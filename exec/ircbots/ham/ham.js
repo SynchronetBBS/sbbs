@@ -192,8 +192,26 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 	}
 
+	function USSpecialEvent(callsign,src,target) {
+		var today=strftime("%m%%2F%d%%2F%Y", time());
+		var result=new HTTPRequest().Post('http://www.arrl.org/special-event-stations', '_method=POST&data%5BSearch%5D%5Bcall_sign%5D='+callsign+'&data%5BSearch%5D%5Bkeywords%5D=&data%5BLocation%5D%5Bzip%5D=&data%5BLocation%5D%5Barea%5D=&data%5BLocation%5D%5Bcity%5D=&data%5BLocation%5D%5Bstate%5D=&data%5BLocation%5D%5Bdivision_id%5D=&data%5BLocation%5D%5Bsection_id%5D=&data%5BLocation%5D%5Bcountry%5D=&data%5BDate%5D%5Bstart%5D='+today+'&data%5BDate%5D%5Bend%5D=&=Search');
+		var m=result.match(/<h3>\s*([\x00-\xff]*?)<\/p/);
+		if(m!=null) {
+			m[1]=m[1].replace(/<[^>]*>/g,'');
+			m[1]=m[1].replace(/[\r\n]/g,' ');
+			m[1]=m[1].replace(/\s+/g,' ');
+			srv.o(target, m[1]);
+		}
+		else {
+			srv.o(target, "Unable to match US special event callsign!");
+		}
+	}
+
 	if(callsign.search(/(C[F-K]|C[Y-Z]|V[A-GOXY]|X[J-O])/)==0) {
 		CanadaCallsign(callsign, srv, target);
+	}
+	else if(callsign.search(/^\s*(K|N|W)[0-9].\s*$/)==0) {
+		USSpecialEvent(callsign,srv,target);
 	}
 	else if(callsign.search(/(A[A-L]|K|N|W)/)==0) {
 		USCallsign(callsign,srv,target);
@@ -206,6 +224,7 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 //var dumb={o:function(x,y) {log(y);}};
+//Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','n0l']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','kj6pxy']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','va6rrx']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','g1xkz']);
