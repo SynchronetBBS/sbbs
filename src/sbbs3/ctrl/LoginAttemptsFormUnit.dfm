@@ -1,8 +1,9 @@
 object LoginAttemptsForm: TLoginAttemptsForm
-  Left = 522
-  Top = 454
+  Left = 729
+  Top = 203
   Width = 496
   Height = 793
+  BorderIcons = [biSystemMenu, biMaximize]
   Caption = 'Failed Login Attempts'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -10,6 +11,7 @@ object LoginAttemptsForm: TLoginAttemptsForm
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
+  FormStyle = fsStayOnTop
   OldCreateOrder = False
   Position = poDefault
   OnClose = FormClose
@@ -24,7 +26,7 @@ object LoginAttemptsForm: TLoginAttemptsForm
     Align = alClient
     Columns = <
       item
-        Caption = 'Count'
+        Caption = 'Unique'
       end
       item
         Caption = 'Dupes'
@@ -49,9 +51,29 @@ object LoginAttemptsForm: TLoginAttemptsForm
         AutoSize = True
         Caption = 'Time'
       end>
+    PopupMenu = PopupMenu
     TabOrder = 0
     ViewStyle = vsReport
     OnColumnClick = ListViewColumnClick
     OnCompare = ListViewCompare
+  end
+  object PopupMenu: TPopupMenu
+    Left = 168
+    Top = 184
+    object CopyPopup: TMenuItem
+      Caption = 'Copy'
+      ShortCut = 16451
+      OnClick = CopyPopupClick
+    end
+    object CopyAllPopup: TMenuItem
+      Caption = 'Copy All'
+      ShortCut = 16449
+      OnClick = CopyAllPopupClick
+    end
+    object RefreshPopup: TMenuItem
+      Caption = 'Refresh'
+      ShortCut = 116
+      OnClick = RefreshPopupClick
+    end
   end
 end
