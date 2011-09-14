@@ -116,6 +116,7 @@ int sbbs_t::login(char *username, char *pw)
 			return(LOGIC_FALSE); 
 		}
 		if(stricmp(useron.pass,str)) {
+			badlogin(useron.alias, str);
 			bputs(text[InvalidLogon]);
 			if(cfg.sys_misc&SM_ECHO_PW) 
 				sprintf(tmp,"(%04u)  %-25s  FAILED Password: '%s' Attempt: '%s'"
@@ -132,8 +133,25 @@ int sbbs_t::login(char *username, char *pw)
 			bputs(text[InvalidLogon]);
 			useron.number=0;
 			useron.misc=useron_misc;
-			return(LOGIC_FALSE); } 
+			return(LOGIC_FALSE); 
+		} 
 	}
 
 	return(LOGIC_TRUE);
+}
+
+void sbbs_t::badlogin(char* user, char* passwd)
+{
+	char reason[128];
+	ulong count;
+
+	SAFEPRINTF(reason,"%s LOGIN", connection);
+	count=loginFailure(startup->login_attempt_list, &client_addr, connection, user, passwd);
+	if(startup->login_attempt_hack_threshold && count>=startup->login_attempt_hack_threshold)
+		hacklog(&cfg, reason, user, passwd, client_name, &client_addr);
+	if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
+		filter_ip(&cfg, connection, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
+			,client_name, inet_ntoa(client_addr.sin_addr), user, /* fname: */NULL);
+
+	mswait(startup->login_attempt_delay);
 }

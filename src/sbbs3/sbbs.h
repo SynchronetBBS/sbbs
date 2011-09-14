@@ -163,7 +163,7 @@ class sbbs_t
 
 public:
 
-	sbbs_t(ushort node_num, DWORD addr, const char* host_name, SOCKET
+	sbbs_t(ushort node_num, SOCKADDR_IN addr, const char* host_name, SOCKET
 		,scfg_t*, char* text[], client_t* client_info);
 	~sbbs_t();
 
@@ -175,7 +175,7 @@ public:
 	client_t client;
 	SOCKET	client_socket;
 	SOCKET	client_socket_dup;
-	DWORD	client_addr;
+	SOCKADDR_IN	client_addr;
 	char	client_name[128];
 	char	client_ident[128];
 	DWORD	local_addr;
@@ -584,14 +584,22 @@ public:
 	int		putnodedat(uint number, node_t * node);
 	int		putnodeext(uint number, char * str);
 
-	/* logonoff.cpp */
-	bool	answer();
+	/* login.ccp */
 	int		login(char *str, char *pw);
+	void	badlogin(char* user, char* passwd);
+
+	/* answer.cpp */
+	bool	answer();
+
+	/* logon.ccp */
 	bool	logon(void);
+
+	/* logout.cpp */
 	void	logout(void);
-	void	logoff(void);
-	BOOL	newuser(void);					/* Get new user							*/
 	void	backout(void);
+
+	/* newuser.cpp */
+	BOOL	newuser(void);					/* Get new user							*/
 
 	/* text_sec.cpp */
 	int		text_sec(void);						/* Text sections */

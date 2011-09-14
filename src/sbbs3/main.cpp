@@ -2818,7 +2818,7 @@ void event_thread(void* arg)
 
 
 //****************************************************************************
-sbbs_t::sbbs_t(ushort node_num, DWORD addr, const char* name, SOCKET sd,
+sbbs_t::sbbs_t(ushort node_num, SOCKADDR_IN addr, const char* name, SOCKET sd,
 			   scfg_t* global_cfg, char* global_text[], client_t* client_info)
 {
 	char	nodestr[32];
@@ -3442,14 +3442,12 @@ int sbbs_t::nopen(char *str, int access)
 void sbbs_t::spymsg(const char* msg)
 {
 	char str[512];
-	struct in_addr addr;
 
 	if(cfg.node_num<1)
 		return;
 
-	addr.s_addr=client_addr;
 	SAFEPRINTF4(str,"\r\n\r\n*** Spy Message ***\r\nNode %d: %s [%s]\r\n*** %s ***\r\n\r\n"
-		,cfg.node_num,client_name,inet_ntoa(addr),msg);
+		,cfg.node_num,client_name,inet_ntoa(client_addr.sin_addr),msg);
 	if(startup->node_spybuf!=NULL 
 		&& startup->node_spybuf[cfg.node_num-1]!=NULL) {
 		RingBufWrite(startup->node_spybuf[cfg.node_num-1],(uchar*)str,strlen(str));
@@ -3876,6 +3874,7 @@ void node_thread(void* arg)
 	int				file;
 	uint			curshell=0;
 	node_t			node;
+	ulong			login_attempts;
 	sbbs_t*			sbbs = (sbbs_t*) arg;
 
 	update_clients();
@@ -3894,6 +3893,13 @@ void node_thread(void* arg)
 			lprintf(LOG_ERR,"Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
 	}
 #endif
+
+	if(startup->login_attempt_throttle
+		&& (login_attempts=loginAttempts(startup->login_attempt_list, &sbbs->client_addr)) > 1) {
+		lprintf(LOG_DEBUG,"Node %d Throttling suspicious connection from: %s (%u login attempts)"
+			,sbbs->cfg.node_num, inet_ntoa(sbbs->client_addr.sin_addr), login_attempts);
+		mswait(login_attempts*startup->login_attempt_throttle);
+	}
 
 	if(sbbs->answer()) {
 
@@ -4715,7 +4721,7 @@ void DLLCALL bbs_thread(void* arg)
 NO_SSH:
 #endif
 
-	sbbs = new sbbs_t(0, server_addr.sin_addr.s_addr
+	sbbs = new sbbs_t(0, server_addr
 		,"Terminal Server", telnet_socket, &scfg, text, NULL);
     sbbs->online = 0;
 	if(sbbs->init()==false) {
@@ -4726,7 +4732,7 @@ NO_SSH:
 	_beginthread(output_thread, 0, sbbs);
 
 	if(!(startup->options&BBS_OPT_NO_EVENTS)) {
-		events = new sbbs_t(0, server_addr.sin_addr.s_addr
+		events = new sbbs_t(0, server_addr
 			,"BBS Events", INVALID_SOCKET, &scfg, text, NULL);
 		events->online = 0;
 		if(events->init()==false) {
@@ -5253,7 +5259,7 @@ NO_SSH:
 
         node_socket[i-1]=client_socket;
 
-		sbbs_t* new_node = new sbbs_t(i, client_addr.sin_addr.s_addr, host_name
+		sbbs_t* new_node = new sbbs_t(i, client_addr, host_name
         	,client_socket
 			,&scfg, text, &client);
 

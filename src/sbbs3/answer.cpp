@@ -47,13 +47,11 @@ bool sbbs_t::answer()
 	char 	path[MAX_PATH+1];
 	int		i,l,in;
 	struct tm tm;
-	struct in_addr addr;
 
 	useron.number=0;
 	answertime=logontime=starttime=now=time(NULL);
 	/* Caller ID is IP address */
-	addr.s_addr=client_addr;
-	SAFECOPY(cid,inet_ntoa(addr)); 
+	SAFECOPY(cid,inet_ntoa(client_addr.sin_addr)); 
 
 	memset(&tm,0,sizeof(tm));
     localtime_r(&now,&tm); 
@@ -118,6 +116,7 @@ bool sbbs_t::answer()
 						,rlogin_pass);
 					for(i=0;i<3;i++) {
 						if(stricmp(tmp,useron.pass)) {
+							badlogin(useron.alias, tmp);
 							rioctl(IOFI);       /* flush input buffer */
 							bputs(text[InvalidLogon]);
 							if(cfg.sys_misc&SM_ECHO_PW)
@@ -148,6 +147,7 @@ bool sbbs_t::answer()
 					}
 					if(i) {
 						if(stricmp(tmp,useron.pass)) {
+							badlogin(useron.alias, tmp);
 							bputs(text[InvalidLogon]);
 							if(cfg.sys_misc&SM_ECHO_PW)
 								sprintf(str,"(%04u)  %-25s  FAILED Password attempt: '%s'"
@@ -200,6 +200,7 @@ bool sbbs_t::answer()
 				,rlogin_pass);
 			for(i=0;i<3;i++) {
 				if(stricmp(tmp,useron.pass)) {
+					badlogin(useron.alias, tmp);
 					rioctl(IOFI);       /* flush input buffer */
 					bputs(text[InvalidLogon]);
 					if(cfg.sys_misc&SM_ECHO_PW)
@@ -236,6 +237,7 @@ bool sbbs_t::answer()
 			}
 			if(i) {
 				if(stricmp(tmp,useron.pass)) {
+					badlogin(useron.alias, tmp);
 					bputs(text[InvalidLogon]);
 					if(cfg.sys_misc&SM_ECHO_PW)
 						sprintf(str,"(%04u)  %-25s  FAILED Password attempt: '%s'"
@@ -442,6 +444,9 @@ bool sbbs_t::answer()
 		hangup();
 		return(false); 
 	}
+
+	if(useron.pass[0])
+		loginSuccess(startup->login_attempt_list, &client_addr);
 
 	return(true);
 }
