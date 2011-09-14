@@ -79,11 +79,12 @@ int sbbs_t::login(char *username, char *pw)
 
 	if(!useron.number) {
 		if(cfg.node_misc&NM_LOGON_P) {
-			strcpy(useron.alias,str);
+			SAFECOPY(useron.alias,str);
 			bputs(pw);
 			console|=CON_R_ECHOX;
 			getstr(str,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
+			badlogin(useron.alias, str);
 			bputs(text[InvalidLogon]);	/* why does this always fail? */
 			if(cfg.sys_misc&SM_ECHO_PW) 
 				sprintf(tmp,"(%04u)  %-25s  FAILED Password attempt: '%s'"
