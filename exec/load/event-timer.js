@@ -57,13 +57,13 @@ function Timer() {
 	}
 	
 	/* create a new event, do not include () on action parameter */
-	this.addEvent = function(interval,repeat,action) {
-		var event=new Event(interval,repeat,action);
+	this.addEvent = function(interval,repeat,action,arguments,context) {
+		var event=new Event(interval,repeat,action,arguments,context);
 		this.events.push(event);
 	}
 	
 	/* event object created by addEvent */
-	function Event(interval,repeat,action) {
+	function Event(interval,repeat,action,arguments,context) {
 		/* last time_t at which event was executed */
 		this.lastrun = time();
 		/* seconds between event occurance */
@@ -72,9 +72,13 @@ function Timer() {
 		this.repeat=repeat;
 		/* function called when event is run */
 		this.action=action;
+		/* arguments passed to function */
+		this.arguments=arguments;
+		/* context in which to run function */
+		this.context=context;
 		/* run event */
 		this.run = function() {
-			this.action();
+			this.action.apply(this.context,this.arguments);
 			this.lastrun = time();
 		}
 	}
