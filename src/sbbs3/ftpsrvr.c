@@ -4602,7 +4602,7 @@ static void ctrl_thread(void* arg)
 	ftp_close_socket(&tmp_sock,__LINE__);
 
 	{
-		int32_t	remain = protected_int32_adjust(&active_client, -1);
+		int32_t	remain = protected_int32_adjust(&active_clients, -1);
 		update_clients();
 
 		thread_down();
