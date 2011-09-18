@@ -2570,8 +2570,8 @@ BOOL DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* 
 /* Add an IP address (with comment) to the IP filter/trashcan file			*/
 /* ToDo: Move somewhere more appropriate (filter.c?)						*/
 /****************************************************************************/
-BOOL DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* host
-					   ,char* ip_addr, char* username, char* fname)
+BOOL DLLCALL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* host
+					   ,const char* ip_addr, const char* username, const char* fname)
 {
 	char	ip_can[MAX_PATH+1];
 	char	tstr[64];

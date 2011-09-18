@@ -112,7 +112,8 @@ DLLEXPORT BOOL	DLLCALL can_user_read_sub(scfg_t* cfg, uint subnum, user_t* user,
 DLLEXPORT BOOL	DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* client, uint* reason);
 DLLEXPORT BOOL	DLLCALL is_user_subop(scfg_t* cfg, uint subnum, user_t* user, client_t* client);
 DLLEXPORT BOOL	DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* client);
-DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* host, char* ip_addr, char* username, char* fname);
+DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* host
+								  ,const char* ip_addr, const char* username, const char* fname);
 
 /* New atomic numeric user field adjustment functions: */
 DLLEXPORT BOOL	DLLCALL user_posted_msg(scfg_t* cfg, user_t* user, int count);
