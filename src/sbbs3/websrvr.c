@@ -5188,7 +5188,7 @@ static void cleanup(int code)
 	if(active_clients.value)
 		lprintf(LOG_WARNING,"#### Web Server terminating with %ld active clients", active_clients.value);
 	else
-		protected_uint32_destroy(active_clients);
+		protected_int32_destroy(active_clients);
 
 	update_clients();
 
