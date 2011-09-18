@@ -69,10 +69,9 @@
 
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
-static volatile ulong	sockets=0;
 static volatile BOOL	terminated=FALSE;
-static volatile time_t	uptime=0;
-static volatile ulong	served=0;
+static time_t	uptime=0;
+static ulong	served=0;
 static char		revision[16];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
@@ -91,11 +90,11 @@ typedef struct {
 	js_startup_t	js;
 	js_server_props_t js_server_props;
 	/* These are run-time state and stat vars */
-	volatile ulong		clients;
-	volatile ulong		served;
-	volatile SOCKET		socket;
-	volatile BOOL		running;
-	volatile BOOL		terminated;
+	ulong		clients;
+	ulong		served;
+	SOCKET		socket;
+	BOOL		running;
+	BOOL		terminated;
 } service_t;
 
 typedef struct {
@@ -220,14 +219,9 @@ static SOCKET open_socket(int type, const char* protocol)
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET) {
-		sockets++;
 		SAFEPRINTF(section,"services|%s", protocol);
 		if(set_socket_options(&scfg, sock, section, error, sizeof(error)))
 			lprintf(LOG_ERR,"%04d !ERROR %s",sock, error);
-
-#if 0 /*def _DEBUG */
-		lprintf(LOG_DEBUG,"%04d Socket opened (%d sockets in use)",sock,sockets);
-#endif
 	}
 	return(sock);
 }
@@ -243,13 +237,8 @@ static int close_socket(SOCKET sock)
 	result=closesocket(sock);
 	if(startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,FALSE);
-	sockets--;
 	if(result!=0)
 		lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",sock, ERROR_VALUE);
-#if 0 /*def _DEBUG */
-	else 
-		lprintf(LOG_DEBUG,"%04d Socket closed (%d sockets in use)",sock,sockets);
-#endif
 
 	return(result);
 }
@@ -1199,7 +1188,7 @@ static void js_service_thread(void* arg)
 
 	thread_down();
 	lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %d total, %lu served)"
-		, socket, service->protocol, service->clients, active_clients(), service->served);
+		,socket, service->protocol, service->clients, active_clients(), service->served);
 
 	client_off(socket);
 	close_socket(socket);
@@ -2111,10 +2100,6 @@ void DLLCALL services_thread(void* arg)
 #endif
 						continue;
 					}
-					sockets++;
-#if 0 /*def _DEBUG */
-					lprintf(LOG_DEBUG,"%04d Socket opened (%d sockets in use)",client_socket,sockets);
-#endif
 					if(startup->socket_open!=NULL)	/* Callback, increments socket counter */
 						startup->socket_open(startup->cbdata,TRUE);	
 				}
