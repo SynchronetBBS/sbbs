@@ -981,7 +981,7 @@ extern "C" {
 		const char*	version_detail;
 		uint32_t*	interface_addr;
 		uint32_t*	options;
-		ulong*		clients;
+		uint32_t*	clients;
 	} js_server_props_t;
 
 	enum {
