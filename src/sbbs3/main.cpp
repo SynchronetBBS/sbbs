@@ -79,8 +79,7 @@
 volatile time_t	uptime=0;
 volatile ulong	served=0;
 
-static	volatile ulong node_threads_running=0;
-static	volatile ulong thread_count=0;
+static	protected_uint32_t node_threads_running;
 		
 char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 RingBuf* node_inbuf[MAX_NODES];
@@ -120,7 +119,7 @@ static const char* status(const char* str)
 static void update_clients()
 {
 	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,node_threads_running);
+		startup->clients(startup->cbdata,node_threads_running.value);
 }
 
 void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -137,15 +136,12 @@ static void client_off(SOCKET sock)
 
 static void thread_up(BOOL setuid)
 {
-	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,TRUE,setuid);
 }
 
 static void thread_down()
 {
-	if(thread_count>0)
-		thread_count--;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,FALSE,FALSE);
 }
@@ -4034,10 +4030,11 @@ void node_thread(void* arg)
 /*	node.useron=0; needed for hang-ups while in multinode chat */
 	sbbs->putnodedat(sbbs->cfg.node_num,&node);
 
-	if(node_threads_running>0)
-		node_threads_running--;
-	lprintf(LOG_INFO,"Node %d thread terminated (%u node threads remain, %lu clients served)"
-		,sbbs->cfg.node_num, node_threads_running, served);
+	{
+		int32_t remain = protected_uint32_adjust(&node_threads_running, -1);
+		lprintf(LOG_INFO,"Node %d thread terminated (%u node threads remain, %lu clients served)"
+			,sbbs->cfg.node_num, remain, served);
+	}
     if(!sbbs->input_thread_running && !sbbs->output_thread_running)
 		delete sbbs;
     else
@@ -4284,6 +4281,8 @@ static void cleanup(int code)
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
+	protected_uint32_destroy(node_threads_running);
+
 #ifdef _WIN32
 	if(exec_mutex!=NULL) {
 		CloseHandle(exec_mutex);
@@ -4309,8 +4308,6 @@ static void cleanup(int code)
 	thread_down();
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"Terminal Server thread terminated (%lu clients served)", served);
-	if(thread_count)
-		lprintf(LOG_WARNING,"!Terminal Server threads (%u) remain after termination", thread_count);
 	if(startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -4380,12 +4377,14 @@ void DLLCALL bbs_thread(void* arg)
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
 	js_server_props.version_detail=bbs_ver();
-	js_server_props.clients=&node_threads_running;
+	js_server_props.clients=&node_threads_running.value;
 	js_server_props.options=&startup->options;
 	js_server_props.interface_addr=&startup->telnet_interface;
 
 	uptime=0;
 	served=0;
+	protected_uint32_init(&node_threads_running,0);
+
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
 	terminate_server=false;
@@ -4409,7 +4408,6 @@ void DLLCALL bbs_thread(void* arg)
 	memset(text, 0, sizeof(text));
     memset(&scfg, 0, sizeof(scfg));
 
-	node_threads_running=0;
 	lastuseron[0]=0;
 
 	char compiler[32];
@@ -4852,7 +4850,7 @@ NO_SSH:
 
 	while(!terminate_server) {
 
-		if(node_threads_running==0) {	/* check for re-run flags and recycle/shutdown sem files */
+		if(node_threads_running.value==0) {	/* check for re-run flags and recycle/shutdown sem files */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
 
 				bool rerun=false;
@@ -5400,7 +5398,7 @@ NO_PASSTHRU:
 		}
 #endif
 
-	    node_threads_running++;
+	    protected_uint32_adjust(&node_threads_running, 1);
 		new_node->input_thread=(HANDLE)_beginthread(input_thread,0, new_node);
 		_beginthread(output_thread, 0, new_node);
 		_beginthread(node_thread, 0, new_node);
@@ -5436,13 +5434,13 @@ NO_PASSTHRU:
     sem_post(&sbbs->outbuf.sem);
 
     // Wait for all node threads to terminate
-	if(node_threads_running) {
-		lprintf(LOG_INFO,"Waiting for %d node threads to terminate...", node_threads_running);
+	if(node_threads_running.value) {
+		lprintf(LOG_INFO,"Waiting for %d node threads to terminate...", node_threads_running.value);
 		start=time(NULL);
-		while(node_threads_running) {
+		while(node_threads_running.value) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
 				lprintf(LOG_ERR,"!TIMEOUT waiting for %d node thread(s) to "
-            		"terminate", node_threads_running);
+            		"terminate", node_threads_running.value);
 				break;
 			}
 			mswait(100);
