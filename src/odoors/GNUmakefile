@@ -66,6 +66,8 @@ endif
 #
 # Compiler command-line flags.
 #
+CFLAGS	+=	-fPIC
+LDFLAGS	+=	-fPIC
 CFLAGS	+=	-O2 -L${LIBDIR} -I../xpdev
 ifeq ($(OS),Darwin)
  CFLAGS		+=	-D__unix__
