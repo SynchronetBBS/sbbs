@@ -12,8 +12,8 @@ load("sbbsdefs.js")
 load("funclib.js");
  
 splashStart();
-client.subscribe("uberblox.players");
-client.subscribe("uberblox.alltime");
+client.subscribe("uberblox","players");
+client.subscribe("uberblox","alltime");
 
 var oldpass = console.ctrl_key_passthru;
 var data = new GameData();
@@ -54,7 +54,7 @@ function gotoxy(x,y)
 }
 function splashStart()
 {
-	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status|=SS_PAUSEOFF;
 	console.clear();
@@ -84,8 +84,8 @@ function blox()
 {
 	const columns=20;
 	const rows=11;
-	const bg=[BG_GREEN,BG_BLUE,BG_RED,BG_CYAN,BG_BROWN,BG_MAGENTA];
-	const fg=[LIGHTGREEN,LIGHTBLUE,LIGHTRED,LIGHTCYAN,YELLOW,LIGHTMAGENTA];
+	const bg=[BG_GREEN,BG_BLUE,BG_RED,BG_BROWN,BG_MAGENTA,LIGHTGRAY];
+	const fg=[LIGHTGREEN,LIGHTBLUE,LIGHTRED,YELLOW,LIGHTMAGENTA,WHITE];
 
 	var level;
 	var points;
@@ -96,7 +96,7 @@ function blox()
 	const points_increment=		10;
 	const minimum_cluster=		3;
 	const colors=				[3,3,3,4,4,4,5,5,5,6,6,6]; //COLORS PER MAP (DEFAULT ex.: levels 1-4 have 3 colors)
-	const tiles_per_color=		[8,7,6,8,7,6,9,8,7,10,9,8];	//TARGET FOR LEVEL COMPLETION (DEFAULT ex. level 1 target: 220 total tiles minus 8 tiles per color times 3 colors = 196)
+	const tiles_per_color=		[8,7,6,10,9,8,11,10,9,12,11,10];	//TARGET FOR LEVEL COMPLETION (DEFAULT ex. level 1 target: 220 total tiles minus 8 tiles per color times 3 colors = 196)
 		
 	var lobby;
 	var logo;
@@ -216,7 +216,7 @@ function blox()
 	}
 	function init()
 	{
-		client.write("uberblox.players." + user.alias + ".laston",time(),2);
+		client.write("uberblox","players." + user.alias + ".laston",time(),2);
 		logo=new Graphic(18,22);
 		logo.load(root + "blox.bin");
 		lobby=new Graphic(80,23);
@@ -559,25 +559,25 @@ function GameData()
 	
 	this.init=function()
 	{
-		client.lock("uberblox.month",2);
-		var month = client.read("uberblox.month");
+		client.lock("uberblox","month",2);
+		var month = client.read("uberblox","month");
 		if(month != this.month) 
 			this.reset();
-		client.unlock("uberblox.month");
+		client.unlock("uberblox","month");
 		
-		this.alltime = client.read("uberblox.alltime",1);
+		this.alltime = client.read("uberblox","alltime",1);
 		if(!this.alltime.name) {
 			this.alltime={
 				name:"no one",
 				score:0
 			}
-			client.write("uberblox.alltime",this.alltime,2);
+			client.write("uberblox","alltime",this.alltime,2);
 		}
 		
-		this.players = client.read("uberblox.players",1); 
+		this.players = client.read("uberblox","players",1); 
 		if(!this.players[user.alias]) {
 			this.players[user.alias] = new Player();
-			client.write("uberblox.players." + user.alias,this.players[user.alias],2);
+			client.write("uberblox","players." + user.alias,this.players[user.alias],2);
 		}
 	}
 	this.formatDate=function(timet)
@@ -595,23 +595,23 @@ function GameData()
 	}
 	this.reset=function()
 	{
-		client.write("uberblox.month",this.month);
-		client.write("uberblox.players",{},2);
+		client.write("uberblox","month",this.month);
+		client.write("uberblox","players",{},2);
 	}
 	this.storePlayer=function()
 	{
-		client.write("uberblox.players." + user.alias,this.players[user.alias],2);
+		client.write("uberblox","players." + user.alias,this.players[user.alias],2);
 		
-		client.lock("uberblox.alltime",2);
+		client.lock("uberblox","alltime",2);
 		if(this.players[user.alias].score > this.alltime.score) {
-			this.alltime=client.read("uberblox.alltime");
+			this.alltime=client.read("uberblox","alltime");
 			if(this.players[user.alias].score > this.alltime.score) {
 				this.alltime.score = this.players[user.alias].score;
 				this.alltime.name = user.alias;
-				client.write("uberblox.alltime",this.alltime);
+				client.write("uberblox","alltime",this.alltime);
 			}
 		}
-		client.unlock("uberblox.alltime");
+		client.unlock("uberblox","alltime");
 	}
 	this.findUser=function(alias)
 	{
@@ -652,6 +652,6 @@ function Tile(bg,fg)
 }
 
 blox();
-client.unsubscribe("uberblox.players");
-client.unsubscribe("uberblox.alltime");
+client.unsubscribe("uberblox","players");
+client.unsubscribe("uberblox","alltime");
 splashExit();

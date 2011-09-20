@@ -1,17 +1,17 @@
 /*********************************
-*		STAR STOCKS (2007) 		*
-*		for Synchronet v3.15 		*
-*		by Matt Johnson			*
-*********************************/
+ *		STAR STOCKS (2007) 		 *
+ *		for Synchronet v3.15 	 *
+ *		by Matt Johnson			 *
+ *********************************/
 
 load("sbbsdefs.js");
 load("funclib.js");
 load("graphic.js");
 
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 bbs.sys_status|=SS_MOFF;
-client.subscribe("starstocks.scores");
+client.subscribe("starstocks","scores");
 
 const 	cfgname=			"stars.cfg";  
 const 	space=				"\xFA";
@@ -46,7 +46,7 @@ var 	max_normal=		max_stars;
 var 	game;
 
 gameMenu();
-client.unsubscribe("starstocks.scores");
+client.unsubscribe("starstocks","scores");
 quit();
 
 //########################## MAIN FUNCTIONS ###################################
@@ -110,17 +110,17 @@ function 	gameMenu()
 }
 function 	loadScores()
 { 
-	scores = client.read("starstocks.scores",1);
+	scores = client.read("starstocks","scores",1);
 }
 function	storeScore(score)
 {
-	client.lock("starstocks.scores",2);
-	scores=client.read("starstocks.scores");
+	client.lock("starstocks","scores",2);
+	scores=client.read("starstocks","scores");
 	if(!scores[score.difficulty])
 		scores[score.difficulty] = [];
 	scores[score.difficulty].push(score);
-	client.write("starstocks.scores." + score.difficulty,scores[score.difficulty]);
-	client.unlock("starstocks.scores");
+	client.write("starstocks","scores." + score.difficulty,scores[score.difficulty]);
+	client.unlock("starstocks","scores");
 }
 function 	loadSettings()
 { 

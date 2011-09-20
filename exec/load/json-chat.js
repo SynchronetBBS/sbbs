@@ -1,34 +1,50 @@
-if(!js.global.JSONClient) 
+if(!js.global.JSONClient)
 	load(js.global,"json-client.js");
-	
-function JSONChat(jsonclient) {
 
-	this.nick = new Nick(user.handle,system.name,user.ip_address);
+function JSONChat(jsonclient,host,port,usernum) {
+
+	this.nick;
 	this.channels = {};
 	this.client = jsonclient;
-	if(!this.client) 
-		this.client = new JSONClient();
-
+	
+	if(!this.client) {
+		if(!host || isNaN(port))
+			throw("invalid client arguments");
+		this.client = new JSONClient(host,port);
+	}
+		
 	this.connect = function() {
-		this.client.subscribe("chat.channels." + this.nick.name + ".messages");
+		var usr;
+		if(usernum > 0 && system.username(usernum)) 
+			usr = new User(usernum);
+		if(usr) 
+			this.nick = new Nick(usr.handle,system.name,usr.ip_address);
+		else if(user && user.number > 0)
+			this.nick = new Nick(user.handle,system.name,user.ip_address);
+		if(this.nick)
+			this.client.subscribe("chat","channels." + this.nick.name + ".messages");
+		else
+			throw("invalid user number");
 	}
 	
 	this.submit = function(target,str) {
 		var message = new Message(this.nick,str,Date.now());
-		this.client.write("chat.channels." + target + ".messages",message,2);
-		this.client.push("chat.channels." + target + ".history",message,2);
-		this.channels[target.toUpperCase()].messages.push(message);
+		var chan = this.channels[target.toUpperCase()];
+		this.client.write("chat","channels." + chan.name + ".messages",message,2);
+		this.client.push("chat","channels." + chan.name + ".history",message,2);
+		chan.messages.push(message);
 	}
 	
 	this.clear = function(target) {
-		this.client.write("chat.channels." + target + ".history",[],2);
-		this.channels[target.toUpperCase()].messages = [];
+		var chan = this.channels[target.toUpperCase()];
+		this.client.write("chat","channels." + chan.name + ".history",[],2);
+		chan.messages = [];
 	}
 	
 	this.join = function(target,str) {
-		this.client.subscribe("chat.channels." + target + ".messages");
+		this.client.subscribe("chat","channels." + target + ".messages");
 		this.channels[target.toUpperCase()] = new Channel(target);
-		var history = this.client.read("chat.channels." + target + ".history",1);
+		var history = this.client.read("chat","channels." + target + ".history",1);
 		var msgcount = 0;
 		for each(var m in history) {
 			this.channels[target.toUpperCase()].messages.push(m);
@@ -36,21 +52,26 @@ function JSONChat(jsonclient) {
 		}
 		if(msgcount == 0) 
 			this.clear(target);
-		this.channels[target.toUpperCase()].users = this.client.who("chat.channels." + target + ".messages");
+		this.channels[target.toUpperCase()].users = this.client.who("chat","channels." + target + ".messages");
 	}
 	
 	this.part = function(target) {
-		this.client.unsubscribe("chat.channels." + target + ".messages");
+		var chan = this.channels[target.toUpperCase()];
+		this.client.unsubscribe("chat","channels." + chan.name + ".messages");
 		delete this.channels[target.toUpperCase()];
 	}
 	
 	this.who = function(target,str) {
-		this.channels[target.toUpperCase()].users = this.client.who("chat.channels." + target + ".messages");
-		return this.channels[target.toUpperCase()].users;
+		var chan = this.channels[target.toUpperCase()];
+		chan.users = this.client.who("chat","channels." + chan.name + ".messages");
+		return chan.users;
 	}
 	
 	this.disconnect = function() {
-		this.client.unsubscribe("chat." + this.nick.name + ".messages");
+		this.client.unsubscribe("chat","channels." + this.nick.name + ".messages");
+		for each(var c in this.channels) 
+			this.client.unsubscribe("chat","channels." + c.name + ".messages");
+		this.channels = {};
 	}
 	
 	/* pass any client update packets to this function to process inbound messages/status updates */
@@ -89,6 +110,10 @@ function JSONChat(jsonclient) {
 		/* if the command string is empty */
 		if(!cmdstr) 
 			return false;
+			
+		/* if the command has been passed with a leading '/' */
+		if(cmdstr[0] == "/")
+			cmdstr = cmdstr.substr(1);
 			
 		cmdstr = cmdstr.split(" ");
 		switch(cmdstr[0].toUpperCase()) {
@@ -155,4 +180,6 @@ function JSONChat(jsonclient) {
 		this.str = str;
 		this.time = time;
 	}
+	
+	this.connect();
 }

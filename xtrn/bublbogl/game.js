@@ -11,6 +11,7 @@
 */
 
 var oldpass=console.ctrl_key_passthru;
+var game_id = "boggle";
 
 load("graphic.js");
 load("sbbsdefs.js");
@@ -19,8 +20,8 @@ load("funclib.js");
 load("calendar.js");
 load(root + "timer.js");
  
+client.subscribe(game_id,"players");
 splashStart();
-client.subscribe("boggle.players");
 
 var wordvalues=[];
 wordvalues[4]=1;
@@ -46,7 +47,7 @@ var data = new GameData();
 function boggle() {
 	function init()
 	{
-		client.write("boggle.players." + user.alias + ".laston",time(),2);
+		client.write(game_id,"players." + user.alias + ".laston",time(),2);
 		player=findUser(user.alias);
 		current=calendar.selected;
 		today=calendar.selected;
@@ -120,7 +121,7 @@ function boggle() {
 			}
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k){
-				switch(k.toUpperCase())	{
+				switch(k.toUpperCase())	{	
 					case KEY_UP:
 					case KEY_DOWN:
 					case KEY_LEFT:
@@ -505,7 +506,7 @@ function processUpdates(update) {
 	data.updated=true;
 }
 function splashStart() {
-	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status |= SS_PAUSEOFF;	
 	console.clear();
@@ -540,21 +541,21 @@ client.callback=processUpdates;
 function GameData() {
 	this.updated=false;
 	
-	this.players=[];
-	this.boards=[];
-	this.winner=undefined;
+	this.players={};
+	this.boards={};
+	this.winner={};
 	this.month=date.getMonth();
 	
 	this.init=function() {
-		client.lock("boggle.month",2);
-		var month = client.read("boggle.month");
+		client.lock(game_id,"month",2);
+		var month = client.read(game_id,"month");
 		if(month != this.month) 
 			this.newMonth();
 		else
 			this.loadMonth();
-		client.unlock("boggle.month");
+		client.unlock(game_id,"month");
 		
-		this.players = client.read("boggle.players",1);
+		this.players = client.read(game_id,"players",1);
 		if(!this.players[user.alias]) {
 			this.players[user.alias] = new Player();
 			this.storePlayer();
@@ -563,16 +564,16 @@ function GameData() {
 	/* load this month's boggle boards */
 	this.loadMonth=function() {
 		console.putmsg("\rPlease wait. Loading puzzles for this month...\r\n");
-		this.winner=client.read("boggle.winner",1);
-		this.boards=client.read("boggle.boards",1);
+		this.winner=client.read(game_id,"winner",1);
+		this.boards=client.read(game_id,"boards",1);
 	}
 	/* save current player data to database */
 	this.storePlayer = function() {
-		client.write("boggle.players." + user.alias,this.players[user.alias],2);
+		client.write(game_id,"players." + user.alias,this.players[user.alias],2);
 	}
 	/* save this round's winner to the database */
 	this.storeRoundWinner=function() {
-		this.players = client.read("boggle.players",1);
+		this.players = client.read(game_id,"players",1);
 		for(p in this.players) {
 			if(!this.winner) 
 				this.winner=this.players[p];
@@ -581,26 +582,27 @@ function GameData() {
 					this.winner=this.players[p];
 			}
 		}
-		client.write("boggle.winner",this.winner,2);
+		client.write(game_id,"winner",this.winner,2);
 	}
 	/* generate a new month's list of boggle boards */
 	this.newMonth=function() {
 		this.storeRoundWinner();
 		
-		client.write("boggle.month",this.month);
-		client.write("boggle.players",{},2);
+		client.write(game_id,"month",this.month);
+		client.write(game_id,"players",{},2);
 			
 		console.putmsg("\rPlease wait. Creating puzzles for new month...\r\n");
 
-		client.lock("boggle.boards",2);
+		client.lock(game_id,"boards",2);
+		client.write(game_id,"boards",{});
 		this.boards=[];
 		var numdays=date.daysInMonth();
 		for(var dn=1;dn<=numdays;dn++) {
 			var board=this.newBoard();
 			this.boards[dn]=board;
-			client.write("boggle.boards." + dn,board);
+			client.write(game_id,"boards." + dn,board);
 		}
-		client.unlock("boggle.boards");
+		client.unlock(game_id,"boards");
 	}
 	/* generate a new boggle board */
 	this.newBoard=function() {
@@ -905,7 +907,7 @@ function Score() {
 }
 
 boggle();
-client.unsubscribe("boggle.players");
+client.unsubscribe(game_id,"players");
 splashExit();
 
 
