@@ -2,64 +2,145 @@ load("event-timer.js");
 load("json-sock.js");
 load("json-db.js");
 
-var timer = new Timer();
-var maindb = new JSONdb(system.data_dir+"db.json");
+/**** SERVICE MODULES
+ * 
+ * 	main service (socket service)
+ * 		socket output
+ * 		socket input
+ * 		routing
+ * 			module engine
+ * 			service administration
+ * 			chat engine
+ * 
+ * 	module engine (game service)
+ * 		database queries
+ * 		module administration
+ * 		module events
+ * 
+ * 	event timer
+ * 		timed events
+ * 			
+ * 	service administration 
+ * 		user authentication
+ * 		service control
+ * 		access control
+ * 		service information
+ * 
+ * 	chat engine 
+ * 		database queries
+ * 		administration
+ * */
+ 
+/**** PACKET DATA
+ * 
+ * 	module = 
+ * 		"SOCKET"
+ * 		"SERVICE"
+ * 		"CHAT"
+ * 		(module name)
+ *
+ * 	func = 
+ * 		"QUERY"
+ *		"ADMIN"
+ *		(other function)
+ * 
+ *	data =
+ *		{..}
+ * 
+ * */
 
+/* error values */
+var errors = {
+	UNKNOWN_MODULE:"Unknown module: %s",
+	UNKNOWN_FUNCTION:"Unknown function: %s",
+	UNKNOWN_COMMAND:"Unknown command: %s",
+	UNKNOWN_USER:"User not found: %s",
+	SERVICE_OFFLINE:"Service offline",
+	MODULE_OFFLINE:"Module offline"
+};
+ 
 /* server object */
 service = new (function() {
 
-	this.VERSION = "$Revision$".split(' ')[1];
+	this.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
 	this.online = true;
 	this.sockets = [];
 	this.denyhosts = [];
 	this.timeout = 1;
 	
+	/* initialize server */
 	this.init = function() {
  
 		/* method called when socket is selected for reading */
 		Socket.prototype.cycle = function() {
 			var packet=this.recvJSON();
+			/* if nothing was received, return */
 			if(!packet) 
 				return false;
-			if(!packet.func)
+			/* if no module was specified, data assumed invalid */
+			if(!packet.scope)
 				return false;
-			switch(packet.func.toUpperCase()) {
-			/* main database queries */
-			case "QUERY":
-				maindb.query(this,packet.data);
-				break;
+			switch(packet.scope.toUpperCase()) {
+			/* service administration */
 			case "ADMIN":
-				admin.query(this,packet.data);
+				admin.process(this,packet);
 				break;
-			/* unknown queries (usually a specific module) */
+			/* chat service */
+			case "CHAT":
+				chat.process(this.packet);
+				break;
+			/* socket data */
+			case "SOCKET":
+				service.process(this,packet);
+				break;
+			/* modular queries */
 			default:
-				engine.query(this,packet);
+				engine.process(this,packet);
 				break;
 			}
 		}
 		
+		/* configure server socket */
 		server.socket.nonblocking = true;
 		server.socket.cycle = function() {
 			var client=this.accept();
+			/* open and immediately close sockets if service is offline */
 			if(!service.online) {
 				client.close();
+				return;
 			}
-			else if(service.denyhosts[client.remote_ip_address]) {
+			/* log and disconnect banned hosts */
+			if(service.denyhosts[client.remote_ip_address]) {
 				log(LOG_INFO,"blocked: " + client.remote_ip_address);
 				client.close();
-			}
-			else {
-				log(LOG_INFO,"connected: " + client.remote_ip_address);
-				client.nonblocking = true;
-				client.id = client.descriptor;
-				service.sockets.push(client);
-			}
+				return;
+			} 
+			
+			/* log and initialize normal connections */
+			log(LOG_INFO,"connected: " + client.remote_ip_address);
+			client.nonblocking = true;
+			client.id = client.descriptor;
+			service.sockets.push(client);
 		}
 		
 		this.sockets.push(server.socket);
-		log(LOG_INFO,"JSON server initialized (v" + this.VERSION + ")");
+		log(LOG_INFO,"server initialized (v" + this.VERSION + ")");
 	}
-	
+	/* process socket data */
+	this.process = function(client,packet) {
+		switch(packet.func.toUpperCase()) {
+		case "PING":
+			client.pingOut("PONG");
+			break;
+		case "PONG":
+			client.pingIn(packet);
+			break;
+		default:
+			error(client,errors.UNKNOWN_FUNCTION,packet.func);
+			break;
+		}
+	}
+	/* monitor sockets */
 	this.cycle = function() {
 		var active=socket_select(this.sockets,this.timeout);
 		for each(var s in active) {
@@ -68,37 +149,66 @@ service = new (function() {
 		for(var s=1;s<this.sockets.length;s++) {
 			if(!this.sockets[s].is_connected) {
 				log(LOG_INFO,"disconnected: " + this.sockets[s].remote_ip_address);
-				maindb.release(this.sockets[s].descriptor);
+				this.release(this.sockets[s].descriptor);
 				this.sockets.splice(s--,1);
 			}
 			if(this.denyhosts[this.sockets[s].remote_ip_address]) {
 				log(LOG_INFO,"disconnecting: " + this.sockets[s].remote_ip_address);
-				maindb.release(this.sockets[s].descriptor);
+				this.release(this.sockets[s].descriptor);
 				this.sockets[s].close();
 				this.sockets.splice(s--,1);
 			}
 		} 
+	}	
+	/* release all locks and auths for a socket */
+	this.release = function(descriptor) {
+		engine.release(descriptor);
+		admin.release(descriptor);
+		chat.release(descriptor);
 	}
 
 	this.init();
 })();
 
+/* chat handler */
+chat = new (function() {
+	this.db = new JSONdb(system.data_dir+"chat.json");
+	this.cycle = function() {
+		this.db.cycle();
+	}
+	this.process = function(client,packet) {
+		switch(packet.func.toUpperCase()) {
+		case "QUERY":
+			this.db.query(client,packet.data);
+			break;
+		default:
+			error(client,errors.UNKNOWN_FUNCTION,packet.func);
+			break;
+		}
+	}
+	this.release = function(descriptor) {
+		this.db.release(descriptor);
+	}
+	log(LOG_DEBUG,"chat initialized: " + l);
+})();
+
 /* administrative tools */
 admin = new (function() {
-	this.authorized = [];
-	this.query = function(client,data) {
-		switch(data.operation) {
+	this.authenticated = [];
+	/* route packet to correct function */
+	this.process = function(client,packet) {
+		switch(packet.func.toUpperCase()) {
 		case "IDENT":
-			this.ident(client.descriptor,data.username,data.pw);
+			this.ident(client.descriptor,packet.data.username,packet.data.pw);
 			break;
 		case "RESTART":
 			this.restart(client.descriptor);
 			break;
 		case "BAN":
-			this.ban(client.remote_ip_address,data.ip);
+			this.ban(client.remote_ip_address,packet.data.ip);
 			break;
 		case "UNBAN":
-			this.unban(client.remote_ip_address,data.ip);
+			this.unban(client.remote_ip_address,packet.data.ip);
 			break;
 		case "CLOSE":
 			this.close(client.descriptor);
@@ -106,6 +216,16 @@ admin = new (function() {
 		case "OPEN":
 			this.open(client.descriptor);
 			break;
+		default:
+			error(client,errors.UNKNOWN_FUNCTION,packet.func);
+			break;
+		}
+	}
+	/* release a socket from the list of authenticated users */
+	this.release = function(descriptor) {
+		if(this.authenticated[descriptor]) {
+			log(LOG_DEBUG,"releasing auth: " + descriptor);
+			delete this.authenticated[descriptor];
 		}
 	}
 	this.ident = function(descriptor,username,pw) {
@@ -125,30 +245,30 @@ admin = new (function() {
 			log(LOG_WARNING,"insufficient access: " + username);
 			return false;
 		}
-		this.authorized[descriptor] = true;
+		this.authenticated[descriptor] = true;
 		log(LOG_DEBUG,"identified: " + username);
 		return true;
 	}
 	this.close = function(descriptor) {
-		if(!this.authorized[descriptor])
+		if(!this.authenticated[descriptor])
 			return false;
 		log(LOG_WARNING,"socket service offline");
 		service.online = false;
 	}
 	this.open = function(descriptor) {
-		if(!this.authorized[descriptor])
+		if(!this.authenticated[descriptor])
 			return false;
 		log(LOG_WARNING,"socket service online");
 		service.online = true;
 	}
 	this.restart = function(descriptor) {
-		if(!this.authorized[descriptor])
+		if(!this.authenticated[descriptor])
 			return false;
 		log(LOG_WARNING,"restarting service");
 		exit();
 	}
 	this.ban = function(descriptor,source,target) {
-		if(!this.authorized[descriptor])
+		if(!this.authenticated[descriptor])
 			return false;
 		if(source == target)
 			return false;
@@ -156,79 +276,115 @@ admin = new (function() {
 		service.denyhosts[target] = true;
 	}
 	this.unban = function(descriptor,source,target) {
-		if(!this.authorized[descriptor])
+		if(!this.authenticated[descriptor])
 			return false;
 		if(source == target)
 			return false;
 		log(LOG_WARNING,"ban removed: " + target);
 		delete service.denyhosts[target];
 	}
+	log(LOG_DEBUG,"admin initialized: " + l);
 })();
 
 /* module handler */
 engine = new (function() {
-
 	this.modules = [];
-	
 	this.file = new File(system.ctrl_dir + "json-service.ini");
-	
+	/* load module list */
 	this.init = function() {
 		/* if there is no module initialization file, fuck it */
 		if(!file_exists(this.file.name))
 			return;
-
-		this.file.open('r');
+		this.file.open('r',true);
 		var modules=this.file.iniGetObject();
 		this.file.close();
-
 		for(var l in modules) {
 			this.modules[l.toUpperCase()]=new Module(modules[l],l);
+			log(LOG_DEBUG,"loaded module: " + l);
 		}
 	}
-
+	/* cycle module databases */
 	this.cycle = function() {
 		for each(var m in this.modules) {
-			m.cycle();
+			if(!m.online)
+				continue;
+			if(typeof m.cycle == "function") 
+				m.cycle();
+			m.db.cycle();
 		}
 	}
-
-	this.query = function(client,query) {
-		if(this.modules[query.func.toUpperCase()]) {
-			this.modules[module.toUpperCase()].query(client,query.data);
-		}
-		else {
-			var error={
-				func:"ERROR",
-				data:{
-					operation:"ERROR",
-					error_num:0,
-					error_desc:"module not found"
-				}
-			};
-			client.sendJSON(error);
+	/* process a module function */
+	this.process = function(client,packet) {
+		var module = this.modules[packet.scope.toUpperCase()];
+		if(!module)
+			error(client,error.val[UNKNOWN_MODULE],packet.scope);
+		switch(packet.func.toUpperCase()) {
+		case "QUERY":
+			module.db.query(client,packet.data);
+			break;
+		case "IDENT":
+			break;
+		case "RESET":
+			break;
+		case "CLOSE":
+			module.online = false;
+			break;
+		case "OPEN":
+			module.online = true;
+			break;
+		default:
+			error(client,errors.UNKNOWN_FUNCTION,packet.func);
+			break;
 		}
 	}
-
+	/* release clients from module authentication and subscription */
+	this.release = function(descriptor) {
+		for each(var m in this.modules) 
+			m.db.release(descriptor);
+	}
+	/* module data */
 	function Module(dir,name) {
-		this.dir=dir;
-		this.name=name;
-		this.init=function() {
-			log(LOG_DEBUG,"initializing module: " + l);
-			if(file_exists(this.dir + "service.js")) {
-				load(this,this.dir + "service.js");
+		this.online = true;
+		this.db = new JSONdb(dir+name+".json");
+		/* load module service files */
+		if(file_exists(dir + "service.js")) {
+			try {
+				load(this,dir + "service.js");
+			} 
+			catch(e) {
+				this.online = false;
+				log(LOG_ERROR,e);
 			}
 		}
-		
-		this.init();
 	}
 	
 	this.init();
-})();	
+})();
+
+/* error reporting/logging */
+error = function(client,err,value) {
+	var desc = format(err,value);
+	log(LOG_ERROR,format(
+		"Error: (%s) %s",
+		client.descriptor,desc
+	));
+	client.sendJSON({
+		func:"ERROR",
+		data:{
+			description:err_desc,
+			client:client.descriptor,
+			ip:client.remote_ip_address
+		}
+	});
+}
+
+/* event timer */
+var timer = new Timer();
 
 /* main service loop */
 while(!js.terminated) {
 	service.cycle();
+	chat.cycle();
 	engine.cycle();
 	timer.cycle();
-	maindb.cycle();
 }
