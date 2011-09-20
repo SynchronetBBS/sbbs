@@ -67,9 +67,7 @@ load("json-sock.js");
 */
 
 function JSONClient(serverAddr,serverPort) {
-
-	this.VERSION = "$Revision$".split(' ')[1];
-	
+	this.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
 	this.serverAddr=serverAddr;
     if(this.serverAddr==undefined) 
 		throw("no host specified");
@@ -106,105 +104,106 @@ function JSONClient(serverAddr,serverPort) {
     }
     
 	/* subscribe to object updates */
-    this.subscribe=function(location) {
-		this.send({
-            operation:"SUBSCRIBE",
+    this.subscribe=function(scope,location) {
+		this.send(scope,"QUERY",{
+            oper:"SUBSCRIBE",
             location:location,
-        },"QUERY");
+        });
     }
     
-    this.unsubscribe=function(location) {
-		this.send({
-            operation:"UNSUBSCRIBE",
+    this.unsubscribe=function(scope,location) {
+		this.send(scope,"QUERY",{
+            oper:"UNSUBSCRIBE",
             location:location,
-        },"QUERY");
+        });
     }
 	
 	/* lock an object */
-	this.lock = function(location,lock_type) {
-		this.send({
+	this.lock = function(scope,location,lock) {
+		this.send(scope,"QUERY",{
             location:location,
-			operation:"LOCK",
-			data:lock_type
-        },"QUERY");
+			oper:"LOCK",
+			data:lock
+        });
 	}
 	
 	/* unlock an object */ 
-	this.unlock = function(location) {
-		this.send({
+	this.unlock = function(scope,location) {
+		this.send(scope,"QUERY",{
             location:location,
-			operation:"LOCK",
+			oper:"LOCK",
 			data:-1,
-        },"QUERY");
+        });
 	}
     
 	/* read object data (lock for reading or writing, blocking) */
-    this.read=function(location,lock_type) {
-		this.send({
-            operation:"READ",
+    this.read=function(scope,location,lock) {
+		this.send(scope,"QUERY",{
+            oper:"READ",
             location:location,
-			lock:lock_type
-        },"QUERY");
+			lock:lock
+        });
 		return this.wait("RESPONSE");
     }
 	
 	/* shift object data (lock for reading or writing, blocking) */
-    this.shift=function(location,lock_type) {
-		this.send({
-            operation:"SHIFT",
+    this.shift=function(scope,location,lock) {
+		this.send(scope,"QUERY",{
+            oper:"SHIFT",
             location:location,
-			lock:lock_type
-        },"QUERY");
+			lock:lock
+        });
 		return this.wait("RESPONSE");
     }
 
 	/* pop object data (lock for reading or writing, blocking) */
-    this.pop=function(location,lock_type) {
-		this.send({
-            operation:"POP",
+    this.pop=function(scope,location,lock) {
+		this.send(scope,"QUERY",{
+            oper:"POP",
             location:location,
-			lock:lock_type
-        },"QUERY");
+			lock:lock
+        });
 		return this.wait("RESPONSE");
     }
     
 	/* store object data (lock for writing) */
-    this.write=function(location,obj,lock_type) {
-        this.send({
-            operation:"WRITE",
+    this.write=function(scope,location,data,lock) {
+        this.send(scope,"QUERY",{
+			oper:"WRITE",
             location:location,
-            data:obj,
-			lock:lock_type
-        },"QUERY");
+            data:data,
+			lock:lock
+        });
     }
 
 	/* unshift object data (lock for writing) */
-    this.unshift=function(location,obj,lock_type) {
-        this.send({
-            operation:"UNSHIFT",
+    this.unshift=function(scope,location,data,lock) {
+        this.send(scope,"QUERY",{
+            oper:"UNSHIFT",
             location:location,
-            data:obj,
-			lock:lock_type
-        },"QUERY");
+            data:data,
+			lock:lock
+        });
     }
 
 	/* push object data (lock for writing) */
-    this.push=function(location,obj,lock_type) {
-        this.send({
-            operation:"PUSH",
+    this.push=function(scope,location,data,lock) {
+        this.send(scope,"QUERY",{
+            oper:"PUSH",
             location:location,
-            data:obj,
-			lock:lock_type
-        },"QUERY");
+            data:data,
+			lock:lock
+        });
     }
 	
-	/* package an object and send through the socket */
-	this.send=function(obj,func) {
+	/* package a query and send through the socket */
+	this.send=function(scope,func,data) {
 		if(!this.socket.is_connected)
 			throw("socket disconnected");
 		var packet={
+			scope:scope,
 			func:func,
-			data:obj
+			data:data
 		};
 		this.socket.sendJSON(packet);
 	}
@@ -215,26 +214,38 @@ function JSONClient(serverAddr,serverPort) {
 			throw("socket disconnected");
 		if(!this.socket.data_waiting) 
 			return false;
-		else
-			return this.socket.recvJSON();
+		var packet=this.socket.recvJSON();
+		switch(packet.func.toUpperCase()) {
+		case "PING":
+			this.socket.pingOut("PONG");
+			return false;
+		case "PONG":
+			this.socket.pingIn(packet);
+			return false;
+		case "ERROR":
+			throw(packet.data.description);
+			return false;
+		}
+		return packet;
 	}
 	
 	/* do not return until the expected response is received */
 	this.wait=function(func) {
 		var start = time();
 		do {
-			var response = this.receive();
+			var packet = this.receive();
 			
-			if(!response)
+			if(!packet)
 				continue;
-			else if(response.func == func) 
-				return response.data;
-			else
-				this.callback(response.data);
-				
+			else if(packet.func == func) 
+				return packet.data;
+			else if(typeof this.callback == "function")
+				this.callback(packet.data);
+			else 
+				this.updates.push(packet.data);
 		} while(time() - start < this.settings.RECV_TIMEOUT);
 		
-		log(LOG_ERROR,"timed out waiting for response");
+		log(LOG_ERROR,"timed out waiting for server response");
 		exit();
 	}
 
@@ -252,36 +263,34 @@ function JSONClient(serverAddr,serverPort) {
 	/* identify this client as a bbs user */
 	this.ident=function(username,pw) {
 		pw = md5_calc(pw.toUpperCase(),true);
-		this.send({
-            operation:"IDENT",
+		this.send("ADMIN","CMD",{
+            oper:"IDENT",
             username:username,
 			pw:pw
-        },"ADMIN");
+        });
 	}
 
 	/* return a list of record subscriber IP addresses */
-	this.who=function(location) {
-		this.send({
-            operation:"WHO",
+	this.who=function(scope,location) {
+		this.send(scope,"QUERY",{
+            oper:"WHO",
             location:location
-        },"QUERY");
+        });
 		return this.wait("RESPONSE");
 	}
 
 	/* retrieve the overall lock and subscription status of an object */
-	this.status=function(location) {
-		this.send({
-			operation:"STATUS",
+	this.status=function(scope,location) {
+		this.send(scope,"QUERY",{
+			oper:"STATUS",
 			location:location
-		},"QUERY");
+        });
 		return this.wait("RESPONSE");
 	}
 	
 	this.connect();
 	log(LOG_INFO,"JSON client initialized (v" + this.VERSION + ")");
 };
-
-
 
 
 

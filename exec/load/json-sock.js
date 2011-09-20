@@ -1,5 +1,6 @@
 load("synchronet-json.js");
-
+/* socket mod version */
+Socket.prototype.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
 /* round trip packet time */
 Socket.prototype.latency = 0;
 /* one way (latency / 2) */
@@ -28,38 +29,31 @@ Socket.prototype.recvJSON = function() {
 	if(data != null) {
 		log(LOG_DEBUG,"<--" + this.descriptor + ": " + data);
 		try {
-			data=JSON.parse(data,this.reviver);
+			packet=JSON.parse(data,this.reviver);
 		} 
 		catch(e) {
 			log(LOG_ERROR,e);
 		}
-		switch(data.func) {
-		case "PING":
-			this.pingOut("PONG");
-			break;
-		case "PONG":
-			this.pingIn(data);
-			break;
-		}
 	}
-	return data;
+	return packet;
 };
 
 /* ping pong */		
 Socket.prototype.pingOut = function(func) {
 	var ping={
+		scope:"SOCKET",
 		func:func,
-		time:Date.now()
+		data:Date.now()
 	}
 	this.sendJSON(ping);
 	this.ping_sent=ping.time;
 };
 
 /* calculate latency */
-Socket.prototype.pingIn = function(data) {
+Socket.prototype.pingIn = function(packet) {
 	var time=Date.now();
 	var latency=(time-this.ping_sent)/2;
-	var gap=(this.ping_sent+latency) - data.time;
+	var gap=(this.ping_sent+latency) - packet.data;
 	if(this.time_offset != gap) {
 		this.time_offset=gap;
 		this.latency=latency;
