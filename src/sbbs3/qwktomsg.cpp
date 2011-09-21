@@ -388,9 +388,8 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 				set_qwk_flag(QWK_VIA);
 			if(route_circ(p,cfg.sys_id)) {
 				bprintf("\r\nCircular message path: %s\r\n",p);
-				SAFEPRINTF2(str,"Circular message path: %s from %s"
+				lprintf(LOG_ERR,"Circular message path: %s from %s"
 					,p,fromhub ? cfg.qhub[fromhub-1]->id:useron.alias);
-				errorlog(str);
 				strListFree(&kludges);
 				free(body);
 				free(tail);

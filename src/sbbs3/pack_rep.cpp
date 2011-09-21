@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -269,7 +269,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		if(i)
 			errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL),i);
 		else
-			errorlog("Couldn't compress REP packet");
+			lprintf(LOG_ERR, "Couldn't compress REP packet");
 		return(false); 
 	}
 	SAFEPRINTF2(str,"%sqnet/%s.out/",cfg.data_dir,hubid_lower);

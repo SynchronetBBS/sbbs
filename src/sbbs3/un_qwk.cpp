@@ -84,8 +84,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	}
 	SAFEPRINTF(str,"%sMESSAGES.DAT",cfg.temp_dir);
 	if(!fexistcase(str)) {
-		SAFEPRINTF2(tmp,"%s doesn't contain MESSAGES.DAT (%s)",packet,str);
-		errorlog(tmp);
+		lprintf(LOG_WARNING,"%s doesn't contain MESSAGES.DAT (%s)",packet,str);
 		return(false); 
 	}
 	if((qwk=fnopen(&file,str,O_RDONLY))==NULL) {

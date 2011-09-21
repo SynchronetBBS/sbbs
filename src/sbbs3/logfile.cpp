@@ -67,6 +67,11 @@ extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text,
 	return(TRUE);
 }
 
+BOOL sbbs_t::hacklog(char* prot, char* text)
+{
+	return ::hacklog(&cfg, prot, useron.alias, text, client_name, &client_addr);
+}
+
 extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 								,char* reason, char* host, char* ip_addr
 								,char* to, char* from)
@@ -282,18 +287,6 @@ void sbbs_t::errormsg(int line, const char *source, const char* action, const ch
 		CRLF;
 	}
 	safe_snprintf(str,sizeof(str),"ERROR %s %s", action, object);
-	errorlog(str);
-	errormsg_inside=false;
-}
-
-/*****************************************************************************/
-/* Error logging to NODE.LOG and DATA\ERROR.LOG function                     */
-/*****************************************************************************/
-void sbbs_t::errorlog(const char *text)
-{
-	if(errorlog_inside)		/* let's not go recursive on this puppy */
-		return;
-	errorlog_inside=1;
 	if(cfg.node_num>0) {
 		getnodedat(cfg.node_num,&thisnode,1);
 		if(thisnode.errors<UCHAR_MAX)
@@ -306,10 +299,10 @@ void sbbs_t::errorlog(const char *text)
 	if(logfile_fp!=NULL) {
 		if(logcol!=1)
 			fprintf(logfile_fp,"\r\n");
-		fprintf(logfile_fp,"%!! %s\r\n",text);
+		fprintf(logfile_fp,"!! %s\r\n",str);
 		logcol=1;
 		fflush(logfile_fp);
 	}
-	errorlog_inside=0;
-}
 
+	errormsg_inside=false;
+}

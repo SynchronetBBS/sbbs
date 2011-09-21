@@ -132,7 +132,7 @@ void sbbs_t::nodesync()
 	if(sys_status&SS_USERON) {
 
 		if(thisnode.status==NODE_WFC) {
-			errorlog("NODE STATUS FIXUP");
+			lprintf(LOG_ERR, "Node %d NODE STATUS FIXUP", cfg.node_num);
 			if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 				thisnode.status=NODE_INUSE;
 				putnodedat(cfg.node_num,&thisnode); 

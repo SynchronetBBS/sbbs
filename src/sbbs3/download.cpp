@@ -165,9 +165,8 @@ void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 	if(cfg.leech_pct && cur_cps                 /* leech detection */
 		&& end-start>=cfg.leech_sec
 		&& end-start>=(double)(size/cur_cps)*(double)cfg.leech_pct/100.0) {
-		sprintf(str,"Possible use of leech protocol (leech=%u  downloads=%u)"
-			,useron.leech+1,useron.dls);
-		errorlog(str);
+		lprintf(LOG_ERR, "Node %d Possible use of leech protocol (leech=%u  downloads=%u)"
+			,cfg.node_num, useron.leech+1,useron.dls);
 		useron.leech=(uchar)adjustuserrec(&cfg,useron.number,U_LEECH,2,1); 
 	}
 }

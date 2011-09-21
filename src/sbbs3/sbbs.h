@@ -724,11 +724,10 @@ public:
 	void	logline(int level, const char *code,const char *str);
 	void	logofflist(void);              /* List of users logon activity */
 	bool	syslog(const char* code, const char *entry);
-	void	errorlog(const char *text);			/* Logs errors to ERROR.LOG and NODE.LOG */
-	bool	errorlog_inside;
 	bool	errormsg_inside;
 	void	errormsg(int line, const char *file, const char* action, const char *object
 				,ulong access, const char *extinfo=NULL);
+	BOOL	hacklog(char* prot, char* text);
 
 	/* qwk.cpp */
 	bool	qwklogon;

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -111,17 +111,15 @@ void sbbs_t::temp_xfer()
 			case 'A':   /* add to temp file */
 				if(!isdir(cfg.temp_dir)) {
 					bprintf(text[DirectoryDoesNotExist], cfg.temp_dir);
-					SAFEPRINTF(str,"Temp directory does not exist: %s", cfg.temp_dir);
-					errorlog(str);
+					lprintf(LOG_ERR,"Temp directory does not exist: %s", cfg.temp_dir);
 					break;
 				}
 				/* free disk space */
 				space=getfreediskspace(cfg.temp_dir,1024);
 				if(space<(ulong)cfg.min_dspace) {
 					bputs(text[LowDiskSpace]);
-					SAFEPRINTF2(str,"Diskspace is low: %s (%lu kilobytes)"
+					lprintf(LOG_ERR,"Diskspace is low: %s (%lu kilobytes)"
 						,cfg.temp_dir,space);
-					errorlog(str);
 					if(!dir_op(dirnum))
 						break; 
 				}
@@ -303,8 +301,7 @@ void sbbs_t::extract(uint dirnum)
 
 	if(!isdir(cfg.temp_dir)) {
 		bprintf(text[DirectoryDoesNotExist], cfg.temp_dir);
-		SAFEPRINTF(str,"Temp directory does not exist: %s", cfg.temp_dir);
-		errorlog(str);
+		lprintf(LOG_ERR,"Temp directory does not exist: %s", cfg.temp_dir);
 		return;
 	}
 
@@ -312,8 +309,7 @@ void sbbs_t::extract(uint dirnum)
 	space=getfreediskspace(cfg.temp_dir,1024);
 	if(space<(ulong)cfg.min_dspace) {
 		bputs(text[LowDiskSpace]);
-		SAFEPRINTF2(str,"Diskspace is low: %s (%lu kilobytes)",cfg.temp_dir,space);
-		errorlog(str);
+		lprintf(LOG_ERR,"Diskspace is low: %s (%lu kilobytes)",cfg.temp_dir,space);
 		if(!dir_op(dirnum))
 			return; 
 	}

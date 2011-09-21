@@ -2894,7 +2894,6 @@ sbbs_t::sbbs_t(ushort node_num, SOCKADDR_IN addr, const char* name, SOCKET sd,
 	event_time = 0;
 	event_code = nulstr;
 	nodesync_inside = false;
-	errorlog_inside = false;
 	errormsg_inside = false;
 	gettimeleft_inside = false;
 	timeleft = 60*10;	/* just incase this is being used for calling gettimeleft() */

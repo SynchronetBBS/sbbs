@@ -728,7 +728,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		if(i)
 			errormsg(WHERE,ERR_EXEC,cmdstr(temp_cmd(),packet,tmp2,NULL),i);
 		else
-			errorlog("Couldn't compress QWK packet");
+			lprintf(LOG_ERR, "Couldn't compress QWK packet");
 		return(false); 
 	}
 

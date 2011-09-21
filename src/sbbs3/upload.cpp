@@ -287,8 +287,7 @@ bool sbbs_t::upload(uint dirnum)
 
 	if(!isdir(path)) {
 		bprintf(text[DirectoryDoesNotExist], path);
-		SAFEPRINTF(str,"File directory does not exist: %s", path);
-		errorlog(str);
+		lprintf(LOG_ERR,"File directory does not exist: %s", path);
 		return(false);
 	}
 
@@ -296,8 +295,7 @@ bool sbbs_t::upload(uint dirnum)
 	space=getfreediskspace(path,1024);
 	if(space<(ulong)cfg.min_dspace) {
 		bputs(text[LowDiskSpace]);
-		sprintf(str,"Diskspace is low: %s (%lu kilobytes)",path,space);
-		errorlog(str);
+		lprintf(LOG_ERR,"Diskspace is low: %s (%lu kilobytes)",path,space);
 		if(!dir_op(dirnum))
 			return(false); 
 	}

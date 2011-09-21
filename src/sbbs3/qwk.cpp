@@ -769,7 +769,7 @@ void sbbs_t::qwk_sec()
 					break;
 			if(k>=cfg.total_fextrs) {
 				bputs(text[QWKExtractionFailed]);
-				errorlog("Couldn't extract REP packet - configuration error");
+				lprintf(LOG_ERR, "Couldn't extract REP packet - configuration error");
 				continue; 
 			}
 
