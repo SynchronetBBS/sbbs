@@ -149,7 +149,7 @@ void sbbs_t::badlogin(char* user, char* passwd)
 	SAFEPRINTF(reason,"%s LOGIN", connection);
 	count=loginFailure(startup->login_attempt_list, &client_addr, connection, user, passwd);
 	if(startup->login_attempt_hack_threshold && count>=startup->login_attempt_hack_threshold)
-		hacklog(&cfg, reason, user, passwd, client_name, &client_addr);
+		::hacklog(&cfg, reason, user, passwd, client_name, &client_addr);
 	if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
 		filter_ip(&cfg, connection, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
 			,client_name, inet_ntoa(client_addr.sin_addr), user, /* fname: */NULL);
