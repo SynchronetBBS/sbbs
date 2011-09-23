@@ -2748,7 +2748,7 @@ ulong DLLCALL loginFailure(link_list_t* list, SOCKADDR_IN* addr, const char* pro
 		if(strcmp(attempt->user,user)==0 && (pass==NULL || strcmp(attempt->pass,pass)==0))
 			attempt->dupes++;
 	}
-	attempt->prot=prot;
+	SAFECOPY(attempt->prot,prot);
 	attempt->time=time(NULL);
 	attempt->addr=addr->sin_addr;
 	SAFECOPY(attempt->user, user);

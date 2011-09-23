@@ -133,7 +133,7 @@ typedef struct {
 	ulong		count;	/* number of consecutive failed login attempts */
 	ulong		dupes;	/* number of consecutive dupliate login attempts (same name and password) */
 	time_t		time;	/* time of last attempt */
-	const char*	prot;	/* protocol used in last attempt */
+	char		prot[32];	/* protocol used in last attempt */
 	char		user[128];
 	char		pass[128];
 } login_attempt_t;
