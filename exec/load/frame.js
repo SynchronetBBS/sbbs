@@ -76,15 +76,23 @@ load("sbbsdefs.js");
 
 function Frame(x,y,width,height,attr,frame) {
 
-	/* matrix representing frame positional and dimensional limits */
-	function Canvas(x,y,width,height) {
+	/* object containing data matrix and frame pointer */
+	function Canvas(width,height,frame) {
+		this.frame = frame;
+		this.data = new Array(width);
+		for(var w=0;w<width;w++) 
+			this.data[w] = new Array(height);
+	}
+	
+	/* object representing frame positional and dimensional limits and canvas stack */
+	function Display(x,y,width,height) {
 		/* private properties */
 		var properties = {
 			x:undefined,
 			y:undefined,
 			width:undefined,
 			height:undefined,
-			canvas:[],
+			canvas:{},
 			update:{}
 		}
 
@@ -136,98 +144,104 @@ function Frame(x,y,width,height,attr,frame) {
 		
 		/* public methods */
 		this.cycle = function() {
-			for(var y in properties.update) {
-				var lastx = undefined;
-				for(var x in properties.update[y]) {
-					var posx = Number(x) + properties.x;
-					var posy = Number(y) + properties.y;
-					if(lastx == undefined || x - lastx !== 1) 
-						console.gotoxy(posx,posy);
-					drawChar(x,y,posx,posy);
-					lastx = Number(x);
-				}
+			var updates = getUpdateList().sort(updateSort);
+			var lasty = undefined;
+			var lastx = undefined;
+			while(updates.length>0) {
+				var u = updates.shift();
+				var posx = u.x + properties.x;
+				var posy = u.y + properties.y;
+				if(lasty !== u.y)
+					console.gotoxy(posx,posy);
+				else if(lastx == undefined || u.x - lastx !== 1) 
+					console.gotoxy(posx,posy);
+				drawChar(u.x,u.y,posx,posy);
+				lastx = u.x;
+				lasty = u.y;
 			}
 			properties.update = {};
  		}
 		this.draw = function(frame) {
-			for(var xoff = 0;xoff<frame.width;xoff++) {
-				for(var yoff = 0;yoff<frame.height;yoff++) {
-					var x = frame.x - properties.x;
-					var y = frame.y - properties.y;
-					updateChar(xoff + x,yoff + y);
-				}
-			}
+			updateFrame(frame);
 		}
 		this.add = function(frame) {
+			var canvas = new Canvas(this.width,this.height,frame)
+			var x = frame.x - this.x;
+			var y = frame.y - this.y;
 			for(var xoff = 0;xoff<frame.width;xoff++) {
 				for(var yoff = 0;yoff<frame.height;yoff++) {
-					var x = frame.x - properties.x;
-					var y = frame.y - properties.y;
-					properties.canvas[xoff+x][yoff+y][frame.id] = 
-						new CharPointer(frame,xoff,yoff);
+					canvas.data[xoff+x][yoff+y] = 
+						new Coord(xoff,yoff);
 					updateChar(xoff + x,yoff + y);
 				}
 			}
+			properties.canvas[frame.id] = canvas;
 		}
 		this.remove = function(frame) {
-			for(var xoff = 0;xoff<frame.width;xoff++) {
-				for(var yoff = 0;yoff<frame.height;yoff++) {
-					var x = frame.x - properties.x;
-					var y = frame.y - properties.y;
-					delete properties.canvas[xoff+x][yoff+y][frame.id];
-					updateChar(xoff + x,yoff + y);
-				}
-			}
+			delete properties.canvas[frame.id];
+			updateFrame(frame);
 		}
 		this.top = function(frame) {
-			for(var xoff = 0;xoff<frame.width;xoff++) {
-				for(var yoff = 0;yoff<frame.height;yoff++) {
-					var x = frame.x - properties.x;
-					var y = frame.y - properties.y;
-					delete properties.canvas[xoff+x][yoff+y][frame.id];
-					properties.canvas[xoff+x][yoff+y][frame.id] = 
-						new CharPointer(frame,xoff,yoff);
-					updateChar(xoff + x,yoff + y);
-				}
-			}
+			var canvas = properties.canvas[frame.id];
+			delete properties.canvas[frame.id];
+			properties.canvas[frame.id] = canvas;
+			updateFrame(frame);
 		}
 		this.bottom = function(frame) {
-			for(var xoff = 0;xoff<frame.width;xoff++) {
-				for(var yoff = 0;yoff<frame.height;yoff++) {
-					var x = frame.x - properties.x;
-					var y = frame.y - properties.y;
-					for(var f in properties.canvas[xoff+x][yoff+y]) {
-						var cp = properties.canvas[xoff+x][yoff+y][f];
-						if(cp.frame.id == frame.id)
-							continue;
-						delete properties.canvas[xoff+x][yoff+y][f];
-						properties.canvas[xoff+x][yoff+y][f] = 
-							cp;
-					}
-					updateChar(xoff + x,yoff + y);
-				}
+			for(var c in properties.canvas) {
+				if(c == frame.id)
+					continue;
+				var canvas = properties.canvas[c];
+				delete properties.canvas[c];
+				properties.canvas[c] = canvas;
 			}
+			updateFrame(frame);
 		}
 		this.update = function(frame,xoff,yoff) {
 			var x = frame.x - properties.x;
 			var y = frame.y - properties.y;
 			updateChar(xoff + x,yoff + y);
 		}
-		
+				
 		/* private functions */
+		function updateFrame(frame) {
+			var x = frame.x - properties.x;
+			var y = frame.y - properties.y;
+			for(var xoff = 0;xoff<frame.width;xoff++) {
+				for(var yoff = 0;yoff<frame.height;yoff++) {
+					updateChar(xoff + x,yoff + y);
+				}
+			}
+		}
 		function updateChar(x,y) {
 			if(!properties.update[y])
 				properties.update[y] = {};
 			properties.update[y][x] = 1;
 		}
+		function getUpdateList() {
+			var list = [];
+			for(var y in properties.update) 
+				for(var x in properties.update[y])
+					list.push(new Coord(x,y));
+			return list;
+		}
+		function updateSort(a,b) {
+			if(a.y == b.y)
+				return a.x-b.x;
+			return a.y-b.y;
+		}
 		function drawChar(x,y,xpos,ypos) {
-			var pointer = getLast(properties.canvas[x][y]);
+			var canvas = getTop(properties.canvas,x,y);
+			var pointer = undefined;
 			var ch = undefined;
 			var attr = undefined;
+			
+			if(canvas instanceof Canvas)
+				pointer = canvas.data[x][y];
 
-			if(pointer instanceof CharPointer) {
-				ch = pointer.frame.getData(pointer).ch;
-				attr = pointer.frame.getData(pointer).attr;
+			if(pointer instanceof Coord) {
+				ch = canvas.frame.getData(pointer).ch;
+				attr = canvas.frame.getData(pointer).attr;
 			}
 			console.attributes = attr;
 			if(xpos == console.screen_columns && ypos == console.screen_rows)  
@@ -237,26 +251,19 @@ function Frame(x,y,width,height,attr,frame) {
 			else 
 				console.write(ch);
 		}
-		function init(x,y,width,height) {
-			this.x = x;
-			this.y = y;
-			this.width = width;
-			this.height = height;
-			
-			for(var w = 0;w<this.width;w++) {
-				properties.canvas.push(new Array(height));
-				for(var h = 0;h<this.height;h++)
-					properties.canvas[w][h] = {}; 
-			}
-		}
-		init.apply(this,arguments);
-	}
-	
-	/* frame and coordinate reference */
-	function CharPointer(frame,x,y) {
-		this.frame = frame;
+
+		/* initialize display properties */
 		this.x = x;
 		this.y = y;
+		this.width = width;
+		this.height = height;
+		log(LOG_DEBUG,format("new display initialized: %sx%s at %s,%s",this.width,this.height,this.x,this.y));
+	}
+	
+	/* coordinate reference */
+	function Coord(x,y) {
+		this.x = Number(x);
+		this.y = Number(y);
 	}
 	
 	/* character/attribute pair representing a screen position and its contents */
@@ -272,7 +279,7 @@ function Frame(x,y,width,height,attr,frame) {
 		width:undefined,
 		height:undefined,
 		attr:undefined,
-		canvas:undefined,
+		display:undefined,
 		data:[],
 		id:0
 	}
@@ -300,8 +307,8 @@ function Frame(x,y,width,height,attr,frame) {
 	this.child setter = function(frame) {
 		relations.child.push(frame);
 	}
-	this.canvas getter = function() {
-		return properties.canvas;
+	this.display getter = function() {
+		return properties.display;
 	}
 	this.attr getter = function() {
 		return properties.attr;
@@ -318,56 +325,56 @@ function Frame(x,y,width,height,attr,frame) {
 	this.x getter = function() { 
 		if(properties.x)
 			return properties.x;
-		return properties.canvas.x; 
+		return properties.display.x; 
 	}
 	this.x setter = function(x) {
 		if(x == undefined)
 			return;
 		if(x < 1 || isNaN(x))
 			throw("invalid x coordinate: " + x);
-		else if(x > (properties.canvas.x + properties.canvas.width - 1) || x < properties.canvas.x)
+		else if(x > (properties.display.x + properties.display.width - 1) || x < properties.display.x)
 			throw("invalid x coordinate: " + x);
 		properties.x = x;
 	}
 	this.y getter = function() { 
 		if(properties.y)
 			return properties.y;
-		return properties.canvas.y; 
+		return properties.display.y; 
 	}
 	this.y setter = function(y) {
 		if(y == undefined)
 			return;
 		if(y < 1 || isNaN(y))
 			throw("invalid y coordinate: " + y);
-		else if(y > (properties.canvas.y + properties.canvas.height - 1) || y < properties.canvas.y)
+		else if(y > (properties.display.y + properties.display.height - 1) || y < properties.display.y)
 			throw("invalid y coordinate: " + y);
 		properties.y = y;
 	}
 	this.width getter = function() {
 		if(properties.width)
 			return properties.width;
-		return properties.canvas.width;
+		return properties.display.width;
 	}
 	this.width setter = function(width) {
 		if(width == undefined)
 			return;
 		else if(width < 1 || isNaN(width))
 			throw("invalid width: " + width);
-		else if((properties.x + width) > (properties.canvas.x + properties.canvas.width))
+		else if((properties.x + width) > (properties.display.x + properties.display.width))
 			throw("invalid width: " + width);
 		properties.width = width;
 	}
 	this.height getter = function() {
 		if(properties.height)
 			return properties.height;
-		return properties.canvas.height;
+		return properties.display.height;
 	}
 	this.height setter = function(height) {
 		if(height == undefined)
 			return;
 		else if(height < 1 || isNaN(height)) 
 			throw("invalid height: " + height);
-		else if((properties.y+ height) > (properties.canvas.y + properties.canvas.height))
+		else if((properties.y+ height) > (properties.display.y + properties.display.height))
 			throw("invalid height: " + height);
 		properties.height = height;
 	}
@@ -385,48 +392,48 @@ function Frame(x,y,width,height,attr,frame) {
 			[pointer.y + position.offset.y].attr = attr;
 	}
 	this.bottom = function() {
-		properties.canvas.bottom(this);
+		properties.display.bottom(this);
 	}
 	this.top = function() {
-		properties.canvas.top(this);
+		properties.display.top(this);
 	}
 	this.open = function() {
-		properties.canvas.add(this);
+		properties.display.add(this);
 		for each(var c in relations.child) 
 			c.open();
 	}
 	this.close = function() {
 		for each(var c in relations.child) 
 			c.close();
-		properties.canvas.remove(this);
+		properties.display.remove(this);
 	}
 	this.move = function(x,y) {
-		if(this.x+x < properties.canvas.x ||
-			this.x+x + this.width > properties.canvas.x + properties.canvas.width)
+		if(this.x+x < properties.display.x ||
+			this.x+x + this.width > properties.display.x + properties.display.width)
 			return false;
-		if(this.y+y < properties.canvas.y ||
-			this.y+y + this.height > properties.canvas.y + properties.canvas.height)
+		if(this.y+y < properties.display.y ||
+			this.y+y + this.height > properties.display.y + properties.display.height)
 			return false;
-		properties.canvas.remove(this);
-		this.x += x;
-		this.y += y;
-		properties.canvas.add(this);
+		properties.display.draw(this);
+		properties.x += x;
+		properties.y += y;
+		properties.display.add(this);
 	}
 	this.moveTo = function(x,y) {
-		if(x < properties.canvas.x || x + this.width > properties.canvas.x + properties.canvas.width)
+		if(x < properties.display.x || x + this.width > properties.display.x + properties.display.width)
 			return false;
-		if(y < properties.canvas.y || y + this.height > properties.canvas.y + properties.canvas.height)
+		if(y < properties.display.y || y + this.height > properties.display.y + properties.display.height)
 			return false;
-		properties.canvas.remove(this);
-		this.x = x;
-		this.y = y;
-		properties.canvas.add(this);
+		properties.display.draw(this);
+		properties.x = x;
+		properties.y = y;
+		properties.display.add(this);
 	}
 	this.draw = function() {
-		properties.canvas.draw(this);
+		properties.display.draw(this);
 	}
 	this.cycle = function() {
-		return properties.canvas.cycle();
+		return properties.display.cycle();
 	}
 	this.load = function(filename,width,height) {
 		var f=new File(filename);
@@ -565,7 +572,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(x == undefined && y == undefined) {
 			for(var x = 0;x<this.width;x++) {
 				for(var y = 0;y<this.height;y++) 
-					properties.canvas.update(this,x,y);
+					properties.display.update(this,x,y);
 				properties.data[x].push(new Char(undefined,this.attr));
 			}
 			position.offset.y++;
@@ -599,7 +606,7 @@ function Frame(x,y,width,height,attr,frame) {
 			for(var y = 0;y<this.height;y++) {
 				properties.data[x][y].ch = undefined;
 				properties.data[x][y].attr = attr;
-				properties.canvas.update(this,x,y);
+				properties.display.update(this,x,y);
 			}
 		}
 		this.home();
@@ -608,7 +615,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(attr == undefined)
 			attr = this.attr;
 		for(var x = 0;x<this.width;x++) {
-			properties.canvas.update(this,x,y);
+			properties.display.update(this,x,y);
 			properties.data[x][y].ch = undefined;
 			properties.data[x][y].attr = attr;
 		}
@@ -617,7 +624,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(attr == undefined)
 			attr = this.attr;
 		for(var x = position.cursor.x;x<this.width;x++) {
-			properties.canvas.update(this,x,y);
+			properties.display.update(this,x,y);
 			properties.data[x][y].ch = undefined;
 			properties.data[x][y].attr = attr;
 		}
@@ -650,7 +657,7 @@ function Frame(x,y,width,height,attr,frame) {
 				switch(ch) {
 				case '\1':	/* A "real" ^A code */
 					this.setData(position.cursor,ch,attr);
-					properties.canvas.update(this,pos.x,pos.y);
+					properties.display.update(this,pos.x,pos.y);
 					pos.x++;
 					break;
 				case 'K':	/* Black */
@@ -749,7 +756,7 @@ function Frame(x,y,width,height,attr,frame) {
 					break;
 				default:
 					this.setData(position.cursor,ch,attr);
-					properties.canvas.update(this,pos.x,pos.y);
+					properties.display.update(this,pos.x,pos.y);
 					pos.x++;
 					break;
 				}
@@ -777,21 +784,22 @@ function Frame(x,y,width,height,attr,frame) {
 	}
 	
 	/* private functions */
-	function getLast(obj) {
+	function getTop(canvas,x,y) {
 		var last = undefined;
-		for each(var i in obj)
-			last = i;
+		for each(var c in canvas)
+			if(c.data[x][y])
+				last = c;
 		return last;
 	}
 	function init(x,y,width,height,attr,frame) {
 		if(frame instanceof Frame) {
 			properties.id = frame.child.length;
-			properties.canvas = frame.canvas;
+			properties.display = frame.display;
 			relations.parent = frame;
 			frame.child = this;
 		}
 		else {
-			properties.canvas = new Canvas(x,y,width,height);
+			properties.display = new Display(x,y,width,height);
 		}
 
 		this.transparent = false;
@@ -807,6 +815,7 @@ function Frame(x,y,width,height,attr,frame) {
 				properties.data[w][h] = new Char(undefined,this.attr);
 			}
 		}
+		//log(LOG_DEBUG,format("new frame initialized: %sx%s at %s,%s",this.width,this.height,this.x,this.y));
 	}
 	init.apply(this,arguments);
 }
