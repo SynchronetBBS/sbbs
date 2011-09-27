@@ -25,11 +25,11 @@ Socket.prototype.sendJSON = function(object) {
 
 /*  socket prototype to automatically decode JSON data */
 Socket.prototype.recvJSON = function() { 
-	var data=this.recvline(this.max_recv,this.recv_wait); 
-	if(data != null) {
+	var packet=this.recvline(this.max_recv,this.recv_wait); 
+	if(packet != null) {
 		log(LOG_DEBUG,"<--" + this.descriptor + ": " + data);
 		try {
-			packet=JSON.parse(data,this.reviver);
+			packet=JSON.parse(packet,this.reviver);
 		} 
 		catch(e) {
 			log(LOG_ERROR,e);
