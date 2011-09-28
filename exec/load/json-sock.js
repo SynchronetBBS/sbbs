@@ -27,7 +27,7 @@ Socket.prototype.sendJSON = function(object) {
 Socket.prototype.recvJSON = function() { 
 	var packet=this.recvline(this.max_recv,this.recv_wait); 
 	if(packet != null) {
-		log(LOG_DEBUG,"<--" + this.descriptor + ": " + data);
+		log(LOG_DEBUG,"<--" + this.descriptor + ": " + packet);
 		try {
 			packet=JSON.parse(packet,this.reviver);
 		} 
