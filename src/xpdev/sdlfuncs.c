@@ -38,6 +38,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	dll_handle	sdl_dll;
 	const char *libnames[]={"SDL", "SDL-1.2", "SDL-1.1", NULL};
 
+	putenv("SDL_ALLOW_SCREENSAVER=1");
 	sdlf->gotfuncs=0;
 	if((sdl_dll=xp_dlopen(libnames,RTLD_LAZY|RTLD_GLOBAL,SDL_PATCHLEVEL))==NULL)
 		return(-1);
