@@ -282,7 +282,7 @@ static size_t get_value(str_list_t list, const char* section, const char* key, c
 		if(value!=NULL)
 			sprintf(value,"%.*s",INI_MAX_VALUE_LEN-1,vp);
 		if(vpp!=NULL)
-			*vpp=list[i] + (str - vp);
+			*vpp=list[i] + (vp - str);
 		return(i);
 	}
 
