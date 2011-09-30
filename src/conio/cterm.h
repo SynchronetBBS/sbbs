@@ -36,6 +36,7 @@
 
 #include <stdio.h>	/* FILE* */
 #include <link_list.h>
+#include <semwrap.h>
 
 typedef enum {
 	 CTERM_MUSIC_NORMAL
