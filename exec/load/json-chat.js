@@ -1,7 +1,7 @@
 if(!js.global.JSONClient)
 	load(js.global,"json-client.js");
 
-function JSONChat(jsonclient,host,port,usernum) {
+function JSONChat(usernum,jsonclient,host,port) {
 
 	this.nick;
 	this.channels = {};
