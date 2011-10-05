@@ -19,9 +19,12 @@ if(!file_exists(root + "server.ini")) {
 
 var server_file = new File(root + "server.ini");
 server_file.open('r',true);
+
+log(LOG_WARNING,"root: " + root);
+log(LOG_WARNING,"file: " + server_file.read());
 //var autoUpdate=server_file.iniGetValue(null,"autoUpdate");
-var serverAddr=server_file.iniGetValue(null,"serverAddr");
-var serverPort=server_file.iniGetValue(null,"serverPort");
+var serverAddr=server_file.iniGetValue(null,"host");
+var serverPort=server_file.iniGetValue(null,"port");
 server_file.close();
 
 var client=new JSONClient(serverAddr,serverPort);
