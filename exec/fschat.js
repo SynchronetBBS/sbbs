@@ -6,8 +6,8 @@
  *	for local setup, see
  *		exec/load/json-service.js
  
- *	to use a different chat server, see "jsonchat" in 
- *		ctrl/modopts.ini
+ *	to use a different chat server, see
+ *		ctrl/json-chat.ini
  */
 
 (function() {
@@ -18,11 +18,11 @@
 	load("str_cmds.js");
 
 	var chat_options = load("modopts.js","jsonchat");
-	/* I dont like how this is done... seems like it should be more "automatic" */
+
 	load("json-client.js");
 	var chat_client = new JSONClient(chat_options.host,chat_options.port);
 	load("json-chat.js");
-	var chat = new JSONChat(chat_client);
+	var chat = new JSONChat(user.number,chat_client);
 
 	var channels = [];
 	var channels_map = [];
