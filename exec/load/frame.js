@@ -162,7 +162,14 @@ function Frame(x,y,width,height,attr,frame) {
 			properties.update = {};
  		}
 		this.draw = function(frame) {
-			updateFrame(frame);
+			var xoff = frame.x - properties.x;
+			var yoff = frame.y - properties.y;
+			for(var y = 0;y<frame.height;y++) {
+				console.gotoxy(frame.x,frame.y + y);
+				for(var x = 0;x<frame.width;x++) {
+					drawChar(x + xoff,y + yoff,frame.x + x,frame.y + y);
+				}
+			}
 		}
 		this.add = function(frame) {
 			var canvas = new Canvas(this.width,this.height,frame)
@@ -197,9 +204,9 @@ function Frame(x,y,width,height,attr,frame) {
 			}
 			updateFrame(frame);
 		}
-		this.update = function(frame,xoff,yoff) {
-			var x = frame.x - properties.x;
-			var y = frame.y - properties.y;
+		this.update = function(frame,x,y) {
+			var xoff = frame.x - properties.x;
+			var yoff = frame.y - properties.y;
 			updateChar(xoff + x,yoff + y);
 		}
 				
@@ -244,7 +251,7 @@ function Frame(x,y,width,height,attr,frame) {
 				attr = canvas.frame.getData(pointer).attr;
 			}
 			console.attributes = attr;
-			if(xpos == console.screen_columns && ypos == console.screen_rows)  
+			if(xpos == console.screen_columns && ypos == console.screen_rows) 
 				console.cleartoeol();
 			else if(ch == undefined)
 				console.write(" ");
@@ -542,6 +549,7 @@ function Frame(x,y,width,height,attr,frame) {
 				}
 				y++;
 			}
+			properties.display.add(this);
 			break;
 		case "BIN":
 			if(width == undefined || height == undefined)
@@ -561,6 +569,7 @@ function Frame(x,y,width,height,attr,frame) {
 				}
 			}
 			f.close();
+			properties.display.add(this);
 			break;
 		default:
 			throw("unsupported filetype");
