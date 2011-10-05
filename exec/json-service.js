@@ -87,7 +87,7 @@ service = new (function() {
 				break;
 			/* chat service */
 			case "CHAT":
-				chat.process(this.packet);
+				chat.process(this,packet);
 				break;
 			/* socket data */
 			case "SOCKET":
@@ -189,7 +189,7 @@ chat = new (function() {
 	this.release = function(descriptor) {
 		this.db.release(descriptor);
 	}
-	log(LOG_DEBUG,"chat initialized: " + l);
+	log(LOG_DEBUG,"chat initialized");
 })();
 
 /* administrative tools */
@@ -283,7 +283,7 @@ admin = new (function() {
 		log(LOG_WARNING,"ban removed: " + target);
 		delete service.denyhosts[target];
 	}
-	log(LOG_DEBUG,"admin initialized: " + l);
+	log(LOG_DEBUG,"admin initialized");
 })();
 
 /* module handler */
@@ -316,8 +316,10 @@ engine = new (function() {
 	/* process a module function */
 	this.process = function(client,packet) {
 		var module = this.modules[packet.scope.toUpperCase()];
-		if(!module)
-			error(client,error.val[UNKNOWN_MODULE],packet.scope);
+		if(!module) {
+			error(client,errors.UNKNOWN_MODULE,packet.scope);
+			return false;
+		}
 		switch(packet.func.toUpperCase()) {
 		case "QUERY":
 			module.db.query(client,packet.data);
@@ -371,7 +373,7 @@ error = function(client,err,value) {
 	client.sendJSON({
 		func:"ERROR",
 		data:{
-			description:err_desc,
+			description:desc,
 			client:client.descriptor,
 			ip:client.remote_ip_address
 		}
