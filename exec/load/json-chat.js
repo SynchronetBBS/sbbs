@@ -6,6 +6,13 @@ function JSONChat(usernum,jsonclient,host,port) {
 	this.nick;
 	this.channels = {};
 	this.client = jsonclient;
+	this.settings = {
+		NICK_COLOR:GREEN,
+		TEXT_COLOR:LIGHTGRAY,
+		PRIV_COLOR:RED,
+		ACTION_COLOR:LIGHTGREEN,
+		NOTICE_COLOR:BROWN
+	}
 	
 	if(!this.client) {
 		if(!host || isNaN(port))
@@ -33,6 +40,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.client.write("chat","channels." + chan.name + ".messages",message,2);
 		this.client.push("chat","channels." + chan.name + ".history",message,2);
 		chan.messages.push(message);
+		return true;
 	}
 	
 	this.clear = function(target) {
@@ -96,6 +104,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 				break;
 			}
 		}
+		return true;
 	}
 	
 	/* check client for update packets */
@@ -103,6 +112,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.client.cycle();
 		while(this.client.updates.length) 
 			this.update(this.client.updates.shift());
+		return true;
 	}
 
 	/* process chat commands */
@@ -157,7 +167,10 @@ function JSONChat(usernum,jsonclient,host,port) {
 		case "BAN":
 			// todo
 			break;
+		default:
+			return false;
 		}
+		return true;
 	}
 	
 	/* user identification object */
