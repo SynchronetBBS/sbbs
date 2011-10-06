@@ -186,13 +186,13 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 		this.remove = function(frame) {
 			delete properties.canvas[frame.id];
-			updateFrame(frame);
+			this.updateFrame(frame);
 		}
 		this.top = function(frame) {
 			var canvas = properties.canvas[frame.id];
 			delete properties.canvas[frame.id];
 			properties.canvas[frame.id] = canvas;
-			updateFrame(frame);
+			this.updateFrame(frame);
 		}
 		this.bottom = function(frame) {
 			for(var c in properties.canvas) {
@@ -202,24 +202,24 @@ function Frame(x,y,width,height,attr,frame) {
 				delete properties.canvas[c];
 				properties.canvas[c] = canvas;
 			}
-			updateFrame(frame);
+			this.updateFrame(frame);
 		}
-		this.update = function(frame,x,y) {
+		this.updateFrame = function(frame) {
+			var xoff = frame.x - properties.x;
+			var yoff = frame.y - properties.y;
+			for(var y = 0;y<frame.height;y++) {
+				for(var x = 0;x<frame.width;x++) {
+					updateChar(xoff + x,yoff + y);
+				}
+			}
+		}
+		this.updateChar = function(frame,x,y) {
 			var xoff = frame.x - properties.x;
 			var yoff = frame.y - properties.y;
 			updateChar(xoff + x,yoff + y);
 		}
 				
 		/* private functions */
-		function updateFrame(frame) {
-			var x = frame.x - properties.x;
-			var y = frame.y - properties.y;
-			for(var xoff = 0;xoff<frame.width;xoff++) {
-				for(var yoff = 0;yoff<frame.height;yoff++) {
-					updateChar(xoff + x,yoff + y);
-				}
-			}
-		}
 		function updateChar(x,y) {
 			if(!properties.update[y])
 				properties.update[y] = {};
@@ -251,6 +251,7 @@ function Frame(x,y,width,height,attr,frame) {
 				attr = canvas.frame.getData(pointer).attr;
 			}
 			console.attributes = attr;
+			
 			if(xpos == console.screen_columns && ypos == console.screen_rows) 
 				console.cleartoeol();
 			else if(ch == undefined)
@@ -421,7 +422,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(this.y+y < properties.display.y ||
 			this.y+y + this.height > properties.display.y + properties.display.height)
 			return false;
-		properties.display.draw(this);
+		properties.display.updateFrame(this);
 		properties.x += x;
 		properties.y += y;
 		properties.display.add(this);
@@ -431,7 +432,7 @@ function Frame(x,y,width,height,attr,frame) {
 			return false;
 		if(y < properties.display.y || y + this.height > properties.display.y + properties.display.height)
 			return false;
-		properties.display.draw(this);
+		properties.display.updateFrame(this);
 		properties.x = x;
 		properties.y = y;
 		properties.display.add(this);
@@ -581,7 +582,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(x == undefined && y == undefined) {
 			for(var x = 0;x<this.width;x++) {
 				for(var y = 0;y<this.height;y++) 
-					properties.display.update(this,x,y);
+					properties.display.updateChar(this,x,y);
 				properties.data[x].push(new Char(undefined,this.attr));
 			}
 			position.offset.y++;
@@ -615,7 +616,7 @@ function Frame(x,y,width,height,attr,frame) {
 			for(var y = 0;y<this.height;y++) {
 				properties.data[x][y].ch = undefined;
 				properties.data[x][y].attr = attr;
-				properties.display.update(this,x,y);
+				properties.display.updateChar(this,x,y);
 			}
 		}
 		this.home();
@@ -624,7 +625,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(attr == undefined)
 			attr = this.attr;
 		for(var x = 0;x<this.width;x++) {
-			properties.display.update(this,x,y);
+			properties.display.updateChar(this,x,y);
 			properties.data[x][y].ch = undefined;
 			properties.data[x][y].attr = attr;
 		}
@@ -633,7 +634,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(attr == undefined)
 			attr = this.attr;
 		for(var x = position.cursor.x;x<this.width;x++) {
-			properties.display.update(this,x,y);
+			properties.display.updateChar(this,x,y);
 			properties.data[x][y].ch = undefined;
 			properties.data[x][y].attr = attr;
 		}
@@ -663,10 +664,13 @@ function Frame(x,y,width,height,attr,frame) {
 			}
 			var ch = str.shift();
 			if(control_a) {
-				switch(ch) {
+				var k = ch;
+				if(k)
+					k = k.toUpperCase();
+				switch(k) {
 				case '\1':	/* A "real" ^A code */
-					this.setData(position.cursor,ch,attr);
-					properties.display.update(this,pos.x,pos.y);
+					this.setData(position.cursor,ch,curattr);
+					properties.display.updateChar(this,pos.x,pos.y);
 					pos.x++;
 					break;
 				case 'K':	/* Black */
@@ -764,8 +768,8 @@ function Frame(x,y,width,height,attr,frame) {
 					pos.y++;
 					break;
 				default:
-					this.setData(position.cursor,ch,attr);
-					properties.display.update(this,pos.x,pos.y);
+					this.setData(position.cursor,ch,curattr);
+					properties.display.updateChar(this,pos.x,pos.y);
 					pos.x++;
 					break;
 				}
