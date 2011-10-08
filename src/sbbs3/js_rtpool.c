@@ -129,7 +129,7 @@ void DLLCALL jsrt_Release(JSRuntime *rt)
 
 void DLLCALL jsrt_TriggerAll(void)
 {
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 	int	i;
 	int j;
 	JSContext	*iterp,*cx;

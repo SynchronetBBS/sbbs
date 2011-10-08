@@ -105,10 +105,23 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 		#define XP_PC
 		#define XP_WIN
 	#endif
-	#define JS_THREADSAFE	/* Required! */
+#ifndef __cplusplus
+	#include <stdbool.h>
+	#include <inttypes.h>
+#endif
+	#include <jsconfig.h>
+#if JS_VERSION < 185
+	#define JS_THREADSAFE
+#endif
 	#include <jsapi.h>
+#if (JS_VERSION < 185) || (defined __cplusplus)
 	#include <jsprf.h>		/* JS-safe sprintf functions */
 	#include <jsnum.h>		/* JSDOUBLE_IS_NaN() */
+#endif
+#if JS_VERSION >= 185
+	#define JSScript					JSObject
+	#define JS_DestroyScript(cx,script)
+#endif
 
 #endif
 
@@ -1036,6 +1049,7 @@ extern "C" {
 	DLLEXPORT JSBool	DLLCALL js_CommonBranchCallback(JSContext*, js_branch_t*);
 	DLLEXPORT void		DLLCALL js_EvalOnExit(JSContext*, JSObject*, js_branch_t*);
 	DLLEXPORT void		DLLCALL	js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir);
+	DLLEXPORT char*		DLLCALL js_getstring(JSContext *cx, JSString *str);
 
 	/* js_system.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent

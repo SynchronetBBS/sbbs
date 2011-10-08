@@ -4430,7 +4430,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
     return(js_CommonBranchCallback(cx,&session->js_branch));
 }
 
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 static JSBool
 js_OperationCallback(JSContext *cx)
 {
@@ -4459,7 +4459,7 @@ js_initcx(http_session_t *session)
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 	JS_SetOperationCallback(js_cx, js_OperationCallback);
 #else
 	JS_SetBranchCallback(js_cx, js_BranchCallback);

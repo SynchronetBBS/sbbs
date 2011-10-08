@@ -949,7 +949,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	return js_CommonBranchCallback(cx,&client->branch);
 }
 
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 static JSBool
 js_OperationCallback(JSContext *cx)
 {
@@ -1153,7 +1153,7 @@ static void js_service_thread(void* arg)
 		lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)",socket,spath);
 	else  {
 		js_PrepareToExecute(js_cx, js_glob, spath, /* startup_dir */NULL);
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
 #else
 		JS_SetBranchCallback(js_cx, js_BranchCallback);
@@ -1256,7 +1256,7 @@ static void js_static_service_thread(void* arg)
 		val = BOOLEAN_TO_JSVAL(JS_FALSE);
 		JS_SetProperty(js_cx, js_glob, "logged_in", &val);
 
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
 #else
 		JS_SetBranchCallback(js_cx, js_BranchCallback);

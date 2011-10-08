@@ -553,7 +553,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	return(js_CommonBranchCallback(cx,&sbbs->js_branch));
 }
 
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 static JSBool
 js_OperationCallback(JSContext *cx)
 {
@@ -665,7 +665,7 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	if(scope==NULL) {
 		js_branch.counter=0;	// Reset loop counter
 
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
 #else
 		JS_SetBranchCallback(js_cx, js_BranchCallback);

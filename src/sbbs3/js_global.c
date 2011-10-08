@@ -166,7 +166,7 @@ static JSBool js_BranchCallback(JSContext *cx, JSScript* script)
 	return js_CommonBranchCallback(cx,&bg->branch);
 }
 
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 static JSBool
 js_OperationCallback(JSContext *cx)
 {
@@ -311,7 +311,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		/* Set our branch callback (which calls the generic branch callback) */
 		JS_SetContextPrivate(bg->cx, bg);
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 		JS_SetOperationCallback(bg->cx, js_OperationCallback);
 #else
 		JS_SetBranchCallback(bg->cx, js_BranchCallback);

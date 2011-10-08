@@ -278,14 +278,14 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 
 #ifdef EVAL_BRANCH_CALLBACK
 	JS_SetContextPrivate(cx, JS_GetPrivate(parent_cx, parent_obj));
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 	JS_SetOperationCallback(cx, js_OperationCallback);
 #else
 	JS_SetBranchCallback(cx, js_BranchCallback);
 #endif
 #else	/* Use the branch callback from the parent context */
 	JS_SetContextPrivate(cx, JS_GetContextPrivate(parent_cx));
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 	JS_SetOperationCallback(cx, JS_GetOperationCallback(parent_cx));
 #else
 	callback=JS_SetBranchCallback(parent_cx,NULL);
@@ -428,6 +428,23 @@ static JSClass js_internal_class = {
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub		/* finalize		*/
 };
+
+#if JS_VERSION >= 185
+char* DLLCALL js_getstring(JSContext *cx, JSString *str)
+{
+	size_t			len;
+	const jschar	*val;
+	char			*ret;
+
+	if(!(val=JS_GetStringCharsAndLength(cx, str, &len)))
+		return NULL;
+	if(!(ret=malloc(len+1))
+		return NULL;
+	memcpy(ret, val, len);
+	ret[len]=0;
+	return ret;
+}
+#endif
 
 void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_branch_t* branch)
 {

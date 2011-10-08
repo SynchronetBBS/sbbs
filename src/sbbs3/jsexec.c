@@ -615,7 +615,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
     return(js_CommonBranchCallback(cx,&branch));
 }
 
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 static JSBool
 js_OperationCallback(JSContext *cx)
 {
@@ -814,7 +814,7 @@ long js_exec(const char *fname, char** args)
 
 	branch.terminated=&terminated;
 
-#ifdef USE_JS_OPERATION_CALLBACK
+#if JS_VERSION>180
 	JS_SetOperationCallback(js_cx, js_OperationCallback);
 #else
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
