@@ -882,7 +882,7 @@ js_conio_gettext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		JS_RESUMEREQUEST(cx, rc);
 		array=JS_NewArrayObject(cx, 0, NULL);
 		for(i=0; i<size; i++) {
-			JS_NewNumberValue(cx, result[i], &val);
+			val=UINT_TO_JSVAL(result[i]);
 			if(!JS_SetElement(cx, array, i, &val)) {
 				free(result);
 				return(JS_FALSE);

@@ -77,11 +77,11 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case SERVER_PROP_OPTIONS:
 			if(p->options!=NULL)
-				JS_NewNumberValue(cx,*p->options,vp);
+				*vp=UINT_TO_JSVAL(*p->options);
 			break;
 		case SERVER_PROP_CLIENTS:
 			if(p->clients!=NULL)
-				JS_NewNumberValue(cx,*p->clients,vp);
+				*vp=UINT_TO_JSVAL(*p->clients);
 			break;
 	}
 

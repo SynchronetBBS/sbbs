@@ -77,7 +77,7 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp=BOOLEAN_TO_JSVAL(uifc->initialized);
 			break;
 		case PROP_MODE:
-			JS_NewNumberValue(cx,uifc->mode,vp);
+			*vp=UINT_TO_JSVAL(uifc->mode);
 			break;
 		case PROP_CHANGES:
 			*vp=BOOLEAN_TO_JSVAL(uifc->changes);

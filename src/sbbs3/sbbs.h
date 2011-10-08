@@ -109,7 +109,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#include <stdbool.h>
 	#include <inttypes.h>
 #endif
-	#include <jsconfig.h>
+	#include <jsversion.h>
 #if JS_VERSION < 185
 	#define JS_THREADSAFE
 #endif
@@ -1022,7 +1022,7 @@ extern "C" {
 														,const char* name, char* str[], uintN flags);
 	DLLEXPORT char*		DLLCALL js_ValueToStringBytes(JSContext* cx, jsval val, size_t* len);
 
-	#define JSVAL_IS_NUM(v)		(JSVAL_IS_NUMBER(v) && (!JSVAL_IS_DOUBLE(v) || !JSDOUBLE_IS_NaN(*JSVAL_TO_DOUBLE(v))))
+	#define JSVAL_IS_NUM(v)		(JSVAL_IS_NUMBER(v) && (!JSVAL_IS_DOUBLE(v) || !JSDOUBLE_IS_NaN(JSVAL_TO_DOUBLE(v))))
 
 	/* js_server.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateServerObject(JSContext* cx, JSObject* parent
@@ -1050,6 +1050,8 @@ extern "C" {
 	DLLEXPORT void		DLLCALL js_EvalOnExit(JSContext*, JSObject*, js_branch_t*);
 	DLLEXPORT void		DLLCALL	js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir);
 	DLLEXPORT char*		DLLCALL js_getstring(JSContext *cx, JSString *str);
+	DLLEXPORT char*		DLLCALL JS_GetStringBytes_dumbass(JSContext *cx, JSString *str);
+	#define JS_GetStringBytes(str)	JS_GetStringBytes_dumbass(cx, str)
 
 	/* js_system.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent

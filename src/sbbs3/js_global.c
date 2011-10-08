@@ -76,10 +76,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case GLOB_PROP_SOCKET_ERRNO:
-			JS_NewNumberValue(cx,ERROR_VALUE,vp);
+			*vp=DOUBLE_TO_JSVAL(ERROR_VALUE);
 			break;
 		case GLOB_PROP_ERRNO:
-			JS_NewNumberValue(cx,errno,vp);
+			*vp=INT_TO_JSVAL(errno);
 			break;
 		case GLOB_PROP_ERRNO_STR:
 			if((js_str=JS_NewStringCopyZ(cx, strerror(errno)))==NULL)
@@ -215,7 +215,7 @@ static jsval* js_CopyValue(JSContext* cx, jsval val, JSContext* new_cx, jsval* r
 	else if(JSVAL_IS_NUMBER(val)) {
 		jsdouble	d;
 		if(JS_ValueToNumber(cx,val,&d))
-			JS_NewNumberValue(new_cx,d,rval);
+			*rval=DOUBLE_TO_JSVAL(d);
 	}
 	else {
 		JSString*	str;
@@ -525,7 +525,7 @@ js_mswait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	mswait(val);
 	JS_RESUMEREQUEST(cx, rc);
 
-	JS_NewNumberValue(cx,msclock()-start,rval);
+	*rval=UINT_TO_JSVAL(msclock()-start);
 
 	return(JS_TRUE);
 }
@@ -538,14 +538,14 @@ js_random(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&val);
 
-	JS_NewNumberValue(cx,sbbs_random(val),rval);
+	*rval=INT_TO_JSVAL(sbbs_random(val));
 	return(JS_TRUE);
 }
 
 static JSBool
 js_time(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	JS_NewNumberValue(cx,time(NULL),rval);
+	*rval=UINT_TO_JSVAL(time(NULL));
 	return(JS_TRUE);
 }
 
@@ -613,7 +613,7 @@ js_crc32(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	cs=crc32(p,len);
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_NewNumberValue(cx,cs,rval);
+	*rval=UINT_TO_JSVAL(cs);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -636,7 +636,7 @@ js_chksum(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	while(len--) sum+=*(p++);
 	JS_RESUMEREQUEST(cx, rc);
 
-	JS_NewNumberValue(cx,sum,rval);
+	*rval=DOUBLE_TO_JSVAL((double)sum);
 	return(JS_TRUE);
 }
 
@@ -2508,7 +2508,7 @@ js_fattr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	rc=JS_SUSPENDREQUEST(cx);
 	attr=getfattr(p);
 	JS_RESUMEREQUEST(cx, rc);
-	JS_NewNumberValue(cx,attr,rval);
+	*rval=INT_TO_JSVAL(attr);
 	return(JS_TRUE);
 }
 
@@ -2528,7 +2528,7 @@ js_fdate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	rc=JS_SUSPENDREQUEST(cx);
 	fd=fdate(p);
 	JS_RESUMEREQUEST(cx, rc);
-	JS_NewNumberValue(cx,fd,rval);
+	*rval=DOUBLE_TO_JSVAL((double)fd);
 	return(JS_TRUE);
 }
 
@@ -2584,7 +2584,7 @@ js_flength(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	rc=JS_SUSPENDREQUEST(cx);
 	fl=flength(p);
 	JS_RESUMEREQUEST(cx, rc);
-	JS_NewNumberValue(cx,(double)fl,rval);
+	*rval=DOUBLE_TO_JSVAL((double)fl);
 	return(JS_TRUE);
 }
 
@@ -2763,7 +2763,7 @@ js_freediskspace(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	rc=JS_SUSPENDREQUEST(cx);
 	fd=getfreediskspace(p,unit);
 	JS_RESUMEREQUEST(cx, rc);
-	JS_NewNumberValue(cx,fd,rval);
+	*rval=DOUBLE_TO_JSVAL((double)fd);
 
     return(JS_TRUE);
 }
@@ -2788,7 +2788,7 @@ js_disksize(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	rc=JS_SUSPENDREQUEST(cx);
 	ds=getdisksize(p,unit);
 	JS_RESUMEREQUEST(cx, rc);
-	JS_NewNumberValue(cx,ds,rval);
+	*rval=DOUBLE_TO_JSVAL((double)ds);
 
     return(JS_TRUE);
 }
@@ -3076,7 +3076,7 @@ js_flags_str(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if((p=JS_GetStringBytes(JSVAL_TO_STRING(argv[0])))==NULL) 
 			return(JS_FALSE);
 
-		JS_NewNumberValue(cx,aftol(p),rval);
+		*rval=DOUBLE_TO_JSVAL((double)aftol(p));
 		return(JS_TRUE);
 	}
 

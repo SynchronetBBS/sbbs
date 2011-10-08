@@ -625,7 +625,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			return(JS_FALSE);
 		*vp = STRING_TO_JSVAL(js_str);
 	} else
-		JS_NewNumberValue(cx,val,vp);
+		*vp = UINT_TO_JSVAL(val);
 
 	return(JS_TRUE);
 }
@@ -2857,7 +2857,7 @@ js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	rc=JS_SUSPENDREQUEST(cx);
 	if(sbbs->inputnstime(&t)==true) {
 		JS_RESUMEREQUEST(cx, rc);
-		JS_NewNumberValue(cx,t,rval);
+		*rval=DOUBLE_TO_JSVAL((double)t);
 	}
 	else
 		JS_RESUMEREQUEST(cx, rc);

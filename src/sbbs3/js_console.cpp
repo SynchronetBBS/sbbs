@@ -1448,7 +1448,7 @@ js_term_supports(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		rc=JS_SUSPENDREQUEST(cx);
 		flags=sbbs->term_supports();
 		JS_RESUMEREQUEST(cx, rc);
-		JS_NewNumberValue(cx,flags,rval);
+		*rval=INT_TO_JSVAL(flags);
 	}
 
     return(JS_TRUE);

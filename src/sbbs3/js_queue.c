@@ -96,7 +96,7 @@ static size_t js_decode_value(JSContext *cx, JSObject *parent
 			*rval = BOOLEAN_TO_JSVAL(v->value.b);
 			break;
 		case JSTYPE_NUMBER:
-			JS_NewNumberValue(cx,v->value.n,rval);
+			*rval=DOUBLE_TO_JSVAL(v->value.n);
 			break;
 		case JSTYPE_STRING:
 			if(v->value.s) {

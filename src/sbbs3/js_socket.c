@@ -705,9 +705,7 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				if((rd=recvfrom(p->sock,(BYTE*)&l,len,0,(SOCKADDR*)&addr,&addrlen))==len) {
 					if(p->network_byte_order)
 						l=ntohl(l);
-					JS_RESUMEREQUEST(cx, rc);
-					JS_NewNumberValue(cx,l,&data_val);
-					rc=JS_SUSPENDREQUEST(cx);
+					data_val=UINT_TO_JSVAL(l);
 				}
 				break;
 		}
@@ -943,9 +941,7 @@ js_recvbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if((rd=recv(p->sock,(BYTE*)&l,size,0))==size) {
 				if(p->network_byte_order)
 					l=ntohl(l);
-				JS_RESUMEREQUEST(cx, rc);
-				JS_NewNumberValue(cx,l,rval);
-				rc=JS_SUSPENDREQUEST(cx);
+				rval = UINT_TO_JSVAL(l);
 			}
 			break;
 	}
@@ -994,9 +990,7 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 			else
 				val = 0;
 		}
-		JS_RESUMEREQUEST(cx, rc);
-		JS_NewNumberValue(cx,val,rval);
-		rc=JS_SUSPENDREQUEST(cx);
+		*rval = INT_TO_JSVAL(val);
 	} else {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "error %d getting option %d"
@@ -1073,7 +1067,7 @@ js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	rc=JS_SUSPENDREQUEST(cx);
 	if(ioctlsocket(p->sock,cmd,(ulong*)&arg)==0) {
 		JS_RESUMEREQUEST(cx, rc);
-		JS_NewNumberValue(cx,arg,rval);
+		*rval=INT_TO_JSVAL(arg);
 	}
 	else {
 		*rval = INT_TO_JSVAL(-1);
@@ -1272,9 +1266,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SOCK_PROP_NREAD:
 			cnt=0;
 			if(ioctlsocket(p->sock, FIONREAD, &cnt)==0) {
-				JS_RESUMEREQUEST(cx, rc);
-				JS_NewNumberValue(cx,cnt,vp);
-				rc=JS_SUSPENDREQUEST(cx);
+				*vp=DOUBLE_TO_JSVAL((double)cnt);
 			}
 			else
 				*vp = JSVAL_ZERO;

@@ -397,7 +397,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			return(JS_FALSE);
 		*vp = STRING_TO_JSVAL(js_str);
 	} else
-		JS_NewNumberValue(cx,val,vp);
+		*vp=DOUBLE_TO_JSVAL((double)val);
 
 	return(JS_TRUE);
 }

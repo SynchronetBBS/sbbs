@@ -448,9 +448,7 @@ js_recvbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if((rd=comReadBuf(p->com,(BYTE*)&l,size,NULL,timeout))==size) {
 				if(p->network_byte_order)
 					l=ntohl(l);
-				JS_RESUMEREQUEST(cx, rc);
-				JS_NewNumberValue(cx,l,rval);
-				rc=JS_SUSPENDREQUEST(cx);
+				*rval=UINT_TO_JSVAL(l);
 			}
 			break;
 	}
@@ -597,9 +595,7 @@ static JSBool js_com_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case COM_PROP_BAUD_RATE:
 			baud_rate=comGetBaudRate(p->com);
-			JS_RESUMEREQUEST(cx, rc);
-			JS_NewNumberValue(cx,baud_rate,vp);
-			rc=JS_SUSPENDREQUEST(cx);
+			*vp=UINT_TO_JSVAL(baud_rate);
 			break;
 		case COM_PROP_DEVICE:
 			JS_RESUMEREQUEST(cx, rc);

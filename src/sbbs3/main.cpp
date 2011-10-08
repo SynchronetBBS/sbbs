@@ -606,8 +606,7 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 	if(consts) {
 		for(i=0;consts[i].name;i++) {
 			if(name==NULL || strcmp(name, consts[i].name)==0) {
-	        	if(!JS_NewNumberValue(cx, consts[i].val, &val))
-					return(JS_FALSE);
+				val=INT_TO_JSVAL(consts[i].val);
 
 				if(!JS_DefineProperty(cx, obj, consts[i].name, val ,NULL, NULL, flags))
 					return(JS_FALSE);
@@ -631,8 +630,7 @@ DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* int
 	jsval	val;
 
 	for(i=0;ints[i].name;i++) {
-        if(!JS_NewNumberValue(cx, ints[i].val, &val))
-			return(JS_FALSE);
+		val=INT_TO_JSVAL(ints[i].val);
 
 		if(!JS_DefineProperty(cx, obj, ints[i].name, val ,NULL, NULL, flags))
 			return(JS_FALSE);

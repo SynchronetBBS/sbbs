@@ -572,7 +572,7 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	if(!JS_SetProperty(js_cx, file, "credits", &val))
 		return(FALSE);
 
-	JS_NewNumberValue(js_cx,(jsdouble)time,&val);
+	val=DOUBLE_TO_JSVAL((double)time);
 	if(!JS_SetProperty(js_cx, file, "time", &val))
 		return(FALSE);
 

@@ -84,32 +84,32 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp=BOOLEAN_TO_JSVAL(branch->auto_terminate);
 			break;
 		case PROP_BRANCH_COUNTER:
-			JS_NewNumberValue(cx,branch->counter,vp);
+			*vp=DOUBLE_TO_JSVAL((double)branch->counter);
 			break;
 		case PROP_BRANCH_LIMIT:
-			JS_NewNumberValue(cx,branch->limit,vp);
+			*cp=DOUBLE_TO_JSVAL(branch->limit);
 			break;
 		case PROP_YIELD_INTERVAL:
-			JS_NewNumberValue(cx,branch->yield_interval,vp);
+			*vp=DOUBLE_TO_JSVAL((double)branch->yield_interval);
 			break;
 		case PROP_GC_INTERVAL:
-			JS_NewNumberValue(cx,branch->gc_interval,vp);
+			*vp=DOUBLE_TO_JSVAL((double)branch->gc_interval);
 			break;
 		case PROP_GC_ATTEMPTS:
-			JS_NewNumberValue(cx,branch->gc_attempts,vp);
+			*vp=DOUBLE_TO_JSVAL((double)branch->gc_attempts);
 			break;
 #ifdef jscntxt_h___
 		case PROP_GC_COUNTER:
-			JS_NewNumberValue(cx,cx->runtime->gcNumber,vp);
+			*vp=UINT_TO_JSVAL(cx->runtime->gcNumber);
 			break;
 		case PROP_GC_LASTBYTES:
-			JS_NewNumberValue(cx,cx->runtime->gcLastBytes,vp);
+			*vp=DOUBLE_TO_JSVAL((double)cx->runtime->gcLastBytes);
 			break;
 		case PROP_BYTES:
-			JS_NewNumberValue(cx,cx->runtime->gcBytes,vp);
+			*vp=DOUBLE_TO_JSVAL((double)cx->runtime->gcBytes);
 			break;
 		case PROP_MAXBYTES:
-			JS_NewNumberValue(cx,cx->runtime->gcMaxBytes,vp);
+			*vp=DOUBLE_TO_JSVAL((double)cx->runtime->gcMaxBytes);
 			break;
 #endif
 		case PROP_GLOBAL:
@@ -430,17 +430,19 @@ static JSClass js_internal_class = {
 };
 
 #if JS_VERSION >= 185
-char* DLLCALL js_getstring(JSContext *cx, JSString *str)
+char* DLLCALL JS_GetStringBytes_dumbass(JSContext *cx, JSString *str)
 {
 	size_t			len;
+	size_t			pos;
 	const jschar	*val;
 	char			*ret;
 
 	if(!(val=JS_GetStringCharsAndLength(cx, str, &len)))
 		return NULL;
-	if(!(ret=malloc(len+1))
+	if(!(ret=malloc(len+1)))
 		return NULL;
-	memcpy(ret, val, len);
+	for(pos=0; pos<len; pos++)
+		ret[pos]=val[pos];
 	ret[len]=0;
 	return ret;
 }
