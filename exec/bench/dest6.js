@@ -45,12 +45,10 @@ if (test07 != undefined) {
 }
 
 /* The following currently segfaults - so many bug like Microsoft */
-/*
 var test08_obj = {};
 //var test08 = js.get_parent(js.get_parent);
 var test08 = js.get_parent(test08_obj);
 log(test08.toSource());
-*/
 
 var test09 = js.version;
 if (test09 != js.version) {
@@ -106,7 +104,7 @@ if (test17 != true) {
 	exit();
 }
 
-var test18 = test16.writeln("shitting documentation");
+var test18 = test16.write("shitting documentation");
 if (test18 != true) {
 	log(LOG_ERROR, "Couldn't write to file in test 16.");
 	exit();
@@ -143,16 +141,16 @@ if (test22 != true) {
 }
 
 var test23 = test16.md5_hex;
-if (test23 != "52859f60180b7416f52bcae17cb4da47") {
-	log(LOG_ERROR, "MD5 sum mismatch!");
+if (test23 != "450491f4513e7e0c69ca80a9702a7196") {
+	log(LOG_ERROR, "MD5 sum mismatch ("+test23+")!");
 	exit();
 }
 
 var test24 = test16.md5_base64;
 log(test24);
-if (test24 != "UoWfYBgLdBb1K8rhfLTaR0==") {
-	log(LOG_ERROR, "MD5 sum (base64) mismatch!");
-//	exit();
+if (test24 != "RQSR9FE+fgxpyoCpcCpxln==") {
+	log(LOG_ERROR, "MD5 sum (base64) mismatch ("+test24+")!");
+	exit();
 }
 
 var test25 = test16.close();

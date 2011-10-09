@@ -392,6 +392,7 @@ Bot_Commands["FINGER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		f_sock.nonblocking = true;
 	} else {
 		f_sock = new Socket();
+		f_sock.nonblocking = false;
 	}
 	if (!f_sock.connect(f_host,79)) {
 		srv.o(target,"Couldn't connect to "+ f_host +": " + f_sock.last_error);
