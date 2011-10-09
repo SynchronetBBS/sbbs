@@ -117,7 +117,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #if (JS_VERSION < 185) || (defined __cplusplus)
 	#include <jsprf.h>		/* JS-safe sprintf functions */
 	#include <math.h>		/* isnan() */
-#endi)f
+#endif
 #if JS_VERSION >= 185
 	#define JS_DestroyScript(cx,script)
 #endif
