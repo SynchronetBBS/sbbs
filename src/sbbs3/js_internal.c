@@ -38,10 +38,6 @@
 #include "sbbs.h"
 #include "js_request.h"
 
-#ifdef _DEBUG
-	#include <jscntxt.h>	/* Needed for Context-private data structure */
-#endif
-
 enum {
 	 PROP_VERSION
 	,PROP_TERMINATED
@@ -89,7 +85,7 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp=DOUBLE_TO_JSVAL((double)branch->counter);
 			break;
 		case PROP_BRANCH_LIMIT:
-			*cp=DOUBLE_TO_JSVAL(branch->limit);
+			*vp=DOUBLE_TO_JSVAL(branch->limit);
 			break;
 		case PROP_YIELD_INTERVAL:
 			*vp=DOUBLE_TO_JSVAL((double)branch->yield_interval);
@@ -259,11 +255,6 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	JSContext*		cx;
 	JSObject*		obj;
 	JSErrorReporter	reporter;
-#ifndef EVAL_BRANCH_CALLBACK
-#ifndef USE_JS_OPERATION_CALLBACK
-	JSBranchCallback callback;
-#endif
-#endif
 
 	if(argc<1)
 		return(JS_TRUE);
@@ -307,8 +298,11 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	}
 
 	if((script=JS_CompileScript(cx, obj, buf, buflen, NULL, 0))!=NULL) {
-		JS_ExecuteScript(cx, obj, script, rval);
+		jsval	rval;
+
+		JS_ExecuteScript(cx, obj, script, &rval);
 		JS_DestroyScript(cx, script);
+		JS_SET_RVAL(cx, arglist, rval);
 	}
 
 	JS_DestroyContext(cx);

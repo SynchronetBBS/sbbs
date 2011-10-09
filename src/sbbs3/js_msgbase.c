@@ -1488,9 +1488,9 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(!SMB_IS_OPEN(&(p->smb))) {
-		if(!js_open(cx, obj, 0, NULL, &open_rval))
+		if(!js_open(cx, arglist, &open_rval))
 			return(JS_FALSE);
-		if(open_rval == JSVAL_FALSE)
+		if(JS_RVAL(cx, arglist) == JSVAL_FALSE)
 			return(JS_TRUE);
 	}
 

@@ -249,11 +249,11 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 		SAFECOPY(nv->name,name);
 
 	switch(JSVAL_TAG(val)) {
-		case JSVAL_BOOLEAN:
+		case JSVAL_TAG_BOOLEAN:
 			nv->type=JSTYPE_BOOLEAN;
 			nv->value.b=JSVAL_TO_BOOLEAN(val);
 			break;
-		case JSVAL_OBJECT:
+		case JSVAL_TAG_OBJECT:
 			if(JSVAL_IS_NULL(val)) {
 				nv->type=JSTYPE_NULL;
 				break;
