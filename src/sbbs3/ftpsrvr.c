@@ -415,7 +415,7 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 	if((fp=(FILE*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	js_write(cx,obj,argc,argv,rval);
+	js_write(cx,argc,arglist);
 	rc=JS_SUSPENDREQUEST(cx);
 	fprintf(fp,"\r\n");
 	JS_RESUMEREQUEST(cx, rc);

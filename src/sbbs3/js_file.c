@@ -598,6 +598,15 @@ static jsval get_value(JSContext *cx, char* value)
 	return(STRING_TO_JSVAL(JS_NewStringCopyZ(cx,value)));
 }
 
+static double js_DateGetMsecSinceEpoch(JSContext *cx, JSObject *obj)
+{
+	jsval	rval;
+
+	if(!JS_CallFunctionName(cx, obj, "UTC", 0, NULL, &rval))
+		return ((double)time(NULL))*1000;
+	return JSVAL_TO_DOUBLE(rval);
+}
+
 static JSBool
 js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -639,28 +648,21 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-	switch(JSVAL_TAG(dflt)) {
-		case JSVAL_BOOLEAN:
-			JS_SET_RVAL(cx,arglist,BOOLEAN_TO_JSVAL(
-				iniReadBool(p->fp,section,key,JSVAL_TO_BOOLEAN(dflt))));
-			break;
-		case JSVAL_DOUBLE:
+	if(JSVAL_IS_BOOLEAN(dflt)) {
+		JS_SET_RVAL(cx,arglist,BOOLEAN_TO_JSVAL(
+			iniReadBool(p->fp,section,key,JSVAL_TO_BOOLEAN(dflt))));
+	}
+	else if(JSVAL_IS_OBJECT(dflt)) {
+		if((dflt_obj = JSVAL_TO_OBJECT(dflt))!=NULL && (strcmp("Date",JS_GetClass(cx, dflt_obj)->name)==0)) {
+			tt=(time_t)(js_DateGetMsecSinceEpoch(cx,dflt_obj)/1000.0);
 			rc=JS_SUSPENDREQUEST(cx);
-			dbl=iniReadFloat(p->fp,section,key,*JSVAL_TO_DOUBLE(dflt));
+			dbl=iniReadDateTime(p->fp,section,key,tt);
 			JS_RESUMEREQUEST(cx, rc);
-			JS_SET_RVAL(cx, arglist,DOUBLE_TO_JSVAL(dbl));
-			break;
-		case JSVAL_OBJECT:
-			if((dflt_obj = JSVAL_TO_OBJECT(dflt))!=NULL && js_DateIsValid(cx, dflt_obj)) {
-				tt=(time_t)(js_DateGetMsecSinceEpoch(cx,dflt_obj)/1000.0);
-				rc=JS_SUSPENDREQUEST(cx);
-				dbl=iniReadDateTime(p->fp,section,key,tt);
-				JS_RESUMEREQUEST(cx, rc);
-				date_obj = js_NewDateObjectMsec(cx, dbl);
-				if(date_obj!=NULL)
-					JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(date_obj));
-				break;
-			}
+			date_obj = JS_NewDateObjectMsec(cx, DOUBLE_TO_JSVAL(dbl));
+			if(date_obj!=NULL)
+				JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(date_obj));
+		}
+		else {
 		    array = JS_NewArrayObject(cx, 0, NULL);
 			cstr=JS_GetStringBytes(JS_ValueToString(cx,dflt));
 			rc=JS_SUSPENDREQUEST(cx);
@@ -675,33 +677,35 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 			iniFreeStringList(list);
 			JS_RESUMEREQUEST(cx, rc);
 			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
-			break;
-		default:
-			if(JSVAL_IS_NUMBER(dflt)) {
-				if(!JS_ValueToInt32(cx,dflt,&i))
-					return(JS_FALSE);
-				rc=JS_SUSPENDREQUEST(cx);
-				i=iniReadInteger(p->fp,section,key,i);
-				JS_RESUMEREQUEST(cx, rc);
-				JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(i));
-			} else {
-				cstr=JS_GetStringBytes(JS_ValueToString(cx,dflt));
-				rc=JS_SUSPENDREQUEST(cx);
-				cstr2=iniReadString(p->fp,section,key,cstr,buf);
-				JS_RESUMEREQUEST(cx, rc);
-				JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cstr2)));
-			}
-			break;
+		}
+	}
+	else if(JSVAL_IS_DOUBLE(dflt)) {
+		rc=JS_SUSPENDREQUEST(cx);
+		dbl=iniReadFloat(p->fp,section,key,JSVAL_TO_DOUBLE(dflt));
+		JS_RESUMEREQUEST(cx, rc);
+		JS_SET_RVAL(cx, arglist,DOUBLE_TO_JSVAL(dbl));
+	}
+	else if(JSVAL_IS_NUMBER(dflt)) {
+		if(!JS_ValueToInt32(cx,dflt,&i))
+			return(JS_FALSE);
+		rc=JS_SUSPENDREQUEST(cx);
+		i=iniReadInteger(p->fp,section,key,i);
+		JS_RESUMEREQUEST(cx, rc);
+		JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(i));
+	} else {
+		cstr=JS_GetStringBytes(JS_ValueToString(cx,dflt));
+		rc=JS_SUSPENDREQUEST(cx);
+		cstr2=iniReadString(p->fp,section,key,cstr,buf);
+		JS_RESUMEREQUEST(cx, rc);
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cstr2)));
 	}
 
 	return(JS_TRUE);
 }
 
 static JSBool
-js_iniSetValue(JSContext *cx, uintN argc, jsval *arglist)
+js_iniSetValue_internal(JSContext *cx, JSObject *obj, uintN argc, jsval* argv, jsval *rval)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	char*	section=ROOT_SECTION;
 	char*	key;
 	char*	result=NULL;
@@ -714,7 +718,7 @@ js_iniSetValue(JSContext *cx, uintN argc, jsval *arglist)
 	char*		cstr;
 	time_t		tt;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -740,49 +744,53 @@ js_iniSetValue(JSContext *cx, uintN argc, jsval *arglist)
 		result = iniSetString(&list,section,key,"",NULL);
 		JS_RESUMEREQUEST(cx, rc);
 	}
-	else {
-
-		switch(JSVAL_TAG(value)) {
-			case JSVAL_BOOLEAN:
-				result = iniSetBool(&list,section,key,JSVAL_TO_BOOLEAN(value),NULL);
-				break;
-			case JSVAL_DOUBLE:
-				result = iniSetFloat(&list,section,key,JSVAL_TO_DOUBLE(value),NULL);
-				break;
-			default:
-				if(JSVAL_IS_NUMBER(value)) {
-					if(!JS_ValueToInt32(cx,value,&i))
-						return(JS_FALSE);
-					rc=JS_SUSPENDREQUEST(cx);
-					result = iniSetInteger(&list,section,key,i,NULL);
-					JS_RESUMEREQUEST(cx, rc);
-				} else {
-					if(JSVAL_IS_OBJECT(value) 
-						&& (value_obj = JSVAL_TO_OBJECT(value))!=NULL
-						&& js_DateIsValid(cx, value_obj)) {
-						tt=(time_t)(js_DateGetMsecSinceEpoch(cx,value_obj)/1000.0);
-						rc=JS_SUSPENDREQUEST(cx);
-						result = iniSetDateTime(&list,section,key,/* include_time */TRUE, tt,NULL);
-						JS_RESUMEREQUEST(cx, rc);
-					} else {
-						cstr=JS_GetStringBytes(JS_ValueToString(cx,value));
-						rc=JS_SUSPENDREQUEST(cx);
-						result = iniSetString(&list,section,key, cstr,NULL);
-						JS_RESUMEREQUEST(cx, rc);
-					}
-				}
-				break;
-		}
+	else if(JSVAL_IS_BOOLEAN(value)) {
+		result = iniSetBool(&list,section,key,JSVAL_TO_BOOLEAN(value),NULL);
+	}
+	else if(JSVAL_IS_DOUBLE(value)) {
+		result = iniSetFloat(&list,section,key,JSVAL_TO_DOUBLE(value),NULL);
+	}
+	else if(JSVAL_IS_NUMBER(value)) {
+		if(!JS_ValueToInt32(cx,value,&i))
+			return(JS_FALSE);
+		rc=JS_SUSPENDREQUEST(cx);
+		result = iniSetInteger(&list,section,key,i,NULL);
+		JS_RESUMEREQUEST(cx, rc);
+	} else if(JSVAL_IS_OBJECT(value) 
+			&& (value_obj = JSVAL_TO_OBJECT(value))!=NULL
+			&& (strcmp("Date",JS_GetClass(cx, value_obj)->name)==0)) {
+		tt=(time_t)(js_DateGetMsecSinceEpoch(cx,value_obj)/1000.0);
+		rc=JS_SUSPENDREQUEST(cx);
+		result = iniSetDateTime(&list,section,key,/* include_time */TRUE, tt,NULL);
+		JS_RESUMEREQUEST(cx, rc);
+	} else {
+		cstr=JS_GetStringBytes(JS_ValueToString(cx,value));
+		rc=JS_SUSPENDREQUEST(cx);
+		result = iniSetString(&list,section,key, cstr,NULL);
+		JS_RESUMEREQUEST(cx, rc);
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(result != NULL)
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(iniWriteFile(p->fp,list)));
+		*rval = BOOLEAN_TO_JSVAL(iniWriteFile(p->fp,list));
 
 	strListFree(&list);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
+}
+
+static JSBool
+js_iniSetValue(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	jsval	rval;
+	JSBool	ret;
+
+	ret=js_iniSetValue_internal(cx, obj, argc, argv, &rval);
+	JS_SET_RVAL(cx, arglist, rval);
+	return ret;
 }
 
 static JSBool
@@ -1013,6 +1021,7 @@ js_iniSetObject(JSContext *cx, uintN argc, jsval *arglist)
     JSObject*	object;
 	JSIdArray*	id_array;
 	jsval		set_argv[3];
+	jsval		rval;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -1031,9 +1040,11 @@ js_iniSetObject(JSContext *cx, uintN argc, jsval *arglist)
 		JS_IdToValue(cx,id_array->vector[i],&set_argv[1]);	
 		/* value */
 		JS_GetProperty(cx,object,JS_GetStringBytes(JSVAL_TO_STRING(set_argv[1])),&set_argv[2]);
-		if(!js_iniSetValue(cx,obj,3,set_argv,rval))
+		if(!js_iniSetValue_internal(cx,obj,3,set_argv,&rval))
 			break;
 	}
+	
+	JS_SET_RVAL(cx, arglist, rval);
 
 	JS_DestroyIdArray(cx,id_array);
 
@@ -1168,6 +1179,7 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 	jsval		oval;
 	jsval		set_argv[3];
 	JSIdArray*	id_array;
+	jsval		rval;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -1205,10 +1217,11 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 				continue;
 			/* value */
 			JS_GetProperty(cx,object,JS_GetStringBytes(JSVAL_TO_STRING(set_argv[1])),&set_argv[2]);
-			if(!js_iniSetValue(cx,obj,3,set_argv,rval))
+			if(!js_iniSetValue_internal(cx,obj,3,set_argv,&rval))
 				break;
 		}
 
+		JS_SET_RVAL(cx, arglist, rval);
 		JS_DestroyIdArray(cx,id_array);
 	}
 
@@ -1299,16 +1312,14 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_writeln(JSContext *cx, uintN argc, jsval *arglist)
+js_writeln_internal(JSContext *cx, JSObject *obj, jsval *arg, jsval *rval)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	char*		cp="";
 	JSString*	str;
 	private_t*	p;
 	jsrefcount	rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -1318,8 +1329,8 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argc) {
-		if((str = JS_ValueToString(cx, argv[0]))==NULL) {
+	if(arg) {
+		if((str = JS_ValueToString(cx, *arg))==NULL) {
 			JS_ReportError(cx,"JS_ValueToString failed");
 			return(JS_FALSE);
 		}
@@ -1331,10 +1342,29 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 		rot13(cp);
 
 	if(fprintf(p->fp,"%s\n",cp)!=0)
-		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+		*rval = JSVAL_TRUE;
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
+}
+
+static JSBool
+js_writeln(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	jsval	rval;
+	JSBool	ret;
+
+	if(argc) {
+		ret=js_writeln_internal(cx, obj, &argv[0], &rval);
+	}
+	else {
+		ret=js_writeln_internal(cx, obj, NULL, &rval);
+	}
+	JS_SET_RVAL(cx, arglist, rval);
+
+	return(ret);
 }
 
 static JSBool
@@ -1476,10 +1506,13 @@ js_writeall(JSContext *cx, uintN argc, jsval *arglist)
     JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 
     for(i=0;i<limit;i++) {
+		jsval	rval;
+
         if(!JS_GetElement(cx, array, i, &elemval))
 			break;
-        js_writeln(cx, obj, 1, &elemval, rval);
-		if(*rval!=JSVAL_TRUE)
+        js_writeln_internal(cx, obj, &elemval, &rval);
+        JS_SET_RVAL(cx, arglist, rval);
+		if(rval!=JSVAL_TRUE)
 			break;
     }
 

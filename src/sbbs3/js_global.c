@@ -322,6 +322,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 
 		/* Save parent's 'log' function (for later use by our log function) */
+#if TODO
 		if(JS_GetProperty(cx, obj, "log", &val)) {
 			JSFunction* func;
 			if((func=JS_ValueToFunction(cx, val))!=NULL && !(func->flags&JSFUN_INTERPRETED)) {
@@ -330,6 +331,9 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 					,"log", js_log, func->nargs, func->flags);
 			}
 		}
+#else
+	#warning BACKGROUND LOG FUNCTION DEAD!
+#endif
 
 		exec_cx = bg->cx;
 		exec_obj = bg->obj;
@@ -468,8 +472,10 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		success = _beginthread(background_thread,0,bg)!=-1;
 
 	} else {
+		jsval	rval;
 
-		success = JS_ExecuteScript(exec_cx, exec_obj, script, rval);
+		success = JS_ExecuteScript(exec_cx, exec_obj, script, &rval);
+		JS_SET_RVAL(cx, arglist, rval);
 		JS_DestroyScript(exec_cx, script);
 	}
 

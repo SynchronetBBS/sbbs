@@ -248,16 +248,15 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 	if(name!=NULL)
 		SAFECOPY(nv->name,name);
 
-	switch(JSVAL_TAG(val)) {
-		case JSVAL_TAG_BOOLEAN:
-			nv->type=JSTYPE_BOOLEAN;
-			nv->value.b=JSVAL_TO_BOOLEAN(val);
-			break;
-		case JSVAL_TAG_OBJECT:
-			if(JSVAL_IS_NULL(val)) {
-				nv->type=JSTYPE_NULL;
-				break;
-			}
+	if(JSVAL_IS_BOOLEAN(val)) {
+		nv->type=JSTYPE_BOOLEAN;
+		nv->value.b=JSVAL_TO_BOOLEAN(val);
+	}
+	else if(JSVAL_IS_OBJECT(val)) {
+		if(JSVAL_IS_NULL(val)) {
+			nv->type=JSTYPE_NULL;
+		}
+		else {
 			nv->type=JSTYPE_OBJECT;
 			obj = JSVAL_TO_OBJECT(val);
 
@@ -284,18 +283,16 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 			}
 			v=js_encode_value(cx,JSVAL_VOID,NULL,v,count);	/* terminate object */
 			JS_DestroyIdArray(cx,id_array);
-			break;
-		default:
-			if(JSVAL_IS_NUMBER(val)) {
-				nv->type = JSTYPE_NUMBER;
-				JS_ValueToNumber(cx,val,&nv->value.n);
-			} else if(JSVAL_IS_VOID(val)) {
-				nv->type = JSTYPE_VOID;
-			} else {
-				nv->type= JSTYPE_STRING;
-				nv->value.s = strdup(JS_GetStringBytes(JS_ValueToString(cx,val)));
-			}
-			break;
+		}
+	}
+	else if(JSVAL_IS_NUMBER(val)) {
+		nv->type = JSTYPE_NUMBER;
+		JS_ValueToNumber(cx,val,&nv->value.n);
+	} else if(JSVAL_IS_VOID(val)) {
+		nv->type = JSTYPE_VOID;
+	} else {
+		nv->type= JSTYPE_STRING;
+		nv->value.s = strdup(JS_GetStringBytes(JS_ValueToString(cx,val)));
 	}
 
 	return(v);

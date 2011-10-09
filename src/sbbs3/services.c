@@ -390,7 +390,7 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 	
-	js_write(cx,obj,argc,argv,rval);
+	js_write(cx,argc,arglist);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	cp="\r\n";
