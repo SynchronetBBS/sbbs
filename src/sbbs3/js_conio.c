@@ -1118,15 +1118,19 @@ static JSBool js_conio_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 
-	if(id != JSVAL_NULL)
-		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	return(js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0));
 }
 
 static JSBool js_conio_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_conio_resolve(cx, obj, JSVAL_NULL));
+	return(js_conio_resolve(cx, obj, JSID_VOID));
 }
 
 static JSClass js_conio_class = {

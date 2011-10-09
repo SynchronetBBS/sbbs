@@ -1132,45 +1132,57 @@ static JSBool js_user_stats_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 
-	if(id != JSVAL_NULL)
-		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	return(js_SyncResolve(cx, obj, name, js_user_stats_properties, NULL, NULL, 0));
 }
 
 static JSBool js_user_stats_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_user_stats_resolve(cx, obj, JSVAL_NULL));
+	return(js_user_stats_resolve(cx, obj, JSID_VOID));
 }
 
 static JSBool js_user_security_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 
-	if(id != JSVAL_NULL)
-		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	return(js_SyncResolve(cx, obj, name, js_user_security_properties, NULL, NULL, 0));
 }
 
 static JSBool js_user_security_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_user_security_resolve(cx, obj, JSVAL_NULL));
+	return(js_user_security_resolve(cx, obj, JSID_VOID));
 }
 
 static JSBool js_user_limits_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 
-	if(id != JSVAL_NULL)
-		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	return(js_SyncResolve(cx, obj, name, js_user_limits_properties, NULL, NULL, 0));
 }
 
 static JSBool js_user_limits_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_user_limits_resolve(cx, obj, JSVAL_NULL));
+	return(js_user_limits_resolve(cx, obj, JSID_VOID));
 }
 
 static JSClass js_user_stats_class = {
@@ -1221,8 +1233,12 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_TRUE);
 
-	if(id != JSVAL_NULL)
-		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	if(name==NULL || strcmp(name, "stats")==0) {
 		/* user.stats */
@@ -1272,7 +1288,7 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_user_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_user_resolve(cx, obj, JSVAL_NULL));
+	return(js_user_resolve(cx, obj, JSID_VOID));
 }
 
 static JSClass js_user_class = {

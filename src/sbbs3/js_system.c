@@ -694,15 +694,19 @@ static JSBool js_sysstats_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 
-	if(id != JSVAL_NULL)
-		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	return(js_SyncResolve(cx, obj, name, js_sysstats_properties, NULL, NULL, 0));
 }
 
 static JSBool js_sysstats_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_sysstats_resolve(cx, obj, JSVAL_NULL));
+	return(js_sysstats_resolve(cx, obj, JSID_VOID));
 }
 
 static JSClass js_sysstats_class = {
@@ -1872,15 +1876,19 @@ static JSBool js_node_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 
-	if(id != JSVAL_NULL)
-		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	return(js_SyncResolve(cx, obj, name, js_node_properties, NULL, NULL, 0));
 }
 
 static JSBool js_node_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_node_resolve(cx, obj, JSVAL_NULL));
+	return(js_node_resolve(cx, obj, JSID_VOID));
 }
 
 static JSClass js_node_class = {
@@ -1943,8 +1951,12 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 	scfg_t* 	cfg;
 	uint		i;
 
-	if(id != JSVAL_NULL)
-		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	/****************************/
 	/* static string properties */
@@ -2063,7 +2075,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_system_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_node_resolve(cx, obj, JSVAL_NULL));
+	return(js_node_resolve(cx, obj, JSID_VOID));
 }
 
 static JSClass js_system_class = {

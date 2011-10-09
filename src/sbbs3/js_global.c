@@ -3642,8 +3642,12 @@ static JSBool js_global_resolve(JSContext *cx, JSObject *obj, jsid id)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	if(id != JSVAL_NULL && id != JS_DEFAULT_XML_NAMESPACE_ID)
-		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+	if(id != JSID_VOID && id != JSID_EMPTY && id != JS_DEFAULT_XML_NAMESPACE_ID) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	if(p->methods) {
 		if(js_SyncResolve(cx, obj, name, NULL, p->methods, NULL, 0)==JS_FALSE)
@@ -3656,7 +3660,7 @@ static JSBool js_global_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_global_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_global_resolve(cx, obj, JSVAL_NULL));
+	return(js_global_resolve(cx, obj, JSID_VOID));
 }
 
 static JSClass js_global_class = {
