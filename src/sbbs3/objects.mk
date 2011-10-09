@@ -45,8 +45,13 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_client$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_console$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_file$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_file_area$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_global$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_internal$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_msg_area$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_msgbase$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_queue$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_request$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_rtpool$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_server$(OFILE)\
@@ -107,11 +112,6 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)xtrn$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)xtrn_sec$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)yenc$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_queue$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_msgbase$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_internal$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_global$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)js_file$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ver$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
