@@ -128,13 +128,22 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	size_t			pos; \
 	const jschar	*val; \
 \
-	if((val=JS_GetStringCharsAndLength(cx, str, &len))) { \
-		if((ret=alloca(len+1))) { \
-			for(pos=0; pos<len; pos++) \
-				ret[pos]=val[pos]; \
-			ret[len]=0; \
+	ret=NULL; \
+	if(str != NULL) { \
+		if((val=JS_GetStringCharsAndLength(cx, str, &len))) { \
+			if((ret=(char *)alloca(len+1))) { \
+				for(pos=0; pos<len; pos++) \
+					ret[pos]=val[pos]; \
+				ret[len]=0; \
+			} \
 		} \
 	} \
+}
+
+#define JSVALUE_TO_STRING(cx, val, ret) \
+{ \
+	JSString	str=JS_ValueToString(cx, val); \
+	JSSTRING_TO_STRING(cx, str, ret); \
 }
 
 #endif
