@@ -740,11 +740,13 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	privatemsg_t*	p;
 	char*			name=NULL;
 	jsrefcount		rc;
-	jsval			idval;
 
-    JS_IdToValue(cx, id, &idval);
-	if(idval != JSVAL_NULL)
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
 		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	/* If we have already enumerated, we're done here... */
 	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -928,7 +930,7 @@ static JSBool js_get_msg_header_enumerate(JSContext *cx, JSObject *obj)
 {
 	privatemsg_t* p;
 
-	js_get_msg_header_resolve(cx, obj, JSVAL_NULL);
+	js_get_msg_header_resolve(cx, obj, JSID_VOID);
 
 	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_TRUE);
@@ -1488,7 +1490,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(!SMB_IS_OPEN(&(p->smb))) {
-		if(!js_open(cx, arglist, &open_rval))
+		if(!js_open(cx, 0, arglist))
 			return(JS_FALSE);
 		if(JS_RVAL(cx, arglist) == JSVAL_FALSE)
 			return(JS_TRUE);
@@ -1878,18 +1880,20 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 static JSBool js_msgbase_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
-	jsval			idval;
 
-    JS_IdToValue(cx, id, &idval);
-	if(idval != JSVAL_NULL)
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
 		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+	}
 
 	return(js_SyncResolve(cx, obj, name, js_msgbase_properties, js_msgbase_functions, NULL, 0));
 }
 
 static JSBool js_msgbase_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_msgbase_resolve(cx, obj, JSVAL_NULL));
+	return(js_msgbase_resolve(cx, obj, JSID_VOID));
 }
 
 static JSClass js_msgbase_class = {
