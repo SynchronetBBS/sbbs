@@ -245,9 +245,10 @@ function IRC_User(id) {
 	this.numeric481=IRCClient_numeric481;
 	this.numeric482=IRCClient_numeric482;
 	// Getters
-	this.nuh getter = function() {
+	this.__defineGetter__("nuh", function() {
 		return(this.nick + "!" + this.uprefix + "@" + this.hostname);
-	};
+	});
+
 }
 
 ////////// Command Parser //////////
