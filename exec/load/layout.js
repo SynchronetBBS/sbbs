@@ -71,15 +71,15 @@ function Layout()
 	var index={ value:0 };
 	
 	/* public view index */
-	this.index getter=function() {
+	this.__defineGetter__("index", function() {
 		return index.value;
-	}
+	});
 	
-	this.index setter=function(value) {
+	this.__defineSetter__("index", function(value) {
 		if(isNaN(value) || !views[value]) return false;
 		index.value=value;
 		return true;
-	}
+	});
 	
 	/* initialize layout */
 	this.init=function() {
@@ -198,18 +198,18 @@ function Layout()
 	}
 	
 	/* return current view object */
-	this.current_view getter=function() {
+	this.__defineGetter__("current_view", function() {
 		return views[this.index];
-	}
+	});
 
 	/* set current view object by name */
-	this.current_view setter=function(name) {
+	this.__defineSetter__("current_view", function(name) {
 		if(views_map[name.toUpperCase()] >= 0) {
 			this.index=views_map[name.toUpperCase()];
 			return true;
 		} 
 		return false;
-	}
+	});
 	
 	/* draw all layout views */
 	this.draw=function() {
@@ -281,24 +281,24 @@ function Layout_View(name,x,y,w,h)
 	this.layout_position=undefined;
 		
 	/* public tab index */
-	this.index getter=function() {
+	this.__defineGetter__("index", function() {
 		return index.value;
-	}
+	});
 	
-	this.index setter=function(value) {
+	this.__defineSetter__("index", function(value) {
 		if(isNaN(value) || !tabs[value]) return false;
 		index.value=value;
 		return true;
-	}
+	});
 	
 	/* return a list of tab names */
-	this.tabs getter=function() {
+	this.__defineGetter__("tabs", function() {
 		var list=[];
 		for each(var t in tabs) {
 			list.push(t.name);
 		}
 		return list;
-	}
+	});
 	
 	/* update loop */
 	this.cycle=function() {
@@ -336,64 +336,64 @@ function Layout_View(name,x,y,w,h)
 	}
 	
 	/* toggle display options (can only be done prior to adding any tabs) */
-	this.show_title setter=function(bool) {
+	this.__defineSetter__("show_title", function(bool) {
 		if(tabs.length > 0) return false;
 		show_title=bool;
 		return true;
-	}
+	});
 
-	this.show_tabs setter=function(bool) {
+	this.__defineSetter__("show_tabs", function(bool) {
 		if(tabs.length > 0) return false;
 		show_tabs=bool;
 		return true;
-	}
+	});
 
-	this.show_border setter=function(bool) {
+	this.__defineSetter__("show_border", function(bool) {
 		if(tabs.length > 0) return false;
 		show_border=bool;
 		return true;
-	}
+	});
 
-	this.interactive setter=function(bool)	 {
+	this.__defineSetter__("interactive", function(bool) {
 		if(tabs.length > 0) return false;
 		interactive=bool;
 		return true;
-	}
+	});
 		
 	/* get display options */
-	this.show_border getter=function() {
+	this.__defineGetter__("show_border", function() {
 		return show_border;
-	}
+	});
 
-	this.show_title getter=function() {
+	this.__defineGetter__("show_title", function() {
 		return show_title;
-	}
+	});
 	
-	this.show_tabs getter=function() {
+	this.__defineGetter__("show_tabs", function() {
 		return show_tabs;
-	}
+	});
 
-	this.interactive getter=function() {
+	this.__defineGetter__("interactive", function() {
 		return interactive;
-	}
+	});
 	
 	this.clear=function() {
 		clearBlock(this.x,this.y,this.width,this.height);
 	}
 	
 	/* return current tab object */
-	this.current_tab getter=function() {
+	this.__defineGetter__("current_tab", function() {
 		return tabs[this.index];
-	}
+	});
 	
 	/* set current tab object */
-	this.current_tab setter=function(name) {
+	this.__defineSetter__("current_tab", function(name) {
 		if(tabs_map[name.toUpperCase()] >= 0) {
 			this.index=tabs_map[name.toUpperCase()];
 			return true;
 		} 
 		return false;
-	}
+	});
 	
 	/* add a named tab to this window */
 	this.add_tab=function(type,name,data) {
@@ -726,12 +726,12 @@ Tab_Templates["CHAT"]=function()
 		this.window=new Window();
 		this.window.init(this.x,this.y,this.width,this.height);
 	}
-	this.update getter=function() {
+	this.__defineGetter__("update", function() {
 		return this.window.update;
-	}
-	this.update setter=function(update) {
+	});
+	this.__defineSetter__("update", function(update) {
 		this.window.update=update;
-	}
+	});
 	this.cycle=function() {
 		this.channel=this.chat.channels[this.name.toUpperCase()];
 		if(!this.channel)

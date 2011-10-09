@@ -40,13 +40,13 @@ function formEdit(obj,parent)
 		this.line = 1;
 		this.items = [];
 		
-		this.full_redraw getter = function() {
+		this.__defineGetter__("full_redraw", function() {
 			return full_redraw;
-		}
+		});
 		
-		this.full_redraw setter = function(bool) {
+		this.__defineSetter__("full_redraw", function(bool) {
 			full_redraw = bool;
-		}
+		});
 		
 		this.init = function() {
 			/* determine object type */
@@ -168,7 +168,7 @@ function formEdit(obj,parent)
 				this.scrollbar.draw(first_line,this.items.length);
 		}
 		
-		this.object getter = function() {
+		this.__defineGetter__("object", function() {
 			if(this.type == "array")
 				obj = [];
 			else
@@ -178,7 +178,7 @@ function formEdit(obj,parent)
 				obj[item.key] = item.value;
 			}
 			return obj;
-		}
+		});
 		
 		this.coords = function(i) {
 			var posx = this.box.x + 1;

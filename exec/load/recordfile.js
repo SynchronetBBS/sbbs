@@ -217,7 +217,7 @@ function RecordFile(filename, definition)
 	this.RecordLength=GetRecordLength(this.fields);
 	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength))
 		return(null);
-	this.length getter=function() {return parseInt(this.file.length/this.RecordLength);};
+	this.__defineGetter__("length", function() {return parseInt(this.file.length/this.RecordLength);});
 
 	/* Read a record by index */
 	this.Get=RecordFile_Get;

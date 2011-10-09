@@ -429,12 +429,12 @@ function Tree(xpos,ypos,w,h) {
 	}
 
 	/* calculate tree depth */
-	this.depth getter=function() {
+	this.__defineGetter__("depth", function() {
 		if(!this.parent)
 			return(0);
 		else
 			return(this.parent.depth+1);
-	}
+	});
 	
 	/* return hash value of current item */
 	this.hash=function() {
@@ -460,17 +460,17 @@ function Tree(xpos,ypos,w,h) {
 	}
 
 	/* return the currently selected item */
-	this.current_item getter=function() {
+	this.__defineGetter__("current_item", function() {
 		if(!this.open || !this.items[this.index])
 			return this;
 		if(this.items[this.index].type == "tree") 
 			return this.items[this.index].current_item;
 		else 
 			return this.items[this.index];
-	}
+	});
 	
 	/* trace back to main tree to see if this tree is the current item */
-	this.current getter=function() {
+	this.__defineGetter__("current", function() {
 		if(!this.parent)
 			return true;
 		else if(this.parent_index == this.parent.index)
@@ -478,78 +478,78 @@ function Tree(xpos,ypos,w,h) {
 				return true;
 		else
 			return false;
-	}
+	});
 	
 	/* trace back to main tree and set this menu current */
-	this.current setter=function(i) {
+	this.__defineSetter__("current", function(i) {
 		this.index=i;
 		if(this.parent)
 			this.parent.current=this.parent_index;
-	}
+	});
 
 	/* return x coordinate */
-	this.x getter=function() {
+	this.__defineGetter__("x", function() {
 		if(this.parent)
 			return this.parent.x;
 		else
 			return x;
-	}
+	});
 
 	/* set x coordinate */
-	this.x setter=function(xpos) {
+	this.__defineSetter__("x", function(xpos) {
 		if(this.parent)
 			this.parent.x=xpos;
 		else
 			x=xpos;
-	}
+	});
 	
 	/* return y coordinate */
-	this.y getter=function() {
+	this.__defineGetter__("y", function() {
 		if(this.parent)
 			return this.parent.y;
 		else
 			return y;
-	}
+	});
 
 	/* set y coordinate */
-	this.y setter=function(ypos) {
+	this.__defineSetter__("y", function(ypos) {
 		if(this.parent)
 			this.parent.y=ypos;
 		else
 			y=ypos;
-	}
+	});
 	
 	/* return tree width */
-	this.width getter=function() {
+	this.__defineGetter__("width", function() {
 		if(this.parent)
 			return this.parent.width;
 		else
 			return width;
-	}
+	});
 	
 	/* set tree width */
-	this.width setter=function(w) {
+	this.__defineSetter__("width", function(w) {
 		if(this.parent)
 			this.parent.width=w;
 		else 
 			width=w;
-	}
+	});
 	
 	/* return tree height */
-	this.height getter=function() {
+	this.__defineGetter__("height", function() {
 		if(this.parent)
 			return this.parent.height;
 		else
 			return height;
-	}
+	});
 	
 	/* set tree height */
-	this.height setter=function(h) {
+	this.__defineSetter__("height", function(h) {
 		if(this.parent)
 			this.parent.height=h;
 		else
 			height=h;
-	}
+	});
 	
 }
 

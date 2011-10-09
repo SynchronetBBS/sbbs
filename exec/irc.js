@@ -921,7 +921,7 @@ function Channels()  {
 	this.join=Channels_join;
 	this.part=Channels_part;
 	this.joined=Channels_joined;
-	this.current getter=function() {return this.channel[this.index];};
+	this.__defineGetter__("current", function() {return this.channel[this.index];});
 // Joining is not attempted until numeric 376 (End of MOTD)
 //	this.join(default_channel);
 	this.nick_change=Channels_nick_change;
@@ -1020,7 +1020,7 @@ function Screen()  {
 	this.update_input_line=Screen_update_input_line;
 	this.print_line=Screen_print_line;
 	this.update_statline=Screen_update_statline;
-	this.statusline getter=function() {
+	this.__defineGetter__("statusline", function() {
 		// THIS NEEDS TO GO INTO THE SCREEN BUFFER!!! ToDo
 		bbs.nodesync();
 		if(connected)  {
@@ -1033,8 +1033,8 @@ function Screen()  {
 			}
 		}
 		return "\x01N\x014 Nick: "+nick+"   Channel: No Channel (0)"+SPACEx80.substr(0,79-48-nick.length)+" /quit to exit \x01N\x010\x01W";
-	};
-	this.topicline getter=function() {
+	});
+	this.__defineGetter__("topicline", function() {
 		if(connected)  {
 			if(channels != undefined)  {
 				if(channels.current != undefined)  {
@@ -1045,7 +1045,7 @@ function Screen()  {
 			}
 		}
 		return "\x01H\x01Y\x014No Topic"+SPACEx80.substr(0,71)+"\x01N\x01W\x010";
-	}
+	});
 	this.input_buffer="";
 	this.input_pos=0;
 	this.handle_key=Screen_handle_key;

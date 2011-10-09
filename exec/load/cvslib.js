@@ -251,7 +251,7 @@ CVS = new (function () {
 	 * While it "handles" error, it still returns it.
 	 */
 	
-	this.response getter = function() {
+	this.__defineGetter__("response", function() {
 		function split_cmd(str, count) {
 			if(count==undefined)
 				count=2;
@@ -367,7 +367,7 @@ CVS = new (function () {
 					return response;
 			}
 		}
-	}
+	});
 
 ////////////////////////////////// PROTOCOL API
 

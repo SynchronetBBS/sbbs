@@ -97,50 +97,50 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 
 		/* protected properties */
-		this.x getter = function() {
+		this.__defineGetter__("x", function() {
 			return properties.x;
-		}
-		this.x setter = function(x) {
+		});
+		this.__defineSetter__("x", function(x) {
 			if(x == undefined)
 				properties.x = 1;
 			else if(isNaN(x) || x < 1 || x > console.screen_columns)
 				throw("invalid x coordinate: " + x);
 			else 
 				properties.x = x;
-		}
-		this.y getter = function() {
+		});
+		this.__defineGetter__("y", function() {
 			return properties.y;
-		}
-		this.y setter = function(y) {
+		});
+		this.__defineSetter__("y", function(y) {
 			if(y == undefined)
 				properties.y = 1;
 			else if(isNaN(y) || y < 1 || y > console.screen_rows)
 				throw("invalid y coordinate: " + y);
 			else 
 				properties.y = y;
-		}
-		this.width getter = function() {
+		});
+		this.__defineGetter__("width", function() {
 			return properties.width;
-		}
-		this.width setter = function(width) {
+		});
+		this.__defineSetter__("width", function(width) {
 			if(width == undefined)
 				properties.width = console.screen_columns;
 			else if(isNaN(width) || (x + width - 1) > (console.screen_columns))
 				throw("invalid width: " + width);
 			else 
 				properties.width = width;
-		}
-		this.height getter = function() {
+		});
+		this.__defineGetter__("height", function() {
 			return properties.height;
-		}
-		this.height setter = function(height) {
+		});
+		this.__defineSetter__("height", function(height) {
 			if(height == undefined)
 				properties.height = console.screen_rows;
 			else if(isNaN(height) || (y + height - 1) > (console.screen_rows))
 				throw("invalid height: " + height);
 			else
 				properties.height = height;
-		}
+		});
 		
 		/* public methods */
 		this.cycle = function() {
@@ -301,41 +301,41 @@ function Frame(x,y,width,height,attr,frame) {
 	}
 		
 	/* protected properties */
-	this.id getter = function() {
+	this.__defineGetter__("id", function() {
 		if(relations.parent)
 			return relations.parent.id+""+properties.id;
 		return properties.id;
-	}
-	this.parent getter = function() {
+	});
+	this.__defineGetter__("parent", function() {
 		return relations.parent;
-	}
-	this.child getter = function() {
+	});
+	this.__defineGetter__("child", function() {
 		return relations.child;
-	}
-	this.child setter = function(frame) {
+	});
+	this.__defineSetter__("child", function(frame) {
 		relations.child.push(frame);
-	}
-	this.display getter = function() {
+	});
+	this.__defineGetter__("display", function() {
 		return properties.display;
-	}
-	this.attr getter = function() {
+	});
+	this.__defineGetter__("attr", function() {
 		return properties.attr;
-	}
-	this.attr setter = function(attr) {
+	});
+	this.__defineSetter__("attr", function(attr) {
 		properties.attr = attr;
-	}
-	this.name getter = function() {
+	});
+	this.__defineGetter__("name", function() {
 		return properties.name;
-	}
-	this.name setter = function(name) {
+	});
+	this.__defineSetter__("name", function(name) {
 		properties.name = name;
-	}
-	this.x getter = function() { 
+	});
+	this.__defineGetter__("x", function() { 
 		if(properties.x)
 			return properties.x;
 		return properties.display.x; 
-	}
-	this.x setter = function(x) {
+	});
+	this.__defineSetter__("x", function(x) {
 		if(x == undefined)
 			return;
 		if(x < 1 || isNaN(x))
@@ -343,13 +343,13 @@ function Frame(x,y,width,height,attr,frame) {
 		else if(x > (properties.display.x + properties.display.width - 1) || x < properties.display.x)
 			throw("invalid x coordinate: " + x);
 		properties.x = x;
-	}
-	this.y getter = function() { 
+	});
+	this.__defineGetter__("y", function() { 
 		if(properties.y)
 			return properties.y;
 		return properties.display.y; 
-	}
-	this.y setter = function(y) {
+	});
+	this.__defineSetter__("y", function(y) {
 		if(y == undefined)
 			return;
 		if(y < 1 || isNaN(y))
@@ -357,13 +357,13 @@ function Frame(x,y,width,height,attr,frame) {
 		else if(y > (properties.display.y + properties.display.height - 1) || y < properties.display.y)
 			throw("invalid y coordinate: " + y);
 		properties.y = y;
-	}
-	this.width getter = function() {
+	});
+	this.__defineGetter__("width", function() {
 		if(properties.width)
 			return properties.width;
 		return properties.display.width;
-	}
-	this.width setter = function(width) {
+	});
+	this.__defineSetter__("width", function(width) {
 		if(width == undefined)
 			return;
 		else if(width < 1 || isNaN(width))
@@ -371,13 +371,13 @@ function Frame(x,y,width,height,attr,frame) {
 		else if((properties.x + width) > (properties.display.x + properties.display.width))
 			throw("invalid width: " + width);
 		properties.width = width;
-	}
-	this.height getter = function() {
+	});
+	this.__defineGetter__("height", function() {
 		if(properties.height)
 			return properties.height;
 		return properties.display.height;
-	}
-	this.height setter = function(height) {
+	});
+	this.__defineSetter__("height", function(height) {
 		if(height == undefined)
 			return;
 		else if(height < 1 || isNaN(height)) 
@@ -385,7 +385,7 @@ function Frame(x,y,width,height,attr,frame) {
 		else if((properties.y+ height) > (properties.display.y + properties.display.height))
 			throw("invalid height: " + height);
 		properties.height = height;
-	}
+	});
 
 	/* public methods */
 	this.getData = function(pointer) {

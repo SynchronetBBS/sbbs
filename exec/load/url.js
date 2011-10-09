@@ -86,7 +86,7 @@ function URL(url, base)
 		}
 	} while(loop);
 
-	this.request_path getter=function() {
+	this.__defineGetter__("request_path", function() {
 		var ret='';
 
 		if(this.path != undefined)
@@ -96,5 +96,5 @@ function URL(url, base)
 		if(this.fragment != undefined)
 			ret += '#'+this.fragment;
 		return ret;
-	};
+	});
 }
