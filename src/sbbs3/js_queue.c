@@ -471,7 +471,7 @@ static JSClass js_queue_class = {
 static JSBool
 js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSObject *obj;
 	jsval *argv=JS_ARGV(cx, arglist);
 	uintN			argn=0;
 	char*			name=NULL;
@@ -480,7 +480,8 @@ js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	list_node_t*	n;
 	jsrefcount		rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	obj=JS_NewObject(cx, &js_queue_class, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 
 #if 0	/* This doesn't appear to be doing anything but leaking memory */
 	if((q=(msg_queue_t*)malloc(sizeof(msg_queue_t)))==NULL) {

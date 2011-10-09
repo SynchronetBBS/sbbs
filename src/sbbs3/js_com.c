@@ -750,13 +750,15 @@ static JSClass js_com_class = {
 static JSBool
 js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSObject *obj;
 	jsval *argv=JS_ARGV(cx, arglist);
 	private_t* p;
 	char*	protocol=NULL;
 	char*		fname;
 	JSString*	str;
 
+	obj=JS_NewObject(cx, &js_com_class, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if(argc==0 || (str = JS_ValueToString(cx, argv[0]))==NULL
 		|| (fname=JS_GetStringBytes(str))==NULL) {
 		JS_ReportError(cx,"Failure reading port name");

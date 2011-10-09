@@ -2400,6 +2400,8 @@ js_file_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	str;
 	private_t*	p;
 
+	obj=JS_NewObject(cx, &js_file_class, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if((str = JS_ValueToString(cx, argv[0]))==NULL) {
 		JS_ReportError(cx,"No filename specified");
 		return(JS_FALSE);

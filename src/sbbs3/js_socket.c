@@ -1554,12 +1554,15 @@ static BOOL js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type)
 static JSBool
 js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSObject *obj;
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	type=SOCK_STREAM;	/* default = TCP */
 	uintN	i;
 	private_t* p;
 	char*	protocol=NULL;
+
+	obj=JS_NewObject(cx, &js_socket_class, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i]))

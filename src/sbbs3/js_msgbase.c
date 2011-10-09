@@ -1914,13 +1914,15 @@ static JSClass js_msgbase_class = {
 static JSBool
 js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSObject *obj;
 	jsval *argv=JS_ARGV(cx, arglist);
 	JSString*	js_str;
 	JSObject*	cfgobj;
 	char*		base;
 	private_t*	p;
 
+	obj=JS_NewObject(cx, &js_msgbase_class, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
 		JS_ReportError(cx,"malloc failed");
 		return(JS_FALSE);

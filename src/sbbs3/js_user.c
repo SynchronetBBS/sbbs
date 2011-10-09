@@ -1309,12 +1309,15 @@ static JSClass js_user_class = {
 static JSBool
 js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	JSObject *obj;
 	jsval *argv=JS_ARGV(cx, arglist);
 	int			i;
 	int32		val=0;
 	user_t		user;
 	private_t*	p;
+
+	obj=JS_NewObject(cx, &js_user_class, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 
 	JS_ValueToInt32(cx,argv[0],&val);
 	user.number=(ushort)val;
