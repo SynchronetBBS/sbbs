@@ -455,7 +455,7 @@ static JSClass js_queue_class = {
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
 	,js_queue_get			/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
+	,JS_StrictPropertyStub	/* setProperty	*/
 	,js_queue_enumerate		/* enumerate	*/
 	,js_queue_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/

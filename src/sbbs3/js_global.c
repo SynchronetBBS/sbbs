@@ -3665,7 +3665,7 @@ static JSClass js_global_class = {
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
 	,js_system_get			/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
+	,JS_StrictPropertyStub	/* setProperty	*/
 	,js_global_enumerate	/* enumerate	*/
 	,js_global_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/

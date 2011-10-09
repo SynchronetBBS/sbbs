@@ -960,7 +960,7 @@ static JSClass js_msghdr_class = {
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
 	,JS_PropertyStub		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
+	,JS_StrictPropertyStub		/* setProperty	*/
 	,js_get_msg_header_enumerate		/* enumerate	*/
 	,js_get_msg_header_resolve			/* resolve		*/
 	,JS_ConvertStub			/* convert		*/

@@ -711,7 +711,7 @@ static JSClass js_sysstats_class = {
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
 	,js_sysstats_get		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
+	,JS_StrictPropertyStub	/* setProperty	*/
 	,js_sysstats_enumerate	/* enumerate	*/
 	,js_sysstats_resolve	/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
