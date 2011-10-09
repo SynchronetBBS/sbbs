@@ -117,7 +117,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #if (JS_VERSION < 185) || (defined __cplusplus)
 	#include <jsprf.h>		/* JS-safe sprintf functions */
 	#include <math.h>		/* isnan() */
-#endif
+#endi)f
 #if JS_VERSION >= 185
 	#define JS_DestroyScript(cx,script)
 #endif
@@ -128,13 +128,13 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	size_t			pos; \
 	const jschar	*strval; \
 \
-	ret=NULL; \
-	if(str != NULL) { \
-		if((strval=JS_GetStringCharsAndLength(cx, str, &len))) { \
-			if((ret=(char *)alloca(len+1))) { \
+	(ret)=NULL; \
+	if((str) != NULL) { \
+		if((strval=JS_GetStringCharsAndLength((cx), (str), &len))) { \
+			if(((ret)=(char *)alloca(len+1))) { \
 				for(pos=0; pos<len; pos++) \
-					ret[pos]=strval[pos]; \
-				ret[len]=0; \
+					(ret)[pos]=strval[pos]; \
+				(ret)[len]=0; \
 			} \
 		} \
 	} \
@@ -142,8 +142,8 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #define JSVALUE_TO_STRING(cx, val, ret) \
 { \
-	JSString	*str=JS_ValueToString(cx, val); \
-	JSSTRING_TO_STRING(cx, str, ret); \
+	JSString	*str=JS_ValueToString((cx), (val)); \
+	JSSTRING_TO_STRING((cx), str, (ret)); \
 }
 
 #endif
