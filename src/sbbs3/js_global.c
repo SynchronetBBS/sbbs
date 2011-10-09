@@ -3688,7 +3688,7 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethod
 	p->methods = methods;
 	p->startup = startup;
 
-	if((glob = JS_NewGlobalObject(cx, &js_global_class)) ==NULL)
+	if((glob = JS_NewCompartmentAndGlobalObject(cx, &js_global_class, NULL)) ==NULL)
 		return(NULL);
 
 	if(!JS_SetPrivate(cx, glob, p))	/* Store a pointer to scfg_t and the new methods */
