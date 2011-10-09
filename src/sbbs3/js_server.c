@@ -46,8 +46,9 @@ enum {
 	,SERVER_PROP_CLIENTS
 };
 
-static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
+	jsval idval;
 	char*		ip;
     jsint       tiny;
 	struct in_addr in_addr;
@@ -56,7 +57,8 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	if((p=(js_server_props_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-    tiny = JSVAL_TO_INT(id);
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
 
 	switch(tiny) {
 		case SERVER_PROP_VER:
@@ -88,15 +90,17 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(JS_TRUE);
 }
 
-static JSBool js_server_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool js_server_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
+	jsval idval;
     jsint				tiny;
 	js_server_props_t*	p;
 
 	if((p=(js_server_props_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-    tiny = JSVAL_TO_INT(id);
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
 
 	switch(tiny) {
 		case SERVER_PROP_OPTIONS:
@@ -134,7 +138,7 @@ static char* server_prop_desc[] = {
 };
 #endif
 
-static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsval id)
+static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 

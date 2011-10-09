@@ -537,7 +537,7 @@ char * sbbs_t::copystrvar(csi_t *csi, char *p, char *str)
 #ifdef JAVASCRIPT
 
 static JSBool
-js_BranchCallback(JSContext *cx, JSScript *script)
+js_BranchCallback(JSContext *cx, JSObject *script)
 {
 	sbbs_t*		sbbs;
 
@@ -582,7 +582,7 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	char		cmdline[MAX_PATH+1];
 	char		path[MAX_PATH+1];
 	JSObject*	js_scope=scope;
-	JSScript*	js_script=NULL;
+	JSObject*	js_script=NULL;
 	jsval		rval;
 	int32		result=0;
 

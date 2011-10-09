@@ -139,8 +139,9 @@ static void js_getuserdat(private_t* p)
 }
 
 
-static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
+	jsval idval;
 	char*		s=NULL;
 	char		tmp[128];
 	ulong		val=0;
@@ -155,7 +156,8 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
 
-    tiny = JSVAL_TO_INT(id);
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
 
 	switch(tiny) {
 		case USER_PROP_NUMBER:
@@ -402,8 +404,9 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(JS_TRUE);
 }
 
-static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
+	jsval idval;
 	char*		str;
 	char		tmp[64];
 	jsint		val;
@@ -423,7 +426,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	if((str=JS_GetStringBytes(js_str))==NULL)
 		return(JS_FALSE);
 
-    tiny = JSVAL_TO_INT(id);
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	switch(tiny) {
@@ -879,8 +883,10 @@ static void js_user_finalize(JSContext *cx, JSObject *obj)
 }
 
 static JSBool
-js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	uchar*		ar;
 	JSString*	js_str;
 	private_t*	p;
@@ -897,7 +903,7 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	js_getuserdat(p);
 
-	*rval = BOOLEAN_TO_JSVAL(chk_ar(p->cfg,ar,p->user,p->client));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(chk_ar(p->cfg,ar,p->user,p->client)));
 
 	if(ar!=NULL && ar!=nular)
 		free(ar);
@@ -907,8 +913,10 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_posted_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	int32	count=1;
 	jsrefcount	rc;
@@ -922,15 +930,17 @@ js_posted_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
 
-	*rval = BOOLEAN_TO_JSVAL(user_posted_msg(p->cfg, p->user, count));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_posted_msg(p->cfg, p->user, count)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
 
 static JSBool
-js_sent_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	int32	count=1;
 	BOOL	feedback=FALSE;
@@ -947,15 +957,17 @@ js_sent_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
 
-	*rval = BOOLEAN_TO_JSVAL(user_sent_email(p->cfg, p->user, count, feedback));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_sent_email(p->cfg, p->user, count, feedback)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
 
 static JSBool
-js_downloaded_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	int32	files=1;
 	int32	bytes=0;
@@ -972,15 +984,17 @@ js_downloaded_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
 
-	*rval = BOOLEAN_TO_JSVAL(user_downloaded(p->cfg, p->user, files, bytes));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_downloaded(p->cfg, p->user, files, bytes)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
 
 static JSBool
-js_uploaded_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	int32	files=1;
 	int32	bytes=0;
@@ -997,15 +1011,17 @@ js_uploaded_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
 
-	*rval = BOOLEAN_TO_JSVAL(user_uploaded(p->cfg, p->user, files, bytes));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_uploaded(p->cfg, p->user, files, bytes)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
 
 static JSBool
-js_adjust_credits(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	int32	count=0;
 	jsrefcount	rc;
@@ -1019,15 +1035,17 @@ js_adjust_credits(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
 
-	*rval = BOOLEAN_TO_JSVAL(user_adjust_credits(p->cfg, p->user, count));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_adjust_credits(p->cfg, p->user, count)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
 
 static JSBool
-js_adjust_minutes(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	int32	count=0;
 	jsrefcount	rc;
@@ -1041,15 +1059,17 @@ js_adjust_minutes(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
 
-	*rval = BOOLEAN_TO_JSVAL(user_adjust_minutes(p->cfg, p->user, count));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_adjust_minutes(p->cfg, p->user, count)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
 
 static JSBool
-js_get_time_left(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	int32	start_time=0;
 	jsrefcount	rc;
@@ -1063,7 +1083,7 @@ js_get_time_left(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
 
-	*rval = INT_TO_JSVAL(gettimeleft(p->cfg, p->user, (time_t)start_time));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(gettimeleft(p->cfg, p->user, (time_t)start_time)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -1108,7 +1128,7 @@ static jsSyncMethodSpec js_user_functions[] = {
 	{0}
 };
 
-static JSBool js_user_stats_resolve(JSContext *cx, JSObject *obj, jsval id)
+static JSBool js_user_stats_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 
@@ -1123,7 +1143,7 @@ static JSBool js_user_stats_enumerate(JSContext *cx, JSObject *obj)
 	return(js_user_stats_resolve(cx, obj, JSVAL_NULL));
 }
 
-static JSBool js_user_security_resolve(JSContext *cx, JSObject *obj, jsval id)
+static JSBool js_user_security_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 
@@ -1138,7 +1158,7 @@ static JSBool js_user_security_enumerate(JSContext *cx, JSObject *obj)
 	return(js_user_security_resolve(cx, obj, JSVAL_NULL));
 }
 
-static JSBool js_user_limits_resolve(JSContext *cx, JSObject *obj, jsval id)
+static JSBool js_user_limits_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 
@@ -1192,7 +1212,7 @@ static JSClass js_user_limits_class = {
 	,JS_FinalizeStub        /* finalize		*/
 };
 
-static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsval id)
+static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 	JSObject*		newobj;
@@ -1271,8 +1291,10 @@ static JSClass js_user_class = {
 /* User Constructor (creates instance of user class) */
 
 static JSBool
-js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	int			i;
 	int32		val=0;
 	user_t		user;

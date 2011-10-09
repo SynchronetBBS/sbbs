@@ -4022,8 +4022,10 @@ js_writefunc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval,
 }
 
 static JSBool
-js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_write(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	http_session_t* session;
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
@@ -4035,8 +4037,10 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	http_session_t* session;
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
@@ -4048,8 +4052,10 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_set_cookie(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	char	header_buf[8192];
 	char	*header;
 	char	*p;
@@ -4099,8 +4105,10 @@ js_set_cookie(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 }
 
 static JSBool
-js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_log(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	char		str[512];
     uintN		i=0;
 	int32		level=LOG_INFO;
@@ -4129,14 +4137,16 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	lprintf(level,"%04d %s",session->socket,str);
 	JS_RESUMEREQUEST(cx, rc);
 
-	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str)));
 
     return(JS_TRUE);
 }
 
 static JSBool
-js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_login(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
 	JSBool		inc_logons=JS_FALSE;
 	user_t		user;
@@ -4144,7 +4154,7 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	http_session_t*	session;
 	jsrefcount	rc;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -4219,7 +4229,7 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(FALSE);
 	}
 
-	*rval=BOOLEAN_TO_JSVAL(JS_TRUE);
+	JS_SET_RVAL(cx, arglist,BOOLEAN_TO_JSVAL(JS_TRUE));
 
 	return(JS_TRUE);
 }
@@ -4341,8 +4351,10 @@ static int js_write_template_part(JSContext *cx, JSObject *obj, char *template, 
 }
 
 static JSBool
-js_write_template(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_write_template(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	JSString*	js_str;
 	char		*filename;
 	char		*template;
@@ -4420,7 +4432,7 @@ static JSFunctionSpec js_global_functions[] = {
 };
 
 static JSBool
-js_BranchCallback(JSContext *cx, JSScript *script)
+js_BranchCallback(JSContext *cx, JSObject *script)
 {
 	http_session_t* session;
 
@@ -4580,7 +4592,7 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 }
 
 static BOOL exec_ssjs(http_session_t* session, char* script)  {
-	JSScript*	js_script;
+	JSObject*	js_script;
 	jsval		rval;
 	char		path[MAX_PATH+1];
 	BOOL		retval=TRUE;

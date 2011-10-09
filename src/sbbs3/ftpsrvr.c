@@ -376,8 +376,10 @@ int getdir(char* p, user_t* user, client_t* client)
 js_server_props_t js_server_props;
 
 static JSBool
-js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_write(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
     uintN		i;
     JSString*	str=NULL;
 	FILE*	fp;
@@ -396,15 +398,17 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(str==NULL)
-		*rval = JSVAL_VOID;
+		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	else
-		*rval = STRING_TO_JSVAL(str);
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	return(JS_TRUE);
 }
 
 static JSBool
-js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
 	FILE*	fp;
 	jsrefcount	rc;
 
@@ -637,7 +641,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 	JSObject*	dir_obj=NULL;
 	JSObject*	file_array=NULL;
 	JSObject*	dir_array=NULL;
-	JSScript*	js_script=NULL;
+	JSObject*	js_script=NULL;
 	JSString*	js_str;
 	long double		start=xp_timer();
 	jsrefcount	rc;

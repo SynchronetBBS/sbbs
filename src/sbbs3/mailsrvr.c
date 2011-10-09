@@ -1684,8 +1684,10 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 }
 
 static JSBool
-js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_log(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
     uintN		i=0;
 	int32		level=LOG_INFO;
     JSString*	str=NULL;
@@ -1708,9 +1710,9 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(str==NULL)
-		*rval = JSVAL_VOID;
+		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	else
-		*rval = STRING_TO_JSVAL(str);
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 
     return(JS_TRUE);
 }
@@ -1745,7 +1747,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	JSObject*	js_scope=NULL;
 	JSObject*	argv;
 	jsuint		argc;
-	JSScript*	js_script;
+	JSObject*	js_script;
 	js_branch_t	js_branch;
 	jsval		val;
 	jsval		rval=JSVAL_VOID;

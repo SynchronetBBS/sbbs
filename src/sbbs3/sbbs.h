@@ -119,7 +119,6 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#include <jsnum.h>		/* JSDOUBLE_IS_NaN() */
 #endif
 #if JS_VERSION >= 185
-	#define JSScript					JSObject
 	#define JS_DestroyScript(cx,script)
 #endif
 

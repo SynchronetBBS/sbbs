@@ -247,15 +247,17 @@ enum {
 };
 
 
-static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
+	jsval idval;
     jsint       tiny;
 	subscan_t*	scan;
 
 	if((scan=(subscan_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_TRUE);
 
-    tiny = JSVAL_TO_INT(id);
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
 
 	switch(tiny) {
 		case SUB_PROP_SCAN_PTR:
@@ -272,8 +274,9 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(JS_TRUE);
 }
 
-static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
+	jsval idval;
 	int32		val=0;
     jsint       tiny;
 	subscan_t*	scan;
@@ -281,7 +284,8 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	if((scan=(subscan_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_TRUE);
 
-    tiny = JSVAL_TO_INT(id);
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
 
 	switch(tiny) {
 		case SUB_PROP_SCAN_PTR:

@@ -471,8 +471,8 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
  	sbbs.dll!js_save_msg(JSContext * cx, JSObject * obj, unsigned int argc, long * argv, long * rval)  Line 1519 + 0x25 bytes	C
  	js32.dll!js_Invoke(JSContext * cx, unsigned int argc, unsigned int flags)  Line 1375 + 0x17 bytes	C
  	js32.dll!js_Interpret(JSContext * cx, unsigned char * pc, long * result)  Line 3944 + 0xf bytes	C
- 	js32.dll!js_Execute(JSContext * cx, JSObject * chain, JSScript * script, JSStackFrame * down, unsigned int flags, long * result)  Line 1633 + 0x13 bytes	C
- 	js32.dll!JS_ExecuteScript(JSContext * cx, JSObject * obj, JSScript * script, long * rval)  Line 4188 + 0x19 bytes	C
+ 	js32.dll!js_Execute(JSContext * cx, JSObject * chain, JSObject * script, JSStackFrame * down, unsigned int flags, long * result)  Line 1633 + 0x13 bytes	C
+ 	js32.dll!JS_ExecuteScript(JSContext * cx, JSObject * obj, JSObject * script, long * rval)  Line 4188 + 0x19 bytes	C
  	sbbs.dll!sbbs_t::js_execfile(const char * cmd, const char * startup_dir)  Line 686 + 0x27 bytes	C++
  	sbbs.dll!sbbs_t::external(const char * cmdline, long mode, const char * startup_dir)  Line 413 + 0x1e bytes	C++
  	sbbs.dll!event_thread(void * arg)  Line 2745 + 0x71 bytes	C++

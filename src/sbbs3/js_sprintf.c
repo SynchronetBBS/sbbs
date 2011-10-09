@@ -50,7 +50,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 	p=xp_asprintf_start(p);
     for(; argn<argc; argn++) {
 		if(JSVAL_IS_DOUBLE(argv[argn]))
-			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_DOUBLE,*JSVAL_TO_DOUBLE(argv[argn]));
+			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_DOUBLE,JSVAL_TO_DOUBLE(argv[argn]));
 		else if(JSVAL_IS_INT(argv[argn]))
 			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,JSVAL_TO_INT(argv[argn]));
 		else if(JSVAL_IS_BOOLEAN(argv[argn]) && xp_printf_get_type(p)!=XP_PRINTF_TYPE_CHARP)
