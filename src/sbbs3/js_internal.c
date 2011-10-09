@@ -242,6 +242,14 @@ js_CommonBranchCallback(JSContext *cx, js_branch_t* branch)
     return(JS_TRUE);
 }
 
+static JSClass eval_class = {
+    "Global",  /* name */
+    JSCLASS_GLOBAL_FLAGS,  /* flags */
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 /* Execute a string in its own context (away from Synchronet objects) */
 static JSBool
 js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
@@ -291,7 +299,7 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 #endif
 #endif
 
-	if((obj=JS_NewObject(cx, NULL, NULL, NULL))==NULL
+	if((obj=JS_NewCompartmentAndGlobalObject(cx, &eval_class, NULL))==NULL
 		|| !JS_InitStandardClasses(cx,obj)) {
 		JS_DestroyContext(cx);
 		return(JS_FALSE);
