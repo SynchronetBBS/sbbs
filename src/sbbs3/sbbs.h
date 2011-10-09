@@ -124,17 +124,17 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #define JSSTRING_TO_STRING(cx, str, ret) \
 { \
-	size_t			len; \
-	size_t			pos; \
-	const jschar	*strval; \
+	size_t			JSSTSlen; \
+	size_t			JSSTSpos; \
+	const jschar	*JSSTSstrval; \
 \
 	(ret)=NULL; \
 	if((str) != NULL) { \
-		if((strval=JS_GetStringCharsAndLength((cx), (str), &len))) { \
-			if(((ret)=(char *)alloca(len+1))) { \
-				for(pos=0; pos<len; pos++) \
-					(ret)[pos]=strval[pos]; \
-				(ret)[len]=0; \
+		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), &JSSTSlen))) { \
+			if(((ret)=(char *)alloca(JSSTSlen+1))) { \
+				for(JSSTSpos=0; JSSTSpos<JSSTSlen; JSSTSpos++) \
+					(ret)[JSSTSpos]=JSSTSstrval[pos]; \
+				(ret)[JSSTSlen]=0; \
 			} \
 		} \
 	} \
@@ -142,8 +142,8 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #define JSVALUE_TO_STRING(cx, val, ret) \
 { \
-	JSString	*str=JS_ValueToString((cx), (val)); \
-	JSSTRING_TO_STRING((cx), str, (ret)); \
+	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
+	JSSTRING_TO_STRING((cx), JSVTSstr, (ret)); \
 }
 
 #endif
