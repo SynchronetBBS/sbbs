@@ -295,6 +295,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	str=NULL;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(argc > 1 && JSVAL_IS_NUMBER(argv[i]))
 		JS_ValueToInt32(cx,argv[i++],&level);
 
@@ -324,6 +326,8 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	int32	len=128;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 	if((buf=alloca(len))==NULL)
@@ -348,6 +352,8 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	char*	p;
 	int32	len=128;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
@@ -374,6 +380,8 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	str=NULL;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
     for (i = 0; i < argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
@@ -396,6 +404,8 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(!js_write(cx,argc,arglist))
 		return(JS_FALSE);
 
@@ -412,6 +422,8 @@ js_printf(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char* p;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((p = js_sprintf(cx, 0, argc, argv))==NULL) {
 		JS_ReportError(cx,"js_sprintf failed");
@@ -437,6 +449,8 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
     JSString *	str;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
 	    return(JS_FALSE);
 
@@ -459,6 +473,8 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 	char     *	p;
 	jsrefcount	rc;
 	char		instr[81]="y";
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
 	    return(JS_FALSE);
@@ -486,6 +502,8 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 	char		instr[81];
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
 	    return(JS_FALSE);
 
@@ -510,6 +528,8 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
     JSString *	prompt;
     JSString *	str;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(!JSVAL_IS_VOID(argv[0])) {
 		if((prompt=JS_ValueToString(cx, argv[0]))==NULL)

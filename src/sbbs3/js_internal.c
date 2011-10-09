@@ -264,6 +264,8 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	JSObject*		obj;
 	JSErrorReporter	reporter;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(argc<1)
 		return(JS_TRUE);
 
@@ -350,6 +352,8 @@ js_report_error(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	JS_ReportError(cx,"%s",JS_GetStringBytes(JS_ValueToString(cx, argv[0])));
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc>1 && argv[1]==JSVAL_TRUE)
 		return(JS_FALSE);	/* fatal */

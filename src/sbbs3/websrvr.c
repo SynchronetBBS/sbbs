@@ -4028,6 +4028,8 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 {
 	http_session_t* session;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
@@ -4040,6 +4042,8 @@ static JSBool
 js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 {
 	http_session_t* session;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -4062,6 +4066,8 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 	struct tm tm;
 	http_session_t* session;
 	time_t	tt;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -4113,6 +4119,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	js_str;
 	http_session_t* session;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -4359,6 +4367,8 @@ js_write_template(JSContext *cx, uintN argc, jsval *arglist)
 	FILE		*tfile;
 	size_t		len;
 	http_session_t* session;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);

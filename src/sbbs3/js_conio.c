@@ -661,6 +661,8 @@ js_conio_setfont(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 	uintN arg=0;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(argc > 2)
 		return(JS_FALSE);
 
@@ -717,6 +719,8 @@ js_conio_window(JSContext *cx, uintN argc, jsval *arglist)
 	int32 bottom=cio_textinfo.screenheight;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(argc > 4)
 		return(JS_FALSE);
 
@@ -769,6 +773,8 @@ js_conio_cgets(JSContext *cx, uintN argc, jsval *arglist)
 	int32	maxlen=255;
 	char	*ret;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc > 1)
 		return(JS_FALSE);
@@ -823,6 +829,8 @@ js_conio_movetext(JSContext *cx, uintN argc, jsval *arglist)
 	int32	args[6];
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(argc != 6)
 		return(JS_FALSE);
 	for(i=0; i<6; i++) {
@@ -850,6 +858,8 @@ js_conio_puttext(JSContext *cx, uintN argc, jsval *arglist)
 	jsval	val;
 	JSObject *array;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	/* default values: */
 	args[0]=1;
@@ -916,6 +926,8 @@ js_conio_gettext(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *array;
 	jsval	val;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	/* default values: */
 	args[0]=1;

@@ -892,6 +892,8 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
@@ -921,6 +923,8 @@ js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 	int32	count=1;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
@@ -945,6 +949,8 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 	int32	count=1;
 	BOOL	feedback=FALSE;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
@@ -973,6 +979,8 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	int32	bytes=0;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
@@ -1000,6 +1008,8 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	int32	bytes=0;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
@@ -1026,6 +1036,8 @@ js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 	int32	count=0;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
@@ -1050,6 +1062,8 @@ js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 	int32	count=0;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
@@ -1073,6 +1087,8 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	int32	start_time=0;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;

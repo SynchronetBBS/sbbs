@@ -733,6 +733,8 @@ js_alias(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t*		cfg;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -769,6 +771,8 @@ js_username(JSContext *cx, uintN argc, jsval *arglist)
 	char*		cstr;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -795,6 +799,8 @@ js_matchuser(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t*		cfg;
 	BOOL		sysop_alias=TRUE;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -832,6 +838,8 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 	BOOL		match_next=FALSE;
 	int 		argnum=2;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -877,6 +885,8 @@ js_trashcan(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	js_can;
 	scfg_t*		cfg;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -956,6 +966,8 @@ js_zonestr(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 	char*		cstr;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -989,6 +1001,8 @@ js_timestr(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t*		cfg;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -1017,6 +1031,8 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 	time_t		t;
 	JSString*	js_str;
 	scfg_t*		cfg;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -1078,6 +1094,8 @@ js_spamlog(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t*		cfg;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -1123,6 +1141,8 @@ js_hacklog(JSContext *cx, uintN argc, jsval *arglist)
 	SOCKADDR_IN	addr;
 	scfg_t*		cfg;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -1172,6 +1192,8 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 	char*		fname=NULL;
 	scfg_t*		cfg;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -1249,6 +1271,8 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t*		cfg;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -1315,6 +1339,8 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t*		cfg;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -1348,6 +1374,8 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	userobj;
 	jsrefcount	rc;
 	client_t*	client=NULL;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -1458,6 +1486,8 @@ js_popen(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	js_str;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(argc<1)
 		return(JS_TRUE);
 
@@ -1500,6 +1530,8 @@ js_chksyspass(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	scfg_t*		cfg;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -1517,6 +1549,8 @@ js_chkname(JSContext *cx, uintN argc, jsval *arglist)
 	char*	str;
 	scfg_t*	cfg;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	str = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)

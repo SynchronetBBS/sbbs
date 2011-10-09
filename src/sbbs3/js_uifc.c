@@ -291,6 +291,8 @@ js_uifc_bail(JSContext *cx, uintN argc, jsval *arglist)
 	uifcapi_t* uifc;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -308,6 +310,8 @@ js_uifc_msg(JSContext *cx, uintN argc, jsval *arglist)
 	char*		str;
 	uifcapi_t*	uifc;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -329,6 +333,8 @@ js_uifc_pop(JSContext *cx, uintN argc, jsval *arglist)
 	char*		str=NULL;
 	uifcapi_t*	uifc;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -358,6 +364,8 @@ js_uifc_input(JSContext *cx, uintN argc, jsval *arglist)
 	uifcapi_t*	uifc;
 	uintN		argn=0;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -427,6 +435,8 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 	jsuint		numopts;
 	str_list_t	opts=NULL;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);

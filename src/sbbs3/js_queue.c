@@ -134,6 +134,8 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	int32 timeout=0;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
@@ -165,6 +167,8 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	queued_value_t*	v;
 	int32 timeout=0;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -205,6 +209,8 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	queued_value_t*	v;
 	int32 timeout=0;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -324,6 +330,8 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	msg_queue_t*	q;
 	jsval			val;
 	char*			name=NULL;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);

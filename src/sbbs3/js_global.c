@@ -187,6 +187,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool retval;
 	background_data_t* bg;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((bg=(background_data_t*)JS_GetContextPrivate(cx))==NULL)
 		return JS_FALSE;
 
@@ -490,6 +492,8 @@ js_format(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
     JSString*	str;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((p=js_sprintf(cx, 0, argc, argv))==NULL) {
 		JS_ReportError(cx,"js_sprintf failed");
 		return(JS_FALSE);
@@ -512,6 +516,8 @@ js_yield(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	BOOL forced=TRUE;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc)
 		JS_ValueToBoolean(cx, argv[0], &forced);
@@ -579,6 +585,8 @@ js_beep(JSContext *cx, uintN argc, jsval *arglist)
 	int32 dur=500;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&freq);
 	if(argc>1)
@@ -599,6 +607,8 @@ js_exit(JSContext *cx, uintN argc, jsval *arglist)
 		JS_DefineProperty(cx, obj, "exit_code", argv[0]
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	return(JS_FALSE);
 }
 
@@ -610,6 +620,8 @@ js_crc16(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	size_t		len;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -632,6 +644,8 @@ js_crc32(JSContext *cx, uintN argc, jsval *arglist)
 	size_t		len;
 	uint32_t	cs;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -656,6 +670,8 @@ js_chksum(JSContext *cx, uintN argc, jsval *arglist)
 	size_t		len;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -679,6 +695,8 @@ js_ascii(JSContext *cx, uintN argc, jsval *arglist)
 	char		str[2];
 	int32		i=0;
 	JSString*	js_str;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -715,6 +733,8 @@ js_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 	int32		i=0;
 	JSString*	js_str;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -747,6 +767,8 @@ js_ascii_str(JSContext *cx, uintN argc, jsval *arglist)
 	char*		buf;
 	JSString*	str;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -777,6 +799,8 @@ js_strip_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 	char*		buf;
 	JSString*	js_str;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -802,6 +826,8 @@ js_strip_exascii(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	char*		buf;
 	JSString*	js_str;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -829,6 +855,8 @@ js_lfexpand(JSContext *cx, uintN argc, jsval *arglist)
 	char*		inbuf;
 	char*		outbuf;
 	JSString*	str;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -867,6 +895,8 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 	char*		outbuf;
 	JSString*	js_str;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -912,6 +942,8 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	char*		prefix=" > ";
 	JSString*	js_str;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -977,6 +1009,8 @@ js_netaddr_type(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*	str;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -996,6 +1030,8 @@ js_rot13(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	char*		str;
 	JSString*	js_str;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -1237,6 +1273,8 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	stateobj=NULL;
 	jsval		val;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -1906,6 +1944,8 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	js_str;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2132,6 +2172,8 @@ js_skipsp(JSContext *cx, uintN argc, jsval *arglist)
 	char*		str;
 	JSString*	js_str;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2154,6 +2196,8 @@ js_truncsp(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	char*		str;
 	JSString*	js_str;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2184,6 +2228,8 @@ js_truncstr(JSContext *cx, uintN argc, jsval *arglist)
 	char*		str;
 	char*		set;
 	JSString*	js_str;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2217,6 +2263,8 @@ js_backslash(JSContext *cx, uintN argc, jsval *arglist)
 	char*		str;
 	JSString*	js_str;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2242,6 +2290,8 @@ js_fullpath(JSContext *cx, uintN argc, jsval *arglist)
 	char*		str;
 	JSString*	js_str;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2270,6 +2320,8 @@ js_getfname(JSContext *cx, uintN argc, jsval *arglist)
 	char*		str;
 	JSString*	js_str;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2292,6 +2344,8 @@ js_getfext(JSContext *cx, uintN argc, jsval *arglist)
 	char*		str;
 	char*		p;
 	JSString*	js_str;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2319,6 +2373,8 @@ js_getfcase(JSContext *cx, uintN argc, jsval *arglist)
 	char		path[MAX_PATH+1];
 	JSString*	js_str;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2350,6 +2406,8 @@ js_dosfname(JSContext *cx, uintN argc, jsval *arglist)
 	char		path[MAX_PATH+1];
 	JSString*	js_str;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2391,6 +2449,8 @@ js_cfgfname(JSContext *cx, uintN argc, jsval *arglist)
 	char*		cstr;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2416,6 +2476,8 @@ js_fexist(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2435,6 +2497,8 @@ js_removecase(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2456,6 +2520,8 @@ js_remove(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2476,6 +2542,8 @@ js_rename(JSContext *cx, uintN argc, jsval *arglist)
 	char*		oldname;
 	char*		newname;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2501,6 +2569,8 @@ js_fcopy(JSContext *cx, uintN argc, jsval *arglist)
 	char*		dest;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2524,6 +2594,8 @@ js_fcompare(JSContext *cx, uintN argc, jsval *arglist)
 	char*		fn1;
 	char*		fn2;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2549,6 +2621,8 @@ js_backup(JSContext *cx, uintN argc, jsval *arglist)
 	int32		level=5;
 	BOOL		ren=FALSE;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2576,6 +2650,8 @@ js_isdir(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2596,6 +2672,8 @@ js_fattr(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	jsrefcount	rc;
 	int			attr;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2618,6 +2696,8 @@ js_fdate(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	time_t		fd;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2642,6 +2722,8 @@ js_utime(JSContext *cx, uintN argc, jsval *arglist)
 	int32			modtime;
 	struct utimbuf	ut;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2679,6 +2761,8 @@ js_flength(JSContext *cx, uintN argc, jsval *arglist)
 	off_t		fl;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2700,6 +2784,8 @@ js_ftouch(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		fname;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2723,6 +2809,8 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 	int32		max_age=0;
 	uintN		argn=0;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2788,6 +2876,8 @@ js_directory(JSContext *cx, uintN argc, jsval *arglist)
 	jsval		val;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2833,6 +2923,8 @@ js_wildmatch(JSContext *cx, uintN argc, jsval *arglist)
 	uintN		argn=0;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_BOOLEAN(argv[argn]))
 		JS_ValueToBoolean(cx, argv[argn++], &case_sensitive);
 
@@ -2867,6 +2959,8 @@ js_freediskspace(JSContext *cx, uintN argc, jsval *arglist)
 	ulong		fd;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -2893,6 +2987,8 @@ js_disksize(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	ulong		ds;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -3005,6 +3101,8 @@ js_mkdir(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -3025,6 +3123,8 @@ js_mkpath(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
@@ -3044,6 +3144,8 @@ js_rmdir(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -3070,6 +3172,8 @@ js_strftime(JSContext *cx, uintN argc, jsval *arglist)
 	struct tm	tm;
 	JSString*	js_str;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -3170,6 +3274,8 @@ js_list_named_queues(JSContext *cx, uintN argc, jsval *arglist)
 	msg_queue_t* q;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
     if((array = JS_NewArrayObject(cx, 0, NULL))==NULL)
 		return(JS_FALSE);
 
@@ -3203,6 +3309,8 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 	char		str[64];
 	jsdouble	d;
 	JSString*	js_str;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);

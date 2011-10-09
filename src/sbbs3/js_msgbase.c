@@ -126,6 +126,8 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	rc=JS_SUSPENDREQUEST(cx);
 	smb_close(&(p->smb));
 	JS_RESUMEREQUEST(cx, rc);

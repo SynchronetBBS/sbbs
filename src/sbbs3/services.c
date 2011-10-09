@@ -261,6 +261,8 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	service_client_t* client;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
@@ -295,6 +297,8 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	str;
 	service_client_t* client;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -360,6 +364,8 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	service_client_t* client;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
@@ -387,6 +393,8 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 	service_client_t* client;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 	
@@ -411,6 +419,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	js_str;
 	service_client_t* client;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -682,6 +692,8 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	service_client_t* service_client;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((service_client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
@@ -733,6 +745,8 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 	service_client_t* service_client;
 	jsrefcount	rc;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((service_client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
@@ -776,6 +790,8 @@ js_client_remove(JSContext *cx, uintN argc, jsval *arglist)
 	SOCKET	sock=INVALID_SOCKET;
 	service_client_t* service_client;
 	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((service_client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
