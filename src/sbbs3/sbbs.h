@@ -135,7 +135,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 			ret[len]=0; \
 		} \
 	} \
-} \
+}
 
 #endif
 
