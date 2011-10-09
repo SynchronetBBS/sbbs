@@ -281,7 +281,7 @@ bool sbbs_t::checkfname(char *fname)
 	if(fname[0]=='-'
 		|| strcspn(fname,ILLEGAL_FILENAME_CHARS)!=strlen(fname)) {
 		lprintf(LOG_WARNING,"Suspicious filename attempt: '%s'",fname);
-		hacklog("Filename", fname);
+		hacklog((char *)"Filename", fname);
 		return(false); 
 	}
 	if(strstr(fname,".."))
