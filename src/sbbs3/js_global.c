@@ -3659,7 +3659,7 @@ static JSBool js_global_enumerate(JSContext *cx, JSObject *obj)
 
 static JSClass js_global_class = {
      "Global"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+    ,JSCLASS_HAS_PRIVATE|JSCLASS_GLOBAL_FLAGS	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
 	,js_system_get			/* getProperty	*/
