@@ -122,6 +122,22 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#define JS_DestroyScript(cx,script)
 #endif
 
+#define JSSTRING_TO_STRING(cx, str, ret) \
+{ \
+	size_t			len; \
+	size_t			pos; \
+	const jschar	*val; \
+\
+	ret[0]=0; \
+	if((val=JS_GetStringCharsAndLength(cx, str, &len))) { \
+		if((ret=alloca(len+1))) { \
+			for(pos=0; pos<len; pos++) \
+				ret[pos]=val[pos]; \
+			ret[len]=0; \
+		} \
+	} \
+} \
+
 #endif
 
 #ifdef USE_CRYPTLIB
