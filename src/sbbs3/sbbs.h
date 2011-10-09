@@ -133,7 +133,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), &JSSTSlen))) { \
 			if(((ret)=(char *)alloca(JSSTSlen+1))) { \
 				for(JSSTSpos=0; JSSTSpos<JSSTSlen; JSSTSpos++) \
-					(ret)[JSSTSpos]=JSSTSstrval[pos]; \
+					(ret)[JSSTSpos]=JSSTSstrval[JSSTSpos]; \
 				(ret)[JSSTSlen]=0; \
 			} \
 		} \
