@@ -326,6 +326,8 @@ js_gc(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool			forced=JS_TRUE;
 	js_branch_t*	branch;
 
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
 	if((branch=(js_branch_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -361,6 +363,8 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	js_branch_t*	branch;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((branch=(js_branch_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
