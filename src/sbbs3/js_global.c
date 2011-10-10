@@ -1019,7 +1019,8 @@ js_netaddr_type(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(smb_netaddr_type(str)));
@@ -1041,7 +1042,8 @@ js_rot13(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	if((p=strdup(str))==NULL)
@@ -2182,7 +2184,8 @@ js_skipsp(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	js_str = JS_NewStringCopyZ(cx, skipsp(str));
@@ -2207,7 +2210,8 @@ js_truncsp(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	if((p=strdup(str))==NULL)
@@ -2239,7 +2243,8 @@ js_truncstr(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	if((set=js_ValueToStringBytes(cx, argv[1], NULL))==NULL) 
@@ -2273,7 +2278,8 @@ js_backslash(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 	
 	SAFECOPY(path,str);
@@ -2301,7 +2307,8 @@ js_fullpath(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	SAFECOPY(path,str);
@@ -2330,7 +2337,8 @@ js_getfname(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	js_str = JS_NewStringCopyZ(cx, getfname(str));
@@ -2355,7 +2363,8 @@ js_getfext(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	if((p=getfext(str))==NULL)
@@ -2384,7 +2393,8 @@ js_getfcase(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	SAFECOPY(path,str);
@@ -2419,7 +2429,8 @@ js_dosfname(JSContext *cx, uintN argc, jsval *arglist)
 
 #if defined(_WIN32)
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);

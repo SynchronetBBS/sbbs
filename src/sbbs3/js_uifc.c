@@ -316,7 +316,8 @@ js_uifc_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], str);
+	if(str==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
