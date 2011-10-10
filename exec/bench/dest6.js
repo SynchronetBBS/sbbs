@@ -198,7 +198,7 @@ while (test32.read() == undefined) {
 	log(test32.read());
 }
 
-var test33_file = new File("/home/cyan/sbbs/exec/test.ini");
+var test33_file = new File("test.ini");
 test33_file.open("w+");
 test33_file.iniSetValue("test", "Date", new Date("April 17, 1980 03:00:00"));
 test33_file.iniSetValue("test", "Double", 13.37);
@@ -206,11 +206,11 @@ test33_file.iniSetValue("test", "Integer", 1337);
 test33_file.iniSetValue("test", "Boolean", true);
 test33_file.close();
 
-var test34_file = new File("/home/cyan/sbbs/exec/test.ini");
+var test34_file = new File("test.ini");
 test34_file.open("r+");
 var test34 = test34_file.iniGetObject("test");
 test34_file.close();
-file_remove("/home/cyan/sbbs/exec/test.ini");
+file_remove("test.ini");
 if (   (test34.Date != "April 17, 1980 03:00:00")
     || (test34.Double != 13.37)
     || (test34.Integer != 1337)
@@ -220,8 +220,7 @@ if (   (test34.Date != "April 17, 1980 03:00:00")
 //	exit();
 }
 
-log('-----');
-log(test34.toSource());
-log('-----');
+log("*** Everything appears to have passed. ***");
+
 exit();
 
