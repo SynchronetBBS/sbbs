@@ -774,7 +774,8 @@ js_ascii_str(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL)
 		return(JS_FALSE);
 
 	if((buf=strdup(p))==NULL)
@@ -806,7 +807,8 @@ js_strip_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	buf=strip_ctrl(p, NULL);
@@ -834,7 +836,8 @@ js_strip_exascii(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	buf=strip_exascii(p, NULL);
@@ -2483,7 +2486,8 @@ js_fexist(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2505,7 +2509,8 @@ js_removecase(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2527,7 +2532,8 @@ js_remove(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2657,7 +2663,8 @@ js_isdir(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2680,7 +2687,8 @@ js_fattr(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2704,7 +2712,8 @@ js_fdate(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2768,7 +2777,8 @@ js_flength(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2849,7 +2859,8 @@ js_sound(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2885,7 +2896,8 @@ js_directory(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	if(argc>1)
@@ -2966,7 +2978,8 @@ js_freediskspace(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	if(argc>1)
@@ -2995,7 +3008,8 @@ js_disksize(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	if(argc>1)
@@ -3108,7 +3122,8 @@ js_mkdir(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -3130,7 +3145,8 @@ js_mkpath(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -3152,7 +3168,8 @@ js_rmdir(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -3215,7 +3232,8 @@ js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -3247,7 +3265,8 @@ js_resolve_host(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p)
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
