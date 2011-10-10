@@ -867,7 +867,7 @@ js_lfexpand(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JSVALUE_TO_STRING(cx, argv[0], inbuf);
-	if(inbif==NULL)
+	if(inbuf==NULL)
 		return(JS_FALSE);
 
 	if((outbuf=(char*)malloc((strlen(inbuf)*2)+1))==NULL)
@@ -908,7 +908,7 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JSVALUE_TO_STRING(cx, argv[0], inbuf);
-	if(inbif==NULL) 
+	if(inbuf==NULL) 
 		return(JS_FALSE);
 
 	if(argc>1)
@@ -956,7 +956,7 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JSVALUE_TO_STRING(cx, argv[0], inbuf);
-	if(inbif==NULL) 
+	if(inbuf==NULL) 
 		return(JS_FALSE);
 
 	if(argc>1)
@@ -1293,7 +1293,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	JSVALUE_TO_STRING(cx, argv[0], inbuf);
-	if(inbif==NULL)
+	if(inbuf==NULL)
 		return(JS_FALSE);
 
 	if(argc>1 && JSVAL_IS_BOOLEAN(argv[1]))
@@ -1961,7 +1961,7 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JSVALUE_TO_STRING(cx, argv[0], inbuf);
-	if(inbif==NULL) 
+	if(inbuf==NULL) 
 		return(JS_FALSE);
 
 	if((outbuf=(char*)malloc(strlen(inbuf)+1))==NULL)
@@ -2110,7 +2110,7 @@ js_b64_decode(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JSVALUE_TO_STRING(cx, argv[0], inbuf);
-	if(inbif==NULL) 
+	if(inbuf==NULL) 
 		return(JS_FALSE);
 
 	len=strlen(inbuf)+1;
