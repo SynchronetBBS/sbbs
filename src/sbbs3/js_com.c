@@ -187,8 +187,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	str = JS_ValueToString(cx, argv[0]);
-	cp	= JS_GetStringBytes(str);
+	JSVALUE_TO_STRING(cx, argv[0], cp);
 	len	= JS_GetStringLength(str);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -226,8 +225,8 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if((str = JS_ValueToString(cx, argv[0]))==NULL
-		|| (fname=JS_GetStringBytes(str))==NULL) {
+	JSVALUE_TO_STRING(cx, argv[0], fname);
+	if(fname==NULL) {
 		JS_ReportError(cx,"Failure reading filename");
 		return(JS_FALSE);
 	}
@@ -733,7 +732,7 @@ static JSBool js_com_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_com_properties, js_com_functions, NULL, 0));
@@ -771,8 +770,9 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	obj=JS_NewObject(cx, &js_com_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
-	if(argc==0 || (str = JS_ValueToString(cx, argv[0]))==NULL
-		|| (fname=JS_GetStringBytes(str))==NULL) {
+	if(argc > 0)
+		JSVALUE_TO_STRING(cx, argv[0], fname);
+	if(argc==0 || fname==NULL) {
 		JS_ReportError(cx,"Failure reading port name");
 		return(JS_FALSE);
 	}

@@ -1073,8 +1073,6 @@ extern "C" {
 	DLLEXPORT void		DLLCALL js_EvalOnExit(JSContext*, JSObject*, js_branch_t*);
 	DLLEXPORT void		DLLCALL	js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir);
 	DLLEXPORT char*		DLLCALL js_getstring(JSContext *cx, JSString *str);
-	DLLEXPORT char*		DLLCALL JS_GetStringBytes_dumbass(JSContext *cx, JSString *str);
-	#define JS_GetStringBytes(str)	JS_GetStringBytes_dumbass(cx, str)
 
 	/* js_system.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent

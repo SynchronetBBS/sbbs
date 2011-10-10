@@ -384,6 +384,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	str=NULL;
 	FILE*	fp;
 	jsrefcount	rc;
+	char		*p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -394,8 +395,9 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		str = JS_ValueToString(cx, argv[i]);
 		if (!str)
 		    return JS_FALSE;
+		JSSTRING_TO_STRING(cx, str, p);
 		rc=JS_SUSPENDREQUEST(cx);
-		fprintf(fp,"%s",JS_GetStringBytes(str));
+		fprintf(fp,"%s", p);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 

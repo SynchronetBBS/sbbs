@@ -703,7 +703,8 @@ js_ascii(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_STRING(argv[0])) {	/* string to ascii-int */
 
-		if((p=JS_GetStringBytes(JSVAL_TO_STRING(argv[0])))==NULL) 
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[0]), p);
+		if(p==NULL) 
 			return(JS_FALSE);
 
 		JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(*p));
@@ -740,7 +741,8 @@ js_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_STRING(argv[0])) {	
 
-		if((p=JS_GetStringBytes(JSVAL_TO_STRING(argv[0])))==NULL) 
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[0]), p);
+		if(p==NULL) 
 			return(JS_FALSE);
 		ch=*p;
 	} else {
@@ -3317,7 +3319,8 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_STRING(argv[0])) {	/* string to long */
 
-		if((p=JS_GetStringBytes(JSVAL_TO_STRING(argv[0])))==NULL) 
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[0]), p);
+		if(p==NULL) 
 			return(JS_FALSE);
 
 		JS_SET_RVAL(cx, arglist,DOUBLE_TO_JSVAL((double)aftol(p)));
@@ -3754,7 +3757,7 @@ static JSBool js_global_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	if(p->methods) {

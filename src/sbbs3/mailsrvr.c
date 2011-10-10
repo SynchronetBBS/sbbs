@@ -1693,6 +1693,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	str=NULL;
 	private_t*	p;
 	jsrefcount	rc;
+	char		*lstr;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1703,11 +1704,12 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx,argv[i++],&level);
 
 	for(; i<argc; i++) {
-		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+		JSVALUE_TO_STRING(cx, argv[i], lstr);
+		if(lstr==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
 		lprintf(level,"%04d %s %s %s"
-			,p->sock,p->log_prefix,p->proc_name,JS_GetStringBytes(str));
+			,p->sock,p->log_prefix,p->proc_name,lstr);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 

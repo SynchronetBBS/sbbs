@@ -372,9 +372,8 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, argv[0]);
 
 	for(i=0; i<argc; i++) {
-		if((str=JS_ValueToString(cx, argv[i]))==NULL)
-			continue;
-		if((cp=JS_GetStringBytes(str))==NULL)
+		JSVALUE_TO_STRING(cx, argv[i], cp);
+		if(cp==NULL)
 			continue;
 		rc=JS_SUSPENDREQUEST(cx);
 		sendsocket(client->socket,cp,strlen(cp));
@@ -419,6 +418,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	js_str;
 	service_client_t* client;
 	jsrefcount	rc;
+	char		*line;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -433,9 +433,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 
 	str[0]=0;
     for(;i<argc && strlen(str)<(sizeof(str)/2);i++) {
-		if((js_str=JS_ValueToString(cx, argv[i]))==NULL)
+		JSVALUE_TO_STRING(cx, argv[i], line);
+		if(line==NULL)
 		    return(JS_FALSE);
-		strncat(str,JS_GetStringBytes(js_str),sizeof(str)/2);
+		strncat(str,line,sizeof(str)/2);
 		strcat(str," ");
 	}
 
@@ -691,6 +692,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	SOCKADDR_IN	addr;
 	service_client_t* service_client;
 	jsrefcount	rc;
+	char		*cstr;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -716,11 +718,15 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 		client.port=ntohs(addr.sin_port);
 	}
 
-	if(argc>1)
-		client.user=JS_GetStringBytes(JS_ValueToString(cx,argv[1]));
+	if(argc>1) {
+		JSVALUE_TO_STRING(cx, argv[1], cstr);
+		client.user=cstr;
+	}
 
-	if(argc>2)
-		SAFECOPY(client.host,JS_GetStringBytes(JS_ValueToString(cx,argv[2])));
+	if(argc>2) {
+		JSVALUE_TO_STRING(cx, argv[2], cstr);
+		SAFECOPY(client.host,cstr);
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	client_on(sock, &client, /* update? */ FALSE);
@@ -744,6 +750,7 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 	SOCKADDR_IN	addr;
 	service_client_t* service_client;
 	jsrefcount	rc;
+	char		*cstr;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -764,11 +771,15 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 		client.port=ntohs(addr.sin_port);
 	}
 
-	if(argc>1)
-		client.user=JS_GetStringBytes(JS_ValueToString(cx,argv[1]));
+	if(argc>1) {
+		JSVALUE_TO_STRING(cx, argv[1], cstr);
+		client.user=cstr;
+	}
 
-	if(argc>2)
-		SAFECOPY(client.host,JS_GetStringBytes(JS_ValueToString(cx,argv[2])));
+	if(argc>2) {
+		JSVALUE_TO_STRING(cx, argv[2], cstr);
+		SAFECOPY(client.host,cstr);
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	client_on(sock, &client, /* update? */ TRUE);

@@ -41,7 +41,7 @@
 char* DLLCALL
 js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 {
-	char*		p;
+	char*		p,*p2;
     JSString*	str;
 
 	if((p=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL)
@@ -56,9 +56,10 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 		else if(JSVAL_IS_BOOLEAN(argv[argn]) && xp_printf_get_type(p)!=XP_PRINTF_TYPE_CHARP)
 			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,JSVAL_TO_BOOLEAN(argv[argn]));
 		else {
-			if((str=JS_ValueToString(cx, argv[argn]))==NULL)
-			    return(NULL);
-			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_CHARP,JS_GetStringBytes(str));
+			JSVALUE_TO_STRING(cx, argv[argn], p2);
+			if(p2==NULL)
+				return NULL;
+			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_CHARP,p2);
 		}
 	}
 

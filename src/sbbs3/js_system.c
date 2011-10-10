@@ -698,7 +698,7 @@ static JSBool js_sysstats_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_sysstats_properties, NULL, NULL, 0));
@@ -743,7 +743,8 @@ js_alias(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-	if((p=JS_GetStringBytes(js_str))==NULL) {
+	JSSTRING_TO_STRING(cx, js_str, p);
+	if(p==NULL) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
 		return(JS_TRUE);
 	}
@@ -813,7 +814,8 @@ js_matchuser(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc>1)
 		JS_ValueToBoolean(cx,argv[1],&sysop_alias);
 
-	if((p=JS_GetStringBytes(js_str))==NULL) {
+	JSSTRING_TO_STRING(cx, js_str, p);
+	if(p==NULL) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
 		return(JS_TRUE);
 	}
@@ -862,8 +864,9 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx, argv[argnum++], &usernumber);
 	if(JSVAL_IS_BOOLEAN(argv[argnum]))
 		JS_ValueToBoolean(cx, argv[argnum], &match_next);
-		
-	if((p=JS_GetStringBytes(js_str))==NULL) {
+	
+	JSSTRING_TO_STRING(cx, js_str, p);
+	if(p==NULL) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
 		return(JS_TRUE);
 	}
@@ -901,12 +904,14 @@ js_trashcan(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-	if((can=JS_GetStringBytes(js_can))==NULL) {
+	JSSTRING_TO_STRING(cx, js_can, can);
+	if(can==NULL) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 		return(JS_TRUE);
 	}
 
-	if((str=JS_GetStringBytes(js_str))==NULL) {
+	JSSTRING_TO_STRING(cx, js_str, str);
+	if(str==NULL) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 		return(JS_TRUE);
 	}
@@ -938,12 +943,14 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-	if((fname=JS_GetStringBytes(js_fname))==NULL) {
+	JSSTRING_TO_STRING(cx, js_fname, fname);
+	if(fname==NULL) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 		return(JS_TRUE);
 	}
 
-	if((str=JS_GetStringBytes(js_str))==NULL) {
+	JSSTRING_TO_STRING(cx, js_str, str);
+	if(str==NULL) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 		return(JS_TRUE);
 	}
@@ -1031,6 +1038,7 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 	time_t		t;
 	JSString*	js_str;
 	scfg_t*		cfg;
+	char		*p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1041,7 +1049,8 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 		t=time(NULL);	/* use current time */
 	else {
 		if(JSVAL_IS_STRING(argv[0])) {	/* convert from string to time_t? */
-			JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((double)dstrtounix(cfg,JS_GetStringBytes(JS_ValueToString(cx, argv[0])))));
+			JSVALUE_TO_STRING(cx, argv[0], p);
+			JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((double)dstrtounix(cfg, p)));
 			return(JS_TRUE);
 		}
 		JS_ValueToInt32(cx,argv[0],(int32*)&t);
@@ -1102,7 +1111,7 @@ js_spamlog(JSContext *cx, uintN argc, jsval *arglist)
 	for(i=0;i<argc;i++) {
 		if(!JSVAL_IS_STRING(argv[i]))
 			continue;
-		p=JS_GetStringBytes(JS_ValueToString(cx, argv[i]));
+		JSVALUE_TO_STRING(cx, argv[i], p);
 		if(p==NULL)
 			continue;
 		if(prot==NULL)
@@ -1159,7 +1168,7 @@ js_hacklog(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		if(!JSVAL_IS_STRING(argv[i]))
 			continue;
-		p=JS_GetStringBytes(JS_ValueToString(cx, argv[i]));
+		JSVALUE_TO_STRING(cx, argv[i], p);
 		if(p==NULL)
 			continue;
 		if(prot==NULL)
@@ -1201,7 +1210,7 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 	for(i=0;i<argc;i++) {
 		if(!JSVAL_IS_STRING(argv[i]))
 			continue;
-		p=JS_GetStringBytes(JS_ValueToString(cx, argv[i]));
+		JSVALUE_TO_STRING(cx, argv[i], p);
 		if(p==NULL)
 			continue;
 		if(prot==NULL)
@@ -1283,7 +1292,8 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
 		return(JS_FALSE);
 
-	if((msg=JS_GetStringBytes(js_msg))==NULL) 
+	JSSTRING_TO_STRING(cx, js_msg, msg);
+	if(msg==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1351,7 +1361,8 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
 		return(JS_FALSE);
 
-	if((msg=JS_GetStringBytes(js_msg))==NULL) 
+	JSSTRING_TO_STRING(cx, js_msg, msg);
+	if(msg==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1380,7 +1391,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	alias=JS_GetStringBytes(JS_ValueToString(cx,argv[0]));
+	JSVALUE_TO_STRING(cx, argv[0], alias);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(!check_name(cfg,alias)) {
@@ -1464,9 +1475,11 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
+	char	*cmd;
 
+	JSVALUE_TO_STRING(cx, argv[0], cmd);
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(system(JS_GetStringBytes(JS_ValueToString(cx, argv[0])))));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(system(cmd)));
 	JS_RESUMEREQUEST(cx, rc);
 	
 	return(JS_TRUE);
@@ -1494,7 +1507,7 @@ js_popen(JSContext *cx, uintN argc, jsval *arglist)
 	if((array=JS_NewArrayObject(cx,0,NULL))==NULL)
 		return(JS_FALSE);
 
-	cmd=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	JSVALUE_TO_STRING(cx, argv[0], cmd);
 	rc=JS_SUSPENDREQUEST(cx);
 	if((fp=popen(cmd,"r"))==NULL) {
 		JS_RESUMEREQUEST(cx, rc);
@@ -1529,15 +1542,16 @@ js_chksyspass(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	scfg_t*		cfg;
+	char		*pass;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(stricmp(JS_GetStringBytes(JS_ValueToString(cx, argv[0]))
-								,cfg->sys_pass)==0));
-	
+	JSVALUE_TO_STRING(cx, argv[0], pass);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(stricmp(pass,cfg->sys_pass)==0));
+
 	return(JS_TRUE);
 }
 
@@ -1552,7 +1566,7 @@ js_chkname(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	str = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	JSVALUE_TO_STRING(cx, argv[0], str);
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
@@ -1914,7 +1928,7 @@ static JSBool js_node_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_node_properties, NULL, NULL, 0));
@@ -1989,7 +2003,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	/****************************/

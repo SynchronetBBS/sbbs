@@ -3965,6 +3965,8 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
     JSString*	str=NULL;
 	http_session_t* session;
 	jsrefcount	rc;
+	char		*cstr;
+	size_t		len;
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -4006,10 +4008,10 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
     for(i=0; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			continue;
-		if(JS_GetStringLength(str)<1 && !writeln)
-			continue;
+		len=JS_GetStringLength(str);
+		JSSTRING_TO_STRING(cx, str, cstr);
 		rc=JS_SUSPENDREQUEST(cx);
-		js_writebuf(session,JS_GetStringBytes(str), JS_GetStringLength(str));
+		js_writebuf(session, cstr, len);
 		if(writeln)
 			js_writebuf(session, newline, 2);
 		JS_RESUMEREQUEST(cx, rc);
@@ -4119,6 +4121,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	js_str;
 	http_session_t* session;
 	jsrefcount	rc;
+	char		*val;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -4133,9 +4136,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 
 	str[0]=0;
     for(;i<argc && strlen(str)<(sizeof(str)/2);i++) {
-		if((js_str=JS_ValueToString(cx, argv[i]))==NULL)
+		JSVALUE_TO_STRING(cx, argv[i], val);
+		if(val==NULL)
 		    return(JS_FALSE);
-		strncat(str,JS_GetStringBytes(js_str),sizeof(str)/2);
+		strncat(str,val,sizeof(str)/2);
 		strcat(str," ");
 	}
 
@@ -4166,10 +4170,8 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	/* User name */
-	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
-		return(JS_FALSE);
-
-	if((p=JS_GetStringBytes(js_str))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], p);
+	if(p==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -4198,10 +4200,8 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	/* Password */
 	if(user.pass[0]) {
-		if((js_str=JS_ValueToString(cx, argv[1]))==NULL) 
-			return(JS_FALSE);
-
-		if((p=JS_GetStringBytes(js_str))==NULL) 
+		JSVALUE_TO_STRING(cx, argv[1], p);
+		if(p==NULL) 
 			return(JS_FALSE);
 
 		if(stricmp(user.pass,p)) { /* Wrong password */
@@ -4575,22 +4575,24 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 	int			i;
 	JSString*	js_str;
 	char		str[MAX_REQUEST_LINE+1];
+	char		*p,*p2;
 
 	JS_BEGINREQUEST(session->js_cx);
 	JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val);
 	reply = JSVAL_TO_OBJECT(val);
 	JS_GetProperty(session->js_cx,reply,"status",&val);
-	SAFECOPY(session->req.status,JS_GetStringBytes_dumbass(session->js_cx, JSVAL_TO_STRING(val)));
+	JSVALUE_TO_STRING(session->js_cx, val, p);
+	SAFECOPY(session->req.status,p);
 	JS_GetProperty(session->js_cx,reply,"header",&val);
 	headers = JSVAL_TO_OBJECT(val);
 	heads=JS_Enumerate(session->js_cx,headers);
 	if(heads != NULL) {
 		for(i=0;i<heads->length;i++)  {
 			JS_IdToValue(session->js_cx,heads->vector[i],&val);
-			js_str=JSVAL_TO_STRING(val);
-			JS_GetProperty(session->js_cx,headers,JS_GetStringBytes_dumbass(session->js_cx, js_str),&val);
-			safe_snprintf(str,sizeof(str),"%s: %s"
-				,JS_GetStringBytes_dumbass(session->js_cx, js_str),JS_GetStringBytes_dumbass(session->js_cx, JSVAL_TO_STRING(val)));
+			JSVALUE_TO_STRING(session->js_cx, val, p);
+			JS_GetProperty(session->js_cx,headers,p,&val);
+			JSVALUE_TO_STRING(session->js_cx, val, p2);
+			safe_snprintf(str,sizeof(str),"%s: %s",p,p2);
 			strListPush(&session->req.dynamic_heads,str);
 		}
 		JS_ClearScope(session->js_cx, headers);

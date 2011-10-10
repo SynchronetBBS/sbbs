@@ -167,6 +167,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	queued_value_t*	v;
 	int32 timeout=0;
 	jsrefcount	rc;
+	char	*p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -177,7 +178,8 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_STRING(argv[0])) {	/* value named specified */
 		ZERO_VAR(find_v);
-		SAFECOPY(find_v.name,JS_GetStringBytes(JS_ValueToString(cx,argv[0])));
+		JSVALUE_TO_STRING(cx, argv[0], p);
+		SAFECOPY(find_v.name,p);
 		rc=JS_SUSPENDREQUEST(cx);
 		v=msgQueueFind(q,&find_v,sizeof(find_v.name));
 		JS_RESUMEREQUEST(cx, rc);
@@ -241,6 +243,7 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
     JSObject*	obj;
 	JSIdArray*	id_array;
 	queued_value_t* nv;
+	char		*p;
 
 	if((nv=realloc(v,((*count)+1)*sizeof(queued_value_t)))==NULL) {
 		if(v) free(v);
@@ -277,7 +280,7 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 				/* property name */
 				JS_IdToValue(cx,id_array->vector[i],&prop_name);
 				if(JSVAL_IS_STRING(prop_name)) {
-					name=JS_GetStringBytes(JSVAL_TO_STRING(prop_name));
+					JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(prop_name), name);
 					/* value */
 					JS_GetProperty(cx,obj,name,&prop_val);
 				} else {
@@ -298,7 +301,8 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 		nv->type = JSTYPE_VOID;
 	} else {
 		nv->type= JSTYPE_STRING;
-		nv->value.s = strdup(JS_GetStringBytes(JS_ValueToString(cx,val)));
+		JSVALUE_TO_STRING(cx, val, p);
+		nv->value.s = strdup(p);
 	}
 
 	return(v);
@@ -341,7 +345,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	val = argv[argn++];
 
 	if(argn < argc)
-		name=JS_GetStringBytes(JS_ValueToString(cx,argv[argn++]));
+		JSVALUE_TO_STRING(cx, argv[argn++], name);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(js_enqueue_value(cx, q, val, name)));
 
@@ -450,7 +454,7 @@ static JSBool js_queue_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_queue_properties, js_queue_functions, NULL, 0));
@@ -500,7 +504,7 @@ js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 
 	if(argn<argc && JSVAL_IS_STRING(argv[argn]))
-		name=JS_GetStringBytes(JS_ValueToString(cx,argv[argn++]));
+		JSVALUE_TO_STRING(cx, argv[argn++], name);
 
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]))
 		JS_ValueToInt32(cx,argv[argn++],&flags);

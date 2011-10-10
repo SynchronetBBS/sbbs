@@ -420,10 +420,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_TRUE);
 
-	if((js_str=JS_ValueToString(cx,*vp))==NULL)
-		return(JS_FALSE);
-
-	if((str=JS_GetStringBytes(js_str))==NULL)
+	JSVALUE_TO_STRING(cx, *vp, str);
+	if(str==NULL)
 		return(JS_FALSE);
 
     JS_IdToValue(cx, id, &idval);
@@ -891,17 +889,19 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	js_str;
 	private_t*	p;
 	jsrefcount	rc;
+	char		*ars;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
-	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+	JSVALUE_TO_STRING(cx,argv[0], ars);
+	if(arstr==NULL)
 		return JS_FALSE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	ar = arstr(NULL,JS_GetStringBytes(js_str),p->cfg);
+	ar = arstr(NULL,ars,p->cfg);
 
 	js_getuserdat(p);
 
@@ -1152,7 +1152,7 @@ static JSBool js_user_stats_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_user_stats_properties, NULL, NULL, 0));
@@ -1171,7 +1171,7 @@ static JSBool js_user_security_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_user_security_properties, NULL, NULL, 0));
@@ -1190,7 +1190,7 @@ static JSBool js_user_limits_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_user_limits_properties, NULL, NULL, 0));
@@ -1253,7 +1253,7 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		name=JS_GetStringBytes(JSVAL_TO_STRING(idval));
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
 	}
 
 	if(name==NULL || strcmp(name, "stats")==0) {
