@@ -491,7 +491,8 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	/* Password */
-	if((pass=js_ValueToStringBytes(cx, argv[1], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[1], pass);
+	if(pass==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);

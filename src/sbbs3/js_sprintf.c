@@ -44,7 +44,8 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 	char*		p,*p2;
     JSString*	str;
 
-	if((p=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[argn++], p);
+	if(p==NULL)
 		return(NULL);
 
 	p=xp_asprintf_start(p);

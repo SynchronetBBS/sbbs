@@ -942,7 +942,8 @@ js_print(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
     for (i = 0; i < argc; i++) {
-		if((cstr=js_ValueToStringBytes(cx, argv[i], NULL))==NULL)
+		JSVALUE_TO_STRING(cx, argv[i], cstr);
+		if(cstr==NULL)
 		    return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
 		sbbs->bputs(cstr);

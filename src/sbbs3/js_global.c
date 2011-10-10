@@ -242,7 +242,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	char		path[MAX_PATH+1];
     uintN		i;
 	uintN		argn=0;
-    const char*	filename;
+    char*		filename;
     JSObject*	script;
 	private_t*	p;
 	jsval		val;
@@ -350,7 +350,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx,"no filename specified");
 		return(JS_FALSE);
 	}
-	if((filename=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[argn++], filename);
+	if(filename==NULL)
 		return(JS_FALSE);
 
 	if(argc>argn || background) {
@@ -2253,7 +2254,8 @@ js_truncstr(JSContext *cx, uintN argc, jsval *arglist)
 	if(str==NULL) 
 		return(JS_FALSE);
 
-	if((set=js_ValueToStringBytes(cx, argv[1], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[1], set);
+	if(set==NULL) 
 		return(JS_FALSE);
 
 	if((p=strdup(str))==NULL)
@@ -2480,7 +2482,8 @@ js_cfgfname(JSContext *cx, uintN argc, jsval *arglist)
 	if(path==NULL) 
 		return(JS_FALSE);
 
-	if((fname=js_ValueToStringBytes(cx, argv[1], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[1], fname);
+	if(fname==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2578,7 +2581,8 @@ js_rename(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_STRING(cx, argv[0], oldname);
 	if(oldname==NULL)
 		return(JS_TRUE);
-	if((newname=js_ValueToStringBytes(cx, argv[1], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[1], newname);
+	if(newname==NULL)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2605,7 +2609,8 @@ js_fcopy(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_STRING(cx, argv[0], src);
 	if(src==NULL)
 		return(JS_TRUE);
-	if((dest=js_ValueToStringBytes(cx, argv[1], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[1], dest);
+	if(dest==NULL)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2632,7 +2637,8 @@ js_fcompare(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_STRING(cx, argv[0], fn1);
 	if(fn1==NULL)
 		return(JS_TRUE);
-	if((fn2=js_ValueToStringBytes(cx, argv[1], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[1], fn2);
+	if(fn2==NULL)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2851,7 +2857,8 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((fname=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[argn++], fname);
+	if(fname==NULL) 
 		return(JS_FALSE);
 	if(argc > argn && JSVAL_IS_STRING(argv[argn]))
 		text=js_ValueToStringBytes(cx, argv[argn++], NULL);
@@ -2966,11 +2973,13 @@ js_wildmatch(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_BOOLEAN(argv[argn]))
 		JS_ValueToBoolean(cx, argv[argn++], &case_sensitive);
 
-	if((fname=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[argn++], fname);
+	if(fname==NULL) 
 		return(JS_FALSE);
 
 	if(argn<argc && argv[argn]!=JSVAL_VOID)
-		if((spec=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL) 
+		JSVALUE_TO_STRING(cx, argv[argn++], spec);
+		if(spec==NULL) 
 			return(JS_FALSE);
 
 	if(argn<argc && argv[argn]!=JSVAL_VOID)
