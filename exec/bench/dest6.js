@@ -92,7 +92,7 @@ if (test13.data_waiting) {
 	exit();
 }
 
-var test16 = new File("test.txt");
+var test16 = new File(system.temp_dir + "test.txt");
 if (typeof(test16) != 'object') {
 	log(LOG_ERROR, "Couldn't create file object?!");
 	exit();
@@ -158,7 +158,7 @@ if (test25 != undefined) {
 	exit();
 }
 
-var test26 = test16.remove("test.txt");
+var test26 = test16.remove(system.temp_dir + "test.txt");
 if (test26 != true) {
 	log(LOG_ERROR, "Couldn't remove test.txt");
 	exit();
@@ -198,7 +198,7 @@ while (test32.read() == undefined) {
 	log(test32.read());
 }
 
-var test33_file = new File("test.ini");
+var test33_file = new File(system.temp_dir + "test.ini");
 test33_file.open("w+");
 test33_file.iniSetValue("test", "Date", new Date("April 17, 1980 03:00:00"));
 test33_file.iniSetValue("test", "Double", 13.37);
@@ -206,7 +206,7 @@ test33_file.iniSetValue("test", "Integer", 1337);
 test33_file.iniSetValue("test", "Boolean", true);
 test33_file.close();
 
-var test34_file = new File("test.ini");
+var test34_file = new File(system.temp_dir + "test.ini");
 test34_file.open("r+");
 var test34 = test34_file.iniGetObject("test");
 test34_file.close();
@@ -215,12 +215,12 @@ if (   (typeof(test34.Date) != "string")
     || (test34.Integer != 1337)
     || (test34.Boolean != true)
 ) {
-	file_remove("test.ini");
+	file_remove(system.temp_dir + "test.ini");
 	log("INI object readback values don't match!");
 	exit();
 }
 
-var test35_file = new File("test.ini");
+var test35_file = new File(system.temp_dir + "test.ini");
 test35_file.open("r+");
 var test35={};
 test35.Date = test35_file.iniGetValue("test", "Date", new Date());
@@ -238,11 +238,11 @@ if (   (test35.Date.getTime() != (new Date("April 17, 1980 03:00:00")).getTime()
 	log(test35.Double+" != 13.37");
 	log(test35.Integer+" != 1337");
 	log(test35.Boolean+" != true");
-	file_remove("test.ini");
+	file_remove(system.temp_dir + "test.ini");
 	exit();
 }
 
-var test36_file = new File("test.ini");
+var test36_file = new File(system.temp_dir + "test.ini");
 test36_file.open("r+");
 test36_file.truncate();
 var test36={};
@@ -251,7 +251,7 @@ test36.Double = test36_file.iniGetValue("test", "Double", 13.37);
 test36.Integer = test36_file.iniGetValue("test", "Integer", 1337);
 test36.Boolean = test36_file.iniGetValue("test", "Boolean", true);
 test36_file.close();
-file_remove("test.ini");
+file_remove(system.temp_dir + "test.ini");
 if (   (test36.Date.getTime() != (new Date("April 17, 1980 03:00:00")).getTime())
     || (test36.Double != 13.37)
     || (test36.Integer != 1337)
