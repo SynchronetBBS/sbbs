@@ -486,7 +486,8 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	/* User name or number */
-	if((user=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], user);
+	if(user==NULL) 
 		return(JS_FALSE);
 
 	/* Password */

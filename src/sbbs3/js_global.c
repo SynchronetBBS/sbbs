@@ -2476,7 +2476,8 @@ js_cfgfname(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((path=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], path);
+	if(path==NULL) 
 		return(JS_FALSE);
 
 	if((fname=js_ValueToStringBytes(cx, argv[1], NULL))==NULL) 
@@ -2574,7 +2575,8 @@ js_rename(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-	if((oldname=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], oldname);
+	if(oldname==NULL)
 		return(JS_TRUE);
 	if((newname=js_ValueToStringBytes(cx, argv[1], NULL))==NULL)
 		return(JS_TRUE);
@@ -2600,7 +2602,8 @@ js_fcopy(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-	if((src=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], src);
+	if(src==NULL)
 		return(JS_TRUE);
 	if((dest=js_ValueToStringBytes(cx, argv[1], NULL))==NULL)
 		return(JS_TRUE);
@@ -2626,7 +2629,8 @@ js_fcompare(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-	if((fn1=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], fn1);
+	if(fn1==NULL)
 		return(JS_TRUE);
 	if((fn2=js_ValueToStringBytes(cx, argv[1], NULL))==NULL)
 		return(JS_TRUE);
@@ -2653,7 +2657,8 @@ js_backup(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-	if((fname=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], fname);
+	if(fname==NULL)
 		return(JS_TRUE);
 
 	if(argc>1)
@@ -2758,7 +2763,8 @@ js_utime(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if((fname=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], fname);
+	if(fname==NULL) 
 		return(JS_FALSE);
 
 	/* use current time as default */
@@ -2819,7 +2825,8 @@ js_ftouch(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((fname=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], fname);
+	if(fname==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -3214,7 +3221,8 @@ js_strftime(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((fmt=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], fmt);
+	if(fmt==NULL) 
 		return(JS_FALSE);
 
 	if(argc>1)
