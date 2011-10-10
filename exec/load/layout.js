@@ -302,9 +302,12 @@ function Layout_View(name,x,y,w,h)
 	
 	/* update loop */
 	this.cycle=function() {
-		for(var t=0;t<tabs.length;t++) {
+		for(var t in tabs) {
 			if(typeof tabs[t].cycle == "function") 
 				tabs[t].cycle();
+			/* verify tab existance in case tab	self-deleted */
+			if(!tabs[t])
+				continue;
 			/* if this tab is flagged for an update */
 			if(tabs[t].update) {
 				/* clear tab update flag */
@@ -733,16 +736,20 @@ Tab_Templates["CHAT"]=function()
 		this.window.update=update;
 	});
 	this.cycle=function() {
-		this.channel=this.chat.channels[this.name.toUpperCase()];
-		if(!this.channel)
+		/* verify local channel cache */
+		if(!this.chat.channels[this.name.toUpperCase()]) {
+			this.parent_view.del_tab(this.name);
 			return;
+		}	
+
+		this.channel=this.chat.channels[this.name.toUpperCase()];
 		/* move any waiting messages to window */
 		while(this.channel.messages.length > 0) {
 			new_messages = true;
 			var msg = this.channel.messages.shift();
 			var str = 
-				getColor(chat_settings.NICK_COLOR) + msg.nick.name + 
-				getColor(chat_settings.TEXT_COLOR) + ": " + msg.str;
+				getColor(this.chat.settings.NICK_COLOR) + msg.nick.name + 
+				getColor(this.chat.settings.TEXT_COLOR) + ": " + msg.str;
 			this.window.post(str);
 		}
 	}
@@ -953,21 +960,12 @@ for(var tt in Tab_Templates)
 from a view automatically  */
 function updateChatView(chat,view) 
 {
+	/* synchronize channel list with chat object */
 	for(var c in chat.channels) {
 		var chan = chat.channels[c];
-		
 		/* if we do not have a tab matching a joined channel, 
 		add a new tab for that channel */
 		if(!view.tab(chan.name)) 
 			view.add_tab("chat",chan.name,chat);
-	}
-	
-	/* verify local channel cache */
-	for(var v=0;v<view.tabs.length;v++) {
-		var chan = view.tabs[v];
-		if(!chat.channels[chan.toUpperCase()]) {
-			view.del_tab(chan);
-			v--;
-		}	
 	}
 }
