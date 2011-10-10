@@ -341,7 +341,7 @@ js_uifc_pop(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc)
-		str=js_ValueToStringBytes(cx, argv[0], NULL);
+		JSVALUE_TO_STRING(cx, argv[0], str);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	uifc->pop(str);

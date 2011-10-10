@@ -4064,11 +4064,11 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	header=header_buf;
-	p=js_ValueToStringBytes(cx, argv[0],NULL);
+	JSVALUE_TO_STRING(cx, argv[0], p);
 	if(!p)
 		return(JS_FALSE);
 	header+=sprintf(header,"Set-Cookie: %s=",p);
-	p=js_ValueToStringBytes(cx, argv[1],NULL);
+	JSVALUE_TO_STRING(cx, argv[1], p);
 	if(!p)
 		return(JS_FALSE);
 	header+=sprintf(header,"%s",p);

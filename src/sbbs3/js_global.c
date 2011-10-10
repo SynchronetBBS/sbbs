@@ -964,7 +964,7 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx,argv[1],&len);
 
 	if(argc>2)
-		prefix=js_ValueToStringBytes(cx, argv[2], NULL);
+		JSVALUE_TO_STRING(cx, argv[2], prefix);
 
 	if((outbuf=(char*)malloc((strlen(inbuf)*(strlen(prefix)+1))+1))==NULL)
 		return(JS_FALSE);
@@ -2861,7 +2861,7 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 	if(fname==NULL) 
 		return(JS_FALSE);
 	if(argc > argn && JSVAL_IS_STRING(argv[argn]))
-		text=js_ValueToStringBytes(cx, argv[argn++], NULL);
+		JSVALUE_TO_STRING(cx, argv[argn++], text);
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn]))
 		JS_ValueToInt32(cx, argv[argn++], &max_age);
 
