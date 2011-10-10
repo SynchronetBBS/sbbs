@@ -210,14 +210,59 @@ var test34_file = new File("test.ini");
 test34_file.open("r+");
 var test34 = test34_file.iniGetObject("test");
 test34_file.close();
-file_remove("test.ini");
-if (   (test34.Date != "April 17, 1980 03:00:00")
+if (   (typeof(test34.Date) != "string")
     || (test34.Double != 13.37)
     || (test34.Integer != 1337)
     || (test34.Boolean != true)
 ) {
-	log("INI readback values don't match!");
-//	exit();
+	file_remove("test.ini");
+	log("INI object readback values don't match!");
+	exit();
+}
+
+var test35_file = new File("test.ini");
+test35_file.open("r+");
+var test35={};
+test35.Date = test35_file.iniGetValue("test", "Date", new Date());
+test35.Double = test35_file.iniGetValue("test", "Double", 97.73);
+test35.Integer = test35_file.iniGetValue("test", "Integer", 9773);
+test35.Boolean = test35_file.iniGetValue("test", "Boolean", false);
+test35_file.close();
+if (   (test35.Date.getTime() != (new Date("April 17, 1980 03:00:00")).getTime())
+    || (test35.Double != 13.37)
+    || (test35.Integer != 1337)
+    || (test35.Boolean != true)
+) {
+	log("INI value readback values don't match!");
+	log(test35.Date+"("+test35.Date.getTime()+") != "+new Date("April 17, 1980 03:00:00")+" ("+(new Date("April 17, 1980 03:00:00")).getTime()+")");
+	log(test35.Double+" != 13.37");
+	log(test35.Integer+" != 1337");
+	log(test35.Boolean+" != true");
+	file_remove("test.ini");
+	exit();
+}
+
+var test36_file = new File("test.ini");
+test36_file.open("r+");
+test36_file.truncate();
+var test36={};
+test36.Date = test36_file.iniGetValue("test", "Date", new Date("April 17, 1980 03:00:00"));
+test36.Double = test36_file.iniGetValue("test", "Double", 13.37);
+test36.Integer = test36_file.iniGetValue("test", "Integer", 1337);
+test36.Boolean = test36_file.iniGetValue("test", "Boolean", true);
+test36_file.close();
+file_remove("test.ini");
+if (   (test36.Date.getTime() != (new Date("April 17, 1980 03:00:00")).getTime())
+    || (test36.Double != 13.37)
+    || (test36.Integer != 1337)
+    || (test36.Boolean != true)
+) {
+	log("INI default value read values don't match!");
+	log(test36.Date+"("+test36.Date.getTime()+") != "+new Date("April 17, 1980 03:00:00")+" ("+(new Date("April 17, 1980 03:00:00")).getTime()+")");
+	log(test36.Double+" != 13.37");
+	log(test36.Integer+" != 1337");
+	log(test36.Boolean+" != true");
+	exit();
 }
 
 log("*** Everything appears to have passed. ***");
