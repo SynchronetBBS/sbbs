@@ -866,7 +866,8 @@ js_lfexpand(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((inbuf=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	if(inbif==NULL)
 		return(JS_FALSE);
 
 	if((outbuf=(char*)malloc((strlen(inbuf)*2)+1))==NULL)
@@ -906,7 +907,8 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((inbuf=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	if(inbif==NULL) 
 		return(JS_FALSE);
 
 	if(argc>1)
@@ -953,7 +955,8 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((inbuf=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	if(inbif==NULL) 
 		return(JS_FALSE);
 
 	if(argc>1)
@@ -1289,7 +1292,8 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
 		return(JS_FALSE);
 
-	if((inbuf=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	if(inbif==NULL)
 		return(JS_FALSE);
 
 	if(argc>1 && JSVAL_IS_BOOLEAN(argv[1]))
@@ -1956,7 +1960,8 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((inbuf=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	if(inbif==NULL) 
 		return(JS_FALSE);
 
 	if((outbuf=(char*)malloc(strlen(inbuf)+1))==NULL)
@@ -2104,7 +2109,8 @@ js_b64_decode(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((inbuf=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	if(inbif==NULL) 
 		return(JS_FALSE);
 
 	len=strlen(inbuf)+1;
