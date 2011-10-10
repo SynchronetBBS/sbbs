@@ -150,8 +150,7 @@ function removeFirstWord(text)
 }
 function removeSpaces(text)
 {
-	while(text[0]==" ") text=text.substr(1);
-	return truncsp(text);
+	return text.replace(/^\s*/,"").replace(/\s*$/,"");
 }
 function splitPadded(string1,string2,length,padding)
 {
@@ -174,8 +173,7 @@ function printPadded(string,length,padding,justification)
 	if(!padding) padding=" ";
 	if(!justification) justification="left";
 	var strlength=console.strlen(string);
-	if(strlength>length)
-	{
+	if(strlength>length) {
 		string=string.substring(0,length);
 	}
 	var padlength=length-strlength;
@@ -190,14 +188,12 @@ function centerString(string,length,padding)
 {
 	if(!padding) padding=" ";
 	var strlength=console.strlen(string);
-	if(strlength>length)
-	{
+	if(strlength>length) {
 		string=string.substring(0,length);
 	}
 	var padlength=length-strlength;
 	var newstring=string;
-	for(p=1;p<=padlength;p++)
-	{
+	for(p=1;p<=padlength;p++) {
 		if(p%2==0) newstring+=padding;
 		else newstring=padding+newstring;
 	}
@@ -224,13 +220,11 @@ function strlen(str)
 }
 function drawLine(x,y,length,color)
 {
-	if(x && y)
-	{
+	if(x && y) {
 		console.gotoxy(x,y);
 		if(y==24 && x+length>80) length-=(length-80);
 	}
-	for(i=0;i<length;i++)
-	{
+	for(i=0;i<length;i++) {
 		if(color) console.attributes=color;
 		console.putmsg("\xc4",P_SAVEATR);
 	}
@@ -239,11 +233,10 @@ function clearBlock(x,y,w,h,bg)
 {
 	console.attributes=bg?bg:ANSI_NORMAL;
 	console.gotoxy(x,y);
-	for(line=0;line<h;line++)
-	{
+	for(var l=0;l<h;l++) {
 		console.pushxy();
 		clearLine(w);
-		if(line<h-1) {
+		if(l<h-1) {
 			console.popxy();
 			console.down();
 		}
@@ -325,15 +318,100 @@ function setPosition(x,y)
 	console.gotoxy(x,y);
 	console.pushxy();
 }
-function pushMessage(txt) 
+function pushMessage(txt,container) 
 {
-	console.popxy();
-	console.putmsg(txt,P_SAVEATR);
-	console.popxy();
-	console.down();
-	console.pushxy();
+	if(!container)
+		container = console;
+	container.popxy();
+	container.putmsg(txt,P_SAVEATR);
+	container.popxy();
+	container.down();
+	container.pushxy();
 }	
-	
+function pushxy(name)
+{
+	if(!js.global.saved_coords)
+		js.global.saved_coords=[];
+	if(name)
+		js.global.saved_coords[name]=console.getxy();
+	else
+		console.pushxy();
+}	
+function popxy(name)
+{
+	if(name)
+		if(js.global.saved_coords[name])
+			console.gotoxy(js.global.saved_coords[name]);
+	else
+		console.popxy();
+}
+function combine(obj1,obj2,concat_str) 
+{
+	var newobj = {};
+	if(obj2 instanceof Array)
+		newobj=[];
+	else
+		newobj={};
+	for(var i in obj1) {
+		switch(typeof obj1[i]) {
+			case "object":
+				newobj[i] = combine(newobj[i],obj1[i],concat_str);
+				break;
+			default:
+				newobj[i] = obj1[i];
+				break;
+		}
+	}
+	for(var i in obj2) {
+		switch(typeof obj2[i]) {
+		case "function":
+			if(!newobj[i])
+				newobj[i]=obj2[i];
+			else
+				newobj["_"+i]=obj2[i];
+			break;
+		case "string":
+			if(!newobj[i])
+				newobj[i]=obj2[i];
+			else if(newobj instanceof Array) {
+				if(concat_str)
+					newobj[i] += obj2[i];
+				else
+					newobj.push(obj2[i]);
+			}
+			else {
+				if(concat_str && typeof newobj[i] == "string")
+					newobj[i] += obj2[i];
+				else
+					newobj["_"+i]=obj2[i];
+			}
+			break;
+		case "number":
+			if(newobj[i]) {
+				if(typeof newobj[i] == "number" || !isNaN(obj[i]))
+					newobj[i] += obj2[i];
+				else if(newobj instanceof Array)
+					newobj.push(obj2[i]);
+				else
+					newobj["_"+i]=obj2[i];
+			}
+			else 
+				newobj[i] = obj2[i];
+			break;
+		case "object":
+			if(typeof newobj[i] == "object")
+				newobj[i] = combine(newobj[i],obj2[i],concat_str);
+			else if(newobj[i]) {
+				newobj["_"+i] = {};
+				newobj = combine(newobj["_"+i],obj2[i],concat_str);
+			}
+			else	
+				newobj[i] = obj2[i];
+			break;
+		}
+	}
+	return newobj;
+}
 	
 	
 	
