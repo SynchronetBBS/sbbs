@@ -4028,13 +4028,6 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
 static JSBool
 js_write(JSContext *cx, uintN argc, jsval *arglist)
 {
-	http_session_t* session;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
 	js_writefunc(cx, argc, arglist, FALSE);
 
 	return(JS_TRUE);
@@ -4043,13 +4036,6 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 {
-	http_session_t* session;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
 	js_writefunc(cx, argc, arglist,TRUE);
 
 	return(JS_TRUE);
