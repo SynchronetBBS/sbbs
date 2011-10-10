@@ -192,104 +192,36 @@ if (test31 != 3) {
 }
 
 var test32 = load(true,"dnshelper.js","127.0.0.1");
-var test32_str = test32.read();
-
-log('-----');
-log(test32_str);
-log('-----');
-exit();
-
-var s = new Socket();
-s.bind(10089);
-s.close();
-s = new Socket();
-s.non_blocking = true;
-s.connect("localhost",23);
-s.send("derp");
-log(s.recvline());
-log(s.error);
-log(s.descriptor);
-s.close();
-
-exit();
-
-function tf(obj) {
-	global_counter++;
-	printf("tf iteration #%d\r\n", global_counter);
-	for(var i in obj) {
-		log(obj[i].toSource());
-//		tf(obj[i]);
-	}
-	return;
+while (test32.read() == undefined) {
+	log("Waiting for dnshelper.js to return a result...");
+	sleep(10);
+	log(test32.read());
 }
 
-/* [+]  global object */
-//write_raw("e");
-/* [+]  js object */
-log(system.datestr());
-log(system.name);
-log(system.operator);
-log(system.nodes);
-log(system.data_dir);
-log(system.timer);
-log(system.uptime);
-log(system.stats.total_messages);
-log(system.node_list[0].toSource());
-/* [+]  server object */
-//log(server.version);
-//log(server.options);
-//log(server.interface_ip_address);
-/* [+]  client object */
-//log(client.ip_address);
-//log(client.user_name);
-//log(client.socket.descriptor);
-/* [+]  user object */
-log(user.adjust_credits(1));
-log(user.compare_ars("G"));
-log(user.number);
-log(user.alias);
-log(user.stats.total_timeon);
-log(user.limits.time_per_logon);
-log(user.security.level);
-/* [+]  bbs object */
-//log(bbs.text(1));
-//log(bbs.nodesync());
-//log(bbs.auto_msg());
-//log(bbs.ver());
-//log(bbs.whos_online());
-//log(bbs.online);
-//log(bbs.sys_status);
-/* [+]  console object */
-/*
-console.write("g");
-console.writeln("h");
-console.putmsg("\1r\1hi");
-log(console.ungetstr("j"));
-log(console.inkey());
-log(console.crlf());
-log(console.cleartoeol());
-log(console.center("k"));
-log(console.strlen("lmnop"));
-log(console.getxy().toSource());
-log(console.status);
-log(console.screen_rows);
-log(console.screen_columns);
-log(console.ctrlkey_passthru);
-*/
-/* [+]  msg_area object */
-log("Msg Area:");
-tf(msg_area);
-/* [+]  file_area object */
-log("File Area:");
-tf(file_area);
-/* [+]  xtrn_area object */
-log("Xtrn Area:");
-tf(xtrn_area);
-/* [+]  MsgBase class */
-var mb = new MsgBase("DOVE-GEN");
-tf(mb);
-log(mb.open());
-log(mb.error);
-log(mb.subnum);
-/* [+]  File class */
-/* [+]  Socket class */
+var test33_file = new File("/home/cyan/sbbs/exec/test.ini");
+test33_file.open("w+");
+test33_file.iniSetValue("test", "Date", new Date("April 17, 1980 03:00:00"));
+test33_file.iniSetValue("test", "Double", 13.37);
+test33_file.iniSetValue("test", "Integer", 1337);
+test33_file.iniSetValue("test", "Boolean", true);
+test33_file.close();
+
+var test34_file = new File("/home/cyan/sbbs/exec/test.ini");
+test34_file.open("r+");
+var test34 = test34_file.iniGetObject("test");
+test34_file.close();
+file_remove("/home/cyan/sbbs/exec/test.ini");
+if (   (test34.Date != "April 17, 1980 03:00:00")
+    || (test34.Double != 13.37)
+    || (test34.Integer != 1337)
+    || (test34.Boolean != true)
+) {
+	log("INI readback values don't match!");
+//	exit();
+}
+
+log('-----');
+log(test34.toSource());
+log('-----');
+exit();
+
