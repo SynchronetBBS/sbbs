@@ -603,8 +603,9 @@ static double js_DateGetMsecSinceEpoch(JSContext *cx, JSObject *obj)
 {
 	jsval	rval;
 
-	if(!JS_CallFunctionName(cx, obj, "UTC", 0, NULL, &rval))
+	if(!JS_CallFunctionName(cx, obj, "getTime", 0, NULL, &rval)) {
 		return ((double)time(NULL))*1000;
+	}
 	return JSVAL_TO_DOUBLE(rval);
 }
 
@@ -660,10 +661,12 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 			tt=(time_t)(js_DateGetMsecSinceEpoch(cx,dflt_obj)/1000.0);
 			rc=JS_SUSPENDREQUEST(cx);
 			dbl=iniReadDateTime(p->fp,section,key,tt);
+			dbl *= 1000;
 			JS_RESUMEREQUEST(cx, rc);
-			date_obj = JS_NewDateObjectMsec(cx, DOUBLE_TO_JSVAL(dbl));
-			if(date_obj!=NULL)
+			date_obj = JS_NewDateObjectMsec(cx, dbl);
+			if(date_obj!=NULL) {
 				JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(date_obj));
+			}
 		}
 		else {
 		    array = JS_NewArrayObject(cx, 0, NULL);
