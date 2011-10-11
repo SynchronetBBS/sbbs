@@ -584,7 +584,9 @@ js_conio_loadfont(JSContext *cx, uintN argc, jsval *arglist)
 	char *	str;
 	jsrefcount	rc;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
+	if(argc==1)
+		JSVALUE_TO_STRING(cx, argv[0], str);
+	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(loadfont(str)));
 		JS_RESUMEREQUEST(cx, rc);
@@ -602,7 +604,9 @@ js_conio_settitle(JSContext *cx, uintN argc, jsval *arglist)
 	char *	str;
 	jsrefcount	rc;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
+	if(argc==1)
+		JSVALUE_TO_STRING(cx, argv[0], str);
+	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		settitle(str);
 		JS_RESUMEREQUEST(cx, rc);
@@ -621,7 +625,9 @@ js_conio_setname(JSContext *cx, uintN argc, jsval *arglist)
 	char *	str;
 	jsrefcount	rc;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
+	if(argc==1)
+		JSVALUE_TO_STRING(cx, argv[0], str);
+	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		setname(str);
 		JS_RESUMEREQUEST(cx, rc);
@@ -640,7 +646,9 @@ js_conio_cputs(JSContext *cx, uintN argc, jsval *arglist)
 	char *	str;
 	jsrefcount	rc;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
+	if(argc==1)
+		JSVALUE_TO_STRING(cx, argv[0], str);
+	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(cputs(str)));
 		JS_RESUMEREQUEST(cx, rc);
@@ -697,7 +705,9 @@ js_conio_getpass(JSContext *cx, uintN argc, jsval *arglist)
 	char *	pwd;
 	jsrefcount	rc;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
+	if(argc==1)
+		JSVALUE_TO_STRING(cx, argv[0], str);
+	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		pwd=getpass(str);
 		JS_RESUMEREQUEST(cx, rc);
