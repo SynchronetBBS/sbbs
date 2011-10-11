@@ -140,7 +140,7 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 	}
 	if(JSVAL_IS_STRING(val)) {
 		str = JS_ValueToString(cx,val);
-		JSSTRING_TO_STRING(cx, str, cp);
+		JSSTRING_TO_STRING(cx, str, cp, NULL);
 		if(isdigit(*cp))
 			return((ushort)strtol(cp,NULL,0));
 		rc=JS_SUSPENDREQUEST(cx);
@@ -207,7 +207,7 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 		port = js_port(cx,argv[0],p->type);
 	addr.sin_port = htons(port);
 	if(argc > 1)
-		JSVALUE_TO_STRING(cx, argv[1], cstr);
+		JSVALUE_TO_STRING(cx, argv[1], cstr, NULL);
 	if(argc>1 && cstr != NULL
 		&& (ip=inet_addr(cstr))!=INADDR_NONE)
 		addr.sin_addr.s_addr = ip;
@@ -336,7 +336,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	str = JS_ValueToString(cx, argv[0]);
-	JSSTRING_TO_STRING(cx, str, cstr);
+	JSSTRING_TO_STRING(cx, str, cstr, NULL);
 	rc=JS_SUSPENDREQUEST(cx);
 	dbprintf(FALSE, p, "resolving hostname: %s", cstr);
 	if((ip_addr=resolve_ip(cstr))==INADDR_NONE) {
@@ -417,7 +417,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
-	JSSTRING_TO_STRING(cx, str, cp);
+	JSSTRING_TO_STRING(cx, str, cp, NULL);
 	len	= JS_GetStringLength(str);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -460,12 +460,12 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 
 	/* data */
 	data_str = JS_ValueToString(cx, argv[0]);
-	JSSTRING_TO_STRING(cx, data_str, cp);
+	JSSTRING_TO_STRING(cx, data_str, cp, NULL);
 	len = JS_GetStringLength(data_str);
 
 	/* address */
 	ip_str = JS_ValueToString(cx, argv[1]);
-	JSSTRING_TO_STRING(cx, ip_str, cstr);
+	JSSTRING_TO_STRING(cx, ip_str, cstr, NULL);
 	rc=JS_SUSPENDREQUEST(cx);
 	dbprintf(FALSE, p, "resolving hostname: %s", cstr);
 	if((ip_addr=resolve_ip(cstr))==INADDR_NONE) {
@@ -523,7 +523,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], fname);
+	JSVALUE_TO_STRING(cx, argv[0], fname, NULL);
 	if(fname==NULL) {
 		JS_ReportError(cx,"Failure reading filename");
 		return(JS_FALSE);
@@ -1030,7 +1030,7 @@ js_getsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	JSVALUE_TO_STRING(cx, argv[0], cstr);
+	JSVALUE_TO_STRING(cx, argv[0], cstr, NULL);
 	if((opt = getSocketOptionByName(cstr, &level)) == -1) {
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
@@ -1081,7 +1081,7 @@ js_setsockopt(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	JSVALUE_TO_STRING(cx, argv[0], optname);
+	JSVALUE_TO_STRING(cx, argv[0], optname, NULL);
 	rc=JS_SUSPENDREQUEST(cx);
 	opt = getSocketOptionByName(optname,&level);
 	if(argv[1]!=JSVAL_VOID) {
@@ -1533,7 +1533,7 @@ static JSBool js_socket_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_socket_properties, js_socket_functions, NULL, 0));
@@ -1603,7 +1603,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		if(JSVAL_IS_NUMBER(argv[i]))
 			JS_ValueToInt32(cx,argv[i],&type);
 		else if(protocol==NULL)
-			JSVALUE_TO_STRING(cx, argv[i], protocol);
+			JSVALUE_TO_STRING(cx, argv[i], protocol, NULL);
 	}
 		
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {

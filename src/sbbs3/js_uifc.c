@@ -316,7 +316,7 @@ js_uifc_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL)
 		return(JS_FALSE);
 
@@ -341,7 +341,7 @@ js_uifc_pop(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc)
-		JSVALUE_TO_STRING(cx, argv[0], str);
+		JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	uifc->pop(str);
@@ -535,7 +535,7 @@ static JSBool js_uifc_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0));

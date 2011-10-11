@@ -585,7 +585,7 @@ js_conio_loadfont(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 
 	if(argc==1)
-		JSVALUE_TO_STRING(cx, argv[0], str);
+		JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(loadfont(str)));
@@ -605,7 +605,7 @@ js_conio_settitle(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 
 	if(argc==1)
-		JSVALUE_TO_STRING(cx, argv[0], str);
+		JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		settitle(str);
@@ -626,7 +626,7 @@ js_conio_setname(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 
 	if(argc==1)
-		JSVALUE_TO_STRING(cx, argv[0], str);
+		JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		setname(str);
@@ -647,7 +647,7 @@ js_conio_cputs(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 
 	if(argc==1)
-		JSVALUE_TO_STRING(cx, argv[0], str);
+		JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(cputs(str)));
@@ -706,7 +706,7 @@ js_conio_getpass(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 
 	if(argc==1)
-		JSVALUE_TO_STRING(cx, argv[0], str);
+		JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(argc==1 && str != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		pwd=getpass(str);
@@ -1144,7 +1144,7 @@ static JSBool js_conio_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0));

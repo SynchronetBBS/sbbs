@@ -350,7 +350,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx,"no filename specified");
 		return(JS_FALSE);
 	}
-	JSVALUE_TO_STRING(cx, argv[argn++], filename);
+	JSVALUE_TO_STRING(cx, argv[argn++], filename, NULL);
 	if(filename==NULL)
 		return(JS_FALSE);
 
@@ -704,7 +704,7 @@ js_ascii(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_STRING(argv[0])) {	/* string to ascii-int */
 
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[0]), p);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[0]), p, NULL);
 		if(p==NULL) 
 			return(JS_FALSE);
 
@@ -742,7 +742,7 @@ js_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_STRING(argv[0])) {	
 
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[0]), p);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[0]), p, NULL);
 		if(p==NULL) 
 			return(JS_FALSE);
 		ch=*p;
@@ -775,7 +775,7 @@ js_ascii_str(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL)
 		return(JS_FALSE);
 
@@ -808,7 +808,7 @@ js_strip_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -837,7 +837,7 @@ js_strip_exascii(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -867,7 +867,7 @@ js_lfexpand(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	JSVALUE_TO_STRING(cx, argv[0], inbuf, NULL);
 	if(inbuf==NULL)
 		return(JS_FALSE);
 
@@ -908,7 +908,7 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	JSVALUE_TO_STRING(cx, argv[0], inbuf, NULL);
 	if(inbuf==NULL) 
 		return(JS_FALSE);
 
@@ -956,7 +956,7 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	JSVALUE_TO_STRING(cx, argv[0], inbuf, NULL);
 	if(inbuf==NULL) 
 		return(JS_FALSE);
 
@@ -964,7 +964,7 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx,argv[1],&len);
 
 	if(argc>2)
-		JSVALUE_TO_STRING(cx, argv[2], prefix);
+		JSVALUE_TO_STRING(cx, argv[2], prefix, NULL);
 
 	if((outbuf=(char*)malloc((strlen(inbuf)*(strlen(prefix)+1))+1))==NULL)
 		return(JS_FALSE);
@@ -1023,7 +1023,7 @@ js_netaddr_type(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
@@ -1046,7 +1046,7 @@ js_rot13(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
@@ -1293,7 +1293,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
 		return(JS_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	JSVALUE_TO_STRING(cx, argv[0], inbuf, NULL);
 	if(inbuf==NULL)
 		return(JS_FALSE);
 
@@ -1961,7 +1961,7 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	JSVALUE_TO_STRING(cx, argv[0], inbuf, NULL);
 	if(inbuf==NULL) 
 		return(JS_FALSE);
 
@@ -2110,7 +2110,7 @@ js_b64_decode(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], inbuf);
+	JSVALUE_TO_STRING(cx, argv[0], inbuf, NULL);
 	if(inbuf==NULL) 
 		return(JS_FALSE);
 
@@ -2191,7 +2191,7 @@ js_skipsp(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
@@ -2217,7 +2217,7 @@ js_truncsp(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
@@ -2250,11 +2250,11 @@ js_truncstr(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[1], set);
+	JSVALUE_TO_STRING(cx, argv[1], set, NULL);
 	if(set==NULL) 
 		return(JS_FALSE);
 
@@ -2286,7 +2286,7 @@ js_backslash(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 	
@@ -2315,7 +2315,7 @@ js_fullpath(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
@@ -2345,7 +2345,7 @@ js_getfname(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
@@ -2371,7 +2371,7 @@ js_getfext(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
@@ -2401,7 +2401,7 @@ js_getfcase(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
@@ -2437,7 +2437,7 @@ js_dosfname(JSContext *cx, uintN argc, jsval *arglist)
 
 #if defined(_WIN32)
 
-	JSVALUE_TO_STRING(cx, argv[0], str);
+	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
 	if(str==NULL) 
 		return(JS_FALSE);
 
@@ -2478,11 +2478,11 @@ js_cfgfname(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], path);
+	JSVALUE_TO_STRING(cx, argv[0], path, NULL);
 	if(path==NULL) 
 		return(JS_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[1], fname);
+	JSVALUE_TO_STRING(cx, argv[1], fname, NULL);
 	if(fname==NULL) 
 		return(JS_FALSE);
 
@@ -2507,7 +2507,7 @@ js_fexist(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -2530,7 +2530,7 @@ js_removecase(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -2553,7 +2553,7 @@ js_remove(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -2578,10 +2578,10 @@ js_rename(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-	JSVALUE_TO_STRING(cx, argv[0], oldname);
+	JSVALUE_TO_STRING(cx, argv[0], oldname, NULL);
 	if(oldname==NULL)
 		return(JS_TRUE);
-	JSVALUE_TO_STRING(cx, argv[1], newname);
+	JSVALUE_TO_STRING(cx, argv[1], newname, NULL);
 	if(newname==NULL)
 		return(JS_TRUE);
 
@@ -2606,10 +2606,10 @@ js_fcopy(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-	JSVALUE_TO_STRING(cx, argv[0], src);
+	JSVALUE_TO_STRING(cx, argv[0], src, NULL);
 	if(src==NULL)
 		return(JS_TRUE);
-	JSVALUE_TO_STRING(cx, argv[1], dest);
+	JSVALUE_TO_STRING(cx, argv[1], dest, NULL);
 	if(dest==NULL)
 		return(JS_TRUE);
 
@@ -2634,10 +2634,10 @@ js_fcompare(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-	JSVALUE_TO_STRING(cx, argv[0], fn1);
+	JSVALUE_TO_STRING(cx, argv[0], fn1, NULL);
 	if(fn1==NULL)
 		return(JS_TRUE);
-	JSVALUE_TO_STRING(cx, argv[1], fn2);
+	JSVALUE_TO_STRING(cx, argv[1], fn2, NULL);
 	if(fn2==NULL)
 		return(JS_TRUE);
 
@@ -2663,7 +2663,7 @@ js_backup(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-	JSVALUE_TO_STRING(cx, argv[0], fname);
+	JSVALUE_TO_STRING(cx, argv[0], fname, NULL);
 	if(fname==NULL)
 		return(JS_TRUE);
 
@@ -2691,7 +2691,7 @@ js_isdir(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -2715,7 +2715,7 @@ js_fattr(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -2740,7 +2740,7 @@ js_fdate(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -2769,7 +2769,7 @@ js_utime(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], fname);
+	JSVALUE_TO_STRING(cx, argv[0], fname, NULL);
 	if(fname==NULL) 
 		return(JS_FALSE);
 
@@ -2806,7 +2806,7 @@ js_flength(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -2831,7 +2831,7 @@ js_ftouch(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], fname);
+	JSVALUE_TO_STRING(cx, argv[0], fname, NULL);
 	if(fname==NULL) 
 		return(JS_FALSE);
 
@@ -2857,11 +2857,11 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[argn++], fname);
+	JSVALUE_TO_STRING(cx, argv[argn++], fname, NULL);
 	if(fname==NULL) 
 		return(JS_FALSE);
 	if(argc > argn && JSVAL_IS_STRING(argv[argn]))
-		JSVALUE_TO_STRING(cx, argv[argn++], text);
+		JSVALUE_TO_STRING(cx, argv[argn++], text, NULL);
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn]))
 		JS_ValueToInt32(cx, argv[argn++], &max_age);
 
@@ -2890,7 +2890,7 @@ js_sound(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -2927,7 +2927,7 @@ js_directory(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -2973,12 +2973,12 @@ js_wildmatch(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_BOOLEAN(argv[argn]))
 		JS_ValueToBoolean(cx, argv[argn++], &case_sensitive);
 
-	JSVALUE_TO_STRING(cx, argv[argn++], fname);
+	JSVALUE_TO_STRING(cx, argv[argn++], fname, NULL);
 	if(fname==NULL) 
 		return(JS_FALSE);
 
 	if(argn<argc && argv[argn]!=JSVAL_VOID)
-		JSVALUE_TO_STRING(cx, argv[argn++], spec);
+		JSVALUE_TO_STRING(cx, argv[argn++], spec, NULL);
 		if(spec==NULL) 
 			return(JS_FALSE);
 
@@ -3011,7 +3011,7 @@ js_freediskspace(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -3041,7 +3041,7 @@ js_disksize(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -3155,7 +3155,7 @@ js_mkdir(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -3178,7 +3178,7 @@ js_mkpath(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -3201,7 +3201,7 @@ js_rmdir(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -3230,7 +3230,7 @@ js_strftime(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], fmt);
+	JSVALUE_TO_STRING(cx, argv[0], fmt, NULL);
 	if(fmt==NULL) 
 		return(JS_FALSE);
 
@@ -3266,7 +3266,7 @@ js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -3299,7 +3299,7 @@ js_resolve_host(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_STRING(cx, argv[0], p)
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL)
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -3372,7 +3372,7 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_STRING(argv[0])) {	/* string to long */
 
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[0]), p);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[0]), p, NULL);
 		if(p==NULL) 
 			return(JS_FALSE);
 
@@ -3810,7 +3810,7 @@ static JSBool js_global_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 	}
 
 	if(p->methods) {

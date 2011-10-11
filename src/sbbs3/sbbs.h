@@ -122,28 +122,31 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#define JS_DestroyScript(cx,script)
 #endif
 
-#define JSSTRING_TO_STRING(cx, str, ret) \
+#define JSSTRING_TO_STRING(cx, str, ret, lenptr) \
 { \
+	size_t			*JSSTSlenptr=lenptr; \
 	size_t			JSSTSlen; \
 	size_t			JSSTSpos; \
 	const jschar	*JSSTSstrval; \
 \
+	if(JSSTSlenptr==NULL) \
+		JSSTSlenptr=&JSSTSlen; \
 	(ret)=NULL; \
 	if((str) != NULL) { \
-		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), &JSSTSlen))) { \
-			if(((ret)=(char *)alloca(JSSTSlen+1))) { \
-				for(JSSTSpos=0; JSSTSpos<JSSTSlen; JSSTSpos++) \
+		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
+			if(((ret)=(char *)alloca(*JSSTSlenptr+1))) { \
+				for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) \
 					(ret)[JSSTSpos]=JSSTSstrval[JSSTSpos]; \
-				(ret)[JSSTSlen]=0; \
+				(ret)[*JSSTSlenptr]=0; \
 			} \
 		} \
 	} \
 }
 
-#define JSVALUE_TO_STRING(cx, val, ret) \
+#define JSVALUE_TO_STRING(cx, val, ret, lenptr) \
 { \
 	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
-	JSSTRING_TO_STRING((cx), JSVTSstr, (ret)); \
+	JSSTRING_TO_STRING((cx), JSVTSstr, (ret), lenptr); \
 }
 
 #endif

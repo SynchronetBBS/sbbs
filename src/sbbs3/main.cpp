@@ -651,7 +651,7 @@ DLLCALL js_ValueToStringBytes(JSContext* cx, jsval val, size_t* len)
 	if(len!=NULL)
 		*len = JS_GetStringLength(str);
 
-	JSSTRING_TO_STRING(cx, str, leak);
+	JSSTRING_TO_STRING(cx, str, leak, NULL);
 	return(strdup(leak));
 }
 
@@ -676,7 +676,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx,argv[i++],&level);
 
     for(; i<argc; i++) {
-		JSVALUE_TO_STRING(cx, argv[i], line);
+		JSVALUE_TO_STRING(cx, argv[i], line, NULL);
 		if(line==NULL) {
 			JS_RESUMEREQUEST(cx, rc);
 		    return(JS_FALSE);
@@ -779,7 +779,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
     for (i = 0; i < argc; i++) {
-		JSVALUE_TO_STRING(cx, argv[i], cstr);
+		JSVALUE_TO_STRING(cx, argv[i], cstr, NULL);
 		if(cstr==NULL)
 		    return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
@@ -894,7 +894,7 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], cstr);
+	JSVALUE_TO_STRING(cx, argv[0], cstr, NULL);
 	if(cstr==NULL)
 	    return(JS_FALSE);
 
@@ -920,7 +920,7 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	JSVALUE_TO_STRING(cx, argv[0], cstr);
+	JSVALUE_TO_STRING(cx, argv[0], cstr, NULL);
 	if(cstr==NULL)
 	    return(JS_FALSE);
 
@@ -945,7 +945,7 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], cstr);
+	JSVALUE_TO_STRING(cx, argv[0], cstr, NULL);
 	if(cstr==NULL)
 	    return(JS_FALSE);
 
@@ -973,12 +973,12 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], prompt);
+	JSVALUE_TO_STRING(cx, argv[0], prompt, NULL);
 	if(prompt==NULL)
 	    return(JS_FALSE);
 
 	if(argc>1) {
-		JSVALUE_TO_STRING(cx, argv[1], cstr);
+		JSVALUE_TO_STRING(cx, argv[1], cstr, NULL);
 		if(cstr==NULL)
 		    return(JS_FALSE);
 		SAFECOPY(instr,cstr);

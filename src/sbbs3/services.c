@@ -372,7 +372,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, argv[0]);
 
 	for(i=0; i<argc; i++) {
-		JSVALUE_TO_STRING(cx, argv[i], cp);
+		JSVALUE_TO_STRING(cx, argv[i], cp, NULL);
 		if(cp==NULL)
 			continue;
 		rc=JS_SUSPENDREQUEST(cx);
@@ -433,7 +433,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 
 	str[0]=0;
     for(;i<argc && strlen(str)<(sizeof(str)/2);i++) {
-		JSVALUE_TO_STRING(cx, argv[i], line);
+		JSVALUE_TO_STRING(cx, argv[i], line, NULL);
 		if(line==NULL)
 		    return(JS_FALSE);
 		strncat(str,line,sizeof(str)/2);
@@ -486,12 +486,12 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	/* User name or number */
-	JSVALUE_TO_STRING(cx, argv[0], user);
+	JSVALUE_TO_STRING(cx, argv[0], user, NULL);
 	if(user==NULL) 
 		return(JS_FALSE);
 
 	/* Password */
-	JSVALUE_TO_STRING(cx, argv[1], pass);
+	JSVALUE_TO_STRING(cx, argv[1], pass, NULL);
 	if(pass==NULL) 
 		return(JS_FALSE);
 
@@ -721,12 +721,12 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(argc>1) {
-		JSVALUE_TO_STRING(cx, argv[1], cstr);
+		JSVALUE_TO_STRING(cx, argv[1], cstr, NULL);
 		client.user=cstr;
 	}
 
 	if(argc>2) {
-		JSVALUE_TO_STRING(cx, argv[2], cstr);
+		JSVALUE_TO_STRING(cx, argv[2], cstr, NULL);
 		SAFECOPY(client.host,cstr);
 	}
 
@@ -774,12 +774,12 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(argc>1) {
-		JSVALUE_TO_STRING(cx, argv[1], cstr);
+		JSVALUE_TO_STRING(cx, argv[1], cstr, NULL);
 		client.user=cstr;
 	}
 
 	if(argc>2) {
-		JSVALUE_TO_STRING(cx, argv[2], cstr);
+		JSVALUE_TO_STRING(cx, argv[2], cstr, NULL);
 		SAFECOPY(client.host,cstr);
 	}
 

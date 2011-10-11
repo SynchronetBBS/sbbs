@@ -1704,7 +1704,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx,argv[i++],&level);
 
 	for(; i<argc; i++) {
-		JSVALUE_TO_STRING(cx, argv[i], lstr);
+		JSVALUE_TO_STRING(cx, argv[i], lstr, NULL);
 		if(lstr==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);

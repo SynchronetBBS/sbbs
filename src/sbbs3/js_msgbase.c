@@ -145,7 +145,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 	jsval		val;
 
 	if(JS_GetProperty(cx, hdr, "to", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 	} else {
@@ -163,7 +163,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 	}
 
 	if(JS_GetProperty(cx, hdr, "to_ext", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, RECIPIENTEXT, cp))!=SMB_SUCCESS)
@@ -173,7 +173,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 	}
 
 	if(JS_GetProperty(cx, hdr, "to_org", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, RECIPIENTORG, cp))!=SMB_SUCCESS)
@@ -186,7 +186,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 	}
 
 	if(JS_GetProperty(cx, hdr, "to_net_addr", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_netaddr(msg, RECIPIENTNETADDR, cp, &nettype))!=SMB_SUCCESS)
@@ -232,7 +232,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 
 	/* Required Header Fields */
 	if(JS_GetProperty(cx, hdr, "subject", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 	} else
@@ -242,7 +242,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	msg->idx.subj=smb_subject_crc(cp);
 
 	if(JS_GetProperty(cx, hdr, "from", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 	} else
@@ -257,7 +257,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 
 	/* Optional Header Fields */
 	if(JS_GetProperty(cx, hdr, "from_ext", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, SENDEREXT, cp))!=SMB_SUCCESS)
@@ -267,7 +267,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "from_org", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, SENDERORG, cp))!=SMB_SUCCESS)
@@ -280,7 +280,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "from_net_addr", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_netaddr(msg, SENDERNETADDR, cp, &nettype))!=SMB_SUCCESS)
@@ -302,7 +302,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "from_ip_addr", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, SENDERIPADDR, cp))!=SMB_SUCCESS)
@@ -310,7 +310,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "from_host_name", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, SENDERHOSTNAME, cp))!=SMB_SUCCESS)
@@ -318,7 +318,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "from_protocol", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, SENDERPROTOCOL, cp))!=SMB_SUCCESS)
@@ -326,7 +326,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "from_port", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, SENDERPORT, cp))!=SMB_SUCCESS)
@@ -334,7 +334,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "replyto", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, REPLYTO, cp))!=SMB_SUCCESS)
@@ -342,7 +342,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "replyto_ext", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, REPLYTOEXT, cp))!=SMB_SUCCESS)
@@ -350,7 +350,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "replyto_org", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, REPLYTOORG, cp))!=SMB_SUCCESS)
@@ -363,7 +363,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		nettype=(ushort)i32;
 	}
 	if(JS_GetProperty(cx, hdr, "replyto_net_addr", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_netaddr(msg, REPLYTONETADDR, cp, &nettype))!=SMB_SUCCESS)
@@ -383,7 +383,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 
 	/* RFC822 headers */
 	if(JS_GetProperty(cx, hdr, "id", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, RFC822MSGID, cp))!=SMB_SUCCESS)
@@ -391,7 +391,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "reply_id", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, RFC822REPLYID, cp))!=SMB_SUCCESS)
@@ -400,7 +400,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 
 	/* SMTP headers */
 	if(JS_GetProperty(cx, hdr, "reverse_path", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, SMTPREVERSEPATH, cp))!=SMB_SUCCESS)
@@ -408,7 +408,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "forward_path", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, SMTPFORWARDPATH, cp))!=SMB_SUCCESS)
@@ -417,7 +417,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 
 	/* USENET headers */
 	if(JS_GetProperty(cx, hdr, "path", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, USENETPATH, cp))!=SMB_SUCCESS)
@@ -425,7 +425,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "newsgroups", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, USENETNEWSGROUPS, cp))!=SMB_SUCCESS)
@@ -434,7 +434,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 
 	/* FTN headers */
 	if(JS_GetProperty(cx, hdr, "ftn_msgid", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, FIDOMSGID, cp))!=SMB_SUCCESS)
@@ -442,7 +442,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_reply", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, FIDOREPLYID, cp))!=SMB_SUCCESS)
@@ -450,7 +450,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_area", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, FIDOAREA, cp))!=SMB_SUCCESS)
@@ -458,7 +458,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_flags", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, FIDOFLAGS, cp))!=SMB_SUCCESS)
@@ -466,7 +466,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_pid", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, FIDOPID, cp))!=SMB_SUCCESS)
@@ -474,7 +474,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "ftn_tid", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		if((p->status=smb_hfield_str(msg, FIDOTID, cp))!=SMB_SUCCESS)
@@ -482,7 +482,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "date", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_STRING(cx, val, cp);
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL)
 			return(FALSE);
 		msg->hdr.when_written=rfc822date(cp);
@@ -548,7 +548,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			if(!JS_GetProperty(cx, field, "type", &val))
 				continue;
 			if(JSVAL_IS_STRING(val)) {
-				JSVALUE_TO_STRING(cx, val, cp);
+				JSVALUE_TO_STRING(cx, val, cp, NULL);
 				type=smb_hfieldtypelookup(cp);
 			}
 			else {
@@ -557,7 +557,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			}
 			if(!JS_GetProperty(cx, field, "data", &val))
 				continue;
-			JSVALUE_TO_STRING(cx, val, cp);
+			JSVALUE_TO_STRING(cx, val, cp, NULL);
 			if(cp==NULL)
 				return(FALSE);
 			if((p->status=smb_hfield_str(msg, type, cp))!=SMB_SUCCESS)
@@ -780,7 +780,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 	}
 
 	/* If we have already enumerated, we're done here... */
@@ -1077,7 +1077,7 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr);
+			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr, NULL);
 			rc=JS_SUSPENDREQUEST(cx);
 			if((p->p->status=smb_getmsghdr_by_msgid(&(p->p->smb),&(p->msg)
 					,cstr))!=SMB_SUCCESS) {
@@ -1156,7 +1156,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			n++;
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr);
+			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr, NULL);
 			rc=JS_SUSPENDREQUEST(cx);
 			if(!msg_offset_by_id(p
 					,cstr
@@ -1253,7 +1253,7 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 			n++;
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr);
+			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr, NULL);
 			rc=JS_SUSPENDREQUEST(cx);
 			if(!msg_offset_by_id(p
 					,cstr
@@ -1374,7 +1374,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 			n++;
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr);
+			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr, NULL);
 			rc=JS_SUSPENDREQUEST(cx);
 			if(!msg_offset_by_id(p
 					,cstr
@@ -1456,7 +1456,7 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 			n++;
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr);
+			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[n]), cstr, NULL);
 			rc=JS_SUSPENDREQUEST(cx);
 			if(!msg_offset_by_id(p
 					,cstr
@@ -1552,7 +1552,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 			}
 		}
 		if(body==NULL) {
-			JSVALUE_TO_STRING(cx, argv[n], body);
+			JSVALUE_TO_STRING(cx, argv[n], body, NULL);
 			if(body==NULL) {
 				JS_ReportError(cx,"JSVALUE_TO_STRING failed");
 				return(JS_FALSE);
@@ -1922,7 +1922,7 @@ static JSBool js_msgbase_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 	}
 
 	return(js_SyncResolve(cx, obj, name, js_msgbase_properties, js_msgbase_functions, NULL, 0));
@@ -1969,7 +1969,7 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	p->smb.retry_time=scfg->smb_retry_time;
 
 	js_str = JS_ValueToString(cx, argv[0]);
-	JSSTRING_TO_STRING(cx, js_str, base);
+	JSSTRING_TO_STRING(cx, js_str, base, NULL);
 
 	p->debug=JS_FALSE;
 

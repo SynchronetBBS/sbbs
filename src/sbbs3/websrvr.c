@@ -4009,7 +4009,7 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			continue;
 		len=JS_GetStringLength(str);
-		JSSTRING_TO_STRING(cx, str, cstr);
+		JSSTRING_TO_STRING(cx, str, cstr, NULL);
 		rc=JS_SUSPENDREQUEST(cx);
 		js_writebuf(session, cstr, len);
 		if(writeln)
@@ -4064,11 +4064,11 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	header=header_buf;
-	JSVALUE_TO_STRING(cx, argv[0], p);
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL);
 	if(!p)
 		return(JS_FALSE);
 	header+=sprintf(header,"Set-Cookie: %s=",p);
-	JSVALUE_TO_STRING(cx, argv[1], p);
+	JSVALUE_TO_STRING(cx, argv[1], p, NULL);
 	if(!p)
 		return(JS_FALSE);
 	header+=sprintf(header,"%s",p);
@@ -4122,7 +4122,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 
 	str[0]=0;
     for(;i<argc && strlen(str)<(sizeof(str)/2);i++) {
-		JSVALUE_TO_STRING(cx, argv[i], val);
+		JSVALUE_TO_STRING(cx, argv[i], val, NULL);
 		if(val==NULL)
 		    return(JS_FALSE);
 		strncat(str,val,sizeof(str)/2);
@@ -4156,7 +4156,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	/* User name */
-	JSVALUE_TO_STRING(cx, argv[0], p);
+	JSVALUE_TO_STRING(cx, argv[0], p, NULL);
 	if(p==NULL) 
 		return(JS_FALSE);
 
@@ -4186,7 +4186,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	/* Password */
 	if(user.pass[0]) {
-		JSVALUE_TO_STRING(cx, argv[1], p);
+		JSVALUE_TO_STRING(cx, argv[1], p, NULL);
 		if(p==NULL) 
 			return(JS_FALSE);
 
@@ -4567,7 +4567,7 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 	JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val);
 	reply = JSVAL_TO_OBJECT(val);
 	JS_GetProperty(session->js_cx,reply,"status",&val);
-	JSVALUE_TO_STRING(session->js_cx, val, p);
+	JSVALUE_TO_STRING(session->js_cx, val, p, NULL);
 	SAFECOPY(session->req.status,p);
 	JS_GetProperty(session->js_cx,reply,"header",&val);
 	headers = JSVAL_TO_OBJECT(val);
@@ -4575,9 +4575,9 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 	if(heads != NULL) {
 		for(i=0;i<heads->length;i++)  {
 			JS_IdToValue(session->js_cx,heads->vector[i],&val);
-			JSVALUE_TO_STRING(session->js_cx, val, p);
+			JSVALUE_TO_STRING(session->js_cx, val, p, NULL);
 			JS_GetProperty(session->js_cx,headers,p,&val);
-			JSVALUE_TO_STRING(session->js_cx, val, p2);
+			JSVALUE_TO_STRING(session->js_cx, val, p2, NULL);
 			safe_snprintf(str,sizeof(str),"%s: %s",p,p2);
 			strListPush(&session->req.dynamic_heads,str);
 		}
