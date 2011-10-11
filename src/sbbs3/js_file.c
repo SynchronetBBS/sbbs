@@ -645,10 +645,11 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_STRING(cx, argv[0], section, NULL);
 	JSVALUE_TO_STRING(cx, argv[1], key, NULL);
 
-	if(dflt==JSVAL_VOID) {	/* unspecified default value */
+	if(argc < 3 || dflt==JSVAL_VOID) {	/* unspecified default value */
 		rc=JS_SUSPENDREQUEST(cx);
-		JS_SET_RVAL(cx, arglist,get_value(cx,iniReadString(p->fp,section,key,NULL,buf)));
+		cstr=iniReadString(p->fp,section,key,NULL,buf);
 		JS_RESUMEREQUEST(cx, rc);
+		JS_SET_RVAL(cx, arglist, get_value(cx, cstr));
 		return(JS_TRUE);
 	}
 
