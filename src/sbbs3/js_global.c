@@ -226,7 +226,8 @@ static jsval* js_CopyValue(JSContext* cx, jsval val, JSContext* new_cx, jsval* r
 		size_t		len;
 		char*		p;
 
-		if((p=js_ValueToStringBytes(cx,val,&len)) != NULL
+		JSVALUE_TO_STRING(cx, val, p, &len);
+		if(p != NULL
 			&& (str=JS_NewStringCopyN(new_cx,p,len)) != NULL)
 			*rval=STRING_TO_JSVAL(str);
 	}
@@ -253,6 +254,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool		background=JS_FALSE;
 	background_data_t* bg;
 	jsrefcount	rc;
+	char		*cpath;
 
 	JS_SET_RVAL(cx, arglist,JSVAL_VOID);
 
@@ -384,7 +386,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			
 			/* if js.exec_dir is defined (location of executed script), search their first */
 			if(JS_GetProperty(cx, js_obj, "exec_dir", &val) && val!=JSVAL_VOID && JSVAL_IS_STRING(val)) {
-				SAFEPRINTF2(path,"%s%s",js_ValueToStringBytes(cx, val, NULL),filename);
+				JSVALUE_TO_STRING(cx, val, cpath, NULL);
+				SAFEPRINTF2(path,"%s%s",cpath,filename);
 				rc=JS_SUSPENDREQUEST(cx);
 				if(!fexistcase(path))
 					path[0]=0;
@@ -401,7 +404,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 				for(i=0;path[0]==0;i++) {
 					if(!JS_GetElement(cx, js_load_list, i, &val) || val==JSVAL_VOID)
 						break;
-					SAFECOPY(prefix,js_ValueToStringBytes(cx, val, NULL));
+					JSVALUE_TO_STRING(cx, val, cpath, NULL);
+					SAFECOPY(prefix,cpath);
 					if(prefix[0]==0)
 						continue;
 					backslash(prefix);
@@ -438,7 +442,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 					rc=JS_SUSPENDREQUEST(cx);
 					break;
 				}
-				SAFECOPY(prefix,js_ValueToStringBytes(cx, val, NULL));
+				JSVALUE_TO_STRING(cx, val, cpath, NULL);
+				SAFECOPY(prefix,cpath);
 				rc=JS_SUSPENDREQUEST(cx);
 				if(prefix[0]==0)
 					continue;
@@ -627,7 +632,8 @@ js_crc16(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], &len))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], p, &len);
+	if(p==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -651,7 +657,8 @@ js_crc32(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], &len))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], p, &len);
+	if(p==NULL)
 		return(JS_FALSE);
 
 	cs=crc32(p,len);
@@ -676,7 +683,8 @@ js_chksum(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=js_ValueToStringBytes(cx, argv[0], &len))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], p, &len);
+	if(p==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);	/* 3.8 seconds on Deuce's computer when len==UINT_MAX/8 */
@@ -2067,7 +2075,8 @@ js_b64_encode(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((inbuf=js_ValueToStringBytes(cx, argv[0], &inbuf_len))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], inbuf, &inbuf_len);
+	if(inbuf==NULL)
 		return(JS_FALSE);
 
 	len=(inbuf_len*10)+1;
@@ -2155,7 +2164,8 @@ js_md5_calc(JSContext* cx, uintN argc, jsval* arglist)
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((inbuf=js_ValueToStringBytes(cx, argv[0], &inbuf_len))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], inbuf, &inbuf_len);
+	if(inbuf==NULL)
 		return(JS_FALSE);
 
 	if(argc>1 && JSVAL_IS_BOOLEAN(argv[1]))
