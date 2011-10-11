@@ -1878,8 +1878,11 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc>1 && (p=js_ValueToStringBytes(cx, argv[1], NULL))!=NULL)
-		prot=*p;
+	if(argc>1) {
+		JSVALUE_TO_STRING(cx, argv[1], p, NULL);
+		if(p!=NULL)
+			prot=*p;
+	}
 
 	JSVALUE_TO_STRING(cx, argv[0], cstr, NULL);
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1905,8 +1908,11 @@ js_recvfile(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc>1 && (p=js_ValueToStringBytes(cx, argv[1], NULL))!=NULL)
-		prot=*p;
+	if(argc>1) {
+		JSVALUE_TO_STRING(cx, argv[1], p, NULL);
+ 		if(p!=NULL)
+			prot=*p;
+	}
 
 	JSVALUE_TO_STRING(cx, argv[0], cstr, NULL);
 	rc=JS_SUSPENDREQUEST(cx);

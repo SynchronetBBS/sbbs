@@ -4079,11 +4079,13 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 			header += strftime(header,50,"; expires=%a, %d-%b-%Y %H:%M:%S GMT",&tm);
 	}
 	if(argc>3) {
-		if(((p=js_ValueToStringBytes(cx, argv[3], NULL))!=NULL) && *p)
+		JSVALUE_TO_STRING(cx, argv[3], p, NULL);
+		if(p!=NULL && *p)
 			header += sprintf(header,"; domain=%s",p);
 	}
 	if(argc>4) {
-		if(((p=js_ValueToStringBytes(cx, argv[4], NULL))!=NULL) && *p)
+		JSVALUE_TO_STRING(cx, argv[4], p, NULL);
+		if(p!=NULL && *p)
 			header += sprintf(header,"; path=%s",p);
 	}
 	if(argc>5) {
@@ -4362,7 +4364,8 @@ js_write_template(JSContext *cx, uintN argc, jsval *arglist)
 	if(session->req.fp==NULL)
 		return(JS_FALSE);
 
-	if((filename=js_ValueToStringBytes(cx, argv[0]))==NULL)
+	JSVALUE_TO_STRING(cx, argv[0], filename, NULL);
+	if(filename==NULL)
 		return(JS_FALSE);
 
 	if(!fexist(filename)) {

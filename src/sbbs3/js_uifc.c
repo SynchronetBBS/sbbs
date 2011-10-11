@@ -155,7 +155,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 			JS_ValueToInt32(cx, *vp, (int32*)&uifc->esc_delay);
 			break;
 		case PROP_HELPBUF:
-			uifc->helpbuf=js_ValueToStringBytes(cx, *vp, NULL);
+			JSVALUE_TO_STRING(cx, *vp, uifc->helpbuf, NULL);
 			break;
 		case PROP_LIST_HEIGHT:
 			JS_ValueToInt32(cx, *vp, (int32*)&uifc->list_height);
@@ -243,20 +243,26 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 	if((uifc=(uifcapi_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	if(argc && (title=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
-		return(JS_FALSE);
+	if(argc) {
+		JSVALUE_TO_STRING(cx, argv[0], title, NULL);
+		if(title==NULL)
+			return(JS_FALSE);
+	}
 
-	if(argc>1 && (mode=js_ValueToStringBytes(cx, argv[1], NULL))!=NULL) {
-		if(!stricmp(mode,"STDIO"))
-			ciolib_mode=-1;
-		else if(!stricmp(mode,"AUTO"))
-			ciolib_mode=CIOLIB_MODE_AUTO;
-		else if(!stricmp(mode,"X"))
-			ciolib_mode=CIOLIB_MODE_X;
-		else if(!stricmp(mode,"ANSI"))
-			ciolib_mode=CIOLIB_MODE_ANSI;
-		else if(!stricmp(mode,"CONIO"))
-			ciolib_mode=CIOLIB_MODE_CONIO;
+	if(argc>1) {
+		JSVALUE_TO_STRING(cx, argv[1], mode, NULL);
+		if(mode != NULL) {
+			if(!stricmp(mode,"STDIO"))
+				ciolib_mode=-1;
+			else if(!stricmp(mode,"AUTO"))
+				ciolib_mode=CIOLIB_MODE_AUTO;
+			else if(!stricmp(mode,"X"))
+				ciolib_mode=CIOLIB_MODE_X;
+			else if(!stricmp(mode,"ANSI"))
+				ciolib_mode=CIOLIB_MODE_ANSI;
+			else if(!stricmp(mode,"CONIO"))
+				ciolib_mode=CIOLIB_MODE_CONIO;
+		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -380,12 +386,16 @@ js_uifc_input(JSContext *cx, uintN argc, jsval *arglist)
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
 		&& !JS_ValueToInt32(cx,argv[argn++],&top))
 		return(JS_FALSE);
-	if(argn<argc && JSVAL_IS_STRING(argv[argn]) 
-		&& (prompt=js_ValueToStringBytes(cx,argv[argn++],NULL))==NULL)
-		return(JS_FALSE);
-	if(argn<argc && JSVAL_IS_STRING(argv[argn]) 
-		&& (org=js_ValueToStringBytes(cx,argv[argn++],NULL))==NULL)
-		return(JS_FALSE);
+	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_STRING(cx, argv[argn++], prompt, NULL);
+		if(prompt==NULL)
+			return(JS_FALSE);
+	}
+	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_STRING(cx, argv[argn++], org, NULL);
+		if(org==NULL)
+			return(JS_FALSE);
+	}
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
 		&& !JS_ValueToInt32(cx,argv[argn++],&maxlen))
 		return(JS_FALSE);
@@ -435,6 +445,7 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 	jsuint      i;
 	jsuint		numopts;
 	str_list_t	opts=NULL;
+	char		*opt;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -460,9 +471,11 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
 		&& !JS_ValueToInt32(cx,argv[argn++],&bar))
 		return(JS_FALSE);
-	if(argn<argc && JSVAL_IS_STRING(argv[argn]) 
-		&& (title=js_ValueToStringBytes(cx,argv[argn++],NULL))==NULL)
-		return(JS_FALSE);
+	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_STRING(cx, argv[argn++], title, NULL);
+		if(title==NULL)
+			return(JS_FALSE);
+	}
 	if(argn<argc && JSVAL_IS_OBJECT(argv[argn])) {
 		if((objarg = JSVAL_TO_OBJECT(argv[argn++]))==NULL)
 			return(JS_FALSE);
@@ -473,7 +486,8 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 			for(i=0;i<numopts;i++) {
 				if(!JS_GetElement(cx, objarg, i, &val))
 					break;
-				strListPush(&opts,js_ValueToStringBytes(cx,val,NULL));
+				JSVALUE_TO_STRING(cx, val, opt, NULL);
+				strListPush(&opts,opt);
 			}
 		}
 	}

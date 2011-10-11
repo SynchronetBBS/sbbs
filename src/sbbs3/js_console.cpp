@@ -777,10 +777,13 @@ static void
 js_set_attr(JSContext* cx, sbbs_t* sbbs, jsval val)
 {
 	int32		attr;
+	char		*as;
 	jsrefcount	rc;
 
-	if(JSVAL_IS_STRING(val))
-		attr=attrstr(js_ValueToStringBytes(cx,val,NULL));
+	if(JSVAL_IS_STRING(val)) {
+		JSVALUE_TO_STRING(cx, val, as, NULL);
+		attr=attrstr(as);
+	}
 	else
 		JS_ValueToInt32(cx, val, &attr);
 
@@ -991,7 +994,8 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
     for (i = 0; i < argc; i++) {
-		if((str=js_ValueToStringBytes(cx, argv[i], &len))==NULL)
+		JSVALUE_TO_STRING(cx, argv[i], str, &len);
+		if(str==NULL)
 		    return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
 		sbbs->rputs(str, len);

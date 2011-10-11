@@ -1046,7 +1046,6 @@ extern "C" {
 	DLLEXPORT JSBool	DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec*, int flags);
 	DLLEXPORT JSBool	DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
 														,const char* name, char* str[], uintN flags);
-	DLLEXPORT char*		DLLCALL js_ValueToStringBytes(JSContext* cx, jsval val, size_t* len);
 
 	#define JSVAL_IS_NUM(v)		(JSVAL_IS_NUMBER(v) && (!JSVAL_IS_DOUBLE(v) || !isnan(JSVAL_TO_DOUBLE(v))))
 

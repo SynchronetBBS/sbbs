@@ -639,22 +639,6 @@ DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* int
 	return(JS_TRUE);
 }
 
-char*
-DLLCALL js_ValueToStringBytes(JSContext* cx, jsval val, size_t* len)
-{
-	JSString* str;
-	char	*leak;
-	
-	if((str=JS_ValueToString(cx, val))==NULL)
-		return(NULL);
-
-	if(len!=NULL)
-		*len = JS_GetStringLength(str);
-
-	JSSTRING_TO_STRING(cx, str, leak, NULL);
-	return(strdup(leak));
-}
-
 static JSBool
 js_log(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -814,7 +798,8 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
     for (i = 0; i < argc; i++) {
-		if((str=js_ValueToStringBytes(cx, argv[i], &len))==NULL)
+		JSVALUE_TO_STRING(cx, argv[i], str, &len);
+		if(str==NULL)
 		    return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
 		sbbs->putcom(str, len);
