@@ -262,13 +262,10 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 		nv->value.b=JSVAL_TO_BOOLEAN(val);
 	}
 	else if(JSVAL_IS_OBJECT(val)) {
-fprintf(stderr,"OBJECT\n");
 		if(JSVAL_IS_NULL(val)) {
-fprintf(stderr,"NULL\n");
 			nv->type=JSTYPE_NULL;
 		}
 		else {
-fprintf(stderr,"Not Null\n");
 			nv->type=JSTYPE_OBJECT;
 			obj = JSVAL_TO_OBJECT(val);
 
@@ -298,14 +295,11 @@ fprintf(stderr,"Not Null\n");
 		}
 	}
 	else if(JSVAL_IS_NUMBER(val)) {
-fprintf(stderr,"Number\n");
 		nv->type = JSTYPE_NUMBER;
 		JS_ValueToNumber(cx,val,&nv->value.n);
 	} else if(JSVAL_IS_VOID(val)) {
-fprintf(stderr,"Void\n");
 		nv->type = JSTYPE_VOID;
 	} else {
-fprintf(stderr,"String\n");
 		nv->type= JSTYPE_STRING;
 		JSVALUE_TO_STRING(cx, val, p, NULL);
 		nv->value.s = strdup(p);
