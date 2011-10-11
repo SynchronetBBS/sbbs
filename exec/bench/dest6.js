@@ -289,33 +289,40 @@ test39_js.writeln('  sleep(10);');
 test39_js.writeln('}');
 test39_js.close();
 var test39 = load(true, system.temp_dir + "test39.js");
+test39_js.remove();
+test39.readValue=function() {
+	while(1) {
+		var x=this.read();
+		if(x)
+			return(x);
+		sleep(1);
+	}
+};
 log("  I: "+ test39.write(new Date("April 17, 1980 03:00:00")));
 log(" II: " + test39.write(13.37));
 log("III: "+ test39.write(1337));
 log(" IV: "+test39.write(true));
 log("  V: "+ test39.write("go-get me some Popeye's Chicken"));
-sleep(100);
-if (test39.read() != new Date("April 17, 1980 03:00:00")) {
+if (test39.readValue() != new Date("April 17, 1980 03:00:00")) {
 	log("Date on background script doesn't return date?");
-	exit();
+	log("Nope, Chuck Testa.");
 }
-if (test39.read() != 13.37) {
+if (test39.readValue() != 13.37) {
 	log("Double on background script doesn't return double?");
 	exit();
 }
-if (test39.read() != 1337) {
+if (test39.readValue() != 1337) {
 	log("Integer on background script doesn't return integer?");
 	exit();
 }
-if (test39.read() != true) {
+if (test39.readValue() != true) {
 	log("Boolean on background script doesn't return boolean?");
 	exit();
 }
-if (test39.read() != "go-get me some Popeye's Chicken") {
+if (test39.readValue() != "go-get me some Popeye's Chicken") {
 	log("String on background script doesn't return string?");
 	exit();
 }
-test39.close();
 
 log("*** Everything appears to have passed. ***");
 
