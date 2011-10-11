@@ -265,6 +265,58 @@ if (   (test36.Date.getTime() != (new Date("April 17, 1980 03:00:00")).getTime()
 	exit();
 }
 
+var test37_xml_file = new File(system.temp_dir + "xml.txt");
+test37_xml_file.open("r", true);
+var test37_xml = new XML(test37_xml_file.read());
+test37_xml_file.close();
+//var test37 = test37_xml.person(@name == "bob").age;
+//var test37 = test37_xml.find("age").text();
+
+var test38_js = new File(system.temp_dir + "test38.js");
+test38_js.open("w+");
+test38_js.writeln('log("Testing log() in background script.");');
+test38_js.close();
+var test38 = load(true, system.temp_dir + "test38.js");
+file_remove(system.temp_dir + "test38.js");
+
+var test39_js = new File(system.temp_dir + "test39.js");
+test39_js.open("w+");
+test39_js.writeln('while (1) {');
+test39_js.writeln('  var x = parent_queue.read();');
+test39_js.writeln('  if (x)');
+test39_js.writeln('     parent_queue.write(x);');
+test39_js.writeln('  sleep(10);');
+test39_js.writeln('}');
+test39_js.close();
+var test39 = load(true, system.temp_dir + "test39.js");
+log("  I: "+ test39.write(new Date("April 17, 1980 03:00:00")));
+log(" II: " + test39.write(13.37));
+log("III: "+ test39.write(1337));
+log(" IV: "+test39.write(true));
+log("  V: "+ test39.write("go-get me some Popeye's Chicken"));
+sleep(100);
+if (test39.read() != new Date("April 17, 1980 03:00:00")) {
+	log("Date on background script doesn't return date?");
+	exit();
+}
+if (test39.read() != 13.37) {
+	log("Double on background script doesn't return double?");
+	exit();
+}
+if (test39.read() != 1337) {
+	log("Integer on background script doesn't return integer?");
+	exit();
+}
+if (test39.read() != true) {
+	log("Boolean on background script doesn't return boolean?");
+	exit();
+}
+if (test39.read() != "go-get me some Popeye's Chicken") {
+	log("String on background script doesn't return string?");
+	exit();
+}
+test39.close();
+
 log("*** Everything appears to have passed. ***");
 
 exit();
