@@ -25,14 +25,13 @@ METHODS:
 	frame.close();				//removes frame contents from character canvas
 	frame.draw();				//draws the characters occupied by 'frame' coords/dimensions 
 	frame.cycle();				//checks the display matrix for updated characters and displays them 
-	frame.load(filename):			//loads a binary graphic (.BIN) or ANSI graphic (.ANS) file into the frame
+	frame.load(filename):		//loads a binary graphic (.BIN) or ANSI graphic (.ANS) file
 	frame.bottom();				//push frame to bottom of display stack
-	frame.top();					//pull frame to top of display stack
-	frame.scroll(dir);				//scroll frame one line in either direction ***NOT YET IMPLEMENTED***
-	frame.move(x,y);				//move frame one space where x = -1,0,1 and y = -1,0,1 
-	frame.moveTo(x,y);				//move frame to absolute position
-	
-	frame.clearline(attr);			//see http://synchro.net/docs/jsobjs.html#console
+	frame.top();				//pull frame to top of display stack
+	frame.scroll(dir);			//scroll frame one line in either direction ***NOT YET IMPLEMENTED***
+	frame.move(x,y);			//move frame one space where x = -1,0,1 and y = -1,0,1 
+	frame.moveTo(x,y);			//move frame to absolute position
+	frame.clearline(attr);		//see http://synchro.net/docs/jsobjs.html#console
 	frame.cleartoeol(attr);
 	frame.putmsg(str);
 	frame.clear(attr);
@@ -54,7 +53,7 @@ METHODS:
 	//add a new frame within the frame object that will display on top at position 10,10
 	var subframe = new Frame(10,10,10,10,BG_GREEN,frame);
 	
-	.//beware this sample infinite loop
+	//beware this sample infinite loop
  	while(!js.terminated) { 
 	
 		//on first call this will draw the entire initial frame
@@ -247,8 +246,8 @@ function Frame(x,y,width,height,attr,frame) {
 				pointer = canvas.data[x][y];
 
 			if(pointer instanceof Coord) {
-				ch = canvas.frame.getData(pointer).ch;
-				attr = canvas.frame.getData(pointer).attr;
+				ch = canvas.frame.getData(pointer.x,pointer.y).ch;
+				attr = canvas.frame.getData(pointer.x,pointer.y).attr;
 			}
 			console.attributes = attr;
 			
@@ -258,6 +257,13 @@ function Frame(x,y,width,height,attr,frame) {
 				console.write(" ");
 			else 
 				console.write(ch);
+		}
+		function getTop(canvas,x,y) {
+			var last = undefined;
+			for each(var c in canvas)
+				if(c.data[x][y])
+					last = c;
+			return last;
 		}
 
 		/* initialize display properties */
@@ -389,27 +395,33 @@ function Frame(x,y,width,height,attr,frame) {
 	});
 
 	/* public methods */
-	this.getData = function(pointer) {
-		return properties.data[pointer.x + position.offset.x][pointer.y + position.offset.y];
+	this.getData = function(x,y) {
+		return properties.data[x + position.offset.x][y + position.offset.y];
 	}
-	this.setData = function(pointer,ch,attr) {
-		properties.data
-			[pointer.x + position.offset.x]
-			[pointer.y + position.offset.y].ch = ch;
-		properties.data
-			[pointer.x + position.offset.x]
-			[pointer.y + position.offset.y].attr = attr;
+	this.setData = function(x,y,ch,attr) {
+		properties.data[x + position.offset.x][y + position.offset.y].ch = ch;
+		properties.data[x + position.offset.x][y + position.offset.y].attr = attr;
 	}
+	
 	this.bottom = function() {
+		for each(var c in relations.child) 
+			c.bottom();
 		properties.display.bottom(this);
 	}
 	this.top = function() {
 		properties.display.top(this);
+		for each(var c in relations.child) 
+			c.top();
 	}
 	this.open = function() {
 		properties.display.add(this);
 		for each(var c in relations.child) 
 			c.open();
+	}
+	this.refresh = function() {
+		properties.canvas.updateFrame(this);
+		for each(var c in relations.child) 
+			c.refresh();
 	}
 	this.close = function() {
 		for each(var c in relations.child) 
@@ -423,6 +435,8 @@ function Frame(x,y,width,height,attr,frame) {
 		if(this.y+y < properties.display.y ||
 			this.y+y + this.height > properties.display.y + properties.display.height)
 			return false;
+		for each(var c in relations.child) 
+			c.move(x,y);
 		properties.display.updateFrame(this);
 		properties.x += x;
 		properties.y += y;
@@ -433,13 +447,16 @@ function Frame(x,y,width,height,attr,frame) {
 			return false;
 		if(y < properties.display.y || y + this.height > properties.display.y + properties.display.height)
 			return false;
+		for each(var c in relations.child) 
+			c.moveTo(x + (c.x - this.x), y + (c.y - this.y));
 		properties.display.updateFrame(this);
 		properties.x = x;
 		properties.y = y;
 		properties.display.add(this);
 	}
 	this.draw = function() {
-		properties.display.draw(this);
+		this.refresh();
+		this.cycle();
 	}
 	this.cycle = function() {
 		return properties.display.cycle();
@@ -651,18 +668,8 @@ function Frame(x,y,width,height,attr,frame) {
 		var control_a = false;
 		var curattr = this.attr;
 		var pos = position.cursor;
-		var off = position.offset;
 
 		while(str.length > 0) {
-			if(pos.x >= this.width) {
-				pos.x=0;
-				pos.y++;
-			}
-			
-			if(pos.y >= this.height) {	
-				this.scroll();
-				pos.y--;
-			}
 			var ch = str.shift();
 			if(control_a) {
 				var k = ch;
@@ -670,8 +677,7 @@ function Frame(x,y,width,height,attr,frame) {
 					k = k.toUpperCase();
 				switch(k) {
 				case '\1':	/* A "real" ^A code */
-					this.setData(position.cursor,ch,curattr);
-					properties.display.updateChar(this,pos.x,pos.y);
+					putChar.call(this,ch,curattr);
 					pos.x++;
 					break;
 				case 'K':	/* Black */
@@ -769,8 +775,7 @@ function Frame(x,y,width,height,attr,frame) {
 					pos.y++;
 					break;
 				default:
-					this.setData(position.cursor,ch,curattr);
-					properties.display.updateChar(this,pos.x,pos.y);
+					putChar.call(this,ch,curattr);
 					pos.x++;
 					break;
 				}
@@ -778,7 +783,7 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 	}
 	this.center = function(str) {
-		position.cursor.x = Math.ceil(this.width/2) - Math.ceil(console.strlen(str)/2) + 1;
+		position.cursor.x = Math.ceil(this.width/2) - Math.ceil(console.strlen(strip_ctrl(str))/2);
 		if(position.cursor.x < 0)
 			position.cursor.x = 0;
 		this.putmsg(str);
@@ -806,12 +811,22 @@ function Frame(x,y,width,height,attr,frame) {
 	}
 	
 	/* private functions */
-	function getTop(canvas,x,y) {
-		var last = undefined;
-		for each(var c in canvas)
-			if(c.data[x][y])
-				last = c;
-		return last;
+	function putChar(ch,attr) {
+		if(position.cursor.x >= this.width) {
+			position.cursor.x=0;
+			position.cursor.y++;
+		}
+		if(position.cursor.y >= this.height) {	
+			this.scroll();
+			position.cursor.y--;
+		}
+		properties.data
+			[position.cursor.x + position.offset.x]
+			[position.cursor.y + position.offset.y].ch = ch;
+		properties.data
+			[position.cursor.x + position.offset.x]
+			[position.cursor.y + position.offset.y].attr = attr;
+		properties.display.updateChar(this,position.cursor.x,position.cursor.y);
 	}
 	function init(x,y,width,height,attr,frame) {
 		if(frame instanceof Frame) {
