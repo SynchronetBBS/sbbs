@@ -98,29 +98,19 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #include <sys/stat.h>
 
-#ifdef JAVASCRIPT
-	#ifdef __unix__
-		#define XP_UNIX
-	#else
-		#define XP_PC
-		#define XP_WIN
-	#endif
+#ifdef __unix__
+	#define XP_UNIX
+#else
+	#define XP_PC
+	#define XP_WIN
+#endif
 #ifndef __cplusplus
 	#include <stdbool.h>
 	#include <inttypes.h>
 #endif
-	#include <jsversion.h>
-#if JS_VERSION < 185
-	#define JS_THREADSAFE
-#endif
-	#include <jsapi.h>
-#if (JS_VERSION < 185) || (defined __cplusplus)
-	#include <jsprf.h>		/* JS-safe sprintf functions */
-	#include <math.h>		/* isnan() */
-#endif
-#if JS_VERSION >= 185
-	#define JS_DestroyScript(cx,script)
-#endif
+#include <jsversion.h>
+#include <jsapi.h>
+#define JS_DestroyScript(cx,script)
 
 #define JSSTRING_TO_STRING(cx, str, ret, lenptr) \
 { \
@@ -148,8 +138,6 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
 	JSSTRING_TO_STRING((cx), JSVTSstr, (ret), lenptr); \
 }
-
-#endif
 
 #ifdef USE_CRYPTLIB
 #include <cryptlib.h>
