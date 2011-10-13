@@ -18,7 +18,7 @@ struct cache_data {
 	ulong	runcount;			/* Number of times this script has been used */
 	time_t	lastrun;			/* Time script was last ran */
 	time_t	laststat;			/* Time of last call to stat() */
-	JSScript	*script;
+	JSObject	*script;
 	int		running;			/* Count of currently running scripts */
 	int		expired;			/* TRUE if last stat() makes this as stale and
 								 * running was non-zero */
@@ -43,7 +43,7 @@ extern "C" {
  * Compiles it and adds to the cache if not.
  * Increments running value.
  */
-JSScript *js_get_compiled_script(JSContext *cx, char *filename);
+JSObject *js_get_compiled_script(JSContext *cx, char *filename);
 
 /*
  * Starts the caching thread.  The caching thread periodically
