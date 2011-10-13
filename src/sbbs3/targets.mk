@@ -47,7 +47,7 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 
 all:	dlls utils console
 
-console:	xpdev-mt smblib \
+console:	$(JS_DEPS) xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
 		dlls \
 		$(SBBSCON) $(JSEXEC)
@@ -56,7 +56,7 @@ utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
 		$(LIBODIR) $(OBJODIR) $(MTOBJODIR) $(EXEODIR) \
 		$(UTILS)
 
-dlls:	smblib xpdev-mt \
+dlls:	$(JS_DEPS) smblib xpdev-mt \
 		$(MTOBJODIR) $(LIBODIR) \
 		$(SBBS) $(FTPSRVR) $(MAILSRVR) $(SERVICES)
 
