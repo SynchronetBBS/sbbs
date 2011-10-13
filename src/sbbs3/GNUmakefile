@@ -58,59 +58,11 @@ ifeq ($(os),linux)
  endif
 endif
 
-# JS and NSPR setup stuff...
-ifeq ($(shell nspr-config --version > /dev/null 2>&1 && echo YES),YES)
- NSPRDIR ?= $(shell nspr-config --libdir)
- NSPRINCLUDE ?= $(shell nspr-config --includedir)
-endif
-
-ifeq ($(os),sunos)
- ifeq ($(shell test -f /usr/sfw/lib/mozilla/libmozjs.so && echo "yes"),yes)
-  JSLIBDIR ?= /usr/sfw/lib/mozilla
-  JSLIB ?= mozjs
- endif
- ifeq ($(shell test -f /usr/sfw/lib/mozilla/libnspr4.so && echo "yes"),yes)
-  NSPRDIR ?= /usr/sfw/lib/mozilla
-  ifeq ($(shell test -d /usr/sfw/include/mozilla/nspr && echo "yes"),yes)
-   NSPRINCLUDE ?= /usr/sfw/include/mozilla/nspr
-  endif
- endif
-endif
-
-CFLAGS += -DJAVASCRIPT
-ifdef JSINCLUDE
- CFLAGS += -I$(JSINCLUDE)
-else
- CFLAGS += -I$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)include$(DIRSEP)mozilla$(DIRSEP)js
-endif
-ifdef NSPRINCLUDE
- CFLAGS += -I$(NSPRINCLUDE)
-else
- # Use local NSPR first...
- CFLAGS += -I/usr/local/include -I$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)include$(DIRSEP)mozilla$(DIRSEP)nspr
-endif
 ifdef CRYPTLIBINCLUDE
  CFLAGS += -I$(CRYPTLIBINCLUDE)
 else
  CFLAGS += -I$(SRC_ROOT)/../include/cryptlib
 endif
-ifndef JSLIBDIR
- JSLIBDIR := $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)js$(DIRSEP)$(machine).$(BUILD)
-endif
-ifndef JSLIB
- JSLIB	:=	js
-endif
-ifndef NSPRDIR
- NSPRDIR := $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)$(machine).$(BUILD)
-endif
-JS_LDFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
-#The following is needed for nspr support on Linux
-ifeq ($(os),linux)
- JS_LDFLAGS	+=	-ldl
-endif
-JS_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR) -lnspr4
-CFLAGS	+=	$(JS_CFLAGS)
-LDFLAGS	+=	$(JS_LDFLAGS)
 
 ifndef CRYPTLIBDIR
  CRYPTLIBDIR := $(SRC_ROOT)/../lib/cryptlib/$(machine).release
@@ -153,16 +105,16 @@ else
  endif
 endif
 
-CFLAGS	+=	$(UIFC-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) $(CIOLIB-MT_CFLAGS)
+CFLAGS	+=	$(UIFC-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) $(CIOLIB-MT_CFLAGS) $(JS_CFLAGS)
 CFLAGS	+=	-I../comio
 vpath %.c ../comio
 OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE)
-LDFLAGS +=	$(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(CIOLIB-MT_LDFLAGS)
+LDFLAGS +=	$(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(JS_LDFLAGS)
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(MONO_OBJS) $(OBJS)
 	@echo Linking $@
-	$(QUIET)$(CXX) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $(MONO_OBJS) $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CXX) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $(MONO_OBJS) $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS) $(JS_LIBS)
 
 # Synchronet BBS library Link Rule
 $(SBBS): $(OBJS) $(LIBS)
@@ -192,7 +144,7 @@ $(SERVICES): $(SERVICE_OBJS)
 # Synchronet Console Build Rule
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
 	@echo Linking $@
-	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(CON_OBJS) $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(CON_OBJS) $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS) $(JS_LIBS)
 
 # Baja Utility
 $(BAJA): $(BAJA_OBJS)
@@ -252,7 +204,7 @@ $(MAKEUSER): $(MAKEUSER_OBJS)
 # JSEXEC
 $(JSEXEC): $(JSEXEC_OBJS) $(SBBS)
 	@echo Linking $@
-	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(JSEXEC_OBJS) -lsbbs $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(JSEXEC_OBJS) -lsbbs $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(JS_LIBS)
 
 # ANS2ASC
 $(ANS2ASC): $(OBJODIR)/ans2asc.o

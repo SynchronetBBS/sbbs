@@ -360,6 +360,7 @@ XPDEV_SRC	:=	$(SRC_ROOT)$(DIRSEP)xpdev
 CIOLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)conio
 SMBLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	:=	$(SRC_ROOT)$(DIRSEP)uifc
+JS_SRC		:=	$(SRC_ROOT)$(DIRSEP)js
 
 # SDL ciolib enabled by default for the moment.
 ifndef WITHOUT_SDL
@@ -377,6 +378,8 @@ endif
 -include		$(CIOLIB_SRC)$(DIRSEP)Common.gmake
 -include		$(UIFC_SRC)$(DIRSEP)Common.make
 -include		$(UIFC_SRC)$(DIRSEP)Common.gmake
+-include		$(JS_SRC)$(DIRSEP)Common.make
+-include		$(JS_SRC)$(DIRSEP)Common.gmake
 
 ifdef DEBUG
  CFLAGS	+=	-ggdb
@@ -452,3 +455,7 @@ uifc:
 $(UIFCLIB-MT): uifc-mt
 uifc-mt:
 	$(MAKE) -C $(UIFC_SRC) mtlib
+
+$(JS_LIB):  $(JS_DEPS)
+js:
+	$(MAKE) -C $(JS_SRC) lib
