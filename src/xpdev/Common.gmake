@@ -171,10 +171,9 @@ else
    NO_X=1
   endif
  endif
+ XPDEV-MT_CFLAGS	+=	-I$(X_HEADERS)
+ XPDEV_CFLAGS	+=	-I$(X_HEADERS)
 endif
-
-XPDEV-MT_CFLAGS	+=	-I$(X_HEADERS)
-XPDEV_CFLAGS	+=	-I$(X_HEADERS)
 
 ifndef WITHOUT_PORTAUDIO
  PORTAUDIO_PATH ?=      $(shell if [ -f /usr/local/include/portaudio.h ]; then echo /usr/local ; elif [ -f /usr/include/portaudio.h ] ; then echo /usr ; else echo NOTFOUND ; fi)
