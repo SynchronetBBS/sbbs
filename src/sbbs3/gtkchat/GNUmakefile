@@ -22,7 +22,7 @@ endif
 
 vpath %.c ..
 
-CFLAGS	+=	-I.. -I../../comio $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) `pkg-config gtk+-2.0 --cflags`
+CFLAGS	+=	-I.. -I../../comio $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) $(JS_CFLAGS) `pkg-config gtk+-2.0 --cflags`
 LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS) `pkg-config gtk+-2.0 --libs`
 
 $(GTKCHAT): $(OBJS)

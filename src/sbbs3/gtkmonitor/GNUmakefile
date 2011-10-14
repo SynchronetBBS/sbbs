@@ -23,7 +23,7 @@ endif
 
 vpath %.c ..
 
-CFLAGS	+=	$(SBBSDEFS) -I.. -I../../comio $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) `pkg-config libglade-2.0 --cflags`
+CFLAGS	+=	$(SBBSDEFS) -I.. -I../../comio $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) $(JS_CFLAGS) `pkg-config libglade-2.0 --cflags`
 # Hopefully, -Wl,-E exports all symbols dynamically everywhere.
 LDFLAGS	+=	-Wl,-E -L../$(LIBODIR) `pkg-config libglade-2.0 --libs` $(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS)
 
