@@ -1441,7 +1441,7 @@ function History()  {
 	this.addline=History_addline;
 	this.index=-1;
 	this.incomplete="";
-	this.next getter=function()  {
+	this.__defineGetter("next", function()  {
 		if(this.index==null)  {
 			this.index=this.line.length;
 		}
@@ -1453,8 +1453,8 @@ function History()  {
 		else  {
 			return this.line[this.index];
 		}
-	}
-	this.previous getter=function()  {
+	});
+	this.__defineGetter("previous", function()  {
 		if(this.index==null)  {
 			this.index=this.line.length;
 		}
@@ -1463,7 +1463,7 @@ function History()  {
 			this.index=0;
 		}
 		return this.line[this.index];
-	}
+	});
 }
 
 function History_addline(line)  {
