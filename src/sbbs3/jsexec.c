@@ -542,7 +542,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(!JSVAL_IS_VOID(argv[0])) {
+	if(argc>0 && !JSVAL_IS_VOID(argv[0])) {
 		JSVALUE_TO_STRING(cx, argv[0], prstr, NULL);
 		if(prompt==NULL)
 			return(JS_FALSE);

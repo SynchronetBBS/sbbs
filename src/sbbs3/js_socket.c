@@ -594,7 +594,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	if(argv[0]!=JSVAL_VOID)
+	if(argc && argv[0]!=JSVAL_VOID)
 		JS_ValueToInt32(cx,argv[0],&val);
 	if(argc>1 && argv[1]!=JSVAL_VOID) 
 		JS_ValueToInt32(cx,argv[1],(int32*)&size);
@@ -1126,7 +1126,7 @@ js_ioctlsocket(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	if(argv[0]!=JSVAL_VOID)
+	if(argc && argv[0]!=JSVAL_VOID)
 		JS_ValueToInt32(cx,argv[0],&cmd);
 	if(argc>1 && argv[1]!=JSVAL_VOID)
 		JS_ValueToInt32(cx,argv[1],&arg);

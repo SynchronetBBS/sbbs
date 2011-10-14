@@ -641,7 +641,7 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+	if(argc && argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
 		JSVALUE_TO_STRING(cx, argv[0], section, NULL);
 	JSVALUE_TO_STRING(cx, argv[1], key, NULL);
 
@@ -735,7 +735,7 @@ js_iniSetValue_internal(JSContext *cx, JSObject *obj, uintN argc, jsval* argv, j
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+	if(argc && argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
 		JSVALUE_TO_STRING(cx, argv[0], section, NULL);
 	JSVALUE_TO_STRING(cx, argv[1], key, NULL);
 
@@ -821,7 +821,7 @@ js_iniRemoveKey(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+	if(argc && argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
 		JSVALUE_TO_STRING(cx, argv[0], section, NULL);
 	JSVALUE_TO_STRING(cx, argv[1], key, NULL);
 
@@ -860,7 +860,7 @@ js_iniRemoveSection(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+	if(argc && argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
 		JSVALUE_TO_STRING(cx, argv[0], section, NULL);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -947,7 +947,7 @@ js_iniGetKeys(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+	if(argc && argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
 		JSVALUE_TO_STRING(cx, argv[0], section, NULL);
     array = JS_NewArrayObject(cx, 0, NULL);
 
