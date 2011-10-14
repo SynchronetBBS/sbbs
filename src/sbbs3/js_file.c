@@ -990,7 +990,7 @@ js_iniGetObject(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+	if(argc>0 && argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
 		JSVALUE_TO_STRING(cx, argv[0], section, NULL);
 
 	rc=JS_SUSPENDREQUEST(cx);
