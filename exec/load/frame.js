@@ -4,7 +4,7 @@
  	for Synchronet v3.15a+ 
  	by Matt Johnson (2011)	
 
- DESCRIPTION:
+DESCRIPTION:
 
  	this library is meant to be used in conjunction with other libraries that
  	store display data in a Frame() object or objects
@@ -29,7 +29,7 @@ METHODS:
 	frame.bottom();				//push frame to bottom of display stack
 	frame.top();				//pull frame to top of display stack
 	frame.scroll(dir);			//scroll frame one line in either direction ***NOT YET IMPLEMENTED***
-	frame.move(x,y);			//move frame one space where x = -1,0,1 and y = -1,0,1 
+	frame.move(x,y);			//move frame one space where x = [-1|0|1] and y = [-1|0|1] 
 	frame.moveTo(x,y);			//move frame to absolute position
 	frame.clearline(attr);		//see http://synchro.net/docs/jsobjs.html#console
 	frame.cleartoeol(attr);
@@ -40,8 +40,10 @@ METHODS:
 	frame.crlf();
 	frame.getxy();
 	frame.gotoxy(x,y);
+	frame.pushxy();
+	frame.popxy();
 
- USAGE:
+USAGE:
 
 	//create a new frame object at screen position 1,1. 80 characters wide by 24 tall
 	var frame = load("frame.js",1,1,80,24,BG_BLUE);
@@ -155,22 +157,26 @@ function Frame(x,y,width,height,attr,frame) {
 		/* public methods */
 		this.cycle = function() {
 			var updates = getUpdateList().sort(updateSort);
-			var lasty = undefined;
-			var lastx = undefined;
-			var lastid = undefined;
-			for each(var u in updates) {
-				var posx = u.x + properties.x;
-				var posy = u.y + properties.y;
-				if(lasty !== u.y || lastx == undefined || (u.x - lastx) != 1) 
-					console.gotoxy(posx,posy);
-				if(lastid !== u.id)
-					console.attributes = undefined;
-				drawChar(u.ch,u.attr,posx,posy);
-				lastx = u.x;
-				lasty = u.y;
-				lastid = u.id;
+			if(updates.length > 0) {
+				var lasty = undefined;
+				var lastx = undefined;
+				var lastid = undefined;
+				for each(var u in updates) {
+					var posx = u.x + properties.x;
+					var posy = u.y + properties.y;
+					if(lasty !== u.y || lastx == undefined || (u.x - lastx) != 1) 
+						console.gotoxy(posx,posy);
+					if(lastid !== u.id)
+						console.attributes = undefined;
+					drawChar(u.ch,u.attr,posx,posy);
+					lastx = u.x;
+					lasty = u.y;
+					lastid = u.id;
+				}
+				properties.update = {};
+				return true;
 			}
-			properties.update = {};
+			return false;
  		}
 		this.draw = function() {
 		}
