@@ -13,9 +13,9 @@
 
  	the object itself takes the following parameters:
 
- 		x: 		the coordinate representing the top left corner of the frame (horiz)
- 		y: 		the coordinate representing the top left corner of the frame (vert)
- 		width: 	the horizontal width of the frame 
+ 		x: 			the coordinate representing the top left corner of the frame (horiz)
+ 		y: 			the coordinate representing the top left corner of the frame (vert)
+ 		width: 		the horizontal width of the frame 
  		height: 	the vertical height of the frame
  		attr:		the background color of the frame (displayed when there are no other contents)
 		
@@ -242,8 +242,10 @@ function Frame(x,y,width,height,attr,frame) {
 			var ch = undefined;
 			var attr = undefined;
 			
-			if(canvas instanceof Canvas)
+			if(canvas instanceof Canvas) {
 				pointer = canvas.data[x][y];
+				attr = canvas.frame.attr;
+			}
 
 			if(pointer instanceof Coord) {
 				ch = canvas.frame.getData(pointer.x,pointer.y).ch;
@@ -399,8 +401,10 @@ function Frame(x,y,width,height,attr,frame) {
 		return properties.data[x + position.offset.x][y + position.offset.y];
 	}
 	this.setData = function(x,y,ch,attr) {
-		properties.data[x + position.offset.x][y + position.offset.y].ch = ch;
-		properties.data[x + position.offset.x][y + position.offset.y].attr = attr;
+		if(ch)
+			properties.data[x + position.offset.x][y + position.offset.y].ch = ch;
+		if(attr)
+			properties.data[x + position.offset.x][y + position.offset.y].attr = attr;
 	}
 	
 	this.bottom = function() {
@@ -419,7 +423,7 @@ function Frame(x,y,width,height,attr,frame) {
 			c.open();
 	}
 	this.refresh = function() {
-		properties.canvas.updateFrame(this);
+		properties.display.updateFrame(this);
 		for each(var c in relations.child) 
 			c.refresh();
 	}
@@ -467,9 +471,8 @@ function Frame(x,y,width,height,attr,frame) {
 		case "ANS":
 			if(!(f.open("r",true,4096)))
 				return(false);
-			var lines=f.readAll();
+			var lines=f.readAll(4096);
 			f.close();
-			
 			var attr = this.attr;
 			var bg = BG_BLACK;
 			var fg = LIGHTGRAY;
@@ -480,6 +483,11 @@ function Frame(x,y,width,height,attr,frame) {
 				var x = 0;
 				var line = lines.shift();
 				while(line.length > 0) {
+					/* check line status */
+					if(x >= this.width) {
+						x = 0;
+						y++;
+					}
 					/* parse an attribute sequence*/
 					var m = line.match(/^\x1b\[(\d+);?(\d*);?(\d*)m/);
 					if(m !== null) {
