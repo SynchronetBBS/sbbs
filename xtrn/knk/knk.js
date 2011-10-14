@@ -215,9 +215,9 @@ function Player(t, n, p)
 	this.guards=8+random(15);
 	this.gold=17500+random(2500);
 	this.food=200000+random(100000);
-	this.power getter=function() { var p=((this.kastle/500)|0)+((this.soldiers/750)|0); if(p>46) return(46); return(p); };
-	this.mfood getter=function() { if(this.soldiers==0 && this.civilians==0) return(0); if(this.food==0) return(0); var f=this.food/(this.soldiers*2+this.civilians); if(f<0.1) return(0); return(f); };
-	this.mfoodstr getter=function() { return(format("%-6.3f", this.mfood).substr(0,6).replace(/\.$/,'')); };
+	this.__defineGetter__("power",  function() { var p=((this.kastle/500)|0)+((this.soldiers/750)|0); if(p>46) return(46); return(p); });
+	this.__defineGetter__("mfood", function() { if(this.soldiers==0 && this.civilians==0) return(0); if(this.food==0) return(0); var f=this.food/(this.soldiers*2+this.civilians); if(f<0.1) return(0); return(f); });
+	this.__defineGetter__("mfoodstr", function() { return(format("%-6.3f", this.mfood).substr(0,6).replace(/\.$/,'')); });
 	this.produce=Player_produce;
 	this.powerbar=Player_powerbar;
 	this.drawscreen=Player_drawscreen;
@@ -1390,7 +1390,7 @@ function UserData(alias, wins, losses, score)
 	this.wins=(wins)|0;
 	this.losses=(losses)|0;
 	this.score=(score)|0;
-	this.lines getter=function() { return([this.alias, this.wins, this.losses, this.score].join('\r\n')); };
+	this.__defineGetter__("lines", function() { return([this.alias, this.wins, this.losses, this.score].join('\r\n')); });
 }
 
 function pretty_number(num)
