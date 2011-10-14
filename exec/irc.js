@@ -1441,7 +1441,7 @@ function History()  {
 	this.addline=History_addline;
 	this.index=-1;
 	this.incomplete="";
-	this.__defineGetter("next", function()  {
+	this.__defineGetter__("next", function()  {
 		if(this.index==null)  {
 			this.index=this.line.length;
 		}
@@ -1454,7 +1454,7 @@ function History()  {
 			return this.line[this.index];
 		}
 	});
-	this.__defineGetter("previous", function()  {
+	this.__defineGetter__("previous", function()  {
 		if(this.index==null)  {
 			this.index=this.line.length;
 		}
