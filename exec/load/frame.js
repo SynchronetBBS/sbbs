@@ -220,10 +220,13 @@ function Frame(x,y,width,height,attr,frame) {
 			var list = [];
 			for(var y in properties.update) {
 				for(var x in properties.update[y]) {
-					var u = getTopChar(x,y);
-					u.x = Number(x);
-					u.y = Number(y);
-					list.push(u);		
+					var d = getTopChar(x,y);
+					list.push({
+						ch:d.ch,
+						attr:d.attr,
+						x:Number(x),
+						y:Number(y)
+					});
 				}
 			}
 			return list;
@@ -234,7 +237,8 @@ function Frame(x,y,width,height,attr,frame) {
 			return a.y-b.y;
 		}
 		function drawChar(ch,attr,xpos,ypos) {
-			console.attributes = attr;
+			if(attr)
+				console.attributes = attr;
 			if(xpos == console.screen_columns && ypos == console.screen_rows) 
 				console.cleartoeol();
 			else if(ch == undefined)
@@ -243,14 +247,12 @@ function Frame(x,y,width,height,attr,frame) {
 				console.write(ch);
 		}
 		function getTopChar(x,y) {
-			var top = undefined;
+			var top = {};
 			for each(var c in properties.canvas) {
 				var d = c.getData(x,y);
 				if(d) 
 					top = d;
 			}
-			if(!top) 
-				top=new Char();
 			return top;
 		}
 
