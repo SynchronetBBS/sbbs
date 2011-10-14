@@ -329,10 +329,10 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 #if TODO
 		if(JS_GetProperty(cx, obj, "log", &val)) {
 			JSFunction* func;
-			if((func=JS_ValueToFunction(cx, val))!=NULL && !(func->flags&JSFUN_INTERPRETED)) {
+			if((func=JS_ValueToFunction(cx, val))!=NULL && !(JS_GetFunctionFlags(func)&JSFUN_INTERPRETED)) {
 				bg->log=func->u.n.native;
 				JS_DefineFunction(bg->cx, bg->obj
-					,"log", js_log, func->nargs, func->flags);
+					,"log", js_log, JS_GetFunctionArity(func), JS_GetFunctionFlags(func));
 			}
 		}
 #else
