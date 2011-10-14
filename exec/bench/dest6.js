@@ -305,7 +305,7 @@ log(" IV: "+test39.write(true));
 log("  V: "+ test39.write("go-get me some Popeye's Chicken"));
 if (test39.readValue() != new Date("April 17, 1980 03:00:00")) {
 	log("Date on background script doesn't return date?");
-	log("Nope, Chuck Testa.");
+	log("Nope, it's just Chuck Testa with another realistic dead JavaScript object.");
 }
 if (test39.readValue() != 13.37) {
 	log("Double on background script doesn't return double?");
