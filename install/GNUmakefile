@@ -142,7 +142,7 @@ binaries:	sbbs3 scfg umonitor uedit gtkuseredit gtkchat gtkmonitor gtkuserlist s
 
 externals:	sbj sbl dpoker tbd
 
-sbbs3:	src $(SBBSDIR)/lib/mozilla/js/$(machine).$(BUILD) $(SBBSDIR)/lib/mozilla/nspr/$(machine).$(BUILD) $(SBBSDIR)/lib/cryptlib/$(machine).release
+sbbs3:	src $(SBBSDIR)/lib/cryptlib/$(machine).release
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
 scfg:	src
@@ -247,8 +247,6 @@ ifdef USE_GLADE
 endif
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/syncview/$(CCPRE).$(machine).exe.$(BUILDPATH)/syncview $(SBBSDIR)/exec/syncview
 	$(INSBIN) $(SBBSDIR)/src/sexpots/$(CCPRE).$(machine).exe.$(BUILDPATH)/sexpots $(SBBSDIR)/exec/sexpots
-# kludge... must fix this to allow moz JS libs and such.  ToDo
-	$(INSBIN) $(SBBSDIR)/lib/mozilla/*/$(machine).$(BUILD)/*.so $(SBBSDIR)/exec/
 	-chown -R $(SBBSCHOWN) $(SBBSDIR)
 	-chown -h $(SBBSCHOWN) $(SBBSDIR)/exec/*
 endif
@@ -264,16 +262,6 @@ endif
 run: 
 ifndef NOCVS
 	$(CVS_CO) run-sbbs3
-endif
-
-$(SBBSDIR)/lib/mozilla/js/$(machine).$(BUILD): 
-ifndef NOCVS
-	$(CVS_CO) lib/mozilla/js/$(machine).$(BUILD)
-endif
-
-$(SBBSDIR)/lib/mozilla/nspr/$(machine).$(BUILD): 
-ifndef NOCVS
-	$(CVS_CO) lib/mozilla/nspr/$(machine).$(BUILD)
 endif
 
 $(SBBSDIR)/lib/cryptlib/$(machine).release: 
