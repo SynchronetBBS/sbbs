@@ -76,11 +76,22 @@ load("sbbsdefs.js");
 function Frame(x,y,width,height,attr,frame) {
 
 	/* object containing data matrix and frame pointer */
-	function Canvas(width,height,frame) {
+	function Canvas(frame,display) {
 		this.frame = frame;
-		this.data = new Array(width);
-		for(var w=0;w<width;w++) 
-			this.data[w] = new Array(height);
+		this.display = display;
+		this.__defineGetter__("xoff",function() {
+			return this.frame.x - this.display.x;
+		});
+		this.__defineGetter__("yoff",function() {
+			return this.frame.y - this.display.y;
+		});
+		this.getData = function(x,y) {
+			if(x - this.xoff < 0 || y - this.yoff < 0)
+				return undefined;
+			if(x - this.xoff >= frame.width || y - this.yoff >= frame.height)
+				return undefined;
+			return frame.getData(x-this.xoff,y-this.yoff);
+		}
 	}
 	
 	/* object representing frame positional and dimensional limits and canvas stack */
@@ -146,42 +157,25 @@ function Frame(x,y,width,height,attr,frame) {
 			var updates = getUpdateList().sort(updateSort);
 			var lasty = undefined;
 			var lastx = undefined;
-			while(updates.length>0) {
-				var u = updates.shift();
+			for each(var u in updates) {
 				var posx = u.x + properties.x;
 				var posy = u.y + properties.y;
 				if(lasty !== u.y)
 					console.gotoxy(posx,posy);
-				else if(lastx == undefined || u.x - lastx !== 1) 
+				else if(lastx == undefined || (u.x - lastx) != 1) 
 					console.gotoxy(posx,posy);
-				drawChar(u.x,u.y,posx,posy);
+				drawChar(u.ch,u.attr,posx,posy);
 				lastx = u.x;
 				lasty = u.y;
 			}
 			properties.update = {};
  		}
-		this.draw = function(frame) {
-			var xoff = frame.x - properties.x;
-			var yoff = frame.y - properties.y;
-			for(var y = 0;y<frame.height;y++) {
-				console.gotoxy(frame.x,frame.y + y);
-				for(var x = 0;x<frame.width;x++) {
-					drawChar(x + xoff,y + yoff,frame.x + x,frame.y + y);
-				}
-			}
+		this.draw = function() {
 		}
 		this.add = function(frame) {
-			var canvas = new Canvas(this.width,this.height,frame)
-			var x = frame.x - this.x;
-			var y = frame.y - this.y;
-			for(var xoff = 0;xoff<frame.width;xoff++) {
-				for(var yoff = 0;yoff<frame.height;yoff++) {
-					canvas.data[xoff+x][yoff+y] = 
-						new Coord(xoff,yoff);
-					updateChar(xoff + x,yoff + y);
-				}
-			}
+			var canvas = new Canvas(frame,this);
 			properties.canvas[frame.id] = canvas;
+			this.updateFrame(frame);
 		}
 		this.remove = function(frame) {
 			delete properties.canvas[frame.id];
@@ -204,18 +198,16 @@ function Frame(x,y,width,height,attr,frame) {
 			this.updateFrame(frame);
 		}
 		this.updateFrame = function(frame) {
-			var xoff = frame.x - properties.x;
-			var yoff = frame.y - properties.y;
+			var c=properties.canvas[frame.id]
 			for(var y = 0;y<frame.height;y++) {
 				for(var x = 0;x<frame.width;x++) {
-					updateChar(xoff + x,yoff + y);
+					updateChar(c.xoff + x,c.yoff + y);
 				}
 			}
 		}
 		this.updateChar = function(frame,x,y) {
-			var xoff = frame.x - properties.x;
-			var yoff = frame.y - properties.y;
-			updateChar(xoff + x,yoff + y);
+			var c=properties.canvas[frame.id]
+			updateChar(c.xoff + x,c.yoff + y);
 		}
 				
 		/* private functions */
@@ -226,9 +218,14 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 		function getUpdateList() {
 			var list = [];
-			for(var y in properties.update) 
-				for(var x in properties.update[y])
-					list.push(new Coord(x,y));
+			for(var y in properties.update) {
+				for(var x in properties.update[y]) {
+					var u = getTopChar(x,y);
+					u.x = Number(x);
+					u.y = Number(y);
+					list.push(u);		
+				}
+			}
 			return list;
 		}
 		function updateSort(a,b) {
@@ -236,23 +233,8 @@ function Frame(x,y,width,height,attr,frame) {
 				return a.x-b.x;
 			return a.y-b.y;
 		}
-		function drawChar(x,y,xpos,ypos) {
-			var canvas = getTop(properties.canvas,x,y);
-			var pointer = undefined;
-			var ch = undefined;
-			var attr = undefined;
-			
-			if(canvas instanceof Canvas) {
-				pointer = canvas.data[x][y];
-				attr = canvas.frame.attr;
-			}
-
-			if(pointer instanceof Coord) {
-				ch = canvas.frame.getData(pointer.x,pointer.y).ch;
-				attr = canvas.frame.getData(pointer.x,pointer.y).attr;
-			}
+		function drawChar(ch,attr,xpos,ypos) {
 			console.attributes = attr;
-			
 			if(xpos == console.screen_columns && ypos == console.screen_rows) 
 				console.cleartoeol();
 			else if(ch == undefined)
@@ -260,12 +242,16 @@ function Frame(x,y,width,height,attr,frame) {
 			else 
 				console.write(ch);
 		}
-		function getTop(canvas,x,y) {
-			var last = undefined;
-			for each(var c in canvas)
-				if(c.data[x][y])
-					last = c;
-			return last;
+		function getTopChar(x,y) {
+			var top = undefined;
+			for each(var c in properties.canvas) {
+				var d = c.getData(x,y);
+				if(d) 
+					top = d;
+			}
+			if(!top) 
+				top=new Char();
+			return top;
 		}
 
 		/* initialize display properties */
@@ -406,7 +392,6 @@ function Frame(x,y,width,height,attr,frame) {
 		if(attr)
 			properties.data[x + position.offset.x][y + position.offset.y].attr = attr;
 	}
-	
 	this.bottom = function() {
 		for each(var c in relations.child) 
 			c.bottom();
@@ -418,7 +403,7 @@ function Frame(x,y,width,height,attr,frame) {
 			c.top();
 	}
 	this.open = function() {
-		properties.display.add(this);
+		properties.display.add(this, properties.data);
 		for each(var c in relations.child) 
 			c.open();
 	}
@@ -439,24 +424,24 @@ function Frame(x,y,width,height,attr,frame) {
 		if(this.y+y < properties.display.y ||
 			this.y+y + this.height > properties.display.y + properties.display.height)
 			return false;
+		properties.display.updateFrame(this);
+		this.x+=x;
+		this.y+=y;
+		properties.display.updateFrame(this);
 		for each(var c in relations.child) 
 			c.move(x,y);
-		properties.display.updateFrame(this);
-		properties.x += x;
-		properties.y += y;
-		properties.display.add(this);
 	}
 	this.moveTo = function(x,y) {
 		if(x < properties.display.x || x + this.width > properties.display.x + properties.display.width)
 			return false;
 		if(y < properties.display.y || y + this.height > properties.display.y + properties.display.height)
 			return false;
+		properties.display.updateFrame(this);
+		this.x=x;
+		this.y=y;
+		properties.display.updateFrame(this);
 		for each(var c in relations.child) 
 			c.moveTo(x + (c.x - this.x), y + (c.y - this.y));
-		properties.display.updateFrame(this);
-		properties.x = x;
-		properties.y = y;
-		properties.display.add(this);
 	}
 	this.draw = function() {
 		this.refresh();
@@ -576,7 +561,7 @@ function Frame(x,y,width,height,attr,frame) {
 				}
 				y++;
 			}
-			properties.display.add(this);
+			this.open();
 			break;
 		case "BIN":
 			if(width == undefined || height == undefined)
@@ -596,7 +581,7 @@ function Frame(x,y,width,height,attr,frame) {
 				}
 			}
 			f.close();
-			properties.display.add(this);
+			this.open();
 			break;
 		default:
 			throw("unsupported filetype");
@@ -604,7 +589,7 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 	}
 	this.scroll = function(x,y) {
-		/* for putmsg() only, add a new line to the data matrix */
+		/* default: add a new line to the data matrix */
 		if(x == undefined && y == undefined) {
 			for(var x = 0;x<this.width;x++) {
 				for(var y = 0;y<this.height;y++) 
