@@ -27,7 +27,7 @@ putenv("CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs");
 var platform = system.platform.toLowerCase();
 if(system.architecture=="x64")
 	platform += "-x64";
-var make = (platform=="win32" ? "make":"gmake JSLIB=mozjs");
+var make = (platform=="win32" ? "make":"gmake");
 var msdev = '"C:\\Program Files\\Microsoft Visual Studio\\Common\\MSDev98\\Bin\\msdev"';
 var build_output = "build_output.txt";
 var archive;
