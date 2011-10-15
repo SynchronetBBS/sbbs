@@ -660,11 +660,11 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx,argv[i++],&level);
 
     for(; i<argc; i++) {
-		JSVALUE_TO_STRING(cx, argv[i], line, NULL);
-		if(line==NULL) {
-			JS_RESUMEREQUEST(cx, rc);
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			return(JS_FALSE);
+		JSSTRING_TO_STRING(cx, str, line, NULL);
+		if(line==NULL)
 		    return(JS_FALSE);
-		}
 		rc=JS_SUSPENDREQUEST(cx);
 		if(sbbs->online==ON_LOCAL) {
 			if(startup!=NULL && startup->event_lputs!=NULL && level <= startup->log_level) {
