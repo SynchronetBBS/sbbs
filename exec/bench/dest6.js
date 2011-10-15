@@ -4,7 +4,7 @@
 
 var test01 = log(LOG_ERROR, "one", "two", "three");
 if (test01 != "three") {
-	log(LOG_ERROR, "log() test failed!");
+	log(LOG_ERROR, "log() test failed ("+test01+")!");
 	exit();
 }
 
