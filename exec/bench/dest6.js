@@ -147,7 +147,7 @@ if (test23 != "450491f4513e7e0c69ca80a9702a7196") {
 }
 
 var test24 = test16.md5_base64;
-if (test24 != "RQSR9FE+fgxpyoCpcCpxls==") {
+if (test24 != "RQSR9FE+fgxpyoCpcCpxln==") {
 	log(LOG_ERROR, "MD5 sum (base64) mismatch ("+test24+")!");
 //	exit();
 }
