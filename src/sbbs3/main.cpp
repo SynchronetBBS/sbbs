@@ -871,7 +871,6 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-    JSString *	str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 	char		*cstr;
@@ -902,12 +901,14 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-    JSString *	str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 	char		*cstr;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
 
 	JSVALUE_TO_STRING(cx, argv[0], cstr, NULL);
 	if(cstr==NULL)
@@ -924,7 +925,6 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-    JSString *	str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 	char		*cstr;
