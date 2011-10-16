@@ -697,12 +697,19 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 #define LAZY_INTEGER(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
+		v=INT_TO_JSVAL((PropValue)); \
+		JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,flags); \
+		if(name) return(JS_TRUE); \
+	}
+
+#define LAZY_UINTEGER(PropName, PropValue, flags) \
+	if(name==NULL || strcmp(name, (PropName))==0) { \
 		v=UINT_TO_JSVAL((PropValue)); \
 		JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,flags); \
 		if(name) return(JS_TRUE); \
 	}
 
-#define LAZY_INTEGER_EXPAND(PropName, PropValue, flags) \
+#define LAZY_UINTEGER_EXPAND(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
 		if(p->expand_fields || (PropValue)) { \
 			v=UINT_TO_JSVAL((PropValue)); \
@@ -712,10 +719,10 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 		else if(name) return(JS_TRUE); \
 	}
 
-#define LAZY_INTEGER_COND(PropName, Condition, PropValue, flags) \
+#define LAZY_UINTEGER_COND(PropName, Condition, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
 		if(Condition) { \
-			v=UINT_TO_JSVAL((PropValue)); \
+			v=UINT_TO_JSVAL((uint32_t)(PropValue)); \
 			JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,flags); \
 			if(name) return(JS_TRUE); \
 		} \
@@ -790,8 +797,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	if((p->msg).hdr.number==0) /* No valid message number/id/offset specified */
 		return(JS_TRUE);
 
-	LAZY_INTEGER("number", p->msg.hdr.number, JSPROP_ENUMERATE);
-	LAZY_INTEGER("offset", p->msg.offset, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("number", p->msg.hdr.number, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("offset", p->msg.offset, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP("to",p->msg.to, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP("from",p->msg.from, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP("subject",p->msg.subj, JSPROP_ENUMERATE);
@@ -803,45 +810,45 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_TRUNCSP_NULL("replyto_ext", p->msg.replyto_ext, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("reverse_path", p->msg.reverse_path, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("forward_path", p->msg.forward_path, JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("to_agent", p->msg.to_agent, JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("from_agent", p->msg.from_agent, JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("replyto_agent", p->msg.replyto_agent, JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("to_net_type", p->msg.to_net.type, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("to_agent", p->msg.to_agent, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("from_agent", p->msg.from_agent, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("replyto_agent", p->msg.replyto_agent, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("to_net_type", p->msg.to_net.type, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("to_net_addr", p->msg.to_net.type && p->msg.to_net.addr, smb_netaddrstr(&(p->msg).to_net,tmp), JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("from_net_type", p->msg.from_net.type, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("from_net_type", p->msg.from_net.type, JSPROP_ENUMERATE);
 	/* exception here because p->msg.from_net is NULL */
 	LAZY_STRING_COND("from_net_addr", p->msg.from_net.type && p->msg.from_net.addr, smb_netaddrstr(&(p->msg).from_net,tmp), JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("replyto_net_type", p->msg.replyto_net.type, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("replyto_net_type", p->msg.replyto_net.type, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("replyto_net_addr", p->msg.replyto_net.type && p->msg.replyto_net.addr, smb_netaddrstr(&(p->msg).replyto_net,tmp), JSPROP_ENUMERATE);
 	LAZY_STRING_COND("from_ip_addr", (val=smb_get_hfield(&(p->msg),SENDERIPADDR,NULL))!=NULL, val, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("from_host_name", (val=smb_get_hfield(&(p->msg),SENDERHOSTNAME,NULL))!=NULL, val, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("from_protocol", (val=smb_get_hfield(&(p->msg),SENDERPROTOCOL,NULL))!=NULL, val, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("from_port", (val=smb_get_hfield(&(p->msg),SENDERPORT,NULL))!=NULL, val, JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("forwarded", p->msg.forwarded, JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("expiration", p->msg.expiration, JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("priority", p->msg.priority, JSPROP_ENUMERATE);
-	LAZY_INTEGER_EXPAND("cost", p->msg.cost, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("forwarded", p->msg.forwarded, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("expiration", p->msg.expiration, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("priority", p->msg.priority, JSPROP_ENUMERATE);
+	LAZY_UINTEGER_EXPAND("cost", p->msg.cost, JSPROP_ENUMERATE);
 
 	/* Fixed length portion of msg header */
-	LAZY_INTEGER("type", p->msg.hdr.type, JSPROP_ENUMERATE);
-	LAZY_INTEGER("version", p->msg.hdr.version, JSPROP_ENUMERATE);
-	LAZY_INTEGER("attr", p->msg.hdr.attr, JSPROP_ENUMERATE);
-	LAZY_INTEGER("auxattr", p->msg.hdr.auxattr, JSPROP_ENUMERATE);
-	LAZY_INTEGER("netattr", p->msg.hdr.netattr, JSPROP_ENUMERATE);
-	LAZY_INTEGER("when_written_time", p->msg.hdr.when_written.time, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("type", p->msg.hdr.type, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("version", p->msg.hdr.version, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("attr", p->msg.hdr.attr, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("auxattr", p->msg.hdr.auxattr, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("netattr", p->msg.hdr.netattr, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("when_written_time", p->msg.hdr.when_written.time, JSPROP_ENUMERATE);
 	LAZY_INTEGER("when_written_zone", p->msg.hdr.when_written.zone, JSPROP_ENUMERATE);
 	LAZY_INTEGER("when_written_zone_offset", smb_tzutc(p->msg.hdr.when_written.zone), JSPROP_ENUMERATE|JSPROP_READONLY);
-	LAZY_INTEGER("when_imported_time", p->msg.hdr.when_imported.time, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("when_imported_time", p->msg.hdr.when_imported.time, JSPROP_ENUMERATE);
 	LAZY_INTEGER("when_imported_zone", p->msg.hdr.when_imported.zone, JSPROP_ENUMERATE);
 	LAZY_INTEGER("when_imported_zone_offset", smb_tzutc(p->msg.hdr.when_imported.zone), JSPROP_ENUMERATE|JSPROP_READONLY);
-	LAZY_INTEGER("thread_back", p->msg.hdr.thread_back, JSPROP_ENUMERATE);
-	LAZY_INTEGER("thread_orig", p->msg.hdr.thread_back, JSPROP_ENUMERATE);
-	LAZY_INTEGER("thread_next", p->msg.hdr.thread_next, JSPROP_ENUMERATE);
-	LAZY_INTEGER("thread_first", p->msg.hdr.thread_first, JSPROP_ENUMERATE);
-	LAZY_INTEGER("delivery_attempts", p->msg.hdr.delivery_attempts, JSPROP_ENUMERATE);
-	LAZY_INTEGER("last_downloaded", p->msg.hdr.last_downloaded, JSPROP_ENUMERATE);
-	LAZY_INTEGER("times_downloaded", p->msg.hdr.times_downloaded, JSPROP_ENUMERATE);
-	LAZY_INTEGER("data_length", smb_getmsgdatlen(&(p->msg)), JSPROP_ENUMERATE);
+	LAZY_UINTEGER("thread_back", p->msg.hdr.thread_back, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("thread_orig", p->msg.hdr.thread_back, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("thread_next", p->msg.hdr.thread_next, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("thread_first", p->msg.hdr.thread_first, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("delivery_attempts", p->msg.hdr.delivery_attempts, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("last_downloaded", p->msg.hdr.last_downloaded, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("times_downloaded", p->msg.hdr.times_downloaded, JSPROP_ENUMERATE);
+	LAZY_UINTEGER("data_length", smb_getmsgdatlen(&(p->msg)), JSPROP_ENUMERATE);
 	LAZY_STRING("date", msgdate((p->msg).hdr.when_written,date), JSPROP_ENUMERATE);
 
 	if(name==NULL || strcmp(name,"reply_id")==0) {
