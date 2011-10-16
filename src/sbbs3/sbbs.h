@@ -104,10 +104,6 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#define XP_PC
 	#define XP_WIN
 #endif
-#ifndef __cplusplus
-	#include <stdbool.h>
-	#include <inttypes.h>
-#endif
 #include <jsversion.h>
 #include <jsapi.h>
 #define JS_DestroyScript(cx,script)
