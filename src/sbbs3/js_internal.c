@@ -271,7 +271,7 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 
 	if((str=JS_ValueToString(parent_cx, argv[0]))==NULL)
 		return(JS_FALSE);
-	JSSTRING_TO_STRING(cx, str, buf, NULL);
+	JSSTRING_TO_STRING(parent_cx, str, buf, NULL);
 	if(buf==NULL)
 		return(JS_FALSE);
 	buflen=JS_GetStringLength(str);
