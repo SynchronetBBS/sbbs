@@ -72,11 +72,6 @@
 
 #endif
 
-/* Services doesn't work without JavaScript support */
-#if !defined(JAVASCRIPT)
-	#define	NO_SERVICES
-#endif
-
 /* Global variables */
 BOOL				terminated=FALSE;
 
