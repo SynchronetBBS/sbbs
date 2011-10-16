@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -129,7 +129,7 @@ BOOL ftouch(const char* fname)
 BOOL fmutex(const char* fname, const char* text, long max_age)
 {
 	int file;
-	long t;
+	time_t t;
 #if !defined(NO_SOCKET_SUPPORT)
 	char hostname[128];
 	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
