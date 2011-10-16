@@ -104,6 +104,9 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#define XP_PC
 	#define XP_WIN
 #endif
+
+#if defined(JAVASCRIPT)
+#include "comio.h"			/* needed for COM_HANDLE definition only */
 #include <jsversion.h>
 #include <jsapi.h>
 #define JS_DestroyScript(cx,script)
@@ -122,7 +125,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
 			if(((ret)=(char *)alloca(*JSSTSlenptr+1))) { \
 				for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) \
-					(ret)[JSSTSpos]=JSSTSstrval[JSSTSpos]; \
+					(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
 				(ret)[*JSSTSlenptr]=0; \
 			} \
 		} \
@@ -134,6 +137,8 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
 	JSSTRING_TO_STRING((cx), JSVTSstr, (ret), lenptr); \
 }
+
+#endif
 
 #ifdef USE_CRYPTLIB
 #include <cryptlib.h>
@@ -163,7 +168,6 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#include "threadwrap.h"	/* pthread_mutex_t */
 #endif
 
-#include "comio.h"
 #include "smblib.h"
 #include "ars_defs.h"
 #include "scfgdefs.h"
