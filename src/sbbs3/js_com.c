@@ -174,7 +174,6 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		cp;
 	int			len;
-	JSString*	str;
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -187,8 +186,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], cp, NULL);
-	len	= JS_GetStringLength(str);
+	JSVALUE_TO_STRING(cx, argv[0], cp, &len);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(comWriteBuf(p->com,cp,len)==len) {
@@ -616,8 +614,7 @@ static JSBool js_com_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = BOOLEAN_TO_JSVAL(p->debug);
 			break;
 		case COM_PROP_DESCRIPTOR:
-			*vp = INT_TO_JSVAL(p->com);
-			//p->is_open = TRUE;
+			*vp = INT_TO_JSVAL((int)p->com);
 			break;
 		case COM_PROP_NETWORK_ORDER:
 			*vp = BOOLEAN_TO_JSVAL(p->network_byte_order);
@@ -764,7 +761,6 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	private_t* p;
 	char*	protocol=NULL;
 	char*		fname;
-	JSString*	str;
 
 	obj=JS_NewObject(cx, &js_com_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));

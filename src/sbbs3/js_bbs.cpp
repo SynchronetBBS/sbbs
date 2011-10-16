@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1074,7 +1074,6 @@ js_exec_xtrn(JSContext *cx, uintN argc, jsval *arglist)
 	int32		i=0;
 	char*		code;
 	sbbs_t*		sbbs;
-    JSString*	str;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1206,7 +1205,6 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 	char*		p;
 	int32		i=0;
 	int			len;
-	JSString*	js_str;
 	sbbs_t*		sbbs;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -3263,7 +3261,6 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	uchar*		ar;
-	JSString*	js_str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 	char		*p;

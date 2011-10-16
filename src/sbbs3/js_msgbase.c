@@ -1518,7 +1518,6 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	smbmsg_t	rcpt_msg;
 	smbmsg_t	msg;
 	client_t*	client=NULL;
-	jsval		open_rval;
 	private_t*	p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
