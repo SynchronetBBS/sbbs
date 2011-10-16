@@ -510,7 +510,6 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	char*		fname;
 	long		len;
 	int			file;
-	JSString*	str;
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -644,10 +643,9 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	int32		len=512;
 	JSString*	str;
 	jsrefcount	rc;
+	private_t*	p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -705,10 +703,9 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 	SOCKADDR_IN	addr;
 	socklen_t	addrlen;
 	jsrefcount	rc;
+	private_t*	p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -827,10 +824,9 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	int32		len=512;
 	JSString*	str;
 	jsrefcount	rc;
+	private_t*	p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
