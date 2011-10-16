@@ -935,8 +935,6 @@ long js_exec(const char *fname, char** args)
 			,path
 			,diff);
 
-	JS_DestroyScript(js_cx, js_script);
-
 	JS_GC(js_cx);
 
 	if(js_buf!=NULL)

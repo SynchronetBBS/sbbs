@@ -312,7 +312,6 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 		jsval	rval;
 
 		JS_ExecuteScript(cx, obj, script, &rval);
-		JS_DestroyScript(cx, script);
 		JS_SET_RVAL(cx, arglist, rval);
 	}
 
@@ -475,7 +474,6 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_branch_t* branch)
 	while((p=strListPop(&branch->exit_func))!=NULL) {
 		if((script=JS_CompileScript(cx, obj, p, strlen(p), NULL, 0))!=NULL) {
 			JS_ExecuteScript(cx, obj, script, &rval);
-			JS_DestroyScript(cx, script);
 		}
 		free(p);
 	}

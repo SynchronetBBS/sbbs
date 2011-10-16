@@ -128,7 +128,6 @@ static void background_thread(void* arg)
 		result=exit_code;
 	js_EvalOnExit(bg->cx, bg->obj, &bg->branch);
 	js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
-	JS_DestroyScript(bg->cx, bg->script);
 	JS_ENDREQUEST(bg->cx);
 	JS_DestroyContext(bg->cx);
 	jsrt_Release(bg->runtime);
@@ -481,7 +480,6 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 		success = JS_ExecuteScript(exec_cx, exec_obj, script, &rval);
 		JS_SET_RVAL(cx, arglist, rval);
-		JS_DestroyScript(exec_cx, script);
 	}
 
     return(success);

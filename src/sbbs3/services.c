@@ -1209,7 +1209,6 @@ static void js_service_thread(void* arg)
 #endif
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		js_EvalOnExit(js_cx, js_glob, &service_client.branch);
-		JS_DestroyScript(js_cx, js_script);
 	}
 	JS_ENDREQUEST(js_cx);
 	JS_DestroyContext(js_cx);	/* Free Context */
@@ -1319,7 +1318,6 @@ static void js_static_service_thread(void* arg)
 		js_PrepareToExecute(js_cx, js_glob, spath, /* startup_dir */NULL);
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		js_EvalOnExit(js_cx, js_glob, &service_client.branch);
-		JS_DestroyScript(js_cx, js_script);
 
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);	/* Free Context */

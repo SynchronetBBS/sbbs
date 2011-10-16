@@ -4672,8 +4672,6 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 
 	/* Free up temporary resources here */
 
-	if(js_script!=NULL) 
-		JS_DestroyScript(session->js_cx, js_script);
 	session->req.dynamic=IS_SSJS;
 	JS_ENDREQUEST(session->js_cx);
 	

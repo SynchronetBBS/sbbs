@@ -1902,8 +1902,6 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 
 		JS_GetProperty(*js_cx, *js_glob, "exit_code", &rval);
 
-		JS_DestroyScript(*js_cx, js_script);
-
 		JS_ClearScope(*js_cx, js_scope);
 
 		JS_GC(*js_cx);

@@ -1017,9 +1017,6 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 	} while(0);
 
 
-	if(js_script!=NULL) 
-		JS_DestroyScript(js_cx, js_script);
-
 	JS_DeleteProperty(js_cx, parent, "path");
 	JS_DeleteProperty(js_cx, parent, "sort");
 	JS_DeleteProperty(js_cx, parent, "reverse");
