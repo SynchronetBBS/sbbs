@@ -57,7 +57,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\mozilla\js\src\dist\include;..\xpdev;..\smblib;..\comio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\js\win32.release\include\js;..\xpdev;..\smblib;..\comio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;_USRDLL;MAILSRVR_EXPORTS;SMB_IMPORTS;MD5_IMPORTS;JAVASCRIPT;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -75,7 +75,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>wsock32.lib;winmm.lib;odbc32.lib;odbccp32.lib;../mozilla/js/src/dist/lib/mozjs185-1.0.lib;../../lib/microsoft/psdk/iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wsock32.lib;winmm.lib;odbc32.lib;odbccp32.lib;..\js\win32.release\lib\mozjs185-1.0.lib;../../lib/microsoft/psdk/iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>.\msvc.win32.dll.debug/mailsrvr.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -106,7 +106,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..\include\mozilla\js;..\xpdev;..\smblib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\js\win32.release\include\js;..\xpdev;..\smblib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;_USRDLL;MAILSRVR_EXPORTS;SMB_IMPORTS;MD5_IMPORTS;JAVASCRIPT;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -123,7 +123,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>wsock32.lib;winmm.lib;odbc32.lib;odbccp32.lib;../../lib/mozilla/js/win32.debug/js32.lib;../../lib/microsoft/psdk/iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wsock32.lib;winmm.lib;odbc32.lib;odbccp32.lib;..\js\win32.release\lib\mozjs185-1.0.lib;../../lib/mozilla/js/win32.debug/js32.lib;../../lib/microsoft/psdk/iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>.\msvc.win32.dll.release/mailsrvr.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ProgramDatabaseFile>.\msvc.win32.dll.release/mailsrvr.pdb</ProgramDatabaseFile>

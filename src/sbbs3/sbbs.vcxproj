@@ -57,7 +57,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\mozilla\js\src\dist\include;..\..\include\mozilla\nspr;..\xpdev;..\smblib;..\..\include\cryptlib;%(AdditionalIncludeDirectories);..\comio</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\js\win32.release\include\js;..\..\include\mozilla\nspr;..\xpdev;..\smblib;..\..\include\cryptlib;%(AdditionalIncludeDirectories);..\comio</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;USE_CRYPTLIB;WIN32;_WINDOWS;_USRDLL;SBBS;SBBS_EXPORTS;SMB_EXPORTS;JAVASCRIPT;RINGBUF_SEM;RINGBUF_MUTEX;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -76,7 +76,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;../../lib/cryptlib/win32.release/cl32.lib;../../lib/microsoft/psdk/iphlpapi.lib;%(AdditionalDependencies);../mozilla/js/src/dist/lib/mozjs185-1.0.lib</AdditionalDependencies>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;../../lib/cryptlib/win32.release/cl32.lib;../../lib/microsoft/psdk/iphlpapi.lib;%(AdditionalDependencies);../js/win32.release/lib/mozjs185-1.0.lib</AdditionalDependencies>
       <OutputFile>.\msvc.win32.dll.debug/sbbs.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>

@@ -54,7 +54,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..\include\mozilla\js;../xpdev;../smblib;../uifc;../conio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\js\win32.release\include\js;../xpdev;../smblib;../uifc;../conio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -94,7 +94,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\mozilla\js\src\dist\include;../xpdev;../smblib;../uifc;../conio;%(AdditionalIncludeDirectories);..\comio</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\js\win32.release\include\js;../xpdev;../smblib;../uifc;../conio;%(AdditionalIncludeDirectories);..\comio</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;WIN32;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -112,7 +112,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>wsock32.lib;odbc32.lib;odbccp32.lib;../mozilla/js/src/dist/lib/mozjs185-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wsock32.lib;odbc32.lib;odbccp32.lib;../js/win32.release/lib/mozjs185-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>.\msvc.win32.exe.debug/jsexec.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
