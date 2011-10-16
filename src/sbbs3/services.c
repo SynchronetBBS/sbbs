@@ -360,7 +360,6 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	uintN		i;
 	char*		cp;
-	JSString*	str;
 	service_client_t* client;
 	jsrefcount	rc;
 
@@ -415,7 +414,6 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	char		str[512];
     uintN		i=0;
 	int32		level=LOG_INFO;
-    JSString*	js_str;
 	service_client_t* client;
 	jsrefcount	rc;
 	char		*line;

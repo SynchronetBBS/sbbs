@@ -431,10 +431,10 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_PHONE,LEN_PHONE,user->phone);
 	putrec(userdat,U_BIRTH,LEN_BIRTH,user->birth);
 	putrec(userdat,U_MODEM,LEN_MODEM,user->modem);
-	putrec(userdat,U_LASTON,8,ultoa(user->laston,str,16));
-	putrec(userdat,U_FIRSTON,8,ultoa(user->firston,str,16));
-	putrec(userdat,U_EXPIRE,8,ultoa(user->expire,str,16));
-	putrec(userdat,U_PWMOD,8,ultoa(user->pwmod,str,16));
+	putrec(userdat,U_LASTON,8,ultoa((ulong)user->laston,str,16));
+	putrec(userdat,U_FIRSTON,8,ultoa((ulong)user->firston,str,16));
+	putrec(userdat,U_EXPIRE,8,ultoa((ulong)user->expire,str,16));
+	putrec(userdat,U_PWMOD,8,ultoa((ulong)user->pwmod,str,16));
 	putrec(userdat,U_PWMOD+8,2,crlf);
 
 	putrec(userdat,U_LOGONS,5,ultoa(user->logons,str,10));
@@ -496,8 +496,8 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_QWK,8,ultoa(user->qwk,str,16));
 	putrec(userdat,U_TMPEXT,3,user->tmpext);
 	putrec(userdat,U_CHAT,8,ultoa(user->chat,str,16));
-	putrec(userdat,U_NS_TIME,8,ultoa(user->ns_time,str,16));
-	putrec(userdat,U_LOGONTIME,8,ultoa(user->logontime,str,16));
+	putrec(userdat,U_NS_TIME,8,ultoa((ulong)user->ns_time,str,16));
+	putrec(userdat,U_LOGONTIME,8,ultoa((ulong)user->logontime,str,16));
 
 	putrec(userdat,U_UNUSED,U_LEN-(U_UNUSED)-2,crlf);
 	putrec(userdat,U_UNUSED+(U_LEN-(U_UNUSED)-2),2,crlf);
@@ -2132,7 +2132,7 @@ BOOL DLLCALL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logonti
 	tused=(now-logontime)/60;
 	user->tlast=(ushort)(tused > USHRT_MAX ? USHRT_MAX : tused);
 
-	putuserrec(cfg,user->number,U_LASTON,8,ultoa(now,str,16));
+	putuserrec(cfg,user->number,U_LASTON,8,ultoa((ulong)now,str,16));
 	putuserrec(cfg,user->number,U_TLAST,5,ultoa(user->tlast,str,10));
 	adjustuserrec(cfg,user->number,U_TIMEON,5,user->tlast);
 	adjustuserrec(cfg,user->number,U_TTODAY,5,user->tlast);
@@ -2627,7 +2627,7 @@ time_t DLLCALL gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 		if(tleft>cfg->level_timepercall[user->level]*60)
 			tleft=cfg->level_timepercall[user->level]*60;
 		tleft+=user->min*60L;
-		tleft-=now-starttime;
+		tleft-=(long)(now-starttime);
 		if(tleft>0x7fffL)
 			timeleft=0x7fff;
 		else
