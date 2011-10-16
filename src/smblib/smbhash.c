@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -185,7 +185,7 @@ static char* strip_ctrla(uchar* dst, const uchar* src)
 
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
-hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags
+hash_t* SMBCALL smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 						 ,const void* data, size_t length)
 {
 	hash_t*	hash;
@@ -215,7 +215,7 @@ hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Supports string hash "pre-processing" (e.g. lowercase, strip whitespace)	*/
 /* Returns NULL on failure													*/
-hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned flags
+hash_t* SMBCALL smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 							,const char* str)
 {
 	char*	p=(char *)str;
@@ -256,15 +256,15 @@ hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mas
 	memset(hashes, 0, sizeof(hash_t*)*(SMB_HASH_SOURCE_TYPES+1));
 
 	if(msg->id!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_MSG_ID)) &&
-		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_MSG_ID, flags, msg->id))!=NULL)
+		(hash=smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_MSG_ID, flags, msg->id))!=NULL)
 		hashes[h++]=hash;
 
 	if(msg->ftn_msgid!=NULL	&& (source_mask&(1<<SMB_HASH_SOURCE_FTN_ID)) &&
-		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_FTN_ID, flags, msg->ftn_msgid))!=NULL)
+		(hash=smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_FTN_ID, flags, msg->ftn_msgid))!=NULL)
 		hashes[h++]=hash;
 
 	if(body!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_BODY)) &&
-		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_BODY, flags|SMB_HASH_STRIP_WSP|SMB_HASH_STRIP_CTRL_A, body))!=NULL)
+		(hash=smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_BODY, flags|SMB_HASH_STRIP_WSP|SMB_HASH_STRIP_CTRL_A, body))!=NULL)
 		hashes[h++]=hash;
 
 	if(msg->subj!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_SUBJECT))) {
@@ -279,7 +279,7 @@ hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mas
 			}
 			break;
 		}
-		if((hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_SUBJECT, flags, p))!=NULL)
+		if((hash=smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_SUBJECT, flags, p))!=NULL)
 			hashes[h++]=hash;
 	}
 

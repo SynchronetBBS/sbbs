@@ -243,7 +243,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 		}
 
 		if(msg->hdr.when_imported.time==0) {
-			msg->hdr.when_imported.time=time(NULL);
+			msg->hdr.when_imported.time=(uint32_t)time(NULL);
 			msg->hdr.when_imported.zone=0;	/* how do we detect system TZ? */
 		}
 		if(msg->hdr.when_written.time==0)	/* Uninitialized */
