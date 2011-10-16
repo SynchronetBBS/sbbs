@@ -127,7 +127,7 @@ void sbbs_get_js_settings(
 	js->gc_interval		= iniGetInteger(list,section,strJavaScriptGcInterval	,defaults->gc_interval);
 	js->yield_interval	= iniGetInteger(list,section,strJavaScriptYieldInterval	,defaults->yield_interval);
 
-	/* Get JavaScriptLoadPath, use default is key is missing, use blank if key value is blank */
+	/* Get JavaScriptLoadPath, use default if key is missing, use blank if key value is blank */
     if((p=iniGetExistingString(list, section, strJavaScriptLoadPath, nulstr, value)) == NULL) {
 		if(defaults!=js)
 			SAFECOPY(js->load_path, defaults->load_path);
