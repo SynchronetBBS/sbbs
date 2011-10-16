@@ -598,9 +598,10 @@ js_putenv(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		p;
+	char*		p=NULL;
 
-	JSVALUE_TO_STRING(cx, argv[0], p, NULL);
+	if(argc)
+		JSVALUE_TO_STRING(cx, argv[0], p, NULL);
 	if(p==NULL) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 		return(JS_TRUE);
