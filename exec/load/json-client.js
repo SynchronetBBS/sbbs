@@ -107,14 +107,16 @@ function JSONClient(serverAddr,serverPort) {
     this.subscribe=function(scope,location) {
 		this.send(scope,"QUERY",{
             oper:"SUBSCRIBE",
-            location:location,
+			nick:user?user.alias:undefined,
+			system:system?system.name:undefined,
+            location:location
         });
     }
     
     this.unsubscribe=function(scope,location) {
 		this.send(scope,"QUERY",{
             oper:"UNSUBSCRIBE",
-            location:location,
+            location:location
         });
     }
 	
