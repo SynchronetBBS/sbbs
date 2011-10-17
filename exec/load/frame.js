@@ -570,6 +570,8 @@ function Frame(x,y,width,height,attr,frame) {
 					/* set character and attribute */
 					var ch = line[0];
 					line = line.substr(1);
+					if(!properties.data[x])
+						properties.data[x]=[];
 					properties.data[x][y]=new Char(ch,attr,this.id);
 					x++;
 				}
@@ -592,6 +594,8 @@ function Frame(x,y,width,height,attr,frame) {
 						return(false);
 					c.attr = f.readBin(1);
 					c.id = this.id;
+					if(!properties.data[x])
+						properties.data[x]=[];
 					properties.data[x][y] = c;
 				}
 			}
