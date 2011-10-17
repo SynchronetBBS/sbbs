@@ -19,6 +19,25 @@ static SOCKET	sock;
 CRYPT_SESSION	ssh_session;
 int				ssh_active=FALSE;
 
+static void cryptlib_error_message(int status, char * msg)
+{
+	char	str[32];
+	char	str2[32];
+	char	*errmsg;
+	int		err_len;
+
+	sprintf(str,"Error %d %s",status, msg);
+	cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &err_len);
+	errmsg=(char *)malloc(err_len+strlen(str)+5);
+	strcpy(errmsg, str);
+	cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, errmsg+strlen(str), &err_len);
+	errmsg[strlen(str)+err_len]=0;
+	strcat(errmsg,"\r\n\r\n");
+	sprintf(str2,"Error %s", msg);
+	uifcmsg(str2, errmsg);
+	free(errmsg);
+}
+
 void ssh_input_thread(void *args)
 {
 	fd_set	rds;
@@ -46,18 +65,11 @@ void ssh_input_thread(void *args)
 		while(rd) {
 			status=cl.PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
 			if(cryptStatusError(status)) {
-				char	str[2048];
-				int		err_len;
-
 				if(status==CRYPT_ERROR_COMPLETE || status == CRYPT_ERROR_READ) {	/* connection closed */
 					ssh_active=FALSE;
 					break;
 				}
-				sprintf(str,"Error %d recieving data",status);
-				strcat(str,"\r\n\r\n");
-				err_len=sizeof(str)-strlen(str)-1;
-				cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, str+strlen(str), &err_len);
-				uifcmsg("Error recieving data",str);
+				cryptlib_error_message(status, "recieving data");
 				break;
 			}
 			else {
@@ -94,18 +106,12 @@ void ssh_output_thread(void *args)
 			while(sent < wr) {
 				status=cl.PushData(ssh_session, conn_api.wr_buf+sent, wr-sent, &ret);
 				if(cryptStatusError(status)) {
-					char	str[2048];
-					int		err_len;
-
 					if(status==CRYPT_ERROR_COMPLETE) {	/* connection closed */
 						ssh_active=FALSE;
 						break;
 					}
-					sprintf(str,"Error %d sending data",status);
-					strcat(str,"\r\n\r\n");
-					err_len=sizeof(str)-strlen(str)-1;
-					cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, str+strlen(str), &err_len);
-					uifcmsg("Error sending data",str);
+					cryptlib_error_message(status, "sending data");
+					break;
 				}
 				sent += ret;
 			}
@@ -213,14 +219,7 @@ int ssh_connect(struct bbslist *bbs)
 	uifc.pop("Activating Session");
 	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
 	if(cryptStatusError(status)) {
-		char	str[2048];
-		int err_len;
-
-		sprintf(str,"Error %d activating session",status);
-		strcat(str,"\r\n\r\n");
-		err_len=sizeof(str)-strlen(str)-1;
-		cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, str+strlen(str), &err_len);
-		uifcmsg("Error activating session",str);
+		cryptlib_error_message(status, "activating session");
 		conn_api.terminate=1;
 		uifc.pop(NULL);
 		return(-1);
