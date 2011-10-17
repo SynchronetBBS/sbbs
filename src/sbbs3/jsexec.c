@@ -607,7 +607,7 @@ js_putenv(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(putenv(p)==0));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(putenv(strdup(p))==0));
 	return(JS_TRUE);
 }
 
