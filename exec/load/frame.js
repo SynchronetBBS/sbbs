@@ -28,8 +28,9 @@ METHODS:
 	frame.load(filename):		//loads a binary graphic (.BIN) or ANSI graphic (.ANS) file
 	frame.bottom();				//push frame to bottom of display stack
 	frame.top();				//pull frame to top of display stack
-	frame.scroll(dir);			//scroll frame one line in either direction ***NOT YET IMPLEMENTED***
-	frame.move(x,y);			//move frame one space where x = [-1|0|1] and y = [-1|0|1] 
+	frame.scroll(x,y);			//scroll frame n spaces in any direction
+	frame.scroll(x,y);			//scroll frame to absolute offset
+	frame.move(x,y);			//move frame n spaces in any direction
 	frame.moveTo(x,y);			//move frame to absolute position
 	frame.clearline(attr);		//see http://synchro.net/docs/jsobjs.html#console
 	frame.cleartoeol(attr);
@@ -625,13 +626,27 @@ function Frame(x,y,width,height,attr,frame) {
 				position.offset.y += y;
 			if(position.offset.x < 0)
 				position.offset.x = 0;
+			else if(position.offset.x + this.width > properties.data.length)
+				position.offset.x = properties.data.length - this.width;
 			if(position.offset.y < 0)
 				position.offset.y = 0;
-			if(position.offset.x + this.width > properties.data.length)
-				position.offset.x = properties.data.length - this.width;
-			if(position.offset.y + this.height > properties.data[0].length)
+			else if(position.offset.y + this.height > properties.data[0].length)
 				position.offset.y = properties.data[0].length - this.height;
 		}
+	}
+	this.scrollTo = function(x,y) {
+		if(typeof x == "number")
+			position.offset.x = x;
+		if(typeof y == "number")
+			position.offset.y = y;
+		if(position.offset.x < 0)
+			position.offset.x = 0;
+		else if(position.offset.x + this.width > properties.data.length)
+			position.offset.x = properties.data.length - this.width;
+		if(position.offset.y < 0)
+			position.offset.y = 0;
+		else if(position.offset.y + this.height > properties.data[0].length)
+			position.offset.y = properties.data[0].length - this.height;
 	}
 
 	/* console method emulation */
