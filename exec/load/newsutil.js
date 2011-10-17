@@ -168,8 +168,8 @@ function parse_news_header(hdr, line)
 				hdr.field_list=new Array();
 			hdr[line.toLowerCase()]=
 				{	type: RFC822HEADER, 
-					data getter: function() { return(this.hdr_name+': '+this.hdr_data); },
-					data setter: function(v) { 
+					get data() { return(this.hdr_name+': '+this.hdr_data); },
+					set data(v) { 
 						var m=v.split(/:\s*/,2);
 						if(m.length==1)
 							this.hdr_data=v;
