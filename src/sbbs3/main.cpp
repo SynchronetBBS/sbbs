@@ -4426,7 +4426,6 @@ void DLLCALL bbs_thread(void* arg)
 
 	uptime=0;
 	served=0;
-	protected_uint32_init(&node_threads_running,0);
 
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
@@ -4435,6 +4434,8 @@ void DLLCALL bbs_thread(void* arg)
 	SetThreadName("BBS");
 
 	do {
+
+	protected_uint32_init(&node_threads_running,0);
 
 	thread_up(FALSE /* setuid */);
 
