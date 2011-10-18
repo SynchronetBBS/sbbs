@@ -79,14 +79,17 @@ $(LIBPREFIX):
 	mkdir $(LIBPREFIX)
 
 clean:
-	rm \
+	-rm \
 	$(LIBPREFIX)doors.o \
 	$(LIBPREFIX)tplib.o \
 	timeport$(BINSUFFIX) \
 	tp-event$(BINSUFFIX) \
-	outside$(BINSUFFIX) \
 	makemod$(BINSUFFIX) \
+	outside$(BINSUFFIX) \
 	badtimes$(BINSUFFIX) \
+	stoneage$(BINSUFFIX) \
+	twenties$(BINSUFFIX) \
+	install$(BINSUFFIX) \
 	$(LIBPREFIX)libtp.so \
 	$(LIBPREFIX)libtp.so.$(VER)
 

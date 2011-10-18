@@ -857,7 +857,7 @@ void OpenStats(char *a1)
 	short c=0;
 	char str[MAXPATHLEN];
 	FILE *file;
-	unsigned char buf[241];
+	char buf[241];
 	int x;
 	char ach1[16];
 
@@ -927,7 +927,7 @@ void OpenStats(char *a1)
 			RecordNumber = c;
 			FirstAvail = c;
 		}
-		if(*buf<' ' || *buf > 128)
+		if(*buf<' ' && *buf > -128)
 		{
         	ch1[0]=0;
         	Found = 1;
@@ -1135,7 +1135,7 @@ void SaveStats(char *a0, char *a1, int b1, int c1, char *d1, char *E1, char *f1,
 	short c=0;
 	char path[MAXPATHLEN];
 	FILE *file;
-	unsigned char buf[241];
+	char buf[241];
 	char outbuf[241];
 	int	Record=0;
 
@@ -1147,7 +1147,7 @@ void SaveStats(char *a0, char *a1, int b1, int c1, char *d1, char *E1, char *f1,
 	    c++;
 		buf[0]=0;
 		fread(buf, RecLen, 1, file);
-    	if(buf[0] < ' ' || buf[0] > 128)
+    	if(buf[0] < ' ' && buf[0] > -128)
 		{
 			// buf[0] = 0;
 			strcpy(buf,a1);
@@ -1211,7 +1211,7 @@ void SaveStrStats(char *a0, char *a1, char *b1, char *c1, char *d1, char *E1, ch
 	short c=0;
 	char path[MAXPATHLEN];
 	FILE *file;
-	unsigned char buf[241];
+	char buf[241];
 	char outbuf[241];
 	int	Record=0;
 
@@ -1223,7 +1223,7 @@ void SaveStrStats(char *a0, char *a1, char *b1, char *c1, char *d1, char *E1, ch
 	    c++;
 		buf[0]=0;
 		fread(buf, RecLen, 1, file);
-    	if(buf[0] < ' ' || buf[0] > 128)
+    	if(buf[0] < ' ' && buf[0] > -128)
 		{
 			// buf[0] = 0;
 			strcpy(buf,a1);
