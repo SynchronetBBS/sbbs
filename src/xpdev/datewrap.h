@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -45,10 +45,14 @@ extern "C" {
 #endif
 
 /* Return difference (in seconds) in time() result from standard (0 on success) */
-time_t checktime(void);
+DLLEXPORT time_t	DLLCALL		checktime(void);
 
 /* Implementation of mktime() that handles common tm element conversions for you */
-time_t sane_mktime(struct tm* tm);
+DLLEXPORT time_t	DLLCALL		sane_mktime(struct tm*);
+
+/* Legacy (32-bit time_t) versions of time() and mktime() */
+DLLEXPORT time32_t	DLLCALL		time32(time32_t* tp);
+DLLEXPORT time32_t	DLLCALL		mktime32(struct tm*);
 
 /*********************************************************************************/
 /* Win32 implementations of recursive (thread-safe) std C time functions on Unix */
@@ -90,8 +94,8 @@ struct time {
 };
 
 #define getdate(x)	xp_getdate(x)
-void xp_getdate(struct date*);
-void gettime(struct time*);
+DLLEXPORT void	DLLCALL		xp_getdate(struct date*);
+DLLEXPORT void	DLLCALL		gettime(struct time*);
 
 #endif	/* !Borland */
 

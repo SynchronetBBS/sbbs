@@ -40,7 +40,7 @@
 #include "datewrap.h"
 
 /* Return difference (in seconds) in time() result from standard */
-time_t checktime(void)
+time_t DLLCALL checktime(void)
 {
 	time_t		t=0x2D24BD00L;	/* Correct time_t value on Jan-1-1994 */
 	struct tm	gmt;
@@ -53,7 +53,7 @@ time_t checktime(void)
 }
 
 /* Compensates for struct tm "weirdness" */
-time_t sane_mktime(struct tm* tm)
+time_t DLLCALL sane_mktime(struct tm* tm)
 {
 	if(tm->tm_year>=1900)
 		tm->tm_year-=1900;
@@ -62,6 +62,27 @@ time_t sane_mktime(struct tm* tm)
 	tm->tm_isdst=-1;	/* Auto-adjust for DST */
 
 	return mktime(tm);
+}
+
+time32_t DLLCALL time32(time32_t* tp)
+{
+	time_t t;
+
+	t=time(NULL);
+
+	if(tp!=NULL)
+		*tp=(time32_t)t;
+
+	return (time32_t)t;
+}
+
+time32_t DLLCALL mktime32(struct tm* tm)
+{
+	time_t t;
+
+	t=sane_mktime(tm);
+
+	return (time32_t)t;
 }
 
 #if !defined(__BORLANDC__)
@@ -76,7 +97,7 @@ time_t sane_mktime(struct tm* tm)
 	#include <sys/time.h>	/* stuct timeval, gettimeofday() */
 #endif
 
-void xp_getdate(struct date* nyd)
+void DLLCALL xp_getdate(struct date* nyd)
 {
 	time_t tim;
 	struct tm dte;
@@ -88,7 +109,7 @@ void xp_getdate(struct date* nyd)
 	nyd->da_mon=dte.tm_mon+1;
 }
 
-void gettime(struct time* nyt)
+void DLLCALL gettime(struct time* nyt)
 {
 #if defined(_WIN32)
 	SYSTEMTIME systime;
