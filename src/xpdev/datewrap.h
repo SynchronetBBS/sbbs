@@ -45,14 +45,15 @@ extern "C" {
 #endif
 
 /* Return difference (in seconds) in time() result from standard (0 on success) */
-DLLEXPORT time_t	DLLCALL		checktime(void);
+DLLEXPORT time_t		DLLCALL		checktime(void);
 
 /* Implementation of mktime() that handles common tm element conversions for you */
-DLLEXPORT time_t	DLLCALL		sane_mktime(struct tm*);
+DLLEXPORT time_t		DLLCALL		sane_mktime(struct tm*);
 
 /* Legacy (32-bit time_t) versions of time() and mktime() */
-DLLEXPORT time32_t	DLLCALL		time32(time32_t* tp);
-DLLEXPORT time32_t	DLLCALL		mktime32(struct tm*);
+DLLEXPORT time32_t		DLLCALL		time32(time32_t* tp);
+DLLEXPORT time32_t		DLLCALL		mktime32(struct tm*);
+DLLEXPORT struct tm*	DLLCALL		localtime32_r(const time32_t* t, struct tm* tm);
 
 /*********************************************************************************/
 /* Win32 implementations of recursive (thread-safe) std C time functions on Unix */
