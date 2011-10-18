@@ -28,11 +28,12 @@
 		//script will end when the event runs its course
 */
 function Timer() {
+	this.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
 	this.events = [];
 	
 	/* called by parent script, generally in a loop, and generally with a pause or timeout to minimize cpu usage */
 	this.cycle = function() {
-		var now = time();
+		var now = Date.now();
 		var count = 0;
 		/* scan all events and run any that are due */
 		for(var e = 0; e<this.events.length; e++) {
@@ -65,7 +66,7 @@ function Timer() {
 	/* event object created by addEvent */
 	function Event(interval,repeat,action,arguments,context) {
 		/* last time_t at which event was executed */
-		this.lastrun = time();
+		this.lastrun = Date.now();
 		/* seconds between event occurance */
 		this.interval=interval;
 		/* number of times to repeat, true to repeat indefinitely, false to run only once */
@@ -79,10 +80,9 @@ function Timer() {
 		/* run event */
 		this.run = function() {
 			this.action.apply(this.context,this.arguments);
-			this.lastrun = time();
+			this.lastrun = Date.now();
 		}
 	}
 };
-
 
 
