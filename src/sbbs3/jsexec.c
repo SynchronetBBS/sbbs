@@ -454,7 +454,6 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-    JSString *	str;
 	jsrefcount	rc;
 	char		*line;
 
@@ -535,7 +534,6 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		instr[81];
-    JSString *	prompt;
     JSString *	str;
 	jsrefcount	rc;
 	char		*prstr;
@@ -544,7 +542,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>0 && !JSVAL_IS_VOID(argv[0])) {
 		JSVALUE_TO_STRING(cx, argv[0], prstr, NULL);
-		if(prompt==NULL)
+		if(prstr==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
 		fprintf(confp,"%s: ",prstr);
@@ -553,7 +551,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>1) {
 		JSVALUE_TO_STRING(cx, argv[1], prstr, NULL);
-		if(str==NULL)
+		if(prstr==NULL)
 		    return(JS_FALSE);
 		SAFECOPY(instr,prstr);
 	} else
