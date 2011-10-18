@@ -394,11 +394,11 @@ void EnterRegis(void)
 
 	file=fopen("tp1.cfg","w");
 
-	GetWord(a,"Registration Line 1\r\n: ", "0");
+	GetWord(a,"Registration Line 1 (Sysop name)\r\n: ", "0");
 	fputs(a, file);
 	fputs("\r\n",file);
 
-	GetWord(b,"Registration Line 2\r\n: ", "0");
+	GetWord(b,"Registration Line 2 (BBS name)\r\n: ", "0");
 	fputs(b, file);
 	fputs("\r\n",file);
 	fclose(file);
