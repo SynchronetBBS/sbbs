@@ -337,7 +337,7 @@ short GetResponse (long l)
 				return(-2);
         	}
         	Money -= x4;
-			sprintf(bstr,"%-8d",(atoi(Mid(str, ChRest, 2, 8))+x4));
+			sprintf(bstr,"%-8ld",(atoi(Mid(str, ChRest, 2, 8))+x4));
 			ChRest[1]=bstr[0];
 			ChRest[2]=bstr[1];
 			ChRest[3]=bstr[2];
