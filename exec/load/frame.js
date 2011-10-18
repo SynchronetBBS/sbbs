@@ -310,12 +310,6 @@ function Frame(x,y,width,height,attr,frame) {
 		log(LOG_DEBUG,format("new display initialized: %sx%s at %s,%s",this.width,this.height,this.x,this.y));
 	}
 	
-	/* coordinate reference */
-	function Coord(x,y) {
-		this.x = Number(x);
-		this.y = Number(y);
-	}
-	
 	/* character/attribute pair representing a screen position and its contents */
 	function Char(ch,attr) {
 		this.ch = ch;
