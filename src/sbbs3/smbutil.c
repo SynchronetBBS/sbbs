@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -215,7 +215,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	}
 
 	memset(&msg,0,sizeof(smbmsg_t));
-	msg.hdr.when_written.time=time(NULL);
+	msg.hdr.when_written.time=(uint32_t)time(NULL);
 	msg.hdr.when_written.zone=tzone;
 	msg.hdr.when_imported=msg.hdr.when_written;
 
@@ -816,12 +816,13 @@ void packmsgs(ulong packable)
 {
 	uchar str[128],buf[SDT_BLOCK_LEN],ch,fname[128],tmpfname[128];
 	int i,size;
-	ulong l,m,n,datoffsets=0,length,total,now;
+	ulong l,m,n,datoffsets=0,length,total;
 	FILE *tmp_sdt,*tmp_shd,*tmp_sid;
 	BOOL		error=FALSE;
 	smbhdr_t	hdr;
 	smbmsg_t	msg;
 	datoffset_t *datoffset=NULL;
+	time_t		now;
 
 	now=time(NULL);
 	printf("Packing %s\n",smb.file);
@@ -1438,6 +1439,7 @@ int main(int argc, char **argv)
 	BOOL	create=FALSE;
 	time_t	now;
 	struct	tm* tm;
+	uint32_t	max_msgs=0;
 
 	setvbuf(stdout,0,_IONBF,0);
 
@@ -1505,6 +1507,8 @@ int main(int argc, char **argv)
 						break;
 					case 'C':
 						create=TRUE;
+						max_msgs=strtoul(argv[x]+j+1,NULL,10);
+						j=strlen(argv[x])-1;
 						break;
 					case 'T':
 						to=argv[x]+j+1;
@@ -1579,7 +1583,7 @@ int main(int argc, char **argv)
 						smb_close(&smb);
 						continue; 
 					}
-					smb.status.max_msgs=strtoul(cmd+1,NULL,0);
+					smb.status.max_msgs=max_msgs;
 					smb.status.max_crcs=count;
 					if((i=smb_create(&smb))!=0) {
 						smb_close(&smb);
