@@ -13,4 +13,4 @@
 # Requires CVS v1.12+
 UseNewInfoFmtStrings=yes
 
-DateFormat=old
+#DateFormat=old
