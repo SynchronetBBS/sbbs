@@ -1046,6 +1046,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	struct tm	tm;
 	char	*headers;
 	char	header[MAX_REQUEST_LINE+1];
+	BOOL	send_entity=TRUE;
 
 	if(session->socket==INVALID_SOCKET) {
 		session->req.sent_headers=TRUE;
@@ -1075,6 +1076,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			status_line="304 Not Modified";
 			ret=-1;
 			send_file=FALSE;
+			send_entity=FALSE;
 		}
 		if(!ret && session->req.if_range && (stats.st_mtime > session->req.if_range || session->req.dynamic)) {
 			status_line="200 OK";
@@ -1155,44 +1157,46 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		}
 
 		/* DO NOT send a content-length for chunked */
-		if(session->req.keep_alive && session->req.dynamic!=IS_CGI && (!chunked)) {
-			if(ret)  {
-				safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
+		if(send_entity) {
+			if(session->req.keep_alive && session->req.dynamic!=IS_CGI && (!chunked)) {
+				if(ret)  {
+					safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
+					safecat(headers,header,MAX_HEADERS_SIZE);
+				}
+				else  {
+					if((session->req.range_start || session->req.range_end) && atoi(status_line)==206) {
+						safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
+						safecat(headers,header,MAX_HEADERS_SIZE);
+					}
+					else {
+						safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
+						safecat(headers,header,MAX_HEADERS_SIZE);
+					}
+				}
+			}
+
+			if(!ret && !session->req.dynamic)  {
+				safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
+				safecat(headers,header,MAX_HEADERS_SIZE);
+				gmtime_r(&stats.st_mtime,&tm);
+				safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+					,get_header(HEAD_LASTMODIFIED)
+					,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
+					,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 				safecat(headers,header,MAX_HEADERS_SIZE);
 			}
-			else  {
-				if((session->req.range_start || session->req.range_end) && atoi(status_line)==206) {
-					safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
-					safecat(headers,header,MAX_HEADERS_SIZE);
-				}
-				else {
-					safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
-					safecat(headers,header,MAX_HEADERS_SIZE);
-				}
-			}
-		}
 
-		if(!ret && !session->req.dynamic)  {
-			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
-			safecat(headers,header,MAX_HEADERS_SIZE);
-			gmtime_r(&stats.st_mtime,&tm);
-			safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
-				,get_header(HEAD_LASTMODIFIED)
-				,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
-				,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
-			safecat(headers,header,MAX_HEADERS_SIZE);
-		}
-
-		if(session->req.range_start || session->req.range_end) {
-			switch(atoi(status_line)) {
-				case 206:	/* Partial reply */
-					safe_snprintf(header,sizeof(header),"%s: bytes %d-%d/%d",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
-					safecat(headers,header,MAX_HEADERS_SIZE);
-					break;
-				default:
-					safe_snprintf(header,sizeof(header),"%s: *",get_header(HEAD_CONTENT_RANGE));
-					safecat(headers,header,MAX_HEADERS_SIZE);
-					break;
+			if(session->req.range_start || session->req.range_end) {
+				switch(atoi(status_line)) {
+					case 206:	/* Partial reply */
+						safe_snprintf(header,sizeof(header),"%s: bytes %d-%d/%d",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
+						safecat(headers,header,MAX_HEADERS_SIZE);
+						break;
+					default:
+						safe_snprintf(header,sizeof(header),"%s: *",get_header(HEAD_CONTENT_RANGE));
+						safecat(headers,header,MAX_HEADERS_SIZE);
+						break;
+				}
 			}
 		}
 	}
