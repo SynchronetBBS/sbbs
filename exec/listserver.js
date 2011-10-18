@@ -28,6 +28,7 @@ if(!ini_file.open("r")) {
 }
 listserver_address=ini_file.iniGetValue(null,"address","listserver@"+system.inet_addr);
 listserver_name=ini_file.iniGetValue(null,"name","Synchronet ListServer");
+use_sender_address=ini_file.iniGetValue(null,"use_sender_address",true);
 subj_cmd=ini_file.iniGetValue(null,"SubjectCommand",false);
 disabled=ini_file.iniGetValue(null,"disabled",false);
 list_array=ini_file.iniGetAllObjects("name");
@@ -58,6 +59,8 @@ for(var l in list_array) {
 		list.description = msg_area.sub[list.sub.toLowerCase()].description;
 	if(list.confirm==undefined)
 		list.confirm=true;
+        if(list.use_sender_address==undefined)
+                list.use_sender_address=use_sender_address;
 
 	var msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
@@ -440,8 +443,8 @@ function process_control_msg(cmd_list)
 			case "help":
 				response.body.push("Available commands:");
 				response.body.push("\tlists");
-				response.body.push("\tsubscribe");
-				response.body.push("\tunsubscribe");
+				response.body.push("\tsubscribe [address]");
+				response.body.push("\tunsubscribe [address]");
 				response.body.push("\thelp");
 				response.body.push("\tend");
 			case "end":
@@ -511,7 +514,7 @@ function write_user_list(user_list, user_file)
 
 function subscription_control(cmd, list, address)
 {
-	if(!address)
+	if(!address || list.use_sender_address)
 		address=sender_address;
 
 	log(LOG_INFO,format("%s Subscription control command (%s) from %s"
