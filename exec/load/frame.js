@@ -18,31 +18,41 @@ DESCRIPTION:
  		width: 		the horizontal width of the frame 
  		height: 	the vertical height of the frame
  		attr:		the background color of the frame (displayed when there are no other contents)
+		frame:		a frame object representing the parent of the new frame
 		
 METHODS:
 
-	frame.open();				//populates frame contents in character canvas
-	frame.close();				//removes frame contents from character canvas
-	frame.draw();				//draws the characters occupied by 'frame' coords/dimensions 
-	frame.cycle();				//checks the display matrix for updated characters and displays them 
-	frame.load(filename):		//loads a binary graphic (.BIN) or ANSI graphic (.ANS) file
-	frame.bottom();				//push frame to bottom of display stack
-	frame.top();				//pull frame to top of display stack
-	frame.scroll(x,y);			//scroll frame n spaces in any direction
-	frame.scroll(x,y);			//scroll frame to absolute offset
-	frame.move(x,y);			//move frame n spaces in any direction
-	frame.moveTo(x,y);			//move frame to absolute position
-	frame.clearline(attr);		//see http://synchro.net/docs/jsobjs.html#console
-	frame.cleartoeol(attr);
-	frame.putmsg(str);
-	frame.clear(attr);
-	frame.home();
-	frame.center(str);
-	frame.crlf();
-	frame.getxy();
-	frame.gotoxy(x,y);
-	frame.pushxy();
-	frame.popxy();
+	frame.open()				//populate frame contents in character canvas
+	frame.close()				//remove frame contents from character canvas
+	frame.draw()				//force a screen update on the frame and it's children
+	frame.cycle()				//check the display matrix for updated characters and displays them 
+	frame.load(filename)		//load a binary graphic (.BIN) or ANSI graphic (.ANS) file
+	frame.bottom()				//push frame to bottom of display stack
+	frame.top()					//pull frame to top of display stack
+	frame.scroll(x,y)			//scroll frame n spaces in any direction
+	frame.scrollTo(x,y)			//scroll frame to absolute offset
+	frame.move(x,y)				//move frame n spaces in any direction
+	frame.moveTo(x,y)			//move frame to absolute position
+	frame.clearline(attr)		//see http://synchro.net/docs/jsobjs.html#console
+	frame.cleartoeol(attr)
+	frame.putmsg(str)
+	frame.clear(attr)
+	frame.home()
+	frame.center(str)
+	frame.crlf()
+	frame.getxy()
+	frame.gotoxy(x,y)
+	frame.pushxy()
+	frame.popxy()
+	
+PROPERTIES:
+
+	frame.x						//x screen position
+	frame.y						//y screen position
+	frame.width					//frame width
+	frame.height				//frame height
+	frame.attr					//default attributes for frame
+	frame.checkbounds			//toggle true/false to restrict/allow frame movement outside display
 
 USAGE:
 
@@ -52,25 +62,34 @@ USAGE:
  	//or it can be done this way.....
  	load("frame.js");
  	var frame = new Frame(1,1,80,24,BG_BLUE);
+	
+	//add frame to the display canvas
+	frame.open();
  
 	//add a new frame within the frame object that will display on top at position 10,10
 	var subframe = new Frame(10,10,10,10,BG_GREEN,frame);
 	
+	//add subframe to the display canvas
+	subframe.open();
+	
+	//place cursor at position x:5 y:5 relative to subframe's coordinates
+	subframe.gotoxy(5,5);
+
 	//beware this sample infinite loop
  	while(!js.terminated) { 
-	
-		//on first call this will draw the entire initial frame
-		//on subsequent calls this will draw only characters that have changed
+		//print a message into subframe
+		subframe.putmsg("1");
+		
+		//on first call this will draw the entire initial frame, 
+		//as triggered by the open() method call.
+		//on subsequent calls this will draw only areas that have changed
 		frame.cycle();
+		//NOTE: if frames are linked, only one frame needs to be cycled
+		//		for all frames to update
 	}
 	
 	//close out the entire frame tree
 	frame.close();
-	
-TODO:
-
-	add a named Queue() to optionally receive messages from outside of
-	the parent script
 	
  */
  
@@ -88,16 +107,16 @@ function Frame(x,y,width,height,attr,frame) {
 		this.__defineGetter__("yoff",function() {
 			return this.frame.y - this.display.y;
 		});
-		this.getData = function(x,y) {
-			if(x - this.xoff < 0 || y - this.yoff < 0)
+		this.hasData = function(x,y) {
+			if(x-this.xoff < 0 || y - this.yoff < 0)
 				return undefined;
-			if(x - this.xoff >= frame.width || y - this.yoff >= frame.height)
+			if(x-this.xoff >= this.frame.width || y - this.yoff >= this.frame.height)
 				return undefined;
-			return frame.getData(x-this.xoff,y-this.yoff);
+			return true;
 		}
 	}
 	
-	/* object representing frame positional and dimensional limits and canvas stack */
+	/* object representing screen positional and dimensional limits and canvas stack */
 	function Display(x,y,width,height) {
 		/* private properties */
 		var properties = {
@@ -116,7 +135,7 @@ function Frame(x,y,width,height,attr,frame) {
 		this.__defineSetter__("x", function(x) {
 			if(x == undefined)
 				properties.x = 1;
-			else if(isNaN(x) || x < 1 || x > console.screen_columns)
+			else if(isNaN(x))
 				throw("invalid x coordinate: " + x);
 			else 
 				properties.x = x;
@@ -157,7 +176,7 @@ function Frame(x,y,width,height,attr,frame) {
 		
 		/* public methods */
 		this.cycle = function() {
-			var updates = getUpdateList().sort(updateSort);
+			var updates = getUpdateList();
 			if(updates.length > 0) {
 				var lasty = undefined;
 				var lastx = undefined;
@@ -165,7 +184,10 @@ function Frame(x,y,width,height,attr,frame) {
 				for each(var u in updates) {
 					var posx = u.x + properties.x;
 					var posy = u.y + properties.y;
-					if(lasty !== u.y || lastx == undefined || (u.x - lastx) != 1) 
+					if(posx < 1 ||  posy < 1 || posx > console.screen_columns 
+						|| posy > console.screen_rows)
+						continue;
+					if(lasty !== u.y || lastx == undefined || (u.x - lastx) != 1)
 						console.gotoxy(posx,posy);
 					if(lastid !== u.id)
 						console.attributes = undefined;
@@ -175,18 +197,25 @@ function Frame(x,y,width,height,attr,frame) {
 					lastid = u.id;
 				}
 				properties.update = {};
+				console.attributes=undefined;
 				return true;
 			}
 			return false;
  		}
 		this.draw = function() {
+			for(var y = 0;y<this.height;y++) {
+				for(var x = 0;x<this.width;x++) {
+					updateChar(x,y);
+				}
+			}
+			this.cycle();
 		}
-		this.add = function(frame) {
+		this.open = function(frame) {
 			var canvas = new Canvas(frame,this);
 			properties.canvas[frame.id] = canvas;
 			this.updateFrame(frame);
 		}
-		this.remove = function(frame) {
+		this.close = function(frame) {
 			this.updateFrame(frame);
 			delete properties.canvas[frame.id];
 		}
@@ -231,17 +260,23 @@ function Frame(x,y,width,height,attr,frame) {
 			var list = [];
 			for(var y in properties.update) {
 				for(var x in properties.update[y]) {
-					var d = getTopChar(x,y);
-					list.push({
-						ch:d.ch,
-						attr:d.attr,
-						id:d.id,
-						x:Number(x),
-						y:Number(y)
-					});
+					var c = getTopCanvas(x,y);
+					list.push(getData(c,x,y));
 				}
 			}
-			return list;
+			return list.sort(updateSort);
+		}
+		function getData(c,x,y) {
+			var d = {};
+			if(c) {
+				d = c.frame.getData(x-c.xoff,y-c.yoff);
+				if(!d.attr)
+					d.attr = c.frame.attr;
+				d.id = c.frame.id;
+			}
+			d.x = Number(x);
+			d.y = Number(y);
+			return d;
 		}
 		function updateSort(a,b) {
 			if(a.y == b.y)
@@ -258,12 +293,11 @@ function Frame(x,y,width,height,attr,frame) {
 			else 
 				console.write(ch);
 		}
-		function getTopChar(x,y) {
-			var top = {};
+		function getTopCanvas(x,y) {
+			var top = undefined;
 			for each(var c in properties.canvas) {
-				var d = c.getData(x,y);
-				if(d) 
-					top = d;
+				if(c.hasData(x,y))
+					top = c;
 			}
 			return top;
 		}
@@ -283,10 +317,9 @@ function Frame(x,y,width,height,attr,frame) {
 	}
 	
 	/* character/attribute pair representing a screen position and its contents */
-	function Char(ch,attr,id) {
+	function Char(ch,attr) {
 		this.ch = ch;
 		this.attr = attr;
-		this.id = id;
 	}
 	
 	/* private properties */
@@ -307,7 +340,8 @@ function Frame(x,y,width,height,attr,frame) {
 	var position = {
 		cursor:{x:0,y:0},
 		offset:{x:0,y:0},
-		stored:{x:0,y:0}
+		stored:{x:0,y:0},
+		checkbounds:true
 	}
 		
 	/* protected properties */
@@ -341,60 +375,59 @@ function Frame(x,y,width,height,attr,frame) {
 		properties.name = name;
 	});
 	this.__defineGetter__("x", function() { 
-		if(properties.x)
-			return properties.x;
-		return properties.display.x; 
+		if(properties.x == undefined)
+			return properties.display.x; 
+		return properties.x;
 	});
 	this.__defineSetter__("x", function(x) {
 		if(x == undefined)
 			return;
-		if(x < 1 || isNaN(x))
-			throw("invalid x coordinate: " + x);
-		else if(x > (properties.display.x + properties.display.width - 1) || x < properties.display.x)
+		if(!checkX(x))
 			throw("invalid x coordinate: " + x);
 		properties.x = x;
 	});
 	this.__defineGetter__("y", function() { 
-		if(properties.y)
-			return properties.y;
-		return properties.display.y; 
+		if(properties.y == undefined)
+			return properties.display.y; 
+		return properties.y;
 	});
 	this.__defineSetter__("y", function(y) {
 		if(y == undefined)
 			return;
-		if(y < 1 || isNaN(y))
-			throw("invalid y coordinate: " + y);
-		else if(y > (properties.display.y + properties.display.height - 1) || y < properties.display.y)
+		if(!checkY(y))
 			throw("invalid y coordinate: " + y);
 		properties.y = y;
 	});
 	this.__defineGetter__("width", function() {
-		if(properties.width)
-			return properties.width;
-		return properties.display.width;
+		if(properties.width == undefined)
+			return properties.display.width;
+		return properties.width;
 	});
 	this.__defineSetter__("width", function(width) {
 		if(width == undefined)
 			return;
-		else if(width < 1 || isNaN(width))
-			throw("invalid width: " + width);
-		else if((properties.x + width) > (properties.display.x + properties.display.width))
+		if(!checkWidth(this.x,width))
 			throw("invalid width: " + width);
 		properties.width = width;
 	});
 	this.__defineGetter__("height", function() {
-		if(properties.height)
-			return properties.height;
-		return properties.display.height;
+		if(properties.height == undefined)
+			return properties.display.height;
+		return properties.height;
 	});
 	this.__defineSetter__("height", function(height) {
 		if(height == undefined)
 			return;
-		else if(height < 1 || isNaN(height)) 
-			throw("invalid height: " + height);
-		else if((properties.y+ height) > (properties.display.y + properties.display.height))
+		if(!checkHeight(this.y,height))
 			throw("invalid height: " + height);
 		properties.height = height;
+	});
+	this.__defineGetter__("checkbounds", function() {
+		return position.checkbounds;
+	});
+	this.__defineSetter__("checkbounds", function(bool) {
+		if(typeof bool == "boolean")
+			position.checkbounds=bool;
 	});
 
 	/* public methods */
@@ -418,7 +451,7 @@ function Frame(x,y,width,height,attr,frame) {
 			c.top();
 	}
 	this.open = function() {
-		properties.display.add(this, properties.data);
+		properties.display.open(this);
 		for each(var c in relations.child) 
 			c.open();
 	}
@@ -430,30 +463,40 @@ function Frame(x,y,width,height,attr,frame) {
 	this.close = function() {
 		for each(var c in relations.child) 
 			c.close();
-		properties.display.remove(this);
+		properties.display.close(this);
 	}
 	this.move = function(x,y) {
-		if(this.x+x < properties.display.x ||
-			this.x+x + this.width > properties.display.x + properties.display.width)
-			return false;
-		if(this.y+y < properties.display.y ||
-			this.y+y + this.height > properties.display.y + properties.display.height)
-			return false;
+		var nx = undefined;
+		var ny = undefined;
+		if(checkX(this.x+x) && checkWidth(this.x+x,this.width))
+			nx = this.x+x;
+		if(checkY(this.y+y) && checkHeight(this.y+y,this.height))
+			ny = this.y+y;
+		if(nx == undefined && ny == undefined)
+			return;
 		properties.display.updateFrame(this);
-		this.x+=x;
-		this.y+=y;
+		if(nx !== undefined)
+			this.x=nx;
+		if(ny !== undefined)
+			this.y=ny;
 		properties.display.updateFrame(this);
 		for each(var c in relations.child) 
 			c.move(x,y);
 	}
 	this.moveTo = function(x,y) {
-		if(x < properties.display.x || x + this.width > properties.display.x + properties.display.width)
-			return false;
-		if(y < properties.display.y || y + this.height > properties.display.y + properties.display.height)
-			return false;
+		var nx = undefined;
+		var ny = undefined;
+		if(checkX(x))
+			nx = x;
+		if(checkY(y))
+			ny = y;
+		if(nx == undefined && ny == undefined)
+			return;
 		properties.display.updateFrame(this);
-		this.x=x;
-		this.y=y;
+		if(nx !== undefined)
+			this.x=nx;
+		if(ny !== undefined)
+			this.y=ny;
 		properties.display.updateFrame(this);
 		for each(var c in relations.child) 
 			c.moveTo(x + (c.x - this.x), y + (c.y - this.y));
@@ -573,7 +616,7 @@ function Frame(x,y,width,height,attr,frame) {
 					line = line.substr(1);
 					if(!properties.data[x])
 						properties.data[x]=[];
-					properties.data[x][y]=new Char(ch,attr,this.id);
+					properties.data[x][y]=new Char(ch,attr);
 					x++;
 				}
 				y++;
@@ -614,7 +657,7 @@ function Frame(x,y,width,height,attr,frame) {
 			for(var x = 0;x<this.width;x++) {
 				for(var y = 0;y<this.height;y++) 
 					properties.display.updateChar(this,x,y);
-				properties.data[x].push(new Char(undefined,this.attr,this.id));
+				properties.data[x].push(new Char());
 			}
 			position.offset.y++;
 		}
@@ -655,12 +698,12 @@ function Frame(x,y,width,height,attr,frame) {
 		position.cursor.y = 0;
 	}
 	this.clear = function(attr) {
-		if(attr == undefined)
-			attr = this.attr;
+		if(attr != undefined)
+			this.attr = attr;
 		for(var x = 0;x<this.width;x++) {
 			for(var y = 0;y<this.height;y++) {
 				properties.data[x][y].ch = undefined;
-				properties.data[x][y].attr = attr;
+				properties.data[x][y].attr = this.attr;
 				properties.display.updateChar(this,x,y);
 			}
 		}
@@ -762,15 +805,15 @@ function Frame(x,y,width,height,attr,frame) {
 					curattr|=BLINK;
 					break;
 				case 'N':	/* Normal (ToDo: Does this do ESC[0?) */
-					curattr=7;
+					curattr=this.attr;
 					break;
 				case '-':	/* Normal if High, Blink, or BG */
 					if(curattr & 0xf8)
-						curattr=7;
+						curattr=this.attr;
 					break;
 				case '_':	/* Normal if blink/background */
 					if(curattr & 0xf0)
-						curattr=7;
+						curattr=this.attr;
 					break;
 				case '[':	/* CR */
 					pos.x=0;
@@ -816,6 +859,11 @@ function Frame(x,y,width,height,attr,frame) {
 		this.putmsg(str);
 	}
 	this.gotoxy = function(x,y) {
+		if(typeof x == "object" && x.x && x.y) {
+			position.cursor.x = x.x-1;
+			position.cursor.y = x.y-1;
+			return;
+		}
 		if(x <= this.width)
 			position.cursor.x = x-1;
 		if(y <= this.height)
@@ -838,6 +886,32 @@ function Frame(x,y,width,height,attr,frame) {
 	}
 	
 	/* private functions */
+	function checkX(x) {
+		if(	isNaN(x) || (position.checkbounds &&  
+			(x > properties.display.x + properties.display.width || 
+			x < properties.display.x)))
+			return false;
+		return true;
+	}
+	function checkY(y) {
+		if( isNaN(y) || (position.checkbounds && 
+			(y > properties.display.y + properties.display.height || 
+			y < properties.display.y)))
+			return false;
+		return true;
+	}
+	function checkWidth(x,width) {
+		if(	width < 1 || isNaN(width) || (position.checkbounds && 
+			x + width > properties.display.x + properties.display.width))
+			return false;
+		return true;
+	}
+	function checkHeight(y,height) {
+		if( height < 1 || isNaN(height) || (position.checkbounds && 
+			y + height > properties.display.y + properties.display.height))
+			return false;
+		return true;
+	}
 	function putChar(ch,attr) {
 		if(position.cursor.x >= this.width) {
 			position.cursor.x=0;
@@ -847,10 +921,12 @@ function Frame(x,y,width,height,attr,frame) {
 			this.scroll();
 			position.cursor.y--;
 		}
-		properties.data
+		if(ch)
+			properties.data
 			[position.cursor.x + position.offset.x]
 			[position.cursor.y + position.offset.y].ch = ch;
-		properties.data
+		if(attr)
+			properties.data
 			[position.cursor.x + position.offset.x]
 			[position.cursor.y + position.offset.y].attr = attr;
 		properties.display.updateChar(this,position.cursor.x,position.cursor.y);
@@ -859,6 +935,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(frame instanceof Frame) {
 			properties.id = frame.child.length;
 			properties.display = frame.display;
+			position.checkbounds = frame.checkbounds;
 			relations.parent = frame;
 			frame.child = this;
 		}
@@ -866,7 +943,6 @@ function Frame(x,y,width,height,attr,frame) {
 			properties.display = new Display(x,y,width,height);
 		}
 
-		this.transparent = false;
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -876,7 +952,7 @@ function Frame(x,y,width,height,attr,frame) {
 		for(var w=0;w<this.width;w++) {
 			properties.data.push(new Array(this.height));
 			for(var h=0;h<this.height;h++) {
-				properties.data[w][h] = new Char(undefined,this.attr,this.id);
+				properties.data[w][h] = new Char();
 			}
 		}
 		//log(LOG_DEBUG,format("new frame initialized: %sx%s at %s,%s",this.width,this.height,this.x,this.y));
