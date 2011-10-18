@@ -53,7 +53,7 @@ DLLEXPORT time_t		DLLCALL		sane_mktime(struct tm*);
 /* Legacy (32-bit time_t) versions of time() and mktime() */
 DLLEXPORT time32_t		DLLCALL		time32(time32_t* tp);
 DLLEXPORT time32_t		DLLCALL		mktime32(struct tm*);
-DLLEXPORT struct tm*	DLLCALL		localtime32_r(const time32_t* t, struct tm* tm);
+DLLEXPORT struct tm*	DLLCALL		localtime32(const time32_t* t, struct tm* tm);
 
 /*********************************************************************************/
 /* Win32 implementations of recursive (thread-safe) std C time functions on Unix */
