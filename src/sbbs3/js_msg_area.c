@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -39,11 +39,12 @@
 
 #ifdef JAVASCRIPT
 
-enum {	/* msg_area Object Properties */
-	 PROP_MAX_QWK_MSGS
-};
-
 #ifdef BUILD_JSDOCS
+
+static char* msg_area_prop_desc[] = {
+	,"message area settings (bitfield) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	,NULL
+};
 
 static char* msg_grp_prop_desc[] = {
 	 "index into grp_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
@@ -358,6 +359,12 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	js_DescribeSyncObject(cx,areaobj,"Message Areas",310);
 #endif
 
+	/* msg_area.properties */
+	if(!JS_NewNumberValue(cx,cfg->msg_misc,&val))
+		return(NULL);
+	if(!JS_SetProperty(cx, areaobj, "settings", &val)) 
+		return(NULL);
+
 	/* msg_area.grp[] */
 	if((allgrps=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
 		return(NULL);
@@ -529,6 +536,8 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	}
 
 #ifdef BUILD_JSDOCS
+	js_CreateArrayOfStrings(cx, areaobj, "_property_desc_list", msg_area_prop_desc, JSPROP_READONLY);
+
 	js_DescribeSyncObject(cx,allgrps,"Associative array of all groups (use name as index)",312);
 	JS_DefineProperty(cx,allgrps,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
