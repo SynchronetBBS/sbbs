@@ -2734,14 +2734,12 @@ void DLLCALL loginSuccess(link_list_t* list, SOCKADDR_IN* addr)
 ulong DLLCALL loginFailure(link_list_t* list, SOCKADDR_IN* addr, const char* prot, const char* user, const char* pass)
 {
 	list_node_t*		node;
-	login_attempt_t		first;
+	login_attempt_t		first = {0};
 	login_attempt_t*	attempt=&first;
 	ulong				count=0;
 
 	if(list==NULL)
 		return 0;
-
-	memset(&first, 0, sizeof(first));
 
 	listLock(list);
 	if((node=login_attempted(list, addr)) != NULL) {
