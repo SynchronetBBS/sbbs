@@ -1,5 +1,5 @@
 ODDIR	:=	../../odoors
-ODLIBS	:=	../../odoors
+ODLIBS	:=	../../odoors/libs-`uname`
 
 CC      ?=	gcc
 CFLAGS  +=	-Wall -ansi -DUNIX -g
@@ -18,3 +18,6 @@ all: dynasty
 dynasty: $(OBJS)
 	 $(CC) ${CFLAGS} -o dynasty $(OBJS) ${LDFLAGS}
 	# strip dynasty 
+
+clean:
+	-rm $(OBJS) dynasty
