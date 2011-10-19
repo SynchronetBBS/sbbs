@@ -37,14 +37,14 @@
 
 #include "sbbs.h"
 
-static msg_number(smbmsg_t* msg)
+static uint32_t msg_number(smbmsg_t* msg)
 {
 	if(msg->idx.number)
 		return(msg->idx.number);
 	return(msg->hdr.number);
 }
 
-static msg_time(smbmsg_t* msg)
+static uint32_t msg_time(smbmsg_t* msg)
 {
 	if(msg->idx.time)
 		return(msg->idx.time);
