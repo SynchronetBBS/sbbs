@@ -484,6 +484,10 @@ static void ODEditDrawAreaLine(tEditInstance *pEditInstance,
       od_disp(ODEditBufferGetCharacter(pEditInstance, unBufferLine, 0),
          unLineLength, TRUE);
    }
+   else
+   {
+      unLineLength = 0;
+   }
 
    /* If right edge of edit area aligns with the right edge of the screen. */
    if(pEditInstance->pUserOptions->nAreaRight == OD_SCREEN_WIDTH)
@@ -1466,6 +1470,7 @@ static void ODEditSetBreakSequence(tEditInstance *pEditInstance,
    {
       /* This should never happen: an invalid end of line sequence was */
       /* passed in.                                                    */
+      pszSequence = NULL;
       ASSERT(FALSE);
    }
 

@@ -105,7 +105,7 @@ ODAPIDEF BOOL ODCALL od_log_open()
    ptmTimeRecord = localtime(&nUnixTime);
 
    /* Print logfile tear line. */
-   fprintf(logfile_pointer, "\n----------  %s %02.2d %s %02.2d, %s\n",
+   fprintf(logfile_pointer, "\n----------  %s %02d %s %02d, %s\n",
       od_control.od_day[ptmTimeRecord->tm_wday],
       ptmTimeRecord->tm_mday,
       od_control.od_month[ptmTimeRecord->tm_mon],
@@ -201,11 +201,11 @@ ODAPIDEF BOOL ODCALL od_log_write(char *pszMessage)
    /* Determine which logfile format string to use. */
    if(ptmTimeRecord->tm_hour<10)
    {
-      pszFormat=(char *)">  %1.1d:%02.2d:%02.2d  %s\n";
+      pszFormat=(char *)">  %1.1d:%02d:%02d  %s\n";
    }
    else
    {
-      pszFormat=(char *)"> %2.2d:%02.2d:%02.2d  %s\n";
+      pszFormat=(char *)"> %2.2d:%02d:%02d  %s\n";
    }
 
    /* Write a line to the logfile. */

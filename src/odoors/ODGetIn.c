@@ -150,12 +150,14 @@ tODKeySequence aKeySequences[] =
 
 /* Current control sequence received state. */
 static char szCurrentSequence[SEQUENCE_BUFFER_SIZE] = "";
+#if 0	// Unused...
 static tODTimer SequenceFailTimer;
 static BOOL bSequenceFromRemote;
 static int nMatchedSequence = NO_MATCH;
+static BOOL bTimerActive = FALSE;
+#endif
 static BOOL bDoorwaySequence = FALSE;
 static BOOL bDoorwaySequencePending = FALSE;
-static BOOL bTimerActive = FALSE;
 
 /* Local private function prototypes. */
 static int ODGetCodeIfLongest(WORD wFlags);
@@ -414,11 +416,9 @@ static int ODLongestFullCode(WORD wFlags)
  */
 static int ODHaveStartOfSequence(WORD wFlags)
 {
-   int CurrLen=0;
    int seqlen1;
    int seqlen2;
    int i;
-   int retval=NO_MATCH;;
 
    if(wFlags & GETIN_RAW)
       return(FALSE);

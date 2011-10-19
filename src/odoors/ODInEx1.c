@@ -1550,7 +1550,7 @@ static BOOL ODInitReadSFDoorsDAT(void)
 
    /* Line 15: User's login time. */
    if(fgets((char *)apszDropFileInfo[2],255,pfDropFile)==NULL) return(FALSE);
-   sprintf(od_control.user_logintime, "%02.2d:%02.2d",
+   sprintf(od_control.user_logintime, "%02d:%02d",
       atoi((char *)apszDropFileInfo[2]) % 60,
       atoi((char *)apszDropFileInfo[2]) / 60);
 

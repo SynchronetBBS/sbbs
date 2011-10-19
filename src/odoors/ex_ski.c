@@ -346,7 +346,7 @@ void PlayGame(void)
    tHighScoreRecord ScoreRecord;
    FILE *pfFile;
    tHighScoreFile HighScores;
-   int nBackup;
+   int nBackup=0;
    clock_t StartClock;
 
    /* Clear the Screen */
@@ -543,7 +543,7 @@ void SpaceRight(int nColumns)
    if(od_control.user_ansi)
    {
       /* Move cursor right using ESC[nC control sequence */
-      sprintf(szSequence, "\x1b[%02.2dC", nColumns);
+      sprintf(szSequence, "\x1b[%02dC", nColumns);
       od_disp_emu(szSequence, TRUE);
    }
 
@@ -561,7 +561,7 @@ void MoveLeft(int nColumns)
 {
    /* Move cursor left using ESC[nD control sequence */
    char szSequence[6];
-   sprintf(szSequence, "\x1b[%02.2dD", nColumns);
+   sprintf(szSequence, "\x1b[%02dD", nColumns);
    od_disp_emu(szSequence, TRUE);
 }
 

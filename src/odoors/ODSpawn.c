@@ -60,6 +60,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #endif
 #include "ODCore.h"
 #include "ODGen.h"
@@ -155,6 +156,11 @@ static void savevect(void);
 
 #endif /* ODPLAT_DOS */
 
+#ifdef ODPLAT_NIX
+/* Location function prototypes. */
+int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
+   char *papszEnviron[]);
+#endif /* ODPLAT_NIX */
 
 /* ----------------------------------------------------------------------------
  * od_spawn()
@@ -225,8 +231,6 @@ ODAPIDEF BOOL ODCALL od_spawn(char *pszCommandLine)
 
 #ifdef ODPLAT_NIX
    sigset_t		block;
-   struct itimerval itv;
-   struct sigaction act;
    int retval;
 
    /* Suspend kernel */
@@ -278,7 +282,7 @@ ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, char *pszPath,
 #ifdef ODPLAT_WIN32
    void *pWindow;
 #endif /* ODPLAT_WIN32 */   
-#if defined(ODPLAT_DOS) || defined(ODPLAT_NIX)
+#ifdef ODPLAT_DOS
    char *pszDir;
    BYTE *abtScreenBuffer;
    INT nDrive;

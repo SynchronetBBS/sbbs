@@ -112,9 +112,11 @@ static void ODKrnlTimeUpdate(void);
 static void ODKrnlChatCleanup(void);
 static void ODKrnlChatMode(void);
 #ifdef ODPLAT_NIX
+#ifdef USE_KERNEL_SIGNAL
 static void sig_run_kernel(int sig);
 static void sig_get_char(int sig);
 static void sig_no_carrier(int sig);
+#endif
 #endif
 
 /* Functions specific to the multithreaded implementation of the kernel. */
@@ -179,8 +181,10 @@ tODResult ODKrnlInitialize(void)
 {
 #ifdef ODPLAT_NIX
    sigset_t		block;
+#ifdef USE_KERNEL_SIGNAL
    struct sigaction act;
    struct itimerval itv;
+#endif
 #endif
 
    tODResult Result = kODRCSuccess;
@@ -206,17 +210,16 @@ tODResult ODKrnlInitialize(void)
    setitimer(ITIMER_REAL,&itv,NULL);
 
    /* Make stdin signal driven. */
-/*   act.sa_handler=sig_get_char;
-/*   act.sa_flags=0;
-/*   sigemptyset(&(act.sa_mask));
-/*   sigaction(SIGIO,&act,NULL);
-/*
-/*   /* Have SIGIO signals delivered to this process */
-/*   fcntl(0,F_SETOWN,getpid());
-/*   
-/*   /* Enable SIGIO when read possible on stdin */
-/*   fcntl(0,F_SETFL,fcntl(0,F_GETFL)|O_ASYNC); */
-/*/
+//   act.sa_handler=sig_get_char;
+//   act.sa_flags=0;
+//   sigemptyset(&(act.sa_mask));
+//   sigaction(SIGIO,&act,NULL);
+//
+//   /* Have SIGIO signals delivered to this process */
+//   fcntl(0,F_SETOWN,getpid());
+//   
+//   /* Enable SIGIO when read possible on stdin */
+//   fcntl(0,F_SETFL,fcntl(0,F_GETFL)|O_ASYNC); 
 
    /* Make sure SIGHUP, SIGALRM, and SIGIO are unblocked */
    sigemptyset(&block);
@@ -343,10 +346,12 @@ void ODKrnlShutdown(void)
 ODAPIDEF void ODCALL od_kernel(void)
 {
 #ifndef OD_MULTITHREADED
+   char ch;
+#ifdef ODPLAT_DOS
    WORD wKey;
    BYTE btShiftStatus;
-   char ch;
    char *pszShellName;
+#endif
    BOOL bCarrier;
 #endif /* OD_MULTITHREADED */
 
@@ -1629,6 +1634,7 @@ static void ODKrnlChatCleanup(void)
 }
 
 #ifdef ODPLAT_NIX
+#ifdef USE_KERNEL_SIGNAL
 /* ----------------------------------------------------------------------------
  * sig_run_kernel(sig)				   *** PRIVATE FUNCTION ***
  *
@@ -1657,7 +1663,6 @@ static void sig_get_char(int sig)
    }
 }
 
-#ifdef USE_KERNEL_SIGNAL
 static void sig_no_carrier(int sig)
 {
    if(od_control.baud != 0 && )

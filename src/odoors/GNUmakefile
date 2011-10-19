@@ -68,7 +68,7 @@ endif
 #
 CFLAGS	+=	-fPIC
 LDFLAGS	+=	-fPIC
-CFLAGS	+=	-O2 -L${LIBDIR} -I../xpdev
+CFLAGS	+=	-O2 -L${LIBDIR} -I../xpdev -Wall
 ifeq ($(OS),Darwin)
  CFLAGS		+=	-D__unix__
  LDFLAGS	+=	$(CFLAGS) -dynamiclib -single_module

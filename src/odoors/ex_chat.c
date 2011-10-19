@@ -107,7 +107,7 @@ char shell_window_text=0x1b;           /* Colour of text in DOS shell window */
 
 
 
-char cursor_window;                   /* FULL-SCREEN CHAT INTERNAL VARIABLES */
+int cursor_window;                   /* FULL-SCREEN CHAT INTERNAL VARIABLES */
 char current_word[2][81];
 int word_length[2];
 int cursor_col[2];
