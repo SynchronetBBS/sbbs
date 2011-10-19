@@ -282,7 +282,7 @@ FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 {
 	int file;
 	int Mode=0;
-	char *p;
+	const char *p;
 	
 	for(p=pszMode;*p;p++)  {
 		switch (*p)  {
