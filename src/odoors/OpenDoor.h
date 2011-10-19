@@ -489,7 +489,7 @@ ODAPIDEF void ODCALL ODLogEnable(void);
 ODAPIDEF void ODCALL ODMPSEnable(void);
 
 /* Optional OpenDoors component settings. */
-typedef void ODFAR OD_COMPONENT;
+typedef void(ODFAR OD_COMPONENT)(void);
 #define INCLUDE_CONFIG_FILE   (OD_COMPONENT *)ODConfigInit
 #define NO_CONFIG_FILE        NULL
 #define INCLUDE_LOGFILE       (OD_COMPONENT *)ODLogEnable
@@ -504,7 +504,7 @@ ODAPIDEF void ODCALL pdef_ra(BYTE btOperation);
 ODAPIDEF void ODCALL pdef_wildcat(BYTE btOperation);
 
 /* Personality proc type. */
-typedef void OD_PERSONALITY_PROC;
+typedef void(ODFAR OD_PERSONALITY_PROC)(BYTE);
 
 /* Personality identifiers. */
 #define PER_OPENDOORS         (void *)pdef_opendoors
