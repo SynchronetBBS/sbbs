@@ -368,6 +368,7 @@ BOOL sbbs_t::newuser()
 	if(rlogin_pass[0] && chkpass(rlogin_pass,&useron,true)) {
 		CRLF;
 		SAFECOPY(useron.pass, rlogin_pass);
+		strupr(useron.pass);	/* passwords are case insensitive, but assumed (in some places) to be uppercase in the user database */
 	}
 	else {
 		c=0;
