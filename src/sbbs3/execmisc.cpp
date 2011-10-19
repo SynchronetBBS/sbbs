@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -755,7 +755,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					if(lp)
-						*lp=time(NULL);
+						*lp=time32(NULL);
 					return(0);
 				case DATE_STR_TO_INT:
 					lp=getintvar(csi,*(int32_t *)csi->ip);
@@ -763,7 +763,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					pp=getstrvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					if(lp && pp && *pp)
-						*lp=dstrtounix(&cfg,*pp);
+						*lp=(int32_t)dstrtounix(&cfg,*pp);
 					return(0);
 				case STRLEN_INT_VAR:
 					lp=getintvar(csi,*(int32_t *)csi->ip);
@@ -833,7 +833,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					if(lp) {
 						if(pp && *pp)
-							*lp=fdate(*pp);
+							*lp=(int32_t)fdate(*pp);
 						else
 							*lp=0; 
 					}
@@ -1267,7 +1267,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					lp2=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					if(lp1 && (uint)*lp1<csi->files && lp2) 
-						*lp2=filetime(fileno(csi->file[*lp1]));
+						*lp2=(int32_t)filetime(fileno(csi->file[*lp1]));
 					return(0);
 				case FIO_SET_TIME:
 					lp1=getintvar(csi,*(int32_t *)csi->ip);

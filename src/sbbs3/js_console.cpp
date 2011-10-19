@@ -73,8 +73,8 @@ enum {
 
 static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
-	jsval idval;
-	ulong		val;
+	jsval		idval;
+	int32		val;
     jsint       tiny;
 	JSString*	js_str;
 	sbbs_t*		sbbs;
@@ -123,7 +123,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=sbbs->cfg.sec_hangup;
 			break;
 		case CON_PROP_TIMEOUT:
-			val=sbbs->timeout;
+			val=(int32)sbbs->timeout;
 			break;
 		case CON_PROP_TIMELEFT_WARN:
 			val=sbbs->timeleft_warn;

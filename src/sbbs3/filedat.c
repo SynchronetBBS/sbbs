@@ -75,7 +75,7 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 	if(!f->size) {					/* only read disk if this is null */
 			getfilepath(cfg,f,str);
 			if((f->size=(long)flength(str))>=0)
-				f->date=fdate(str);
+				f->date=(time32_t)fdate(str);
 	/*
 			}
 		else {
@@ -123,7 +123,7 @@ BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 	putrec(buf,F_TIMESDLED+5,2,crlf);
 	putrec(buf,F_OPENCOUNT,3,ultoa(f->opencount,tmp,10));
 	putrec(buf,F_OPENCOUNT+3,2,crlf);
-	buf[F_MISC]=f->misc+' ';
+	buf[F_MISC]=(char)f->misc+' ';
 	putrec(buf,F_ALTPATH,2,hexplus(f->altpath,tmp));
 	putrec(buf,F_ALTPATH+2,2,crlf);
 	SAFEPRINTF2(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
@@ -201,7 +201,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	putrec(fdat,F_TIMESDLED+5,2,crlf);
 	putrec(fdat,F_OPENCOUNT,3,ultoa(f->opencount,tmp,10));
 	putrec(fdat,F_OPENCOUNT+3,2,crlf);
-	fdat[F_MISC]=f->misc+' ';
+	fdat[F_MISC]=(char)f->misc+' ';
 	putrec(fdat,F_ALTPATH,2,hexplus(f->altpath,tmp));
 	putrec(fdat,F_ALTPATH+2,2,crlf);
 	f->datoffset=l;

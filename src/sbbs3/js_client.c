@@ -72,7 +72,7 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
 	const char*	p=NULL;
-	ulong		val=0;
+	int32		val=0;
     jsint       tiny;
 	JSString*	js_str;
 	client_t*	client;
@@ -94,7 +94,7 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=client->port;
 			break;
 		case CLIENT_PROP_TIME:
-			val=client->time;
+			val=(int32)client->time;
 			break;
 		case CLIENT_PROP_PROTOCOL:
 			p=(char*)client->protocol;

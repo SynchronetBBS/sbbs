@@ -242,8 +242,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(smb_zonestr(sys_timezone(&cfg),str));
 
 	if(!strcmp(sp,"DATE") || !strcmp(sp,"SYSDATE")) {
-		now=time(NULL);
-		return(unixtodstr(&cfg,now,str));
+		return(unixtodstr(&cfg,time32(NULL),str));
 	}
 
 	if(!strcmp(sp,"DATETIME"))
@@ -420,7 +419,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 
 	if(!strcmp(sp,"TUSED")) {              /* Synchronet only */
 		now=time(NULL);
-		return(sectostr(now-logontime,str)+1);
+		return(sectostr((uint)(now-logontime),str)+1);
 	}
 
 	if(!strcmp(sp,"TLEFT")) {              /* Synchronet only */
@@ -453,7 +452,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 
 	if(!strcmp(sp,"LASTTIMEON")) {
 		memset(&tm,0,sizeof(tm));
-		localtime_r(&useron.laston,&tm);
+		localtime32(&useron.laston,&tm);
 		safe_snprintf(str,maxlen,"%02d:%02d %s"
 			,tm.tm_hour==0 ? 12
 			: tm.tm_hour>12 ? tm.tm_hour-12
@@ -512,7 +511,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 	}
 
 	if(!strcmp(sp,"LASTNEW"))
-		return(unixtodstr(&cfg,ns_time,str));
+		return(unixtodstr(&cfg,(time32_t)ns_time,str));
 
 	if(!strcmp(sp,"NEWFILETIME"))
 		return(timestr(ns_time));
@@ -566,7 +565,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 
 	if(!strcmp(sp,"EXPDAYS")) {
 		now=time(NULL);
-		l=useron.expire-now;
+		l=(long)(useron.expire-now);
 		if(l<0)
 			l=0;
 		safe_snprintf(str,maxlen,"%lu",l/(1440L*60L));

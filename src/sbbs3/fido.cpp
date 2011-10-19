@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -532,7 +532,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 		memset(&msg,0,sizeof(smbmsg_t));
 		msg.hdr.version=smb_ver();
-		msg.hdr.when_imported.time=time(NULL);
+		msg.hdr.when_imported.time=time32(NULL);
 		msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
 		if(fromhub || useron.rest&FLAG('Q')) {
@@ -596,7 +596,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		tm.tm_sec=0;
 
 		tm.tm_isdst=-1;	/* Do not adjust for DST */
-		msg.hdr.when_written.time=mktime(&tm);
+		msg.hdr.when_written.time=mktime32(&tm);
 
 		sprintf(str,"%.25s",block+71);              /* Title */
 		smb_hfield(&msg,SUBJECT,strlen(str),str);

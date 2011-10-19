@@ -102,7 +102,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 
 	smb_hfield_str(&msg,SUBJECT,title);
 
-	msg.hdr.when_written.time=time(NULL);
+	msg.hdr.when_written.time=time32(NULL);
 	msg.hdr.when_written.zone=sys_timezone(&cfg);
 
 	if(editor!=NULL)

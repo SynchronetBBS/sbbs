@@ -572,7 +572,7 @@ js_time(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	JS_SET_RVAL(cx, arglist,UINT_TO_JSVAL(time(NULL)));
+	JS_SET_RVAL(cx, arglist,UINT_TO_JSVAL((uint32_t)time(NULL)));
 	return(JS_TRUE);
 }
 
@@ -1777,7 +1777,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 
 					case 'D':
 						now=time(NULL);
-						j+=sprintf(outbuf+j,"%s",unixtodstr(p->cfg,now,tmp1));
+						j+=sprintf(outbuf+j,"%s",unixtodstr(p->cfg,(time32_t)now,tmp1));
 						break;
 					case 'T':
 						now=time(NULL);
@@ -2782,7 +2782,7 @@ js_utime(JSContext *cx, uintN argc, jsval *arglist)
 	ut.actime = ut.modtime = time(NULL);
 
 	if(argc>1) {
-		actime=modtime=ut.actime;
+		actime=modtime=(int32_t)ut.actime;
 		JS_ValueToInt32(cx,argv[1],&actime);
 		JS_ValueToInt32(cx,argv[2],&modtime);
 		ut.actime=actime;
@@ -3224,7 +3224,7 @@ js_strftime(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		str[128];
 	char*		fmt;
-	int32		i=time(NULL);
+	int32		i=(int32_t)time(NULL);
 	time_t		t;
 	struct tm	tm;
 	JSString*	js_str;

@@ -661,7 +661,7 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 		if((dflt_obj = JSVAL_TO_OBJECT(dflt))!=NULL && (strcmp("Date",JS_GetClass(cx, dflt_obj)->name)==0)) {
 			tt=(time_t)(js_DateGetMsecSinceEpoch(cx,dflt_obj)/1000.0);
 			rc=JS_SUSPENDREQUEST(cx);
-			dbl=iniReadDateTime(p->fp,section,key,tt);
+			dbl=(double)iniReadDateTime(p->fp,section,key,tt);
 			dbl *= 1000;
 			JS_RESUMEREQUEST(cx, rc);
 			date_obj = JS_NewDateObjectMsec(cx, dbl);
@@ -1161,6 +1161,17 @@ And July-22-2010:
  	websrvr.dll!http_session_thread(void * arg)  Line 5091 + 0xc bytes	C
 
 
+And Sept-17-2011:
+
+JS_SetElement(JSContext * 0x058b7138, JSObject * 0x0578cd78, long 2, long * 0x084cb338) line 3178 + 32 bytes
+js_iniGetAllObjects(JSContext * 0x058b7138, JSObject * 0x0578cd60, unsigned int 0, long * 0x063adfbc, long * 0x084cb460) line 1115 + 24 bytes
+js_Invoke(JSContext * 0x058b7138, unsigned int 0, unsigned int 0) line 1375 + 23 bytes
+js_Interpret(JSContext * 0x058b7138, unsigned char * 0x04e9298b, long * 0x084cc678) line 3944 + 15 bytes
+js_Execute(JSContext * 0x058b7138, JSObject * 0x057b4b48, JSScript * 0x04e92880, JSStackFrame * 0x00000000, unsigned int 0, long * 0x084cc860) line 1633 + 19 bytes
+JS_ExecuteScript(JSContext * 0x058b7138, JSObject * 0x057b4b48, JSScript * 0x04e92880, long * 0x084cc860) line 4188 + 25 bytes
+exec_ssjs(http_session_t * 0x084ce0f0, char * 0x084ce221) line 4644 + 36 bytes
+respond(http_session_t * 0x084ce0f0) line 4690 + 18 bytes
+http_session_thread(void * 0x00000000) line 5098 + 12 bytes
   */
         if(!JS_SetElement(cx, array, i, &val))
 			break;

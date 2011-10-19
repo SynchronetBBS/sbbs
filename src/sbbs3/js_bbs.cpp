@@ -251,7 +251,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	char		tmp[128];
 	const char*	p=NULL;
 	const char*	nulstr="";
-	ulong		val=0;
+	uint32		val=0;
     jsint       tiny;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -270,19 +270,19 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=sbbs->startup->options;
 			break;
 		case BBS_PROP_ANSWER_TIME:
-			val=sbbs->answertime;
+			val=(uint32)sbbs->answertime;
 			break;
 		case BBS_PROP_LOGON_TIME:
-			val=sbbs->logontime;
+			val=(uint32)sbbs->logontime;
 			break;
 		case BBS_PROP_START_TIME:
-			val=sbbs->starttime;
+			val=(uint32)sbbs->starttime;
 			break;
 		case BBS_PROP_NS_TIME:
-			val=sbbs->ns_time;
+			val=(uint32)sbbs->ns_time;
 			break;
 		case BBS_PROP_LAST_NS_TIME:
-			val=sbbs->last_ns_time;
+			val=(uint32)sbbs->last_ns_time;
 			break;
 		case BBS_PROP_ONLINE:
 			val=sbbs->online;
@@ -293,7 +293,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case BBS_PROP_EVENT_TIME:
-			val=sbbs->event_time;
+			val=(uint32)sbbs->event_time;
 			break;
 		case BBS_PROP_EVENT_CODE:
 			p=sbbs->event_code;

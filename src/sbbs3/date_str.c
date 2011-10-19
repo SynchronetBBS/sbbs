@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -44,7 +44,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 /****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
 /****************************************************************************/
-time_t DLLCALL dstrtounix(scfg_t* cfg, char *instr)
+time32_t DLLCALL dstrtounix(scfg_t* cfg, char *instr)
 {
 	char*	p;
 	char*	day;
@@ -89,15 +89,16 @@ time_t DLLCALL dstrtounix(scfg_t* cfg, char *instr)
 	if (tm.tm_mon)
 		tm.tm_mon--;	/* zero-based month field */
 	tm.tm_isdst=-1;		/* Do not adjust for DST */
-	return(mktime(&tm));
+	return(mktime32(&tm));
 }
 
 /****************************************************************************/
 /* Converts unix time format (long - time_t) into a char str MM/DD/YY		*/
 /****************************************************************************/
-char* DLLCALL unixtodstr(scfg_t* cfg, time_t unix_time, char *str)
+char* DLLCALL unixtodstr(scfg_t* cfg, time32_t t, char *str)
 {
 	struct tm tm;
+	time_t unix_time=t;
 
 	if(!unix_time)
 		strcpy(str,"00/00/00");
@@ -154,11 +155,12 @@ char* DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str)
 /* Generates a 24 character ASCII string that represents the time_t pointer */
 /* Used as a replacement for ctime()                                        */
 /****************************************************************************/
-char* DLLCALL timestr(scfg_t* cfg, time_t intime, char* str)
+char* DLLCALL timestr(scfg_t* cfg, time32_t t, char* str)
 {
     char*		mer;
 	uchar		hour;
     struct tm	tm;
+	time_t		intime=t;
 
 	if(localtime_r(&intime,&tm)==NULL) {
 		strcpy(str,"Invalid Time");
