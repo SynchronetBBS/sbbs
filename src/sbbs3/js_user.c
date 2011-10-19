@@ -557,7 +557,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_LOGONTIME:	 
 			JS_RESUMEREQUEST(cx, rc);
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->user->number,U_LOGONTIME,0,ultoa((ulong)p->user->logontime=val,tmp,16));
+				putuserrec(p->cfg,p->user->number,U_LOGONTIME,0,ultoa(p->user->logontime=val,tmp,16));
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 			
@@ -569,7 +569,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_PWMOD:
 			JS_RESUMEREQUEST(cx, rc);
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->user->number,U_PWMOD,0,ultoa((ulong)p->user->pwmod=val,tmp,16));
+				putuserrec(p->cfg,p->user->number,U_PWMOD,0,ultoa(p->user->pwmod=val,tmp,16));
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_LEVEL: 
@@ -631,7 +631,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_EXPIRE:  
 			JS_RESUMEREQUEST(cx, rc);
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->user->number,U_EXPIRE,0,ultoa((ulong)p->user->expire=val,tmp,16));
+				putuserrec(p->cfg,p->user->number,U_EXPIRE,0,ultoa(p->user->expire=val,tmp,16));
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 
