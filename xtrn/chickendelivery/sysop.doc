@@ -1,0 +1,52 @@
+Sample configuration in Synchronet (SBBSCFG.EXE):
+
+[Chicken Delivery]
+ 1: Name                       Chicken Delivery
+ 2: Internal Code              CHICKEN
+ 3: Start-up Directory         
+ 4: Command Line               *../xtrn/chickendelivery/chickendelivery.js
+ 5: Clean-up Command Line      
+ 6: Execution Cost             None
+ 7: Access Requirements        
+ 8: Execution Requirements     
+ 9: Multiple Concurrent Users  Yes
+10: Intercept Standard I/O     No
+11: Native (32-bit) Executable No
+12: Use Shell to Execute       No
+13: Modify User Data           No
+14: Execute on Event           No
+15: Pause After Execution      No
+16: BBS Drop File Type         None
+17: Place Drop File In         Node Directory
+18: Time Options...
+	
+NOTE:	It is recommended that you check frequently for updates 
+		from the Synchronet CVS repository located at:
+		
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/xtrn/chickendelivery/
+	
+*****UPDATING YOUR LOCAL LIBRARIES******
+
+It is recommended that you
+update your relative 'EXEC/' and 'EXEC/LOAD/' paths (typically '/SBBS/EXEC' and '/SBBS/EXEC/LOAD')
+with the latest files from the Synchronet CVS repository at:
+	
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/
+	
+	RECOMMENDED UPDATES:
+	
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-sock.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-client.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/frame.js
+		
+	NOTE:	Replace any outdated local copies with the latest releases from these links.
+
+Please report any bugs, issues or questions to: echicken at bbs dot electronicchicken dot com
+
+
+
+
+
+
+
+
