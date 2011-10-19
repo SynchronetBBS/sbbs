@@ -131,7 +131,6 @@ void DLLCALL jsrt_TriggerAll(void)
 {
 #if JS_VERSION>180
 	int	i;
-	int j;
 	JSContext	*iterp,*cx;
 
 	if(!initialized)
