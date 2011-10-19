@@ -2114,7 +2114,7 @@ int main(int argc, char** argv)
 						count=0;
 						for(node=login_attempt_list.first; node!=NULL; node=node->next) {
 							login_attempt=node->data;
-							localtime_r(&login_attempt->time,&tm);
+							localtime32(&login_attempt->time,&tm);
 							printf("%u attempts (%u duplicate) from %s, last via %s on %u/%u %02u:%02u:%02u (user: %s, password: %s)\n"
 								,login_attempt->count
 								,login_attempt->dupes
@@ -2149,7 +2149,7 @@ int main(int argc, char** argv)
 						count=0;
 						for(node=client_list.first; node!=NULL; node=node->next) {
 							client=node->data;
-							localtime_r(&client->time,&tm);
+							localtime32(&client->time,&tm);
 							printf("%04d %s %s %s %s port %u since %u/%u %02u:%02u:%02u\n"
 								,node->tag
 								,client->protocol

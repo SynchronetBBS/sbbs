@@ -359,7 +359,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 		now=time(NULL);
 		if(localtime_r(&now, &now_tm)!=NULL 
-			&& localtime_r(&user->logontime, &logon_tm)!=NULL) {
+			&& localtime32(&user->logontime, &logon_tm)!=NULL) {
 			if(now_tm.tm_year!=logon_tm.tm_year
 				|| now_tm.tm_mon!=logon_tm.tm_mon
 				|| now_tm.tm_mday!=logon_tm.tm_mday)
@@ -2576,7 +2576,7 @@ BOOL DLLCALL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const 
 	char	ip_can[MAX_PATH+1];
 	char	tstr[64];
     FILE*	fp;
-    time_t	now=time(NULL);
+    time32_t now=time32(NULL);
 
 	if(ip_addr==NULL)
 		return(FALSE);
@@ -2749,7 +2749,7 @@ ulong DLLCALL loginFailure(link_list_t* list, SOCKADDR_IN* addr, const char* pro
 			attempt->dupes++;
 	}
 	SAFECOPY(attempt->prot,prot);
-	attempt->time=time(NULL);
+	attempt->time=time32(NULL);
 	attempt->addr=addr->sin_addr;
 	SAFECOPY(attempt->user, user);
 	SAFECOPY(attempt->pass, pass);

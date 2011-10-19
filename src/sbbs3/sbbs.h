@@ -924,11 +924,11 @@ extern "C" {
 
 	/* date_str.c */
 	DLLEXPORT char *	DLLCALL zonestr(short zone);
-	DLLEXPORT time_t	DLLCALL dstrtounix(scfg_t*, char *str);
-	DLLEXPORT char *	DLLCALL unixtodstr(scfg_t*, time_t, char *str);
+	DLLEXPORT time32_t	DLLCALL dstrtounix(scfg_t*, char *str);
+	DLLEXPORT char *	DLLCALL unixtodstr(scfg_t*, time32_t, char *str);
 	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);
 	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
-	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time_t intime, char* str);
+	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time32_t intime, char* str);
 	DLLEXPORT when_t	DLLCALL rfc822date(char* p);
 	DLLEXPORT char *	DLLCALL msgdate(when_t when, char* buf);
 

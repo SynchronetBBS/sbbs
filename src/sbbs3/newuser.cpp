@@ -105,10 +105,10 @@ BOOL sbbs_t::newuser()
 	/* Sets defaults per sysop config */
 	useron.misc|=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
 	useron.qwk=QWK_DEFAULT;
-	useron.firston=useron.laston=useron.pwmod=time(NULL);
+	useron.firston=useron.laston=useron.pwmod=time32(NULL);
 	if(cfg.new_expire) {
 		now=time(NULL);
-		useron.expire=now+((long)cfg.new_expire*24L*60L*60L); 
+		useron.expire=(time32_t)(now+((long)cfg.new_expire*24L*60L*60L)); 
 	} else
 		useron.expire=0;
 	useron.sex=' ';

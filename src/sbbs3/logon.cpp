@@ -189,7 +189,7 @@ bool sbbs_t::logon()
 	logon_ml=useron.level;
 	logontime=time(NULL);
 	starttime=logontime;
-	useron.logontime=logontime;
+	useron.logontime=(time32_t)logontime;
 	last_ns_time=ns_time=useron.ns_time;
 	// ns_time-=(useron.tlast*60); /* file newscan time == last logon time */
 	delfiles(cfg.temp_dir,ALLFILES);
@@ -206,7 +206,7 @@ bool sbbs_t::logon()
 	CLS;
 	if(useron.rows)
 		rows=useron.rows;
-	unixtodstr(&cfg,logontime,str);
+	unixtodstr(&cfg,(time32_t)logontime,str);
 	if(!strncmp(str,useron.birth,5) && !(useron.rest&FLAG('Q'))) {
 		bputs(text[HappyBirthday]);
 		pause();
@@ -260,8 +260,8 @@ bool sbbs_t::logon()
 				break; 
 			}
 			strcpy(useron.pass,str);
-			useron.pwmod=time(NULL);
-			putuserrec(&cfg,useron.number,U_PWMOD,8,ultoa(useron.pwmod,str,16));
+			useron.pwmod=time32(NULL);
+			putuserrec(&cfg,useron.number,U_PWMOD,8,ultoa((ulong)useron.pwmod,str,16));
 			bputs(text[PasswordChanged]);
 			pause(); 
 		}
@@ -556,9 +556,9 @@ ulong sbbs_t::logonstats()
 	read(dsts,&stats.logons,4);		/* Total number of logons on system */
 	close(dsts);
 	now=time(NULL);
-	now32=now;
+	now32=(time32_t)now;
 	if(update_t>now+(24L*60L*60L)) /* More than a day in the future? */
-		errormsg(WHERE,ERR_CHK,"Daily stats time stamp",update_t);
+		errormsg(WHERE,ERR_CHK,"Daily stats time stamp",(ulong)update_t);
 	if(localtime_r(&update_t,&update_tm)==NULL)
 		return(0);
 	if(localtime_r(&now,&tm)==NULL)

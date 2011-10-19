@@ -706,7 +706,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	memset(&client,0,sizeof(client));
 	client.size=sizeof(client);
 	client.protocol=service_client->service->protocol;
-	client.time=time(NULL);
+	client.time=time32(NULL);
 	client.user="<unknown>";
 	SAFECOPY(client.host,client.user);
 	
@@ -1135,7 +1135,7 @@ static void js_service_thread(void* arg)
 #endif
 
 	client.size=sizeof(client);
-	client.time=time(NULL);
+	client.time=time32(NULL);
 	SAFECOPY(client.addr,inet_ntoa(service_client.addr.sin_addr));
 	SAFECOPY(client.host,host_name);
 	client.port=ntohs(service_client.addr.sin_port);
@@ -1480,7 +1480,7 @@ static void native_service_thread(void* arg)
 #endif
 
 	client.size=sizeof(client);
-	client.time=time(NULL);
+	client.time=time32(NULL);
 	SAFECOPY(client.addr,inet_ntoa(service_client.addr.sin_addr));
 	SAFECOPY(client.host,host_name);
 	client.port=ntohs(service_client.addr.sin_port);

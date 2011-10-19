@@ -302,7 +302,7 @@ DLLEXPORT void DLLCALL sbbs_srand()
 		close(rf);
 	}
 #else
-	seed = time(NULL) ^ (DWORD)GetCurrentThreadId();
+	seed = time32(NULL) ^ (DWORD)GetCurrentThreadId();
 #endif
 
  	srand(seed);
@@ -2409,7 +2409,7 @@ void event_thread(void* arg)
 						sbbs->online=FALSE;
 					} 
 				}
-				lastprepack=now;
+				lastprepack=(time32_t)now;
 				SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
@@ -2580,7 +2580,7 @@ void event_thread(void* arg)
 				}
 				delfiles(sbbs->cfg.temp_dir,ALLFILES);
 
-				sbbs->cfg.qhub[i]->last=time(NULL);
+				sbbs->cfg.qhub[i]->last=time32(NULL);
 				SAFEPRINTF(str,"%sqnet.dab",sbbs->cfg.ctrl_dir);
 				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
@@ -2622,7 +2622,7 @@ void event_thread(void* arg)
 				&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
 				&& sbbs->cfg.phub[i]->days&(1<<now_tm.tm_wday))) {
 
-				sbbs->cfg.phub[i]->last=time(NULL);
+				sbbs->cfg.phub[i]->last=time32(NULL);
 				SAFEPRINTF(str,"%spnet.dab",sbbs->cfg.ctrl_dir);
 				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
@@ -2705,7 +2705,7 @@ void event_thread(void* arg)
 							SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 							if((file=sbbs->nopen(str,O_RDONLY))==-1) {
 								sbbs->errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-								sbbs->cfg.event[i]->last=now;
+								sbbs->cfg.event[i]->last=(time32_t)now;
 								continue; 
 							}
 							lseek(file,(long)i*4L,SEEK_SET);
@@ -2721,7 +2721,7 @@ void event_thread(void* arg)
 						SAFEPRINTF2(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
 						if(fexistcase(str))
 							remove(str);
-						sbbs->cfg.event[i]->last=now;
+						sbbs->cfg.event[i]->last=(time32_t)now;
 					} else {	// Exclusive event to run on a node under our control
 						eprintf(LOG_INFO,"Waiting for all nodes to become inactive before "
 							"running timed event: %s",sbbs->cfg.event[i]->code);
@@ -2780,7 +2780,7 @@ void event_thread(void* arg)
 					|| sbbs->cfg.event[i]->node>last_node) {
 					eprintf(LOG_NOTICE,"Changing node status for nodes %d through %d to WFC"
 						,first_node,last_node);
-					sbbs->cfg.event[i]->last=now;
+					sbbs->cfg.event[i]->last=(time32_t)now;
 					for(j=first_node;j<=last_node;j++) {
 						node.status=NODE_INVALID_STATUS;
 						if(sbbs->getnodedat(j,&node,1)!=0)
@@ -2822,7 +2822,7 @@ void event_thread(void* arg)
 						if(!(ex_mode&EX_BG))
 							eprintf(LOG_INFO,"Timed event: %s returned %d",strupr(str), result);
 					}
-					sbbs->cfg.event[i]->last=time(NULL);
+					sbbs->cfg.event[i]->last=time32(NULL);
 					SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 					if((file=sbbs->nopen(str,O_WRONLY))==-1) {
 						sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
@@ -3884,8 +3884,8 @@ void sbbs_t::logoffstats()
 		read(file,&stats,sizeof(stats));  
 
 		if(!(useron.rest&FLAG('Q'))) {	/* Don't count QWKnet nodes */
-			stats.timeon+=(now-logontime)/60;
-			stats.ttoday+=(now-logontime)/60;
+			stats.timeon+=(uint32_t)(now-logontime)/60;
+			stats.ttoday+=(uint32_t)(now-logontime)/60;
 			stats.ptoday+=logon_posts;
 		}
 		stats.uls+=logon_uls;
@@ -4172,7 +4172,7 @@ void sbbs_t::daily_maint(void)
 				user.exempt=sbbs->cfg.val_exempt[sbbs->cfg.level_expireto[user.level]];
 				user.rest=sbbs->cfg.val_rest[sbbs->cfg.level_expireto[user.level]];
 				if(sbbs->cfg.val_expire[sbbs->cfg.level_expireto[user.level]])
-					user.expire=now
+					user.expire=(time32_t)now
 						+(sbbs->cfg.val_expire[sbbs->cfg.level_expireto[user.level]]*24*60*60);
 				else
 					user.expire=0;
@@ -4196,7 +4196,7 @@ void sbbs_t::daily_maint(void)
 			putuserrec(&sbbs->cfg,user.number,U_FLAGS2,8,ultoa(user.flags2,str,16));
 			putuserrec(&sbbs->cfg,user.number,U_FLAGS3,8,ultoa(user.flags3,str,16));
 			putuserrec(&sbbs->cfg,user.number,U_FLAGS4,8,ultoa(user.flags4,str,16));
-			putuserrec(&sbbs->cfg,user.number,U_EXPIRE,8,ultoa(user.expire,str,16));
+			putuserrec(&sbbs->cfg,user.number,U_EXPIRE,8,ultoa((ulong)user.expire,str,16));
 			putuserrec(&sbbs->cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,str,16));
 			putuserrec(&sbbs->cfg,user.number,U_REST,8,ultoa(user.rest,str,16));
 			if(sbbs->cfg.expire_mod[0]) {
@@ -5248,7 +5248,7 @@ NO_SSH:
 		}
 		/* Initialize client display */
 		client.size=sizeof(client);
-		client.time=time(NULL);
+		client.time=time32(NULL);
 		SAFECOPY(client.addr,host_ip);
 		SAFECOPY(client.host,host_name);
 		client.port=ntohs(client_addr.sin_port);

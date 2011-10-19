@@ -208,7 +208,7 @@ void sbbs_t::update_qwkroute(char *via)
 			for(i=0;i<total_nodes;i++)
 				if(qwk_time[i]>t)
 					fprintf(stream,"%s %s:%s\r\n"
-						,unixtodstr(&cfg,qwk_time[i],str),qwk_node[i],qwk_path[i]);
+						,unixtodstr(&cfg,(time32_t)qwk_time[i],str),qwk_node[i],qwk_path[i]);
 			fclose(stream); 
 		}
 		else
@@ -806,12 +806,12 @@ void sbbs_t::qwk_sec()
 
 void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 {
-	long	l;
+	long		l;
 	uint32_t	last;
 
 	if(buf[2]=='/' && buf[5]=='/') {    /* date specified */
-		l=dstrtounix(&cfg,buf);
-		subscan[subnum].ptr=getmsgnum(subnum,l);
+		time_t t=dstrtounix(&cfg,buf);
+		subscan[subnum].ptr=getmsgnum(subnum,t);
 		return; 
 	}
 	l=atol(buf);

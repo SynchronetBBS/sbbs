@@ -949,7 +949,7 @@ typedef struct {						/* Users information */
 			cdt,						/* Credits */
 			min,						/* Minutes */
 			freecdt;					/* Free credits (renewed daily) */
-	time_t	firston,					/* Date/Time first called */
+	time32_t firston,					/* Date/Time first called */
 			laston, 					/* Last logoff date/time */
 			expire, 					/* Expiration date */
 			pwmod,						/* Password last modified */

@@ -43,7 +43,7 @@ extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text,
 	char	tstr[64];
 	char	fname[MAX_PATH+1];
 	int		file;
-	time_t	now=time(NULL);
+	time32_t now=time32(NULL);
 
 	sprintf(fname,"%shack.log",cfg->logs_dir);
 
@@ -81,7 +81,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	char	tstr[64];
 	char	fname[MAX_PATH+1];
 	int		file;
-	time_t	now=time(NULL);
+	time32_t now=time32(NULL);
 
 	sprintf(fname,"%sspam.log",cfg->logs_dir);
 
@@ -124,7 +124,7 @@ extern "C" int DLLCALL errorlog(scfg_t* cfg, const char* host, const char* text)
 	sprintf(path,"%serror.log",cfg->logs_dir);
 	if((fp=fnopen(NULL,path,O_WRONLY|O_CREAT|O_APPEND))==NULL)
 		return -1; 
-	fprintf(fp,"%s %s\r\n%s\r\n\r\n", timestr(cfg,time(NULL),buf), host==NULL ? "":host, text);
+	fprintf(fp,"%s %s\r\n%s\r\n\r\n", timestr(cfg,time32(NULL),buf), host==NULL ? "":host, text);
 	fclose(fp);
 	return 0;
 }

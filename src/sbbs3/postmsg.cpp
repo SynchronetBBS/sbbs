@@ -311,7 +311,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	memset(&msg,0,sizeof(smbmsg_t));
 	msg.hdr.version=smb_ver();
 	msg.hdr.attr=msgattr;
-	msg.hdr.when_written.time=msg.hdr.when_imported.time=time(NULL);
+	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
 	msg.hdr.number=smb.status.last_msg+1; /* this *should* be the new message number */
@@ -514,7 +514,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 	}
 
 	if(msg->hdr.when_imported.time==0) {
-		msg->hdr.when_imported.time=time(NULL);
+		msg->hdr.when_imported.time=time32(NULL);
 		msg->hdr.when_imported.zone=sys_timezone(cfg);
 	}
 	if(msg->hdr.when_written.time==0)	/* Uninitialized */

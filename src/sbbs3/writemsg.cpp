@@ -465,7 +465,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 			removecase(msgtmp);
 		else {
 			qlen=(long)flength(msgtmp);
-			qtime=fdate(msgtmp); 
+			qtime=(long)fdate(msgtmp); 
 		}
 
 		CLS;
@@ -1154,7 +1154,7 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 	smb_hfield_str(msg,RECIPIENTEXT,str);
 	msg->idx.to=usernumber;
 
-	now32=time(NULL);
+	now32=time32(NULL);
 	smb_hfield(msg,FORWARDED,sizeof(time32_t),&now32);
 
 

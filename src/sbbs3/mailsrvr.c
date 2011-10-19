@@ -834,7 +834,7 @@ static void pop3_thread(void* arg)
 
 	/* Initialize client display */
 	client.size=sizeof(client);
-	client.time=time(NULL);
+	client.time=time32(NULL);
 	SAFECOPY(client.addr,host_ip);
 	SAFECOPY(client.host,host_name);
 	client.port=ntohs(pop3.client_addr.sin_port);
@@ -1501,7 +1501,7 @@ static void exempt_email_addr(const char* comment
 			if(fromext!=NULL)
 				fprintf(fp,"#%s ",fromext);
 			fprintf(fp,"%s on %s\n%s\n"
-				,fromaddr, timestr(&scfg,time(NULL),tmp), to);
+				,fromaddr, timestr(&scfg,time32(NULL),tmp), to);
 			fclose(fp);
 		}
 	}
@@ -2490,7 +2490,7 @@ static void smtp_thread(void* arg)
 
 	/* Initialize client display */
 	client.size=sizeof(client);
-	client.time=time(NULL);
+	client.time=time32(NULL);
 	SAFECOPY(client.addr,host_ip);
 	SAFECOPY(client.host,host_name);
 	client.port=ntohs(smtp.client_addr.sin_port);

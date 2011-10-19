@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -93,7 +93,7 @@ void sbbs_t::useredit(int usernumber)
 				return; 
 			} 
 		}
-		unixtodstr(&cfg,time(NULL),str);
+		unixtodstr(&cfg,time32(NULL),str);
 		unixtodstr(&cfg,user.laston,tmp);
 		if(strcmp(str,tmp) && user.ltoday) {
 			user.ltoday=user.ttoday=user.ptoday=user.etoday=user.textra=0;
@@ -128,7 +128,7 @@ void sbbs_t::useredit(int usernumber)
 				,user.comment);
 		else
 			CRLF;
-		if(localtime_r(&user.laston,&tm)==NULL)
+		if(localtime32(&user.laston,&tm)==NULL)
 			return;
 		bprintf(text[UserDates]
 			,unixtodstr(&cfg,user.firston,str),unixtodstr(&cfg,user.expire,tmp)
@@ -371,28 +371,28 @@ void sbbs_t::useredit(int usernumber)
 				if(sys_status&SS_ABORT)
 					break;
 				user.laston=dstrtounix(&cfg,str);
-				putuserrec(&cfg,user.number,U_LASTON,8,ultoa(user.laston,tmp,16));
+				putuserrec(&cfg,user.number,U_LASTON,8,ultoa((ulong)user.laston,tmp,16));
 				bputs(text[UeditFirstOn]);
 				unixtodstr(&cfg,user.firston,str);
 				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.firston=dstrtounix(&cfg,str);
-				putuserrec(&cfg,user.number,U_FIRSTON,8,ultoa(user.firston,tmp,16));
+				putuserrec(&cfg,user.number,U_FIRSTON,8,ultoa((ulong)user.firston,tmp,16));
 				bputs(text[UeditExpire]);
 				unixtodstr(&cfg,user.expire,str);
 				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.expire=dstrtounix(&cfg,str);
-				putuserrec(&cfg,user.number,U_EXPIRE,8,ultoa(user.expire,tmp,16));
+				putuserrec(&cfg,user.number,U_EXPIRE,8,ultoa((ulong)user.expire,tmp,16));
 				bputs(text[UeditPwModDate]);
 				unixtodstr(&cfg,user.pwmod,str);
 				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.pwmod=dstrtounix(&cfg,str);
-				putuserrec(&cfg,user.number,U_PWMOD,8,ultoa(user.pwmod,tmp,16));
+				putuserrec(&cfg,user.number,U_PWMOD,8,ultoa((ulong)user.pwmod,tmp,16));
 				break;
 			case 'L':
 				bputs(text[EnterYourAddress]);
@@ -503,7 +503,7 @@ void sbbs_t::useredit(int usernumber)
 				now=time(NULL);
 				if(cfg.val_expire[i]) {
 					if(user.expire<now)
-						user.expire=now+((long)cfg.val_expire[i]*24L*60L*60L);
+						user.expire=(time32_t)(now+((long)cfg.val_expire[i]*24L*60L*60L));
 					else
 						user.expire+=((long)cfg.val_expire[i]*24L*60L*60L); 
 				}
@@ -1036,7 +1036,7 @@ void sbbs_t::maindflts(user_t* user)
 						break;
 					putuserrec(&cfg,user->number,U_PASS,LEN_PASS,str);
 					now=time(NULL);
-					putuserrec(&cfg,user->number,U_PWMOD,8,ultoa(now,tmp,16));
+					putuserrec(&cfg,user->number,U_PWMOD,8,ultoa((ulong)now,tmp,16));
 					bputs(text[PasswordChanged]);
 					SAFEPRINTF(str,"%s changed password",useron.alias);
 					logline(LOG_NOTICE,nulstr,str);

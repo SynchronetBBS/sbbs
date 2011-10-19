@@ -566,7 +566,7 @@ bool sbbs_t::inputnstime32(time32_t *dt)
 	time_t	tmptime=*dt;
 
 	retval=inputnstime(&tmptime);
-	*dt=tmptime;
+	*dt=(time32_t)tmptime;
 	return(retval);
 }
 
@@ -838,7 +838,7 @@ bool sbbs_t::trashcan(const char *insearchof, const char *name)
 
 char* sbbs_t::timestr(time_t intime)
 {
-	return(::timestr(&cfg,intime,timestr_output));
+	return(::timestr(&cfg,(time32_t)intime,timestr_output));
 }
 
 void sbbs_t::sys_info()
@@ -889,7 +889,7 @@ void sbbs_t::user_info()
 
 	bprintf(text[UserStats],useron.alias,useron.number);
 
-	if(localtime_r(&useron.laston,&tm)!=NULL)
+	if(localtime32(&useron.laston,&tm)!=NULL)
 		bprintf(text[UserDates]
 			,unixtodstr(&cfg,useron.firston,str)
 			,unixtodstr(&cfg,useron.expire,tmp)
@@ -1132,7 +1132,7 @@ void sbbs_t::time_bank(void)
 		if(s<0) s=0;
 		if(s>cfg.level_timepercall[useron.level])
 			s=cfg.level_timepercall[useron.level];
-		s-=(now-starttime)/60;
+		s-=(int)(now-starttime)/60;
 		if(s<0) s=0;
 		bprintf(text[FreeMinLeft],s);
 		bprintf(text[UserMinutes],ultoac(useron.min,tmp));

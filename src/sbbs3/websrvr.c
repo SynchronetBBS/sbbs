@@ -102,8 +102,8 @@ static volatile ulong	sockets=0;
 static volatile BOOL	terminate_server=FALSE;
 static volatile BOOL	terminate_http_logging_thread=FALSE;
 static volatile	ulong	thread_count=0;
-static volatile SOCKET	server_socket=INVALID_SOCKET;
-static volatile SOCKET	server_socket6=INVALID_SOCKET;
+static SOCKET	server_socket=INVALID_SOCKET;
+static SOCKET	server_socket6=INVALID_SOCKET;
 static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
@@ -1379,7 +1379,7 @@ void http_logon(http_session_t * session, user_t *usr)
 		putuserrec(&scfg,session->user.number,U_MODEM,LEN_MODEM,"HTTP");
 		putuserrec(&scfg,session->user.number,U_COMP,LEN_COMP,session->host_name);
 		putuserrec(&scfg,session->user.number,U_NOTE,LEN_NOTE,session->host_ip);
-		putuserrec(&scfg,session->user.number,U_LOGONTIME,0,ultoa(session->logon_time,str,16));
+		putuserrec(&scfg,session->user.number,U_LOGONTIME,0,ultoa((ulong)session->logon_time,str,16));
 	}
 	session->client.user=session->username;
 	client_on(session->socket, &session->client, /* update existing client record? */TRUE);
@@ -5032,7 +5032,7 @@ void http_session_thread(void* arg)
 	SAFECOPY(session.client.addr,session.host_ip);
 	SAFECOPY(session.client.host,session.host_name);
 	session.client.port=ntohs(session.addr.sin_port);
-	session.client.time=time(NULL);
+	session.client.time=time32(NULL);
 	session.client.protocol="HTTP";
 	session.client.user=session.username;
 	session.client.size=sizeof(session.client);

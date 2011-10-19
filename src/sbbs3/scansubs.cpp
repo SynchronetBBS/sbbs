@@ -265,7 +265,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(j<99) outchar(' ');
 				t=getmsgtime(usrsub[i][j],subscan[usrsub[i][j]].ptr);
 				if(t>(long)l)
-					l=t;
+					l=(uint32_t)t;
 				bprintf(text[SubPtrLstFmt],j+1,cfg.sub[usrsub[i][j]]->lname
 					,timestr(t),nulstr); 
 			}
