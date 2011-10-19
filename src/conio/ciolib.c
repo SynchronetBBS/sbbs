@@ -93,7 +93,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_gotoxy(int x, int y);
 CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_cputs(char *str);
-CIOLIBEXPORT int	CIOLIBCALL ciolib_cprintf(char *fmat, ...);
+CIOLIBEXPORT int	CIOLIBCALL ciolib_cprintf(const char *fmat, ...);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textbackground(int colour);
 CIOLIBEXPORT void CIOLIBCALL ciolib_textcolor(int colour);
 CIOLIBEXPORT void CIOLIBCALL ciolib_highvideo(void);
@@ -846,7 +846,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_insline(void)
 }
 
 /* Not overridable due to varargs */
-CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
+CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(const char *fmat, ...)
 {
     va_list argptr;
 	int		ret;
