@@ -42,8 +42,6 @@
 
 static scfg_t* scfg=NULL;
 
-static const char* getprivate_failure = "line %d %s JS_GetPrivate failed";
-
 typedef struct
 {
 	user_t*		user;
