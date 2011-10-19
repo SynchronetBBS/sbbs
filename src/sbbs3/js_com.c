@@ -101,7 +101,6 @@ static JSBool
 js_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -133,7 +132,6 @@ static JSBool
 js_open(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -759,7 +757,6 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj;
 	jsval *argv=JS_ARGV(cx, arglist);
 	private_t* p;
-	char*	protocol=NULL;
 	char*		fname;
 
 	obj=JS_NewObject(cx, &js_com_class, NULL, NULL);

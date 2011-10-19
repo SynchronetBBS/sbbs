@@ -293,7 +293,6 @@ static JSBool
 js_uifc_bail(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	uifcapi_t* uifc;
 	jsrefcount	rc;
 

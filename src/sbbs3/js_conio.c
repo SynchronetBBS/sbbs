@@ -293,7 +293,6 @@ static jsSyncPropertySpec js_properties[] = {
 static JSBool
 js_conio_init(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int			ciolib_mode=CIOLIB_MODE_AUTO;
 	char*		mode;
@@ -331,8 +330,6 @@ js_conio_init(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_suspend(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -345,8 +342,6 @@ js_conio_suspend(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_clreol(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -359,8 +354,6 @@ js_conio_clreol(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_clrscr(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -373,8 +366,6 @@ js_conio_clrscr(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_wscroll(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -387,8 +378,6 @@ js_conio_wscroll(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_delline(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -401,8 +390,6 @@ js_conio_delline(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_insline(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -415,8 +402,6 @@ js_conio_insline(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_normvideo(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -429,8 +414,6 @@ js_conio_normvideo(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_getch(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -442,8 +425,6 @@ js_conio_getch(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_getche(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -455,8 +436,6 @@ js_conio_getche(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_beep(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -468,8 +447,6 @@ js_conio_beep(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_getfont(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -481,8 +458,6 @@ js_conio_getfont(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_hidemouse(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -494,8 +469,6 @@ js_conio_hidemouse(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_showmouse(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -507,7 +480,6 @@ js_conio_showmouse(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_setcursortype(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	type;
 	jsrefcount	rc;
@@ -526,7 +498,6 @@ js_conio_setcursortype(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	x,y;
 	jsrefcount	rc;
@@ -546,7 +517,6 @@ js_conio_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_putch(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	ch;
 	jsrefcount	rc;
@@ -564,7 +534,6 @@ js_conio_putch(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_ungetch(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	ch;
 	jsrefcount	rc;
@@ -582,7 +551,6 @@ js_conio_ungetch(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_loadfont(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char *	str;
 	jsrefcount	rc;
@@ -602,7 +570,6 @@ js_conio_loadfont(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_settitle(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char *	str;
 	jsrefcount	rc;
@@ -623,7 +590,6 @@ js_conio_settitle(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_setname(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char *	str;
 	jsrefcount	rc;
@@ -644,7 +610,6 @@ js_conio_setname(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_cputs(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char *	str;
 	jsrefcount	rc;
@@ -664,7 +629,6 @@ js_conio_cputs(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_setfont(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	font;
 	int force=JS_FALSE;
@@ -702,7 +666,6 @@ js_conio_setfont(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_getpass(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char *	str;
 	char *	pwd;
@@ -724,7 +687,6 @@ js_conio_getpass(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_window(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32 left=1;
 	int32 top=1;
@@ -780,7 +742,6 @@ js_conio_window(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_cgets(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char	buf[258];
 	int32	maxlen=255;
@@ -836,7 +797,6 @@ js_conio_cscanf(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_movetext(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int		i;
 	int32	args[6];
@@ -861,7 +821,6 @@ js_conio_movetext(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_puttext(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	args[4];
 	unsigned char	*buffer;
@@ -930,7 +889,6 @@ js_conio_puttext(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_conio_gettext(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	args[4];
 	unsigned char	*result;

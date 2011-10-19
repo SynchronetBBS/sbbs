@@ -98,7 +98,6 @@ static JSBool
 js_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -265,7 +264,6 @@ static JSBool
 js_accept(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	private_t*	new_p;
 	JSObject*	sockobj;

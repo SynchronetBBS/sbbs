@@ -247,7 +247,6 @@ static JSBool
 js_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -527,7 +526,6 @@ static JSBool
 js_readall(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
     jsint       len=0;
     JSObject*	array;
 	private_t*	p;
@@ -1639,7 +1637,6 @@ static JSBool
 js_delete(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -1666,7 +1663,6 @@ static JSBool
 js_flush(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -1691,7 +1687,6 @@ static JSBool
 js_rewind(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -1750,7 +1745,6 @@ static JSBool
 js_clear_error(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	jsrefcount	rc;
 

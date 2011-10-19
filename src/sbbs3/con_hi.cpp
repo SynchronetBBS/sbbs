@@ -104,7 +104,6 @@ int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const 
 bool sbbs_t::chksyspass()
 {
 	char	str[256],str2[256];
-	int 	orgcon=console;
 
 	if(online==ON_REMOTE && !(cfg.sys_misc&SM_R_SYSOP)) {
 		logline(LOG_NOTICE,"S!","Remote sysop access disabled");

@@ -49,8 +49,8 @@ int 	lprintf(int level, const char *fmt, ...);	/* log output */
 BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 {
 	int		i;
-	long	line=0L;
 #ifdef SBBS
+	long	line=0L;
 	FILE 	*instream;
 	char	str[256],fname[13];
 #endif

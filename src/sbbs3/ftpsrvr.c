@@ -378,7 +378,6 @@ js_server_props_t js_server_props;
 static JSBool
 js_write(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
     uintN		i;
     JSString*	str=NULL;
@@ -411,8 +410,6 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	FILE*	fp;
 	jsrefcount	rc;
 

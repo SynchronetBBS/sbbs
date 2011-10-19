@@ -288,7 +288,6 @@ void bail(int code)
 static JSBool
 js_log(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
     uintN		i=0;
 	int32		level=LOG_INFO;
@@ -323,7 +322,6 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_read(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*	buf;
 	int		rd;
@@ -350,7 +348,6 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_readln(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*	buf;
 	char*	p;
@@ -378,7 +375,6 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_write(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
     uintN		i;
     JSString*	str=NULL;
@@ -408,8 +404,6 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -426,7 +420,6 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_printf(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char* p;
 	jsrefcount	rc;
@@ -452,7 +445,6 @@ js_printf(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_alert(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	jsrefcount	rc;
 	char		*line;
@@ -475,7 +467,6 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
     JSString *	str;
 	char	 *	cstr;
@@ -503,7 +494,6 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_deny(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
     JSString *	str;
 	char	 *	cstr;
@@ -531,7 +521,6 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		instr[81];
     JSString *	str;
@@ -574,7 +563,6 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_chdir(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
 	jsrefcount	rc;
@@ -594,7 +582,6 @@ js_chdir(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_putenv(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p=NULL;
 

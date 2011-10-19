@@ -3197,7 +3197,6 @@ static BOOL exec_cgi(http_session_t *session)
 	char	cmdline[MAX_PATH+256];
 	/* ToDo: Damn, that's WAY too many variables */
 	int		i=0;
-	int		j;
 	int		status=0;
 	pid_t	child=0;
 	int		out_pipe[2];
@@ -3220,11 +3219,8 @@ static BOOL exec_cgi(http_session_t *session)
 	time_t	start;
 	char	cgipath[MAX_PATH+1];
 	char	*p;
-	char	ch;
 	BOOL	orig_keep=FALSE;
-	size_t	idx;
 	str_list_t	tmpbuf;
-	size_t	tmpbuflen=0;
 	BOOL	no_chunked=FALSE;
 	BOOL	set_chunked=FALSE;
 
@@ -3963,7 +3959,6 @@ static void js_writebuf(http_session_t *session, const char *buf, size_t buflen)
 static JSBool
 js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
     uintN		i;
     JSString*	str=NULL;
@@ -4048,7 +4043,6 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char	header_buf[8192];
 	char	*header;
@@ -4105,7 +4099,6 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_log(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		str[512];
     uintN		i=0;
@@ -4146,7 +4139,6 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_login(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
 	JSBool		inc_logons=JS_FALSE;

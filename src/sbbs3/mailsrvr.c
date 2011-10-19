@@ -1686,7 +1686,6 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 static JSBool
 js_log(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
     uintN		i=0;
 	int32		level=LOG_INFO;

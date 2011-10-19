@@ -1308,7 +1308,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	pid_t	pid;
 	int		in_pipe[2];
 	int		out_pipe[2];
+#ifdef XTERN_LOG_STDERR
 	int		err_pipe[2];
+#endif
 	fd_set ibits;
 	int	high_fd;
 	struct timeval timeout;
@@ -1657,7 +1659,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(pipe(err_pipe)!=0) {
 		errormsg(WHERE,ERR_CREATE,"err_pipe",0);
 		return(-1);
-}
+	}
 #endif
 
 	if((mode&EX_STDIO)==EX_STDIO)  {

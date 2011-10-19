@@ -254,7 +254,6 @@ static JSClass eval_class = {
 static JSBool
 js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 {
-	JSObject *parent_obj=JS_THIS_OBJECT(parent_cx, arglist);
 	jsval *argv=JS_ARGV(parent_cx, arglist);
 	char*			buf;
 	size_t			buflen;
@@ -349,7 +348,6 @@ js_gc(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_report_error(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char	*p;
 
@@ -389,7 +387,6 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_get_parent(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	JSObject* child=NULL;
 	JSObject* parent;

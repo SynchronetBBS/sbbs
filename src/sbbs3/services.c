@@ -254,7 +254,6 @@ static void status(char* str)
 static JSBool
 js_read(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		buf;
 	int32		len=512;
@@ -285,7 +284,6 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_readln(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		ch;
 	char*		buf;
@@ -356,7 +354,6 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_write(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	uintN		i;
 	char*		cp;
@@ -385,8 +382,6 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	char*		cp;
 	service_client_t* client;
 	jsrefcount	rc;
@@ -409,7 +404,6 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_log(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		str[512];
     uintN		i=0;
@@ -588,7 +582,6 @@ static JSBool
 js_logout(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	jsval val;
 	service_client_t* client;
 	jsrefcount	rc;
@@ -684,7 +677,6 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 static JSBool
 js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	client_t	client;
 	SOCKET		sock=INVALID_SOCKET;
@@ -742,7 +734,6 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	client_t	client;
 	SOCKET		sock=INVALID_SOCKET;
@@ -796,7 +787,6 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_client_remove(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	SOCKET	sock=INVALID_SOCKET;
 	service_client_t* service_client;

@@ -398,7 +398,6 @@ int change_user(void)
         lputs(LOG_ERR,"!Setting new user_id failed!  (Does the user exist?)");
         return(-1);
 	} else {
-        char str[256];
         struct passwd *pwent;
         
         pwent=getpwnam(new_uid_name);
@@ -1062,7 +1061,6 @@ BOOL WINAPI ControlHandler(unsigned long CtrlType)
 #ifdef __unix__
 void _sighandler_quit(int sig)
 {
-	char	str[1024];
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
 
@@ -2140,7 +2138,6 @@ int main(int argc, char** argv)
 				case 'c':	/* Show connected clients: */
 					printf("\nConnected clients:\n\n");
 					{
-						unsigned long		total=0;
 						struct tm			tm;
 						list_node_t*		node;
 						client_t*			client;
