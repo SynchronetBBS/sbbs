@@ -384,6 +384,7 @@ endif
 ifdef DEBUG
  CFLAGS	+=	-ggdb
  CFLAGS	+=	-D_DEBUG
+ CFLAGS +=	-Wall
 else # RELEASE
  # -finline functions breaks the baja build badly.
  # This also means that -O3 won't work either.
