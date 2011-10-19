@@ -6,7 +6,7 @@
 /* Maybe this was not original intention? */
 
 /* Note: dark yellow (brown) follows the IBM CGA convention of lowering the */
-/* green component to yield a more pleasing brown-tone.
+/* green component to yield a more pleasing brown-tone. */
 /* See http://en.wikipedia.org/wiki/Color_Graphics_Adapter for more details */
 
 /* Note: The RGB values here were taken from Grymmjack's Windows NT ANSI */
