@@ -46,7 +46,7 @@
      /* Setup 1.00    */ 
 }               configrec;
  /* Setup 1.00    */ configrec config;
- /* Setup 1.00    */ char *yn[2] = {"No", "Yes"};
+ /* Setup 1.00    */ char *yesno[2] = {"No", "Yes"};
  /* Setup 1.00    */ void 
 __errormessage(int x, char y[15])
 {
