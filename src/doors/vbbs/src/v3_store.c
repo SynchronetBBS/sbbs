@@ -442,7 +442,7 @@ void buy_computer()
     char    ch1, kys[23]="Q";
 
     for(i=1;i<23;i++)
-        kys[i] = (char)NULL;
+        kys[i] = 0;
 
     text("0740");
     for(i=0;i<MAX_CPU;i++)

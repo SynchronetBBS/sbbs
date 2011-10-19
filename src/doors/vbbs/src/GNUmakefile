@@ -23,17 +23,17 @@ TARGET = ./bin/vbbs
 
 OBJS	=  ${O}/v3_basic.o ${O}/v3_hack.o ${O}/v3_io.o ${O}/v3_learn.o ${O}/v3_mail.o ${O}/v3_maint.o ${O}/v3_mci.o ${O}/v3_store.o ${O}/vbbsutil.o ${O}/vbbs.o ${O}/vbbs_db.o ${O}/filewrap.o
 
-LIBS	= ../lib/libODoors.a
+LIBS	= -lODoors
 
 ifeq (${BUILD},debug)
-    CFLAGS    = -g -Wall -O -I. -I../include
-    CPPFLAGS  = -g -Wall -O -I. -I../include
-    LDFLAGS   = -g 
+    CFLAGS    = -g -Wall -O -I. -I../include -I../../../odoors -I../../../xpdev -DHAS_INTTYPES_H
+    CPPFLAGS  = -g -Wall -O -I. -I../include -I../../../odoors -I../../../xpdev -DHAS_INTTYPES_H
+    LDFLAGS   = -g -L../../../odoors/libs-`uname`
 	QUIET	:=
 else
-    CFLAGS    = -O2 -Wall -fno-common -fomit-frame-pointer -I. -I../include
-    CPPFLAGS  = -O2 -Wall -fno-common -fomit-frame-pointer -fno-exceptions -fno-rtti -I. -I../include
-    LDFLAGS   = 
+    CFLAGS    = -O2 -Wall -fno-common -fomit-frame-pointer -I. -I../include -I../../../odoors -I../../../xpdev -DHAS_INTTYPES_H
+    CPPFLAGS  = -O2 -Wall -fno-common -fomit-frame-pointer -fno-exceptions -fno-rtti -I. -I../include -I../../../odoors -I../../../xpdev -DHAS_INTTYPES_H
+    LDFLAGS   = -L../../../odoors/libs-`uname`
 	QUIET	:=	@
 endif
 
@@ -48,7 +48,7 @@ bin:
 obj:
 	mkdir obj
 
-${TARGET}: bin obj ${OBJS} ${LIBS}
+${TARGET}: bin obj ${OBJS}
 	@echo linking $@
 	${QUIET}${LD} ${LDFLAGS} ${OBJS} ${LIBS} -o ${TARGET}
 	${QUIET}${CP} ${TARGET} ../build
@@ -58,6 +58,10 @@ clean:
 	${QUIET}${RM} ${O}/*.o ${TARGET}
 
 ${O}/%.o : %.c
+	@echo Compiling $<
+	${QUIET}${CC} -c ${CFLAGS} $< -o $@
+
+${O}/%.o : ../../../xpdev/%.c
 	@echo Compiling $<
 	${QUIET}${CC} -c ${CFLAGS} $< -o $@
 

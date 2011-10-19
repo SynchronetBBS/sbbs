@@ -527,12 +527,12 @@ void u32_2A(int numa, u32 lnum)
 #else // VBBS_WIN32 && VBBS_LINUX
 void s32_2A(int numa, s32 lnum)
 {
-	sprintf(A[numa], "%d", lnum);
+	sprintf(A[numa], "%d", (int32_t)lnum);
 }
 
 void u32_2A(int numa, u32 lnum)
 {
-	sprintf(A[numa], "%u", lnum);
+	sprintf(A[numa], "%u", (uint32_t)lnum);
 }
 #endif
 
