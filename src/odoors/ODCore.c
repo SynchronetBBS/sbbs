@@ -133,7 +133,7 @@ char *pchColorEndPos;
 BYTE btCurrentStatusLine = STATUS_NONE;
 OD_PERSONALITY_CALLBACK *pfCurrentPersonality = NULL;
 char szDesiredPersonality[33] = "";
-extern SET_PERSONALITY_FUNC *pfSetPersonality = NULL;
+SET_PERSONALITY_FUNC *pfSetPersonality = NULL;
 
 /* Commonly used character sequences. */
 char abtBlackBlock[2] = {' ', 0x07};
