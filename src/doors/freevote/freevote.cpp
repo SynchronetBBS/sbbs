@@ -158,17 +158,17 @@ void AddQuestion(void);
 void DeleteQuestion(void);
 void ChangeQuestion(void);
 void DeleteYourQuestion(void);
-int ChooseQuestion(unsigned int nFromWhichQuestions, char *pszTitle, int *nLocation);
+int ChooseQuestion(unsigned int nFromWhichQuestions, const char *pszTitle, int *nLocation);
 int DisplayQuestionResult(tQuestionRecord *pQuestionRecord,int all);
 int ReadOrAddCurrentUser(void);
 void WriteCurrentUser(void);
-FILE *ExculsiveFileOpen(char *pszFileName, char *pszMode);
+FILE *ExculsiveFileOpen(const char *pszFileName, const char *pszMode);
 void WaitForEnter(void);
 int CountQuestions(void);
 int CountQuestionsF(void);
 void dump(void);
 void maint(void);
-void warp_line(char line1[], char line2[],char intro[]);
+void warp_line(char line1[], char line2[],const char intro[]);
 void my_clr_scr();
 void trim(char *numstr);
 void QuestionEditor(void);
@@ -565,7 +565,7 @@ main(int argc, char *argv[])
 	maint_run=TRUE;
       } else if (strnicmp(argv[cnt],"-C",2)==0) {
 	od_control.od_config_file = INCLUDE_CONFIG_FILE;
-	strzcpy(od_control.od_config_filename,argv[cnt],2,59);
+	od_control.od_config_filename=argv[cnt]+2;
       } else if (strnicmp(argv[cnt],"-FC",3)==0) {
 	Forcevote=5;
       } else if (strnicmp(argv[cnt],"-FNQ",4)==0) {
@@ -3529,7 +3529,7 @@ int CountQuestionsF()
 /* of the nFromWhichQuestions parameter, this function will present a list */
 /* of questions that the user has voted on, a list of questions that the   */
 /* user has not voted on, or a list of all questions.                      */
-int ChooseQuestion(unsigned int nFromWhichQuestions, char *pszTitle, int *nLocation)
+int ChooseQuestion(unsigned int nFromWhichQuestions, const char *pszTitle, int *nLocation)
 {
    int nCurrent;
    int nFileQuestion;
@@ -4321,12 +4321,12 @@ void WriteCurrentUser(void)
 
 
 #ifdef ODPLAT_NIX
-FILE *fsopen(char *pszFilename, char *pszMode, int shmode)
+FILE *fsopen(const char *pszFilename, const char *pszMode, int shmode)
 {
     int file;
     int Mode=0;
     char pszNewMode[3];
-    char *p;
+    const char *p;
     
     for(p=pszMode;*p;p++)  {
         switch (*p)  {
@@ -4388,7 +4388,7 @@ FILE *fsopen(char *pszFilename, char *pszMode, int shmode)
 /* be unable to open the file. This function will wait for up to the number */
 /* of seconds set by FILE_ACCESS_MAX_WAIT, which is defined near the        */
 /* beginning of this file.                                                  */
-FILE *ExculsiveFileOpen(char *pszFileName, char *pszMode)
+FILE *ExculsiveFileOpen(const char *pszFileName, const char *pszMode)
 {
    FILE *fpFile = NULL;
    time_t StartTime = time(NULL);
@@ -4409,7 +4409,7 @@ FILE *ExculsiveFileOpen(char *pszFileName, char *pszMode)
 }
 
 void
-warp_line(char line1[], char line2[],char intro[])
+warp_line(char line1[], char line2[],const char intro[])
 {
   int cnt,last_space=ANSWER_STR_SIZE-2;
   char key,warp=TRUE;
