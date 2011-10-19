@@ -7,7 +7,7 @@
 
 void dump(void);
 
-void
+int
 main(void) {
 	FILE *justfile;
 	enemy erec;

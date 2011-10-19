@@ -11,11 +11,11 @@ void    online_fight(INT16 *user_num, user_rec *user_on, INT16 enm_num);
 void    fgc(INT16 *enm_num, INT16 *user_num);
 INT16	event_gen(user_rec *user_on);
 INT16	len_format(char str[]);
-void	ny_send_file(char filename[]);
-char	ny_send_menu(menu_t menu,char allowed[],INT16 onscreen=0);
+void	ny_send_file(const char filename[]);
+char	ny_send_menu(menu_t menu,const char allowed[],INT16 onscreen=0);
 void	ny_get_index(void);
 void	ny_line(INT16 line,INT16 before,INT16 after);
-void    any_attack_ops(user_rec *user_on, char fight_name[], char en_name[], INT32 en_hitpoints, INT32 en_strength, INT32 en_defense, weapon en_arm);
+void    any_attack_ops(user_rec *user_on, const char fight_name[], const char en_name[], INT32 en_hitpoints, INT32 en_strength, INT32 en_defense, weapon en_arm);
 
 
 

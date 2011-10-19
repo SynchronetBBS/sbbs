@@ -26,15 +26,13 @@
 
 #include <OpenDoor.h>                   // Must be included in all doors
 #include <dirwrap.h>
-#include <conio.h>
+#include <ciolib.h>
 #include <filewrap.h>
 #include <genwrap.h>
 
 #include "filename.h"
 #include "const.h"
 #include "structs.h"
-
-int    	main(int argc,char *argv[]);    // Function prototype declarations
 
 char   	entry_menu(void);               // Menu draw...
 void	DisplayStats(void);
@@ -50,10 +48,10 @@ void CustomConfigFunction(char *pszKeyword, char *pszOptions);
 void strzcpy(char dest[],const char src[], INT16 beg,INT16 end);
 void	cap_names(char name[]);
 void	dump(void);
-void    ny_disp_emu(char line[]);
+void    ny_disp_emu(const char line[]);
 void	get_bbsname(char bbsname[]);
 INT16	seereg(char bbsname[]);
-FILE *ShareFileOpen(char *pszFileName, char *pszMode);
+FILE *ShareFileOpen(const char *pszFileName, const char *pszMode);
 size_t ny_fread(void *ptr, size_t size, size_t n, FILE*stream);
 size_t ny_fwrite(const void *ptr, size_t size, size_t n, FILE*stream);
 //void ChangeOnlineRanks(void);

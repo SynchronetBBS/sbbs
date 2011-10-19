@@ -45,13 +45,13 @@
 
 #if !defined(__unix__) && !defined(_WIN32)
 #include <share.h>
-#include <conio.h>
+#include <ciolib.h>
 #include <io.h>
 #else
 #include <dirwrap.h>
 #include <genwrap.h>
 #include <filewrap.h>
-#include <conio.h>
+#include <ciolib.h>
 #endif
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -80,7 +80,6 @@
 #define NY2008_FALG6          0x0020*/
 
 
-int     main(int argc,char *argv[]);    // Function prototype declarations
 char    entry_menu(void);               // Menu draw...
 //char    central_park(void);
 //char    drugs(void);
@@ -92,7 +91,7 @@ char    entry_menu(void);               // Menu draw...
 //char    healing(void);
 //char    mail(void);
 
-char    callmenu(char allowed[],menu_t menu,INT16 menu_line,char figst);
+char    callmenu(const char allowed[],menu_t menu,INT16 menu_line,char figst);
 void DisplayBestIB(void);
 
 void    read_IGMs(void);
@@ -118,7 +117,7 @@ void    SortScrFile(INT16 usr, INT16 max);
 void    ChangeOnlineRanks(void);
 void    WhosOnline(void);
 INT16     askifuser(char handle[25]);
-char    ny_get_answer(char *string);
+char    ny_get_answer(const char *string);
 void    fig_ker(void);
 void    trim(char *numstr);
 
@@ -139,14 +138,14 @@ void    get_line(char beg[],char line[],char ovr[],INT16 wrap);
 void    read_mail(void);
 void    illness(void);
 void    illness(desease ill, INT16 inf, INT16 rape=FALSE);
-void    news_post(char line[], char name1[], char name2[], INT16 flag);
+void    news_post(const char line[], const char name1[], const char name2[], INT16 flag);
 void    print_disease(desease ill);
 INT16     seereg(char bbsname[]);
 void    get_bbsname(char bbsname[]);
 //void  cap_names(char name[]);
 void    change_info(void);
 void    dump(void);
-INT16     strzcmp(char str1[], char str2[]);
+INT16     strzcmp(const char str1[], const char str2[]);
 void    del(char *file);
 //void  checknodes(void);
 
@@ -155,7 +154,7 @@ INT16 ReadOrAddCurrentUser(void);
 void WriteCurrentUser(void);
 INT32 randomf(INT32 max);
 //FILE *ExculsiveFileOpen(char *pszFileName, char *pszMode);
-FILE *ShareFileOpen(char *pszFileName, char *pszMode);
+FILE *ShareFileOpen(const char *pszFileName, const char *pszMode);
 size_t ny_fread(void *ptr, size_t size, size_t n, FILE*stream);
 size_t ny_fwrite(const void *ptr, size_t size, size_t n, FILE*stream);
 void CustomConfigFunction(char *pszKeyword, char *pszOptions);
@@ -178,11 +177,11 @@ void CrashRecovery(void);
 void IGM(char exenam[]);
 void IGM_ops(void);
 void CreateDropFile(INT16 all);
-void ny_disp_emu(char line[]);
+void ny_disp_emu(const char line[]);
 void nyr_disp_emu(char line[]);
 void ny_clr_scr();
 //void print_gun_prices(void);
-void ny_disp_emu(char line[],INT16 min);
+void ny_disp_emu(const char line[],INT16 min);
 void ny_disp_emu_file(FILE *ans_phile,FILE *asc_phile,char line[],INT16 min);
 char *ny_un_emu(char line[]);
 char *ny_un_emu(char line[],char out[]);
@@ -194,12 +193,12 @@ void ch_flag_d(void);
 void forrest_IGM(void);
 void call_IGM(char exenamr[]);
 void read_fight_IGMs(void);
-FILE *ShareFileOpenAR(char *pszFileName, char *pszMode);
+FILE *ShareFileOpenAR(const char *pszFileName, const char *pszMode);
 void UserStatus(void);
 void ny_pers(unsigned char message);
 void time_slice(void);
-INT16 copyfile(char *file1,char *file2);
-INT16 ny_remove(char *pszFileName);
+INT16 copyfile(const char *file1,const char *file2);
+INT16 ny_remove(const char *pszFileName);
 void game_events(void);
 void ny_stat_line(INT16 line,INT16 before,INT16 after);
 void ny_read_stat_line(INT16 line,char *string, FILE *phile);

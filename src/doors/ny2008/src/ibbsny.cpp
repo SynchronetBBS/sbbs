@@ -1298,7 +1298,7 @@ void            ConvertStringToAddress(tFidoNode * pNode, const char *pszSource)
 #define KEYWORD_IBBS_GN    12
 #define KEYWORD_BBS_NAME   13
 
-char           *apszKeyWord[NUM_KEYWORDS] = {"SystemAddress",
+const char           *apszKeyWord[NUM_KEYWORDS] = {"SystemAddress",
         "UserName",
         "NetmailDir",
         "Crash",
@@ -1313,7 +1313,7 @@ char           *apszKeyWord[NUM_KEYWORDS] = {"SystemAddress",
         "InterBBSGameNumber",
         "SystemName"};
 
-tIBResult       IBReadConfig(tIBInfo * pInfo, char *pszConfigFile) {
+tIBResult       IBReadConfig(tIBInfo * pInfo, const char *pszConfigFile) {
 	/* Set default values for pInfo settings */
 
 	/*
@@ -1445,7 +1445,7 @@ void            ProcessConfigLine(INT16 nKeyword, char *pszParameter, void *pCal
 /* Configuration file reader settings */
 #define CONFIG_LINE_SIZE 128
 #define MAX_TOKEN_CHARS 32
-tBool           ProcessConfigFile(char *pszFileName, INT16 nKeyWords, char **papszKeyWord,
+tBool           ProcessConfigFile(const char *pszFileName, INT16 nKeyWords, const char **papszKeyWord,
                                   void (*pfCallBack) (INT16, char *, void *), void *pCallBackData) {
 	FILE           *pfConfigFile;
 	char            szConfigLine[CONFIG_LINE_SIZE + 1];

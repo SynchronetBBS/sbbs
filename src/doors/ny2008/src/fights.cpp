@@ -63,7 +63,7 @@ INT16	xp_random();
 void	attack_sequence();
   */
 
-void any_attack_ops(user_rec *user_on, char fight_name[], char en_name[], INT32 en_hitpoints, INT32 en_strength, INT32 en_defense, weapon en_arm) {
+void any_attack_ops(user_rec *user_on, const char fight_name[], const char en_name[], INT32 en_hitpoints, INT32 en_strength, INT32 en_defense, weapon en_arm) {
 	INT32 hit_s; //the attacking stregth
 	INT32 def_s;
 	INT32 en_hit_s;
@@ -4989,7 +4989,7 @@ len_format(char str[]) {
 }
 
 void
-ny_send_file(char filename[]) {
+ny_send_file(const char filename[]) {
 	char line[124];
 	FILE *phile;
 	INT16 cnt;
@@ -5168,7 +5168,7 @@ ny_get_index(void) {
 
 
 char
-ny_send_menu(menu_t menu,char allowed[],INT16 onscreen) {
+ny_send_menu(menu_t menu,const char allowed[],INT16 onscreen) {
 	char line[124];
 	FILE *phile;
 	INT16 cnt;

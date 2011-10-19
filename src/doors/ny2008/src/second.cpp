@@ -371,7 +371,7 @@ newz_ops(void) {
 
 
 void
-news_post(char line[], char name1[], char name2[], INT16 flag) {
+news_post(const char line[], const char name1[], const char name2[], INT16 flag) {
 	FILE *justfile;
 	char c_dir;
 
@@ -2163,7 +2163,7 @@ money_minus(DWORD howmuch) {
 
 
 char
-ny_get_answer(char *string) {
+ny_get_answer(const char *string) {
 	INT16 len, cnt=0;
 	time_t t,t2;
 	char key,doker=TRUE;
@@ -2181,7 +2181,7 @@ ny_get_answer(char *string) {
 
 	while (1) {
 		key=od_get_key(FALSE);
-		while (key==NULL) {
+		while (key==0) {
 			t=time(NULL);
 			if(t>=t2+check_o_nodes) {
 				if(doker)
@@ -2966,7 +2966,7 @@ ny_fread(void *ptr, size_t size, size_t n, FILE *stream) {
 /* be able to open the file. This function will wait for up to the number   */
 /* of seconds set by FILE_ACCESS_MAX_WAIT, which is defined near the        */
 /* beginning of this file.                                                  */
-FILE *ShareFileOpen(char *pszFileName, char *pszMode) {
+FILE *ShareFileOpen(const char *pszFileName, const char *pszMode) {
 	FILE *fpFile = NULL;
 	time_t StartTime = time(NULL);
 	char numstr[14];
@@ -3007,7 +3007,7 @@ FILE *ShareFileOpen(char *pszFileName, char *pszMode) {
 }
 
 
-FILE *ShareFileOpenAR(char *pszFileName, char *pszMode) {
+FILE *ShareFileOpenAR(const char *pszFileName, const char *pszMode) {
 	FILE *fpFile = NULL;
 	time_t StartTime = time(NULL);
 	char numstr[14];
@@ -3052,7 +3052,7 @@ FILE *ShareFileOpenAR(char *pszFileName, char *pszMode) {
 
 
 INT16
-ny_remove(char *pszFileName) {
+ny_remove(const char *pszFileName) {
 	//   FILE *fpFile = NULL;
 	time_t StartTime;
 	//   char numstr[80];
@@ -3329,7 +3329,7 @@ nyr_disp_emu(char line[]) {
 
 
 void
-ny_disp_emu(char line[]) {
+ny_disp_emu(const char line[]) {
 	INT16 cnt;
 	//  if(rip) {
 	//    od_control.user_rip=FALSE;
@@ -3428,7 +3428,7 @@ ny_disp_emu(char line[]) {
 
 
 void
-ny_disp_emu(char line[],INT16 min) {
+ny_disp_emu(const char line[],INT16 min) {
 	INT16 cnt;
 	INT16 len;
 

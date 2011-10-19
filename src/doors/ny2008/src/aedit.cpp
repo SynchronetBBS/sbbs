@@ -11,7 +11,7 @@
 
 void dump(void);
 
-void
+int
 main(void) {
 	FILE *justfile;
 	enemy erec;
@@ -21,19 +21,19 @@ main(void) {
 	INT16 lvl=0;
 	INT16 cnt;
 	char nnm[36];
-	//  system("ren "ENEMY_FILENAME" nyenmb.dat");
-	//  system("ren "ENEMY_INDEX" nyenmb.idx");
-	system("del "ENEMY_FILENAME);
-	system("del "ENEMY_INDEX);
+	system("mv "ENEMY_FILENAME" nyenmb.dat");
+	system("mv "ENEMY_INDEX" nyenmb.idx");
+	system("rm "ENEMY_FILENAME);
+	system("rm "ENEMY_INDEX);
 
 	eidx.first_enemy[0]=0;
 	do {
-		//    printf("\nA-Add N-Next level Q-Quit>");
+		printf("\nA-Add N-Next level Q-Quit>");
 		scanf("%c",&key);
 		dump();
 
 		if (key=='A' || key=='a') {
-			//    printf("Name of the sucker:");
+			printf("Name of the sucker:");
 			cnt=0;
 			do {
 				scanf("%c",&key);
@@ -44,25 +44,25 @@ main(void) {
 			if (key!='\n' && key!='\r')
 				dump();
 
-			//  printf("Hitpoints:");
+			printf("Hitpoints:");
 			scanf("%ld",&erec.hitpoints);
 			dump();
 
-			//  printf("Strength:");
+			printf("Strength:");
 			scanf("%ld",&erec.strength);
 			dump();
 
-			//  printf("Defense:");
+			printf("Defense:");
 			scanf("%ld",&erec.defense);
 			dump();
 
-			//  printf("Arm:");
+			printf("Arm:");
 			scanf("%d",&erec.arm);
 
 			dump();
 
 			justfile=fopen(ENEMY_FILENAME,"a+b");
-			//   printf("Atpos: %d\n\n",ftell(justfile)/sizeof(enemy));
+			printf("Atpos: %d\n\n",ftell(justfile)/sizeof(enemy));
 			fwrite(&erec,sizeof(enemy),1,justfile);
 			fclose(justfile);
 
@@ -78,6 +78,7 @@ main(void) {
 	fwrite(&eidx,sizeof(enemy_idx),1,justfile);
 	fclose(justfile);
 	printf("\nDone!");
+	return 0;
 }
 
 void

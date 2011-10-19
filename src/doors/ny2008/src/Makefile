@@ -1,72 +1,26 @@
 CC	= gcc
 CXX	= g++
-CONIO_SRC	=	../../../conio
-XPDEV_SRC	=	../../../xpdev
-ODOOR_SRC	=	../../../odoors
-CFLAGS += -O2
-CFLAGS += -g
-CFLAGS += -I${ODOOR_SRC} -I${XPDEV_SRC} -I${CONIO_SRC}
-# Needed for struct alignment!
-CFLAGS += -fshort-enums
-LDFLAGS += -L${ODOOR_SRC}
+SRC_ROOT	:=	../../..
+include ${SRC_ROOT}/build/Common.gmake
 
-all : ny2008 aedit nyibbs nyedit medit
+ODOORS_SRC	:= $(SRC_ROOT)/odoors
+CFLAGS += $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
+CFLAGS += -I$(ODOORS_SRC)
+LDFLAGS += $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) -L${ODOORS_SRC}/libs-`uname`
+CPPFLAGS += $(CFLAGS)
 
-filewrap.o:
-	$(CC) $(CFLAGS) -c ${XPDEV_SRC}/filewrap.c
+$(NY2008) : $(OBJS)
+	$(CXX) $(CPPFLAGS) ${LDFLAGS} $(OBJS) -lODoors -o $(NY2008) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
-dirwrap.o:
-	$(CC) $(CFLAGS) -c ${XPDEV_SRC}/dirwrap.c
+$(AEDIT) : $(AEDIT_OBJS)
+	$(CXX) $(CPPFLAGS) ${LDFLAGS} $(AEDIT_OBJS) -o $(AEDIT)
 
-genwrap.o:
-	$(CC) $(CFLAGS) -c ${XPDEV_SRC}/genwrap.c
+$(MEDIT) : $(MEDIT_OBJS)
+	$(CXX) $(CPPFLAGS) ${LDFLAGS} $(MEDIT_OBJS) -o $(MEDIT)
 
-conio.o: curs_cio.o x_cio.o
-	$(CC) $(CFLAGS) -c ${CONIO_SRC}/conio.c
+$(NYIBBS) : $(NYIBBS_OBJS)
+	$(CXX) $(CPPFLAGS) ${LDFLAGS} $(NYIBBS_OBJS) -o $(NYIBBS) $(XPDEV-MT_LIBS)
 
-curs_cio.o:
-	$(CC) $(CFLAGS) -c ${CONIO_SRC}/curs_cio.c
+$(NYEDIT) : $(NYEDIT_OBJS)
+	$(CXX) $(CPPFLAGS) ${LDFLAGS} $(NYEDIT_OBJS) -lODoors -o $(NYEDIT) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
-x_cio.o:
-	$(CC) $(CFLAGS) -c ${CONIO_SRC}/x_cio.c
-
-fights.o : fights.cpp fights.h ny2008.h
-	$(CXX) $(CFLAGS) -c fights.cpp
-
-ibbsny.o : ibbsny.cpp ibbsny.h ny2008.h
-	$(CXX) $(CFLAGS) -c ibbsny.cpp
-
-igmsup.o : igmsup.cpp ny2008.h
-	$(CXX) $(CFLAGS) -c igmsup.cpp
-
-second.o : second.cpp ny2008.h
-	$(CXX) $(CFLAGS) -c second.cpp
-
-chatadd.o : chatadd.cpp ny2008.h
-	$(CXX) $(CFLAGS) -c chatadd.cpp
-
-ny2008.o : ny2008.cpp
-	$(CXX) $(CFLAGS) -c ny2008.cpp
-
-ny2008 : ny2008.o ibbsny.o second.o igmsup.o ibbsny.o fights.o dirwrap.o filewrap.o genwrap.o conio.o chatadd.o
-	$(CXX) $(CFLAGS) ${LDFLAGS} conio.o curs_cio.o x_cio.o ny2008.o chatadd.o dirwrap.o filewrap.o genwrap.o fights.o ibbsny.o igmsup.o second.o -lcurses -lODoors -lm -o ../ny2008
-
-aedit : aedit.cpp
-	$(CXX) $(CFLAGS) ${LDFLAGS} aedit.cpp -o ../aedit
-
-medit : medit.cpp
-	$(CXX) $(CFLAGS) ${LDFLAGS} medit.cpp -o ../medit
-
-nyibbs : nyibbs.cpp ibbsny.o filewrap.o genwrap.o dirwrap.o
-	$(CXX) $(CFLAGS) ${LDFLAGS} nyibbs.cpp ibbsny.o filewrap.o genwrap.o dirwrap.o -o ../nyibbs
-
-nyedit : nyedit.cpp nyedit.h filewrap.o genwrap.o dirwrap.o conio.o curs_cio.o x_cio.o
-	$(CXX) $(CFLAGS) ${LDFLAGS} nyedit.cpp filewrap.o genwrap.o dirwrap.o conio.o curs_cio.o x_cio.o -lcurses -lODoors -lm -o ../nyedit
-
-clean :
-	rm -f *.o
-	rm -f ../ny2008
-	rm -f ../medit
-	rm -f ../aedit
-	rm -f ../nyibbs
-	rm -f ../nyedit

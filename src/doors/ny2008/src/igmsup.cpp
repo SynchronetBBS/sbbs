@@ -313,7 +313,7 @@ list_igm:
                 if(found_file==FALSE) {
                         fseek(menuthing,where,SEEK_SET);
                         x=1;
-                        while(menuthing!=NULL && x<=20 && ny_fread(temp,31,1,menuthing)!=NULL) {
+                        while(menuthing!=NULL && x<=20 && ny_fread(temp,31,1,menuthing)!=0) {
                                 ny_fread(exenam,251,1,menuthing);
                                 if(found_file==FALSE) {
                                         od_printf(" `bright red`%-2d`red` - ",x);

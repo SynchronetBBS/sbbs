@@ -14,7 +14,7 @@
 // include prototypes for fights
 #include "fights.h"
 
-extern unsigned _stklen=20000U;
+unsigned _stklen=20000U;
 
 // price arrays
 DWORD    gun_price[ULTRASOUND_GUN+1] =  {
@@ -63,8 +63,8 @@ INT16 no_rip_m=0;
 INT16 rip=FALSE;
 char *t_buffer=NULL;
 INT16 registered=786;
-char *ver="1.01";
-char *verinfo="";
+const char *ver="1.01";
+const char *verinfo="";
 INT16 gamedisk,flagdisk=-1;
 INT16 *regptr;
 char gamedir[MAX_PATH],flagdir[MAX_PATH];
@@ -166,7 +166,7 @@ time_slice(void) {
 }
 
 INT16
-copyfile(char *file1,char *file2) {
+copyfile(const char *file1,const char *file2) {
 	FILE *f1,*f2;
 	char *buffer;
 	INT32 len1,where,x,y;
@@ -281,7 +281,7 @@ loadbadwords(void) {
 	fclose(fp);
 }
 
-int
+extern "C" int
 main(int argc,char *argv[]) {
 	FILE *justfile,*njustfile;
 	char key;
@@ -510,7 +510,7 @@ main(int argc,char *argv[]) {
 				sscanf(numstr,"%d",&intval);
 				od_control.od_node=intval;
 			} else if (strnicmp(argv[cnt],"-C",2)==0) {
-				strzcpy(od_control.od_config_filename,argv[cnt],2,59);
+				od_control.od_config_filename=argv[cnt]+2;
 				od_control.od_config_file = INCLUDE_CONFIG_FILE;
 			}
 		} while ((++cnt)<argc);
@@ -4569,7 +4569,7 @@ DrgPtsCoef(void) {
 }
 
 char
-callmenu(char allowed[],menu_t menu,INT16 menu_line,char figst) {
+callmenu(const char allowed[],menu_t menu,INT16 menu_line,char figst) {
 	char key;
 
 	od_clear_keybuffer();
@@ -5353,7 +5353,7 @@ AddBestPlayerInIB(char *name,DWORD points) {
 
 
 INT16
-strzcmp(char str1[], char str2[]) {
+strzcmp(const char str1[], const char str2[]) {
 	char temp1[40],
 	temp2[40];
 

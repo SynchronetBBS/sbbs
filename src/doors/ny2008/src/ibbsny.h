@@ -39,7 +39,7 @@ tIBResult IBSendAll(tIBInfo *pInfo, char *pBuffer, INT16 nBufferSize);
 tIBResult IBSendMail(tIBInfo *pInfo, ibbs_mail_type *ibmail);
 tIBResult IBGetMail(tIBInfo *pInfo, ibbs_mail_type *ibmail);
 //tIBResult IBGetR(tIBInfo *pInfo, void *pBuffer,INT16 *nBufferLen);
-tIBResult IBReadConfig(tIBInfo *pInfo, char *pszConfigFile);
+tIBResult IBReadConfig(tIBInfo *pInfo, const char *pszConfigFile);
 
 
 /******************************************************************************/
@@ -82,7 +82,7 @@ void DecodeMail(const char *pcSource, ibbs_mail_type *ibmail);
 //int DecodeBufferR(const char *pszSource, void *pDestBuffer);
 void ConvertAddressToString(char *pszDest, const tFidoNode *pNode);
 void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
-tBool ProcessConfigFile(char *pszFileName, INT16 nKeyWords, char **papszKeyWord,
+tBool ProcessConfigFile(const char *pszFileName, INT16 nKeyWords, const char **papszKeyWord,
                         void (*pfCallBack)(INT16, char *, void *), void *pCallBackData);
 void ProcessConfigLine(INT16 nKeyword, char *pszParameter, void *pCallbackData);
 

@@ -8,7 +8,8 @@
 typedef INT16 tBool;
 #endif
 
-typedef enum
+typedef unsigned char tIBResult;
+enum
 {
     eSuccess,
     eNoMoreMessages,
@@ -17,9 +18,10 @@ typedef enum
     eNoMemory,
     eMissingDir,
     eFileOpenError
-} tIBResult;
+};
 
-typedef enum {HANDS,
+typedef unsigned char weapon;
+enum {HANDS,
               PEPPER,
               KNIFE,
               CHAIN,
@@ -41,19 +43,26 @@ typedef enum {HANDS,
               ASSAULT_RIFLE,
               PROTON_GUN,
               NEUTRON_PHASER,
-              ULTRASOUND_GUN} weapon;
-typedef enum {POT,HASH,LSD,COKE,PCP,HEROIN} drug_type;
-typedef enum {MALE,FEMALE} sex_type;
-typedef enum {HEADBANGER,HIPPIE,BIG_FAT_DUDE,CRACK_ADDICT,PUNK} guy_type;
-typedef enum {NONE,CRAPS,HERPES,SYPHILIS,AIDS} desease;
-typedef enum {ALIVE,UNCONCIOUS,DEAD} guy_status;
-typedef enum {NOWHERE,MOTEL,REG_HOTEL,EXP_HOTEL} hotel_type;
-typedef enum {CENTRAL_PARK,CENTRAL_PARK_IB,EVIL_STUFF,BANK,HEALING,FOOD,
+              ULTRASOUND_GUN};
+typedef unsigned char drug_type;
+enum {POT,HASH,LSD,COKE,PCP,HEROIN};
+typedef unsigned char sex_type;
+enum {MALE,FEMALE};
+typedef unsigned char guy_type;
+enum {HEADBANGER,HIPPIE,BIG_FAT_DUDE,CRACK_ADDICT,PUNK};
+typedef unsigned char desease;
+enum {NONE,CRAPS,HERPES,SYPHILIS,AIDS};
+typedef unsigned char guy_status;
+ enum {ALIVE,UNCONCIOUS,DEAD};
+typedef unsigned char hotel_type;
+ enum {NOWHERE,MOTEL,REG_HOTEL,EXP_HOTEL};
+typedef unsigned char menu_t;
+ enum {CENTRAL_PARK,CENTRAL_PARK_IB,EVIL_STUFF,BANK,HEALING,FOOD,
               DRUGS,ARMS,SEX,MAIL,REST,P_FIG,C_FIG,S_FIG,ENTRY_1,ENTRY_2,
               ONLINE,NEWZ,LIST,CONSIOUS,ATTACK,WIN,MAINT_RUN,WEAPONS,COPS,
               NEW,NATION,OTHER,NEW_NAME,NEW_WIN,NEW_LOOSE,TEN_BEST,BUSTED,
               ASS_KICKED,ASS_KICKED_P,ASS_KICKED_O,COLORS_HELP,CH_DRUG,
-              LIST_IB_SYS,IBBS_MENU,HITMEN,TEN_BEST_IBBS,END} menu_t;
+              LIST_IB_SYS,IBBS_MENU,HITMEN,TEN_BEST_IBBS,END};
 
 #if defined(_WIN32) || defined(__BORLANDC__)
         #define PRAGMA_PACK
@@ -511,7 +520,8 @@ typedef struct _PACK {
 scr_rec;
 
 //typedef enum                {HANDS,PEPPER,KNIFE,CHAIN,GUN,RIFLE,LASER_GUN,SHOTGUN,MACHINEGUN,GRANADE_LAUNCHER,BLASTER,A_BOMB} weapon;
-typedef enum {HANDS,
+typedef unsigned char weapon;
+ enum {HANDS,
               PEPPER,
               KNIFE,
               CHAIN,
@@ -533,18 +543,24 @@ typedef enum {HANDS,
               ASSAULT_RIFLE,
               PROTON_GUN,
               NEUTRON_PHASER,
-              ULTRASOUND_GUN} weapon;
+              ULTRASOUND_GUN};
 
 /*DWORD 	gun_price[A_BOMB+1]={0,    50,    100,  200,  500,1000, 2000,     5000,   10000,     20000,           50000,  250000};
 */
-typedef enum                 {POT,HASH,LSD,COKE,PCP,HEROIN} drug_type;
+typedef unsigned char drig_type;
+ enum                 {POT,HASH,LSD,COKE,PCP,HEROIN};
 /*int 	drug_price[HEROIN+1]={10, 25,  50, 100, 150,200};
 */
-typedef enum {MALE,FEMALE} sex_type;
-typedef enum {HEADBANGER,HIPPIE,BIG_FAT_DUDE,CRACK_ADDICT,PUNK} guy_type;
-typedef enum {NONE,CRAPS,HERPES,SYPHILIS,AIDS} desease;
-typedef enum {ALIVE,UNCONCIOUS,DEAD} guy_status;
-typedef enum {NOWHERE,MOTEL,REG_HOTEL,EXP_HOTEL} hotel_type;
+typedef unsigned char sex_type;
+ enum {MALE,FEMALE};
+typedef unsigned char guy_type;
+ enum {HEADBANGER,HIPPIE,BIG_FAT_DUDE,CRACK_ADDICT,PUNK};
+typedef unsigned char desease;
+ enum {NONE,CRAPS,HERPES,SYPHILIS,AIDS};
+typedef unsigned char guy_status;
+ enum {ALIVE,UNCONCIOUS,DEAD};
+typedef unsigned char hotel_type;
+ enum {NOWHERE,MOTEL,REG_HOTEL,EXP_HOTEL};
 
 
 #endif

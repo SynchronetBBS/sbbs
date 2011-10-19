@@ -11,7 +11,6 @@
 // include the header
 #include "nyedit.h"
 
-
 // Declare global variables
 user_rec cur_user;
 char str[25];
@@ -41,7 +40,7 @@ NoDropFile(void) {
 	exit(10);
 }
 
-int main(int argc,char *argv[]) {
+extern "C" int main (int argc,char *argv[]) {
 	FILE *justfile;
 	char key,s_key;
 	WORD uintval;
@@ -174,7 +173,7 @@ int main(int argc,char *argv[]) {
 				/*      } else if (strnicmp(argv[cnt],"-DV",3)==0) {
 					directvideo=1; */
 			} else if (strnicmp(argv[cnt],"-C",2)==0) {
-				strzcpy(od_control.od_config_filename,argv[cnt],2,59);
+				od_control.od_config_filename=argv[cnt]+2;
 				od_control.od_config_file = INCLUDE_CONFIG_FILE;
 			}
 			/* Was <= argc */
@@ -1639,7 +1638,7 @@ void CustomConfigFunction(char *pszKeyword, char *pszOptions) {
 
 
 void
-ny_disp_emu(char line[]) {
+ny_disp_emu(const char line[]) {
 	INT16 cnt;
 
 	for(cnt=0;line[cnt]!=0;cnt++) {
@@ -1811,7 +1810,7 @@ ny_fread(void *ptr, size_t size, size_t n, FILE *stream) {
 /* be able to open the file. This function will wait for up to the number   */
 /* of seconds set by FILE_ACCESS_MAX_WAIT, which is defined near the        */
 /* beginning of this file.                                                  */
-FILE *ShareFileOpen(char *pszFileName, char *pszMode) {
+FILE *ShareFileOpen(const char *pszFileName, const char *pszMode) {
 	FILE *fpFile = NULL;
 	time_t StartTime = time(NULL);
 
