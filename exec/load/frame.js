@@ -728,7 +728,7 @@ function Frame(x,y,width,height,attr,frame) {
 		else {}
 	}
 	this.putmsg = function(str) {
-		str = str.split('');
+		str = str.toString().split('');
 		var control_a = false;
 		var curattr = this.attr;
 		var pos = position.cursor;
