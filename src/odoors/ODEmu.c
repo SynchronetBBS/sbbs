@@ -1001,7 +1001,7 @@ static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel)
  *
  *     Return: void
  */
-ODAPIDEF void ODCALL od_disp_emu(char *pszToDisplay, BOOL bRemoteEcho)
+ODAPIDEF void ODCALL od_disp_emu(const char *pszToDisplay, BOOL bRemoteEcho)
 {
    BOOL bTranslateRemote;
 

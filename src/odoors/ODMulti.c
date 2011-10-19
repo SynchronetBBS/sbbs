@@ -108,7 +108,7 @@ ODAPIDEF void ODCALL ODMPSEnable(void)
  *
  *     Return: TRUE on success, or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_set_personality(char *pszName)
+ODAPIDEF BOOL ODCALL od_set_personality(const char *pszName)
 {
 #ifdef OD_TEXTMODE
    BYTE btNewPersonality;
@@ -213,7 +213,7 @@ ODAPIDEF BOOL ODCALL od_set_personality(char *pszName)
  *
  *     Return: TRUE on success or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_add_personality(char *pszName, BYTE btOutputTop,
+ODAPIDEF BOOL ODCALL od_add_personality(const char *pszName, BYTE btOutputTop,
    BYTE btOutputBottom, OD_PERSONALITY_PROC *pfPerFunc)
 {
    /* Log function entry if running in trace mode */

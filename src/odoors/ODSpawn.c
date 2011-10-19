@@ -172,7 +172,7 @@ int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
  *
  *     Return: TRUE on success, or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_spawn(char *pszCommandLine)
+ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
 {
 #ifdef ODPLAT_DOS
    char *apszArgs[4];

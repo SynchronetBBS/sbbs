@@ -948,7 +948,7 @@ od_control;
  *    od_sleep()              - Yield to other processes
  *    od_control_get()        - Returns a pointer to the od_control structure.
  */
-ODAPIDEF BOOL ODCALL   od_add_personality(char *pszName, BYTE btOutputTop,
+ODAPIDEF BOOL ODCALL   od_add_personality(const char *pszName, BYTE btOutputTop,
                           BYTE btOutputBottom,
                           OD_PERSONALITY_PROC *pfPerFunc);
 ODAPIDEF void ODCALL   od_autodetect(INT nFlags);
@@ -960,7 +960,7 @@ ODAPIDEF void ODCALL   od_clr_scr(void);
 ODAPIDEF BYTE ODCALL   od_color_config(char *pszColorDesc);
 ODAPIDEF tODControl *  ODCALL od_control_get(void);
 ODAPIDEF void ODCALL   od_disp(char *pachBuffer, INT nSize, BOOL bLocalEcho);
-ODAPIDEF void ODCALL   od_disp_emu(char *pszToDisplay, BOOL bRemoteEcho);
+ODAPIDEF void ODCALL   od_disp_emu(const char *pszToDisplay, BOOL bRemoteEcho);
 ODAPIDEF void ODCALL   od_disp_str(const char *pszToDisplay);
 ODAPIDEF BOOL ODCALL   od_draw_box(BYTE btLeft, BYTE btTop, BYTE btRight,
                           BYTE btBottom);
@@ -1011,10 +1011,10 @@ ODAPIDEF void ODCALL   od_set_attrib(INT nColour);
 ODAPIDEF void ODCALL   od_set_color(INT nForeground, INT nBackground);
 ODAPIDEF void ODCALL   od_set_cursor(INT nRow, INT nColumn);
 ODAPIDEF void ODCALL   od_set_dtr(BOOL bHigh);
-ODAPIDEF BOOL ODCALL   od_set_personality(char *pszName);
+ODAPIDEF BOOL ODCALL   od_set_personality(const char *pszName);
 ODAPIDEF void ODCALL   od_set_statusline(INT nSetting);
 ODAPIDEF void ODCALL   od_sleep(tODMilliSec Milliseconds);
-ODAPIDEF BOOL ODCALL   od_spawn(char *pszCommandLine);
+ODAPIDEF BOOL ODCALL   od_spawn(const char *pszCommandLine);
 ODAPIDEF INT16 ODCALL  od_spawnvpe(INT16 nModeFlag, char *pszPath,
                           char *papszArg[], char *papszEnv[]);
 ODAPIDEF void * ODCALL od_window_create(INT nLeft, INT nTop, INT nRight,
