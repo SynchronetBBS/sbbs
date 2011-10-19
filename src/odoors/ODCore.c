@@ -851,7 +851,7 @@ ODAPIDEF void ODCALL od_disp(char *pachBuffer, INT nSize, BOOL bLocalEcho)
  *
  *     Return: void
  */
-ODAPIDEF void ODCALL od_disp_str(char *pszToDisplay)
+ODAPIDEF void ODCALL od_disp_str(const char *pszToDisplay)
 {
    /* Log function entry if running in trace mode */
    TRACE(TRACE_API, "od_disp_str()");

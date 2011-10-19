@@ -720,7 +720,7 @@ typedef struct
    char          od_cfg_text[48][33];
    char          od_cfg_lines[25][33];
    OD_COMPONENT  *od_config_file;
-   char *        od_config_filename;
+   const char *  od_config_filename;
    void          (*od_config_function)(char *keyword, char *options);
    char          od_color_char;
    char          od_color_delimiter;
@@ -961,7 +961,7 @@ ODAPIDEF BYTE ODCALL   od_color_config(char *pszColorDesc);
 ODAPIDEF tODControl *  ODCALL od_control_get(void);
 ODAPIDEF void ODCALL   od_disp(char *pachBuffer, INT nSize, BOOL bLocalEcho);
 ODAPIDEF void ODCALL   od_disp_emu(char *pszToDisplay, BOOL bRemoteEcho);
-ODAPIDEF void ODCALL   od_disp_str(char *pszToDisplay);
+ODAPIDEF void ODCALL   od_disp_str(const char *pszToDisplay);
 ODAPIDEF BOOL ODCALL   od_draw_box(BYTE btLeft, BYTE btTop, BYTE btRight,
                           BYTE btBottom);
 ODAPIDEF WORD ODCALL   od_edit_str(char *pszInput, char *pszFormat, INT nRow,
