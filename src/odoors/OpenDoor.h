@@ -969,7 +969,7 @@ ODAPIDEF WORD ODCALL   od_edit_str(char *pszInput, char *pszFormat, INT nRow,
                           BYTE btHighlightColour, char chBlank,
                           WORD nFlags);
 ODAPIDEF void ODCALL   od_exit(INT nErrorLevel, BOOL bTermCall);
-ODAPIDEF char ODCALL   od_get_answer(char *pszOptions);
+ODAPIDEF char ODCALL   od_get_answer(const char *pszOptions);
 ODAPIDEF void ODCALL   od_get_cursor(INT *pnRow, INT *pnColumn);
 ODAPIDEF BOOL ODCALL   od_get_input(tODInputEvent *pInputEvent,
                           tODMilliSec TimeToWait, WORD wFlags);
@@ -1005,7 +1005,7 @@ ODAPIDEF BOOL ODCALL   od_restore_screen(void *pBuffer);
 ODAPIDEF BOOL ODCALL   od_save_screen(void *pBuffer);
 ODAPIDEF BOOL ODCALL   od_scroll(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, INT nDistance, WORD nFlags);
-ODAPIDEF BOOL ODCALL   od_send_file(char *pszFileName);
+ODAPIDEF BOOL ODCALL   od_send_file(const char *pszFileName);
 ODAPIDEF BOOL ODCALL   od_send_file_section(char *pszFileName, char *pszSectionName);
 ODAPIDEF void ODCALL   od_set_attrib(INT nColour);
 ODAPIDEF void ODCALL   od_set_color(INT nForeground, INT nBackground);

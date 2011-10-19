@@ -78,7 +78,7 @@
 
 /* Local helper function prototypes. */
 static void ODEmulateFromBuffer(char *pszBuffer, BOOL bRemoteEcho);
-static FILE *ODEmulateFindCompatFile(char *pszBaseName, INT *pnLevel);
+static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel);
 static void ODEmulateFillArea(BYTE btLeft, BYTE btTop, BYTE btRight,
    BYTE btBottom, char chToFillWith);
 
@@ -223,7 +223,7 @@ ODAPIDEF char ODCALL od_hotkey_menu(char *pszFileName, char *pszHotKeys,
  *
  *     Return: TRUE on success, or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_send_file(char *pszFileName)
+ODAPIDEF BOOL ODCALL od_send_file(const char *pszFileName)
 {
    FILE *pfRemoteFile;
    FILE *pfLocalFile = NULL;
@@ -938,7 +938,7 @@ end_transmission:
  *     Return: A pointer to a now-open file of the required type, or NULL if
  *             no match was found.
  */
-static FILE *ODEmulateFindCompatFile(char *pszBaseName, INT *pnLevel)
+static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel)
 {
    FILE *pfCompatibleFile;
 

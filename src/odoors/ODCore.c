@@ -1368,7 +1368,7 @@ ODAPIDEF void ODCALL od_set_dtr(BOOL bHigh)
  *
  *     Return: void
  */
-ODAPIDEF char ODCALL od_get_answer(char *pszOptions)
+ODAPIDEF char ODCALL od_get_answer(const char *pszOptions)
 {
    char *pchPossibleOption;
    char chPressed;
