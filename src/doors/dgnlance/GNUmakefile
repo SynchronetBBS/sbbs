@@ -3,7 +3,7 @@ include ${SRC_ROOT}/build/Common.gmake
 
 # OpenDoors
 LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-`uname`
-CFLAGS	+=	-I$(SRC_ROOT)/odoors
+CFLAGS	+=	-I$(SRC_ROOT)/odoors -Wall -pedantic -std=c99
 
 ifdef STATIC
  LDFLAGS	+=	-static
