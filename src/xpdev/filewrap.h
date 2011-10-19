@@ -172,7 +172,7 @@ extern "C" {
 #endif
 
 #if defined(__unix__)
-	DLLEXPORT FILE * DLLCALL _fsopen(char *pszFilename, char *pszMode, int shmode);
+	DLLEXPORT FILE * DLLCALL _fsopen(const char *pszFilename, const char *pszMode, int shmode);
 #endif
 
 #if defined(_MSC_VER) && (_MSC_VER < 1300)	/* missing prototypes */

@@ -278,7 +278,7 @@ int DLLCALL unlock(int file, off_t offset, off_t size)
 #endif	/* !Unix && (MSVC || MinGW) */
 
 #ifdef __unix__
-FILE *_fsopen(char *pszFilename, char *pszMode, int shmode)
+FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 {
 	int file;
 	int Mode=0;
