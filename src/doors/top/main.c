@@ -37,7 +37,7 @@ in Win32) and the main input loop.
    Notes:  This function never returns.  exit() is always used to quit TOP.
 */
 #ifndef __WIN32__
-extern void main(XINT ac, char *av[])
+extern int main(XINT ac, char *av[])
 #else
 extern int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                           LPSTR lpszCmdParam, int nCmdShow)

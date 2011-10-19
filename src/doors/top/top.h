@@ -540,7 +540,7 @@ typedef struct file_stats_str
 //|#include "toppoker.h"
 
 #ifndef __WIN32__
-extern void main(XINT ac, char *av[]);
+extern int main(XINT ac, char *av[]);
 #else
 extern int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                           LPSTR lpszCmdParam, int nCmdShow);
@@ -772,7 +772,7 @@ extern XINT lowestnode;
 extern lang_text_typ XFAR **langptrs;
 extern XINT usedcmdlen;
 extern XINT nodecfgfil;
-extern long curchannel;
+extern unsigned long curchannel;
 extern unsigned char *wordret;
 extern long numlang;
 extern node_idx_typ *node;

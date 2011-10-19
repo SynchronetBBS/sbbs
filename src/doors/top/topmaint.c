@@ -16,7 +16,7 @@
 
 user_data_typ ubuf;
 
-void main(XINT argc, char *argv[]);
+int main(XINT argc, char *argv[]);
 void showcmdline(XINT cmd);
 void deleteuser(char *nam);
 void packusers(void);
@@ -24,7 +24,7 @@ void purgeusers(unsigned XINT sec, unsigned XINT days);
 XINT calc_days_ago(XDATE *lastdate);
 void setusersec(unsigned XINT sec, char *nam);
 
-void main(XINT argc, char *argv[])
+int main(XINT argc, char *argv[])
 {
     XINT d;
 

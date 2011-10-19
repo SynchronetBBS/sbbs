@@ -29,7 +29,7 @@ contains comments describing each variable.
 #define TOP_REVISION "A321"
 
 /* Borland global variable that sets the stack size. */
-extern unsigned _stklen = 8192L;
+unsigned _stklen = 8192L;
 
 /* Variables below are mostly listed in the order added to TOP. */
 
@@ -101,7 +101,7 @@ XINT usedcmdlen = 0;
    a binary node configuration file. */
 XINT nodecfgfil = -1;
 /* Current channel the user is on. */
-long curchannel = 0;
+unsigned long curchannel = 0;
 /* getword functions return buffer. */
 unsigned char *wordret = NULL;
 /* Node index data for this node. */

@@ -158,7 +158,7 @@ void mod_proc(void)
     /* The user can't ban in a personal channel.  The test is done using
        hardcoded internal channel numbers but probably should use the CHAN_
        channel type constants instead. */
-    if (curchannel >= 4000000000 && curchannel <= 4000999999 &&
+    if (curchannel >= 4000000000UL && curchannel <= 4000999999UL &&
         baninvflg >= 1 && baninvflg <= 2)
         {
         top_output(OUT_SCREEN, getlang("CantBanFromHere"));
@@ -166,7 +166,7 @@ void mod_proc(void)
         }
     /* The user can't invite in normal channels or conferences.  Again
        the test uses hardcoded channel numbers. */
-    if ((curchannel <= 3999999999 || curchannel >= 4001000000) &&
+    if ((curchannel <= 3999999999UL || curchannel >= 4001000000UL) &&
         baninvflg >= 3 && baninvflg <= 4)
         {
         top_output(OUT_SCREEN, getlang("CantInvFromHere"));

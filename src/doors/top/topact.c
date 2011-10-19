@@ -71,13 +71,13 @@ typedef struct
     unsigned char *pluraltext;
     } action_ptr_typ;
 
-void main(XINT argc, char *argv[]);
+int main(XINT argc, char *argv[]);
 void actfile_compile(unsigned char *ifname, unsigned char *ofname);
 
 unsigned char loadbuf[513];
 unsigned char iname[256], oname[256];
 
-void main(XINT argc, char *argv[])
+int main(XINT argc, char *argv[])
     {
 
     printf("\nTOPACT - Action Compiler for TOP 2.00.\n\n");
@@ -93,7 +93,7 @@ void main(XINT argc, char *argv[])
         printf("be used.  If <outfile> is not specified, the\n          "
                "base name of <infile> will be used with the extension of "
                ".TAC.\n");
-        exit(0);
+        return(0);
         }
 
     strcpy(iname, argv[1]);
@@ -123,7 +123,7 @@ void main(XINT argc, char *argv[])
 
     actfile_compile(iname, oname);
 
-    exit(0);
+    return(0);
 
     }
 
