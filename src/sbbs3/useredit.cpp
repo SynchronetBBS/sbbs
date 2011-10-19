@@ -1009,7 +1009,7 @@ void sbbs_t::maindflts(user_t* user)
 					console|=CON_R_ECHOX;
 					ch=getstr(str,LEN_PASS,K_UPPER);
 					console&=~(CON_R_ECHOX|CON_L_ECHOX);
-					if(strcmp(str,user->pass)) {
+					if(stricmp(str,user->pass)) {
 						bputs(text[WrongPassword]);
 						pause();
 						break; 
