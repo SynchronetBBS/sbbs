@@ -47,6 +47,7 @@ function printBoards() {
 			print(msgBase.total_msgs + " messages");
 			if(msgBase.last_msg > 0) {
 				var header = msgBase.get_msg_header(msgBase.last_msg);
+				if(!header) continue;
 				print("<br />Latest: " + header.subject + ", by: " + header.from + " on " + system.timestr(header.when_written_time));
 			}
 			print("</div>");
@@ -120,7 +121,7 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 	for(m = mm; m <= msgBase.last_msg; m++) {
 		header = msgBase.get_msg_header(m);
 		body = msgBase.get_msg_body(m,strip_ctrl_a=true);
-		if(!header || !body || threadedMessages.hasOwnProperty(header.number)) continue;
+		if(!header || !body || !header.hasOwnProperty("number") || threadedMessages.hasOwnProperty(header.number)) continue;
 		if(newOnly && header.number <= scanPointer) continue; // This message precedes our scan pointer - don't waste any more time on it.
 		if(subBoardCode == 'mail' && header.to != user.alias && header.to_ext != user.number && header.from != user.alias && header.from_ext != user.number) continue; // lol :|
 
