@@ -103,7 +103,6 @@ static volatile BOOL	terminate_server=FALSE;
 static volatile BOOL	terminate_http_logging_thread=FALSE;
 static volatile	ulong	thread_count=0;
 static SOCKET	server_socket=INVALID_SOCKET;
-static SOCKET	server_socket6=INVALID_SOCKET;
 static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
@@ -2821,7 +2820,6 @@ static BOOL check_extra_path(http_session_t * session)
 						*end=0;
 						strcat(rpath,startup->index_file_name[i]);
 						if(!stat(rpath,&sb)) {
-							/* *end=0; /* Removed Wed, Aug 09, 2006 to allow is_dynamic_req to detect correctly */
 							SAFECOPY(session->req.extra_path_info,epath);
 							SAFECOPY(session->req.virtual_path,vpath);
 							strcat(session->req.virtual_path,"/");
