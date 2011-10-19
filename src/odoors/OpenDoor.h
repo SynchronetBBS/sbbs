@@ -959,7 +959,7 @@ ODAPIDEF void ODCALL   od_clr_line(void);
 ODAPIDEF void ODCALL   od_clr_scr(void);
 ODAPIDEF BYTE ODCALL   od_color_config(char *pszColorDesc);
 ODAPIDEF tODControl *  ODCALL od_control_get(void);
-ODAPIDEF void ODCALL   od_disp(char *pachBuffer, INT nSize, BOOL bLocalEcho);
+ODAPIDEF void ODCALL   od_disp(const char *pachBuffer, INT nSize, BOOL bLocalEcho);
 ODAPIDEF void ODCALL   od_disp_emu(const char *pszToDisplay, BOOL bRemoteEcho);
 ODAPIDEF void ODCALL   od_disp_str(const char *pszToDisplay);
 ODAPIDEF BOOL ODCALL   od_draw_box(BYTE btLeft, BYTE btTop, BYTE btRight,
