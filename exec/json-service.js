@@ -149,22 +149,22 @@ service = new (function() {
 		for(var s=1;s<this.sockets.length;s++) {
 			if(!this.sockets[s].is_connected) {
 				log(LOG_INFO,"disconnected: " + this.sockets[s].remote_ip_address);
-				this.release(this.sockets[s].descriptor);
+				this.release(this.sockets[s]);
 				this.sockets.splice(s--,1);
 			}
 			if(this.denyhosts[this.sockets[s].remote_ip_address]) {
 				log(LOG_INFO,"disconnecting: " + this.sockets[s].remote_ip_address);
-				this.release(this.sockets[s].descriptor);
+				this.release(this.sockets[s]);
 				this.sockets[s].close();
 				this.sockets.splice(s--,1);
 			}
 		} 
 	}	
 	/* release all locks and auths for a socket */
-	this.release = function(descriptor) {
-		engine.release(descriptor);
-		admin.release(descriptor);
-		chat.release(descriptor);
+	this.release = function(client) {
+		engine.release(client);
+		admin.release(client);
+		chat.release(client);
 	}
 
 	this.init();
@@ -186,8 +186,8 @@ chat = new (function() {
 			break;
 		}
 	}
-	this.release = function(descriptor) {
-		this.db.release(descriptor);
+	this.release = function(client) {
+		this.db.release(client);
 	}
 	log(LOG_DEBUG,"chat initialized");
 })();
@@ -222,10 +222,10 @@ admin = new (function() {
 		}
 	}
 	/* release a socket from the list of authenticated users */
-	this.release = function(descriptor) {
-		if(this.authenticated[descriptor]) {
-			log(LOG_DEBUG,"releasing auth: " + descriptor);
-			delete this.authenticated[descriptor];
+	this.release = function(client) {
+		if(this.authenticated[client.id]) {
+			log(LOG_DEBUG,"releasing auth: " + client.id);
+			delete this.authenticated[client.id];
 		}
 	}
 	this.ident = function(descriptor,username,pw) {
@@ -340,9 +340,9 @@ engine = new (function() {
 		}
 	}
 	/* release clients from module authentication and subscription */
-	this.release = function(descriptor) {
+	this.release = function(client) {
 		for each(var m in this.modules) 
-			m.db.release(descriptor);
+			m.db.release(client);
 	}
 	/* module data */
 	function Module(dir,name) {
