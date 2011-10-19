@@ -125,8 +125,8 @@ void IBBS_SendPacketFile(_INT16 DestID, char *pszSendFile);
 void IBBS_AddToGame(struct clan *Clan, BOOL WasLost);
 void IBBS_SendPacket(_INT16 PacketType, long PacketLength, void *PacketData,
 					 _INT16 DestID);
-_INT16 file_copy(char *from, char *to);
-_INT16 file_append(char *from, char *to);
+int file_copy(char *from, char *to);
+int file_append(char *from, char *to);
 
 // ------------------------------------------------------------------------- //
 /* Function Procedure:

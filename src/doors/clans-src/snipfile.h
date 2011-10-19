@@ -16,7 +16,7 @@ long   ffsearch(FILE *fp, const char *pattern,
 long   rfsearch(FILE *fp, const char *pattern,
 				const size_t size, _INT16 N);               /* Srchfile.C     */
 void   show_text_file(char *txt);                     /* Textmod.C      */
-_INT16    file_copy(char *from, char *to);               /* Wb_Fcopy.C     */
-_INT16    file_append(char *from, char *to);             /* Wb_Fapnd.C     */
+int    file_copy(char *from, char *to);               /* Wb_Fcopy.C     */
+int    file_append(char *from, char *to);             /* Wb_Fapnd.C     */
 
 #endif /* SNIPFILE__H */
