@@ -98,6 +98,7 @@ function JSONdb (fileName) {
 		if(!this.subscriptions[client.id][record.location]) {
 	        record.shadow[record.child_name]._subscribers[client.id]=client;
 			this.subscriptions[client.id][record.location] = record;
+			send_subscriber_updates(client,record,"SUBSCRIBE");
 		}
 		else {
 			this.error(client,this.errors.DUPLICATE_SUB);
@@ -112,6 +113,7 @@ function JSONdb (fileName) {
 			delete this.subscriptions[client.id][record.location];
 			if(count(this.subscriptions[client.id]) == 0)
 				delete delete this.subscriptions[client.id];
+			send_subscriber_updates(client,record,"UNSUBSCRIBE");
 		}
 		else {
 			this.error(client,this.errors.INVALID_REQUEST);
@@ -192,7 +194,7 @@ function JSONdb (fileName) {
 				/* if this was a write lock, send an update to all record subscribers */
 				if(client_lock.type == this.settings.LOCK_WRITE) {
 					this.settings.UPDATES=true;
-					send_updates(client,record);
+					send_data_updates(client,record);
 				}
 				delete record.shadow[record.child_name]._lock[client.id];
 				return true;
@@ -348,15 +350,7 @@ function JSONdb (fileName) {
 
 	/* return a list of subscriptions and associated IP address for clients */
 	this.who = function(client,record) {
-		var data = [];
-		for each(var s in record.shadow[record.child_name]._subscribers) {
-			data.push({
-				id:s.id,
-				nick:s.nick,
-				system:s.system
-			});	
-		}
-		log(data.toSource());
+		var data = get_subscriber_list(record);
 		send_packet(client,data,"RESPONSE");
 		return true;
 	}
@@ -504,13 +498,13 @@ function JSONdb (fileName) {
 	};
     
 	/* release any locks or subscriptions held by a disconnected client */
-	this.release = function(client_id) {
-		if(this.subscriptions[client_id]) {
+	this.release = function(client) {
+		if(this.subscriptions[client.id]) {
 			free_prisoner(client_id,this.shadow);
-			delete this.subscriptions[client_id];
+			delete this.subscriptions[client.id];
 		}
 		for(var c=0;c<this.queue.length;c++) {
-			if(this.queue[c].client.id == client_id)
+			if(this.queue[c].client.id == client.id)
 				this.queue.splice(c--,1);
 		}
 	};
@@ -721,22 +715,23 @@ function JSONdb (fileName) {
 	 }
 	
 	/* release subscriptions and locks on an object recursively */
-	function free_prisoner(client_id,shadow) {
+	function free_prisoner(client,shadow) {
 		if(shadow._lock) {
-			if(shadow._lock[client_id]) {
-				log(LOG_DEBUG,"releasing lock: " + client_id);
-				delete shadow._lock[client_id];
+			if(shadow._lock[client.id]) {
+				log(LOG_DEBUG,"releasing lock: " + client.id);
+				delete shadow._lock[client.id];
 			}
 		}
 		if(shadow._subscribers) {
-			if(shadow._subscribers[client_id]) {
-				log(LOG_DEBUG,"releasing subscriber: " + client_id);
-				delete shadow._subscribers[client_id];
+			if(shadow._subscribers[client.id]) {
+				log(LOG_DEBUG,"releasing subscriber: " + client.id);
+				delete shadow._subscribers[client.id];
+				send_subscriber_updates(client,record,"UNSUBSCRIBE");
 			}
 		}
 		for(var s in shadow) {
 			if(typeof shadow[s] == "object") 
-				free_prisoner(client_id,shadow[s]);
+				free_prisoner(client.id,shadow[s]);
 		}
 	}
 	
@@ -770,7 +765,7 @@ function JSONdb (fileName) {
 	}
 
 	/* send updates of this object to all subscribers */
-	function send_updates(client,record) {
+	function send_data_updates(client,record) {
 		for each(var c in record.info.subscribers) {
 			/* do not send updates to request originator */
 			if(c.id == client.id)
@@ -781,6 +776,38 @@ function JSONdb (fileName) {
 			};
 			send_packet(c,data,"UPDATE");
 		}
+	}
+	
+	/* send update of client subscription to all subscribers */
+	function send_subscriber_updates(client,record,oper) {
+		var data = {
+			oper:oper,
+			location:record.location,
+			data:get_client_info(client)
+		};
+		for each(var c in record.info.subscribers) {
+			/* do not send updates to request originator */
+			if(c.id == client.id)
+				continue;
+			send_packet(c,data,"UPDATE");
+		}
+	}
+	
+	function get_client_info(client) {
+		return {
+			id:client.id,
+			nick:client.nick,
+			system:client.system
+		}
+	}
+	
+	/* retrieve a list of subscribers to this record */
+	function get_subscriber_list(record) {
+		var data = [];
+		for each(var s in record.info.subscribers) {
+			data.push(get_client_info(s));
+		}
+		return data;
 	}
 
 	/* parse parent object name from a dot-delimited string */
