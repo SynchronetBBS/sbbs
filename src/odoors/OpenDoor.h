@@ -996,7 +996,7 @@ ODAPIDEF void ODCALL   od_parse_cmd_line(INT nArgCount,
 #endif /* !ODPLAT_WIN32 */
 ODAPIDEF INT ODCALL    od_popup_menu(char *pszTitle, char *pszText,
                           INT nLeft, INT nTop, INT nLevel, WORD uFlags);
-ODAPIDEF void ODVCALL  od_printf(char *pszFormat, ...);
+ODAPIDEF void ODVCALL  od_printf(const char *pszFormat, ...);
 ODAPIDEF void ODCALL   od_putch(char chToDisplay);
 ODAPIDEF BOOL ODCALL   od_puttext(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, void *pBlock);

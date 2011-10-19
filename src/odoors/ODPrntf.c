@@ -68,7 +68,7 @@
  *
  *     Return: void
  */
-ODAPIDEF void ODVCALL od_printf(char *pszFormat,...)
+ODAPIDEF void ODVCALL od_printf(const char *pszFormat,...)
 {
    va_list pArgumentList;
    static char *pszWorkBuffer = NULL;
