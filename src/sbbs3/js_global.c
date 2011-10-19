@@ -178,29 +178,6 @@ js_OperationCallback(JSContext *cx)
 }
 #endif
 
-static JSBool
-js_log(JSContext *cx, uintN argc, jsval *arglist)
-{
-	JSBool retval;
-	background_data_t* bg;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if((bg=(background_data_t*)JS_GetContextPrivate(cx))==NULL)
-		return JS_FALSE;
-
-	/* Use parent's context private data */
-	JS_SetContextPrivate(cx, JS_GetContextPrivate(bg->parent_cx));
-
-	/* Call parent's log() function */
-	retval = bg->log(cx, argc, arglist);
-
-	/* Restore our context private data */
-	JS_SetContextPrivate(cx, bg);
-
-	return retval;
-}
-
 /* Create a new value in the new context with a value from the original context */
 /* Note: objects (including arrays) not currently supported */
 static jsval* js_CopyValue(JSContext* cx, jsval val, JSContext* new_cx, jsval* rval)
