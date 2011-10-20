@@ -72,9 +72,10 @@ while(!js.terminated) {
 	var entryDirection = f.iniGetValue(null, 'entryDirection');
 	f.close();
 
-	var timeStart = time();
-	var timeElapsed = timeLimit;
-	var lastTimeDiff = 0;
+	var timeStart = system.timer;
+	var timeElapsed = 0;
+	var clockChange = timeStart;
+	var lastClockChange = timeStart;
 	
 	statusBar.open();
 	statusBar.clear();
@@ -84,7 +85,7 @@ while(!js.terminated) {
 	lifeBox.putmsg("\1h\1wLives: " + lives);
 	timeBox.open();
 	timeBox.clear();
-	timeBox.putmsg("\1h\1wTime: " + (timeLimit - (time() - timeStart)));
+	timeBox.putmsg("\1h\1wTime: " + timeLimit);
 	
 	player.open();
 	player.clear();
@@ -113,10 +114,11 @@ while(!js.terminated) {
 		enemies[e] = new Frame(parseInt(thisEnemy[0]), parseInt(thisEnemy[1]), 5, 4, BG_BLACK, frame);
 		enemies[e].load(baseDir + "sprites/" + thisEnemy[2].toString());
 		enemies[e].direction = thisEnemy[5];
-		enemies[e].lastStep = time();
+		enemies[e].lastStep = system.timer;
 		enemies[e].lastX = parseInt(thisEnemy[0]);
 		enemies[e].borderL = parseInt(thisEnemy[3]);
 		enemies[e].borderR = parseInt(thisEnemy[4]);
+		enemies[e].stepInterval = parseFloat(thisEnemy[6]);
 	}
 
 	frame.cycle();
@@ -136,7 +138,7 @@ while(!js.terminated) {
 			default:	doCycle(frame);
 					break;
 		}
-		timeElapsed = time() - timeStart;
+		timeElapsed = system.timer - timeStart;
 	} while(!quitNow && player.y + player.height <= 24 && !collision && !levelCompleted && (timeElapsed <= timeLimit));
 
 	if(quitNow) quitGame();
@@ -174,7 +176,7 @@ while(!js.terminated) {
 
 	if(levelCompleted) {
 		levelCompleted = false;
-		var timeScore = (timeLimit - timeElapsed) * timeBonus;
+		var timeScore = parseInt((timeLimit - timeElapsed) * timeBonus);
 		var lastScore = score;
 		score = score + parseInt(door[3]) + timeScore;
 		if(lastScore < mileStone && score >= mileStone) {
@@ -257,8 +259,8 @@ function jump(player, frame, steps) {
 		if(userInput == 6) right(player, frame, 5, true);
 		if(userInput == 29) left(player, frame, 5, true);
 		if(userInput == 32 && y == steps) {
-			var hoverStart = time();
-			while(time() - hoverStart <= 1) {
+			var hoverStart = system.timer;
+			while(system.timer - hoverStart <= 1) {
 				userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, 10));
 				if(userInput == 6) right(player, frame, 1, true, false);
 				if(userInput == 29) left(player, frame, 1, true, false);
@@ -320,8 +322,8 @@ function checkOverlap(sprite1, sprite2) {
 
 function doCycle(frame) {
 	for(var e in enemies) {
-		var thisTime = time();
-		if(thisTime - enemies[e].lastStep >= 1) {
+		var thisTime = system.timer;
+		if(thisTime - enemies[e].lastStep >= enemies[e].stepInterval) {
 			enemies[e].lastStep = thisTime;
 			enemies[e].lastX = enemies[e].x;
 			if(enemies[e].direction == 'l') {
@@ -335,12 +337,12 @@ function doCycle(frame) {
 		if(checkOverlap(player, enemies[e])) collision = true;
 	}
 	if(checkOverlap(player, doorFrame)) levelCompleted = true;
-	timeDiff = timeLimit - timeElapsed;
-	if(lastTimeDiff - timeDiff >= 1) {
+	var clockChange = system.timer;
+	if(clockChange - lastClockChange >= 1) {
 		timeBox.clear();
-		timeBox.putmsg("\1h\1wTime: " + timeDiff);
+		timeBox.putmsg("\1h\1wTime: " + parseInt(timeLimit - timeElapsed));
+		lastClockChange = clockChange;
 	}
-	lastTimeDiff = timeDiff;
 	if(frame.cycle()) console.gotoxy(80,24);
 	return;
 }
