@@ -224,8 +224,8 @@ function right(player, frame, steps, nofall, nocycle) {
 		player.direction = 'r';
 		return;
 	}
-	if(checkRight(player)) return;
 	for(var y = 1; y <= steps; y++) {
+		if(checkRight(player)) return;
 		player.move(1, 0);
 		if(!nofall) fall(player, frame);
 		if(!nocycle) doCycle(frame);
@@ -240,8 +240,8 @@ function left(player, frame, steps, nofall, nocycle) {
 		player.direction = 'l';
 		return;
 	}
-	if(checkLeft(player)) return;
 	for(var y = 1; y <= steps; y++) {
+		if(checkLeft(player)) return;
 		player.move(-1, 0);
 		if(!nofall) fall(player, frame);
 		if(!nocycle) doCycle(frame);
@@ -250,24 +250,23 @@ function left(player, frame, steps, nofall, nocycle) {
 }
 
 function jump(player, frame, steps) {
-//	var timeOut = 10;
+	var timeOut = 10;
 	for(var y = 1; y <= steps; y++) {
 		if(checkTop(player)) break;
 		player.move(0, -1);
 		doCycle(frame);
-		if(y == steps) {
-			userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, 250));
-			if(userInput == 6) right(player, frame, 5, true);
-			if(userInput == 29) left(player, frame, 5, true);
-			if(userInput == 32 && y == steps) {
-				var hoverStart = system.timer;
-				while(system.timer - hoverStart <= 1) {
-					userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, 10));
-					if(userInput == 6) right(player, frame, 1, true, false);
-					if(userInput == 29) left(player, frame, 1, true, false);
-					if(userInput == 32) break;
-					doCycle(frame);
-				}
+		if(y == steps) timeOut = 250;
+		userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, timeOut));
+		if(userInput == 6) right(player, frame, 5, true);
+		if(userInput == 29) left(player, frame, 5, true);
+		if(userInput == 32 && y == steps) {
+			var hoverStart = system.timer;
+			while(system.timer - hoverStart <= 1) {
+				userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, 10));
+				if(userInput == 6) right(player, frame, 1, true, false);
+				if(userInput == 29) left(player, frame, 1, true, false);
+				if(userInput == 32) break;
+				doCycle(frame);
 			}
 		}
 	}
@@ -279,8 +278,8 @@ function fall(player, frame) {
 		player.move(0, 1);
 		if(!player.hasOwnProperty("borderR")) {
 			userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, 5));
-			if(userInput == 6) right(player, frame, 5, true);
-			if(userInput == 29) left(player, frame, 5, true);
+			if(userInput == 6) right(player, frame, 1, true);
+			if(userInput == 29) left(player, frame, 1, true);
 		}
 		doCycle(frame);
 	}
