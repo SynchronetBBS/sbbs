@@ -26,7 +26,7 @@ static void cryptlib_error_message(int status, char * msg)
 	char	*errmsg;
 	int		err_len;
 
-	sprintf(str,"Error %d %s",status, msg);
+	sprintf(str,"Error %d %s\r\n\r\n",status, msg);
 	cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &err_len);
 	errmsg=(char *)malloc(err_len+strlen(str)+5);
 	strcpy(errmsg, str);
