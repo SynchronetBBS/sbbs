@@ -112,7 +112,7 @@ function JSONdb (fileName) {
 			delete record.shadow[record.child_name]._subscribers[client.id];
 			delete this.subscriptions[client.id][record.location];
 			if(count(this.subscriptions[client.id]) == 0)
-				delete delete this.subscriptions[client.id];
+				delete this.subscriptions[client.id];
 			send_subscriber_updates(client,record,"UNSUBSCRIBE");
 		}
 		else {
@@ -500,7 +500,7 @@ function JSONdb (fileName) {
 	/* release any locks or subscriptions held by a disconnected client */
 	this.release = function(client) {
 		if(this.subscriptions[client.id]) {
-			free_prisoner(client.id,this.shadow);
+			free_prisoner(client,this.shadow);
 			delete this.subscriptions[client.id];
 		}
 		for(var c=0;c<this.queue.length;c++) {
@@ -731,7 +731,7 @@ function JSONdb (fileName) {
 		}
 		for(var s in shadow) {
 			if(typeof shadow[s] == "object") 
-				free_prisoner(client.id,shadow[s]);
+				free_prisoner(client,shadow[s]);
 		}
 	}
 	
