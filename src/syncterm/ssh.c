@@ -97,9 +97,7 @@ void ssh_output_thread(void *args)
 	while(ssh_active && !conn_api.terminate) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr=conn_buf_wait_bytes(&conn_outbuf, 1, 100);
-		pthread_mutex_unlock(&(conn_outbuf.mutex));
 		if(wr) {
-			pthread_mutex_lock(&(conn_outbuf.mutex));
 			wr=conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent=0;
@@ -118,6 +116,8 @@ void ssh_output_thread(void *args)
 			if(sent)
 				cl.FlushData(ssh_session);
 		}
+		else
+			pthread_mutex_unlock(&(conn_outbuf.mutex));
 	}
 	conn_api.output_thread_running=0;
 }
