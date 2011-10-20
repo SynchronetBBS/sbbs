@@ -145,8 +145,6 @@ while(!js.terminated) {
 
 	if(collision || player.y + player.height > 24 || (timeElapsed > timeLimit)) {
 		lives = lives - 1;
-		lifeBox.clear();
-		lifeBox.putmsg("\1h\1wLives: " + lives);
 		deathFrame.open();
 		deathFrame.clear();
 		deathFrame.crlf();
@@ -288,13 +286,13 @@ function fall(player, frame) {
 function checkBottom(sprite) {
 	var retVal = false;
 	sprite.move(0, 1);
-	if(sprite.y + sprite.height > 24) retVal = true;
 	for(var p in platforms) {
-		if(checkOverlap(sprite, platforms[p]) || retVal) {
+		if(checkOverlap(sprite, platforms[p])) {
 			retVal = true;
 			break;
 		}
 	}
+	if(sprite.y + sprite.height > 24 && !retVal) return true;
 	sprite.move(0, -1);
 	return retVal;
 }
