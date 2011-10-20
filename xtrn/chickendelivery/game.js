@@ -122,6 +122,7 @@ while(!js.terminated) {
 	}
 
 	frame.cycle();
+	fall(player, frame);
 
 	do {
 		userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF));
@@ -249,22 +250,24 @@ function left(player, frame, steps, nofall, nocycle) {
 }
 
 function jump(player, frame, steps) {
-	var timeOut = 10;
+//	var timeOut = 10;
 	for(var y = 1; y <= steps; y++) {
 		if(checkTop(player)) break;
 		player.move(0, -1);
 		doCycle(frame);
-		if(y == steps) timeOut = 200;
-		userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, timeOut));
-		if(userInput == 6) right(player, frame, 5, true);
-		if(userInput == 29) left(player, frame, 5, true);
-		if(userInput == 32 && y == steps) {
-			var hoverStart = system.timer;
-			while(system.timer - hoverStart <= 1) {
-				userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, 10));
-				if(userInput == 6) right(player, frame, 1, true, false);
-				if(userInput == 29) left(player, frame, 1, true, false);
-				doCycle(frame);
+		if(y == steps) {
+			userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, 250));
+			if(userInput == 6) right(player, frame, 5, true);
+			if(userInput == 29) left(player, frame, 5, true);
+			if(userInput == 32 && y == steps) {
+				var hoverStart = system.timer;
+				while(system.timer - hoverStart <= 1) {
+					userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, 10));
+					if(userInput == 6) right(player, frame, 1, true, false);
+					if(userInput == 29) left(player, frame, 1, true, false);
+					if(userInput == 32) break;
+					doCycle(frame);
+				}
 			}
 		}
 	}
@@ -284,34 +287,60 @@ function fall(player, frame) {
 	return;
 }
 
-function checkBottom(player) {
+function checkBottom(sprite) {
+	var retVal = false;
+	sprite.move(0, 1);
+	if(sprite.y + sprite.height > 24) retVal = true;
 	for(var p in platforms) {
-		for(var x = player.x; x < (player.x + player.width); x++) if((x >= platforms[p].x && x < (platforms[p].x + platforms[p].width)) && platforms[p].y == player.y + player.height) return true;
+		if(checkOverlap(sprite, platforms[p]) || retVal) {
+			retVal = true;
+			break;
+		}
 	}
-	if(player.y + player.height > 24) return true;
-	return false;
+	sprite.move(0, -1);
+	return retVal;
 }
 
-function checkTop(player) {
+function checkTop(sprite) {
+	var retVal = false;
+	sprite.move(0, -1);
+	if(sprite.y < 1) retVal = true;
 	for(var p in platforms) {
-		for(var x = player.x; x < (player.x + player.width); x++) if((x >= platforms[p].x && x < (platforms[p].x + platforms[p].width)) && platforms[p].y == player.y - 1) return true;
+		if(checkOverlap(sprite, platforms[p]) || retVal) {
+			retVal = true;
+			break;
+		}
 	}
-	if(player.y - 1 < 1) return true;
-	return false;
+	sprite.move(0, 1);
+	return retVal;
 }
 
-function checkRight(player) {
+function checkRight(sprite) {
+	var retVal = false;
+	sprite.move(1, 0);
+	if(sprite.x + sprite.width > 81) retVal = true;
 	for(var p in platforms) {
-		for(var y = player.y; y < (player.y + player.height); y++) if(y == platforms[p].y && player.x + player.width == platforms[p].x) return true;
+		if(checkOverlap(sprite, platforms[p]) || retVal) {
+			retVal = true;
+			break;
+		}
 	}
-	return false;
+	sprite.move(-1, 0);
+	return retVal;
 }
 
-function checkLeft(player) {
+function checkLeft(sprite) {
+	var retVal = false;
+	sprite.move(-1,0);
+	if(sprite.x < 1) retVal = true;
 	for(var p in platforms) {
-		for(var y = player.y; y < (player.y + player.height); y++) if(y == platforms[p].y && player.x == platforms[p].x + platforms[p].width) return true;
+		if(checkOverlap(sprite, platforms[p]) || retVal) {
+			retVal = true;
+			break;
+		}
 	}
-	return false;
+	sprite.move(1, 0);
+	return retVal;
 }
 
 function checkOverlap(sprite1, sprite2) {
