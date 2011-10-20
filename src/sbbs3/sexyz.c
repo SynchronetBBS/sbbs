@@ -790,7 +790,7 @@ void xmodem_progress(void* unused, unsigned block_num, int64_t offset, int64_t f
 
 	now=time(NULL);
 	if(now-last_progress>=progress_interval || offset >= fsize || newline) {
-		t=now-start;
+		t=(long)(now-start);
 		if(t<=0)
 			t=1;
 		if((cps=(unsigned)(offset/t))==0)
@@ -859,7 +859,7 @@ void zmodem_progress(void* cbdata, int64_t current_pos)
 
 	now=time(NULL);
 	if(now-last_progress>=progress_interval || current_pos >= zm.current_file_size || newline) {
-		t=now-zm.transfer_start_time;
+		t=(long)(now-zm.transfer_start_time);
 		if(t<=0)
 			t=1;
 		if(zm.transfer_start_pos>current_pos)

@@ -241,26 +241,26 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			f.cdt=flength(filepath);
 			padfname(getfname(filepath),f.name);
 			printf("%s  %10lu  %s\n"
-				,f.name,f.cdt,unixtodstr(&scfg,fdate(filepath),str));
+				,f.name,f.cdt,unixtodstr(&scfg,(time32_t)fdate(filepath),str));
 			exist=findfile(&scfg,f.dir,f.name);
 			if(exist) {
 				if(mode&NO_UPDATE)
 					continue;
 				getfileixb(&scfg,&f);
 				if(mode&ULDATE_ONLY) {
-					f.dateuled=time(NULL);
+					f.dateuled=time32(NULL);
 					update_uldate(&scfg, &f);
 					continue; 
 				} 
 			}
 
 			if(mode&FILE_DATE) {		/* get the file date and put into desc */
-				unixtodstr(&scfg,fdate(filepath),f.desc);
+				unixtodstr(&scfg,(time32_t)fdate(filepath),f.desc);
 				strcat(f.desc,"  "); 
 			}
 
 			if(mode&TODAYS_DATE) {		/* put today's date in desc */
-				unixtodstr(&scfg,time(NULL),f.desc);
+				unixtodstr(&scfg,time32(NULL),f.desc);
 				strcat(f.desc,"  "); 
 			}
 
@@ -303,7 +303,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 				} 
 			}
 
-			f.dateuled=time(NULL);
+			f.dateuled=time32(NULL);
 			f.altpath=cur_altpath;
 			prep_desc(f.desc);
 			if(mode&ASCII_ONLY)
@@ -388,7 +388,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 				continue;
 			getfileixb(&scfg,&f);
 			if(mode&ULDATE_ONLY) {
-				f.dateuled=time(NULL);
+				f.dateuled=time32(NULL);
 				update_uldate(&scfg, &f);
 				continue; 
 			} 
@@ -398,13 +398,13 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			: scfg.dir[f.dir]->path,fname);
 
 		if(mode&FILE_DATE) {		/* get the file date and put into desc */
-			l=fdate(filepath);
+			l=(time32_t)fdate(filepath);
 			unixtodstr(&scfg,l,f.desc);
 			strcat(f.desc,"  "); 
 		}
 
 		if(mode&TODAYS_DATE) {		/* put today's date in desc */
-			l=time(NULL);
+			l=time32(NULL);
 			unixtodstr(&scfg,l,f.desc);
 			strcat(f.desc,"  "); 
 		}
@@ -508,7 +508,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		}
 
 		f.cdt=l;
-		f.dateuled=time(NULL);
+		f.dateuled=time32(NULL);
 		f.altpath=cur_altpath;
 		prep_desc(f.desc);
 		if(mode&ASCII_ONLY)
@@ -861,9 +861,9 @@ int main(int argc, char **argv)
 			sprintf(str,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 				: scfg.dir[f.dir]->path,argv[j]);
 			if(mode&FILE_DATE)
-				sprintf(f.desc,"%s  ",unixtodstr(&scfg,fdate(str),tmp));
+				sprintf(f.desc,"%s  ",unixtodstr(&scfg,(time32_t)fdate(str),tmp));
 			if(mode&TODAYS_DATE)
-				sprintf(f.desc,"%s  ",unixtodstr(&scfg,time(NULL),tmp));
+				sprintf(f.desc,"%s  ",unixtodstr(&scfg,time32(NULL),tmp));
 			sprintf(tmp,"%.*s",(int)(LEN_FDESC-strlen(f.desc)),argv[++j]);
 			strcpy(f.desc,tmp);
 			l=flength(str);
@@ -877,13 +877,13 @@ int main(int argc, char **argv)
 					continue;
 				getfileixb(&scfg,&f);
 				if(mode&ULDATE_ONLY) {
-					f.dateuled=time(NULL);
+					f.dateuled=time32(NULL);
 					update_uldate(&scfg, &f);
 					continue; 
 				} 
 			}
 			f.cdt=l;
-			f.dateuled=time(NULL);
+			f.dateuled=time32(NULL);
 			f.altpath=cur_altpath;
 			prep_desc(f.desc);
 			if(mode&ASCII_ONLY)

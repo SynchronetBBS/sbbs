@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -160,14 +160,14 @@ int main(int argc, char **argv)
 	user.misc=(scfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
 	user.misc|=AUTOTERM;	/* No way to frob the default value... */
 	user.qwk=QWK_DEFAULT;
-	user.firston=now;
-	user.laston=now;	/* must set this or user may be purged prematurely */
-	user.pwmod=now;
+	user.firston=(time32_t)now;
+	user.laston=(time32_t)now;	/* must set this or user may be purged prematurely */
+	user.pwmod=(time32_t)now;
 	user.sex=' ';
 	user.prot=scfg.new_prot;
 
 	if(scfg.new_expire)
-		user.expire=now+((long)scfg.new_expire*24L*60L*60L); 
+		user.expire=(time32_t)(now+((long)scfg.new_expire*24L*60L*60L)); 
 
 	for(i=first_arg;i<argc;i++) {
 		if(argv[i][0]=='-') {
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 				SAFECOPY(user.comment,argv[i]);
 				break;
 			case 'E':
-				user.expire=now+((long)atoi(argv[i])*24L*60L*60L); 
+				user.expire=(time32_t)(now+((long)atoi(argv[i])*24L*60L*60L)); 
 				break;
 			case 'F':
 				switch(toupper(argv[i-1][2])) {
