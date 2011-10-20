@@ -5,7 +5,7 @@ Bot_Commands["DEF"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target,"You didn't specify a word");
 		return;
 	}
-	var xmldef=define(cmd.shift(),"wn");
+	var xmldef=define(cmd[0],"wn");
 	if(!xmldef) {
 		srv.o(target, "word not found: " + cmd[0]);
 		return;
@@ -45,7 +45,7 @@ Bot_Commands["SYN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target,"You didn't specify a word");
 		return;
 	}
-	var xmldef=define(cmd.shift(),"wn");
+	var xmldef=define(cmd[0],"wn");
 	if(!xmldef) {
 		srv.o(target, "no synonyms found: " + cmd[0]);
 		return;
@@ -74,7 +74,7 @@ Bot_Commands["INFO"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target,"You didn't specify a word");
 		return;
 	}
-	var xmldef=define(cmd.shift(),"wn");
+	var xmldef=define(cmd[0],"wn");
 	if(!xmldef) {
 		srv.o(target, "no usage examples found: " + cmd[0]);
 		return;
@@ -88,5 +88,28 @@ Bot_Commands["INFO"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return;
 	} 
 	srv.o(target,word + " (usage): " + examples);
+	return;
+}
+
+Bot_Commands["WTF"] = new Bot_Command(0,1,false);
+Bot_Commands["WTF"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	cmd.shift();
+	if(!cmd[0]) {
+		srv.o(target,"usage: " + get_cmd_prefix() + "wtf is <acronym>");
+		return;
+	}
+	
+	var result=wtf_is(cmd[0]);
+	if(!result) {
+		srv.o(target, "acronym not found: " + cmd[0]);
+		return;
+	} 
+	
+	var str="";
+	for(var a in result) {
+		str+=", " + result[a].expan;
+	}
+	srv.o(target,cmd[0].toUpperCase() + ":" + str.substr(1));
 	return;
 }

@@ -111,13 +111,13 @@ service = new (function() {
 			}
 			/* log and disconnect banned hosts */
 			if(service.denyhosts[client.remote_ip_address]) {
-				log(LOG_INFO,"blocked: " + client.remote_ip_address);
+				log(LOG_WARNING,"<--" + client.descriptor + ": " + client.remote_ip_address + " blocked");
 				client.close();
 				return;
 			} 
 			
 			/* log and initialize normal connections */
-			log(LOG_INFO,"connected: " + client.remote_ip_address);
+			log(LOG_INFO,"<--" + client.descriptor + ": " + client.remote_ip_address + " connected");
 			client.nonblocking = true;
 			client.id = client.descriptor;
 			service.sockets.push(client);
@@ -148,12 +148,14 @@ service = new (function() {
 		}
 		for(var s=1;s<this.sockets.length;s++) {
 			if(!this.sockets[s].is_connected) {
-				log(LOG_INFO,"disconnected: " + this.sockets[s].remote_ip_address);
+				log(LOG_INFO,"<--" + this.sockets[s].descriptor + ": " 
+					+ this.sockets[s].remote_ip_address + " disconnected");
 				this.release(this.sockets[s]);
 				this.sockets.splice(s--,1);
 			}
-			if(this.denyhosts[this.sockets[s].remote_ip_address]) {
-				log(LOG_INFO,"disconnecting: " + this.sockets[s].remote_ip_address);
+			else if(this.denyhosts[this.sockets[s].remote_ip_address]) {
+				log(LOG_WARNING,"<--" + this.sockets[s].descriptor + ": " 
+					+ this.sockets[s].remote_ip_address + " terminated");
 				this.release(this.sockets[s]);
 				this.sockets[s].close();
 				this.sockets.splice(s--,1);
@@ -347,11 +349,12 @@ engine = new (function() {
 	/* module data */
 	function Module(dir,name) {
 		this.online = true;
+		this.dir = dir;
 		this.db = new JSONdb(dir+name+".json");
 		/* load module service files */
-		if(file_exists(dir + "service.js")) {
+		if(file_exists(this.dir + "service.js")) {
 			try {
-				load(this,dir + "service.js");
+				load(this,this.dir + "service.js");
 			} 
 			catch(e) {
 				this.online = false;

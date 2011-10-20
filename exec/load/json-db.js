@@ -499,8 +499,9 @@ function JSONdb (fileName) {
     
 	/* release any locks or subscriptions held by a disconnected client */
 	this.release = function(client) {
-		if(this.subscriptions[client.id]) {
-			free_prisoner(client,this.shadow);
+		for (var s in this.subscriptions[client.id]) {
+			free_prisoners(client,this.shadow);
+			cancel_subscriptions(client,this.subscriptions[client.id]);
 			delete this.subscriptions[client.id];
 		}
 		for(var c=0;c<this.queue.length;c++) {
@@ -714,24 +715,25 @@ function JSONdb (fileName) {
 		}
 	 }
 	
-	/* release subscriptions and locks on an object recursively */
-	function free_prisoner(client,shadow) {
-		if(shadow._lock) {
-			if(shadow._lock[client.id]) {
-				log(LOG_DEBUG,"releasing lock: " + client.id);
-				delete shadow._lock[client.id];
-			}
-		}
-		if(shadow._subscribers) {
-			if(shadow._subscribers[client.id]) {
-				log(LOG_DEBUG,"releasing subscriber: " + client.id);
-				delete shadow._subscribers[client.id];
-				send_subscriber_updates(client,record,"UNSUBSCRIBE");
-			}
+	/* release locks on an object recursively */
+	function free_prisoners(client,shadow) {
+		if(shadow._lock && shadow._lock[client.id]) {
+			log(LOG_DEBUG,"releasing lock: " + client.id);
+			delete shadow._lock[client.id];
 		}
 		for(var s in shadow) {
 			if(typeof shadow[s] == "object") 
-				free_prisoner(client,shadow[s]);
+				free_prisoners(client,shadow[s]);
+		}
+	}
+	
+	/* release subscriptions on an object recursively */
+	function cancel_subscriptions(client,records) {
+		for(var r in records) {
+			var record = records[r];
+			log(LOG_DEBUG,"releasing subscription: " + client.id);
+			delete record.shadow._subscribers[client.id];
+			send_subscriber_updates(client,record,"UNSUBSCRIBE");
 		}
 	}
 	

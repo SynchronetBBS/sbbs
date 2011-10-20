@@ -6,6 +6,7 @@ function define(word,dict) {
 	var body = new HTTPRequest().Get(dict_url).replace(/<\?.*\?>[\r\n]*/,'').replace(/\sxmlns=".*"/,'');
 	var xml_obj = new XML(body);
 	var definition = xml_obj.Definitions.Definition;
+	log(definition);
 	if(!definition[0]) {
 		return false;
 	} else {
@@ -16,6 +17,20 @@ function define(word,dict) {
 function parseDefXML(xmldef) {
 	return(strip_ctrl(xmldef.WordDefinition).replace(/\s+/g,' ').replace(/[{}]/g,''));
 }
+
+function wtf_is(acronym) {
+	var dict_url = "http://acronyms.silmaril.ie/cgi-bin/uncgi/xaa?" + acronym;
+	var body = new HTTPRequest().Get(dict_url).replace(/<\?.*\?>[\r\n]*/,'').replace(/\sxmlns=".*"/,'');
+	var xml_obj = new XML(body);
+	var acronyms = xml_obj.found.acro;
+	log(acronyms);
+	if(!acronyms[0]) {
+		return false;
+	} else {
+		return(acronyms);
+	}
+}
+
 
 function sortIndices(list) {
 	for(n = 0;n < list.length;n++)
