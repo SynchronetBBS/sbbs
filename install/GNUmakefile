@@ -1,3 +1,4 @@
+# $Id$
 # Global GNU makefile for Synchronet
 #
 # Usage:
