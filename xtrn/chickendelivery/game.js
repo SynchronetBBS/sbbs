@@ -132,7 +132,6 @@ while(!js.terminated) {
 			case 29: 	left(player, frame, 1, false, false);
 					break;
 			case 30:	jump(player, frame, 5);
-					fall(player, frame);
 					break;
 			case 27:	if(quitPrompt()) var quitNow = true;
 					break;
@@ -265,11 +264,11 @@ function jump(player, frame, steps) {
 				userInput = ascii(console.inkey(K_NOSPIN|K_NOECHO|K_NOCRLF, 10));
 				if(userInput == 6) right(player, frame, 1, true, false);
 				if(userInput == 29) left(player, frame, 1, true, false);
-				if(userInput == 32) break;
-				doCycle(frame);
+				if(userInput == 10) break;
 			}
 		}
 	}
+	fall(player, frame);
 	return;
 }
 
