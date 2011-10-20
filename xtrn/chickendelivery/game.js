@@ -19,7 +19,7 @@ frame.open();
 var splashScreen = new Frame(1, 1, 80, 24, BG_BLACK, frame);
 var scoreFrame = new Frame(12, 2, 58, 22, BG_BLACK, frame);
 var netScoreFrame = new Frame(3, 3, 75, 21, BG_BLACK, frame);
-var instructionFrame = new Frame(8, 3, 68, 19, BG_BLACK, frame);
+var instructionFrame = new Frame(8, 3, 68, 20, BG_BLACK, frame);
 var menuFrame = new Frame(2, 10, 16, 6, BG_BLACK, frame);
 var deathFrame = new Frame(29, 10, 21, 4, BG_BLUE, frame);
 var quitFrame = new Frame(29, 10, 21, 4, BG_BLUE, frame);
