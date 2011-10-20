@@ -1,6 +1,8 @@
 load("frame.js");
 load("json-client.js");
 
+client.subscribe("chickendelivery", "chickenScores");
+
 var baseDir = "/sbbs/xtrn/chickendelivery/"; // The location of chicken.js, et al
 var score = 0; // The player's starting score
 var lives = 5; // The number of lives the player starts with
@@ -29,8 +31,7 @@ var player = new Frame(1, 1, 5, 4, BG_BLACK, frame);
 splashScreen.load(baseDir + "ckndlvry.ans");
 frame.cycle();
 
-var client = new JSONClient("bbs.loveclown.com",10088);
-client.subscribe("chickendelivery", "chickenScores");
+mswait(500);
 
 menuFrame.load(baseDir + "menu.ans");
 frame.cycle();
@@ -179,7 +180,7 @@ while(!js.terminated) {
 		if(lastScore < mileStone && score >= mileStone) {
 			lives++;
 			mileStone = mileStone + mileStone;
-			var nlFrame = new Frame(29,10,21,7,BG_BLUE,frame);
+			var nlFrame = new Frame(29,10,21,8,BG_BLUE,frame);
 			nlFrame.gotoxy(1,6);
 			nlFrame.center("\1h\1w1UP!");
 			nlFrame.gotoxy(1,1);
@@ -195,6 +196,8 @@ while(!js.terminated) {
 		nlFrame.center("\1h\1wTime Bonus: " + timeScore);
 		nlFrame.crlf();
 		nlFrame.center("\1h\1wScore: " + score);
+		nlFrame.gotoxy(1,7);
+		nlFrame.center("\1h\1w< Press Enter >");
 		nlFrame.cycle();
 		while(console.getkey(K_NOECHO) !== "\r");
 		if(!file_exists(baseDir + "levels/" + (level + 1) + ".ini")) {
