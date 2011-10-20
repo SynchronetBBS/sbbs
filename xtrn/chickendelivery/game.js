@@ -390,6 +390,7 @@ function winScreen() {
 function showNetScores() {
 	var scores = client.read("chickendelivery", "chickenScores", 1);
 	netScoreFrame.open();
+	netScoreFrame.clear();
 	netScoreFrame.load(baseDir + "netscore.ans");
 	netScoreFrame.gotoxy(3, 6);
 	var highScores = new Array();
