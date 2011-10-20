@@ -500,7 +500,7 @@ function JSONdb (fileName) {
 	/* release any locks or subscriptions held by a disconnected client */
 	this.release = function(client) {
 		if(this.subscriptions[client.id]) {
-			free_prisoner(client_id,this.shadow);
+			free_prisoner(client.id,this.shadow);
 			delete this.subscriptions[client.id];
 		}
 		for(var c=0;c<this.queue.length;c++) {
