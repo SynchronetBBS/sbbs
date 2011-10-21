@@ -7,6 +7,15 @@ Chicken Delivery 2 To-Do List
 	checkOverlap() function to use Frame.hasData(x, y), which will simplify
 	its evaluations somewhat.
 	-echicken
+	
+	*** use frame.getData(x,y) and not frame.hasData(x,y). use existing
+	method to check collision with moving objects, use frame.getData(x,y)
+	to check collision with stationary objects. 
+	-mcmlxxix
+	
+	*** use a set character	to identify solid objects in backdrop ANSI's, 
+	to allow for passable background scenery.
+	-mcmlxxix
 
 -	Add jumping enemies and an axis specifier for enemies in the level INI
 	files (border coordinates become y instead of x if axis is set to y.)
@@ -34,6 +43,10 @@ Chicken Delivery 2 To-Do List
 	you gain points for collecting, or add up to earn free lives or an
 	extra time bonus.)
 	-echicken
+	
+	*** Add door keys or boxes of chicken that need to be retrieved before
+	the level can be completed/door unlocked.
+	-mcmlxxix
 
 -	Powerups? Invincibility, long flight, high jump, egg throwing/dropping,
 	running?
