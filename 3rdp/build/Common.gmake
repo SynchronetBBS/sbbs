@@ -32,8 +32,8 @@ ifeq ($(os),linux)
  NSPR_LIBS +=	-ldl
 endif
 
-NSPR_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR) -lnspr4
-
+NSPR_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR)
+NSPR_LIBS	+=	-lnspr4
 
 ################
 # Common stuff #
@@ -82,11 +82,13 @@ ifdef JS_NOBUILD
   JSLIB	:=	mozjs185
  endif
  JS_DEPS :=
+ JS_LIBS += -l$(JSLIB)
 else
  JSINCLUDE := $(JS_IDIR)$(DIRSEP)include/js
  JSLIBDIR := $(JS_IDIR)$(DIRSEP)lib
  JSLIB := mozjs185
  JS_DEPS := js
+ JS_LIBS += $(JSLIBDIR)$(DIRSEP)libmozjs185-1.0.a
 endif
  
 # Put it all together...
@@ -97,7 +99,6 @@ endif
 ifdef JSLIBDIR
  JS_LDFLAGS += -L$(JSLIBDIR)
 endif
-JS_LIBS += -l$(JSLIB)
 
 ##################
 # Cryptlib Stuff #
@@ -116,10 +117,12 @@ ifdef CRYPTLIB_NOBUILD
  # Cryptlib specified on build line #
  ####################################
  CRYPT_DEPS :=
-#else
+ CRYPT_LIBS += -lcl
+else
  CRYPTLIBINCLUDE := $(CRYPT_IDIR)
  CRYPTLIBDIR := $(CRYPT_IDIR)
  CRYPT_DEPS := cl
+ CRYPT_LIBS += $(CRYPT_IDIR)/libcl.a
 endif
 
 # Put it all together...
@@ -130,5 +133,4 @@ endif
 ifdef CRYPTLIBDIR
  CRYPT_LDFLAGS += -L$(CRYPTLIBDIR)
 endif
-CRYPT_LIBS += -lcl
 
