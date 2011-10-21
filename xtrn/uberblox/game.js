@@ -202,8 +202,7 @@ function blox()
 	}
 	function endGame()
 	{
-		if(data.players[user.alias].score<points) 
-		{
+		if(data.players[user.alias].score<points) {
 			data.players[user.alias].score=points;
 			data.storePlayer();
 		}
@@ -530,12 +529,10 @@ function blox()
 				index++;
 			}
 		}
-		if(data.alltime.score > 0) {
-			console.gotoxy(46,20);
-			console.putmsg("\1n\1yName \1h: " + data.alltime.name);
-			console.gotoxy(46,21);
-			console.putmsg("\1n\1yScore\1h: " + data.alltime.score,P_SAVEATR);
-		}
+		console.gotoxy(46,20);
+		console.putmsg("\1n\1yName \1h: " + data.alltime.name);
+		console.gotoxy(46,21);
+		console.putmsg("\1n\1yScore\1h: " + data.alltime.score,P_SAVEATR);
 	}
 
 	init();
@@ -552,8 +549,8 @@ function Grid(c,r)
 }
 function GameData()
 {
-	this.players=[];
-	this.alltime=[];
+	this.players=client.read("uberblox","players",1);
+	this.alltime=client.read("uberblox","alltime",1);
 	this.update=false;
 	this.month=new Date().getMonth();
 	
@@ -565,16 +562,11 @@ function GameData()
 			this.reset();
 		client.unlock("uberblox","month");
 		
-		this.alltime = client.read("uberblox","alltime",1);
-		if(!this.alltime.name) {
-			this.alltime={
-				name:"no one",
-				score:0
-			}
-			client.write("uberblox","alltime",this.alltime,2);
-		}
+		if(!this.alltime) 
+			this.alltime={name:"none",score:0};
 		
-		this.players = client.read("uberblox","players",1); 
+		if(!this.players)
+			this.players = {};
 		if(!this.players[user.alias]) {
 			this.players[user.alias] = new Player();
 			client.write("uberblox","players." + user.alias,this.players[user.alias],2);
@@ -596,15 +588,16 @@ function GameData()
 	this.reset=function()
 	{
 		client.write("uberblox","month",this.month);
-		client.write("uberblox","players",{},2);
+		client.remove("uberblox","players",2);
 	}
 	this.storePlayer=function()
 	{
 		client.write("uberblox","players." + user.alias,this.players[user.alias],2);
-		
 		client.lock("uberblox","alltime",2);
 		if(this.players[user.alias].score > this.alltime.score) {
 			this.alltime=client.read("uberblox","alltime");
+			if(!this.alltime) 
+				this.alltime={name:"none",score:0};
 			if(this.players[user.alias].score > this.alltime.score) {
 				this.alltime.score = this.players[user.alias].score;
 				this.alltime.name = user.alias;

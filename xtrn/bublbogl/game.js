@@ -555,7 +555,8 @@ function GameData() {
 			this.loadMonth();
 		client.unlock(game_id,"month");
 		
-		this.players = client.read(game_id,"players",1);
+		if(!this.players)
+			this.players = {};
 		if(!this.players[user.alias]) {
 			this.players[user.alias] = new Player();
 			this.storePlayer();
@@ -564,6 +565,7 @@ function GameData() {
 	/* load this month's boggle boards */
 	this.loadMonth=function() {
 		console.putmsg("\rPlease wait. Loading puzzles for this month...\r\n");
+		this.players=client.read(game_id,"players",1)
 		this.winner=client.read(game_id,"winner",1);
 		this.boards=client.read(game_id,"boards",1);
 	}
@@ -589,12 +591,12 @@ function GameData() {
 		this.storeRoundWinner();
 		
 		client.write(game_id,"month",this.month);
-		client.write(game_id,"players",{},2);
+		client.remove(game_id,"players",2);
 			
 		console.putmsg("\rPlease wait. Creating puzzles for new month...\r\n");
 
 		client.lock(game_id,"boards",2);
-		client.write(game_id,"boards",{});
+		client.remove(game_id,"boards");
 		this.boards=[];
 		var numdays=date.daysInMonth();
 		for(var dn=1;dn<=numdays;dn++) {
