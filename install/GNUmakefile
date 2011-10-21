@@ -143,7 +143,7 @@ binaries:	sbbs3 scfg umonitor uedit gtkuseredit gtkchat gtkmonitor gtkuserlist s
 
 externals:	sbj sbl dpoker tbd
 
-sbbs3:	src $(SBBSDIR)/lib/cryptlib/$(machine).release
+sbbs3:	src $(SBBSDIR)/3rdp/dist
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
 scfg:	src
@@ -265,9 +265,9 @@ ifndef NOCVS
 	$(CVS_CO) run-sbbs3
 endif
 
-$(SBBSDIR)/lib/cryptlib/$(machine).release: 
+$(SBBSDIR)/3rdp/dist: 
 ifndef NOCVS
-	$(CVS_CO) lib/cryptlib/$(machine).release
+	$(CVS_CO) lib
 endif
 
 cvslogin: $(SBBSDIR)
