@@ -124,7 +124,7 @@ void msgs_cfg()
 	char*	tp;
     char	tmp[128];
 	char	tmp_code[32];
-	int		j,k,l,q,s;
+	int		j,k,q,s;
 	int		i,file,ptridx,n;
 	unsigned total_subs;
 	long	ported;
