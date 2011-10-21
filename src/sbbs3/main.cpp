@@ -5103,7 +5103,7 @@ NO_SSH:
 #endif
 
 		/* Do SSH stuff here */
-
+#ifdef USE_CRYPTLIB
 		if(ssh) {
 			int	ssh_failed=0;
 			if(!cryptStatusOK(i=cryptCreateSession(&sbbs->ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH_SERVER))) {
@@ -5168,7 +5168,7 @@ NO_SSH:
 			}
 			cryptPopData(sbbs->ssh_session, str, sizeof(str), &i);
 		}
-
+#endif
    		sbbs->client_socket=client_socket;	// required for output to the user
         sbbs->online=ON_REMOTE;
 
