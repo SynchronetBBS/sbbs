@@ -41,6 +41,7 @@
 #																			#
 # Common Build Macros REQUIRED:												#
 #  SRC_ROOT			- *MUST* be set to the src dir							#
+#  3RDP_ROOT		- If not set, defaults to $(SRC_ROOT)/../3rdp			#
 #																			#
 # Common Build Macros Used:													#
 #  DEBUG			- Create a debug build									#
@@ -360,7 +361,8 @@ XPDEV_SRC	:=	$(SRC_ROOT)$(DIRSEP)xpdev
 CIOLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)conio
 SMBLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	:=	$(SRC_ROOT)$(DIRSEP)uifc
-JS_SRC		:=	$(SRC_ROOT)$(DIRSEP)js
+3RDP_ROOT	?=	$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)3rdp
+3RDP_BUILD	:=	$(3RDP_ROOT)$(DIRSEP)build
 
 # SDL ciolib enabled by default for the moment.
 ifndef WITHOUT_SDL
@@ -378,8 +380,8 @@ endif
 -include		$(CIOLIB_SRC)$(DIRSEP)Common.gmake
 -include		$(UIFC_SRC)$(DIRSEP)Common.make
 -include		$(UIFC_SRC)$(DIRSEP)Common.gmake
--include		$(JS_SRC)$(DIRSEP)Common.make
--include		$(JS_SRC)$(DIRSEP)Common.gmake
+-include		$(3RDP_BUILD)$(DIRSEP)Common.make
+-include		$(3RDP_BUILD)$(DIRSEP)Common.gmake
 
 ifdef DEBUG
  CFLAGS	+=	-ggdb
@@ -459,4 +461,8 @@ uifc-mt:
 
 $(JS_LIB):  $(JS_DEPS)
 js:
-	$(MAKE) -C $(JS_SRC) lib
+	$(MAKE) -C $(3RDPBUILDDIR) jslib
+
+$(CRYPT_LIB):  $(CRYPT_DEPS)
+cl:
+	$(MAKE) -C $(3RDPBUILDDIR) cryptlib

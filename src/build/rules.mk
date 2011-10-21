@@ -17,6 +17,7 @@ $(EXEODIR):
 	$(QUIET)$(IFNOTEXIST) mkdir $(EXEODIR)
 
 clean:
+clean:
 	@echo Deleting $(OBJODIR)$(DIRSEP)
 	-$(QUIET)$(DELETE) $(OBJODIR)$(DIRSEP)*
 	@echo Deleting $(MTOBJODIR)$(DIRSEP)
