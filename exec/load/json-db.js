@@ -347,9 +347,8 @@ function JSONdb (fileName) {
 			return true;
 		/* if this client has this record locked */
 		else if(record.shadow[record.child_name]._lock[client.id] && 
-		record.shadow[record.child_name]._lock[client.id].type == locks.WRITE) {
+			record.shadow[record.child_name]._lock[client.id].type == locks.WRITE) {
 			delete record.data[record.child_name];
-			delete record.shadow[record.child_name];
 			/* send data updates to all subscribers */
 			return true;
 		}
@@ -708,15 +707,16 @@ function JSONdb (fileName) {
 			var p=parent_name.split(/\./);
 			for each(var c in p) {
 				/* in the event of a write request, create new data if it does not exist*/
-				if(data[c] === undefined && create_new) 
-					create_data(data,c);
 				/* ensure that the shadow object exists in order to allow for non-read operations */
 				if(shadow[c] === undefined) 
-					create_shadow(data,c);
-				/* keep track of current object, and store the immediate parent of the request object */
-				if(data !== undefined)
-					data=data[c];
+					create_shadow(shadow,c);
 				shadow=shadow[c];
+				/* keep track of current object, and store the immediate parent of the request object */
+				if(data !== undefined) {
+					if(data[c] === undefined && create_new) 
+						create_data(data,c);
+					data=data[c];
+				}
 				/* check the current object's lock and subscriber status along the way */
 				info = investigate(shadow,info);
 			}
