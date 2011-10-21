@@ -24,30 +24,11 @@
 # character to interpose another module into the current module.  This
 # can be useful for creating a module that consists of many directories
 # spread out over the entire source repository.
-lib-win32           	-a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release lib/microsoft lib/cryptlib
-lib-win32.release   	-a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release lib/microsoft lib/cryptlib
-lib-win32.debug     	-a lib/mozilla/js/win32.debug     lib/mozilla/nspr/win32.release lib/microsoft lib/cryptlib
-lib-linux           	-a lib/cryptlib/linux.release
-lib-linux.release   	-a lib/cryptlib/linux.release
-lib-linux.debug     	-a lib/cryptlib/linux.release
-lib-linux-x64       	-a lib/cryptlib/linux.x64.release
-lib-linux-x64.release   -a lib/cryptlib/linux.x64.release
-lib-linux-x64.debug     -a lib/cryptlib/linux.x64.release
-lib-freebsd         	-a lib/cryptlib/freebsd.release
-lib-freebsd.release 	-a lib/cryptlib/freebsd.release
-lib-freebsd.debug   	-a lib/cryptlib/freebsd.release
-lib-openbsd         	-a lib/cryptlib/openbsd.release
-lib-openbsd.release 	-a lib/cryptlib/openbsd.release
-lib-openbsd.debug   	-a lib/cryptlib/openbsd.release
-lib-netbsd          	-a lib/cryptlib/netbsd.release
-lib-netbsd.release  	-a lib/cryptlib/netbsd.release
-lib-netbsd.debug    	-a lib/cryptlib/netbsd.release
-src-sbbs3           	-a src/build src/sbbs3 src/xpdev src/smblib src/uifc include src/conio src/sexpots src/comio src/js
+lib-win32           	-a 3rdp/win32.release
+src-sbbs3           	-a src/build src/sbbs3 src/xpdev src/smblib src/uifc src/conio src/sexpots src/comio
 run-sbbs3           	-a ctrl text exec xtrn node1 node2 node3 node4 docs web
 syncterm		-a src/syncterm src/build src/conio src/uifc src/xpdev src/comio src/sbbs3/telnet.c src/sbbs3/telnet.h src/sbbs3/xmodem.c src/sbbs3/xmodem.h src/sbbs3/zmodem.c src/sbbs3/zmodem.h src/sbbs3/sexyz.h src/smblib/crc16.c src/smblib/crc16.h src/smblib/crc32.c src/smblib/crc32.h
 install install
-include include
-lib	lib
 src 	src
 docs 	docs
 ctrl	ctrl
@@ -55,3 +36,4 @@ text	text
 exec	exec
 xtrn	xtrn
 web	web
+3rdp	3rdp
