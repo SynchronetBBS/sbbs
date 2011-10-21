@@ -30,10 +30,20 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+    <Import Project="..\..\xpdev\xpdev.props" />
+    <Import Project="..\..\smblib\smblib.props" />
+    <Import Project="..\..\conio\conio.props" />
+    <Import Project="..\..\uifc\uifc.props" />
+    <Import Project="..\..\build\undeprecate.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+    <Import Project="..\..\xpdev\xpdev.props" />
+    <Import Project="..\..\smblib\smblib.props" />
+    <Import Project="..\..\conio\conio.props" />
+    <Import Project="..\..\uifc\uifc.props" />
+    <Import Project="..\..\build\undeprecate.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -53,7 +63,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..;..\..\xpdev;..\..\smblib;..\..\uifc;..\..\conio;%(AdditionalIncludeDirectories);..\..\comio</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;WIN32;_CONSOLE;SCFG;SBBS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -96,7 +106,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..;..\..\xpdev;..\..\smblib;..\..\uifc;..\..\conio;%(AdditionalIncludeDirectories);..\..\comio</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_CONSOLE;SCFG;SBBS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -245,6 +255,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\conio\conio.vcxproj">
+      <Project>{84592e48-27ca-48a6-b9c6-243d2347a578}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\smblib\smblib.vcxproj">
       <Project>{d674842b-2f41-42cb-9426-b3c4b0682574}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -252,6 +265,9 @@
     <ProjectReference Include="..\..\uifc\uifc.vcxproj">
       <Project>{7bfb9820-0e57-4be4-9be9-e0a687874e19}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\xpdev\xpdev_mt.vcxproj">
+      <Project>{aeed3a81-3a47-4953-be51-fd5e08283890}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

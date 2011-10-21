@@ -22,10 +22,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dupefind", "dupefind.vcxproj", "{D80E94E4-09D7-4A2A-B850-67C5ABB5ABDA}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "echocfg", "echocfg.vcxproj", "{91A5D0BE-90BC-4795-8833-CE5C4D484B4A}"
-	ProjectSection(ProjectDependencies) = postProject
-		{84592E48-27CA-48A6-B9C6-243D2347A578} = {84592E48-27CA-48A6-B9C6-243D2347A578}
-		{AEED3A81-3A47-4953-BE51-FD5E08283890} = {AEED3A81-3A47-4953-BE51-FD5E08283890}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "filelist", "filelist.vcxproj", "{262BC06F-0649-4D56-A353-97038D531C2B}"
 EndProject
@@ -70,9 +66,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "textgen", "textgen.vcxproj", "{A41D7A4A-2173-4DF6-96AF-9575C069CA8A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uifc", "..\uifc\uifc.vcxproj", "{7BFB9820-0E57-4BE4-9BE9-E0A687874E19}"
-	ProjectSection(ProjectDependencies) = postProject
-		{84592E48-27CA-48A6-B9C6-243D2347A578} = {84592E48-27CA-48A6-B9C6-243D2347A578}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unbaja", "unbaja.vcxproj", "{C9E94535-877A-4A25-A10F-5AB750B0FB31}"
 EndProject
