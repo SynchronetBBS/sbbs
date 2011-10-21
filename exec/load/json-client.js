@@ -178,6 +178,16 @@ function JSONClient(serverAddr,serverPort) {
         });
     }
 
+	/* store object data (lock for writing) */
+    this.remove=function(scope,location,lock) {
+        this.send(scope,"QUERY",{
+			oper:"WRITE",
+            location:location,
+			data:undefined,
+			lock:lock
+        });
+    }
+
 	/* unshift object data (lock for writing) */
     this.unshift=function(scope,location,data,lock) {
         this.send(scope,"QUERY",{
