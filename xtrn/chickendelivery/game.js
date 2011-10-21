@@ -3,21 +3,23 @@ load("json-client.js");
 
 client.subscribe("chickendelivery", "chickenScores");
 
-var baseDir = "/sbbs/xtrn/chickendelivery/"; // The location of chicken.js, et al
+// The values of score, lives, level, and mileStone should match on every BBS
+// that is using the same json-db server (as configured in server.ini.) Don't
+// change these values without consulting the json-db server admin first. 
 var score = 0; // The player's starting score
 var lives = 5; // The number of lives the player starts with
 var level = 1; // The level that the player starts at
 var mileStone = 2500; // How many points must a player earn to win a free life
 
+// Edit below this line at your own peril.
 var quitNow = false; // Try this shit
 var collision = false; // Dim c as collision, that is cool
 var levelCompleted = false; // Your iQ is at the level of 10
 
-var frame = new Frame(1, 1, 80, 24, BG_BLACK);
+var frame = new Frame(1, 1, 80, 24, BG_BLACK); // Parent of all frames
 frame.open();
 
 var splashScreen = new Frame(1, 1, 80, 24, BG_BLACK, frame);
-var scoreFrame = new Frame(12, 2, 58, 22, BG_BLACK, frame);
 var netScoreFrame = new Frame(3, 3, 75, 21, BG_BLACK, frame);
 var instructionFrame = new Frame(8, 3, 68, 20, BG_BLACK, frame);
 var menuFrame = new Frame(2, 10, 16, 6, BG_BLACK, frame);
@@ -28,12 +30,12 @@ var lifeBox = new Frame(60, 1, 10, 1, BG_BLACK, statusBar);
 var timeBox = new Frame(70, 1, 10, 1, BG_BLACK, statusBar);
 var player = new Frame(1, 1, 5, 4, BG_BLACK, frame);
 
-splashScreen.load(baseDir + "ckndlvry.ans");
+splashScreen.load(js.exec_dir + "ckndlvry.ans");
 frame.cycle();
 
 mswait(500);
 
-menuFrame.load(baseDir + "menu.ans");
+menuFrame.load(js.exec_dir + "menu.ans");
 frame.cycle();
 
 var userInput = '';
@@ -42,7 +44,7 @@ while(userInput != 'P') {
 	userInput = console.getkey(K_NOSPIN|K_NOECHO|K_NOCRLF).toUpperCase();
 	switch(userInput) {
 		case 'I':	instructionFrame.open();
-				instructionFrame.load(baseDir + "instruct.ans");
+				instructionFrame.load(js.exec_dir + "instruct.ans");
 				frame.cycle();
 				console.getkey(K_NOSPIN|K_NOECHO|K_NOCRLF);
 				instructionFrame.close();
@@ -51,8 +53,6 @@ while(userInput != 'P') {
 				continue; // Scores
 		case 'Q': 	frame.close();
 				exit();
-		case 'L':	if(user.alias == "echicken") level = console.getstr();
-				continue;
 	}
 }
 menuFrame.close();
@@ -60,7 +60,7 @@ splashScreen.close();
 
 while(!js.terminated) {
 
-	var f = new File(baseDir + "levels/" + level + ".ini");
+	var f = new File(js.exec_dir + "levels/" + level + ".ini");
 	f.open("r");
 	var iniPlatforms = f.iniGetObject("Platforms");
 	var iniEnemies = f.iniGetObject("Enemies");
@@ -92,9 +92,9 @@ while(!js.terminated) {
 	player.moveTo(parseInt(entry[0]), parseInt(entry[1]));
 	player.direction = entryDirection;
  	if(entryDirection == 'r') {
-		player.load(baseDir + "sprites/player-r.ans");
+		player.load(js.exec_dir + "sprites/player-r.ans");
 	} else {
-		player.load(baseDir + "sprites/player-l.ans");
+		player.load(js.exec_dir + "sprites/player-l.ans");
 	}
 
 	var platforms = new Array();
@@ -105,14 +105,14 @@ while(!js.terminated) {
 	}
 
 	var doorFrame = new Frame(parseInt(door[0]), parseInt(door[1]), 5, 4, BG_BLACK, frame);
-	doorFrame.load(baseDir + "sprites/" + door[2].toString());
+	doorFrame.load(js.exec_dir + "sprites/" + door[2].toString());
 	doorFrame.score = door[3];
 
 	var enemies = new Array();
 	for(var e in iniEnemies) {
 		var thisEnemy = iniEnemies[e].split(",");
 		enemies[e] = new Frame(parseInt(thisEnemy[0]), parseInt(thisEnemy[1]), 5, 4, BG_BLACK, frame);
-		enemies[e].load(baseDir + "sprites/" + thisEnemy[2].toString());
+		enemies[e].load(js.exec_dir + "sprites/" + thisEnemy[2].toString());
 		enemies[e].direction = thisEnemy[5];
 		enemies[e].lastStep = system.timer;
 		enemies[e].lastX = parseInt(thisEnemy[0]);
@@ -200,7 +200,7 @@ while(!js.terminated) {
 		nlFrame.center("\1h\1w< Press Enter >");
 		nlFrame.cycle();
 		while(console.getkey(K_NOECHO) !== "\r");
-		if(!file_exists(baseDir + "levels/" + (level + 1) + ".ini")) {
+		if(!file_exists(js.exec_dir + "levels/" + (level + 1) + ".ini")) {
 			nlFrame.close();
 			winScreen();
 			addNetScore();
@@ -217,7 +217,7 @@ while(!js.terminated) {
 function right(player, frame, steps, nofall, nocycle) {
 	if(player.direction == 'l' && !player.hasOwnProperty("borderL")) {
 		player.clear();
-		player.load(baseDir + "sprites/player-r.ans");
+		player.load(js.exec_dir + "sprites/player-r.ans");
 		player.direction = 'r';
 		return;
 	}
@@ -233,7 +233,7 @@ function right(player, frame, steps, nofall, nocycle) {
 function left(player, frame, steps, nofall, nocycle) {
 	if(player.direction == 'r' && !player.hasOwnProperty("borderL")) {
 		player.clear();
-		player.load(baseDir + "sprites/player-l.ans");
+		player.load(js.exec_dir + "sprites/player-l.ans");
 		player.direction = 'l';
 		return;
 	}
@@ -382,7 +382,7 @@ function winScreen() {
 	frame.cycle();
 	var winner = new Frame(1, 10, 5, 4, BG_BLACK, winFrame);
 	winner.open();
-	winner.load(baseDir + "sprites/player-r.ans");
+	winner.load(js.exec_dir + "sprites/player-r.ans");
 	winFrame.cycle();
 	for(var m = 1; m <= 38; m++) {
 		winner.move(1,0);
@@ -408,7 +408,7 @@ function winScreen() {
 			if(checkOverlap(winner, starFrames[s])) continue;
 			if(starFrames[s].stage == 5) starFrames[s].stage = 1;
 			starFrames[s].clear();
-			starFrames[s].load(baseDir + "sprites/star-" + starFrames[s].stage + ".ans");
+			starFrames[s].load(js.exec_dir + "sprites/star-" + starFrames[s].stage + ".ans");
 			starFrames[s].stage++;
 			starFrames[s].cycle();
 		}
@@ -421,7 +421,7 @@ function showNetScores() {
 	var scores = client.read("chickendelivery", "chickenScores", 1);
 	netScoreFrame.open();
 	netScoreFrame.clear();
-	netScoreFrame.load(baseDir + "netscore.ans");
+	netScoreFrame.load(js.exec_dir + "netscore.ans");
 	netScoreFrame.gotoxy(3, 6);
 	var highScores = new Array();
 	for(var s in scores) highScores.push(scores[s].score);
@@ -489,4 +489,3 @@ function quitGame() {
 	client.unsubscribe();
 	exit();
 }
-
