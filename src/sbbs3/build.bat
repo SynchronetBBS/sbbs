@@ -1,4 +1,6 @@
 @echo off
-rem *** Requires Microsoft Visual C++ v6.0 ***
-"C:\Program Files\Microsoft Visual Studio\Common\MSDev98\Bin\msdev" sbbs3.dsw /MAKE ALL %1 %2 %3 %4 %5
+setlocal
+rem *** Requires Microsoft Visual C++ 2010 ***
+call "%VS100COMNTOOLS%\vsvars32.bat"
+msbuild sbbs3.sln %1 %2 %3 %4 %5
 if errorlevel 1 echo. & echo !ERROR(s) occurred
