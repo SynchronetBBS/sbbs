@@ -1,6 +1,6 @@
 /* testbuild.js */
 
-/* JSexec script for periodic Synchronet test builds */
+/* JSexec script for nightly Synchronet test builds */
 
 /* $Id$ */
 
@@ -28,7 +28,6 @@ var platform = system.platform.toLowerCase();
 if(system.architecture=="x64")
 	platform += "-x64";
 var make = (platform=="win32" ? "make":"gmake");
-var msdev = '"C:\\Program Files\\Microsoft Visual Studio\\Common\\MSDev98\\Bin\\msdev"';
 var build_output = "build_output.txt";
 var archive;
 var archive_cmd;
@@ -53,22 +52,19 @@ if(platform=="win32") {
 var builds
 	=	[/* sub-dir */		/* cmd-line */						/* redirect */
 		[""					,"cvs co src-sbbs3"					,"2> " + build_output],
-		[""					,"cvs co lib-"+platform+".debug"	,"2> " + build_output],
-		[""					,"cvs co lib-"+platform+".release"	,"2> " + build_output],
+		[""					,"cvs co lib-"+platform				,"2> " + build_output],
 		[""					,archive_cmd						,"2> " + build_output],
-		["lib"				,lib_cmd							,"2> " + build_output],
-		["src/sbbs3"		,make + " DEBUG=1"					,"2> " + build_output],
-		["src/sbbs3"		,make + " RELEASE=1"				,"2> " + build_output],
-		["src/sbbs3/scfg"	,make + " DEBUG=1"					,"2> " + build_output],
-		["src/sbbs3/scfg"	,make + " RELEASE=1"				,"2> " + build_output],
+		["3rdp"				,lib_cmd							,"2> " + build_output],
 	];
 
 /* Platform-specific (or non-ported) projects */
 if(platform=="win32") {
-	/* Requires Visual C++ */
-	builds.push(["src/sbbs3"			,"msdev sbbs3.dsw /MAKE ALL"
-																,"/OUT "+ build_output]);
+	/* Requires Visual C++ 2010 */
+	builds.push(["src/sbbs3"			,'build.bat /v:m "/p:Configuration=Release"'
+																,"> " + build_output]);
 	/* Requires C++Builder */
+	builds.push(["src/xpdev"			,"make"
+																,"> " + build_output]);
 	builds.push(["src/sbbs3/ctrl"		,"makelibs.bat ..\\msvc.win32.dll.release"
 																,"> " + build_output]);
 	builds.push(["src/sbbs3/ctrl"		,"bpr2mak sbbsctrl.bpr & make -f sbbsctrl.mak"
@@ -76,6 +72,8 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/chat"		,"bpr2mak chat.bpr     & make -f chat.mak"
 																,"> " + build_output]);
 } else {	/* Unix */
+	builds.push(["src/sbbs3"			,"gmake RELEASE=1"		,"2> " + build_output]);
+	builds.push(["src/sbbs3/scfg"		,"gmake RELEASE=1"		,"2> " + build_output]);
 	builds.push(["src/sbbs3/install"	,"gmake"				,"2> " + build_output]);
 	builds.push(["src/sbbs3/umonitor"	,"gmake RELEASE=1"		,"2> " + build_output]);
 	builds.push(["src/sbbs3/uedit"		,"gmake RELEASE=1"		,"2> " + build_output]);
@@ -90,9 +88,9 @@ var win32_dist
 		"src/sbbs3/scfg/msvc.win32.exe.release/scfghelp.*",
 		"src/sbbs3/chat/chat.exe",
 		"src/sbbs3/ctrl/sbbsctrl.exe",
-		"lib/mozilla/js/win32.release/js32.dll",
-		"lib/mozilla/nspr/win32.release/nspr4.dll",
-		"lib/cryptlib/win32.release/cl32.dll"
+		"3rdp/win32.release/mozjs/bin/*.dll",
+		"3rdp/win32.release/nspr/bin/*.dll",
+		"3rdp/win32.release/cryptlib/*.dll"
 	];
 
 var nix_dist
@@ -161,7 +159,7 @@ for(i in builds) {
 	if(builds[i][2])
 		cmd_line += " " + builds[i][2];
 	log(LOG_INFO, "Executing: " + cmd_line);
-	var retval=system.exec(cmd_line.replace(/msdev/, msdev));
+	var retval=system.exec(cmd_line);
 	log(LOG_INFO, "Done: " + cmd_line);
 	if(retval) {
 		send_email(subject, 
