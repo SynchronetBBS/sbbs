@@ -25,6 +25,7 @@
 # can be useful for creating a module that consists of many directories
 # spread out over the entire source repository.
 lib-win32           	-a 3rdp/win32.release
+lib-linux.x64		-a 3rdp/gcc.linux.x64.release
 lib	           	-a 3rdp/dist 3rdp/build
 src-sbbs3           	-a src/build src/sbbs3 src/xpdev src/smblib src/uifc src/conio src/sexpots src/comio
 run-sbbs3           	-a ctrl text exec xtrn node1 node2 node3 node4 docs web
