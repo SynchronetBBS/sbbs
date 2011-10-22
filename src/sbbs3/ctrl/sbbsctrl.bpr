@@ -51,7 +51,7 @@
     <USERDEFINES value="SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
-    <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\include\cryptlib;..\..\comio"/>
+    <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\3rdp\win32.release\cryptlib\include;..\..\comio"/>
     <LIBPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
@@ -59,7 +59,7 @@
   </MACROS>
   <OPTIONS>
     <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib 
-      -I$(BCB)\include -I$(BCB)\include\vcl -I..\..\..\include\cryptlib 
+      -I$(BCB)\include -I$(BCB)\include\vcl -I..\..\..\3rdp\win32.release\cryptlib\include 
       -I..\..\comio -src_suffix cpp -DSBBS -D_DEBUG -DRINGBUF_SEM 
       -DRINGBUF_MUTEX -DUSE_CRYPTLIB -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
