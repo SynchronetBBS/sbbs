@@ -56,7 +56,6 @@ CRYPT_IDIR :=	$(3RDPODIR)/cl
 
 JS_CFLAGS += -DJAVASCRIPT $(NSPR_CFLAGS)
 JS_LDFLAGS += $(NSPR_LDFLAGS)
-JS_LIBS += $(NSPR_LIBS)
 
 ifdef JSLIB
  JS_NOBUILD:=1
@@ -93,6 +92,7 @@ else
  JS_DEPS := js
  JS_LIBS += $(JSLIBDIR)$(DIRSEP)libmozjs185-1.0.a
 endif
+JS_LIBS += $(NSPR_LIBS)
  
 # Put it all together...
 
