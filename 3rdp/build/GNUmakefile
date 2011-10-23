@@ -28,6 +28,7 @@ $(JS_IDIR): | $(3RDPODIR)
 
 $(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz | $(JS_SRC) $(JS_IDIR)
 	@echo Creating $@ ...
+	$(QUIET)-rm -rf $(JS_SRC)/*
 	$(QUIET)tar -xzC $(JS_SRC) -f $(3RDPDISTDIR)$(DIRSEP)libmozjs.tgz
 	-$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && autoconf-2.13
 	$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && ./configure $(JS_CONFIGURE_ARGS)
@@ -42,7 +43,8 @@ $(CRYPT_IDIR): | $(3RDPODIR)
 
 $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip | $(CRYPT_SRC) $(CRYPT_IDIR)
 	@echo Creating $@ ...
+	$(QUIET)-rm -rf $(CRYPT_SRC)/*
 	$(QUIET)unzip -oua $(3RDPDISTDIR)$(DIRSEP)cryptlib.zip -d $(CRYPT_SRC)
-	$(QUIET)make -C $(CRYPT_SRC) default
+	$(QUIET)make -C $(CRYPT_SRC)
 	$(QUIET)cp $(CRYPT_SRC)$(DIRSEP)libcl.a $(CRYPT_IDIR)
 	$(QUIET)cp $(CRYPT_SRC)$(DIRSEP)cryptlib.h $(CRYPT_IDIR)
