@@ -440,7 +440,7 @@ void sbbs_t::create_sif_dat(char *siffile, char *datfile)
 		errormsg(WHERE,ERR_ALLOC,siffile,SIF_MAXBUF);
 		return; 
 	}
-	memset(buf,SIF_MAXBUF,0);	 /* initialize to null */
+	memset(buf,0,SIF_MAXBUF);	 /* initialize to null */
 	sif(siffile,buf,SIF_MAXBUF);
 	if((file=nopen(datfile,O_WRONLY|O_TRUNC|O_CREAT))==-1) {
 		free(buf);
