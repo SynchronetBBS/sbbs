@@ -254,6 +254,8 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
         QVChoice->Append(str);
     }
     }
+
+   this->SetSizerAndFit(BoxSizer1);
 }
 
 SBBS_User_ListFrame::~SBBS_User_ListFrame()
