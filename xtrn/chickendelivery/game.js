@@ -1,8 +1,7 @@
 load("frame.js");
 load("json-client.js");
 
-client.subscribe("chickendelivery", "chickenScores");
-
+client.subscribe("chickendelivery","chickenScores");
 // The values of score, lives, level, and mileStone should match on every BBS
 // that is using the same json-db server (as configured in server.ini.) Don't
 // change these values without consulting the json-db server admin first. 
@@ -44,17 +43,19 @@ while(userInput != 'P') {
 	userInput = console.getkey(K_NOSPIN|K_NOECHO|K_NOCRLF).toUpperCase();
 	switch(userInput) {
 		case 'I':	instructionFrame.open();
-				instructionFrame.load(js.exec_dir + "instruct.ans");
-				frame.cycle();
-				console.getkey(K_NOSPIN|K_NOECHO|K_NOCRLF);
-				instructionFrame.close();
-				continue; // Instructions
+			instructionFrame.load(js.exec_dir + "instruct.ans");
+			frame.cycle();
+			console.getkey(K_NOSPIN|K_NOECHO|K_NOCRLF);
+			instructionFrame.close();
+			continue; // Instructions
 		case 'S':	showNetScores();
-				continue; // Scores
+			continue; // Scores
 		case 'Q': 	frame.close();
-				exit();
+			client.unsubscribe("chickendelivery","chickenScores");
+			exit();
 	}
 }
+
 menuFrame.close();
 splashScreen.close();
 
@@ -91,7 +92,7 @@ while(!js.terminated) {
 	player.clear();
 	player.moveTo(parseInt(entry[0]), parseInt(entry[1]));
 	player.direction = entryDirection;
- 	if(entryDirection == 'r') {
+	if(entryDirection == 'r') {
 		player.load(js.exec_dir + "sprites/player-r.ans");
 	} else {
 		player.load(js.exec_dir + "sprites/player-l.ans");
@@ -419,6 +420,7 @@ function winScreen() {
 
 function showNetScores() {
 	var scores = client.read("chickendelivery", "chickenScores", 1);
+	var onlinePlayers = client.who("chickendelivery","chickenScores");
 	netScoreFrame.open();
 	netScoreFrame.clear();
 	netScoreFrame.load(js.exec_dir + "netscore.ans");
@@ -429,8 +431,15 @@ function showNetScores() {
 	for(var h = 0; h < 14; h++) {
 		for(var s in scores) { 
 			if(scores[s].score == highScores[h]) {
-				netScoreFrame.gotoxy(3, netScoreFrame.getxy().y);
-				netScoreFrame.putmsg("\1h\1w" + scores[s].name);
+				var online = " ";
+				for each(var u in onlinePlayers) {
+					if(u.nick == scores[s].name) {
+						online = "\1y\1h*";
+						break;
+					}
+				}
+				netScoreFrame.gotoxy(2, netScoreFrame.getxy().y);
+				netScoreFrame.putmsg(online + "\1h\1w" + scores[s].name);
 				netScoreFrame.gotoxy(25, netScoreFrame.getxy().y);
 				netScoreFrame.putmsg("\1h\1w" + scores[s].level);
 				netScoreFrame.gotoxy(32, netScoreFrame.getxy().y);
@@ -455,9 +464,7 @@ function netScore(name, bbsName, level, score) {
 
 function addNetScore() {
 	var s = new netScore(user.alias,system.name,level,score);
-	client.lock("chickendelivery", "chickenScores." + user.alias, 2);
-	client.write("chickendelivery", "chickenScores." + user.alias, s);
-	client.unlock("chickendelivery", "chickenScores." + user.alias);
+	client.write("chickendelivery", "chickenScores." + user.alias, s, 2);
 }
 
 function quitPrompt() {
@@ -486,6 +493,6 @@ function quitGame() {
 	splashScreen.close();
 	frame.close();
 	console.clear(BG_BLACK);
-	client.unsubscribe();
+	client.unsubscribe("chickendelivery","chickenScores");
 	exit();
 }
