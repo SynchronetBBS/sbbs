@@ -553,7 +553,7 @@ char DLLCALL exascii_to_ascii_char(uchar ch)
 /****************************************************************************/
 char* DLLCALL ascii_str(uchar* str)
 {
-	char*	p=str;
+	uchar*	p=str;
 
 	while(*p) {
 		if((*p)&0x80)
