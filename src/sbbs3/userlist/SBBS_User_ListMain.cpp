@@ -78,8 +78,11 @@ void SBBS_User_ListFrame::fillUserList(void)
             if(!chk_ar(&App->cfg, ars, &user, NULL))
                 continue;
         }
-        buf.Printf(_("%d"), i);
+        buf.Printf(_("%d"), user.number);
         item=UserList->InsertItem(i, buf, 0);
+        if(user.misc & DELETED) {
+            UserList->SetItemTextColour(item, *wxLIGHT_GREY);
+        }
 
         UserList->SetItem(item, 1, wxString::From8BitData(user.alias));
         UserList->SetItem(item, 2, wxString::From8BitData(user.name));
