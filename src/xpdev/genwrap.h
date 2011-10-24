@@ -60,7 +60,9 @@
 	#endif
 #elif defined(_WIN32)
 	#include <process.h>	/* getpid() */
-	typedef DWORD pid_t;
+	#ifndef __MINGW32__
+        typedef DWORD pid_t;
+	#endif
 #endif
 
 #if !defined(_WIN32)
@@ -87,7 +89,7 @@ extern "C" {
 #if defined(__BORLANDC__)
 
 	#define DESCRIBE_COMPILER(str) SAFEPRINTF2(str,"BCC %X.%02X" \
-		,__BORLANDC__>>8,__BORLANDC__&0xff);	
+		,__BORLANDC__>>8,__BORLANDC__&0xff);
 
 #elif defined(_MSC_VER)
 
@@ -111,7 +113,7 @@ extern "C" {
 #elif defined(__DMC__)	/* Digital Mars C/C++ */
 
 	#define DESCRIBE_COMPILER(str) SAFEPRINTF(str,"DMC %X.%02X" \
-		,__DMC__>>8,__DMC__&0xff);	
+		,__DMC__>>8,__DMC__&0xff);
 
 #else /* Unknown compiler */
 
@@ -317,7 +319,7 @@ DLLEXPORT int DLLCALL	get_errno(void);
 #endif
 
 /* Win32 implementations of recursive (thread-safe) std C time functions on Unix */
-#if !defined(__unix__)	
+#if !defined(__unix__)
 
 	DLLEXPORT char*			DLLCALL		strtok_r(char *str, const char *delim, char **last);
 #endif
