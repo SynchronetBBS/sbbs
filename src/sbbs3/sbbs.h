@@ -953,7 +953,7 @@ extern "C" {
 
 
 	/* scfglib1.c */
-	DLLEXPORT char *	DLLCALL prep_dir(char* base, char* dir, size_t buflen);
+	DLLEXPORT char *	DLLCALL prep_dir(const char* base, char* dir, size_t buflen);
 
 	/* logfile.cpp */
 	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, const char* host, const char* text);

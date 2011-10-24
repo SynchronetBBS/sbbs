@@ -357,7 +357,7 @@ static void free_attr_cfg(scfg_t* cfg)
 	cfg->total_colors=0;
 }
 
-char* DLLCALL prep_dir(char* base, char* path, size_t buflen)
+char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
 {
 #ifdef __unix__
 	char	*p;
