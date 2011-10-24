@@ -40,10 +40,10 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="`wxgtk2u-2.8-config --cflags`" />
+			<Add option="`wx-config --cflags`" />
 		</Compiler>
 		<Linker>
-			<Add option="`wxgtk2u-2.8-config --libs`" />
+			<Add option="`wx-config --libs`" />
 		</Linker>
 		<Unit filename="../ars.c">
 			<Option compilerVar="CC" />
