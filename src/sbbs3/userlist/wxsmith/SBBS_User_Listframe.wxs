@@ -1,103 +1,105 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <wxsmith>
 	<object class="wxFrame" name="SBBS_User_ListFrame">
-		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
-			<orient>wxVERTICAL</orient>
-			<object class="sizeritem">
-				<object class="wxBoxSizer" variable="BoxSizer2" member="no">
-					<object class="sizeritem">
-						<object class="wxStaticText" name="ID_STATICTEXT1" variable="StaticText1" member="yes">
-							<label>ARS Filter</label>
+		<object class="wxPanel" name="ID_PANEL1" variable="Panel1" member="yes">
+			<object class="wxBoxSizer" variable="BoxSizer1" member="no">
+				<orient>wxVERTICAL</orient>
+				<object class="sizeritem">
+					<object class="wxBoxSizer" variable="BoxSizer2" member="no">
+						<object class="sizeritem">
+							<object class="wxStaticText" name="ID_STATICTEXT1" variable="StaticText1" member="yes">
+								<label>ARS Filter</label>
+							</object>
+							<flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL</flag>
+							<border>5</border>
 						</object>
-						<flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL</flag>
-						<border>5</border>
-					</object>
-					<object class="sizeritem">
-						<object class="wxTextCtrl" name="ID_ARSTEXTCTRL" variable="ARSFilter" member="yes">
-							<tooltip>Enter an ARS string to filter users with</tooltip>
-							<handler function="OnARSFilterText" entry="EVT_TEXT" />
+						<object class="sizeritem">
+							<object class="wxTextCtrl" name="ID_ARSTEXTCTRL" variable="ARSFilter" member="yes">
+								<tooltip>Enter an ARS string to filter users with</tooltip>
+								<handler function="OnARSFilterText" entry="EVT_TEXT" />
+							</object>
+							<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+							<border>5</border>
+							<option>1</option>
 						</object>
-						<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
-						<border>5</border>
-						<option>1</option>
-					</object>
-					<object class="sizeritem">
-						<object class="wxButton" name="ID_CLEARBUTTON" variable="ClearButton" member="yes">
-							<label>Clear</label>
-							<tooltip>Clears the ARS filter</tooltip>
-							<handler function="OnClearButtonClick" entry="EVT_BUTTON" />
+						<object class="sizeritem">
+							<object class="wxButton" name="ID_CLEARBUTTON" variable="ClearButton" member="yes">
+								<label>Clear</label>
+								<tooltip>Clears the ARS filter</tooltip>
+								<handler function="OnClearButtonClick" entry="EVT_BUTTON" />
+							</object>
+							<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+							<border>5</border>
 						</object>
-						<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
-						<border>5</border>
 					</object>
+					<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
+					<border>5</border>
 				</object>
-				<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
-				<border>5</border>
-			</object>
-			<object class="sizeritem">
-				<object class="wxListCtrl" name="ID_USERLISTCTRL" variable="UserList" member="yes">
-					<style>wxLC_REPORT|wxLC_HRULES</style>
-					<handler function="OnUserListItemSelect" entry="EVT_LIST_ITEM_SELECTED" />
-					<handler function="OnUserListItemSelect" entry="EVT_LIST_ITEM_DESELECTED" />
-				</object>
-				<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
-				<border>5</border>
-				<option>1</option>
-			</object>
-			<object class="sizeritem">
-				<object class="wxBoxSizer" variable="BoxSizer3" member="no">
-					<object class="sizeritem">
-						<object class="wxBoxSizer" variable="BoxSizer4" member="no">
-							<object class="sizeritem">
-								<object class="wxStaticText" name="ID_STATICTEXT2" variable="StaticText2" member="yes">
-									<label>Quick Validation Sets</label>
-								</object>
-								<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
-								<border>5</border>
-							</object>
-							<object class="sizeritem">
-								<object class="wxChoice" name="ID_QVCHOICE" variable="QVChoice" member="yes">
-									<content>
-										<item>Select a set</item>
-									</content>
-									<selection>0</selection>
-									<enabled>0</enabled>
-									<handler function="OnQVChoiceSelect" entry="EVT_CHOICE" />
-								</object>
-								<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
-								<border>5</border>
-							</object>
-						</object>
-						<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
-						<border>5</border>
-						<option>1</option>
+				<object class="sizeritem">
+					<object class="wxListCtrl" name="ID_USERLISTCTRL" variable="UserList" member="yes">
+						<style>wxLC_REPORT|wxLC_HRULES</style>
+						<handler function="OnUserListItemSelect" entry="EVT_LIST_ITEM_SELECTED" />
+						<handler function="OnUserListItemSelect" entry="EVT_LIST_ITEM_DESELECTED" />
 					</object>
-					<object class="sizeritem">
-						<object class="wxBoxSizer" variable="BoxSizer5" member="no">
-							<object class="sizeritem">
-								<object class="wxButton" name="ID_REFRESHBUTTON" variable="RefreshButton" member="yes">
-									<label>Refresh</label>
-									<tooltip>Reloads the user database</tooltip>
-									<handler function="OnRefreshButtonClick" entry="EVT_BUTTON" />
-								</object>
-								<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP</flag>
-								<border>5</border>
-							</object>
-							<object class="sizeritem">
-								<object class="wxButton" name="ID_EDITBUTTON" variable="EditButton" member="yes">
-									<label>Edit</label>
-									<enabled>0</enabled>
-								</object>
-								<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP</flag>
-								<border>5</border>
-							</object>
-						</object>
-						<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP</flag>
-						<border>5</border>
-					</object>
+					<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
+					<border>5</border>
+					<option>1</option>
 				</object>
-				<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
-				<border>5</border>
+				<object class="sizeritem">
+					<object class="wxBoxSizer" variable="BoxSizer3" member="no">
+						<object class="sizeritem">
+							<object class="wxBoxSizer" variable="BoxSizer4" member="no">
+								<object class="sizeritem">
+									<object class="wxStaticText" name="ID_STATICTEXT2" variable="StaticText2" member="yes">
+										<label>Quick Validation Sets</label>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+									<border>5</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxChoice" name="ID_QVCHOICE" variable="QVChoice" member="yes">
+										<content>
+											<item>Select a set</item>
+										</content>
+										<selection>0</selection>
+										<enabled>0</enabled>
+										<handler function="OnQVChoiceSelect" entry="EVT_CHOICE" />
+									</object>
+									<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+									<border>5</border>
+								</object>
+							</object>
+							<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
+							<border>5</border>
+							<option>1</option>
+						</object>
+						<object class="sizeritem">
+							<object class="wxBoxSizer" variable="BoxSizer5" member="no">
+								<object class="sizeritem">
+									<object class="wxButton" name="ID_REFRESHBUTTON" variable="RefreshButton" member="yes">
+										<label>Refresh</label>
+										<tooltip>Reloads the user database</tooltip>
+										<handler function="OnRefreshButtonClick" entry="EVT_BUTTON" />
+									</object>
+									<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP</flag>
+									<border>5</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxButton" name="ID_EDITBUTTON" variable="EditButton" member="yes">
+										<label>Edit</label>
+										<enabled>0</enabled>
+									</object>
+									<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP</flag>
+									<border>5</border>
+								</object>
+							</object>
+							<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP</flag>
+							<border>5</border>
+						</object>
+					</object>
+					<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
+					<border>5</border>
+				</object>
 			</object>
 		</object>
 		<object class="wxMenuBar" variable="MenuBar1" member="no">
