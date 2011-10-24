@@ -33,14 +33,19 @@ class SBBS_User_ListFrame: public wxFrame
 
     private:
 
+        void fillUserList(void);
+
         //(*Handlers(SBBS_User_ListFrame)
         void OnQuit(wxCommandEvent& event);
         void OnAbout(wxCommandEvent& event);
+        void OnRefreshButtonClick(wxCommandEvent& event);
+        void OnARSFilterText(wxCommandEvent& event);
+        void OnClearButtonClick(wxCommandEvent& event);
         //*)
 
         //(*Identifiers(SBBS_User_ListFrame)
         static const long ID_STATICTEXT1;
-        static const long ID_TEXTCTRL1;
+        static const long ID_ARSTEXTCTRL;
         static const long ID_CLEARBUTTON;
         static const long ID_USERLISTCTRL;
         static const long ID_STATICTEXT2;
@@ -59,11 +64,12 @@ class SBBS_User_ListFrame: public wxFrame
         wxListCtrl* UserList;
         wxStatusBar* StatusBar1;
         wxButton* ClearButton;
-        wxTextCtrl* TextCtrl1;
         wxButton* EditButton;
+        wxTextCtrl* ARSFilter;
         wxChoice* Choice1;
         //*)
 
+        unsigned char *ars;
         DECLARE_EVENT_TABLE()
 };
 

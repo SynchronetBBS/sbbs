@@ -13,8 +13,9 @@
 						<border>5</border>
 					</object>
 					<object class="sizeritem">
-						<object class="wxTextCtrl" name="ID_TEXTCTRL1" variable="TextCtrl1" member="yes">
+						<object class="wxTextCtrl" name="ID_ARSTEXTCTRL" variable="ARSFilter" member="yes">
 							<tooltip>Enter an ARS string to filter users with</tooltip>
+							<handler function="OnARSFilterText" entry="EVT_TEXT" />
 						</object>
 						<flag>wxALL|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
 						<border>5</border>
@@ -24,6 +25,7 @@
 						<object class="wxButton" name="ID_CLEARBUTTON" variable="ClearButton" member="yes">
 							<label>Clear</label>
 							<tooltip>Clears the ARS filter</tooltip>
+							<handler function="OnClearButtonClick" entry="EVT_BUTTON" />
 						</object>
 						<flag>wxALL|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
 						<border>5</border>
@@ -83,6 +85,7 @@
 								<object class="wxButton" name="ID_REFRESHBUTTON" variable="RefreshButton" member="yes">
 									<label>Refresh</label>
 									<tooltip>Reloads the user database</tooltip>
+									<handler function="OnRefreshButtonClick" entry="EVT_BUTTON" />
 								</object>
 								<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
 								<border>5</border>

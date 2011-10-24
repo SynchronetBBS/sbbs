@@ -43,7 +43,7 @@ wxString wxbuildinfo(wxbuildinfoformat format)
 
 //(*IdInit(SBBS_User_ListFrame)
 const long SBBS_User_ListFrame::ID_STATICTEXT1 = wxNewId();
-const long SBBS_User_ListFrame::ID_TEXTCTRL1 = wxNewId();
+const long SBBS_User_ListFrame::ID_ARSTEXTCTRL = wxNewId();
 const long SBBS_User_ListFrame::ID_CLEARBUTTON = wxNewId();
 const long SBBS_User_ListFrame::ID_USERLISTCTRL = wxNewId();
 const long SBBS_User_ListFrame::ID_STATICTEXT2 = wxNewId();
@@ -60,7 +60,7 @@ BEGIN_EVENT_TABLE(SBBS_User_ListFrame,wxFrame)
     //*)
 END_EVENT_TABLE()
 
-void fillUserList(wxListCtrl *UserList)
+void SBBS_User_ListFrame::fillUserList(void)
 {
     int         totalusers=lastuser(&App->cfg);
     int         i;
@@ -74,6 +74,10 @@ void fillUserList(wxListCtrl *UserList)
         user.number=i;
         if(getuserdat(&App->cfg, &user)!=0)
             continue;
+        if(ars!=NULL && ars != nular) {
+            if(!chk_ar(&App->cfg, ars, &user, NULL))
+                continue;
+        }
         buf.Printf(_("%d"), i);
         item=UserList->InsertItem(i, buf, 0);
 
@@ -119,9 +123,9 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
     StaticText1 = new wxStaticText(this, ID_STATICTEXT1, _("ARS Filter"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
     BoxSizer2->Add(StaticText1, 0, wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl1 = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL1"));
-    TextCtrl1->SetToolTip(_("Enter an ARS string to filter users with"));
-    BoxSizer2->Add(TextCtrl1, 1, wxALL|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
+    ARSFilter = new wxTextCtrl(this, ID_ARSTEXTCTRL, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_ARSTEXTCTRL"));
+    ARSFilter->SetToolTip(_("Enter an ARS string to filter users with"));
+    BoxSizer2->Add(ARSFilter, 1, wxALL|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
     ClearButton = new wxButton(this, ID_CLEARBUTTON, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CLEARBUTTON"));
     ClearButton->SetToolTip(_("Clears the ARS filter"));
     BoxSizer2->Add(ClearButton, 0, wxALL|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
@@ -142,7 +146,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     UserList->InsertColumn(12, wxString(_("Logons")));
     UserList->InsertColumn(13, wxString(_("First On")));
     UserList->InsertColumn(14, wxString(_("Last On")));
-    fillUserList(UserList);
+    fillUserList();
     BoxSizer1->Add(UserList, 1, wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
     BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
     BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);
@@ -192,9 +196,37 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
 
+    Connect(ID_ARSTEXTCTRL,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnARSFilterText);
+    Connect(ID_CLEARBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnClearButtonClick);
+    Connect(ID_REFRESHBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnRefreshButtonClick);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQuit);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnAbout);
     //*)
+
+    /*
+     * Ideally, this would go right after UserList is created
+     * and before it's added to the parent.
+     */
+
+    if(UserList->GetColumnCount()==0) {
+    fprintf(stderr,"No columns in UserList!\r\n");
+    UserList->InsertColumn(0, wxString(_("Num")));
+    UserList->InsertColumn(1, wxString(_("Alias")));
+    UserList->InsertColumn(2, wxString(_("Name")));
+    UserList->InsertColumn(3, wxString(_("Level")));
+    UserList->InsertColumn(4, wxString(_("Age")));
+    UserList->InsertColumn(5, wxString(_("Sex")));
+    UserList->InsertColumn(6, wxString(_("Location")));
+    UserList->InsertColumn(7, wxString(_("Protocol")));
+    UserList->InsertColumn(8, wxString(_("Address")));
+    UserList->InsertColumn(9, wxString(_("Host Name")));
+    UserList->InsertColumn(10, wxString(_("Phone")));
+    UserList->InsertColumn(11, wxString(_("Email")));
+    UserList->InsertColumn(12, wxString(_("Logons")));
+    UserList->InsertColumn(13, wxString(_("First On")));
+    UserList->InsertColumn(14, wxString(_("Last On")));
+    fillUserList();
+    }
 }
 
 SBBS_User_ListFrame::~SBBS_User_ListFrame()
@@ -212,4 +244,34 @@ void SBBS_User_ListFrame::OnAbout(wxCommandEvent& event)
 {
     wxString msg = wxbuildinfo(long_f);
     wxMessageBox(msg, _("Welcome to..."));
+}
+
+void SBBS_User_ListFrame::OnRefreshButtonClick(wxCommandEvent& event)
+{
+    fillUserList();
+}
+
+void SBBS_User_ListFrame::OnARSFilterText(wxCommandEvent& event)
+{
+    static uchar    *last_ars=NULL;
+    static ushort   last_ars_count=0;
+    ushort          count;
+
+    if(!ARSFilter->IsModified())
+        return;
+
+    ars=arstr(&count, ARSFilter->GetValue().mb_str(wxConvUTF8), &App->cfg);
+    if(count != last_ars_count || memcmp(last_ars, ars, count)) {
+        if(last_ars != nular)
+            FREE_AND_NULL(last_ars);
+        last_ars=ars;
+        last_ars_count=count;
+        fillUserList();
+    }
+}
+
+void SBBS_User_ListFrame::OnClearButtonClick(wxCommandEvent& event)
+{
+    ARSFilter->SetValue(_(""));
+    OnARSFilterText(event);
 }
