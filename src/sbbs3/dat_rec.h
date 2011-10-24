@@ -46,15 +46,20 @@
 #endif
 
 #ifdef _WIN32
-	#ifdef SBBS_EXPORTS
-		#define DLLEXPORT __declspec(dllexport)
-	#else
-		#define DLLEXPORT __declspec(dllimport)
-	#endif
-	#ifdef __BORLANDC__
-		#define DLLCALL __stdcall
-	#else
+	#ifdef __MINGW32__
+		#define DLLEXPORT
 		#define DLLCALL
+	#else
+		#ifdef SBBS_EXPORTS
+			#define DLLEXPORT __declspec(dllexport)
+		#else
+			#define DLLEXPORT __declspec(dllimport)
+		#endif
+		#ifdef __BORLANDC__
+			#define DLLCALL __stdcall
+		#else
+			#define DLLCALL
+		#endif
 	#endif
 #else
 	#define DLLEXPORT

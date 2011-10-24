@@ -64,7 +64,7 @@
 #if defined(__cplusplus)
 	extern "C"
 #endif
-	extern HINSTANCE hK32;
+	HINSTANCE hK32;
 
 #elif defined(__unix__)		/* Unix-variant */
 
@@ -835,15 +835,20 @@ public:
 #undef DLLCALL
 #endif
 #ifdef _WIN32
-	#ifdef SBBS_EXPORTS
-		#define DLLEXPORT	__declspec(dllexport)
-	#else
-		#define DLLEXPORT	__declspec(dllimport)
-	#endif
-	#ifdef __BORLANDC__
-		#define DLLCALL __stdcall
-	#else
+	#ifdef __MINGW32__
+		#define DLLEXPORT
 		#define DLLCALL
+	#else
+		#ifdef SBBS_EXPORTS
+			#define DLLEXPORT	__declspec(dllexport)
+		#else
+			#define DLLEXPORT	__declspec(dllimport)
+		#endif
+		#ifdef __BORLANDC__
+			#define DLLCALL __stdcall
+		#else
+			#define DLLCALL
+		#endif
 	#endif
 #else	/* !_WIN32 */
 	#define DLLEXPORT
