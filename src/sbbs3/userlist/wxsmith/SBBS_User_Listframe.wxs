@@ -17,7 +17,7 @@
 							<tooltip>Enter an ARS string to filter users with</tooltip>
 							<handler function="OnARSFilterText" entry="EVT_TEXT" />
 						</object>
-						<flag>wxALL|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+						<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
 						<border>5</border>
 						<option>1</option>
 					</object>
@@ -27,18 +27,20 @@
 							<tooltip>Clears the ARS filter</tooltip>
 							<handler function="OnClearButtonClick" entry="EVT_BUTTON" />
 						</object>
-						<flag>wxALL|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+						<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
 						<border>5</border>
 					</object>
 				</object>
-				<flag>wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+				<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
 				<border>5</border>
 			</object>
 			<object class="sizeritem">
 				<object class="wxListCtrl" name="ID_USERLISTCTRL" variable="UserList" member="yes">
 					<style>wxLC_REPORT|wxLC_HRULES</style>
+					<handler function="OnUserListItemSelect" entry="EVT_LIST_ITEM_SELECTED" />
+					<handler function="OnUserListItemSelect" entry="EVT_LIST_ITEM_DESELECTED" />
 				</object>
-				<flag>wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+				<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
 				<border>5</border>
 				<option>1</option>
 			</object>
@@ -50,32 +52,23 @@
 								<object class="wxStaticText" name="ID_STATICTEXT2" variable="StaticText2" member="yes">
 									<label>Quick Validation Sets</label>
 								</object>
-								<flag>wxALL|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+								<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
 								<border>5</border>
 							</object>
 							<object class="sizeritem">
-								<object class="wxChoice" name="ID_CHOICE1" variable="Choice1" member="yes">
+								<object class="wxChoice" name="ID_QVCHOICE" variable="QVChoice" member="yes">
 									<content>
 										<item>Select a set</item>
-										<item>1 SL:10 F1:                          </item>
-										<item>2 SL:20 F1:                          </item>
-										<item>3 SL:30 F1:                          </item>
-										<item>4 SL:40 F1:                          </item>
-										<item>5 SL:50 F1:                          </item>
-										<item>6 SL:60 F1:                          </item>
-										<item>7 SL:70 F1:                          </item>
-										<item>8 SL:80 F1:                          </item>
-										<item>9 SL:90 F1:                          </item>
-										<item>10 SL:100 F1:                          </item>
 									</content>
 									<selection>0</selection>
 									<enabled>0</enabled>
+									<handler function="OnQVChoiceSelect" entry="EVT_CHOICE" />
 								</object>
-								<flag>wxALL|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+								<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
 								<border>5</border>
 							</object>
 						</object>
-						<flag>wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+						<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
 						<border>5</border>
 						<option>1</option>
 					</object>
@@ -87,7 +80,7 @@
 									<tooltip>Reloads the user database</tooltip>
 									<handler function="OnRefreshButtonClick" entry="EVT_BUTTON" />
 								</object>
-								<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+								<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP</flag>
 								<border>5</border>
 							</object>
 							<object class="sizeritem">
@@ -95,15 +88,15 @@
 									<label>Edit</label>
 									<enabled>0</enabled>
 								</object>
-								<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+								<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP</flag>
 								<border>5</border>
 							</object>
 						</object>
-						<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+						<flag>wxALL|wxALIGN_RIGHT|wxALIGN_TOP</flag>
 						<border>5</border>
 					</object>
 				</object>
-				<flag>wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_BOTTOM</flag>
+				<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
 				<border>5</border>
 			</object>
 		</object>

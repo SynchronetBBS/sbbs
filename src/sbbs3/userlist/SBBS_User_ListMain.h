@@ -41,6 +41,8 @@ class SBBS_User_ListFrame: public wxFrame
         void OnRefreshButtonClick(wxCommandEvent& event);
         void OnARSFilterText(wxCommandEvent& event);
         void OnClearButtonClick(wxCommandEvent& event);
+        void OnUserListItemSelect(wxListEvent& event);
+        void OnQVChoiceSelect(wxCommandEvent& event);
         //*)
 
         //(*Identifiers(SBBS_User_ListFrame)
@@ -49,7 +51,7 @@ class SBBS_User_ListFrame: public wxFrame
         static const long ID_CLEARBUTTON;
         static const long ID_USERLISTCTRL;
         static const long ID_STATICTEXT2;
-        static const long ID_CHOICE1;
+        static const long ID_QVCHOICE;
         static const long ID_REFRESHBUTTON;
         static const long ID_EDITBUTTON;
         static const long idMenuQuit;
@@ -64,9 +66,9 @@ class SBBS_User_ListFrame: public wxFrame
         wxListCtrl* UserList;
         wxStatusBar* StatusBar1;
         wxButton* ClearButton;
+        wxChoice* QVChoice;
         wxButton* EditButton;
         wxTextCtrl* ARSFilter;
-        wxChoice* Choice1;
         //*)
 
         unsigned char *ars;

@@ -47,7 +47,7 @@ const long SBBS_User_ListFrame::ID_ARSTEXTCTRL = wxNewId();
 const long SBBS_User_ListFrame::ID_CLEARBUTTON = wxNewId();
 const long SBBS_User_ListFrame::ID_USERLISTCTRL = wxNewId();
 const long SBBS_User_ListFrame::ID_STATICTEXT2 = wxNewId();
-const long SBBS_User_ListFrame::ID_CHOICE1 = wxNewId();
+const long SBBS_User_ListFrame::ID_QVCHOICE = wxNewId();
 const long SBBS_User_ListFrame::ID_REFRESHBUTTON = wxNewId();
 const long SBBS_User_ListFrame::ID_EDITBUTTON = wxNewId();
 const long SBBS_User_ListFrame::idMenuQuit = wxNewId();
@@ -68,6 +68,7 @@ void SBBS_User_ListFrame::fillUserList(void)
     int         item;
     wxString    buf;
     char        datebuf[9];
+    long        topitem=UserList->GetTopItem();
 
     UserList->DeleteAllItems();
     for(i=0; i<totalusers; i++) {
@@ -83,7 +84,7 @@ void SBBS_User_ListFrame::fillUserList(void)
         if(user.misc & DELETED) {
             UserList->SetItemTextColour(item, *wxLIGHT_GREY);
         }
-
+        UserList->SetItemData(item, user.number);
         UserList->SetItem(item, 1, wxString::From8BitData(user.alias));
         UserList->SetItem(item, 2, wxString::From8BitData(user.name));
         buf.Printf(_("%d"), user.level);
@@ -105,6 +106,8 @@ void SBBS_User_ListFrame::fillUserList(void)
         unixtodstr(&App->cfg, user.laston, datebuf);
         UserList->SetItem(item,14, wxString::From8BitData(datebuf));
     }
+    UserList->EnsureVisible(item);
+    UserList->EnsureVisible(topitem);
 }
 
 SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
@@ -128,11 +131,11 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2->Add(StaticText1, 0, wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5);
     ARSFilter = new wxTextCtrl(this, ID_ARSTEXTCTRL, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_ARSTEXTCTRL"));
     ARSFilter->SetToolTip(_("Enter an ARS string to filter users with"));
-    BoxSizer2->Add(ARSFilter, 1, wxALL|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
+    BoxSizer2->Add(ARSFilter, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     ClearButton = new wxButton(this, ID_CLEARBUTTON, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CLEARBUTTON"));
     ClearButton->SetToolTip(_("Clears the ARS filter"));
-    BoxSizer2->Add(ClearButton, 0, wxALL|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
-    BoxSizer1->Add(BoxSizer2, 0, wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
+    BoxSizer2->Add(ClearButton, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
+    BoxSizer1->Add(BoxSizer2, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
     UserList = new wxListCtrl(this, ID_USERLISTCTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_HRULES, wxDefaultValidator, _T("ID_USERLISTCTRL"));
     UserList->InsertColumn(0, wxString(_("Num")));
     UserList->InsertColumn(1, wxString(_("Alias")));
@@ -150,35 +153,35 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     UserList->InsertColumn(13, wxString(_("First On")));
     UserList->InsertColumn(14, wxString(_("Last On")));
     fillUserList();
-    BoxSizer1->Add(UserList, 1, wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
+    BoxSizer1->Add(UserList, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
     BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
     BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);
     StaticText2 = new wxStaticText(this, ID_STATICTEXT2, _("Quick Validation Sets"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
-    BoxSizer4->Add(StaticText2, 0, wxALL|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
-    Choice1 = new wxChoice(this, ID_CHOICE1, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
-    Choice1->SetSelection( Choice1->Append(_("Select a set")) );
-    Choice1->Append(_("1 SL:10 F1:                          "));
-    Choice1->Append(_("2 SL:20 F1:                          "));
-    Choice1->Append(_("3 SL:30 F1:                          "));
-    Choice1->Append(_("4 SL:40 F1:                          "));
-    Choice1->Append(_("5 SL:50 F1:                          "));
-    Choice1->Append(_("6 SL:60 F1:                          "));
-    Choice1->Append(_("7 SL:70 F1:                          "));
-    Choice1->Append(_("8 SL:80 F1:                          "));
-    Choice1->Append(_("9 SL:90 F1:                          "));
-    Choice1->Append(_("10 SL:100 F1:                          "));
-    Choice1->Disable();
-    BoxSizer4->Add(Choice1, 0, wxALL|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
-    BoxSizer3->Add(BoxSizer4, 1, wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
+    BoxSizer4->Add(StaticText2, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
+    QVChoice = new wxChoice(this, ID_QVCHOICE, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_QVCHOICE"));
+    QVChoice->SetSelection( QVChoice->Append(_("Select a set")) );
+    for(int i=0;i<10;i++) {
+        wxString    str;
+        wxString    fstr;
+        char        flags[33];
+
+        fstr=wxString::From8BitData(ltoaf(App->cfg.val_flags1[i],flags));
+        str.Printf(_("%d  SL: %-2d  F1: "),i,App->cfg.val_level[i]);
+        str += fstr;
+        QVChoice->Append(str);
+    }
+    QVChoice->Disable();
+    BoxSizer4->Add(QVChoice, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
+    BoxSizer3->Add(BoxSizer4, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
     BoxSizer5 = new wxBoxSizer(wxHORIZONTAL);
     RefreshButton = new wxButton(this, ID_REFRESHBUTTON, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_REFRESHBUTTON"));
     RefreshButton->SetToolTip(_("Reloads the user database"));
-    BoxSizer5->Add(RefreshButton, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
+    BoxSizer5->Add(RefreshButton, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP, 5);
     EditButton = new wxButton(this, ID_EDITBUTTON, _("Edit"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_EDITBUTTON"));
     EditButton->Disable();
-    BoxSizer5->Add(EditButton, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
-    BoxSizer3->Add(BoxSizer5, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
-    BoxSizer1->Add(BoxSizer3, 0, wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_BOTTOM, 5);
+    BoxSizer5->Add(EditButton, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP, 5);
+    BoxSizer3->Add(BoxSizer5, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP, 5);
+    BoxSizer1->Add(BoxSizer3, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
     SetSizer(BoxSizer1);
     MenuBar1 = new wxMenuBar();
     Menu1 = new wxMenu();
@@ -201,6 +204,9 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
 
     Connect(ID_ARSTEXTCTRL,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnARSFilterText);
     Connect(ID_CLEARBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnClearButtonClick);
+    Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);
+    Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_DESELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);
+    Connect(ID_QVCHOICE,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQVChoiceSelect);
     Connect(ID_REFRESHBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnRefreshButtonClick);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQuit);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnAbout);
@@ -229,6 +235,24 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     UserList->InsertColumn(13, wxString(_("First On")));
     UserList->InsertColumn(14, wxString(_("Last On")));
     fillUserList();
+    }
+
+    /*
+     * Ideally this would go right after QVChoice->SetSelection
+     */
+
+    if(QVChoice->GetCount()==1) {
+    fprintf(stderr,"No items in QVChoice!\r\n");
+    for(int i=0;i<10;i++) {
+        wxString    str;
+        wxString    fstr;
+        char        flags[33];
+
+        fstr=wxString::From8BitData(ltoaf(App->cfg.val_flags1[i],flags));
+        str.Printf(_("%d  SL: %-2d  F1: "),i,App->cfg.val_level[i]);
+        str += fstr;
+        QVChoice->Append(str);
+    }
     }
 }
 
@@ -277,4 +301,56 @@ void SBBS_User_ListFrame::OnClearButtonClick(wxCommandEvent& event)
 {
     ARSFilter->SetValue(_(""));
     OnARSFilterText(event);
+}
+
+void SBBS_User_ListFrame::OnUserListItemSelect(wxListEvent& event)
+{
+    if(UserList->GetSelectedItemCount())
+        QVChoice->Enable();
+    else
+        QVChoice->Enable();
+}
+
+void SBBS_User_ListFrame::OnQVChoiceSelect(wxCommandEvent& event)
+{
+    user_t      user;
+    int         res;
+    long        item=-1;
+    wxArrayInt  selections;
+    int         set=QVChoice->GetSelection()-1;
+
+    for(;;) {
+        item = UserList->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+        if(item==-1)
+            break;
+        user.number=UserList->GetItemData(item);
+        if((res=getuserdat(&App->cfg, &user))) {
+            wxString    str;
+            str.Printf(_("Error %d loading user %d."),res,user.number);
+            wxMessageDialog *dlg=new wxMessageDialog(NULL, str, str);
+            dlg->ShowModal();
+            continue;
+        }
+        user.flags1=App->cfg.val_flags1[set];
+        user.flags2=App->cfg.val_flags2[set];
+        user.flags3=App->cfg.val_flags3[set];
+        user.flags4=App->cfg.val_flags4[set];
+        user.exempt=App->cfg.val_exempt[set];
+        user.rest=App->cfg.val_rest[set];
+        if(App->cfg.val_expire[set]) {
+            user.expire=time(NULL)
+                +(App->cfg.val_expire[set]*24*60*60);
+        }
+        else
+            user.expire=0;
+        user.level=App->cfg.val_level[set];
+        if((res=putuserdat(&App->cfg,&user))) {
+            wxString    str;
+            str.Printf(_("Error %d saving user %d."),res,user.number);
+            wxMessageDialog *dlg=new wxMessageDialog(NULL, str, str);
+            dlg->ShowModal();
+            continue;
+        }
+    }
+    fillUserList();
 }
