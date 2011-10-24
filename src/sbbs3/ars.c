@@ -58,10 +58,10 @@ static BOOL ar_string_arg(int artype)
 #ifdef __BORLANDC__	/* Eliminate warning when buildling Baja */
 #pragma argsused
 #endif
-uchar* arstr(ushort* count, char* str, scfg_t* cfg)
+uchar* arstr(ushort* count, const char* str, scfg_t* cfg)
 {
-	char*	p;
-	char*	np;
+	const char*	p;
+	const char*	np;
 	char	ch;
 	uchar	ar[1024],*ar_buf;
 	int		artype=AR_INVALID;
@@ -686,8 +686,11 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				break;
 		} 
 	}
-	if(!j)
+	if(!j) {
+		if(count)
+			(*count)=0;
 		return((uchar*)nular);	/* Save memory */
+	}
 
 	ar[j++]=AR_NULL;
 	/** DEBUG stuff
@@ -695,8 +698,11 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 		lprintf(LOG_DEBUG,"%02X ",(uint)ar[i]);
 	lputs("\r\n");
 	***/
-	if((ar_buf=(uchar *)calloc(j+4,1))==NULL)	/* Padded for ushort dereferencing */
+	if((ar_buf=(uchar *)calloc(j+4,1))==NULL) {	/* Padded for ushort dereferencing */
+		if(count)
+			(*count)=0;
 		return(NULL);
+	}
 	memcpy(ar_buf,ar,j);
 	if(count)
 		(*count)=j;
