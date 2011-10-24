@@ -477,7 +477,7 @@ char* DLLCALL truncsp(char* str)
 
 	if(str!=NULL) {
 		i=len=strlen(str);
-		while(i && isspace((unsigned char)str[i-1])) 
+		while(i && isspace((unsigned char)str[i-1]))
 			i--;
 		if(i!=len)
 			str[i]=0;	/* truncate */
@@ -499,8 +499,8 @@ char* DLLCALL truncsp_lines(char* dst)
 
 	for(sp=src, dp=dst; *sp!=0; sp++) {
 		if(*sp=='\n')
-			while(dp!=dst 
-				&& (*(dp-1)==' ' || *(dp-1)=='\t' || *(dp-1)=='\r') && *(dp-1)!='\n') 
+			while(dp!=dst
+				&& (*(dp-1)==' ' || *(dp-1)=='\t' || *(dp-1)=='\r') && *(dp-1)!='\n')
 					dp--;
 		*(dp++)=*sp;
 	}
@@ -519,7 +519,7 @@ char* DLLCALL truncnl(char* str)
 
 	if(str!=NULL) {
 		i=len=strlen(str);
-		while(i && (str[i-1]=='\r' || str[i-1]=='\n')) 
+		while(i && (str[i-1]=='\r' || str[i-1]=='\n'))
 			i--;
 		if(i!=len)
 			str[i]=0;	/* truncate */
@@ -584,7 +584,7 @@ BOOL DLLCALL check_pid(pid_t pid)
 
 	if((h=OpenProcess(PROCESS_QUERY_INFORMATION,/* inheritable: */FALSE, pid)) != NULL) {
 		DWORD	code;
-		if(GetExitCodeProcess(h,&code)==TRUE && code==STILL_ACTIVE)
+		if(GetExitCodeProcess(h,(PDWORD)&code)==TRUE && code==STILL_ACTIVE)
 			result=TRUE;
 		CloseHandle(h);
 	}

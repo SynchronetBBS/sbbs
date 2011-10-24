@@ -74,7 +74,7 @@
 #if defined(__WATCOMC__)
 	#include <dos.h>
 #endif
-	
+
 #include <sys/types.h>	/* _dev_t */
 #include <sys/stat.h>	/* struct stat */
 
@@ -97,9 +97,9 @@ char* DLLCALL getfname(const char* path)
 	bslash=strrchr(path,'\\');
 	if(bslash>fname)
 		fname=bslash;
-	if(fname!=NULL) 
+	if(fname!=NULL)
 		fname++;
-	else 
+	else
 		fname=(char*)path;
 	return((char*)fname);
 }
@@ -114,7 +114,7 @@ char* DLLCALL getfext(const char* path)
 
 	fname=getfname(path);
 	fext=strrchr(fname,'.');
-	if(fext==NULL || fext==fname) 
+	if(fext==NULL || fext==fname)
 		return(NULL);
 	return(fext);
 }
@@ -264,8 +264,8 @@ int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 		}
 		if(_findnext(ff_handle, &ff)!=0) {
 			_findclose(ff_handle);
-			ff_handle=-1; 
-		} 
+			ff_handle=-1;
+		}
 	}
 
 	if(found==0)
@@ -437,7 +437,7 @@ off_t DLLCALL flength(const char *filename)
 
 	return(f.size);
 
-#else 
+#else
 
 	struct stat st;
 
@@ -497,7 +497,7 @@ BOOL DLLCALL fexist(const char *filespec)
 	return(found);
 
 #else /* Unix or OS/2 */
-	
+
 	/* portion by cmartin */
 
 	glob_t g;
@@ -523,7 +523,7 @@ BOOL DLLCALL fexist(const char *filespec)
             return TRUE;
         }
     }
-        
+
     globfree(&g);
     return FALSE;
 
@@ -565,7 +565,7 @@ BOOL DLLCALL fexistcase(char *path)
 	char *p;
 	int  i;
 	glob_t	glb;
-	
+
 	if(path[0]==0)		/* work around glibc bug 574274 */
 		return FALSE;
 
@@ -592,7 +592,7 @@ BOOL DLLCALL fexistcase(char *path)
 
 	if(glob(globme,GLOB_MARK,NULL,&glb) != 0)
 		return(FALSE);
-	
+
 	if(glb.gl_pathc>0)  {
 		for(i=0;i<glb.gl_pathc;i++)  {
 			if(*lastchar(glb.gl_pathv[i]) != '/')
@@ -607,7 +607,7 @@ BOOL DLLCALL fexistcase(char *path)
 
 	globfree(&glb);
 	return FALSE;
-	
+
 #endif
 }
 
@@ -731,7 +731,7 @@ ulong DLLCALL delfiles(const char *inpath, const char *spec)
 /****************************************************************************/
 #if defined(_WIN32)
 typedef BOOL(WINAPI * GetDiskFreeSpaceEx_t)
-	(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER); 
+	(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER);
 
 static int bit_num(ulong val)
 {
@@ -761,9 +761,9 @@ static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 
 	if(hK32 == NULL)
 		hK32 = LoadLibrary("KERNEL32");
-	GetDiskFreeSpaceEx 
+	GetDiskFreeSpaceEx
 		= (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");
- 
+
 	if (GetDiskFreeSpaceEx!=NULL) {	/* Windows 95-OSR2 or later */
 		if(!GetDiskFreeSpaceEx(
 			path,		/* pointer to the directory name */
@@ -796,10 +796,10 @@ static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 	sprintf(root,"%.3s",path);
 	if(!GetDiskFreeSpace(
 		root,					/* pointer to root path */
-		&SectorsPerCluster,		/* pointer to sectors per cluster */
-		&BytesPerSector,		/* pointer to bytes per sector */
-		&NumberOfFreeClusters,	/* pointer to number of free clusters */
-		&TotalNumberOfClusters  /* pointer to total number of clusters */
+		(PDWORD)&SectorsPerCluster,		/* pointer to sectors per cluster */
+		(PDWORD)&BytesPerSector,		/* pointer to bytes per sector */
+		(PDWORD)&NumberOfFreeClusters,	/* pointer to number of free clusters */
+		(PDWORD)&TotalNumberOfClusters  /* pointer to total number of clusters */
 		))
 		return(0);
 
@@ -826,7 +826,7 @@ static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 	if(unit>1)
 		blocks/=unit;
     return fs.f_bsize * blocks;
-    
+
 /* statfs is also used under FreeBSD (Though it *supports* statvfs() now too) */
 #elif defined(__GLIBC__) || defined(BSD)
 
@@ -844,7 +844,7 @@ static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 	if(unit>1)
 		blocks/=unit;
     return fs.f_bsize * blocks;
-    
+
 #else
 
 	fprintf(stderr,"\n*** !Missing getfreediskspace implementation ***\n");
@@ -901,7 +901,7 @@ char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 		}
 	}
 	strncat(target,path,size-1);
-	
+
 /*	if(stat(target,&sb))
 		return(NULL);
 	if(sb.st_mode&S_IFDIR)
@@ -966,7 +966,7 @@ BOOL DLLCALL isabspath(const char *filename)
 /****************************************************************************/
 BOOL DLLCALL isfullpath(const char* filename)
 {
-	return(filename[0]=='/' 
+	return(filename[0]=='/'
 #ifdef WIN32
 		|| filename[0]=='\\' || filename[1]==':'
 #endif
