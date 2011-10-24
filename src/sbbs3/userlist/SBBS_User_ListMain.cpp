@@ -65,7 +65,7 @@ void SBBS_User_ListFrame::fillUserList(void)
     int         totalusers=lastuser(&App->cfg);
     int         i;
     user_t      user;
-    int         item;
+    int         item=0;
     wxString    buf;
     char        datebuf[9];
     long        topitem=UserList->GetTopItem();
