@@ -185,12 +185,12 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     StatusBar1->SetFieldsCount(1,__wxStatusBarWidths_1);
     StatusBar1->SetStatusStyles(1,__wxStatusBarStyles_1);
     SetStatusBar(StatusBar1);
-    MenuItem3 = new wxMenuItem((&ContextMenu), ID_EDITUSER, _("Edit User\tE"), wxEmptyString, wxITEM_NORMAL);
+    MenuItem3 = new wxMenuItem((&ContextMenu), ID_EDITUSER, _("Edit User"), wxEmptyString, wxITEM_NORMAL);
     ContextMenu.Append(MenuItem3);
     MenuItem3->Enable(false);
-    MenuItem4 = new wxMenuItem((&ContextMenu), ID_COPY, _("Copy\tC"), wxEmptyString, wxITEM_NORMAL);
+    MenuItem4 = new wxMenuItem((&ContextMenu), ID_COPY, _("Copy"), wxEmptyString, wxITEM_NORMAL);
     ContextMenu.Append(MenuItem4);
-    MenuItem5 = new wxMenuItem((&ContextMenu), ID_COPYALL, _("Copy All\tA"), wxEmptyString, wxITEM_NORMAL);
+    MenuItem5 = new wxMenuItem((&ContextMenu), ID_COPYALL, _("Copy All"), wxEmptyString, wxITEM_NORMAL);
     ContextMenu.Append(MenuItem5);
     MenuItem6 = new wxMenuItem((&ContextMenu), ID_REFRESH, _("Refresh"), wxEmptyString, wxITEM_NORMAL);
     ContextMenu.Append(MenuItem6);
@@ -458,7 +458,7 @@ int wxCALLBACK SortCallBack(wxIntPtr item1_data, wxIntPtr item2_data, wxIntPtr d
 			v1=dstrtounix(&App->cfg, val1.mb_str(wxConvUTF8));
 			v2=dstrtounix(&App->cfg, val2.mb_str(wxConvUTF8));
 			ret = v1-v2;
-			break;
+			break;c
 		// Strings
 		default:
 			ret=val1.CmpNoCase(val2);

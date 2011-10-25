@@ -132,17 +132,14 @@
 		<object class="wxMenu" variable="ContextMenu" member="yes">
 			<object class="wxMenuItem" name="ID_EDITUSER" variable="MenuItem3" member="yes">
 				<label>Edit User</label>
-				<accel>E</accel>
 				<enabled>0</enabled>
 			</object>
 			<object class="wxMenuItem" name="ID_COPY" variable="MenuItem4" member="yes">
 				<label>Copy</label>
-				<accel>C</accel>
 				<handler function="CopyMenuItemSelected" entry="EVT_MENU" />
 			</object>
 			<object class="wxMenuItem" name="ID_COPYALL" variable="MenuItem5" member="yes">
 				<label>Copy All</label>
-				<accel>A</accel>
 				<handler function="CopyAllMenuItemSelected" entry="EVT_MENU" />
 			</object>
 			<object class="wxMenuItem" name="ID_REFRESH" variable="MenuItem6" member="yes">
