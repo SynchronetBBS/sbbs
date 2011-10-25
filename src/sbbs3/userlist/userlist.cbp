@@ -32,14 +32,14 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="`wx-config --cflags`" />
+			<Add option="`wx-config --unicode --cflags`" />
 			<Add option="-DHAS_INTTYPES_H=1" />
 			<Add directory=".." />
 			<Add directory="../../xpdev" />
 			<Add directory="../../smblib" />
 		</Compiler>
 		<Linker>
-			<Add option="`wx-config --libs`" />
+			<Add option="`wx-config --unicode --libs`" />
 			<Add library="xpdev" />
 			<Add directory="../../xpdev/gcc.freebsd.lib.release" />
 		</Linker>
