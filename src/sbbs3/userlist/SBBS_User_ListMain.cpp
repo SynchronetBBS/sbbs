@@ -10,10 +10,7 @@
 #include "SBBS_User_ListMain.h"
 #include <wx/msgdlg.h>
 
-//(*InternalHeaders(SBBS_User_ListFrame)
-#include <wx/intl.h>
-#include <wx/string.h>
-//*)
+//(*InternalHeaders(SBBS_User_ListFrame)#include <wx/intl.h>#include <wx/string.h>//*)
 
 //helper functions
 enum wxbuildinfoformat {
@@ -41,19 +38,7 @@ wxString wxbuildinfo(wxbuildinfoformat format)
     return wxbuild;
 }
 
-//(*IdInit(SBBS_User_ListFrame)
-const long SBBS_User_ListFrame::ID_STATICTEXT1 = wxNewId();
-const long SBBS_User_ListFrame::ID_ARSTEXTCTRL = wxNewId();
-const long SBBS_User_ListFrame::ID_CLEARBUTTON = wxNewId();
-const long SBBS_User_ListFrame::ID_USERLISTCTRL = wxNewId();
-const long SBBS_User_ListFrame::ID_STATICTEXT2 = wxNewId();
-const long SBBS_User_ListFrame::ID_QVCHOICE = wxNewId();
-const long SBBS_User_ListFrame::ID_REFRESHBUTTON = wxNewId();
-const long SBBS_User_ListFrame::ID_EDITBUTTON = wxNewId();
-const long SBBS_User_ListFrame::idMenuQuit = wxNewId();
-const long SBBS_User_ListFrame::idMenuAbout = wxNewId();
-const long SBBS_User_ListFrame::ID_STATUSBAR1 = wxNewId();
-//*)
+//(*IdInit(SBBS_User_ListFrame)const long SBBS_User_ListFrame::ID_STATICTEXT1 = wxNewId();const long SBBS_User_ListFrame::ID_ARSTEXTCTRL = wxNewId();const long SBBS_User_ListFrame::ID_CLEARBUTTON = wxNewId();const long SBBS_User_ListFrame::ID_USERLISTCTRL = wxNewId();const long SBBS_User_ListFrame::ID_STATICTEXT2 = wxNewId();const long SBBS_User_ListFrame::ID_QVCHOICE = wxNewId();const long SBBS_User_ListFrame::ID_REFRESHBUTTON = wxNewId();const long SBBS_User_ListFrame::ID_EDITBUTTON = wxNewId();const long SBBS_User_ListFrame::ID_PANEL1 = wxNewId();const long SBBS_User_ListFrame::idMenuQuit = wxNewId();const long SBBS_User_ListFrame::idMenuAbout = wxNewId();const long SBBS_User_ListFrame::ID_STATUSBAR1 = wxNewId();//*)
 
 BEGIN_EVENT_TABLE(SBBS_User_ListFrame,wxFrame)
     //(*EventTable(SBBS_User_ListFrame)
@@ -112,146 +97,60 @@ void SBBS_User_ListFrame::fillUserList(void)
 
 SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
 {
-    //(*Initialize(SBBS_User_ListFrame)
-    wxBoxSizer* BoxSizer4;
-    wxBoxSizer* BoxSizer5;
-    wxMenuItem* MenuItem2;
-    wxMenuItem* MenuItem1;
-    wxBoxSizer* BoxSizer2;
-    wxMenu* Menu1;
-    wxBoxSizer* BoxSizer1;
-    wxMenuBar* MenuBar1;
-    wxBoxSizer* BoxSizer3;
-    wxMenu* Menu2;
+    //(*Initialize(SBBS_User_ListFrame)    wxBoxSizer* BoxSizer4;    wxBoxSizer* BoxSizer5;    wxMenuItem* MenuItem2;    wxMenuItem* MenuItem1;    wxBoxSizer* BoxSizer2;    wxMenu* Menu1;    wxBoxSizer* BoxSizer1;    wxMenuBar* MenuBar1;    wxBoxSizer* BoxSizer3;    wxMenu* Menu2;    Create(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("id"));    Panel1 = new wxPanel(this, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));    BoxSizer1 = new wxBoxSizer(wxVERTICAL);    BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);    StaticText1 = new wxStaticText(Panel1, ID_STATICTEXT1, _("ARS Filter"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));    BoxSizer2->Add(StaticText1, 0, wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5);    ARSFilter = new wxTextCtrl(Panel1, ID_ARSTEXTCTRL, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_ARSTEXTCTRL"));    ARSFilter->SetToolTip(_("Enter an ARS string to filter users with"));    BoxSizer2->Add(ARSFilter, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);    ClearButton = new wxButton(Panel1, ID_CLEARBUTTON, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CLEARBUTTON"));    ClearButton->SetToolTip(_("Clears the ARS filter"));    BoxSizer2->Add(ClearButton, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);    BoxSizer1->Add(BoxSizer2, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);    UserList = new wxListCtrl(Panel1, ID_USERLISTCTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_HRULES, wxDefaultValidator, _T("ID_USERLISTCTRL"));    BoxSizer1->Add(UserList, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);    BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);    BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);    StaticText2 = new wxStaticText(Panel1, ID_STATICTEXT2, _("Quick Validation Sets"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));    BoxSizer4->Add(StaticText2, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);    QVChoice = new wxChoice(Panel1, ID_QVCHOICE, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_QVCHOICE"));    QVChoice->SetSelection( QVChoice->Append(_("Select a set")) );    QVChoice->Disable();    BoxSizer4->Add(QVChoice, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);    BoxSizer3->Add(BoxSizer4, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);    BoxSizer5 = new wxBoxSizer(wxHORIZONTAL);    RefreshButton = new wxButton(Panel1, ID_REFRESHBUTTON, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_REFRESHBUTTON"));    RefreshButton->SetToolTip(_("Reloads the user database"));    BoxSizer5->Add(RefreshButton, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP, 5);    EditButton = new wxButton(Panel1, ID_EDITBUTTON, _("Edit"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_EDITBUTTON"));    EditButton->Disable();    BoxSizer5->Add(EditButton, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP, 5);    BoxSizer3->Add(BoxSizer5, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP, 5);    BoxSizer1->Add(BoxSizer3, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);    Panel1->SetSizer(BoxSizer1);    BoxSizer1->Fit(Panel1);    BoxSizer1->SetSizeHints(Panel1);    MenuBar1 = new wxMenuBar();    Menu1 = new wxMenu();    MenuItem1 = new wxMenuItem(Menu1, idMenuQuit, _("Quit\tAlt-F4"), _("Quit the application"), wxITEM_NORMAL);    Menu1->Append(MenuItem1);    MenuBar1->Append(Menu1, _("&File"));    Menu2 = new wxMenu();    MenuItem2 = new wxMenuItem(Menu2, idMenuAbout, _("About\tF1"), _("Show info about this application"), wxITEM_NORMAL);    Menu2->Append(MenuItem2);    MenuBar1->Append(Menu2, _("Help"));    SetMenuBar(MenuBar1);    StatusBar1 = new wxStatusBar(this, ID_STATUSBAR1, 0, _T("ID_STATUSBAR1"));    int __wxStatusBarWidths_1[1] = { -1 };    int __wxStatusBarStyles_1[1] = { wxSB_NORMAL };    StatusBar1->SetFieldsCount(1,__wxStatusBarWidths_1);    StatusBar1->SetStatusStyles(1,__wxStatusBarStyles_1);    SetStatusBar(StatusBar1);    Connect(ID_ARSTEXTCTRL,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnARSFilterText);    Connect(ID_CLEARBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnClearButtonClick);    Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);    Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_DESELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);    Connect(ID_QVCHOICE,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQVChoiceSelect);    Connect(ID_REFRESHBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnRefreshButtonClick);    Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQuit);    Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnAbout);    //*)
 
-    Create(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("id"));
-    BoxSizer1 = new wxBoxSizer(wxVERTICAL);
-    BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
-    StaticText1 = new wxStaticText(this, ID_STATICTEXT1, _("ARS Filter"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
-    BoxSizer2->Add(StaticText1, 0, wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5);
-    ARSFilter = new wxTextCtrl(this, ID_ARSTEXTCTRL, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_ARSTEXTCTRL"));
-    ARSFilter->SetToolTip(_("Enter an ARS string to filter users with"));
-    BoxSizer2->Add(ARSFilter, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
-    ClearButton = new wxButton(this, ID_CLEARBUTTON, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CLEARBUTTON"));
-    ClearButton->SetToolTip(_("Clears the ARS filter"));
-    BoxSizer2->Add(ClearButton, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
-    BoxSizer1->Add(BoxSizer2, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
-    UserList = new wxListCtrl(this, ID_USERLISTCTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_HRULES, wxDefaultValidator, _T("ID_USERLISTCTRL"));
-    BoxSizer1->Add(UserList, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
-    BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
-    BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);
-    StaticText2 = new wxStaticText(this, ID_STATICTEXT2, _("Quick Validation Sets"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
-    BoxSizer4->Add(StaticText2, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
-    QVChoice = new wxChoice(this, ID_QVCHOICE, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_QVCHOICE"));
-    QVChoice->SetSelection( QVChoice->Append(_("Select a set")) );
-    for(int i=0;i<10;i++) {
-        wxString    str;
-        wxString    fstr;
-        char        flags[33];
-
-        fstr=wxString::From8BitData(ltoaf(App->cfg.val_flags1[i],flags));
-        str.Printf(_("%d  SL: %-2d  F1: "),i,App->cfg.val_level[i]);
-        str += fstr;
-        QVChoice->Append(str);
-    }
-    QVChoice->Disable();
-    BoxSizer4->Add(QVChoice, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
-    BoxSizer3->Add(BoxSizer4, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
-    BoxSizer5 = new wxBoxSizer(wxHORIZONTAL);
-    RefreshButton = new wxButton(this, ID_REFRESHBUTTON, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_REFRESHBUTTON"));
-    RefreshButton->SetToolTip(_("Reloads the user database"));
-    BoxSizer5->Add(RefreshButton, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP, 5);
-    EditButton = new wxButton(this, ID_EDITBUTTON, _("Edit"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_EDITBUTTON"));
-    EditButton->Disable();
-    BoxSizer5->Add(EditButton, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP, 5);
-    BoxSizer3->Add(BoxSizer5, 0, wxALL|wxALIGN_RIGHT|wxALIGN_TOP, 5);
-    BoxSizer1->Add(BoxSizer3, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
-    SetSizer(BoxSizer1);
-    MenuBar1 = new wxMenuBar();
-    Menu1 = new wxMenu();
-    MenuItem1 = new wxMenuItem(Menu1, idMenuQuit, _("Quit\tAlt-F4"), _("Quit the application"), wxITEM_NORMAL);
-    Menu1->Append(MenuItem1);
-    MenuBar1->Append(Menu1, _("&File"));
-    Menu2 = new wxMenu();
-    MenuItem2 = new wxMenuItem(Menu2, idMenuAbout, _("About\tF1"), _("Show info about this application"), wxITEM_NORMAL);
-    Menu2->Append(MenuItem2);
-    MenuBar1->Append(Menu2, _("Help"));
-    SetMenuBar(MenuBar1);
-    StatusBar1 = new wxStatusBar(this, ID_STATUSBAR1, 0, _T("ID_STATUSBAR1"));
-    int __wxStatusBarWidths_1[1] = { -1 };
-    int __wxStatusBarStyles_1[1] = { wxSB_NORMAL };
-    StatusBar1->SetFieldsCount(1,__wxStatusBarWidths_1);
-    StatusBar1->SetStatusStyles(1,__wxStatusBarStyles_1);
-    SetStatusBar(StatusBar1);
-    BoxSizer1->Fit(this);
-    BoxSizer1->SetSizeHints(this);
-
-    Connect(ID_ARSTEXTCTRL,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnARSFilterText);
-    Connect(ID_CLEARBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnClearButtonClick);
-    Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);
-    Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_DESELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);
-    Connect(ID_QVCHOICE,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQVChoiceSelect);
-    Connect(ID_REFRESHBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnRefreshButtonClick);
-    Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQuit);
-    Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnAbout);
-    //*)
-
-    if(UserList->GetColumnCount()==0) {
-		wxListItem itemCol;
-		itemCol.SetText("Num");
-		itemCol.SetImage(-1);
-		UserList->InsertColumn(0, itemCol);
-		UserList->InsertColumn(0, wxString(_("Num")));
-		UserList->InsertColumn(1, wxString(_("Alias")));
-		UserList->InsertColumn(2, wxString(_("Name")));
-		UserList->InsertColumn(3, wxString(_("Level")));
-		UserList->InsertColumn(4, wxString(_("Age")));
-		UserList->InsertColumn(5, wxString(_("Sex")));
-		UserList->InsertColumn(6, wxString(_("Location")));
-		UserList->InsertColumn(7, wxString(_("Protocol")));
-		UserList->InsertColumn(8, wxString(_("Address")));
-		UserList->InsertColumn(9, wxString(_("Host Name")));
-		UserList->InsertColumn(10, wxString(_("Phone")));
-		UserList->InsertColumn(11, wxString(_("Email")));
-		UserList->InsertColumn(12, wxString(_("Logons")));
-		UserList->InsertColumn(13, wxString(_("First On")));
-		UserList->InsertColumn(14, wxString(_("Last On")));
-		fillUserList();
-		UserList->SetColumnWidth(0, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(1, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(2, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(3, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(4, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(5, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(6, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(7, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(8, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(9, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(10, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(11, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(12, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(13, wxLIST_AUTOSIZE);
-		UserList->SetColumnWidth(14, wxLIST_AUTOSIZE);
-    }
+	wxListItem itemCol;
+	itemCol.SetText("Num");
+	itemCol.SetImage(-1);
+	UserList->InsertColumn(0, itemCol);
+	UserList->InsertColumn(0, wxString(_("Num")));
+	UserList->InsertColumn(1, wxString(_("Alias")));
+	UserList->InsertColumn(2, wxString(_("Name")));
+	UserList->InsertColumn(3, wxString(_("Level")));
+	UserList->InsertColumn(4, wxString(_("Age")));
+	UserList->InsertColumn(5, wxString(_("Sex")));
+	UserList->InsertColumn(6, wxString(_("Location")));
+	UserList->InsertColumn(7, wxString(_("Protocol")));
+	UserList->InsertColumn(8, wxString(_("Address")));
+	UserList->InsertColumn(9, wxString(_("Host Name")));
+	UserList->InsertColumn(10, wxString(_("Phone")));
+	UserList->InsertColumn(11, wxString(_("Email")));
+	UserList->InsertColumn(12, wxString(_("Logons")));
+	UserList->InsertColumn(13, wxString(_("First On")));
+	UserList->InsertColumn(14, wxString(_("Last On")));
+	fillUserList();
+	UserList->SetColumnWidth(0, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(1, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(2, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(3, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(4, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(5, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(6, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(7, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(8, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(9, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(10, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(11, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(12, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(13, wxLIST_AUTOSIZE);
+	UserList->SetColumnWidth(14, wxLIST_AUTOSIZE);
 
     /*
      * Ideally this would go right after QVChoice->SetSelection
      */
 
-    if(QVChoice->GetCount()==1) {
-		for(int i=0;i<10;i++) {
-			wxString    str;
-			wxString    fstr;
-			char        flags[33];
+	for(int i=0;i<10;i++) {
+		wxString    str;
+		wxString    fstr;
+		char        flags[33];
 
-			fstr=wxString::From8BitData(ltoaf(App->cfg.val_flags1[i],flags));
-			str.Printf(_("%d  SL: %-2d  F1: "),i,App->cfg.val_level[i]);
-			str += fstr;
-			QVChoice->Append(str);
-		}
-    }
+		fstr=wxString::From8BitData(ltoaf(App->cfg.val_flags1[i],flags));
+		str.Printf(_("%d  SL: %-2d  F1: "),i,App->cfg.val_level[i]);
+		str += fstr;
+		QVChoice->Append(str);
+	}
 
-	this->SetSizerAndFit(BoxSizer1);
+	BoxSizer1->SetSizeHints(this);
 }
 
 SBBS_User_ListFrame::~SBBS_User_ListFrame()
