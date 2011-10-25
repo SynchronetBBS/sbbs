@@ -44,7 +44,12 @@ class SBBS_User_ListFrame: public wxFrame
         void OnClearButtonClick(wxCommandEvent& event);
         void OnUserListItemSelect(wxListEvent& event);
         void OnQVChoiceSelect(wxCommandEvent& event);
+        void OnUserListItemRClick(wxListEvent& event);
+        void CopyMenuItemSelected(wxCommandEvent& event);
+        void CopyAllMenuItemSelected(wxCommandEvent& event);
         //*)
+
+		void CopyItems(int state);
 
         //(*Identifiers(SBBS_User_ListFrame)
         static const long ID_STATICTEXT1;
@@ -59,15 +64,24 @@ class SBBS_User_ListFrame: public wxFrame
         static const long idMenuQuit;
         static const long idMenuAbout;
         static const long ID_STATUSBAR1;
+        static const long ID_EDITUSER;
+        static const long ID_COPY;
+        static const long ID_COPYALL;
+        static const long ID_REFRESH;
         //*)
 
         //(*Declarations(SBBS_User_ListFrame)
         wxButton* RefreshButton;
+        wxMenuItem* MenuItem5;
         wxStaticText* StaticText2;
+        wxMenuItem* MenuItem4;
         wxPanel* Panel1;
         wxStaticText* StaticText1;
+        wxMenu ContextMenu;
         wxListCtrl* UserList;
+        wxMenuItem* MenuItem3;
         wxStatusBar* StatusBar1;
+        wxMenuItem* MenuItem6;
         wxButton* ClearButton;
         wxChoice* QVChoice;
         wxButton* EditButton;

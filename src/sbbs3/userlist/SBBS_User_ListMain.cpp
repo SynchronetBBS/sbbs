@@ -9,6 +9,8 @@
 
 #include "SBBS_User_ListMain.h"
 #include <wx/msgdlg.h>
+#include <wx/clipbrd.h>
+#include <wx/dataobj.h>
 
 //(*InternalHeaders(SBBS_User_ListFrame)
 #include <wx/intl.h>
@@ -54,6 +56,10 @@ const long SBBS_User_ListFrame::ID_PANEL1 = wxNewId();
 const long SBBS_User_ListFrame::idMenuQuit = wxNewId();
 const long SBBS_User_ListFrame::idMenuAbout = wxNewId();
 const long SBBS_User_ListFrame::ID_STATUSBAR1 = wxNewId();
+const long SBBS_User_ListFrame::ID_EDITUSER = wxNewId();
+const long SBBS_User_ListFrame::ID_COPY = wxNewId();
+const long SBBS_User_ListFrame::ID_COPYALL = wxNewId();
+const long SBBS_User_ListFrame::ID_REFRESH = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(SBBS_User_ListFrame,wxFrame)
@@ -179,15 +185,28 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     StatusBar1->SetFieldsCount(1,__wxStatusBarWidths_1);
     StatusBar1->SetStatusStyles(1,__wxStatusBarStyles_1);
     SetStatusBar(StatusBar1);
+    MenuItem3 = new wxMenuItem((&ContextMenu), ID_EDITUSER, _("Edit User\tE"), wxEmptyString, wxITEM_NORMAL);
+    ContextMenu.Append(MenuItem3);
+    MenuItem3->Enable(false);
+    MenuItem4 = new wxMenuItem((&ContextMenu), ID_COPY, _("Copy\tC"), wxEmptyString, wxITEM_NORMAL);
+    ContextMenu.Append(MenuItem4);
+    MenuItem5 = new wxMenuItem((&ContextMenu), ID_COPYALL, _("Copy All\tA"), wxEmptyString, wxITEM_NORMAL);
+    ContextMenu.Append(MenuItem5);
+    MenuItem6 = new wxMenuItem((&ContextMenu), ID_REFRESH, _("Refresh\tR"), wxEmptyString, wxITEM_NORMAL);
+    ContextMenu.Append(MenuItem6);
 
     Connect(ID_ARSTEXTCTRL,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnARSFilterText);
     Connect(ID_CLEARBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnClearButtonClick);
     Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);
     Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_DESELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);
+    Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_RIGHT_CLICK,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemRClick);
     Connect(ID_QVCHOICE,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQVChoiceSelect);
     Connect(ID_REFRESHBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnRefreshButtonClick);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQuit);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnAbout);
+    Connect(ID_COPY,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::CopyMenuItemSelected);
+    Connect(ID_COPYALL,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::CopyAllMenuItemSelected);
+    Connect(ID_REFRESH,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnRefreshButtonClick);
     //*)
 
 	// Stupid Windows Dance
@@ -347,4 +366,49 @@ void SBBS_User_ListFrame::OnQVChoiceSelect(wxCommandEvent& event)
         }
     }
     fillUserList();
+}
+
+void SBBS_User_ListFrame::OnUserListItemRClick(wxListEvent& event)
+{
+	PopupMenu(&ContextMenu);
+}
+
+void SBBS_User_ListFrame::CopyItems(int state)
+{
+	long		item=UserList->GetNextItem(-1, wxLIST_NEXT_ALL, state);
+	int			cols=UserList->GetColumnCount();
+	int			rows=UserList->GetSelectedItemCount();
+	wxString	cp;
+	wxListItem	li;
+
+	for(;;) {
+		for(int i=0; i<cols; i++) {
+			li.m_itemId = item;
+			li.m_col = i;
+			if(UserList->GetItem(li))
+				cp += li.m_text;
+			if(i<(cols-1))
+				cp += _T("\t");
+		}
+		item=UserList->GetNextItem(item, wxLIST_NEXT_ALL, state);
+		if(item==-1)
+			break;
+		else
+			cp += _T("\r\n");
+	}
+
+	if (wxTheClipboard->Open()) {
+        wxTheClipboard->SetData(new wxTextDataObject(cp));
+        wxTheClipboard->Close();
+    }
+}
+
+void SBBS_User_ListFrame::CopyMenuItemSelected(wxCommandEvent& event)
+{
+	CopyItems(wxLIST_STATE_SELECTED);
+}
+
+void SBBS_User_ListFrame::CopyAllMenuItemSelected(wxCommandEvent& event)
+{
+	CopyItems(wxLIST_STATE_DONTCARE	);
 }
