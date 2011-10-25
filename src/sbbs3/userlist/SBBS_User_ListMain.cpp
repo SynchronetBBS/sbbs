@@ -192,7 +192,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     ContextMenu.Append(MenuItem4);
     MenuItem5 = new wxMenuItem((&ContextMenu), ID_COPYALL, _("Copy All\tA"), wxEmptyString, wxITEM_NORMAL);
     ContextMenu.Append(MenuItem5);
-    MenuItem6 = new wxMenuItem((&ContextMenu), ID_REFRESH, _("Refresh\tR"), wxEmptyString, wxITEM_NORMAL);
+    MenuItem6 = new wxMenuItem((&ContextMenu), ID_REFRESH, _("Refresh"), wxEmptyString, wxITEM_NORMAL);
     ContextMenu.Append(MenuItem6);
 
     Connect(ID_ARSTEXTCTRL,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnARSFilterText);
@@ -200,6 +200,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);
     Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_DESELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemSelect);
     Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_ITEM_RIGHT_CLICK,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListItemRClick);
+    Connect(ID_USERLISTCTRL,wxEVT_COMMAND_LIST_COL_CLICK,(wxObjectEventFunction)&SBBS_User_ListFrame::OnUserListColumnClick);
     Connect(ID_QVCHOICE,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQVChoiceSelect);
     Connect(ID_REFRESHBUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnRefreshButtonClick);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnQuit);
@@ -216,7 +217,8 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
 	UserList->InsertColumn(0, itemCol);
 	UserList->DeleteColumn(0);
 
-	UserList->InsertColumn(0, wxString(_("Num")));
+	UserList->InsertColumn(0, wxString(_("Num \x25BC")));
+	this->sort=0;
 	UserList->InsertColumn(1, wxString(_("Alias")));
 	UserList->InsertColumn(2, wxString(_("Name")));
 	UserList->InsertColumn(3, wxString(_("Level")));
@@ -377,7 +379,6 @@ void SBBS_User_ListFrame::CopyItems(int state)
 {
 	long		item=UserList->GetNextItem(-1, wxLIST_NEXT_ALL, state);
 	int			cols=UserList->GetColumnCount();
-	int			rows=UserList->GetSelectedItemCount();
 	wxString	cp;
 	wxListItem	li;
 
@@ -410,5 +411,90 @@ void SBBS_User_ListFrame::CopyMenuItemSelected(wxCommandEvent& event)
 
 void SBBS_User_ListFrame::CopyAllMenuItemSelected(wxCommandEvent& event)
 {
-	CopyItems(wxLIST_STATE_DONTCARE	);
+	CopyItems(wxLIST_STATE_DONTCARE);
+}
+
+struct sortData {
+	int			sort;
+	wxListCtrl	*UserList;
+};
+
+int wxCALLBACK SortCallBack(wxIntPtr item1_data, wxIntPtr item2_data, wxIntPtr data)
+{
+	struct sortData	*sd=(struct sortData *)data;
+	long			item1=sd->UserList->FindItem(-1, item1_data);
+	long			item2=sd->UserList->FindItem(-1, item2_data);
+	wxString		val1,val2;
+	wxListItem		li;
+	long			v1, v2;
+	int				ret;
+
+	li.m_itemId = (sd->sort & 0x100) ? item2 : item1;
+	li.m_col = sd->sort & 0xff;
+	if(!sd->UserList->GetItem(li))
+		return 0;
+	val1 = li.m_text;
+
+	li.m_itemId = (sd->sort & 0x100) ? item1 : item2;
+	if(!sd->UserList->GetItem(li))
+		return 0;
+	val2 = li.m_text;
+
+	switch(sd->sort & 0xff) {
+		// Numbers:
+		case 0:
+		case 3:
+		case 4:
+		case 12:
+			if(!val1.ToLong(&v1))
+				return 0;
+			if(!val2.ToLong(&v2))
+				return 0;
+			ret = v1-v2;
+			break;
+		// Dates:
+		case 13:
+		case 14:
+			v1=dstrtounix(&App->cfg, val1.mb_str(wxConvUTF8));
+			v2=dstrtounix(&App->cfg, val2.mb_str(wxConvUTF8));
+			ret = v1-v2;
+			break;
+		// Strings
+		default:
+			ret=val1.CmpNoCase(val2);
+	}
+	if(ret==0)
+		return item1_data-item2_data;
+	return ret;
+}
+
+void SBBS_User_ListFrame::OnUserListColumnClick(wxListEvent& event)
+{
+	struct sortData sd;
+	wxListItem		li;
+	int				column=event.GetColumn();
+
+	sd.UserList=UserList;
+
+	UserList->Freeze();
+	// First, remove char from old sort column
+	UserList->GetColumn(sort & 0xff, li);
+	li.m_text = li.m_text.Left(li.m_text.Length()-2);
+	UserList->SetColumn(sort & 0xff, li);
+	// Now, set new sort
+	if((sort & 0xff)==column)
+		sort ^= 0x100;
+	else
+		sort=column;
+	sd.sort=sort;
+	/* Add char to new sort column */
+	UserList->GetColumn(sort & 0xff, li);
+	if(sort & 0x100)
+		li.m_text += _T(" \x25b2");
+	else
+		li.m_text += _T(" \x25bc");
+	UserList->SetColumn(sort & 0xff, li);
+
+	UserList->SortItems(SortCallBack, (wxIntPtr)&sd);
+	UserList->Thaw();
 }

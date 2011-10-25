@@ -35,6 +35,8 @@ class SBBS_User_ListFrame: public wxFrame
     private:
 
         void fillUserList(void);
+		void CopyItems(int state);
+		int	sort;
 
         //(*Handlers(SBBS_User_ListFrame)
         void OnQuit(wxCommandEvent& event);
@@ -47,9 +49,8 @@ class SBBS_User_ListFrame: public wxFrame
         void OnUserListItemRClick(wxListEvent& event);
         void CopyMenuItemSelected(wxCommandEvent& event);
         void CopyAllMenuItemSelected(wxCommandEvent& event);
+        void OnUserListColumnClick(wxListEvent& event);
         //*)
-
-		void CopyItems(int state);
 
         //(*Identifiers(SBBS_User_ListFrame)
         static const long ID_STATICTEXT1;
