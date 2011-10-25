@@ -44,12 +44,12 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 /****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
 /****************************************************************************/
-time32_t DLLCALL dstrtounix(scfg_t* cfg, char *instr)
+time32_t DLLCALL dstrtounix(scfg_t* cfg, const char *instr)
 {
-	char*	p;
-	char*	day;
-	char	str[16];
-	struct tm tm;
+	const char*	p;
+	const char*	day;
+	char		str[16];
+	struct tm	tm;
 
 	if(!instr[0] || !strncmp(instr,"00/00/00",8))
 		return(0);
