@@ -151,7 +151,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
     BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);
     StaticText2 = new wxStaticText(Panel1, ID_STATICTEXT2, _("Quick Validation Sets"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
-    BoxSizer4->Add(StaticText2, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
+    BoxSizer4->Add(StaticText2, 0, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     QVChoice = new wxChoice(Panel1, ID_QVCHOICE, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_QVCHOICE"));
     QVChoice->SetSelection( QVChoice->Append(_("Select a set")) );
     QVChoice->Disable();
@@ -458,7 +458,7 @@ int wxCALLBACK SortCallBack(wxIntPtr item1_data, wxIntPtr item2_data, wxIntPtr d
 			v1=dstrtounix(&App->cfg, val1.mb_str(wxConvUTF8));
 			v2=dstrtounix(&App->cfg, val2.mb_str(wxConvUTF8));
 			ret = v1-v2;
-			break;c
+			break;
 		// Strings
 		default:
 			ret=val1.CmpNoCase(val2);

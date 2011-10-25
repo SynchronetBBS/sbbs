@@ -55,7 +55,7 @@
 									<object class="wxStaticText" name="ID_STATICTEXT2" variable="StaticText2" member="yes">
 										<label>Quick Validation Sets</label>
 									</object>
-									<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+									<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
 								</object>
 								<object class="sizeritem">
