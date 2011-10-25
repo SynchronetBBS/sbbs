@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="xpdev" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="gcc.freebsd.lib.debug\libxpdev" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="gcc.freebsd.obj.debug\" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="gcc.freebsd.lib.release\libxpdev" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="gcc.freebsd.obj.release\" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-DHAS_INTTYPES_H" />
+		</Compiler>
+		<Unit filename="conwrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="conwrap.h" />
+		<Unit filename="dat_file.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="dat_file.h" />
+		<Unit filename="datewrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="datewrap.h" />
+		<Unit filename="dirwrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="dirwrap.h" />
+		<Unit filename="filewrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="filewrap.h" />
+		<Unit filename="gen_defs.h" />
+		<Unit filename="genwrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="genwrap.h" />
+		<Unit filename="ini_file.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="ini_file.h" />
+		<Unit filename="link_list.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="link_list.h" />
+		<Unit filename="main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="msg_queue.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="msg_queue.h" />
+		<Unit filename="netwrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="netwrap.h" />
+		<Unit filename="semfile.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="semfile.h" />
+		<Unit filename="semwrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="semwrap.h" />
+		<Unit filename="sockwrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="sockwrap.h" />
+		<Unit filename="str_list.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="str_list.h" />
+		<Unit filename="strwrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="strwrap.h" />
+		<Unit filename="threadwrap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="threadwrap.h" />
+		<Unit filename="wrapdll.h" />
+		<Unit filename="xp_dl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="xpbeep.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="xpbeep.h" />
+		<Unit filename="xpdatetime.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="xpendian.h" />
+		<Unit filename="xpprintf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="xpprintf.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
