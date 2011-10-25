@@ -39,7 +39,7 @@ bool SBBS_User_ListApp::OnInit()
     }
     memset(&cfg, 0, sizeof(cfg));
     cfg.size=sizeof(cfg);
-    SAFECOPY(cfg.ctrl_dir, ctrlDir.fn_str());
+    SAFECOPY(cfg.ctrl_dir, ctrlDir.mb_str(wxConvUTF8));
     prep_dir("", cfg.ctrl_dir, sizeof(cfg.ctrl_dir));
     if(!isdir(cfg.ctrl_dir)) {
         wxMessageDialog *dlg = new wxMessageDialog(NULL, _("SBBSCTRL environment variable is not set to a directory.  This variable must be set to the ctrl directory (ie: /sbbs/ctrl)."), _("SBBSCTRL Not A Directory"));
@@ -53,15 +53,13 @@ bool SBBS_User_ListApp::OnInit()
         return false;
     }
     //(*AppInitialize
-    bool        wxsOK = true;
+    bool wxsOK = true;
     wxInitAllImageHandlers();
-
-
     if ( wxsOK )
     {
-    	SBBS_User_ListFrame* Frame = new SBBS_User_ListFrame(0);
-    	Frame->Show();
-    	SetTopWindow(Frame);
+    SBBS_User_ListFrame* Frame = new SBBS_User_ListFrame(0);
+    Frame->Show();
+    SetTopWindow(Frame);
     }
     //*)
     return wxsOK;
