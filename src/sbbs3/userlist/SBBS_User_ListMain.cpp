@@ -55,6 +55,7 @@ void SBBS_User_ListFrame::fillUserList(void)
     char        datebuf[9];
     long        topitem=UserList->GetTopItem();
 
+    UserList->Freeze();
     UserList->DeleteAllItems();
     for(i=0; i<totalusers; i++) {
         user.number=i;
@@ -93,6 +94,7 @@ void SBBS_User_ListFrame::fillUserList(void)
     }
     UserList->EnsureVisible(item);
     UserList->EnsureVisible(topitem);
+	UserList->Thaw();
 }
 
 SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
