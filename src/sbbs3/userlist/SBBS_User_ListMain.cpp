@@ -210,6 +210,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_REFRESH,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnRefreshButtonClick);
     //*)
 
+	this->ars=NULL;
 	UserList->InsertColumn(0, wxString(_("Num \x25BC")));
 	this->sort=0;
 	UserList->InsertColumn(1, wxString(_("Alias")));
