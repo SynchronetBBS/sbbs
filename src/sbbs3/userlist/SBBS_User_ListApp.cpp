@@ -26,7 +26,7 @@ extern "C" int lprintf(int level, const char *fmt, ...) /* log output */
 SBBS_User_ListApp *App;
 
 bool SBBS_User_ListApp::OnInit()
-{    wxString    ctrlDir;
+{    wxString    ctrlDir;
     char        errstr[1024];
 
     App=this;
@@ -52,7 +52,7 @@ bool SBBS_User_ListApp::OnInit()
         dlg->ShowModal();
         return false;
     }
-    //(*AppInitialize
+    //(*AppInitialize
     bool        wxsOK = true;
     wxInitAllImageHandlers();
 
