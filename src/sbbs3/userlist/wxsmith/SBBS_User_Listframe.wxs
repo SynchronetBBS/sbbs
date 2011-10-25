@@ -40,6 +40,7 @@
 						<style>wxLC_REPORT|wxLC_HRULES</style>
 						<handler function="OnUserListItemSelect" entry="EVT_LIST_ITEM_SELECTED" />
 						<handler function="OnUserListItemSelect" entry="EVT_LIST_ITEM_DESELECTED" />
+						<handler function="OnUserListItemRClick" entry="EVT_LIST_ITEM_RIGHT_CLICK" />
 					</object>
 					<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP</flag>
 					<border>5</border>
@@ -126,6 +127,28 @@
 			<fields>1</fields>
 			<widths>-1</widths>
 			<styles>wxSB_NORMAL</styles>
+		</object>
+		<object class="wxMenu" variable="ContextMenu" member="yes">
+			<object class="wxMenuItem" name="ID_EDITUSER" variable="MenuItem3" member="yes">
+				<label>Edit User</label>
+				<accel>E</accel>
+				<enabled>0</enabled>
+			</object>
+			<object class="wxMenuItem" name="ID_COPY" variable="MenuItem4" member="yes">
+				<label>Copy</label>
+				<accel>C</accel>
+				<handler function="CopyMenuItemSelected" entry="EVT_MENU" />
+			</object>
+			<object class="wxMenuItem" name="ID_COPYALL" variable="MenuItem5" member="yes">
+				<label>Copy All</label>
+				<accel>A</accel>
+				<handler function="CopyAllMenuItemSelected" entry="EVT_MENU" />
+			</object>
+			<object class="wxMenuItem" name="ID_REFRESH" variable="MenuItem6" member="yes">
+				<label>Refresh</label>
+				<accel>R</accel>
+				<handler function="OnRefreshButtonClick" entry="EVT_MENU" />
+			</object>
 		</object>
 	</object>
 </wxsmith>
