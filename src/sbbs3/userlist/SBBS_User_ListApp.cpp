@@ -26,14 +26,10 @@ extern "C" int lprintf(int level, const char *fmt, ...) /* log output */
 SBBS_User_ListApp *App;
 
 bool SBBS_User_ListApp::OnInit()
-{
-    //(*AppInitialize
-    bool        wxsOK = true;
-    wxString    ctrlDir;
+{    wxString    ctrlDir;
     char        errstr[1024];
 
     App=this;
-    wxInitAllImageHandlers();
 
     /* Check config... */
     if(!wxGetEnv(_("SBBSCTRL"), &ctrlDir)) {
@@ -56,6 +52,10 @@ bool SBBS_User_ListApp::OnInit()
         dlg->ShowModal();
         return false;
     }
+    //(*AppInitialize
+    bool        wxsOK = true;
+    wxInitAllImageHandlers();
+
 
     if ( wxsOK )
     {
