@@ -310,6 +310,9 @@ void SBBS_User_ListFrame::OnQVChoiceSelect(wxCommandEvent& event)
     wxArrayInt  selections;
     int         set=QVChoice->GetSelection()-1;
 
+	if(set<0)
+		return;
+
     for(;;) {
         item = UserList->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         if(item==-1)
