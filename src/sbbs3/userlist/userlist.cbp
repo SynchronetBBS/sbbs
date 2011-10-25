@@ -18,7 +18,7 @@
 			</Target>
 			<Target title="Release">
 				<Option output="gcc.freebsd.exe.release/SBBS User List" prefix_auto="1" extension_auto="1" />
-				<Option object_output="gcc.freebsd.exe.release/" />
+				<Option object_output="gcc.freebsd.obj.release/" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="2" />
