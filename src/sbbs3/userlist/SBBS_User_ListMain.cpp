@@ -137,22 +137,6 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2->Add(ClearButton, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     BoxSizer1->Add(BoxSizer2, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
     UserList = new wxListCtrl(this, ID_USERLISTCTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_HRULES, wxDefaultValidator, _T("ID_USERLISTCTRL"));
-    UserList->InsertColumn(0, wxString(_("Num")));
-    UserList->InsertColumn(1, wxString(_("Alias")));
-    UserList->InsertColumn(2, wxString(_("Name")));
-    UserList->InsertColumn(3, wxString(_("Level")));
-    UserList->InsertColumn(4, wxString(_("Age")));
-    UserList->InsertColumn(5, wxString(_("Sex")));
-    UserList->InsertColumn(6, wxString(_("Location")));
-    UserList->InsertColumn(7, wxString(_("Protocol")));
-    UserList->InsertColumn(8, wxString(_("Address")));
-    UserList->InsertColumn(9, wxString(_("Host Name")));
-    UserList->InsertColumn(10, wxString(_("Phone")));
-    UserList->InsertColumn(11, wxString(_("Email")));
-    UserList->InsertColumn(12, wxString(_("Logons")));
-    UserList->InsertColumn(13, wxString(_("First On")));
-    UserList->InsertColumn(14, wxString(_("Last On")));
-    fillUserList();
     BoxSizer1->Add(UserList, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
     BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
     BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);
@@ -212,29 +196,42 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&SBBS_User_ListFrame::OnAbout);
     //*)
 
-    /*
-     * Ideally, this would go right after UserList is created
-     * and before it's added to the parent.
-     */
-
     if(UserList->GetColumnCount()==0) {
-    fprintf(stderr,"No columns in UserList!\r\n");
-    UserList->InsertColumn(0, wxString(_("Num")));
-    UserList->InsertColumn(1, wxString(_("Alias")));
-    UserList->InsertColumn(2, wxString(_("Name")));
-    UserList->InsertColumn(3, wxString(_("Level")));
-    UserList->InsertColumn(4, wxString(_("Age")));
-    UserList->InsertColumn(5, wxString(_("Sex")));
-    UserList->InsertColumn(6, wxString(_("Location")));
-    UserList->InsertColumn(7, wxString(_("Protocol")));
-    UserList->InsertColumn(8, wxString(_("Address")));
-    UserList->InsertColumn(9, wxString(_("Host Name")));
-    UserList->InsertColumn(10, wxString(_("Phone")));
-    UserList->InsertColumn(11, wxString(_("Email")));
-    UserList->InsertColumn(12, wxString(_("Logons")));
-    UserList->InsertColumn(13, wxString(_("First On")));
-    UserList->InsertColumn(14, wxString(_("Last On")));
-    fillUserList();
+		wxListItem itemCol;
+		itemCol.SetText("Num");
+		itemCol.SetImage(-1);
+		UserList->InsertColumn(0, itemCol);
+		UserList->InsertColumn(0, wxString(_("Num")));
+		UserList->InsertColumn(1, wxString(_("Alias")));
+		UserList->InsertColumn(2, wxString(_("Name")));
+		UserList->InsertColumn(3, wxString(_("Level")));
+		UserList->InsertColumn(4, wxString(_("Age")));
+		UserList->InsertColumn(5, wxString(_("Sex")));
+		UserList->InsertColumn(6, wxString(_("Location")));
+		UserList->InsertColumn(7, wxString(_("Protocol")));
+		UserList->InsertColumn(8, wxString(_("Address")));
+		UserList->InsertColumn(9, wxString(_("Host Name")));
+		UserList->InsertColumn(10, wxString(_("Phone")));
+		UserList->InsertColumn(11, wxString(_("Email")));
+		UserList->InsertColumn(12, wxString(_("Logons")));
+		UserList->InsertColumn(13, wxString(_("First On")));
+		UserList->InsertColumn(14, wxString(_("Last On")));
+		fillUserList();
+		UserList->SetColumnWidth(0, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(1, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(2, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(3, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(4, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(5, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(6, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(7, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(8, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(9, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(10, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(11, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(12, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(13, wxLIST_AUTOSIZE);
+		UserList->SetColumnWidth(14, wxLIST_AUTOSIZE);
     }
 
     /*
@@ -242,20 +239,19 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
      */
 
     if(QVChoice->GetCount()==1) {
-    fprintf(stderr,"No items in QVChoice!\r\n");
-    for(int i=0;i<10;i++) {
-        wxString    str;
-        wxString    fstr;
-        char        flags[33];
+		for(int i=0;i<10;i++) {
+			wxString    str;
+			wxString    fstr;
+			char        flags[33];
 
-        fstr=wxString::From8BitData(ltoaf(App->cfg.val_flags1[i],flags));
-        str.Printf(_("%d  SL: %-2d  F1: "),i,App->cfg.val_level[i]);
-        str += fstr;
-        QVChoice->Append(str);
-    }
+			fstr=wxString::From8BitData(ltoaf(App->cfg.val_flags1[i],flags));
+			str.Printf(_("%d  SL: %-2d  F1: "),i,App->cfg.val_level[i]);
+			str += fstr;
+			QVChoice->Append(str);
+		}
     }
 
-   this->SetSizerAndFit(BoxSizer1);
+	this->SetSizerAndFit(BoxSizer1);
 }
 
 SBBS_User_ListFrame::~SBBS_User_ListFrame()
