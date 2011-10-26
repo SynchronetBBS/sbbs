@@ -122,6 +122,7 @@ static void background_thread(void* arg)
 	SetThreadName("JS Background");
 	msgQueueAttach(bg->msg_queue);
 	JS_SetContextThread(bg->cx);
+	JS_SetThreadStackLimit(bg->cx, 0);
 	JS_BEGINREQUEST(bg->cx);
 	if(!JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result)
 		&& JS_GetProperty(bg->cx, bg->obj, "exit_code", &exit_code))
