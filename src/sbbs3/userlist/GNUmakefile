@@ -32,4 +32,3 @@ export LD_RUN_PATH
 $(USERLIST): $(SBBS) $(OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(LDFLAGS) $(OBJS) -o $@ -lsbbs $(SMBLIB_LIBS) $(XPDEV-MT_LIBS) $(SBBS_LIBS)
-	$(QUIET)cd $(EXEODIR) && ln -s ../gtkuserlist.glade .
