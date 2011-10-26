@@ -105,7 +105,7 @@ $(SBBSMONO): $(MONO_OBJS) $(OBJS)
 	$(QUIET)$(CXX) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $(MONO_OBJS) $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS) $(JS_LIBS) $(CRYPT_LIBS)
 
 # Synchronet BBS library Link Rule
-$(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS)
+$(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) | $(LIBODIR)
 	@echo Linking $@
 	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(SBBS_LIBS) $(LIBS) $(SHLIBOPTS) $(JS_LIBS) $(CRYPT_LIBS)
 
