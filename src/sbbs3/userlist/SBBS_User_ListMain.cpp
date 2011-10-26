@@ -302,10 +302,6 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
 	UserList->SetColumnWidth(13, wxLIST_AUTOSIZE);
 	UserList->SetColumnWidth(14, wxLIST_AUTOSIZE);
 
-    /*
-     * Ideally this would go right after QVChoice->SetSelection
-     */
-
 	for(int i=0;i<10;i++) {
 		wxString    str;
 		wxString    fstr;
@@ -318,6 +314,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
 	}
 
 	BoxSizer1->SetSizeHints(this);
+	this->SetName(this->GetTitle());
 }
 
 SBBS_User_ListFrame::~SBBS_User_ListFrame()
