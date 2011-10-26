@@ -8,7 +8,7 @@ SBBS_SRC	?=	$(SRC_ROOT)/sbbs3
 SBBS_CFLAGS	+=	-I$(SBBS_SRC)
 
 SBBSDEFS	:=
--include sbbsdefs.mk		# defines $(SBBSDEFS)
+-include $(SBBS_SRC)/sbbsdefs.mk		# defines $(SBBSDEFS)
 SBBS_CFLAGS	+=	$(SBBSDEFS)
 SBBS_LDFLAGS	+=	-L$(SBBS_SRC)/$(LIBODIR)
 
