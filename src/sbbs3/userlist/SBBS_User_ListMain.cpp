@@ -370,7 +370,7 @@ void SBBS_User_ListFrame::OnARSFilterText(wxCommandEvent& event)
 void SBBS_User_ListFrame::OnClearButtonClick(wxCommandEvent& event)
 {
     ARSFilter->SetValue(_(""));
-    OnARSFilterText(event);
+    applyARS();
 }
 
 void SBBS_User_ListFrame::OnUserListItemSelect(wxListEvent& event)
