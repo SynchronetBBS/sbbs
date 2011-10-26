@@ -215,7 +215,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
     StaticText1 = new wxStaticText(Panel1, ID_STATICTEXT1, _("ARS Filter"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
     BoxSizer2->Add(StaticText1, 0, wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5);
-    ARSFilter = new wxTextCtrl(Panel1, ID_ARSTEXTCTRL, _("ACTIVE) NOT DELETED)"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_ARSTEXTCTRL"));
+    ARSFilter = new wxTextCtrl(Panel1, ID_ARSTEXTCTRL, _("ACTIVE NOT DELETED"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_ARSTEXTCTRL"));
     ARSFilter->SetToolTip(_("Enter an ARS string to filter users with"));
     BoxSizer2->Add(ARSFilter, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     ClearButton = new wxButton(Panel1, ID_CLEARBUTTON, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CLEARBUTTON"));

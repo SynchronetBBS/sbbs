@@ -15,7 +15,7 @@
 						</object>
 						<object class="sizeritem">
 							<object class="wxTextCtrl" name="ID_ARSTEXTCTRL" variable="ARSFilter" member="yes">
-								<value>ACTIVE) NOT DELETED)</value>
+								<value>ACTIVE NOT DELETED</value>
 								<tooltip>Enter an ARS string to filter users with</tooltip>
 								<handler function="OnARSFilterText" entry="EVT_TEXT" />
 							</object>
