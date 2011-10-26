@@ -204,7 +204,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     wxBoxSizer* BoxSizer1;
     wxBoxSizer* BoxSizer3;
 
-    Create(parent, id, _("SBBS User Editor"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("id"));
+    Create(parent, id, _("SBBS User List"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("id"));
     {
     wxIcon FrameIcon;
     FrameIcon.CopyFromBitmap(wxBitmap(wxImage(_T("../../conio/syncicon64.ico"))));
@@ -222,7 +222,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     ClearButton->SetToolTip(_("Clears the ARS filter"));
     BoxSizer2->Add(ClearButton, 0, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     BoxSizer1->Add(BoxSizer2, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
-    UserList = new wxListCtrl(Panel1, ID_USERLISTCTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_HRULES, wxDefaultValidator, _T("ID_USERLISTCTRL"));
+    UserList = new wxListCtrl(Panel1, ID_USERLISTCTRL, wxDefaultPosition, wxDLG_UNIT(Panel1,wxSize(-1,128)), wxLC_REPORT|wxLC_HRULES, wxDefaultValidator, _T("ID_USERLISTCTRL"));
     BoxSizer1->Add(UserList, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_TOP, 5);
     BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
     BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);
