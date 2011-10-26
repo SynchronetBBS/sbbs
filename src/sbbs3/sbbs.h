@@ -1040,8 +1040,6 @@ extern "C" {
 	DLLEXPORT JSBool	DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
 														,const char* name, char* str[], uintN flags);
 
-	#define JSVAL_IS_NUM(v)		(JSVAL_IS_NUMBER(v))
-
 	/* js_server.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateServerObject(JSContext* cx, JSObject* parent
 										,js_server_props_t* props);

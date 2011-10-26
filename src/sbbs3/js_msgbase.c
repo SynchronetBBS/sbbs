@@ -630,11 +630,15 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 		if(JSVAL_IS_BOOLEAN(argv[n])) {
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
 		}
-		else if(JSVAL_IS_NUM(argv[n])) {
-			if(by_offset)							/* Get by offset */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
-			else									/* Get by number */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
+		else if(JSVAL_IS_NUMBER(argv[n])) {
+			if(by_offset) {							/* Get by offset */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset))
+					return JS_FALSE;
+			}
+			else {									/* Get by number */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
+					return JS_FALSE;
+			}
 
 			rc=JS_SUSPENDREQUEST(cx);
 			if((p->status=smb_getmsgidx(&(p->smb), &msg))!=SMB_SUCCESS) {
@@ -1055,11 +1059,15 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 
 	/* Now parse message offset/id and get message */
 	for(n=0;n<argc;n++) {
-		if(JSVAL_IS_NUM(argv[n])) {
-			if(by_offset)							/* Get by offset */
-				JS_ValueToInt32(cx,argv[n],(int32*)&(p->msg).offset);
-			else									/* Get by number */
-				JS_ValueToInt32(cx,argv[n],(int32*)&(p->msg).hdr.number);
+		if(JSVAL_IS_NUMBER(argv[n])) {
+			if(by_offset) {							/* Get by offset */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&(p->msg).offset))
+					return JS_FALSE;
+			}
+			else {									/* Get by number */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&(p->msg).hdr.number))
+					return JS_FALSE;
+			}
 
 			rc=JS_SUSPENDREQUEST(cx);
 			if((p->p->status=smb_getmsgidx(&(p->p->smb), &(p->msg)))!=SMB_SUCCESS) {
@@ -1152,11 +1160,15 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_NUM(argv[n])) {
-			if(by_offset)							/* Get by offset */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
-			else									/* Get by number */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
+		else if(JSVAL_IS_NUMBER(argv[n])) {
+			if(by_offset) {							/* Get by offset */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset))
+					return JS_FALSE;
+			}
+			else {									/* Get by number */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
+					return JS_FALSE;
+			}
 			msg_specified=JS_TRUE;
 			n++;
 			break;
@@ -1249,11 +1261,15 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_NUM(argv[n])) {
-			if(by_offset)							/* Get by offset */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
-			else									/* Get by number */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
+		else if(JSVAL_IS_NUMBER(argv[n])) {
+			if(by_offset) {							/* Get by offset */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset))
+					return JS_FALSE;
+			}
+			else {									/* Get by number */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
+					return JS_FALSE;
+			}
 			msg_specified=JS_TRUE;
 			n++;
 			break;
@@ -1370,11 +1386,15 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_NUM(argv[n])) {
-			if(by_offset)							/* Get by offset */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
-			else									/* Get by number */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
+		else if(JSVAL_IS_NUMBER(argv[n])) {
+			if(by_offset) {							/* Get by offset */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset))
+					return JS_FALSE;
+			}
+			else {									/* Get by number */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
+					return JS_FALSE;
+			}
 			msg_specified=JS_TRUE;
 			n++;
 			break;
@@ -1452,11 +1472,15 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_NUM(argv[n])) {
-			if(by_offset)							/* Get by offset */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
-			else									/* Get by number */
-				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
+		else if(JSVAL_IS_NUMBER(argv[n])) {
+			if(by_offset) {							/* Get by offset */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset))
+					return JS_FALSE;
+			}
+			else {									/* Get by number */
+				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
+					return JS_FALSE;
+			}
 			msg_specified=JS_TRUE;
 			n++;
 			break;
