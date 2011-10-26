@@ -1159,6 +1159,8 @@ bool sbbs_t::js_init(ulong* stack_frame)
 			lprintf(LOG_DEBUG,"%s JavaScript: Thread stack limit: %lu bytes"
 				,node, startup->js.thread_stack);
 		}
+		else
+			JS_SetThreadStackLimit(js_cx, 0);
 
 		success=true;
 
