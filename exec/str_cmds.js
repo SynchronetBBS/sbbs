@@ -361,8 +361,11 @@ function str_cmds(str)
 			if(bbs.check_syspass()) {
 				str=str.substr(3);
 				writeln("");
-				bbs.spy(parseInt(get_arg(str)));
-				write("\1n\r\nSpy session complete.\r\n");
+				try {	// May throw on parseInt()
+					bbs.spy(parseInt(get_arg(str)));
+					write("\1n\r\nSpy session complete.\r\n");
+				}
+				catch (e) {}
 			}
 			return;
 		}
