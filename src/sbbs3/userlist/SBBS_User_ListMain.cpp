@@ -62,10 +62,66 @@ const long SBBS_User_ListFrame::ID_COPYALL = wxNewId();
 const long SBBS_User_ListFrame::ID_REFRESH = wxNewId();
 //*)
 
+struct sortData {
+	int			sort;
+	wxListCtrl	*UserList;
+};
+
 BEGIN_EVENT_TABLE(SBBS_User_ListFrame,wxFrame)
     //(*EventTable(SBBS_User_ListFrame)
     //*)
 END_EVENT_TABLE()
+
+int wxCALLBACK SortCallBack(wxIntPtr item1_data, wxIntPtr item2_data, wxIntPtr data)
+{
+	struct sortData	*sd=(struct sortData *)data;
+	long			item1=sd->UserList->FindItem(-1, item1_data);
+	long			item2=sd->UserList->FindItem(-1, item2_data);
+	wxString		val1,val2;
+	wxListItem		li;
+	long			v1, v2;
+	int				ret;
+
+	li.m_itemId = (sd->sort & 0x100) ? item2 : item1;
+	li.m_col = sd->sort & 0xff;
+	li.m_mask = wxLIST_MASK_TEXT;
+	if(!sd->UserList->GetItem(li))
+		return 0;
+	val1 = li.m_text;
+
+	li.m_itemId = (sd->sort & 0x100) ? item1 : item2;
+	li.m_mask = wxLIST_MASK_TEXT;
+	if(!sd->UserList->GetItem(li))
+		return 0;
+	val2 = li.m_text;
+
+	switch(sd->sort & 0xff) {
+		// Numbers:
+		case 0:
+		case 3:
+		case 4:
+		case 12:
+			if(!val1.ToLong(&v1))
+				return 0;
+			if(!val2.ToLong(&v2))
+				return 0;
+			ret = v1-v2;
+			break;
+		// Dates:
+		case 13:
+		case 14:
+			v1=dstrtounix(&App->cfg, val1.mb_str(wxConvUTF8));
+			v2=dstrtounix(&App->cfg, val2.mb_str(wxConvUTF8));
+			ret = v1-v2;
+			break;
+		// Strings
+		default:
+			ret=val1.CmpNoCase(val2);
+	}
+	if(ret==0)
+		return item1_data-item2_data;
+	return ret;
+}
 
 void SBBS_User_ListFrame::fillUserList(void)
 {
@@ -76,6 +132,7 @@ void SBBS_User_ListFrame::fillUserList(void)
     wxString    buf;
     char        datebuf[9];
     long        topitem=UserList->GetTopItem();
+	struct sortData sd;
 
     UserList->Freeze();
     UserList->DeleteAllItems();
@@ -114,6 +171,9 @@ void SBBS_User_ListFrame::fillUserList(void)
         unixtodstr(&App->cfg, user.laston, datebuf);
         UserList->SetItem(item,14, wxString::From8BitData(datebuf));
     }
+	sd.sort=sort;
+	sd.UserList=UserList;
+	UserList->SortItems(SortCallBack, (wxIntPtr)&sd);
     UserList->EnsureVisible(item);
     UserList->EnsureVisible(topitem);
 	UserList->Thaw();
@@ -407,62 +467,6 @@ void SBBS_User_ListFrame::CopyMenuItemSelected(wxCommandEvent& event)
 void SBBS_User_ListFrame::CopyAllMenuItemSelected(wxCommandEvent& event)
 {
 	CopyItems(wxLIST_STATE_DONTCARE);
-}
-
-struct sortData {
-	int			sort;
-	wxListCtrl	*UserList;
-};
-
-int wxCALLBACK SortCallBack(wxIntPtr item1_data, wxIntPtr item2_data, wxIntPtr data)
-{
-	struct sortData	*sd=(struct sortData *)data;
-	long			item1=sd->UserList->FindItem(-1, item1_data);
-	long			item2=sd->UserList->FindItem(-1, item2_data);
-	wxString		val1,val2;
-	wxListItem		li;
-	long			v1, v2;
-	int				ret;
-
-	li.m_itemId = (sd->sort & 0x100) ? item2 : item1;
-	li.m_col = sd->sort & 0xff;
-	li.m_mask = wxLIST_MASK_TEXT;
-	if(!sd->UserList->GetItem(li))
-		return 0;
-	val1 = li.m_text;
-
-	li.m_itemId = (sd->sort & 0x100) ? item1 : item2;
-	li.m_mask = wxLIST_MASK_TEXT;
-	if(!sd->UserList->GetItem(li))
-		return 0;
-	val2 = li.m_text;
-
-	switch(sd->sort & 0xff) {
-		// Numbers:
-		case 0:
-		case 3:
-		case 4:
-		case 12:
-			if(!val1.ToLong(&v1))
-				return 0;
-			if(!val2.ToLong(&v2))
-				return 0;
-			ret = v1-v2;
-			break;
-		// Dates:
-		case 13:
-		case 14:
-			v1=dstrtounix(&App->cfg, val1.mb_str(wxConvUTF8));
-			v2=dstrtounix(&App->cfg, val2.mb_str(wxConvUTF8));
-			ret = v1-v2;
-			break;
-		// Strings
-		default:
-			ret=val1.CmpNoCase(val2);
-	}
-	if(ret==0)
-		return item1_data-item2_data;
-	return ret;
 }
 
 void SBBS_User_ListFrame::OnUserListColumnClick(wxListEvent& event)
