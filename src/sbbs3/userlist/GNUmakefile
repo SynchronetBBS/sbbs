@@ -22,12 +22,6 @@ include ../Common.gmake
 CFLAGS	+=	$(SBBS_CFLAGS) $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) `wx-config --unicode --cflags`
 CXXFLAGS	+= $(CFLAGS)
 LDFLAGS	+=	`wx-config --unicode --libs` $(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS) $(SBBS_LDFLAGS) 
-ifdef SBBSDIR
-LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(SBBS_SRC)/$(LIBODIR)
-else
-LD_RUN_PATH	:=	$(SBBS_SRC)/$(LIBODIR)
-endif
-export LD_RUN_PATH
 
 $(USERLIST): $(SBBS) $(OBJS)
 	@echo Linking $@

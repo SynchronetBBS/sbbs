@@ -14,6 +14,13 @@ SBBS_LDFLAGS	+=	-L$(SBBS_SRC)/$(LIBODIR)
 
 SBBSLIBS	+=	-lsbbs
 
+ifdef SBBSDIR
+LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(SBBS_SRC)/$(LIBODIR)
+else
+LD_RUN_PATH	:=	$(SBBS_SRC)/$(LIBODIR)
+endif
+export LD_RUN_PATH
+
 $(SBBS):
 	$(MAKE) -C $(SBBS_SRC) $(LIBODIR)$(DIRSEP)$(LIBPREFIX)sbbs$(SOFILE)
 
