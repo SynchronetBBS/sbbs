@@ -378,6 +378,7 @@ void SBBS_User_ListFrame::CopyItems(int state)
 
 	for(;;) {
 		for(int i=0; i<cols; i++) {
+			li.m_mask = wxLIST_MASK_TEXT;
 			li.m_itemId = item;
 			li.m_col = i;
 			if(UserList->GetItem(li))
@@ -425,11 +426,13 @@ int wxCALLBACK SortCallBack(wxIntPtr item1_data, wxIntPtr item2_data, wxIntPtr d
 
 	li.m_itemId = (sd->sort & 0x100) ? item2 : item1;
 	li.m_col = sd->sort & 0xff;
+	li.m_mask = wxLIST_MASK_TEXT;
 	if(!sd->UserList->GetItem(li))
 		return 0;
 	val1 = li.m_text;
 
 	li.m_itemId = (sd->sort & 0x100) ? item1 : item2;
+	li.m_mask = wxLIST_MASK_TEXT;
 	if(!sd->UserList->GetItem(li))
 		return 0;
 	val2 = li.m_text;
@@ -472,6 +475,7 @@ void SBBS_User_ListFrame::OnUserListColumnClick(wxListEvent& event)
 
 	UserList->Freeze();
 	// First, remove char from old sort column
+	li.m_mask = wxLIST_MASK_TEXT;
 	UserList->GetColumn(sort & 0xff, li);
 	li.m_text = li.m_text.Left(li.m_text.Length()-2);
 	UserList->SetColumn(sort & 0xff, li);
@@ -482,6 +486,7 @@ void SBBS_User_ListFrame::OnUserListColumnClick(wxListEvent& event)
 		sort=column;
 	sd.sort=sort;
 	/* Add char to new sort column */
+	li.m_mask = wxLIST_MASK_TEXT;
 	UserList->GetColumn(sort & 0xff, li);
 	if(sort & 0x100)
 		li.m_text += _T(" \x25b2");
