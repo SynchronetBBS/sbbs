@@ -13,7 +13,10 @@
 #include <wx/dataobj.h>
 
 //(*InternalHeaders(SBBS_User_ListFrame)
+#include <wx/bitmap.h>
+#include <wx/icon.h>
 #include <wx/intl.h>
+#include <wx/image.h>
 #include <wx/string.h>
 //*)
 
@@ -201,7 +204,12 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     wxBoxSizer* BoxSizer1;
     wxBoxSizer* BoxSizer3;
 
-    Create(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("id"));
+    Create(parent, id, _("SBBS User Editor"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("id"));
+    {
+    wxIcon FrameIcon;
+    FrameIcon.CopyFromBitmap(wxBitmap(wxImage(_T("../../conio/syncicon64.ico"))));
+    SetIcon(FrameIcon);
+    }
     Panel1 = new wxPanel(this, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
