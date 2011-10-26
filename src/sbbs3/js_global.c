@@ -515,8 +515,10 @@ js_mswait(JSContext *cx, uintN argc, jsval *arglist)
 	clock_t start=msclock();
 	jsrefcount	rc;
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&val);
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&val))
+			return JS_FALSE;
+	}
 	rc=JS_SUSPENDREQUEST(cx);
 	mswait(val);
 	JS_RESUMEREQUEST(cx, rc);
@@ -532,8 +534,10 @@ js_random(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32 val=100;
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&val);
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&val))
+			return JS_FALSE;
+	}
 
 	JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(sbbs_random(val)));
 	return(JS_TRUE);
@@ -557,10 +561,14 @@ js_beep(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&freq);
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],&dur);
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&freq))
+			return JS_FALSE;
+	}
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx,argv[1],&dur))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	sbbs_beep(freq,dur);
@@ -681,7 +689,8 @@ js_ascii(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	/* ascii-int to str */
-	JS_ValueToInt32(cx,argv[0],&i);
+	if(!JS_ValueToInt32(cx,argv[0],&i))
+		return JS_FALSE;
 	str[0]=(uchar)i;
 	str[1]=0;
 
@@ -714,7 +723,8 @@ js_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 			return(JS_FALSE);
 		ch=*p;
 	} else {
-		JS_ValueToInt32(cx,argv[0],&i);
+		if(!JS_ValueToInt32(cx,argv[0],&i))
+			return JS_FALSE;
 		ch=(char)i;
 	}
 
@@ -874,11 +884,15 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 	if(inbuf==NULL) 
 		return(JS_FALSE);
 
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],&len);
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx,argv[1],&len))
+			return JS_FALSE;
+	}
 
-	if(argc>2)
-		JS_ValueToInt32(cx,argv[2],&oldlen);
+	if(argc>2) {
+		if(!JS_ValueToInt32(cx,argv[2],&oldlen))
+			return JS_FALSE;
+	}
 
 	if(argc>3 && JSVAL_IS_BOOLEAN(argv[3]))
 		handle_quotes=JSVAL_TO_BOOLEAN(argv[3]);
@@ -921,8 +935,10 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if(inbuf==NULL) 
 		return(JS_FALSE);
 
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],&len);
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx,argv[1],&len))
+			return JS_FALSE;
+	}
 
 	if(argc>2)
 		JSVALUE_TO_STRING(cx, argv[2], prefix, NULL);
@@ -1275,35 +1291,55 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc>5 && JSVAL_IS_OBJECT(argv[5])) {
 		stateobj=JSVAL_TO_OBJECT(argv[5]);
 		JS_GetProperty(cx,stateobj,"fg",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &fg);
+		if(JSVAL_IS_NUMBER(val)) {
+			if(!JS_ValueToInt32(cx, val, &fg))
+				return JS_FALSE;
+		}
 		JS_GetProperty(cx,stateobj,"bg",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &bg);
+		if(JSVAL_IS_NUMBER(val)) {
+			if(!JS_ValueToInt32(cx, val, &bg))
+				return JS_FALSE;
+		}
 		JS_GetProperty(cx,stateobj,"lastcolor",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &lastcolor);
+		if(JSVAL_IS_NUMBER(val)) {
+			if(!JS_ValueToInt32(cx, val, &lastcolor))
+				return JS_FALSE;
+		}
 		JS_GetProperty(cx,stateobj,"blink",&val);
-		if(JSVAL_IS_BOOLEAN(val))
-			fg=JS_ValueToBoolean(cx, val, &blink);
+		if(JSVAL_IS_BOOLEAN(val)) {
+			if(!JS_ValueToBoolean(cx, val, &blink))
+				return JS_FALSE;
+		}
 		JS_GetProperty(cx,stateobj,"bold",&val);
-		if(JSVAL_IS_BOOLEAN(val))
-			fg=JS_ValueToBoolean(cx, val, &bold);
+		if(JSVAL_IS_BOOLEAN(val)) {
+			if(!JS_ValueToBoolean(cx, val, &bold))
+				return JS_FALSE;
+		}
 		JS_GetProperty(cx,stateobj,"hpos",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &hpos);
+		if(JSVAL_IS_NUMBER(val)) {
+			if(!JS_ValueToInt32(cx, val, &hpos))
+				return JS_FALSE;
+		}
 		JS_GetProperty(cx,stateobj,"currrow",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &currrow);
+		if(JSVAL_IS_NUMBER(val)) {
+			if(!JS_ValueToInt32(cx, val, &currrow))
+				return JS_FALSE;
+		}
 		JS_GetProperty(cx,stateobj,"wraphpos",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &wraphpos);
+		if(JSVAL_IS_NUMBER(val)) {
+			if(!JS_ValueToInt32(cx, val, &wraphpos))
+				return JS_FALSE;
+		}
 		JS_GetProperty(cx,stateobj,"wrapvpos",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &wrapvpos);
+		if(JSVAL_IS_NUMBER(val)) {
+			if(!JS_ValueToInt32(cx, val, &wrapvpos))
+				return JS_FALSE;
+		}
 		JS_GetProperty(cx,stateobj,"wrappos",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &wrappos);
+		if(JSVAL_IS_NUMBER(val)) {
+			if(!JS_ValueToInt32(cx, val, &wrappos))
+				return JS_FALSE;
+		}
 	}
 
 	if((tmpbuf=(char*)malloc((strlen(inbuf)*10)+1))==NULL)
@@ -2609,10 +2645,14 @@ js_backup(JSContext *cx, uintN argc, jsval *arglist)
 	if(fname==NULL)
 		return(JS_TRUE);
 
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],&level);
-	if(argc>2)
-		JS_ValueToBoolean(cx,argv[2],&ren);
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx,argv[1],&level))
+			return JS_FALSE;
+	}
+	if(argc>2) {
+		if(!JS_ValueToBoolean(cx,argv[2],&ren))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(backup(fname,level,ren)));
@@ -2716,8 +2756,12 @@ js_utime(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>1) {
 		actime=modtime=(int32_t)ut.actime;
-		JS_ValueToInt32(cx,argv[1],&actime);
-		JS_ValueToInt32(cx,argv[2],&modtime);
+		if(!JS_ValueToInt32(cx,argv[1],&actime))
+			return JS_FALSE;
+		if(argc>2) {
+ 			if(!JS_ValueToInt32(cx,argv[2],&modtime))
+				return JS_FALSE;
+		}
 		ut.actime=actime;
 		ut.modtime=modtime;
 	}
@@ -2797,8 +2841,10 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	if(argc > argn && JSVAL_IS_STRING(argv[argn]))
 		JSVALUE_TO_STRING(cx, argv[argn++], text, NULL);
-	if(argc > argn && JSVAL_IS_NUMBER(argv[argn]))
-		JS_ValueToInt32(cx, argv[argn++], &max_age);
+	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx, argv[argn++], &max_age))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(fmutex(fname,text,max_age)));
@@ -2864,8 +2910,10 @@ js_directory(JSContext *cx, uintN argc, jsval *arglist)
 	if(p==NULL) 
 		return(JS_FALSE);
 
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],&flags);
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx,argv[1],&flags))
+			return JS_FALSE;
+	}
 
     if((array = JS_NewArrayObject(cx, 0, NULL))==NULL)
 		return(JS_FALSE);
@@ -2946,8 +2994,10 @@ js_freediskspace(JSContext *cx, uintN argc, jsval *arglist)
 	if(p==NULL) 
 		return(JS_FALSE);
 
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],&unit);
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx,argv[1],&unit))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	fd=getfreediskspace(p,unit);
@@ -2975,8 +3025,10 @@ js_disksize(JSContext *cx, uintN argc, jsval *arglist)
 	if(p==NULL) 
 		return(JS_FALSE);
 
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],&unit);
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx,argv[1],&unit))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	ds=getdisksize(p,unit);
@@ -3159,8 +3211,10 @@ js_strftime(JSContext *cx, uintN argc, jsval *arglist)
 	if(fmt==NULL) 
 		return(JS_FALSE);
 
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],&i);
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx,argv[1],&i))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	strcpy(str,"-Invalid time-");

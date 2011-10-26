@@ -104,8 +104,10 @@ static JSBool js_server_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 
 	switch(tiny) {
 		case SERVER_PROP_OPTIONS:
-			if(p->options!=NULL)
-				JS_ValueToInt32(cx, *vp, (int32*)p->options);
+			if(p->options!=NULL) {
+				if(!JS_ValueToInt32(cx, *vp, (int32*)p->options))
+					return JS_FALSE;
+			}
 			break;
 	}
 

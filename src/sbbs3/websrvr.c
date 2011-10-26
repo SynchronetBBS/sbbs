@@ -4069,7 +4069,8 @@ js_set_cookie(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	header+=sprintf(header,"%s",p);
 	if(argc>2) {
-		JS_ValueToInt32(cx,argv[2],&i);
+		if(!JS_ValueToInt32(cx,argv[2],&i))
+			return JS_FALSE;
 		tt=i;
 		if(i && gmtime_r(&tt,&tm)!=NULL)
 			header += strftime(header,50,"; expires=%a, %d-%b-%Y %H:%M:%S GMT",&tm);
@@ -4113,8 +4114,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     if(startup==NULL || startup->lputs==NULL)
         return(JS_FALSE);
 
-	if(argc > 1 && JSVAL_IS_NUMBER(argv[i]))
-		JS_ValueToInt32(cx,argv[i++],&level);
+	if(argc > 1 && JSVAL_IS_NUMBER(argv[i])) {
+		if(!JS_ValueToInt32(cx,argv[i++],&level))
+			return JS_FALSE;
+	}
 
 	str[0]=0;
     for(;i<argc && strlen(str)<(sizeof(str)/2);i++) {

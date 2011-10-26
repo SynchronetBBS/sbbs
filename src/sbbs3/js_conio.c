@@ -185,41 +185,49 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 			JS_ValueToBoolean(cx, *vp, &puttext_can_move);
 			break;
 		case PROP_ESCDELAY:
-			if(cio_api.ESCDELAY)
-				JS_ValueToInt32(cx, *vp, (int32*)cio_api.ESCDELAY);
+			if(cio_api.ESCDELAY) {
+				if(!JS_ValueToInt32(cx, *vp, (int32*)cio_api.ESCDELAY))
+					return JS_FALSE;
+			}
 			break;
 		case PROP_TEXTATTR:
-			JS_ValueToInt32(cx, *vp, &i);
+			if(!JS_ValueToInt32(cx, *vp, &i))
+				return JS_FALSE;
 			rc=JS_SUSPENDREQUEST(cx);
 			textattr(i);
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case PROP_WHEREX:
-			JS_ValueToInt32(cx, *vp, &i);
+			if(!JS_ValueToInt32(cx, *vp, &i))
+				return JS_FALSE;
 			rc=JS_SUSPENDREQUEST(cx);
 			gotoxy(i, cio_textinfo.cury);
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case PROP_WHEREY:
-			JS_ValueToInt32(cx, *vp, &i);
+			if(!JS_ValueToInt32(cx, *vp, &i))
+				return JS_FALSE;
 			rc=JS_SUSPENDREQUEST(cx);
 			gotoxy(cio_textinfo.curx, i);
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case PROP_TEXTMODE:
-			JS_ValueToInt32(cx, *vp, &i);
+			if(!JS_ValueToInt32(cx, *vp, &i))
+				return JS_FALSE;
 			rc=JS_SUSPENDREQUEST(cx);
 			textmode(i);
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case PROP_TEXTBACKGROUND:
-			JS_ValueToInt32(cx, *vp, &i);
+			if(!JS_ValueToInt32(cx, *vp, &i))
+				return JS_FALSE;
 			rc=JS_SUSPENDREQUEST(cx);
 			textbackground(i);
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case PROP_TEXTCOLOR:
-			JS_ValueToInt32(cx, *vp, &i);
+			if(!JS_ValueToInt32(cx, *vp, &i))
+				return JS_FALSE;
 			rc=JS_SUSPENDREQUEST(cx);
 			textcolor(i);
 			JS_RESUMEREQUEST(cx, rc);

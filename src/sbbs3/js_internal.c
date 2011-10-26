@@ -139,20 +139,25 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 			JS_ValueToBoolean(cx,*vp,&branch->auto_terminate);
 			break;
 		case PROP_BRANCH_COUNTER:
-			JS_ValueToInt32(cx, *vp, (int32*)&branch->counter);
+			if(!JS_ValueToInt32(cx, *vp, (int32*)&branch->counter))
+				return JS_FALSE;
 			break;
 		case PROP_BRANCH_LIMIT:
-			JS_ValueToInt32(cx, *vp, (int32*)&branch->limit);
+			if(!JS_ValueToInt32(cx, *vp, (int32*)&branch->limit))
+				return JS_FALSE;
 			break;
 		case PROP_GC_INTERVAL:
-			JS_ValueToInt32(cx, *vp, (int32*)&branch->gc_interval);
+			if(!JS_ValueToInt32(cx, *vp, (int32*)&branch->gc_interval))
+				return JS_FALSE;
 			break;
 		case PROP_YIELD_INTERVAL:
-			JS_ValueToInt32(cx, *vp, (int32*)&branch->yield_interval);
+			if(!JS_ValueToInt32(cx, *vp, (int32*)&branch->yield_interval))
+				return JS_FALSE;
 			break;
 #ifdef jscntxt_h___
 		case PROP_MAXBYTES:
-			JS_ValueToInt32(cx, *vp, (int32*)&cx->runtime->gcMaxBytes);
+			if(!JS_ValueToInt32(cx, *vp, (int32*)&cx->runtime->gcMaxBytes))
+				return JS_FALSE;
 			break;
 #endif
 	}

@@ -141,8 +141,10 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	if(argc && JSVAL_IS_NUMBER(argv[0])) 	/* timeout specified */
-		JS_ValueToInt32(cx,argv[0],&timeout);
+	if(argc && JSVAL_IS_NUMBER(argv[0])) { 	/* timeout specified */
+		if(!JS_ValueToInt32(cx,argv[0],&timeout))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	v=msgQueuePeek(q,timeout);
@@ -176,7 +178,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	if(JSVAL_IS_STRING(argv[0])) {	/* value named specified */
+	if(argc && JSVAL_IS_STRING(argv[0])) {	/* value named specified */
 		ZERO_VAR(find_v);
 		JSVALUE_TO_STRING(cx, argv[0], p, NULL);
 		SAFECOPY(find_v.name,p);
@@ -184,8 +186,10 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		v=msgQueueFind(q,&find_v,sizeof(find_v.name));
 		JS_RESUMEREQUEST(cx, rc);
 	} else {
-		if(JSVAL_IS_NUMBER(argv[0]))
-			JS_ValueToInt32(cx,argv[0],&timeout);
+		if(argc && JSVAL_IS_NUMBER(argv[0])) {
+			if(!JS_ValueToInt32(cx,argv[0],&timeout))
+				return JS_FALSE;
+		}
 		rc=JS_SUSPENDREQUEST(cx);
 		v=msgQueueRead(q, timeout);
 		JS_RESUMEREQUEST(cx, rc);
@@ -219,8 +223,10 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	if(argc && JSVAL_IS_NUMBER(argv[0])) 	/* timeout specified */
-		JS_ValueToInt32(cx,argv[0],&timeout);
+	if(argc && JSVAL_IS_NUMBER(argv[0])) { 	/* timeout specified */
+		if(!JS_ValueToInt32(cx,argv[0],&timeout))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	v=msgQueuePeek(q, timeout);
@@ -506,8 +512,10 @@ js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if(argn<argc && JSVAL_IS_STRING(argv[argn]))
 		JSVALUE_TO_STRING(cx, argv[argn++], name, NULL);
 
-	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]))
-		JS_ValueToInt32(cx,argv[argn++],&flags);
+	if(argn<argc && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn++],&flags))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(name!=NULL) {

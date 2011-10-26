@@ -265,8 +265,10 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&len);
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&len))
+			return JS_FALSE;
+	}
 	
 	if((buf=alloca(len))==NULL)
 		return(JS_TRUE);
@@ -301,16 +303,20 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&len);
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&len))
+			return JS_FALSE;
+	}
 
 	if((buf=(char*)alloca(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],(int32*)&timeout);
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx,argv[1],(int32*)&timeout))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	start=time(NULL);
@@ -420,8 +426,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     if(startup==NULL || startup->lputs==NULL)
         return(JS_FALSE);
 
-	if(argc > 1 && JSVAL_IS_NUMBER(argv[i]))
-		JS_ValueToInt32(cx,argv[i++],&level);
+	if(argc > 1 && JSVAL_IS_NUMBER(argv[i])) {
+		if(!JS_ValueToInt32(cx,argv[i++],&level))
+			return JS_FALSE;
+	}
 
 	str[0]=0;
     for(;i<argc && strlen(str)<(sizeof(str)/2);i++) {

@@ -655,8 +655,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc > 1 && JSVAL_IS_NUMBER(argv[i]))
-		JS_ValueToInt32(cx,argv[i++],&level);
+	if(argc > 1 && JSVAL_IS_NUMBER(argv[i])) {
+		if(!JS_ValueToInt32(cx,argv[i++],&level))
+			return JS_FALSE;
+	}
 
     for(; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
@@ -695,8 +697,10 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&len);
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&len))
+			return JS_FALSE;
+	}
 
 	if((buf=(uchar*)malloc(len))==NULL)
 		return(JS_TRUE);
@@ -726,8 +730,10 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&len);
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&len))
+			return JS_FALSE;
+	}
 
 	if((buf=(char*)malloc(len))==NULL)
 		return(JS_TRUE);

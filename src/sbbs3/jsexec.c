@@ -297,8 +297,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(argc > 1 && JSVAL_IS_NUMBER(argv[i]))
-		JS_ValueToInt32(cx,argv[i++],&level);
+	if(argc > 1 && JSVAL_IS_NUMBER(argv[i])) {
+		if(!JS_ValueToInt32(cx,argv[i++],&level))
+			return JS_FALSE;
+	}
 
 	for(; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
@@ -330,8 +332,10 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&len);
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&len))
+			return JS_FALSE;
+	}
 	if((buf=alloca(len))==NULL)
 		return(JS_TRUE);
 
@@ -356,8 +360,10 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&len);
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&len))
+			return JS_FALSE;
+	}
 	if((buf=alloca(len+1))==NULL)
 		return(JS_TRUE);
 

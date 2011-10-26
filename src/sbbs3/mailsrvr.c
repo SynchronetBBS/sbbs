@@ -1699,8 +1699,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(JSVAL_IS_NUMBER(argv[i]))
-		JS_ValueToInt32(cx,argv[i++],&level);
+	if(JSVAL_IS_NUMBER(argv[i])) {
+		if(!JS_ValueToInt32(cx,argv[i++],&level))
+			return JS_FALSE;
+	}
 
 	for(; i<argc; i++) {
 		JSVALUE_TO_STRING(cx, argv[i], lstr, NULL);

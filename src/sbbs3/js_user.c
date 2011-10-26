@@ -924,8 +924,10 @@ js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
-	if(argc)
-		JS_ValueToInt32(cx, argv[0], &count);
+	if(argc) {
+		if(!JS_ValueToInt32(cx, argv[0], &count))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
@@ -951,8 +953,10 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
-	if(argc)
-		JS_ValueToInt32(cx, argv[0], &count);
+	if(argc) {
+		if(!JS_ValueToInt32(cx, argv[0], &count))
+			return JS_FALSE;
+	}
 	if(argc>1)
 		JS_ValueToBoolean(cx, argv[1], &feedback);
 
@@ -980,10 +984,14 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
-	if(argc)
-		JS_ValueToInt32(cx, argv[0], &bytes);
-	if(argc>1)
-		JS_ValueToInt32(cx, argv[1], &files);
+	if(argc) {
+		if(!JS_ValueToInt32(cx, argv[0], &bytes))
+			return JS_FALSE;
+	}
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx, argv[1], &files))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
@@ -1009,10 +1017,14 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
-	if(argc)
-		JS_ValueToInt32(cx, argv[0], &bytes);
-	if(argc>1)
-		JS_ValueToInt32(cx, argv[1], &files);
+	if(argc) {
+		if(!JS_ValueToInt32(cx, argv[0], &bytes))
+			return JS_FALSE;
+	}
+	if(argc>1) {
+		if(!JS_ValueToInt32(cx, argv[1], &files))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
@@ -1037,8 +1049,10 @@ js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
-	if(argc)
-		JS_ValueToInt32(cx, argv[0], &count);
+	if(argc) {
+		if(!JS_ValueToInt32(cx, argv[0], &count))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
@@ -1063,8 +1077,10 @@ js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
-	if(argc)
-		JS_ValueToInt32(cx, argv[0], &count);
+	if(argc) {
+		if(!JS_ValueToInt32(cx, argv[0], &count))	
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
@@ -1089,8 +1105,10 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
-	if(argc)
-		JS_ValueToInt32(cx, argv[0], &start_time);
+	if(argc) {
+		if(!JS_ValueToInt32(cx, argv[0], &start_time))
+			return JS_FALSE;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(p);
@@ -1331,7 +1349,8 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	obj=JS_NewObject(cx, &js_user_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 
-	JS_ValueToInt32(cx,argv[0],&val);
+	if(argc && (!JS_ValueToInt32(cx,argv[0],&val)))
+		return JS_FALSE;
 	user.number=(ushort)val;
 	if(user.number!=0 && (i=getuserdat(scfg,&user))!=0) {
 		JS_ReportError(cx,"Error %d reading user number %d",i,val);
