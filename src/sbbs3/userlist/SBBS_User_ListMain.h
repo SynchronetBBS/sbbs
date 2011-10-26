@@ -36,6 +36,7 @@ class SBBS_User_ListFrame: public wxFrame
 
         void fillUserList(void);
 		void CopyItems(int state);
+		void applyARS(void);
 		int	sort;
 
         //(*Handlers(SBBS_User_ListFrame)

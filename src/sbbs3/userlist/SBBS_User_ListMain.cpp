@@ -179,6 +179,22 @@ void SBBS_User_ListFrame::fillUserList(void)
 	UserList->Thaw();
 }
 
+void SBBS_User_ListFrame::applyARS(void)
+{
+    static uchar    *last_ars=NULL;
+    static ushort   last_ars_count=0;
+    ushort          count;
+
+    ars=arstr(&count, ARSFilter->GetValue().mb_str(wxConvUTF8), &App->cfg);
+    if(count != last_ars_count || memcmp(last_ars, ars, count)) {
+        if(last_ars != nular)
+            FREE_AND_NULL(last_ars);
+        last_ars=ars;
+        last_ars_count=count;
+        fillUserList();
+    }
+}
+
 SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
 {
     //(*Initialize(SBBS_User_ListFrame)
@@ -199,7 +215,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
     StaticText1 = new wxStaticText(Panel1, ID_STATICTEXT1, _("ARS Filter"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
     BoxSizer2->Add(StaticText1, 0, wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, 5);
-    ARSFilter = new wxTextCtrl(Panel1, ID_ARSTEXTCTRL, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_ARSTEXTCTRL"));
+    ARSFilter = new wxTextCtrl(Panel1, ID_ARSTEXTCTRL, _("ACTIVE) NOT DELETED)"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_ARSTEXTCTRL"));
     ARSFilter->SetToolTip(_("Enter an ARS string to filter users with"));
     BoxSizer2->Add(ARSFilter, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     ClearButton = new wxButton(Panel1, ID_CLEARBUTTON, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CLEARBUTTON"));
@@ -287,7 +303,7 @@ SBBS_User_ListFrame::SBBS_User_ListFrame(wxWindow* parent,wxWindowID id)
 	UserList->InsertColumn(12, wxString(_("Logons")));
 	UserList->InsertColumn(13, wxString(_("First On")));
 	UserList->InsertColumn(14, wxString(_("Last On")));
-	fillUserList();
+    applyARS();
 	UserList->SetColumnWidth(0, wxLIST_AUTOSIZE);
 	UserList->SetColumnWidth(1, wxLIST_AUTOSIZE);
 	UserList->SetColumnWidth(2, wxLIST_AUTOSIZE);
@@ -346,21 +362,9 @@ void SBBS_User_ListFrame::OnRefreshButtonClick(wxCommandEvent& event)
 
 void SBBS_User_ListFrame::OnARSFilterText(wxCommandEvent& event)
 {
-    static uchar    *last_ars=NULL;
-    static ushort   last_ars_count=0;
-    ushort          count;
-
     if(!ARSFilter->IsModified())
         return;
-
-    ars=arstr(&count, ARSFilter->GetValue().mb_str(wxConvUTF8), &App->cfg);
-    if(count != last_ars_count || memcmp(last_ars, ars, count)) {
-        if(last_ars != nular)
-            FREE_AND_NULL(last_ars);
-        last_ars=ars;
-        last_ars_count=count;
-        fillUserList();
-    }
+	applyARS();
 }
 
 void SBBS_User_ListFrame::OnClearButtonClick(wxCommandEvent& event)
