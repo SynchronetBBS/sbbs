@@ -101,6 +101,9 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 			case AR_WIN32:
 			case AR_UNIX:
 			case AR_LINUX:
+			case AR_ACTIVE:
+			case AR_INACTIVE:
+			case AR_DELETED:
 				break;
 			default:
 				(*ptrptr)++;
