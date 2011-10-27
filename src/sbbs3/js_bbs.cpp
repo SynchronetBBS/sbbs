@@ -2899,7 +2899,7 @@ js_postmsg(JSContext *cx, uintN argc, jsval *arglist)
 				return(JS_TRUE);
 			remsg=&msg;
 			if(!js_ParseMsgHeaderObject(cx,hdrobj,remsg))
-				return(JS_TRUE);
+				return(JS_FALSE);
 		}
 	}
 
