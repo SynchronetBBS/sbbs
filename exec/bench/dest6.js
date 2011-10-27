@@ -45,10 +45,10 @@ if (test07 != undefined) {
 }
 
 /* The following currently segfaults - so many bug like Microsoft */
-//var test08_obj = {};
-//var test08 = js.get_parent(js.get_parent);
-//var test08 = js.get_parent(test08_obj);
-//log(test08.toSource());
+var test08_obj = {};
+var test08 = js.get_parent(js.get_parent);
+var test08 = js.get_parent(test08_obj);
+log(test08.toSource());
 
 var test09 = js.version;
 if (test09 != js.version) {
