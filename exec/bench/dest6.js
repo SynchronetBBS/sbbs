@@ -191,10 +191,16 @@ if (test31 != 3) {
 	exit();
 }
 
-var test32 = load(true,"dnshelper.js","127.0.0.1");
-while ((test32.ret=test32.read()) == undefined) {
-	log("Waiting for dnshelper.js to return a result...");
-	sleep(10);
+var test32=[];
+var test32_count=128;
+for(test32_count=0; test32_count<128; test32_count++)
+	test32.push(load(true,"dnshelper.js","127.0.0.1"))
+for(test32_count=0; test32_count<128; test32_count++) {
+	test32_queue=test32.shift();
+	while ((test32_queue.ret=test32_queue.read()) == undefined) {
+		log("Waiting for dnshelper.js to return a result...");
+		sleep(10);
+	}
 }
 log(test32.ret);
 
@@ -303,9 +309,9 @@ log(" II: " + test39.write(13.37));
 log("III: "+ test39.write(1337));
 log(" IV: "+test39.write(true));
 log("  V: "+ test39.write("go-get me some Popeye's Chicken"));
-if (test39.readValue() != new Date("April 17, 1980 03:00:00")) {
+if ((test39_val = test39.readValue().valueOf()) != new Date("April 17, 1980 03:00:00").valueOf()) {
 	log("Date on background script doesn't return date?");
-	log("Nope, it's just Chuck Testa with another realistic dead JavaScript object.");
+	log("Nope, it's just Chuck Testa with another realistic dead JavaScript object. ("+test39_val.getTime()+")");
 }
 if (test39.readValue() != 13.37) {
 	log("Double on background script doesn't return double?");
