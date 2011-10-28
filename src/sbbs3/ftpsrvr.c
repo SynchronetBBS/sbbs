@@ -480,8 +480,8 @@ static JSContext*
 js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_callback_t* cb)
 {
 	JSContext*	js_cx;
-	JSObject*	js_glob;
 	BOOL		success=FALSE;
+	BOOL		rooted=FALSE;
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)"
 		,sock,startup->js.cx_stack);
@@ -501,35 +501,35 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_c
 	do {
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing Global object",sock);
-		if((js_glob=js_CreateGlobalObject(js_cx, &scfg, NULL, &startup->js))==NULL) 
+		if(!js_CreateGlobalObject(js_cx, &scfg, NULL, &startup->js, glob))
 			break;
+		rooted=TRUE;
 
-		if(!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
+		if(!JS_DefineFunctions(js_cx, *glob, js_global_functions)) 
 			break;
 
 		/* Internal JS Object */
-		if(js_CreateInternalJsObject(js_cx, js_glob, cb, &startup->js)==NULL)
+		if(js_CreateInternalJsObject(js_cx, *glob, cb, &startup->js)==NULL)
 			break;
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing System object",sock);
-		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
+		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
 			break;
 
-		if((*ftp=JS_DefineObject(js_cx, js_glob, "ftp", NULL
+		if((*ftp=JS_DefineObject(js_cx, *glob, "ftp", NULL
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
-		if(js_CreateServerObject(js_cx,js_glob,&js_server_props)==NULL)
+		if(js_CreateServerObject(js_cx,*glob,&js_server_props)==NULL)
 			break;
-
-		if(glob!=NULL)
-			*glob=js_glob;
 
 		success=TRUE;
 
 	} while(0);
 
 	if(!success) {
+		if(rooted)
+			JS_RemoveObjectRoot(js_cx, glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
 		return(NULL);
@@ -4575,6 +4575,9 @@ static void ctrl_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(js_cx!=NULL) {
 		lprintf(LOG_DEBUG,"%04d JavaScript: Destroying context",sock);
+		JS_BEGINREQUEST(js_cx);
+		JS_RemoveObjectRoot(js_cx, &js_glob);
+		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);	/* Free Context */
 	}
 

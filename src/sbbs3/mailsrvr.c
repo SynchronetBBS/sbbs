@@ -1800,13 +1800,14 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 
 		if(*js_glob==NULL) {
 			/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
-			if((*js_glob=js_CreateCommonObjects(*js_cx, &scfg, &scfg, NULL
+			if(!js_CreateCommonObjects(*js_cx, &scfg, &scfg, NULL
 						,uptime, startup->host_name, SOCKLIB_DESC	/* system */
 						,&js_callback									/* js */
 						,&startup->js
 						,client, sock								/* client */
 						,&js_server_props							/* server */
-				))==NULL)
+						,js_glob
+				))
 				break;
 
 			if(!JS_DefineFunctions(*js_cx, *js_glob, js_global_functions))
@@ -1918,10 +1919,14 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	return(success);
 }
 
-void js_cleanup(JSRuntime* js_runtime, JSContext* js_cx)
+void js_cleanup(JSRuntime* js_runtime, JSContext* js_cx, JSObject** js_glob)
 {
-	if(js_cx!=NULL)
+	if(js_cx!=NULL) {
+		JS_BEGINREQUEST(js_cx);
+		JS_RemoveObjectRoot(js_cx, js_glob);
+		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
+	}
 	if(js_runtime!=NULL)
 		jsrt_Release(js_runtime);
 }
@@ -4052,7 +4057,7 @@ static void smtp_thread(void* arg)
 	remove(rcptlst_fname);
 	if(spy!=NULL)
 		fclose(spy);
-	js_cleanup(js_runtime, js_cx);
+	js_cleanup(js_runtime, js_cx, &js_glob);
 
 	status(STATUS_WFC);
 

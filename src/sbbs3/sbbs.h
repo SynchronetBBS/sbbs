@@ -1045,8 +1045,8 @@ extern "C" {
 										,js_server_props_t* props);
 
 	/* js_global.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t*);
-	DLLEXPORT JSObject*	DLLCALL js_CreateCommonObjects(JSContext* cx
+	DLLEXPORT BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t*, JSObject**);
+	DLLEXPORT BOOL	DLLCALL js_CreateCommonObjects(JSContext* cx
 													,scfg_t* cfg				/* common */
 													,scfg_t* node_cfg			/* node-specific */
 													,jsSyncMethodSpec* methods	/* global */
@@ -1058,6 +1058,7 @@ extern "C" {
 													,client_t* client			/* client */
 													,SOCKET client_socket		/* client */
 													,js_server_props_t* props	/* server */
+													,JSObject** glob
 													);
 
 	/* js_internal.c */

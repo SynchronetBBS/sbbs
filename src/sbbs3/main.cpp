@@ -1119,14 +1119,8 @@ bool sbbs_t::js_init(ulong* stack_frame)
 		return(false);
 	JS_BEGINREQUEST(js_cx);
 	
-	memset(&js_branch,0,sizeof(js_branch));
-	js_branch.limit = startup->js.branch_limit;
-	js_branch.gc_interval = startup->js.gc_interval;
-	js_branch.yield_interval = startup->js.yield_interval;
-	js_branch.terminated = &terminated;
-	js_branch.auto_terminate = TRUE;
-
 	bool success=false;
+	bool rooted=false;
 
 	do {
 
@@ -1135,14 +1129,16 @@ bool sbbs_t::js_init(ulong* stack_frame)
 		JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
 
 		/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
-		if((js_glob=js_CreateCommonObjects(js_cx, &scfg, &cfg, js_global_functions
+		if(!js_CreateCommonObjects(js_cx, &scfg, &cfg, js_global_functions
 					,uptime, startup->host_name, SOCKLIB_DESC	/* system */
-					,&js_branch									/* js */
+					,&js_callback									/* js */
 					,&startup->js
 					,&client, client_socket						/* client */
 					,&js_server_props							/* server */
-			))==NULL)
+					,&js_glob
+			))
 			break;
+		rooted=true;
 
 		/* BBS Object */
 		if(js_CreateBbsObject(js_cx, js_glob)==NULL)
@@ -1156,12 +1152,16 @@ bool sbbs_t::js_init(ulong* stack_frame)
 
 	} while(0);
 
-	JS_ENDREQUEST(js_cx);
 	if(!success) {
+		if(rooted)
+			JS_RemoveObjectRoot(js_cx, &js_glob);
+		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
 		js_cx=NULL;
 		return(false);
 	}
+	else
+		JS_ENDREQUEST(js_cx);
 
 	return(true);
 }
@@ -1171,6 +1171,9 @@ void sbbs_t::js_cleanup(const char* node)
 	/* Free Context */
 	if(js_cx!=NULL) {	
 		lprintf(LOG_DEBUG,"%s JavaScript: Destroying context",node);
+		JS_BEGINREQUEST(js_cx);
+		JS_RemoveObjectRoot(js_cx, &js_glob);
+		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
 		js_cx=NULL;
 	}

@@ -128,6 +128,7 @@ static void background_thread(void* arg)
 		result=exit_code;
 	js_EvalOnExit(bg->cx, bg->obj, &bg->cb);
 	js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
+	JS_RemoveObjectRoot(bg->cx, &bg->obj);
 	JS_ENDREQUEST(bg->cx);
 	JS_DestroyContext(bg->cx);
 	jsrt_Release(bg->runtime);
@@ -252,14 +253,19 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		bg->cb.counter=0;
 		bg->cb.gc_attempts=0;
 
-		if((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES, 1000, __FILE__, __LINE__))==NULL)
+		if((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES, 1000, __FILE__, __LINE__))==NULL) {
+			free(bg);
 			return(JS_FALSE);
+		}
 
-	    if((bg->cx = JS_NewContext(bg->runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+	    if((bg->cx = JS_NewContext(bg->runtime, JAVASCRIPT_CONTEXT_STACK))==NULL) {
+			jsrt_Release(bg->runtime);
+			free(bg);
 			return(JS_FALSE);
+		}
 		JS_BEGINREQUEST(bg->cx);
 
-		if((bg->obj=js_CreateCommonObjects(bg->cx
+		if(!js_CreateCommonObjects(bg->cx
 				,p->cfg			/* common config */
 				,NULL			/* node-specific config */
 				,NULL			/* additional global methods */
@@ -271,8 +277,14 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 				,NULL			/* client */
 				,INVALID_SOCKET	/* client_socket */
 				,NULL			/* server props */
-				))==NULL) 
+				,&bg->obj
+				)) {
+			JS_ENDREQUEST(bg->cx);
+			JS_DestroyContext(bg->cx);
+			jsrt_Release(bg->runtime);
+			free(bg);
 			return(JS_FALSE);
+		}
 
 		bg->msg_queue = msgQueueInit(NULL,MSG_QUEUE_BIDIR);
 
@@ -309,16 +321,39 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argn==argc) {
 		JS_ReportError(cx,"no filename specified");
+		if(background) {
+			JS_RemoveObjectRoot(bg->cx, &bg->obj);
+			JS_ENDREQUEST(bg->cx);
+			JS_DestroyContext(bg->cx);
+			jsrt_Release(bg->runtime);
+			free(bg);
+		}
 		return(JS_FALSE);
 	}
 	JSVALUE_TO_STRING(cx, argv[argn++], filename, NULL);
-	if(filename==NULL)
+	if(filename==NULL) {
+		if(background) {
+			JS_RemoveObjectRoot(bg->cx, &bg->obj);
+			JS_ENDREQUEST(bg->cx);
+			JS_DestroyContext(bg->cx);
+			jsrt_Release(bg->runtime);
+			free(bg);
+		}
 		return(JS_FALSE);
+	}
 
 	if(argc>argn || background) {
 
-		if((js_argv=JS_NewArrayObject(exec_cx, 0, NULL)) == NULL)
+		if((js_argv=JS_NewArrayObject(exec_cx, 0, NULL)) == NULL) {
+			if(background) {
+				JS_RemoveObjectRoot(bg->cx, &bg->obj);
+				JS_ENDREQUEST(bg->cx);
+				JS_DestroyContext(bg->cx);
+				jsrt_Release(bg->runtime);
+				free(bg);
+			}
 			return(JS_FALSE);
+		}
 
 		JS_DefineProperty(exec_cx, exec_obj, "argv", OBJECT_TO_JSVAL(js_argv)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -427,8 +462,15 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_ClearPendingException(exec_cx);
 
-	if((script=JS_CompileFile(exec_cx, exec_obj, path))==NULL)
+	if((script=JS_CompileFile(exec_cx, exec_obj, path))==NULL) {
+		if(background) {
+			JS_RemoveObjectRoot(bg->cx, &bg->obj);
+			JS_DestroyContext(bg->cx);
+			jsrt_Release(bg->runtime);
+			free(bg);
+		}
 		return(JS_FALSE);
+	}
 
 	if(background) {
 
@@ -3801,36 +3843,41 @@ static JSClass js_global_class = {
 	,js_global_finalize		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t* startup)
+BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t* startup, JSObject**glob)
 {
-	JSObject*	glob;
 	private_t*	p;
 
 	if((p = (private_t*)malloc(sizeof(private_t)))==NULL)
-		return(NULL);
+		return(FALSE);
 
 	p->cfg = cfg;
 	p->methods = methods;
 	p->startup = startup;
 
-	if((glob = JS_NewCompartmentAndGlobalObject(cx, &js_global_class, NULL)) ==NULL)
-		return(NULL);
+	if((*glob = JS_NewCompartmentAndGlobalObject(cx, &js_global_class, NULL)) ==NULL)
+		return(FALSE);
+	if(!JS_AddObjectRoot(cx, glob))
+		return(FALSE);
 
-	if(!JS_SetPrivate(cx, glob, p))	/* Store a pointer to scfg_t and the new methods */
-		return(NULL);
+	if(!JS_SetPrivate(cx, *glob, p)) {	/* Store a pointer to scfg_t and the new methods */
+		JS_RemoveObjectRoot(cx, glob);
+		return(FALSE);
+	}
 
-	if (!JS_InitStandardClasses(cx, glob))
-		return(NULL);
+	if (!JS_InitStandardClasses(cx, *glob)) {
+		JS_RemoveObjectRoot(cx, glob);
+		return(FALSE);
+	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,glob
+	js_DescribeSyncObject(cx,*glob
 		,"Top-level functions and properties (common to all servers and services)",310);
 #endif
 
-	return(glob);
+	return(TRUE);
 }
 
-JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
+BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 										,scfg_t* cfg				/* common */
 										,scfg_t* node_cfg			/* node-specific */
 										,jsSyncMethodSpec* methods	/* global */
@@ -3842,64 +3889,72 @@ JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
 										,client_t* client			/* client */
 										,SOCKET client_socket		/* client */
 										,js_server_props_t* props	/* server */
+										,JSObject** glob
 										)
 {
-	JSObject*	js_glob;
+	BOOL	success=FALSE;
 
 	if(node_cfg==NULL)
 		node_cfg=cfg;
 
 	/* Global Object */
-	if((js_glob=js_CreateGlobalObject(js_cx, cfg, methods, js_startup))==NULL)
-		return(NULL);
+	if(!js_CreateGlobalObject(js_cx, cfg, methods, js_startup, glob))
+		return(FALSE);
 
-	/* System Object */
-	if(js_CreateSystemObject(js_cx, js_glob, node_cfg, uptime, host_name, socklib_desc)==NULL)
-		return(NULL);
+	do {
+		/* System Object */
+		if(js_CreateSystemObject(js_cx, *glob, node_cfg, uptime, host_name, socklib_desc)==NULL)
+			break;
 
-	/* Internal JS Object */
-	if(cb!=NULL 
-		&& js_CreateInternalJsObject(js_cx, js_glob, cb, js_startup)==NULL)
-		return(NULL);
+		/* Internal JS Object */
+		if(cb!=NULL 
+			&& js_CreateInternalJsObject(js_cx, *glob, cb, js_startup)==NULL)
+			break;
 
-	/* Client Object */
-	if(client!=NULL 
-		&& js_CreateClientObject(js_cx, js_glob, "client", client, client_socket)==NULL)
-		return(NULL);
+		/* Client Object */
+		if(client!=NULL 
+			&& js_CreateClientObject(js_cx, *glob, "client", client, client_socket)==NULL)
+			break;
 
-	/* Server */
-	if(props!=NULL
-		&& js_CreateServerObject(js_cx, js_glob, props)==NULL)
-		return(NULL);
+		/* Server */
+		if(props!=NULL
+			&& js_CreateServerObject(js_cx, *glob, props)==NULL)
+			break;
 
-	/* Socket Class */
-	if(js_CreateSocketClass(js_cx, js_glob)==NULL)
-		return(NULL);
+		/* Socket Class */
+		if(js_CreateSocketClass(js_cx, *glob)==NULL)
+			break;
 
-	/* Queue Class */
-	if(js_CreateQueueClass(js_cx, js_glob)==NULL)
-		return(NULL);
+		/* Queue Class */
+		if(js_CreateQueueClass(js_cx, *glob)==NULL)
+			break;
 
-	/* MsgBase Class */
-	if(js_CreateMsgBaseClass(js_cx, js_glob, cfg)==NULL)
-		return(NULL);
+		/* MsgBase Class */
+		if(js_CreateMsgBaseClass(js_cx, *glob, cfg)==NULL)
+			break;
 
-	/* File Class */
-	if(js_CreateFileClass(js_cx, js_glob)==NULL)
-		return(NULL);
+		/* File Class */
+		if(js_CreateFileClass(js_cx, *glob)==NULL)
+			break;
 
-	/* User class */
-	if(js_CreateUserClass(js_cx, js_glob, cfg)==NULL) 
-		return(NULL);
+		/* User class */
+		if(js_CreateUserClass(js_cx, *glob, cfg)==NULL) 
+			break;
 
-	/* COM Class */
-	if(js_CreateCOMClass(js_cx, js_glob)==NULL)
-		return(NULL);
+		/* COM Class */
+		if(js_CreateCOMClass(js_cx, *glob)==NULL)
+			break;
 
-	/* Area Objects */
-	if(!js_CreateUserObjects(js_cx, js_glob, cfg, /* user: */NULL, client, /* html_index_fname: */NULL, /* subscan: */NULL)) 
-		return(NULL);
+		/* Area Objects */
+		if(!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */NULL, client, /* html_index_fname: */NULL, /* subscan: */NULL)) 
+			break;
 
-	return(js_glob);
+		success=TRUE;
+	} while(0);
+
+	if(!success)
+		JS_RemoveObjectRoot(js_cx, glob);
+
+	return(success);
 }
 #endif	/* JAVSCRIPT */

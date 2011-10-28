@@ -667,7 +667,7 @@ js_OperationCallback(JSContext *cx)
 	JS_SetOperationCallback(cx, js_OperationCallback);
 	return ret;
 }
-#endif
+
 static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 {
 	char		name[256];
@@ -723,12 +723,13 @@ static BOOL js_init(char** environ)
 	JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
 	/* Global Object */
-	if((js_glob=js_CreateCommonObjects(js_cx, &scfg, NULL, js_global_functions
+	if(!js_CreateCommonObjects(js_cx, &scfg, NULL, js_global_functions
 		,time(NULL), host_name, SOCKLIB_DESC	/* system */
 		,&cb,&startup						/* js */
 		,NULL,INVALID_SOCKET					/* client */
 		,NULL									/* server */
-		))==NULL) {
+		,&js_glob
+		)) {
 		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
@@ -1182,6 +1183,7 @@ int main(int argc, char **argv, char** environ)
 		fprintf(statfp,"\n");
 
 		result=js_exec(module,&argv[argn]);
+		JS_RemoveObjectRoot(js_cx, &js_glob);
 		JS_ENDREQUEST(js_cx);
 		YIELD();
 

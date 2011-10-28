@@ -833,9 +833,9 @@ static JSContext*
 js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, JSObject** glob)
 {
 	JSContext*	js_cx;
-	JSObject*	js_glob;
 	JSObject*	server;
 	BOOL		success=FALSE;
+	BOOL		rooted=FALSE;
 
     if((js_cx = JS_NewContext(js_runtime, service_client->service->js.cx_stack))==NULL)
 		return(NULL);
@@ -849,50 +849,51 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 		JS_SetContextPrivate(js_cx, service_client);
 
-		if((js_glob=js_CreateGlobalObject(js_cx, &scfg, NULL, &service_client->service->js))==NULL) 
+		if(!js_CreateGlobalObject(js_cx, &scfg, NULL, &service_client->service->js, glob))
 			break;
+		rooted=TRUE;
 
-		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
+		if (!JS_DefineFunctions(js_cx, *glob, js_global_functions))
 			break;
 
 		/* Internal JS Object */
-		if(js_CreateInternalJsObject(js_cx, js_glob, &service_client->callback, &service_client->service->js)==NULL)
+		if(js_CreateInternalJsObject(js_cx, *glob, &service_client->callback, &service_client->service->js)==NULL)
 			break;
 
 		/* Client Object */
 		if(service_client->client!=NULL)
-			if(js_CreateClientObject(js_cx, js_glob, "client", service_client->client, sock)==NULL)
+			if(js_CreateClientObject(js_cx, *glob, "client", service_client->client, sock)==NULL)
 				break;
 
 		/* User Class */
-		if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
+		if(js_CreateUserClass(js_cx, *glob, &scfg)==NULL) 
 			break;
 
 		/* Socket Class */
-		if(js_CreateSocketClass(js_cx, js_glob)==NULL)
+		if(js_CreateSocketClass(js_cx, *glob)==NULL)
 			break;
 
 		/* MsgBase Class */
-		if(js_CreateMsgBaseClass(js_cx, js_glob, &scfg)==NULL)
+		if(js_CreateMsgBaseClass(js_cx, *glob, &scfg)==NULL)
 			break;
 
 		/* File Class */
-		if(js_CreateFileClass(js_cx, js_glob)==NULL)
+		if(js_CreateFileClass(js_cx, *glob)==NULL)
 			break;
 
 		/* Queue Class */
-		if(js_CreateQueueClass(js_cx, js_glob)==NULL)
+		if(js_CreateQueueClass(js_cx, *glob)==NULL)
 			break;
 
 		/* COM Class */
-		if(js_CreateCOMClass(js_cx, js_glob)==NULL)
+		if(js_CreateCOMClass(js_cx, *glob)==NULL)
 			break;
 
 		/* user-specific objects */
-		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan)) 
+		if(!js_CreateUserObjects(js_cx, *glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan)) 
 			break;
 
-		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
+		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
 			break;
 #if 0		
 		char		ver[256];
@@ -900,7 +901,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		jsval		val;
 
 		/* server object */
-		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
+		if((server=JS_DefineObject(js_cx, *glob, "server", &js_server_class
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
@@ -935,7 +936,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 				&service_client->service->options;
 		}
 
-		if((server=js_CreateServerObject(js_cx,js_glob
+		if((server=js_CreateServerObject(js_cx,*glob
 			,&service_client->service->js_server_props))==NULL)
 			break;
 #endif
@@ -948,16 +949,14 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		JS_DefineFunction(js_cx, server, "client_update", js_client_update,	1, 0);
 		JS_DefineFunction(js_cx, server, "client_remove", js_client_remove, 1, 0);
 
-
-		if(glob!=NULL)
-			*glob=js_glob;
-
 		success=TRUE;
 
 	} while(0);
 
 
 	if(!success) {
+		if(rooted)
+			JS_RemoveObjectRoot(js_cx, glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
 		return(NULL);
@@ -1184,6 +1183,7 @@ static void js_service_thread(void* arg)
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		js_EvalOnExit(js_cx, js_glob, &service_client.callback);
 	}
+	JS_RemoveObjectRoot(js_cx, &js_glob);
 	JS_ENDREQUEST(js_cx);
 	JS_DestroyContext(js_cx);	/* Free Context */
 
@@ -1288,13 +1288,14 @@ static void js_static_service_thread(void* arg)
 		js_PrepareToExecute(js_cx, js_glob, spath, /* startup_dir */NULL);
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		js_EvalOnExit(js_cx, js_glob, &service_client.callback);
-
+		JS_RemoveObjectRoot(js_cx, &js_glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);	/* Free Context */
 		js_cx=NULL;
 	} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
 
 	if(js_cx!=NULL) {
+		JS_RemoveObjectRoot(js_cx, &js_glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);	/* Free Context */
 	}
