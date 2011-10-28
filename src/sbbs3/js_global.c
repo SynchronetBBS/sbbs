@@ -108,7 +108,7 @@ typedef struct {
 	JSObject*		obj;
 	JSObject*		script;
 	msg_queue_t*	msg_queue;
-	js_branch_t		branch;
+	js_callback_t	cb;
 	JSErrorReporter error_reporter;
 	JSNative		log;
 } background_data_t;
@@ -122,12 +122,11 @@ static void background_thread(void* arg)
 	SetThreadName("JS Background");
 	msgQueueAttach(bg->msg_queue);
 	JS_SetContextThread(bg->cx);
-	JS_SetThreadStackLimit(bg->cx, 0);
 	JS_BEGINREQUEST(bg->cx);
 	if(!JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result)
 		&& JS_GetProperty(bg->cx, bg->obj, "exit_code", &exit_code))
 		result=exit_code;
-	js_EvalOnExit(bg->cx, bg->obj, &bg->branch);
+	js_EvalOnExit(bg->cx, bg->obj, &bg->cb);
 	js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
 	JS_ENDREQUEST(bg->cx);
 	JS_DestroyContext(bg->cx);
@@ -153,9 +152,11 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	JS_SetContextPrivate(cx, bg);
 }
 
-static JSBool js_BranchCallback(JSContext *cx, JSObject* script)
+static JSBool
+js_OperationCallback(JSContext *cx)
 {
 	background_data_t* bg;
+	JSBool	ret;
 
 	if((bg=(background_data_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -163,21 +164,11 @@ static JSBool js_BranchCallback(JSContext *cx, JSObject* script)
 	if(bg->parent_cx!=NULL && !JS_IsRunning(bg->parent_cx)) 	/* die when parent dies */
 		return(JS_FALSE);
 
-	return js_CommonBranchCallback(cx,&bg->branch);
-}
-
-#if JS_VERSION>180
-static JSBool
-js_OperationCallback(JSContext *cx)
-{
-	JSBool	ret;
-
 	JS_SetOperationCallback(cx, NULL);
-	ret=js_BranchCallback(cx, NULL);
+	ret=js_CommonOperationCallback(cx,&bg->cb);
 	JS_SetOperationCallback(cx, js_OperationCallback);
 	return ret;
 }
-#endif
 
 /* Create a new value in the new context with a value from the original context */
 /* Note: objects (including arrays) not currently supported */
@@ -249,17 +240,17 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 		bg->parent_cx = cx;
 
-		/* Setup default values for branch settings */
-		bg->branch.limit=p->startup->branch_limit;
-		bg->branch.gc_interval=p->startup->gc_interval;
-		bg->branch.yield_interval=p->startup->yield_interval;
+		/* Setup default values for callback settings */
+		bg->cb.limit=p->startup->time_limit;
+		bg->cb.gc_interval=p->startup->gc_interval;
+		bg->cb.yield_interval=p->startup->yield_interval;
 #if 0
 		if(JS_GetProperty(cx, obj,"js",&val))	/* copy branch settings from parent */
 			memcpy(&bg->branch,JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)),sizeof(bg->branch));
 #endif
-		bg->branch.terminated=NULL;	/* could be bad pointer at any time */
-		bg->branch.counter=0;
-		bg->branch.gc_attempts=0;
+		bg->cb.terminated=NULL;	/* could be bad pointer at any time */
+		bg->cb.counter=0;
+		bg->cb.gc_attempts=0;
 
 		if((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES, 1000, __FILE__, __LINE__))==NULL)
 			return(JS_FALSE);
@@ -275,7 +266,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 				,0				/* uptime */
 				,""				/* hostname */
 				,""				/* socklib_desc */
-				,&bg->branch	/* js */
+				,&bg->cb		/* js */
 				,p->startup		/* js */
 				,NULL			/* client */
 				,INVALID_SOCKET	/* client_socket */
@@ -292,13 +283,9 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SetErrorReporter(cx,bg->error_reporter);
 		JS_SetErrorReporter(bg->cx,js_ErrorReporter);
 
-		/* Set our branch callback (which calls the generic branch callback) */
+		/* Set our Operation callback (which calls the generic branch callback) */
 		JS_SetContextPrivate(bg->cx, bg);
-#if JS_VERSION>180
 		JS_SetOperationCallback(bg->cx, js_OperationCallback);
-#else
-		JS_SetBranchCallback(bg->cx, js_BranchCallback);
-#endif
 
 		/* Save parent's 'log' function (for later use by our log function) */
 		if(JS_GetProperty(cx, obj, "log", &val)) {
@@ -3850,7 +3837,7 @@ JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
 										,time_t uptime				/* system */
 										,char* host_name			/* system */
 										,char* socklib_desc			/* system */
-										,js_branch_t* branch		/* js */
+										,js_callback_t* cb			/* js */
 										,js_startup_t* js_startup	/* js */
 										,client_t* client			/* client */
 										,SOCKET client_socket		/* client */
@@ -3871,8 +3858,8 @@ JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		return(NULL);
 
 	/* Internal JS Object */
-	if(branch!=NULL 
-		&& js_CreateInternalJsObject(js_cx, js_glob, branch, js_startup)==NULL)
+	if(cb!=NULL 
+		&& js_CreateInternalJsObject(js_cx, js_glob, cb, js_startup)==NULL)
 		return(NULL);
 
 	/* Client Object */

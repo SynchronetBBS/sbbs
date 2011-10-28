@@ -253,7 +253,7 @@ typedef struct  {
 	JSObject*		js_header;
 	JSObject*		js_cookie;
 	JSObject*		js_request;
-	js_branch_t		js_branch;
+	js_callback_t	js_callback;
 	subscan_t		*subscan;
 
 	/* Ring Buffer Stuff */
@@ -4424,28 +4424,20 @@ static JSFunctionSpec js_global_functions[] = {
 };
 
 static JSBool
-js_BranchCallback(JSContext *cx, JSObject *script)
+js_OperationCallback(JSContext *cx)
 {
+	JSBool	ret;
 	http_session_t* session;
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-    return(js_CommonBranchCallback(cx,&session->js_branch));
-}
-
-#if JS_VERSION>180
-static JSBool
-js_OperationCallback(JSContext *cx)
-{
-	JSBool	ret;
-
 	JS_SetOperationCallback(cx, NULL);
-	ret=js_BranchCallback(cx, NULL);
+    ret=js_CommonOperationCallback(cx,&session->js_callback);
 	JS_SetOperationCallback(cx, js_OperationCallback);
+
 	return ret;
 }
-#endif
 
 static JSContext* 
 js_initcx(http_session_t *session)
@@ -4463,11 +4455,7 @@ js_initcx(http_session_t *session)
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
-#if JS_VERSION>180
 	JS_SetOperationCallback(js_cx, js_OperationCallback);
-#else
-	JS_SetBranchCallback(js_cx, js_BranchCallback);
-#endif
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Creating Global Objects and Classes",session->socket);
 	if((session->js_glob=js_CreateCommonObjects(js_cx, &scfg, NULL
@@ -4475,7 +4463,7 @@ js_initcx(http_session_t *session)
 									,uptime						/* system */
 									,startup->host_name			/* system */
 									,SOCKLIB_DESC				/* system */
-									,&session->js_branch		/* js */
+									,&session->js_callback		/* js */
 									,&startup->js				/* js */
 									,&session->client			/* client */
 									,session->socket			/* client */
@@ -4632,7 +4620,7 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 		/* RUN SCRIPT */
 		JS_ClearPendingException(session->js_cx);
 
-		session->js_branch.counter=0;
+		session->js_callback.counter=0;
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Compiling script: %s",session->socket,script);
 		if((js_script=JS_CompileFile(session->js_cx, session->js_glob
@@ -4647,7 +4635,7 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 		start=xp_timer();
 		js_PrepareToExecute(session->js_cx, session->js_glob, script, /* startup_dir */NULL);
 		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
-		js_EvalOnExit(session->js_cx, session->js_glob, &session->js_branch);
+		js_EvalOnExit(session->js_cx, session->js_glob, &session->js_callback);
 		lprintf(LOG_DEBUG,"%04d JavaScript: Done executing script: %s (%.2Lf seconds)"
 			,session->socket,script,xp_timer()-start);
 	} while(0);
@@ -5769,11 +5757,11 @@ void DLLCALL web_server(void* arg)
 			SAFECOPY(session->host_ip,host_ip);
 			session->addr=client_addr;
    			session->socket=client_socket;
-			session->js_branch.auto_terminate=TRUE;
-			session->js_branch.terminated=&terminate_server;
-			session->js_branch.limit=startup->js.branch_limit;
-			session->js_branch.gc_interval=startup->js.gc_interval;
-			session->js_branch.yield_interval=startup->js.yield_interval;
+			session->js_callback.auto_terminate=TRUE;
+			session->js_callback.terminated=&terminate_server;
+			session->js_callback.limit=startup->js.time_limit;
+			session->js_callback.gc_interval=startup->js.gc_interval;
+			session->js_callback.yield_interval=startup->js.yield_interval;
 #ifdef ONE_JS_RUNTIME
 			session->js_runtime=js_runtime;
 #endif

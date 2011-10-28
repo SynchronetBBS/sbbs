@@ -72,8 +72,7 @@
 
 #define	JAVASCRIPT_MAX_BYTES		(8*1024*1024)
 #define JAVASCRIPT_CONTEXT_STACK	(16*1024)
-#define JAVASCRIPT_THREAD_STACK		(256*1024)
-#define JAVASCRIPT_BRANCH_LIMIT		99999999
+#define JAVASCRIPT_TIME_LIMIT		(24*60*600)			/* in 100ms ticks */
 #define JAVASCRIPT_YIELD_INTERVAL	10000
 #define JAVASCRIPT_GC_INTERVAL		100 
 #define JAVASCRIPT_LOAD_PATH		"load"
@@ -88,7 +87,7 @@ typedef struct {
 	BOOL	auto_terminate;
 	volatile BOOL*	terminated;
 	str_list_t	exit_func;
-} js_branch_t;
+} js_callback_t;
 
 #define JSVAL_NULL_OR_VOID(val)		(JSVAL_IS_NULL(val) || JSVAL_IS_VOID(val))
 

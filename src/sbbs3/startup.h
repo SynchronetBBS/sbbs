@@ -52,10 +52,9 @@
 typedef struct {
 	ulong	max_bytes;		/* max allocated bytes before garbage collection */
 	ulong	cx_stack;		/* bytes for script execution stack */
-	ulong	thread_stack;	/* limit of stack size for native execution thread */
-	ulong	branch_limit;	/* maximum number of branches (for infinite loop detection) */
-	ulong	gc_interval;	/* number of branches between garbage collection attempts */
-	ulong	yield_interval;	/* number of branches between time-slice yields */
+	ulong	time_limit;		/* maximum number of ticks (for infinite loop detection) */
+	ulong	gc_interval;	/* number of ticks between garbage collection attempts */
+	ulong	yield_interval;	/* number of ticks between time-slice yields */
 	char	load_path[INI_MAX_VALUE_LEN];	/* additional (comma-separated) directories to search for load()ed scripts */
 } js_startup_t;
 

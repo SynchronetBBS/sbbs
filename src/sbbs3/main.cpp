@@ -1152,22 +1152,6 @@ bool sbbs_t::js_init(ulong* stack_frame)
 		if(js_CreateConsoleObject(js_cx, js_glob)==NULL)
 			break;
 
-		if(startup->js.thread_stack) {
-			ulong stack_limit;
-
-#if JS_STACK_GROWTH_DIRECTION > 0
-			stack_limit=((ulong)stack_frame)+startup->js.thread_stack;
-#else
-			stack_limit=((ulong)stack_frame)-startup->js.thread_stack;
-#endif
-			JS_SetThreadStackLimit(js_cx, stack_limit);
-
-			lprintf(LOG_DEBUG,"%s JavaScript: Thread stack limit: %lu bytes"
-				,node, startup->js.thread_stack);
-		}
-		else
-			JS_SetThreadStackLimit(js_cx, 0);
-
 		success=true;
 
 	} while(0);

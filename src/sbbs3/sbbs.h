@@ -256,14 +256,14 @@ public:
 
 #ifdef JAVASCRIPT
 
-	JSRuntime*	js_runtime;
-	JSContext*	js_cx;
-	JSObject*	js_glob;
-	js_branch_t	js_branch;
-	long		js_execfile(const char *fname, const char* startup_dir, JSObject* scope=NULL);
-	bool		js_init(ulong* stack_frame);
-	void		js_cleanup(const char* node);
-	void		js_create_user_objects(void);
+	JSRuntime*		js_runtime;
+	JSContext*		js_cx;
+	JSObject*		js_glob;
+	js_callback_t	js_callback;
+	long			js_execfile(const char *fname, const char* startup_dir, JSObject* scope=NULL);
+	bool			js_init(ulong* stack_frame);
+	void			js_cleanup(const char* node);
+	void			js_create_user_objects(void);
 
 #endif
 
@@ -1053,7 +1053,7 @@ extern "C" {
 													,time_t uptime				/* system */
 													,char* host_name			/* system */
 													,char* socklib_desc			/* system */
-													,js_branch_t*				/* js */
+													,js_callback_t*				/* js */
 													,js_startup_t*				/* js */
 													,client_t* client			/* client */
 													,SOCKET client_socket		/* client */
@@ -1061,9 +1061,9 @@ extern "C" {
 													);
 
 	/* js_internal.c */
-	DLLEXPORT JSObject* DLLCALL js_CreateInternalJsObject(JSContext*, JSObject* parent, js_branch_t*, js_startup_t*);
-	DLLEXPORT JSBool	DLLCALL js_CommonBranchCallback(JSContext*, js_branch_t*);
-	DLLEXPORT void		DLLCALL js_EvalOnExit(JSContext*, JSObject*, js_branch_t*);
+	DLLEXPORT JSObject* DLLCALL js_CreateInternalJsObject(JSContext*, JSObject* parent, js_callback_t*, js_startup_t*);
+	DLLEXPORT JSBool	DLLCALL js_CommonOperationCallback(JSContext*, js_callback_t*);
+	DLLEXPORT void		DLLCALL js_EvalOnExit(JSContext*, JSObject*, js_callback_t*);
 	DLLEXPORT void		DLLCALL	js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir);
 	DLLEXPORT char*		DLLCALL js_getstring(JSContext *cx, JSString *str);
 

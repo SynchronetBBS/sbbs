@@ -1753,12 +1753,12 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	JSObject*	argv;
 	jsuint		argc;
 	JSObject*	js_script;
-	js_branch_t	js_branch;
+	js_callback_t	js_callback;
 	jsval		val;
 	jsval		rval=JSVAL_VOID;
 	private_t	priv;
 
-	ZERO_VAR(js_branch);
+	ZERO_VAR(js_callback);
 
 	SAFECOPY(fname,cmdline);
 	truncstr(fname," \t");
@@ -1802,7 +1802,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 			/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
 			if((*js_glob=js_CreateCommonObjects(*js_cx, &scfg, &scfg, NULL
 						,uptime, startup->host_name, SOCKLIB_DESC	/* system */
-						,&js_branch									/* js */
+						,&js_callback									/* js */
 						,&startup->js
 						,client, sock								/* client */
 						,&js_server_props							/* server */
@@ -1895,6 +1895,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		if(js_script==NULL)
 			break;
 
+		/* ToDo: Set operational callback */
 		success=JS_ExecuteScript(*js_cx, js_scope, js_script, &rval);
 
 		JS_GetProperty(*js_cx, *js_glob, "exit_code", &rval);
@@ -1902,7 +1903,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval))
 			JS_ValueToInt32(*js_cx,rval,result);
 
-		js_EvalOnExit(*js_cx, js_scope, &js_branch);
+		js_EvalOnExit(*js_cx, js_scope, &js_callback);
 
 		JS_ReportPendingException(*js_cx);
 

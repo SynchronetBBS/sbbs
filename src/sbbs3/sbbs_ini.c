@@ -65,8 +65,7 @@ static const char*	strLoginAttemptHackThreshold="LoginAttemptHackThreshold";
 static const char*	strLoginAttemptFilterThreshold="LoginAttemptFilterThreshold";
 static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
 static const char*	strJavaScriptContextStack	="JavaScriptContextStack";
-static const char*	strJavaScriptThreadStack	="JavaScriptThreadStack";
-static const char*	strJavaScriptBranchLimit	="JavaScriptBranchLimit";
+static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
 static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
 static const char*	strJavaScriptLoadPath		="JavaScriptLoadPath";
@@ -122,8 +121,7 @@ void sbbs_get_js_settings(
 
 	js->max_bytes		= (ulong)iniGetBytes(list,section,strJavaScriptMaxBytes		,/* unit: */1,defaults->max_bytes);
 	js->cx_stack		= (ulong)iniGetBytes(list,section,strJavaScriptContextStack	,/* unit: */1,defaults->cx_stack);
-	js->thread_stack	= (ulong)iniGetBytes(list,section,strJavaScriptThreadStack	,/* unit: */1,defaults->thread_stack);
-	js->branch_limit	= iniGetInteger(list,section,strJavaScriptBranchLimit	,defaults->branch_limit);
+	js->time_limit		= iniGetInteger(list,section,strJavaScriptTimeLimit		,defaults->time_limit);
 	js->gc_interval		= iniGetInteger(list,section,strJavaScriptGcInterval	,defaults->gc_interval);
 	js->yield_interval	= iniGetInteger(list,section,strJavaScriptYieldInterval	,defaults->yield_interval);
 
@@ -148,8 +146,7 @@ BOOL sbbs_set_js_settings(
 	js_startup_t global_defaults = {
 			 JAVASCRIPT_MAX_BYTES
 			,JAVASCRIPT_CONTEXT_STACK
-			,JAVASCRIPT_THREAD_STACK
-			,JAVASCRIPT_BRANCH_LIMIT
+			,JAVASCRIPT_TIME_LIMIT
 			,JAVASCRIPT_GC_INTERVAL
 			,JAVASCRIPT_YIELD_INTERVAL
             ,JAVASCRIPT_LOAD_PATH
@@ -171,15 +168,10 @@ BOOL sbbs_set_js_settings(
 	else 
 		failure|=iniSetBytes(lp,section,strJavaScriptContextStack,/*unit: */1,js->cx_stack,style)==NULL;
 
-	if(js->thread_stack==defaults->thread_stack)
-		iniRemoveValue(lp,section,strJavaScriptThreadStack);
-	else 
-		failure|=iniSetBytes(lp,section,strJavaScriptThreadStack,/*unit: */1,js->thread_stack,style)==NULL;
-
-	if(js->branch_limit==defaults->branch_limit)
-		iniRemoveValue(lp,section,strJavaScriptBranchLimit);
+	if(js->time_limit==defaults->time_limit)
+		iniRemoveValue(lp,section,strJavaScriptTimeLimit);
 	else
-		failure|=iniSetInteger(lp,section,strJavaScriptBranchLimit,js->branch_limit,style)==NULL;
+		failure|=iniSetInteger(lp,section,strJavaScriptTimeLimit,js->time_limit,style)==NULL;
 
 	if(js->gc_interval==defaults->gc_interval)
 		iniRemoveValue(lp,section,strJavaScriptGcInterval);
@@ -238,8 +230,7 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	/* Setup default values here */
 	global->js.max_bytes		= JAVASCRIPT_MAX_BYTES;
 	global->js.cx_stack			= JAVASCRIPT_CONTEXT_STACK;
-	global->js.thread_stack		= JAVASCRIPT_THREAD_STACK;
-	global->js.branch_limit		= JAVASCRIPT_BRANCH_LIMIT;
+	global->js.time_limit		= JAVASCRIPT_TIME_LIMIT;
 	global->js.gc_interval		= JAVASCRIPT_GC_INTERVAL;
 	global->js.yield_interval	= JAVASCRIPT_YIELD_INTERVAL;
     SAFECOPY(global->js.load_path, JAVASCRIPT_LOAD_PATH);

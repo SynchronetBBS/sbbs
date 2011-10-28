@@ -815,7 +815,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     SAFECOPY(global.ctrl_dir,"c:\\sbbs\\ctrl\\");
     global.js.max_bytes=JAVASCRIPT_MAX_BYTES;
     global.js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
-    global.js.branch_limit=JAVASCRIPT_BRANCH_LIMIT;
+    global.js.time_limit=JAVASCRIPT_TIME_LIMIT;
     global.js.gc_interval=JAVASCRIPT_GC_INTERVAL;
     global.js.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
     global.sem_chk_freq=5;		/* seconds */
@@ -1995,8 +1995,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
             global.js.cx_stack=Registry->ReadInteger("JS_ContextStack");
         if(global.js.cx_stack==0)
             global.js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
-        if(Registry->ValueExists("JS_BranchLimit"))
-            global.js.branch_limit=Registry->ReadInteger("JS_BranchLimit");
         if(Registry->ValueExists("JS_GcInterval"))
             global.js.gc_interval=Registry->ReadInteger("JS_GcInterval");
         if(Registry->ValueExists("JS_YieldInterval"))
@@ -3156,8 +3154,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->PasswordEdit->Text=Password;
     PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(global.js.max_bytes);
     PropertiesDlg->JS_ContextStackEdit->Text=IntToStr(global.js.cx_stack);
-    PropertiesDlg->JS_ThreadStackEdit->Text=IntToStr(global.js.thread_stack);    
-    PropertiesDlg->JS_BranchLimitEdit->Text=IntToStr(global.js.branch_limit);
+    PropertiesDlg->JS_TimeLimitEdit->Text=IntToStr(global.js.time_limit);
     PropertiesDlg->JS_GcIntervalEdit->Text=IntToStr(global.js.gc_interval);
     PropertiesDlg->JS_YieldIntervalEdit->Text=IntToStr(global.js.yield_interval);
     PropertiesDlg->JS_LoadPathEdit->Text=global.js.load_path;
@@ -3217,10 +3214,8 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         	=PropertiesDlg->JS_MaxBytesEdit->Text.ToIntDef(JAVASCRIPT_MAX_BYTES);
         global.js.cx_stack
         	=PropertiesDlg->JS_ContextStackEdit->Text.ToIntDef(JAVASCRIPT_CONTEXT_STACK);
-        global.js.thread_stack
-        	=PropertiesDlg->JS_ThreadStackEdit->Text.ToIntDef(JAVASCRIPT_THREAD_STACK);
-        global.js.branch_limit
-        	=PropertiesDlg->JS_BranchLimitEdit->Text.ToIntDef(JAVASCRIPT_BRANCH_LIMIT);
+        global.js.time_limit
+        	=PropertiesDlg->JS_TimeLimitEdit->Text.ToIntDef(JAVASCRIPT_TIME_LIMIT);
         global.js.gc_interval
         	=PropertiesDlg->JS_GcIntervalEdit->Text.ToIntDef(JAVASCRIPT_GC_INTERVAL);
         global.js.yield_interval

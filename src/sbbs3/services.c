@@ -104,7 +104,7 @@ typedef struct {
 	user_t			user;
 	client_t*		client;
 	service_t*		service;
-	js_branch_t		branch;
+	js_callback_t	callback;
 	/* Initial UDP datagram */
 	BYTE*			udp_buf;
 	int				udp_len;
@@ -832,7 +832,6 @@ js_client_remove(JSContext *cx, uintN argc, jsval *arglist)
 static JSContext* 
 js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, JSObject** glob)
 {
-	ulong		stack_frame;
 	JSContext*	js_cx;
 	JSObject*	js_glob;
 	JSObject*	server;
@@ -857,7 +856,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			break;
 
 		/* Internal JS Object */
-		if(js_CreateInternalJsObject(js_cx, js_glob, &service_client->branch, &service_client->service->js)==NULL)
+		if(js_CreateInternalJsObject(js_cx, js_glob, &service_client->callback, &service_client->service->js)==NULL)
 			break;
 
 		/* Client Object */
@@ -953,15 +952,6 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(glob!=NULL)
 			*glob=js_glob;
 
-		if(service_client->service->js.thread_stack) {
-#if JS_STACK_GROWTH_DIRECTION > 0
-			stack_frame=((ulong)&stack_frame)+service_client->service->js.thread_stack;
-#else
-			stack_frame=((ulong)&stack_frame)-service_client->service->js.thread_stack;
-#endif
-			JS_SetThreadStackLimit(js_cx, stack_frame);
-		}
-
 		success=TRUE;
 
 	} while(0);
@@ -977,35 +967,27 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 }
 
 static JSBool
-js_BranchCallback(JSContext *cx, JSObject *script)
+js_OperationCallback(JSContext *cx)
 {
+	JSBool	ret;
 	service_client_t* client;
 
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	/* Terminated? */ 
-	if(client->branch.auto_terminate && terminated) {
+	if(client->callback.auto_terminate && terminated) {
 		JS_ReportWarning(cx,"Terminated");
-		client->branch.counter=0;
+		client->callback.counter=0;
 		return(JS_FALSE);
 	}
 
-	return js_CommonBranchCallback(cx,&client->branch);
-}
-
-#if JS_VERSION>180
-static JSBool
-js_OperationCallback(JSContext *cx)
-{
-	JSBool	ret;
-
 	JS_SetOperationCallback(cx, NULL);
-	ret=js_BranchCallback(cx, NULL);
+	ret=js_CommonOperationCallback(cx,&client->callback);
 	JS_SetOperationCallback(cx, js_OperationCallback);
+
 	return ret;
 }
-#endif
 
 static void js_init_args(JSContext* js_cx, JSObject* js_obj, const char* cmdline)
 {
@@ -1198,13 +1180,9 @@ static void js_service_thread(void* arg)
 		lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)",socket,spath);
 	else  {
 		js_PrepareToExecute(js_cx, js_glob, spath, /* startup_dir */NULL);
-#if JS_VERSION>180
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
-#else
-		JS_SetBranchCallback(js_cx, js_BranchCallback);
-#endif
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
-		js_EvalOnExit(js_cx, js_glob, &service_client.branch);
+		js_EvalOnExit(js_cx, js_glob, &service_client.callback);
 	}
 	JS_ENDREQUEST(js_cx);
 	JS_DestroyContext(js_cx);	/* Free Context */
@@ -1267,11 +1245,11 @@ static void js_static_service_thread(void* arg)
 	memset(&service_client,0,sizeof(service_client));
 	service_client.socket = service->socket;
 	service_client.service = service;
-	service_client.branch.limit = service->js.branch_limit;
-	service_client.branch.gc_interval = service->js.gc_interval;
-	service_client.branch.yield_interval = service->js.yield_interval;
-	service_client.branch.terminated = &service->terminated;
-	service_client.branch.auto_terminate = TRUE;
+	service_client.callback.limit = service->js.time_limit;
+	service_client.callback.gc_interval = service->js.gc_interval;
+	service_client.callback.yield_interval = service->js.yield_interval;
+	service_client.callback.terminated = &service->terminated;
+	service_client.callback.auto_terminate = TRUE;
 
 	if((js_runtime=jsrt_GetNew(service->js.max_bytes, 5000, __FILE__, __LINE__))==NULL) {
 		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript runtime"
@@ -1300,11 +1278,7 @@ static void js_static_service_thread(void* arg)
 		val = BOOLEAN_TO_JSVAL(JS_FALSE);
 		JS_SetProperty(js_cx, js_glob, "logged_in", &val);
 
-#if JS_VERSION>180
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
-#else
-		JS_SetBranchCallback(js_cx, js_BranchCallback);
-#endif
 	
 		if((js_script=JS_CompileFile(js_cx, js_glob, spath))==NULL)  {
 			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)",service->socket,spath);
@@ -1313,7 +1287,7 @@ static void js_static_service_thread(void* arg)
 
 		js_PrepareToExecute(js_cx, js_glob, spath, /* startup_dir */NULL);
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
-		js_EvalOnExit(js_cx, js_glob, &service_client.branch);
+		js_EvalOnExit(js_cx, js_glob, &service_client.callback);
 
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);	/* Free Context */
@@ -2197,11 +2171,11 @@ void DLLCALL services_thread(void* arg)
 				client->service->clients++;		/* this should be mutually exclusive */
 				client->udp_buf=udp_buf;
 				client->udp_len=udp_len;
-				client->branch.limit			= service[i].js.branch_limit;
-				client->branch.gc_interval		= service[i].js.gc_interval;
-				client->branch.yield_interval	= service[i].js.yield_interval;
-				client->branch.terminated		= &client->service->terminated;
-				client->branch.auto_terminate	= TRUE;
+				client->callback.limit			= service[i].js.time_limit;
+				client->callback.gc_interval	= service[i].js.gc_interval;
+				client->callback.yield_interval	= service[i].js.yield_interval;
+				client->callback.terminated		= &client->service->terminated;
+				client->callback.auto_terminate	= TRUE;
 
 				udp_buf = NULL;
 

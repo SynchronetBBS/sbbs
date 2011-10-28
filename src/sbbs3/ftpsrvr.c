@@ -477,7 +477,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 }
 
 static JSContext* 
-js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_branch_t* branch)
+js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_callback_t* cb)
 {
 	JSContext*	js_cx;
 	JSObject*	js_glob;
@@ -494,7 +494,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_b
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
-	memset(branch, 0, sizeof(js_branch_t));
+	memset(cb, 0, sizeof(js_callback_t));
 
 	/* ToDo: call js_CreateCommonObjects() instead */
 
@@ -508,7 +508,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_b
 			break;
 
 		/* Internal JS Object */
-		if(js_CreateInternalJsObject(js_cx, js_glob, branch, &startup->js)==NULL)
+		if(js_CreateInternalJsObject(js_cx, js_glob, cb, &startup->js)==NULL)
 			break;
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing System object",sock);
@@ -2444,7 +2444,7 @@ static void ctrl_thread(void* arg)
 	JSObject*	js_glob;
 	JSObject*	js_ftp;
 	JSString*	js_str;
-	js_branch_t	js_branch;
+	js_callback_t	js_callback;
 #endif
 
 	SetThreadName("FTP CTRL");
@@ -3978,7 +3978,7 @@ static void ctrl_thread(void* arg)
 
 					if(js_cx==NULL) {	/* Context not yet created, create it now */
 						/* js_initcx() starts a request */
-						if(((js_cx=js_initcx(js_runtime, sock,&js_glob,&js_ftp,&js_branch))==NULL)) {
+						if(((js_cx=js_initcx(js_runtime, sock,&js_glob,&js_ftp,&js_callback))==NULL)) {
 							lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript context",sock);
 							sockprintf(sock,"451 Error initializing JavaScript context");
 							filepos=0;
