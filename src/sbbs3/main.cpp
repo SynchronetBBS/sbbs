@@ -1119,6 +1119,13 @@ bool sbbs_t::js_init(ulong* stack_frame)
 		return(false);
 	JS_BEGINREQUEST(js_cx);
 	
+	memset(&js_callback,0,sizeof(js_callback));
+	js_callback.limit = startup->js.time_limit;
+	js_callback.gc_interval = startup->js.gc_interval;
+	js_callback.yield_interval = startup->js.yield_interval;
+	js_callback.terminated = &terminated;
+	js_callback.auto_terminate = TRUE;
+
 	bool success=false;
 	bool rooted=false;
 
@@ -1131,7 +1138,7 @@ bool sbbs_t::js_init(ulong* stack_frame)
 		/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
 		if(!js_CreateCommonObjects(js_cx, &scfg, &cfg, js_global_functions
 					,uptime, startup->host_name, SOCKLIB_DESC	/* system */
-					,&js_callback									/* js */
+					,&js_callback								/* js */
 					,&startup->js
 					,&client, client_socket						/* client */
 					,&js_server_props							/* server */
