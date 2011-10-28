@@ -41,13 +41,9 @@
 
 typedef struct
 {
-	char	name[128];
-	int		type;
-	union {
-		JSBool		b;
-		jsdouble	n;
-		char*		s;
-	} value;
+	char		name[128];
+	size_t		size;
+	uint64_t	*value;
 } queued_value_t;
 
 link_list_t named_queues;
@@ -74,51 +70,15 @@ static size_t js_decode_value(JSContext *cx, JSObject *parent
 							   ,queued_value_t* v, jsval* rval, BOOL peek)
 {
 	size_t			count=1;
-	size_t			decoded;
-	queued_value_t* pv;
-	queued_value_t	term;
-	jsval	prop_val;
-	jsuint	index=0;
-	JSObject *obj;
-
-	ZERO_VAR(term);
 
 	*rval = JSVAL_VOID;
 
-	if(v==NULL || v->type==JSTYPE_VOID)
+	if(v==NULL)
 		return(count);
 
-	switch(v->type) {
-		case JSTYPE_NULL:
-			*rval = JSVAL_NULL;
-			break;
-		case JSTYPE_BOOLEAN:
-			*rval = BOOLEAN_TO_JSVAL(v->value.b);
-			break;
-		case JSTYPE_NUMBER:
-			*rval=DOUBLE_TO_JSVAL(v->value.n);
-			break;
-		case JSTYPE_STRING:
-			if(v->value.s) {
-				*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,v->value.s));
-				if(!peek)
-					free(v->value.s);
-			}
-			break;
-		case JSTYPE_ARRAY:
-		case JSTYPE_OBJECT:
-			obj = JS_DefineObject(cx, parent, v->name, NULL, NULL
-				,JSPROP_ENUMERATE);
-			for(pv=v+1,count++;memcmp(pv,&term,sizeof(term));pv+=decoded,count+=decoded) {
-				decoded=js_decode_value(cx,obj,pv,&prop_val,peek);
-				if(v->type==JSTYPE_ARRAY)
-					JS_SetElement(cx,obj,index++,&prop_val);
-				else
-					JS_DefineProperty(cx, obj, pv->name, prop_val,NULL,NULL,JSPROP_ENUMERATE);
-			}
-			*rval = OBJECT_TO_JSVAL(obj);
-			break;
-	}
+	JS_ReadStructuredClone(cx, v->value, v->size, JS_STRUCTURED_CLONE_VERSION, rval, NULL, NULL);
+	js_free(v->value);
+
 	return(count);
 }
 
@@ -243,13 +203,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 									   ,queued_value_t* v, size_t* count)
 {
-	jsint       i;
-	jsval		prop_name;
-	jsval		prop_val;
-    JSObject*	obj;
-	JSIdArray*	id_array;
 	queued_value_t* nv;
-	char		*p;
 
 	if((nv=realloc(v,((*count)+1)*sizeof(queued_value_t)))==NULL) {
 		if(v) free(v);
@@ -263,52 +217,9 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 	if(name!=NULL)
 		SAFECOPY(nv->name,name);
 
-	if(JSVAL_IS_BOOLEAN(val)) {
-		nv->type=JSTYPE_BOOLEAN;
-		nv->value.b=JSVAL_TO_BOOLEAN(val);
-	}
-	else if(JSVAL_IS_OBJECT(val)) {
-		if(JSVAL_IS_NULL(val)) {
-			nv->type=JSTYPE_NULL;
-		}
-		else {
-			nv->type=JSTYPE_OBJECT;
-			obj = JSVAL_TO_OBJECT(val);
-
-			if(JS_IsArrayObject(cx, obj))
-				nv->type=JSTYPE_ARRAY;
-
-			if((id_array=JS_Enumerate(cx,obj))==NULL) {
-				free(v);
-				return(NULL);
-			}
-			for(i=0; i<id_array->length; i++)  {
-				/* property name */
-				JS_IdToValue(cx,id_array->vector[i],&prop_name);
-				if(JSVAL_IS_STRING(prop_name)) {
-					JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(prop_name), name, NULL);
-					/* value */
-					JS_GetProperty(cx,obj,name,&prop_val);
-				} else {
-					name=NULL;
-					JS_GetElement(cx,obj,i,&prop_val);
-				}
-				if((v=js_encode_value(cx,prop_val,name,v,count))==NULL)
-					break;
-			}
-			v=js_encode_value(cx,JSVAL_VOID,NULL,v,count);	/* terminate object */
-			JS_DestroyIdArray(cx,id_array);
-		}
-	}
-	else if(JSVAL_IS_NUMBER(val)) {
-		nv->type = JSTYPE_NUMBER;
-		JS_ValueToNumber(cx,val,&nv->value.n);
-	} else if(JSVAL_IS_VOID(val)) {
-		nv->type = JSTYPE_VOID;
-	} else {
-		nv->type= JSTYPE_STRING;
-		JSVALUE_TO_STRING(cx, val, p, NULL);
-		nv->value.s = strdup(p);
+	if(!JS_WriteStructuredClone(cx, val, &nv->value, &nv->size, NULL, NULL)) {
+		free(v);
+		return NULL;
 	}
 
 	return(v);
