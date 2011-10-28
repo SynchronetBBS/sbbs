@@ -2,6 +2,7 @@
 
 #include "js_rtpool.h"
 #include <threadwrap.h>		/* Must be included after jsapi.h */
+#include <genwrap.h>		/* SLEEP() */
 
 #ifdef DLLCALL
 #undef DLLCALL
@@ -38,6 +39,21 @@ static int			initialized=0;
 static sem_t			jsrt_sem;
 #endif
 
+static void trigger_thread(void *args)
+{
+	int	i;
+
+	for(;;) {
+		pthread_mutex_lock(&jsrt_mutex);
+		for(i=0; i<JSRT_QUEUE_SIZE; i++) {
+			if(jsrt_queue[i].created)
+				JS_TriggerAllOperationCallbacks(jsrt_queue[i].rt);
+		}
+		pthread_mutex_unlock(&jsrt_mutex);
+		SLEEP(100);
+	}
+}
+
 JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line)
 {
 #ifdef SHARED_RUNTIMES
@@ -45,6 +61,7 @@ JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char 
 
 	if(!initialized) {
 		pthread_mutex_init(&jsrt_mutex, NULL);
+		_beginthread(trigger_thread, 65536, NULL);
 		initialized=TRUE;
 	}
 

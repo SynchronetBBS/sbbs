@@ -2,7 +2,7 @@
 <wxsmith>
 	<object class="wxFrame" name="SBBS_User_ListFrame">
 		<title>SBBS User List</title>
-		<icon>../../conio/syncicon64.ico</icon>
+		<icon>../../../conio/syncicon64.ico</icon>
 		<object class="wxPanel" name="ID_PANEL1" variable="Panel1" member="yes">
 			<object class="wxBoxSizer" variable="BoxSizer1" member="no">
 				<orient>wxVERTICAL</orient>
