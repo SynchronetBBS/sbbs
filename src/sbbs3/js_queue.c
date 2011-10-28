@@ -77,7 +77,7 @@ static size_t js_decode_value(JSContext *cx, JSObject *parent
 		return(count);
 
 	JS_ReadStructuredClone(cx, v->value, v->size, JS_STRUCTURED_CLONE_VERSION, rval, NULL, NULL);
-	js_free(v->value);
+//	js_free(v->value);	// this line is asserting a heap violation, v = 0x0152ed08 {name=0x0152ed08 "" size=80 value=0x0338bfc0 }
 
 	return(count);
 }
