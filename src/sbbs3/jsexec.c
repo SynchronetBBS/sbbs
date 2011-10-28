@@ -663,7 +663,7 @@ js_OperationCallback(JSContext *cx)
 	JSBool	ret;
 
 	JS_SetOperationCallback(cx, NULL);
-	ret=js_CommonOperationCallback(cx, NULL);
+	ret=js_CommonOperationCallback(cx, &cb);
 	JS_SetOperationCallback(cx, js_OperationCallback);
 	return ret;
 }
