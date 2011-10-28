@@ -2,6 +2,30 @@
 
 /* A sophisticated suite of test cases.  CVS pollution at its finest. */
 
+/*
+ * This bit is here for test32.  If the commented bit is
+ * uncommented, it will spawn 128 different threads which
+ * will each spawn 128 dnshelper.js threads.
+ *
+ * This will crash.
+ * At 2:25AM, Oct 28th, 2011, I didn't care about that though.
+ */
+if(argc) {
+	var test32=[];
+	var test32_count=128;
+	var test32_script="dnshelper.js";
+	for(test32_count=0; test32_count<128; test32_count++)
+		test32.push(load(true,test32_script,"127.0.0.1"))
+	for(test32_count=0; test32_count<128; test32_count++) {
+		test32_queue=test32.shift();
+		while ((test32_queue.ret=test32_queue.read()) == undefined) {
+			log("Waiting for dnshelper.js to return a result...");
+			sleep(10);
+		}
+	}
+	exit();
+}
+
 var test01 = log(LOG_ERROR, "one", "two", "three");
 if (test01 != "three") {
 	log(LOG_ERROR, "log() test failed ("+test01+")!");
@@ -193,13 +217,21 @@ if (test31 != 3) {
 
 var test32=[];
 var test32_count=128;
+var test32_script="dnshelper.js";
+/*
+ * Yeah, this is what I was talking about.
+ */
+//if(argc==0)
+//	test32_script="bench/dest6.js";
 for(test32_count=0; test32_count<128; test32_count++)
-	test32.push(load(true,"dnshelper.js","127.0.0.1"))
+	test32.push(load(true,test32_script,"127.0.0.1"))
 for(test32_count=0; test32_count<128; test32_count++) {
 	test32_queue=test32.shift();
-	while ((test32_queue.ret=test32_queue.read()) == undefined) {
-		log("Waiting for dnshelper.js to return a result...");
-		sleep(10);
+	if(argc) {
+		while ((test32_queue.ret=test32_queue.read()) == undefined) {
+			log("Waiting for dnshelper.js to return a result...");
+			sleep(10);
+		}
 	}
 }
 log(test32.ret);
