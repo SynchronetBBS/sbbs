@@ -43,7 +43,7 @@ typedef struct
 {
 	char		name[128];
 	size_t		size;
-	uint64_t	*value;
+	uint64		*value;
 } queued_value_t;
 
 link_list_t named_queues;
@@ -77,7 +77,7 @@ static size_t js_decode_value(JSContext *cx, JSObject *parent
 		return(count);
 
 	JS_ReadStructuredClone(cx, v->value, v->size, JS_STRUCTURED_CLONE_VERSION, rval, NULL, NULL);
-//	js_free(v->value);	// this line is asserting a heap violation, v = 0x0152ed08 {name=0x0152ed08 "" size=80 value=0x0338bfc0 }
+	free(v->value);
 
 	return(count);
 }
@@ -204,6 +204,7 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 									   ,queued_value_t* v, size_t* count)
 {
 	queued_value_t* nv;
+	uint64			*nval;
 
 	if((nv=realloc(v,((*count)+1)*sizeof(queued_value_t)))==NULL) {
 		if(v) free(v);
@@ -217,10 +218,17 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
 	if(name!=NULL)
 		SAFECOPY(nv->name,name);
 
-	if(!JS_WriteStructuredClone(cx, val, &nv->value, &nv->size, NULL, NULL)) {
+	if(!JS_WriteStructuredClone(cx, val, &nval, &nv->size, NULL, NULL)) {
 		free(v);
 		return NULL;
 	}
+	if((nv->value=(uint64 *)malloc(nv->size))==NULL) {
+		JS_free(cx, nval);
+		free(v);
+		return NULL;
+	}
+	memcpy(nv->value, nval, nv->size);
+	JS_free(cx, nval);
 
 	return(v);
 }
