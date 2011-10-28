@@ -204,10 +204,6 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
     }
 
 	p=iniGetString(list,section,strTempDirectory,nulstr,value);
-#if defined(__unix__)
-	if(*p==0)
-		p=_PATH_TMP;	/* Good idea to use "/tmp" on Unix */
-#endif
 	if(*p) {
 	    SAFECOPY(global->temp_dir,value);
 		backslash(global->temp_dir);
