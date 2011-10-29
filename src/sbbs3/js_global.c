@@ -180,6 +180,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	background_data_t* bg;
 	jsval	rval;
 
+fprintf(stderr,"BACKGROUND LOG!\r\n");
 	JS_SET_RVAL(cx, arglist, rval);
 	rval=JSVAL_VOID;
 
@@ -203,7 +204,7 @@ static jsval* js_CopyValue(JSContext* cx, jsval val, JSContext* new_cx, jsval* r
 {
 	*rval = JSVAL_VOID;
 	size_t	size;
-	uint64	nval;
+	uint64	*nval;
 
 	if(JS_WriteStructuredClone(cx, val, &nval, &size, NULL, NULL)) {
 		JS_ReadStructuredClone(new_cx, nval, size, JS_STRUCTURED_CLONE_VERSION, rval, NULL, NULL);
