@@ -110,7 +110,7 @@ typedef struct {
 	msg_queue_t*	msg_queue;
 	js_callback_t	cb;
 	JSErrorReporter error_reporter;
-	JSNative		log;
+	JSObject*		logobj;
 } background_data_t;
 
 static void background_thread(void* arg)
@@ -128,6 +128,7 @@ static void background_thread(void* arg)
 		result=exit_code;
 	js_EvalOnExit(bg->cx, bg->obj, &bg->cb);
 	js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
+	JS_RemoveObjectRoot(bg->cx, &bg->logobj);
 	JS_RemoveObjectRoot(bg->cx, &bg->obj);
 	JS_ENDREQUEST(bg->cx);
 	JS_DestroyContext(bg->cx);
@@ -171,32 +172,42 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
+static JSBool
+js_log(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	JSBool retval;
+	background_data_t* bg;
+	jsval	rval;
+
+	JS_SET_RVAL(cx, arglist, rval);
+	rval=JSVAL_VOID;
+
+	if((bg=(background_data_t*)JS_GetContextPrivate(cx))==NULL)
+		return JS_FALSE;
+
+	/* Use parent's context private data */
+	JS_SetContextPrivate(cx, JS_GetContextPrivate(bg->parent_cx));
+
+	/* Call parent's log() function */
+	retval = JS_CallFunctionName(cx, bg->logobj, "log", argc, argv, &rval);
+
+	/* Restore our context private data */
+	JS_SetContextPrivate(cx, bg);
+
+	return retval;
+}
+
 /* Create a new value in the new context with a value from the original context */
-/* Note: objects (including arrays) not currently supported */
 static jsval* js_CopyValue(JSContext* cx, jsval val, JSContext* new_cx, jsval* rval)
 {
 	*rval = JSVAL_VOID;
+	size_t	size;
+	uint64	nval;
 
-	if(cx==new_cx
-		|| JSVAL_IS_BOOLEAN(val) 
-		|| JSVAL_IS_NULL(val) 
-		|| JSVAL_IS_VOID(val) 
-		|| JSVAL_IS_INT(val))
-		*rval = val;
-	else if(JSVAL_IS_NUMBER(val)) {
-		jsdouble	d;
-		if(JS_ValueToNumber(cx,val,&d))
-			*rval=DOUBLE_TO_JSVAL(d);
-	}
-	else {
-		JSString*	str;
-		size_t		len;
-		char*		p;
-
-		JSVALUE_TO_STRING(cx, val, p, &len);
-		if(p != NULL
-			&& (str=JS_NewStringCopyN(new_cx,p,len)) != NULL)
-			*rval=STRING_TO_JSVAL(str);
+	if(JS_WriteStructuredClone(cx, val, &nval, &size, NULL, NULL)) {
+		JS_ReadStructuredClone(new_cx, nval, size, JS_STRUCTURED_CLONE_VERSION, rval, NULL, NULL);
+		JS_free(cx, nval);
 	}
 
 	return rval;
@@ -245,10 +256,6 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		bg->cb.limit=p->startup->time_limit;
 		bg->cb.gc_interval=p->startup->gc_interval;
 		bg->cb.yield_interval=p->startup->yield_interval;
-#if 0
-		if(JS_GetProperty(cx, obj,"js",&val))	/* copy branch settings from parent */
-			memcpy(&bg->branch,JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)),sizeof(bg->branch));
-#endif
 		bg->cb.terminated=NULL;	/* could be bad pointer at any time */
 		bg->cb.counter=0;
 		bg->cb.gc_attempts=0;
@@ -286,6 +293,15 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			return(JS_FALSE);
 		}
 
+		if((bg->logobj=JS_NewObjectWithGivenProto(bg->cx, NULL, NULL, bg->obj))==NULL) {
+			JS_ENDREQUEST(bg->cx);
+			JS_DestroyContext(bg->cx);
+			jsrt_Release(bg->runtime);
+			free(bg);
+			return(JS_FALSE);
+		}
+		JS_AddObjectRoot(cx, &bg->logobj);
+
 		bg->msg_queue = msgQueueInit(NULL,MSG_QUEUE_BIDIR);
 
 		js_CreateQueueObject(bg->cx, bg->obj, "parent_queue", bg->msg_queue);
@@ -305,8 +321,9 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			if((func=JS_ValueToFunction(cx, val))!=NULL) {
 				JSObject *obj;
 
-				obj=JS_CloneFunctionObject(bg->cx, JS_GetFunctionObject(func), bg->obj);
-				JS_DefineProperty(bg->cx, bg->obj, "log", OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE|JSPROP_PERMANENT);
+				obj=JS_CloneFunctionObject(bg->cx, JS_GetFunctionObject(func), bg->logobj);
+				JS_DefineProperty(bg->cx, bg->logobj, "log", OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE|JSPROP_PERMANENT);
+				JS_DefineFunction(bg->cx, bg->obj, "log", js_log, JS_GetFunctionArity(func), JS_GetFunctionFlags(func));
 			}
 		}
 
