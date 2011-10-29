@@ -227,7 +227,7 @@ for(test32_count=0; test32_count<128; test32_count++)
 	test32.push(load(true,test32_script,"127.0.0.1"))
 for(test32_count=0; test32_count<128; test32_count++) {
 	test32_queue=test32.shift();
-	if(argc) {
+	if(test32_script=="dnshelper.js") {
 		while ((test32_queue.ret=test32_queue.read()) == undefined) {
 			log("Waiting for dnshelper.js to return a result...");
 			sleep(10);
