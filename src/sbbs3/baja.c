@@ -334,11 +334,11 @@ void newvar(uchar* src, uchar *in)
 			return;
 	}
 	if((var_name=(uint32_t *)realloc(var_name,sizeof(int32_t)*(vars+1)))==NULL) {
-		printf("Too many (%lu) variables!\n",vars);
+		printf("Too many (%"PRIu32") variables!\n",vars);
 		bail(1); }
 	var_name[vars]=l;
 	if(display)
-		printf("newvar(%08lX)=%s\n",l,in);
+		printf("newvar(%08"PRIX32")=%s\n",l,in);
 	vars++;
 }
 

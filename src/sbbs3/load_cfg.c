@@ -56,7 +56,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 #endif
 
 	if(cfg->size!=sizeof(scfg_t)) {
-		sprintf(error,"cfg->size (%ld) != sizeof(scfg_t) (%d)"
+		sprintf(error,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%d)"
 			,cfg->size,sizeof(scfg_t));
 		return(FALSE);
 	}
@@ -111,7 +111,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 		fclose(instream);
 
 		if(i<TOTAL_TEXT) {
-			sprintf(error,"line %lu in %s: Less than TOTAL_TEXT (%u) strings defined in %s."
+			sprintf(error,"line %d in %s: Less than TOTAL_TEXT (%u) strings defined in %s."
 				,i,fname
 				,TOTAL_TEXT,fname);
 			return(FALSE); 

@@ -3172,7 +3172,7 @@ static void ctrl_thread(void* arg)
 						t=fdate(g.gl_pathv[i]);
 						if(localtime_r(&t,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
-						fprintf(fp,"%crw-r--r--   1 %-8s local %9ld %s %2d "
+						fprintf(fp,"%crw-r--r--   1 %-8s local %9"PRId32" %s %2d "
 							,isdir(g.gl_pathv[i]) ? 'd':'-'
 							,scfg.sys_id
 							,f.size
@@ -3674,7 +3674,7 @@ static void ctrl_thread(void* arg)
 								dotname(f.uler,str);
 						} else
 							SAFECOPY(str,scfg.sys_id);
-						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d "
+						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9"PRId32" %s %2d "
 							,NAME_LEN
 							,str
 							,scfg.dir[dir]->code_suffix

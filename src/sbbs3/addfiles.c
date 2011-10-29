@@ -240,7 +240,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			f.desc[0]=0;
 			f.cdt=flength(filepath);
 			padfname(getfname(filepath),f.name);
-			printf("%s  %10lu  %s\n"
+			printf("%s  %10"PRIu32"  %s\n"
 				,f.name,f.cdt,unixtodstr(&scfg,(time32_t)fdate(filepath),str));
 			exist=findfile(&scfg,f.dir,f.name);
 			if(exist) {
@@ -888,7 +888,7 @@ int main(int argc, char **argv)
 			prep_desc(f.desc);
 			if(mode&ASCII_ONLY)
 				strip_exascii(f.desc, f.desc);
-			printf("%s %7lu %s\n",f.name,f.cdt,f.desc);
+			printf("%s %7"PRIu32" %s\n",f.name,f.cdt,f.desc);
 			if(mode&FILE_ID) {
 				for(i=0;i<scfg.total_fextrs;i++)
 					if(!stricmp(scfg.fextr[i]->ext,f.name+9) && chk_ar(&scfg,scfg.fextr[i]->ar,/* user: */NULL, /* client: */NULL))

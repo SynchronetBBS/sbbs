@@ -485,6 +485,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 	time_t		startfile;
 	struct		stat st;
 	BOOL		sent_header=FALSE;
+	uintmax_t	tmptime;
 
 	if(sent!=NULL)	
 		*sent=0;
@@ -509,9 +510,9 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 
 			memset(block,0,sizeof(block));
 			SAFECOPY(block,getfname(fname));
-			i=sprintf(block+strlen(block)+1,"%"PRIu64" %lo 0 0 %d %u"
+			i=sprintf(block+strlen(block)+1,"%"PRIu64" %"PRIoMAX" 0 0 %lu %"PRId64
 				,(uint64_t)st.st_size
-				,st.st_mtime
+				,(uintmax_t)st.st_mtime
 				,xm->total_files-xm->sent_files
 				,xm->total_bytes-xm->sent_bytes);
 			

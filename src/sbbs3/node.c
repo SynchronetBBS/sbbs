@@ -628,7 +628,7 @@ int main(int argc, char **argv)
 							printf("conn=%u\n",node.connection);
 							printf("misc=%u\n",node.misc);
 							printf("aux=%u\n",node.aux);
-							printf("extaux=%lu\n",node.extaux); 
+							printf("extaux=%"PRIu32"\n",node.extaux); 
 						}  /* debug */
 
 						if(pause) {

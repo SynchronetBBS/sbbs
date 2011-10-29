@@ -210,7 +210,7 @@ void add_bruted(unsigned long name, char good, char *val, int save)
 	if(*val && save) {
 		cache=fopen("unbaja.brute","a");
 		if(cache!=NULL) {
-			fprintf(cache,"%08x,%hhd,%s\n",name,good,val);
+			fprintf(cache,"%08lx,%hhd,%s\n",name,good,val);
 			fclose(cache);
 		}
 	}
@@ -258,7 +258,7 @@ char* bruteforce(unsigned long name)
 	}
 	memset(brute_buf,0,brute_len+1);
 	memset(brute_crc_buf,0,brute_len*sizeof(int32_t));
-	printf("Brute forcing var_%08x\n",name);
+	printf("Brute forcing var_%08lx\n",name);
 	this_crc=crc32((char *)brute_buf,0);
 	for(;;) {
 		pos=brute_buf+l;
@@ -346,7 +346,7 @@ char *getvar(long name)
 		if(brute)
 			strcpy(varname,brute);
 		else
-			sprintf(varname,"var_%08x",name);
+			sprintf(varname,"var_%08lx",name);
 	}
 
 	return(varname);
@@ -384,7 +384,7 @@ void write_lng(FILE *bin, char *src)
 	int32_t lng;
 
 	fread(&lng,4,1,bin);
-	sprintf(strchr(src,0),"%ld ",lng);
+	sprintf(strchr(src,0),"%"PRId32" ",lng);
 }
 
 void write_short(FILE *bin, char *src)
@@ -1538,7 +1538,7 @@ void decompile(FILE *bin, FILE *srcfile)
 							sprintf(strchr(src,0),"%s ",getvar(var));
 							usevar=FALSE;
 						} else {
-							sprintf(strchr(src,0),"%ld ",lng);
+							sprintf(strchr(src,0),"%"PRId32" ",lng);
 						}
 						eol(src);
 						break;
@@ -1551,7 +1551,7 @@ void decompile(FILE *bin, FILE *srcfile)
 							sprintf(strchr(src,0),"%s ",getvar(var));
 							usevar=FALSE;
 						} else {
-							sprintf(strchr(src,0),"%ld ",lng);
+							sprintf(strchr(src,0),"%"PRId32" ",lng);
 						}
 						eol(src);
 						break;

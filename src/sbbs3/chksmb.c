@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 		SAFECOPY(from,msg.from);
 		truncsp(from);
 		strip_ctrl(from);
-		fprintf(stderr,"#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,from);
+		fprintf(stderr,"#%-5"PRIu32" (%06lX) %-25.25s ",msg.hdr.number,l,from);
 
 		if(msg.hdr.length!=smb_getmsghdrlen(&msg)) {
 			fprintf(stderr,"%sHeader length mismatch\n",beep);
@@ -366,12 +366,12 @@ int main(int argc, char **argv)
 #ifdef _DEBUG
 						printf("\n");
 						printf("%-10s: %s\n",		"Source",	smb_hashsourcetype(hashes[h]->source));
-						printf("%-10s: %lu\n",		"Length",	hashes[h]->length);
+						printf("%-10s: %"PRIu32"\n",		"Length",	hashes[h]->length);
 						printf("%-10s: %x\n",		"Flags",	hashes[h]->flags);
 						if(hashes[h]->flags&SMB_HASH_CRC16)
 							printf("%-10s: %04x\n",	"CRC-16",	hashes[h]->crc16);
 						if(hashes[h]->flags&SMB_HASH_CRC32)
-							printf("%-10s: %08lx\n","CRC-32",	hashes[h]->crc32);
+							printf("%-10s: %08"PRIx32"\n","CRC-32",	hashes[h]->crc32);
 						if(hashes[h]->flags&SMB_HASH_MD5)
 							printf("%-10s: %s\n",	"MD5",		MD5_hex(str,hashes[h]->md5));
 
@@ -402,7 +402,7 @@ int main(int argc, char **argv)
 				fprintf(stderr,"%sOut-Of-Range message number\n",beep);
 				msgerr=TRUE;
 				if(extinfo)
-					printf("MSGERR: Header number (%lu) greater than last (%lu)\n"
+					printf("MSGERR: Header number (%"PRIu32") greater than last (%"PRIu32")\n"
 						,msg.hdr.number,smb.status.last_msg);
 				hdrnumerr++; 
 			}
@@ -410,7 +410,7 @@ int main(int argc, char **argv)
 				fprintf(stderr,"%sNot found in index\n",beep);
 				msgerr=TRUE;
 				if(extinfo)
-					printf("MSGERR: Header number (%lu) not found in index\n"
+					printf("MSGERR: Header number (%"PRIu32") not found in index\n"
 						,msg.hdr.number);
 				orphan++; 
 			}
@@ -511,7 +511,7 @@ int main(int argc, char **argv)
 						fprintf(stderr,"%sDuplicate message number\n",beep);
 						msgerr=TRUE;
 						if(extinfo)
-							printf("MSGERR: Header number (%lu) duplicated\n"
+							printf("MSGERR: Header number (%"PRIu32") duplicated\n"
 								,msg.hdr.number);
 						dupenumhdr++;
 						break; 
@@ -535,7 +535,7 @@ int main(int argc, char **argv)
 						msgerr=TRUE;
 						if(extinfo)
 							printf("MSGERR: Unsupported translation type (%04X) "
-								"in dfield[%u] (offset %ld)\n"
+								"in dfield[%u] (offset %"PRIu32")\n"
 								,xlat,i,msg.dfield[i].offset);
 						xlaterr++; 
 					}
@@ -566,11 +566,11 @@ int main(int argc, char **argv)
 					}
 	***/
 				if(!(msg.hdr.attr&MSG_DELETE) && (i=fgetc(smb.sha_fp))!=1) {
-					fprintf(stderr,"%sActive Header Block %lu marked %02X\n"
+					fprintf(stderr,"%sActive Header Block %"PRIu32" marked %02X\n"
 						,beep,m/SHD_BLOCK_LEN,i);
 					msgerr=TRUE;
 					if(extinfo)
-						printf("MSGERR: Active header block %lu marked %02X "
+						printf("MSGERR: Active header block %"PRIu32" marked %02X "
 							"instead of 01\n"
 							,m/SHD_BLOCK_LEN,i);
 					actalloc++; 
@@ -583,14 +583,14 @@ int main(int argc, char **argv)
 					if(msg.dfield[n].offset&0x80000000UL) {
 						msgerr=TRUE;
 						if(extinfo)
-							printf("MSGERR: Invalid Data Field [%lu] Offset: %lu\n"
+							printf("MSGERR: Invalid Data Field [%lu] Offset: %"PRIu32"\n"
 								,n,msg.dfield[n].offset);
 						dfieldoffset++; 
 					}
 					if(msg.dfield[n].length&0x80000000UL) {
 						msgerr=TRUE;
 						if(extinfo)
-							printf("MSGERR: Invalid Data Field [%lu] Length: %lu\n"
+							printf("MSGERR: Invalid Data Field [%lu] Length: %"PRIu32"\n"
 								,n,msg.dfield[n].length);
 						dfieldlength++; 
 					}
@@ -602,11 +602,11 @@ int main(int argc, char **argv)
 						i=0;
 						if(!fread(&i,2,1,smb.sda_fp) || !i) {
 							fprintf(stderr
-								,"%sActive Data Block %lu.%lu marked free\n"
+								,"%sActive Data Block %lu.%"PRIu32" marked free\n"
 								,beep,n,m/SHD_BLOCK_LEN);
 							msgerr=TRUE;
 							if(extinfo)
-								printf("MSGERR: Active Data Block %lu.%lu "
+								printf("MSGERR: Active Data Block %lu.%"PRIu32" "
 									"marked free\n"
 									,n,m/SHD_BLOCK_LEN);
 							datactalloc++; 
@@ -687,7 +687,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"\r%2lu%%  %5lu ",l ? (long)(100.0/((float)total/l)) : 0,l);
 		if(!fread(&idx,sizeof(idxrec_t),1,smb.sid_fp))
 			break;
-		fprintf(stderr,"#%-5lu (%06lX) 1st Pass ",idx.number,idx.offset);
+		fprintf(stderr,"#%-5"PRIu32" (%06"PRIX32") 1st Pass ",idx.number,idx.offset);
 		if(idx.attr&MSG_DELETE) {
 			/* Message Disabled... why?  ToDo */
 			/* fprintf(stderr,"%sMarked for deletion\n",beep); */
@@ -701,7 +701,7 @@ int main(int argc, char **argv)
 			}
 		for(m=0;m<l;m++)
 			if(offset[m]==idx.offset) {
-				fprintf(stderr,"%sDuplicate offset: %lu\n",beep,idx.offset);
+				fprintf(stderr,"%sDuplicate offset: %"PRIu32"\n",beep,idx.offset);
 				dupeoff++;
 				break; 
 			}
@@ -731,7 +731,7 @@ int main(int argc, char **argv)
 	else {
 		fprintf(stderr,"\r%79s\r","");
 		for(m=0;m<total;m++) {
-			fprintf(stderr,"\r%2lu%%  %5lu ",m ? (long)(100.0/((float)total/m)) : 0,m);
+			fprintf(stderr,"\r%2lu%%  %5"PRIu32" ",m ? (long)(100.0/((float)total/m)) : 0,m);
 			fprintf(stderr,"#%-5lu (%06lX) 2nd Pass ",number[m],offset[m]);
 			for(n=0;n<m;n++)
 				if(number[m] && number[n] && number[m]<number[n]) {
@@ -764,9 +764,9 @@ int main(int argc, char **argv)
 			if(hash.number==0 || hash.number > smb.status.last_msg)
 				fprintf(stderr,"\r%sInvalid message number (%u)\n", beep, hash.number), badhash++;
 			else if(hash.time < 0x40000000 || hash.time > (ulong)now)
-				fprintf(stderr,"\r%sInvalid time (0x%08lX)\n", beep, hash.time), badhash++;
+				fprintf(stderr,"\r%sInvalid time (0x%08"PRIX32")\n", beep, hash.time), badhash++;
 			else if(hash.length < 1 || hash.length > 1024*1024)
-				fprintf(stderr,"\r%sInvalid length (%lu)\n", beep, hash.length), badhash++;
+				fprintf(stderr,"\r%sInvalid length (%"PRIu32")\n", beep, hash.length), badhash++;
 			else if(hash.source >= SMB_HASH_SOURCE_TYPES)
 				fprintf(stderr,"\r%sInvalid source type (%u)\n", beep, hash.source), badhash++;
 		}
@@ -782,7 +782,7 @@ int main(int argc, char **argv)
 	totaldelmsgs+=deleted;
 	totallzhsaved+=lzhsaved;
 	printf("\n");
-	printf("%-35.35s (=): %lu\n"
+	printf("%-35.35s (=): %"PRIu32"\n"
 		,"Status Total"
 		,smb.status.total_msgs);
 	printf("%-35.35s (=): %lu\n"

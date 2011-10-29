@@ -1401,16 +1401,16 @@ int main(int argc, char** argv)
 			printf("Telnet server port:\t%u\n",bbs_startup.telnet_port);
 			printf("Terminal first node:\t%u\n",bbs_startup.first_node);
 			printf("Terminal last node:\t%u\n",bbs_startup.last_node);
-			printf("Terminal server options:\t0x%08lX\n",bbs_startup.options);
+			printf("Terminal server options:\t0x%08"PRIX32"\n",bbs_startup.options);
 			printf("FTP server port:\t%u\n",ftp_startup.port);
-			printf("FTP server options:\t0x%08lX\n",ftp_startup.options);
+			printf("FTP server options:\t0x%08"PRIX32"\n",ftp_startup.options);
 			printf("Mail SMTP server port:\t%u\n",mail_startup.smtp_port);
 			printf("Mail SMTP relay port:\t%u\n",mail_startup.relay_port);
 			printf("Mail POP3 server port:\t%u\n",mail_startup.pop3_port);
-			printf("Mail server options:\t0x%08lX\n",mail_startup.options);
-			printf("Services options:\t0x%08lX\n",services_startup.options);
+			printf("Mail server options:\t0x%08"PRIX32"\n",mail_startup.options);
+			printf("Services options:\t0x%08"PRIX32"\n",services_startup.options);
 			printf("Web server port:\t%u\n",web_startup.port);
-			printf("Web server options:\t0x%08lX\n",web_startup.options);
+			printf("Web server options:\t0x%08"PRIX32"\n",web_startup.options);
 			return(0);
 		}
 		switch(toupper(*(arg++))) {
@@ -2113,7 +2113,7 @@ int main(int argc, char** argv)
 						for(node=login_attempt_list.first; node!=NULL; node=node->next) {
 							login_attempt=node->data;
 							localtime32(&login_attempt->time,&tm);
-							printf("%u attempts (%u duplicate) from %s, last via %s on %u/%u %02u:%02u:%02u (user: %s, password: %s)\n"
+							printf("%lu attempts (%lu duplicate) from %s, last via %s on %u/%u %02u:%02u:%02u (user: %s, password: %s)\n"
 								,login_attempt->count
 								,login_attempt->dupes
 								,inet_ntoa(login_attempt->addr)
@@ -2129,11 +2129,11 @@ int main(int argc, char** argv)
 						if(count)
 							printf("==\n");
 						printf("%u failed login attempters (potential password hackers)\n", count);
-						printf("%u total unique failed login attempts (potential password hack attempts)\n", total);
+						printf("%lu total unique failed login attempts (potential password hack attempts)\n", total);
 					}
 					break;
 				case 'A':
-					printf("\n%u login attempts cleared\n", loginAttemptListClear(&login_attempt_list));
+					printf("\n%lu login attempts cleared\n", loginAttemptListClear(&login_attempt_list));
 					break;
 				case 'c':	/* Show connected clients: */
 					printf("\nConnected clients:\n\n");
@@ -2147,7 +2147,7 @@ int main(int argc, char** argv)
 						for(node=client_list.first; node!=NULL; node=node->next) {
 							client=node->data;
 							localtime32(&client->time,&tm);
-							printf("%04d %s %s %s %s port %u since %u/%u %02u:%02u:%02u\n"
+							printf("%04ld %s %s %s %s port %u since %u/%u %02u:%02u:%02u\n"
 								,node->tag
 								,client->protocol
 								,client->user

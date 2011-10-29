@@ -4848,22 +4848,22 @@ static void cleanup(int code)
 	status("Down");
 	if(terminate_server || code) {
 		char str[1024];
-		sprintf(str,"%u connections served", stats.connections_served);
+		sprintf(str,"%lu connections served", stats.connections_served);
 		if(stats.connections_refused)
-			sprintf(str+strlen(str),", %u refused", stats.connections_refused);
+			sprintf(str+strlen(str),", %lu refused", stats.connections_refused);
 		if(stats.connections_ignored)
-			sprintf(str+strlen(str),", %u ignored", stats.connections_refused);
+			sprintf(str+strlen(str),", %lu ignored", stats.connections_refused);
 		if(stats.sessions_refused)
-			sprintf(str+strlen(str),", %u sessions refused", stats.sessions_refused);
-		sprintf(str+strlen(str),", %u messages received", stats.msgs_received);
+			sprintf(str+strlen(str),", %lu sessions refused", stats.sessions_refused);
+		sprintf(str+strlen(str),", %lu messages received", stats.msgs_received);
 		if(stats.msgs_refused)
-			sprintf(str+strlen(str),", %u refused", stats.msgs_refused);
+			sprintf(str+strlen(str),", %lu refused", stats.msgs_refused);
 		if(stats.msgs_ignored)
-			sprintf(str+strlen(str),", %u ignored", stats.msgs_ignored);
+			sprintf(str+strlen(str),", %lu ignored", stats.msgs_ignored);
 		if(stats.errors)
-			sprintf(str+strlen(str),", %u errors", stats.errors);
+			sprintf(str+strlen(str),", %lu errors", stats.errors);
 		if(stats.crit_errors)
-			sprintf(str+strlen(str),", %u critcal", stats.crit_errors);
+			sprintf(str+strlen(str),", %lu critcal", stats.crit_errors);
 
 		lprintf(LOG_INFO,"#### Mail Server thread terminated (%s)",str);
 	}

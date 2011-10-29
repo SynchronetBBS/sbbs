@@ -1768,9 +1768,9 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	p += strlen(p) + 1;
 
-	sprintf(p,"%"PRId64" %lo 0 0 %u %"PRId64" 0"
+	sprintf(p,"%"PRId64" %"PRIoMAX" 0 0 %u %"PRId64" 0"
 		,zm->current_file_size	/* use for estimating only, could be zero! */
-		,s.st_mtime
+		,(uintmax_t)s.st_mtime
 		,zm->files_remaining
 		,zm->bytes_remaining
 		);
@@ -2117,7 +2117,7 @@ void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 	zm->files_remaining = 0;
 	zm->bytes_remaining = 0;
 
-	i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%"PRId64" %lo %o %lo %u %"PRId64
+	i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%"SCNd64" %lo %o %lo %u %"SCNd64
 		,&zm->current_file_size	/* file size (decimal) */
 		,&tmptime				/* file time (octal unix format) */
 		,&mode					/* file mode */

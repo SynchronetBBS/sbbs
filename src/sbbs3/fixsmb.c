@@ -194,7 +194,7 @@ int fixsmb(char* sub)
 			continue; 
 		}
 		size=smb_hdrblocks(smb_getmsghdrlen(&msg))*SHD_BLOCK_LEN;
-		printf("#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
+		printf("#%-5"PRIu32" (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
 
 		if(smb_undelete)
 			msg.hdr.attr&=~MSG_DELETE;

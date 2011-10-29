@@ -20,12 +20,12 @@ DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **names, int mode, int major)
 			return(ret);
 
 		/* Try for name match */
-		sprintf(fname, "lib%s.so", name, major);
+		sprintf(fname, "lib%s.so", name);
 		if((ret=dlopen(fname, mode))!=NULL)
 			return(ret);
 
 		/* Try for name match without the prefix */
-		sprintf(fname, "%s.so", name, major);
+		sprintf(fname, "%s.so", name);
 		if((ret=dlopen(fname, mode))!=NULL)
 			return(ret);
 

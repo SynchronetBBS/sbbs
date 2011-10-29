@@ -141,7 +141,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 		if(length) {
 
 			if(length&0x80000000) {
-				sprintf(smb->last_error,"message length: 0x%lX",length);
+				sprintf(smb->last_error,"message length: 0x%zX",length);
 				retval=SMB_ERR_DAT_LEN;
 				break;
 			}

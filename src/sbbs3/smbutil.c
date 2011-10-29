@@ -362,11 +362,11 @@ void showstatus(void)
 			,beep,i,smb.last_error);
 		return; 
 	}
-	printf("last_msg        =%lu\n"
-		   "total_msgs      =%lu\n"
-		   "header_offset   =%lu\n"
-		   "max_crcs        =%lu\n"
-		   "max_msgs        =%lu\n"
+	printf("last_msg        =%"PRIu32"\n"
+		   "total_msgs      =%"PRIu32"\n"
+		   "header_offset   =%"PRIu32"\n"
+		   "max_crcs        =%"PRIu32"\n"
+		   "max_msgs        =%"PRIu32"\n"
 		   "max_age         =%u\n"
 		   "attr            =%04Xh\n"
 		   ,smb.status.last_msg
@@ -400,13 +400,13 @@ void config(void)
 			,beep,i,smb.last_error);
 		return; 
 	}
-	printf("Header offset =%-5lu  New value (CR=No Change): "
+	printf("Header offset =%-5"PRIu32"  New value (CR=No Change): "
 		,smb.status.header_offset);
 	gets(header_offset);
-	printf("Max msgs      =%-5lu  New value (CR=No Change): "
+	printf("Max msgs      =%-5"PRIu32"  New value (CR=No Change): "
 		,smb.status.max_msgs);
 	gets(max_msgs);
-	printf("Max crcs      =%-5lu  New value (CR=No Change): "
+	printf("Max crcs      =%-5"PRIu32"  New value (CR=No Change): "
 		,smb.status.max_crcs);
 	gets(max_crcs);
 	printf("Max age       =%-5u  New value (CR=No Change): "
@@ -475,7 +475,7 @@ void listmsgs(ulong start, ulong count)
 				,beep,i,smb.last_error);
 			break; 
 		}
-		printf("%4lu %-25.25s %-25.25s %s\n"
+		printf("%4"PRIu32" %-25.25s %-25.25s %s\n"
 			,msg.hdr.number,msg.from,msg.to,msg.subj);
 		smb_freemsgmem(&msg);
 		l++; 
@@ -533,7 +533,7 @@ void dumpindex(ulong start, ulong count)
 		if(!fread(&idx,1,sizeof(idx),smb.sid_fp))
 			break;
 
-		printf("%4lu %04hX %04hX %04Xh %04Xh %06X %s\n"
+		printf("%4"PRIu32" %04hX %04hX %04Xh %04Xh %06X %s\n"
 			,idx.number,idx.from,idx.to,idx.subj,idx.attr
 			,idx.offset,my_timestr(idx.time));
 		l++; 
@@ -598,15 +598,15 @@ void dump_hashes(void)
 		if(smb_fread(&smb,&hash,sizeof(hash),smb.hash_fp)!=sizeof(hash))
 			break;
 		printf("\n");
-		printf("%-10s: %lu\n",		"Number",	hash.number);
+		printf("%-10s: %"PRIu32"\n","Number",	hash.number);
 		printf("%-10s: %s\n",		"Source",	smb_hashsourcetype(hash.source));
-		printf("%-10s: %lu\n",		"Length",	hash.length);
+		printf("%-10s: %"PRIu32"\n","Length",	hash.length);
 		printf("%-10s: %s\n",		"Time",		my_timestr(hash.time));
 		printf("%-10s: %02x\n",		"Flags",	hash.flags);
 		if(hash.flags&SMB_HASH_CRC16)
 			printf("%-10s: %04x\n",	"CRC-16",	hash.crc16);
 		if(hash.flags&SMB_HASH_CRC32)
-			printf("%-10s: %08lx\n","CRC-32",	hash.crc32);
+			printf("%-10s: %08"PRIx32"\n","CRC-32",	hash.crc32);
 		if(hash.flags&SMB_HASH_MD5)
 			printf("%-10s: %s\n",	"MD5",		MD5_hex(tmp,hash.md5));
 	}
@@ -650,13 +650,13 @@ void maint(void)
 	if((idx=(idxrec_t *)malloc(sizeof(idxrec_t)*smb.status.total_msgs))
 		==NULL) {
 		smb_unlocksmbhdr(&smb);
-		fprintf(errfp,"\n%s!Error allocating %lu bytes of memory\n"
+		fprintf(errfp,"\n%s!Error allocating %u bytes of memory\n"
 			,beep,sizeof(idxrec_t)*smb.status.total_msgs);
 		return; 
 	}
 	fseek(smb.sid_fp,0L,SEEK_SET);
 	for(l=0;l<smb.status.total_msgs;l++) {
-		printf("%lu of %lu\r"
+		printf("%lu of %"PRIu32"\r"
 			,l+1,smb.status.total_msgs);
 		if(!fread(&idx[l],1,sizeof(idxrec_t),smb.sid_fp))
 			break; 
@@ -1024,7 +1024,7 @@ void packmsgs(ulong packable)
 	fseek(smb.sid_fp,0L,SEEK_SET);
 	total=0;
 	for(l=0;l<smb.status.total_msgs;l++) {
-		printf("%lu of %lu\r",l+1,smb.status.total_msgs);
+		printf("%lu of %"PRIu32"\r",l+1,smb.status.total_msgs);
 		if(!fread(&msg.idx,1,sizeof(idxrec_t),smb.sid_fp))
 			break;
 		if(msg.idx.attr&MSG_DELETE) {
@@ -1305,7 +1305,7 @@ void readmsgs(ulong start)
 				break; 
 			}
 
-			printf("\n%lu (%lu)\n",msg.hdr.number,msg.offset+1);
+			printf("\n%"PRIu32" (%d)\n",msg.hdr.number,msg.offset+1);
 			printf("Subj : %s\n",msg.subj);
 			printf("To   : %s",msg.to);
 			if(msg.to_net.type)
