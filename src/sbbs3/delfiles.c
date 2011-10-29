@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 					/* strupr(str); */
 					if(!findfile(&cfg, i,str)) {
 						sprintf(str,"%s%s",tmp,gl.gl_pathv[j]);
-						printf("Removing %s (not in database)\n",gl.gl_pathv);
+						printf("Removing %s (not in database)\n",gl.gl_pathv[j]);
 						if(!(misc&REPORT) && remove(str))
 							printf("Error removing %s\n",str); } } }
 			globfree(&gl);
