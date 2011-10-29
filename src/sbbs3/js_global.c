@@ -201,10 +201,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 /* Create a new value in the new context with a value from the original context */
 static jsval* js_CopyValue(JSContext* cx, jsval val, JSContext* new_cx, jsval* rval)
 {
-	*rval = JSVAL_VOID;
 	size_t	size;
 	uint64	*nval;
 
+	*rval = JSVAL_VOID;
 	if(JS_WriteStructuredClone(cx, val, &nval, &size, NULL, NULL)) {
 		JS_ReadStructuredClone(new_cx, nval, size, JS_STRUCTURED_CLONE_VERSION, rval, NULL, NULL);
 		JS_free(cx, nval);
