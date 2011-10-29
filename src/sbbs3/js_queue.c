@@ -379,7 +379,7 @@ static JSBool js_queue_resolve(JSContext *cx, JSObject *obj, jsid id)
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		if(JSVAL_IS_STRING(jsval))
+		if(JSVAL_IS_STRING(idval))
 			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 	}
 
