@@ -180,8 +180,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	background_data_t* bg;
 	jsval	rval;
 
-	JS_SET_RVAL(cx, arglist, rval);
 	rval=JSVAL_VOID;
+	JS_SET_RVAL(cx, arglist, rval);
 
 	if((bg=(background_data_t*)JS_GetContextPrivate(cx))==NULL)
 		return JS_FALSE;
