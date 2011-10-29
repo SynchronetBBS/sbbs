@@ -180,7 +180,6 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	background_data_t* bg;
 	jsval	rval;
 
-fprintf(stderr,"BACKGROUND LOG!\r\n");
 	JS_SET_RVAL(cx, arglist, rval);
 	rval=JSVAL_VOID;
 
