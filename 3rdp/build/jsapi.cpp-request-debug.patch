@@ -1,0 +1,31 @@
+--- js-1.8.5/js/src/jsapi.cpp.orig	2011-10-28 18:26:10.000000000 -0700
++++ js-1.8.5/js/src/jsapi.cpp	2011-10-28 18:33:03.000000000 -0700
+@@ -955,6 +955,28 @@
+ #endif
+ }
+ 
++JS_PUBLIC_API(jsrefcount)
++JS_RequestDepth(JSContext *cx)
++{
++#ifdef JS_THREADSAFE
++    JS_ASSERT(CURRENT_THREAD_IS_ME(cx->thread));
++    return JS_THREAD_DATA(cx)->requestDepth;
++#else
++    return false;
++#endif
++}
++
++JS_PUBLIC_API(jsrefcount)
++JS_SuspendDepth(JSContext *cx)
++{
++#ifdef JS_THREADSAFE
++    JS_ASSERT(CURRENT_THREAD_IS_ME(cx->thread));
++    return cx->thread->suspendCount;
++#else
++    return false;
++#endif
++}
++
+ JS_PUBLIC_API(void)
+ JS_Lock(JSRuntime *rt)
+ {
