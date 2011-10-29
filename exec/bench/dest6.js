@@ -69,10 +69,12 @@ if (test07 != undefined) {
 }
 
 /* The following currently segfaults - so many bug like Microsoft */
+/* Well, it doesn't segfault, but it DOES init UIFC stuff...
 var test08_obj = {};
 var test08 = js.get_parent(js.get_parent);
 var test08 = js.get_parent(test08_obj);
 log(test08.toSource());
+*/
 
 var test09 = js.version;
 if (test09 != js.version) {
@@ -320,9 +322,14 @@ file_remove(system.temp_dir + "test38.js");
 var test39_js = new File(system.temp_dir + "test39.js");
 test39_js.open("w+");
 test39_js.writeln('while (1) {');
-test39_js.writeln('  var x = parent_queue.read();');
+test39_js.writeln('  var x = parent_queue.read(60);');
 test39_js.writeln('  if (x)');
 test39_js.writeln('     parent_queue.write(x);');
+test39_js.writeln('  if(x=="stop") {');
+test39_js.writeln('     log("background mirror exiting");');
+test39_js.writeln('     parent_queue.write(x);');
+test39_js.writeln('     exit(0);');
+test39_js.writeln('  }');
 test39_js.writeln('  sleep(10);');
 test39_js.writeln('}');
 test39_js.close();
@@ -341,6 +348,7 @@ log(" II: " + test39.write(13.37));
 log("III: "+ test39.write(1337));
 log(" IV: "+test39.write(true));
 log("  V: "+ test39.write("go-get me some Popeye's Chicken"));
+log(" VI: "+test39.write("stop"));
 if ((test39_val = test39.readValue().valueOf()) != new Date("April 17, 1980 03:00:00").valueOf()) {
 	log("Date on background script doesn't return date?");
 	log("Nope, it's just Chuck Testa with another realistic dead JavaScript object. ("+test39_val.getTime()+")");
@@ -359,6 +367,10 @@ if (test39.readValue() != true) {
 }
 if (test39.readValue() != "go-get me some Popeye's Chicken") {
 	log("String on background script doesn't return string?");
+	exit();
+}
+if (test39.readValue() != "stop") {
+	log("Second string on background script doesn't return string?");
 	exit();
 }
 
