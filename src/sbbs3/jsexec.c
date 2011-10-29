@@ -899,8 +899,6 @@ long js_exec(const char *fname, char** args)
 			,path
 			,diff);
 
-	JS_GC(js_cx);
-
 	if(js_buf!=NULL)
 		free(js_buf);
 
