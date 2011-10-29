@@ -300,7 +300,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			free(bg);
 			return(JS_FALSE);
 		}
-		JS_AddObjectRoot(cx, &bg->logobj);
+		JS_AddObjectRoot(bg->cx, &bg->logobj);
 
 		bg->msg_queue = msgQueueInit(NULL,MSG_QUEUE_BIDIR);
 
