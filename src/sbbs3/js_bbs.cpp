@@ -919,19 +919,19 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 };
 
 /* Utility functions */
-static uint get_subnum(JSContext* cx, sbbs_t* sbbs, jsval val)
+static uint get_subnum(JSContext* cx, sbbs_t* sbbs, jsval *argv, int argc, int pos)
 {
 	uint subnum=INVALID_SUB;
 
-	if(JSVAL_IS_STRING(val)) {
+	if(argc>pos && JSVAL_IS_STRING(argv[pos])) {
 		char * p;
 
-		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(val), p, NULL);
+		JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(argv[pos]), p, NULL);
 		for(subnum=0;subnum<sbbs->cfg.total_subs;subnum++)
 			if(!stricmp(sbbs->cfg.sub[subnum]->code,p))
 				break;
-	} else if(JSVAL_IS_NUMBER(val)) {
-		if(!JS_ValueToInt32(cx,val,(int32*)&subnum))
+	} else if(argc>pos && JSVAL_IS_NUMBER(argv[pos])) {
+		if(!JS_ValueToInt32(cx,argv[pos],(int32*)&subnum))
 			return JS_FALSE;
 	}
 	else if(sbbs->usrgrps>0)
@@ -1979,7 +1979,7 @@ js_sub_info(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	uint subnum=get_subnum(cx,sbbs,argv[0]);
+	uint subnum=get_subnum(cx,sbbs,argv,argc,0);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(subnum<sbbs->cfg.total_subs)
@@ -2882,7 +2882,7 @@ js_postmsg(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	subnum=get_subnum(cx,sbbs,argv[0]);
+	subnum=get_subnum(cx,sbbs,argv,argc,0);
 
 	if(subnum>=sbbs->cfg.total_subs) 	// invalid sub-board
 		return(JS_TRUE);
@@ -3058,7 +3058,7 @@ js_scanposts(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	subnum=get_subnum(cx,sbbs,argv[0]);
+	subnum=get_subnum(cx,sbbs,argv,argc,0);
 
 	if(subnum>=sbbs->cfg.total_subs) {	// invalid sub-board
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -3102,7 +3102,7 @@ js_listmsgs(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
 
-	subnum=get_subnum(cx,sbbs,argv[argn++]);
+	subnum=get_subnum(cx,sbbs,argv,argc,argn++);
 
 	if(subnum>=sbbs->cfg.total_subs) 	// invalid sub-board
 		return(JS_TRUE);
