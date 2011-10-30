@@ -167,11 +167,51 @@ typedef unsigned long long int uint64_t;
 #define INTTYPES_H_64BIT_PREFIX         "ll"
 #endif
 
+/* printf integer formatters: */
+
+#define PRId32	"d"
+#define PRIu32	"u"
+#define PRIi32	"i"
+#define PRIx32	"x"
+#define PRIX32	"X"
+#define PRIo32	"o"
+
 #define PRIi64  INTTYPES_H_64BIT_PREFIX"i"
 #define PRIu64  INTTYPES_H_64BIT_PREFIX"u"
 #define PRId64  INTTYPES_H_64BIT_PREFIX"d"
 #define PRIx64  INTTYPES_H_64BIT_PREFIX"x"
+#define PRIX64  INTTYPES_H_64BIT_PREFIX"X"
 #define PRIo64  INTTYPES_H_64BIT_PREFIX"o"
+
+#define PRIdMAX	PRId64
+#define PRIiMAX	PRIi64
+#define PRIuMAX	PRIu64
+#define PRIxMAX	PRIx64
+#define PRIXMAX	PRIX64
+#define PRIoMAX	PRIo64
+
+/* scanf integer formatters: */
+
+#define SCNd32 	PRId32
+#define SCNi32 	PRIi32
+#define SCNu32 	PRIu32
+#define SCNx32 	PRIx32
+#define SCNX32 	PRIX32
+#define SCNo32 	PRIo32
+
+#define SCNd64 	PRId64
+#define SCNi64 	PRIi64
+#define SCNu64 	PRIu64
+#define SCNx64 	PRIx64
+#define SCNX64 	PRIX64
+#define SCNo64 	PRIo64
+
+#define SCNdMAX	PRId64
+#define SCNiMAX	PRIi64
+#define SCNuMAX	PRIu64
+#define SCNxMAX	PRIx64
+#define SCNXMAX	PRIX64
+#define SCNoMAX	PRIo64
 
 #endif
 
