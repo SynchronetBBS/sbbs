@@ -62,6 +62,9 @@
 
 #include <sys/types.h>
 #ifdef HAS_INTTYPES_H
+#if defined __cplusplus
+#define __STDC_FORMAT_MACROS
+#endif
 #include <inttypes.h>
 #else
 #ifdef HAS_STDINT_H
