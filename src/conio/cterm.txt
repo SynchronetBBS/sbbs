@@ -111,68 +111,88 @@ CSI = [ p1 [ ; p2 ] ] {
 	SOURCE: CTerm only.
 
 
-CSI [ = 255 h
+CSI = 255 h
 	NON-STANDARD EXTENSION
 	Enable DoorWay Mode
 
 	SOURCE: BANSI.TXT
 
-CSI [ ? 25 h
+CSI ? 7 h
+	NON-STANDARD EXTENSION
+    Enable auto wrap.
+    
+    This is the normal mode in which a write to the last column of a
+    row will move the cursor to the start of the next line triggering a
+    scroll if required to create a new line.
+    
+    SOURCE: Digital VT102 User Guide
+
+CSI ? 25 h
 	NON-STANDARD EXTENSION
 	Display the cursor
 
 	SOURCE: "Installing and Using the VT320 Video Terminal"
 
-CSI [ ? 31 h
+CSI ? 31 h
 	NON-STANDARD EXTENSION
 	Enable alt character set
 
 	With this mode set, the bright (1) graphic rendition selects characters
 	from an alternate character set.
 
-CSI [ ? 32 h
+CSI ? 32 h
 	NON-STANDARD EXTENSION
 	Bright Intensity Disable
 
 	With this mode set, the bright (1) graphic rendition does not cause
 	characters to be display in a bright colour
 
-CSI [ ? 33 h
+CSI ? 33 h
 	NON-STANDARD EXTENSION
 	Blink to Bright Intensity Background
 
 	With this mode set, the blink (5,6) graphic renditions cause the
 	background colour to be high intensity rather than causing blink
 
-CSI [ = 255 l
+CSI = 255 l
 	NON-STANDARD EXTENSION
 	Disable DoorWay Mode
 
 	SOURCE: BANSI.TXT
 
-CSI [ ? 25 l
+CSI ? 25 l
 	NON-STANDARD EXTENSION
 	Hide the cursor
 
 	SOURCE: "Installing and Using the VT320 Video Terminal"
 
-CSI [ ? 31 l
+CSI ? 7 l
+	NON-STANDARD EXTENSION
+    Disable auto wrap.
+    
+    This mode causes a write to the last column of a to leave the
+    cursor where it was before the write occured, overwriting anything
+    which was previously written to the same position.
+    
+    SOURCE: Digital VT102 User Guide
+
+CSI ? 31 l
 	NON-STANDARD EXTENSION
 	Disable alt character set
 
-	Reverses CSI [ ? 31 h
+	Reverses CSI ? 31 h
 
-CSI [ ? 32 l
+CSI ? 32 l
 	NON-STANDARD EXTENSION
 	Bright Intensity Enable
 
-	Reverses CSI [ ? 32 h
+	Reverses CSI ? 32 h
 
-CSI [ ? 33 l
+CSI ? 33 l
 	NON-STANDARD EXTENSION
 	Blink Normal
 
-	Reverses CSI [ ? 33 h
+	Reverses CSI ? 33 h
 
 CSI [ p1 [ ; p2 ] ] * r
 	NON-STANDARD EXTENSION.
@@ -517,14 +537,32 @@ CSI [ p1 ] n
 		(parameters 5 and 6 only)
 	SOURCE: BANSI.TXT (parameter 255)
 
+CSI ? [ p1 [ pX ... ] ] s
+	NON-STANDARD EXTENSION
+    Save Mode Setting
+    Saves the current mode states as specified by CSI l and CSI h.  If
+    p1 is omitted, saves all such states.  If pX is included, saves only
+    the specified states (arguments to CSI l/h).
+    
+    SOURCE: SyncTERM only
+
 CSI s
 	NON-STANDARD EXTENSION
 	Save Current Position
 	Saves the current cursor position for later restoring with CSI u
-	although this is non-standard, it's so widely used in the BBS world that
-	any terminal program MUST implement it.
+	although this is non-standard, it's so widely used in the BBS world
+	that any terminal program MUST implement it.
 
 	SOURCE: ANSI.SYS
+
+CSI ? [ p1 [ pX ... ] ]  u
+	NON-STANDARD EXTENSION
+    Restore Mode Setting
+    Saves the current mode states as specified by CSI l and CSI h.  If
+    p1 is omitted, saves all such states.  If pX is included, restores
+    all the specified states (arguments to CSI l/h)
+    
+    SOURCE: SyncTERM only
 
 CSI u
 	NON-STANDARD EXTENSION
