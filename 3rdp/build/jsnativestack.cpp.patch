@@ -1,0 +1,16 @@
+--- js-1.8.5/js/src/jsnativestack.cpp.orig	2011-11-01 00:58:59.000000000 -0700
++++ js-1.8.5/js/src/jsnativestack.cpp	2011-11-01 01:02:48.000000000 -0700
+@@ -48,11 +48,13 @@
+ # include <os2.h>
+ 
+ #elif defined(XP_MACOSX) || defined(DARWIN) || defined(XP_UNIX)
++# pragma GCC visibility push(default)
+ # include <pthread.h>
+ 
+ # if defined(__FreeBSD__)
+ #  include <pthread_np.h>
+ # endif
++# pragma GCC visibility pop
+ 
+ #else
+ # error "Unsupported platform"
