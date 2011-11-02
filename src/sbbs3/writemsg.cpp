@@ -549,8 +549,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 			while(!feof(sig)) {
 				if(!fgets(str,sizeof(str),sig))
 					break;
-				fputs(str,stream);
-				l+=strlen(str);	/* byte counter */
+				l+=fprintf(stream,"%s\r\n",str);
 				lines++;		/* line counter */
 			}
 			fclose(sig);
