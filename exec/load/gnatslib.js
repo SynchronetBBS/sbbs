@@ -1,6 +1,6 @@
 // $Id$
 
-if(!js.global || js.global.SOCK_STREAM==undefineD)
+if(!js.global || js.global.SOCK_STREAM==undefined)
 	load("sockdefs.js");
 if(!js.global || js.global.mail_get_name==undefined)
 	load("mailutil.js");
