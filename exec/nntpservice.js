@@ -768,12 +768,6 @@ while(client.socket.is_connected && !quit) {
 			if(!(user.security.restrictions&UFLAG_Q))	// Treat this as a local message
 				hdr.from_net_type=NET_NONE;
 
-			/* Security logging */
-			hdr.from_ip_addr	= client.ip_address;
-			hdr.from_host_name	= client.host_name;
-			hdr.from_protocol	= client.protocol;
-			hdr.from_port		= client.port;
-
 			if(system.trashcan("subject",hdr.subject)) {
 				log(format("!BLOCKED subject: %s",hdr.subject));
 				var reason = format("Blocked subject from %s (%s): %s"
@@ -839,7 +833,7 @@ while(client.socket.is_connected && !quit) {
 							else
 								hdr.attr&=~MSG_MODERATED;
 
-						    if(msgbase.save_msg(hdr,body)) {
+						    if(msgbase.save_msg(hdr,client,body)) {
 							    log(format("%s posted a message (%u chars, %u lines) on %s"
 									,user.alias, body.length, lines, newsgroups[n]));
 							    posted=true;
