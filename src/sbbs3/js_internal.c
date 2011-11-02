@@ -240,6 +240,9 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
+	/* Permit other contexts to run GC */
+	JS_YieldRequest(cx);
+
 	/* Periodic Garbage Collection */
 	if(cb->gc_interval && (cb->counter%cb->gc_interval)==0)
 		JS_MaybeGC(cx), cb->gc_attempts++;
