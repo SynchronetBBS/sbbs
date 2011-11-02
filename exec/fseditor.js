@@ -1054,7 +1054,7 @@ function make_strings(soft,embed_colour)
 			if(line[i].hardcr)
 				str+='\r\n';
 			else
-				str+='\n';
+				str+=' \n';
 			attrs+=attrs.substr(-1)+attrs.substr(-1);
 		}
 	}
