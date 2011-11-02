@@ -26,8 +26,8 @@
 	"Type h/?ng on a new line for menu.\r\nn"
 "ng\r\nRaw message input (h%ung bytes max). "\    023 EnterMsgNowRaw
 	"hCtrl-Zng to save, hCtrl-Cng to abort.n\r\n\r\n"
-"No more lines. Type /? for menu.\r\n"                  024 NoMoreLines
-"Only %d lines left.\r\n"                               025 OnlyNLinesLeft
+"Line limit (%u) reached.\r\n"                  	024 NoMoreLines
+"Only %u lines left.\r\n"                               025 OnlyNLinesLeft
 "\r\n\r\n\1n\1r\1h\1iOut of bytes.\1n\r\n"              026 OutOfBytes
 "Invalid line number\r\n"                               027 InvalidLineNumber
 "nMessage cleared.\r\n"                                028 MsgCleared
