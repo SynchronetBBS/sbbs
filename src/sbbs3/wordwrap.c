@@ -4,7 +4,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -191,12 +191,15 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 		return NULL;
 	outp=outbuf;
 
-	if((linebuf=(char*)malloc(inbuf_len+2))==NULL) /* room for ^A codes */
+	if((linebuf=(char*)malloc(inbuf_len+2))==NULL) { /* room for ^A codes */
+		free(outbuf);
 		return NULL;
+	}
 
 	if(handle_quotes) {
 		if((prefix=(char *)malloc(inbuf_len+1))==NULL) { /* room for ^A codes */
 			free(linebuf);
+			free(outbuf);
 			return NULL;
 		}
 		prefix[0]=0;
