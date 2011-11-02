@@ -17,12 +17,15 @@
 	#define DLLCALL
 #endif
 
-#define SHARED_RUNTIMES
+#define RT_UNIQUE	0
+#define RT_SHARED	1
+#define RT_SINGLE	2
+#define RT_TYPE		RT_SHARED
 
 struct jsrt_queue {
 	JSRuntime       *rt;
 	int			created;
-#ifdef SHARED_RUNTIMES
+#if (RT_TYPE==RT_SHARED)
 	const char*	file;
 	long		line;
 #else
@@ -31,11 +34,15 @@ struct jsrt_queue {
 #endif
 };
 
+#if (RT_TYPE == RT_SINGLE)
+#define JSRT_QUEUE_SIZE		1
+#else
 #define JSRT_QUEUE_SIZE		128
+#endif
 struct jsrt_queue jsrt_queue[JSRT_QUEUE_SIZE];
 static pthread_mutex_t		jsrt_mutex;
 static int			initialized=0;
-#ifndef SHARED_RUNTIMES
+#if (RT_TYPE == RT_UNIQUE)
 static sem_t			jsrt_sem;
 #endif
 
@@ -56,7 +63,17 @@ static void trigger_thread(void *args)
 
 JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line)
 {
-#ifdef SHARED_RUNTIMES
+#if (RT_TYPE==RT_SINGLE)
+	if(!initialized) {
+		pthread_mutex_init(&jsrt_mutex, NULL);
+		jsrt_queue[0].rt=JS_NewRuntime(128*1024*1024 /* 128 MB total for all scripts? */);
+		jsrt_queue[0].created=1;
+		_beginthread(trigger_thread, 65536, NULL);
+		initialized=TRUE;
+	}
+
+	return jsrt_queue[0].rt;
+#elif (RT_TYPE==RT_SHARED)
 	int	i;
 
 	if(!initialized) {
@@ -83,7 +100,7 @@ JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char 
 	pthread_mutex_unlock(&jsrt_mutex);
 
 	return(NULL);
-#else
+#elif (RT_TYPE==RT_UNIQUE)
 	int	i;
 	int	last_unused=-1;
 
@@ -129,8 +146,7 @@ JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char 
 
 void DLLCALL jsrt_Release(JSRuntime *rt)
 {
-#ifdef SHARED_RUNTIMES
-#else
+#if (RT_TYPE==RT_UNIQUE)
 	int	i;
 
 	for(i=0; i<JSRT_QUEUE_SIZE; i++) {
