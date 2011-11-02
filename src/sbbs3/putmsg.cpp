@@ -47,9 +47,10 @@
 /* the attributes prior to diplaying the message are always restored.       */
 /* Ignores Ctrl-Z's                                                         */
 /****************************************************************************/
-char sbbs_t::putmsg(const char *str, long mode)
+char sbbs_t::putmsg(const char *buf, long mode)
 {
 	char	tmpatr,tmp2[256],tmp3[128];
+	char*	str=buf;
 	uchar	exatr=0;
 	int 	orgcon=console,i;
 	ulong	l=0,sys_status_sav=sys_status;
@@ -63,6 +64,14 @@ char sbbs_t::putmsg(const char *str, long mode)
 		sys_status|=SS_PAUSEOFF;
 	if(mode&P_HTML)
 		putcom("\x02\x02");
+	if(mode&P_WORDWRAP) {
+		char *wrapped;
+		if((wrappped=::wordwrap(buf, cols-4, cols-1, /* handle_quotes */TRUE)) == NULL)
+			errormsg(WHERE,ERR_ALLOC,"wordwrap buffer",0);
+		else
+			str=wrapped;
+	}
+
 	while(str[l] && (mode&P_NOABORT || !msgabort()) && online) {
 		if(str[l]==CTRL_A && str[l+1]!=0) {
 			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF)) {  /* Quote a file */
@@ -279,6 +288,9 @@ char sbbs_t::putmsg(const char *str, long mode)
 		else
 			pause();
 	}
+
+	if(str!=buf)	/* malloc'd copy of buffer */
+		free(str);
 
 	/* Restore original settings of Forced Pause On/Off */
 	sys_status&=~(SS_PAUSEOFF|SS_PAUSEON);
