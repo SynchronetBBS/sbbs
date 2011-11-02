@@ -402,6 +402,42 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		}
 	}
 
+	if(JS_GetProperty(cx, hdr, "sender_userid", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid \"sender_userid\" string in header object");
+			return(FALSE);
+		}
+		if((p->status=smb_hfield_str(msg, SENDERUSERID, cp))!=SMB_SUCCESS) {
+			JS_ReportError(cx, "Error %d adding SENDERUSERID field to message header", p->status);
+			return(FALSE);
+		}
+	}
+
+	if(JS_GetProperty(cx, hdr, "sender_server", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid \"sender_server\" string in header object");
+			return(FALSE);
+		}
+		if((p->status=smb_hfield_str(msg, SENDERSERVER, cp))!=SMB_SUCCESS) {
+			JS_ReportError(cx, "Error %d adding SENDERSERVER field to message header", p->status);
+			return(FALSE);
+		}
+	}
+
+	if(JS_GetProperty(cx, hdr, "sender_time", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_STRING(cx, val, cp, NULL);
+		if(cp==NULL) {
+			JS_ReportError(cx, "Invalid \"sender_time\" string in header object");
+			return(FALSE);
+		}
+		if((p->status=smb_hfield_str(msg, SENDERTIME, cp))!=SMB_SUCCESS) {
+			JS_ReportError(cx, "Error %d adding SENDERTIME field to message header", p->status);
+			return(FALSE);
+		}
+	}
+	
 	if(JS_GetProperty(cx, hdr, "replyto", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_STRING(cx, val, cp, NULL);
 		if(cp==NULL) {
@@ -988,6 +1024,9 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_COND("from_host_name", (val=smb_get_hfield(&(p->msg),SENDERHOSTNAME,NULL))!=NULL, val, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("from_protocol", (val=smb_get_hfield(&(p->msg),SENDERPROTOCOL,NULL))!=NULL, val, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("from_port", (val=smb_get_hfield(&(p->msg),SENDERPORT,NULL))!=NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("sender_userid", (val=smb_get_hfield(&(p->msg),SENDERUSERID,NULL))!=NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("sender_server", (val=smb_get_hfield(&(p->msg),SENDERSERVER,NULL))!=NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("sender_time", (val=smb_get_hfield(&(p->msg),SENDERTIME,NULL))!=NULL, val, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("forwarded", p->msg.forwarded, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("expiration", p->msg.expiration, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("priority", p->msg.priority, JSPROP_ENUMERATE);
@@ -2063,6 +2102,9 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>from_host_name</tt><td>Sender's host name (if available, for security tracking)"
 	"<tr><td align=top><tt>from_protocol</tt><td>TCP/IP protocol used by sender (if available, for security tracking)"
 	"<tr><td align=top><tt>from_port</tt><td>TCP/UDP port number used by sender (if available, for security tracking)"
+	"<tr><td align=top><tt>sender_userid</tt><td>Sender's user ID (if available, for security tracking)"
+	"<tr><td align=top><tt>sender_server</tt><td>Server's host name (if available, for security tracking)"
+	"<tr><td align=top><tt>sender_time</tt><td>Time/Date message was received from sender (if available, for security tracking)"
 	"<tr><td align=top><tt>replyto</tt><td>Replies should be sent to this name"
 	"<tr><td align=top><tt>replyto_ext</tt><td>Replies should be sent to this user number"
 	"<tr><td align=top><tt>replyto_org</tt><td>Replies should be sent to organization"
