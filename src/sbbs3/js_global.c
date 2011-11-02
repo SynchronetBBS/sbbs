@@ -56,6 +56,8 @@ typedef struct {
 	scfg_t*				cfg;
 	jsSyncMethodSpec*	methods;
 	js_startup_t*		startup;
+	unsigned			bg_count;
+	sem_t				bg_sem;
 } private_t;
 
 /* Global Object Properites */
@@ -111,6 +113,7 @@ typedef struct {
 	js_callback_t	cb;
 	JSErrorReporter error_reporter;
 	JSObject*		logobj;
+	sem_t			*sem;
 } background_data_t;
 
 static void background_thread(void* arg)
@@ -133,6 +136,7 @@ static void background_thread(void* arg)
 	JS_ENDREQUEST(bg->cx);
 	JS_DestroyContext(bg->cx);
 	jsrt_Release(bg->runtime);
+	sem_post(bg->sem);
 	free(bg);
 }
 
@@ -211,6 +215,33 @@ static jsval* js_CopyValue(JSContext* cx, jsval val, JSContext* new_cx, jsval* r
 	}
 
 	return rval;
+}
+
+JSBool BGContextCallback(JSContext *cx, uintN contextOp)
+{
+	JSObject	*gl=JS_GetGlobalObject(cx);
+	private_t*	p;
+
+	if(!gl)
+		return JS_TRUE;
+
+	if((p=(private_t*)JS_GetPrivate(cx,gl))==NULL)
+		return(JS_TRUE);
+
+	switch(contextOp) {
+		case JSCONTEXT_DESTROY:
+			while(p->bg_count) {
+				while(p->bg_count && sem_trywait(&p->bg_sem)==0)
+					p->bg_count--;
+				if(!p->bg_count)
+					break;
+
+				if(sem_wait(&p->bg_sem)==0)
+					p->bg_count--;
+			}
+			break;
+	}
+	return JS_TRUE;
 }
 
 static JSBool
@@ -495,7 +526,12 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(js_CreateQueueObject(cx, obj, NULL, bg->msg_queue)));
 		JS_ENDREQUEST(bg->cx);
 		JS_ClearContextThread(bg->cx);
+		bg->sem=&p->bg_sem;
 		success = _beginthread(background_thread,0,bg)!=-1;
+		if(success) {
+			JS_SetContextCallback(JS_GetRuntime(cx), BGContextCallback);
+			p->bg_count++;
+		}
 
 	} else {
 		jsval	rval;
@@ -3883,6 +3919,17 @@ BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec*
 	}
 
 	if (!JS_InitStandardClasses(cx, *glob)) {
+		JS_RemoveObjectRoot(cx, glob);
+		return(FALSE);
+	}
+
+	p->bg_count=0;
+	if(sem_init(&p->bg_sem, 0, 0)==-1) {
+		JS_RemoveObjectRoot(cx, glob);
+		return(FALSE);
+	}
+
+	if (!JS_SetReservedSlot(cx, *glob, 0, INT_TO_JSVAL(0))) {
 		JS_RemoveObjectRoot(cx, glob);
 		return(FALSE);
 	}
