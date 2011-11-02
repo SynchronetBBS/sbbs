@@ -508,7 +508,7 @@ public:
 	void	forwardmail(smbmsg_t* msg, int usernum);
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, const char *top, char *title);
-	bool	editfile(char *path);
+	bool	editfile(char *path, bool msg=false);
 	int		loadmsg(smbmsg_t *msg, ulong number);
 	ushort	chmsgattr(ushort attr);
 	void	show_msgattr(ushort attr);
@@ -521,8 +521,8 @@ public:
 				,uint subnum);
 	void	copyfattach(uint to, uint from, char *title);
 	bool	movemsg(smbmsg_t* msg, uint subnum);
-	int		process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines);
-	int		process_edited_file(const char* src, const char* dest, long mode, unsigned* lines);
+	int		process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines, unsigned maxlines);
+	int		process_edited_file(const char* src, const char* dest, long mode, unsigned* lines, unsigned maxlines);
 
 	/* postmsg.cpp */
 	bool	postmsg(uint subnum, smbmsg_t* msg, long wm_mode);
