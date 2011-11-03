@@ -6,7 +6,7 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 
 JS_CONFIGURE_ARGS += --with-system-nspr --disable-tests --disable-shared-js --enable-threadsafe --prefix=$(shell echo `pwd`$(DIRSEP)$(JS_IDIR))
 ifdef DEBUG
- JS_CONFIGURE_ARGS += --enable-debug-symbols --disable-optimize
+ JS_CONFIGURE_ARGS += --enable-debug-symbols --disable-optimize --enable-valgrind
 else
  JS_CONFIGURE_ARGS += --enable-optimize=-O3
 endif

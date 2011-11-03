@@ -1,6 +1,6 @@
---- js-1.8.5/js/src/jsapi.cpp.orig	2011-10-28 18:26:10.000000000 -0700
-+++ js-1.8.5/js/src/jsapi.cpp	2011-10-28 18:33:03.000000000 -0700
-@@ -955,6 +955,28 @@
+--- js-1.8.5/js/src/jsapi.cpp.orig	2011-11-02 15:45:55.000000000 -0700
++++ js-1.8.5/js/src/jsapi.cpp	2011-11-02 15:46:35.000000000 -0700
+@@ -955,6 +955,27 @@
  #endif
  }
  
@@ -8,8 +8,7 @@
 +JS_RequestDepth(JSContext *cx)
 +{
 +#ifdef JS_THREADSAFE
-+    JS_ASSERT(CURRENT_THREAD_IS_ME(cx->thread));
-+    return JS_THREAD_DATA(cx)->requestDepth;
++    return cx->outstandingRequests;
 +#else
 +    return false;
 +#endif
