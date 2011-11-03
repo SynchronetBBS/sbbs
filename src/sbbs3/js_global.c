@@ -164,13 +164,18 @@ js_OperationCallback(JSContext *cx)
 	background_data_t* bg;
 	JSBool	ret;
 
-	if((bg=(background_data_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-	if(bg->parent_cx!=NULL && !JS_IsRunning(bg->parent_cx)) 	/* die when parent dies */
-		return(JS_FALSE);
-
 	JS_SetOperationCallback(cx, NULL);
+
+	if((bg=(background_data_t*)JS_GetContextPrivate(cx))==NULL) {
+		JS_SetOperationCallback(cx, js_OperationCallback);
+		return(JS_FALSE);
+	}
+
+	if(bg->parent_cx!=NULL && !JS_IsRunning(bg->parent_cx)) { 	/* die when parent dies */
+		JS_SetOperationCallback(cx, js_OperationCallback);
+		return(JS_FALSE);
+	}
+
 	ret=js_CommonOperationCallback(cx,&bg->cb);
 	JS_SetOperationCallback(cx, js_OperationCallback);
 	return ret;

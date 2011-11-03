@@ -4429,10 +4429,12 @@ js_OperationCallback(JSContext *cx)
 	JSBool	ret;
 	http_session_t* session;
 
-	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
 	JS_SetOperationCallback(cx, NULL);
+	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL) {
+		JS_SetOperationCallback(cx, js_OperationCallback);
+		return(JS_FALSE);
+	}
+
     ret=js_CommonOperationCallback(cx,&session->js_callback);
 	JS_SetOperationCallback(cx, js_OperationCallback);
 

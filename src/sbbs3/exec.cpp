@@ -542,16 +542,19 @@ js_OperationCallback(JSContext *cx)
 	JSBool	ret;
 	sbbs_t*		sbbs;
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	JS_SetOperationCallback(cx, NULL);
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL) {
+		JS_SetOperationCallback(cx, js_OperationCallback);
 		return(JS_FALSE);
+	}
 
 	if(sbbs->js_callback.auto_terminate && !sbbs->online) {
 		JS_ReportWarning(cx,"Disconnected");
 		sbbs->js_callback.counter=0;
+		JS_SetOperationCallback(cx, js_OperationCallback);
 		return(JS_FALSE);
 	}
 
-	JS_SetOperationCallback(cx, NULL);
 	ret=js_CommonOperationCallback(cx,&sbbs->js_callback);
 	JS_SetOperationCallback(cx, js_OperationCallback);
 	return ret;

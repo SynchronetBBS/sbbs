@@ -971,17 +971,20 @@ js_OperationCallback(JSContext *cx)
 	JSBool	ret;
 	service_client_t* client;
 
-	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+	JS_SetOperationCallback(cx, NULL);
+	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL) {
+		JS_SetOperationCallback(cx, js_OperationCallback);
 		return(JS_FALSE);
+	}
 
 	/* Terminated? */ 
 	if(client->callback.auto_terminate && terminated) {
 		JS_ReportWarning(cx,"Terminated");
 		client->callback.counter=0;
+		JS_SetOperationCallback(cx, js_OperationCallback);
 		return(JS_FALSE);
 	}
 
-	JS_SetOperationCallback(cx, NULL);
 	ret=js_CommonOperationCallback(cx,&client->callback);
 	JS_SetOperationCallback(cx, js_OperationCallback);
 
