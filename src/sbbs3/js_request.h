@@ -20,10 +20,10 @@ void js_debug_resumerequest(JSContext *cx, jsrefcount rc, const char *file, unsi
 #define JS_SUSPENDREQUEST(cx)		js_debug_suspendrequest(cx, __FILE__, __LINE__)
 #define JS_RESUMEREQUEST(cx, rf)	js_debug_resumerequest(cx, rf, __FILE__, __LINE__)
 #else
-#define JS_BEGINREQUEST(cx)	JS_BeginRequest(cx);
-#define JS_ENDREQUEST(cx)	JS_EndRequest(cx);
-#define JS_SUSPENDREQUEST(cx)	JS_SuspendRequest(cx);
-#define JS_RESUMEREQUEST(cx, rf)	JS_ResumeRequest(cx, rf);
+#define JS_BEGINREQUEST(cx)	JS_BeginRequest(cx)
+#define JS_ENDREQUEST(cx)	JS_EndRequest(cx)
+#define JS_SUSPENDREQUEST(cx)	JS_SuspendRequest(cx)
+#define JS_RESUMEREQUEST(cx, rf)	JS_ResumeRequest(cx, rf)
 #endif
 
 #endif
