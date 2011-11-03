@@ -183,6 +183,7 @@
 !define P_NOPAUSE	.4	# Disable screen pause
 !define P_HTML		.5	# Message is HTML
 !define P_NOCRLF	.6	# Don't prepend a CRLF
+!define P_WORDWRAP	.7	# Word-wrap long lines for user's terminal
 
 				# Values for USER_EVENT function
 !define EVENT_NONE      0       # Only accessible by menu
