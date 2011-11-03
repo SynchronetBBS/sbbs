@@ -101,6 +101,11 @@ void js_debug_beginrequest(JSContext *cx, const char *file, unsigned long line)
 		logstr();
 		return;
 	}
+
+	if(JS_IsInRequest(cx)) {
+		sprintf(str,"Begin FROM REQUEST after %s from %s:%lu at %s:%lu (%p)\n",type_names[req->type],req->file,req->line,file,line,req->cx);
+	}
+
 	switch(req->type) {
 	case LAST_REQUEST_TYPE_NONE:
 	case LAST_REQUEST_TYPE_END:
@@ -141,6 +146,9 @@ void js_debug_endrequest(JSContext *cx, const char *file, unsigned long line)
 		strcpy(str,"Missing req in End\n");
 		logstr();
 		return;
+	}
+	if(!JS_IsInRequest(cx)) {
+		sprintf(str,"End WITHOUT REQUEST after %s from %s:%lu at %s:%lu (%p)\n",type_names[req->type],req->file,req->line,file,line,req->cx);
 	}
 	switch(req->type) {
 	case LAST_REQUEST_TYPE_BEGIN:
@@ -211,6 +219,9 @@ jsrefcount js_debug_suspendrequest(JSContext *cx, const char *file, unsigned lon
 		logstr();
 		return -1;
 	}
+	if(!JS_IsInRequest(cx)) {
+		sprintf(str,"Suspend WITHOUT REQUEST after %s from %s:%lu at %s:%lu (%p)\n",type_names[req->type],req->file,req->line,file,line,req->cx);
+	}
 	switch(req->type) {
 	case LAST_REQUEST_TYPE_BEGIN:
 	case LAST_REQUEST_TYPE_RESUME:
@@ -233,15 +244,6 @@ jsrefcount js_debug_suspendrequest(JSContext *cx, const char *file, unsigned lon
 	case 1:
 		break;
 	}
-	switch(JS_SuspendDepth(cx)) {
-	case 0:
-		break;
-	default:
-		sprintf(str,"Suspend depth=%u at Suspend after %s from %s:%lu at %s:%lu (%p)\n",JS_SuspendDepth(cx),type_names[req->type],req->file,req->line,file,line,req->cx);
-		logstr();
-		break;
-	}
-
 
 	req->type=LAST_REQUEST_TYPE_SUSPEND;
 	req->file=file;
@@ -263,6 +265,9 @@ void js_debug_resumerequest(JSContext *cx, jsrefcount rc, const char *file, unsi
 		strcpy(str,"Missing req in Resume\n");
 		logstr();
 		return;
+	}
+	if(!JS_IsInRequest(cx)) {
+		sprintf(str,"Resume WITHOUT REQUEST after %s from %s:%lu at %s:%lu (%p)\n",type_names[req->type],req->file,req->line,file,line,req->cx);
 	}
 	switch(req->type) {
 	case LAST_REQUEST_TYPE_SUSPEND:
@@ -286,9 +291,9 @@ void js_debug_resumerequest(JSContext *cx, jsrefcount rc, const char *file, unsi
 	}
 	switch(JS_SuspendDepth(cx)) {
 	case 1:
+	default:
 		break;
 	case 0:
-	default:
 		sprintf(str,"Suspend depth=%u at Resume after %s from %s:%lu at %s:%lu (%p)\n",JS_SuspendDepth(cx),type_names[req->type],req->file,req->line,file,line,req->cx);
 		logstr();
 		break;
