@@ -263,6 +263,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool		background=JS_FALSE;
 	background_data_t* bg;
 	jsrefcount	rc;
+	jsrefcount	brc;
 	char		*cpath;
 
 	JS_SET_RVAL(cx, arglist,JSVAL_VOID);
@@ -276,9 +277,12 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		background=JSVAL_TO_BOOLEAN(argv[argn++]);
 
 	if(background) {
+		rc=JS_SUSPENDREQUEST(cx);
 
-		if((bg=(background_data_t*)malloc(sizeof(background_data_t)))==NULL)
+		if((bg=(background_data_t*)malloc(sizeof(background_data_t)))==NULL) {
+			JS_RESUMEREQUEST(cx, rc);
 			return(JS_FALSE);
+		}
 		memset(bg,0,sizeof(background_data_t));
 
 		bg->parent_cx = cx;
@@ -293,12 +297,14 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 		if((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES, 1000, __FILE__, __LINE__))==NULL) {
 			free(bg);
+			JS_RESUMEREQUEST(cx, rc);
 			return(JS_FALSE);
 		}
 
 	    if((bg->cx = JS_NewContext(bg->runtime, JAVASCRIPT_CONTEXT_STACK))==NULL) {
 			jsrt_Release(bg->runtime);
 			free(bg);
+			JS_RESUMEREQUEST(cx, rc);
 			return(JS_FALSE);
 		}
 		JS_BEGINREQUEST(bg->cx);
@@ -321,6 +327,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			JS_DestroyContext(bg->cx);
 			jsrt_Release(bg->runtime);
 			free(bg);
+			JS_RESUMEREQUEST(cx, rc);
 			return(JS_FALSE);
 		}
 
@@ -329,6 +336,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			JS_DestroyContext(bg->cx);
 			jsrt_Release(bg->runtime);
 			free(bg);
+			JS_RESUMEREQUEST(cx, rc);
 			return(JS_FALSE);
 		}
 		JS_AddObjectRoot(bg->cx, &bg->logobj);
@@ -338,8 +346,12 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		js_CreateQueueObject(bg->cx, bg->obj, "parent_queue", bg->msg_queue);
 
 		/* Save parent's error reporter (for later use by our error reporter) */
+		brc=JS_SUSPENDREQUEST(bg->cx);
+		JS_RESUMEREQUEST(cx, rc);
 		bg->error_reporter=JS_SetErrorReporter(cx,NULL);
 		JS_SetErrorReporter(cx,bg->error_reporter);
+		rc=JS_SUSPENDREQUEST(cx);
+		JS_RESUMEREQUEST(bg->cx, brc);
 		JS_SetErrorReporter(bg->cx,js_ErrorReporter);
 
 		/* Set our Operation callback (which calls the generic branch callback) */
@@ -347,14 +359,20 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SetOperationCallback(bg->cx, js_OperationCallback);
 
 		/* Save parent's 'log' function (for later use by our log function) */
+		brc=JS_SUSPENDREQUEST(bg->cx);
+		JS_RESUMEREQUEST(cx, rc);
 		if(JS_GetProperty(cx, obj, "log", &val)) {
 			JSFunction* func;
 			if((func=JS_ValueToFunction(cx, val))!=NULL) {
 				JSObject *obj;
 
+				rc=JS_SUSPENDREQUEST(cx);
+				JS_RESUMEREQUEST(bg->cx, brc);
 				obj=JS_CloneFunctionObject(bg->cx, JS_GetFunctionObject(func), bg->logobj);
 				JS_DefineProperty(bg->cx, bg->logobj, "log", OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE|JSPROP_PERMANENT);
 				JS_DefineFunction(bg->cx, bg->obj, "log", js_log, JS_GetFunctionArity(func), JS_GetFunctionFlags(func));
+				brc=JS_SUSPENDREQUEST(bg->cx);
+				JS_RESUMEREQUEST(cx, rc);
 			}
 		}
 
@@ -370,10 +388,13 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	if(argn==argc) {
 		JS_ReportError(cx,"no filename specified");
 		if(background) {
+			rc=JS_SUSPENDREQUEST(cx);
+			JS_RESUMEREQUEST(bg->cx, brc);
 			JS_RemoveObjectRoot(bg->cx, &bg->obj);
 			JS_ENDREQUEST(bg->cx);
 			JS_DestroyContext(bg->cx);
 			jsrt_Release(bg->runtime);
+			JS_RESUMEREQUEST(cx, rc);
 			free(bg);
 		}
 		return(JS_FALSE);
@@ -381,16 +402,24 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_STRING(cx, argv[argn++], filename, NULL);
 	if(filename==NULL) {
 		if(background) {
+			rc=JS_SUSPENDREQUEST(cx);
+			JS_RESUMEREQUEST(bg->cx, brc);
 			JS_RemoveObjectRoot(bg->cx, &bg->obj);
 			JS_ENDREQUEST(bg->cx);
 			JS_DestroyContext(bg->cx);
 			jsrt_Release(bg->runtime);
+			JS_RESUMEREQUEST(cx, rc);
 			free(bg);
 		}
 		return(JS_FALSE);
 	}
 
 	if(argc>argn || background) {
+
+		if(background) {
+			rc=JS_SUSPENDREQUEST(cx);
+			JS_RESUMEREQUEST(bg->cx, brc);
+		}
 
 		if((js_argv=JS_NewArrayObject(exec_cx, 0, NULL)) == NULL) {
 			if(background) {
@@ -411,6 +440,11 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 		JS_DefineProperty(exec_cx, exec_obj, "argc", INT_TO_JSVAL(argc-argn)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		if(background) {
+			brc=JS_SUSPENDREQUEST(bg->cx);
+			JS_RESUMEREQUEST(cx, rc);
+		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -506,16 +540,22 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		if(path[0]==0)
 			SAFEPRINTF2(path,"%s%s",p->cfg->exec_dir,filename);
 	}
-	JS_RESUMEREQUEST(cx, rc);
+
+	if(background)
+		JS_RESUMEREQUEST(bg->cx, brc);
+	else
+		JS_RESUMEREQUEST(cx, rc);
 
 	JS_ClearPendingException(exec_cx);
 
 	if((script=JS_CompileFile(exec_cx, exec_obj, path))==NULL) {
 		if(background) {
+			JS_ENDREQUEST(bg->cx);
 			JS_RemoveObjectRoot(bg->cx, &bg->obj);
 			JS_DestroyContext(bg->cx);
 			jsrt_Release(bg->runtime);
 			free(bg);
+			JS_RESUMEREQUEST(cx, rc);
 		}
 		return(JS_FALSE);
 	}
@@ -523,11 +563,16 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	if(background) {
 
 		bg->script = script;
+		brc=JS_SUSPENDREQUEST(bg->cx);
+		JS_RESUMEREQUEST(cx, rc);
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(js_CreateQueueObject(cx, obj, NULL, bg->msg_queue)));
+		rc=JS_SUSPENDREQUEST(cx);
+		JS_RESUMEREQUEST(bg->cx, brc);
 		JS_ENDREQUEST(bg->cx);
 		JS_ClearContextThread(bg->cx);
 		bg->sem=&p->bg_sem;
 		success = _beginthread(background_thread,0,bg)!=-1;
+		JS_RESUMEREQUEST(cx, rc);
 		if(success) {
 			JS_SetContextCallback(JS_GetRuntime(cx), BGContextCallback);
 			p->bg_count++;
