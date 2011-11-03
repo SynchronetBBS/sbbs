@@ -52,6 +52,7 @@
 #define DEFAULT_LOG_LEVEL	LOG_DEBUG	/* Display all LOG levels */
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
 
+js_startup_t	startup;
 JSRuntime*	js_runtime;
 JSContext*	js_cx;
 JSObject*	js_glob;
@@ -700,8 +701,6 @@ static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 
 static BOOL js_init(char** environ)
 {
-	js_startup_t	startup;
-
 	memset(&startup,0,sizeof(startup));
 	SAFECOPY(startup.load_path, load_path_list);
 
