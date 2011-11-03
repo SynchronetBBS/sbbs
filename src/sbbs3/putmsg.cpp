@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "wordwrap.h"
 
 /****************************************************************************/
 /* Outputs a NULL terminated string locally and remotely (if applicable)	*/
@@ -50,7 +51,7 @@
 char sbbs_t::putmsg(const char *buf, long mode)
 {
 	char	tmpatr,tmp2[256],tmp3[128];
-	char*	str=buf;
+	char*	str=(char*)buf;
 	uchar	exatr=0;
 	int 	orgcon=console,i;
 	ulong	l=0,sys_status_sav=sys_status;
@@ -66,7 +67,7 @@ char sbbs_t::putmsg(const char *buf, long mode)
 		putcom("\x02\x02");
 	if(mode&P_WORDWRAP) {
 		char *wrapped;
-		if((wrappped=::wordwrap(buf, cols-4, cols-1, /* handle_quotes */TRUE)) == NULL)
+		if((wrapped=::wordwrap((char*)buf, cols-4, cols-1, /* handle_quotes */TRUE)) == NULL)
 			errormsg(WHERE,ERR_ALLOC,"wordwrap buffer",0);
 		else
 			str=wrapped;
@@ -77,7 +78,7 @@ char sbbs_t::putmsg(const char *buf, long mode)
 			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF)) {  /* Quote a file */
 				l+=2;
 				i=0;
-				while(i<sizeof(tmp2)-1 && isprint(str[l]) && str[l]!='\\' && str[l]!='/')
+				while(i<(int)sizeof(tmp2)-1 && isprint(str[l]) && str[l]!='\\' && str[l]!='/')
 					tmp2[i++]=str[l++];
 				tmp2[i]=0;
 				sys_status|=SS_NEST_PF; 	/* keep it only one message deep! */
