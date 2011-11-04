@@ -17,10 +17,10 @@ var join=false;
 var exclude=new Array();
 var quiet=false;
 
-function log(msg)
+function mylog(msg)
 {
     if(!quiet)
-        js.global.log(LOG_INFO,"ircmsg: " + msg);
+        log(LOG_INFO,"ircmsg: " + msg);
 }
 
 for(i=0;i<argc;i++) {
@@ -56,8 +56,8 @@ for(i=0;i<argc;i++) {
 	}
 }
 
-log("Using nick: " + nick);
-log("Connecting to: " +server+ " port " + port);
+mylog("Using nick: " + nick);
+mylog("Connecting to: " +server+ " port " + port);
 my_server = IRC_client_connect(server,nick,undefined,undefined,port);
 if(!my_server) {
 	alert("!Couldn't connect to " + server);
@@ -69,15 +69,15 @@ while(!done) {
 	while(!done && (response=my_server.recvline())) {
 		var resp=response.split(/\s+/);
 		if(resp[1]=='433') {
-			log(response);
+			mylog(response);
 			/* Nick in use... */
 			nick+='_';
-			log("Using nick: " + nick);
+			mylog("Using nick: " + nick);
 			my_server.send("NICK " + nick + "\r\n");
 		}
 		if(resp[1]=='422' || resp[1]=='376')
 			done=1;
-		//log(response);
+		//mylog(response);
 	}
 	if(!my_server.is_connected) {
 		alert("Disconnected");
@@ -86,10 +86,10 @@ while(!done) {
 }
 
 if(join) {
-	log("Joining: " + channel);
+	mylog("Joining: " + channel);
 	my_server.send("JOIN " + channel + "\r\n");
 	while(my_server.poll(5) && (response=my_server.recvline()))
-		log(response);
+		mylog(response);
 }
 
 if(msg)
@@ -98,22 +98,22 @@ else while((msg=readln())!=undefined)	/* read from stdin */
 	send(msg);
 
 while(my_server.poll(0) && (response=my_server.recvline()))
-	log(response);
+	mylog(response);
 
 IRC_quit(my_server);
-log("Exiting");
+mylog("Exiting");
 exit();
 
 function send(msg)
 {
 	if(msg==undefined || msg.search(/^[\r\n]*$/)!=-1) {
-		log("Not sending blank message");
+		mylog("Not sending blank message");
 		return;
 	}
 	for(i in exclude)
 		if(msg.search(exclude[i])>=0)
 			return;
-	log("Sending: " + msg);
+	mylog("Sending: " + msg);
 	if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
 		alert("send failure");
 	else
