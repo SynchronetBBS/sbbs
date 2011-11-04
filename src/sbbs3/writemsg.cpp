@@ -91,7 +91,7 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 	if((buf=smb_getmsgtxt(&smb,msg,tails)) != NULL) {
 		strip_invalid_attr(buf);
 		if(useron.xedit && (cfg.xedit[useron.xedit-1]->misc&QUOTEWRAP))
-			wrapped=::wordwrap(buf, cols-4, cols-1, /* handle_quotes */TRUE);
+			wrapped=::wordwrap(buf, cols-4, cols-1, WORDWRAP_FLAG_QUOTES);
 		if(wrapped!=NULL) {
 			fputs(wrapped,fp);
 			free(wrapped);

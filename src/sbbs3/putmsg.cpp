@@ -67,7 +67,7 @@ char sbbs_t::putmsg(const char *buf, long mode)
 		putcom("\x02\x02");
 	if(mode&P_WORDWRAP) {
 		char *wrapped;
-		if((wrapped=::wordwrap((char*)buf, cols-4, cols-1, /* handle_quotes */TRUE)) == NULL)
+		if((wrapped=::wordwrap((char*)buf, cols-4, cols-1, WORDWRAP_FLAG_QUOTES)) == NULL)
 			errormsg(WHERE,ERR_ALLOC,"wordwrap buffer",0);
 		else
 			str=wrapped;

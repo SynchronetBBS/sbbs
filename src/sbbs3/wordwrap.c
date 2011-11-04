@@ -34,6 +34,7 @@
 #include <ctype.h>
 #include <genwrap.h>
 #include <stdlib.h>		/* realloc */
+#include <stdbool.h>
 #include "wordwrap.h"
 
 static int get_prefix(const char *text, int *bytes, int *len, int maxlen)
@@ -168,8 +169,10 @@ static int compare_prefix(char *old_prefix, int old_prefix_bytes, const char *ne
 	return(0);
 }
 
-char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
+char* wordwrap(char* inbuf, int len, int oldlen, uint32_t flags)
 {
+	bool		handle_quotes=flags&WORDWRAP_FLAG_QUOTES;
+	bool		lf_break=flags&WORDWRAP_FLAG_BARELF;
 	int			l;
 	int			crcount=0;
 	long		i,k,t;
@@ -241,6 +244,12 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 				crcount++;
 				break;
 			case '\n':
+				if(!lf_break) {
+					if(i==0)
+						break;
+					if(inbuf[i-1] != '\r')
+						break;
+				}
 				if(handle_quotes && (quote_count=get_prefix(inbuf+i+1, &prefix_bytes, &prefix_len, len*2+2))!=0) {
 					/* Move the input pointer offset to the last char of the prefix */
 					i+=prefix_bytes;

@@ -1006,6 +1006,7 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 	char*		outbuf;
 	JSString*	js_str;
 	jsrefcount	rc;
+	uint32_t	flags=0;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1026,12 +1027,14 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 
-	if(argc>3 && JSVAL_IS_BOOLEAN(argv[3]))
-		handle_quotes=JSVAL_TO_BOOLEAN(argv[3]);
+	if(argc>3 && JSVAL_IS_BOOLEAN(argv[3])) {
+		if(JSVAL_TO_BOOLEAN(argv[3]))
+			flags |= WORDWRAP_FLAG_QUOTES;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 
-	outbuf=wordwrap(inbuf, len, oldlen, handle_quotes);
+	outbuf=wordwrap(inbuf, len, oldlen, flags);
 
 	JS_RESUMEREQUEST(cx, rc);
 
