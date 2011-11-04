@@ -67,10 +67,12 @@ char sbbs_t::putmsg(const char *buf, long mode)
 		putcom("\x02\x02");
 	if(mode&P_WORDWRAP) {
 		char *wrapped;
-		if((wrapped=::wordwrap((char*)buf, cols-1, 79, WORDWRAP_FLAG_QUOTES)) == NULL)
+		if((wrapped=::wordwrap((char*)buf, cols, 79, WORDWRAP_FLAG_QUOTES)) == NULL)
 			errormsg(WHERE,ERR_ALLOC,"wordwrap buffer",0);
-		else
+		else {
+			truncsp_lines(wrapped);
 			str=wrapped;
+		}
 	}
 
 	while(str[l] && (mode&P_NOABORT || !msgabort()) && online) {

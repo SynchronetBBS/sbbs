@@ -187,7 +187,6 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 	show_msghdr(msg);
 
 	if((text=smb_getmsgtxt(&smb,msg,GETMSGTXT_ALL))!=NULL) {
-		truncsp_lines(text);
 		putmsg(text, mode|P_WORDWRAP);
 		smb_freemsgtxt(text);
 	}
