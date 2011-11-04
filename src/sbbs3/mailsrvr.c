@@ -2746,7 +2746,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 			
-				if(msg_handled) {
+				if(msg_handled || iniReadSectionCount(rcptlst,NULL) < 1) {
 					lprintf(LOG_NOTICE,"%04d SMTP Message handled by external mail processor (%s, %u total)"
 						,socket, mailproc->name, ++mailproc->handled);
 					continue;
