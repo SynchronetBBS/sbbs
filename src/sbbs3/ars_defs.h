@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -79,7 +79,7 @@ enum {                              /* Access requirement binaries */
 	,AR_FLAG3
 	,AR_FLAG4
 	,AR_EXEMPT
-	,AR_REST
+	,AR_REST		/* 20 */
     ,AR_SEX
 	,AR_UDR
 	,AR_UDFR
@@ -89,7 +89,7 @@ enum {                              /* Access requirement binaries */
 	,AR_ANSI
 	,AR_RIP
 	,AR_LOCAL
-	,AR_GROUP
+	,AR_GROUP		/* 30 */
 	,AR_SUB
 	,AR_LIB
 	,AR_DIR
@@ -99,8 +99,8 @@ enum {                              /* Access requirement binaries */
 	,AR_MAIN_CMDS
 	,AR_FILE_CMDS
 	,AR_RANDOM
-	,AR_LASTON
-	,AR_LOGONS
+	,AR_LASTON		/* 40 */
+	,AR_LOGONS		
 	,AR_WIP
 	,AR_SUBCODE
 	,AR_DIRCODE
@@ -109,7 +109,7 @@ enum {                              /* Access requirement binaries */
 	,AR_WIN32
 	,AR_UNIX
 	,AR_LINUX
-	,AR_SHELL
+	,AR_SHELL		/* 50 */
 	,AR_PROT
 	,AR_GUEST
 	,AR_QNODE
@@ -119,7 +119,7 @@ enum {                              /* Access requirement binaries */
 	,AR_ULS
 	,AR_ULK
 	,AR_ULM
-	,AR_DLS
+	,AR_DLS			/* 60 */
 	,AR_DLK
 	,AR_DLM
 	,AR_HOST	/* Remote/client hostname (wildcards allowed) */
