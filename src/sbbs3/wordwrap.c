@@ -181,6 +181,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, uint32_t flags)
 	char*		outp;
 	char*		linebuf;
 	char*		prefix=NULL;
+	char		ch;
 	int			prefix_len=0;
 	int			prefix_bytes=0;
 	int			quote_count=0;
@@ -242,12 +243,49 @@ char* wordwrap(char* inbuf, int len, int oldlen, uint32_t flags)
 			case '\r':
 				crcount++;
 				break;
+			case '\x1f':	/* Delete... meaningless... strip. */
+				break;
+			case '\b':		/* Backspace... handle if possible, but don't go crazy. */
+				if(l>0) {
+					if(l>1 && linebuf[l-2]=='\x01') {
+						if(linebuf[l-1]=='\x01') {
+							ocol--;
+							icol--;
+						}
+						l-=2;
+					}
+					else {
+						l--;
+						ocol--;
+						icol--;
+					}
+				}
+				break;
+			case '\t':		/* TAB */
+				linebuf[l++]=inbuf[i];
+				/* Can't ever wrap on whitespace remember. */
+				icol++;
+				ocol++;
+				while(ocol%8)
+					ocol++;
+				while(icol%8)
+					icol++;
+				break;
+			case '\x01':	/* CTRL-A */
+				linebuf[l++]=inbuf[i++];
+				if(inbuf[i]!='\x01') {
+					linebuf[l++]=inbuf[i];
+					break;
+				}
+				if(0) {	// This is a very ugly thing... figure this out before editing!!!
 			case '\n':
 				if(!lf_break) {
 					if(i==0)
 						break;
-					if(inbuf[i-1] != '\r')
-						break;
+					if(inbuf[i-1] != '\r') {
+						if(l==0 || isspace(linebuf[l-1]))
+							break;
+					}
 				}
 				if(handle_quotes && (quote_count=get_prefix(inbuf+i+1, &prefix_bytes, &prefix_len, len*2+2))!=0) {
 					/* Move the input pointer offset to the last char of the prefix */
@@ -319,42 +357,12 @@ char* wordwrap(char* inbuf, int len, int oldlen, uint32_t flags)
 				}
 				icol=prefix_len+1;
 				break;
-			case '\x1f':	/* Delete... meaningless... strip. */
-				break;
-			case '\b':		/* Backspace... handle if possible, but don't go crazy. */
-				if(l>0) {
-					if(l>1 && linebuf[l-2]=='\x01') {
-						if(linebuf[l-1]=='\x01') {
-							ocol--;
-							icol--;
-						}
-						l-=2;
-					}
-					else {
-						l--;
-						ocol--;
-						icol--;
-					}
-				}
-				break;
-			case '\t':		/* TAB */
-				linebuf[l++]=inbuf[i];
-				/* Can't ever wrap on whitespace remember. */
-				icol++;
-				ocol++;
-				while(ocol%8)
-					ocol++;
-				while(icol%8)
-					icol++;
-				break;
-			case '\x01':	/* CTRL-A */
-				linebuf[l++]=inbuf[i++];
-				if(inbuf[i]!='\x01') {
-					linebuf[l++]=inbuf[i];
-					break;
-				}
+			} // This is where the ugly referenced above finishes.
 			default:
-				linebuf[l++]=inbuf[i];
+				if(inbuf[i]=='\n')
+					linebuf[l++]=' ';
+				else
+					linebuf[l++]=inbuf[i];
 				ocol++;
 				icol++;
 				if(ocol>len && !isspace((unsigned char)inbuf[i])) {		/* Need to wrap here */
