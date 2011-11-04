@@ -34,6 +34,8 @@
 #ifndef _WORDWRAP_H_
 #define _WORDWRAP_H_
 
+#include "gen_defs.h"	// uint32_t
+
 #define WORDWRAP_FLAG_QUOTES	(1<<0)	// Handle quote prefixes
 #define	WORDWRAP_FLAG_BARELF	(1<<1)	// Treat bare LFs as a line break
 
