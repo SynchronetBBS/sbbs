@@ -208,16 +208,23 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 /* Create a new value in the new context with a value from the original context */
-static jsval* js_CopyValue(JSContext* cx, jsval val, JSContext* new_cx, jsval* rval)
+/* BOTH CONTEXTX NEED TO BE SUSPENDED! */
+static jsval* js_CopyValue(JSContext* cx, jsrefcount *cx_rc, jsval val, JSContext* new_cx, jsrefcount *new_rc, jsval* rval)
 {
 	size_t	size;
 	uint64	*nval;
 
 	*rval = JSVAL_VOID;
+	JS_RESUMEREQUEST(cx, *cx_rc);
 	if(JS_WriteStructuredClone(cx, val, &nval, &size, NULL, NULL)) {
+		*cx_rc=JS_SUSPENDREQUEST(cx);
+		JS_RESUMEREQUEST(new_cx, *new_rc);
 		JS_ReadStructuredClone(new_cx, nval, size, JS_STRUCTURED_CLONE_VERSION, rval, NULL, NULL);
+		*new_rc=JS_SUSPENDREQUEST(new_cx);
+		JS_RESUMEREQUEST(cx, *cx_rc);
 		JS_free(cx, nval);
 	}
+	*cx_rc=JS_SUSPENDREQUEST(cx);
 
 	return rval;
 }
@@ -440,8 +447,13 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_DefineProperty(exec_cx, exec_obj, "argv", OBJECT_TO_JSVAL(js_argv)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-		for(i=argn; i<argc; i++)
-			JS_SetElement(exec_cx, js_argv, i-argn, js_CopyValue(cx,argv[i],exec_cx,&val));
+		for(i=argn; i<argc; i++) {
+			jsval *copy;
+			brc=JS_SUSPENDREQUEST(bg->cx);
+			copy=js_CopyValue(cx,&rc,argv[i],exec_cx,&brc,&val);
+			JS_RESUMEREQUEST(bg->cx, brc);
+			JS_SetElement(exec_cx, js_argv, i-argn, copy);
+		}
 
 		JS_DefineProperty(exec_cx, exec_obj, "argc", INT_TO_JSVAL(argc-argn)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
