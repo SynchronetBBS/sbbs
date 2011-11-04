@@ -67,6 +67,8 @@ extern "C" {
 /* Read all section names and return as an allocated string list */
 /* Optionally (if prefix!=NULL), returns a subset of section names */
 str_list_t	iniReadSectionList(FILE*, const char* prefix);
+/* Returns number (count) of sections */
+size_t		iniReadSectionCount(FILE*, const char* prefix);
 /* Read all key names and return as an allocated string list */
 str_list_t	iniReadKeyList(FILE*, const char* section);
 /* Read all key and value pairs and return as a named string list */

@@ -931,6 +931,33 @@ size_t iniGetSectionCount(str_list_t list, const char* prefix)
 	return(items);
 }
 
+size_t iniReadSectionCount(FILE* fp, const char* prefix)
+{
+	char*	p;
+	char	str[INI_MAX_LINE_LEN];
+	ulong	items=0;
+
+	if(fp==NULL)
+		return(0);
+
+	rewind(fp);
+
+	while(!feof(fp)) {
+		if(fgets(str,sizeof(str),fp)==NULL)
+			break;
+		if(is_eof(str))
+			break;
+		if((p=section_name(str))==NULL)
+			continue;
+		if(prefix!=NULL)
+			if(strnicmp(p,prefix,strlen(prefix))!=0)
+				continue;
+		items++;
+	}
+
+	return(items);
+}
+
 
 str_list_t iniReadKeyList(FILE* fp, const char* section)
 {
