@@ -3124,7 +3124,7 @@ static void smtp_thread(void* arg)
 					sender_ext[0]=0;
 					if(msg.from_ext!=NULL)
 						SAFEPRINTF(sender_ext," #%s",msg.from_ext);
-					lprintf(LOG_INFO,"%04d SMTP Created message #%ld from %s%s %s to %s [%s]"
+					lprintf(LOG_INFO,"%04d SMTP Created message #%ld from %s%s [%s] to %s [%s]"
 						,socket, newmsg.hdr.number, sender, sender_ext, smb_netaddrstr(&msg.from_net,tmp), rcpt_name, rcpt_addr);
 					if(relay_user.number!=0)
 						user_sent_email(&scfg, &relay_user, 1, usernum==1);
