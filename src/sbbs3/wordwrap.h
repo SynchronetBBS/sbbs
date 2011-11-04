@@ -34,11 +34,14 @@
 #ifndef _WORDWRAP_H_
 #define _WORDWRAP_H_
 
+#define WORDWRAP_FLAG_QUOTES	(1<<0)	// Handle quote prefixes
+#define	WORDWRAP_FLAG_BARELF	(1<<1)	// Treat bare LFs as a line break
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes);
+char* wordwrap(char* inbuf, int len, int oldlen, uint32_t flags);
 
 #ifdef __cplusplus
 }
