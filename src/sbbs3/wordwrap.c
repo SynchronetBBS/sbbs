@@ -277,9 +277,10 @@ char* wordwrap(char* inbuf, int len, int oldlen, uint32_t flags)
 					linebuf[l++]=inbuf[i];
 					break;
 				}
-				if(0) {	// This is a very ugly thing... figure this out before editing!!!
+				if(0) 	// This is a very ugly thing... figure this out before editing!!!
+						// See that brace?  It's IMPORTANT!
+			case '\n': {
 				BOOL	ignore=FALSE;
-			case '\n':
 				if(!lf_break) {
 					if(i==0)
 						break;
