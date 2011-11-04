@@ -449,9 +449,16 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 		for(i=argn; i<argc; i++) {
 			jsval *copy;
-			brc=JS_SUSPENDREQUEST(bg->cx);
-			copy=js_CopyValue(cx,&rc,argv[i],exec_cx,&brc,&val);
-			JS_RESUMEREQUEST(bg->cx, brc);
+			if(background) {
+				brc=JS_SUSPENDREQUEST(bg->cx);
+				copy=js_CopyValue(cx,&rc,argv[i],exec_cx,&brc,&val);
+				JS_RESUMEREQUEST(bg->cx, brc);
+			}
+			else {
+				rc=JS_SUSPENDREQUEST(cx);
+				copy=js_CopyValue(cx,&rc,argv[i],exec_cx,&rc,&val);
+				JS_RESUMEREQUEST(cx, rc);
+			}
 			JS_SetElement(exec_cx, js_argv, i-argn, copy);
 		}
 
