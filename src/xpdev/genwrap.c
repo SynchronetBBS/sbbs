@@ -486,7 +486,8 @@ char* DLLCALL truncsp(char* str)
 }
 
 /****************************************************************************/
-/* Truncates all white-space chars off end of \n-terminated lines in 'str'	*/
+/* Truncates common white-space chars off end of \n-terminated lines in		*/
+/* 'dst' and retains original line break format	(e.g. \r\n or \n)			*/
 /****************************************************************************/
 char* DLLCALL truncsp_lines(char* dst)
 {
@@ -498,10 +499,13 @@ char* DLLCALL truncsp_lines(char* dst)
 		return(dst);
 
 	for(sp=src, dp=dst; *sp!=0; sp++) {
-		if(*sp=='\n')
+		if(*sp=='\n') {
 			while(dp!=dst
-				&& (*(dp-1)==' ' || *(dp-1)=='\t' || *(dp-1)=='\r') && *(dp-1)!='\n')
+				&& (*(dp-1)==' ' || *(dp-1)=='\t' || *(dp-1)=='\r'))
 					dp--;
+			if(sp!=src && *(sp-1)=='\r')
+				*(dp++)='\r';
+		}
 		*(dp++)=*sp;
 	}
 	*dp=0;
