@@ -2021,7 +2021,7 @@ void output_thread(void* arg)
 	}
 #endif
 
-	while(sbbs->client_socket!=INVALID_SOCKET && !terminate_server) {
+	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET && !terminate_server) {
 		/*
 		 * I'd like to check the linear buffer against the highwater
 		 * at this point, but it would get too clumsy imho - Deuce
@@ -2101,7 +2101,6 @@ void output_thread(void* arg)
 			if(!cryptStatusOK((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
 				/* Handle the SSH error here... */
 				lprintf(LOG_WARNING,"%s !ERROR %d sending on Cryptlib session", node, err);
-				i=-1;
 				sbbs->online=FALSE;
 				i=buftop-bufbot;	// Pretend we sent it all
 			}
@@ -2110,7 +2109,7 @@ void output_thread(void* arg)
 		}
 		else
 #endif
-		i=sendsocket(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot);
+			i=sendsocket(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
                 lprintf(LOG_NOTICE,"%s client socket closed on send", node);
@@ -3253,8 +3252,8 @@ bool sbbs_t::init()
 			return(false);
 		}
 		for(i=0;i<cfg.max_batup;i++) {
-			if((batup_desc[i]=(char *)malloc(59))==NULL) {
-				errormsg(WHERE, ERR_ALLOC, "batup_desc[x]", 59);
+			if((batup_desc[i]=(char *)malloc(LEN_FDESC+1))==NULL) {
+				errormsg(WHERE, ERR_ALLOC, "batup_desc[x]", LEN_FDESC+1);
 				return(false);
 			}
 			if((batup_name[i]=(char *)malloc(13))==NULL) {
@@ -4755,7 +4754,6 @@ NO_SSH:
 
 	sbbs = new sbbs_t(0, server_addr
 		,"Terminal Server", telnet_socket, &scfg, text, NULL);
-    sbbs->online = 0;
 	if(sbbs->init()==false) {
 		lputs(LOG_CRIT,"!BBS initialization failed");
 		cleanup(1);
@@ -4766,7 +4764,6 @@ NO_SSH:
 	if(!(startup->options&BBS_OPT_NO_EVENTS)) {
 		events = new sbbs_t(0, server_addr
 			,"BBS Events", INVALID_SOCKET, &scfg, text, NULL);
-		events->online = 0;
 		if(events->init()==false) {
 			lputs(LOG_CRIT,"!Events initialization failed");
 			cleanup(1);
