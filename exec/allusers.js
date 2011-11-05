@@ -199,12 +199,12 @@
 				continue user_loop;
 				
 			flag_loop:
-			for(var s in rule.flag_set) {
+			for(var s in rule.flags) {
 				if(!rule.flag_set[s])
 					continue flag_loop; 
-				if(usr.security["flags" + s] & rule.flags.set == 0)
+				if(usr.security["flags" + s] & rule.flags[s].set == 0)
 					continue user_loop;
-				if(usr.security["flags" + s] & rule.flags.unset > 0)
+				if(usr.security["flags" + s] & rule.flags[s].unset > 0)
 					continue user_loop;
 			}
 			
