@@ -940,14 +940,14 @@ static uint get_subnum(JSContext* cx, sbbs_t* sbbs, jsval *argv, int argc, int p
 	return(subnum);
 }
 
-static uint get_dirnum(JSContext* cx, sbbs_t* sbbs, jsval val, bool default)
+static uint get_dirnum(JSContext* cx, sbbs_t* sbbs, jsval val, bool dflt)
 {
 	uint dirnum=INVALID_DIR;
 
 	if(sbbs->usrlibs>0)
 		dirnum=sbbs->usrdir[sbbs->curlib][sbbs->curdir[sbbs->curlib]];
 
-	if(!default) {
+	if(!dflt) {
 		if(JSVAL_IS_STRING(val)) {
 			char	*p;
 			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(val), p, NULL);
