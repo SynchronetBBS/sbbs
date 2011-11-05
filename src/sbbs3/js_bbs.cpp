@@ -2334,7 +2334,7 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc < 1)
 		return JS_FALSE;
 
-	if(SVAL_IS_NUMBER(argv[0])) {
+	if(JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToInt32(cx,argv[0],&usernumber))
 			return JS_FALSE;
 	}
