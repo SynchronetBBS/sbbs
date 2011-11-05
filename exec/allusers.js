@@ -230,7 +230,6 @@
 
 	/* edit them bitches */
 	function editUsers(matches, rule) {
-		log("rule: " + rule.toSource());
 		for each(var m in matches) {
 			if(rule.level) 
 				m.security.level = Number(rule.level);
