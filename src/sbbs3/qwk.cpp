@@ -151,7 +151,6 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 		if(!fgets(str,256,stream))
 			break;
 		if(!strnicmp(str+9,node,strlen(node))) {
-			fclose(stream);
 			truncsp(str);
 			sprintf(fulladdr,"%s/%s",str+9+strlen(node),inaddr);
 			break; 
