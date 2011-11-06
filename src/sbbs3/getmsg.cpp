@@ -187,7 +187,9 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 	show_msghdr(msg);
 
 	if((text=smb_getmsgtxt(&smb,msg,GETMSGTXT_ALL))!=NULL) {
-		putmsg(text, mode|P_WORDWRAP);
+		if(!(console&CON_RAW_IN))
+			mode|=P_WORDWRAP;
+		putmsg(text, mode);
 		smb_freemsgtxt(text);
 	}
 }
