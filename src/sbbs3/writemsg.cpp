@@ -546,10 +546,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		|| (subnum!=INVALID_SUB && !(cfg.sub[subnum]->misc&SUB_NOUSERSIG))) {
 		SAFEPRINTF2(str,"%suser/%04u.sig",cfg.data_dir,useron.number);
 		FILE* sig;
-		if(fexist(str) && (sig=fopen(str,"rb"))!=NULL) {
+		if(fexist(str) && (sig=fopen(str,"r"))!=NULL) {
 			while(!feof(sig)) {
 				if(!fgets(str,sizeof(str),sig))
 					break;
+				truncsp(str);
 				l+=fprintf(stream,"%s\r\n",str);
 				lines++;		/* line counter */
 			}
