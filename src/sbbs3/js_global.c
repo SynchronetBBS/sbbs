@@ -67,6 +67,15 @@ enum {
 	,GLOB_PROP_SOCKET_ERRNO
 };
 
+BOOL DLLCALL js_argc(JSContext *cx, uintN argc, uintN min)
+{
+	if(argc < min) {
+		JS_ReportError(cx, "Insufficient Arguments");
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
