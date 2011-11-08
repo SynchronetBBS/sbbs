@@ -231,6 +231,9 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 		old_prefix_bytes=prefix_bytes;
 	}
 	for(; inbuf[i]; i++) {
+		if(oldlen == 0)
+			icol=-256;
+
 		if(l>=len*2+2) {
 			l-=4;
 			linebuf[l]=0;
