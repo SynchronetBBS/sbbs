@@ -1,4 +1,5 @@
 /*******************************************************************************
+$ Id: $
 FILE: emailval.js v0.2
 BY  : Michael J. Ryan (http://tracker1.info/)
 ON  : 2005-02-14
@@ -109,7 +110,7 @@ function ChangeEmailAddress() {
 
 	console.print("\1n \r\b\1h\1bEnter your email address below.\r\n\1n\1b:\1n ");
 	user.netmail = console.getstr(user.netmail, 60, K_EDIT | K_LINE);
-	console.print("\r\n\1n \1\n");
+	console.print("\r\n\1n \r\n");
 }
 
 function EnterValidationCode() {
