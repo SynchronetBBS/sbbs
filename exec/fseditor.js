@@ -964,6 +964,8 @@ function make_strings(soft,embed_colour)
 	var lastattr=7;
 	var thisattr;
 
+	// Force the last line to be a hard CR.
+	line[line.length-1].hardcr=true;
 	for(i=0; i<line.length; i++) {
 		if(embed_colour) {
 			for(j=0;j<line[i].text.length;j++) {
