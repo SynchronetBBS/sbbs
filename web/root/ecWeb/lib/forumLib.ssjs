@@ -74,6 +74,8 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 		if(!newOnly) print("<br />There are no messages to show in this sub-board.");
 		return;
 	}
+	var msgBase_last_msg=msgBase.last_msg;
+	var canPost=msgBase.cfg.can_post;
 	if(subBoardCode != 'mail' && !user.compare_ars(msgBase.cfg.ars)) return; // 'mail' does not have a .cfg.
 	var header, body, msg, mm = msgBase.first_msg, reply = '', messageThreads = new Object(), threadedMessages = new Object();
 	print('<div id=' + subBoardCode + '-headerBox class="subBoardHeaderColor standardBorder standardMargin standardPadding headingFont">');
@@ -116,11 +118,11 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 		print('</form></div></div>');
 	}
 
-	if(webIni.maxMessages > 0 && (msgBase.last_msg - webIni.maxMessages) > 0) mm = msgBase.last_msg - webIni.maxMessages;
+	if(webIni.maxMessages > 0 && (msgBase_last_msg - webIni.maxMessages) > 0) mm = msgBase_last_msg - webIni.maxMessages;
 
-	for(m = mm; m <= msgBase.last_msg; m++) {
+	for(m = mm; m <= msgBase_last_msg; m++) {
 		header = msgBase.get_msg_header(m);
-		body = msgBase.get_msg_body(m,strip_ctrl_a=true);
+		body = msgBase.get_msg_body(true,header.offset,strip_ctrl_a=true);
 		if(!header || !body || !header.hasOwnProperty("number") || threadedMessages.hasOwnProperty(header.number)) continue;
 		if(newOnly && header.number <= scanPointer) continue; // This message precedes our scan pointer - don't waste any more time on it.
 		if(subBoardCode == 'mail' && header.to != user.alias && header.to_ext != user.number && header.from != user.alias && header.from_ext != user.number) continue; // lol :|
@@ -137,7 +139,7 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 		msg += 'From <b>' + header.from + '</b> to <b>' + header.to + '</b> on <b>' + system.timestr(header.when_written_time) + '</b>';
 		msg += '<br /><br />' + html_encode(body, true, false, false, false).replace(/\r\n|\r|\n/g, "<br />").replace(/'/g, "&rsquo;") + '<br />';
 
-		if(subBoardCode == 'mail' || user.compare_ars(msgBase.cfg.post_ars)) {
+		if(subBoardCode == 'mail' || canPost) {
 			msg += '<a class=ulLink onclick=toggleVisibility("' + subBoardCode + '-reply-' + header.number + '")>Reply</a> - ';
 			/* Set 'reply' to contain a (non-submittable) reply form, which
 			   will be appended to 'msg' (above) further along. The submit
