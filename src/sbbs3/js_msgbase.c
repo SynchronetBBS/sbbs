@@ -1218,7 +1218,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 			if(p->msg.idx.attr&MSG_PRIVATE) {
 				if(user==NULL)
 					break;
-				if(!is_user_subop(scfg, p->p->smb.subnum, user, client) && !(user->rest&FLAG('Q')) {
+				if(!is_user_subop(scfg, p->p->smb.subnum, user, client) && !(user->rest&FLAG('Q'))) {
 					if(p->msg.idx.to!=namecrc && p->msg.idx.from!=namecrc
 						&& p->msg.idx.to!=aliascrc && p->msg.idx.from!=aliascrc
 						&& (user->number!=1 || p->msg.idx.to!=sysop))
