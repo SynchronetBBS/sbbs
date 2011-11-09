@@ -51,6 +51,14 @@ you already have flashpolicyserver.js. Make sure that it's enabled in your
 ctrl/services.ini file, that port 843 is open to your BBS, and add port 6667
 to the extra_ports key in the [flashpolicyserver] section of ctrl/modopts.ini.
 
+The option for the Flash policy server *must* be named "FlashPolicy" as
+follows:
+[FlashPolicy]
+Port=843
+Command=flashpolicyserver.js
+MaxClients=10
+Options=NO_HOST_LOOKUP
+
 I'm adding more comprehensive documentation to the wiki. This should be enough
 to get you started.
 
