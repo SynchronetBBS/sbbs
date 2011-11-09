@@ -12,7 +12,10 @@ var f = new File(system.ctrl_dir + 'services.ini');
 if(f.open("r")) {
 	var servicesIni = f.iniGetObject('FlashPolicy');
 	f.close();
-	var fspPort = servicesIni.Port;
+	if(servicesIni)
+		var fspPort = servicesIni.Port;
+	else
+		fspPort = 843;
 } else {
 	var fspPort = 843;
 }
