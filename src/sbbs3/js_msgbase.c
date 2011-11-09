@@ -1511,29 +1511,37 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-static char* get_msg_text(private_t* p, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL rfc822, ulong mode)
+static char* get_msg_text(private_t* p, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL rfc822, ulong mode, JSBool existing)
 {
 	char*		buf;
 
-	if((p->status=smb_getmsgidx(&(p->smb), msg))!=SMB_SUCCESS)
-		return(NULL);
+	if(existing) {
+		if((p->status=smb_lockmsghdr(&(p->smb),msg))!=SMB_SUCCESS)
+			return(NULL);
+	}
+	else {
+		if((p->status=smb_getmsgidx(&(p->smb), msg))!=SMB_SUCCESS)
+			return(NULL);
 
-	if((p->status=smb_lockmsghdr(&(p->smb),msg))!=SMB_SUCCESS)
-		return(NULL);
+		if((p->status=smb_lockmsghdr(&(p->smb),msg))!=SMB_SUCCESS)
+			return(NULL);
 
-	if((p->status=smb_getmsghdr(&(p->smb), msg))!=SMB_SUCCESS) {
-		smb_unlockmsghdr(&(p->smb), msg); 
-		return(NULL);
+		if((p->status=smb_getmsghdr(&(p->smb), msg))!=SMB_SUCCESS) {
+			smb_unlockmsghdr(&(p->smb), msg); 
+			return(NULL);
+		}
 	}
 
 	if((buf=smb_getmsgtxt(&(p->smb), msg, mode))==NULL) {
 		smb_unlockmsghdr(&(p->smb),msg); 
-		smb_freemsgmem(msg);
+		if(!existing)
+			smb_freemsgmem(msg);
 		return(NULL);
 	}
 
 	smb_unlockmsghdr(&(p->smb), msg); 
-	smb_freemsgmem(msg);
+	if(!existing)
+		smb_freemsgmem(msg);
 
 	if(strip_ctrl_a)
 		remove_ctrl_a(buf, buf);
@@ -1564,11 +1572,13 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 	char*		buf;
 	uintN		n;
 	smbmsg_t	msg;
+	smbmsg_t	*msgptr;
 	JSBool		by_offset=JS_FALSE;
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		tails=JS_TRUE;
 	JSBool		rfc822=JS_FALSE;
 	JSBool		msg_specified=JS_FALSE;
+	JSBool		existing_msg=JS_FALSE;
 	JSString*	js_str;
 	private_t*	p;
 	char*		cstr;
@@ -1585,6 +1595,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	memset(&msg,0,sizeof(msg));
+	msgptr=&msg;
 
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
@@ -1614,7 +1625,21 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 			msg_specified=JS_TRUE;
 			n++;
 			break;
+		} else if(JSVAL_IS_OBJECT(argv[n])) {		/* Use existing header */
+			JSClass *oc=JS_GetClass(cx, JSVAL_TO_OBJECT(argv[n]));
+			if(strcmp(oc->name, js_msghdr_class.name)==0) {
+				privatemsg_t	*pmsg=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[n]));
+
+				if(pmsg != NULL) {
+					msg_specified=JS_TRUE;
+					existing_msg=JS_TRUE;
+					msgptr=&pmsg->msg;
+				}
+			}
+			n++;
+			break;
 		}
+	
 	}
 
 	if(!msg_specified)	/* No message number or id specified */
@@ -1630,7 +1655,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 		tails=JSVAL_TO_BOOLEAN(argv[n++]);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	buf = get_msg_text(p, &msg, strip_ctrl_a, rfc822, tails ? GETMSGTXT_TAILS : 0);
+	buf = get_msg_text(p, msgptr, strip_ctrl_a, rfc822, tails ? GETMSGTXT_TAILS : 0, existing_msg);
 	JS_RESUMEREQUEST(cx, rc);
 	if(buf==NULL)
 		return(JS_TRUE);
@@ -1651,10 +1676,12 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 	char*		buf;
 	uintN		n;
 	smbmsg_t	msg;
+	smbmsg_t	*msgptr;
 	JSBool		by_offset=JS_FALSE;
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		rfc822=JS_FALSE;
 	JSBool		msg_specified=JS_FALSE;
+	JSBool		existing_msg=JS_FALSE;
 	JSString*	js_str;
 	private_t*	p;
 	char*		cstr;
@@ -1671,6 +1698,7 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	memset(&msg,0,sizeof(msg));
+	msgptr=&msg;
 
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
@@ -1700,6 +1728,19 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 			msg_specified=JS_TRUE;
 			n++;
 			break;
+		} else if(JSVAL_IS_OBJECT(argv[n])) {		/* Use existing header */
+			JSClass *oc=JS_GetClass(cx, JSVAL_TO_OBJECT(argv[n]));
+			if(strcmp(oc->name, js_msghdr_class.name)==0) {
+				privatemsg_t	*pmsg=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[n]));
+
+				if(pmsg != NULL) {
+					msg_specified=JS_TRUE;
+					existing_msg=JS_TRUE;
+					msgptr=&pmsg->msg;
+				}
+			}
+			n++;
+			break;
 		}
 	}
 
@@ -1713,7 +1754,7 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 		rfc822=JSVAL_TO_BOOLEAN(argv[n++]);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	buf = get_msg_text(p, &msg, strip_ctrl_a, rfc822, GETMSGTXT_TAILS|GETMSGTXT_NO_BODY);
+	buf = get_msg_text(p, msgptr, strip_ctrl_a, rfc822, GETMSGTXT_TAILS|GETMSGTXT_NO_BODY, existing_msg);
 	JS_RESUMEREQUEST(cx, rc);
 	if(buf==NULL)
 		return(JS_TRUE);
@@ -2052,7 +2093,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,JSDOCSTR("write a message header")
 	,310
 	},
-	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_id [,strip_ctrl_a=<tt>false</tt>] "
+	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_id [, message_header] [,strip_ctrl_a=<tt>false</tt>] "
 		"[,rfc822_encoded=<tt>false</tt>] [,include_tails=<tt>true</tt>]")
 	,JSDOCSTR("returns the entire body text of a specific message as a single String, <i>null</i> on failure. "
 		"The default behavior is to leave Ctrl-A codes intact, perform no RFC-822 encoding, and to include tails (if any) in the "
@@ -2060,7 +2101,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	)
 	,310
 	},
-	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_id [,strip_ctrl_a]=<tt>false</tt>")
+	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_id [, message_header] [,strip_ctrl_a]=<tt>false</tt>")
 	,JSDOCSTR("returns the tail text of a specific message, <i>null</i> on failure")
 	,310
 	},
