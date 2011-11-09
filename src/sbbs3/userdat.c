@@ -2534,6 +2534,8 @@ BOOL DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* cli
 /****************************************************************************/
 BOOL DLLCALL is_user_subop(scfg_t* cfg, uint subnum, user_t* user, client_t* client)
 {
+	if(user==NULL)
+		return FALSE;
 	if(!can_user_access_sub(cfg, subnum, user, client))
 		return FALSE;
 	if(user->level>=SYSOP_LEVEL)
