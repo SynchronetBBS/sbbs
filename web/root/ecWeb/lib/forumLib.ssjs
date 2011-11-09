@@ -122,8 +122,10 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 
 	for(m = mm; m <= msgBase_last_msg; m++) {
 		header = msgBase.get_msg_header(m);
+		if(!(header && (header.can_read===undefined || header.can_read)))
+			continue;
 		body = msgBase.get_msg_body(true,header.offset,strip_ctrl_a=true,header);
-		if(!header || !body || !header.hasOwnProperty("number") || threadedMessages.hasOwnProperty(header.number)) continue;
+		if(!body || !header.hasOwnProperty("number") || threadedMessages.hasOwnProperty(header.number)) continue;
 		if(newOnly && header.number <= scanPointer) continue; // This message precedes our scan pointer - don't waste any more time on it.
 		if(subBoardCode == 'mail' && header.to != user.alias && header.to_ext != user.number && header.from != user.alias && header.from_ext != user.number) continue; // lol :|
 
