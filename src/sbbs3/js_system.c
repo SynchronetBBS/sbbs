@@ -1002,7 +1002,7 @@ js_timestr(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		str[128];
-	int32		i=0;
+	jsdouble	ti;
 	JSString*	js_str;
 	scfg_t*		cfg;
 	jsrefcount	rc;
@@ -1013,11 +1013,11 @@ js_timestr(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc<1)
-		i=(int32_t)time(NULL);	/* use current time */
+		ti=(jsdouble)time(NULL);	/* use current time */
 	else
-		JS_ValueToInt32(cx,argv[0],&i);
+		JS_ValueToNumber(cx,argv[0],&ti);
 	rc=JS_SUSPENDREQUEST(cx);
-	timestr(cfg,i,str);
+	timestr(cfg,(time32_t)ti,str);
 	JS_RESUMEREQUEST(cx, rc);
 	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
 		return(JS_FALSE);
