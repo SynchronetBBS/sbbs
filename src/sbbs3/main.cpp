@@ -2021,7 +2021,8 @@ void output_thread(void* arg)
 	}
 #endif
 
-	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET && !terminate_server) {
+	/* Note: do not terminate when online==FALSE, that is expected for the terminal server output_thread */
+	while(sbbs->client_socket!=INVALID_SOCKET && !terminate_server) {
 		/*
 		 * I'd like to check the linear buffer against the highwater
 		 * at this point, but it would get too clumsy imho - Deuce
