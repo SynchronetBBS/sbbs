@@ -104,7 +104,7 @@ if(idx_to_user(template.idx)) {
     msgbase.put_msg_header(false,m,template.hdr);
 }
 template.hdr=clean_msg_headers(template.hdr,0);
-template.body=msgbase.get_msg_body(false,m);
+template.body=msgbase.get_msg_body(false,m,template.hdr);
 
 msg=mime_decode(template.hdr,template.body);
 template.body=msg.body;

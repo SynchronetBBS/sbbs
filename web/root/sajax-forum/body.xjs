@@ -43,7 +43,7 @@ function linkify(body) {
 
 if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDATED)!=0) {
 	if((hdr.attr & (MSG_PRIVATE|MSG_DELETE))==0) {
-		body=msgbase.get_msg_body(true,hdr.offset);
+		body=msgbase.get_msg_body(true,hdr.offset,hdr);
 		body=expand_body(body, system.settings);
 	}
 }

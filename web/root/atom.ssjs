@@ -72,7 +72,7 @@ if(http_request.query["item"]) {
 		if(!template.hdr)
 			writeln(log(LOG_ERR,'Error: ' + msgbase.error));
 		else
-			template.body= msgbase.get_msg_body(false, template.hdr.number);
+			template.body= msgbase.get_msg_body(false, template.hdr.number, template.hdr);
 	}
 
 	msg=mime_decode(template.hdr,template.body);
@@ -171,7 +171,7 @@ if(msgbase.open()) {
 		var hdr = msgbase.get_msg_header(true,total_msgs-i);
 		if(!hdr || hdr.attr&MSG_DELETE)
 			continue;
-		var body = msgbase.get_msg_body(true,total_msgs-i);
+		var body = msgbase.get_msg_body(true,total_msgs-i, hdr);
 		if(!body)
 			continue;
 		var date=new Date(hdr.date);

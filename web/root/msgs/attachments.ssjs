@@ -33,7 +33,7 @@ if(hdr==undefined) {
 if(sub=='mail' && hdr.to_ext!=user.number)
     error("You can only read e-mail attachments addressed to yourself!");
 
-body=msgbase.get_msg_body(false,id);
+body=msgbase.get_msg_body(false,id,hdr);
 if(body==undefined) {
 	error("Can not read message body!");
 }

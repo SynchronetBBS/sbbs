@@ -30,7 +30,7 @@ hdr=msgbase.get_msg_header(false,id);
 if(hdr==undefined) {
 	error("No such message!");
 }
-body=msgbase.get_msg_body(false,id);
+body=msgbase.get_msg_body(false,id,hdr);
 if(body==undefined) {
 	error("Can not read message body!");
 }

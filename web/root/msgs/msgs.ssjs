@@ -249,7 +249,7 @@ if(DateDescending) {
 	 template.messages[displayed.toString()].to=template.messages[displayed.toString()].to.substr(0,MAX_NAME_LEN);
 	 template.messages[displayed.toString()].from=template.messages[displayed.toString()].from.substr(0,MAX_NAME_LEN);
 	 template.messages[displayed.toString()].subject=template.messages[displayed.toString()].subject.substr(0,MAX_SUBJ_LEN);
-     template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,msgarray[last_offset].offset));
+     template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,msgarray[last_offset].offset,hdr));
      template.messages[displayed.toString()].offset=msgarray[last_offset].offset;
      displayed++;
   }
@@ -263,7 +263,7 @@ if(DateDescending) {
 	  template.messages[displayed.toString()].to=template.messages[displayed.toString()].to.substr(0,MAX_NAME_LEN);
 	  template.messages[displayed.toString()].from=template.messages[displayed.toString()].from.substr(0,MAX_NAME_LEN);
 	  template.messages[displayed.toString()].subject=template.messages[displayed.toString()].subject.substr(0,MAX_SUBJ_LEN);
-	  template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,msgarray[first_offset].offset));
+	  template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,msgarray[first_offset].offset,hdr));
       template.messages[displayed.toString()].offset=msgarray[first_offset].offset;
       displayed++;
   }
