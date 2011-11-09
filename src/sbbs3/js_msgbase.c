@@ -37,6 +37,7 @@
 
 #include "sbbs.h"
 #include "js_request.h"
+#include "userdat.h"
 
 #ifdef JAVASCRIPT
 
@@ -1164,6 +1165,85 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 		else if (name)
 			return(JS_TRUE);
 	}
+
+	if(name==NULL || strcmp(name, "can_read")==0) {
+		v=BOOLEAN_TO_JSVAL(JS_FALSE);
+
+		do {
+			client_t	*client=NULL;
+			user_t		*user=NULL;
+			jsval		cov;
+			ushort		aliascrc,namecrc,sysop=crc16("sysop",0);
+
+			/* dig a client object out of the global object */
+			JS_GetProperty(cx, JS_GetGlobalObject(cx), "client", &cov);
+			if(JSVAL_IS_OBJECT(cov)) {
+				JSObject *obj = JSVAL_TO_OBJECT(cov);
+				JSClass	*cl;
+
+				if((cl=JS_GetClass(cx,obj))!=NULL && strcmp(cl->name,"Client")==0)
+					client=JS_GetPrivate(cx,obj);
+			}
+			
+			/* dig a user object out of the global object */
+			JS_GetProperty(cx, JS_GetGlobalObject(cx), "user", &cov);
+			if(JSVAL_IS_OBJECT(cov)) {
+				JSObject *obj = JSVAL_TO_OBJECT(cov);
+				JSClass	*cl;
+
+				if((cl=JS_GetClass(cx,obj))!=NULL && strcmp(cl->name,"User")==0) {
+					user=*(user_t **)(JS_GetPrivate(cx,obj));
+					namecrc=crc16(user->name, 0);
+					aliascrc=crc16(user->alias, 0);
+				}
+			}
+
+			if(p->msg.idx.attr&MSG_DELETE) {		/* Pre-flagged */
+				if(!(scfg->sys_misc&SM_SYSVDELM)) /* Noone can view deleted msgs */
+					break;
+				if(user) {
+					if(!(scfg->sys_misc&SM_USRVDELM)	/* Users can't view deleted msgs */
+						&& !is_user_subop(scfg, p->p->smb.subnum, user, client)) 	/* not sub-op */
+						break;
+					if(!is_user_subop(scfg, p->p->smb.subnum, user, client)			/* not sub-op */
+						&& p->msg.idx.from!=namecrc && p->msg.idx.from!=aliascrc) /* not for you */
+						break; 
+				}
+			}
+
+			if(user) {
+				if(p->msg.idx.attr&MSG_MODERATED && !(p->msg.idx.attr&MSG_VALIDATED)
+					&& (!is_user_subop(scfg, p->p->smb.subnum, user, client)))
+					break;
+			}
+
+			if(user) {
+				if(p->msg.idx.attr&MSG_PRIVATE
+					&& !is_user_subop(scfg, p->p->smb.subnum, user, client) && !(user->rest&FLAG('Q'))) {
+					if(p->msg.idx.to!=namecrc && p->msg.idx.from!=namecrc
+						&& p->msg.idx.to!=aliascrc && p->msg.idx.from!=aliascrc
+						&& (user->number!=1 || p->msg.idx.to!=sysop))
+						break;
+					if(stricmp(p->msg.to,user->alias)
+						&& stricmp(p->msg.from,user->alias)
+						&& stricmp(p->msg.to,user->name)
+						&& stricmp(p->msg.from,user->name)
+						&& (user->number!=1 || stricmp(p->msg.to,"sysop")
+						|| p->msg.from_net.type)) {
+						break;
+					}
+				}
+			}
+
+			v=BOOLEAN_TO_JSVAL(JS_TRUE);
+		} while(0);
+
+		JS_DefineProperty(cx, obj, "can_read", v, NULL,NULL,JSPROP_ENUMERATE);
+
+		if(name)
+			return(JS_TRUE);
+	}
+
 
 	/* DO NOT RETURN JS_FALSE on unknown names */
 	/* Doing so will preven toString() among others from working. */
