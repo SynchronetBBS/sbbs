@@ -252,7 +252,8 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 		newuser.security.restrictions = restrictions;
 	if(expire)
 		newuser.security.expiration_date = time() + (expire*24*60*60);
-	newuser.comment = comment;
+	if(comment)
+		newuser.comment = comment;
 	
 	writeln("User record #" + newuser.number + " " + newuser.alias + " created successfully.");
 })();
