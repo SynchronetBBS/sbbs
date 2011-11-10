@@ -27,8 +27,138 @@ function sortnumber(a,b) {
         return b - a;
 }
 
+function linkify(body) {
+	// Magical URL-ify
+	urlRE=/(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
+	body=body.replace(urlRE, 
+		function (str) {
+			var ret=''
+			var p=0;
+			var link=str.replace(/\.*$/, '');
+			var linktext=link;
+			if(link.indexOf('://')==-1)
+				link='mailto:'+link;
+			return('<a href="'+link+'" class="linkified">'+linktext+'</a>'+str.substr(linktext.length));
+		}
+	);
+	return(body);
+}
+
+function webify(body) {
+	var ret='';
+
+	var blockquote_start='<div class="quote"><a class="quote-expander" href="#" onclick="toggle_quote(this.parentNode.parentNode);return false">Show quotes</a><blockquote style="display: none">';
+	var blockquote_end='</blockquote></div>';
+
+	// Strip CTRL-A
+	body=body.replace(/\1./g,'');
+	// Strip ANSI
+	body=body.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g,'');
+	body=body.replace(/\x1b[\x40-\x7e]/g,'');
+	// Strip unprintable control chars (NULL, BEL, DEL, ESC)
+	body=body.replace(/[\x00\x07\x1b\x7f]/g,'');
+
+	// Wrap and encode
+	body=word_wrap(body, body.length);
+	body=html_encode(body, true, false, false, false);
+
+	// Magical quoting stuff!
+	/*
+	 * Each /[^ ]{0,3}> / is a quote block
+	 */
+	var lines=body.split(/\r?\n/);
+	var quote_depth=0;
+	var prefixes=new Array();
+	body='';
+	for (l in lines) {
+		var line_prefix='';
+		var m=lines[l].match(/^((?:\s?[^\s]{0,3}&gt;\s?)+)/);
+
+		if(m!=null) {
+			var new_prefixes=m[1].match(/\s?[^\s]{0,3}&gt;\s?/g);
+			var p;
+			var broken=false;
+
+			line=lines[l];
+			
+			// If the new length is smaller than the old one, close the extras
+			for(p=new_prefixes.length; p<prefixes.length; p++) {
+				if(quote_depth > 0) {
+					line_prefix = line_prefix + blockquote_end;
+					quote_depth--;
+				}
+				else {
+					log("BODY: Depth problem 1");
+				}
+			}
+			for(p in new_prefixes) {
+				// Remove prefix from start of line
+				line=line.substr(new_prefixes[p].length);
+
+				if(prefixes[p]==undefined) {
+					/* New depth */
+					line_prefix = line_prefix + blockquote_start;
+					var blockquote_start='<div class="quote"><small>&lt;--------------&gt;</small><blockquote style="display: none">';
+					quote_depth++;
+				}
+				else if(broken) {
+					line_prefix = line_prefix + blockquote_start;
+					var blockquote_start='<div class="quote"><small>&lt;--------------&gt;</small><blockquote style="display: none">';
+					quote_depth++;
+				}
+				else if(prefixes[p].replace(/^\s*(.*?)\s*$/,"$1") != new_prefixes[p].replace(/^\s*(.*?)\s*$/,"$1")) {
+					// Close all remaining old prefixes and start one new one
+					var o;
+					for(o=p; o<prefixes.length && o<new_prefixes.length; o++) {
+						if(quote_depth > 0) {
+							line_prefix = blockquote_end+line_prefix;
+							quote_depth--;
+						}
+						else {
+							log("BODY: Depth problem 2");
+						}
+					}
+					line_prefix = blockquote_start+line_prefix;
+					var blockquote_start='<div class="quote"><small>&lt;--------------&gt;</small><blockquote style="display: none">';
+					quote_depth++;
+					broken=true;
+				}
+			}
+			prefixes=new_prefixes.slice();
+			line=line_prefix+line;
+		}
+		else {
+			for(p=0; p<prefixes.length; p++) {
+				if(quote_depth > 0) {
+					line_prefix = line_prefix + blockquote_end;
+					quote_depth--;
+				}
+				else {
+					log("BODY: Depth problem 3");
+				}
+			}
+			prefixes=new Array();
+			line=line_prefix + lines[l];
+		}
+		body = body + line + "\r\n";
+	}
+	if(quote_depth != 0) {
+		log("BODY: Depth problem 4");
+		for(;quote_depth > 0; quote_depth--) {
+			body += blockquote_end;
+		}
+	}
+
+	body=linkify(body);
+	body=body.replace(/\r\n$/,'');
+	body=body.replace(/(\r?\n)/g, "<br />");
+	body=body.replace(/'/g,'&rsquo;');
+	return body;
+}
+
 // Generate a list of boards & their sub-boards, using client-side JS to toggle visibility of certain elements
 function printBoards() {
+
 	for(mg in msg_area.grp_list) {
 		print("<div class='standardBorder standardPadding underMargin subBoardHeaderColor'>");
 		print("<div class='headingFont'><a class=ulLink href='javascript:toggleVisibility(\"grp" + msg_area.grp_list[mg].number + "\")'>" + msg_area.grp_list[mg].name + "</a></div>");
@@ -120,11 +250,47 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 
 	if(webIni.maxMessages > 0 && (msgBase_last_msg - webIni.maxMessages) > 0) mm = msgBase_last_msg - webIni.maxMessages;
 
+	print('<script language=javascript type=text/javascript>');
+	print('function toggle_quote(container) {');
+	print('	for(child in container.childNodes) {');
+	print('		if(container.childNodes[child].nodeName=="BLOCKQUOTE") {');
+	print('			switch(container.childNodes[child].style.display) {');
+	print('			case "none":');
+	print('				container.childNodes[child].style.display="block";');
+	print('				toggle_quote(container.childNodes[child]);');
+	print('				break;');
+	print('			default:');
+	print('				container.childNodes[child].style.display="none";');
+	print('				toggle_quote(container.childNodes[child]);');
+	print('				if(container.innerHTML=="Hide quotes")');
+	print('					container.innerHTML="Show quotes";');
+	print('				break;');
+	print('			}');
+	print('		}');
+	print('		else if(container.childNodes[child].nodeName=="A") {');
+	print('			if(container.childNodes[child].innerHTML=="Show quotes")');
+	print('				container.childNodes[child].innerHTML="Hide quotes";');
+	print('			else if(container.childNodes[child].innerHTML=="Hide quotes")');
+	print('				container.childNodes[child].innerHTML="Show quotes";');
+	print('		}');
+	print('		else if(container.childNodes[child].nodeName=="SMALL") {');
+	print('			if(container.childNodes[child].innerHTML=="&lt;--------------&gt;")');
+	print('				container.childNodes[child].innerHTML="";');
+	print('			else if(container.childNodes[child].innerHTML=="")');
+	print('				container.childNodes[child].innerHTML="&lt;--------------&gt;";');
+	print('		}');
+	print('		else {');
+	print('			toggle_quote(container.childNodes[child]);');
+	print('		}');
+	print('	}');
+	print('}');
+	print('</script>');
+
 	for(m = mm; m <= msgBase_last_msg; m++) {
 		header = msgBase.get_msg_header(m);
 		if(!(header && (header.can_read===undefined || header.can_read)))
 			continue;
-		body = msgBase.get_msg_body(true,header.offset,strip_ctrl_a=true,header);
+		body = msgBase.get_msg_body(true,header.offset,header);
 		if(!body || !header.hasOwnProperty("number") || threadedMessages.hasOwnProperty(header.number)) continue;
 		if(newOnly && header.number <= scanPointer) continue; // This message precedes our scan pointer - don't waste any more time on it.
 		if(subBoardCode == 'mail' && header.to != user.alias && header.to_ext != user.number && header.from != user.alias && header.from_ext != user.number) continue; // lol :|
@@ -139,7 +305,7 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 		msg = '<a name=' + header.number + '></a>';
 		msg += '<div id=' + subBoardCode + header.number + ' class="messageBoxColor standardBorder standardPadding underMargin subTreeIndent messageFont">';
 		msg += 'From <b>' + header.from + '</b> to <b>' + header.to + '</b> on <b>' + system.timestr(header.when_written_time) + '</b>';
-		msg += '<br /><br />' + html_encode(body, true, false, false, false).replace(/\r\n|\r|\n/g, "<br />").replace(/'/g, "&rsquo;") + '<br />';
+		msg += '<br /><br />' + webify(body) + '<br />';
 
 		if(subBoardCode == 'mail' || canPost) {
 			msg += '<a class=ulLink onclick=toggleVisibility("' + subBoardCode + '-reply-' + header.number + '")>Reply</a> - ';
