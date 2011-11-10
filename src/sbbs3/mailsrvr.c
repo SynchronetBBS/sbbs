@@ -2625,6 +2625,7 @@ static void smtp_thread(void* arg)
 				fclose(rcptlst), rcptlst=NULL;
 
 				/* External Mail Processing here */
+				mailproc=NULL;
 				msg_handled=FALSE;
 				if(mailproc_count) {
 					SAFEPRINTF2(proc_err_fname,"%sSBBS_SMTP.%s.err", scfg.temp_dir, session_id);
@@ -2746,9 +2747,16 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 			
-				if(msg_handled || iniReadSectionCount(rcptlst,NULL) < 1) {
-					lprintf(LOG_NOTICE,"%04d SMTP Message handled by external mail processor (%s, %u total)"
-						,socket, mailproc->name, ++mailproc->handled);
+				if(!msg_handled && subnum==INVALID_SUB && iniReadSectionCount(rcptlst,NULL) < 1) {
+					lprintf(LOG_DEBUG,"%04d SMTP No recipients in recipient list file (message handled by external mail processor?)"
+						,socket);
+					sockprintf(socket,ok_rsp);
+					msg_handled=TRUE;
+				}
+				if(msg_handled) {
+					if(mailproc!=NULL)
+						lprintf(LOG_NOTICE,"%04d SMTP Message handled by external mail processor (%s, %u total)"
+							,socket, mailproc->name, ++mailproc->handled);
 					continue;
 				}
 
