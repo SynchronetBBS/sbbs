@@ -34,19 +34,19 @@ if(http_request.query.hasOwnProperty('username') && http_request.query.hasOwnPro
 	var UID = system.matchuser(http_request.query.username);
 	var u = new User(UID);
 	if(u && http_request.query.password.toString().toUpperCase() == u.security.password.toUpperCase()) {
-			// The supplied username was valid, and the supplied password is correct. Create a cookie, log the user in and populate their .session file.
-			set_cookie('synchronet', UID + ',' + sessionKey, time() + webIni.sessionTimeout, system.inet_addr, "/");
-			login(u.alias, u.security.password);
-			var f = getSessionKeyFile(user.number.toString());
-			if(f.open("w"))	{
-					// If this fails, the user will only be logged in for the duration of this page load.
-					f.write(sessionKey);
-					f.close();
-			}
+		// The supplied username was valid, and the supplied password is correct. Create a cookie, log the user in and populate their .session file.
+		set_cookie('synchronet', UID + ',' + sessionKey, time() + webIni.sessionTimeout, http_request.host, "/");
+		login(u.alias, u.security.password);
+		var f = getSessionKeyFile(user.number.toString());
+		if(f.open("w"))	{
+			// If this fails, the user will only be logged in for the duration of this page load.
+			f.write(sessionKey);
+			f.close();
+		}
 	}
-} else if(http_request.header.hasOwnProperty('cookie') && http_request.header.cookie.match(/synchronet\=\d+,\w+/) != null && !http_request.query.hasOwnProperty('logout')) {
+} else if(http_request.cookie.hasOwnProperty('synchronet') && http_request.cookie.synchronet[0].match(/\d+,\w+/) != null && !http_request.query.hasOwnProperty('logout')) {
 	// A 'synchronet' cookie exists and matches our '<user.number>,<sessionKey>' format.
-	var cookie = http_request.header.cookie.toString().match(/\d+,\w+/)[0].split(',');
+	var cookie = http_request.cookie.synchronet[0].match(/\d+,\w+/)[0].split(',');
 	var u = new User(cookie[0]);
 	var sessionKey = false;
 	var f = getSessionKeyFile(u.number.toString());
