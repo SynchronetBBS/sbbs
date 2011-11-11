@@ -1,5 +1,5 @@
 (function() {
-	writeln("\r\nSynchronet System/Node Statistics Log Viewer v1.02\n");
+	writeln("\r\nSynchronet System/Node Statistics Log Viewer\n");
 
 	var sfile = new File(system.ctrl_dir + "csts.dab");
 	var list = [];
@@ -29,10 +29,14 @@
 		}
 	}
 
-	if(!file_exists(sfile.name))
-		throw(sfile.name + " does not exist");
-	if(!sfile.open('r+b'))
-		throw("error opening " + sfile.name);
+	if(!file_exists(sfile.name)) {
+		writeln("* " + sfile.name + " does not exist");
+		return false;
+	}
+	if(!sfile.open('r+b')) {
+		writeln("* error opening " + sfile.name);
+		return false;
+	}
 
 	while(sfile.position <= file_size(sfile.name) - 40) {
 		
