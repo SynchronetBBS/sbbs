@@ -80,6 +80,7 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 			name = argv.shift();
 			if(system.trashcan("name",name)) {
 				writeln("* Illegal user name per " + system.text_dir + "name.can");
+				error = true;
 				return false;
 			}
 			break;
@@ -87,6 +88,7 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 			handle = argv.shift().substr(0,8);
 			if(system.trashcan("name",handle)) {
 				writeln("* Invalid user handle per " + system.text_dir + "name.can");
+				error = true;
 				return false;
 			}
 			break;
