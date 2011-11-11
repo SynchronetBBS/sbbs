@@ -2,30 +2,6 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 
 (function() {
 	
-	/* functions */
-	function openCan(filename) {
-		var list = [];
-		if(file_exists(filename)) {
-			var f = new File(filename);
-			if(f.open('r',true)) {
-				list = f.readAll();
-				f.close();
-			}
-		}
-		return list;
-	}
-	
-	function scanCan(can,text) {
-		for each(var i in can) {
-			pattern = i;
-			if(i.match(/~$/) != null)
-				pattern = "*" + i + "*";
-			if(wildmatch(text,i))
-				return true;
-		}
-		return false;
-	}
-
 	function usage() {
 		writeln('usage: jsexec.exe makeuser.js name [-param value] [...]');
 		writeln('');
@@ -53,14 +29,13 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 	
 	/* stuff */
 	var error = false;
-	var badnames = openCan(system.text_dir + "name.can");
-	var badpws = openCan(system.text_dir + "password.can");
 	
 	/* properties */
 	var alias = argv.shift();
 	var pass = undefined;
 	var name = undefined;
 	var gender = undefined;
+	var handle = undefined;
 	var birthdate = undefined;
 	var telephone = undefined;
 	var email = undefined;
@@ -85,7 +60,7 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 		writeln("* A user by that name already exists");
 		return false;
 	}
-	if(scanCan(badnames,alias)) {
+	if(system.trashcan("name",alias)) {
 		writeln("* Illegal user alias per " + system.text_dir + "name.can");
 		return false;
 	}
@@ -96,21 +71,21 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 		switch(arg[1].toUpperCase()) {
 		case "P":
 			password = argv.shift();
-			if(scanCan(badpws,password)) {
+			if(system.trashcan("password",password)) {
 				writeln("* Illegal password per " + system.text_dir + "name.can");
 				error = true;
 			}
 			break;
 		case "R":
 			name = argv.shift();
-			if(scanCan(badnames,name)) {
+			if(system.trashcan("name",name)) {
 				writeln("* Illegal user name per " + system.text_dir + "name.can");
 				return false;
 			}
 			break;
 		case "H":
 			handle = argv.shift().substr(0,8);
-			if(scanCan(badnames,handle)) {
+			if(system.trashcan("name",handle)) {
 				writeln("* Invalid user handle per " + system.text_dir + "name.can");
 				return false;
 			}
