@@ -331,16 +331,27 @@ function ajaxpage(url, containerid, buttonid, buttonurl, is_script, prefix, suff
 
 function spin(current)
 {
-	switch(current) {
-		case '<span style="font-family: monospace;">Loading -</span>':
-			return('<span style="font-family: monospace;">Loading \\</span>');
-		case '<span style="font-family: monospace;">Loading /</span>':
-			return('<span style="font-family: monospace;">Loading -</span>');
-		case '<span style="font-family: monospace;">Loading |</span>':
-			return('<span style="font-family: monospace;">Loading /</span>');
-		default:
-			return('<span style="font-family: monospace;">Loading |</span>');
+	var spins=[
+			['&#9474;','/','&#9472;','\\'],
+			['&#9617;','&#9618;','&#9619;','&#9608;','&#9619;','&#9618;'],
+			['-', '=', '&#8801;', '='],
+			['&#9484;','&#9492;','&#9496;','&#9488;'],
+			['&#9604;','&#9616;','&#9600;','&#9612;']
+		];
+	var spin;
+	var pos;
+	var m;
+
+	m=current.match(/^\<span style="font-family: monospace;">\<!-- (\d+),(\d) -->Loading (.)\<\/span>$/);
+	if(m == null) {
+		spin=parseInt(Math.random()*spins.length);
+		pos=0;
 	}
+	else {
+		spin=parseInt(m[1]);
+		pos=parseInt(m[2])%spins[spin].length;
+	}
+	return '<span style="font-family: monospace;"><!-- '+spin+','+pos+1+' -->Loading '+spins[spin][pos]+'</span>';
 }
 
 function evalpage(page_request, containerid, prefix, suffix)
