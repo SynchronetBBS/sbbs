@@ -51,6 +51,7 @@
 char sbbs_t::putmsg(const char *buf, long mode)
 {
 	char	tmpatr,tmp2[256],tmp3[128];
+	char	ret;
 	char*	str=(char*)buf;
 	uchar	exatr=0;
 	int 	orgcon=console,i;
@@ -292,12 +293,13 @@ char sbbs_t::putmsg(const char *buf, long mode)
 			pause();
 	}
 
+	ret=str[l];
 	if(str!=buf)	/* malloc'd copy of buffer */
 		free(str);
 
 	/* Restore original settings of Forced Pause On/Off */
 	sys_status&=~(SS_PAUSEOFF|SS_PAUSEON);
 	sys_status|=(sys_status_sav&(SS_PAUSEOFF|SS_PAUSEON));
-	return(str[l]);
+	return(ret);
 }
 
