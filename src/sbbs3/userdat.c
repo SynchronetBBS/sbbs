@@ -2548,7 +2548,7 @@ BOOL DLLCALL can_user_send_mail(scfg_t* cfg, uint usernumber, user_t* user, uint
 		return FALSE;
 	if(reason!=NULL)
 		*reason=R_Feedback;
-	if(usernumber==1 && useron.rest&FLAG('S'))			/* feedback restriction? */
+	if(usernumber==1 && user->rest&FLAG('S'))			/* feedback restriction? */
 		return FALSE;
 	if(reason!=NULL)
 		*reason=TooManyEmailsToday;
