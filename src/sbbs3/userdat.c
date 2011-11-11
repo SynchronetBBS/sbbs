@@ -2181,7 +2181,7 @@ void DLLCALL resetdailyuserdat(scfg_t* cfg, user_t* user, BOOL write)
 	if(write) putuserrec(cfg,user->number,U_TTODAY,5,"0");
 	/* extra time today */
 	user->textra=0;
-	if(write) putuserrec(cfg,user->number,U_TEXTRA,5,"0");	
+	if(write) putuserrec(cfg,user->number,U_TEXTRA,5,"0");
 }
 
 /****************************************************************************/
@@ -2524,6 +2524,35 @@ BOOL DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* cli
 	if(reason!=NULL)
 		*reason=TooManyPostsToday;
 	if(user->ptoday>=cfg->level_postsperday[user->level])
+		return FALSE;
+
+	return TRUE;
+}
+
+/****************************************************************************/
+/* Determine if the specified user can or cannot send email					*/
+/* 'reason' is an (optional) pointer to a text.dat item number				*/
+/* usernumber==0 for netmail												*/
+/****************************************************************************/
+BOOL DLLCALL can_user_send_mail(scfg_t* cfg, uint usernumber, user_t* user, uint* reason)
+{
+	if(reason!=NULL)
+		*reason=R_Email;
+	if(user==NULL || user->number==0)
+		return FALSE;
+	if(usernumber>1 && user->rest&FLAG('E'))			/* local mail restriction? */
+		return FALSE;
+	if(reason!=NULL)
+		*reason=NoNetMailAllowed;
+	if(usernumber==0 && user->rest&FLAG('M'))			/* netmail restriction */
+		return FALSE;
+	if(reason!=NULL)
+		*reason=R_Feedback;
+	if(usernumber==1 && useron.rest&FLAG('S'))			/* feedback restriction? */
+		return FALSE;
+	if(reason!=NULL)
+		*reason=TooManyEmailsToday;
+	if(user->etoday>=cfg->level_emailperday[user->level] && !(user->exempt&FLAG('M')))
 		return FALSE;
 
 	return TRUE;
