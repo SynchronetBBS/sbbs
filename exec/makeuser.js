@@ -72,7 +72,7 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 		case "P":
 			password = argv.shift();
 			if(system.trashcan("password",password)) {
-				writeln("* Illegal password per " + system.text_dir + "name.can");
+				writeln("* Illegal password per " + system.text_dir + "password.can");
 				error = true;
 			}
 			break;
@@ -110,11 +110,19 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 				writeln("* Invalid telephone number");
 				error = true;
 			}
+			else if(system.trashcan("phone",telephone) {
+				writeln("* Illegal phone number per " + system.text_dir + "phone.can");
+				error = true;
+			}
 			break;
 		case "N":
 			email = argv.shift();
 			if(!wildmatch(email,"*@*.*")) {
 				writeln("* Invalid e-mail address");
+				error = true;
+			}
+			else if(system.trashcan("email",email) {
+				writeln("* Illegal e-mail address per " + system.text_dir + "email.can");
 				error = true;
 			}
 			break;
@@ -133,7 +141,7 @@ writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 			break;
 		case "S":
 			level = Number(argv.shift());
-			if(isNaN(level)) {
+			if(isNaN(level) || level < 0 || level > 99) {
 				writeln("* Invalid security level");
 				error = true;
 			}
