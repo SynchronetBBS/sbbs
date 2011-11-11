@@ -33,6 +33,7 @@ var archive;
 var archive_cmd;
 var lib;
 var lib_cmd;
+var lib_alias="lib";
 var cleanup;
 
 if(platform=="win32") {
@@ -41,6 +42,7 @@ if(platform=="win32") {
 	lib="lib-win32.zip";
 	lib_cmd="pkzip25 -exclude=*output.txt -add -dir -max ../" + lib;
 	cleanup="rmdir /s /q ";
+	lib_alias="lib-win32";
 } else {
 	archive="sbbs_src.tgz";
 	archive_cmd="tar --exclude=*output.txt -czvf " + archive + " *";
@@ -52,7 +54,7 @@ if(platform=="win32") {
 var builds
 	=	[/* sub-dir */		/* cmd-line */						/* redirect */
 		[""					,"cvs co src-sbbs3"					,"2> " + build_output],
-		[""					,"cvs co lib-"+platform				,"2> " + build_output],
+		[""					,"cvs co "+lib_alias				,"2> " + build_output],
 		[""					,archive_cmd						,"2> " + build_output],
 		["3rdp"				,lib_cmd							,"2> " + build_output],
 	];
