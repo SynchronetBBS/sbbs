@@ -104,14 +104,6 @@ if(http_request.query.hasOwnProperty('action') && http_request.query.action == '
 		}
 	}
 
-	if(system.newuser_questions&UQ_COMP) {
-		if(!http_request.query.hasOwnProperty('computer') || http_request.query.computer.length < 1) {
-			failString += '- Computer type not provided<br />';
-		} else {
-			// user.computer is AKA host_name, so I'm not sure where to stick this answer. I suspect nobody will care anyway. :|
-		}
-	}
-
 	if(system.newuser_questions&UQ_COMPANY) {
 		if(!http_request.query.hasOwnProperty('company') || http_request.query.company.length < 1) {
 			failString += '- Company name not provided<br />';
