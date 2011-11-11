@@ -41,11 +41,6 @@
 
 #ifdef BUILD_JSDOCS
 
-static char* msg_area_prop_desc[] = {
-	,"message area settings (bitfield) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	,NULL
-};
-
 static char* msg_grp_prop_desc[] = {
 	 "index into grp_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
 	,"unique number for this message group"
