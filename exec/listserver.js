@@ -562,7 +562,8 @@ function process_contribution(header, body, list)
 
 	// verify author/sender is a list subscriber here
 
-	if(find_user(user_list, sender_address)==-1) {
+	if(sender_address!=list.submitter
+        && find_user(user_list, sender_address)==-1) {
 		error_file.writeln(log(LOG_WARNING,format("%s !ERROR %s is not a subscriber"
 			,list.name, sender_address)));
 //		error_file.writeln();
