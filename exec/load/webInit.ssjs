@@ -6,7 +6,7 @@
 
 load('sbbsdefs.js');
 
-webIni=(function() {
+var webIni=(function() {
 	// Returns a string of random characters 'length' characters long
 	function randomString(length) {
 		var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz';
