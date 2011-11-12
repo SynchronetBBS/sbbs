@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -610,7 +610,7 @@ JSObject* js_CreateUifcObject(JSContext* cx, JSObject* parent)
 		return(NULL);
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"User InterFaCe object - used for jsexec menus" ,310);
+	js_DescribeSyncObject(cx,obj,"User InterFaCe object - used for jsexec menus" ,314);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", uifc_prop_desc, JSPROP_READONLY);
 #endif
 
