@@ -124,12 +124,12 @@ typedef struct {
 #define UQ_LOCATION		(1L<<1) 	/* Ask for location 					*/
 #define UQ_ADDRESS		(1L<<2) 	/* Ask for address						*/
 #define UQ_PHONE		(1L<<3) 	/* Ask for phone number 				*/
-#define UQ_HANDLE		(1L<<4) 	/* Ask for chat handle					*/
+#define UQ_HANDLE		(1L<<4) 	/* Ask for chat handle / HAM callsign	*/
 #define UQ_DUPHAND		(1L<<5) 	/* Search for duplicate handles 		*/
 #define UQ_SEX			(1L<<6) 	/* Ask for sex :)						*/
 #define UQ_BIRTH		(1L<<7) 	/* Ask for birth date					*/
-#define UQ_COMP 		(1L<<8) 	/* Ask for computer type				*/
-#define UQ_MC_COMP		(1L<<9) 	/* Multiple choice computer type		*/
+#define UQ_UNUSED1 		(1L<<8) 	/* was UQ_COMP							*/
+#define UQ_UNUSED2		(1L<<9) 	/* was UQ_MC_COMP						*/
 #define UQ_REALNAME		(1L<<10)	/* Ask for real name					*/
 #define UQ_DUPREAL		(1L<<11)	/* Search for duplicate real names		*/
 #define UQ_COMPANY		(1L<<12)	/* Ask for company name 				*/
