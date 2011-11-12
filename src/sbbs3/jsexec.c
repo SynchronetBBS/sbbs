@@ -603,7 +603,10 @@ js_putenv(JSContext *cx, uintN argc, jsval *arglist)
 static jsSyncMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1},
 	{"read",			js_read,            1},
-	{"readln",			js_readln,          1},
+	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
+	,JSDOCSTR("read a single line, up to count characters, from input stream")
+	,311
+	},
     {"write",           js_write,           0},
     {"writeln",         js_writeln,         0},
     {"print",           js_writeln,         0},
