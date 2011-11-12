@@ -20,26 +20,26 @@ object_depth=0;
 
 body = "";
 
-function write(str)
+function docwrite(str)
 {
 	body+=str;
 }
 
-function writeln(str)
+function docwriteln(str)
 {
-	write(str + "\n");
+	docwrite(str + "\n");
 }
 
 function table_open(name)
 {
-	writeln(table_tag);
+	docwriteln(table_tag);
 	table_depth++;
 }
 
 function table_close()
 {
 	if(table_depth) {
-		writeln("</table>");
+		docwriteln("</table>");
 		table_depth--;
 	}
 }
@@ -64,44 +64,44 @@ function document_methods(name,obj)
 	table_open(name);
 
 	
-	writeln("<caption align=left><b><tt>" + name + "</tt>");
-	writeln("<a name=" + name + "_methods> methods</a>"); 
-	writeln("</b></caption>");
-	writeln("<tr bgcolor=gray>");
-	writeln("<th align=left width=100>");
-	writeln("Name".fontcolor("white"));
-	writeln("<th align=left width=100>");
-	writeln("Returns".fontcolor("white"));
-	writeln("<th align=left width=200>");
-	writeln("Usage".fontcolor("white"));
+	docwriteln("<caption align=left><b><tt>" + name + "</tt>");
+	docwriteln("<a name=" + name + "_methods> methods</a>"); 
+	docwriteln("</b></caption>");
+	docwriteln("<tr bgcolor=gray>");
+	docwriteln("<th align=left width=100>");
+	docwriteln("Name".fontcolor("white"));
+	docwriteln("<th align=left width=100>");
+	docwriteln("Returns".fontcolor("white"));
+	docwriteln("<th align=left width=200>");
+	docwriteln("Usage".fontcolor("white"));
 	if(!min_ver && obj._method_list[0].ver) {
-		writeln("<th align=left width=50>");
-		writeln("Ver".fontcolor("white"));
+		docwriteln("<th align=left width=50>");
+		docwriteln("Ver".fontcolor("white"));
 	}
-	writeln("<th align=left>");
-	writeln("Description".fontcolor("white"));
+	docwriteln("<th align=left>");
+	docwriteln("Description".fontcolor("white"));
 
 	for(method in obj._method_list) {
 		if(obj._method_list[method].ver < min_ver
 			|| obj._method_list[method].ver > max_ver)
 			continue;
 
-		write("<tr valign=top>");
+		docwrite("<tr valign=top>");
 
 		if(obj==js.global)
 			func=obj._method_list[method].name;
 		else
 			func=name + '.' + obj._method_list[method].name;
 
-		write(format("<td>%s<td>%s<td><tt>%s(%s)\n"
+		docwrite(format("<td>%s<td>%s<td><tt>%s(%s)\n"
 			,obj._method_list[method].name.bold()
 			,obj._method_list[method].type
 			,func
 			,obj._method_list[method].args
 			));
 		if(!min_ver && obj._method_list[method].ver)
-			writeln("<td>" + verstr(obj._method_list[method].ver));
-		writeln("<td>" + obj._method_list[method].desc);
+			docwriteln("<td>" + verstr(obj._method_list[method].ver));
+		docwriteln("<td>" + obj._method_list[method].desc);
 		total_methods++;
 	}
 }
@@ -118,14 +118,14 @@ function object_header(name, obj, type)
 
 	if(table_depth)
 		table_close();
-	writeln("<h2><a name=" + name + ">" + name + " " + type + "</a>");
+	docwriteln("<h2><a name=" + name + ">" + name + " " + type + "</a>");
 	if(obj._description!=undefined)
-		writeln("<br><font size=-1>"+obj._description+"</font>");
+		docwriteln("<br><font size=-1>"+obj._description+"</font>");
 	if(!min_ver && obj._ver>310)
-		writeln("<font size=-1> - introduced in v"+verstr(obj._ver)+"</font>");
-	writeln("</h2>");
+		docwriteln("<font size=-1> - introduced in v"+verstr(obj._ver)+"</font>");
+	docwriteln("</h2>");
 	if(obj._constructor!=undefined)
-		writeln("<p>" + obj._constructor + "</p>");
+		docwriteln("<p>" + obj._constructor + "</p>");
 }
 
 function properties_header(name, obj)
@@ -136,23 +136,23 @@ function properties_header(name, obj)
 
 	table_close();
 	if(obj._method_list != undefined)
-		writeln("<br>");
+		docwriteln("<br>");
 
 	table_open(name);
-	writeln("<caption align=left><b><tt>" + name + "</tt>");
-	writeln("<a name=" + name + "_properties> properties</a>"); 
-	writeln("</b></caption>");
-	writeln("<tr bgcolor=gray>");
-	writeln("<th align=left width=100>");
-	writeln("Name".fontcolor("white"));
-	writeln("<th align=left width=100>");
-	writeln("Type".fontcolor("white"));
+	docwriteln("<caption align=left><b><tt>" + name + "</tt>");
+	docwriteln("<a name=" + name + "_properties> properties</a>"); 
+	docwriteln("</b></caption>");
+	docwriteln("<tr bgcolor=gray>");
+	docwriteln("<th align=left width=100>");
+	docwriteln("Name".fontcolor("white"));
+	docwriteln("<th align=left width=100>");
+	docwriteln("Type".fontcolor("white"));
 	if(!min_ver && obj._property_ver_list && obj._property_ver_list.length) {
-		writeln("<th align=left width=50>");
-		writeln("Ver".fontcolor("white"));
+		docwriteln("<th align=left width=50>");
+		docwriteln("Ver".fontcolor("white"));
 	}
-	writeln("<th align=left>");
-	writeln("Description".fontcolor("white"));
+	docwriteln("<th align=left>");
+	docwriteln("Description".fontcolor("white"));
 }
 
 function document_properties(name, obj)
@@ -199,13 +199,13 @@ function document_properties(name, obj)
 			properties_header(name, obj);
 			prop_hdr=true;
 		}
-		write("<tr valign=top>");
-		writeln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
+		docwrite("<tr valign=top>");
+		docwriteln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
 		if(!min_ver && obj._property_ver_list)
-			writeln("<td>" 
+			docwriteln("<td>" 
 				+ (obj._property_ver_list[p] ? verstr(obj._property_ver_list[p]) : "N/A"));
 		if(obj._property_desc_list!=undefined)
-			writeln("<td>" + obj._property_desc_list[p]);
+			docwriteln("<td>" + obj._property_desc_list[p]);
 		p++;
 		total_properties++;
 	}
@@ -275,30 +275,42 @@ object_header("global"		,js.global);
 f.writeln("<ul>");
 document_methods("global"	,js.global);
 properties_header("global"	,js.global);
-writeln("<tr><td>" + "argc".bold() + "<td>number<td>number of arguments passed to the script</td>");
-writeln("<tr><td>" + "argv".bold() + "<td>array<td>array of argument strings (argv.length == argc)</td>");
-writeln("<tr><td>" + "errno".bold() + "<td>number<td>last system error number</td>");
-writeln("<tr><td>" + "errno_str".bold() + "<td>string<td>description of last system error</td>");
-writeln("<tr><td>" + "socket_errno".bold() + "<td>number<td>last socket-related error number (same as <i>errno</i> on Unix platforms)</td>");
+docwriteln("<tr><td>" + "argc".bold() + "<td>number<td>N/A<td>number of arguments passed to the script</td>");
+docwriteln("<tr><td>" + "argv".bold() + "<td>array<td>N/A<td>array of argument strings (argv.length == argc)</td>");
+docwriteln("<tr><td>" + "errno".bold() + "<td>number<td>N/A<td>last system error number</td>");
+docwriteln("<tr><td>" + "errno_str".bold() + "<td>string<td>N/A<td>description of last system error</td>");
+docwriteln("<tr><td>" + "socket_errno".bold() + "<td>number<td>N/A<td>last socket-related error number (same as <i>errno</i> on Unix platforms)</td>");
 f.writeln("</ul>");
 
 document_object("js"		,js);
-document_object("system"	,system);
-document_object("server"	,server);
-document_object("client"	,client);
-document_object("user"		,user);
-document_object("bbs"		,bbs);
-document_object("console"	,console);
-document_object("msg_area"	,msg_area);
-document_object("file_area"	,file_area);
-document_object("xtrn_area"	,xtrn_area);
-document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "class");
-document_object("File"		,new File(system.devnull), "class");
-document_object("Queue"		,new Queue(), "class");
-sock=new Socket();
-sock.close();
-sock.descriptor=client.socket.descriptor;
-document_object("Socket"	,sock, "class");
+if(js.global.system != undefined)		document_object("system"	,system);
+if(js.global.server != undefined) 		document_object("server"	,server);
+if(js.global.client != undefined)		document_object("client"	,client);
+if(js.global.user != undefined)			document_object("user"		,user);
+if(js.global.bbs != undefined)			document_object("bbs"		,bbs);
+if(js.global.console != undefined)		document_object("console"	,console);
+if(js.global.msg_area != undefined)		document_object("msg_area"	,msg_area);
+if(js.global.file_area != undefined)	document_object("file_area"	,file_area);
+if(js.global.xtrn_area != undefined)	document_object("xtrn_area"	,xtrn_area);
+if(js.global.uifc != undefined)			document_object("uifc"		,uifc);
+if(js.global.MsgBase != undefined)		document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "class");
+if(js.global.File != undefined)			document_object("File"		,new File(system.devnull), "class");
+if(js.global.Queue != undefined)		document_object("Queue"		,new Queue(), "class");
+if(js.global.Socket != undefined) {
+	sock=new Socket();
+	sock.close();
+	if(js.global.client != undefined)
+		sock.descriptor=client.socket.descriptor;
+	if(sock != undefined)		document_object("Socket"	,sock, "class");
+}
+if(js.global.COM != undefined) {
+	if(system.platform=="Win32")
+		com=new COM('COM1');
+	else
+		com=new COM('/dev/tty');
+	com.close();
+	if(com != undefined)		document_object("COM"	,com, "class");
+}
 
 f.writeln("</ol>");
 
@@ -307,4 +319,4 @@ f.write(body);
 f.writeln("<p><small>");
 f.writeln("Totals: " + total_properties + " properties, " + total_methods + " methods");
 
-f.close();
+	f.close();
