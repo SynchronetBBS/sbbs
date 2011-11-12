@@ -1310,8 +1310,8 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 			return(JS_FALSE);
 		JS_SetPrivate(cx, newobj, p);
 #ifdef BUILD_JSDOCS
-		js_DescribeSyncObject(cx,newobj,"User limitations based on security level (all <small>READ ONLY</small>)",311);
-		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_limits_prop_desc, JSPROP_READONLY);
+		js_DescribeSyncObject(cx,newobj,"User security settings",310);
+		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_security_prop_desc, JSPROP_READONLY);
 #endif
 		if(name)
 			return(JS_TRUE);
@@ -1324,8 +1324,8 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 			return(JS_FALSE);
 		JS_SetPrivate(cx, newobj, p);
 #ifdef BUILD_JSDOCS
-		js_DescribeSyncObject(cx,newobj,"User security settings",310);
-		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_security_prop_desc, JSPROP_READONLY);
+		js_DescribeSyncObject(cx,newobj,"User limitations based on security level (all <small>READ ONLY</small>)",311);
+		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_limits_prop_desc, JSPROP_READONLY);
 #endif
 		if(name)
 			return(JS_TRUE);
