@@ -302,10 +302,8 @@ static JSBool js_queue_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	msg_queue_t*	q;
 	jsrefcount		rc;
 
-	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
-		return(JS_FALSE);
-	}
+	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL)
+		return JS_FALSE;
 
     JS_IdToValue(cx, id, &idval);
     tiny = JSVAL_TO_INT(idval);

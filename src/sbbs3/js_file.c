@@ -1931,10 +1931,8 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	off_t		lng;
 	int			in;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
-	}
 
     JS_IdToValue(cx, id, &idval);
     tiny = JSVAL_TO_INT(idval);
