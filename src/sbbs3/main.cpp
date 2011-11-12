@@ -399,10 +399,11 @@ static const char *js_type_str[] = {
     "string",
     "number",
     "boolean",
+	"null",
+	"xml",
 	"array",
 	"alias",
-	"undefined",
-	"null"
+	"undefined"
 };
 
 JSBool
