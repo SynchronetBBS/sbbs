@@ -1218,7 +1218,10 @@ enum {
 
 #ifdef BUILD_JSDOCS
 static char* socket_prop_desc[] = {
-	 "error status for the last socket operation that failed - <small>READ ONLY</small>"
+	/* statically-defined properties: */
+	 "array of socket option names supported by the current platform"
+	/* Regular properties */
+	,"error status for the last socket operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
 	,"<i>true</i> if socket can accept written data - Setting to false will shutdown the write end of the socket."
 	,"<i>true</i> if data is waiting to be read from socket - <small>READ ONLY</small>"
@@ -1232,8 +1235,6 @@ static char* socket_prop_desc[] = {
 	,"remote TCP or UDP port number"
 	,"socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)"
 	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
-	/* statically-defined properties: */
-	,"array of socket option names supported by the current platform"
 	,NULL
 };
 #endif
