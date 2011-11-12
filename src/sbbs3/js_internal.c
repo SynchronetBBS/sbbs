@@ -207,6 +207,19 @@ static char* prop_desc[] = {
 	,"maximum number of bytes available for heap"
 #endif
 	,"global (top level) object - <small>READ ONLY</small>"
+	/* New properties go here... */
+	,"load() search path array.<br>For relative load paths (e.g. not beginning with '/' or '\'), "
+		"the path is assumed to be a sub-directory of the (configurable) mods or exec directories "
+		"and is searched accordingly. "
+		"So, by default, load(\"somefile.js\") will search in this order:<br>"
+		"mods/load/somefile.js<br>"
+		"exec/load/somefile.js<br>"
+		"mods/somefile.js<br>"
+		"exec/somefile.js<br>"
+	,"full path and filename of JS file executed"
+	,"directory of executed JS file"
+	,"JS filename executed (with no path)"
+	,"Either the configure startup directory in SCFG (for externals) or the cwd when jsexec is started"
 	,NULL
 };
 #endif
