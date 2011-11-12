@@ -87,6 +87,7 @@ static char* event_prop_desc[] = {
 	,"frequency to execute"
 	,"days of week to execute (bitfield)"
 	,"days of month to execute (bitfield)"
+	,"months of year to execute (bitfield)"
 	,"date/time last run (in time_t format)"
 	,"toggle options (bitfield)"
 	,NULL
