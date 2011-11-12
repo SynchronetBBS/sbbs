@@ -207,6 +207,25 @@ static jsSyncPropertySpec js_properties[] = {
 	{0}
 };
 
+#ifdef BUILD_JSDOCS
+static char* uifc_prop_desc[] = {
+	 "uifc has been initialized"
+	,"current mode bits (see uifcdefs.js)"
+	,"a change has occured in an input call.  You are expected to set this to false before calling the input if you care about it."
+	,"save buffer depth (advanced)"
+	,"current screen length"
+	,"current screen width"
+	,"when WIN_FIXEDHEIGHT is set, specifies the hight used by a list method"
+	,"delay before a single ESC char is parsed and assumed to not be an ANSI sequence (advanced)"
+	,"text that will be displayed if F1 is pressed"
+	,"background colour"
+	,"frame colour"
+	,"text colour"
+	,"inverse colour"
+	,"lightbar colour"
+};
+#endif
+
 /* Convenience functions */
 static uifcapi_t* get_uifc(JSContext *cx, JSObject *obj)
 {
@@ -589,6 +608,11 @@ JSObject* js_CreateUifcObject(JSContext* cx, JSObject* parent)
 
 	if(!JS_SetPrivate(cx, obj, api))	/* Store a pointer to uifcapi_t */
 		return(NULL);
+
+#ifdef BUILD_JSDOCS
+	js_DescribeSyncObject(cx,obj,"User InterFaCe object - used for jsexec menus" ,310);
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", uifc_prop_desc, JSPROP_READONLY);
+#endif
 
 	return(obj);
 }
