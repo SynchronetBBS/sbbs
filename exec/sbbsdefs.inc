@@ -71,8 +71,6 @@
 !define UQ_DUPHAND      .5      # Search for duplicate handles
 !define UQ_SEX          .6      # Ask for sex
 !define UQ_BIRTH        .7      # Ask for birth date
-!define UQ_COMP         .8      # Ask for computer type
-!define UQ_MC_COMP      .9      # Multiple choice computer type
 !define UQ_REALNAME     .10     # Ask for real name
 !define UQ_DUPREAL      .11     # Search for duplicate real names
 !define UQ_COMPANY      .12     # Ask for company name
@@ -81,6 +79,8 @@
 !define UQ_XEDIT        .15     # Ask for external editor
 !define UQ_NODEF        .16     # Don't ask for default settings
 !define UQ_NOCOMMAS     .17     # Do not require commas in location
+!define UQ_NONETMAIL	.18	# Don't ask for email/netmail address
+!define UQ_NOUPRLWR	.19	# Don't force upper/lower case strings
 
 
 				# FidoNet netmail toggles (_NETMAIL_MISC)
