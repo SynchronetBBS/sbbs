@@ -1937,10 +1937,6 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
     JS_IdToValue(cx, id, &idval);
     tiny = JSVAL_TO_INT(idval);
 
-#if 0 /* just too much */
-	dbprintf(FALSE, sock, "getting property %d",tiny);
-#endif
-
 	switch(tiny) {
 		case FILE_PROP_NAME:
 			if((js_str=JS_NewStringCopyZ(cx, p->name))==NULL)
@@ -2487,9 +2483,9 @@ js_file_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent)
 {
-	JSObject*	sockobj;
+	JSObject*	obj;
 
-	sockobj = JS_InitClass(cx, parent, NULL
+	obj = JS_InitClass(cx, parent, NULL
 		,&js_file_class
 		,js_file_constructor
 		,1		/* number of constructor args */
@@ -2497,7 +2493,7 @@ JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent)
 		,NULL	/* funcs, set in constructor */
 		,NULL,NULL);
 
-	return(sockobj);
+	return(obj);
 }
 
 JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, FILE* fp)
