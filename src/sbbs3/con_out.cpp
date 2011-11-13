@@ -458,10 +458,14 @@ void sbbs_t::ctrl_a(char x)
 		case 'T':   /* Time */
 			now=time(NULL);
 			localtime_r(&now,&tm);
-			bprintf("%02d:%02d %s"
-				,tm.tm_hour==0 ? 12
-				: tm.tm_hour>12 ? tm.tm_hour-12
-				: tm.tm_hour, tm.tm_min, tm.tm_hour>11 ? "pm":"am");
+			if(cfg.sys_misc&SM_MILITARY)
+				bprintf("%02u:%02u:%02u"
+					,tm.tm_hour, tm.tm_min, tm.tm_sec);
+			else
+				bprintf("%02d:%02d %s"
+					,tm.tm_hour==0 ? 12
+					: tm.tm_hour>12 ? tm.tm_hour-12
+					: tm.tm_hour, tm.tm_min, tm.tm_hour>11 ? "pm":"am");
 			break;
 		case 'D':   /* Date */
 			now=time(NULL);
