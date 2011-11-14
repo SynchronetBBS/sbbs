@@ -255,7 +255,34 @@ function Frame(x,y,width,height,attr,frame) {
 			var yoff = frame.y - this.y;
 			updateChar(xoff + x,yoff + y);
 		}
+		this.screenShot = function(file,append) {
+			var f = new File(file);
+			if(append) 
+				f.open('ab',true,4096);
+			else
+				f.open('wb',true,4096) ;
+			if(!f.is_open)
+				return false;
 				
+			for(var y = 0;y<this.height;y++) {
+				for(var x = 0;x<this.width;x++) {
+					var c = getTopCanvas(x,y);
+					var d = getData(c,x,y);
+					if(d.ch)
+						f.write(d.ch);
+					else
+						f.write(" ");
+					if(d.attr)
+						f.writeBin(d.attr,1);
+					else
+						f.writeBin(0,1);
+				}
+			}
+			
+			f.close();
+			return true;
+		}
+		
 		/* private functions */
 		function updateChar(x,y) {
 			if(!properties.update[y])
@@ -799,6 +826,9 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 		if(update)
 			this.refresh();
+	}
+	this.screenShot = function(file,append) {
+		return properties.display.screenShot(file,append);
 	}
 
 	/* console method emulation */
