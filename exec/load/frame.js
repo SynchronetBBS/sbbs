@@ -33,6 +33,7 @@ METHODS:
 	frame.scrollTo(x,y)			//scroll frame to absolute offset
 	frame.move(x,y)				//move frame n spaces in any direction
 	frame.moveTo(x,y)			//move frame to absolute position
+	frame.getoff()				//retrieve frame data offset (x,y) 
 	frame.clearline(attr)		//see http://synchro.net/docs/jsobjs.html#console
 	frame.cleartoeol(attr)
 	frame.putmsg(str)
@@ -53,6 +54,10 @@ PROPERTIES:
 	frame.height				//frame height
 	frame.attr					//default attributes for frame
 	frame.checkbounds			//toggle true/false to restrict/allow frame movement outside display
+	frame.lf_strict				//toggle true/false to force newline after a crlf-terminated string
+	frame.v_scroll				//toggle true/false to enable/disable vertical scrolling
+	frame.h_scroll				//toggle true/false to enable/disable horizontal scrolling
+	frame.scrollbars_visible	//toggle true/false to show/hide scrollbars
 
 USAGE:
 
@@ -125,7 +130,8 @@ function Frame(x,y,width,height,attr,frame) {
 			width:undefined,
 			height:undefined,
 			canvas:{},
-			update:{}
+			update:{},
+			buffer:{}
 		}
 
 		/* protected properties */
@@ -261,22 +267,34 @@ function Frame(x,y,width,height,attr,frame) {
 			for(var y in properties.update) {
 				for(var x in properties.update[y]) {
 					var c = getTopCanvas(x,y);
-					list.push(getData(c,x,y));
+					var d = getData(c,x,y);
+					if(!properties.buffer[x])
+						properties.buffer[x] = {};
+					if(!properties.buffer[x][y] ||
+						properties.buffer[x][y].ch != d.ch || 
+						properties.buffer[x][y].attr != d.attr) {
+						properties.buffer[x][y] = d;
+						list.push(d);
+					}
 				}
 			}
 			return list.sort(updateSort);
 		}
 		function getData(c,x,y) {
-			var d = {};
+			var cd = {
+				x:Number(x),
+				y:Number(y)
+			};
 			if(c) {
-				d = c.frame.getData(x-c.xoff,y-c.yoff);
-				if(!d.attr)
-					d.attr = c.frame.attr;
-				d.id = c.frame.id;
+				var d = c.frame.getData(x-c.xoff,y-c.yoff,true);
+				cd.id = c.frame.id;
+				cd.ch = d.ch;
+				if(d.attr)
+					cd.attr = d.attr;
+				else
+					cd.attr = c.frame.attr;
 			}
-			d.x = Number(x);
-			d.y = Number(y);
-			return d;
+			return cd;
 		}
 		function updateSort(a,b) {
 			if(a.y == b.y)
@@ -325,7 +343,15 @@ function Frame(x,y,width,height,attr,frame) {
 		attr:undefined,
 		display:undefined,
 		data:[],
+		open:false,
 		id:0
+	}
+	var settings = {
+		v_scroll:true,
+		h_scroll:false,
+		scrollbars_visible:true,
+		lf_strict:false,
+		checkbounds:true
 	}
 	var relations = {
 		parent:undefined,
@@ -334,27 +360,15 @@ function Frame(x,y,width,height,attr,frame) {
 	var position = {
 		cursor:{x:0,y:0},
 		offset:{x:0,y:0},
-		stored:{x:0,y:0},
-		checkbounds:true
+		stored:{x:0,y:0}
 	}
 		
 	/* protected properties */
-	this.__defineGetter__("id", function() {
-		if(relations.parent)
-			return relations.parent.id+""+properties.id;
-		return properties.id;
-	});
-	this.__defineGetter__("parent", function() {
-		return relations.parent;
-	});
 	this.__defineGetter__("child", function() {
 		return relations.child;
 	});
 	this.__defineSetter__("child", function(frame) {
 		relations.child.push(frame);
-	});
-	this.__defineGetter__("display", function() {
-		return properties.display;
 	});
 	this.__defineGetter__("attr", function() {
 		return properties.attr;
@@ -416,48 +430,126 @@ function Frame(x,y,width,height,attr,frame) {
 			throw("invalid height: " + height);
 		properties.height = height;
 	});
+
+	/* read-only properties */
+	this.__defineGetter__("id", function() {
+		if(relations.parent)
+			return relations.parent.id+"."+properties.id;
+		return properties.id;
+	});
+	this.__defineGetter__("parent", function() {
+		return relations.parent;
+	});
+	this.__defineGetter__("display", function() {
+		return properties.display;
+	});
+	this.__defineGetter__("data_height", function() {
+		return properties.data[0].length;
+	});
+	this.__defineGetter__("data_width", function() {
+		return properties.data.length;
+	});
+	this.__defineGetter__("data", function() {
+		return properties.data;
+	});
+	
+	/* protected settings */
 	this.__defineGetter__("checkbounds", function() {
-		return position.checkbounds;
+		return settings.checkbounds;
 	});
 	this.__defineSetter__("checkbounds", function(bool) {
 		if(typeof bool == "boolean")
-			position.checkbounds=bool;
+			settings.checkbounds=bool;
+	});
+	this.__defineGetter__("lf_strict", function() {
+		return settings.lf_strict;
+	});
+	this.__defineSetter__("lf_strict", function(bool) {
+		if(typeof bool == "boolean")
+			settings.lf_strict=bool;
+	});
+	this.__defineGetter__("scrollbars_visible", function() {
+		return settings.scrollbar;
+	});
+	this.__defineSetter__("scrollbars_visible", function(bool) {
+		if(typeof bool == "boolean")
+			settings.scrollbar=bool;
+	});
+	this.__defineGetter__("v_scroll", function() {
+		return settings.v_scroll;
+	});
+	this.__defineSetter__("v_scroll", function(bool) {
+		if(typeof bool == "boolean")
+			settings.v_scroll=bool;
+	});
+	this.__defineGetter__("h_scroll", function() {
+		return settings.h_scroll;
+	});
+	this.__defineSetter__("h_scroll", function(bool) {
+		if(typeof bool == "boolean")
+			settings.h_scroll=bool;
 	});
 
 	/* public methods */
-	this.getData = function(x,y) {
-		return properties.data[x + position.offset.x][y + position.offset.y];
+	this.getData = function(x,y,use_offset) {
+		if(use_offset) 
+			return properties.data[x + position.offset.x][y + position.offset.y];
+		else
+			return properties.data[x][y];
 	}
-	this.setData = function(x,y,ch,attr) {
-		if(ch)
-			properties.data[x + position.offset.x][y + position.offset.y].ch = ch;
-		if(attr)
-			properties.data[x + position.offset.x][y + position.offset.y].attr = attr;
+	this.setData = function(x,y,ch,attr,use_offset) {
+		if(use_offset) {
+			if(ch)
+				properties.data[x + position.offset.x][y + position.offset.y].ch = ch;
+			if(attr)
+				properties.data[x + position.offset.x][y + position.offset.y].attr = attr;
+			if(properties.open) 
+				properties.display.updateChar(this,x,y);
+		}
+		else {
+			if(ch)
+				properties.data[x][y].ch = ch;
+			if(attr)
+				properties.data[x][y].attr = attr;
+			if(properties.open && (x >= position.offset.x && x < position.offset.x + this.width &&
+				y >= position.offset.y && y < position.offset.y + this.height))
+				properties.display.updateChar(this,x,y);
+		}
 	}
 	this.bottom = function() {
-		for each(var c in relations.child) 
-			c.bottom();
-		properties.display.bottom(this);
+		if(properties.open) {
+			for each(var c in relations.child) 
+				c.bottom();
+			properties.display.bottom(this);
+		}
 	}
 	this.top = function() {
-		properties.display.top(this);
-		for each(var c in relations.child) 
-			c.top();
+		if(properties.open) {
+			properties.display.top(this);
+			for each(var c in relations.child) 
+				c.top();
+		}
 	}
 	this.open = function() {
 		properties.display.open(this);
+		properties.open = true;
 		for each(var c in relations.child) 
 			c.open();
 	}
 	this.refresh = function() {
-		properties.display.updateFrame(this);
-		for each(var c in relations.child) 
-			c.refresh();
+		if(properties.open) {
+			properties.display.updateFrame(this);
+			for each(var c in relations.child) 
+				c.refresh();
+		}
 	}
 	this.close = function() {
-		for each(var c in relations.child) 
-			c.close();
-		properties.display.close(this);
+		if(properties.open) {
+			for each(var c in relations.child) 
+				c.close();
+			properties.display.close(this);
+			properties.open = false;
+		}
 	}
 	this.move = function(x,y) {
 		var nx = undefined;
@@ -496,7 +588,10 @@ function Frame(x,y,width,height,attr,frame) {
 			c.moveTo(x + (c.x - this.x), y + (c.y - this.y));
 	}
 	this.draw = function() {
-		this.refresh();
+		if(properties.open)
+			this.refresh();
+		else
+			this.open();
 		this.cycle();
 	}
 	this.cycle = function() {
@@ -615,7 +710,6 @@ function Frame(x,y,width,height,attr,frame) {
 				}
 				y++;
 			}
-			this.open();
 			break;
 		case "BIN":
 			if(width == undefined || height == undefined)
@@ -638,7 +732,6 @@ function Frame(x,y,width,height,attr,frame) {
 				}
 			}
 			f.close();
-			this.open();
 			break;
 		default:
 			throw("unsupported filetype");
@@ -657,18 +750,25 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 		/* otherwise, adjust the x/y offset */
 		else {
-			if(typeof x == "number")
+			var update = false;
+			if(typeof x == "number") {
 				position.offset.x += x;
-			if(typeof y == "number")
+				if(position.offset.x < 0)
+					position.offset.x = 0;
+				else if(position.offset.x + this.width > this.data_width)
+					position.offset.x = this.data_width - this.width;
+				update = true;
+			}
+			if(typeof y == "number") {
 				position.offset.y += y;
-			if(position.offset.x < 0)
-				position.offset.x = 0;
-			else if(position.offset.x + this.width > properties.data.length)
-				position.offset.x = properties.data.length - this.width;
-			if(position.offset.y < 0)
-				position.offset.y = 0;
-			else if(position.offset.y + this.height > properties.data[0].length)
-				position.offset.y = properties.data[0].length - this.height;
+				if(position.offset.y < 0)
+					position.offset.y = 0;
+				else if(position.offset.y + this.height > this.data_height)
+					position.offset.y = this.data_height - this.height;
+				update = true;
+			}
+			if(update)
+				this.refresh();
 		}
 	}
 	this.scrollTo = function(x,y) {
@@ -814,6 +914,10 @@ function Frame(x,y,width,height,attr,frame) {
 					break;
 				case ']':	/* LF */
 					pos.y++;
+					if(settings.lf_strict && pos.y >= this.height) {	
+						this.scroll();
+						pos.y--;
+					}
 					break;
 				default:	/* Other stuff... specifically, check for right movement */
 					if(ch.charCodeAt(0)>127) {
@@ -837,6 +941,10 @@ function Frame(x,y,width,height,attr,frame) {
 					break;
 				case '\n':
 					pos.y++;
+					if(settings.lf_strict && pos.y >= this.height) {	
+						this.scroll();
+						pos.y--;
+					}
 					break;
 				default:
 					putChar.call(this,ch,curattr);
@@ -870,6 +978,13 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 		return xy;
 	}
+	this.getoff = function() {
+		var xy = {
+			x:position.offset.x,
+			y:position.offset.y
+		};
+		return xy;
+	}
 	this.pushxy = function() {
 		position.stored.x = position.cursor.x;
 		position.stored.y = position.cursor.y;
@@ -878,30 +993,70 @@ function Frame(x,y,width,height,attr,frame) {
 		position.cursor.x = position.stored.x;
 		position.cursor.y = position.stored.y;
 	}
+	this.up = function(n) {
+		if(isNaN(n))
+			n = 1;
+		position.cursor.y-=n;
+		if(position.cursor.y < 0) {
+			if(position.offset.y > 0)
+				this.scroll(0,-(n));
+			position.cursor.y = 0;
+		}
+	}
+	this.down = function(n) {
+		if(isNaN(n))
+			n = 1;
+		position.cursor.y+=n;
+		if(position.cursor.y > this.height-1) {
+			if(position.offset.y < this.data_height - this.height)
+				this.scroll(0,n);
+			position.cursor.y = this.height-1;
+		}
+	}
+	this.left = function(n) {
+		if(isNaN(n))
+			n = 1;
+		position.cursor.x-=n;
+		if(position.cursor.x < 0) {
+			if(position.offset.x > 0)
+				this.scroll(-(n),0);
+			position.cursor.x=0;
+		}
+	}
+	this.right = function(n) {
+		if(isNaN(n))
+			n = 1;
+		position.cursor.x+=n;
+		if(position.cursor.x > this.width-1) {
+			if(position.offset.x < this.data_width - this.width)
+				this.scroll(n,0);
+			position.cursor.x=this.width-1;
+		}
+	}
 	
 	/* private functions */
 	function checkX(x) {
-		if(	isNaN(x) || (position.checkbounds &&  
+		if(	isNaN(x) || (settings.checkbounds &&  
 			(x > properties.display.x + properties.display.width || 
 			x < properties.display.x)))
 			return false;
 		return true;
 	}
 	function checkY(y) {
-		if( isNaN(y) || (position.checkbounds && 
+		if( isNaN(y) || (settings.checkbounds && 
 			(y > properties.display.y + properties.display.height || 
 			y < properties.display.y)))
 			return false;
 		return true;
 	}
 	function checkWidth(x,width) {
-		if(	width < 1 || isNaN(width) || (position.checkbounds && 
+		if(	width < 1 || isNaN(width) || (settings.checkbounds && 
 			x + width > properties.display.x + properties.display.width))
 			return false;
 		return true;
 	}
 	function checkHeight(y,height) {
-		if( height < 1 || isNaN(height) || (position.checkbounds && 
+		if( height < 1 || isNaN(height) || (settings.checkbounds && 
 			y + height > properties.display.y + properties.display.height))
 			return false;
 		return true;
@@ -915,21 +1070,13 @@ function Frame(x,y,width,height,attr,frame) {
 			this.scroll();
 			position.cursor.y--;
 		}
-		if(ch)
-			properties.data
-			[position.cursor.x + position.offset.x]
-			[position.cursor.y + position.offset.y].ch = ch;
-		if(attr)
-			properties.data
-			[position.cursor.x + position.offset.x]
-			[position.cursor.y + position.offset.y].attr = attr;
-		properties.display.updateChar(this,position.cursor.x,position.cursor.y);
+		this.setData(position.cursor.x,position.cursor.y,ch,attr,true);
 	}
 	function init(x,y,width,height,attr,frame) {
 		if(frame instanceof Frame) {
 			properties.id = frame.child.length;
 			properties.display = frame.display;
-			position.checkbounds = frame.checkbounds;
+			settings.checkbounds = frame.checkbounds;
 			relations.parent = frame;
 			frame.child = this;
 		}
@@ -949,6 +1096,7 @@ function Frame(x,y,width,height,attr,frame) {
 				properties.data[w][h] = new Char();
 			}
 		}
+		
 		//log(LOG_DEBUG,format("new frame initialized: %sx%s at %s,%s",this.width,this.height,this.x,this.y));
 	}
 	init.apply(this,arguments);
