@@ -8,8 +8,8 @@ DESCRIPTION:
 
  	this library is meant to be used in conjunction with other libraries that
  	store display data in a Frame() object or objects
- 	this allows for "windows" that can be hidden and closed without 
- 	destroying the data behind them.
+ 	this allows for "windows" that can be hidden, moved, closed, etc...
+	without destroying the data behind them.
 
  	the object itself takes the following parameters:
 
@@ -17,7 +17,7 @@ DESCRIPTION:
  		y: 			the coordinate representing the top left corner of the frame (vert)
  		width: 		the horizontal width of the frame 
  		height: 	the vertical height of the frame
- 		attr:		the background color of the frame (displayed when there are no other contents)
+ 		attr:		the default color attributes of the frame
 		frame:		a frame object representing the parent of the new frame
 		
 METHODS:
@@ -57,7 +57,7 @@ PROPERTIES:
 	frame.lf_strict				//toggle true/false to force newline after a crlf-terminated string
 	frame.v_scroll				//toggle true/false to enable/disable vertical scrolling
 	frame.h_scroll				//toggle true/false to enable/disable horizontal scrolling
-	frame.scrollbars_visible	//toggle true/false to show/hide scrollbars
+	frame.scrollbars			//toggle true/false to show/hide scrollbars
 
 USAGE:
 
@@ -102,7 +102,7 @@ load("sbbsdefs.js");
 
 function Frame(x,y,width,height,attr,frame) {
 
-	/* object containing data matrix and frame pointer */
+	/* frame reference object */
 	function Canvas(frame,display) {
 		this.frame = frame;
 		this.display = display;
@@ -347,11 +347,11 @@ function Frame(x,y,width,height,attr,frame) {
 		id:0
 	}
 	var settings = {
-		v_scroll:true,
+		v_scroll:false,
 		h_scroll:false,
-		scrollbars_visible:true,
+		scrollbars:false,
 		lf_strict:false,
-		checkbounds:true
+		checkbounds:false
 	}
 	var relations = {
 		parent:undefined,
@@ -468,12 +468,12 @@ function Frame(x,y,width,height,attr,frame) {
 		if(typeof bool == "boolean")
 			settings.lf_strict=bool;
 	});
-	this.__defineGetter__("scrollbars_visible", function() {
-		return settings.scrollbar;
+	this.__defineGetter__("scrollbars", function() {
+		return settings.scrollbars;
 	});
-	this.__defineSetter__("scrollbars_visible", function(bool) {
+	this.__defineSetter__("scrollbars", function(bool) {
 		if(typeof bool == "boolean")
-			settings.scrollbar=bool;
+			settings.scrollbars=bool;
 	});
 	this.__defineGetter__("v_scroll", function() {
 		return settings.v_scroll;
@@ -544,12 +544,10 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 	}
 	this.close = function() {
-		if(properties.open) {
-			for each(var c in relations.child) 
-				c.close();
-			properties.display.close(this);
-			properties.open = false;
-		}
+		for each(var c in relations.child) 
+			c.close();
+		properties.display.close(this);
+		properties.open = false;
 	}
 	this.move = function(x,y) {
 		var nx = undefined;
@@ -741,49 +739,66 @@ function Frame(x,y,width,height,attr,frame) {
 	this.scroll = function(x,y) {
 		/* default: add a new line to the data matrix */
 		if(x == undefined && y == undefined) {
-			for(var x = 0;x<this.width;x++) {
-				for(var y = 0;y<this.height;y++) 
-					properties.display.updateChar(this,x,y);
-				properties.data[x].push(new Char());
+			if(settings.v_scroll) {
+				for(var x = 0;x<this.width;x++) {
+					for(var y = 0;y<this.height;y++) 
+						properties.display.updateChar(this,x,y);
+					properties.data[x].push(new Char());
+				}
+				position.offset.y++;
 			}
-			position.offset.y++;
 		}
 		/* otherwise, adjust the x/y offset */
 		else {
 			var update = false;
 			if(typeof x == "number") {
-				position.offset.x += x;
-				if(position.offset.x < 0)
-					position.offset.x = 0;
-				else if(position.offset.x + this.width > this.data_width)
-					position.offset.x = this.data_width - this.width;
-				update = true;
+				if(settings.h_scroll) {
+					position.offset.x += x;
+					if(position.offset.x < 0)
+						position.offset.x = 0;
+					else if(position.offset.x + this.width > this.data_width)
+						position.offset.x = this.data_width - this.width;
+					update = true;
+				}
 			}
 			if(typeof y == "number") {
-				position.offset.y += y;
-				if(position.offset.y < 0)
-					position.offset.y = 0;
-				else if(position.offset.y + this.height > this.data_height)
-					position.offset.y = this.data_height - this.height;
-				update = true;
+				if(settings.v_scroll) {
+					position.offset.y += y;
+					if(position.offset.y < 0)
+						position.offset.y = 0;
+					else if(position.offset.y + this.height > this.data_height)
+						position.offset.y = this.data_height - this.height;
+					update = true;
+				}
 			}
 			if(update)
 				this.refresh();
 		}
 	}
 	this.scrollTo = function(x,y) {
-		if(typeof x == "number")
-			position.offset.x = x;
-		if(typeof y == "number")
-			position.offset.y = y;
-		if(position.offset.x < 0)
-			position.offset.x = 0;
-		else if(position.offset.x + this.width > properties.data.length)
-			position.offset.x = properties.data.length - this.width;
-		if(position.offset.y < 0)
-			position.offset.y = 0;
-		else if(position.offset.y + this.height > properties.data[0].length)
-			position.offset.y = properties.data[0].length - this.height;
+		var update = false;
+		if(typeof x == "number") {
+			if(settings.h_scroll) {
+				position.offset.x = x;
+				if(position.offset.x < 0)
+					position.offset.x = 0;
+				else if(position.offset.x + this.width > this.data_width)
+					position.offset.x = this.data_width - this.width;
+				update = true;
+			}
+		}
+		if(typeof y == "number") {
+			if(settings.v_scroll) {
+				position.offset.y = y;
+				if(position.offset.y < 0)
+					position.offset.y = 0;
+				else if(position.offset.y + this.height > this.data_height)
+					position.offset.y = this.data_height - this.height;
+				update = true;
+			}
+		}
+		if(update)
+			this.refresh();
 	}
 
 	/* console method emulation */
