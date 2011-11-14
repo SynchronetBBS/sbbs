@@ -29,13 +29,14 @@ var lifeBox = new Frame(60, 1, 10, 1, BG_BLACK, statusBar);
 var timeBox = new Frame(70, 1, 10, 1, BG_BLACK, statusBar);
 var player = new Frame(1, 1, 5, 4, BG_BLACK, frame);
 
+
 splashScreen.load(js.exec_dir + "ckndlvry.ans");
-frame.cycle();
+splashScreen.draw();
 
 mswait(500);
 
 menuFrame.load(js.exec_dir + "menu.ans");
-frame.cycle();
+menuFrame.draw();
 
 var userInput = '';
 while(userInput != 'P') {
@@ -108,6 +109,7 @@ while(!js.terminated) {
 	var doorFrame = new Frame(parseInt(door[0]), parseInt(door[1]), 5, 4, BG_BLACK, frame);
 	doorFrame.load(js.exec_dir + "sprites/" + door[2].toString());
 	doorFrame.score = door[3];
+	doorFrame.open();
 
 	var enemies = new Array();
 	for(var e in iniEnemies) {
@@ -120,6 +122,7 @@ while(!js.terminated) {
 		enemies[e].borderL = parseInt(thisEnemy[3]);
 		enemies[e].borderR = parseInt(thisEnemy[4]);
 		enemies[e].stepInterval = parseFloat(thisEnemy[6]);
+		enemies[e].open();
 	}
 
 	frame.cycle();
