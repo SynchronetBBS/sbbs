@@ -291,6 +291,7 @@ admin = new (function() {
 /* module handler */
 engine = new (function() {
 	this.modules = [];
+	this.queue = undefined;
 	this.file = new File(system.ctrl_dir + "json-service.ini");
 	/* load module list */
 	this.init = function() {
@@ -310,8 +311,6 @@ engine = new (function() {
 		for each(var m in this.modules) {
 			if(!m.online)
 				continue;
-			if(typeof m.cycle == "function") 
-				m.cycle();
 			m.db.cycle();
 		}
 	}
@@ -328,7 +327,9 @@ engine = new (function() {
 			break;
 		case "IDENT":
 			break;
-		case "RESET":
+		case "RELOAD":
+			module.queue.write("RELOAD");
+			module.init();
 			break;
 		case "CLOSE":
 			module.online = false;
@@ -350,17 +351,15 @@ engine = new (function() {
 	function Module(dir,name) {
 		this.online = true;
 		this.dir = dir;
+		this.queue = undefined;
 		this.db = new JSONdb(dir+name+".json");
-		/* load module service files */
-		if(file_exists(this.dir + "service.js")) {
-			try {
-				load(this,this.dir + "service.js");
-			} 
-			catch(e) {
-				this.online = false;
-				log(LOG_ERROR,e);
+		this.init = function() {
+			/* load module service files */
+			if(file_exists(this.dir + "service.js")) {
+				this.queue = load(true,this.dir + "service.js",this.dir);
 			}
 		}
+		this.init();
 	}
 	
 	this.init();
