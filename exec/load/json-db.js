@@ -236,7 +236,7 @@ function JSONdb (fileName) {
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 			record.info.lock[client.id].type == locks.WRITE) {
-			if(typeof record.data[record.child_name].pop == "function") 
+			if(record.data[record.child_name] instanceof Array) {
 				send_packet(client,record.data[record.child_name].pop(),"RESPONSE");
 			else
 				this.error(client,errors.NON_ARRAY);
@@ -258,7 +258,7 @@ function JSONdb (fileName) {
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 		record.info.lock[client.id].type == locks.WRITE) {
-			if(typeof record.data[record.child_name].shift == "function") 
+			if(record.data[record.child_name] instanceof Array) {
 				send_packet(client,record.data[record.child_name].shift(),"RESPONSE");
 			else
 				this.error(client,errors.NON_ARRAY);
@@ -280,7 +280,7 @@ function JSONdb (fileName) {
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 			record.info.lock[client.id].type == locks.WRITE) {
-			if(typeof record.data[record.child_name].pop == "function") {
+			if(record.data[record.child_name] instanceof Array) {
 				var index = record.data[record.child_name].length;
 				record.data[record.child_name].push(data);
 				/* populate this object's children with shadow objects */
@@ -306,7 +306,7 @@ function JSONdb (fileName) {
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 			record.info.lock[client.id].type == locks.WRITE) {
-			if(typeof record.data[record.child_name].unshift == "function") {
+			if(record.data[record.child_name] instanceof Array) {
 				var index = record.data[record.child_name].length;
 				record.data[record.child_name].unshift(data);
 				/* populate this object's children with shadow objects */
