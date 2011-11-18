@@ -349,7 +349,6 @@ function JSONdb (fileName) {
 		else if(record.shadow[record.child_name]._lock[client.id] && 
 			record.shadow[record.child_name]._lock[client.id].type == locks.WRITE) {
 			delete record.data[record.child_name];
-			/* send data updates to all subscribers */
 			return true;
 		}
         /* if there is no lock for this client, error */
@@ -549,7 +548,7 @@ function JSONdb (fileName) {
 			);
 			
 			if(!record) {
-				log(LOG_DEBUG,"db: bad request removed from queue");
+				log(LOG_WARNING,"db: bad request removed from queue");
 				this.queue.splice(r--,1);
 				continue;
 			}
@@ -576,9 +575,6 @@ function JSONdb (fileName) {
 			case "DELETE":
 				result=this.remove(request.client,record);
 				break;
-			case "CREATE":
-				result=this.create(request.client,record,request.data);
-				break;
 			case "SUBSCRIBE":
 				result=this.subscribe(request.client,record);
 				break;
@@ -597,6 +593,7 @@ function JSONdb (fileName) {
 			}
 			if(result == true) {
 				log(LOG_DEBUG,"db: " + 
+					request.client.id + " " + 
 					request.oper + " " + 
 					record.location + " OK"
 				);
@@ -604,6 +601,7 @@ function JSONdb (fileName) {
 			}
 			else {
 				log(LOG_DEBUG,"db: " + 
+					request.client.id + " " + 
 					request.oper + " " + 
 					record.location + " FAILED"
 				); 
@@ -798,14 +796,15 @@ function JSONdb (fileName) {
 
 	/* send updates of this object to all subscribers */
 	function send_data_updates(client,record) {
+		var data = {
+			oper:"WRITE",
+			location:record.location,
+			data:get_record_data(record)
+		};
 		for each(var c in record.info.subscribers) {
 			/* do not send updates to request originator */
 			if(c.id == client.id)
 				continue;
-			var data = {
-				location:record.location,
-				data:get_record_data(record)
-			};
 			send_packet(c,data,"UPDATE");
 		}
 	}
