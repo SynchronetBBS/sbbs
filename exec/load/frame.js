@@ -374,11 +374,11 @@ function Frame(x,y,width,height,attr,frame) {
 		id:0
 	}
 	var settings = {
-		v_scroll:false,
+		v_scroll:true,
 		h_scroll:false,
 		scrollbars:false,
-		lf_strict:false,
-		checkbounds:false
+		lf_strict:true,
+		checkbounds:true
 	}
 	var relations = {
 		parent:undefined,
@@ -758,6 +758,14 @@ function Frame(x,y,width,height,attr,frame) {
 			}
 			f.close();
 			break;
+		case "TXT":
+			if(!(f.open("r",true,4096)))
+				return(false);
+			var lines=f.readAll(4096);
+			f.close();
+			while(lines.length > 0)
+				this.putmsg(lines.shift() + "\r\n");
+			break;
 		default:
 			throw("unsupported filetype");
 			break;
@@ -1111,7 +1119,7 @@ function Frame(x,y,width,height,attr,frame) {
 			position.cursor.x=0;
 			position.cursor.y++;
 		}
-		if(position.cursor.y >= this.height) {	
+		while(position.cursor.y >= this.height) {	
 			this.scroll();
 			position.cursor.y--;
 		}
@@ -1146,6 +1154,3 @@ function Frame(x,y,width,height,attr,frame) {
 	}
 	init.apply(this,arguments);
 }
-
-if(argc >= 4)
-	frame = new Frame(argv[0],argv[1],argv[2],argv[3],argv[4],argv[5]);
