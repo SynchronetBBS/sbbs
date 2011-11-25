@@ -19,12 +19,15 @@
 		load(event-timer.js);
 		var timer=new Timer();
 		
-		function event() {
+		function hello() {
 			print("hello\r\n");
 		}
-		timer.addEvent(10,10,event);
-		
+
 		//will print "hello" 10 times at 10 second intervals
+		timer.addEvent(10000,10,hello);
+		
+		//will print "hello" infinitely at 20 second intervals
+		timer.addEvent(20000,true,print,"hello");
 		
 		while(timer.events.length > 0) {
 			timer.cycle();
@@ -52,10 +55,10 @@ function Timer() {
 				if(event.repeat === true)
 					continue;
 				/* decrement event repeat counter */
-				if(event.repeat > 0)
+				else if(event.repeat > 0)
 					event.repeat--;
 				/* if event has expired, or is set to run only once, delete it */
-				if(!event.repeat) 
+				if(event.repeat === false || event.repeat === 0)
 					this.events.splice(e--,1);
 			}
 		}
