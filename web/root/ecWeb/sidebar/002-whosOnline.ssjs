@@ -4,7 +4,7 @@
 /* An asynchronous "Who's Online" listing that updates at a sysop-defined
    interval.  Written for the ecWeb sidebar, but could be used elsewhere. */
 
-var update = 10000; // Milliseconds between updates
+var update = 30000; // Milliseconds between updates
 
 load("nodedefs.js");
 if(http_request.query.hasOwnProperty("action") && http_request.query.action.toString() == "show") {
