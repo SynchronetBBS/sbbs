@@ -1,4 +1,5 @@
 /* $Id$ */
+
 /**
  	Javascript Frame Library 					
  	for Synchronet v3.15a+ 
@@ -483,19 +484,18 @@ function Frame(x,y,width,height,attr,frame) {
 		return relations.child;
 	});
 	this.__defineSetter__("child", function(frame) {
-		relations.child.push(frame);
+		if(frame instanceof Frame)
+			relations.child.push(frame);
+		else
+			throw("child not an instance of Frame()");
 	});
 	this.__defineGetter__("attr", function() {
 		return properties.attr;
 	});
 	this.__defineSetter__("attr", function(attr) {
+		if(attr !== undefined && isNaN(attr))
+			throw("invalid attribute: " + attr);
 		properties.attr = attr;
-	});
-	this.__defineGetter__("name", function() {
-		return properties.name;
-	});
-	this.__defineSetter__("name", function(name) {
-		properties.name = name;
 	});
 	this.__defineGetter__("x", function() { 
 		if(properties.x == undefined)
@@ -581,6 +581,8 @@ function Frame(x,y,width,height,attr,frame) {
 	this.__defineSetter__("checkbounds", function(bool) {
 		if(typeof bool == "boolean")
 			settings.checkbounds=bool;
+		else
+			throw("non-boolean checkbounds: " + bool);
 	});
 	this.__defineGetter__("lf_strict", function() {
 		return settings.lf_strict;
@@ -588,6 +590,8 @@ function Frame(x,y,width,height,attr,frame) {
 	this.__defineSetter__("lf_strict", function(bool) {
 		if(typeof bool == "boolean")
 			settings.lf_strict=bool;
+		else
+			throw("non-boolean lf_strict: " + bool);
 	});
 	this.__defineGetter__("scrollbars", function() {
 		return settings.scrollbars;
@@ -595,6 +599,8 @@ function Frame(x,y,width,height,attr,frame) {
 	this.__defineSetter__("scrollbars", function(bool) {
 		if(typeof bool == "boolean")
 			settings.scrollbars=bool;
+		else
+			throw("non-boolean scrollbars: " + bool);
 	});
 	this.__defineGetter__("v_scroll", function() {
 		return settings.v_scroll;
@@ -602,6 +608,8 @@ function Frame(x,y,width,height,attr,frame) {
 	this.__defineSetter__("v_scroll", function(bool) {
 		if(typeof bool == "boolean")
 			settings.v_scroll=bool;
+		else
+			throw("non-boolean v_scroll: " + bool);
 	});
 	this.__defineGetter__("h_scroll", function() {
 		return settings.h_scroll;
@@ -609,17 +617,27 @@ function Frame(x,y,width,height,attr,frame) {
 	this.__defineSetter__("h_scroll", function(bool) {
 		if(typeof bool == "boolean")
 			settings.h_scroll=bool;
+		else
+			throw("non-boolean h_scroll: " + bool);
 	});
 
 	/* public methods */
 	this.getData = function(x,y,use_offset) {
-		if(use_offset) 
+		if(use_offset) {
+			if(!properties.data[y + position.offset.y] || !properties.data[y + position.offset.y][x + position.offset.x])
+				throw("invalid coordinates: " + x + "," + y);
 			return properties.data[y + position.offset.y][x + position.offset.x];
-		else
+		}
+		else {
+			if(!properties.data[y] || !properties.data[y][x])
+				throw("invalid coordinates: " + x + "," + y);
 			return properties.data[y][x];
+		}
 	}
 	this.setData = function(x,y,ch,attr,use_offset) {
 		if(use_offset) {
+			if(!properties.data[y + position.offset.y] || !properties.data[y + position.offset.y][x + position.offset.x])
+				throw("invalid coordinates: " + x + "," + y);
 			if(ch)
 				properties.data[y + position.offset.y][x + position.offset.x].ch = ch;
 			if(attr)
@@ -628,6 +646,8 @@ function Frame(x,y,width,height,attr,frame) {
 				properties.display.updateChar(this,x,y);
 		}
 		else {
+			if(!properties.data[y] || !properties.data[y][x])
+				throw("invalid coordinates: " + x + "," + y);
 			if(ch)
 				properties.data[y][x].ch = ch;
 			if(attr)
