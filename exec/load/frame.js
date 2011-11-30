@@ -33,7 +33,7 @@ METHODS:
 	frame.scrollTo(x,y)			//scroll frame to absolute offset
 	frame.move(x,y)				//move frame n spaces in any direction
 	frame.moveTo(x,y)			//move frame to absolute position
-	frame.getoff()				//retrieve frame data offset (x,y) 
+	frame.end()					//opposite of frame.home()
 	frame.clearline(attr)		//see http://synchro.net/docs/jsobjs.html#console
 	frame.cleartoeol(attr)
 	frame.putmsg(str)
@@ -52,12 +52,18 @@ PROPERTIES:
 	frame.y						//y screen position
 	frame.width					//frame width
 	frame.height				//frame height
+	frame.data_height			//true height of frame contents (READ ONLY)
+	frame.data_width			//true width of frame contents (READ ONLY)
 	frame.attr					//default attributes for frame
 	frame.checkbounds			//toggle true/false to restrict/allow frame movement outside display
 	frame.lf_strict				//toggle true/false to force newline after a crlf-terminated string
 	frame.v_scroll				//toggle true/false to enable/disable vertical scrolling
 	frame.h_scroll				//toggle true/false to enable/disable horizontal scrolling
 	frame.scrollbars			//toggle true/false to show/hide scrollbars
+	frame.offset				//current offset object {x,y}
+	frame.cursor				//current cursor object {x,y}
+	frame.parent				//the parent frame of a frame
+	frame.id					//a unique identifier (e.g. "0.1.1.2.3")
 
 USAGE:
 
@@ -361,6 +367,88 @@ function Frame(x,y,width,height,attr,frame) {
 		this.attr = attr;
 	}
 	
+	/* self-validating cursor position object */
+	function Cursor(x,y,frame) {
+		var properties = {
+			x:undefined,
+			y:undefined,
+			frame:undefined
+		}
+		this.__defineGetter__("x", function() { 
+			return properties.x;
+		});
+		this.__defineSetter__("x", function(x) {
+			if(x == undefined)
+				throw("invalid x coordinate: " + x);
+			else if(x < 0)
+				x = 0;
+			else if(x >= properties.frame.width)	
+				x = properties.frame.width - 1;
+			properties.x = x;
+		});
+		this.__defineGetter__("y", function() { 
+			return properties.y;
+		});
+		this.__defineSetter__("y", function(y) {
+			if(y == undefined)
+				throw("invalid y coordinate: " + y);
+			else if(y < 0)
+				y = 0;
+			else if(y > properties.frame.height)
+				y = properties.frame.height - 1;
+			properties.y = y;
+		});
+		
+		if(frame instanceof Frame)
+			properties.frame = frame;
+		else
+			throw("the frame is not a frame");
+			
+		this.x = x;
+		this.y = y;
+	}
+	
+	/* self-validating scroll offset object */
+	function Offset(x,y,frame) {
+		var properties = {
+			x:undefined,
+			y:undefined,
+			frame:undefined
+		}
+		this.__defineGetter__("x", function() { 
+			return properties.x;
+		});
+		this.__defineSetter__("x", function(x) {
+			if(x == undefined)
+				throw("invalid x offset: " + x);
+			else if(x < 0)
+				x = 0;
+			else if(x > properties.frame.data_width - properties.frame.width)	
+				x = properties.frame.data_width - properties.frame.width;
+			properties.x = x;
+		});
+		this.__defineGetter__("y", function() { 
+			return properties.y;
+		});
+		this.__defineSetter__("y", function(y) {
+			if(y == undefined)
+				throw("invalid y offset: " + y);
+			else if(y < 0)
+				y = 0;
+			else if(y > properties.frame.data_height - properties.frame.height)
+				y = properties.frame.data_height - properties.frame.height;
+			properties.y = y;
+		});
+		
+		if(frame instanceof Frame)
+			properties.frame = frame;
+		else
+			throw("the frame is not a frame");
+			
+		this.x = x;
+		this.y = y;
+	}
+
 	/* private properties */
 	var properties = {
 		x:undefined,
@@ -385,9 +473,9 @@ function Frame(x,y,width,height,attr,frame) {
 		child:[]
 	}
 	var position = {
-		cursor:{x:0,y:0},
-		offset:{x:0,y:0},
-		stored:{x:0,y:0}
+		cursor:new Cursor(0,0,this),
+		offset:new Offset(0,0,this),
+		stored:new Cursor(0,0,this)
 	}
 		
 	/* protected properties */
@@ -459,6 +547,12 @@ function Frame(x,y,width,height,attr,frame) {
 	});
 
 	/* read-only properties */
+	this.__defineGetter__("cursor",function() {
+		return position.cursor;
+	});
+	this.__defineGetter__("offset",function() {
+		return position.offset;
+	});
 	this.__defineGetter__("id", function() {
 		if(relations.parent)
 			return relations.parent.id+"."+properties.id;
@@ -471,10 +565,10 @@ function Frame(x,y,width,height,attr,frame) {
 		return properties.display;
 	});
 	this.__defineGetter__("data_height", function() {
-		return properties.data[0].length;
+		return properties.data.length;
 	});
 	this.__defineGetter__("data_width", function() {
-		return properties.data.length;
+		return properties.data[0].length;
 	});
 	this.__defineGetter__("data", function() {
 		return properties.data;
@@ -520,24 +614,24 @@ function Frame(x,y,width,height,attr,frame) {
 	/* public methods */
 	this.getData = function(x,y,use_offset) {
 		if(use_offset) 
-			return properties.data[x + position.offset.x][y + position.offset.y];
+			return properties.data[y + position.offset.y][x + position.offset.x];
 		else
-			return properties.data[x][y];
+			return properties.data[y][x];
 	}
 	this.setData = function(x,y,ch,attr,use_offset) {
 		if(use_offset) {
 			if(ch)
-				properties.data[x + position.offset.x][y + position.offset.y].ch = ch;
+				properties.data[y + position.offset.y][x + position.offset.x].ch = ch;
 			if(attr)
-				properties.data[x + position.offset.x][y + position.offset.y].attr = attr;
+				properties.data[y + position.offset.y][x + position.offset.x].attr = attr;
 			if(properties.open) 
 				properties.display.updateChar(this,x,y);
 		}
 		else {
 			if(ch)
-				properties.data[x][y].ch = ch;
+				properties.data[y][x].ch = ch;
 			if(attr)
-				properties.data[x][y].attr = attr;
+				properties.data[y][x].attr = attr;
 			if(properties.open && (x >= position.offset.x && x < position.offset.x + this.width &&
 				y >= position.offset.y && y < position.offset.y + this.height))
 				properties.display.updateChar(this,x,y);
@@ -728,9 +822,9 @@ function Frame(x,y,width,height,attr,frame) {
 					/* set character and attribute */
 					var ch = line[0];
 					line = line.substr(1);
-					if(!properties.data[x])
-						properties.data[x]=[];
-					properties.data[x][y]=new Char(ch,attr);
+					if(!properties.data[y])
+						properties.data[y]=[];
+					properties.data[y][x]=new Char(ch,attr);
 					x++;
 				}
 				y++;
@@ -751,9 +845,9 @@ function Frame(x,y,width,height,attr,frame) {
 						return(false);
 					c.attr = f.readBin(1);
 					c.id = this.id;
-					if(!properties.data[x])
-						properties.data[x]=[];
-					properties.data[x][y] = c;
+					if(!properties.data[y])
+						properties.data[y]=[];
+					properties.data[y][x] = c;
 				}
 			}
 			f.close();
@@ -772,43 +866,35 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 	}
 	this.scroll = function(x,y) {
+		var update = false;
 		/* default: add a new line to the data matrix */
 		if(x == undefined && y == undefined) {
 			if(settings.v_scroll) {
+				var newrow = [];
 				for(var x = 0;x<this.width;x++) {
 					for(var y = 0;y<this.height;y++) 
 						properties.display.updateChar(this,x,y);
-					properties.data[x].push(new Char());
+					newrow.push(new Char());
 				}
+				properties.data.push(newrow);
 				position.offset.y++;
+				update = true;
 			}
 		}
 		/* otherwise, adjust the x/y offset */
 		else {
-			var update = false;
-			if(typeof x == "number") {
-				if(settings.h_scroll) {
-					position.offset.x += x;
-					if(position.offset.x < 0)
-						position.offset.x = 0;
-					else if(position.offset.x + this.width > this.data_width)
-						position.offset.x = this.data_width - this.width;
-					update = true;
-				}
+			if(typeof x == "number" && x !== 0 && settings.h_scroll) {
+				position.offset.x += x;
+				update = true;
 			}
-			if(typeof y == "number") {
-				if(settings.v_scroll) {
-					position.offset.y += y;
-					if(position.offset.y < 0)
-						position.offset.y = 0;
-					else if(position.offset.y + this.height > this.data_height)
-						position.offset.y = this.data_height - this.height;
-					update = true;
-				}
+			if(typeof y == "number" && y !== 0 && settings.v_scroll) {
+				position.offset.y += y;
+				update = true;
 			}
 			if(update)
 				this.refresh();
 		}
+		return update;
 	}
 	this.scrollTo = function(x,y) {
 		var update = false;
@@ -841,16 +927,36 @@ function Frame(x,y,width,height,attr,frame) {
 
 	/* console method emulation */
 	this.home = function() {
+		if(position.cursor.x == 0 && position.cursor.y == 0)
+			return false;
 		position.cursor.x = 0;
 		position.cursor.y = 0;
+		return true;
+	}
+	this.end = function() {
+		if(position.cursor.x == this.width-1 && position.cursor.y == this.height-1)
+			return false;
+		position.cursor.x = this.width-1;
+		position.cursor.y = this.height-1;
+		return true;
+	}
+	this.pagedown = function() {
+		position.offset.y += this.height-1;
+		if(position.offset.y >= this.data_height)
+			position.offset.y = this.data_height - this.height;
+	}
+	this.pageup = function() {
+		position.offset.y -= this.height-1;
+		if(position.offset.y < 0)
+			position.offset.y = 0;
 	}
 	this.clear = function(attr) {
 		if(attr != undefined)
 			this.attr = attr;
-		for(var x = 0;x<this.width;x++) {
-			for(var y = 0;y<this.height;y++) {
-				properties.data[x][y].ch = undefined;
-				properties.data[x][y].attr = this.attr;
+		for(var y = 0;y<this.height;y++) {
+			for(var x = 0;x<this.width;x++) {
+				properties.data[y][x].ch = undefined;
+				properties.data[y][x].attr = this.attr;
 				properties.display.updateChar(this,x,y);
 			}
 		}
@@ -861,8 +967,8 @@ function Frame(x,y,width,height,attr,frame) {
 			attr = this.attr;
 		for(var x = 0;x<this.width;x++) {
 			properties.display.updateChar(this,x,y);
-			properties.data[x][y].ch = undefined;
-			properties.data[x][y].attr = attr;
+			properties.data[y][x].ch = undefined;
+			properties.data[y][x].attr = attr;
 		}
 	}
 	this.cleartoeol = function(attr) {
@@ -870,8 +976,8 @@ function Frame(x,y,width,height,attr,frame) {
 			attr = this.attr;
 		for(var x = position.cursor.x;x<this.width;x++) {
 			properties.display.updateChar(this,x,y);
-			properties.data[x][y].ch = undefined;
-			properties.data[x][y].attr = attr;
+			properties.data[y][x].ch = undefined;
+			properties.data[y][x].attr = attr;
 		}
 	}
 	this.crlf = function() {
@@ -1017,26 +1123,16 @@ function Frame(x,y,width,height,attr,frame) {
 		if(typeof x == "object" && x.x && x.y) {
 			position.cursor.x = x.x-1;
 			position.cursor.y = x.y-1;
-			return;
+			return true;
 		}
-		if(x <= this.width)
-			position.cursor.x = x-1;
-		if(y <= this.height)
-			position.cursor.y = y-1;
+		position.cursor.x = x-1;
+		position.cursor.y = y-1;
 	}
 	this.getxy = function() {
-		var xy = {
+		return {
 			x:position.cursor.x+1,
 			y:position.cursor.y+1
-		}
-		return xy;
-	}
-	this.getoff = function() {
-		var xy = {
-			x:position.offset.x,
-			y:position.offset.y
 		};
-		return xy;
 	}
 	this.pushxy = function() {
 		position.stored.x = position.cursor.x;
@@ -1047,44 +1143,68 @@ function Frame(x,y,width,height,attr,frame) {
 		position.cursor.y = position.stored.y;
 	}
 	this.up = function(n) {
+		if(position.cursor.y == 0 && position.offset.y == 0)
+			return false;
 		if(isNaN(n))
 			n = 1;
-		position.cursor.y-=n;
-		if(position.cursor.y < 0) {
-			if(position.offset.y > 0)
-				this.scroll(0,-(n));
-			position.cursor.y = 0;
+		while(n > 0) {
+			if(position.cursor.y > 0) {
+				position.cursor.y--;
+				n--;
+			}
+			else break;
 		}
+		if(n > 0) 
+			this.scroll(0,-(n));
+		return true;
 	}
 	this.down = function(n) {
+		if(position.cursor.y == this.height-1 && position.offset.y == this.data_height - this.height)
+			return false;
 		if(isNaN(n))
 			n = 1;
-		position.cursor.y+=n;
-		if(position.cursor.y > this.height-1) {
-			if(position.offset.y < this.data_height - this.height)
-				this.scroll(0,n);
-			position.cursor.y = this.height-1;
+		while(n > 0) {
+			if(position.cursor.y < this.height - 1) {
+				position.cursor.y++;
+				n--;
+			}
+			else break;
 		}
+		if(n > 0)
+			this.scroll(0,n);
+		return true;
 	}
 	this.left = function(n) {
+		if(position.cursor.x == 0 && position.offset.x == 0)
+			return false;
 		if(isNaN(n))
 			n = 1;
-		position.cursor.x-=n;
-		if(position.cursor.x < 0) {
-			if(position.offset.x > 0)
-				this.scroll(-(n),0);
-			position.cursor.x=0;
+		while(n > 0) {
+			if(position.cursor.x > 0) {
+				position.cursor.x--;
+				n--;
+			}
+			else break;
 		}
+		if(n > 0) 
+			this.scroll(-(n),0);
+		return true;
 	}
 	this.right = function(n) {
+		if(position.cursor.x == this.width-1 && position.offset.x == this.data_width - this.width)
+			return false;
 		if(isNaN(n))
 			n = 1;
-		position.cursor.x+=n;
-		if(position.cursor.x > this.width-1) {
-			if(position.offset.x < this.data_width - this.width)
-				this.scroll(n,0);
-			position.cursor.x=this.width-1;
+		while(n > 0) {
+			if(position.cursor.x < this.width - 1) {
+				position.cursor.x++;
+				n--;
+			}
+			else break;
 		}
+		if(n > 0) 
+			this.scroll(n,0);
+		return true;
 	}
 	
 	/* private functions */
@@ -1143,10 +1263,10 @@ function Frame(x,y,width,height,attr,frame) {
 		this.height = height;
 		this.attr = attr;
 		
-		for(var w=0;w<this.width;w++) {
-			properties.data.push(new Array(this.height));
-			for(var h=0;h<this.height;h++) {
-				properties.data[w][h] = new Char();
+		for(var h=0;h<this.height;h++) {
+			properties.data.push(new Array(this.width));
+			for(var w=0;w<this.width;w++) {
+				properties.data[h][w] = new Char();
 			}
 		}
 		
