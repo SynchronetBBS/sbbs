@@ -178,7 +178,7 @@ while(!js.terminated) {
 
 	if(levelCompleted) {
 		levelCompleted = false;
-		var timeScore = parseInt((timeLimit - timeElapsed) * timeBonus);
+		var timeScore = (parseInt(timeLimit) - parseInt(timeElapsed)) * timeBonus;
 		var lastScore = score;
 		score = score + parseInt(door[3]) + timeScore;
 		if(lastScore < mileStone && score >= mileStone) {
@@ -433,7 +433,7 @@ function showNetScores() {
 	highScores.sort(function(a, b) { return b - a });
 	for(var h = 0; h < 14; h++) {
 		for(var s in scores) { 
-			if(scores[s].score == highScores[h]) {
+			if(scores[s].score == highScores[h] && scores[s].score > 0) {
 				var online = " ";
 				for each(var u in onlinePlayers) {
 					if(u.nick == scores[s].name) {
