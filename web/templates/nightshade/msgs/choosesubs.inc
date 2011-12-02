@@ -7,7 +7,7 @@
 	<div id="subslist">
 	<div align="center">
 
-<form action="/msgs/updatesubs.ssjs" method="POST">
+<form action="/msgs/updatesubs.ssjs" method="post">
 <input type="hidden" value="%%group:name%%" name="msg_grp" />
 <table class="sublist" cellpadding="2" cellspacing="1">
 <tr>

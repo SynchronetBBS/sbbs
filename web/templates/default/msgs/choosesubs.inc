@@ -4,7 +4,7 @@
     
     <td class="main" valign="top"><br />
 
-<form action="/msgs/updatesubs.ssjs" method="POST">
+<form action="/msgs/updatesubs.ssjs" method="post">
 <input type="hidden" value="%%group:name%%" name="msg_grp" />
 <table class="sublist" cellpadding="2" cellspacing="2">
 <tr>
