@@ -7,6 +7,7 @@
 /* ToDo: Deal with UQ_NODEF */
 
 var send_user_info_to_sysop=false;
+var send_password_via_email=true;
 
 /* These two strings *must* be different! */
 var required_str="*";
@@ -304,7 +305,7 @@ else {
     newpw=genpass();
 
     /* Generate and send email */
-    if(http_request.query.netmail != undefined && http_request.query.netmail != '') {
+    if(send_password_via_email && http_request.query.netmail != undefined && http_request.query.netmail != '') {
         var hdrs = new Object;
         hdrs.to=http_request.query.name;
         hdrs.to_net_type=netaddr_type(http_request.query.netmail);
@@ -373,7 +374,7 @@ else {
 	    load(leftnav_html);
 	if(do_rightnav)
 		write_template("rightnav.inc");
-    if(http_request.query.netmail != undefined && http_request.query.netmail != '')
+    if(send_password_via_email && http_request.query.netmail != undefined && http_request.query.netmail != '')
         template.response=format("Your account has been created and the password has been mailed to: %s." ,http_request.query.netmail);
     else
         template.response=format("Your account has been created and the password is: %s " ,newpw);
