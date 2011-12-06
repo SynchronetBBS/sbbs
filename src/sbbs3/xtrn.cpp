@@ -837,12 +837,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 							,OPEN_EXISTING
 							,FILE_ATTRIBUTE_NORMAL
 							,(HANDLE) NULL);
-#if 0
-						if(wrslot==INVALID_HANDLE_VALUE) {
-							errormsg(WHERE,ERR_OPEN,str,0);
-							break;
-						}
-#endif
+						if(wrslot==INVALID_HANDLE_VALUE)
+							lprintf(LOG_DEBUG,"Node %d !ERROR %u opening %s", cfg.node_num, GetLastError(), str);
+						else
+							lprintf(LOG_DEBUG,"Node %d CreateFile(%s)=0x%x", cfg.node_num, str, wrslot);
 					}
 					
 					/* CR expansion */
@@ -851,16 +849,25 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					else
 						bp=buf;
 
-					if(wrslot!=INVALID_HANDLE_VALUE
-						&& WriteFile(wrslot,bp,wr,&len,NULL)==TRUE) {
+					len=0;
+					if(wrslot==INVALID_HANDLE_VALUE)
+						lprintf(LOG_WARNING,"Node %d VDD Open failed (not loaded yet?)",cfg.node_num);
+					else if(!WriteFile(wrslot,bp,wr,&len,NULL)) {
+						lprintf(LOG_ERR,"Node %d !VDD WriteFile(0x%x, %u) FAILURE (Error=%u)", cfg.node_num, wrslot, wr, GetLastError());
+						if(GetMailslotInfo(wrslot,&wr,NULL,NULL,NULL))
+							lprintf(LOG_DEBUG,"Node %d !VDD MailSlot max_msg_size=%u", cfg.node_num, wr);
+						else
+							lprintf(LOG_DEBUG,"Node %d !GetMailslotInfo(0x%x)=%u", cfg.node_num, wrslot, GetLastError());
+					} else {
+						if(len!=wr)
+							lprintf(LOG_WARNING,"Node %d VDD short write (%u instead of %u)",cfg.node_num,len,wr);
 						RingBufRead(&inbuf, NULL, len);
-						wr=len;
 						if(use_pipes && !(mode&EX_NOECHO)) {
 							/* echo */
-							RingBufWrite(&outbuf, bp, wr);
+							RingBufWrite(&outbuf, bp, len);
 						}
-					} else		// VDD not loaded yet
-						wr=0;
+					}
+					wr=len;
 				}
 
 				/* Read from VDD */
