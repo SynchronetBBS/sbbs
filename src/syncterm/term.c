@@ -263,17 +263,26 @@ static BOOL zmodem_check_abort(void* vp)
 	zmodem_t*				zm=zcb->zm;
 	static time_t			last_check=0;
 	time_t					now=time(NULL);
+	int						key;
 
 	if(last_check != now) {
 		last_check=now;
-		if(zm!=NULL && kbhit()) {
-			switch(getch()) {
-				case ESC:
-				case CTRL_C:
-				case CTRL_X:
+		if(zm!=NULL) {
+			while(kbhit()) {
+				switch((key=getch())) {
+					case ESC:
+					case CTRL_C:
+					case CTRL_X:
 						zm->cancelled=TRUE;
-					zm->local_abort=TRUE;
-					break;
+						zm->local_abort=TRUE;
+						break;
+					case 0:
+					case 0xff:
+						key |= (getch() << 8);
+						if(key==CIO_KEY_MOUSE)
+							getmouse(NULL);
+						break;
+				}
 			}
 		}
 	}
@@ -1196,16 +1205,25 @@ static BOOL xmodem_check_abort(void* vp)
 	xmodem_t* xm = (xmodem_t*)vp;
 	static time_t			last_check=0;
 	time_t					now=time(NULL);
+	int						key;
 
 	if(last_check != now) {
 		last_check=now;
-		if(xm!=NULL && kbhit()) {
-			switch(getch()) {
-				case ESC:
-				case CTRL_C:
-				case CTRL_X:
-					xm->cancelled=TRUE;
-					break;
+		if(xm!=NULL) {
+			while(kbhit()) {
+				switch((key=getch())) {
+					case ESC:
+					case CTRL_C:
+					case CTRL_X:
+						xm->cancelled=TRUE;
+						break;
+					case 0:
+					case 0xff:
+						key |= (getch() << 8);
+						if(key==CIO_KEY_MOUSE)
+							getmouse(NULL);
+						break;
+				}
 			}
 		}
 	}
@@ -1417,6 +1435,8 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 			,path,fsize/1024,(mode&GMODE)?"-g":"");
 	}
 	else {
+		fclose(fp);
+		conn_binary_mode_off();
 		return;
 	}
 
