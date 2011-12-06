@@ -49,7 +49,7 @@
 #define INI_FILENAME			"sbbsexec.ini"
 #define RINGBUF_SIZE_IN			10000
 #define DEFAULT_MAX_MSG_SIZE	4000
-#define LINEAR_RX_BUFLEN		5000
+#define LINEAR_RX_BUFLEN		10000
 
 /* UART Parameters and virtual registers */
 WORD uart_io_base				= UART_COM1_IO_BASE;	/* COM1 */
@@ -218,11 +218,21 @@ void _cdecl input_thread(void* arg)
 	char	buf[LINEAR_RX_BUFLEN];
 	int		count;
 
+	lprintf(LOG_DEBUG,"input_thread: started");
 	while(1) {
-		count=0;
-		if(!ReadFile(rdslot,buf,sizeof(buf),&count,NULL)) {
-			if(GetLastError()==ERROR_HANDLE_EOF)	/* closed by VDD_CLOSE */
+		count=RingBufFree(&rdbuf);
+		if(count<1) {
+			lprintf(LOG_WARNING,"input_thread: input buffer full!");
+			YIELD();
+			continue;
+		}
+		if(count>sizeof(buf))
+			count=sizeof(buf);
+		if(!ReadFile(rdslot,buf,count,&count,NULL)) {
+			if(GetLastError()==ERROR_HANDLE_EOF) {	/* closed by VDD_CLOSE */
+				lprintf(LOG_INFO,"input_thread: ReadFile returned EOF");
 				break;
+			}
 			lprintf(LOG_ERR,"!input_thread: ReadFile Error %d (size=%d)"
 				,GetLastError(),count);
 			continue;
@@ -240,6 +250,7 @@ void _cdecl input_thread(void* arg)
 			assert_interrupt(UART_IER_RX_DATA); /* assert rx data interrupt */
 		}
 	}
+	lprintf(LOG_DEBUG,"input_thread: terminated");
 }
 
 unsigned vdd_read(BYTE* p, unsigned count)
@@ -481,7 +492,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 			sprintf(str,"\\\\.\\mailslot\\sbbsexec\\wr%d",node_num);
 			rdslot=CreateMailslot(str
-				,LINEAR_RX_BUFLEN		/* Max message size (0=any) */
+				,0 //LINEAR_RX_BUFLEN		/* Max message size (0=any) */
 				,MAILSLOT_WAIT_FOREVER 	/* Read timeout */
 				,NULL);
 			if(rdslot==INVALID_HANDLE_VALUE) {
@@ -557,7 +568,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				_beginthread(interrupt_thread, 0, NULL);
 			}
 
-			lprintf(LOG_DEBUG,"VDD_OPEN: Opened successfully");
+			lprintf(LOG_DEBUG,"VDD_OPEN: Opened successfully (wrslot=%p)", wrslot);
 
 			_beginthread(input_thread, 0, NULL);
 
@@ -645,7 +656,9 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			status = (vdd_status_t*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
 
+			status->inbuf_size=RINGBUF_SIZE_IN;
 			status->inbuf_full=RingBufFull(&rdbuf);
+			msgs=0;
 
 			/* OUTBUF FULL/SIZE */
 			if(!GetMailslotInfo(
@@ -655,9 +668,16 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				&msgs,					/* address of number of messages  */
  				NULL					/* address of read time-out  */
 				)) {
+				lprintf(LOG_ERR,"!VDD_STATUS: GetMailSlotInfo(%p) failed, error %u (msgs=%u, inbuf_full=%u, inbuf_size=%u)"
+					,wrslot
+					,GetLastError(), msgs, status->inbuf_full, status->inbuf_size);
 				status->outbuf_full=0;
 				status->outbuf_size=DEFAULT_MAX_MSG_SIZE;
-			}
+			} else
+				lprintf(LOG_DEBUG,"VDD_STATUS: MailSlot maxmsgsize=%u, nextmsgsize=%u, msgs=%u"
+					,status->outbuf_size
+					,status->outbuf_full
+					,msgs);
 			if(status->outbuf_full==MAILSLOT_NO_MESSAGE)
 				status->outbuf_full=0;
 			status->outbuf_full*=msgs;
