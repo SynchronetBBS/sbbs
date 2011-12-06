@@ -2054,7 +2054,7 @@ js_dir_info(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	uint dirnum=get_dirnum(cx,sbbs,argv[0],argc > 0);
+	uint dirnum=get_dirnum(cx,sbbs,argv[0],argc == 0);
 	rc=JS_SUSPENDREQUEST(cx);
 	if(dirnum<sbbs->cfg.total_dirs)
 		sbbs->dirinfo(dirnum);
@@ -2452,7 +2452,7 @@ js_upload_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	dirnum=get_dirnum(cx,sbbs,argv[0], argc > 0);
+	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -2479,7 +2479,7 @@ js_bulkupload(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	dirnum=get_dirnum(cx,sbbs,argv[0], argc > 0);
+	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -2505,7 +2505,7 @@ js_resort_dir(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	dirnum=get_dirnum(cx,sbbs,argv[0], argc > 0);
+	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -2869,7 +2869,7 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	dirnum=get_dirnum(cx,sbbs,argv[0], argc > 0);
+	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
@@ -2914,7 +2914,7 @@ js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	dirnum=get_dirnum(cx,sbbs,argv[0], argc > 0);
+	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
