@@ -1614,19 +1614,18 @@ void input_thread(void *arg)
 
     	rd=RingBufFree(&sbbs->inbuf);
 
-		if(!rd) { // input buffer full
+		if(rd==0) { // input buffer full
 			lprintf(LOG_WARNING,"Node %d !WARNING input buffer full", sbbs->cfg.node_num);
         	// wait up to 5 seconds to empty (1 byte min)
 			time_t start=time(NULL);
-            while((rd=RingBufFree(&sbbs->inbuf))==0) {
-            	if(time(NULL)-start>=5) {
-                	rd=1;
-					if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
-						sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
-                	break;
-                }
+            while((rd=RingBufFree(&sbbs->inbuf))==0 && time(NULL)-start<5) {
                 YIELD();
             }
+			if(rd==0) {	/* input buffer still full */
+				if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
+					sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
+				continue;
+			}
 		}
 		
 	    if(rd > (int)sizeof(inbuf))
