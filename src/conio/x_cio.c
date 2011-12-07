@@ -169,6 +169,7 @@ int x_init(void)
 {
 	dll_handle	dl;
 	const char *libnames[]={"X11",NULL};
+	Status (*xit)(void);
 
 	/* Ensure we haven't already initialized */
 	if(x11_initialized)
@@ -185,6 +186,8 @@ int x_init(void)
 	/* Load X11 functions */
 	if((dl=xp_dlopen(libnames,RTLD_LAZY,7))==NULL)
 		return(-1);
+	if((xit=xp_dlsym(dl,XInitThreads))!=NULL)
+		xit();
 	if((x11.XChangeGC=xp_dlsym(dl,XChangeGC))==NULL) {
 		xp_dlclose(dl);
 		return(-1);
