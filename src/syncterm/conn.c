@@ -409,7 +409,7 @@ int conn_socket_connect(struct bbslist *bbs)
 	fd_set			wfd;
 	int				failcode=FAILURE_WHAT_FAILURE;
 	struct addrinfo	hints;
-	struct addrinfo	*res;
+	struct addrinfo	*res=NULL;
 	struct addrinfo	*cur;
 	char			portnum[6];
 
@@ -422,6 +422,7 @@ int conn_socket_connect(struct bbslist *bbs)
 	sprintf(portnum, "%hu", bbs->port);
 	if(getaddrinfo(bbs->addr, portnum, &hints, &res)!=0) {
 		failcode=FAILURE_RESOLVE;
+		res=NULL;
 		goto connect_failed;
 	}
 	uifc.pop(NULL);
@@ -504,7 +505,8 @@ connected:
 	return(sock);
 
 connect_failed:
-	freeaddrinfo(res);
+	if(res)
+		freeaddrinfo(res);
 	{
 		char str[LIST_ADDR_MAX+40];
 
