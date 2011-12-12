@@ -35,8 +35,11 @@
 #define _CTERM_H_
 
 #include <stdio.h>	/* FILE* */
+#include <stdbool.h>
+#ifndef __bool_true_false_are_defined
 #define bool int
 enum { false, true };
+#endif
 #include <link_list.h>
 #include <semwrap.h>
 
