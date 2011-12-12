@@ -471,23 +471,12 @@ display_avatar(unsigned char ch)
 		return 0;
 	}
 	switch (ch) {
-	case '':
-		CursX = 0;
-		CursY = 0;
-		break;
 	case '':
 		avt_rep = TRUE;
 		b = 1;
 		break;
 	case '':
 		avt_command = TRUE;
-		break;
-	case 10:
-		CursX = 0;
-		CursY++;
-		break;
-	case 13:
-		CursX = 0;
 		break;
 	default:
 		return ch;
@@ -498,10 +487,6 @@ display_avatar(unsigned char ch)
 unsigned char 
 display_sync(unsigned char ch)
 {
-	if (ch == 1) {
-		sync_code = TRUE;
-		return 0;
-	}
 	if (sync_code) {
 		switch (toupper(ch)) {
 		case 'L':	/* Clear Screen */
@@ -573,6 +558,31 @@ display_sync(unsigned char ch)
 		sync_code = FALSE;
 		return 0;
 	}
+	if (ch == 1) {
+		sync_code = TRUE;
+		ch = 0;
+	}
+	return ch;
+}
+
+unsigned char 
+display_ctrl(unsigned char ch)
+{
+	switch(ch) {
+		case 10:	// LF
+			CursX = 0;
+			CursY++;
+			ch=0;
+			break;
+		case 12:	// FF
+			CursX = 0;
+			CursY = 0;
+			break;
+		case 13:	// CR
+			CursX = 0;
+			ch=0;
+			break;
+	}
 	return ch;
 }
 
@@ -628,7 +638,7 @@ LoadFile(char *Name)
 				SYNC=FALSE;
 			}
 		}
-	
+
 		do {
 			ch=fgetc(fp);
 			if (ch == 26 && !avt_command && !avt_rep)
@@ -642,7 +652,7 @@ LoadFile(char *Name)
 					ch=display_ansi(ch);
 				if(PCB)
 					ch=display_PCBoard(ch);
-				ch = display_PCBoard(display_ansi(display_sync(display_avatar(ch))));
+				ch=display_ctrl(ch);
 				if (ch > 0) {
 					if (CursX > 79) {
 						CursX = 0;
