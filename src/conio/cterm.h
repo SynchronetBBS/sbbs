@@ -35,8 +35,9 @@
 #define _CTERM_H_
 
 #include <stdio.h>	/* FILE* */
+#if !(defined __BORLANDC__ || defined _MSC_VER)
 #include <stdbool.h>
-#ifndef __bool_true_false_are_defined
+#else
 #define bool int
 enum { false, true };
 #endif
