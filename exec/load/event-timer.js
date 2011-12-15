@@ -13,6 +13,8 @@
 		- action = the function to call when running the event
 		- arguments = the arguments to pass to the action 
 		- context = the context (scope) in which to run the event
+		- pause = stop the event from running (toggle TRUE/FALSE)
+		- abort = cause the event to be flagged for deletion by timer.cycle() (toggle TRUE/FALSE)
 	
 	sample usage: 
 	
@@ -47,7 +49,13 @@ function Timer() {
 		/* scan all events and run any that are due */
 		for(var e = 0; e<this.events.length; e++) {
 			var event = this.events[e];
-			if(now - event.lastrun >= event.interval) {
+			if(event.abort) {
+				this.events.splice(e--,1);
+			}
+			else if(event.pause) {
+				continue;
+			}
+			else if(now - event.lastrun >= event.interval) {
 				/* run event */
 				event.run();
 				count++;
@@ -70,6 +78,7 @@ function Timer() {
 	this.addEvent = function(interval,repeat,action,arguments,context) {
 		var event=new Event(interval,repeat,action,arguments,context);
 		this.events.push(event);
+		return event;
 	}
 	
 	/* event object created by addEvent */
@@ -86,6 +95,9 @@ function Timer() {
 		this.arguments=arguments;
 		/* context in which to run function */
 		this.context=context;
+		/* toggles for parent script intervention */
+		this.pause=false;
+		this.abort=false;
 		/* run event */
 		this.run = function() {
 			this.action.apply(this.context,this.arguments);
