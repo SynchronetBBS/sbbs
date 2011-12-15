@@ -151,7 +151,7 @@ function Frame(x,y,width,height,attr,frame) {
 			else if(isNaN(x))
 				throw("invalid x coordinate: " + x);
 			else 
-				properties.x = x;
+				properties.x = Number(x);
 		});
 		this.__defineGetter__("y", function() {
 			return properties.y;
@@ -162,7 +162,7 @@ function Frame(x,y,width,height,attr,frame) {
 			else if(isNaN(y) || y < 1 || y > console.screen_rows)
 				throw("invalid y coordinate: " + y);
 			else 
-				properties.y = y;
+				properties.y = Number(y);
 		});
 		this.__defineGetter__("width", function() {
 			return properties.width;
@@ -170,10 +170,10 @@ function Frame(x,y,width,height,attr,frame) {
 		this.__defineSetter__("width", function(width) {
 			if(width == undefined)
 				properties.width = console.screen_columns;
-			else if(isNaN(width) || (x + width - 1) > (console.screen_columns))
+			else if(isNaN(width) || (this.x + Number(width) - 1) > (console.screen_columns))
 				throw("invalid width: " + width);
 			else 
-				properties.width = width;
+				properties.width = Number(width);
 		});
 		this.__defineGetter__("height", function() {
 			return properties.height;
@@ -181,10 +181,10 @@ function Frame(x,y,width,height,attr,frame) {
 		this.__defineSetter__("height", function(height) {
 			if(height == undefined)
 				properties.height = console.screen_rows;
-			else if(isNaN(height) || (y + height - 1) > (console.screen_rows))
+			else if(isNaN(height) || (this.y + Number(height) - 1) > (console.screen_rows))
 				throw("invalid height: " + height);
 			else
-				properties.height = height;
+				properties.height = Number(height);
 		});
 		
 		/* public methods */
@@ -507,7 +507,7 @@ function Frame(x,y,width,height,attr,frame) {
 			return;
 		if(!checkX(x))
 			throw("invalid x coordinate: " + x);
-		properties.x = x;
+		properties.x = Number(x);
 	});
 	this.__defineGetter__("y", function() { 
 		if(properties.y == undefined)
@@ -519,7 +519,7 @@ function Frame(x,y,width,height,attr,frame) {
 			return;
 		if(!checkY(y))
 			throw("invalid y coordinate: " + y);
-		properties.y = y;
+		properties.y = Number(y);
 	});
 	this.__defineGetter__("width", function() {
 		if(properties.width == undefined)
@@ -529,9 +529,9 @@ function Frame(x,y,width,height,attr,frame) {
 	this.__defineSetter__("width", function(width) {
 		if(width == undefined)
 			return;
-		if(!checkWidth(this.x,width))
+		if(!checkWidth(this.x,Number(width)))
 			throw("invalid width: " + width);
-		properties.width = width;
+		properties.width = Number(width);
 	});
 	this.__defineGetter__("height", function() {
 		if(properties.height == undefined)
@@ -541,9 +541,9 @@ function Frame(x,y,width,height,attr,frame) {
 	this.__defineSetter__("height", function(height) {
 		if(height == undefined)
 			return;
-		if(!checkHeight(this.y,height))
+		if(!checkHeight(this.y,Number(height)))
 			throw("invalid height: " + height);
-		properties.height = height;
+		properties.height = Number(height);
 	});
 
 	/* read-only properties */
@@ -1266,6 +1266,12 @@ function Frame(x,y,width,height,attr,frame) {
 		this.setData(position.cursor.x,position.cursor.y,ch,attr,true);
 	}
 	function init(x,y,width,height,attr,frame) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.attr = attr;
+
 		if(frame instanceof Frame) {
 			properties.id = frame.child.length;
 			properties.display = frame.display;
@@ -1276,12 +1282,6 @@ function Frame(x,y,width,height,attr,frame) {
 		else {
 			properties.display = new Display(x,y,width,height);
 		}
-
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-		this.attr = attr;
 		
 		for(var h=0;h<this.height;h++) {
 			properties.data.push(new Array(this.width));
