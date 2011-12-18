@@ -230,7 +230,7 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			matched=USSpecialEvent(callsign,srv,target);
 		}
 		catch(e) {
-			srv.o(target, "Failed to look up Canadian Callsign: "+e);
+			srv.o(target, "Failed to look up US Special Event Callsign: "+e);
 		}
 	}
 	if(!matched && callsign.search(/(A[A-L]|K|N|W)/)==0) {
@@ -238,7 +238,7 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			matched=USCallsign(callsign,srv,target);
 		}
 		catch(e) {
-			srv.o(target, "Failed to look up Canadian Callsign: "+e);
+			srv.o(target, "Failed to look up US Callsign: "+e);
 		}
 	}
 	if(!matched) {
@@ -246,7 +246,7 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			matched=HamcallCallsign(callsign, srv, target);
 		}
 		catch(e) {
-			srv.o(target, "Failed to look up Canadian Callsign: "+e);
+			srv.o(target, "Failed to look up Callsign on HamCall: "+e);
 		}
 	}
 	if(!matched) {
