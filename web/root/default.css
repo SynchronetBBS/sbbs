@@ -724,7 +724,7 @@ pre.leftalign {
     color: #aaaaaa; 
     text-align: left; 
     padding: 3px; 
-    font-size11pt; 
+    font-size: 11pt; 
 }
 
 pre.leftalignwht { 
