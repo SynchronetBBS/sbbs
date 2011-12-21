@@ -690,6 +690,22 @@ function Frame(x,y,width,height,attr,frame) {
 		properties.display.close(this);
 		properties.open = false;
 	}
+	this.delete = function(id) {
+		if(id == undefined) {
+			this.close();
+			if(relations.parent) {
+				relations.parent.delete(this.id);
+			}
+		}
+		else {
+			for(var c=0;c<relations.child.length;c++) {
+				if(relations.child[c].id == id) {
+					relations.child.splice(c--,1);
+					break;
+				}
+			}
+		}
+	}
 	this.move = function(x,y) {
 		var nx = undefined;
 		var ny = undefined;
