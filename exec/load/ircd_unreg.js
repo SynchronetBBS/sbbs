@@ -202,6 +202,7 @@ function Unregistered_Commands(cmdline) {
 			var new_server = Servers[cmd[1].toLowerCase()];
 			Local_Servers[this.id] = new_server;
 			Local_Sockets_Map[this.id] = new_server;
+			delete Unregistered[this.id];
 			rebuild_socksel_array = true;
 			new_server.socket = this.socket;
 			new_server.hops = cmd[2];
