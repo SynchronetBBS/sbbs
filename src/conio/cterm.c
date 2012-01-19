@@ -1919,7 +1919,7 @@ static void ctputs(struct cterminal *cterm, char *buf)
 				GOTOXY(cx,cy);
 				break;
 			default:
-				if(cx==cterm->width && (!cterm->autowrap==false)) {
+				if(cx==cterm->width && (!cterm->autowrap)) {
 					char ch;
 					ch=*(p+1);
 					*(p+1)=0;
