@@ -90,7 +90,7 @@ xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
 		goto RETURN;
 	}
 	
-	(*sem)->count = (u_int32_t)value;
+	(*sem)->count = (uint32_t)value;
 	(*sem)->nwaiters = 0;
 	(*sem)->magic = XP_SEM_MAGIC;
 
@@ -248,7 +248,7 @@ xp_sem_setvalue(xp_sem_t *sem, int sval)
 	_SEM_CHECK_VALIDITY(sem);
 
 	pthread_mutex_lock(&(*sem)->lock);
-	(*sem)->count=(u_int32_t)sval;
+	(*sem)->count=(uint32_t)sval;
 	if (((*sem)->nwaiters > 0) && sval) {
 		/*
 		 * We must use pthread_cond_broadcast() rather than

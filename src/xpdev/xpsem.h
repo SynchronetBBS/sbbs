@@ -46,6 +46,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <inttypes.h>
 
 /* Opaque type definition. */
 struct xp_sem;
@@ -55,7 +56,7 @@ typedef struct xp_sem *xp_sem_t;
 #define XP_SEM_VALUE_MAX	UINT_MAX
 
 #if defined(__solaris__)
-typedef unsigned int	u_int32_t;
+typedef unsigned int	uint32_t;
 #endif
 
 #if defined(__cplusplus)
@@ -88,12 +89,12 @@ int  xp_sem_timedwait (xp_sem_t *sem, const struct timespec *abs_timeout);
 */
 
 struct xp_sem {
-#define XP_SEM_MAGIC       ((u_int32_t) 0x09fa4012)
-        u_int32_t       magic;
+#define XP_SEM_MAGIC       ((uint32_t) 0x09fa4012)
+        uint32_t       magic;
         pthread_mutex_t lock;
         pthread_cond_t  gtzero;
-        u_int32_t       count;
-        u_int32_t       nwaiters;
+        uint32_t       count;
+        uint32_t       nwaiters;
 };
 
 extern pthread_once_t _thread_init_once;
