@@ -170,6 +170,9 @@ typedef unsigned long long int uint64_t;
 #define INTTYPES_H_64BIT_PREFIX         "ll"
 #endif
 
+typedef uint64_t	uintmax_t;
+typedef int64_t		intmax_t;
+
 /* printf integer formatters: */
 
 #define PRId32	"d"
