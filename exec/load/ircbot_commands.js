@@ -155,7 +155,7 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			if(module.Bot_Commands.HELP) {
 				module.Bot_Commands.HELP.command(target,onick,ouh,srv,lvl,cmd);
 			} else {
-				help_out(module.Bot_Commands[help_cmd.toUpperCase()]);
+				help_out(module.Bot_Commands[hlp_cmd.toUpperCase()]);
 			}
 		/* if no command was specified, list module's commands */
 		} else {
