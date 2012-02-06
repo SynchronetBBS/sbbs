@@ -337,6 +337,21 @@ engine = new (function() {
 		case "OPEN":
 			module.online = true;
 			break;
+		case "READABLE":
+			if(module.db.settings.KEEP_READABLE)
+				module.db.settings.KEEP_READABLE = false;
+			else
+				module.db.settings.KEEP_READABLE = true;
+			break;
+		case "SAVE":
+			module.db.save();
+			break;
+		case "READONLY":
+			if(module.db.settings.READ_ONLY)
+				module.db.settings.READ_ONLY = false;
+			else
+				module.db.settings.READ_ONLY = true;
+			break;
 		default:
 			error(client,errors.UNKNOWN_FUNCTION,packet.func);
 			break;
@@ -356,7 +371,11 @@ engine = new (function() {
 		this.init = function() {
 			/* load module service files */
 			if(file_exists(this.dir + "service.js")) {
-				this.queue = load(true,this.dir + "service.js",this.dir);
+				try {
+					this.queue = load(true,this.dir + "service.js",this.dir);
+				} catch(e) {
+					log(LOG_ERROR,"error loading module: " + name);
+				}
 			}
 		}
 		this.init();
