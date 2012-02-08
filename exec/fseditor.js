@@ -1394,7 +1394,7 @@ function add_char(key)
 				+key
 				+line[ypos].text.substr(xpos+1);
 		line[ypos].attr=line[ypos].attr.substr(0,xpos)
-				+key
+				+ascii(curattr)
 				+line[ypos].attr.substr(xpos+1);
 	}
 	xpos++;
