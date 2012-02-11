@@ -494,6 +494,7 @@ int conn_socket_connect(struct bbslist *bbs)
 
 connected:
 	freeaddrinfo(res);
+	res=NULL;
 	nonblock=0;
 	ioctlsocket(sock, FIONBIO, &nonblock);
 	if(!socket_check(sock, NULL, NULL, 0)) {
