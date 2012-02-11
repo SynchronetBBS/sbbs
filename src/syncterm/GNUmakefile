@@ -1,8 +1,7 @@
 SRC_ROOT	:=	..
 include ${SRC_ROOT}/build/Common.gmake
 
-CFLAGS	+=	-I/usr/local/include	# cryptlib.h lives here by default
-CFLAGS	+=	-I../../include/cryptlib	# cryptlib.h lives here in CVS
+CFLAGS	+=	$(CRYPT_CFLAGS)
 ifdef WITHOUT_OOII
  CFLAGS	+= -DWITHOUT_OOII=1
 else
@@ -69,11 +68,7 @@ ifdef STATIC
  STATIC_CRYPTLIB	:= true
 endif
 
-ifdef STATIC_CRYPTLIB
- CFLAGS += -DSTATIC_CRYPTLIB
- LDFLAGS += -lz
- EXTRA_LIBS += $(SRC_ROOT)/../lib/cryptlib/$(machine).release/libcl.a
-endif
+EXTRA_LIBS	+=	$(CRYPT_LIB)
 
 ifeq ($(os),darwin)
  ifeq ($(shell uname -r),6.8)
@@ -108,7 +103,7 @@ endif
 CFLAGS	+=	-DSYSTEM_LIST_DIR=\"${SYSTEM_LIST_DIR}\"
 
 CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) -I../sbbs3 -I../smblib -I../comio
-LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
+LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(CRYPT_LDFLAGS)
 
 vpath %.c ../sbbs3 ../smblib ../uifc ../guts ../comio
 
@@ -130,7 +125,7 @@ ifndef bcc
 endif
 
 
-$(SYNCTERM): $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
+$(SYNCTERM): $(EXEODIR) $(OBJS) $(BUILD_DEPENDS) $(CRYPT_DEPS)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(WXLIBS) $(XPDEV-MT_LIBS) $(EXTRA_LIBS)
 ifeq ($(os),darwin)
