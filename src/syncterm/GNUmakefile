@@ -1,7 +1,6 @@
 SRC_ROOT	:=	..
 include ${SRC_ROOT}/build/Common.gmake
 
-CFLAGS	+=	$(CRYPT_CFLAGS)
 ifdef WITHOUT_OOII
  CFLAGS	+= -DWITHOUT_OOII=1
 else
@@ -62,13 +61,13 @@ ifdef WITHOUT_CRYPTLIB
  CFLAGS += -DWITHOUT_CRYPTLIB
 else
  OBJS += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
+ CFLAGS	+=	$(CRYPT_CFLAGS)
+ EXTRA_LIBS	+=	$(CRYPT_LIB)
 endif
 
 ifdef STATIC
  STATIC_CRYPTLIB	:= true
 endif
-
-EXTRA_LIBS	+=	$(CRYPT_LIB)
 
 ifeq ($(os),darwin)
  ifeq ($(shell uname -r),6.8)
@@ -125,7 +124,7 @@ ifndef bcc
 endif
 
 
-$(SYNCTERM): $(EXEODIR) $(OBJS) $(BUILD_DEPENDS) $(CRYPT_DEPS)
+$(SYNCTERM): $(CRYPT_DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(WXLIBS) $(XPDEV-MT_LIBS) $(EXTRA_LIBS)
 ifeq ($(os),darwin)
