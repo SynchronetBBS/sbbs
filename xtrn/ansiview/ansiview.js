@@ -126,7 +126,7 @@ function slideshow() {
 	var retval;
 	ssForLoop:
 	for(var d = 0; d< dirList.length; d++) {
-		if(!file_isdir(dirList[d]) && !checkExt(dirList[d])) retval = printAnsi(loadAnsiFile(dirList[d]), true);
+		if(!file_isdir(dirList[d]) && (choice.match(/\./) === null || !checkExt(dirList[d]))) retval = printAnsi(loadAnsiFile(dirList[d]), true);
 		switch(retval) {
 			case 0:
 				break ssForLoop;
