@@ -418,7 +418,10 @@ int conn_socket_connect(struct bbslist *bbs)
 	hints.ai_flags=PF_UNSPEC;
 	hints.ai_socktype=SOCK_STREAM;
 	hints.ai_protocol=IPPROTO_TCP;
-	hints.ai_flags=AI_ADDRCONFIG|AI_NUMERICSERV;
+	hints.ai_flags=AI_NUMERICSERV;
+#ifdef AI_ADDRCONFIG
+	hints.ai_flags|=AI_ADDRCONFIG;
+#endif
 	sprintf(portnum, "%hu", bbs->port);
 	if(getaddrinfo(bbs->addr, portnum, &hints, &res)!=0) {
 		failcode=FAILURE_RESOLVE;
