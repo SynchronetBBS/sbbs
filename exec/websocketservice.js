@@ -203,6 +203,7 @@ function GetFromWebSocketClient() {
         case 0: return GetFromWebSocketClientDraft0();
 		case 7: 
 		case 8: 
+        case 13:
 			return GetFromWebSocketClientVersion7();
     }
 }
@@ -328,6 +329,7 @@ function SendToWebSocketClient(AData) {
 			break;
 		case 7: 
 		case 8: 
+        case 13:
 			SendToWebSocketClientVersion7(AData); 
 			break;
     }
@@ -407,6 +409,7 @@ function ShakeHands() {
 						return ShakeHandsDraft0();
 					case 7: 
 					case 8: 
+                    case 13:
 						return ShakeHandsVersion7();
 					default: 
 						//		    TODO If this version does not
