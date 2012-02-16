@@ -1,3 +1,5 @@
+// ansiview.js by echicken -at- bbs.electronicchicken.com
+
 load("sbbsdefs.js");
 load("tree.js");
 
@@ -20,15 +22,18 @@ var userInput;
 var treeCmd;
 var disp;
 
-function getInput(slideshow) {
+function getInput(slideshow, ansiName) {
 	var retval = 1;
 	userInput = ascii(console.inkey(K_NOECHO).toUpperCase());
 	if(userInput == 0) return retval;
 	if(userInput == 32) {
 		console.saveline();
 		console.clearline();
-		console.putmsg(ascii(27) + "[1;37;40mQ\1h\1cuit - \1w<\1cSpace\1w> \1cfor more - \1wS\1clow, \1wM\1cedium, \1wF\1cast");
-		if(slideshow) console.putmsg("\1h\1c - \1wP\1crevious, \1wN\1cext");
+		if(slideshow) {
+			console.putmsg(ascii(27) + "[1;37;40m[\1h\1c" + ansiName.substr(0, 18) + "\1w] Q\1cuit\1w, <\1cSpace\1w> \1cfor more\1w, S\1clow\1w, M\1cedium\1w, F\1cast\1w, P\1crevious\1w, N\1cext");
+		} else {
+			console.putmsg(ascii(27) + "[1;37;40m[\1h\1c" + ansiName.substr(0, 34) + "\1w] Q\1cuit\1w, <\1cSpace\1w> \1cfor more\1w, S\1clow\1w, M\1cedium\1w, F\1cast");
+		}
 		var userInput = ascii(console.getkey(K_NOECHO).toUpperCase());
 		console.clearline();
 		console.restoreline();
@@ -56,7 +61,7 @@ function getInput(slideshow) {
 	return retval;
 }
 
-function printAnsi(ansi, slideshow) {
+function printAnsi(ansi, slideshow, ansiName) {
 	var retval = 1;
 	console.clear(LIGHTGRAY);
 	forLoop:
@@ -64,12 +69,15 @@ function printAnsi(ansi, slideshow) {
 		console.putmsg(ansi[a]);
 		console.line_counter = 0;
 		while(system.timer - lastPrint < ansiDelay) {
-			retval = getInput(slideshow);
+			retval = getInput(slideshow, ansiName);
 			if(retval != 1) break forLoop;
 		}
 		lastPrint = system.timer;
 	}
-	if(retval == 1) console.pause();
+	if(retval == 1) {
+		console.print("\1h\1w[\1c" + ansiName + " \1w - \1c Press any key to continue\1w]");
+		console.getkey(K_NOECHO|K_NOCRLF);
+	}
 	return retval;
 }
 
@@ -126,7 +134,7 @@ function slideshow() {
 	var retval;
 	ssForLoop:
 	for(var d = 0; d< dirList.length; d++) {
-		if(!file_isdir(dirList[d]) && (dirList[d].match(/\./) === null || !checkExt(dirList[d]))) retval = printAnsi(loadAnsiFile(dirList[d]), true);
+		if(!file_isdir(dirList[d]) && (dirList[d].match(/\./) === null || !checkExt(dirList[d]))) retval = printAnsi(loadAnsiFile(dirList[d]), true, file_getname(dirList[d]));
 		switch(retval) {
 			case 0:
 				break ssForLoop;
@@ -171,6 +179,6 @@ while(!js.terminated) {
 		helpScreen();
 	} else if(choice.match(/\./) === null || !checkExt(choice)) {
 		var ansi = loadAnsiFile(choice);
-		printAnsi(ansi, false);
+		printAnsi(ansi, false, file_getname(choice));
 	}
 }
