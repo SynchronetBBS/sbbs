@@ -7,8 +7,7 @@ load("tree.js");
 var ansiRoot = js.exec_dir + "library/"; // The location of your ANSI library, eg. "/dev/magicalansigenerator/"
 tree_settings.lfg = WHITE; // The lightbar foreground colour, see sbbsdefs.js for valid values
 tree_settings.lbg = BG_CYAN; // The lightbar background colour, see sbbsdefs.js for valid values
-var disallowedFiles	= ["PASSWD", "USER.DAT"]; // Files and directories exactly matching fields in this array will not be openable (case insensitive)
-var disallowedExtensions = [".COM", ".EXE", ".GIF", ".JPG", ".MP3", ".PNG", ".RAR"]; // Files with these extensions will not be viewable (case insensitive)
+var disallowedFiles = ["PASSWD", "USER.DAT", "*.COM", "*.EXE", "*.GIF", "*.JPG", "*.MP3", "*.PNG", "*.RAR"]; // Files matching these patterns will not be shown in directory listings
 var slow = .033;	// Seconds between printed characters, slow speed
 var medium = .0033;	// Seconds between printed characters, medium speed
 var fast = .00033;	// Seconds between printed characters, fast speed
@@ -95,6 +94,7 @@ function fileChooser() {
 	var tree = new Tree(2, 6, 76, 15);
 	if(curDir != ansiRoot) tree.addItem("[..]", parentDir);
 	for(var d = 0; d < dirList.length; d++) {
+		if(checkFile(dirList[d])) continue;
 		disp = dirList[d].split("/");
 		if(file_isdir(dirList[d])) {
 			disp = disp[disp.length - 2];
@@ -132,12 +132,7 @@ function checkFile(str) {
 	} else {
 		matchMe = file_getname(str);
 	}
-	for(var f = 0; f < disallowedFiles.length; f++) if(matchMe.toUpperCase() == disallowedFiles[f].toUpperCase()) return true;
-	return false;
-}
-
-function checkExt(str) {
-	for(var d = 0; d < disallowedExtensions.length; d++) if(file_getext(str).toUpperCase() == disallowedExtensions[d].toUpperCase()) return true;
+	for(var f = 0; f < disallowedFiles.length; f++) if(wildmatch(false, matchMe, disallowedFiles[f])) return true;
 	return false;
 }
 
@@ -146,7 +141,7 @@ function slideshow() {
 	var retval;
 	ssForLoop:
 	for(var d = 0; d< dirList.length; d++) {
-		if(!file_isdir(dirList[d]) && (dirList[d].match(/\./) === null || !checkExt(dirList[d]))) retval = printAnsi(loadAnsiFile(dirList[d]), true, file_getname(dirList[d]));
+		if(!file_isdir(dirList[d]) && !checkFile(dirList[d]) && !wildmatch(false, file_getname(dirList[d]), "*.ZIP")) retval = printAnsi(loadAnsiFile(dirList[d]), true, file_getname(dirList[d]));
 		switch(retval) {
 			case 0:
 				break ssForLoop;
@@ -174,7 +169,6 @@ while(!js.terminated) {
 	var choice = fileChooser();
 	console.line_counter = 0;
 	if(file_isdir(choice)) {
-		if(checkFile(choice)) continue;
 		if(choice.length > curDir.length) {
 			parentDir = curDir;
 		} else if(parentDir != ansiRoot && parentDir.length > ansiRoot.length) {
@@ -196,7 +190,7 @@ while(!js.terminated) {
 		curDir = destDir;
 		if(file_isdir(destDir)) continue;
 		bbs.exec(system.exec_dir + "unzip -s -o -qq -d" + destDir + " " + choice);
-	} else if((choice.match(/\./) === null || !checkExt(choice)) && !checkFile(choice)) {
+	} else {
 		var ansi = loadAnsiFile(choice);
 		printAnsi(ansi, false, file_getname(choice));
 	}
