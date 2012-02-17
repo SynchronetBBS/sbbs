@@ -123,7 +123,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>.\msvc.win32.exe.debug/sbbsecho.pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
-      <MapFileName>.\msvc.win32.debug\sbbsecho/sbbsecho.map</MapFileName>
+      <MapFileName>.\msvc.win32.debug\sbbsecho\sbbsecho.map</MapFileName>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
