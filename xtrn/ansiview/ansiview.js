@@ -7,7 +7,8 @@ load("tree.js");
 var ansiRoot = js.exec_dir + "library/"; // The location of your ANSI library, eg. "/dev/magicalansigenerator/"
 tree_settings.lfg = WHITE; // The lightbar foreground colour, see sbbsdefs.js for valid values
 tree_settings.lbg = BG_CYAN; // The lightbar background colour, see sbbsdefs.js for valid values
-var disallowedExtensions = [".COM", ".EXE", ".GIF", ".JPG", ".MP3", ".PNG", ".RAR", ".ZIP"]; // Files with these extensions will not be viewable
+var disallowedFiles	= ["PASSWD", "USER.DAT"]; // Files and directories exactly matching fields in this array will not be openable (case insensitive)
+var disallowedExtensions = [".COM", ".EXE", ".GIF", ".JPG", ".MP3", ".PNG", ".RAR"]; // Files with these extensions will not be viewable (case insensitive)
 var slow = .033;	// Seconds between printed characters, slow speed
 var medium = .0033;	// Seconds between printed characters, medium speed
 var fast = .00033;	// Seconds between printed characters, fast speed
@@ -92,7 +93,7 @@ function fileChooser() {
 	console.putmsg(ascii(27) + "[1;37;40mpath: " + curDir.replace(ansiRoot, "/"));
 	var dirList = directory(curDir + "*.*");
 	var tree = new Tree(2, 6, 76, 15);
-	tree.addItem("[..]", parentDir);
+	if(curDir != ansiRoot) tree.addItem("[..]", parentDir);
 	for(var d = 0; d < dirList.length; d++) {
 		disp = dirList[d].split("/");
 		if(file_isdir(dirList[d])) {
@@ -122,6 +123,17 @@ function loadAnsiFile(ansi) {
 	var ansiFileContents = f.read();
 	f.close();
 	return ansiFileContents;
+}
+
+function checkFile(str) {
+	if(file_isdir(str)) {
+		var matchMe = str.split("/");
+		matchMe = matchMe[matchMe.length - 2];
+	} else {
+		matchMe = file_getname(str);
+	}
+	for(var f = 0; f < disallowedFiles.length; f++) if(matchMe.toUpperCase() == disallowedFiles[f].toUpperCase()) return true;
+	return false;
 }
 
 function checkExt(str) {
@@ -162,6 +174,7 @@ while(!js.terminated) {
 	var choice = fileChooser();
 	console.line_counter = 0;
 	if(file_isdir(choice)) {
+		if(checkFile(choice)) continue;
 		if(choice.length > curDir.length) {
 			parentDir = curDir;
 		} else if(parentDir != ansiRoot && parentDir.length > ansiRoot.length) {
@@ -177,7 +190,13 @@ while(!js.terminated) {
 		slideshow();
 	} else if(choice == "H") {
 		helpScreen();
-	} else if(choice.match(/\./) === null || !checkExt(choice)) {
+	} else if(file_getext(choice).toUpperCase() == ".ZIP") {
+		destDir = curDir + file_getname(choice).toUpperCase().replace(".ZIP", "") + "/";
+		parentDir = curDir;
+		curDir = destDir;
+		if(file_isdir(destDir)) continue;
+		bbs.exec(system.exec_dir + "unzip -s -o -qq -d" + destDir + " " + choice);
+	} else if((choice.match(/\./) === null || !checkExt(choice)) && !checkFile(choice)) {
 		var ansi = loadAnsiFile(choice);
 		printAnsi(ansi, false, file_getname(choice));
 	}
