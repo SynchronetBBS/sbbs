@@ -1,11 +1,11 @@
 #include <stdlib.h>	/* getenv()/exit()/atexit() */
 #include <stdio.h>	/* NULL */
 
+#include "gen_defs.h"
 #include <SDL.h>
 #ifndef main
  #define USE_REAL_MAIN
 #endif
-#include "gen_defs.h"
 #ifdef USE_REAL_MAIN
  #undef main
 #endif

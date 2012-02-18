@@ -402,6 +402,7 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 #endif
 
 #ifdef WITH_SDL
+	#include <gen_defs.h>
 	#include <SDL.h>
 
 	#ifdef main
