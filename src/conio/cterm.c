@@ -1573,6 +1573,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								cterm->attr&=248;
 								cterm->attr|=7;
 								break;
+							case 49:
 							case 40:
 								cterm->attr&=143;
 								break;
@@ -1601,7 +1602,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								cterm->attr|=3<<4;
 								break;
 							case 47:
-							case 49:
 								cterm->attr&=143;
 								cterm->attr|=7<<4;
 								break;
