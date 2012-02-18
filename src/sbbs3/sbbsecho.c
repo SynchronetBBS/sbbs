@@ -3968,7 +3968,7 @@ int main(int argc, char **argv)
 	"o: import all netmail regardless of destination address\n"
 	"s: import private echomail override (strip private status)\n"
 	"!: notify users of received echomail     @: prompt for key upon exiting (debug)\n"
-	"                                         $: prompt for key upon abnormal exit\n";
+	"                                         W: prompt for key upon abnormal exit\n";
 
 	if((email=(smb_t *)malloc(sizeof(smb_t)))==NULL) {
 		printf("ERROR allocating memory for email.\n");
@@ -4086,7 +4086,7 @@ int main(int argc, char **argv)
 					case '@':
 						pause_on_exit=TRUE;
 						break;
-					case '$':
+					case 'W':
 						pause_on_abend=TRUE;
 						break;
 					case 'Q':
