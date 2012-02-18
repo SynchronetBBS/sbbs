@@ -12,6 +12,21 @@
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <shlobj.h>
+#ifndef REFKNOWNFOLDERID
+typedef GUID KNOWNFOLDERID;
+#define REFKNOWNFOLDERID KNOWNFOLDERID*
+// Not shared
+static const KNOWNFOLDERID FOLDERID_Downloads =			{0x374DE290,0x123F,0x4565,{0x91,0x64,0x39,0xC4,0x92,0x5E,0x46,0x7B}};
+static const KNOWNFOLDERID FOLDERID_RoamingAppData =	{0x3EB685DB,0x65F9,0x4CF6,{0xA0,0x3A,0xE3,0xEF,0x65,0x72,0x9F,0x3D}};
+static const KNOWNFOLDERID FOLDERID_InternetCache =		{0x352481E8,0x33BE,0x4251,{0xBA,0x85,0x60,0x07,0xCA,0xED,0xCF,0x9D}};
+// Shared
+static const KNOWNFOLDERID FOLDERID_PublicDownloads =	{0x3D644C9B,0x1FB8,0x4f30,{0x9B,0x45,0xF6,0x70,0x23,0x5F,0x79,0xC0}};
+static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0xA9,0xDD,0x07,0x0D,0x1D,0x49,0x5D,0x97}};
+#ifndef KF_FLAG_CREATE
+#define KF_FLAG_CREATE	0x00008000
+#endif
+#endif
+#include <xp_dl.h>	/* xp_dlopen() and friends */
 #endif
 
 #include <gen_defs.h>
@@ -884,6 +899,15 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 
 #ifdef _WIN32
 	char	*home;
+	static	dll_handle	shell32=NULL;
+	BOOL	we_got_this=FALSE;
+	static	HRESULT(*GKFP)(REFKNOWNFOLDERID rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath)=NULL;
+	const char *shell32dll[]={"Shell32", NULL};
+
+	static	dll_handle	ole32=NULL;
+	static	int (*CTMF)(LPVOID)=NULL;
+	const char *ole32dll[]={"OLE32", NULL};
+
 	home=getenv("HOME");
 	if(home==NULL)
 		home=getenv("USERPROFILE");
@@ -894,37 +918,96 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 		SAFECOPY(oldlst, home);
 		strcat(oldlst, "/syncterm.lst");
 	}
+
+	if(shell32==NULL) {
+		shell32=xp_dlopen(shell32dll, RTLD_LAZY, 6);
+	}
+	if(ole32==NULL) {
+		ole32=xp_dlopen(ole32dll, RTLD_LAZY, 0);
+	}
+	if(shell32!=NULL && ole32 !=NULL) {
+		if(GKFP==NULL) {
+			GKFP=xp_dlsym(shell32, SHGetKnownFolderPath);
+		}
+		if(CTMF==NULL) {
+			CTMF=xp_dlsym(ole32, CoTaskMemFree);
+		}
+		if(GKFP && CTMF) {
+			PWSTR path;
+			switch(type) {
+				case SYNCTERM_PATH_INI:
+				case SYNCTERM_PATH_LIST:
+					if(shared) {
+						if(GKFP(&FOLDERID_ProgramData, KF_FLAG_CREATE, NULL, &path)==S_OK) {
+							we_got_this=TRUE;
+						}
+					}
+					else {
+						if(GKFP(&FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &path)==S_OK) {
+							we_got_this=TRUE;
+						}
+					}
+					break;
+				case SYNCTERM_DEFAULT_TRANSFER_PATH:
+					if(shared) {
+						if(GKFP(&FOLDERID_PublicDownloads, KF_FLAG_CREATE, NULL, &path)==S_OK) {
+							we_got_this=TRUE;
+						}
+					}
+					else {
+						if(GKFP(&FOLDERID_Downloads, KF_FLAG_CREATE, NULL, &path)==S_OK) {
+							we_got_this=TRUE;
+						}
+					}
+					break;
+				case SYNCTERM_PATH_CACHE:
+					if(GKFP(&FOLDERID_InternetCache, KF_FLAG_CREATE, NULL, &path)==S_OK) {
+						we_got_this=TRUE;
+					}
+					break;
+			}
+			if(we_got_this) {
+				// Convert unicode to string.
+				if(snprintf(fn, fnlen, "%S\\SyncTERM", path) >= fnlen) {
+					we_got_this=FALSE;
+				}
+				CTMF(path);
+			}
+		}
+	}
+	if(!we_got_this) {
 #ifdef CSIDL_FLAG_CREATE
-	if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
-		switch(SHGetFolderPath(NULL, CSIDL_PERSONAL|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, fn)) {
+		if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
+			switch(SHGetFolderPath(NULL, CSIDL_PERSONAL|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, fn)) {
+				case E_FAIL:
+				case E_INVALIDARG:
+					getcwd(fn, fnlen);
+					backslash(fn);
+					break;
+				default:
+					backslash(fn);
+					strcat(fn,"SyncTERM");
+					break;
+			}
+			if(!isdir(fn))
+				MKDIR(fn);
+			return(fn);
+		}
+		switch(SHGetFolderPath(NULL, (shared?CSIDL_COMMON_APPDATA:CSIDL_APPDATA)|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, fn)) {
 			case E_FAIL:
 			case E_INVALIDARG:
-				getcwd(fn, fnlen);
-				backslash(fn);
+				strcpy(fn,".");
 				break;
 			default:
 				backslash(fn);
 				strcat(fn,"SyncTERM");
 				break;
 		}
-		if(!isdir(fn))
-			MKDIR(fn);
-		return(fn);
-	}
-	switch(SHGetFolderPath(NULL, (shared?CSIDL_COMMON_APPDATA:CSIDL_APPDATA)|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, fn)) {
-		case E_FAIL:
-		case E_INVALIDARG:
-			strcpy(fn,".");
-			break;
-		default:
-			backslash(fn);
-			strcat(fn,"SyncTERM");
-			break;
-	}
 #else
-	getcwd(fn, fnlen);
-	backslash(fn);
+		getcwd(fn, fnlen);
+		backslash(fn);
 #endif
+	}
 
 	/* Create if it doesn't exist */
 	if(!isdir(fn)) {
@@ -943,6 +1026,14 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 			break;
 		case SYNCTERM_PATH_CACHE:
 			backslash(fn);
+			strncat(fn,"SyncTERM",fnlen);
+			backslash(fn);
+			if(!isdir(fn)) {
+				if(MKDIR(fn)) {
+					fn[0]=0;
+					break;
+				}
+			}
 			strncat(fn,"cache",fnlen);
 			backslash(fn);
 			if(!isdir(fn)) {
