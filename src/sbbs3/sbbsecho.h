@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -37,7 +37,7 @@
 
 /* Portions written by Allen Christiansen 1994-1996 						*/
 
-#define SBBSECHO_VER "2.12"
+#define SBBSECHO_VER "2.13"
 
 #define IMPORT_NETMAIL  (1L<<0)
 #define IMPORT_PACKETS	(1L<<1)
@@ -167,9 +167,9 @@ typedef struct {
 	} area_t;
 
 typedef struct {
-	FILE *stream;				/* The stream associated with this packet */
+	FILE *stream;				/* The stream associated with this packet (NULL if not-open) */
 	faddr_t uplink; 			/* The current uplink for this packet */
-	uchar filename[128],curopen;/* Name of the file and if it's open or not */
+	uchar filename[MAX_PATH+1];	/* Name of the file */
     } outpkt_t;
 
 typedef struct {

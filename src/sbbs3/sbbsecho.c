@@ -2642,15 +2642,15 @@ char *pktname(BOOL temp)
     struct tm *tm;
 
 	now=time(NULL);
-	for(i=0;i<MAX_TOTAL_PKTS*2;i++) {
+	for(i=0;i>=0;i++) {
 		now++;
 		tm=localtime(&now);
 		sprintf(str,"%s%02u%02u%02u%02u.%s",cfg.outbound,tm->tm_mday,tm->tm_hour
 			,tm->tm_min,tm->tm_sec,temp ? "pk_" : "pkt");
 		if(!fexist(str))				/* Add 1 second if name exists */
-			break; 
+			return(str); 
 	}
-	return(str);
+	return(NULL);	/* This should never happen */
 }
 /******************************************************************************
  This function puts a message into a Fido packet, writing both the header
@@ -3112,19 +3112,19 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 				lprintf(LOG_ERR,"MAX_TOTAL_PKTS (%d) REACHED!",MAX_TOTAL_PKTS);
 				break;
 			}
-			if(outpkt[i].curopen) {
-				terminate_packet(outpkt[i].stream);
-				fclose(outpkt[i].stream); }
+			if(outpkt[i].stream==NULL)
+				outpkt[i].stream=fnopen(&file,outpkt[i].filename,O_WRONLY|O_APPEND);
+				
+			if(outpkt[i].stream==NULL)
+				lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s for termination",errno,strerror(errno),__LINE__,outpkt[i].filename);
 			else {
-				if((outpkt[i].stream=fnopen(&file,outpkt[i].filename
-					,O_WRONLY|O_APPEND))==NULL) {
-					lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,outpkt[i].filename);
-					continue; }
 				terminate_packet(outpkt[i].stream);
-				fclose(outpkt[i].stream); }
-			  /* pack_nundle() disabled.  Why?  ToDo */
+				fclose(outpkt[i].stream); 
+			}
+			  /* pack_bundle() disabled.  Why?  ToDo */
 			  /* pack_bundle(outpkt[i].filename,outpkt[i].uplink); */
-			memset(&outpkt[i],0,sizeof(outpkt_t)); }
+			memset(&outpkt[i],0,sizeof(outpkt_t)); 
+		}
 		totalpkts=openpkts=0;
 		attach_bundles();
 		if(!(misc&FLO_MAILER))
@@ -3157,20 +3157,22 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 				break;
 			}
 			if(!memcmp(&area.uplink[j],&outpkt[i].uplink,sizeof(faddr_t))) {
-				if(!outpkt[i].curopen) {
-					if(openpkts==DFLT_OPEN_PKTS)
+				if(outpkt[i].stream==NULL) {
+					if(openpkts==DFLT_OPEN_PKTS) {
 						for(k=0;k<totalpkts;k++) {
-							if(outpkt[k].curopen) {
+							if(outpkt[k].stream!=NULL) {
 								fclose(outpkt[k].stream);
-								outpkt[k].curopen=0;
-								break; } }
+								outpkt[k].stream=NULL;
+								break; 
+							} 
+						}
+					}
 					if((outpkt[i].stream=fnopen(&file,outpkt[i].filename
 						,O_WRONLY|O_APPEND))==NULL) {
 						lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,outpkt[i].filename);
-						bail(1); 
-						return;
+						continue;
 					}
-					outpkt[i].curopen=1; }
+				}
 				if((strlen((char *)fbuf)+1+ftell(outpkt[i].stream))
 					<=cfg.maxpktsize) {
 					fmsghdr.destnode=area.uplink[j].node;
@@ -3194,20 +3196,24 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 			} 
 		}
 		if(i==totalpkts) {
-			if(openpkts==DFLT_OPEN_PKTS)
+			if(openpkts==DFLT_OPEN_PKTS) {
 				for(k=0;k<totalpkts;k++) {
-					if(outpkt[k].curopen) {
+					if(outpkt[k].stream!=NULL) {
 						fclose(outpkt[k].stream);
-						outpkt[k].curopen=0;
+						outpkt[k].stream=NULL;
 						--openpkts;
-						break; } }
-			strcpy(outpkt[i].filename,pktname(/* temp? */ TRUE));
+						break; 
+					} 
+				}
+			}
+			SAFECOPY(outpkt[i].filename,pktname(/* temp? */ TRUE));
 			now=time(NULL);
 			tm=localtime(&now);
 			if((outpkt[i].stream=fnopen(&file,outpkt[i].filename
 				,O_WRONLY|O_CREAT))==NULL) {
 				lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s"
 					,errno,strerror(errno),__LINE__,outpkt[i].filename);	/* failhere */
+				lprintf(LOG_DEBUG,"i=%d, totalpkts=%d, openpkts=%d", i, totalpkts, openpkts);
 				bail(1); 
 				return;
 			}
@@ -3265,13 +3271,13 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 			}
 			fwrite(&pkthdr,sizeof(pkthdr_t),1,outpkt[totalpkts].stream);
 			putfmsg(outpkt[totalpkts].stream,fbuf,fmsghdr,area,seenbys,paths);
-			outpkt[totalpkts].curopen=1;
 			memcpy(&outpkt[totalpkts].uplink,&area.uplink[j]
 				,sizeof(faddr_t));
 			++openpkts;
 			++totalpkts;
 			if(totalpkts>=MAX_TOTAL_PKTS) {
 				fclose(outpkt[totalpkts-1].stream);
+				outpkt[totalpkts-1].stream=NULL;
 				/* pack_bundle() disabled.  Why?  ToDo */
 				/* pack_bundle(outpkt[totalpkts-1].filename
 					  ,outpkt[totalpkts-1].uplink); */
@@ -4946,8 +4952,9 @@ int main(int argc, char **argv)
 					if(write_flofile(hdr.subj,addr,FALSE /* !bundle */))
 						bail(1); 
 			}
-			else
+			else {
 				SAFECOPY(packet,pktname(/* Temp? */ FALSE));
+			}
 
 			lprintf(LOG_DEBUG,"NetMail packet: %s", packet);
 			now=time(NULL);
