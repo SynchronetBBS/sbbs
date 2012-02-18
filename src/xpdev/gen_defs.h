@@ -171,7 +171,9 @@ typedef unsigned long long int uint64_t;
 #endif
 
 typedef uint64_t	uintmax_t;
+#define _UINTMAX_T_DECLARED
 typedef int64_t		intmax_t;
+#define _INTMAX_T_DECLARED
 
 /* printf integer formatters: */
 
