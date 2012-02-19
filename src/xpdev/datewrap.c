@@ -78,7 +78,7 @@ time32_t DLLCALL time32(time32_t* tp)
 
 time32_t DLLCALL mktime32(struct tm* tm)
 {
-	return (time32_t)sane_mktime(tm);
+	return (time32_t)mktime(tm);	/* don't use sane_mktime since tm->tm_mon is assumed to be already zero-based */
 }
 
 struct tm* DLLCALL localtime32(const time32_t* t32, struct tm* tm)
