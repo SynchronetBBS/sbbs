@@ -441,6 +441,12 @@ int pty_connect(struct bbslist *bbs)
 				":vi=\\E[?25l:",ws.ws_col,ws.ws_row);
 		setenv("TERMCAP",termcap,1);
 		xp_asprintf_free(termcap);
+		termcap=xp_asprintf("%d",ws.ws_col);
+		setenv("COLUMNS",termcap,1);
+		xp_asprintf_free(termcap);
+		termcap=xp_asprintf("%d",ws.ws_row);
+		setenv("LINES",termcap,1);
+		xp_asprintf_free(termcap);
 		if(bbs->addr[0])
 			execl("/bin/sh", "/bin/sh", "-c", bbs->addr, (char *)0);
 		else
