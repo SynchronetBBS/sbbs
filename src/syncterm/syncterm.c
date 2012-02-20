@@ -1208,6 +1208,32 @@ int main(int argc, char **argv)
 	BOOL	override_conn=FALSE;
 	char	*last_bbs=NULL;
 
+	if(argc==2 && strcmp(argv[1],"-T")==0) {
+		puts("\n# terminfo database entry for SyncTERM\n"
+				"syncterm|SyncTERM,\n"
+				"	am,bce,mir,msgr,\n"
+				"	cols#80,it#8,lines#24,colors#8,pairs#64,\n"
+				"	acsc=l\\332m\\300k\\277j\\331u\\264t\\303v\\301w\\302q\\304x\\263n\\305`\\004a\\260f\\370g\\361~\\371.\\031-\\030h\\261i^U0\\333y\\363z\\362,\n"
+				"	cbt=\\E[Z,bel=^G,cr=^M,clear=\\E[2J,el1=\\E[1K,el=\\E[K,ed=\\E[J,\n"
+				"	cup=\\E[%i%p1%d;%p2%dH,cud1=^J,home=\\E[H,civis=\\E[?25l,cub1=\\E[D,cnorm=\\E[?25h,\n"
+				"	cuf1=\\E[C,cuu1=\\E[A,dch1=\\E[P,dl1=\\E[M,smam=\\E[?7h,blink=\\E[5m,bold=\\E[1m,\n"
+				"	ech=\\E[%p1%dX,rmam=\\E[7l,sgr0=\\E[0m,\n"
+				"	is2=\\E[?7h\\E[?25h\\E[?31l\\E[?32l\\E[?33l\\E[*r\\E[ D\\E[0m\\E[?s,\n"
+				"	ich1=\\E[@,il1=\\E[L,\n"
+				"	kbs=^H,kdch1=\\177,kcud1=\\E[B,kend=\\E[K,\n"
+				"	kf1=\\EOP,kf2=\\EOQ,kf3=\\EOR,kf4=\\EOS,kf5=\\EOt,kf6=\\E[17~,\n"
+				"	kf7=\\E[18~,kf8=\\E[19~,kf9=\\E[20~,kf10=\\E[21~,kf11=\\E[23~,kf12=\\E[24~,\n"
+				"	khome=\\E[H,kich1=\\E[@,kcub1=\\E[D,knp=\\E[U,kpp=\\E[V,kcuf1=\\E[C,\n"
+				"	kcuu1=\\E[A,\n"
+				"	nel=^M^J,\n"
+				"	dch=\\E[%p1%dP,dl=\\E[%p1%dM,cud=\\E[%p1%dB,ich=\\E[%p1%d@,indn=\\E[%p1%dS,\n"
+				"	il=\\E[%p1%dL,cub=\\E[%p1%dD,cuf=\\E[%p1%dC,rin=\\E[%p1%dT,cuu=\\E[%p1%dA,\n"
+				"	rc=\\E[u,sc=\\E[s,ind=\\E[S,ri=\\E[T,setab=\\E[4%p1%dm,setaf=\\E[3%p1%dm,\n"
+				"	sgr=\\E[0%?%p1%p6%|%t;1%;%?%p4%|%t;5%;%?%p1%p3%|%t;7%;%?%p7%|%t;8%;m,\n"
+				"	smso=\\E[0;1;7m,\n");
+		return 0;
+	}
+
 	/* Cryptlib initialization MUST be done before ciolib init */
 	if(!crypt_loaded)
 		init_crypt();
@@ -1533,6 +1559,7 @@ int main(int argc, char **argv)
 		"-r  =  use rlogin mode if URL does not include the scheme\n"
 		"-h  =  use SSH mode if URL does not include the scheme\n"
 		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
+		"-T  =  when the ONLY argument, dumps the terminfo entry to stdout and exits\n"
 		"\n"
 		"URL format is: [(rlogin|telnet|ssh|raw)://][user[:password]@]domainname[:port]\n"
 		"raw:// URLs MUST include a port.\n"
