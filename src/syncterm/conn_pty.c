@@ -418,6 +418,25 @@ int pty_connect(struct bbslist *bbs)
 		return(-1);
 	case 0:		/* Child */
 		setenv("TERM",settings.TERM,1);
+		setenv("TERMCAP","syncterm|SyncTERM"
+				":am:mi:ms:ut"
+				":Co#8:co#80:it#8:li#24:pa#64"
+				":@7=\\E[K:AB=\\E[4%dm:AF=\\E[3%dm:AL=\\E[%dL:DC=\\E[%dP"
+				":DL=\\E[%dM:DO=\\E[%dB:F1=\\E[23~:F2=\\E[24~:IC=\\E[%d@"
+				":LE=\\E[%dD:RA=\\E[7l:RI=\\E[%dC:SA=\\E[?7h:SF=\\E[%dS"
+				":SR=\\E[%dT:UP=\\E[%dA"
+				":ac=-\\030.^Y0\\333`\\004a\\260f\\370g\\361h\\261i\\025j\\331k\\277l\\332m\\300n\\305q\\304t\\303u\\264v\\301w\\302x\\263y\\363z\\362~\\371"
+				":al=\\E[L:bl=^G:bt=\\E[Z:cb=\\E[1K:cd=\\E[J:ce=\\E[K:cl=\\E[2J"
+				":cm=\\E[%i%d;%dH:cr=^M:dc=\\E[P:dl=\\E[M:do=^J:ec=\\E[%dX:ei="
+				":ho=\\E[H:ic=\\E[@:im="
+				":is=\\E[?7h\\E[?25h\\E[?31l\\E[?32l\\E[?33l\\E[*r\\E[ D\\E[0m\\E[?s"
+				":k1=\\EOP:k2=\\EOQ:k3=\\EOR:k4=\\EOS:k5=\\EOt:k6=\\E[17~"
+				":k7=\\E[18~:k8=\\E[19~:k9=\\E[20~:k;=\\E[21~:kD=\\177:kI=\\E[@"
+				":kd=\\E[B:kN=\\E[U:kP=\\E[V:kb=^H:kh=\\E[H:kl=\\E[D:kr=\\E[C"
+				":ku=\\E[A:le=\\E[D:mb=\\E[5m:md=\\E[1m:me=\\E[0m:nd=\\E[C"
+				":nw=^M^J:rc=\\E[u"
+				":sc=\\E[s:sf=\\E[S:so=\\E[0;1;7m:sr=\\E[T:up=\\E[A:ve=\\E[?25h"
+				":vi=\\E[?25l:",1);
 		if(bbs->addr[0])
 			execl("/bin/sh", "/bin/sh", "-c", bbs->addr, (char *)0);
 		else
