@@ -1207,9 +1207,7 @@ int main(int argc, char **argv)
 	int		text_mode;
 	BOOL	override_conn=FALSE;
 	char	*last_bbs=NULL;
-
-	if(argc==2 && strcmp(argv[1],"-T")==0) {
-		puts("\n# terminfo database entry for SyncTERM\n"
+	const char syncterm_termcap[]="\n# terminfo database entry for SyncTERM\n"
 				"syncterm|SyncTERM 80x25,\n"
 				"	am,bce,mir,msgr,\n"
 				"	cols#80,it#8,lines#24,colors#8,pairs#64,\n"
@@ -1268,8 +1266,10 @@ int main(int argc, char **argv)
 				"syncterm-59-w|SyncTERM 132x60,\n"
 				"	cols#132,lines#59,use=syncterm,\n"
 				"syncterm-60-w|SyncTERM 132x60 No Status Line,\n"
-				"	cols#132,lines#60,use=syncterm,\n"
-		);
+				"	cols#132,lines#60,use=syncterm,\n";
+
+	if(argc==2 && strcmp(argv[1],"-T")==0) {
+		write(STDOUT_FILENO, syncterm_termcap, strlen(syncterm_termcap));
 		return 0;
 	}
 
