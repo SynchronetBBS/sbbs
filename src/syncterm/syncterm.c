@@ -14,7 +14,7 @@
 #include <shlobj.h>
 #ifndef REFKNOWNFOLDERID
 typedef GUID KNOWNFOLDERID;
-#define REFKNOWNFOLDERID KNOWNFOLDERID*
+#define REFKNOWNFOLDERID const KNOWNFOLDERID*
 // Not shared
 static const KNOWNFOLDERID FOLDERID_Downloads =			{0x374DE290,0x123F,0x4565,{0x91,0x64,0x39,0xC4,0x92,0x5E,0x46,0x7B}};
 static const KNOWNFOLDERID FOLDERID_RoamingAppData =	{0x3EB685DB,0x65F9,0x4CF6,{0xA0,0x3A,0xE3,0xEF,0x65,0x72,0x9F,0x3D}};
@@ -901,11 +901,11 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 	char	*home;
 	static	dll_handle	shell32=NULL;
 	BOOL	we_got_this=FALSE;
-	static	HRESULT(*GKFP)(REFKNOWNFOLDERID rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath)=NULL;
+	static HRESULT(__stdcall *GKFP)(REFKNOWNFOLDERID rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath)=NULL;
 	const char *shell32dll[]={"Shell32", NULL};
 
 	static	dll_handle	ole32=NULL;
-	static	int (*CTMF)(LPVOID)=NULL;
+	static	int (__stdcall *CTMF)(LPVOID)=NULL;
 	const char *ole32dll[]={"OLE32", NULL};
 
 	home=getenv("HOME");
