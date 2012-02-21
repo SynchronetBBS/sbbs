@@ -35,6 +35,7 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 
 #include <ini_file.h>
 #include <dirwrap.h>
+#include <filewrap.h>	// STDOUT_FILENO
 
 #include "ciolib.h"
 #ifdef HAS_VSTAT
