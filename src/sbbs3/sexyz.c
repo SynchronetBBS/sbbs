@@ -93,6 +93,7 @@ BOOL	dszlog_short=FALSE;				/* Log Micros~1 short filename		*/
 BOOL	dszlog_quotes=FALSE;			/* Quote filenames in DSZLOG		*/
 int		log_level=LOG_INFO;
 BOOL	use_syslog=FALSE;
+BOOL	lc_filenames=FALSE;
 int64_t	max_file_size=MAX_FILE_SIZE;
 
 xmodem_t xm;
@@ -1224,6 +1225,10 @@ static int receive_files(char** fname_list, int fnames)
 			return(1); 
 		}
 
+		if(lc_filenames) {
+			strlwr(str);
+		}
+
 		if((fp=fnopen(NULL,str,O_WRONLY|O_CREAT|O_TRUNC|O_BINARY))==NULL
 			&& (fp=fopen(str,"wb"))==NULL) {
 			lprintf(LOG_ERR,"Error %d creating %s",errno,str);
@@ -1413,6 +1418,7 @@ static const char* usage=
 	"         -8  set maximum Zmodem block size to 8K (ZedZap)\n"
 	"         -m# set maximum receive file size to # bytes (0=unlimited, default=%u)\n"
 	"         -!  to pause after abnormal exit (error)\n"
+	"         -l  lowercase received filenames\n"
 #ifdef __unix__
 	"         -telnet to enable Telnet mode (the default except in stdio mode)\n"
 #else
@@ -1748,6 +1754,9 @@ int main(int argc, char **argv)
 						break;
 					case 'M':	/* MaxFileSize */
 						max_file_size=strtoul(arg++,NULL,0);	/* TODO: use strtoull() ? */
+						break;
+					case 'L':	/* Lowercase received filenames */
+						lc_filenames=TRUE;
 						break;
 				}
 			}
