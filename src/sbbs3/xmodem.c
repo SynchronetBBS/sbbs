@@ -485,7 +485,6 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 	time_t		startfile;
 	struct		stat st;
 	BOOL		sent_header=FALSE;
-	uintmax_t	tmptime;
 
 	if(sent!=NULL)	
 		*sent=0;
