@@ -23,6 +23,14 @@ this in place, a simple "make" should build everything you need.  If you're
 using *nix you must use GNU Make... under some systems (Such a most BSDs) this
 is optional and installed as "gmake" rather than "make".
 
+When building from the source archive, need to set SRC_ROOT to the extracted
+path name to locate the bundled 3rd party sources like so:
+make SRC_ROOT=/path/to/syncterm-20120226
+This can be done using backticks as well:
+make SRC_ROOT=`cd .. ; pwd`
+or:
+make SRC_ROOT=`realpath ..`
+
 Refer to src/build/Common.gmake or src/build/Common.bmake for details of some
 of the make options the build system supports.
 
