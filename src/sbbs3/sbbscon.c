@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1102,15 +1102,13 @@ static void handle_sigs(void)
 	SetThreadName("Signal Handler");
 	thread_up(NULL,TRUE,TRUE);
 
-	if (is_daemon) {
-		/* Write the standard .pid file if running as a daemon */
-		/* Must be here so signals are sent to the correct thread */
+	/* Write the standard .pid file if created/open */
+	/* Must be here so signals are sent to the correct thread */
 
-		if(pidf!=NULL) {
-			fprintf(pidf,"%d",getpid());
-			fclose(pidf);
-			pidf=NULL;
-		}
+	if(pidf!=NULL) {
+		fprintf(pidf,"%d",getpid());
+		fclose(pidf);
+		pidf=NULL;
 	}
 
 	/* Set up blocked signals */
@@ -1747,10 +1745,10 @@ int main(int argc, char** argv)
 			lprintf(LOG_ERR,"!ERROR %d running as daemon",errno);
 			is_daemon=FALSE;
 		}
-
-		/* Open here to use startup permissions to create the file */
-		pidf=fopen(pid_fname,"w");
 	}
+	/* Open here to use startup permissions to create the file */
+	pidf=fopen(pid_fname,"w");
+
 	old_uid = getuid();
 	if((pw_entry=getpwnam(new_uid_name))!=0)
 	{
