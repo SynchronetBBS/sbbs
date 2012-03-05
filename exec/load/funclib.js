@@ -412,10 +412,28 @@ function combine(obj1,obj2,concat_str)
 	}
 	return newobj;
 }
-	
-	
-	
-	
-	
+function compressList(list) 
+{
+	var c=[];
+	for(var l in list)
+		c.push(list[l]);
+	return c;
+}
+function sortListByProperty(list,prop) 
+{ 
+	var data=compressList(list);
+	var numItems=data.length;
+	for(n=0; n<numItems; n++)	{
+		for(m=0; m<(numItems-1); m++) {
+			if(data[m][prop] < data[m+1][prop]) {
+				var holder = data[m+1];
+				data[m+1] = data[m];
+				data[m] = holder;
+			}
+		}
+	}
+	return data;
+}
+
 	
 	
