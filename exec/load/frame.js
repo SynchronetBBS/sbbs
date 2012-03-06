@@ -382,6 +382,11 @@ function Frame(x,y,width,height,attr,frame) {
 			c.move(x,y);
 	}
 	this.moveTo = function(x,y) {
+		for each(var c in relations.child) {
+			var cx = (x + (c.x-this.x));
+			var cy = (y + (c.y-this.y));
+			c.moveTo(cx,cy);
+		}
 		var nx = undefined;
 		var ny = undefined;
 		if(checkX(x))
@@ -396,8 +401,6 @@ function Frame(x,y,width,height,attr,frame) {
 		if(ny !== undefined)
 			this.y=ny;
 		properties.display.updateFrame(this);
-		for each(var c in relations.child) 
-			c.moveTo(x + (c.x - this.x), y + (c.y - this.y));
 	}
 	this.draw = function() {
 		if(properties.open)
@@ -658,7 +661,6 @@ function Frame(x,y,width,height,attr,frame) {
 	this.clearline = function(attr) {
 		if(attr == undefined)
 			attr = this.attr;
-		
 		for(var x = 0;x<this.width;x++) {
 			properties.display.updateChar(this,x,y);
 			properties.data[position.cursor.y][x].ch = undefined;
