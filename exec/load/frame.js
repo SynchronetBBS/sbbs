@@ -109,347 +109,6 @@ load("sbbsdefs.js");
 
 function Frame(x,y,width,height,attr,frame) {
 
-	/* frame reference object */
-	function Canvas(frame,display) {
-		this.frame = frame;
-		this.display = display;
-		this.__defineGetter__("xoff",function() {
-			return this.frame.x - this.display.x;
-		});
-		this.__defineGetter__("yoff",function() {
-			return this.frame.y - this.display.y;
-		});
-		this.hasData = function(x,y) {
-			if(x-this.xoff < 0 || y - this.yoff < 0)
-				return undefined;
-			if(x-this.xoff >= this.frame.width || y - this.yoff >= this.frame.height)
-				return undefined;
-			return true;
-		}
-	}
-	
-	/* object representing screen positional and dimensional limits and canvas stack */
-	function Display(x,y,width,height) {
-		/* private properties */
-		var properties = {
-			x:undefined,
-			y:undefined,
-			width:undefined,
-			height:undefined,
-			canvas:{},
-			update:{},
-			buffer:{}
-		}
-
-		/* protected properties */
-		this.__defineGetter__("x", function() {
-			return properties.x;
-		});
-		this.__defineSetter__("x", function(x) {
-			if(x == undefined)
-				properties.x = 1;
-			else if(isNaN(x))
-				throw("invalid x coordinate: " + x);
-			else 
-				properties.x = Number(x);
-		});
-		this.__defineGetter__("y", function() {
-			return properties.y;
-		});
-		this.__defineSetter__("y", function(y) {
-			if(y == undefined)
-				properties.y = 1;
-			else if(isNaN(y) || y < 1 || y > console.screen_rows)
-				throw("invalid y coordinate: " + y);
-			else 
-				properties.y = Number(y);
-		});
-		this.__defineGetter__("width", function() {
-			return properties.width;
-		});
-		this.__defineSetter__("width", function(width) {
-			if(width == undefined)
-				properties.width = console.screen_columns;
-			else if(isNaN(width) || (this.x + Number(width) - 1) > (console.screen_columns))
-				throw("invalid width: " + width);
-			else 
-				properties.width = Number(width);
-		});
-		this.__defineGetter__("height", function() {
-			return properties.height;
-		});
-		this.__defineSetter__("height", function(height) {
-			if(height == undefined)
-				properties.height = console.screen_rows;
-			else if(isNaN(height) || (this.y + Number(height) - 1) > (console.screen_rows))
-				throw("invalid height: " + height);
-			else
-				properties.height = Number(height);
-		});
-		
-		/* public methods */
-		this.cycle = function() {
-			var updates = getUpdateList();
-			if(updates.length > 0) {
-				var lasty = undefined;
-				var lastx = undefined;
-				var lastid = undefined;
-				for each(var u in updates) {
-					var posx = u.x + properties.x;
-					var posy = u.y + properties.y;
-					if(posx < 1 ||  posy < 1 || posx > console.screen_columns 
-						|| posy > console.screen_rows)
-						continue;
-					if(lasty !== u.y || lastx == undefined || (u.x - lastx) != 1)
-						console.gotoxy(posx,posy);
-					if(lastid !== u.id)
-						console.attributes = undefined;
-					drawChar(u.ch,u.attr,posx,posy);
-					lastx = u.x;
-					lasty = u.y;
-					lastid = u.id;
-				}
-				properties.update = {};
-				console.attributes=undefined;
-				return true;
-			}
-			return false;
- 		}
-		this.draw = function() {
-			for(var y = 0;y<this.height;y++) {
-				for(var x = 0;x<this.width;x++) {
-					updateChar(x,y);
-				}
-			}
-			this.cycle();
-		}
-		this.open = function(frame) {
-			var canvas = new Canvas(frame,this);
-			properties.canvas[frame.id] = canvas;
-			this.updateFrame(frame);
-		}
-		this.close = function(frame) {
-			this.updateFrame(frame);
-			delete properties.canvas[frame.id];
-		}
-		this.top = function(frame) {
-			var canvas = properties.canvas[frame.id];
-			delete properties.canvas[frame.id];
-			properties.canvas[frame.id] = canvas;
-			this.updateFrame(frame);
-		}
-		this.bottom = function(frame) {
-			for(var c in properties.canvas) {
-				if(c == frame.id)
-					continue;
-				var canvas = properties.canvas[c];
-				delete properties.canvas[c];
-				properties.canvas[c] = canvas;
-			}
-			this.updateFrame(frame);
-		}
-		this.updateFrame = function(frame) {
-			var xoff = frame.x - this.x;
-			var yoff = frame.y - this.y;
-			for(var y = 0;y<frame.height;y++) {
-				for(var x = 0;x<frame.width;x++) {
-					updateChar(xoff + x,yoff + y);
-				}
-			}
-		}
-		this.updateChar = function(frame,x,y) {
-			var xoff = frame.x - this.x;
-			var yoff = frame.y - this.y;
-			updateChar(xoff + x,yoff + y);
-		}
-		this.screenShot = function(file,append) {
-			var f = new File(file);
-			if(append) 
-				f.open('ab',true,4096);
-			else
-				f.open('wb',true,4096) ;
-			if(!f.is_open)
-				return false;
-				
-			for(var y = 0;y<this.height;y++) {
-				for(var x = 0;x<this.width;x++) {
-					var c = getTopCanvas(x,y);
-					var d = getData(c,x,y);
-					if(d.ch)
-						f.write(d.ch);
-					else
-						f.write(" ");
-					if(d.attr)
-						f.writeBin(d.attr,1);
-					else
-						f.writeBin(0,1);
-				}
-			}
-			
-			f.close();
-			return true;
-		}
-		
-		/* private functions */
-		function updateChar(x,y) {
-			if(!properties.update[y])
-				properties.update[y] = {};
-			properties.update[y][x] = 1;
-		}
-		function getUpdateList() {
-			var list = [];
-			for(var y in properties.update) {
-				for(var x in properties.update[y]) {
-					var c = getTopCanvas(x,y);
-					var d = getData(c,x,y);
-					if(!properties.buffer[x])
-						properties.buffer[x] = {};
-					if(!properties.buffer[x][y] ||
-						properties.buffer[x][y].ch != d.ch || 
-						properties.buffer[x][y].attr != d.attr) {
-						properties.buffer[x][y] = d;
-						list.push(d);
-					}
-				}
-			}
-			return list.sort(updateSort);
-		}
-		function getData(c,x,y) {
-			var cd = {
-				x:Number(x),
-				y:Number(y)
-			};
-			if(c) {
-				var d = c.frame.getData(x-c.xoff,y-c.yoff,true);
-				cd.id = c.frame.id;
-				cd.ch = d.ch;
-				if(d.attr)
-					cd.attr = d.attr;
-				else
-					cd.attr = c.frame.attr;
-			}
-			return cd;
-		}
-		function updateSort(a,b) {
-			if(a.y == b.y)
-				return a.x-b.x;
-			return a.y-b.y;
-		}
-		function drawChar(ch,attr,xpos,ypos) {
-			if(attr)
-				console.attributes = attr;
-			if(xpos == console.screen_columns && ypos == console.screen_rows) 
-				console.cleartoeol();
-			else if(ch == undefined)
-				console.write(" ");
-			else 
-				console.write(ch);
-		}
-		function getTopCanvas(x,y) {
-			var top = undefined;
-			for each(var c in properties.canvas) {
-				if(c.hasData(x,y))
-					top = c;
-			}
-			return top;
-		}
-
-		/* initialize display properties */
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-		log(LOG_DEBUG,format("new display initialized: %sx%s at %s,%s",this.width,this.height,this.x,this.y));
-	}
-	
-	/* character/attribute pair representing a screen position and its contents */
-	function Char(ch,attr) {
-		this.ch = ch;
-		this.attr = attr;
-	}
-	
-	/* self-validating cursor position object */
-	function Cursor(x,y,frame) {
-		var properties = {
-			x:undefined,
-			y:undefined,
-			frame:undefined
-		}
-		this.__defineGetter__("x", function() { 
-			return properties.x;
-		});
-		this.__defineSetter__("x", function(x) {
-			if(x == undefined)
-				throw("invalid x coordinate: " + x);
-			else if(x < 0)
-				x = 0;
-			else if(x >= properties.frame.width)	
-				x = properties.frame.width - 1;
-			properties.x = x;
-		});
-		this.__defineGetter__("y", function() { 
-			return properties.y;
-		});
-		this.__defineSetter__("y", function(y) {
-			if(y == undefined)
-				throw("invalid y coordinate: " + y);
-			else if(y < 0)
-				y = 0;
-			else if(y > properties.frame.height)
-				y = properties.frame.height - 1;
-			properties.y = y;
-		});
-		
-		if(frame instanceof Frame)
-			properties.frame = frame;
-		else
-			throw("the frame is not a frame");
-			
-		this.x = x;
-		this.y = y;
-	}
-	
-	/* self-validating scroll offset object */
-	function Offset(x,y,frame) {
-		var properties = {
-			x:undefined,
-			y:undefined,
-			frame:undefined
-		}
-		this.__defineGetter__("x", function() { 
-			return properties.x;
-		});
-		this.__defineSetter__("x", function(x) {
-			if(x == undefined)
-				throw("invalid x offset: " + x);
-			else if(x < 0)
-				x = 0;
-			else if(x > properties.frame.data_width - properties.frame.width)	
-				x = properties.frame.data_width - properties.frame.width;
-			properties.x = x;
-		});
-		this.__defineGetter__("y", function() { 
-			return properties.y;
-		});
-		this.__defineSetter__("y", function(y) {
-			if(y == undefined)
-				throw("invalid y offset: " + y);
-			else if(y < 0)
-				y = 0;
-			else if(y > properties.frame.data_height - properties.frame.height)
-				y = properties.frame.data_height - properties.frame.height;
-			properties.y = y;
-		});
-		
-		if(frame instanceof Frame)
-			properties.frame = frame;
-		else
-			throw("the frame is not a frame");
-			
-		this.x = x;
-		this.y = y;
-	}
-
 	/* private properties */
 	var properties = {
 		x:undefined,
@@ -554,8 +213,6 @@ function Frame(x,y,width,height,attr,frame) {
 		return position.offset;
 	});
 	this.__defineGetter__("id", function() {
-		if(relations.parent)
-			return relations.parent.id+"."+properties.id;
 		return properties.id;
 	});
 	this.__defineGetter__("parent", function() {
@@ -1001,10 +658,11 @@ function Frame(x,y,width,height,attr,frame) {
 	this.clearline = function(attr) {
 		if(attr == undefined)
 			attr = this.attr;
+		
 		for(var x = 0;x<this.width;x++) {
 			properties.display.updateChar(this,x,y);
-			properties.data[y][x].ch = undefined;
-			properties.data[y][x].attr = attr;
+			properties.data[position.cursor.y][x].ch = undefined;
+			properties.data[position.cursor.y][x].attr = attr;
 		}
 	}
 	this.cleartoeol = function(attr) {
@@ -1012,8 +670,8 @@ function Frame(x,y,width,height,attr,frame) {
 			attr = this.attr;
 		for(var x = position.cursor.x;x<this.width;x++) {
 			properties.display.updateChar(this,x,y);
-			properties.data[y][x].ch = undefined;
-			properties.data[y][x].attr = attr;
+			properties.data[position.cursor.y][x].ch = undefined;
+			properties.data[position.cursor.y][x].attr = attr;
 		}
 	}
 	this.crlf = function() {
@@ -1283,7 +941,7 @@ function Frame(x,y,width,height,attr,frame) {
 	}
 	function init(x,y,width,height,attr,frame) {
 		if(frame instanceof Frame) {
-			properties.id = frame.child.length;
+			properties.id = frame.display.nextID;
 			properties.display = frame.display;
 			settings.checkbounds = frame.checkbounds;
 			relations.parent = frame;
@@ -1310,3 +968,349 @@ function Frame(x,y,width,height,attr,frame) {
 	}
 	init.apply(this,arguments);
 }
+
+/* frame reference object */
+function Canvas(frame,display) {
+	this.frame = frame;
+	this.display = display;
+	this.__defineGetter__("xoff",function() {
+		return this.frame.x - this.display.x;
+	});
+	this.__defineGetter__("yoff",function() {
+		return this.frame.y - this.display.y;
+	});
+	this.hasData = function(x,y) {
+		if(x-this.xoff < 0 || y - this.yoff < 0)
+			return undefined;
+		if(x-this.xoff >= this.frame.width || y - this.yoff >= this.frame.height)
+			return undefined;
+		return true;
+	}
+}
+
+/* object representing screen positional and dimensional limits and canvas stack */
+function Display(x,y,width,height) {
+	/* private properties */
+	var properties = {
+		x:undefined,
+		y:undefined,
+		width:undefined,
+		height:undefined,
+		canvas:{},
+		update:{},
+		buffer:{},
+		count:0
+	}
+
+	/* protected properties */
+	this.__defineGetter__("x", function() {
+		return properties.x;
+	});
+	this.__defineSetter__("x", function(x) {
+		if(x == undefined)
+			properties.x = 1;
+		else if(isNaN(x))
+			throw("invalid x coordinate: " + x);
+		else 
+			properties.x = Number(x);
+	});
+	this.__defineGetter__("y", function() {
+		return properties.y;
+	});
+	this.__defineSetter__("y", function(y) {
+		if(y == undefined)
+			properties.y = 1;
+		else if(isNaN(y) || y < 1 || y > console.screen_rows)
+			throw("invalid y coordinate: " + y);
+		else 
+			properties.y = Number(y);
+	});
+	this.__defineGetter__("width", function() {
+		return properties.width;
+	});
+	this.__defineSetter__("width", function(width) {
+		if(width == undefined)
+			properties.width = console.screen_columns;
+		else if(isNaN(width) || (this.x + Number(width) - 1) > (console.screen_columns))
+			throw("invalid width: " + width);
+		else 
+			properties.width = Number(width);
+	});
+	this.__defineGetter__("height", function() {
+		return properties.height;
+	});
+	this.__defineSetter__("height", function(height) {
+		if(height == undefined)
+			properties.height = console.screen_rows;
+		else if(isNaN(height) || (this.y + Number(height) - 1) > (console.screen_rows))
+			throw("invalid height: " + height);
+		else
+			properties.height = Number(height);
+	});
+	this.__defineGetter__("nextID",function() {
+		return ++properties.count;
+	});
+	
+	/* public methods */
+	this.cycle = function() {
+		var updates = getUpdateList();
+		if(updates.length > 0) {
+			var lasty = undefined;
+			var lastx = undefined;
+			var lastid = undefined;
+			for each(var u in updates) {
+				var posx = u.x + properties.x;
+				var posy = u.y + properties.y;
+				if(posx < 1 ||  posy < 1 || posx > console.screen_columns 
+					|| posy > console.screen_rows)
+					continue;
+				if(lasty !== u.y || lastx == undefined || (u.x - lastx) != 1)
+					console.gotoxy(posx,posy);
+				if(lastid !== u.id)
+					console.attributes = undefined;
+				drawChar(u.ch,u.attr,posx,posy);
+				lastx = u.x;
+				lasty = u.y;
+				lastid = u.id;
+			}
+			properties.update = {};
+			console.attributes=undefined;
+			return true;
+		}
+		return false;
+	}
+	this.draw = function() {
+		for(var y = 0;y<this.height;y++) {
+			for(var x = 0;x<this.width;x++) {
+				updateChar(x,y);
+			}
+		}
+		this.cycle();
+	}
+	this.open = function(frame) {
+		var canvas = new Canvas(frame,this);
+		properties.canvas[frame.id] = canvas;
+		this.updateFrame(frame);
+	}
+	this.close = function(frame) {
+		this.updateFrame(frame);
+		delete properties.canvas[frame.id];
+	}
+	this.top = function(frame) {
+		var canvas = properties.canvas[frame.id];
+		delete properties.canvas[frame.id];
+		properties.canvas[frame.id] = canvas;
+		this.updateFrame(frame);
+	}
+	this.bottom = function(frame) {
+		for(var c in properties.canvas) {
+			if(c == frame.id)
+				continue;
+			var canvas = properties.canvas[c];
+			delete properties.canvas[c];
+			properties.canvas[c] = canvas;
+		}
+		this.updateFrame(frame);
+	}
+	this.updateFrame = function(frame) {
+		var xoff = frame.x - this.x;
+		var yoff = frame.y - this.y;
+		for(var y = 0;y<frame.height;y++) {
+			for(var x = 0;x<frame.width;x++) {
+				updateChar(xoff + x,yoff + y);
+			}
+		}
+	}
+	this.updateChar = function(frame,x,y) {
+		var xoff = frame.x - this.x;
+		var yoff = frame.y - this.y;
+		updateChar(xoff + x,yoff + y);
+	}
+	this.screenShot = function(file,append) {
+		var f = new File(file);
+		if(append) 
+			f.open('ab',true,4096);
+		else
+			f.open('wb',true,4096) ;
+		if(!f.is_open)
+			return false;
+			
+		for(var y = 0;y<this.height;y++) {
+			for(var x = 0;x<this.width;x++) {
+				var c = getTopCanvas(x,y);
+				var d = getData(c,x,y);
+				if(d.ch)
+					f.write(d.ch);
+				else
+					f.write(" ");
+				if(d.attr)
+					f.writeBin(d.attr,1);
+				else
+					f.writeBin(0,1);
+			}
+		}
+		
+		f.close();
+		return true;
+	}
+	
+	/* private functions */
+	function updateChar(x,y) {
+		if(!properties.update[y])
+			properties.update[y] = {};
+		properties.update[y][x] = 1;
+	}
+	function getUpdateList() {
+		var list = [];
+		for(var y in properties.update) {
+			for(var x in properties.update[y]) {
+				var c = getTopCanvas(x,y);
+				var d = getData(c,x,y);
+				if(!properties.buffer[x])
+					properties.buffer[x] = {};
+				if(!properties.buffer[x][y] ||
+					properties.buffer[x][y].ch != d.ch || 
+					properties.buffer[x][y].attr != d.attr) {
+					properties.buffer[x][y] = d;
+					list.push(d);
+				}
+			}
+		}
+		return list.sort(updateSort);
+	}
+	function getData(c,x,y) {
+		var cd = {
+			x:Number(x),
+			y:Number(y)
+		};
+		if(c) {
+			var d = c.frame.getData(x-c.xoff,y-c.yoff,true);
+			cd.id = c.frame.id;
+			cd.ch = d.ch;
+			if(d.attr)
+				cd.attr = d.attr;
+			else
+				cd.attr = c.frame.attr;
+		}
+		return cd;
+	}
+	function updateSort(a,b) {
+		if(a.y == b.y)
+			return a.x-b.x;
+		return a.y-b.y;
+	}
+	function drawChar(ch,attr,xpos,ypos) {
+		if(attr)
+			console.attributes = attr;
+		if(xpos == console.screen_columns && ypos == console.screen_rows) 
+			console.cleartoeol();
+		else if(ch == undefined)
+			console.write(" ");
+		else 
+			console.write(ch);
+	}
+	function getTopCanvas(x,y) {
+		var top = undefined;
+		for each(var c in properties.canvas) {
+			if(c.hasData(x,y))
+				top = c;
+		}
+		return top;
+	}
+
+	/* initialize display properties */
+	this.x = x;
+	this.y = y;
+	this.width = width;
+	this.height = height;
+	log(LOG_DEBUG,format("new display initialized: %sx%s at %s,%s",this.width,this.height,this.x,this.y));
+}
+
+/* character/attribute pair representing a screen position and its contents */
+function Char(ch,attr) {
+	this.ch = ch;
+	this.attr = attr;
+}
+
+/* self-validating cursor position object */
+function Cursor(x,y,frame) {
+	var properties = {
+		x:undefined,
+		y:undefined,
+		frame:undefined
+	}
+	this.__defineGetter__("x", function() { 
+		return properties.x;
+	});
+	this.__defineSetter__("x", function(x) {
+		if(x == undefined)
+			throw("invalid x coordinate: " + x);
+		else if(x < 0)
+			x = 0;
+		else if(x >= properties.frame.width)	
+			x = properties.frame.width - 1;
+		properties.x = x;
+	});
+	this.__defineGetter__("y", function() { 
+		return properties.y;
+	});
+	this.__defineSetter__("y", function(y) {
+		if(y == undefined)
+			throw("invalid y coordinate: " + y);
+		else if(y < 0)
+			y = 0;
+		else if(y > properties.frame.height)
+			y = properties.frame.height - 1;
+		properties.y = y;
+	});
+	
+	if(frame instanceof Frame)
+		properties.frame = frame;
+	else
+		throw("the frame is not a frame");
+		
+	this.x = x;
+	this.y = y;
+}
+
+/* self-validating scroll offset object */
+function Offset(x,y,frame) {
+	var properties = {
+		x:undefined,
+		y:undefined,
+		frame:undefined
+	}
+	this.__defineGetter__("x", function() { 
+		return properties.x;
+	});
+	this.__defineSetter__("x", function(x) {
+		if(x == undefined)
+			throw("invalid x offset: " + x);
+		else if(x < 0)
+			x = 0;
+		else if(x > properties.frame.data_width - properties.frame.width)	
+			x = properties.frame.data_width - properties.frame.width;
+		properties.x = x;
+	});
+	this.__defineGetter__("y", function() { 
+		return properties.y;
+	});
+	this.__defineSetter__("y", function(y) {
+		if(y == undefined)
+			throw("invalid y offset: " + y);
+		else if(y < 0)
+			y = 0;
+		else if(y > properties.frame.data_height - properties.frame.height)
+			y = properties.frame.data_height - properties.frame.height;
+		properties.y = y;
+	});
+	
+	if(frame instanceof Frame)
+		properties.frame = frame;
+	else
+		throw("the frame is not a frame");
+		
+	this.x = x;
+	this.y = y;
+}
+
