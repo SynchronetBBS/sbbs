@@ -35,6 +35,9 @@ function JSONChat(usernum,jsonclient,host,port) {
 	}
 	
 	this.submit = function(target,str) {
+		/* if the string has been passed with a leading '/' */
+		if(str[0] == "/") 
+			return this.getcmd(target,str);
 		var message = new Message(this.nick,str,Date.now());
 		var chan = this.channels[target.toUpperCase()];
 		this.client.write("chat","channels." + chan.name + ".messages",message,2);
@@ -116,7 +119,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 	}
 
 	/* process chat commands */
-	this.handle_command = function(target,cmdstr) {
+	this.getcmd = function(target,cmdstr) {
 		/* if the command string is empty */
 		if(!cmdstr) 
 			return false;

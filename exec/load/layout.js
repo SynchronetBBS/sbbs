@@ -82,8 +82,8 @@ function Layout(frame) {
 		title_fg:YELLOW,
 		tab_bg:BG_LIGHTGRAY,
 		tab_fg:BLACK,
-		view_bg:BG_GREEN,
-		view_fg:LIGHTGREEN,
+		view_bg:BG_BLACK,
+		view_fg:GREEN,
 		border_bg:BG_BLACK,
 		border_fg:LIGHTGRAY
 	};
@@ -261,6 +261,9 @@ function LayoutView(title,frame,parent) {
 		frames.main.draw();
 	}
 	this.cycle=function() {
+		for each(var t in properties.tabs)
+			if(typeof t.cycle == "function")
+				t.cycle();
 		return frames.main.cycle();
 	}
 	this.addTab=function(title) {
