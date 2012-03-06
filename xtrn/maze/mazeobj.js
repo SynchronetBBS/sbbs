@@ -1,184 +1,136 @@
 //GAME OBJECTS
-function ScoreList()
+function GameData() 
 {
-	this.scores;
-	this.SaveScores=function()
-	{
-	}
-	this.loadScores=function()
-	{
-	}
-	this.SortScores=function()
-	{ 
-	}	
-}
-function PlayerList()
-{
-	this.players=[];
-	this.prefix=system.qwk_id + ".";
+	this.profiles={};
+	this.games={};
+	this.mazes={};
+	this.online={};
+	this.updated=true;
 	
-	this.storePlayer=function(id)
-	{
-		var player=this.players[id];
-		var pFile=new File(root + "players.ini");
-		pFile.open("r+"); 
-		pFile.iniSetValue(id,"wins",player.wins);
-		pFile.iniSetValue(id,"besttime",player.losses);
-		pFile.close();
-		sendFiles(pFile.name);
+	this.loadGames=function() {
+		this.games = client.read("mazerace","games",1);
+		if(!this.games)
+			this.games = {};
 	}
-	this.loadPlayers=function()
-	{
-		var update=false;
-		var pFile=new File(root + "players.ini");
-		pFile.open(file_exists(pFile.name) ? "r+":"w+",true); 
-		
-		if(!pFile.iniGetValue(this.prefix + user.alias,"name")) {
-			pFile.iniSetObject(this.prefix + user.alias,new Score(user.alias));
-			update=true;
-		}
-		var players=pFile.iniGetSections();
-		for(player in players)	{
-			this.players[players[player]]=pFile.iniGetObject(players[player]);
-		}
-		pFile.close();
-		if(update) sendFiles(pFile.name);
-	}
-	this.getPlayer=function(id)
-	{
-		return this.players[id];
-	}
-	this.getAlias=function(id)
-	{
-		return id.substr(id.indexOf(".")+1);
-	}
-	this.getPlayerID=function(name)
-	{
-		return(this.prefix + name);
-	}
-}
-function Maze(rootFile,gameNumber)
-{
-	this.colors=["\1y","\1g","\1m","\1c","\1r","\1w"];	//LIST OF COLORS USED BY OTHER PLAYERS
-	this.maze=new Graphic(79,22);
-	this.timer=new Timer("\1y\1h");
-	this.mazeFile=rootFile+".maz";
-	this.dataFile=rootFile+".ini";
-	this.gameNumber=gameNumber;
-
-	this.players=[];
-	this.start=false;
-	this.finish=false;
-	this.lastupdate=-1;
-	this.status=-1;
-	this.winner=false;
-	this.damage=true;
-		
-	this.init=function()
-	{
-		if(!file_exists(this.mazeFile)) {
-			generator.generate(this.dataFile,this.mazeFile);
-		}
-		this.loadMaze();
-		this.findStartFinish();
-		this.loadData();
-	}
-	this.goToStartingPosition=function(player)
-	{
-		player.coords=new Coords(this.start.x,this.start.y);
-	}
-	this.findStartFinish=function()
-	{
-		for(var x=0;x<this.maze.data.length;x++) {
-			for(var y=0;y<this.maze.data[x].length;y++)	{
-				if(!this.start) if(this.maze.data[x][y].ch=="S") {
-					this.start=new Coords(x+1,y+1);
-					this.maze.data[x][y].ch=" ";
-				}
-				if(!this.finish) if(this.maze.data[x][y].ch=="X") {
-					this.finish=new Coords(x+1,y+1);
-					this.maze.data[x][y].attr=14;
-				}
-				if(this.start && this.finish) {
-					return true;
-				}
-			}
-		}
-		log("unable to find start & finish");
-		return false;
-	}
-	this.draw=function()
-	{
-		console.clear();
-		this.maze.draw(1,1);
-	}
-	this.loadMaze=function()
-	{
-		this.maze.load(this.mazeFile);
-	}
-	this.loadData=function()
-	{
-		var file=new File(this.dataFile);
-		this.lastupdate=file_date(file.name);
-		file.open('r',true);
-		var players=file.iniGetKeys("players");
-		var created=file.iniGetValue(null,"created");
-		var status=file.iniGetValue(null,"status");
-		file.close();
-		
-		for(var p in players) {
-			if(!this.players[players[p]]) {
-				this.players[players[p]]=new Player(players[p],this.colors.shift(),100);
-			}
-			this.goToStartingPosition(this.players[players[p]]);
-		}
-		this.status=status;
-		this.lastupdate=time();
-		
-		if(created > 0) {
-			var current=time();
-			var difference=current-created;
-			this.timer.init(30-difference);
+	this.loadPlayers=function() {
+		this.profiles=client.read(game_id,"profiles",1);
+		if(!this.profiles)
+			this.profiles = {};
+		if(!this.profiles[user.alias]) {
+			var p = new Profile(user.alias);
+			this.profiles[p.name] = p;
+			client.write("mazerace","profiles."+p.name,p,2);
 		}
 	}
-	this.init();
+	this.who=function() {
+		this.online=client.who(game_id,"games");
+	}
+	this.storeGameStatus=function(gameNumber,status) {
+		this.games[gameNumber].status = status;
+		client.write(game_id,
+			"games." + 
+			gameNumber + 
+			".status", 
+			status,2);
+	}
+	this.storeGameWinner=function(gameNumber,raceTime,winner) {
+		this.games[gameNumber].raceTime = raceTime;
+		this.games[gameNumber].winner = winner;
+		this.profiles[winner].wins++;
+		client.write(game_id,
+			"games." + 
+			gameNumber + 
+			".winner", 
+			winner,2);
+		client.write(game_id,
+			"games." + 
+			gameNumber + 
+			".raceTime", 
+			raceTime,2);
+		client.write(game_id,
+			"profiles." +
+			winner +
+			".wins",
+			this.profiles[winner].wins,2);
+		if(raceTime < this.profiles[winner].best_time || this.profiles[winner].best_time == 0) {
+			this.profiles[winner].best_time = raceTime;
+			client.write(game_id,
+				"profiles." +
+				winner +
+				".best_time",
+				raceTime,2);
+		}
+	}
+	this.storePlayerPosition=function(gameNumber,player) {
+		this.mazes[gameNumber].players[player.name].coords = player.coords;
+		client.write(game_id,
+			"mazes." + 
+			gameNumber + 
+			".players." + 
+			player.name + ".coords",
+			player.coords,2);
+	}
+	this.storePlayerHealth=function(gameNumber,player) {
+		this.mazes[gameNumber].players[player.name].health = player.health;
+		client.write(game_id,
+			"mazes." + 
+			gameNumber + 
+			".players." + 
+			player.name  + ".health",
+			player.health,2);
+	}
+	this.addPlayer=function(gameNumber,profile) {
+		var player = new Player(profile.name,profile.avatar,profile.color);
+		this.games[gameNumber].players[player.name] = player;
+		client.write(game_id,
+			"games." + 
+			gameNumber + 
+			".players." + 
+			player.name,
+			player,2);
+	}
+	this.delPlayer=function(gameNumber,profile) {
+		delete this.games[gameNumber].players[profile.name];
+		client.remove(game_id,
+			"games." + 
+			gameNumber + 
+			".players." + 
+			profile.name,
+			2);
+	}
+	
+	this.loadGames();
+	this.loadPlayers();
+	this.who();
 }
 function Coords(x,y)
 {
 	this.x=x;
 	this.y=y;
 }
-function Score(name,besttime,wins)
+function Profile(name) 
 {
 	this.name=name;
-	this.besttime=besttime?besttime:0;
-	this.wins=wins?wins:0;
+	this.avatar=settings.avatars[0];
+	this.color=settings.colors[0];
+	this.wins=0;
+	this.losses=0;
+	this.best_time=0;
 }
-function Player(name,color,health)
+function Player(name,avatar,color)
 {
 	this.name=name;
-	this.color=color;
-	this.health=health;
-	this.coords;
-	
-	this.draw=function(c)
-	{
-		var color="";
-		if(this.health>=75) color=this.color+"\1h";
-		else if(this.health>=50) color=this.color;
-		else if(this.health>=25) color="\1k\1h";
-		else color="\1r";
-		console.gotoxy(this.coords);
-		console.putmsg(color + "\xEA");
-		console.home();
-	}
-	this.unDraw=function()
-	{
-		console.gotoxy(this.coords);
-		write(" ");
-	}
+	this.coords={};
+	this.health=100;
+	this.avatar=settings.avatars[0];
+	this.color=settings.colors[0];
+	this.ready=false;
 }
-function Packet(func)
+function Game(gameNumber) 
 {
-	this.func=func;
+	this.gameNumber=gameNumber;
+	this.players={};
+
+	this.damage=settings.DAMAGE;
+	this.status=status.WAITING;
 }

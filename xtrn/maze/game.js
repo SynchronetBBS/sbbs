@@ -1,3 +1,4 @@
+//$Id$
 /*
 	SYNCHRONET MAZE RACE 
 	A Javascript remake 
@@ -6,45 +7,40 @@
 	For Synchronet v3.15+
 	Matt Johnson(2008)
 */
-//$Id$
-const VERSION="$Revision$".split(' ')[1];
-
-load("graphic.js");
-load("chateng.js");
-load("layout.js");
-load("inputline.js");
+const VERSION="$Revision$".replace(/\$/g,'').split(' ')[1];
 
 var oldpass=console.ctrlkey_passthru;
 var root=js.exec_dir;
+var game_id = "mazerace";
 
-load(root + "mazegen.js");
+load("frame.js");
+load("json-chat.js");
+load("inputline.js");
+load("layout.js");
+load("graphic.js");
 load(root + "mazeobj.js");
-load(root + "timer.js");
 load(root + "menu.js");
 
-var stream=argv[0];
-var generator=new MazeGenerator(10,26);
-var players=new PlayerList();
-var scores=new ScoreList();
-var input=new InputLine(2,console.screen_rows-1,56,150);
-var chat=new ChatEngine("IRC","rrx.ca","6667");
+/* game objects */
+var settings=client.read(game_id,"settings",1);
+var status={WAITING:-1,STARTING:0,RACING:1,FINISHED:2};
+var frame=new Frame(1,1,80,24);
+var layout=new Layout(frame);
+var data=new GameData();
 
-function splashStart()
-{
-	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+/* game splash screens */
+function splashStart() {
+	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status|=SS_PAUSEOFF;
 	console.clear();
 	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
 }
-function splashExit()
-{
-	//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
+function splashExit() {
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	bbs.sys_status&=~SS_PAUSEOFF;
-	console.clear(ANSI_NORMAL);
-	sendFiles("players.ini");
+	console.clear(BG_BLACK);
 	
 	var splash_filename=root + "exit.bin";
 	if(!file_exists(splash_filename)) return;
@@ -61,339 +57,383 @@ function splashExit()
 	console.getkey(K_NOSPIN|K_NOECHO);
 	console.clear(ANSI_NORMAL);
 }
-function lobby()
-{
-	var background=new Graphic(80,24);
-	var window=new Layout_View("chat",2,4,56,18);
+function formatTime(julian_date) {
+	var ms = julian_date%1000;
+	julian_date/=1000;
+	var s = julian_date%60;
+	julian_date/=60;
+	var m = julian_date%60;
+	julian_date/=60;
+	return(format("\1y%2d\1cm \1y%02d\1cs \1y%03d\1cms",m,s,ms));
+}
+function formatScore(num,name, wins, best_time) {
+	return format(" \1c%3d \1y%-25s \1c%4d \1y%13s",num,name,wins,formatTime(best_time)); 
+}
+function lobby() {
+
+	/* toggles */
+	var full_redraw=true;
+	var hotkeys=true;
 	
-	var menu;
-	var mazes=[];
-	var update=false;
-	
-	function init()
-	{
-		updateMazes();
-		initChat();
-		initMenu();
-		background.load(root + "lobby.bin");
-		notice("\1y\1hWelcome to Maze Race!");
-		notice("\1n\1ytype '/' for a list of available menu commands,");
-		notice("\1n\1yor you can just start typing to chat.");
-		notice("\1n\1yPress 'Escape' to quit.");
-		notice(" ");
-	}
-	function initChat()
-	{
-		window.show_title=false;
-		window.show_border=false;
-		window.add_tab("chat","#maze_race_lobby",chat);
-	}
-	function initMenu()
-	{
-		var menu_items=["~Create Race", 
-						"~Join Race",
-						"~Rankings",
-						"~Help",
-						"Re~draw"];
-		menu=new Menu(menu_items,2,23,56,"\1c\1h","\1n");	
-	}
-	function main()
-	{
-		var hotkeys=true;
-		redraw();
+	/* display objects */
+	var playerlist=new Frame(59,5,20,18,BG_BLACK,frame);
+	var input=new InputLine(3,console.screen_rows-1,54,150);
+	var chat=new JSONChat(user.number,undefined,serverAddr,serverPort);
+	var chat_window=layout.addView("chat",2,4,56,18)
+	var chat_tab;
 		
-		while(1) {
+	/* main menu */
+	var menu=new Menu([
+		"~Join race",
+		"~Leave race",
+		"~Ready",
+		"S~ettings",
+		"~Scores",
+		"~Chat",
+		"~Help",
+		"~Quit"
+	],3,23,54,"\1c\1h","\1n");	
+
+	/* metadata */
+	var profile=undefined;
+	var gnum=undefined;
+	
+	/* main functions */
+	function open()	{
+		frame.open();
+		frame.load(root + "lobby.bin",80,24);
+		client.subscribe(game_id,"games");
+		chat.join("#mazerace");
+		chat_window.show_title=false;
+		chat_window.show_border=false;
+		chat_tab=chat_window.addTab("#mazerace");
+		data.who();
+		menu.disable("L");
+		menu.disable("R");
+		profile=data.profiles[user.alias];
+	}
+	function main()	{
+		while(!js.terminated) {
 			cycle();
 			var k=input.inkey(hotkeys);
 			if(!k) 
 				continue;
 			if(hotkeys) {
+				k = k.toUpperCase();
+				if(!menu.items[k] || !menu.items[k].enabled) 
+					continue;
 				switch(k.toUpperCase()) {
-				case "/":
-					refreshCommands();
-					menu.draw();
-					getMenuCommand();
-					redraw();
-					break;
-				case "\x1b":
-					return;
-				default:
-					hotkeys=false;
-					console.ungetstr(k);
-					break;
-				}
-			}
-			else if(window.handle_command(k,"IRC"))
-				hotkeys=true;
-		}
-	}
-	function cycle()
-	{
-		window.cycle();
-		updateChatView(chat,window);
-		updateMazes();
-
-		for each(var m in mazes) {
-			switch(Number(m.status)) {
-			case -1:
-				if(countMembers(m.players)>1) {
-					initTimer(m);
-					update=true;
-				}
-				break;
-			case 0:
-				if(!m.timer.countdown) m.loadData();
-				var difference=time()-m.timer.lastupdate;
-				if(!difference>=1) break;
-				if(!m.timer.countDown()) {
-					startRace(m);
-				}
-				update=true;
-				break;
-			case 1:
-				var id=players.getPlayerID(user.alias);
-				if(m.players[id]) {
-					race(m);
-					redraw();
-				}
-				break;
-			case 2:
-				break;
-			default:
-				log("unknown game status: " + m.status);
-				mswait(500);
-				break;
-			}
-		}
-		if(update) {
-			listMazes();
-			update=false;
-		}
-		mswait(5);
-	}
-	function initTimer(maze)
-	{
-		maze.status=0;
-		var file=new File(maze.dataFile);
-		file.open('r+',true);
-		file.iniSetValue(null,"created","" + time());
-		file.iniSetValue(null,"status",0);
-		file.close();
-	}
-	function startRace(maze)
-	{
-		log(LOG_DEBUG,"starting maze: " + maze.gameNumber);
-		maze.status=1;
-		var file=new File(maze.dataFile);
-		file.open('r+',true);
-		file.iniSetValue(null,"status",1);
-		file.close();
-	}
-	function help()
-	{
-	
-	}
-	function notice(txt)
-	{
-		window.current_tab.window.post("\1n\1g" + txt);
-	}
-	function alrt(txt)
-	{
-		window.current_tab.window.post("\1n\1r" + txt);
-	}
-	function refreshCommands()
-	{
-		if(countMembers(mazes)>0) {
-			menu.enable(["J"]);
-		} else {
-			menu.disable(["J"]);
-		}
-	}
-	function showRankings()
-	{
-	}
-	function getMenuCommand()
-	{
-		while(1) {
-			cycle();
-			var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
-			if(k) 	{
-				switch(k.toUpperCase())
-				{
-				case "R":
-					showRankings();
+				case "S":
+					showScores();
 					break;
 				case "H":
-					help();
-					break;
-				case "C":
-					createMaze();
+					showHelp();
 					break;
 				case "J":
-					selectMaze();
+					joinMaze();
 					break;
-				default:
+				case "R":
+					toggleReady();
+					break;
+				case "L":
+					leaveMaze();
+					break;
+				case "E":
+					chooseAvatar();
+					break;
+				case "Q":
+					return;
+				case "C":
+					input.draw();
+					hotkeys=false;
 					break;
 				}
-				return true;
+			}
+			else {
+				chat.submit(chat_tab.title.toUpperCase(),k);
+				menu.draw();
+				hotkeys=true;
 			}
 		}
 	}
-	function selectMaze()
-	{
-		var gameNumber=menuPrompt("\1nEnter maze #\1h: ");
-		if(!mazes[gameNumber]) {
-			alrt("No such maze!");
-			return false;
-		}
-		joinMaze(mazes[gameNumber]);
-		return true;
+	function close() {
+		frame.close();
+		client.unsubscribe(game_id,"games");
 	}
-	function createMaze()
-	{
-		var id=players.getPlayerID(user.alias);
-		for each(var m in mazes) {
-			if(m.players[id]) {
-				menuPrompt("\1r\1hYou are already in a game \1n\1r[\1hpress a key\1n\1r]");
-				return false;
-			}
+	function cycle() {
+		client.cycle();
+		while(client.updates.length > 0)
+			processUpdate(client.updates.shift());
+		chat.cycle();
+		updateChatTab();
+		if(frame.cycle())
+			console.gotoxy(1,24);
+		if(full_redraw)
+			redraw();
+		if(data.updated) {
+			listPlayers();
+			data.updated = false;
 		}
-		var gameNumber=getNewGameNumber();
-		var rootFileName=getRootFileName(gameNumber);
-		var maze=new Maze(rootFileName,gameNumber);
-		maze.players[id]=new Player(id,maze.colors.shift(),100);
-		maze.goToStartingPosition(maze.players[id]);
-		mazes[maze.gameNumber]=maze;
-
-		sendFiles(maze.mazeFile);
-		storeGameData(maze);
+		if(hotkeys && menu.updated) {
+			menu.draw();
+			menu.updated = false;
+		}
+		if(readyToRace()) {
+			data.mazes[gnum] = client.read(game_id,"mazes." + gnum,1);
+			race(gnum);
+			leaveMaze();
+			full_redraw = true;
+		}
 	}
-	function joinMaze(maze)
-	{
-		var id=players.getPlayerID(user.alias);
-		if(maze.players[id]) {
-			menuPrompt("\1r\1hYou are already in that game \1n\1r[\1hpress a key\1n\1r]");
-			return false;
+	function updateChatTab() {
+		var channel = chat.channels[chat_tab.title.toUpperCase()];
+		while(channel && channel.messages.length > 0) {
+			var msg = channel.messages.shift();
+			var str = msg.nick.name + ": " + msg.str;
+			chat_tab.getcmd(str + "\r\n");
 		}
-		if(countMembers(maze.players) == maze.colors.length) {
-			menuPrompt("\1r\1hThat game is full \1n\1r[\1hpress a key\1n\1r]");
-			return false;
+	}
+	function getGameNumber() {
+		for each(var game in data.games) {
+			if(game.players && game.players[profile.name] != undefined)
+				return game.gameNumber;
 		}
-		maze.players[id]=new Player(id,maze.colors.shift(),100);
-		maze.goToStartingPosition(maze.players[id]);
-		storePlayerData(maze,id);
-		notice("You joined maze #" + maze.gameNumber);
-	}	
-	function updateMazes()
-	{
-		var maze_files=directory(root+"maze*.ini");
-		for(var i=0;i<maze_files.length;i++) {
-			var filename=file_getname(maze_files[i]);
-			var gameNumber=Number(filename.substring(4,filename.indexOf(".")));
-			
-			if(mazes[gameNumber]) {
-				var lastupdate=file_date(maze_files[i]);
-				var lastloaded=mazes[gameNumber].lastupdate;
-				if(lastupdate>lastloaded) {
-					log("Updating maze: " +  maze_files[i]);
-					log("last update: " + lastloaded);
-					mswait(500);
-					mazes[gameNumber].loadData();
-					update=true;
+		return undefined;
+	}
+	function readyToRace() {
+		if(!data.games[gnum])
+			return false;
+		if(!data.games[gnum].players[profile.name])
+			return false;
+		if(data.games[gnum].status != status.RACING)
+			return false;
+		return (data.games[gnum].players[profile.name].ready);
+	}
+	function processUpdate(update) {
+		try {
+			switch(update.oper) {
+			case "WRITE":
+				var p=update.location.split(".");
+				var obj=data;
+				while(p.length > 1) {
+					var child=p.shift();
+					if(!obj[child])
+						obj[child] = {};
+					obj=obj[child];
 				}
-			} else {
-				log("loading maze: " + maze_files[i]);
-				mazes[gameNumber]=loadMaze(gameNumber);
-				update=true;
+				if(update.data == undefined)
+					delete obj[p.shift()];
+				else
+					obj[p.shift()] = update.data;
+				data.updated=true;
+				break;
+			case "SUBSCRIBE":
+			case "UNSUBSCRIBE":
+				data.online=client.who(game_id,"games");
+				data.updated=true;
+				break;
 			}
+		} catch(e) {
+			log(LOG_ERROR,e);
+			log(LOG_WARNING,update.toSource());
 		}
-		for(m in mazes) {
-			var maze=mazes[m];
-			if(maze && !file_exists(maze.dataFile)) {
-				log("removing deleted maze: " + maze.dataFile);
-				delete mazes[m];
-				update=true;
-			}
-		}
-	}
-	function loadMaze(gameNumber)
-	{
-		var rootFileName=root + "maze" + gameNumber;
-		return new Maze(rootFileName,gameNumber);
-	}
-	function listMazes()
-	{
-		var ip=new Coords(60,6);
-		clearBlock(60,6,19,7);
-		var wp=new Coords(60,16);
-		clearBlock(60,16,19,7);
-		var in_progress=[];
-		var waiting=[];
-		
-		for(var m in mazes) {
-			var maze=mazes[m];
-			if(maze.status == 1)
-				in_progress.push(maze);
-			else 
-				waiting.push(maze);
-		}
-		
-		console.gotoxy(ip);
-		console.pushxy();
-		for each(var m in in_progress) {
-			console.putmsg("\1n\1cMaze #" + m.gameNumber);
-			console.popxy();
-			console.down();
-			console.pushxy();
-		}
-		console.gotoxy(wp);
-		console.pushxy();
-		for each(var m in waiting) {
-			console.putmsg("\1n\1cMaze #\1h" + m.gameNumber);
-			if(m.timer.countdown > 0)
-				console.putmsg(" \1n\1c: \1r\1h" + parseInt(m.timer.countdown,10));
-			console.popxy();
-			console.down();
-			console.pushxy();
-		}
-	}
-	function redraw()
-	{
-		background.draw();
-		window.drawView();
-		listMazes();
 	}
 
-	init();
-	main();
-}
-function race(maze) 
-{
-	var currentPlayerID=players.getPlayerID(user.alias);
-	var player=maze.players[currentPlayerID];
-	var update=true;
+	/* character picker */
+	function chooseAvatar() {
+		var af = new Frame(30,10,10,2,BG_BLACK + player.color,frame);
+		af.open();
+		for each(var a in settings.avatars)
+			af.putmsg(a + " ");
+		af.draw();
+	}
+	function chooseColor() {
+		var cf = new Frame(30,10,10,2,BG_BLACK);
+	}
 	
-	function init()
-	{
-		maze.draw();
+	/* helpers */
+	function showHelp()	{
+	}
+	function listPlayers() {
+		playerlist.clear();
+		playerlist.crlf();
+
+		var idle = {};
+		for each(var p in data.online) {
+			if(!p.nick)
+				continue;
+			idle[p.nick] = p;
+		}
+		for each(var g in data.games) {
+			playerlist.putmsg("\1c\1h MAZE #" + g.gameNumber + ":");
+			
+			if(g.status == status.WAITING)
+				playerlist.putmsg(" \1r\1h[waiting]\r\n");
+			else if(g.status == status.STARTING) 
+				playerlist.putmsg(" \1y\1h[starting]\r\n");
+			else if(g.status == status.RACING)
+				playerlist.putmsg(" \1g\1h[racing]\r\n");
+			else if(g.status == status.FINISHED)
+				playerlist.putmsg(" \1k\1h[finished]\r\n");
+			else 
+				playerlist.putmsg(" \1n\1r[error]\r\n");
+				
+			for each(var p in g.players) {
+				if(p.ready == true)
+					playerlist.putmsg("\1g\1h * ");
+				else
+					playerlist.putmsg("\1r\1h * ");
+				playerlist.putmsg("\1n\1c" + p.name + "\r\n");
+				delete idle[p.name];
+			}
+			playerlist.crlf();
+		}
+		if(countMembers(idle) > 0) {
+			playerlist.putmsg("\1c\1h ONLINE:\r\n");
+			for each(var p in idle)
+				playerlist.putmsg("\1n\1c  " + p.nick + "\r\n");
+		}
+	}
+	function showScores()	{
+		var scoreFrame = new Frame(16,6,50,14,BG_BLUE + YELLOW,frame);
+		var count = 0;
+		var scores_per_page = 10;
+		var list = sortScoresByWins();
+		scoreFrame.open();
+		for each(var player in list) {
+			if(player.wins == 0)
+				continue;
+			if(count > 0 && count%scores_per_page == 0) {
+				scoreFrame.gotoxy(1,24);
+				scoreFrame.center("\1r\1h<SPACE to continue>");
+				scoreFrame.draw();
+				while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
+				scoreFrame.clear();
+			}
+			if(count++%scores_per_page == 0) {
+				scoreFrame.crlf();
+				scoreFrame.putmsg("\1w\1h" + 
+					format(" %3s %-25s %4s %13s","###","NAME","WINS","BEST TIME") + "\r\n");
+			}
+			scoreFrame.putmsg("\1w\1y" + 
+				formatScore(count,player.name,player.wins,player.best_time) + "\r\n");
+		}
+		scoreFrame.gotoxy(1,24);
+		scoreFrame.center("\1r\1h<SPACE to continue>");
+		scoreFrame.cycle();
+		while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
+		scoreFrame.close();
+	}
+	function sortScoresByWins() {
+		return sortListByProperty(data.profiles,"wins");
+	}
+	function sortScoresByTime() {
+		return sortListByProperty(data.profiles,"best_time").reverse();
+	}
+	function joinMaze() {
+		/* find the first open game number */
+		gnum=1;
+		for each(var g in data.games) {
+			if(g.status == status.RACING)
+				gnum++;
+			else if(countMembers(g.players) >= settings.max_players)
+				gnum++;
+		}
+		client.lock("mazerace","games." + gnum,2);
+		
+		var player = new Player(profile.name,profile.avatar,profile.color);
+		/* if the game doesnt exist, create it */
+		if(!data.games[gnum]) {
+			data.games[gnum] = new Game(gnum);
+			data.games[gnum].players[profile.name] = player;
+			client.write("mazerace","games." + gnum,data.games[gnum]);
+		}
+		/* otherwise, store player info in game */
+		else {
+			data.games[gnum].players[profile.name] = player;
+			client.write("mazerace","games."+gnum+".players."+profile.name,player);
+		}
+		client.unlock("mazerace","games." + gnum);
+		menu.enable("L");
+		menu.enable("R");
+		menu.disable("J");
+		data.updated=true;
+	}
+	function leaveMaze() {
+		delete data.games[gnum].players[profile.name];
+		client.remove("mazerace","games."+gnum+".players."+profile.name,2);
+		menu.enable("J");
+		menu.disable("L");
+		menu.disable("R");
+		data.updated=true;
+	}
+	function toggleReady() {
+		var player = data.games[gnum].players[profile.name];
+		player.ready = player.ready?false:true;
+		client.write("mazerace","games."+gnum+".players."+profile.name+".ready",player.ready,2);
+		data.updated=true;
+	}
+	function redraw() {
+		if(full_redraw) {
+			frame.draw();
+			full_redraw=false;
+		}
+		if(hotkeys)
+			menu.draw();
+		else
+			input.draw();
+		listPlayers();
+	}
+
+	open();
+	main();
+	close();
+}
+function race(gameNumber)	{
+	
+	/* bitwise compass */
+	const N=1;
+	const E=2;
+	const S=4;
+	const W=8;
+	
+	/* mazeplay variables */
+	var maze = data.mazes[gameNumber];
+	var game = data.games[gameNumber];
+	var player = maze.players[user.alias];
+
+	/* display frames */
+	var screen = new Frame(1,1,80,23,BG_BLACK + CYAN,frame);
+	var info = new Frame(1,24,80,1,BG_BLUE + YELLOW,frame);
+	var start_time = Date.now();
+	var end_time = undefined;
+	
+	/* main functions */
+	function open() {
+		client.subscribe(game_id,"mazes." + gameNumber);
+		loadMaze();
+		loadPlayers();
+		screen.open();
+		info.open();
 		showPlayerInfo();
 	}
-	function main()
-	{
-		while(!maze.winner) {
+	function main()	{
+		while(game.status != status.FINISHED) {
 			cycle();
-			var k=console.inkey();
-			switch(k.toUpperCase())
-			{
+			var k=console.inkey(K_NOCRLF|K_NOECHO,5);
+			switch(k.toUpperCase())	{
 			case KEY_DOWN:
 			case KEY_UP:
 			case KEY_LEFT:
 			case KEY_RIGHT:
 				movePosition(k);
+				if(playerDead()) 
+					goToStart();
+				else if(playerAtFinish()) 
+					endGame();
 				break;
 			case "Q":
 			case "\x1b":
-				deleteMaze();
 				return false;
 			case "R":
 				redraw();
@@ -401,228 +441,274 @@ function race(maze)
 				break;
 			}
 		}
-		deleteMaze();
-		console.home();
-		console.cleartoeol();
-		console.putmsg("\1y\1h" + maze.winner + " has won! \1r[press 'Q' to return to the lobby]");
-		return(console.getkeys('Q'));
+		showWinner();
 	}
-	function processData(packet)
-	{
-		if(packet.gameNumber != maze.gameNumber) return false;
-		switch(packet.func.toUpperCase()) {
-		case "MOVE":
-			var p=packet.player;
-			var coords=packet.coords;
-			var health=packet.health;
-			
-			maze.players[p].unDraw();
-			if(maze.players[p].coords.x == player.coords.x && maze.players[p].coords.y == player.coords.y) {
-				player.draw();
-				send();
-			}
-			maze.players[p].coords=coords;
-			maze.players[p].health=health;
-			maze.players[p].draw();
-			showPlayerInfo();
-			checkWinner();
-			break;
-		default:
-			log("Unknown chess data type received");
-			log("packet: " + packet.toSource());
-			break;
-		}
+	function close() {
+		screen.close();
+		info.close();
+		client.unsubscribe(game_id,"mazes." + maze.gameNumber);
 	}
-	function cycle()
-	{
-		var packet=stream.receive();
-		if(packet)	processData(packet);
-		
-		if(update) {
-			send();
-			player.draw();
-			checkWinner();
-			update=false;
-		}
+	function cycle() {
+		client.cycle();
+		while(client.updates.length > 0)
+			processUpdate(client.updates.shift());
+		if(frame.cycle())
+			console.gotoxy(1,24);
 	}
-	function movePosition(k)
-	{
-		switch(k)
-		{
-		case KEY_DOWN:
-			if(checkMove(player.coords.x,player.coords.y+1)) {
-				kk=false; 
-				showPlayerInfo(); 
+	function processUpdate(update) {
+		var pName = undefined;
+		try {
+			switch(update.oper) {
+			case "WRITE":
+				var p=update.location.split(".");
+				var obj=data;
+				while(p.length > 1) {
+					var child=p.shift();
+					if(!obj[child])
+						obj[child] = {};
+					obj=obj[child];
+					if(child.toUpperCase() == "PLAYERS")
+						pName = p[0];
+				}
+				if(p[0].toUpperCase() == "COORDS") {
+					var x = update.data.x+1;
+					var y = update.data.y+1;
+					maze.players[pName].frame.moveTo(x,y);
+				}
+				else if(p[0].toUpperCase() == "HEALTH") {
+					maze.players[pName].health = update.data;
+					showPlayerInfo();
+				}
+				if(update.data == undefined)
+					delete obj[p.shift()];
+				else
+					obj[p.shift()] = update.data;
+				break;
+			case "SUBSCRIBE":
+			case "UNSUBSCRIBE":
+				data.online=client.who(game_id,"games");
 				break;
 			}
-			player.unDraw();
-			player.coords.y++;
-			update=true;
-			break;
-		case KEY_UP:
-			if(checkMove(player.coords.x,player.coords.y-1)) {
-				kk=false; 
-				showPlayerInfo(); 
-				break;
-			}
-			player.unDraw();
-			player.coords.y--;
-			update=true;
-			break;
-		case KEY_LEFT:
-			if(checkMove(player.coords.x-1,player.coords.y)) {
-				kk=false; 
-				showPlayerInfo(); 
-				break;
-			}
-			player.unDraw();
-			player.coords.x--;
-			update=true;
-			break;
-		case KEY_RIGHT:
-			if(checkMove(player.coords.x+1,player.coords.y)) {
-				kk=false; 
-				showPlayerInfo(); 
-				break;
-			}
-			player.unDraw();
-			player.coords.x++;
-			update=true;
-			break;
+		} catch(e) {
+			log(LOG_ERROR,e);
+			log(LOG_WARNING,update.toSource());
 		}
-	}
-	function redraw()
-	{
-		DrawMaze();
-		showPlayerInfo();
-		for(ply in players) {
-			players[ply].draw();
-		}
-		console.center("\1k\1hUse Arrow Keys to Move. First player to reach '\1yX\1k' wins. - [\1cQ\1k]uit [\1cR\1k]edraw");
-	}
-	function checkMove(posx,posy)
-	{
-		var data=maze.maze.data;
-		/*for each(var p in maze.players) {
-			if(posx == p.coords.x && posy == p.coords.y) {
-				return true;
-			} 
-		}*/
-		if(	data[posx-1][posy-1].ch==" " || data[posx-1][posy-1].ch=="S" || data[posx-1][posy-1].ch=="X") {
-			return false;
-		}
-		if(maze.damage) {
-			player.health-=5;
-			update=true;
-		}
-		if(player.health==0) {
-			player.unDraw();
-			maze.goToStartingPosition(player);
-			player.health=100;
-		}
-		return true;
-	}
-	function showPlayerInfo()
-	{
-		console.home();
-		for(var p in maze.players) {
-			var ply=maze.players[p];
-			console.putmsg(" " + ply.color + ply.name + "\1k\1h:" + (ply.health<=25?"\1r":ply.color) + ply.health);
-		}
-		console.cleartoeol();
-	}
-	function deleteMaze()
-	{
-		delete maze.players[currentPlayerID];
-		if(file_exists(maze.mazeFile)) {
-			file_remove(maze.mazeFile);
-		}
-		if(file_exists(maze.mazeFile + ".bck")) {
-			file_remove(maze.mazeFile + ".bck");
-		}
-		if(file_exists(maze.dataFile)) {
-			file_remove(maze.dataFile);
-		}
-		if(file_exists(maze.dataFile + ".bck")) {
-			file_remove(maze.dataFile + ".bck");
-		}
-	}
-	function send()
-	{
-		var data=new Object;
-		data.player=currentPlayerID;
-		data.coords=player.coords;
-		data.health=player.health;
-		data.func="MOVE";
-		data.gameNumber=maze.gameNumber;
-		stream.send(data);
-	}
-	function checkWinner()
-	{
-		for each(var p in maze.players) {
-			if(p.coords.x == maze.finish.x && p.coords.y == maze.finish.y) {
-				maze.winner=p.name;
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	init();
-	main();
-}
-function getRootFileName(gameNumber)
-{
-	return(root + "maze" + gameNumber);
-}
-function getNewGameNumber()
-{
-	var gNum=1;
-	while(file_exists(root + "maze" + gNum + ".ini")) {
-		gNum++;
-	}
-	return gNum;
-}
-function menuPrompt(text)
-{
-	input.clear();
-	console.gotoxy(input);
-	console.putmsg(text);
-	var key=console.getkey();
-	input.draw();
-	return key;
-}
-function storeGameData(maze)
-{
-	//STORE GAME DATA
-	var file=new File(maze.dataFile+".tmp");
-	file.open("w+");
-	
-	file.iniSetValue(null,"gameNumber",maze.gameNumber);
-	file.iniSetValue(null,"status",maze.status);
-	
-	if(maze.created) file.iniSetValue(null,"created",maze.created);
-	
-	for(var p in maze.players) {
-		file.iniSetValue("players",p,"");
 	}
 
-	file.close();
-	file_remove(maze.dataFile);
-	file_rename(file.name,maze.dataFile);
-	sendFiles(maze.dataFile);
-}
-function storePlayerData(maze,player)
-{
-	var file=new File(maze.dataFile);
-	file.open('r+',true);
-	file.iniSetValue("players",player);
-	file.close();
-	sendFiles(maze.dataFile);
-}
-function sendFiles(mask)
-{
-	stream.sendfile(mask);
+	/* helpers */
+	function loadMaze() {
+		var posx;
+		var posy;
+		var walls={
+			NE:"\xC0",
+			NW:"\xD9",
+			SE:"\xDA",
+			SW:"\xBF",
+			I:"\xC5",
+			V:"\xB3",
+			H:"\xC4",
+			TU:"\xC1",
+			TD:"\xC2",
+			TL:"\xB4",
+			TR:"\xC3"
+		};
+		
+		var r=0;
+		for(;r<=settings.rows;r++) {
+			posy = r*2;
+			var c=0;
+			for(;c<settings.columns;c++) {
+				posx = c*3;
+				var wall_state = N + E + S + W;
+				if(!maze.maze[r] && c == 0) 
+					wall_state &= ~W;
+				else if(maze.maze[r] && (!maze.maze[r][c-1] || !(maze.maze[r][c-1] & N)))
+					wall_state &= ~W;
+				if(!maze.maze[r-1] || !(maze.maze[r-1][c] & W))
+					wall_state &= ~N;
+				if(maze.maze[r] && (maze.maze[r][c] && !(maze.maze[r][c] & N)))
+					wall_state &= ~E;
+				if(!maze.maze[r] || !(maze.maze[r][c] & W))
+					wall_state &= ~S;
+									
+				switch(wall_state) {
+					case (N+S+E+W):
+						screen.setData(posx,posy,walls.I);
+						break;
+					case (N+S+E):
+						screen.setData(posx,posy,walls.TR);
+						break;
+					case (N+S+W):
+						screen.setData(posx,posy,walls.TL);
+						break;
+					case (N+E+W):
+						screen.setData(posx,posy,walls.TU);
+						break;
+					case (S+E+W):
+						screen.setData(posx,posy,walls.TD);
+						break;
+					case (N+S):
+						screen.setData(posx,posy,walls.V);
+						break;
+					case (E+W):
+						screen.setData(posx,posy,walls.H);
+						break;
+					case (N+E):
+						screen.setData(posx,posy,walls.NE);
+						break;
+					case (N+W):
+						screen.setData(posx,posy,walls.NW);
+						break;
+					case (S+E):
+						screen.setData(posx,posy,walls.SE);
+						break;
+					case (S+W):
+						screen.setData(posx,posy,walls.SW);
+						break;
+					case S:
+					case N:
+						screen.setData(posx,posy,walls.V);
+						break;
+					case E:
+					case W:
+						screen.setData(posx,posy,walls.H);
+						break
+				}
+				if(wall_state & E) {
+					screen.setData(posx+1,posy,walls.H);
+					screen.setData(posx+2,posy,walls.H);
+				}
+				if(wall_state & S) {
+					screen.setData(posx,posy+1,walls.V);
+				}
+			}
+			if(r==0)
+				screen.setData(posx+3,posy,walls.SW);
+			else if(r == settings.rows)
+				screen.setData(posx+3,posy,walls.NW);
+			else if(maze.maze[r] && maze.maze[r][c-1] & N)
+				screen.setData(posx+3,posy,walls.TL);
+			else 
+				screen.setData(posx+3,posy,walls.V);
+			if(maze.maze[r])
+				screen.setData(posx+3,posy+1,walls.V);
+		}
+		screen.setData(maze.start.x*3+1,maze.start.y*2+1,"\xAF",LIGHTGREEN);
+		screen.setData(maze.finish.x*3+2,maze.finish.y*2+1,"\xAF",LIGHTRED);
+	}	
+	function loadPlayers() {
+		var x = maze.start.x*3+1;
+		var y = maze.start.y*2+1;
+		for each(var p in maze.players) {
+			p.coords = new Coords(x,y);
+			p.health = settings.max_health;
+			p.frame = new Frame(x+1,y+1,1,1,p.color,screen);
+			p.frame.putmsg(p.avatar)
+		}
+	}
+	function endGame() {
+		end_time = Date.now();
+		game.winner = player.name;
+		game.raceTime = end_time - start_time;
+		data.storeGameWinner(gameNumber,game.raceTime,game.winner);
+		data.storeGameStatus(gameNumber,status.FINISHED);
+	}
+	function showWinner() {
+		var winFrame = new Frame(25,9,30,6,BG_BLUE + YELLOW,frame);
+		winFrame.open();
+		winFrame.crlf();
+		winFrame.center("\1r\1hGAME OVER\r\n");
+		winFrame.center("\1y\1hWinner: " + game.winner + "\r\n");
+		winFrame.center("\1w\1hTime: " + formatTime(game.raceTime) + "\r\n");
+		winFrame.crlf();
+		winFrame.center("\1c\1h<SPACE to continue>");
+		winFrame.draw();
+		while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
+		winFrame.close();
+	}
+	function redraw() {
+		screen.draw();
+	}
+	function showPlayerInfo() {
+		info.clear();
+		for each(var p in maze.players) 
+			info.putmsg(" " + p.name + ":" + p.health);
+	}
+
+	/* movement */
+	function checkMove(x,y) {
+		if(!screen.getData(x-1,y-1).ch || screen.getData(x-1,y-1).ch == "\xAF")
+			return false;
+		else
+			return true;
+	}
+	function movePlayer(x,y) {
+		player.coords.x += x;
+		player.coords.y += y;
+		player.frame.move(x,y);
+		data.storePlayerPosition(gameNumber,player);
+	}
+	function takeDamage() {
+		if(settings.damage)
+			player.health -= settings.damage_qty;
+		data.storePlayerHealth(gameNumber,player);
+		showPlayerInfo();
+	}
+	function playerDead() {
+		if(player.health <= 0) 
+			return true;
+		return false;
+	}
+	function goToStart() {
+		var x = maze.start.x*3+1;
+		var y = maze.start.y*2+1;
+		player.coords = new Coords(x,y);
+		player.health = settings.max_health;
+		data.storePlayerPosition(gameNumber,player);
+		data.storePlayerHealth(gameNumber,player);
+		player.frame.moveTo(x+1,y+1);
+	}
+	function playerAtFinish() {
+		if(player.coords.x == (maze.finish.x*3+1) && player.coords.y == (maze.finish.y*2+1)) 
+			return true;
+		else if(player.coords.x == 1 && player.coords.y == 1)
+			return true;
+		return false;
+	}
+	function movePosition(k) {
+		switch(k) {
+		case KEY_DOWN:
+			if(checkMove(player.frame.x,player.frame.y+1)) 
+				takeDamage(); 
+			else
+				movePlayer(0,1);
+			break;
+		case KEY_UP:
+			if(checkMove(player.frame.x,player.frame.y-1)) 
+				takeDamage(player); 
+			else
+				movePlayer(0,-1);
+			break;
+		case KEY_LEFT:
+			if(checkMove(player.frame.x-1,player.frame.y)) 
+				takeDamage(player); 
+			else
+				movePlayer(-1,0);
+			break;
+		case KEY_RIGHT:
+			if(checkMove(player.frame.x+1,player.frame.y)) 
+				takeDamage(player); 
+			else
+				movePlayer(1,0);
+			break;
+		default:
+			return;
+		}
+	}
+
+	open();
+	main();
+	close();
 }
 
 splashStart();

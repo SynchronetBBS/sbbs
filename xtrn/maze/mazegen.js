@@ -1,39 +1,20 @@
-function MazeGenerator(rows,columns) {
-	const N=1;			// directional constants
+function generateMaze(columns,rows) {
+	/* bitwise wall constants */
+	const N=1;
 	const E=2;
 	const S=4;
 	const W=8;
-
-	// generate and display a maze
-	this.generate=function(dataFile,mazeFile)
-	{
-		var mfile=new File(mazeFile);
-		var dfile=new File(dataFile);
-
-		var maze=initMaze();	// the maze of cells
-		var stack=initStack();	// cell stack to hold a list of cell locations
-
-		generateMaze(maze,stack);
-
-		dfile.open('w');
-		dfile.iniSetValue(null,"status",-1);
-		dfile.close();
-
-		mfile.open('wb');
-		outputMaze(mfile,maze);
-		mfile.close();
-	}
+	
 	function initMaze()
 	{
-		var i,j;
 		// create a maze of cells
 		var maze=new Array(rows);
-		for (i=0;i<rows;i++)
+		for (var i=0;i<rows;i++) {
 			maze[i]=new Array(columns);
-		// set all walls of each cell in maze by setting bits :  N E S W
-		for (i=0;i<rows;i++)
-			for (j=0;j<columns;j++)
+			// set all walls of each cell in maze by setting bits :  N E S W
+			for (var j=0;j<columns;j++)
 				maze[i][j]=(N + E + S + W);
+		}
 		return maze;
 	}
 	function initStack()
@@ -45,11 +26,13 @@ function MazeGenerator(rows,columns) {
 		// initialize stack
 		for (i=0;i<rows*columns;i++)
 			for (j=0;j<2;j++)
-				stack[i][j]=parseInt("0");
+				stack[i][j]=0;
 		return stack;
 	}
-	function generateMaze(maze,stack)
+	function generateMaze()
 	{
+		var maze=initMaze();	// the maze of cells
+		var stack=initStack();	// cell stack to hold a list of cell locations
 		var i,j,r,c;
 		// choose a cell at random and make it the current cell
 		r=random(rows);
@@ -133,164 +116,9 @@ function MazeGenerator(rows,columns) {
 				tos--;
 			}
 		}
+		return maze;
 	}
-	function outputMaze(file,maze)
-	{
-		var i,j,k;
-		var starting_point=setRandomStart(maze);
-		var finish_point=setRandomFinish(maze);
-		for(var col=0;col<=(columns*3);col++) output(file," ");
-		for (i=0;i<rows;i++) {
-			for (k=1;k<=2;k++)	{
-				for (j=0;j<columns;j++) {
-					if(k==1)      // upper corners and walls (FROM TOP LEFT)
-					{
-						if(i==0) 
-						{
-							if(j==0) 
-							{
-								output(file,"\xDA");		//TOP LEFT CORNER
-							}
-							else 
-							{						//TOP ROW
-								if(maze[i][j] & W) //IF WEST WALL IS INTACT IN THE CELL 
-								{ 				                        
-									output(file,"\xC2");
-								}
-								else output(file,"\xC4");
-							}
-							output(file,"\xC4\xC4");
-							if((j + 1)==columns) output(file,"\xBF");
-						}
-						else 
-						{
-							if(j==0) 
-							{						//LEFT EDGE
-								if(maze[i][j] & N) output(file,"\xC3\xC4\xC4");
-								else output(file,"\xB3  ");
-							}
-							else 
-							{					//MIDDLE OF GRID
-								if(maze[i][j] & N) 
-								{ 				//IF NORTH WALL IS INTACT IN THIS CELL
-									if(maze[i][j-1] & N) 
-									{			//AND NORTH WALL IS INTACT IN CELL TO THE LEFT
-										if(maze[i][j] & W) 
-										{			//AND WEST WALL IS INTACT IN THIS CELL
-											if(maze[i-1][j] & W) output(file,"\xC5");	//AND WEST WALL IS INTACT IN CELL ABOVE
-											else output(file,"\xC2");					//OTHERWISE DRAW A T
-										}
-										else 
-										{
-											if(maze[i-1][j] & W) output(file,"\xC1");//AND WEST WALL IS INTACT IN CELL ABOVE
-											else output(file,"\xC4");					//OTHERWISE DRAW A HORIZONTAL LINE
-										}
-									}
-									else 
-									{							//IF NORTH WALL IS NOT INTACT IN CELL TO THE LEFT
-										if(maze[i][j] & W) 
-										{						//AND WEST WALL IS INTACT IN THIS CELL
-											if(maze[i-1][j] & W) output(file,"\xC3");//AND WEST WALL IS INTACT IN CELL ABOVE
-											else output(file,"\xDA");					//OTHERWISE DRAW A TOP LEFT CORNER
-										}	
-										else 
-										{
-											if(maze[i-1][j] & W) output(file,"\xC0");//AND WEST WALL IS INTACT IN CELL ABOVE
-											else output(file,"\xC4");					//OTHERWISE DRAW A HORIZONTAL LINE
-										}
-									}
-									output(file, "\xC4\xC4" );
-								}
-								else 
-								{								//IF NORTH WALL IS NOT INTACT IN THIS CELL
-			 						if(maze[i][j-1] & N) 
-									{							//AND NORTH WALL IS  INTACT IN CELL TO THE LEFT
-										if(maze[i][j] & W) 
-										{						//AND WEST WALL IS INTACT IN THIS CELL
-											if(maze[i-1][j] & W) output(file,"\xB4");	//AND WEST WALL IS INTACT IN CELL ABOVE
-											else output(file,"\xBF");					//OTHERWISE DRAW A TOP RIGHT CORNER
-										}
-										else 
-										{						//IF WEST WALL IS NOT INTACT IN THIS CELL
-											if(maze[i-1][j] & W) output(file,"\xD9");	//AND WEST WALL IS INTACT IN CELL ABOVE
-											else output(file, "\xC4" );				//OTHERWISE DRAW A HORIZONTAL LINE
-										}
-									}
-									else 
-									{							//IF NORTH WALL IS NOT INTACT IN CELL TO THE LEFT
-										output(file, "\xB3" );
-									}
-									output(file, "  " );
-								}
-								if((j + 1)==columns) 
-								{
-									if(maze[i][j] & N) output(file,"\xB4");
-									else output(file,"\xB3");
-								}
-							}
-						}
-					}
-					else if(k==2)         // center walls and open areas (FROM LEFT)
-					{
-						if(maze[i][j] & W)  
-						{
-							output(file,"\xB3");
-							if(j==0) 
-								if(i==starting_point) output(file,"S ");
-								else output(file,"  ");
-							else if(j+1==columns) 
-								if(i==finish_point) output(file," X");
-								else output(file,"  ");
-							else output(file,"  ");
-						}
-						else
-							if(j+1==columns && i==finish_point) output(file,"  X");
-							else output(file, "   " );
-								if((j + 1)==columns) output(file,"\xB3");
-					}
-				}
-			}
-		}
-		for (j=0;j<columns;j++) 
-		{        // bottom walls
-			if(j==0) output(file,"\xC0");				//BOTTOM LEFT CORNER
-			else if(maze[rows-1][j] & W) output(file,"\xC1");
-			else output(file,"\xC4");
-			output(file,"\xC4\xC4");
-		}
-		output(file, "\xD9" );			// BOTTOM RIGHT CORNER
-	}
-	function setRandomStart(maze)
-	{
-		for(col=0;col<columns;col++) {
-			for(row=0;row<rows;row++) {
-				if(maze[row][col+1] & W) {
-					if(row+1==rows) return row;
-					else if(maze[row][col] & N || maze[row+1][col] & N) return row;
-				}
-			}
-		}
-	}
-	function setRandomFinish(maze)
-	{
-		/*
-		var randomrow=random(rows);
-		write(randomrow)
-		return randomrow;
-		*/
-		for(col=columns;col>0;col--)
-		{
-			for(row=0;row<rows;row++) {
-				if(maze[row][col-1] & W) {
-					if(row+1==rows) return row;
-					else if(maze[row][col-1] & N || maze[row+1][col-1] & N) return row;
-				}
-			}
-		}
-	}
-	function output(file,text)
-	{
-		text=text.replace(/(\S)/g,"$1");
-		file.write(text.replace(/ /g," "));
-	}
+	
+	var maze = generateMaze();
+	return maze;
 }

@@ -1,19 +1,22 @@
 function Menu(items,x,y,w,hl,txt)		
-{								//MENU CLASSES
+{								
 	this.items=[];
 	this.x=x;
 	this.y=y;
 	this.width=w;
 	this.hl=hl;
 	this.txt=txt;
+	this.updated=true;
 	
 	this.disable=function(item)
 	{
 		this.items[item].enabled=false;
+		this.updated=true;
 	}
 	this.enable=function(item)
 	{
 		this.items[item].enabled=true;
+		this.updated=true;
 	}
 	this.add=function(items)
 	{
@@ -33,14 +36,16 @@ function Menu(items,x,y,w,hl,txt)
 		for each(var i in this.items) {
 			if(i.enabled==true) str+=i.text + " ";
 		}
+		var offset = str.length - console.strlen(strip_ctrl(str));
 		console.gotoxy(this);
 		console.attributes=ANSI_NORMAL;
-		console.putmsg(format("%-s",str,this.width));
+		console.putmsg(format("%-*s",this.width + offset,str));
+		this.updated=false;
 	}
 	this.add(items);
 }
 function Item(item,hotkey,hl,txt)
-{								//MENU ITEM OBJECT
+{								
 	this.enabled=true;
 	this.hotkey=hotkey;
 	this.text=item.replace(("~" + hotkey) , hl + hotkey + txt);
