@@ -36,8 +36,7 @@ load("json-sock.js");
 	-	JSONClient.receive();
 	-	JSONClient.wait();
 	
-	optional arguments: if these are not supplied, 
-	the client will connect to the default server (bbs.thebrokenbubble.com)
+	arguments: 
 	
 	-	argv[0] = serverAddr;
 	-	argv[1] = serverPort;
@@ -273,10 +272,9 @@ function JSONClient(serverAddr,serverPort) {
 	}
 	
 	/* identify this client as a bbs user */
-	this.ident=function(username,pw) {
+	this.ident=function(scope,username,pw) {
 		pw = md5_calc(pw.toUpperCase(),true);
-		this.send("ADMIN","CMD",{
-            oper:"IDENT",
+		this.send(scope,"IDENT",{
             username:username,
 			pw:pw
         });
@@ -303,16 +301,3 @@ function JSONClient(serverAddr,serverPort) {
 	this.connect();
 	log(LOG_INFO,"JSON client initialized (v" + this.VERSION + ")");
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
