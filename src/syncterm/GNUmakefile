@@ -77,6 +77,10 @@ ifeq ($(os),darwin)
  STATIC_CRYPTLIB ?= 1
 endif
 
+ifdef STATIC_CRYPTLIB
+ CFLAGS += -DSTATIC_CRYPTLIB
+endif
+
 ifeq ($(os),linux)
  ifeq ($(shell uname -m),x86_64)
   LDFLAGS += -ldl
