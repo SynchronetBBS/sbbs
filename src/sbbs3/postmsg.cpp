@@ -323,7 +323,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 		msg.hdr.thread_back=remsg->hdr.number;	/* needed for threading backward */
 
-		if((msg.hdr.thread_id=remsg->hdr.thread_id)) == 0)
+		if((msg.hdr.thread_id=remsg->hdr.thread_id) == 0)
 			msg.hdr.thread_id=remsg->hdr.number;
 
 		/* Add RFC-822 Reply-ID (generate if necessary) */
