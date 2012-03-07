@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -146,6 +146,9 @@ BOOL DLLCALL backup(char *fname, int backup_level, BOOL ren)
 	char*	ext;
 	int		i;
 	int		len;
+
+	if(flength(fname) < 1)	/* no need to backup a 0-byte (or non-existent) file */
+		return(FALSE);
 
 	if((ext=strrchr(fname,'.'))==NULL)
 		ext="";
