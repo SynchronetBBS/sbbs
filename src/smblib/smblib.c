@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -1455,6 +1455,9 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		return(i);
 	}
 	msg->hdr.number=smb->status.last_msg+1;
+
+	if(msg->hdr.thread_id==0)	/* new thread being started */
+		msg->hdr.thread_id=msg->hdr.number;
 
 	/* This is *not* a dupe-check */
 	if(!(msg->flags&MSG_FLAG_HASHED) /* not already hashed */

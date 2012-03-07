@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -531,9 +531,10 @@ typedef struct _PACK {		/* Message header */
     /* 28 */ uint32_t	thread_next;		/* Next message in thread */
     /* 2c */ uint32_t	thread_first;		/* First reply to this message */
 	/* 30 */ uint16_t	delivery_attempts;	/* Delivery attempt counter */
-	/* 32 */ uint32_t	times_downloaded;	/* Total number of times downloaded */
-	/* 36 */ uint32_t	last_downloaded;	/* Date/time of last download */
-	/* 3a */ uchar		reserved[6];		/* Reserved for future use */
+	/* 32 */ uchar		reserved[2];		/* Reserved for future use */
+	/* 34 */ uint32_t	thread_id;			/* Number of original message in thread (or 0 if unknown) */
+	/* 38 */ uint32_t	times_downloaded;	/* Total number of times downloaded (moved Mar-6-2012) */
+	/* 3c */ uint32_t	last_downloaded;	/* Date/time of last download (moved Mar-6-2012) */
     /* 40 */ uint32_t	offset;				/* Offset for buffer into data file (0 or mod 256) */
 	/* 44 */ uint16_t	total_dfields;		/* Total number of data fields */
 

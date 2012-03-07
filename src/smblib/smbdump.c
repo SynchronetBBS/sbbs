@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -124,6 +124,8 @@ void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 	fprintf(fp,"%-20.20s %08"PRIX32"h\n"	,"netattr"			,msg->hdr.netattr);
 
 	/* optional fixed fields */
+	if(msg->hdr.thread_id)
+		fprintf(fp,"%-20.20s %"PRId32"\n"	,"thread_id"		,msg->hdr.thread_id);
 	if(msg->hdr.thread_back)
 		fprintf(fp,"%-20.20s %"PRId32"\n"	,"thread_back"		,msg->hdr.thread_back);
 	if(msg->hdr.thread_next)
