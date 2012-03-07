@@ -46,6 +46,7 @@ static int			initialized=0;
 static sem_t			jsrt_sem;
 #endif
 
+#define TRIGGER_THREAD_STACK_SIZE	(256*1024)
 static void trigger_thread(void *args)
 {
 	int	i;
@@ -68,7 +69,7 @@ JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char 
 		pthread_mutex_init(&jsrt_mutex, NULL);
 		jsrt_queue[0].rt=JS_NewRuntime(128*1024*1024 /* 128 MB total for all scripts? */);
 		jsrt_queue[0].created=1;
-		_beginthread(trigger_thread, 65536, NULL);
+		_beginthread(trigger_thread, TRIGGER_THREAD_STACK_SIZE, NULL);
 		initialized=TRUE;
 	}
 
@@ -78,7 +79,7 @@ JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char 
 
 	if(!initialized) {
 		pthread_mutex_init(&jsrt_mutex, NULL);
-		_beginthread(trigger_thread, 65536, NULL);
+		_beginthread(trigger_thread, TRIGGER_THREAD_STACK_SIZE, NULL);
 		initialized=TRUE;
 	}
 
@@ -107,7 +108,7 @@ JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char 
 	if(!initialized) {
 		pthread_mutex_init(&jsrt_mutex, NULL);
 		sem_init(&jsrt_sem, 0, JSRT_QUEUE_SIZE);
-		_beginthread(trigger_thread, 65536, NULL);
+		_beginthread(trigger_thread, TRIGGER_THREAD_STACK_SIZE, NULL);
 		initialized=TRUE;
 	}
 
