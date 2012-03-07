@@ -130,7 +130,7 @@ function JSONClient(serverAddr,serverPort) {
 	
 	/* unlock an object */ 
 	this.unlock = function(scope,location) {
-		this.lock(-1);
+		this.lock(scope, location, -1);
 	}
     
 	/* read object data (lock for reading or writing, blocking) */
