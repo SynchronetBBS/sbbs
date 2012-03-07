@@ -1543,12 +1543,14 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 	j=strlen(line);
 	k=0;
 	for(i=0;i<j;i++) {
-		if(!isalnum(line[i]) && !k)	/* beginning non-alphanumeric */
-			continue;
-		if(!isalnum(line[i]) && line[i]==line[i+1])	/* redundant non-alnum */
-			continue;
-		if(!isalnum(line[i]) && line[i+1]=='?')	/* fix "WHAT ?" */
-			continue;
+		if(line[i]<0 || !isalnum(line[i])) {
+			if(!k)	/* beginning non-alphanumeric */
+				continue;
+			if(line[i]==line[i+1])	/* redundant non-alnum */
+				continue;
+			if(line[i+1]=='?')	/* fix "WHAT ?" */
+				continue;
+		}
 		cstr[k++]=line[i]; 
 	}
 	cstr[k]=0;
