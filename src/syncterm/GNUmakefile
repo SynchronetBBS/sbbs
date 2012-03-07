@@ -118,7 +118,7 @@ OBJS	+= $(MTOBJODIR)$(DIRSEP)conn_pty$(OFILE)
 ifndef bcc
  ifneq ($(os),sunos)
   ifneq ($(os),darwin)
-   LDFLAGS   +=  -lutil
+   EXTRA_LIBS   +=  -lutil
   endif
  endif
 endif
