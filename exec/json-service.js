@@ -56,7 +56,8 @@ var errors = {
 	UNKNOWN_COMMAND:"Unknown command: %s",
 	UNKNOWN_USER:"User not found: %s",
 	SERVICE_OFFLINE:"Service offline",
-	MODULE_OFFLINE:"Module offline"
+	MODULE_OFFLINE:"Module offline",
+	IDENT_REQUIRED:"You must identify before using this command"
 };
  
 /* server object */
@@ -175,11 +176,27 @@ service = new (function() {
 /* chat handler */
 chat = new (function() {
 	this.db = new JSONdb(system.data_dir+"chat.json");
+	this.authenticated = [];
+	this.deny_hosts = [];
+	
 	this.cycle = function() {
 		this.db.cycle();
 	}
 	this.process = function(client,packet) {
 		switch(packet.func.toUpperCase()) {
+		case "IDENT":
+			this.ident(client.descriptor,packet.data);
+			break;
+		case "BAN":
+			if(!admin.verify(client,packet))
+				break;
+			this.ban(client.remote_ip_address,packet.data.ip);
+			break;
+		case "UNBAN":
+			if(!admin.verify(client,packet))
+				break;
+			this.unban(client.remote_ip_address,packet.data.ip);
+			break;
 		case "QUERY":
 			this.db.query(client,packet.data);
 			break;
@@ -188,7 +205,46 @@ chat = new (function() {
 			break;
 		}
 	}
+	this.ident = function(descriptor,data) {
+		var username = data.username;
+		var pw = data.pw;
+		var usernum = system.matchuser(username);
+		if(usernum  == 0) {
+			log(LOG_WARNING,"no such user: " + username);
+			return false;
+		}
+		var usr = new User(usernum);
+		var pass = md5_calc(usr.security.password,true);
+		
+		if(md5_calc(usr.security.password,true) != pw) {
+			log(LOG_WARNING,"failed pw attempt for user: " + username);
+			return false;
+		}
+		this.authenticated[descriptor] = usr;
+		log(LOG_DEBUG,"identified: " + username);
+		return true;
+	}
+	this.ban = function(descriptor,source,target) {
+		if(!this.authenticated[descriptor] || this.authenticated[descriptor].security.level < 90)
+			return false;
+		if(source == target)
+			return false;
+		log(LOG_WARNING,"ban added: " + target);
+		this.denyhosts[target] = true;
+	}
+	this.unban = function(descriptor,source,target) {
+		if(!this.authenticated[descriptor] || this.authenticated[descriptor].security.level < 90)
+			return false;
+		if(source == target)
+			return false;
+		log(LOG_WARNING,"ban removed: " + target);
+		delete this.denyhosts[target];
+	}
 	this.release = function(client) {
+		if(this.authenticated[client.id]) {
+			log(LOG_DEBUG,"releasing auth: " + client.id);
+			delete this.authenticated[client.id];
+		}
 		this.db.release(client);
 	}
 	log(LOG_DEBUG,"chat initialized");
@@ -201,21 +257,31 @@ admin = new (function() {
 	this.process = function(client,packet) {
 		switch(packet.func.toUpperCase()) {
 		case "IDENT":
-			this.ident(client.descriptor,packet.data.username,packet.data.pw);
+			this.ident(client.descriptor,packet.data);
 			break;
 		case "RESTART":
+			if(!this.verify(client,packet))
+				break;
 			this.restart(client.descriptor);
 			break;
 		case "BAN":
+			if(!this.verify(client,packet))
+				break;
 			this.ban(client.remote_ip_address,packet.data.ip);
 			break;
 		case "UNBAN":
+			if(!this.verify(client,packet))
+				break;
 			this.unban(client.remote_ip_address,packet.data.ip);
 			break;
 		case "CLOSE":
+			if(!this.verify(client,packet))
+				break;
 			this.close(client.descriptor);
 			break;
 		case "OPEN":
+			if(!this.verify(client,packet))
+				break;
 			this.open(client.descriptor);
 			break;
 		default:
@@ -230,7 +296,9 @@ admin = new (function() {
 			delete this.authenticated[client.id];
 		}
 	}
-	this.ident = function(descriptor,username,pw) {
+	this.ident = function(descriptor,data) {
+		var username = data.username;
+		var pw = data.pw;
 		var usernum = system.matchuser(username);
 		if(usernum  == 0) {
 			log(LOG_WARNING,"no such user: " + username);
@@ -247,43 +315,40 @@ admin = new (function() {
 			log(LOG_WARNING,"insufficient access: " + username);
 			return false;
 		}
-		this.authenticated[descriptor] = true;
+		this.authenticated[descriptor] = usr;
 		log(LOG_DEBUG,"identified: " + username);
 		return true;
 	}
 	this.close = function(descriptor) {
-		if(!this.authenticated[descriptor])
-			return false;
 		log(LOG_WARNING,"socket service offline");
 		service.online = false;
 	}
 	this.open = function(descriptor) {
-		if(!this.authenticated[descriptor])
-			return false;
 		log(LOG_WARNING,"socket service online");
 		service.online = true;
 	}
 	this.restart = function(descriptor) {
-		if(!this.authenticated[descriptor])
-			return false;
 		log(LOG_WARNING,"restarting service");
 		exit();
 	}
 	this.ban = function(descriptor,source,target) {
-		if(!this.authenticated[descriptor])
-			return false;
 		if(source == target)
 			return false;
 		log(LOG_WARNING,"ban added: " + target);
 		service.denyhosts[target] = true;
 	}
 	this.unban = function(descriptor,source,target) {
-		if(!this.authenticated[descriptor])
-			return false;
 		if(source == target)
 			return false;
 		log(LOG_WARNING,"ban removed: " + target);
 		delete service.denyhosts[target];
+	}
+	this.verify = function(client,packet) {
+		if(!this.authenticated[client.id]) {
+			error(client,errors.IDENT_REQUIRED,packet.func);
+			return false;
+		}
+		return true;
 	}
 	log(LOG_DEBUG,"admin initialized");
 })();
@@ -325,35 +390,47 @@ engine = new (function() {
 		case "QUERY":
 			module.db.query(client,packet.data);
 			break;
+		default:
+			error(client,errors.UNKNOWN_FUNCTION,packet.func);
+			break;
 		case "IDENT":
 			break;
 		case "RELOAD":
+			if(!admin.verify(client,packet))
+				break;
 			module.queue.write("RELOAD");
 			module.init();
 			break;
 		case "CLOSE":
+			if(!admin.verify(client,packet))
+				break;
 			module.online = false;
 			break;
 		case "OPEN":
+			if(!admin.verify(client,packet))
+				break;
 			module.online = true;
 			break;
 		case "READABLE":
+			if(!admin.verify(client,packet))
+				break;
 			if(module.db.settings.KEEP_READABLE)
 				module.db.settings.KEEP_READABLE = false;
 			else
 				module.db.settings.KEEP_READABLE = true;
 			break;
 		case "SAVE":
+			if(!admin.verify(client,packet))
+				break;
 			module.db.save();
 			break;
 		case "READONLY":
+			if(!admin.verify(client,packet))
+				break;
 			if(module.db.settings.READ_ONLY)
 				module.db.settings.READ_ONLY = false;
 			else
 				module.db.settings.READ_ONLY = true;
-			break;
-		default:
-			error(client,errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		}
 	}
