@@ -17,6 +17,11 @@ src/syncterm/*
 src/uifc/*
 src/xpdev/*
 src/comio/*
+3rdp/build/Common.gmake
+3rdp/build/Common.make
+3rdp/build/GNUmakefile
+3rdp/build/targets.mk
+3rdp/dist/cryptlib.zip
 
 The directory structure under src *must* be kept intact.  Once you have all
 this in place, a simple "make" should build everything you need.  If you're
