@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -35,7 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define QWK_NEWLINE		'\xe3'	/* QWK line terminator */
+#define QWK_NEWLINE		'\xe3'	/* QWK line terminator (227) */
 #define QWK_BLOCK_LEN	128
 #define QWK_HFIELD_LEN	25		/* Header field (To/From/Subject) length */
 
