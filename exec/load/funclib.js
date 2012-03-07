@@ -421,9 +421,7 @@ function compressList(list)
 }
 function sortListByProperty(list,prop) 
 { 
-	var data=compressList(list);
-
-	return data.sort(function(a,b) {
+	return compressList(list).sort(function(a,b) {
 		if(a[prop] < b[prop])
 			return -1;
 		if(a[prop] > b[prop])
