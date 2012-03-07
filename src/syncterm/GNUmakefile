@@ -130,7 +130,7 @@ endif
 
 $(SYNCTERM): $(CRYPT_DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
-	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(WXLIBS) $(XPDEV-MT_LIBS) $(EXTRA_LIBS)
+	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(WXLIBS) $(XPDEV-MT_LIBS)
 ifeq ($(os),darwin)
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents
