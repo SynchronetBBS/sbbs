@@ -74,6 +74,22 @@ function JSONdb (fileName) {
 		WRITE:2,
 	}
 	
+	/* operation constants */
+	var opers = {
+		READ:0,
+		WRITE:1,
+		LOCK:2,
+		PUSH:3,
+		POP:4,
+		SHIFT:5,
+		UNSHIFT:6,
+		DELETE:7,
+		SUBSCRIBE:8,
+		UNSUBSCRIBE:9,
+		WHO:10,
+		STATUS:11
+	}
+	
 	/* error constants */
 	var errors = {
 		INVALID_REQUEST:0,
@@ -84,7 +100,9 @@ function JSONdb (fileName) {
 		DUPLICATE_LOCK:5,
 		DUPLICATE_SUB:6,
 		NON_ARRAY:7,
-		READ_ONLY:8
+		READ_ONLY:8,
+		INVALID_LOCK:9,
+		INVALID_OPER:10
 	};
 	
 	/*************************** database methods ****************************/
@@ -409,6 +427,15 @@ function JSONdb (fileName) {
 
 		/* if an operation is requested */
 		if(query.oper !== undefined) {
+			if(!valid_oper(query.oper)) {
+				this.error(client,errors.INVALID_OPER);
+				return false;
+			}
+			if(query.oper == "LOCK" && !valid_lock(query.data)) {
+				this.error(client,errors.INVALID_LOCK);
+				return false;
+			}
+
 			request = new Request(client,query.oper,parent_name,child_name,query.data);
 			/* push this query into a queue to be processed at the next response cycle (this.cycle()) */;
 			q.push(request);
@@ -416,6 +443,10 @@ function JSONdb (fileName) {
 		
 		/* if there is an attached lock operation, process accordingly */
 		if(query.lock !== undefined) {	
+			if(!valid_lock(query.lock)) {
+				this.error(client,errors.INVALID_LOCK);
+				return false;
+			}
 			/* put lock ahead of the operation in request queue */
 			q.unshift(new Request(
 				client,"LOCK",parent_name,child_name,query.lock
@@ -458,8 +489,14 @@ function JSONdb (fileName) {
 		case errors.NON_ARRAY:
 			error_desc="Record is not an array";
 			break;
-		case this.settings.READ_ONLY:
+		case errors.READ_ONLY:
 			error_desc="Record is read-only";
+			break;
+		case errors.INVALID_LOCK:
+			error_desc="Unknown lock type";
+			break;
+		case errors.INVALID_OPER:
+			error_desc="Unknown operation";
 			break;
 		}
 		var error=new Error(error_num,error_desc);
@@ -521,18 +558,26 @@ function JSONdb (fileName) {
         this.settings.LAST_SAVE = Date.now();
 		log(LOG_INFO,"database initialized (v" + this.VERSION + ")");
 	};
-    
-	/* release any locks or subscriptions held by a disconnected client */
+ 
+	/* schedule client for subscription and lock release */
 	this.release = function(client) {
+		this.queue.push(new Request(
+			client,"CLOSE"
+		));
+	}
+ 
+	/* release any locks or subscriptions held by a disconnected client */
+	this.close = function(client) {
+		/* release any locks the client holds */
 		free_prisoners(client,this.shadow);
-		for (var s in this.subscriptions[client.id]) {
-			cancel_subscriptions(client,this.subscriptions[client.id]);
-			delete this.subscriptions[client.id];
-		}
-		for(var c=0;c<this.queue.length;c++) {
-			if(this.queue[c].client.id == client.id)
-				this.queue.splice(c--,1);
-		}
+		
+		/* release any subscriptions the client holds */
+		cancel_subscriptions(client,this.subscriptions[client.id]);
+		
+		/* remove any remaining queries from the queue */
+		fuh_queue(client,this.queue);
+		
+		return true;
 	};
 	
     /* main "loop" called by server */
@@ -541,6 +586,14 @@ function JSONdb (fileName) {
 		for(var r=0;r<this.queue.length;r++) {
 			var request=this.queue[r];
 			var result=false;
+			
+			/* if we have been asked to clear a client's locks, DEW IT */
+			if(request.oper.toUpperCase() == "CLOSE") {
+				this.queue.splice(r--,1);
+				this.close(request.client);
+				continue;
+			}	
+			
 			/* locate the requested record within the database */
 			var record=identify_remains.call(
 				this,request.client,request.parent_name,request.child_name,
@@ -592,19 +645,13 @@ function JSONdb (fileName) {
 				break;
 			}
 			if(result == true) {
-				log(LOG_DEBUG,"db: " + 
-					request.client.id + " " + 
-					request.oper + " " + 
-					record.location + " OK"
-				);
+				log(LOG_DEBUG,format("db: %s %s %s OK",
+					request.client.id,request.oper,record.location));  
 				this.queue.splice(r--,1);
 			}
 			else {
-				log(LOG_DEBUG,"db: " + 
-					request.client.id + " " + 
-					request.oper + " " + 
-					record.location + " FAILED"
-				); 
+				log(LOG_DEBUG,format("db: %s %s %s FAILED",
+					request.client.id,request.oper,record.location));  
 			}
 		} 
 		if(!this.settings.UPDATES)
@@ -756,6 +803,18 @@ function JSONdb (fileName) {
 		}
 	}
 	
+	/* remove any remaining client queries from queue */
+	function fuh_queue(client,queue) {
+		for(var c=0;c<queue.length;c++) {
+			var query = queue[c];
+			if(query.client.id == client.id) {
+				log(LOG_DEBUG,format("removing query: %s %s.%s",
+					query.oper,query.parent_name,query.child_name));
+				queue.splice(c--,1);
+			}
+		}
+	}
+	
 	/* release subscriptions on an object recursively */
 	function cancel_subscriptions(client,records) {
 		for(var r in records) {
@@ -764,6 +823,7 @@ function JSONdb (fileName) {
 			delete record.shadow[record.child_name]._subscribers[client.id];
 			send_subscriber_updates(client,record,"UNSUBSCRIBE");
 		}
+		delete records;
 	}
 	
 	/* return the prevailing lock type and pending lock status for an object */
@@ -855,6 +915,22 @@ function JSONdb (fileName) {
 		if(i > 0)
 			return str.substr(0,i);
 		return undefined;
+	}
+	
+	/* check a lock value against valid lock types */
+	function valid_lock(lock) {
+		for each(var l in locks) {
+			if(l == lock) 
+				return true;
+		}
+		return false;
+	}
+	
+	/* check an operation against valid operation types */
+	function valid_oper(oper) {
+		if(opers[oper] !== undefined)
+			return true;
+		return false;
 	}
 	
 	/* parse child object name from a dot-delimited string */
