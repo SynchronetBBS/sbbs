@@ -17,15 +17,16 @@ SRC_ROOT	=	../..
 include $(SRC_ROOT)/build/Common.gmake
 
 ifeq ($(os),sunos)
- LDFLAGS	+=	-lnsl
+ EXTRA_LIBS	+=	-lnsl
 endif
 
 vpath %.c ..
 
 CFLAGS	+=	-I.. -I../../comio $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) $(JS_CFLAGS) `pkg-config gtk+-2.0 --cflags`
-LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS) `pkg-config gtk+-2.0 --libs`
+LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS)
+EXTRA_LIBS += `pkg-config gtk+-2.0 --libs`
 
 $(GTKCHAT): $(OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LDFLAGS) $(OBJS) -o $@ $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CC) $(LDFLAGS) $(OBJS) -o $@ $(EXTRA_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
 	$(QUIET)cd $(EXEODIR) && ln -s ../gtk-chat.glade .
