@@ -452,7 +452,7 @@ function JSONdb (fileName) {
 		case errors.DUPLICATE_LOCK:
 			error_desc="Duplicate record lock request";
 			break;
-		case errors.DUPLICATE_SUBSCRIPTION:
+		case errors.DUPLICATE_SUB:
 			error_desc="Duplicate record subscription request";
 			break;
 		case errors.NON_ARRAY:
@@ -524,8 +524,8 @@ function JSONdb (fileName) {
     
 	/* release any locks or subscriptions held by a disconnected client */
 	this.release = function(client) {
+		free_prisoners(client,this.shadow);
 		for (var s in this.subscriptions[client.id]) {
-			free_prisoners(client,this.shadow);
 			cancel_subscriptions(client,this.subscriptions[client.id]);
 			delete this.subscriptions[client.id];
 		}
