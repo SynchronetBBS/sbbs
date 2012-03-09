@@ -1,3 +1,4 @@
+if(js.global.JSON==undefined) {
 //alert('IMPORTANT: Remove this line from json2.js before deployment.');
 /*
     http://www.JSON.org/json2.js
@@ -482,3 +483,4 @@ replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
     }
 }());
 
+}
