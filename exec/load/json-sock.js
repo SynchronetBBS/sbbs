@@ -1,4 +1,4 @@
-load("synchronet-json.js");
+//load("synchronet-json.js");
 /* socket mod version */
 Socket.prototype.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
 /* round trip packet time */
