@@ -79,7 +79,7 @@ function EnterSector()	/* 20000 */
 
 	console.attributes="Y";
 	sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
-	DisplaySector(sector,player.Sector);
+	DisplaySector(sector,player.Sector,false);
 	if(sector.FighterOwner > 0) {
 		otherplayer=players.Get(sector.FighterOwner);
 		if(otherplayer.TeamNumber > 0)
@@ -111,7 +111,7 @@ function EnterSector()	/* 20000 */
 			case 'D':
 				console.writeln("<Display>");
 				sector=db.read('tw2','sector.'+player.Sector,LOCK_READ);
-				DisplaySector(sector,player.Sector);
+				DisplaySector(sector,player.Sector,false);
 				break;
 			case 'I':
 				console.writeln("<Info>");
@@ -199,7 +199,7 @@ function EnterSector()	/* 20000 */
 	return(true);
 }
 
-function DisplaySector(sector, secnum)
+function DisplaySector(sector, secnum, helponly)
 {
 	var i;
 	var count=0;
@@ -226,6 +226,8 @@ function DisplaySector(sector, secnum)
 		console.attributes="HM";
 		console.writeln(secnum);
 	}
+	if(helponly)
+		return;
 	console.crlf();
 	console.attributes="HY";
 	console.writeln("Sector "+secnum);

@@ -87,7 +87,7 @@ function Menu(sector)
 			case 'D':
 				console.writeln("<Display>");
 				sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
-				DisplaySector(sector,player.Sector);
+				DisplaySector(sector,player.Sector,false);
 				continue;
 			case 'E':
 				if(user.level < 90)
@@ -138,7 +138,12 @@ function Menu(sector)
 				console.attributes="C";
 				console.writeln("<Help>");
 				console.crlf();
-				console.printfile(fname("main.asc"));
+				if(user.settings&USER_ANSI) {
+					sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+					DisplaySector(sector,player.Sector,true);
+				}
+				else
+					console.printfile(fname("main.asc"));
 				break;
 
 			case 'Z':
