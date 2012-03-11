@@ -6,6 +6,12 @@ var PlayerProperties=[
 				,def:(user == undefined?0:user.number)
 			}
 			,{
+				 prop:"QWKID"
+				,name:"BBS QWK ID"
+				,type:"String:8"
+				,def:system.qwk_id
+			}
+			,{
 				 prop:"Points"
 				,name:"Pointes"
 				,type:"Integer"
@@ -21,7 +27,7 @@ var PlayerProperties=[
 				 prop:"LastOnDay"
 				,name:"Date Last On"
 				,type:"Date"
-				,def:system.datestr()
+				,def:strftime("%Y:%m:%d")
 			}
 			,{
 				 prop:"KilledBy"
@@ -103,17 +109,36 @@ var PlayerProperties=[
 			}
 		];
 
-var PlayerLocation = [
-			{
-				 prop:"Sector"
-				,name:"Sector"
-				,type:"Integer"
-				,def:1
+var players = {
+	GetLocked:function GetLocked(playerNum, lock) {
+		var ret=db.read('tw2','players.'+playerNum,lock);
+		ret.Record=playerNum;
+		ret.PutLocked=function(lock) {
+			var p={};
+			var i;
+			
+			for(i in PlayerProperties) {
+				p[PlayerProperties[i]['prop']]=this[PlayerProperties[i]['prop']];
 			}
-		];
-
-var players=new RecordFile(fname("players.dat"), PlayerProperties);
-var playerLocation=new RecordFile(fname("player-loc.dat"), PlayerLocation);
+			db.write('tw2','players.'+this.Record,p,lock);
+		}
+		ret.Put=function () {
+			this.PutLocked(LOCK_WRITE);
+		}
+		ret.ReInit=function() {
+			for(i in PlayerProperties) {
+				this[PlayerProperties[i]['prop']]=PlayerProperties[i]['def'];
+			}
+		}
+		return ret;
+	},
+	Get:function GetLocked(playerNum, lock) {
+		return this.GetLocked(playerNum, LOCK_READ);
+	},
+	get length() {
+		return(db.read('tw2','players.length',LOCK_READ));
+	}
+}
 
 function AttackPlayer()
 {
@@ -125,20 +150,17 @@ function AttackPlayer()
 		return(false);
 	}
 	for(i=1;i<players.length; i++) {
-		var otherloc=playerLocation.Get(i);
-		if(otherloc.Sector==player.Sector) {
-			var otherplayer=players.Get(i);
-			if(otherplayer.Sector==player.Sector
-					&& otherplayer.Record!=player.Record
-					&& otherplayer.KilledBy!=0
-					&& otherplayer.UserNumber!=0
-					&& !otherplayer.Online) {
-				count++;
-				console.write("Attack "+otherplayer.Alias+" (Y/N)[Y]? ");
-				if(InputFunc(['Y','N'])!='N') {
-					console.writeln("<Yes>");
-					break;
-				}
+		var otherplayer=players.Get(i);
+		if(otherplayer.Sector==player.Sector
+				&& otherplayer.Record!=player.Record
+				&& otherplayer.KilledBy!=0
+				&& otherplayer.UserNumber!=0
+				&& !otherplayer.Online) {
+			count++;
+			console.write("Attack "+otherplayer.Alias+" (Y/N)[Y]? ");
+			if(InputFunc(['Y','N'])!='N') {
+				console.writeln("<Yes>");
+				break;
 			}
 		}
 		otherplayer=null;
@@ -209,7 +231,7 @@ function PlayerMove()
 	console.attributes="HW";
 	console.write("Warps lead to: ");
 
-	var sector=sectors.Get(player.Sector);
+	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 	var i;
 	var avail=new Array();
 	for(i=0; i<sector.Warps.length; i++) {
@@ -278,32 +300,38 @@ function KilledBy(killed, killer, notify)	/* 15300 */
 
 	killed.KilledBy=killer.Record;
 	killed.Put();
-	var killedLocation=playerLocation.Get(killed.Record);
-	killedLocation.Sector=killed.Sector; killedLocation.Put();
+	var seclen=db.read('tw2','sectors.length',LOCK_READ);
 
 	/* Destroy all deployed fighters */
-	for(i=1; i<sectors.length; i++) {
-		var sector=sectors.Get(i);
+	for(i=1; i<seclen; i++) {
+		db.lock('tw2','sectors.'+i,LOCK_WRITE);
+		var sector=db.read('tw2','sectors.'+i);
 		if(sector.FighterOwner==player.Record) {
 			sector.Fighters=0;
 			sector.FighterOwner=0;
-			sector.Put();
+			db.write('tw2','sectors.'+i,sector);
 		}
+		db.unlock('tw2','sectors.'+i);
 	}
 
 	if(killed.TeamNumber > 0) {
-		var team=teams.Get(killed.TeamNumber);
-		i;
+		var ktn=killed.TeamNumber;
+		db.lock('tw2','teams.'+ktn);
+		var team=db.read('tw2','teams.'+ktn);
+		var i;
 		for(i=0; i<team.Members.length; i++) {
 			if(team.Members[i]==killed.Record) {
-				team.Members[i]=0;
-				team.Size--;
+				team.Members.splice(i,1);
+				db.write('tw2','teams.'+ktn);
+				killed.TeamNumber=0;
+				killed.Put();
 			}
 		}
+		db.unlock('tw2','teams.'+ktn);
 	}
 
 	if(notify)
-		twmsg.writeln(" - "+killer.Alias+"  killed "+killed.Alias);
+		db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:" - "+killer.Alias+"  killed "+killed.Alias},LOCK_WRITE);
 }
 
 function RankPlayers()
@@ -311,28 +339,28 @@ function RankPlayers()
 	var i;
 	var rank=new Array();
 	var fighters=new Array();
+	var universe=db.read('tw2','sectors',LOCK_READ);
+	var allplayers=db.read('tw2','players',LOCK_READ);
 
-	for(i=1; i<sectors.length; i++) {
-		var sector=sectors.Get(i);
-		if(sector.Fighters > 0 && sector.FighterOwner > 0) {
-			if(fighters[sector.FighterOwner]==undefined)
-				fighters[sector.FighterOwner]=0;
-			fighters[sector.FighterOwner]+=sector.Fighters;
+	for(i=1; i<universe.length; i++) {
+		if(universe[i].Fighters > 0 && universe[i].FighterOwner > 0) {
+			if(fighters[universe[i].FighterOwner]==undefined)
+				fighters[universe[i].FighterOwner]=0;
+			fighters[universe[i].FighterOwner]+=universe[i].Fighters;
 		}
 	}
-	for(i=1; i<players.length; i++) {
-		var p=players.Get(i);
-		if(p.UserNumber==0)
+	for(i=1; i<allplayers.length; i++) {
+		if(allplayers[i].UserNumber==0)
 			continue;
-		if(p.KilledBy!=0)
+		if(allplayers[i].KilledBy!=0)
 			continue;
 		var robj=new Object();
-		robj.Record=p.Record;
-		robj.Score=p.Fighters*100 + p.Holds*500 + p.Credits;
+		robj.Record=allplayers[i].Record;
+		robj.Score=allplayers[i].Fighters*100 + allplayers[i].Holds*500 + allplayers[i].Credits;
 
 		var j;
 		for(j=0; j<Commodities.length; j++)
-			robj.Score += Commodities[j].price*p.Commodities[j];
+			robj.Score += Commodities[j].price*allplayers[i].Commodities[j];
 		if(fighters[i]!=undefined)
 			robj.Score += fighters[i]*100;
 		rank.push(robj);
@@ -348,16 +376,15 @@ function RankPlayers()
 
 function TWRank()
 {
-	var rf=new File(fname(Settings.TopTenFile));
-	rf.open("w", true);
-	rf.writeln();
-	rf.writeln("  T R A D E W A R S   I I - 500T   S C O R E B O A R D  ");
-	rf.writeln();
-	rf.writeln("Last updated at: "+system.timestr());
-	rf.writeln();
-	rf.writeln("Player Rankings");
-	rf.writeln("Rank     Value      Team   Player");
-	rf.writeln("==== ============= ====== ================");
+	var rstr='';
+	rstr += '\r\n';
+	rstr += "  T R A D E W A R S   I I - 500T   S C O R E B O A R D  \r\n";
+	rstr += '\r\n';
+	rstr += "Last updated at: "+system.timestr()+"\r\n";
+	rstr += '\r\n';
+	rstr += "Player Rankings\r\n";
+	rstr += "Rank     Value      Team   Player\r\n";
+	rstr += "==== ============= ====== ================\r\n";
 	var ranked=RankPlayers();
 	var i;
 	var trank=new Object();
@@ -365,7 +392,7 @@ function TWRank()
 	for(i=0; i<ranked.length; i++) {
 		var p=players.Get(ranked[i].Record);
 		if(i<10)
-			rf.writeln(format("%4d %13d %6s %s",(i+1),ranked[i].Score,p.TeamNumber==0?"":p.TeamNumber.toString(),p.Alias));
+			rstr += format("%4d %13d %6s %s\r\n",(i+1),ranked[i].Score,p.TeamNumber==0?"":p.TeamNumber.toString(),p.Alias);
 		if(p.TeamNumber.toString() != 0) {
 			if(trank[p.TeamNumber.toString()]==undefined)
 				trank[p.TeamNumber.toString()]=0;
@@ -386,19 +413,85 @@ function TWRank()
 	if(tsort.length > 0) {
 
 		tsort.sort(sortfunc);
-		rf.writeln();
-		rf.writeln("Team Rankings");
-		rf.writeln("Rank     Value      Team");
-		rf.writeln("==== ============= ======");
+		rstr += "\r\n";
+		rstr += "Team Rankings\r\n";
+		rstr += "Rank     Value      Team\r\n";
+		rstr += "==== ============= ======\r\n";
 		for(i=0; i<tsort.length; i++) {
 			if(i>=10)
 				break;
-			rf.writeln(format("%4d %13d %6d",(i+1),tsort[i].Score,tsort[i].Record));
+			rstr += format("%4d %13d %6d\r\n",(i+1),tsort[i].Score,tsort[i].Record);
 		}
 	}
-	rf.close();
+	db.write('tw2','ranking',rstr,LOCK_WRITE);
 }
 
+function JSON_DoBattle(oppPath, otherteam)
+{
+	if(player.Fighters<1) {
+		console.writeln("You don't have any fighters!");
+		return(0);
+	}
+	else {
+		console.write("How many fighters do you wish to use? ");
+		var use=InputFunc([{min:0,max:player.Fighters}]);
+
+		if(use > 0 && use <= player.Fighters) {
+			var lost=0;
+			var killed=0;
+
+			db.lock('tw2',oppPath,LOCK_WRITE);
+			var opp=db.read('tw2',oppPath);
+			player.Fighters -= use;
+			while(use && opp.Fighters) {
+				if(player.TeamNumber > 0 && otherteam) {
+					if((random(10)+1) > 6) {
+						opp.Fighters--;
+						killed++;
+					}
+					else {
+						use--;
+						lost++;
+					}
+				}
+				else if(otherteam && player.TeamNumber==0) {
+					if((random(10)+1) > 6) {
+						use--;
+						lost++;
+					}
+					else {
+						opp.Fighters--;
+						killed++;
+					}
+				}
+				else {
+					if(random(2)==0) {
+						use--;
+						lost++;
+					}
+					else {
+						opp.Fighters--;
+						killed++;
+					}
+				}
+			}
+			player.Fighters += use;
+			db.write('tw2',oppPath,opp);
+			db.unlock('tw2',oppPath);
+			player.Put();
+
+			console.writeln("You lost "+lost+" fighter(s), "+player.Fighters+" remain.");
+			if(opp.Fighters > 0)
+				console.write("You destroyed "+killed+" enemy fighters, "+opp.Fighters+" remain.");
+			else
+				console.write("You destroyed all of the enemy fighters.");
+			return(killed);
+		}
+	}
+	return(0);
+}
+
+// TODO: Obsolete
 function DoBattle(opp, otherteam)
 {
 	if(player.Fighters<1) {
@@ -492,45 +585,46 @@ function DeletePlayer(player)
 	player.Alias="<Deleted>";
 	player.Sector=0;
 	player.Put();
-	/* Move to sector zero */
-	var loc=playerLocation.Get(player.Record);
-	loc.Sector=0;
-	loc.Put();
 	/* Set fighter owner to "Deleted Player" */
 	var i;
+	var seclen=db.read('tw2','sectors.length',LOCK_READ);
 	for(i=1; i<sectors.length; i++) {
-		var sector=sectors.Get(i);
+		db.lock('tw2','sectors.'+i,LOCK_WRITE);
+		var sector=db.read('tw2','sectors.'+i);
 		if(sector.FighterOwner==player.Record) {
 			sector.FighterOwner=-98;
-			sector.Put();
+			sector=db.write('tw2','sectors.'+i,sector);
 		}
+		db.unlock('tw2','sectors.'+i);
 	}
 	/* Set messages TO the deleted player as read and FROM as from deleted */
-	for(i=0; i<twpmsg.length; i++) {
-		msg=twpmsg.Get(i);
-
-		if(msg.To==player.Record && !msg.Read) {
-			msg.Read=true;
-			msg.Put();
+	db.lock('tw2','updates',LOCK_WRITE);
+	var updates=db.read('tw2','updates');
+	for(i=0; i<updates.length; i++) {
+		if(updates[i].To==player.Record && !msg.Read) {
+			updates.splice(i,1);
+			i--;
 		}
-		else if(msg.From==player.Record) {
-			msg.From=-98;
-			msg.Put();
+		else if(updates[i].From==player.Record) {
+			updates[i].From=-98;
 		}
 	}
+	db.write('tw2','updates',updates);
+	db.unlock('tw2','updates');
 	/* Set radio messages TO the deleted player as read and FROM as from deleted */
-	for(i=0; i<twrmsg.length; i++) {
-		msg=twrmsg.Get(i);
-
-		if(msg.To==player.Record && !msg.Read) {
-			msg.Read=true;
-			msg.Put();
+	db.lock('tw2','radio',LOCK_WRITE);
+	var radio=db.read('tw2','radio');
+	for(i=0; i<radio.length; i++) {
+		if(radio[i].To==player.Record && !msg.Read) {
+			radio.splice(i,1);
+			i--;
 		}
-		else if(msg.From==player.Record) {
-			msg.From=-98;
-			msg.Put();
+		else if(radio[i].From==player.Record) {
+			radio[i].From=-98;
 		}
 	}
+	db.write('tw2','radio',radio);
+	db.unlock('tw2','radio');
 	/* Set killed bys to Deleted Player */
 	for(i=1; i<players.length; i++) {
 		var otherplayer=players.Get(i);
@@ -540,12 +634,12 @@ function DeletePlayer(player)
 			otherplayer.Put();
 		}
 	}
-	twmsg.writeln("  - "+player.Alias+" deleted from game");
+	db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"  - "+player.Alias+" deleted from game"},LOCK_WRITE);
 }
 
 function MoveTo(to)
 {
-	var sector=sectors.Get(player.Sector);
+	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 
 	if(player.TurnsLeft < 1) {
 		console.writeln("I'm sorry but you don't have any turns left.");
@@ -558,8 +652,6 @@ function MoveTo(to)
 				player.LastIn=player.Sector;
 				player.Sector=to;
 				player.Put();
-				var location=playerLocation.Get(player.Record);
-				location.Sector=player.Sector; location.Put();
 				return(true);
 			}
 		}
@@ -571,26 +663,47 @@ function MoveTo(to)
 function LoadPlayer()
 {
 	var firstnew;
-	for(i=1; i<players.length; i++) {
-		player=players.Get(i);
-		if(player.UserNumber == user.number && (!file_exists(system.data_dir+format("user/%04d.tw2",player.UserNumber))))
-			DeletePlayer(player);
-		if(player.UserNumber==0 && firstnew==undefined)
-			firstnew=player;
-		if(player.UserNumber == user.number)
-			break;
+	var allplayers;
+	var playerNum=0;
+
+	for(var done=false; !done;) {
+		db.lock('tw2','players',LOCK_WRITE);
+		allplayers=db.read('tw2','players');
+		for(i=1; i<allplayers.length; i++) {
+			player=allplayers[i];
+			if(player.QWKID==system.qwk_id && player.UserNumber == user.number && (!file_exists(system.data_dir+format("user/%04d.tw2",player.UserNumber)))) {
+				db.unlock('tw2','players',LOCK_WRITE);
+				DeletePlayer(player);
+				break;
+			}
+			if(player.UserNumber==0 && firstnew==undefined)
+				firstnew=i;
+			if(player.QWKID==system.qwk_id && player.UserNumber == user.number) {
+				done=true;
+				playerNum=i;
+				break;
+			}
+		}
+		done=true;
 	}
 	if(player==undefined || player.UserNumber!=user.number) {
+		player=players.GetLocked(firstnew);
+		if(player != undefined) {
+			player.UserNumber=-1;
+			player.Online=true;
+			player.PutLocked();
+		}
+		db.unlock('tw2','players');
+		db.lock('tw2','players.'+player.Record);
 		console.attributes="G";
 		console.writeln("I can't find your record, so I am assuming you are a new player.");
 		console.attributes="M";
 		console.writeln("Entering a new player...");
-		player=firstnew;
 		if(player==undefined) {
 			console.writeln("I'm sorry but the game is full.");
 			console.writeln("Please leave a message for the Sysop so");
 			console.writeln("he can save a space for you when one opens up.");
-			twmsg.writeln(system.timestr()+": New player not allowed - game full.");
+			db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:": New player not allowed - game full."},LOCK_WRITE);
 			return(false);
 		}
 		console.crlf();
@@ -598,39 +711,27 @@ function LoadPlayer()
 		console.writeln("be deleted to make room for someone else.");
 		console.crlf();
 		console.writeln("Your ship is being initialized.");
-
-		/* Lock the player file and mark us online... */
-		if(!Lock(players.file.name, bbs.node_num, true, 10)) {
-			console.writeln("!!!Unable to lock player data!");
-			twmsg.writeln("!!!Unable to lock player data!");
-			return(false);
-		}
 		player.ReInit();
 		player.Online=true;
-		player.Put();
-		Unlock(players.file.name);
+		player.PutLocked();
+		db.unlock('tw2','players.'+player.Record);
 
-		twmsg.writeln(system.timestr()+" "+user.alias+": New Player logged on");
+		db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:user.alias+": New Player logged on"},LOCK_WRITE);
 		Instructions();
 	}
 	else {
-		/* Lock the player file and mark us online... */
-		if(!Lock(players.file.name, bbs.node_num, true, 10)) {
-			console.writeln("!!!Unable to lock player data!");
-			twmsg.writeln("!!!Unable to lock player data!");
-			return(false);
-		}
+		player=players.GetLocked(playerNum);
 		player.Online=true;
-		player.Put();
-		Unlock(players.file.name);
+		player.PutLocked();
+		db.unlock('tw2','players');
 
 		console.crlf();		/* TODO: BASIC magic... N$ appears empty tw2.bas: 242 */
-		twmsg.writeln(system.timestr()+" "+user.alias+": Logged on");
-		if(today < system.datestr(player.LastOnDay)) {
-			console.writeln("I'm sorry, but you won't be allowed on for another " + parseInt((system.datestr(player.LastOnDay)-today)/86400) + " day(s)");
+		db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:user.alias+": Logged on"},LOCK_WRITE);
+		if(strftime("%Y:%m:%d") < player.LastOnDay) {
+			console.writeln("I'm sorry, but you won't be allowed on until " + player.LastOnDay);
 			return(false);
 		}
-		if(today==system.datestr(player.LastOnDay)) {
+		if(strftime("%Y:%m:%d")==player.LastOnDay) {
 			if(player.KilledBy != -99) {
 				console.writeln("You have been on today.");
 				if(player.TurnsLeft<1) {
@@ -648,7 +749,7 @@ function LoadPlayer()
 			player.TurnsLeft=Settings.TurnsPerDay;
 			player.TimeToday=0;
 		}
-		player.LastOnDay=system.datestr();
+		player.LastOnDay=strftime("%Y:%m:%d");
 		if(player.KilledBy != 0) {
 			switch(player.KilledBy) {
 				case player.Record:
@@ -675,14 +776,11 @@ function LoadPlayer()
 
 	ReadRadio();
 
-	if(player.Sector < 1 || player.Sector >= sectors.length) {
+	if(player.Sector < 1 || player.Sector >= db.read('tw2','sectors.length',LOCK_READ)) {
 		console.writeln("You are being moved to sector 1");
 		player.Sector=1;
 		player.Put();
 	}
-	var location=playerLocation.Get(player.Record);
-	location.Sector=player.Sector;
-	location.Put();
 
 	if(player.Credits > 25000) {
 		console.crlf();
@@ -700,50 +798,61 @@ function DropFighters()
 		console.writeln("You can't leave fighters in the Union (sectors 1-7)");
 		return(false);
 	}
-	var sector=sectors.Get(player.Sector);
+	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 	if(sector.Fighters > 0 && sector.FighterOwner != player.Record) {
 		console.writeln("There are already fighters in this sector!");
 		return(false);
 	}
 	console.writeln("You have " + (player.Fighters+sector.Fighters) + " fighters available.");
 	console.write("How many fighters do you want defending this sector? ");
+
 	var newf=player.Fighters+sector.Fighters;
 	if(newf > 9999)
 		newf=9999;
 	newf=InputFunc([{min:0,max:newf}]);
+	db.lock('tw2','sectors.'+player.Sector,LOCK_WRITE);
+	sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+	if(sector.Fighters > 0 && sector.FighterOwner != player.Record) {
+		console.writeln("There are already fighters in this sector!");
+		db.unlock('tw2','sectors.'+player.Sector);
+		return(false);
+	}
 	if(newf >= 0 && newf <=player.Fighters+sector.Fighters) {
 		if((player.Fighters+sector.Fighters)-newf > 9999) {
 			console.writeln("Too many ships in your fleet!  You are limited to 9999");
+			db.unlock('tw2','sectors.'+player.Sector);
 			return(false);
 		}
 		player.Fighters=(player.Fighters+sector.Fighters)-newf;
 		sector.Fighters=newf;
 		if(sector.Fighters > 0)
 			sector.FighterOwner=player.Record;
-		sector.Put();
+		db.write('tw2','sectors.'+player.Sector,sector);
+		db.unlock('tw2','sectors.'+player.Sector);
 		player.Put();
 		console.writeln("Done.  You have " + player.Fighters + " fighter(s) in your fleet.");
 		return(true);
 	}
+	db.unlock('tw2','sectors.'+player.Sector);
 	return(false);
 }
 
 function ResetAllPlayers()
 {
 	uifc.pop("Creating Players");
-	var player=players.New();
-	var loc=playerLocation.New();
+	var player={};
 	var i;
-	player.UserNumber=0;
-	player.Put();
-	loc.Put();
-	for(i=0; i<Settings.MaxPlayers; i++) {
-		player=players.New();
-		player.UserNumber=0;
-		player.Sector=0;
-		player.Put();
-		loc=playerLocation.New();
-		loc.Sector=0;
-		loc.Put();
+
+	db.lock('tw2','players',LOCK_WRITE);
+	db.write('tw2','players',[]);
+	for(i in PlayerProperties) {
+		player[PlayerProperties[i]['prop']]=PlayerProperties[i]['def'];
 	}
+	player.UserNumber=0;
+	player.Sector=0;
+	db.push('tw2','players',{Excuse:"I hate zero-based arrays, so I'm just stuffing this crap in here"});
+	for(i=0; i<Settings.MaxPlayers; i++) {
+		db.push('tw2','players',player);
+	}
+	db.unlock('tw2','players');
 }

@@ -5,6 +5,7 @@ function ComputerMenu()
 	console.writeln("<Computer activated>");
 	var showhelp=true;
 	var sec;
+	var seclen;
 
 	for(;;) {
 		if(showhelp) {
@@ -13,6 +14,7 @@ function ComputerMenu()
 			showhelp=false;
 		}
 		console.attributes="HW";
+		console.crlf();
 		console.write("Computer command (?=help)? ");
 		switch(InputFunc(['?','1','2','3','4','5'])) {
 			case '?':
@@ -27,9 +29,10 @@ function ComputerMenu()
 			case '2':
 				/* 33780 */
 				console.write("What sector number is the port in? ");
-				sec=InputFunc([{min:0,max:sectors.length-1}]);
-				if(sec > 0 && sec < sectors.length) {
-					var sector=sectors.Get(sec);
+				seclen=db.read('tw2','sectors.length',LOCK_READ);
+				sec=InputFunc([{min:0,max:seclen-1}]);
+				if(sec > 0 && sec < seclen) {
+					var sector=db.read('tw2','sectors.'+sec,LOCK_READ);
 					if(sector.Port==0 || (sector.Fighters>0 && sector.Fighters!=player.Record)) {
 						console.crlf();
 						console.writeln("I have no information about that port.");
@@ -39,15 +42,16 @@ function ComputerMenu()
 						SolReport();
 					}
 					else {
-						PortReport(sector);
+						PortReport(sector.Port);
 					}
 				}
 				break;
 			case '3':
 				/* 33830 */
 				console.write("What sector do you want to get to? ");
-				sec=InputFunc([{min:0,max:sectors.length-1}]);
-				if(sec > 0 && sec < sectors.length) {
+				seclen=db.read('tw2','sectors.length',LOCK_READ);
+				sec=InputFunc([{min:0,max:seclen-1}]);
+				if(sec > 0 && sec < seclen) {
 					if(sec==player.Sector) {
 						console.writeln("You are in that sector.");
 						break;
@@ -76,8 +80,7 @@ function ComputerMenu()
 				console.crlf();
 				console.write("Ranking Players.");
 				TWRank();
-				console.printfile(fname(Settings.TopTenFile));
-				console.crlf();
+				console.writeln(db.read('tw2','ranking',LOCK_READ));
 				break;
 			case '5':
 				/* 33960 */

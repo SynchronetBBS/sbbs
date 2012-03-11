@@ -27,14 +27,17 @@ var Commodities=[
 	}
 ];
 var Settings;
-var today;
 var player=null;
 var exit_tw2=false;
 
+load("json-client.js");
 load("recordfile.js");
 load("lockfile.js");
 load(startup_path+"filename.js");
 load(fname("gamesettings.js"));
+var db;
+var LOCK_WRITE=2;
+var LOCK_READ=1;
 Settings=new GameSettings();
 
 load(fname("ports.js"));
@@ -60,7 +63,7 @@ function Menu()
 		console.attributes="HC";
 		console.write("Command (?=Help)? ");
 		var valid=new Array('A','C','D','E','F','G','I','L','M','P','Q','T','Z','?');
-		var sector=sectors.Get(player.Sector);
+		var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 		var i;
 		for(i=0; i<sector.Warps.length; i++) {
 			if(sector.Warps[i]>0)
@@ -166,27 +169,35 @@ function do_exit()
 	if(player != undefined) {
 		player.Online=false;
 		if(player.Ported || player.Landed) {
-			var sector=sectors.Get(player.Sector);
+			var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 			if(player.Ported) {
 				console.writeln("Leaving the port...");
 				player.Ported=false;
-				var port=ports.Get(sector.Port);
+				db.lock('tw2','ports.'+sector.Port,LOCK_WRITE);
+				port=db.read('tw2','ports.'+sector.Port);
 				port.OccupiedBy=0;
-				port.Put();
+				db.write('tw2','ports.'+sector.Port,port);
+				db.unlock('tw2','ports.'+sector.Port);
 			}
 			if(player.Landed) {
 				console.writeln("Launching from planet...");
 				player.Landed=false;
-				if(!Lock(planets.file.name, bbs.node_num, true, 5))
-					console.writeln("!UNABLE TO LOCK planet.dat!");
-				var planet=planets.Get(sector.Planet);
+				try {
+					db.lock('tw2','planets.'+sector.Planet,LOCK_WRITE);
+				}
+				catch (e) {
+					db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"!!! Error locking planets file!\n"+e},LOCK_WRITE);
+					return;
+				}
+				var planet=db.read('tw2','planets.'+sector.Planet);
 				planet.OccupiedCount--;
-				planet.Put();
-				Unlock(planets.file.name);
+				db.write('tw2','planets.'+sector.Planet,planet);
+				db.unlock('tw2','planets.'+sector.Planet);
 			}
 		}
 		player.TimeUsed += time()-on_at;
-		player.Put();
+		if(player.Put != undefined)
+			player.Put();
 	}
 	console.writeln("Returning to Door monitor...");
 	TWRank();
@@ -199,6 +210,24 @@ function Instructions()
 		console.crlf();
 		console.printfile(fname("twinstr.doc"));
 	}
+}
+
+// NOTE: Caller needs to save now...
+function LockedProduction(place)
+{
+	var newupd=time();
+	var diffdays=(newupd-place.LastUpdate)/86400;
+
+	if(diffdays>10)
+		diffdays=10;
+	for(i=0; i<Commodities.length; i++) {
+		if(diffdays > 0) {
+			place.Commodities[i] += place.Production[i]*diffdays;
+			if(place.Commodities[i] > place.Production[i]*10)
+				place.Commodities[i] = place.Production[i]*10;
+		}
+	}
+	place.LastUpdate=newupd;
 }
 
 function Production(place)
@@ -219,14 +248,28 @@ function Production(place)
 	place.Put();
 }
 
+function ShowOpeng()
+{
+	var len=db.read('tw2','twopeng.lengh',LOCK_READ);
+	var i;
+	var msg;
+
+	// TODO: Only show "new" stuff from here...
+	for(i=0; i<len; i++) {
+		msg=db.read('tw2','twopeng.'+i,LOCK_READ);
+		console.writeln(msg.Message);
+		console.crlf();
+	}
+}
+
 function main()
 {
-	today=system.datestr(system.datestr());
+	var today=strftime("%Y:%m:%d");
 
 	js.on_exit("do_exit()");
 	js.auto_terminate=false;
 	/* Run maintenance */
-	if(Settings.MaintLastRan != system.datestr()) {
+	if(Settings.MaintLastRan < today) {
 		RunMaint();
 	}
 
@@ -241,10 +284,7 @@ function main()
 	console.center("Sysop  "+system.operator);
 	console.crlf();
 	console.crlf();
-	console.printfile(fname("twopeng.asc"));
-	if(file_exists(fname("twopeng.dat")))
-		console.printfile(fname("twopeng.dat"));
-	console.crlf();
+	ShowOpeng();
 	console.attributes="W";
 	console.writeln("Initializing...");
 	console.writeln("Searching my records for your name.");

@@ -3,7 +3,19 @@ load("uifcdefs.js");				// WIN_*
 load("../xtrn/tw2/filename.js");
 
 var GameSettingProperties=[
-			 {
+			 {	// This index (0) is hard-coded.
+				 prop:"Server"
+				,name:"Server hostname"
+				,type:"String"
+				,def:"bbs.thebrokenbubble.com"
+			}
+			,{	// This index (1) is hard-coded.
+				 prop:"Port"
+				,name:"Server port"
+				,type:"Integer"
+				,def:"10088"
+			}
+			,{
 				 prop:"EditorPassword"
 				,name:"Editor Password"
 				,type:"String"
@@ -13,7 +25,7 @@ var GameSettingProperties=[
 				 prop:"Start"
 				,name:"Starting Date"
 				,type:"Date"
-				,def:system.datestr()
+				,def:strftime("%Y:%m:%d")
 			}
 			,{
 				 prop:"StartingFighters"
@@ -43,7 +55,7 @@ var GameSettingProperties=[
 				 prop:"MaintLastRan"
 				,name:"Maintenance Last Ran"
 				,type:"Date"
-				,def:system.datestr(time()-86400)
+				,def:strftime("%Y:%m:%d",time()-86400)
 			}
 			,{
 				 prop:"TurnsPerDay"
@@ -76,12 +88,6 @@ var GameSettingProperties=[
 				,def:50
 			}
 			,{
-				 prop:"TopTenFile"
-				,name:"Top Ten File Name"
-				,type:"String"
-				,def:"twtopten.txt"
-			}
-			,{
 				 prop:"AllowAliases"
 				,name:"Allow Aliases"
 				,type:"Boolean"
@@ -98,15 +104,22 @@ var GameSettingProperties=[
 function GameSettings_Save()
 {
 	var f=new File(fname("game.ini"));
+	var s={};
 
 	f.open(file_exists(f.name) ? 'r+':'w+');
-	for(i=0; i<GameSettingProperties.length; i++) {
-		if(GameSettingProperties[i].type=="Date" || this[GameSettingProperties[i].prop]!=GameSettingProperties[i].def)
-			f.iniSetValue(null, GameSettingProperties[i].prop, this[GameSettingProperties[i].prop]);
-		else
-			f.iniRemoveKey(null, GameSettingProperties[i].prop);
+	if(this.Server!=GameSettingProperties[0].def)
+		f.iniSetValue(null, 'Server', this.Server);
+	else
+		f.iniRemoveKey(null, 'Server');
+	if(this.Port!=GameSettingProperties[1].def)
+		f.iniSetValue(null, 'Port', this.Server);
+	else
+		f.iniRemoveKey(null, 'Port');
+
+	for(i=2; i<GameSettingProperties.length; i++) {
+		s[GameSettingProperties[i].prop]=this[GameSettingProperties[i].prop];
 	}
-	f.close();
+	db.write('tw2','settings',s,LOCK_WRITE);
 }
 
 function GameSettings()
@@ -125,6 +138,12 @@ function GameSettings()
 		for(i=0; i<GameSettingProperties.length; i++) {
 			this[GameSettingProperties[i].prop]=GameSettingProperties[i].def;
 		}
+	}
+	db=new JSONClient(this.Server,this.Port);
+	db.connect();
+	var s=db.read('tw2','settings',LOCK_READ);
+	for(i in s) {
+		this[i]=s[i];
 	}
 	this.save=GameSettings_Save;
 }

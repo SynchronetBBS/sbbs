@@ -1,3 +1,8 @@
+var DefaultTeam = {
+	Password:'',
+	Members:[]
+};
+
 var TeamProperties = [
 			{
 				 prop:"Password"
@@ -18,8 +23,6 @@ var TeamProperties = [
 				,def:0
 			}
 		];
-
-var teams=new RecordFile(fname("teams.dat"), TeamProperties);
 
 function TeamMenu()
 {
@@ -117,29 +120,46 @@ function CreateTeam()
 	console.crlf();
 	console.writeln("REMEMBER YOUR TEAM PASSWORD!");
 	var team=null;
-	for(i=1; i<teams.length; i++) {
-		team=teams.Get(i);
-		if(team.Size > 0)
+	var teamNum=-1;
+	var teamLen=db.read('tw2','teams.length',LOCK_READ);
+	for(i=1; i<teamLen; i++) {
+		team=db.read('tw2','teams.'+i,LOCK_READ);
+		if(team.Members.length > 0) {
+			teamNum=i;
 			break;
+		}
 		team=null;
 	}
-	if(team==null)
-		team=teams.New();
+	if(team==null) {
+		team=eval(DefaultTeam.toSource());
+	}
 	team.Password=password;
-	team.Size=1;
 	team.Members[0]=player.Record;
-	player.TeamNumber=team.Record;
-	team.Put();
+	db.push('tw2','teams',team,LOCK_WRITE);
+	/* Now find the record we just wrote... */
+	if(teamNum==-1) {
+		teamLen=db.read('tw2','teams.length',LOCK_READ);
+		for(i=1; i<teamLen; i++) {
+			team=db.read('tw2','teams.'+i,LOCK_READ);
+			if(team.Members.length > 0 && team.Members[0]==player.Record) {
+				teamNum=i;
+				break;
+			}
+		}
+	}
+	player.TeamNumber=teamNum;
 	player.Put();
 	console.attributes="HYI";
-	twmsg.writeln(player.Alias+" Created Team "+team.Record+" the " /* TNAM$ */);
-	console.writeln("Team number [" + team.Record + "] CREATED!");
+	db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:player.Alias+" Created Team "+teamNum+" the " /* TNAM$ */},LOCK_WRITE);
+	console.writeln("Team number [" + teamNum + "] CREATED!");
 	console.attributes="HK";
 	return(true);
 }
 
 function JoinTeam()
 {
+	var teamLen=db.read('tw2','teams.length',LOCK_READ);
+
 	if(player.TeamNumber > 0) {
 		console.writeln("You already belong to a Team! ");
 		console.writeln("You must quit one team to join another Team.");
@@ -147,40 +167,39 @@ function JoinTeam()
 	}
 
 	console.write("What Team number do you wish to join (0=quit)? ");
-	var tnum=InputFunc([{min:0,max:(teams.length-1)}]);
-	if(!(tnum > 0 && tnum < teams.length))
+	var tnum=InputFunc([{min:0,max:(teamLen-1)}]);
+	if(!(tnum > 0 && tnum < teamLen))
 		return(false);
 
-	var team=teams.Get(tnum);
-	if(team.Size > 3) {
+	var team=db.read('tw2','teams.'+tnum,LOCK_READ);
+	if(team.Members.length > 3) {
 		console.writeln("The Team you picked has a maximum amount of members!");
 		return(false);
 	}
-	console.write("Please enter Password to Join Team #"+team.Record+" ? ");
+	console.write("Please enter Password to Join Team #"+tnum+" ? ");
 	var pass=console.getstr(4);
 	if(pass != team.Password) {
 		console.writeln("Invalid Password entered!");
 		return(false);
 	}
 	var i;
-	for(i=0; i<team.Members.length; i++) {
-		if(team.Members[i]==0) {
-			team.Members[i]=player.Record;
-			team.Size++;
-			player.TeamNumber=team.Record;
-			team.Put();
-			player.Put();
-			twmsg.writeln(player.Alias + " Joined Team "+team.Record);
-			console.attributes="HC";
-			console.writeln("Your Team info has been recorded!  Have fun!");
-			console.attributes="HK";
-			return(true);
-		}
+	db.lock('tw2','teams.'+tnum,LOCK_WRITE);
+	team=db.read('tw2','teams.'+tnum);
+	if(team.Members.length > 3) {
+		console.writeln("The Team you picked has a maximum amount of members!");
+		db.unlock('tw2','teams.'+tnum);
+		return(false);
 	}
-	console.attributes="HR";
-	console.writeln("Corrupt team detected on join!  Please notify the Sysop!");
-	twmsg.writeln("!!! Team "+team.Record+" is corrupted (join)!");
-	return(false);
+	team.Members.push(player.Record);
+	player.TeamNumber=tnum;
+	db.write('tw2','teams.'+tnum, team);
+	db.unlock('tw2','teams.'+tnum);
+	player.Put();
+	db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:player.Alias + " Joined Team "+tnum},LOCK_WRITE);
+	console.attributes="HC";
+	console.writeln("Your Team info has been recorded!  Have fun!");
+	console.attributes="HK";
+	return(true);
 }
 
 function QuitTeam()
@@ -191,15 +210,17 @@ function QuitTeam()
 	}
 	console.write("Are you sure you wish to quit your Team [N]? ");
 	if(InputFunc(['Y','N'])=='Y') {
-		var team=teams.Get(player.TeamNumber);
-		player.TeamNumber=0;
+		var teamNum=player.TeamNumber;
+		db.lock('tw2','teams.'+teamNum,LOCK_WRITE);
+		var team=db.read('tw2','teams.'+teamNum);
 		var i;
 		for(i=0; i<team.Members.length; i++) {
 			if(team.Members[i]==player.Record) {
-				team.Members[i]=0;
-				team.Size--;
+				team.Members.splice(i,1);
+				player.TeamNumber=0;
 				player.Put();
-				team.Put();
+				db.write('tw2', 'teams.'+teamNum, team);
+				db.unlock('tw2','teams.'+teamNum);
 				console.crlf();
 				console.attributes="HG";
 				console.writeln("You have been removed from Team play");
@@ -208,9 +229,10 @@ function QuitTeam()
 			}
 		}
 	}
+	db.unlock('tw2','teams.'+teamNum);
 	console.attributes="HR";
 	console.writeln("Corrupt team detected on quit!  Please notify the Sysop!");
-	twmsg.writeln("!!! Team "+team.Record+" is corrupted (quit)!");
+	db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"!!! Team "+player.TeamNumber+" is corrupted (quit)!"},LOCK_WRITE);
 	return(false);
 }
 
@@ -227,20 +249,17 @@ function TeamTransfer(type)
 
 	var otherplayer=null;
 	for(i=1;i<players.length; i++) {
-		var otherloc=playerLocation.Get(i);
-		if(otherloc.Sector==player.Sector) {
-			otherplayer=players.Get(i);
-			if(otherplayer.Sector==player.Sector
-					&& otherplayer.Record!=player.Record
-					&& otherplayer.KilledBy!=0
-					&& otherplayer.UserNumber!=0
-					&& otherplayer.TeamNumber==player.TeamNumber) {
-				console.write("Transfer "+type+" to " + otherplayer.Alias + " (Y/[N])? ");
-				if(InputFunc(['Y','N'])=='Y')
-					break;
-			}
-			otherplayer=null;
+		otherplayer=players.Get(i);
+		if(otherplayer.Sector==player.Sector
+				&& otherplayer.Record!=player.Record
+				&& otherplayer.KilledBy!=0
+				&& otherplayer.UserNumber!=0
+				&& otherplayer.TeamNumber==player.TeamNumber) {
+			console.write("Transfer "+type+" to " + otherplayer.Alias + " (Y/[N])? ");
+			if(InputFunc(['Y','N'])=='Y')
+				break;
 		}
+		otherplayer=null;
 	}
 	if(otherplayer==null) {
 		console.writeln("There is no one else in this sector");
@@ -277,6 +296,6 @@ function TeamTransfer(type)
 function InitializeTeams()
 {
 	uifc.pop("Teams");
-	var team=teams.New();
-	team.Put();
+	db.write('tw2','teams',[],LOCK_WRITE);
+	db.push('tw2','teams',{Excuse:"I hate zero-based arrays, so I'm just stuffing this crap in here"},LOCK_WRITE);
 }

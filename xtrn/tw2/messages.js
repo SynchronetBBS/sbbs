@@ -52,37 +52,39 @@ var RadioMessageProperties = [
 			}
 		];
 
-var twpmsg=new RecordFile(fname("twpmesg.dat"), PlayerMessageProperties);
-var twrmsg=new RecordFile(fname("twrmesg.dat"), RadioMessageProperties);
-var twmsg=new File(fname("twmesg.dat"));
-twmsg.open("a", true);
-
 function ReadPMsg()
 {
 	console.writeln("The following happened to your ship since your last time on:");
+	// TODO: Fix this up...
+	db.lock('tw2','updates',LOCK_WRITE);
+	var updates=db.read('tw2','updates');
 	var count=0;
-	for(i=0; i<twpmsg.length; i++) {
-		var msg=twpmsg.Get(i);
+	var msgstr='';
+	for(i=0; i<updates.length; i++) {
+		var msg=updates[i];
 
 		if(msg.To==player.Record && !msg.Read) {
 			count++;
 			if(msg.From==-98)
-				console.writeln("A deleted player destroyed "+msg.Destroyed+" fighters.");
+				msgstr += "A deleted player destroyed "+msg.Destroyed+" fighters.\r\n";
 			else if(msg.From==-1) {
-				console.attributes="R";
-				console.writeln("The Cabal destroyed "+msg.Destroyed+" fighters.");
+				msgstr += "The Cabal destroyed "+msg.Destroyed+" fighters.\r\n";
 			}
 			else {
 				var otherplayer=players.Get(msg.From);
 
-				console.writeln(otherplayer.Alias+" "+(otherplayer.TeamNumber?" Team["+otherplayer.TeamNumber+"] ":"")+"destroyed "+msg.Destroyed+" of your fighters.");
+				msgstr += otherplayer.Alias+" "+(otherplayer.TeamNumber?" Team["+otherplayer.TeamNumber+"] ":"")+"destroyed "+msg.Destroyed+" of your fighters.";
 			}
-			msg.Read=true;
-			msg.Put();
+			updates.splice(i,1);
+			i--;
 		}
 	}
+	db.write('tw2','updates',updates);
+	db.unlock('tw2','updates');
 	if(count==0)
 		console.writeln("Nothing");
+	else
+		console.write(msgstr);
 	return(count);
 }
 
@@ -90,20 +92,12 @@ function RadioMessage(from, to, msg)
 {
 	var i;
 
-	var rmsg;
-	for(i=0; i<twrmsg.length; i++) {
-		var rmsg=twrmsg.Get(i);
-		if(rmsg.Read)
-			break;
-		rmsg=null;
-	}
-	if(rmsg==null)
-		rmsg=twrmsg.New();
+	var rmsg={};
 	rmsg.Read=false;
 	rmsg.From=from;
 	rmsg.To=to;
 	rmsg.Message=msg;
-	rmsg.Put();
+	db.push('tw2','radio',rmsg,LOCK_WRITE);
 	console.writeln("Message sent.");
 	return;
 }
@@ -111,33 +105,38 @@ function RadioMessage(from, to, msg)
 function ReadRadio()
 {
 	var i;
-	var rmsg;
 	var count=0;
+	var msgstr='';
 	
 	console.crlf();
 	console.writeln("Checking for Radio Messages sent to you.");
-	for(i=0; i<twrmsg.length; i++) {
-		var rmsg=twrmsg.Get(i);
-		if(rmsg.Read)
+	db.lock('tw2','radio',LOCK_WRITE);
+	var radio=db.read('tw2','radio');
+	for(i=0; i<radio.length; i++) {
+		if(radio[i].Read)
 			continue;
-		if(rmsg.To != player.Record)
+		if(radio[i].To != player.Record)
 			continue;
-		console.write("Message from ");
-		if(rmsg.From > 0) {
-			var p=players.Get(rmsg.From);
-			console.write(p.Alias);
+		msgstr += "Message from ";
+		if(radio[i].From > 0) {
+			var p=players.Get(radio[i].From);
+			msgstr += p.Alias;
 		}
 		else {
-			console.write("A deleted player");
+			msgstr += "A deleted player";
 		}
-		console.writeln(":");
-		console.writeln(rmsg.Message);
-		rmsg.Read=true;
-		rmsg.Put();
+		msgstr += ":\r\n";
+		msgstr += radio[i].Message+"\r\n";
+		radio.splice(i,1);
+		i--;
 		count++;
 	}
+	db.write('tw2','radio',radio);
+	db.unlock('tw2','radio');
 	if(count < 1)
 		console.writeln("None Received.");
+	else
+		console.write(msgstr);
 }
 
 function SendRadioMessage()
@@ -174,21 +173,12 @@ function ResetAllMessages()
 	var i;
 
 	uifc.pop("SysOp Messages");
-	twmsg.close();
-	twmsg.open("w");
-	twmsg.writeln(system.timestr()+" TW 500 initialized");
-	twmsg.close();
+	db.write('tw2','log',[],LOCK_WRITE);
+	db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:" TW 500 initialized"},LOCK_WRITE);
 
 	uifc.pop("Player Messages");
-	for(i=0; i<100; i++) {
-		msg=twpmsg.New();
-		msg.Put();
-	}
+	db.write('tw2','updates',[],LOCK_WRITE);
 
 	uifc.pop("Radio Messages");
-	for(i=0; i<2; i++) {
-		msg=twrmsg.New();
-		twrmsg.Read=true;
-		msg.Put();
-	}
+	db.write('tw2','radio',[],LOCK_WRITE);
 }

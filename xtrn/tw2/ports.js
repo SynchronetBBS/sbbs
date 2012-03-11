@@ -1,3 +1,14 @@
+var DefaultPort = {
+		Name:'',
+		Class:'',
+		Commodities:[0,0,0],
+		Production:[0,0,0],
+		PriceVariance:[0,0,0],
+		LastUpdate:0,
+		OccupiedBy:0,
+		Sector:0
+};
+
 var PortProperties = [
 			{
 				 prop:"Name"
@@ -49,8 +60,6 @@ var PortProperties = [
 			}
 		];
 
-var ports=new RecordFile(fname("ports.dat"), PortProperties);
-
 function SolReport()
 {
 	var holdprice=parseInt(50*Math.sin(0.89756*(today/86400)) + 0.5)+500;
@@ -67,7 +76,7 @@ function SolReport()
 }
 
 /*
- * Sol has not persistant data so locking isn't needed
+ * Sol has no persistant data so locking isn't needed
  */
 function DockAtSol()
 {
@@ -121,14 +130,19 @@ function DockAtSol()
 	}
 }
 
-function PortReport(sec) {
-	var port=ports.Get(sec.Port);
+function PortReport(portNum) {
+	db.lock('tw2','ports.'+portNum,LOCK_WRITE);
+	var port=db.read('tw2','ports.'+portNum);
 	var i;
 
-	if(port==null)
+	if(port==null) {
+		db.unlock('tw2','ports.'+portNum);
 		return(null);
+	}
 	/* 33000 */
-	Production(port);
+	LockedProduction(port);
+	db.write('tw2','ports.'+portNum,port);
+	db.unlock('tw2','ports.'+portNum,port);
 	var ret=new Array(Commodities.length);
 	for(i=0; i<Commodities.length; i++) {
 		ret[i]=new Object();
@@ -244,28 +258,25 @@ function Transact(type, price, vary, avail)
 
 function DockAtRegularPort()
 {
-	var sector=sectors.Get(player.Sector);
+	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 	var amount;
 	var sale;
 	var count;
 	var port;
 
 	/* Lock the port file and ensure we can dock... */
-	if(!Lock(ports.file.name, bbs.node_num, true, 5)) {
-		console.writeln("The port is busy.  Try again later.");
-		return;
-	}
-	port=ports.Get(sector.Port);
+	db.lock('tw2','ports.'+sector.Port,LOCK_WRITE);
+	port=db.read('tw2','ports.'+sector.Port);
 	if(port.OccupiedBy != 0) {
 		console.writeln("The port is busy.  Try again later.");
-		Unlock(ports.file.name);
+		db.unlock('tw2','ports.'+sector.Port);
 		return;
 	}
 	port.OccupiedBy=player.Record;
-	port.Put();
-	Unlock(ports.file.name);
-	Production(port);
-	sale=PortReport(sector);
+	LockedProduction(port);
+	db.write('tw2','ports.'+sector.Port,port);
+	db.unlock('tw2','ports.'+sector.Port);
+	sale=PortReport(sector.Port);
 	console.attributes="HR";
 	count=0;
 
@@ -279,7 +290,7 @@ function DockAtRegularPort()
 			if(amount >= 0) {
 				count++;
 				port.Commodities[i] -= amount;
-				port.Put();
+				db.write('tw2','ports.'+sector.Port,port,LOCK_WRITE);
 			}
 		}
 	}
@@ -290,7 +301,7 @@ function DockAtRegularPort()
 			if(amount >= 0) {
 				count++;
 				port.Commodities[i] -= amount;
-				port.Put();
+				db.write('tw2','ports.'+sector.Port,port,LOCK_WRITE);
 			}
 		}
 	}
@@ -300,11 +311,8 @@ function DockAtRegularPort()
 		console.attributes="C";
 	}
 
-	if(!Lock(ports.file.name, bbs.node_num, true, 10))
-		twmsg.writeln("!!! Error locking ports file!");
 	port.OccupiedBy=0;
-	port.Put();
-	Unlock(ports.file.name);
+	db.write('tw2','ports.'+sector.Port,port,LOCK_WRITE);
 }
 
 
@@ -317,7 +325,7 @@ function DockAtPort()
 		console.writeln("Sorry, but you don't have any turns left.");
 		return;
 	}
-	var sector=sectors.Get(player.Sector);
+	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 	if(sector.Port<1) {
 		console.writeln("There are no ports in this sector.");
 		return;
@@ -338,23 +346,31 @@ function DockAtPort()
 
 function InitializePorts()
 {
+	var port;
+	
 	uifc.pop("Placing Ports");
-	var port=ports.New();
-	port.Put();
+
+	db.lock('tw2','ports',LOCK_WRITE);
+	db.write('tw2','ports',[]);
+	db.push('tw2','ports',DefaultPort);
 
 	/* Place ports */
 	for(i=0; i<ports_init.length; i++) {
-		port=ports.New();
-		for(prop in ports_init[i])
-			port[prop]=ports_init[i][prop];
+		port=eval(DefaultPort.toSource());
+		for(prop in ports_init[i]) {
+			if(port[prop]!=undefined)
+				port[prop]=ports_init[i][prop];
+		}
 		port.Production=[ports_init[i].OreProduction, ports_init[i].OrgProduction, ports_init[i].EquProduction];
 		port.PriceVariance=[ports_init[i].OreDeduction,ports_init[i].OrgDeduction,ports_init[i].EquDeduction];
 
-		var sector=sectors.Get(ports_init[i].Sector);
-		sector.Port=port.Record;
-		sector.Put();
-		ports_init[i].LastUpdate=system.datestr(time()-15*86400);
+		db.lock('tw2','sectors.'+ports_init[i].Sector,LOCK_WRITE);
+		var sector=db.read('tw2','sectors.'+ports_init[i].Sector);
+		sector.Port=i+1;
+		db.write('tw2','sectors.'+ports_init[i].Sector,sector);
+		db.unlock('tw2','sectors.'+ports_init[i].Sector);
 
-		port.Put();
+		db.push('tw2','ports',port);
 	}
+	db.unlock('tw2','ports');
 }

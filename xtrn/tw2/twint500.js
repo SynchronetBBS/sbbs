@@ -1,15 +1,20 @@
+#!/synchronet/src/src/sbbs3/gcc.freebsd.exe.stephen.hurd.local/jsexec
+
 var startup_path='.';
 try { throw barfitty.barf(barf) } catch(e) { startup_path=e.fileName }
 startup_path=startup_path.replace(/[\/\\][^\/\\]*$/,'');
 startup_path=backslash(startup_path);
 
 load(startup_path+"filename.js");
+load("json-client.js");
+var LOCK_WRITE=2;
+var LOCK_READ=1;
 load(fname("gamesettings.js"));
 load(fname("sector_map.js"));
 load(fname("ports_map.js"));
 load("recordfile.js");
-
 var Settings=new GameSettings();
+var db;
 
 function ConfigureSettings()
 {
@@ -29,12 +34,17 @@ function ConfigureSettings()
 				var q=uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Save Changes?", ["Yes", "No"]);
 				if(q!=-1) {
 					if(q==0)
+						db=new JSONClient(Settings.Server,Settings.Port);
+						db.connect();
 						Settings.save();
 					break;
 				}
 			}
-			else
+			else {
+				db=new JSONClient(Settings.Server,Settings.Port);
+				db.connect();
 				break;
+			}
 		}
 		else {
 			last=i;
@@ -70,20 +80,12 @@ if(uifc == undefined) {
 uifc.init("TradeWars 2 Initialization");
 ConfigureSettings();
 
-if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Reset Game?", ["No", "Yes"])!=1)
-	exit(1);
+if(js.global.db != undefined) {
+	if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Reset Game?", ["No", "Yes"])!=1)
+		exit(1);
+}
 
-file_remove(fname("sectors.dat"));
-file_remove(fname("ports.dat"));
 file_remove(fname("players.dat"));
-file_remove(fname("player-loc.dat"));
-file_remove(fname("planets.dat"));
-file_remove(fname("twmesg.dat"));
-file_remove(fname("twpmesg.dat"));
-file_remove(fname("twrmesg.dat"));
-file_remove(fname("teams.dat"));
-file_remove(fname("twopeng.dat"));
-file_remove(fname("cabals.dat"));
 
 load(fname("ports.js"));
 load(fname("planets.js"));
@@ -95,7 +97,6 @@ load(fname("messages.js"));
 load(fname("computer.js"));
 load(fname("input.js"));
 
-var twmsg=new File(fname("twmesg.dat"));
 var i;
 
 ResetAllPlayers();
@@ -105,6 +106,7 @@ InitializeTeams();
 InitializeSectors();
 InitializePorts();
 InitializeCabal();
+db.write('tw2','twopeng',[],LOCK_WRITE);
 
 uifc.pop();
 uifc.bail();
