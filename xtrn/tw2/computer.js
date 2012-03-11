@@ -10,23 +10,26 @@ function ComputerMenu()
 	for(;;) {
 		if(showhelp) {
 			console.crlf();
-			console.printfile(fname("computer.asc"));
+			if(user.settings&USER_ANSI)
+				console.printfile(fname("computer.ans"));
+			else
+				console.printfile(fname("computer.asc"));
 			showhelp=false;
 		}
 		console.attributes="HW";
 		console.crlf();
 		console.write("Computer command (?=help)? ");
-		switch(InputFunc(['?','1','2','3','4','5'])) {
+		switch(InputFunc(['?','X','P','S','R','M'])) {
 			case '?':
 				showhelp=true;
 				break;
-			case '1':
+			case 'X':
 				/* 33990 */
 				console.crlf();
 				console.attributes="Y";
 				console.writeln("<Computer deactivated>");
 				return;
-			case '2':
+			case 'P':
 				/* 33780 */
 				console.write("What sector number is the port in? ");
 				seclen=db.read('tw2','sectors.length',LOCK_READ);
@@ -46,7 +49,7 @@ function ComputerMenu()
 					}
 				}
 				break;
-			case '3':
+			case 'S':
 				/* 33830 */
 				console.write("What sector do you want to get to? ");
 				seclen=db.read('tw2','sectors.length',LOCK_READ);
@@ -75,14 +78,14 @@ function ComputerMenu()
 					}
 				}
 				break;
-			case '4':
+			case 'R':
 				/* 33900 */
 				console.crlf();
 				console.write("Ranking Players.");
 				TWRank();
 				console.writeln(db.read('tw2','ranking',LOCK_READ));
 				break;
-			case '5':
+			case 'M':
 				/* 33960 */
 				SendRadioMessage();
 				break;
