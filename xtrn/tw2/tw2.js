@@ -28,6 +28,7 @@ var Commodities=[
 ];
 var Settings;
 var player=null;
+var sector=null;
 var exit_tw2=false;
 
 load("json-client.js");
@@ -51,7 +52,7 @@ load(fname("computer.js"));
 load(fname("input.js"));
 load(fname("editor.js"));
 
-function Menu()
+function Menu(sector)
 {
 	/* 22000 */
 	while(1) {
@@ -63,7 +64,6 @@ function Menu()
 		console.attributes="HC";
 		console.write("Command (?=Help)? ");
 		var valid=new Array('A','C','D','E','F','G','I','L','M','P','Q','T','Z','?');
-		var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 		var i;
 		for(i=0; i<sector.Warps.length; i++) {
 			if(sector.Warps[i]>0)
@@ -86,8 +86,9 @@ function Menu()
 				break;
 			case 'D':
 				console.writeln("<Display>");
-				DisplaySector(player.Sector);
-				break;
+				sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+				DisplaySector(sector,player.Sector);
+				continue;
 			case 'E':
 				if(user.level < 90)
 					break;
@@ -161,6 +162,7 @@ function Menu()
 				}
 				break;
 		}
+		sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 	}
 }
 
@@ -266,6 +268,7 @@ function main()
 {
 	var today=strftime("%Y:%m:%d");
 
+try {
 	js.on_exit("do_exit()");
 	js.auto_terminate=false;
 	/* Run maintenance */
@@ -296,10 +299,11 @@ function main()
 	while(player.KilledBy==0 && exit_tw2==false) {
 		if(EnterSector()) {
 			if(CheckSector())
-				Menu();
+				Menu(sector);
 		}
 	}
-
+}
+catch (e) { log(e.toSource); throw(e); }
 }
 
 main();

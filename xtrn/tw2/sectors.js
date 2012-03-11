@@ -3,7 +3,8 @@ var DefaultSector = {
 	Port:0,
 	Planet:0,
 	Fighters:0,
-	FighterOwner:0
+	FighterOwner:0,
+	Ships:[]
 };
 
 var SectorProperties = [
@@ -37,6 +38,12 @@ var SectorProperties = [
 				,type:"SignedInteger"
 				,def:0
 			}
+			,{
+				 prop:"Ships"
+				,name:"Ships in Sector"
+				,type:"Array:0:Integer"	// Ok, now we've broken it.
+				,def:[]
+			}
 		];
 
 function CheckSector()
@@ -65,12 +72,14 @@ function CheckSector()
 
 function EnterSector()	/* 20000 */
 {
-	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+	var lastsector;
 	var fighterteam=-1;
 	var otherplayer;
+	var i;
 
 	console.attributes="Y";
-	DisplaySector(player.Sector);
+	sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+	DisplaySector(sector,player.Sector);
 	if(sector.FighterOwner > 0) {
 		otherplayer=players.Get(sector.FighterOwner);
 		if(otherplayer.TeamNumber > 0)
@@ -101,7 +110,8 @@ function EnterSector()	/* 20000 */
 				break;
 			case 'D':
 				console.writeln("<Display>");
-				DisplaySector(player.Sector);
+				sector=db.read('tw2','sector.'+player.Sector,LOCK_READ);
+				DisplaySector(sector,player.Sector);
 				break;
 			case 'I':
 				console.writeln("<Info>");
@@ -122,8 +132,23 @@ function EnterSector()	/* 20000 */
 				if(player.Fighters<1) {
 					if(random(2)==1) {
 						console.writeln("You escaped!");
+						db.lock('tw2','sectors.'+player.Sector,LOCK_WRITE);
+						db.lock('tw2','sectors.'+player.LastIn,LOCK_WRITE);
+						sector=db.read('tw2','sectors.'+player.Sector);
+						lastsector=db.read('tw2','sectors.'+player.Sector);
+						lastsector.Ships.push(player.Record);
+						for(i=0; i<sector.Ships.length; i++) {
+							if(sector.Ships[i]==player.Record) {
+								sector.Ships.splice(i,1);
+								i--;
+							}
+						}
+						db.write('tw2','sectors.'+player.Sector,sector);
+						db.write('tw2','sectors.'+player.LastIn,lastsector);
 						player.Sector=player.LastIn;
 						player.Put();
+						db.unlock('tw2','sectors.'+player.Sector);
+						db.unlock('tw2','sectors.'+player.LastIn);
 						return(false);
 					}
 					console.attributes="R";
@@ -138,8 +163,23 @@ function EnterSector()	/* 20000 */
 				else {
 					player.Fighters--;
 					console.writeln("You have "+player.Fighters+" fighter(s) left.");
+					db.lock('tw2','sectors.'+player.Sector,LOCK_WRITE);
+					db.lock('tw2','sectors.'+player.LastIn,LOCK_WRITE);
+					sector=db.read('tw2','sectors.'+player.Sector);
+					lastsector=db.read('tw2','sectors.'+player.Sector);
+					lastsector.Ships.push(player.Record);
+					for(i=0; i<sector.Ships.length; i++) {
+						if(sector.Ships[i]==player.Record) {
+							sector.Ships.splice(i,1);
+							i--;
+						}
+					}
+					db.write('tw2','sectors.'+player.Sector,sector);
+					db.write('tw2','sectors.'+player.LastIn,lastsector);
 					player.Sector=player.LastIn;
 					player.Put();
+					db.unlock('tw2','sectors.'+player.Sector);
+					db.unlock('tw2','sectors.'+player.LastIn);
 					return(false);
 				}
 				break;
@@ -159,27 +199,18 @@ function EnterSector()	/* 20000 */
 	return(true);
 }
 
-function DisplaySector(secnum)
+function DisplaySector(sector, secnum)
 {
-	var sector=db.read('tw2','sectors.'+secnum, LOCK_READ);
 	var i;
 	var count=0;
 	var otherships=new Array();
 	var otherplayer;
 
-	db.lock('tw2','players',LOCK_READ);
-	var allplayers=db.read('tw2','players');
-	for(i=1;i<allplayers.length;i++) {
-		if(i==player.Record)
+	for(i=1;i<sector.Ships.length;i++) {
+		if(sector.Ships[i]==player.Record)
 			continue;
-		if(allplayers[i].UserNumber > 0 && allplayers[i].Sector==secnum) {
-			if(allplayers[i].KilledBy!=0)
-				continue;
-
-			otherships.push(players.GetLocked(i));
-		}
+		otherships.push(players.Get(sector.Ships[i]));
 	}
-	db.unlock('tw2','players');
 
 	if(user.settings&USER_ANSI) {
 		console.printfile(fname("main.ans"));
