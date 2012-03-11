@@ -87,7 +87,8 @@ function JSONdb (fileName) {
 		SUBSCRIBE:8,
 		UNSUBSCRIBE:9,
 		WHO:10,
-		STATUS:11
+		STATUS:11,
+		KEYS:12
 	}
 	
 	/* error constants */
@@ -357,6 +358,27 @@ function JSONdb (fileName) {
             return false;
         }
     };
+
+	/* retrieve a list of object keys */
+	this.keys = function(client,record) {
+		var keys=[];
+		/* if the requested data does not exist, result is undefined */
+		if(record.data === undefined) {
+            send_packet(client,undefined,"RESPONSE");
+			return true;
+		}
+		/* if this client has this record locked, read */
+		if(record.info.lock[client.id]) {
+			for(var k in record.data[record.child_name])
+				keys.push(k);
+            send_packet(client,keys,"RESPONSE");
+			return true;
+		}
+        /* if there is no lock for this client, error */
+        else {
+            return false;
+        }
+	}
     
     /* remove a record from the database (requires WRITE_LOCK) */
     this.remove = function(client,record) {
@@ -618,6 +640,9 @@ function JSONdb (fileName) {
 				break;
 			case "WRITE":
 				result=this.write(request.client,record,request.data);
+				break;
+			case "KEYS":
+				result=this.keys(request.client,record);
 				break;
 			case "PUSH":
 				result=this.push(request.client,record,request.data);

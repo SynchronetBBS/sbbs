@@ -14,20 +14,26 @@ load("json-sock.js");
 	-	JSONClient.cycle(); 
 	-	JSONClient.connect();
 	-	JSONClient.disconnect();
-	-	JSONClient.read();
-	-	JSONClient.pop();
-	-	JSONClient.shift();
-	-	JSONClient.write();
-	-	JSONClient.push();
-	-	JSONClient.unshift();
-	-	JSONClient.lock();
-	-	JSONClient.unlock();
-	-	JSONClient.subscribe();
-	-	JSONClient.unsubscribe();
-	-	JSONClient.status();
-	-	JSONClient.who();
-	-	JSONClient.ident();
+	-	JSONClient.read(scope,location,lock);
+	-	JSONClient.pop(scope,location,lock);
+	-	JSONClient.shift(scope,location,lock);
+	-	JSONClient.write(scope,location,lock);
+	-	JSONClient.push(scope,location,lock);
+	-	JSONClient.unshift(scope,location,lock);
+	-	JSONClient.lock(scope,location,lock);
+	-	JSONClient.unlock(scope,location);
+	-	JSONClient.subscribe(scope,location);
+	-	JSONClient.unsubscribe(scope,location);
+	-	JSONClient.status(scope,location);
+	-	JSONClient.who(scope,location);
+	-	JSONClient.ident(scope,username,password);
 	
+	NOTE: scope is the module or root service you wish to send the command to,
+	location is a dot-notated object property, and lock is one of the following:
+		LOCK_READ = 1
+		LOCK_WRITE = 2
+		LOCK_UNLOCK = -1
+		
 	indirect methods: these will generally be called automatically by the other methods
 	and you will not typically need to use them
 	
@@ -43,22 +49,14 @@ load("json-sock.js");
 	
 	sample usage:
 	
-		var LOCK_READ = 1;
-		var LOCK_WRITE = 2;
-		var UNLOCK = -1;
-	
 		load("json-client.js");
 		var client=new JSONClient(myServer,myPort);
 		
-		function callback(data) {
-			myData = data;
-		}
-		
 		while(1) {
 			doSomething();
-			client.lock("mydatabase.dong",LOCK_READ);
-			var dong=client.read("mydatabase.dong");
-			client.unlock("mydatabase.dong");
+			client.lock("myscript","mydatabase.dong",LOCK_READ);
+			var dong=client.read("myscript","mydatabase.dong");
+			client.unlock("myscript","mydatabase.dong");
 			print("look at my " + dong);
 			client.cycle();
 		}
@@ -130,7 +128,7 @@ function JSONClient(serverAddr,serverPort) {
 	
 	/* unlock an object */ 
 	this.unlock = function(scope,location) {
-		this.lock(scope, location, -1);
+		this.lock(scope,location,-1);
 	}
     
 	/* read object data (lock for reading or writing, blocking) */
@@ -142,6 +140,16 @@ function JSONClient(serverAddr,serverPort) {
         });
 		return this.wait("RESPONSE");
     }
+	
+	/* read object keys (lock for reading or writing, blocking) */
+	this.keys=function(scope,location,lock) {
+		this.send(scope,"QUERY",{
+            oper:"KEYS",
+            location:location,
+			lock:lock
+        });
+		return this.wait("RESPONSE");
+	}
 	
 	/* shift object data (lock for reading or writing, blocking) */
     this.shift=function(scope,location,lock) {
