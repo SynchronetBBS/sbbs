@@ -250,7 +250,6 @@ function DisplaySector(sector, secnum, helponly)
 	console.attributes="C";
 	for(i in otherships) {
 		otherplayer=otherships[i];
-		console.crlf();
 		console.write("   "+otherplayer.Alias);
 		if(otherplayer.TeamNumber>0)
 			console.write("  Team ["+otherplayer.TeamNumber+"]");
@@ -261,10 +260,10 @@ function DisplaySector(sector, secnum, helponly)
 			console.write(" (docked)");
 		else if(otherplayer.Online)
 			console.write(" (online)");
+		console.crlf();
 	}
 	if(otherships.length==0)
-		console.write("   None");
-	console.crlf();
+		console.writeln("   None");
 	console.attributes="HG";
 	console.writeln("Fighters defending sector");
 	console.attributes="G";
