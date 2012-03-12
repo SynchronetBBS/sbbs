@@ -357,7 +357,7 @@ function RankPlayers()
 		if(allplayers[i].KilledBy!=0)
 			continue;
 		var robj=new Object();
-		robj.Record=allplayers[i].Record;
+		robj.Record=i;
 		robj.Score=allplayers[i].Fighters*100 + allplayers[i].Holds*500 + allplayers[i].Credits;
 
 		var j;
