@@ -113,7 +113,7 @@ function NextAvailablePlanet()
 		planet.Sector=0;
 		db.write('tw2','planets.'+i,planet);
 		db.unlock('tw2','planets');
-		db.lock('tw2','planets.'+i);
+		db.lock('tw2','planets.'+i,LOCK_WRITE);
 	}
 	else {
 		db.unlock('tw2','planets');

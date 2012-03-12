@@ -318,7 +318,7 @@ function KilledBy(killed, killer, notify)	/* 15300 */
 
 	if(killed.TeamNumber > 0) {
 		var ktn=killed.TeamNumber;
-		db.lock('tw2','teams.'+ktn);
+		db.lock('tw2','teams.'+ktn,LOCK_WRITE);
 		var team=db.read('tw2','teams.'+ktn);
 		var i;
 		for(i=0; i<team.Members.length; i++) {
@@ -725,7 +725,7 @@ function LoadPlayer()
 			player.PutLocked();
 		}
 		db.unlock('tw2','players');
-		db.lock('tw2','players.'+player.Record);
+		db.lock('tw2','players.'+player.Record,LOCK_WRITE);
 		console.attributes="G";
 		console.writeln("I can't find your record, so I am assuming you are a new player.");
 		console.attributes="M";
