@@ -254,7 +254,7 @@ function TeamTransfer(type)
 		otherplayer=players.Get(team.Members[i]);
 		if(otherplayer.Sector==player.Sector
 				&& otherplayer.Record!=player.Record
-				&& otherplayer.KilledBy!=0
+				&& otherplayer.KilledBy==0
 				&& otherplayer.UserNumber!=0
 				&& otherplayer.TeamNumber==player.TeamNumber) {
 			console.write("Transfer "+type+" to " + otherplayer.Alias + " (Y/[N])? ");

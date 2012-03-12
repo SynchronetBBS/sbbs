@@ -155,9 +155,10 @@ function AttackPlayer()
 	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
 	for(i=0;i<sector.Ships.length; i++) {
 		var otherplayer=players.Get(sector.Ships[i]);
+log(otherplayer.Sector+'=='+player.Sector+", "+ otherplayer.Record+'!='+player.Record+", "+otherplayer.KilledBy+"!=0, "+otherplayer.UserNumber+"!=0, !"+otherplayer.Online);
 		if(otherplayer.Sector==player.Sector
 				&& otherplayer.Record!=player.Record
-				&& otherplayer.KilledBy!=0
+				&& otherplayer.KilledBy==0
 				&& otherplayer.UserNumber!=0
 				&& !otherplayer.Online) {
 			count++;
