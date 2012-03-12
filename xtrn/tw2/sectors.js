@@ -206,7 +206,7 @@ function DisplaySector(sector, secnum, helponly)
 	var otherships=new Array();
 	var otherplayer;
 
-	for(i=1;i<sector.Ships.length;i++) {
+	for(i=0;i<sector.Ships.length;i++) {
 		if(sector.Ships[i]==player.Record)
 			continue;
 		otherships.push(players.Get(sector.Ships[i]));

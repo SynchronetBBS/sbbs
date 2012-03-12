@@ -82,7 +82,7 @@ function LocateTeam()
 	var count=0;
 	var team=db.read('tw2','teams.'+player.TeamNumber,LOCK_READ);
 	var i;
-	for(i=1;i<team.Members.length; i++) {
+	for(i=0;i<team.Members.length; i++) {
 		var otherplayer=players.Get(team.Members[i]);
 		if(otherplayer.Record!=player.Record
 				&& otherplayer.UserNumber!=0
@@ -250,7 +250,7 @@ function TeamTransfer(type)
 
 	var otherplayer=null;
 	var team=db.read('tw2','teams.'+player.TeamNumber,LOCK_READ);
-	for(i=1;i<team.Members.length; i++) {
+	for(i=0;i<team.Members.length; i++) {
 		otherplayer=players.Get(team.Members[i]);
 		if(otherplayer.Sector==player.Sector
 				&& otherplayer.Record!=player.Record

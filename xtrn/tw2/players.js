@@ -153,7 +153,7 @@ function AttackPlayer()
 		return(false);
 	}
 	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
-	for(i=1;i<sector.Ships.length; i++) {
+	for(i=0;i<sector.Ships.length; i++) {
 		var otherplayer=players.Get(sector.Ships[i]);
 		if(otherplayer.Sector==player.Sector
 				&& otherplayer.Record!=player.Record
