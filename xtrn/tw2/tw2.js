@@ -275,7 +275,6 @@ function main()
 
 try {
 	js.on_exit("do_exit()");
-	js.auto_terminate=false;
 	/* Run maintenance */
 	if(Settings.MaintLastRan < today) {
 		RunMaint();
