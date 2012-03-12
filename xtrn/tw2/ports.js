@@ -62,6 +62,7 @@ var PortProperties = [
 
 function SolReport()
 {
+	var today=system.datestr(system.datestr());
 	var holdprice=parseInt(50*Math.sin(0.89756*(today/86400)) + 0.5)+500;
 	var fighterprice=parseInt(10*Math.sin(0.89714*(today/86400) + 1.5707) + 0.5)+100;
 	var turnprice=300;
