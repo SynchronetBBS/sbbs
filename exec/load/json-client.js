@@ -77,7 +77,8 @@ function JSONClient(serverAddr,serverPort) {
 		CONNECTION_TIMEOUT:		5,
 		PING_INTERVAL:			60*1000,
 		PING_TIMEOUT:			10*1000,
-		RECV_TIMEOUT:			10
+		SOCK_TIMEOUT:			10*1000,
+		TIMEOUT:				-1
 	};
         
     this.socket=undefined; 
@@ -106,15 +107,21 @@ function JSONClient(serverAddr,serverPort) {
             oper:"SUBSCRIBE",
 			nick:user?user.alias:undefined,
 			system:system?system.name:undefined,
-            location:location
+            location:location,
+			timeout:this.settings.TIMEOUT
         });
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait();
     }
     
     this.unsubscribe=function(scope,location) {
 		this.send(scope,"QUERY",{
             oper:"UNSUBSCRIBE",
-            location:location
+            location:location,
+			timeout:this.settings.TIMEOUT
         });
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait();
     }
 	
 	/* lock an object */
@@ -122,13 +129,16 @@ function JSONClient(serverAddr,serverPort) {
 		this.send(scope,"QUERY",{
             location:location,
 			oper:"LOCK",
-			data:lock
-        });
+			data:lock,
+ 			timeout:this.settings.TIMEOUT
+		});
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait();
 	}
 	
 	/* unlock an object */ 
 	this.unlock = function(scope,location) {
-		this.lock(scope,location,-1);
+		return this.lock(scope,location,-1);
 	}
     
 	/* read object data (lock for reading or writing, blocking) */
@@ -136,9 +146,10 @@ function JSONClient(serverAddr,serverPort) {
 		this.send(scope,"QUERY",{
             oper:"READ",
             location:location,
-			lock:lock
-        });
-		return this.wait("RESPONSE");
+			lock:lock,
+ 			timeout:this.settings.TIMEOUT
+		});
+		return this.wait();
     }
 	
 	/* read object keys (lock for reading or writing, blocking) */
@@ -146,9 +157,10 @@ function JSONClient(serverAddr,serverPort) {
 		this.send(scope,"QUERY",{
             oper:"KEYS",
             location:location,
-			lock:lock
-        });
-		return this.wait("RESPONSE");
+			lock:lock,
+ 			timeout:this.settings.TIMEOUT
+		});
+		return this.wait();
 	}
 	
 	/* shift object data (lock for reading or writing, blocking) */
@@ -156,9 +168,10 @@ function JSONClient(serverAddr,serverPort) {
 		this.send(scope,"QUERY",{
             oper:"SHIFT",
             location:location,
-			lock:lock
+			lock:lock,
+			timeout:this.settings.TIMEOUT
         });
-		return this.wait("RESPONSE");
+		return this.wait();
     }
 
 	/* pop object data (lock for reading or writing, blocking) */
@@ -166,9 +179,10 @@ function JSONClient(serverAddr,serverPort) {
 		this.send(scope,"QUERY",{
             oper:"POP",
             location:location,
-			lock:lock
+			lock:lock,
+			timeout:this.settings.TIMEOUT
         });
-		return this.wait("RESPONSE");
+		return this.wait();
     }
     
 	/* store object data (lock for writing) */
@@ -177,8 +191,11 @@ function JSONClient(serverAddr,serverPort) {
 			oper:"WRITE",
             location:location,
             data:data,
-			lock:lock
+			lock:lock,
+			timeout:this.settings.TIMEOUT
         });
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait(this.settings.TIMEOUT);
     }
 
 	/* store object data (lock for writing) */
@@ -187,8 +204,11 @@ function JSONClient(serverAddr,serverPort) {
 			oper:"WRITE",
             location:location,
 			data:undefined,
-			lock:lock
+			lock:lock,
+			timeout:this.settings.TIMEOUT
         });
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait();
     }
 
 	/* unshift object data (lock for writing) */
@@ -197,8 +217,11 @@ function JSONClient(serverAddr,serverPort) {
             oper:"UNSHIFT",
             location:location,
             data:data,
-			lock:lock
+			lock:lock,
+			timeout:this.settings.TIMEOUT
         });
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait();
     }
 
 	/* push object data (lock for writing) */
@@ -207,8 +230,11 @@ function JSONClient(serverAddr,serverPort) {
             oper:"PUSH",
             location:location,
             data:data,
-			lock:lock
+			lock:lock,
+			timeout:this.settings.TIMEOUT
         });
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait();
     }
 	
 	/* package a query and send through the socket */
@@ -245,23 +271,20 @@ function JSONClient(serverAddr,serverPort) {
 	}
 	
 	/* do not return until the expected response is received */
-	this.wait=function(func) {
-		var start = time();
+	this.wait=function() {
+		var start = Date.now();
 		do {
 			var packet = this.receive();
-			
 			if(!packet)
 				continue;
-			else if(packet.func == func) 
+			else if(packet.func == "RESPONSE") 
 				return packet.data;
 			else if(typeof this.callback == "function")
 				this.callback(packet.data);
 			else 
 				this.updates.push(packet.data);
-		} while(time() - start < this.settings.RECV_TIMEOUT);
-		
-		log(LOG_ERROR,"timed out waiting for server response");
-		exit();
+		} while(Date.now() - start < this.settings.SOCK_TIMEOUT);
+		throw("timed out waiting for server response");
 	}
 
 	/* check socket for data, and process it if a callback is specified */
@@ -288,18 +311,22 @@ function JSONClient(serverAddr,serverPort) {
 	this.who=function(scope,location) {
 		this.send(scope,"QUERY",{
             oper:"WHO",
-            location:location
+            location:location,
+			timeout:this.settings.TIMEOUT
         });
-		return this.wait("RESPONSE");
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait();
 	}
 
 	/* retrieve the overall lock and subscription status of an object */
 	this.status=function(scope,location) {
 		this.send(scope,"QUERY",{
 			oper:"STATUS",
-			location:location
+			location:location,
+			timeout:this.settings.TIMEOUT
         });
-		return this.wait("RESPONSE");
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait();
 	}
 	
 	this.connect();
