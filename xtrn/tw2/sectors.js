@@ -363,5 +363,5 @@ function InitializeSectors()
 			sector[prop]=sector_map[i][prop];
 		db.push(Settings.DB,'sectors',sector);
 	}
-	db.unlock(Settings.DB,'sectors',LOCK_WRITE);
+	db.unlock(Settings.DB,'sectors');
 }

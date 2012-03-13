@@ -685,7 +685,7 @@ function MoveTo(to)
 				return(true);
 			}
 		}
-		db.unlock(Settings.DB,'sectors.'+player.Sector,LOCK_WRITE);
+		db.unlock(Settings.DB,'sectors.'+player.Sector);
 		console.writeln("You can't get there from here.");
 	}
 	return(false);
@@ -703,7 +703,7 @@ function LoadPlayer()
 		for(i=1; i<allplayers.length; i++) {
 			player=allplayers[i];
 			if(player.QWKID==system.qwk_id && player.UserNumber == user.number && (!file_exists(system.data_dir+format("user/%04d.tw2",player.UserNumber)))) {
-				db.unlock(Settings.DB,'players',LOCK_WRITE);
+				db.unlock(Settings.DB,'players');
 				DeletePlayer(player);
 				break;
 			}

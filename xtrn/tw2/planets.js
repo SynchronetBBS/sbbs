@@ -77,6 +77,8 @@ function LandOnPlanet()
 		LockedProduction(planet);
 		db.write(Settings.DB,'planets.'+sector.Planet,planet);
 		db.unlock(Settings.DB,'planets.'+sector.Planet);
+		if(user.settings&USER_ANSI)
+			ANSIPlanet(sector.Planet);
 		PlanetReport(sector.Planet);
 		console.attributes="HW";
 		PlanetMenu(sector.Planet);
@@ -187,9 +189,7 @@ function CreatePlanet(sectorNum)
 
 function PlanetReport(planetNum)
 {
-	db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
-	var planet=db.read(Settings.DB,'planets.'+planetNum);
-	db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+	var planet=db.read(Settings.DB,'planets.'+planetNum,LOCK_READ);
 	console.crlf();
 	console.attributes="HC";
 	console.writeln("Planet: "+planet.Name);
@@ -209,6 +209,21 @@ function PlanetReport(planetNum)
 	}
 	console.attributes="HG";
 	console.writeln("You have "+freeholds+" free cargo holds.");
+}
+
+function ANSIPlanet(planetNum)
+{
+	var planet=db.read(Settings.DB, 'planets.'+planetNum,LOCK_READ);
+
+	console.printfile(fname("landed.ans"));
+	console.gotoxy(3,1);
+	console.attributes="HM";
+	console.writeln(planet.Name+ascii(204));
+	if(planet.OccupiedCount > 1) {
+		console.printfile(fname("landship.ans"));
+	}
+	console.gotoxy(1,9);
+	console.attributes="N";
 }
 
 function PlanetMenu(planetNum)
@@ -247,8 +262,12 @@ function PlanetMenu(planetNum)
 				PlanetReport(planetNum);
 				break;
 			case '?':
-				console.crlf();
-				console.printfile(fname("planet.asc"));
+				if(user.settings&USER_ANSI)
+					ANSIPlanet(planetNum);
+				else {
+					console.crlf();
+					console.printfile(fname("planet.asc"));
+				}
 				break;
 			default:
 				var keynum=parseInt(key);
@@ -272,12 +291,12 @@ function DestroyPlanet(planetNum)
 	console.write("Are you sure (Y/N)[N]? ");
 	if(InputFunc(['Y','N'])=='Y') {
 		db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+		var planet=db.read(Settings.DB,"planets."+planetNum);
 		secnum=planet.Sector;
 		db.lock(Settings.DB,'sector.'+secnum,LOCK_WRITE);
-		var planet=db.read(Settings.DB,'planets.'+planetNum);
 		if(planet.OccupiedCount > 1) {
 			console.writeln("Another player prevents destroying the planet.");
-			db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+			db.unlock(Settings.DB,'planets.'+planetNum);
 			db.unlock(Settings.DB,'sector.'+secnum);
 			return(false);
 		}
@@ -289,7 +308,7 @@ function DestroyPlanet(planetNum)
 		db.write(Settings.DB,'sectors.'+secnum,sector);
 		db.unlock(Settings.DB,'sector.'+secnum);
 		db.write(Settings.DB,'planets.'+planetNum,planet);
-		db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+		db.unlock(Settings.DB,'planets.'+planetNum);
 		db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"  -  " + player.Alias + " destroyed the planet in sector " + secnum},LOCK_WRITE);
 		console.writeln("Planet destroyed.");
 		return(true);
@@ -326,7 +345,7 @@ function PlanetTakeAll(planetNum, freeholds)
 		}
 	}
 	db.write(Settings.DB,'planets.'+planetNum,planet);
-	db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+	db.unlock(Settings.DB,'planets.'+planetNum);
 	player.Put();
 	return(freeholds);
 }
@@ -374,7 +393,7 @@ function PlanetIncreaseProd(planetNum)
 			player.Credits -= incr*Commodities[keynum].price*20;
 			planet.Production[keynum]+=incr;
 			db.write(Settings.DB,'planets.'+planetNum,planet);
-			db.unlock(Settings.DB,'planets');
+			db.unlock(Settings.DB,'planets.'+planetNum);
 			player.Put();
 			console.writeln("Production of "+Commodities[keynum].name+" increased by "+incr+" for "+incr*Commodities[keynum].price*20+" credits.");
 		}
@@ -403,17 +422,17 @@ function PlanetTakeCommodity(planetNum, commodity, freeholds)
 		max=parseInt(planet.Commodities[commodity]);
 	if(take > max) {
 		console.writeln("They don't have that many.");
-		db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+		db.unlock(Settings.DB,'planets.'+planetNum);
 		return(freeholds);
 	}
 	if(take > freeholds) {
 		console.writeln("You don't have enough free cargo holds.");
-		db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+		db.unlock(Settings.DB,'planets.'+planetNum);
 		return(freeholds);
 	}
 	planet.Commodities[commodity]-=take;
 	db.write(Settings.DB,'planets.'+planetNum,planet);
-	db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+	db.unlock(Settings.DB,'planets.'+planetNum);
 	player.Commodities[commodity]+=take;
 	freeholds -= take;
 	player.Put();

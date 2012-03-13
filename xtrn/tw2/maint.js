@@ -317,7 +317,7 @@ function MoveCabal()
 			}
 		}
 	}
-	db.unlock(Settings.DB,'cabals',LOCK_WRITE);
+	db.unlock(Settings.DB,'cabals');
 }
 
 function CabalAttack(cabal, cabalRecord)

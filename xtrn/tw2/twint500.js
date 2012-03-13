@@ -12,7 +12,6 @@ var LOCK_READ=1;
 load(fname("gamesettings.js"));
 load(fname("sector_map.js"));
 load(fname("ports_map.js"));
-load("recordfile.js");
 var Settings=new GameSettings();
 var db;
 

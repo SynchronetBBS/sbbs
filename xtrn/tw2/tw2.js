@@ -32,8 +32,6 @@ var sector=null;
 var exit_tw2=false;
 
 load("json-client.js");
-load("recordfile.js");
-load("lockfile.js");
 load(startup_path+"filename.js");
 load(fname("gamesettings.js"));
 var db;
@@ -176,10 +174,18 @@ function do_exit()
 	if(player != undefined) {
 		player.Online=false;
 		if(player.Ported || player.Landed) {
+			if(db.status(Settings.DB,'sectors').lock!=undefined)
+				db.unlock(Settings.DB,'sectors');
+			if(db.status(Settings.DB,'sectors.'+player.Sector).lock!=undefined)
+				db.unlock(Settings.DB,'sectors.'+player.Sector);
 			var sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 			if(player.Ported) {
 				console.writeln("Leaving the port...");
 				player.Ported=false;
+				if(db.status(Settings.DB,'ports').lock!=undefined);
+					db.unlock(Settings.DB,'ports');
+				if(db.status(Settings.DB,'ports.'+sector.Port).lock!=undefined);
+					db.unlock(Settings.DB,'ports.'+sector.Port);
 				db.lock(Settings.DB,'ports.'+sector.Port,LOCK_WRITE);
 				port=db.read(Settings.DB,'ports.'+sector.Port);
 				port.OccupiedBy=0;
@@ -189,13 +195,11 @@ function do_exit()
 			if(player.Landed) {
 				console.writeln("Launching from planet...");
 				player.Landed=false;
-				try {
-					db.lock(Settings.DB,'planets.'+sector.Planet,LOCK_WRITE);
-				}
-				catch (e) {
-					db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"!!! Error locking planets file!\n"+e},LOCK_WRITE);
-					return;
-				}
+				if(db.status(Settings.DB,'planets').lock!=undefined);
+					db.unlock(Settings.DB,'planets');
+				if(db.status(Settings.DB,'planets.'+sector.Planet).lock!=undefined);
+					db.unlock(Settings.DB,'planets.'+sector.Planet);
+				db.lock(Settings.DB,'planets.'+sector.Planet,LOCK_WRITE);
 				var planet=db.read(Settings.DB,'planets.'+sector.Planet);
 				planet.OccupiedCount--;
 				db.write(Settings.DB,'planets.'+sector.Planet,planet);
@@ -307,7 +311,7 @@ try {
 		}
 	}
 }
-catch (e) { log(e.toSource); throw(e); }
+catch (e) { log(e); log(e.toSource); throw(e); }
 }
 
 main();
