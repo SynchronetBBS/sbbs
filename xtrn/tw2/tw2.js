@@ -86,7 +86,7 @@ function Menu(sector)
 				break;
 			case 'D':
 				console.writeln("<Display>");
-				sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+				sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 				DisplaySector(sector,player.Sector,false);
 				continue;
 			case 'E':
@@ -139,7 +139,7 @@ function Menu(sector)
 				console.writeln("<Help>");
 				console.crlf();
 				if(user.settings&USER_ANSI) {
-					sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+					sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 					DisplaySector(sector,player.Sector,true);
 				}
 				else
@@ -167,7 +167,7 @@ function Menu(sector)
 				}
 				break;
 		}
-		sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+		sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 	}
 }
 
@@ -176,30 +176,30 @@ function do_exit()
 	if(player != undefined) {
 		player.Online=false;
 		if(player.Ported || player.Landed) {
-			var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+			var sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 			if(player.Ported) {
 				console.writeln("Leaving the port...");
 				player.Ported=false;
-				db.lock('tw2','ports.'+sector.Port,LOCK_WRITE);
-				port=db.read('tw2','ports.'+sector.Port);
+				db.lock(Settings.DB,'ports.'+sector.Port,LOCK_WRITE);
+				port=db.read(Settings.DB,'ports.'+sector.Port);
 				port.OccupiedBy=0;
-				db.write('tw2','ports.'+sector.Port,port);
-				db.unlock('tw2','ports.'+sector.Port);
+				db.write(Settings.DB,'ports.'+sector.Port,port);
+				db.unlock(Settings.DB,'ports.'+sector.Port);
 			}
 			if(player.Landed) {
 				console.writeln("Launching from planet...");
 				player.Landed=false;
 				try {
-					db.lock('tw2','planets.'+sector.Planet,LOCK_WRITE);
+					db.lock(Settings.DB,'planets.'+sector.Planet,LOCK_WRITE);
 				}
 				catch (e) {
-					db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"!!! Error locking planets file!\n"+e},LOCK_WRITE);
+					db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"!!! Error locking planets file!\n"+e},LOCK_WRITE);
 					return;
 				}
-				var planet=db.read('tw2','planets.'+sector.Planet);
+				var planet=db.read(Settings.DB,'planets.'+sector.Planet);
 				planet.OccupiedCount--;
-				db.write('tw2','planets.'+sector.Planet,planet);
-				db.unlock('tw2','planets.'+sector.Planet);
+				db.write(Settings.DB,'planets.'+sector.Planet,planet);
+				db.unlock(Settings.DB,'planets.'+sector.Planet);
 			}
 		}
 		player.TimeUsed += time()-on_at;
@@ -257,13 +257,13 @@ function Production(place)
 
 function ShowOpeng()
 {
-	var len=db.read('tw2','twopeng.lengh',LOCK_READ);
+	var len=db.read(Settings.DB,'twopeng.lengh',LOCK_READ);
 	var i;
 	var msg;
 
 	// TODO: Only show "new" stuff from here...
 	for(i=0; i<len; i++) {
-		msg=db.read('tw2','twopeng.'+i,LOCK_READ);
+		msg=db.read(Settings.DB,'twopeng.'+i,LOCK_READ);
 		console.writeln(msg.Message);
 		console.crlf();
 	}

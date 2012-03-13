@@ -58,7 +58,7 @@ function LandOnPlanet()
 	console.crlf();
 	console.attributes="HY";
 	console.writeln("Landing...");
-	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+	var sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 	var planet=null;
 
 	if(sector.Planet==0) {
@@ -68,24 +68,24 @@ function LandOnPlanet()
 	else {
 		/* 32310 */
 		/* Lock the planet file and ensure we can land... */
-		db.lock('tw2','planets.'+sector.Planet,LOCK_WRITE);
-		planet=db.read('tw2','planets.'+sector.Planet);
+		db.lock(Settings.DB,'planets.'+sector.Planet,LOCK_WRITE);
+		planet=db.read(Settings.DB,'planets.'+sector.Planet);
 		planet.OccupiedCount++;
 		player.Landed=true;
 		player.Put();
 
 		LockedProduction(planet);
-		db.write('tw2','planets.'+sector.Planet,planet);
-		db.unlock('tw2','planets.'+sector.Planet);
+		db.write(Settings.DB,'planets.'+sector.Planet,planet);
+		db.unlock(Settings.DB,'planets.'+sector.Planet);
 		PlanetReport(sector.Planet);
 		console.attributes="HW";
 		PlanetMenu(sector.Planet);
 
-		db.lock('tw2','planets.'+sector.Planet,LOCK_WRITE);
-		planet=db.read('tw2','planets.'+sector.Planet);
+		db.lock(Settings.DB,'planets.'+sector.Planet,LOCK_WRITE);
+		planet=db.read(Settings.DB,'planets.'+sector.Planet);
 		planet.OccupiedCount--;
-		db.write('tw2','planets.'+sector.Planet,planet);
-		db.unlock('tw2','planets.'+sector.Planet);
+		db.write(Settings.DB,'planets.'+sector.Planet,planet);
+		db.unlock(Settings.DB,'planets.'+sector.Planet);
 		player.Landed=false;
 		player.Put();
 	}
@@ -98,11 +98,11 @@ function NextAvailablePlanet()
 	var planet;
 	var planetLen;
 
-	db.lock('tw2','planets',LOCK_WRITE);
-	planetLen=db.read('tw2','planets.length');
+	db.lock(Settings.DB,'planets',LOCK_WRITE);
+	planetLen=db.read(Settings.DB,'planets.length');
 
 	for(i=1; i<planetLen; i++) {
-		planet=db.read('tw2','planets.'+i);
+		planet=db.read(Settings.DB,'planets.'+i);
 		if(!planet.Created)
 			break;
 		planet=null;
@@ -111,12 +111,12 @@ function NextAvailablePlanet()
 	if(planet != null) {
 		planet.Created=true;
 		planet.Sector=0;
-		db.write('tw2','planets.'+i,planet);
-		db.unlock('tw2','planets');
-		db.lock('tw2','planets.'+i,LOCK_WRITE);
+		db.write(Settings.DB,'planets.'+i,planet);
+		db.unlock(Settings.DB,'planets');
+		db.lock(Settings.DB,'planets.'+i,LOCK_WRITE);
 	}
 	else {
-		db.unlock('tw2','planets');
+		db.unlock(Settings.DB,'planets');
 		return -1;
 	}
 	return(i);
@@ -143,14 +143,14 @@ function CreatePlanet(sectorNum)
 			return(false);
 		}
 
-		planet=db.read('tw2','planets.'+planetNum);
-		db.unlock('tw2','planets.'+planetNum);
+		planet=db.read(Settings.DB,'planets.'+planetNum);
+		db.unlock(Settings.DB,'planets.'+planetNum);
 		planet.Name='';
 		console.write("What do you want to name this planet? (41 chars. max)? ");
 		planet.Name=console.getstr(41);
-		db.lock('tw2','planets.'+planetNum,LOCK_WRITE);
-		db.lock('tw2','sectors.'+sectorNum,LOCK_WRITE);
-		var sector=db.read('tw2','sectors.'+sectorNum);
+		db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+		db.lock(Settings.DB,'sectors.'+sectorNum,LOCK_WRITE);
+		var sector=db.read(Settings.DB,'sectors.'+sectorNum);
 		if(sector.Planet != 0) {
 			console.crlf();
 			console.writeln("While you were deciding on a name, someone else has created a planet in this");
@@ -159,9 +159,9 @@ function CreatePlanet(sectorNum)
 		}
 		if(planet.Name=='') {
 			planet.Created=false;
-			db.write('tw2','planets.'+planetNum, planet);
-			db.unlock('tw2','planets.'+planetNum);
-			db.unlock('tw2','sectors.'+sectorNum);
+			db.write(Settings.DB,'planets.'+planetNum, planet);
+			db.unlock(Settings.DB,'planets.'+planetNum);
+			db.unlock(Settings.DB,'sectors.'+sectorNum);
 			return(false);
 		}
 		for(i=0; i<Commodities.length; i++) {
@@ -174,11 +174,11 @@ function CreatePlanet(sectorNum)
 		sector.Planet=planetNum;
 		planet.LastUpdated=time();
 		planet.Created=true;
-		db.write('tw2','planets.'+planetNum, planet);
-		db.write('tw2','sectors.'+sectorNum, sector);
-		db.unlock('tw2','planets.'+planetNum);
-		db.unlock('tw2','sectors.'+sectorNum);
-		db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"  -  "+player.Alias+" made a planet: "+planet.Name},LOCK_WRITE);
+		db.write(Settings.DB,'planets.'+planetNum, planet);
+		db.write(Settings.DB,'sectors.'+sectorNum, sector);
+		db.unlock(Settings.DB,'planets.'+planetNum);
+		db.unlock(Settings.DB,'sectors.'+sectorNum);
+		db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"  -  "+player.Alias+" made a planet: "+planet.Name},LOCK_WRITE);
 		console.crlf();
 		console.writeln("Planet created");
 		return(true);
@@ -187,9 +187,9 @@ function CreatePlanet(sectorNum)
 
 function PlanetReport(planetNum)
 {
-	db.lock('tw2','planets.'+planetNum,LOCK_WRITE);
-	var planet=db.read('tw2','planets.'+planetNum);
-	db.unlock('tw2','planets.'+planetNum,LOCK_WRITE);
+	db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+	var planet=db.read(Settings.DB,'planets.'+planetNum);
+	db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
 	console.crlf();
 	console.attributes="HC";
 	console.writeln("Planet: "+planet.Name);
@@ -271,26 +271,26 @@ function DestroyPlanet(planetNum)
 	console.attributes="Y";
 	console.write("Are you sure (Y/N)[N]? ");
 	if(InputFunc(['Y','N'])=='Y') {
-		db.lock('tw2','planets.'+planetNum,LOCK_WRITE);
+		db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
 		secnum=planet.Sector;
-		db.lock('tw2','sector.'+secnum,LOCK_WRITE);
-		var planet=db.read('tw2','planets.'+planetNum);
+		db.lock(Settings.DB,'sector.'+secnum,LOCK_WRITE);
+		var planet=db.read(Settings.DB,'planets.'+planetNum);
 		if(planet.OccupiedCount > 1) {
 			console.writeln("Another player prevents destroying the planet.");
-			db.unlock('tw2','planets.'+planetNum,LOCK_WRITE);
-			db.unlock('tw2','sector.'+secnum);
+			db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+			db.unlock(Settings.DB,'sector.'+secnum);
 			return(false);
 		}
-		var sector=db.read('tw2','sectors.'+secnum);
+		var sector=db.read(Settings.DB,'sectors.'+secnum);
 		if(sector.Planet==planetNum)
 			sector.Planet=0;
 		planet.Created=false;
 		planet.Sector=0;
-		db.write('tw2','sectors.'+secnum,sector);
-		db.unlock('tw2','sector.'+secnum);
-		db.write('tw2','planets.'+planetNum,planet);
-		db.unlock('tw2','planets.'+planetNum,LOCK_WRITE);
-		db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"  -  " + player.Alias + " destroyed the planet in sector " + secnum},LOCK_WRITE);
+		db.write(Settings.DB,'sectors.'+secnum,sector);
+		db.unlock(Settings.DB,'sector.'+secnum);
+		db.write(Settings.DB,'planets.'+planetNum,planet);
+		db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+		db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"  -  " + player.Alias + " destroyed the planet in sector " + secnum},LOCK_WRITE);
 		console.writeln("Planet destroyed.");
 		return(true);
 	}
@@ -308,8 +308,8 @@ function PlanetTakeAll(planetNum, freeholds)
 	/*
 	 * Re-read the planet struct 
 	 */
-	db.lock('tw2','planets.'+planetNum,LOCK_WRITE);
-	planet=db.read('tw2','planets.'+planetNum);
+	db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+	planet=db.read(Settings.DB,'planets.'+planetNum);
 	for(i=Commodities.length-1; i>=0; i--) {
 		var take=parseInt(planet.Commodities[i]);
 		if(take > freeholds)
@@ -325,8 +325,8 @@ function PlanetTakeAll(planetNum, freeholds)
 			break;
 		}
 	}
-	db.write('tw2','planets.'+planetNum,planet);
-	db.unlock('tw2','planets.'+planetNum,LOCK_WRITE);
+	db.write(Settings.DB,'planets.'+planetNum,planet);
+	db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
 	player.Put();
 	return(freeholds);
 }
@@ -348,33 +348,33 @@ function PlanetIncreaseProd(planetNum)
 	var keynum=parseInt(InputFunc(values));
 	if(keynum > 0 && keynum <= Commodities.length) {
 		keynum--;
-		db.lock('tw2','planets.'+planetNum,LOCK_WRITE);
-		planet=db.read('tw2','planets.'+planetNum);
+		db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+		planet=db.read(Settings.DB,'planets.'+planetNum);
 		if(planet.Production[keynum]>19) {
 			console.writeln("It's at its maximum value.");
-			db.unlock('tw2','planets.'+planetNum);
+			db.unlock(Settings.DB,'planets.'+planetNum);
 			return;
 		}
 		var max=parseInt(player.Credits/(Commodities[keynum].price*20));
 		if(max<1) {
 			console.writeln("You're too poor.  You only have "+player.Credits+" credits.");
-			db.unlock('tw2','planets.'+planetNum);
+			db.unlock(Settings.DB,'planets.'+planetNum);
 			return;
 		}
 		if(planet.Production[keynum]+max > 19)
 			max=20-planet.Production[keynum];
-		db.unlock('tw2','planets.'+planetNum);
+		db.unlock(Settings.DB,'planets.'+planetNum);
 		console.write(Commodities[keynum].name+": Increase by how many units? ");
 		var incr=InputFunc([{min:0,max:max}]);
 		if(incr > 0 && incr <= max) {
-			db.lock('tw2','planets.'+planetNum,LOCK_WRITE);
-			planet=db.read('tw2','planets.'+planetNum);
+			db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+			planet=db.read(Settings.DB,'planets.'+planetNum);
 			if(planet.Production[keynum]+incr > 20)
 				incr=20-planet.Production[keynum];
 			player.Credits -= incr*Commodities[keynum].price*20;
 			planet.Production[keynum]+=incr;
-			db.write('tw2','planets.'+planetNum,planet);
-			db.unlock('tw2','planets');
+			db.write(Settings.DB,'planets.'+planetNum,planet);
+			db.unlock(Settings.DB,'planets');
 			player.Put();
 			console.writeln("Production of "+Commodities[keynum].name+" increased by "+incr+" for "+incr*Commodities[keynum].price*20+" credits.");
 		}
@@ -396,24 +396,24 @@ function PlanetTakeCommodity(planetNum, commodity, freeholds)
 	/*
 	 * Re-read the planet struct 
 	 */
-	db.lock('tw2','planets.'+planetNum,LOCK_WRITE);
-	planet=db.read('tw2','planets.'+planetNum);
+	db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
+	planet=db.read(Settings.DB,'planets.'+planetNum);
 	max=freeholds;
 	if(max > parseInt(planet.Commodities[commodity]))
 		max=parseInt(planet.Commodities[commodity]);
 	if(take > max) {
 		console.writeln("They don't have that many.");
-		db.unlock('tw2','planets.'+planetNum,LOCK_WRITE);
+		db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
 		return(freeholds);
 	}
 	if(take > freeholds) {
 		console.writeln("You don't have enough free cargo holds.");
-		db.unlock('tw2','planets.'+planetNum,LOCK_WRITE);
+		db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
 		return(freeholds);
 	}
 	planet.Commodities[commodity]-=take;
-	db.write('tw2','planets.'+planetNum,planet);
-	db.unlock('tw2','planets.'+planetNum,LOCK_WRITE);
+	db.write(Settings.DB,'planets.'+planetNum,planet);
+	db.unlock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
 	player.Commodities[commodity]+=take;
 	freeholds -= take;
 	player.Put();
@@ -425,11 +425,11 @@ function ResetAllPlanets()
 	var i;
 
 	uifc.pop("Creating Planets");
-	db.lock('tw2','planets',LOCK_WRITE);
-	db.write('tw2','planets',[]);
-	db.push('tw2','planets',DefaultPlanet);
+	db.lock(Settings.DB,'planets',LOCK_WRITE);
+	db.write(Settings.DB,'planets',[]);
+	db.push(Settings.DB,'planets',DefaultPlanet);
 	for(i=0; i<Settings.MaxPlanets; i++) {
-		db.push('tw2','planets',DefaultPlanet);
+		db.push(Settings.DB,'planets',DefaultPlanet);
 	}
-	db.unlock('tw2','planets');
+	db.unlock(Settings.DB,'planets');
 }

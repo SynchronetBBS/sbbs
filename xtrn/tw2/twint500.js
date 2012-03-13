@@ -106,7 +106,7 @@ InitializeTeams();
 InitializeSectors();
 InitializePorts();
 InitializeCabal();
-db.write('tw2','twopeng',[],LOCK_WRITE);
+db.write(Settings.DB,'twopeng',[],LOCK_WRITE);
 
 uifc.pop();
 uifc.bail();

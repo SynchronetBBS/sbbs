@@ -15,6 +15,12 @@ var GameSettingProperties=[
 				,type:"Integer"
 				,def:"10088"
 			}
+			,{	// This index (2) is hard-coded.
+				 prop:"DB"
+				,name:"Server scope"
+				,type:"String"
+				,def:"tw2"
+			}
 			,{
 				 prop:"EditorPassword"
 				,name:"Editor Password"
@@ -115,11 +121,15 @@ function GameSettings_Save()
 		f.iniSetValue(null, 'Port', this.Server);
 	else
 		f.iniRemoveKey(null, 'Port');
+	if(this.Port!=GameSettingProperties[2].def)
+		f.iniSetValue(null, 'DB', this.DB);
+	else
+		f.iniRemoveKey(null, 'DB');
 
-	for(i=2; i<GameSettingProperties.length; i++) {
+	for(i=3; i<GameSettingProperties.length; i++) {
 		s[GameSettingProperties[i].prop]=this[GameSettingProperties[i].prop];
 	}
-	db.write('tw2','settings',s,LOCK_WRITE);
+	db.write(Settings.DB,'settings',s,LOCK_WRITE);
 }
 
 function GameSettings()
@@ -141,7 +151,7 @@ function GameSettings()
 	}
 	db=new JSONClient(this.Server,this.Port);
 	db.connect();
-	var s=db.read('tw2','settings',LOCK_READ);
+	var s=db.read(this.DB,'settings',LOCK_READ);
 	for(i in s) {
 		this[i]=s[i];
 	}

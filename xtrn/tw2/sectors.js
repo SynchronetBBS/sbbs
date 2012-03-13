@@ -56,13 +56,13 @@ function CheckSector()
 		player.Put();
 		console.writeln("Unfortunately, victory is fleeting...");
 
-		db.lock('tw2','sectors.85',LOCK_WRITE);
-		var sector=db.read('tw2','sectors.85');
+		db.lock(Settings.DB,'sectors.85',LOCK_WRITE);
+		var sector=db.read(Settings.DB,'sectors.85');
 		sector.Fighters=3000;
 		sector.FighterOwner=-1;
-		sector=db.write('tw2','sectors.85',sector);
-		db.unlock('tw2','sectors.85');
-		db.push('tw2','twopeng',{Date:strftime("%Y:%m:%d"),Message:"Congratulations go to "+player.Alias+
+		sector=db.write(Settings.DB,'sectors.85',sector);
+		db.unlock(Settings.DB,'sectors.85');
+		db.push(Settings.DB,'twopeng',{Date:strftime("%Y:%m:%d"),Message:"Congratulations go to "+player.Alias+
            " who invaded the Cabal empire on " + strftime("%b %d, %Y") + 
 		   " and received 100,000 points!"},LOCK_WRITE);
 		return(false);
@@ -78,7 +78,7 @@ function EnterSector()	/* 20000 */
 	var i;
 
 	console.attributes="Y";
-	sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+	sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 	DisplaySector(sector,player.Sector,false);
 	if(sector.FighterOwner > 0) {
 		otherplayer=players.Get(sector.FighterOwner);
@@ -104,13 +104,13 @@ function EnterSector()	/* 20000 */
 					player.Points+=killed*100;
 					console.writeln("You just recieved "+(killed*100)+" points for that.");
 				}
-				db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+				db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 				if(sector.Fighters==0)
 					console.writeln("You destroyed all the fighters.");
 				break;
 			case 'D':
 				console.writeln("<Display>");
-				sector=db.read('tw2','sector.'+player.Sector,LOCK_READ);
+				sector=db.read(Settings.DB,'sector.'+player.Sector,LOCK_READ);
 				DisplaySector(sector,player.Sector,false);
 				break;
 			case 'I':
@@ -126,16 +126,16 @@ function EnterSector()	/* 20000 */
 				break;
 			case 'R':
 				console.writeln("<Retreat>");
-				var sectorsLen=db.reaD('tw2','sectors.length',LOCK_READ);
+				var sectorsLen=db.reaD(Settings.DB,'sectors.length',LOCK_READ);
 				if(player.LastIn<1 || player.LastIn>=sectorsLen)
 					player.LastIn=random(sectorsLen-1)+1;
 				if(player.Fighters<1) {
 					if(random(2)==1) {
 						console.writeln("You escaped!");
-						db.lock('tw2','sectors.'+player.Sector,LOCK_WRITE);
-						db.lock('tw2','sectors.'+player.LastIn,LOCK_WRITE);
-						sector=db.read('tw2','sectors.'+player.Sector);
-						lastsector=db.read('tw2','sectors.'+player.Sector);
+						db.lock(Settings.DB,'sectors.'+player.Sector,LOCK_WRITE);
+						db.lock(Settings.DB,'sectors.'+player.LastIn,LOCK_WRITE);
+						sector=db.read(Settings.DB,'sectors.'+player.Sector);
+						lastsector=db.read(Settings.DB,'sectors.'+player.Sector);
 						lastsector.Ships.push(player.Record);
 						for(i=0; i<sector.Ships.length; i++) {
 							if(sector.Ships[i]==player.Record) {
@@ -143,12 +143,12 @@ function EnterSector()	/* 20000 */
 								i--;
 							}
 						}
-						db.write('tw2','sectors.'+player.Sector,sector);
-						db.write('tw2','sectors.'+player.LastIn,lastsector);
+						db.write(Settings.DB,'sectors.'+player.Sector,sector);
+						db.write(Settings.DB,'sectors.'+player.LastIn,lastsector);
 						player.Sector=player.LastIn;
 						player.Put();
-						db.unlock('tw2','sectors.'+player.Sector);
-						db.unlock('tw2','sectors.'+player.LastIn);
+						db.unlock(Settings.DB,'sectors.'+player.Sector);
+						db.unlock(Settings.DB,'sectors.'+player.LastIn);
 						return(false);
 					}
 					console.attributes="R";
@@ -163,10 +163,10 @@ function EnterSector()	/* 20000 */
 				else {
 					player.Fighters--;
 					console.writeln("You have "+player.Fighters+" fighter(s) left.");
-					db.lock('tw2','sectors.'+player.Sector,LOCK_WRITE);
-					db.lock('tw2','sectors.'+player.LastIn,LOCK_WRITE);
-					sector=db.read('tw2','sectors.'+player.Sector);
-					lastsector=db.read('tw2','sectors.'+player.Sector);
+					db.lock(Settings.DB,'sectors.'+player.Sector,LOCK_WRITE);
+					db.lock(Settings.DB,'sectors.'+player.LastIn,LOCK_WRITE);
+					sector=db.read(Settings.DB,'sectors.'+player.Sector);
+					lastsector=db.read(Settings.DB,'sectors.'+player.Sector);
 					lastsector.Ships.push(player.Record);
 					for(i=0; i<sector.Ships.length; i++) {
 						if(sector.Ships[i]==player.Record) {
@@ -174,12 +174,12 @@ function EnterSector()	/* 20000 */
 							i--;
 						}
 					}
-					db.write('tw2','sectors.'+player.Sector,sector);
-					db.write('tw2','sectors.'+player.LastIn,lastsector);
+					db.write(Settings.DB,'sectors.'+player.Sector,sector);
+					db.write(Settings.DB,'sectors.'+player.LastIn,lastsector);
 					player.Sector=player.LastIn;
 					player.Put();
-					db.unlock('tw2','sectors.'+player.Sector);
-					db.unlock('tw2','sectors.'+player.LastIn);
+					db.unlock(Settings.DB,'sectors.'+player.Sector);
+					db.unlock(Settings.DB,'sectors.'+player.LastIn);
 					return(false);
 				}
 				break;
@@ -234,7 +234,7 @@ function DisplaySector(sector, secnum, helponly)
 	console.attributes="HR";
 	console.write("Port   ");
 	if(sector.Port > 0) {
-		var port=db.read('tw2','ports.'+sector.Port,LOCK_READ);
+		var port=db.read(Settings.DB,'ports.'+sector.Port,LOCK_READ);
 		console.write(port.Name+", class "+port.Class);
 	}
 	else
@@ -242,7 +242,7 @@ function DisplaySector(sector, secnum, helponly)
 	console.crlf();
 	console.attributes="HB";
 	if(sector.Planet) {
-		var planet=db.read('tw2','planets.'+sector.Planet,LOCK_READ);
+		var planet=db.read(Settings.DB,'planets.'+sector.Planet,LOCK_READ);
 		console.writeln("Planet "+planet.Name);
 	}
 	console.attributes="HC";
@@ -302,7 +302,7 @@ function ShortestPath(start, end)
 {
 	var i,j;
 	var hops=0;
-	var seclen=db.read('tw2','sectors.length',LOCK_READ);
+	var seclen=db.read(Settings.DB,'sectors.length',LOCK_READ);
 	var univ=new Array(seclen);
 	var done=false;
 	var ret=new Array();
@@ -315,7 +315,7 @@ function ShortestPath(start, end)
 			if(univ[pos].Warps[i]==0)
 				continue;
 			if(univ[univ[pos].Warps[i]]==undefined) {
-				univ[univ[pos].Warps[i]]=db.read('tw2','sectors.'+univ[pos].Warps[i],LOCK_READ);
+				univ[univ[pos].Warps[i]]=db.read(Settings.DB,'sectors.'+univ[pos].Warps[i],LOCK_READ);
 				univ[univ[pos].Warps[i]].hops=hops;
 				univ[univ[pos].Warps[i]].from=pos;
 				if(univ[pos].Warps[i]==end)
@@ -326,7 +326,7 @@ function ShortestPath(start, end)
 	}
 
 	/* Do the expansion */
-	univ[start]=db.read('tw2','sectors.'+start,LOCK_READ);
+	univ[start]=db.read(Settings.DB,'sectors.'+start,LOCK_READ);
 	univ[start].hops=hops;
 	while(!done) {
 		for(i=1; i<seclen; i++) {
@@ -354,14 +354,14 @@ function InitializeSectors()
 
 	uifc.pop("Writing Sectors");
 	/* Write sectors.dat */
-	db.lock('tw2','sectors',LOCK_WRITE);
-	db.write('tw2','sectors',[]);
-	db.push('tw2','sectors',{Excuse:"I hate zero-based arrays, so I'm just stuffing this crap in here"});
+	db.lock(Settings.DB,'sectors',LOCK_WRITE);
+	db.write(Settings.DB,'sectors',[]);
+	db.push(Settings.DB,'sectors',{Excuse:"I hate zero-based arrays, so I'm just stuffing this crap in here"});
 	for(i=0; i<sector_map.length; i++) {
 		var sector=eval(DefaultSector.toSource());
 		for(prop in sector_map[i])
 			sector[prop]=sector_map[i][prop];
-		db.push('tw2','sectors',sector);
+		db.push(Settings.DB,'sectors',sector);
 	}
-	db.unlock('tw2','sectors',LOCK_WRITE);
+	db.unlock(Settings.DB,'sectors',LOCK_WRITE);
 }

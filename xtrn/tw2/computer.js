@@ -32,10 +32,10 @@ function ComputerMenu()
 			case 'P':
 				/* 33780 */
 				console.write("What sector number is the port in? ");
-				seclen=db.read('tw2','sectors.length',LOCK_READ);
+				seclen=db.read(Settings.DB,'sectors.length',LOCK_READ);
 				sec=InputFunc([{min:0,max:seclen-1}]);
 				if(sec > 0 && sec < seclen) {
-					var sector=db.read('tw2','sectors.'+sec,LOCK_READ);
+					var sector=db.read(Settings.DB,'sectors.'+sec,LOCK_READ);
 					if(sector.Port==0 || (sector.Fighters>0 && sector.Fighters!=player.Record)) {
 						console.crlf();
 						console.writeln("I have no information about that port.");
@@ -52,7 +52,7 @@ function ComputerMenu()
 			case 'S':
 				/* 33830 */
 				console.write("What sector do you want to get to? ");
-				seclen=db.read('tw2','sectors.length',LOCK_READ);
+				seclen=db.read(Settings.DB,'sectors.length',LOCK_READ);
 				sec=InputFunc([{min:0,max:seclen-1}]);
 				if(sec > 0 && sec < seclen) {
 					if(sec==player.Sector) {
@@ -83,7 +83,7 @@ function ComputerMenu()
 				console.crlf();
 				console.write("Ranking Players.");
 				TWRank();
-				console.writeln(db.read('tw2','ranking',LOCK_READ));
+				console.writeln(db.read(Settings.DB,'ranking',LOCK_READ));
 				break;
 			case 'M':
 				/* 33960 */

@@ -56,8 +56,8 @@ function ReadPMsg()
 {
 	console.writeln("The following happened to your ship since your last time on:");
 	// TODO: Fix this up...
-	db.lock('tw2','updates',LOCK_WRITE);
-	var updates=db.read('tw2','updates');
+	db.lock(Settings.DB,'updates',LOCK_WRITE);
+	var updates=db.read(Settings.DB,'updates');
 	var count=0;
 	var msgstr='';
 	for(i=0; i<updates.length; i++) {
@@ -79,8 +79,8 @@ function ReadPMsg()
 			i--;
 		}
 	}
-	db.write('tw2','updates',updates);
-	db.unlock('tw2','updates');
+	db.write(Settings.DB,'updates',updates);
+	db.unlock(Settings.DB,'updates');
 	if(count==0)
 		console.writeln("Nothing");
 	else
@@ -97,7 +97,7 @@ function RadioMessage(from, to, msg)
 	rmsg.From=from;
 	rmsg.To=to;
 	rmsg.Message=msg;
-	db.push('tw2','radio',rmsg,LOCK_WRITE);
+	db.push(Settings.DB,'radio',rmsg,LOCK_WRITE);
 	console.writeln("Message sent.");
 	return;
 }
@@ -110,8 +110,8 @@ function ReadRadio()
 	
 	console.crlf();
 	console.writeln("Checking for Radio Messages sent to you.");
-	db.lock('tw2','radio',LOCK_WRITE);
-	var radio=db.read('tw2','radio');
+	db.lock(Settings.DB,'radio',LOCK_WRITE);
+	var radio=db.read(Settings.DB,'radio');
 	for(i=0; i<radio.length; i++) {
 		if(radio[i].Read)
 			continue;
@@ -131,8 +131,8 @@ function ReadRadio()
 		i--;
 		count++;
 	}
-	db.write('tw2','radio',radio);
-	db.unlock('tw2','radio');
+	db.write(Settings.DB,'radio',radio);
+	db.unlock(Settings.DB,'radio');
 	if(count < 1)
 		console.writeln("None Received.");
 	else
@@ -173,12 +173,12 @@ function ResetAllMessages()
 	var i;
 
 	uifc.pop("SysOp Messages");
-	db.write('tw2','log',[],LOCK_WRITE);
-	db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:" TW 500 initialized"},LOCK_WRITE);
+	db.write(Settings.DB,'log',[],LOCK_WRITE);
+	db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:" TW 500 initialized"},LOCK_WRITE);
 
 	uifc.pop("Player Messages");
-	db.write('tw2','updates',[],LOCK_WRITE);
+	db.write(Settings.DB,'updates',[],LOCK_WRITE);
 
 	uifc.pop("Radio Messages");
-	db.write('tw2','radio',[],LOCK_WRITE);
+	db.write(Settings.DB,'radio',[],LOCK_WRITE);
 }

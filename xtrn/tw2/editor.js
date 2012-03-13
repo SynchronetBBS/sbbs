@@ -131,12 +131,12 @@ function PlanetEdit()
 	console.write("Planet name or sector number: ");
 	var plid=console.getstr(42);
 	var planet=null;
-	var planetsLen=db.read('tw2','planets.length',LOCK_READ);
+	var planetsLen=db.read(Settings.DB,'planets.length',LOCK_READ);
 	var sector=null;
 
 	/* First, search by name */
 	for(i=1; i<planetsLen; i++) {
-		planet=db.read('tw2','planets.'+i,LOCK_READ);
+		planet=db.read(Settings.DB,'planets.'+i,LOCK_READ);
 		if(planet.Name.toUpperCase().search(plid.toUpperCase())!=-1) {
 			console.write(planet.Name+" ["+planet.Sector+"] Y/[N]? ");
 			if(InputFunc(['Y','N'])=='Y') {
@@ -153,11 +153,11 @@ function PlanetEdit()
 			secnum=parseInt(plid);
 		}
 		catch (e) {}
-		var seclen=db.read('tw2','sectors.length',LOCK_READ);
+		var seclen=db.read(Settings.DB,'sectors.length',LOCK_READ);
 		if(secnum > 0 && secnum < seclen) {
-			sector=db.read('tw2','sectors.'+secnum,LOCK_READ);
+			sector=db.read(Settings.DB,'sectors.'+secnum,LOCK_READ);
 			if(sector.Planet > 0 && sector.Planet < planets.length) {
-				planet=db.read('tw2','planets.'+sector.Planet,LOCK_READ);
+				planet=db.read(Settings.DB,'planets.'+sector.Planet,LOCK_READ);
 				console.write(planet.Name+" ["+planet.Sector+"] Y/[N]? ");
 				if(InputFunc(['Y','N'])!='Y') {
 					planet=null;
@@ -177,11 +177,11 @@ function PlanetEdit()
 			if(planetNum==-1)
 				console.writeln("No room for additional planets.");
 			else {
-				planet=db.read('tw2','planets.'+planetNum,LOCK_READ);
+				planet=db.read(Settings.DB,'planets.'+planetNum,LOCK_READ);
 				console.write("Sector? ");
 				planet.Sector=InputFunc([{min:0,max:planets.length-1}]);
 				if(planet.Sector > 0 && planet.Sector<planets.length) {
-					sector=db.read('tw2','sectors.'+planet.Sector,LOCK_READ);
+					sector=db.read(Settings.DB,'sectors.'+planet.Sector,LOCK_READ);
 					sector.Planet=planet.Record;
 					console.write("Planet name: ");
 					planet.Name=console.getstr(41);
@@ -198,13 +198,13 @@ function PlanetEdit()
 		return;
 
 	if(sector==null)
-		sector=db.read('tw2','sectors.'+planet.Sector,LOCK_READ);
+		sector=db.read(Settings.DB,'sectors.'+planet.Sector,LOCK_READ);
 
 	var oldsector=planet.Sector;
 	LockedEditProperties(planet, PlanetProperties);
 	/* Planet moved... */
 	if(planet.Sector != oldsector) {
-		var newsector=db.read('tw2','sectors.'+planet.Sector,LOCK_READ);
+		var newsector=db.read(Settings.DB,'sectors.'+planet.Sector,LOCK_READ);
 
 		if(newsector.Planet > 0) {
 			console.writeln("Sector "+newsector.Record+" already has a planet.  Planet returned to sector "+sector.Record+".");
@@ -212,7 +212,7 @@ function PlanetEdit()
 		}
 		else {
 			sector.Planet=0;
-			db.write('tw2','sectors.'+oldsector);
+			db.write(Settings.DB,'sectors.'+oldsector);
 			newsector.Planet=planetNum;
 			sector=newsector;
 		}
@@ -220,8 +220,8 @@ function PlanetEdit()
 	/* Planet doesn't exist (move to sector zero */
 	if(!planet.Created)
 		planet.Sector=0;
-	db.write('tw2','planets.'+planetNum,planet,LOCK_WRITE);
-	db.write('tw2','sectors.'+planet.Sector,sector,LOCK_WRITE);
+	db.write(Settings.DB,'planets.'+planetNum,planet,LOCK_WRITE);
+	db.write(Settings.DB,'sectors.'+planet.Sector,sector,LOCK_WRITE);
 }
 
 function PlayerEdit()
@@ -281,13 +281,13 @@ function PortEdit()
 	console.write("Port name or sector number: ");
 	var plid=console.getstr(42);
 	var port=null;
-	var portsLen=db.read('tw2','ports.length',LOCK_READ);
+	var portsLen=db.read(Settings.DB,'ports.length',LOCK_READ);
 	var portNum=0;
 	var sector=null;
 
 	/* First, search by name */
 	for(i=1; i<portsLen; i++) {
-		port=db.read('tw2','ports.'+i,LOCK_READ);
+		port=db.read(Settings.DB,'ports.'+i,LOCK_READ);
 		if(port.Name.toUpperCase().search(plid.toUpperCase())!=-1) {
 			console.write(port.Name+" Y/[N]? ");
 			if(InputFunc(['Y','N'])=='Y') {
@@ -304,12 +304,12 @@ function PortEdit()
 			secnum=parseInt(plid);
 		}
 		catch (e) {}
-		var seclen=db.read('tw2','sectors.length',LOCK_READ);
+		var seclen=db.read(Settings.DB,'sectors.length',LOCK_READ);
 		if(secnum > 0 && secnum < seclen) {
-			sector=db.read('tw2','sectors.'+secnum,LOCK_READ);
-			var plen=db.read('tw2','ports.length',LOCK_READ);
+			sector=db.read(Settings.DB,'sectors.'+secnum,LOCK_READ);
+			var plen=db.read(Settings.DB,'ports.length',LOCK_READ);
 			if(sector.Port > 0 && sector.Port < plen) {
-				port=db.read('tw2','ports.'+sector.Port,LOCK_READ);
+				port=db.read(Settings.DB,'ports.'+sector.Port,LOCK_READ);
 				console.write(port.Name+" ["+secnum+"] Y/[N]? ");
 				if(InputFunc(['Y','N'])!='Y') {
 					port=null;
@@ -327,36 +327,36 @@ function PortEdit()
 		return;
 
 	if(sector==null)
-		sector=db.read('tw2','sectors.'+port.Sector,LOCK_READ);
+		sector=db.read(Settings.DB,'sectors.'+port.Sector,LOCK_READ);
 
 	LockedEditProperties(port, PortProperties);
 
-	db.write('tw2','ports.'+portNum,port,LOCK_WRITE);
+	db.write(Settings.DB,'ports.'+portNum,port,LOCK_WRITE);
 	sector.Put();
 }
 
 function SectorEdit()
 {
-	var seclen=db.read('tw2','sectors.length',LOCK_READ);
+	var seclen=db.read(Settings.DB,'sectors.length',LOCK_READ);
 	console.write("Sector: ");
 	var sec=InputFunc([{max:(seclen-1)}]);
 
 	if(sec>0 && sec <seclen) {
-		var sector=db.read('tw2','sectors.'+sec,LOCK_READ);
+		var sector=db.read(Settings.DB,'sectors.'+sec,LOCK_READ);
 		EditProperties(sector, SectorProperties);
-		db.write('tw2','sectors.'+sec,sector,LOCK_WRITE);
+		db.write(Settings.DB,'sectors.'+sec,sector,LOCK_WRITE);
 	}
 }
 
 function TeamEdit()
 {
 	console.write("Team: ");
-	var t=InputFunc([{max:(db.read('tw2','teams.length',LOCK_READ)-1)}]);
+	var t=InputFunc([{max:(db.read(Settings.DB,'teams.length',LOCK_READ)-1)}]);
 
 	if(t>0 && t <teams.length) {
-		var team=db.read('tw2','teams.length', LOCK_READ);
+		var team=db.read(Settings.DB,'teams.length', LOCK_READ);
 		LockedEditProperties(team, TeamProperties);
-		db.write('tw2','teams.length', team, LOCK_WRITE);
+		db.write(Settings.DB,'teams.length', team, LOCK_WRITE);
 	}
 }
 

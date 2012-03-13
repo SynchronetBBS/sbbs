@@ -132,18 +132,18 @@ function DockAtSol()
 }
 
 function PortReport(portNum) {
-	db.lock('tw2','ports.'+portNum,LOCK_WRITE);
-	var port=db.read('tw2','ports.'+portNum);
+	db.lock(Settings.DB,'ports.'+portNum,LOCK_WRITE);
+	var port=db.read(Settings.DB,'ports.'+portNum);
 	var i;
 
 	if(port==null) {
-		db.unlock('tw2','ports.'+portNum);
+		db.unlock(Settings.DB,'ports.'+portNum);
 		return(null);
 	}
 	/* 33000 */
 	LockedProduction(port);
-	db.write('tw2','ports.'+portNum,port);
-	db.unlock('tw2','ports.'+portNum,port);
+	db.write(Settings.DB,'ports.'+portNum,port);
+	db.unlock(Settings.DB,'ports.'+portNum,port);
 	var ret=new Array(Commodities.length);
 	for(i=0; i<Commodities.length; i++) {
 		ret[i]=new Object();
@@ -259,24 +259,24 @@ function Transact(type, price, vary, avail)
 
 function DockAtRegularPort()
 {
-	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+	var sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 	var amount;
 	var sale;
 	var count;
 	var port;
 
 	/* Lock the port file and ensure we can dock... */
-	db.lock('tw2','ports.'+sector.Port,LOCK_WRITE);
-	port=db.read('tw2','ports.'+sector.Port);
+	db.lock(Settings.DB,'ports.'+sector.Port,LOCK_WRITE);
+	port=db.read(Settings.DB,'ports.'+sector.Port);
 	if(port.OccupiedBy != 0) {
 		console.writeln("The port is busy.  Try again later.");
-		db.unlock('tw2','ports.'+sector.Port);
+		db.unlock(Settings.DB,'ports.'+sector.Port);
 		return;
 	}
 	port.OccupiedBy=player.Record;
 	LockedProduction(port);
-	db.write('tw2','ports.'+sector.Port,port);
-	db.unlock('tw2','ports.'+sector.Port);
+	db.write(Settings.DB,'ports.'+sector.Port,port);
+	db.unlock(Settings.DB,'ports.'+sector.Port);
 	sale=PortReport(sector.Port);
 	console.attributes="HR";
 	count=0;
@@ -291,7 +291,7 @@ function DockAtRegularPort()
 			if(amount >= 0) {
 				count++;
 				port.Commodities[i] -= amount;
-				db.write('tw2','ports.'+sector.Port,port,LOCK_WRITE);
+				db.write(Settings.DB,'ports.'+sector.Port,port,LOCK_WRITE);
 			}
 		}
 	}
@@ -302,7 +302,7 @@ function DockAtRegularPort()
 			if(amount >= 0) {
 				count++;
 				port.Commodities[i] -= amount;
-				db.write('tw2','ports.'+sector.Port,port,LOCK_WRITE);
+				db.write(Settings.DB,'ports.'+sector.Port,port,LOCK_WRITE);
 			}
 		}
 	}
@@ -313,7 +313,7 @@ function DockAtRegularPort()
 	}
 
 	port.OccupiedBy=0;
-	db.write('tw2','ports.'+sector.Port,port,LOCK_WRITE);
+	db.write(Settings.DB,'ports.'+sector.Port,port,LOCK_WRITE);
 }
 
 
@@ -326,7 +326,7 @@ function DockAtPort()
 		console.writeln("Sorry, but you don't have any turns left.");
 		return;
 	}
-	var sector=db.read('tw2','sectors.'+player.Sector,LOCK_READ);
+	var sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 	if(sector.Port<1) {
 		console.writeln("There are no ports in this sector.");
 		return;
@@ -351,9 +351,9 @@ function InitializePorts()
 	
 	uifc.pop("Placing Ports");
 
-	db.lock('tw2','ports',LOCK_WRITE);
-	db.write('tw2','ports',[]);
-	db.push('tw2','ports',DefaultPort);
+	db.lock(Settings.DB,'ports',LOCK_WRITE);
+	db.write(Settings.DB,'ports',[]);
+	db.push(Settings.DB,'ports',DefaultPort);
 
 	/* Place ports */
 	for(i=0; i<ports_init.length; i++) {
@@ -365,13 +365,13 @@ function InitializePorts()
 		port.Production=[ports_init[i].OreProduction, ports_init[i].OrgProduction, ports_init[i].EquProduction];
 		port.PriceVariance=[ports_init[i].OreDeduction,ports_init[i].OrgDeduction,ports_init[i].EquDeduction];
 
-		db.lock('tw2','sectors.'+ports_init[i].Sector,LOCK_WRITE);
-		var sector=db.read('tw2','sectors.'+ports_init[i].Sector);
+		db.lock(Settings.DB,'sectors.'+ports_init[i].Sector,LOCK_WRITE);
+		var sector=db.read(Settings.DB,'sectors.'+ports_init[i].Sector);
 		sector.Port=i+1;
-		db.write('tw2','sectors.'+ports_init[i].Sector,sector);
-		db.unlock('tw2','sectors.'+ports_init[i].Sector);
+		db.write(Settings.DB,'sectors.'+ports_init[i].Sector,sector);
+		db.unlock(Settings.DB,'sectors.'+ports_init[i].Sector);
 
-		db.push('tw2','ports',port);
+		db.push(Settings.DB,'ports',port);
 	}
-	db.unlock('tw2','ports');
+	db.unlock(Settings.DB,'ports');
 }

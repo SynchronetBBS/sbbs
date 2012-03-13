@@ -37,7 +37,7 @@ function RunMaint()
 	console.writeln("  by Chris Sherrick (PTL)");
 	console.crlf();
 	console.writeln("This program is run once per day.");
-	db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:user.alias+": Maintence program ran"},LOCK_WRITE);
+	db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:user.alias+": Maintence program ran"},LOCK_WRITE);
 
 	DeleteInactive();
 
@@ -50,7 +50,7 @@ function DeleteInactive()
 {
 	console.writeln("Deleting inactive players");
 	var oldest_allowed=strftime("%Y:%m:%d",time()-Settings.DaysInactivity*86400);
-	var allplayers=db.read('tw2','players',LOCK_READ);
+	var allplayers=db.read(Settings.DB,'players',LOCK_READ);
 	for(i=1; i<allplayers.length; i++) {
 		if(allplayers[i].QWKID==system.qwk_id && allplayers[i].UserNumber > 0) {
 			if((!file_exists(system.data_dir+format("user/%04d.tw2",p.UserNumber))) || (p.LastOnDay < oldest_allowed && p.KilledBy != 0)) {
@@ -63,26 +63,26 @@ function DeleteInactive()
 function MoveCabalGroup(cabal, cabalRecord, target)
 {
 	var i;
-	var cabalsLen=db.read('tw2','cabals.length');
+	var cabalsLen=db.read(Settings.DB,'cabals.length');
 
 	if(cabal.Sector==0 || cabal.Size < 1)
 		return;
 
-	db.lock('tw2','sectors.'+cabal.Sector,LOCK_WRITE);
-	var sector=db.read('tw2','sectors.'+cabal.Sector);
+	db.lock(Settings.DB,'sectors.'+cabal.Sector,LOCK_WRITE);
+	var sector=db.read(Settings.DB,'sectors.'+cabal.Sector);
 
 	sector.Fighters -= cabal.Size;
 	if(sector.Fighters < 1) {
 		sector.Fighters=0;
 		sector.FighterOwner=0;
 	}
-	db.write('tw2','sectors.'+cabal.Sector,sector);
-	db.unlock('tw2','sectors.'+cabal.Sector);
+	db.write(Settings.DB,'sectors.'+cabal.Sector,sector);
+	db.unlock(Settings.DB,'sectors.'+cabal.Sector);
 
 	/* Set new sector */
 	cabal.Sector=target;
-	db.lock('tw2','sectors.'+cabal.Sector,LOCK_WRITE);
-	sector=db.read('tw2','sectors.'+cabal.Sector);
+	db.lock(Settings.DB,'sectors.'+cabal.Sector,LOCK_WRITE);
+	sector=db.read(Settings.DB,'sectors.'+cabal.Sector);
 
 	/* Attack dropped fighters */
 	if(sector.Fighters > 0 && sector.FighterOwner != -1) {
@@ -110,8 +110,8 @@ function MoveCabalGroup(cabal, cabalRecord, target)
 		msg.To=sector.FighterOwner;
 		msg.From=-1;
 		msg.Destroyed=killed;
-		db.push('tw2','updates',msg,LOCK_WRITE);
-		db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"      Group "+cabalRecord+" --> Sector "+target+" ("+ownername+"): lost "+killed+", dstrd "+lost+" ("+(sector.Fighters==0?"Player":"Cabal")+" ftrs dstrd)"},LOCK_WRITE);
+		db.push(Settings.DB,'updates',msg,LOCK_WRITE);
+		db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"      Group "+cabalRecord+" --> Sector "+target+" ("+ownername+"): lost "+killed+", dstrd "+lost+" ("+(sector.Fighters==0?"Player":"Cabal")+" ftrs dstrd)"},LOCK_WRITE);
 		if(cabal.Size==0) {
 			cabal=eval(DefaultCabal.toSource());
 			return;
@@ -121,8 +121,8 @@ function MoveCabalGroup(cabal, cabalRecord, target)
 			sector.Fighters=cabal.Size;
 		}
 	}
-	db.write('tw2','sectors.'+cabal.Sector,sector);
-	db.unlock('tw2','sectors.'+cabal.Sector);
+	db.write(Settings.DB,'sectors.'+cabal.Sector,sector);
+	db.unlock(Settings.DB,'sectors.'+cabal.Sector);
 
 	CabalAttack(cabal, cabalRecord);
 	if(cabal.Sector==0 || cabal.Size < 1)
@@ -133,7 +133,7 @@ function MoveCabalGroup(cabal, cabalRecord, target)
 	for(i=1; i<cabalsLen; i++) {
 		if(i==cabalRecord)
 			continue;
-		var othercabal=db.read('tw2','cabals.'+i);
+		var othercabal=db.read(Settings.DB,'cabals.'+i);
 		/* Merge Groups */
 		if(othercabal.Sector==cabal.Sector) {
 			if(i < cabalRecord) {
@@ -144,8 +144,8 @@ function MoveCabalGroup(cabal, cabalRecord, target)
 				cabal.Size += othercabal.Size;
 				othercabal=eval(DefaultCabal.toSource());
 			}
-			db.write('tw2','cabals.'+cabalRecord, cabal);
-			db.write('tw2','cabals.'+i, othercabal);
+			db.write(Settings.DB,'cabals.'+cabalRecord, cabal);
+			db.write(Settings.DB,'cabals.'+i, othercabal);
 		}
 	}
 }
@@ -158,29 +158,29 @@ function MoveCabal()
 	var group2;
 	var wgroup,agroup,hgroup;
 	var path,next;
-	db.lock('tw2','cabals',LOCK_WRITE);
-	var cabalsLen=db.read('tw2','cabals.length');
+	db.lock(Settings.DB,'cabals',LOCK_WRITE);
+	var cabalsLen=db.read(Settings.DB,'cabals.length');
 
 	console.writeln("Moving the Cabal.");
-	db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"    Cabal report:"},LOCK_WRITE);
+	db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"    Cabal report:"},LOCK_WRITE);
 	/* Validate Groups and count the total */
 	for(i=1; i<cabalsLen; i++) {
-		cabal=db.read('tw2','cabals.'+i);
-		var sector=db.read('tw2','sectors.'+cabal.Sector,LOCK_READ);
+		cabal=db.read(Settings.DB,'cabals.'+i);
+		var sector=db.read(Settings.DB,'sectors.'+cabal.Sector,LOCK_READ);
 		cabal.Size=sector.Fighters;
 		if(sector.FighterOwner != -1 || sector.Fighters==0) {
 			cabal.Sector=0;
 			cabal.Size=0;
 			cabal.Goal=0;
 		}
-		db.write('tw2','cabals.'+i, cabal);
+		db.write(Settings.DB,'cabals.'+i, cabal);
 		total+=cabal.Size;
 	}
 
 	/* Move group 2 into sector 85 (merge into group 1) */
-	cabal=db.read('tw2','cabals.2');
+	cabal=db.read(Settings.DB,'cabals.2');
 	MoveCabalGroup(cabal, 2, 85);
-	db.write('tw2','cabals.2',cabal);
+	db.write(Settings.DB,'cabals.2',cabal);
 
 	/* Note, this seems to have a max limit of 2000 for regeneration */
 	var regen=Settings.CabalRegeneration;
@@ -189,22 +189,22 @@ function MoveCabal()
 	if(regen<1)
 		regen=0;
 
-	cabal=db.read('tw2','cabals.1');
+	cabal=db.read(Settings.DB,'cabals.1');
 	cabal.Size += regen;
 
 	/* Split off group 2 */
-	group2=db.read('tw2','cabals.2');
+	group2=db.read(Settings.DB,'cabals.2');
 	if(cabal.Size > 1000) {
 		group2.Size=cabal.Size-1000;
 		group2.Sector=85;
 		MoveCabalGroup(group2, 2, 83);
-		db.write('tw2','cabals.2',cabal2);
+		db.write(Settings.DB,'cabals.2',cabal2);
 	}
 
-	var seclen=db.read('tw2','sectors.length',LOCK_READ);
+	var seclen=db.read(Settings.DB,'sectors.length',LOCK_READ);
 	/* Create wandering groups */
 	for(i=3; i<6; i++) {
-		wgroup=db.read('tw2','cabals.'+i);
+		wgroup=db.read(Settings.DB,'cabals.'+i);
 		if(wgroup.Size < 1 || wgroup.Sector < 1 || wgroup.Sector >= seclen) {
 			if(group2.size >= 600) {
 				wgroup.Size=100;
@@ -217,13 +217,13 @@ function MoveCabal()
 			else {
 				wgroup=eval(DefaultCabal.toSource());
 			}
-			db.write('tw2','cabals.'+i, wgroup);
+			db.write(Settings.DB,'cabals.'+i, wgroup);
 		}
 	}
 
 	/* Create attack groups */
 	for(i=6; i<9; i++) {
-		agroup=db.read('tw2','cabals.'+i);
+		agroup=db.read(Settings.DB,'cabals.'+i);
 		if(agroup.Size < 1 || agroup.Sector < 1 || agroup.Sector >= seclen) {
 			if(group2.size >= 550) {
 				agroup.Size=50;
@@ -236,12 +236,12 @@ function MoveCabal()
 			else {
 				agroup=eval(DefaultCabal.toSource());
 			}
-			db.write('tw2','cabals.'+i, agroup);
+			db.write(Settings.DB,'cabals.'+i, agroup);
 		}
 	}
 	
 	/* Create hunter group */
-	hgroup=db.read('tw2','cabals.9');
+	hgroup=db.read(Settings.DB,'cabals.9');
 	if(hgroup.Size < 1 || hgroup.Sector < 1 || hgroup.Sector >= seclen) {
 		if(group2.size >= 500) {
 			hgroup.Size=group2.Size-500;
@@ -252,13 +252,13 @@ function MoveCabal()
 		else {
 			hgroup=eval(DefaultCabal.toSource());
 		}
-		db.write('tw2','cabals.9', hgroup);
+		db.write(Settings.DB,'cabals.9', hgroup);
 	}
-	db.write('tw2','cabals.2', group2);
+	db.write(Settings.DB,'cabals.2', group2);
 
 	/* Move wandering groups */
 	for(i=3; i<6; i++) {
-		wgroup=db.read('tw2','cabals.'+i);
+		wgroup=db.read(Settings.DB,'cabals.'+i);
 		if(wgroup.Size < 1 || wgroup.Sector == 0)
 			continue;
 		/* Choose new target */
@@ -273,12 +273,12 @@ function MoveCabal()
 		while(path[0] < 8)
 			path.shift();
 		MoveCabalGroup(wgroup,i,path[0]);
-		db.write('tw2','cabals.'+i,wgroup);
+		db.write(Settings.DB,'cabals.'+i,wgroup);
 	}
 
 	/* Move Attack Groups */
 	for(i=6; i<9; i++) {
-		agroup=db.read('tw2','cabals.'+i);
+		agroup=db.read(Settings.DB,'cabals.'+i);
 		if(agroup.Size < 1 || agroup.Sector == 0)
 			continue;
 		/* Choose new target */
@@ -295,13 +295,13 @@ function MoveCabal()
 			if(next < 8)
 				continue;
 			MoveCabalGroup(agroup,i,next);
-			db.write('tw2','cabals.'+i,agroup);
+			db.write(Settings.DB,'cabals.'+i,agroup);
 		}
 	}
 
 	/* Move hunter groups... */
 	for(i=9; i<10; i++) {
-		hgroup=db.read('tw2','cabals.'+i);
+		hgroup=db.read(Settings.DB,'cabals.'+i);
 		if(hgroup.Size < 1 || hgroup.Sector == 0)
 			continue;
 		/* Choose target */
@@ -313,11 +313,11 @@ function MoveCabal()
 			while(path.length > 0 && hgroup.Size > 0) {
 				next=path.shift();
 				MoveCabalGroup(hgroup,i,next);
-				db.write('tw2','cabals.'+i,hgroup);
+				db.write(Settings.DB,'cabals.'+i,hgroup);
 			}
 		}
 	}
-	db.unlock('tw2','cabals',LOCK_WRITE);
+	db.unlock(Settings.DB,'cabals',LOCK_WRITE);
 }
 
 function CabalAttack(cabal, cabalRecord)
@@ -331,10 +331,10 @@ function CabalAttack(cabal, cabalRecord)
 	var attackwith=0;
 
 	var ranks=RankPlayers();
-	db.lock('tw2','sectors.'+cabal.Sector,LOCK_WRITE);
-	var sector=db.read('tw2','sectors.'+cabal.Sector);
+	db.lock(Settings.DB,'sectors.'+cabal.Sector,LOCK_WRITE);
+	var sector=db.read(Settings.DB,'sectors.'+cabal.Sector);
 	if(sector.FighterOwner != -1) {	/* Huh? */
-		db.unlock('tw2','sectors.'+cabal.Sector);
+		db.unlock(Settings.DB,'sectors.'+cabal.Sector);
 		return;
 	}
 
@@ -380,7 +380,7 @@ function CabalAttack(cabal, cabalRecord)
 			}
 		}
 		cabal.Size += attackwith;
-		db.push('tw2','log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"      Group "+cabalRecord+" --> "+otherplayer.Alias+": lost "+killed+ ", dstrd "+killed+" ("+(cabal.Size==0?"Cabal":"Player")+" dstrd)"},LOCK_WRITE);
+		db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"      Group "+cabalRecord+" --> "+otherplayer.Alias+": lost "+killed+ ", dstrd "+killed+" ("+(cabal.Size==0?"Cabal":"Player")+" dstrd)"},LOCK_WRITE);
 		if(cabal.Size==0)
 			cabaleval(DefaultCabal.toSource());
 		else {				/* Player destroyed by the cabal! */
@@ -388,28 +388,28 @@ function CabalAttack(cabal, cabalRecord)
 			otherplayer.Sector=0;
 		}
 		otherplayer.Put();
-		db.write('tw2','cabals.'+cabalRecord, cabal);
+		db.write(Settings.DB,'cabals.'+cabalRecord, cabal);
 	}
 	sector.Fighters += cabal.Size;
 	if(cabal.Size > 0)
 		sector.FighterOwner=-1;
-	db.write('tw2','sectors.'+cabal.Sector,sector);
-	db.unlock('tw2','sectors.'+cabal.Sector);
+	db.write(Settings.DB,'sectors.'+cabal.Sector,sector);
+	db.unlock(Settings.DB,'sectors.'+cabal.Sector);
 }
 
 function InitializeCabal()
 {
-	var sector=db.read('tw2','sectors.85',LOCK_READ);
+	var sector=db.read(Settings.DB,'sectors.85',LOCK_READ);
 
 	uifc.pop("Initializing the Cabal");
 	sector_map[85].Fighters=3000;
 	sector_map[85].FightersOwner=-1;
 	sector.Fighters=3000;
 	sector.FightersOwner=-1;
-	db.write('tw2','sectors.85',sector,LOCK_WRITE);
-	db.lock('tw2','cabals',LOCK_WRITE);
-	db.write('tw2','cabals',[]);
-	db.push('tw2','cabals',DefaultCabal);
+	db.write(Settings.DB,'sectors.85',sector,LOCK_WRITE);
+	db.lock(Settings.DB,'cabals',LOCK_WRITE);
+	db.write(Settings.DB,'cabals',[]);
+	db.push(Settings.DB,'cabals',DefaultCabal);
 	for(i=1; i<10; i++) {
 		var grp=eval(DefaultCabal.toSource());
 		if(i==1) {
@@ -417,7 +417,7 @@ function InitializeCabal()
 			grp.Sector=85;
 			grp.Goal=85;
 		}
-		db.write('tw2','cabals.'+i,grp);
+		db.write(Settings.DB,'cabals.'+i,grp);
 	}
-	db.unlock('tw2','cabals');
+	db.unlock(Settings.DB,'cabals');
 }
