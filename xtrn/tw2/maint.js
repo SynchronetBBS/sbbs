@@ -53,8 +53,8 @@ function DeleteInactive()
 	var allplayers=db.read(Settings.DB,'players',LOCK_READ);
 	for(i=1; i<allplayers.length; i++) {
 		if(allplayers[i].QWKID==system.qwk_id && allplayers[i].UserNumber > 0) {
-			if((!file_exists(system.data_dir+format("user/%04d.tw2",p.UserNumber))) || (p.LastOnDay < oldest_allowed && p.KilledBy != 0)) {
-				DeletePlayer(p);
+			if((!file_exists(system.data_dir+format("user/%04d.tw2",allplayers[i].UserNumber))) || (allplayers[i].LastOnDay < oldest_allowed && allplayers[i].KilledBy != 0)) {
+				DeletePlayer(players.Get(i));
 			}
 		}
 	}
