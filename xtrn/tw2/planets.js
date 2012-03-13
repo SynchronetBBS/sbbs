@@ -265,7 +265,7 @@ function DestroyPlanet(planetNum)
 	var secnum;
 	
 	console.crlf();
-	console.attributes="RI7H";
+	console.attributes="RIH";
 	console.writeln("*** DESTROY THE PLANET ***");
 	console.crlf();
 	console.attributes="Y";
