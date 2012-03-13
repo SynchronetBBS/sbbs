@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -69,6 +69,7 @@ char	mdm_cid[INI_MAX_VALUE_LEN]		= "AT+VCID=1";
 char	mdm_cleanup[INI_MAX_VALUE_LEN]	= "ATS0=0";
 BOOL	mdm_null=FALSE;
 int		mdm_timeout=5;			/* seconds */
+int		mdm_reinit=60;			/* minutes */
 
 #ifdef _WIN32
 char	com_dev[MAX_PATH+1]				= "COM1";
@@ -739,6 +740,19 @@ void cleanup(void)
 	}
 }
 
+BOOL carrier_detect(COM_HANDLE com_handle)
+{
+	int			mdm_status;
+
+	if((mdm_status=comGetModemStatus(com_handle)) == COM_ERROR)
+		lprintf(LOG_ERR,"Error %u getting modem status (line %u)"
+			,COM_ERROR_VALUE, __LINE__);
+	else if(mdm_status&COM_DCD)
+		return TRUE;
+
+	return FALSE;
+}
+
 /****************************************************************************/
 /****************************************************************************/
 BOOL wait_for_call(COM_HANDLE com_handle)
@@ -747,7 +761,7 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 	char*		p;
 	BOOL		result=TRUE;
 	DWORD		events=0;
-	int			mdm_status;
+	time_t		start=time(NULL);
 
 	ZERO_VAR(cid_name);
 	ZERO_VAR(cid_number);
@@ -812,11 +826,12 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 			}
 			continue;	/* don't check DCD until we've received all the modem msgs */
 		}
-		if((mdm_status=comGetModemStatus(com_handle)) == COM_ERROR)
-			lprintf(LOG_ERR,"Error %u getting modem status (line %u)"
-				,COM_ERROR_VALUE, __LINE__);
-		else if(mdm_status&COM_DCD)
+		if(carrier_detect(com_handle))
 			break;
+		if(mdm_reinit && (time(NULL)-start)/60 > mdm_reinit) {
+			lprintf(LOG_INFO,"Re-initialization timer elapsed: %u minutes", mdm_reinit);
+			return TRUE;
+		}
 	}
 
 	if(strcmp(cid_name,"P")==0)
@@ -1379,6 +1394,7 @@ void parse_ini_file(const char* ini_fname)
 	iniGetExistingWord(list, section, "Cleanup", "", mdm_cleanup);
 	iniGetExistingWord(list, section, "EnableCallerID", "", mdm_cid);
 	mdm_timeout     = iniGetInteger(list, section, "Timeout", mdm_timeout);
+	mdm_reinit		= iniGetInteger(list, section, "ReInit", mdm_reinit);
 
 	/* [TCP] Section */
 	section="TCP";
@@ -1537,6 +1553,8 @@ service_loop(int argc, char** argv)
 
 	/* Main service loop: */
 	while(!terminated && wait_for_call(com_handle)) {
+		if(!carrier_detect(com_handle))
+			continue;
 		comWriteByte(com_handle,'\r');
 		comWriteString(com_handle, banner);
 		comWriteString(com_handle, "\r\n");
