@@ -1,9 +1,9 @@
      Synchronet External Plain Old Telephone System (POTS) Support
      -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                             a.k.a. SEXPOTS
-                     Copyright 2007 Rob Swindell
+                     Copyright 2012 Rob Swindell
 
-$Id$
+For current documentation, see http://wiki.synchro.net/util:sexpots
 
 
 Overview
@@ -119,6 +119,15 @@ an NT service, the SEXPOTS log output goes to the "Application Log"
 in the NT event viewer.
 
 
+MSVCR100
+--------
+As of SEXPOTS v1.27 for Windows, you will need to download and install the
+Microsoft Visual C++ 2010 Redistributable Package (x86) which contains
+the required file: MSVCR100.DLL (Microsoft Visual C++ Run-time Library
+v10.0) - if you do not already have this file:
+http://www.microsoft.com/download/en/details.aspx?id=5555 
+
+
 Configuration
 -------------
 Configuration is normally performed by editing the file sexpots.ini, located
@@ -165,6 +174,7 @@ Example .ini file (with default values given):
     CleanUp = ATS0=0            ; When exiting, turn off auto-answer
     EnableCallerID = AT+VCID=1  ; Enable Caller-ID support (or try AT#CID=1)
     Timeout = 5                 ; Seconds to wait for a response from modem
+    ReInit = 60                 ; Minutes between re-init while waiting for call
 
     [TCP]
     Host = localhost            ; Hostname or IP address of TCP server
@@ -243,6 +253,6 @@ Win32   = 32-bit versions of Windows (from Windows 95 through Windows Vista)
 Support
 -------
 For technical support (including bug reports and feature requests), see 
-http://www.synchro.net/docs/support.html for details.
+http://wiki.synchro.net/howto:support for details.
 
 /* End of file */
