@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sexpots", "sexpots.vcxproj", "{7C337348-CEE5-F22E-BB39-850434F75AF9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AEED3A81-3A47-4953-BE51-FD5E08283890} = {AEED3A81-3A47-4953-BE51-FD5E08283890}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xpdev_mt", "..\xpdev\xpdev_mt.vcxproj", "{AEED3A81-3A47-4953-BE51-FD5E08283890}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7C337348-CEE5-F22E-BB39-850434F75AF9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7C337348-CEE5-F22E-BB39-850434F75AF9}.Debug|Win32.Build.0 = Debug|Win32
+		{7C337348-CEE5-F22E-BB39-850434F75AF9}.Release|Win32.ActiveCfg = Release|Win32
+		{7C337348-CEE5-F22E-BB39-850434F75AF9}.Release|Win32.Build.0 = Release|Win32
+		{AEED3A81-3A47-4953-BE51-FD5E08283890}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AEED3A81-3A47-4953-BE51-FD5E08283890}.Debug|Win32.Build.0 = Debug|Win32
+		{AEED3A81-3A47-4953-BE51-FD5E08283890}.Release|Win32.ActiveCfg = Release|Win32
+		{AEED3A81-3A47-4953-BE51-FD5E08283890}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
