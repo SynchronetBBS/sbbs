@@ -532,29 +532,6 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-#if 0
-	len=filelength(file);
-	/* TODO: Probobly too big for alloca()... also, this is insane. */
-	if((buf=malloc(len))==NULL) {
-		close(file);
-		return(JS_TRUE);
-	}
-	if(read(file,buf,len)!=len) {
-		free(buf);
-		close(file);
-		return(JS_TRUE);
-	}
-	close(file);
-
-	if(sendsocket(p->sock,buf,len)==len) {
-		dbprintf(FALSE, p, "sent %u bytes",len);
-		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
-	} else {
-		p->last_error=ERROR_VALUE;
-		dbprintf(TRUE, p, "send of %u bytes failed",len);
-	}
-	free(buf);
-#else
 	len = sendfilesocket(p->sock, file, NULL, 0);
 	close(file);
 	if(len > 0) {
@@ -564,7 +541,6 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %s failed",fname);
 	}
-#endif
 
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
@@ -653,7 +629,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc && argv[0]!=JSVAL_VOID)
 		JS_ValueToInt32(cx,argv[0],&len);
 
-	if((buf=(char*)alloca(len+1))==NULL) {
+	if((buf=(char*)malloc(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
@@ -664,19 +640,23 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	if(len<0) {
 		p->last_error=ERROR_VALUE;
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+		free(buf);
 		return(JS_TRUE);
 	}
 	buf[len]=0;
 
 	str = JS_NewStringCopyN(cx, buf, len);
-	if(str==NULL)
+	if(str==NULL) {
+		free(buf);
 		return(JS_FALSE);
+	}
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	rc=JS_SUSPENDREQUEST(cx);
 	dbprintf(FALSE, p, "received %u bytes",len);
 	JS_RESUMEREQUEST(cx, rc);
 	
+	free(buf);
 	return(JS_TRUE);
 }
 
@@ -757,7 +737,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 
 	} else {		/* String Data */
 
-		if((buf=(char*)alloca(len+1))==NULL) {
+		if((buf=(char*)malloc(len+1))==NULL) {
 			JS_ReportError(cx,"Error allocating %u bytes",len+1);
 			return(JS_FALSE);
 		}
@@ -767,11 +747,13 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		if(len<0) {
 			p->last_error=ERROR_VALUE;
+			free(buf);
 			return(JS_TRUE);
 		}
 		buf[len]=0;
 
 		str = JS_NewStringCopyN(cx, buf, len);
+		free(buf);
 
 		if(str==NULL)
 			return(JS_FALSE);
@@ -834,7 +816,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc && argv[0]!=JSVAL_VOID)
 		JS_ValueToInt32(cx,argv[0],&len);
 
-	if((buf=(char*)alloca(len+1))==NULL) {
+	if((buf=(char*)malloc(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
@@ -844,11 +826,13 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	if(len<0) {
 		p->last_error=ERROR_VALUE;	
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+		free(buf);
 		return(JS_TRUE);
 	}
 	buf[len]=0;
 
 	str = JS_NewStringCopyN(cx, buf, len);
+	free(buf);
 	if(str==NULL)
 		return(JS_FALSE);
 
@@ -887,7 +871,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc && argv[0]!=JSVAL_VOID)
 		JS_ValueToInt32(cx,argv[0],&len);
 
-	if((buf=(char*)alloca(len+1))==NULL) {
+	if((buf=(char*)malloc(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
@@ -904,6 +888,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 			if(i==0) {
 				JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 				JS_RESUMEREQUEST(cx, rc);
+				free(buf);
 				return(JS_TRUE);	/* socket closed */
 			}
 			break;		/* disconnected */
@@ -914,6 +899,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 				dbprintf(FALSE, p, "recvline timeout (received: %d)",i);
 				JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 				JS_RESUMEREQUEST(cx, rc);
+				free(buf);
 				return(JS_TRUE);	/* time-out */
 			}
 			continue;	/* no data */
@@ -936,6 +922,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_RESUMEREQUEST(cx, rc);
 	str = JS_NewStringCopyZ(cx, buf);
+	free(buf);
 	if(str==NULL)
 		return(JS_FALSE);
 
