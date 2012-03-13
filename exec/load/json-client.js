@@ -314,8 +314,7 @@ function JSONClient(serverAddr,serverPort) {
             location:location,
 			timeout:this.settings.TIMEOUT
         });
-		if(this.settings.TIMEOUT >= 0)
-			return this.wait();
+		return this.wait();
 	}
 
 	/* retrieve the overall lock and subscription status of an object */
@@ -325,8 +324,7 @@ function JSONClient(serverAddr,serverPort) {
 			location:location,
 			timeout:this.settings.TIMEOUT
         });
-		if(this.settings.TIMEOUT >= 0)
-			return this.wait();
+		return this.wait();
 	}
 	
 	this.connect();
