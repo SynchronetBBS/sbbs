@@ -172,6 +172,10 @@ function Menu(sector)
 function do_exit()
 {
 	if(player != undefined) {
+		if(db.status(Settings.DB,'players').lock!=undefined)
+			db.unlock(Settings.DB,'players');
+		if(db.status(Settings.DB,'players.'+player.Record).lock!=undefined)
+			db.unlock(Settings.DB,'players.'+player.Record);
 		player.Online=false;
 		if(player.Ported || player.Landed) {
 			if(db.status(Settings.DB,'sectors').lock!=undefined)
