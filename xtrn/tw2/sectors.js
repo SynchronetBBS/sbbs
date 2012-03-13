@@ -104,13 +104,13 @@ function EnterSector()	/* 20000 */
 					player.Points+=killed*100;
 					console.writeln("You just recieved "+(killed*100)+" points for that.");
 				}
-				db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
+				sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 				if(sector.Fighters==0)
 					console.writeln("You destroyed all the fighters.");
 				break;
 			case 'D':
 				console.writeln("<Display>");
-				sector=db.read(Settings.DB,'sector.'+player.Sector,LOCK_READ);
+				sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 				DisplaySector(sector,player.Sector,false);
 				break;
 			case 'I':
@@ -127,15 +127,17 @@ function EnterSector()	/* 20000 */
 			case 'R':
 				console.writeln("<Retreat>");
 				var sectorsLen=db.read(Settings.DB,'sectors.length',LOCK_READ);
-				if(player.LastIn<1 || player.LastIn>=sectorsLen)
+				while(player.LastIn<1 || player.LastIn>=sectorsLen || player.LastIn==player.Sector) {
 					player.LastIn=random(sectorsLen-1)+1;
+				}
+				var oldsector=player.Sector;
 				if(player.Fighters<1) {
 					if(random(2)==1) {
 						console.writeln("You escaped!");
 						db.lock(Settings.DB,'sectors.'+player.Sector,LOCK_WRITE);
 						db.lock(Settings.DB,'sectors.'+player.LastIn,LOCK_WRITE);
 						sector=db.read(Settings.DB,'sectors.'+player.Sector);
-						lastsector=db.read(Settings.DB,'sectors.'+player.Sector);
+						lastsector=db.read(Settings.DB,'sectors.'+player.LastIn);
 						lastsector.Ships.push(player.Record);
 						for(i=0; i<sector.Ships.length; i++) {
 							if(sector.Ships[i]==player.Record) {
@@ -147,7 +149,7 @@ function EnterSector()	/* 20000 */
 						db.write(Settings.DB,'sectors.'+player.LastIn,lastsector);
 						player.Sector=player.LastIn;
 						player.Put();
-						db.unlock(Settings.DB,'sectors.'+player.Sector);
+						db.unlock(Settings.DB,'sectors.'+oldsector);
 						db.unlock(Settings.DB,'sectors.'+player.LastIn);
 						return(false);
 					}
@@ -166,7 +168,7 @@ function EnterSector()	/* 20000 */
 					db.lock(Settings.DB,'sectors.'+player.Sector,LOCK_WRITE);
 					db.lock(Settings.DB,'sectors.'+player.LastIn,LOCK_WRITE);
 					sector=db.read(Settings.DB,'sectors.'+player.Sector);
-					lastsector=db.read(Settings.DB,'sectors.'+player.Sector);
+					lastsector=db.read(Settings.DB,'sectors.'+player.LastIn);
 					lastsector.Ships.push(player.Record);
 					for(i=0; i<sector.Ships.length; i++) {
 						if(sector.Ships[i]==player.Record) {
@@ -178,7 +180,7 @@ function EnterSector()	/* 20000 */
 					db.write(Settings.DB,'sectors.'+player.LastIn,lastsector);
 					player.Sector=player.LastIn;
 					player.Put();
-					db.unlock(Settings.DB,'sectors.'+player.Sector);
+					db.unlock(Settings.DB,'sectors.'+oldsector);
 					db.unlock(Settings.DB,'sectors.'+player.LastIn);
 					return(false);
 				}

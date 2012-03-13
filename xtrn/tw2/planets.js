@@ -293,11 +293,11 @@ function DestroyPlanet(planetNum)
 		db.lock(Settings.DB,'planets.'+planetNum,LOCK_WRITE);
 		var planet=db.read(Settings.DB,"planets."+planetNum);
 		secnum=planet.Sector;
-		db.lock(Settings.DB,'sector.'+secnum,LOCK_WRITE);
+		db.lock(Settings.DB,'sectors.'+secnum,LOCK_WRITE);
 		if(planet.OccupiedCount > 1) {
 			console.writeln("Another player prevents destroying the planet.");
 			db.unlock(Settings.DB,'planets.'+planetNum);
-			db.unlock(Settings.DB,'sector.'+secnum);
+			db.unlock(Settings.DB,'sectors.'+secnum);
 			return(false);
 		}
 		var sector=db.read(Settings.DB,'sectors.'+secnum);
@@ -306,7 +306,7 @@ function DestroyPlanet(planetNum)
 		planet.Created=false;
 		planet.Sector=0;
 		db.write(Settings.DB,'sectors.'+secnum,sector);
-		db.unlock(Settings.DB,'sector.'+secnum);
+		db.unlock(Settings.DB,'sectors.'+secnum);
 		db.write(Settings.DB,'planets.'+planetNum,planet);
 		db.unlock(Settings.DB,'planets.'+planetNum);
 		db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"  -  " + player.Alias + " destroyed the planet in sector " + secnum},LOCK_WRITE);
