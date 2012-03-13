@@ -126,7 +126,7 @@ function EnterSector()	/* 20000 */
 				break;
 			case 'R':
 				console.writeln("<Retreat>");
-				var sectorsLen=db.reaD(Settings.DB,'sectors.length',LOCK_READ);
+				var sectorsLen=db.read(Settings.DB,'sectors.length',LOCK_READ);
 				if(player.LastIn<1 || player.LastIn>=sectorsLen)
 					player.LastIn=random(sectorsLen-1)+1;
 				if(player.Fighters<1) {
