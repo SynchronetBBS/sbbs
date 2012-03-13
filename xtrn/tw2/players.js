@@ -849,7 +849,7 @@ function DropFighters()
 		newf=9999;
 	newf=InputFunc([{min:0,max:newf}]);
 	db.lock(Settings.DB,'sectors.'+player.Sector,LOCK_WRITE);
-	sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
+	sector=db.read(Settings.DB,'sectors.'+player.Sector);
 	if(sector.Fighters > 0 && sector.FighterOwner != player.Record) {
 		console.writeln("There are already fighters in this sector!");
 		db.unlock(Settings.DB,'sectors.'+player.Sector);
