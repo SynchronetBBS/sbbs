@@ -308,13 +308,13 @@ function KilledBy(killed, killer, notify)	/* 15300 */
 	var sectors=db.read(Settings.DB,'sectors');
 	/* Destroy all deployed fighters */
 	for(i=1; i<sectors.length; i++) {
-		if(sectors[i].FighterOwner==player.Record) {
+		if(sectors[i].FighterOwner==killed.Record) {
 			sectors[i].Fighters=0;
 			sectors[i].FighterOwner=0;
 		}
 	}
 	db.write(Settings.DB,'sectors',sectors);
-	db.unlock(Settings.DB,'sectors.'+i);
+	db.unlock(Settings.DB,'sectors');
 
 	if(killed.TeamNumber > 0) {
 		var ktn=killed.TeamNumber;
@@ -324,11 +324,12 @@ function KilledBy(killed, killer, notify)	/* 15300 */
 		for(i=0; i<team.Members.length; i++) {
 			if(team.Members[i]==killed.Record) {
 				team.Members.splice(i,1);
-				db.write(Settings.DB,'teams.'+ktn);
-				killed.TeamNumber=0;
-				killed.Put();
+				i--;
 			}
 		}
+		killed.TeamNumber=0;
+		killed.Put();
+		db.write(Settings.DB,'teams.'+ktn);
 		db.unlock(Settings.DB,'teams.'+ktn);
 	}
 
