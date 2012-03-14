@@ -79,13 +79,13 @@ function EnterSector()	/* 20000 */
 
 	console.attributes="Y";
 	sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
-	DisplaySector(sector,player.Sector,false);
 	if(sector.FighterOwner > 0) {
 		otherplayer=players.Get(sector.FighterOwner);
 		if(otherplayer.TeamNumber > 0)
 			fighterteam=otherplayer.TeamNumber;
 	}
 	while(sector.FighterOwner != player.Record && sector.Fighters > 0 && fighterteam != player.TeamNumber) {
+		DisplaySector(sector,player.Sector,false,'enter.ans');
 		console.writeln("You have to destroy the fighters before you can enter this sector.");
 		console.writeln("Fighters: "+player.Fighters+" / "+sector.Fighters);
 		console.write("Option? (A,D,I,Q,R,?):? ");
@@ -111,7 +111,7 @@ function EnterSector()	/* 20000 */
 			case 'D':
 				console.writeln("<Display>");
 				sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
-				DisplaySector(sector,player.Sector,false);
+				DisplaySector(sector,player.Sector,false,'enter.ans');
 				break;
 			case 'I':
 				console.writeln("<Info>");
@@ -198,10 +198,11 @@ function EnterSector()	/* 20000 */
 				console.writeln("Invalid command.  ? = Help");
 		}
 	}
+	DisplaySector(sector,player.Sector,false,'main.ans');
 	return(true);
 }
 
-function DisplaySector(sector, secnum, helponly)
+function DisplaySector(sector, secnum, helponly, mainfname)
 {
 	var i;
 	var count=0;
@@ -215,7 +216,7 @@ function DisplaySector(sector, secnum, helponly)
 	}
 
 	if(user.settings&USER_ANSI) {
-		console.printfile(fname("main.ans"));
+		console.printfile(fname(mainfname));
 		if(sector.Port > 0)
 			console.printfile(fname("port.ans"));
 		if(sector.Planet > 0)

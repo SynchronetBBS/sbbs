@@ -195,8 +195,8 @@ function AttackPlayer()
 	var j;
 
 	console.writeln("You destroyed the ship and salvaged these cargo holds:");
-	var holds=new Array(Commodities.length+1);
-	for(i=0; i<holds.length+1; i++)
+	var holds=new Array(Commodities.length);
+	for(i=0; i<holds.length; i++)
 		holds[i]=0;
 	for(i=0; i<otherplayer.Holds; i++) {
 		var limit=0;
@@ -549,9 +549,9 @@ function DoBattle(opp, otherteam)
 
 			console.writeln("You lost "+lost+" fighter(s), "+player.Fighters+" remain.");
 			if(opp.Fighters > 0)
-				console.write("You destroyed "+killed+" enemy fighters, "+opp.Fighters+" remain.");
+				console.writeln("You destroyed "+killed+" enemy fighters, "+opp.Fighters+" remain.");
 			else
-				console.write("You destroyed all of the enemy fighters.");
+				console.writeln("You destroyed all of the enemy fighters.");
 			return(killed);
 		}
 	}

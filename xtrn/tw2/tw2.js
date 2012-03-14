@@ -85,7 +85,7 @@ function Menu(sector)
 			case 'D':
 				console.writeln("<Display>");
 				sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
-				DisplaySector(sector,player.Sector,false);
+				DisplaySector(sector,player.Sector,false,'main.ans');
 				continue;
 			case 'E':
 				if(user.level < 90)
@@ -138,7 +138,7 @@ function Menu(sector)
 				console.crlf();
 				if(user.settings&USER_ANSI) {
 					sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
-					DisplaySector(sector,player.Sector,true);
+					DisplaySector(sector,player.Sector,true,'main.ans');
 				}
 				else
 					console.printfile(fname("main.asc"));
