@@ -195,7 +195,7 @@ function AttackPlayer()
 	var j;
 
 	console.writeln("You destroyed the ship and salvaged these cargo holds:");
-	var holds=new Array(Commodities.length);
+	var holds=new Array(Commodities.length+1);
 	for(i=0; i<holds.length; i++)
 		holds[i]=0;
 	for(i=0; i<otherplayer.Holds; i++) {
