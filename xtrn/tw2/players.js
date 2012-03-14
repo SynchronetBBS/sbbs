@@ -198,7 +198,7 @@ function AttackPlayer()
 	var holds=new Array(Commodities.length+1);
 	for(i=0; i<holds.length; i++)
 		holds[i]=0;
-	for(i=0; i<otherplayer.Holds; i++) {
+	for(i=0; i<salvaged; i++) {
 		var limit=0;
 		var r=random(otherplayer.Holds)+1;
 		for(j=0; j<Commodities.length; j++) {
@@ -206,11 +206,11 @@ function AttackPlayer()
 			if(r<limit) {
 				otherplayer.Commodities[j]--;
 				holds[j]++;
-				r=0;
+				r=-1;
 				break;
 			}
 		}
-		if(r==0)
+		if(r!=-1)
 			holds[Commodities.length]++;
 	}
 	if(holds[Commodities.length]>0) {
@@ -300,7 +300,7 @@ function PlayerInfo(num)
 
 function KilledBy(killed, killer, notify)	/* 15300 */
 {
-	var i;
+	var i,j;
 
 	killed.KilledBy=killer.Record;
 	killed.Put();
@@ -308,6 +308,14 @@ function KilledBy(killed, killer, notify)	/* 15300 */
 	var sectors=db.read(Settings.DB,'sectors');
 	/* Destroy all deployed fighters */
 	for(i=1; i<sectors.length; i++) {
+		if(i==killed.Sector) {
+			for(j=0; j<sectors[i].Ships.length; j++) {
+				if(sectors[i].Ships[j]==killed.Record) {
+					sectors[i].Ships.splice(j,1);
+					j--;
+				}
+			}
+		}
 		if(sectors[i].FighterOwner==killed.Record) {
 			sectors[i].Fighters=0;
 			sectors[i].FighterOwner=0;
