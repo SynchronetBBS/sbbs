@@ -84,8 +84,6 @@ if(js.global.db != undefined) {
 		exit(1);
 }
 
-file_remove(fname("players.dat"));
-
 load(fname("ports.js"));
 load(fname("planets.js"));
 load(fname("teams.js"));
