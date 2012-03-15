@@ -372,17 +372,17 @@ js_report_error(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *thisobj=JS_THIS_OBJECT(cx, arglist);
-	JSObject *parent=JS_GetParent(cx,thisobj);
+	JSObject *scope=JS_GetScopeChain(cx);
 	JSObject *glob=JS_GetGlobalObject(cx);
 	jsval *argv=JS_ARGV(cx, arglist);
 	global_private_t*	pd;
 	str_list_t	list;
+	str_list_t	oldlist;
 	char		*p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(glob==parent) {
+	if(glob==scope) {
 		if((pd=(global_private_t*)JS_GetPrivate(cx,glob))==NULL)
 			return(JS_FALSE);
 		if(pd->exit_func==NULL)
@@ -390,15 +390,19 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 		list=pd->exit_func;
 	}
 	else {
-		list=(str_list_t)JS_GetPrivate(cx,parent);
+		list=(str_list_t)JS_GetPrivate(cx,scope);
 		if(list==NULL) {
 			list=strListInit();
-			JS_SetPrivate(cx,parent,list);
+			JS_SetPrivate(cx,scope,list);
 		}
 	}
 
 	JSVALUE_TO_STRING(cx, argv[0], p, NULL);
 	strListPush(&list,p);
+	if(glob==scope)
+		pd->exit_func=list;
+	else
+		JS_SetPrivate(cx,scope,list);
 
 	return(JS_TRUE);
 }
@@ -506,6 +510,10 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	}
 
 	strListFree(&list);
+	if(glob != obj)
+		JS_SetPrivate(cx,obj,NULL);
+	else
+		pt->exit_func=NULL;
 
 	if(auto_terminate)
 		cb->auto_terminate = TRUE;
