@@ -214,7 +214,7 @@ function QuitTeam()
 {
 	if(player.TeamNumber == 0) {
 		console.writeln("You don't belong to a Team!");
-		return(false);
+		return;
 	}
 	console.write("Are you sure you wish to quit your Team [N]? ");
 	if(InputFunc(['Y','N'])=='Y') {
@@ -225,23 +225,20 @@ function QuitTeam()
 		for(i=0; i<team.Members.length; i++) {
 			if(team.Members[i]==player.Record) {
 				team.Members.splice(i,1);
-				player.TeamNumber=0;
-				player.Put();
-				db.write(Settings.DB, 'teams.'+teamNum, team);
-				db.unlock(Settings.DB,'teams.'+teamNum);
-				console.crlf();
-				console.attributes="HG";
-				console.writeln("You have been removed from Team play");
-				console.attributes="HK";
-				return(true);
+				i--;
 			}
 		}
+		player.TeamNumber=0;
+		player.Put();
+		db.write(Settings.DB, 'teams.'+teamNum, team);
+		db.unlock(Settings.DB,'teams.'+teamNum);
+		console.crlf();
+		console.attributes="HG";
+		console.writeln("You have been removed from Team play");
+		console.attributes="HK";
 	}
-	db.unlock(Settings.DB,'teams.'+teamNum);
 	console.attributes="HR";
-	console.writeln("Corrupt team detected on quit!  Please notify the Sysop!");
-	db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:"!!! Team "+player.TeamNumber+" is corrupted (quit)!"},LOCK_WRITE);
-	return(false);
+	return;
 }
 
 function TeamTransfer(type)
