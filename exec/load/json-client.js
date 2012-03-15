@@ -151,7 +151,26 @@ function JSONClient(serverAddr,serverPort) {
 		});
 		return this.wait();
     }
-	
+
+	/* read multiple object data (lock for reading or writing, blocking) */
+	/* readmulti([['tw2','sector.1',undefined,'sector'],['tw2','planets.1',undefined,'planet']]); */
+	this.readmulti=function(objects) {
+		var i;
+		var ret={};
+		for(i in objects) {
+			this.send(objects[i][0],'QUERY',{
+				oper:'READ',
+				location:objects[i][1],
+				lock:objects[i][2],
+				timeout:this.settings.TIMEOUT
+			});
+		}
+		for(i in objects) {
+			ret[objects[i][3]]=this.wait();
+		}
+		return ret;
+	}
+
 	/* read object keys (lock for reading or writing, blocking) */
 	this.keys=function(scope,location,lock) {
 		this.send(scope,"QUERY",{
