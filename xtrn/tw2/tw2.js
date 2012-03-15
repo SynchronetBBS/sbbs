@@ -52,8 +52,10 @@ load(fname("editor.js"));
 
 function Menu(sector)
 {
+	var refresh;
 	/* 22000 */
 	while(1) {
+		refresh=true;
 		console.crlf();
 		if(player.TurnsLeft==10 || player.TurnsLeft < 6) {
 			console.attributes="HM";
@@ -81,11 +83,15 @@ function Menu(sector)
 				/* 33640 */
 				console.writeln("<Computer>");
 				ComputerMenu();
+				sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
+				DisplaySector(sector,player.Sector,false,'main.ans');
+				refresh=false;
 				break;
 			case 'D':
 				console.writeln("<Display>");
 				sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 				DisplaySector(sector,player.Sector,false,'main.ans');
+				refresh=false;
 				continue;
 			case 'E':
 				if(user.level < 90)
@@ -131,6 +137,9 @@ function Menu(sector)
 				console.attributes="HW";
 				console.writeln("<Team menu>");
 				TeamMenu();
+				sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
+				DisplaySector(sector,player.Sector,false,'main.ans');
+				refresh=false;
 				break;
 			case '?':
 				console.attributes="C";
@@ -139,6 +148,7 @@ function Menu(sector)
 				if(user.settings&USER_ANSI) {
 					sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 					DisplaySector(sector,player.Sector,true,'main.ans');
+					refresh=false;
 				}
 				else
 					console.printfile(fname("main.asc"));
@@ -165,7 +175,8 @@ function Menu(sector)
 				}
 				break;
 		}
-		sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
+		if(refresh)
+			sector=db.read(Settings.DB,'sectors.'+player.Sector,LOCK_READ);
 	}
 }
 
