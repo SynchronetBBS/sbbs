@@ -208,11 +208,12 @@ function DisplaySector(sector, secnum, helponly, mainfname)
 	var count=0;
 	var otherships=new Array();
 	var otherplayer;
+	var reads=[];
 
 	for(i=0;i<sector.Ships.length;i++) {
 		if(sector.Ships[i]==player.Record)
 			continue;
-		otherships.push(players.Get(sector.Ships[i]));
+		reads.push([Settings.DB,'players.'+sector.Ships[i],LOCK_READ,'players.'+sector.Ships[i]]);
 	}
 
 	if(user.settings&USER_ANSI) {
@@ -223,7 +224,7 @@ function DisplaySector(sector, secnum, helponly, mainfname)
 			console.printfile(fname("planet.ans"));
 		if(sector.Fighters > 0 && sector.FighterOwner != 0)
 			console.printfile(fname("fighters.ans"));
-		if(otherships.length > 0)
+		if(reads.length > 0)
 			console.printfile(fname("ship.ans"));
 		console.printfile(fname("sector.ans"));
 		console.attributes="HM";
@@ -231,26 +232,37 @@ function DisplaySector(sector, secnum, helponly, mainfname)
 	}
 	if(helponly)
 		return;
+
+	if(sector.Port > 0)
+		reads.push([Settings.DB,'ports.'+sector.Port,LOCK_READ,'port']);
+	if(sector.Planet > 0)
+		reads.push([Settings.DB,'planets.'+sector.Planet,LOCK_READ,'planet']);
+
+	sd=db.readmulti(reads);
+
 	console.crlf();
 	console.attributes="HY";
 	console.writeln("Sector "+secnum);
 	console.attributes="HR";
 	console.write("Port   ");
 	if(sector.Port > 0) {
-		var port=db.read(Settings.DB,'ports.'+sector.Port,LOCK_READ);
-		console.write(port.Name+", class "+port.Class);
+		console.write(sd.port.Name+", class "+sd.port.Class);
 	}
 	else
 		console.write("None");
 	console.crlf();
 	console.attributes="HB";
 	if(sector.Planet) {
-		var planet=db.read(Settings.DB,'planets.'+sector.Planet,LOCK_READ);
-		console.writeln("Planet "+planet.Name);
+		console.writeln("Planet "+sd.planet.Name);
 	}
 	console.attributes="HC";
 	console.writeln("Other Ships");
 	console.attributes="C";
+	for(i in sd) {
+		if(i.substr(0,8)=='players.') {
+			otherships.push(new Player(sd[i],i.substr(8)));
+		}
+	}
 	for(i in otherships) {
 		otherplayer=otherships[i];
 		console.write("   "+otherplayer.Alias);
