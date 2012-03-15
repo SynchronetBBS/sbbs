@@ -111,35 +111,42 @@ var PlayerProperties=[
 
 var players = {
 	GetLocked:function GetLocked(playerNum, lock) {
-		var ret;
 		if(playerNum==undefined)
-			return ret;
-		ret=db.read(Settings.DB,'players.'+playerNum,lock);
-		ret.Record=playerNum;
-		ret.PutLocked=function(lock) {
-			var p={};
-			var i;
-			
-			for(i in PlayerProperties) {
-				p[PlayerProperties[i]['prop']]=this[PlayerProperties[i]['prop']];
-			}
-			db.write(Settings.DB,'players.'+this.Record,p,lock);
-		}
-		ret.Put=function () {
-			this.PutLocked(LOCK_WRITE);
-		}
-		ret.ReInit=function() {
-			for(i in PlayerProperties) {
-				this[PlayerProperties[i]['prop']]=PlayerProperties[i]['def'];
-			}
-		}
-		return ret;
+			return undefined;
+		return new Player(db.read(Settings.DB,'players.'+playerNum, lock), playerNum);
 	},
-	Get:function GetLocked(playerNum, lock) {
+	Get:function GetLocked(playerNum) {
 		return this.GetLocked(playerNum, LOCK_READ);
 	},
 	get length() {
 		return(db.read(Settings.DB,'players.length',LOCK_READ));
+	}
+}
+
+function Player(player,playerNum)
+{
+	if(playerNum==undefined)
+		return undefined;
+	this.Record=playerNum;
+	this.PutLocked=function(lock) {
+		var p={};
+		var i;
+
+		for(i in PlayerProperties) {
+			p[PlayerProperties[i]['prop']]=this[PlayerProperties[i]['prop']];
+		}
+		db.write(Settings.DB,'players.'+this.Record,p,lock);
+	}
+	this.Put=function () {
+		this.PutLocked(LOCK_WRITE);
+	}
+	this.ReInit=function() {
+		for(i in PlayerProperties) {
+			this[PlayerProperties[i]['prop']]=PlayerProperties[i]['def'];
+		}
+	}
+	for(i in PlayerProperties) {
+		this[PlayerProperties[i]['prop']]=player[PlayerProperties[i]['prop']];
 	}
 }
 
