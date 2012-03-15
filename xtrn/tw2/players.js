@@ -663,28 +663,30 @@ function DeletePlayer(player)
 
 function MoveTo(to)
 {
-	var sector,newsector,from=player.Sector;
-	
+	var sector,from=player.Sector;
+
 	if(player.TurnsLeft < 1) {
 		console.writeln("I'm sorry but you don't have any turns left.");
 		return(false);
 	}
 	if(to > 0) {
 		db.lock(Settings.DB,'sectors.'+player.Sector,LOCK_WRITE);
-		sector=db.read(Settings.DB,'sectors.'+player.Sector);
-		for(i=0; i<sector.Warps.length; i++) {
-			if(sector.Warps[i]==to) {
-				db.lock(Settings.DB,'sectors.'+to,LOCK_WRITE);
-				newsector=db.read(Settings.DB,'sectors.'+to);
-				newsector.Ships.push(player.Record);
-				for(i=0; i<sector.Ships.length; i++) {
-					if(sector.Ships[i]==player.Record) {
-						sector.Ships.splice(i,1);
+		db.lock(Settings.DB,'sectors.'+to,LOCK_WRITE);
+		sector=db.readmulti([
+			[Settings.DB,'sectors.'+player.Sector,undefined,'from'],
+			[Settings.DB,'sectors.'+to,undefined,'to']
+		]);
+		for(i=0; i<sector.from.Warps.length; i++) {
+			if(sector.from.Warps[i]==to) {
+				sector.to.Ships.push(player.Record);
+				for(i=0; i<sector.from.Ships.length; i++) {
+					if(sector.from.Ships[i]==player.Record) {
+						sector.from.Ships.splice(i,1);
 						i--;
 					}
 				}
-				db.write(Settings.DB,'sectors.'+player.Sector,sector);
-				db.write(Settings.DB,'sectors.'+to,newsector);
+				db.write(Settings.DB,'sectors.'+player.Sector,sector.from);
+				db.write(Settings.DB,'sectors.'+to,sector.to);
 				player.TurnsLeft--;
 				player.LastIn=player.Sector;
 				player.Sector=to;
@@ -695,6 +697,7 @@ function MoveTo(to)
 			}
 		}
 		db.unlock(Settings.DB,'sectors.'+player.Sector);
+		db.unlock(Settings.DB,'sectors.'+to);
 		console.writeln("You can't get there from here.");
 	}
 	return(false);

@@ -16,12 +16,6 @@ var TeamProperties = [
 				,type:"Array:4:Integer"
 				,def:[0,0,0,0]
 			}
-			,{
-				 prop:"Size"
-				,name:"Number of members"
-				,type:"Integer"
-				,def:0
-			}
 		];
 
 function TeamMenu()
