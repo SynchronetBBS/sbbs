@@ -27,11 +27,18 @@ var TeamProperties = [
 function TeamMenu()
 {
 	function TeamHelp() {
+		var extension='';
+
 		console.crlf();
 		if(player.TeamNumber > 0)
-			console.printfile(fname("team-member.asc"));
+			extension+='-member';
 		else
-			console.printfile(fname("team-none.asc"));
+			extension+='-none';
+		if(user.settings&USER_ANSI)
+			extension += '.ans';
+		else
+			extension += '.asc';
+		console.printfile(fname("team-"+extension));
 	}
 
 	TeamHelp();
@@ -39,9 +46,9 @@ function TeamMenu()
 	while(1) {
 		var values=new Array();
 		if(player.TeamNumber > 0)
-			values=['1','2','3','4','5','6','7','?'];
+			values=['X','C','Q','F','S','?'];
 		else
-			values=['1','2','3','?'];
+			values=['X','C','J','?'];
 		console.crlf();
 		console.attributes="W";
 		console.write("Team Command (?=help)? ");
@@ -49,24 +56,24 @@ function TeamMenu()
 			case '?':
 				TeamHelp();
 				break;
-			case '1':
+			case 'X':
 				return;
-			case '2':
-				CreateTeam();
+			case 'C':
+				if(player.TeamNumber > 0)
+					TeamTransfer("Credits");
+				else
+					CreateTeam();
 				break;
-			case '3':
+			case 'J':
 				JoinTeam();
 				break;
-			case '4':
+			case 'Q':
 				QuitTeam();
 				break;
-			case '5':
-				TeamTransfer("Credits");
-				break;
-			case '6':
+			case 'F':
 				TeamTransfer("Fighters");
 				break;
-			case '7':
+			case 'S':
 				LocateTeam();
 				break;
 		}
