@@ -398,11 +398,14 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JSVALUE_TO_STRING(cx, argv[0], p, NULL);
+	oldlist=list;
 	strListPush(&list,p);
-	if(glob==scope)
-		pd->exit_func=list;
-	else
-		JS_SetPrivate(cx,scope,list);
+	if(oldlist != list) {
+		if(glob==scope)
+			pd->exit_func=list;
+		else
+			JS_SetPrivate(cx,scope,list);
+	}
 
 	return(JS_TRUE);
 }
