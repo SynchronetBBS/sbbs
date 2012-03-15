@@ -382,7 +382,7 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(thisobj==parent) {
+	if(glob==parent) {
 		if((pd=(global_private_t*)JS_GetPrivate(cx,glob))==NULL)
 			return(JS_FALSE);
 		if(pd->exit_func==NULL)
