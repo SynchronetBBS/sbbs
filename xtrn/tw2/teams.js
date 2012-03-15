@@ -31,9 +31,9 @@ function TeamMenu()
 
 		console.crlf();
 		if(player.TeamNumber > 0)
-			extension+='-member';
+			extension+='member';
 		else
-			extension+='-none';
+			extension+='none';
 		if(user.settings&USER_ANSI)
 			extension += '.ans';
 		else
