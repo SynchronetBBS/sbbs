@@ -70,6 +70,7 @@ char	mdm_cleanup[INI_MAX_VALUE_LEN]	= "ATS0=0";
 BOOL	mdm_null=FALSE;
 int		mdm_timeout=5;			/* seconds */
 int		mdm_reinit=60;			/* minutes */
+int		mdm_cmdretry=2;			/* command retries (total attempts-1) */
 
 #ifdef _WIN32
 char	com_dev[MAX_PATH+1]				= "COM1";
@@ -643,12 +644,12 @@ BOOL modem_response(COM_HANDLE com_handle, char *str, size_t maxlen)
 	start=time(NULL);
 	while(1){
 		if(time(NULL)-start >= mdm_timeout) {
-			lprintf(LOG_WARNING,"Modem Response TIMEOUT (%lu seconds)", mdm_timeout);
+			lprintf(LOG_WARNING,"Modem Response TIMEOUT (%lu seconds) on %s", mdm_timeout, com_dev);
 			return FALSE;
 		}
 		if(len >= maxlen) {
-			lprintf(LOG_WARNING,"Modem Response too long (%u >= %u)"
-				,len, maxlen);
+			lprintf(LOG_WARNING,"Modem Response too long (%u >= %u) from %s"
+				,len, maxlen, com_dev);
 			return FALSE;
 		}
 		if(!comReadByte(com_handle, &ch)) {
@@ -677,20 +678,36 @@ BOOL modem_response(COM_HANDLE com_handle, char *str, size_t maxlen)
 /****************************************************************************/
 BOOL modem_command(COM_HANDLE com_handle, const char* cmd)
 {
-	char resp[128];
+	char	resp[128];
+	int		i;
 
-	if(!modem_send(com_handle, cmd)) {
-		lprintf(LOG_ERR,"ERROR %u sending modem command (%s)"
-			,COM_ERROR_VALUE, cmd);
-		return FALSE;
+	for(i=0;i<=mdm_cmdretry;i++) {
+		if(i) {
+			lprintf(LOG_WARNING,"Retry #%u: sending modem command (%s) on %s", i, cmd, com_dev);
+			lprintf(LOG_DEBUG,"Dropping DTR on %s", com_dev);
+			if(!comLowerDTR(com_handle))
+				lprintf(LOG_ERR,"ERROR %u lowering DTR on %s", COM_ERROR_VALUE, com_dev);
+			SLEEP(dtr_delay);
+			lprintf(LOG_DEBUG,"Raising DTR on %s", com_dev);
+			if(!comRaiseDTR(com_handle))
+				lprintf(LOG_ERR,"ERROR %u raising DTR on %s", COM_ERROR_VALUE, com_dev);
+		}
+		if(!modem_send(com_handle, cmd)) {
+			lprintf(LOG_ERR,"ERROR %u sending modem command (%s) on %s"
+				,COM_ERROR_VALUE, cmd, com_dev);
+			continue;
+		}
+
+		if(modem_response(com_handle, resp, sizeof(resp)))
+			break;
 	}
 
-	if(!modem_response(com_handle, resp, sizeof(resp)))
-		return FALSE;
-
-	lprintf(LOG_INFO,"Modem Response: %s", resp);
-
-	return TRUE;
+	if(i<=mdm_cmdretry) {
+		lprintf(LOG_INFO,"Modem Response: %s", resp);
+		return TRUE;
+	}
+	lprintf(LOG_ERR,"Modem command (%s) failure on %s (%u attempts)", cmd, com_dev, i);
+	return FALSE;
 }
 
 /****************************************************************************/
@@ -740,17 +757,23 @@ void cleanup(void)
 	}
 }
 
+/* Returns 0 on error, Modem status bit-map value otherwise */
+int modem_status(COM_HANDLE com_handle)
+{
+	int	mdm_status;
+
+	if((mdm_status=comGetModemStatus(com_handle)) == COM_ERROR) {
+		lprintf(LOG_ERR,"ERROR %u getting modem status"
+			,COM_ERROR_VALUE);
+		return 0;
+	}
+	return mdm_status;
+}
+
+/* Returns TRUE if DCD (Data Carrier Detect) is high */
 BOOL carrier_detect(COM_HANDLE com_handle)
 {
-	int			mdm_status;
-
-	if((mdm_status=comGetModemStatus(com_handle)) == COM_ERROR)
-		lprintf(LOG_ERR,"Error %u getting modem status (line %u)"
-			,COM_ERROR_VALUE, __LINE__);
-	else if(mdm_status&COM_DCD)
-		return TRUE;
-
-	return FALSE;
+	return (modem_status(com_handle)&COM_DCD) ? TRUE:FALSE;
 }
 
 /****************************************************************************/
@@ -766,7 +789,8 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 	ZERO_VAR(cid_name);
 	ZERO_VAR(cid_number);
 
-	comRaiseDTR(com_handle);
+	if(!comRaiseDTR(com_handle))
+		lprintf(LOG_ERR,"ERROR %u raising DTR", COM_ERROR_VALUE);
 
 	if(com_alreadyconnected)
 		return TRUE;
@@ -789,12 +813,13 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 		}
 	}
 
-	lprintf(LOG_INFO,"Waiting for incoming call (Carrier Detect) on %s ...", com_dev);
+	lprintf(LOG_INFO,"Waiting for incoming call (Carrier Detect) ...");
 	while(1) {
 		if(terminated)
 			return FALSE;
 		if(comReadLine(com_handle, str, sizeof(str), /* timeout (ms): */250) > 0) {
 			truncsp(str);
+			lprintf(LOG_DEBUG,"Received from modem: '%s'", str);
 			p=str;
 			SKIP_WHITESPACE(p);
 			if(*p) {
@@ -828,7 +853,7 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 		}
 		if(carrier_detect(com_handle))
 			break;
-		if(mdm_reinit && (time(NULL)-start)/60 > mdm_reinit) {
+		if(mdm_reinit && (time(NULL)-start)/60 >= mdm_reinit) {
 			lprintf(LOG_INFO,"Re-initialization timer elapsed: %u minutes", mdm_reinit);
 			return TRUE;
 		}
@@ -844,7 +869,7 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 	else if(strcmp(cid_number,"O")==0)
 		SAFECOPY(cid_number,"Out-of-area");
 
-	lprintf(LOG_INFO,"Carrier detected on %s", com_dev);
+	lprintf(LOG_INFO,"Carrier detected");
 	return TRUE;
 }
 
@@ -890,7 +915,8 @@ SOCKET connect_socket(const char* host, ushort port)
 
 	lprintf(LOG_INFO,"Connecting to %s port %u", host, port);
 	if(connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == 0) {
-		lprintf(LOG_INFO,"Connected from %s to %s port %u on socket %u", com_dev, host, port, sock);
+		lprintf(LOG_INFO,"Connected from COM Port (handle %u) to %s TCP port %u using socket descriptor %u"
+			,com_handle, host, port, sock);
 		return sock;
 	}
 
@@ -1203,7 +1229,6 @@ BOOL handle_call(void)
 	int			result;
 	int			rd;
 	int			wr;
-	int			mdm_status;
 	fd_set		socket_set;
 	struct		timeval tv = {0, 0};
 
@@ -1224,18 +1249,11 @@ BOOL handle_call(void)
 
 	while(!terminated) {
 
-		if(!dcd_ignore) {
-			if((mdm_status = comGetModemStatus(com_handle)) == COM_ERROR) {
-				lprintf(LOG_ERR,"Error %u getting modem status (line %u)"
-					,COM_ERROR_VALUE, __LINE__);
-				break;
-			}
-			if((mdm_status&COM_DCD) == 0) {
-				lprintf(LOG_WARNING,"Loss of Carrier Detect (DCD) detected");
-				break;
-			}
+		if(!dcd_ignore && !carrier_detect(com_handle)) {
+			lprintf(LOG_WARNING,"Loss of Carrier Detect (DCD) detected");
+			break;
 		}
-#if 0
+#if 0	/* single-threaded mode: */
 		if(comReadByte(com_handle, &ch)) {
 			lprintf(LOG_DEBUG,"read byte: %c", ch);
 			send(sock, &ch, sizeof(ch), 0);
@@ -1278,8 +1296,8 @@ BOOL handle_call(void)
 		YIELD();
 	}
 
-	lprintf(LOG_INFO,"Bytes sent-to, received-from %s: %lu, %lu"
-		, com_dev, bytes_sent, bytes_received);
+	lprintf(LOG_INFO,"Bytes sent-to, received-from COM Port: %lu, %lu"
+		,bytes_sent, bytes_received);
 
 	return TRUE;
 }
@@ -1292,12 +1310,7 @@ BOOL hangup_call(COM_HANDLE com_handle)
 	int		attempt;
 	int		mdm_status;
 
-	if((mdm_status=comGetModemStatus(com_handle)) == COM_ERROR) {
-		lprintf(LOG_ERR,"Error %u getting modem status (line %u)"
-			,COM_ERROR_VALUE, __LINE__);
-		return TRUE;
-	}
-	if((mdm_status&COM_DCD)==0)	/* DCD already low */
+	if(!carrier_detect(com_handle))/* DCD already low */
 		return TRUE;
 
 	lprintf(LOG_DEBUG,"Waiting for transmit buffer to empty");
@@ -1311,17 +1324,13 @@ BOOL hangup_call(COM_HANDLE com_handle)
 		lprintf(LOG_DEBUG,"Waiting for loss of Carrier Detect (DCD)");
 		start=time(NULL);
 		while(time(NULL)-start <= dcd_timeout) {
-			if((mdm_status=comGetModemStatus(com_handle)) == COM_ERROR) {
-				lprintf(LOG_ERR,"Error %u getting modem status (line %u)"
-					,COM_ERROR_VALUE, __LINE__);
-				return TRUE;
-			}
-			if((mdm_status&COM_DCD)==0)
+			if(((mdm_status=modem_status(com_handle))&COM_DCD)==0)
 				return TRUE;
 			SLEEP(1000); 
 		}
 		lprintf(LOG_ERR,"TIMEOUT waiting for DCD to drop (attempt #%d of %d)"
-			, attempt+1, hangup_attempts);
+			,attempt+1, hangup_attempts);
+		lprintf(LOG_DEBUG,"Modem status: 0x%lX", mdm_status);
 	}
 
 	return FALSE;
@@ -1395,6 +1404,7 @@ void parse_ini_file(const char* ini_fname)
 	iniGetExistingWord(list, section, "EnableCallerID", "", mdm_cid);
 	mdm_timeout     = iniGetInteger(list, section, "Timeout", mdm_timeout);
 	mdm_reinit		= iniGetInteger(list, section, "ReInit", mdm_reinit);
+	mdm_cmdretry	= iniGetInteger(list, section, "CmdRetry", mdm_cmdretry);
 
 	/* [TCP] Section */
 	section="TCP";
@@ -1522,19 +1532,21 @@ service_loop(int argc, char** argv)
 	lprintf(LOG_INFO,"TCP Port: %u", port);
 	
 	if(!com_handle_passed) {
-		lprintf(LOG_INFO,"Opening Communications Device: %s", com_dev);
+		lprintf(LOG_INFO,"Opening Communications Device (COM Port): %s", com_dev);
 		if((com_handle=comOpen(com_dev)) == COM_HANDLE_INVALID) {
-			lprintf(LOG_ERR,"ERROR %u opening %s", COM_ERROR_VALUE, com_dev);
+			lprintf(LOG_ERR,"ERROR %u opening communications device/port: '%s'", COM_ERROR_VALUE, com_dev);
 			exit(1);
 		}
 	}
+	lprintf(LOG_INFO,"COM Port device handle: %u", com_handle);
+
 	if(com_baudrate!=0) {
 		if(!comSetBaudRate(com_handle,com_baudrate))
-			lprintf(LOG_ERR,"ERROR %u setting %s DTE rate to %lu bps"
-				,COM_ERROR_VALUE, com_dev, com_baudrate);
+			lprintf(LOG_ERR,"ERROR %u setting DTE rate to %lu bps"
+				,COM_ERROR_VALUE, com_baudrate);
 	}
 
-	lprintf(LOG_INFO,"%s set to %ld bps DTE rate", com_dev, comGetBaudRate(com_handle));
+	lprintf(LOG_INFO,"COM Port DTE rate: %ld bps", comGetBaudRate(com_handle));
 
 	if(ident)
 		_beginthread(ident_server_thread, 0, NULL);
@@ -1553,7 +1565,7 @@ service_loop(int argc, char** argv)
 
 	/* Main service loop: */
 	while(!terminated && wait_for_call(com_handle)) {
-		if(!carrier_detect(com_handle))
+		if(!carrier_detect(com_handle))	/* re-initialization timer time-out? */
 			continue;
 		comWriteByte(com_handle,'\r');
 		comWriteString(com_handle, banner);
