@@ -1,7 +1,7 @@
 /*	$id: $ 
 
 	Lightbar Menu Tree 
-	by Matt Johnson (MCMLXXIX) 2011
+	by Matt Johnson (MCMLXXIX) 2012
 	
 	properties:
 	
@@ -490,22 +490,22 @@ function TreeItem(text,frame,parent,func,args) {
 	this.show = function() {
 		if(properties.status&flags.HIDDEN) {
 			properties.status&=~flags.HIDDEN;
-			regenerate();
+			this.refresh();
 			return true;
 		}
 		return false;
 	}
 	this.hide = function() {
-		if(properties.status&flags.CLOSED)
+		if(properties.status&flags.HIDDEN)
 			return false;
-		properties.status|=flags.CLOSED;
-		regenerate();
+		properties.status|=flags.HIDDEN;
+		this.refresh();
 		return true;
 	}
 	this.enable = function() {
 		if(properties.status&flags.DISABLED) {
 			properties.status&=~flags.DISABLED;
-			regenerate();
+			this.refresh();
 			return true;
 		}
 		return false;
@@ -514,7 +514,7 @@ function TreeItem(text,frame,parent,func,args) {
 		if(properties.status&flags.DISABLED)
 			return false;
 		properties.status|=flags.DISABLED;
-		regenerate();
+		this.refresh();
 		return true;
 	}
 	this.refresh=function() {
