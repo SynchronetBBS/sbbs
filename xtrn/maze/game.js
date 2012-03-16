@@ -332,13 +332,7 @@ function lobby() {
 	}
 	function joinMaze() {
 		/* find the first open game number */
-		gnum=1;
-		for each(var g in data.games) {
-			if(g.status == status.RACING)
-				gnum++;
-			else if(countMembers(g.players) >= settings.max_players)
-				gnum++;
-		}
+		gnum=getOpenGame();
 		client.lock("mazerace","games." + gnum,2);
 		
 		var player = new Player(profile.name,profile.avatar,profile.color);
@@ -358,6 +352,19 @@ function lobby() {
 		menu.enable("R");
 		menu.disable("J");
 		data.updated=true;
+	}
+	function getOpenGame() {
+		for each(var g in data.games) {
+			if(g.status == status.RACING)
+				continue;
+			else if(countMembers(g.players) >= settings.max_players)
+				continue;
+			return g.gameNumber;
+		}
+		var g=1;
+		while(data.games[g])
+			g++;
+		return g;
 	}
 	function leaveMaze() {
 		delete data.games[gnum].players[profile.name];
@@ -485,8 +492,12 @@ function race(gameNumber)	{
 					obj[p.shift()] = update.data;
 				break;
 			case "SUBSCRIBE":
+				data.online=client.who(game_id,"games");
+				break;
 			case "UNSUBSCRIBE":
 				data.online=client.who(game_id,"games");
+				if(maze.players[update.data.nick])
+					maze.players[update.data.nick].frame.delete();
 				break;
 			}
 		} catch(e) {
@@ -670,8 +681,6 @@ function race(gameNumber)	{
 	}
 	function playerAtFinish() {
 		if(player.coords.x == (maze.finish.x*3+1) && player.coords.y == (maze.finish.y*2+1)) 
-			return true;
-		else if(player.coords.x == 1 && player.coords.y == 1)
 			return true;
 		return false;
 	}
