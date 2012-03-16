@@ -18,6 +18,7 @@ load("json-chat.js");
 load("inputline.js");
 load("layout.js");
 load("graphic.js");
+load("funclib.js");
 load(root + "mazeobj.js");
 load(root + "menu.js");
 
