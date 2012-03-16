@@ -22,7 +22,7 @@ function Menu(items,x,y,w,hl,txt)
 	{
 		for(i=0;i<items.length;i++) {
 			hotkey=get_hotkey(items[i]);
-			this.items[hotkey]=new Item(items[i],hotkey,hl,txt);
+			this.items[hotkey.toUpperCase()]=new Item(items[i],hotkey,hl,txt);
 		}
 	}
 	this.clear=function()
@@ -42,16 +42,17 @@ function Menu(items,x,y,w,hl,txt)
 		console.putmsg(format("%-*s",this.width + offset,str));
 		this.updated=false;
 	}
+	
+	function Item(item,hotkey,hl,txt)
+	{								
+		this.enabled=true;
+		this.hotkey=hotkey;
+		this.text=item.replace(("~" + hotkey) , hl + hotkey + txt);
+	}
+	function get_hotkey(item)
+	{
+		keyindex=item.indexOf("~")+1;
+		return item.charAt(keyindex);
+	}	
 	this.add(items);
 }
-function Item(item,hotkey,hl,txt)
-{								
-	this.enabled=true;
-	this.hotkey=hotkey;
-	this.text=item.replace(("~" + hotkey) , hl + hotkey + txt);
-}
-function get_hotkey(item)
-{
-	keyindex=item.indexOf("~")+1;
-	return item.charAt(keyindex);
-}	

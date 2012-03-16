@@ -121,13 +121,14 @@ function lobby() {
 				continue;
 			if(hotkeys) {
 				k = k.toUpperCase();
-				if(!menu.items[k] || !menu.items[k].enabled) 
+				if(!menu.items[k] || !menu.items[k].enabled)
 					continue;
 				switch(k.toUpperCase()) {
 				case "S":
 					showScores();
 					break;
 				case "H":
+				case "?":
 					showHelp();
 					break;
 				case "J":
@@ -141,6 +142,7 @@ function lobby() {
 					break;
 				case "E":
 					chooseAvatar();
+					chooseColor();
 					break;
 				case "Q":
 					return;
@@ -244,21 +246,43 @@ function lobby() {
 			log(LOG_WARNING,update.toSource());
 		}
 	}
-
-	/* character picker */
 	function chooseAvatar() {
-		var af = new Frame(30,10,10,2,BG_BLACK + player.color,frame);
-		af.open();
-		for each(var a in settings.avatars)
-			af.putmsg(a + " ");
-		af.draw();
+		todo();
+		// var aFrame = new Frame(25,10,30,4,BG_BLUE,frame);
+		// aFrame.open();
+		// aFrame.crlf();
+		// aFrame.putmsg(" " + profile.color + settings.avatars);
+		// aFrame.draw();
+		// aFrame.center("\1r\1h<SPACE to continue>");
+		// aFrame.draw();
+		// while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
+		// aFrame.delete();
 	}
 	function chooseColor() {
-		var cf = new Frame(30,10,10,2,BG_BLACK);
+		todo();
+		//var cf = new Frame(30,10,10,2,BG_BLACK);
 	}
-	
+	function todo() {
+		var tFrame = new Frame(25,10,30,4,BG_BLUE,frame);
+		tFrame.open();
+		tFrame.crlf();
+		tFrame.center("\1y\1hFeature not yet available");
+		tFrame.crlf();
+		tFrame.crlf();
+		tFrame.center("\1r\1h<SPACE to continue>");
+		tFrame.draw();
+		while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
+		tFrame.delete();
+	}
+
 	/* helpers */
 	function showHelp()	{
+		var hFrame = new Frame(11,3,60,19,undefined,frame);
+		hFrame.open();
+		hFrame.load(root + "instructions.bin",60,19);
+		hFrame.draw();
+		while(console.inkey(K_NOECHO|K_NOCRLF,1) !== " ");
+		hFrame.delete();
 	}
 	function listPlayers() {
 		playerlist.clear();
@@ -328,7 +352,7 @@ function lobby() {
 		scoreFrame.center("\1r\1h<SPACE to continue>");
 		scoreFrame.cycle();
 		while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
-		scoreFrame.close();
+		scoreFrame.delete();
 	}
 	function sortScoresByWins() {
 		return sortListByProperty(data.profiles,"wins");
@@ -446,10 +470,13 @@ function race(gameNumber)	{
 			case KEY_LEFT:
 			case KEY_RIGHT:
 				movePosition(k);
-				if(playerDead()) 
+				if(playerDead()) {
 					goToStart();
-				else if(playerAtFinish()) 
+					showPlayerInfo();
+				}
+				else if(playerAtFinish()) {
 					endGame();
+				}
 				break;
 			case "Q":
 			case "\x1b":
@@ -510,6 +537,7 @@ function race(gameNumber)	{
 				data.online=client.who(game_id,"games");
 				if(maze.players[update.data.nick])
 					maze.players[update.data.nick].frame.delete();
+				showPlayerInfo();
 				break;
 			}
 		} catch(e) {
@@ -624,9 +652,13 @@ function race(gameNumber)	{
 		var y = maze.start.y*2+1;
 		for each(var p in maze.players) {
 			p.coords = new Coords(x,y);
+			p.color = settings.colors.shift();
+			p.avatar = settings.avatars.shift();
 			p.health = settings.max_health;
 			p.frame = new Frame(x+1,y+1,1,1,p.color,screen);
 			p.frame.putmsg(p.avatar)
+			settings.colors.push(p.color);
+			settings.avatars.push(p.avatar);
 		}
 	}
 	function endGame() {
@@ -654,8 +686,24 @@ function race(gameNumber)	{
 	}
 	function showPlayerInfo() {
 		info.clear();
-		for each(var p in maze.players) 
-			info.putmsg(" " + p.name + ":" + p.health);
+		for each(var p in maze.players) {
+			var ph = p.health/100;
+			var bars = Math.floor(ph * 7);
+			var str = " " + getColor(p.color) + p.avatar + ": ";
+			if(ph > .75)
+				str+="\1g\1h";
+			else if(ph > .50)
+				str+="\1y\1h";
+			else
+				str+="\1r\1h";
+			var bstr = "";
+			for(var b=0;b<bars;b++)
+				bstr+="\xDB";
+			if(ph*7%1 >= .5)
+				bstr+="\xDD";
+			str+=format("%-*s",8,bstr);	
+			info.putmsg(str);
+		}
 	}
 
 	/* movement */
@@ -694,7 +742,7 @@ function race(gameNumber)	{
 		player.frame.moveTo(x+1,y+1);
 	}
 	function playerAtFinish() {
-		if(player.coords.x == (maze.finish.x*3+1) && player.coords.y == (maze.finish.y*2+1)) 
+		if(player.coords.x == (maze.finish.x*3+2) && player.coords.y == (maze.finish.y*2+1)) 
 			return true;
 		return false;
 	}
