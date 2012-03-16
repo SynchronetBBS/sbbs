@@ -190,7 +190,12 @@ function lobby() {
 		var channel = chat.channels[chat_tab.title.toUpperCase()];
 		while(channel && channel.messages.length > 0) {
 			var msg = channel.messages.shift();
-			var str = msg.nick.name + ": " + msg.str;
+			var str = "";
+			if(msg.nick)
+				var str = getColor(chat.settings.NICK_COLOR) + msg.nick.name + "\1n: " + 
+				getColor(chat.settings.TEXT_COLOR) + msg.str;
+			else
+				var str = getColor(chat.settings.NOTICE_COLOR) + msg.str;
 			chat_tab.getcmd(str + "\r\n");
 		}
 	}
@@ -334,17 +339,23 @@ function lobby() {
 	function joinMaze() {
 		/* find the first open game number */
 		gnum=getOpenGame();
+		if(isNaN(gnum)) {
+			log(LOG_WARNING,"Error finding game number");
+			return false;
+		}
 		client.lock("mazerace","games." + gnum,2);
-		
+		var game = client.read("mazerace","games." + gnum);
 		var player = new Player(profile.name,profile.avatar,profile.color);
+		
 		/* if the game doesnt exist, create it */
-		if(!data.games[gnum]) {
+		if(!game) {
 			data.games[gnum] = new Game(gnum);
 			data.games[gnum].players[profile.name] = player;
 			client.write("mazerace","games." + gnum,data.games[gnum]);
 		}
 		/* otherwise, store player info in game */
 		else {
+			data.games[gnum] = game;
 			data.games[gnum].players[profile.name] = player;
 			client.write("mazerace","games."+gnum+".players."+profile.name,player);
 		}
@@ -661,8 +672,10 @@ function race(gameNumber)	{
 		data.storePlayerPosition(gameNumber,player);
 	}
 	function takeDamage() {
-		if(settings.damage)
+		if(settings.damage) {
 			player.health -= settings.damage_qty;
+			write(ascii(7));
+		}
 		data.storePlayerHealth(gameNumber,player);
 		showPlayerInfo();
 	}
