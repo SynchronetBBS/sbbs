@@ -150,6 +150,10 @@ function blox()
 	}
 	function main()
 	{
+		selx=0;
+		sely=0;
+		selection=[];
+		selected=false;
 		level=0;
 		points=0;
 		gameover=false;
