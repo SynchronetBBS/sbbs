@@ -754,6 +754,7 @@ function LoadPlayer()
 			console.writeln("Please leave a message for the Sysop so");
 			console.writeln("he can save a space for you when one opens up.");
 			db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:": New player not allowed - game full."},LOCK_WRITE);
+			db.unlock(Settings.DB,'players.'+player.Record);
 			return(false);
 		}
 		console.crlf();
