@@ -201,6 +201,10 @@ function blox()
 	}
 	function levelUp()
 	{
+		selx=0;
+		sely=0;
+		selection=[];
+		selected=false;
 		level+=1;
 		generateLevel();
 	}
