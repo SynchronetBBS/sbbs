@@ -552,6 +552,8 @@ var   TG_PASSTHRU	=(1<<5);	/* Pass-through telnet commands/responses	*/
 var   TG_RLOGIN		=(1<<6);	/* Use BSD RLogin protocol					*/
 var   TG_NOCHKTIME	=(1<<7);	/* Don't check time left online				*/
 var   TG_NOTERMTYPE =(1<<8);	/* Request client "DONT TERM_TYPE"			*/
+var   TG_SENDPASS = (1<<9);	/* Send password instead of real name (RLogin)	*/
+
 					    		/********************************************/
 
 					    		/********************************************/
