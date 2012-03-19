@@ -58,6 +58,8 @@
 	// display the frame contents
 	frame.draw();
 */
+
+load("funclib.js");
 function Tree(frame,text,tree) {
 
 	/* private properties */
@@ -72,6 +74,7 @@ function Tree(frame,text,tree) {
 		text:undefined,
 		status:undefined,
 		index:undefined,
+		line:undefined,
 		items:[]
 	};
 	var colors = {
@@ -159,7 +162,20 @@ function Tree(frame,text,tree) {
 		properties.index = index;
 		return true;
 	});
-	this.__defineGetter__("curitem", function() {
+	this.__defineGetter__("line", function() {
+		if(properties.parent)
+			return properties.parent.line;
+		else
+			return properties.line;
+	});
+	this.__defineSetter__("line", function(line) {
+		if(properties.parent)
+			properties.parent.line=line;
+		else 
+			properties.line=line;
+		return true;
+	});
+	this.__defineGetter__("current", function() {
 		return properties.items[properties.index];
 	});
 	
@@ -168,14 +184,13 @@ function Tree(frame,text,tree) {
 		return properties.frame.cycle();
 	}
 	this.getcmd = function(cmd) {
-		
 		/* initialize return value */
 		var retval=false;
 		
 		if(!(properties.status&flags.CLOSED)) {
 			/* if the current tree item is a subtree, pass control to the next subtree */
-			if(this.curitem instanceof Tree) 
-				retval=this.curitem.getcmd(cmd);
+			if(this.current instanceof Tree) 
+				retval=this.current.getcmd(cmd);
 			
 			/* if the submenu did not handle it, let this menu handle the command */
 			if(retval === false) {
@@ -188,7 +203,7 @@ function Tree(frame,text,tree) {
 					break;
 				case "\r":
 					if(properties.index >= 0) 
-						retval = this.curitem.action();						
+						retval = this.current.action();						
 					else 
 						retval = this.close();
 					break;
@@ -197,8 +212,8 @@ function Tree(frame,text,tree) {
 					break;
 				}
 				if(retval === true) {
-					if(this.curitem instanceof Tree)
-						updateTreeIndex(this.curitem,cmd);
+					if(this.current instanceof Tree)
+						this.current.updateIndex(cmd);
 					this.refresh();
 				}
 			}
@@ -283,30 +298,45 @@ function Tree(frame,text,tree) {
 		return false;
 	}
 	this.refresh=function() {
-		if(properties.parent)
+		if(properties.parent) {
 			properties.parent.refresh();
-		else
+		}
+		else {
 			this.generate();
+			var offset = this.line - this.frame.height;
+			this.frame.scrollTo(undefined,offset);
+		}
 	}
 
 	/* DO NOT USE */
-	this.generate=function(last,current) {
+	this.generate=function(last,current,line) {
 		if(properties.status&flags.HIDDEN)
-			return false;
+			return line;
 		if(this.depth == 0) {
 			current = true;
+			line = 1;
 			this.frame.clear();
+			this.frame.scrollTo(0,0);
 		}
 		if(this.depth > 0) {
 			var str="";
 			/* set initial background color */
-			if(current && properties.index == -1)
+			if(current && properties.index == -1) {
 				str+=getColor(this.colors.lbg);
-			else
+				this.line = line;
+			}
+			else {
 				str+=getColor(this.colors.hbg);
+			}
 			/* add indentation on subtrees */
-			str+=format("%-*s",this.depth,"");
+			str+=format("%-*s",this.depth-1,"");
 			/* set color for expansion character */
+			if(this.depth == 1) 
+				str+=" ";
+			else if(last)
+				str+=getColor(this.colors.tfg)+"\xC0";
+			else
+				str+=getColor(this.colors.tfg)+"\xC3";
 			str+=getColor(this.colors.xfg);
 			if(properties.status&flags.CLOSED)
 				str+="+";
@@ -321,28 +351,32 @@ function Tree(frame,text,tree) {
 			str+=properties.text;
 			str+=format("%-*s",this.frame.width-console.strlen(str),"");
 			this.frame.putmsg(str+"\r\n");
+			line++;
 		}
 		if(!(properties.status&flags.CLOSED)) {
 			for(var i in properties.items) {
-				properties.items[i].generate(
+				line = properties.items[i].generate(
 					(i == properties.items.length-1),
-					(current && properties.index == i)
-				);
+					(current && properties.index == i),
+					line);
 			}
 		}
+		return line;
 	}
-	
-	/* private functions */
-	function updateTreeIndex(item,cmd) {
-		if(item instanceof Tree && !(item.status&flags.CLOSED)) {
+	this.updateIndex=function(cmd) {
+		if(!(this.status&flags.CLOSED)) {
 			if(cmd == KEY_UP)
-				item.index = item.items.length-1;
+				properties.index = properties.items.length-1;
 			else if(cmd == KEY_DOWN)
-				item.index = -1;
+				properties.index = -1;
+			if(properties.items[properties.index] instanceof Tree)
+				properties.items[properties.index].updateIndex(cmd);
 			return true;
 		}
 		return false;
 	}
+	
+	/* private functions */
 	function moveDown(loop) {
 		var start = properties.index;
 		while(properties.index == -1 || properties.items[properties.index]) {
@@ -478,6 +512,12 @@ function TreeItem(text,frame,parent,func,args) {
 	this.__defineGetter__("depth",function() {
 		return properties.parent.depth+1;
 	});
+	this.__defineGetter__("line", function() {
+		return properties.parent.line;
+	});
+	this.__defineSetter__("line", function(line) {
+		properties.parent.line=line;
+	});
 	
 	/* public properties */
 	this.func = func;
@@ -522,15 +562,18 @@ function TreeItem(text,frame,parent,func,args) {
 	}
 
 	/* DO NOT USE */
-	this.generate=function(last,current) {
+	this.generate=function(last,current,line) {
 		if(properties.status&flags.HIDDEN)
-			return false;
+			return line;
 		var str="";
 		/* set initial background color */
-		if(current)
+		if(current) {
 			str+=getColor(this.colors.lbg);
-		else
+			this.line = line;
+		}
+		else {
 			str+=getColor(this.colors.bg);
+		}
 		/* add indentation on subtrees */
 		str+=format("%-*s",this.depth-1,"");
 		if(this.depth == 1) 
@@ -548,6 +591,7 @@ function TreeItem(text,frame,parent,func,args) {
 		str+=properties.text;
 		str+=format("%-*s",this.frame.width-console.strlen(str),"");
 		this.frame.putmsg(str+"\r\n");
+		return ++line;
 	}
 	
 	/* private functions */
