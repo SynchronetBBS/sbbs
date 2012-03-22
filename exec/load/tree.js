@@ -71,45 +71,28 @@ function Tree(frame,text,tree) {
 	var properties = {
 		frame:undefined,
 		parent:undefined,
-		text:undefined,
-		status:undefined,
-		index:undefined,
-		line:undefined,
+		status:flags.OPEN,
+		index:0,
+		text:"",
+		line:1,
 		items:[]
-	};
-	var colors = {
-		// non-current item foreground
-		fg:LIGHTGRAY,
-		// non-current item/empty space background 
-		bg:BG_BLACK,
-		// current item foreground
-		lfg:YELLOW,
-		// current item background
-		lbg:BG_BROWN,
-		// disabled item foreground
-		dfg:DARKGRAY,
-		// hotkey foreground
-		kfg:YELLOW,
-		// tree branch foreground
-		tfg:BROWN,
-		// tree heading foreground
-		hfg:WHITE,
-		// tree heading background
-		hbg:BG_BLACK,
-		// tree expansion foreground
-		xfg:YELLOW
 	};
 	
 	/* protected properties */
 	this.__defineGetter__("frame",function() {
+		if(properties.parent)
+			return properties.parent.frame;
 		return properties.frame;
 	});
-	this.__defineSetter__("frame",function(f) {
-		if(f instanceof Frame) {
-			properties.frame = f;
+	this.__defineSetter__("frame",function(frame) {
+		if(frame instanceof Frame) {
+			properties.frame = frame;
+			properties.frame.attr = this.colors.bg + this.colors.fg;
 			return true;
 		}
-		return false;
+		else {
+			throw("frame parameter must be a Frame() object");
+		}
 	});
 	this.__defineGetter__("items",function() {
 		return properties.items;
@@ -136,11 +119,6 @@ function Tree(frame,text,tree) {
 	});
 	this.__defineGetter__("status",function() {
 		return properties.status;
-	});
-	this.__defineGetter__("colors",function() {
-		if(properties.parent)
-			return properties.parent.colors;
-		return colors;
 	});
 	this.__defineGetter__("hash",function() {
 		if(properties.parent)
@@ -178,6 +156,30 @@ function Tree(frame,text,tree) {
 	this.__defineGetter__("current", function() {
 		return properties.items[properties.index];
 	});
+
+	/* public properties */
+	this.colors = {
+		// non-current item foreground
+		fg:LIGHTGRAY,
+		// non-current item/empty space background 
+		bg:BG_BLACK,
+		// current item foreground
+		lfg:LIGHTRED,
+		// current item background
+		lbg:BG_RED,
+		// disabled item foreground
+		dfg:DARKGRAY,
+		// hotkey foreground
+		kfg:YELLOW,
+		// tree branch foreground
+		tfg:BROWN,
+		// tree heading foreground
+		hfg:WHITE,
+		// tree heading background
+		hbg:BG_BLACK,
+		// tree expansion foreground
+		xfg:YELLOW
+	};
 	
 	/* tree methods */
 	this.cycle = function() {
@@ -232,21 +234,22 @@ function Tree(frame,text,tree) {
 	this.addTree = function(text) {
 		var tree=new Tree(this.frame,text,this);
 		this.items.push(tree);
+		this.refresh();
 		return tree;
 	}
 	this.addItem = function(text,func,args) {
 		var args = Array.prototype.slice.apply(arguments);
-		var item=new TreeItem(args.shift(),this.frame,this,args.shift(),args);
+		var item=new TreeItem(args.shift(),this,args.shift(),args);
 		this.items.push(item);
+		this.refresh();
 		return item;
 	}		
 	this.open = function() {
 		if(properties.status&flags.CLOSED) {
 			properties.status&=~flags.CLOSED;
-			this.refresh();
-			return true;
 		}
-		return false;
+		this.refresh();
+		return true;
 	}
 	this.close = function() {
 		if(properties.status&flags.CLOSED)
@@ -302,6 +305,8 @@ function Tree(frame,text,tree) {
 			properties.parent.refresh();
 		}
 		else {
+			if(!this.frame)
+				return;
 			this.generate();
 			var offset = this.line - this.frame.height;
 			this.frame.scrollTo(undefined,offset);
@@ -318,7 +323,7 @@ function Tree(frame,text,tree) {
 			this.frame.clear();
 			this.frame.scrollTo(0,0);
 		}
-		if(this.depth > 0) {
+		else if(this.depth > 0) {
 			var str="";
 			/* set initial background color */
 			if(current && properties.index == -1) {
@@ -411,11 +416,6 @@ function Tree(frame,text,tree) {
 		}
 		return false;
 	}
-	function processCommand(cmd) {
-		if(!cmd)
-			return false;
-		return false;
-	}
 	function matchHotkey(cmd) {
 		if(!cmd.match(/\w/))
 			return false;
@@ -440,31 +440,23 @@ function Tree(frame,text,tree) {
 		return false;
 	}
 	function init(frame,text,tree) {
-		if(frame instanceof Frame)
-			properties.frame = frame;
-		else
-			throw("frame parameter must be a Frame() object");
 		if(tree instanceof Tree) {
 			properties.parent = tree;
 			properties.status |= flags.CLOSED;
 			properties.index = -1;
+			this.colors=properties.parent.colors;
 		}
-		else {
-			frame.attr = colors.bg + colors.fg;
-			properties.status |= flags.CLOSED;
-			properties.index = 0;
+		if(frame instanceof Frame) {
+			properties.frame=frame;
+			properties.frame.attr = this.colors.bg + this.colors.fg;
 		}
-		if(text) {
+		if(text) 
 			properties.text = text;
-		}
-		else {
-			properties.text = "";
-		}
 	}
 	init.apply(this,arguments);
 }
 
-function TreeItem(text,frame,parent,func,args) {
+function TreeItem(text,parent,func,args) {
 	
 	/* private properties */
 	var flags = {
@@ -473,7 +465,6 @@ function TreeItem(text,frame,parent,func,args) {
 		DISABLED:(1<<2)
 	};
 	var properties = {
-		frame:undefined,
 		parent:undefined,
 		status:undefined,
 		text:undefined
@@ -517,6 +508,9 @@ function TreeItem(text,frame,parent,func,args) {
 	});
 	this.__defineSetter__("line", function(line) {
 		properties.parent.line=line;
+	});
+	this.__defineGetter__("hotkey",function() {
+		return properties.text.indexOf("|")+1;
 	});
 	
 	/* public properties */
@@ -595,9 +589,8 @@ function TreeItem(text,frame,parent,func,args) {
 	}
 	
 	/* private functions */
-	function init(text,frame,parent,func,args) {
+	function init(text,parent,func,args) {
 		properties.text = text;
-		properties.frame = frame;
 		properties.parent = parent;
 		this.func=func;
 		this.args=args;
