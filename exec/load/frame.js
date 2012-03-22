@@ -277,7 +277,10 @@ function Frame(x,y,width,height,attr,frame) {
 		else
 			throw("non-boolean h_scroll: " + bool);
 	});
-
+	this.__defineGetter__("is_open",function() {
+		return properties.open;
+	});
+	
 	/* public methods */
 	this.getData = function(x,y,use_offset) {
 		if(use_offset) {
@@ -597,20 +600,12 @@ function Frame(x,y,width,height,attr,frame) {
 		if(typeof x == "number") {
 			if(settings.h_scroll) {
 				position.offset.x = x;
-				if(position.offset.x < 0)
-					position.offset.x = 0;
-				else if(position.offset.x + this.width > this.data_width)
-					position.offset.x = this.data_width - this.width;
 				update = true;
 			}
 		}
 		if(typeof y == "number") {
 			if(settings.v_scroll) {
 				position.offset.y = y;
-				if(position.offset.y < 0)
-					position.offset.y = 0;
-				else if(position.offset.y + this.height > this.data_height)
-					position.offset.y = this.data_height - this.height;
 				update = true;
 			}
 		}
