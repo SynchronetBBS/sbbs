@@ -75,17 +75,7 @@ function Layout(frame) {
 	/* private properties */
 	var properties={
 		views:[],
-		index:0
-	};
-	var colors={
-		title_bg:BG_BLUE,
-		title_fg:YELLOW,
-		tab_bg:BG_LIGHTGRAY,
-		tab_fg:BLACK,
-		view_bg:BG_BLACK,
-		view_fg:GREEN,
-		border_bg:BG_BLACK,
-		border_fg:LIGHTGRAY
+		index:undefined
 	};
 	var frames={
 		main:undefined
@@ -104,22 +94,42 @@ function Layout(frame) {
 	this.__defineGetter__("height",function() {
 		return frames.main.height;
 	});
-	this.__defineGetter__("colors",function() {
-		return colors;
-	});
 	this.__defineGetter__("frame",function() {
 		return frames.main;
 	});
 	
 	/* settings */
-	this.__defineGetter__("current_view",function() {
+	this.__defineGetter__("current",function() {
 		return properties.views[properties.index];
 	});
-	this.__defineSetter__("current_view",function(view) {
-		//Todo
+	this.__defineSetter__("current",function(index) {
+		properties.index=index;
+		properties.views[properties.index].active=true;
 	});
+	
+	/* public properties */
+	this.colors={
+		title_bg:BG_BLUE,
+		title_fg:YELLOW,
+		inactive_title_bg:BG_BLACK,
+		inactive_title_fg:LIGHTGRAY,
+		tab_bg:BG_GREEN,
+		tab_fg:LIGHTGREEN,
+		inactive_tab_bg:BG_LIGHTGRAY,
+		inactive_tab_fg:BLACK,
+		view_bg:BG_BLACK,
+		view_fg:GREEN,
+		border_bg:BG_BLACK,
+		border_fg:LIGHTGRAY
+	};
 
 	/* public methods */
+	this.open=function() {
+		this.current=0;
+		frames.main.open();
+		for each(var v in properties.views)
+			v.open();
+	}
 	this.addView=function(title,x,y,w,h) {
 		var f = new Frame(x,y,w,h,undefined,frames.main);
 		var v = new LayoutView(title,f,this);
@@ -131,9 +141,10 @@ function Layout(frame) {
 			view.draw();
 	}
 	this.cycle=function() {
-		return frames.main.cycle();
+		for each(var v in properties.views)
+			v.cycle();
 	}
-	this.getViewByTitle=function(title) {
+	this.getViewByName=function(title) {
 		for each(var v in properties.views) {
 			if(v.title.toUpperCase() == title.toUpperCase())
 				return v;
@@ -146,13 +157,17 @@ function Layout(frame) {
 			return false;
 		switch(cmd.toUpperCase()) {
 		case "\t":
-			properties.index++;
-			if(properties.index >= properties.views.length)
-				properties.index = 0;
+			if(properties.views.length > 1) {
+				properties.views[properties.index].active = false;
+				properties.index++;
+				if(properties.index >= properties.views.length)
+					properties.index = 0;
+				properties.views[properties.index].active = true;
+			}
 			return true;
 		default:
 			if(properties.views.length > 0)
-				return properties.views[properties.index].handle_command(cmd);
+				return properties.views[properties.index].getcmd(cmd);
 			break;
 		}
 		return false;
@@ -176,7 +191,7 @@ function LayoutView(title,frame,parent) {
 	/* private properties */
 	var properties={
 		title:undefined,
-		index:0,
+		index:undefined,
 		tabs:[]
 	}
 	var relations={
@@ -185,7 +200,8 @@ function LayoutView(title,frame,parent) {
 	var settings={
 		show_title:true,
 		show_tabs:true,
-		show_border:true
+		show_border:true,
+		active:false
 	}
 	var frames={
 		main:undefined,
@@ -249,14 +265,43 @@ function LayoutView(title,frame,parent) {
 		updateViewFrames();
 		return true;
 	});
-	this.__defineGetter__("current_tab",function() {
+	this.__defineGetter__("current",function() {
 		return properties.tabs[properties.index];
 	});
-	this.__defineSetter__("current_tab",function(tab) {
-		//Todo
+	this.__defineSetter__("current",function(index) {
+		if(properties.tabs[index]) {
+			if(properties.index == index)
+				return false;
+			if(properties.tabs[properties.index])
+				properties.tabs[properties.index].active=false;
+			properties.index=index;
+			properties.tabs[properties.index].active=true;
+			setTabs();
+			return true;
+		}
+		return false;
+	});
+	this.__defineSetter__("active",function(bool) {
+		if(typeof bool == "boolean") {
+			settings.active = bool;
+			if(settings.active)
+				frames.title.attr = this.colors.title_bg+this.colors.title_fg;
+			else
+				frames.title.attr = this.colors.inactive_title_bg + this.colors.inactive_title_fg;
+			setTitle();
+			return true;
+		}
+		return false;
 	});
 	
 	/* public methods */
+	this.open=function() {
+		for each(var t in properties.tabs) 
+			if(typeof t.open == "function")
+				t.open();
+		this.current=0;
+		setViewFrames();
+	}
 	this.draw=function() {
 		frames.main.draw();
 	}
@@ -264,9 +309,8 @@ function LayoutView(title,frame,parent) {
 		for each(var t in properties.tabs)
 			if(typeof t.cycle == "function")
 				t.cycle();
-		return frames.main.cycle();
 	}
-	this.addTab=function(title) {
+	this.addTab=function(title,type,content) {
 		/* use this view's location and dimensions as 
 		starting point for new tabs */
 		var x = frames.content.x;
@@ -275,12 +319,12 @@ function LayoutView(title,frame,parent) {
 		var h = frames.content.height;
 		var attr = this.colors.view_bg + this.colors.view_fg;
 		var f = new Frame(x,y,w,h,attr,frames.content);
-		var t = new ViewTab(title,f,this);
+		var t = new ViewTab(title,f,this);	
+		setContent(t,type,content);
 		properties.tabs.push(t);
-		setTabs();
 		return t;
 	}
-	this.getTabByTitle=function(title) {
+	this.getTabByName=function(title) {
 		for each(var t in properties.tabs) {
 			if(t.title.toUpperCase() == title.toUpperCase())
 				return t;
@@ -289,31 +333,94 @@ function LayoutView(title,frame,parent) {
 	this.getcmd=function(cmd) {
 		if(!cmd) 
 			return false;
-		var old_index = properties.index;
-		var handled = false;
 		switch(cmd.toUpperCase()) {
 		case KEY_LEFT:
-			properties.index--;
-			handled = true;
+			if(properties.tabs.length > 1) {
+				properties.tabs[properties.index].active = false;
+				properties.index--;
+				if(properties.index < 0)
+					properties.index = properties.tabs.length-1;
+				properties.tabs[properties.index].active = true;
+				setTabs();
+			}
 			break;
 		case KEY_RIGHT:
-			properties.index++;
-			handled = true;
+			if(properties.tabs.length > 1) {
+				properties.tabs[properties.index].active = false;
+				properties.index++;
+				if(properties.index >= properties.tabs.length)
+					properties.index = 0;
+				properties.tabs[properties.index].active = true;
+				setTabs();
+			}
 			break;
 		default:
 			if(properties.tabs.length > 0)
-				return properties.tabs[properties.index].handle_command(cmd);
+				return properties.tabs[properties.index].getcmd(cmd);
 			break;
 		}
-		if(properties.index >= properties.tabs.length)
-			properties.index = 0;
-		else if(properties.index < 0)
-			properties.index = properties.tabs.length-1;
-		if(properties.index != old_index)
-			setTabs();
 	}
 	
 	/* private methods */
+	function setContent(tab,type,content) {
+		if(!type)
+			return false;
+		switch(type.toUpperCase()) {
+		case "TREE":
+			if(typeof Tree == "undefined")
+				load("tree.js");
+			if(content instanceof Tree)  {
+				tab.tree = content;
+				tab.tree.frame = tab.frame;
+				tab.tree.refresh();
+			}
+			else {
+				tab.tree = new Tree(tab.frame);
+				tab.tree.refresh();
+			}
+			tab.getcmd = function(cmd) {
+				return this.tree.getcmd.call(tab.tree,cmd);
+			}
+			break;
+		case "CHAT":
+			if(typeof JSONChat == "undefined")
+				load("json-chat.js");
+			if(content instanceof JSONChat) 
+				tab.chat = content;
+			else
+				tab.chat = new JSONChat();
+			tab.getcmd = function(cmd) {
+				switch(cmd.toUpperCase()) {
+				case KEY_UP:
+					return this.frame.scroll(0,-1);
+				case KEY_DOWN:
+					return this.frame.scroll(0,1);
+				default:
+					return this.chat.submit.call(this.chat,this.title,cmd);
+				}
+			}
+			tab.cycle = function() {
+				var chan = this.chat.channels[this.title.toUpperCase()];
+				while(chan.messages.length > 0) {
+					var msg = chan.messages.shift();
+					var str = "";
+					if(msg.nick)
+						var str = getColor(this.chat.settings.NICK_COLOR) + msg.nick.name + "\1n: " + 
+						getColor(this.chat.settings.TEXT_COLOR) + msg.str;
+					else
+						var str = getColor(this.chat.settings.NOTICE_COLOR) + msg.str;
+					this.frame.putmsg(str + "\r\n");
+				}
+			}
+			break;
+		case "GRAPHIC":
+			//ToDo
+			break;
+		default:
+			return false;
+		}
+		return true;
+	}
 	function updateViewFrames() {
 		var x = frames.main.x;
 		var y = frames.main.y;
@@ -334,29 +441,33 @@ function LayoutView(title,frame,parent) {
 		if(settings.show_border) {
 			var attr = colors.border_bg + colors.border_fg;
 			frames.border = new Frame(x,y,w,h,attr,frames.main);
-			setBorder();
 			x++;
 			y++;
 			w-=2;
 			h-=2;
 		}
 		if(settings.show_title) {
-			var attr = colors.title_bg + colors.title_fg;
+			var attr = colors.inactive_title_bg + colors.inactive_title_fg;
 			frames.title = new Frame(x,y,w,1,attr,frames.main);
-			setTitle();
 			y++;
 			h--;
 		}
 		if(settings.show_tabs) {
-			var attr = colors.tab_bg + colors.tab_fg;
+			var attr = colors.inactive_tab_bg + colors.inactive_tab_fg;
 			frames.tabs = new Frame(x,y,w,1,attr,frames.main);
-			setTabs();
 			y++;
 			h--;
 		}
 
 		frames.content = new Frame(x,y,w,h,undefined,frames.main); 
-		frames.main.open();
+	}
+	function setViewFrames() {
+		if(settings.show_border)
+			setBorder();
+		if(settings.show_title)
+			setTitle();
+		if(settings.show_tabs) 
+			setTabs();
 	}
 	function setBorder() {
 		var f = frames.border;
@@ -380,13 +491,19 @@ function LayoutView(title,frame,parent) {
 		var f = frames.tabs;
 		var w = f.width;
 		var max_width=w-2;
-		var la="<";
-		var ra=">";
+		var left_arrow = "<";
+		var right_arrow = ">";
+		var colors = relations.parent.colors;
+		var inact_color = "\1n" + getColor(colors.inactive_tab_bg) + getColor(colors.inactive_tab_fg);
+		var act_color = "\1n" + getColor(colors.tab_bg) + getColor(colors.tab_fg);
+		var arrow_color = "\1r\1h";
 
 		/* populate string with current tab highlight */
 		var tab_str="";
 		if(properties.tabs.length > 0) {
-			tab_str+=properties.tabs[properties.index].title;
+			tab_str+=act_color + properties.tabs[properties.index].title + inact_color;
+			
+			/* if there are items below the current index */
 			var t=properties.index-1;
 			while(t >= 0 && console.strlen(tab_str) < max_width) {
 				if(console.strlen(tab_str)+properties.tabs[t].title.length+1 > max_width) 
@@ -395,7 +512,9 @@ function LayoutView(title,frame,parent) {
 				t--;
 			}
 			if(t >= 0) 
-				la = "\1r\1h<";
+				left_arrow = arrow_color + left_arrow;
+				
+			/* if there are items above the current index */
 			t=properties.index+1;
 			while(t < properties.tabs.length && console.strlen(tab_str) < max_width) {
 				if(console.strlen(tab_str)+properties.tabs[t].title.length+1 > max_width) 
@@ -405,20 +524,15 @@ function LayoutView(title,frame,parent) {
 				t++;
 			}
 			if(t < properties.tabs.length) 
-				ra = "\1r\1h>";
+				right_arrow = arrow_color + right_arrow;
 		}
+		tab_str+=format("%-*s",max_width-console.strlen(tab_str),"");
 		f.home();
-		f.putmsg(la + format("%-*s",max_width,tab_str) + ra);
+		f.putmsg(left_arrow + tab_str + right_arrow);
 	}
 	function setTitle() {
-		var f = frames.title;
-		f.home();
-		f.center(properties.title);
-	}
-	function setContent() {
-		//var f = frames.content;
-		//f.home();
-		//ToDo: resize content?
+		frames.title.clear();
+		frames.title.center(properties.title);
 	}
 	
 	/* constructor */
@@ -430,6 +544,7 @@ function LayoutView(title,frame,parent) {
 			frames.main = new Frame();
 		relations.parent = parent;
 		updateViewFrames();
+		setViewFrames();
 	}
 	init.call(this,title,frame,parent);
 }
@@ -441,7 +556,11 @@ function LayoutView(title,frame,parent) {
 function ViewTab(title,frame,parent) {
 	/* private properties */
 	var properties={
-		title:undefined
+		title:undefined,
+		content:undefined
+	}
+	var settings={
+		active:false
 	}
 	var frames={
 		main:undefined
@@ -472,8 +591,18 @@ function ViewTab(title,frame,parent) {
 	this.__defineGetter__("frame",function() {
 		return frames.main;
 	});
+	this.__defineSetter__("active",function(bool) {
+		if(typeof bool == "boolean") {
+			settings.active = bool;
+			if(settings.active) 
+				frames.main.top();
+			return true;
+		}
+		return false;
+	});
 	
-	/* default command handler (can be overridden for specialized tabs) */
+	/* default command handler 
+	 * (can be overridden for specialized tabs) */
 	this.getcmd = function(cmd) {
 		if(!cmd)
 			return false;
@@ -485,8 +614,8 @@ function ViewTab(title,frame,parent) {
 	function init(title,frame,parent) {
 		properties.title = title;
 		frames.main = frame;
-		frames.main.open();
 		relations.parent = parent;
 	}
 	init.call(this,title,frame,parent);
 }
+
