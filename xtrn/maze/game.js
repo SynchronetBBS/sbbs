@@ -26,12 +26,11 @@ load(root + "menu.js");
 var settings=client.read(game_id,"settings",1);
 var status={WAITING:-1,STARTING:0,RACING:1,FINISHED:2};
 var frame=new Frame(1,1,80,24);
-var layout=new Layout(frame);
 var data=new GameData();
 
 /* game splash screens */
 function splashStart() {
-	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
+	console.ctrlkey_passthru="+ACGKLOPQRTVWXYZ";
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status|=SS_PAUSEOFF;
 	console.clear();
@@ -78,22 +77,14 @@ function lobby() {
 	
 	/* display objects */
 	var playerlist=new Frame(59,5,20,18,BG_BLACK,frame);
-	var input=new InputLine(3,console.screen_rows-1,54,150);
+	var input=new InputLine();
 	var chat=new JSONChat(user.number,undefined,serverAddr,serverPort);
+	var layout=new Layout(frame);
 	var chat_window=layout.addView("chat",2,4,56,18)
-	var chat_tab;
-		
-	/* main menu */
-	var menu=new Menu([
-		"~Join race",
-		"~Leave race",
-		"~Ready",
-		"S~ettings",
-		"~Scores",
-		"~Chat",
-		"~Help",
-		"~Quit"
-	],3,23,54,"\1c\1h","\1n");	
+	var menu=new Menu(["~Join race","~Leave race","~Ready",
+		"S~ettings","~Scores","~Chat","~Help","~Quit"],
+		new Frame(3,23,54,1,BG_BLACK + LIGHTGRAY,frame),
+		"\1c\1h","\1n")	;	
 
 	/* metadata */
 	var profile=undefined;
@@ -104,23 +95,36 @@ function lobby() {
 		frame.open();
 		frame.load(root + "lobby.bin",80,24);
 		client.subscribe(game_id,"games");
-		chat.join("#mazerace");
 		chat_window.show_title=false;
 		chat_window.show_border=false;
-		chat_tab=chat_window.addTab("#mazerace");
-		data.who();
+		chat.view = chat_window;
+		chat.join("#mazerace");
+		profile=data.profiles[user.alias];
+		input.init(3,23,54,1,frame);
 		menu.disable("L");
 		menu.disable("R");
-		profile=data.profiles[user.alias];
+		layout.open();
+		menu.frame.top();
+		data.who();
 	}
 	function main()	{
 		while(!js.terminated) {
 			cycle();
-			var k=input.inkey(hotkeys);
-			if(!k) 
+			var k = input.getkey(hotkeys);
+			if(k == undefined) 
 				continue;
 			if(hotkeys) {
 				k = k.toUpperCase();
+				switch(k) {
+				case KEY_LEFT:
+				case KEY_RIGHT:
+				case KEY_UP:
+				case KEY_DOWN:
+				case KEY_HOME:
+				case KEY_END:
+					layout.getcmd(k);
+					break;
+				}
 				if(!menu.items[k] || !menu.items[k].enabled)
 					continue;
 				switch(k.toUpperCase()) {
@@ -141,21 +145,26 @@ function lobby() {
 					leaveMaze();
 					break;
 				case "E":
-					chooseAvatar();
-					chooseColor();
+					todo();
+					//chooseAvatar();
+					//chooseColor();
 					break;
 				case "Q":
 					return;
 				case "C":
-					input.draw();
+					input.frame.top();
 					hotkeys=false;
 					break;
 				}
 			}
 			else {
-				chat.submit(chat_tab.title.toUpperCase(),k);
-				menu.draw();
-				hotkeys=true;
+				if(k.length > 0) {
+					layout.getcmd(k);
+				}
+				else {
+					menu.frame.top();
+					hotkeys=true;
+				}
 			}
 		}
 	}
@@ -165,10 +174,10 @@ function lobby() {
 	}
 	function cycle() {
 		client.cycle();
+		layout.cycle();
+		chat.cycle();
 		while(client.updates.length > 0)
 			processUpdate(client.updates.shift());
-		chat.cycle();
-		updateChatTab();
 		if(frame.cycle())
 			console.gotoxy(1,24);
 		if(full_redraw)
@@ -177,28 +186,10 @@ function lobby() {
 			listPlayers();
 			data.updated = false;
 		}
-		if(hotkeys && menu.updated) {
-			menu.draw();
-			menu.updated = false;
-		}
 		if(readyToRace()) {
 			data.mazes[gnum] = client.read(game_id,"mazes." + gnum,1);
 			race(gnum);
 			leaveMaze();
-			full_redraw = true;
-		}
-	}
-	function updateChatTab() {
-		var channel = chat.channels[chat_tab.title.toUpperCase()];
-		while(channel && channel.messages.length > 0) {
-			var msg = channel.messages.shift();
-			var str = "";
-			if(msg.nick)
-				var str = getColor(chat.settings.NICK_COLOR) + msg.nick.name + "\1n: " + 
-				getColor(chat.settings.TEXT_COLOR) + msg.str;
-			else
-				var str = getColor(chat.settings.NOTICE_COLOR) + msg.str;
-			chat_tab.getcmd(str + "\r\n");
 		}
 	}
 	function getGameNumber() {
@@ -247,7 +238,6 @@ function lobby() {
 		}
 	}
 	function chooseAvatar() {
-		todo();
 		// var aFrame = new Frame(25,10,30,4,BG_BLUE,frame);
 		// aFrame.open();
 		// aFrame.crlf();
@@ -259,7 +249,6 @@ function lobby() {
 		// aFrame.delete();
 	}
 	function chooseColor() {
-		todo();
 		//var cf = new Frame(30,10,10,2,BG_BLACK);
 	}
 	function todo() {

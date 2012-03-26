@@ -1,53 +1,40 @@
-function Menu(items,x,y,w,hl,txt)		
-{								
+function Menu(items,frame,hk_color,text_color) {								
 	this.items=[];
-	this.x=x;
-	this.y=y;
-	this.width=w;
-	this.hl=hl;
-	this.txt=txt;
-	this.updated=true;
+	this.frame=frame;
+	this.hk_color=hk_color;
+	this.text_color=text_color;
 	
 	this.disable=function(item)
 	{
 		this.items[item].enabled=false;
-		this.updated=true;
+		this.draw();
 	}
 	this.enable=function(item)
 	{
 		this.items[item].enabled=true;
-		this.updated=true;
+		this.draw();
 	}
 	this.add=function(items)
 	{
 		for(i=0;i<items.length;i++) {
 			hotkey=get_hotkey(items[i]);
-			this.items[hotkey.toUpperCase()]=new Item(items[i],hotkey,hl,txt);
+			this.items[hotkey.toUpperCase()]=new Item(items[i],hotkey,hk_color,text_color);
 		}
-	}
-	this.clear=function()
-	{
-		console.gotoxy(this);
-		console.write(format("%*s",this.width,""));
 	}
 	this.draw=function()
 	{
 		var str="";
-		for each(var i in this.items) {
+		for each(var i in this.items)
 			if(i.enabled==true) str+=i.text + " ";
-		}
-		var offset = str.length - console.strlen(strip_ctrl(str));
-		console.gotoxy(this);
-		console.attributes=ANSI_NORMAL;
-		console.putmsg(format("%-*s",this.width + offset,str));
-		this.updated=false;
+		this.frame.clear();
+		this.frame.putmsg(str);
 	}
 	
-	function Item(item,hotkey,hl,txt)
+	function Item(item,hotkey,hk_color,text_color)
 	{								
 		this.enabled=true;
 		this.hotkey=hotkey;
-		this.text=item.replace(("~" + hotkey) , hl + hotkey + txt);
+		this.text=item.replace(("~" + hotkey) , hk_color + hotkey + text_color);
 	}
 	function get_hotkey(item)
 	{
