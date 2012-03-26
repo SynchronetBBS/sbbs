@@ -178,8 +178,12 @@ function lobby() {
 		chat.cycle();
 		while(client.updates.length > 0)
 			processUpdate(client.updates.shift());
-		if(frame.cycle())
-			console.gotoxy(1,24);
+		if(frame.cycle()) {
+			if(hotkeys)
+				console.gotoxy(1,24);
+			else
+				input.popxy();
+		}
 		if(full_redraw)
 			redraw();
 		if(data.updated) {
