@@ -83,6 +83,13 @@ function InputLine(frame,text) {
 		properties.frame.h_scroll = true;
 		properties.frame.open();
 	}
+	this.popxy = function() {
+		var overrun=properties.buffer.length-properties.frame.width;
+		if(overrun > 0) 
+			console.gotoxy(properties.frame.x+properties.frame.width,properties.frame.y);
+		else
+			console.gotoxy(properties.frame.x+properties.buffer.length,properties.frame.y);
+	}
 	
 	/* private functions */
 	function bufferKey(key) {
