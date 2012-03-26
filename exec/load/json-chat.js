@@ -6,6 +6,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 	this.nick;
 	this.channels = {};
 	this.client = jsonclient;
+	this.view = undefined;
 	this.settings = {
 		NICK_COLOR:GREEN,
 		TEXT_COLOR:LIGHTGRAY,
@@ -128,6 +129,8 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.client.cycle();
 		while(this.client.updates.length) 
 			this.update(this.client.updates.shift());
+		if(this.view)
+			updateChatView(this.view,this);
 		return true;
 	}
 
@@ -210,5 +213,22 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.time = time;
 	}
 	
+	/* adapter for updating layout views */
+	function updateChatView(view,chat) {
+		for each(var c in chat.channels) {
+			var found = false;
+			for each(var t in view.tabs) {
+				if(t.title == c.name) {
+					found = true;
+					break;
+				}
+			}
+			if(!found) {
+				view.addTab(c.name,"chat",chat);
+			}
+		}
+	}
+	
+	/* constructor */
 	this.connect();
 }
