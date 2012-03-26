@@ -111,16 +111,21 @@ function 	gameMenu()
 function 	loadScores()
 { 
 	scores = client.read("starstocks","scores",1);
+	if(!scores)
+		scores = {};
 }
 function	storeScore(score)
 {
-	client.lock("starstocks","scores",2);
-	scores=client.read("starstocks","scores");
-	if(!scores[score.difficulty])
-		scores[score.difficulty] = [];
-	scores[score.difficulty].push(score);
-	client.write("starstocks","scores." + score.difficulty,scores[score.difficulty]);
-	client.unlock("starstocks","scores");
+	var loc = "scores." + score.difficulty + "." + score.player;
+	client.lock("starstocks",loc,2);
+	var currscore=client.read("starstocks",loc);
+	if(!currscore || score.score > currscore.score) {
+		client.write("starstocks",loc,score);
+		if(!scores[score.difficulty])
+			scores[score.difficulty] = {};
+		scores[score.difficulty][score.player] = score;
+	}
+	client.unlock("starstocks",loc);
 }
 function 	loadSettings()
 { 
@@ -371,41 +376,42 @@ function	shortNumber(number)
 	else return "?";
 	return newnum;
 }
-function 	sortScores(sort)
+function 	sortScores(scores)
 { 
+	var list=[];
+	for each(var s in scores) {
+		list.push(s);
+	}
 	// The Bubble Sort method.
-	for(n = 0; n < sort.length; n++) 
-	{
-		for(m = 0; m < (sort.length-1); m++) 
-		{
-			if(sort[m].score < sort[m+1].score) 
-			{
-				holder = sort[m+1];
-				sort[m+1] = sort[m];
-				sort[m] = holder;
+	for(n = 0; n < list.length; n++) {
+		for(m = 0; m < (list.length-1); m++) {
+			if(list[m].score < list[m+1].score) {
+				holder = list[m+1];
+				list[m+1] = list[m];
+				list[m] = holder;
 			}
 		}
 	}
-	return sort;
+	return list;
 }
 function	viewHighScores()
 {
 	loadScores();
-	var difficulties=["Easy", "Normal", "Difficult"];
-	for(df in scores)
+	var difficulties={0:"Easy",1:"Normal",2:"Difficult"};
+	for(var d in difficulties)
 	{
-		scores[df]=sortScores(scores[df]);
+		var scoreList = sortScores(scores[d]);
 		console.clear();
 		console.down(3);
-		console.putmsg("   \1w\1hHIGH SCORES: \1c\1h" + difficulties[df]);
+		console.putmsg("   \1w\1hHIGH SCORES: \1c\1h" + difficulties[d]);
 		console.crlf();
 		console.crlf();
-		for(hs=0;hs<scores[df].length && hs<10;hs++)
+		for(hs=0;hs<scoreList.length && hs<10;hs++)
 		{
 			console.putmsg("  " + printPadded("\1w\1h" + (hs+1) + ": ",4," ","right")); 
-			console.putmsg(printPadded("\1y\1h" + scores[df][hs].player,20," ","left"));
-			console.putmsg("\1c\1h$" + printPadded("\1w\1h" + dollarAmount(scores[df][hs].score),18,"\1h\1k.","right"));
-			console.putmsg("\1n\1g  " + scores[df][hs].date);
+			console.putmsg(printPadded("\1y\1h" + scoreList[hs].player,20," ","left"));
+			console.putmsg("\1c\1h$" + printPadded( "\1w\1h" + dollarAmount(scoreList[hs].score),18,"\1h\1k.","right"));
+			console.putmsg("\1n\1g  " + scoreList[hs].date);
 			console.crlf();
 		}
 		console.gotoxy(1,24);
@@ -584,41 +590,6 @@ function	sortCompanies()
 }
 
 //########################## MISC FUNCTIONS ###################################
-function	locked()
-{
-	filename=root+"stars.lck";
-	var max_attempts=20;
-	for(attempt=0;attempt<max_attempts;attempt++)
-	{
-		if(file_exists(filename))
-		{
-			mswait(250);
-		}
-		else return false;
-	}
-	message("\1r\1hFailed to access data file");
-	mswait(1000);	
-	return true;
-}
-function	lock()
-{
-	filename=root+"stars.lck";
-	var lockfile=new File(filename);
-	lockfile.open('we', false); 
-	if(!lockfile.is_open) 
-		return false;
-	else 
-	{
-		lockfile.close();
-		return true;
-	}
-}
-function	unlock()
-{
-	filename=root+"stars.lck";
-	var lockfile=new File(filename);
-	file_remove(filename);
-}
 function 	dollarAmount(number) 
 { 
 	var Num="" + number.toFixed(2);
