@@ -1,73 +1,39 @@
+bbs.command_str='';
 load("str_cmds.js");
-full_redraw=false;
+load("funclib.js");
+load("frame.js");
 
-function InputLine(x,y,w,max,bg,fg,title)
-{
-	this.x=1;
-	this.y=24;
-	this.width=79;
-	this.max_buffer=200;
+function InputLine(frame,text) {
+	/* private properties */
+	var properties = {
+		frame:undefined,
+		text:undefined,
+		buffer:[]
+	};
+	var settings = {
+		show_border:true,
+		show_title:true,
+		timeout:50,
+		max_buffer:200
+	};
 	
-	this.bg=BG_BLACK;
-	this.fg=LIGHTGRAY;
-	this.buffer="";
+	/* protected properties */
+	this.__defineGetter__("frame",function() {
+		return properties.frame;
+	});
 	
-	this.title_bg=BG_LIGHTGRAY;
-	this.title_fg=BLACK;
-	this.title="";
+	/* public properties */
+	this.colors = {
+		bg:BG_BLUE,
+		fg:WHITE
+	};
 	
-	this.clear=function() 
-	{
-		console.gotoxy(this.x + console.strlen(this.title),this.y);
-		console.attributes=this.bg;
-		console.write(format("%*s",this.width-console.strlen(this.title),""));
-	}
-	this.init=function(x,y,w,max,bg,fg,title) 
-	{
-		if(x) this.x=x;
-		if(y) this.y=y;
-		if(w) this.width=w;
-		if(max) this.max_buffer=max;
-		if(bg) this.bg=bg;
-		if(fg) this.fg=fg;
-		if(title) this.title=title;
-	
-		if(this.x + this.w > console.screen_columns) {
-			log("input line wider than screen. adjusting to fit.");
-			this.w=console.screen_columns-this.x-1;
-		}
-		if(this.x >= console.screen_columns || this.y > console.screen_rows) {
-			log("input line off the screen. using defaults.");
-			this.x=1;
-			this.y=1;
-		}
-	}
-	this.submit=function()
-	{
-		if(strlen(this.buffer)<1) return null;
-		
-		if(this.buffer[0]==";") {
-			if(this.buffer.length>1 && (user.compare_ars("SYSOP") || bbs.sys_status&SS_TMPSYSOP)) {
-				console.clear();
-				str_cmds(this.buffer.substr(1));
-				this.reset();
-				this.clear();
-				full_redraw=true;
-				return null;
-			}
-		}
-		
-		var command=this.buffer;
-		this.reset();
-		this.clear();
-		return command;
-	}
-	this.inkey=function(hotkeys)
-	{
-		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO);
-		if(!key) 
-			return false;
-		if(hotkeys) 
+	/* public methods */
+	this.getkey = function(use_hotkeys) {
+		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,settings.timeout);
+		if(key == "") 
+			return undefined;
+		if(use_hotkeys) 
 			return key;
 		switch(key) {
 		case '\x00':	/* CTRL-@ (NULL) */
@@ -91,7 +57,6 @@ function InputLine(x,y,w,max,bg,fg,title)
 		case '\x1a':	/* CTRL-Z */
 		case '\x1c':	/* CTRL-\ */
 		case '\x1f':	/* CTRL-_ */
-		case '\x1b':	/* ESC */
 		case KEY_UP:
 		case KEY_DOWN:
 		case KEY_LEFT:
@@ -101,91 +66,84 @@ function InputLine(x,y,w,max,bg,fg,title)
 			return key;
 		case '\x7f':	/* DELETE */
 		case '\b':
-			this.backspace();
-			return false;
+			return backspace();
 		case '\r':
 		case '\n':
-			return this.submit();
+			return submit();
+		case '\x1b':
+			return false;
 		default:
-			this.bufferKey(key);
-			return false;
+			return bufferKey(key);
 		}
 	}
-	this.backspace=function()
-	{
-		if(this.buffer.length>0) {
-			if(this.buffer.length<=this.getWidth()) {
-				this.getxy();
-				console.left();
-				console.attributes=this.bg;
-				console.write(" ");
-				this.buffer=this.buffer.substr(0,this.buffer.length-1);
-			} else {
-				this.buffer=this.buffer.substr(0,this.buffer.length-1);
-				console.gotoxy(this);
-				console.right(console.strlen(this.title));
-				this.printBuffer();
+	this.init = function(x,y,w,h,frame) {
+		var attr = this.colors.bg + this.colors.fg;
+		properties.frame = new Frame(x,y,w,h,attr,frame);
+		properties.frame.v_scroll = false;
+		properties.frame.h_scroll = true;
+		properties.frame.open();
+	}
+	
+	/* private functions */
+	function bufferKey(key) {
+		if(properties.buffer.length >= settings.max_buffer) 
+			return false;
+		properties.buffer+=key;
+		if(properties.buffer.length>properties.frame.width) 
+			printBuffer();
+		 else 
+			properties.frame.putmsg(key);
+		return undefined;
+	}
+	function backspace() {
+		if(properties.buffer.length == 0) 
+			return false;
+		properties.buffer=properties.buffer.substr(0,properties.buffer.length-1);
+		if(properties.buffer.length+1>=properties.frame.width) 
+			printBuffer();
+		else {
+			properties.frame.left();
+			properties.frame.putmsg(" ");
+			properties.frame.left();
+		}
+		return undefined;
+	}
+	function printBuffer() {
+		properties.frame.clear();
+		var overrun=properties.buffer.length-properties.frame.width;
+		if(overrun > 0) {
+			var truncated=properties.buffer.substr(overrun);
+			properties.frame.putmsg(truncated);
+		}
+		else {
+			properties.frame.putmsg(properties.buffer);
+		}
+	}
+	function reset() {
+		properties.buffer = [];
+		properties.frame.clear();
+	}
+	function submit() {
+		// if(strlen(properties.buffer)<1) 
+			// return null;
+		if(properties.buffer[0]==";") {
+			if(properties.buffer.length>1 && (user.compare_ars("SYSOP") || bbs.sys_status&SS_TMPSYSOP)) {
+				str_cmds(properties.buffer.substr(1));
+				reset();
+				return null;
 			}
-			return true;
-		} else {
-			return false;
+		}
+		var cmd=properties.buffer;
+		reset();
+		return cmd;
+	}
+	function init(frame,text) {
+		if(frame instanceof Frame) {
+			properties.frame=frame;
+		}
+		if(text) {
+			properties.text = text;
 		}
 	}
-	this.reset=function()
-	{
-		this.buffer="";
-	}
-	this.getxy=function()
-	{
-		console.gotoxy(this.x + console.strlen(this.title) + this.buffer.length,this.y);
-	}
-	this.bufferKey=function(key)
-	{
-		if(this.buffer.length >= this.max_buffer) {
-			return false;
-		} else if(this.buffer.length>=this.getWidth()) {
-			this.buffer+=key;
-			console.gotoxy(this);
-			console.right(console.strlen(this.title));
-			this.printBuffer();
-		} else {
-			this.getxy();
-			this.buffer+=key;
-			console.attributes=this.fg + this.bg;
-			console.write(key);
-		}
-		return true;
-	}
-	this.getWidth=function()
-	{
-		return this.width-console.strlen(this.title);
-	}
-	this.draw=function()
-	{
-		console.gotoxy(this);
-		this.printTitle();
-//		if(this.x + this.width == console.screen_columns && this.y == console.screen_rows) 
-//			console.cleartoeol(this.bg);
-		this.printBuffer();
-	}
-	this.printTitle=function()
-	{
-		if(this.title.length > 0) {
-			console.attributes=this.title_fg + this.title_bg;
-			console.write(this.title);
-		}
-	}
-	this.printBuffer=function()
-	{
-		console.attributes=this.fg+this.bg;
-		if(this.buffer.length>this.getWidth()) {
-			var overrun=this.buffer.length-this.getWidth();
-			var truncated=this.buffer.substr(overrun);
-			console.write(truncated);
-		} else {
-			console.write(printPadded(this.buffer,this.getWidth()));
-		}
-	}
-
-	this.init(x,y,w,max,bg,fg,title);
+	init.apply(this,arguments);
 }
