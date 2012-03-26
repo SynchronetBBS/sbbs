@@ -333,7 +333,7 @@ function LayoutView(title,frame,parent) {
 	this.getTab=function(title_or_index) {
 		if(isNaN(title_or_index)) {
 			for each(var t in properties.tabs) {
-				if(t.title.toUpperCase() == title.toUpperCase())
+				if(t.title.toUpperCase() == title_or_index.toUpperCase())
 					return t;
 			}
 		}

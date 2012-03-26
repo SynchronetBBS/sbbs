@@ -51,7 +51,12 @@ function JSONChat(usernum,jsonclient,host,port) {
 		var chan = this.channels[target.toUpperCase()];
 		this.client.write("chat","channels." + chan.name + ".history",[],2);
 		chan.messages = [];
-	}
+		if(this.view) {
+			var tab =  this.view.getTab(target)
+			if(tab)
+				tab.frame.clear();
+		}
+	} 
 	
 	this.join = function(target,str) {
 		this.client.subscribe("chat","channels." + target + ".messages");
@@ -146,12 +151,14 @@ function JSONChat(usernum,jsonclient,host,port) {
 			
 		cmdstr = cmdstr.split(" ");
 		switch(cmdstr[0].toUpperCase()) {
+		case "J":
 		case "JOIN":
 			cmdstr.shift();
 			var chan = cmdstr.shift();
 			if(chan)
 				this.join(chan,cmdstr.join(" "));
 			break;
+		case "P":
 		case "PART":
 			cmdstr.shift();
 			var chan = cmdstr.shift();
