@@ -75,7 +75,7 @@ function Layout(frame) {
 	/* private properties */
 	var properties={
 		views:[],
-		index:undefined
+		index:0
 	};
 	var frames={
 		main:undefined
@@ -191,8 +191,8 @@ function LayoutView(title,frame,parent) {
 	/* private properties */
 	var properties={
 		title:undefined,
-		index:undefined,
-		tabs:[]
+		index:0,
+		tabs:[],
 	}
 	var relations={
 		parent:undefined
@@ -232,6 +232,9 @@ function LayoutView(title,frame,parent) {
 	});
 	this.__defineGetter__("frame",function() {
 		return frames.main;
+	});
+	this.__defineGetter__("tabs",function() {
+		return properties.tabs;
 	});
 	
 	/* settings */
@@ -282,16 +285,15 @@ function LayoutView(title,frame,parent) {
 		return false;
 	});
 	this.__defineSetter__("active",function(bool) {
-		if(typeof bool == "boolean") {
-			settings.active = bool;
-			if(settings.active)
-				frames.title.attr = this.colors.title_bg+this.colors.title_fg;
-			else
-				frames.title.attr = this.colors.inactive_title_bg + this.colors.inactive_title_fg;
-			setTitle();
-			return true;
-		}
-		return false;
+		if(typeof bool !== "boolean") 
+			return false;
+		settings.active = bool;
+		if(settings.active)
+			frames.title.attr = this.colors.title_bg+this.colors.title_fg;
+		else
+			frames.title.attr = this.colors.inactive_title_bg + this.colors.inactive_title_fg;
+		setTitle();
+		return true;
 	});
 	
 	/* public methods */
@@ -320,15 +322,48 @@ function LayoutView(title,frame,parent) {
 		var attr = this.colors.view_bg + this.colors.view_fg;
 		var f = new Frame(x,y,w,h,attr,frames.content);
 		var t = new ViewTab(title,f,this);	
+		f.open();
 		setContent(t,type,content);
 		properties.tabs.push(t);
+		if(this.current)
+			this.current.active=true;
+		setTabs();
 		return t;
 	}
-	this.getTabByName=function(title) {
-		for each(var t in properties.tabs) {
-			if(t.title.toUpperCase() == title.toUpperCase())
-				return t;
+	this.getTab=function(title_or_index) {
+		if(isNaN(title_or_index)) {
+			for each(var t in properties.tabs) {
+				if(t.title.toUpperCase() == title.toUpperCase())
+					return t;
+			}
 		}
+		else {
+			return properties.tabs[title_or_index];
+		}
+	}
+	this.delTab=function(title_or_index) {
+		var tab = false;
+		if(isNaN(title_or_index)) {
+			for(var t=0;t<properties.tabs.length;t++) {
+				if(properties.tabs[t].title.toUpperCase() == title.toUpperCase()) {
+					tab = properties.tabs[t];
+					properties.tabs.splice(t,1);
+				}
+			}
+		}
+		else if(properties.tabs[title_or_index]) {
+			tab = properties.tabs[title_or_index];
+			properties.tabs.splice(title_or_index,1);
+		}
+		if(tab) {
+			tab.frame.delete();
+			while(!properties.tabs[properties.index] && properties.index > 0)
+				properties.index--;
+			if(this.current)
+				this.current.active=true;
+			setTabs();
+		}
+		return tab;
 	}
 	this.getcmd=function(cmd) {
 		if(!cmd) 
@@ -401,6 +436,10 @@ function LayoutView(title,frame,parent) {
 			}
 			tab.cycle = function() {
 				var chan = this.chat.channels[this.title.toUpperCase()];
+				if(!chan) {
+					this.parent.delTab(this.title);
+					return false;
+				}
 				while(chan.messages.length > 0) {
 					var msg = chan.messages.shift();
 					var str = "";
@@ -412,6 +451,7 @@ function LayoutView(title,frame,parent) {
 					this.frame.putmsg(str + "\r\n");
 				}
 			}
+			properties.chat = tab.chat;
 			break;
 		case "GRAPHIC":
 			//ToDo
@@ -591,16 +631,20 @@ function ViewTab(title,frame,parent) {
 	this.__defineGetter__("frame",function() {
 		return frames.main;
 	});
-	this.__defineSetter__("active",function(bool) {
-		if(typeof bool == "boolean") {
-			settings.active = bool;
-			if(settings.active) 
-				frames.main.top();
-			return true;
-		}
-		return false;
+	this.__defineGetter__("parent",function() {
+		return relations.parent;
 	});
 	
+	/* settings */
+	this.__defineSetter__("active",function(bool) {
+		if(typeof bool !== "boolean") 
+			return false;
+		settings.active = bool;
+		if(settings.active) 
+			frames.main.top();
+		return true;
+	});
+
 	/* default command handler 
 	 * (can be overridden for specialized tabs) */
 	this.getcmd = function(cmd) {
@@ -618,4 +662,3 @@ function ViewTab(title,frame,parent) {
 	}
 	init.call(this,title,frame,parent);
 }
-

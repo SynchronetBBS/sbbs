@@ -227,6 +227,10 @@ function JSONChat(usernum,jsonclient,host,port) {
 				view.addTab(c.name,"chat",chat);
 			}
 		}
+		for (var t = 0;t<view.tabs.length;t++) {
+			if(!chat.channels[view.tabs[t].title.toUpperCase()]) 
+				view.delTab(t--);
+		}
 	}
 	
 	/* constructor */
