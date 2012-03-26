@@ -770,11 +770,8 @@ function Frame(x,y,width,height,attr,frame) {
 					}
 					break;
 				default:	/* Other stuff... specifically, check for right movement */
-					if(ch.charCodeAt(0)>127) {
+					if(ch.charCodeAt(0)>127) 
 						pos.x+=ch.charCodeAt(0)-127;
-						if(pos.x>=this.width)
-							pos.x=this.width-1;
-					}
 					break;
 				}
 				control_a = false;
@@ -812,12 +809,19 @@ function Frame(x,y,width,height,attr,frame) {
 	}
 	this.gotoxy = function(x,y) {
 		if(typeof x == "object" && x.x && x.y) {
-			position.cursor.x = x.x-1;
-			position.cursor.y = x.y-1;
+			if(validateCursor.call(this,x.x-1,x.y-1)) {
+				position.cursor.x = x.x-1;
+				position.cursor.y = x.y-1;
+				return true;
+			}
+			return false;
+		}
+		if(validateCursor.call(this,x-1,y-1)) {
+			position.cursor.x = x-1;
+			position.cursor.y = y-1;
 			return true;
 		}
-		position.cursor.x = x-1;
-		position.cursor.y = y-1;
+		return false;
 	}
 	this.getxy = function() {
 		return {
@@ -925,12 +929,18 @@ function Frame(x,y,width,height,attr,frame) {
 			return false;
 		return true;
 	}
+	function validateCursor(x,y) {
+		if(x >= this.width) 
+			return false;
+		if(y >= this.height) 	
+			return false;
+	}
 	function putChar(ch,attr) {
 		if(position.cursor.x >= this.width) {
 			position.cursor.x=0;
 			position.cursor.y++;
 		}
-		while(position.cursor.y >= this.height) {	
+		if(position.cursor.y >= this.height) {	
 			this.scroll();
 			position.cursor.y--;
 		}
@@ -1240,24 +1250,16 @@ function Cursor(x,y,frame) {
 		return properties.x;
 	});
 	this.__defineSetter__("x", function(x) {
-		if(x == undefined)
+		if(isNaN(x))
 			throw("invalid x coordinate: " + x);
-		else if(x < 0)
-			x = 0;
-		else if(x >= properties.frame.width)	
-			x = properties.frame.width - 1;
 		properties.x = x;
 	});
 	this.__defineGetter__("y", function() { 
 		return properties.y;
 	});
 	this.__defineSetter__("y", function(y) {
-		if(y == undefined)
+		if(isNaN(y))
 			throw("invalid y coordinate: " + y);
-		else if(y < 0)
-			y = 0;
-		else if(y > properties.frame.height)
-			y = properties.frame.height - 1;
 		properties.y = y;
 	});
 	

@@ -452,6 +452,7 @@ function LayoutView(title,frame,parent) {
 				}
 			}
 			properties.chat = tab.chat;
+			tab.frame.lf_strict = false;
 			break;
 		case "GRAPHIC":
 			//ToDo
