@@ -150,7 +150,9 @@ function removeFirstWord(text)
 }
 function removeSpaces(text)
 {
-	return text.replace(/^\s*/,"").replace(/\s*$/,"");
+	if(text.length > 0)
+		return text.replace(/^\s*/,"").replace(/\s*$/,"");
+	return text;
 }
 function splitPadded(string1,string2,length,padding)
 {
@@ -421,11 +423,19 @@ function compressList(list)
 }
 function sortListByProperty(list,prop) 
 { 
-	return compressList(list).sort(function(a,b) {
-		if(a[prop] < b[prop])
-			return -1;
-		if(a[prop] > b[prop])
-			return 1;
-		return 0;
-	});
+	var data=compressList(list);
+	var numItems=data.length;
+	for(n=0; n<numItems; n++)	{
+		for(m=0; m<(numItems-1); m++) {
+			if(data[m][prop] < data[m+1][prop]) {
+				var holder = data[m+1];
+				data[m+1] = data[m];
+				data[m] = holder;
+			}
+		}
+	}
+	return data;
 }
+
+	
+	
