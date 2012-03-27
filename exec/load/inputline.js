@@ -94,7 +94,7 @@ function InputLine(frame,text) {
 	/* private functions */
 	function bufferKey(key) {
 		if(properties.buffer.length >= settings.max_buffer) 
-			return false;
+			return undefined;
 		properties.buffer+=key;
 		if(properties.buffer.length>properties.frame.width) 
 			printBuffer();
@@ -104,7 +104,7 @@ function InputLine(frame,text) {
 	}
 	function backspace() {
 		if(properties.buffer.length == 0) 
-			return false;
+			return undefined;
 		properties.buffer=properties.buffer.substr(0,properties.buffer.length-1);
 		if(properties.buffer.length+1>=properties.frame.width) 
 			printBuffer();
