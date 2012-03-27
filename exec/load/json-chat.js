@@ -52,8 +52,8 @@ function JSONChat(usernum,jsonclient,host,port) {
 		var chan = this.channels[target.toUpperCase()];
 		this.client.write("chat","channels." + chan.name + ".history",[],2);
 		chan.messages = [];
-		if(this.view) {
-			var tab =  this.view.getTab(target)
+		if(this.chatView) {
+			var tab =  this.chatView.getTab(target)
 			if(tab)
 				tab.frame.clear();
 		}
