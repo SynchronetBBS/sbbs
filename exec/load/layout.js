@@ -69,6 +69,8 @@
  * 
  */
 
+ load("funclib.js");
+
 /* main layout object, intended to contain child layout view objects */ 
 function Layout(frame) {
 	
@@ -157,13 +159,8 @@ function Layout(frame) {
 			return false;
 		switch(cmd.toUpperCase()) {
 		case "\t":
-			if(properties.views.length > 1) {
-				properties.views[properties.index].active = false;
-				properties.index++;
-				if(properties.index >= properties.views.length)
-					properties.index = 0;
-				properties.views[properties.index].active = true;
-			}
+			if(properties.views.length > 1) 
+				nextView();
 			return true;
 		default:
 			if(properties.views.length > 0)
@@ -174,6 +171,19 @@ function Layout(frame) {
 	}
 	
 	/* constructor */
+	function nextView() {
+		var start = properties.index++;
+		while(start !== properties.index) {
+			if(properties.index >= properties.views.length)
+				properties.index = 0;
+			if(properties.views[properties.index].can_focus) {
+				properties.views[start].active = false;
+				properties.views[properties.index].active = true;
+				break;
+			}
+			properties.index++;
+		}
+	}
 	function init(frame) {
 		if(frame instanceof Frame)
 			frames.main = frame;
@@ -201,6 +211,7 @@ function LayoutView(title,frame,parent) {
 		show_title:true,
 		show_tabs:true,
 		show_border:true,
+		can_focus:true,
 		active:false
 	}
 	var frames={
@@ -271,18 +282,35 @@ function LayoutView(title,frame,parent) {
 	this.__defineGetter__("current",function() {
 		return properties.tabs[properties.index];
 	});
-	this.__defineSetter__("current",function(index) {
-		if(properties.tabs[index]) {
-			if(properties.index == index)
-				return false;
-			if(properties.tabs[properties.index])
-				properties.tabs[properties.index].active=false;
-			properties.index=index;
+	this.__defineSetter__("current",function(title_or_index) {
+		if(isNaN(title_or_index)) {
+			for(var t=0;t<properties.tabs.length;t++) {
+				if(properties.tabs[t].title.toUpperCase() == title_or_index.toUpperCase()) {
+					properties.tabs[properties.index].active=false;
+					properties.index = t;
+					properties.tabs[properties.index].active=true;
+					setTabs();
+					return true;
+				}
+			}
+		}
+		else if(properties.tabs[title_or_index]) {
+			properties.tabs[properties.index].active=false;
+			properties.index = title_or_index;
 			properties.tabs[properties.index].active=true;
 			setTabs();
 			return true;
 		}
 		return false;
+	});
+	this.__defineGetter__("can_focus",function() {
+		return settings.can_focus;
+	});
+	this.__defineSetter__("can_focus",function(bool) {
+		if(typeof bool !== "boolean")
+			return false;
+		settings.can_focus = bool;
+		return true;
 	});
 	this.__defineSetter__("active",function(bool) {
 		if(typeof bool !== "boolean") 
@@ -377,6 +405,7 @@ function LayoutView(title,frame,parent) {
 					properties.index = properties.tabs.length-1;
 				properties.tabs[properties.index].active = true;
 				setTabs();
+				return true;
 			}
 			break;
 		case KEY_RIGHT:
@@ -387,6 +416,7 @@ function LayoutView(title,frame,parent) {
 					properties.index = 0;
 				properties.tabs[properties.index].active = true;
 				setTabs();
+				return true;
 			}
 			break;
 		default:
@@ -436,10 +466,8 @@ function LayoutView(title,frame,parent) {
 			}
 			tab.cycle = function() {
 				var chan = this.chat.channels[this.title.toUpperCase()];
-				if(!chan) {
-					this.parent.delTab(this.title);
+				if(!chan) 
 					return false;
-				}
 				while(chan.messages.length > 0) {
 					var msg = chan.messages.shift();
 					var str = "";
