@@ -6,7 +6,8 @@ function JSONChat(usernum,jsonclient,host,port) {
 	this.nick;
 	this.channels = {};
 	this.client = jsonclient;
-	this.view = undefined;
+	this.chatView = undefined;
+	this.userView = undefined;
 	this.settings = {
 		NICK_COLOR:GREEN,
 		TEXT_COLOR:LIGHTGRAY,
@@ -69,7 +70,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 		}
 		if(msgcount == 0) 
 			this.clear(target);
-		this.channels[target.toUpperCase()].users = this.client.who("chat","channels." + target + ".messages");
+		this.who(target);
 	}
 	
 	this.part = function(target) {
@@ -78,10 +79,14 @@ function JSONChat(usernum,jsonclient,host,port) {
 		delete this.channels[target.toUpperCase()];
 	}
 	
-	this.who = function(target,str) {
+	this.who = function(target) {
 		var chan = this.channels[target.toUpperCase()];
-		chan.users = this.client.who("chat","channels." + chan.name + ".messages");
-		return chan.users;
+		var users = this.client.who("chat","channels." + chan.name + ".messages");
+		if(chan)
+			chan.users = users;
+		if(this.userView)
+			updateUserView(this.userView,chan);
+		return users;
 	}
 	
 	this.disconnect = function() {
@@ -115,9 +120,11 @@ function JSONChat(usernum,jsonclient,host,port) {
 		switch(packet.oper.toUpperCase()) {
 		case "SUBSCRIBE":
 			channel.messages.push(new Message("",packet.data.nick + " is here.",Date.now()));
+			this.who(channel.name);
 			break;
 		case "UNSUBSCRIBE":
 			channel.messages.push(new Message("",packet.data.nick + " has left.",Date.now()));
+			this.who(channel.name);
 			break;
 		case "WRITE":
 			channel.messages.push(message);
@@ -134,11 +141,22 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.client.cycle();
 		while(this.client.updates.length) 
 			this.update(this.client.updates.shift());
-		if(this.view)
-			updateChatView(this.view,this);
+		if(this.chatView)
+			syncChatView(this.chatView,this);
+		if(this.userView)
+			syncUserView(this.userView,this);
 		return true;
 	}
 
+	/* perform an action */
+	this.action = function(target,action) {
+		var message = new Message(undefined,this.nick.name + " " + action,Date.now());
+		var chan = this.channels[target.toUpperCase()];
+		this.client.write("chat","channels." + chan.name + ".messages",message,2);
+		this.client.push("chat","channels." + chan.name + ".history",message,2);
+		chan.messages.push(message);
+	}
+	
 	/* process chat commands */
 	this.getcmd = function(target,cmdstr) {
 		/* if the command string is empty */
@@ -173,11 +191,27 @@ function JSONChat(usernum,jsonclient,host,port) {
 			this.clear(target);
 			break;
 		case "WHO":
-			var users = this.who(target);
-			for(var u in users)
-				this.channels[target.toUpperCase()].users.push(users[u]);
+			cmdstr.shift();
+			var cname = cmdstr.shift();
+			if(!cname)
+				cname = target;
+			var users = this.who(cname);
+			var chan = this.channels[target.toUpperCase()];
+			chan.messages.push(new Message(undefined,"users in " + cname + ":",Date.now()));
+			for(var u in users) {
+				this.channels[cname.toUpperCase()].users.push(users[u]);
+				chan.messages.push(new Message(undefined,"- " + users[u].nick,Date.now()));
+			}
+			break;
+		case "ME":
+			cmdstr.shift();
+			this.action(target,cmdstr.join(" "));
 			break;
 		case "INVITE":
+			cmdstr.shift();
+			var usr = cmdstr.join(" ");
+			var message = new Message(undefined,this.nick.name + " has invited you to " + target,Date.now());
+			this.client.write("chat","channels." + usr + ".messages",message,2);
 			break;
 		case "DISCONNECT":
 		case "CLOSE":
@@ -220,8 +254,8 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.time = time;
 	}
 	
-	/* adapter for updating layout views */
-	function updateChatView(view,chat) {
+	/* adapter for updating chat layout view */
+	function syncChatView(view,chat) {
 		for each(var c in chat.channels) {
 			var found = false;
 			for each(var t in view.tabs) {
@@ -235,8 +269,41 @@ function JSONChat(usernum,jsonclient,host,port) {
 			}
 		}
 		for (var t = 0;t<view.tabs.length;t++) {
-			if(!chat.channels[view.tabs[t].title.toUpperCase()]) 
+			if(!chat.channels[view.tabs[t].title.toUpperCase()]) {
 				view.delTab(t--);
+			}
+		}
+	}
+	
+	/* adapter for updating user list layout view */
+	function syncUserView(view,chat) {
+		for each(var c in chat.channels) {
+			var found = false;
+			for each(var t in view.tabs) {
+				if(t.title == c.name) {
+					found = true;
+					break;
+				}
+			}
+			if(!found) {
+				view.addTab(c.name);
+				updateUserView(view,c);
+			}
+		}
+		for (var t = 0;t<view.tabs.length;t++) {
+			if(!chat.channels[view.tabs[t].title.toUpperCase()]) {
+				view.delTab(t--);
+			}
+		}
+	}
+	
+	/* adapter for listing channel users */
+	function updateUserView(view,chan) {
+		var tab = view.getTab(chan.name);
+		if(tab && chan.users) {
+			tab.frame.clear();
+			for each(var u in chan.users)
+				tab.frame.putmsg(u.nick + "\r\n");
 		}
 	}
 	
