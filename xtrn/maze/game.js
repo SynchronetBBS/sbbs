@@ -97,7 +97,7 @@ function lobby() {
 		client.subscribe(game_id,"games");
 		chat_window.show_title=false;
 		chat_window.show_border=false;
-		chat.view = chat_window;
+		chat.chatView = chat_window;
 		chat.join("#mazerace");
 		profile=data.profiles[user.alias];
 		input.init(3,23,54,1,frame);
