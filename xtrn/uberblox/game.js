@@ -56,7 +56,16 @@ function splashStart()
 {
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 	bbs.sys_status|=SS_MOFF;
-	bbs.sys_status|=SS_PAUSEOFF;
+	bbs.sys_status|=SS_PAUSEOFF;	
+	if(file_exists(root + "uberblox.bin")) {
+		console.clear();
+		var splash=new Graphic(80,22);
+		splash.load(root + "uberblox.bin");
+		splash.draw();
+		console.gotoxy(1,23);
+		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	}
 	console.clear();
 }
 function splashExit()

@@ -509,8 +509,16 @@ function splashStart() {
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status |= SS_PAUSEOFF;	
+	if(file_exists(root + "boggle.bin")) {
+		console.clear();
+		var splash=new Graphic(80,22);
+		splash.load(root + "boggle.bin");
+		splash.draw();
+		console.gotoxy(1,23);
+		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	}
 	console.clear();
-	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
 }
 function splashExit() {
 	
@@ -520,18 +528,15 @@ function splashExit() {
 	console.attributes=ANSI_NORMAL;
 	console.clear();
 	var splash_filename=root + "exit.bin";
-	if(!file_exists(splash_filename)) exit();
-	
-	var splash_size=file_size(splash_filename);
-	splash_size/=2;		
-	splash_size/=80;	
-	var splash=new Graphic(80,splash_size);
-	splash.load(splash_filename);
-	splash.draw();
-	
-	console.gotoxy(1,23);
-	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
-	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	if(file_exists(splash_filename)) {
+		var splash=new Graphic(80,21);
+		splash.load(splash_filename);
+		splash.draw();
+		
+		console.gotoxy(1,23);
+		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	}
 	console.clear();
 }
 
@@ -677,7 +682,7 @@ function Player(name,points,days,laston) {
 	this.name=name?name:user.alias;
 	this.points=points?points:0;
 	this.days=days?days:[];
-	this.laston=laston?laston:false;
+	this.laston=laston?laston:time();
 }
 
 function InfoBox(x,y) {
