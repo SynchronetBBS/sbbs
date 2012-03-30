@@ -1,4 +1,4 @@
-function Menu(items,frame,hk_color,text_color) {								
+function Menu(items,frame,hk_color,text_color) {						
 	this.items=[];
 	this.frame=frame;
 	this.hk_color=hk_color;
@@ -7,12 +7,10 @@ function Menu(items,frame,hk_color,text_color) {
 	this.disable=function(item)
 	{
 		this.items[item].enabled=false;
-		this.draw();
 	}
 	this.enable=function(item)
 	{
 		this.items[item].enabled=true;
-		this.draw();
 	}
 	this.add=function(items)
 	{
@@ -24,10 +22,14 @@ function Menu(items,frame,hk_color,text_color) {
 	this.draw=function()
 	{
 		var str="";
-		for each(var i in this.items)
-			if(i.enabled==true) str+=i.text + " ";
-		this.frame.clear();
+		for each(var i in this.items) {
+			if(i.enabled==true) {
+				str+=i.text + " ";
+			}
+		}
+		this.frame.home();
 		this.frame.putmsg(str);
+		this.frame.cleartoeol();
 	}
 	
 	function Item(item,hotkey,hk_color,text_color)

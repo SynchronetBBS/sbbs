@@ -29,33 +29,28 @@ var frame=new Frame(1,1,80,24);
 var data=new GameData();
 
 /* game splash screens */
-function splashStart() {
+function open() {
 	console.ctrlkey_passthru="+ACGKLOPQRTVWXYZ";
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status|=SS_PAUSEOFF;
-	console.clear();
-	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
+	splash("mazerace.bin");
 }
-function splashExit() {
+function close() {
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	bbs.sys_status&=~SS_PAUSEOFF;
-	console.clear(BG_BLACK);
-	
-	var splash_filename=root + "exit.bin";
-	if(!file_exists(splash_filename)) return;
-	
-	var splash_size=file_size(splash_filename);
-	splash_size/=2;		
-	splash_size/=80;	
-	var splash=new Graphic(80,splash_size);
-	splash.load(splash_filename);
-	splash.draw();
-	
-	console.gotoxy(1,23);
-	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
-	console.getkey(K_NOSPIN|K_NOECHO);
-	console.clear(ANSI_NORMAL);
+	splash("exit.bin");
+}
+function splash(file) {
+	if(file_exists(root + file)) {
+		var splash=new Frame(1,1,80,24,undefined,frame);
+		splash.load(root + file,80,24);
+		splash.gotoxy(1,24);
+		splash.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+		splash.draw();
+		console.getkey(K_NOECHO|K_NOSPIN);
+		splash.delete();
+	}
 }
 function formatTime(julian_date) {
 	var ms = julian_date%1000;
@@ -76,34 +71,43 @@ function lobby() {
 	var hotkeys=true;
 	
 	/* display objects */
-	var playerlist=new Frame(59,5,20,18,BG_BLACK,frame);
-	var input=new InputLine();
-	var chat=new JSONChat(user.number,undefined,serverAddr,serverPort);
-	var layout=new Layout(frame);
-	var chat_window=layout.addView("chat",2,4,56,18)
-	var menu=new Menu(["~Join race","~Leave race","~Ready",
-		"S~ettings","~Scores","~Chat","~Help","~Quit"],
-		new Frame(3,23,54,1,BG_BLACK + LIGHTGRAY,frame),
-		"\1c\1h","\1n")	;	
+	var inputFrame,menuFrame,playerFrame,input,chat,
+		layout,chatWindow,menu,profile,gnum;
 
-	/* metadata */
-	var profile=undefined;
-	var gnum=undefined;
-	
 	/* main functions */
 	function open()	{
+		playerFrame=new Frame(59,5,20,18,BG_BLACK,frame);
+		inputFrame=new Frame(3,23,54,1,BG_BLUE + WHITE,frame);
+		menuFrame=new Frame(3,23,54,1,BG_BLACK + LIGHTGRAY,frame);
+		input=new InputLine(inputFrame);
+		chat=new JSONChat(user.number,undefined,serverAddr,serverPort);
+		layout=new Layout(frame);
+		chatWindow=layout.addView("chat",2,4,56,18)
+		menu=new Menu([
+			"~Join race",
+			"~Leave race",
+			"~Ready",
+			"S~ettings",
+			"~Scores",
+			"~Chat",
+			"~Help",
+			"~Quit"
+			],
+			menuFrame,
+			"\1c\1h","\1n"
+		);	
 		frame.open();
 		frame.load(root + "lobby.bin",80,24);
 		client.subscribe(game_id,"games");
-		chat_window.show_title=false;
-		chat_window.show_border=false;
-		chat.chatView = chat_window;
+		chatWindow.show_title=false;
+		chatWindow.show_border=false;
+		chat.chatView = chatWindow;
 		chat.join("#mazerace");
 		profile=data.profiles[user.alias];
-		input.init(3,23,54,1,frame);
 		menu.disable("L");
 		menu.disable("R");
 		layout.open();
+		menu.draw();
 		menu.frame.top();
 		data.who();
 	}
@@ -137,12 +141,14 @@ function lobby() {
 					break;
 				case "J":
 					joinMaze();
+					menu.draw();
 					break;
 				case "R":
 					toggleReady();
 					break;
 				case "L":
 					leaveMaze();
+					menu.draw();
 					break;
 				case "E":
 					todo();
@@ -278,8 +284,8 @@ function lobby() {
 		hFrame.delete();
 	}
 	function listPlayers() {
-		playerlist.clear();
-		playerlist.crlf();
+		playerFrame.clear();
+		playerFrame.crlf();
 
 		var idle = {};
 		for each(var p in data.online) {
@@ -288,33 +294,33 @@ function lobby() {
 			idle[p.nick] = p;
 		}
 		for each(var g in data.games) {
-			playerlist.putmsg("\1c\1h MAZE #" + g.gameNumber + ":");
+			playerFrame.putmsg("\1c\1h MAZE #" + g.gameNumber + ":");
 			
 			if(g.status == status.WAITING)
-				playerlist.putmsg(" \1r\1h[waiting]\r\n");
+				playerFrame.putmsg(" \1r\1h[waiting]\r\n");
 			else if(g.status == status.STARTING) 
-				playerlist.putmsg(" \1y\1h[starting]\r\n");
+				playerFrame.putmsg(" \1y\1h[starting]\r\n");
 			else if(g.status == status.RACING)
-				playerlist.putmsg(" \1g\1h[racing]\r\n");
+				playerFrame.putmsg(" \1g\1h[racing]\r\n");
 			else if(g.status == status.FINISHED)
-				playerlist.putmsg(" \1k\1h[finished]\r\n");
+				playerFrame.putmsg(" \1k\1h[finished]\r\n");
 			else 
-				playerlist.putmsg(" \1n\1r[error]\r\n");
+				playerFrame.putmsg(" \1n\1r[error]\r\n");
 				
 			for each(var p in g.players) {
 				if(p.ready == true)
-					playerlist.putmsg("\1g\1h * ");
+					playerFrame.putmsg("\1g\1h * ");
 				else
-					playerlist.putmsg("\1r\1h * ");
-				playerlist.putmsg("\1n\1c" + p.name + "\r\n");
+					playerFrame.putmsg("\1r\1h * ");
+				playerFrame.putmsg("\1n\1c" + p.name + "\r\n");
 				delete idle[p.name];
 			}
-			playerlist.crlf();
+			playerFrame.crlf();
 		}
 		if(countMembers(idle) > 0) {
-			playerlist.putmsg("\1c\1h ONLINE:\r\n");
+			playerFrame.putmsg("\1c\1h ONLINE:\r\n");
 			for each(var p in idle)
-				playerlist.putmsg("\1n\1c  " + p.nick + "\r\n");
+				playerFrame.putmsg("\1n\1c  " + p.nick + "\r\n");
 		}
 	}
 	function showScores()	{
@@ -398,9 +404,9 @@ function lobby() {
 	function leaveMaze() {
 		delete data.games[gnum].players[profile.name];
 		client.remove("mazerace","games."+gnum+".players."+profile.name,2);
-		menu.enable("J");
 		menu.disable("L");
 		menu.disable("R");
+		menu.enable("J");
 		data.updated=true;
 	}
 	function toggleReady() {
@@ -775,6 +781,6 @@ function race(gameNumber)	{
 	close();
 }
 
-splashStart();
+open();
 lobby();
-splashExit();
+close();
