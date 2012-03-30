@@ -642,12 +642,12 @@ function Frame(x,y,width,height,attr,frame) {
 			position.offset.y = 0;
 	}
 	this.clear = function(attr) {
-		if(attr != undefined)
-			this.attr = attr;
+		if(attr == undefined)
+			attr = this.attr;
 		for(var y = 0;y<this.height;y++) {
 			for(var x = 0;x<this.width;x++) {
 				properties.data[y][x].ch = undefined;
-				properties.data[y][x].attr = this.attr;
+				properties.data[y][x].attr = attr;
 				properties.display.updateChar(this,x,y);
 			}
 		}
@@ -657,7 +657,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(attr == undefined)
 			attr = this.attr;
 		for(var x = 0;x<this.width;x++) {
-			properties.display.updateChar(this,x,y);
+			properties.display.updateChar(this,x,position.cursor.y);
 			properties.data[position.cursor.y][x].ch = undefined;
 			properties.data[position.cursor.y][x].attr = attr;
 		}
@@ -666,7 +666,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(attr == undefined)
 			attr = this.attr;
 		for(var x = position.cursor.x;x<this.width;x++) {
-			properties.display.updateChar(this,x,y);
+			properties.display.updateChar(this,x,position.cursor.y);
 			properties.data[position.cursor.y][x].ch = undefined;
 			properties.data[position.cursor.y][x].attr = attr;
 		}
@@ -934,6 +934,7 @@ function Frame(x,y,width,height,attr,frame) {
 			return false;
 		if(y >= this.height) 	
 			return false;
+		return true;
 	}
 	function putChar(ch,attr) {
 		if(position.cursor.x >= this.width) {
@@ -1080,7 +1081,6 @@ function Display(x,y,width,height) {
 				lasty = u.y;
 				lastid = u.id;
 			}
-			properties.update = {};
 			console.attributes=undefined;
 			return true;
 		}
@@ -1175,7 +1175,7 @@ function Display(x,y,width,height) {
 				var d = getData(c,x,y);
 				if(!properties.buffer[x])
 					properties.buffer[x] = {};
-				if(!properties.buffer[x][y] ||
+				if( properties.buffer[x][y] == undefined ||
 					properties.buffer[x][y].ch != d.ch || 
 					properties.buffer[x][y].attr != d.attr) {
 					properties.buffer[x][y] = d;
@@ -1183,6 +1183,7 @@ function Display(x,y,width,height) {
 				}
 			}
 		}
+		properties.update={};
 		return list.sort(updateSort);
 	}
 	function getData(c,x,y) {
