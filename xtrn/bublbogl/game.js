@@ -20,16 +20,14 @@ load("funclib.js");
 load("calendar.js");
 load(root + "timer.js");
  
-client.subscribe(game_id,"players");
-splashStart();
-
-var wordvalues=[];
-wordvalues[4]=1;
-wordvalues[5]=2;
-wordvalues[6]=3;
-wordvalues[7]=5;
-wordvalues[8]=11;
-
+var word_value={
+	4:1,
+	5:2,
+	6:3,
+	7:5,
+	8:11,
+	9:15
+};
 var max_future=2;
 var current;
 var today;
@@ -47,7 +45,6 @@ var data = new GameData();
 function boggle() {
 	function init()
 	{
-		client.write(game_id,"players." + user.alias + ".laston",time(),2);
 		player=findUser(user.alias);
 		current=calendar.selected;
 		today=calendar.selected;
@@ -347,8 +344,8 @@ function boggle() {
 		function AddPoints(word)
 		{
 			var length=word.length;
-			if(length>8) length=8;
-			info.score.points+=wordvalues[length];
+			if(length>9) length=9;
+			info.score.points+=word_value[length];
 		}
 		function AddWord(word)
 		{
@@ -370,7 +367,8 @@ function boggle() {
 		}
 		function endGame()
 		{
-			if(!playing_game) return;
+			if(!playing_game) 
+				return;
 			var p=data.players[user.alias];
 			var points=info.score.points;
 			p.points+=points;
@@ -422,7 +420,7 @@ function boggle() {
 			}
 		}
 		
-		if(data.winner.name)	{
+		if(data.winner)	{
 			console.gotoxy(48,18);
 			console.putmsg("\1c\1h" + data.winner.name);
 			console.gotoxy(75,18);
@@ -505,7 +503,11 @@ function processUpdates(update) {
 	obj[p.shift()] = update.data;
 	data.updated=true;
 }
-function splashStart() {
+function open() {
+	client.callback=processUpdates;
+	client.subscribe(game_id,"players");
+	data.players[user.alias].laston = time();
+	data.storePlayer();
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status |= SS_PAUSEOFF;	
@@ -520,8 +522,9 @@ function splashStart() {
 	}
 	console.clear();
 }
-function splashExit() {
+function close() {
 	
+	client.unsubscribe(game_id,"players");
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	bbs.sys_status&=~SS_PAUSEOFF;
@@ -540,8 +543,6 @@ function splashExit() {
 	console.clear();
 }
 
-client.callback=processUpdates;
-
 //GAME OBJECTS
 function GameData() {
 	this.updated=false;
@@ -554,10 +555,9 @@ function GameData() {
 	this.init=function() {
 		client.lock(game_id,"month",2);
 		var month = client.read(game_id,"month");
-		if(month != this.month) 
+		if(month !== this.month) 
 			this.newMonth();
-		else
-			this.loadMonth();
+		this.loadMonth();
 		client.unlock(game_id,"month");
 		
 		if(!this.players)
@@ -581,13 +581,11 @@ function GameData() {
 	/* save this round's winner to the database */
 	this.storeRoundWinner=function() {
 		this.players = client.read(game_id,"players",1);
-		for(p in this.players) {
-			if(!this.winner) 
-				this.winner=this.players[p];
-			else {
-				if(this.players[p].points>this.winner.points) 
-					this.winner=this.players[p];
-			}
+		for each(var p in this.players) {
+			if(this.winner.points == undefined) 
+				this.winner=p;
+			else if(p.points>this.winner.points) 
+				this.winner=p;
 		}
 		client.write(game_id,"winner",this.winner,2);
 	}
@@ -913,9 +911,9 @@ function Score() {
 	this.words=0;
 }
 
+open();
 boggle();
-client.unsubscribe(game_id,"players");
-splashExit();
+close();
 
 
 
