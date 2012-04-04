@@ -11,15 +11,9 @@ load("graphic.js");
 load("sbbsdefs.js")
 load("funclib.js");
  
-splashStart();
-client.subscribe("uberblox","players");
-client.subscribe("uberblox","alltime");
-
 var oldpass = console.ctrl_key_passthru;
 var data = new GameData();
 
-/* assign callback method to client object */
-client.callback=processUpdates;
 /* cycle client and check for updates */
 function cycle() {
 	client.cycle();
@@ -52,8 +46,9 @@ function gotoxy(x,y)
 	var posy=22-(y*2);
 	console.gotoxy(posx,posy);
 }
-function splashStart()
+function open()
 {
+	client.callback=processUpdates;
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status|=SS_PAUSEOFF;	
@@ -67,27 +62,29 @@ function splashStart()
 		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
 	}
 	console.clear();
+	client.subscribe("uberblox","players");
+	client.subscribe("uberblox","alltime");
 }
-function splashExit()
+function close()
 {
+	client.unsubscribe("uberblox","players");
+	client.unsubscribe("uberblox","alltime");
+	data.storePlayer();
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	bbs.sys_status&=~SS_PAUSEOFF;
-	console.clear(ANSI_NORMAL);
+	console.clear();
 	var splash_filename=root + "exit.bin";
-	if(!file_exists(splash_filename)) exit();
-	
-	var splash_size=file_size(splash_filename);
-	splash_size/=2;		
-	splash_size/=80;	
-	var splash=new Graphic(80,splash_size);
-	splash.load(splash_filename);
-	splash.draw();
-	
-	console.gotoxy(1,23);
-	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
-	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
-	console.clear(ANSI_NORMAL);
+	if(file_exists(splash_filename)) {
+		var splash=new Graphic(80,21);
+		splash.load(splash_filename);
+		splash.draw();
+		
+		console.gotoxy(1,23);
+		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	}
+	console.clear();
 }
 function blox()
 {
@@ -219,10 +216,12 @@ function blox()
 	}
 	function endGame()
 	{
-		if(data.players[user.alias].score<points) {
-			data.players[user.alias].score=points;
+		if(data.players[user.alias].score == undefined || data.players[user.alias].score < points) {
+			data.players[user.alias].score = points;
 			data.storePlayer();
+			data.allTime();
 		}
+		
 		console.clear();
 		gameend.draw();
 		console.gotoxy(52,5);
@@ -232,7 +231,7 @@ function blox()
 	}
 	function init()
 	{
-		client.write("uberblox","players." + user.alias + ".laston",time(),2);
+		data.players[user.alias].laston = time();
 		logo=new Graphic(18,22);
 		logo.load(root + "blox.bin");
 		lobby=new Graphic(80,23);
@@ -610,6 +609,9 @@ function GameData()
 	this.storePlayer=function()
 	{
 		client.write("uberblox","players." + user.alias,this.players[user.alias],2);
+	}
+	this.allTime=function() 
+	{
 		client.lock("uberblox","alltime",2);
 		if(this.players[user.alias].score > this.alltime.score) {
 			this.alltime=client.read("uberblox","alltime");
@@ -661,7 +663,6 @@ function Tile(bg,fg)
 	}
 }
 
+open();
 blox();
-client.unsubscribe("uberblox","players");
-client.unsubscribe("uberblox","alltime");
-splashExit();
+close();
