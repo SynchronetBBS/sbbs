@@ -62,6 +62,7 @@ ifdef USE_SDL
 	endif
     ifdef SDL_FRAMEWORK_PATH
      WITH_SDL	:=	1
+     CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
     endif
    else
 	ifeq ($(shell sdl-config --cflags > /dev/null 2>&1 && echo YES),YES)
