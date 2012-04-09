@@ -151,7 +151,7 @@ static void setApplicationMenu(void)
     [appleMenu addItem:[NSMenuItem separatorItem]];
 
     title = [@"Quit " stringByAppendingString:appName];
-    [appleMenu addItemWithTitle:title action:@selector(terminate:) keyEquivalent:@"q"];
+    [appleMenu addItemWithTitle:title action:@selector(terminate:) keyEquivalent:@""];
 
     
     /* Put menu into the menubar */
