@@ -19,10 +19,10 @@ static SOCKET	sock;
 CRYPT_SESSION	ssh_session;
 int				ssh_active=FALSE;
 
-static void cryptlib_error_message(int status, char * msg)
+static void cryptlib_error_message(int status, const char * msg)
 {
-	char	str[32];
-	char	str2[32];
+	char	str[64];
+	char	str2[64];
 	char	*errmsg;
 	int		err_len;
 
