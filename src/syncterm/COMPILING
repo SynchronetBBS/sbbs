@@ -44,4 +44,4 @@ make USE_SDL_AUDIO=1 STATIC_SDL=1 RELEASE=1 PREFIX=/usr
 
 The package is generated and copied do a disk image which is then converted
 with the following command:
-hdiutil convert ~/Desktop/SyncTERM.dmg -format UDRO -o /synchronet/sbbs/web/root/syncterm.bbsdev.net/SyncTERM.dmg
+hdiutil convert ~/Desktop/SyncTERM.dmg -format UDRO -o /Volumes/Synchronet/sbbs/web/root/syncterm.bbsdev.net/SyncTERM.dmg
