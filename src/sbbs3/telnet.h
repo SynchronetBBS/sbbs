@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -48,18 +48,18 @@
 #define TELNET_WONT 	252 /* 0xfc - Won't do option */
 #define TELNET_WILL 	251 /* 0xfb - Will do option */
 
-#define TELNET_SB       250	/* sub-negotiation */
-#define TELNET_GA		249	/* Go ahead */
-#define TELNET_EL		248 /* Erase line */
-#define TELNET_EC		247 /* Erase char */
-#define TELNET_AYT		246 /* Are you there? */
-#define TELNET_AO		245 /* Abort output */
-#define TELNET_IP		244 /* Interrupt process */
-#define TELNET_BRK		243 /* Break */
-#define TELNET_SYNC		242 /* Data mark */
-#define TELNET_NOP		241 /* No operation */
+#define TELNET_SB       250	/* 0xfa - sub-negotiation */
+#define TELNET_GA		249	/* 0xf9 - Go ahead */
+#define TELNET_EL		248 /* 0xf8 - Erase line */
+#define TELNET_EC		247 /* 0xf7 - Erase char */
+#define TELNET_AYT		246 /* 0xf6 - Are you there? */
+#define TELNET_AO		245 /* 0xf5 - Abort output */
+#define TELNET_IP		244 /* 0xf4 - Interrupt process */
+#define TELNET_BRK		243 /* 0xf3 - Break */
+#define TELNET_SYNC		242 /* 0xf2 - Data mark */
+#define TELNET_NOP		241 /* 0xf1 - No operation */
 
-#define TELNET_SE       240 /*  End of subnegotiation parameters. */
+#define TELNET_SE       240 /* 0xf0 - End of subnegotiation parameters. */
 
 /* options */
 
