@@ -252,7 +252,7 @@ function ansiEdit(x, y, width, height, attr) {
 	popUp.gotoxy(7, 1);
 	popUp.putmsg("ANSI Editor Menu");
 	popUp.gotoxy(1, popUp.height);
-	popUp.putmsg("<ENTER> select | <ESC> close");
+	popUp.putmsg("<ENTER> select | <TAB> close");
 	palette.gotoxy(13, 1);
 	palette.putmsg("Color Palette");
 	palette.gotoxy(5, 6);
