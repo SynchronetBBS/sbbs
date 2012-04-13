@@ -65,29 +65,26 @@ function cleanUp() {
 	console.clear();
 }
 
-// This may be needed if canvas data starts to exceed the receive limit
-/*
-var canvas = ansiClient.keys("syncwall", "canvas." + monthYear, 1);
-if(canvas !== undefined) {
-	for(var c = 0; c < canvas.length; c++) {
-		var ch = ansiClient.read("syncwall", "canvas." + monthYear + "." + canvas[c], 1);
-		putCh(ch);
-		mswait(chDelay);
+var index = 0;
+var canvasLength = ansiClient.read("syncwall", "canvas." + monthYear + ".history.length", 1);
+var canvas = [];
+if(canvasLength === undefined) {
+	ansiClient.write("syncwall", "canvas." + monthYear, { history : [] }, 2);
+} else {
+	while(index < canvasLength) {
+		canvas.push(ansiClient.slice("syncwall", "canvas." + monthYear + ".history", index, 1000, 1));
+		index = index + 1000;
 	}
-}
-*/
-// So if you uncomment the above section, comment out this next bit:
-var canvas = ansiClient.read("syncwall", "canvas." + monthYear, 1);
-if(canvas !== undefined) {
-	for(var c in canvas) {
-		putCh(canvas[c]);
-		if(ascii(console.inkey(K_NONE, chDelay)) == 27) {
-			cleanUp();
-			exit();
+	for(var c = 0; c < canvas.length; c++) {
+		for(var cc = 0; cc < canvas[c].length; cc++) {
+			putCh(canvas[c][cc]);
+			if(ascii(console.inkey(K_NONE, chDelay)) == 27) {
+				cleanUp();
+				exit();
+			}
 		}
 	}
 }
-// And stop commenting here.
 
 while(ascii(userInput) != 27) {
 	ansiClient.cycle();
@@ -105,8 +102,8 @@ while(ascii(userInput) != 27) {
 	}
 	ch.userAlias = user.alias;
 	ch.system = system.name;
-	pName = base64_encode(user.alias) + system.timer.toString().split(".").join("");
-	ansiClient.write("syncwall", "canvas." + monthYear + "." + pName, ch, 2);
+	ansiClient.write("syncwall", "canvas." + monthYear + ".ch", ch, 2);
+	ansiClient.push("syncwall", "canvas." + monthYear + ".history", ch, 2);
 }
 
 cleanUp();
