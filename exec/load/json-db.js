@@ -52,7 +52,10 @@ function JSONdb (fileName) {
 	this.queue={};
 	
 	/* general list of db subscribers (for quick release if no subscriptions) */
-	this.subscriptions=[];
+	this.subscriptions={};
+	
+	/* list of disconnected clients */
+	this.disconnected={};
 	
 	/* database settings */
 	this.settings={
@@ -89,7 +92,8 @@ function JSONdb (fileName) {
 		UNSUBSCRIBE:9,
 		WHO:10,
 		STATUS:11,
-		KEYS:12
+		KEYS:12,
+		SLICE:13
 	}
 	
 	/* error constants */
@@ -117,10 +121,15 @@ function JSONdb (fileName) {
 		}
 		if(!this.subscriptions[client.id][record.location]) {
 	        record.shadow[record.child_name]._subscribers[client.id]=client;
-			this.subscriptions[client.id][record.location] = record;
+			this.subscriptions[client.id][record.location]=record;
+			record.subtime = Date.now();
 			send_subscriber_updates(client,record,"SUBSCRIBE");
 		}
 		else {
+			log(LOG_WARNING,
+				client.id + "@" + 
+				this.subscriptions[client.id][record.location].subtime + ": " +
+				record.location);
 			this.error(client,errors.DUPLICATE_SUB);
 		}
 		return true;
@@ -345,6 +354,31 @@ function JSONdb (fileName) {
 			}
 			else
 				this.error(client,errors.NON_ARRAY);
+			return true;
+		}
+        /* if there is no lock for this client, error */
+        else {
+            return false;
+        }
+	}
+	
+	/* shift a record off the end of an array */
+	this.slice = function(request,record) {
+		var client = request.client;
+		/* if the requested data does not exist, result is undefined */
+		if(record.data === undefined) {
+            send_packet(client,undefined,"RESPONSE");
+			return true;
+		}
+		/* if this client has this record locked  */
+		else if(record.info.lock[client.id]) {
+			if(record.data[record.child_name] instanceof Array) {
+				var d = record.data[record.child_name].slice(request.data.start,request.data.end);
+				send_packet(client,d,"RESPONSE");
+			}
+			else {
+				this.error(client,errors.NON_ARRAY);
+			}
 			return true;
 		}
         /* if there is no lock for this client, error */
@@ -600,24 +634,9 @@ function JSONdb (fileName) {
  
 	/* schedule client for subscription and lock release */
 	this.release = function(client) {
-		if(!this.queue[client.id])
-			this.queue[client.id] = [];
-		this.queue[client.id].push(new Request(client,"CLOSE"));
+		this.disconnected[client.id] = client;
 	}
  
-	/* release any locks or subscriptions held by a disconnected client */
-	this.close = function(client) {
-		/* release any locks the client holds */
-		free_prisoners(client,this.shadow);
-		
-		/* release any subscriptions the client holds */
-		cancel_subscriptions(client,this.subscriptions[client.id]);
-		
-		/* remove any remaining client queries */
-		fuh_queue(client,this.queue);
-		return true;
-	};
-	
     /* main "loop" called by server */
     this.cycle = function() {
 		/* process request queue, removing successful operations */
@@ -630,17 +649,9 @@ function JSONdb (fileName) {
 				var request=this.queue[c][r];
 				var result=false;
 				
-				/* if we have been asked to clear a client's locks, DEW IT */
-				if(request.oper.toUpperCase() == "CLOSE") {
-					this.queue[c].splice(r--,1);
-					this.close(request.client);
-					break;
-				}
-
 				/* locate the requested record within the database */
 				var record=identify_remains.call(
-					this,request.client,request.parent_name,request.child_name,
-					request.oper.toUpperCase() == "WRITE"
+					this,request.client,request.parent_name,request.child_name
 				);
 				
 				/* if there was an error parsing object location, delete request */
@@ -673,6 +684,9 @@ function JSONdb (fileName) {
 				case "UNSHIFT":
 					result=this.unshift(request,record);
 					break;
+				case "SLICE":
+					result=this.slice(request,record);
+					break;
 				case "DELETE":
 					result=this.remove(request,record);
 					break;
@@ -691,6 +705,10 @@ function JSONdb (fileName) {
 				case "WHO":
 					result=this.who(request,record);
 					break;
+				default:
+					this.error(client,errors.INVALID_REQUEST);
+					this.queue[c].splice(r--,1);
+					break;
 				}
 				
 				/* if the request did not succeed, move to the next user queue */
@@ -699,6 +717,22 @@ function JSONdb (fileName) {
 				this.queue[c].splice(r--,1);
 			}
 		} 
+		
+		/* terminate any disconnected clients after processing queue */
+		for each(var c in this.disconnected) {
+			/* release any locks the client holds */
+			free_prisoners(client,this.shadow);
+			
+			/* release any subscriptions the client holds */
+			cancel_subscriptions(client,this.subscriptions[client.id]);
+			
+			/* remove any remaining client queries */
+			fuh_queue(client,this.queue);
+		}
+		
+		/* reset disconnected client object */
+		this.disconnected={};
+		
 		if(!this.settings.UPDATES)
 			return;
 		if(!this.settings.SAVE_INTERVAL > 0)
@@ -779,7 +813,7 @@ function JSONdb (fileName) {
 
 	/* parse an object location name and return the object (ex: dicewarz2.games.1.players.1.tiles.0)
 	an object containing the corresponding data and its shadow object */
-	function identify_remains(client,parent_name,child_name,create_new) {
+	function identify_remains(client,parent_name,child_name) {
 
 		var data=this.data;
 		var shadow=this.shadow;
