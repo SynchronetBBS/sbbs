@@ -21,6 +21,7 @@ var userInput = "";
 var bgColours = [ BG_BLUE, BG_CYAN, BG_GREEN, BG_MAGENTA, BG_RED, BG_BROWN ];
 
 var ansiClient = new JSONClient(server, port);
+if(!ansiClient.socket.is_connected) exit();
 ansiClient.callback = drawStuff;
 ansiClient.subscribe("syncwall", "canvas." + monthYear);
 
@@ -56,7 +57,7 @@ function putCh(ch) {
 	return;
 }
 
-// This may be needed if canvas data exceed's json-sock.js' receive limit
+// This may be needed if canvas data starts to exceed the receive limit
 /*
 var canvas = ansiClient.keys("syncwall", "canvas." + monthYear, 1);
 if(canvas !== undefined) {
