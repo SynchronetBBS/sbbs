@@ -57,6 +57,14 @@ function putCh(ch) {
 	return;
 }
 
+function cleanUp() {
+	frame.close();
+	ansi.close();
+	ansiClient.unsubscribe();
+	ansiClient.disconnect();
+	console.clear();
+}
+
 // This may be needed if canvas data starts to exceed the receive limit
 /*
 var canvas = ansiClient.keys("syncwall", "canvas." + monthYear, 1);
@@ -73,7 +81,10 @@ var canvas = ansiClient.read("syncwall", "canvas." + monthYear, 1);
 if(canvas !== undefined) {
 	for(var c in canvas) {
 		putCh(canvas[c]);
-		mswait(chDelay);
+		if(ascii(console.inkey(K_NONE, chDelay)) == 27) {
+			cleanUp();
+			exit();
+		}
 	}
 }
 // And stop commenting here.
@@ -98,6 +109,4 @@ while(ascii(userInput) != 27) {
 	ansiClient.write("syncwall", "canvas." + monthYear + "." + pName, ch, 2);
 }
 
-ansi.close();
-ansiClient.unsubscribe();
-ansiClient.disconnect();
+cleanUp();
