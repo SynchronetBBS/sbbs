@@ -651,7 +651,7 @@ function JSONdb (fileName) {
 				
 				/* locate the requested record within the database */
 				var record=identify_remains.call(
-					this,request.client,request.parent_name,request.child_name
+					this,request.client,request.parent_name,request.child_name,request.oper
 				);
 				
 				/* if there was an error parsing object location, delete request */
@@ -813,7 +813,7 @@ function JSONdb (fileName) {
 
 	/* parse an object location name and return the object (ex: dicewarz2.games.1.players.1.tiles.0)
 	an object containing the corresponding data and its shadow object */
-	function identify_remains(client,parent_name,child_name) {
+	function identify_remains(client,parent_name,child_name,oper) {
 
 		var data=this.data;
 		var shadow=this.shadow;
@@ -837,7 +837,7 @@ function JSONdb (fileName) {
 				shadow=shadow[c];
 				/* keep track of current object, and store the immediate parent of the request object */
 				if(data !== undefined) {
-					if(data[c] === undefined && create_new) 
+					if(data[c] === undefined && oper == "WRITE")
 						create_data(data,c);
 					data=data[c];
 				}
