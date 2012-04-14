@@ -60,20 +60,22 @@ function putCh(ch) {
 function cleanUp() {
 	frame.close();
 	ansi.close();
-	ansiClient.unsubscribe();
+	ansiClient.unsubscribe("syncwall", "canvas." + monthYear);
 	ansiClient.disconnect();
 	console.clear();
 }
 
 var index = 0;
+var endex = 1000;
 var canvasLength = ansiClient.read("syncwall", "canvas." + monthYear + ".history.length", 1);
 var canvas = [];
 if(canvasLength === undefined) {
 	ansiClient.write("syncwall", "canvas." + monthYear, { history : [] }, 2);
 } else {
 	while(index < canvasLength) {
-		canvas.push(ansiClient.slice("syncwall", "canvas." + monthYear + ".history", index, 1000, 1));
+		canvas.push(ansiClient.slice("syncwall", "canvas." + monthYear + ".history", index, endex, 1));
 		index = index + 1000;
+		endex = index + 1000;
 	}
 	for(var c = 0; c < canvas.length; c++) {
 		for(var cc = 0; cc < canvas[c].length; cc++) {
