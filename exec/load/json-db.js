@@ -721,13 +721,13 @@ function JSONdb (fileName) {
 		/* terminate any disconnected clients after processing queue */
 		for each(var c in this.disconnected) {
 			/* release any locks the client holds */
-			free_prisoners(client,this.shadow);
+			free_prisoners(c,this.shadow);
 			
 			/* release any subscriptions the client holds */
-			cancel_subscriptions(client,this.subscriptions[client.id]);
+			cancel_subscriptions(c,this.subscriptions[c.id]);
 			
 			/* remove any remaining client queries */
-			fuh_queue(client,this.queue);
+			fuh_queue(c,this.queue);
 		}
 		
 		/* reset disconnected client object */
