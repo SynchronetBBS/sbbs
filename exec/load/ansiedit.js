@@ -62,7 +62,7 @@ load("sbbsdefs.js");
 load("frame.js");
 load("tree.js");
 
-function ansiEdit(x, y, width, height, attr) {
+function ansiEdit(x, y, width, height, attr, frame) {
 	
 	var str = "";
 	var esc = ascii(27);
@@ -118,17 +118,17 @@ function ansiEdit(x, y, width, height, attr) {
 		[ascii(235), ascii(236), ascii(237), ascii(238), ascii(239), ascii(240), ascii(241), ascii(242), ascii(243), ascii(244)],
 		[ascii(245), ascii(246), ascii(247), ascii(248), ascii(249), ascii(250), ascii(251), ascii(252), ascii(253)]
 	]
-
-	var frame = new Frame(x, y, width, height, BG_BLACK);
-	var popUp = new Frame(parseInt((frame.width - 28) / 2), y, 28, frame.height - 1, BG_BLUE|WHITE, frame);
+	
+	var	aFrame = new Frame(x, y, width, height, BG_BLACK, frame);
+	var popUp = new Frame(parseInt((aFrame.width - 28) / 2), y, 28, aFrame.height - 1, BG_BLUE|WHITE, aFrame);
 	var subPopUp = new Frame(popUp.x + 2, popUp.y + 1, popUp.width - 4, popUp.height - 2, BG_BLACK, popUp);
-	var palette = new Frame(parseInt((frame.width - 36) / 2), parseInt((frame.height - 6) / 2), 36, 6, BG_BLUE|WHITE, frame);
+	var palette = new Frame(parseInt((aFrame.width - 36) / 2), parseInt((aFrame.height - 6) / 2), 36, 6, BG_BLUE|WHITE, aFrame);
 	var subPalette = new Frame(palette.x + 2, palette.y + 1, palette.width - 4, palette.height - 2, BG_BLACK, palette);
 	var pfgCursor = new Frame(x, y, 1, 1, BG_BLACK|WHITE, subPalette);
 	var pbgCursor = new Frame(x, y, 1, 1, BG_BLACK|WHITE, subPalette);
-	var canvas = new Frame(x, y, frame.width, frame.height - 1, BG_BLACK|LIGHTGRAY, frame);
+	var canvas = new Frame(x, y, aFrame.width, aFrame.height - 1, BG_BLACK|LIGHTGRAY, aFrame);
 	var cursor = new Frame(x, y, 1, 1, BG_BLACK|WHITE, canvas);
-	var charSet = new Frame(x, (frame.y + frame.height - 1), frame.width, 1, currentAttributes, frame);
+	var charSet = new Frame(x, (aFrame.y + aFrame.height - 1), aFrame.width, 1, currentAttributes, aFrame);
 
 	charSet.update = function(index) {
 		characterSet = index;
@@ -165,7 +165,7 @@ function ansiEdit(x, y, width, height, attr) {
 		var userInput = "";
 		pfgCursor.moveTo((fgColour * 2) + subPalette.x, subPalette.y + 1);
 		pbgCursor.moveTo((bgColour * 4) + subPalette.x, subPalette.y + 3);
-		frame.cycle();
+		aFrame.cycle();
 		while(!js.terminated) {
 			var userInput = console.inkey(K_NONE, 5);
 			if(userInput == "") continue;
@@ -211,7 +211,7 @@ function ansiEdit(x, y, width, height, attr) {
 			}
 			currentAttributes = fgColours[fgColour]|bgColours[bgColour];
 			charSet.update(characterSet);
-			if(frame.cycle()) console.gotoxy(80, 24);
+			if(aFrame.cycle()) console.gotoxy(80, 24);
 			if(ascii(userInput) == 27 || ascii(userInput) == 13 || ascii(userInput) == 9) break;
 		}
 		palette.bottom();
@@ -224,14 +224,14 @@ function ansiEdit(x, y, width, height, attr) {
 	this.download = function() {
 		charSet.close();
 		popUp.close();
-		frame.cycle();
+		aFrame.cycle();
 		var f = system.data_dir + format("user/%04u.bin", user.number);
 		canvas.screenShot(f, false);
 		bbs.send_file(f, user.download_protocol);
-		frame.close();
+		aFrame.close();
 		console.clear();
-		frame.open();
-		frame.draw();
+		aFrame.open();
+		aFrame.draw();
 		return "EXITTREE";
 	}
 	
@@ -260,9 +260,10 @@ function ansiEdit(x, y, width, height, attr) {
 	cursor.putmsg(ascii(219));
 	charSet.update(characterSet);
 
-	frame.open();
+	aFrame.open();
+	aFrame.top();
 	tree.open();
-	frame.cycle();
+	aFrame.cycle();
 
 	this.putChar = function(ch) {
 		if(ch.ch == "CLEAR") {
@@ -338,7 +339,7 @@ function ansiEdit(x, y, width, height, attr) {
 		
 		if(!cont && asc == 9) {
 			popUp.top();
-			frame.cycle();
+			aFrame.cycle();
 			var userInput = "";
 			while(ascii(userInput) != 27 && ascii(userInput) != 9) {
 				userInput = console.inkey(K_NONE, 5);
@@ -364,12 +365,12 @@ function ansiEdit(x, y, width, height, attr) {
 		if(canvas.getxy().x > canvas.width || canvas.getxy().y > canvas.height) canvas.gotoxy(canvasPos.x, canvasPos.y);
 		canvasPos = canvas.getxy();
 		cursor.moveTo(canvas.x + canvas.cursor.x, canvas.y + canvas.cursor.y);
-		if(frame.cycle()) console.gotoxy(80, 24);
+		if(aFrame.cycle()) console.gotoxy(80, 24);
 		return retval;
 	}
 	
 	this.close = function() {
-		frame.close();
+		aFrame.close();
 		return;
 	}
 	
