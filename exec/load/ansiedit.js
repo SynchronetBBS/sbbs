@@ -261,7 +261,6 @@ function ansiEdit(x, y, width, height, attr, frame) {
 	charSet.update(characterSet);
 
 	aFrame.open();
-	aFrame.top();
 	tree.open();
 	aFrame.cycle();
 
@@ -271,10 +270,13 @@ function ansiEdit(x, y, width, height, attr, frame) {
 		} else {
 			canvas.setData(ch.x - 1, ch.y - 1, ch.ch, ch.attr, false);
 		}
-		canvas.cycle();
 	}
 	
-	this.cycle = function(str) {
+	this.cycle = function() {
+		return aFrame.cycle();
+	}
+	
+	this.getcmd = function(str) {
 		var retval = { x : canvasPos.x, y : canvasPos.y, ch : false, attr : currentAttributes }
 		if(str == "") return retval;
 		var cont = false;
@@ -367,6 +369,11 @@ function ansiEdit(x, y, width, height, attr, frame) {
 		cursor.moveTo(canvas.x + canvas.cursor.x, canvas.y + canvas.cursor.y);
 		if(aFrame.cycle()) console.gotoxy(80, 24);
 		return retval;
+	}
+
+	this.open = function() {
+		aFrame.open();
+		return;
 	}
 	
 	this.close = function() {
