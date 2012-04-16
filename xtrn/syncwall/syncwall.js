@@ -128,7 +128,11 @@ function main() {
 		}
 		ch.userAlias = user.alias;
 		ch.system = system.name;
-		ansiClient.write("syncwall", "canvas." + monthYear + ".data." + ch.x + "." + ch.y, { x : ch.x, y : ch.y, ch : ch.ch, attr: ch.attr }, 2);
+		if(ch.ch == "CLEAR") {
+			ansiClient.write("syncwall", "canvas." + monthYear + ".data", {}, 2);
+		} else {
+			ansiClient.write("syncwall", "canvas." + monthYear + ".data." + ch.x + "." + ch.y, { x : ch.x, y : ch.y, ch : ch.ch, attr: ch.attr }, 2);
+		}
 		ansiClient.write("syncwall", "canvas." + monthYear + ".ch", ch, 2);
 		ansiClient.push("syncwall", "canvas." + monthYear + ".history", ch, 2);
 	}
