@@ -44,7 +44,7 @@ function init() {
 	topBar = new Frame(1, 1, 80, 1, BG_BLUE|WHITE, frame);
 	bottomBar = new Frame(1, 24, 80, 1, BG_BLUE|WHITE, frame);
 	ansiClient.callback = drawStuff;
-	ansiClient.subscribe("syncwall", "canvas." + monthYear);
+	ansiClient.subscribe("syncwall", "canvas." + monthYear + ".data");
 	topBar.putmsg(".: SyncWall InterBBS Graffiti Wall : Hit [ESC] to Exit :.");
 	topBar.gotoxy(69, 1);
 	topBar.putmsg("\1h\1bby echicken");
@@ -154,7 +154,7 @@ function main() {
 			property for updates, which is constantly overwritten. Each character
 			is also pushed onto the history array so that it can be buffered in
 			when this script starts (see above.) */
-		ansiClient.write("syncwall", "canvas." + monthYear + "." + ch.x + "." + ch.y, ch, 2);
+		ansiClient.write("syncwall", "canvas." + monthYear + ".data." + ch.x + "." + ch.y, ch, 2);
 		ansiClient.push("syncwall", "canvas." + monthYear + ".history", ch, 2);
 		frame.cycle();
 	}
