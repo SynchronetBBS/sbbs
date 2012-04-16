@@ -4,16 +4,18 @@
 	
 	Object:
 	
-	ansiEdit(x, y, width, height, attributes)
+	ansiEdit(x, y, width, height, attributes, frame)
 
 		- 'x' and 'y' are coordinates for the top left corner of the editor
 		- 'width' and 'height' are the dimensions of the editor in characters
 		  (Things will start breaking if you set these values too low)
 		- 'attributes' are the default fg/bg colours (see sbbsdefs.js)
+		- 'frame' is a parent Frame object (see frame.js) to put this ANSI
+		  editor in, if any. (Optional)
 	
 	Methods:
 	
-	ansiEdit.cycle(str)
+	ansiEdit.getcmd(str)
 	
 		- Acts upon 'str' (eg. a return value from console.inkey()) to draw
 		  a character, move the cursor, or bring up the pop-up menu.
@@ -31,8 +33,21 @@
 		  with properties x, y, ch, and attr, meaning where to draw it, what
 		  to draw, and what colour to draw it in.  (See sbbsdefs.js for
 		  more on colour attributes.)
+
+	ansiEdit.cycle()
+	
+		- Update the ANSI editor's canvas (ansiEdit.getcmd(str) does this
+		  automatically, but you will need to call this after calls to
+		  ansiEdit.putChar().)
 		  
+	ansiEdit.open()
+	
+		- Only needed if you've used ansiEdit.close() already. New ANSI editor
+		  objects open automagically.
+		
 	ansiEdit.close()
+	
+		- Close the ANSI editor and remove it from the screen.
 		  	
 	Example:
 	
@@ -51,7 +66,8 @@
 	while(ascii(b) != 27) {
 		b = console.inkey(K_NONE, 5);
 		if(b == "") continue;
-		c = a.cycle(b);
+		c = a.getcmd(b);
+		a.cycle();
 		if(!c.ch) continue; // No character was drawn
 		console.gotoxy(1, 23);
 		console.putmsg("\1h\1w" + c.toSource());
