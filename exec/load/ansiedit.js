@@ -48,6 +48,11 @@
 	ansiEdit.close()
 	
 		- Close the ANSI editor and remove it from the screen.
+		
+	ansiEdit.showUI(boolean)
+		
+		- Show or hide the cursor and character set (must ansiEdit.cycle() or
+		  cycle the parent frame for change to appear on screen.)
 		  	
 	Example:
 	
@@ -290,6 +295,16 @@ function ansiEdit(x, y, width, height, attr, frame) {
 	
 	this.cycle = function() {
 		return aFrame.cycle();
+	}
+	
+	this.showUI = function(s) {
+		if(s) {
+			cursor.top();
+			charSet.top();
+		} else {
+			cursor.bottom();
+			charSet.bottom();
+		}
 	}
 	
 	this.getcmd = function(str) {
