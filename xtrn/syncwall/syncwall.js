@@ -79,6 +79,7 @@ function loadHistory() {
 	if(canvasLength === undefined) {
 		ansiClient.write("syncwall", "canvas." + monthYear, { history : [] }, 2);
 	} else {
+		ansi.showUI(false);
 		while(index < canvasLength) {
 			var canvas = ansiClient.slice("syncwall", "canvas." + monthYear + ".history", index, endex, 1);
 			index += chBuffer;
@@ -104,6 +105,7 @@ function loadHistory() {
 				}
 			}
 		}
+		ansi.showUI(true);
 	}
 	bottomBar.clear();
 	lastUser = "";
