@@ -205,7 +205,11 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 		return;
 	}
 	var msgBase_last_msg=msgBase.last_msg;
-	var canPost=msgBase.cfg.can_post;
+	if(subBoardCode == 'mail') {
+		var canPost=true;
+	} else {
+		var canPost=msgBase.cfg.can_post;
+	}
 	if(subBoardCode != 'mail' && !user.compare_ars(msgBase.cfg.ars)) return; // 'mail' does not have a .cfg.
 	var header, body, msg, mm = msgBase.first_msg, reply = '', messageThreads = new Object(), threadedMessages = new Object();
 	print('<div id=' + subBoardCode + '-headerBox class="subBoardHeaderColor standardBorder standardMargin standardPadding headingFont">');
