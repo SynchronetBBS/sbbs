@@ -4,7 +4,7 @@
 	
 	Object:
 	
-	ansiEdit(x, y, width, height, attributes, frame)
+	ansiEdit(x, y, width, height, attributes, frame, scrolling)
 
 		- 'x' and 'y' are coordinates for the top left corner of the editor
 		- 'width' and 'height' are the dimensions of the editor in characters
@@ -12,6 +12,8 @@
 		- 'attributes' are the default fg/bg colours (see sbbsdefs.js)
 		- 'frame' is a parent Frame object (see frame.js) to put this ANSI
 		  editor in, if any. (Optional)
+		- 'scrolling' is true or false, whether to allow the length of the
+		  ANSI to exceed the fixed height of the ANSI editor
 	
 	Methods:
 	
@@ -83,7 +85,9 @@ load("sbbsdefs.js");
 load("frame.js");
 load("tree.js");
 
-function ansiEdit(x, y, width, height, attr, frame) {
+function ansiEdit(x, y, width, height, attr, frame, scrolling) {
+	
+	if(scrolling == undefined) var scrolling = false;
 	
 	var str = "";
 	var esc = ascii(27);
@@ -151,6 +155,10 @@ function ansiEdit(x, y, width, height, attr, frame) {
 	var cursor = new Frame(x, y, 1, 1, BG_BLACK|WHITE, canvas);
 	var charSet = new Frame(x, (aFrame.y + aFrame.height - 1), aFrame.width, 1, currentAttributes, aFrame);
 
+	aFrame.checkbounds = false;
+	canvas.checkbounds = false;
+	canvas.v_scroll = true;
+	
 	charSet.update = function(index) {
 		characterSet = index;
 		var chrs = "";
@@ -316,7 +324,11 @@ function ansiEdit(x, y, width, height, attr, frame) {
 		
 		switch(str) {
 			case KEY_UP:
-				if(canvasPos.y > 1) canvas.gotoxy(canvasPos.x, canvasPos.y - 1);
+				if(canvasPos.y > 1) {
+					canvas.gotoxy(canvasPos.x, canvasPos.y - 1);
+				} else if(scrolling && canvas.offset.y > 0) {
+					canvas.scroll(0, -1);
+				}
 				cont = true;
 				break;
 			case KEY_RIGHT:
@@ -324,7 +336,11 @@ function ansiEdit(x, y, width, height, attr, frame) {
 				cont = true;
 				break;
 			case KEY_DOWN:
-				if(canvasPos.y < canvas.height) canvas.gotoxy(canvasPos.x, canvasPos.y + 1);
+				if(canvasPos.y < canvas.height) {
+					canvas.gotoxy(canvasPos.x, canvasPos.y + 1);
+				} else if(scrolling) {
+					canvas.scroll();
+				}
 				cont = true;
 				break
 			case KEY_LEFT:
@@ -355,9 +371,14 @@ function ansiEdit(x, y, width, height, attr, frame) {
 			cont = true;
 		}
 		
-		if(!cont && asc == 13 && canvasPos.y < canvas.height) {
-			canvas.gotoxy(1, canvasPos.y + 1);
+		if(!cont && asc == 13) {
 			cont = true;
+			if(canvasPos.y < canvas.height) {
+				canvas.gotoxy(1, canvasPos.y + 1);
+			} else if(scrolling) {
+				canvas.scroll();
+				canvas.gotoxy(1, canvasPos.y);
+			}
 		}
 		
 		if(!cont && asc == 8 && canvasPos.x > 1) {
