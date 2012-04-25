@@ -5,10 +5,8 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)fonts$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)rlogin$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet_io$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)modem$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn_telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)comio$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)term$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)window$(OFILE) \

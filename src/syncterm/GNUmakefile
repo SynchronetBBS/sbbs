@@ -119,7 +119,11 @@ else
 endif
 INSTALL_DATA	?=	install -m 0444
 
-OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE)
+ifneq ($(os),haiku)
+ OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE) \
+           $(MTOBJODIR)$(DIRSEP)modem$(OFILE) \
+           $(MTOBJODIR)$(DIRSEP)comio$(OFILE)
+endif
 OBJS	+= $(MTOBJODIR)$(DIRSEP)conn_pty$(OFILE)
 ifndef bcc
  ifneq ($(os),sunos)
