@@ -123,6 +123,7 @@ ifneq ($(os),haiku)
  OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE) \
            $(MTOBJODIR)$(DIRSEP)modem$(OFILE) \
            $(MTOBJODIR)$(DIRSEP)comio$(OFILE)
+ EXTRA_LIBS	+=	-lnet
 endif
 OBJS += $(MTOBJODIR)$(DIRSEP)conn_pty$(OFILE)
 ifndef bcc
