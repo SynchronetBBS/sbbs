@@ -4,8 +4,8 @@ ifneq ($(os),haiku)
  XPDEV-MT_LIBS	+=	-lm
 endif
 ifeq ($(os),haiku)
- XPDEV_LIBS	+=	-lnet
- XPDEV-MT_LIBS	+=	-lnet
+ XPDEV_LIBS	+=	-lnetwork
+ XPDEV-MT_LIBS	+=	-lnetwork
 endif
 ifeq ($(os),netbsd)     # NetBSD
  XPDEV_LIBS	+=	-lossaudio
