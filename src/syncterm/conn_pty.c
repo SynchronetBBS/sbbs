@@ -105,11 +105,7 @@
 #endif
 
 #ifndef TTYDEF_IFLAG
-	#ifndef IMAXBEL
-		#define TTYDEF_IFLAG    (BRKINT | ICRNL | IXON | IXANY)
-	#else
-		#define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
-	#endif
+	#define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
 #endif
 #ifndef TTYDEF_OFLAG
 	#define TTYDEF_OFLAG    (OPOST | ONLCR)
