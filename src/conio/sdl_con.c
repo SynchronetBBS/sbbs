@@ -533,9 +533,8 @@ char *sdl_getcliptext(void)
 	}
 #endif
 	sdl.mutexP(sdl_copybuf_mutex);
-	ret=(char *)malloc(strlen(sdl_pastebuf)+1);
-	if(ret!=NULL)
-		strcpy(ret,sdl_copybuf);
+	if(sdl_copybuf)
+		ret=strdup(sdl_copybuf);
 	sdl.mutexV(sdl_copybuf_mutex);
 	return(ret);
 }
