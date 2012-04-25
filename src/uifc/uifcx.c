@@ -176,7 +176,7 @@ static void truncsp(char *str)
 /****************************************************************************/
 /* Convert ASCIIZ string to upper case										*/
 /****************************************************************************/
-#if defined(__unix__)
+#if defined(__unix__) && !defined(__HAIKU__)
 static char* strupr(char* str)
 {
 	char*	p=str;
