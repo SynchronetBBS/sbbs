@@ -156,6 +156,8 @@ extern "C" {
 	#define PLATFORM_DESC	"QNX"
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
+#elif defined(__HAIKU__)
+	#define PLATFORM_DESC	"Haiku"
 #else
 	#error "Need to describe target platform"
 #endif
