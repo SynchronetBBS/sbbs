@@ -231,6 +231,10 @@ endif
 
 ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
  CFLAGS	+=	-DHAS_INTTYPES_H
+else
+ ifeq ($(shell if [ -f /boot/develop/headers/posix/inttypes.h ] ; then echo YES ; fi),YES)
+  CFLAGS	+=	-DHAS_INTTYPES_H
+ endif
 endif
 
 CCPRE := $(lastword $(subst /, ,$(CCPRE)))
