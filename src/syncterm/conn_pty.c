@@ -105,7 +105,11 @@
 #endif
 
 #ifndef TTYDEF_IFLAG
-	#define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
+	#ifndef IMAXBEL
+		#define TTYDEF_IFLAG    (BRKINT | ICRNL | IXON | IXANY)
+	#else
+		#define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
+	#endif
 #endif
 #ifndef TTYDEF_OFLAG
 	#define TTYDEF_OFLAG    (OPOST | ONLCR)
@@ -116,7 +120,7 @@
 #ifndef TTYDEF_CFLAG
 	#define TTYDEF_CFLAG    (CREAD | CS8 | HUPCL)
 #endif
-#if defined(__QNX__) || defined(__solaris__) || defined(__NetBSD__)
+#if defined(__QNX__) || defined(__solaris__) || defined(__NetBSD__) || defined(__HAIKU__)
 	static cc_t     ttydefchars[NCCS] = {
         CEOF,   CEOL,   CEOL,   CERASE, CWERASE, CKILL, CREPRINT,
         CERASE2, CINTR, CQUIT,  CSUSP,  CDSUSP, CSTART, CSTOP,  CLNEXT,
