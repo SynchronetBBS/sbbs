@@ -35,7 +35,9 @@
 #include "rlogin.h"
 #include "raw.h"
 #include "ssh.h"
+#ifndef __HAIKU__
 #include "modem.h"
+#endif
 #ifdef __unix__
 #include "conn_pty.h"
 #endif
@@ -342,6 +344,7 @@ int conn_connect(struct bbslist *bbs)
 			conn_api.close=ssh_close;
 			break;
 #endif
+#ifndef __HAIKU__
 		case CONN_TYPE_SERIAL:
 			conn_api.connect=modem_connect;
 			conn_api.close=serial_close;
@@ -350,6 +353,7 @@ int conn_connect(struct bbslist *bbs)
 			conn_api.connect=modem_connect;
 			conn_api.close=modem_close;
 			break;
+#endif
 #ifdef __unix__
 		case CONN_TYPE_SHELL:
 			conn_api.connect=pty_connect;
