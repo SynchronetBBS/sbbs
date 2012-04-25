@@ -203,7 +203,7 @@ daemon(int nochdir, int noclose)
 }
 #endif
 
-static int openpty(int *amaster, int *aslave, char *name, struct termios *termp, winsize *winp)
+static int openpty(int *amaster, int *aslave, char *name, struct termios *termp, struct winsize *winp)
 {
 	char line[] = "/dev/ptyXX";
 	const char *cp1, *cp2;
@@ -250,7 +250,7 @@ static int openpty(int *amaster, int *aslave, char *name, struct termios *termp,
 	return (-1);
 }
 
-static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
+static int forkpty(int *amaster, char *name, termios *termp, struct winsize *winp)
 {
 	int master, slave, pid;
 
