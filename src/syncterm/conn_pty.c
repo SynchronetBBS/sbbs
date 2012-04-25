@@ -250,7 +250,7 @@ static int openpty(int *amaster, int *aslave, char *name, struct termios *termp,
 	return (-1);
 }
 
-static int forkpty(int *amaster, char *name, termios *termp, struct winsize *winp)
+static int forkpty(int *amaster, char *name, struct termios *termp, struct winsize *winp)
 {
 	int master, slave, pid;
 
