@@ -1,6 +1,8 @@
 XPDEV-MT_CFLAGS	+=	-DXPDEV_THREAD_SAFE
-XPDEV_LIBS	+=	-lm
-XPDEV-MT_LIBS	+=	-lm
+ifneq ($(os),haiku)
+ XPDEV_LIBS	+=	-lm
+ XPDEV-MT_LIBS	+=	-lm
+endif
 ifeq ($(os),netbsd)     # NetBSD
  XPDEV_LIBS	+=	-lossaudio
  XPDEV-MT_LIBS	+=	-lossaudio -lpthread
