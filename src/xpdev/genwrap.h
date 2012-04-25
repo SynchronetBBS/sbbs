@@ -263,7 +263,7 @@ DLLEXPORT int DLLCALL	get_errno(void);
 	#define	MAYBE_YIELD()	DosSleep(0)
 	#define SLEEP(x)		DosSleep(x)
 
-#elif defined(__unix__) || defined(__APPLE__)
+#elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__)
 
 	#if defined(_PTH_PTHREAD_H_)
 		#define SLEEP(x)		({ int sleep_msecs=x; struct timeval tv; \
