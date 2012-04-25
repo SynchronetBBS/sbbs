@@ -491,9 +491,7 @@ void sdl_copytext(const char *text, size_t buflen)
 	sdl.mutexP(sdl_copybuf_mutex);
 	FREE_AND_NULL(sdl_copybuf);
 
-	sdl_copybuf=(char *)malloc(buflen+1);
-	if(sdl_copybuf!=NULL)
-		strcpy(sdl_copybuf, text);
+	sdl_copybuf=strdup(text);
 	sdl.mutexV(sdl_copybuf_mutex);
 	return;
 }
