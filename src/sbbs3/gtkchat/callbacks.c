@@ -18,7 +18,7 @@ get_from_remote(gpointer data)
 	instr[1]=0;
 	switch(chat_check_remote()) {
 		case 2:		/* Chat active */
-			while(ch=chat_read_byte()) {
+			while((ch=chat_read_byte())) {
 				if(ch==-1) {
 					chat_close();
 					gtk_main_quit();
