@@ -163,15 +163,12 @@ int refresh_data(gpointer data)
 	char		str[1024];
 	char		str2[1024];
 	char		str3[1024];
-	char		*p;
 	GtkWidget	*w;
 	int			i,j;
 	GtkTreeIter	curr;
-	GtkTreeModel	*model;
 	node_t	node;
 	stats_t	sstats;
 	stats_t	nstats;
-	stats_t	stats;
 	int		shownodes;
 
 	/* Update the node list stuff */

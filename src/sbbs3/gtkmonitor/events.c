@@ -268,7 +268,6 @@ void on_yesterdays_log1_activate(GtkWidget *wiggy, gpointer data)
 void on_another_days_log1_activate(GtkWidget *wiggy, gpointer data) {
 	isoDate_t	date;
 	char	fn[20];
-	GtkWidget	*w;
 
 	date=time_to_isoDate(time(NULL));
 	get_date(wiggy, &date);
@@ -373,7 +372,6 @@ void on_edit3_activate(GtkWidget *wiggy, gpointer data)
 
 void on_truncate_deleted_users1_activate(GtkWidget *wiggy, gpointer data)
 {
-    int usernumber;
     int deleted=0;
     user_t user;
     char str[128];
@@ -562,7 +560,6 @@ void rerun_nodes(GtkWidget *wiggy, gpointer data)
 
 void do_clear_errors(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
 {
-	int	*bit=data;
 	int	fd;
 	char	*node_str;
 	int		n,i;
@@ -682,7 +679,7 @@ void quick_validate(int usernum, int set)
 }
 
 /* Show user list */
-on_list1_activate(GtkWidget *wiggy, gpointer data)
+void on_list1_activate(GtkWidget *wiggy, gpointer data)
 {
 	run_external(cfg.exec_dir,"gtkuserlist");
 }
@@ -693,7 +690,6 @@ void quickvalidate_useron_node(GtkWidget *wiggy, gpointer data)
 	int		i;
 	int		set;
 	node_t	node;
-	GtkWidget	*w;
 
 	set=gtk_combo_box_get_active(GTK_COMBO_BOX(wiggy))-1;
 	if(set>=0) {
