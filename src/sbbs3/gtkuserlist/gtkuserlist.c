@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
     if(!load_cfg(&cfg, NULL, TRUE, str)) {
 		fprintf(stderr,"Cannot load configuration data (%s)",str);
-        return;
+        return(-1);
 	}
 
     /* load the interface */
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     lxml = glade_xml_new(glade_path, "UserListWindow", NULL);
 	if(lxml==NULL) {
 		fprintf(stderr,"Could not locate UserListWindow widget\n");
-		return;
+		return(-1);
 	}
     /* connect the signals in the interface */
     glade_xml_signal_autoconnect(lxml);
@@ -305,4 +305,5 @@ int main(int argc, char **argv)
 	/* Show 'er to the user */
 	gtk_window_present(GTK_WINDOW(glade_xml_get_widget(lxml, "UserListWindow")));
 	gtk_main();
+	return 0;
 }
