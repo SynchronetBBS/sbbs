@@ -7,6 +7,7 @@
 #include "datewrap.h"
 #include "semwrap.h"
 
+#include "events.h"
 #include "gtkuseredit.h"
 
 /*
@@ -2095,7 +2096,6 @@ void get_birthdate(GtkWidget *t, gpointer data)
 	isoDate_t	date;
 	GtkWidget	*w;
 	int			year;
-	char		str[9];
 
 	year=atoi(user.birth+6)+1900;
 	if(year<Y2K_2DIGIT_WINDOW)
