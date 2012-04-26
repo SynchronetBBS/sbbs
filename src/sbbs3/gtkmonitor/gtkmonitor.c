@@ -3,6 +3,8 @@
 
 #include "events.h"
 #include "gtkmonitor.h"
+#include "gtkmonitor.h"
+#include "util_func.h"
 
 scfg_t		cfg;
 GladeXML	*xml;
