@@ -69,6 +69,7 @@ function update_solar()
 {
 	// MUST NOT request more than every hour or you will get banned!
 	if((time() - last_solar_update) < 60*60) return;
+	last_solar_update=time();
 	var req=new HTTPRequest();
 	var newxml=req.Get('http://www.hamqsl.com/solarxml.php');
 	newxml=newxml.replace(/<\?[^?]*\?>/g,'');
