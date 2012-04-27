@@ -336,13 +336,17 @@ long DLLCALL xp_random(int n)
 			return(curr % n);
 	}
 #else
-	float f=0;
+	double f=0;
+	int ret;
 
 	if(n<2)
 		return(0);
-	f=(float)rand()/(float)RAND_MAX;
+	do {
+		f=(double)rand()/(double)RAND_MAX;
+		ret=(n*f);
+	} while ret==n;
 
-	return((int)(n*f));
+	return(ret);
 #endif
 }
 
