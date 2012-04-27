@@ -342,7 +342,7 @@ long DLLCALL xp_random(int n)
 	if(n<2)
 		return(0);
 	do {
-		f=(double)rand()/(double)RAND_MAX;
+		f=(double)rand()/(double)(RAND_MAX+1);
 		ret=(n*f);
 	} while ret==n;
 
