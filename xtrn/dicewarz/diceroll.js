@@ -14,9 +14,8 @@ function	rollDice(a,b,dice)
 	
 	for(var aa=0;aa<a;aa++) {
 		var rand=random(6)+1;
-		if(!dice[rand]) {
-			log(LOG_ERROR,"dice error: " + rand);
-		}
+		while(rand < 1 || rand > 6)
+			rand = random(6)+1;
 		dice[rand].display(xx,yy,fc,bc);
 		xx+=4;
 		totals[0]+=rand;
@@ -32,6 +31,8 @@ function	rollDice(a,b,dice)
 	yy=y;
 	for(var bb=0;bb<b;bb++) {
 		var rand=random(6)+1;
+		while(rand < 1 || rand > 6)
+			rand = random(6) + 1;
 		totals[1]+=rand;
 		if(!dice[rand]) {
 			log(LOG_ERROR,"dice error: " + rand);
@@ -51,11 +52,8 @@ function	fancyRoll(qty,x,y,fc,bc,dice)
 		var yy=y;
 		for(var dr=0;dr<qty;dr++) {
 			var num = random(6) + 1;
-			while(num < 0 || num > 6)
+			while(num < 1 || num > 6)
 				num = random(6) + 1;
-			if(!dice[num]) {
-				log(LOG_ERROR,"dice error: " + num);
-			}
 			dice[num].display(xx,yy,fc,bc);
 			xx+=4;
 		}

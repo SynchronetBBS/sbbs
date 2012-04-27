@@ -556,11 +556,14 @@ function	startGame(gameNumber)
 		if(g.players[i].user==-1) {
 			if(possibleplayers.length > 0) {
 				var p=random(possibleplayers.length);
+				while(!possibleplayers[p])
+					p = random(possibleplayers.length);
 				g.players[i].AI.name=possibleplayers[p];
 				possibleplayers.splice(p,1);
 				g.players[i].AI.sort=aifile.iniGetValue(g.players[i].AI.name, "sort", "Random");
 				g.players[i].AI.check=aifile.iniGetValue(g.players[i].AI.name, "Check", "Random");
 				g.players[i].AI.qty=aifile.iniGetValue(g.players[i].AI.name, "Quantity", "Random");
+				g.players[i].AI.forfeit=aifile.iniGetValue(g.players[i].AI.name, "Forfeit", "Random");
 				if(AISortFunctions[g.players[i].AI.sort]===undefined)
 					g.players[i].AI.sort="Random";
 				if(AICheckFunctions[g.players[i].AI.check]===undefined)
@@ -975,6 +978,8 @@ function	forfeit(gameNumber,playerNumber)
 					break;
 				}
 			}
+			if(g.singlePlayer) 
+				file_remove(g.fileName);
 		}
 		else {
 			delete g.users[p.user];

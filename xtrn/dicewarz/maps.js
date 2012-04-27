@@ -137,6 +137,8 @@ function 	Map(c,r,p,gn)
 			if(this.lastEliminator>0)
 				this.assignPoints();
 			this.status=0;
+			if(this.singlePlayer) 
+				file_remove(this.fileName);
 			return true;
 		}
 		else return false;
@@ -196,6 +198,7 @@ function 	Map(c,r,p,gn)
 			scores[dead.user].losses+=1;
 			if(this.singlePlayer) {
 				this.status=0;
+				file_remove(this.fileName);
 				scores[dead.user].score+=settings.deathPointsSolo;
 			}
 			else {
@@ -242,7 +245,10 @@ function 	Map(c,r,p,gn)
 	}
 	this.setMap=				function()	
 	{										//SET MAP SIZE
-		this.playerTerr=this.minTerr+random(this.maxTerr-this.minTerr);
+		var rand=random(this.maxTerr-this.minTerr);
+		while(rand < 0 || rand > (this.maxTerr-this.minTerr))
+			rand=random(this.maxTerr-this.minTerr);
+		this.playerTerr=this.minTerr+rand;
 		this.mapSize=this.maxPlayers*(this.playerTerr);
 	}								
 	this.displayGrid=			function()
@@ -434,6 +440,8 @@ function 	Map(c,r,p,gn)
 		for(mi=0;mi<this.total;mi++) 
 			unused.push(mi);
 		var randa=random(unused.length);
+		while(!unused[randa])
+			randa=random(unused.length);
 		var locationa=unused[randa];
 		this.grid[locationa]=new Territory(locationa);
 		this.used[locationa]=true;
@@ -441,6 +449,8 @@ function 	Map(c,r,p,gn)
 		
 		for(var ms=1;ms<this.mapSize;ms++) {
 			var randb=random(unused.length);
+			while(!unused[randb])
+				randb=random(unused.length);
 			var locationb=unused[randb];
 			var prox=scanProximity(locationb);
 			if(this.landNearby(prox, this.used)) {
@@ -457,6 +467,8 @@ function 	Map(c,r,p,gn)
 		for(var ply in this.players) {
 			for(tt=0;tt < this.playerTerr; tt++) {
 				var rand=random(territories.length);
+				while(!territories[rand])
+					rand=random(territories.length);
 				var location=territories[rand];
 				if(this.grid[location].player>=0) 
 					tt--;
@@ -487,10 +499,9 @@ function 	Map(c,r,p,gn)
 		var placed=[];
 		for(var sd=0;sd<numDice;sd++) {
 			var rand=random(this.players[playerNumber].territories.length);
+			while(!this.players[playerNumber].territories[rand])
+				rand=random(this.players[playerNumber].territories.length);
 			var terr=this.players[playerNumber].territories[rand];
-			if(!this.grid[terr]) {
-				log(LOG_ERROR,"corrupt tile: " + terr);
-			}
 			if(this.players[playerNumber].totalDice==(this.players[playerNumber].territories.length*this.maxDice)) {
 				fulldice=true;
 				var reserveCap=(30-this.players[playerNumber].reserve);
@@ -520,6 +531,8 @@ function 	Map(c,r,p,gn)
 			else {
 				while(this.players[playerNumber].reserve>0)	{
 					var rand=random(this.players[playerNumber].territories.length);
+					while(!this.players[playerNumber].territories[rand])
+						rand=random(this.players[playerNumber].territories.length);
 					var terr=this.players[playerNumber].territories[rand];
 					if(this.grid[terr].dice<this.maxDice) {
 						this.grid[terr].dice++;

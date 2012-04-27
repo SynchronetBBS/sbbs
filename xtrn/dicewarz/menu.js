@@ -43,7 +43,7 @@ function 	Menu(title,x,y,color,hkey_color)
 	}
 	this.enable=function(items)
 	{
-		for(ivar tem in items)	{
+		for(var item in items)	{
 			this.items[items[item]].enabled=true;
 		}
 	}
