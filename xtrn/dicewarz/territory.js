@@ -31,13 +31,11 @@ function 	Territory(location)
 		this.northeast=proximity[3];
 		this.southwest=proximity[4];
 		this.southeast=proximity[5];
-		if(!data[this.north])
-		{
+		if(!data[this.north]) {
 			if(!data[this.northwest]) this.topLeft=".";
 			if(!data[this.northeast]) this.topRight=".";
 		}
-		if(!data[this.south])
-		{
+		if(!data[this.south]) {
 			if(!data[this.southwest]) this.bottomleft="`";
 			if(!data[this.southeast]) this.bottomright="'";
 		}
@@ -51,7 +49,7 @@ function 	Territory(location)
 	}
 	this.show=				function()
 	{										//DISPLAY THIS TERRITORY ON THE MAP
-		display=(this.bfColor + "\xFE"+ blackbg + this.bColor + this.fColor + " " + this.dice + " " + blackbg + this.bfColor + "\xFE");
+		var display=(this.bfColor + "\xFE"+ blackbg + this.bColor + this.fColor + " " + this.dice + " " + blackbg + this.bfColor + "\xFE");
 		console.gotoxy(this.x-1, this.y);
 		console.putmsg(display);
 	}
@@ -89,7 +87,7 @@ function 	Territory(location)
 	{										//ASSIGN DISPLAY COORDINATES FOR MAP
 		var startX=sc;
 		var startY=sr;
-		offset=loc%columns;
+		var offset=loc%columns;
 		if(offset%2==1) startY++;
 		startX+=(offset*5);
 		startY+=(parseInt(loc/columns)*2);

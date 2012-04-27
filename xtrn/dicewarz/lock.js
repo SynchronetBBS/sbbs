@@ -5,16 +5,15 @@ function	Locked(fileName,timeOut)
 	{
 		if(!timeOut) return true;
 		var max_attempts=20;
-		for(attempt=0;attempt<max_attempts;attempt++)
-		{
-			if(file_exists(fname))
-			{
+		for(var attempt=0;attempt<max_attempts;attempt++){
+			if(file_exists(fname))	{
 				mswait(250);
 			}
 			else return false;
 		}
 	}
-	else return false;
+	else 
+		return false;
 	return true;
 }
 function	Lock(fileName)
@@ -24,26 +23,23 @@ function	Lock(fileName)
 		lockfile.open('we', false); 
 	if(!lockfile.is_open) 
 		return false;
-	else 
-	{
+	else  {
 		lockfile.close();
-		activeGame=fileName;
 		return fileName;
 	}
 }
 function	Unlock(fileName)
 {
-	if(fileName==-1 || !fileName) return;
+	if(fileName==-1 || !fileName) 
+		return;
 	var fname=(root+fileName+".lck");
 	file_remove(fname);
 }
 function	UnlockAll()
 {
 	var lockList=directory(root + "*.lck"); 		
-	if(lockList.length)
-	{
-		for(lf in lockList)
-		{	
+	if(lockList.length) {
+		for(var lf in lockList)	{	
 			file_remove(lockList[lf]);
 		}
 	}

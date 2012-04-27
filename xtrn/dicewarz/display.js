@@ -10,8 +10,7 @@ function	clearArea(fromRow,fromColumn,qty)
 	var count;
 
 	console.gotoxy(fromColumn, fromRow);
-	for(count=0;count < qty; count++)
-	{
+	for(var count=0;count < qty; count++) {
 		console.cleartoeol();
 		console.down();
 	}
@@ -26,9 +25,10 @@ function	wrap(msg,lst)
 	console.putmsg("\1w\1h: ");
 	var col=32;
 	var delimiter="\1n\1g,";
-	for(aa=0;aa<lst.length;aa++)
+	for(var aa=0;aa<lst.length;aa++)
 	{
-		if(aa==lst.length-1) delimiter="";
+		if(aa==lst.length-1) 
+			delimiter="";
 		var item=lst[aa]+delimiter;
 		if((col + console.strlen(item))>79) {
 			console.crlf();
@@ -70,8 +70,7 @@ function 	drawVerticalLine(color/*, side*/)
 {
 	var ly=1;
 	var lx=menuColumn-1;
-	for(;ly<=24;ly++)
-	{
+	for(;ly<=24;ly++) {
 		console.gotoxy(lx,ly);
 		console.putmsg(color + "\xBA");
 	}
@@ -79,8 +78,12 @@ function 	drawVerticalLine(color/*, side*/)
 
 function 	wipeCursor(lr)			//SEND CURSOR TO BOTTOM RIGHT CORNER OF SCREEN
 {	
-	if(lr=="left") { side=1; row=console.screen_rows; }
-	else { side=console.screen_columns; row=1; }
+	var side = console.screen_columns;
+	var row = 1;
+	if(lr=="left") { 
+		side=1; 
+		row=console.screen_rows; 
+	}
 	console.gotoxy(side,row);
 }
 
@@ -124,12 +127,10 @@ function	showWinner(g)
 	console.gotoxy(51,18);
 	console.putmsg("\1n\1r\1hThis game was won by: ");
 	console.gotoxy(53,19);
-	if(g.winner>=0)
-	{
+	if(g.winner>=0)	{
 		console.putmsg("\1n\1r\1h" + system.username(g.winner));
 	}
-	else
-	{
+	else {
 		console.putmsg("\1n\1r\1hcomputer player");
 	}
 	wipeCursor("left");

@@ -5,14 +5,18 @@ function	rollDice(a,b,dice)
 	var x=menuColumn;		
 	var y=16;
 
-	bc=console.ansi(BG_RED);
-	fc=console.ansi(LIGHTGRAY);
+	var bc=console.ansi(BG_RED);
+	var fc=console.ansi(LIGHTGRAY);
 
 	fancyRoll(a,x,y,fc,bc,dice);
-	xx=x;
-	yy=y;
-	for(aa=0;aa<a;aa++) {
-		rand=(random(6)+1);
+	var xx=x;
+	var yy=y;
+	
+	for(var aa=0;aa<a;aa++) {
+		var rand=random(6)+1;
+		if(!dice[rand]) {
+			log(LOG_ERROR,"dice error: " + rand);
+		}
 		dice[rand].display(xx,yy,fc,bc);
 		xx+=4;
 		totals[0]+=rand;
@@ -26,9 +30,12 @@ function	rollDice(a,b,dice)
 	fancyRoll(b,x,y,fc,bc,dice);
 	xx=x;
 	yy=y;
-	for(bb=0;bb<b;bb++) {
-		rand=(random(6)+1);
+	for(var bb=0;bb<b;bb++) {
+		var rand=random(6)+1;
 		totals[1]+=rand;
+		if(!dice[rand]) {
+			log(LOG_ERROR,"dice error: " + rand);
+		}
 		dice[rand].display(xx,yy,fc,bc);
 		xx+=4;
 	}
@@ -39,11 +46,17 @@ function	rollDice(a,b,dice)
 }
 function	fancyRoll(qty,x,y,fc,bc,dice)
 {								//"ROLLING DICE" DISPLAY
-	for(roll=0;roll<8;roll++) {
-		xx=x;
-		yy=y;
-		for(dr=0;dr<qty;dr++) {
-			dice[random(6)+1].display(xx,yy,fc,bc);
+	for(var roll=0;roll<8;roll++) {
+		var xx=x;
+		var yy=y;
+		for(var dr=0;dr<qty;dr++) {
+			var num = random(6) + 1;
+			while(num < 0 || num > 6)
+				num = random(6) + 1;
+			if(!dice[num]) {
+				log(LOG_ERROR,"dice error: " + num);
+			}
+			dice[num].display(xx,yy,fc,bc);
 			xx+=4;
 		}
 		mswait(40);
@@ -81,8 +94,8 @@ function	Die(number)
 }
 function	loadDice()
 {								//INITIALIZE SIX SIDED DICE OBJECTS
-	var dice_=[];
-	for(d=1;d<=6;d++) 
-		dice_[d]=new Die(d);
-	return dice_;
+	var dice=[];
+	for(var d=1;d<=6;d++) 
+		dice[d]=new Die(d);
+	return dice;
 }

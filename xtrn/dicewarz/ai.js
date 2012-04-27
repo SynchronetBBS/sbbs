@@ -52,8 +52,8 @@ function	GroupAndParanoidAISort(a,b)
 		var ret=0;
 
 		var dirs=map.loadDirectional(location);
-		for(dir in dirs) {
-			current=dirs[dir];
+		for(var dir in dirs) {
+			var current=dirs[dir];
 			if(map.grid[current]) {
 				if(map.grid[current].player!=player)
 					ret++;
@@ -69,20 +69,24 @@ function	GroupAndParanoidAISort(a,b)
 		return(ParanoiaAISort(a,b));
 	return(aopts-bopts);
 }
+function	RandomAIForfeit()
+{
+	var f=new Array(AIForfeitValues.Coward,AIForfeitValues.Normal,AIForfeitValues.Alamo);
+
+	return(f[random(f.length)]);
+}
 
 /* Callbacks for deciding if a given attack should go into the targets array */
 function	RandomAICheck(gameNumber, playerNumber, base, target)
 {
-	g=games.gameData[gameNumber];
-	computerPlayer=g.players[playerNumber];
+	var g=games.gameData[gameNumber];
+	var computerPlayer=g.players[playerNumber];
 
 	var rand=random(100);
 	if(rand>10 && g.grid[base].dice>g.grid[target].dice)
 		return(true);
-	if(g.grid[base].dice==g.grid[target].dice)
-	{
-		if(rand>50 || g.grid[target].dice==g.maxDice)
-		{
+	if(g.grid[base].dice==g.grid[target].dice) {
+		if(rand>50 || g.grid[target].dice==g.maxDice) {
 			if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20)
 				return(true);
 			else {
@@ -100,8 +104,8 @@ function	RandomAICheck(gameNumber, playerNumber, base, target)
 }
 function	ParanoidAICheck(gameNumber, playerNumber, base, target)
 {
-	g=games.gameData[gameNumber];
-	computerPlayer=g.players[playerNumber];
+	var g=games.gameData[gameNumber];
+	var computerPlayer=g.players[playerNumber];
 
 	var rand=random(100);
 	/* If we have an advantage, add to targets array */
@@ -138,8 +142,8 @@ function	WildAndCrazyAICheck(gameNumber, playerNumber, base, target)
 }
 function	UltraParanoidAICheck(gameNumber, playerNumber, base, target)
 {
-	g=games.gameData[gameNumber];
-	computerPlayer=g.players[playerNumber];
+	var g=games.gameData[gameNumber];
+	var computerPlayer=g.players[playerNumber];
 
 	/* If we don't have our "fair share" of territories, use paranoid attack */
 	if(computerPlayer.territories.length <= g.playerTerr) {
@@ -174,10 +178,10 @@ function	UltraParanoidAICheck(gameNumber, playerNumber, base, target)
 		return(false);
 
 	/* Finally, check that we will still be at least equal after the capture */
-	dirs=g.loadDirectional(target);
+	var dirs=g.loadDirectional(target);
 	var troublecount=0;
 	for(dir in dirs) {
-		current=dirs[dir];
+		var current=dirs[dir];
 		if(current==base)
 			continue;
 		if(g.grid[current]) {
@@ -212,3 +216,4 @@ function	SingleAttackQuantity(tlen)
 var AISortFunctions={Random:RandomSort, Wild:WildAndCrazyAISort, KillMost:KillMostDiceAISort, Paranoia:ParanoiaAISort, RandomAI:RandomAISort, GroupParanoid:GroupAndParanoidAISort};
 var AICheckFunctions={Random:RandomAICheck, Paranoid:ParanoidAICheck, Wild:WildAndCrazyAICheck, UltraParanoid:UltraParanoidAICheck};
 var AIQtyFunctions={Random:RandomAttackQuantity, Full:FullAttackQuantity, Single:SingleAttackQuantity};
+var AIForfeitValues={Coward:.45,Normal:.25,Alamo:0,Random:RandomAIForfeit};

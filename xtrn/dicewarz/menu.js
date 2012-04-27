@@ -20,8 +20,7 @@ function 	Menu(title,x,y,color,hkey_color)
 	
 		var clear=5;
 		var cleared=0;
-		for(i in this.items)
-		{
+		for(var i in this.items) {
 			if(this.items[i].enabled)
 			{
 				console.gotoxy(orig_x,yyyy); yyyy++;
@@ -30,8 +29,7 @@ function 	Menu(title,x,y,color,hkey_color)
 				cleared++;
 			}
 		}
-		for(i=cleared;i<clear;i++)
-		{
+		for(var i=cleared;i<clear;i++)	{
 			console.gotoxy(orig_x,yyyy); yyyy++;
 			console.cleartoeol();
 
@@ -39,23 +37,20 @@ function 	Menu(title,x,y,color,hkey_color)
 	}
 	this.disable=function(items)
 	{
-		for(item in items)
-		{
+		for(var item in items) {
 			this.items[items[item]].enabled=false;
 		}
 	}
 	this.enable=function(items)
 	{
-		for(item in items)
-		{
+		for(ivar tem in items)	{
 			this.items[items[item]].enabled=true;
 		}
 	}
 	this.add=function(items)
 	{
-		for(i=0;i<items.length;i++)
-		{
-			hotkey=this.getHotKey(items[i]);
+		for(var i=0;i<items.length;i++)	{
+			var hotkey=this.getHotKey(items[i]);
 			this.items[hotkey]=new MenuItem(items[i],hotkey,color,hkey_color);
 			this.items[hotkey].init(color,hkey_color);
 		}
@@ -66,15 +61,14 @@ function 	Menu(title,x,y,color,hkey_color)
 	}
 	this.getHotKey=function(item)
 	{
-		keyindex=item.indexOf("~")+1;
+		var keyindex=item.indexOf("~")+1;
 		return item.charAt(keyindex);
 	}	
 	this.displayHorizontal=function()
 	{
 		clearLine(1,48);
 		console.gotoxy(orig_x,orig_y);
-		for(i in this.items)
-		{
+		for(var i in this.items) {
 			if(this.items[i].enabled) console.putmsg(this.items[i].text + " ");
 		}
 	}

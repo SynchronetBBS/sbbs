@@ -20,7 +20,7 @@ function	Player(userNumber, vote)
 	}
 	this.removeTerritory=function(territory)
 	{
-		for(rem in this.territories) {
+		for(var rem in this.territories) {
 			if(this.territories[rem]==territory) 
 				this.territories.splice(rem,1);
 		}
@@ -28,7 +28,7 @@ function	Player(userNumber, vote)
 	this.countTerritory=function()
 	{
 		var count=0;
-		for(tt in this.territories)	
+		for(var tt in this.territories)	
 			count++;
 		return count;
 	}
