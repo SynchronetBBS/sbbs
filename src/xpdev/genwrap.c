@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -177,15 +177,14 @@ char* DLLCALL c_escape_char(char ch)
 char* DLLCALL c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only)
 {
 	const char*	s;
-	char*	d;
-	char*	e;
+	char*		d;
+	const char*	e;
 
-	for(s=src,d=dst;*s && (size_t)(d-dst)<maxlen;s++,d++) {
+	for(s=src,d=dst;*s && (size_t)(d-dst)<maxlen;s++) {
 		if((!ctrl_only || (uchar)*s < ' ') && (e=c_escape_char(*s))!=NULL) {
-			*d=0;
-			strncat(dst,e,maxlen-(d-dst));
-			d++;
-		} else *d=*s;
+			strncpy(d,e,maxlen-(d-dst));
+			d+=strlen(d);
+		} else *d++=*s;
 	}
 	*d=0;
 
@@ -343,8 +342,8 @@ long DLLCALL xp_random(int n)
 		return(0);
 	do {
 		f=(double)rand()/(double)(RAND_MAX+1);
-		ret=(n*f);
-	} while ret==n;
+		ret=(int)(n*f);
+	} while(ret==n);
 
 	return(ret);
 #endif
