@@ -274,7 +274,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 			this.connected = false;
 			this.reject = false;
 		} else if((p.control & U_FRAME) == U_FRAME) {
-			// Unnumbered Information fields should be processed, I guess.
+			if(p.hasOwnProperty("information") && p.information.length > 0) retval = p.information;
 			return retval;
 		} else if(!this.connected) {
 			a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_DM);
@@ -314,7 +314,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 				this.rsv++;
 				if(this.rsv > 7) this.rsv = 0;
 				a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, (S_FRAME_RR|(this.rsv<<5)));
-				if(p.hasOwnProperty("information") || p.information.length > 0) retval = p.information;
+				if(p.hasOwnProperty("information") && p.information.length > 0) retval = p.information;
 				this.reject = false;
 			} else {
 				// Send a FRMR with the offending control field, our RSV and SSV, and the "Z" flag to indicate an invalid N(R)
