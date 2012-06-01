@@ -166,7 +166,6 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if(cmd.length==2)
 		callsign=cmd[1].toUpperCase();
 	else {
-		srv.o(target,"Usage: callsign <sign>");
 		return true;
 	}
 
