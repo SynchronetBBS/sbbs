@@ -27,7 +27,7 @@
 # SDL_CONFIG = Path to sdl-config program
 # CVSTAG = CVS tag to pull
 # NO_X = Don't include build conio library (ciolib) for X
-# NO_GLADE = Don't build Glade-based sysop tools
+# NO_GTK = Don't build GTK-based sysop tools
 # X_PATH = /path/to/X (if not /usr/X11R6)
 
 ifndef DEBUG
