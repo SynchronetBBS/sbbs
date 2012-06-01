@@ -108,7 +108,7 @@ $(SBBSMONO): $(MONO_OBJS) $(OBJS)
 # Synchronet BBS library Link Rule
 $(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) | $(LIBODIR)
 	@echo Linking $@
-	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(SBBS_LIBS) $(LIBS) $(SHLIBOPTS) $(JS_LIBS) $(CRYPT_LIBS)
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(SBBS_LIBS) $(LIBS) $(SHLIBOPTS) $(JS_LIBS) $(CRYPT_LIBS) $(XPDEV-MT_LIBS)
 
 # FTP Server Link Rule
 $(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
