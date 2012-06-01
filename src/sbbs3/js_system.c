@@ -1388,6 +1388,11 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
+	if(argc<1 || JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_ReportError(cx,"Missing or invalid argument");
+		return JS_FALSE;
+	}
+
 	JSVALUE_TO_STRING(cx, argv[0], alias, NULL);
 
 	rc=JS_SUSPENDREQUEST(cx);
