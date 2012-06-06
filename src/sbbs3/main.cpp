@@ -4431,6 +4431,8 @@ void DLLCALL bbs_thread(void* arg)
 	protected_uint32_init(&node_threads_running,0);
 
 	thread_up(FALSE /* setuid */);
+	if(startup->seteuid!=NULL)
+		startup->seteuid(TRUE);
 
 	status("Initializing");
 
