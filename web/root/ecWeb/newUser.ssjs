@@ -161,7 +161,6 @@ if(http_request.query.hasOwnProperty('action') && http_request.query.action == '
 	if(system.newuser_questions&UQ_PHONE) print("Phone Number:<br /><input type=text size=30 name=phone id=phone /> <span id=phoneError></span><br /><br />");
 	if(system.newuser_questions&UQ_SEX) print("Sex: <input type=radio name=sex id=sex value=m />M <input type=radio name=sex id=sex value=f />F <span id=sexError></span><br /><br />"); // lol
 	if(system.newuser_questions&UQ_BIRTH) print("Birthdate DD-MM-YY:<br /><input type=text size=8 name=birthDate id=birthDate /> <span id=birthDateError></span><br /><br />");
-	if(system.newuser_questions&UQ_COMP) print("Computer:<br /><input type=text size=30 name=computer id=computer /> <span id=computerError></span><br /><br />");
 	if(system.newuser_questions&UQ_COMPANY) print("Company:<br /><input type=text size=30 name=company id=company /> <span id=companyError></span><br /><br />");
 	if(system.newuser_questions&UQ_NONETMAIL) {
 	} else {
