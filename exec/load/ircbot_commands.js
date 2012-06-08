@@ -567,7 +567,7 @@ Server_Commands["JOIN"]= function (srv,cmd,onick,ouh) {
 	if (lvl >= 50) {
 		var usr = new User(system.matchuser(onick));
 		if (lvl >= 60)
-			srv.writeout("MODE " + cmd[1] + " +o " + onick);
+			srv.writeout("MODE " + cmd[0] + " +o " + onick);
 		if (usr.number > 0) {
 			if (usr.comment)
 				srv.o(cmd[0],"[" + onick + "] " + usr.comment);
