@@ -1721,7 +1721,7 @@ void pack_bundle(char *infile,faddr_t dest)
 					,strerror(errno));
 		}
 		if(fexistcase(str)) {
-			if(flength(str)>=cfg.maxbdlsize)
+			if(i!='Z' && flength(str)>=cfg.maxbdlsize)
 				continue;
 			file=sopen(str,O_WRONLY,SH_DENYRW);
 			if(file==-1)		/* Can't open?!? Probably being sent */
@@ -1750,9 +1750,11 @@ void pack_bundle(char *infile,faddr_t dest)
 			return; 
 		} 
 	}
-
+	lprintf(LOG_WARNING,"All bundle files for %s already exist, adding to: %s"
+		,smb_faddrtoa(&dest,NULL), str);
 	pack(infile,str,dest);	/* Won't get here unless all bundles are full */
 }
+
 /******************************************************************************
  This function checks the inbound directory for the first bundle it finds, it
  will then unpack and delete the bundle.  If no bundles exist this function
