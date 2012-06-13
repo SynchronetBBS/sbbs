@@ -1496,11 +1496,11 @@ static void exempt_email_addr(const char* comment
 			lprintf(LOG_ERR,"0000 !Error opening file: %s", fname);
 		else {
 			lprintf(LOG_INFO,"0000 %s: %s", comment, to);
-			fprintf(fp,"\n;%s from \"%s\" "
+			fprintf(fp,"\n;%s from \"%s\""
 				,comment, fromname);
 			if(fromext!=NULL)
-				fprintf(fp,"#%s ",fromext);
-			fprintf(fp,"%s on %s\n%s\n"
+				fprintf(fp,"%s",fromext);
+			fprintf(fp," %s on %s\n%s\n"
 				,fromaddr, timestr(&scfg,time32(NULL),tmp), to);
 			fclose(fp);
 		}
