@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1301,19 +1301,22 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 							,speed);
 						sbbs->cur_rate=atoi(speed);
 						sbbs->cur_cps=sbbs->cur_rate/10;
-#if 0
+#ifdef SBBS_TELNET_ENVIRON_SUPPORT
 					} else if(option==TELNET_NEW_ENVIRON
 						&& sbbs->telnet_cmd[3]==TELNET_ENVIRON_IS) {
 						BYTE*	p;
 						BYTE*   end=sbbs->telnet_cmd+(sbbs->telnet_cmdlen-2);
 						for(p=sbbs->telnet_cmd+4; p < end; ) {
-							if(*p==TELNET_ENVIRON_VAR || *p==TELNET_ENVIRON_USERVAR) {
+							if(*p==TELNET_ENVIRON_VAR) {
+								char tmp[128];
 								p++;
-								lprintf(LOG_DEBUG,"Node %d %s telnet environment var/val: %.*s"
+								c_escape_str((char*)p,tmp,sizeof(tmp),TRUE);
+								lprintf(LOG_DEBUG,"Node %d %s telnet environment var/val: %.*s (%s)"
 	                				,sbbs->cfg.node_num
 									,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 									,end-p
-									,p);
+									,p
+									,tmp);
 								p+=strlen((char*)p);
 							} else
 								p++;
@@ -1342,10 +1345,11 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 							sbbs->cols=cols;
 
 					} else if(startup->options&BBS_OPT_DEBUG_TELNET)
-            			lprintf(LOG_DEBUG,"Node %d %s unsupported telnet sub-negotiation cmd: %s"
+            			lprintf(LOG_DEBUG,"Node %d %s unsupported telnet sub-negotiation cmd: %s, 0x%02X"
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
-                			,telnet_opt_desc(option));
+                			,telnet_opt_desc(option)
+							,sbbs->telnet_cmd[3]);
 					sbbs->telnet_cmdlen=0;
 				}
 			}
@@ -1386,6 +1390,9 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 								case TELNET_SUP_GA:
 								case TELNET_NEGOTIATE_WINDOW_SIZE:
 								case TELNET_SEND_LOCATION:
+#ifdef SBBS_TELNET_ENVIRON_SUPPORT
+								case TELNET_NEW_ENVIRON:
+#endif
 									sbbs->telnet_remote_option[option]=command;
 									sbbs->send_telnet_cmd(telnet_opt_ack(command),option);
 									break;
@@ -1420,14 +1427,14 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 								,TELNET_IAC,TELNET_SE);
 							sbbs->putcom(buf,6);
 						}
-#if 0
+#ifdef SBBS_TELNET_ENVIRON_SUPPORT
 						else if(command==TELNET_WILL && option==TELNET_NEW_ENVIRON) {
 							if(startup->options&BBS_OPT_DEBUG_TELNET)
 								lprintf(LOG_DEBUG,"Node %d requesting USER environment variable value"
 									,sbbs->cfg.node_num);
 
 							char	buf[64];
-							int len=sprintf(buf,"%c%c%c%c%cUSER%c%c"
+							int len=sprintf(buf,"%c%c%c%c%c%c%c"
 								,TELNET_IAC,TELNET_SB
 								,TELNET_NEW_ENVIRON,TELNET_ENVIRON_SEND,TELNET_ENVIRON_VAR
 								,TELNET_IAC,TELNET_SE);
@@ -2793,8 +2800,6 @@ void event_thread(void* arg)
 						node.status=NODE_EVENT_RUNNING;
 						sbbs->putnodedat(sbbs->cfg.event[i]->node,&node);
 					}
-					strcpy(str,sbbs->cfg.event[i]->code);
-					eprintf(LOG_INFO,"Running timed event: %s",strupr(str));
 					int ex_mode = EX_OFFLINE;
 					if(!(sbbs->cfg.event[i]->misc&EVENT_EXCL)
 						&& sbbs->cfg.event[i]->misc&EX_BG)
@@ -2803,6 +2808,11 @@ void event_thread(void* arg)
 						ex_mode |= EX_SH;
 					ex_mode|=(sbbs->cfg.event[i]->misc&EX_NATIVE);
 					sbbs->online=ON_LOCAL;
+					strcpy(str,sbbs->cfg.event[i]->code);
+					eprintf(LOG_INFO,"Running %s%stimed event: %s"
+						,(ex_mode&EX_NATIVE)	? "native ":""
+						,(ex_mode&EX_BG)		? "background ":""
+						,strupr(str));
 					{
 						int result=
 						sbbs->external(

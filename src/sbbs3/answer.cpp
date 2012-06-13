@@ -183,6 +183,9 @@ bool sbbs_t::answer()
 		request_telnet_opt(TELNET_DO,TELNET_TERM_SPEED);
 		request_telnet_opt(TELNET_DO,TELNET_SEND_LOCATION);
 		request_telnet_opt(TELNET_DO,TELNET_NEGOTIATE_WINDOW_SIZE);
+#ifdef SBBS_TELNET_ENVIRON_SUPPORT
+		request_telnet_opt(TELNET_DO,TELNET_NEW_ENVIRON);
+#endif
 	}
 #ifdef USE_CRYPTLIB
 	if(sys_status&SS_SSH) {
