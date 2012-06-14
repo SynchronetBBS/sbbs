@@ -217,7 +217,11 @@ int main(int argc, char **argv)
             SAFECOPY(cfg.ctrl_dir,argv[i]);
     }
 
+#ifdef _WIN32
 	FULLPATH(exepath,argv[0],sizeof(exepath));	/* Must do this before chdir */
+#else
+	exepath[0]=0;
+#endif
 
 	if(chdir(cfg.ctrl_dir)!=0) {
 		printf("!ERROR %d changing current directory to: %s\n"
