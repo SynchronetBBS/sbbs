@@ -401,8 +401,8 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 
 		if(i<1) {
 			if(i==0) {
-				if((time(NULL)-start)>startup->max_inactivity) {
-					lprintf(LOG_WARNING,"%04d !SOCKET INACTIVE",socket);
+				if(startup->max_inactivity && (time(NULL)-start)>startup->max_inactivity) {
+					lprintf(LOG_WARNING,"%04d !TIMEOUT in sockreadline (%u seconds):  INACTIVE SOCKET",socket,startup->max_inactivity);
 					return(-1);
 				}
 				continue;
@@ -433,8 +433,11 @@ static BOOL sockgetrsp(SOCKET socket, char* rsp, char *buf, int len)
 
 	while(1) {
 		rd = sockreadline(socket, buf, len);
-		if(rd<1) 
+		if(rd<1) {
+			if(rd==0)
+				lprintf(LOG_WARNING,"%04d !RECEIVED BLANK RESPONSE, Expected '%s'", socket, rsp);
 			return(FALSE);
+		}
 		if(buf[3]=='-')	{ /* Multi-line response */
 			if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
 				lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
@@ -4264,6 +4267,7 @@ static void sendmail_thread(void* arg)
 	ulong		ip_addr;
 	ulong		dns;
 	ulong		lines;
+	ulong		bytes;
 	BOOL		success;
 	BOOL		first_cycle=TRUE;
 	SOCKET		sock=INVALID_SOCKET;
@@ -4739,16 +4743,22 @@ static void sendmail_thread(void* arg)
 				bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
 				continue;
 			}
-			lprintf(LOG_DEBUG,"%04d SEND sending message text (%u bytes)"
-				,sock, strlen(msgtxt));
+			bytes=strlen(msgtxt);
+			lprintf(LOG_DEBUG,"%04d SEND sending message text (%u bytes) begin"
+				,sock, bytes);
 			lines=sockmsgtxt(sock,&msg,msgtxt,-1);
+			lprintf(LOG_DEBUG,"%04d SEND send of message text (%u bytes, %u lines) complete, waiting for acknowledgement (250)"
+				,sock, bytes, lines);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
-				remove_msg_intransit(&smb,&msg);
-				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-				bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
-				continue;
+				/* Wait doublely-long for the acknowledgement */
+				if(buf[0] || !sockgetrsp(sock,"250", buf, sizeof(buf))) {
+					remove_msg_intransit(&smb,&msg);
+					SAFEPRINTF3(err,badrsp_err,server,buf,"250");
+					bounce(sock, &smb,&msg,err,/* immediate: */buf[0]=='5');
+					continue;
+				}
 			}
-			lprintf(LOG_INFO,"%04d SEND message transfer complete (%lu lines)", sock, lines);
+			lprintf(LOG_INFO,"%04d SEND message transfer complete (%u bytes, %lu lines)", sock, bytes, lines);
 
 			/* Now lets mark this message for deletion without corrupting the index */
 			msg.hdr.attr|=MSG_DELETE;
@@ -5488,9 +5498,9 @@ void DLLCALL mail_server(void* arg)
 				,server_socket, active_clients.value);
 			start=time(NULL);
 			while(active_clients.value) {
-				if(time(NULL)-start>startup->max_inactivity) {
-					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for %d active clients"
-						,server_socket, active_clients.value);
+				if(startup->max_inactivity && time(NULL)-start>startup->max_inactivity) {
+					lprintf(LOG_WARNING,"%04d !TIMEOUT (%u seconds) waiting for %d active clients"
+						,server_socket, startup->max_inactivity, active_clients.value);
 					break;
 				}
 				mswait(100);
