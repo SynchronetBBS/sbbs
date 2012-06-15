@@ -79,8 +79,12 @@ var CallSign={
 					}
 					if(ret.class==undefined)
 						ret.qualifications=ret.type;
-					else
+					else {
 						ret.qualifications=ret.class;
+						m=ret.name.match(/^(.*), (.*)$/);
+						if(m)
+							ret.name=m[2]+' '+m[1];
+					}
 					return ret;
 				}
 			}
