@@ -346,7 +346,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 		getnodedat(i,&node,0);
 		if(node.useron==usernumber && !(node.misc&NODE_POFF)
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
-			safe_snprintf(str,sizeof(str)),text[EmailNodeMsg],cfg.node_num,useron.alias);
+			safe_snprintf(str,sizeof(str),text[EmailNodeMsg],cfg.node_num,useron.alias);
 			putnmsg(&cfg,i,str);
 			break; 
 		} 
