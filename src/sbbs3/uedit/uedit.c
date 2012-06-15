@@ -1754,7 +1754,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 			}
 		}
 		FREE_AND_NULL(opt[j]);
-		if((opt[j]=(struct user_list *)alloca(sizeof(struct user_list)))==NULL)
+		if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 			allocfail(sizeof(struct user_list));
 		opt[j]->info[0]=0;
 		i=0;
