@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1472,6 +1472,33 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_del_user(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	jsrefcount	rc;
+	int32		n;
+	scfg_t*		cfg;
+	user_t		user;
+	char		str[128];
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	JS_ValueToInt32(cx,argv[0],&n);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+	if(getuserdat(cfg, &user)==0
+		&& putuserrec(cfg,n,U_MISC,8,ultoa(user.misc|DELETED,str,16))==0
+		&& putusername(cfg,n,nulstr)==0)
+		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+	JS_RESUMEREQUEST(cx, rc);
+	
+	return(JS_TRUE);
+}
+
+static JSBool
 js_exec(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -1700,6 +1727,10 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("creates a new user record, returns a new <a href=#User>User</a> object representing the new user account, on success.<br>"
 	"returns an numeric error code on failure (optional <i>client</i> object argument added in v3.15a)")
 	,310
+	},
+	{"del_user",		js_del_user,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number")
+	,JSDOCSTR("delete the specified user account")
+	,316
 	},
 	{"exec",			js_exec,			1,	JSTYPE_NUMBER,	JSDOCSTR("command-line")
 	,JSDOCSTR("executes a native system/shell command-line, returns <i>0</i> on success")
