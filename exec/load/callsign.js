@@ -113,7 +113,7 @@ var CallSign={
 
 		Hamcall:function(callsign) {
 			var req=new HTTPRequest();
-			var config = load("modopts.js","hamcall");
+			var config = js.global.load("modopts.js","hamcall");
 
 			req.SetupGet('http://hamcall.net/call?callsign='+callsign);
 			req.request_headers.push("Cookie: callsign="+config.callsign+'; password='+config.password);
