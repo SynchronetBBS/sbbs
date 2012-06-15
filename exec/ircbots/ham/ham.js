@@ -172,31 +172,40 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 
 	var matched;
-	if(matched==undefined && callsign.search(/(C[F-K]|C[Y-Z]|V[A-GOXY]|X[J-O])/)==0) {
+	var country
+	try {
+		country=CallSign.Country(callsign)
+	}
+	catch(e) {
+		srv.o(target, "Failed to locate callsing country");
+	}
+	if(country == 'Canada') {
 		try {
-			matched=CanadaCallsign(callsign);
+			matched=CallSign.Lookup.Canada(callsign);
 			srv.o(target, (matched.callsign+": "+matched.name+", "+matched.address+", "+matched.city+", "+matched.province+" "+matched.postalzip+". "+matched.qualifications));
 		}
 		catch(e) {
 			srv.o(target, "Failed to look up Canadian Callsign: "+e);
 		}
 	}
-	if(matched==undefined && callsign.search(/^\s*(K|N|W)[0-9].\s*$/)==0) {
-		try {
-			matched=USSpecialEvent(callsign,srv,target);
-			srv.o(target, matched.string);
+	if(country == 'United States of America') {
+		if(matched==undefined && callsign.search(/^\s*(K|N|W)[0-9].\s*$/)==0) {
+			try {
+				matched=CallSign.Lookup.USSpecialEvent(callsign,srv,target);
+				srv.o(target, matched.string);
+			}
+			catch(e) {
+				srv.o(target, "Failed to look up US Special Event Callsign: "+e);
+			}
 		}
-		catch(e) {
-			srv.o(target, "Failed to look up US Special Event Callsign: "+e);
-		}
-	}
-	if(matched==undefined && callsign.search(/(A[A-L]|K|N|W)/)==0) {
-		try {
-			matched=USCallsign(callsign);
-			srv.o(target, matched.callsign+':'+matched.address+' - Type: '+matched.type+' - Class: '+matched.class+' ('+matched.status+')');
-		}
-		catch(e) {
-			srv.o(target, "Failed to look up US Callsign: "+e);
+		if(matched==undefined) {
+			try {
+				matched=CallSign.Lookup.US(callsign);
+				srv.o(target, matched.callsign+':'+matched.address+' - Type: '+matched.type+' - Class: '+matched.class+' ('+matched.status+')');
+			}
+			catch(e) {
+				srv.o(target, "Failed to look up US Callsign: "+e);
+			}
 		}
 	}
 	if(matched==undefined) {
@@ -205,11 +214,11 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			srv.o(target, matched.string);
 		}
 		catch(e) {
-			srv.o(target, "Failed to look up Callsign on HamCall: "+e);
+			srv.o(target, "Failed to look up callsign from "+country+" on HamCall: "+e);
 		}
 	}
 	if(matched==undefined) {
-		srv.o(target, "Unable to match callsign in any databases.");
+		srv.o(target, "Unable to match callsign from "+country+" in any databases.");
 	}
 
 	return true;
