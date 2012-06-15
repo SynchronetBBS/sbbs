@@ -719,7 +719,7 @@ To configure a directory, select it with the arrow keys and hit ~ ENTER ~.
 		return;
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;
-		strcpy(str,"Games");
+		strcpy(str,"My Brand-New File Directory");
 		SETHELP(WHERE);
 /*
 `Directory Long Name:`
