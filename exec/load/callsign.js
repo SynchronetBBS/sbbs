@@ -4,7 +4,7 @@ if(!js.global || js.global.HTTPRequest==undefined)
 var CallSign={
 	Lookup:{
 		US:function(callsign) {
-			var ret={callsign:callsign};
+			var ret={callsign:callsign.toUpperCase()};
 			var i;
 			var CookieRequest=new HTTPRequest();
 			var m=CookieRequest.Get('http://wireless2.fcc.gov/UlsApp/UlsSearch/searchLicense.jsp');
@@ -32,12 +32,28 @@ var CallSign={
 				var response=new HTTPRequest().Get('http://wireless2.fcc.gov/UlsApp/UlsSearch/'+m[m.length-1]);
 				m=response.match(/In the case of City, state and zip[^-]*?-->([\s\S]*?)<\/td>/);
 				if(m) {
-					m[1]=m[1].replace(/<[^>]*>/g,'');
 					m[1]=m[1].replace(/[\r\n]/g,' ');
 					m[1]=m[1].replace(/\s+/g,' ');
+					var parts=m[1].split(/\s*<br>\s*/);
+					m[1]=m[1].replace(/<[^>]*>/g,'');
 					ret.address=m[1];
+					ret.name=parts.shift().replace(/^\s*(.*?)\s*$/,"$1");
+					if(parts[parts.length-1].search(/^\s*$/)==0) {
+						parts.pop();
+					}
+					if(parts[parts.length-1].search(/^ATTN /)==0) {
+						ret.attn=parts.pop().replace(/^ATTN /,'');
+					}
+					m=parts[parts.length-1].match(/^(.*),\s+([A-Z]{2})\s+([0-9]{5}(?:-[0-9]{4})?)\s*$/);
+					if(m) {
+						parts.pop();
+						ret.city=m[1];
+						ret.provstate=m[2];
+						ret.postalzip=m[3];
+						ret.address=parts.join(', ');
+					}
 
-					m=response.match(/>Type<\/td>[\s\S]*?>([^<&]*)[<&]/);
+					m=response.match(/>Type<\/td>[\s\S]*?>\s*([^<&]*?)\s*[<&]/);
 					if(m) {
 						m[1]=m[1].replace(/<[^>]*>/g,'');
 						m[1]=m[1].replace(/[\r\n]/g,' ');
@@ -45,20 +61,26 @@ var CallSign={
 						ret.type=m[1];
 					}
 
-					m=response.match(/<!--Example: Amateur Extra -->([^&<]*?)[&<]/);
+					m=response.match(/<!--Example: Amateur Extra -->\s*([^&<]*?)\s*[&<]/);
 					if(m) {
 						m[1]=m[1].replace(/<[^>]*>/g,'');
 						m[1]=m[1].replace(/[\r\n]/g,' ');
 						m[1]=m[1].replace(/\s+/g,' ');
-						ret.class=m[1];
+						if(m[1] != '')
+							ret.class=m[1];
 					}
 
-					m=response.match(/>Status<\/td>[\s\S]*?>([^<&]*)[<&]/);
+					m=response.match(/>Status<\/td>[\s\S]*?>\s*([^<&]*?)\s*[<&]/);
 					if(m) {
 						m[1]=m[1].replace(/<[^>]*>/g,'');
 						m[1]=m[1].replace(/[\r\n]/g,' ');
 						m[1]=m[1].replace(/\s+/g,' ');
+						ret.status=m[1];
 					}
+					if(ret.class==undefined)
+						ret.qualifications=ret.type;
+					else
+						ret.qualifications=ret.class;
 					return ret;
 				}
 			}
@@ -70,7 +92,7 @@ var CallSign={
 			var re=new RegExp("<a href=\"(query_amat_cs\\$callsign\\.QueryViewByKey\\?P_CALLSIGN="+callsign.toUpperCase()+"&amp;Z_CHK=[0-9]+)\">"+callsign.toUpperCase()+"</a>");
 			var m=result.match(re);
 			if(m!=null) {
-				var ret={callsign:callsign};
+				var ret={callsign:callsign.toUpperCase()};
 				result=new HTTPRequest().Get('http://apc-cap.ic.gc.ca/pls/apc_anon/'+m[1].replace(/&amp;/g, '&'));
 				result=result.replace(/&nbsp;/g,' ');
 				result=result.replace(/\s+/g,' ');
@@ -80,7 +102,7 @@ var CallSign={
 					ret.name=m[2];
 					ret.address=m[3];
 					ret.city=m[4];
-					ret.province=m[5];
+					ret.provstate=m[5];
 					ret.postalzip=m[6];
 					ret.qualifications=m[7];
 					return ret;
@@ -91,25 +113,21 @@ var CallSign={
 
 		Hamcall:function(callsign) {
 			var req=new HTTPRequest();
-			var config = new File(system.ctrl_dir + js.global.config_filename);
-			if(!config.open('r')) {
-				throw("Unable to open config!");
-			}
+			var config = load("modopts.js","hamcall");
 
 			req.SetupGet('http://hamcall.net/call?callsign='+callsign);
-			req.request_headers.push("Cookie: callsign="+config.iniGetValue("module_Ham", 'callsign')+'; password='+config.iniGetValue("module_Ham", 'password'));
+			req.request_headers.push("Cookie: callsign="+config.callsign+'; password='+config.password);
 			req.SendRequest();
 			req.ReadResponse();
 
-			config.close();
-
-			var m=req.body.match(/Tell them you found it on HamCall.net, the world's largest callsign database!.*?<BR>([\s\S]*?)(<font size|<\/td>)/);
+			var m=req.body.match(/Tell them you found it on HamCall.net, the world's largest callsign database!.*?<BR>\s*([\s\S]*?)\s*(?:<font size|<\/td>)/);
 			if(m) {
 				m[1]=m[1].replace(/<[^>]*>/g,' ');
 				m[1]=m[1].replace(/[\r\n]/g,' ');
 				m[1]=m[1].replace(/\s+/g,' ');
+				m[1]=m[1].replace(/^\s*(.*?)\s*$/g,'$1');
 				m[1] += ' (Found on HamCall.net)';
-				return {callsign:callsign,string:m[1]};
+				return {callsign:callsign.toUpperCase(),string:callsign.toUpperCase()+': '+m[1]};
 			}
 			throw("No match");
 		},
@@ -121,9 +139,50 @@ var CallSign={
 				m[1]=m[1].replace(/<[^>]*>/g,'');
 				m[1]=m[1].replace(/[\r\n]/g,' ');
 				m[1]=m[1].replace(/\s+/g,' ');
-				return {callsign:callsign,string:m[1]};
+				return {callsign:callsign.toUpperCase(),string:m[1]};
 			}
 			throw("No match");
+		},
+
+		Any:function(callsign) {
+			var country;
+			var matched;
+			try {
+				country=CallSign.Country(callsign);
+			}
+			catch(e) {
+				throw("Failed to locate callsign country");
+			}
+			if(country == 'Canada') {
+				try {
+					matched=CallSign.Lookup.Canada(callsign);
+				}
+				catch(e) {}
+			}
+			else if(country == 'United States of America') {
+				if(matched==undefined && callsign.search(/^\s*(K|N|W)[0-9].\s*$/)==0) {
+					try {
+						matched=CallSign.Lookup.USSpecialEvent(callsign);
+					}
+					catch(e) {}
+				}
+				if(matched==undefined) {
+					try {
+						matched=CallSign.Lookup.US(callsign);
+					}
+					catch(e) {}
+				}
+			}
+			if(matched==undefined) {
+				try {
+					matched=CallSign.Lookup.Hamcall(callsign);
+				}
+				catch(e) {log(e)}
+			}
+			if(matched==undefined) {
+				throw("Unable to match callsign from "+country+" in any databases.");
+			}
+			return matched;
 		},
 	},
 
