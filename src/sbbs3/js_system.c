@@ -1485,14 +1485,15 @@ js_del_user(JSContext *cx, uintN argc, jsval *arglist)
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	JS_ValueToInt32(cx,argv[0],&n);
-
+	if(!JS_ValueToInt32(cx,argv[0],&n))
+		return(JS_FALSE);
+	user.number=n;
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);	/* fail, by default */
 	if(getuserdat(cfg, &user)==0
 		&& putuserrec(cfg,n,U_MISC,8,ultoa(user.misc|DELETED,str,16))==0
 		&& putusername(cfg,n,nulstr)==0)
-		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);	/* success */
 	JS_RESUMEREQUEST(cx, rc);
 	
 	return(JS_TRUE);
