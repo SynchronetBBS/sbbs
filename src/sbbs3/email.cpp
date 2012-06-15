@@ -92,7 +92,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 	if((l&NETMAIL) && (cfg.sys_misc&SM_FWDTONET)) {
 		getuserrec(&cfg,usernumber,U_NETMAIL,LEN_NETMAIL,str);
 		bprintf(text[UserNetMail],str);
-		if(usernumber==cfg.node_valuser || text[ForwardMailQ][0]==0 || yesno(text[ForwardMailQ])) /* Forward to netmail address */
+		if((mode & WM_FORCEFWD) || text[ForwardMailQ][0]==0 || yesno(text[ForwardMailQ])) /* Forward to netmail address */
 			return(netmail(str,subj,mode));
 	}
 	bprintf(text[Emailing],username(&cfg,usernumber,tmp),usernumber);
