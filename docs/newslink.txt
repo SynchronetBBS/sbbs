@@ -142,6 +142,7 @@ r   remove "Newsgroups:" header field from imported messages
 b   decode single-part (uuencoded or yenc-encoded) binary attachments
 i   import all articles on first run (not just new articles)
 s   no subject filtering (do not check against text/subject.can)
+m   moderate imported messages (a subop will need to validate every message)
 
 To specify one or more flag characters for a specific area, you must use the
 following "AREA" line syntax:

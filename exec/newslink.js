@@ -24,6 +24,7 @@
 // b        decode binary attachments
 // i		import all (not just new articles)
 // s		no subject filtering
+// m		Moderate imported messages
 
 const REVISION = "$Revision$".split(' ')[1];
 
@@ -879,6 +880,8 @@ for(i in area) {
 //		hdr.from_net_addr=hdr.from;
 		if(flags.indexOf('t')==-1)
 			body += tearline;
+		if(flags.indexOf('m')==-1)
+			hdr.attr |= MSG_MODERATED;
 		if(msgbase.save_msg(hdr,body)) {
 			imported++;
 			subimported++;
