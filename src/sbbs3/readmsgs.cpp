@@ -939,9 +939,9 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					if(!(useron.misc&EXPERT))
 						menu("sysmscan");
 					bputs(text[OperatorPrompt]);
-					strcpy(str,"?CEHMPQUV");
+					strcpy(str,"?CEHMQUV");
 					if(SYSOP)
-						strcat(str,"S");
+						strcat(str,"SP");
 					switch(getkeys(str,0)) {
 						case '?':
 							if(useron.misc&EXPERT)
