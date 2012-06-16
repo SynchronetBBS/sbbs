@@ -301,6 +301,8 @@ function stop_sem_signaled()
 /******************************/
 var exported=0;
 var imported=0;
+var subimported=0;
+var subpending=0;
 var twitlist_fname = system.ctrl_dir + "twitlist.cfg";
 var use_twitlist = file_exists(twitlist_fname);
 
@@ -554,6 +556,7 @@ for(i in area) {
 	}
 
 	delete article_list;
+	subpending=0;
 	if(use_xover && ptr<=last_msg) {
 		writeln(format("XOVER %u-%u", ptr, last_msg));
 		if(parseInt(readln())==224) {
@@ -565,9 +568,11 @@ for(i in area) {
 				maybe_yield();
 			}
 			printf("%u new articles\r\n", article_list.length);
+			subpending=article_list.length;
 		}
 	}
 
+	subimported=0;
 	for(;socket.is_connected 
 		&& ptr<=last_msg 
 		&& !js.terminated
@@ -576,14 +581,17 @@ for(i in area) {
 		if(this.console!=undefined)
 			console.line_counter = 0;
 
-		if(article_list && !article_listed(article_list,ptr))
+		if(article_list && !article_listed(article_list,ptr)) {
+			subpending--;
 			continue;
+		}
 
 		printf("Retrieving article: %u\r\n", ptr);
 		writeln(format("ARTICLE %lu",ptr));
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
 			printf("!ARTICLE %lu ERROR: %s\r\n",ptr,rsp);
+			subpending--;
 			continue;
 		}
 		body="";
@@ -757,6 +765,7 @@ for(i in area) {
 			&& (system.trashcan("ip", hdr["nntp-posting-host"]) 
 				|| system.trashcan("ip-silent", hdr["nntp-posting-host"]))) {
 			print("!Filtered IP address in NNTP-Posting-Host header field: " + hdr["nntp-posting-host"]);
+			subpending--;
 			continue;
 		}
 			
@@ -785,6 +794,7 @@ for(i in area) {
 						printf("Duplicate file removed: %s\r\n",file.name);   
 					else   
 						printf("!ERROR removing duplicate file: %s\r\n",file.name);   
+					subpending--;
 					continue;   
 				}
 				/* Append MD5 to history file */
@@ -794,6 +804,7 @@ for(i in area) {
 				} else
 					printf("!ERROR %d (%s) creating/appending %s\r\n"
 						,errno, errno_str, md5_file.name);
+				subpending--;
 				continue;
 			}
         } 
@@ -802,6 +813,7 @@ for(i in area) {
 
 		if(truncsp(body).length==0) {
 			printf("Message %lu not imported (blank)\r\n",ptr);
+			subpending--;
 			continue;
 		}
 
@@ -811,6 +823,7 @@ for(i in area) {
 				var reason = format("Too many newsgroups (%d): %s",ngarray.length, hdr.newsgroups);
 				printf("!%s\r\n",reason);
 				system.spamlog("NNTP","NOT IMPORTED",reason,hdr.from,host,hdr.to);
+				subpending--;
 				continue;
 			}
 		}
@@ -819,25 +832,33 @@ for(i in area) {
 			hdr.to=hdr.newsgroups;
 
 		// Duplicate/looped message detection here
-		if(hdr.id.indexOf('@' + system.inetaddr)!=-1)
+		if(hdr.id.indexOf('@' + system.inetaddr)!=-1) {
+			subpending--;
 			continue;
+		}
 		if(hdr.path
-			&& hdr.path.indexOf(system.inetaddr)!=-1)
+			&& hdr.path.indexOf(system.inetaddr)!=-1) {
+			subpending--;
 			continue;
+		}
 		if(hdr.gateway
-			&& hdr.gateway.indexOf(system.inetaddr)!=-1)
+			&& hdr.gateway.indexOf(system.inetaddr)!=-1) {
+			subpending--;
 			continue;
+		}
 
 		if(flags.indexOf('s')==-1 && system.trashcan("subject",hdr.subject)) {
 			var reason = format("Blocked subject (%s)",hdr.subject);
 			printf("!%s\r\n",reason);
 			system.spamlog("NNTP","NOT IMPORTED",reason,hdr.from,host,hdr.to);
+			subpending--;
 			continue;
 		}
 		if(use_twitlist 
 			&& (system.findstr(twitlist_fname,hdr.from) 
 				|| system.findstr(twitlist_fname,hdr.to))) {
 			printf("Filtering message from %s to %s\r\n", hdr.from, hdr.to);
+			subpending--;
 			continue;
 		}
 
@@ -860,10 +881,13 @@ for(i in area) {
 			body += tearline;
 		if(msgbase.save_msg(hdr,body)) {
 			imported++;
+			subimported++;
 			printf("Message %lu imported into %s (%lu of %lu total) %lu lines\r\n"
-				,ptr, sub, imported, msgbase.total_msgs, line_counter);
-		} else
+				,ptr, sub, subimported, subpending, line_counter);
+		} else {
 			printf("!IMPORT %lu ERROR: %s\r\n", ptr, msgbase.last_error);
+			subpending--;
+		}
 	}
 
 	ptr--;	/* point to last requested article number */
