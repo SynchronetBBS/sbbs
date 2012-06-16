@@ -880,7 +880,7 @@ for(i in area) {
 //		hdr.from_net_addr=hdr.from;
 		if(flags.indexOf('t')==-1)
 			body += tearline;
-		if(flags.indexOf('m')==-1)
+		if(flags.indexOf('m')>=0)
 			hdr.attr |= MSG_MODERATED;
 		if(msgbase.save_msg(hdr,body)) {
 			imported++;
