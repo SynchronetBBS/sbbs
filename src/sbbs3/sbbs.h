@@ -921,6 +921,7 @@ extern "C" {
 	DLLEXPORT size_t	DLLCALL strip_invalid_attr(char *str);
 	DLLEXPORT char *	DLLCALL ultoac(ulong l,char *str);
 	DLLEXPORT char *	DLLCALL rot13(char* str);
+	DLLEXPORT uint32_t	DLLCALL str_to_bits(uint32_t currval, const char *str);
 
 	/* msg_id.c */
 	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg, char* msgid, size_t);

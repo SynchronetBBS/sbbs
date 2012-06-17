@@ -271,37 +271,10 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			break;
 		case CON_PROP_CTRLKEY_PASSTHRU:
 			if(JSVAL_IS_STRING(*vp)) {
-				/* op can be 0 for replace, + for add, or - for remove */
-				int op=0;
 				char *s;
-				char ctrl;
 
-				if((str=JS_ValueToString(cx, *vp))==NULL)
-					break;
-				val=sbbs->cfg.ctrlkey_passthru;
 				JSSTRING_TO_STRING(cx, str, s, NULL);
-				for(; *s; s++) {
-					if(*s=='+')
-						op=1;
-					else if(*s=='-')
-						op=2;
-					else {
-						if(!op) {
-							val=0;
-							op=1;
-						}
-						ctrl=toupper(*s);
-						ctrl&=0x1f;			/* Ensure it fits */
-						switch(op) {
-							case 1:		/* Add to the set */
-								val |= 1<<ctrl;
-								break;
-							case 2:		/* Remove from the set */
-								val &= ~(1<<ctrl);
-								break;
-						}
-					}
-				}
+				val=str_to_bits(sbbs->cfg.ctrlkey_passthru, s);
 			}
 			sbbs->cfg.ctrlkey_passthru=val;
 			break;

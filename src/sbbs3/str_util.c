@@ -699,6 +699,36 @@ char* replace_keyed_values(const char* src
 	return(buf);
 }
 
+uint32_t DLLCALL str_to_bits(uint32_t val, const char *str)
+{
+	/* op can be 0 for replace, + for add, or - for remove */
+	int op=0;
+	char *s;
+	char ctrl;
+
+	for(s=str; *s; s++) {
+		if(*s=='+')
+			op=1;
+		else if(*s=='-')
+			op=2;
+		else {
+			if(!op) {
+				val=0;
+				op=1;
+			}
+			ctrl=toupper(*s);
+			ctrl&=0x1f;			/* Ensure it fits */
+			switch(op) {
+				case 1:		/* Add to the set */
+					val |= 1<<ctrl;
+					break;
+				case 2:		/* Remove from the set */
+					val &= ~(1<<ctrl);
+					break;
+			}
+		}
+	}
+}
 
 #if 0	/* replace_*_values test */
 

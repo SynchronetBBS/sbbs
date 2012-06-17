@@ -583,43 +583,73 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			break;
 		case USER_PROP_FLAGS1:
 			JS_RESUMEREQUEST(cx, rc);
-			if(!JS_ValueToInt32(cx,*vp,&val))
-				return JS_FALSE;
+			if(JSVAL_IS_STRING(*vp)) {
+				val=str_to_bits(p->user->flags1, str);
+			}
+			else {
+				if(!JS_ValueToInt32(cx,*vp,&val))
+					return JS_FALSE;
+			}
 			putuserrec(p->cfg,p->user->number,U_FLAGS1,0,ultoa(p->user->flags1=val,tmp,16));
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS2:
 			JS_RESUMEREQUEST(cx, rc);
-			if(!JS_ValueToInt32(cx,*vp,&val))
-				return JS_FALSE;
+			if(JSVAL_IS_STRING(*vp)) {
+				val=str_to_bits(p->user->flags1, str);
+			}
+			else {
+				if(!JS_ValueToInt32(cx,*vp,&val))
+					return JS_FALSE;
+			}
 			putuserrec(p->cfg,p->user->number,U_FLAGS2,0,ultoa(p->user->flags2=val,tmp,16));
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS3:
 			JS_RESUMEREQUEST(cx, rc);
-			if(!JS_ValueToInt32(cx,*vp,&val))
-				return JS_FALSE;
+			if(JSVAL_IS_STRING(*vp)) {
+				val=str_to_bits(p->user->flags1, str);
+			}
+			else {
+				if(!JS_ValueToInt32(cx,*vp,&val))
+					return JS_FALSE;
+			}
 			putuserrec(p->cfg,p->user->number,U_FLAGS3,0,ultoa(p->user->flags3=val,tmp,16));
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS4:
 			JS_RESUMEREQUEST(cx, rc);
-			if(!JS_ValueToInt32(cx,*vp,&val))
-				return JS_FALSE;
+			if(JSVAL_IS_STRING(*vp)) {
+				val=str_to_bits(p->user->flags1, str);
+			}
+			else {
+				if(!JS_ValueToInt32(cx,*vp,&val))
+					return JS_FALSE;
+			}
 			putuserrec(p->cfg,p->user->number,U_FLAGS4,0,ultoa(p->user->flags4=val,tmp,16));
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_EXEMPT:
 			JS_RESUMEREQUEST(cx, rc);
-			if(!JS_ValueToInt32(cx,*vp,&val))
-				return JS_FALSE;
+			if(JSVAL_IS_STRING(*vp)) {
+				val=str_to_bits(p->user->flags1, str);
+			}
+			else {
+				if(!JS_ValueToInt32(cx,*vp,&val))
+					return JS_FALSE;
+			}
 			putuserrec(p->cfg,p->user->number,U_EXEMPT,0,ultoa(p->user->exempt=val,tmp,16));
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_REST:	
 			JS_RESUMEREQUEST(cx, rc);
-			if(!JS_ValueToInt32(cx,*vp,&val))
-				return JS_FALSE;
+			if(JSVAL_IS_STRING(*vp)) {
+				val=str_to_bits(p->user->flags1, str);
+			}
+			else {
+				if(!JS_ValueToInt32(cx,*vp,&val))
+					return JS_FALSE;
+			}
 			putuserrec(p->cfg,p->user->number,U_REST,0,ultoa(p->user->rest=val,tmp,16));
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
@@ -774,12 +804,12 @@ static char* user_security_prop_desc[] = {
 	 "password"
 	,"date password last modified (time_t format)"
 	,"security level (0-99)"
-	,"flag set #1 (bitfield)"
-	,"flag set #2 (bitfield)"
-	,"flag set #3 (bitfield)"
-	,"flag set #4 (bitfield)"
-	,"exemption flags (bitfield)"
-	,"restriction flags (bitfield)"
+	,"flag set #1 (bitfield) can use +/-[A-?] notation"
+	,"flag set #2 (bitfield) can use +/-[A-?] notation"
+	,"flag set #3 (bitfield) can use +/-[A-?] notation"
+	,"flag set #4 (bitfield) can use +/-[A-?] notation"
+	,"exemption flags (bitfield) can use +/-[A-?] notation"
+	,"restriction flags (bitfield) can use +/-[A-?] notation"
 	,"credits"
 	,"free credits (for today only)"
 	,"extra minutes (time bank)"
