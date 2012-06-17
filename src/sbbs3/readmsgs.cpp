@@ -644,11 +644,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				uint16_t msg_attr = msg.hdr.attr;
 				SAFEPRINTF2(str,text[ValidatePostQ],msg.hdr.number,msg.subj);
 				if(!noyes(str))
-					msg.hdr.attr|=MSG_VALIDATED;
+					msg_attr|=MSG_VALIDATED;
 				else {
 					SAFEPRINTF2(str,text[DeletePostQ],msg.hdr.number,msg.subj);
 					if(yesno(str))
-						msg.hdr.attr|=MSG_DELETE;
+						msg_attr|=MSG_DELETE;
 				}
 				if(msg_attr!=msg.hdr.attr) {
 					if(msg.total_hfields)
