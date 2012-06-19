@@ -53,7 +53,7 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 var config = new File(system.ctrl_dir + config_filename);
 
 function init() {
-	load("load/ircbot_functions.js");
+	load("ircbot_functions.js");
 
 	if (!config.open("r")) {
 		exit("Couldn't open config file!");
@@ -77,7 +77,7 @@ function init() {
 
 	config.close();
 	
-	load("load/ircbot_commands.js");
+	load("ircbot_commands.js");
 }
 
 function init_servers(config) {
