@@ -189,9 +189,11 @@ bool sbbs_t::answer()
 	}
 #ifdef USE_CRYPTLIB
 	if(sys_status&SS_SSH) {
+		pthread_mutex_lock(&ssh_mutex);
 		cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, rlogin_name, &i);
 		rlogin_name[i]=0;
 		cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, rlogin_pass, &i);
+		pthread_mutex_unlock(&ssh_mutex);
 		rlogin_pass[i]=0;
 		lprintf(LOG_DEBUG,"Node %d SSH login: '%s'"
 			,cfg.node_num, rlogin_name);
