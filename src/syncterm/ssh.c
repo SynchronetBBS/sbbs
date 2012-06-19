@@ -18,6 +18,7 @@
 static SOCKET	sock;
 CRYPT_SESSION	ssh_session;
 int				ssh_active=FALSE;
+pthread_mutex_t	ssh_mutex;
 
 static void cryptlib_error_message(int status, const char * msg)
 {
@@ -27,10 +28,12 @@ static void cryptlib_error_message(int status, const char * msg)
 	int		err_len;
 
 	sprintf(str,"Error %d %s\r\n\r\n",status, msg);
+	pthread_mutex_lock(&ssh_mutex);
 	cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &err_len);
 	errmsg=(char *)malloc(err_len+strlen(str)+5);
 	strcpy(errmsg, str);
 	cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, errmsg+strlen(str), &err_len);
+	pthread_mutex_unlock(&ssh_mutex);
 	errmsg[strlen(str)+err_len]=0;
 	strcat(errmsg,"\r\n\r\n");
 	sprintf(str2,"Error %s", msg);
@@ -63,7 +66,9 @@ void ssh_input_thread(void *args)
 		if(rd == 0)
 			continue;
 		while(rd) {
+			pthread_mutex_lock(&ssh_mutex);
 			status=cl.PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
+			pthread_mutex_unlock(&ssh_mutex);
 			if(cryptStatusError(status)) {
 				if(status==CRYPT_ERROR_COMPLETE || status == CRYPT_ERROR_READ) {	/* connection closed */
 					ssh_active=FALSE;
@@ -102,7 +107,9 @@ void ssh_output_thread(void *args)
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent=0;
 			while(sent < wr) {
+				pthread_mutex_lock(&ssh_mutex);
 				status=cl.PushData(ssh_session, conn_api.wr_buf+sent, wr-sent, &ret);
+				pthread_mutex_unlock(&ssh_mutex);
 				if(cryptStatusError(status)) {
 					if(status==CRYPT_ERROR_COMPLETE) {	/* connection closed */
 						ssh_active=FALSE;
@@ -113,8 +120,11 @@ void ssh_output_thread(void *args)
 				}
 				sent += ret;
 			}
-			if(sent)
+			if(sent) {
+				pthread_mutex_lock(&ssh_mutex);
 				cl.FlushData(ssh_session);
+				pthread_mutex_unlock(&ssh_mutex);
+			}
 		}
 		else
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
@@ -130,6 +140,7 @@ int ssh_connect(struct bbslist *bbs)
 	char username[MAX_USER_LEN+1];
 
 	init_uifc(TRUE, TRUE);
+	pthread_mutex_init(&ssh_mutex, NULL);
 
 	if(!crypt_loaded) {
 		uifcmsg("Cannot load cryptlib - SSH inoperative",	"`Cannot load cryptlib`\n\n"
@@ -257,5 +268,6 @@ int ssh_close(void)
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);
 	FREE_AND_NULL(conn_api.wr_buf);
+	pthread_mutex_destroy(&ssh_mutex);
 	return(0);
 }
