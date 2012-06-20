@@ -598,6 +598,14 @@ static int ciolib_setfont(struct cterminal *,int font, int force, int font_num)
 }
 #endif
 
+static void tone_or_beep(double freq, int duration, int device_open)
+{
+	if(device_open)
+		xptone(freq,duration,WAVE_SHAPE_SINE_SAW_HARM);
+	else
+		xpbeep(freq,duration);
+}
+
 static void playnote_thread(void *args)
 {
 	/* Tempo is quarter notes per minute */
@@ -641,15 +649,12 @@ static void playnote_thread(void *args)
 				break;
 		}
 		duration-=pauselen;
-		if(note->notenum < 72 && note->notenum >= 0) {
-			if(device_open)
-				xptone(((double)note_frequency[note->notenum])/1000,duration,WAVE_SHAPE_SINE_SAW_HARM);
-			else
-				xpbeep(((double)note_frequency[note->notenum])/1000,duration);
-		}
+		if(note->notenum < 72 && note->notenum >= 0)
+			tone_or_beep(((double)note_frequency[note->notenum])/1000,duration,device_open);
 		else
-			SLEEP(duration);
-		SLEEP(pauselen);
+			tone_or_beep(0,duration,device_open);
+		if(pauselen)
+			tone_or_beep(0,pauselen,device_open);
 		if(note->foreground)
 			sem_post(&cterm->note_completed_sem);
 		free(note);
