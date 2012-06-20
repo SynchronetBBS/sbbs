@@ -6,7 +6,7 @@
 #include "SDL_syswm.h"
 
 #ifdef _WIN32
-        #define HACK_HACK_HACK __stdcall
+        #define HACK_HACK_HACK __cdecl
 #else
         #define HACK_HACK_HACK
 #endif
