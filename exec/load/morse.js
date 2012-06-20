@@ -65,7 +65,7 @@ function Morse2ANSI(string, wpm)
 	var i,j;
 	var skipped=false;
 	for(i=0;i<string.length;i++) {
-		var ch=string.charAt(i);
+		var ch=string.charAt(i).toUpperCase();
 		if(morse[ch] != undefined) {
 			skipped=false;
 			for(j=0;j<morse[ch].length;j++) {
