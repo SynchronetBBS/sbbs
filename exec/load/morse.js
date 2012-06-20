@@ -82,7 +82,6 @@ function Morse2ANSI(string, wpm)
 		else if(!skipped) {
 			skipped=true;
 			if(ch=~/^\s$/) {
-				str=str.replace(
 				str += 'PP'+(L/3);
 			}
 		}
