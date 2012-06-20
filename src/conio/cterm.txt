@@ -581,12 +581,12 @@ playing music on a BBS conenction.  They decided to add an "unused" ANSI code
 and go their merry way.  Since their product didn't implement CSI M (Delete
 line) they assumed it was unused and blissfully broke the spec.  They defined
 "ANSI" music as:
-CSI M <music string> 0x0a
+CSI M <music string> 0x0e
 
 They used a subset of IBM BASICs PLAY statement functionality for ANSI music
 strings which oftem start with "MF" or "MB", so the M after the CSI was often
 considered as part of the music string.  You would see things such as:
-CSI MFABCD 0x0a and the F would not be played as a note.  This just added
+CSI MFABCD 0x0e and the F would not be played as a note.  This just added
 further confusion to the mess.
 
 Later on, BananaCom realized the conflict between delete line and music, so they
@@ -675,6 +675,6 @@ an excellent reason to change them (and more correct integer values for all
 notes) I am willing to do that assuming the notes still sound "right".
 
 !!!PLEASE NOTE!!! If you are playing some ANSI Music then ask the user if they
-heard it, ALWAYS follow it with an 0x0b 0x0a is the shift lock character which
+heard it, ALWAYS follow it with an 0x0f 0x0e is the shift lock character which
 *will* cause people with anything but an ANSI-BBS terminal (ie: *nix users using
-the bundled telnet app) to have their screen messed up.  0x0b "undoes" the 0x0a.
+the bundled telnet app) to have their screen messed up.  0x0f "undoes" the 0x0e.
