@@ -93,7 +93,7 @@ static int handle_type=SOUND_DEVICE_CLOSED;
 static PaStream			*portaudio_stream;
 static int				portaudio_buf_len=0;
 static int				portaudio_buf_pos=0;
-static const unsigned char	*pawave;
+static const unsigned char	*pawave=NULL;
 static int				portaudio_initialized=FALSE;
 #ifndef PaStream	// Detect version... defined for 1.8 and not for 1.9
 #define PortAudioCallback	void
@@ -131,7 +131,8 @@ static SDL_sem			*sdlToneDone;
 
 #ifdef _WIN32
 static	HWAVEOUT		waveOut;
-static	WAVEHDR			wh;
+static	WAVEHDR			wh[2];
+static	int				curr_wh;
 #endif
 
 #ifdef USE_ALSA_SOUND
@@ -189,6 +190,8 @@ void makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE sha
 	double inc;
 	double pos;
 	BOOL endhigh;
+	int crossings;
+	int numcross=0;
 
 	if(freq==0) {
 		memset(wave, 128, samples);
@@ -250,6 +253,31 @@ void makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE sha
 				wave[i]=128;
 			}
 		}
+
+		/* Number of crossings should be on the order of 5ms worth... according to the ARRL */
+		/* We're ASSuming that a full wave crosses twice */
+		numcross=freq/100;
+		if(numcross) {
+			/* Ramp up and down by one third for three corssings of 128 */
+			crossings=0;
+			for(i=0; i<(samples-1); i++) {
+				if(((wave[i]<128 && wave[i+1]>=128) || (wave[i]>128 && wave[i+1]<=128)) && i>2) {
+					crossings++;
+					if(crossings>=numcross)
+						break;
+				}
+				wave[i]=128+((wave[i]-128)/((numcross-crossings)*(numcross-crossings)));
+			}
+			crossings=0;
+			for(i=samples; i>0; i--) {
+				if(((wave[i]<128 && wave[i-1]>=128) || (wave[i]>128 && wave[i-1]<=128)) && i>2) {
+					crossings++;
+					if(crossings>=numcross)
+						break;
+				}
+				wave[i]=128+((wave[i]-128)/((numcross-crossings)*(numcross-crossings)));
+			}
+		}
 	}
 }
 
@@ -300,6 +328,7 @@ void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 			sdl.SemPost(sdlToneDone);
 			sdl_audio_buf_len=0;
 			sdl_audio_buf_pos=0;
+			free(swave);
 		}
 	}
 }
@@ -431,8 +460,8 @@ BOOL xptone_open(void)
 		if(sound_device_open_failed)
 			return(FALSE);
 		memset(&wh, 0, sizeof(wh));
-		wh.lpData=NULL;
-		wh.dwBufferLength=S_RATE*15/2+1;
+		wh[0].dwBufferLength=S_RATE*15/2+1;
+		wh[1].dwBufferLength=S_RATE*15/2+1;
 		handle_type=SOUND_DEVICE_WIN32;
 		if(!sound_device_open_failed)
 			return(TRUE);
@@ -527,8 +556,60 @@ BOOL xptone_open(void)
 	return(FALSE);
 }
 
+void xptone_complete(void)
+{
+	if(handle_type==SOUND_DEVICE_CLOSED)
+		return;
+#ifdef WITH_PORTAUDIO
+	else if(handle_type==SOUND_DEVICE_PORTAUDIO) {
+		while(pa_api->active(portaudio_stream))
+			SLEEP(1);
+		pa_api->stop(portaudio_stream);
+		FREE_AND_NULL(pawave);
+	}
+#endif
+
+#ifdef WITH_SDL_AUDIO
+	else if(handle_type==SOUND_DEVICE_SDL) {
+		// TODO: How?
+	}
+#endif
+
+#ifdef _WIN32
+	if(handle_type==SOUND_DEVICE_WIN32) {
+		if(wh[0].dwFlags & WHDR_PREPARED) {
+			while(waveOutUnprepareHeader(waveOut, &wh[0], sizeof(wh))==WAVERR_STILLPLAYING)
+				SLEEP(1);
+			FREE_AND_NULL(wh[0].lpData);
+		}
+		if(wh[1].dwFlags & WHDR_PREPARED) {
+			while(waveOutUnprepareHeader(waveOut, &wh[1], sizeof(wh))==WAVERR_STILLPLAYING)
+				SLEEP(1);
+			FREE_AND_NULL(wh[1].lpData);
+		}
+	}
+#endif
+
+#ifdef USE_ALSA_SOUND
+	if(handle_type==SOUND_DEVICE_ALSA) {
+		if(!alsa_device_open_failed) {
+			while(alsa_api->snd_pcm_drain(playback_handle))
+				SLEEP(1);
+		}
+	}
+#endif
+
+#ifdef AFMT_U8
+	else if(handle_type==SOUND_DEVICE_OSS) {
+		close(dsp);
+	}
+#endif
+
+}
+
 BOOL xptone_close(void)
 {
+	xptone_complete();
 #ifdef WITH_PORTAUDIO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 		pa_api->close(portaudio_stream);
@@ -556,8 +637,9 @@ BOOL xptone_close(void)
 #endif
 
 #ifdef AFMT_U8
-	if(handle_type==SOUND_DEVICE_OSS)
+	if(handle_type==SOUND_DEVICE_OSS) {
 		close(dsp);
+	}
 #endif
 	handle_type=SOUND_DEVICE_CLOSED;
 	sound_device_open_failed=FALSE;
@@ -573,6 +655,8 @@ void xp_play_sample_thread(void *data)
 	BOOL			must_close=FALSE;
 	BOOL			posted_last=TRUE;
 	BOOL			waited=FALSE;
+	unsigned char	*sample;
+	size_t			this_sample_size;
 
 #ifdef AFMT_U8
 	int wr;
@@ -599,30 +683,38 @@ void xp_play_sample_thread(void *data)
 				continue;
 			}
 		}
+		this_sample_size=sample_size;
+		sample=(unsigned char *)malloc(sample_size);
+		if(sample==NULL) {
+				sem_post(&sample_complete_sem);
+				pthread_mutex_unlock(&sample_mutex);
+				continue;
+		}
+		memcpy(sample, sample_buffer, this_sample_size);
+		pthread_mutex_unlock(&sample_mutex);
 
 	#ifdef WITH_PORTAUDIO
 		if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 			if(pa_api->ver >= 1899) {
-				pa_api->write(portaudio_stream, sample_buffer, sample_size);
+				pa_api->write(portaudio_stream, sample, this_sample_size);
+				free(sample);
 			}
 			else {
-				pawave=sample_buffer;
+				xptone_complete();
+				pawave=sample;
 				portaudio_buf_pos=0;
-				portaudio_buf_len=sample_size;
+				portaudio_buf_len=this_sample_size;
 				pa_api->start(portaudio_stream);
 			}
-			while(pa_api->active(portaudio_stream))
-				SLEEP(1);
-			pa_api->stop(portaudio_stream);
 		}
 	#endif
 
 	#ifdef WITH_SDL_AUDIO
 		if(handle_type==SOUND_DEVICE_SDL) {
 			sdl.LockAudio();
-			swave=sample_buffer;
+			swave=sample;
 			sdl_audio_buf_pos=0;
-			sdl_audio_buf_len=sample_size;
+			sdl_audio_buf_len=this_sample_size;
 			sdl.UnlockAudio();
 			sdl.SemWait(sdlToneDone);
 		}
@@ -630,14 +722,16 @@ void xp_play_sample_thread(void *data)
 
 	#ifdef _WIN32
 		if(handle_type==SOUND_DEVICE_WIN32) {
-			wh.lpData=sample_buffer;
-			wh.dwBufferLength=sample_size;
-			if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
-				if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
-					while(!(wh.dwFlags & WHDR_DONE))
-						SLEEP(1);
-					while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
-						SLEEP(1);
+			if(wh[curr_wh].dwFlags & WHDR_PREPARED) {
+				while(waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==WAVERR_STILLPLAYING)
+					SLEEP(1);
+			}
+			FREE_AND_NULL(wh[curr_wh].lpData);
+			wh[curr_wh].lpData=sample;
+			wh[curr_wh].dwBufferLength=this_sample_size;
+			if(waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
+				if(waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
+					curr_wh ^= 1;
 				}
 			}
 		}
@@ -648,8 +742,8 @@ void xp_play_sample_thread(void *data)
 			int ret;
 			int written=0;
 
-			while(written < sample_size) {
-				ret=alsa_api->snd_pcm_writei(playback_handle, sample_buffer+written, sample_size-written);
+			while(written < this_sample_size) {
+				ret=alsa_api->snd_pcm_writei(playback_handle, sample+written, this_sample_size-written);
 				if(ret < 0) {
 					if(written==0) {
 						/* Go back and try OSS */
@@ -661,10 +755,9 @@ void xp_play_sample_thread(void *data)
 				}
 				written += ret;
 			}
-			if(!alsa_device_open_failed) {
-				while(alsa_api->snd_pcm_drain(playback_handle))
-					SLEEP(1);
-			}
+#ifndef AFMT_U8
+			free(sample);
+#endif
 		}
 	#endif
 
@@ -676,11 +769,11 @@ void xp_play_sample_thread(void *data)
 				if(i>=0)
 					wr+=i;
 			}
+			free(sample);
 		}
 	#endif
 		sem_post(&sample_complete_sem);
 		posted_last=TRUE;
-		pthread_mutex_unlock(&sample_mutex);
 		if(must_close) {
 			if(sem_trywait(&sample_pending_sem)==0)
 				waited=TRUE;
@@ -694,7 +787,6 @@ error_return:
 	if(!posted_last)
 		sem_post(&sample_complete_sem);
 	sample_thread_running=FALSE;
-	pthread_mutex_unlock(&sample_mutex);
 }
 
 BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t size, BOOL background)
@@ -752,16 +844,18 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 		if(pa_api->ver >= 1899) {
 			pa_api->write(portaudio_stream, sample, sample_size);
+			free(sample);
 		}
 		else {
+			xptone_complete();
 			pawave=sample;
 			portaudio_buf_pos=0;
 			portaudio_buf_len=sample_size;
 			pa_api->start(portaudio_stream);
 		}
-		while(pa_api->active(portaudio_stream))
-			SLEEP(1);
-		pa_api->stop(portaudio_stream);
+		if(must_close)
+			xptone_close();
+		return TRUE;
 	}
 #endif
 
@@ -773,19 +867,25 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 		sdl_audio_buf_len=sample_size;
 		sdl.UnlockAudio();
 		sdl.SemWait(sdlToneDone);
+		if(must_close)
+			xptone_close();
+		return TRUE;
 	}
 #endif
 
 #ifdef _WIN32
 	if(handle_type==SOUND_DEVICE_WIN32) {
-		wh.lpData=sample;
-		wh.dwBufferLength=sample_size;
-		if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
-			if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
-				while(!(wh.dwFlags & WHDR_DONE))
-					SLEEP(1);
-				while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
-					SLEEP(1);
+		while(waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==WAVERR_STILLPLAYING)
+			SLEEP(1);
+		FREE_AND_NULL(wh[curr_wh].lpData);
+		wh[curr_wh].lpData=sample;
+		wh[curr_wh].dwBufferLength=sample_size;
+		if(waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
+			if(waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
+				curr_wh ^= 1;
+				if(must_close)
+					xptone_close();
+				return TRUE;
 			}
 		}
 	}
@@ -810,8 +910,6 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 			written += ret;
 		}
 		if(!alsa_device_open_failed) {
-			while(alsa_api->snd_pcm_drain(playback_handle))
-				SLEEP(1);
 			if(must_close)
 				xptone_close();
 			return(TRUE);
@@ -844,9 +942,10 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 
 BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 {
-	unsigned char	wave[S_RATE*15/2+1];
+	unsigned char	*wave;
 	int samples;
 
+	wave=(unsigned char *)malloc(S_RATE*15/2+1);
 	if(freq<17 && freq != 0)
 		freq=17;
 	samples=S_RATE*duration/1000;
