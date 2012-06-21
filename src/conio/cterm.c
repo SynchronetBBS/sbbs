@@ -869,6 +869,7 @@ static void play_music(struct cterminal *cterm)
 		sem_wait(&cterm->note_completed_sem);
 		fore_count--;
 	}
+	xptone_complete();
 }
 
 static void scrolldown(struct cterminal *cterm)
