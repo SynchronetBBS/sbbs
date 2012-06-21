@@ -52,11 +52,11 @@ function Morse2ANSI(string, wpm)
 		wpm=25;
 	}
 	// Calculate the tempo...
-	var etime=1.2/wpm;		// The duration of one element.
+	var etime=1.2/wpm;		// The duration of one element (seconds).
 	var epm=60/etime;		// Number of elements per minute
 	var T;
-	var L=3;
-	T=epm*4/3;
+	var L=4;
+	T=epm;
 	while(T > (255)) {
 		T/=2;
 		L*=2;
@@ -73,16 +73,16 @@ function Morse2ANSI(string, wpm)
 					str += 'C';
 				}
 				else {
-					str += 'C'+(L/3);
+					str += 'C'+(L/2)+'.';
 				}
 				str += 'P';
 			}
-			str += (L/3);
+			str += (L/2)+'.';
 		}
 		else if(!skipped) {
 			skipped=true;
 			if(ch=~/^\s$/) {
-				str += 'PP'+(L/3);
+				str += 'P'+(L/4);
 			}
 		}
 	}
