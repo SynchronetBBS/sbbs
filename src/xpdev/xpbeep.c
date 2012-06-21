@@ -571,7 +571,8 @@ void xptone_complete(void)
 
 #ifdef WITH_SDL_AUDIO
 	else if(handle_type==SOUND_DEVICE_SDL) {
-		// TODO: How?
+		while(sdl.GetAudioStatus()==SDL_AUDIO_PLAYING)
+			SLEEP(1);
 	}
 #endif
 
@@ -601,7 +602,7 @@ void xptone_complete(void)
 
 #ifdef AFMT_U8
 	else if(handle_type==SOUND_DEVICE_OSS) {
-		close(dsp);
+		ioctl(dsp, SNDCTL_DSP_SYNC, NULL);
 	}
 #endif
 
