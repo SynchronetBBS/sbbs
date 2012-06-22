@@ -273,6 +273,8 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			if(JSVAL_IS_STRING(*vp)) {
 				char *s;
 
+				if((str=JS_ValueToString(cx, *vp))==NULL)
+					break;
 				JSSTRING_TO_STRING(cx, str, s, NULL);
 				val=str_to_bits(sbbs->cfg.ctrlkey_passthru, s);
 			}
