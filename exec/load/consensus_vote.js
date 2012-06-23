@@ -149,7 +149,7 @@ function ConcensusObject(host, port, scope)
 			matched=0;
 			for(j in all[i].answers) {
 				for(k in all[i].answers[j].votes) {
-					if(all[i].answers[j].votes[k]==user.number)
+					if(all[i].answers[j].votes[k]==user.alias)
 						matched++;
 				}
 			}
