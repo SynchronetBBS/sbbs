@@ -2,6 +2,7 @@
  * Hard-coded things to watch out for... voters have UFLAG_D
  * and "I don't give a shit what you hamfags do" is the string for
  * standing aside.
+ * Issues expire after 15 days.
  */
 load("sbbsdefs.js");
 load("json-client.js");
@@ -141,15 +142,19 @@ function ConcensusObject(host, port, scope)
 	{
 		var all=this.get_open_issues();
 		var i,j,k;
+		var matched;
 		var ret=[];
 
 		for(i in all) {
+			matched=0;
 			for(j in all[i].answers) {
 				for(k in all[i].answers[j].votes) {
 					if(all[i].answers[j].votes[k]==user.number)
-						ret.push(all[i]);
+						matched++;
 				}
 			}
+			if(!matched)
+				ret.push(all[i]);
 		}
 		return ret;
 	}
