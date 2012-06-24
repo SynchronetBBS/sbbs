@@ -47,7 +47,7 @@ function Morse2ANSI(string, wpm)
 		'@':'.--.-'
 	};
 
-	var str='MFMLO4';
+	var str='MLO4';
 	if(wpm==undefined) {
 		wpm=25;
 	}
