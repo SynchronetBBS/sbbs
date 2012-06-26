@@ -72,6 +72,19 @@ function ConcensusObject(host, port, scope)
 			newissue.answers=this.answers;
 			this.db.write(this.scope, 'issues.'+this.index, newissue, LOCK_WRITE);
 		}
+		issue.havevoted=function()
+		{
+			var i,j;
+
+			for(i in this.answers) {
+				for(j in this.answers[i].votes) {
+						if(this.answers[i].votes[k]==user.alias)
+							return true;
+					}
+				}
+			}
+			return false;
+		}
 	}
 
 	this.get_all_issues=function()
@@ -141,19 +154,11 @@ function ConcensusObject(host, port, scope)
 	this.get_pending_issues=function()
 	{
 		var all=this.get_open_issues();
-		var i,j,k;
-		var matched;
+		var i;
 		var ret=[];
 
 		for(i in all) {
-			matched=0;
-			for(j in all[i].answers) {
-				for(k in all[i].answers[j].votes) {
-					if(all[i].answers[j].votes[k]==user.alias)
-						matched++;
-				}
-			}
-			if(!matched)
+			if(!all[i].havevoted())
 				ret.push(all[i]);
 		}
 		return ret;
