@@ -103,6 +103,16 @@ function ConcensusObject(host, port, scope)
 		return(issues);
 	}
 
+	this.get_issue=function(index)
+	{
+		var issue=this.db.read(this.scope, 'issues.'+index, LOCK_READ);
+		this.add_issue_funcs(issue);
+		issue.index=index;
+		issue.db=this.db;
+		issue.scope=this.scope;
+		return issue;
+	}	
+
 	this.is_closed=function(issue)
 	{
 		var i;
