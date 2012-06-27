@@ -15,6 +15,7 @@ function ConcensusObject(host, port, scope)
 	var u,i,j;
 
 	this.db=new JSONClient(host,port);
+	this.scope=scope;
 
 	this.add_issue_funcs=function(issue)
 	{
