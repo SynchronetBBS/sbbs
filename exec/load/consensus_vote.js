@@ -94,8 +94,8 @@ function ConcensusObject(host, port, scope)
 		{
 			var i;
 			var now=time();
-			var dontgiveashit;
-	
+			var dontgiveashit=0;
+
 			if(this.start < now-60*60*24*15)
 				return true;
 
