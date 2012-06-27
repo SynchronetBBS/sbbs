@@ -72,17 +72,20 @@ function ConcensusObject(host, port, scope)
 			newissue.answers=this.answers;
 			this.db.write(this.scope, 'issues.'+this.index, newissue, LOCK_WRITE);
 		}
-		issue.havevoted=function()
+		issue.myvote=function()
 		{
 			var i,j;
 
 			for(i in this.answers) {
 				for(j in this.answers[i].votes) {
 					if(this.answers[i].votes[j]==user.alias)
-						return true;
+						return this.answers[i].value;
 				}
 			}
-			return false;
+		}
+		issue.havevoted=function()
+		{
+			return this.myvote()!=undefined;
 		}
 	}
 
