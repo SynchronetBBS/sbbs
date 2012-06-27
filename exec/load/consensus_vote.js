@@ -15,10 +15,12 @@ function ConcensusObject(host, port, scope)
 	var u,i,j;
 
 	this.db=new JSONClient(host,port);
-	this.scope=scope;
 
 	this.add_issue_funcs=function(issue)
 	{
+		issue.db=this.db;
+		issue.scope=this.scope;
+		issue.conobj=this;
 		issue.new_answer=function(text)
 		{
 			for(i in this.answer) {
@@ -70,7 +72,7 @@ function ConcensusObject(host, port, scope)
 			newissue.start=this.start;
 			newissue.title=this.title;
 			newissue.answers=this.answers;
-			this.db.write(this.scope, 'issues.'+this.index, newissue, LOCK_WRITE);
+			this.conobj.db.write(this.conobj.scope, 'issues.'+this.index, newissue, LOCK_WRITE);
 		}
 		issue.myvote=function()
 		{
@@ -87,6 +89,28 @@ function ConcensusObject(host, port, scope)
 		{
 			return this.myvote()!=undefined;
 		}
+		issue.is_closed=function()
+		{
+			var i;
+			var now=time();
+			var dontgiveashit;
+	
+			if(this.start < now-60*60*24*15)
+				return true;
+
+			for(i in this.answers) {
+				if(this.answers[i].value=="I don't give a shit what you hamfags do")
+					dontgiveashit=this.answers[i].votes.length;
+			}
+			for(i in this.answers) {
+				if(this.answers[i].value!="I don't give a shit what you hamfags do") {
+					if(this.answers[i].votes.length + dontgiveashit == this.conobj.dongcount)
+						return true;
+				}
+			}
+
+			return false;
+		}
 	}
 
 	this.get_all_issues=function()
@@ -97,8 +121,6 @@ function ConcensusObject(host, port, scope)
 		for(i in issues) {
 			this.add_issue_funcs(issues[i]);
 			issues[i].index=i;
-			issues[i].db=this.db;
-			issues[i].scope=this.scope;
 		}
 		return(issues);
 	}
@@ -108,33 +130,8 @@ function ConcensusObject(host, port, scope)
 		var issue=this.db.read(this.scope, 'issues.'+index, LOCK_READ);
 		this.add_issue_funcs(issue);
 		issue.index=index;
-		issue.db=this.db;
-		issue.scope=this.scope;
 		return issue;
 	}	
-
-	this.is_closed=function(issue)
-	{
-		var i;
-		var now=time();
-		var dontgiveashit;
-
-		if(issue.start < now-60*60*24*15)
-			return true;
-
-		for(i in issue.answers) {
-			if(issue.answers[i].value=="I don't give a shit what you hamfags do")
-				dontgiveashit=issue.answers[i].votes.length;
-		}
-		for(i in issue.answers) {
-			if(issue.answers[i].value!="I don't give a shit what you hamfags do") {
-				if(issue.answers[i].votes.length + dontgiveashit == this.dongcount)
-					return true;
-			}
-		}
-
-		return false;
-	}
 
 	this.get_closed_issues=function()
 	{
@@ -143,7 +140,7 @@ function ConcensusObject(host, port, scope)
 		var ret=[];
 
 		for (i in all) {
-			if(this.is_closed(all[i]))
+			if(all[i].is_closed())
 				ret.push(all[i]);
 		}
 		return ret;
@@ -156,7 +153,7 @@ function ConcensusObject(host, port, scope)
 		var ret=[];
 
 		for (i in all) {
-			if(!(this.is_closed(all[i]))) {
+			if(!(all[i].is_closed())) {
 				ret.push(all[i]);
 			}
 		}
@@ -193,8 +190,6 @@ function ConcensusObject(host, port, scope)
 				issue.index=i;
 			}
 		}
-		issue.db=this.db;
-		issue.scope=this.scope;
 		this.add_issue_funcs(issue);
 		return issue;
 	}
