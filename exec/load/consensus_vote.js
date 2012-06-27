@@ -201,7 +201,7 @@ function ConcensusObject(host, port, scope)
 		u.number=i;
 		if(u.settings&USER_DELETED)
 			continue;
-		if(user.security.flags1 & UFLAG_D)
+		if(u.security.flags1 & UFLAG_D)
 			this.dongcount++;
 	}
 
