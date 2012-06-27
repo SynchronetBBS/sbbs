@@ -78,9 +78,8 @@ function ConcensusObject(host, port, scope)
 
 			for(i in this.answers) {
 				for(j in this.answers[i].votes) {
-						if(this.answers[i].votes[k]==user.alias)
-							return true;
-					}
+					if(this.answers[i].votes[k]==user.alias)
+						return true;
 				}
 			}
 			return false;
