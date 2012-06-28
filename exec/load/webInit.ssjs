@@ -28,7 +28,7 @@ var webIni=(function() {
 	}
 
 	var f = new File(system.ctrl_dir + 'web.ini');
-	f.open("r");
+	f.open("r",true);
 	var webIni = f.iniGetObject();
 	f.close();
 
@@ -58,7 +58,7 @@ var webIni=(function() {
 			var u = new User(cookie[0]);
 			var sessionKey = false;
 			var f = getSessionKeyFile(u.number);
-			if(f.open("r")) {
+			if(f.open("r",true)) {
 				sessionKey = f.read();
 				f.close();
 			}
