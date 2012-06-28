@@ -24,7 +24,7 @@ for(f in d) {
         }
         if(file_getext(d[f]).toUpperCase() == ".HTML") {
 	        var g = new File(d[f]);
-			g.open("r");
+			g.open("r",true);
 	        h = g.read();
 	        g.close();
 			print(h);
@@ -32,7 +32,7 @@ for(f in d) {
         }
         if(file_getext(d[f]).toUpperCase() == ".TXT") {
             var g = new File(d[f]);
-            g.open("r");
+            g.open("r",true);
 			h = g.read();
 			g.close();
 //			print(h); // Uncomment this line if you'd rather not have your text files appear within <pre /> elements.

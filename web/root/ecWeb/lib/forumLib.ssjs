@@ -11,7 +11,7 @@ while(sigFile.length < 4) sigFile = "0" + sigFile;
 sigFile += ".sig";
 if(file_exists(system.data_dir + "user/" + sigFile)) {
 	var f = new File(system.data_dir + "user/" + sigFile);
-	f.open("r");
+	f.open("r",true);
 	var sig = f.read().replace(/\n|\r\n/g, '&#13;&#10;');
 	f.close();
 }

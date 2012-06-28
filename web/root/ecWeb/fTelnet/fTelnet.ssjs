@@ -9,7 +9,7 @@
    could comment the following if..else block out and just set var fspPort to
    whichever port you like. */
 var f = new File(system.ctrl_dir + 'services.ini');
-if(f.open("r")) {
+if(f.open("r",true)) {
 	var servicesIni = f.iniGetObject('FlashPolicy');
 	f.close();
 	if(servicesIni)

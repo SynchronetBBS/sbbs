@@ -7,7 +7,7 @@
 var e = directory(webIni.webRoot + "/pages/*");
 for(var g in e) {
 	var h = new File(e[g]);
-	if(h.open("r")) {
+	if(h.open("r",true)) {
 		var i = h.readAll();
 		h.close();
 		if(file_isdir(e[g])) continue;

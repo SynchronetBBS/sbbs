@@ -28,7 +28,7 @@ function insertCaptcha() {
 	for(i = 0; i < webIni.captchaLength; i++) {
 		var randomLetter = Math.floor(Math.random() * (f.length));
 		var g = new File(f[randomLetter]);
-		g.open("r");
+		g.open("r",true);
 		var h = g.read();
 		g.close();
 		h = html_encode(h);

@@ -31,7 +31,7 @@ function openPage(pageTitle) {
 		if(file_getext(d[f]).toUpperCase() == ".SSJS" || file_getext(d[f]).toUpperCase() == ".JS") load(d[f]);
 		if(file_getext(d[f]).toUpperCase() == ".TXT" || file_getext(d[f]).toUpperCase() == ".HTML") {
 			var handle = new File(d[f]);
-			handle.open("r");
+			handle.open("r",true);
 			var printme = handle.read();
 			handle.close();
 			if(file_getext(d[f]).toUpperCase() == ".TXT") printme = "<pre>" + printme + "</pre>";
