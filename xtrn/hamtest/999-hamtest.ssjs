@@ -157,7 +157,7 @@ else {
 		var ans;
 		while(q.question.answers.length) {
 			ans=q.question.answers.splice(random(q.question.answers.length),1)[0];
-			print('<button style="border-style: none" '+(q.failed[ans]!=undefined?'disabled class="backDropColor" ':'class="standardColor" ')+'type="submit" name="answer" value="'+encode(ans)+'">'+encode(ans)+'</button></br>');
+			print('<button style="border-style: none;" '+(q.failed[ans]!=undefined?'disabled class="backDropColor" ':'class="standardColor link" ')+'type="submit" name="answer" value="'+encode(ans)+'">'+encode(ans)+'</button></br>');
 		}
 		print('</div><br>');
 		print(correct+' out of '+(correct+wrong)+' correct, '+(test.question_list.length+1)+' remaining.');
