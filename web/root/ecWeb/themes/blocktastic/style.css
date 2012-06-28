@@ -1,7 +1,7 @@
 /* blocktastic v2 by echicken */
 
 /* HTML input elements, (eg. text inputs, buttons.) */
-input {
+button, input {
 	border-style: solid;
 	border-width: 1px;
 	border-color: #FFFFFF;
