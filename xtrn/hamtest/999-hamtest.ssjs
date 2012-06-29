@@ -18,12 +18,12 @@ var correct=0;
 var wrong=0;
 if(http_request.query.action==undefined) {
 	print('<h3>Select Exam Class</h3><ul>');
-	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&action=advanced">Advanced (Canadian)</a></li>');
-	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&action=basic">Basic (Canadian)</a></li>');
-	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&action=extra">Extra (American)</a></li>');
-	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&action=general">General (American)</a></li>');
-	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&action=technician">Technician (American)</a></li>');
-	print('</li>');
+	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&amp;action=advanced">Advanced (Canadian)</a></li>');
+	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&amp;action=basic">Basic (Canadian)</a></li>');
+	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&amp;action=extra">Extra (American)</a></li>');
+	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&amp;action=general">General (American)</a></li>');
+	print('<li><a class="link" href="?page='+http_request.query.page[0]+'&amp;action=technician">Technician (American)</a></li>');
+	print('</ul>');
 }
 else {
 	var opts=load('modopts.js','HamExam');
@@ -79,7 +79,7 @@ else {
 		}
 	}
 	q=undefined;
-	print('<form action="?page='+http_request.query.page[0]+'&action='+http_request.query.action[0]+'" method="POST">');
+	print('<form action="?page='+http_request.query.page[0]+'&amp;action='+http_request.query.action[0]+'" method="POST"><div>');
 	if(http_request.query.correct != undefined) {
 		correct = parseInt(http_request.query.correct[0],10);
 	}
@@ -128,7 +128,7 @@ else {
 	}
 	if(q==undefined) {
 		// Test is all done!
-		print('<div class="results" align="center">');
+		print('<div class="results" style="text-align: center">');
 		print("<h3>You answered "+correct+" out of "+(correct+wrong)+" correctly!</h3>");
 		var pct = Math.floor(correct/(correct+wrong)*100);
 
@@ -152,15 +152,15 @@ else {
 
 		print('<b>'+q.subelement+'</b><br>');
 		print(q.question.title+'<br><br>');
-		print('<div class="answers" align="center">');
+		print('<div class="answers" style="text-align: center">');
 		print('<h2>'+q.question.question+'</h2><br>');
 		var ans;
 		while(q.question.answers.length) {
 			ans=q.question.answers.splice(random(q.question.answers.length),1)[0];
-			print('<button style="border-style: none;" '+(q.failed[ans]!=undefined?'disabled class="backDropColor" ':'class="standardColor link" ')+'type="submit" name="answer" value="'+encode(ans)+'">'+encode(ans)+'</button></br>');
+			print('<button style="border-style: none;" '+(q.failed[ans]!=undefined?'disabled class="backDropColor" ':'class="standardColor link" ')+'type="submit" name="answer" value="'+encode(ans)+'">'+encode(ans)+'</button><br>');
 		}
 		print('</div><br>');
 		print(correct+' out of '+(correct+wrong)+' correct, '+(test.question_list.length+1)+' remaining.');
-		print('</form>');
+		print('</div></form>');
 	}
 }
