@@ -35,8 +35,8 @@ function insertCaptcha() {
 		print("<pre style='font-face:monospace;font-family:courier new,courier,fixedsys,monospace;background-color:black;float:left;padding-right:5px;'>" + h + "</pre>");
 		captchaString = captchaString + file_getname(f[randomLetter]).replace(file_getext(f[randomLetter]), "")
 	}
-	print("</div><br style=clear:both;/><br />");
-	print("<input class='border font' type=text size=" + webIni.captchaLength + " name=letters1> Enter the letters shown above (<a class=link href=./lib/captchaLib.ssjs?font=" + randomFont + " target=_blank>Help</a>)<br /><br />");
+	print("</div><br style=clear:both><br>");
+	print("<input class='border font' type=text size=" + webIni.captchaLength + " name=letters1> Enter the letters shown above (<a class=link href='./lib/captchaLib.ssjs?font=" + randomFont + "' target=_blank>Help</a>)<br><br>");
 	print("<input type=hidden name=letters2 value=" + md5_calc(captchaString.toUpperCase(), hex=true) + ">");
 }
 
@@ -44,12 +44,14 @@ if(http_request.query.hasOwnProperty("font")) {
 	load('webInit.ssjs');
 	load(webIni.webRoot + '/themes/' + webIni.theme + '/layout.ssjs');
 	openPage("Captcha Help"); 
-	print("<span class=headingFont>CAPTCHA Help</span><br /><br />");
-	print("Having trouble reading the CAPTCHA? Compare what you see in the CAPTCHA box to the letters in the alphabet below.<br />(Note: this CAPTCHA uses letters, not numbers, and is not case sensitive.)<br /><br />");
+	print("<span class=headingFont>CAPTCHA Help</span><br><br>");
+	print("Having trouble reading the CAPTCHA? Compare what you see in the CAPTCHA box to the letters in the alphabet below.<br>(Note: this CAPTCHA uses letters, not numbers, and is not case sensitive.)<br><br>");
 	var d = directory(webIni.webRoot + "/lib/captchaAnsis/*");
 	if(parseInt(http_request.query.font) < d.length) {
 		var f = directory(d[parseInt(http_request.query.font)] + "/*");
 		for(g in f) {
+			if(file_isdir(f[g]))
+				continue;
 			var h = new File(f[g]);
 			h.open("r");
 			i = h.read();

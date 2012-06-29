@@ -153,7 +153,10 @@ function validateNewUserForm() {
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
-		if(theForm.elements[e].id == 'sex') {
+		if(theForm.elements[e].id == 'sexM') {
+			if(!theForm.elements[e].checked) sexCheck++;
+		}
+		if(theForm.elements[e].id == 'sexF') {
 			if(!theForm.elements[e].checked) sexCheck++;
 		}
 		if(theForm.elements[e].id == 'birthDate') {

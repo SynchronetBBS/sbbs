@@ -8,9 +8,9 @@
 // reflect that change.
 
 // Embed fTelnet
-print("<span class=titleFont>Telnet</span><br /><br />");
+print("<span class=titleFont>Telnet</span><br><br>");
 load(webIni.webRoot + '/fTelnet/fTelnet.ssjs');
 
 // Embed lightIRC
-print("<br /><br /><span class=titleFont>IRC Chat</span><br /><br />");
+print("<br><br><span class=titleFont>IRC Chat</span><br><br>");
 load(webIni.webRoot + '/lightirc/lightirc.ssjs');

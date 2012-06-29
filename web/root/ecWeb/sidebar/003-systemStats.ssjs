@@ -4,7 +4,7 @@
 /* A basic sidebar widget to display selected system statistics. Nothing
    special, more of an example of something you can do with the sidebar. */
    
-print("<table border=0 cellpadding=0 cellspacing=0 class='standardColor standardFont'>");
+print('<table border=0 cellpadding=0 cellspacing=0 class="standardColor standardFont">');
 print("<tr><td>Sysop:</td><td>&nbsp;" + system.operator + "</td></tr>");
 print("<tr><td>Location:</td><td>&nbsp;" + system.location + "</td></tr>");
 print("<tr><td>Users:</td><td>&nbsp;" + system.stats.total_users + "</td></tr>");

@@ -21,9 +21,9 @@ if(f.open("r",true)) {
 	var fspPort = 843;
 }
 
-print("<script type=text/javascript src=" + eval(webIni.webUrl) + "lightirc/swfobject.js></script>");
+print('<script type="text/javascript" src="' + eval(webIni.webUrl) + 'lightirc/swfobject.js"></script>');
 print("<div id=lightIRC></div>");
-print("<script language=javascript type=text/javascript>");
+print('<script type="text/javascript">');
 print("var params = {};");
 print("params.host = '" + system.inet_addr + "';");
 print("params.policyPort = " + fspPort + ";");
