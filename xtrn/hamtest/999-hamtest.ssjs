@@ -133,7 +133,7 @@ else {
 		var pct = Math.floor(correct/(correct+wrong)*100);
 
 		write('<h1>'+pct+'% ');
-		if(pct > test.pass) {
+		if(pct >= test.pass) {
 			write('YOU PASSED');
 			if(test.honours != undefined && pct >= test.honours)
 				write('WITH HONOURS');
