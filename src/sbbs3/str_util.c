@@ -728,6 +728,7 @@ uint32_t DLLCALL str_to_bits(uint32_t val, const char *str)
 			}
 		}
 	}
+	return val;
 }
 
 #if 0	/* replace_*_values test */
