@@ -703,7 +703,7 @@ uint32_t DLLCALL str_to_bits(uint32_t val, const char *str)
 {
 	/* op can be 0 for replace, + for add, or - for remove */
 	int op=0;
-	char *s;
+	const char *s;
 	char ctrl;
 
 	for(s=str; *s; s++) {
