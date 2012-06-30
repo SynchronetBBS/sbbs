@@ -142,7 +142,7 @@ else {
 		else {
 			write('is not a passing score - keep trying!');
 		}
-		print('</div>');
+		print('</h1></div>');
 	}
 	else {
 		print('<input type="hidden" name="question" value="'+encode(q.q)+'">');
@@ -161,6 +161,6 @@ else {
 		}
 		print('</div><br>');
 		print(correct+' out of '+(correct+wrong)+' correct, '+(test.question_list.length+1)+' remaining.');
-		print('</div></form>');
 	}
+	print('</div></form>');
 }
