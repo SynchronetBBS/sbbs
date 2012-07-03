@@ -181,7 +181,10 @@ function printBoards() {
 			print(msgBase.total_msgs + " messages");
 			if(msgBase.last_msg > 0) {
 				var header = msgBase.get_msg_header(msgBase.last_msg);
-				if(!header) continue;
+				if(!header) {
+					print("</div>");
+					continue;
+				}
 				print("<br>Latest: " + clean_subject(header.subject) + ", by: " + clean_subject(header.from) + " on " + system.timestr(header.when_written_time));
 			}
 			print("</div>");
