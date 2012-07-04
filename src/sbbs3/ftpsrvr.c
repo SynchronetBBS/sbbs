@@ -3700,8 +3700,7 @@ static void ctrl_thread(void* arg)
 				&& !stricmp(p,startup->index_file_name)
 				&& !delecmd) {
 				if(getsize) {
-					/* Size not available for dynamically generated files */
-					sockprintf(sock, "213 0"); /* report size of 0 to be make Google Chrome happy */
+					sockprintf(sock, "550 Size not available for dynamically generated files");
 					continue;
 				}
 				if((fp=fopen(ftp_tmpfname(fname,"ndx",sock),"w+b"))==NULL) {
@@ -3816,8 +3815,7 @@ static void ctrl_thread(void* arg)
 				&& !delecmd) {
 				success=TRUE;
 				if(getsize) {
-					/* Size not available for dynamically generated files */
-					sockprintf(sock, "213 0"); /* report size of 0 to be make Google Chrome happy */
+					sockprintf(sock, "550 Size not available for dynamically generated files");
 					continue;
 				}
 				else if(getdate)
