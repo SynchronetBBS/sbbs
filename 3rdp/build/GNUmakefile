@@ -4,9 +4,9 @@ SRC_ROOT = ../../src
 # Cross platform/compiler definitions
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
-JS_CONFIGURE_ARGS += --with-system-nspr --disable-tests --disable-shared-js --disable-valgrind --enable-threadsafe --prefix=$(shell echo `pwd`$(DIRSEP)$(JS_IDIR))
+JS_CONFIGURE_ARGS += --with-system-nspr --disable-tests --disable-shared-js --enable-threadsafe --prefix=$(shell echo `pwd`$(DIRSEP)$(JS_IDIR))
 ifdef DEBUG
- JS_CONFIGURE_ARGS += --enable-debug-symbols --disable-optimize --enable-valgrind
+ JS_CONFIGURE_ARGS += --enable-debug-symbols --disable-optimize
 else
  JS_CONFIGURE_ARGS += --enable-optimize=-O3
 endif
