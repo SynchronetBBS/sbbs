@@ -420,7 +420,7 @@ function boggle() {
 			}
 		}
 		
-		if(data.winner)	{
+		if(data.winner && data.winner.name !== undefined && data.winner.points > 0)	{
 			console.gotoxy(48,18);
 			console.putmsg("\1c\1h" + data.winner.name);
 			console.gotoxy(75,18);
