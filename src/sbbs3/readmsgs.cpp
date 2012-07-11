@@ -674,6 +674,13 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						}
 						smb_unlocksmbhdr(&smb); 
 					}
+					if(msg_addr & MSG_DELETE) {
+						if(!(cfg.sys_misc&SM_SYSVDELM))
+							domsg=0;	// If you can view deleted messages, don't redisplay.
+					}
+					else {
+						domsg=0;		// If you just validated, don't redisplay.
+					}
 					if(post)
 						free(post);
 					post=loadposts(&smb.msgs,subnum,0,lp,&unvalidated);
