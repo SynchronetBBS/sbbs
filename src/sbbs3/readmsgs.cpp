@@ -675,7 +675,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						smb_unlocksmbhdr(&smb); 
 					}
 					if(msg_attr & MSG_DELETE) {
-						if(!(cfg.sys_misc&SM_SYSVDELM))
+						if(cfg.sys_misc&SM_SYSVDELM)
 							domsg=0;	// If you can view deleted messages, don't redisplay.
 					}
 					else {
