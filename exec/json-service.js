@@ -293,6 +293,16 @@ admin = new (function() {
 				break;
 			this.open(client.descriptor);
 			break;
+		case "MODULES":
+			var list = [];
+			for each(var m in engine.modules) {
+				list.push({name:m.name,status:m.online});
+			}
+			client.sendJSON({
+				func:"RESPONSE",
+				data:list
+			});
+			break;
 		default:
 			error(client,errors.UNKNOWN_FUNCTION,packet.func);
 			break;
@@ -407,13 +417,20 @@ engine = new (function() {
 		case "RELOAD":
 			if(!admin.verify(client,packet))
 				break;
-			module.queue.write("RELOAD");
+			if(module.queue)
+				module.queue.write("RELOAD");
 			module.init();
 			break;
 		case "CLOSE":
 			if(!admin.verify(client,packet))
 				break;
 			module.online = false;
+			break;
+		case "STATUS":
+			client.sendJSON({
+				func:"RESPONSE",
+				data:module.online
+			});
 			break;
 		case "OPEN":
 			if(!admin.verify(client,packet))
@@ -445,22 +462,24 @@ engine = new (function() {
 	}
 	/* release clients from module authentication and subscription */
 	this.release = function(client) {
-		for each(var m in this.modules) 
+		for each(var m in this.modules) {
 			m.db.release(client);
+		}
 	}
 	/* module data */
 	function Module(dir,name) {
 		this.online = true;
+		this.name = name;
 		this.dir = dir;
 		this.queue = undefined;
-		this.db = new JSONdb(dir+name+".json");
+		this.db = new JSONdb(this.dir+this.name+".json");
 		this.init = function() {
 			/* load module service files */
 			if(file_exists(this.dir + "service.js")) {
 				try {
 					this.queue = load(true,this.dir + "service.js",this.dir);
 				} catch(e) {
-					log(LOG_ERROR,"error loading module: " + name);
+					log(LOG_ERROR,"error loading module: " + this.name);
 				}
 			}
 		}
