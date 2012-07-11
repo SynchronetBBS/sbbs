@@ -691,8 +691,8 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		if(useron.misc&WIP)
 			menu("msgscan");
 		ASYNC;
-		if(unvalidated < smb.curmsg+1)
-			bprintf(text[UnvalidatedWarning],unvalidated);
+		if(unvalidated < smb.curmsg)
+			bprintf(text[UnvalidatedWarning],unvalidated+1);
 		bprintf(text[ReadingSub],ugrp,cfg.grp[cfg.sub[subnum]->grp]->sname
 			,usub,cfg.sub[subnum]->sname,smb.curmsg+1,smb.msgs);
 		sprintf(str,"ABCDEFILMPQRTY?<>[]{}-+.,");
