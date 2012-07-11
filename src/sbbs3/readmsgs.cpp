@@ -256,8 +256,6 @@ post_t * sbbs_t::loadposts(int32_t *posts, uint subnum, ulong ptr, long mode, ul
 		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED)) {
 			if(mode&LP_REP || !sub_op(subnum))
 				break;
-			if(unvalidated_num && *unvalidated_num > idx.number)
-				*unvalidated_num=idx.number;
 		}
 
 		if(idx.attr&MSG_PRIVATE && !(mode&LP_PRIVATE)
@@ -318,8 +316,13 @@ post_t * sbbs_t::loadposts(int32_t *posts, uint subnum, ulong ptr, long mode, ul
 				continue; 
 		}
 
+		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED)) {
+			if(unvalidated_num && *unvalidated_num > l)
+				*unvalidated_num=l;
+		}
+
 		memcpy(&post[l],&idx,sizeof(idx));
-		l++; 
+		l++;
 	}
 	smb_unlocksmbhdr(&smb);
 	if(!l)
@@ -649,11 +652,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 
 			if(sub_op(subnum) && (msg.hdr.attr&(MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED) {
 				uint16_t msg_attr = msg.hdr.attr;
-				SAFEPRINTF2(str,text[ValidatePostQ],msg.hdr.number,msg.subj);
+				SAFEPRINTF2(str,text[ValidatePostQ],smb.curmsg+1,msg.subj);
 				if(!noyes(str))
 					msg_attr|=MSG_VALIDATED;
 				else {
-					SAFEPRINTF2(str,text[DeletePostQ],msg.hdr.number,msg.subj);
+					SAFEPRINTF2(str,text[DeletePostQ],smb.curmsg+1,msg.subj);
 					if(yesno(str))
 						msg_attr|=MSG_DELETE;
 				}
