@@ -449,7 +449,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					k|=LP_BYSELF;
 				if(useron.rest&FLAG('Q') || !(subscan[usrsub[i][j]].cfg&SUB_CFG_YSCAN))
 					k|=LP_OTHERS;
-				post=loadposts(&posts,usrsub[i][j],subscan[usrsub[i][j]].ptr,k);
+				post=loadposts(&posts,usrsub[i][j],subscan[usrsub[i][j]].ptr,k,NULL);
 
 				bprintf(text[NScanStatusFmt]
 					,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname

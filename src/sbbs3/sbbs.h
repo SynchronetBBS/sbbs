@@ -534,7 +534,7 @@ public:
 	void	delallmail(uint usernumber, int which, bool permanent=true);
 
 	/* getmsg.cpp */
-	post_t* loadposts(int32_t *posts, uint subnum, ulong ptr, long mode);
+	post_t* loadposts(int32_t *posts, uint subnum, ulong ptr, long mode, ulong *unvalidated_num);
 
 	/* readmail.cpp */
 	void	readmail(uint usernumber, int sent);

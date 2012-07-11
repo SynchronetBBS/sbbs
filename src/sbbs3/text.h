@@ -806,6 +806,7 @@ enum {
 	,CantPostMsg
 	,OperatorPrompt
 	,AddSubToNewScanQ
+	,UnvalidatedWarning
 
 	,TOTAL_TEXT
 };

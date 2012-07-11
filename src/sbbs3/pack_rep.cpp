@@ -177,7 +177,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			continue; 
 		}
 
-		post=loadposts(&posts,j,subscan[j].ptr,LP_BYSELF|LP_OTHERS|LP_PRIVATE|LP_REP);
+		post=loadposts(&posts,j,subscan[j].ptr,LP_BYSELF|LP_OTHERS|LP_PRIVATE|LP_REP,NULL);
 		eprintf(LOG_INFO,remove_ctrl_a(text[NScanStatusFmt],tmp)
 			,cfg.grp[cfg.sub[j]->grp]->sname
 			,cfg.sub[j]->lname,posts,msgs);
