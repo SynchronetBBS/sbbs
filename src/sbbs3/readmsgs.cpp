@@ -674,12 +674,16 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						}
 						smb_unlocksmbhdr(&smb); 
 					}
-					if(!msg.total_hfields) {				/* unsuccessful reload */
-						domsg=0;
-						continue; 
-					} 
+					if(post)
+						free(post);
+					post=loadposts(&smb.msgs,subnum,0,lp,&unvalidated);
+					if(!smb.msgs)
+						break;
+					if(smb.curmsg>(smb.msgs-1))
+						smb.curmsg=(smb.msgs-1);
+					mismatches++;
+					continue; 
 				}
-
 			}
 		}
 		else domsg=1;
