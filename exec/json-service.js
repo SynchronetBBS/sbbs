@@ -66,7 +66,9 @@ var errors = {
 	UNKNOWN_USER:"User not found: %s",
 	SERVICE_OFFLINE:"Service offline",
 	MODULE_OFFLINE:"Module offline",
-	IDENT_REQUIRED:"You must identify before using this command"
+	IDENT_REQUIRED:"You must identify before using this command",
+	NOT_AUTHORIZED:"You are not authorized to use that command",
+	INVALID_PW:"Password incorrect"
 };
  
 /* server object */
@@ -178,6 +180,25 @@ service = new (function() {
 		admin.release(client);
 		chat.release(client);
 	}
+	/* disconnect all clients and refuse new connections */
+	this.close = function(client) {
+		this.online = false;
+		for(var s=1;s<this.sockets.length;s++) {
+			if(this.sockets[s].descriptor != client.descriptor) {
+				log(LOG_INFO,"<--" + this.sockets[s].descriptor + ": " 
+					+ this.sockets[s].remote_ip_address + " disconnected");
+				this.sockets[s].close();
+				this.release(this.sockets[s]);
+				this.sockets.splice(s--,1);
+			}
+		}
+		confirm(client,"Service offline");
+	}
+	/* open service for new connections */
+	this.open = function(client) {
+		this.online = true;
+		confirm(client,"Service online");
+	}
 
 	this.init();
 })();
@@ -194,17 +215,17 @@ chat = new (function() {
 	this.process = function(client,packet) {
 		switch(packet.func.toUpperCase()) {
 		case "IDENT":
-			this.ident(client.descriptor,packet.data);
+			this.ident(client,packet.data);
 			break;
 		case "BAN":
 			if(!admin.verify(client,packet))
 				break;
-			this.ban(client.remote_ip_address,packet.data.ip);
+			this.ban(client,packet.data.ip);
 			break;
 		case "UNBAN":
 			if(!admin.verify(client,packet))
 				break;
-			this.unban(client.remote_ip_address,packet.data.ip);
+			this.unban(client,packet.data.ip);
 			break;
 		case "QUERY":
 			this.db.query(client,packet.data);
@@ -214,39 +235,35 @@ chat = new (function() {
 			break;
 		}
 	}
-	this.ident = function(descriptor,data) {
+	this.ident = function(client,data) {
 		var username = data.username;
 		var pw = data.pw;
 		var usernum = system.matchuser(username);
 		if(usernum  == 0) {
-			log(LOG_WARNING,"no such user: " + username);
+			error(client,errors.UNKNOWN_USER,username);
 			return false;
 		}
 		var usr = new User(usernum);
 		var pass = md5_calc(usr.security.password,true);
 		
 		if(md5_calc(usr.security.password,true) != pw) {
-			log(LOG_WARNING,"failed pw attempt for user: " + username);
+			error(client,errors.INVALID_PASSWORD);
 			return false;
 		}
-		this.authenticated[descriptor] = usr;
-		log(LOG_DEBUG,"identified: " + username);
+		this.authenticated[client.descriptor] = usr;
+		confirm(client,"Identified: " + username);
 		return true;
 	}
-	this.ban = function(descriptor,source,target) {
-		if(!this.authenticated[descriptor] || this.authenticated[descriptor].security.level < 90)
+	this.ban = function(client,target) {
+		if(client.remote_ip_address == target)
 			return false;
-		if(source == target)
-			return false;
-		log(LOG_WARNING,"ban added: " + target);
+		confirm(client,"Ban Added: " + target);
 		this.denyhosts[target] = true;
 	}
-	this.unban = function(descriptor,source,target) {
-		if(!this.authenticated[descriptor] || this.authenticated[descriptor].security.level < 90)
+	this.unban = function(client,target) {
+		if(client.remote_ip_address == target)
 			return false;
-		if(source == target)
-			return false;
-		log(LOG_WARNING,"ban removed: " + target);
+		confirm(client,"Ban Removed: " + target);
 		delete this.denyhosts[target];
 	}
 	this.release = function(client) {
@@ -266,42 +283,35 @@ admin = new (function() {
 	this.process = function(client,packet) {
 		switch(packet.func.toUpperCase()) {
 		case "IDENT":
-			this.ident(client.descriptor,packet.data);
+			this.ident(client,packet.data);
 			break;
 		case "RESTART":
 			if(!this.verify(client,packet))
 				break;
-			this.restart(client.descriptor);
+			this.restart(client);
 			break;
 		case "BAN":
 			if(!this.verify(client,packet))
 				break;
-			this.ban(client.remote_ip_address,packet.data.ip);
+			this.ban(client,packet.data.ip);
 			break;
 		case "UNBAN":
 			if(!this.verify(client,packet))
 				break;
-			this.unban(client.remote_ip_address,packet.data.ip);
+			this.unban(client,packet.data.ip);
 			break;
 		case "CLOSE":
 			if(!this.verify(client,packet))
 				break;
-			this.close(client.descriptor);
+			service.close(client);
 			break;
 		case "OPEN":
 			if(!this.verify(client,packet))
 				break;
-			this.open(client.descriptor);
+			service.open(client);
 			break;
 		case "MODULES":
-			var list = [];
-			for each(var m in engine.modules) {
-				list.push({name:m.name,status:m.online});
-			}
-			client.sendJSON({
-				func:"RESPONSE",
-				data:list
-			});
+			this.modules(client);
 			break;
 		default:
 			error(client,errors.UNKNOWN_FUNCTION,packet.func);
@@ -315,51 +325,50 @@ admin = new (function() {
 			delete this.authenticated[client.id];
 		}
 	}
-	this.ident = function(descriptor,data) {
+	this.modules = function(client) {
+		var list = [];
+		for each(var m in engine.modules) {
+			list.push({name:m.name,status:m.online});
+		}
+		respond(client,list);
+	}
+	this.ident = function(client,data) {
 		var username = data.username;
 		var pw = data.pw;
 		var usernum = system.matchuser(username);
 		if(usernum  == 0) {
-			log(LOG_WARNING,"no such user: " + username);
+			error(client,errors.UNKNOWN_USER,username);
 			return false;
 		}
 		var usr = new User(usernum);
 		var pass = md5_calc(usr.security.password,true);
 		
 		if(md5_calc(usr.security.password,true) != pw) {
-			log(LOG_WARNING,"failed pw attempt for user: " + username);
+			error(client,errors.INVALID_PASSWORD);
 			return false;
 		}
 		if(usr.security.level < 90) {
-			log(LOG_WARNING,"insufficient access: " + username);
+			error(client,errors.NOT_AUTHORIZED);
 			return false;
 		}
-		this.authenticated[descriptor] = usr;
-		log(LOG_DEBUG,"identified: " + username);
+		this.authenticated[client.descriptor] = usr;
+		confirm(client,"Identified: " + username);
 		return true;
 	}
-	this.close = function(descriptor) {
-		log(LOG_WARNING,"socket service offline");
-		service.online = false;
-	}
-	this.open = function(descriptor) {
-		log(LOG_WARNING,"socket service online");
-		service.online = true;
-	}
-	this.restart = function(descriptor) {
-		log(LOG_WARNING,"restarting service");
+	this.restart = function(client) {
+		confirm(client,"Service Restarted");
 		exit();
 	}
-	this.ban = function(descriptor,source,target) {
-		if(source == target)
+	this.ban = function(client,target) {
+		if(client.remote_ip_address == target)
 			return false;
-		log(LOG_WARNING,"ban added: " + target);
+		confirm(client,"Ban Added: " + target);
 		service.denyhosts[target] = true;
 	}
-	this.unban = function(descriptor,source,target) {
-		if(source == target)
+	this.unban = function(client,target) {
+		if(client.remote_ip_address == target)
 			return false;
-		log(LOG_WARNING,"ban removed: " + target);
+		confirm(client,"Ban Removed: " + target);
 		delete service.denyhosts[target];
 	}
 	this.verify = function(client,packet) {
@@ -419,23 +428,23 @@ engine = new (function() {
 				break;
 			if(module.queue)
 				module.queue.write("RELOAD");
+			confirm(client,module.name + " reloaded");
 			module.init();
 			break;
 		case "CLOSE":
 			if(!admin.verify(client,packet))
 				break;
 			module.online = false;
+			confirm(client,module.name + " offline");
 			break;
 		case "STATUS":
-			client.sendJSON({
-				func:"RESPONSE",
-				data:module.online
-			});
+			respond(client,module.online);
 			break;
 		case "OPEN":
 			if(!admin.verify(client,packet))
 				break;
 			module.online = true;
+			confirm(client,module.name + " online");
 			break;
 		case "READABLE":
 			if(!admin.verify(client,packet))
@@ -449,6 +458,7 @@ engine = new (function() {
 			if(!admin.verify(client,packet))
 				break;
 			module.db.save();
+			confirm(client,module.name + " data saved");
 			break;
 		case "READONLY":
 			if(!admin.verify(client,packet))
@@ -503,6 +513,23 @@ error = function(client,err,value) {
 			client:client.descriptor,
 			ip:client.remote_ip_address
 		}
+	});
+}
+
+/* confirmation to client */
+confirm = function(client,message) {
+	log(LOG_INFO,message);
+	client.sendJSON({
+		func:"OK",
+		data:message
+	});
+}
+
+/* packet request response to client */
+respond = function(client,data) {
+	client.sendJSON({
+		func:"RESPONSE",
+		data:data
 	});
 }
 
