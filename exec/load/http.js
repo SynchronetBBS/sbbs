@@ -34,7 +34,7 @@ function HTTPRequest()
 		this.referer=referer;
 		this.base=base;
 		this.url=new URL(url, this.base);
-		if(this.url.scheme!='http')
+		if(this.url.scheme!='http' && this.url.scheme!='https')
 			throw("Unknown scheme! '"+this.url.scheme+"'");
 		if(this.url.path=='')
 			this.url.path='/';
@@ -66,8 +66,10 @@ function HTTPRequest()
 
 		if((this.sock=new Socket(SOCK_STREAM))==null)
 			throw("Unable to create socket");
-		if(!this.sock.connect(this.url.host, this.url.port?this.url.port:80))
+		if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443)))
 			throw("Unable to connect");
+		if(this.url.scheme=='https')
+			this.sock.ssl_session=true;
 		if(!this.sock.send(this.request+"\r\n"))
 			throw("Unable to send request");
 		for(i in this.request_headers) {
