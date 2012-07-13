@@ -4,11 +4,11 @@ load("json-db.js");
 
 // Running from jsexec presumably...
 if(js.global.server==undefined) {
-        load("sockdefs.js");
-        server={};
-        server.socket=new Socket(SOCK_STREAM, 'JSONDB');
-        server.socket.bind(10088,'127.0.0.1');
-        server.socket.listen();
+	load("sockdefs.js");
+	server={};
+	server.socket=new Socket(SOCK_STREAM, 'JSONDB');
+	server.socket.bind(10088,'127.0.0.1');
+	server.socket.listen();
 }
 
 /**** SERVICE MODULES
@@ -68,7 +68,7 @@ var errors = {
 	MODULE_OFFLINE:"Module offline",
 	IDENT_REQUIRED:"You must identify before using this command",
 	NOT_AUTHORIZED:"You are not authorized to use that command",
-	INVALID_PW:"Password incorrect"
+	INVALID_PASSWORD:"Password incorrect"
 };
  
 /* server object */
