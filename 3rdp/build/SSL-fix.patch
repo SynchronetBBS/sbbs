@@ -1,0 +1,14 @@
+--- session/sess_attr.c.orig	2012-07-13 14:19:07.000000000 -0700
++++ session/sess_attr.c	2012-07-13 14:21:15.000000000 -0700
+@@ -102,9 +102,11 @@
+ 	   then we can't set a server name as well */
+ 	if( sessionInfoPtr->transportSession != CRYPT_ERROR )
+ 		return( exitErrorInited( sessionInfoPtr, CRYPT_SESSINFO_SESSION ) );
++/*
+ 	if( sessionInfoPtr->networkSocket != CRYPT_ERROR )
+ 		return( exitErrorInited( sessionInfoPtr, 
+ 								 CRYPT_SESSINFO_NETWORKSOCKET ) );
++*/
+ 
+ 	/* Parse the server name.  The PKI protocols all use HTTP as their 
+ 	   substrate so if it's not SSH or SSL/TLS we require HTTP.  For TSP
