@@ -16,16 +16,16 @@
 	-	Database.cycle(Date.now());
 	-	Database.load();
 	-	Database.save(Date.now());
-	-	Database.lock(client,record,child_name,lock_type);
-	-	Database.read(client,record,child_name);
-	-	Database.pop(client,record,child_name);
-	-	Database.shift(client,record,child_name);
-	-	Database.write(client,record,child_name,data);
-	-	Database.push(client,record,child_name,data);
-	-	Database.unshift(client,record,child_name,data);
-	-	Database.remove(client,record,child_name);
-	-	Database.subscribe(client,record,child_name);
-	-	Database.unsubscribe(client,record,child_name);
+	-	Database.lock(client,record,property,lock_type);
+	-	Database.read(client,record,property);
+	-	Database.pop(client,record,property);
+	-	Database.shift(client,record,property);
+	-	Database.write(client,record,property,data);
+	-	Database.push(client,record,property,data);
+	-	Database.unshift(client,record,property,data);
+	-	Database.remove(client,record,property);
+	-	Database.subscribe(client,record,property);
+	-	Database.unsubscribe(client,record,property);
 	
 	optional arguments:
 	
@@ -43,10 +43,16 @@ function JSONdb (fileName) {
 		this.file=undefined;
 	
     /* master database object */
-    this.data={};
-    
-    /* database record subscription and locking object */
-    this.shadow={};
+	this.masterData={
+		/* top-level data object */
+		data:{}
+	};
+
+    /* master shadow object */
+	this.masterShadow={
+		/* top-level data object */
+		data:{}
+	};
 	
 	/* queued array of data requests (get/put/create/delete) */
 	this.queue={};
@@ -120,16 +126,12 @@ function JSONdb (fileName) {
 			this.subscriptions[client.id] = {};
 		}
 		if(!this.subscriptions[client.id][record.location]) {
-	        record.shadow[record.child_name]._subscribers[client.id]=client;
+	        record.shadow[record.property]._subscribers[client.id]=client;
 			this.subscriptions[client.id][record.location]=record;
 			record.subtime = Date.now();
 			send_subscriber_updates(client,record,"SUBSCRIBE");
 		}
 		else {
-			log(LOG_WARNING,
-				client.id + "@" + 
-				this.subscriptions[client.id][record.location].subtime + ": " +
-				record.location);
 			this.error(client,errors.DUPLICATE_SUB);
 		}
 		return true;
@@ -139,7 +141,7 @@ function JSONdb (fileName) {
     this.unsubscribe = function(request,record) {
 		var client = request.client;
 		if(this.subscriptions[client.id][record.location]) {
-			delete record.shadow[record.child_name]._subscribers[client.id];
+			delete record.shadow[record.property]._subscribers[client.id];
 			delete this.subscriptions[client.id][record.location];
 			if(count(this.subscriptions[client.id]) == 0)
 				delete this.subscriptions[client.id];
@@ -171,7 +173,7 @@ function JSONdb (fileName) {
 				}
 				/* otherwise, we can read lock */
 				else {
-					record.shadow[record.child_name]._lock[client.id] = new Lock(
+					record.shadow[record.property]._lock[client.id] = new Lock(
 						request.data,
 						Date.now()
 					);
@@ -182,7 +184,7 @@ function JSONdb (fileName) {
 				return false;
 			/* if the record isnt locked at all, we can lock */
 			case locks.NONE:
-				record.shadow[record.child_name]._lock[client.id] = new Lock(
+				record.shadow[record.property]._lock[client.id] = new Lock(
 					request.data,
 					Date.now()
 				);
@@ -205,21 +207,21 @@ function JSONdb (fileName) {
 			/* ...and the record is already locked, flag for pending write lock */
 			case locks.READ:
 			case locks.WRITE:
-				record.shadow[record.child_name]._lock_pending=true;
+				record.shadow[record.property]._lock_pending=true;
 				return false;
 			/* ...and the record isnt locked, lock for writing and remove flag */
 			case locks.NONE:
-				record.shadow[record.child_name]._lock[client.id] = new Lock(
+				record.shadow[record.property]._lock[client.id] = new Lock(
 					request.data,
 					Date.now()
 				);
-				record.shadow[record.child_name]._lock_pending=false;
+				record.shadow[record.property]._lock_pending=false;
 				return true;
 			}
 			break;
 		/* if the client wants to unlock, check credentials */
 		case locks.UNLOCK:
-			var client_lock=record.shadow[record.child_name]._lock[client.id];
+			var client_lock=record.shadow[record.property]._lock[client.id];
 			/* if the client has a lock on this record, release the lock */
 			if(client_lock) {
 				/* if this was a write lock, send an update to all record subscribers */
@@ -227,7 +229,7 @@ function JSONdb (fileName) {
 					this.settings.UPDATES=true;
 					send_data_updates(client,record);
 				}
-				delete record.shadow[record.child_name]._lock[client.id];
+				delete record.shadow[record.property]._lock[client.id];
 				return true;
 			}
 			/* otherwise deny */
@@ -251,7 +253,7 @@ function JSONdb (fileName) {
 		}
 		/* if this client has this record locked, read */
 		else if(record.info.lock[client.id]) {
-            send_packet(client,record.data[record.child_name],"RESPONSE");
+            send_packet(client,record.data[record.property],"RESPONSE");
 			return true;
 		}
         /* if there is no lock for this client, error */
@@ -271,8 +273,8 @@ function JSONdb (fileName) {
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 			record.info.lock[client.id].type == locks.WRITE) {
-			if(record.data[record.child_name] instanceof Array) 
-				send_packet(client,record.data[record.child_name].pop(),"RESPONSE");
+			if(record.data[record.property] instanceof Array) 
+				send_packet(client,record.data[record.property].pop(),"RESPONSE");
 			else
 				this.error(client,errors.NON_ARRAY);
 			return true;
@@ -294,8 +296,8 @@ function JSONdb (fileName) {
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 		record.info.lock[client.id].type == locks.WRITE) {
-			if(record.data[record.child_name] instanceof Array) 
-				send_packet(client,record.data[record.child_name].shift(),"RESPONSE");
+			if(record.data[record.property] instanceof Array) 
+				send_packet(client,record.data[record.property].shift(),"RESPONSE");
 			else
 				this.error(client,errors.NON_ARRAY);
 			return true;
@@ -318,11 +320,11 @@ function JSONdb (fileName) {
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 			record.info.lock[client.id].type == locks.WRITE) {
-			if(record.data[record.child_name] instanceof Array) {
-				var index = record.data[record.child_name].length;
-				record.data[record.child_name].push(data);
+			if(record.data[record.property] instanceof Array) {
+				var index = record.data[record.property].length;
+				record.data[record.property].push(data);
 				/* populate this object's children with shadow objects */
-				composite_sketch(record.data[record.child_name][index],record.shadow[record.child_name][index]);
+				composite_sketch(record.data[record.property][index],record.shadow[record.property][index]);
 			}
 			else
 				this.error(client,errors.NON_ARRAY);
@@ -346,11 +348,11 @@ function JSONdb (fileName) {
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 			record.info.lock[client.id].type == locks.WRITE) {
-			if(record.data[record.child_name] instanceof Array) {
-				var index = record.data[record.child_name].length;
-				record.data[record.child_name].unshift(data);
+			if(record.data[record.property] instanceof Array) {
+				var index = record.data[record.property].length;
+				record.data[record.property].unshift(data);
 				/* populate this object's children with shadow objects */
-				composite_sketch(record.data[record.child_name][index],record.shadow[record.child_name][index]);
+				composite_sketch(record.data[record.property][index],record.shadow[record.property][index]);
 			}
 			else
 				this.error(client,errors.NON_ARRAY);
@@ -372,8 +374,8 @@ function JSONdb (fileName) {
 		}
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id]) {
-			if(record.data[record.child_name] instanceof Array) {
-				var d = record.data[record.child_name].slice(request.data.start,request.data.end);
+			if(record.data[record.property] instanceof Array) {
+				var d = record.data[record.property].slice(request.data.start,request.data.end);
 				send_packet(client,d,"RESPONSE");
 			}
 			else {
@@ -394,9 +396,9 @@ function JSONdb (fileName) {
 		/* if this client has this record locked  */
 		if(record.info.lock[client.id] && 
 		record.info.lock[client.id].type == locks.WRITE) {
-			record.data[record.child_name]=data;
+			record.data[record.property]=data;
 			/* populate this object's children with shadow objects */
-			composite_sketch(record.data[record.child_name],record.shadow[record.child_name]);
+			composite_sketch(record.data[record.property],record.shadow[record.property]);
 			/* send data updates to all subscribers */
 			return true;
 		}
@@ -417,7 +419,7 @@ function JSONdb (fileName) {
 		}
 		/* if this client has this record locked, read */
 		if(record.info.lock[client.id]) {
-			for(var k in record.data[record.child_name])
+			for(var k in record.data[record.property])
 				keys.push(k);
             send_packet(client,keys,"RESPONSE");
 			return true;
@@ -435,9 +437,9 @@ function JSONdb (fileName) {
 		if(record.data === undefined) 
 			return true;
 		/* if this client has this record locked */
-		else if(record.shadow[record.child_name]._lock[client.id] && 
-			record.shadow[record.child_name]._lock[client.id].type == locks.WRITE) {
-			delete record.data[record.child_name];
+		else if(record.shadow[record.property]._lock[client.id] && 
+			record.shadow[record.property]._lock[client.id].type == locks.WRITE) {
+			delete record.data[record.property];
 			return true;
 		}
         /* if there is no lock for this client, error */
@@ -474,17 +476,16 @@ function JSONdb (fileName) {
 	/* generic query handler, will process locks, reads, writes, and unlocks
 	and put them into the appropriate queues */
 	this.query = function(client,query) {
-        /* store the child name */
-        var parent_name = get_pname(query.location);
-        /* strip the last child identifier from the string */
-        var child_name = get_cname(query.location);
+		if(query.location == undefined || query.location.length == 0)
+			query.location = "data";
+		else
+			query.location = "data." + query.location;
 		
-		/* if the data request is invalid or empty, return an error */
-		if(!child_name) {
-			this.error(client,errors.INVALID_REQUEST);
-			return false;
-		}
-
+        /* store the child name */
+        var parent = get_pname(query.location);
+        /* strip the last child identifier from the string */
+        var property = get_cname(query.location);
+		
 		/* temporary array for queue additions */
 		var q=[];
 
@@ -511,7 +512,7 @@ function JSONdb (fileName) {
 		}
 
 		q.push(new Request(
-			client,query.oper,parent_name,child_name,query.data,query.timeout
+			client,query.oper,parent,property,query.data,query.timeout
 		));
 		/* push this query into a queue to be processed at the next response cycle (this.cycle()) */;
 		
@@ -520,11 +521,11 @@ function JSONdb (fileName) {
 		if(query.lock !== locks.NONE) {	
 			/* put lock ahead of the operation in request queue */
 			q.unshift(new Request(
-				client,"LOCK",parent_name,child_name,query.lock
+				client,"LOCK",parent,property,query.lock
 			));
 			/* put unlock after the operation in the request queue */
 			q.push(new Request(
-				client,"LOCK",parent_name,child_name,locks.UNLOCK
+				client,"LOCK",parent,property,locks.UNLOCK
 			));
 		}
 		
@@ -651,7 +652,7 @@ function JSONdb (fileName) {
 				
 				/* locate the requested record within the database */
 				var record=identify_remains.call(
-					this,request.client,request.parent_name,request.child_name,request.oper
+					this,request.client,request.parent,request.property,request.oper
 				);
 				
 				/* if there was an error parsing object location, delete request */
@@ -724,7 +725,7 @@ function JSONdb (fileName) {
 			free_prisoners(c,this.shadow);
 			
 			/* release any subscriptions the client holds */
-			cancel_subscriptions(c,this.subscriptions[c.id]);
+			cancel_subscriptions(c,this.subscriptions);
 			
 			/* remove any remaining client queries */
 			fuh_queue(c,this.queue);
@@ -769,22 +770,22 @@ function JSONdb (fileName) {
 	contains the requested object, its shadow object,
 	the prevailing lock state of that object (affected by parents/children),
 	and a list of subscribers associated with that object or its parents */
-	function Record(data,shadow,location,child_name,info) {
+	function Record(data,shadow,location,property,info) {
 		this.data=data;
 		this.shadow=shadow;
 		this.location=location;
-		this.child_name=child_name;
+		this.property=property;
 		this.info=info;
 	}
 
 	/* request object generated by queue() method
 	contains the requested object parent, the specific child property requested,
 	data (in the case of a PUT operation ) */
-	function Request(client,operation,parent_name,child_name,data,timeout) {
+	function Request(client,operation,parent,property,data,timeout) {
 		this.client=client;
 		this.oper=operation;
-		this.parent_name=parent_name;
-		this.child_name=child_name;
+		this.parent=parent;
+		this.property=property;
 		this.data=data;
 		this.time=Date.now();
 		this.timeout=timeout;
@@ -813,11 +814,11 @@ function JSONdb (fileName) {
 
 	/* parse an object location name and return the object (ex: dicewarz2.games.1.players.1.tiles.0)
 	an object containing the corresponding data and its shadow object */
-	function identify_remains(client,parent_name,child_name,oper) {
+	function identify_remains(client,parent,property,oper) {
 
-		var data=this.data;
-		var shadow=this.shadow;
-		var location=child_name;
+		var data=this.masterData;
+		var shadow=this.masterShadow;
+		var location=property;
 		var info={
 			lock:{},
 			lock_type:locks.NONE,
@@ -825,10 +826,10 @@ function JSONdb (fileName) {
 			subscribers:{}
 		};
 
-		if(parent_name !== undefined) {
+		if(parent !== undefined) {
 			/* iterate through split object name checking the keys against the database and 
 			checking the lock statuses against the shadow copy */
-			var p=parent_name.split(/\./);
+			var p=parent.split(/\./);
 			for each(var c in p) {
 				/* in the event of a write request, create new data if it does not exist*/
 				/* ensure that the shadow object exists in order to allow for non-read operations */
@@ -844,30 +845,30 @@ function JSONdb (fileName) {
 				/* check the current object's lock and subscriber status along the way */
 				info = investigate(shadow,info);
 			}
-			location = parent_name + "." + child_name;
+			location = parent + "." + property;
 		}
-		
+
 		/* ensure requested shadow object's existance */
-		if(shadow[child_name] === undefined) 
-			create_shadow(shadow,child_name);
+		if(shadow[property] === undefined || shadow[property]._lock === undefined) 
+			create_shadow(shadow,property);
 			
 		/* continue on through the selected shadow object's children to check for locked children */
-		info = search_party(shadow[child_name],info);
+		info = search_party(shadow[property],info);
 		
 		/* return selected database object, shadow object, and overall lock status of the chosen tree */
-		return new Record(data,shadow,location,child_name,info);
+		return new Record(data,shadow,location,property,info);
 	}
 	
 	/* if the requested child object does not exist, create it */
-	function create_shadow(shadow,child_name) {
-		log(LOG_DEBUG,"creating new shadow: " + child_name);
-		shadow[child_name]=new Shadow();
+	function create_shadow(shadow,property) {
+		log(LOG_DEBUG,"creating new shadow: " + property);
+		shadow[property]=new Shadow();
 	}
 	
 	/* if the requested child object does not exist, create it */
-	function create_data(data,child_name) {
-		log(LOG_DEBUG,"creating new data: " + child_name);
-		data[child_name]={};
+	function create_data(data,property) {
+		log(LOG_DEBUG,"creating new data: " + property);
+		data[property]={};
 	}
 	
 	/* release locks on an object recursively */
@@ -887,20 +888,21 @@ function JSONdb (fileName) {
 		while(queue[client.id] && queue[client.id].length > 0) {
 			var query = queue[client.id].shift();
 			log(LOG_DEBUG,format("removing query: %s %s.%s",
-				query.oper,query.parent_name,query.child_name));
+				query.oper,query.parent,query.property));
 		}
 		delete queue[client.id];
 	}
 	
 	/* release subscriptions on an object recursively */
-	function cancel_subscriptions(client,records) {
+	function cancel_subscriptions(client,subscriptions) {
+		var records = subscriptions[client.id];
 		for(var r in records) {
 			var record = records[r];
 			log(LOG_DEBUG,"releasing subscription: " + record.location);
-			delete record.shadow[record.child_name]._subscribers[client.id];
+			delete record.shadow[record.property]._subscribers[client.id];
 			send_subscriber_updates(client,record,"UNSUBSCRIBE");
 		}
-		delete records;
+		delete subscriptions[client.id];
 	}
 	
 	/* return the prevailing lock type and pending lock status for an object */
@@ -982,7 +984,7 @@ function JSONdb (fileName) {
 	function get_record_data(record) {
 		if(record.data === undefined)
 			return undefined;
-		return record.data[record.child_name];
+		return record.data[record.property];
 	}
 	
 	/* send update of client subscription to all subscribers */
@@ -1065,11 +1067,11 @@ function JSONdb (fileName) {
 	
 	/* send data packet to a client */
 	function send_packet(client,data,func) {
-		var data={
+		var packet={
 			func:func,
 			data:data
 		};
-		client.sendJSON(data);
+		client.sendJSON(packet);
 	}
 
 	/* constructor */
