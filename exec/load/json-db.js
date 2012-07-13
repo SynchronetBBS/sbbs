@@ -591,9 +591,9 @@ function JSONdb (fileName) {
 		// And flushes all objects to disk in case of crash
 		// Also, this is called on clean exit.
 		if(this.settings.KEEP_READABLE)
-			this.file.write(JSON.stringify(this.data,undefined,'\t'));
+			this.file.write(JSON.stringify(this.masterData.data,undefined,'\t'));
 		else 
-			this.file.write(JSON.stringify(this.data));
+			this.file.write(JSON.stringify(this.masterData.data));
 		this.file.close();
 		this.settings.LAST_SAVE=Date.now();
 		this.settings.UPDATES=false;
@@ -607,11 +607,10 @@ function JSONdb (fileName) {
 			return;
 		if(!this.file.open("r",true))
 			return;
-		this.data = JSON.parse(
-			this.file.readAll(this.settings.FILE_BUFFER).join('\n')
-		);
+		var data = this.file.readAll(this.settings.FILE_BUFFER).join('\n');
+		this.masterData.data = JSON.parse(data);
 		this.file.close(); 
-        this.shadow=composite_sketch(this.data);
+        this.masterShadow.data=composite_sketch(this.masterData.data);
     };
 	
 	/* initialize db and settings */
@@ -722,7 +721,7 @@ function JSONdb (fileName) {
 		/* terminate any disconnected clients after processing queue */
 		for each(var c in this.disconnected) {
 			/* release any locks the client holds */
-			free_prisoners(c,this.shadow);
+			free_prisoners(c,this.masterShadow);
 			
 			/* release any subscriptions the client holds */
 			cancel_subscriptions(c,this.subscriptions);
