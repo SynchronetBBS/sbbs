@@ -46,6 +46,7 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip | $(CRYPT_SRC) $(CRYPT
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(CRYPT_SRC)/*
 	$(QUIET)unzip -oa $(3RDPDISTDIR)$(DIRSEP)cryptlib.zip -d $(CRYPT_SRC)
+	$(QUIET)patch -d $(CRYPT_SRC) < random_exit.patch
 	$(QUIET)patch -d $(CRYPT_SRC) < SSL-fix.patch
 ifdef DEBUG
 	$(QUIET)env - PATH=$(PATH) make -C $(CRYPT_SRC) debug

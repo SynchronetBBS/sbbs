@@ -1,0 +1,38 @@
+--- random/unix.c.orig	2012-07-14 00:50:55.000000000 -0700
++++ random/unix.c	2012-07-14 00:52:28.000000000 -0700
+@@ -161,7 +161,7 @@
+    process, which calls exit() rather than returning */
+ 
+ #define ENSURES_EXIT( x ) \
+-		if( !( x ) ) { assert( INTERNAL_ERROR ); exit( -1 ); }
++		if( !( x ) ) { assert( INTERNAL_ERROR ); _Exit( -1 ); }
+ 
+ /* The structure containing information on random-data sources.  Each record 
+    contains the source and a relative estimate of its usefulness (weighting) 
+@@ -544,7 +544,7 @@
+ 		/* We are the child, connect the read side of the pipe to stdout and
+ 		   unplug stdin and stderr */
+ 		if( dup2( pipedes[ STDOUT_FILENO ], STDOUT_FILENO ) < 0 )
+-			exit( 127 );
++			_Exit( 127 );
+ 		if( ( fd = open( "/dev/null", O_RDWR ) ) > 0 )
+ 			{
+ 			dup2( fd, STDIN_FILENO );
+@@ -616,7 +616,7 @@
+ #ifdef HAS_VFORK
+ 		_exit( 127 );
+ #else
+-		exit( 127 );
++		_Exit( 127 );
+ #endif /* Unixen that have vfork() */
+ 		}
+ 
+@@ -1539,7 +1539,7 @@
+ 
+ 	/* "Thou child of the daemon, ... wilt thou not cease...?"
+ 	   -- Acts 13:10 */
+-	exit( 0 );
++	_Exit( 0 );
+ 	}
+ 
+ /* Unix slow poll.  If a few of the randomness sources create a large amount
