@@ -40,15 +40,6 @@
 #include "sbbs.h"
 #include "js_request.h"
 
-#ifdef unix
-    #include <unistd.h> /* _exit() */
-
-void exit(int code)
-{
-    _exit(code);
-}
-#endif
-
 #ifdef JAVASCRIPT
 
 int cryptInitialized=0;
