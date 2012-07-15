@@ -99,7 +99,8 @@ function JSONdb (fileName) {
 		WHO:10,
 		STATUS:11,
 		KEYS:12,
-		SLICE:13
+		SLICE:13,
+		KEYTYPES:14
 	}
 	
 	/* error constants */
@@ -429,7 +430,33 @@ function JSONdb (fileName) {
             return false;
         }
 	}
-    
+ 
+	/* retrieve a list of object keys */
+	this.keyTypes = function(request,record) {
+		var client = request.client;
+		var keys={};
+		/* if the requested data does not exist, result is undefined */
+		if(record.data === undefined) {
+            send_packet(client,undefined,"RESPONSE");
+			return true;
+		}
+		/* if this client has this record locked, read */
+		if(record.info.lock[client.id]) {
+			for(var k in record.data[record.property]) {
+				var type = typeof record.data[record.property][k];
+				if(record.data[record.property][k] instanceof Array)
+					type = "array";
+				keys[k] = type;
+			}
+            send_packet(client,keys,"RESPONSE");
+			return true;
+		}
+        /* if there is no lock for this client, error */
+        else {
+            return false;
+        }
+	}
+ 
     /* remove a record from the database (requires WRITE_LOCK) */
     this.remove = function(request,record) {
 		var client = request.client;
@@ -676,6 +703,9 @@ function JSONdb (fileName) {
 					result=this.write(request,record);
 					break;
 				case "KEYS":
+					result=this.keys(request,record);
+					break;
+				case "KEYTYPES":
 					result=this.keys(request,record);
 					break;
 				case "PUSH":

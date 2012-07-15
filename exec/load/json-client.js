@@ -197,6 +197,17 @@ function JSONClient(serverAddr,serverPort) {
 		return this.wait();
 	}
 	
+	/* read object keys and key types (lock for reading or writing, blocking) */
+	this.keys=function(scope,location,lock) {
+		this.send(scope,"QUERY",{
+            oper:"KEYTYPES",
+            location:location,
+			lock:lock,
+ 			timeout:this.settings.TIMEOUT
+		});
+		return this.wait();
+	}
+
 	/* shift object data (lock for reading or writing, blocking) */
     this.shift=function(scope,location,lock) {
 		this.send(scope,"QUERY",{
@@ -290,18 +301,21 @@ function JSONClient(serverAddr,serverPort) {
 		if(!this.socket.data_waiting) 
 			return false;
 		var packet=this.socket.recvJSON();
-		switch(packet.func.toUpperCase()) {
-		case "PING":
-			this.socket.pingOut("PONG");
-			return false;
-		case "PONG":
-			this.socket.pingIn(packet);
-			return false;
-		case "ERROR":
-			throw(packet.data.description);
-			return false;
+		if(packet != null) {
+			switch(packet.func.toUpperCase()) {
+			case "PING":
+				this.socket.pingOut("PONG");
+				return false;
+			case "PONG":
+				this.socket.pingIn(packet);
+				return false;
+			case "ERROR":
+				throw(packet.data.description);
+				return false;
+			}
+			return packet;
 		}
-		return packet;
+		return false;
 	}
 	
 	/* do not return until the expected response is received */
