@@ -42,7 +42,7 @@ var hostCallsign = client.socket.recvline();
 var hostSSID = client.socket.recvline();
 
 // Load an array of banned words
-var f = new File(system.ctrl_dir + "censorship.txt");
+var f = new File(system.text_dir + "packet/censorship.txt");
 f.open("r");
 var badWords = f.readAll();
 f.close();
