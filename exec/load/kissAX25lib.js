@@ -1,6 +1,219 @@
-// kissAX25lib.js for Synchronet 3.15+
-// echicken -at- bbs.electronicchicken.com (VE3XEC)
-// Support for KISS TNCs and partial support for the AX.25 protocol.
+/*	kissAX25lib.js for Synchronet 3.15+
+	echicken -at- bbs.electronicchicken.com (VE3XEC)
+	
+	This library provides support for the KISS and AX.25 protocols.  AX.25
+	support is partial and needs much improvement.
+	
+	The following functions are available:
+	
+	loadKISSInterface(section)
+		- 'section' is the name of a section from ctrl/kiss.ini
+		- Returns a kissTNC object
+		
+	loadKISSInterfaces()
+		- Takes no arguments and loads all interfaces defined in ctrl/kiss.ini
+		- Returns an array of kissTNC objects
+		
+	logbyte(b)
+		- Adds a representation of an eight-bit byte to the log (eg. 00111100)
+		- Occasionally useful for debugging
+		
+	stringToByteArray(s)
+		- Converts string 's' into an array of ASCII values
+		- Returns an array with one element per character in 's'
+		
+	byteArrayToString(s)
+		- Converts byte array 's' (as above) into a string and returns it
+		
+	The following objects are available:
+	
+	kissTNC(name, callsign, ssid, serialPort, baudRate)
+
+		Normally you'll use loadKISSInterface(section) to instantiate these,
+		however the arguments it accepts are obvious if you want to create
+		instances manually and bypass kiss.ini.
+		
+		Properties:
+		
+		'name'
+			A textual name for the TNC (a section heading from kiss.ini)
+		
+		'callsign'
+			The callsign assigned to this TNC
+		
+		'ssid'
+			The SSID assigned to this TNC
+			
+		'handle'
+			A COM object representing the serial connection to the TNC.  This
+			has its own methods for reading and writing data to and from the
+			TNC.
+		
+		Methods:
+		
+		getKISSFrame()
+			A bit of a misnomer.  What it actually does is read a KISS frame
+			from the TNC and then returns an array representing the bytes of
+			the AX.25 packet contained therein.
+			
+		sendKISSFrame(p)
+			Where 'p' is array containing the bytes of an AX.25 frame, this
+			will encapsulate that packet in a KISS frame and then send it to
+			the TNC for transmission.
+			
+		beacon()
+			Causes the TNC to transmit a UI frame containing the value of
+			system.name (the name of your BBS.)  I'll probably make the beacon
+			text configurable in kiss.ini later on.
+			
+	ax25packet()
+	
+		Represents a single AX.25 frame, but is mostly devoid of properties
+		until either the assemble() or disassemble() methods are called.
+		
+		assemble(destination, destinationSSID, source, sourceSSID, repeaters, control, pid, information)
+			- 'repeaters' is the digipeater path, an array of 'callsign-ssid'
+			- 'control' is a control field octet from ax25defs.js, eg. U_FRAME
+			- 'pid' is a protocol ID octet from ax25defs.js (usually PID_NONE)
+			- 'information' is the payload of an I or UI frame, eg. the return
+			  value of stringToByteArray(s)
+		
+		disassemble(p)
+			'p' is an array containing the bytes of an AX.25 frame, eg. the
+			return value of kissTNC.getKISSFrame().
+		
+		logPacket()
+			Writes some information about this packet to the log.
+			
+		After assemble() or disassemble() has been called, your ax25packet
+		object will have the following properties:
+		
+			'destination'
+				The remote callsign
+			
+			'destinationSSID'
+				The remote SSID
+				
+			'source'
+				The local callsign
+			
+			'sourceSSID'
+				The local SSID
+			
+			'repeaters'
+				An array of 'callsign-ssid' representing the digipeater path
+			
+			'control'
+				The control octet, which can be compared bitwise against masks
+				defined in ax25defs.js
+				
+			'pid'
+				The protocol ID octet, which can be compared bitwise against
+				masks defined in ax25defs.js
+				
+			'information'
+				The payload if applicable (I or UI frames only,) good for use
+				with byteArrayToString(s)
+			
+			'clientID'
+				A unique ID for the sender or recipient, for internal use
+				
+			'raw'
+				An array representing the bytes of the frame, good for use
+				with kissTNC.sendKISSFrame(p)
+				
+	ax25Client(destination, destinationSSID, source, sourceSSID, k)
+	
+		Can represent a client that has called you, but can also be used to
+		represent an outgoing session that you have initiated.
+		
+		All arguments but 'k' are self-explanatory. 'k' is a reference to a
+		kissTNC object (see above) and will be the interface through which all
+		traffic for this client shall pass.
+		
+		Properties:
+		
+		'kissTNC'
+			A reference to the kissTNC object representing the TNC through
+			which all traffic to and from this client passes
+		
+		'callsign'
+			The local callsign
+		
+		'ssid'
+			The local SSID
+			
+		'clientID'
+			A unique ID for this client, for internal use, same as
+			ax25packet.clientID
+			
+		'ssv'
+			The send-sequence variable
+			
+		'rsv'
+			The receive-sequence variable
+		
+		'ns'
+			Client's last reported N(S)
+			
+		'nr'
+			Client's last reported N(R)
+		
+		't1'
+			Timer T1 (Placeholder; not yet implemented)
+
+		't2'
+			Timer T2 (Placeholder; not yet implemented)
+
+		't3'
+			Timer T3 (Placeholder; not yet implemented)
+
+		'resend'
+			true/false, for internal use
+			
+		'reject'
+			true/false, for internal use
+			
+		'connected'
+			true/false, whether or not this client is connected
+
+		'sentIFrames'
+			An array of the last seven I frames that we have sent to this
+			client.
+
+		'lastPacket'
+			An ax25packet object representing the last packet that we sent to
+			this client.
+			
+		Methods:
+		
+		receive(p)
+			'p' is an optional ax25packet object; if omitted, an attempt will
+			be made to read an AX.25 frame from the KISS TNC associated with
+			this client.  Returns false if there is no AX.25 frame waiting to
+			be received.
+		
+		sendPacket(a)
+			'a' is an ax25packet object that will be sent to the client via
+			its associated KISS TNC.
+		
+		send(p)
+			Sends an I frame to the client, where 'p' is the payload (eg. a
+			return value from stringToByteArray(s).
+		
+		connect()
+			Makes five attempts to connect to the client, at three second
+			intervals.  (Attempts and intervals to be made configurable at
+			some point.)  To verify the connection state afterward, check
+			the value of ax25client.connected.
+		
+		disconnect()
+			Makes five attempts to disconnect the client, at three second
+			intervals.  (Attempts and intervals to be made configurable at
+			some point.  To verify the connection state afterward, check the
+			value of ax25client.connected.
+		
+*/
 
 load("ax25defs.js");
 
@@ -8,7 +221,8 @@ load("ax25defs.js");
 function loadKISSInterface(section) {
 	var f = new File(system.ctrl_dir + "kiss.ini");
 	f.open("r");
-	if(!f.exists || !f.is_open) return false;
+	if(!f.exists || !f.is_open)
+		return false;
 	var kissINI = f.iniGetObject(section);
 	f.close();
 	var tnc = new kissTNC(section, kissINI.callsign, kissINI.ssid, kissINI.serialPort, Number(kissINI.baudRate));
@@ -19,11 +233,14 @@ function loadKISSInterface(section) {
 function loadKISSInterfaces() {
 	var f = new File(system.ctrl_dir + "kiss.ini");
 	f.open("r");
-	if(!f.exists || !f.is_open) return false;
+	if(!f.exists || !f.is_open)
+		return false;
 	var kissINI = f.iniGetAllObjects();
 	f.close();
 	var kissTNCs = new Array();
-	for(var i = 0; i < kissINI.length; i++) kissTNCs.push(new kissTNC(kissINI[i].name, kissINI[i].callsign, kissINI[i].ssid, kissINI[i].serialPort, Number(kissINI[i].baudRate)));
+	for(var i = 0; i < kissINI.length; i++) {
+		kissTNCs.push(new kissTNC(kissINI[i].name, kissINI[i].callsign, kissINI[i].ssid, kissINI[i].serialPort, Number(kissINI[i].baudRate)));
+	}
 	return kissTNCs;
 }
 
@@ -35,18 +252,21 @@ function kissTNC(name, callsign, ssid, serialPort, baudRate) {
 	this.handle = new COM(serialPort);
 	this.handle.baud_rate = parseInt(baudRate);
 	this.handle.open();
-	if(!this.handle.is_open) return false;
+	if(!this.handle.is_open)
+		return false;
 
 	// Read a KISS frame from a TNC, return an AX.25 packet (array of bytes) less the flags and FCS
 	this.getKISSFrame = function() {
 		var escaped = false;
 		var kissByte = this.handle.readBin(2);
-		if(kissByte != (KISS_FEND<<8)) return false;
+		if(kissByte != (KISS_FEND<<8))
+			return false;
 		var kissFrame = new Array();
 		// To do: add a timeout to this loop
 		while(kissByte != KISS_FEND) {
 			kissByte = this.handle.readBin(1);
-			if(kissByte == -1) continue;
+			if(kissByte == -1)
+				continue;
 			if((kissByte & KISS_FESC) == KISS_FESC) {
 				escaped = true;
 				continue;
@@ -65,6 +285,7 @@ function kissTNC(name, callsign, ssid, serialPort, baudRate) {
 
 	// Write a KISS frame to a TNC where p is an AX.25 packet (array of bytes) less the flags and FCS
 	this.sendKISSFrame = function(p) {
+		if(p == undefined) return false;
 		var kissByte;
 		this.handle.writeBin((KISS_FEND<<8), 2);
 		for(var i = 0; i < p.length; i++) {
@@ -78,6 +299,12 @@ function kissTNC(name, callsign, ssid, serialPort, baudRate) {
 			}
 		}
 		this.handle.writeBin(KISS_FEND, 1);
+	}
+	
+	this.beacon = function() {
+		var a = new ax25packet();
+		a.assemble("BEACON", 0, this.callsign, this.ssid, false, U_FRAME_UI, PID_NONE, stringToByteArray(system.name));
+		this.sendKISSFrame(a.raw);
 	}
 }
 	
@@ -99,10 +326,14 @@ function ax25packet() {
 		this.clientID = this.destination.replace(/\s/, "") + this.destinationSSID + this.source.replace(/\s/, "") + this.sourceSSID;
 		this.raw = new Array();
 		var dest = stringToByteArray(this.destination);
-		for(var i = 0; i < dest.length; i++) this.raw.push((dest[i]<<1));
+		for(var i = 0; i < dest.length; i++) {
+			this.raw.push((dest[i]<<1));
+		}
 		this.raw.push((parseInt(this.destinationSSID)<<1));
 		var src = stringToByteArray(this.source);
-		for(var i = 0; i < src.length; i++) this.raw.push((src[i]<<1));
+		for(var i = 0; i < src.length; i++) {
+			this.raw.push((src[i]<<1));
+		}
 		if(!repeaters) {
 			this.raw.push((parseInt(this.sourceSSID)<<1)|(1<<0));
 		} else {
@@ -110,30 +341,39 @@ function ax25packet() {
 			for(var i = 0; i < this.repeaters.length; i++) {
 				var repeater = this.repeaters[i].split("-");
 				var repeaterCall = stringToByteArray(repeater[0]);
-				for(var j = 0; j < repeaterCall.length; j++) this.raw.push((repeaterCall[j]<<1));
+				for(var j = 0; j < repeaterCall.length; j++) {
+					this.raw.push((repeaterCall[j]<<1));
+				}
 				var repeaterSSID = (parseInt(repeater[1])<<1);
-				if(i == this.repeaters.length - 1) repeaterSSID |= (1<<0);
+				if(i == this.repeaters.length - 1)
+					repeaterSSID |= (1<<0);
 				this.raw.push(repeaterSSID);
 			}
 		}
 		this.raw.push(this.control);
-		if(this.pid !== undefined) this.raw.push(this.pid);
+		if(this.pid !== undefined)
+			this.raw.push(this.pid);
 		if(this.information !== undefined) {
 			for(var i = 0; i < this.information.length; i++) {
 				this.raw.push(this.information[i]);
 			}
 			this.ns = ((this.control & NS)>>>1);
 		}
-		if((this.control & I_FRAME) == I_FRAME || (this.control & S_FRAME) == S_FRAME) this.nr = ((this.control & NR)>>>5);
+		if((this.control & I_FRAME) == I_FRAME || (this.control & S_FRAME) == S_FRAME)
+			this.nr = ((this.control & NR)>>>5);
 	}
 
 	this.disassemble = function(p) {
 		this.raw = p;
 		this.destination = "";
-		for(var i = 0; i < 6; i++) this.destination += ascii((p[i]>>1));
+		for(var i = 0; i < 6; i++) {
+			this.destination += ascii((p[i]>>1));
+		}
 		this.destinationSSID = ((p[6] & A_SSID)>>1);
 		this.source = "";
-		for(var i = 7; i < 13; i++) this.source += ascii(p[i]>>1);
+		for(var i = 7; i < 13; i++) {
+			this.source += ascii(p[i]>>1);
+		}
 		var i = 13;
 		this.sourceSSID = ((p[i] & A_SSID)>>1);
 		this.clientID = this.destination.replace(/\s/, "") + this.destinationSSID + this.source.replace(/\s/, "") + this.sourceSSID;
@@ -151,7 +391,8 @@ function ax25packet() {
 				} else {
 					repeater += ascii((p[i]>>1));
 				}
-				if(p[i] & (1<<0)) break;
+				if(p[i] & (1<<0))
+					break;
 			}
 		}
 		this.control = p[i + 1]; // Implementation can compare this against bitmasks from ax25defs.js to determine frame type.
@@ -159,12 +400,16 @@ function ax25packet() {
 		if((this.control & U_FRAME_UI) == U_FRAME_UI || (this.control & U_FRAME_FRMR) == U_FRAME_FRMR || (this.control & I_FRAME) == I_FRAME) {
 			this.pid = p[i + 2];
 			this.information = new Array();
-			for(var x = i + 3; x < p.length; x++) this.information.push(p[x]);
+			for(var x = i + 3; x < p.length; x++) {
+				this.information.push(p[x]);
+			}
 		}
 		// An I frame will have N(S) (send-sequence) bits in the control octet
-		if((this.control & I_FRAME) == I_FRAME) this.ns = ((this.control & NS)>>>1);
+		if((this.control & I_FRAME) == I_FRAME)
+			this.ns = ((this.control & NS)>>>1);
 		// An I frame or an S frame will have N(R) (receive sequence) bits in the control octet
-		if((this.control & I_FRAME) == I_FRAME || (this.control & S_FRAME) == S_FRAME) this.nr = ((this.control & NR)>>>5);
+		if((this.control & I_FRAME) == I_FRAME || (this.control & S_FRAME) == S_FRAME)
+			this.nr = ((this.control & NR)>>>5);
 	}
 	
 	this.logPacket = function() {
@@ -196,14 +441,18 @@ function ax25packet() {
 function stringToByteArray(s) {
 	s = s.split("");
 	var r = new Array();
-	for(var i = 0; i < s.length; i++) r.push(ascii(s[i]));
+	for(var i = 0; i < s.length; i++) {
+		r.push(ascii(s[i]));
+	}
 	return r;
 }
 
 // Turns an array of ASCII character codes into a string
 function byteArrayToString(s) {
 	var r = "";
-	for(var i = 0; i < s.length; i++) r += ascii(s[i]);
+	for(var i = 0; i < s.length; i++) {
+		r += ascii(s[i]);
+	}
 	return r;
 }
 
@@ -241,10 +490,12 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 	this.receive = function(p) {
 		if(p == undefined) {
 			var kissFrame = this.kissTNC.getKISSFrame();
-			if(!kissFrame) return false;
+			if(!kissFrame)
+				return false;
 			var p = new ax25packet();
 			p.disassemble(kissFrame);
-			if(p.destination != this.kissTNC.callsign || p.destinationSSID != this.kissTNC.ssid) return false;
+			if(p.destination != this.kissTNC.callsign || p.destinationSSID != this.kissTNC.ssid)
+				return false;
 		}
 		p.logPacket();
 		var retval = false;
@@ -262,8 +513,10 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		} else if((p.control & U_FRAME_DM) == U_FRAME_DM) {
 			this.connected = false;
 		} else if((p.control & U_FRAME_UA) == U_FRAME_UA) {
-			if((this.lastPacket.control & U_FRAME_SABM) == U_FRAME_SABM) this.connected = true;
-			if((this.lastPacket.control & U_FRAME_DISC) == U_FRAME_DISC) this.connected = false;
+			if((this.lastPacket.control & U_FRAME_SABM) == U_FRAME_SABM)
+				this.connected = true;
+			if((this.lastPacket.control & U_FRAME_DISC) == U_FRAME_DISC)
+				this.connected = false;
 			return retval;
 		} else if((p.control & U_FRAME_FRMR) == U_FRAME_FRMR && this.connected) {
 			a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_SABM);
@@ -274,7 +527,8 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 			this.connected = false;
 			this.reject = false;
 		} else if((p.control & U_FRAME) == U_FRAME) {
-			if(p.hasOwnProperty("information") && p.information.length > 0) retval = p.information;
+			if(p.hasOwnProperty("information") && p.information.length > 0)
+				retval = p.information;
 			return retval;
 		} else if(!this.connected) {
 			a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_DM);
@@ -283,7 +537,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 			a.raw = this.sentIFrames[p.nr - 1];
 			this.nr = p.nr;
 		} else if((p.control & S_FRAME_RNR) == S_FRAME_RNR) {
-			this.nr = p.nr;
+			this.nr = p.nr - 1;
 		} else if((p.control & S_FRAME) == S_FRAME) {
 			// This is a Receive-Ready and an acknowledgement of all frames in the sequence up to client's N(R)
 			this.nr = p.nr;
@@ -305,22 +559,27 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 			this.ns = p.ns;
 			this.nr = p.nr;
 			if(p.ns != this.rsv) {
-				if(this.reject) return retval;
+				if(this.reject)
+					return retval;
 				// Send a REJ, requesting retransmission of the frame whose N(S) value matches our current RSV
 				a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, (S_FRAME_REJ|(this.rsv<<5)));
 				this.reject = true;
 			} else if(p.information.length <= 256) {
 				// This is an actual, good and expected I frame
 				this.rsv++;
-				if(this.rsv > 7) this.rsv = 0;
+				if(this.rsv > 7)
+					this.rsv = 0;
 				a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, (S_FRAME_RR|(this.rsv<<5)));
-				if(p.hasOwnProperty("information") && p.information.length > 0) retval = p.information;
+				if(p.hasOwnProperty("information") && p.information.length > 0)
+					retval = p.information;
 				this.reject = false;
 			} else {
 				// Send a FRMR with the offending control field, our RSV and SSV, and the "Z" flag to indicate an invalid N(R)
 				var i = [p.control, (this.rsv<<5)|(this.ssv<<1), 0];
-				if(p.information.length > 256) i[2] = (1<<2);
-				if(p.nr != this.ssv) i[2]|=(1<<3);
+				if(p.information.length > 256)
+					i[2] = (1<<2);
+				if(p.nr != this.ssv)
+					i[2]|=(1<<3);
 				a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, (U_FRAME_FRMR), PID_NONE, i);
 				this.reject = true;
 			}
@@ -344,7 +603,8 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, (I_FRAME|(this.rsv<<5)|(this.ssv<<1)), PID_NONE, p);
 		this.sendPacket(a);
 		this.ssv++;
-		if(this.ssv > 7) this.ssv = 0;
+		if(this.ssv > 7)
+			this.ssv = 0;
 		this.sentIFrames.push(a);
 	}
 
@@ -354,13 +614,13 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		var a = new ax25packet();
 		a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_SABM);
 		var i = 0;
-		while(!c.connected && i < 5){
+		while(!this.connected && i < 5){
 			this.sendPacket(a);
 			mswait(3000);
 			this.receive();
 			i++;
 		}
-		if(c.connected) {
+		if(this.connected) {
 			log(LOG_INFO, this.kissTNC.callsign + "-" + this.kissTNC.ssid + " connected to " + this.callsign + "-" + this.ssid);
 		} else {
 			log(LOG_INFO, this.kissTNC.callsign + "-" + this.kissTNC.ssid + " failed to connect to " + this.callsign + "-" + this.ssid);
@@ -373,14 +633,14 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		var a = new ax25packet();
 		a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_DISC);
 		var i = 0;
-		while(c.connected && i < 5){
+		while(this.connected && i < 5){
 			this.sendPacket(a);
 			mswait(3000);
 			this.receive();
 			i++;
 		}
-		if(c.connected) {
-			c.connected = false;
+		if(this.connected) {
+			this.connected = false;
 			log(LOG_INFO, this.callsign + "-" + this.ssid + " failed to acknowledge U_FRAME_DISC from " + this.kissTNC.callsign + "-" + this.kissTNC.ssid);
 		} else {
 			log(LOG_INFO, this.callsign + "-" + this.ssid + " disconnected from " + this.kissTNC.callsign + "-" + this.kissTNC.ssid);
