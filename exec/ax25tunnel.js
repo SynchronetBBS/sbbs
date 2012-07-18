@@ -74,6 +74,8 @@ while(!js.terminated) {
 	}
 	// Check for data waiting on any sockets
 	for(var c in ax25Clients) {
+		if(ax25Clients[c].wait)
+			continue;
 		if(ax25Clients[c].sock.data_waiting && ax25Clients[c].nr == ax25Clients[c].ssv && !ax25Clients[c].reject) {
 			var sendMe = ax25Clients[c].sock.recvfrom(false, 256).data;
 			sendMe = stringToByteArray(sendMe);
