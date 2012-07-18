@@ -157,6 +157,8 @@ var port=119;
 var username;
 var password;
 var interface_ip_address=0;
+var port_set=false;
+var tls=false;
 area = new Array();
 
 if(this.server!=undefined)
@@ -187,8 +189,14 @@ while(!cfg_file.eof) {
 		case "server":
 			host=str[1];
 			break;
+		case "tls"
+			tls=true;
+			if(!port_set)
+				port=563;
+			break;
 		case "port":
 			port=parseInt(str[1]);
+			port_set=true;
 			break;
 		case "interface":
 			interface_ip_address=str[1];
@@ -262,6 +270,7 @@ if(!socket.connect(host,port)) {
 	exit();
 }
 print("Connected");
+socket.ssl_session=tls;
 readln();
 
 if(username!=undefined && username.length) {
