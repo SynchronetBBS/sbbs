@@ -32,6 +32,11 @@ var kissFrame;
 var sockRet = "";
 var ax25Clients = new Object();
 
+var f = new File(system.ctrl_dir + "services.ini");
+f.open("r");
+var i = f.iniGetObject("Packet-BBS");
+f.close();
+
 function beaconAllTNCs() {
 	for(var k = 0; k < kissTNCs.length; k++) {
 		kissTNCs[k].beacon();
@@ -53,7 +58,7 @@ while(!js.terminated) {
 		if(!ax25Clients.hasOwnProperty(p.clientID)) {
 			ax25Clients[p.clientID] = new ax25Client(p.destination, p.destinationSSID, p.source, p.sourceSSID, kissTNCs[k]);
 			ax25Clients[p.clientID].sock = new Socket();
-			ax25Clients[p.clientID].sock.connect("localhost", 2000);
+			ax25Clients[p.clientID].sock.connect("localhost", i.Port);
 			ax25Clients[p.clientID].sock.send(ax25Clients[p.clientID].callsign + "\r\n");
 			ax25Clients[p.clientID].sock.send(ax25Clients[p.clientID].ssid + "\r\n");
 			ax25Clients[p.clientID].sock.send(ax25Clients[p.clientID].kissTNC.callsign + "\r\n");
