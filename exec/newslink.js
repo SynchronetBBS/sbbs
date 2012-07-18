@@ -270,7 +270,10 @@ if(!socket.connect(host,port)) {
 	exit();
 }
 print("Connected");
-socket.ssl_session=tls;
+if(tls) {
+	print("Negotiating TLS");
+	socket.ssl_session=true;
+}
 readln();
 
 if(username!=undefined && username.length) {
