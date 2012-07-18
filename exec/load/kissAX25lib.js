@@ -114,7 +114,7 @@
 			'information'
 				The payload if applicable (I or UI frames only,) good for use
 				with byteArrayToString(s)
-			
+
 			'clientID'
 				A unique ID for the sender or recipient, for internal use
 				
@@ -173,6 +173,11 @@
 			
 		'reject'
 			true/false, for internal use
+			
+		'wait'
+			If true, do not send any additional I frames to this client. (Your
+			scripts should check this value before deciding to send data to
+			the client.)
 			
 		'connected'
 			true/false, whether or not this client is connected
@@ -476,6 +481,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 	this.t3 = 0; // Timer T3
 	this.resend = false;
 	this.reject = false;
+	this.wait = false;
 	this.connected = false;
 	this.sentIFrames = [];
 	this.lastPacket = false;
@@ -541,11 +547,11 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		} else if((p.control & S_FRAME) == S_FRAME) {
 			// This is a Receive-Ready and an acknowledgement of all frames in the sequence up to client's N(R)
 			this.nr = p.nr;
-			if(p.nr == 7 && this.sentIFrames.length == 7) {
-				this.sentIFrames = []; // Client acknowledges the entire sequence, we can ditch our stored sent packets
-				return retval;
-			} else if(p.nr == 7 && this.sentIFrames.length > 7) {
-				this.sentIFrames = this.sentIFrames.slice(7); // If we sent more I frames before they acknowledged our N(S)=7, we don't want to delete them yet.
+			if(this.ssv <= this.nr % 8)
+				this.wait = false;
+			if(p.nr == 7 && this.sentIFrames.length >= 7) {
+				// Client acknowledges the entire sequence, we can ditch our stored sent packets
+				this.sentIFrames = this.sentIFrames.slice(7);
 				return retval;
 			} else if(this.resend && p.nr < this.sentIFrames.length) {
 				a.raw = this.sentIFrames[p.nr - 1];
@@ -558,6 +564,8 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		} else if((p.control & I_FRAME) == I_FRAME) {
 			this.ns = p.ns;
 			this.nr = p.nr;
+			if(this.ssv <= this.nr % 8)
+				this.wait = false;
 			if(p.ns != this.rsv) {
 				if(this.reject)
 					return retval;
@@ -605,6 +613,8 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		this.ssv++;
 		if(this.ssv > 7)
 			this.ssv = 0;
+		if(this.ssv > this.nr % 8)
+			this.wait = true;
 		this.sentIFrames.push(a);
 	}
 
