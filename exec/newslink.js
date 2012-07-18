@@ -189,7 +189,7 @@ while(!cfg_file.eof) {
 		case "server":
 			host=str[1];
 			break;
-		case "tls"
+		case "tls":
 			tls=true;
 			if(!port_set)
 				port=563;
