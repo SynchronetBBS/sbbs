@@ -115,6 +115,9 @@ been completed for you.
 
    E. Remove or comment-out (with a semicolon) the "DISABLED" line.
 
+   F. If you wish to use TLS/SSL, incomment (remove the semicolon) the "TLS"
+      line.
+
 6. Now you may force the NEWSLINK timed event to run. In SBBSCTRL (Win32 GUI),
    you can do this by clicking BBS->Force Timed Event->NEWSLINK, or for the
    console or NT services versions of Synchronet, you can touch or create the
