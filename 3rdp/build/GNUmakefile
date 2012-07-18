@@ -42,7 +42,7 @@ $(CRYPT_SRC): | $(3RDPSRCDIR)
 $(CRYPT_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(CRYPT_IDIR)
 
-$(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip | $(CRYPT_SRC) $(CRYPT_IDIR)
+$(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)build/SSL-fix.patch $(3RDP_ROOT)$(DIRSEP)build/random_exit.patch | $(CRYPT_SRC) $(CRYPT_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(CRYPT_SRC)/*
 	$(QUIET)unzip -oa $(3RDPDISTDIR)$(DIRSEP)cryptlib.zip -d $(CRYPT_SRC)
