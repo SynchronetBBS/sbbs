@@ -535,6 +535,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 			} else {
 				a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_SABM);
 				this.init();
+				this.expectUA = true;
 			}
 		} else if((p.control & U_FRAME_FRMR) == U_FRAME_FRMR && this.connected) {
 			a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_SABM);
@@ -660,6 +661,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		var i = 0;
 		while(this.connected && i < 5){
 			this.sendPacket(a);
+			this.expectUA = true;
 			mswait(3000);
 			this.receive();
 			i++;
