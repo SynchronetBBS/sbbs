@@ -472,19 +472,25 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		this.ssid = sourceSSID;	
 	}
 	this.clientID = destination.replace(/\s/, "") + destinationSSID + source.replace(/\s/, "") + sourceSSID;
-	this.ssv = 0; // Send Sequence Variable
-	this.rsv = 0; // Receive Sequence Variable
-	this.ns = 0; // Client's last reported N(S)
-	this.nr = 0; // Client's last reported N(R)
-	this.t1 = 0; // Timer T1
-	this.t2 = 0; // Timer T2
-	this.t3 = 0; // Timer T3
-	this.resend = false;
-	this.reject = false;
-	this.wait = false;
-	this.connected = false;
-	this.sentIFrames = [];
-	this.lastPacket = false;
+
+	this.init = function() {
+		this.ssv = 0; // Send Sequence Variable
+		this.rsv = 0; // Receive Sequence Variable
+		this.ns = 0; // Client's last reported N(S)
+		this.nr = 0; // Client's last reported N(R)
+		this.t1 = 0; // Timer T1
+		this.t2 = 0; // Timer T2
+		this.t3 = 0; // Timer T3
+		this.resend = false;
+		this.reject = false;
+		this.wait = false;
+		this.connected = false;
+		this.sentIFrames = [];
+		this.lastPacket = false;
+		this.expectUA = false;
+	}
+	
+	this.init();
 
 	/*	Process and respond to ax25packet object 'p', returning false unless
 		'p' is an I frame, in which case the I frame payload will be returned
@@ -511,23 +517,28 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 			if(this.reject) {
 				this.reject = false;
 			} else {
-				this.rsv = 0;
-				this.ssv = 0;
+				this.init();
+				this.connected = true;
 			}
 			a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_UA);
 			log(LOG_INFO, this.kissTNC.callsign + "-" + this.kissTNC.ssid + ": Connection from " + this.callsign + "-" + this.ssid);
 		} else if((p.control & U_FRAME_DM) == U_FRAME_DM) {
 			this.connected = false;
 		} else if((p.control & U_FRAME_UA) == U_FRAME_UA) {
-			if((this.lastPacket.control & U_FRAME_SABM) == U_FRAME_SABM)
-				this.connected = true;
-			if((this.lastPacket.control & U_FRAME_DISC) == U_FRAME_DISC)
-				this.connected = false;
-			return retval;
+			if(this.expectUA) {
+				this.expectUA = false;
+				if((this.lastPacket.control & U_FRAME_SABM) == U_FRAME_SABM)
+					this.connected = true;
+				if((this.lastPacket.control & U_FRAME_DISC) == U_FRAME_DISC)
+					this.connected = false;
+				return retval;
+			} else {
+				a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_SABM);
+				this.init();
+			}
 		} else if((p.control & U_FRAME_FRMR) == U_FRAME_FRMR && this.connected) {
 			a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_SABM);
-			this.rsv = 0;
-			this.ssv = 0;
+			this.init();
 		} else if((p.control & U_FRAME_DISC) == U_FRAME_DISC) {
 			a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_UA);
 			this.connected = false;
@@ -540,7 +551,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 			a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, U_FRAME_DM);
 		} else if((p.control & S_FRAME_REJ) == S_FRAME_REJ) {
 			this.resend = true;
-			a.raw = this.sentIFrames[p.nr - 1];
+			a = this.sentIFrames[p.nr - 1];
 			this.nr = p.nr;
 		} else if((p.control & S_FRAME_RNR) == S_FRAME_RNR) {
 			this.nr = p.nr - 1;
@@ -548,13 +559,14 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 			// This is a Receive-Ready and an acknowledgement of all frames in the sequence up to client's N(R)
 			this.nr = p.nr;
 			if(this.ssv <= this.nr % 8)
+				// We haven't exceeded the flow control window, so no need to wait before sending more I frames
 				this.wait = false;
 			if(p.nr == 7 && this.sentIFrames.length >= 7) {
 				// Client acknowledges the entire sequence, we can ditch our stored sent packets
 				this.sentIFrames = this.sentIFrames.slice(7);
 				return retval;
 			} else if(this.resend && p.nr < this.sentIFrames.length) {
-				a.raw = this.sentIFrames[p.nr - 1];
+				a = this.sentIFrames[p.nr - 1];
 			} else if(this.resend && p.nr >= this.sentIFrames.length) {
 				this.resend = false;
 				return retval;
@@ -614,6 +626,8 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		if(this.ssv > 7)
 			this.ssv = 0;
 		if(this.ssv > this.nr % 8)
+			/*	If we send again, we will exceed the flow control window. We
+				should wait for the client to catch up before sending more. */
 			this.wait = true;
 		this.sentIFrames.push(a);
 	}
@@ -626,6 +640,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		var i = 0;
 		while(!this.connected && i < 5){
 			this.sendPacket(a);
+			this.expectUA = true;
 			mswait(3000);
 			this.receive();
 			i++;
