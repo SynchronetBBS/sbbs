@@ -559,7 +559,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		} else if((p.control & S_FRAME) == S_FRAME) {
 			// This is a Receive-Ready and an acknowledgement of all frames in the sequence up to client's N(R)
 			this.nr = p.nr;
-			if(this.ssv <= this.nr % 8)
+			if(this.ssv >= this.nr)
 				// We haven't exceeded the flow control window, so no need to wait before sending more I frames
 				this.wait = false;
 			if(p.nr == 7 && this.sentIFrames.length >= 7) {
@@ -577,7 +577,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		} else if((p.control & I_FRAME) == I_FRAME) {
 			this.ns = p.ns;
 			this.nr = p.nr;
-			if(this.ssv <= this.nr % 8)
+			if(this.ssv >= this.nr)
 				this.wait = false;
 			if(p.ns != this.rsv) {
 				if(this.reject)
@@ -588,8 +588,7 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 			} else if(p.information.length <= 256) {
 				// This is an actual, good and expected I frame
 				this.rsv++;
-				if(this.rsv > 7)
-					this.rsv = 0;
+				this.rsv = this.rsv % 8;
 				a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, (S_FRAME_RR|(this.rsv<<5)));
 				if(p.hasOwnProperty("information") && p.information.length > 0)
 					retval = p.information;
@@ -624,9 +623,8 @@ function ax25Client(destination, destinationSSID, source, sourceSSID, k) {
 		a.assemble(this.callsign, this.ssid, this.kissTNC.callsign, this.kissTNC.ssid, false, (I_FRAME|(this.rsv<<5)|(this.ssv<<1)), PID_NONE, p);
 		this.sendPacket(a);
 		this.ssv++;
-		if(this.ssv > 7)
-			this.ssv = 0;
-		if(this.ssv > this.nr % 8)
+		this.ssv = this.ssv % 8;
+		if(this.ssv < this.nr)
 			/*	If we send again, we will exceed the flow control window. We
 				should wait for the client to catch up before sending more. */
 			this.wait = true;
