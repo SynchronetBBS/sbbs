@@ -1488,24 +1488,24 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 //								if((ret=cryptSetAttribute(p->session, CRYPT_SESSINFO_VERSION, 0))==CRYPT_OK) {
 									if((ret=cryptSetAttributeString(p->session, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname)))==CRYPT_OK) {
 										if((ret=cryptSetAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1))!=CRYPT_OK) {
-											fprintf(stderr,"cryptSetAttribute(CRYPT_SESSINFO_ACTIVE) Error %d\n",ret);
+											lprintf(LOG_ERR,"cryptSetAttribute(CRYPT_SESSINFO_ACTIVE) Error %d\n",ret);
 											cryptDestroySession(p->session);
 											p->session=-1;
 											ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 										}
 									}
-									else fprintf(stderr,"cryptSetAttributeString(CRYPT_SESSINFO_SERVER_NAME) Error %d\n",ret);
+									else lprintf(LOG_ERR,"cryptSetAttributeString(CRYPT_SESSINFO_SERVER_NAME) Error %d\n",ret);
 //								}
-//								else fprintf(stderr,"cryptSetAttributeString(CRYPT_SESSINFO_VERSION) Error %d\n",ret);
+//								else lprintf(LOG_ERR,"cryptSetAttributeString(CRYPT_SESSINFO_VERSION) Error %d\n",ret);
 							}
 							else {
-								fprintf(stderr,"cryptSetAttribute(CRYPT_SESSINFO_NETWORKSOCKET) Error %d\n",ret);
+								lprintf(LOG_ERR,"cryptSetAttribute(CRYPT_SESSINFO_NETWORKSOCKET) Error %d\n",ret);
 								cryptDestroySession(p->session);
 								p->session=-1;
 								ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 							}
 						}
-						else fprintf(stderr,"cryptCreateSession() Error %d\n",ret);
+						else lprintf(LOG_ERR,"cryptCreateSession() Error %d\n",ret);
 					}
 				}
 			}
