@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -66,9 +66,9 @@ static void do_cryptEnd(void)
 	cryptEnd();
 }
 
-static ssize_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, int timeout)
+static size_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, int timeout)
 {
-	ssize_t	total=0;
+	size_t	total=0;
 	int	copied;
 	
 	if(p->session==-1)
@@ -87,7 +87,7 @@ static ssize_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, in
 			if(total>=len)
 				return total;
 			len-=copied;
-			buf+=copied;
+			((uint8_t*)buf)+=copied;
 		}
 		else
 			return total;
@@ -95,9 +95,9 @@ static ssize_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, in
 	return total;	// Shouldn't happen...
 }
 
-static ssize_t js_socket_sendsocket(private_t *p, const void *msg, size_t len, int flush)
+static size_t js_socket_sendsocket(private_t *p, const void *msg, size_t len, int flush)
 {
-	ssize_t total=0;
+	size_t total=0;
 	int copied=0;
 	
 	if(p->session==-1)
@@ -114,7 +114,7 @@ static ssize_t js_socket_sendsocket(private_t *p, const void *msg, size_t len, i
 				return total;
 			}
 			len -= copied;
-			msg += copied;
+			((uint8_t*)msg) += copied;
 		}
 		else {
 			if(flush) cryptFlushData(p->session);
