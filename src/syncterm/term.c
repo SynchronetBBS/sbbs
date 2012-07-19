@@ -2491,6 +2491,12 @@ BOOL doterm(struct bbslist *bbs)
 							setup_mouse_events();
 							puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
 							free(p);
+							if(cterm->scrollback != scrollback_buf || cterm->backlines != settings.backlines) {
+								cterm->scrollback = scrollback_buf;
+								cterm->backlines = settings.backlines;
+								if(cterm->backpos>cterm->backlines)
+									cterm->backpos=cterm->backlines;
+							}
 							showmouse();
 							_setcursortype(_NORMALCURSOR);
 						}
