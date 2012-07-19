@@ -66,9 +66,9 @@ static void do_cryptEnd(void)
 	cryptEnd();
 }
 
-static size_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, int timeout)
+static ptrdiff_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, int timeout)
 {
-	size_t	total=0;
+	ptrdiff_t	total=0;
 	int	copied;
 	
 	if(p->session==-1)
@@ -87,7 +87,7 @@ static size_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, int
 			if(total>=len)
 				return total;
 			len-=copied;
-			((uint8_t*)buf)+=copied;
+			buf=((uint8_t *)buf) + copied;
 		}
 		else
 			return total;
@@ -95,9 +95,9 @@ static size_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, int
 	return total;	// Shouldn't happen...
 }
 
-static size_t js_socket_sendsocket(private_t *p, const void *msg, size_t len, int flush)
+static ptrdiff_t js_socket_sendsocket(private_t *p, const void *msg, size_t len, int flush)
 {
-	size_t total=0;
+	ptrdiff_t total=0;
 	int copied=0;
 	
 	if(p->session==-1)
@@ -114,7 +114,7 @@ static size_t js_socket_sendsocket(private_t *p, const void *msg, size_t len, in
 				return total;
 			}
 			len -= copied;
-			((uint8_t*)msg) += copied;
+			msg=((uint8_t *)msg) + copied;
 		}
 		else {
 			if(flush) cryptFlushData(p->session);
