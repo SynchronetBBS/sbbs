@@ -69,7 +69,7 @@ static void do_cryptEnd(void)
 int do_cryptInit(void)
 {
 	int ret;
-	
+
 	if(!cryptInitialized) {
 		if((ret=cryptInit())==CRYPT_OK) {
 			cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
@@ -1514,16 +1514,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 				if(p->session==-1) {
 					int ret;
 
-					if(!cryptInitialized) {
-						if((ret=cryptInit())==CRYPT_OK) {
-							cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
-							cryptInitialized=1;
-							atexit(do_cryptEnd);
-						}
-						else
-							lprintf(LOG_ERR,"cryptInit() returned %d", ret);
-					}
-					if(cryptInitialized) {
+					if(do_cryptInit()) {
 						if((ret=cryptCreateSession(&p->session, CRYPT_UNUSED, CRYPT_SESSION_SSL))==CRYPT_OK) {
 							ulong nb=0;
 							ioctlsocket(p->sock,FIONBIO,&nb);

@@ -4696,7 +4696,7 @@ void DLLCALL bbs_thread(void* arg)
 
 		CRYPT_KEYSET	ssh_keyset;
 
-		if(do_cryptInit()!=CRYPT_OK)
+		if(!do_cryptInit())
 			goto NO_SSH;
 		/* Get the private key... first try loading it from a file... */
 		SAFEPRINTF2(str,"%s%s",scfg.ctrl_dir,"cryptlib.key");
