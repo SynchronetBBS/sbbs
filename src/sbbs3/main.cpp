@@ -41,6 +41,7 @@
 #include "netwrap.h"
 #include "js_rtpool.h"
 #include "js_request.h"
+#include "js_socket.h"
 
 #ifdef __unix__
 	#include <sys/un.h>
@@ -4695,8 +4696,8 @@ void DLLCALL bbs_thread(void* arg)
 
 		CRYPT_KEYSET	ssh_keyset;
 
-		cryptInit();
-		cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
+		if(do_cryptInit()!=CRYPT_OK)
+			goto NO_SSH;
 		/* Get the private key... first try loading it from a file... */
 		SAFEPRINTF2(str,"%s%s",scfg.ctrl_dir,"cryptlib.key");
 		if(cryptStatusOK(cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_NONE))) {

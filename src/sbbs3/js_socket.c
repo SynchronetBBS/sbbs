@@ -66,6 +66,22 @@ static void do_cryptEnd(void)
 	cryptEnd();
 }
 
+int do_cryptInit(void)
+{
+	int ret;
+	
+	if(!cryptInitialized) {
+		if((ret=cryptInit())==CRYPT_OK) {
+			cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
+			cryptInitialized=1;
+			atexit(do_cryptEnd);
+		}
+		else
+			lprintf(LOG_ERR,"cryptInit() returned %d", ret);
+	}
+	return cryptInitialized;
+}
+
 static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
 {
 	int ret=cryptSetAttribute(session, attr, val);
@@ -80,6 +96,14 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 	if(ret != CRYPT_OK)
 		lprintf(LOG_ERR, "cryptSetAttributeString(%d) returned %d", attr, ret);
 	return ret;
+}
+
+static void do_CryptFlush(const CRYPT_CONTEXT session)
+{
+	int ret=cryptFlushData(session);
+
+	if(ret!=CRYPT_OK)
+		lprintf(LOG_ERR, "cryptFlushData() returned %d", ret);
 }
 
 static ptrdiff_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, int timeout)
@@ -113,14 +137,6 @@ static ptrdiff_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, 
 	return total;	// Shouldn't happen...
 }
 
-static void doCryptFlush(const CRYPT_CONTEXT session)
-{
-	int ret=cryptFlushData(session);
-
-	if(ret!=CRYPT_OK)
-		lprintf(LOG_ERR, "cryptFlushData() returned %d", ret);
-}
-
 static ptrdiff_t js_socket_sendsocket(private_t *p, const void *msg, size_t len, int flush)
 {
 	ptrdiff_t total=0;
@@ -131,12 +147,12 @@ static ptrdiff_t js_socket_sendsocket(private_t *p, const void *msg, size_t len,
 	do {
 		if((ret=cryptPushData(p->session, msg, len, &copied))==CRYPT_OK) {
 			if(p->nonblocking) {
-				if(flush) doCryptFlush(p->session);
+				if(flush) do_CryptFlush(p->session);
 				return copied;
 			}
 			total += copied;
 			if(total >= len) {
-				if(flush) doCryptFlush(p->session);
+				if(flush) do_CryptFlush(p->session);
 				return total;
 			}
 			len -= copied;
@@ -144,11 +160,11 @@ static ptrdiff_t js_socket_sendsocket(private_t *p, const void *msg, size_t len,
 		}
 		else {
 			lprintf(LOG_ERR,"cryptPushData() returned %d", ret);
-			if(flush) doCryptFlush(p->session);
+			if(flush) do_CryptFlush(p->session);
 			return total;
 		}
 	} while(len);
-	if(flush) doCryptFlush(p->session);
+	if(flush) do_CryptFlush(p->session);
 	return total; // shouldn't happen...
 }
 
@@ -183,7 +199,7 @@ static int js_socket_sendfilesocket(private_t *p, int file, off_t *offset, off_t
 	while(total<count) {
 		rd=read(file,buf,sizeof(buf));
 		if(rd==-1) {
-			doCryptFlush(p->session);
+			do_CryptFlush(p->session);
 			return(-1);
 		}
 		if(rd==0)
@@ -197,11 +213,11 @@ static int js_socket_sendfilesocket(private_t *p, int file, off_t *offset, off_t
 				SLEEP(1);
 				continue;
 			}
-			doCryptFlush(p->session);
+			do_CryptFlush(p->session);
 			return(wr);
 		}
 		if(i!=rd) {
-			doCryptFlush(p->session);
+			do_CryptFlush(p->session);
 			return(-1);
 		}
 		total+=rd;
@@ -210,7 +226,7 @@ static int js_socket_sendfilesocket(private_t *p, int file, off_t *offset, off_t
 	if(offset!=NULL)
 		(*offset)+=total;
 
-	doCryptFlush(p->session);
+	do_CryptFlush(p->session);
 	return(total);
 }
 
