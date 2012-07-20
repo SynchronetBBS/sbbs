@@ -66,21 +66,37 @@ static void do_cryptEnd(void)
 	cryptEnd();
 }
 
+static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
+{
+	int ret=cryptSetAttribute(session, attr, val);
+	if(ret != CRYPT_OK)
+		lprintf(LOG_ERR, "cryptSetAttribute(%d) returned %d", attr, ret);
+	return ret;
+}
+
+static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len)
+{
+	int ret=cryptSetAttributeString(session, attr, val, len);
+	if(ret != CRYPT_OK)
+		lprintf(LOG_ERR, "cryptSetAttributeString(%d) returned %d", attr, ret);
+	return ret;
+}
+
 static ptrdiff_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, int timeout)
 {
 	ptrdiff_t	total=0;
-	int	copied;
+	int	copied,ret;
 	
 	if(p->session==-1)
 		return(recv(p->sock, buf, len, flags));
 	if(p->nonblocking) {
-		cryptSetAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, 0);
+		do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, 0);
 	}
 	else {
-		cryptSetAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, timeout);
+		do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, timeout);
 	}
 	do {
-		if(cryptPopData(p->session, buf, len, &copied)==CRYPT_OK) {
+		if((ret=cryptPopData(p->session, buf, len, &copied))==CRYPT_OK) {
 			if(p->nonblocking)
 				return copied;
 			total += copied;
@@ -89,8 +105,10 @@ static ptrdiff_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, 
 			len-=copied;
 			buf=((uint8_t *)buf) + copied;
 		}
-		else
+		else {
+			lprintf(LOG_ERR,"cryptPopData() returned %d", ret);
 			return total;
+		}
 	} while(len);
 	return total;	// Shouldn't happen...
 }
@@ -106,12 +124,12 @@ static void doCryptFlush(const CRYPT_CONTEXT session)
 static ptrdiff_t js_socket_sendsocket(private_t *p, const void *msg, size_t len, int flush)
 {
 	ptrdiff_t total=0;
-	int copied=0;
+	int copied=0,ret;
 	
 	if(p->session==-1)
 		return sendsocket(p->sock, msg, len);
 	do {
-		if(cryptPushData(p->session, msg, len, &copied)==CRYPT_OK) {
+		if((ret=cryptPushData(p->session, msg, len, &copied))==CRYPT_OK) {
 			if(p->nonblocking) {
 				if(flush) doCryptFlush(p->session);
 				return copied;
@@ -125,6 +143,7 @@ static ptrdiff_t js_socket_sendsocket(private_t *p, const void *msg, size_t len,
 			msg=((uint8_t *)msg) + copied;
 		}
 		else {
+			lprintf(LOG_ERR,"cryptPushData() returned %d", ret);
 			if(flush) doCryptFlush(p->session);
 			return total;
 		}
@@ -1480,11 +1499,13 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 					int ret;
 
 					if(!cryptInitialized) {
-						if(cryptInit()==CRYPT_OK) {
+						if((ret=cryptInit())==CRYPT_OK) {
 							cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
 							cryptInitialized=1;
 							atexit(do_cryptEnd);
 						}
+						else
+							lprintf(LOG_ERR,"cryptInit() returned %d", ret);
 					}
 					if(cryptInitialized) {
 						if((ret=cryptCreateSession(&p->session, CRYPT_UNUSED, CRYPT_SESSION_SSL))==CRYPT_OK) {
@@ -1492,22 +1513,18 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 							ioctlsocket(p->sock,FIONBIO,&nb);
 							nb=1;
 							setsockopt(p->sock,IPPROTO_TCP,TCP_NODELAY,(char*)&nb,sizeof(nb));
-							if((ret=cryptSetAttribute(p->session, CRYPT_SESSINFO_NETWORKSOCKET, p->sock))==CRYPT_OK) {
-//								if((ret=cryptSetAttribute(p->session, CRYPT_SESSINFO_VERSION, 0))==CRYPT_OK) {
-									if((ret=cryptSetAttributeString(p->session, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname)))==CRYPT_OK) {
-										if((ret=cryptSetAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1))!=CRYPT_OK) {
-											lprintf(LOG_ERR,"cryptSetAttribute(CRYPT_SESSINFO_ACTIVE) Error %d",ret);
+							if((ret=do_cryptAttribute(p->session, CRYPT_SESSINFO_NETWORKSOCKET, p->sock))==CRYPT_OK) {
+//								if((ret=do_cryptAttribute(p->session, CRYPT_SESSINFO_VERSION, 0))==CRYPT_OK) {
+									if((ret=do_cryptAttributeString(p->session, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname)))==CRYPT_OK) {
+										if((ret=do_cryptAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1))!=CRYPT_OK) {
 											cryptDestroySession(p->session);
 											p->session=-1;
 											ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 										}
 									}
-									else lprintf(LOG_ERR,"cryptSetAttributeString(CRYPT_SESSINFO_SERVER_NAME) Error %d",ret);
 //								}
-//								else lprintf(LOG_ERR,"cryptSetAttributeString(CRYPT_SESSINFO_VERSION) Error %d",ret);
 							}
 							else {
-								lprintf(LOG_ERR,"cryptSetAttribute(CRYPT_SESSINFO_NETWORKSOCKET) Error %d",ret);
 								cryptDestroySession(p->session);
 								p->session=-1;
 								ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
