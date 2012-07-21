@@ -79,7 +79,7 @@ int do_cryptInit(void)
 	int ret;
 
 	if(!cryptInitialized) {
-		do_cryptAttribute(CRYPT_UNUSED, CRYPT_OPTION_MISC_ASYNCINIT, FALSE);
+//		do_cryptAttribute(CRYPT_UNUSED, CRYPT_OPTION_MISC_ASYNCINIT, FALSE);
 		if((ret=cryptInit())==CRYPT_OK) {
 			cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
 			cryptInitialized=1;
