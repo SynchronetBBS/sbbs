@@ -66,11 +66,20 @@ static void do_cryptEnd(void)
 	cryptEnd();
 }
 
+static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
+{
+	int ret=cryptSetAttribute(session, attr, val);
+	if(ret != CRYPT_OK)
+		lprintf(LOG_ERR, "cryptSetAttribute(%d) returned %d", attr, ret);
+	return ret;
+}
+
 int do_cryptInit(void)
 {
 	int ret;
 
 	if(!cryptInitialized) {
+		do_cryptAttribute(CRYPT_UNUSED, CRYPT_OPTION_MISC_ASYNCINIT, FALSE);
 		if((ret=cryptInit())==CRYPT_OK) {
 			cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
 			cryptInitialized=1;
@@ -80,14 +89,6 @@ int do_cryptInit(void)
 			lprintf(LOG_ERR,"cryptInit() returned %d", ret);
 	}
 	return cryptInitialized;
-}
-
-static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
-{
-	int ret=cryptSetAttribute(session, attr, val);
-	if(ret != CRYPT_OK)
-		lprintf(LOG_ERR, "cryptSetAttribute(%d) returned %d", attr, ret);
-	return ret;
 }
 
 static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len)
