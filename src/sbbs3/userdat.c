@@ -245,6 +245,11 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	unlock(file,(long)((long)(user_number-1)*U_LEN),U_LEN);
 	close(file);
+
+	/* The user number needs to be set here
+	   before calling chk_ar() below for user-number comparisons in AR strings to function correctly */
+	user->number=user_number;	/* Signal of success */
+
 	/* order of these function calls is irrelevant */
 	getrec(userdat,U_ALIAS,LEN_ALIAS,user->alias);
 	getrec(userdat,U_NAME,LEN_NAME,user->name);
@@ -348,8 +353,6 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	getrec(userdat,U_CHAT,8,str);
 	user->chat=ahtoul(str);
-
-	user->number=user_number;	/* Signal of success */
 
 	/* Reset daily stats if not already logged on today */
 	if(user->ltoday || user->etoday || user->ptoday || user->ttoday) {
