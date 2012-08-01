@@ -102,9 +102,9 @@ typedef struct {
 #endif
 
 	unsigned short	getbuf;		/* Was just "unsigned" fixed 04/12/95 */
-	uchar			getlen;
+	uint8_t			getlen;
 	unsigned		putbuf;
-	uchar			putlen;
+	uint8_t			putlen;
 
 	unsigned short	code, len;
 
@@ -220,7 +220,7 @@ static void lzh_delete_node(lzh_t* lzh, short int p)  /* Deleting node from the 
  * sliding dictionary pointer
  */
 /* encoder table */
-static uchar lzh_p_len[64] = {
+static uint8_t lzh_p_len[64] = {
 	0x03, 0x04, 0x04, 0x04, 0x05, 0x05, 0x05, 0x05,
 	0x05, 0x05, 0x05, 0x05, 0x06, 0x06, 0x06, 0x06,
 	0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06,
@@ -231,7 +231,7 @@ static uchar lzh_p_len[64] = {
 	0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08
 };
 
-static uchar lzh_p_code[64] = {
+static uint8_t lzh_p_code[64] = {
 	0x00, 0x20, 0x30, 0x40, 0x50, 0x58, 0x60, 0x68,
 	0x70, 0x78, 0x80, 0x88, 0x90, 0x94, 0x98, 0x9C,
 	0xA0, 0xA4, 0xA8, 0xAC, 0xB0, 0xB4, 0xB8, 0xBC,
@@ -243,7 +243,7 @@ static uchar lzh_p_code[64] = {
 };
 
 /* decoder table */
-static uchar lzh_d_code[256] = {
+static uint8_t lzh_d_code[256] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -278,7 +278,7 @@ static uchar lzh_d_code[256] = {
 	0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
 };
 
-static uchar lzh_d_len[256] = {
+static uint8_t lzh_d_len[256] = {
 	0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
 	0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
 	0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
@@ -314,7 +314,7 @@ static uchar lzh_d_len[256] = {
 };
 
 
-static int lzh_getbit(lzh_t* lzh, uchar *inbuf, long *incnt, long inlen)    /* get one bit */
+static int lzh_getbit(lzh_t* lzh, uint8_t *inbuf, long *incnt, long inlen)    /* get one bit */
 {
 	short int i;
 
@@ -332,7 +332,7 @@ static int lzh_getbit(lzh_t* lzh, uchar *inbuf, long *incnt, long inlen)    /* g
 	return (i < 0);
 }
 
-static short int lzh_getbyte(lzh_t* lzh, uchar *inbuf, long *incnt, long inlen)   /* get a byte */
+static short int lzh_getbyte(lzh_t* lzh, uint8_t *inbuf, long *incnt, long inlen)   /* get a byte */
 {
 	unsigned short i;
 
@@ -352,7 +352,7 @@ static short int lzh_getbyte(lzh_t* lzh, uchar *inbuf, long *incnt, long inlen) 
 
 
 /* output c bits */
-static void lzh_putcode(lzh_t* lzh, short int l, unsigned short c, uchar *outbuf, long *outlen)
+static void lzh_putcode(lzh_t* lzh, short int l, unsigned short c, uint8_t *outbuf, long *outlen)
 {
 	lzh->putbuf |= c >> lzh->putlen;
 	if ((lzh->putlen += l) >= 8) {
@@ -471,7 +471,7 @@ static void lzh_update(lzh_t* lzh, short int c)
 	} while ((c = lzh->prnt[c]) != 0);	/* do it until reaching the root */
 }
 
-static void lzh_encode_char(lzh_t* lzh, unsigned short c, uchar *outbuf, long *outlen)
+static void lzh_encode_char(lzh_t* lzh, unsigned short c, uint8_t *outbuf, long *outlen)
 {
 	unsigned short i;
 	short int j, k;
@@ -498,7 +498,7 @@ static void lzh_encode_char(lzh_t* lzh, unsigned short c, uchar *outbuf, long *o
 	lzh_update(lzh,c);
 }
 
-static void lzh_encode_position(lzh_t* lzh, unsigned short c, uchar *outbuf, long *outlen)
+static void lzh_encode_position(lzh_t* lzh, unsigned short c, uint8_t *outbuf, long *outlen)
 {
 	unsigned short i;
 
@@ -510,14 +510,14 @@ static void lzh_encode_position(lzh_t* lzh, unsigned short c, uchar *outbuf, lon
 	lzh_putcode(lzh, 6, (unsigned short)((c & 0x3f) << 10), outbuf, outlen);
 }
 
-static void lzh_encode_end(lzh_t* lzh, uchar *outbuf, long *outlen)
+static void lzh_encode_end(lzh_t* lzh, uint8_t *outbuf, long *outlen)
 {
 	if (lzh->putlen) {
 		outbuf[(*outlen)++]=(lzh->putbuf >> 8);
 	}
 }
 
-static short int lzh_decode_char(lzh_t* lzh, uchar *inbuf, long *incnt, long inlen)
+static short int lzh_decode_char(lzh_t* lzh, uint8_t *inbuf, long *incnt, long inlen)
 {
 	unsigned short c;
 
@@ -537,7 +537,7 @@ static short int lzh_decode_char(lzh_t* lzh, uchar *inbuf, long *incnt, long inl
 	return c;
 }
 
-static short int lzh_decode_position(lzh_t* lzh, uchar *inbuf, long *incnt, long inlen)
+static short int lzh_decode_position(lzh_t* lzh, uint8_t *inbuf, long *incnt, long inlen)
 {
 	unsigned short i, j, c;
 
@@ -558,17 +558,16 @@ static short int lzh_decode_position(lzh_t* lzh, uchar *inbuf, long *incnt, long
 
 /* Encoding/Compressing */
 /* Returns length of outbuf */
-/* TODO: Note that inlen usage suggests this is not 64-bit clean */
-long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf)
+int32_t LZHCALL lzh_encode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
 {
 	short int  i, c, len, r, s, last_match_length;
-	long incnt,outlen; /* textsize=0; */
+	int32_t incnt,outlen; /* textsize=0; */
 	lzh_t lzh;
 	memset(&lzh,0,sizeof(lzh));
 
 #ifdef LZH_DYNAMIC_BUF
 
-	if((lzh.text_buf=(uchar *)malloc(LZH_N + LZH_F - 1))==NULL)
+	if((lzh.text_buf=(uint8_t *)malloc(LZH_N + LZH_F - 1))==NULL)
 		return(-1);
 	if((lzh.freq=(unsigned short*)malloc((LZH_T + 1)*sizeof(unsigned short)))==NULL) {
 		free(lzh.text_buf);
@@ -647,9 +646,9 @@ long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf)
 		for (i = 0; i < last_match_length && incnt<inlen; i++) {
 			lzh_delete_node(&lzh,s);
 			c=inbuf[incnt++];
-			lzh.text_buf[s] = (uchar)c;
+			lzh.text_buf[s] = (uint8_t)c;
 			if (s < LZH_F - 1)
-				lzh.text_buf[s + LZH_N] = (uchar)c;
+				lzh.text_buf[s + LZH_N] = (uint8_t)c;
 			s = (s + 1) & (LZH_N - 1);
 			r = (r + 1) & (LZH_N - 1);
 			lzh_insert_node(&lzh,r);
@@ -689,17 +688,17 @@ long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf)
 
 /* Decoding/Uncompressing */
 /* Returns length of outbuf */
-long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf)
+int32_t LZHCALL lzh_decode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
 {
 	short int  i, j, k, r, c;
-	unsigned long int  count;
-	long incnt,textsize;
+	uint32_t	count;
+	int32_t		incnt,textsize;
 	lzh_t lzh;
 
 	memset(&lzh,0,sizeof(lzh));
 #ifdef LZH_DYNAMIC_BUF
 
-	if((lzh.text_buf=(uchar *)malloc((LZH_N + LZH_F - 1)*2))==NULL)
+	if((lzh.text_buf=(uint8_t *)malloc((LZH_N + LZH_F - 1)*2))==NULL)
 		return(-1);
 	if((lzh.freq=(unsigned short *)malloc((LZH_T + 1)*sizeof(unsigned short)))
 		==NULL) {
@@ -735,14 +734,14 @@ long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf)
     for (count = 0; count < (unsigned long)textsize; ) {
 		c = lzh_decode_char(&lzh,inbuf,&incnt,inlen);
 		if (c < 256) {
-			outbuf[count]=(uchar)c;
+			outbuf[count]=(uint8_t)c;
 #if 0
 			if(r>(LZH_N + LZH_F - 1) || r<0) {
 				printf("Overflow! (%d)\n",r);
 				getch();
 				exit(-1); }
 #endif
-			*(lzh.text_buf+r) = (uchar)c;
+			*(lzh.text_buf+r) = (uint8_t)c;
 			r++;
 			r &= (LZH_N - 1);
 			count++;
@@ -752,13 +751,13 @@ long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf)
 			j = c - 255 + LZH_THRESHOLD;
 			for (k = 0; k < j && count<(unsigned long)textsize; k++) {
 				c = lzh.text_buf[(i + k) & (LZH_N - 1)];
-				outbuf[count]=(uchar)c;
+				outbuf[count]=(uint8_t)c;
 #if 0
 				if(r>(LZH_N + LZH_F - 1) || r<0) {
 					printf("Overflow! (%d)\n",r);
 					exit(-1); }
 #endif
-				*(lzh.text_buf+r) = (uchar)c;
+				*(lzh.text_buf+r) = (uint8_t)c;
 				r++;
 				r &= (LZH_N - 1);
 				count++;
