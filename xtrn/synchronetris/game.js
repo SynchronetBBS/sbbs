@@ -2,8 +2,7 @@
 function playGame(profile,game) {
 
 	/* variables and shit */
-	var menu, status, direction, queue, lines, pause, pause_reduction, 
-		garbage, base_points, last_update, gameFrame, localPlayer;
+	var menu, status, direction, queue, last_update, gameFrame, localPlayer;
 
 	/* main shit */
 	function open() {
@@ -11,16 +10,6 @@ function playGame(profile,game) {
 		status = {WAITING:-1,STARTING:0,PLAYING:1,FINISHED:2};
 		/* directional constants */
 		direction = {UP:0,DOWN:1,LEFT:2,RIGHT:3};
-		/*	variable for holding outbound garbage quantity */
-		garbage = 0;
-		/* base point multiplier */
-		base_points = 5;
-		/*  wait between gravitational movement */
-		pause = 1000;
-		/* 	pause multiplier for level increase */
-		pause_reduction = 0.9;
-		/*	lines per level */
-		lines = 10;
 		
 		last_update=Date.now();
 		gameFrame=new Frame(undefined,undefined,undefined,undefined,undefined,frame);
@@ -46,7 +35,7 @@ function playGame(profile,game) {
  			return;
 			
 		var difference=Date.now()-last_update;
-		if(difference<pause) 
+		if(difference<settings.pause) 
 			return;
 		last_update=Date.now();
 
@@ -161,7 +150,7 @@ function playGame(profile,game) {
 	/* init shit */
 	function initBoards() {
 		var x=1;
-		var y=3;
+		var y=1;
 		var index=0;
 		var width=27;
 		if(game.players[profile.name]) {
@@ -234,10 +223,10 @@ function playGame(profile,game) {
 			client.write(game_id,"metadata." + game.gameNumber + ".players." + localPlayer.name,d,2);
 	}
 	function processUpdate(packet) {
-		if(packet.oper.toUpperCase() == "WRITE") {
+		if(packet.oper == "WRITE") {
 			var data = packet.data;
 			var p = game.players[data.playerName];
-			switch(data.cmd.toUpperCase()) {
+			switch(data.cmd) {
 			case "MOVE":
 				unDrawCurrent(p);
 				p.currentPiece.x=data.x;
@@ -258,7 +247,7 @@ function playGame(profile,game) {
 				delete p.currentPiece;
 				break;
 			case "DEAD":
-				killPlayer(p);
+				killPlayer(data.playerName);
 				break;
 			case "NEXT":
 				p.nextPiece=loadMini(data.piece);
@@ -344,14 +333,15 @@ function playGame(profile,game) {
 	}
 	function scoreLines(qty) {
 		/*	a "TETRIS" */
-		if(qty==4) qty=10;
+		if(qty==4) 
+			qty=8;
 
 		localPlayer.lines+=qty;
-		localPlayer.score+=(localPlayer.level * qty * base_points);
+		localPlayer.score+=(localPlayer.level * qty * settings.base_points);
 
-		if(localPlayer.lines/10 >= localPlayer.level) {
+		if(localPlayer.lines/settings.lines >= localPlayer.level) {
 			localPlayer.level++;
-			pause=pause*pause_reduction;
+			settings.pause*=settings.pause_reduction;
 		}
 		
 		drawScore(localPlayer);
@@ -652,6 +642,7 @@ function playGame(profile,game) {
 		drawCurrent(localPlayer);
 		drawNext(localPlayer);
 		localPlayer.swapped=false;
+		last_update=Date.now();		
 		
 		send("CURRENT");
 		send("NEXT");
@@ -781,7 +772,6 @@ function playGame(profile,game) {
 		h += 2;
 		var x = Math.floor((localPlayer.frame.width - w)/2);
 		var y = 10;
-		log("x: " + x + " y: " + y + " w: " + w + " h: " + h);
 		var f = new Frame(x,y,w,h,BG_BLUE+YELLOW,localPlayer.frame);
 		f.gotoxy(2,2);
 		return f;
@@ -822,7 +812,7 @@ function playGame(profile,game) {
 		var piece = player.nextPiece;
 		if(piece == undefined) 
 			return;
-		player.frame.gotoxy(23,4);
+		player.frame.gotoxy(23,6);
 		player.frame.pushxy();
 		for(var x=0;x<piece.grid.length;x++) {
 			player.frame.putmsg(piece.grid[x],piece.fg);
@@ -835,7 +825,7 @@ function playGame(profile,game) {
 		var piece = player.holdPiece;
 		if(piece == undefined) 
 			return;
-		player.frame.gotoxy(23,10);
+		player.frame.gotoxy(23,12);
 		player.frame.pushxy();
 		for(var x=0;x<piece.grid.length;x++) {
 			player.frame.putmsg(piece.grid[x],piece.fg);
@@ -881,17 +871,17 @@ function playGame(profile,game) {
 		}
 	}
 	function drawScore(player) {
-		gameFrame.gotoxy(1,1);
-		gameFrame.putmsg(splitPadded(
-			printPadded("\1n" + player.name,19), 
-			printPadded("\1h" + player.score,6,"\1n\1r0",direction.RIGHT),
+		player.frame.gotoxy(1,1);
+		player.frame.putmsg(splitPadded(
+			printPadded("\1n" + player.name,20), 
+			printPadded("\1h" + player.score,6,"\1n\1r0","right"),
 			25
 		));
-		gameFrame.gotoxy(1,2);
-		gameFrame.putmsg(splitPadded(
-			"\1k\1hLevel:" + printPadded("\1h" + player.level,4,"\1n\1r0",direction.RIGHT),
-			"\1k\1hLines:" + printPadded("\1h" + player.lines,4,"\1n\1r0",direction.RIGHT),
-			25
+		player.frame.gotoxy(1,2);
+		player.frame.putmsg(splitPadded(
+			"\1k\1hLevel:" + printPadded("\1h" + player.level,4,"\1n\1r0","right"),
+			"\1k\1hLines:" + printPadded("\1h" + player.lines,4,"\1n\1r0","right"),
+			26
 		));
 	}
 	

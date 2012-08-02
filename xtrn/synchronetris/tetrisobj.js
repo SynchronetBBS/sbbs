@@ -67,7 +67,7 @@ function Game(gameNumber)
 {
 	this.gameNumber=gameNumber;
 	this.players={};
-	this.garbage=settings.GARBAGE;
+	this.garbage=settings.garbage;
 	this.status=status.WAITING;
 	this.pieces=[];
 }
@@ -97,8 +97,8 @@ function GameBoard(frame,name,x,y)
 	this.holdPiece;
 	this.grid;
 	
-	this.frame=new Frame(x,y,26,22,undefined,frame);
-	this.stack = new Frame(x+1,y,20,21,undefined,this.frame);
+	this.frame=new Frame(x,y,26,24,undefined,frame);
+	this.stack = new Frame(x+1,y+2,20,21,undefined,this.frame);
 	this.open = function() {
 		this.frame.open();
 	}
@@ -106,7 +106,7 @@ function GameBoard(frame,name,x,y)
 		this.frame.close();
 	}
 	
-	this.frame.load(root + "board.bin",26,22);
+	this.frame.load(root + "board.bin",26,24);
 }
 /* game menu controller */
 function Menu(items,frame,hk_color,text_color) 

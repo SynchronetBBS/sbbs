@@ -21,7 +21,11 @@ var settings = {
 	garbage:true,
 	min_players:1,
 	max_players:3,
-	start_delay:5000,
+	pause:1000,
+	pause_reduction:0.7,
+	base_points:5,
+	lines:10,
+	start_delay:5000
 };
 
 var status={
