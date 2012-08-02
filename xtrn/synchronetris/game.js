@@ -197,6 +197,7 @@ function playGame(profile,game) {
 		case "DEAD":
 			break;
 		case "GARBAGE":
+			data.space=random(10);
 			data.lines=garbage;
 			break;
 		case "SCORE":
@@ -223,7 +224,7 @@ function playGame(profile,game) {
 			client.write(game_id,"metadata." + game.gameNumber + ".players." + localPlayer.name,d,2);
 	}
 	function processUpdate(packet) {
-		if(packet.oper == "WRITE") {
+		if(packet.oper == "WRITE" && packet.data) {
 			var data = packet.data;
 			var p = game.players[data.playerName];
 			switch(data.cmd) {
@@ -240,8 +241,9 @@ function playGame(profile,game) {
 				drawCurrent(p);
 				break;
 			case "GARBAGE":
-				//loadGarbage(data.lines,data.space);
-				//drawBoard(p);
+				loadGarbage(data.lines,data.space);
+				drawBoard(localPlayer);
+				send("GRID");
 				break;
 			case "SET":
 				delete p.currentPiece;
@@ -279,10 +281,23 @@ function playGame(profile,game) {
 	}
 
 	/* game board shit */
+	function loadGarbage(lines,space) {
+		for(var l=0;l<lines;l++) {
+			localPlayer.grid.push(getGarbageLine(space));
+			var topLine = localPlayer.grid.shift();
+			for each(var i in topLine) {
+				if(i > 0) {
+					killPlayer(localPlayer.name);
+					return;
+				}
+			}
+		}
+	}
 	function getGarbageLine(space) {
 		var line=new Array(10);
 		for(var x=0;x<line.length;x++) {
-			if(x==space) line[x]=0;
+			if(x==space) 
+				line[x]=0;
 			else {
 				line[x]=random(7)+1;
 			}
@@ -317,7 +332,7 @@ function playGame(profile,game) {
 			send("GRID");
 			scoreLines(lines.length);
 
-			if(game.garbage) {
+			if(game.garbage && activePlayers() > 1) {
 				if(lines.length==4) 
 					garbage=4;
 				else if(lines.length==3) 
@@ -902,7 +917,8 @@ function playGame(profile,game) {
 	function activePlayers() {
 		var count=0;
 		for each(var p in game.players) {
-			if(p.active) count++;
+			if(p.active) 
+				count++;
 		}
 		return count;
 	}
@@ -927,7 +943,6 @@ function playGame(profile,game) {
 	function endGame() {
 		game.status=2;
 		client.write(game_id,"games." + game.gameNumber + ".status",game.status,2);
-		send("UPDATE");
 	}
 			
 	open();
