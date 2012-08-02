@@ -71,6 +71,7 @@ function playGame(profile,game) {
 		else {
 			setPiece();
 			getLines();
+			getNewPiece();
 		}
 	}
 	function main()	{
@@ -104,6 +105,7 @@ function playGame(profile,game) {
 				send("MOVE");
 				setPiece();
 				getLines();
+				getNewPiece();
 				break;
 			case "2":
 			case KEY_DOWN:
@@ -112,6 +114,7 @@ function playGame(profile,game) {
 				else {
 					setPiece();
 					getLines();
+					getNewPiece();
 				}
 				break;
 			case "4":
@@ -143,21 +146,16 @@ function playGame(profile,game) {
 			}
 		}
 		
-		console.gotoxy(localPlayer.x+1,localPlayer.y+11);
-		console.pushxy();
-		
-		if(game.winner == localPlayer.name) {
-			message("\1g\1hYOU WIN!");
-		} 
-		else {
-			message("\1r\1hYOU LOSE!");
-		}
-		message("\1n\1rpress \1hQ \1n\1rto quit");
-		while(1) {
-			if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)=="Q") {
-				return;
-			}
-		}
+		var msg = ["Game Over"];
+		if(game.winner == localPlayer.name)
+			msg.push("\1g\1hYou win!");
+		else 
+			msg.push("\1r\1hYou lose!");
+		msg.push("\1n\1yPress [\1hQ\1n\1y] to exit");
+		showMessage(msg);
+		while(console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Q");
+		gameFrame.close();
+		return;
 	}
 
 	/* init shit */
@@ -764,17 +762,45 @@ function playGame(profile,game) {
 			return BLUE;
 		}
 	}
-	function display(player,msg) {
-		gameFrame.gotoxy(gameFrame.x+1,gameFrame.y+10);
-		gameFrame.pushxy();
-		message(msg);
+	function getMsgFrame(msg) {
+		var w = 0;
+		var h = 0;
+		if(msg instanceof Array) {
+			for each(var l in msg) {
+				var length = console.strlen(l);
+				if(length > w)
+					w = length;
+			}
+			h = msg.length;
+		}
+		else {
+			w = console.strlen(msg);
+			h = 1;
+		}
+		w += 2;
+		h += 2;
+		var x = Math.floor((localPlayer.frame.width - w)/2);
+		var y = 10;
+		log("x: " + x + " y: " + y + " w: " + w + " h: " + h);
+		var f = new Frame(x,y,w,h,BG_BLUE+YELLOW,localPlayer.frame);
+		f.gotoxy(2,2);
+		return f;
 	}
-	function message(msg) {
-		gameFrame.popxy();
-		gameFrame.putmsg(centerString(msg,20));
-		gameFrame.popxy();
-		gameFrame.down();
-		gameFrame.pushxy();
+	function showMessage(msg) {
+		var f = getMsgFrame(msg);
+		f.open();
+		
+		if(msg instanceof Array) {
+			for each(var l in msg) {
+				f.center(l + "\r\n");
+			}
+		}
+		else {
+			f.center(msg);
+		}
+		
+		f.draw();
+		return f;
 	}
 	function drawCurrent(player) {
 		var piece = player.currentPiece;
@@ -871,15 +897,15 @@ function playGame(profile,game) {
 	
 	/* other shit */
 	function handleExit() {
-		// if(game.status == status.PLAYING) {
-			// display(localPlayer,"\1c\1hQuit game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
-			// if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") {
-				// gameFrame.close();
-				// return false;
-			// }
-			// killPlayer(localPlayer.name);
-			// send("DEAD");
-		// }
+		if(game.status == status.PLAYING) {
+			var f = showMessage("\1c\1hQuit game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+			if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") {
+				f.close();
+				return false;
+			}
+			f.close();
+			killPlayer(localPlayer.name);
+		}
 		gameFrame.close();
 		return true;
 	}
@@ -896,7 +922,7 @@ function playGame(profile,game) {
 			return false;
 		}
 		game.players[playerName].active=false;
-		display(game.players[playerName],"\1n\1r[\1hGAME OVER\1n\1r]");
+		send("DEAD");
 		
 		if(activePlayers()<=1) {
 			for (var p in game.players) {
