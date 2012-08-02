@@ -1,501 +1,100 @@
-/*
-	JAVASCRIPT TETRIS INTERBBS
-	For Synchronet v3.15+
-	Matt Johnson(2009)
-*/
-//$Id$
-const VERSION="$Revision$".split(' ')[1];
+/** GAME PLAY **/
+function playGame(profile,game) {
 
-load("inputline.js");
-load("layout.js");
-load("chateng.js");
-load("scrollbar.js");
-load("graphic.js");
-load("sbbsdefs.js");
-load("funclib.js");
+	/* variables and shit */
+	var menu, status, direction, queue, lines, pause, pause_reduction, 
+		garbage, base_points, last_update, gameFrame, localPlayer;
 
-//load("helpfile.js"); //TODO: write instructions
-var root=js.exec_dir;
-load(root + "tetrisobj.js");
-load(root + "menu.js");
-load(root + "timer.js");
-
-var chat=new ChatEngine("IRC","rrx.ca","6667");
-var input=new InputLine(42,console.screen_rows-1,38,150);
-var players=new PlayerList();
-var oldpass=console.ctrl_key_passthru;
-var window=new Layout_View("chat",42,3,38,19);
-
-function splashStart()
-{
-	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
-	bbs.sys_status|=SS_MOFF;
-	bbs.sys_status |= SS_PAUSEOFF;	
-	console.clear();
-	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
-}
-function splashExit()
-{
-	console.ctrlkey_passthru=oldpass;
-	bbs.sys_status&=~SS_MOFF;
-	bbs.sys_status&=~SS_PAUSEOFF;
-	console.attributes=ANSI_NORMAL;
-	console.clear();
-	var splash_filename=root + "exit.bin";
-	if(!file_exists(splash_filename)) return;
-	
-	var splash_size=file_size(splash_filename);
-	splash_size/=2;		
-	splash_size/=80;	
-	var splash=new Graphic(80,splash_size);
-	splash.load(splash_filename);
-	splash.draw();
-	
-	console.gotoxy(1,23);
-	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
-	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
-	console.clear();
-}
-
-/*	main */
-function lobby()
-{
-	var table_graphic=new Graphic(10,5);
-	var lobby_graphic=new Graphic(80,24);
-	var scrollBar=new Scrollbar(3,24,35,"horizontal","\1y");
-
-	var refresh=true;
-	var scroll_index=0;
-	var last_table_number=0;
-	var table_markers=[];
-	var tables=[];
-	var menu;
-
-	function init()
-	{
-		table_graphic.load(root+"icon.bin");
-		lobby_graphic.load(root+"lobby.bin");
-		processGraphic();
-		loadPlayers();
-		updateTables();
-		initChat();
-		initMenu();
-	}
-	function initChat()
-	{
-		window.show_title=false;
-		window.show_border=false;
-		window.add_tab("chat","#tetris_lobby",chat);
-	}
-	function initMenu()
-	{
-		menu=new Menu("\1n","\1c\1h");
-		var menu_items=["~New Game",
-						"~Join Game",
-						"~Scores",
-						"~Help",
-						"Re~draw"];
-		menu=new Menu(menu_items,42,console.screen_rows-1,38,"\1w\1h","\1n");	
-	}
-	function processGraphic()
-	{
-		for(var posx=0;posx<lobby_graphic.data.length;posx++) 
-		{
-			for(var posy=0;posy<lobby_graphic.data[posx].length;posy++)
-			{
-				var position={"x" : posx+1, "y" : posy+1};
-				if(lobby_graphic.data[posx][posy].ch=="@") 
-				{
-					table_markers.push(position);
-					lobby_graphic.data[posx][posy].ch=" ";
-				}
-			}
-		}
-	}
-	function menuPrompt(msg)
-	{
-		console.popxy();
-		console.down();
-		console.pushxy();
-		console.putmsg(msg);
-	}
-	function refreshCommands()
-	{
-		if(!tables.length) menu.disable(["J"]);
-		else menu.enable(["J"]);
-	}
-	function getTablePointers()
-	{
-		var pointers=[];
-		for(t in tables) {
-			pointers.push(t);
-		}
-		return pointers;
-	}
-	function loadPlayers()
-	{
-		players.loadPlayers();
-	}
-	function updateTables()
-	{
-		var game_files=directory(root + "tetris*.ini");
-		for(var i=0;i<game_files.length;i++) {
-			var filename=file_getname(game_files[i]);
-			var gameNumber=Number(filename.substring(6,filename.indexOf(".")));
-			if(tables[gameNumber]) {
-				var lastupdate=file_date(game_files[i]);
-				var lastloaded=tables[gameNumber].lastupdate;
-				if(lastupdate>lastloaded) {
-					log("updating game: " +  gameNumber);
-					tables[gameNumber].loadGame();
-				}
-			} else {
-				log("loading game: " + game_files[i]);
-				loadTable(game_files[i]);
-			}
-		}
-		for(t in tables) {
-			var table=tables[t];
-			if(table.status == 2) {
-				if(file_exists(table.dataFile))
-					file_remove(table.dataFile);
-				if(file_exists(table.dataFile + ".bck"))
-					file_remove(table.dataFile + ".bck");
-			}
-			if(table && !file_exists(table.dataFile)) {
-				log("removing deleted game: " + table.dataFile);
-				delete tables[t];
-				refresh=true;
-			}
-		}
-	}
-	function loadTable(dataFile,index)
-	{
-		var table=new Tetris(dataFile);
-		if(table.gameNumber>last_table_number) last_table_number=table.gameNumber;
-		tables[table.gameNumber]=table;
-	}
-	function listTables(full)
-	{
-		var pointers=getTablePointers();
-		var range=(pointers.length%2==1?pointers.length+1:pointers.length);
-		if(tables.length>4) scrollBar.draw(scroll_index,range);
-
-		var index=scroll_index;
-		for(i in table_markers) {
-			var x=table_markers[i].x;
-			var y=table_markers[i].y;
-			if(full) {
-				clearBlock(x,y,19,10);
-			}
-			var pointer=pointers[index];
-			if(tables[pointer])	{
-				if(full || tables[pointer].update) {
-					var game=tables[pointer];
-					table_graphic.draw(x,y);
-					listGameInfo(x,y,game);
-				}
-				index++;
-			}
-		}
-		console.attributes=ANSI_NORMAL;
-	}
-	function listGameInfo(x,y,game)
-	{
-		console.gotoxy(x+10,y);
-		console.putmsg("\1n\1yGAME\1h: " + game.gameNumber);
+	/* main shit */
+	function open() {
+		/* game status constants */
+		status = {WAITING:-1,STARTING:0,PLAYING:1,FINISHED:2};
+		/* directional constants */
+		direction = {UP:0,DOWN:1,LEFT:2,RIGHT:3};
+		/*	variable for holding outbound garbage quantity */
+		garbage = 0;
+		/* base point multiplier */
+		base_points = 5;
+		/*  wait between gravitational movement */
+		pause = 1000;
+		/* 	pause multiplier for level increase */
+		pause_reduction = 0.9;
+		/*	lines per level */
+		lines = 10;
 		
-		console.gotoxy(x+11,y+2);
-		console.pushxy();
-		if(game.status == 1) {
-			menuPrompt(printPadded("\1n\1gGAME",8));
-			menuPrompt(printPadded("\1n\1gIN",8));
-			menuPrompt(printPadded("\1n\1gPROGRESS",8));
-		} else	if(game.status == 0) {
-			menuPrompt(printPadded("\1n\1gSTARTING",8));
-			menuPrompt(printPadded("\1n\1gIN \1h" + parseInt(game.timer.countdown,10),8));
-			menuPrompt(printPadded("\1n\1gSECONDS",8));
-		} else	if(game.status == 2) {
-			menuPrompt(printPadded("\1n\1gCOMPLETE",8));
-		} else {
-			menuPrompt(printPadded("\1n\1gWAITING",8));
-			menuPrompt(printPadded("\1n\1gFOR",8));
-			menuPrompt(printPadded("\1n\1gPLAYERS",8));
+		last_update=Date.now();
+		gameFrame=new Frame(undefined,undefined,undefined,undefined,undefined,frame);
+		gameFrame.open();
+		initBoards();
+		localPlayer = game.players[profile.name];
+		localPlayer.grid = getMatrix(21,10);
+		client.callback = 
+		queue = client.read(game_id,"metadata." + game.gameNumber + ".queue",1);
+		client.subscribe(game_id,"metadata." + game.gameNumber);
+		drawScore(localPlayer);
+	}
+	function close() {
+		client.unsubscribe(game_id,"metadata." + game.gameNumber);
+	}
+	function cycle() {
+		client.cycle();
+		while(client.updates.length > 0)
+			processUpdate(client.updates.shift());
+		frame.cycle();
+		
+		if(!localPlayer || !localPlayer.active) 
+ 			return;
+			
+		var difference=Date.now()-last_update;
+		if(difference<pause) 
+			return;
+		last_update=Date.now();
+
+		/* if the player needs a new piece, give 'em one! */
+		if(localPlayer.currentPiece == undefined) {
+			getNewPiece();
+			return;
 		}
 		
-		console.gotoxy(x,y+6);
-		console.pushxy();
-		console.putmsg("\1n\1yPLAYERS\1h:");
-		for(var p in game.players)	{
-			console.popxy();
-			console.down();
-			console.pushxy();
-			console.putmsg("\1y\1h " + game.players[p].name);
-		}
-		game.update=false;
-	}
-	function drawLobby()
-	{
-		lobby_graphic.draw();
-	}
-	function redraw()
-	{
-		console.clear(ANSI_NORMAL);
-		drawLobby();
-		listTables(true);
-		window.drawView();
-	}
-
-	function main()
-	{
-		var hotkeys=true;
-		redraw();
+		/* if the piece stack has reached the top of the screen, kill */
+		if(checkInterference()) {
+			killPlayer(localPlayer.name);
+			send("DEAD");
+			return;
+		} 
 		
-		while(1) {
+		/* normal timed piece drop */
+		if(move(direction.DOWN)) {
+			send("MOVE");
+		} 
+		/* check for any clearable lines */
+		else {
+			setPiece();
+			getLines();
+		}
+	}
+	function main()	{
+		while(game.status == status.PLAYING) {
+		
 			cycle();
-			var k=input.inkey(hotkeys);
-			if(!k) 
-				continue;
-			if(hotkeys) {
-				var range=(tables.length%2==1?tables.length+1:tables.length);
-				switch(k.toUpperCase()) {
-				case "+":
-					if(scroll_index>0 && tables.length>4) {
-						scroll_index-=2;
-						listTables();
-					}
-					break;
-				case "-":
-					if((scroll_index+1)<=range && tables.length>4) {
-						scroll_index+=2;
-						listTables();
-					}
-					break;
-				case "/":
-					lobbyMenu();
-					redraw();
-					break;
-				case "\x1b":	
-					return;
-				default:
-					hotkeys=false;
-					console.ungetstr(k);
-					break;
-				}
-			}
-			else if(window.handle_command(k,"IRC"))
-				hotkeys=true;
-		}
-	}
-	function cycle()
-	{
-		window.cycle();
-		updateChatView(chat,window);
-		updateTables();
-		var update=false;
-
-		for each(var t in tables) {
-			switch(Number(t.status)) {
-			case -1:
-				if(countMembers(t.players)>0) {
-					initTimer(t);
-					t.update=true;
-					update=true;
-				}
-				break;
-			case 0:
-				if(!t.timer.countdown) t.loadGame();
-				var difference=time()-t.timer.lastupdate;
-				if(!difference>=1) break;
-				if(!t.timer.countDown()) {
-					startGame(t);
-				}
-				t.update=true;
-				update=true;
-				break;
-			case 1:
-				var id=players.getPlayerID(user.alias);
-				if(t.players[id] && t.players[id].active == true) {
-					playGame(t);
-					redraw();
-				}
-				break;
-			case 2:
-				break;
-			default:
-				log("unknown game status: " + t.status);
-				mswait(500);
-				break;
-			}
-		}
-		if(refresh) {
-			listTables(true);
-			refresh=false;
-		} else if(update) {
-			listTables(false);
-			update=false;
-		}
-		mswait(5);
-	}
-	function startGame(game)
-	{
-		log("starting game: " + game.gameNumber);
-		game.status=1;
-		storeGame(game);
-	}
-	function initTimer(game)
-	{
-		log("starting time for game: " + game.gameNumber);
-		game.status=0;
-		var file=new File(game.dataFile);
-		file.open('r+',true);
-		file.iniSetValue(null,"created","" + time());
-		file.iniSetValue(null,"status",0);
-		file.close();
-		sendFiles(game.dataFile);
-	}
-	function lobbyMenu()
-	{
-		refreshCommands();
-		menu.draw();
-		
-		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_UPPER);
-		if(k) {
-			if(menu.items[k] && menu.items[k].enabled) {
-				switch(k.toUpperCase())
-				{
-				case "N":
-					createNewGame();
-					break;
-				case "R":
-					showRankings();
-					redraw();
-					break;
-				case "H":
-					help();
-					break;
-				case "D":
-					redraw();
-					break;
-				case "J":
-					var g=selectGame();
-					if(g) joinGame(tables[g],user.alias);
-					break;
-				default:
-					break;
-				}
-			}
-		}
-	}
-	function showRankings()
-	{
-	}
-	function joinGame(game,name)
-	{
-		var id=players.getPlayerID(name);
-		if(game.players[id]) {
-			alrt("You are already in that game!");
-			return false;
-		}
-		if(game.status>0) {
-			alrt("It has already started!");
-			return false;
-		}
-		if(countMembers(game.players) == 3) {
-			alrt("That game is full!");
-			return false;
-		}
-		game.players[id]=new Player(name,true);
-		game.update=true;
-		storePlayerData(game,id);
-	}	
-	function selectGame()
-	{
-		console.gotoxy(input);
-		console.putmsg(format("%-41s","\1nEnter Table \1h#: "));
-		var num=console.getkeys("\x1bQ\r",last_table_number);
-		if(tables[num]) {
-			return num;
-		}
-		else return false;
-	}
-	function createNewGame()
-	{
-		var newgame=new Tetris();
-		notice("\1g\1hGame #" + parseInt(newgame.gameNumber,10) + " created");
-		var id=players.getPlayerID(user.alias);
-		newgame.players[id]=new Player(user.alias,true);
-		refresh=true;
-		storeGame(newgame);
-	}
- 
-	init();
-	main();
-}
-function playGame(game) 
-{
-	var menu;
-	var lastupdate=time();
-	
-	/*	lines per level */
-	var lines=10;
-	/*  wait between gravitational movement */
-	var pause=1; 
-	/* 	pause multiplier for level increase */
-	var pause_reduction=0.9
-	/*	variable for holding outbound garbage quantity */
-	var garbage=0;
-	/* base point multiplier */
-	var base_points=5;
-	
-	var currentPlayerID=players.getPlayerID(user.alias);
-	var currentPlayer=false;
-
-	function initGame()
-	{
-		var x=1;
-		var y=3;
-		var index=0;
-		var width=27;
-		if(game.players[currentPlayerID]) {
-			game.players[currentPlayerID]=new GameBoard(user.alias,x,y);
-			index++;
-		}
-		for(var p in game.players) {
-			if(p == currentPlayerID) continue;
-			game.players[p]=new GameBoard(game.players[p].name,x + (index*width),y);
-			index++;
-		}
-		currentPlayer=game.players[currentPlayerID];
-	}
-	function main()
-	{
-		redraw();
-		while(game.status == 1) {
-			cycle();
-			mswait(5);
+			
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER,5);
-			switch(k)
-			{
+			switch(k) {
 			case "\x1b":	
 			case "Q":
-				if(handleExit()) return;
+				if(handleExit()) 
+					return;
 				break;
 			}
-			if(!currentPlayer.active || !currentPlayer.currentPiece) {
+			
+			if(!localPlayer.active || localPlayer.currentPiece == undefined) 
 				continue;
-			}
-			if(checkInterference()) {
-				killPlayer(currentPlayerID);
-				send("DEAD");
-				continue;
-			}
-			switch(k)
-			{
+			
+			switch(k) {
 			case " ":
 			case "0":
-				if(!currentPlayer.swapped) {
-					currentPlayer.swapped=true;
+				if(!localPlayer.swapped) {
+					localPlayer.swapped=true;
 					swapPiece();
 				}
 				break;
@@ -504,43 +103,53 @@ function playGame(game)
 				fullDrop();
 				send("MOVE");
 				setPiece();
+				getLines();
 				break;
 			case "2":
 			case KEY_DOWN:
-				if(move("DOWN")) {
+				if(move(direction.DOWN))
 					send("MOVE");
-				} else {
+				else {
 					setPiece();
+					getLines();
 				}
 				break;
 			case "4":
 			case KEY_LEFT:
-				if(move("LEFT")) send("MOVE");
+				if(move(direction.LEFT)) 
+					send("MOVE");
 				break;
 			case "6":
 			case KEY_RIGHT:
-				if(move("RIGHT")) send("MOVE");
+				if(move(direction.RIGHT)) 
+					send("MOVE");
 				break;
 			case "5":
-				if(rotate("RIGHT")) send("MOVE");
+				if(rotate(direction.RIGHT)) 
+					send("MOVE");
 				break;
 			case "7":
 			case "A":
-				if(rotate("LEFT")) send("MOVE");
+				if(rotate(direction.LEFT)) 
+					send("MOVE");
 				break;
 			case "9":
 			case "D":
-				if(rotate("RIGHT")) send("MOVE");
+				if(rotate(direction.RIGHT)) 
+					send("MOVE");
 				break;
 			default:
 				break;
 			}
 		}
-		console.gotoxy(currentPlayer.x+1,currentPlayer.y+11);
+		
+		console.gotoxy(localPlayer.x+1,localPlayer.y+11);
 		console.pushxy();
-		if(game.winner == currentPlayerID) {
+		
+		if(game.winner == localPlayer.name) {
 			message("\1g\1hYOU WIN!");
-		} else {
+		} 
+		else {
 			message("\1r\1hYOU LOSE!");
 		}
 		message("\1n\1rpress \1hQ \1n\1rto quit");
@@ -550,261 +159,211 @@ function playGame(game)
 			}
 		}
 	}
-	function handleExit()
-	{
-		if(game.status == 1) {
-			display(currentPlayer,"\1c\1hQuit game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
-			if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") {
-				redraw();
-				return false;
-			}
-			killPlayer(currentPlayerID);
-			send("DEAD");
+
+	/* init shit */
+	function initBoards() {
+		var x=1;
+		var y=3;
+		var index=0;
+		var width=27;
+		if(game.players[profile.name]) {
+			game.players[profile.name]=new GameBoard(gameFrame,profile.name,x,y);
+			game.players[profile.name].open();
+			index++;
 		}
-		return true;
-	}
-	function cycle()
-	{
-		//chat.cycle();
-		var packet=stream.receive();
-		if(packet)	processData(packet);
-		if(!currentPlayer || !currentPlayer.active) return;
-		
-		var update=false;
-		var difference=time()-lastupdate;
-
-		if(difference<pause) return;
-		lastupdate=time();
-
-		getLines();
-
-		if(!currentPlayer.currentPiece) {
-			getNewPiece();
-			return;
-		}
-		
-		if(checkInterference()) {
-			killPlayer(currentPlayerID);
-			send("DEAD");
-			return;
-		} 
-		
-		if(move("DOWN")) {
-			send("MOVE");
-		} else {
-			setPiece();
+		for(var p in game.players) {
+			if(p == profile.name) 
+				continue;
+			game.players[p]=new GameBoard(gameFrame,game.players[p].name,x + (index*width),y);
+			game.players[p].open();
+			index++;
 		}
 	}
-	function processData(packet)
-	{
-		if(packet.gameNumber != game.gameNumber) return false;
-		switch(packet.func.toUpperCase())
-		{
+	function getMatrix(h,w)	{
+		var grid=new Array(h);
+		for(var y=0;y<grid.length;y++) {
+			grid[y]=getNewLine(w);
+		}
+		return grid;
+	}
+
+	/* data shit */
+	function packageData(cmd) {
+		var data={cmd:cmd};
+		switch(cmd.toUpperCase()) {
+		case "MOVE":
+			data.x=localPlayer.currentPiece.x;
+			data.y=localPlayer.currentPiece.y;
+			data.o=localPlayer.currentPiece.o;
+			break;
+		case "SET":
+			break;
+		case "CURRENT":
+			data.piece=localPlayer.currentPiece.id;
+			break;
+		case "NEXT":
+			data.piece=localPlayer.nextPiece.id;
+			break;
+		case "HOLD":
+			data.piece=localPlayer.holdPiece.id;
+			break;
+		case "DEAD":
+			break;
+		case "GARBAGE":
+			data.lines=garbage;
+			break;
+		case "SCORE":
+			data.score=localPlayer.score;
+			data.lines=localPlayer.lines;
+			data.level=localPlayer.level;
+			break;
+		case "PLAYER":
+			break;
+		case "GRID":
+			data.grid=localPlayer.grid;
+			break;
+		default:
+			log("Unknown tetris data not sent");
+			break;
+		}
+		data.gameNumber=game.gameNumber;
+		data.playerName=localPlayer.name;
+		return data;
+	}
+	function send(cmd)	{
+		var d=packageData(cmd);
+		if(d) 
+			client.write(game_id,"metadata." + game.gameNumber + ".players." + localPlayer.name,d,2);
+	}
+	function processUpdate(packet) {
+		if(packet.oper.toUpperCase() == "WRITE") {
+			var data = packet.data;
+			var p = game.players[data.playerName];
+			switch(data.cmd.toUpperCase()) {
 			case "MOVE":
-				if(!game.players[packet.player].currentPiece) {
-					log("received invalid move data");
-					break;
-				}
-				game.players[packet.player].unDrawPiece();
-				game.players[packet.player].currentPiece.x=packet.x;
-				game.players[packet.player].currentPiece.y=packet.y;
-				game.players[packet.player].currentPiece.o=packet.o;
-				game.players[packet.player].drawPiece();
+				unDrawCurrent(p);
+				p.currentPiece.x=data.x;
+				p.currentPiece.y=data.y;
+				p.currentPiece.o=data.o;
+				drawCurrent(p);
 				break;
-			case "PIECE":
-				game.players[packet.player].currentPiece=loadPiece(packet.piece);
-				game.players[packet.player].drawPiece();
+			case "CURRENT":
+				unDrawCurrent(p);
+				p.currentPiece=loadPiece(data.piece);
+				drawCurrent(p);
 				break;
 			case "GARBAGE":
-				currentPlayer.clearBoard();
-				loadGarbage(packet.lines);
-				currentPlayer.drawBoard();
-				currentPlayer.drawPiece();
+				//loadGarbage(data.lines,data.space);
+				//drawBoard(p);
+				break;
+			case "SET":
+				delete p.currentPiece;
 				break;
 			case "DEAD":
-				killPlayer(packet.player);
+				killPlayer(p);
 				break;
 			case "NEXT":
-				game.players[packet.player].nextPiece=packet.piece;
-				game.players[packet.player].drawNext();
+				p.nextPiece=loadMini(data.piece);
+				drawNext(p);
 				break;
 			case "HOLD":
-				game.players[packet.player].unDrawPiece();
-				game.players[packet.player].holdPiece=packet.piece;
-				game.players[packet.player].drawHold();
+				p.holdPiece=loadMini(data.piece);
+				drawHold(p);
 				break;
 			case "SCORE":
-				game.players[packet.player].score=packet.score;
-				game.players[packet.player].lines=packet.lines;
-				game.players[packet.player].level=packet.level;
-				game.players[packet.player].drawScore();
+				p.score=data.score;
+				p.lines=data.lines;
+				p.level=data.level;
+				drawScore(p);
 				break;
 			case "GRID":
-				game.players[packet.player].grid=packet.grid;
-				game.players[packet.player].clearBoard();
-				game.players[packet.player].drawBoard();
-				break;
-			case "UPDATE":
-				log("updating game data");
-				game.loadGame();
+				p.grid=data.grid;
+				drawBoard(p);
 				break;
 			default:
 				log("Unknown tetris data type received");
-				log("packet: " + packet.toSource());
+				log("packet: " + data.toSource());
 				break;
+			}
 		}
-	}
-	function packageData(func)
-	{
-		var data=new Packet(func);
-		switch(func.toUpperCase())
-		{
-			case "MOVE":
-				data.x=currentPlayer.currentPiece.x;
-				data.y=currentPlayer.currentPiece.y;
-				data.o=currentPlayer.currentPiece.o;
-				break;
-			case "PIECE":
-				data.piece=currentPlayer.currentPiece.id;
-				break;
-			case "NEXT":
-				data.piece=currentPlayer.nextPiece;
-				break;
-			case "HOLD":
-				data.piece=currentPlayer.holdPiece;
-				break;
-			case "DEAD":
-				break;
-			case "GARBAGE":
-				data.lines=garbage;
-				break;
-			case "SCORE":
-				data.score=currentPlayer.score;
-				data.lines=currentPlayer.lines;
-				data.level=currentPlayer.level;
-				break;
-			case "UPDATE":
-				break;
-			case "PLAYER":
-				break;
-			case "GRID":
-				data.grid=currentPlayer.grid;
-				break;
-			default:
-				log("Unknown tetris data not sent");
-				break;
+		else {
+			//TODO: handle subscribe/unsubscribe/etc...
 		}
-		data.gameNumber=game.gameNumber;
-		data.player=currentPlayerID;
-		return data;
-	}
-	function send(func)
-	{
-		var d=packageData(func);
-		if(d) stream.send(d);
-	}
-	function redraw()
-	{
-		console.clear(ANSI_NORMAL);
-		for each(var p in game.players) {
-			p.drawBackground();
-			p.drawScore();
-			p.drawBoard();
-		}
-		//chat.redraw();
 	}
 
-	/*	gameplay functions */
-	function loadGarbage(lines)
-	{
-		var space=random(10);
-		while(lines>0) {
-			if(currentPlayer.currentPiece) {
-				currentPlayer.currentPiece.y++;
-				if(checkInterference()) {
-					currentPlayer.currentPiece.y--;
-					setPiece();
-				} else {
-					currentPlayer.currentPiece.y--;
-				}
+	/* game board shit */
+	function getGarbageLine(space) {
+		var line=new Array(10);
+		for(var x=0;x<line.length;x++) {
+			if(x==space) line[x]=0;
+			else {
+				line[x]=random(7)+1;
 			}
-			var topLine=currentPlayer.grid.shift();
-			for(var x=0;x<topLine.length;x++) {
-				if(topLine[x] > 0) {
-					log("garbage overflow");
-					killPlayer(currentPlayerID);
-					return;
-				}
-			}
-			currentPlayer.grid.push(getGarbageLine(space));
-			lines--;
 		}
-		send("GRID");
+		return line;
 	}
-	function fullDrop()
-	{	
-		while(1) {
-			if(!move("DOWN")) break;
+	function getNewLine(w) {
+		var line=new Array(w);
+		for(var x=0;x<line.length;x++) {
+			line[x]=0;
 		}
+		return line;
 	}
-	function getLines()
-	{
+	function getLines()	{
 		var lines=[];
-		for(var y=0;y<currentPlayer.grid.length;y++) {
+		for(var y=0;y<localPlayer.grid.length;y++) {
 			var line=true;
-			for(var x=0;x<currentPlayer.grid[y].length;x++) {
-				if(currentPlayer.grid[y][x] == 0) {
+			for(var x=0;x<localPlayer.grid[y].length;x++) {
+				if(localPlayer.grid[y][x] == 0) {
 					line=false;
 					break;
 				}
 			}
 			if(line) {
-				currentPlayer.grid.splice(y,1);
-				currentPlayer.grid.unshift(getNewLine(currentPlayer.grid[0].length));
+				localPlayer.grid.splice(y,1);
+				localPlayer.grid.unshift(getNewLine(localPlayer.grid[0].length));
 				lines.push(y);
 			}
 		}
 		if(lines.length>0) {
-			currentPlayer.clearBoard();
-			currentPlayer.drawBoard();
+			drawBoard(localPlayer);
 			send("GRID");
-			
 			scoreLines(lines.length);
 
 			if(game.garbage) {
-				if(lines.length==4) {
+				if(lines.length==4) 
 					garbage=4;
-				} else if(lines.length==3) {
+				else if(lines.length==3) 
 					garbage=2;
-				} else if(lines.length==2) {
+				else if(lines.length==2) 
 					garbage=1;
-				} else {
+				else 
 					garbage=0;
-				}
+				if(garbage>0) 
+					send("GARBAGE");
 			} 
-			if(garbage>0) send("GARBAGE");
 		}
 	}
-	function scoreLines(qty)
-	{
+	function scoreLines(qty) {
 		/*	a "TETRIS" */
 		if(qty==4) qty=10;
 
-		currentPlayer.lines+=qty;
-		currentPlayer.score+=(currentPlayer.level * qty * base_points);
+		localPlayer.lines+=qty;
+		localPlayer.score+=(localPlayer.level * qty * base_points);
 
-		if(currentPlayer.lines/10 >= currentPlayer.level) {
-			currentPlayer.level++;
+		if(localPlayer.lines/10 >= localPlayer.level) {
+			localPlayer.level++;
 			pause=pause*pause_reduction;
 		}
 		
-		currentPlayer.drawScore();
+		drawScore(localPlayer);
 		send("SCORE");
 	}
-	function setPiece()
-	{
-		var piece=currentPlayer.currentPiece;
-		var piece_matrix=piece.orientation[currentPlayer.currentPiece.o];
+	function checkInterference() {
+		var piece=localPlayer.currentPiece;
+		if(piece == undefined)
+			return;
+		var piece_matrix=piece.direction[piece.o];
 		
 		var yoffset=piece.y;
 		var xoffset=piece.x;
@@ -814,63 +373,315 @@ function playGame(game)
 				var posy=yoffset+y;
 				var posx=xoffset+x;
 				if(piece_matrix[y][x] > 0) {
-					currentPlayer.grid[posy][posx]=piece_matrix[y][x];
+					if(!localPlayer.grid[posy] || localPlayer.grid[posy][posx] == undefined) {
+						return true;
+					}
+					if(localPlayer.grid[posy][posx] > 0) {
+						return true;
+					}
 				}
 			}
 		}
-		delete currentPlayer.currentPiece;
+		return false;
 	}
-	function swapPiece()
-	{
-		currentPlayer.unDrawPiece();
-		if(currentPlayer.holdPiece) {
-			var temp=currentPlayer.currentPiece.id;
-			currentPlayer.currentPiece=loadPiece(currentPlayer.holdPiece);
-			currentPlayer.holdPiece=temp;
-			currentPlayer.drawPiece();
-			currentPlayer.drawNext();
-			currentPlayer.drawHold();
+
+	/* piece assignment shit */
+	function loadPiece(index) {
+		var up;
+		var down;
+		var left;
+		var right;
+		var fg;
+		var bg;
+		
+		switch(index) {
+		case 1: // BAR 1 x 4 CYAN
+			up=[
+				[0,1,0,0],
+				[0,1,0,0],
+				[0,1,0,0],
+				[0,1,0,0]
+			];
+			right=[
+				[0,0,0,0],
+				[1,1,1,1],
+				[0,0,0,0],
+				[0,0,0,0]
+			];
+			down=up;
+			left=right;
+			fg=CYAN;
+			bg=BG_CYAN;
+			break;
+		case 2: // BLOCK 2 x 2 LIGHTGRAY
+			up=[
+				[2,2],
+				[2,2]
+			];
+			down=up;
+			right=up;
+			left=up;
+			fg=LIGHTGRAY;
+			bg=BG_LIGHTGRAY;
+			break;
+		case 3: // "T"	2 x 3 BROWN
+			up=[
+				[0,3,0],
+				[3,3,3],
+				[0,0,0]
+			];
+			right=[
+				[0,3,0],
+				[0,3,3],
+				[0,3,0]
+			];
+			down=[
+				[0,0,0],
+				[3,3,3],
+				[0,3,0]
+			];
+			left=[
+				[0,3,0],
+				[3,3,0],
+				[0,3,0]
+			];
+			bg=BG_BROWN;
+			fg=BROWN;
+			break;
+		case 4: // RH OFFSET 2 x 3 GREEN
+			up=[
+				[4,0,0],
+				[4,4,0],
+				[0,4,0]
+			];
+			right=[
+				[0,4,4],
+				[4,4,0],
+				[0,0,0]
+			];
+			down=up;
+			left=right;
+			fg=GREEN;
+			bg=BG_GREEN;
+			break;
+		case 5: // LH OFFSET 2 x 3 RED
+			up=[
+				[0,0,5],
+				[0,5,5],
+				[0,5,0]
+			];
+			right=[
+				[5,5,0],
+				[0,5,5],
+				[0,0,0]
+			];
+			down=up;
+			left=right;
+			fg=RED;
+			bg=BG_RED;
+			break;
+		case 6: // RH "L" 2 x 3 MAGENTA
+			up=[
+				[0,6,0],
+				[0,6,0],
+				[0,6,6]
+			];
+			right=[
+				[0,0,0],
+				[6,6,6],
+				[6,0,0]
+			];
+			down=[
+				[6,6,0],
+				[0,6,0],
+				[0,6,0]
+			];
+			left=[
+				[0,0,6],
+				[6,6,6],
+				[0,0,0]
+			];
+			fg=MAGENTA;
+			bg=BG_MAGENTA;
+			break;
+		case 7: // LH "L" 2 x 3 BLUE
+			up=[
+				[0,7,0],
+				[0,7,0],
+				[7,7,0]
+			];
+			right=[
+				[7,0,0],
+				[7,7,7],
+				[0,0,0]
+			];
+			down=[
+				[0,7,7],
+				[0,7,0],
+				[0,7,0]
+			];
+			left=[
+				[0,0,0],
+				[7,7,7],
+				[0,0,7]
+			];
+			fg=BLUE;
+			bg=BG_BLUE;
+			break;
+		}
+		
+		return new Piece(index,fg,bg,up,down,right,left);
+	}
+	function loadMini(index) {
+		var grid;
+		var fg;
+		var bg;
+		
+		switch(index) {
+		case 1: // BAR 1 x 4 CYAN
+			grid=[
+				" \xDB ",
+				" \xDB ",
+				" \xDB "
+			];
+			fg=CYAN;
+			bg=BG_CYAN;
+			break;
+		case 2: // BLOCK 2 x 2 LIGHTGRAY
+			grid=[
+				" \xDB\xDB",
+				" \xDB\xDB",
+				"   "
+			];
+			fg=LIGHTGRAY;
+			bg=BG_LIGHTGRAY;
+			break;
+		case 3: // "T"	2 x 3 BROWN
+			grid=[
+				" \xDB ",
+				"\xDB\xDB\xDB",
+				"   "
+			];
+			bg=BG_BROWN;
+			fg=BROWN;
+			break;
+		case 4: // RH OFFSET 2 x 3 GREEN
+			grid=[
+				" \xDB\xDB",
+				"\xDB\xDB ",
+				"   "
+			];
+			fg=GREEN;
+			bg=BG_GREEN;
+			break;
+		case 5: // LH OFFSET 2 x 3 RED
+			grid=[
+				"\xDB\xDB ",
+				" \xDB\xDB",
+				"   "
+			];
+			fg=RED;
+			bg=BG_RED;
+			break;
+		case 6: // RH "L" 2 x 3 MAGENTA
+			grid=[
+				" \xDB ",
+				" \xDB ",
+				" \xDB\xDB"
+			];
+			fg=MAGENTA;
+			bg=BG_MAGENTA;
+			break;
+		case 7: // LH "L" 2 x 3 BLUE
+			grid=[
+				" \xDB ",
+				" \xDB ",
+				"\xDB\xDB "
+			];
+			fg=BLUE;
+			bg=BG_BLUE;
+			break;
+		}
+		
+		return new Mini(index,fg,bg,grid);
+	}
+	function setPiece()	{
+		var piece=localPlayer.currentPiece;
+		var piece_matrix=piece.direction[localPlayer.currentPiece.o];
+		
+		var yoffset=piece.y;
+		var xoffset=piece.x;
+		
+		for(var y=0;y<piece_matrix.length;y++) {
+			for(var x=0;x<piece_matrix[y].length;x++) {
+				var posy=yoffset+y;
+				var posx=xoffset+x;
+				if(piece_matrix[y][x] > 0) {
+					localPlayer.grid[posy][posx]=piece_matrix[y][x];
+				}
+			}
+		}
+		delete localPlayer.currentPiece;
+		send("SET");
+	}
+	function swapPiece() {
+		unDrawCurrent(localPlayer);
+		if(localPlayer.holdPiece) {
+			var mini=localPlayer.currentPiece.id;
+			localPlayer.currentPiece=loadPiece(localPlayer.holdPiece.id);
+			localPlayer.holdPiece=loadMini(mini);
+			
+			drawCurrent(localPlayer);
+			drawNext(localPlayer);
+			drawHold(localPlayer);
+			
 			send("HOLD");
-			send("PIECE");
+			send("CURRENT");
 			send("NEXT");
 		} else {
-			currentPlayer.holdPiece=currentPlayer.currentPiece.id;
+			localPlayer.holdPiece=loadMini(localPlayer.currentPiece.id);
 			send("HOLD");
 			getNewPiece();
-			currentPlayer.drawHold();
+			drawHold(localPlayer);
 		}
 	}
-	function getNewPiece()
-	{
-		if(!currentPlayer.nextPiece) currentPlayer.nextPiece=random(7)+1;
-		currentPlayer.currentPiece=loadPiece(currentPlayer.nextPiece);
-		currentPlayer.nextPiece=random(7)+1;
+	function getNewPiece() {
+		if(localPlayer.nextPiece == undefined) 
+			localPlayer.nextPiece=loadMini(queue.pop());
+		localPlayer.currentPiece=loadPiece(localPlayer.nextPiece.id);
+		localPlayer.nextPiece=loadMini(queue.pop());
 		
-		currentPlayer.drawPiece();
-		currentPlayer.drawNext();
-		currentPlayer.swapped=false;
-		send("PIECE");
+		drawCurrent(localPlayer);
+		drawNext(localPlayer);
+		localPlayer.swapped=false;
+		
+		send("CURRENT");
 		send("NEXT");
 	}
-	function move(dir)
-	{
-		var piece=currentPlayer.currentPiece;
-		
+
+	/* movement shit */
+	function fullDrop()	{	
+		while(1) {
+			if(!move(direction.DOWN)) 
+				break;
+		}
+	}
+	function move(dir) {
+		var piece=localPlayer.currentPiece;
 		var old_x=piece.x;
 		var old_y=piece.y;
 		
 		var new_x=old_x;
 		var new_y=old_y;
 		
-		switch(dir) 
-		{
-		case "DOWN":
+		switch(dir) {
+		case direction.DOWN:
 			new_y=piece.y+1;
 			break;
-		case "LEFT":
+		case direction.LEFT:
 			new_x=piece.x-1;
 			break;
-		case "RIGHT":
+		case direction.RIGHT:
 			new_x=piece.x+1;
 			break;
 		}
@@ -886,35 +697,35 @@ function playGame(game)
 		
 		piece.x=old_x;
 		piece.y=old_y;
-		currentPlayer.unDrawPiece();
+		unDrawCurrent(localPlayer);
 		piece.x=new_x;
 		piece.y=new_y;
-		currentPlayer.drawPiece();
+		drawCurrent(localPlayer);
 		return true;
 	}
-	function rotate(dir)
-	{
-		var piece=currentPlayer.currentPiece;
-		
+	function rotate(dir) {
+		var piece=localPlayer.currentPiece;
 		var old_o=piece.o;
 		var new_o=old_o;
 		var old_x=piece.x;
 		var new_x=old_x;
 		
-		switch(dir)
-		{
-		case "RIGHT":
+		switch(dir)	{
+		case direction.RIGHT:
 			new_o=piece.o-1;
-			if(new_o<0) new_o=piece.orientation.length-1;
+			if(new_o<0) 
+				new_o=piece.direction.length-1;
 			break;
-		case "LEFT":
+		case direction.LEFT:
 			new_o=piece.o+1;
-			if(new_o==piece.orientation.length) new_o=0;
+			if(new_o==piece.direction.length) 
+				new_o=0;
 			break;
 		}
-		var grid=piece.orientation[piece.o];
+		var grid=piece.direction[piece.o];
 		var overlap=(piece.x + grid[0].length)-10;
-		if(overlap>0) new_x=piece.x-overlap;
+		if(overlap>0) 
+			new_x=piece.x-overlap;
 		
 		piece.o=new_o;
 		piece.x=new_x
@@ -927,407 +738,184 @@ function playGame(game)
 		
 		piece.x=old_x;
 		piece.o=old_o;
-		currentPlayer.unDrawPiece();
+		unDrawCurrent(localPlayer);
 		piece.x=new_x;
 		piece.o=new_o;
-		currentPlayer.drawPiece();
+		drawCurrent(localPlayer);
 		return true;
 	}
-	function checkInterference()
-	{
-		var piece=currentPlayer.currentPiece;
-		var piece_matrix=piece.orientation[piece.o];
-		
-		var yoffset=piece.y;
-		var xoffset=piece.x;
-		
-		for(var y=0;y<piece_matrix.length;y++) {
-			for(var x=0;x<piece_matrix[y].length;x++) {
-				var posy=yoffset+y;
-				var posx=xoffset+x;
-				if(piece_matrix[y][x] > 0) {
-					if(!currentPlayer.grid[posy] || currentPlayer.grid[posy][posx] == undefined) {
-						return true;
-					}
-					if(currentPlayer.grid[posy][posx] > 0) {
-						return true;
-					}
+
+	/* display shit */
+	function getAttr(index)	{
+		switch(Number(index)) {
+		case 1:
+			return CYAN;
+		case 2:
+			return LIGHTGRAY;
+		case 3:
+			return BROWN;
+		case 4:
+			return GREEN;
+		case 5:
+			return RED;
+		case 6:
+			return MAGENTA;
+		case 7:
+			return BLUE;
+		}
+	}
+	function display(player,msg) {
+		gameFrame.gotoxy(gameFrame.x+1,gameFrame.y+10);
+		gameFrame.pushxy();
+		message(msg);
+	}
+	function message(msg) {
+		gameFrame.popxy();
+		gameFrame.putmsg(centerString(msg,20));
+		gameFrame.popxy();
+		gameFrame.down();
+		gameFrame.pushxy();
+	}
+	function drawCurrent(player) {
+		var piece = player.currentPiece;
+		if(piece == undefined) 
+			return;
+		var grid=piece.direction[piece.o];
+		for(var y=0;y<grid.length;y++) {
+			for(var x=0;x<grid[y].length;x++) {
+				if(grid[y][x] > 0) {
+					var xoffset=(piece.x+x)*2+1;
+					var yoffset=piece.y+y+1;
+					player.stack.gotoxy(xoffset,yoffset);
+					player.stack.putmsg(piece.ch,piece.attr);
 				}
 			}
 		}
-		return false;
 	}
-	function activePlayers()
-	{
+	function drawNext(player) {
+		var piece = player.nextPiece;
+		if(piece == undefined) 
+			return;
+		player.frame.gotoxy(23,4);
+		player.frame.pushxy();
+		for(var x=0;x<piece.grid.length;x++) {
+			player.frame.putmsg(piece.grid[x],piece.fg);
+			player.frame.popxy();
+			player.frame.down();
+			player.frame.pushxy();
+		}
+	}
+	function drawHold(player) {
+		var piece = player.holdPiece;
+		if(piece == undefined) 
+			return;
+		player.frame.gotoxy(23,10);
+		player.frame.pushxy();
+		for(var x=0;x<piece.grid.length;x++) {
+			player.frame.putmsg(piece.grid[x],piece.fg);
+			player.frame.popxy();
+			player.frame.down();
+			player.frame.pushxy();
+		}
+	}
+	function unDrawCurrent(player) {
+		var piece = player.currentPiece;
+		if(piece == undefined) 
+			return;
+		var grid=piece.direction[piece.o];
+
+		for(var y=0;y<grid.length;y++) {
+			for(var x=0;x<grid[y].length;x++) {
+				if(grid[y][x] > 0) {
+					var xoffset=(piece.x+x)*2+1;
+					var yoffset=piece.y+y+1;
+					player.stack.gotoxy(xoffset,yoffset);
+					player.stack.putmsg("  ");
+				}
+			}
+		}
+	}
+	function drawBoard(player) {
+		for(var y=0;y<player.grid.length;y++) {
+			for(var x=0;x<player.grid[y].length;x++) {
+			
+				var xpos = (x*2);
+				var ypos = y;
+				var ch = " ";
+				var attr = 0;
+				
+				if(player.grid[y][x]>0) {
+					ch = "\xDB";
+					attr = getAttr(player.grid[y][x]);
+				}
+				
+				player.stack.setData(xpos,ypos,ch,attr);
+				player.stack.setData(xpos+1,ypos,ch,attr);
+			}
+		}
+	}
+	function drawScore(player) {
+		gameFrame.gotoxy(1,1);
+		gameFrame.putmsg(splitPadded(
+			printPadded("\1n" + player.name,19), 
+			printPadded("\1h" + player.score,6,"\1n\1r0",direction.RIGHT),
+			25
+		));
+		gameFrame.gotoxy(1,2);
+		gameFrame.putmsg(splitPadded(
+			"\1k\1hLevel:" + printPadded("\1h" + player.level,4,"\1n\1r0",direction.RIGHT),
+			"\1k\1hLines:" + printPadded("\1h" + player.lines,4,"\1n\1r0",direction.RIGHT),
+			25
+		));
+	}
+	
+	/* other shit */
+	function handleExit() {
+		// if(game.status == status.PLAYING) {
+			// display(localPlayer,"\1c\1hQuit game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+			// if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") {
+				// gameFrame.close();
+				// return false;
+			// }
+			// killPlayer(localPlayer.name);
+			// send("DEAD");
+		// }
+		gameFrame.close();
+		return true;
+	}
+	function activePlayers() {
 		var count=0;
 		for each(var p in game.players) {
 			if(p.active) count++;
 		}
 		return count;
 	}
-	function killPlayer(player)
-	{	
-		if(!game.players[player]) {
-			log("player does not exist: " + player);
+	function killPlayer(playerName) {	
+		if(!game.players[playerName]) {
+			log(LOG_WARNING,"player does not exist: " + playerName);
 			return false;
 		}
-		game.players[player].active=false;
-		game.players[player].clearBoard();
-		display(game.players[player],"\1n\1r[\1hGAME OVER\1n\1r]");
+		game.players[playerName].active=false;
+		display(game.players[playerName],"\1n\1r[\1hGAME OVER\1n\1r]");
 		
 		if(activePlayers()<=1) {
 			for (var p in game.players) {
-				if(game.players[p].active) game.winner=p;
+				if(game.players[p].active)  {
+					game.winner=p;
+					break;
+				}
 			}
 			endGame();
 		}
 	}
-	function endGame()
-	{
+	function endGame() {
 		game.status=2;
-		storeGame(game);
+		client.write(game_id,"games." + game.gameNumber + ".status",game.status,2);
 		send("UPDATE");
 	}
-	function display(player,msg)
-	{
-		console.gotoxy(player.x+1,player.y+10);
-		console.pushxy();
-		message(msg);
-	}
-	function message(msg)
-	{
-		console.popxy();
-		console.putmsg(centerString(msg,20));
-		console.popxy();
-		console.down();
-		console.pushxy();
-	}
-	
-	initGame();
+			
+	open();
 	main();
+	close();
 }
 
-/*	data functions */
-function loadPiece(index)
-{
-	var up;
-	var down;
-	var left;
-	var right;
-	var fg;
-	var bg;
-	
-	switch(index) {
-	case 1: // BAR 1 x 4 CYAN
-		up=[
-			[0,1,0,0],
-			[0,1,0,0],
-			[0,1,0,0],
-			[0,1,0,0]
-		];
-		right=[
-			[0,0,0,0],
-			[1,1,1,1],
-			[0,0,0,0],
-			[0,0,0,0]
-		];
- 		down=up;
-		left=right;
-		fg=CYAN;
-		bg=BG_CYAN;
-		break;
-	case 2: // BLOCK 2 x 2 LIGHTGRAY
-		up=[
-			[2,2],
-			[2,2]
-		];
-		down=up;
-		right=up;
-		left=up;
-		fg=LIGHTGRAY;
-		bg=BG_LIGHTGRAY;
-		break;
-	case 3: // "T"	2 x 3 BROWN
-		up=[
-			[0,3,0],
-			[3,3,3],
-			[0,0,0]
-		];
-		right=[
-			[0,3,0],
-			[0,3,3],
-			[0,3,0]
-		];
-		down=[
-			[0,0,0],
-			[3,3,3],
-			[0,3,0]
-		];
-		left=[
-			[0,3,0],
-			[3,3,0],
-			[0,3,0]
-		];
-		bg=BG_BROWN;
-		fg=BROWN;
-		break;
-	case 4: // RH OFFSET 2 x 3 GREEN
-		up=[
-			[4,0,0],
-			[4,4,0],
-			[0,4,0]
-		];
-		right=[
-			[0,4,4],
-			[4,4,0],
-			[0,0,0]
-		];
-		down=up;
-		left=right;
-		fg=GREEN;
-		bg=BG_GREEN;
-		break;
-	case 5: // LH OFFSET 2 x 3 RED
-		up=[
-			[0,0,5],
-			[0,5,5],
-			[0,5,0]
-		];
-		right=[
-			[5,5,0],
-			[0,5,5],
-			[0,0,0]
-		];
-		down=up;
-		left=right;
-		fg=RED;
-		bg=BG_RED;
-		break;
-	case 6: // RH "L" 2 x 3 MAGENTA
-		up=[
-			[0,6,0],
-			[0,6,0],
-			[0,6,6]
-		];
-		right=[
-			[0,0,0],
-			[6,6,6],
-			[6,0,0]
-		];
-		down=[
-			[6,6,0],
-			[0,6,0],
-			[0,6,0]
-		];
-		left=[
-			[0,0,6],
-			[6,6,6],
-			[0,0,0]
-		];
-		fg=MAGENTA;
-		bg=BG_MAGENTA;
-		break;
-	case 7: // LH "L" 2 x 3 BLUE
-		up=[
-			[0,7,0],
-			[0,7,0],
-			[7,7,0]
-		];
-		right=[
-			[7,0,0],
-			[7,7,7],
-			[0,0,0]
-		];
-		down=[
-			[0,7,7],
-			[0,7,0],
-			[0,7,0]
-		];
-		left=[
-			[0,0,0],
-			[7,7,7],
-			[0,0,7]
-		];
-		fg=BLUE;
-		bg=BG_BLUE;
-		break;
-	}
-	
-	return new Piece(index,fg,bg,up,down,right,left);
-}
-function loadMini(index)
-{
-	var grid;
-	var fg;
-	var bg;
-	
-	switch(index) {
-	case 1: // BAR 1 x 4 CYAN
-		grid=[
-			" \xDB ",
-			" \xDB ",
-			" \xDB "
-		];
-		fg=CYAN;
-		bg=BG_CYAN;
-		break;
-	case 2: // BLOCK 2 x 2 LIGHTGRAY
-		grid=[
-			" \xDB\xDB",
-			" \xDB\xDB",
-			"   "
-		];
-		fg=LIGHTGRAY;
-		bg=BG_LIGHTGRAY;
-		break;
-	case 3: // "T"	2 x 3 BROWN
-		grid=[
-			" \xDB ",
-			"\xDB\xDB\xDB",
-			"   "
-		];
-		bg=BG_BROWN;
-		fg=BROWN;
-		break;
-	case 4: // RH OFFSET 2 x 3 GREEN
-		grid=[
-			" \xDB\xDB",
-			"\xDB\xDB ",
-			"   "
-		];
-		fg=GREEN;
-		bg=BG_GREEN;
-		break;
-	case 5: // LH OFFSET 2 x 3 RED
-		grid=[
-			"\xDB\xDB ",
-			" \xDB\xDB",
-			"   "
-		];
-		fg=RED;
-		bg=BG_RED;
-		break;
-	case 6: // RH "L" 2 x 3 MAGENTA
-		grid=[
-			" \xDB ",
-			" \xDB ",
-			" \xDB\xDB"
-		];
-		fg=MAGENTA;
-		bg=BG_MAGENTA;
-		break;
-	case 7: // LH "L" 2 x 3 BLUE
-		grid=[
-			" \xDB ",
-			" \xDB ",
-			"\xDB\xDB "
-		];
-		fg=BLUE;
-		bg=BG_BLUE;
-		break;
-	}
-	
-	return new Mini(fg,bg,grid);
-}
-function sendFiles(filename)
-{
-	stream.sendfile(filename);
-}
-function getAttr(index)
-{
-	switch(Number(index))
-	{
-	case 1:
-		console.attributes=CYAN;
-		break;
-	case 2:
-		console.attributes=LIGHTGRAY;
-		break;
-	case 3:
-		console.attributes=BROWN;
-		break;
-	case 4:
-		console.attributes=GREEN;
-		break;
-	case 5:
-		console.attributes=RED;
-		break;
-	case 6:
-		console.attributes=MAGENTA;
-		break;
-	case 7:
-		console.attributes=BLUE;
-		break;
-	}
-}
-function getMatrix(h,w)
-{
-	var grid=new Array(h);
-	for(var y=0;y<grid.length;y++) {
-		grid[y]=getNewLine(w);
-	}
-	return grid;
-}
-function getGarbageLine(space)
-{
-	var line=new Array(10);
-	for(var x=0;x<line.length;x++) {
-		if(x==space) line[x]=0;
-		else {
-			line[x]=random(7)+1;
-		}
-	}
-	return line;
-}
-function getNewLine(w)
-{
-	var line=new Array(w);
-	for(var x=0;x<line.length;x++) {
-		line[x]=0;
-	}
-	return line;
-}
-function storeGame(game)
-{
-	//STORE GAME DATA
-	var file=new File(game.dataFile+".tmp");
-	file.open("w+");
-	
-	file.iniSetValue(null,"gameNumber",game.gameNumber);
-	file.iniSetValue(null,"status",game.status);
-	file.iniSetValue(null,"winner",game.winner);
-	if(game.created) file.iniSetValue(null,"created",game.created);
-	
-	for(var p in game.players) {
-		file.iniSetValue("players",p,game.players[p].active);
-	}
-
-	file.close();
-	file_remove(game.dataFile);
-	file_rename(file.name,game.dataFile);
-	sendFiles(game.dataFile);
-}
-function storePlayerData(game,id)
-{
-	var file=new File(game.dataFile);
-	file.open('r+',true);
-	file.iniSetValue("players",id,game.players[id].active);
-	file.close();
-	sendFiles(game.dataFile);
-}
-function notice(txt)
-{
-	window.current_tab.window.post("\1n\1g" + txt);
-}
-function alrt(txt)
-{
-	window.current_tab.window.post("\1n\1r" + txt);
-}
-function help() 
-{
-	//TODO: write help file
-}
-
-splashStart();
-lobby();
-splashExit();

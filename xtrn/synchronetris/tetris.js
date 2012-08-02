@@ -4,33 +4,26 @@
 	Matt Johnson(2009)
 */
 //$Id$
-load("commclient.js");
-
+load("json-client.js");
 var root = js.exec_dir;
-var stream = new ServiceConnection("tetris");
 
-var server_file=new File(root + "server.ini");
-if(file_exists(server_file.name)) {
-	server_file.open('r',true);
-	var update=server_file.iniGetValue(null,"autoupdate");
-	server_file.close();
-	if(update != true) {
-		if((user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP)) 
-			&& console.yesno("Check for game updates?")) 
-			update=true;
-	}
-	
-	if(update) {
-		console.putmsg("\r\n\1nChecking for updates...");
-		stream.recvfile("*.bin");
-		stream.recvfile("*.js");
-		stream.recvfile("interbbs.doc");
-		stream.recvfile("sysop.doc",true);
-	}
-	
-	console.putmsg("\r\n\1nSynchronizing data files...");
-	stream.recvfile("tetris*.ini");
-	stream.recvfile("players.ini",true);
+if(!file_exists(root + "server.ini")) {
+	throw("server initialization file missing");
 }
 
-load(root + "game.js",stream);
+var server_file = new File(root + "server.ini");
+server_file.open('r',true);
+
+//var autoUpdate=server_file.iniGetValue(null,"autoUpdate");
+var serverAddr=server_file.iniGetValue(null,"host");
+var serverPort=server_file.iniGetValue(null,"port");
+server_file.close();
+
+var client=new JSONClient(serverAddr,serverPort);
+
+/*
+if(autoUpdate) {
+}
+*/
+
+load(root + "lobby.js");

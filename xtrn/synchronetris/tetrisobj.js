@@ -1,83 +1,168 @@
-function Tetris(dataFile)
+/* master game data */
+function GameData() 
 {
-	this.timer=new Timer("\1y\1h");
-	this.players=[];
-	this.status=-1;
-	this.lastupdate=-1;
-	this.garbage=true;
-	this.update=true;
-	this.winner=false;
-	//this.dataFile;		
-	//this.gameNumber;
+	this.profiles={};
+	this.games={};
+	this.boards={};
+	this.online={};
 	
-	this.init=function()
-	{
-		if(dataFile) {
-			this.dataFile=dataFile;
-			this.loadGame();
-		} else {
-			this.setFileInfo();
+	this.loadGames=function() {
+		this.games = client.read(game_id,"games",1);
+		if(!this.games)
+			this.games = {};
+	}
+	this.loadPlayers=function() {
+		this.profiles=client.read(game_id,"profiles",1);
+		if(!this.profiles)
+			this.profiles = {};
+		if(!this.profiles[user.alias]) {
+			var p = new Profile(user.alias);
+			this.profiles[p.name] = p;
+			client.write(game_id,"profiles."+p.name,p,2);
 		}
 	}
-	this.setFileInfo=function()
-	{
-		var gNum=1;
-		if(gNum<10) gNum="0"+gNum;
-		while(file_exists(root + "tetris" + gNum + ".ini")) {
-			gNum++;
-			if(gNum<10) gNum="0"+gNum;
-		}
-		var fName=root + "tetris" + gNum + ".ini";
-		this.dataFile=fName;
-		this.gameNumber=parseInt(gNum,10);
+	this.who=function() {
+		this.online=client.who(game_id,"games");
 	}
-	this.loadGame=function()
-	{
-		//LOAD GAME TABLE - BASIC DATA
-		var file=new File(this.dataFile);
-		this.lastupdate=file_date(file.name);
-		if(!file_exists(file.name)) return false;
-		file.open("r",true);
-		
-		var created=file.iniGetValue(null,"created");
-		if(created > 0) {
-			var current=time();
-			var difference=current-created;
-			this.timer.init(20-difference);
-		}
-
-		this.gameNumber=Number(file.iniGetValue(null,"gameNumber"));
-		this.status=file.iniGetValue(null,"status");
-		var plist=file.iniGetObject("players");
-		for(var p in plist) {
-			if(!this.players[p]) this.players[p]=new Player(players.getAlias(p),plist[p]);
-			else this.players[p].active=plist[p];
-		}
-		this.update=true;
-		log("loaded game: " + this.gameNumber);
-		file.close();
+	this.storeGameStatus=function(gameNumber,status) {
+		this.games[gameNumber].status = status;
+		client.write(game_id,"games." + gameNumber + ".status", status, 2);
 	}
-	this.redraw=function()
-	{
-		this.board.draw();
-		this.currentPiece.draw();
+	this.storeGameWinner=function(gameNumber,winner) {
+		this.games[gameNumber].winner = winner;
+		this.profiles[winner].wins++;
+		client.write(game_id,"games." + gameNumber + ".winner", winner,2);
+		client.write(game_id,"games." + gameNumber + ".raceTime", raceTime,2);
+		client.write(game_id,"profiles." + winner + ".wins", this.profiles[winner].wins,2);
 	}
-
-	this.init();
+	this.addPlayer=function(gameNumber,profile) {
+		var player = new Player(profile.name,profile.avatar,profile.color);
+		this.games[gameNumber].players[player.name] = player;
+		client.write(game_id,"games." + gameNumber + ".players." + player.name,	player,2);
+	}
+	this.delPlayer=function(gameNumber,profile) {
+		delete this.games[gameNumber].players[profile.name];
+		client.remove(game_id, "games." + gameNumber + ".players." + profile.name, 2);
+	}
+	
+	this.loadGames();
+	this.loadPlayers();
+	this.who();
 }
-function Mini(fg,bg,grid)
+/* player score and other information */
+function Profile(name) 
 {
-	this.grid=grid;
-	this.fg=fg;
-	this.bg=bg;
+	this.name=name;
+	this.wins=0;
+	this.losses=0;
 }
+/* in-game player object */
+function Player(name)
+{
+	this.name=name;
+	this.ready=false;
+}
+/* individual game data */
+function Game(gameNumber) 
+{
+	this.gameNumber=gameNumber;
+	this.players={};
+	this.garbage=settings.GARBAGE;
+	this.status=status.WAITING;
+	this.pieces=[];
+}
+/* lobby game icon and status */
+function GameInfo(x,y) 
+{
+	this.frame = new Frame(x,y,18,10,BG_BLACK+CYAN,frame);
+	this.open = function() {
+		this.frame.open();
+	}
+	this.close = function() {
+		this.frame.close();
+	}
+	this.frame.load(root + "icon.bin",18,6);
+}
+/* game board */
+function GameBoard(frame,name,x,y) 
+{
+	this.name=name;
+	this.lines=0;
+	this.score=0;
+	this.level=1;
+	this.active=true;
+	this.swapped=false;
+	this.currentPiece;
+	this.nextPiece;
+	this.holdPiece;
+	this.grid;
+	
+	this.frame=new Frame(x,y,26,22,undefined,frame);
+	this.stack = new Frame(x+1,y,20,21,undefined,this.frame);
+	this.open = function() {
+		this.frame.open();
+	}
+	this.close = function() {
+		this.frame.close();
+	}
+	
+	this.frame.load(root + "board.bin",26,22);
+}
+/* game menu controller */
+function Menu(items,frame,hk_color,text_color) 
+{								
+	this.items=[];
+	this.frame=frame;
+	this.hk_color=hk_color;
+	this.text_color=text_color;
+	
+	this.disable=function(item)
+	{
+		this.items[item].enabled=false;
+		this.draw();
+	}
+	this.enable=function(item)
+	{
+		this.items[item].enabled=true;
+		this.draw();
+	}
+	this.add=function(items)
+	{
+		for(i=0;i<items.length;i++) {
+			hotkey=get_hotkey(items[i]);
+			this.items[hotkey.toUpperCase()]=new Item(items[i],hotkey,hk_color,text_color);
+		}
+	}
+	this.draw=function()
+	{
+		var str="";
+		for each(var i in this.items)
+			if(i.enabled==true) str+=i.text + " ";
+		this.frame.clear();
+		this.frame.putmsg(str);
+	}
+	
+	function Item(item,hotkey,hk_color,text_color)
+	{								
+		this.enabled=true;
+		this.hotkey=hotkey;
+		this.text=item.replace(("~" + hotkey) , hk_color + hotkey + text_color);
+	}
+	function get_hotkey(item)
+	{
+		keyindex=item.indexOf("~")+1;
+		return item.charAt(keyindex);
+	}	
+	this.add(items);
+}
+/* tetris piece */
 function Piece(id,fg,bg,u,d,l,r)
 {
 	//this.attr=fg+bg;
 	this.attr=fg+BG_BLACK;
 	this.ch="\xDB\xDB";
 	this.id=id;
-	this.orientation=[u,r,d,l];
+	this.direction=[u,r,d,l];
 
 	this.x=4;
 	this.y=0;
@@ -97,186 +182,11 @@ function Piece(id,fg,bg,u,d,l,r)
 		}
 	}
 }
-function GameBoard(name,x,y)
+/* miniature piece */
+function Mini(id,fg,bg,grid)
 {
-	log("creating board for: " + name);
-	this.x=x;
-	this.y=y;
-
-	this.name=name;
-	this.score=0;
-	this.lines=0;
-	this.level=1;
-	this.active=true;
-	this.swapped=false;
-	
-	this.background=new Graphic(26,22);
-	this.background.load(root + "board.bin");
-	this.grid=getMatrix(20,10);
-	//this.currentPiece;
-	//this.nextPiece;
-	//this.holdPiece;
-	
-	this.drawBackground=function()
-	{
-		this.background.draw(this.x,this.y);
-	}
-	this.drawBoard=function() 
-	{
-		var startx=this.x+1;
-		var starty=this.y+1;
-		
-		for(var y=0;y<this.grid.length;y++) {
-			for(var x=0;x<this.grid[y].length;x++) {
-				if(this.grid[y][x]>0) {
-					getAttr(this.grid[y][x]);
-					console.gotoxy(startx+(x*2), starty+y);
-					console.putmsg("\xDB\xDB",P_SAVEATR);
-				}
-			}
-		}
-	}
-	this.drawScore=function()
-	{
-		console.gotoxy(this.x,1);
-		console.pushxy();
-		console.putmsg(printPadded("\1y\1h" + this.name,19) + printPadded("\1h" + this.score,6,"\1n\1r0","right"));
-		console.popxy();
-		console.down();
-		console.putmsg("\1nLEVEL \1h: " + printPadded("\1h" + this.level,4,"\1n\1r0","right") + " \1nLINES \1h: " + printPadded("\1h" + this.lines,4,"\1n\1r0","right"));
-	}
-	this.clearBoard=function()
-	{
-		clearBlock(this.x+1,this.y+1,20,20);
-	}
-	this.drawPiece=function()
-	{
-		if(!this.currentPiece) return;
-		var piece=this.currentPiece;
-		var startx=this.x+1;
-		var starty=this.y+1;
-		var grid=piece.orientation[piece.o];
-
-		console.attributes=piece.attr;
-		for(var y=0;y<grid.length;y++) {
-			for(var x=0;x<grid[y].length;x++) {
-				if(grid[y][x] > 0) {
-					var xoffset=(piece.x+x)*2;
-					var yoffset=piece.y+y;
-					console.gotoxy(startx+xoffset,starty+yoffset);
-					console.putmsg(piece.ch,P_SAVEATR);
-				}
-			}
-		}
-		console.home();
-	}
-	this.drawNext=function()
-	{
-		if(!this.nextPiece) return;
-		console.gotoxy(this.x + 22,this.y + 3);
-		var piece=loadMini(this.nextPiece);
-		console.attributes=piece.fg;
-		console.pushxy();
-		for(var x=0;x<piece.grid.length;x++) {
-			console.putmsg(piece.grid[x],P_SAVEATR);
-			console.popxy();
-			console.down();
-			console.pushxy();
-		}
-	}
-	this.drawHold=function()
-	{
-		if(!this.holdPiece) return;
-		console.gotoxy(this.x + 22,this.y + 9);
-		var piece=loadMini(this.holdPiece);
-		console.attributes=piece.fg;
-		console.pushxy();
-		for(var x=0;x<piece.grid.length;x++) {
-			console.putmsg(piece.grid[x],P_SAVEATR);
-			console.popxy();
-			console.down();
-			console.pushxy();
-		}
-	}
-	this.unDrawPiece=function()
-	{
-		if(!this.currentPiece) return;
-		var piece=this.currentPiece;
-		var startx=this.x+1;
-		var starty=this.y+1;
-		var grid=piece.orientation[piece.o];
-
-		console.attributes=ANSI_NORMAL;
-		
-		for(var y=0;y<grid.length;y++) {
-			for(var x=0;x<grid[y].length;x++) {
-				if(grid[y][x] > 0) {
-					var xoffset=(piece.x+x)*2;
-					var yoffset=piece.y+y;
-					console.gotoxy(startx+xoffset,starty+yoffset);
-					console.putmsg("  ",P_SAVEATR);
-				}
-			}
-		}
-	}
-}
-function PlayerList()
-{
-	this.players=[];
-	this.prefix=system.qwk_id + ".";
-	
-	this.storePlayer=function(id)
-	{
-		var player=this.players[id];
-		var pFile=new File(root + "players.ini");
-		pFile.open("r+"); 
-		pFile.iniSetValue(id,"wins",player.wins);
-		pFile.iniSetValue(id,"losses",player.losses);
-		pFile.close();
-		sendFiles(pFile.name);
-	}
-	this.loadPlayers=function()
-	{
-		var update=false;
-		var pFile=new File(root + "players.ini");
-		pFile.open(file_exists(pFile.name) ? "r+":"w+",true); 
-		
-		if(!pFile.iniGetValue(this.prefix + user.alias,"name")) {
-			pFile.iniSetObject(this.prefix + user.alias,new Score(user.alias));
-			update=true;
-		}
-		var players=pFile.iniGetSections();
-		for(player in players)	{
-			this.players[players[player]]=pFile.iniGetObject(players[player]);
-		}
-		pFile.close();
-		if(update) sendFiles(pFile.name);
-	}
-	this.getPlayer=function(id)
-	{
-		return this.players[id];
-	}
-	this.getAlias=function(id)
-	{
-		return id.substr(id.indexOf(".")+1);
-	}
-	this.getPlayerID=function(name)
-	{
-		return(this.prefix + name);
-	}
-}
-function Score(name,wins,losses)
-{
-	this.name=name;
-	this.wins=wins?wins:0;
-	this.losses=losses?losses:0;
-}
-function Player(name,active)
-{
-	this.name=name;
-	this.active=active;
-}
-function Packet(func)
-{
-	this.func=func;
+	this.grid=grid;
+	this.id=id;
+	this.fg=fg;
+	this.bg=bg;
 }
