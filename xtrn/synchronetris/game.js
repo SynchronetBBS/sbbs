@@ -2,7 +2,8 @@
 function playGame(profile,game) {
 
 	/* variables and shit */
-	var menu, status, direction, queue, last_update, gameFrame, localPlayer, pause, players;
+	var menu, status, direction, queue, last_update, 
+		gameFrame, localPlayer, pause, players, ready;
 
 	/* main shit */
 	function open() {
@@ -76,7 +77,7 @@ function playGame(profile,game) {
 				break;
 			}
 			
-			if(!localPlayer.active || localPlayer.currentPiece == undefined) 
+			if(!localPlayer.active || localPlayer.currentPiece == undefined || !everyoneReady()) 
 				continue;
 			
 			switch(k) {
@@ -147,6 +148,13 @@ function playGame(profile,game) {
 	}
 
 	/* init shit */
+	function everyoneReady() {
+		for each(var p in players) {
+			if(!p.ready)
+				return false;
+		}
+		return true;
+	}
 	function initPlayers() {
 		players = {};
 		var x=1;
@@ -278,8 +286,13 @@ function playGame(profile,game) {
 				break;
 			}
 		}
-		else {
-			//TODO: handle subscribe/unsubscribe/etc...
+		else if(packet.oper == "SUBSCRIBE") {
+			if(players[packet.nick])
+				players[packet.nick].ready = true;
+		}
+		else if(packet.oper == "UNSUBSCRIBE") {
+			if(players[packet.nick])
+				players[packet.nick].ready = false;
 		}
 	}
 
