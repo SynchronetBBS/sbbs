@@ -3,7 +3,7 @@ function playGame(profile,game) {
 
 	/* variables and shit */
 	var menu, status, direction, queue, last_update, 
-		gameFrame, localPlayer, pause, players, ready;
+		gameFrame, localPlayer, pause, players, readyMsg;
 
 	/* main shit */
 	function open() {
@@ -22,6 +22,15 @@ function playGame(profile,game) {
 		drawScore(localPlayer);
 	}
 	function close() {
+		if(localPlayer) {
+			if(countMembers(players) > 1) {
+				if(game.winner == localPlayer.name) 
+					scoreWin();
+				else
+					scoreLoss();
+			}
+			saveScore();
+		}
 		client.unsubscribe(game_id,"metadata." + game.gameNumber);
 	}
 	function cycle() {
@@ -35,7 +44,7 @@ function playGame(profile,game) {
 			return;
 		last_update=Date.now();
 
-		if(!localPlayer || !localPlayer.active) 
+		if(!localPlayer || !localPlayer.active || !everyoneReady()) 
  			return;
 			
 		//TODO: this might not be necessary anymore
@@ -150,8 +159,15 @@ function playGame(profile,game) {
 	/* init shit */
 	function everyoneReady() {
 		for each(var p in players) {
-			if(!p.ready)
+			if(!p.ready) {
+				if(!readyMsg)
+					readyMsg = showMessage("Waiting for players");
 				return false;
+			}
+		}
+		if(readyMsg) {
+			readyMsg.close();
+			delete readyMsg;
 		}
 		return true;
 	}
@@ -222,7 +238,7 @@ function playGame(profile,game) {
 			data.grid=localPlayer.grid;
 			break;
 		default:
-			log("Unknown tetris data not sent");
+			log(LOG_WARNING,"Unknown tetris data not sent: " + cmd);
 			break;
 		}
 		data.gameNumber=game.gameNumber;
@@ -282,8 +298,8 @@ function playGame(profile,game) {
 				drawBoard(p);
 				break;
 			default:
-				log("Unknown tetris data type received");
-				log("packet: " + data.toSource());
+				log(LOG_WARNING,"Unknown tetris data type received");
+				log(LOG_WARNING,"packet: " + data.toSource());
 				break;
 			}
 		}
@@ -972,18 +988,21 @@ function playGame(profile,game) {
 			endGame();
 		}
 	}
-	function scoreWin(score) {
+	function scoreWin() {
 		profile.wins++;
-		if(score > profile.score)
-			profile.score = score;
+	}
+	function scoreLoss() {
+		profile.losses++;
+	}
+	function saveScore() {
+		if(localPlayer.score > profile.score)
+			profile.score = localPlayer.score;
+		if(localPlayer.lines > profile.lines) 
+			profile.lines = localPlayer.lines;
+		if(localPlayer.level > profile.level) 
+			profile.level = localPlayer.level;
 		client.write(game_id,"profiles." + localPlayer.name,profile,2);
 	}
-	function scoreLoss(score) {
-		profile.losses++;
-		if(score > profile.score)
-			profile.score = score;
-		client.write(game_id,"profiles." + localPlayer.name,profile,2);
-	}	
 	function endGame() {
 		game.status=status.FINISHED;
 		client.write(game_id,"games." + game.gameNumber + ".status",game.status,2);

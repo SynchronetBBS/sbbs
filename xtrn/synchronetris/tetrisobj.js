@@ -24,17 +24,6 @@ function GameData()
 	this.who=function() {
 		this.online=client.who(game_id,"games");
 	}
-	this.storeGameStatus=function(gameNumber,status) {
-		this.games[gameNumber].status = status;
-		client.write(game_id,"games." + gameNumber + ".status", status, 2);
-	}
-	this.storeGameWinner=function(gameNumber,winner) {
-		this.games[gameNumber].winner = winner;
-		this.profiles[winner].wins++;
-		client.write(game_id,"games." + gameNumber + ".winner", winner,2);
-		client.write(game_id,"games." + gameNumber + ".raceTime", raceTime,2);
-		client.write(game_id,"profiles." + winner + ".wins", this.profiles[winner].wins,2);
-	}
 	this.addPlayer=function(gameNumber,profile) {
 		var player = new Player(profile.name,profile.avatar,profile.color);
 		this.games[gameNumber].players[player.name] = player;
@@ -54,6 +43,8 @@ function Profile(name)
 {
 	this.name=name;
 	this.score=0;
+	this.lines=0;
+	this.level=0;
 	this.wins=0;
 	this.losses=0;
 }

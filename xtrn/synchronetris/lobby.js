@@ -271,16 +271,16 @@ var lobby=(function() {
 
 	/* show rankings */
 	function showScores()	{
-		var scoreFrame = new Frame(16,6,50,14,BG_BLUE + YELLOW,frame);
+		var scoreFrame = new Frame(16,6,57,14,BG_BLUE + YELLOW,frame);
 		var count = 0;
 		var scores_per_page = 10;
-		var list = sortScoresByWins();
+		var list = sortScores("score");
 		scoreFrame.open();
 		for each(var player in list) {
-			if(player.wins == 0)
-				continue;
+			//if(player.wins == 0)
+			//	continue;
 			if(count > 0 && count%scores_per_page == 0) {
-				scoreFrame.gotoxy(1,24);
+				//scoreFrame.gotoxy(1,24);
 				scoreFrame.center("\1r\1h<SPACE to continue>");
 				scoreFrame.draw();
 				while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
@@ -289,10 +289,10 @@ var lobby=(function() {
 			if(count++%scores_per_page == 0) {
 				scoreFrame.crlf();
 				scoreFrame.putmsg("\1w\1h" + 
-					format(" %3s %-25s %4s %13s","###","NAME","WINS","HIGH SCORE") + "\r\n");
+					format(" %3s %-25s %4s %6s %6s %6s","###","NAME","WINS","LEVEL","SCORE","LINES") + "\r\n");
 			}
 			scoreFrame.putmsg("\1w\1y" + 
-				formatScore(count,player.name,player.wins,player.score) + "\r\n");
+				formatScore(count,player.name,player.wins,player.level,player.score,player.lines) + "\r\n");
 		}
 		scoreFrame.end();
 		scoreFrame.center("\1r\1h<SPACE to continue>");
@@ -300,15 +300,15 @@ var lobby=(function() {
 		while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
 		scoreFrame.delete();
 	}
-
-	/* sort scores */
-	function sortScoresByWins() {
-		return sortListByProperty(data.profiles,"wins");
+	
+	/* format score display */
+	function formatScore(num,name,wins,level,score,lines) {
+		return format(" \1c%3d \1y%-25s %4d %6d %6d %6d",num,name,wins,level,score,lines); 
 	}
-
+	
 	/* sort scores */
-	function sortScoresByTime() {
-		return sortListByProperty(data.profiles,"best_time").reverse();
+	function sortScores(property) {
+		return sortListByProperty(data.profiles,property);
 	}
 
 	/* show game help */
