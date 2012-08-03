@@ -53,6 +53,7 @@ function GameData()
 function Profile(name) 
 {
 	this.name=name;
+	this.score=0;
 	this.wins=0;
 	this.losses=0;
 }
@@ -87,6 +88,7 @@ function GameInfo(x,y)
 function GameBoard(frame,name,x,y) 
 {
 	this.name=name;
+	this.ready=false;
 	this.lines=0;
 	this.score=0;
 	this.level=1;

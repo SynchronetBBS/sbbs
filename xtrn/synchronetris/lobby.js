@@ -265,7 +265,7 @@ var lobby=(function() {
 				tile.frame.cleartoeol();
 				tile.frame.crlf();
 			}
-			tile.frame.crlf();qq
+			tile.frame.crlf();
 		}
 	}
 
@@ -289,10 +289,10 @@ var lobby=(function() {
 			if(count++%scores_per_page == 0) {
 				scoreFrame.crlf();
 				scoreFrame.putmsg("\1w\1h" + 
-					format(" %3s %-25s %4s %13s","###","NAME","WINS","BEST TIME") + "\r\n");
+					format(" %3s %-25s %4s %13s","###","NAME","WINS","HIGH SCORE") + "\r\n");
 			}
 			scoreFrame.putmsg("\1w\1y" + 
-				formatScore(count,player.name,player.wins,player.best_time) + "\r\n");
+				formatScore(count,player.name,player.wins,player.score) + "\r\n");
 		}
 		scoreFrame.end();
 		scoreFrame.center("\1r\1h<SPACE to continue>");
@@ -324,7 +324,7 @@ var lobby=(function() {
 	/* toggle player readiness on/off */
 	function toggleReady() {
 		var player = data.games[gnum].players[profile.name];
-		player.ready = player.ready?false:true;
+		player.ready = !player.ready;
 		client.write(game_id,"games."+gnum+".players."+profile.name+".ready",player.ready,2);
 		data.updated=true;
 	}
@@ -335,7 +335,7 @@ var lobby=(function() {
 			return false;
 		if(!data.games[gnum].players[profile.name])
 			return false;
-		if(data.games[gnum].status != status.PLAYING)
+		if(data.games[gnum].status !== status.PLAYING)
 			return false;
 		return (data.games[gnum].players[profile.name].ready);
 	}
@@ -351,10 +351,8 @@ var lobby=(function() {
 			listGames();
 			data.updated = false;
 		}
-		if(readyToStart()) {
+		if(readyToStart()) 
 			playGame(profile,data.games[gnum]);
-			//leaveGame();
-		}
 		if(frame.cycle())
 			input.popxy();
 	}

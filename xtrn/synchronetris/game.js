@@ -2,7 +2,7 @@
 function playGame(profile,game) {
 
 	/* variables and shit */
-	var menu, status, direction, queue, last_update, gameFrame, localPlayer;
+	var menu, status, direction, queue, last_update, gameFrame, localPlayer, pause, players;
 
 	/* main shit */
 	function open() {
@@ -14,10 +14,8 @@ function playGame(profile,game) {
 		last_update=Date.now();
 		gameFrame=new Frame(undefined,undefined,undefined,undefined,undefined,frame);
 		gameFrame.open();
-		initBoards();
-		localPlayer = game.players[profile.name];
-		localPlayer.grid = getMatrix(21,10);
-		client.callback = 
+		initPlayers();
+		pause = settings.pause;
 		queue = client.read(game_id,"metadata." + game.gameNumber + ".queue",1);
 		client.subscribe(game_id,"metadata." + game.gameNumber);
 		drawScore(localPlayer);
@@ -31,14 +29,15 @@ function playGame(profile,game) {
 			processUpdate(client.updates.shift());
 		frame.cycle();
 		
-		if(!localPlayer || !localPlayer.active) 
- 			return;
-			
 		var difference=Date.now()-last_update;
-		if(difference<settings.pause) 
+		if(difference<pause) 
 			return;
 		last_update=Date.now();
 
+		if(!localPlayer || !localPlayer.active) 
+ 			return;
+			
+		//TODO: this might not be necessary anymore
 		/* if the player needs a new piece, give 'em one! */
 		if(localPlayer.currentPiece == undefined) {
 			getNewPiece();
@@ -148,21 +147,24 @@ function playGame(profile,game) {
 	}
 
 	/* init shit */
-	function initBoards() {
+	function initPlayers() {
+		players = {};
 		var x=1;
 		var y=1;
 		var index=0;
 		var width=27;
 		if(game.players[profile.name]) {
-			game.players[profile.name]=new GameBoard(gameFrame,profile.name,x,y);
-			game.players[profile.name].open();
+			players[profile.name]=new GameBoard(gameFrame,profile.name,x,y);
+			players[profile.name].open();
 			index++;
+			localPlayer = players[profile.name];
+			localPlayer.grid = getMatrix(21,10);
 		}
 		for(var p in game.players) {
 			if(p == profile.name) 
 				continue;
-			game.players[p]=new GameBoard(gameFrame,game.players[p].name,x + (index*width),y);
-			game.players[p].open();
+			players[p]=new GameBoard(gameFrame,game.players[p].name,x + (index*width),y);
+			players[p].open();
 			index++;
 		}
 	}
@@ -226,7 +228,7 @@ function playGame(profile,game) {
 	function processUpdate(packet) {
 		if(packet.oper == "WRITE" && packet.data) {
 			var data = packet.data;
-			var p = game.players[data.playerName];
+			var p = players[data.playerName];
 			switch(data.cmd) {
 			case "MOVE":
 				unDrawCurrent(p);
@@ -243,6 +245,7 @@ function playGame(profile,game) {
 			case "GARBAGE":
 				loadGarbage(data.lines,data.space);
 				drawBoard(localPlayer);
+				drawCurrent(p);
 				send("GRID");
 				break;
 			case "SET":
@@ -283,11 +286,28 @@ function playGame(profile,game) {
 	/* game board shit */
 	function loadGarbage(lines,space) {
 		for(var l=0;l<lines;l++) {
-			localPlayer.grid.push(getGarbageLine(space));
+			/* pull the top line off the stack */
 			var topLine = localPlayer.grid.shift();
+			
+			/* if the current falling piece is interfering
+			push the top line back on the stack and set the piece
+			in the stack and remove the top line again 
+			(seems kludgy) */
+			if(checkInterference(localPlayer)) {
+				localPlayer.grid.unshift(topLine);
+				setPiece();
+				topLine = localPlayer.grid.shift();
+			}
+			
+			/* add a line of garbage at the bottom */
+			localPlayer.grid.push(getGarbageLine(space));
+			
+			/* if the top line we removed contains pieces,
+			the player is now dead */
 			for each(var i in topLine) {
 				if(i > 0) {
 					killPlayer(localPlayer.name);
+					send("DEAD");
 					return;
 				}
 			}
@@ -356,7 +376,7 @@ function playGame(profile,game) {
 
 		if(localPlayer.lines/settings.lines >= localPlayer.level) {
 			localPlayer.level++;
-			settings.pause*=settings.pause_reduction;
+			pause*=settings.pause_reduction;
 		}
 		
 		drawScore(localPlayer);
@@ -910,29 +930,27 @@ function playGame(profile,game) {
 			}
 			f.close();
 			killPlayer(localPlayer.name);
+			send("DEAD");
 		}
 		gameFrame.close();
 		return true;
 	}
 	function activePlayers() {
 		var count=0;
-		for each(var p in game.players) {
+		for each(var p in players) {
 			if(p.active) 
 				count++;
 		}
 		return count;
 	}
 	function killPlayer(playerName) {	
-		if(!game.players[playerName]) {
-			log(LOG_WARNING,"player does not exist: " + playerName);
-			return false;
-		}
-		game.players[playerName].active=false;
-		send("DEAD");
-		
-		if(activePlayers()<=1) {
-			for (var p in game.players) {
-				if(game.players[p].active)  {
+		players[playerName].active=false;
+		findWinner(); 
+	}
+	function findWinner() {
+		if(activePlayers() <= 1) {
+			for(var p in players) {
+				if(players[p].active)  {
 					game.winner=p;
 					break;
 				}
@@ -940,8 +958,20 @@ function playGame(profile,game) {
 			endGame();
 		}
 	}
+	function scoreWin(score) {
+		profile.wins++;
+		if(score > profile.score)
+			profile.score = score;
+		client.write(game_id,"profiles." + localPlayer.name,profile,2);
+	}
+	function scoreLoss(score) {
+		profile.losses++;
+		if(score > profile.score)
+			profile.score = score;
+		client.write(game_id,"profiles." + localPlayer.name,profile,2);
+	}	
 	function endGame() {
-		game.status=2;
+		game.status=status.FINISHED;
 		client.write(game_id,"games." + game.gameNumber + ".status",game.status,2);
 	}
 			

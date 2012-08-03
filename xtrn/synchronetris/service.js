@@ -58,17 +58,18 @@ function processUpdate(update) {
 			case "GAMES":
 				gameNumber = p[0];
 				break;
-			case "PIECES":
-				break;
 			}
 		}
+		
+		var child = p.shift();
 		if(update.data == undefined)
-			delete obj[p.shift()];
+			delete obj[child];
 		else
-			obj[p.shift()] = update.data;
-		if(playerName != undefined && gameNumber != undefined) 
-			validateGamePlayers(update,gameNumber,playerName);
-		updateGames();
+			obj[child] = update.data;
+		if(child.toUpperCase() == "STATUS")
+			updateStatus(update,gameNumber);
+		else if(playerName !== undefined && gameNumber !== undefined) 
+			updateGame(update,gameNumber,playerName);
 		break;
 	}
 }
@@ -109,7 +110,7 @@ function deletePlayer(gameNumber,playerName) {
 }
 
 /* ensure there arent too few or too many players in a game */
-function validateGamePlayers(update,gameNumber,playerName) {
+function updateGame(update,gameNumber,playerName) {
 	var game = data.games[gameNumber];
 	if(!game.players) {
 		deleteGame(gameNumber);
@@ -122,18 +123,31 @@ function validateGamePlayers(update,gameNumber,playerName) {
 		deletePlayer(gameNumber,playerName);
 	else if(pcount >= settings.min_players) {
 		var ready = getReady(game);
-		if(ready && game.status == status.WAITING)
+		if(ready && game.status == status.WAITING || game.status == status.FINISHED)
 			startTimer(game);
-		else if(!ready && game.status == status.PLAYING && pcount == 1)
-			deletePlayer(gameNumber,playerName);
+		// else if(!ready && game.status == status.PLAYING && pcount == 1)
+			// deletePlayer(gameNumber,playerName);
+		else if(!ready && game.status == status.STARTING) 
+			stopTimer(game);
 	}
 }
 
-/* check the status of all games (after an update) */
-function updateGames() {
-	for each(var game in data.games) 
-		if(game.status == status.STARTING && !getReady(game)) 
-			stopTimer(game);
+/* handle game status update */
+function updateStatus(update,gameNumber) {
+	var game = data.games[gameNumber];
+	switch(update.data) {
+	case status.FINISHED:
+		resetPlayers(game);
+		break;
+	}
+}
+
+/* reset all players to "not ready" */
+function resetPlayers(game) {
+	for each(var p in game.players) {
+		p.ready = false;
+		client.write(game_id,"games." + game.gameNumber + ".players." + p.name + ".ready",p.ready,2);
+	}
 }
 
 /* stop the countdown */
@@ -141,14 +155,14 @@ function stopTimer(game) {
 	if(data.timers[game.gameNumber])
 		data.timers[game.gameNumber].abort = true;
 	game.status = status.WAITING;
-	client.write(game_id,"games." + game.gameNumber + ".status",status.WAITING,2);
+	client.write(game_id,"games." + game.gameNumber + ".status",game.status,2);
 }
 
 /* start the countdown */
 function startTimer(game) {
 	data.timers[game.gameNumber] = timer.addEvent(settings.start_delay,false,startGame,[game]);
 	game.status = status.STARTING;
-	client.write(game_id,"games." + game.gameNumber + ".status",status.STARTING,2);
+	client.write(game_id,"games." + game.gameNumber + ".status",game.status,2);
 }
 
 /* check a game for player readiness */
@@ -209,13 +223,6 @@ function main() {
 			client.cycle();
 		timer.cycle();
 	}
-}
-
-/* race object */
-function Board(gameNumber,players,garbage) {
-	this.gameNumber = gameNumber;
-	this.players = players;
-	this.garbage = garbage;
 }
 
 init();
