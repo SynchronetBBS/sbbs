@@ -167,6 +167,7 @@ function playGame(profile,game) {
 			index++;
 			localPlayer = players[profile.name];
 			localPlayer.grid = getMatrix(21,10);
+			localPlayer.ready = true;
 		}
 		for(var p in game.players) {
 			if(p == profile.name) 
