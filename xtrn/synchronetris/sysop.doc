@@ -21,26 +21,28 @@ Sample configuration in Synchronet (SBBSCFG.EXE):
 18: Time Options...
 	
 NOTE:	It is recommended that you check frequently for updates 
-		from the Synchronet CVS repository located at:
-		
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/xtrn/synchronetris/
-		
-		LINKS:
-		
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/tetris.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/tetrisobj.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/menu.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/timer.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/board.bin
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/icon.bin
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/exit.bin
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/lobby.bin
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/sysop.doc
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/interbbs.doc
-		
-		Replace any outdated local copies with the latest releases from these links.
-		(by default, these files are to be located in your 'XTRN/SYNCHRONETRIS/' path)
+	from the Synchronet CVS repository located at:
 	
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/xtrn/synchronetris/
+	
+	LINKS:
+	
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/tetris.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/game.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/lobby.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/tetrisobj.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/board.bin
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/icon.bin
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/exit.bin
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/lobby.bin
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/sysop.doc
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/interbbs.doc
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/instructions.bin
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/synchronetris.bin
+	
+	Replace any outdated local copies with the latest releases from these links.
+	(by default, these files are to be located in your 'XTRN/SYNCHRONETRIS/' path)
+
 *****UPDATING YOUR LOCAL LIBRARIES******
 
 Before you attempt to install the inter-BBS service, it is recommended that you
@@ -49,16 +51,6 @@ with the latest files from the Synchronet CVS repository at:
 	
 	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/
 	
-	RECOMMENDED UPDATES:
-	
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/funclib.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/calendar.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/clock.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/msgwndw.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/scrollbar.js
-		
-	NOTE:	Replace any outdated local copies with the latest releases from these links.
-
 Please report any bugs, issues or questions to: mcmlxxix at bbs dot thebrokenbubble dot com
 
 

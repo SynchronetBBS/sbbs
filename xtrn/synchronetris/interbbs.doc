@@ -8,22 +8,18 @@ with the latest files from the Synchronet CVS repository at:
 	
 	RECOMMENDED UPDATES:
 	
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/irc_protocol.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/socket_bg.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/layout.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/inputline.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/funclib.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/calendar.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/event-timer.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/timer.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/clock.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/msgwndw.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/scrollbar.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/cvs.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-sock.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-client.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/chateng.js
-		
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/layout.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/inputline.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/funclib.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/calendar.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/event-timer.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/clock.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/scrollbar.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-sock.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-client.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-chat.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/frame.js
+	
 	NOTE:	Replace any outdated local copies with the latest release from the links.
 
 *****SETTING UP INTER-BBS SERVICE WITH SYNCHRONET*****
@@ -34,17 +30,17 @@ this program in inter-BBS mode, and can be downloaded from the Synchronet CVS re
 
 	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/
 
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/json-service.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-db.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-sock.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/ctrl/json-service.ini
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/json-service.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-db.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-sock.js
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/ctrl/json-service.ini
 	
 	NOTE: 	Placing these files in their corresponding local equivalent locations
 			will make configuration much easier.
 
-[CHATENG.JS]
+[JSON-CHAT.JS]
 
-	This handles all inbound/outbound chat messages, and packages them for delivery via the irc protocol.
+	This handles all inbound/outbound chat messages, and packages them for delivery.
 	this also contains the necessary objects to implement a chat room (windowed or fullscreen). 
 	
 [JSON-DB.JS]
