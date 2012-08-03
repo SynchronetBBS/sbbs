@@ -311,6 +311,16 @@ var lobby=(function() {
 		return sortListByProperty(data.profiles,"best_time").reverse();
 	}
 
+	/* show game help */
+	function showHelp()	{
+		var hFrame = new Frame(11,3,60,19,undefined,frame);
+		hFrame.open();
+		hFrame.load(root + "instructions.bin",60,19);
+		hFrame.draw();
+		while(console.inkey(K_NOECHO|K_NOCRLF,1) !== " ");
+		hFrame.delete();
+	}
+
 	/* leave a game */
 	function leaveGame() {
 		delete data.games[gnum].players[profile.name];
