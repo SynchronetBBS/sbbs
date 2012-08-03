@@ -126,7 +126,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 			if(usrgrps && (ch&0xf)*10U<=usrsubs[curgrp] && (ch&0xf)) {
 				i=(ch&0xf)*10;
 				ch=getkey(K_UPPER);
-				if(!isdigit(ch) && ch!=CR) {
+				if(!isdigit((uchar)ch) && ch!=CR) {
 					ungetkey(ch);
 					cursub[curgrp]=(i/10)-1;
 					return(0); 
@@ -141,7 +141,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 				if(i*10<=usrsubs[curgrp]) { 	/* 100+ subs */
 					i*=10;
 					ch=getkey(K_UPPER);
-					if(!isdigit(ch) && ch!=CR) {
+					if(!isdigit((uchar)ch) && ch!=CR) {
 						ungetkey(ch);
 						cursub[curgrp]=(i/10)-1;
 						return(0); 
@@ -176,7 +176,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 			if((ch&0xf)*10U<=usrgrps && (ch&0xf)) {
 				i=(ch&0xf)*10;
 				ch=getkey(K_UPPER);
-				if(!isdigit(ch) && ch!=CR) {
+				if(!isdigit((uchar)ch) && ch!=CR) {
 					ungetkey(ch);
 					curgrp=(i/10)-1;
 					return(0); 
