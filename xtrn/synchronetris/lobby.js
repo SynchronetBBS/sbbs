@@ -271,7 +271,7 @@ var lobby=(function() {
 
 	/* show rankings */
 	function showScores()	{
-		var scoreFrame = new Frame(16,6,57,14,BG_BLUE + YELLOW,frame);
+		var scoreFrame = new Frame(12,6,57,14,BG_BLUE + YELLOW,frame);
 		var count = 0;
 		var scores_per_page = 10;
 		var list = sortScores("score");

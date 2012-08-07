@@ -12,13 +12,13 @@ function playGame(profile,game) {
 		/* directional constants */
 		direction = {UP:0,DOWN:1,LEFT:2,RIGHT:3};
 		
+		client.subscribe(game_id,"metadata." + game.gameNumber);
 		last_update=Date.now();
 		gameFrame=new Frame(undefined,undefined,undefined,undefined,undefined,frame);
 		gameFrame.open();
 		initPlayers();
 		pause = settings.pause;
 		queue = client.read(game_id,"metadata." + game.gameNumber + ".queue",1);
-		client.subscribe(game_id,"metadata." + game.gameNumber);
 		drawScore(localPlayer);
 	}
 	function close() {
@@ -192,6 +192,13 @@ function playGame(profile,game) {
 			players[p].open();
 			index++;
 		}
+		var online = onlinePlayers();
+		for each(var p in online) {
+			if(p.nick == profile.name) 
+				continue;
+			if(players[p.nick])
+				players[p.nick].ready = true;
+		}
 	}
 	function getMatrix(h,w)	{
 		var grid=new Array(h);
@@ -298,18 +305,16 @@ function playGame(profile,game) {
 				drawBoard(p);
 				break;
 			default:
-				log(LOG_WARNING,"Unknown tetris data type received");
-				log(LOG_WARNING,"packet: " + data.toSource());
 				break;
 			}
 		}
 		else if(packet.oper == "SUBSCRIBE") {
-			if(players[packet.nick])
-				players[packet.nick].ready = true;
+			if(players[packet.data.nick])
+				players[packet.data.nick].ready = true;
 		}
 		else if(packet.oper == "UNSUBSCRIBE") {
-			if(players[packet.nick])
-				players[packet.nick].ready = false;
+			if(players[packet.data.nick])
+				players[packet.data.nick].ready = false;
 		}
 	}
 
@@ -951,6 +956,11 @@ function playGame(profile,game) {
 	}
 	
 	/* other shit */
+	function onlinePlayers() {
+		var online = client.who(game_id,"metadata." + game.gameNumber);
+		log(online.toSource());
+		return online;
+	}
 	function handleExit() {
 		if(game.status == status.PLAYING) {
 			var f = showMessage("\1c\1hQuit game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
