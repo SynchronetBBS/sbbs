@@ -1766,24 +1766,24 @@ var test={
 			},
 			{
 				title:"B-001-21-06",
-				question:"Which of the following answers is *not* correct? Canadian radio amateurs may apply for a CEPT (Conférence européenne des administrations des postes et des télécommunications) international radio amateur licence for operation in any of the 32 CEPT (Conférence européenne des administrations des postes et des télécommunications) countries, and:",
+				question:"Which of the following answers is *not* correct? Canadian radio amateurs may apply for a CEPT (Conference europeenne des administrations des postes et des telecommunications) international radio amateur licence for operation in any of the 32 CEPT (Conference europeenne des administrations des postes et des telecommunications) countries, and:",
 				answer:0,
 				answers:[
-				"foreign radio amateurs, holding CEPT (Conférence européenne des administrations des postes et des télécommunications) Class 2 licences, receive the same privileges in Canada as Canadians with Basic and 12 WPM (Words per minute) qualifications",
-					"Canadian radio amateurs, holding Basic and 12 w.p.m. (Words per minute) qualifications, will be granted CEPT (Conférence européenne des administrations des postes et des télécommunications) Class 1 recognition",
-					"Canadian radio amateurs, holding Basic Qualification only, will be granted CEPT (Conférence européenne des administrations des postes et des télécommunications) Class 2 recognition (operation only above 30 MHz (Megahertz))",
-					"foreign radio amateurs, holding CEPT (Conférence européenne des administrations des postes et des télécommunications) Class 1 licences, receive the same privileges in Canada as Canadians with Basic and 12 w.p.m. (Words per minute) qualifications"
+				"foreign radio amateurs, holding CEPT (Conference europeenne des administrations des postes et des telecommunications) Class 2 licences, receive the same privileges in Canada as Canadians with Basic and 12 WPM (Words per minute) qualifications",
+					"Canadian radio amateurs, holding Basic and 12 w.p.m. (Words per minute) qualifications, will be granted CEPT (Conference europeenne des administrations des postes et des telecommunications) Class 1 recognition",
+					"Canadian radio amateurs, holding Basic Qualification only, will be granted CEPT (Conference europeenne des administrations des postes et des telecommunications) Class 2 recognition (operation only above 30 MHz (Megahertz))",
+					"foreign radio amateurs, holding CEPT (Conference europeenne des administrations des postes et des telecommunications) Class 1 licences, receive the same privileges in Canada as Canadians with Basic and 12 w.p.m. (Words per minute) qualifications"
 				],
 			},
 			{
 				title:"B-001-21-07",
-				question:"Which of the following answers is *not* correct? Canadian radio Canadian CEPT (Conférence européenne des administrations des postes et des télécommunications) international radio licences for operation in any of the 32 CEPT (Conférence européenne des administrations des postes et des télécommunications) member amateurs may apply for countries, and:",
+				question:"Which of the following answers is *not* correct? Canadian radio Canadian CEPT (Conference europeenne des administrations des postes et des telecommunications) international radio licences for operation in any of the 32 CEPT (Conference europeenne des administrations des postes et des telecommunications) member amateurs may apply for countries, and:",
 				answer:2,
 				answers:[
-				"foreign radio amateurs, holding CEPT (Conférence européenne des administrations des postes et des télécommunications) Class 1 licences, will receive recognition in Canada equal to Basic and 12 w.p.m. (Words per minute)",
-					"Canadian radio amateurs, holding Basic Qualification only, will be granted CEPT (Conférence européenne des administrations des postes et des télécommunications) Class 2 recognition (operation above 30 MHz (Megahertz))",
-					"foreign radio amateurs, holding CEPT (Conférence européenne des administrations des postes et des télécommunications) Class 1 licences, will receive recognition in Canada equal to Basic Qualification only",
-					"Canadian radio amateurs, holding Basic and 12 w.p.m. (Words per minute) qualifications, will be granted CEPT (Conférence européenne des administrations des postes et des télécommunications) Class 1 recognition"
+				"foreign radio amateurs, holding CEPT (Conference europeenne des administrations des postes et des telecommunications) Class 1 licences, will receive recognition in Canada equal to Basic and 12 w.p.m. (Words per minute)",
+					"Canadian radio amateurs, holding Basic Qualification only, will be granted CEPT (Conference europeenne des administrations des postes et des telecommunications) Class 2 recognition (operation above 30 MHz (Megahertz))",
+					"foreign radio amateurs, holding CEPT (Conference europeenne des administrations des postes et des telecommunications) Class 1 licences, will receive recognition in Canada equal to Basic Qualification only",
+					"Canadian radio amateurs, holding Basic and 12 w.p.m. (Words per minute) qualifications, will be granted CEPT (Conference europeenne des administrations des postes et des telecommunications) Class 1 recognition"
 				],
 			},
 		],
