@@ -136,7 +136,7 @@ else {
 		if(pct >= test.pass) {
 			write('YOU PASSED');
 			if(test.honours != undefined && pct >= test.honours)
-				write('WITH HONOURS');
+				write(' WITH HONOURS');
 			write('!');
 		}
 		else {
