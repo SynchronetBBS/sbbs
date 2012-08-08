@@ -8,22 +8,12 @@ load("sbbsdefs.js");
 var game_id = "synchronetris";
 var timer = new Timer();
 var client = new JSONClient("localhost",10088);
+var settings = loadSettings();
 
 var data = { 
 	games:client.read(game_id,"games",1),
 	players:client.read(game_id,"players",1),
 	timers:{}
-};
-
-var settings = {
-	garbage:true,
-	min_players:1,
-	max_players:3,
-	pause:1000,
-	pause_reduction:0.7,
-	base_points:5,
-	lines:10,
-	start_delay:5000
 };
 
 var status={
@@ -232,6 +222,14 @@ function init() {
 	if(!data.players)
 		data.players = {};
 	log(LOG_INFO,"Synchronetris background service initialized");
+}
+
+function loadSettings() {
+	var file=new File(root + "synchronetris.ini");
+	file.open('r',true);
+	var data=file.iniGetObject(null);
+	file.close();
+	return data;
 }
 
 /* main loop */
