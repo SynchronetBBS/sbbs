@@ -100,6 +100,13 @@ function playGame(profile,game) {
 				if(!localPlayer.active || localPlayer.currentPiece == undefined) 
 					continue;
 				
+				/* if the piece stack has reached the top of the screen, kill */
+				if(checkInterference()) {
+					killPlayer(localPlayer.name);
+					send("DEAD");
+					continue;
+				} 
+				
 				switch(k) {
 				case " ":
 				case "0":

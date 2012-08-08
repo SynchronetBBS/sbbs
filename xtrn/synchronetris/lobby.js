@@ -78,12 +78,20 @@ var lobby=(function() {
 			if(hotkeys) {
 				k = k.toUpperCase();
 				switch(k) {
+				case KEY_HOME:
+					index-=4;
+					if(index<1)
+						index=1;
+					listGames();
+					break;
+				case KEY_END:
+					index+=4;
+					listGames();
+					break;
 				case KEY_LEFT:
 				case KEY_RIGHT:
 				case KEY_UP:
 				case KEY_DOWN:
-				case KEY_HOME:
-				case KEY_END:
 					layout.getcmd(k);
 					break;
 				}
@@ -291,10 +299,11 @@ var lobby=(function() {
 
 	/* show rankings */
 	function showScores()	{
+		data.loadPlayers();
 		var scoreFrame = new Frame(12,6,57,14,BG_BLUE + YELLOW,frame);
 		var count = 0;
 		var scores_per_page = 10;
-		var list = sortScores("score");
+		var list = sortScores(data.profiles,"score");
 		scoreFrame.open();
 		for each(var player in list) {
 			//if(player.wins == 0)
@@ -327,8 +336,8 @@ var lobby=(function() {
 	}
 	
 	/* sort scores */
-	function sortScores(property) {
-		return sortListByProperty(data.profiles,property);
+	function sortScores(scores,property) {
+		return sortListByProperty(scores,property);
 	}
 
 	/* show game help */
