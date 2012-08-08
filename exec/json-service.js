@@ -482,7 +482,7 @@ engine = new (function() {
 		this.name = name;
 		this.dir = dir;
 		this.queue = undefined;
-		this.db = new JSONdb(this.dir+this.name+".json");
+		this.db;
 		this.init = function() {
 			/* load module service files */
 			if(file_exists(this.dir + "service.js")) {
@@ -492,6 +492,7 @@ engine = new (function() {
 					log(LOG_ERROR,"error loading module: " + this.name);
 				}
 			}
+			this.db = new JSONdb(this.dir+this.name+".json");
 		}
 		this.init();
 	}
