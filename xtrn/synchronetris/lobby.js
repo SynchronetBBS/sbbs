@@ -29,7 +29,7 @@ var lobby=(function() {
 		bbs.sys_status|=SS_MOFF;
 		bbs.sys_status|=SS_PAUSEOFF;
 		splash("synchronetris.bin");
-		status = {WAITING:-1,STARTING:0,PLAYING:1,FINISHED:2};
+		status = {WAITING:-1,STARTING:0,SYNCING:1,PLAYING:2,FINISHED:3};
 		data = new GameData();
 		chat = new JSONChat(user.number,undefined,serverAddr,serverPort);
 		settings=client.read(game_id,"settings",1);
@@ -145,32 +145,42 @@ var lobby=(function() {
 
 	/* process subscription data updates */
 	function processUpdate(update) {
-		try {
-			switch(update.oper) {
-			case "WRITE":
-				var p=update.location.split(".");
-				var obj=data;
-				while(p.length > 1) {
-					var child=p.shift();
-					if(!obj[child])
-						obj[child] = {};
-					obj=obj[child];
+		var playerName = undefined;
+		var gameNumber = undefined;
+		
+		switch(update.oper) {
+		case "WRITE":
+			var p=update.location.split(".");
+			var obj=data;
+			while(p.length > 1) {
+				var child=p.shift();
+				if(!obj[child])
+					obj[child] = {};
+				obj=obj[child];
+				switch(child.toUpperCase()) {
+				case "PLAYERS":
+					playerName = p[0];
+					break;
+				case "GAMES":
+					gameNumber = p[0];
+					break;
 				}
-				if(update.data == undefined)
-					delete obj[p.shift()];
-				else
-					obj[p.shift()] = update.data;
-				data.updated=true;
-				break;
-			case "SUBSCRIBE":
-			case "UNSUBSCRIBE":
-				data.online=client.who(game_id,"games");
-				data.updated=true;
-				break;
 			}
-		} catch(e) {
-			log(LOG_ERROR,e);
-			log(LOG_WARNING,update.toSource());
+			var child=p.shift();
+			if(update.data == undefined)
+				delete obj[child];
+			else
+				obj[child] = update.data;
+			data.updated=true;
+			
+			if(child.toUpperCase() == "STATUS")
+				updateStatus(update.data,gameNumber);
+			break;
+		case "SUBSCRIBE":
+		case "UNSUBSCRIBE":
+			data.online=client.who(game_id,"games");
+			data.updated=true;
+			break;
 		}
 	}
 
@@ -234,16 +244,26 @@ var lobby=(function() {
 			var gameStr = "\1n\1cGame \1c\1h" + game.gameNumber;
 			var statusStr = "";
 			
-			if(game.status == status.WAITING)
+			switch(game.status) {
+			case status.WAITING:
 				statusStr = "  \1n\1c[waiting]";
-			else if(game.status == status.STARTING) 
+				break;
+			case status.STARTING:
 				statusStr = " \1n\1y[starting]";
-			else if(game.status == status.PLAYING)
+				break;
+			case status.SYNCING:
+				statusStr = " \1n\1y[syncing]";
+				break;
+			case status.PLAYING:
 				statusStr = "  \1n\1g[playing]";
-			else if(game.status == status.FINISHED)
+				break;
+			case status.FINISHED:
 				statusStr = " \1k\1h[finished]";
-			else 
+				break;
+			default:
 				statusStr = "    \1n\1r[error]";
+				break;
+			}
 			
 			tile.open();
 			tile.frame.home();
@@ -339,15 +359,17 @@ var lobby=(function() {
 		data.updated=true;
 	}
 
-	/* check the status of your current game */
-	function readyToStart() {
-		if(!data.games[gnum])
+	/* process a game status update */
+	function updateStatus(statusUpdate,gameNumber) {
+		if(!data.games[gameNumber])
 			return false;
-		if(!data.games[gnum].players[profile.name])
-			return false;
-		if(data.games[gnum].status !== status.PLAYING)
-			return false;
-		return (data.games[gnum].players[profile.name].ready);
+		if(data.games[gameNumber].players[profile.name]) {
+			switch(statusUpdate) {
+			case status.SYNCING:
+				playGame(profile,data.games[gameNumber]);
+				break;
+			}
+		}
 	}
 		
 	/* update data sources and display objects */
@@ -361,8 +383,6 @@ var lobby=(function() {
 			listGames();
 			data.updated = false;
 		}
-		if(readyToStart()) 
-			playGame(profile,data.games[gnum]);
 		if(frame.cycle())
 			input.popxy();
 	}

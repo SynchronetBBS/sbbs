@@ -1,5 +1,4 @@
 var root = argv[0];
-js.branch_limit = 0;
 
 load("json-client.js");
 load("event-timer.js");
@@ -12,7 +11,6 @@ var client = new JSONClient("localhost",10088);
 
 var data = { 
 	games:client.read(game_id,"games",1),
-	boards:client.read(game_id,"boards",1),
 	players:client.read(game_id,"players",1),
 	timers:{}
 };
@@ -31,36 +29,41 @@ var settings = {
 var status={
 	WAITING:-1,
 	STARTING:0,
-	PLAYING:1,
-	FINISHED:2
+	SYNCING:1,
+	PLAYING:2,
+	FINISHED:3
 }
 
 /* process inbound updates */
 function processUpdate(update) {
 	var playerName = undefined;
 	var gameNumber = undefined;
-	var raceNumber = undefined;
+	var p=update.location.split(".");
+	
+	var obj=data;
+	while(p.length > 1) {
+		var child=p.shift();
+		obj=obj[child];
+		switch(child.toUpperCase()) {
+		case "PLAYERS":
+			playerName = p[0];
+			break;
+		case "GAMES":
+		case "METADATA":
+			gameNumber = p[0];
+			break;
+		}
+	}
 	
 	switch(update.oper.toUpperCase()) {
+	case "SUBSCRIBE":
+		if(gameNumber)
+			updatePlayers(gameNumber,update.data);
+		break;
 	case "UNSUBSCRIBE":
 		handleDisco(update);
 		break;
 	case "WRITE":
-		var p=update.location.split(".");
-		var obj=data;
-		while(p.length > 1) {
-			var child=p.shift();
-			obj=obj[child];
-			switch(child.toUpperCase()) {
-			case "PLAYERS":
-				playerName = p[0];
-				break;
-			case "GAMES":
-				gameNumber = p[0];
-				break;
-			}
-		}
-		
 		var child = p.shift();
 		if(update.data == undefined)
 			delete obj[child];
@@ -123,10 +126,8 @@ function updateGame(update,gameNumber,playerName) {
 		deletePlayer(gameNumber,playerName);
 	else if(pcount >= settings.min_players) {
 		var ready = getReady(game);
-		if(ready && game.status == status.WAITING || game.status == status.FINISHED)
+		if(ready && (game.status == status.WAITING || game.status == status.FINISHED))
 			startTimer(game);
-		// else if(!ready && game.status == status.PLAYING && pcount == 1)
-			// deletePlayer(gameNumber,playerName);
 		else if(!ready && game.status == status.STARTING) 
 			stopTimer(game);
 	}
@@ -142,11 +143,23 @@ function updateStatus(update,gameNumber) {
 	}
 }
 
+/* monitor player subscriptions to games */
+function updatePlayers(gameNumber,subscription) {
+	var game = data.games[gameNumber];
+	game.players[subscription.nick].synced = true;
+	for each(var p in game.players) {
+		if(!p.synced)
+			return;
+	}
+	startGame(game);
+}
+
 /* reset all players to "not ready" */
 function resetPlayers(game) {
 	for each(var p in game.players) {
 		p.ready = false;
-		client.write(game_id,"games." + game.gameNumber + ".players." + p.name + ".ready",p.ready,2);
+		client.write(game_id,"games." + game.gameNumber + ".players." + 
+			p.name + ".ready",p.ready,2);
 	}
 }
 
@@ -160,7 +173,7 @@ function stopTimer(game) {
 
 /* start the countdown */
 function startTimer(game) {
-	data.timers[game.gameNumber] = timer.addEvent(settings.start_delay,false,startGame,[game]);
+	data.timers[game.gameNumber] = timer.addEvent(settings.start_delay,false,startSync,[game]);
 	game.status = status.STARTING;
 	client.write(game_id,"games." + game.gameNumber + ".status",game.status,2);
 }
@@ -174,17 +187,24 @@ function getReady(game) {
 	return true;
 }
 
-/* generate a game and start */
-function startGame(game) {
+/* flag game for player sync */
+function startSync(game) {
 	/* verify that the game is still ready */
 	if(game.status == status.STARTING) {
-		log("starting game: " + game.gameNumber);
-		client.lock(game_id,"games." + game.gameNumber + ".status",2);
+		game.status = status.SYNCING;
+		client.subscribe(game_id,"metadata." + game.gameNumber);
 		client.write(game_id,"metadata." + game.gameNumber + ".queue",generatePieces(),2);
-		game.status = status.PLAYING;
-		client.write(game_id,"games." + game.gameNumber + ".status",status.PLAYING);
-		client.unlock(game_id,"games." + game.gameNumber + ".status");
+		client.write(game_id,"games." + game.gameNumber + ".status",game.status,2);
 	}
+}
+
+/* generate a game and start */
+function startGame(game) {
+	game.status = status.PLAYING;
+	client.unsubscribe(game_id,"metadata." + game.gameNumber);
+	client.lock(game_id,"games." + game.gameNumber + ".status",2);
+	client.write(game_id,"games." + game.gameNumber + ".status",game.status);
+	client.unlock(game_id,"games." + game.gameNumber + ".status");
 }
 
 /* generate a game */
@@ -209,8 +229,6 @@ function init() {
 	client.callback = processUpdate;
 	if(!data.games)
 		data.games = {};
-	if(!data.boards)
-		data.boards = {};
 	if(!data.players)
 		data.players = {};
 	log(LOG_INFO,"Synchronetris background service initialized");

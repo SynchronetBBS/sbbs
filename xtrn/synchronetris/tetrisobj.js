@@ -5,6 +5,7 @@ function GameData()
 	this.games={};
 	this.boards={};
 	this.online={};
+	this.updated=true;
 	
 	this.loadGames=function() {
 		this.games = client.read(game_id,"games",1);

@@ -8,21 +8,20 @@ function playGame(profile,game) {
 	/* main shit */
 	function open() {
 		/* game status constants */
-		status = {WAITING:-1,STARTING:0,PLAYING:1,FINISHED:2};
+		status = {WAITING:-1,STARTING:0,SYNCING:1,PLAYING:2,FINISHED:3};
 		/* directional constants */
 		direction = {UP:0,DOWN:1,LEFT:2,RIGHT:3};
-		
-		client.subscribe(game_id,"metadata." + game.gameNumber);
 		last_update=Date.now();
+		pause = settings.pause;
+		queue = client.read(game_id,"metadata." + game.gameNumber + ".queue",1);
 		gameFrame=new Frame(undefined,undefined,undefined,undefined,undefined,frame);
 		gameFrame.open();
 		initPlayers();
-		pause = settings.pause;
-		queue = client.read(game_id,"metadata." + game.gameNumber + ".queue",1);
 		drawScore(localPlayer);
+		client.subscribe(game_id,"metadata." + game.gameNumber);
 	}
 	function close() {
-		if(localPlayer) {
+		if(localPlayer != undefined) {
 			if(countMembers(players) > 1) {
 				if(game.winner == localPlayer.name) 
 					scoreWin();
@@ -44,7 +43,7 @@ function playGame(profile,game) {
 			return;
 		last_update=Date.now();
 
-		if(!localPlayer || !localPlayer.active || !everyoneReady()) 
+		if(!localPlayer || !localPlayer.active || game.status !== status.PLAYING) 
  			return;
 			
 		//TODO: this might not be necessary anymore
@@ -73,8 +72,7 @@ function playGame(profile,game) {
 		}
 	}
 	function main()	{
-		while(game.status == status.PLAYING) {
-		
+		while(!js.terminated) {
 			cycle();
 			
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER,5);
@@ -86,91 +84,96 @@ function playGame(profile,game) {
 				break;
 			}
 			
-			if(!localPlayer.active || localPlayer.currentPiece == undefined || !everyoneReady()) 
-				continue;
+			if(game.status == status.SYNCING) {
 			
-			switch(k) {
-			case " ":
-			case "0":
-				if(!localPlayer.swapped) {
-					localPlayer.swapped=true;
-					swapPiece();
+				if(!readyMsg)
+					readyMsg = showMessage("Waiting for players");
+			}
+			
+			else if(game.status == status.PLAYING) {
+			
+				if(readyMsg) {
+					readyMsg.close();
+					delete readyMsg;
 				}
-				break;
-			case "8":
-			case KEY_UP:
-				fullDrop();
-				send("MOVE");
-				setPiece();
-				getLines();
-				getNewPiece();
-				break;
-			case "2":
-			case KEY_DOWN:
-				if(move(direction.DOWN))
+				
+				if(!localPlayer.active || localPlayer.currentPiece == undefined) 
+					continue;
+				
+				switch(k) {
+				case " ":
+				case "0":
+					if(!localPlayer.swapped) {
+						localPlayer.swapped=true;
+						swapPiece();
+					}
+					break;
+				case "8":
+				case KEY_UP:
+					fullDrop();
 					send("MOVE");
-				else {
 					setPiece();
 					getLines();
 					getNewPiece();
+					break;
+				case "2":
+				case KEY_DOWN:
+					if(move(direction.DOWN))
+						send("MOVE");
+					else {
+						setPiece();
+						getLines();
+						getNewPiece();
+					}
+					break;
+				case "4":
+				case KEY_LEFT:
+					if(move(direction.LEFT)) 
+						send("MOVE");
+					break;
+				case "6":
+				case KEY_RIGHT:
+					if(move(direction.RIGHT)) 
+						send("MOVE");
+					break;
+				case "5":
+					if(rotate(direction.RIGHT)) 
+						send("MOVE");
+					break;
+				case "7":
+				case "A":
+					if(rotate(direction.LEFT)) 
+						send("MOVE");
+					break;
+				case "9":
+				case "D":
+					if(rotate(direction.RIGHT)) 
+						send("MOVE");
+					break;
+				default:
+					break;
 				}
-				break;
-			case "4":
-			case KEY_LEFT:
-				if(move(direction.LEFT)) 
-					send("MOVE");
-				break;
-			case "6":
-			case KEY_RIGHT:
-				if(move(direction.RIGHT)) 
-					send("MOVE");
-				break;
-			case "5":
-				if(rotate(direction.RIGHT)) 
-					send("MOVE");
-				break;
-			case "7":
-			case "A":
-				if(rotate(direction.LEFT)) 
-					send("MOVE");
-				break;
-			case "9":
-			case "D":
-				if(rotate(direction.RIGHT)) 
-					send("MOVE");
-				break;
-			default:
+			}
+			
+			else if(game.status == status.FINISHED) {
+				var msg = ["Game Over"];
+				if(game.winner == localPlayer.name)
+					msg.push("\1g\1hYou win!");
+				else 
+					msg.push("\1r\1hYou lose!");
+				msg.push("\1n\1yPress [\1hQ\1n\1y] to exit");
+				showMessage(msg);
+				while(console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Q");
 				break;
 			}
 		}
 		
-		var msg = ["Game Over"];
-		if(game.winner == localPlayer.name)
-			msg.push("\1g\1hYou win!");
-		else 
-			msg.push("\1r\1hYou lose!");
-		msg.push("\1n\1yPress [\1hQ\1n\1y] to exit");
-		showMessage(msg);
-		while(console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Q");
+		/* shutdown gameplay and return to lobby */
 		gameFrame.close();
 		return;
 	}
 
 	/* init shit */
-	function everyoneReady() {
-		for each(var p in players) {
-			if(!p.ready) {
-				if(!readyMsg)
-					readyMsg = showMessage("Waiting for players");
-				return false;
-			}
-		}
-		if(readyMsg) {
-			readyMsg.close();
-			delete readyMsg;
-		}
-		return true;
-	}
 	function initPlayers() {
 		players = {};
 		var x=1;
@@ -191,13 +194,6 @@ function playGame(profile,game) {
 			players[p]=new GameBoard(gameFrame,game.players[p].name,x + (index*width),y);
 			players[p].open();
 			index++;
-		}
-		var online = onlinePlayers();
-		for each(var p in online) {
-			if(p.nick == profile.name) 
-				continue;
-			if(players[p.nick])
-				players[p.nick].ready = true;
 		}
 	}
 	function getMatrix(h,w)	{
@@ -241,6 +237,8 @@ function playGame(profile,game) {
 			break;
 		case "PLAYER":
 			break;
+		case "READY":
+			break;
 		case "GRID":
 			data.grid=localPlayer.grid;
 			break;
@@ -254,28 +252,30 @@ function playGame(profile,game) {
 	}
 	function send(cmd)	{
 		var d=packageData(cmd);
-		if(d) 
-			client.write(game_id,"metadata." + game.gameNumber + ".players." + localPlayer.name,d,2);
+		if(d) {
+			client.write(game_id,"metadata." + game.gameNumber + ".players." + 
+				localPlayer.name,d,2);
+		}
 	}
-	function processUpdate(packet) {
-		if(packet.oper == "WRITE" && packet.data) {
-			var data = packet.data;
-			var p = players[data.playerName];
-			switch(data.cmd) {
+	function processUpdate(update) {
+		if(update.oper == "WRITE" && update.data) {
+			var d = update.data;
+			var p = players[d.playerName];
+			switch(d.cmd) {
 			case "MOVE":
 				unDrawCurrent(p);
-				p.currentPiece.x=data.x;
-				p.currentPiece.y=data.y;
-				p.currentPiece.o=data.o;
+				p.currentPiece.x=d.x;
+				p.currentPiece.y=d.y;
+				p.currentPiece.o=d.o;
 				drawCurrent(p);
 				break;
 			case "CURRENT":
 				unDrawCurrent(p);
-				p.currentPiece=loadPiece(data.piece);
+				p.currentPiece=loadPiece(d.piece);
 				drawCurrent(p);
 				break;
 			case "GARBAGE":
-				loadGarbage(data.lines,data.space);
+				loadGarbage(d.lines,d.space);
 				drawBoard(localPlayer);
 				drawCurrent(p);
 				send("GRID");
@@ -284,37 +284,46 @@ function playGame(profile,game) {
 				delete p.currentPiece;
 				break;
 			case "DEAD":
-				killPlayer(data.playerName);
+				killPlayer(d.playerName);
 				break;
 			case "NEXT":
-				p.nextPiece=loadMini(data.piece);
+				p.nextPiece=loadMini(d.piece);
 				drawNext(p);
 				break;
 			case "HOLD":
-				p.holdPiece=loadMini(data.piece);
+				p.holdPiece=loadMini(d.piece);
 				drawHold(p);
 				break;
 			case "SCORE":
-				p.score=data.score;
-				p.lines=data.lines;
-				p.level=data.level;
+				p.score=d.score;
+				p.lines=d.lines;
+				p.level=d.level;
 				drawScore(p);
 				break;
 			case "GRID":
-				p.grid=data.grid;
+				p.grid=d.grid;
 				drawBoard(p);
 				break;
 			default:
+				var location = update.location.split(".");
+				if(location.length > 0) {
+					switch(location.pop().toUpperCase()) { 
+					case "STATUS":
+						game.status = update.data;
+						break;
+					case "WINNER":
+						game.winner = update.data;
+						break;
+					}
+				}
 				break;
 			}
 		}
-		else if(packet.oper == "SUBSCRIBE") {
-			if(players[packet.data.nick])
-				players[packet.data.nick].ready = true;
+		else if(update.oper == "SUBSCRIBE") {
+			/* player rejoining? */
 		}
-		else if(packet.oper == "UNSUBSCRIBE") {
-			if(players[packet.data.nick])
-				players[packet.data.nick].ready = false;
+		else if(update.oper == "UNSUBSCRIBE") {
+			/* player leaving? */
 		}
 	}
 
@@ -990,8 +999,9 @@ function playGame(profile,game) {
 	function findWinner() {
 		if(activePlayers() <= 1) {
 			for(var p in players) {
-				if(players[p].active)  {
+				if(players[p].active == true)  {
 					game.winner=p;
+					client.write(game_id,"games." + game.gameNumber + ".winner",game.winner,2);
 					break;
 				}
 			}
