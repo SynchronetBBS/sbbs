@@ -51,7 +51,7 @@ function processUpdate(update) {
 			updatePlayers(gameNumber,update.data);
 		break;
 	case "UNSUBSCRIBE":
-		handleDisco(update);
+		handleDisco(update.data);
 		break;
 	case "WRITE":
 		var child = p.shift();
@@ -62,13 +62,13 @@ function processUpdate(update) {
 		if(child.toUpperCase() == "STATUS")
 			updateStatus(update,gameNumber);
 		else if(playerName !== undefined && gameNumber !== undefined) 
-			updateGame(update,gameNumber,playerName);
+			updateGame(gameNumber,playerName);
 		break;
 	}
 }
 
 /* handle a player disconnection */
-function handleDisco(update) {
+function handleDisco(subscription) {
 	for each(var game in data.games) {
 		if(!game.players) {
 			deleteGame(game.gameNumber);
@@ -77,11 +77,11 @@ function handleDisco(update) {
 		var pcount = countMembers(game.players);
 		if(pcount == 0) 
 			deleteGame(game.gameNumber);
-		else if(game.players[update.data.nick]) {
+		else if(game.players[subscription.nick]) {
 			if(pcount == 1)
 				deleteGame(game.gameNumber);
 			else 
-				deletePlayer(game.gameNumber,update.data.nick);
+				deletePlayer(game.gameNumber,subscription.nick);
 		}
 	}
 }
@@ -103,7 +103,7 @@ function deletePlayer(gameNumber,playerName) {
 }
 
 /* ensure there arent too few or too many players in a game */
-function updateGame(update,gameNumber,playerName) {
+function updateGame(gameNumber,playerName) {
 	var game = data.games[gameNumber];
 	if(!game.players) {
 		deleteGame(gameNumber);
@@ -136,14 +136,16 @@ function updateStatus(update,gameNumber) {
 /* monitor player subscriptions to games */
 function updatePlayers(gameNumber,subscription) {
 	var game = data.games[gameNumber];
-	game.players[subscription.nick].synced = true;
-	for each(var p in game.players) {
-		if(!p.synced)
-			return;
+	if(game.status !== status.PLAYING) {
+		game.players[subscription.nick].synced = true;
+		for each(var p in game.players) {
+			if(!p.synced)
+				return;
+		}
+		startGame(game);
 	}
-	startGame(game);
 }
-
+	
 /* reset all players to "not ready" */
 function resetPlayers(game) {
 	for each(var p in game.players) {

@@ -145,9 +145,9 @@ var lobby=(function() {
 	function initLobby() {
 		gameList = [
 			new GameInfo(2,3),
-			new GameInfo(22,3),
+			new GameInfo(21,3),
 			new GameInfo(2,13),
-			new GameInfo(22,13)
+			new GameInfo(21,13)
 		];
 	}
 

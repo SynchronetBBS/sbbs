@@ -31,6 +31,7 @@ function playGame(profile,game) {
 			saveScore();
 		}
 		client.unsubscribe(game_id,"metadata." + game.gameNumber);
+		data.loadGames();
 	}
 	function cycle() {
 		client.cycle();
@@ -312,9 +313,24 @@ function playGame(profile,game) {
 				drawBoard(p);
 				break;
 			default:
-				var location = update.location.split(".");
-				if(location.length > 0) {
-					switch(location.pop().toUpperCase()) { 
+				var playerName = undefined;
+				var gameNumber = undefined;
+				var p=update.location.split(".");
+				
+				while(p.length > 1) {
+					var child=p.shift();
+					switch(child.toUpperCase()) {
+					case "PLAYERS":
+						playerName = p[0];
+						break;
+					case "GAMES":
+					case "METADATA":
+						gameNumber = p[0];
+						break;
+					}
+				}
+				if(gameNumber && gameNumber == game.gameNumber) {
+					switch(p.pop().toUpperCase()) { 
 					case "STATUS":
 						game.status = update.data;
 						break;
