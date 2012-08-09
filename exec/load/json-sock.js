@@ -8,7 +8,7 @@ Socket.prototype.time_offset = 0;
 /* largest receivable packet */
 Socket.prototype.max_recv = 131072;
 /* timeout for socket.recvline() */
-Socket.prototype.recv_wait = 1;
+Socket.prototype.recv_wait = 30;
 /* last ping sent */
 Socket.prototype.ping_sent = 0;
 
@@ -16,7 +16,8 @@ Socket.prototype.ping_sent = 0;
 Socket.prototype.sendJSON = function(object) {
 	try {
 		var data=JSON.stringify(object,this.replacer,this.space)+"\r\n";
-		this.send(data); 
+		if(!this.send(data)) 
+			log(LOG_ERROR,"send failed: " + data);
 		log(LOG_DEBUG,"-->" + this.descriptor + ": " + data);
 	} catch(e) {
 		log(LOG_ERROR,e);
