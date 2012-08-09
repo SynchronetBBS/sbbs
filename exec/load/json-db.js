@@ -132,8 +132,9 @@ function JSONdb (fileName) {
 			record.subtime = Date.now();
 			send_subscriber_updates(client,record,"SUBSCRIBE");
 		}
-		else {
-			this.error(client,errors.DUPLICATE_SUB);
+		else if(this.subscriptions[client.id][record.location]) {
+			log(LOG_WARNING,"duplicate subscription: " + client.id + "@" + record.location);
+			//this.error(client,errors.DUPLICATE_SUB);
 		}
 		return true;
     };
@@ -149,7 +150,8 @@ function JSONdb (fileName) {
 			send_subscriber_updates(client,record,"UNSUBSCRIBE");
 		}
 		else {
-			this.error(client,errors.INVALID_REQUEST);
+			log(LOG_WARNING,"invalid subscription: " + client.id + "@" + record.location);
+			//this.error(client,errors.INVALID_REQUEST);
 		}
 		return true;
     };
