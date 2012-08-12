@@ -142,7 +142,7 @@ function JSONdb (fileName) {
     /* unsubscribe a client from an object */
     this.unsubscribe = function(request,record) {
 		var client = request.client;
-		if(this.subscriptions[client.id][record.location]) {
+		if(this.subscriptions[client.id] && this.subscriptions[client.id][record.location]) {
 			delete record.shadow[record.property]._subscribers[client.id];
 			delete this.subscriptions[client.id][record.location];
 			if(count(this.subscriptions[client.id]) == 0)

@@ -77,7 +77,7 @@ function JSONClient(serverAddr,serverPort) {
 		CONNECTION_TIMEOUT:		10,
 		PING_INTERVAL:			60*1000,
 		PING_TIMEOUT:			10*1000,
-		SOCK_TIMEOUT:			10*1000,
+		SOCK_TIMEOUT:			30*1000,
 		TIMEOUT:				-1
 	};
         
