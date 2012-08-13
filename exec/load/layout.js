@@ -158,7 +158,7 @@ function Layout(frame) {
 		if(!cmd) 
 			return false;
 		switch(cmd.toUpperCase()) {
-		case "\t":
+		case '\x09': 
 			if(properties.views.length > 1) 
 				nextView();
 			return true;
@@ -446,6 +446,7 @@ function LayoutView(title,frame,parent) {
 			tab.getcmd = function(cmd) {
 				return this.tree.getcmd.call(tab.tree,cmd);
 			}
+			tab.hotkeys = true;
 			break;
 		case "CHAT":
 			if(typeof JSONChat == "undefined")
@@ -481,6 +482,25 @@ function LayoutView(title,frame,parent) {
 			}
 			properties.chat = tab.chat;
 			tab.frame.lf_strict = false;
+			tab.hotkeys = false;
+			break;
+		case "FRAME":
+			tab.getcmd = function(cmd) {
+				switch(cmd.toUpperCase()) {
+				case KEY_UP:
+					return this.frame.scroll(0,-1);
+				case KEY_DOWN:
+					return this.frame.scroll(0,1);
+				case KEY_LEFT:
+					return this.frame.scroll(-1,1);
+				case KEY_RIGHT:
+					return this.frame.scroll(1,0);
+				}
+			}
+			tab.hotkeys = true;
+			tab.frame.v_scroll=true;
+			tab.frame.h_scroll=true;
+			tab.frame.open();
 			break;
 		case "GRAPHIC":
 			//ToDo
@@ -629,7 +649,8 @@ function ViewTab(title,frame,parent) {
 		content:undefined
 	}
 	var settings={
-		active:false
+		active:false,
+		hotkeys:true
 	}
 	var frames={
 		main:undefined
@@ -660,7 +681,7 @@ function ViewTab(title,frame,parent) {
 	this.__defineGetter__("frame",function() {
 		return frames.main;
 	});
-	this.__defineGetter__("parent",function() {
+	this.__defineGetter__("parent",function() {	
 		return relations.parent;
 	});
 	
@@ -672,6 +693,12 @@ function ViewTab(title,frame,parent) {
 		if(settings.active) 
 			frames.main.top();
 		return true;
+	});
+	this.__defineGetter__("hotkeys",function() {
+		return settings.hotkeys;
+	});
+	this.__defineSetter__("hotkeys",function(hotkeys) {
+		settings.hotkeys = hotkeys;
 	});
 
 	/* default command handler 
