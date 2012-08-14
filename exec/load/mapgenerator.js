@@ -35,95 +35,48 @@ but only if the starting elevation matches the elevation of the specified starti
 
 */
 
+Math.sq = function(num) {
+	return num*num;
+}
+
 /* generate a land object of specified width, height, base elevation */
-function generateLand(width,height,base_elevation) { 
-	var a = {
-		map:[],
-		width:width,
-		height:height,
-		elevation:base_elevation
-	}; 
-	for(var w=0;w<width;w++) { 
-		a.map[w] = []; 
-		for(var h=0;h<height;h++) { 
-			a.map[w][h] = base_elevation; 
+function generateLand(width,height,base_elevation,num_hills) { 
+	var map = [];
+	
+	/* populate matrix with base elevation values */
+	for(var x=0;x<width;x++) { 
+		map[x] = []; 
+		for(var y=0;y<height;y++) { 
+			map[x][y] = base_elevation; 
 		} 
-	} 
-	return a; 
+	}
+	
+	/* generate specified number of "hills" */
+	for(var h=0;h<num_hills;h++) {
+		var x = random(width);
+		var y = random(height);
+		var radius = random(height)+1;
+		generateFeature(map,x,y,radius);
+	}
+	
+	/* ToDo: normalize? */
+	return map; 
 }
 
 /* generate a randomized feature (elevation int_change) on a land_object starting 
 from an optionally specified start_position */
-function generateFeature(fill_percent,int_change,land_object,start_position) { 
-	var totalSize = land.width*land.height; 
-	var featureSize = Math.floor(fill_percent * totalSize); 
-	var featureStack = [];
-	var elevation = land.elevation;
-	var position = {
-		x:random(land.width),
-		y:random(land.height)
-	};	
-
-	/* if we've been supplied a starting position, use it */
-	if(start_position) {
-		position = start_position;
-		elevation = land_object.map[position.x][position.y];
-	}
-	
-	/* set starting position */
-	land_object.map[position.x][position.y] = elevation + int_change;
-	featureStack.push(position);
-	
-	while(featureStack.length < featureSize) {
-	
-		/* generate a new random position */
-		position = {
-			x:random(land_object.width),
-			y:random(land_object.height)
-		};
-		
-		/* validate this position */
-		if(!validatePosition(position))
-			continue;
-		
-		/* this randomly chosen position is already of the desired feature type */
-		if(land_object.map[position.x][position.y] == elevation + int_change)
-			continue;
-		
-		var compass = getSurroundings(position,land);
-		for each(var direction in compass) {
-			/* a neighbor to this random position is of the desired feature */
-			if(land_object.map[direction.x][direction.y] == elevation + int_change) {
-				land_object.map[position.x][position.y] = elevation + int_change;
-				featureStack.push(position);
-				break;
-			}
+function generateFeature(map,xoff,yoff,radius) {
+	for(var y=-radius;y<radius;y++) {
+		var halfRow=Math.sqrt(Math.sq(radius)-Math.sq(y));
+		for(var x=-halfRow;x<halfRow;x++) {     
+			//var h = Math.sq(radius) - (Math.sq(x) + Math.sq(y));
+			var h = 1;
+			var xpos = Math.floor(x);
+			if(map[xoff+xpos] && map[xoff+xpos][yoff+y] >= 0)
+				map[xoff+xpos][yoff+y] += h;
+			if(map[xoff-xpos] && map[xoff-xpos][yoff+y] >= 0)
+				map[xoff-xpos][yoff+y] += h;
 		}
 	}
-
-	return featureStack;
-} 
-
-/* random() bug workaround */
-function validatePosition(position) {
-	/* if we received invalid random coordinates */
-	if(position.x < 0 || position.x >= land.width)
-		return false;
-	if(position.y < 0 || position.y >= land.height)
-		return false;
-	return true;
 }
 
-/* return all valid neighboring coordinates from a given position */
-function getSurroundings(position,land) {
-	var compass={};
-	if(position.x > 0)
-		compass.west = { x:position.x-1,y:position.y };
-	if(position.y > 0)
-		compass.north = { x:position.x,y:position.y-1 };
-	if(position.x < land.width-1)
-		compass.east = { x:position.x+1,y:position.y };
-	if(position.y < land.height-1)
-		compass.south = { x:position.x,y:position.y+1 };
-	return compass;
-}
