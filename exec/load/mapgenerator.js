@@ -3,35 +3,40 @@
 /* JavaScript Random Terrain Generator
    by MCMLXXIX (2012)
 
-//generate initial land mass
-var land = generateLand(20,10,0);
+USAGE:
 
-// generate first level of mountain
-var foothills = generateFeature(.50,1,land,{x:10,y:5}); true;
+var <variable> = generateLand( 
+	<width>, 
+	<height>, 
+	<base>, 
+	<hills>, 
+	<min_radius>, 
+	<max_radius>, 
+	<scale> 
+);
 
-// use the same starting point and choose a smaller percentage 
-// of land to increase the elevation
-var mountain = generateFeature(.30,2,land,{x:10,y:5}); true;
+width = the width of the map array
+height = the height of the map array
+base = the minimum elevation of the map
+hills = the number of hills to generate
+max_radius = the largest any single hill can be
+min_radius = the smallest any single hill can be
+scale = the scale of the map (max elevation relative to base)
 
-// same deal.. smaller percentage and bigger increase
-var peak = generateFeature(.15,3,land,{x:10,y:5}); true;
+EXAMPLE:
 
-00001111111330000000
-00000113113333300000
-00000033133633100000
-00000113333633000000
-00100133336666311000
-00111113366666111000
-00133336666666600110
-00003133636661111100
-00003103666611100000
-00000101066600100000
+var land = generateLand(20,10,0,9,10,1,10);
 
-generateFeature() returns an array containing coordinate objects
-representing every position that was modified in the operation
-
-Notice it adds the elevation change to the existing elevation,
-but only if the starting elevation matches the elevation of the specified starting position
+23333344678963322111
+33344444677763332111
+33433444677763332111
+33333444556654332110
+34444544455654333222
+44445544445554333221
+44445444444433201111
+44444434444333100111
+34443333444331100011
+33333333332110000000
 
 */
 
@@ -40,26 +45,47 @@ Math.sq = function(num) {
 }
 
 /* generate a land object of specified width, height, base elevation */
-function generateLand(width,height,base_elevation,num_hills) { 
+function generateLand(width,height,base,scale,hills,min_radius,max_radius) { 
 	var map = [];
+	
+	if(width == undefined || height == undefined)
+		throw("generateLand() requires, at minimum, width and height arguments");
+	if(base == undefined)
+		base = 0;
+	if(scale == undefined)
+		scale = 9;
+	if(hills == undefined)
+		hills = 20;
+	if(min_radius == undefined)
+		min_radius = 1;
+	if(max_radius == undefined)
+		max_radius = 10;
 	
 	/* populate matrix with base elevation values */
 	for(var x=0;x<width;x++) { 
 		map[x] = []; 
 		for(var y=0;y<height;y++) { 
-			map[x][y] = base_elevation; 
+			map[x][y] = 0; 
 		} 
 	}
 	
 	/* generate specified number of "hills" */
-	for(var h=0;h<num_hills;h++) {
+	for(var h=0;h<hills;h++) {
+		
+		/* pick a random starting position */
 		var x = random(width);
 		var y = random(height);
-		var radius = random(height)+1;
+		
+		/* pick a hill radius between min and max */
+		var radius = random(max_radius-min_radius)+min_radius;
+		
+		/* generate hill */
 		generateFeature(map,x,y,radius);
 	}
 	
-	/* ToDo: normalize? */
+	/* normalize elevation values to fit between base elevation and scale */
+	normalize(map,base,scale);
+	
 	return map; 
 }
 
@@ -80,3 +106,27 @@ function generateFeature(map,xoff,yoff,radius) {
 	}
 }
 
+/* normalize land within an acceptable range */
+function normalize(map,base,scale) {
+	var min;
+	var max;
+	
+	/* iterate map and find the min and max values */
+	for(var x=0;x<map.length;x++) {
+		for(var y=0;y<map[x].length;y++) {
+			if(!min || map[x][y] < min)
+				min = map[x][y];
+			if(!max || map[x][y] > max)
+				max = map[x][y];
+		}
+	}
+	
+	/* iterate map again and adjust values to fit scale */
+	var range = max - min;
+	for(var x=0;x<map.length;x++) {
+		for(var y=0;y<map[x].length;y++) {
+			var n = map[x][y]-min;
+			map[x][y] = ((n/range) * scale) + base;
+		}
+	}
+}
