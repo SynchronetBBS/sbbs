@@ -70,7 +70,7 @@ function TerrainGenerator() {
 	this.base = 0;
 	this.scale = 9;
 	this.min_radius=5;
-	this.max_radius=15;
+	this.max_radius=10;
 	
 	/* generate a land object of specified width, height, base elevation */
 	this.generate = function(width,height,hills) { 
@@ -100,25 +100,23 @@ function TerrainGenerator() {
 		var copy = copyMap(map);
 		
 		/* pick a hill radius between min and max */
-		if(!radius)
-			var radius = random(this.max_radius-this.min_radius)+this.min_radius;
+		if(radius == undefined)
+			radius = random(this.max_radius-this.min_radius)+this.min_radius;
 			
 		/* pick a random starting position */
-		if(!xoff)
-			xoff = random(copy.length);
-		if(!yoff)
-			yoff = random(copy[xoff].length);
+		if(yoff == undefined)
+			xoff = random(copy.length+(2*radius))-radius;
+		if(yoff == undefined)
+			yoff = random(copy[0].length+(2*radius))-radius;
 			
-		/* default to elevation increase */
-		if(!direction)
+		/* default elevation change */
+		if(direction == undefined) 
 			direction = 1;
 		
 		for(var y=-radius;y<radius;y++) {
 			var halfRow=Math.round(Math.sqrt(Math.sq(radius)-Math.sq(y)));
 			for(var x=-halfRow;x<halfRow;x++) {     
 				//var h = Math.sq(radius) - (Math.sq(x) + Math.sq(y));
-				if(!direction)
-					direction = 1;
 				if(copy[xoff+x] && copy[xoff+x][yoff+y] >= 0)
 					copy[xoff+x][yoff+y] += direction;
 			}
@@ -135,9 +133,9 @@ function TerrainGenerator() {
 		var min=false;
 		var max=false;
 		
-		if(!base)
+		if(base == undefined)
 			base = this.base;
-		if(!scale)
+		if(scale == undefined)
 			scale = this.scale;
 		
 		/* iterate map and find the min and max values */
@@ -151,7 +149,7 @@ function TerrainGenerator() {
 		}
 		
 		/* iterate map again and adjust values to fit scale */
-		var range = max - min;
+		var range = Math.abs(max - min);
 		for(var x=0;x<copy.length;x++) {
 			for(var y=0;y<copy[x].length;y++) {
 				var a = copy[x][y]-min;
