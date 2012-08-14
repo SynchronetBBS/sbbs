@@ -492,6 +492,8 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 			default:
 				break;
 		}
+		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > 80 || this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > 24)
+			return false;
 		var w = new Sprite(this.ini.weapon, this.frame.parent, this.weaponCoordinates.x, this.weaponCoordinates.y, this.bearing);
 		w.frame.draw(); // Shouldn't be necessary, but sprite doesn't appear unless I do this
 	}
