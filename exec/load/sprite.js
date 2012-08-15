@@ -271,6 +271,15 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 		this.ini.range = parseInt(this.ini.range);
 	else
 		this.ini.range = 0;
+		
+	if(this.ini.weapon) {
+		var f = new File(js.exec_dir + "sprites/" + this.ini.weapon + ".ini");
+		f.open("r");
+		var wi = f.iniGetObject();
+		f.close();
+		this.ini.weaponWidth = wi.width;
+		this.ini.weaponHeight = wi.height;
+	}
 
 	this.frame = new Frame(x, y, this.ini.width, this.ini.height, 0, parentFrame);
 	this.frame.checkbounds = false;
@@ -455,13 +464,13 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 			case "n":
 				this.weaponCoordinates = {
 					x : parseInt(this.x + (this.frame.width / 2)),
-					y : this.y - 1
+					y : this.y - this.ini.weaponHeight
 				}
 				break;
 			case "ne":
 				this.weaponCoordinates = {
 					x : this.x + this.frame.width,
-					y : this.y - 1
+					y : this.y - this.ini.weaponHeight
 				}			
 				break;
 			case "e":
@@ -484,20 +493,20 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 				break;
 			case "sw":
 				this.weaponCoordinates = {
-					x : this.x - 1,
+					x : this.x - this.ini.weaponWidth,
 					y : this.y + this.frame.height
 				}
 				break;
 			case "w":
 				this.weaponCoordinates = {
-					x : this.x - 1,
+					x : this.x - this.ini.weaponWidth,
 					y : parseInt(this.y + (this.frame.height / 2))
 				}
 				break;
 			case "nw":
 				this.weaponCoordinates = {
-					x : this.x - 1,
-					y : this.y - 1
+					x : this.x - this.ini.weaponWidth,
+					y : this.y - this.ini.weaponHeight
 				}
 				break;
 			default:
