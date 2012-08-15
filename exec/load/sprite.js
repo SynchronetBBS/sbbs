@@ -11,42 +11,43 @@
 	
 	<sprite>.ini format:
 	
-		width		= The width of the sprite (REQUIRED)
+		width		The width of the sprite (REQUIRED)
 
-		height		= The height of the sprite (ie. the height of one
-				  graphic  in <sprite>.bin) (REQUIRED)
+		height		The height of the sprite (ie. the height of one
+					graphic  in <sprite>.bin) (REQUIRED)
 
-		bearings	= A comma separated list of bearings available to this
-				  sprite (eg. n,ne,e,se,s,sw,w,nw) (REQUIRED)
+		bearings	A comma separated list of bearings available to this
+					sprite (eg. n,ne,e,se,s,sw,w,nw) (REQUIRED)
 
-		constantmotion	= 1 or 0, whether or not this sprite is constantly
-				  moving or only moves when a key is pressed.
-				  (REQUIRED)
+		constantmotion
+					1 or 0, whether or not this sprite is constantly
+					moving or only moves when a key is pressed.
+					(REQUIRED)
 
-		speed		= Time (in seconds, fractional seconds (eg. .5) are
-				  allowed) between sprite movements.  The lower the
-				  number, the faster the sprite can move. (REQUIRED)
+		speed		Time (in seconds, fractional seconds (eg. .5) are
+					allowed) between sprite movements.  The lower the
+					number, the faster the sprite can move. (REQUIRED)
 
-		speedstep	= Applicable only if constantmotion = 1, is the amount
-				  by which 'speed' is increased or decreased when the
-				  up and down cursor keys are pressed.  (Recommended
-				  if constantmotion = 1)
+		speedstep	Applicable only if constantmotion = 1, is the amount
+					by which 'speed' is increased or decreased when the
+					up and down cursor keys are pressed.  (Recommended
+					if constantmotion = 1)
 
-		gravity		= 1 or 0, 0 is default, should really only be used if
-				  bearings = e,w.  Sprites will fall toward the bottom
-				  of the screen until an obstacle is encountered if
-				  this is enabled.
+		gravity		1 or 0, 0 is default, should really only be used if
+					bearings = e,w.  Sprites will fall toward the bottom
+					of the screen until an obstacle is encountered if
+					this is enabled.
 
-		jumpheight	= How many character cells high should the sprite be
-				  able to jump?  Should be used in conjunction with
-				  'gravity' and with 'bearings = e,w' (eg. a platform-
-				  type game.)  (Recommended if gravity = 1)
+		jumpheight	How many character cells high should the sprite be
+					able to jump?  Should be used in conjunction with
+					'gravity' and with 'bearings = e,w' (eg. a platform-
+					type game.)  (Recommended if gravity = 1)
 
-		weapon		= The name of another <sprite>.ini/<sprite>.bin pair,
-				  which will be produced when KEY_FIRE is pressed.
+		weapon		The name of another <sprite>.ini/<sprite>.bin pair,
+					which will be produced when KEY_FIRE is pressed.
 
-		range		= Applicable only to weapon sprites, how far the sprite
-				  can travel before disappearing.
+		range		Applicable only to weapon sprites, how far the sprite
+					can travel before disappearing.
 		
 		You can add any number of other key=value pairs to a <sprite>.ini file
 		for your own use.  They are accessible as properties of your sprite
@@ -70,7 +71,7 @@
 		S		- Shown when the sprite is facing south
 		SW		- Shown when the sprite is facing southwest
 		W		- Shown when the sprite is facing west
-		Spare		- Access with Sprite.frame.scrollTo(1, Sprite.ini.height * 8)
+		Spare	- Access with Sprite.frame.scrollTo(1, Sprite.ini.height * 8)
 		
 		You may omit graphics for any bearings that your sprite will not be
 		using, but remember to leave blank spaces where these graphics would
@@ -109,101 +110,111 @@
 
 	Methods:
 	
-		Sprite.getCmd(cmd)	- Process and acts upon user input (eg. a value
-					  returned by console.inkey()).  Calls 'turn'
-					  'move' or 'putWeapon' as required.
+		Sprite.getCmd(cmd)	Process and acts upon user input (eg. a value
+							returned by console.inkey()).  Calls 'turn'
+							'move' or 'putWeapon' as required.
 								  
-		Sprite.cycle()		- Various housekeeping tasks.  Must be called
-					  in order to apply any changes to Sprite's
-					  position or orientation.
+		Sprite.cycle()		Various housekeeping tasks.  Must be called
+							in order to apply any changes to Sprite's
+							position or orientation.
 							  
-		Sprite.move(direction)	- Where 'direction' is either "forward" or
-					  "reverse", will cause the sprite to move in
-					  one space in or away from the direction
-					  it is currently facing (ie. its bearing.)
+		Sprite.move(direction)
+							Where 'direction' is either "forward" or
+							"reverse", will cause the sprite to move in
+							one space in or away from the direction
+							it is currently facing (ie. its bearing.)
+
+		Sprite.moveTo(x, y)	Move the sprite to an absolute position within
+							its parent frame.
+		
+		Sprite.turn(direction)
+							Where 'direction' is either 'cw' or 'ccw'
+							(clockwise or counter-clockwise,) will
+							cause the sprite to change to the next
+							available bearing in that direction and
+							load the applicable graphic.
+							
+		Sprite.turnTo(bearing)
+							Rotate the sprite to an absolute bearing.
 								  
-		Sprite.turn(direction)	- Where 'direction' is either 'cw' or 'ccw'
-					  (clockwise or counter-clockwise,) will
-					  cause the sprite to change to the next
-					  available bearing in that direction and
-					  load the applicable graphic.
-								  
-		Sprite.putWeapon()	- Finds the center of the sprite's forward
-					  facing side and produces a weapon at that
-					  point. (The weapon will be another sprite
-					  which must exist in the 'sprites' sub-
-					  directory, and should have constantmotion
-					  set to 1 in its own ini file, and have a
-					  range defined.)
+		Sprite.putWeapon()	Finds the center of the sprite's forward
+							facing side and produces a weapon at that
+							point. (The weapon will be another sprite
+							which must exist in the 'sprites' sub-
+							directory, and should have constantmotion
+							set to 1 in its own ini file, and have a
+							range defined.)
 								  
 		Sprite.checkOverlap(margin)
-					- Returns an array of all other sprites that
-					  overlap on the screen with this one, or
-					  false if there is no overlap. (It's up to
-					  you to decide what to do in case of overlap,
-					  eg. let the player collect a prize, or make
-					  it explode if it stepped on a landmine.)
+							Returns an array of all other sprites that
+							overlap on the screen with this one, or
+							false if there is no overlap. (It's up to
+							you to decide what to do in case of overlap,
+							eg. let the player collect a prize, or make
+							it explode if it stepped on a landmine.)
 		
 		Sprite.checkBelow()
-		Sprite.checkAbove()	- These are mostly for internal use.  They
-					  return true if there is something directly
-					  above or below the sprite.  (This is what
-					  stops a jump or a fall.)
+		Sprite.checkAbove()	These are mostly for internal use.  They
+							return true if there is something directly
+							above or below the sprite.  (This is what
+							stops a jump or a fall.)
 								  
-		Sprite.pursue(sprite)	- Causes Sprite to turn clockwise, once, toward
-					  'sprite'.  Returns true if Sprite is facing
-					  toward 'sprite'. (If Sprite.move() is then
-					  called, Sprite will start moving toward
-					  'sprite'.)  Useful for causing enemies to
-					  chase after the player, etc.
+		Sprite.pursue(sprite)
+							Causes Sprite to turn clockwise, once, toward
+							'sprite'.  Returns true if Sprite is facing
+							toward 'sprite'. (If Sprite.move() is then
+							called, Sprite will start moving toward
+							'sprite'.)  Useful for causing enemies to
+							chase after the player, etc.
 
-		Sprite.remove()		- Removes the sprite from the screen and sets
-					  the value of its 'open' property to false.
+		Sprite.remove()		Removes the sprite from the screen and sets
+							the value of its 'open' property to false.
 		
 	Properties:
 	
 		Sprite.x								  
-		Sprite.y		- The current x and y coordinates of the top
-					  left corner of this sprite. (Normally the
-					  same as Sprite.frame.x and Sprite.frame.y)
+		Sprite.y			The current x and y coordinates of the top
+							left corner of this sprite. (Normally the
+							same as Sprite.frame.x and Sprite.frame.y)
 										  
 		Sprite.origin.x
-		Sprite.origin.y		- The x and y coordinates where this sprite
-					  first appeared on the screen.
+		Sprite.origin.y		The x and y coordinates where this sprite
+							first appeared on the screen.
 								  
-		Sprite.bearing		- The direction that the sprite is facing, one
-					  of n,ne,e,se,s,sw, or w. (Top of screen is
-					  north, right side of screen is east, and so
-					  on.)
+		Sprite.bearing		The direction that the sprite is facing, one
+							of n,ne,e,se,s,sw, or w. (Top of screen is
+							north, right side of screen is east, and so
+							on.)
 								  
-		Sprite.lastMove		- The time when the sprite last moved (as read
-					  from system.timer
+		Sprite.lastMove		The time when the sprite last moved (as read
+							from system.timer
 								  
-		Sprite.lastAttack	- The time when the sprite last used its weapon
-					  (as read from system.timer)
+		Sprite.lastAttack	The time when the sprite last used its weapon
+							(as read from system.timer)
 								  
-		Sprite.inJump		- True if the sprite is jumping
+		Sprite.inJump		True if the sprite is jumping
 		
-		Sprite.inFall		- True if the sprite is falling
+		Sprite.inFall		True if the sprite is falling
 		
-		Sprite.jumpStart	- The time when a jump began (as read from
-					  system.timer)
+		Sprite.jumpStart	The time when a jump began (as read from
+							system.timer)
 								  
-		Sprite.weaponCoordinates- Where the sprite's weapon should appear on
-					  the screen (calculated by Sprite.putWeapon())
+		Sprite.weaponCoordinates
+							Where the sprite's weapon should appear on
+							the screen (calculated by Sprite.putWeapon())
 								  
-		Sprite.ini		- Has sub-properties for every value defined in
-					  this sprite's ini file.
+		Sprite.ini			Has sub-properties for every value defined in
+							this sprite's ini file.
 								  
-		Sprite.frame		- A Frame object; how this Sprite is actually
-					  displayed on the screen.
+		Sprite.frame		A Frame object; how this Sprite is actually
+							displayed on the screen.
 								  
-		Sprite.offsets		- An array of offsets to the first lines of
-					  each of the n,ne,e,se,s,sw,w,spare graphics
-					  in the <sprite>.bin file.
+		Sprite.offsets		An array of offsets to the first lines of
+							each of the n,ne,e,se,s,sw,w,spare graphics
+							in the <sprite>.bin file.
 								  
-		Sprite.open		- true or false, whether or not this sprite is
-					  currently displayed on the screen.
+		Sprite.open			true or false, whether or not this sprite is
+							currently displayed on the screen.
 
 */
 
@@ -495,10 +506,13 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > 80 || this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > 24)
 			return false;
 		var w = new Sprite(this.ini.weapon, this.frame.parent, this.weaponCoordinates.x, this.weaponCoordinates.y, this.bearing);
+		w.owner = this;
 		w.frame.draw(); // Shouldn't be necessary, but sprite doesn't appear unless I do this
 	}
 	
 	this.checkOverlap = function(margin) {
+		if(margin === undefined)
+			margin = 0;
 		var yarg = [];
 		for(var s = 0; s < sprites.length; s++) {
 			if(sprites[s] == this)
@@ -695,4 +709,16 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 		this.frame.close();	
 	}
 	
+	this.moveTo = function(x, y) {
+		this.x = x;
+		this.y = y;
+		this.frame.moveTo(x, y);
+	}
+	
+	this.turnTo = function(bearing) {
+		if(this.ini.bearings.indexOf(bearing) < 0)
+			return false;
+		this.bearing = bearing;
+		this.frame.scrollTo(0, this.offsets[this.bearing]);			
+	}
 }
