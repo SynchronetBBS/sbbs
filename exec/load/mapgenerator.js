@@ -68,9 +68,9 @@ function TerrainGenerator() {
 
 	/* defaults */
 	this.base = 0;
-	this.scale = 9;
-	this.min_radius=5;
-	this.max_radius=10;
+	this.peak = 9;
+	this.min_radius=15;
+	this.max_radius=20;
 	
 	/* generate a land object of specified width, height, base elevation */
 	this.generate = function(width,height,hills) { 
@@ -117,7 +117,7 @@ function TerrainGenerator() {
 			var halfRow=Math.round(Math.sqrt(Math.sq(radius)-Math.sq(y)));
 			for(var x=-halfRow;x<halfRow;x++) {     
 				//var h = Math.sq(radius) - (Math.sq(x) + Math.sq(y));
-				if(copy[xoff+x] && copy[xoff+x][yoff+y] >= 0)
+				if(copy[xoff+x] && copy[xoff+x][yoff+y] !== undefined)
 					copy[xoff+x][yoff+y] += direction;
 			}
 		}
@@ -126,36 +126,42 @@ function TerrainGenerator() {
 	}
 
 	/* normalize land within a given range */
-	this.normalize = function(map,base,scale) {
+	this.normalize = function(map,base,peak) {
 	
 		/* make a copy of the original map */
 		var copy = copyMap(map);
-		var min=false;
-		var max=false;
+		var min=undefined;
+		var max=undefined;
 		
 		if(base == undefined)
 			base = this.base;
-		if(scale == undefined)
-			scale = this.scale;
+		if(peak == undefined)
+			peak = this.peak;
 		
 		/* iterate map and find the min and max values */
 		for(var x=0;x<copy.length;x++) {
 			for(var y=0;y<copy[x].length;y++) {
-				if(min==false || copy[x][y] < min)
+				if(min==undefined || copy[x][y] < min)
 					min = copy[x][y];
-				if(max==false || copy[x][y] > max)
+				if(max==undefined || copy[x][y] > max)
 					max = copy[x][y];
 			}
 		}
 		
 		/* iterate map again and adjust values to fit scale */
 		var range = Math.abs(max - min);
+		if(range == 0)
+			return copy;
+			
 		for(var x=0;x<copy.length;x++) {
 			for(var y=0;y<copy[x].length;y++) {
 				var a = copy[x][y]-min;
-				var b = (a/range) * scale;
-				var c = b + base;
-				copy[x][y] = c;
+				var b = a/range;
+				var c = b * peak;
+				var d = c + base;
+				if(d < base)
+					log("invalid elevation: " + d);
+				copy[x][y] = d;
 			}
 		}
 		
