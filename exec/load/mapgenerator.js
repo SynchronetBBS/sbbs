@@ -21,7 +21,12 @@ SETTINGS:
 TerrainGenerator.base = the minimum elevation of the map
 TerrainGenerator.max_radius = the largest any single hill can be
 TerrainGenerator.min_radius = the smallest any single hill can be
-TerrainGenerator.scale = the scale of the map (max elevation relative to base)
+TerrainGenerator.peak = the scale of the map (max elevation relative to base)
+
+TerrainGenerator.island_mode = force poke center-points to be within map boundaries
+								(tends to cluster terrain in the center of the map)
+TerrainGenerator.lake_mode = default "poke" direction is downward instead of upward
+TerrainGenerator.border_mode = make a single line half-step border around "poke"
 
 METHODS:
 
@@ -72,6 +77,10 @@ function TerrainGenerator() {
 	this.min_radius=15;
 	this.max_radius=20;
 	
+	this.border_mode=false;
+	this.island_mode=false;
+	this.lake_mode=false;
+	
 	/* generate a land object of specified width, height, base elevation */
 	this.generate = function(width,height,hills) { 
 
@@ -104,14 +113,26 @@ function TerrainGenerator() {
 			radius = random(this.max_radius-this.min_radius)+this.min_radius;
 			
 		/* pick a random starting position */
-		if(yoff == undefined)
-			xoff = random(copy.length+(2*radius))-radius;
-		if(yoff == undefined)
-			yoff = random(copy[0].length+(2*radius))-radius;
+		if(yoff == undefined) {
+			if(this.island_mode)
+				xoff = random(copy.length);
+			else
+				xoff = random(copy.length+(2*radius))-radius;
+		}
+		if(yoff == undefined) {
+			if(this.island_mode)
+				yoff = random(copy[0].length);
+			else
+				yoff = random(copy[0].length+(2*radius))-radius;
+		}
 			
 		/* default elevation change */
-		if(direction == undefined) 
-			direction = 1;
+		if(direction == undefined) {
+			if(this.lake_mode)
+				direction = -1;
+			else
+				direction = 1;
+		}
 		
 		for(var y=-radius;y<radius;y++) {
 			var halfRow=Math.round(Math.sqrt(Math.sq(radius)-Math.sq(y)));
@@ -119,6 +140,10 @@ function TerrainGenerator() {
 				//var h = Math.sq(radius) - (Math.sq(x) + Math.sq(y));
 				if(copy[xoff+x] && copy[xoff+x][yoff+y] !== undefined)
 					copy[xoff+x][yoff+y] += direction;
+				if(this.border_mode) {
+					if(copy[xoff-x] && copy[xoff-x][yoff+y] !== undefined)
+						copy[xoff-x][yoff+y] += direction;
+				}
 			}
 		}
 		
