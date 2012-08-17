@@ -621,7 +621,7 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 					else if(this.ini.constantmotion < 1)
 						this.move("forward");
 				} else if(this.ini.movement == "rotating" && this.ini.constantmotion == 0) {
-					this.move("forward");
+					this.move("reverse");
 				} else {
 					if(this.ini.speed == this.ini.speedmin)
 						this.ini.speed = 0;
