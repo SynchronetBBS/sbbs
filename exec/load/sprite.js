@@ -19,6 +19,13 @@
 		bearings	A comma separated list of bearings available to this
 					sprite (eg. n,ne,e,se,s,sw,w,nw) (REQUIRED)
 
+		movement	"rotating" or "directional"
+					If "rotating", the sprite will turn clockwise or
+					counterclockwise when the left and right arrow keys
+					are pressed.  If "directional" the sprite will
+					turn to face the direction of the arrow key that
+					was pressed.
+					
 		constantmotion
 					1 or 0, whether or not this sprite is constantly
 					moving or only moves when a key is pressed.
@@ -251,6 +258,8 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 	this.ini.speedstep = parseFloat(this.ini.speedstep);
 	this.ini.speedmax = parseFloat(this.ini.maximumspeed);
 	this.ini.speedmin = parseFloat(this.ini.minimumspeed);
+	if(!this.ini.hasOwnProperty("movement"))
+		this.ini.movement = "rotating";
 	if(this.ini.hasOwnProperty("constantmotion"))
 		this.ini.constantmotion = parseInt(this.ini.constantmotion);
 	else
@@ -563,9 +572,12 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 	this.getCmd = function(userInput) {
 		switch(userInput.toUpperCase()) {
 			case KEY_LEFT:
-				if(this.ini.bearings.length == 2 && this.bearing == "w") {
-					this.move("forward");
-				} else {
+				if(this.ini.movement == "directional" && this.ini.bearings.indexOf("w") >= 0) {
+					if(this.bearing != "w")
+						this.turnTo("w");
+					else if(this.ini.constantmotion == 0)
+						this.move("forward");
+				} else if(this.ini.movement == "rotating") {
 					this.turn("ccw");
 					while(this.ini.bearings.indexOf(this.bearing) < 0) {
 						this.turn("ccw");
@@ -573,9 +585,12 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 				}
 				break;
 			case KEY_RIGHT:
-				if(this.ini.bearings.length == 2 && this.bearing == "e") {
-					this.move("forward");
-				} else {
+				if(this.ini.movement == "directional" && this.ini.bearings.indexOf("e") >= 0) {
+					if(this.bearing != "e")
+						this.turnTo("e");
+					else if(this.ini.constantmotion == 0)
+						this.move("forward");
+				} else if(this.ini.movement == "rotating") {
 					this.turn("cw");
 					while(this.ini.bearings.indexOf(this.bearing) < 0) {
 						this.turn("cw");
@@ -583,7 +598,12 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 				}
 				break;
 			case KEY_UP:
-				if(this.ini.constantmotion < 1) {
+				if(this.ini.movement == "directional" && this.ini.bearings.indexOf("e") >= 0) {
+					if(this.bearing != "n")
+						this.turnTo("n");
+					else if(this.ini.constantmotion < 1)
+						this.move("forward");				
+				} else if(this.ini.movement == "rotating" && this.ini.constantmotion == 0) {
 					this.move("forward");
 				} else {
 					if(this.ini.speed > this.ini.speedmax)
@@ -595,8 +615,13 @@ function Sprite(spriteName, parentFrame, x, y, bearing) {
 				}
 				break;
 			case KEY_DOWN:
-				if(this.ini.constantmotion < 1) {
-					this.move("backward");
+				if(this.ini.movement == "directional" && this.ini.bearings.indexOf("s") >= 0) {
+					if(this.bearing != "s")
+						this.turnTo("s");
+					else if(this.ini.constantmotion < 1)
+						this.move("forward");
+				} else if(this.ini.movement == "rotating" && this.ini.constantmotion == 0) {
+					this.move("forward");
 				} else {
 					if(this.ini.speed == this.ini.speedmin)
 						this.ini.speed = 0;
