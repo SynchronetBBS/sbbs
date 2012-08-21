@@ -6,55 +6,60 @@
 	
 	ansiEdit(x, y, width, height, attributes, frame, scrolling)
 
-		- 'x' and 'y' are coordinates for the top left corner of the editor
-		- 'width' and 'height' are the dimensions of the editor in characters
-		  (Things will start breaking if you set these values too low)
-		- 'attributes' are the default fg/bg colours (see sbbsdefs.js)
-		- 'frame' is a parent Frame object (see frame.js) to put this ANSI
-		  editor in, if any. (Optional)
-		- 'scrolling' is true or false, whether to allow the length of the
-		  ANSI to exceed the fixed height of the ANSI editor
+		'x' and 'y' are coordinates for the top left corner of the editor
+
+		'width' and 'height' are the dimensions of the editor in characters
+		(Things will start breaking if you set these values too low)
+
+		'attributes' are the default fg/bg colours (see sbbsdefs.js)
+
+		'frame' is a parent Frame object (see frame.js) to put this ANSI
+		editor in, if any. (Optional, false may be passed as a placeholder.)
+
+		'scrolling' is true or false, whether to allow the length of the
+		ANSI to exceed the fixed height of the ANSI editor. (Optional,
+		defaults to false.)
 	
 	Methods:
 	
 	ansiEdit.getcmd(str)
 	
-		- Acts upon 'str' (eg. a return value from console.inkey()) to draw
-		  a character, move the cursor, or bring up the pop-up menu.
+		Acts upon 'str' (eg. a return value from console.inkey()) to draw
+		a character, move the cursor, or bring up the pop-up menu.
 							  
-		- Returns an object with the following properties:
+		Returns an object with the following properties:
 							  
-		  x    : x coordinate of the character drawn
-		  y    : y coordinate of the character drawn
-		  ch   : The character that was drawn, false if nothing was drawn
-		  attr : The colour attributes of the character that was drawn
+		x    : x coordinate of the character drawn
+		y    : y coordinate of the character drawn
+		ch   : The character that was drawn, false if nothing was drawn
+		attr : The colour attributes of the character that was drawn
 	
 	ansiEdit.putChar(charObject)
 	
-		- Draws charObject on the canvas, where charObject is an object
-		  with properties x, y, ch, and attr, meaning where to draw it, what
-		  to draw, and what colour to draw it in.  (See sbbsdefs.js for
-		  more on colour attributes.)
+		Draws charObject on the canvas, where charObject is an object
+		with properties x, y, ch, and attr, meaning where to draw it, what
+		to draw, and what colour to draw it in.  (See sbbsdefs.js for
+		more on colour attributes.)
 
 	ansiEdit.cycle()
 	
-		- Update the ANSI editor's canvas (ansiEdit.getcmd(str) does this
-		  automatically, but you will need to call this after calls to
-		  ansiEdit.putChar().)
+		Update the ANSI editor's canvas (ansiEdit.getcmd(str) does this
+		automatically, but you will need to call this after calls to
+		ansiEdit.putChar().)
 		  
 	ansiEdit.open()
 	
-		- Only needed if you've used ansiEdit.close() already. New ANSI editor
-		  objects open automagically.
+		Only needed if you've used ansiEdit.close() already. New ANSI editor
+		objects open automagically.
 		
 	ansiEdit.close()
 	
-		- Close the ANSI editor and remove it from the screen.
+		Close the ANSI editor and remove it from the screen.
 		
 	ansiEdit.showUI(boolean)
 		
-		- Show or hide the cursor and character set (must ansiEdit.cycle() or
-		  cycle the parent frame for change to appear on screen.)
+		Show or hide the cursor and character set (must ansiEdit.cycle() or
+		cycle the parent frame for change to appear on screen.)
 		  	
 	Example:
 	
@@ -69,14 +74,13 @@
 	var a = new ansiEdit(1, 1, 80, 23, BG_BLACK|LIGHTGRAY);
 	var b = "";
 	var c;
-	a.putChar( { x : 1, y : 1, ch : "a",  attr : BG_BLUE|WHITE } );
+	a.putChar( { x : 1, y : 1, ch : "a", attr : BG_BLUE|WHITE } );
 	while(ascii(b) != 27) {
 		b = console.inkey(K_NONE, 5);
 		if(b == "") continue;
 		c = a.getcmd(b);
-		a.cycle();
 		if(!c.ch) continue; // No character was drawn
-		console.gotoxy(1, 23);
+		console.gotoxy(1, 24);
 		console.putmsg("\1h\1w" + c.toSource());
 	}
 */
@@ -87,7 +91,11 @@ load("tree.js");
 
 function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 	
-	if(scrolling == undefined) var scrolling = false;
+	if(!frame || frame === undefined)
+		var frame = new Frame(x, y, width, height, attr);
+	
+	if(scrolling === undefined)
+		var scrolling = false;
 	
 	var str = "";
 	var esc = ascii(27);
@@ -289,7 +297,7 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 	cursor.putmsg(ascii(219));
 	charSet.update(characterSet);
 
-	aFrame.open();
+	frame.open();
 	tree.open();
 	aFrame.cycle();
 
