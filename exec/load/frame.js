@@ -284,39 +284,31 @@ function Frame(x,y,width,height,attr,frame) {
 	
 	/* public methods */
 	this.getData = function(x,y,use_offset) {
+		var px = x;
+		var py = y;
 		if(use_offset) {
-			if(!properties.data[y + position.offset.y] || !properties.data[y + position.offset.y][x + position.offset.x])
-				throw("invalid coordinates: " + x + "," + y);
-			return properties.data[y + position.offset.y][x + position.offset.x];
+			px += position.offset.x;
+			py += position.offset.y;
 		}
-		else {
-			if(!properties.data[y] || !properties.data[y][x])
-				throw("invalid coordinates: " + x + "," + y);
-			return properties.data[y][x];
-		}
+		if(!properties.data[py] || !properties.data[py][px])
+			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
+		return properties.data[py][px];
 	}
 	this.setData = function(x,y,ch,attr,use_offset) {
+		var px = x;
+		var py = y;
 		if(use_offset) {
-			if(!properties.data[y + position.offset.y] || !properties.data[y + position.offset.y][x + position.offset.x])
-				throw("invalid coordinates: " + x + "," + y);
-			if(ch)
-				properties.data[y + position.offset.y][x + position.offset.x].ch = ch;
-			if(attr)
-				properties.data[y + position.offset.y][x + position.offset.x].attr = attr;
-			if(properties.open) 
-				properties.display.updateChar(this,x,y);
+			px += position.offset.x;
+			py += position.offset.y;
 		}
-		else {
-			if(!properties.data[y] || !properties.data[y][x])
-				throw("invalid coordinates: " + x + "," + y);
-			if(ch)
-				properties.data[y][x].ch = ch;
-			if(attr)
-				properties.data[y][x].attr = attr;
-			if(properties.open && (x >= position.offset.x && x < position.offset.x + this.width &&
-				y >= position.offset.y && y < position.offset.y + this.height))
-				properties.display.updateChar(this,x,y);
-		}
+		if(!properties.data[py] || !properties.data[py][px])
+			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
+		if(ch)
+			properties.data[py][px].ch = ch;
+		if(attr)
+			properties.data[py][px].attr = attr;
+		if(properties.open) 
+			properties.display.updateChar(this,x,y);
 	}
 	this.bottom = function() {
 		if(properties.open) {
@@ -616,18 +608,18 @@ function Frame(x,y,width,height,attr,frame) {
 	this.screenShot = function(file,append) {
 		return properties.display.screenShot(file,append);
 	}
-
+	this.invalidate = function() {
+		properties.display.invalidate();
+		this.refresh();
+	}
+	
 	/* console method emulation */
 	this.home = function() {
-		if(position.cursor.x == 0 && position.cursor.y == 0)
-			return false;
 		position.cursor.x = 0;
 		position.cursor.y = 0;
 		return true;
 	}
 	this.end = function() {
-		if(position.cursor.x == this.width-1 && position.cursor.y == this.height-1)
-			return false;
 		position.cursor.x = this.width-1;
 		position.cursor.y = this.height-1;
 		return true;
@@ -636,19 +628,25 @@ function Frame(x,y,width,height,attr,frame) {
 		position.offset.y += this.height-1;
 		if(position.offset.y >= this.data_height)
 			position.offset.y = this.data_height - this.height;
+		this.refresh();
 	}
 	this.pageup = function() {
 		position.offset.y -= this.height-1;
 		if(position.offset.y < 0)
 			position.offset.y = 0;
+		this.refresh();
 	}
 	this.clear = function(attr) {
 		if(attr == undefined)
 			attr = this.attr;
-		for(var y = 0;y<this.height;y++) {
-			for(var x = 0;x<this.width;x++) {
+		for(var y=0;y<properties.data.length;y++) {
+			for(var x=0;x<properties.data[y].length;x++) {
 				properties.data[y][x].ch = undefined;
 				properties.data[y][x].attr = attr;
+			}
+		}
+		for(var y=0;y<this.height;y++) {
+			for(var x=0;x<this.width;x++) {
 				properties.display.updateChar(this,x,y);
 			}
 		}
@@ -657,19 +655,23 @@ function Frame(x,y,width,height,attr,frame) {
 	this.clearline = function(attr) {
 		if(attr == undefined)
 			attr = this.attr;
-		for(var x = 0;x<this.width;x++) {
-			properties.display.updateChar(this,x,position.cursor.y);
+		for(var x=0;x<properties.data[position.cursor.y].length;x++) {
 			properties.data[position.cursor.y][x].ch = undefined;
 			properties.data[position.cursor.y][x].attr = attr;
+		}
+		for(var x=0;x<this.width;x++) {
+			properties.display.updateChar(this,x,position.cursor.y);
 		}
 	}
 	this.cleartoeol = function(attr) {
 		if(attr == undefined)
 			attr = this.attr;
-		for(var x = position.cursor.x;x<this.width;x++) {
-			properties.display.updateChar(this,x,position.cursor.y);
+		for(var x=position.cursor.x;x<properties.data[position.cursor.y].length;x++) {
 			properties.data[position.cursor.y][x].ch = undefined;
 			properties.data[position.cursor.y][x].attr = attr;
+		}
+		for(var x=position.cursor.x;x<this.width;x++) {
+			properties.display.updateChar(this,x,position.cursor.y);
 		}
 	}
 	this.crlf = function() {
@@ -679,6 +681,8 @@ function Frame(x,y,width,height,attr,frame) {
 		else {}
 	}
 	this.putmsg = function(str,attr) {
+		if(str == undefined)
+			return;
 		str = str.toString().split('');
 		var control_a = false;
 		var curattr = attr;
@@ -995,6 +999,7 @@ function Canvas(frame,display) {
 			return undefined;
 		if(x-this.xoff >= this.frame.width || y - this.yoff >= this.frame.height)
 			return undefined;
+		//ToDo check for undefined (in case of transparency)
 		return true;
 	}
 }
@@ -1068,21 +1073,16 @@ function Display(x,y,width,height) {
 		if(updates.length > 0) {
 			var lasty = undefined;
 			var lastx = undefined;
-			var lastid = undefined;
+			var lastf = undefined;
 			for each(var u in updates) {
-				var posx = u.x + properties.x;
-				var posy = u.y + properties.y;
-				if(posx < 1 ||  posy < 1 || posx > console.screen_columns 
-					|| posy > console.screen_rows)
-					continue;
-				if(lasty !== u.y || lastx == undefined || (u.x - lastx) != 1)
-					console.gotoxy(posx,posy);
-				if(lastid !== u.id)
+				if(lasty !== u.y || lastx == undefined || (u.x - lastx) !== 1)
+					console.gotoxy(u.px,u.py);
+				if(lastf !== u.id)
 					console.attributes = undefined;
-				drawChar(u.ch,u.attr,posx,posy);
+				drawChar(u.ch,u.attr,u.px,u.py);
 				lastx = u.x;
 				lasty = u.y;
-				lastid = u.id;
+				lastf = u.id;
 			}
 			console.attributes=undefined;
 			return true;
@@ -1163,6 +1163,9 @@ function Display(x,y,width,height) {
 		f.close();
 		return true;
 	}
+	this.invalidate = function() {
+		properties.buffer = {};
+	}
 	
 	/* private functions */
 	function updateChar(x,y) {
@@ -1176,9 +1179,15 @@ function Display(x,y,width,height) {
 			for(var x in properties.update[y]) {
 				var c = getTopCanvas(x,y);
 				var d = getData(c,x,y);
-				if(!properties.buffer[x])
+				
+				if(d.px < 1 ||  d.py < 1 || d.px > console.screen_columns || d.py > console.screen_rows)
+					continue;
+				if(!properties.buffer[x]) {
 					properties.buffer[x] = {};
-				if( properties.buffer[x][y] == undefined ||
+					properties.buffer[x][y] = d;
+					list.push(d);
+				}
+				else if(properties.buffer[x][y] == undefined ||
 					properties.buffer[x][y].ch != d.ch || 
 					properties.buffer[x][y].attr != d.attr) {
 					properties.buffer[x][y] = d;
@@ -1187,12 +1196,16 @@ function Display(x,y,width,height) {
 			}
 		}
 		properties.update={};
+		// if(list.length > 0)
+			// logStamp("end getUpdateList");
 		return list.sort(updateSort);
 	}
 	function getData(c,x,y) {
 		var cd = {
 			x:Number(x),
-			y:Number(y)
+			y:Number(y),
+			px:Number(x) + properties.x,
+			py:Number(y) + properties.y
 		};
 		if(c) {
 			var d = c.frame.getData(x-c.xoff,y-c.yoff,true);
@@ -1215,10 +1228,16 @@ function Display(x,y,width,height) {
 			console.attributes = attr;
 		if(xpos == console.screen_columns && ypos == console.screen_rows) 
 			console.cleartoeol();
-		else if(ch == undefined)
-			console.write(" ");
-		else 
+		else if(ch == undefined) {
+			//ToDo: transparency
+			// if(properties.transparent)
+				// console.right(1);
+			// else
+				console.write(" ");
+		}	
+		else {
 			console.write(ch);
+		}
 	}
 	function getTopCanvas(x,y) {
 		var top = undefined;
