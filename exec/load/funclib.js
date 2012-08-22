@@ -436,6 +436,23 @@ function sortListByProperty(list,prop)
 	}
 	return data;
 }
+function logStamp(msg) 
+{
+	if(!js.global.LogTimer)
+		js.global.LogTimer={};
+		
+	var t = js.global.LogTimer;
+	var now = Date.now();
 
+	if(!t.start || (now-t.start > 10000)) {
+		t.start = now;
+		t.last = now;
+	}
+	if(!t.last)
+		t.last = now;
+		
+	log(format("%4d",(now-t.last)) + " [" + (now - t.start) + "] " + msg);
+	t.last = now;
+}
 	
 	
