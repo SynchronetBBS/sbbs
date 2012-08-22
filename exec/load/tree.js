@@ -57,6 +57,7 @@
 	
 	// display the frame contents
 	frame.draw();
+	
 */
 
 load("funclib.js");
@@ -75,6 +76,7 @@ function Tree(frame,text,tree) {
 		index:0,
 		text:"",
 		line:1,
+		list:[],
 		items:[]
 	};
 	
@@ -203,6 +205,12 @@ function Tree(frame,text,tree) {
 				case KEY_UP:
 					retval = moveUp(this.depth==0);
 					break;
+				case KEY_HOME:
+					retval = home();
+					break;
+				case KEY_END:
+					retval = end();
+					break;
 				case "\r":
 					if(properties.index >= 0) 
 						retval = this.current.action();						
@@ -241,7 +249,7 @@ function Tree(frame,text,tree) {
 		var args = Array.prototype.slice.apply(arguments);
 		var item=new TreeItem(args.shift(),this,args.shift(),args);
 		this.items.push(item);
-		this.refresh();
+		//this.refresh();
 		return item;
 	}		
 	this.open = function() {
@@ -300,6 +308,12 @@ function Tree(frame,text,tree) {
 		}
 		return false;
 	}
+	this.list = function(list) {
+		if(properties.parent) 
+			properties.parent.list(list);
+		else 
+			properties.list.push(list);
+	}
 	this.refresh=function() {
 		if(properties.parent) {
 			properties.parent.refresh();
@@ -308,8 +322,17 @@ function Tree(frame,text,tree) {
 			if(!this.frame)
 				return;
 			this.generate();
-			var offset = this.line - this.frame.height;
-			this.frame.scrollTo(undefined,offset);
+			var offset = 0;
+			if(this.line > this.frame.height)
+				offset = this.line-this.frame.height;
+			var output = properties.list.splice(offset,this.frame.height);
+			for(var y=0;y<output.length;y++) {
+				for(var x=0;x<output[y].length;x++) {
+					var d = output[y][x];
+					this.frame.setData(x,y,d.ch,d.attr,false);
+				}
+			}
+			properties.list=[];
 		}
 	}
 
@@ -317,55 +340,78 @@ function Tree(frame,text,tree) {
 	this.generate=function(last,current,line) {
 		if(properties.status&flags.HIDDEN)
 			return line;
+
+		var list=[];
+		var bg;
+		var fg;
+		
+		/* if this tree is the top level, initialize recursive shit */
 		if(this.depth == 0) {
 			current = true;
 			line = 1;
-			this.frame.clear();
-			this.frame.scrollTo(0,0);
 		}
+		
+		/* if this is a subtree, do stuff? */
 		else if(this.depth > 0) {
-			var str="";
-			/* set initial background color */
-			if(current && properties.index == -1) {
-				str+=getColor(this.colors.lbg);
+		
+			/* if this is the current item, set lightbar bg color */
+			if(current) {
+				bg=this.colors.lbg;
 				this.line = line;
 			}
+			/* otherwise use regular menu bg color */
 			else {
-				str+=getColor(this.colors.hbg);
+				bg=this.colors.bg;
 			}
+			
 			/* add indentation on subtrees */
-			str+=format("%-*s",this.depth-1,"");
-			/* set color for expansion character */
+			for(var i=0;i<this.depth-1;i++) 
+				list.push({ch:undefined,attr:bg+fg});
+			/* do not draw tree branches on top level tree */
 			if(this.depth == 1) 
-				str+=" ";
-			else if(last)
-				str+=getColor(this.colors.tfg)+"\xC0";
-			else
-				str+=getColor(this.colors.tfg)+"\xC3";
-			str+=getColor(this.colors.xfg);
-			if(properties.status&flags.CLOSED)
-				str+="+";
-			else
-				str+="-";
+				list.push({ch:undefined,attr:bg+fg});
+			/* if this is the bottom of a subtree */
+			else if(last) {
+				fg=this.colors.tfg;
+				list.push({ch:"\xC0",attr:bg+fg});
+			}
+			/* otherwise draw a right-hand tee for a tree item */
+			else {
+				fg=this.colors.tfg;
+				list.push({ch:"\xC3",attr:bg+fg});
+			}
+			
+			/* if this tree is disabled, use disabled fg */
 			if(properties.status&flags.DISABLED)
-				str+=getColor(this.colors.dfg);
-			else if(current && properties.index == -1)
-				str+=getColor(this.colors.lfg);
+				fg=this.colors.dfg;
+			/* otherwise, if current? lightbar fg */
+			else if(current)
+				fg=this.colors.lfg;
+			/* normal menu fg */
 			else
-				str+=getColor(this.colors.hfg);
-			str+=properties.text;
-			str+=format("%-*s",this.frame.width-console.strlen(str),"");
-			this.frame.putmsg(str+"\r\n");
+				fg=this.colors.fg;
+			
+			/* push text string into list */
+			for(var i=0;i<properties.text.length;i++) 
+				list.push({ch:properties.text[i],attr:bg+fg});
+
+			/* populate remaining characters as undefined */
+			for(var i=0;i<this.frame.width-list.length;i++) 
+				list.push({ch:undefined,attr:bg+fg});
+				
 			line++;
+			this.list(list);
 		}
+		
+		/* if this tree is "open", list its items */
 		if(!(properties.status&flags.CLOSED)) {
 			for(var i in properties.items) {
-				line = properties.items[i].generate(
-					(i == properties.items.length-1),
-					(current && properties.index == i),
-					line);
+				var l = (i == properties.items.length-1);
+				var c = (current && properties.index == i);
+				line = properties.items[i].generate(l,c,line);
 			}
 		}
+		
 		return line;
 	}
 	this.updateIndex=function(cmd) {
@@ -416,6 +462,20 @@ function Tree(frame,text,tree) {
 		}
 		return false;
 	}
+	function home() {
+		if(properties.index == 0)
+			return false;
+		properties.index = 0;
+		return true;
+	}
+	function end() {
+		if(properties.index == properties.items.length-1)
+			return false;
+			if(!(properties.items[properties.index].status&flags.disabled))
+				return true;
+		properties.index = properties.items.length-1;
+		return true;
+	}
 	function matchHotkey(cmd) {
 		if(!cmd.match(/\w/))
 			return false;
@@ -450,8 +510,9 @@ function Tree(frame,text,tree) {
 			properties.frame=frame;
 			properties.frame.attr = this.colors.bg + this.colors.fg;
 		}
-		if(text) 
+		if(text) {
 			properties.text = text;
+		}
 	}
 	init.apply(this,arguments);
 }
@@ -551,6 +612,9 @@ function TreeItem(text,parent,func,args) {
 		this.refresh();
 		return true;
 	}
+	this.list=function(str) {
+		properties.parent.list(str);
+	}
 	this.refresh=function() {
 		properties.parent.refresh();
 	}
@@ -559,32 +623,57 @@ function TreeItem(text,parent,func,args) {
 	this.generate=function(last,current,line) {
 		if(properties.status&flags.HIDDEN)
 			return line;
-		var str="";
-		/* set initial background color */
+			
+		var list=[];
+		var bg;
+		var fg;
+		
+		/* if this is the current item, set lightbar bg color */
 		if(current) {
-			str+=getColor(this.colors.lbg);
+			bg=this.colors.lbg;
 			this.line = line;
 		}
+		/* otherwise use regular menu bg color */
 		else {
-			str+=getColor(this.colors.bg);
+			bg=this.colors.bg;
 		}
+		
 		/* add indentation on subtrees */
-		str+=format("%-*s",this.depth-1,"");
+		for(var i=0;i<this.depth-1;i++) 
+			list.push({ch:undefined,attr:bg+fg});
+		/* do not draw tree branches on top level tree */
 		if(this.depth == 1) 
-			str+=" ";
-		else if(last)
-			str+=getColor(this.colors.tfg)+"\xC0";
-		else
-			str+=getColor(this.colors.tfg)+"\xC3";
+			list.push({ch:undefined,attr:bg+fg});
+		/* if this is the bottom of a subtree */
+		else if(last) {
+			fg=this.colors.tfg;
+			list.push({ch:"\xC0",attr:bg+fg});
+		}
+		/* otherwise draw a right-hand tee for a tree item */
+		else {
+			fg=this.colors.tfg;
+			list.push({ch:"\xC3",attr:bg+fg});
+		}
+		
+		/* if this tree is disabled, use disabled fg */
 		if(properties.status&flags.DISABLED)
-			str+=getColor(this.colors.dfg);
+			fg=this.colors.dfg;
+		/* otherwise, if current? lightbar fg */
 		else if(current)
-			str+=getColor(this.colors.lfg);
+			fg=this.colors.lfg;
+		/* normal menu fg */
 		else
-			str+=getColor(this.colors.fg);
-		str+=properties.text;
-		str+=format("%-*s",this.frame.width-console.strlen(str),"");
-		this.frame.putmsg(str+"\r\n");
+			fg=this.colors.fg;
+		
+		/* push text string into list */
+		for(var i=0;i<properties.text.length;i++) 
+			list.push({ch:properties.text[i],attr:bg+fg});
+
+		/* populate remaining characters as undefined */
+		for(var i=0;i<this.frame.width-list.length;i++) 
+			list.push({ch:undefined,attr:bg+fg});
+			
+		this.list(list);
 		return ++line;
 	}
 	
@@ -602,3 +691,4 @@ function TreeItem(text,parent,func,args) {
 	}
 	init.apply(this,arguments);
 }
+
