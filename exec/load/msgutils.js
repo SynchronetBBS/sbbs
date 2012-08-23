@@ -336,3 +336,101 @@ function expand_body(body, sys_misc, mode)
 
 	return(body);
 }
+
+/*	- echicken's getMessageThreads() function -
+
+	Usage: var threads = getMessageThreads(sub);
+	(Where 'sub' is a sub-board internal code)
+	threads.order	- Array of references to properties of threads.thread
+	threads.thread	- Object
+	threads.thread[x].newest	- Date of most recent message in this thread
+	threads.thread[x].messages	- Array of headers of messages in this thread
+	
+	Iterate over threads from oldest to newest:
+	for(var t in threads.thread) {
+		for(var m in threads.thread[t].messages) {
+			// Do stuff
+		}
+	}
+	
+	Iterate over threads from most recently to least recently updated:
+	for(var t in threads.order) {
+		for(var m in threads.thread[threads.order[t]].messages) {
+			// Do stuff
+		}
+	}
+*/
+function getMessageThreads(sub) {
+	var threads = { thread : {}, dates : [], order : [] };
+	var threadedMessages = [];
+	var subjects = {};
+	var header;
+	var tbHeader;
+	var md5subject;
+	var msgBase = new MsgBase(sub);
+	msgBase.open();
+	for(var m = msgBase.first_msg; m <= msgBase.last_msg; m++) {
+		if(threadedMessages.indexOf(m) >= 0)
+			continue;
+		header = msgBase.get_msg_header(m);
+		if(header === null || header.attr&MSG_DELETE)
+			continue;
+		md5subject = md5_calc(header.subject.toUpperCase().replace(/^\s*|\s*RE:|^\s*|\s*$/g, ''), hex=true);
+		if(header.thread_back !== null && threadedMessages.indexOf(header.thread_back) >= 0) {
+			if(threads.thread.hasOwnProperty(header.thread_back)) {
+				// This is a reply to the first message in a thread
+				threads.thread[header.thread_back].newest = header.when_written_time;
+				threads.dates[threads.thread[header.thread_back].dateIndex] = header.when_written_time;
+				threads.thread[header.thread_back].messages.push(header);
+				threadedMessages.push(m);
+			} else {
+				tbHeader = msgBase.get_msg_header(header.thread_back);
+				if(tbHeader !== null) {
+					// Heh - yeah, this part still sucks
+					outer:
+					for(var t in threads.thread) {
+						for(var mm in threads.thread[t].messages) {
+							if(threads.thread[t].messages[mm].number != tbHeader.number)
+								continue;
+							threads.thread[t].newest = header.when_written_time;
+							threads.dates[threads.thread[t].dateIndex] = header.when_written_time;
+							threads.thread[t].messages.push(header);
+							threadedMessages.push(m);
+							break outer;
+						}
+					}
+				}
+			}			
+		} else if(subjects.hasOwnProperty(md5subject)) {
+			// Attempt to match an existing thread based on the subject line
+			threads.thread[subjects[md5subject]].newest = header.when_written_time;
+			threads.dates[threads.thread[subjects[md5subject]].dateIndex] = header.when_written_time;
+			threads.thread[subjects[md5subject]].messages.push(header);
+			threadedMessages.push(m);
+		}
+		if(threadedMessages.indexOf(m) >= 0)
+			continue;
+		
+		// This is a new thread
+		threads.dates.push(header.when_written_time);
+		threads.thread[m] = {
+			newest : header.when_written_time,
+			dateIndex : threads.dates.length - 1,
+			messages : [header]
+		}
+		subjects[md5subject] = m;
+		threadedMessages.push(m);
+	}
+	msgBase.close();
+	
+	threads.dates.sort(function (a,b) {return b - a});
+	for(var d = 0; d < threads.dates.length; d++) {
+		for(var t in threads.thread) {
+			if(threads.thread[t].newest != threads.dates[d])
+				continue;
+			threads.order.push(t);
+			break;
+		}
+	}
+	return threads;
+}
