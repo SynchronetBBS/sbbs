@@ -377,14 +377,15 @@ function Tree(frame,text,tree) {
 			
 			var y;
 			var x;
-			var ch;
-			var attr;
 			
 			/* push tree items into frame */
 			for(y=0;y<output.length;y++) {
-				for(x=0;x<output[y].length;x++) {
-					ch = output[y][x].ch;
-					attr = output[y][x].attr;
+				var ch;
+				var attr;
+				var line = output[y].splice(0,this.frame.width);
+				for(x=0;x<line.length;x++) {
+					ch = line[x].ch;
+					attr = line[x].attr;
 					this.frame.setData(x,y,ch,attr,false);
 				}
 				/* clear remaining spaces at end of line */
@@ -551,18 +552,19 @@ function Tree(frame,text,tree) {
 			/* add indentation on subtrees */
 			for(var i=0;i<this.depth-1;i++) 
 				list.push({ch:" ",attr:bg+fg});
+				
 			/* do not draw tree branches on top level tree */
-			if(this.depth == 1) 
-				list.push({ch:" ",attr:bg+fg});
-			/* if this is the bottom of a subtree */
-			else if(last) {
-				fg=this.colors.tfg;
-				list.push({ch:"\xC0",attr:bg+fg});
-			}
-			/* otherwise draw a right-hand tee for a tree item */
-			else {
-				fg=this.colors.tfg;
-				list.push({ch:"\xC3",attr:bg+fg});
+			if(this.depth > 1) {
+				/* if this is the bottom of a subtree */
+				if(last) {
+					fg=this.colors.tfg;
+					list.push({ch:"\xC0",attr:bg+fg});
+				}
+				/* otherwise draw a right-hand tee for a tree item */
+				else {
+					fg=this.colors.tfg;
+					list.push({ch:"\xC3",attr:bg+fg});
+				}
 			}
 			
 			fg = this.colors.xfg;
@@ -782,7 +784,7 @@ function TreeItem(text,parent,func,args) {
 		}
 		
 		/* add indentation on subtrees */
-		for(var i=0;i<this.depth-1;i++) 
+		for(var i=0;i<this.depth-2;i++) 
 			list.push({ch:" ",attr:bg+fg});
 		/* do not draw tree branches on top level tree */
 		if(this.depth == 1) 
