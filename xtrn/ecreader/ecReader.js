@@ -178,11 +178,11 @@ function showMessage(header) {
 	var body = msgBase.get_msg_body(header.number);
 	msgBase.close();
 	headerFrame.putmsg(
-		hfg + format("%15s", "Subject: ") + sffg + header.subject
+		hfg + format("%15s", "Subject: ") + sffg + header.subject.substr(0, 65)
 		+ "\r\n" +
-		hfg + format("%15s", "From: ") + sffg + header.from
+		hfg + format("%15s", "From: ") + sffg + header.from.substr(0, 65)
 		+ "\r\n" +
-		hfg + format("%15s", "To: ") + sffg + header.to
+		hfg + format("%15s", "To: ") + sffg + header.to.substr(0, 65)
 		+ "\r\n" +
 		hfg + format("%15s", "Date: ") + sffg + system.timestr(header.when_written_time)
 	);
