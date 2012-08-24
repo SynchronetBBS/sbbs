@@ -20,6 +20,7 @@ var nfg = LIGHTGRAY;	// Foreground colour of non-highlighted text
 var xfg = LIGHTCYAN;	// Subtree expansion indicator colour
 var tfg = LIGHTCYAN;	// Uh, that line beside subtree items
 var fbg = BG_BLUE;		// Title, Header, Help frame background colour
+var urm = WHITE;		// Unread message foreground colour
 var hfg = "\1h\1w"; 	// Heading text (CTRL-A format, for now)
 var sffg = "\1h\1c";	// Heading sub-field text (CTRL-A format, for now)
 var mfg = "\1n\1w";		// Message text colour (CTRL-A format, for now)
@@ -122,7 +123,11 @@ function getFlatList(oldestFirst) {
 		messages.reverse();
 	for(var m = 0; m < messages.length; m++) {
 		item = formatItem(messages[m].number, messages[m].from, messages[m].to, messages[m].subject, messages[m].when_written_time);;
-		tree.addItem(item, showMessage, messages[m], mail);
+		var i = tree.addItem(item, showMessage, messages[m], mail);
+		if(!mail && messages[messages.length - 1].number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr)
+			i.attr = urm;
+		else if(mail && messages[messages.length - 1].attr&MSG_READ == 0)
+			i.attr = urm;
 	}
 	tree.open();
 	tree.cycle();
@@ -144,7 +149,11 @@ function getThreadedList() {
 				threads.thread[threads.order[t]].messages[0].subject,
 				threads.thread[threads.order[t]].messages[0].when_written_time
 			);
-			tree.addItem(item, showMessage, messages[messages.length - 1], mail);
+			var i = tree.addItem(item, showMessage, messages[messages.length - 1], mail);
+			if(!mail && messages[messages.length - 1].number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr)
+				i.attr = urm;
+			else if(mail && messages[messages.length - 1].attr&MSG_READ == 0)
+				i.attr = urm;
 			continue;
 		}
 		item = formatItem(
@@ -164,7 +173,14 @@ function getThreadedList() {
 				threads.thread[threads.order[t]].messages[m].subject,
 				threads.thread[threads.order[t]].messages[m].when_written_time
 			);
-			st.addItem(item, showMessage, messages[messages.length - 1], mail);
+			var i = st.addItem(item, showMessage, messages[messages.length - 1], mail);
+			if(!mail && messages[messages.length - 1].number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr) {
+				i.attr = urm;
+				st.attr = urm;
+			} else if(mail && messages[messages.length - 1].attr&MSG_READ == 0) {
+				i.attr = urm;
+				st.attr = urm;
+			}
 		}
 	}
 	tree.open();
@@ -197,12 +213,21 @@ function getList() {
 }
 
 function showMessage(header) {
+	var retval = true;
+	var userInput = "";
+	var h = null;
+	var n = header.number;
 	currentMessage = messages.indexOf(header);
 	messageFrame.top();
-	if(!mail)
+	if(!mail) {
 		mb = msgBase;
-	else
+		if(header.number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr) {
+			msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr = header.number;
+			retval = "REFRESH";
+		}
+	} else {
 		mb = new MsgBase('mail');
+	}
 	mb.open();
 	var body = mb.get_msg_body(header.number);
 	mb.close();
@@ -218,10 +243,6 @@ function showMessage(header) {
 	bodyFrame.scrollTo(0, 0);
 	bodyFrame.putmsg(mfg + word_wrap(body));
 	bodyFrame.scrollTo(0, 0);
-	var retval = true;
-	var userInput = "";
-	var h = null;
-	var n = header.number;
 	while(userInput != "Q") {
 		if(frame.cycle())
 			console.gotoxy(80, 24);
