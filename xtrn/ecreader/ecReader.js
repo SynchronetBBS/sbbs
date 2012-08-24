@@ -320,7 +320,7 @@ function showMessage(header) {
 
 function deleteMessage(header) {
 	var ret = false;
-	if(!mail && user.number == 1) {
+	if(!mail && msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].is_operator) {
 		if(prompt("Delete message #" + header.number)) {
 			msgBase.open();
 			msgBase.remove_msg(header.number);
