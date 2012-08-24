@@ -43,10 +43,13 @@ var messageFrame = new Frame(1, 3, 80, 21, BG_BLACK|WHITE, frame);
 var headerFrame = new Frame(1, 3, 80, 4, fbg|WHITE, messageFrame);
 var bodyFrame = new Frame(1, 7, 80, 17, BG_BLACK|WHITE, messageFrame);
 var messageBar = new Frame(1, 24, 80, 1, fbg|WHITE, messageFrame);
+var promptFrame = new Frame(20, 8, 40, 6, fbg|WHITE, frame);
+var promptSubFrame = new Frame(22, 9, 36, 4, BG_BLACK|WHITE, promptFrame);
 
 frame.open();
 messageFrame.bottom();
 headerFrame.bottom();
+promptFrame.bottom();
 
 columnFrame.putmsg(
 	format("%-9s", "Msg #")
@@ -294,9 +297,12 @@ function showMessage(header) {
 					bodyFrame.scroll(0, bodyFrame.height);
 				break;
 			case KEY_DEL:
-				deleteMessage(header);
-				userInput = "Q";
-				retval = "REFRESH";
+				if(deleteMessage(header)) {
+					userInput = "Q";
+					retval = "REFRESH";
+				} else {
+					frame.cycle();
+				}
 				break;
 			default:
 				break;
@@ -313,21 +319,24 @@ function showMessage(header) {
 }
 
 function deleteMessage(header) {
+	var ret = false;
 	if(!mail && user.number == 1) {
-		msgBase.open();
-		msgBase.remove_msg(header.number);
-		msgBase.close();
-	} else if(mail) {
+		if(prompt("Delete message #" + header.number)) {
+			msgBase.open();
+			msgBase.remove_msg(header.number);
+			msgBase.close();
+			ret = true;
+		}
+	} else if(mail && prompt("Delete this message")) {
 		/*	Could verify again that mail is addressed to this user, but
 			they shouldn't have been able to select it otherwise. */
 		var mailBase = new MsgBase("mail");
 		mailBase.open();
 		mailBase.remove_msg(header.number);
 		mailBase.close();
-	} else {
-		return false;
+		ret = true;
 	}
-	return true;
+	return ret;
 }
 
 function sendEmail() {
@@ -347,6 +356,17 @@ function sendEmail() {
 		console.crlf();
 		console.pause();
 	}
+}
+
+function prompt(str) {
+	promptFrame.top();
+	promptSubFrame.clear();
+	frame.cycle();
+	console.gotoxy(promptSubFrame.x, promptSubFrame.y + 1);
+	var ret = console.yesno(str);
+	promptFrame.bottom();
+	frame.invalidate();
+	return ret;
 }
 
 getList();
