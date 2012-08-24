@@ -53,9 +53,12 @@ columnFrame.putmsg(
 	+ "Date"
 );
 helpFrame.putmsg(
-	hfg + "HOME" + sffg + ": first, "
-	+ hfg + "END" + sffg + ": last | "
-	+ sffg + "View: "
+	hfg + "HOME"
+	+ sffg + ", "
+	+ hfg + "END"
+	+ sffg + ", "
+	+ hfg + "[" + sffg + " PgUp PgDn " + hfg + "] "
+	+ sffg + "| View: "
 	+ hfg + "T" + sffg + "hreaded, "
 	+ hfg + "F" + sffg + "lat | "
 	+ hfg + "C" + sffg + "hange area  "
@@ -65,8 +68,11 @@ helpFrame.putmsg(
 messageBar.putmsg(
 	sffg + "Scroll: " + hfg + "UP" + sffg + "/" + hfg + "DOWN"
 	+ sffg + ", "
-	+ hfg + "HOME" + sffg + ": top, "
-	+ hfg + "END" + sffg + ": bottom"
+	+ hfg + "HOME"
+	+ sffg + ", "
+	+ hfg + "END"
+	+ sffg + ", "
+	+ hfg + "[" + sffg + " PgUp PgDn " + hfg + "] "
 	+ sffg + " | "
 	+ hfg + "R" + sffg + "eply  "
 	+ hfg + "P" + sffg + "revious  "
@@ -243,6 +249,18 @@ function showMessage(header) {
 			case KEY_END:
 				bodyFrame.end();
 				bodyFrame.scrollTo(0, bodyFrame.data_height - bodyFrame.height);
+				break;
+			case "[":
+				if(bodyFrame.offset.y - bodyFrame.height < 0)
+					bodyFrame.scrollTo(0, 0);
+				else
+					bodyFrame.scroll(0, -bodyFrame.height);
+				break;
+			case "]":
+				if(bodyFrame.offset.y + bodyFrame.height > bodyFrame.data_height)
+					bodyFrame.scrollTo(bodyFrame.data_height - bodyFrame.height);
+				else
+					bodyFrame.scroll(0, bodyFrame.height);
 				break;
 			default:
 				break;
