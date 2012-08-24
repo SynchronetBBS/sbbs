@@ -2,6 +2,7 @@
 // A lightbar, threaded message reader for Synchronet 3.16+
 // echicken -at- bbs.electronicchicken.com, 2012
 
+js.branch_limit = 0;
 console.clear();
 console.putmsg("\1h\1wecReader by echicken, loading message threads...");
 
@@ -11,6 +12,7 @@ load(js.exec_dir + "msglib.js");
 load("frame.js");
 load("tree.js");
 
+var showMail = true;	// Allow access to the private 'mail' sub-board
 var threaded = true;	// False to default to flat view
 var lbg = BG_CYAN;		// Lightbar background
 var lfg = WHITE;		// Foreground colour of highlighted text
@@ -25,6 +27,7 @@ var mfg = "\1n\1w";		// Message text colour (CTRL-A format, for now)
 var messages;
 var tree;
 var currentMessage = 0;
+var mail = false;
 
 if(argc > 0 && argv[0])
 	var msgBase = new MsgBase(argv[0]);
@@ -53,30 +56,24 @@ columnFrame.putmsg(
 	+ "Date"
 );
 helpFrame.putmsg(
-	hfg + "HOME"
-	+ sffg + ", "
-	+ hfg + "END"
-	+ sffg + ", "
-	+ hfg + "[" + sffg + " PgUp PgDn " + hfg + "] "
-	+ sffg + "| View: "
-	+ hfg + "T" + sffg + "hreaded, "
-	+ hfg + "F" + sffg + "lat | "
-	+ hfg + "C" + sffg + "hange area  "
-	+ hfg + "P" + sffg + "ost  "
+	hfg + "HOME" + sffg + "/" + hfg + "END "
+	+ hfg + "[" + sffg + "PgUp/PgDn" + hfg + "] "
+	+ hfg + "N" + sffg + "ew Scan "
+	+ hfg + "T" + sffg + "hreaded "
+	+ hfg + "F" + sffg + "lat "
+	+ hfg + "C" + sffg + "hange Area "
+	+ hfg + "P" + sffg + "ost "
+	+ hfg + "E" + sffg + "mail "
+	+ hfg + "DEL" + sffg + "ete "
 	+ hfg + "Q" + sffg + "uit"
 );
 messageBar.putmsg(
-	sffg + "Scroll: " + hfg + "UP" + sffg + "/" + hfg + "DOWN"
-	+ sffg + ", "
-	+ hfg + "HOME"
-	+ sffg + ", "
-	+ hfg + "END"
-	+ sffg + ", "
-	+ hfg + "[" + sffg + " PgUp PgDn " + hfg + "] "
-	+ sffg + " | "
-	+ hfg + "R" + sffg + "eply  "
-	+ hfg + "P" + sffg + "revious  "
-	+ hfg + "N" + sffg + "ext  "
+	hfg + "HOME" + sffg + "/" + hfg + "END "
+	+ hfg + "[" + sffg + "PgUp/PgDn" + hfg + "] "
+	+ hfg + "R" + sffg + "eply "
+	+ hfg + "P" + sffg + "revious "
+	+ hfg + "N" + sffg + "ext "
+	+ hfg + "DEL" + sffg + "ete "
 	+ hfg + "Q" + sffg + "uit"
 );
 
@@ -92,61 +89,79 @@ function formatItem(messageNumber, from, to, subject, date) {
 
 function getFlatList(oldestFirst) {
 	var header = null;
-	msgBase.open();
-	for(var m = msgBase.first_msg; m <= msgBase.last_msg; m++) {
-		header = msgBase.get_msg_header(m);
-		if(header === null || header.attr&MSG_DELETE)
+	var item;
+	if(!mail)
+		var mb = msgBase;
+	else
+		var mb = new MsgBase('mail');
+	mb.open();
+	for(var m = mb.first_msg; m <= mb.last_msg; m++) {
+		header = mb.get_msg_header(m);
+		if(
+			header === null
+			||
+			header.attr&MSG_DELETE
+			||
+			(mail
+				&&
+				header.to != user.alias
+				&&
+				header.to != user.name
+				&&
+				header.to_ext != user.number
+			)
+		)
 			continue;
 		messages.push(header);
 	}
-	msgBase.close();
+	mb.close();
 	if(oldestFirst === undefined || !oldestFirst)
 		messages.reverse();
 	for(var m = 0; m < messages.length; m++) {
-		tree.addItem(formatItem(messages[m].number, messages[m].from, messages[m].to, messages[m].subject, messages[m].when_written_time), showMessage, messages[m]);
+		item = formatItem(messages[m].number, messages[m].from, messages[m].to, messages[m].subject, messages[m].when_written_time);;
+		tree.addItem(item, showMessage, messages[m], mail);
 	}
 	tree.open();
 	tree.cycle();
 }
 
 function getThreadedList() {
-	var threads = getMessageThreads(msgBase.cfg.code);
+	if(!mail)
+		var threads = getMessageThreads(msgBase.cfg.code);
+	else
+		var threads = getMessageThreads('mail');
+	var item;
 	for(var t in threads.order) {
 		if(threads.thread[threads.order[t]].messages.length < 2) {
 			messages.push(threads.thread[threads.order[t]].messages[0]);
-			tree.addItem(
-					formatItem(
-						threads.thread[threads.order[t]].messages[0].number,
-						threads.thread[threads.order[t]].messages[0].from,
-						threads.thread[threads.order[t]].messages[0].to,
-						threads.thread[threads.order[t]].messages[0].subject,
-						threads.thread[threads.order[t]].messages[0].when_written_time
-					),
-				showMessage, messages[messages.length - 1]
+			item = formatItem(
+				threads.thread[threads.order[t]].messages[0].number,
+				threads.thread[threads.order[t]].messages[0].from,
+				threads.thread[threads.order[t]].messages[0].to,
+				threads.thread[threads.order[t]].messages[0].subject,
+				threads.thread[threads.order[t]].messages[0].when_written_time
 			);
+			tree.addItem(item, showMessage, messages[messages.length - 1], mail);
 			continue;
 		}
-		st = tree.addTree(
-				formatItem(
-					threads.thread[threads.order[t]].messages[0].number,
-					threads.thread[threads.order[t]].messages[0].from,
-					threads.thread[threads.order[t]].messages[0].to,
-					threads.thread[threads.order[t]].messages[0].subject,
-					threads.thread[threads.order[t]].newest
-				)
+		item = formatItem(
+			threads.thread[threads.order[t]].messages[0].number,
+			threads.thread[threads.order[t]].messages[0].from,
+			threads.thread[threads.order[t]].messages[0].to,
+			threads.thread[threads.order[t]].messages[0].subject,
+			threads.thread[threads.order[t]].newest
 		);
+		st = tree.addTree(item);
 		for(var m = 0; m < threads.thread[threads.order[t]].messages.length; m++) {
 			messages.push(threads.thread[threads.order[t]].messages[m]);
-			st.addItem(
-				formatItem(
-					threads.thread[threads.order[t]].messages[m].number,
-					threads.thread[threads.order[t]].messages[m].from,
-					threads.thread[threads.order[t]].messages[m].to,
-					threads.thread[threads.order[t]].messages[m].subject,
-					threads.thread[threads.order[t]].messages[m].when_written_time
-				),
-				showMessage, messages[messages.length - 1]
+			item = formatItem(
+				threads.thread[threads.order[t]].messages[m].number,
+				threads.thread[threads.order[t]].messages[m].from,
+				threads.thread[threads.order[t]].messages[m].to,
+				threads.thread[threads.order[t]].messages[m].subject,
+				threads.thread[threads.order[t]].messages[m].when_written_time
 			);
+			st.addItem(item, showMessage, messages[messages.length - 1], mail);
 		}
 	}
 	tree.open();
@@ -161,10 +176,17 @@ function getList() {
 	tree.colors.xfg = xfg;
 	tree.colors.tfg = tfg;
 	messages = [];
+	if(!mail) {
+		var mg = msgBase.cfg.grp_name;
+		var ms = msgBase.cfg.name;
+	} else {	
+		var mg = "Private email";
+		var ms = "Private email";
+	}
 	titleFrame.clear();
-	titleFrame.putmsg(hfg + "Message Group: " + sffg + msgBase.cfg.grp_name);
+	titleFrame.putmsg(hfg + "Message Group: " + sffg + mg);
 	titleFrame.crlf();
-	titleFrame.putmsg(hfg + "    Sub Board: " + sffg + msgBase.cfg.name);
+	titleFrame.putmsg(hfg + "    Sub Board: " + sffg + ms);
 	if(threaded)
 		getThreadedList();
 	else
@@ -174,9 +196,13 @@ function getList() {
 function showMessage(header) {
 	currentMessage = messages.indexOf(header);
 	messageFrame.top();
-	msgBase.open();
-	var body = msgBase.get_msg_body(header.number);
-	msgBase.close();
+	if(!mail)
+		mb = msgBase;
+	else
+		mb = new MsgBase('mail');
+	mb.open();
+	var body = mb.get_msg_body(header.number);
+	mb.close();
 	headerFrame.putmsg(
 		hfg + format("%15s", "Subject: ") + sffg + header.subject.substr(0, 65)
 		+ "\r\n" +
@@ -205,7 +231,12 @@ function showMessage(header) {
 				f.close();
 				frame.invalidate();
 				console.clear();
-				bbs.post_msg(msgBase.cfg.code, WM_QUOTE, header);
+				if(!mail)
+					bbs.post_msg(mb.cfg.code, WM_QUOTE, header);
+				else if(mail && header.from_net_type == NET_NONE)
+					bbs.email(parseInt(header.from_ext), WM_EMAIL|WM_QUOTE, "", "RE: " + header.subject);
+				else if(mail)
+					bbs.netmail(header.from_net_addr, WM_NETMAIL|WM_QUOTE, "RE: " + header.subject);
 				frame.draw();
 				retval = header;
 				userInput = "Q";
@@ -271,6 +302,8 @@ function showMessage(header) {
 	bodyFrame.clear();
 	if(!retval.hasOwnProperty("number"))
 		messageFrame.bottom();
+	else if(mail)
+		retval.mail = true;
 	return retval;
 }
 
@@ -294,6 +327,7 @@ while(userInput != "Q") {
 		case "C":
 			messageAreaSelector(4, 5, 70, 16, frame);
 			msgBase = new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
+			mail = false;
 			getList();
 			break;
 		case "P":
@@ -302,11 +336,20 @@ while(userInput != "Q") {
 			bbs.post_msg(msgBase.cfg.code);
 			getList();
 			frame.draw();
+		case "E":
+			mail = true;
+			getList();
+			break;
+		case KEY_DEL:
+			break;
 		default:
 			r = tree.getcmd(userInput);
 			while(r.hasOwnProperty("number")) {
 				frame.cycle();
-				r = showMessage(r);
+				if(r.hasOwnProperty('mail') && r.mail)
+					r = showMessage(r, true);
+				else
+					r = showMessage(r);
 			}
 			break;
 	}
