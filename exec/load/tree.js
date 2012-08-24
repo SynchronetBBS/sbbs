@@ -14,7 +14,9 @@
 		hash
 		depth
 		index
-		curitem
+		current
+		currentItem
+		currentTree
 	
 	methods:
 	
@@ -22,6 +24,7 @@
 		getcmd(cmd)									//handle user input
 		addTree(text)								//add a subtree to an existing tree
 		addItem(text,[func|retval],[arg1,arg2..])	//add an item to the tree
+		deleteItem(index)							//remove an item/subtree
 		open()										//expand tree
 		close()										//collapse tree
 		show()										//show hidden tree
@@ -72,7 +75,7 @@ function Tree(frame,text,tree) {
 	var properties = {
 		frame:undefined,
 		parent:undefined,
-		status:0,
+		status:flags.CLOSED,
 		index:0,
 		text:"",
 		line:1,
@@ -91,7 +94,7 @@ function Tree(frame,text,tree) {
 		PGDN:"]",
 		PGUP:"[",
 		SELECT:"\r",
-		
+		DELETE:"\x7f"
 	}
 		
 	/* protected properties */
@@ -172,7 +175,22 @@ function Tree(frame,text,tree) {
 	this.__defineGetter__("current", function() {
 		return properties.items[properties.index];
 	});
-
+	this.__defineGetter__("currentItem", function() {
+		var current = this;
+		while(current.current instanceof Tree) 
+			current = current.current;
+		if(current.current instanceof TreeItem)
+			return current.current;
+		else
+			return current;
+	});
+	this.__defineGetter__("currentTree", function() {
+		var current = this;
+		while(current.current instanceof Tree) 
+			current = current.current;
+		return current;
+	});
+	
 	/* public properties */
 	this.colors = {
 		// non-current item foreground
@@ -235,6 +253,9 @@ function Tree(frame,text,tree) {
 				case commands.PGDN:
 					retval = this.pageDown(0,this.frame.height);
 					break;
+				case commands.DELETE:
+					retval = this.deleteItem();
+					break;
 				case commands.SELECT:
 					if(properties.index >= 0) 
 						retval = this.current.action();						
@@ -288,18 +309,43 @@ function Tree(frame,text,tree) {
 		return retval;
 	}
 	this.addTree = function(text) {
-		var tree=new Tree(this.frame,text,this);
-		this.items.push(tree);
-		this.refresh();
+		if(text instanceof Tree) {
+			this.items.push(tree);
+			tree.frame = this.frame;
+		}
+		else {
+			var tree=new Tree(this.frame,text,this);
+			this.items.push(tree);
+		}
+		if(!(this.status&flags.CLOSED))
+			this.refresh();
 		return tree;
 	}
 	this.addItem = function(text,func,args) {
-		var args = Array.prototype.slice.apply(arguments);
-		var item=new TreeItem(args.shift(),this,args.shift(),args);
-		this.items.push(item);
-		//this.refresh();
+		if(text instanceof TreeItem) {
+			this.items.push(text);
+			text.parent = this;
+		}
+		else {
+			var args = Array.prototype.slice.apply(arguments);
+			var item=new TreeItem(args.shift(),this,args.shift(),args);
+			this.items.push(item);
+		}
+		if(!(this.status&flags.CLOSED))
+			this.refresh();
 		return item;
 	}		
+	this.deleteItem = function(index) {
+		if(!index)
+			index = properties.index;
+		if(!properties.items[index])
+			return values.NOT_HANDLED;
+		var item = properties.items.splice(index,1);
+		if(!properties.items[properties.index])
+			properties.index--;
+		this.refresh();
+		return values.HANDLED;
+	}
 	this.open = function() {
 		if(properties.status&flags.CLOSED) {
 			properties.status&=~flags.CLOSED;
@@ -516,14 +562,14 @@ function Tree(frame,text,tree) {
 		return values.HANDLED;
 	}
 	
-	/* DO NOT USE */
+	/** DO NOT USE, SHIT WILL EXPLODE, INTERNAL USE ONLY **/
 	this.generate=function(last,current,line) {
 		if(properties.status&flags.HIDDEN)
 			return line;
 
 		var list=[];
-		var bg;
-		var fg;
+		var bg=this.colors.hbg;
+		var fg=this.colors.hfg;
 		
 		/* if this tree is the top level, initialize recursive shit */
 		if(this.depth == 0) {
@@ -543,10 +589,6 @@ function Tree(frame,text,tree) {
 				else {
 					bg=this.colors.cbg;
 				}
-			}
-			/* otherwise use regular menu bg color */
-			else {
-				bg=this.colors.hbg;
 			}
 			
 			/* add indentation on subtrees */
@@ -764,23 +806,19 @@ function TreeItem(text,parent,func,args) {
 		properties.parent.refresh();
 	}
 
-	/* DO NOT USE */
+	/** DO NOT USE, SHIT WILL EXPLODE, INTERNAL USE ONLY **/
 	this.generate=function(last,current,line) {
 		if(properties.status&flags.HIDDEN)
 			return line;
 			
 		var list=[];
-		var bg;
-		var fg;
+		var bg=this.colors.bg;
+		var fg=this.colors.fg;
 		
 		/* if this is the current item, set lightbar bg color */
 		if(current) {
 			bg=this.colors.lbg;
 			this.line = line;
-		}
-		/* otherwise use regular menu bg color */
-		else {
-			bg=this.colors.bg;
 		}
 		
 		/* add indentation on subtrees */
