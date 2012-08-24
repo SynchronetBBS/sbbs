@@ -715,7 +715,8 @@ function TreeItem(text,parent,func,args) {
 	var properties = {
 		parent:undefined,
 		status:undefined,
-		text:undefined
+		text:undefined,
+		attr:undefined
 	};
 	
 	/* protected properties */
@@ -741,6 +742,9 @@ function TreeItem(text,parent,func,args) {
 	});
 	this.__defineGetter__("colors",function() {
 		return properties.parent.colors;
+	});
+	this.__defineSetter__("attr",function(attr) {
+		properties.attr = attr;
 	});
 	this.__defineGetter__("hash",function() {
 		return properties.parent.hash+"\t"+properties.text;
@@ -845,8 +849,10 @@ function TreeItem(text,parent,func,args) {
 		else if(current)
 			fg=this.colors.lfg;
 		/* normal menu fg */
-		else
+		else if(properties.attr == undefined)
 			fg=this.colors.fg;
+		else
+			fg=properties.attr;
 		
 		/* push text string into list */
 		for(var i=0;i<properties.text.length;i++) 
