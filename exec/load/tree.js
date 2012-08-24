@@ -79,6 +79,7 @@ function Tree(frame,text,tree) {
 		index:0,
 		text:"",
 		line:1,
+		attr:undefined,
 		list:[],
 		items:[]
 	};
@@ -135,6 +136,12 @@ function Tree(frame,text,tree) {
 			return true;
 		}
 		return false;
+	});
+	this.__defineSetter__("attr",function(attr) {
+		properties.attr = attr;
+	});
+	this.__defineGetter__("attr",function() {
+		return properties.attr;
 	});
 	this.__defineGetter__("status",function() {
 		return properties.status;
@@ -626,9 +633,12 @@ function Tree(frame,text,tree) {
 				else
 					fg=this.colors.cfg;
 			}
-			/* normal menu fg */
-			else
+			/* normal item fg */
+			else if(properties.attr == undefined)
 				fg=this.colors.hfg;
+			/* special item fg */
+			else
+				fg=properties.attr;
 			
 			/* push text string into list */
 			for(var i=0;i<properties.text.length;i++) 
@@ -746,6 +756,9 @@ function TreeItem(text,parent,func,args) {
 	this.__defineSetter__("attr",function(attr) {
 		properties.attr = attr;
 	});
+	this.__defineGetter__("attr",function() {
+		return properties.attr;
+	});
 	this.__defineGetter__("hash",function() {
 		return properties.parent.hash+"\t"+properties.text;
 	});
@@ -848,9 +861,10 @@ function TreeItem(text,parent,func,args) {
 		/* otherwise, if current? lightbar fg */
 		else if(current)
 			fg=this.colors.lfg;
-		/* normal menu fg */
+		/* normal item fg */
 		else if(properties.attr == undefined)
 			fg=this.colors.fg;
+		/* special item fg */
 		else
 			fg=properties.attr;
 		
