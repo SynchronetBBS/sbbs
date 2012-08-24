@@ -5,52 +5,58 @@
 
 USAGE:
 
-var generator = new TerrainGenerator();
-var map = generator.generate( 
-	<width>, 
-	<height>, 
-	<hills>
-);
+var map = new Map(width,height);
 
 width = the width of the map array
 height = the height of the map array
-hills = the number of hills to generate
+
+PROPERTIES:
+
+Map.min = the lowest elevation on the map
+Map.max = the highest elevation on the map
+Map.mean = the average elevation on the map
+Map.range = the difference between the max and min elevations
 
 SETTINGS:
 
-TerrainGenerator.base = the minimum elevation of the map
-TerrainGenerator.max_radius = the largest any single hill can be
-TerrainGenerator.min_radius = the smallest any single hill can be
-TerrainGenerator.peak = the scale of the map (max elevation relative to base)
+Map.base = the minimum elevation of the map
+Map.peak = the scale of the map (max elevation relative to base)
+Map.maxRadius = the largest any single hill can be
+Map.minRadius = the smallest any single hill can be
+Map.hills = number of times to "poke" the map (generate elevation features)
 
-TerrainGenerator.island_mode = force poke center-points to be within map boundaries
-								(tends to cluster terrain in the center of the map)
-TerrainGenerator.lake_mode = default "poke" direction is downward instead of upward
-TerrainGenerator.border_mode = make a single line half-step border around "poke"
+MODES:
+
+Map.island = [true|false] cluster features towards the center of the map
+Map.lake = [true|false] invert feature changes (lower elevation instead of increase elevation)
+Map.border = [true|false] add a ring around the edge of a feature
 
 METHODS:
 
-TerrainGenerator.generate(width,height,hills)
---must supply width and height 
---hills determines whether the generator will generate randomized terrain for you
---if hills is not specified, a "blank slate" will be returned, which 
-  can be manipulated via poke() and normalize()
+Map.xSection(y,width,height)
+--y is the vertical offset of the map slice to create (a side profile view of the map at a given line)
+--width and height are the dimensions of the matrix returned
 
-TerrainGenerator.poke(map,xoff,yoff,direction)
---must supply a map (2D integer array)
+Map.ySection(x,width,height)
+--x is the horizontal offset of the map slice to create (a side profile view of the map at a given line)
+--width and height are the dimensions of the matrix returned
+
+Map.randomize(base,peak,hill)
+--if arguments are not specified, Map will use default values
+
+Map.poke(xoff,yoff,direction)
 --xoff, yoff are the position on the map to change elevation (optional)
 --direction is the direction in which to change the elevation (optional)
---min_radius and max_radius affect the outcome of the "poke"
+NOTE: Map.minRadius and maxRadius affect the outcome of the "poke"
 
-TerrainGenerator.normalize(map,base,scale)
---must supply a map (2D integer array)
+Map.normalize(base,peak)
 --base is the lowest acceptable elevation value (optional)
---scale is the highest acceptable elevation value (optional)
+--peak is the highest acceptable elevation value (optional)
 
 EXAMPLE:
 
-var generator = new TerrainGenerator();
-var map = generator.generate(20,10,10);
+var m = new Map(20,10);
+m.randomize(0,10,100);
 
 23333344678963322111
 33344444677763332111
@@ -69,66 +75,258 @@ Math.sq = function(num) {
 	return num*num;
 }
 
-function TerrainGenerator() {
+function Map(width,height) {
 
-	/* defaults */
-	this.base = 0;
-	this.peak = 9;
-	this.min_radius=15;
-	this.max_radius=20;
+	/* protected map properties */
+	var properties = {
+		min:undefined,
+		max:undefined,
+		mean:undefined,
+		range:undefined,
+		width:0,
+		height:0
+	};
 	
-	this.border_mode=false;
-	this.island_mode=false;
-	this.lake_mode=false;
+	/* map generation modes */
+	var modes = {
+		island:(1<<0),
+		lake:(1<<1),
+		border:(1<<2)
+	};
 	
-	/* generate a land object of specified width, height, base elevation */
-	this.generate = function(width,height,hills) { 
-
-		if(width == undefined || height == undefined)
-			throw("Terrain.generate() requires, at minimum, width and height arguments");
-			
-		/* populate matrix with base elevation values */
-		var map = getMap(width,height,this.base);
+	/* map generation settings */
+	var settings = {
+		minRadius:10,
+		maxRadius:20,
+		hills:100,
+		mode:0
+	};
+	
+	this.__defineGetter__("width",function() {
+		return properties.width;
+	});
+	this.__defineGetter__("height",function() {
+		return properties.height;
+	});
+	this.__defineGetter__("min",function() {
+		if(isNaN(properties.min))
+			setRange(this);
+		return properties.min;
+	});
+	this.__defineGetter__("max",function() {
+		if(isNaN(properties.max))
+			setRange(this);
+		return properties.max;
+	});
+	this.__defineGetter__("mean",function() {
+		if(isNaN(properties.mean))
+			setRange(this);
+		return properties.mean;
+	});
+	this.__defineGetter__("range",function() {
+		if(isNaN(properties.range))
+			setRange(this);
+		return properties.range;
+	});
+	this.__defineGetter__("minRadius",function() {
+		return settings.minRadius;
+	});
+	this.__defineGetter__("maxRadius",function() {
+		return settings.maxRadius;
+	});
+	this.__defineSetter__("minRadius",function(r) {
+		if(isNaN(r) || r > settings.maxRadius)
+			return false;
+		settings.minRadius = r;
+		return true;
+	});
+	this.__defineSetter__("maxRadius",function(r) {
+		if(isNaN(r) || r < settings.minRadius)
+			return false;
+		settings.maxRadius = r;
+		return true;
+	});
+	this.__defineGetter__("island",function() {
+		return properties.mode&modes.island;
+	});
+	this.__defineSetter__("island",function(bool) {
+		if(bool) {
+			if(properties.mode&modes.island)
+				return false;
+			properties.mode|=modes.island;
+		}
+		else {
+			if(!(properties.mode&modes.island))
+				return false;
+			properties.mode&=~modes.island;
+		}
+	});
+	this.__defineGetter__("lake",function() {
+		return properties.mode&modes.lake;
+	});
+	this.__defineSetter__("lake",function(bool) {
+		if(bool) {
+			if(properties.mode&modes.lake)
+				return false;
+			properties.mode|=modes.lake;
+		}
+		else {
+			if(!(properties.mode&modes.lake))
+				return false;
+			properties.mode&=~modes.lake;
+		}
+	});
+	this.__defineGetter__("border",function() {
+		return properties.mode&modes.lake;
+	});
+	this.__defineSetter__("border",function(bool) {
+		if(bool) {
+			if(properties.mode&modes.border)
+				return false;
+			properties.mode|=modes.border;
+		}
+		else {
+			if(!(properties.mode&modes.border))
+				return false;
+			properties.mode&=~modes.border;
+		}
+	});
+	this.__defineGetter__("hills",function() {
+		return settings.hills;
+	});
+	this.__defineSetter__("hills",function(hills) {
+		if(isNaN(hills))
+			return false;
+		settings.hills = hills;
+		return true;
+	});
+	
+	/* return a cross section (horizontal) */
+	this.xSection = function(y,width,height) {
+		var section = [];
 		
-		if(hills > 0) {
-			/* generate specified number of "hills" */
-			for(var h=0;h<hills;h++) 
-				map = this.poke(map);
+		for(var x=0;x<this.length;x++) {
+			section[x]=[];
 			
-			/* normalize elevation values to fit between base elevation and scale */
-			map = this.normalize(map);
+			var a = this[x][y];
+			var b = a-this.min;
+			var c = b/this.range;
+			var d = c*(height-2);
+			
+			log(format("a:%f,b:%f,c:%f,d:%f",a,b,c,d));
+			var i=0;
+			for(;i<t;i++) 
+				section[x].unshift(1);
+			for(;i<height;i++)
+				section[x].unshift(0);
 		}
 		
-		return map;
+		return section;
+	}
+	
+	/* return a cross section (vertical) */
+	this.ySection = function(x,width,height) {
+		var section = [];
+		
+		for(var y=0;y<this[x].length;y++) {
+			section[y]=[];
+			
+			var a = this[x][y];
+			if(a == undefined)
+				throw("Invalid elevation data '" + a + "' at " + x + ":" + y);
+			var b = a-this.min;
+			var c = b/this.range;
+			var d = c*(height-2);
+			
+			log(format("a:%f,b:%f,c:%f,d:%f",a,b,c,d));
+			var i=0;
+			for(;i<t;i++) 
+				section[y].unshift(1);
+			for(;i<height;i++)
+				section[y].unshift(0);
+		}
+		
+		return section.reverse();
+	}
+	
+	/* generate a land object of specified width, height, base elevation */
+	this.randomize = function(base,peak,hills) { 
+
+		if(!hills)
+			hills = settings.hills;
+		
+		/* generate specified number of "hills" */
+		for(var h=0;h<hills;h++) 
+			this.poke();
+		
+		/* normalize elevation values to fit between base elevation and scale */
+		this.normalize(base,peak);
+		
+		return true;
+	}
+	
+	/* wipe map clear */
+	this.clear = function() {
+		for(var x=0;x<properties.width;x++) {
+			for(var y=0;y<properties.height;y++) {
+				this[x][y]=0;
+			}
+		}
+	}
+	
+	/* normalize elevation data between a base and peak value */
+	this.normalize = function(base,peak) {
+		if(base == undefined)
+			base = 0;
+		if(peak == undefined)
+			peak = 1;
+
+		/* iterate map again and adjust values to fit scale */
+		if(this.range == 0)
+			return false;
+			
+		for(var x=0;x<this.length;x++) {
+			for(var y=0;y<this[x].length;y++) {
+				var a = this[x][y];
+				if(a == undefined)
+					throw("Invalid elevation data '" + a + "' at " + x + ":" + y);
+				var b = a-this.min;
+				var c = b/this.range;
+				var d = c * peak;
+				var e = d + base;
+				this[x][y] = e;
+			}
+		}
+		
+		setRange(this);
+		return true;
 	}
 
 	/* generate a randomized feature on a map starting 
 	from an optionally specified x,y position in a given direction */
-	this.poke = function(map,xoff,yoff,radius,direction) {
-		/* make a copy of the original map */
-		var copy = copyMap(map);
-		
+	this.poke = function(xoff,yoff,radius,direction) {
+	
 		/* pick a hill radius between min and max */
 		if(radius == undefined)
-			radius = random(this.max_radius-this.min_radius)+this.min_radius;
+			radius = random(settings.maxRadius-settings.minRadius)+settings.minRadius;
 			
 		/* pick a random starting position */
 		if(yoff == undefined) {
-			if(this.island_mode)
-				xoff = random(copy.length);
+			if(settings.mode&modes.island)
+				xoff = random(this.length);
 			else
-				xoff = random(copy.length+(2*radius))-radius;
+				xoff = random(this.length+(2*radius))-radius;
 		}
 		if(yoff == undefined) {
-			if(this.island_mode)
-				yoff = random(copy[0].length);
+			if(settings.mode&modes.island)
+				yoff = random(this[0].length);
 			else
-				yoff = random(copy[0].length+(2*radius))-radius;
+				yoff = random(this[0].length+(2*radius))-radius;
 		}
 			
 		/* default elevation change */
 		if(direction == undefined) {
-			if(this.lake_mode)
+			if(settings.mode&modes.lake)
 				direction = -1;
 			else
 				direction = 1;
@@ -138,80 +336,62 @@ function TerrainGenerator() {
 			var halfRow=Math.round(Math.sqrt(Math.sq(radius)-Math.sq(y)));
 			for(var x=-halfRow;x<halfRow;x++) {     
 				//var h = Math.sq(radius) - (Math.sq(x) + Math.sq(y));
-				if(copy[xoff+x] && copy[xoff+x][yoff+y] !== undefined)
-					copy[xoff+x][yoff+y] += direction;
-				if(this.border_mode) {
-					if(copy[xoff-x] && copy[xoff-x][yoff+y] !== undefined)
-						copy[xoff-x][yoff+y] += direction;
+				if(this[xoff+x] && this[xoff+x][yoff+y] !== undefined)
+					this[xoff+x][yoff+y] += direction;
+				if(settings.mode&modes.border) {
+					if(this[xoff-x] && this[xoff-x][yoff+y] !== undefined)
+						this[xoff-x][yoff+y] += direction;
 				}
 			}
 		}
-		
-		return copy;
+		return true;
 	}
-
-	/* normalize land within a given range */
-	this.normalize = function(map,base,peak) {
 	
-		/* make a copy of the original map */
-		var copy = copyMap(map);
+	/* initialize map */
+	this.init = function(width,height) {
+		if(isNaN(width) || isNaN(height))
+			throw("Map() width and height arguments must be integers > 0");
+		if(this.length > 0) 
+			this.splice(0,this.length);
+		for(var x=0;x<width;x++) {
+			this.push([]);
+			for(var y=0;y<height;y++) {
+				this[x][y]=0;
+			}
+		}
+		
+		properties.width = width;
+		properties.height = height;
+	}
+	
+	/* private range finding function */
+	function setRange(map) {
 		var min=undefined;
 		var max=undefined;
-		
-		if(base == undefined)
-			base = this.base;
-		if(peak == undefined)
-			peak = this.peak;
+		var mean=undefined;
+		var total=0;
 		
 		/* iterate map and find the min and max values */
-		for(var x=0;x<copy.length;x++) {
-			for(var y=0;y<copy[x].length;y++) {
-				if(min==undefined || copy[x][y] < min)
-					min = copy[x][y];
-				if(max==undefined || copy[x][y] > max)
-					max = copy[x][y];
-			}
-		}
-		
-		/* iterate map again and adjust values to fit scale */
-		var range = Math.abs(max - min);
-		if(range == 0)
-			return copy;
-			
-		for(var x=0;x<copy.length;x++) {
-			for(var y=0;y<copy[x].length;y++) {
-				var a = copy[x][y]-min;
-				var b = a/range;
-				var c = b * peak;
-				var d = c + base;
-				if(d < base)
-					log("invalid elevation: " + d);
-				copy[x][y] = d;
-			}
-		}
-		
-		return copy;
-	}
-	
-	/* create a 2d array of given dimensions */
-	function getMap(width,height,base) {
-		var array = [];
-		for(var x=0;x<width;x++) { 
-			array[x] = []; 
-			for(var y=0;y<height;y++) 
-				array[x][y] = base; 
-		}
-		return array;
-	}
-	
-	/* copy a map */
-	function copyMap(map) {
-		var copy = [];
 		for(var x=0;x<map.length;x++) {
-			copy[x] = [];
-			for(var y=0;y<map[x].length;y++) 
-				copy[x][y] = map[x][y];
-		}
-		return copy;
+			for(var y=0;y<map[x].length;y++) {
+				if(min==undefined || map[x][y] < min)
+					min = map[x][y];
+				if(max==undefined || map[x][y] > max)
+					max = map[x][y];
+				total+=map[x][y];
+			}
+		}	
+		
+		mean = total / (map[0].length * map.length);
+		range = max - min;
+		
+		properties.min = min;
+		properties.max = max;
+		properties.mean = mean;
+		properties.range = range;
 	}
+
+	/* initialize map object */
+	this.init(width,height);
 }
+Map.prototype = new Array();	
