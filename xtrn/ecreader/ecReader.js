@@ -234,9 +234,9 @@ function showMessage(header) {
 				if(!mail)
 					bbs.post_msg(mb.cfg.code, WM_QUOTE, header);
 				else if(mail && header.from_net_type == NET_NONE)
-					bbs.email(parseInt(header.from_ext), WM_EMAIL|WM_QUOTE, "", "RE: " + header.subject);
+					bbs.email(parseInt(header.from_ext), WM_EMAIL|WM_QUOTE, "", header.subject);
 				else if(mail)
-					bbs.netmail(header.from_net_addr, WM_NETMAIL|WM_QUOTE, "RE: " + header.subject);
+					bbs.netmail(header.from_net_addr, WM_NETMAIL|WM_QUOTE, header.subject);
 				frame.draw();
 				retval = header;
 				userInput = "Q";
@@ -293,6 +293,11 @@ function showMessage(header) {
 				else
 					bodyFrame.scroll(0, bodyFrame.height);
 				break;
+			case KEY_DEL:
+				deleteMessage(header);
+				userInput = "Q";
+				retval = "REFRESH";
+				break;
 			default:
 				break;
 		}
@@ -305,6 +310,43 @@ function showMessage(header) {
 	else if(mail)
 		retval.mail = true;
 	return retval;
+}
+
+function deleteMessage(header) {
+	if(!mail && user.number == 1) {
+		msgBase.open();
+		msgBase.remove_msg(header.number);
+		msgBase.close();
+	} else if(mail) {
+		/*	Could verify again that mail is addressed to this user, but
+			they shouldn't have been able to select it otherwise. */
+		var mailBase = new MsgBase("mail");
+		mailBase.open();
+		mailBase.remove_msg(header.number);
+		mailBase.close();
+	} else {
+		return false;
+	}
+	return true;
+}
+
+function sendEmail() {
+	var ret = true;
+	console.putmsg(hfg + "Send email to: ");
+	var to = console.getstr('', 64, K_LINE);
+	if(to == "")
+		ret = false;
+	else if(system.matchuser(to) > 0)
+		bbs.email(system.matchuser(to, WM_EMAIL));
+	else if(netaddr_type(to) != NET_NONE)
+		bbs.netmail(to, WM_NETMAIL)
+	else
+		ret = false;
+	if(!ret) {
+		console.putmsg(hfg + "Invalid user or netmail/email address.");
+		console.crlf();
+		console.pause();
+	}
 }
 
 getList();
@@ -333,17 +375,31 @@ while(userInput != "Q") {
 		case "P":
 			frame.invalidate();
 			console.clear();
-			bbs.post_msg(msgBase.cfg.code);
+			if(!mail)
+				bbs.post_msg(msgBase.cfg.code);
+			else
+				sendEmail();
 			getList();
 			frame.draw();
+			break;
 		case "E":
 			mail = true;
 			getList();
 			break;
 		case KEY_DEL:
+			if(!(tree.currentItem instanceof Tree)) {
+				if(deleteMessage(tree.currentItem.args[0])) {
+					tree.currentTree.deleteItem();
+					getList();
+				}
+			}
 			break;
 		default:
+			if(tree.current === undefined)
+				break;
 			r = tree.getcmd(userInput);
+			if(r == "REFRESH")
+				getList();
 			while(r.hasOwnProperty("number")) {
 				frame.cycle();
 				if(r.hasOwnProperty('mail') && r.mail)
