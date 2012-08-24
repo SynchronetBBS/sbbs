@@ -25,6 +25,7 @@ METHODS:
 
 	frame.open()				//populate frame contents in character canvas
 	frame.close()				//remove frame contents from character canvas
+	frame.invalidate()			//clear screen buffer to redraw contents on cycle() or draw()
 	frame.draw()				//force a screen update on the frame and it's children
 	frame.cycle()				//check the display matrix for updated characters and displays them 
 	frame.load(filename)		//load a binary graphic (.BIN) or ANSI graphic (.ANS) file
@@ -38,7 +39,7 @@ METHODS:
 	frame.screenShot(file,append)//capture the contents of a frame to file
 	frame.clearline(attr)		//see http://synchro.net/docs/jsobjs.html#console
 	frame.cleartoeol(attr)
-	frame.putmsg(str)
+	frame.putmsg(str,attr)
 	frame.clear(attr)
 	frame.home()
 	frame.center(str)
@@ -303,6 +304,8 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 		if(!properties.data[py] || !properties.data[py][px])
 			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
+		if(properties.data[py][px].ch == ch && properties.data[py][px].attr == attr)
+			return;
 		if(ch)
 			properties.data[py][px].ch = ch;
 		if(attr)
@@ -1127,7 +1130,7 @@ function Display(x,y,width,height) {
 		var yoff = frame.y - this.y;
 		for(var y = 0;y<frame.height;y++) {
 			for(var x = 0;x<frame.width;x++) {
-				updateChar(xoff + x,yoff + y);
+				updateChar(xoff + x,yoff + y/*,data*/);
 			}
 		}
 	}
@@ -1168,10 +1171,11 @@ function Display(x,y,width,height) {
 	}
 	
 	/* private functions */
-	function updateChar(x,y) {
+	function updateChar(x,y/*,data*/) {
+		//ToDo: maybe store char update so I dont have to retrieve it later?
 		if(!properties.update[y])
 			properties.update[y] = {};
-		properties.update[y][x] = 1;
+		properties.update[y][x] = 1; /*data; */
 	}
 	function getUpdateList() {
 		var list = [];
