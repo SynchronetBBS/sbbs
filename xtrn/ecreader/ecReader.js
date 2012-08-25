@@ -220,7 +220,7 @@ function getList() {
 }
 
 function showMessage(header) {
-	var retval = true;
+	var retval = "REFRESH";
 	var userInput = "";
 	var h = null;
 	var n = header.number;
@@ -228,17 +228,14 @@ function showMessage(header) {
 	messageFrame.top();
 	if(!mail) {
 		mb = msgBase;
-		if(setPointers && header.number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr) {
+		if(setPointers && header.number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr)
 			msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr = header.number;
-			retval = "REFRESH";
-		}
 		mb.open();
 	} else {
 		mb = new MsgBase('mail');
 		mb.open();
 		header.attr|=MSG_READ;
 		mb.put_msg_header(header.number, header);
-		retval = "REFRESH";
 	}
 	var body = mb.get_msg_body(header.number);
 	mb.close();
