@@ -14,6 +14,8 @@ load("tree.js");
 
 var showMail = true;	// Allow access to the private 'mail' sub-board
 var threaded = true;	// False to default to flat view
+var setPointers = true; // False to leave scan pointers unaffected by reading
+var oldestFirst = false;// False to list messages in descending date order
 var lbg = BG_CYAN;		// Lightbar background
 var lfg = WHITE;		// Foreground colour of highlighted text
 var nfg = LIGHTGRAY;	// Foreground colour of non-highlighted text
@@ -59,25 +61,26 @@ columnFrame.putmsg(
 	+ format("%-28s", "Subject")
 	+ "Date"
 );
-helpFrame.putmsg(
-	hfg + "HOME" + sffg + "/" + hfg + "END "
-	+ hfg + "[" + sffg + "PgUp/PgDn" + hfg + "] "
-	+ hfg + "N" + sffg + "ew Scan "
-	+ hfg + "T" + sffg + "hreaded "
-	+ hfg + "F" + sffg + "lat "
-	+ hfg + "C" + sffg + "hange Area "
-	+ hfg + "P" + sffg + "ost "
-	+ hfg + "E" + sffg + "mail "
-	+ hfg + "DEL" + sffg + "ete "
+helpFrame.center(
+	hfg + "UP" + sffg + "/" + hfg + "DN  "
+	+ hfg + "[" + sffg + "PgUp/PgDn" + hfg + "]  "
+	+ hfg + "HOME" + sffg + "/" + hfg + "END  "
+	+ hfg + "T" + sffg + "hreaded  "
+	+ hfg + "F" + sffg + "lat  "
+	+ hfg + "A" + sffg + "rea  "
+	+ hfg + "E" + sffg + "mail  "
+	+ hfg + "P" + sffg + "ost  "
+	+ hfg + "DEL" + sffg + "ete  "
 	+ hfg + "Q" + sffg + "uit"
 );
-messageBar.putmsg(
-	hfg + "HOME" + sffg + "/" + hfg + "END "
-	+ hfg + "[" + sffg + "PgUp/PgDn" + hfg + "] "
-	+ hfg + "R" + sffg + "eply "
-	+ hfg + "P" + sffg + "revious "
-	+ hfg + "N" + sffg + "ext "
-	+ hfg + "DEL" + sffg + "ete "
+messageBar.center(
+	hfg + "UP" + sffg + "/" + hfg + "DN  "
+	+ hfg + "[" + sffg + "PgUp/PgDn" + hfg + "]  "
+	+ hfg + "HOME" + sffg + "/" + hfg + "END  "
+	+ hfg + "R" + sffg + "eply  "
+	+ hfg + "P" + sffg + "revious  "
+	+ hfg + "N" + sffg + "ext  "
+	+ hfg + "DEL" + sffg + "ete  "
 	+ hfg + "Q" + sffg + "uit"
 );
 
@@ -91,7 +94,7 @@ function formatItem(messageNumber, from, to, subject, date) {
 	return retval;
 }
 
-function getFlatList(oldestFirst) {
+function getFlatList() {
 	var header = null;
 	var item;
 	if(!mail)
@@ -126,7 +129,7 @@ function getFlatList(oldestFirst) {
 		var i = tree.addItem(item, showMessage, messages[m], mail);
 		if(!mail && messages[messages.length - 1].number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr)
 			i.attr = urm;
-		else if(mail && messages[messages.length - 1].attr&MSG_READ == 0)
+		else if(mail && !(messages[messages.length - 1].attr&MSG_READ))
 			i.attr = urm;
 	}
 	tree.open();
@@ -139,39 +142,43 @@ function getThreadedList() {
 	else
 		var threads = getMessageThreads('mail');
 	var item;
-	for(var t in threads.order) {
-		if(threads.thread[threads.order[t]].messages.length < 2) {
-			messages.push(threads.thread[threads.order[t]].messages[0]);
+	for(var t in ((oldestFirst)?threads.thread:threads.order)) {
+		if(oldestFirst)
+			var theThread = threads.thread[t];
+		else
+			var theThread = threads.thread[threads.order[t]];
+		if(theThread.messages.length < 2) {
+			messages.push(theThread.messages[0]);
 			item = formatItem(
-				threads.thread[threads.order[t]].messages[0].number,
-				threads.thread[threads.order[t]].messages[0].from,
-				threads.thread[threads.order[t]].messages[0].to,
-				threads.thread[threads.order[t]].messages[0].subject,
-				threads.thread[threads.order[t]].messages[0].when_written_time
+				theThread.messages[0].number,
+				theThread.messages[0].from,
+				theThread.messages[0].to,
+				theThread.messages[0].subject,
+				theThread.messages[0].when_written_time
 			);
 			var i = tree.addItem(item, showMessage, messages[messages.length - 1], mail);
 			if(!mail && messages[messages.length - 1].number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr)
 				i.attr = urm;
-			else if(mail && messages[messages.length - 1].attr&MSG_READ == 0)
+			else if(mail && !(messages[messages.length - 1].attr&MSG_READ))
 				i.attr = urm;
 			continue;
 		}
 		item = formatItem(
-			threads.thread[threads.order[t]].messages[0].number,
-			threads.thread[threads.order[t]].messages[0].from,
-			threads.thread[threads.order[t]].messages[0].to,
-			threads.thread[threads.order[t]].messages[0].subject,
-			threads.thread[threads.order[t]].newest
+			theThread.messages[0].number,
+			theThread.messages[0].from,
+			theThread.messages[0].to,
+			theThread.messages[0].subject,
+			theThread.newest
 		);
 		st = tree.addTree(item);
-		for(var m = 0; m < threads.thread[threads.order[t]].messages.length; m++) {
-			messages.push(threads.thread[threads.order[t]].messages[m]);
+		for(var m = 0; m < theThread.messages.length; m++) {
+			messages.push(theThread.messages[m]);
 			item = formatItem(
-				threads.thread[threads.order[t]].messages[m].number,
-				threads.thread[threads.order[t]].messages[m].from,
-				threads.thread[threads.order[t]].messages[m].to,
-				threads.thread[threads.order[t]].messages[m].subject,
-				threads.thread[threads.order[t]].messages[m].when_written_time
+				theThread.messages[m].number,
+				theThread.messages[m].from,
+				theThread.messages[m].to,
+				theThread.messages[m].subject,
+				theThread.messages[m].when_written_time
 			);
 			var i = st.addItem(item, showMessage, messages[messages.length - 1], mail);
 			if(!mail && messages[messages.length - 1].number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr) {
@@ -221,14 +228,18 @@ function showMessage(header) {
 	messageFrame.top();
 	if(!mail) {
 		mb = msgBase;
-		if(header.number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr) {
+		if(setPointers && header.number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr) {
 			msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr = header.number;
 			retval = "REFRESH";
 		}
+		mb.open();
 	} else {
 		mb = new MsgBase('mail');
+		mb.open();
+		header.attr|=MSG_READ;
+		mb.put_msg_header(header.number, header);
+		retval = "REFRESH";
 	}
-	mb.open();
 	var body = mb.get_msg_body(header.number);
 	mb.close();
 	headerFrame.putmsg(
@@ -407,7 +418,7 @@ while(userInput != "Q") {
 			threaded = false;
 			getList();
 			break;
-		case "C":
+		case "A":
 			messageAreaSelector(4, 5, 70, 16, frame);
 			msgBase = new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
 			mail = false;
