@@ -33,6 +33,11 @@
 		y    : y coordinate of the character drawn
 		ch   : The character that was drawn, false if nothing was drawn
 		attr : The colour attributes of the character that was drawn
+		
+		If 'frame' was not supplied when creating the ansiEdit object, then
+		the canvas frame will be cycled (updates will be drawn), otherwise
+		nothing will be output to the screen until your script cycles the
+		parent frame.
 	
 	ansiEdit.putChar(charObject)
 	
@@ -43,9 +48,7 @@
 
 	ansiEdit.cycle()
 	
-		Update the ANSI editor's canvas (ansiEdit.getcmd(str) does this
-		automatically, but you will need to call this after calls to
-		ansiEdit.putChar().)
+		Update the ANSI editor's canvas.
 		  
 	ansiEdit.open()
 	
@@ -90,17 +93,16 @@ load("frame.js");
 load("tree.js");
 
 function ansiEdit(x, y, width, height, attr, frame, scrolling) {
-	
-	if(!frame || frame === undefined)
-		var frame = new Frame(x, y, width, height, attr);
-	
 	if(scrolling === undefined)
 		var scrolling = false;
 	
 	var str = "";
 	var esc = ascii(27);
 	var block = ascii(219);
-	var canvasPos = { x : 1, y : 1 };
+	var canvasPos = {
+		x : 1,
+		y : 1
+	};
 
 	var fgColour = 2;
 	var bgColour = 0;
@@ -152,7 +154,7 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 		[ascii(245), ascii(246), ascii(247), ascii(248), ascii(249), ascii(250), ascii(251), ascii(252), ascii(253)]
 	]
 	
-	var	aFrame = new Frame(x, y, width, height, BG_BLACK, frame);
+	var	aFrame = new Frame(x, y, width, height, BG_BLACK, ((frame)?frame:undefined));
 	var popUp = new Frame(parseInt((aFrame.width - 28) / 2), y, 28, aFrame.height - 1, BG_BLUE|WHITE, aFrame);
 	var subPopUp = new Frame(popUp.x + 2, popUp.y + 1, popUp.width - 4, popUp.height - 2, BG_BLACK, popUp);
 	var palette = new Frame(parseInt((aFrame.width - 36) / 2), parseInt((aFrame.height - 6) / 2), 36, 6, BG_BLUE|WHITE, aFrame);
@@ -205,7 +207,8 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 		aFrame.cycle();
 		while(!js.terminated) {
 			var userInput = console.inkey(K_NONE, 5);
-			if(userInput == "") continue;
+			if(userInput == "")
+				continue;
 			switch(userInput) {
 				case KEY_LEFT:
 					if(pfgCursor.x > subPalette.x) {
@@ -248,8 +251,10 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 			}
 			currentAttributes = fgColours[fgColour]|bgColours[bgColour];
 			charSet.update(characterSet);
-			if(aFrame.cycle()) console.gotoxy(80, 24);
-			if(ascii(userInput) == 27 || ascii(userInput) == 13 || ascii(userInput) == 9) break;
+			if(aFrame.cycle())
+				console.gotoxy(80, 24);
+			if(ascii(userInput) == 27 || ascii(userInput) == 13 || ascii(userInput) == 9)
+				break;
 		}
 		palette.bottom();
 		pfgCursor.bottom();
@@ -265,9 +270,7 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 		var f = system.data_dir + format("user/%04u.bin", user.number);
 		canvas.screenShot(f, false);
 		bbs.send_file(f, user.download_protocol);
-		aFrame.close();
-		console.clear();
-		aFrame.open();
+		aFrame.invalidate();
 		aFrame.draw();
 		return "EXITTREE";
 	}
@@ -280,7 +283,8 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 	tree.colors.xfg = LIGHTCYAN;
 	tree.addItem("Color Palette", colourPicker);
 	var charSetTree = tree.addTree("Choose Character Set");
-	for(var c = 0; c < characterSets.length; c++) charSetTree.addItem(characterSets[c].join(" "), charSet.update, c);
+	for(var c = 0; c < characterSets.length; c++)
+		charSetTree.addItem(characterSets[c].join(" "), charSet.update, c);
 	tree.addItem("Download this ANSI", this.download);
 	tree.addItem("Clear the Canvas", "CLEAR");
 	
@@ -297,16 +301,16 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 	cursor.putmsg(ascii(219));
 	charSet.update(characterSet);
 
-	frame.open();
+	aFrame.open();
 	tree.open();
-	aFrame.cycle();
+	if(!frame)
+		aFrame.cycle();
 
 	this.putChar = function(ch) {
-		if(ch.ch == "CLEAR") {
+		if(ch.ch == "CLEAR")
 			canvas.clear();
-		} else {
+		else
 			canvas.setData(ch.x - 1, ch.y - 1, ch.ch, ch.attr, false);
-		}
 	}
 	
 	this.cycle = function() {
@@ -324,35 +328,41 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 	}
 	
 	this.getcmd = function(str) {
-		var retval = { x : canvasPos.x, y : canvasPos.y, ch : false, attr : currentAttributes }
-		if(str == "") return retval;
+		var retval = { 
+			x : canvasPos.x,
+			y : canvasPos.y,
+			ch : false,
+			attr : currentAttributes
+		}
+		if(str == "")
+			return retval;
 		var cont = false;
 		var num = Number(str);
 		var asc = ascii(str);
 		
 		switch(str) {
 			case KEY_UP:
-				if(canvasPos.y > 1) {
+				if(canvasPos.y > 1)
 					canvas.gotoxy(canvasPos.x, canvasPos.y - 1);
-				} else if(scrolling && canvas.offset.y > 0) {
+				else if(scrolling && canvas.offset.y > 0)
 					canvas.scroll(0, -1);
-				}
 				cont = true;
 				break;
 			case KEY_RIGHT:
-				if(canvasPos.x < canvas.width) canvas.gotoxy(canvasPos.x + 1, canvasPos.y);
+				if(canvasPos.x < canvas.width)
+					canvas.gotoxy(canvasPos.x + 1, canvasPos.y);
 				cont = true;
 				break;
 			case KEY_DOWN:
-				if(canvasPos.y < canvas.height) {
+				if(canvasPos.y < canvas.height)
 					canvas.gotoxy(canvasPos.x, canvasPos.y + 1);
-				} else if(scrolling) {
+				else if(scrolling)
 					canvas.scroll();
-				}
 				cont = true;
 				break
 			case KEY_LEFT:
-				if(canvasPos.x > 1) canvas.gotoxy(canvasPos.x - 1, canvasPos.y);
+				if(canvasPos.x > 1)
+					canvas.gotoxy(canvasPos.x - 1, canvasPos.y);
 				cont = true;
 				break;
 			case KEY_HOME:
@@ -401,19 +411,23 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 		
 		if(!cont && asc == 9) {
 			popUp.top();
-			aFrame.cycle();
+			if(!frame)
+				aFrame.cycle();
 			var userInput = "";
 			while(ascii(userInput) != 27 && ascii(userInput) != 9) {
 				userInput = console.inkey(K_NONE, 5);
-				if(userInput == "") continue;
+				if(userInput == "")
+					continue;
 				var ret = tree.getcmd(userInput);
-				if(ret == "EXITTREE") break;
+				if(ret == "EXITTREE")
+					break;
 				if(ret == "CLEAR") {
 					canvas.clear();
 					retval.ch = "CLEAR";
 					break;
 				}
-				if(popUp.cycle()) console.gotoxy(80, 24);
+				if(popUp.cycle())
+					console.gotoxy(80, 24);
 			}
 			popUp.bottom();
 		}
@@ -424,10 +438,14 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 			canvas.attr = BG_BLACK|BLACK;
 		}
 
-		if(canvas.getxy().x > canvas.width || canvas.getxy().y > canvas.height) canvas.gotoxy(canvasPos.x, canvasPos.y);
+		if(canvas.getxy().x > canvas.width || canvas.getxy().y > canvas.height)
+			canvas.gotoxy(canvasPos.x, canvasPos.y);
 		canvasPos = canvas.getxy();
 		cursor.moveTo(canvas.x + canvas.cursor.x, canvas.y + canvas.cursor.y);
-		if(aFrame.cycle()) console.gotoxy(80, 24);
+		if(!frame) {
+			if(aFrame.cycle())
+				console.gotoxy(80, 24);
+		}
 		return retval;
 	}
 
@@ -440,5 +458,4 @@ function ansiEdit(x, y, width, height, attr, frame, scrolling) {
 		aFrame.close();
 		return;
 	}
-	
 }
