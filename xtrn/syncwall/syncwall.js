@@ -6,7 +6,7 @@ load("json-client.js");
 
 js.branch_limit = 0;
 
-var chDelay = 15; // Milliseconds between characters when loading the buffer
+var chDelay = 10; // Milliseconds between characters when loading the buffer
 var server = "bbs.electronicchicken.com"; // IP or hostname of the JSON server
 var port = 10088; // Port that "server" is listening on
 var chBuffer = 100; // Max character history to read at once 
@@ -18,10 +18,18 @@ var lastUser = "";
 var lastSystem = "";
 var userInput = "";
 
-var bgColours = [ BG_BLUE, BG_CYAN, BG_GREEN, BG_MAGENTA, BG_RED, BG_BROWN ];
+var bgColours = [ 
+	BG_BLUE,
+	BG_CYAN,
+	BG_GREEN,
+	BG_MAGENTA,
+	BG_RED,
+	BG_BROWN
+];
 
 var ansiClient = new JSONClient(server, port);
-if(!ansiClient.socket.is_connected) exit();
+if(!ansiClient.socket.is_connected)
+	exit();
 
 var frame, topBar, bottomBar, ansi;
 
@@ -40,9 +48,11 @@ function init() {
 }
 
 function drawStuff(update) {
-	if(update.oper.toUpperCase() == "SUBSCRIBE" || update.oper.toUpperCase() == "UNSUBSCRIBE") return;
+	if(update.oper.toUpperCase() == "SUBSCRIBE" || update.oper.toUpperCase() == "UNSUBSCRIBE")
+		return;
 	var location = update.location.split(".").shift().toUpperCase();
-	if(location != "CANVAS") return;
+	if(location != "CANVAS")
+		return;
 	putCh(update.data, false);
 	return;
 }
@@ -85,7 +95,8 @@ function loadHistory() {
 			index += chBuffer;
 			endex += chBuffer;
 			while(canvas.length > 0) {
-				frame.cycle();
+				if(frame.cycle())
+					console.gotoxy(80, 24);
 				putCh(canvas.shift(), true);
 				var cmd = console.inkey(K_NONE, chDelay);
 				if(ascii(cmd) == 27) {
@@ -96,9 +107,8 @@ function loadHistory() {
 					var canvas = ansiClient.read("syncwall", "canvas." + monthYear + ".data", 1);
 					ansi.putChar({ x : 1, y: 1, ch : "CLEAR", attr : 0 });
 					for(var c in canvas) {
-						for(var y in canvas[c]) {
+						for(var y in canvas[c])
 							ansi.putChar(canvas[c][y]);
-						}
 					}
 					index = canvasLength;
 					break;
@@ -115,12 +125,15 @@ function loadHistory() {
 
 function main() {
 	while(ascii(userInput) != 27) {
-		if(frame.cycle()) console.gotoxy(80, 24);
+		if(frame.cycle())
+			console.gotoxy(80, 24);
 		ansiClient.cycle();
 		userInput = console.inkey(K_NONE, 5);
-		if(userInput == "") continue;
+		if(userInput == "")
+			continue;
 		ch = ansi.getcmd(userInput);
-		if(!ch.ch) continue;
+		if(!ch.ch)
+			continue;
 		if(lastUser != user.alias || lastSystem != system.name) {
 			bottomBar.attr = BG_BLUE|WHITE;
 			bottomBar.clear();
@@ -130,11 +143,10 @@ function main() {
 		}
 		ch.userAlias = user.alias;
 		ch.system = system.name;
-		if(ch.ch == "CLEAR") {
+		if(ch.ch == "CLEAR")
 			ansiClient.write("syncwall", "canvas." + monthYear + ".data", {}, 2);
-		} else {
+		else
 			ansiClient.write("syncwall", "canvas." + monthYear + ".data." + ch.x + "." + ch.y, { x : ch.x, y : ch.y, ch : ch.ch, attr: ch.attr }, 2);
-		}
 		ansiClient.write("syncwall", "canvas." + monthYear + ".ch", ch, 2);
 		ansiClient.push("syncwall", "canvas." + monthYear + ".history", ch, 2);
 	}
