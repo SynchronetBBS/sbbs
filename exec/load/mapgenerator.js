@@ -213,9 +213,9 @@ function Map(width,height) {
 			var c = b/this.range;
 			var d = c*(height-2);
 			
-			log(format("a:%f,b:%f,c:%f,d:%f",a,b,c,d));
+			//log(format("a:%f,b:%f,c:%f,d:%f",a,b,c,d));
 			var i=0;
-			for(;i<t;i++) 
+			for(;i<d;i++) 
 				section[x].unshift(1);
 			for(;i<height;i++)
 				section[x].unshift(0);
@@ -238,9 +238,9 @@ function Map(width,height) {
 			var c = b/this.range;
 			var d = c*(height-2);
 			
-			log(format("a:%f,b:%f,c:%f,d:%f",a,b,c,d));
+			//log(format("a:%f,b:%f,c:%f,d:%f",a,b,c,d));
 			var i=0;
-			for(;i<t;i++) 
+			for(;i<d;i++) 
 				section[y].unshift(1);
 			for(;i<height;i++)
 				section[y].unshift(0);
@@ -384,6 +384,8 @@ function Map(width,height) {
 		
 		mean = total / (map[0].length * map.length);
 		range = max - min;
+		
+		//log(format("min:%f,max:%f,mean:%f,range:%f",min,max,mean,range));
 		
 		properties.min = min;
 		properties.max = max;
