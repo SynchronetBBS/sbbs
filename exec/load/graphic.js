@@ -171,11 +171,11 @@ function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 			mswait(15);
 		}
 		var randx=random(placeholder.length);
-		var randy=random(placeholder[randx].length);
 		if(!placeholder[randx] || !placeholder[randx].length) {
 			placeholder.splice(randx,1);
 			continue;
 		}
+		var randy=random(placeholder[randx].length);
 		var position=placeholder[randx][randy];
 		if(!position) 
 			continue;
@@ -330,6 +330,14 @@ function Graphic_load(filename)
 			}
 		}
 		f.close();
+		break;
+	case "ASC":
+		if(!(f.open("r",true,4096)))
+			return(false);
+		var lines=f.readAll();
+		f.close();
+		for each(var l in lines)
+			this.putmsg(undefined,undefined,l,true);
 		break;
 	default:
 		throw("unsupported file type");
