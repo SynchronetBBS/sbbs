@@ -147,48 +147,48 @@ function Map(width,height) {
 		return true;
 	});
 	this.__defineGetter__("island",function() {
-		return properties.mode&modes.island;
+		return settings.mode&modes.island;
 	});
 	this.__defineSetter__("island",function(bool) {
 		if(bool) {
-			if(properties.mode&modes.island)
+			if(settings.mode&modes.island)
 				return false;
-			properties.mode|=modes.island;
+			settings.mode|=modes.island;
 		}
 		else {
-			if(!(properties.mode&modes.island))
+			if(!(settings.mode&modes.island))
 				return false;
-			properties.mode&=~modes.island;
+			settings.mode&=~modes.island;
 		}
 	});
 	this.__defineGetter__("lake",function() {
-		return properties.mode&modes.lake;
+		return settings.mode&modes.lake;
 	});
 	this.__defineSetter__("lake",function(bool) {
 		if(bool) {
-			if(properties.mode&modes.lake)
+			if(settings.mode&modes.lake)
 				return false;
-			properties.mode|=modes.lake;
+			settings.mode|=modes.lake;
 		}
 		else {
-			if(!(properties.mode&modes.lake))
+			if(!(settings.mode&modes.lake))
 				return false;
-			properties.mode&=~modes.lake;
+			settings.mode&=~modes.lake;
 		}
 	});
 	this.__defineGetter__("border",function() {
-		return properties.mode&modes.lake;
+		return settings.mode&modes.lake;
 	});
 	this.__defineSetter__("border",function(bool) {
 		if(bool) {
-			if(properties.mode&modes.border)
+			if(settings.mode&modes.border)
 				return false;
-			properties.mode|=modes.border;
+			settings.mode|=modes.border;
 		}
 		else {
-			if(!(properties.mode&modes.border))
+			if(!(settings.mode&modes.border))
 				return false;
-			properties.mode&=~modes.border;
+			settings.mode&=~modes.border;
 		}
 	});
 	this.__defineGetter__("hills",function() {
