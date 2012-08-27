@@ -370,19 +370,32 @@ function getMessageThreads(sub) {
 	var msgBase = new MsgBase(sub);
 	msgBase.open();
 	for(var m = msgBase.first_msg; m <= msgBase.last_msg; m++) {
-		if(threadedMessages.indexOf(m) >= 0)
-			continue;
 		header = msgBase.get_msg_header(m);
-		if(header === null || header.attr&MSG_DELETE)
+		if(
+			header === null
+			||
+			header.attr&MSG_DELETE
+			||
+			(sub == 'mail'
+				&&
+				header.to != user.alias
+				&&
+				header.to != user.name
+				&&
+				header.to_ext != user.number
+			)
+			||
+			threadedMessages.indexOf(header.number) >= 0
+		)
 			continue;
-		md5subject = md5_calc(header.subject.toUpperCase().replace(/^\s*|\s*RE:|^\s*|\s*$/g, ''), hex=true);
+		md5subject = md5_calc(header.subject.toUpperCase().replace(/\s*RE:\s*/g, ''), hex=true);
 		if(header.thread_back !== null && threadedMessages.indexOf(header.thread_back) >= 0) {
 			if(threads.thread.hasOwnProperty(header.thread_back)) {
 				// This is a reply to the first message in a thread
 				threads.thread[header.thread_back].newest = header.when_written_time;
 				threads.dates[threads.thread[header.thread_back].dateIndex] = header.when_written_time;
 				threads.thread[header.thread_back].messages.push(header);
-				threadedMessages.push(m);
+				threadedMessages.push(header.number);
 			} else {
 				tbHeader = msgBase.get_msg_header(header.thread_back);
 				if(tbHeader !== null) {
@@ -395,7 +408,7 @@ function getMessageThreads(sub) {
 							threads.thread[t].newest = header.when_written_time;
 							threads.dates[threads.thread[t].dateIndex] = header.when_written_time;
 							threads.thread[t].messages.push(header);
-							threadedMessages.push(m);
+							threadedMessages.push(header.number);
 							break outer;
 						}
 					}
@@ -406,20 +419,20 @@ function getMessageThreads(sub) {
 			threads.thread[subjects[md5subject]].newest = header.when_written_time;
 			threads.dates[threads.thread[subjects[md5subject]].dateIndex] = header.when_written_time;
 			threads.thread[subjects[md5subject]].messages.push(header);
-			threadedMessages.push(m);
+			threadedMessages.push(header.number);
 		}
-		if(threadedMessages.indexOf(m) >= 0)
+		if(threadedMessages.indexOf(header.number) >= 0)
 			continue;
 		
 		// This is a new thread
 		threads.dates.push(header.when_written_time);
-		threads.thread[m] = {
+		threads.thread[header.number] = {
 			newest : header.when_written_time,
 			dateIndex : threads.dates.length - 1,
 			messages : [header]
 		}
-		subjects[md5subject] = m;
-		threadedMessages.push(m);
+		subjects[md5subject] = header.number;
+		threadedMessages.push(header.number);
 	}
 	msgBase.close();
 	
