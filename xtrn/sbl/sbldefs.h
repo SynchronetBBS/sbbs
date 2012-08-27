@@ -71,15 +71,15 @@ typedef union _PACK {
 			char	number[13]; 		/* Phone number */
 			char	desc[16];			/* Modem description */
 			char	location[31];		/* Location of phone number */
-			ushort	min_rate;			/* Minimum connect rate */
-			ushort	max_rate;			/* Maximum connect rate */
+			uint16_t	min_rate;			/* Minimum connect rate */
+			uint16_t	max_rate;			/* Maximum connect rate */
 		} modem;
 
 		struct {
 			char	addr[29];			/* Telnet address */
 			char	location[31];		/* Location  */
-			ushort	unused;				/* 0xffff */
-			ushort	port;				/* TCP port number */
+			uint16_t	unused;				/* 0xffff */
+			uint16_t	port;				/* TCP port number */
 		} telnet;
 
 } number_t;
@@ -98,17 +98,17 @@ typedef struct _PACK {
 			,terminal[MAX_TERMS][16]	/* Terminals supported */
 			,desc[DESC_LINES][51]		/* 5 line description */
 			;
-	ushort	 nodes						/* Total nodes */
+	uint16_t	 nodes						/* Total nodes */
 			,users						/* Total users */
 			,subs						/* Total sub-boards */
 			,dirs						/* Total file dirs */
 			,xtrns						/* Total external programs */
 			;
-	time_t	 created					/* Time/date entry was created */
+	uint32_t	 created					/* Time/date entry was created */
 			,updated					/* Time/date last updated */
 			,birth						/* Birthdate of BBS */
 			;
-	ulong	 megs						/* Storage space in megabytes */
+	uint32_t	 megs						/* Storage space in megabytes */
 			,msgs						/* Total messages */
 			,files						/* Total files */
 			,misc						/* Miscellaneous bits */
@@ -116,13 +116,13 @@ typedef struct _PACK {
 	number_t number[MAX_NUMBERS];		/* Access numbers */
 
 	char	userupdated[26];			/* User who last updated */
-	time_t	verified;					/* Time/Date last vouched for */
+	uint32_t	verified;					/* Time/Date last vouched for */
 	char	userverified[26];			/* User who last vouched */
 	char	web_url[61];				/* Web-site address */
 	char	sysop_email[61];			/* Sysop's e-mail address */
-	time_t	exported;					/* Date last exported to SMB */
-	ulong	verification_count;			/* Number of successful auto-verifications */
-	ulong	verification_attempts;		/* Number of auto-verification attempts */
+	uint32_t	exported;					/* Date last exported to SMB */
+	uint32_t	verification_count;			/* Number of successful auto-verifications */
+	uint32_t	verification_attempts;		/* Number of auto-verification attempts */
 	char	unused[310];				/* Unused space */
 } bbs_t;
 
