@@ -98,6 +98,8 @@ function Map(width,height) {
 	var settings = {
 		minRadius:10,
 		maxRadius:20,
+		base:0,
+		peak:1,
 		hills:100,
 		mode:0
 	};
@@ -200,6 +202,24 @@ function Map(width,height) {
 		settings.hills = hills;
 		return true;
 	});
+	this.__defineGetter__("base",function() {
+		return settings.base;
+	});
+	this.__defineSetter__("base",function(base) {
+		if(isNaN(base))
+			return false;
+		settings.base = base;
+		return true;
+	});
+	this.__defineGetter__("peak",function() {
+		return settings.peak;
+	});
+	this.__defineSetter__("peak",function(peak) {
+		if(isNaN(peak))
+			return false;
+		settings.peak = peak;
+		return true;
+	});
 	
 	/* return a cross section (horizontal) */
 	this.xSection = function(y,width,height) {
@@ -277,9 +297,9 @@ function Map(width,height) {
 	/* normalize elevation data between a base and peak value */
 	this.normalize = function(base,peak) {
 		if(base == undefined)
-			base = 0;
+			base = settings.base;
 		if(peak == undefined)
-			peak = 1;
+			peak = settings.base;
 
 		/* iterate map again and adjust values to fit scale */
 		if(this.range == 0)
