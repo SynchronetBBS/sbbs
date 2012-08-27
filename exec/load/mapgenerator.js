@@ -299,7 +299,7 @@ function Map(width,height) {
 		if(base == undefined)
 			base = settings.base;
 		if(peak == undefined)
-			peak = settings.base;
+			peak = settings.peak;
 
 		/* iterate map again and adjust values to fit scale */
 		if(this.range == 0)
