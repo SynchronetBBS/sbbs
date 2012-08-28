@@ -1,0 +1,98 @@
+<?xjs load('webInit.ssjs'); ?>
+<html>
+
+<head>
+<title>
+	<?xjs write(system.name); ?>
+</title>
+<link rel="stylesheet" type="text/css" href="./style/style.css">
+<script language="javascript" type="text/javascript" src="./lib/client.js"></script>
+<script language="javascript" type="text/javascript" src="./lib/json2.js"></script>
+</head>
+
+<body>
+<div id="container" class="font">
+
+<div id="header" class="border box background">
+<?xjs write(system.name); ?>
+</div>
+
+<div id="sidebar">
+<?xjs
+	var d = directory(webIni.RootDirectory + '/sidebar/*');
+	for(var f = 0; f < d.length; f++) {
+		if(file_isdir(d[f]))
+			continue;
+		var ext = d[f].toUpperCase().split(".").slice(1).join(".");
+		if(ext == "XJS.SSJS")
+			continue;
+		if(ext == "SSJS") {
+			print('<div class="sidebarItem border box background">');
+			load(d[f]);
+			print('</div>')
+		} else if(ext == "XJS") {
+			print(
+				format(
+					'<iframe class="sidebarItem border box background font" frameborder=0 id="sbi%s" scrolling="no" src="./sidebar/%s" onload="loadIFrame(\'sbi%s\', 0)"></iframe>',
+					f, file_getname(d[f]), f
+				)
+			);
+		} else if(ext == "TXT" || ext == "HTML") {
+			var handle = new File(d[f]);
+			handle.open("r");
+			var printme = handle.read();
+			handle.close();
+			print('<div class="sidebarItem border box background">');
+			if(file_getext(d[f]).toUpperCase() == ".TXT")
+				printme = "<pre>" + printme + "</pre>";
+			else
+				print(printme);
+			print('</div>');
+		}
+	}
+?>
+</div>
+
+<div id="content" class="border box background">
+<?xjs
+	if(http_request.query.hasOwnProperty("page"))
+		var page = http_request.query.page;
+	else
+		var page = "000-home.xjs";
+	var ext = file_getext(page).toUpperCase();
+	var f = file_exists(webIni.RootDirectory + "/pages/" + page);
+	if(f && ext == ".SSJS") {
+		load(webIni.RootDirectory + "/pages/" + page);
+	} else if(f && ext == ".HTML") {
+		var f = new File(webIni.RootDirectory + "/pages/" + page);
+		f.open("r");
+		var contents = f.read();
+		f.close();
+		write(contents);
+	} else if(f && ext == ".XJS") {
+			print(
+				format(
+					'<iframe class="background font" frameborder=0 id="contentIFrame" scrolling="no" src="./pages/%s" onload="loadIFrame(\'contentIFrame\', 1)"></iframe>',
+					page
+				)
+			);
+	} else if(f && ext == ".TXT") {
+		var f = new File(webIni.RootDirectory + "/pages/" + page);
+		f.open("r");
+		var contents = f.readAll();
+		f.close();
+		if(contents[0] == "HIDDEN")
+			contents.shift();
+		contents = contents.join("\r\n");
+		print("<pre>" + contents + "</pre>");
+	}
+?>
+</div>
+
+<div id="footer" class="border box background">
+<?xjs write(system.version_notice); ?>
+</div>
+
+</div>
+</body>
+</html>
