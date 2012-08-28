@@ -1,0 +1,34 @@
+<?xjs
+	load('webInit.ssjs');
+	var f = new File(system.ctrl_dir + 'services.ini');
+	if(f.open("r")) {
+		var servicesIni = f.iniGetObject('Socket-Policy');
+		f.close();
+		var fspPort = servicesIni.Port;
+	} else {
+		var fspPort = 843;
+	}
+?>
+
+<html>
+
+<head>
+<script type="text/javascript" src="http://<?xjs write(webIni.HostName); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/swfobject.js"></script>
+</head>
+
+<body>
+<div id="lightIRC"></div>
+<script language="javascript" type="text/javascript">
+var params = {
+	host : '<?xjs write(system.inet_addr); ?>',
+	policyPort : '<?xjs write(fspPort); ?>',
+	language : 'en',
+	nickselect : 'yes',
+	nick : '<?xjs write(user.alias); ?>',
+	autojoin : '#bbs'
+};
+swfobject.embedSWF('http://<?xjs write(webIni.HostName); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
+</script>
+</body>
+
+</html>
