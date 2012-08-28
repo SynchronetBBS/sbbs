@@ -98,6 +98,7 @@ function Map(width,height) {
 	var settings = {
 		minRadius:10,
 		maxRadius:20,
+		sectionHeight:15,
 		base:0,
 		peak:1,
 		hills:100,
@@ -139,13 +140,22 @@ function Map(width,height) {
 	this.__defineSetter__("minRadius",function(r) {
 		if(isNaN(r) || r > settings.maxRadius)
 			return false;
-		settings.minRadius = r;
+		settings.minRadius =  Number(r);
+		return true;
+	});
+	this.__defineGetter__("sectionHeight",function() {
+		return settings.sectionHeight;
+	});
+	this.__defineSetter__("sectionHeight",function(height) {
+		if(isNaN(height) || height < 1 || height > 50)
+			return false;
+		settings.sectionHeight =  Number(height);
 		return true;
 	});
 	this.__defineSetter__("maxRadius",function(r) {
 		if(isNaN(r) || r < settings.minRadius)
 			return false;
-		settings.maxRadius = r;
+		settings.maxRadius = Number(r);
 		return true;
 	});
 	this.__defineGetter__("island",function() {
@@ -199,7 +209,7 @@ function Map(width,height) {
 	this.__defineSetter__("hills",function(hills) {
 		if(isNaN(hills))
 			return false;
-		settings.hills = hills;
+		settings.hills = Number(hills);
 		return true;
 	});
 	this.__defineGetter__("base",function() {
@@ -208,7 +218,7 @@ function Map(width,height) {
 	this.__defineSetter__("base",function(base) {
 		if(isNaN(base))
 			return false;
-		settings.base = base;
+		settings.base = Number(base);
 		return true;
 	});
 	this.__defineGetter__("peak",function() {
@@ -217,14 +227,15 @@ function Map(width,height) {
 	this.__defineSetter__("peak",function(peak) {
 		if(isNaN(peak))
 			return false;
-		settings.peak = peak;
+		settings.peak = Number(peak);
 		return true;
 	});
 	
 	/* return a cross section (horizontal) */
-	this.xSection = function(y,width,height) {
+	this.xSection = function(y,height) {
 		var section = [];
-		
+		if(!height)
+			height = this.sectionHeight;
 		for(var x=0;x<this.length;x++) {
 			section[x]=[];
 			
@@ -245,9 +256,10 @@ function Map(width,height) {
 	}
 	
 	/* return a cross section (vertical) */
-	this.ySection = function(x,width,height) {
+	this.ySection = function(x,height) {
 		var section = [];
-		
+		if(!height)
+			height = this.sectionHeight;
 		for(var y=0;y<this[x].length;y++) {
 			section[y]=[];
 			
