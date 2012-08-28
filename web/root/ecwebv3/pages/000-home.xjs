@@ -1,0 +1,16 @@
+<?xjs load('webInit.ssjs'); ?>
+<!--Home-->
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="../style/style.css" />
+</head>
+<body class="background font">
+<span class="title">Telnet</span>
+<iframe class="background" frameborder=0 width="730px" height="420px" id="ftelnetIframe" scrolling="no" src="../ftelnet/ftelnet.xjs" onload="loadIFrame('ftelnetIframe', 1)">
+</iframe>
+<br /><br />
+<span class="title">IRC Chat</span>
+<iframe class="background" frameborder=0 width="730px" height="430px" id="lightIRCIframe" scrolling="no" src="../lightirc/lightirc.xjs" onload="loadIFrame('lightIRCIframe', 1)">
+</iframe>
+</body>
+</html>
