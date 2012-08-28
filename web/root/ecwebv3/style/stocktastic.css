@@ -1,0 +1,126 @@
+body {
+	color: #000000;
+	background-color: #999999;
+}
+
+a { 
+	text-decoration: none;
+	font-weight: bold;
+}
+
+a:link  {
+	color: #000000;
+}
+
+a:visited {
+	color: #000000;
+}
+
+a:hover {
+	color: #FFFFFF;
+	background-color: #000000;
+}
+
+a:active {
+	color: #FFFFFF;
+	background-color: #000000;
+}
+
+.ulLink { 
+}
+
+.ulLink:link  {
+	color: #000000;
+}
+
+.ulLink:visited {
+	color: #000000;
+}
+
+.ulLink:hover {
+	color: #000000;
+	text-decoration: underline;
+	background-color: transparent;
+}
+
+.ulLink:active {
+	color: #000000;
+	text-decoration: underline;
+	background-color: transparent;
+}
+
+#container {
+	width: 1200px;
+	margin: 0 auto;
+}
+
+#header {
+	margin-bottom: 10px;
+	font-size: 16pt;
+	font-weight: bold;
+}
+
+#content {
+	float: right;
+	width: 895px;
+	margin-bottom: 10px;
+}
+
+#sidebar {
+	float: left;
+	width: 250px;
+}
+
+#footer {
+	clear: both;
+	text-align: right;
+}
+
+.font {
+	font-family: arial,helvetica;
+	font-size: 10pt;
+}
+
+.border {
+	border-style: solid;
+	border-width: 1px;
+	border-color: #000000;
+}
+
+.box {
+	padding: 10px;
+}
+
+.indentBox1 {
+	padding: 10px;
+	margin-left: 25px;
+}
+
+.indentBox2{
+	padding: 10px;
+	margin-left: 50px;
+}
+
+.indentBox3 {
+	padding: 10px;
+	margin-left: 75px;
+}
+
+.background {
+	background-color: #CCCCCC;
+}
+
+.msg {
+	background-color: #E6E6E6;
+	margin-bottom: 10px;
+}
+
+.sidebarItem {
+	margin-bottom: 10px;
+	width: 250px;
+}
+
+.title {
+	font-size: 14pt;
+	font-weight: bold;
+}
