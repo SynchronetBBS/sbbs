@@ -27,10 +27,28 @@ var webIni=(function() {
 		login(u.alias, u.security.password);
 	}
 
+	/*	web.ini will likely go away in the near future, but we'll read it in
+		to support ecWeb v2 systems for now. */
 	var f = new File(system.ctrl_dir + 'web.ini');
-	f.open("r",true);
+	f.open("r");
 	var webIni = f.iniGetObject();
 	f.close();
+	
+	var f = new File(system.ctrl_dir + 'sbbs.ini');
+	f.open("r");
+	var sbbsIni = f.iniGetObject("Web");
+	f.close();
+	
+	var f = new File(system.ctrl_dir + 'modopts.ini');
+	f.open("r");
+	var modsIni = f.iniGetObject("Web");
+	f.close();
+	
+	webIni.RootDirectory = modsIni.RootDirectory;
+	webIni.appendURL = modsIni.appendURL;
+	webIni.WebGuest = modsIni.guestUser;
+	webIni.HostName = sbbsIni.HostName;
+	webIni.HTTPPort = Number(sbbsIni.Port).toFixed();
 
 	if(http_request.query.username != undefined && http_request.query.password != undefined) {
 		// Script was (we'll assume) called from the login form.  Attempt to authenticate the user.
@@ -58,7 +76,7 @@ var webIni=(function() {
 			var u = new User(cookie[0]);
 			var sessionKey = false;
 			var f = getSessionKeyFile(u.number);
-			if(f.open("r",true)) {
+			if(f.open("r")) {
 				sessionKey = f.read();
 				f.close();
 			}
@@ -91,5 +109,5 @@ var webIni=(function() {
 		}
 		print("<html><head><script type=text/javascript>window.location='" + loc + "'</script></head></html>");
 	}
-	return(webIni);
+	return webIni;
 })();
