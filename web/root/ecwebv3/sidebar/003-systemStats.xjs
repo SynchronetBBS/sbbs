@@ -1,0 +1,64 @@
+<?xjs load('webInit.ssjs'); ?>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="../style/style.css">
+</head>
+<body class="background">
+<table border=0 cellpadding=0 cellspacing=0 class="font">
+	<tr>
+		<td>Sysop:</td>
+		<td>&nbsp;<?xjs write(system.operator); ?></td>
+	</tr>
+	<tr>
+		<td>Location:</td>
+		<td>&nbsp;<?xjs write(system.location); ?></td>
+	</tr>
+	<tr>
+		<td>Users:</td>
+		<td>&nbsp;<?xjs write(system.stats.total_users); ?></td>
+	</tr>
+	<tr>
+		<td>Nodes:</td>
+		<td>&nbsp;<?xjs write(system.nodes); ?></td>
+	</tr>
+	<tr>
+		<td>Uptime:</td>
+		<td>&nbsp;<?xjs write(system.secondstr(time() - system.uptime)); ?></td>
+	</tr>
+	<tr>
+		<td>Calls:</td>
+		<td>&nbsp;<?xjs write(system.stats.total_logons); ?></td>
+	</tr>
+	<tr>
+		<td>Calls today:</td>
+		<td>&nbsp;<?xjs write(system.stats.logons_today); ?></td>
+	</tr>
+	<tr>
+		<td>Files:</td>
+		<td>&nbsp;<?xjs write(system.stats.total_files); ?></td>
+	</tr>
+	<tr>
+		<td>U/L today:</td>
+		<td>&nbsp;
+			<?xjs write(system.stats.files_uploaded_today); ?> files 
+			(<?xjs write(system.stats.bytes_uploaded_today); ?> bytes)
+		</td>
+	</tr>
+	<tr>
+		<td>D/L today:</td>
+		<td>&nbsp;
+			<?xjs write(system.stats.files_downloaded_today); ?> files 
+			(<?xjs write(system.stats.bytes_downloaded_today); ?> bytes)
+		</td>
+	</tr>
+	<tr>
+		<td>Messages:</td>
+		<td>&nbsp;<?xjs write(system.stats.total_messages); ?></td>
+	</tr>
+	<tr>
+		<td>Posts today:</td>
+		<td>&nbsp;<?xjs write(system.stats.messages_posted_today); ?></td>
+	</tr>
+</table>
+</body>
+</html>
