@@ -13,7 +13,7 @@
 <html>
 
 <head>
-<script type="text/javascript" src="http://<?xjs write(webIni.HostName); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/swfobject.js"></script>
+<script type="text/javascript" src="http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/swfobject.js"></script>
 </head>
 
 <body>
@@ -27,7 +27,7 @@ var params = {
 	nick : '<?xjs write(user.alias); ?>',
 	autojoin : '#bbs'
 };
-swfobject.embedSWF('http://<?xjs write(webIni.HostName); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
+swfobject.embedSWF('http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
 </script>
 </body>
 
