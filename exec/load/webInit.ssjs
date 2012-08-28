@@ -47,7 +47,6 @@ var webIni=(function() {
 	webIni.RootDirectory = modsIni.RootDirectory;
 	webIni.appendURL = modsIni.appendURL;
 	webIni.WebGuest = modsIni.guestUser;
-	webIni.HostName = sbbsIni.HostName;
 	webIni.HTTPPort = Number(sbbsIni.Port).toFixed();
 
 	if(http_request.query.username != undefined && http_request.query.password != undefined) {
