@@ -1,0 +1,101 @@
+<?xjs
+	var f = new File(system.ctrl_dir + 'services.ini');
+	if(f.open("r")) {
+		var servicesIni = f.iniGetObject('Socket-Policy');
+		f.close();
+		var fspPort = servicesIni.Port;
+	} else {
+		var fspPort = 843;
+	}
+	f = new File(system.ctrl_dir + 'sbbs.ini');
+	if(f.open("r")) {
+		var sbbsIni = f.iniGetObject("BBS");
+		f.close();
+		var rloginPort = sbbsIni.RLoginPort;
+		var telnetPort = sbbsIni.TelnetPort;
+	} else {
+		var rloginPort = 513;
+		var telnetPort = 23;
+	}
+?>
+
+<html>
+
+<head>
+<script type="text/javascript">
+var ClientVars = {
+	AlertDialogX : 0,
+	AlertDialogY : 0,
+	AutoConnect : 0,
+	BitsPerSecond : 115200,
+	CodePage : "437",
+	ConnectButtonX : -0.08,
+	ConnectButtonY : 0.30,
+	Enter : "\r",
+	FontWidth : 9,
+	FontHeight : 16,
+	LocalEcho : 0,
+	RIP : 0,
+	RIPIconPath : "/ripicon",
+	RLogin : 0,
+	RLoginHostName : "<?xjs write(system.inet_addr); ?>",
+	RLoginPort : <?xjs write(rloginPort); ?>,
+	RLoginClientUserName : "",
+	RLoginServerUserName : "",
+	RLoginTerminalType : "",
+	ScreenColumns : 80,
+	ScreenRows : 25,
+	SendOnConnect : "",
+	ServerName : "<?xjs write(system.name); ?>",
+	SocketPolicyPort : <?xjs write(fspPort); ?>,
+	TelnetHostName : "<?xjs write(system.inet_addr); ?>",
+	TelnetPort : <?xjs write(telnetPort); ?>,
+	VirtualKeyboardWidth : 1,
+	VT : 0,
+	WebSocketHostName : "<?xjs write(system.inet_addr); ?>",
+	WebSocketPort : 1123
+}
+</script>
+<script type="text/javascript" src="./ClientFuncs.js"></script>
+<script type="text/javascript" src="./swfobject.js"></script>
+<script type="text/javascript" src="./HtmlTerm.compiled.js"></script>
+<script type="text/javascript" src="./HtmlTerm.font2.js"></script>
+<script type="text/javascript" src="./HtmlTerm.fontamiga.js"></script>
+<script type="text/javascript" src="./HtmlTerm.fontatari.js"></script>
+</head>
+
+<body>
+<p style="text-align: center;">
+<div id="ClientContainer"></div>
+</p>
+<script type="text/javascript">
+	swfobject.embedSWF(
+		"fTelnet.swf",
+		"ClientContainer",
+		"100%",
+		"100%",
+		"10.2.0",
+		"playerProductInstall.swf",
+		ClientVars,
+		{
+			allowfullscreen: "true",
+			allowscriptaccess: "sameDomain",
+			bgcolor: "#ffffff", quality: "high"
+		},
+		{
+			align: "middle",
+			id: "fTelnet",
+			name: "fTelnet",
+			swliveconnect: "true"
+		},
+		function (callbackObj) {
+			if (!callbackObj.success) {
+				if (!HtmlTerm.Init("ClientContainer", ClientVars))
+					alert("Sorry, I wasn't able to load either fTelnet or HtmlTerm\n\nTry again with Flash 10+ installed (for fTelnet), or with an HTML5 capable browser (for HtmlTerm)");
+			}
+		}
+	);
+</script>
+</body>
+
+</html>
