@@ -1,1 +1,0 @@
-var params = {}; params.host = 'bbs.electronicchicken.com'; params.policyPort = 843; params.language = 'en'; params.nickselect = 'yes'; params.nick = 'ecbbs-%25'; params.autojoin = '#bbs'; swfobject.embedSWF('lightIRC.swf', 'lightIRC', '100%', '100%', '9.0.0', null, params, null);
