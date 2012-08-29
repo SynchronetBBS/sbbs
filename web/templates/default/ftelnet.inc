@@ -7,6 +7,7 @@
 <!-- fTelnet --> 
 
 	<p style="text-align: center;"><span id="ClientContainer"></span></p>
+	<p style="text-align: center;">Keyboard Shortcuts: CTRL+UP ARROW = Scrollback, CTRL+PAGE UP = Upload, CTRL+PAGE DOWN = Download</p>
 	
 	<script type="text/javascript" src="/ftelnet/ClientVars.js"></script>
 	<script type="text/javascript" src="/ftelnet/ClientFuncs.js"></script>
