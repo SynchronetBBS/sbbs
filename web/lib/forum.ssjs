@@ -83,7 +83,7 @@ function printThreads(sub) {
 	if(!msgBase.open())
 		return false;
 	msgBase.close();
-	var threads = getMessageThreads(sub);
+	var threads = getMessageThreads(sub, webIni.maxMessages);
 	var out = "";	
 	for(var t in threads.order) {
 		var header = threads.thread[threads.order[t]].messages[0];
@@ -111,7 +111,7 @@ function printThread(sub, t) {
 	var msgBase = new MsgBase(sub);
 	if(!msgBase.open())
 		return false;
-	var threads = getMessageThreads(sub);
+	var threads = getMessageThreads(sub, webIni.maxMessages);
 	var out = "";
 	for(var m in threads.thread[t].messages) {
 		var header = threads.thread[t].messages[m];
