@@ -1,8 +1,7 @@
 // webInit.ssjs, by echicken -at- bbs.electronicchicken.com
 
 // Some bootstrapping stuff for the web interface, kept in exec/load/ so that
-// layout.ssjs can find it.  Loads the web interface configuration into the
-// webIni object, logs in the current user.
+// other scripts can find it.  Could/should be moved to /sbbs/web/lib.
 
 load('sbbsdefs.js');
 
@@ -26,27 +25,17 @@ var webIni=(function() {
 		set_cookie('synchronet', u.number.toString() + ',' + sessionKey, time() + webIni.sessionTimeout, http_request.host, "/");
 		login(u.alias, u.security.password);
 	}
-
-	/*	web.ini will likely go away in the near future, but we'll read it in
-		to support ecWeb v2 systems for now. */
-	var f = new File(system.ctrl_dir + 'web.ini');
+	
+	var f = new File(system.ctrl_dir + 'modopts.ini');
 	f.open("r");
-	var webIni = f.iniGetObject();
+	var webIni = f.iniGetObject("Web");
 	f.close();
 	
 	var f = new File(system.ctrl_dir + 'sbbs.ini');
 	f.open("r");
 	var sbbsIni = f.iniGetObject("Web");
 	f.close();
-	
-	var f = new File(system.ctrl_dir + 'modopts.ini');
-	f.open("r");
-	var modsIni = f.iniGetObject("Web");
-	f.close();
-	
-	webIni.RootDirectory = modsIni.RootDirectory;
-	webIni.appendURL = modsIni.appendURL;
-	webIni.WebGuest = modsIni.guestUser;
+
 	webIni.HTTPPort = Number(sbbsIni.Port).toFixed();
 
 	if(http_request.query.username != undefined && http_request.query.password != undefined) {
@@ -90,14 +79,14 @@ var webIni=(function() {
 
 	// If none of the above conditions were met, user 0 is still signed in, so we should log in the guest user
 	if(user.number == 0) {
-		var guestUID = system.matchuser(webIni.guestUser);
+		var guestUID = system.matchuser(webIni.WebGuest);
 		var u = new User(guestUID);
 		setLoginCookie(u, sessionKey);
 	}
 
 	// Yeah, this kinda sucks, but it works.
 	if(http_request.query.callback != undefined) {
-		if(http_request.query.username != undefined && user.alias == webIni.guestUser) {
+		if(http_request.query.username != undefined && user.alias == webIni.WebGuest) {
 			if(http_request.query.callback[0].match(/\?/) != null) {
 				var loc = http_request.query.callback[0] + "&loginfail=true";
 			} else {
