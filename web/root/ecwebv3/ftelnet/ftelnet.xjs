@@ -2,15 +2,22 @@
 	load('webInit.ssjs');
 	var f = new File(system.ctrl_dir + 'services.ini');
 	if(f.open("r")) {
-		var servicesIni = f.iniGetObject('FlashPolicy');
+		var fspIni = f.iniGetObject('FlashPolicy');
+		var wssIni = f.iniGetObject('WebSocket');
 		f.close();
 	}
-	if(servicesIni === undefined || servicesIni === null) {
+	if(fspIni === undefined || fspIni === null) {
 		var embed = false;
 		var fspPort = 843;
 	} else {
 		var embed = true;
-		var fspPort = servicesIni.Port;
+		var fspPort = fspIni.Port;
+	}
+	if(wssIni === undefined || wssIni === null) {
+		var htmlterm = false;
+	} else {
+		var htmlterm = true;
+		var wssPort = wssIni.Port;
 	}
 	f = new File(system.ctrl_dir + 'sbbs.ini');
 	if(f.open("r")) {
@@ -75,7 +82,9 @@ var ClientVars = {
 <div id="ClientContainer"></div>
 </p>
 <script type="text/javascript">
-	if(!<?xjs write(embed); ?>) {
+	var embed = <?xjs write(embed); ?>;
+	var htmlterm = <?xjs write(htmlterm); ?>;
+	if(!embed) {
 		document.getElementById('ClientContainer').innerHTML = "Socket policy server not enabled.  fTelnet disabled.";
 	} else {
 		swfobject.embedSWF(
@@ -98,8 +107,8 @@ var ClientVars = {
 				swliveconnect: "true"
 			},
 			function (callbackObj) {
-				if (!callbackObj.success) {
-					if (!HtmlTerm.Init("ClientContainer", ClientVars))
+				if(!callbackObj.success) {
+					if(!htmlterm || !HtmlTerm.Init("ClientContainer", ClientVars))
 						alert("Sorry, I wasn't able to load either fTelnet or HtmlTerm\n\nTry again with Flash 10+ installed (for fTelnet), or with an HTML5 capable browser (for HtmlTerm)");
 				}
 			}
