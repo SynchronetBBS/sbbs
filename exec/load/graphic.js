@@ -53,6 +53,7 @@ function Graphic(w,h,attr,ch)
 	this.scroll=Graphic_scroll;
 	this.putmsg=Graphic_putmsg;
 	this.resize=Graphic_resize;
+	this.parseANSI=Graphic_parseANSI;
 }
 function Graphic_clear()
 {
@@ -206,114 +207,8 @@ function Graphic_load(filename)
 		if(!(f.open("r",true,4096)))
 			return(false);
 		var lines=f.readAll();
+		this.parseAnsi(lines);
 		f.close();
-		
-		var attr = this.attr;
-		var bg = BG_BLACK;
-		var fg = LIGHTGRAY;
-		var i = 0;
-		var y = 0;
-		while(lines.length > 0 && y < this.height) {	
-			var x = 0;
-			var line = lines.shift();
-			
-			/* parse 'ATCODES'?? 
-			line = line.replace(/@(.*)@/g,
-				function (str, code, offset, s) {
-					return bbs.atcode(code);
-				}
-			);
-			*/
-			
-			while(line.length > 0 && x < this.width) {
-				/* parse an attribute sequence*/
-				var m = line.match(/^\x1b\[(\d+);?(\d*);?(\d*)m/);
-				if(m !== null) {
-					line = line.substr(m.shift().length);
-					if(m[0] == 0) {
-						bg = BG_BLACK;
-						fg = LIGHTGRAY;
-						i = 0;
-						m.shift();
-					}
-					if(m[0] == 1) {
-						i = HIGH;
-						m.shift();
-					}
-					if(m[0] >= 40) {
-						switch(Number(m.shift())) {
-						case 40:
-							bg = BG_BLACK;
-							break;
-						case 41:
-							bg = BG_RED;
-							break;
-						case 42: 
-							bg = BG_GREEN;
-							break;
-						case 43:
-							bg = BG_BROWN;
-							break;
-						case 44:
-							bg = BG_BLUE;
-							break;
-						case 45:
-							bg = BG_MAGENTA;
-							break;
-						case 46:
-							bg = BG_CYAN;
-							break;
-						case 47:
-							bg = BG_LIGHTGRAY;
-							break;
-						}
-					}
-					if(m[0] >= 30) {
-						switch(Number(m.shift())) {
-						case 30:
-							fg = BLACK;
-							break;
-						case 31:
-							fg = RED;
-							break;
-						case 32:
-							fg = GREEN;
-							break;
-						case 33:
-							fg = BROWN;
-							break;
-						case 34:
-							fg = BLUE;
-							break;
-						case 35:
-							fg = MAGENTA;
-							break;
-						case 36:
-							fg = CYAN;
-							break;
-						case 37:
-							fg = LIGHTGRAY;
-							break;
-						}
-					}
-					attr = bg + fg + i;
-					continue;
-				}
-				/* parse a positional sequence */
-				var n = line.match(/^\x1b\[(\d+)C/);
-				if(n !== null) {
-					line = line.substr(n.shift().length);
-					x+=Number(n.shift());
-					continue;
-				}
-				/* set character and attribute */
-				var ch = line[0];
-				line = line.substr(1);
-				this.data[x][y]=new Graphic_sector(ch,attr);
-				x++;
-			}
-			y++;
-		}
 		break;
 	case "BIN":
 		if(!(f.open("rb",true,4096)))
@@ -344,6 +239,220 @@ function Graphic_load(filename)
 		break;
 	}
 	return(true);
+}
+function Graphic_parseANSI(lines) 
+{
+	var attr = this.attr;
+	var bg = 0;
+	var fg = 0;
+	var i = 0;
+	var saved = {};
+	
+	var y = 0;
+	while(lines.length > 0) {	
+		var x = 0;
+		var line = lines.shift();
+		/* parse 'ATCODES'?? 
+		line = line.replace(/@(.*)@/g,
+			function (str, code, offset, s) {
+				return bbs.atcode(code);
+			}
+		);
+		*/
+		while(line.length > 0) {
+			/* parse an attribute sequence*/
+			var m = line.match(/^\x1b\[(\d*);?(\d*);?(\d*)m/);
+			if(m !== null) {
+				line = line.substr(m.shift().length);
+				if(m[0] == 0) {
+					bg = BG_BLACK;
+					fg = LIGHTGRAY;
+					i = 0;
+					m.shift();
+				}
+				if(m[0] == 1) {
+					i = HIGH;
+					m.shift();
+				}
+				if(m[0] >= 40) {
+					switch(Number(m.shift())) {
+					case 40:
+						bg = BG_BLACK;
+						break;
+					case 41:
+						bg = BG_RED;
+						break;
+					case 42: 
+						bg = BG_GREEN;
+						break;
+					case 43:
+						bg = BG_BROWN;
+						break;
+					case 44:
+						bg = BG_BLUE;
+						break;
+					case 45:
+						bg = BG_MAGENTA;
+						break;
+					case 46:
+						bg = BG_CYAN;
+						break;
+					case 47:
+						bg = BG_LIGHTGRAY;
+						break;
+					}
+				}
+				if(m[0] >= 30) {
+					switch(Number(m.shift())) {
+					case 30:
+						fg = BLACK;
+						break;
+					case 31:
+						fg = RED;
+						break;
+					case 32:
+						fg = GREEN;
+						break;
+					case 33:
+						fg = BROWN;
+						break;
+					case 34:
+						fg = BLUE;
+						break;
+					case 35:
+						fg = MAGENTA;
+						break;
+					case 36:
+						fg = CYAN;
+						break;
+					case 37:
+						fg = LIGHTGRAY;
+						break;
+					}
+				}
+				attr = bg + fg + i;
+				continue;
+			}
+			
+			/* parse absolute character position */
+			var m = line.match(/^\x1b\[(\d*);?(\d*)[Hf]/);
+			if(m !== null) {
+				line = line.substr(m.shift().length);
+				
+				if(m.length==0) {
+					x=0;
+					y=0;
+				}
+				else {
+					if(m[0])
+						y = Number(m.shift())-1;
+					if(m[0])
+						x = Number(m.shift())-1;
+				}
+				continue;
+			}
+			
+			/* ignore a bullshit sequence */
+			var n = line.match(/^\x1b\[\?7h/);
+			if(n !== null) {
+				line = line.substr(n.shift().length);
+				continue;
+			}
+			
+			/* parse an up positional sequence */
+			var n = line.match(/^\x1b\[(\d*)A/);
+			if(n !== null) {
+				line = line.substr(n.shift().length);
+				var chars = n.shift();
+				if(chars < 1)
+					y-=1;
+				else
+					y-=Number(chars);
+				continue;
+			}
+			
+			/* parse a down positional sequence */
+			var n = line.match(/^\x1b\[(\d*)B/);
+			if(n !== null) {
+				line = line.substr(n.shift().length);
+				var chars = n.shift();
+				if(chars < 1)
+					y+=1;
+				else
+					y+=Number(chars);
+				continue;
+			}
+			
+			/* parse a forward positional sequence */
+			var n = line.match(/^\x1b\[(\d*)C/);
+			if(n !== null) {
+				line = line.substr(n.shift().length);
+				var chars = n.shift();
+				if(chars < 1)
+					x+=1;
+				else
+					x+=Number(chars);
+				continue;
+			}
+			
+			/* parse a backward positional sequence */
+			var n = line.match(/^\x1b\[(\d*)D/);
+			if(n !== null) {
+				line = line.substr(n.shift().length);
+				var chars = n.shift()
+				if(chars < 1)
+					x-=1;
+				else
+					x-=Number(chars);
+				continue;
+			}
+			
+			/* parse a clear screen sequence */
+			var n = line.match(/^\x1b\[2J/);
+			if(n !== null) {
+				line = line.substr(n.shift().length);
+				continue;
+			}
+			
+			/* parse save cursor sequence */
+			var n = line.match(/^\x1b\[s/);
+			if(n !== null) {
+				line = line.substr(n.shift().length);
+				saved.x = x;
+				saved.y = y;
+				continue;
+			}
+
+			/* parse restore cursor sequence */
+			var n = line.match(/^\x1b\[u/);
+			if(n !== null) {
+				line = line.substr(n.shift().length);
+				x = saved.x;
+				y = saved.y;
+				continue;
+			}
+
+			/* set character and attribute */
+			var ch = line[0];
+			line = line.substr(1);
+			
+			/* validate position */
+			if(y<0) 
+				y=0; 
+			if(x<0)
+				x=0;
+			if(x>=this.width) {
+				x=0;
+				y++;
+			}
+			
+			if(!this.data[x])
+				this.data[x]=[];
+			this.data[x][y]=new Graphic_sector(ch,attr);
+			x++;
+		}
+		y++;
+	}
 }
 function Graphic_write(filename)
 {
