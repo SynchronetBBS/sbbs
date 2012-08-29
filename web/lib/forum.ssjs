@@ -53,7 +53,7 @@ function printBoards() {
 			);
 			var msgBase = new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 			msgBase.open();
-			out += msgBase.total_msgs + " messages.<br />";
+			out += ((webIni.maxMessages > 0 && webIni.maxMessages < msgBase.total_msgs)?webIni.maxMessages:msgBase.total_msgs) + " messages.<br />";
 			var h = msgBase.get_msg_header(msgBase.last_msg);
 			msgBase.close();
 			if(h !== null)
