@@ -360,7 +360,9 @@ function expand_body(body, sys_misc, mode)
 		}
 	}
 */
-function getMessageThreads(sub) {
+function getMessageThreads(sub, max) {
+	if(max === undefined)
+		max = 0;
 	var threads = { thread : {}, dates : [], order : [] };
 	var threadedMessages = [];
 	var subjects = {};
@@ -369,6 +371,7 @@ function getMessageThreads(sub) {
 	var md5subject;
 	var msgBase = new MsgBase(sub);
 	msgBase.open();
+	var n = 0;
 	for(var m = msgBase.first_msg; m <= msgBase.last_msg; m++) {
 		header = msgBase.get_msg_header(m);
 		if(
@@ -433,6 +436,9 @@ function getMessageThreads(sub) {
 		}
 		subjects[md5subject] = header.number;
 		threadedMessages.push(header.number);
+		n++;
+		if(max > 0 && n >= max)
+			break;
 	}
 	msgBase.close();
 	
