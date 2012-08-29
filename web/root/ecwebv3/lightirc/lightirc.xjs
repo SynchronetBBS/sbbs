@@ -2,11 +2,14 @@
 	load('webInit.ssjs');
 	var f = new File(system.ctrl_dir + 'services.ini');
 	if(f.open("r")) {
-		var servicesIni = f.iniGetObject('Socket-Policy');
+		var servicesIni = f.iniGetObject('FlashPolicy');
 		f.close();
-		var fspPort = servicesIni.Port;
+	}
+	if(servicesIni === undefined || servicesIni === null) {
+		var embed = false;
 	} else {
-		var fspPort = 843;
+		var embed = true;
+		var fspPort = servicesIni.Port;
 	}
 ?>
 
@@ -19,18 +22,19 @@
 <body>
 <div id="lightIRC">LightIRC would appear here if you had Flash Player installed and Javascript enabled.</div>
 <script language="javascript" type="text/javascript">
-if(swfobject.getFlashPlayerVersion().major >= 9) {
-	document.getElementById('lightIRC').innerHTML = "";
-	var params = {
-		host : '<?xjs write(system.inet_addr); ?>',
-		policyPort : '<?xjs write(fspPort); ?>',
-		language : 'en',
-		nickselect : 'yes',
-		nick : '<?xjs write(user.alias); ?>',
-		autojoin : '#bbs'
-	};
+document.getElementById('lightIRC').innerHTML = "";
+var params = {
+	host : '<?xjs write(system.inet_addr); ?>',
+	policyPort : '<?xjs write(fspPort); ?>',
+	language : 'en',
+	nickselect : 'yes',
+	nick : '<?xjs write(user.alias); ?>',
+	autojoin : '#bbs'
+};
+if(<?xjs write(embed); ?>)
 	swfobject.embedSWF('http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
-}
+else
+	document.getElementById('lightIRC').innerHTML = 'Socket policy server not enabled.  LightIRC not loaded.';
 </script>
 </body>
 
