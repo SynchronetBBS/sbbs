@@ -5,7 +5,9 @@ if(http_request.query.hasOwnProperty("action") && http_request.query.action.toSt
 
         print("<b>Who's online</b><br><br>");
         print("<table border=0 cellpadding=0 cellspacing=0 class='font'>");
-        for(n = 0; n < 6; n++) {
+        for(n = 0; n < system.node_list.length; n++) {
+				if(system.node_list[n] === undefined)
+					continue;
                 print("<tr><td>Node " + (n + 1) + ":&nbsp;</td>");
                 if(system.node_list[n].status == 3)
                         print("<td>" + system.username(system.node_list[n].useron) + "</td></tr><tr><td>&nbsp;</td><td style=font-style:italic;>" + NodeAction[system.node_list[n].action] + "</td></tr>");
