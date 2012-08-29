@@ -17,17 +17,20 @@
 </head>
 
 <body>
-<div id="lightIRC"></div>
+<div id="lightIRC">LightIRC would appear here if you had Flash Player installed and Javascript enabled.</div>
 <script language="javascript" type="text/javascript">
-var params = {
-	host : '<?xjs write(system.inet_addr); ?>',
-	policyPort : '<?xjs write(fspPort); ?>',
-	language : 'en',
-	nickselect : 'yes',
-	nick : '<?xjs write(user.alias); ?>',
-	autojoin : '#bbs'
-};
-swfobject.embedSWF('http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
+if(swfobject.getFlashPlayerVersion().major >= 9) {
+	document.getElementById('lightIRC').innerHTML = "";
+	var params = {
+		host : '<?xjs write(system.inet_addr); ?>',
+		policyPort : '<?xjs write(fspPort); ?>',
+		language : 'en',
+		nickselect : 'yes',
+		nick : '<?xjs write(user.alias); ?>',
+		autojoin : '#bbs'
+	};
+	swfobject.embedSWF('http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
+}
 </script>
 </body>
 
