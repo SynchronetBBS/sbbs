@@ -84,9 +84,7 @@ var ClientVars = {
 <script type="text/javascript">
 	var embed = <?xjs write(embed); ?>;
 	var htmlterm = <?xjs write(htmlterm); ?>;
-	if(!embed) {
-		document.getElementById('ClientContainer').innerHTML = "Socket policy server not enabled.  fTelnet disabled.";
-	} else {
+	if(embed) {
 		swfobject.embedSWF(
 			"fTelnet.swf",
 			"ClientContainer",
@@ -107,13 +105,13 @@ var ClientVars = {
 				swliveconnect: "true"
 			},
 			function (callbackObj) {
-				if(!callbackObj.success) {
-					if(!htmlterm || !HtmlTerm.Init("ClientContainer", ClientVars))
-						alert("Sorry, I wasn't able to load either fTelnet or HtmlTerm\n\nTry again with Flash 10+ installed (for fTelnet), or with an HTML5 capable browser (for HtmlTerm)");
-				}
+				if(!callbackObj.success)
+					embed = false;
 			}
 		);
 	}
+	if(!embed && !htmlterm || (htmlterm && !HtmlTerm.Init("ClientContainer", ClientVars)))
+		document.getElementById('ClientContainer').innerHTML = "Could not load fTelnet or HTMLTerm.";
 </script>
 </body>
 
