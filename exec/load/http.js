@@ -13,16 +13,28 @@ if(!js.global || js.global.URL==undefined)
  *	Parse response headers
  */
 
-function HTTPRequest()
+function HTTPRequest(username,password)
 {
+	/* request properties */
+	this.request_headers;
+	this.referer;
+	this.base;
+	this.url;
+	this.body;
+	
+	this.username=username;
+	this.password=password;
+
 	this.AddDefaultHeaders=function(){
 		// General Headers
 		this.request_headers.push("Connection: close");
 		if(js.global.client != undefined)
-			this.request_headers.push("Via: "+client.protocol.toLowerCase()+"/1.0 "+system.name);
+			this.request_headers.push(
+				"Via: "+client.protocol.toLowerCase()+"/1.0 "+system.name);
 		// Request Headers
 		this.request_headers.push("Accept: text/*");
-		this.request_headers.push("Accept-Charset: ISO-8859-13,Latin-9,ISO-8859-15,ISO-8859-1,UTF-8;q=0.5,*;q=0.1");
+		this.request_headers.push(
+			"Accept-Charset: ISO-8859-13,Latin-9,ISO-8859-15,ISO-8859-1,UTF-8;q=0.5,*;q=0.1");
 		this.request_headers.push("Accept-Encoding: ");
 		this.request_headers.push("Host: "+this.url.host);
 		if(this.referer != undefined)
@@ -63,20 +75,20 @@ function HTTPRequest()
 
 	this.SendRequest=function() {
 		var i;
-
+		
 		if((this.sock=new Socket(SOCK_STREAM))==null)
 			throw("Unable to create socket");
 		if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443)))
 			throw("Unable to connect");
 		if(this.url.scheme=='https')
 			this.sock.ssl_session=true;
-		if(!this.sock.send(this.request+"\r\n"))
-			throw("Unable to send request");
+		if(!this.sock.send(this.request+"\n"))
+			throw("Unable to send request: " + this.request);
 		for(i in this.request_headers) {
-			if(!this.sock.send(this.request_headers[i]+"\r\n"))
+			if(!this.sock.send(this.request_headers[i]+"\n"))
 				throw("Unable to send headers");
 		}
-		if(!this.sock.send("\r\n"))
+		if(!this.sock.send("\n"))
 			throw("Unable to terminate headers");
 		if(this.body != undefined) {
 			if(!this.sock.send(this.body))
@@ -123,8 +135,20 @@ function HTTPRequest()
 		this.ReadBody();
 	};
 
+	this.BasicAuth=function(username,password) {
+		if(username && password) {
+			this.username=username;
+			this.password=password;
+		}
+		if(this.username && this.password) {
+			var auth = base64_encode(this.username + ":" + this.password);
+			this.request_headers.push("Authorization: Basic " + auth + "\n");
+		}
+	}
+	
 	this.Get=function(url, referer, base) {
 		this.SetupGet(url,referer,base);
+		this.BasicAuth();
 		this.SendRequest();
 		this.ReadResponse();
 		return(this.body);
@@ -132,6 +156,7 @@ function HTTPRequest()
 
 	this.Post=function(url, data, referer, base) {
 		this.SetupPost(url,referer,base,data);
+		this.BasicAuth();
 		this.SendRequest();
 		this.ReadResponse();
 		return(this.body);
