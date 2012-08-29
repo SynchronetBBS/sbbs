@@ -14,11 +14,11 @@
 	<script type="text/javascript" src="/ftelnet/swfobject.js"></script>
 	<script type="text/javascript">
 		ClientVars.RLogin = 1;
-		ClientVars.RLoginExternal = "@@External@@";
+		ClientVars.RLoginClientUserName = "@@ClientUserName@@";
 		ClientVars.RLoginHostName = "@@HostName@@";
-		ClientVars.RLoginPassword = "@@Password@@";
 		ClientVars.RLoginPort = @@Port@@;
-		ClientVars.RLoginUserName = "@@UserName@@";
+		ClientVars.RLoginServerUserName = "@@ServerUserName@@";
+		ClientVars.RLoginTerminalType = "@@TerminalType@@";
 		ClientVars.ServerName = "@@ServerName@@";
 		ClientVars.SocketPolicyPort = @@SocketPolicyPort@@;
 		swfobject.embedSWF(
