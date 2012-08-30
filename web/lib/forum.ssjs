@@ -28,7 +28,7 @@ function linkify(body) {
 			var linktext=link;
 			if(link.indexOf('://')==-1)
 				link='mailto:'+link;
-			return('<a href="'+link+'">'+linktext+'</a>'+str.substr(linktext.length));
+			return('<a class="ulLink" href="'+link+'">'+linktext+'</a>'+str.substr(linktext.length));
 		}
 	);
 	return(body);
@@ -87,7 +87,7 @@ function printThreads(sub) {
 	var out = "";	
 	for(var t in threads.order) {
 		var header = threads.thread[threads.order[t]].messages[0];
-		out += format("<a name='thread-%s'></a>", header.number);
+		out += format("<a class='ulLink' name='thread-%s'></a>", header.number);
 		out += "<div class='border indentBox2 msg'>";
 		out += format(
 			"<a class='ulLink' onclick='loadThread(\"http://%s:%s/%s/forum-async.ssjs\", \"%s\", \"%s\")'>%s</a><br />",
@@ -127,14 +127,14 @@ function printThread(sub, t) {
 		out += linkify(strip_exascii(body).replace(/\r\n/g, "<br />").replace(/\n/g, "<br />"));
 		out += "<br /><br />";
 		out += format(
-			"<a href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s#thread-%s'>Thread URL</a> - ",
+			"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s#thread-%s'>Thread URL</a> - ",
 			msgBase.cfg.grp_name, sub, t, t
 		);
 		out += format(
-			"<a href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s&message=%s#%s-%s'>Message URL</a> - ",
+			"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s&message=%s#%s-%s'>Message URL</a> - ",
 			msgBase.cfg.grp_name, sub, t, header.number, sub, header.number
 		);
-		out += format("<a class=ulLink onclick='toggleVisibility(\"sub-%s-thread-%s\")'>Collapse Thread</a>", sub, t);
+		out += format("<a class='ulLink' onclick='toggleVisibility(\"sub-%s-thread-%s\")'>Collapse Thread</a>", sub, t);
 		if(user.alias != webIni.WebGuest && user.compare_ars(msgBase.cfg.post_ars))
 			out += format(
 				" - <a class='ulLink' onclick='addReply(\"http://%s:%s/%s/forum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\")'>Reply</a>",
