@@ -17,9 +17,10 @@
 
 <head>
 <script type="text/javascript" src="http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/swfobject.js"></script>
+<link rel="stylesheet" type="text/css" href="../style/style.css" />
 </head>
 
-<body>
+<body class="background">
 <div id="lightIRC">LightIRC would appear here if you had Flash Player installed and Javascript enabled.</div>
 <script language="javascript" type="text/javascript">
 document.getElementById('lightIRC').innerHTML = "";

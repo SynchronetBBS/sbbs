@@ -34,6 +34,7 @@
 <html>
 
 <head>
+<link rel="stylesheet" type="text/css" href="../style/style.css" />
 <script type="text/javascript">
 var ClientVars = {
 	AlertDialogX : 0,
@@ -77,7 +78,7 @@ var ClientVars = {
 <script type="text/javascript" src="./HtmlTerm.fontatari.js"></script>
 </head>
 
-<body>
+<body class="background">
 <p style="text-align: center;">
 <div id="ClientContainer"></div>
 </p>
