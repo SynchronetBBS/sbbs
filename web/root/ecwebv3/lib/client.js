@@ -154,7 +154,7 @@ function addReply(url, sub, thread, number) {
 	out += "<input type='hidden' name='postmessage' value='true' />";
 	out += "<input type='hidden' name='sub' value='" + sub + "' />";
 	out += "<input type='hidden' name='irt' value='" + number + "' />";
-	out += "To:<br /><input class='border' type='text' name='to' value='" + response.header.from + "' /><br />";
+	out += "To:<br /><input class='border' type='text' name='to' value='" + response.header.from + "'" + ((sub == "mail")?" readonly":"") + " /><br />";
 	out += "From:<br />";
 	out += "<select name='from'>";
 	out += "<option value='" + response.user.alias + "'>" + response.user.alias + "</option>";
@@ -180,7 +180,7 @@ function addPost(url, sub, alias, name, sig) {
 	out += "<input type='hidden' name='postmessage' value='true' />";
 	out += "<input type='hidden' name='sub' value='" + sub + "' />";
 	out += "<input type='hidden' name='irt' value='0' />";
-	out += "To:<br /><input class='border' type='text' name='to' value='All' /><br />";
+	out += "To:<br /><input class='border' type='text' name='to' value='" + ((sub == "mail")?"":"All") + "' /><br />";
 	out += "From:<br />";
 	out += "<select name='from'>";
 	out += "<option value='" + alias + "'>" + alias + "</option>";

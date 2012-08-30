@@ -15,7 +15,7 @@ if(http_request.query.hasOwnProperty('board')) {
 	print("</script>");
 }
 
-if(http_request.query.hasOwnProperty('sub')) {
+if(http_request.query.hasOwnProperty('sub') && http_request.query.sub != 'mail') {
 	print("<script type='text/javascript'>");
 	print("loadThreads('http://" + system.inet_addr + ":" + webIni.HTTPPort + "/forum-async.ssjs', '" + http_request.query.sub + "', " + ((http_request.query.hasOwnProperty('thread'))?false:true) + ");");
 	if(http_request.query.hasOwnProperty('thread'))
