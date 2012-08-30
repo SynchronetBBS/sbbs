@@ -2,7 +2,9 @@
 load('../web/lib/captchaLib.ssjs');
 print("<span class=title>New User Registration</span><br /><br />");
 
-if(user.alias == webIni.WebGuest && http_request.query.hasOwnProperty('newuser')) {
+if(http_request.query.hasOwnProperty('font')) {
+	captchaHelp(http_request.query.font);
+} else if(user.alias == webIni.WebGuest && http_request.query.hasOwnProperty('newuser')) {
 
 	var failString = '';
 	var newUserObject = {};
@@ -162,10 +164,12 @@ if(user.alias == webIni.WebGuest && http_request.query.hasOwnProperty('newuser')
 		print("Company:<br /><input class='border font' type='text' size='30' name='company' id='company' /> <span id='companyError'></span><br /><br />");
 	if(system.newuser_questions&UQ_NONETMAIL == 0)
 		print("Email/Netmail:<br /><input class='border font' type='text' size='30' name='netmail' id='netmail' /> <span id='netmailError'></span><br /><br />");
-	insertCaptcha(); // Draws a CAPTCHA, inserts the hidden input 'letters2' (md5 sum of the CAPTCHA string) and text input 'letters1'
+	print("<div id='captcha'>");
+	insertCaptcha();
+	print("</div>");
+	print("<input class='border font' type='submit' value='Submit' style='clear:both;' /><br />");
 	if(system.newuser_password != "")
 		print("Please supply the new user password below.<br /><input class='border font' type='password' size='25' name='nup'><br /><br />");
-	print("<input class='border font' type='submit' value='Submit' />");
 	print("</form>");
 
 } else {
