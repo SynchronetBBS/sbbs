@@ -16,7 +16,7 @@
 <html>
 
 <head>
-<script type="text/javascript" src="http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/swfobject.js"></script>
+<script type="text/javascript" src="http://<?xjs write(http_request.host); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/swfobject.js"></script>
 <link rel="stylesheet" type="text/css" href="../style/style.css" />
 </head>
 
@@ -25,7 +25,7 @@
 <script language="javascript" type="text/javascript">
 document.getElementById('lightIRC').innerHTML = "";
 var params = {
-	host : '<?xjs write(system.inet_addr); ?>',
+	host : '<?xjs write(http_request.host); ?>',
 	policyPort : '<?xjs write(fspPort); ?>',
 	language : 'en',
 	nickselect : 'yes',
@@ -36,7 +36,7 @@ var params = {
 	quitmsg : '<?xjs write(system.name); ?>'
 };
 if(<?xjs write(embed); ?>)
-	swfobject.embedSWF('http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
+	swfobject.embedSWF('http://<?xjs write(http_request.host); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
 else
 	document.getElementById('lightIRC').innerHTML = 'Socket policy server not enabled.  LightIRC not loaded.';
 </script>

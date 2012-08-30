@@ -44,7 +44,7 @@ var ClientVars = {
 	CodePage : "437",
 	ConnectButtonX : 0,
 	ConnectButtonY : 0,
-	ConnectAnsi : "http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/ftelnet/ftelnet-resources/connectansi.txt",
+	ConnectAnsi : "http://<?xjs write(http_request.host); ?>:<?xjs write(webIni.HTTPPort); ?>/ftelnet/ftelnet-resources/connectansi.txt",
 	Enter : "\r",
 	FontWidth : 9,
 	FontHeight : 16,
@@ -52,7 +52,7 @@ var ClientVars = {
 	RIP : 0,
 	RIPIconPath : "/ripicon",
 	RLogin : 0,
-	RLoginHostName : "<?xjs write(system.inet_addr); ?>",
+	RLoginHostName : "<?xjs write(http_request.host); ?>",
 	RLoginPort : <?xjs write(rloginPort); ?>,
 	RLoginClientUserName : "",
 	RLoginServerUserName : "",
@@ -62,11 +62,11 @@ var ClientVars = {
 	SendOnConnect : "",
 	ServerName : "<?xjs write(system.name); ?>",
 	SocketPolicyPort : <?xjs write(fspPort); ?>,
-	TelnetHostName : "<?xjs write(system.inet_addr); ?>",
+	TelnetHostName : "<?xjs write(http_request.host); ?>",
 	TelnetPort : <?xjs write(telnetPort); ?>,
 	VirtualKeyboardWidth : 1,
 	VT : 0,
-	WebSocketHostName : "<?xjs write(system.inet_addr); ?>",
+	WebSocketHostName : "<?xjs write(http_request.host); ?>",
 	WebSocketPort : 1123
 };
 </script>
