@@ -30,7 +30,10 @@ var params = {
 	language : 'en',
 	nickselect : 'yes',
 	nick : '<?xjs write(user.alias); ?>',
-	autojoin : '#bbs'
+	autojoin : '#bbs',
+	ident : '<?xjs write(user.alias); ?>',
+	realname : '<?xjs write(user.name); ?>',
+	quitmsg : '<?xjs write(system.name); ?>'
 };
 if(<?xjs write(embed); ?>)
 	swfobject.embedSWF('http://<?xjs write(system.inet_addr); ?>:<?xjs write(webIni.HTTPPort); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
