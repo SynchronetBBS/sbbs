@@ -56,10 +56,14 @@
 <div id="content" class="border box background">
 <?xjs
 	if(http_request.query.hasOwnProperty("page"))
-		var page = http_request.query.page;
+		var page = file_getname(http_request.query.page);
 	else
 		var page = "000-home.xjs";
-	var ext = file_getext(page).toUpperCase();
+	var ext = file_getext(page);
+	if(ext === undefined)
+		ext = false;
+	else
+		ext = ext.toUpperCase();
 	var f = file_exists(webIni.RootDirectory + "/pages/" + page);
 	if(f && ext == ".SSJS") {
 		load(webIni.RootDirectory + "/pages/" + page);
