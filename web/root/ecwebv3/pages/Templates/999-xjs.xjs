@@ -1,0 +1,28 @@
+<?xjs load('webInit.ssjs'); ?>
+
+<!--Document Title-->
+
+<!--
+The first comment in an XJS or HTML document will be used as its title in the
+"pages" sidebar module (where the "Home" and "Forum" links appear.)  In the
+comment above, replace "Document Title" with whatever you want your page to
+be called, or "HIDDEN" to prevent it from appearing in the list.
+-->
+
+<html>
+
+<head>
+<link rel="stylesheet" type="text/css" href="../style/style.css" />
+</head>
+
+<body class="background font">
+<span class="title">XJS Page</span>
+<br />
+This is an XJS page.  It's an HTML document, but you can also insert inline
+server-side javascript statements such as:
+
+Hello, <?xjs write(user.alias); ?> welcome to <?xjs write(system.name); ?>!
+
+</body>
+
+</html>
