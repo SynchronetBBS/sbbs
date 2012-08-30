@@ -178,7 +178,7 @@ while(!js.terminated) {
 
 	if(levelCompleted) {
 		levelCompleted = false;
-		var timeScore = (parseInt(timeLimit) - parseInt(timeElapsed)) * timeBonus;
+		var timeScore = parseInt((timeLimit - timeElapsed) * timeBonus);
 		var lastScore = score;
 		score = score + parseInt(door[3]) + timeScore;
 		if(lastScore < mileStone && score >= mileStone) {
@@ -428,33 +428,75 @@ function showNetScores() {
 	netScoreFrame.clear();
 	netScoreFrame.load(js.exec_dir + "netscore.ans");
 	netScoreFrame.gotoxy(3, 6);
-	var highScores = new Array();
-	for(var s in scores) highScores.push(scores[s].score);
-	highScores.sort(function(a, b) { return b - a });
-	for(var h = 0; h < 14; h++) {
-		for(var s in scores) { 
-			if(scores[s].score == highScores[h] && scores[s].score > 0) {
-				var online = " ";
-				for each(var u in onlinePlayers) {
-					if(u.nick == scores[s].name) {
-						online = "\1y\1h*";
-						break;
-					}
-				}
-				netScoreFrame.gotoxy(2, netScoreFrame.getxy().y);
-				netScoreFrame.putmsg(online + "\1h\1w" + scores[s].name);
-				netScoreFrame.gotoxy(25, netScoreFrame.getxy().y);
-				netScoreFrame.putmsg("\1h\1w" + scores[s].level);
-				netScoreFrame.gotoxy(32, netScoreFrame.getxy().y);
-				netScoreFrame.putmsg("\1h\1w" + scores[s].score);
-				netScoreFrame.gotoxy(47, netScoreFrame.getxy().y);
-				netScoreFrame.putmsg("\1h\1w" + scores[s].bbsName);
-				netScoreFrame.crlf();			
+
+	var highScores = [];
+	for each(var s in scores) 
+		highScores.push(s);
+	highScores.sort(function(a, b) { return b.score - a.score });
+
+	// for each(var score in list) {
+		// if(player.score == 0)
+			// continue;
+		// if(count > 0 && count%scores_per_page == 0) {
+			// scoreFrame.center("\1r\1h<SPACE to continue>");
+			// scoreFrame.draw();
+			// while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
+			// scoreFrame.clear();
+		// }
+		// if(count++%scores_per_page == 0) {
+			// scoreFrame.crlf();
+			// scoreFrame.putmsg("\1w\1h" + format(" %3s %-25s %4s %6s %6s %6s",
+				// "###","NAME","WINS","LEVEL","SCORE","LINES") + "\r\n");
+		// }
+		// scoreFrame.putmsg("\1w\1y" + formatScore(count,	player.name,
+			// player.wins,player.level,player.score,player.lines) + "\r\n");
+	// }
+	// scoreFrame.end();
+	// scoreFrame.center("\1r\1h<SPACE to continue>");
+	// scoreFrame.cycle();
+	// while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
+	// scoreFrame.delete();
+	
+	var count=0;
+	var scores_per_page=14;
+	for(var h in highScores) {
+	
+		if(count > 0 && count%scores_per_page == 0) {
+			netScoreFrame.center("\1r\1h<SPACE to continue>");
+			netScoreFrame.draw();
+			while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
+			netScoreFrame.clear();
+		}
+		
+		if(count++%scores_per_page == 0) {
+			netScoreFrame.clear();
+			netScoreFrame.load(js.exec_dir + "netscore.ans");
+			netScoreFrame.gotoxy(3, 6);
+		}
+		
+		var online = " ";
+		for each(var u in onlinePlayers) {
+			if(u.nick == highScores[h].name) {
+				online = "\1y\1h*";
+				break;
 			}
 		}
+	
+		netScoreFrame.gotoxy(2, netScoreFrame.getxy().y);
+		netScoreFrame.putmsg(online + "\1h\1w" + highScores[h].name);
+		netScoreFrame.gotoxy(25, netScoreFrame.getxy().y);
+		netScoreFrame.putmsg("\1h\1w" + highScores[h].level);
+		netScoreFrame.gotoxy(32, netScoreFrame.getxy().y);
+		netScoreFrame.putmsg("\1h\1w" + highScores[h].score);
+		netScoreFrame.gotoxy(47, netScoreFrame.getxy().y);
+		netScoreFrame.putmsg("\1h\1w" + highScores[h].bbsName);
+		netScoreFrame.crlf();			
+	
 	}
+	
+	netScoreFrame.center("\1r\1h<SPACE to continue>");
 	frame.cycle();
-	console.getkey();
+	while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
 	netScoreFrame.close();
 }
 
