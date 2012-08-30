@@ -1,6 +1,7 @@
 // Forum functions for ecWeb v3
 // echicken -at- bbs.electronicchicken.com
 
+load('sbbsdefs.js');
 load('msgutils.js'); // Supplies getMessageThreads(sub)
 
 function getSig() {
@@ -88,7 +89,7 @@ function printThreads(sub) {
 	for(var t in threads.order) {
 		var header = threads.thread[threads.order[t]].messages[0];
 		out += format("<a class='ulLink' name='thread-%s'></a>", header.number);
-		out += "<div class='border indentBox2 msg'>";
+		out += "<div class='border " + ((sub == "mail")?"box":"indentBox2") + " msg'>";
 		out += format(
 			"<a class='ulLink' onclick='loadThread(\"http://%s:%s/%s/forum-async.ssjs\", \"%s\", \"%s\")'>%s</a><br />",
 			system.inet_addr, webIni.HTTPPort, webIni.appendURL, sub, threads.order[t], header.subject
@@ -119,27 +120,29 @@ function printThread(sub, t) {
 		if(body === null)
 			continue;
 		out += format("<a name='%s-%s'></a>", sub, header.number);
-		out += format("<div class='border indentBox3 msg' id='sub-%s-thread-%s-%s'>", sub, t, header.number);
+		out += format("<div class='border " + ((sub == "mail")?"indentBox2":"indentBox3") + " msg' id='sub-%s-thread-%s-%s'>", sub, t, header.number);
 		out += format(
 			"From <b>%s</b> to <b>%s</b> on <b>%s</b><br /><br />",
 			header.from, header.to, system.timestr(header.when_written_time)
 		);
 		out += linkify(strip_exascii(body).replace(/\r\n/g, "<br />").replace(/\n/g, "<br />"));
 		out += "<br /><br />";
-		out += format(
-			"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s#thread-%s'>Thread URL</a> - ",
-			msgBase.cfg.grp_name, sub, t, t
-		);
-		out += format(
-			"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s&message=%s#%s-%s'>Message URL</a> - ",
-			msgBase.cfg.grp_name, sub, t, header.number, sub, header.number
-		);
+		if(sub != 'mail') {
+			out += format(
+				"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s#thread-%s'>Thread URL</a> - ",
+				msgBase.cfg.grp_name, sub, t, t
+			);
+			out += format(
+				"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s&message=%s#%s-%s'>Message URL</a> - ",
+				msgBase.cfg.grp_name, sub, t, header.number, sub, header.number
+			);
+		}
 		out += format("<a class='ulLink' onclick='toggleVisibility(\"sub-%s-thread-%s\")'>Collapse Thread</a>", sub, t);
-		if(user.alias != webIni.WebGuest && user.compare_ars(msgBase.cfg.post_ars))
+		if(user.alias != webIni.WebGuest && sub == 'mail' || (sub != 'mail' && user.compare_ars(msgBase.cfg.post_ars)))
 			out += format(
 				" - <a class='ulLink' onclick='addReply(\"http://%s:%s/%s/forum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\")'>Reply</a>",
 				system.inet_addr, webIni.HTTPPort, webIni.appendURL, sub, t, header.number, header.from, user.alias, header.subject
-		);
+			);
 		out += "</div>";
 	}
 	print(out);
@@ -150,7 +153,7 @@ function printMessage(sub, number) {
 	var msgBase = new MsgBase(sub);
 	if(!msgBase.open())
 		return false;
-	if(!user.compare_ars(msgBase.cfg.read_ars) || !user.compare_ars(msgBase.cfg.post_ars))
+	if(sub != "mail" && (!user.compare_ars(msgBase.cfg.read_ars) || !user.compare_ars(msgBase.cfg.post_ars)))
 		return false;
 	var ret = { "header" : msgBase.get_msg_header(number) };
 	if(ret.header === null)
@@ -175,11 +178,11 @@ function postMessage(sub, irt, to, from, subject, body) {
 			return false;
 	}
 	if(user.alias != from && user.name != from)
-		return false
+		return false;
 	var msgBase = new MsgBase(sub);
 	if(!msgBase.open())
 		return false;
-	if(!user.compare_ars(msgBase.cfg.post_ars))
+	if(sub != "mail" && !user.compare_ars(msgBase.cfg.post_ars))
 		return false;
 	var header = {
 		"to" : to,
@@ -191,6 +194,13 @@ function postMessage(sub, irt, to, from, subject, body) {
 	}
 	if(irt !== undefined && parseInt(irt) > 0)
 		header.thread_back = irt;
+	if(sub == "mail") {
+		var na = netaddr_type(to);
+		if(na > 0) {
+			header.to_net_type = na;
+			header.to_net_addr = to;
+		}
+	}
 	msgBase.save_msg(header, body);
 	msgBase.close();
 	print("Your message has been posted.");
