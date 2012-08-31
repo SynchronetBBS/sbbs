@@ -361,17 +361,19 @@ function expand_body(body, sys_misc, mode)
 	}
 */
 function getMessageThreads(sub, max) {
-	if(max === undefined)
-		max = 0;
 	var threads = { thread : {}, dates : [], order : [] };
 	var subjects = {};
 	var header;
-	var tbHeader;
 	var md5subject;
 	var msgBase = new MsgBase(sub);
 	msgBase.open();
-	var n = 0;
-	for(var m = msgBase.first_msg; m <= msgBase.last_msg; m++) {
+	if(!msgBase.is_open)
+		return false;
+	if(max === undefined || msgBase.last_msg - max < msgBase.first_msg)
+		max = msgBase.first_msg;
+	else
+		max = msgBase.last_msg - max;
+	for(var m = max; m <= msgBase.last_msg; m++) {
 		header = msgBase.get_msg_header(m);
 		if(
 			header === null
@@ -405,9 +407,6 @@ function getMessageThreads(sub, max) {
 				messages : [header]
 			}
 			subjects[md5subject] = header.thread_id;
-			n++;
-			if(max > 0 && n >= max)
-				break;
 		}
 	}
 	msgBase.close();
