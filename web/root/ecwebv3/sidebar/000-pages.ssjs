@@ -1,5 +1,8 @@
 var e = directory(webIni.RootDirectory + "/pages/*");
 for(var g in e) {
+	var fn = file_getname(e[g]);
+	if(!checkWebCtrl(webIni.RootDirectory + "/pages/", fn))
+		continue;
 	var ext = e[g].toUpperCase().split(".").slice(1).join(".");
 	var h = new File(e[g]);
 	h.open("r");
