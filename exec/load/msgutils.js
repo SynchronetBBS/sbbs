@@ -364,7 +364,6 @@ function getMessageThreads(sub, max) {
 	if(max === undefined)
 		max = 0;
 	var threads = { thread : {}, dates : [], order : [] };
-	var threadedMessages = [];
 	var subjects = {};
 	var header;
 	var tbHeader;
@@ -387,58 +386,29 @@ function getMessageThreads(sub, max) {
 				&&
 				header.to_ext != user.number
 			)
-			||
-			threadedMessages.indexOf(header.number) >= 0
 		)
 			continue;
 		md5subject = md5_calc(header.subject.toUpperCase().replace(/\s*RE:\s*/g, ''), hex=true);
-		if(header.thread_back !== null && threadedMessages.indexOf(header.thread_back) >= 0) {
-			if(threads.thread.hasOwnProperty(header.thread_back)) {
-				// This is a reply to the first message in a thread
-				threads.thread[header.thread_back].newest = header.when_written_time;
-				threads.dates[threads.thread[header.thread_back].dateIndex] = header.when_written_time;
-				threads.thread[header.thread_back].messages.push(header);
-				threadedMessages.push(header.number);
-			} else {
-				tbHeader = msgBase.get_msg_header(header.thread_back);
-				if(tbHeader !== null) {
-					// Heh - yeah, this part still sucks
-					outer:
-					for(var t in threads.thread) {
-						for(var mm in threads.thread[t].messages) {
-							if(threads.thread[t].messages[mm].number != tbHeader.number)
-								continue;
-							threads.thread[t].newest = header.when_written_time;
-							threads.dates[threads.thread[t].dateIndex] = header.when_written_time;
-							threads.thread[t].messages.push(header);
-							threadedMessages.push(header.number);
-							break outer;
-						}
-					}
-				}
-			}			
+		if(header.thread_id !== header.number && threads.thread.hasOwnProperty(header.thread_id)) {
+			threads.thread[header.thread_id].newest = header.when_written_time;
+			threads.dates[threads.thread[header.thread_id].dateIndex] = header.when_written_time;
+			threads.thread[header.thread_id].messages.push(header);
 		} else if(subjects.hasOwnProperty(md5subject)) {
-			// Attempt to match an existing thread based on the subject line
 			threads.thread[subjects[md5subject]].newest = header.when_written_time;
 			threads.dates[threads.thread[subjects[md5subject]].dateIndex] = header.when_written_time;
 			threads.thread[subjects[md5subject]].messages.push(header);
-			threadedMessages.push(header.number);
+		} else {
+			threads.dates.push(header.when_written_time);
+			threads.thread[header.thread_id] = {
+				newest : header.when_written_time,
+				dateIndex : threads.dates.length - 1,
+				messages : [header]
+			}
+			subjects[md5subject] = header.thread_id;
+			n++;
+			if(max > 0 && n >= max)
+				break;
 		}
-		if(threadedMessages.indexOf(header.number) >= 0)
-			continue;
-		
-		// This is a new thread
-		threads.dates.push(header.when_written_time);
-		threads.thread[header.number] = {
-			newest : header.when_written_time,
-			dateIndex : threads.dates.length - 1,
-			messages : [header]
-		}
-		subjects[md5subject] = header.number;
-		threadedMessages.push(header.number);
-		n++;
-		if(max > 0 && n >= max)
-			break;
 	}
 	msgBase.close();
 	
