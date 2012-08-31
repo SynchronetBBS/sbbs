@@ -46,6 +46,7 @@ var FTelnetPort    = -1;
 var FLoadedServicesIni               = false;
 var FFlashSocketPolicyServiceEnabled = false;
 var FFlashSocketPolicyServicePort    = -1;
+var FServicePorts                    = "";
 
 // Credit to echicken for port lookup code
 function GetSBBSIniValues() {
@@ -74,19 +75,28 @@ function GetServicesIniValues() {
 		try {
 			var f = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 			if (f.open("r", true)) {
+				// Try to get the flash socket policy server port
                 FFlashSocketPolicyServicePort = f.iniGetValue("FlashPolicy", "Port", -1);
-                if (FFlashSocketPolicyServicePort === -1) {
-                    var Sections = f.iniGetSections();
-                    for (var i = 0; i < Sections.length; i++) {
-                        if (f.iniGetValue(Sections[i], "Port", -1) === 843) {
-                            FFlashSocketPolicyServicePort = 843;
-                            FFlashSocketPolicyServiceEnabled = f.iniGetValue(Sections[i], "Enabled", true);
-                            if (FFlashSocketPolicyServiceEnabled) break;
-                        }
-                    }
-                } else {
-                    FFlashSocketPolicyServiceEnabled = f.iniGetValue("FlashPolicy", "Enabled", true);
-                }
+                FFlashSocketPolicyServiceEnabled = f.iniGetValue("FlashPolicy", "Enabled", true);
+
+				// Try to get the ports from all the enabled services (also look for entry for flash socket policy server if it wasn't found above)
+				var Sections = f.iniGetSections();
+				for (var i = 0; i < Sections.length; i++) {
+					// If we don't know the flash socket policy port yet, check if this could be it
+					if (FFlashSocketPolicyServicePort === -1) {
+						if (f.iniGetValue(Sections[i], "Port", -1) === 843) {
+							FFlashSocketPolicyServicePort = 843;
+							FFlashSocketPolicyServiceEnabled = f.iniGetValue(Sections[i], "Enabled", true);
+						}
+					}
+					
+					// If this service is enabled (and not UDP), add it to the port list
+					if ((f.iniGetValue(Sections[i], "Enabled", true)) && (f.iniGetValue(Sections[i], "Options", "").toUpperCase().indexOf("UDP") === -1)) {
+						if (FServicePorts != "") FServicePorts += ",";
+						FServicePorts += f.iniGetValue(Sections[i], "Port", -1);
+					}
+				}
+				
 				f.close();
 			}
 		} catch (err) {
@@ -105,6 +115,11 @@ function GetRLoginPort() {
 	return FRLoginPort;
 }
 
+function GetServicePorts() {
+	GetServicesIniValues();
+	return FServicePorts;
+}
+
 function GetSSHPort() {
 	GetSBBSIniValues();
 	return FSSHPort;
@@ -119,6 +134,7 @@ function GetTerminalServerPorts() {
 	var Ports = GetTelnetPort();
 	if (IsRLoginEnabled()) Ports += "," + GetRLoginPort();
 	if (IsSSHEnabled()) Ports += "," + GetSSHPort();
+	Ports += "," + GetServicePorts();
 	return Ports;
 }
 
