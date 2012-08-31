@@ -19,7 +19,7 @@ DESCRIPTION:
  		width: 		the horizontal width of the frame 
  		height: 	the vertical height of the frame
  		attr:		the default color attributes of the frame
-		frame:		a frame object representing the parent of the new frame
+		parent:		a frame object representing the parent of the new frame
 		
 METHODS:
 
@@ -71,9 +71,6 @@ PROPERTIES:
 USAGE:
 
 	//create a new frame object at screen position 1,1. 80 characters wide by 24 tall
-	var frame = load("frame.js",1,1,80,24,BG_BLUE);
-	
- 	//or it can be done this way.....
  	load("frame.js");
  	var frame = new Frame(1,1,80,24,BG_BLUE);
 	
@@ -109,7 +106,7 @@ USAGE:
  
 load("sbbsdefs.js");
 
-function Frame(x,y,width,height,attr,frame) {
+function Frame(x,y,width,height,attr,parent) {
 
 	/* private properties */
 	var properties = {
@@ -128,7 +125,8 @@ function Frame(x,y,width,height,attr,frame) {
 		h_scroll:false,
 		scrollbars:false,
 		lf_strict:true,
-		checkbounds:true
+		checkbounds:true,
+		transparent:false
 	}
 	var relations = {
 		parent:undefined,
@@ -243,7 +241,15 @@ function Frame(x,y,width,height,attr,frame) {
 		else
 			throw("non-boolean checkbounds: " + bool);
 	});
-	this.__defineGetter__("lf_strict", function() {
+	this.__defineGetter__("transparent", function() {
+		return settings.transparent;
+	});
+	this.__defineSetter__("transparent", function(bool) {
+		if(typeof bool == "boolean")
+			settings.transparent=bool;
+		else
+			throw("non-boolean transparent: " + bool);
+	});	this.__defineGetter__("lf_strict", function() {
 		return settings.lf_strict;
 	});
 	this.__defineSetter__("lf_strict", function(bool) {
@@ -957,13 +963,13 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 		this.setData(position.cursor.x,position.cursor.y,ch,attr,true);
 	}
-	function init(x,y,width,height,attr,frame) {
-		if(frame instanceof Frame) {
-			properties.id = frame.display.nextID;
-			properties.display = frame.display;
-			settings.checkbounds = frame.checkbounds;
-			relations.parent = frame;
-			frame.child = this;
+	function init(x,y,width,height,attr,parent) {
+		if(parent instanceof Frame) {
+			properties.id = parent.display.nextID;
+			properties.display = parent.display;
+			settings.checkbounds = parent.checkbounds;
+			relations.parent = parent;
+			parent.child = this;
 		}
 		else {
 			properties.display = new Display(x,y,width,height);
@@ -998,11 +1004,15 @@ function Canvas(frame,display) {
 		return this.frame.y - this.display.y;
 	});
 	this.hasData = function(x,y) {
-		if(x-this.xoff < 0 || y - this.yoff < 0)
+		var xpos = x-this.xoff;
+		var ypos = y-this.yoff;
+		
+		if(xpos < 0 || ypos < 0)
 			return undefined;
-		if(x-this.xoff >= this.frame.width || y - this.yoff >= this.frame.height)
+		if(xpos >= this.frame.width || ypos >= this.frame.height)
 			return undefined;
-		//ToDo check for undefined (in case of transparency)
+		if(this.frame.transparent && this.frame.getData(xpos,ypos).ch == undefined)
+			return undefined;
 		return true;
 	}
 }
@@ -1233,11 +1243,7 @@ function Display(x,y,width,height) {
 		if(xpos == console.screen_columns && ypos == console.screen_rows) 
 			console.cleartoeol();
 		else if(ch == undefined) {
-			//ToDo: transparency
-			// if(properties.transparent)
-				// console.right(1);
-			// else
-				console.write(" ");
+			console.write(" ");
 		}	
 		else {
 			console.write(ch);
