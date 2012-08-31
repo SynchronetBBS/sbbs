@@ -369,7 +369,7 @@ function getMessageThreads(sub, max) {
 	msgBase.open();
 	if(!msgBase.is_open)
 		return false;
-	if(max === undefined || msgBase.last_msg - max < msgBase.first_msg)
+	if(max === undefined || max == 0 || msgBase.last_msg - max < msgBase.first_msg)
 		max = msgBase.first_msg;
 	else
 		max = msgBase.last_msg - max;
