@@ -1,4 +1,26 @@
-<?xjs load('webInit.ssjs'); ?>
+<?xjs
+	load('webInit.ssjs');
+	function checkWebCtrl(path, fileName) {
+		if(!file_exists(path + "webctrl.ini"))
+			return true; // Directory is not controlled, allow access
+		var f = new File(path + "webctrl.ini");
+		f.open("r");
+		if(f.is_open) {
+			var webctrl = f.iniGetAllObjects();
+			f.close();
+		} else {
+			return false; // Directory is controlled but webctrl not openable
+		}
+		for(var w = 0; w < webctrl.length; w++) {
+			if(webctrl[w].name != fileName)
+				continue;
+			if(webctrl[w].hasOwnProperty('AccessRequirements') && !user.compare_ars(webctrl[w].AccessRequirements))
+				return false;
+		}
+		return true;
+	}
+?>
+
 <html>
 
 <head>
@@ -22,6 +44,9 @@
 	var d = directory(webIni.RootDirectory + '/sidebar/*');
 	for(var f = 0; f < d.length; f++) {
 		if(file_isdir(d[f]))
+			continue;
+		var fn = file_getname(d[f]);
+		if(!checkWebCtrl(webIni.RootDirectory + '/sidebar/', fn))
 			continue;
 		var ext = d[f].toUpperCase().split(".").slice(1).join(".");
 		if(ext == "XJS.SSJS")
@@ -65,7 +90,9 @@
 	else
 		ext = ext.toUpperCase();
 	var f = file_exists(webIni.RootDirectory + "/pages/" + page);
-	if(f && ext == ".SSJS") {
+	if(!f || !checkWebCtrl(webIni.RootDirectory + "/pages/", page)) {
+		print("Page not available.");
+	} else if(ext == ".SSJS") {
 		load(webIni.RootDirectory + "/pages/" + page);
 	} else if(f && ext == ".HTML") {
 		var f = new File(webIni.RootDirectory + "/pages/" + page);
