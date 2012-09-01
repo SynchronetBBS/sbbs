@@ -44,7 +44,7 @@ var ClientVars = {
 	CodePage : "437",
 	ConnectButtonX : 0,
 	ConnectButtonY : 0,
-	ConnectAnsi : "http://<?xjs write(http_request.host); ?>:<?xjs write(webIni.HTTPPort); ?>/ftelnet/ftelnet-resources/connectansi.txt",
+	ConnectAnsi : "http://<?xjs write(http_request.host); ?>:<?xjs write(webIni.HTTPPort); ?>/<?xjs write(webIni.appendURL); ?>/ftelnet/ftelnet-resources/connectansi.txt",
 	Enter : "\r",
 	FontWidth : 9,
 	FontHeight : 16,
