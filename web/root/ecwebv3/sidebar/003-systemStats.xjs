@@ -1,9 +1,3 @@
-<?xjs load('webInit.ssjs'); ?>
-<html>
-<head>
-<link rel="stylesheet" type="text/css" href="../style/style.css">
-</head>
-<body class="background">
 <table border=0 cellpadding=0 cellspacing=0 class="font">
 	<tr>
 		<td>Sysop:</td>
@@ -60,5 +54,3 @@
 		<td>&nbsp;<?xjs write(system.stats.messages_posted_today); ?></td>
 	</tr>
 </table>
-</body>
-</html>
