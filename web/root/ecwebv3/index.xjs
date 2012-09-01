@@ -1,5 +1,6 @@
 <?xjs
 	load('webInit.ssjs');
+	load('xjs.js');
 	function checkWebCtrl(path, fileName) {
 		if(!file_exists(path + "webctrl.ini"))
 			return true; // Directory is not controlled, allow access
@@ -56,12 +57,9 @@
 			load(d[f]);
 			print('</div>')
 		} else if(ext == "XJS") {
-			print(
-				format(
-					'<iframe class="sidebarItem border box background font" frameborder=0 id="sbi%s" scrolling="no" src="./sidebar/%s" onload="loadIFrame(\'sbi%s\', 0)"></iframe>',
-					f, file_getname(d[f]), f
-				)
-			);
+			print('<div class="sidebarItem border box background">');
+			load(xjs_compile(d[f]));
+			print('</div>');
 		} else if(ext == "TXT" || ext == "HTML") {
 			var handle = new File(d[f]);
 			handle.open("r");
@@ -101,12 +99,7 @@
 		f.close();
 		write(contents);
 	} else if(f && ext == ".XJS") {
-			print(
-				format(
-					'<iframe class="background font" frameborder=0 id="contentIFrame" scrolling="no" src="./pages/%s" onload="loadIFrame(\'contentIFrame\', 1)"></iframe>',
-					page
-				)
-			);
+		load(xjs_compile(webIni.RootDirectory + "/pages/" + page));
 	} else if(f && ext == ".TXT") {
 		var f = new File(webIni.RootDirectory + "/pages/" + page);
 		f.open("r");
