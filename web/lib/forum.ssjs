@@ -49,7 +49,7 @@ function printBoards() {
 		for(var s = 0; s < msg_area.grp_list[g].sub_list.length; s++) {
 			out += "<div class='border msg indentBox1'>";
 			out += format(
-				"<a class='ulLink' onclick='loadThreads(\"http://%s:%s/%s/forum-async.ssjs\", \"%s\")'>%s</a><br />",
+				"<a class='ulLink' onclick='loadThreads(\"http://%s:%s%sforum-async.ssjs\", \"%s\")'>%s</a><br />",
 				http_request.host, webIni.HTTPPort, webIni.appendURL, msg_area.grp_list[g].sub_list[s].code, msg_area.grp_list[g].sub_list[s].name
 			);
 			var msgBase = new MsgBase(msg_area.grp_list[g].sub_list[s].code);
@@ -61,7 +61,7 @@ function printBoards() {
 				out += format("Latest: %s, by %s on %s", h.subject, h.from, system.timestr(h.when_written_time));
 			if(user.alias != webIni.WebGuest && user.compare_ars(msgBase.cfg.post_ars)) {
 				out += format(
-					"<br /><a class='ulLink' onclick='addPost(\"http://%s:%s/%s/forum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\")'>Post a new message</a>",
+					"<br /><a class='ulLink' onclick='addPost(\"http://%s:%s%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\")'>Post a new message</a>",
 					http_request.host, webIni.HTTPPort, webIni.appendURL, msg_area.grp_list[g].sub_list[s].code, user.alias, user.name
 				);
 				out += format("<div id='sub-%s-newMsgBox'></div>", msg_area.grp_list[g].sub_list[s].code);
@@ -91,7 +91,7 @@ function printThreads(sub) {
 		out += format("<a class='ulLink' name='thread-%s'></a>", header.number);
 		out += "<div class='border " + ((sub == "mail")?"box":"indentBox2") + " msg'>";
 		out += format(
-			"<a class='ulLink' onclick='loadThread(\"http://%s:%s/%s/forum-async.ssjs\", \"%s\", \"%s\")'>%s</a><br />",
+			"<a class='ulLink' onclick='loadThread(\"http://%s:%s%sforum-async.ssjs\", \"%s\", \"%s\")'>%s</a><br />",
 			http_request.host, webIni.HTTPPort, webIni.appendURL, sub, threads.order[t], header.subject
 			);
 		out += format("Started by %s on %s<br />", header.from, system.timestr(header.when_written_time));
@@ -140,7 +140,7 @@ function printThread(sub, t) {
 		out += format("<a class='ulLink' onclick='toggleVisibility(\"sub-%s-thread-%s\")'>Collapse Thread</a>", sub, t);
 		if(user.alias != webIni.WebGuest && sub == 'mail' || (sub != 'mail' && user.compare_ars(msgBase.cfg.post_ars)))
 			out += format(
-				" - <a class='ulLink' onclick='addReply(\"http://%s:%s/%s/forum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\")'>Reply</a>",
+				" - <a class='ulLink' onclick='addReply(\"http://%s:%s%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\")'>Reply</a>",
 				http_request.host, webIni.HTTPPort, webIni.appendURL, sub, t, header.number, header.from, user.alias, header.subject
 			);
 		out += "</div>";
