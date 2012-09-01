@@ -1,8 +1,8 @@
 <!--Home-->
 <div style="clear:both;" class="title">Telnet</div>
-<iframe class="background" frameborder=0 width="730px" height="420px" id="ftelnetIframe" scrolling="no" src="<?xjs write(webIni.appendURL); ?>/ftelnet/ftelnet.xjs" onload="loadIFrame('ftelnetIframe', 1)">
+<iframe class="background" frameborder=0 width="730px" height="420px" id="ftelnetIframe" scrolling="no" src="<?xjs write(webIni.appendURL); ?>ftelnet/ftelnet.xjs" onload="loadIFrame('ftelnetIframe', 1)">
 </iframe>
 <br /><br />
 <div style="clear:both;" class="title">IRC Chat</div>
-<iframe class="background" frameborder=0 width="730px" height="430px" id="lightIRCIframe" scrolling="no" src="<?xjs write(webIni.appendURL); ?>/lightirc/lightirc.xjs" onload="loadIFrame('lightIRCIframe', 1)">
+<iframe class="background" frameborder=0 width="730px" height="430px" id="lightIRCIframe" scrolling="no" src="<?xjs write(webIni.appendURL); ?>lightirc/lightirc.xjs" onload="loadIFrame('lightIRCIframe', 1)">
 </iframe>
