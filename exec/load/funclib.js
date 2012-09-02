@@ -483,3 +483,126 @@ function pipeToCtrlA(str) {
 	str = str.replace(/\|23/g, "\17");
 	return str;
 }
+
+// Returns 'attr', which may be compared against colours defined in sbbsdefs.js
+function colorPicker(x, y, frame, attr) {
+
+	var fgColours = [
+		BLACK,
+		BLUE,
+		GREEN,
+		CYAN,
+		RED,
+		MAGENTA,
+		BROWN,
+		LIGHTGRAY,
+		DARKGRAY,
+		LIGHTBLUE,
+		LIGHTGREEN,
+		LIGHTCYAN,
+		LIGHTRED,
+		LIGHTMAGENTA,
+		YELLOW,
+		WHITE
+	];
+	var bgColours = [
+		BG_BLACK,
+		BG_BLUE,
+		BG_GREEN,
+		BG_CYAN,
+		BG_RED,
+		BG_MAGENTA,
+		BG_BROWN,
+		BG_LIGHTGRAY
+	];
+	
+	var fgmask = (1<<0)|(1<<1)|(1<<2)|(1<<3);
+	var bgmask = (1<<4)|(1<<5)|(1<<6);
+	if(frame === undefined)
+		var frame = new Frame(x, y, 36, 6, BG_BLACK|LIGHTGRAY);
+	if(attr === undefined)
+		attr = frame.attr;
+	var fgColour = attr&fgmask;
+	var bgColour = ((attr&bgmask)>>4);
+	
+	var palette = new Frame(x, y, 36, 6, BG_BLUE|WHITE, frame);
+	var subPalette = new Frame(palette.x + 2, palette.y + 1, palette.width - 4, palette.height - 2, BG_BLACK, palette);
+	var pfgCursor = new Frame(x, y, 2, 1, BG_BLACK|WHITE, subPalette);
+	var pbgCursor = new Frame(x, y, 2, 1, BG_BLACK|WHITE, subPalette);
+	palette.open();
+
+	for(var c = 0; c < fgColours.length; c++) {
+		var ch = (c == 0) ? "\1h\1w" + ascii(250) : ascii(219);
+		subPalette.attr = fgColours[c];
+		subPalette.putmsg(ch + ch);
+		subPalette.attr = 0;
+	}
+	subPalette.gotoxy(1, 3);
+	for(var c  = 0; c < bgColours.length; c++) {
+		var ch = (c == 0) ? "\1h\1w" + ascii(250) : " ";
+		subPalette.attr = bgColours[c];
+		subPalette.putmsg(ch + ch + ch + ch);
+		subPalette.attr = 0;
+	}
+	palette.top();
+	pfgCursor.top();
+	pbgCursor.top();
+	pfgCursor.putmsg("FG");
+	pbgCursor.putmsg("BG");
+	var userInput = "";
+	pfgCursor.moveTo((fgColour * 2) + subPalette.x, subPalette.y + 1);
+	pbgCursor.moveTo((bgColour * 4) + subPalette.x, subPalette.y + 3);
+	palette.cycle();
+	while(!js.terminated) {
+		var userInput = console.inkey(K_NONE, 5);
+		if(userInput == "")
+			continue;
+		switch(userInput) {
+			case KEY_LEFT:
+				if(pfgCursor.x > subPalette.x) {
+					pfgCursor.move(-2, 0);
+					fgColour = fgColour - 1;
+				} else {
+					pfgCursor.moveTo(subPalette.x + subPalette.width - 2, pfgCursor.y);
+					fgColour = fgColours.length - 1;
+				}
+				break;
+			case KEY_RIGHT:
+				if(pfgCursor.x < subPalette.x + subPalette.width - 2) {
+					pfgCursor.move(2, 0);
+					fgColour = fgColour + 1;
+				} else {
+					pfgCursor.moveTo(subPalette.x, pfgCursor.y);
+					fgColour = 0;
+				}
+				break;
+			case KEY_DOWN:
+				if(pbgCursor.x > subPalette.x) {
+					pbgCursor.move(-4, 0);
+					bgColour = bgColour - 1;
+				} else {
+					pbgCursor.moveTo(subPalette.x + subPalette.width - 4, pbgCursor.y);
+					bgColour = bgColours.length - 1;
+				}
+				break;
+			case KEY_UP:
+				if(pbgCursor.x < subPalette.x + subPalette.width - 4) {
+					pbgCursor.move(4, 0);
+					bgColour = bgColour + 1;
+				} else {
+					pbgCursor.moveTo(subPalette.x, pbgCursor.y);
+					bgColour = 0;
+				}
+				break;
+			default:
+				break;
+		}
+		attr = fgColours[fgColour]|bgColours[bgColour];
+		if(palette.cycle())
+			console.gotoxy(80, 24);
+		if(ascii(userInput) == 27 || ascii(userInput) == 13 || ascii(userInput) == 9)
+			break;
+	}
+	palette.close();
+	return attr;
+}
