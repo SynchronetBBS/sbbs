@@ -13,13 +13,28 @@ function InputLine(frame,text) {
 	var settings = {
 		show_border:true,
 		show_title:true,
-		timeout:50,
+		timeout:10,
 		max_buffer:200
 	};
 	
 	/* protected properties */
 	this.__defineGetter__("frame",function() {
 		return properties.frame;
+	});
+	this.__defineGetter__("max_buffer",function() {
+		return properties.max_buffer;
+	});
+	this.__defineSetter__("max_buffer",function(num) {
+		if(num > 0 && num < 10000)
+			settings.max_buffer = Number(num);
+	});
+	this.__defineGetter__("timeout",function() {
+		return properties.timeout;
+	});
+	this.__defineSetter__("timeout",function() {
+		return properties.timeout;
+		if(num > 0 && num < 10000)
+			settings.timeout = Number(num);
 	});
 	
 	/* public properties */
@@ -145,12 +160,10 @@ function InputLine(frame,text) {
 		return cmd;
 	}
 	function init(frame,text) {
-		if(frame instanceof Frame) {
+		if(frame instanceof Frame)
 			properties.frame=frame;
-		}
-		if(text) {
+		if(text) 
 			properties.text = text;
-		}
 	}
 	init.apply(this,arguments);
 }
