@@ -454,5 +454,32 @@ function logStamp(msg)
 	log(format("%4d",(now-t.last)) + " [" + (now - t.start) + "] " + msg);
 	t.last = now;
 }
-	
-	
+
+// Convert pipe codes in 'str' to Synchronet CTRL-A codes
+function pipeToCtrlA(str) {
+	str = str.replace(/\|00/g, "\1N\1K");
+	str = str.replace(/\|01/g, "\1N\1B");
+	str = str.replace(/\|02/g, "\1N\1G");
+	str = str.replace(/\|03/g, "\1N\1C");
+	str = str.replace(/\|04/g, "\1N\1R");
+	str = str.replace(/\|05/g, "\1N\1M");
+	str = str.replace(/\|06/g, "\1N\1Y");
+	str = str.replace(/\|07/g, "\1N\1W");
+	str = str.replace(/\|08/g, "\1H\1K");
+	str = str.replace(/\|09/g, "\1H\1B");
+	str = str.replace(/\|10/g, "\1H\1G");
+	str = str.replace(/\|11/g, "\1H\1C");
+	str = str.replace(/\|12/g, "\1H\1R");
+	str = str.replace(/\|13/g, "\1H\1M");
+	str = str.replace(/\|14/g, "\1H\1Y");
+	str = str.replace(/\|15/g, "\1H\1W");
+	str = str.replace(/\|16/g, "\10");
+	str = str.replace(/\|17/g, "\11");
+	str = str.replace(/\|18/g, "\12");
+	str = str.replace(/\|19/g, "\13");
+	str = str.replace(/\|20/g, "\14");
+	str = str.replace(/\|21/g, "\15");
+	str = str.replace(/\|22/g, "\16");
+	str = str.replace(/\|23/g, "\17");
+	return str;
+}
