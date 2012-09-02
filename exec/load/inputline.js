@@ -36,6 +36,9 @@ function InputLine(frame,text) {
 		if(num > 0 && num < 10000)
 			settings.timeout = Number(num);
 	});
+	this.__defineGetter__("buffer",function() {
+		return properties.buffer;
+	});
 	
 	/* public properties */
 	this.colors = {
@@ -44,6 +47,9 @@ function InputLine(frame,text) {
 	};
 	
 	/* public methods */
+	this.clear = function() {
+		reset();
+	}
 	this.getkey = function(use_hotkeys) {
 		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,settings.timeout);
 		if(key == "") 
