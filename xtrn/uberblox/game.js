@@ -568,15 +568,15 @@ function GameData()
 	this.players=client.read("uberblox","players",1);
 	this.alltime=client.read("uberblox","alltime",1);
 	this.update=false;
-	this.month=new Date().getMonth();
+	//this.month=new Date().getMonth();
 	
 	this.init=function()
 	{
-		client.lock("uberblox","month",2);
-		var month = client.read("uberblox","month");
-		if(month != this.month) 
-			this.reset();
-		client.unlock("uberblox","month");
+		// client.lock("uberblox","month",2);
+		// var month = client.read("uberblox","month");
+		// if(month != this.month) 
+			// this.reset();
+		// client.unlock("uberblox","month");
 		
 		if(!this.alltime) 
 			this.alltime={name:"none",score:0};
