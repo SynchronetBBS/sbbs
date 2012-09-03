@@ -363,7 +363,9 @@ function expand_body(body, sys_misc, mode)
 function getMessageThreads(sub, max) {
 	var threads = { thread : {}, dates : [], order : [] };
 	var subjects = {};
+	var threadedMessages = [];
 	var header;
+	var tbHeader;
 	var md5subject;
 	var msgBase = new MsgBase(sub);
 	msgBase.open();
@@ -391,22 +393,50 @@ function getMessageThreads(sub, max) {
 		)
 			continue;
 		md5subject = md5_calc(header.subject.toUpperCase().replace(/\s*RE:\s*/g, ''), hex=true);
-		if(header.thread_id !== header.number && threads.thread.hasOwnProperty(header.thread_id)) {
+		if(header.thread_id === 0 && threadedMessages.indexOf(header.thread_back) >= 0) {
+			if(threads.thread.hasOwnProperty(header.thread_back)) {
+				// This is a reply to the first message in a thread
+				threads.thread[header.thread_back].newest = header.when_written_time;
+				threads.dates[threads.thread[header.thread_back].dateIndex] = header.when_written_time;
+				threads.thread[header.thread_back].messages.push(header);
+				threadedMessages.push(header.number);
+			} else {
+				tbHeader = msgBase.get_msg_header(header.thread_back);
+				if(tbHeader !== null) {
+					// Heh - yeah, this part still sucks
+					outer:
+					for(var t in threads.thread) {
+						for(var mm in threads.thread[t].messages) {
+							if(threads.thread[t].messages[mm].number != tbHeader.number)
+								continue;
+							threads.thread[t].newest = header.when_written_time;
+							threads.dates[threads.thread[t].dateIndex] = header.when_written_time;
+							threads.thread[t].messages.push(header);
+							threadedMessages.push(header.number);
+							break outer;
+						}
+					}
+				}
+			}			
+		} else if(header.thread_id !== header.number && threads.thread.hasOwnProperty(header.thread_id)) {
 			threads.thread[header.thread_id].newest = header.when_written_time;
 			threads.dates[threads.thread[header.thread_id].dateIndex] = header.when_written_time;
 			threads.thread[header.thread_id].messages.push(header);
+			threadedMessages.push(header.number);
 		} else if(subjects.hasOwnProperty(md5subject)) {
 			threads.thread[subjects[md5subject]].newest = header.when_written_time;
 			threads.dates[threads.thread[subjects[md5subject]].dateIndex] = header.when_written_time;
 			threads.thread[subjects[md5subject]].messages.push(header);
+			threadedMessages.push(header.number);
 		} else {
 			threads.dates.push(header.when_written_time);
-			threads.thread[header.thread_id] = {
+			threads.thread[((header.thread_id === 0)?header.number:header.thread_id)] = {
 				newest : header.when_written_time,
 				dateIndex : threads.dates.length - 1,
 				messages : [header]
 			}
-			subjects[md5subject] = header.thread_id;
+			subjects[md5subject] = ((header.thread_id === 0)?header.number:header.thread_id);
+			threadedMessages.push(header.number);
 		}
 	}
 	msgBase.close();
