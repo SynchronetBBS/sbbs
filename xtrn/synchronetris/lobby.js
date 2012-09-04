@@ -12,10 +12,15 @@ load("inputline.js");
 
 var game_id="synchronetris";
 var root=js.exec_dir;
-var settings,frame,data,status;
 
 load(root + "tetrisobj.js");
 load(root + "game.js");
+
+var settings = client.read(game_id,"settings",1);
+var frame = new Frame();
+var data = new GameData();
+var status = {WAITING:-1,STARTING:0,SYNCING:1,PLAYING:2,FINISHED:3};
+
 
 /** GAME LOBBY **/
 var lobby=(function() {	
@@ -29,12 +34,8 @@ var lobby=(function() {
 		bbs.sys_status|=SS_MOFF;
 		bbs.sys_status|=SS_PAUSEOFF;
 		splash("synchronetris.bin");
-		status = {WAITING:-1,STARTING:0,SYNCING:1,PLAYING:2,FINISHED:3};
-		data = new GameData();
 		chat = new JSONChat(user.number,undefined,serverAddr,serverPort);
-		settings=client.read(game_id,"settings",1);
 		profile=data.profiles[user.alias];
-		frame = new Frame();
 		layout=new Layout(frame);
 		chatView = layout.addView("chat",40,3,40,21);
 		chatView.show_border = false;
@@ -42,9 +43,8 @@ var lobby=(function() {
 		input=new InputLine();
 		chat.chatView = chatView;
 		chat.join("#synchronetris");
-		input.colors.bg = BG_RED;
-		input.colors.fg = WHITE;
 		input.init(2,24,78,1,frame);
+		input.attr = BG_RED|WHITE;
 		var menu_frame = new Frame(2,24,78,1,BG_LIGHTGRAY+RED,frame);
 		var menu_items = [
 			"~Play game",
@@ -226,7 +226,7 @@ var lobby=(function() {
 	/* find the next available game number */
 	function getOpenGame() {
 		for each(var g in data.games) {
-			if(g.status == status.PLAYING)
+			if(g.status == status.PLAYING || g.status == status.SYNCING)
 				continue;
 			else if(countMembers(g.players) >= settings.max_players)
 				continue;
@@ -306,10 +306,9 @@ var lobby=(function() {
 		var list = sortScores(data.profiles,"score");
 		scoreFrame.open();
 		for each(var player in list) {
-			//if(player.wins == 0)
-			//	continue;
+			if(player.score == 0)
+				continue;
 			if(count > 0 && count%scores_per_page == 0) {
-				//scoreFrame.gotoxy(1,24);
 				scoreFrame.center("\1r\1h<SPACE to continue>");
 				scoreFrame.draw();
 				while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
@@ -317,11 +316,11 @@ var lobby=(function() {
 			}
 			if(count++%scores_per_page == 0) {
 				scoreFrame.crlf();
-				scoreFrame.putmsg("\1w\1h" + 
-					format(" %3s %-25s %4s %6s %6s %6s","###","NAME","WINS","LEVEL","SCORE","LINES") + "\r\n");
+				scoreFrame.putmsg("\1w\1h" + format(" %3s %-25s %4s %6s %6s %6s",
+					"###","NAME","WINS","LEVEL","SCORE","LINES") + "\r\n");
 			}
-			scoreFrame.putmsg("\1w\1y" + 
-				formatScore(count,player.name,player.wins,player.level,player.score,player.lines) + "\r\n");
+			scoreFrame.putmsg("\1w\1y" + formatScore(count,	player.name,
+				player.wins,player.level,player.score,player.lines) + "\r\n");
 		}
 		scoreFrame.end();
 		scoreFrame.center("\1r\1h<SPACE to continue>");
