@@ -74,8 +74,6 @@ function HTTPRequest(username,password)
 	};
 
 	this.SendRequest=function() {
-		var i;
-		
 		if((this.sock=new Socket(SOCK_STREAM))==null)
 			throw("Unable to create socket");
 		if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443)))
@@ -88,8 +86,9 @@ function HTTPRequest(username,password)
 			if(!this.sock.send(this.request_headers[i]+"\n"))
 				throw("Unable to send headers");
 		}
-		if(!this.sock.send("\n"))
-			throw("Unable to terminate headers");
+// This termination is apparently unnecessary - blank line already appears after headers.
+//		if(!this.sock.send("\n"))
+//			throw("Unable to terminate headers");
 		if(this.body != undefined) {
 			if(!this.sock.send(this.body))
 				throw("Unable to send body");
