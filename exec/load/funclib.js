@@ -472,14 +472,14 @@ function pipeToCtrlA(str) {
 	str = str.replace(/\|13/g, "\1H\1M");
 	str = str.replace(/\|14/g, "\1H\1Y");
 	str = str.replace(/\|15/g, "\1H\1W");
-	str = str.replace(/\|16/g, "\10");
-	str = str.replace(/\|17/g, "\11");
-	str = str.replace(/\|18/g, "\12");
-	str = str.replace(/\|19/g, "\13");
-	str = str.replace(/\|20/g, "\14");
-	str = str.replace(/\|21/g, "\15");
-	str = str.replace(/\|22/g, "\16");
-	str = str.replace(/\|23/g, "\17");
+	str = str.replace(/\|16/g, "\1" + 0);
+	str = str.replace(/\|17/g, "\1" + 4);
+	str = str.replace(/\|18/g, "\1" + 2);
+	str = str.replace(/\|19/g, "\1" + 6);
+	str = str.replace(/\|20/g, "\1" + 1);
+	str = str.replace(/\|21/g, "\1" + 5);
+	str = str.replace(/\|22/g, "\1" + 3);
+	str = str.replace(/\|23/g, "\1" + 7);
 	return str;
 }
 
