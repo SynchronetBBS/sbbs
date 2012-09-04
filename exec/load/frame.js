@@ -319,6 +319,20 @@ function Frame(x,y,width,height,attr,parent) {
 		if(properties.open) 
 			properties.display.updateChar(this,x,y);
 	}
+	this.clearData = function(x,y,use_offset) {
+		var px = x;
+		var py = y;
+		if(use_offset) {
+			px += position.offset.x;
+			py += position.offset.y;
+		}
+		if(!properties.data[py] || !properties.data[py][px])
+			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
+		properties.data[py][px].ch = undefined;
+		properties.data[py][px].attr = undefined;
+		if(properties.open) 
+			properties.display.updateChar(this,x,y);
+	}
 	this.bottom = function() {
 		if(properties.open) {
 			for each(var c in relations.child) 
