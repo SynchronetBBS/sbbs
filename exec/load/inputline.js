@@ -9,12 +9,16 @@ function InputLine(frame,text) {
 		frame:undefined,
 		text:undefined,
 		attr:undefined,
+		cursor:undefined,
 		buffer:[]
 	};
 	var settings = {
 		show_border:true,
 		show_title:true,
+		show_cursor:false,
 		auto_clear:true,
+		cursor_attr:BG_LIGHTGRAY|BLACK,
+		cursor_char:"_",
 		timeout:10,
 		max_buffer:200,
 	};
@@ -37,12 +41,46 @@ function InputLine(frame,text) {
 		if(typeof bool == "boolean")
 			settings.auto_clear = bool;
 	});
+	this.__defineGetter__("show_cursor",function() {
+		return settings.show_cursor;
+	});
+	this.__defineSetter__("show_cursor",function(bool) {
+		if(settings.show_cursor == bool)
+			return;
+		if(typeof bool == "boolean")
+			settings.show_cursor = bool;
+		if(settings.show_cursor) {
+			properties.cursor = new Frame(properties.frame.x,properties.frame.y,1,1,BG_LIGHTGRAY|BLACK,properties.frame);
+			properties.cursor.putmsg("\r" + settings.cursor_char);
+		}
+		else {
+			properties.cursor = properties.cursor.delete(); 
+		}
+	});
 	this.__defineGetter__("attr",function() {
 		return properties.frame.attr;
 	});
-	this.__defineSetter__("attr",function(num) {
-		if(num >= 0 && num < 512)
-			properties.frame.attr = Number(num);
+	this.__defineSetter__("attr",function(attr) {
+		if(attr >= 0 && attr < 512)
+			properties.frame.attr = Number(attr);
+	});
+	this.__defineGetter__("cursor_attr",function() {
+		return settings.cursor_attr;
+	});
+	this.__defineSetter__("cursor_attr",function(attr) {
+		if(attr >= 0 && attr < 512) {
+			settings.cursor_attr = Number(attr);
+			properties.cursor.attr = settings.cursor_attr;
+		}
+	});
+	this.__defineGetter__("cursor_char",function() {
+		return settings.cursor_char;
+	});
+	this.__defineSetter__("cursor_char",function(ch) {
+		if(ch.length == 1) {
+			settings.cursor_char = ch;
+			properties.cursor.putmsg("\r" + settings.cursor_char);
+		}
 	});
 	this.__defineGetter__("timeout",function() {
 		return properties.timeout;
@@ -114,11 +152,8 @@ function InputLine(frame,text) {
 		properties.frame.open();
 	}
 	this.popxy = function() {
-		var overrun=properties.buffer.length-properties.frame.width;
-		if(overrun > 0) 
-			console.gotoxy(properties.frame.x+properties.frame.width,properties.frame.y);
-		else
-			console.gotoxy(properties.frame.x+properties.buffer.length,properties.frame.y);
+		var position=getxy();
+		gotoxy(position);
 	}
 	
 	/* private functions */
@@ -128,8 +163,10 @@ function InputLine(frame,text) {
 		properties.buffer+=key;
 		if(properties.buffer.length>properties.frame.width) 
 			printBuffer();
-		 else 
+		else 
 			properties.frame.putmsg(key,properties.frame.attr);
+		if(settings.show_cursor)
+			printCursor();
 		return undefined;
 	}
 	function backspace() {
@@ -143,6 +180,8 @@ function InputLine(frame,text) {
 			properties.frame.putmsg(" ");
 			properties.frame.left();
 		}
+		if(settings.show_cursor)
+			printCursor();
 		return undefined;
 	}
 	function printBuffer() {
@@ -156,9 +195,33 @@ function InputLine(frame,text) {
 			properties.frame.putmsg(properties.buffer);
 		}
 	}
+	function gotoxy(position) {
+		console.gotoxy(position);
+		return position;
+	}
+	function getxy() {
+		var overrun=properties.buffer.length-properties.frame.width;
+		var position = {};
+		if(overrun > 0) {
+			position.x=properties.frame.x+properties.frame.width
+			position.y=properties.frame.y;
+		}
+		else {
+			position.x=properties.frame.x+properties.buffer.length
+			position.y=properties.frame.y;
+		}
+		return position;
+	}
+	function printCursor() {
+		var position = getxy();
+		properties.cursor.moveTo(position.x,position.y);
+		//gotoxy(position);
+	}
 	function reset() {
 		properties.buffer = [];
 		properties.frame.clear();
+		if(settings.show_cursor)
+			printCursor();
 	}
 	function submit() {
 		// if(strlen(properties.buffer)<1) 
