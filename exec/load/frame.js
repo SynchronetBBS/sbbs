@@ -118,6 +118,7 @@ function Frame(x,y,width,height,attr,parent) {
 		display:undefined,
 		data:[],
 		open:false,
+		ctrl_a:false,
 		id:0
 	}
 	var settings = {
@@ -707,7 +708,6 @@ function Frame(x,y,width,height,attr,parent) {
 		if(str == undefined)
 			return;
 		str = str.toString().split('');
-		var control_a = false;
 		var curattr = attr;
 		if(!curattr)
 			curattr = this.attr;
@@ -715,7 +715,7 @@ function Frame(x,y,width,height,attr,parent) {
 
 		while(str.length > 0) {
 			var ch = str.shift();
-			if(control_a) {
+			if(properties.ctrl_a) {
 				var k = ch;
 				if(k)
 					k = k.toUpperCase();
@@ -804,12 +804,12 @@ function Frame(x,y,width,height,attr,parent) {
 						pos.x+=ch.charCodeAt(0)-127;
 					break;
 				}
-				control_a = false;
+				properties.ctrl_a = false;
 			}
 			else {
 				switch(ch) {
 				case '\1':		/* CTRL-A code */
-					control_a = true;
+					properties.ctrl_a = true;
 					break;
 				case '\7':		/* Beep */
 					break;

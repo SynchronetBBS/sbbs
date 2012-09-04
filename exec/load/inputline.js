@@ -8,13 +8,15 @@ function InputLine(frame,text) {
 	var properties = {
 		frame:undefined,
 		text:undefined,
+		attr:undefined,
 		buffer:[]
 	};
 	var settings = {
 		show_border:true,
 		show_title:true,
+		auto_clear:true,
 		timeout:10,
-		max_buffer:200
+		max_buffer:200,
 	};
 	
 	/* protected properties */
@@ -22,11 +24,25 @@ function InputLine(frame,text) {
 		return properties.frame;
 	});
 	this.__defineGetter__("max_buffer",function() {
-		return properties.max_buffer;
+		return settings.max_buffer;
 	});
 	this.__defineSetter__("max_buffer",function(num) {
 		if(num > 0 && num < 10000)
 			settings.max_buffer = Number(num);
+	});
+	this.__defineGetter__("auto_clear",function() {
+		return settings.auto_clear;
+	});
+	this.__defineSetter__("auto_clear",function(bool) {
+		if(typeof bool == "boolean")
+			settings.auto_clear = bool;
+	});
+	this.__defineGetter__("attr",function() {
+		return properties.frame.attr;
+	});
+	this.__defineSetter__("attr",function(num) {
+		if(num >= 0 && num < 512)
+			properties.frame.attr = Number(num);
 	});
 	this.__defineGetter__("timeout",function() {
 		return properties.timeout;
@@ -39,12 +55,6 @@ function InputLine(frame,text) {
 	this.__defineGetter__("buffer",function() {
 		return properties.buffer;
 	});
-	
-	/* public properties */
-	this.colors = {
-		bg:BG_BLUE,
-		fg:WHITE
-	};
 	
 	/* public methods */
 	this.clear = function() {
@@ -97,8 +107,7 @@ function InputLine(frame,text) {
 			return bufferKey(key);
 		}
 	}
-	this.init = function(x,y,w,h,frame) {
-		var attr = this.colors.bg + this.colors.fg;
+	this.init = function(x,y,w,h,frame,attr) {
 		properties.frame = new Frame(x,y,w,h,attr,frame);
 		properties.frame.v_scroll = false;
 		properties.frame.h_scroll = true;
@@ -120,7 +129,7 @@ function InputLine(frame,text) {
 		if(properties.buffer.length>properties.frame.width) 
 			printBuffer();
 		 else 
-			properties.frame.putmsg(key);
+			properties.frame.putmsg(key,properties.frame.attr);
 		return undefined;
 	}
 	function backspace() {
@@ -162,7 +171,8 @@ function InputLine(frame,text) {
 			}
 		}
 		var cmd=properties.buffer;
-		reset();
+		if(settings.auto_clear)
+			reset();
 		return cmd;
 	}
 	function init(frame,text) {
