@@ -455,7 +455,6 @@ function logStamp(msg)
 	t.last = now;
 }
 
-// Convert pipe codes in 'str' to Synchronet CTRL-A codes
 function pipeToCtrlA(str) {
 	str = str.replace(/\|00/g, "\1N\1K");
 	str = str.replace(/\|01/g, "\1N\1B");
@@ -484,7 +483,6 @@ function pipeToCtrlA(str) {
 	return str;
 }
 
-// Returns 'attr', which may be compared against colours defined in sbbsdefs.js
 function colorPicker(x, y, frame, attr) {
 
 	var fgColours = [
@@ -547,6 +545,9 @@ function colorPicker(x, y, frame, attr) {
 	palette.top();
 	pfgCursor.top();
 	pbgCursor.top();
+	palette.center("Foreground: Left / Right");
+	palette.gotoxy(1, 6);
+	palette.center("Background: Up / Down");
 	pfgCursor.putmsg("FG");
 	pbgCursor.putmsg("BG");
 	var userInput = "";
