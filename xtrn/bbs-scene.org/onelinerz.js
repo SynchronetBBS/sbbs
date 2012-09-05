@@ -1,0 +1,123 @@
+load("sbbsdefs.js");
+load("frame.js");
+load("funclib.js");
+load("inputline.js");
+load(js.exec_dir + "client.js");
+
+if(!http)
+	exit;
+
+var aliasColor = WHITE;
+var onelinerColor = LIGHTGRAY;
+
+var frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK|WHITE);
+var headerFrame = new Frame(1, 1, console.screen_columns, 7, BG_BLACK|LIGHTGRAY, frame);
+var onelinerzFrame = new Frame(1, 8, console.screen_columns, console.screen_rows - 9, BG_BLACK|WHITE, frame);
+var helpFrame = new Frame(1, console.screen_rows - 1, console.screen_columns, 1, BG_BLACK|LIGHTGRAY, frame);
+var inputNickFrame = new Frame(1, console.screen_rows, 12, 1, BG_BLACK|aliasColor, frame);
+var inputFrame = new Frame(14, console.screen_rows, console.screen_columns - 14, 1, BG_BLACK|LIGHTGRAY, frame);
+var inputLine = new InputLine(inputFrame);
+var hideInputFrame = new Frame(1, console.screen_rows, console.screen_columns, 1, BG_BLACK|LIGHTGRAY, frame);
+inputLine.max_buffer = 67;
+inputLine.auto_clear = false;
+inputLine.show_cursor = true;
+inputLine.cursor_char = "\xB1";
+inputLine.cursor_attr = BG_LIGHTGRAY|WHITE;
+inputFrame.bottom();
+
+function getOneLinerz() {
+	onelinerzFrame.gotoxy(1, ((console.screen_rows - 9) / 2).toFixed(0));
+	onelinerzFrame.center("\1ILoading onelinerz from bbs-scene.org...\1N");
+	frame.cycle();
+	var response = http.Get("http://bbs-scene.org/api/onelinerzjson.php?limit=" + onelinerzFrame.height + "&ansi=1");
+	try {
+		if(response === undefined || response === null)
+			throw("Empty response");
+	}
+	catch(err) {
+		if(err)
+			exit;
+	}
+	var onelinerz = JSON.parse(response);
+	onelinerzFrame.clear();
+	for(var o in onelinerz) {
+		onelinerzFrame.attr = aliasColor;
+		onelinerzFrame.putmsg(format("%12s", onelinerz[o].alias.substr(0, 12)));
+		onelinerzFrame.attr = onelinerColor;
+		onelinerzFrame.putmsg(" " + pipeToCtrlA(onelinerz[o].oneliner.substr(0, console.screen_columns - 13)));
+		onelinerzFrame.crlf();
+	}
+}
+
+function postOneLiner() {
+	var userInput = undefined;
+	helpFrame.invalidate();
+	helpFrame.putmsg(line);
+	helpFrame.gotoxy(50, 1);
+	helpFrame.putmsg(ascii(180) + "\1h\1w[\1nTAB\1h]\1n to change colors" + ascii(195));
+	inputNickFrame.putmsg(format("%12s", user.alias.substr(0, 12)));
+	hideInputFrame.bottom();
+	while(userInput === undefined) {
+		userInput = inputLine.getkey();
+		if(frame.cycle())
+			console.gotoxy(80, 24);
+		if(ascii(userInput) == 9) {
+			inputLine.frame.attr = colorPicker(20, 10, inputFrame);
+			userInput = undefined;
+			continue;
+		}
+	}
+	if(!userInput || userInput.replace(/\s*/g, "").length < 1)
+		return false;
+	var fgmask = (1<<0)|(1<<1)|(1<<2)|(1<<3);
+	var bgmask = (1<<4)|(1<<5)|(1<<6);
+	var fgattr = LIGHTGRAY;
+	var bgattr = BLACK;
+	var piped = "";
+	for(var c = 0; c < userInput.length; c++) {
+		var x = inputLine.frame.getData(c, 0, false);
+		if((x.attr&fgmask) != fgattr) {
+			fgattr = (x.attr&fgmask);
+			piped += "|" + format("%02s", fgattr);
+		}
+		if(((x.attr&bgmask)>>4) != bgattr) {
+			bgattr = ((x.attr&bgmask)>>4);
+			piped += "|" + (bgattr + 16);
+		}
+		piped += userInput[c];
+	}
+	var response = http.Post("http://bbs-scene.org/api/onelinerz.json", "bbsname=" + system.qwk_id + "&alias=" + user.alias.replace(/\s/g, "+") + "&oneliner=" + piped.replace(/\s/g, "+"), "", "");
+	response = JSON.parse(response);
+	inputFrame.clear();
+	hideInputFrame.top();
+	if(!response || !response.success) {
+		hideInputFrame.center("\1h\1rThere was an error and your oneliner was not posted.  Try again later.");
+		return false;
+	}
+	hideInputFrame.center("\1h\1wYour oneliner has been posted. \1h\1c[\1h\1wPress any key to continue\1h\1c]");
+//  Should scroll the onelinerz and append the new one, but writes on top of the last one instead.
+/*	onelinerzFrame.attr = aliasColor;
+	onelinerzFrame.putmsg(format("%12s", user.alias.substr(0, 12)));
+	onelinerzFrame.attr = onelinerColor;
+	onelinerzFrame.putmsg(" " + pipeToCtrlA(piped)); */
+	frame.cycle();
+	console.getkey();
+}
+
+var line = "";
+for(var l = 1; l <= frame.width; l++)
+	line += ascii(196);
+
+console.clear();
+frame.open();
+headerFrame.load(js.exec_dir + "onelinerz.bin", 80, 6);
+headerFrame.gotoxy(1, 7);
+headerFrame.attr = LIGHTGRAY;
+headerFrame.putmsg(line);
+helpFrame.putmsg(line);
+getOneLinerz();
+frame.cycle();
+console.gotoxy(((console.screen_columns - 48) / 2).toFixed(0), console.screen_rows - 1);
+if(!console.noyes("Post a new oneliner to bbs-scene.org"))
+	var ret = postOneLiner();
+frame.close();
