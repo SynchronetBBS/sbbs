@@ -4843,6 +4843,13 @@ static void cleanup(int code)
 		pop3_socket=INVALID_SOCKET;
 	}
 
+	if(thread_count.value > 1) {
+		lprintf(LOG_DEBUG,"#### Waiting for %d child threads to terminate", thread_count.value-1);
+		while(thread_count.value > 1) {
+			mswait(100);
+		}
+	}
+
 	if(active_clients.value)
 		lprintf(LOG_WARNING,"#### !Mail Server terminating with %ld active clients", active_clients.value);
 	else
@@ -4856,12 +4863,6 @@ static void cleanup(int code)
 #endif
 
 	thread_down();
-
-	if(thread_count.value)
-		lprintf(LOG_WARNING,"#### !Mail Server threads (%ld) remain after termination", thread_count.value);
-
-	protected_int32_destroy(thread_count);
-
 	status("Down");
 	if(terminate_server || code) {
 		char str[1024];
@@ -4991,10 +4992,9 @@ void DLLCALL mail_server(void* arg)
 	terminate_server=FALSE;
 
 	SetThreadName("Mail Server");
+	protected_int32_init(&thread_count, 0);
 
 	do {
-
-		protected_int32_init(&thread_count, 0);
 
 		thread_up(FALSE /* setuid */);
 
@@ -5542,4 +5542,6 @@ void DLLCALL mail_server(void* arg)
 		}
 
 	} while(!terminate_server);
+
+	protected_int32_destroy(thread_count);
 }
