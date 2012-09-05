@@ -599,7 +599,7 @@ function Tree(frame,text,tree) {
 			}
 			
 			/* add indentation on subtrees */
-			for(var i=0;i<this.depth-1;i++) 
+			for(var i=0;i<this.depth-2;i++) 
 				list.push({ch:" ",attr:bg+fg});
 				
 			/* do not draw tree branches on top level tree */
@@ -641,8 +641,12 @@ function Tree(frame,text,tree) {
 				fg=properties.attr;
 			
 			/* push text string into list */
-			for(var i=0;i<properties.text.length;i++) 
-				list.push({ch:properties.text[i],attr:bg+fg});
+			for(var i=0;i<properties.text.length;i++) {
+				if(properties.text[i] == "|")
+					list.push({ch:properties.text[++i],attr:bg+this.colors.kfg});
+				else
+					list.push({ch:properties.text[i],attr:bg+fg});
+			}
 
 			line++;
 			this.list(list);
@@ -869,8 +873,12 @@ function TreeItem(text,parent,func,args) {
 			fg=properties.attr;
 		
 		/* push text string into list */
-		for(var i=0;i<properties.text.length;i++) 
-			list.push({ch:properties.text[i],attr:bg+fg});
+		for(var i=0;i<properties.text.length;i++) {
+			if(properties.text[i] == "|")
+				list.push({ch:properties.text[++i],attr:bg+this.colors.kfg});
+			else
+				list.push({ch:properties.text[i],attr:bg+fg});
+		}
 
 		this.list(list);
 		return ++line;
