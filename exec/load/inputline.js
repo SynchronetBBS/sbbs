@@ -1,7 +1,10 @@
 bbs.command_str='';
-load("str_cmds.js");
-load("funclib.js");
-load("frame.js");
+if(js.global.str_cmds == undefined)
+	js.global.load(js.global,"str_cmds.js");
+if(js.global.getColor == undefined)
+	js.global.load(js.global,"funclib.js");
+if(js.global.Frame == undefined)
+	js.global.load(js.global,"frame.js");
 
 function InputLine(frame,text) {
 	/* private properties */
@@ -95,6 +98,14 @@ function InputLine(frame,text) {
 	});
 	
 	/* public methods */
+	this.open = function() {
+		properties.frame.open();
+		if(properties.cursor)
+			properties.cursor.top();
+	}
+	this.close = function() {
+		properties.frame.close();
+	}
 	this.clear = function() {
 		reset();
 	}
@@ -246,3 +257,4 @@ function InputLine(frame,text) {
 	}
 	init.apply(this,arguments);
 }
+
