@@ -7,18 +7,15 @@ load(js.exec_dir + "client.js");
 if(!http)
 	exit;
 
-var aliasColor = WHITE;
-var onelinerColor = LIGHTGRAY;
-
 var frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK|WHITE);
 var headerFrame = new Frame(1, 1, console.screen_columns, 7, BG_BLACK|LIGHTGRAY, frame);
-var onelinerzFrame = new Frame(1, 8, console.screen_columns, console.screen_rows - 9, BG_BLACK|WHITE, frame);
+var onelinerzFrame = new Frame(1, 8, console.screen_columns, console.screen_rows - 9, BG_BLACK|LIGHTGRAY, frame);
 var helpFrame = new Frame(1, console.screen_rows - 1, console.screen_columns, 1, BG_BLACK|LIGHTGRAY, frame);
-var inputNickFrame = new Frame(1, console.screen_rows, 12, 1, BG_BLACK|aliasColor, frame);
-var inputFrame = new Frame(14, console.screen_rows, console.screen_columns - 14, 1, BG_BLACK|LIGHTGRAY, frame);
+var inputNickFrame = new Frame(1, console.screen_rows, 23, 1, BG_BLACK|LIGHTGRAY, frame);
+var inputFrame = new Frame(25, console.screen_rows, console.screen_columns - 25, 1, BG_BLACK|LIGHTGRAY, frame);
 var inputLine = new InputLine(inputFrame);
 var hideInputFrame = new Frame(1, console.screen_rows, console.screen_columns, 1, BG_BLACK|LIGHTGRAY, frame);
-inputLine.max_buffer = 67;
+inputLine.max_buffer = 55;
 inputLine.auto_clear = false;
 inputLine.show_cursor = true;
 inputLine.cursor_char = "\xB1";
@@ -27,7 +24,7 @@ inputFrame.bottom();
 
 function getOneLinerz() {
 	onelinerzFrame.gotoxy(1, ((console.screen_rows - 9) / 2).toFixed(0));
-	onelinerzFrame.center("\1ILoading onelinerz from bbs-scene.org...\1N");
+	onelinerzFrame.center("\1H\1W\1ILoading onelinerz from bbs-scene.org...\1N");
 	frame.cycle();
 	var response = http.Get("http://bbs-scene.org/api/onelinerzjson.php?limit=" + onelinerzFrame.height + "&ansi=1");
 	try {
@@ -41,10 +38,12 @@ function getOneLinerz() {
 	var onelinerz = JSON.parse(response);
 	onelinerzFrame.clear();
 	for(var o in onelinerz) {
-		onelinerzFrame.attr = aliasColor;
-		onelinerzFrame.putmsg(format("%12s", onelinerz[o].alias.substr(0, 12)));
-		onelinerzFrame.attr = onelinerColor;
-		onelinerzFrame.putmsg(" " + pipeToCtrlA(onelinerz[o].oneliner.substr(0, console.screen_columns - 13)));
+		var userAtBBS = "\1h\1k(\1h\1w" + onelinerz[o].alias.substr(0, 23) + "\1h\1c@\1n\1w" + onelinerz[o].bbsname.substr(0, 23).toLowerCase() + "\1h\1k)";
+		while(console.strlen(userAtBBS) < 23) {
+			userAtBBS = "\1h\1k." + userAtBBS;
+		}
+		onelinerzFrame.putmsg(userAtBBS);
+		onelinerzFrame.putmsg(" \1n\1w" + pipeToCtrlA(onelinerz[o].oneliner.substr(0, console.screen_columns - 13)));
 		onelinerzFrame.crlf();
 	}
 }
@@ -55,7 +54,11 @@ function postOneLiner() {
 	helpFrame.putmsg(line);
 	helpFrame.gotoxy(50, 1);
 	helpFrame.putmsg(ascii(180) + "\1h\1w[\1nTAB\1h]\1n to change colors" + ascii(195));
-	inputNickFrame.putmsg(format("%12s", user.alias.substr(0, 12)));
+	var userAtBBS = "\1h\1k(\1h\1w" + user.alias.substr(0, 23) + "\1h\1c@\1n\1w" + system.qwk_id.substr(0, 23).toLowerCase() + "\1h\1k)";
+	while(console.strlen(userAtBBS) < 23) {
+		userAtBBS = "\1h\1k." + userAtBBS;
+	}
+	inputNickFrame.putmsg(userAtBBS);
 	hideInputFrame.bottom();
 	while(userInput === undefined) {
 		userInput = inputLine.getkey();
@@ -86,7 +89,7 @@ function postOneLiner() {
 		}
 		piped += userInput[c];
 	}
-	var response = http.Post("http://bbs-scene.org/api/onelinerz.json", "bbsname=" + system.qwk_id + "&alias=" + user.alias.replace(/\s/g, "+") + "&oneliner=" + piped.replace(/\s/g, "+"), "", "");
+	var response = http.Post("http://bbs-scene.org/api/onelinerz.json", "bbsname=" + system.qwk_id.toLowerCase() + "&alias=" + user.alias.replace(/\s/g, "+") + "&oneliner=" + piped.replace(/\s/g, "+"), "", "");
 	response = JSON.parse(response);
 	inputFrame.clear();
 	hideInputFrame.top();
