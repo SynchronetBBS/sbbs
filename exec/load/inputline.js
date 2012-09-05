@@ -53,11 +53,16 @@ function InputLine(frame,text) {
 		if(typeof bool == "boolean")
 			settings.show_cursor = bool;
 		if(settings.show_cursor) {
-			properties.cursor = new Frame(properties.frame.x,properties.frame.y,1,1,BG_LIGHTGRAY|BLACK,properties.frame);
-			properties.cursor.putmsg("\r" + settings.cursor_char);
+			if(!properties.cursor) {
+				properties.cursor = new Frame(properties.frame.x,properties.frame.y,1,1,BG_LIGHTGRAY|BLACK,properties.frame);
+				properties.cursor.putmsg("\r" + settings.cursor_char);
+			}
+			if(properties.frame.is_open) {
+				properties.cursor.open();
+			}
 		}
-		else {
-			properties.cursor = properties.cursor.delete(); 
+		else if(properties.cursor.is_open) {
+			properties.cursor.close();
 		}
 	});
 	this.__defineGetter__("attr",function() {
