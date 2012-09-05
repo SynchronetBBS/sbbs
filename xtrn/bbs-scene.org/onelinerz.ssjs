@@ -23,9 +23,9 @@ print("<b>BBS-Scene.org Global Onelinerz</b><br><br>");
 var n = 0;
 for(var o in onelinerz) {
 	if(n % 2 == 0)
-		print("<div style='padding:5px;background-color:#585858;'>");
+		print("<div style='padding:5px;background-color:#585858;color:#FFFFFF;'>");
 	else
-		print("<div style='padding:5px;background-color:#2E2E2E;'>");
+		print("<div style='padding:5px;background-color:#2E2E2E;color:#FFFFFF;'>");
 	print("<b>" + onelinerz[o].alias + "@" + onelinerz[o].bbsname + "</b>:<br>" + onelinerz[o].oneliner);
 	print("</div>");
 	n++;
