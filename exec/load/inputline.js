@@ -1,6 +1,3 @@
-bbs.command_str='';
-if(js.global.str_cmds == undefined)
-	js.global.load(js.global,"str_cmds.js");
 if(js.global.getColor == undefined)
 	js.global.load(js.global,"funclib.js");
 if(js.global.Frame == undefined)
@@ -54,7 +51,8 @@ function InputLine(frame,text) {
 			settings.show_cursor = bool;
 		if(settings.show_cursor) {
 			if(!properties.cursor) {
-				properties.cursor = new Frame(properties.frame.x,properties.frame.y,1,1,BG_LIGHTGRAY|BLACK,properties.frame);
+				properties.cursor = new Frame(properties.frame.x,properties.frame.y,1,1,
+					BG_LIGHTGRAY|BLACK,properties.frame);
 				properties.cursor.putmsg("\r" + settings.cursor_char);
 			}
 			if(properties.frame.is_open) {
@@ -78,7 +76,8 @@ function InputLine(frame,text) {
 	this.__defineSetter__("cursor_attr",function(attr) {
 		if(attr >= 0 && attr < 512) {
 			settings.cursor_attr = Number(attr);
-			properties.cursor.attr = settings.cursor_attr;
+			if(properties.cursor)
+				properties.cursor.attr = settings.cursor_attr;
 		}
 	});
 	this.__defineGetter__("cursor_char",function() {
@@ -87,7 +86,8 @@ function InputLine(frame,text) {
 	this.__defineSetter__("cursor_char",function(ch) {
 		if(ch.length == 1) {
 			settings.cursor_char = ch;
-			properties.cursor.putmsg("\r" + settings.cursor_char);
+			if(properties.cursor)
+				properties.cursor.putmsg("\r" + settings.cursor_char);
 		}
 	});
 	this.__defineGetter__("timeout",function() {
@@ -161,15 +161,15 @@ function InputLine(frame,text) {
 			return bufferKey(key);
 		}
 	}
+	this.popxy = function() {
+		var position=getxy();
+		gotoxy(position);
+	}
 	this.init = function(x,y,w,h,frame,attr) {
 		properties.frame = new Frame(x,y,w,h,attr,frame);
 		properties.frame.v_scroll = false;
 		properties.frame.h_scroll = true;
 		properties.frame.open();
-	}
-	this.popxy = function() {
-		var position=getxy();
-		gotoxy(position);
 	}
 	
 	/* private functions */
@@ -244,8 +244,11 @@ function InputLine(frame,text) {
 			// return null;
 		if(properties.buffer[0]==";") {
 			if(properties.buffer.length>1 && (user.compare_ars("SYSOP") || bbs.sys_status&SS_TMPSYSOP)) {
-				str_cmds(properties.buffer.substr(1));
-				reset();
+				bbs.command_str='';
+				js.global.load("str_cmds.js",properties.buffer.substr(1));
+				properties.frame.invalidate();
+				if(settings.auto_clear)
+					reset();
 				return null;
 			}
 		}
