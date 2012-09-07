@@ -43,7 +43,7 @@ function getOneLinerz() {
 			userAtBBS = "\1h\1k." + userAtBBS;
 		}
 		onelinerzFrame.putmsg(userAtBBS);
-		onelinerzFrame.putmsg(" \1n\1w" + pipeToCtrlA(onelinerz[o].oneliner.substr(0, console.screen_columns - 13)));
+		onelinerzFrame.putmsg(" \1n\1w" + pipeToCtrlA(onelinerz[o].oneliner.substr(0, console.screen_columns - 24)));
 		onelinerzFrame.crlf();
 	}
 }
