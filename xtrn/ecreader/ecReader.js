@@ -12,6 +12,7 @@ load(js.exec_dir + "msglib.js");
 load("frame.js");
 load("tree.js");
 
+var maxMessages = 0;	// How many messages to load per sub, 0 for all.
 var showMail = true;	// Allow access to the private 'mail' sub-board
 var threaded = true;	// False to default to flat view
 var setPointers = true; // False to leave scan pointers unaffected by reading
@@ -37,15 +38,15 @@ if(argc > 0 && argv[0])
 else
 	var msgBase = new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
 
-var frame = new Frame(1, 1, 80, 24, BG_BLACK|WHITE);
-var titleFrame = new Frame(1, 1, 80, 2, fbg|WHITE, frame);
-var columnFrame = new Frame(1, 3, 80, 1, fbg|WHITE, frame);
-var treeFrame = new Frame(1, 4, 80, 20, BG_BLACK|WHITE, frame);
-var helpFrame = new Frame(1, 24, 80, 1, fbg|WHITE, frame);
-var messageFrame = new Frame(1, 3, 80, 21, BG_BLACK|WHITE, frame);
-var headerFrame = new Frame(1, 3, 80, 4, fbg|WHITE, messageFrame);
-var bodyFrame = new Frame(1, 7, 80, 17, BG_BLACK|WHITE, messageFrame);
-var messageBar = new Frame(1, 24, 80, 1, fbg|WHITE, messageFrame);
+var frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK|WHITE);
+var titleFrame = new Frame(1, 1, console.screen_columns, 2, fbg|WHITE, frame);
+var columnFrame = new Frame(1, 3, console.screen_columns, 1, fbg|WHITE, frame);
+var treeFrame = new Frame(1, 4, console.screen_columns, console.screen_rows - 4, BG_BLACK|WHITE, frame);
+var helpFrame = new Frame(1, console.screen_rows, console.screen_columns, 1, fbg|WHITE, frame);
+var messageFrame = new Frame(1, 3, console.screen_columns, console.screen_rows - 3, BG_BLACK|WHITE, frame);
+var headerFrame = new Frame(1, 3, console.screen_columns, 4, fbg|WHITE, messageFrame);
+var bodyFrame = new Frame(1, 7, console.screen_columns, console.screen_rows - 7, BG_BLACK|WHITE, messageFrame);
+var messageBar = new Frame(1, console.screen_rows, console.screen_columns, 1, fbg|WHITE, messageFrame);
 var promptFrame = new Frame(20, 8, 40, 6, fbg|WHITE, frame);
 var promptSubFrame = new Frame(22, 9, 36, 4, BG_BLACK|WHITE, promptFrame);
 
@@ -58,7 +59,7 @@ columnFrame.putmsg(
 	format("%-9s", "Msg #")
 	+ format("%-13s", "From")
 	+ format("%-13s", "To")
-	+ format("%-28s", "Subject")
+	+ format("%-" + (console.screen_columns - 52) + "s", "Subject")
 	+ "Date"
 );
 helpFrame.center(
@@ -89,7 +90,7 @@ function formatItem(messageNumber, from, to, subject, date) {
 			format("%-8s", messageNumber)
 			+ format("%-13s", from.substr(0, 12))
 			+ format("%-13s", to.substr(0, 12))
-			+ format("%-28s", subject.substr(0, 27))
+			+ format("%-" + (console.screen_columns - 52) + "s", subject.substr(0, (console.screen_columns - 53)))
 			+ strftime("%m-%d-%Y %H:%I", date);
 	return retval;
 }
@@ -138,9 +139,9 @@ function getFlatList() {
 
 function getThreadedList() {
 	if(!mail)
-		var threads = getMessageThreads(msgBase.cfg.code);
+		var threads = getMessageThreads(msgBase.cfg.code, maxMessages);
 	else
-		var threads = getMessageThreads('mail');
+		var threads = getMessageThreads('mail', maxMessages);
 	var item;
 	for(var t in ((oldestFirst)?threads.thread:threads.order)) {
 		if(oldestFirst)
