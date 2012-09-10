@@ -103,7 +103,11 @@ function getFlatList() {
 	else
 		var mb = new MsgBase('mail');
 	mb.open();
-	for(var m = mb.first_msg; m <= mb.last_msg; m++) {
+	if(maxMessages == 0)
+		var start = mb.first_msg;
+	else
+		var start = mb.last_msg - maxMessages;
+	for(var m = start; m <= mb.last_msg; m++) {
 		header = mb.get_msg_header(m);
 		if(
 			header === null
