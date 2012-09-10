@@ -25,9 +25,11 @@ METHODS:
 
 	frame.open()				//populate frame contents in character canvas
 	frame.close()				//remove frame contents from character canvas
+	frame.delete()				//delete this frame (remove from screen buffer, destroy internal references)
 	frame.invalidate()			//clear screen buffer to redraw contents on cycle() or draw()
-	frame.draw()				//force a screen update on the frame and it's children
+	frame.draw()				//open frame (if not open) move to top (if not on top) and cycle()
 	frame.cycle()				//check the display matrix for updated characters and displays them 
+	frame.refresh()				//flag all frame sectors for potential update
 	frame.load(filename)		//load a binary graphic (.BIN) or ANSI graphic (.ANS) file
 	frame.bottom()				//push frame to bottom of display stack
 	frame.top()					//pull frame to top of display stack
@@ -36,7 +38,14 @@ METHODS:
 	frame.move(x,y)				//move frame n spaces in any direction
 	frame.moveTo(x,y)			//move frame to absolute position
 	frame.end()					//opposite of frame.home()
-	frame.screenShot(file,append)//capture the contents of a frame to file
+	frame.screenShot(file,append)
+								//capture the contents of a frame to file
+	frame.getData(x,y,use_offset)
+								//return the character and attribute located at x,y in frame.data (optional scroll offset)
+	frame.setData(x,y,ch,attr,use_offset)
+								//modify the character and attribute located at x,y in frame.data (optional scroll offset)
+	frame.clearData(x,y,use_offset)
+								//delete the character and attribute located at x,y in frame.data (optional scroll offset)
 	frame.clearline(attr)		//see http://synchro.net/docs/jsobjs.html#console
 	frame.cleartoeol(attr)
 	frame.putmsg(str,attr)
@@ -55,6 +64,7 @@ PROPERTIES:
 	frame.y						//y screen position
 	frame.width					//frame width
 	frame.height				//frame height
+	frame.data					//frame data matrix 
 	frame.data_height			//true height of frame contents (READ ONLY)
 	frame.data_width			//true width of frame contents (READ ONLY)
 	frame.attr					//default attributes for frame
@@ -63,10 +73,13 @@ PROPERTIES:
 	frame.v_scroll				//toggle true/false to enable/disable vertical scrolling
 	frame.h_scroll				//toggle true/false to enable/disable horizontal scrolling
 	frame.scrollbars			//toggle true/false to show/hide scrollbars
+	frame.transparent			//toggle true/false to enable transparency mode 
+								//(do not display frame sectors where char == undefined)
 	frame.offset				//current offset object {x,y}
 	frame.cursor				//current cursor object {x,y}
 	frame.parent				//the parent frame of a frame
 	frame.id					//a unique identifier (e.g. "0.1.1.2.3")
+	frame.is_open				//return true is frame is opened in screen buffer
 
 USAGE:
 
@@ -329,6 +342,8 @@ function Frame(x,y,width,height,attr,parent) {
 		}
 		if(!properties.data[py] || !properties.data[py][px])
 			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
+		if(properties.data[py][px].ch == undefined && properties.data[py][px].attr == undefined)
+			return;
 		properties.data[py][px].ch = undefined;
 		properties.data[py][px].attr = undefined;
 		if(properties.open) 
