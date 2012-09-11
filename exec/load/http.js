@@ -86,9 +86,8 @@ function HTTPRequest(username,password)
 			if(!this.sock.send(this.request_headers[i]+"\n"))
 				throw("Unable to send headers");
 		}
-// This termination is apparently unnecessary - blank line already appears after headers.
-//		if(!this.sock.send("\n"))
-//			throw("Unable to terminate headers");
+		if(!this.sock.send("\n"))
+			throw("Unable to terminate headers");
 		if(this.body != undefined) {
 			if(!this.sock.send(this.body))
 				throw("Unable to send body");
