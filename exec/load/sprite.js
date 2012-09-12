@@ -175,6 +175,7 @@
 */
 
 load("sbbsdefs.js");
+load("funclib.js");
 load("frame.js");
 
 var KEY_WEAPON = "F"; // Redefine this in your scripts as desired
@@ -362,6 +363,9 @@ var Sprite = {
 */
 Sprite.Aerial = function(spriteName, parentFrame, x, y, bearing, position) {
 
+	if(!file_exists(js.exec_dir + "sprites/" + spriteName + ".ini"))
+		return false;
+		
 	this.x = x;
 	this.y = y;
 	this.origin = { x : x, y : y };
@@ -373,70 +377,8 @@ Sprite.Aerial = function(spriteName, parentFrame, x, y, bearing, position) {
 	this.lastAttack = system.timer;
 	this.open = true;
 	this.weaponCoordinates = { x : 0, y : 0 };
-
-	if(!file_exists(js.exec_dir + "sprites/" + spriteName + ".ini"))
-		return false;
-	var f = new File(js.exec_dir + "sprites/" + spriteName + ".ini");
-	
-	f.open("r",true);
-	this.ini = f.iniGetObject();
-	f.close();
-	
-	this.ini.bearings = this.ini.bearings.split(",");
-	this.ini.positions = this.ini.positions.split(",");
-	this.ini.speed = parseFloat(this.ini.speed);
-	this.ini.speedstep = parseFloat(this.ini.speedstep);
-	this.ini.speedmax = parseFloat(this.ini.maximumspeed);
-	this.ini.speedmin = parseFloat(this.ini.minimumspeed);
-	if(!this.ini.hasOwnProperty("movement"))
-		this.ini.movement = "rotating";
-	if(this.ini.hasOwnProperty("constantmotion"))
-		this.ini.constantmotion = parseInt(this.ini.constantmotion);
-	else
-		this.ini.constantmotion = 0;
-	if(this.ini.hasOwnProperty("weapon"))
-		this.ini.weapon = this.ini.weapon;
-	else
-		this.ini.weapon = false;
-	if(this.ini.hasOwnProperty("range"))
-		this.ini.range = parseInt(this.ini.range);
-	else
-		this.ini.range = 0;
-		
-	if(this.ini.weapon) {
-		var f = new File(js.exec_dir + "sprites/" + this.ini.weapon + ".ini");
-		f.open("r");
-		var wi = f.iniGetObject();
-		f.close();
-		this.ini.weaponWidth = wi.width;
-		this.ini.weaponHeight = wi.height;
-	}
-
-	/* y offset for directional bearings */
 	this.bearings = {undefined:0};
-	for(var b=0;b<this.ini.bearings.length;b++) {
-		var bearing = this.ini.bearings[b];
-		this.bearings[bearing] = this.ini.height * b;
-	}
-	
-	/* x offsets for sprite position */
 	this.positions = {undefined:0};
-	for(var p=0;p<this.ini.positions.length;p++) {
-		var pos = this.ini.positions[p];
-		this.positions[pos] = this.ini.width * p;
-	}
-
-	/* initialize sprite frame */
-	this.frame = new Frame(x, y, this.ini.width, this.ini.height, 0, parentFrame);
-	this.frame.checkbounds = false;
-	this.frame.top();
-	this.frame.load(js.exec_dir + "sprites/" + spriteName + ".bin", 
-		(this.ini.width * this.ini.positions.length), 
-		(this.ini.height * this.ini.bearings.length));
-	
-	this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
-
-	sprites.push(this);
 
 	this.move = function(direction) {
 		if(
@@ -783,6 +725,72 @@ Sprite.Aerial = function(spriteName, parentFrame, x, y, bearing, position) {
 		this.bearing = bearing;
 		this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);			
 	}
+
+	function init(spriteName, parentFrame, x, y, bearing, position) {
+		var f = new File(js.exec_dir + "sprites/" + spriteName + ".ini");
+		f.open("r",true);
+		this.ini = f.iniGetObject();
+		f.close();
+		
+		/* y offset for directional bearings */
+		if(this.ini.hasOwnProperty("bearings")) {
+			this.ini.bearings = this.ini.bearings.split(",");
+			for(var b=0;b<this.ini.bearings.length;b++) {
+				var bearing = this.ini.bearings[b];
+				this.bearings[bearing] = this.ini.height * b;
+			}
+		}
+		/* x offsets for sprite position */
+		if(this.ini.hasOwnProperty("positions")) {
+			this.ini.positions = this.ini.positions.split(",");
+			for(var p=0;p<this.ini.positions.length;p++) {
+				var pos = this.ini.positions[p];
+				this.positions[pos] = this.ini.width * p;
+			}
+		}
+		/* parse some ini shit */
+		this.ini.speed = parseFloat(this.ini.speed);
+		this.ini.speedstep = parseFloat(this.ini.speedstep);
+		this.ini.speedmax = parseFloat(this.ini.maximumspeed);
+		this.ini.speedmin = parseFloat(this.ini.minimumspeed);
+		if(!this.ini.hasOwnProperty("movement"))
+			this.ini.movement = "rotating";
+		if(this.ini.hasOwnProperty("constantmotion"))
+			this.ini.constantmotion = parseInt(this.ini.constantmotion);
+		else
+			this.ini.constantmotion = 0;
+		if(this.ini.hasOwnProperty("weapon"))
+			this.ini.weapon = this.ini.weapon;
+		else
+			this.ini.weapon = false;
+		if(this.ini.hasOwnProperty("range"))
+			this.ini.range = parseInt(this.ini.range);
+		else
+			this.ini.range = 0;
+		/* initialize weapon */
+		if(this.ini.weapon) {
+			var f = new File(js.exec_dir + "sprites/" + this.ini.weapon + ".ini");
+			f.open("r");
+			var wi = f.iniGetObject();
+			f.close();
+			this.ini.weaponWidth = wi.width;
+			this.ini.weaponHeight = wi.height;
+		}
+
+		/* initialize sprite frame */
+		this.frame = new Frame(x, y, this.ini.width, this.ini.height, 0, parentFrame);
+		this.frame.checkbounds = false;
+		this.frame.v_scroll = true;
+		this.frame.h_scroll = true;
+		this.frame.transparent = true;
+		this.frame.top();
+		this.frame.load(js.exec_dir + "sprites/" + spriteName + ".bin", 
+			(this.ini.width * countMembers(this.positions)), 
+			(this.ini.height * countMembers(this.bearings)));
+		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
+	}
+	init.apply(this,arguments);
+	Sprite.aerials.push(this);
 }
 
 /*	Profile Sprite 
@@ -862,7 +870,6 @@ Sprite.Aerial = function(spriteName, parentFrame, x, y, bearing, position) {
 							system.timer)
 */
 Sprite.Profile = function(spriteName, parentFrame, x, y, bearing, position) {
-	/* if the sprite files do not exist, go no further */
 	if(!file_exists(js.exec_dir + "sprites/" + spriteName + ".ini"))
 		return false;
 
@@ -880,75 +887,10 @@ Sprite.Profile = function(spriteName, parentFrame, x, y, bearing, position) {
 	this.inJump = false;
 	this.inFall = false;
 	this.jumpStart = 0;
-
-	var f = new File(js.exec_dir + "sprites/" + spriteName + ".ini");
-	f.open("r",true);
-	this.ini = f.iniGetObject();
-	f.close();
-
-	this.ini.bearings = this.ini.bearings.split(",");
-	this.ini.positions = this.ini.positions.split(",");
-	this.ini.speed = parseFloat(this.ini.speed);
-	this.ini.speedstep = parseFloat(this.ini.speedstep);
-	this.ini.speedmax = parseFloat(this.ini.maximumspeed);
-	this.ini.speedmin = parseFloat(this.ini.minimumspeed);
-	
-	if(this.ini.hasOwnProperty("constantmotion"))
-		this.ini.constantmotion = parseInt(this.ini.constantmotion);
-	else
-		this.ini.constantmotion = 0;
-	if(this.ini.hasOwnProperty("gravity"))
-		this.ini.gravity = parseInt(this.ini.gravity);
-	else
-		this.ini.gravity = 0;
-	if(this.ini.hasOwnProperty("jumpheight"))
-		this.ini.jumpheight = parseInt(this.ini.jumpheight);
-	else
-		this.ini.jumpheight = 0;
-	if(this.ini.hasOwnProperty("weapon"))
-		this.ini.weapon = this.ini.weapon;
-	else
-		this.ini.weapon = false;
-	if(this.ini.hasOwnProperty("range"))
-		this.ini.range = parseInt(this.ini.range);
-	else
-		this.ini.range = 0;
-		
-	if(this.ini.weapon) {
-		var f = new File(js.exec_dir + "sprites/" + this.ini.weapon + ".ini");
-		f.open("r");
-		var wi = f.iniGetObject();
-		f.close();
-		this.ini.weaponWidth = wi.width;
-		this.ini.weaponHeight = wi.height;
-	}
-	
-	/* y offset for directional bearings */
 	this.bearings = {undefined:0};
-	for(var b=0;b<this.ini.bearings.length;b++) {
-		var bearing = this.ini.bearings[b];
-		this.bearings[bearing] = this.ini.height * b;
-	}
-	
-	/* x offsets for profile position */
 	this.positions = {undefined:0};
-	for(var p=0;p<this.ini.positions.length;p++) {
-		var pos = this.ini.positions[p];
-		this.positions[pos] = this.ini.width * p;
-	}
-	
-	/* frame init */
-	this.frame = new Frame(x, y, this.ini.width, this.ini.height, 0, parentFrame);
-	this.frame.checkbounds = false;
-	
-	log("width: " + (this.ini.width * this.ini.positions.length) + " height: " + (this.ini.height * this.ini.bearings.length));
-	this.frame.load(js.exec_dir + "sprites/" + spriteName + ".bin", 
-		(this.ini.width * this.ini.positions.length),(this.ini.height * this.ini.bearings.length));
-	this.frame.top();
-	this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
-	
-	/* push this sprite into the stack */
-	Sprite.profiles.push(this);
+
+
 
 	this.move = function(direction) {
 	
@@ -1158,17 +1100,24 @@ Sprite.Profile = function(spriteName, parentFrame, x, y, bearing, position) {
 			if(Sprite.checkAbove(this) || this.y == this.jumpStart - this.ini.jumpheight) {
 				this.inJump = false;
 				this.inFall = true;
+				if(this.positions["fall"] != undefined)
+					this.changePosition("fall");
 			} else {
 				this.y = this.y - 1;
 				this.lastMove = system.timer;
 			}
 		}
 		if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastMove > this.ini.speed) {
+		
 			if(!Sprite.checkBelow(this)) {
 				this.y = this.y + 1;
 				this.lastMove = system.timer;
-			} else {
+			} 
+			
+			if(this.inFall && Sprite.checkBelow(this)) {
 				this.inFall = false;
+				if(this.positions["normal"] != undefined)
+					this.changePosition("normal");
 			}
 		}
 		if(this.bearing != this.lastBearing || this.position != this.lastPosition) {
@@ -1181,19 +1130,11 @@ Sprite.Profile = function(spriteName, parentFrame, x, y, bearing, position) {
 			ret = true;
 			this.frame.moveTo(this.x, this.y);
 		}
-		if(
-			this.ini.range > 0
-			&&
-			(
-				this.x - this.origin.x >= this.ini.range
-				||
-				this.origin.x - this.x >= this.ini.range
-				||
-				this.y - this.origin.y >= this.ini.range / 2
-				||
-				this.origin.y - this.y >= this.ini.range / 2
-			)
-		) {
+		if(this.ini.range > 0 &&
+			(	this.x - this.origin.x >= this.ini.range
+			|| 	this.origin.x - this.x >= this.ini.range
+			|| 	this.y - this.origin.y >= this.ini.range / 2
+			|| 	this.origin.y - this.y >= this.ini.range / 2)) {
 			this.frame.close();
 			this.open = false;
 		}
@@ -1205,10 +1146,26 @@ Sprite.Profile = function(spriteName, parentFrame, x, y, bearing, position) {
 			return;
 		this.jumpStart = this.y;
 		this.inJump = true;
+		
+		if(this.positions["jump"] != undefined)
+			this.changePosition("jump");
 	}
 	
 	this.pursue = function(s) {
-		// ToDo: add platformer sprite pursuit
+		var targetBearing;
+		var attack = false;
+		if(this.x > s.x + s.frame.width) 
+			targetBearing = "w";
+		else if(this.x + this.width < s.x)
+			targetBearing = "e";
+		
+		if(this.bearing != targetBearing)
+			this.turnTo(targetBearing);
+		else if(s.inJump && !this.inJump)
+			this.jump();
+		//else 
+			//this.move("forward");
+		return attack;
 	}
 
 	this.remove = function() {
@@ -1226,8 +1183,87 @@ Sprite.Profile = function(spriteName, parentFrame, x, y, bearing, position) {
 		if(this.ini.bearings.indexOf(bearing) < 0)
 			return false;
 		this.bearing = bearing;
-		this.frame.scrollTo(0, this.bearings[this.bearing]);			
+		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);			
 	}
+	
+	this.changePosition = function(position) {
+		if(this.ini.positions.indexOf(position) < 0)
+			return false;
+		this.position = position;
+		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);			
+	}
+
+	function init(spriteName, parentFrame, x, y, bearing, position) {
+		var f = new File(js.exec_dir + "sprites/" + spriteName + ".ini");
+		f.open("r",true);
+		this.ini = f.iniGetObject();
+		f.close();
+
+		/* y offset for directional bearings */
+		if(this.ini.hasOwnProperty("bearings")) {
+			this.ini.bearings = this.ini.bearings.split(",");
+			for(var b=0;b<this.ini.bearings.length;b++) {
+				var bearing = this.ini.bearings[b];
+				this.bearings[bearing] = this.ini.height * b;
+			}
+		}
+		/* x offsets for sprite position */
+		if(this.ini.hasOwnProperty("positions")) {
+			this.ini.positions = this.ini.positions.split(",");
+			for(var p=0;p<this.ini.positions.length;p++) {
+				var pos = this.ini.positions[p];
+				this.positions[pos] = this.ini.width * p;
+			}
+		}
+		/* parse some ini shit */
+		this.ini.speed = parseFloat(this.ini.speed);
+		this.ini.speedstep = parseFloat(this.ini.speedstep);
+		this.ini.speedmax = parseFloat(this.ini.maximumspeed);
+		this.ini.speedmin = parseFloat(this.ini.minimumspeed);
+		
+		if(this.ini.hasOwnProperty("constantmotion"))
+			this.ini.constantmotion = parseInt(this.ini.constantmotion);
+		else
+			this.ini.constantmotion = 0;
+		if(this.ini.hasOwnProperty("gravity"))
+			this.ini.gravity = parseInt(this.ini.gravity);
+		else
+			this.ini.gravity = 0;
+		if(this.ini.hasOwnProperty("jumpheight"))
+			this.ini.jumpheight = parseInt(this.ini.jumpheight);
+		else
+			this.ini.jumpheight = 0;
+		if(this.ini.hasOwnProperty("weapon"))
+			this.ini.weapon = this.ini.weapon;
+		else
+			this.ini.weapon = false;
+		if(this.ini.hasOwnProperty("range"))
+			this.ini.range = parseInt(this.ini.range);
+		else
+			this.ini.range = 0;
+		/* initialize weapon */
+		if(this.ini.weapon) {
+			var f = new File(js.exec_dir + "sprites/" + this.ini.weapon + ".ini");
+			f.open("r");
+			var wi = f.iniGetObject();
+			f.close();
+			this.ini.weaponWidth = wi.width;
+			this.ini.weaponHeight = wi.height;
+		}
+		/* frame init */
+		this.frame = new Frame(x, y, this.ini.width, this.ini.height, 0, parentFrame);
+		this.frame.checkbounds = false;
+		this.frame.transparent = true;
+		this.frame.v_scroll = true;
+		this.frame.h_scroll = true;
+		this.frame.load(js.exec_dir + "sprites/" + spriteName + ".bin", 
+			(this.ini.width * countMembers(this.ini.positions)),
+			(this.ini.height * countMembers(this.ini.bearings)));
+		this.frame.top();
+		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
+	}
+	init.apply(this,arguments);
+	Sprite.profiles.push(this);	
 }
 
 /* Platform Sprite
