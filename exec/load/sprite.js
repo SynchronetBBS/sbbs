@@ -103,17 +103,22 @@
 	Creating a Sprite:
 		
 		Aerial sprites (top-down):
-			var s = new Sprite.Aerial(spriteName, parentFrame, x, y, bearing, position);
+			var s = new Sprite.Aerial(fileName, parentFrame, x, y, bearing, position);
 			
 		Profile sprites (side-view):
-			var s = new Sprite.Profile(spriteName, parentFrame, x, y, bearing, position);
+			var s = new Sprite.Profile(fileName, parentFrame, x, y, bearing, position);
 			
 		Platform sprites (walls, floors):
 			var s = new Sprite.Platform(parentFrame, x, y, width, height, ch, attr);
 			
-		Where 'spriteName' is the name of a pair of files in the 'sprites'
-		subdirectory.  (Eg. if you have ./sprites/dwer.ini and
-		./sprites/dwer.bin, supply "dwer" for 'spriteName'.)
+		Where 'fileName' is the name of a pair of files in the 'sprites'
+		subdirectory. 'fileName' can either be an absolute path and root file name
+		(without extension), or it can be simply the root filename of a sprite,
+		if the files are located in ./sprites/
+		
+		If you have ./sprites/<sprite name>.ini and ./sprites/<sprite name>.bin, 
+		supply "<sprite name>" for 'fileName'. If you have the files elsewhere, 
+		you must supply the full path/file name (without extension). 
 		
 		'parentFrame' is a reference to a Frame object of which this sprite
 		will be a child.  You must already have created this frame, and
@@ -361,13 +366,14 @@ var Sprite = {
 							<sprite>.bin. file.
 								  
 */
-Sprite.Aerial = function(spriteName, parentFrame, x, y, bearing, position) {
-
-	if(!file_exists(js.exec_dir + "sprites/" + spriteName + ".ini")) {
-		throw("Sprite file missing: sprites/" + spriteName + ".ini");
+Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
+	if(!file_exists(fileName + ".ini"))
+		fileName = js.exec_dir + "sprites/" + fileName;
+	if(!file_exists(fileName + ".ini")) {
+		throw("Sprite file missing: " + fileName + ".ini");
 	}
-	if(!file_exists(js.exec_dir + "sprites/" + spriteName + ".bin")) {
-		throw("Sprite file missing: sprites/" + spriteName + ".bin");
+	if(!file_exists(fileName + ".bin")) {
+		throw("Sprite file missing: " + fileName + ".bin");
 	}
 		
 	this.x = x;
@@ -730,8 +736,8 @@ Sprite.Aerial = function(spriteName, parentFrame, x, y, bearing, position) {
 		this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);			
 	}
 
-	function init(spriteName, parentFrame, x, y, bearing, position) {
-		var f = new File(js.exec_dir + "sprites/" + spriteName + ".ini");
+	function init(fileName, parentFrame, x, y, bearing, position) {
+		var f = new File(fileName + ".ini");
 		f.open("r",true);
 		this.ini = f.iniGetObject();
 		f.close();
@@ -788,7 +794,7 @@ Sprite.Aerial = function(spriteName, parentFrame, x, y, bearing, position) {
 		this.frame.h_scroll = true;
 		this.frame.transparent = true;
 		this.frame.top();
-		this.frame.load(js.exec_dir + "sprites/" + spriteName + ".bin", 
+		this.frame.load(fileName + ".bin", 
 			(this.ini.width * countMembers(this.positions)), 
 			(this.ini.height * countMembers(this.bearings)));
 		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
@@ -873,14 +879,16 @@ Sprite.Aerial = function(spriteName, parentFrame, x, y, bearing, position) {
 		sprite.jumpStart	The time when a jump began (as read from
 							system.timer)
 */
-Sprite.Profile = function(spriteName, parentFrame, x, y, bearing, position) {
-	if(!file_exists(js.exec_dir + "sprites/" + spriteName + ".ini")) {
-		throw("Sprite file missing: sprites/" + spriteName + ".ini");
+Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
+	if(!file_exists(fileName + ".ini"))
+		fileName = js.exec_dir + "sprites/" + fileName;
+	if(!file_exists(fileName + ".ini")) {
+		throw("Sprite file missing: " + fileName + ".ini");
 	}
-	if(!file_exists(js.exec_dir + "sprites/" + spriteName + ".bin")) {
-		throw("Sprite file missing: sprites/" + spriteName + ".bin");
+	if(!file_exists(fileName + ".bin")) {
+		throw("Sprite file missing: " + fileName + ".bin");
 	}
-
+	
 	this.x = x;
 	this.y = y;
 	this.bearing = bearing;
@@ -1201,8 +1209,8 @@ Sprite.Profile = function(spriteName, parentFrame, x, y, bearing, position) {
 		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);			
 	}
 
-	function init(spriteName, parentFrame, x, y, bearing, position) {
-		var f = new File(js.exec_dir + "sprites/" + spriteName + ".ini");
+	function init(fileName, parentFrame, x, y, bearing, position) {
+		var f = new File(fileName + ".ini");
 		f.open("r",true);
 		this.ini = f.iniGetObject();
 		f.close();
@@ -1264,7 +1272,7 @@ Sprite.Profile = function(spriteName, parentFrame, x, y, bearing, position) {
 		this.frame.transparent = true;
 		this.frame.v_scroll = true;
 		this.frame.h_scroll = true;
-		this.frame.load(js.exec_dir + "sprites/" + spriteName + ".bin", 
+		this.frame.load(fileName + ".bin", 
 			(this.ini.width * countMembers(this.ini.positions)),
 			(this.ini.height * countMembers(this.ini.bearings)));
 		this.frame.top();
