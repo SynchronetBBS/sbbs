@@ -58,6 +58,9 @@ if(js.global.server==undefined) {
  * 
  * */
 
+/* service module initialization file */
+var serviceIniFile = system.ctrl_dir + "json-service.ini";
+ 
 /* error values */
 var errors = {
 	UNKNOWN_MODULE:"Unknown module: %s",
@@ -122,7 +125,7 @@ service = new (function() {
 				return;
 			}
 			/* log and disconnect banned hosts */
-			if(service.denyhosts[client.remote_ip_address]) {
+			if(!service.verify(client)) {
 				log(LOG_WARNING,"<--" + client.descriptor + ": " + client.remote_ip_address + " blocked");
 				client.close();
 				return;
@@ -165,15 +168,25 @@ service = new (function() {
 				this.release(this.sockets[s]);
 				this.sockets.splice(s--,1);
 			}
-			else if(this.denyhosts[this.sockets[s].remote_ip_address]) {
-				log(LOG_WARNING,"<--" + this.sockets[s].descriptor + ": " 
-					+ this.sockets[s].remote_ip_address + " terminated");
-				this.release(this.sockets[s]);
-				this.sockets[s].close();
-				this.sockets.splice(s--,1);
-			}
+			// else if(!this.verify(this.sockets[s])) {
+				// log(LOG_WARNING,"<--" + this.sockets[s].descriptor + ": " 
+					// + this.sockets[s].remote_ip_address + " terminated");
+				// this.release(this.sockets[s]);
+				// this.sockets[s].close();
+				// this.sockets.splice(s--,1);
+			// }
 		} 
-	}	
+	}
+	/* check ip/host against ip/host.can && this.denyhosts[] */
+	this.verify = function(client) {
+		if(this.denyhosts[client.remote_ip_address])
+			return false;
+		if(system.trashcan("ip.can",client.remote_ip_address))
+			return false;
+		if(system.trashcan("ip-silent.can",client.remote_ip_address))
+			return false;
+		return true;
+	}
 	/* release all locks and auths for a socket */
 	this.release = function(client) {
 		engine.release(client);
@@ -218,12 +231,12 @@ chat = new (function() {
 			this.ident(client,packet.data);
 			break;
 		case "BAN":
-			if(!admin.verify(client,packet))
+			if(!admin.verify(client,packet,90))
 				break;
 			this.ban(client,packet.data.ip);
 			break;
 		case "UNBAN":
-			if(!admin.verify(client,packet))
+			if(!admin.verify(client,packet,90))
 				break;
 			this.unban(client,packet.data.ip);
 			break;
@@ -286,31 +299,33 @@ admin = new (function() {
 			this.ident(client,packet.data);
 			break;
 		case "RESTART":
-			if(!this.verify(client,packet))
+			if(!this.verify(client,packet,90))
 				break;
 			this.restart(client);
 			break;
 		case "BAN":
-			if(!this.verify(client,packet))
+			if(!this.verify(client,packet,90))
 				break;
 			this.ban(client,packet.data.ip);
 			break;
 		case "UNBAN":
-			if(!this.verify(client,packet))
+			if(!this.verify(client,packet,90))
 				break;
 			this.unban(client,packet.data.ip);
 			break;
 		case "CLOSE":
-			if(!this.verify(client,packet))
+			if(!this.verify(client,packet,90))
 				break;
 			service.close(client);
 			break;
 		case "OPEN":
-			if(!this.verify(client,packet))
+			if(!this.verify(client,packet,90))
 				break;
 			service.open(client);
 			break;
 		case "MODULES":
+			if(!this.verify(client,packet,90))
+				break;
 			this.modules(client);
 			break;
 		default:
@@ -347,10 +362,6 @@ admin = new (function() {
 			error(client,errors.INVALID_PASSWORD);
 			return false;
 		}
-		if(usr.security.level < 90) {
-			error(client,errors.NOT_AUTHORIZED);
-			return false;
-		}
 		this.authenticated[client.descriptor] = usr;
 		confirm(client,"Identified: " + username);
 		return true;
@@ -371,9 +382,13 @@ admin = new (function() {
 		confirm(client,"Ban Removed: " + target);
 		delete service.denyhosts[target];
 	}
-	this.verify = function(client,packet) {
+	this.verify = function(client,packet,level) {
 		if(!this.authenticated[client.id]) {
 			error(client,errors.IDENT_REQUIRED,packet.func);
+			return false;
+		}
+		else if(this.authenticated[client.id].security.level < level) {
+			error(client,errors.NOT_AUTHORIZED,packet.func);
 			return false;
 		}
 		return true;
@@ -385,20 +400,22 @@ admin = new (function() {
 engine = new (function() {
 	this.modules = [];
 	this.queue = undefined;
-	this.file = new File(system.ctrl_dir + "json-service.ini");
+	this.file = new File(serviceIniFile);
+	
 	/* load module list */
 	this.init = function() {
 		/* if there is no module initialization file, fuck it */
 		if(!file_exists(this.file.name))
 			return;
 		this.file.open('r',true);
-		var modules=this.file.iniGetObject();
+		var modules=this.file.iniGetAllObjects();
 		this.file.close();
-		for(var l in modules) {
-			this.modules[l.toUpperCase()]=new Module(modules[l],l);
-			log(LOG_DEBUG,"loaded module: " + l);
+		for each(var m in modules) {
+			this.modules[m.name.toUpperCase()]=new Module(m.name,m.dir,m.auth);
+			log(LOG_DEBUG,"loaded module: " + m.name);
 		}
 	}
+	
 	/* cycle module databases */
 	this.cycle = function() {
 		for each(var m in this.modules) {
@@ -407,6 +424,7 @@ engine = new (function() {
 			m.db.cycle();
 		}
 	}
+
 	/* process a module function */
 	this.process = function(client,packet) {
 		var module = this.modules[packet.scope.toUpperCase()];
@@ -416,15 +434,16 @@ engine = new (function() {
 		}
 		switch(packet.func.toUpperCase()) {
 		case "QUERY":
+			if(!this.verify(client,packet,module)) {
+				error(client,errors.NOT_AUTHORIZED,packet.func);
+				break;
+			}
 			module.db.query(client,packet.data);
-			break;
-		default:
-			error(client,errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		case "IDENT":
 			break;
 		case "RELOAD":
-			if(!admin.verify(client,packet))
+			if(!admin.verify(client,packet,90))
 				break;
 			if(module.queue)
 				module.queue.write("RELOAD");
@@ -432,7 +451,7 @@ engine = new (function() {
 			module.init();
 			break;
 		case "CLOSE":
-			if(!admin.verify(client,packet))
+			if(!admin.verify(client,packet,90))
 				break;
 			module.online = false;
 			confirm(client,module.name + " offline");
@@ -441,49 +460,80 @@ engine = new (function() {
 			respond(client,module.online);
 			break;
 		case "OPEN":
-			if(!admin.verify(client,packet))
+			if(!admin.verify(client,packet,90))
 				break;
 			module.online = true;
 			confirm(client,module.name + " online");
 			break;
 		case "READABLE":
-			if(!admin.verify(client,packet))
+			if(!admin.verify(client,packet,90))
 				break;
-			if(module.db.settings.KEEP_READABLE)
-				module.db.settings.KEEP_READABLE = false;
-			else
-				module.db.settings.KEEP_READABLE = true;
+			module.db.settings.KEEP_READABLE = !module.db.settings.KEEP_READABLE;
 			break;
 		case "SAVE":
-			if(!admin.verify(client,packet))
+			if(!admin.verify(client,packet,90))
 				break;
 			module.db.save();
 			confirm(client,module.name + " data saved");
 			break;
 		case "READONLY":
-			if(!admin.verify(client,packet))
+			if(!admin.verify(client,packet,90))
 				break;
-			if(module.db.settings.READ_ONLY)
-				module.db.settings.READ_ONLY = false;
-			else
-				module.db.settings.READ_ONLY = true;
+			module.db.settings.READ_ONLY = !module.db.settings.READ_ONLY;
+			break;
+		default:
+			error(client,errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		}
 	}
+
+	/* verify a client's access to queries */
+	this.verify = function(client,packet,module) {
+		switch(packet.data.oper) {
+		case "READ":
+		case "POP":
+		case "SHIFT":
+		case "SLICE":
+			if(module.read > 0) {
+				if(!admin.verify(client,packet,module.read)) {
+					error(client,errors.NOT_AUTHORIZED,packet.data.oper);
+					return false;
+				}
+			}
+			break;
+		case "WRITE":
+		case "PUSH":
+		case "UNSHIFT":
+		case "DELETE":
+			if(module.write > 0) {
+				if(!admin.verify(client,packet,module.write)) {
+					error(client,errors.NOT_AUTHORIZED,packet.data.oper);
+					return false;
+				}
+			}
+			break;
+		}
+		return true;
+	}
+
 	/* release clients from module authentication and subscription */
 	this.release = function(client) {
 		for each(var m in this.modules) {
 			m.db.release(client);
 		}
 	}
+
 	/* module data */
-	function Module(dir,name) {
+	function Module(name, dir, auth) {
 		this.online = true;
 		this.name = name;
 		this.dir = dir;
 		this.queue = undefined;
+		this.auth = auth;
 		this.db;
+		
 		this.init = function() {
+			this.db=new JSONdb(this.dir+this.name+".json");
 			/* load module service files */
 			if(file_exists(this.dir + "service.js")) {
 				try {
@@ -492,7 +542,6 @@ engine = new (function() {
 					log(LOG_ERROR,"error loading module: " + this.name);
 				}
 			}
-			this.db = new JSONdb(this.dir+this.name+".json");
 		}
 		this.init();
 	}
