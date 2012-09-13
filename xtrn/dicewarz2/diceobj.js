@@ -108,7 +108,7 @@ function Data()
 	}
 	this.removePlayer=function(map,n) {
 		var location="games." + map.gameNumber + ".players." + n;
-		client.write(game_id,location,undefined,2);
+		client.remove(game_id,location,2);
 	}	
 	this.saveGame=function(game) {
 		var location = "games." + game.gameNumber;

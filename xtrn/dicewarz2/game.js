@@ -42,10 +42,13 @@ function menuPrompt(string,append,keepOpen,hotkeys) {
 	var cmd="";
 	while(!js.terminated) {
 		var k = console.getkey(K_NOECHO|K_NOCRLF|K_UPPER|K_NOSPIN);
-		if(hotkeys) 
-			return k;
-		if(k == "\r")
+		if(hotkeys) { 
+			cmd = k;
 			break;
+		}
+		if(k == "\r") {
+			break;
+		}
 		cmd+=k;
 		promptFrame.putmsg(k);
 		promptFrame.cycle();
@@ -91,6 +94,7 @@ function lobby() {
 	var menuFrame=new Frame(10,24,70,1,BG_BROWN|BLACK,frame);
 	var chatFrame=new Frame(2,16,78,8,BG_BLACK|LIGHTGRAY,frame);
 	var scoreFrame=new Frame(10,5,60,15,BG_BLUE|YELLOW,frame);
+	var infoFrame=new Frame(20,8,40,10,BG_BLUE,frame);
 	var channel="#dicewarz2";
 	var menu,menuFrame;
 
@@ -317,35 +321,39 @@ function lobby() {
 		gameList();
 	}
 	function viewGameInfo(game) {
-		clearBlock(2,2,78,16);
-		console.gotoxy(2,2);
-		wrap("\1n\1cGAME #\1h" + game.gameNumber + " \1n\1cINFO");
-		wrap("\1n\1cHidden names\1h: \1n\1c" + game.hidden_names);
-		wrap("\1n\1cPlayers in this game\1h:");
+		infoFrame.clear();
+		infoFrame.crlf();
+		wrap(infoFrame,"\1n\1c Game \1h#\1y" + game.gameNumber);
+		wrap(infoFrame,"\1n\1c Players\1h:");
 		for(var p in game.players) {
 			var name=game.players[p].name;
-			if(game.hidden_names) name="Player " + (Number(p)+1);
-			wrap("\1c\1h " + name + " \1n\1cvote\1h: " + game.players[p].vote);
+			if(game.hidden_names) 
+				name="[Hidden]";
+			var vote = game.players[p].vote?"\1g\1hstart":"\1r\1hwait";
+			wrap(infoFrame,"\1g\1h  " + name + " \1n\1cvotes to " + vote);
 		}
+		infoFrame.draw();
+		
 		var player=findPlayer(game,user.alias);
 		if(player>=0) {
-			response=menuPrompt("Remove yourself from this game? \1w\1h[y/N]",false,true);
+			response=menuPrompt("Remove yourself from this game? [\1gy\1w/\1gN\1w]",false,false,true);
 			if(response=='Y') {
 				game.players.splice(player,1);
-				data.removePlayer(game,player)
+				data.saveGame(game);
 				return;
 			}
-			response=menuPrompt("Change your vote? \1w\1h[y/N]",false,true);
+			response=menuPrompt("Change your vote? [\1gy\1w/\1gN\1w]",false,false,true);
 			if(response=='Y') {
 				current_vote=game.players[player].vote;
 				game.players[player].vote=(current_vote?false:true);
 			}
 		} else {
-			response=menuPrompt("Join this game? \1w\1h[y/N]",false,true);
+			response=menuPrompt("Join this game? [\1gy\1w/\1gN\1w]",false,false,true);
 			if(response!=='Y') {
+				infoFrame.close();
 				return;
 			}
-			vote=menuPrompt("Vote to start? \1w\1h[y/N]",false,false);
+			vote=menuPrompt("Vote to start? [\1yy\1w/\1yN]",false,false,true);
 			addPlayer(game,user.alias,system.name,(vote=="Y"?true:false));
 		}
 		
@@ -354,6 +362,8 @@ function lobby() {
 			for(var p in game.players) {
 				if(vote_to_start) 
 					vote_to_start=game.players[p].vote;
+				else
+					break;
 			}
 			if(vote_to_start) {
 				startGame(game); 
@@ -387,7 +397,9 @@ function lobby() {
 					playGame(num);
 					return true;
 				} else {
+					infoFrame.open();
 					viewGameInfo(data.games[num]);
+					infoFrame.close();
 				}
 				break;
 			} else {
@@ -421,7 +433,7 @@ function lobby() {
 		var gameNumber = 1;
 			
 		while(1) {
-			response=menuPrompt("Single player game? \1w\1h[y/N]: ",false,true,true);
+			response=menuPrompt("Single player game? \1w\1h[y/N]: ",false,false,true);
 			if(response=='\x1b' || response=='Q') {
 				return false;
 			} else if(response=='Y') {
@@ -432,13 +444,13 @@ function lobby() {
 				single_player = false;
 				break;
 			} else {
-				menuPrompt("Invalid response \1w\1h[press any key]",true,true,true);
+				menuPrompt("Invalid response \1w\1h[press any key]",true,false,true);
 			}
 		}
 		
 		if(!single_player) {
 			while(1) {
-				response=menuPrompt("Start when there are enough players? \1w\1h[y/N]: ",false,true,true);
+				response=menuPrompt("Start when there are enough players? \1w\1h[y/N]: ",false,false,true);
 				if(response=='\x1b' || response=='Q') {
 					return false;
 				} else if(response=='Y') {
@@ -448,12 +460,12 @@ function lobby() {
 					start_now = false;
 					break;
 				} else {
-					menuPrompt("Invalid response \1w\1h[press any key]",true,true,true);
+					menuPrompt("Invalid response \1w\1h[press any key]",true,false,true);
 				}
 			}
 			
 			while(1) {
-				response=menuPrompt("Hide player names? \1w\1h[y/N]: ",false,true,true);
+				response=menuPrompt("Hide player names? \1w\1h[y/N]: ",false,false,true);
 				if(response=='\x1b' || response=='Q') {
 					return false;
 				} else if(response=='Y') {

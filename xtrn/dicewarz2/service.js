@@ -113,6 +113,16 @@ function updateStatus(game) {
 	else if(game.status == status.FINISHED) {
 		deleteGame(game.gameNumber);
 	}
+	else {
+		var pcount=0;
+		for(var p in game.players) {
+			if(game.players[p])
+				pcount++;
+		}
+		if(pcount == 0) {
+			deleteGame(game.gameNumber);
+		}
+	}
 }
 
 /* handle turn update, possibly launch AI background thread */

@@ -400,7 +400,6 @@ function nextTurn(game) {
 }
 
 /* player data functions */
-
 function countActivePlayers(game) {
 	var count=0;
 	for(var p=0;p<game.players.length;p++) {
