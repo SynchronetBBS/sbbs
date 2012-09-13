@@ -40,6 +40,18 @@ function JSONChat(usernum,jsonclient,host,port) {
 		/* if the string has been passed with a leading '/' */
 		if(str[0] == "/") 
 			return this.getcmd(target,str);
+		/* ignore escape sequences */
+		switch(str) {
+		case KEY_UP:
+		case KEY_DOWN:
+		case KEY_LEFT:
+		case KEY_RIGHT:
+		case KEY_HOME:
+		case KEY_END:
+		case KEY_DEL:
+		case "\x1b":
+			return false;
+		}
 		var message = new Message(this.nick,str,Date.now());
 		var chan = this.channels[target.toUpperCase()];
 		this.client.write("chat","channels." + chan.name + ".messages",message,2);
@@ -64,12 +76,23 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.channels[target.toUpperCase()] = new Channel(target);
 		var history = this.client.read("chat","channels." + target + ".history",1);
 		var msgcount = 0;
+		var lastMsg = 0;
 		for each(var m in history) {
 			this.channels[target.toUpperCase()].messages.push(m);
+			lastMsg = m.time;
 			msgcount++;
 		}
-		if(msgcount == 0) 
+		if(msgcount == 0) {
 			this.clear(target);
+		}
+		else {
+			var d = new Date(lastMsg);
+			var str = format("Last msg: %.2d:%.2d on %.2d/%.2d/%.4d",
+				(d.getHours()+1),(d.getMinutes()+1),(d.getMonth()+1),d.getDate(),d.getFullYear());
+			this.channels[target.toUpperCase()].messages.push(
+				new Message("",str,Date.now())
+			);
+		}
 		this.who(target);
 	}
 	
