@@ -12,21 +12,22 @@ load(js.exec_dir + "msglib.js");
 load("frame.js");
 load("tree.js");
 
-var maxMessages = 0;	// How many messages to load per sub, 0 for all.
-var showMail = true;	// Allow access to the private 'mail' sub-board
-var threaded = true;	// False to default to flat view
-var setPointers = true; // False to leave scan pointers unaffected by reading
-var oldestFirst = false;// False to list messages in descending date order
-var lbg = BG_CYAN;		// Lightbar background
-var lfg = WHITE;		// Foreground colour of highlighted text
-var nfg = LIGHTGRAY;	// Foreground colour of non-highlighted text
-var xfg = LIGHTCYAN;	// Subtree expansion indicator colour
-var tfg = LIGHTCYAN;	// Uh, that line beside subtree items
-var fbg = BG_BLUE;		// Title, Header, Help frame background colour
-var urm = WHITE;		// Unread message foreground colour
-var hfg = "\1h\1w"; 	// Heading text (CTRL-A format, for now)
-var sffg = "\1h\1c";	// Heading sub-field text (CTRL-A format, for now)
-var mfg = "\1n\1w";		// Message text colour (CTRL-A format, for now)
+var maxMessages = 0;			// How many messages to load per sub, 0 for all.
+var showMail = true;			// Allow access to the private 'mail' sub-board
+var threaded = true;			// False to default to flat view
+var setPointers = true; 		// False to leave scan pointers unaffected by reading
+var reverseThreads = true;		// True to list threads from most to least recently updated
+var reverseMessages = false;	// True to list messages in a thread from oldest to newest
+var lbg = BG_CYAN;				// Lightbar background
+var lfg = WHITE;				// Foreground colour of highlighted text
+var nfg = LIGHTGRAY;			// Foreground colour of non-highlighted text
+var xfg = LIGHTCYAN;			// Subtree expansion indicator colour
+var tfg = LIGHTCYAN;			// Uh, that line beside subtree items
+var fbg = BG_BLUE;				// Title, Header, Help frame background colour
+var urm = WHITE;				// Unread message foreground colour
+var hfg = "\1h\1w"; 			// Heading text (CTRL-A format, for now)
+var sffg = "\1h\1c";			// Heading sub-field text (CTRL-A format, for now)
+var mfg = "\1n\1w";				// Message text colour (CTRL-A format, for now)
 
 var messages;
 var tree;
@@ -85,13 +86,13 @@ messageBar.center(
 	+ hfg + "Q" + sffg + "uit"
 );
 
-function formatItem(messageNumber, from, to, subject, date) {
+function formatItem(messageNumber, from, to, subject, wwt) {
 	var retval = 
 			format("%-8s", messageNumber)
 			+ format("%-13s", from.substr(0, 12))
 			+ format("%-13s", to.substr(0, 12))
 			+ format("%-" + (console.screen_columns - 52) + "s", subject.substr(0, (console.screen_columns - 53)))
-			+ strftime("%m-%d-%Y %H:%I", date);
+			+ strftime("%m-%d-%Y %H:%I", wwt);
 	return retval;
 }
 
@@ -127,7 +128,7 @@ function getFlatList() {
 		messages.push(header);
 	}
 	mb.close();
-	if(oldestFirst === undefined || !oldestFirst)
+	if(reverseThreads)
 		messages.reverse();
 	for(var m = 0; m < messages.length; m++) {
 		item = formatItem(messages[m].number, messages[m].from, messages[m].to, messages[m].subject, messages[m].when_written_time);;
@@ -147,8 +148,8 @@ function getThreadedList() {
 	else
 		var threads = getMessageThreads('mail', maxMessages);
 	var item;
-	for(var t in ((oldestFirst)?threads.thread:threads.order)) {
-		if(oldestFirst)
+	for(var t in ((!reverseThreads)?threads.thread:threads.order)) {
+		if(!reverseThreads)
 			var theThread = threads.thread[t];
 		else
 			var theThread = threads.thread[threads.order[t]];
@@ -176,14 +177,15 @@ function getThreadedList() {
 			theThread.newest
 		);
 		st = tree.addTree(item);
+		var mm = (reverseMessages) ? theThread.messages.length - 1 : 0;
 		for(var m = 0; m < theThread.messages.length; m++) {
-			messages.push(theThread.messages[m]);
+			messages.push(theThread.messages[mm]);
 			item = formatItem(
-				theThread.messages[m].number,
-				theThread.messages[m].from,
-				theThread.messages[m].to,
-				theThread.messages[m].subject,
-				theThread.messages[m].when_written_time
+				theThread.messages[mm].number,
+				theThread.messages[mm].from,
+				theThread.messages[mm].to,
+				theThread.messages[mm].subject,
+				theThread.messages[mm].when_written_time
 			);
 			var i = st.addItem(item, showMessage, messages[messages.length - 1], mail);
 			if(!mail && messages[messages.length - 1].number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr) {
@@ -193,6 +195,7 @@ function getThreadedList() {
 				i.attr = urm;
 				st.attr = urm;
 			}
+			mm = (reverseMessages) ? mm - 1 : mm + 1;
 		}
 	}
 	tree.open();
