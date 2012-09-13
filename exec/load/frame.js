@@ -51,7 +51,7 @@ METHODS:
 	frame.putmsg(str,attr)
 	frame.clear(attr)
 	frame.home()
-	frame.center(str)
+	frame.center(str,attr)
 	frame.crlf()
 	frame.getxy()
 	frame.gotoxy(x,y)
@@ -341,7 +341,7 @@ function Frame(x,y,width,height,attr,parent) {
 			py += position.offset.y;
 		}
 		if(!properties.data[py] || !properties.data[py][px])
-			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
+			throw("Frame.clearData() - invalid coordinates: " + px + "," + py);
 		if(properties.data[py][px].ch == undefined && properties.data[py][px].attr == undefined)
 			return;
 		properties.data[py][px].ch = undefined;
@@ -846,11 +846,11 @@ function Frame(x,y,width,height,attr,parent) {
 			}
 		}
 	}
-	this.center = function(str) {
+	this.center = function(str,attr) {
 		position.cursor.x = Math.ceil(this.width/2) - Math.ceil(console.strlen(strip_ctrl(str))/2);
 		if(position.cursor.x < 0)
 			position.cursor.x = 0;
-		this.putmsg(str);
+		this.putmsg(str,attr);
 	}
 	this.gotoxy = function(x,y) {
 		if(typeof x == "object" && x.x && x.y) {
