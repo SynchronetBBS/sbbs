@@ -53,19 +53,11 @@ territories are already full.
 The game is over (for you) when you have either conquered all of the 
 tiles on the board, or had all of your tiles taken over by other players.
 
-                  ####SCORING#### 
-
-1st place: +2 points
-2nd place: +1 point
-3rd place: no change
-4th place: -1 point
-5th place: -2 points
-6th place: -2 points
-7th place: -2 points
-
                   ####THANKS TO#### 
 
 Landis for his coding advice.
 Chrispi for his relentless bug detection.
+Deuce for his AI work.
+Your mother for making you the wonderful human you are today.
 
 Now everyone go get killed!

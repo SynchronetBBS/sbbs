@@ -1,40 +1,24 @@
-/*
-	UBER BLOX!
-	A javascript block puzzle game similar to GameHouse "Super Collapse" 
-	by Matt Johnson (2009)
+load("json-client.js");
+var root = js.exec_dir;
 
-	for Synchronet v3.15+
+if(!file_exists(root + "server.ini")) {
+	throw("server initialization file missing");
+}
+
+var server_file = new File(root + "server.ini");
+server_file.open('r',true);
+//var autoUpdate=server_file.iniGetValue(null,"autoUpdate");
+var serverAddr=server_file.iniGetValue(null,"serverAddr");
+var serverPort=server_file.iniGetValue(null,"serverPort");
+server_file.close();
+
+var client=new JSONClient(serverAddr,serverPort);
+var oldpass = console.ctrlkey_passthru;
+
+/*
+if(autoUpdate) {
+	console.putmsg("\r\n\1nChecking for updates...");
+}
 */
 
-load("commclient.js");
-
-var root = js.exec_dir;
-var stream = new ServiceConnection("dicewarz2");
-var server_file=new File(root + "server.ini");
-
-if(file_exists(server_file.name)) {
-	server_file.open('r',true);
-	var update=server_file.iniGetValue("autoupdate");
-	server_file.close();
-	
-	if(update != true) {
-		if((user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP)) 
-			&& console.yesno("Check for game updates?")) 
-			update=true;
-	}
-	
-	if(update) {
-		console.putmsg("\r\n\1nChecking for updates...");
-		stream.recvfile("*.bin");
-		stream.recvfile("*.js");
-		stream.recvfile("dice.doc");
-		stream.recvfile("dice.ini");
-		stream.recvfile("interbbs.doc");
-		stream.recvfile("sysop.doc",true);
-	}
-	
-	console.putmsg("\r\n\1nSynchronizing data files...");
-	stream.recvfile("*.dw");
-	stream.recvfile("players.ini",true);
-}
-load(root + "game.js",stream);
+load(root + "game.js");

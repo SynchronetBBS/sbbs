@@ -29,11 +29,13 @@ NOTE:	It is recommended that you check frequently for updates
 		
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/dice2.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/ai.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/maps.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/player.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/service.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/lobby.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/game.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/dicefunc.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/diceobj.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/rolldice.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/menu.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/handler.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/server.ini
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/dice.ini
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/ai.ini
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/dicewarz2/lobby.bin
@@ -51,16 +53,6 @@ update your relative 'EXEC/' and 'EXEC/LOAD/' paths
 with the latest files from the Synchronet CVS repository at:
 	
 	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/
-	
-	RECOMMENDED UPDATES:
-	
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/funclib.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/calendar.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/clock.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/msgwndw.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/scrollbar.js
-		
-	NOTE:	Replace any outdated local copies with the latest releases from these links.
 
 Please report any bugs, issues or questions to: mcmlxxix at bbs dot thebrokenbubble dot com
 

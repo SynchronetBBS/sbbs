@@ -1,20 +1,39 @@
-var game_number=argv[0];
-var root=argv[1];
-load(root+"maps.js");
-var stream=new ServiceConnection("dicewarz2");
-var map=game_data.list[game_number];
+load("json-client.js");
 
-var sortFunctions={random:randomSort, wild:wildAndCrazyAISort, killMost:killMostDiceAISort, paranoia:paranoiaAISort, randomAI:randomAISort, groupParanoid:groupAndParanoidAISort};
-var checkFunctions={random:randomAICheck, paranoid:paranoidAICheck, wild:wildAndCrazyAICheck, ultraParanoid:ultraParanoidAICheck, weakest:weakestCheck};
-var qtyFunctions={random:randomAttackQuantity, full:fullAttackQuantity, single:singleAttackQuantity};
+var gameNumber=argv[0];
+var root=argv[1];
+var client,game,map;
+
+initClient();
+load(root+"diceobj.js");
+load(root+"dicefunc.js");
+
+var sortFunctions={
+	random:randomSort, 
+	wild:wildAndCrazyAISort, 
+	killMost:killMostDiceAISort, 
+	paranoia:paranoiaAISort, 
+	randomAI:randomAISort, 
+	groupParanoid:groupAndParanoidAISort
+};
+var checkFunctions={
+	random:randomAICheck, 
+	paranoid:paranoidAICheck, 
+	wild:wildAndCrazyAICheck, 
+	ultraParanoid:ultraParanoidAICheck, 
+	weakest:weakestCheck
+};
+var qtyFunctions={
+	random:randomAttackQuantity, 
+	full:fullAttackQuantity, 
+	single:singleAttackQuantity
+};
 
 /* Callbacks for sorting the targets array */
-function randomSort()
-{
+function randomSort() {
 	return(random(2)*2-1);
 }
-function slowAndSteadyAISort(a, b)
-{
+function slowAndSteadyAISort(a, b) {
 	var adiff=0;
 	var bdiff=0;
 
@@ -22,8 +41,7 @@ function slowAndSteadyAISort(a, b)
 	bdiff=b.base.dice - b.target.dice;
 	return(adiff-bdiff);
 }
-function wildAndCrazyAISort(a, b)
-{
+function wildAndCrazyAISort(a, b) {
 	var adiff=0;
 	var bdiff=0;
 
@@ -31,12 +49,10 @@ function wildAndCrazyAISort(a, b)
 	bdiff=b.base.dice - b.target.dice;
 	return(bdiff-adiff);
 }
-function killMostDiceAISort(a, b)
-{
+function killMostDiceAISort(a, b) {
 	return(b.base.dice - a.target.dice);
 }
-function paranoiaAISort(a,b)
-{
+function paranoiaAISort(a,b) {
 	var ascore=0;
 	var bscore=0;
 
@@ -46,14 +62,12 @@ function paranoiaAISort(a,b)
 	bscore *= b.target.dice;
 	return(bscore-ascore);
 }
-function randomAISort(a,b)
-{
+function randomAISort(a,b) {
 	var sortfuncs=new Array(randomSort, slowAndSteadyAISort, wildAndCrazyAISort, killMostDiceAISort, paranoiaAISort);
 
 	return(sortfuncs[random(sortfuncs.length)](a,b));
 }
-function groupAndParanoidAISort(a,b)
-{
+function groupAndParanoidAISort(a,b) {
 	var aopts=0;
 	var bopts=0;
 
@@ -77,10 +91,9 @@ function groupAndParanoidAISort(a,b)
 }
 
 /* Callbacks for deciding if a given attack should go into the targets array */
-function weakestCheck(map, base, target) 
-{
-	var target_tiles=countTiles(map, target.owner);
-	var neighbors=getNeighboringTiles(base,map);
+function weakestCheck(game, map, base, target) {
+	var target_tiles = countTiles(map, target.owner);
+	var neighbors = getNeighboringTiles(base,map);
 	
 	for(var n=0;n<neighbors.length;n++) {
 		var neighbor=neighbors[n];
@@ -93,9 +106,8 @@ function weakestCheck(map, base, target)
 	}
 	return(true);
 }
-function randomAICheck(map, base, target)
-{
-	var computer=map.players[base.owner];
+function randomAICheck(game, map, base, target) {
+	var computer=game.players[base.owner];
 	var rand=random(100);
 	
 	if(rand>10 && base.dice>target.dice)
@@ -115,9 +127,8 @@ function randomAICheck(map, base, target)
 	}
 	return(false);
 }
-function paranoidAICheck(map, base, target)
-{
-	var computer=map.players[base.owner];
+function paranoidAICheck(game, map, base, target) {
+	var computer=game.players[base.owner];
 	var rand=random(100);
 
 	/* If we have an advantage, add to targets array */
@@ -129,9 +140,8 @@ function paranoidAICheck(map, base, target)
 	}
 	return(false);
 }
-function wildAndCrazyAICheck(map, base, target)
-{
-	var computer=map.players[base.owner];
+function wildAndCrazyAICheck(game, map, base, target) {
+	var computer=game.players[base.owner];
 	var rand=random(100);
 	
 	if(base.dice>target.dice)
@@ -151,25 +161,24 @@ function wildAndCrazyAICheck(map, base, target)
 	}
 	return(false);
 }
-function ultraParanoidAICheck(map, base, target)
-{
-	var computer=map.players[base.owner];
+function ultraParanoidAICheck(game, map, base, target) {
+	var computer=game.players[base.owner];
 	var rand=random(100);
 	
 	var computer_tiles=getPlayerTiles(map,base.owner);
 	/* If we don't have our "fair share" of territories, use paranoid attack */
-	if(computer_tiles.length < map.tiles.length/map.players.length) {
-		return(paranoidAICheck(map, base, target));
+	if(computer_tiles.length < map.tiles.length/game.players.length) {
+		return(paranoidAICheck(game, map, base, target));
 	}
 
 	/* If reserves + expected new dice - used reserves is still greater than seven, use the merely paranoid attack */
 	if(computer.reserve + computer_tiles.length - (computer.AI.moves*settings.max_dice) > settings.max_dice-1) {
-		return(paranoidAICheck(map, base, target));
+		return(paranoidAICheck(game, map, base, target));
 	}
 
 	/* Always try to attack on the first turn */
 	if(computer.AI.turns==0) {
-		return(paranoidAICheck(map, base, target));
+		return(paranoidAICheck(game, map, base, target));
 	}
 
 	/* First, check if we would leave ourselves open.  If so,
@@ -201,46 +210,122 @@ function ultraParanoidAICheck(map, base, target)
 }
 
 /* Callbacks for selecting the number of targets to use */
-function randomAttackQuantity(tlen)
-{
+function randomAttackQuantity(tlen) {
 	if(tlen <= 2)
 		return(tlen); 
 	return(random(tlen-2)+2);
 }
-function fullAttackQuantity(tlen)
-{
+function fullAttackQuantity(tlen) {
 	return(tlen);
 }
-function singleAttackQuantity(tlen)
-{
+function singleAttackQuantity(tlen) {
 	if(tlen > 0)
 		return(1);
 	return(0);
 }
 
 /* Attack functions */
-function main()
-{
-	while(map.players[map.turn].AI && map.status==0) {
-		takeTurn();
-		if(countActivePlayers(map)==2 && countTiles(map,map.turn)<map.tiles.length*.4) {
-			forfeit();
-		} else {
-			reinforce();
-			updateStatus(map);
-			nextTurn(map);
-		}
-		game_data.saveData(map);
-		mswait(500);
+function open() {
+	
+	map = data.loadMap(gameNumber);
+	game = data.loadGame(gameNumber);
+	
+	if(!game.players[game.turn].active) {
+		game.turn = nextTurn(game);
+		data.saveTurn(game);
 	}
-	mswait(5000);
-	stream.close();
+	log(LOG_DEBUG,"Dicewarz II AI thread loaded");
 }
-function attack()
-{
-	var computer=map.players[map.turn];
-	var territories=getPlayerTiles(map,map.turn);
+function initClient() {
+	if(!file_exists(root + "server.ini"))
+		throw("server initialization file missing");
+		
+	var server_file = new File(root + "server.ini");
+	server_file.open('r',true);
+	var serverAddr=server_file.iniGetValue(null,"serverAddr");
+	var serverPort=server_file.iniGetValue(null,"serverPort");
+	server_file.close();
+	client = new JSONClient(serverAddr,serverPort);
+}
+function main() {
+	while(game.players[game.turn].AI && game.status==status.PLAYING) {
+
+		var computer=game.players[game.turn];
+		computer.AI.turns = 0;
+		computer.AI.moves = 0;
+		
+		var attacks = attack(computer);
+		if(countActivePlayers(game)==2 && countTiles(map,game.turn)<(map.tiles.length*.3)) 
+			forfeit(computer);
+		else 
+			reinforce(computer);
+		
+		updateStatus(game, map);
+		nextTurn(game);
+		
+		mswait(1000);
+	}
+}
+function cycle() {
+
+	/* in theory.. we should have sole control
+	over everything happening in this particular game
+	until we get to an end game condition or the next
+	player is human (at which point control returns to the service) */
+	client.cycle();
+	while(client.updates.length > 0)
+		processUpdate(client.updates.shift());
+}
+function processUpdate(update) {
+	/* this entire function may very well be useless */
+	var playerName = undefined;
+	var gameNumber = undefined;
+	
+	switch(update.oper.toUpperCase()) {
+	case "SUBSCRIBE":
+	case "UNSUBSCRIBE":
+		/* we will likely proceed with our AI turns regardless 
+		of anyone else's subscription status, so that turns take
+		place whether a player drops carrier or not */
+		break;
+	case "WRITE":
+		/* somebody changed somethin */
+		var p=update.location.split(".");
+		var obj=data;
+		while(p.length > 1) {
+			var child=p.shift();
+			obj=obj[child];
+			switch(child.toUpperCase()) {
+			case "PLAYERS":
+				playerName = p[0];
+				break;
+			case "GAMES":
+			case "MAPS":
+				gameNumber = p[0];
+				break;
+			}
+		}
+		
+		var child = p.shift();
+		if(update.data == undefined)
+			delete obj[child];
+		else
+			obj[child] = update.data;
+			
+		/* we may receive notice to end the game early
+		due to pleyer forfeits */
+		if(child.toUpperCase() == "STATUS")
+			updateStatus(update,gameNumber);
+		break;
+	}
+}
+function close() {
+	log(LOG_DEBUG,"Dicewarz II AI thread complete");
+}
+function attack(computer) {
+	var territories=getPlayerTiles(map,game.turn);
 	var attacks=[];
+	var attackCount=0;
 	
 	/* For each owned territory */
 	for(var t=0;t<territories.length;t++) {
@@ -254,7 +339,7 @@ function attack()
 			for(var o=0;o<attack_options.length;o++) {
 				var target=attack_options[o];
 				/* Check if this is an acceptable attack */
-				if(checkFunctions[computer.AI.check](map,base,target))
+				if(checkFunctions[computer.AI.check](game,map,base,target))
 					basetargets.push({map:map,target:target,base:base});
 			}
 			/* If we found acceptable attacks, sort them and choose the best one */
@@ -264,89 +349,70 @@ function attack()
 			}
 		}
 	}
+	
 	/* Randomize the targets array */
 	attacks.sort(randomSort);
 	attackQuantity=qtyFunctions[computer.AI.qty](attacks.length);
-	if(attackQuantity<1) return false;
+	if(attackQuantity<1) 
+		return attackCount;
 	
+	data.saveActivity(game.gameNumber,"\1n\1r" + computer.name + " attacking");
 	attacks.sort(sortFunctions[computer.AI.sort]);
-	for(var a=0;a<attackQuantity;a++)
-	{
+	for(var n=0;n<attackQuantity;n++) {
 		var attack=attacks.shift();
 		var attacking=attack.base;
 		var defending=attack.target;
-		var attacker=map.players[attacking.owner].name;
-		var defender=map.players[defending.owner].name;
+		var attacker=game.players[attacking.owner];
+		var defender=game.players[defending.owner];
 		
 		var a=new Roll(attacking.owner);
 		for(var r=0;r<attacking.dice;r++) {
 			var roll=random(6)+1;
 			a.roll(roll);
 		}
+		
 		var d=new Roll(defending.owner);
 		for(var r=0;r<defending.dice;r++) {
 			var roll=random(6)+1;
 			d.roll(roll);
 		}
-		var data=new Packet("battle",map);
-		data.a=a;
-		data.d=d;
-		stream.send(data);
-		
+		data.saveActivity(game,"\1n\1m" + attacker.name + " attacking " + defender.name);
 		if(a.total>d.total) {
 			if(countTiles(map,defending.owner)==1) {
-				players.scoreKill(map.players[attacking.owner]);
-				players.scoreLoss(map.players[defending.owner]);
-				map.players[defending.owner].active=false;
+				data.scoreKiller(attacker);
+				data.scoreLoser(defender);
+				data.saveActivity(game,"\1r\1h" + attacker.name + " eliminated " + defender.name + "!");
 			}
-			defending.assign(attacking.owner,attacking.dice-1);
-		} 
-		attacking.dice=1;
+			data.assignTile(map,defending,attacking.owner,attacking.dice-1);
+			updateStatus(game,map);
+		}
 		
-		game_data.saveTile(map,attacking);
-		game_data.saveTile(map,defending);
+		data.assignTile(map,attacking,attacking.owner,1);
 		computer.AI.moves++;
+		attackCount++;
+		mswait(1000);
 	}
 	computer.AI.turns++;
-	return true;
+	return attackCount;
 }
-function takeTurn()
-{
-	while(map.status==0) {
-		if(!attack()) break;
-		updateStatus(map);
-		mswait(500);
-	}
+function forfeit(computer) {
+	game.status=status.FINISHED;
+	computer.active=false;
+	data.scoreForfeit(computer);
+	updateStatus(game, map);
 }
-function forfeit()
-{
-	map.status=1;
-	map.players[map.turn].active=false;
-	var data=new Packet("activity",map);
-	data.activity=("\1n\1y" + map.players[map.turn].name + " forfeits");
-	stream.send(data);
-	players.scoreLoss(map.players[map.turn]);
-	updateStatus(map);
-}
-function reinforce()
-{
-	var player_tiles=getPlayerTiles(map,map.turn);
-	var reinforcements=countConnected(map,player_tiles,map.turn);
-	var placed=placeReinforcements(map,player_tiles,reinforcements);
-	var total=0;
-	for(var p in placed) {
-		total+=placed[p];
+function reinforce(computer) {
+	var update=getReinforcements(game,map);
+	if(update.placed>0) {
+		var msg="\1n\1y" + computer.name + " placed " + update.placed + " dice";
+		data.saveActivity(game,msg);
 	}
-	var reserved=placeReserves(map,reinforcements-total);
-	var data=new Packet("activity",map);
-	if(total>0) {
-		data.activity=("\1n\1y" + map.players[map.turn].name + " placed " + total + " dice");
-		stream.send(data);
-	}
-	if(reserved>0) {
-		data.activity=("\1n\1y" + map.players[map.turn].name + " reserved " + reserved + " dice");
-		stream.send(data);
+	if(update.reserved>0) {
+		var msg="\1n\1y" + computer.name + " reserved " + update.reserved + " dice";
+		data.saveActivity(game,msg);
 	}
 }
 
+open();
 main();
+close();
