@@ -128,6 +128,20 @@ function lobby() {
 			var cmd=input.getkey(hotkeys);
 			if(!cmd) 
 				continue;
+			switch(cmd) {
+			case KEY_UP:
+				chatFrame.scroll(0,-1);
+				continue;
+			case KEY_DOWN:
+				chatFrame.scroll(0,1);
+				continue;
+			case KEY_HOME:
+				chatFrame.pageup();
+				continue;
+			case KEY_END:
+				chatFrame.pagedown();
+				continue;
+			}
 			if(hotkeys) {
 				//menu.clear();
 				switch(cmd.toUpperCase())	{
@@ -233,7 +247,7 @@ function lobby() {
 					sorted.started.push(i);
 					if(game.turn==in_game) 
 						sorted.yourturn.push(i);
-					else if(!game.players[in_game].active)
+					else if(in_game>=0 && !game.players[in_game].active)
 						sorted.eliminated.push(i);
 				}
 				else {
@@ -572,6 +586,7 @@ function playGame(gameNumber) {
 		gameFrame.delete();
 		listFrame.delete();
 		infoFrame.delete();
+		inputFrame.bottom();
 		chat.part(channel.toUpperCase());
 	}
 	function main()	{
@@ -581,6 +596,20 @@ function playGame(gameNumber) {
 			var cmd=input.getkey(hotkeys);
 			if(!cmd)
 				continue;
+			switch(cmd) {
+			case KEY_UP:
+				activityFrame.scroll(0,-1);
+				continue;
+			case KEY_DOWN:
+				activityFrame.scroll(0,1);
+				continue;
+			case KEY_HOME:
+				activityFrame.pageup();
+				continue;
+			case KEY_END:
+				activityFrame.pagedown();
+				continue;
+			}
 			if(hotkeys) {
 				if(menu.items[cmd.toUpperCase()] && menu.items[cmd.toUpperCase()].enabled) {
 					switch(cmd.toUpperCase()) {
