@@ -110,7 +110,7 @@ function canAttack(map,base) {
 	}
 	return valid_targets;
 }
-function countConnected(map,tiles,player) {	
+function countConnected(map,tiles,playerNum) {	
 	var counted=[];
 	var largest_group=0;
 	for(var t=0;t<tiles.length;t++) {
@@ -118,7 +118,7 @@ function countConnected(map,tiles,player) {
 			var count=[];
 			count[tiles[t].id]=true;
 			var grid=getBorders(map,tiles[t]);
-			var connections=trace(map,grid,count,player);
+			var connections=trace(map,grid,count,playerNum);
 			counted.concat(connections);
 			var group_size=countMembers(connections);
 			if(group_size>largest_group) 
@@ -264,22 +264,24 @@ function createGrid(w,h) {
 
 /* map data functions */
 function updateStatus(game,map) {
+	/* count the tiles of all active players,
+	if tiles == 0, player is dead */
 	for(var p=0;p<game.players.length;p++) {
 		if(game.players[p].active) {
 			if(countTiles(map,p)==0) {
-				log(LOG_DEBUG,"inactive player: " + game.players[p].name);
+				//log(LOG_DEBUG,"inactive player: " + game.players[p].name);
 				game.players[p].active=false;
 				data.savePlayer(game,p);
 			}
 		}
 	}
+	/* for a single player game, find the non-AI player and check whether active. 
+	if not, game over */
 	if(game.single_player && game.status==status.PLAYING) {
 		for(var p=0;p<game.players.length;p++) {
 			var player=game.players[p];
-			/* for a single player game, find the non-AI player and check whether active. 
-			if not, game over */
 			if(!player.AI && !player.active) {
-				log(LOG_DEBUG,"inactive game: " + game.gameNumber);
+				//log(LOG_DEBUG,"inactive game: " + game.gameNumber);
 				game.status=status.FINISHED;
 				game.winner=getWinner(game,map);
 
@@ -290,6 +292,8 @@ function updateStatus(game,map) {
 			}
 		}
 	}
+	/* for all games, if there is only one active player left,
+	that player is the winner */
 	if(countActivePlayers(game)==1) {
 		game.status=status.FINISHED;
 		game.winner=getWinner(game,map);
@@ -322,10 +326,10 @@ function getWinner(game,map) {
 	}
 	return winner;
 }
-function getReinforcements(game,map) {
-	var tiles=getPlayerTiles(map,game.turn);
-	var reinforcements=countConnected(map,tiles,game.turn);
-	var player=game.players[game.turn];
+function getReinforcements(game,map,playerNum) {
+	var tiles=getPlayerTiles(map,playerNum);
+	var reinforcements=countConnected(map,tiles,playerNum);
+	var player=game.players[playerNum];
 	var updated={};
 	
 	while(reinforcements>0 && tiles.length>0) {
@@ -364,7 +368,7 @@ function getReinforcements(game,map) {
 			reinforcements -= (player.reserve-settings.max_reserve);
 			player.reserve = settings.max_reserve;
 		}
-		data.savePlayer(game,game.turn);
+		data.savePlayer(game,playerNum);
 	}
 	
 	var totalPlaced=0;
@@ -384,6 +388,7 @@ function nextTurn(game) {
 	if(game.turn==game.players.length-1) {
 		game.turn=0;
 		game.round++;
+		data.saveRound(game);
 	} 
 	else {
 		game.turn++;
@@ -394,7 +399,7 @@ function nextTurn(game) {
 		nextTurn(game);
 	}
 	else {
-		log("incrementing turn: " + game.turn);
+		//log("incrementing turn: " + game.turn);
 		data.saveTurn(game);
 	}
 }

@@ -227,9 +227,11 @@ function singleAttackQuantity(tlen) {
 /* Attack functions */
 function open() {
 	
-	map = data.loadMap(gameNumber);
-	game = data.loadGame(gameNumber);
+	map = client.read(game_id,"maps." + gameNumber,1);
+	game = client.read(game_id,"games." + gameNumber,1);
 	
+	if(!game)
+		exit();
 	if(!game.players[game.turn].active) {
 		game.turn = nextTurn(game);
 		data.saveTurn(game);
@@ -356,7 +358,6 @@ function attack(computer) {
 	if(attackQuantity<1) 
 		return attackCount;
 	
-	data.saveActivity(game.gameNumber,"\1n\1r" + computer.name + " attacking");
 	attacks.sort(sortFunctions[computer.AI.sort]);
 	for(var n=0;n<attackQuantity;n++) {
 		var attack=attacks.shift();
@@ -376,12 +377,13 @@ function attack(computer) {
 			var roll=random(6)+1;
 			d.roll(roll);
 		}
-		data.saveActivity(game,"\1n\1m" + attacker.name + " attacking " + defender.name);
+		data.saveActivity(game,"\1n\1m" + attacker.name + " attacked " + defender.name);
 		if(a.total>d.total) {
-			if(countTiles(map,defending.owner)==1) {
+			if(countTiles(map,defending.owner)==1 && defender.active) {
 				data.scoreKiller(attacker);
 				data.scoreLoser(defender);
-				data.saveActivity(game,"\1r\1h" + attacker.name + " eliminated " + defender.name + "!");
+				data.saveActivity(game,"\1r\1h" + attacker.name + 
+					" eliminated " + defender.name + "!");
 			}
 			data.assignTile(map,defending,attacking.owner,attacking.dice-1);
 			updateStatus(game,map);
@@ -396,13 +398,14 @@ function attack(computer) {
 	return attackCount;
 }
 function forfeit(computer) {
-	game.status=status.FINISHED;
 	computer.active=false;
+	data.savePlayer(game,computer);
+	data.saveActivity(game.gameNumber,"\1n\1r" + computer.name + " forfeits.");
 	data.scoreForfeit(computer);
 	updateStatus(game, map);
 }
 function reinforce(computer) {
-	var update=getReinforcements(game,map);
+	var update=getReinforcements(game,map,game.turn);
 	if(update.placed>0) {
 		var msg="\1n\1y" + computer.name + " placed " + update.placed + " dice";
 		data.saveActivity(game,msg);

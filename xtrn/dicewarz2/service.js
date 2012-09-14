@@ -22,7 +22,6 @@ var aiTakingTurns = {};
 
 var data = { 
 	games:client.read(game_id,"games",1),
-	maps:client.read(game_id,"maps",1),
 	players:client.read(game_id,"players",1)
 };
 var status = {
@@ -72,8 +71,6 @@ function processUpdate(update) {
 		case "GAMES":
 			gameNumber = p[0];
 			break;
-		case "MAPS":
-			break;
 		}
 	}
 	
@@ -81,10 +78,14 @@ function processUpdate(update) {
 	case "SUBSCRIBE":
 		if(gameNumber) {
 			var game = data.games[gameNumber];
-			updateTurn(game);
+			updateStatus(game);
 		}
 		break;
 	case "UNSUBSCRIBE":
+		if(gameNumber) {
+			var game = data.games[gameNumber];
+			updateStatus(game);
+		}
 		break;
 	case "WRITE":
 		/* update local data to match what was received */
@@ -110,10 +111,7 @@ function updateStatus(game) {
 	if(game.status == status.PLAYING) {
 		updateTurn(game);
 	}
-	else if(game.status == status.FINISHED) {
-		deleteGame(game.gameNumber);
-	}
-	else {
+	else if(game.status == status.NEW) {
 		var pcount=0;
 		for(var p in game.players) {
 			if(game.players[p])
@@ -122,6 +120,11 @@ function updateStatus(game) {
 		if(pcount == 0) {
 			deleteGame(game.gameNumber);
 		}
+	}
+	else if(game.status == status.FINISHED) {
+		var online = client.who(game_id,"maps." + game.gameNumber);
+		if(online.length == 0)
+			deleteGame(game.gameNumber);
 	}
 }
 
@@ -168,8 +171,6 @@ function open() {
 	client.callback = processUpdate;
 	if(!data.games)
 		data.games = {};
-	if(!data.maps)
-		data.maps = {};
 	if(!data.players)
 		data.players = {};
 	

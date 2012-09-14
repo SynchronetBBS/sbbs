@@ -146,7 +146,9 @@ function lobby() {
 				//menu.clear();
 				switch(cmd.toUpperCase())	{
 				case "R":
+					scoreFrame.open();
 					viewRankings();
+					scoreFrame.close();
 					break;
 				case "S":
 					selectGame();
@@ -258,21 +260,32 @@ function lobby() {
 		return sorted;
 	}
 	function viewRankings() {
-		data.loadScores();
-		var scores=sortScores(data.scores);
 		scoreFrame.clear();
-		wrap(scoreFrame,"\1n\1c " + 
-			format("%-18s\1h \1n\1c","PLAYER") + 
-			format("%-18s\1h \1n\1c","SYSTEM") + 
-			format("%6s\1h \1n\1c","POINTS") + 
-			format("%4s\1h \1n\1c","KILL") + 
-			format("%3s\1h \1n\1c","WIN") + 
-			format("%4s","LOSS")); 
+		data.loadScores();
+		var count = 0;
+		var scores_per_page = 13;
+		var scores=sortScores(data.scores);
 		for(var s=0;s<scores.length;s++) {
+			if(count > 0 && count%scores_per_page == 0) {
+				scoreFrame.end();
+				scoreFrame.center("\1r\1h<SPACE to continue>");
+				scoreFrame.draw();
+				while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
+				scoreFrame.clear();
+			}
+			if(count++%scores_per_page == 0) {
+				wrap(scoreFrame,"\1n\1c " + 
+					format("%-18s\1h \1n\1c","PLAYER") + 
+					format("%-18s\1h \1n\1c","SYSTEM") + 
+					format("%6s\1h \1n\1c","POINTS") + 
+					format("%4s\1h \1n\1c","KILL") + 
+					format("%3s\1h \1n\1c","WIN") + 
+					format("%4s","LOSS")); 
+			}
 			var score=scores[s];
 			var color="\1y\1h";
 			if(score.name==user.alias)
-				color="\1r\1h";
+				color="\1g\1h";
 			wrap(scoreFrame,color+ " " + 
 				format("%-18s\1h "+color,score.name) + 
 				format("%-18s\1h "+color,score.system) + 
@@ -283,10 +296,8 @@ function lobby() {
 		}
 		scoreFrame.end();
 		scoreFrame.center("\1r\1h<SPACE to continue>");
-		scoreFrame.open();
 		scoreFrame.draw();
 		while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
-		scoreFrame.close();
 	}
 	function viewInstructions(section) {
 
@@ -313,26 +324,19 @@ function lobby() {
 		f.crlf();
 	}
 	function processUpdate(update) {
-	
-		var p = update.location.split(".");
-		var gnum;
-		var obj=data;
-
-		while(p.length > 1) {
-			var child=p.shift();
-			if(obj[child])
-				obj=obj[child];
-
-			switch(child.toUpperCase()) {
-			case "GAMES":
-				gnum = p[0];
-				break;
+		if(update.oper == "WRITE") {
+			var p = update.location.split(".");
+			var obj=data;
+			
+			while(p.length > 1) {
+				var child=p.shift();
+				obj = obj[child];
 			}
+			
+			var child = p.shift();
+			obj[child] = update.data;
+			gameList();
 		}
-		
-		var child = p.shift();
-		obj[child] = update.data;
-		gameList();
 	}
 	function viewGameInfo(game) {
 		infoFrame.clear();
@@ -406,6 +410,8 @@ function lobby() {
 			var num=menuPrompt("Game number: ",false,false);
 			if(!num) 
 				break;
+			log("num: " + num);
+			log(data.games.toSource());
 			if(data.games[num]) {
 				if(data.games[num].status>=0) {
 					playGame(num);
@@ -524,14 +530,14 @@ function lobby() {
 
 /* game */
 function playGame(gameNumber) {
-	var game=data.loadGame(gameNumber);
-	var map=data.loadMap(gameNumber);
+	var game=client.read(game_id,"games." + gameNumber,1);
+	var map=client.read(game_id,"maps." + gameNumber,1);
 	var gameBackground=loadGraphic(root+settings.background_file);
 	var activityFrame=new Frame(48,12,32,12,BG_BLACK|LIGHTGRAY,frame);
 	var gameFrame=new Frame(2,2,45,22,undefined,frame);
 	var menuFrame=new Frame(10,24,70,1,BG_BROWN|BLACK,frame);
-	var listFrame=new Frame(48,2,18,9,undefined,frame);
-	var infoFrame=new Frame(67,2,13,9,undefined,frame);
+	var listFrame=new Frame(48,3,18,7,undefined,frame);
+	var infoFrame=new Frame(67,3,13,7,undefined,frame);
 	var battleFrame=new Frame(30,8,20,8,BG_BLUE,frame);
 	var cursor=new Frame(1,1,1,1,BG_LIGHTGRAY|BLACK,frame);
 	var localPlayer=findPlayer(game,user.alias);
@@ -571,8 +577,13 @@ function playGame(gameNumber) {
 		listFrame.open();
 		infoFrame.open();
 		
-		cursor.putmsg("\xC5");
+		if(game.round == 0) {
+			chat.clear(channel);
+			game.round=1;
+			data.saveRound(game);
+		}
 
+		cursor.putmsg("\xC5");
 		statusAlert();
 		drawMap(map);
 		listPlayers();
@@ -671,56 +682,68 @@ function playGame(gameNumber) {
 	}
 	function processUpdate(update) {
 	
-		var p = update.location.split(".");
-		var gnum;
-		var mnum;
-		var pnum;
-		var tnum;
-		
-		var obj=data;
-
-		while(p.length > 1) {
-			var child=p.shift();
-			if(obj[child])
-				obj=obj[child];
-
-			switch(child.toUpperCase()) {
-			case "GAMES":
-				gnum = p[0];
+		if(update.oper == "WRITE") {
+			var p = update.location.split(".");
+			var gnum;
+			var pnum;
+			var tnum;
+			
+			while(p.length > 1) {
+				var child=p.shift();
+				
+				switch(child.toUpperCase()) {
+				case "GAMES":
+				case "METADATA":
+				case "MAPS":
+					gnum = p[0];
+					break;
+				case "PLAYERS":
+					pnum = p[0];
+					break;
+				case "TILES":
+					tnum = p[0];
+					break;
+				}
+			}
+			
+			/* ignore updates not for this game */
+			if(gnum != game.gameNumber)
+				return false;
+			
+			if(tnum) {
+				map.tiles[tnum] = update.data;
+				drawTile(map,map.tiles[tnum]);
+			}
+			
+			if(pnum) {
+				game.players[pnum] = update.data;
+				listPlayers();
+			}
+			
+			var child = p.shift();
+			switch(child.toUpperCase()) { 
+			case "STATUS":
+				game.status = update.data;
 				break;
-			case "MAPS":
-				mnum = p[0];
+			case "WINNER":
+				game.winner = update.data;
 				break;
-			case "PLAYERS":
-				pnum = p[0];
+			case "ROUND":
+				game.round = update.data;
 				break;
-			case "TILES":
-				tnum = p[0];
+			case "TURN":
+				game.turn = update.data;
+				setMenuCommands();
+				statusAlert();
 				break;
+			case "ACTIVITY":
+				msgAlert(update.data);
+				return;
 			}
 		}
-		
-		var child = p.shift();
-		obj[child] = update.data;
-
-		switch(child.toUpperCase()) { 
-		case "STATUS":
-		case "WINNER":
-		case "ROUND":
-			listPlayers();
-			break;
-		case "TURN":
-			log("updating turn");
-			setMenuCommands();
-			statusAlert();
-			break;
-		case "ACTIVITY":
-			msgAlert(update.data);
-			return;
+		else if(update.oper == "SUBSCRIBE") {
 		}
-		
-		if(tnum) {
-			drawTile(map,map.tiles[tnum]);
+		else if(update.oper == "UNSUBSCRIBE") {
 		}
 	}
 	function setMenuCommands()	{
@@ -752,25 +775,26 @@ function playGame(gameNumber) {
 		taking_turn=false;
 		game.players[localPlayer].active=false;
 		data.savePlayer(game,localPlayer);
+		data.saveActivity(game.gameNumber,"\1n\1r" + game.players[localPlayer].name + " forfeits.");
 		data.scoreForfeit(game.players[localPlayer]);
+		nextTurn(game);
 		updateStatus(game,map);
 		statusAlert();
 		listPlayers();
 	}
 	function endTurn() {
 		taking_turn=false;
-
-		reinforce();
-		nextTurn(game);
+		reinforce(localPlayer);
 		
+		nextTurn(game);
 		updateStatus(game,map);
 		
 		listPlayers();
 		statusAlert();
 	}
-	function reinforce() {
-		var update=getReinforcements(game,map);
-		var player=game.players[localPlayer];
+	function reinforce(playerNum) {
+		var update=getReinforcements(game,map,playerNum);
+		var player=game.players[playerNum];
 		for(var t in update.tiles) {
 			var tile = map.tiles[t];
 			drawSector(map,tile.home.x,tile.home.y);
@@ -792,10 +816,12 @@ function playGame(gameNumber) {
 	function attack(coords) {
 		if(!coords) 
 			coords=new Coords(map.width/2,map.height/2,0);
-		var attacking;
-		var attacker=game.players[localPlayer].name;
-		var defending;
+			
+		var attacker=game.players[localPlayer];
 		var defender;
+
+		var attacking;
+		var defending;
 		
 		menuText("Choose a territory to attack from. Press 'Q' to stop attacking.");
 		while(1) {
@@ -822,7 +848,7 @@ function playGame(gameNumber) {
 			defending=map.tiles[map.grid[coords.x][coords.y]];
 			if(defending.owner!=localPlayer) {
 				if(connected(attacking,defending,map)) {
-					defender=game.players[defending.owner].name;
+					defender=game.players[defending.owner];
 					break;
 				} else {
 					msgAlert("\1r\1hNot connected");
@@ -846,11 +872,12 @@ function playGame(gameNumber) {
 		//showRoll(d.rolls,BLACK+BG_LIGHTGRAY,chatView.x,chatView.y+3);
 		battle(a,d);
 		
+		data.saveActivity(game,"\1n\1m" + attacker.name + " attacked " + defender.name);
 		if(a.total>d.total) {
-			if(countTiles(map,defending.owner)==1) {
-				data.scoreKiller(game.players[attacking.owner]);
-				data.scoreLoser(game.players[defending.owner]);
-				var msg = "\1r\1h" + attacker + " eliminated " + defender + "!";
+			if(countTiles(map,defending.owner)==1 && defender.active) {
+				data.scoreKiller(attacker);
+				data.scoreLoser(defender);
+				var msg = "\1r\1h" + attacker.name + " eliminated " + defender.name + "!";
 				data.saveActivity(game,msg);
 				msgAlert(msg);
 			}
@@ -858,6 +885,7 @@ function playGame(gameNumber) {
 			drawTile(map,defending);
 			updateStatus(game,map);
 		} 
+		
 		data.assignTile(map,attacking,attacking.owner,1);
 		drawSector(map,attacking.home.x,attacking.home.y);
 		return coords;

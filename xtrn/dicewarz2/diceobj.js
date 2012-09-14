@@ -23,7 +23,6 @@ function Map(gameNumber)
 	this.height=10;
 	this.grid=createGrid(this.width,this.height);
 	this.tiles=[];
-	this.attacking=false;
 }
 function Game(gameNumber,hidden_names)
 {
@@ -53,7 +52,6 @@ function Coords(x,y,z)
 function Data()
 {
 	this.games={};
-	this.maps={};
 	this.scores={};
 	
 	/* return the last valid game number */
@@ -91,16 +89,6 @@ function Data()
 		this.games[gameNumber] = client.read(game_id,location,1);
 		return this.games[gameNumber];
 	}
-	this.loadMaps=function() {
-		this.maps = client.read(game_id,"maps",1);
-		if(!this.maps)
-			this.maps={};
-	}
-	this.loadMap=function(gameNumber) {
-		var location = "maps." + gameNumber;
-		this.maps[gameNumber] = client.read(game_id,location,1);
-		return this.maps[gameNumber];
-	}
 
 	this.savePlayer=function(game,playerNumber) {
 		var location="games." + game.gameNumber + ".players." + playerNumber;
@@ -128,12 +116,14 @@ function Data()
 	this.saveTurn=function(game) {
 		var location="games." + game.gameNumber;
 		client.write(game_id,location + ".turn",game.turn,2);
+	}
+	this.saveRound=function(game) {
+		var location="games." + game.gameNumber;
 		client.write(game_id,location + ".round",game.round,2);
 	}
 	this.saveMap=function(map) {
 		var location = "maps." + map.gameNumber;
 		client.write(game_id,location,map,2);
-		this.maps[map.gameNumber]=map;
 	}
 	this.saveTile=function(map,tile) {
 		var location="maps." + map.gameNumber + ".tiles." + tile.id;
@@ -222,6 +212,7 @@ function Player(name,sys_name,vote)
 	this.vote=vote;
 	this.reserve=0;
 	this.active=true;
+	this.lastTurn=0;
 	this.AI=false;
 }
 function AI(sort,check,qty)
