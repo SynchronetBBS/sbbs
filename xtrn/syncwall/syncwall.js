@@ -58,6 +58,15 @@ function drawStuff(update) {
 }
 
 function putCh(ch, skipMsg) {
+	ch.attr = parseInt(ch.attr);
+	if(ch.x < 1)
+		ch.x = 1;
+	if(ch.y < 1)
+		ch.y = 1;
+	if(ch.x > 80)
+		ch.x = 80;
+	if(ch.y > 21)
+		ch.y = 21;
 	ansi.putChar(ch);
 	if(ch.userAlias != lastUser || ch.system != lastSystem) {
 		var randomAttr = bgColours[Math.floor(Math.random()*bgColours.length)]|WHITE;
