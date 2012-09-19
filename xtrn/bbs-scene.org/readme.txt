@@ -96,7 +96,8 @@ onelinerz.ssjs
 Users of ecWeb can copy 'onelinerz.ssjs' into the sidebar/ directory of their
 ecWeb installation.  Prepending a string of digits to the filename (eg.
 renaming it to "005-onelinerz.ssjs") will affect the order in which it is
-loaded into the sidebar.
+loaded into the sidebar.  If you rename the file, edit the "scriptname"
+variable at the top of the script to reflect the new filename.
 
 Users of the default or custom web interfaces may be able to add the command:
 
