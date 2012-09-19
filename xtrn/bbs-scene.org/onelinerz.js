@@ -38,7 +38,7 @@ function getOneLinerz() {
 	var onelinerz = JSON.parse(response);
 	onelinerzFrame.clear();
 	for(var o in onelinerz) {
-		var userAtBBS = "\1h\1k(\1h\1w" + onelinerz[o].alias.substr(0, 14) + "\1h\1c@\1n\1w" + onelinerz[o].bbsname.substr(0, 8).toLowerCase() + "\1h\1k)";
+		var userAtBBS = "\1h\1k(\1h\1w" + onelinerz[o].alias.substr(0, 13) + "\1h\1c@\1n\1w" + onelinerz[o].bbsname.substr(0, 7).toLowerCase() + "\1h\1k)";
 		while(console.strlen(userAtBBS) < 23) {
 			userAtBBS = "\1h\1k." + userAtBBS;
 		}
@@ -54,7 +54,7 @@ function postOneLiner() {
 	helpFrame.putmsg(line);
 	helpFrame.gotoxy(50, 1);
 	helpFrame.putmsg(ascii(180) + "\1h\1w[\1nTAB\1h]\1n to change colors" + ascii(195));
-	var userAtBBS = "\1h\1k(\1h\1w" + user.alias.substr(0, 14) + "\1h\1c@\1n\1w" + system.qwk_id.toLowerCase() + "\1h\1k)";
+	var userAtBBS = "\1h\1k(\1h\1w" + user.alias.substr(0, 13) + "\1h\1c@\1n\1w" + system.qwk_id.toLowerCase() + "\1h\1k)";
 	while(console.strlen(userAtBBS) < 23) {
 		userAtBBS = "\1h\1k." + userAtBBS;
 	}
