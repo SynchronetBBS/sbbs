@@ -26,6 +26,7 @@ for(var g in e) {
 			if(title.match("HIDDEN") != null)
 				break;
 			print("<a class='link' href=./index.xjs?page=" + file_getname(e[g]) + ">" + title + "</a><br />");
+			break;
 		}
 	}
 	if(ext == "TXT") {
