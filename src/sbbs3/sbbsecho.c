@@ -4187,8 +4187,7 @@ int main(int argc, char **argv)
 
 	printf("Reading %s",cfg.areafile);
 	if((stream=fopen(cfg.areafile,"r"))==NULL) {
-		fprintf(stderr,"\nERROR %u (%s) opening %s\n"
-			,errno,strerror(errno),cfg.areafile);
+		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,cfg.areafile);
 		bail(1); 
 		return -1;
 	}
@@ -4204,7 +4203,7 @@ int main(int argc, char **argv)
 			continue;
 		if((cfg.area=(areasbbs_t *)realloc(cfg.area,sizeof(areasbbs_t)*
 			(cfg.areas+1)))==NULL) {
-			fprintf(stderr,"ERROR allocating memory for area #%u.\n",cfg.areas+1);
+			lprintf(LOG_ERR,"ERROR allocating memory for area #%u.",cfg.areas+1);
 			bail(1); 
 			return -1;
 		}
@@ -4233,7 +4232,7 @@ int main(int argc, char **argv)
 		if(tmp[0]=='*')         /* UNKNOWN-ECHO area */
 			cfg.badecho=cfg.areas;
 		if((cfg.area[cfg.areas].name=(char *)malloc(strlen(tmp)+1))==NULL) {
-			fprintf(stderr,"ERROR allocating memory for area #%u tag name.\n"
+			lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag name."
 				,cfg.areas+1);
 			bail(1); 
 			return -1;
@@ -4249,7 +4248,7 @@ int main(int argc, char **argv)
 			if((cfg.area[cfg.areas].uplink=(faddr_t *)
 				realloc(cfg.area[cfg.areas].uplink
 				,sizeof(faddr_t)*(cfg.area[cfg.areas].uplinks+1)))==NULL) {
-				fprintf(stderr,"ERROR allocating memory for area #%u uplinks.\n"
+				lprintf(LOG_ERR,"ERROR allocating memory for area #%u uplinks."
 					,cfg.areas+1);
 				bail(1); 
 				return -1;
