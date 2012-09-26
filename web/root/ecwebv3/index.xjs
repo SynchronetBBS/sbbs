@@ -36,8 +36,10 @@
 <body>
 <div id="container" class="font">
 
-<div id="header" class="border box background">
+<div id="header">
+<div id="subHeader" class="border box background">
 <?xjs write(system.name); ?>
+</div>
 </div>
 
 <div id="sidebar">
@@ -76,7 +78,8 @@
 ?>
 </div>
 
-<div id="content" class="border box background">
+<div id="content">
+<div id="subContent" class="border box background">
 <?xjs
 	if(http_request.query.hasOwnProperty("page"))
 		var page = file_getname(http_request.query.page);
@@ -112,9 +115,12 @@
 	}
 ?>
 </div>
+</div>
 
-<div id="footer" class="border box background">
+<div id="footer">
+<div id="subFooter" class="border box background">
 <?xjs write(system.version_notice); ?>
+</div>
 </div>
 
 </div>
