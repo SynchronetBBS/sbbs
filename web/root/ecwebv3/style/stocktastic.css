@@ -49,31 +49,49 @@ a:active {
 	background-color: transparent;
 }
 
+div {
+	overflow: hidden;
+}
+
 #container {
-	width: 1200px;
-	margin: 0 auto;
+	width: 90%;
+	text-align: left;
 }
 
 #header {
+	width: 100%;
+	clear: both;
+}
+
+#subHeader {
 	margin-bottom: 10px;
 	font-size: 16pt;
 	font-weight: bold;
 }
 
 #content {
-	float: right;
-	width: 895px;
+	float: left;
+	width: 80%;
+}
+
+#subContent {
+	margin-left: 10px;
 	margin-bottom: 10px;
 }
 
 #sidebar {
 	float: left;
-	width: 250px;
+	width: 20%;
 }
 
 #footer {
 	clear: both;
 	text-align: right;
+	width: 100%;
+}
+
+#subFooter {
+
 }
 
 .font {
@@ -93,17 +111,17 @@ a:active {
 
 .indentBox1 {
 	padding: 10px;
-	margin-left: 25px;
+	margin-left: 20px;
 }
 
 .indentBox2{
 	padding: 10px;
-	margin-left: 50px;
+	margin-left: 40px;
 }
 
 .indentBox3 {
 	padding: 10px;
-	margin-left: 75px;
+	margin-left: 60px;
 }
 
 .background {
@@ -117,7 +135,6 @@ a:active {
 
 .sidebarItem {
 	margin-bottom: 10px;
-	width: 250px;
 }
 
 .title {
