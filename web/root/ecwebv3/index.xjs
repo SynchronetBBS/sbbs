@@ -34,6 +34,7 @@
 </head>
 
 <body>
+<center>
 <div id="container" class="font">
 
 <div id="header">
@@ -124,5 +125,6 @@
 </div>
 
 </div>
+</center>
 </body>
 </html>
