@@ -30,7 +30,7 @@ function HTTPRequest(username,password)
 		this.request_headers.push("Connection: close");
 		if(js.global.client != undefined)
 			this.request_headers.push(
-				"Via: "+client.protocol.toLowerCase()+"/1.0 "+system.name);
+				"Via: "+client.protocol.toString().toLowerCase()+"/1.0 "+system.name);
 		// Request Headers
 		this.request_headers.push("Accept: text/*");
 		this.request_headers.push(
