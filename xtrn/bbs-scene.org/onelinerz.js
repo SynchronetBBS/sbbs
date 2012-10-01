@@ -26,7 +26,7 @@ function getOneLinerz() {
 	onelinerzFrame.gotoxy(1, ((console.screen_rows - 9) / 2).toFixed(0));
 	onelinerzFrame.center("\1H\1W\1ILoading onelinerz from bbs-scene.org...\1N");
 	frame.cycle();
-	var response = http.Get("http://bbs-scene.org/api/onelinerzjson.php?limit=" + (onelinerzFrame.height - 1) + "&ansi=1");
+	var response = http.Get("http://bbs-scene.org/api/onelinerzjson.php?limit=" + onelinerzFrame.height + "&ansi=1");
 	try {
 		if(response === undefined || response === null)
 			throw("Empty response");
@@ -89,7 +89,7 @@ function postOneLiner() {
 		}
 		piped += userInput[c];
 	}
-	var response = http.Post("http://bbs-scene.org/api/onelinerz.json", "bbsname=" + system.qwk_id.toLowerCase() + "&alias=" + user.alias.replace(/\s/g, "+") + "&oneliner=" + piped.replace(/\s/g, "+"), "", "");
+	var response = http.Post("http://bbs-scene.org/api/onelinerz.json", "&bbsname=" + system.qwk_id.toLowerCase() + "&alias=" + user.alias.replace(/\s/g, "+") + "&oneliner=" + piped.replace(/\s/g, "+"), "", "");
 	response = JSON.parse(response);
 	inputFrame.clear();
 	hideInputFrame.top();
