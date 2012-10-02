@@ -27,7 +27,13 @@ function init() {
 }
 
 function update() {
-	var ret = http.Get("http://www.bbsfinder.net/update.asp?un=" + opts.username + "&pw=" + opts.password);
+	try {
+		var ret = http.Get("http://www.bbsfinder.net/update.asp?un=" + opts.username + "&pw=" + opts.password);
+	}
+	catch(e) {
+		log(LOG_INFO, "BBSfinder HTTP error: " + e);
+		return false;
+	}
 	if(ret == 0) {
 		log(LOG_INFO, "BBSfinder update succeded.");
 		return true;
@@ -40,7 +46,7 @@ function update() {
 if(!init())
 	exit();
 	
-update();
+var r = update();
 if(argc > 0 && argv[0] == "-l") {
 	timer.addEvent(delay, true, update);
 	while(!js.terminated) {
