@@ -4,6 +4,7 @@
 
 #include "fidodefs.h"
 #include "sbbsdefs.h"	/* faddr_t */
+#include "xpendian.h"	/* swap */
 
 FILE* nulfp;
 FILE* bodyfp;
@@ -86,7 +87,7 @@ int pktdump(FILE* fp, const char* fname)
 
 	printf("%s Packet Type ", fname);
 
-	if(pkthdr.fill.two_plus.cword==_rotr(pkthdr.fill.two_plus.cwcopy,8)  /* 2+ Packet Header */
+	if(pkthdr.fill.two_plus.cword==BYTE_SWAP_16(pkthdr.fill.two_plus.cwcopy)  /* 2+ Packet Header */
 		&& pkthdr.fill.two_plus.cword&1) {
 		fprintf(stdout,"2+");
 		dest.point=pkthdr.fill.two_plus.destpoint;
