@@ -5036,16 +5036,6 @@ void http_session_thread(void* arg)
 	    memset(&(session.req), 0, sizeof(session.req));
 		redirp=NULL;
 		loop_count=0;
-		if(session.req.ld) {
-			FREE_AND_NULL(session.req.ld->hostname);
-			FREE_AND_NULL(session.req.ld->ident);
-			FREE_AND_NULL(session.req.ld->user);
-			FREE_AND_NULL(session.req.ld->request);
-			FREE_AND_NULL(session.req.ld->referrer);
-			FREE_AND_NULL(session.req.ld->agent);
-			FREE_AND_NULL(session.req.ld->vhost);
-			FREE_AND_NULL(session.req.ld);
-		}
 		if(startup->options&WEB_OPT_HTTP_LOGGING) {
 			/* FREE()d in http_logging_thread... passed there by close_request() */
 			if((session.req.ld=(struct log_data*)malloc(sizeof(struct log_data)))==NULL)
