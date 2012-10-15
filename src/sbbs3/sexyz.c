@@ -1390,7 +1390,6 @@ static int receive_files(char** fname_list, int fnames)
 
 void bail(int code)
 {
-	fcloseall();
 	if(pause_on_exit || (pause_on_abend && code!=0)) {
 		printf("Hit enter to continue...");
 		getchar();

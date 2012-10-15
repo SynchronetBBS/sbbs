@@ -989,7 +989,6 @@ int main(int argc, char **argv)
 			,totaldelmsgs,ultoac(packable,str));
 
 	if(pause_on_error && errlast!=errors) {
-		fcloseall();
 		fprintf(stderr,"\7\nHit any key to continue...");
 		if(!getch())
 			getch();

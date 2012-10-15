@@ -2013,7 +2013,6 @@ ulong loadmsgs(post_t** post, ulong ptr)
 void bail(int code)
 {
 	if((code && pause_on_abend) || pause_on_exit) {
-		fcloseall();
 		fprintf(stderr,"\nHit any key...");
 		getch();
 		fprintf(stderr,"\n");
