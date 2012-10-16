@@ -79,25 +79,6 @@ http://wiki.synchro.net/install:nix
       Synchronet discussion groups (http://www.synchro.net/docs/support.html).
 
 
-8. Updating/synchronizing the source code with the CVS repository:
-
-   A. Change to your Synchronet installation directory:
-      # cd /sbbs
-
-   B. Back-up your working exec directory:
-      # cp -a exec exec.bak
-
-   C. Get the latest changes from CVS:
-      # export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
-      # cvs update -d docs exec xtrn src lib include
-
-   D. Repeat steps 2, 3 and 4 (only).
-
-   E. Shutdown and re-run sbbs.
-
-   F. You're done. :-)
-
-
 Default Configuration (SCFG) Screen-shots
 =========================================
 
