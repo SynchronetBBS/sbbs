@@ -102,15 +102,13 @@ pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive);
 #if defined (__FreeBSD__) || defined (__OpenBSD__)
  #include <pthread_np.h>
  #define	SetThreadName(c)	pthread_set_name_np(pthread_self(),c)
-#else
- #if defined(__GLIBC__)
-  #include <features.h>
-  #if (__GLIBC__ > 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ >= 12))
-   #define	SetThreadName(c)	pthread_setname_np(pthread_self(),c)
-  #endif
- #else
-  #define SetThreadName(c)
+#elif defined(__GLIBC__)
+ #include <features.h>
+ #if (__GLIBC__ > 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ >= 12))
+  #define	SetThreadName(c)	pthread_setname_np(pthread_self(),c)
  #endif
+#else
+ #define SetThreadName(c)
 #endif
 
 #else
