@@ -616,6 +616,7 @@ static void playnote_thread(void *args)
 	struct cterminal *cterm=(struct cterminal *)args;
 
 
+	SetThreadName("PlayNote");
 	cterm->playnote_thread_running=TRUE;
 	while(1) {
 		if(device_open) {

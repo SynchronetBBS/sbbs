@@ -73,6 +73,7 @@ static void blinker_thread(void *data)
 {
 	int count=0;
 
+	SetThreadName("Blinker");
 	while(1) {
 		do {
 			SLEEP(10);

@@ -159,6 +159,7 @@ void x11_mouse_thread(void *data)
 	//uint16_t	key=((CIO_KEY_MOUSE&0xFF)<<8)|((CIO_KEY_MOUSE>>8)&0xFF);
 	uint16_t	key=CIO_KEY_MOUSE;
 
+	SetThreadName("X11 Mouse");
 	while(1) {
 		if(mouse_wait())
 			write(key_pipe[1], &key, 2);

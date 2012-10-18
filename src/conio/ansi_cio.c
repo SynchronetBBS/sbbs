@@ -640,6 +640,7 @@ static void ansi_keyparse(void *par)
 	int		unknown=0;
 
 	seq[0]=0;
+	SetThreadName("ANSI Keyparse");
 	for(;;) {
 		if(ansi_got_row)
 			sem_wait(&goahead);

@@ -815,6 +815,7 @@ void x11_event_thread(void *args)
 	XEvent ev;
 	static struct timeval tv;
 
+	SetThreadName("X11 Events");
 	if(video_init()) {
 		sem_post(&init_complete);
 		return;

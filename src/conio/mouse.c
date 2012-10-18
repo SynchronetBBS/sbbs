@@ -206,6 +206,7 @@ void ciolib_mouse_thread(void *data)
 	int delay;
 	clock_t	ttime=0;
 
+	SetThreadName("Mouse");
 	init_mouse();
 	while(1) {
 		timedout=0;
