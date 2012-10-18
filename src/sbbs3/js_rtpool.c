@@ -51,6 +51,7 @@ static void trigger_thread(void *args)
 {
 	int	i;
 
+	SetThreadName("JSRT Trigger");
 	for(;;) {
 		pthread_mutex_lock(&jsrt_mutex);
 		for(i=0; i<JSRT_QUEUE_SIZE; i++) {
