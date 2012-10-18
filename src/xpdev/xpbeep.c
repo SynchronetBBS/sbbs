@@ -664,6 +664,7 @@ void xp_play_sample_thread(void *data)
 	int	i;
 #endif
 
+	SetThreadName("Sample Play");
 	sample_thread_running=TRUE;
 	while(1) {
 		if(!waited) {
