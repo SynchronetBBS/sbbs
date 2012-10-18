@@ -761,7 +761,7 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_STDIO	(EX_STDIN|EX_STDOUT)
 #define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
 
-#if defined(__unix)
+#if defined(__unix__)
 #define EX_WILDCARD	EX_SH		/* Expand wildcards using 'sh' on Unix		*/
 #else
 #define EX_WILDCARD	0
