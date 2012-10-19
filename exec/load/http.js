@@ -80,13 +80,13 @@ function HTTPRequest(username,password)
 			throw("Unable to connect");
 		if(this.url.scheme=='https')
 			this.sock.ssl_session=true;
-		if(!this.sock.send(this.request+"\n"))
+		if(!this.sock.send(this.request+"\r\n"))
 			throw("Unable to send request: " + this.request);
 		for(i in this.request_headers) {
-			if(!this.sock.send(this.request_headers[i]+"\n"))
+			if(!this.sock.send(this.request_headers[i]+"\r\n"))
 				throw("Unable to send headers");
 		}
-		if(!this.sock.send("\n"))
+		if(!this.sock.send("\r\n"))
 			throw("Unable to terminate headers");
 		if(this.body != undefined) {
 			if(!this.sock.send(this.body))
@@ -140,7 +140,7 @@ function HTTPRequest(username,password)
 		}
 		if(this.username && this.password) {
 			var auth = base64_encode(this.username + ":" + this.password);
-			this.request_headers.push("Authorization: Basic " + auth + "\n");
+			this.request_headers.push("Authorization: Basic " + auth + "\r\n");
 		}
 	}
 	
