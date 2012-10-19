@@ -894,7 +894,7 @@ for(i in area) {
 			body += tearline;
 		if(flags.indexOf('m')>=0)
 			hdr.attr |= MSG_MODERATED;
-		if(msgbase.save_msg(hdr,body)) {
+		if(msgbase.save_msg(hdr.body)) {
 			imported++;
 			subimported++;
 			printf("Message %lu imported into %s (%lu of %lu total) %lu lines\r\n"
