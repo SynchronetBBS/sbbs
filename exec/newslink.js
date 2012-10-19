@@ -774,10 +774,10 @@ for(i in area) {
 		for(h in hfields)
 			parse_news_header(hdr,hfields[h]);	// from newsutil.js
 
-		if(hdr["nntp-posting-host"]!=undefined 
-			&& (system.trashcan("ip", hdr["nntp-posting-host"]) 
-				|| system.trashcan("ip-silent", hdr["nntp-posting-host"]))) {
-			print("!Filtered IP address in NNTP-Posting-Host header field: " + hdr["nntp-posting-host"]);
+		if(hdr.extra_headers["nntp-posting-host"]!=undefined 
+			&& (system.trashcan("ip", hdr.extra_headers["nntp-posting-host"]) 
+				|| system.trashcan("ip-silent", hdr.extra_headers["nntp-posting-host"]))) {
+			print("!Filtered IP address in NNTP-Posting-Host header field: " + hdr.extra_headers["nntp-posting-host"]);
 			subpending--;
 			continue;
 		}
