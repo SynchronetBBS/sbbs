@@ -106,6 +106,8 @@ pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive);
  #include <features.h>
  #if (__GLIBC__ > 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ >= 12))
   #define	SetThreadName(c)	pthread_setname_np(pthread_self(),c)
+ #else
+  #define SetThreadName(c)
  #endif
 #else
  #define SetThreadName(c)
