@@ -202,8 +202,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode)
 		offset=smb_allocdat(&smb,length,1);
 	smb_close_da(&smb);
 
-	if((file=open(msgpath,O_RDONLY|O_BINARY))==-1
-		|| (instream=fdopen(file,"rb"))==NULL) {
+	if((instream=fnopen(&file,msgpath,O_RDONLY|O_BINARY))==NULL) {
 		smb_freemsgdat(&smb,offset,length,1);
 		smb_unlocksmbhdr(&smb);
 		smb_close(&smb);
@@ -413,8 +412,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 		offset=smb_allocdat(&smb,length,1);
 	smb_close_da(&smb);
 
-	if((file=open(msgpath,O_RDONLY|O_BINARY))==-1
-		|| (instream=fdopen(file,"rb"))==NULL) {
+	if((instream=fnopen(&file,msgpath,O_RDONLY|O_BINARY))==NULL) {
 		smb_freemsgdat(&smb,offset,length,1);
 		smb_unlocksmbhdr(&smb);
 		smb_close(&smb);

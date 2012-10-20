@@ -264,8 +264,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		smb_close_da(&smb); 
 	}
 
-	if((file=open(str,O_RDONLY|O_BINARY))==-1
-		|| (instream=fdopen(file,"rb"))==NULL) {
+	if((instream=fnopen(&file,str,O_RDONLY|O_BINARY))==NULL) {
 		smb_freemsgdat(&smb,offset,length,1);
 		smb_close(&smb);
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_BINARY);

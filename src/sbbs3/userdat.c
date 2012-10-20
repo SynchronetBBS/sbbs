@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -70,11 +70,9 @@ uint DLLCALL matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 		return(1);
 
 	SAFEPRINTF(str,"%suser/name.dat",cfg->data_dir);
-	if((file=nopen(str,O_RDONLY))==-1)
+	if((stream=fnopen(&file,str,O_RDONLY))==NULL)
 		return(0);
 	length=(long)filelength(file);
-	if((stream=fdopen(file,"rb"))==NULL)
-		return(0);
 	for(l=0;l<length;l+=LEN_ALIAS+2) {
 		fread(dat,sizeof(dat),1,stream);
 		for(c=0;c<LEN_ALIAS;c++)
