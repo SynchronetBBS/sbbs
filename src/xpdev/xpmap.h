@@ -41,6 +41,7 @@
 #include "gen_defs.h"
 
 void *xpmap(const char *filename, int flags);
+void xpunmap(struct xpmapping *map);
 
 enum xpmap_type {
 	XPMAP_READ,
