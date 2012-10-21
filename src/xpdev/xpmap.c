@@ -36,10 +36,10 @@
  ****************************************************************************/
 
 #include "xpmap.h"
+#include <stdlib.h>	// malloc()
 
 #if defined(__unix__)
 
-#include <stdlib.h>	// malloc()
 #include <unistd.h>	// close()
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -98,15 +98,14 @@ void xpunmap(struct xpmapping *map)
 	free(map);
 }
 
-#elif defined(_WIN32)	
+#elif defined(_WIN32)
 
 struct xpmapping *xpmap(const char *filename, enum xpmap_type type)
 {
-	HANDLE				fd;
+	HFILE				fd;
 	HANDLE				md;
 	OFSTRUCT			of;
 	UINT				oflags;
-	DWORD				mattrs;
 	DWORD				mprot;
 	DWORD				maccess;
 	DWORD				size;
@@ -117,19 +116,16 @@ struct xpmapping *xpmap(const char *filename, enum xpmap_type type)
 		case XPMAP_READ:
 			oflags=OF_READ|OF_SHARE_DENY_NONE;
 			mprot=PAGE_READONLY;
-			mattrs=0;
 			maccess=FILE_MAP_READ;
 			break;
 		case XPMAP_WRITE:
 			oflags=OF_READWRITE|OF_SHARE_DENY_NONE;
 			mprot=PAGE_READWRITE;
-			mflags=0;
 			maccess=FILE_MAP_WRITE;
 			break;
 		case XPMAP_COPY:
 			oflags=OF_READ|OF_SHARE_DENY_NONE;
 			mprot=PAGE_WRITECOPY;
-			mflags=0;
 			maccess=FILE_MAP_COPY;
 			break;
 	}
