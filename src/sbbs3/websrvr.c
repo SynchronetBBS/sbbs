@@ -46,7 +46,7 @@
  * 
  * Add support for multipart/form-data
  * 
- */p
+ */
 
 //#define ONE_JS_RUNTIME
 
@@ -4805,7 +4805,7 @@ int read_post_data(http_session_t * session)
 				/* Check size */
 				i += ch_len;
 				if(i > MAX_POST_LEN) {
-					if(i > SIZE_T_MAX) {
+					if(i > SIZE_MAX) {
 						send_error(session,"413 Request entity too large");
 						if(fp) fclose(fp);
 						return(FALSE);
