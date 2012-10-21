@@ -43,7 +43,10 @@
  * Add in support to pass connections through to a different webserver...
  *      probobly in access.ars... with like a simplified mod_rewrite.
  *      This would allow people to run apache and Synchronet as the same site.
- */
+ * 
+ * Add support for multipart/form-data
+ * 
+ */p
 
 //#define ONE_JS_RUNTIME
 
@@ -2001,7 +2004,7 @@ static void js_add_cookieval(http_session_t * session, char *key, char *value)
 	JS_SetElement(session->js_cx, keyarray, alen, &val);
 }
 
-static void js_add_request_prop(http_session_t * session, char *key, char *value)  
+static void js_add_request_prop(http_session_t * session, char *key, char *value)
 {
 	JSString*	js_str;
 
@@ -4622,8 +4625,10 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 		js_parse_query(session,session->req.query_str);
 	}
 	if(session->req.post_data && session->req.post_data[0]) {
-		js_add_request_prop(session,"post_data",session->req.post_data);
-		js_parse_query(session,session->req.post_data);
+		if(session->req.post_len <= MAX_POST_LEN) {
+			js_add_request_prop(session,"post_data",session->req.post_data);
+			js_parse_query(session,session->req.post_data);
+		}
 	}
 	parse_js_headers(session);
 
