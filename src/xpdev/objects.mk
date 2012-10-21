@@ -23,6 +23,7 @@ OBJS	= \
 	$(OBJODIR)$(DIRSEP)xp_dl$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpbeep$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpdatetime$(OFILE) \
+	$(OBJODIR)$(DIRSEP)xpmap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpprintf$(OFILE)
 
 
@@ -46,6 +47,7 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)xp_dl$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xpbeep$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xpdatetime$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)xpmap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xpprintf$(OFILE)
 
 TESTOBJS = \

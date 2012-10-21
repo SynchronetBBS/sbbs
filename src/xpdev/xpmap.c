@@ -39,6 +39,8 @@
 
 #if defined(__unix__)
 
+#include <stdlib.h>	// malloc()
+#include <unistd.h>	// close()
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -51,7 +53,7 @@ struct xpmapping *xpmap(const char *filename, enum xpmap_type type)
 	int					oflags;
 	int					mflags;
 	int					mprot;
-	struct stat			*sb;
+	struct stat			sb;
 	struct xpmapping	*ret;
 
 	switch(type) {

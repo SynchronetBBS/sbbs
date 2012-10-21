@@ -40,9 +40,6 @@
 
 #include "gen_defs.h"
 
-void *xpmap(const char *filename, int flags);
-void xpunmap(struct xpmapping *map);
-
 enum xpmap_type {
 	XPMAP_READ,
 	XPMAP_WRITE,
@@ -70,5 +67,10 @@ struct xpmapping {
 #else
 
 	#error "Need mmap wrappers."
+
+#endif
+
+struct xpmapping *xpmap(const char *filename, enum xpmap_type type);
+void xpunmap(struct xpmapping *map);
 
 #endif
