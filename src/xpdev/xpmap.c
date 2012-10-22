@@ -133,9 +133,9 @@ struct xpmapping *xpmap(const char *filename, enum xpmap_type type)
 	fd=OpenFile(filename, &of, oflags);
 	if(fd == HFILE_ERROR)
 		return NULL;
-	if((size=GetFileSize(fd, NULL))==INVALID_FILE_SIZE)
+	if((size=GetFileSize((HANDLE)fd, NULL))==INVALID_FILE_SIZE)
 		return NULL;
-	md=CreateFileMapping(fd, NULL, mprot, 0, size, NULL);
+	md=CreateFileMapping((HANDLE)fd, NULL, mprot, 0, size, NULL);
 	if(md==NULL)
 		return NULL;
 	addr=MapViewOfFile(md, maccess, 0, 0, size);
@@ -143,7 +143,7 @@ struct xpmapping *xpmap(const char *filename, enum xpmap_type type)
 	if(ret==NULL)
 		return NULL;
 	ret->addr=addr;
-	ret->fd=fd;
+	ret->fd=(HANDLE)fd;
 	ret->md=md;
 	ret->size=size;
 	return ret;
