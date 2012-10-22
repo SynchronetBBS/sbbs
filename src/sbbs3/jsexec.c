@@ -48,6 +48,7 @@
 #include "ini_file.h"
 #include "js_rtpool.h"
 #include "js_request.h"
+#include <jsdbgapi.h>
 
 #define DEFAULT_LOG_LEVEL	LOG_DEBUG	/* Display all LOG levels */
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
@@ -55,6 +56,7 @@
 js_startup_t	startup;
 JSRuntime*	js_runtime;
 JSContext*	js_cx;
+JSObject*	js_script=NULL;
 JSObject*	js_glob;
 js_callback_t	cb;
 scfg_t		scfg;
@@ -81,6 +83,13 @@ BOOL		daemonize=FALSE;
 #endif
 char		orig_cwd[MAX_PATH+1];
 BOOL		debugger=FALSE;
+enum debug_action {
+	DEBUG_CONTINUE,
+	DEBUG_EXIT
+};
+
+static JSTrapStatus trap_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, jsval closure);
+static enum debug_action debug_prompt(JSScript *script);
 
 void banner(FILE* fp)
 {
@@ -131,6 +140,7 @@ void usage(FILE* fp)
 		"\t-l             loop until intentionally terminated\n"
 		"\t-p             wait for keypress (pause) on exit\n"
 		"\t-!             wait for keypress (pause) on error\n"
+		"\t-D             debugs the script\n"
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_CONTEXT_STACK
 		,JAVASCRIPT_TIME_LIMIT
@@ -423,7 +433,7 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_printf(JSContext *cx, uintN argc, jsval *arglist)
+jse_printf(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char* p;
@@ -611,7 +621,7 @@ static jsSyncMethodSpec js_global_functions[] = {
     {"write",           js_write,           0},
     {"writeln",         js_writeln,         0},
     {"print",           js_writeln,         0},
-    {"printf",          js_printf,          1},	
+    {"printf",          jse_printf,          1},	
 	{"alert",			js_alert,			1},
 	{"prompt",			js_prompt,			1},
 	{"confirm",			js_confirm,			1},
@@ -763,6 +773,127 @@ static const char* js_ext(const char* fname)
 	return("");
 }
 
+/*
+ * This doesn't belong here and is done wrong...
+ * mcmlxxix should love it.
+ */
+static enum debug_action debug_prompt(JSScript *script)
+{
+	char	line[1024];
+
+	while(1) {
+		if(JS_IsExceptionPending(js_cx))
+			fputs("!", stdout);
+		fputs("JS> ", stdout);
+
+		if(fgets(line, sizeof(line), stdin)==NULL) {
+			fputs("Error readin input\n",stderr);
+			continue;
+		}
+		if(strncmp(line, "break ", 6)==0) {
+			ulong		linenum=strtoul(line+6, NULL, 10);
+			jsbytecode	*pc;
+			
+			if(linenum==ULONG_MAX) {
+				fputs("Unable to parse line number\n",stderr);
+				continue;
+			}
+			pc=JS_LineNumberToPC(js_cx, script, linenum);
+			if(pc==NULL) {
+				fprintf(stderr, "Unable to locate line %lu\n", linenum);
+				break;
+			}
+			if(!JS_SetTrap(js_cx, script, pc, trap_handler, JSVAL_VOID)) {
+				fprintf(stderr, "Unable to set breakpoint at line %lu\n",linenum);
+			}
+			continue;
+		}
+		if(strncmp(line, "r", 1)==0) {
+			return DEBUG_CONTINUE;
+		}
+		if(strncmp(line, "eval ", 5)==0 || 
+				strncmp(line, "e ", 2)==0
+				) {
+			jsval			ret;
+			JSStackFrame	*fp;
+			jsval			oldexcept;
+			BOOL			has_old=FALSE;
+			int				cmdlen=5;
+
+			if(line[1]==' ')
+				cmdlen=2;
+			if(JS_IsExceptionPending(js_cx)) {
+				if(JS_GetPendingException(js_cx, &oldexcept))
+					has_old=TRUE;
+				JS_ClearPendingException(js_cx);
+			}
+
+			fp=JS_GetScriptedCaller(js_cx, NULL);
+			if(!fp) {
+				if(has_old)
+					JS_SetPendingException(js_cx, oldexcept);
+				fputs("Unable to get frame pointer\n", stderr);
+				continue;
+			}
+			if(!JS_EvaluateInStackFrame(js_cx, fp, line+cmdlen, strlen(line)-cmdlen, "eval-d statement", 1, &ret)) {
+				if(JS_IsExceptionPending(js_cx)) {
+					JS_SetErrorReporter(js_cx, js_ErrorReporter);
+					JS_ReportPendingException(js_cx);
+					JS_ClearPendingException(js_cx);
+				}
+			}
+			else {
+				// TODO: Check ret...
+			}
+			if(has_old)
+				JS_SetPendingException(js_cx, oldexcept);
+			continue;
+		}
+		if(strncmp(line, "clear", 5)==0) {
+			JS_ClearPendingException(js_cx);
+			continue;
+		}
+		fputs("Unrecognized command:\n"
+			  "break ####       - Sets a breakpoint\n"
+			  "r                - Runs the script\n"
+			  "eval <statement> - eval() <statement> in the current frame\n"
+			  "e <statement>    - eval() <statement> in the current frame\n"
+			  "clear            - Clears pending exceptions (doesn't seem to help)\n"
+			  "\n",stderr);
+	}
+	return DEBUG_CONTINUE;
+}
+
+static JSTrapStatus trap_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, jsval closure)
+{
+    JS_GC(cx);
+
+	fputs("Breakpoint reached\n",stdout);
+
+    switch(debug_prompt(script)) {
+		case DEBUG_CONTINUE:
+			return JSTRAP_CONTINUE;
+		case DEBUG_EXIT:
+			return JSTRAP_ERROR;
+	}
+	return JSTRAP_CONTINUE;
+}
+
+static JSTrapStatus throw_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, void *closure)
+{
+    JS_GC(cx);
+
+	fputs("Exception thrown\n",stdout);
+
+    switch(debug_prompt(script)) {
+		case DEBUG_CONTINUE:
+			return JSTRAP_CONTINUE;
+		case DEBUG_EXIT:
+			return JSTRAP_ERROR;
+	}
+	return JSTRAP_CONTINUE;
+}
+
 long js_exec(const char *fname, char** args)
 {
 	int			argc=0;
@@ -773,7 +904,6 @@ long js_exec(const char *fname, char** args)
 	size_t		len;
 	char*		js_buf=NULL;
 	size_t		js_buflen;
-	JSObject*	js_script=NULL;
 	JSString*	arg;
 	JSObject*	argv;
 	FILE*		fp=stdin;
@@ -884,7 +1014,11 @@ long js_exec(const char *fname, char** args)
 
 	js_PrepareToExecute(js_cx, js_glob, fname==NULL ? NULL : path, orig_cwd);
 	start=xp_timer();
-	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+	if((!debugger) || debug_prompt(JS_GetScriptFromObject(js_script))==DEBUG_CONTINUE) {
+		if(debugger)
+			JS_SetThrowHook(js_runtime, throw_handler, NULL);
+		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+	}
 	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 	if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
 		char	*p;
@@ -949,10 +1083,6 @@ int parseLogLevel(const char* p)
 			return i;
 	}
 	return DEFAULT_LOG_LEVEL;
-}
-
-void debug_promopt()
-{
 }
 
 /*********************/
@@ -1189,6 +1319,8 @@ int main(int argc, char **argv, char** environ)
 		}
 		fprintf(statfp,"\n");
 
+		if(debugger)
+			JS_SetDebugMode(js_cx, JS_TRUE);
 		result=js_exec(module,&argv[argn]);
 		JS_RemoveObjectRoot(js_cx, &js_glob);
 		JS_ENDREQUEST(js_cx);
