@@ -80,6 +80,7 @@ pthread_mutex_t output_mutex;
 BOOL		daemonize=FALSE;
 #endif
 char		orig_cwd[MAX_PATH+1];
+BOOL		debugger=FALSE;
 
 void banner(FILE* fp)
 {
@@ -950,6 +951,9 @@ int parseLogLevel(const char* p)
 	return DEFAULT_LOG_LEVEL;
 }
 
+void debug_promopt()
+{
+}
 
 /*********************/
 /* Entry point (duh) */
@@ -1001,42 +1005,17 @@ int main(int argc, char **argv, char** environ)
 				case 'a':
 					omode="a";
 					break;
-				case 'f':
-					nonbuffered_con=TRUE;
-					break;
-				case 'm':
+				case 'c':
 					if(*p==0) p=argv[++argn];
-					js_max_bytes=strtoul(p,NULL,0);
+					SAFECOPY(scfg.ctrl_dir,p);
 					break;
-				case 's':
-					if(*p==0) p=argv[++argn];
-					js_cx_stack=strtoul(p,NULL,0);
+#if defined(__unix__)
+				case 'd':
+					daemonize=TRUE;
 					break;
-				case 't':
-					if(*p==0) p=argv[++argn];
-					cb.limit=strtoul(p,NULL,0);
-					break;
-				case 'y':
-					if(*p==0) p=argv[++argn];
-					cb.yield_interval=strtoul(p,NULL,0);
-					break;
-				case 'g':
-					if(*p==0) p=argv[++argn];
-					cb.gc_interval=strtoul(p,NULL,0);
-					break;
-				case 'h':
-					if(*p==0)
-						gethostname(host_name=host_name_buf,sizeof(host_name_buf));
-					else
-						host_name=p;
-					break;
-				case 'u':
-					if(*p==0) p=argv[++argn];
-					umask(strtol(p,NULL,8));
-					break;
-				case 'L':
-					if(*p==0) p=argv[++argn];
-					log_level=parseLogLevel(p);
+#endif
+				case 'D':
+					debugger=TRUE;
 					break;
 				case 'E':
 					if(*p==0) p=argv[++argn];
@@ -1049,6 +1028,37 @@ int main(int argc, char **argv, char** environ)
 						return(do_bail(1));
 					}
 					break;
+				case 'f':
+					nonbuffered_con=TRUE;
+					break;
+				case 'g':
+					if(*p==0) p=argv[++argn];
+					cb.gc_interval=strtoul(p,NULL,0);
+					break;
+				case 'h':
+					if(*p==0)
+						gethostname(host_name=host_name_buf,sizeof(host_name_buf));
+					else
+						host_name=p;
+					break;
+				case 'i':
+					if(*p==0) p=argv[++argn];
+					load_path_list=p;
+					break;
+				case 'L':
+					if(*p==0) p=argv[++argn];
+					log_level=parseLogLevel(p);
+					break;
+				case 'l':
+					loop=TRUE;
+					break;
+				case 'm':
+					if(*p==0) p=argv[++argn];
+					js_max_bytes=strtoul(p,NULL,0);
+					break;
+				case 'n':
+					statfp=nulfp;
+					break;
 				case 'o':
 					if(*p==0) p=argv[++argn];
 					if((confp=fopen(p,omode))==NULL) {
@@ -1056,41 +1066,38 @@ int main(int argc, char **argv, char** environ)
 						return(do_bail(1));
 					}
 					break;
-				case 'q':
-					confp=nulfp;
-					break;
-				case 'n':
-					statfp=nulfp;
-					break;
-				case 'x':
-					cb.auto_terminate=FALSE;
-					break;
-				case 'l':
-					loop=TRUE;
-					break;
 				case 'p':
 					pause_on_exit=TRUE;
 					break;
-				case '!':
-					pause_on_error=TRUE;
+				case 'q':
+					confp=nulfp;
 					break;
-				case 'c':
+				case 's':
 					if(*p==0) p=argv[++argn];
-					SAFECOPY(scfg.ctrl_dir,p);
+					js_cx_stack=strtoul(p,NULL,0);
 					break;
-				case 'i':
+				case 't':
 					if(*p==0) p=argv[++argn];
-					load_path_list=p;
+					cb.limit=strtoul(p,NULL,0);
+					break;
+				case 'u':
+					if(*p==0) p=argv[++argn];
+					umask(strtol(p,NULL,8));
 					break;
 				case 'v':
 					banner(statfp);
 					fprintf(statfp,"%s\n",(char *)JS_GetImplementationVersion());
 					return(do_bail(0));
-#if defined(__unix__)
-				case 'd':
-					daemonize=TRUE;
+				case 'x':
+					cb.auto_terminate=FALSE;
 					break;
-#endif
+				case 'y':
+					if(*p==0) p=argv[++argn];
+					cb.yield_interval=strtoul(p,NULL,0);
+					break;
+				case '!':
+					pause_on_error=TRUE;
+					break;
 				default:
 					fprintf(errfp,"\n!Unsupported option: %s\n",argv[argn]);
 				case '?':
