@@ -56,7 +56,6 @@
 js_startup_t	startup;
 JSRuntime*	js_runtime;
 JSContext*	js_cx;
-JSObject*	js_script=NULL;
 JSObject*	js_glob;
 js_callback_t	cb;
 scfg_t		scfg;
@@ -904,6 +903,7 @@ long js_exec(const char *fname, char** args)
 	size_t		len;
 	char*		js_buf=NULL;
 	size_t		js_buflen;
+	JSObject*	js_script=NULL;
 	JSString*	arg;
 	JSObject*	argv;
 	FILE*		fp=stdin;
