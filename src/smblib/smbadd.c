@@ -99,10 +99,10 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			}
 		}
 
-		if(tail!=NULL && (taillen=strlen(tail))>0)
+		if(tail!=NULL && (taillen=strlen((const char *)tail))>0)
 			taillen+=sizeof(xlat);	/* xlat string terminator */
 
-		if(body!=NULL && (bodylen=strlen(body))>0) {
+		if(body!=NULL && (bodylen=strlen((const char *)body))>0) {
 
 			/* Remove white-space from end of message text */
 			chklen=bodylen;

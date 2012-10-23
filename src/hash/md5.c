@@ -210,7 +210,7 @@ void MD5CALL MD5_digest(MD5 *md5, const void *input, size_t inputLen)
     memcpy(&md5->buffer[index], input, partLen);
     MD5Transform(md5->state, md5->buffer);
     for (i = partLen; i + 63 < inputLen; i += 64)
-      MD5Transform(md5->state, (char *) input + i);
+      MD5Transform(md5->state, (BYTE *) input + i);
     index = 0;
   }
   else

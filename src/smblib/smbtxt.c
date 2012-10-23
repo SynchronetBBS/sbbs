@@ -125,7 +125,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 				return(buf); 
 			}
 			buf=p;
-			lzh_decode((char*)lzhbuf,length,(char*)buf+l);
+			lzh_decode((uint8_t *)lzhbuf,length,(uint8_t *)buf+l);
 			free(lzhbuf);
 			l+=lzhlen; 
 		}
