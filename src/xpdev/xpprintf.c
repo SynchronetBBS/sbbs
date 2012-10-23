@@ -44,6 +44,7 @@
 #endif
 
 #include "xpprintf.h"
+#include "gen_defs.h"
 
 /* MSVC Sucks - can't tell the required len of a *printf() */
 #define MAX_ARG_LEN		1024			/* MAX_ARG_LEN is the maximum length
@@ -900,7 +901,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 							ll=ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
-							ll=(long long)pntr;
+							ll=(long long)((intptr_t)pntr);
 							break;
 						case XP_PRINTF_TYPE_SIZET:
 							ll=s;
@@ -938,7 +939,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 							ull=ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
-							ull=(unsigned long long int)pntr;
+							ull=(unsigned long long int)((uintptr_t)pntr);
 							break;
 						case XP_PRINTF_TYPE_SIZET:
 							ull=s;
@@ -1099,10 +1100,10 @@ char *xp_asprintf_next(char *format, int type, ...)
 							break;
 #if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
-							pntr=(void *)ll;
+							pntr=(void *)((intptr_t)ll);
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
-							pntr=(void *)ull;
+							pntr=(void *)((uintptr_t)ull);
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:

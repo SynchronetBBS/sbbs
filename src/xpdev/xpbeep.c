@@ -74,9 +74,15 @@ static size_t sample_size;
 #endif
 
 static BOOL sound_device_open_failed=FALSE;
+#ifdef USE_ALSA_SOUND
 static BOOL alsa_device_open_failed=FALSE;
+#endif
+#ifdef WITH_SDL_AUDIO
 static BOOL sdl_device_open_failed=FALSE;
+#endif
+#ifdef WITH_PORTAUDIO
 static BOOL portaudio_device_open_failed=FALSE;
+#endif
 
 enum {
 	 SOUND_DEVICE_CLOSED
@@ -644,8 +650,15 @@ BOOL xptone_close(void)
 #endif
 	handle_type=SOUND_DEVICE_CLOSED;
 	sound_device_open_failed=FALSE;
+#ifdef USE_ALSA_SOUND
 	alsa_device_open_failed=FALSE;
+#endif
+#ifdef WITH_SDL_AUDIO
 	sdl_device_open_failed=FALSE;
+#endif
+#ifdef WITH_PORTAUDIO
+	portaudio_device_open_failed=FALSE;
+#endif
 
 	return(TRUE);
 }
