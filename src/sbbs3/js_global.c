@@ -46,6 +46,7 @@
 
 /* SpiderMonkey: */
 #include <jsapi.h>
+#include <jsdbgapi.h>
 
 #define MAX_ANSI_SEQ	16
 #define MAX_ANSI_PARAMS	8
@@ -3487,6 +3488,18 @@ js_list_named_queues(JSContext *cx, uintN argc, jsval *arglist)
     return(JS_TRUE);
 }
 
+static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+
+	JSObject* tmp_obj=JSVAL_TO_OBJECT(argv[0]);
+	if(!tmp_obj)
+		return(JS_FALSE);
+	JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL(JS_GetObjectTotalSize(cx, tmp_obj)));
+	return(JS_TRUE);
+}
+
+
 static JSBool
 js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -3832,6 +3845,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("convert a string of security flags (letters) into their numeric value or vice-versa "
 	"(returns number OR string) - (added in v3.13)")
 	,313
+	},
+	{"get_size",		js_getsize,			1,	JSTYPE_NUMBER,	JSDOCSTR("[number]")
+	,JSDOCSTR("Gets the size in bytes the object uses in memory (forces GC) ")
+	,314
 	},
 	{0}
 };
