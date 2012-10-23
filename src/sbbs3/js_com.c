@@ -171,7 +171,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		cp;
-	int			len;
+	size_t		len;
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -190,7 +190,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_STRING(cx, argv[0], cp, &len);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(comWriteBuf(p->com,cp,len)==len) {
+	if(comWriteBuf(p->com,(uint8_t *)cp,len)==len) {
 		dbprintf(FALSE, p, "sent %u bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
@@ -250,7 +250,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	close(file);
 
-	if(comWriteBuf(p->com,buf,len)==len) {
+	if(comWriteBuf(p->com,(uint8_t *)buf,len)==len) {
 		dbprintf(FALSE, p, "sent %u bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
@@ -477,18 +477,18 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	switch(size) {
 		case sizeof(BYTE):
-			if((rd=comReadBuf(p->com,(BYTE*)&b,size,NULL,timeout))==size)
+			if((rd=comReadBuf(p->com,(char*)&b,size,NULL,timeout))==size)
 				JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(b));
 			break;
 		case sizeof(WORD):
-			if((rd=comReadBuf(p->com,(BYTE*)&w,size,NULL,timeout))==size) {
+			if((rd=comReadBuf(p->com,(char*)&w,size,NULL,timeout))==size) {
 				if(p->network_byte_order)
 					w=ntohs(w);
 				JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(w));
 			}
 			break;
 		case sizeof(DWORD):
-			if((rd=comReadBuf(p->com,(BYTE*)&l,size,NULL,timeout))==size) {
+			if((rd=comReadBuf(p->com,(char*)&l,size,NULL,timeout))==size) {
 				if(p->network_byte_order)
 					l=ntohl(l);
 				JS_SET_RVAL(cx, arglist,UINT_TO_JSVAL(l));
