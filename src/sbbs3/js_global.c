@@ -912,7 +912,7 @@ js_ascii_str(JSContext *cx, uintN argc, jsval *arglist)
 	if((buf=strdup(p))==NULL)
 		return(JS_FALSE);
 
-	ascii_str(buf);
+	ascii_str((uchar*)buf);
 
 	str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
@@ -1024,7 +1024,7 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 	int32		len=79;
 	int32		oldlen=79;
 	JSBool		handle_quotes=JS_TRUE;
-	uchar*		inbuf;
+	char*		inbuf;
 	char*		outbuf;
 	JSString*	js_str;
 	jsrefcount	rc;
@@ -1073,7 +1073,7 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32		len=79;
 	int			i,l,clen;
-	uchar*		inbuf;
+	char*		inbuf;
 	char*		outbuf;
 	char*		linebuf;
 	char*		prefix=" > ";
@@ -1373,10 +1373,10 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	int			ch;
 	ulong		i,j;
-	uchar*		inbuf;
-	uchar*		tmpbuf;
-	uchar*		outbuf;
-	uchar*		param;
+	char*		inbuf;
+	char*		tmpbuf;
+	char*		outbuf;
+	char*		param;
 	char*		lastparam;
 	JSBool		exascii=JS_TRUE;
 	JSBool		wsp=JS_TRUE;
@@ -1506,7 +1506,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 			case LF:
 			case CR:
 				if(wsp)
-					j+=sprintf(tmpbuf+j,"&#%u;",inbuf[i]);
+					j+=sprintf(tmpbuf+j,"&#%u;",(uchar)inbuf[i]);
 				else
 					tmpbuf[j++]=inbuf[i];
 				break;
@@ -1537,13 +1537,13 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 					} else
 						tmpbuf[j++]=inbuf[i];
 				}
-				else if(inbuf[i]>=' ' && inbuf[i]<DEL)
+				else if((uchar)inbuf[i]>=' ' && (uchar)inbuf[i]<DEL)
 					tmpbuf[j++]=inbuf[i];
 #if 0		/* ASCII 127 - Not displayed? */
 				else if(inbuf[i]==DEL && exascii)
 					j+=sprintf(tmpbuf+j,"&#8962;",exasctbl[ch].value);
 #endif
-				else if(inbuf[i]<' ') /* unknown control chars */
+				else if((uchar)inbuf[i]<' ') /* unknown control chars */
 				{
 					if(ansi && inbuf[i]==ESC)
 					{
@@ -1563,7 +1563,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 						else
 							j+=sprintf(tmpbuf+j,"&#%u;",lowasctbl[ch].value);
 					} else
-						j+=sprintf(tmpbuf+j,"&#%u;",inbuf[i]);
+						j+=sprintf(tmpbuf+j,"&#%u;",(uchar)inbuf[i]);
 				}
 				break;
 		}
@@ -1575,7 +1575,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 		obsize=(strlen(tmpbuf)+(esccount+1)*MAX_COLOR_STRING)+1;
 		if(obsize<2048)
 			obsize=2048;
-		if((outbuf=(uchar*)malloc(obsize))==NULL)
+		if((outbuf=(char*)malloc(obsize))==NULL)
 		{
 			free(tmpbuf);
 			JS_RESUMEREQUEST(cx, rc);
@@ -1789,7 +1789,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 /*				j+=sprintf(outbuf+j,"<!-- CTRL-A-%c (%u) -->",tmpbuf[i+1],tmpbuf[i+1]); */
 				if(nodisplay && tmpbuf[i+1] != ')')
 					continue;
-				if(tmpbuf[i+1]>0x7f)
+				if(tmpbuf[i+1] & 0x80)
 				{
 					j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
 					lastcolor=0;
@@ -1976,7 +1976,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 							else
 								j+=sprintf(outbuf+j,"&#%u;",lowasctbl[ch].value);
 						} else
-							j+=sprintf(outbuf+j,"&#%u;",inbuf[i]);
+							j+=sprintf(outbuf+j,"&#%u;",(uchar)inbuf[i]);
 						i--;
 				}
 				i++;
@@ -2101,8 +2101,8 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 	int			ch;
 	int			val;
 	ulong		i,j;
-	uchar*		inbuf;
-	uchar*		outbuf;
+	char*		inbuf;
+	char*		outbuf;
 	char		token[16];
 	size_t		t;
 	JSString*	js_str;
@@ -2208,8 +2208,8 @@ js_b64_encode(JSContext *cx, uintN argc, jsval *arglist)
 	int			res;
 	size_t		len;
 	size_t		inbuf_len;
-	uchar*		inbuf;
-	uchar*		outbuf;
+	char*		inbuf;
+	char*		outbuf;
 	JSString*	js_str;
 	jsrefcount	rc;
 
@@ -2251,8 +2251,8 @@ js_b64_decode(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	int			res;
 	size_t		len;
-	uchar*		inbuf;
-	uchar*		outbuf;
+	char*		inbuf;
+	char*		outbuf;
 	JSString*	js_str;
 	jsrefcount	rc;
 
@@ -2316,9 +2316,9 @@ js_md5_calc(JSContext* cx, uintN argc, jsval* arglist)
 	MD5_calc(digest,inbuf,inbuf_len);
 
 	if(hex)
-		MD5_hex(outbuf,digest);
+		MD5_hex((BYTE*)outbuf,digest);
 	else
-		b64_encode(outbuf,sizeof(outbuf),digest,sizeof(digest));
+		b64_encode(outbuf,sizeof(outbuf),(char*)digest,sizeof(digest));
 	JS_RESUMEREQUEST(cx, rc);
 
 	js_str = JS_NewStringCopyZ(cx, outbuf);
