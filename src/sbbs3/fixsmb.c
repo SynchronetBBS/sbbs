@@ -204,7 +204,7 @@ int fixsmb(char* sub)
 			text=NULL;
 		else
 			text=smb_getmsgtxt(&smb,&msg,GETMSGTXT_BODY_ONLY);
-		i=smb_hashmsg(&smb,&msg,text,TRUE /* update */);
+		i=smb_hashmsg(&smb,&msg,(uchar*)text,TRUE /* update */);
 		if(i!=SMB_SUCCESS)
 			printf("!ERROR %d hashing message\n", i);
 		if(text!=NULL)

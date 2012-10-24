@@ -1036,7 +1036,8 @@ BOOL DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 {
-	uchar	str[MAX_PATH+1],c;
+	char	str[MAX_PATH+1];
+	uchar	c;
 	int 	i,j,sec,file;
 	uint16_t	n;
 	FILE	*stream;

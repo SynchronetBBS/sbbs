@@ -1164,7 +1164,7 @@ static void js_service_thread(void* arg)
 	if(service->options&SERVICE_OPT_UDP 
 		&& service_client.udp_buf != NULL
 		&& service_client.udp_len > 0) {
-		datagram = JS_NewStringCopyN(js_cx, service_client.udp_buf, service_client.udp_len);
+		datagram = JS_NewStringCopyN(js_cx, (char*)service_client.udp_buf, service_client.udp_len);
 		if(datagram==NULL)
 			val=JSVAL_VOID;
 		else

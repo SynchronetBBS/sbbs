@@ -312,7 +312,7 @@ int main(int argc, char **argv)
 			close(file);
 			if(misc&AUTO) fclose(out);
 			continue; }
-		if((ixbbuf=(char *)malloc(l))==NULL) {
+		if((ixbbuf=(uchar *)malloc(l))==NULL) {
 			close(file);
 			if(misc&AUTO) fclose(out);
 			printf("\7ERR_ALLOC %s %lu\n",str,l);

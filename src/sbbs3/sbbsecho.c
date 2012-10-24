@@ -1366,7 +1366,7 @@ char* process_areafix(faddr_t addr, char* inbuf, char* password, char* to)
 	del_area.tags=0;
 	del_area.tag=NULL;
 	for(l=0;l<m;l++) { 
-		while(*(p+l) && isspace(*(p+l))) l++;
+		while(*(p+l) && isspace((uchar)*(p+l))) l++;
 		while(*(p+l)==CTRL_A) {				/* Ignore kludge lines June-13-2004 */
 			while(*(p+l) && *(p+l)!='\r') l++;
 			continue;
@@ -2113,7 +2113,7 @@ time_t fmsgtime(char *str)
 	memset(&tm,0,sizeof(tm));
 	tm.tm_isdst=-1;	/* Do not adjust for DST */
 
-	if(isdigit(str[1])) {	/* Regular format: "01 Jan 86  02:34:56" */
+	if(isdigit((uchar)str[1])) {	/* Regular format: "01 Jan 86  02:34:56" */
 		tm.tm_mday=atoi(str);
 		sprintf(month,"%3.3s",str+3);
 		if(!stricmp(month,"jan"))
@@ -2195,9 +2195,9 @@ static short fmsgzone(char* p)
 	else
 		west=FALSE;
 
-	if(strlen(p)>=2)
+	if(strlen((char*)p)>=2)
 		sprintf(hr,"%.2s",p);
-	if(strlen(p+2)>=2)
+	if(strlen((char*)p+2)>=2)
 		sprintf(min,"%.2s",p+2);
 
 	val=atoi(hr)*60;
@@ -2224,7 +2224,7 @@ static short fmsgzone(char* p)
 
 char* getfmsg(FILE *stream, ulong *outlen)
 {
-	uchar* fbuf;
+	char* fbuf;
 	int ch;
 	ulong l,length,start;
 
@@ -2264,11 +2264,10 @@ char* getfmsg(FILE *stream, ulong *outlen)
 /* Coverts a FidoNet message into a Synchronet message						*/
 /* Returns 0 on success, 1 dupe, 2 filtered, 3 empty, or other SMB error	*/
 /****************************************************************************/
-int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
+int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 {
-	uchar	ch,*sbody,stail[MAX_TAILLEN+1]
-				,*p,str[128];
-	char	msg_id[256];
+	uchar	ch,stail[MAX_TAILLEN+1],*sbody;
+	char	msg_id[256],str[128],*p;
 	BOOL	done,esc,cr;
 	int 	i,storage=SMB_SELFPACK;
 	uint	col;
@@ -2327,7 +2326,7 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		return(-1); 
 	}
 	length=strlen((char *)fbuf);
-	if((sbody=(char*)malloc((length+1)*2))==NULL) {
+	if((sbody=(uchar*)malloc((length+1)*2))==NULL) {
 		lprintf(LOG_ERR,"ERROR line %d allocating %lu bytes for body",__LINE__
 			,(length+1)*2L);
 		smb_freemsgmem(&msg);
@@ -2339,10 +2338,10 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		if(!l && !strncmp((char *)fbuf,"AREA:",5)) {
 			save=l;
 			l+=5;
-			while(l<length && fbuf[l]<=' ') l++;
+			while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 			m=l;
 			while(m<length && fbuf[m]!='\r') m++;
-			while(m && fbuf[m-1]<=' ') m--;
+			while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 			if(m>l)
 				smb_hfield(&msg,FIDOAREA,(ushort)(m-l),fbuf+l);
 			while(l<length && fbuf[l]!='\r') l++;
@@ -2376,76 +2375,76 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 
 			else if(!strncmp((char *)fbuf+l+1,"MSGID:",6)) {
 				l+=7;
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ') m--;
+				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l)
 					smb_hfield(&msg,FIDOMSGID,(ushort)(m-l),fbuf+l); }
 
 			else if(!strncmp((char *)fbuf+l+1,"REPLY:",6)) {
 				l+=7;
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ') m--;
+				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l)
 					smb_hfield(&msg,FIDOREPLYID,(ushort)(m-l),fbuf+l); }
 
 			else if(!strncmp((char *)fbuf+l+1,"FLAGS ",6)		/* correct */
 				||  !strncmp((char *)fbuf+l+1,"FLAGS:",6)) {	/* incorrect */
 				l+=7;
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ') m--;
+				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l)
 					smb_hfield(&msg,FIDOFLAGS,(ushort)(m-l),fbuf+l); }
 
 			else if(!strncmp((char *)fbuf+l+1,"PATH:",5)) {
 				l+=6;
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ') m--;
+				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l && (misc&STORE_PATH))
 					smb_hfield(&msg,FIDOPATH,(ushort)(m-l),fbuf+l); }
 
 			else if(!strncmp((char *)fbuf+l+1,"PID:",4)) {
 				l+=5;
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ') m--;
+				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l)
 					smb_hfield(&msg,FIDOPID,(ushort)(m-l),fbuf+l); }
 
 			else if(!strncmp((char *)fbuf+l+1,"TID:",4)) {
 				l+=5;
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ') m--;
+				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l)
 					smb_hfield(&msg,FIDOTID,(ushort)(m-l),fbuf+l); }
 
 			else if(!strncmp((char *)fbuf+l+1,"TZUTC:",6)) {		/* FSP-1001 */
 				l+=7;
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				msg.hdr.when_written.zone = fmsgzone(fbuf+l);
 			}
 
 			else if(!strncmp((char *)fbuf+l+1,"TZUTCINFO:",10)) {	/* non-standard */
 				l+=11;
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				msg.hdr.when_written.zone = fmsgzone(fbuf+l);
 			}
 
 			else {		/* Unknown kludge line */
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ') m--;
+				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l && (misc&STORE_KLUDGE))
 					smb_hfield(&msg,FIDOCTRL,(ushort)(m-l),fbuf+l); }
 
@@ -2458,10 +2457,10 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				done=1; 			/* tear line and down go into tail */
 			if(done && cr && !strncmp((char *)fbuf+l,"SEEN-BY:",8)) {
 				l+=8;
-				while(l<length && fbuf[l]<=' ') l++;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
 				while(m<length && fbuf[m]!='\r') m++;
-				while(m && fbuf[m-1]<=' ') m--;
+				while(m && fbuf[m-1]<=' ' && fbuf[m-1]>=0) m--;
 				if(m>l && (misc&STORE_SEENBY))
 					smb_hfield(&msg,FIDOSEENBY,(ushort)(m-l),fbuf+l);
 				while(l<length && fbuf[l]!='\r') l++;
@@ -2483,7 +2482,7 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 			else {
 				cr=0;
 				if(col==1 && !strncmp((char *)fbuf+l," * Origin: ",11)) {
-					p=(char *)fbuf+l+11;
+					p=(char*)fbuf+l+11;
 					while(*p && *p!='\r') p++;	 /* Find CR */
 					while(p && *p!='(') p--;     /* rewind to '(' */
 					if(p)
@@ -2495,7 +2494,7 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				if(ch==ESC) esc=1;		/* ANSI codes */
 				if(ch==' ' && col>40 && !esc) {	/* word wrap */
 					for(m=l+1;m<length;m++) 	/* find next space */
-						if(fbuf[m]<=' ')
+						if(fbuf[m]<=' ' && fbuf[m]>=0)
 							break;
 					if(m<length && m-l>80-col) {  /* if it's beyond the eol */
 						sbody[bodylen++]='\r';
@@ -2656,7 +2655,7 @@ char *pktname(BOOL temp)
  This function puts a message into a Fido packet, writing both the header
  information and the message body
 ******************************************************************************/
-void putfmsg(FILE *stream,uchar *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
+void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 	,addrlist_t seenbys,addrlist_t paths)
 {
 	char str[256],seenby[256];
@@ -3091,7 +3090,7 @@ void attach_bundles(void)
  parameter to 1 to force all the remaining packets closed and stuff them into
  a bundle.
 ******************************************************************************/
-void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
+void pkt_to_pkt(char *fbuf,areasbbs_t area,faddr_t faddr
 	,fmsghdr_t fmsghdr,addrlist_t seenbys,addrlist_t paths, int cleanup)
 {
 	int i,j,k,file;
@@ -3291,7 +3290,7 @@ void pkt_to_pkt(uchar *fbuf,areasbbs_t area,faddr_t faddr
 int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, char* info)
 {
 	char path[MAX_PATH+1];
-	uchar* fmsgbuf;
+	char* fmsgbuf;
 	int i,file;
 	ulong l;
 
@@ -3334,7 +3333,7 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, char* info)
 /**************************************/
 int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 {
-	uchar info[512],str[256],tmp[256],subj[256]
+	char info[512],str[256],tmp[256],subj[256]
 		,*fmsgbuf=NULL,*p,*tp,*sp;
 	int i,match,usernumber;
 	ulong length;
@@ -3610,10 +3609,10 @@ void export_echomail(char *sub_code,faddr_t addr)
 	char	msgid[256];
 	char*	buf=NULL;
 	char*	minus;
-	uchar*	fmsgbuf=NULL;
+	char*	fmsgbuf=NULL;
 	ulong	fmsgbuflen;
 	int		tzone;
-	int		g,i,j,k=0,file;
+	int		g,i,j,k=0;
 	ulong	f,l,m,exp,exported=0;
 	uint32_t ptr,msgs,lastmsg,posts;
 	float	export_time;
@@ -3692,7 +3691,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 				start_tick=msclock();
 
 				for(m=exp=0;m<posts;m++) {
-					printf("\r%8s %5lu of %-5lu  "
+					printf("\r%8s %5lu of %-5"PRIu32"  "
 						,scfg.sub[i]->code,m+1,posts);
 					memset(&msg,0,sizeof(msg));
 					msg.idx=post[m];
@@ -3852,7 +3851,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 						else
 							cr=0;
 						if((scfg.sub[i]->misc&SUB_ASCII) || (misc&ASCII_ONLY)) {
-							if(buf[l]<' ' && buf[l]!='\r'
+							if(buf[l]<' ' && buf[l]>=0 && buf[l]!='\r'
 								&& buf[l]!='\n')			/* Ctrl ascii */
 								buf[l]='.';             /* converted to '.' */
 							if((uchar)buf[l]&0x80)		/* extended ASCII */
@@ -3953,12 +3952,12 @@ int main(int argc, char **argv)
 			,*p,*tp
 			,areatagstr[128],outbound[128]
 			,password[16];
-	uchar	*fmsgbuf=NULL;
+	char	*fmsgbuf=NULL;
 	ushort	attr;
 	int 	i,j,k,file,fmsg,grp,node;
 	BOOL	grunged;
 	uint	subnum[MAX_OPEN_SMBS]={INVALID_SUB};
-	ulong	echomail=0,l,m/* f, */,areatag;
+	ulong	echomail=0,m/* f, */,areatag;
 	time_t	now;
 	time_t	ftime;
 	float	import_time;
@@ -4130,7 +4129,7 @@ int main(int argc, char **argv)
 			if(strchr(argv[i],'\\') || strchr(argv[i],'/') 
 				|| argv[i][1]==':' || strchr(argv[i],'.'))
 				SAFECOPY(cfg.cfgfile,argv[i]);
-			else if(isdigit(argv[i][0]))
+			else if(isdigit((uchar)argv[i][0]))
 				addr=atofaddr(argv[i]);
 			else
 				SAFECOPY(sub_code,argv[i]); 

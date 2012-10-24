@@ -163,7 +163,7 @@ DWORD RINGBUFCALL RingBufFree( RingBuf* rb )
 	return(retval);
 }
 
-DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
+DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
 {
 	DWORD max, first, remain;
 

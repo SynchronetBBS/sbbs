@@ -101,7 +101,7 @@ enum {
 
 static scfg_t	scfg;
 static volatile BOOL	http_logging_thread_running=FALSE;
-static protected_int32_t active_clients;
+static protected_uint32_t active_clients;
 static volatile ulong	sockets=0;
 static volatile BOOL	terminate_server=FALSE;
 static volatile BOOL	terminate_http_logging_thread=FALSE;
@@ -524,7 +524,7 @@ static int writebuf(http_session_t	*session, const char *buf, size_t len)
 		}
 		if(avail > len-sent)
 			avail=len-sent;
-		sent+=RingBufWrite(&(session->outbuf), ((char *)buf)+sent, avail);
+		sent+=RingBufWrite(&(session->outbuf), ((const BYTE *)buf)+sent, avail);
 	}
 	return(sent);
 }
@@ -1599,7 +1599,7 @@ static BOOL check_ars(http_session_t * session)
 				MD5_digest(&ctx, ":", 1);
 				MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
 				MD5_close(&ctx, digest);
-				MD5_hex(ha1, digest);
+				MD5_hex((BYTE*)ha1, digest);
 
 				/* H(A1)l */
 				pass=strdup(thisuser.pass);
@@ -1611,7 +1611,7 @@ static BOOL check_ars(http_session_t * session)
 				MD5_digest(&ctx, ":", 1);
 				MD5_digest(&ctx, pass, strlen(pass));
 				MD5_close(&ctx, digest);
-				MD5_hex(ha1l, digest);
+				MD5_hex((BYTE*)ha1l, digest);
 
 				/* H(A1)u */
 				strupr(pass);
@@ -1622,7 +1622,7 @@ static BOOL check_ars(http_session_t * session)
 				MD5_digest(&ctx, ":", 1);
 				MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
 				MD5_close(&ctx, digest);
-				MD5_hex(ha1u, digest);
+				MD5_hex((BYTE*)ha1u, digest);
 				free(pass);
 
 				/* H(A2) */
@@ -1635,7 +1635,7 @@ static BOOL check_ars(http_session_t * session)
 				if(session->req.auth.qop_value == QOP_AUTH_INT)
 					return(FALSE);
 				MD5_close(&ctx, digest);
-				MD5_hex(ha2, digest);
+				MD5_hex((BYTE*)ha2, digest);
 
 				/* Check password as in user.dat */
 				calculate_digest(session, ha1, ha2, digest);
@@ -4992,7 +4992,7 @@ void http_output_thread(void *arg)
 		}
 
 		pthread_mutex_lock(&session->outbuf_write);
-        RingBufRead(obuf, bufdata, avail);
+        RingBufRead(obuf, (uchar*)bufdata, avail);
 		if(chunked) {
 			bufdata+=avail;
 			*(bufdata++)='\r';
@@ -5112,7 +5112,7 @@ void http_session_thread(void* arg)
 		return;
 	}
 
-	protected_int32_adjust(&active_clients, 1);
+	protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 	SAFECOPY(session.username,unknown);
 
@@ -5230,7 +5230,7 @@ void http_session_thread(void* arg)
 	sem_destroy(&session.output_thread_terminated);
 	RingBufDispose(&session.outbuf);
 
-	clients_remain=protected_int32_adjust(&active_clients, -1);
+	clients_remain=protected_uint32_adjust(&active_clients, -1);
 	update_clients();
 	client_off(socket);
 
@@ -5278,7 +5278,7 @@ static void cleanup(int code)
 	if(active_clients.value)
 		lprintf(LOG_WARNING,"#### Web Server terminating with %ld active clients", active_clients.value);
 	else
-		protected_int32_destroy(active_clients);
+		protected_uint32_destroy(active_clients);
 
 	update_clients();
 
@@ -5609,7 +5609,7 @@ void DLLCALL web_server(void* arg)
 		if(uptime==0)
 			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
-		protected_int32_init(&active_clients,0);
+		protected_uint32_init(&active_clients,0);
 		update_clients();
 
 		/* open a socket and wait for a client */

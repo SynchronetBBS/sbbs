@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 		if(!l) {
 			close(file);
 			continue; }
-		if((ixbbuf=(char *)malloc(l))==NULL) {
+		if((ixbbuf=malloc(l))==NULL) {
 			close(file);
 			printf("\7ERR_ALLOC %s %lu\n",str,l);
 			continue; }

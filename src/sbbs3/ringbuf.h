@@ -110,7 +110,7 @@ int 	RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
 void	RINGBUFCALL RingBufDispose( RingBuf* rb );
 DWORD	RINGBUFCALL RingBufFull( RingBuf* rb );
 DWORD	RINGBUFCALL RingBufFree( RingBuf* rb );
-DWORD	RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE *src,	DWORD cnt );
+DWORD	RINGBUFCALL RingBufWrite( RingBuf* rb, const BYTE *src,	DWORD cnt );
 DWORD	RINGBUFCALL RingBufRead( RingBuf* rb, BYTE *dst,  DWORD cnt );
 DWORD	RINGBUFCALL RingBufPeek( RingBuf* rb, BYTE *dst,  DWORD cnt );
 void	RINGBUFCALL RingBufReInit( RingBuf* rb );

@@ -175,7 +175,7 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 
 /****************************************************************************/
 /****************************************************************************/
-post_t * sbbs_t::loadposts(int32_t *posts, uint subnum, ulong ptr, long mode, ulong *unvalidated_num)
+post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, ulong *unvalidated_num)
 {
 	char name[128];
 	ushort aliascrc,namecrc,sysop;
@@ -332,9 +332,9 @@ post_t * sbbs_t::loadposts(int32_t *posts, uint subnum, ulong ptr, long mode, ul
 	return(post);
 }
 
-static int get_start_msg(sbbs_t* sbbs, smb_t* smb)
+static uint32_t get_start_msg(sbbs_t* sbbs, smb_t* smb)
 {
-	int i,j=smb->curmsg+1;
+	uint32_t	i,j=smb->curmsg+1;
 
 	if(j<smb->msgs)
 		j++;
@@ -368,6 +368,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 	long	org_mode=mode;
 	ulong	msgs,l,unvalidated;
 	uint32_t last;
+	uint32_t u;
 	post_t	*post;
 	smbmsg_t	msg;
 
@@ -941,11 +942,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					 done=1;
 					 break; 
 				}
-				i=smb.curmsg+11;
-				if(i>smb.msgs)
-					i=smb.msgs;
-				listmsgs(subnum,0,post,smb.curmsg+1,i);
-				smb.curmsg=i-1;
+				u=smb.curmsg+11;
+				if(u>smb.msgs)
+					u=smb.msgs;
+				listmsgs(subnum,0,post,smb.curmsg+1,u);
+				smb.curmsg=u-1;
 				if(subscan[subnum].ptr<post[smb.curmsg].number)
 					subscan[subnum].ptr=post[smb.curmsg].number;
 				break;
@@ -1072,11 +1073,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					domsg=0;
 					break; 
 				}
-				for(i=0;i<smb.msgs;i++)
-					if(l==post[i].number)
+				for(u=0;u<smb.msgs;u++)
+					if(l==post[u].number)
 						break;
-				if(i<smb.msgs)
-					smb.curmsg=i;
+				if(u<smb.msgs)
+					smb.curmsg=u;
 				do_find=false;
 				break;
 			case ',':   /* Thread backwards */
@@ -1084,19 +1085,19 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					domsg=0;
 					break; 
 				}
-				for(i=0;i<smb.msgs;i++)
-					if(msg.hdr.thread_back==post[i].number)
+				for(u=0;u<smb.msgs;u++)
+					if(msg.hdr.thread_back==post[u].number)
 						break;
-				if(i<smb.msgs)
-					smb.curmsg=i;
+				if(u<smb.msgs)
+					smb.curmsg=u;
 				do_find=false;
 				break;
 			case '>':   /* Search Title forward */
-				for(i=smb.curmsg+1;i<smb.msgs;i++)
-					if(post[i].subj==msg.idx.subj)
+				for(u=smb.curmsg+1;u<smb.msgs;u++)
+					if(post[u].subj==msg.idx.subj)
 						break;
-				if(i<smb.msgs)
-					smb.curmsg=i;
+				if(u<smb.msgs)
+					smb.curmsg=u;
 				else
 					domsg=0;
 				do_find=false;
@@ -1113,11 +1114,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				break;
 			case '}':   /* Search Author forward */
 				strcpy(str,msg.from);
-				for(i=smb.curmsg+1;i<smb.msgs;i++)
-					if(post[i].from==msg.idx.from)
+				for(u=smb.curmsg+1;u<smb.msgs;u++)
+					if(post[u].from==msg.idx.from)
 						break;
-				if(i<smb.msgs)
-					smb.curmsg=i;
+				if(u<smb.msgs)
+					smb.curmsg=u;
 				else
 					domsg=0;
 				do_find=false;
@@ -1135,11 +1136,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				break;
 			case ']':   /* Search To User forward */
 				strcpy(str,msg.to);
-				for(i=smb.curmsg+1;i<smb.msgs;i++)
-					if(post[i].to==msg.idx.to)
+				for(u=smb.curmsg+1;u<smb.msgs;u++)
+					if(post[u].to==msg.idx.to)
 						break;
-				if(i<smb.msgs)
-					smb.curmsg=i;
+				if(u<smb.msgs)
+					smb.curmsg=u;
 				else
 					domsg=0;
 				do_find=false;
@@ -1194,7 +1195,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
 {
 	int 	i;
-	int32_t	posts;
+	uint32_t	posts;
 	long	displayed;
 	post_t	*post;
 

@@ -140,9 +140,9 @@ typedef struct {						/* Type 2+ Packet Header Info */
 	} two_plus_t;
 
 typedef struct {						/* Type 2.2 Packet Header Info */
-	uchar origdomn[8],					/* Origination Domain */
-		  destdomn[8],					/* Destination Domain */
-		  empty[4]; 					/* Product Specific Data */
+	char origdomn[8],					/* Origination Domain */
+		  destdomn[8];					/* Destination Domain */
+	uchar	  empty[4]; 					/* Product Specific Data */
 	} two_two_t;
 
 typedef struct {
@@ -169,7 +169,7 @@ typedef struct {
 typedef struct {
 	FILE *stream;				/* The stream associated with this packet (NULL if not-open) */
 	faddr_t uplink; 			/* The current uplink for this packet */
-	uchar filename[MAX_PATH+1];	/* Name of the file */
+	char filename[MAX_PATH+1];	/* Name of the file */
     } outpkt_t;
 
 typedef struct {

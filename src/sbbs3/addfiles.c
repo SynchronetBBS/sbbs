@@ -80,7 +80,7 @@ int lprintf(int level, const char *fmat, ...)
 	return(chcount);
 }
 
-void prep_desc(uchar *str)
+void prep_desc(char *str)
 {
 	char tmp[1024];
 	int i,j;
@@ -88,11 +88,11 @@ void prep_desc(uchar *str)
 	for(i=j=0;str[i] && j < sizeof(tmp)-1;i++) {
 		if(j && str[i]==' ' && tmp[j-1]==' ' && (mode&KEEP_SPACE))
 			tmp[j++]=str[i];
-		else if(j && str[i]<=' ' && tmp[j-1]==' ')
+		else if(j && str[i]<=' ' && str[i] > 0&& tmp[j-1]==' ')
 			continue;
-		else if(i && !isalnum(str[i]) && str[i]==str[i-1])
+		else if(i && !isalnum((uchar)str[i]) && str[i]==str[i-1])
 			continue;
-		else if(str[i]>=' ')
+		else if(str[i]>=' ' || str[i]<0)
 			tmp[j++]=str[i];
 		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
 			tmp[j++]=' ';
@@ -212,7 +212,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 	char filepath[MAX_PATH+1];
 	char curline[256],nextline[256];
 	char *p;
-	uchar ext[1024],tmpext[513];
+	char ext[1024],tmpext[513];
 	int i,file;
 	long l;
 	BOOL exist;
@@ -282,7 +282,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 						memset(ext,0,513);
 						read(file,ext,512);
 						for(i=512;i;i--)
-							if(ext[i-1]>' ')
+							if(ext[i-1]>' ' || ext[i-1]<0)
 								break;
 						ext[i]=0;
 						if(mode&ASCII_ONLY)
@@ -291,10 +291,10 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 							sprintf(tmpext,"%.256s",ext);
 							prep_desc(tmpext);
 							for(i=0;tmpext[i];i++)
-								if(isalpha(tmpext[i]))
+								if(isalpha((uchar)tmpext[i]))
 									break;
 							sprintf(f.desc,"%.*s",LEN_FDESC,tmpext+i);
-							for(i=0;f.desc[i]>=' ' && i<LEN_FDESC;i++)
+							for(i=0;(f.desc[i]>=' ' || f.desc[i]<0) && i<LEN_FDESC;i++)
 								;
 							f.desc[i]=0; }
 						close(file);
@@ -428,7 +428,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			if(nextline[0]==' ') {
 				strcpy(str,nextline);				   /* tack on to end of desc */
 				p=str+dskip;
-				while(*p && *p<=' ') p++;
+				while(*p>0 && *p<=' ') p++;
 				i=LEN_FDESC-strlen(f.desc);
 				if(i>1) {
 					p[i-1]=0;
@@ -485,7 +485,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 					memset(ext,0,513);
 					read(file,ext,512);
 					for(i=512;i;i--)
-						if(ext[i-1]>' ')
+						if(ext[i-1]>' ' || ext[i-1]<0)
 							break;
 					ext[i]=0;
 					if(mode&ASCII_ONLY)
@@ -494,10 +494,10 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 						sprintf(tmpext,"%.256s",ext);
 						prep_desc(tmpext);
 						for(i=0;tmpext[i];i++)
-							if(isalpha(tmpext[i]))
+							if(isalpha((uchar)tmpext[i]))
 								break;
 						sprintf(f.desc,"%.*s",LEN_FDESC,tmpext+i);
-						for(i=0;f.desc[i]>=' ' && i<LEN_FDESC;i++)
+						for(i=0;(f.desc[i]>=' ' || f.desc[i]<0) && i<LEN_FDESC;i++)
 							;
 						f.desc[i]=0; 
 					}
@@ -539,11 +539,11 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 
 void synclist(char *inpath, int dirnum)
 {
-	uchar	str[1024];
+	char	str[1024];
 	char	fname[MAX_PATH+1];
 	char	listpath[MAX_PATH+1];
 	uchar*	ixbbuf;
-	uchar*	p;
+	char*	p;
 	int		i,file,found;
 	long	l,m,length;
 	FILE*	stream;
@@ -668,7 +668,8 @@ int main(int argc, char **argv)
 	char revision[16];
 	char str[MAX_PATH+1];
 	char tmp[MAX_PATH+1];
-	uchar *p,exist,listgiven=0,namegiven=0,ext[513]
+	char *p;
+	char exist,listgiven=0,namegiven=0,ext[513]
 		,auto_name[MAX_PATH+1]="FILES.BBS";
 	int i,j,file;
 	uint desc_offset=0, size_offset=0;
@@ -721,7 +722,7 @@ int main(int argc, char **argv)
 		mode|=AUTO_ADD;
 		i=0; 
 	} else {
-		if(!isalnum(argv[1][0]) && argc==2) {
+		if(!isalnum((uchar)argv[1][0]) && argc==2) {
 			printf(usage);
 			return(1); 
 		}
@@ -814,7 +815,7 @@ int main(int argc, char **argv)
 						return(1); 
 			} 
 		}
-		else if(isdigit(argv[j][0])) {
+		else if(isdigit((uchar)argv[j][0])) {
 			if(desc_offset==0)
 				desc_offset=atoi(argv[j]);
 			else
@@ -824,9 +825,9 @@ int main(int argc, char **argv)
 		else if(argv[j][0]=='+') {      /* filelist - FILES.BBS */
 			listgiven=1;
 			if(argc > j+1
-				&& isdigit(argv[j+1][0])) { /* skip x characters before description */
+				&& isdigit((uchar)argv[j+1][0])) { /* skip x characters before description */
 				if(argc > j+2
-					&& isdigit(argv[j+2][0])) { /* skip x characters before size */
+					&& isdigit((uchar)argv[j+2][0])) { /* skip x characters before size */
 					addlist(argv[j]+1,f,atoi(argv[j+1]),atoi(argv[j+2]));
 					j+=2; 
 				}
@@ -908,7 +909,7 @@ int main(int argc, char **argv)
 						read(file,ext,512);
 						if(!(mode&KEEP_DESC)) {
 							sprintf(f.desc,"%.*s",LEN_FDESC,ext);
-							for(i=0;f.desc[i]>=' ' && i<LEN_FDESC;i++)
+							for(i=0;(f.desc[i]>=' ' || f.desc[i]<0) && i<LEN_FDESC;i++)
 								;
 							f.desc[i]=0; 
 						}

@@ -410,7 +410,6 @@ static void handle_resize_event(int width, int height)
 {
 	int newFSH=1;
 	int newFSW=1;
-	int oldscaling=vstat.scaling;
 
 	// No change
 	if((width == vstat.charwidth * vstat.cols * vstat.scaling)

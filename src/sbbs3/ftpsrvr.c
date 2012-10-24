@@ -79,8 +79,8 @@
 static ftp_startup_t*	startup=NULL;
 static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;
-static protected_int32_t active_clients;
-static protected_int32_t thread_count;
+static protected_uint32_t active_clients;
+static protected_uint32_t thread_count;
 static volatile time_t	uptime=0;
 static volatile ulong	served=0;
 static volatile BOOL	terminate_server=FALSE;
@@ -208,7 +208,7 @@ static void client_off(SOCKET sock)
 
 static int32_t thread_up(BOOL setuid)
 {
-	int32_t	count =	protected_int32_adjust(&thread_count,1);
+	int32_t	count =	protected_uint32_adjust(&thread_count,1);
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,TRUE, setuid);
 	return count;
@@ -216,7 +216,7 @@ static int32_t thread_up(BOOL setuid)
 
 static int32_t thread_down(void)
 {
-	int32_t count = protected_int32_adjust(&thread_count,-1);
+	int32_t count = protected_uint32_adjust(&thread_count,-1);
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,FALSE, FALSE);
 	return count;
@@ -2400,7 +2400,7 @@ static void ctrl_thread(void* arg)
 		return;
 	} 
 
-	protected_int32_adjust(&active_clients, 1), 
+	protected_uint32_adjust(&active_clients, 1), 
 	update_clients();
 
 	/* Initialize client display */
@@ -4478,7 +4478,7 @@ static void ctrl_thread(void* arg)
 	ftp_close_socket(&tmp_sock,__LINE__);
 
 	{
-		int32_t	clients = protected_int32_adjust(&active_clients, -1);
+		int32_t	clients = protected_uint32_adjust(&active_clients, -1);
 		int32_t	threads = thread_down();
 		update_clients();
 
@@ -4512,7 +4512,7 @@ static void cleanup(int code, int line)
 	if(active_clients.value)
 		lprintf(LOG_WARNING,"#### !FTP Server terminating with %ld active clients", active_clients.value);
 	else
-		protected_int32_destroy(active_clients);
+		protected_uint32_destroy(active_clients);
 
 	update_clients();
 
@@ -4627,7 +4627,7 @@ void DLLCALL ftp_server(void* arg)
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
-	protected_int32_init(&thread_count, 0);
+	protected_uint32_init(&thread_count, 0);
 
 	do {
 
@@ -4723,7 +4723,7 @@ void DLLCALL ftp_server(void* arg)
 
 		lprintf(LOG_DEBUG,"Maximum inactivity: %d seconds",startup->max_inactivity);
 
-		protected_int32_init(&active_clients, 0);
+		protected_uint32_init(&active_clients, 0);
 		update_clients();
 
 		strlwr(scfg.sys_id); /* Use lower-case unix-looking System ID for group name */
@@ -4921,5 +4921,5 @@ void DLLCALL ftp_server(void* arg)
 
 	} while(!terminate_server);
 
-	protected_int32_destroy(thread_count);
+	protected_uint32_destroy(thread_count);
 }

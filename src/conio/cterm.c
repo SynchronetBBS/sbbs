@@ -2009,34 +2009,34 @@ char *cterm_write(struct cterminal * cterm, const unsigned char *buf, int buflen
 					cterm->fontbuf[cterm->font_read++]=ch[0];
 					if(cterm->font_read == cterm->font_size) {
 #ifndef CTERM_WITHOUT_CONIO
-						char *buf;
+						char *buf2;
 
-						if((buf=(char *)malloc(cterm->font_size))!=NULL) {
-							memcpy(buf,cterm->fontbuf,cterm->font_size);
+						if((buf2=(char *)malloc(cterm->font_size))!=NULL) {
+							memcpy(buf2,cterm->fontbuf,cterm->font_size);
 							if(cterm->font_slot >= CONIO_FIRST_FREE_FONT) {
 								switch(cterm->font_size) {
 									case 4096:
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_sixteen);
-										conio_fontdata[cterm->font_slot].eight_by_sixteen=buf;
+										conio_fontdata[cterm->font_slot].eight_by_sixteen=buf2;
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
 										conio_fontdata[cterm->font_slot].desc=strdup("Remote Defined Font");
 										break;
 									case 3586:
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_fourteen);
-										conio_fontdata[cterm->font_slot].eight_by_fourteen=buf;
+										conio_fontdata[cterm->font_slot].eight_by_fourteen=buf2;
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
 										conio_fontdata[cterm->font_slot].desc=strdup("Remote Defined Font");
 										break;
 									case 2048:
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_eight);
-										conio_fontdata[cterm->font_slot].eight_by_eight=buf;
+										conio_fontdata[cterm->font_slot].eight_by_eight=buf2;
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
 										conio_fontdata[cterm->font_slot].desc=strdup("Remote Defined Font");
 										break;
 								}
 							}
 							else
-								FREE_AND_NULL(buf);
+								FREE_AND_NULL(buf2);
 						}
 #endif
 						cterm->font_size=0;

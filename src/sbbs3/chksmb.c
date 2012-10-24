@@ -347,7 +347,7 @@ int main(int argc, char **argv)
 
 		if(!(smb.status.attr&SMB_EMAIL) && chkhash) {
 			/* Look-up the message hashes */
-			hashes=smb_msghashes(&msg,body,SMB_HASH_SOURCE_DUPE);
+			hashes=smb_msghashes(&msg,(uchar*)body,SMB_HASH_SOURCE_DUPE);
 			if(hashes!=NULL 
 				&& hashes[0]!=NULL 
 				&& (i=smb_findhash(&smb,hashes,NULL,SMB_HASH_SOURCE_DUPE,/* mark */TRUE ))
@@ -373,7 +373,7 @@ int main(int argc, char **argv)
 						if(hashes[h]->flags&SMB_HASH_CRC32)
 							printf("%-10s: %08"PRIx32"\n","CRC-32",	hashes[h]->crc32);
 						if(hashes[h]->flags&SMB_HASH_MD5)
-							printf("%-10s: %s\n",	"MD5",		MD5_hex(str,hashes[h]->md5));
+							printf("%-10s: %s\n",	"MD5",		MD5_hex((BYTE*)str,hashes[h]->md5));
 
 #endif
 					}

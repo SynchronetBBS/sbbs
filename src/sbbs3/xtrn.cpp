@@ -1978,7 +1978,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			lprintf(LOG_NOTICE,"%.*s",i,buf);
 	}
 #else
-	waitpid(pid, &i, 0)==0;
+	waitpid(pid, &i, 0);
 #endif
 
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */

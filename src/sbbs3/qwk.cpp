@@ -337,8 +337,8 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 {
 	char	str[MAX_PATH+1];
 	int 	i;
-	long	l,deleted=0;
-	int32_t	msgs;
+	long	deleted=0;
+	uint32_t	u,msgs;
 	mail_t	*mail;
 	smbmsg_t msg;
 
@@ -397,12 +397,12 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 		}
 
 		/* Mark as READ and DELETE */
-		for(l=0;l<msgs;l++) {
-			if(mail[l].number>qwkmail_last)
+		for(u=0;u<msgs;u++) {
+			if(mail[u].number>qwkmail_last)
 				continue;
 			memset(&msg,0,sizeof(msg));
 			/* !IMPORTANT: search by number (do not initialize msg.idx.offset) */
-			if(!loadmsg(&msg,mail[l].number))
+			if(!loadmsg(&msg,mail[u].number))
 				continue;
 			if(!(msg.hdr.attr&MSG_READ)) {
 				if(thisnode.status==NODE_INUSE)

@@ -50,9 +50,10 @@ bool sbbs_t::pack_rep(uint hubnum)
 	char		hubid_lower[LEN_QWKID+1];
 	int 		file,mode;
 	uint		i,j,k;
-	long		l,msgcnt,submsgs,packedmail,netfiles=0,deleted;
-	int32_t		posts;
-	int32_t		mailmsgs;
+	long		msgcnt,submsgs,packedmail,netfiles=0,deleted;
+	uint32_t	u;
+	uint32_t	posts;
+	uint32_t	mailmsgs;
 	ulong		msgs;
 	uint32_t	last;
 	post_t*		post;
@@ -122,14 +123,14 @@ bool sbbs_t::pack_rep(uint hubnum)
 	packedmail=0;
 	if(mailmsgs) {
 		eprintf(LOG_INFO,"Packing NetMail for %s", cfg.qhub[hubnum]->id);
-		for(l=0;l<mailmsgs;l++) {
-	//		bprintf("\b\b\b\b\b%-5lu",l+1);
+		for(u=0;u<mailmsgs;u++) {
+	//		bprintf("\b\b\b\b\b%-5lu",u+1);
 
 			memset(&msg,0,sizeof(msg));
-			msg.idx=mail[l];
+			msg.idx=mail[u];
 			if(msg.idx.number>qwkmail_last)
 				qwkmail_last=msg.idx.number;
-			if(!loadmsg(&msg,mail[l].number))
+			if(!loadmsg(&msg,mail[u].number))
 				continue;
 
 			SAFEPRINTF(str,"%s/",cfg.qhub[hubnum]->id);
@@ -189,12 +190,12 @@ bool sbbs_t::pack_rep(uint hubnum)
 		subscan[j].ptr=last;                   /* set pointer */
 		eprintf(LOG_INFO,"%s",remove_ctrl_a(text[QWKPackingSubboard],tmp));	/* ptr to last msg	*/
 		submsgs=0;
-		for(l=0;l<posts;l++) {
-	//		bprintf("\b\b\b\b\b%-5lu",l+1);
+		for(u=0;u<posts;u++) {
+	//		bprintf("\b\b\b\b\b%-5lu",u+1);
 
 			memset(&msg,0,sizeof(msg));
-			msg.idx=post[l];
-			if(!loadmsg(&msg,post[l].number))
+			msg.idx=post[u];
+			if(!loadmsg(&msg,post[u].number))
 				continue;
 
 			if(msg.from_net.type && msg.from_net.type!=NET_QWK &&
@@ -222,7 +223,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			smb_unlockmsghdr(&smb,&msg);
 			msgcnt++;
 			submsgs++; 
-			if(!(l%50))
+			if(!(u%50))
 				YIELD(); /* yield */
 		}
 		eprintf(LOG_INFO,remove_ctrl_a(text[QWKPackedSubboard],tmp),submsgs,msgcnt);
@@ -304,12 +305,12 @@ bool sbbs_t::pack_rep(uint hubnum)
 
 		deleted=0;
 		/* Mark as READ and DELETE */
-		for(l=0;l<mailmsgs;l++) {
-			if(mail[l].number>qwkmail_last)
+		for(u=0;u<mailmsgs;u++) {
+			if(mail[u].number>qwkmail_last)
 				continue;
 			memset(&msg,0,sizeof(msg));
 			/* !IMPORTANT: search by number (do not initialize msg.idx.offset) */
-			if(!loadmsg(&msg,mail[l].number))
+			if(!loadmsg(&msg,mail[u].number))
 				continue;
 
 			SAFEPRINTF(str,"%s/",cfg.qhub[hubnum]->id);

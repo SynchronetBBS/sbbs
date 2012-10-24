@@ -155,7 +155,7 @@ void bail(int code)
 /*****************************************************************************/
 /* Expands Unix LF to CRLF													 */
 /*****************************************************************************/
-ulong lf_expand(BYTE* inbuf, BYTE* outbuf)
+ulong lf_expand(uchar* inbuf, uchar* outbuf)
 {
 	ulong	i,j;
 
@@ -176,8 +176,8 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 {
 	char		str[128];
 	char		buf[1024];
-	char*		msgtxt=NULL;
-	char*		newtxt;
+	uchar*		msgtxt=NULL;
+	uchar*		newtxt;
 	long		msgtxtlen;
 	ushort		net;
 	int 		i;
@@ -191,7 +191,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		i=fread(buf,1,sizeof(buf),fp);
 		if(i<1)
 			break;
-		if((msgtxt=(char*)realloc(msgtxt,msgtxtlen+i+1))==NULL) {
+		if((msgtxt=(uchar*)realloc(msgtxt,msgtxtlen+i+1))==NULL) {
 			fprintf(errfp,"\n%s!realloc(%ld) failure\n",beep,msgtxtlen+i+1);
 			bail(1);
 		}
@@ -203,7 +203,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 
 		msgtxt[msgtxtlen]=0;	/* Must be NULL-terminated */
 
-		if((newtxt=(char*)malloc((msgtxtlen*2)+1))==NULL) {
+		if((newtxt=(uchar*)malloc((msgtxtlen*2)+1))==NULL) {
 			fprintf(errfp,"\n%s!malloc(%ld) failure\n",beep,(msgtxtlen*2)+1);
 			bail(1);
 		}
@@ -608,7 +608,7 @@ void dump_hashes(void)
 		if(hash.flags&SMB_HASH_CRC32)
 			printf("%-10s: %08"PRIx32"\n","CRC-32",	hash.crc32);
 		if(hash.flags&SMB_HASH_MD5)
-			printf("%-10s: %s\n",	"MD5",		MD5_hex(tmp,hash.md5));
+			printf("%-10s: %s\n",	"MD5",		MD5_hex((BYTE*)tmp,hash.md5));
 	}
 
 	smb_close_hash(&smb);
@@ -814,7 +814,8 @@ typedef struct {
 /****************************************************************************/
 void packmsgs(ulong packable)
 {
-	uchar str[128],buf[SDT_BLOCK_LEN],ch,fname[128],tmpfname[128];
+	uchar	buf[SDT_BLOCK_LEN],ch;
+	char	str[128],fname[128],tmpfname[128];
 	int i,size;
 	ulong l,m,n,datoffsets=0,length,total;
 	FILE *tmp_sdt,*tmp_shd,*tmp_sid;

@@ -65,7 +65,7 @@ length=filelength(file);
 if(length<40) {
     close(file);
 	return(1); }
-if((buf=(char *)malloc(length))==0) {
+if((buf=malloc(length))==0) {
     close(file);
 	printf("error allocating %lu bytes\r\n",length);
 	return(1); }

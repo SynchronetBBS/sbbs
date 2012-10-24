@@ -473,7 +473,7 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 	return(FALSE);
 }
 
-BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, int64_t* sent)
+BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, uint64_t* sent)
 {
 	BOOL		success=FALSE;
 	int64_t		sent_bytes=0;
@@ -519,7 +519,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			
 			block_len=strlen(block)+1+i;
 			for(xm->errors=0;xm->errors<=xm->max_errors && !is_cancelled(xm) && is_connected(xm);xm->errors++) {
-				xmodem_put_block(xm, block, block_len <=XMODEM_MIN_BLOCK_SIZE ? XMODEM_MIN_BLOCK_SIZE:XMODEM_MAX_BLOCK_SIZE, 0  /* block_num */);
+				xmodem_put_block(xm, (uchar*)block, block_len <=XMODEM_MIN_BLOCK_SIZE ? XMODEM_MIN_BLOCK_SIZE:XMODEM_MAX_BLOCK_SIZE, 0  /* block_num */);
 				if((i=xmodem_get_ack(xm,/* tries: */1, /* block_num: */0)) == ACK) {
 					sent_header=TRUE;
 					break; 
@@ -570,7 +570,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			}
 			if(xm->progress!=NULL)
 				xm->progress(xm->cbdata,block_num,ftello(fp),st.st_size,startfile);
-			xmodem_put_block(xm, block, xm->block_size, block_num);
+			xmodem_put_block(xm, (uchar*)block, xm->block_size, block_num);
 			if(xmodem_get_ack(xm, /* tries: */5,block_num) != ACK) {
 				xm->errors++;
 				lprintf(xm,LOG_WARNING,"Block %u: Error #%d at offset %"PRId64

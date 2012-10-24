@@ -216,13 +216,13 @@ void add_bruted(unsigned long name, char good, char *val, int save)
 	}
 }
 
-int check_bruted(long name,char *val)
+int check_bruted(long name,unsigned char *val)
 {
 	int i;
 
 	for(i=0; i<bruted_len; i++) {
 		if(*(int32_t *)bruted[i]==name) {
-			if(!strcmp(val,bruted[i]+5))
+			if(!strcmp((char*)val,bruted[i]+5))
 				return(*(bruted[i]+4));
 		}
 	}
@@ -307,7 +307,7 @@ LOOP_END:
 				case 0:
 					break;
 				case 2:
-					add_bruted(name,1,brute_buf,1);
+					add_bruted(name,1,(char*)brute_buf,1);
 				case 1:
 					goto BRUTE_DONE;
 			}
@@ -320,7 +320,7 @@ LOOP_END:
 
 BRUTE_DONE:
 	printf("\r%s Found!\n",brute_buf);
-	return(brute_buf);
+	return((char*)brute_buf);
 }
 
 /* comparison function for var_table */
@@ -2338,7 +2338,7 @@ int main(int argc, char **argv)
 		if(!strncmp(argv[f],"-b",2)) {
 			brute_len=atoi(argv[f]+2);
 			if(brute_len) {
-				brute_buf=(char *)malloc(brute_len+1);
+				brute_buf=malloc(brute_len+1);
 				if(!brute_buf)
 					brute_len=0;
 				brute_crc_buf=(uint32_t *)malloc(brute_len*sizeof(uint32_t));

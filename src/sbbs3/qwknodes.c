@@ -43,9 +43,9 @@ unsigned _stklen=10000;
 smb_t		smb;
 scfg_t		cfg;
 
-void stripctrla(uchar *str)
+void stripctrla(char *str)
 {
-	uchar out[256];
+	char out[256];
 	int i,j;
 
 	for(i=j=0;str[i] && j<sizeof(out)-1;i++) {

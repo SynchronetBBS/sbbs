@@ -1652,7 +1652,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
  * send a file; returns true when session is successful. (or file is skipped)
  */
 
-BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, time_t* start, int64_t* sent)
+BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, time_t* start, uint64_t* sent)
 {
 	uint64_t	pos=0;
 	uint64_t	sent_bytes;
@@ -1764,18 +1764,18 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	p = zm->tx_data_subpacket;
 
-	SAFECOPY(zm->tx_data_subpacket,getfname(fname));
+	SAFECOPY(((char*)zm->tx_data_subpacket),getfname(fname));
 
-	p += strlen(p) + 1;
+	p += strlen((char*)p) + 1;
 
-	sprintf(p,"%"PRId64" %"PRIoMAX" 0 0 %u %"PRId64" 0"
+	sprintf((char*)p,"%"PRId64" %"PRIoMAX" 0 0 %u %"PRId64" 0"
 		,zm->current_file_size	/* use for estimating only, could be zero! */
 		,(uintmax_t)s.st_mtime
 		,zm->files_remaining
 		,zm->bytes_remaining
 		);
 
-	p += strlen(p) + 1;
+	p += strlen((char*)p) + 1;
 
 	for(attempts=0;;attempts++) {
 
@@ -1787,7 +1787,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	 	 */
 
 		lprintf(zm,LOG_DEBUG,"Sending ZFILE frame: '%s'"
-			,zm->tx_data_subpacket+strlen(zm->tx_data_subpacket)+1);
+			,zm->tx_data_subpacket+strlen((char*)zm->tx_data_subpacket)+1);
 
 		if((i=zmodem_send_bin_header(zm,zfile_frame))!=0) {
 			lprintf(zm,LOG_DEBUG,"zmodem_send_bin_header returned %d",i);
@@ -2110,14 +2110,14 @@ void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 	long		serial=-1L;
 	ulong		tmptime;
 
-	SAFECOPY(zm->current_file_name,getfname(zm->rx_data_subpacket));
+	SAFECOPY(zm->current_file_name,getfname((char*)zm->rx_data_subpacket));
 
 	zm->current_file_size = 0;
 	zm->current_file_time = 0;
 	zm->files_remaining = 0;
 	zm->bytes_remaining = 0;
 
-	i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%"SCNd64" %lo %o %lo %u %"SCNd64
+	i=sscanf((char*)zm->rx_data_subpacket+strlen((char*)zm->rx_data_subpacket)+1,"%"SCNd64" %lo %o %lo %u %"SCNd64
 		,&zm->current_file_size	/* file size (decimal) */
 		,&tmptime				/* file time (octal unix format) */
 		,&mode					/* file mode */
@@ -2128,7 +2128,7 @@ void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 	zm->current_file_time=tmptime;
 
 	lprintf(zm,LOG_DEBUG,"Zmodem file (ZFILE) data (%u fields): %s"
-		,i, zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1);
+		,i, zm->rx_data_subpacket+strlen((char*)zm->rx_data_subpacket)+1);
 
 	if(!zm->files_remaining)
 		zm->files_remaining = 1;

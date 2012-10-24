@@ -90,8 +90,8 @@ static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;
 static SOCKET	submission_socket=INVALID_SOCKET;
 static SOCKET	pop3_socket=INVALID_SOCKET;
-static protected_int32_t active_clients;
-static protected_int32_t thread_count;
+static protected_uint32_t active_clients;
+static protected_uint32_t thread_count;
 static volatile int		active_sendmail=0;
 static volatile BOOL	sendmail_running=FALSE;
 static volatile BOOL	terminate_server=FALSE;
@@ -218,7 +218,7 @@ static void client_off(SOCKET sock)
 
 static int32_t thread_up(BOOL setuid)
 {
-	int32_t	count =	protected_int32_adjust(&thread_count,1);
+	int32_t	count =	protected_uint32_adjust(&thread_count,1);
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,TRUE,setuid);
 	return count;
@@ -226,7 +226,7 @@ static int32_t thread_up(BOOL setuid)
 
 static int32_t thread_down(void)
 {
-	int32_t count = protected_int32_adjust(&thread_count,-1);
+	int32_t count = protected_uint32_adjust(&thread_count,-1);
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,FALSE,FALSE);
 	return count;
@@ -471,7 +471,7 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 	char		msgid[256];
 	char		date[64];
 	uchar*		p;
-	uchar*		np;
+	char*		np;
 	char*		content_type=NULL;
 	int			i;
 	int			s;
@@ -600,24 +600,24 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 
 	/* MESSAGE BODY */
 	lines=0;
-	p=msgtxt;
-	while(*p && lines<maxlines) {
+	np=msgtxt;
+	while(*np && lines<maxlines) {
 		len=0;
-		while(len<MAX_LINE_LEN && *(p+len)!=0 && *(p+len)!='\n')
+		while(len<MAX_LINE_LEN && *(np+len)!=0 && *(np+len)!='\n')
 			len++;
 
 		tlen=len;
-		while(tlen && *(p+(tlen-1))<=' ') /* Takes care of '\r' or spaces */
+		while(tlen && *(np+(tlen-1))<=' ') /* Takes care of '\r' or spaces */
 			tlen--;
 
-		if(!sockprintf(socket, "%s%.*s", *p=='.' ? ".":"", tlen, p))
+		if(!sockprintf(socket, "%s%.*s", *np=='.' ? ".":"", tlen, np))
 			break;
 		lines++;
-		if(*(p+len)=='\r')
+		if(*(np+len)=='\r')
 			len++;
-		if(*(p+len)=='\n')
+		if(*(np+len)=='\n')
 			len++;
-		p+=len;
+		np+=len;
 		/* release time-slices every x lines */
 		if(startup->lines_per_yield
 			&& !(lines%startup->lines_per_yield))	
@@ -756,7 +756,7 @@ static void pop3_thread(void* arg)
 	char		username[128];
 	char		password[128];
 	char		challenge[256];
-	char		digest[MD5_DIGEST_SIZE];
+	uchar		digest[MD5_DIGEST_SIZE];
 	char*		response="";
 	char*		msgtxt;
 	int			i;
@@ -767,7 +767,7 @@ static void pop3_thread(void* arg)
 	ulong		lines;
 	ulong		lines_sent;
 	ulong		login_attempts;
-	int32_t		msgs;
+	uint32_t	msgs;
 	long		msgnum;
 	ulong		bytes;
 	SOCKET		socket;
@@ -832,7 +832,7 @@ static void pop3_thread(void* arg)
 		return;
 	}
 
-	protected_int32_adjust(&active_clients, 1);
+	protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 
 	/* Initialize client display */
@@ -932,7 +932,7 @@ static void pop3_thread(void* arg)
 			strlwr(user.pass);	/* this is case-sensitive, so convert to lowercase */
 			strcat(challenge,user.pass);
 			MD5_calc(digest,challenge,strlen(challenge));
-			MD5_hex(str,digest);
+			MD5_hex((BYTE*)str,digest);
 			if(strcmp(str,response)) {
 				lprintf(LOG_NOTICE,"%04d !POP3 %s FAILED APOP authentication"
 					,socket,username);
@@ -1354,7 +1354,7 @@ static void pop3_thread(void* arg)
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
 
-	protected_int32_adjust(&active_clients, -1);
+	protected_uint32_adjust(&active_clients, -1);
 	update_clients();
 	client_off(socket);
 
@@ -1935,9 +1935,9 @@ void js_cleanup(JSRuntime* js_runtime, JSContext* js_cx, JSObject** js_glob)
 }
 #endif
 
-static uchar* get_header_field(uchar* buf, char* name, size_t maxlen)
+static char* get_header_field(char* buf, char* name, size_t maxlen)
 {
-	uchar*	p;
+	char*	p;
 	size_t	len;
 
 	if(buf[0]<=' ')	/* folded header */
@@ -1957,7 +1957,7 @@ static uchar* get_header_field(uchar* buf, char* name, size_t maxlen)
 	return p;
 }
 
-static int parse_header_field(uchar* buf, smbmsg_t* msg, ushort* type)
+static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 {
 	char*	p;
 	char*	tp;
@@ -2122,10 +2122,10 @@ static void parse_mail_address(char* p
 /* Decode quoted-printable content-transfer-encoded text */
 /* Ignores (strips) unsupported ctrl chars and non-ASCII chars */
 /* Does not enforce 76 char line length limit */
-static char* qp_decode(uchar* buf)
+static char* qp_decode(char* buf)
 {
-	uchar*	p=buf;
-	uchar*	dest=buf;
+	uchar*	p=(uchar*)buf;
+	uchar*	dest=p;
 
 	for(;;p++) {
 		if(*p==0) {
@@ -2253,7 +2253,7 @@ static void smtp_thread(void* arg)
 	char		response[128];
 	char		secret[64];
 	char		md5_data[384];
-	char		digest[MD5_DIGEST_SIZE];
+	uchar		digest[MD5_DIGEST_SIZE];
 	char		dest_host[128];
 	char*		errmsg;
 	ushort		dest_port;
@@ -2394,7 +2394,7 @@ static void smtp_thread(void* arg)
 	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
 		lprintf(LOG_INFO,"%04d SMTP Hostname: %s", socket, host_name);
 
-	protected_int32_adjust(&active_clients, 1);
+	protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 
 	SAFECOPY(hello_name,host_name);
@@ -2415,7 +2415,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,"550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			mail_close_socket(socket);
 			thread_down();
-			protected_int32_adjust(&active_clients, -1);
+			protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 			return;
 		}
@@ -2427,7 +2427,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,"550 CLIENT HOSTNAME BLOCKED: %s", host_name);
 			mail_close_socket(socket);
 			thread_down();
-			protected_int32_adjust(&active_clients, -1);
+			protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 			return;
 		}
@@ -2447,7 +2447,7 @@ static void smtp_thread(void* arg)
 				lprintf(LOG_NOTICE,"%04d !SMTP REFUSED SESSION from blacklisted server (%u total)"
 					,socket, ++stats.sessions_refused);
 				thread_down();
-				protected_int32_adjust(&active_clients, -1);
+				protected_uint32_adjust(&active_clients, -1);
 				update_clients();
 				return;
 			}
@@ -2461,7 +2461,7 @@ static void smtp_thread(void* arg)
 		sockprintf(socket,sys_unavail);
 		mail_close_socket(socket);
 		thread_down();
-		protected_int32_adjust(&active_clients, -1);
+		protected_uint32_adjust(&active_clients, -1);
 		update_clients();
 		return;
 	}
@@ -2484,7 +2484,7 @@ static void smtp_thread(void* arg)
 		sockprintf(socket,sys_error);
 		mail_close_socket(socket);
 		thread_down();
-		protected_int32_adjust(&active_clients, -1);
+		protected_uint32_adjust(&active_clients, -1);
 		update_clients();
 		return;
 	}
@@ -2834,7 +2834,7 @@ static void smtp_thread(void* arg)
 							break;
 						}
 					}
-					if((smb_error=parse_header_field(buf,&msg,&hfield_type))!=SMB_SUCCESS) {
+					if((smb_error=parse_header_field((char*)buf,&msg,&hfield_type))!=SMB_SUCCESS) {
 						if(smb_error==SMB_ERR_HDR_LEN)
 							lprintf(LOG_WARNING,"%04d !SMTP MESSAGE HEADER EXCEEDS %u BYTES"
 								,socket, SMB_MAX_HDR_LEN);
@@ -2988,7 +2988,7 @@ static void smtp_thread(void* arg)
 						sources&=~(1<<SMB_HASH_SOURCE_SUBJECT);
 					lprintf(LOG_DEBUG,"%04d SMTP Calculating message hashes (sources=%lx, msglen=%u)"
 						,socket, sources, strlen(msgbuf));
-					if((hashes=smb_msghashes(&msg, msgbuf, sources)) != NULL) {
+					if((hashes=smb_msghashes(&msg, (uchar*)msgbuf, sources)) != NULL) {
 						hash_t	found;
 
 						for(i=0;hashes[i];i++)
@@ -3443,7 +3443,7 @@ static void smtp_thread(void* arg)
 				md5_data[i]=secret[i]^0x5c;	/* opad */
 			memcpy(md5_data+i,digest,sizeof(digest));
 			MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
-			MD5_hex(str,digest);
+			MD5_hex((BYTE*)str,digest);
 			if(strcmp(p,str)) {
 				lprintf(LOG_WARNING,"%04d !SMTP %s FAILED CRAM-MD5 authentication"
 					,socket,relay_user.alias);
@@ -4071,7 +4071,7 @@ static void smtp_thread(void* arg)
 
 	status(STATUS_WFC);
 
-	protected_int32_adjust(&active_clients, -1);
+	protected_uint32_adjust(&active_clients, -1);
 	update_clients();
 	client_off(socket);
 
@@ -4254,7 +4254,7 @@ static void sendmail_thread(void* arg)
 	char		challenge[256];
 	char		secret[64];
 	char		md5_data[384];
-	char		digest[MD5_DIGEST_SIZE];
+	uchar		digest[MD5_DIGEST_SIZE];
 	char		numeric_ip[16];
 	char		domain_list[MAX_PATH+1];
 	char		dns_server[16];
@@ -4277,8 +4277,8 @@ static void sendmail_thread(void* arg)
 	smb_t		smb;
 	smbmsg_t	msg;
 	mail_t*		mail;
-	int32_t		msgs;
-	long		l;
+	uint32_t	msgs;
+	uint32_t	u;
 	size_t		len;
 	BOOL		sending_locally=FALSE;
 	link_list_t	failed_server_list;
@@ -4346,7 +4346,7 @@ static void sendmail_thread(void* arg)
 		last_msg=smb.status.last_msg;
 		last_scan=time(NULL);
 		mail=loadmail(&smb,&msgs,/* to network */0,MAIL_YOUR,0);
-		for(l=0; l<msgs; l++) {
+		for(u=0; u<msgs; u++) {
 			if(active_sendmail!=0)
 				active_sendmail=0, update_clients();
 
@@ -4365,10 +4365,10 @@ static void sendmail_thread(void* arg)
 
 			smb_freemsgmem(&msg);
 
-			msg.hdr.number=mail[l].number;
+			msg.hdr.number=mail[u].number;
 			if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
 				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) getting message index #%lu"
-					,i, smb.last_error, mail[l].number);
+					,i, smb.last_error, mail[u].number);
 				break;
 			}
 			if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS) {
@@ -4409,9 +4409,9 @@ static void sendmail_thread(void* arg)
 			truncstr(fromaddr," ");
 
 			lprintf(LOG_INFO,"0000 SEND Message #%lu (%u of %u) from %s%s %s to %s [%s]"
-				,msg.hdr.number, l+1, msgs, msg.from, fromext, fromaddr
+				,msg.hdr.number, u+1, msgs, msg.from, fromext, fromaddr
 				,msg.to, msg.to_net.addr);
-			SAFEPRINTF2(str,"Sending (%u of %u)", l+1, msgs);
+			SAFEPRINTF2(str,"Sending (%u of %u)", u+1, msgs);
 			status(str);
 #ifdef _WIN32
 			if(startup->outbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
@@ -4671,7 +4671,7 @@ static void sendmail_thread(void* arg)
 							memcpy(md5_data+i,digest,sizeof(digest));
 							MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
 							
-							safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex(str,digest));
+							safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex((BYTE*)str,digest));
 							b64_encode(p=resp,sizeof(resp),buf,0);
 							break;
 						default:
@@ -4853,7 +4853,7 @@ static void cleanup(int code)
 	if(active_clients.value)
 		lprintf(LOG_WARNING,"#### !Mail Server terminating with %ld active clients", active_clients.value);
 	else
-		protected_int32_destroy(active_clients);
+		protected_uint32_destroy(active_clients);
 
 	update_clients();
 
@@ -4992,7 +4992,7 @@ void DLLCALL mail_server(void* arg)
 	terminate_server=FALSE;
 
 	SetThreadName("Mail Server");
-	protected_int32_init(&thread_count, 0);
+	protected_uint32_init(&thread_count, 0);
 
 	do {
 
@@ -5118,7 +5118,7 @@ void DLLCALL mail_server(void* arg)
 
 		lprintf(LOG_DEBUG,"Maximum inactivity: %u seconds",startup->max_inactivity);
 
-		protected_int32_init(&active_clients, 0);
+		protected_uint32_init(&active_clients, 0);
 		update_clients();
 
 		/* open a socket and wait for a client */
@@ -5543,5 +5543,5 @@ void DLLCALL mail_server(void* arg)
 
 	} while(!terminate_server);
 
-	protected_int32_destroy(thread_count);
+	protected_uint32_destroy(thread_count);
 }

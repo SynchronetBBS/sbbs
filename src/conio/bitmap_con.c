@@ -299,7 +299,6 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 {
 	int	direction=1;
 	int	cy;
-	int	sy;
 	int	destoffset;
 	int	sourcepos;
 	int width=ex-x+1;

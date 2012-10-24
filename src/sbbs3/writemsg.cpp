@@ -188,7 +188,7 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, long mode, un
 /* message and 'title' is the title (70chars max) for the message.          */
 /* 'dest' contains a text description of where the message is going.        */
 /****************************************************************************/
-bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode, int subnum
+bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode, uint subnum
 	,const char *dest, char** editor)
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
