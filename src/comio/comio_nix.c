@@ -176,7 +176,7 @@ int comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
  */
 int comWriteString(COM_HANDLE handle, const char* str)
 {
-	return comWriteBuf(handle, str, strlen(str));
+	return comWriteBuf(handle, (BYTE*)str, strlen(str));
 }
 
 BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
