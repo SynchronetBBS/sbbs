@@ -70,6 +70,7 @@ int main(int argc, char **argv)
 	sub_status_t *sub_status;
 	scfg_t	cfg;
 	glob_t	gl;
+	size_t	glp;
 
 	fprintf(stderr,"\nSMBACTIV Version %s (%s) - Synchronet Message Base Activity "
 		"Monitor\n", SMBACTIV_VER, PLATFORM_DESC);
@@ -130,18 +131,17 @@ int main(int argc, char **argv)
 		free(sub_status);
 		return(1); }
 
-	j=0;
 	lprintf("\nComparing user pointers ");
-	for(j=0; j<gl.gl_pathc; j++) {
-		lprintf("%-5d\b\b\b\b\b",j);
-		SAFECOPY(str,gl.gl_pathv[j]);
+	for(glp=0; glp<gl.gl_pathc; glp++) {
+		lprintf("%-5d\b\b\b\b\b",glp);
+		SAFECOPY(str,gl.gl_pathv[glp]);
 		if((file=nopen(str,O_RDONLY|O_BINARY))==-1) {
 			continue; }
 		length=filelength(file);
 		for(i=0;i<cfg.total_subs;i++) {
 			if(sub_status[i].read>max_users)
 				continue;
-			if(length<(cfg.sub[i]->ptridx+1)*10L)
+			if(length<(cfg.sub[i]->ptridx+1)*10UL)
 				continue;
 			else {
 				lseek(file,((long)cfg.sub[i]->ptridx*10L)+4L,SEEK_SET);
