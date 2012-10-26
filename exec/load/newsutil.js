@@ -165,7 +165,9 @@ function parse_news_header(hdr, line)
 
 		default:
 			if(hdr.field_list==undefined)
-				hdr.field_list=new Array();
+				hdr.field_list=[];
+			if(hdr.extra_headers==undefined)
+				hdr.extra_headers=[];
 			hdr.extra_headers[line.toLowerCase()]=
 				{	type: RFC822HEADER, 
 					get data() { return(this.hdr_name+': '+this.hdr_data); },
