@@ -1704,8 +1704,8 @@ void pack_bundle(char *infile,faddr_t dest)
 			return; 
 		}
 
-	if(dest.point && !(misc&FLO_MAILER))
-		sprintf(fname,"%s%04hxp%03hx.%s",outbound,0,(short)dest.point,day);
+	if(dest.point)
+		sprintf(fname,"%s0000p%03hx.%s",outbound,(short)dest.point,day);
 	else
 		sprintf(fname,"%s%04hx%04hx.%s",outbound,(short)(sys_faddr.net-dest.net)
 			,(short)(sys_faddr.node-dest.node),day);
