@@ -3492,6 +3492,10 @@ static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval	*argv=JS_ARGV(cx, arglist);
 
+	if(!JSVAL_IS_OBJECT(argv[0])) {
+		JS_ReportError(cx, "get_size() error!  Parameter is not an object.");
+		return(JS_FALSE);
+	}
 	JSObject* tmp_obj=JSVAL_TO_OBJECT(argv[0]);
 	if(!tmp_obj)
 		return(JS_FALSE);
