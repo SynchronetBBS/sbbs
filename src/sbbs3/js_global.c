@@ -136,7 +136,17 @@ static void background_thread(void* arg)
 	JS_RemoveObjectRoot(bg->cx, &bg->logobj);
 	JS_RemoveObjectRoot(bg->cx, &bg->obj);
 	JS_ENDREQUEST(bg->cx);
-	JS_DestroyContext(bg->cx);
+	JS_DestroyContext(bg->cx);	/* exception here (Feb-5-2012):
+ 	mozjs185-1.0.dll!66f3cede() 	
+ 	[Frames below may be incorrect and/or missing, no symbols loaded for mozjs185-1.0.dll]	
+ 	mozjs185-1.0.dll!66f3d49d() 	
+ 	mozjs185-1.0.dll!66ee010f() 	
+ 	mozjs185-1.0.dll!66ebb0c9() 	
+>	sbbs.dll!background_thread(void * arg=0x0167f050)  Line 146 + 0xf bytes	C
+ 	sbbs.dll!_callthreadstart()  Line 259 + 0xf bytes	C
+ 	sbbs.dll!_threadstart(void * ptd=0x016a0590)  Line 243	C
+*/
+
 	jsrt_Release(bg->runtime);
 	sem_post(bg->sem);
 	free(bg);
@@ -487,7 +497,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		if(JS_GetProperty(cx, obj, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
 			JSObject* js_obj = JSVAL_TO_OBJECT(val);
 			
-			/* if js.exec_dir is defined (location of executed script), search their first */
+			/* if js.exec_dir is defined (location of executed script), search there first */
 			if(JS_GetProperty(cx, js_obj, "exec_dir", &val) && val!=JSVAL_VOID && JSVAL_IS_STRING(val)) {
 				JSVALUE_TO_STRING(cx, val, cpath, NULL);
 				SAFEPRINTF2(path,"%s%s",cpath,filename);
@@ -3491,12 +3501,13 @@ js_list_named_queues(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval	*argv=JS_ARGV(cx, arglist);
+	JSObject* tmp_obj;
 
 	if(!JSVAL_IS_OBJECT(argv[0])) {
 		JS_ReportError(cx, "get_size() error!  Parameter is not an object.");
 		return(JS_FALSE);
 	}
-	JSObject* tmp_obj=JSVAL_TO_OBJECT(argv[0]);
+	tmp_obj=JSVAL_TO_OBJECT(argv[0]);
 	if(!tmp_obj)
 		return(JS_FALSE);
 	JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL(JS_GetObjectTotalSize(cx, tmp_obj)));
