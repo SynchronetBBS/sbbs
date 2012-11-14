@@ -1764,7 +1764,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	p = zm->tx_data_subpacket;
 
-	SAFECOPY(((char*)zm->tx_data_subpacket),getfname(fname));
+	SAFECOPY(zm->tx_data_subpacket,getfname(fname));
 
 	p += strlen((char*)p) + 1;
 
