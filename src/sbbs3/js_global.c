@@ -1537,9 +1537,9 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 					j--;
 				break;
 			default:
-				if(inbuf[i]&0x80) {
+				if(((uchar)inbuf[i])&0x80) {
 					if(exascii) {
-						ch=inbuf[i]^0x80;
+						ch=((uchar)inbuf[i])^0x80;
 						if(exasctbl[ch].name!=NULL)
 							j+=sprintf(tmpbuf+j,"&%s;",exasctbl[ch].name);
 						else
