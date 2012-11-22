@@ -3461,7 +3461,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	}
 
 	usernumber=atoi(hdr.to);
-	if(!stricmp(hdr.to,"SYSOP"))  /* NetMail to "sysop" goes to #1 */
+	if(cfg.sysop_alias[0] && stricmp(hdr.to,cfg.sysop_alias)==0)  /* NetMail to configured SYSOP_ALIAS goes to user #1 */
 		usernumber=1;
 	if(!usernumber && match<scfg.total_faddrs)
 		usernumber=matchname(hdr.to);

@@ -221,7 +221,8 @@ typedef struct {
 			   ,outbound[82]		/* Outbound directory */
 			   ,areafile[128]		/* AREAS.BBS path/filename */
 			   ,logfile[128]		/* LOG path/filename */
-			   ,cfgfile[128];		/* Configuration path/filename */
+			   ,cfgfile[128]		/* Configuration path/filename */
+			   ,sysop_alias[FIDO_NAME_LEN];
 	ulong		maxpktsize			/* Maximum size for packets */
 			   ,maxbdlsize			/* Maximum size for bundles */
 			   ,log					/* What do we log? */
