@@ -1516,7 +1516,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 			case LF:
 			case CR:
 				if(wsp)
-					j+=sprintf(tmpbuf+j,"&#%u;",(uchar)inbuf[i]);
+					j+=sprintf(tmpbuf+j,"&#%u;",inbuf[i]);
 				else
 					tmpbuf[j++]=inbuf[i];
 				break;
