@@ -1,0 +1,88 @@
+﻿------------------------------------------------
+ FatFish: the fishing simulation door game.
+------------------------------------------------
+FatFish is a fishing simulation door game for Synchronet BBS systems.
+
+Please see README.txt.
+
+------------
+Requirements
+------------
+- FatFish relies on the following libraries from mcmlxxix:
+	- exec/load/event-timer.js
+	- exec/load/frame.js
+	- exec/load/mapgenerator.js
+	- exec/load/json-client.js
+  You can grab these from the Synchronet CVS repository.
+
+- You need to have a fairly updated Synchronet environment. Your exec/ and exec/load/ directories should be updated to 2 September 2012 from CVS.
+
+-------------------
+Supported Platforms
+-------------------
+Any platform that supports Synchronet and spidermonkey should be able to run FatFish.
+
+FatFish has been tested on:
+
+- Windows Server 2008 (x86).
+- Arch Linux (ARM - Raspberry Pi).
+
+------------
+Installation
+------------
+1. Get the sources. You can click the first 'snapshot' link here:
+     http://git.poorcoding.com/?p=fatfish
+   This will get the latest snapshot of the source from the repository in .tgz format.
+
+2. Extract and put the 'fatfish' folder into /sbbs/xtrn.
+
+3. Configure the door in SCFG:
+	╔[■][?]════════════════════════════════════════════════════╗
+	║                         Fat Fish                         ║
+	╠══════════════════════════════════════════════════════════╣
+	║ │Name                       Fat Fish                     ║
+	║ │Internal Code              FATFISH                      ║
+	║ │Start-up Directory                                      ║
+	║ │Command Line               *../xtrn/fatfish/fatfish.js  ║
+	║ │Clean-up Command Line                                   ║
+	║ │Execution Cost             None                         ║
+	║ │Access Requirements                                     ║
+	║ │Execution Requirements                                  ║
+	║ │Multiple Concurrent Users  Yes                          ║
+	║ │Intercept I/O              No                           ║
+	║ │Native Executable          No                           ║
+	║ │Use Shell to Execute       No                           ║
+	║ │Modify User Data           No                           ║
+	║ │Execute on Event           No                           ║
+	║ │Pause After Execution      No                           ║
+	║ │BBS Drop File Type         None                         ║
+	║ │Place Drop File In         Node Directory               ║
+	╚══════════════════════════════════════════════════════════╝
+
+4. If you did not install FatFish in the default location (/sbbs/xtrn/fatfish), then edit 'fatfish.js', the line where PATH_FATFISH is defined. You must update it to reflect the FatFish path on your system.
+
+------------
+Instructions
+------------
+Please see the README.txt document for in-game instructions.
+
+------------------------
+Hosting the JSON Service
+------------------------
+By default, FatFish will send and retrieve InterBBS data from the global server (Fatcats BBS). If you want to host your own JSON service, you are mostly on your own, please note:
+
+1. Your BBS should be configured with the JSON service. In your ctrl/services.ini, ensure this is enabled:
+	[JSON]
+	Port=10088
+	Options=STATIC | LOOP | NO_RECYCLE
+	Command=json-service.js
+
+2. Edit ctrl/json-service.ini, adding the line:
+	fatfish=../xtrn/fatfish/
+   Note that if you changed the installation path, this line must be similarly changed.
+
+3. Restart the Synchronet Services service.
+
+4. Edit 'fatfish.js'. Modify the line:
+	var json = new JSONClient("fatcatsbbs.com", 10088);
+   Change "fatcatsbbs.com" to "localhost", for example.
