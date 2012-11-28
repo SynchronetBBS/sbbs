@@ -1,0 +1,21 @@
+Editors will have quote text and messages wrapped/unwrapped as per setting
+wrap/unwrap 80
+	Quoted text is wrapped to 80 cols, message is unwrapped from 80 cols
+wrap/unwrap 79
+	Quoted text is wrapped to 79 cols, message is unwrapped from 79 cols
+Quote unwrap current
+	Quoted text is wrapped to the current number of cols, message is unwrapped from same
+Leave as is
+	Message needs no wrap/unwrap
+
+Soft CR is " \n", hard CR is "\r\n"
+
+Message bases have 79-col wraps using soft CRs.
+
+QWK uses the 79 column format as with message base
+On QWK import, messages are unwrapped
+
+FTN uses a modified 79 column format using FIDO soft CRs per spec.
+FTN import is translated to message base format.
+
+Newsgroup, email, etc. will simply be "fixed" for import/export per existing specs
