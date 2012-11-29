@@ -788,25 +788,25 @@ function Terrain(d) {
             if (smoothing) {
                 rm2 = random(3);
                 switch (rm2) {
-                    // BG strong < °±²Û > FG strong
+                    // BG strong < \xB0\xB1\xB2\xDB > FG strong
                     case 0:
                         //log(Math.floor(this.depth));
                         if (Math.floor(this.depth) <= -3.0) {
-                            this.texture = ANSI.FG_BLACK + ANSI.BG_BLUE + "°" + ANSI.DEFAULT;
+                            this.texture = ANSI.FG_BLACK + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
                         }
                         break;
                     case 1:
                         if (Math.floor(this.depth) > -1.5) {
-                            this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "°" + ANSI.DEFAULT;
+                            this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
                         } else {
-                            this.texture = ANSI.BOLD + ANSI.FG_BLUE + ANSI.BG_BLUE + "°" + ANSI.DEFAULT;
+                            this.texture = ANSI.BOLD + ANSI.FG_BLUE + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
                         }
                         break;
                     case 2:
                         if (Math.floor(this.depth) <= -2.5) {
-                            this.texture = ANSI.FG_BLACK + ANSI.BG_BLUE + "°" + ANSI.DEFAULT;
+                            this.texture = ANSI.FG_BLACK + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
                         } else {
-                            this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "°" + ANSI.DEFAULT;
+                            this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
                         }
                         break;
                 }
@@ -823,25 +823,25 @@ function Terrain(d) {
                 rm1 = random(5);
 
                 switch (rm1) {
-                    // °±²Û
+                    // \xB0\xB1\xB2\xDB
                     case 0:
-                        this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "²" + ANSI.DEFAULT;
+                        this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB2" + ANSI.DEFAULT;
                         break;
                     case 1:
-                        this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "±" + ANSI.DEFAULT;
+                        this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB1" + ANSI.DEFAULT;
                         break;
                     case 2:
-                        this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "°" + ANSI.DEFAULT;
+                        this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
                         break;
                     case 3:
                         if (this.depth > -0.5) {
-                            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "±" + ANSI.DEFAULT;
+                            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB1" + ANSI.DEFAULT;
                         } else {
-                            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "°" + ANSI.DEFAULT;
+                            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
                         }
                         break;
                     case 4:
-                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "°" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
                         break;
                 }
             }
@@ -857,24 +857,24 @@ function Terrain(d) {
                 r0 = random(6);
 
                 switch (r0) {
-                    // BG strong < °±²Û > FG strong
+                    // BG strong < \xB0\xB1\xB2\xDB > FG strong
                     case 0:
-                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "°" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "\xB0" + ANSI.DEFAULT;
                         break;
                     case 1:
-                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "±" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "\xB1" + ANSI.DEFAULT;
                         break;
                     case 2:
-                        this.texture = ANSI.FG_BLUE + ANSI.BG_CYAN + "°" + ANSI.DEFAULT;
+                        this.texture = ANSI.FG_BLUE + ANSI.BG_CYAN + "\xB0" + ANSI.DEFAULT;
                         break;
                     case 3:
-                        this.texture = ANSI.FG_BLUE + ANSI.BG_CYAN + "±" + ANSI.DEFAULT;
+                        this.texture = ANSI.FG_BLUE + ANSI.BG_CYAN + "\xB1" + ANSI.DEFAULT;
                         break;
                     case 4:
-                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "°" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "\xB0" + ANSI.DEFAULT;
                         break;
                     case 5:
-                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "±" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "\xB1" + ANSI.DEFAULT;
                         break;
                 }
             }
@@ -882,21 +882,21 @@ function Terrain(d) {
 
         case 1:
             // Sand.
-            this.texture = ANSI.BOLD + ANSI.FG_YELLOW + "Û" + ANSI.DEFAULT;
+            this.texture = ANSI.BOLD + ANSI.FG_YELLOW + "\xDB" + ANSI.DEFAULT;
 
             if (smoothing_land) {
                 r1 = random(3);
 
                 switch (r1) {
-                    // °±²Û
+                    // \xB0\xB1\xB2\xDB
                     case 0:
-                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "²" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "\xB2" + ANSI.DEFAULT;
                         break;
                     case 1:
-                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "±" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "\xB1" + ANSI.DEFAULT;
                         break;
                     case 2:
-                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_YELLOW + "±" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_YELLOW + "\xB1" + ANSI.DEFAULT;
                         break;
                 }
             }
@@ -912,15 +912,15 @@ function Terrain(d) {
                 r2 = random(3);
 
                 switch (r2) {
-                    // BG strong < °±²Û > FG strong
+                    // BG strong < \xB0\xB1\xB2\xDB > FG strong
                     case 0:
-                        this.texture = ANSI.BOLD + ANSI.BG_GREEN + ANSI.FG_GREEN + "°" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.BG_GREEN + ANSI.FG_GREEN + "\xB0" + ANSI.DEFAULT;
                         break;
                     case 1:
-                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_GREEN + "°" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_GREEN + "\xB0" + ANSI.DEFAULT;
                         break;
                     case 2:
-                        this.texture = ANSI.FG_YELLOW + ANSI.BG_GREEN + "°" + ANSI.DEFAULT;
+                        this.texture = ANSI.FG_YELLOW + ANSI.BG_GREEN + "\xB0" + ANSI.DEFAULT;
                         break;
                 }
             }
@@ -1472,7 +1472,7 @@ function render_status_bar(x, y, width, threshold, fgcol, thcol, bgcol) {
     //log("Filling in " + a + " out of " + width + " blocks.");
     console.write(fgcol);
     for (b = 0; b < a; b++) {
-        console.write("Û");
+        console.write("\xDB");
     }
 
     console.write(bgcol);
