@@ -238,7 +238,7 @@ function send_fetch_response(msgnum, fmat, uid)
 	}
 
 	/*
-	 * Sets the seen flag on a message (for INBOX only)
+	 * Sets the seen flag on a message
 	 */
 	function set_seen_flag() {
 		if(readonly)
@@ -255,6 +255,11 @@ function send_fetch_response(msgnum, fmat, uid)
 			}
 		}
 		else {
+			if(saved_config[index.code] == undefined)
+				saved_config[index.code] = {};
+			if(saved_config[index.code].Seen == undefined)
+				saved_config[index.code].Seen = {};
+			saved_config[index.code].Seen[msgnum]=1;
 			idx.attr |= MSG_READ;
 		}
 	}
@@ -757,6 +762,7 @@ any_state_command_handlers = {
 			var elapsed=0;
 
 			client.socket.send("+ Ooo, Idling... my favorite.\r\n");
+			save_cfg();
 			while(1) {
 				line=client.socket.recvline(10240, 5);
 				if(line==null) {
@@ -804,7 +810,6 @@ unauthenticated_command_handlers = {
 					return;
 				}
 				tagged(tag, "OK", "Howdy.");
-				read_cfg();
 				state=Authenticated;
 			}
 			else
@@ -823,7 +828,6 @@ unauthenticated_command_handlers = {
 				return;
 			}
 			tagged(tag, "OK", "Sure, come on in.");
-			read_cfg();
 			state=Authenticated;
 		},
 	}
@@ -935,11 +939,14 @@ function check_msgflags(attr, netattr, ismail, touser, fromuser, isoperator)
 	const from_perms=0;
 	var perms=0;
 
-	if(user.compare_ars("SYSOP"))
-		return(flags);	// SYSOP has godly powers.
-
-	// Only the sysop can diddle the network flags
-	flags.netattr=0;
+	if(user.compare_ars("SYSOP")) {
+		perms = attr;
+		perms &= ~MSG_READ;	// SYSOP has godly powers.
+	}
+	else {
+		// Only the sysop can diddle the network flags
+		flags.netattr=0;
+	}
 
 	if(isoperator)
 		perms |= op_perms;
@@ -1173,6 +1180,7 @@ function read_index(base)
 	var i;
 	var idx;
 	var index;
+	var newseen={};
 
 	index={offsets:[],idx:{}};
 	index.first=base.first_msg;
@@ -1182,6 +1190,8 @@ function read_index(base)
 
 	if(base.cfg != undefined)
 		index.code=base.cfg.code;
+	else
+		index.code='mail';
 	for(i=0; i<index.total; i++) {
 		idx=base.get_msg_index(true,i);
 		if(idx==null)
@@ -1193,13 +1203,16 @@ function read_index(base)
 		else {
 			// Fake \Seen
 			idx.attr &= ~MSG_READ;
-			if(idx.number <= msg_area.sub[base.cfg.code].scan_ptr)
+			if(saved_config[index.code].Seen[idx.number] == 1) {
 				idx.attr |= MSG_READ;
+				newseen[idx.number]=1;
+			}
 		}
 		index.idx[idx.number]=idx;
 		index.offsets.push(idx.number);
 		idx.offset=index.offsets.length;
 	}
+	saved_config[index.code].Seen=newseen;
 	return(index);
 }
 
@@ -1212,11 +1225,19 @@ function exit_func()
 function save_cfg()
 {
 	var cfg;
+	var s;
 
 	if(user.number > 0) {
 		cfg=new File(format(system.data_dir+"user/%04d.imap", user.number));
 		if(cfg.open()) {
-			cfg.iniSetObject("inbox",saved_config.inbox);
+			for(sub in saved_config) {
+				s=saved_config[sub].Seen;
+				delete saved_config[sub].Seen;
+				if(s != undefined)
+					cfg.iniSetObject(sub+'.seen',saved_config[sub].Seen);
+				cfg.iniSetObject(sub,saved_config[sub]);
+				saved_config[sub].Seen=s;
+			}
 			cfg.close();
 		}
 	}
@@ -1228,7 +1249,7 @@ function close_sub()
 		msg_ptrs[base.subnum]=scan_ptr;
 		if(msg_ptrs[base.subnum]!=orig_ptrs[base.subnum]) {
 			if(base.subnum==-1) {
-				saved_config.inbox.scan_ptr=scan_ptr;
+				saved_config.mail.scan_ptr=scan_ptr;
 			}
 			else
 				msg_area.sub[base.cfg.code].scan_ptr=scan_ptr;
@@ -1254,6 +1275,8 @@ function open_sub(sub)
 			msg_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
 		}
 	}
+	read_cfg(sub);
+
 	scan_ptr=orig_ptrs[base.subnum];
 	update_status();
 	sendflags(false);
@@ -1310,7 +1333,7 @@ authenticated_command_handlers = {
 			state=Selected;
 		},
 	},
-	EXAMINE:{	// Same as select onlt without the writability
+	EXAMINE:{	// Same as select only without the writability
 		arguments:1,
 		handler:function(args){
 			var tag=args[0];
@@ -1483,40 +1506,58 @@ function do_store(seq, uid, item, data)
 	var flags;
 	var chflags;
 	var hdr;
+	var mod_seen=false;
+	var idx;
+	var changed=false;
 
 	for(i in seq) {
+		idx=index.idx[seq[i]];
 		hdr=base.get_msg_header(seq[i]);
 		flags=parse_flags(data);
 		switch(item.toUpperCase()) {
 			case 'FLAGS.SILENT':
 				silent=true;
 			case 'FLAGS':
-				chflags={attr:hdr.attr^flags.attr, netattr:hdr.netattr^flags.netattr};
+				chflags={attr:idx.attr^flags.attr, netattr:hdr.netattr^flags.netattr};
 				break;
 			case '+FLAGS.SILENT':
 				silent=true;
 			case '+FLAGS':
-				chflags={attr:hdr.attr^(hdr.attr|flags.attr), netattr:hdr.netattr^(hdr.netattr|flags.netattr)};
+				chflags={attr:idx.attr^(idx.attr|flags.attr), netattr:hdr.netattr^(hdr.netattr|flags.netattr)};
 				break;
 			case '-FLAGS.SILENT':
 				silent=true;
 			case '-FLAGS':
-				chflags={attr:hdr.attr^(hdr.attr&~flags.attr), netattr:hdr.netattr^(hdr.netattr&~flags.netattr)};
+				chflags={attr:idx.attr^(idx.attr&~flags.attr), netattr:hdr.netattr^(hdr.netattr&~flags.netattr)};
 				break
 		}
+
+		if(chflags.attr & MSG_READ)
+			mod_seen=true;
 		chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==-1, hdr.to_net_type==NET_NONE?hdr.to==user.number:false, hdr.from_net_type==NET_NONE?hdr.from==user.number:false,base.is_operator);
 		if(chflags.attr || chflags.netattr) {
 			hdr.attr ^= chflags.attr;
 			hdr.netattr ^= chflags.netattr;
 			if(!readonly) {
 				base.put_msg_header(seq[i], hdr);
-				index=read_index(base);
+				changed=true;
 			}
-			hdr=base.get_msg_header(seq[i]);
+		}
+		if(mod_seen && base.cfg != undefined) {
+			if(saved_config[base.cfg.code] == undefined)
+				saved_config[base.cfg.code] = {};
+			if(saved_config[base.cfg.code].Seen == undefined) {
+				saved_config[base.cfg.code].Seen = {};
+				saved_config[base.cfg.code].Seen[header.number]=0;
+			}
+			saved_config[base.cfg.code].Seen[seq[i]] ^= 1;
+			changed=true;
 		}
 		if(!silent)
 			send_fetch_response(seq[i], ["FLAGS"], uid);
 	}
+	if(changed)
+		index=read_index(base);
 }
 
 function datestr(date)
@@ -1938,18 +1979,28 @@ selected_command_handlers = {
 	},
 };
 
-function read_cfg()
+function read_cfg(sub)
 {
 	var cfg=new File(format(system.data_dir+"user/%04d.imap",user.number));
 
 	if(cfg.open("r+")) {
-		saved_config.inbox=cfg.iniGetObject("inbox");
+		saved_config[sub]=cfg.iniGetObject(sub);
+		if(saved_config[sub]==undefined)
+			saved_config[sub]={};
+		saved_config[sub].Seen=cfg.iniGetObject(sub+'.seen');
 		cfg.close();
 	}
 	else
-		saved_config={inbox:{scan_ptr:0}};
-	msg_ptrs[-1]=saved_config.inbox.scan_ptr;
-	orig_ptrs[-1]=saved_config.inbox.scan_ptr;
+		saved_config[sub]={};
+
+	if(sub == 'mail') {
+		msg_ptrs[-1]=saved_config.mail.scan_ptr;
+		orig_ptrs[-1]=saved_config.mail.scan_ptr;
+	}
+	else {
+		if(saved_config[sub].Seen==undefined)
+			saved_config[sub].Seen={};
+	}
 }
 
 var line;
@@ -1957,7 +2008,7 @@ var readonly=true;
 var orig_ptrs={};
 var msg_ptrs={};
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
-var saved_config={inbox:{scan_ptr:0}};
+var saved_config={mail:{scan_ptr:0}};
 var scan_ptr;
 const RFC822HEADER = 0xb0;  // from smbdefs.h
 
