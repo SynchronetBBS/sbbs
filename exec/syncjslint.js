@@ -5256,7 +5256,7 @@ function SYNCJSLINT(argc, argv)
 
 		writeln("Loading "+fname);
 		if(f.open("r",65535)) {
-			all_lines=f.readAll();
+			all_lines=f.readAll(65535);
 			for(i=0; i<all_lines.length; i++) {
 				lines.splice(pos+offset+i, 0, all_lines[i]);
 				index.splice(pos+offset+i, 0, fname+":"+(i+1));
