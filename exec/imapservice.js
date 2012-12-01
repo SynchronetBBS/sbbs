@@ -16,6 +16,14 @@ var sepchar="|";
 var debug=true;
 var debugRX=true;
 
+// Global variables
+const UnAuthenticated=0;
+const Authenticated=1;
+const Selected=2;
+var state=UnAuthenticated;
+var base;
+var index={offsets:[],idx:{}};
+
 
 /**********************/
 /* Encoding functions */
@@ -80,7 +88,7 @@ MsgBase.HeaderPrototype.parse_headers=function(force)
 		delete this.parsed_headers;
 
 	if(this.parsed_headers==undefined)
-		this.parsed_headers=parse_headers(this.get_rfc822_header(force))
+		this.parsed_headers=parse_headers(this.get_rfc822_header(force));
 	return(this.parsed_headers);
 };
 
@@ -123,19 +131,19 @@ MsgBase.HeaderPrototype.get_envelope=function (force)
 
 	if(this.envelope==undefined) {
 		hdrs=this.parse_headers();
-		envelope=[];
-		envelope.push(parse_header(hdrs.date, false));
-		envelope.push(parse_header(hdrs.subject, false));
-		envelope.push(parse_header(hdrs.from, true));
-		envelope.push(parse_header(hdrs.sender, true));
-		envelope.push(parse_header(hdrs['reply-to'], true));
-		envelope.push(parse_header(hdrs.to, true));
-		envelope.push(parse_header(hdrs.cc, true));
-		envelope.push(parse_header(hdrs.bcc, true));
-		envelope.push(parse_header(hdrs['in-reply-to'], false));
-		envelope.push(parse_header(hdrs['message-id'], false));
+		this.envelope=[];
+		this.envelope.push(parse_header(hdrs.date, false));
+		this.envelope.push(parse_header(hdrs.subject, false));
+		this.envelope.push(parse_header(hdrs.from, true));
+		this.envelope.push(parse_header(hdrs.sender, true));
+		this.envelope.push(parse_header(hdrs['reply-to'], true));
+		this.envelope.push(parse_header(hdrs.to, true));
+		this.envelope.push(parse_header(hdrs.cc, true));
+		this.envelope.push(parse_header(hdrs.bcc, true));
+		this.envelope.push(parse_header(hdrs['in-reply-to'], false));
+		this.envelope.push(parse_header(hdrs['message-id'], false));
 	}
-	return(envelope);
+	return(this.envelope);
 };
 
 
@@ -722,14 +730,6 @@ function parse_command(line)
 	send_updates();
 	return(execute_line(parse_line()));
 }
-
-// Global variables
-const UnAuthenticated=0;
-const Authenticated=1;
-const Selected=2;
-var state=UnAuthenticated;
-var base;
-var index={offsets:[],idx:{}};
 
 // Command handling functions
 any_state_command_handlers = {
