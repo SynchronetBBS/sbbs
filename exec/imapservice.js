@@ -1207,7 +1207,7 @@ function read_index(base)
 		else {
 			// Fake \Seen
 			idx.attr &= ~MSG_READ;
-			if(saved_config[index.code].Seen[idx.number] == 1) {
+			if(saved_config[index.code].Seen != undefined && saved_config[index.code].Seen[idx.number] == 1) {
 				idx.attr |= MSG_READ;
 				newseen[idx.number]=1;
 			}
@@ -1238,7 +1238,7 @@ function save_cfg()
 				s=saved_config[sub].Seen;
 				delete saved_config[sub].Seen;
 				if(s != undefined)
-					cfg.iniSetObject(sub+'.seen',saved_config[sub].Seen);
+					cfg.iniSetObject(sub+'.seen',s);
 				cfg.iniSetObject(sub,saved_config[sub]);
 				saved_config[sub].Seen=s;
 			}
@@ -2005,7 +2005,7 @@ function read_cfg(sub)
 	if(cfg.open("r+")) {
 		secs=cfg.iniGetSections();
 		for(sec in secs) {
-			if(secs[sec].match(/\.seen$/))
+			if(secs[sec].search(/\.seen$/)!=-1)
 				continue;
 			saved_config[secs[sec]]=cfg.iniGetObject(secs[sec]);
 			if(saved_config[secs[sec]]==null)
@@ -2014,6 +2014,7 @@ function read_cfg(sub)
 			if(saved_config[secs[sec]].Seen==null)
 				saved_config[secs[sec]].Seen={};
 		}
+		cfg.close();
 	}
 
 	if(sub == 'mail') {
