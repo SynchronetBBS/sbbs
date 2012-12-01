@@ -1237,9 +1237,9 @@ function save_cfg()
 			for(sub in saved_config) {
 				s=saved_config[sub].Seen;
 				delete saved_config[sub].Seen;
+				cfg.iniSetObject(sub,saved_config[sub]);
 				if(s != undefined)
 					cfg.iniSetObject(sub+'.seen',s);
-				cfg.iniSetObject(sub,saved_config[sub]);
 				saved_config[sub].Seen=s;
 			}
 			cfg.close();
