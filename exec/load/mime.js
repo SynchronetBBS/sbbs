@@ -300,7 +300,7 @@ rfc5322abnf.obs_optional="(?:"+rfc5322abnf.field_name+abnf.WSP+"*:"+rfc5322abnf.
 rfc5322abnf.obs_fields="(?:(?:"+rfc5322abnf.obs_return+"|"+rfc5322abnf.obs_received+"|"+rfc5322abnf.obs_orig_date+"|"+rfc5322abnf.obs_from+"|"+rfc5322abnf.obs_sender+"|"+rfc5322abnf.obs_reply_to+"|"+rfc5322abnf.obs_to+"|"+rfc5322abnf.obs_cc+"|"+rfc5322abnf.obs_bcc+"|"+rfc5322abnf.obs_message_id+"|"+rfc5322abnf.obs_in_reply_to+"|"+rfc5322abnf.obs_references+"|"+rfc5322abnf.obs_subject+"|"+rfc5322abnf.obs_comments+"|"+rfc5322abnf.obs_keywords+"|"+rfc5322abnf.obs_resent_date+"|"+rfc5322abnf.obs_resent_from+"|"+rfc5322abnf.obs_resent_send+"|"+rfc5322abnf.obs_resent_rply+"|"+rfc5322abnf.obs_resent_to+"|"+rfc5322abnf.obs_resent_cc+"|"+rfc5322abnf.obs_resent_bcc+"|"+rfc5322abnf.obs_resent_mid+"|"+rfc5322abnf.obs_optional+")*)";
 
 // 3.5 Overall Message Syntax
-rfc5322abnf.body="(?:(?:(?:"+rfc5322abnf.text+"{0,998}"+abnf.CRLF+")*"+rfc5322abnf.text+"{0,998})|"+rfc5322abnf.obs_body+")"
+rfc5322abnf.body="(?:(?:(?:"+rfc5322abnf.text+"{0,998}"+abnf.CRLF+")*"+rfc5322abnf.text+"{0,998})|"+rfc5322abnf.obs_body+")";
 rfc5322abnf.message="(?:(?:"+rfc5322abnf.fields+"|"+rfc5322abnf.obs_fields+")(?:"+rfc5322abnf.CFLF+rfc5322abnf.body+")?)";
 
 /***************************/
@@ -569,7 +569,7 @@ abnf.obs_optional="(?:"+abnf.field_name+abnf.WSP+"*:"+abnf.unstructured+abnf.CRL
 abnf.obs_fields="(?:abnf.obs_optional*)";
 
 // 3.5 Overall Message Syntax
-abnf.body="(?:(?:(?:"+abnf.text+"{0,998}"+abnf.CRLF+")*"+abnf.text+"{0,998})|"+abnf.obs_body+")"
+abnf.body="(?:(?:(?:"+abnf.text+"{0,998}"+abnf.CRLF+")*"+abnf.text+"{0,998})|"+abnf.obs_body+")";
 abnf.message="(?:(?:"+abnf.fields+"|"+abnf.obs_fields+")(?:"+abnf.CFLF+abnf.body+")?)";
 
 /*************************/
@@ -774,6 +774,20 @@ function parse_mime_header(hdrstr)
 	return(hdr);
 }
 
+function parse_message(str)
+{
+	var ret={headers:{},text:''};
+	var tmp,tmp2;
+
+	tmp=str.split(/\r\n\r\n/);
+	ret.headers=parse_headers(tmp.shift()+"\r\n");
+	ret.text=tmp.join("\r\n\r\n");
+
+	//if(ret.headers[":mime:"].length > 0)
+		ret.mime=parse_mime(ret.headers, ret.text);
+	return(ret);
+}
+
 function parse_mime(hdrs, text)
 {
 	var i;
@@ -812,19 +826,5 @@ function parse_mime(hdrs, text)
 			ret.parts.push(parse_message(tmp[i]));
 	}
 
-	return(ret);
-}
-
-function parse_message(str)
-{
-	var ret={headers:{},text:''};
-	var tmp,tmp2;
-
-	tmp=str.split(/\r\n\r\n/);
-	ret.headers=parse_headers(tmp.shift()+"\r\n");
-	ret.text=tmp.join("\r\n\r\n");
-
-	//if(ret.headers[":mime:"].length > 0)
-		ret.mime=parse_mime(ret.headers, ret.text);
 	return(ret);
 }
