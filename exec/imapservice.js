@@ -1998,6 +1998,7 @@ function read_cfg(sub)
 	var cfg=new File(format(system.data_dir+"user/%04d.imap",user.number));
 	var secs;
 	var sec;
+	var seen;
 
 	if(saved_config[sub]==undefined)
 		saved_config[sub]={};
@@ -2005,14 +2006,25 @@ function read_cfg(sub)
 	if(cfg.open("r+")) {
 		secs=cfg.iniGetSections();
 		for(sec in secs) {
-			if(secs[sec].search(/\.seen$/)!=-1)
+			if(secs[sec].search(/\.seen$/)!=-1) {
+				if(saved_config[secs[sec]]==undefined)
+					saved_config[secs[sec]]={};
+				saved_config[secs[sec]].Seen=cfg.iniGetObject(secs[sec]+'.seen');
+				if(saved_config[secs[sec]].Seen==null)
+					saved_config[secs[sec]].Seen={};
 				continue;
-			saved_config[secs[sec]]=cfg.iniGetObject(secs[sec]);
-			if(saved_config[secs[sec]]==null)
-				saved_config[secs[sec]]={};
-			saved_config[secs[sec]].Seen=cfg.iniGetObject(secs[sec]+'.seen');
-			if(saved_config[secs[sec]].Seen==null)
-				saved_config[secs[sec]].Seen={};
+			}
+			else {
+				if(saved_config[secs[sec]] != undefined && saved_config[secs[sec]].Seen != undefined)
+					seen = saved_config[secs[sec]].Seen;
+				else
+					seen = undefined;
+				saved_config[secs[sec]]=cfg.iniGetObject(secs[sec]);
+				if(saved_config[secs[sec]]==null)
+					saved_config[secs[sec]]={};
+				if(seen != undefined)
+					saved_config[secs[sec]].Seen=seen;
+			}
 		}
 		cfg.close();
 	}
