@@ -259,6 +259,8 @@ function send_fetch_response(msgnum, fmat, uid)
 				saved_config[index.code] = {};
 			if(saved_config[index.code].Seen == undefined)
 				saved_config[index.code].Seen = {};
+			if(saved_config[index.code].Seen[msgnum] != 1)
+				seen_changed=true;
 			saved_config[index.code].Seen[msgnum]=1;
 			idx.attr |= MSG_READ;
 		}
@@ -500,6 +502,8 @@ function send_fetch_response(msgnum, fmat, uid)
 			}
 		}
 	}
+	if(seen_changed)
+		save_cfg();
 	if(seen_changed && !sent_flags) {
 		get_header();
 		resp += "FLAGS ("+calc_msgflags(idx.attr, hdr.netattr, base.subnum, msgnum, readonly)+") ";
@@ -1556,8 +1560,10 @@ function do_store(seq, uid, item, data)
 		if(!silent)
 			send_fetch_response(seq[i], ["FLAGS"], uid);
 	}
-	if(changed)
+	if(changed) {
+		save_cfg();
 		index=read_index(base);
+	}
 }
 
 function datestr(date)
@@ -1803,6 +1809,10 @@ function do_search(args, uid)
 		}
 		if(search_set.hdr.length > 0 || search_set.all.length > 0) {
 			hdr=base.get_msg_header(idx.number);
+			if(hdr==null) {
+				log("Unable to get header for idx.number");
+				continue;
+			}
 			for(j in search_set.hdr) {
 				if(search_set.hdr[j](hdr)==false)
 					failed=true;
@@ -1812,6 +1822,10 @@ function do_search(args, uid)
 		}
 		if(search_set.body.length > 0 || search_set.all.length > 0) {
 			body=base.get_msg_body(idx.number,true,true,true).toUpperCase();
+			if(body==null) {
+				log("Unable to get body for idx.number");
+				continue;
+			}
 			for(j in search_set.body) {
 				if(search_set.body[j](body)==false)
 					failed=true;
@@ -1982,16 +1996,25 @@ selected_command_handlers = {
 function read_cfg(sub)
 {
 	var cfg=new File(format(system.data_dir+"user/%04d.imap",user.number));
+	var secs;
+	var sec;
+
+	if(saved_config[sub]==undefined)
+		saved_config[sub]={};
 
 	if(cfg.open("r+")) {
-		saved_config[sub]=cfg.iniGetObject(sub);
-		if(saved_config[sub]==undefined)
-			saved_config[sub]={};
-		saved_config[sub].Seen=cfg.iniGetObject(sub+'.seen');
-		cfg.close();
+		secs=cfg.iniGetSections();
+		for(sec in secs) {
+			if(secs[sec].match(/\.seen$/))
+				continue;
+			saved_config[secs[sec]]=cfg.iniGetObject(secs[sec]);
+			if(saved_config[secs[sec]]==null)
+				saved_config[secs[sec]]={};
+			saved_config[secs[sec]].Seen=cfg.iniGetObject(secs[sec]+'.seen');
+			if(saved_config[secs[sec]].Seen==null)
+				saved_config[secs[sec]].Seen={};
+		}
 	}
-	else
-		saved_config[sub]={};
 
 	if(sub == 'mail') {
 		msg_ptrs[-1]=saved_config.mail.scan_ptr;
