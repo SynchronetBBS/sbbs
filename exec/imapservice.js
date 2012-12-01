@@ -2009,7 +2009,7 @@ function read_cfg(sub)
 			if(secs[sec].search(/\.seen$/)!=-1) {
 				if(saved_config[secs[sec]]==undefined)
 					saved_config[secs[sec]]={};
-				saved_config[secs[sec]].Seen=cfg.iniGetObject(secs[sec]+'.seen');
+				saved_config[secs[sec]].Seen=cfg.iniGetObject(secs[sec]);
 				if(saved_config[secs[sec]].Seen==null)
 					saved_config[secs[sec]].Seen={};
 				continue;
