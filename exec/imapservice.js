@@ -17,6 +17,41 @@ var debug=true;
 var debugRX=true;
 
 
+/**********************/
+/* Encoding functions */
+/**********************/
+/* 
+ * These encode at least as is passed (token/string/binary)
+ */
+function encode_binary(str)
+{
+	return '{'+str.length+'}\r\n'+str;
+}
+
+function encode_string(str)
+{
+	if(str=='')
+		return('""');
+
+	if(str.search(/[\r\n\x80-\xff]/)==-1) {
+		str=str.replace(/[\\\"]/, "\\$1");
+		return '"'+str+'"';
+	}
+
+	return encode_binary(str);
+}
+
+function encode_token(str)
+{
+	if(str=='')
+		return(encode_string(str));
+
+	if(str.search(/[\(\)\{ \x00-\x1F\*\%\"\\\]]/)==-1)
+		return str;
+
+	return(encode_string(str));
+}
+
 /*****************************/
 /* Message header extensions */
 /*****************************/
@@ -37,7 +72,7 @@ MsgBase.HeaderPrototype.get_from=function (force)
 			this.from_header = this.from+" <"+this.from.replace(/ /g,".").toLowerCase()+"@"+this.from_net_addr+">";
 	}
 	return(this.from_header);
-}
+};
 
 MsgBase.HeaderPrototype.parse_headers=function(force)
 {
@@ -47,11 +82,13 @@ MsgBase.HeaderPrototype.parse_headers=function(force)
 	if(this.parsed_headers==undefined)
 		this.parsed_headers=parse_headers(this.get_rfc822_header(force))
 	return(this.parsed_headers);
-}
+};
 
 MsgBase.HeaderPrototype.get_envelope=function (force)
 {
 	function parse_header(header, is_addresses) {
+		var m2;
+
 		if(header==undefined || header.length==0)
 			return("NIL");
 
@@ -99,7 +136,7 @@ MsgBase.HeaderPrototype.get_envelope=function (force)
 		envelope.push(parse_header(hdrs['message-id'], false));
 	}
 	return(envelope);
-}
+};
 
 
 /***********************/
@@ -143,41 +180,6 @@ function untagged(msg)
 	debug_log("IMAP Send: * "+msg, false);
 }
 
-
-/**********************/
-/* Encoding functions */
-/**********************/
-/* 
- * These encode at least as is passed (token/string/binary)
- */
-function encode_binary(str)
-{
-	return '{'+str.length+'}\r\n'+str;
-}
-
-function encode_string(str)
-{
-	if(str=='')
-		return('""');
-
-	if(str.search(/[\r\n\x80-\xff]/)==-1) {
-		str=str.replace(/[\\\"]/, "\\$1");
-		return '"'+str+'"';
-	}
-
-	return encode_binary(str);
-}
-
-function encode_token(str)
-{
-	if(str=='')
-		return(encode_string(str));
-
-	if(str.search(/[\(\)\{ \x00-\x1F\*\%\"\\\]]/)==-1)
-		return str;
-
-	return(encode_string(str));
-}
 
 /*************************************************************/
 /* Fetch response generation... this is the tricky bit.  :-) */
