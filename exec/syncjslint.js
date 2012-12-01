@@ -5288,6 +5288,101 @@ function SYNCJSLINT(argc, argv)
 	var tmpVar2;
 	var tmpVar3;
 	var optdone=false;
+
+	function dumparray(obj,indent) {
+		var prop;
+		var ind=format("%*s",indent,'');
+
+		writeln(ind+obj.sort().join("\r\n"+ind));
+	}
+
+	function dumpobjs(obj,indent) {
+		var prop;
+		var ind=format("%*s",indent,'');
+
+		if(obj.constructor.toString().substr(0,16) == 'function Array()')
+			dumparray(obj,indent);
+		else {
+			for(prop in obj) {
+				if(typeof(obj[prop])=='object') {
+					writeln(ind+prop+":");
+					if(obj[prop].constructor.toString().substr(0,16) == 'function Array()')
+						dumparray(obj[prop],indent+2);
+					else
+						dumpobjs(obj[prop],indent+2);
+				}
+				else {
+					writeln(ind+prop+": "+obj[prop]);
+				}
+			}
+		}
+	}
+
+	function dumpFunc(obj) {
+		var prop;
+		var indent=2;
+		var ind=format("%*s",indent,'');
+
+		writeln(ind+obj.name+"("+(obj.params===undefined?'':obj.params)+"):");
+		indent+=2;
+		ind=format("%*s",indent,'');
+		writeln(ind+index[obj.line]);
+		for(prop in obj) {
+			switch(prop) {
+				case 'name':
+				case 'line':
+				case 'params':
+					break;
+				default:
+					if(typeof(obj[prop])=='object') {
+						writeln(ind+prop+":");
+						dumpobjs(obj[prop],indent+2);
+					}
+					else {
+						writeln(ind+prop+": "+obj[prop]);
+					}
+			}
+		}
+	}
+
+	function dumpFuncs(obj) {
+		var f;
+		var indent=0;
+		var ind=format("%*s",indent,'');
+
+		if(obj !== undefined) {
+			writeln("Functions:");
+			for(f in obj) {
+				dumpFunc(obj[f]);
+				writeln('');
+			}
+		}
+	}
+
+	function dumpGlobals(obj) {
+		var gl;
+
+		if(obj !== undefined) {
+			writeln('Defined Globals:');
+			writeln('  '+obj.sort().join("\r\n  "));
+		}
+	}
+
+	function dumpURLs(obj) {
+		var gl;
+
+		if(obj !== undefined) {
+			writeln('URLs:');
+			writeln('  '+obj.sort().join("\r\n  "));
+		}
+	}
+
+	function dumpJSON(obj) {
+		if(obj !== undefined) {
+			writeln('JSON: '+obj);
+		}
+	}
+
 	for(tmpVar1 in argv) {
 		if(tmpVar1.search(/^[0-9]+$/)!=-1) {
 			if(!optdone) {
@@ -5328,100 +5423,6 @@ function SYNCJSLINT(argc, argv)
 						writeln(JSLINT.errors[tmpVar2].evidence);
 						writeln(format("%.*s",JSLINT.errors[tmpVar2].character,JSLINT.errors[tmpVar2].evidence).replace(/[^\x00-\x1f]/g,' ')+'^');
 					}
-				}
-			}
-
-			function dumparray(obj,indent) {
-				var prop;
-				var ind=format("%*s",indent,'');
-
-				writeln(ind+obj.sort().join("\r\n"+ind));
-			}
-
-			function dumpobjs(obj,indent) {
-				var prop;
-				var ind=format("%*s",indent,'');
-
-				if(obj.constructor.toString().substr(0,16) == 'function Array()')
-					dumparray(obj,indent);
-				else {
-					for(prop in obj) {
-						if(typeof(obj[prop])=='object') {
-							writeln(ind+prop+":");
-							if(obj[prop].constructor.toString().substr(0,16) == 'function Array()')
-								dumparray(obj[prop],indent+2);
-							else
-								dumpobjs(obj[prop],indent+2);
-						}
-						else {
-							writeln(ind+prop+": "+obj[prop]);
-						}
-					}
-				}
-			}
-
-			function dumpFunc(obj) {
-				var prop;
-				var indent=2;
-				var ind=format("%*s",indent,'');
-
-				writeln(ind+obj.name+"("+(obj.params===undefined?'':obj.params)+"):");
-				indent+=2;
-				ind=format("%*s",indent,'');
-				writeln(ind+index[obj.line]);
-				for(prop in obj) {
-					switch(prop) {
-						case 'name':
-						case 'line':
-						case 'params':
-							break;
-						default:
-							if(typeof(obj[prop])=='object') {
-								writeln(ind+prop+":");
-								dumpobjs(obj[prop],indent+2);
-							}
-							else {
-								writeln(ind+prop+": "+obj[prop]);
-							}
-					}
-				}
-			}
-
-			function dumpFuncs(obj) {
-				var f;
-				var indent=0;
-				var ind=format("%*s",indent,'');
-
-				if(obj !== undefined) {
-					writeln("Functions:");
-					for(f in obj) {
-						dumpFunc(obj[f]);
-						writeln('');
-					}
-				}
-			}
-
-			function dumpGlobals(obj) {
-				var gl;
-
-				if(obj !== undefined) {
-					writeln('Defined Globals:');
-					writeln('  '+obj.sort().join("\r\n  "));
-				}
-			}
-
-			function dumpURLs(obj) {
-				var gl;
-
-				if(obj !== undefined) {
-					writeln('URLs:');
-					writeln('  '+obj.sort().join("\r\n  "));
-				}
-			}
-
-			function dumpJSON(obj) {
-				if(obj !== undefined) {
-					writeln('JSON: '+obj);
 				}
 			}
 
