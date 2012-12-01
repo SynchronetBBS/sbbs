@@ -32,8 +32,8 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 		if(this.replyto != undefined)
 			this.rfc822 += "Reply-To: "+this.replyto+"\r\n";
 		else {
-			if(base.subnum != -1)
-				this.rfc822 += 'Reply-To: "'+this.from+'" <sub:'+base.cfg.code+'@'+system.inet_addr+'>\r\n';
+			if(this.subnum != -1)
+				this.rfc822 += 'Reply-To: "'+this.from+'" <sub:'+this.cfg.code+'@'+system.inet_addr+'>\r\n';
 		}
 		if(this.reply_id != undefined)
 			this.rfc822 += "In-Reply-To: "+this.reply_id+"\r\n";
@@ -78,4 +78,4 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 		this.rfc822 += "\r\n";
 	}
 	return this.rfc822;
-}
+};
