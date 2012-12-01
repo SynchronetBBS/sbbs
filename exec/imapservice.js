@@ -2012,7 +2012,6 @@ function read_cfg(sub)
 				saved_config[secs[sec]].Seen=cfg.iniGetObject(secs[sec]);
 				if(saved_config[secs[sec]].Seen==null)
 					saved_config[secs[sec]].Seen={};
-				continue;
 			}
 			else {
 				if(saved_config[secs[sec]] != undefined && saved_config[secs[sec]].Seen != undefined)
