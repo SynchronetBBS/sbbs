@@ -455,23 +455,28 @@ function Frame(x,y,width,height,attr,parent) {
 				return(false);
 			var lines=f.readAll(4096);
 			f.close();
+			
 			var attr = this.attr;
 			var bg = BG_BLACK;
 			var fg = LIGHTGRAY;
+			
 			var i = 0;
-
 			var y = 0;
+			var saved = {};
+			
 			while(lines.length > 0) {	
 				var x = 0;
 				var line = lines.shift();
-				while(line.length > 0) {
-					/* check line status */
-					if(x >= this.width) {
-						x = 0;
-						y++;
+				/* parse 'ATCODES'?? 
+				line = line.replace(/@(.*)@/g,
+					function (str, code, offset, s) {
+						return bbs.atcode(code);
 					}
+				);
+				*/
+				while(line.length > 0) {
 					/* parse an attribute sequence*/
-					var m = line.match(/^\x1b\[(\d+);?(\d*);?(\d*)m/);
+					var m = line.match(/^\x1b\[(\d*);?(\d*);?(\d*)m/);
 					if(m !== null) {
 						line = line.substr(m.shift().length);
 						if(m[0] == 0) {
@@ -543,23 +548,126 @@ function Frame(x,y,width,height,attr,parent) {
 						attr = bg + fg + i;
 						continue;
 					}
-					/* parse a positional sequence */
-					var n = line.match(/^\x1b\[(\d+)C/);
-					if(n !== null) {
-						line = line.substr(n.shift().length);
-						x+=Number(n.shift());
+					
+					/* parse absolute character position */
+					var m = line.match(/^\x1b\[(\d*);?(\d*)[Hf]/);
+					if(m !== null) {
+						line = line.substr(m.shift().length);
+						
+						if(m.length==0) {
+							x=0;
+							y=0;
+						}
+						else {
+							if(m[0])
+								y = Number(m.shift())-1;
+							if(m[0])
+								x = Number(m.shift())-1;
+						}
 						continue;
 					}
+					
+					/* ignore a bullshit sequence */
+					var n = line.match(/^\x1b\[\?7h/);
+					if(n !== null) {
+						line = line.substr(n.shift().length);
+						continue;
+					}
+					
+					/* parse an up positional sequence */
+					var n = line.match(/^\x1b\[(\d*)A/);
+					if(n !== null) {
+						line = line.substr(n.shift().length);
+						var chars = n.shift();
+						if(chars < 1)
+							y-=1;
+						else
+							y-=Number(chars);
+						continue;
+					}
+					
+					/* parse a down positional sequence */
+					var n = line.match(/^\x1b\[(\d*)B/);
+					if(n !== null) {
+						line = line.substr(n.shift().length);
+						var chars = n.shift();
+						if(chars < 1)
+							y+=1;
+						else
+							y+=Number(chars);
+						continue;
+					}
+					
+					/* parse a forward positional sequence */
+					var n = line.match(/^\x1b\[(\d*)C/);
+					if(n !== null) {
+						line = line.substr(n.shift().length);
+						var chars = n.shift();
+						if(chars < 1)
+							x+=1;
+						else
+							x+=Number(chars);
+						continue;
+					}
+					
+					/* parse a backward positional sequence */
+					var n = line.match(/^\x1b\[(\d*)D/);
+					if(n !== null) {
+						line = line.substr(n.shift().length);
+						var chars = n.shift()
+						if(chars < 1)
+							x-=1;
+						else
+							x-=Number(chars);
+						continue;
+					}
+					
+					/* parse a clear screen sequence */
+					var n = line.match(/^\x1b\[2J/);
+					if(n !== null) {
+						line = line.substr(n.shift().length);
+						continue;
+					}
+					
+					/* parse save cursor sequence */
+					var n = line.match(/^\x1b\[s/);
+					if(n !== null) {
+						line = line.substr(n.shift().length);
+						saved.x = x;
+						saved.y = y;
+						continue;
+					}
+
+					/* parse restore cursor sequence */
+					var n = line.match(/^\x1b\[u/);
+					if(n !== null) {
+						line = line.substr(n.shift().length);
+						x = saved.x;
+						y = saved.y;
+						continue;
+					}
+
 					/* set character and attribute */
 					var ch = line[0];
 					line = line.substr(1);
+					
+					/* validate position */
+					if(y<0) 
+						y=0; 
+					if(x<0)
+						x=0;
+					if(x>=this.width) {
+						x=0;
+						y++;
+					}
+					/* set character and attribute */
 					if(!properties.data[y])
 						properties.data[y]=[];
 					properties.data[y][x]=new Char(ch,attr);
 					x++;
 				}
 				y++;
-			}
+			}			
 			break;
 		case "BIN":
 			if(width == undefined || height == undefined)
