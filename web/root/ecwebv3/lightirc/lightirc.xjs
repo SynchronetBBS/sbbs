@@ -25,15 +25,15 @@
 <script language="javascript" type="text/javascript">
 document.getElementById('lightIRC').innerHTML = "";
 var params = {
-	host : '<?xjs write(http_request.host); ?>',
-	policyPort : '<?xjs write(fspPort); ?>',
-	language : 'en',
-	nickselect : 'yes',
-	nick : '<?xjs write(user.alias); ?>',
-	autojoin : '#bbs',
-	ident : '<?xjs write(user.alias); ?>',
-	realname : '<?xjs write(user.name); ?>',
-	quitmsg : '<?xjs write(system.name); ?>'
+	host : "<?xjs write(http_request.host); ?>",
+	policyPort : "<?xjs write(fspPort); ?>",
+	language : "en",
+	nickselect : "yes",
+	nick : "<?xjs write(user.alias); ?>",
+	autojoin : "#bbs",
+	ident : "<?xjs write(user.alias); ?>",
+	realname : "<?xjs write(user.name); ?>",
+	quitmsg : "<?xjs write(system.name); ?>"
 };
 if(<?xjs write(embed); ?>)
 	swfobject.embedSWF('http://<?xjs write(http_request.host); ?>:<?xjs write(webIni.HTTPPort); ?>/<?xjs write(webIni.appendURL); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
