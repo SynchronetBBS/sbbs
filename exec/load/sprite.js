@@ -562,10 +562,11 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > 80 
 			|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > 24)
 			return false;
-		var w = new Sprite(this.ini.weapon, this.frame.parent, 
+		var w = new Sprite.Aerial(this.ini.weapon, this.frame.parent, 
 			this.weaponCoordinates.x, this.weaponCoordinates.y, this.bearing);
 		w.owner = this;
 		w.frame.open(); // Shouldn't be necessary, but sprite doesn't appear unless I do this
+		return(w);
 	}
 	
 	this.getcmd = function(userInput) {
