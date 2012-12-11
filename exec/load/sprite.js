@@ -387,8 +387,10 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 	this.lastAttack = system.timer;
 	this.open = true;
 	this.weaponCoordinates = { x : 0, y : 0 };
-	this.bearings = {undefined:0};
-	this.positions = {undefined:0};
+//	this.bearings = {undefined:0};
+//	this.positions = {undefined:0};
+	this.bearings = {};
+	this.positions = {};
 
 	this.move = function(direction) {
 		if(
