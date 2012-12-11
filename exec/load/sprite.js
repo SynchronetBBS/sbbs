@@ -492,7 +492,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 				break;
 		}
 		/* increment or decrement bearing */
-		if(direction = "cw")
+		if(direction == "cw")
 			b++;
 		else if(direction == "ccw") 
 			b--;
