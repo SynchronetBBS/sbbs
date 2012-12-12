@@ -26,17 +26,23 @@
 		}
 
 		//will print "hello" 10 times at 10 second intervals
-		timer.addEvent(10000,10,hello);
+		var event1 = timer.addEvent(10000,10,hello);
 		
 		//will print "hello" infinitely at 20 second intervals
-		timer.addEvent(20000,true,print,"hello");
+		var event2 = timer.addEvent(20000,true,print,"hello");
+		
+		//will print "hello" once after 30 seconds
+		var event3 = timer.addEvent(30000,false,
 		
 		while(timer.events.length > 0) {
+			
+			// iterate events list and run any events that are scheduled
 			timer.cycle();
 			mswait(1000);
+			
+			// mark event1 for deletion on next timer.cycle() 
+			event1.abort = true;
 		}
-		
-		//script will end when the event runs its course
 */
 function Timer() {
 	this.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
@@ -100,9 +106,14 @@ function Timer() {
 		this.abort=false;
 		/* run event */
 		this.run = function() {
-			this.action.apply(this.context,this.arguments);
 			this.lastrun = Date.now();
+			this.action.apply(this.context,this.arguments);
 		}
+		
+		/* poll event for time remaining until next run */
+		this.__defineGetter__("nextrun",function() {
+			return (this.interval - (Date.now() - this.lastrun));
+		});
 	}
 };
 
