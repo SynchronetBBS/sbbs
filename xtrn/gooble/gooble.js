@@ -18,6 +18,8 @@ var pellets = 0;
 var userInput = "";
 var edible = false;
 var fruitPos = 0;
+var KEY_JUMP = undefined;
+var KEY_FIRE = undefined;
 
 var frame = new Frame(1, 1, 80, 24, BG_BLACK);
 var splash = new Frame(1, 1, 80, 24, BG_BLACK, frame);
@@ -199,7 +201,7 @@ var play = function() {
 					score = score + (2000 * level);
 					scoreFrame2.clear();
 					scoreFrame2.putmsg(score);
-				} else if(o[i].position == "edible") {
+				} else if(o[i].position == "edible" || o[i].position == "warning") {
 					o[i].remove();
 					score = score + 1000;
 					scoreFrame2.clear();
