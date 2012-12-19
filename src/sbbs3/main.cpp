@@ -3069,6 +3069,7 @@ bool sbbs_t::init()
 			errormsg(WHERE,ERR_CREATE,"duplicate socket handle",client_socket);
 			return(false);
 		}
+		lprintf(LOG_DEBUG,"Node %d socket %u duplicated as %u", cfg.node_num, client_socket, client_socket_dup);
 #else
 		client_socket_dup = client_socket;
 #endif
