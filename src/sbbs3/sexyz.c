@@ -1167,7 +1167,7 @@ static int receive_files(char** fname_list, int fnames)
 			lprintf(LOG_DEBUG,"Incoming filename: %.64s ",fname);
 
 			if(mode&RECVDIR)
-				sprintf(str,"%s%s",fname_list[0],getfname(fname));
+				SAFEPRINTF(str,"%s%s",fname_list[0],getfname(fname));
 			else {
 				SAFECOPY(str,getfname(fname));
 				for(i=0;i<fnames;i++) {
@@ -1767,7 +1767,7 @@ int main(int argc, char **argv)
 				bail(1); 
 				return -1;
 			}
-			sprintf(str,"%s",argv[i]+1);
+			SAFEPRINTF(str,"%s",argv[i]+1);
 			if((fp=fopen(str,"r"))==NULL) {
 				fprintf(statfp,"!Error %d opening filelist: %s\n",errno,str);
 				bail(1); 
