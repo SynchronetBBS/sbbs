@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -618,7 +618,7 @@ configuration before deciding, hit ~ ESC ~.
 void txt_cfg()
 {
 	static int txt_dflt,bar;
-	char str[81],code[9],done=0,*p;
+	char str[128],code[128],done=0,*p;
 	int j,k;
 	uint i;
 	static txtsec_t savtxtsec;
@@ -674,10 +674,8 @@ This is the name of this text section.
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Name",str,40
 				,K_EDIT)<1)
 				continue;
-			sprintf(code,"%.8s",str);
-			p=strchr(code,' ');
-			if(p) *p=0;
-			strupr(code);
+			SAFECOPY(code,str);
+			prep_code(code,/* prefix: */NULL);
 			SETHELP(WHERE);
 /*
 `Text Section Internal Code:`
@@ -788,7 +786,7 @@ abreviation of the name.
 void shell_cfg()
 {
 	static int shell_dflt,shell_bar;
-	char str[81],code[9],done=0,*p;
+	char str[128],code[128],done=0,*p;
 	int j,k;
 	uint i;
 	static shell_t savshell;
@@ -843,10 +841,8 @@ This is the descriptive name of this command shell.
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Name",str,40
 				,K_EDIT)<1)
 				continue;
-			sprintf(code,"%.8s",str);
-			p=strchr(code,' ');
-			if(p) *p=0;
-			strupr(code);
+			SAFECOPY(code,str);
+			prep_code(code,/* prefix: */NULL);
 			SETHELP(WHERE);
 /*
 `Command Shell Internal Code:`
@@ -1974,6 +1970,7 @@ char* prep_code(char *str, const char* prefix)
 		tmp[j]=0;
 		strcpy(str,tmp);
 	}
+	str[LEN_CODE]=0;
 	return(str);
 }
 

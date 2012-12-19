@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -781,7 +781,7 @@ re-initialized, set this option to ~Yes~.
 void xtrn_cfg(uint section)
 {
 	static int ext_dflt,ext_bar,sub_bar,opt_dflt,time_dflt;
-	char str[128],code[9],done=0,*p;
+	char str[128],code[128],done=0,*p;
 	int j,k;
 	uint i,n,xtrnnum[MAX_OPTS+1];
 	static xtrn_t savxtrn;
@@ -832,10 +832,8 @@ This is the name or description of the online program (door).
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Name",str,25
 			,0)<1)
             continue;
-		sprintf(code,"%.8s",str);
-		p=strchr(code,' ');
-		if(p) *p=0;
-        strupr(code);
+		SAFECOPY(code,str);
+		prep_code(code,/* prefix: */NULL);
 		SETHELP(WHERE);
 /*
 `Online Program Internal Code:`
@@ -1547,10 +1545,8 @@ This is the name or description of the external editor.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"External Editor Name",str,40
 			,0)<1)
             continue;
-		sprintf(code,"%.8s",str);
-		p=strchr(code,' ');
-		if(p) *p=0;
-        strupr(code);
+		SAFECOPY(code,str);
+		prep_code(code,/* prefix: */NULL);
 		SETHELP(WHERE);
 /*
 `External Editor Internal Code:`
@@ -1827,7 +1823,17 @@ FIXME
 				}
 				break;
 			case 8:
-				k=3;
+				switch(cfg.xedit[i]->misc&(QUOTEALL|QUOTENONE)) {
+					case 0:		/* prompt user */
+						k=2;
+						break;
+					case QUOTENONE:
+						k=1;
+						break;
+					default:	/* all */
+						k=0;
+						break;
+				}
 				strcpy(opt[0],"All");
 				strcpy(opt[1],"None");
 				strcpy(opt[2],"Prompt User");
@@ -2069,7 +2075,7 @@ return(0);
 void xtrnsec_cfg()
 {
 	static int xtrnsec_dflt,xtrnsec_opt;
-	char str[81],code[9],done=0,*p;
+	char str[128],code[128],done=0,*p;
 	int j,k;
 	uint i;
 	static xtrnsec_t savxtrnsec;
@@ -2112,10 +2118,8 @@ This is the name of this section.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Section Name",str,40
 			,0)<1)
             continue;
-		sprintf(code,"%.8s",str);
-		p=strchr(code,' ');
-		if(p) *p=0;
-        strupr(code);
+		SAFECOPY(code,str);
+		prep_code(code,/* prefix: */NULL);
 		SETHELP(WHERE);
 /*
 `Online Program Section Internal Code:`
