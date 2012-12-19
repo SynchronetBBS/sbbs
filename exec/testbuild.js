@@ -184,7 +184,7 @@ for(i in builds) {
 body += "-----\n";
 body += elapsed_time(time()-start) + " - total\n";
 
-send_email(system.platform + " builds successful", lfexpand(body));
+send_email(system.platform + " builds successful in " + elapsed_time(time() - start), lfexpand(body));
 
 chdir(temp_dir);
 
