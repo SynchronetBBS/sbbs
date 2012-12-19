@@ -3035,6 +3035,10 @@ sbbs_t::sbbs_t(ushort node_num, SOCKADDR_IN addr, const char* name, SOCKET sd,
 	batdn_alt=NULL;
 	batdn_cdt=NULL;
 
+	/* used by update_qwkroute(): */
+	qwknode=NULL;	
+	total_qwknodes=0;
+
 	spymsg("Connected");
 }
 

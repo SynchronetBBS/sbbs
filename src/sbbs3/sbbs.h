@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -762,6 +762,12 @@ public:
 	ulong	qwkmail_last;
 	void	qwk_sec(void);
 	int		qwk_route(char *inaddr, char *fulladdr);
+	uint	total_qwknodes;
+	struct qwknode {
+		char	id[LEN_QWKID+1];
+		char	path[MAX_PATH+1];
+		time_t	time;
+	}* qwknode;
 	void	update_qwkroute(char *via);
 	void	qwk_success(ulong msgcnt, char bi, char prepack);
 	void	qwksetptr(uint subnum, char *buf, int reset);
