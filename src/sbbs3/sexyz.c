@@ -1167,7 +1167,7 @@ static int receive_files(char** fname_list, int fnames)
 			lprintf(LOG_DEBUG,"Incoming filename: %.64s ",fname);
 
 			if(mode&RECVDIR)
-				SAFEPRINTF(str,"%s%s",fname_list[0],getfname(fname));
+				SAFEPRINTF2(str,"%s%s",fname_list[0],getfname(fname));
 			else {
 				SAFECOPY(str,getfname(fname));
 				for(i=0;i<fnames;i++) {
