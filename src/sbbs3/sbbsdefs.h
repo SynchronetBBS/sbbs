@@ -58,8 +58,8 @@
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version " VERSION
 #define SYNCHRONET_CRC		0x9BCDD162
-#define COPYRIGHT_NOTICE	"Copyright 2011 Rob Swindell"
-#define COPYRIGHT_CRC		0x3D5C1DE9
+#define COPYRIGHT_NOTICE	"Copyright 2012 Rob Swindell"
+#define COPYRIGHT_CRC		0x413D3832
 
 #define Y2K_2DIGIT_WINDOW	70
 
