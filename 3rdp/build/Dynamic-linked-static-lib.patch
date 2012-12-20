@@ -1,0 +1,18 @@
+--- tools/ccopts.sh.orig	2012-12-20 14:30:15.000000000 -0800
++++ tools/ccopts.sh	2012-12-20 14:30:57.000000000 -0800
+@@ -176,7 +176,6 @@
+ # of large-displacement jumps, so if you're tuning the code for size/speed
+ # you can try -fpic to see if you get any improvement.
+ 
+-if [ $# -eq 2 ] ; then
+ 	case $OSNAME in
+ 		'Darwin')
+ 			CCARGS="$CCARGS -fPIC -fno-common" ;;
+@@ -197,7 +196,6 @@
+ 		*)
+ 			CCARGS="$CCARGS -fPIC" ;;
+ 	esac ;
+-fi
+ 
+ # Conversely, if we're building a static lib and the system requires it, set
+ # up static lib-specific options.
