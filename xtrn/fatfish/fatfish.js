@@ -11,7 +11,7 @@
  */
 
 /* Path to FatFish. */
-var PATH_FATFISH = "/sbbs/xtrn/fatfish/";
+var PATH_FATFISH = js.exec_dir;
 
 /* Set to true for slow processor or low memory. Restricts lake size to 80x25 maximum. */
 var SHITTY_BOX = false;
@@ -68,7 +68,7 @@ fishFrame.transparent = true;
 var popupFrame = new Frame(1, 1, lake_x, lake_y, undefined, frame);
 popupFrame.transparent = true;
 /* Shop frame */
-var shopFrame = new Frame(1, 1, parseInt(lake_x/2), parseInt(lake_y/2), undefined, frame);
+var shopFrame = new Frame(1, 1, parseInt(lake_x / 2), parseInt(lake_y / 2), undefined, frame);
 //shopFrame.transparent = true;
 shopFrame.clear(BG_LIGHTGRAY);
 
@@ -232,6 +232,7 @@ popupFrame.top();
 loadFish();
 renderLake();
 renderBoat();
+
 if (SHITTY_BOX) {
     renderBar("Ahoy! Welcome to FatFish! Hit '?' for help.");
 } else {
@@ -245,6 +246,8 @@ if (SHITTY_BOX) {
     popupFrame.draw();
     timer_game.addEvent(10000, false, event_popup_clear);
 }
+
+//frame.invalidate();
 
 while (is_fatfishing) {
     timer_fish.cycle();
@@ -300,13 +303,22 @@ while (is_fatfishing) {
         case "i":
             /* Display manual */
             var help_file = PATH_FATFISH + "README.txt";
+            
+            console.writeln(ANSI.DEFAULT);
+            console.home();
+            console.clear();            
 
             console.line_counter = 0;
             console.printfile(help_file);
             console.line_counter = 0;
             console.pause();
+            console.clear();
+            console.write(ANSI.DEFAULT);
 
             frame.invalidate();
+            frame.draw();
+            statusFrame.invalidate();
+            statusFrame.draw();
 
             break;
 
@@ -337,7 +349,7 @@ while (is_fatfishing) {
 
                     console.gotoxy(1, lake_y + 1);
                     console.cleartoeol(HIGH | YELLOW | BG_BROWN);
-                    console.write(ANSI.BOLD + ANSI.FG_YELLOW + " Left/right: "+ rod_col + rods[rod_idx].name + ANSI.FG_BLACK + " (wgt:" + rods[rod_idx].weight + "kg, line:" + rods[rod_idx].max_line_distance + "m, ten:" + rods[rod_idx].max_line_tension + "kg)");
+                    console.write(ANSI.BOLD + ANSI.FG_YELLOW + " Left/right: " + rod_col + rods[rod_idx].name + ANSI.FG_BLACK + " (wgt:" + rods[rod_idx].weight + "kg, line:" + rods[rod_idx].max_line_distance + "m, ten:" + rods[rod_idx].max_line_tension + "kg)");
                     redraw_rodding = false;
                 }
 
@@ -411,7 +423,7 @@ while (is_fatfishing) {
         case "?":
         case "h":
             // Display help.
-
+            console.writeln(ANSI.DEFAULT);
             console.clear();
             console.printfile(PATH_FATFISH + "help.ans");
             console.line_counter = 0;
@@ -474,16 +486,16 @@ while (is_fatfishing) {
 }
 
 /* map rendering functions */
-function drawFish(x,y) {
+function drawFish(x, y) {
     var attr = BG_BLUE;
-	var fish = fish_map[x][y][0];
+    var fish = fish_map[x][y][0];
     if (lake.map[fish.y][fish.x].depth >= -1)
         attr = BG_CYAN;
     fishFrame.setData(x, y, fish.texture, fish.attr | attr);
 }
 
-function unDrawFish(x,y) {
-	fishFrame.clearData(x, y);
+function unDrawFish(x, y) {
+    fishFrame.clearData(x, y);
 }
 
 function renderBar(msg) {
@@ -522,12 +534,12 @@ function renderBar(msg) {
         statusFrame.gotoxy(30, 1);
         statusFrame.putmsg(bar_msg_persist);
 
-    //} else if (msg !=undefined && msg.length == 0) {
+        //} else if (msg !=undefined && msg.length == 0) {
         //log("Status reset received.");
     } else if (msg == undefined) {
-        //log("Status undefined received.");
+            //log("Status undefined received.");
 
-        // Redraw persisting status.
+            // Redraw persisting status.
         statusFrame.gotoxy(30, 1);
         statusFrame.putmsg(bar_msg_persist);
     }
@@ -579,47 +591,47 @@ function renderBoat() {
 function loadFish() {
     for (var a = 0; a < fishes.length; a++) {
         var rfish = fishes[a];
-		
-		if(!fish_map[rfish.x])
-			fish_map[rfish.x] = {};
-		if(!fish_map[rfish.x][rfish.y])
-			fish_map[rfish.x][rfish.y] = [];
-		fish_map[rfish.x][rfish.y].push(rfish);
+
+        if (!fish_map[rfish.x])
+            fish_map[rfish.x] = {};
+        if (!fish_map[rfish.x][rfish.y])
+            fish_map[rfish.x][rfish.y] = [];
+        fish_map[rfish.x][rfish.y].push(rfish);
     }
 }
 
 function showFish() {
-	for(var x in fish_map) {
-		for(var y in fish_map[x]) {
-			/* break after drawing the first fish at this location */
-			for(var f=0;f<fish_map[x][y].length;f++) {
-				var fish = fish_map[x][y][f];
-				/* if this fish is no longer in this location,
+    for (var x in fish_map) {
+        for (var y in fish_map[x]) {
+            /* break after drawing the first fish at this location */
+            for (var f = 0; f < fish_map[x][y].length; f++) {
+                var fish = fish_map[x][y][f];
+                /* if this fish is no longer in this location,
 				remove it from this location's fish stack */
-				if(fish.x != x || fish.y != y) {
-					fish_map[x][y].splice(f--,1);
-				}
-			}
-			/* if this location is now empty, 
+                if (fish.x != x || fish.y != y) {
+                    fish_map[x][y].splice(f--, 1);
+                }
+            }
+            /* if this location is now empty, 
 			clear it */
-			if(fish_map[x][y].length == 0) {
-				delete fish_map[x][y];
-				unDrawFish(x,y);
-			}
-			/* otherwise draw the topmost fish */
-			else {
-				drawFish(x,y);
-			}
-		}
-	}
+            if (fish_map[x][y].length == 0) {
+                delete fish_map[x][y];
+                unDrawFish(x, y);
+            }
+                /* otherwise draw the topmost fish */
+            else {
+                drawFish(x, y);
+            }
+        }
+    }
 }
 
 function hideFish() {
-	for(var x in fish_map) {
-		for(var y in fish_map[x]) {
-			unDrawFish(x,y);
-		}
-	}
+    for (var x in fish_map) {
+        for (var y in fish_map[x]) {
+            unDrawFish(x, y);
+        }
+    }
 }
 
 function renderLake() {
@@ -686,7 +698,7 @@ function initMap() {
     map.minRadius = 10;
     map.maxRadius = 15;
     var r_hills = 50 + parseInt(console.screen_rows * console.screen_columns / 100) + random(200);
-        /* Give these hillz some flava. */
+    /* Give these hillz some flava. */
     map.hills = r_hills
     map.island = true;
     map.lake = true;
@@ -767,11 +779,9 @@ function Terrain(d) {
     if (this.depth <= 1.0) {
         this.depth = this.depth - 1;
 
-        // TODO: Update the original Map with transposed values.
     }
 
     // Generate some random land textures.
-    //switch (Math.round(this.depth)) {
     switch (Math.floor(this.depth)) {
         case -10:
         case -9:
@@ -783,7 +793,7 @@ function Terrain(d) {
         case -3:
         case -2:
             // Deeper  water.
-            this.texture = ANSI.BG_BLUE + " " + ANSI.DEFAULT;
+            this.texture = ANSI.UNBOLD + ANSI.BG_BLUE + " ";
 
             if (smoothing) {
                 rm2 = random(3);
@@ -792,32 +802,34 @@ function Terrain(d) {
                     case 0:
                         //log(Math.floor(this.depth));
                         if (Math.floor(this.depth) <= -3.0) {
-                            this.texture = ANSI.FG_BLACK + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
+                            this.texture = ANSI.UNBOLD + ANSI.FG_BLACK + ANSI.BG_BLUE + "\xB0";
                         }
                         break;
+                        
                     case 1:
+                        // This case appears to break on some systems?
+                        // TODO: alternate smoothing rendering engine.
                         if (Math.floor(this.depth) > -1.5) {
-                            this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
+                            this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0";
                         } else {
-                            this.texture = ANSI.BOLD + ANSI.FG_BLUE + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
+                            this.texture = ANSI.BOLD + ANSI.FG_BLUE + ANSI.BG_BLUE + "\xB0";
                         }
                         break;
                     case 2:
                         if (Math.floor(this.depth) <= -2.5) {
-                            this.texture = ANSI.FG_BLACK + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
+                            this.texture = ANSI.UNBOLD + ANSI.FG_BLACK + ANSI.BG_BLUE + "\xB0";
                         } else {
-                            this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
+                            this.texture = ANSI.UNBOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0";
                         }
                         break;
                 }
             }
 
-            // TODO: Blacken if depth < 2.0
-
             break;
+
         case -1:
             // Deep water.
-            this.texture = ANSI.BG_BLUE + " " + ANSI.DEFAULT;
+            this.texture = ANSI.UNBOLD + ANSI.BG_BLUE + " ";
 
             if (smoothing) {
                 rm1 = random(5);
@@ -825,23 +837,36 @@ function Terrain(d) {
                 switch (rm1) {
                     // \xB0\xB1\xB2\xDB
                     case 0:
-                        this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB2" + ANSI.DEFAULT;
+                        this.texture = ANSI.UNBOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB2";
                         break;
                     case 1:
-                        this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB1" + ANSI.DEFAULT;
+                        this.texture = ANSI.UNBOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB1";
                         break;
                     case 2:
-                        this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
+                        // Definitely causes issues on some BBSes.
+                        this.texture = ANSI.UNBOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0";                        
+                        // TODO: alternate smoothing rendering engine.
+                        //this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0";
                         break;
                     case 3:
                         if (this.depth > -0.5) {
-                            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB1" + ANSI.DEFAULT;
-                        } else {
-                            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
+                            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB2";
+                            // TODO: alternate smoothing rendering engine.
+                            //this.texture = ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB1";
+                        } else {                            
+                            // Definitely causes issues on some BBSes.
+                            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB0";
+                            // TODO: alternate smoothing rendering engine.
+                            // Bugfix?                            
+                            //this.texture = ANSI.FG_BLUE + ANSI.BG_GREEN + "\xB2";
                         }
                         break;
                     case 4:
-                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0" + ANSI.DEFAULT;
+                        // Definitely causes issues on some BBSes.
+                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0";
+                        // TODO: alternate smoothing rendering engine.
+                        // Bugfix?
+                        //this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB1";
                         break;
                 }
             }
@@ -850,7 +875,7 @@ function Terrain(d) {
 
         case 0:
             // Water.
-            this.texture = ANSI.BG_CYAN + " " + ANSI.DEFAULT;
+            this.texture = ANSI.UNBOLD + ANSI.BG_CYAN + " ";
 
             if (smoothing) {
 
@@ -859,71 +884,79 @@ function Terrain(d) {
                 switch (r0) {
                     // BG strong < \xB0\xB1\xB2\xDB > FG strong
                     case 0:
-                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "\xB0" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "\xB0";
                         break;
                     case 1:
-                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "\xB1" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "\xB1";
                         break;
                     case 2:
-                        this.texture = ANSI.FG_BLUE + ANSI.BG_CYAN + "\xB0" + ANSI.DEFAULT;
+                        this.texture = ANSI.UNBOLD + ANSI.FG_BLUE + ANSI.BG_CYAN + "\xB0";
                         break;
                     case 3:
-                        this.texture = ANSI.FG_BLUE + ANSI.BG_CYAN + "\xB1" + ANSI.DEFAULT;
+                        this.texture = ANSI.UNBOLD + ANSI.FG_BLUE + ANSI.BG_CYAN + "\xB1";
                         break;
                     case 4:
-                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "\xB0" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "\xB0";
                         break;
                     case 5:
-                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "\xB1" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "\xB1";
                         break;
                 }
             }
+
             break;
 
         case 1:
             // Sand.
-            this.texture = ANSI.BOLD + ANSI.FG_YELLOW + "\xDB" + ANSI.DEFAULT;
-
+            this.texture = ANSI.BOLD + ANSI.FG_YELLOW + "\xDB";
+            
             if (smoothing_land) {
                 r1 = random(3);
 
                 switch (r1) {
                     // \xB0\xB1\xB2\xDB
                     case 0:
-                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "\xB2" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "\xB2";
                         break;
                     case 1:
-                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "\xB1" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "\xB1";
                         break;
                     case 2:
-                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_YELLOW + "\xB1" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_YELLOW + "\xB1";
+                        // TODO: alternate smoothing rendering engine.
+                        // Bugfix?
+                        //this.texture = ANSI.FG_GREEN + ANSI.BG_YELLOW + "\xB1";
                         break;
                 }
             }
+            
             break;
 
         case 2:
             // Grassland.
-            this.texture = ANSI.BG_GREEN + " " + ANSI.DEFAULT;
-
+            this.texture = ANSI.UNBOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + " ";
+            
             c = " ";
-
+            
             if (smoothing_land) {
                 r2 = random(3);
 
                 switch (r2) {
                     // BG strong < \xB0\xB1\xB2\xDB > FG strong
                     case 0:
-                        this.texture = ANSI.BOLD + ANSI.BG_GREEN + ANSI.FG_GREEN + "\xB0" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + "\xB0";
                         break;
                     case 1:
-                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_GREEN + "\xB0" + ANSI.DEFAULT;
+                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_GREEN + "\xB0";;
                         break;
                     case 2:
-                        this.texture = ANSI.FG_YELLOW + ANSI.BG_GREEN + "\xB0" + ANSI.DEFAULT;
+                        this.texture = ANSI.UNBOLD + ANSI.FG_YELLOW + ANSI.BG_GREEN + "\xB0";
                         break;
                 }
             }
+            
+
+
             break;
 
             //default:
@@ -935,26 +968,30 @@ function Terrain(d) {
         case 8:
         case 9:
         case 10:
-            // Depth > 2
-            // Forest
+        default:
 
+            // Depth > 2
+            // Forest            
+            var tex = '^';
+            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + tex;
+            
             c = " ";
-            r3 = random(3);
-            switch (r3) {
-                case 0:
-                    c = ";"
-                    break;
-                case 1:
-                    //c = "";
-                    c = ANSI.BOLD + ANSI.FG_GREEN + "";
-                    break;
-                case 2:
-                    //c = "";
-                    c = ANSI.FG_YELLOW + "";
-                    break;
-            }
 
-            this.texture = ANSI.BG_GREEN + ANSI.FG_GREEN + c + ANSI.DEFAULT;
+            if (smoothing_land) {
+                r3 = random(3);
+                switch (r3) {
+                    case 0:
+                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + ";";
+                        break;
+                    case 1:
+                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + tex;
+                        break;
+                    case 2:
+                        this.texture = ANSI.UNBOLD + ANSI.FG_YELLOW + ANSI.BG_GREEN + tex;
+                        break;
+                }
+            } // end if(smoothing_land)
+            
             break;
     }   // End switch
 
@@ -1008,9 +1045,9 @@ function fishAt(x, y) {
 }
 
 function event_fish_clear() {
-	hideFish();
-	fish_finder_on = false;
-	fish_finder_locked = false;
+    hideFish();
+    fish_finder_on = false;
+    fish_finder_locked = false;
     bar_mode = old_bar_mode;
     statusFrame.invalidate();
 }
@@ -1043,7 +1080,7 @@ function event_fish_move() {
             }
         }
 
- 		/* if the fish finder is enabled, update screen positions */
+        /* if the fish finder is enabled, update screen positions */
         if (fish_finder_on) {
             showFish();
         }
@@ -1062,7 +1099,6 @@ function toTitleCase(str) {
 }
 
 function depthToMetres(d) {
-    //return Math.abs((d * 10).toFixed(2))
     return (d * 10).toFixed(2);
 }
 
@@ -1178,7 +1214,7 @@ function update_hi_scores(fish) {
                 /* Display fish ansi */
                 console.clear();
                 console.printfile(PATH_FATFISH + "trout.ans", P_NOCRLF | P_NOPAUSE);
-                console.line_counter = 0;                
+                console.line_counter = 0;
                 console.gotoxy(60, 20);
                 safe_pause();
                 console.clear();
@@ -1230,9 +1266,6 @@ function update_hi_scores(fish) {
         } catch (e) {
             log("EXCEPTION: json.write(): " + e.Message);
         }
-
-        // TODO: Update JSON scores to see if new records set.
-        // TODO: Display InterBBS trophy.
 
     } // end if (scores_need_saving).
 }
@@ -1307,7 +1340,7 @@ function show_fish_caught() {
 // Display each player's score in JSON.
 function show_json_scores() {
     try {
-        
+
         var scores = json.read("fatfish", "", 1);
 
         if (json == undefined || scores == undefined) {
@@ -1317,15 +1350,6 @@ function show_json_scores() {
         }
 
         if (scores != undefined) {
-            // Debug: show the scores object from JSON.
-            //log("DEBUG scores: " + scores.toSource());
-
-            // Debug: BBSes found, as an array.
-            //log("DEBUG scores: BBSes found: " + Object.keys(scores));
-
-            // Debug: each BBS.
-            //log("DEBUG scores: FATCATS: " + scores["FATCATS"].toSource());
-
             var top_bass_length = 0;   // InterBBS top scores.
             var top_eel_length = 0;
             var top_pike_length = 0;
@@ -1343,18 +1367,14 @@ function show_json_scores() {
 
                 for (var a = 0; a < bbses.length; a++) {
                     // Each BBS.
-                    //log(bbses[a] + ":");
                     console.writeln(ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + " " + bbses[a] + ": " + ANSI.DEFAULT);
 
-                    //log(scores[bbses[a]].toSource());
-
                     var json_players = Object.keys(scores[bbses[a]]);
-                    //log(1)
+
                     if (json_players != undefined) {
-                        //log(2);
+
                         for (var b = 0; b < json_players.length; b++) {
                             // Each player.
-                            //log(json_players[b] + ".");
                             var col = ANSI.BOLD + ANSI.FG_WHITE;
                             if (json_players[b].length <= 6) {
                                 console.write(col + json_players[b] + ":" + ANSI.DEFAULT);
@@ -1363,14 +1383,9 @@ function show_json_scores() {
                                 console.line_counter++;
                             }
 
-                            //log(json_players[b].toSource());
-                            //log(scores[bbses[a]][json_players[b]].best_pike.toSource());
-
                             if (scores[bbses[a]][json_players[b]].best_bass != undefined) {
-                                //log(scores[bbses[a]][json_players[b]].best_bass.toSource());
 
                                 // Print.
-                                //log("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_bass.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_bass.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_bass.weight + "kg.");
                                 console.write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_bass.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_bass.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_bass.weight + "kg.");
 
                                 // Check top InterBBS score.
@@ -1391,9 +1406,6 @@ function show_json_scores() {
                             }
 
                             if (scores[bbses[a]][json_players[b]].best_pike != undefined) {
-                                //log(scores[bbses[a]][json_players[b]].best_pike.toSource());
-
-                                //log("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_pike.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_pike.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_pike.weight + "kg.");
                                 console.write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_pike.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_pike.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_pike.weight + "kg.");
 
                                 // Check top InterBBS score.
@@ -1404,11 +1416,8 @@ function show_json_scores() {
                             }
 
                             if (scores[bbses[a]][json_players[b]].best_trout != undefined) {
-                                //log(scores[bbses[a]][json_players[b]].best_trout.toSource());
-
-                                //log("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_trout.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_trout.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_trout.weight + "kg.");
                                 write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_trout.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_trout.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_trout.weight + "kg.");
-                                
+
                                 // Check top InterBBS score.
                                 if (scores[bbses[a]][json_players[b]].best_trout.length > top_trout_length) {
                                     // This is the new top score.
@@ -1419,17 +1428,14 @@ function show_json_scores() {
                             console.crlf();
                             console.line_counter++;
                             if (console.line_counter > (console.screen_rows - 2)) {
-                                //log("line_counter: " + console.line_counter);
                                 console.pause();
                                 console.line_counter = 0;
                             }
 
-                            //log(3);
                         } // end for Players
                     } // end if
 
                     console.crlf();
-                    //log("line_counter: " + console.line_counter);
                 } // end for BBSes
 
                 // Print InterBBS top scores.

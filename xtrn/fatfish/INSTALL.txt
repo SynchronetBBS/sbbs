@@ -26,29 +26,32 @@ FatFish has been tested on:
 
 - Windows Server 2008 (x86).
 - Arch Linux (ARM - Raspberry Pi).
+- Ubuntu Linux (x64).
 
 ------------
 Installation
 ------------
-1. Get the sources. You can click the first 'snapshot' link here:
-     http://git.poorcoding.com/?p=fatfish
-   This will get the latest snapshot of the source from the repository in .tgz format.
+1. Get the sources. They can be found on cvs.synchro.net, the official Synchronet repository.
 
-2. Extract and put the 'fatfish' folder into /sbbs/xtrn.
+   Git it:
+     For the latest code/unstable branch, you can click the first 'snapshot' link here:
+       http://git.poorcoding.com/?p=fatfish
+     This will get the latest snapshot of the source from the repository in .tgz format.
+     Extract and put the 'fatfish' folder into /sbbs/xtrn.
 
 3. Configure the door in SCFG:
 	╔[■][?]════════════════════════════════════════════════════╗
 	║                         Fat Fish                         ║
 	╠══════════════════════════════════════════════════════════╣
-	║ │Name                       Fat Fish                     ║
-	║ │Internal Code              FATFISH                      ║
-	║ │Start-up Directory                                      ║
-	║ │Command Line               *../xtrn/fatfish/fatfish.js  ║
+	║ │Name                       Fat Fish                     ║ <-- avast!
+	║ │Internal Code              FATFISH                      ║ <-- avast!
+	║ │Start-up Directory         /sbbs/xtrn/fatfish           ║ <-- avast!
+	║ │Command Line               *../xtrn/fatfish/fatfish.js  ║ <-- avast!
 	║ │Clean-up Command Line                                   ║
 	║ │Execution Cost             None                         ║
-	║ │Access Requirements                                     ║
+	║ │Access Requirements                                     ║ <-- avast?
 	║ │Execution Requirements                                  ║
-	║ │Multiple Concurrent Users  Yes                          ║
+	║ │Multiple Concurrent Users  Yes                          ║ <-- avast!
 	║ │Intercept I/O              No                           ║
 	║ │Native Executable          No                           ║
 	║ │Use Shell to Execute       No                           ║
@@ -58,8 +61,6 @@ Installation
 	║ │BBS Drop File Type         None                         ║
 	║ │Place Drop File In         Node Directory               ║
 	╚══════════════════════════════════════════════════════════╝
-
-4. If you did not install FatFish in the default location (/sbbs/xtrn/fatfish), then edit 'fatfish.js', the line where PATH_FATFISH is defined. You must update it to reflect the FatFish path on your system.
 
 ------------
 Instructions
