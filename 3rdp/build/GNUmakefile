@@ -10,6 +10,22 @@ ifdef DEBUG
 else
  JS_CONFIGURE_ARGS += --enable-optimize=-O3
 endif
+ifeq ($(shell perl -e 'print "$(machine)"=~/\.arm/?"YES":"NO"'),YES)
+ ifeq ($(shell perl -e 'print "$(machine)"=~/\.armv[1-6]/?"YES":"NO"'),YES)
+  JS_CONFIGURE_ARGS += --with-cpu-arch=armv5te
+ endif
+ ifeq ($(shell perl -e 'print `gcc -v 2>&1`=~/--with-fpu=vfp/?"YES":"NO"'),YES)
+  ifeq ($(shell perl -e 'print `gcc -v 2>&1`=~/--with-float=hard/?"YES":"NO"'),YES)
+   JS_CONFIGURE_ENV += 'CFLAGS=-mfpu=vfp -mfloat-abi=hard'
+   JS_CONFIGURE_ENV += 'CXXFLAGS=-mfpu=vfp -mfloat-abi=hard'
+   JS_CONFIGURE_ENV += 'ASFLAGS=-mfpu=vfp -mfloat-abi=hard'
+  else
+   JS_CONFIGURE_ENV += 'CFLAGS=-msoft-float'
+   JS_CONFIGURE_ENV += 'CXXFLAGS=-msoft-float'
+   JS_CONFIGURE_ENV += 'ASFLAGS=-msoft-float'
+  endif
+ endif
+endif
 
 ###############
 # Directories #
@@ -26,14 +42,15 @@ $(JS_SRC): | $(3RDPSRCDIR)
 $(JS_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(JS_IDIR)
 
-$(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)build/js_src_jsnativestack_cpp.patch | $(JS_SRC) $(JS_IDIR)
+$(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.patch | $(JS_SRC) $(JS_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(JS_SRC)/*
 	$(QUIET)tar -xzC $(JS_SRC) -f $(3RDPDISTDIR)$(DIRSEP)libmozjs.tgz
 	$(QUIET)echo "pthread_np.h" >> $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src$(DIRSEP)config$(DIRSEP)system-headers
 	$(QUIET)patch -p0 -d $(JS_SRC)$(DIRSEP)js-1.8.5 < js_src_jsnativestack_cpp.patch
+	$(QUIET)patch -p0 -d $(JS_SRC) < js-configure.patch
 	-$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && autoconf-2.13
-	$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && ./configure $(JS_CONFIGURE_ARGS)
+	$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && env $(JS_CONFIGURE_ENV) ./configure $(JS_CONFIGURE_ARGS)
 	$(QUIET)$(MAKE) -C $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src
 	$(QUIET)$(MAKE) -C $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src install
 
