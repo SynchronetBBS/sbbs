@@ -4,6 +4,7 @@
 // other scripts can find it.  Could/should be moved to /sbbs/web/lib.
 
 load('sbbsdefs.js');
+load('modopts.js');
 
 var webIni=(function() {
 	// Returns a string of random characters 'length' characters long
@@ -26,12 +27,9 @@ var webIni=(function() {
 		login(u.alias, u.security.password);
 	}
 	
-	var f = new File(system.ctrl_dir + 'modopts.ini');
-	f.open("r");
-	var webIni = f.iniGetObject("Web");
-	f.close();
+	var webIni = get_mod_options("ecWeb");
 	
-	var f = new File(system.ctrl_dir + 'sbbs.ini');
+	var f = new File(file_cfgname(system.ctrl_dir,'sbbs.ini'));
 	f.open("r");
 	var sbbsIni = f.iniGetObject("Web");
 	f.close();
