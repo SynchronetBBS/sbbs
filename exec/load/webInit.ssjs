@@ -1,5 +1,7 @@
 // webInit.ssjs, by echicken -at- bbs.electronicchicken.com
 
+// $Id$
+
 // Some bootstrapping stuff for the web interface, kept in exec/load/ so that
 // other scripts can find it.  Could/should be moved to /sbbs/web/lib.
 
@@ -35,6 +37,7 @@ var webIni=(function() {
 	f.close();
 
 	webIni.HTTPPort = Number(sbbsIni.Port).toFixed();
+	webIni.RootDirectory = fullpath(webIni.RootDirectory);
 
 	if(http_request.query.username != undefined && http_request.query.password != undefined) {
 		// Script was (we'll assume) called from the login form.  Attempt to authenticate the user.
