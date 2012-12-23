@@ -39,7 +39,7 @@ Installation
      This will get the latest snapshot of the source from the repository in .tgz format.
      Extract and put the 'fatfish' folder into /sbbs/xtrn.
 
-3. Configure the door in SCFG:
+2. Configure the door in SCFG:
 	╔[■][?]════════════════════════════════════════════════════╗
 	║                         Fat Fish                         ║
 	╠══════════════════════════════════════════════════════════╣
