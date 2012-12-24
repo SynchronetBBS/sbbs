@@ -7,7 +7,7 @@ var GameSettingProperties=[
 				 prop:"Server"
 				,name:"Server hostname"
 				,type:"String"
-				,def:"bbs.thebrokenbubble.com"
+				,def:"localhost"
 			}
 			,{	// This index (1) is hard-coded.
 				 prop:"Port"
