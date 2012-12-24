@@ -1,5 +1,7 @@
 /* FatFish
  *
+ * $Id$
+ *
  * WEBSITE:
  *  http://art.poorcoding.com/fatfish
  *
@@ -34,11 +36,15 @@ load(PATH_FATFISH + "shop.js");
 /* Version. */
 var FF_VER = "0.6b";
 
+var server_file = new File(file_cfgname(PATH_FATFISH,"server.ini"));
+server_file.open('r',true);
+var serverAddr=server_file.iniGetValue(null,"host","localhost");
+var serverPort=server_file.iniGetValue(null,"port",10088);
+server_file.close();
+
+
 /* JSON client object. */
-var json = new JSONClient("fatcatsbbs.com", 10088);
-/*  If you want to host the JSON service on your own BBS, use the
-    localhost line below, and comment out the above. */
-//var json = new JSONClient("localhost", 10088);
+var json = new JSONClient(serverAddr, serverPort);
 
 var lake_x = console.screen_columns;
 var lake_y = console.screen_rows - 1;
@@ -1345,7 +1351,7 @@ function show_json_scores() {
 
         if (json == undefined || scores == undefined) {
             /* If no json object or scores, try it again. */
-            json = new JSONClient("fatcatsbbs.com", 10088);
+            json = new JSONClient(serverAddr, serverPort);
             scores = json.read("fatfish", "", 1);
         }
 

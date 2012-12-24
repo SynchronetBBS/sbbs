@@ -43,7 +43,13 @@ var	ghosts = [
 var fruit = new Sprite.Aerial("fruit", maze, 39, 11, "n", "fruit");
 var timer = new Timer();
 
-var scoreClient = new JSONClient("bbs.electronicchicken.com", 10088);
+var server_file = new File(file_cfgname(js.exec_dir, "server.ini"));
+server_file.open('r', true);
+var serverAddr = server_file.iniGetValue(null, "host", "localhost");
+var serverPort = server_file.iniGetValue(null, "port", 10088);
+server_file.close();
+
+var scoreClient = new JSONClient(serverAddr, serverPort);
 
 var newLevel = function() {
 	statFrame.clear();
