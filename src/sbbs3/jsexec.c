@@ -885,10 +885,9 @@ long js_exec(const char *fname, char** args)
 		if(!fgets(line,sizeof(line),fp))
 			break;
 		line_no++;
-#if defined(__unix__)	/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
+		/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
 		if(line_no==1 && strncmp(line,"#!",2)==0)
 			strcpy(line,"\n");	/* To keep line count correct */
-#endif
 		len=strlen(line);
 		if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
 			lprintf(LOG_ERR,"!Error allocating %u bytes of memory"
