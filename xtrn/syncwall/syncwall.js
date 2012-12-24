@@ -1,5 +1,6 @@
 // SyncWall InterBBS Graffiti Wall
 // by echicken -at- bbs.electronicchicken.com
+// $Id$
 
 load("ansiedit.js");
 load("json-client.js");
@@ -7,11 +8,15 @@ load("json-client.js");
 js.branch_limit = 0;
 
 var chDelay = 10; // Milliseconds between characters when loading the buffer
-var server = "bbs.electronicchicken.com"; // IP or hostname of the JSON server
-var port = 10088; // Port that "server" is listening on
 var chBuffer = 100; // Max character history to read at once 
 
 var monthYear = strftime("%m%y", time());
+
+var server_file = new File(file_cfgname(js.exec_dir, "server.ini"));
+server_file.open('r', true);
+var server = server_file.iniGetValue(null, "host", "localhost");
+var port = server_file.iniGetValue(null, "port", 10088);
+server_file.close();
 
 var ch;
 var lastUser = "";
