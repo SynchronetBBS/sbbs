@@ -94,7 +94,7 @@ function DockAtSol()
 	if(player.Holds+maxbuy>50)
 		maxbuy=50-player.Holds;
 	if(maxbuy > 0) {
-		console.write("How many holds do you want to buy [0]? ");
+		console.write("How many holds do you want to buy [0]-"+maxbuy+"? ");
 		buy=InputFunc([{min:0,max:maxbuy}]);
 		if(buy>0) {
 			player.Holds+=buy;
@@ -108,7 +108,7 @@ function DockAtSol()
 	if(player.Fighters+maxbuy>9999)
 		maxbuy=9999-player.Fighters;
 	if(maxbuy > 0) {
-		console.write("How many fighters do you want to buy [0]? ");
+		console.write("How many fighters do you want to buy [0]-"+maxbuy+"? ");
 		buy=InputFunc([{min:0,max:maxbuy}]);
 		if(buy>0) {
 			player.Fighters+=buy;
