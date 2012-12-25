@@ -7,7 +7,9 @@ Table of Contents
 
 1 - Introduction
 2 - Installation
-3 - Host your own wall
+3 - The SyncWall JSON Database
+  3.1 - Connecting to the shared database
+  3.2 - Hosting your own database (default)
 4 - Support
 
 
@@ -27,6 +29,9 @@ state.
 SyncWall depends on several libraries that any fully up-to-date Synchronet
 BBS installation should already have. If you don't already do this regularly,
 back up your BBS and then grab the latest updates from CVS.
+
+SyncWall also relies on access to a JSON database, which you may host locally
+or (more preferably) access remotely.  See section three for more information.
 
 I'll assume that your copy of Synchronet is installed at /sbbs.  Bear that in
 mind as you follow these instructions.
@@ -58,33 +63,44 @@ mind as you follow these instructions.
   saving your changes when prompted
 
 
-3) Host your own wall
----------------------
+3) The SyncWall JSON database
+-----------------------------
 
-If you're not already running the JSON DB service, add the following section
-to /sbbs/ctrl/services.ini:
+  3.1) Connect to the shared SyncWall database at bbs.electronicchicken.com:
+  --------------------------------------------------------------------------  
+  In xtrn/syncwall, create a text file named "server.ini".  Edit that file so
+  that it contains the following two lines:
+  
+  host = bbs.electronicchicken.com
+  port = 10088
+  
+  Your SyncWall instance will now connect to the shared database.  You and
+  your users will see what has been drawn (or is being drawn) on every other
+  BBS that uses this same datastore.
+  
+  3.2) Host your own wall
+  -----------------------
+  By default, SyncWall will attempt to connect to the JSON database service on
+  port 10088 of your BBS server.  If you're not already running the JSON DB
+  service, add the following section to /sbbs/ctrl/services.ini:
 
-[JSON]
-Port = 10088
-Options = STATIC | LOOP
-Command = json-service.js
+  [JSON]
+  Port = 10088
+  Options = STATIC | LOOP
+  Command = json-service.js
 
-Add the following line to /sbbs/ctrl/json-service.ini:
+  To create a SyncWall database on your BBS' JSON service, add the following
+  line to /sbbs/ctrl/json-service.ini:
 
-syncwall=../xtrn/syncwall
-
-Open /sbbs/xtrn/syncwall/syncwall.js in a text editor and change the line:
-
-var server = "bbs.electronicchicken.com";
-
-To point to your hostname. (If you set the port for the JSON service to
-something other than 10088 in /sbbs/ctrl/services.ini, you'll also need
-to change the port number on the following line.)
-
-If you want other systems to be able to use your wall, be sure that external
-hosts can connect to port 10088 of your BBS server, and tell the other sysops
-to make the same changes to /sbbs/xtrn/syncwall.js that you just did.
-
+  syncwall=../xtrn/syncwall
+  
+  Recycle services (or simply restart your BBS) for these changes to take
+  effect.
+  
+  If you want other systems to be able to access your SyncWall database, tell
+  the sysops to follow the instructions set out in section 3.1 of this file,
+  substituting the hostname and port number accordingly.
+  
 
 4) Support
 ----------
