@@ -62,11 +62,20 @@
  *                              characters, it will make the line blank before
  *                              adding it to gQuoteLines, to avoid weird
  *                              issues when prefixing the quote lines.
- * 2012-12-26 Eric Oulashin     Updated printEditLine() to return the length of
+ * 2012-12-26 Eric Oulashin     Version 1.17
+ *                              Updated printEditLine() to return the length of
  *                              text actually written.  Fixed a bug in
  *                              displayMessageRectangle() that was causing some
  *                              text lines not to be updated properly due to
  *                              incorrectly calculating text lengths, etc.
+ * 2012-12-27 Eric Oulashin     Version 1.17
+ *                              Bug fix: If the useQuoteLineInitials setting is
+ *                              enabled but the reWrapQuoteLines setting was
+ *                              disabled, it wasn't quoting lines; this has been
+ *                              fixed.
+ *                              Even though I had released v1.17 yesterday,
+ *                              it appeared that nobody had downloaded it yet,
+ *                              so I'm still calling this v1.17.
  */
 
 /* Command-line arguments:
@@ -125,7 +134,7 @@ if (!console.term_supports(USER_ANSI))
 
 // Constants
 const EDITOR_VERSION = "1.17";
-const EDITOR_VER_DATE = "2012-12-26";
+const EDITOR_VER_DATE = "2012-12-27";
 
 
 // Program variables
@@ -362,8 +371,24 @@ if (inputFile.open("r", false))
         }
      }
      // If the setting to re-wrap quote lines is enabled, then do it.
-     if (gConfigSettings.reWrapQuoteLines && (gQuoteLines.length > 0))
-       wrapQuoteLines(gConfigSettings.useQuoteLineInitials);
+     // wrapQuoteLines() will also prefix the quote lines with author's
+     // initials if configured to do so.
+     // If not configured to re-wrap quote lines, then if configured to
+     // prefix quote lines with author's initials, then we need to
+     // prefix them here with gQuotePrefix.
+     /*if (gConfigSettings.reWrapQuoteLines && (gQuoteLines.length > 0))
+       wrapQuoteLines(gConfigSettings.useQuoteLineInitials);*/
+     if (gQuoteLines.length > 0)
+     {
+       if (gConfigSettings.reWrapQuoteLines)
+         wrapQuoteLines(gConfigSettings.useQuoteLineInitials);
+       else if (gConfigSettings.useQuoteLineInitials)
+       {
+         var maxQuoteLineWidth = gEditWidth - gQuotePrefix.length;
+         for (var i = 0; i < gQuoteLines.length; ++i)
+           gQuoteLines[i] = quote_msg(gQuoteLines[i], maxQuoteLineWidth, gQuotePrefix);
+       }
+     }
 	}
 	else
 	{
