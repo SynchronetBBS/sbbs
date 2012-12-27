@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.16
-                        Release date: 2012-12-21
+                              Version 1.17
+                        Release date: 2012-12-26
 
                                   by
 
@@ -43,19 +43,23 @@ customization of colors via theme files.
 
 The motivation for creating this was that IceEdit and DCT Edit were always
 my two favorite BBS message editors, but in a world where 32-bit (and 64-bit)
-Windows and *nix platforms are common, 16-bit DOS emulation is required to
-run IceEdit and DCT Edit, which results in slow (and sometimes unreliable)
-operation.  Since SlyEdit is written in JavaScript, it is faster and does
-not require a 16-bit virtual DOS machine.  Also, being written in JavaScript,
-it should run on any platform where Synchronet runs, so all Synchronet sysops
-can use it.
+Windows and *nix platforms are common, 16-bit DOS emulation is required to run
+IceEdit and DCT Edit, which is noticeably slow and sometimes unreliable.
+Since SlyEdit is written in JavaScript, it is faster than a DOS-based message
+editor and can run in any environment in which Synchronet runs, without any
+modification or being re-compiled.
 
 SlyEdit will recognize the user's terminal size and set up the screen
-accordingly.  The width of the edit area will always be 80 characters; however,
-an increased terminal size will provide more room for message information to be
-displayed, as well as a taller edit area (if the terminal size is taller).
+accordingly.  The width of the edit area will always be 80 characters and
+support up to 79 characters; however, an increased terminal size will provide
+more room for message information to be displayed.  Also, a terminal height
+greater than the standard 24 or 25 characters will provide a taller edit area,
+allowing more of the message to be seen on the screen at a time.
 
-Thanks goes out to Nick of Lightning BBS (lightningbbs.dyndns.org) for testing.
+Thanks go out to the following people for testing:
+- Nick of Lightning BBS (lightningbbs.dyndns.org) for testing early versions
+- Nick (AKA Access Denied) of The Pharcyde (pharcyde.org) for testing the
+  newer versions and for his input on various features, mainly message quoting
 
 3. Installation & Setup
 =======================
@@ -132,17 +136,21 @@ DCT Edit.  It also has the following features:
   the text is found, the message area will scroll to it, and it will be
   highlighted.  Repeated searches for the same text will look for the
   next occurrance of that text.
+- Message quoting: When replying to a message, users can select lines from the
+  message to quote.  By default, SlyEdit puts the initials of the original
+  author in front of the quote lines to indicate who originally wrote those
+  parts of the message.  Optionally, sysops may disable the use of initials
+  in quote lines, in which case SlyEdit simply prefixes quote lines with " > "
+  as was done in IceEdit, DCT Edit, and other editors of the early-mid 1990s.
 - Navigation: Page up/down, home/end of line, and arrow keys
 - Slash commands (at the start of the line):
   /A: Abort
   /S: Save
   /Q: Quote message
-- Sysops can import a file (from the BBS machine) into the message
+- Sysops can import a file (stored on the BBS machine) into the message
 - Sysops can export the current message to a file (on the BBS machine)
-- Configuration file with behavior and color settings.  The configuration
-  settings are fairly limited right now, and I plan to add more color
-  settings in future versions.  See section 4 (Configuration File) for
-  more information.
+- Configuration file with behavior and color settings.  See section 4
+  (Configuration File) for more information.
 
 The following is a summary of the keyboard shortcuts (from SlyEdit's command
 help screen):
@@ -204,6 +212,16 @@ reWrapQuoteLines                  Whether or not to re-wrap quote lines. Valid
                                   feature is disabled, quote lines will simply
                                   be trimmed to make room for the quote prefix
                                   character to be added to the front.
+
+useQuoteLineInitials              Whether or not to prefix quoted message lines
+                                  with the previous author's initials when
+                                  replying to a message.  If this setting is
+                                  disabled, SlyEdit will simply prefix the
+                                  quoted lines with " > ", as was done in
+                                  IceEdit, DCT Edit, and other message editors
+                                  of the early-mid 1990s.  If this setting is
+                                  not in the configuration file, it will be
+                                  enabled by default.
 
 add3rdPartyStartupScript          Add a 3rd-party JavaScript script to execute
                                   (via loading) upon startup of SlyEdit.  The
@@ -456,6 +474,16 @@ MenuHotkeys                       The color to use for the hotkey characters in 
 ================================
 Version  Date         Description
 -------  ----         -----------
+1.17     2012-12-26   Updated to add author initials before quote lines.  This
+                      is now the default behavior, but this can be disabled
+                      with the following line in SlyEdit.cfg:
+                      useQuoteLineInitials=false
+                      When disabled, SlyEdit will simply prefix quote lines
+                      with " > ", as was done in IceEdit, DCT Edit, and other
+                      message editors of the early-mid 1990s.
+                      Also, fixed a bug related to refreshing the text on the
+                      screen when a drop-down menu disappears.  This bug fix is
+                      only relevant for DCT mode.
 1.16     2012-12-21   Updated to look for the .cfg files first in
                       the sbbs/ctrl directory, and if they're not
                       found there, assume they're in the same
