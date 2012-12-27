@@ -1,6 +1,6 @@
                          SlyEdit message editor
                               Version 1.17
-                        Release date: 2012-12-26
+                        Release date: 2012-12-27
 
                                   by
 
@@ -474,7 +474,7 @@ MenuHotkeys                       The color to use for the hotkey characters in 
 ================================
 Version  Date         Description
 -------  ----         -----------
-1.17     2012-12-26   Updated to add author initials before quote lines.  This
+1.17     2012-12-27   Updated to add author initials before quote lines.  This
                       is now the default behavior, but this can be disabled
                       with the following line in SlyEdit.cfg:
                       useQuoteLineInitials=false
