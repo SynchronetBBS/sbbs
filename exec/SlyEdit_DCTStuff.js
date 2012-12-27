@@ -1,5 +1,4 @@
-/* This contains some DCTEdit-specific functions for the Digital Distortion
- * Editor which don't rely on any global variables.
+/* This file contains DCTEdit-specific functions for SlyEdit.
  *
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
@@ -880,7 +879,6 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
          case KEY_DOWN:
             break;
          case KEY_ENTER: // Selected an item from the menu
-            //displayDebugText(1, 1, "Pressed Enter", null, false); // Temporary
             // Set userInput to the return code from the menu so that it will
             // be returned from this function.
             userInput = menuRetObj.returnVal;
@@ -903,7 +901,6 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
             continueOn = false;
             break;
          default:
-            //displayDebugText(1, 1, "Last key:" + userInput + ":", null, true); // Temporary
             break;
 		}
    }

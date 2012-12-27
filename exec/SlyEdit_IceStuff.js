@@ -1,5 +1,4 @@
-/* This contains some IceEdit-specific functions for the Digital Distortion
- * Editor which don't rely on any global variables.
+/* This contains IceEdit-specific functions for SlyEdit.
  *
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion

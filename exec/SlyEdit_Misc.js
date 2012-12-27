@@ -1,5 +1,5 @@
-/* This file declares functions and variables that are used by Digital
- * Distortion Editor for both DCTEdit and IceEdit modes.
+/* This file declares some general helper functions and variables
+ * that are used by SlyEdit.
  *
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
@@ -39,9 +39,16 @@
  *                              was incorrectly dealing with quote lines that
  *                              were blank after the quote text.
  * 2012-12-21 Eric Oulashin     Updated to check for the .cfg files in the
- *                              /sbbs/ctrl directory first, and if they aren't
+ *                              sbbs/ctrl directory first, and if they aren't
  *                              there, assume they're in the same directory as
  *                              the .js file.
+ * 2012-12-23 Eric Oulashin     Worked on updating wrapQuoteLines() and
+ *                              firstNonQuoteTxtIndex() to support putting the
+ *                              "To" user's initials before the > in quote lines.
+ * 2012-12-25 Eric Oulashin     Updated wrapQuoteLines() to insert a > in quote
+ *                              lines right after the leading quote characters
+ *                              (if any), without a space afteward, to indicate
+ *                              an additional level of quoting.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -134,9 +141,6 @@ var CTRL_X = "\x18";
 var CTRL_Y = "\x19";
 var CTRL_Z = "\x1a";
 var KEY_ESC = "\x1b";
-
-// gQuotePrefix contains the text to prepend to quote lines.
-var gQuotePrefix = " > ";
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
@@ -309,6 +313,8 @@ function isPrintableChar(pText)
 //  pLeading: Whether or not to trim leading spaces (optional, defaults to true)
 //  pMultiple: Whether or not to trim multiple spaces (optional, defaults to true)
 //  pTrailing: Whether or not to trim trailing spaces (optional, defaults to true)
+//
+// Return value: The trimmed string
 function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 {
    // Make sure pString is a string.
@@ -457,7 +463,7 @@ function displayGeneralHelp(pDisplayHeader, pClear, pPause)
    if (pDisplayHeader)
       displayHelpHeader();
 
-   console.print("ncThis is a full-screen message editor that mimics the look & feel of\r\n");
+   console.print("ncSlyEdit is a full-screen message editor that mimics the look & feel of\r\n");
    console.print("IceEdit or DCT Edit, two popular editors.  The editor is currently in " +
                  (EDITOR_STYLE == "DCT" ? "DCT" : "Ice") + "\r\nmode.\r\n");
    console.print("At the top of the screen, information about the message being written (or\r\n");
@@ -522,7 +528,7 @@ function displayProgramInfo(pDisplayHeader, pClear, pPause)
                   EDITOR_VER_DATE + "w)");
    console.center("ncby Eric Oulashin");
    console.crlf();
-   console.print("ncThis is a full-screen message editor written for Synchronet that mimics\r\n");
+   console.print("ncSlyEdit is a full-screen message editor written for Synchronet that mimics\r\n");
    console.print("the look & feel of IceEdit or DCT Edit.");
    console.crlf();
    if (pPause)
@@ -632,8 +638,9 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle)
 // Return value: An object containing the settings as properties.
 function ReadSlyEditConfigFile()
 {
-   // Create the configuration object
-   var cfgObj = new Object();
+   var cfgObj = new Object(); // Configuration object
+
+   // Default settings
    cfgObj.thirdPartyLoadOnStart = new Array();
    cfgObj.runJSOnStart = new Array();
    cfgObj.thirdPartyLoadOnExit = new Array();
@@ -643,7 +650,9 @@ function ReadSlyEditConfigFile()
    cfgObj.inputTimeoutMS = 300000;
    cfgObj.reWrapQuoteLines = true;
    cfgObj.allowColorSelection = true;
-   // Ice-style colors
+   cfgObj.useQuoteLineInitials = true;
+
+   // Default Ice-style colors
    cfgObj.iceColors = new Object();
    // Ice color theme file
    cfgObj.iceColors.ThemeFilename = system.ctrl_dir + "SlyIceColors_BlueIce.cfg";
@@ -676,7 +685,7 @@ function ReadSlyEditConfigFile()
    cfgObj.iceColors.EditMode = "ch";
    cfgObj.iceColors.KeyInfoLabelColor = "ch";
 
-   // DCT-style colors
+   // Default DCT-style colors
    cfgObj.DCTColors = new Object();
    // DCT color theme file
    cfgObj.DCTColors.ThemeFilename = system.ctrl_dir + "SlyDCTColors_Default.cfg";
@@ -815,6 +824,8 @@ function ReadSlyEditConfigFile()
                   cfgObj.reWrapQuoteLines = (valueUpper == "TRUE");
                else if (settingUpper == "ALLOWCOLORSELECTION")
                   cfgObj.allowColorSelection = (valueUpper == "TRUE");
+               else if (settingUpper == "USEQUOTELINEINITIALS")
+                  cfgObj.useQuoteLineInitials = (valueUpper == "TRUE");
                else if (settingUpper == "ADD3RDPARTYSTARTUPSCRIPT")
                   cfgObj.thirdPartyLoadOnStart.push(value);
                else if (settingUpper == "ADD3RDPARTYEXITSCRIPT")
@@ -1455,6 +1466,7 @@ function firstNonQuoteTxtIndex(pStr)
   var retObj = new Object();
   retObj.startIndex = -1;
   retObj.quoteLevel = 0;
+  retObj.begOfLine = ""; // Will store the beginning of the line, before the >
 
   // If pStr is not a valid positive-length string, then just return.
   if ((pStr == null) || (typeof(pStr) != "string") || (pStr.length == 0))
@@ -1465,7 +1477,7 @@ function firstNonQuoteTxtIndex(pStr)
   // & count the > characters from the >.
   var searchStartIndex = 0;
   // Regex notes:
-  //  \w: Matches any alphanumerical character (word characters) including underscore (short for [a-zA-Z0-9_])
+  //  \w: Matches any alphanumeric character (word characters) including underscore (short for [a-zA-Z0-9_])
   //  ?: Supposed to match 0 or 1 occurance, but seems to match 1 or 2
   var lineStartsWithQuoteText = /^ *\w?[^ ]>/.test(pStr);
   if (lineStartsWithQuoteText)
@@ -1477,6 +1489,7 @@ function firstNonQuoteTxtIndex(pStr)
   // Look for the first non-quote text and quote level in the string.
   var strChar = "";
   var j = 0;
+  var GTIndex = -1; // Index of a > character in the string
   for (var i = searchStartIndex; i < pStr.length; ++i)
   {
     strChar = pStr.charAt(i);
@@ -1494,6 +1507,8 @@ function firstNonQuoteTxtIndex(pStr)
             ++retObj.quoteLevel;
         }
       }
+      // Store the beginning of the line in retObj.begOfLine
+      retObj.begOfLine = pStr.substr(0, retObj.startIndex);
       break;
     }
   }
@@ -1510,15 +1525,19 @@ function firstNonQuoteTxtIndex(pStr)
   return retObj;
 }
 
-function wrapQuoteLines()
+function wrapQuoteLines(pUseAuthorInitials)
 {
   if (gQuoteLines.length == 0)
     return;
 
+  var useAuthorInitials = true;
+  if (typeof(pUseAuthorInitials) != "undefined")
+    useAuthorInitials = pUseAuthorInitials;
+
   // This function checks if a string has only > characters separated by
   // whitespace and returns a version where the > characters are only separated
-  // by one space each, and if the line starts with " >", the leading space
-  // will be removed.
+  // by one space each.  If the line starts with " >", the leading space will
+  // be removed.
   function normalizeGTChars(pStr)
   {
     if (/^\s*>\s*$/.test(pStr))
@@ -1532,6 +1551,8 @@ function wrapQuoteLines()
     return pStr;
   }
 
+  // Note: gQuotePrefix is declared in SlyEdit.js.
+
   // Create an array for line information objects, and append the
   // first line's info to it.  Also, store the first line's quote
   // level in the lastQuoteLevel variable.
@@ -1543,23 +1564,25 @@ function wrapQuoteLines()
   // Loop through the array starting at the 2nd line and wrap the lines
   var startArrIndex = 0;
   var endArrIndex = 0;
-  var quoteStr = "";
+  var quotePrefix = "";
   var quoteLevel = 0;
   var retObj = null;
   var i = 0; // Index variable
+  var maxBegOfLineLen = 0; // For storing the length of the longest beginning of line that was removed
   for (var quoteLineIndex = 1; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
   {
     retObj = firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex]);
     lineInfos.push(retObj);
     if (retObj.quoteLevel != lastQuoteLevel)
     {
+      maxBegOfLineLen = 0;
       endArrIndex = quoteLineIndex;
       // Remove the quote strings from the lines we're about to wrap
       for (i = startArrIndex; i < endArrIndex; ++i)
       {
-        // TODO
-        // Error on next line: !JavaScript  TypeError: lineInfos[i] is undefined
-        // Fixed by checking that lineInfos[i] is not null..  but why would it be?
+        // lineInfos[i] is checked for null to avoid the error "!JavaScript
+        // TypeError: lineInfos[i] is undefined".  But I'm not sure why it
+        // would be null..
         if (lineInfos[i] != null)
         {
           if (lineInfos[i].startIndex > -1)
@@ -1568,18 +1591,42 @@ function wrapQuoteLines()
             gQuoteLines[i] = normalizeGTChars(gQuoteLines[i]);
           // If the quote line now only consists of spaces after removing the quote
           // characters, then make it blank.
-          if (/^ +$/.test(gQuoteLines[i])) gQuoteLines[i] = "";
+          if (/^ +$/.test(gQuoteLines[i]))
+            gQuoteLines[i] = "";
+          // Remove leading spaces and change multiple spaces to single
+          // spaces in the beginning-of-line string.
+          lineInfos[i].begOfLine = trimSpaces(lineInfos[i].begOfLine, true, true, false);
+          // See if we need to update maxBegOfLineLen, and if so, do it.
+          if (lineInfos[i].begOfLine.length > maxBegOfLineLen)
+            maxBegOfLineLen = lineInfos[i].begOfLine.length;
         }
       }
+      // If maxBegOfLineLen is non-zero, then add 1 more to it because
+      // we'll be adding a > character to the quote lines to signify one
+      // more level of quoting.
+      if (maxBegOfLineLen > 0)
+        ++maxBegOfLineLen;
+      // Add gQuotePrefix's length to maxBegOfLineLen to account for that
+      // for wrapping the text. Note: In future versions, if we don't want
+      // to add the previous author's initials to all lines, then we might
+      // not automatically want to add this to every line.
+      maxBegOfLineLen += gQuotePrefix.length;
       // Wrap the text lines in the range we've seen
       // Note: 79 is assumed as the maximum line length because
       // that seems to be a commonly-accepted message width for
-      // BBSs.  Also, the following length is subtracted from it:
-      // (2*(lastQuoteLevel+1) + gQuotePrefix.length)
-      // That is because we'll be prepending "> " to the quote lines,
-      // and then SlyEdit will prepend gQuotePrefix to them during quoting.
+      // BBSs.  So, we need to subtract the maximum "beginning
+      // of line" length from 79 and use that as the wrapping
+      // length.
       var numLinesBefore = gQuoteLines.length;
-      wrapTextLines(gQuoteLines, startArrIndex, endArrIndex, 79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
+
+      // Wrap the text lines.  If using new-style quote lines preservation,
+      // use maxBegOfLineLen as the basis of where to wrap.  Otherwise (for
+      // older style without author initials), calculate the width based on
+      // the quote level and number of " > " strings we'll insert.
+      if (useAuthorInitials)
+        wrapTextLines(gQuoteLines, startArrIndex, endArrIndex, 79 - maxBegOfLineLen);
+      else
+        wrapTextLines(gQuoteLines, startArrIndex, endArrIndex, 79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
       // If quote lines were added as a result of wrapping, then
       // determine the number of lines added, and update endArrIndex
       // and quoteLineIndex accordingly.
@@ -1589,27 +1636,104 @@ function wrapQuoteLines()
         endArrIndex += numLinesAdded;
         quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
       }
-      // Put quote strings ("> ") back into the lines we just wrapped
+      // Put the beginnings of the wrapped lines back on them.
       if ((quoteLineIndex > 0) && (lastQuoteLevel > 0))
       {
-        quoteStr = "";
-        for (i = 0; i < lastQuoteLevel; ++i)
-          quoteStr += "> ";
-        for (i = startArrIndex; i < endArrIndex; ++i)
-          gQuoteLines[i] = quoteStr + gQuoteLines[i].replace(/^\s*>/, ">");
+        // If using the author's initials in the quote lines, then
+        // do it the new way.  Otherwise, do it the old way where
+        // we just insert "> " back in the beginning of the quote
+        // lines.
+        if (useAuthorInitials)
+        {
+          for (i = startArrIndex; i < endArrIndex; ++i)
+          {
+            if (lineInfos[i] != null)
+            {
+              // If the beginning of the line has a non-zero length,
+              // then add a > at the end to signify that this line is
+              // being quoted again.
+              var begOfLineLen = lineInfos[i].begOfLine.length;
+              if (begOfLineLen > 0)
+              {
+                if (lineInfos[i].begOfLine.charAt(begOfLineLen-1) == " ")
+                  lineInfos[i].begOfLine = lineInfos[i].begOfLine.substr(0, begOfLineLen-1) + "> ";
+                else
+                  lineInfos[i].begOfLine += ">";
+              }
+              // Re-assemble the quote line
+              gQuoteLines[i] = lineInfos[i].begOfLine + gQuoteLines[i];
+            }
+            else
+            {
+              // Old style: Put quote strings ("> ") back into the lines
+              // we just wrapped.
+              quotePrefix = "";
+              for (i = 0; i < lastQuoteLevel; ++i)
+                quotePrefix += "> ";
+              gQuoteLines[i] = quotePrefix + gQuoteLines[i].replace(/^\s*>/, ">");
+            }
+          }
+        }
+        else
+        {
+          // Not using author initials in the quote lines.
+          // Old style: Put quote strings ("> ") back into the lines
+          // we just wrapped.
+          quotePrefix = "";
+          for (i = 0; i < lastQuoteLevel; ++i)
+            quotePrefix += "> ";
+          for (i = startArrIndex; i < endArrIndex; ++i)
+            gQuoteLines[i] = quotePrefix + gQuoteLines[i].replace(/^\s*>/, ">");
+        }
       }
+
       lastQuoteLevel = retObj.quoteLevel;
       startArrIndex = quoteLineIndex;
+
+      if (useAuthorInitials)
+      {
+        // For quoting only the last author's lines: Insert gQuotePrefix
+        // to the front of the quote lines.  gQuotePrefix contains the
+        // last message author's initials.
+        if (retObj.quoteLevel == 0)
+        {
+          if ((gQuoteLines[i].length > 0) && (gQuoteLines[i].indexOf(gQuotePrefix) != 0))
+            gQuoteLines[i] = gQuotePrefix + gQuoteLines[i];
+        }
+      }
     }
   }
-  // Wrap the last block of lines
-  wrapTextLines(gQuoteLines, startArrIndex, gQuoteLines.length, 79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
 
-  // Go through the quote lines again, and for ones that start with " >", remove
-  // the leading whitespace.  This is because the quote string is " > ", so it
-  // would insert an extra space before the first > in the quote line.
-  for (i = 0; i < gQuoteLines.length; ++i)
-    gQuoteLines[i] = gQuoteLines[i].replace(/^\s*>/, ">");
+  // Wrap the last block of lines: This is the block that contains
+  // (some of) the last message's author's reply to the quoted lines
+  // above it.
+  // Then, go through the quote lines again, and for ones that start with " >",
+  // remove the leading whitespace.  This is because the quote string is " > ",
+  // so it would insert an extra space before the first > in the quote line.
+  // Also, if using author initials, quote the last author's lines by inserting
+  // gQuotePrefix to the front of the quote lines.  gQuotePrefix contains the
+  // last message author's initials.
+  if (useAuthorInitials)
+  {
+    wrapTextLines(gQuoteLines, startArrIndex, gQuoteLines.length, 79 - gQuotePrefix.length);
+    for (i = 0; i < gQuoteLines.length; ++i)
+    {
+      // Remove leading whitespace from > characters
+      gQuoteLines[i] = gQuoteLines[i].replace(/^\s*>/, ">");
+      // Quote the last author's lines with gQuotePrefix
+      if ((lineInfos[i] != null) && (lineInfos[i].quoteLevel == 0))
+      {
+        if ((gQuoteLines[i].length > 0) && (gQuoteLines[i].indexOf(gQuotePrefix) != 0))
+          gQuoteLines[i] = gQuotePrefix + gQuoteLines[i];
+      }
+    }
+  }
+  else
+  {
+    wrapTextLines(gQuoteLines, startArrIndex, gQuoteLines.length, 79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
+    for (i = 0; i < gQuoteLines.length; ++i)
+      gQuoteLines[i] = gQuoteLines[i].replace(/^\s*>/, ">");
+  }
 }
 
 // This function displays debug text at a given location on the screen, then

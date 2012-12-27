@@ -53,6 +53,20 @@
  *                              the sbbs/ctrl directory, and if they're not
  *                              found there, assume they're in the same
  *                              directory as the .js files.
+ * 2012-12-23 Eric Oulashin     Version 1.17 BETA
+ *                              Started working on updating the quoting style,
+ *                              to add the "To" user's initials or first 2
+ *                              letters of their username to the quote prefix.
+ * 2012-12-25 Eric Oulashin     When reading quote lines, if a quote line
+ *                              contains only whitespace characters and/or >
+ *                              characters, it will make the line blank before
+ *                              adding it to gQuoteLines, to avoid weird
+ *                              issues when prefixing the quote lines.
+ * 2012-12-26 Eric Oulashin     Updated printEditLine() to return the length of
+ *                              text actually written.  Fixed a bug in
+ *                              displayMessageRectangle() that was causing some
+ *                              text lines not to be updated properly due to
+ *                              incorrectly calculating text lengths, etc.
  */
 
 /* Command-line arguments:
@@ -110,8 +124,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.16";
-const EDITOR_VER_DATE = "2012-12-21";
+const EDITOR_VERSION = "1.17";
+const EDITOR_VER_DATE = "2012-12-26";
 
 
 // Program variables
@@ -131,7 +145,6 @@ if (console.screen_columns < 80)
 	gEditLeft = 1;
 	gEditRight = console.screen_columns;
 }
-// Note: gQuotePrefix is declared in SlyEdit_Misc.js.
 
 // Colors
 var gQuoteWinTextColor = "n7k";   // Normal text color for the quote window (DCT default)
@@ -139,6 +152,10 @@ var gQuoteLineHighlightColor = "nw"; // Highlighted text color for the quote w
 var gTextAttrs = "nw";               // The text color for edit mode
 var gQuoteLineColor = "nc";          // The text color for quote lines
 var gUseTextAttribs = false;              // Will be set to true if text colors start to be used
+// gQuotePrefix contains the text to prepend to quote lines.
+// gQuotePrefix will later be updated to include the "To" user's
+// initials or first 2 letters of their username.
+var gQuotePrefix = " > ";
 
 // EDITOR_STYLE: Can be changed to mimic the look of DCT Edit or IceEdit.
 // The following are supported:
@@ -270,6 +287,56 @@ console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_";
 // Enable delete line in SyncTERM (Disabling ANSI Music in the process)
 console.write("\033[=1M");
 console.clear();
+
+// Read the message from name, to name, and subject from the drop file
+// (msginf in the node directory).
+var gMsgSubj = "";
+var gFromName = user.alias;
+var gToName = gInputFilename;
+var gMsgArea = "";
+var dropFileTime = -Infinity;
+var dropFileName = file_getcase(system.node_dir + "msginf");
+if (dropFileName != undefined)
+{
+	if (file_date(dropFileName) >= dropFileTime)
+	{
+		var dropFile = new File(dropFileName);
+		if (dropFile.exists && dropFile.open("r"))
+		{
+			dropFileTime = dropFile.date;
+			info = dropFile.readAll();
+			dropFile.close();
+
+			gFromName = info[0];
+			gToName = info[1];
+			gMsgSubj = info[2];
+			gMsgArea = info[4];
+
+			// If specified in the configuration to use author's initials in
+			// the quote line prefix, then update gQuotePrefix to contain the
+			// initials or first 2 letters from gToName.
+			if (gConfigSettings.useQuoteLineInitials && (gToName.length > 0))
+			{
+				// Make a copy of gToName and remove any leading, multiple, or
+				// trailing spaces that it might have.  Then, use the initials
+				// or first 2 characters from it for gQuotePrefix.
+				var toName = trimSpaces(gToName, true, true, true);
+				var spaceIndex = toName.indexOf(" ");
+				if (spaceIndex > -1) // If a space exists, use the initials
+				{
+					gQuotePrefix = toName.charAt(0).toUpperCase();
+					if (toName.length > spaceIndex+1)
+						gQuotePrefix += toName.charAt(spaceIndex+1).toUpperCase();
+					gQuotePrefix += "> ";
+				}
+				else // A space doesn't exist; use the first 2 letters
+					gQuotePrefix = toName.substr(0, 2) + "> ";
+			}
+		}
+	}
+	file_remove(dropFileName);
+}
+
 // Open the quote file / message file
 var inputFile = new File(gInputFilename);
 if (inputFile.open("r", false))
@@ -286,12 +353,17 @@ if (inputFile.open("r", false))
         if (typeof(textLine) == "string")
         {
            textLine = strip_ctrl(textLine);
+           // If the line has only whitespace and/or > characters,
+           // then make the line blank before putting it into
+           // gQuoteLines.
+           if (/^[\s>]+$/.test(textLine))
+              textLine = "";
            gQuoteLines.push(textLine);
         }
      }
      // If the setting to re-wrap quote lines is enabled, then do it.
      if (gConfigSettings.reWrapQuoteLines && (gQuoteLines.length > 0))
-       wrapQuoteLines();
+       wrapQuoteLines(gConfigSettings.useQuoteLineInitials);
 	}
 	else
 	{
@@ -326,34 +398,6 @@ if (inputFile.open("r", false))
 		}
 	}
 	inputFile.close();
-}
-
-// Read the message from name, to name, and subject from the drop file
-// (msginf in the node directory).
-var gMsgSubj = "";
-var gFromName = user.alias;
-var gToName = gInputFilename;
-var gMsgArea = "";
-var dropFileTime = -Infinity;
-var dropFileName = file_getcase(system.node_dir + "msginf");
-if (dropFileName != undefined)
-{
-   if (file_date(dropFileName) >= dropFileTime)
-	{
-		var dropFile = new File(dropFileName);
-		if (dropFile.exists && dropFile.open("r"))
-		{
-         dropFileTime = dropFile.date;
-			info = dropFile.readAll();
-			dropFile.close();
-
-         gFromName = info[0];
-         gToName = info[1];
-			gMsgSubj = info[2];
-			gMsgArea = info[4];
-		}
-	}
-	file_remove(dropFileName);
 }
 
 // If the subject is blank, set it to something.
@@ -2213,8 +2257,16 @@ function getQuoteTextLine(pIndex, pMaxWidth)
    var textLine = "";
    if ((pIndex >= 0) && (pIndex < gQuoteLines.length))
    {
-      if ((gQuoteLines[pIndex] != null) && (gQuoteLines[pIndex].length > 0))
-         textLine = quote_msg(gQuoteLines[pIndex], pMaxWidth-1, gQuotePrefix);
+      if (gConfigSettings.useQuoteLineInitials)
+      {
+         if ((gQuoteLines[pIndex] != null) && (gQuoteLines[pIndex].length > 0))
+          textLine = gQuoteLines[pIndex].substr(0, pMaxWidth-1);
+      }
+      else
+      {
+         if ((gQuoteLines[pIndex] != null) && (gQuoteLines[pIndex].length > 0))
+            textLine = quote_msg(gQuoteLines[pIndex], pMaxWidth-1, gQuotePrefix);
+      }
    }
    return textLine;
 }
@@ -2456,6 +2508,7 @@ function displayMessageRectangle(pX, pY, pWidth, pHeight, pEditLinesIndex, pClea
    var screenY = pY;
    var editLinesIndex = pEditLinesIndex;
    var formatStr = "%-" + pWidth + "s";
+   var actualLenWritten = 0; // Actual length of text written for each line
    for (var rectangleLine = 0; rectangleLine < pHeight; ++rectangleLine)
    {
       // Output the correct color for the line
@@ -2467,19 +2520,14 @@ function displayMessageRectangle(pX, pY, pWidth, pHeight, pEditLinesIndex, pClea
       // then print it; otherwise, just print spaces to blank out the line.
       if (typeof(gEditLines[editLinesIndex]) != "undefined")
       {
-         //printf(formatStr, gEditLines[editLinesIndex].text.substr(editLineIndex, pWidth));
-         //printEditLine(pIndex, pUseColors, pStart, pLength)
-         // TODO: Change the false to the parameter for whether or not to allow
-         // message colors
-         printEditLine(editLinesIndex, false, editLineIndex, pWidth);
+         actualLenWritten = printEditLine(editLinesIndex, false, editLineIndex, pWidth);
          // If pClearExtraWidth is true, then if the box width is longer than
          // the text that was written, then output spaces to clear the rest
          // of the line to erase the rest of the box line.
          if (pClearExtraWidth)
          {
-            var displayedTextLen = gEditLines[editLinesIndex].text.length - editLineIndex;
-            if (pWidth > displayedTextLen)
-               printf("%" + (pWidth-displayedTextLen) + "s", "");
+            if (pWidth > actualLenWritten)
+               printf("%" + +(pWidth-actualLenWritten) + "s", "");
          }
       }
       else
@@ -3496,10 +3544,12 @@ function doColorSelection(pCurpos, pCurrentWordLength)
 //  pLength: Integer - The length to write.  Optional.  If
 //           omitted, the entire line will be written.  <= 0 can be
 //           passed to write the entire string.
+//
+// Return value: The actual length of text written
 function printEditLine(pIndex, pUseColors, pStart, pLength)
 {
    if (typeof(pIndex) != "number")
-      return;
+      return 0;
    var useColors = true;
    var start = 0;
    var length = -1;
@@ -3518,7 +3568,7 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
       // that the screen is updated correctly
       for (var i = 0; i < length; ++i)
          console.print(" ");
-      return;
+      return length;
    }
    if (start < 0)
       start = 0;
@@ -3528,11 +3578,12 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
       // that the screen is updated correctly
       for (var i = 0; i < length; ++i)
          console.print(" ");
-      return;
+      return length;
    }
    //if (length > (gEditLines[pIndex].text.length - start))
    //   length = gEditLines[pIndex].text.length - start;
 
+   var lengthWritten = 0;
    if (useColors)
    {
    }
@@ -3544,18 +3595,27 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
       {
          // Simplest case: start is 0 and length is negative -
          // Just print the entire line.
+         lengthWritten = gEditLines[pIndex].text.length;
          if (length <= 0)
             console.print(gEditLines[pIndex].text);
          else
-            console.print(gEditLines[pIndex].text.substr(start, length));
+         {
+            var textToWrite = gEditLines[pIndex].text.substr(start, length);
+            console.print(textToWrite);
+            lengthWritten = textToWrite.length;
+         }
       }
       else
       {
          // Start is > 0
+         var textToWrite = "";
          if (length <= 0)
-            console.print(gEditLines[pIndex].text.substr(start));
+            textToWrite = gEditLines[pIndex].text.substr(start);
          else
-            console.print(gEditLines[pIndex].text.substr(start, length));
+            textToWrite = gEditLines[pIndex].text.substr(start, length);
+         console.print(textToWrite);
+         lengthWritten = textToWrite.length;
       }
    }
+   return lengthWritten;
 }
