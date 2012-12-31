@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.17
-                        Release date: 2012-12-27
+                              Version 1.18
+                        Release date: 2012-12-31
 
                                   by
 
@@ -56,15 +56,20 @@ more room for message information to be displayed.  Also, a terminal height
 greater than the standard 24 or 25 characters will provide a taller edit area,
 allowing more of the message to be seen on the screen at a time.
 
+Also, SlyEdit has no moving parts that can wear out over time.
+
 Thanks go out to the following people for testing:
 - Nick of Lightning BBS (lightningbbs.dyndns.org) for testing early versions
 - Nick (AKA Access Denied) of The Pharcyde (pharcyde.org) for testing the
   newer versions and for his input on various features, mainly message quoting
+- echicken (sysop of Electronic Chicken) for his solution to look up the
+  original author of a message after a user changes the "To" name when
+  replying to a message
 
 3. Installation & Setup
 =======================
 These are the steps for installation:
- 1. Unzip the archive.  If you're viewing this file, then you've probably
+ 1. Extract the archive.  If you're viewing this file, then you've probably
     already done this. :)
  2. There are 2 ways SlyEdit's files can be copied onto your Synchronet system:
     1. Copy the JavaScript files into your sbbs/exec directory and the .cfg files
@@ -201,8 +206,8 @@ inputTimeoutMS                    The amount of time (in milliseconds) to
                                   to 300000.
 
 reWrapQuoteLines                  Whether or not to re-wrap quote lines. Valid
-                                  values are true and false, and this feature
-                                  is enabled by default.  With this feature
+                                  values are true and false.  This feature is
+                                  enabled by default.  With this feature
                                   enabled, SlyEdit will re-wrap quote lines
                                   to still be complete and readable after the
                                   quote prefix character is added to the front
@@ -215,13 +220,19 @@ reWrapQuoteLines                  Whether or not to re-wrap quote lines. Valid
 
 useQuoteLineInitials              Whether or not to prefix quoted message lines
                                   with the previous author's initials when
-                                  replying to a message.  If this setting is
-                                  disabled, SlyEdit will simply prefix the
-                                  quoted lines with " > ", as was done in
-                                  IceEdit, DCT Edit, and other message editors
-                                  of the early-mid 1990s.  If this setting is
-                                  not in the configuration file, it will be
-                                  enabled by default.
+                                  replying to a message.  Valued values are
+                                  true and false.  If this setting is disabled,
+                                  SlyEdit will simply prefix the quoted lines
+                                  with " > ", as was done in IceEdit, DCT Edit,
+                                  and other message editors of the early-mid
+                                  1990s.  This setting is enabled by default.
+
+indentQuoteLinesWithInitials      When prefixing quoted messages lines with the
+                                  previous author's initials, this setting
+                                  specifies whether or not to indent quoted
+                                  lines with a space.  Valued values are true
+                                  and false.  This setting is disabled by
+                                  default.
 
 add3rdPartyStartupScript          Add a 3rd-party JavaScript script to execute
                                   (via loading) upon startup of SlyEdit.  The
@@ -474,9 +485,28 @@ MenuHotkeys                       The color to use for the hotkey characters in 
 ================================
 Version  Date         Description
 -------  ----         -----------
-1.17     2012-12-27   Updated to add author initials before quote lines.  This
-                      is now the default behavior, but this can be disabled
-                      with the following line in SlyEdit.cfg:
+1.18     2012-12-31   Bug fix: When prefixing quote lines with author initials,
+                      if re-wrapping quote lines resulted in an additional
+                      quote line being created, it wasn't prefixing that quote
+                      line with an additional > to indicate that it was being
+                      quoted again.  This was fixed.
+                      Also, updated so that when replying to a message,
+                      instead of getting the author's initials (for quoted
+                      lines) from the given "To" name, it will read the
+                      message's "From" name from the message database.  That
+                      way, if a user changes the "To" name when replying to a
+                      message, the correct initials will be used.
+                      If a BBS has Digital Distortion's Message Lister set up,
+                      then it must be updated to at least version 1.31 in order
+                      for message quoting with author's initials to work
+                      properly when replying to a message from Digital
+                      Distortion's Message Lister.
+                      The latest version of the Digital Distortion BBS doors &
+                      add-ons can be downloaded from the following web page:
+                      http://digdist.bbsindex.com/DigDistBBSStuff/DigDistBBSStuff.html
+1.17     2012-12-27   Updated to prefix quote lines with author initials.
+                      This is now the default behavior, but this can be
+                      disabled with the following line in SlyEdit.cfg:
                       useQuoteLineInitials=false
                       When disabled, SlyEdit will simply prefix quote lines
                       with " > ", as was done in IceEdit, DCT Edit, and other
