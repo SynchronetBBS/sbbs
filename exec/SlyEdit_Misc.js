@@ -49,6 +49,30 @@
  *                              lines right after the leading quote characters
  *                              (if any), without a space afteward, to indicate
  *                              an additional level of quoting.
+ * 2012-12-27 Eric Oulashin     Bug fix in wrapQuoteLines(): When prefixing
+ *                              quote lines with author initials, if wrapping
+ *                              resulted in additional quote lines, it wasn't
+ *                              adding a > character to the additional line(s).
+ * 2012-12-28 Eric Oulashin     Updated firstNonQuoteTxtIndex() to more
+ *                              intelligently find the first non-quote index
+ *                              when using author initials in quote lines.
+ *                              I.e., dealing with multiply-quoted lines that
+ *                              start like this:
+ *                              > AD> 
+ *                              > AD>>
+ *                              etc..
+ * 2012-12-30 Eric Oulashin     Added the readCurMsgNum() and
+ *                              getFromNameForCurMsg() functions.
+ *                              readCurMsgNum() reads DDML_SyncSMBInfo.txt,
+ *                              which is written to the node directory by
+ *                              the Digital Distortion Message Lister and
+ *                              contains information about the current
+ *                              message being read so that SlyEdit can
+ *                              read it for getting the sender name from
+ *                              the message header.  That was necessary
+ *                              because the information about that in the
+ *                              bbs object (provided by Synchronet) can't
+ *                              be modified.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -651,6 +675,10 @@ function ReadSlyEditConfigFile()
    cfgObj.reWrapQuoteLines = true;
    cfgObj.allowColorSelection = true;
    cfgObj.useQuoteLineInitials = true;
+   // The next setting specifies whether or not quote lines
+   // shoudl be prefixed with a space when using author
+   // initials.
+   cfgObj.indentQuoteLinesWithInitials = false;
 
    // Default Ice-style colors
    cfgObj.iceColors = new Object();
@@ -826,6 +854,8 @@ function ReadSlyEditConfigFile()
                   cfgObj.allowColorSelection = (valueUpper == "TRUE");
                else if (settingUpper == "USEQUOTELINEINITIALS")
                   cfgObj.useQuoteLineInitials = (valueUpper == "TRUE");
+               else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
+                  cfgObj.indentQuoteLinesWithInitials = (valueUpper == "TRUE");
                else if (settingUpper == "ADD3RDPARTYSTARTUPSCRIPT")
                   cfgObj.thirdPartyLoadOnStart.push(value);
                else if (settingUpper == "ADD3RDPARTYEXITSCRIPT")
@@ -1450,23 +1480,40 @@ function wrapTextLines(pLineArr, pStartLineIndex, pStopIndex, pLineWidth)
   return pLineArr.length;
 }
 
+// Returns an object containing default quote string information.
+//
+// Return value: An object containing the following properties:
+//               startIndex: The index of the first non-quote character in the string.
+//                           Defaults to -1.
+//               quoteLevel: The number of > characters at the start of the string
+//               begOfLine: Normally, the quote text at the beginng of the line.
+//                          This defaults to a blank string.
+function getDefaultQuoteStrObj()
+{
+  var retObj = new Object();
+  retObj.startIndex = -1;
+  retObj.quoteLevel = 0;
+  retObj.begOfLine = ""; // Will store the beginning of the line, before the >
+  return retObj;
+}
+
 // Returns the index of a string for the first non-quote character.
 //
 // Parameters:
 //  pStr: A string to check
+//  pUseAuthorInitials: Whether or not SlyEdit is configured to prefix
+//                      quote lines with author's initials
 //
 // Return value: An object containing the following properties:
 //               startIndex: The index of the first non-quote character in the string.
 //                           If pStr is an invalid string, or if a non-quote character
 //                           is not found, this will be -1.
 //               quoteLevel: The number of > characters at the start of the string
-function firstNonQuoteTxtIndex(pStr)
+//               begOfLine: The quote text at the beginng of the line
+function firstNonQuoteTxtIndex(pStr, pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 {
   // Create the return object with initial values.
-  var retObj = new Object();
-  retObj.startIndex = -1;
-  retObj.quoteLevel = 0;
-  retObj.begOfLine = ""; // Will store the beginning of the line, before the >
+  var retObj = getDefaultQuoteStrObj();  
 
   // If pStr is not a valid positive-length string, then just return.
   if ((pStr == null) || (typeof(pStr) != "string") || (pStr.length == 0))
@@ -1479,13 +1526,74 @@ function firstNonQuoteTxtIndex(pStr)
   // Regex notes:
   //  \w: Matches any alphanumeric character (word characters) including underscore (short for [a-zA-Z0-9_])
   //  ?: Supposed to match 0 or 1 occurance, but seems to match 1 or 2
+  // First, look for spaces then 1 or 2 initials followed by a non-space followed
+  // by a >.  If not found, then look for ">>".  If that isn't found, then look
+  // for just 2 characters followed by a >.
   var lineStartsWithQuoteText = /^ *\w?[^ ]>/.test(pStr);
+  if (pUseAuthorInitials)
+  {
+    if (!lineStartsWithQuoteText)
+      lineStartsWithQuoteText = (pStr.lastIndexOf(">>") > -1);
+    if (!lineStartsWithQuoteText)
+      lineStartsWithQuoteText = /\w{2}>/.test(pStr);
+  }
   if (lineStartsWithQuoteText)
   {
-    searchStartIndex = pStr.indexOf(">");
-    if (searchStartIndex < 0) searchStartIndex = 0;
+    if (pUseAuthorInitials)
+    {
+      // First, look for ">> " starting from the beginning of the line
+      // (this would be a line that has been quoted at least twice).
+      // If found, then increment searchStartIndex by 2 to get past the
+      // >> characters.  Otherwise, look for the last instance of 2
+      // letters, numbers, or underscores (a user's handle could have
+      // these characters) followed by >.  (It's possible that someone's
+      // username has a number in it.)
+      searchStartIndex = pStr.lastIndexOf(">> ");
+      if (searchStartIndex > -1)
+        searchStartIndex += 2;
+      else
+      {
+        // If pStr is at least 3 characters long, then starting with the
+        // last 3 characters in pStr, look for an instance of 2 letters
+        // or numbers or underscores followed by a >.  Keep moving back
+        // 1 character at a time until found or until the beginning of
+        // the string is reached.
+        if (pStr.length >= 3)
+        {
+          // Regex notes:
+          //  \w: Matches any alphanumeric character (word characters) including underscore (short for [a-zA-Z0-9_])
+          var substrStartIndex = pStr.length - 3;
+          for (; (substrStartIndex >= 0) && (searchStartIndex < 0); --substrStartIndex)
+            searchStartIndex = pStr.substr(substrStartIndex, 3).search(/\w{2}>/);
+          ++substrStartIndex; // To fix off-by-one
+          if (searchStartIndex > -1)
+            searchStartIndex += substrStartIndex + 3; // To get past the "..>"
+                                                      // Note: I originally had + 4 here..
+          if (searchStartIndex < 0)
+          {
+            searchStartIndex = pStr.indexOf(">");
+            if (searchStartIndex < 0)
+              searchStartIndex = 0;
+          }
+        }
+        else
+        {
+          searchStartIndex = pStr.indexOf(">");
+          if (searchStartIndex < 0)
+            searchStartIndex = 0;
+        }
+      }
+    }
+    else
+    {
+      // SlyEdit is not prefixing quote lines with author's initials.
+      searchStartIndex = pStr.indexOf(">");
+      if (searchStartIndex < 0)
+        searchStartIndex = 0;
+    }
   }
 
+  // Find the quote level and the beginning of the line.
   // Look for the first non-quote text and quote level in the string.
   var strChar = "";
   var j = 0;
@@ -1507,8 +1615,13 @@ function firstNonQuoteTxtIndex(pStr)
             ++retObj.quoteLevel;
         }
       }
-      // Store the beginning of the line in retObj.begOfLine
+      // Store the beginning of the line in retObj.begOfLine.  And if
+      // SlyEdit is configured to indent quote lines with author initials,
+      // and if the beginning of the line doesn't begin with a space,
+      // then add a space to the beginning of it.
       retObj.begOfLine = pStr.substr(0, retObj.startIndex);
+      if (pUseAuthorInitials && pIndentQuoteLinesWithInitials && (retObj.begOfLine.length > 0) && (retObj.begOfLine.charAt(0) != " "))
+        retObj.begOfLine = " " + retObj.begOfLine;
       break;
     }
   }
@@ -1525,14 +1638,26 @@ function firstNonQuoteTxtIndex(pStr)
   return retObj;
 }
 
-function wrapQuoteLines(pUseAuthorInitials)
+// Performs text wrapping on the quote lines.
+//
+// Parameters:
+//  pUseAuthorInitials: Whether or not to prefix quote lines with the last author's
+//                      initials
+// pIndentQuoteLinesWithInitials: If prefixing the quote lines with the
+//                                last author's initials, this parameter specifies
+//                                whether or not to also prefix the quote lines with
+//                                a space.
+function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 {
   if (gQuoteLines.length == 0)
     return;
 
   var useAuthorInitials = true;
+  var indentQuoteLinesWithInitials = false;
   if (typeof(pUseAuthorInitials) != "undefined")
     useAuthorInitials = pUseAuthorInitials;
+  if (typeof(pIndentQuoteLinesWithInitials) != "undefined")
+    indentQuoteLinesWithInitials = pIndentQuoteLinesWithInitials;
 
   // This function checks if a string has only > characters separated by
   // whitespace and returns a version where the > characters are only separated
@@ -1552,28 +1677,30 @@ function wrapQuoteLines(pUseAuthorInitials)
   }
 
   // Note: gQuotePrefix is declared in SlyEdit.js.
+  // Make another copy of it without its leading space for searching the
+  // quote lines later.
+  var quotePrefixWithoutLeadingSpace = gQuotePrefix.replace(/^ /, "");
 
   // Create an array for line information objects, and append the
-  // first line's info to it.  Also, store the first line's quote
-  // level in the lastQuoteLevel variable.
+  // line info for all quote lines into it.  Also, store the first
+  // line's quote level in the lastQuoteLevel variable.
   var lineInfos = new Array();
-  var retObj = firstNonQuoteTxtIndex(gQuoteLines[0]);
-  lineInfos.push(retObj);
-  var lastQuoteLevel = retObj.quoteLevel;
+  for (var quoteLineIndex = 0; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
+    lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], pUseAuthorInitials, pIndentQuoteLinesWithInitials));
+  var lastQuoteLevel = lineInfos[0].quoteLevel;
 
   // Loop through the array starting at the 2nd line and wrap the lines
   var startArrIndex = 0;
   var endArrIndex = 0;
   var quotePrefix = "";
   var quoteLevel = 0;
-  var retObj = null;
+  var quoteLineInfoObj = null;
   var i = 0; // Index variable
   var maxBegOfLineLen = 0; // For storing the length of the longest beginning of line that was removed
   for (var quoteLineIndex = 1; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
   {
-    retObj = firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex]);
-    lineInfos.push(retObj);
-    if (retObj.quoteLevel != lastQuoteLevel)
+    quoteLineInfoObj = lineInfos[quoteLineIndex];
+    if (quoteLineInfoObj.quoteLevel != lastQuoteLevel)
     {
       maxBegOfLineLen = 0;
       endArrIndex = quoteLineIndex;
@@ -1593,15 +1720,20 @@ function wrapQuoteLines(pUseAuthorInitials)
           // characters, then make it blank.
           if (/^ +$/.test(gQuoteLines[i]))
             gQuoteLines[i] = "";
-          // Remove leading spaces and change multiple spaces to single
-          // spaces in the beginning-of-line string.
-          lineInfos[i].begOfLine = trimSpaces(lineInfos[i].begOfLine, true, true, false);
+          // Change multiple spaces to single spaces in the beginning-of-line
+          // string.  Also, if not prefixing quote lines w/ initials with a
+          // space, then also trim leading spaces.
+          if (useAuthorInitials && indentQuoteLinesWithInitials)
+            lineInfos[i].begOfLine = trimSpaces(lineInfos[i].begOfLine, false, true, false);
+          else
+            lineInfos[i].begOfLine = trimSpaces(lineInfos[i].begOfLine, true, true, false);
+
           // See if we need to update maxBegOfLineLen, and if so, do it.
           if (lineInfos[i].begOfLine.length > maxBegOfLineLen)
             maxBegOfLineLen = lineInfos[i].begOfLine.length;
         }
       }
-      // If maxBegOfLineLen is non-zero, then add 1 more to it because
+      // If maxBegOfLineLen is positive, then add 1 more to it because
       // we'll be adding a > character to the quote lines to signify one
       // more level of quoting.
       if (maxBegOfLineLen > 0)
@@ -1611,18 +1743,18 @@ function wrapQuoteLines(pUseAuthorInitials)
       // to add the previous author's initials to all lines, then we might
       // not automatically want to add this to every line.
       maxBegOfLineLen += gQuotePrefix.length;
-      // Wrap the text lines in the range we've seen
-      // Note: 79 is assumed as the maximum line length because
-      // that seems to be a commonly-accepted message width for
-      // BBSs.  So, we need to subtract the maximum "beginning
-      // of line" length from 79 and use that as the wrapping
-      // length.
+
       var numLinesBefore = gQuoteLines.length;
 
-      // Wrap the text lines.  If using new-style quote lines preservation,
-      // use maxBegOfLineLen as the basis of where to wrap.  Otherwise (for
-      // older style without author initials), calculate the width based on
-      // the quote level and number of " > " strings we'll insert.
+      // Wrap the text lines in the range we've seen
+      // Note: 79 is assumed as the maximum line length because that seems to
+      // be a commonly-accepted message width for BBSs.  So, we need to
+      // subtract the maximum "beginning of line" length from 79 and use that
+      // as the wrapping length.
+      // If using author initials in the quote lines, use maxBegOfLineLen as
+      // the basis of where to wrap.  Otherwise (for older style without
+      // author initials), calculate the width based on the quote level and
+      // number of " > " strings we'll insert.
       if (useAuthorInitials)
         wrapTextLines(gQuoteLines, startArrIndex, endArrIndex, 79 - maxBegOfLineLen);
       else
@@ -1630,11 +1762,24 @@ function wrapQuoteLines(pUseAuthorInitials)
       // If quote lines were added as a result of wrapping, then
       // determine the number of lines added, and update endArrIndex
       // and quoteLineIndex accordingly.
+      var numLinesAdded = 0; // Will store the number of lines added after wrapping
       if (gQuoteLines.length > numLinesBefore)
       {
-        var numLinesAdded = gQuoteLines.length - numLinesBefore;
+        numLinesAdded = gQuoteLines.length - numLinesBefore;
         endArrIndex += numLinesAdded;
-        quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
+        //quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
+        quoteLineIndex += numLinesAdded;
+
+        // Splice in a quote line info object for each new line added
+        // by the wrapping process.
+        var insertEndIndex = endArrIndex + numLinesAdded - 1;
+        for (var insertIndex = endArrIndex-1; insertIndex < insertEndIndex; ++insertIndex)
+        {
+          lineInfos.splice(insertIndex, 0, getDefaultQuoteStrObj());
+          lineInfos[insertIndex].startIndex = lineInfos[startArrIndex].startIndex;
+          lineInfos[insertIndex].quoteLevel = lineInfos[startArrIndex].quoteLevel;
+          lineInfos[insertIndex].begOfLine = lineInfos[startArrIndex].begOfLine;
+        }
       }
       // Put the beginnings of the wrapped lines back on them.
       if ((quoteLineIndex > 0) && (lastQuoteLevel > 0))
@@ -1687,7 +1832,10 @@ function wrapQuoteLines(pUseAuthorInitials)
         }
       }
 
-      lastQuoteLevel = retObj.quoteLevel;
+      lastQuoteLevel = quoteLineInfoObj.quoteLevel;
+      // We want to go onto the next block of quote lines to wrap, so
+      // set startArrIndex to the next line where we want to start wrapping.
+      //startArrIndex = quoteLineIndex + numLinesAdded;
       startArrIndex = quoteLineIndex;
 
       if (useAuthorInitials)
@@ -1695,9 +1843,9 @@ function wrapQuoteLines(pUseAuthorInitials)
         // For quoting only the last author's lines: Insert gQuotePrefix
         // to the front of the quote lines.  gQuotePrefix contains the
         // last message author's initials.
-        if (retObj.quoteLevel == 0)
+        if (quoteLineInfoObj.quoteLevel == 0)
         {
-          if ((gQuoteLines[i].length > 0) && (gQuoteLines[i].indexOf(gQuotePrefix) != 0))
+          if ((gQuoteLines[i].length > 0) && (gQuoteLines[i].indexOf(gQuotePrefix) != 0) && (gQuoteLines[i].indexOf(quotePrefixWithoutLeadingSpace) != 0))
             gQuoteLines[i] = gQuotePrefix + gQuoteLines[i];
         }
       }
@@ -1718,12 +1866,14 @@ function wrapQuoteLines(pUseAuthorInitials)
     wrapTextLines(gQuoteLines, startArrIndex, gQuoteLines.length, 79 - gQuotePrefix.length);
     for (i = 0; i < gQuoteLines.length; ++i)
     {
-      // Remove leading whitespace from > characters
-      gQuoteLines[i] = gQuoteLines[i].replace(/^\s*>/, ">");
+      // If not prefixing the quote lines with a space, then remove leading
+      // whitespace from the quote line if it starts with a >.
+      if (!indentQuoteLinesWithInitials)
+        gQuoteLines[i] = gQuoteLines[i].replace(/^\s*>/, ">");
       // Quote the last author's lines with gQuotePrefix
       if ((lineInfos[i] != null) && (lineInfos[i].quoteLevel == 0))
       {
-        if ((gQuoteLines[i].length > 0) && (gQuoteLines[i].indexOf(gQuotePrefix) != 0))
+        if ((gQuoteLines[i].length > 0) && (gQuoteLines[i].indexOf(gQuotePrefix) != 0) && (gQuoteLines[i].indexOf(quotePrefixWithoutLeadingSpace) != 0))
           gQuoteLines[i] = gQuotePrefix + gQuoteLines[i];
       }
     }
@@ -1734,6 +1884,102 @@ function wrapQuoteLines(pUseAuthorInitials)
     for (i = 0; i < gQuoteLines.length; ++i)
       gQuoteLines[i] = gQuoteLines[i].replace(/^\s*>/, ">");
   }
+}
+
+// Returns an object containing the following values:
+// - lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
+// - totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
+// - curMsgNum: The number of the current message being read (i.e., bbs.smb_curmsg)
+// - subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code)
+// This function First tries to read the values from the file
+// DDML_SyncSMBInfo.txt in the node directory (written by the Digital
+// Distortion Message Lister v1.31 and higher).  If that file can't be read,
+// the values will default to the values of bbs.smb_last_msg,
+// bbs.smb_total_msgs, and bbs.smb_curmsg.
+function readCurMsgNum()
+{
+  var retObj = new Object();
+  retObj.lastMsg = bbs.smb_last_msg;
+  retObj.totalNumMsgs = bbs.smb_total_msgs;
+  retObj.curMsgNum = bbs.smb_curmsg;
+  retObj.subBoardCode = bbs.smb_sub_code;
+
+  var SMBInfoFile = new File(system.node_dir + "DDML_SyncSMBInfo.txt");
+  if (SMBInfoFile.open("r"))
+  {
+    var fileLine = null; // A line read from the file
+    var lineNum = 0; // Will be incremented at the start of the while loop, to start at 1.
+    while (!SMBInfoFile.eof)
+    {
+       ++lineNum;
+
+       // Read the next line from the config file.
+       fileLine = SMBInfoFile.readln(2048);
+
+       // fileLine should be a string, but I've seen some cases
+       // where for some reason it isn't.  If it's not a string,
+       // then continue onto the next line.
+       if (typeof(fileLine) != "string")
+          continue;
+
+        // Depending on the line number, set the appropriate value
+        // in retObj.
+        switch (lineNum)
+        {
+          case 1:
+            retObj.lastMsg = +fileLine;
+            break;
+          case 2:
+            retObj.totalNumMsgs = +fileLine;
+            break;
+          case 3:
+            retObj.curMsgNum = +fileLine;
+            break;
+          case 4:
+            retObj.subBoardCode = fileLine;
+            break;
+          default:
+            break;
+        }
+     }
+     SMBInfoFile.close();
+  }
+
+  return retObj;
+}
+
+// Gets the "From" name of the current message being replied to.
+// Only for use when replying to a message in a public sub-board.
+// The message information is retrieved from DDML_SyncSMBInfo.txt
+// in the node dir if it exists or from the bbs object's properties.
+// On error, the string returned will be blank.
+function getFromNameForCurMsg()
+{
+  var fromName = "";
+
+  // Get the information about the current message from
+  // DDML_SyncSMBInfo.txt in the node dir if it exists or from
+  // the bbs object's properties.  Then open the message header
+  // and get the 'from' name from it.
+  // Thanks goes to echicken (sysop of Electronic Chicken) for
+  // the idea behind this code.
+  var msgInfo = readCurMsgNum();
+  var msgNum = msgInfo.lastMsg - msgInfo.totalNumMsgs + msgInfo.curMsgNum + 1;
+
+  if (msgInfo.subBoardCode.length > 0)
+  {
+    var msgBase = new MsgBase(msgInfo.subBoardCode);
+    if (msgBase != null)
+    {
+      msgBase.open();
+      var hdr = msgBase.get_msg_header(msgNum);
+      if (hdr != null)
+        fromName = hdr.from;
+      msgBase.close();
+    }
+  }
+
+  return fromName;
 }
 
 // This function displays debug text at a given location on the screen, then

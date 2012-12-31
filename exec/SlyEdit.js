@@ -76,6 +76,29 @@
  *                              Even though I had released v1.17 yesterday,
  *                              it appeared that nobody had downloaded it yet,
  *                              so I'm still calling this v1.17.
+ * 2012-12-27 Eric Oulashin     Version 1.18 beta
+ *                              Bug fix: When wrapping text lines while prefixing
+ *                              the lines with initials, if wrapping a section
+ *                              resulted in adding more lines, it wasn't properly
+ *                              adding a > to the last line of the section to
+ *                              indicate one more level of quoting.  This has
+ *                              been fixed.
+ * 2012-12-28 Eric Oulashin     Version 1.18 beta 3
+ *                              Updated to use the new configuration setting
+ *                              gConfigSettings.indentQuoteLinesWithInitials
+ *                              to determine whether to prefix quote lines with
+ *                              a space if using author's initials in quote lines.
+ * 2012-12-30 Eric Oulashin     Version 1.18 beta 4
+ *                              Updated so that when replying to a message
+ *                              in a public sub-board, it will use the
+ *                              message's "From" name, read from the message
+ *                              database, rather than the given "To" name,
+ *                              for the author's initials.  That way, if a
+ *                              user changes the "To" name before replying to
+ *                              a message, the correct initials will be used.
+ * 2012-12-31 Eric Oulashin     Version 1.18 (final)
+ *                              Releasing this version today, as testing has
+ *                              shown that it's working well and as intended.
  */
 
 /* Command-line arguments:
@@ -133,8 +156,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.17";
-const EDITOR_VER_DATE = "2012-12-27";
+const EDITOR_VERSION = "1.18";
+const EDITOR_VER_DATE = "2012-12-31";
 
 
 // Program variables
@@ -321,26 +344,35 @@ if (dropFileName != undefined)
 			gMsgSubj = info[2];
 			gMsgArea = info[4];
 
-			// If specified in the configuration to use author's initials in
-			// the quote line prefix, then update gQuotePrefix to contain the
-			// initials or first 2 letters from gToName.
-			if (gConfigSettings.useQuoteLineInitials && (gToName.length > 0))
-			{
-				// Make a copy of gToName and remove any leading, multiple, or
-				// trailing spaces that it might have.  Then, use the initials
-				// or first 2 characters from it for gQuotePrefix.
-				var toName = trimSpaces(gToName, true, true, true);
-				var spaceIndex = toName.indexOf(" ");
+      if (gConfigSettings.useQuoteLineInitials)
+      {
+        // For the name to use for the initials, use the
+        // current message's "from" name if there is one,
+        // or the "To" name read from the message info
+        // drop file.
+        // Remove any leading, multiple, or trailing spaces
+        // that it might have.
+        var quotedName = trimSpaces(getFromNameForCurMsg(), true, true, true);
+        if (quotedName.length == 0)
+          quotedName = trimSpaces(gToName, true, true, true);
+        // If configured to indent quote lines w/ initials with
+        // a space, then do it.
+        gQuotePrefix = "";
+        if (gConfigSettings.indentQuoteLinesWithInitials)
+          gQuotePrefix = " ";
+				// Use the initials or first 2 characters from the
+				// quoted name for gQuotePrefix.
+				var spaceIndex = quotedName.indexOf(" ");
 				if (spaceIndex > -1) // If a space exists, use the initials
 				{
-					gQuotePrefix = toName.charAt(0).toUpperCase();
-					if (toName.length > spaceIndex+1)
-						gQuotePrefix += toName.charAt(spaceIndex+1).toUpperCase();
+          gQuotePrefix += quotedName.charAt(0).toUpperCase();
+					if (quotedName.length > spaceIndex+1)
+						gQuotePrefix += quotedName.charAt(spaceIndex+1).toUpperCase();
 					gQuotePrefix += "> ";
 				}
 				else // A space doesn't exist; use the first 2 letters
-					gQuotePrefix = toName.substr(0, 2) + "> ";
-			}
+					gQuotePrefix += quotedName.substr(0, 2) + "> ";
+      }
 		}
 	}
 	file_remove(dropFileName);
@@ -376,12 +408,10 @@ if (inputFile.open("r", false))
      // If not configured to re-wrap quote lines, then if configured to
      // prefix quote lines with author's initials, then we need to
      // prefix them here with gQuotePrefix.
-     /*if (gConfigSettings.reWrapQuoteLines && (gQuoteLines.length > 0))
-       wrapQuoteLines(gConfigSettings.useQuoteLineInitials);*/
      if (gQuoteLines.length > 0)
      {
        if (gConfigSettings.reWrapQuoteLines)
-         wrapQuoteLines(gConfigSettings.useQuoteLineInitials);
+         wrapQuoteLines(gConfigSettings.useQuoteLineInitials, gConfigSettings.indentQuoteLinesWithInitials);
        else if (gConfigSettings.useQuoteLineInitials)
        {
          var maxQuoteLineWidth = gEditWidth - gQuotePrefix.length;
