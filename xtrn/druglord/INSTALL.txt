@@ -1,0 +1,94 @@
+﻿--------
+DrugLord
+--------
+Please see README.txt.
+
+Note that InterBBS features are disabled by default. See the Requirements, Installation and Hosting sections.
+
+------------
+Requirements
+------------
+- DrugLord's InterBBS capability relies on the following libraries from mcmlxxix:
+	- exec/load/json-client.js
+  You can grab this from the Synchronet CVS repository, if you don't have it already.
+
+-------------------
+Supported Platforms
+-------------------
+Any platform that supports Synchronet and spidermonkey should be able to run DrugLord.
+
+DrugLord has been tested on:
+
+- Windows Server 2008 (x86).
+- Arch Linux (ARM - Raspberry Pi).
+- Ubuntu Linux (x64).
+
+------------
+Installation
+------------
+1. Get the sources. They can be found on cvs.synchro.net, the official Synchronet repository.
+
+   Git it:
+     For the latest code/unstable branch, you can click the first 'snapshot' link here:
+       http://git.poorcoding.com/?p=druglord
+     This will get the latest snapshot of the source from the repository in .tgz format.
+     Extract and put the 'druglord' folder into /sbbs/xtrn.
+
+2. Configure the door in SCFG:
+	╔[■][?]════════════════════════════════════════════════════╗
+	║                         DrugLord                         ║
+	╠══════════════════════════════════════════════════════════╣
+	║ │Name                       DrugLord                     ║
+	║ │Internal Code              DRUGLORD                     ║
+	║ │Start-up Directory         ../xtrn/druglord             ║
+	║ │Command Line               ?druglord                    ║
+	║ │Clean-up Command Line                                   ║
+	║ │Execution Cost             None                         ║
+	║ │Access Requirements                                     ║
+	║ │Execution Requirements                                  ║
+	║ │Multiple Concurrent Users  Yes                          ║
+	║ │Intercept I/O              No                           ║
+	║ │Native Executable          No                           ║
+	║ │Use Shell to Execute       No                           ║
+	║ │Modify User Data           No                           ║
+	║ │Execute on Event           No                           ║
+	║ │Pause After Execution      No                           ║
+	║ │BBS Drop File Type         None                         ║
+	║ │Place Drop File In         Node Directory               ║
+	╚══════════════════════════════════════════════════════════╝
+	
+3. InterBBS is disabled by default, but is simple to enable. Ensure you have read the requirements section. If you want to enable InterBBS mode, please edit 'druglord.js' and set the 'USE_JSON' key in druglord_config to true:
+
+	var druglord_config = {
+		...
+		USE_JSON: true,         /* Use JSON interbbs functions? false to disable. */
+		...
+	}
+
+   If you wish to host your own high scores service please read the hosting section below.
+
+------------
+Instructions
+------------
+Please see the README.txt document for in-game instructions.
+
+------------------------
+Hosting the JSON Service
+------------------------
+By default, when InterBBS enabled, DrugLord will send and retrieve InterBBS data from the global server (Fatcats BBS). If you want to host your own JSON service, you are mostly on your own, please note:
+
+1. Your BBS should be configured with the JSON service. In your ctrl/services.ini, ensure this is enabled:
+	[JSON]
+	Port=10088
+	Options=STATIC | LOOP
+	Command=json-service.js
+
+2. Edit ctrl/json-service.ini, adding the line:
+	druglord=../xtrn/druglord/
+   Note that if you changed the installation path, this line must be similarly changed.
+
+3. Restart the Synchronet Services service.
+
+4. Edit 'druglord.js'. Modify the line:
+	var json = new JSONClient("fatcatsbbs.com", 10088);
+   Change "fatcatsbbs.com" to "localhost", for example.
