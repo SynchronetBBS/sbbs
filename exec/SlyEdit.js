@@ -99,6 +99,14 @@
  * 2012-12-31 Eric Oulashin     Version 1.18 (final)
  *                              Releasing this version today, as testing has
  *                              shown that it's working well and as intended.
+ * 2013-01-02 Eric Oulashin     Version 1.19
+ *                              Fixed a bug where reading low-numbered messages
+ *                              in a sub-board would result in getting the
+ *                              incorrect original author name.  Updated
+ *                              getFromNameForCurMsg() in SlyEdit_Misc.js
+ *                              to just use the sub-board code and message
+ *                              offset to get the header for the current
+ *                              message being read.
  */
 
 /* Command-line arguments:
@@ -156,8 +164,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.18";
-const EDITOR_VER_DATE = "2012-12-31";
+const EDITOR_VERSION = "1.19";
+const EDITOR_VER_DATE = "2013-01-02";
 
 
 // Program variables

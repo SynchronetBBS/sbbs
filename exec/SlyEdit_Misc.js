@@ -61,9 +61,9 @@
  *                              > AD> 
  *                              > AD>>
  *                              etc..
- * 2012-12-30 Eric Oulashin     Added the readCurMsgNum() and
+ * 2012-12-30 Eric Oulashin     Added the getCurMsgInfo() and
  *                              getFromNameForCurMsg() functions.
- *                              readCurMsgNum() reads DDML_SyncSMBInfo.txt,
+ *                              getCurMsgInfo() reads DDML_SyncSMBInfo.txt,
  *                              which is written to the node directory by
  *                              the Digital Distortion Message Lister and
  *                              contains information about the current
@@ -73,6 +73,14 @@
  *                              because the information about that in the
  *                              bbs object (provided by Synchronet) can't
  *                              be modified.
+ * 2013-01-02 Eric Oulashin     Fixed a bug in getFromNameForCurMsg() where
+ *                              reading low-numbered messages in a sub-board
+ *                              would result in getting the incorrect
+ *                              original author name.  Updated
+ *                              getFromNameForCurMsg() to just use the
+ *                              sub-board code and message offset to get
+ *                              the header for the current message being
+ *                              read.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -1896,7 +1904,7 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 // Distortion Message Lister v1.31 and higher).  If that file can't be read,
 // the values will default to the values of bbs.smb_last_msg,
 // bbs.smb_total_msgs, and bbs.smb_curmsg.
-function readCurMsgNum()
+function getCurMsgInfo()
 {
   var retObj = new Object();
   retObj.lastMsg = bbs.smb_last_msg;
@@ -1961,18 +1969,14 @@ function getFromNameForCurMsg()
   // DDML_SyncSMBInfo.txt in the node dir if it exists or from
   // the bbs object's properties.  Then open the message header
   // and get the 'from' name from it.
-  // Thanks goes to echicken (sysop of Electronic Chicken) for
-  // the idea behind this code.
-  var msgInfo = readCurMsgNum();
-  var msgNum = msgInfo.lastMsg - msgInfo.totalNumMsgs + msgInfo.curMsgNum + 1;
-
+  var msgInfo = getCurMsgInfo();
   if (msgInfo.subBoardCode.length > 0)
   {
     var msgBase = new MsgBase(msgInfo.subBoardCode);
     if (msgBase != null)
     {
       msgBase.open();
-      var hdr = msgBase.get_msg_header(msgNum);
+      var hdr = msgBase.get_msg_header(true, msgInfo.curMsgNum, true);
       if (hdr != null)
         fromName = hdr.from;
       msgBase.close();
