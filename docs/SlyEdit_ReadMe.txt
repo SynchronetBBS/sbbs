@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.18
-                        Release date: 2012-12-31
+                              Version 1.19
+                        Release date: 2013-01-02
 
                                   by
 
@@ -485,6 +485,10 @@ MenuHotkeys                       The color to use for the hotkey characters in 
 ================================
 Version  Date         Description
 -------  ----         -----------
+1.19     2013-01-02   Bug fix: When replying to low-numbered messages in a
+                      message area now get the correct author name.
+                      Previously, it would get the correct author name only
+                      from the later messages in a message area.
 1.18     2012-12-31   Bug fix: When prefixing quote lines with author initials,
                       if re-wrapping quote lines resulted in an additional
                       quote line being created, it wasn't prefixing that quote
