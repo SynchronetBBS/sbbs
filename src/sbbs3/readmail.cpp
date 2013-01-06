@@ -134,15 +134,17 @@ void sbbs_t::readmail(uint usernumber, int which)
 		ASYNC;
 		if(!(sys_status&SS_ABORT)) {
 			bprintf(text[StartWithN],1L);
-			if((long)(smb.curmsg=getnum(smb.msgs))>0)
-				smb.curmsg--;
-			else if((long)smb.curmsg==-1) {
+			l=getnum(smb.msgs);
+			if(l>0)
+				smb.curmsg=l-1;
+			else if(l==-1) {
 				free(mail);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
-				return; 
+				return;
 			}
-			
+			else
+				smb.curmsg=l;
 		}
 		sys_status&=~SS_ABORT; 
 	}
