@@ -1,5 +1,5 @@
 --- tools/ccopts.sh.orig	2010-12-19 00:57:12.000000000 -0800
-+++ tools/ccopts.sh	2013-01-05 22:19:38.000000000 -0800
++++ tools/ccopts.sh	2013-01-05 22:33:35.000000000 -0800
 @@ -105,7 +105,7 @@
  			HASDYNLOAD=1 ;
  		fi ;;
@@ -25,3 +25,12 @@
  
  # Conversely, if we're building a static lib and the system requires it, set
  # up static lib-specific options.
+@@ -448,7 +446,7 @@
+ # later versions of gcc 4.1.x, to be on the safe side we only enable it
+ # for gcc 4.2 and newer.
+ 
+-if [ $GCC_VER -ge 42 ] ; then
++if [ $GCC_VER -ge 42 -a 1 = 3 ] ; then
+   if [ `$CC -fstack-protector -S -o /dev/null -xc /dev/null 2>&1 | grep -c "unrecog"` -eq 0 ] ; then
+ 	CCARGS="$CCARGS -fstack-protector" ;
+   fi ;
