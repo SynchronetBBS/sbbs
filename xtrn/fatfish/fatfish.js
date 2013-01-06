@@ -186,50 +186,52 @@ var fish_finder_points = 3;
 var player_credits = 0;
 
 // Load personal scores from JSON: fatfish.QWKID.username.best_bass, etc.
-console.writeln("\t- Loading data from InterBBS database.");
-try {
-    //log("JSON path is: " + system.qwk_id + "." + user.alias);
-    var j1 = json.read("fatfish", system.qwk_id + "." + user.alias + ".best_bass", 1);
-    if (j1 != undefined) {
-        //log("JSON Bass: " + j1.toSource());
-        best.bass = j1;
-    }
-
-    var j2 = json.read("fatfish", system.qwk_id + "." + user.alias + ".best_pike", 1);
-    if (j2 != undefined) {
-        //log("JSON Pike: " + j2.toSource());
-        best.pike = j2;
-    }
-
-    var j3 = json.read("fatfish", system.qwk_id + "." + user.alias + ".best_trout", 1);
-    if (j3 != undefined) {
-        //log("JSON Trout: " + j3.toSource());
-        best.trout = j3;
-    }
-
-    var j4 = json.read("fatfish", system.qwk_id + "." + user.alias + ".best_eel", 1);
-    if (j4 != undefined) {
-        //log("JSON Trout: " + j3.toSource());
-        best.eel = j4;
-    }
-
-    /* Load Player's credits from JSON. */
-    var c1 = json.read("fatfish", system.qwk_id + "." + user.alias + ".credits", 1);
-    if (c1 != undefined) {
-        player_credits = c1;
-    }
-
-    /* Load Rods owned by player from JSON. */
-    for (var ri = 1; ri < rods.length; ri++) {
-
-        var r1 = json.read("fatfish", system.qwk_id + "." + user.alias + ".rods_owned." + ri, 1);
-        if (r1 != undefined && r1 == true) {
-            rods[ri].owned = true;
+if (USING_JSON) {
+    console.writeln("\t- Loading data from InterBBS database.");
+    try {
+        //log("JSON path is: " + system.qwk_id + "." + user.alias);
+        var j1 = json.read("fatfish", system.qwk_id + "." + user.alias + ".best_bass", 1);
+        if (j1 != undefined) {
+            //log("JSON Bass: " + j1.toSource());
+            best.bass = j1;
         }
 
+        var j2 = json.read("fatfish", system.qwk_id + "." + user.alias + ".best_pike", 1);
+        if (j2 != undefined) {
+            //log("JSON Pike: " + j2.toSource());
+            best.pike = j2;
+        }
+
+        var j3 = json.read("fatfish", system.qwk_id + "." + user.alias + ".best_trout", 1);
+        if (j3 != undefined) {
+            //log("JSON Trout: " + j3.toSource());
+            best.trout = j3;
+        }
+
+        var j4 = json.read("fatfish", system.qwk_id + "." + user.alias + ".best_eel", 1);
+        if (j4 != undefined) {
+            //log("JSON Trout: " + j3.toSource());
+            best.eel = j4;
+        }
+
+        /* Load Player's credits from JSON. */
+        var c1 = json.read("fatfish", system.qwk_id + "." + user.alias + ".credits", 1);
+        if (c1 != undefined) {
+            player_credits = c1;
+        }
+
+        /* Load Rods owned by player from JSON. */
+        for (var ri = 1; ri < rods.length; ri++) {
+
+            var r1 = json.read("fatfish", system.qwk_id + "." + user.alias + ".rods_owned." + ri, 1);
+            if (r1 != undefined && r1 == true) {
+                rods[ri].owned = true;
+            }
+
+        }
+    } catch (e) {
+        log("EXCEPTION: json.read(): " + e.toSource());
     }
-} catch (e) {
-    log("EXCEPTION: json.read(): " + e.toSource());
 }
 
 //
@@ -433,9 +435,11 @@ while (is_fatfishing) {
             break;
 
         case "s":
-            // Show all scores
-            show_json_scores();
-            frame.invalidate();
+            if (USING_JSON) {
+                // Show all scores
+                show_json_scores();
+                frame.invalidate();
+            }
             break;
 
         case "t":
@@ -705,7 +709,7 @@ function initFish() {
         fishes.push(tmp_f);
     }
 
-    log("Total fish: " + fishes.length);
+    //log("Total fish: " + fishes.length);
 
     // Fish movement timer.
     var ms = 1000;
@@ -1276,22 +1280,29 @@ function update_hi_scores(fish) {
     }
 
     if (scores_need_saving) {
-        // Save personal scores to JSON: fatfish.QWKID.username.best_bass, etc.
-        try {
-            if (user.alias.length > 0) {
-                // TODO: Only save the new best.FISHTYPE.
+        if (USING_JSON) {
+            // Save personal scores to JSON: fatfish.QWKID.username.best_bass, etc.
+            try {
+                if (user.alias.length > 0) {
+                    // TODO: Only save the new best.FISHTYPE.
+                    ?
+                    if (json == undefined) {
+                        /* If no json object, try it again. */
+                        json = new JSONClient(serverAddr, serverPort);
+                    }
 
-                if (best.bass != undefined)
-                    json.write("fatfish", system.qwk_id + "." + user.alias + ".best_bass", best.bass, 2);
-                if (best.eel != undefined)
-                    json.write("fatfish", system.qwk_id + "." + user.alias + ".best_eel", best.eel, 2);
-                if (best.pike != undefined)
-                    json.write("fatfish", system.qwk_id + "." + user.alias + ".best_pike", best.pike, 2);
-                if (best.trout != undefined)
-                    json.write("fatfish", system.qwk_id + "." + user.alias + ".best_trout", best.trout, 2);
+                    if (best.bass != undefined)
+                        json.write("fatfish", system.qwk_id + "." + user.alias + ".best_bass", best.bass, 2);
+                    if (best.eel != undefined)
+                        json.write("fatfish", system.qwk_id + "." + user.alias + ".best_eel", best.eel, 2);
+                    if (best.pike != undefined)
+                        json.write("fatfish", system.qwk_id + "." + user.alias + ".best_pike", best.pike, 2);
+                    if (best.trout != undefined)
+                        json.write("fatfish", system.qwk_id + "." + user.alias + ".best_trout", best.trout, 2);
+                }
+            } catch (e) {
+                log("EXCEPTION: json.write(): " + e.Message);
             }
-        } catch (e) {
-            log("EXCEPTION: json.write(): " + e.Message);
         }
 
     } // end if (scores_need_saving).
@@ -1366,129 +1377,131 @@ function show_fish_caught() {
 
 // Display each player's score in JSON.
 function show_json_scores() {
-    try {
+    if (USING_JSON) {
+        try {
 
-        var scores = json.read("fatfish", "", 1);
+            var scores = json.read("fatfish", "", 1);
 
-        if (json == undefined || scores == undefined) {
-            /* If no json object or scores, try it again. */
-            json = new JSONClient(serverAddr, serverPort);
-            scores = json.read("fatfish", "", 1);
-        }
+            if (json == undefined || scores == undefined) {
+                /* If no json object or scores, try it again. */
+                json = new JSONClient(serverAddr, serverPort);
+                scores = json.read("fatfish", "", 1);
+            }
 
-        if (scores != undefined) {
-            var top_bass_length = 0;   // InterBBS top scores.
-            var top_eel_length = 0;
-            var top_pike_length = 0;
-            var top_trout_length = 0;
+            if (scores != undefined) {
+                var top_bass_length = 0;   // InterBBS top scores.
+                var top_eel_length = 0;
+                var top_pike_length = 0;
+                var top_trout_length = 0;
 
-            console.clear();
-            console.write(ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + " InterBBS Scores ");
-            console.cleartoeol();
-            console.writeln(ANSI.DEFAULT);
-            console.crlf();
+                console.clear();
+                console.write(ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + " InterBBS Scores ");
+                console.cleartoeol();
+                console.writeln(ANSI.DEFAULT);
+                console.crlf();
 
-            if (Object.keys(scores).length > 0) {
-                // Iterate through each BBS, showing player scores.
-                var bbses = Object.keys(scores);
+                if (Object.keys(scores).length > 0) {
+                    // Iterate through each BBS, showing player scores.
+                    var bbses = Object.keys(scores);
 
-                for (var a = 0; a < bbses.length; a++) {
-                    // Each BBS.
-                    console.writeln(ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + " " + bbses[a] + ": " + ANSI.DEFAULT);
+                    for (var a = 0; a < bbses.length; a++) {
+                        // Each BBS.
+                        console.writeln(ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + " " + bbses[a] + ": " + ANSI.DEFAULT);
 
-                    var json_players = Object.keys(scores[bbses[a]]);
+                        var json_players = Object.keys(scores[bbses[a]]);
 
-                    if (json_players != undefined) {
+                        if (json_players != undefined) {
 
-                        for (var b = 0; b < json_players.length; b++) {
-                            // Each player.
-                            var col = ANSI.BOLD + ANSI.FG_WHITE;
-                            if (json_players[b].length <= 6) {
-                                console.write(col + json_players[b] + ":" + ANSI.DEFAULT);
-                            } else {
-                                console.writeln(col + json_players[b] + ":" + ANSI.DEFAULT);
+                            for (var b = 0; b < json_players.length; b++) {
+                                // Each player.
+                                var col = ANSI.BOLD + ANSI.FG_WHITE;
+                                if (json_players[b].length <= 6) {
+                                    console.write(col + json_players[b] + ":" + ANSI.DEFAULT);
+                                } else {
+                                    console.writeln(col + json_players[b] + ":" + ANSI.DEFAULT);
+                                    console.line_counter++;
+                                }
+
+                                if (scores[bbses[a]][json_players[b]].best_bass != undefined) {
+
+                                    // Print.
+                                    console.write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_bass.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_bass.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_bass.weight + "kg.");
+
+                                    // Check top InterBBS score.
+                                    if (scores[bbses[a]][json_players[b]].best_bass.length > top_bass_length) {
+                                        // This is the new top score.
+                                        top_bass_length = scores[bbses[a]][json_players[b]].best_bass.length;
+                                    }
+                                }
+
+                                if (scores[bbses[a]][json_players[b]].best_eel != undefined) {
+                                    console.write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_eel.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_eel.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_eel.weight + "kg.");
+
+                                    // Check top InterBBS score.
+                                    if (scores[bbses[a]][json_players[b]].best_eel.length > top_eel_length) {
+                                        // This is the new top score.
+                                        top_eel_length = scores[bbses[a]][json_players[b]].best_eel.length;
+                                    }
+                                }
+
+                                if (scores[bbses[a]][json_players[b]].best_pike != undefined) {
+                                    console.write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_pike.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_pike.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_pike.weight + "kg.");
+
+                                    // Check top InterBBS score.
+                                    if (scores[bbses[a]][json_players[b]].best_pike.length > top_pike_length) {
+                                        // This is the new top score.
+                                        top_pike_length = scores[bbses[a]][json_players[b]].best_pike.length;
+                                    }
+                                }
+
+                                if (scores[bbses[a]][json_players[b]].best_trout != undefined) {
+                                    write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_trout.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_trout.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_trout.weight + "kg.");
+
+                                    // Check top InterBBS score.
+                                    if (scores[bbses[a]][json_players[b]].best_trout.length > top_trout_length) {
+                                        // This is the new top score.
+                                        top_trout_length = scores[bbses[a]][json_players[b]].best_trout.length;
+                                    }
+                                }
+
+                                console.crlf();
                                 console.line_counter++;
-                            }
-
-                            if (scores[bbses[a]][json_players[b]].best_bass != undefined) {
-
-                                // Print.
-                                console.write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_bass.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_bass.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_bass.weight + "kg.");
-
-                                // Check top InterBBS score.
-                                if (scores[bbses[a]][json_players[b]].best_bass.length > top_bass_length) {
-                                    // This is the new top score.
-                                    top_bass_length = scores[bbses[a]][json_players[b]].best_bass.length;
+                                if (console.line_counter > (console.screen_rows - 2)) {
+                                    console.pause();
+                                    console.line_counter = 0;
                                 }
-                            }
 
-                            if (scores[bbses[a]][json_players[b]].best_eel != undefined) {
-                                console.write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_eel.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_eel.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_eel.weight + "kg.");
+                            } // end for Players
+                        } // end if
 
-                                // Check top InterBBS score.
-                                if (scores[bbses[a]][json_players[b]].best_eel.length > top_eel_length) {
-                                    // This is the new top score.
-                                    top_eel_length = scores[bbses[a]][json_players[b]].best_eel.length;
-                                }
-                            }
+                        console.crlf();
+                    } // end for BBSes
 
-                            if (scores[bbses[a]][json_players[b]].best_pike != undefined) {
-                                console.write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_pike.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_pike.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_pike.weight + "kg.");
+                    // Print InterBBS top scores.
+                    console.writeln(ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + " Top scores: " + ANSI.DEFAULT);
+                    console.writeln(ANSI.BOLD + "\tBass:\t" + top_bass_length / 10 + "cm.");
+                    console.writeln("\tEel:\t" + top_eel_length / 10 + "cm.");
+                    console.writeln("\tPike:\t" + top_pike_length / 10 + "cm.");
+                    console.writeln("\tTrout:\t" + top_trout_length / 10 + "cm." + ANSI.DEFAULT);
+                } else {
+                    // No scores found in JSON.
+                    console.writeln("No scores found.");
+                } // end if
 
-                                // Check top InterBBS score.
-                                if (scores[bbses[a]][json_players[b]].best_pike.length > top_pike_length) {
-                                    // This is the new top score.
-                                    top_pike_length = scores[bbses[a]][json_players[b]].best_pike.length;
-                                }
-                            }
-
-                            if (scores[bbses[a]][json_players[b]].best_trout != undefined) {
-                                write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_trout.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_trout.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_trout.weight + "kg.");
-
-                                // Check top InterBBS score.
-                                if (scores[bbses[a]][json_players[b]].best_trout.length > top_trout_length) {
-                                    // This is the new top score.
-                                    top_trout_length = scores[bbses[a]][json_players[b]].best_trout.length;
-                                }
-                            }
-
-                            console.crlf();
-                            console.line_counter++;
-                            if (console.line_counter > (console.screen_rows - 2)) {
-                                console.pause();
-                                console.line_counter = 0;
-                            }
-
-                        } // end for Players
-                    } // end if
-
-                    console.crlf();
-                } // end for BBSes
-
-                // Print InterBBS top scores.
-                console.writeln(ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + " Top scores: " + ANSI.DEFAULT);
-                console.writeln(ANSI.BOLD + "\tBass:\t" + top_bass_length / 10 + "cm.");
-                console.writeln("\tEel:\t" + top_eel_length / 10 + "cm.");
-                console.writeln("\tPike:\t" + top_pike_length / 10 + "cm.");
-                console.writeln("\tTrout:\t" + top_trout_length / 10 + "cm." + ANSI.DEFAULT);
             } else {
-                // No scores found in JSON.
+                // scores undefined.
                 console.writeln("No scores found.");
-            } // end if
+            }
 
-        } else {
-            // scores undefined.
-            console.writeln("No scores found.");
+            console.crlf();
+            console.pause();
+            console.clear();
+            redraw_all = true;
+
+        } catch (e) {
+            log("EXCEPTION: show_json_scores():json.read(): " + e.Message);
         }
-
-        console.crlf();
-        console.pause();
-        console.clear();
-        redraw_all = true;
-
-    } catch (e) {
-        log("EXCEPTION: show_json_scores():json.read(): " + e.Message);
-    }
+    } // end if (USING_JSON)
 }
 
 function render_status_bar(x, y, width, threshold, fgcol, thcol, bgcol) {
