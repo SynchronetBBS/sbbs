@@ -18,8 +18,11 @@ var PATH_FATFISH = js.exec_dir;
 /* Set to true for slow processor or low memory. Restricts lake size to 80x25 maximum. */
 var SHITTY_BOX = false;
 
-/* TODO: Set to false to disable JSON. */
-var USING_JSON = true;
+/* Set to false to disable JSON. */
+var USING_JSON = false;
+
+/* Set to true to use Global High Scores server (FatCats BBS) */
+var USING_GLOBAL_SERVER = false;
 
 load("sbbsdefs.js");
 load("event-timer.js");
@@ -36,15 +39,33 @@ load(PATH_FATFISH + "shop.js");
 /* Version. */
 var FF_VER = "0.6b";
 
-var server_file = new File(file_cfgname(PATH_FATFISH,"server.ini"));
-server_file.open('r',true);
-var serverAddr=server_file.iniGetValue(null,"host","localhost");
-var serverPort=server_file.iniGetValue(null,"port",10088);
-server_file.close();
+/* Set InterBBS Server. */
+if (USING_JSON) {
+    try {
+        var serverAddr;
+        var serverPort;
+
+        if (!USING_GLOBAL_SERVER) {
+            var server_file = new File(file_cfgname(PATH_FATFISH,"server.ini"));
+            server_file.open('r',true);
+            serverAddr=server_file.iniGetValue(null,"host","localhost");
+            serverPort=server_file.iniGetValue(null,"port",10088);
+            server_file.close();
+        } else {
+            /* Use global server if enabled. */
+            serverAddr = "FatCatsBBS.com";
+            serverPort = 10088;
+        }
+
+        /* JSON client object. */
+        var json = new JSONClient(serverAddr, serverPort);
+    } catch (e) {
+        //console.writeln("Exception: " + e.message);
+        //console.pause();
+    }
+}
 
 
-/* JSON client object. */
-var json = new JSONClient(serverAddr, serverPort);
 
 var lake_x = console.screen_columns;
 var lake_y = console.screen_rows - 1;
