@@ -1,5 +1,14 @@
---- tools/ccopts.sh.orig	2012-12-20 14:30:15.000000000 -0800
-+++ tools/ccopts.sh	2012-12-20 14:30:57.000000000 -0800
+--- tools/ccopts.sh.orig	2010-12-19 00:57:12.000000000 -0800
++++ tools/ccopts.sh	2013-01-05 22:19:38.000000000 -0800
+@@ -105,7 +105,7 @@
+ 			HASDYNLOAD=1 ;
+ 		fi ;;
+ esac
+-if [ $HASDYNLOAD -gt 0 ] ; then
++if [ $HASDYNLOAD -gt 0 -a 1 = 2 ] ; then
+ 	if [ -f /usr/include/sql.h ] ; then
+ 		echo "ODBC interface detected, enabling ODBC support." >&2 ;
+ 		CCARGS="$CCARGS -DHAS_ODBC" ;
 @@ -176,7 +176,6 @@
  # of large-displacement jumps, so if you're tuning the code for size/speed
  # you can try -fpic to see if you get any improvement.
