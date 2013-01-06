@@ -1285,7 +1285,6 @@ function update_hi_scores(fish) {
             try {
                 if (user.alias.length > 0) {
                     // TODO: Only save the new best.FISHTYPE.
-                    ?
                     if (json == undefined) {
                         /* If no json object, try it again. */
                         json = new JSONClient(serverAddr, serverPort);
