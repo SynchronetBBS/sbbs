@@ -29,7 +29,7 @@ var webIni=(function() {
 		login(u.alias, u.security.password);
 	}
 	
-	var webIni = get_mod_options("ecWeb");
+	var webIni = get_mod_options("ecweb");
 	
 	var f = new File(file_cfgname(system.ctrl_dir,'sbbs.ini'));
 	f.open("r");
