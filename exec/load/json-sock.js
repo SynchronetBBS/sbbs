@@ -17,7 +17,7 @@ Socket.prototype.sendJSON = function(object) {
 	try {
 		var data=JSON.stringify(object,this.replacer,this.space)+"\r\n";
 		if(!this.send(data)) 
-			log(LOG_ERROR,"send failed: " + data);
+			log(LOG_ERROR,"send failed ("+this.error+"): " + data);
 		log(LOG_DEBUG,"-->" + this.descriptor + ": " + data);
 	} catch(e) {
 		log(LOG_ERROR,e);
