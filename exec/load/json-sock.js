@@ -16,6 +16,14 @@ Socket.prototype.ping_sent = 0;
 Socket.prototype.sendJSON = function(object) {
 	try {
 		var data=JSON.stringify(object,this.replacer,this.space)+"\r\n";
+		while(data.length) {
+			var s=this.send(data);
+			if(s==0) {
+				if(!this.is_connected)
+					throw("lost connection " + data);
+			}
+			data=data.substr(s);
+		}
 		if(!this.send(data)) 
 			log(LOG_ERROR,"send failed ("+this.error+"): " + data);
 		log(LOG_DEBUG,"-->" + this.descriptor + ": " + data);
