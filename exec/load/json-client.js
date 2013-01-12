@@ -91,17 +91,22 @@ function JSONClient(serverAddr,serverPort) {
 	/* create new socket connection to server */
     this.connect = function() {
 		if(this.socket && this.socket.is_connected)
-			this.socket.close();
+			return false;
 			
         this.socket=new Socket();
 		this.socket.connect(this.serverAddr,this.serverPort,this.settings.CONNECTION_TIMEOUT);
 		
 		if(!this.socket.is_connected)
 			throw("error connecting to server");
+		return true;
     }
     
     this.disconnect = function() {
-        this.socket.close();
+		if(this.socket && this.socket.is_connected) {
+			this.socket.close();
+			return true;
+		}
+		return false;
     }
     
 	/* subscribe to object updates */
