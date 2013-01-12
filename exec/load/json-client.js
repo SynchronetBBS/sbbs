@@ -102,11 +102,7 @@ function JSONClient(serverAddr,serverPort) {
     }
     
     this.disconnect = function() {
-		if(this.socket && this.socket.is_connected) {
-			this.socket.close();
-			return true;
-		}
-		return false;
+	return this.socket.close();
     }
     
 	/* subscribe to object updates */
