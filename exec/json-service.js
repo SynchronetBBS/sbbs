@@ -437,7 +437,7 @@ engine = new (function() {
 		var handled = false;
 		
 		/* pass command to module method if it exists */
-		if(module.commands[packet.func.toUpperCase()])
+		if(module.commands && module.commands[packet.func.toUpperCase()])
 			handled = module.commands[packet.func.toUpperCase()](client,packet);
 	
 		if(handled)
