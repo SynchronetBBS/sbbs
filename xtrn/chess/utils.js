@@ -1,3 +1,8 @@
+var COLOUR = {
+	white:1,
+	black:-1
+};
+
 function parsePos(pos)
 {
 	var m=pos.match(/^([a-h])([1-8])$/);
@@ -14,9 +19,24 @@ function parsePos(pos)
 function parseColour(colour)
 {
 	if(colour=='w')
-		return false;
+		return COLOUR.white;
 	if(colour=='b')
-		return true;
+		return COLOUR.black;
 	throw("Illegal colour '"+colour+"' passed to parseColour");
 }
 
+function toward(from, to)
+{
+	if(from==to)
+		return from;
+	if(from > to)
+		return from-1;
+	return from+1;
+}
+
+function copyprops(from, to)
+{
+	for(prop in from) {
+		to[prop]=from[prop];
+	}
+}
