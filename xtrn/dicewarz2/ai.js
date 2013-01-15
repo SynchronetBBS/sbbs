@@ -244,8 +244,8 @@ function initClient() {
 		
 	var server_file = new File(root + "server.ini");
 	server_file.open('r',true);
-	var serverAddr=server_file.iniGetValue(null,"serverAddr");
-	var serverPort=server_file.iniGetValue(null,"serverPort");
+	var serverAddr=server_file.iniGetValue(null,"host");
+	var serverPort=server_file.iniGetValue(null,"port");
 	server_file.close();
 	client = new JSONClient(serverAddr,serverPort);
 }
