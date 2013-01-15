@@ -432,6 +432,17 @@ engine = new (function() {
 			error(client,errors.UNKNOWN_MODULE,packet.scope);
 			return false;
 		}
+		
+		/* flag command as not handled */
+		var handled = false;
+		
+		/* pass command to module method if it exists */
+		if(module.commands[packet.func.toUpperCase()])
+			handled = module.commands[packet.func.toUpperCase()](client,packet);
+	
+		if(handled)
+			return true;
+			
 		switch(packet.func.toUpperCase()) {
 		case "QUERY":
 			if(!this.verify(client,packet,module)) {
@@ -485,6 +496,8 @@ engine = new (function() {
 			error(client,errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		}
+		
+		return true;
 	}
 
 	/* verify a client's access to queries */
@@ -501,10 +514,10 @@ engine = new (function() {
 			break;
 		case "WRITE":
 		case "PUSH":
-		case "UNSHIFT":
-		case "DELETE":
 		case "POP":
 		case "SHIFT":
+		case "UNSHIFT":
+		case "DELETE":
 			if(module.write > 0) {
 				if(!admin.verify(client,packet,module.write)) {
 					error(client,errors.NOT_AUTHORIZED,packet.data.oper);
@@ -534,12 +547,20 @@ engine = new (function() {
 		
 		this.init = function() {
 			this.db=new JSONdb(this.dir+this.name+".json");
-			/* load module service files */
+			/* load module background service file */
 			if(file_exists(this.dir + "service.js")) {
 				try {
 					this.queue = load(true,this.dir + "service.js",this.dir);
 				} catch(e) {
-					log(LOG_ERROR,"error loading module: " + this.name);
+					log(LOG_ERROR,"error loading module service: " + this.name);
+				}
+			}
+			/* load module command file */
+			if(file_exists(this.dir + "commands.js")) {
+				try {
+					this.queue = load(this,this.dir + "commands.js",this.dir);
+				} catch(e) {
+					log(LOG_ERROR,"error loading module commands: " + this.name);
 				}
 			}
 		}
