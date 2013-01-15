@@ -65,7 +65,7 @@ Pawn.prototype.moveTo=function(pos, update)
 	if(ydist > 2)
 		return false;
 	if(ydist==2) {
-		if(this.x!=4.5-(2.5*this.colour))
+		if(this.y!=4.5-(2.5*this.colour))
 			return false;
 		if(!this.emptyTo(tgtpos))
 			return false;
