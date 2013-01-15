@@ -491,8 +491,6 @@ engine = new (function() {
 	this.verify = function(client,packet,module) {
 		switch(packet.data.oper) {
 		case "READ":
-		case "POP":
-		case "SHIFT":
 		case "SLICE":
 			if(module.read > 0) {
 				if(!admin.verify(client,packet,module.read)) {
@@ -505,6 +503,8 @@ engine = new (function() {
 		case "PUSH":
 		case "UNSHIFT":
 		case "DELETE":
+		case "POP":
+		case "SHIFT":
 			if(module.write > 0) {
 				if(!admin.verify(client,packet,module.write)) {
 					error(client,errors.NOT_AUTHORIZED,packet.data.oper);
