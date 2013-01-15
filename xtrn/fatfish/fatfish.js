@@ -18,10 +18,10 @@ var PATH_FATFISH = js.exec_dir;
 /* Set to true for slow processor or low memory. Restricts lake size to 80x25 maximum. */
 var SHITTY_BOX = false;
 
-/* Set to false to disable JSON. */
+/* Set to true to enable JSON -- recommended by author. */
 var USING_JSON = false;
 
-/* Set to true to use Global High Scores server (FatCats BBS) */
+/* Set to true to use Global High Scores server (FatCats BBS) -- recommended by author. */
 var USING_GLOBAL_SERVER = false;
 
 load("sbbsdefs.js");
@@ -187,8 +187,16 @@ var player_credits = 0;
 
 // Load personal scores from JSON: fatfish.QWKID.username.best_bass, etc.
 if (USING_JSON) {
-    console.writeln("\t- Loading data from InterBBS database.");
+    console.writeln("\t- Loading data from InterBBS database:");
     try {
+
+        if (json == undefined) {
+            /* If no json object, try it again. */
+            json = new JSONClient(serverAddr, serverPort);
+        }
+
+        console.write("\t\t- Loading your fish...");
+
         //log("JSON path is: " + system.qwk_id + "." + user.alias);
         var j1 = json.read("fatfish", system.qwk_id + "." + user.alias + ".best_bass", 1);
         if (j1 != undefined) {
@@ -214,13 +222,18 @@ if (USING_JSON) {
             best.eel = j4;
         }
 
+        console.writeln(" OK.");
+
         /* Load Player's credits from JSON. */
+        console.write("\t\t- Loading your credits...");
         var c1 = json.read("fatfish", system.qwk_id + "." + user.alias + ".credits", 1);
         if (c1 != undefined) {
             player_credits = c1;
         }
+        console.writeln(" OK.");
 
         /* Load Rods owned by player from JSON. */
+        console.write("\t\t- Loading your Fishing Rods...");
         for (var ri = 1; ri < rods.length; ri++) {
 
             var r1 = json.read("fatfish", system.qwk_id + "." + user.alias + ".rods_owned." + ri, 1);
@@ -229,8 +242,19 @@ if (USING_JSON) {
             }
 
         }
+        console.writeln(" OK.");
+
     } catch (e) {
-        log("EXCEPTION: json.read(): " + e.toSource());
+        console.writeln(" ERROR! (;_;)");
+        console.writeln("\t\t- InterBBS functions temporarily disabled for this session. :(");
+
+        //log("EXCEPTION: json.read(): " + e.toSource());
+        log("Warning: unable to load personal scores from InterBBS database. The server may be temporarily unreachable.");
+
+        /* Disable JSON for rest of session. */
+        USING_JSON = false;
+
+        console.pause();
     }
 }
 
@@ -1300,7 +1324,11 @@ function update_hi_scores(fish) {
                         json.write("fatfish", system.qwk_id + "." + user.alias + ".best_trout", best.trout, 2);
                 }
             } catch (e) {
-                log("EXCEPTION: json.write(): " + e.Message);
+                //log("EXCEPTION: json.write(): " + e.Message);
+                log("Warning: unable to save personal scores to the InterBBS database. The server may be temporarily unreachable.");
+
+                /* Disable JSON for rest of session. */
+                USING_JSON = false;
             }
         }
 
@@ -1378,14 +1406,12 @@ function show_fish_caught() {
 function show_json_scores() {
     if (USING_JSON) {
         try {
-
-            var scores = json.read("fatfish", "", 1);
-
-            if (json == undefined || scores == undefined) {
+            if (json == undefined) {
                 /* If no json object or scores, try it again. */
                 json = new JSONClient(serverAddr, serverPort);
-                scores = json.read("fatfish", "", 1);
             }
+
+            var scores = json.read("fatfish", "", 1);
 
             if (scores != undefined) {
                 var top_bass_length = 0;   // InterBBS top scores.
@@ -1498,7 +1524,11 @@ function show_json_scores() {
             redraw_all = true;
 
         } catch (e) {
-            log("EXCEPTION: show_json_scores():json.read(): " + e.Message);
+            //log("EXCEPTION: show_json_scores():json.read(): " + e.Message);
+            log("Warning: unable to load scores from the InterBBS database. The server may be temporarily unreachable.");
+
+            /* Disable JSON for rest of session. */
+            USING_JSON = false;
         }
     } // end if (USING_JSON)
 }
