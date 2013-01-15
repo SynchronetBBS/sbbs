@@ -11,7 +11,7 @@ Piece.prototype={
 	x: null,
 	y: null,
 	board: null,
-	moveTo: function() {
+	moveTo: function(pos) {
 		var tgtpos=parsePos(pos);
 		return this.board._domove(this, tgtpos);
 	},
@@ -21,9 +21,9 @@ Piece.prototype={
 		var piece;
 
 		while(x != target.x || y!=target.y) {
-			x = toward(x, target,x);
+			x = toward(x, target.x);
 			y = toward(y, target.y);
-			piece=this.board.getpiece({x:x, y:y});
+			piece=this.board.getPiece({x:x, y:y});
 			if(piece) {
 				if(x==target.x && y==target.y) {
 					if(piece.colour == this.colour)
@@ -41,7 +41,7 @@ function Pawn(colour, pos, board)
 {
 	Piece.call(this, colour, pos, board);
 }
-copyprops(Piece.prototype, Pawn.prototype);
+copyProps(Piece.prototype, Pawn.prototype);
 Pawn.prototype.double_move_num={ value: 0 };
 Pawn.prototype.moveTo=function(pos, update)
 {
@@ -71,11 +71,11 @@ Pawn.prototype.moveTo=function(pos, update)
 			return false;
 	}
 
-	capture=this.board.getpiece(tgtpos);
+	capture=this.board.getPiece(tgtpos);
 	if(capture==null) {
 		// Check for en passant
 		if(xdist==1) {
-			passed=this.board.getpiece({x:this.x,y:this.y-(black?-1:1)});
+			passed=this.board.getPiece({x:this.x,y:this.y-(black?-1:1)});
 
 			if(passed == null)
 				return false;
@@ -97,7 +97,7 @@ Pawn.prototype.moveTo=function(pos, update)
 	}
 
 	if(update) {
-		ret=Piece.prototype.moveTo.apply(this, pos);
+		ret=Piece.prototype.moveTo.apply(this, [pos]);
 		if(ret && ydist==2)
 			this.double_move_num=this.board.movenum;
 		return ret;
@@ -108,7 +108,7 @@ function Rook(colour, pos, board)
 {
 	Piece.call(this, colour, pos, board);
 }
-copyprops(Piece.prototype, Rook.prototype);
+copyProps(Piece.prototype, Rook.prototype);
 Rook.prototype.moved = { value: false };
 Rook.prototype.moveTo=function(pos, update)
 {
@@ -125,7 +125,7 @@ Rook.prototype.moveTo=function(pos, update)
 		return false;
 
 	if(update) {
-		ret=Piece.prototype.moveTo.apply(this, pos);
+		ret=Piece.prototype.moveTo.apply(this, [pos]);
 		if(ret && ydist==2)
 			this.moved=true;
 		return ret;
@@ -136,7 +136,7 @@ function Bishop(colour, pos, board)
 {
 	Piece.call(this, colour, pos, board);
 }
-copyprops(Piece.prototype, Bishop.prototype);
+copyProps(Piece.prototype, Bishop.prototype);
 Bishop.prototype.moveTo=function(pos, update)
 {
 	if(update == null)
@@ -151,14 +151,14 @@ Bishop.prototype.moveTo=function(pos, update)
 		return false;
 
 	if(update)
-		return Piece.prototype.moveTo.apply(this, pos);
+		return Piece.prototype.moveTo.apply(this, [pos]);
 }
 
 function Queen(colour, pos, board)
 {
 	Piece.call(this, colour, pos, board);
 }
-copyprops(Piece.prototype, Queen.prototype);
+copyProps(Piece.prototype, Queen.prototype);
 Queen.prototype.moveTo=function(pos, update)
 {
 	if(update == null)
@@ -173,14 +173,14 @@ Queen.prototype.moveTo=function(pos, update)
 		return false;
 
 	if(update)
-		return Piece.prototype.moveTo.apply(this, pos);
+		return Piece.prototype.moveTo.apply(this, [pos]);
 }
 
 function Knight(colour, pos, board)
 {
 	Piece.call(this, colour, pos, board);
 }
-copyprops(Piece.prototype, Knight.prototype);
+copyProps(Piece.prototype, Knight.prototype);
 Knight.prototype.moveTo=function(pos, update)
 {
 	if(update == null)
@@ -192,19 +192,19 @@ Knight.prototype.moveTo=function(pos, update)
 
 	if(!((ydist == 1 && xdist == 2) || (xdist==1 && ydist==2)))
 		return false;
-	piece=this.board.getpiece(tgtpos);
+	piece=this.board.getPiece(tgtpos);
 	if(piece != null && piece.colour == this.colour)
 		return false;
 
 	if(update)
-		return Piece.prototype.moveTo.apply(this, pos);
+		return Piece.prototype.moveTo.apply(this, [pos]);
 }
 
 function King(colour, pos, board)
 {
 	Piece.call(this, colour, pos, board);
 }
-copyprops(Piece.prototype, King.prototype);
+copyProps(Piece.prototype, King.prototype);
 King.prototype.moved = { value: false };
 King.prototype.moveTo = function(pos, update)
 {
@@ -223,7 +223,7 @@ King.prototype.moveTo = function(pos, update)
 		x=tgtpos.x < this.x?1:8;
 		cx=tgtpos.x < this.x?4:6; // Must be clear to here
 
-		piece=this.board.getpiece({x:x, y:this.y});
+		piece=this.board.getPiece({x:x, y:this.y});
 		if(piece==null)
 			return false;
 		if(piece.constructor.Name != "Rook")
@@ -234,20 +234,20 @@ King.prototype.moveTo = function(pos, update)
 			return false;
 		if(!piece.emptyTo({x:cx, y:this.y}))
 			return false;
-		if(this.board.getpiece({x:cx, y:this.y}))
+		if(this.board.getPiece({x:cx, y:this.y}))
 			return false;
 		// TODO: Check check
 	}
 	else {
 		if(ydist > 1 || xdist > 1)
 			return false;
-		piece=this.board.getpiece(tgtpos);
+		piece=this.board.getPiece(tgtpos);
 		if(piece != null && piece.colour == this.colour)
 			return false;
 	}
 
 	if(update) {
-		ret=Piece.prototype.moveTo.apply(this, pos);
+		ret=Piece.prototype.moveTo.apply(this, [pos]);
 		if(ret) {
 			this.moved=true;
 			if(cx != undefined) {

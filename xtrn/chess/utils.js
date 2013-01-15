@@ -12,7 +12,7 @@ function parsePos(pos)
 
 	var ret={};
 	ret.x = m[1].charCodeAt(0)-96;
-	ret.y = m[2]-'0';
+	ret.y = parseInt(m[2],10);
 	return ret;
 }
 
@@ -34,7 +34,7 @@ function toward(from, to)
 	return from+1;
 }
 
-function copyprops(from, to)
+function copyProps(from, to)
 {
 	for(prop in from) {
 		to[prop]=from[prop];
