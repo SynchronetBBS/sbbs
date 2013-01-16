@@ -54,7 +54,8 @@ function Pawn(colour, pos, board)
 	Piece.call(this, colour, pos, board);
 }
 copyProps(Piece.prototype, Pawn.prototype);
-Pawn.prototype.double_move_num={ value: 0 };
+Pawn.prototype.double_move_num=0;
+Pawn.prototype.promote=true;
 Pawn.prototype.moveTo=function(pos, update)
 {
 	if(update == null)
@@ -111,6 +112,8 @@ Pawn.prototype.moveTo=function(pos, update)
 	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
 	if(update && ret && ydist==2)
 		this.double_move_num=this.board.movenum;
+	if(ret && this.y == 4.5+(3.5*this.colour))
+		this.promote=true;
 	return ret;
 }
 
@@ -119,7 +122,7 @@ function Rook(colour, pos, board)
 	Piece.call(this, colour, pos, board);
 }
 copyProps(Piece.prototype, Rook.prototype);
-Rook.prototype.moved = { value: false };
+Rook.prototype.moved = false;
 Rook.prototype.moveTo=function(pos, update)
 {
 	if(update == null)
@@ -210,7 +213,7 @@ function King(colour, pos, board)
 	Piece.call(this, colour, pos, board);
 }
 copyProps(Piece.prototype, King.prototype);
-King.prototype.moved = { value: false };
+King.prototype.moved = false;
 King.prototype.moveTo = function(pos, update)
 {
 	if(update == null)
