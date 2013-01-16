@@ -1,5 +1,7 @@
 function Piece(colour, pos, board)
 {
+	if(colour==null && pos==null && board==null)
+		return;
 	var pos=parsePos(pos);
 	this.colour=parseColour(colour);
 	this.x=pos.x;
@@ -34,6 +36,9 @@ Piece.prototype={
 			}
 		}
 		return true;
+	},
+	get position() {
+		return makePos(this);
 	}
 }
 
@@ -75,7 +80,7 @@ Pawn.prototype.moveTo=function(pos, update)
 	if(capture==null) {
 		// Check for en passant
 		if(xdist==1) {
-			passed=this.board.getPiece({x:this.x,y:this.y-(black?-1:1)});
+			passed=this.board.getPiece({x:this.x,y:this.y-this.colour});
 
 			if(passed == null)
 				return false;
