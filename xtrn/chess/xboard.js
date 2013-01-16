@@ -10,6 +10,7 @@ var piece;
 var f=new File("/tmp/chesslog.txt");
 var reason;
 f.open("a");
+f.truncate(0);
 
 while(1) {
 	cmd=readln();
@@ -22,23 +23,26 @@ f.flush();
 				piece=b.getPiece(parsePos(m[1]));
 				if(piece) {
 					if(piece.moveTo(m[2])) {
-						print('move '+m[1]+m[2]);
+						write('move '+m[1]+m[2]+"\n");
 						f.writeln("Moved "+m[1]+m[2]);
 						f.flush();
 						break;
 					}
 					else {
-						print('Illegal move (no worky): '+m[1]+m[2]);
+						write('Illegal move (no worky): '+m[1]+m[2]+"\n");
 						f.writeln('Illegal move (no worky): '+m[1]+m[2]);
 						f.flush();
 					}
 				}
 				else {
-					print('Illegal move (no such piece): '+m[1]+m[2]);
+					write('Illegal move (no such piece): '+m[1]+m[2]+"\n");
 					f.writeln('Illegal move (no such piece): '+m[1]+m[2]);
 					f.flush();
 				}
 			}
+			break;
+		case 'protover 2':
+			writeln('feature\n');
 			break;
 		case 'new':
 			b=new Board();
