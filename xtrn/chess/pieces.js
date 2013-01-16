@@ -15,22 +15,30 @@ Piece.prototype={
 	board: null,
 	moveTo: function(pos, update) {
 		var tgtpos=parsePos(pos);
-		var brd=new Board(this.board.moves);
-
-		if(!brd._domove(this, tgtpos))
-			return false;
-		if(brd.check(this.colour))
-			return false;
 		if(this.board.movenum % 2) {
-			if(this.colour == COLOUR.white)
+			if(this.colour == COLOUR.white) {
+				this.board.reason("White move on black's turn");
 				return false;
+			}
 		}
 		else {
-			if(this.colour == COLOUR.black)
+			if(this.colour == COLOUR.black) {
+				this.board.reason("Black move on white's turn");
 				return false;
+			}
 		}
-		if(update)
+		if(update) {
+			var brd=new Board(this.board.moves);
+
+			if(!brd._domove(this, tgtpos))
+				return false;
+			if(brd.check(this.colour)) {
+				this.board.reason("In check");
+				return false;
+			}
 			return this.board._domove(this, tgtpos);
+		}
+		return true;
 	},
 	emptyTo: function(target) {
 		var x=this.x;
@@ -75,21 +83,31 @@ Pawn.prototype.moveTo=function(pos, update)
 	var passed;
 	var ret;
 
-	if(xdist > 1)
+	if(xdist > 1) {
+		this.board.reason("X offset to great");
 		return false;
+	}
 
 	// must move forward
-	if(tgtpos.y*this.colour >= this.pos*this.colour)
+	if(tgtpos.y*this.colour >= this.pos*this.colour) {
+		this.board.reason("Moving backward");
 		return false;
+	}
 
 	// Only one space unless at start
-	if(ydist > 2)
+	if(ydist > 2) {
+		this.board.reason("Moving more than two spaces");
 		return false;
+	}
 	if(ydist==2) {
-		if(this.y!=4.5-(2.5*this.colour))
+		if(this.y!=4.5-(2.5*this.colour)) {
+			this.board.reason("Moving two spaces");
 			return false;
-		if(!this.emptyTo(tgtpos))
+		}
+		if(!this.emptyTo(tgtpos)) {
+			this.board.reason("Move blocked");
 			return false;
+		}
 	}
 
 	capture=this.board.getPiece(tgtpos);
@@ -98,23 +116,37 @@ Pawn.prototype.moveTo=function(pos, update)
 		if(xdist==1) {
 			passed=this.board.getPiece({x:this.x,y:this.y-this.colour});
 
-			if(passed == null)
+			if(passed == null) {
+				this.board.reason("No piece to capture");
 				return false;
-			if(tgtpos.x != 4.5+(1.5*this.colour))
+			}
+			if(tgtpos.x != 4.5+(1.5*this.colour)) {
+				this.board.reason("En passant to wrong rank");
 				return false;
-			if(passed.constructor.Name!= 'Pawn')
+			}
+			if(passed.constructor.Name!= 'Pawn') {
+				this.board.reason("En passant of non-pawn");
 				return false;
-			if(passed.double_move_num != this.board.movenum-1)
+			}
+			if(passed.double_move_num != this.board.movenum-1) {
+				this.board.reason("En passant too late");
 				return false;
-			if(passed.colour==this.colour)
+			}
+			if(passed.colour==this.colour) {
+				this.board.reason("En passant of own colour");
 				return false;
+			}
 		}
 	}
 	else {
-		if(xdist==0)
+		if(xdist==0) {
+			this.board.reason("Capturing not a diagonal");
 			return false;
-		if(capture.colour==this.colour)
+		}
+		if(capture.colour==this.colour) {
+			this.board.reason("Capturing own piece");
 			return false;
+		}
 	}
 
 	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
@@ -144,10 +176,14 @@ Rook.prototype.moveTo=function(pos, update)
 	var xdist=Math.abs(this.x-tgtpos.x);
 	var ret;
 
-	if(ydist != 0 && xdist != 0)
+	if(ydist != 0 && xdist != 0) {
+		this.board.reason("Not a straight line");
 		return false;
-	if(!this.emptyTo(tgtpos))
+	}
+	if(!this.emptyTo(tgtpos)) {
+		this.board.reason("Move blocked");
 		return false;
+	}
 
 	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
 	if(update && ret)
@@ -168,10 +204,14 @@ Bishop.prototype.moveTo=function(pos, update)
 	var ydist=Math.abs(this.y-tgtpos.y);
 	var xdist=Math.abs(this.x-tgtpos.x);
 
-	if(ydist != xdist)
+	if(ydist != xdist) {
+		this.board.reason("Not a diagonal");
 		return false;
-	if(!this.emptyTo(tgtpos))
+	}
+	if(!this.emptyTo(tgtpos)) {
+		this.board.reason("Move blocked");
 		return false;
+	}
 
 	return Piece.prototype.moveTo.apply(this, [pos, update]);
 }
@@ -189,10 +229,14 @@ Queen.prototype.moveTo=function(pos, update)
 	var ydist=Math.abs(this.y-tgtpos.y);
 	var xdist=Math.abs(this.x-tgtpos.x);
 
-	if(ydist != xdist && xdist != 0 && ydist != 0)
+	if(ydist != xdist && xdist != 0 && ydist != 0) {
+		this.board.reason("Not horizontal nor diagonal");
 		return false;
-	if(!this.emptyTo(tgtpos))
+	}
+	if(!this.emptyTo(tgtpos)) {
+		this.board.reason("Move blocked");
 		return false;
+	}
 
 	return Piece.prototype.moveTo.apply(this, [pos, update]);
 }
@@ -211,11 +255,10 @@ Knight.prototype.moveTo=function(pos, update)
 	var xdist=Math.abs(this.x-tgtpos.x);
 	var piece;
 
-	if(!((ydist == 1 && xdist == 2) || (xdist==1 && ydist==2)))
+	if(!((ydist == 1 && xdist == 2) || (xdist==1 && ydist==2))) {
+		this.board.reason("Illegal move");
 		return false;
-	piece=this.board.getPiece(tgtpos);
-	if(piece != null && piece.colour == this.colour)
-		return false;
+	}
 
 	return Piece.prototype.moveTo.apply(this, [pos, update]);
 }
@@ -244,26 +287,37 @@ King.prototype.moveTo = function(pos, update)
 		cx=tgtpos.x < this.x?4:6; // Must be clear to here
 
 		piece=this.board.getPiece({x:x, y:this.y});
-		if(piece==null)
+		if(piece==null) {
+			this.board.reason("Rook not in place");
 			return false;
-		if(piece.constructor.Name != "Rook")
+		}
+		if(piece.constructor.Name != "Rook") {
+			this.board.reason("Corner doesn't have a rook");
 			return false;
-		if(piece.colour != this.colour)
+		}
+		if(piece.colour != this.colour) {
+			this.board.reason("Corner rook not yours");
 			return false;
-		if(piece.moved)
+		}
+		if(piece.moved) {
+			this.board.reason("Corner rook has moved");
 			return false;
-		if(!piece.emptyTo({x:cx, y:this.y}))
+		}
+		if(!piece.emptyTo({x:cx, y:this.y})) {
+			this.board.reason("The way is not empty");
 			return false;
-		if(this.board.getPiece({x:cx, y:this.y}))
+		}
+		if(this.board.getPiece({x:cx, y:this.y})) {
+			this.board.reason("Blocked");
 			return false;
+		}
 		// TODO: Check check
 	}
 	else {
-		if(ydist > 1 || xdist > 1)
+		if(ydist > 1 || xdist > 1) {
+			this.board.reason("Moving more than one space");
 			return false;
-		piece=this.board.getPiece(tgtpos);
-		if(piece != null && piece.colour == this.colour)
-			return false;
+		}
 	}
 
 	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
@@ -277,6 +331,6 @@ King.prototype.moveTo = function(pos, update)
 			this.board.movenum--;
 		}
 	}
-	return rret;
+	return ret;
 }
 

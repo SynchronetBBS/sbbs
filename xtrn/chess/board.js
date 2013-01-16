@@ -123,3 +123,6 @@ Board.prototype.check=function(colour)
 	}
 	return false;
 }
+Board.prototype.reason=function(str)
+{
+}
