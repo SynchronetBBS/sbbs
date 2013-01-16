@@ -1,5 +1,7 @@
-function Board()
+function Board(moves)
 {
+	var m,piece;
+
 	this.pieces=[
 		[
 			new Rook('w', 'a1', this),
@@ -49,6 +51,21 @@ function Board()
 	this.king = {}
 	this.king[COLOUR.white] = this.pieces[0][4];
 	this.king[COLOUR.black] = this.pieces[7][4];
+	this.moves=[];
+	if(moves) {
+		for(move in moves) {
+			// TODO: Promotions
+			m=moves[move].match(/^([a-h][1-8])([a-h][1-8])(.*)$/);
+			if(m==null)
+				throw("Corrupt game (invalid move)!");
+			if(m!=null) {
+				piece=this.getPiece(parsePos(m[1]));
+				if(!piece.moveTo(m[2]))
+					throw("Corrupt game (illegal move)!");
+			}
+			this.moves.push(moves[move]);
+		}
+	}
 }
 Board.prototype.movenum={value: 0};
 Board.prototype.pieces=null;
@@ -74,7 +91,7 @@ Board.prototype.check=function(colour)
 	kp=this.king[colour].position;
 	for(y=0;y<this.pieces.length;y++) {
 		for(x=0;x<this.pieces[y].length;x++) {
-			piece=this.getPiece({x:x, y:y});
+			piece=this.getPiece({x:x+1, y:y+1});
 			if(piece != null) {
 				if(piece.moveTo(kp, false))
 					return true;
