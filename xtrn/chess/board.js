@@ -58,10 +58,10 @@ function Board(moves)
 		}
 	}
 }
-Board.prototype.handleMove
+Board.prototype.handleMove=function(move)
 {
 	// TODO: Promotions
-	m=moves[move].match(/^([a-h][1-8])([a-h][1-8])(.*)$/);
+	m=move.match(/^([a-h][1-8])([a-h][1-8])(.*)$/);
 	if(m==null)
 		throw("Corrupt game (invalid move)!");
 	if(m!=null) {
