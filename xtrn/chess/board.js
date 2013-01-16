@@ -46,6 +46,9 @@ function Board()
 			new Rook('b', 'h8', this),
 		],
 	];
+	this.king = {}
+	this.king[COLOUR.white] = this.pieces[0][4];
+	this.king[COLOUR.black] = this.pieces[7][4];
 }
 Board.prototype.movenum={value: 0};
 Board.prototype.pieces=null;
@@ -63,4 +66,20 @@ Board.prototype._domove=function(from, to)
 Board.prototype.getPiece=function(pos)
 {
 	return this.pieces[pos.y-1][pos.x-1];
+}
+Board.prototype.check=function(colour)
+{
+	var x,y,piece,kp;
+
+	kp=this.king[colour].position;
+	for(y=0;y<this.pieces.length;y++) {
+		for(x=0;x<this.pieces[y].length;x++) {
+			piece=this.getPiece({x:x, y:y});
+			if(piece != null) {
+				if(piece.moveTo(kp, false))
+					return true;
+			}
+		}
+	}
+	return false;
 }
