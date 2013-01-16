@@ -262,7 +262,7 @@ King.prototype.moveTo = function(pos, update)
 	if(ret) {
 		this.moved=true;
 		if(cx != undefined) {
-			ret = piece.moveTo({x:cx, y:this.y}, true);
+			ret = this.board._domove(piece, {x:cx, y:this.y});
 			if(!ret)
 				throw("Castling error!");
 			// Hack
