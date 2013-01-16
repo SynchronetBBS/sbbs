@@ -40,9 +40,12 @@ f.flush();
 					f.flush();
 				}
 			}
+			else if((m=cmd.match(/^ping ([0-9])$/))!=null) {
+				write("pong "+m[1]+"\n");
+			}
 			break;
 		case 'protover 2':
-			writeln('feature time=0 draw=0 analyze=0 myname="JS Engine" variants="normal" colors=0 name=0 nps=0 done=1\n');
+			writeln('feature ping=1 time=0 draw=0 analyze=0 myname="JS Engine" variants="normal" colors=0 name=0 nps=0 done=1\n');
 			break;
 		case 'new':
 			b=new Board();
