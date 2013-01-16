@@ -55,7 +55,7 @@ function Pawn(colour, pos, board)
 }
 copyProps(Piece.prototype, Pawn.prototype);
 Pawn.prototype.double_move_num=0;
-Pawn.prototype.promote=true;
+Pawn.prototype.promote=false;
 Pawn.prototype.moveTo=function(pos, update)
 {
 	if(update == null)
