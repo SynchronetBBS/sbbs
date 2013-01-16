@@ -54,7 +54,8 @@ function Board(moves)
 	this.moves=[];
 	if(moves) {
 		for(move in moves) {
-			this.handleMove(moves[move]);
+			if(!this.handleMove(moves[move]))
+				throw("Illegal set of moves, game corrupy");
 		}
 	}
 }
@@ -63,10 +64,10 @@ Board.prototype.handleMove=function(move)
 	// TODO: Promotions
 	m=move.match(/^([a-h][1-8])([a-h][1-8])(.*)$/);
 	if(m==null)
-		throw("Corrupt game (invalid move)!");
+		return false;
 	if(m!=null) {
 		piece=this.getPiece(parsePos(m[1]));
-		if(piece.constructer.name=='Pawn') {
+		if(piece.constructor.name=='Pawn') {
 			switch(m[3]) {
 				case 'q':
 					piece.promote_to=Queen;
@@ -83,9 +84,10 @@ Board.prototype.handleMove=function(move)
 			}
 		}
 		if(!piece.moveTo(m[2]))
-			throw("Corrupt game (illegal move)!");
+			return false;
 	}
-	this.moves.push(moves[move]);
+	this.moves.push(move);
+	return true;
 }
 Board.prototype.movenum=0;
 Board.prototype.pieces=null;
