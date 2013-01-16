@@ -7,45 +7,63 @@ var b;
 var cmd;
 var m;
 var piece;
-var f=new File("/tmp/chesslog.txt");
 var reason;
-f.open("a");
-f.truncate(0);
+var f=new File("/tmp/chesslog.txt");
+f.open("w");
 
 while(1) {
 	cmd=readln();
+	f.writeln("CMD: "+cmd);
+	f.flush();
 
-f.writeln("CMD: "+cmd);
-f.flush();
 	switch(cmd) {
 		default:
 			if((m=cmd.match(/^([a-h][1-8])([a-h][1-8])$/))!=null) {
 				piece=b.getPiece(parsePos(m[1]));
 				if(piece) {
 					if(piece.moveTo(m[2])) {
-						write('move '+m[1]+m[2]+"\n");
-						f.writeln("Moved "+m[1]+m[2]);
-						f.flush();
+						writeln('move '+m[1]+m[2]);
+						f.writeln('move '+m[1]+m[2]);
 						break;
 					}
 					else {
-						write('Illegal move (no worky): '+m[1]+m[2]+"\n");
-						f.writeln('Illegal move (no worky): '+m[1]+m[2]);
-						f.flush();
+						writeln('Illegal move: '+m[1]+m[2]);
+						f.writeln('Illegal move: '+m[1]+m[2]);
 					}
 				}
 				else {
-					write('Illegal move (no such piece): '+m[1]+m[2]+"\n");
-					f.writeln('Illegal move (no such piece): '+m[1]+m[2]);
-					f.flush();
+					writeln('Illegal move: '+m[1]+m[2]);
+					f.writeln('Illegal move: '+m[1]+m[2]);
 				}
 			}
 			else if((m=cmd.match(/^ping ([0-9])$/))!=null) {
-				write("pong "+m[1]+"\n");
+				writeln("pong "+m[1]);
+				f.writeln("pong "+m[1]);
 			}
 			break;
 		case 'protover 2':
-			writeln('feature ping=1 time=0 draw=0 analyze=0 myname="JS Engine" variants="normal" colors=0 name=0 nps=0 done=1\n');
+			writeln('feature done=0');
+			writeln('feature ping=1');
+			writeln('feature time=0');
+			writeln('feature draw=0');
+			writeln('feature analyze=0');
+			writeln('feature myname="JS Engine"');
+			writeln('feature variants="normal"');
+			writeln('feature colors=0');
+			writeln('feature name=0');
+			writeln('feature nps=0');
+			writeln('feature done=1');
+			f.writeln('feature done=0');
+			f.writeln('feature ping=1');
+			f.writeln('feature time=0');
+			f.writeln('feature draw=0');
+			f.writeln('feature analyze=0');
+			f.writeln('feature myname="JS Engine"');
+			f.writeln('feature variants="normal"');
+			f.writeln('feature colors=0');
+			f.writeln('feature name=0');
+			f.writeln('feature nps=0');
+			f.writeln('feature done=1');
 			break;
 		case 'new':
 			b=new Board();
@@ -53,4 +71,5 @@ f.flush();
 		case 'quit':
 			exit(0);
 	}
+	f.flush();
 }
