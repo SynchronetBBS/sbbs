@@ -55,7 +55,7 @@ function Pawn(colour, pos, board)
 }
 copyProps(Piece.prototype, Pawn.prototype);
 Pawn.prototype.double_move_num=0;
-Pawn.prototype.promote=false;
+Pawn.prototype.promote_to=null;
 Pawn.prototype.moveTo=function(pos, update)
 {
 	if(update == null)
@@ -112,8 +112,12 @@ Pawn.prototype.moveTo=function(pos, update)
 	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
 	if(update && ret && ydist==2)
 		this.double_move_num=this.board.movenum;
-	if(ret && this.y == 4.5+(3.5*this.colour))
-		this.promote=true;
+	if(ret && this.y == 4.5+(3.5*this.colour)) {
+		// Promotion!
+		if(this.promote_to == null)
+			throw("Illegal pawn promotion!");
+		this.board.pieces[this.y-1][this.x-1]=new this.promote_to(COLOUR_STR[this.colour], this.position, this.board);
+	}
 	return ret;
 }
 

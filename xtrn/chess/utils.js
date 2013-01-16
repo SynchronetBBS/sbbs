@@ -3,6 +3,11 @@ var COLOUR = {
 	black:-1
 };
 
+var COLOUR_STR = {
+	'1':'w',
+	'-1':'b'
+};
+
 function parsePos(pos)
 {
 	var m=pos.match(/^([a-h])([1-8])$/);

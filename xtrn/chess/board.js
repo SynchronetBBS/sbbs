@@ -66,6 +66,22 @@ Board.prototype.handleMove=function(move)
 		throw("Corrupt game (invalid move)!");
 	if(m!=null) {
 		piece=this.getPiece(parsePos(m[1]));
+		if(piece.constructer.name=='Pawn') {
+			switch(m[3]) {
+				case 'q':
+					piece.promote_to=Queen;
+					break;
+				case 'r':
+					piece.promote_to=Rook;
+					break;
+				case 'b':
+					piece.promote_to=Bishop;
+					break;
+				case 'k':
+					piece.promote_to=Knight;
+					break;
+			}
+		}
 		if(!piece.moveTo(m[2]))
 			throw("Corrupt game (illegal move)!");
 	}
