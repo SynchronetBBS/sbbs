@@ -21,7 +21,7 @@ Piece.prototype={
 			return false;
 		if(brd.check(this.colour))
 			return false;
-		if(this.board.movenum % 1) {
+		if(this.board.movenum % 2) {
 			if(this.colour == COLOUR.white)
 				return false;
 		}
