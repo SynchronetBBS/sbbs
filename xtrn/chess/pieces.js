@@ -13,9 +13,16 @@ Piece.prototype={
 	x: null,
 	y: null,
 	board: null,
-	moveTo: function(pos) {
+	moveTo: function(pos, update) {
 		var tgtpos=parsePos(pos);
-		return this.board._domove(this, tgtpos);
+		var brd=new Board(this.board.moves);
+
+		if(!brd._domove(this, tgtpos))
+			return false;
+		if(brd.check(this.colour))
+			return false;
+		if(update)
+			return this.board._domove(this, tgtpos);
 	},
 	emptyTo: function(target) {
 		var x=this.x;
@@ -101,12 +108,10 @@ Pawn.prototype.moveTo=function(pos, update)
 			return false;
 	}
 
-	if(update) {
-		ret=Piece.prototype.moveTo.apply(this, [pos]);
-		if(ret && ydist==2)
-			this.double_move_num=this.board.movenum;
-		return ret;
-	}
+	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
+	if(update && ret && ydist==2)
+		this.double_move_num=this.board.movenum;
+	return ret;
 }
 
 function Rook(colour, pos, board)
@@ -129,12 +134,10 @@ Rook.prototype.moveTo=function(pos, update)
 	if(!this.emptyTo(tgtpos))
 		return false;
 
-	if(update) {
-		ret=Piece.prototype.moveTo.apply(this, [pos]);
-		if(ret && ydist==2)
-			this.moved=true;
-		return ret;
-	}
+	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
+	if(update && ret)
+		this.moved=true;
+	return ret;
 }
 
 function Bishop(colour, pos, board)
@@ -155,8 +158,7 @@ Bishop.prototype.moveTo=function(pos, update)
 	if(!this.emptyTo(tgtpos))
 		return false;
 
-	if(update)
-		return Piece.prototype.moveTo.apply(this, [pos]);
+	return Piece.prototype.moveTo.apply(this, [pos, update]);
 }
 
 function Queen(colour, pos, board)
@@ -177,8 +179,7 @@ Queen.prototype.moveTo=function(pos, update)
 	if(!this.emptyTo(tgtpos))
 		return false;
 
-	if(update)
-		return Piece.prototype.moveTo.apply(this, [pos]);
+	return Piece.prototype.moveTo.apply(this, [pos, update]);
 }
 
 function Knight(colour, pos, board)
@@ -201,8 +202,7 @@ Knight.prototype.moveTo=function(pos, update)
 	if(piece != null && piece.colour == this.colour)
 		return false;
 
-	if(update)
-		return Piece.prototype.moveTo.apply(this, [pos]);
+	return Piece.prototype.moveTo.apply(this, [pos, update]);
 }
 
 function King(colour, pos, board)
@@ -251,19 +251,17 @@ King.prototype.moveTo = function(pos, update)
 			return false;
 	}
 
-	if(update) {
-		ret=Piece.prototype.moveTo.apply(this, [pos]);
-		if(ret) {
-			this.moved=true;
-			if(cx != undefined) {
-				ret = piece.moveTo({x:cx, y:this.y}, true);
-				if(!ret)
-					throw("Castling error!");
-				// Hack
-				this.board.movenum--;
-			}
+	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
+	if(ret) {
+		this.moved=true;
+		if(cx != undefined) {
+			ret = piece.moveTo({x:cx, y:this.y}, true);
+			if(!ret)
+				throw("Castling error!");
+			// Hack
+			this.board.movenum--;
 		}
-		return ret;
 	}
+	return rret;
 }
 
