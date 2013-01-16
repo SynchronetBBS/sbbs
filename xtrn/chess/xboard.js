@@ -18,22 +18,14 @@ while(1) {
 
 	switch(cmd) {
 		default:
-			if((m=cmd.match(/^([a-h][1-8])([a-h][1-8])$/))!=null) {
-				piece=b.getPiece(parsePos(m[1]));
-				if(piece) {
-					if(piece.moveTo(m[2])) {
-						writeln('move '+m[1]+m[2]);
-						f.writeln('move '+m[1]+m[2]);
-						break;
-					}
-					else {
-						writeln('Illegal move: '+m[1]+m[2]);
-						f.writeln('Illegal move: '+m[1]+m[2]);
-					}
+			if((m=cmd.match(/^([a-h][1-8])([a-h][1-8])([qkbr]?)$/))!=null) {
+				if(b.handleMove(cmd)) {
+					writeln('move '+cmd);
+					f.writeln('move '+cmd);
 				}
 				else {
-					writeln('Illegal move: '+m[1]+m[2]);
-					f.writeln('Illegal move: '+m[1]+m[2]);
+					writeln('Illegal move: '+cmd);
+					f.writeln('Illegal move: '+cmd);
 				}
 			}
 			else if((m=cmd.match(/^ping ([0-9])$/))!=null) {
