@@ -54,18 +54,22 @@ function Board(moves)
 	this.moves=[];
 	if(moves) {
 		for(move in moves) {
-			// TODO: Promotions
-			m=moves[move].match(/^([a-h][1-8])([a-h][1-8])(.*)$/);
-			if(m==null)
-				throw("Corrupt game (invalid move)!");
-			if(m!=null) {
-				piece=this.getPiece(parsePos(m[1]));
-				if(!piece.moveTo(m[2]))
-					throw("Corrupt game (illegal move)!");
-			}
-			this.moves.push(moves[move]);
+			this.handleMove(moves[move]);
 		}
 	}
+}
+Board.prototype.handleMove
+{
+	// TODO: Promotions
+	m=moves[move].match(/^([a-h][1-8])([a-h][1-8])(.*)$/);
+	if(m==null)
+		throw("Corrupt game (invalid move)!");
+	if(m!=null) {
+		piece=this.getPiece(parsePos(m[1]));
+		if(!piece.moveTo(m[2]))
+			throw("Corrupt game (illegal move)!");
+	}
+	this.moves.push(moves[move]);
 }
 Board.prototype.movenum={value: 0};
 Board.prototype.pieces=null;
