@@ -21,6 +21,14 @@ Piece.prototype={
 			return false;
 		if(brd.check(this.colour))
 			return false;
+		if(this.board.movenum % 1) {
+			if(this.colour == COLOUR.white)
+				return false;
+		}
+		else {
+			if(this.colour == COLOUR.black)
+				return false;
+		}
 		if(update)
 			return this.board._domove(this, tgtpos);
 	},
