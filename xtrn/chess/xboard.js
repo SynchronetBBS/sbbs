@@ -3,7 +3,7 @@ load("utils.js");
 load("pieces.js");
 load("board.js");
 
-var b;
+var b=new Board();
 var cmd;
 var m;
 var piece;
