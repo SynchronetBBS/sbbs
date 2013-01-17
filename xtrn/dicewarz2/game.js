@@ -438,7 +438,7 @@ function lobby() {
 			return false;
 		}
 		while(1) {
-			var num=numberPrompt("Enter game # or Q to cancel: ",false,false);
+			var num=numberPrompt("Select game # or ENTER cancel: ",false,false);
 			if(!num) 
 				break;
 			if(data.games[num]) {
