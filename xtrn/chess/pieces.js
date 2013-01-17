@@ -91,6 +91,7 @@ Pawn.prototype.moveTo=function(pos, update)
 
 	if(update==null)
 		update=true;
+
 	if(xdist > 1) {
 		this.board.reason("X offset to great");
 		return false;
@@ -107,7 +108,12 @@ Pawn.prototype.moveTo=function(pos, update)
 		this.board.reason("Moving more than two spaces");
 		return false;
 	}
+
 	if(ydist==2) {
+		if(xdist != 0) {
+			this.board.reason("Can't long attack");
+			return false;
+		}
 		if(this.y!=4.5-(2.5*this.colour)) {
 			this.board.reason("Moving two spaces");
 			return false;
