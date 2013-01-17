@@ -15,7 +15,7 @@ Piece.prototype={
 	board: null,
 	moveTo: function(pos, update) {
 		var tgtpos=parsePos(pos);
-		if(this.board.movenum % 2) {
+		if(this.board.moves.length % 2) {
 			if(this.colour == COLOUR.white) {
 				this.board.reason("White move on black's turn");
 				return false;
@@ -128,7 +128,7 @@ Pawn.prototype.moveTo=function(pos, update)
 				this.board.reason("En passant of non-pawn");
 				return false;
 			}
-			if(passed.double_move_num != this.board.movenum-1) {
+			if(passed.double_move_num != this.board.moves.length-1) {
 				this.board.reason("En passant too late");
 				return false;
 			}
@@ -151,7 +151,7 @@ Pawn.prototype.moveTo=function(pos, update)
 
 	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
 	if(update && ret && ydist==2)
-		this.double_move_num=this.board.movenum;
+		this.double_move_num=this.board.moves.length;
 	if(ret && this.y == 4.5+(3.5*this.colour)) {
 		// Promotion!
 		if(this.promote_to == null)
@@ -327,8 +327,6 @@ King.prototype.moveTo = function(pos, update)
 			ret = this.board._domove(piece, {x:cx, y:this.y});
 			if(!ret)
 				throw("Castling error!");
-			// Hack
-			this.board.movenum--;
 		}
 	}
 	return ret;

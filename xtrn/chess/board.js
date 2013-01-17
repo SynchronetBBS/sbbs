@@ -89,7 +89,6 @@ Board.prototype.handleMove=function(move)
 	this.moves.push(move);
 	return true;
 }
-Board.prototype.movenum=0;
 Board.prototype.pieces=null;
 Board.prototype._domove=function(from, to)
 {
@@ -100,7 +99,6 @@ Board.prototype._domove=function(from, to)
 	this.pieces[piece.y-1][piece.x-1]=null;
 	piece.x=to.x;
 	piece.y=to.y;
-	this.movenum++;
 	return true;
 }
 Board.prototype.getPiece=function(pos)
