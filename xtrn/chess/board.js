@@ -83,7 +83,7 @@ Board.prototype.handleMove=function(move)
 					break;
 			}
 		}
-		if(!piece.moveTo(m[2]))
+		if(!piece.moveTo(parsePos(m[2])))
 			return false;
 	}
 	this.moves.push(move);
@@ -107,14 +107,13 @@ Board.prototype.getPiece=function(pos)
 }
 Board.prototype.check=function(colour)
 {
-	var x,y,piece,kp;
+	var x,y,piece;
 
-	kp=this.king[colour].position;
 	for(y=0;y<this.pieces.length;y++) {
 		for(x=0;x<this.pieces[y].length;x++) {
 			piece=this.getPiece({x:x+1, y:y+1});
 			if(piece != null) {
-				if(piece.moveTo(kp, false))
+				if(piece.moveTo(this.king[colour], false))
 					return true;
 			}
 		}

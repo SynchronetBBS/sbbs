@@ -14,7 +14,16 @@ Piece.prototype={
 	y: null,
 	board: null,
 	moveTo: function(pos, update) {
-		var tgtpos=parsePos(pos);
+		var tgtpiece=this.board.getPiece(pos);
+
+		if(update == null)
+			update=true;
+		if(tgtpiece != null) {
+			if(tgtpiece.colour==this.colour) {
+				this.board.reason("Can't capture your own piece");
+				return false;
+			}
+		}
 		if(this.board.moves.length % 2) {
 			if(this.colour == COLOUR.white) {
 				this.board.reason("White move on black's turn");
@@ -30,13 +39,13 @@ Piece.prototype={
 		if(update) {
 			var brd=new Board(this.board.moves);
 
-			if(!brd._domove(this, tgtpos))
+			if(!brd._domove(this, pos))
 				return false;
 			if(brd.check(this.colour)) {
 				this.board.reason("In check");
 				return false;
 			}
-			return this.board._domove(this, tgtpos);
+			return this.board._domove(this, pos);
 		}
 		return true;
 	},
@@ -74,22 +83,21 @@ Pawn.prototype.double_move_num=0;
 Pawn.prototype.promote_to=null;
 Pawn.prototype.moveTo=function(pos, update)
 {
-	if(update == null)
-		update=true;
-	var tgtpos=parsePos(pos);
-	var ydist=Math.abs(this.y-tgtpos.y);
-	var xdist=Math.abs(this.x-tgtpos.x);
+	var ydist=Math.abs(this.y-pos.y);
+	var xdist=Math.abs(this.x-pos.x);
 	var capture;
 	var passed;
 	var ret;
 
+	if(update==null)
+		update=true;
 	if(xdist > 1) {
 		this.board.reason("X offset to great");
 		return false;
 	}
 
 	// must move forward
-	if(tgtpos.y*this.colour >= this.pos*this.colour) {
+	if(pos.y*this.colour >= this.pos*this.colour) {
 		this.board.reason("Moving backward");
 		return false;
 	}
@@ -104,13 +112,13 @@ Pawn.prototype.moveTo=function(pos, update)
 			this.board.reason("Moving two spaces");
 			return false;
 		}
-		if(!this.emptyTo(tgtpos)) {
+		if(!this.emptyTo(pos)) {
 			this.board.reason("Move blocked");
 			return false;
 		}
 	}
 
-	capture=this.board.getPiece(tgtpos);
+	capture=this.board.getPiece(pos);
 	if(capture==null) {
 		// Check for en passant
 		if(xdist==1) {
@@ -120,7 +128,7 @@ Pawn.prototype.moveTo=function(pos, update)
 				this.board.reason("No piece to capture");
 				return false;
 			}
-			if(tgtpos.x != 4.5+(1.5*this.colour)) {
+			if(pos.x != 4.5+(1.5*this.colour)) {
 				this.board.reason("En passant to wrong rank");
 				return false;
 			}
@@ -141,10 +149,6 @@ Pawn.prototype.moveTo=function(pos, update)
 	else {
 		if(xdist==0) {
 			this.board.reason("Capturing not a diagonal");
-			return false;
-		}
-		if(capture.colour==this.colour) {
-			this.board.reason("Capturing own piece");
 			return false;
 		}
 	}
@@ -171,16 +175,15 @@ Rook.prototype.moveTo=function(pos, update)
 {
 	if(update == null)
 		update=true;
-	var tgtpos=parsePos(pos);
-	var ydist=Math.abs(this.y-tgtpos.y);
-	var xdist=Math.abs(this.x-tgtpos.x);
+	var ydist=Math.abs(this.y-pos.y);
+	var xdist=Math.abs(this.x-pos.x);
 	var ret;
 
 	if(ydist != 0 && xdist != 0) {
 		this.board.reason("Not a straight line");
 		return false;
 	}
-	if(!this.emptyTo(tgtpos)) {
+	if(!this.emptyTo(pos)) {
 		this.board.reason("Move blocked");
 		return false;
 	}
@@ -198,17 +201,14 @@ function Bishop(colour, pos, board)
 copyProps(Piece.prototype, Bishop.prototype);
 Bishop.prototype.moveTo=function(pos, update)
 {
-	if(update == null)
-		update=true;
-	var tgtpos=parsePos(pos);
-	var ydist=Math.abs(this.y-tgtpos.y);
-	var xdist=Math.abs(this.x-tgtpos.x);
+	var ydist=Math.abs(this.y-pos.y);
+	var xdist=Math.abs(this.x-pos.x);
 
 	if(ydist != xdist) {
 		this.board.reason("Not a diagonal");
 		return false;
 	}
-	if(!this.emptyTo(tgtpos)) {
+	if(!this.emptyTo(pos)) {
 		this.board.reason("Move blocked");
 		return false;
 	}
@@ -223,17 +223,14 @@ function Queen(colour, pos, board)
 copyProps(Piece.prototype, Queen.prototype);
 Queen.prototype.moveTo=function(pos, update)
 {
-	if(update == null)
-		update=true;
-	var tgtpos=parsePos(pos);
-	var ydist=Math.abs(this.y-tgtpos.y);
-	var xdist=Math.abs(this.x-tgtpos.x);
+	var ydist=Math.abs(this.y-pos.y);
+	var xdist=Math.abs(this.x-pos.x);
 
 	if(ydist != xdist && xdist != 0 && ydist != 0) {
 		this.board.reason("Not horizontal nor diagonal");
 		return false;
 	}
-	if(!this.emptyTo(tgtpos)) {
+	if(!this.emptyTo(pos)) {
 		this.board.reason("Move blocked");
 		return false;
 	}
@@ -248,11 +245,8 @@ function Knight(colour, pos, board)
 copyProps(Piece.prototype, Knight.prototype);
 Knight.prototype.moveTo=function(pos, update)
 {
-	if(update == null)
-		update=true;
-	var tgtpos=parsePos(pos);
-	var ydist=Math.abs(this.y-tgtpos.y);
-	var xdist=Math.abs(this.x-tgtpos.x);
+	var ydist=Math.abs(this.y-pos.y);
+	var xdist=Math.abs(this.x-pos.x);
 	var piece;
 
 	if(!((ydist == 1 && xdist == 2) || (xdist==1 && ydist==2))) {
@@ -273,9 +267,8 @@ King.prototype.moveTo = function(pos, update)
 {
 	if(update == null)
 		update=true;
-	var tgtpos=parsePos(pos);
-	var ydist=Math.abs(this.y-tgtpos.y);
-	var xdist=Math.abs(this.x-tgtpos.x);
+	var ydist=Math.abs(this.y-pos.y);
+	var xdist=Math.abs(this.x-pos.x);
 	var piece;
 	var ret;
 	var x,cx;
@@ -283,8 +276,8 @@ King.prototype.moveTo = function(pos, update)
 	// Check for castling
 	if(!this.moved && xdist==2 && ydist==0) {
 		// Check the rook
-		x=tgtpos.x < this.x?1:8;
-		cx=tgtpos.x < this.x?4:6; // Must be clear to here
+		x=pos.x < this.x?1:8;
+		cx=pos.x < this.x?4:6; // Must be clear to here
 
 		piece=this.board.getPiece({x:x, y:this.y});
 		if(piece==null) {
