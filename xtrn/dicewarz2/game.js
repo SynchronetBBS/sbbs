@@ -356,16 +356,7 @@ function lobby() {
 	}
 	function processUpdate(update) {
 		if(update.oper == "WRITE") {
-			var p = update.location.split(".");
-			var obj=data;
-			
-			while(p.length > 1) {
-				var child=p.shift();
-				obj = obj[child];
-			}
-			
-			var child = p.shift();
-			obj[child] = update.data;
+			/* todo: make this smarter */
 			gameList();
 		}
 	}
@@ -423,8 +414,8 @@ function lobby() {
 	}
 	function gameList()	{
 		listFrame.clear();
-		var games = client.read(game_id,"games",1);
-		var sorted = sortGameData(games);
+		data.games = client.read(game_id,"games",1);
+		var sorted = sortGameData(data.games);
 		wrap(listFrame,"\1gGames in progress          ",sorted.started);
 		wrap(listFrame,"\1gGames needing more players ",sorted.waiting);
 		wrap(listFrame,"\1gYou are involved in games  ",sorted.yourgames);
@@ -743,6 +734,7 @@ function playGame(gameNumber) {
 			if(tnum) {
 				map.tiles[tnum] = update.data;
 				drawTile(map,map.tiles[tnum]);
+				listPlayers();
 			}
 			
 			if(pnum) {

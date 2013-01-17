@@ -366,6 +366,11 @@ function attack(computer) {
 		var attacker=game.players[attacking.owner];
 		var defender=game.players[defending.owner];
 		
+		if(attacking.owner == defending.owner) {
+			log(LOG_ERROR,"invalid attack attempted: " + attacking.id + "->" + defending.id);
+			continue;
+		}
+		
 		var a=new Roll(attacking.owner);
 		for(var r=0;r<attacking.dice;r++) {
 			var roll=random(6)+1;

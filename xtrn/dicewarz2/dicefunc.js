@@ -104,8 +104,10 @@ function canAttack(map,base) {
 		var neighbors=getNeighboringTiles(base,map);
 		for(var n=0;n<neighbors.length;n++) {
 			var tile=neighbors[n];
-			if(tile.owner!=base.owner) 
+			if(tile.owner !== base.owner) {
+				log(LOG_DEBUG,"Adding attack option: " + base.id + "(" + base.owner + ")->" + tile.id + "(" + tile.owner + ")");
 				valid_targets.push(tile);
+			}
 		}
 	}
 	return valid_targets;
