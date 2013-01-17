@@ -322,7 +322,8 @@ function Frame(x,y,width,height,attr,parent) {
 			px += position.offset.x;
 			py += position.offset.y;
 		}
-		if(!properties.data[py] || !properties.data[py][px])
+		//if(!properties.data[py] || !properties.data[py][px])
+		if(!properties.data[py])
 			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
 		if(properties.data[py][px].ch == ch && properties.data[py][px].attr == attr)
 			return;
@@ -936,8 +937,17 @@ function Frame(x,y,width,height,attr,parent) {
 					break;
 				case '\7':		/* Beep */
 					break;
+				case '\b':
+					if(pos.x > 0) {
+						pos.x--;
+						putChar.call(this," ",curattr);
+					}
+					break;
 				case '\r':
 					pos.x=0;
+					break;
+				case '\t':
+					pos.x += 4;
 					break;
 				case '\n':
 					pos.y++;
