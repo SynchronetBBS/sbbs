@@ -31,7 +31,7 @@ function loadGraphic(filename) {
 	f.open();
 	return f;
 }
-function menuPrompt(string,append,keepOpen,hotkeys) {
+function menuPrompt(string, append, keepOpen, hotkeys) {
 	if(!append) 
 		promptFrame.clear();
 	if(!promptFrame.is_open) 
@@ -56,6 +56,37 @@ function menuPrompt(string,append,keepOpen,hotkeys) {
 	if(!keepOpen)
 		promptFrame.close();
 	return cmd;
+}
+function numberPrompt(string, append, keepOpen) {
+	if(!append) 
+		promptFrame.clear();
+	if(!promptFrame.is_open) 
+		promptFrame.open();
+	promptFrame.putmsg(string);
+	promptFrame.draw();
+	
+	var cmd=[];
+	while(!js.terminated) {
+		var k = console.getkey(K_NOECHO|K_NOCRLF|K_NUMBER|K_NOSPIN);
+		if(k == "\r") {
+			break;
+		}
+		else if(k == "\b") {
+			if(cmd.length > 0) {
+				cmd.pop();
+				promptFrame.putmsg(k);
+				promptFrame.cycle();
+			}
+		}
+		else {
+			cmd.push(k);
+			promptFrame.putmsg(k);
+			promptFrame.cycle();
+		}
+	}
+	if(!keepOpen)
+		promptFrame.close();
+	return cmd.join("");
 }
 function menuText(string,append) {
 	if(!append) 
@@ -407,11 +438,9 @@ function lobby() {
 			return false;
 		}
 		while(1) {
-			var num=menuPrompt("Game number: ",false,false);
+			var num=numberPrompt("Enter game # or Q to cancel: ",false,false);
 			if(!num) 
 				break;
-			log("num: " + num);
-			log(data.games.toSource());
 			if(data.games[num]) {
 				if(data.games[num].status>=0) {
 					playGame(num);
@@ -424,6 +453,7 @@ function lobby() {
 				break;
 			} else {
 				menuPrompt("\1n\1c No such game! \1w[press any key]",true,false,true);
+				return false;
 			}
 		}
 		return false;
