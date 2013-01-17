@@ -508,7 +508,8 @@ function blox()
 		var sorted=[];
 		for(var p in data.players) {
 			var s=data.players[p];
-			sorted.push(s);
+			if(s.score > 0)
+				sorted.push(s);
 		}
 		var numScores=sorted.length;
 		for(n=0;n<numScores;n++) {
@@ -528,22 +529,23 @@ function blox()
 		var posy=4;
 		var index=0;
 		
-		var scores=sortScores();
+		var scores=sortScores().slice(0,13);
+		
 		for(var s in scores) {
 			var score=scores[s];
-			if(score.score>0) {
-				if(score.name==user.alias) console.attributes=YELLOW;
-				else console.attributes=BROWN;
-				console.gotoxy(posx,posy+index);
-				console.putmsg(score.name,P_SAVEATR);
-				console.right(17-score.name.length);
-				console.putmsg(score.sys,P_SAVEATR);
-				console.right(25-score.sys.length);
-				console.putmsg(printPadded(score.score,10,undefined,"right"),P_SAVEATR);
-				console.right(3);
-				console.putmsg(printPadded(data.formatDate(score.laston),8,undefined,"right"),P_SAVEATR);
-				index++;
-			}
+			if(score.name==user.alias) 
+				console.attributes=YELLOW;
+			else 
+				console.attributes=BROWN;
+			console.gotoxy(posx,posy+index);
+			console.putmsg(score.name,P_SAVEATR);
+			console.right(17-score.name.length);
+			console.putmsg(score.sys,P_SAVEATR);
+			console.right(25-score.sys.length);
+			console.putmsg(printPadded(score.score,10,undefined,"right"),P_SAVEATR);
+			console.right(3);
+			console.putmsg(printPadded(data.formatDate(score.laston),8,undefined,"right"),P_SAVEATR);
+			index++;
 		}
 		console.gotoxy(46,20);
 		console.putmsg("\1n\1yName \1h: " + data.alltime.name);
