@@ -123,3 +123,77 @@ Board.prototype.check=function(colour)
 Board.prototype.reason=function(str)
 {
 }
+Board.prototype.stateString= function()
+{
+	var ret='';
+	var x,y,p,p2,cx;
+
+	ret += this.moves.length%2;
+	for(y=1; y<=8; y++) {
+		for(x=1; x<=8; x++) {
+			p=this.getPiece({x:x,y:y});
+			if(p==null)
+				ret += '*';
+			else {
+				if(p.colour==COLOUR.white)
+					ret += 'W';
+				else
+					ret += 'B';
+				switch(p.constructor.name) {
+					case 'Pawn':
+						/*
+						 * If this pawn can be captured en passant,
+						 * capitalize it
+						 */
+						if(p.double_move_num==this.moves.length-1) {
+							p2=this.getPiece({x:x-1,y:y});
+							if(p2 != null && p2.constructor.name=='Pawn' && p2.colour != p.colour) {
+								ret += 'P';
+								break;
+							}
+							p2=this.getPiece({x:x+1,y:y});
+							if(p2 != null && p2.constructor.name=='Pawn' && p2.colour != p.colour) {
+								ret += 'P';
+								break;
+							}
+						}
+						ret += 'p';
+						break;
+					case 'Bishop':
+						ret += 'b';
+						break;
+					case 'Queen':
+						ret += 'q';
+						break;
+					case 'King':
+						ret += 'k';
+						break;
+					case 'Rook':
+						/*
+						 *  If the king can castle with this rook,
+						 * use a capital
+						 */
+						p2=this.king[p.colour];
+						if((!p.moved) && (!p2.moved)) {
+							if(p.x < p2.x)
+								cx=p2.x-1;
+							else
+								cx=p2.x+1;
+							if(p.emptyTo({x:cx, y:p.y})) {
+								if(this.getPiece({x:cx, y:p.y})==null) {
+									ret + 'R';
+									break;
+								}
+							}
+						}
+						ret += 'r';
+						break;
+					case 'Knight':
+						ret += 'k';
+						break;
+				}
+			}
+		}
+	}
+	return ret;
+}
