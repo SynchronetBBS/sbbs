@@ -24,17 +24,9 @@ Piece.prototype={
 				return false;
 			}
 		}
-		if(this.board.moves.length % 2) {
-			if(this.colour == COLOUR.white) {
-				this.board.reason("White move on black's turn");
-				return false;
-			}
-		}
-		else {
-			if(this.colour == COLOUR.black) {
-				this.board.reason("Black move on white's turn");
-				return false;
-			}
+		if(this.colour != this.board.turn()) {
+			this.board.reason("Attempted move out of turn");
+			return false;
 		}
 		if(update) {
 			var brd=new Board(this.board.moves);
@@ -160,8 +152,10 @@ Pawn.prototype.moveTo=function(pos, update)
 	}
 
 	ret=Piece.prototype.moveTo.apply(this, [pos, update]);
-	if(update && ret && ydist==2)
-		this.double_move_num=this.board.moves.length;
+	if(update && ret) {
+		if(ydist==2)
+			this.double_move_num=this.board.moves.length;
+	}
 	if(ret && this.y == 4.5+(3.5*this.colour)) {
 		// Promotion!
 		if(this.promote_to == null)

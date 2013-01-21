@@ -51,6 +51,8 @@ function Board(moves)
 	this.king = {}
 	this.king[COLOUR.white] = this.pieces[0][4];
 	this.king[COLOUR.black] = this.pieces[7][4];
+	this.draw_counter_turns;
+	this.position_count={};
 	this.moves=[];
 	if(moves) {
 		for(move in moves) {
@@ -59,12 +61,10 @@ function Board(moves)
 		}
 	}
 }
+Board.prototype.drawn=false;
 Board.prototype.handleMove=function(move)
 {
-	// TODO: Promotions
 	m=move.match(/^([a-h][1-8])([a-h][1-8])(.*)$/);
-	if(m==null)
-		return false;
 	if(m!=null) {
 		piece=this.getPiece(parsePos(m[1]));
 		if(piece.constructor.name=='Pawn') {
@@ -78,7 +78,7 @@ Board.prototype.handleMove=function(move)
 				case 'b':
 					piece.promote_to=Bishop;
 					break;
-				case 'k':
+				case 'n':
 					piece.promote_to=Knight;
 					break;
 			}
@@ -86,8 +86,80 @@ Board.prototype.handleMove=function(move)
 		if(!piece.moveTo(parsePos(m[2])))
 			return false;
 	}
+	if(move.search(/'D$/) != -1) {
+		if(this.draw_offer && this.draw_offer != this.turn())
+			this.drawn=true;
+		else if(m==null)
+			return false;
+		this.draw_offer = this.turn();
+	}
+	else
+		delete this.draw_offer;
 	this.moves.push(move);
 	return true;
+}
+Board.prototype.checkForMove=function(t)
+{
+	var x,y,p;
+	var x2,y2;
+
+	/*
+	 * This tests for stalemate and checkmate.  Checkmate is simply
+	 * a stalemate where the king is in check
+	 */
+	for(y=0;y<=8;y++) {
+		for(x=0;x<=8;x++) {
+			p=this.getPiece({x:x,y:y});
+			if(p==null)
+				continue;
+			if(p.colour != t)
+				continue;
+			for(y2=1;y2<=8;y2++) {
+				for(x2=1;x2<=8;x2++) {
+					if(p.moveTo({x:x2,y:y2},false))
+						return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+Board.prototype.newTurn=function()
+{
+	var t=this.turn();
+	var s;
+	
+	if(this.drawn)
+		return 'DRAW';
+
+	/* Check for check and check mate */
+	if(!this.checkForMove(t)) {
+		if(this.check(t))
+			return 'CHECKMATE';
+		return 'STALEMATE';
+	}
+
+	/* Check for threefold repitition */
+	s=this.stateString();
+	if(this.position_count[s]==undefined)
+		this.position_count[s]=1;
+	else
+		this.position_count[s]++;
+
+	/* Check for 50 turn limit */
+	this.draw_counter_turns++;
+	if(this.draw_counter_turns >= 100) {
+		if(this.draw_offer && this.draw_offer != t)
+			return 'DRAW';
+		else
+			this.draw_offer = t;
+	}
+	if(this.position_count[s]>=3) {
+		if(this.draw_offer && this.draw_offer != t)
+			return 'DRAW';
+		else
+			this.draw_offer = t;
+	}
 }
 Board.prototype.pieces=null;
 Board.prototype._domove=function(from, to)
@@ -95,6 +167,8 @@ Board.prototype._domove=function(from, to)
 	var piece=this.getPiece(from);
 	if(piece==null)
 		return false;
+	if(piece.constructor.name=='Pawn' || this.pieces[to.y-1][to.x-1])
+		this.draw_counter_turns=-1;
 	this.pieces[to.y-1][to.x-1]=piece;
 	this.pieces[piece.y-1][piece.x-1]=null;
 	piece.x=to.x;
@@ -123,6 +197,19 @@ Board.prototype.check=function(colour)
 Board.prototype.reason=function(str)
 {
 }
+Board.prototype.turn=function()
+{
+	if(this.moves.length % 2)
+		return COLOUR.black;
+	return COLOUR.white;
+}
+Board.prototype.lastTurn=function()
+{
+	if(this.moves.length % 2)
+		return COLOUR.white;
+	return COLOUR.black;
+}
+// TODO: There's a notation (FEN?) for this.
 Board.prototype.stateString= function()
 {
 	var ret='';
@@ -189,7 +276,7 @@ Board.prototype.stateString= function()
 						ret += 'r';
 						break;
 					case 'Knight':
-						ret += 'k';
+						ret += 'n';
 						break;
 				}
 			}
