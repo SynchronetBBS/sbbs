@@ -69,12 +69,13 @@ function printAnsi(ansi, slideshow, ansiName) {
 		console.line_counter = 0;
 		while(system.timer - lastPrint < ansiDelay) {
 			retval = getInput(slideshow, ansiName);
-			if(retval != 1) break forLoop;
+			if(retval != 1)
+				break forLoop;
 		}
 		lastPrint = system.timer;
 	}
 	if(retval == 1) {
-		console.print("\1h\1w[\1c" + ansiName + " \1w - \1c Press any key to continue\1w]");
+		console.putmsg("\1h\1w[\1c" + ansiName + " \1w - \1c Press any key to continue\1w]");
 		console.getkey(K_NOECHO|K_NOCRLF);
 	}
 	return retval;
@@ -89,7 +90,7 @@ function fileChooser() {
 	console.putmsg(g);
 	console.gotoxy(3, 4);
 	console.putmsg(ascii(27) + "[1;37;40mpath: " + curDir.replace(ansiRoot, "/"));
-	var dirList = directory(curDir + "*.*");
+	var dirList = directory(curDir + "*");
 	var frame = new Frame(2,6,76,15)
 	var tree = new Tree(frame);
 	tree.colors.lfg = WHITE; // The lightbar foreground colour, see sbbsdefs.js for valid values
