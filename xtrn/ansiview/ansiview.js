@@ -75,7 +75,7 @@ function printAnsi(ansi, slideshow, ansiName) {
 		lastPrint = system.timer;
 	}
 	if(retval == 1) {
-		console.putmsg("\1h\1w[\1c" + ansiName + " \1w - \1c Press any key to continue\1w]");
+		console.putmsg(ascii(27) + "[1;37;40m[\1c" + ansiName + " \1w - \1c Press any key to continue\1w]");
 		console.getkey(K_NOECHO|K_NOCRLF);
 	}
 	return retval;
