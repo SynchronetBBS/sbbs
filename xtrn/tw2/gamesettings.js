@@ -126,7 +126,7 @@ function GameSettings_Save()
 	else
 		f.iniRemoveKey(null, 'DB');
 
-	for(i=3; i<GameSettingProperties.length; i++) {
+	for(var i=3; i<GameSettingProperties.length; i++) {
 		s[GameSettingProperties[i].prop]=this[GameSettingProperties[i].prop];
 	}
 	db.write(Settings.DB,'settings',s,LOCK_WRITE);
@@ -150,7 +150,6 @@ function GameSettings()
 		}
 	}
 	db=new JSONClient(this.Server,this.Port);
-	db.connect();
 	var s=db.read(this.DB,'settings',LOCK_READ);
 	for(i in s) {
 		this[i]=s[i];

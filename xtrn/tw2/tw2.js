@@ -29,6 +29,7 @@ var Commodities=[
 var Settings;
 var player=null;
 var sector=null;
+var initialized=null;
 var exit_tw2=false;
 
 load("json-client.js");
@@ -37,6 +38,7 @@ load(fname("gamesettings.js"));
 var db;
 var LOCK_WRITE=2;
 var LOCK_READ=1;
+
 Settings=new GameSettings();
 
 load(fname("ports.js"));
@@ -226,7 +228,9 @@ function do_exit()
 			player.Put();
 	}
 	console.writeln("Returning to Door monitor...");
-	TWRank();
+	if(initialized != undefined) {
+		TWRank();
+	}
 }
 
 function Instructions()
@@ -276,7 +280,7 @@ function Production(place)
 
 function ShowOpeng()
 {
-	var len=db.read(Settings.DB,'twopeng.lengh',LOCK_READ);
+	var len=db.read(Settings.DB,'twopeng.length',LOCK_READ);
 	var i;
 	var msg;
 
@@ -286,6 +290,7 @@ function ShowOpeng()
 		console.writeln(msg.Message);
 		console.crlf();
 	}
+	return len;
 }
 
 function main()
@@ -294,10 +299,6 @@ function main()
 
 try {
 	js.on_exit("do_exit()");
-	/* Run maintenance */
-	if(Settings.MaintLastRan < today) {
-		RunMaint();
-	}
 
 	console.attributes="C";
 	console.crlf();
@@ -310,7 +311,20 @@ try {
 	console.center("Sysop  "+system.operator);
 	console.crlf();
 	console.crlf();
-	ShowOpeng();
+	initialized = ShowOpeng();
+	
+	/* Make sure game has been 'big-banged' */
+	if(initialized == undefined) {
+		console.attributes="R";
+		console.writeln("The game has not been initialized.");
+		console.writeln("Please notify the SysOp.");
+		exit(0);
+	}
+	
+	/* Run maintenance */
+	if(Settings.MaintLastRan < today) {
+		RunMaint();
+	}
 	console.attributes="W";
 	console.writeln("Initializing...");
 	console.writeln("Searching my records for your name.");
@@ -318,7 +332,6 @@ try {
 		exit(0);
 
 	console.pause();
-
 	while(player.KilledBy==0 && exit_tw2==false) {
 		if(EnterSector()) {
 			if(CheckSector())
