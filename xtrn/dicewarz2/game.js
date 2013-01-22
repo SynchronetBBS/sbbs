@@ -270,6 +270,9 @@ function lobby() {
 			
 			if(game.single_player) {
 				sorted.singleplayer.push(i);
+				if(in_game>=0) {
+					sorted.yourgames.push(i);
+				}
 			} 
 			else {
 				if(in_game>=0) {
