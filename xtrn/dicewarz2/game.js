@@ -413,7 +413,7 @@ function lobby() {
 	}
 	function gameList()	{
 		listFrame.clear();
-		data.games = client.read(game_id,"games",1);
+		data.loadGames();
 		var sorted = sortGameData(data.games);
 		wrap(listFrame,"\1gGames in progress          ",sorted.started);
 		wrap(listFrame,"\1gGames needing more players ",sorted.waiting);
@@ -539,8 +539,6 @@ function lobby() {
 			return true;
 		}
 		return false;
-	}
-	function getVote() {
 	}
 	
 	open();
