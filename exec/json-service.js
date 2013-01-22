@@ -59,9 +59,12 @@ if(js.global.server==undefined) {
  * */
 
 /* service module initialization file */
-var serviceIniFile = system.ctrl_dir + argv[0];
-if(serviceIniFile == undefined)
+var serviceIniFile;
+if(file_exists(system.ctrl_dir + argv[0]))
+	serviceIniFile = system.ctrl_dir + argv[0];
+else
 	serviceIniFile = system.ctrl_dir + "json-service.ini";
+	
  
 /* error values */
 var errors = {
