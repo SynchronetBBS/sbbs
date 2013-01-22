@@ -48,7 +48,6 @@ function loadSettings(filename) {
 /* check initial status of all games (may have activity after crash or reboot) */
 function updateGames() {
 	for each(var g in data.games) {
-		updateTurn(g);
 		updateStatus(g);
 	}
 }
@@ -63,7 +62,8 @@ function processUpdate(update) {
 	var obj=data;
 	while(p.length > 1) {
 		var child=p.shift();
-		obj=obj[child];
+		if(obj)
+			obj=obj[child];
 		switch(child.toUpperCase()) {
 		case "PLAYERS":
 			playerName = p[0];
@@ -85,6 +85,9 @@ function processUpdate(update) {
 		if(gameNumber) {
 			var game = data.games[gameNumber];
 			updateStatus(game);
+		}
+		else {
+			updateGames();
 		}
 		break;
 	case "WRITE":
@@ -152,6 +155,8 @@ function updateTurn(game) {
 function deleteGame(gameNumber) {
 	log(LOG_WARNING,"removing game #" + gameNumber);
 	client.remove(game_id,"games." + gameNumber,2);
+	client.remove(game_id,"maps." + gameNumber,2);
+	client.remove(game_id,"metadata." + gameNumber,2);
 	delete data.games[gameNumber];
 }
 
@@ -178,14 +183,20 @@ function open() {
 	log(LOG_INFO,"Dicewarz II background service initialized");
 }
 
+function close() {
+	client.unsubscribe(game_id,"games");
+	client.unsubscribe(game_id,"players");
+	log("terminating dicewarz2 background service");
+}
+
 /* main loop */
 function main() {
 	while(!js.terminated && !parent_queue.poll()) {
 		if(client.socket.poll(.1))
 			client.cycle();
 	}
-	log("terminating dicewarz2 background service");
 }
 
 open();
 main();
+close();

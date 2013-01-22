@@ -269,8 +269,7 @@ function lobby() {
 			var in_game=findPlayer(game,user.alias);
 			
 			if(game.single_player) {
-				if(in_game>=0) 
-					sorted.singleplayer.push(i);
+				sorted.singleplayer.push(i);
 			} 
 			else {
 				if(in_game>=0) {

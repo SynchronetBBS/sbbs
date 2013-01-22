@@ -256,7 +256,7 @@ function main() {
 		computer.AI.turns = 0;
 		computer.AI.moves = 0;
 		
-		var attacks = attack(computer);
+		var attacks = attack();
 		if(countActivePlayers(game)==2 && countTiles(map,game.turn)<(map.tiles.length*.3)) 
 			forfeit(computer);
 		else 
@@ -324,10 +324,70 @@ function processUpdate(update) {
 function close() {
 	log(LOG_DEBUG,"Dicewarz II AI thread complete");
 }
-function attack(computer) {
-	var territories=getPlayerTiles(map,game.turn);
-	var attacks=[];
+function attack() {
+	var computer=game.players[game.turn];
 	var attackCount=0;
+	var attacks;
+	
+	do {
+		/* Randomize the targets array */
+		attacks=getAttackOptions();
+		attacks.sort(randomSort);
+		attackQuantity=qtyFunctions[computer.AI.qty](attacks.length);
+		if(attackQuantity<1) 
+			break;
+		
+		attacks.sort(sortFunctions[computer.AI.sort]);
+		for(var n=0;n<attackQuantity;n++) {
+			var attack=attacks.shift();
+			var attacking=attack.base;
+			var defending=attack.target;
+			
+			if(attacking.owner == defending.owner)
+				continue;
+				
+			var attacker=game.players[attacking.owner];
+			var defender=game.players[defending.owner];
+			
+			var a=new Roll(attacking.owner);
+			for(var r=0;r<attacking.dice;r++) {
+				var roll=random(6)+1;
+				a.roll(roll);
+			}
+			
+			var d=new Roll(defending.owner);
+			for(var r=0;r<defending.dice;r++) {
+				var roll=random(6)+1;
+				d.roll(roll);
+			}
+			
+			data.saveActivity(game,"\1n\1m" + attacker.name + " attacked " + defender.name);
+			if(a.total>d.total) {
+				if(countTiles(map,defending.owner)==1 && defender.active) {
+					data.scoreKiller(attacker);
+					data.scoreLoser(defender);
+					data.saveActivity(game,"\1r\1h" + attacker.name + 
+						" eliminated " + defender.name + "!");
+				}
+				data.assignTile(map,defending,attacking.owner,attacking.dice-1);
+				updateStatus(game,map);
+			}
+			
+			data.assignTile(map,attacking,attacking.owner,1);
+			computer.AI.moves++;
+			attackCount++;
+			mswait(1000);
+			
+		} 
+	} while(attacks.length > 0);
+	
+	computer.AI.turns++;
+	return attackCount;
+}
+function getAttackOptions() {
+	var territories=getPlayerTiles(map,game.turn);
+	var computer=game.players[game.turn];
+	var attacks=[];
 	
 	/* For each owned territory */
 	for(var t=0;t<territories.length;t++) {
@@ -352,55 +412,7 @@ function attack(computer) {
 		}
 	}
 	
-	/* Randomize the targets array */
-	attacks.sort(randomSort);
-	attackQuantity=qtyFunctions[computer.AI.qty](attacks.length);
-	if(attackQuantity<1) 
-		return attackCount;
-	
-	attacks.sort(sortFunctions[computer.AI.sort]);
-	for(var n=0;n<attackQuantity;n++) {
-		var attack=attacks.shift();
-		var attacking=attack.base;
-		var defending=attack.target;
-		var attacker=game.players[attacking.owner];
-		var defender=game.players[defending.owner];
-		
-		if(attacking.owner == defending.owner) {
-			log(LOG_ERROR,"invalid attack attempted: " + attacking.id + "->" + defending.id);
-			continue;
-		}
-		
-		var a=new Roll(attacking.owner);
-		for(var r=0;r<attacking.dice;r++) {
-			var roll=random(6)+1;
-			a.roll(roll);
-		}
-		
-		var d=new Roll(defending.owner);
-		for(var r=0;r<defending.dice;r++) {
-			var roll=random(6)+1;
-			d.roll(roll);
-		}
-		data.saveActivity(game,"\1n\1m" + attacker.name + " attacked " + defender.name);
-		if(a.total>d.total) {
-			if(countTiles(map,defending.owner)==1 && defender.active) {
-				data.scoreKiller(attacker);
-				data.scoreLoser(defender);
-				data.saveActivity(game,"\1r\1h" + attacker.name + 
-					" eliminated " + defender.name + "!");
-			}
-			data.assignTile(map,defending,attacking.owner,attacking.dice-1);
-			updateStatus(game,map);
-		}
-		
-		data.assignTile(map,attacking,attacking.owner,1);
-		computer.AI.moves++;
-		attackCount++;
-		mswait(1000);
-	}
-	computer.AI.turns++;
-	return attackCount;
+	return attacks;
 }
 function forfeit(computer) {
 	computer.active=false;
