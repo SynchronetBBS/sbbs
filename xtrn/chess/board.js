@@ -127,7 +127,7 @@ Board.prototype.checkForMove=function(t)
 Board.prototype.newTurn=function()
 {
 	var t=this.turn();
-	var s;
+	var s,smaterial,i,count,piece,material_array,x,y,c,c2;
 	
 	if(this.drawn)
 		return 'DRAW';
@@ -160,6 +160,59 @@ Board.prototype.newTurn=function()
 		else
 			this.draw_offer = t;
 	}
+
+	/* Check for insufficient material */
+	s=s.substr(1);
+	smaterial=s.replace(/[WB\*]/,'');
+	smaterial=smaterial.split(/\b|\B/).sort().join('');
+	if(smaterial=='kk' || smaterial=='bkk' || smaterial=='kkn') {
+		if(this.draw_offer && this.draw_offer != t)
+			return 'DRAW';
+		else
+			this.draw_offer = t;
+	}
+	/*
+	 * In the case of kb vs kb (or kbbbb vs kb), all bishops must
+	 * be on the same colour, and both players must have at least
+	 * one bishop.
+	 */
+	count={};
+	do {
+		if(smaterial.search(/^b{2,}kk$/)!=-1) {
+			material_array=s.match(/[WB]b/);
+			for(i in material_array) {
+				if(count[material_array[i]]==undefined)
+					count[material_array[i]]=1;
+				else 
+					count[material_array[i]]++;
+			}
+			if(count['Wb']==undefined || count['Bb']==undefined)
+				break;
+			for(y=1;y<=8;y++) {
+				for(x=1;x<=8;x++) {
+					piece=this.getPiece({x:x,y:y});
+					if(piece.constructor.name=='Bishop') {
+						c2=x%2;
+						if(y%2)
+							c2^=1;
+						if(c==undefined)
+							c=c2;
+						else
+							if(c2 != c)
+								break;
+					}
+				}
+			}
+			if(c2==c) {
+				if(this.draw_offer && this.draw_offer != t)
+					return 'DRAW';
+				else
+					this.draw_offer = t;
+			}
+		}
+	} while(0);
+
+	return '';
 }
 Board.prototype.pieces=null;
 Board.prototype._domove=function(from, to)
