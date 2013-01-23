@@ -124,7 +124,7 @@ function lobby() {
 	var listFrame=new Frame(2,2,78,13,undefined,frame);
 	var menuFrame=new Frame(10,24,70,1,BG_BROWN|BLACK,frame);
 	var chatFrame=new Frame(2,16,78,8,BG_BLACK|LIGHTGRAY,frame);
-	var scoreFrame=new Frame(10,5,60,15,BG_BLUE|YELLOW,frame);
+	var scoreFrame=new Frame(5,5,70,15,BG_BLUE|YELLOW,frame);
 	var infoFrame=new Frame(20,8,40,10,BG_BLUE,frame);
 	var channel="#dicewarz2";
 	var menu,menuFrame;
@@ -308,8 +308,8 @@ function lobby() {
 			}
 			if(count++%scores_per_page == 0) {
 				wrap(scoreFrame,"\1n\1c " + 
-					format("%-18s\1h \1n\1c","PLAYER") + 
-					format("%-18s\1h \1n\1c","SYSTEM") + 
+					format("%-20s\1h \1n\1c","PLAYER") + 
+					format("%-26s\1h \1n\1c","SYSTEM") + 
 					format("%6s\1h \1n\1c","POINTS") + 
 					format("%4s\1h \1n\1c","KILL") + 
 					format("%3s\1h \1n\1c","WIN") + 
@@ -320,8 +320,8 @@ function lobby() {
 			if(score.name==user.alias)
 				color="\1g\1h";
 			wrap(scoreFrame,color+ " " + 
-				format("%-18s\1h "+color,score.name) + 
-				format("%-18s\1h "+color,score.system) + 
+				format("%-20s\1h "+color,score.name.substr(0,20)) + 
+				format("%-26s\1h "+color,score.system.substr(0,26)) + 
 				format("%6s\1h "+color,score.points) + 
 				format("%4s\1h "+color,score.kills) + 
 				format("%3s\1h "+color,score.wins) + 
