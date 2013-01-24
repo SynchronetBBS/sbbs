@@ -62,7 +62,7 @@ var ClientVars = {
 	SendOnConnect : "",
 	ServerName : "<?xjs write(system.name); ?>",
 	SocketPolicyPort : <?xjs write(fspPort); ?>,
-	TelnetHostName : "<?xjs write(http_request.host); ?>",
+	TelnetHostName : "<?xjs write(http_request.host.replace(/\:\d*/g, "")); ?>",
 	TelnetPort : <?xjs write(telnetPort); ?>,
 	VirtualKeyboardWidth : 1,
 	VT : 0,
