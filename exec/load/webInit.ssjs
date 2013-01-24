@@ -25,7 +25,7 @@ var webIni=(function() {
 
 	function setLoginCookie(u, sessionKey)
 	{
-		set_cookie('synchronet', u.number.toString() + ',' + sessionKey, time() + webIni.sessionTimeout, http_request.host, "/");
+		set_cookie('synchronet', u.number.toString() + ',' + sessionKey, time() + webIni.sessionTimeout, http_request.host.replace(/\:d*/g, ""), "/");
 		login(u.alias, u.security.password);
 	}
 	
