@@ -36,8 +36,8 @@ function linkify(body) {
 }
 
 function printBoards() {
-	out = "";
 	for(var g = 0; g < msg_area.grp_list.length; g++) {
+		var out = "";
 		out += "<div class='border box msg'>";
 		out += format(
 			"<a class='ulLink' onclick='toggleVisibility(\"group-%s\")'>%s</a><br />",
@@ -74,8 +74,8 @@ function printBoards() {
 			out += format("<div id='sub-%s' style='display:none;'></div>", msg_area.grp_list[g].sub_list[s].code);
 		}
 		out += "</div>";
+		print(out);
 	}
-	print(out);
 	return;
 }
 
@@ -85,8 +85,8 @@ function printThreads(sub) {
 		return false;
 	msgBase.close();
 	var threads = getMessageThreads(sub, webIni.maxMessages);
-	var out = "";	
 	for(var t in threads.order) {
+		var out = "";
 		var header = threads.thread[threads.order[t]].messages[0];
 		out += format("<a class='ulLink' name='thread-%s'></a>", header.number);
 		out += "<div class='border " + ((sub == "mail")?"box":"indentBox2") + " msg'>";
@@ -104,8 +104,8 @@ function printThreads(sub) {
 		out += "</div>";
 		out += format("<div id='sub-%s-thread-%s' style='display:none;'></div>", sub, threads.order[t]);
 		out += format("<div id='sub-%s-thread-%s-info' class='border msg indentBox2' style='display:none;'></div>", sub, threads.order[t]);
+		print(out);
 	}
-	print(out);
 }
 
 function printThread(sub, t) {
@@ -113,8 +113,8 @@ function printThread(sub, t) {
 	if(!msgBase.open())
 		return false;
 	var threads = getMessageThreads(sub, webIni.maxMessages);
-	var out = "";
 	for(var m in threads.thread[t].messages) {
+		var out = "";
 		var header = threads.thread[t].messages[m];
 		var body = msgBase.get_msg_body(header.number, strip_ctrl_a=true);
 		if(body === null)
@@ -144,8 +144,8 @@ function printThread(sub, t) {
 				http_request.host, webIni.appendURL, sub, t, header.number, header.from, user.alias, header.subject
 			);
 		out += "</div>";
+		print(out);
 	}
-	print(out);
 	msgBase.close();
 }
 
