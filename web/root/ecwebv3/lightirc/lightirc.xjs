@@ -16,7 +16,7 @@
 <html>
 
 <head>
-<script type="text/javascript" src="http://<?xjs write(http_request.host); ?>:<?xjs write(webIni.HTTPPort); ?>/<?xjs write(webIni.appendURL); ?>/lightirc/swfobject.js"></script>
+<script type="text/javascript" src="http://<?xjs write(http_request.host); ?>/<?xjs write(webIni.appendURL); ?>/lightirc/swfobject.js"></script>
 <link rel="stylesheet" type="text/css" href="../style/style.css" />
 </head>
 
@@ -36,7 +36,7 @@ var params = {
 	quitmsg : "<?xjs write(system.name); ?>"
 };
 if(<?xjs write(embed); ?>)
-	swfobject.embedSWF('http://<?xjs write(http_request.host); ?>:<?xjs write(webIni.HTTPPort); ?>/<?xjs write(webIni.appendURL); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
+	swfobject.embedSWF('http://<?xjs write(http_request.host); ?>/<?xjs write(webIni.appendURL); ?>/lightirc/lightIRC.swf', 'lightIRC', '730', '420', '9.0.0', null, params, null);
 else
 	document.getElementById('lightIRC').innerHTML = 'Socket policy server not enabled.  LightIRC not loaded.';
 </script>
