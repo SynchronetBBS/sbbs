@@ -48,7 +48,7 @@ function loadSettings(filename) {
 /* check initial status of all games (may have activity after crash or reboot) */
 function updateGames() {
 	for each(var g in data.games) {
-		updateStatus(g);
+		updateStatus(g.gameNumber);
 	}
 }
 
@@ -77,14 +77,12 @@ function processUpdate(update) {
 	switch(update.oper.toUpperCase()) {
 	case "SUBSCRIBE":
 		if(gameNumber) {
-			var game = data.games[gameNumber];
-			updateStatus(game);
+			updateStatus(gameNumber);
 		}
 		break;
 	case "UNSUBSCRIBE":
 		if(gameNumber) {
-			var game = data.games[gameNumber];
-			updateStatus(game);
+			updateStatus(gameNumber);
 		}
 		else {
 			updateGames();
@@ -100,17 +98,18 @@ function processUpdate(update) {
 				obj[child] = update.data;
 		}	
 		if(gameNumber) {
-			var game = data.games[gameNumber];
-			updateStatus(game);
+			updateStatus(gameNumber);
 		}
 		break;
 	}
 }
 
 /* monitor game status? */
-function updateStatus(game) {
+function updateStatus(gameNumber) {
+	var game = loadGame(gameNumber);
 	if(!game)
 		return false;
+	
 	if(game.status == status.PLAYING) {
 		updateTurn(game);
 	}
@@ -121,13 +120,13 @@ function updateStatus(game) {
 				pcount++;
 		}
 		if(pcount == 0) {
-			deleteGame(game.gameNumber);
+			deleteGame(gameNumber);
 		}
 	}
 	else if(game.status == status.FINISHED) {
-		var online = client.who(game_id,"maps." + game.gameNumber);
+		var online = client.who(game_id,"maps." + gameNumber);
 		if(online.length == 0)
-			deleteGame(game.gameNumber);
+			deleteGame(gameNumber);
 	}
 }
 
@@ -158,6 +157,12 @@ function deleteGame(gameNumber) {
 	client.remove(game_id,"maps." + gameNumber,2);
 	client.remove(game_id,"metadata." + gameNumber,2);
 	delete data.games[gameNumber];
+}
+
+/* load game data from database */
+function loadGame(gameNumber) {
+	data.games[gameNumber] = client.read(game_id,"games." + gameNumber,1);
+	return data.games[gameNumber];
 }
 
 /* delete a player */

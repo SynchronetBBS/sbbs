@@ -282,7 +282,6 @@ function updateStatus(game,map) {
 		for(var p=0;p<game.players.length;p++) {
 			var player=game.players[p];
 			if(!player.AI && !player.active) {
-				//log(LOG_DEBUG,"inactive game: " + game.gameNumber);
 				game.status=status.FINISHED;
 				game.winner=getWinner(game,map);
 

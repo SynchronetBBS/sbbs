@@ -378,24 +378,24 @@ function lobby() {
 		
 		var player=findPlayer(game,user.alias);
 		if(player>=0) {
-			response=menuPrompt("Remove yourself from this game? [\1gy\1w/\1gN\1w]",false,false,true);
+			response=menuPrompt("Remove yourself from this game? [y/N]",false,false,true);
 			if(response=='Y') {
 				game.players.splice(player,1);
 				data.saveGame(game);
 				return;
 			}
-			response=menuPrompt("Change your vote? [\1gy\1w/\1gN\1w]",false,false,true);
+			response=menuPrompt("Change your vote? [y/N]",false,false,true);
 			if(response=='Y') {
 				current_vote=game.players[player].vote;
 				game.players[player].vote=(current_vote?false:true);
 			}
 		} else {
-			response=menuPrompt("Join this game? [\1gy\1w/\1gN\1w]",false,false,true);
+			response=menuPrompt("Join this game? [y/N]",false,false,true);
 			if(response!=='Y') {
 				infoFrame.close();
 				return;
 			}
-			vote=menuPrompt("Vote to start? [\1yy\1w/\1yN]",false,false,true);
+			vote=menuPrompt("Vote to start? [y/N]",false,false,true);
 			addPlayer(game,user.alias,system.name,(vote=="Y"?true:false));
 		}
 		
@@ -427,7 +427,7 @@ function lobby() {
 	}
 	function selectGame() {
 		if(data.count()==0) {
-			menuPrompt("\1n\1cNo games to select \1w\1h[press any key]",false,false,true);
+			menuPrompt("No games to select [press any key]",false,false,true);
 			return false;
 		}
 		while(1) {
@@ -445,7 +445,7 @@ function lobby() {
 				}
 				break;
 			} else {
-				menuPrompt("\1n\1c No such game! \1w[press any key]",true,false,true);
+				menuPrompt("No such game! [press any key]",true,false,true);
 				return false;
 			}
 		}
@@ -466,8 +466,8 @@ function lobby() {
 		data.saveMap(map);
 	}
 	function createNewGame() {
-		response=menuPrompt("Begin a new game? \1w\1h[Y/n]: ",false,true,true);
-		if(response!=='Y') 
+		response=menuPrompt("Begin a new game? \1w\1h[Y/n]: ",false,false,true);
+		if(response != 'Y' && response != '\r') 
 			return false;
 			
 		var single_player = false;
@@ -483,11 +483,11 @@ function lobby() {
 				single_player = true;
 				start_now = true;
 				break;
-			} else if(response=='N') {
+			} else if(response=='N' || response=='\r') {
 				single_player = false;
 				break;
 			} else {
-				menuPrompt("Invalid response \1w\1h[press any key]",true,false,true);
+				menuPrompt("Invalid response \1w\1h[press any key]",false,false,true);
 			}
 		}
 		
@@ -499,11 +499,11 @@ function lobby() {
 				} else if(response=='Y') {
 					start_now = true;
 					break;
-				} else if(response=='N') {
+				} else if(response=='N' || response=='\r') {
 					start_now = false;
 					break;
 				} else {
-					menuPrompt("Invalid response \1w\1h[press any key]",true,false,true);
+					menuPrompt("Invalid response \1w\1h[press any key]",false,false,true);
 				}
 			}
 			
@@ -514,11 +514,11 @@ function lobby() {
 				} else if(response=='Y') {
 					hidden_names=true;
 					break;
-				} else if(response=='N') {
+				} else if(response=='N' || response=='\r') {
 					hidden_names=false;
 					break;
 				} else {
-					menuPrompt("Invalid response \1w\1h[press any key]",true,false,true);
+					menuPrompt("Invalid response \1w\1h[press any key]",false,false,true);
 				}
 			}
 		}
@@ -652,11 +652,7 @@ function playGame(gameNumber) {
 						takeTurn();
 						break;
 					case "A":
-						promptFrame.open();
-						cursor.open();
-						coords=attack(coords);
-						cursor.close();
-						promptFrame.close();
+						doAttacks();
 						listPlayers();
 						break;
 					case "E":
@@ -793,6 +789,17 @@ function playGame(gameNumber) {
 	}
 
 	/* gameplay shit */
+	function doAttacks() {
+		promptFrame.open();
+		cursor.open();
+		var coords;
+		do {
+			coords=attack(coords);
+		}
+		while(coords !== false);
+		cursor.close();
+		promptFrame.close();
+	}
 	function forfeit() {
 		taking_turn=false;
 		game.players[localPlayer].active=false;
@@ -858,7 +865,8 @@ function playGame(gameNumber) {
 					break;
 				else 
 					msgAlert("\1r\1hNot enough dice to attack");
-			} else {
+			} 
+			else {
 				msgAlert("\1r\1hNot your territory");
 			}
 		}
@@ -866,16 +874,20 @@ function playGame(gameNumber) {
 		while(1) {
 			cycle();
 			coords=select(coords);
-			if(!coords) return false;
+			if(!coords) {
+				return false;
+			}
 			defending=map.tiles[map.grid[coords.x][coords.y]];
 			if(defending.owner!=localPlayer) {
 				if(connected(attacking,defending,map)) {
 					defender=game.players[defending.owner];
 					break;
-				} else {
+				} 
+				else {
 					msgAlert("\1r\1hNot connected");
 				}
-			} else {
+			} 
+			else {
 				msgAlert("\1r\1hNot an enemy territory");
 			}
 		}
@@ -935,12 +947,6 @@ function playGame(gameNumber) {
 			if(cmd) {
 				drawSector(map,posx,posy);
 				switch(cmd) {
-				case "R":
-					redraw();
-					break;
-				case "C":
-					chatInput();
-					break;
 				case KEY_UP:
 					if(posy<=0) 
 						break;
