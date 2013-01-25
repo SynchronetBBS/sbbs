@@ -445,7 +445,7 @@ function lobby() {
 				}
 				break;
 			} else {
-				menuPrompt("No such game! [press any key]",true,false,true);
+				menuPrompt("No such game! [press any key]",false,false,true);
 				return false;
 			}
 		}
