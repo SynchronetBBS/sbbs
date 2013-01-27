@@ -1438,7 +1438,9 @@ function show_json_scores() {
                         if (json_players != undefined) {
 
                             for (var b = 0; b < json_players.length; b++) {
-                                // Each player.
+                                // Each player.								
+								//log("DEBUG: parsing player: " + json_players[b] + "@" + bbses[a]);
+								
                                 var col = ANSI.BOLD + ANSI.FG_WHITE;
                                 if (json_players[b].length <= 6) {
                                     console.write(col + json_players[b] + ":" + ANSI.DEFAULT);
@@ -1463,10 +1465,12 @@ function show_json_scores() {
                                     console.write("\t" + toTitleCase(scores[bbses[a]][json_players[b]].best_eel.type) + ANSI.DEFAULT + ", " + (scores[bbses[a]][json_players[b]].best_eel.length / 10).toFixed(1) + "cm, " + scores[bbses[a]][json_players[b]].best_eel.weight + "kg.");
 
                                     // Check top InterBBS score.
-                                    if (scores[bbses[a]][json_players[b]].best_eel.length > top_eel_length) {
+                                    if (Number(scores[bbses[a]][json_players[b]].best_eel.length) > Number(top_eel_length)) {
                                         // This is the new top score.
                                         top_eel_length = scores[bbses[a]][json_players[b]].best_eel.length;
+										//log("DEBUG: found new --> top eel: " + top_eel_length);
                                     }
+									//log("DEBUG: player best_eel: " + scores[bbses[a]][json_players[b]].best_eel.length);
                                 }
 
                                 if (scores[bbses[a]][json_players[b]].best_pike != undefined) {
