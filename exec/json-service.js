@@ -59,15 +59,42 @@ if(js.global.server==undefined) {
 }
 
 /* service module initialization file */
+var timer;
 var serviceIniFile;
-if(argv[0] != undefined) {
-	if(file_exists(system.ctrl_dir + argv[0]))
-		serviceIniFile = system.ctrl_dir + argv[0];
-	else 
-		throw("service initialization file missing: " + system.ctrl_dir + argv[0]);
+var serviceIniFileDate;
+init(argv[0]);
+
+/* service init */
+function init(fileName) {
+	if(fileName != undefined) {
+		if(file_exists(system.ctrl_dir + fileName))
+			serviceIniFile = system.ctrl_dir + fileName;
+		else 
+			throw("service initialization file missing: " + system.ctrl_dir + fileName);
+	}
+	else {
+		serviceIniFile = system.ctrl_dir + "json-service.ini";
+	}
+
+	serviceIniFileDate = file_date(serviceIniFile);
+	timer = new Timer();
+	timer.addEvent(5000,true,checkUpdate);
 }
-else {
-	serviceIniFile = system.ctrl_dir + "json-service.ini";
+
+/* main service loop */
+function main() {
+	while(!js.terminated) {
+		service.cycle();
+		chat.cycle();
+		engine.cycle();
+		timer.cycle();
+	}
+}
+
+/* check service ini file for updates */
+function checkUpdate() {
+	if(file_date(serviceIniFile) > serviceIniFileDate)
+		exit(0);
 }
 	
 /* error values */
@@ -87,6 +114,7 @@ var errors = {
 service = new (function() {
 
 	this.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
+	this.fileDate = file_date(serviceIniFile);
 	this.online = true;
 	this.sockets = [];
 	this.denyhosts = [];
@@ -221,7 +249,6 @@ service = new (function() {
 		this.online = true;
 		confirm(client,"Service online");
 	}
-
 	this.init();
 })();
 
@@ -614,13 +641,4 @@ respond = function(client,data) {
 	});
 }
 
-/* event timer */
-var timer = new Timer();
-
-/* main service loop */
-while(!js.terminated) {
-	service.cycle();
-	chat.cycle();
-	engine.cycle();
-	timer.cycle();
-}
+main();
