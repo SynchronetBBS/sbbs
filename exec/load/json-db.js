@@ -33,7 +33,7 @@
 	
 */
 
-function JSONdb (fileName) {
+function JSONdb (fileName, scope) {
 	this.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
 	
     /* database storage file */
@@ -41,6 +41,9 @@ function JSONdb (fileName) {
 		this.file=new File(fileName);
     else 
 		this.file=undefined;
+	
+	/* scope property used in responses */
+	var scope=scope;
 	
     /* master database object */
 	this.masterData={
@@ -230,7 +233,7 @@ function JSONdb (fileName) {
 				/* if this was a write lock, send an update to all record subscribers */
 				if(client_lock.type == locks.WRITE) {
 					this.settings.UPDATES=true;
-					send_data_updates(client,record);
+					send_data_updates(client,record,this.scope);
 				}
 				delete record.shadow[record.property]._lock[client.id];
 				return true;
@@ -251,12 +254,12 @@ function JSONdb (fileName) {
 		var client = request.client;
 		/* if the requested data does not exist, result is undefined */
 		if(record.data === undefined) {
-            send_packet(client,undefined,"RESPONSE");
+            send_packet(client,"RESPONSE","READ",record.location,undefined);
 			return true;
 		}
 		/* if this client has this record locked, read */
 		else if(record.info.lock[client.id]) {
-            send_packet(client,record.data[record.property],"RESPONSE");
+            send_packet(client,"RESPONSE","READ",record.location,record.data[record.property]);
 			return true;
 		}
         /* if there is no lock for this client, error */
@@ -270,14 +273,14 @@ function JSONdb (fileName) {
 		var client = request.client;
 		/* if the requested data does not exist, result is undefined */
 		if(record.data === undefined) {
-            send_packet(client,undefined,"RESPONSE");
+            send_packet(client,"RESPONSE","POP",record.location,undefined);
 			return true;
 		}
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 			record.info.lock[client.id].type == locks.WRITE) {
 			if(record.data[record.property] instanceof Array) 
-				send_packet(client,record.data[record.property].pop(),"RESPONSE");
+				send_packet(client,"RESPONSE","POP",record.location,record.data[record.property].pop());
 			else
 				this.error(client,errors.NON_ARRAY);
 			return true;
@@ -293,14 +296,14 @@ function JSONdb (fileName) {
 		var client = request.client;
 		/* if the requested data does not exist, result is undefined */
 		if(record.data === undefined) {
-            send_packet(client,undefined,"RESPONSE");
+            send_packet(client,"RESPONSE","SHIFT",record.location,undefined);
 			return true;
 		}
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id] && 
 		record.info.lock[client.id].type == locks.WRITE) {
 			if(record.data[record.property] instanceof Array) 
-				send_packet(client,record.data[record.property].shift(),"RESPONSE");
+				send_packet(client,"RESPONSE","SHIFT",record.location,record.data[record.property].shift());
 			else
 				this.error(client,errors.NON_ARRAY);
 			return true;
@@ -372,14 +375,14 @@ function JSONdb (fileName) {
 		var client = request.client;
 		/* if the requested data does not exist, result is undefined */
 		if(record.data === undefined) {
-            send_packet(client,undefined,"RESPONSE");
+			send_packet(client,"RESPONSE","SLICE",record.location,undefined);
 			return true;
 		}
 		/* if this client has this record locked  */
 		else if(record.info.lock[client.id]) {
 			if(record.data[record.property] instanceof Array) {
 				var d = record.data[record.property].slice(request.data.start,request.data.end);
-				send_packet(client,d,"RESPONSE");
+				send_packet(client,"RESPONSE","SLICE",record.location,d);
 			}
 			else {
 				this.error(client,errors.NON_ARRAY);
@@ -417,14 +420,14 @@ function JSONdb (fileName) {
 		var keys=[];
 		/* if the requested data does not exist, result is undefined */
 		if(record.data === undefined) {
-            send_packet(client,undefined,"RESPONSE");
+			send_packet(client,"RESPONSE","KEYS",record.location,undefined);
 			return true;
 		}
 		/* if this client has this record locked, read */
 		if(record.info.lock[client.id]) {
 			for(var k in record.data[record.property])
 				keys.push(k);
-            send_packet(client,keys,"RESPONSE");
+			send_packet(client,"RESPONSE","KEYS",record.location,keys);
 			return true;
 		}
         /* if there is no lock for this client, error */
@@ -439,7 +442,7 @@ function JSONdb (fileName) {
 		var keys={};
 		/* if the requested data does not exist, result is undefined */
 		if(record.data === undefined) {
-            send_packet(client,undefined,"RESPONSE");
+			send_packet(client,"RESPONSE","KEYTYPES",record.location,undefined);
 			return true;
 		}
 		/* if this client has this record locked, read */
@@ -450,7 +453,7 @@ function JSONdb (fileName) {
 					type = "array";
 				keys[k] = type;
 			}
-            send_packet(client,keys,"RESPONSE");
+			send_packet(client,"RESPONSE","KEYTYPES",record.location,keys);
 			return true;
 		}
         /* if there is no lock for this client, error */
@@ -487,10 +490,9 @@ function JSONdb (fileName) {
 		var data={
 			subscribers:sub,
 			lock:record.info.lock_type,
-			pending:record.info.lock_pending,
-			location:record.location
-		}
-		send_packet(client,data,"RESPONSE");
+			pending:record.info.lock_pending
+		};
+		send_packet(client,"RESPONSE","STATUS",record.location,data);
 		return true;
 	}
 
@@ -498,7 +500,7 @@ function JSONdb (fileName) {
 	this.who = function(request,record) {
 		var client = request.client;
 		var data = get_subscriber_list(record);
-		send_packet(client,data,"RESPONSE");
+		send_packet(client,"RESPONSE","WHO",record.location,data);
 		return true;
 	}
 
@@ -606,7 +608,7 @@ function JSONdb (fileName) {
 			break;
 		}
 		var error=new Error(error_num,error_desc);
-		send_packet(client,error,"ERROR");
+		send_packet(client,"ERROR",undefined,undefined,error);
 	}
 	
     /* internal periodic data storage method 
@@ -960,6 +962,7 @@ function JSONdb (fileName) {
 		if(shadow == undefined)
 			return info;
 		info = investigate(shadow,info);
+		
 		for each(var i in shadow) 
 			if(i instanceof Shadow)
 				info = search_party(i,info);
@@ -981,7 +984,7 @@ function JSONdb (fileName) {
 				case "UNSUBSCRIBE":
 				case "LOCK":
 					//notify client of success on non-read operations
-					send_packet(request.client,true,"RESPONSE");
+					send_packet(request.client,"RESPONSE",request.oper,record.location,true);
 					break;
 				}
 			}
@@ -991,7 +994,7 @@ function JSONdb (fileName) {
 			log(LOG_DEBUG,format("db: %s %s %s FAILED",
 				request.client.id,request.oper,record.location));
 			if(request.timeout >= 0 && timeout_expired(request)) {
-				send_packet(request.client,false,"RESPONSE");
+				send_packet(request.client,"RESPONSE",request.oper,record.location,false);
 				return true;
 			}
 			return false;
@@ -1000,16 +1003,11 @@ function JSONdb (fileName) {
 	
 	/* send updates of this object to all subscribers */
 	function send_data_updates(client,record) {
-		var data = {
-			oper:"WRITE",
-			location:record.location,
-			data:get_record_data(record)
-		};
 		for each(var c in record.info.subscribers) {
 			/* do not send updates to request originator */
 			if(c.id == client.id)
 				continue;
-			send_packet(c,data,"UPDATE");
+			send_packet(c,"UPDATE","WRITE",record.location,get_record_data(record));
 		}
 	}
 	
@@ -1022,16 +1020,11 @@ function JSONdb (fileName) {
 	
 	/* send update of client subscription to all subscribers */
 	function send_subscriber_updates(client,record,oper) {
-		var data = {
-			oper:oper,
-			location:record.location,
-			data:get_client_info(client)
-		};
 		for each(var c in record.info.subscribers) {
 			/* do not send updates to request originator */
 			if(c.id == client.id)
 				continue;
-			send_packet(c,data,"UPDATE");
+			send_packet(c,"UPDATE",oper,record.location,get_client_info(client));
 		}
 	}
 	
@@ -1099,9 +1092,12 @@ function JSONdb (fileName) {
 	}
 	
 	/* send data packet to a client */
-	function send_packet(client,data,func) {
-		var packet={
+	function send_packet(client,func,oper,location,data) {
+		var packet = {
+			scope:scope,
 			func:func,
+			oper:oper,
+			location:location,
 			data:data
 		};
 		client.sendJSON(packet);

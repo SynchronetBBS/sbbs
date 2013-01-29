@@ -102,12 +102,18 @@ function JSONClient(serverAddr,serverPort) {
     }
     
     this.disconnect = function() {
-	return this.socket.close();
+		if(this.socket && this.socket.is_connected) {
+			this.socket.close();
+			return true;
+		}
+		return false;
     }
     
 	/* subscribe to object updates */
     this.subscribe=function(scope,location) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"SUBSCRIBE",
 			nick:user?user.alias:undefined,
 			system:system?system.name:undefined,
@@ -119,7 +125,9 @@ function JSONClient(serverAddr,serverPort) {
     }
     
     this.unsubscribe=function(scope,location) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"UNSUBSCRIBE",
             location:location,
 			timeout:this.settings.TIMEOUT
@@ -130,7 +138,9 @@ function JSONClient(serverAddr,serverPort) {
 	
 	/* lock an object */
 	this.lock = function(scope,location,lock) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             location:location,
 			oper:"LOCK",
 			data:lock,
@@ -147,7 +157,9 @@ function JSONClient(serverAddr,serverPort) {
     
 	/* read object data (lock for reading or writing, blocking) */
     this.read=function(scope,location,lock) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"READ",
             location:location,
 			lock:lock,
@@ -158,7 +170,9 @@ function JSONClient(serverAddr,serverPort) {
 	
 	/* array slice method */
 	this.slice=function(scope,location,start,end,lock) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"SLICE",
             location:location,
 			data:{
@@ -177,7 +191,9 @@ function JSONClient(serverAddr,serverPort) {
 		var i;
 		var ret={};
 		for(i in objects) {
-			this.send(objects[i][0],'QUERY',{
+			this.send({
+				scope:objects[i][0],
+				func:"QUERY",
 				oper:'READ',
 				location:objects[i][1],
 				lock:objects[i][2],
@@ -192,7 +208,9 @@ function JSONClient(serverAddr,serverPort) {
 
 	/* read object keys (lock for reading or writing, blocking) */
 	this.keys=function(scope,location,lock) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"KEYS",
             location:location,
 			lock:lock,
@@ -203,7 +221,9 @@ function JSONClient(serverAddr,serverPort) {
 	
 	/* read object keys and key types (lock for reading or writing, blocking) */
 	this.keyTypes=function(scope,location,lock) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"KEYTYPES",
             location:location,
 			lock:lock,
@@ -214,7 +234,9 @@ function JSONClient(serverAddr,serverPort) {
 
 	/* shift object data (lock for reading or writing, blocking) */
     this.shift=function(scope,location,lock) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"SHIFT",
             location:location,
 			lock:lock,
@@ -225,7 +247,9 @@ function JSONClient(serverAddr,serverPort) {
 
 	/* pop object data (lock for reading or writing, blocking) */
     this.pop=function(scope,location,lock) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"POP",
             location:location,
 			lock:lock,
@@ -236,7 +260,9 @@ function JSONClient(serverAddr,serverPort) {
     
 	/* store object data (lock for writing) */
     this.write=function(scope,location,data,lock) {
-        this.send(scope,"QUERY",{
+        this.send({
+			scope:scope,
+			func:"QUERY",
 			oper:"WRITE",
             location:location,
             data:data,
@@ -249,7 +275,9 @@ function JSONClient(serverAddr,serverPort) {
 
 	/* store object data (lock for writing) */
     this.remove=function(scope,location,lock) {
-        this.send(scope,"QUERY",{
+        this.send({
+			scope:scope,
+			func:"QUERY",
 			oper:"WRITE",
             location:location,
 			data:undefined,
@@ -262,7 +290,9 @@ function JSONClient(serverAddr,serverPort) {
 
 	/* unshift object data (lock for writing) */
     this.unshift=function(scope,location,data,lock) {
-        this.send(scope,"QUERY",{
+        this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"UNSHIFT",
             location:location,
             data:data,
@@ -275,7 +305,9 @@ function JSONClient(serverAddr,serverPort) {
 
 	/* push object data (lock for writing) */
     this.push=function(scope,location,data,lock) {
-        this.send(scope,"QUERY",{
+        this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"PUSH",
             location:location,
             data:data,
@@ -287,14 +319,9 @@ function JSONClient(serverAddr,serverPort) {
     }
 	
 	/* package a query and send through the socket */
-	this.send=function(scope,func,data) {
+	this.send=function(packet) {
 		if(!this.socket.is_connected)
 			throw("socket disconnected");
-		var packet={
-			scope:scope,
-			func:func,
-			data:data
-		};
 		this.socket.sendJSON(packet);
 	}
 
@@ -332,9 +359,9 @@ function JSONClient(serverAddr,serverPort) {
 			else if(packet.func == "RESPONSE") 
 				return packet.data;
 			else if(typeof this.callback == "function")
-				this.callback(packet.data);
+				this.callback(packet);
 			else 
-				this.updates.push(packet.data);
+				this.updates.push(packet);
 		} while(Date.now() - start < this.settings.SOCK_TIMEOUT);
 		throw("timed out waiting for server response");
 	}
@@ -345,15 +372,17 @@ function JSONClient(serverAddr,serverPort) {
 		if(!packet)
 			return false;
 		else if(typeof this.callback == "function")
-			this.callback(packet.data);
+			this.callback(packet);
 		else 
-			this.updates.push(packet.data);
+			this.updates.push(packet);
 	}
 	
 	/* identify this client as a bbs user */
 	this.ident=function(scope,username,pw) {
 		pw = md5_calc(pw.toUpperCase(),true);
-		this.send(scope,"IDENT",{
+		this.send({
+			scope:scope,
+			func:"IDENT",
             username:username,
 			pw:pw
         });
@@ -361,7 +390,9 @@ function JSONClient(serverAddr,serverPort) {
 
 	/* return a list of record subscriber IP addresses */
 	this.who=function(scope,location) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
             oper:"WHO",
             location:location,
 			timeout:this.settings.TIMEOUT
@@ -371,7 +402,9 @@ function JSONClient(serverAddr,serverPort) {
 
 	/* retrieve the overall lock and subscription status of an object */
 	this.status=function(scope,location) {
-		this.send(scope,"QUERY",{
+		this.send({
+			scope:scope,
+			func:"QUERY",
 			oper:"STATUS",
 			location:location,
 			timeout:this.settings.TIMEOUT
