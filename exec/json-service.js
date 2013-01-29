@@ -264,20 +264,20 @@ chat = new (function() {
 	this.process = function(client,packet) {
 		switch(packet.func.toUpperCase()) {
 		case "IDENT":
-			this.ident(client,packet.data);
+			this.ident(client,packet);
 			break;
 		case "BAN":
 			if(!admin.verify(client,packet,90))
 				break;
-			this.ban(client,packet.data.ip);
+			this.ban(client,packet.ip);
 			break;
 		case "UNBAN":
 			if(!admin.verify(client,packet,90))
 				break;
-			this.unban(client,packet.data.ip);
+			this.unban(client,packet.ip);
 			break;
 		case "QUERY":
-			this.db.query(client,packet.data);
+			this.db.query(client,packet);
 			break;
 		default:
 			error(client,errors.UNKNOWN_FUNCTION,packet.func);
@@ -332,7 +332,7 @@ admin = new (function() {
 	this.process = function(client,packet) {
 		switch(packet.func.toUpperCase()) {
 		case "IDENT":
-			this.ident(client,packet.data);
+			this.ident(client,packet);
 			break;
 		case "RESTART":
 			if(!this.verify(client,packet,90))
@@ -342,12 +342,12 @@ admin = new (function() {
 		case "BAN":
 			if(!this.verify(client,packet,90))
 				break;
-			this.ban(client,packet.data.ip);
+			this.ban(client,packet.ip);
 			break;
 		case "UNBAN":
 			if(!this.verify(client,packet,90))
 				break;
-			this.unban(client,packet.data.ip);
+			this.unban(client,packet.ip);
 			break;
 		case "CLOSE":
 			if(!this.verify(client,packet,90))
@@ -364,12 +364,23 @@ admin = new (function() {
 				break;
 			this.modules(client);
 			break;
+		case "TIME":
+			this.time(client);
+			break;
 		default:
 			error(client,errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		}
 	}
 	/* release a socket from the list of authenticated users */
+	this.time = function(client) {
+		client.sendJSON({ 
+			scope:undefined,
+			func:"RESPONSE",
+			oper:"TIME",
+			data:time()
+		});
+	}
 	this.release = function(client) {
 		if(this.authenticated[client.id]) {
 			log(LOG_DEBUG,"releasing auth: " + client.id);
@@ -485,7 +496,7 @@ engine = new (function() {
 				error(client,errors.NOT_AUTHORIZED,packet.func);
 				break;
 			}
-			module.db.query(client,packet.data);
+			module.db.query(client,packet);
 			break;
 		case "IDENT":
 			break;
@@ -538,12 +549,12 @@ engine = new (function() {
 
 	/* verify a client's access to queries */
 	this.verify = function(client,packet,module) {
-		switch(packet.data.oper) {
+		switch(packet.oper) {
 		case "READ":
 		case "SLICE":
 			if(module.read > 0) {
 				if(!admin.verify(client,packet,module.read)) {
-					error(client,errors.NOT_AUTHORIZED,packet.data.oper);
+					error(client,errors.NOT_AUTHORIZED,packet.oper);
 					return false;
 				}
 			}
@@ -556,7 +567,7 @@ engine = new (function() {
 		case "DELETE":
 			if(module.write > 0) {
 				if(!admin.verify(client,packet,module.write)) {
-					error(client,errors.NOT_AUTHORIZED,packet.data.oper);
+					error(client,errors.NOT_AUTHORIZED,packet.oper);
 					return false;
 				}
 			}
@@ -583,7 +594,7 @@ engine = new (function() {
 		this.db;
 		
 		this.init = function() {
-			this.db=new JSONdb(this.dir+this.name+".json");
+			this.db=new JSONdb(this.dir+this.name+".json", this.name);
 			/* load module background service file */
 			if(file_exists(this.dir + "service.js")) {
 				try {
@@ -615,7 +626,9 @@ error = function(client,err,value) {
 		client.descriptor,desc
 	));
 	client.sendJSON({
+		scope:undefined,
 		func:"ERROR",
+		oper:"ERROR",
 		data:{
 			description:desc,
 			client:client.descriptor,
@@ -628,6 +641,7 @@ error = function(client,err,value) {
 confirm = function(client,message) {
 	log(LOG_INFO,message);
 	client.sendJSON({
+		scope:undefined,
 		func:"OK",
 		data:message
 	});
@@ -636,6 +650,7 @@ confirm = function(client,message) {
 /* packet request response to client */
 respond = function(client,data) {
 	client.sendJSON({
+		scope:undefined,
 		func:"RESPONSE",
 		data:data
 	});
