@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.19
-                        Release date: 2013-01-02
+                              Version 1.20
+                        Release date: 2013-01-31
 
                                   by
 
@@ -14,7 +14,7 @@
 This file describes SlyEdit, a message editor for Synchronet.
 Note: For sysops who already have a previous version of SlyEdit
 installed and are upgrading to this version, please see the file
-Upgrading.txt.
+SlyEdit_Upgrading.txt.
 
 Contents
 ========
@@ -25,7 +25,6 @@ Contents
 5. Configuration file
 6. Ice-style Color Theme Settings
 7. DCT-style Color Theme Settings
-8. Revision History (change log)
 
 
 1. Disclaimer
@@ -39,7 +38,9 @@ find SlyEdit useful and enjoy using it.
 ===============
 SlyEdit is a message editor that I wrote in JavaScript for Synchronet, which
 can mimic the look and feel of IceEdit or DCT Edit.  SlyEdit also supports
-customization of colors via theme files.
+customization of colors via theme files, cross-posting into other message
+areas, text search, and file import & export (works with files on the
+BBS machine, and is enabled only for the sysop).
 
 The motivation for creating this was that IceEdit and DCT Edit were always
 my two favorite BBS message editors, but in a world where 32-bit (and 64-bit)
@@ -73,7 +74,16 @@ These are the steps for installation:
     already done this. :)
  2. There are 2 ways SlyEdit's files can be copied onto your Synchronet system:
     1. Copy the JavaScript files into your sbbs/exec directory and the .cfg files
-       into your sbbs/ctrl directory
+       into your sbbs/ctrl directory.  If you plan to customize your SlyEdit.cfg
+       or color theme files, it's recommended to also put the .cfg files in your
+       sbbs/mods directory so that your configuration won't be accidentally
+       overwritten when updating the files from the Synchronet CVS repository.
+       SlyEdit will first check the sbbs/mods directory for the configuration
+       files, then sbbs/ctrl, and then SlyEdit's own directory for the
+       configuration files.  In other words, the SlyEdit configuration files
+       in sbbs/mods take first precedence, sbbs/ctrl 2nd precedence, and
+       SlyEdit's own directory takes last precedence for the configuration
+       files.
     2. Copy all files together into their own directory of your choice
  3. Set up SlyEdit on your BBS with Synchronet's configration program (SCFG).
 
@@ -147,11 +157,29 @@ DCT Edit.  It also has the following features:
   parts of the message.  Optionally, sysops may disable the use of initials
   in quote lines, in which case SlyEdit simply prefixes quote lines with " > "
   as was done in IceEdit, DCT Edit, and other editors of the early-mid 1990s.
+- Cross-posting into other message sub-boards: When posting a message to a
+  message sub-board, SlyEdit allows the user to select other message sub-boards
+  to post the message into.  SlyEdit will post the message to the user's
+  current message sub-board by default.  Using the cross-post feature, the
+  user can select any number of other message sub-boards to cross-post his/her
+  message into.  SlyEdit respects the ARS security setting for each sub-board -
+  If a user is not allowed to post in a message sub-board, SlyEdit will not
+  allow the user to select that sub-board for cross-posting.  The user can also
+  un-select their current message sub-board.  When the user un-selects their
+  current message sub-board and chooses other message sub-boards to post
+  his/her message into, Synchronet will say that the message was aborted
+  because the message file wasn't saved as it normally is for the current
+  message sub-board.  However, SlyEdit will output all of the message
+  sub-boards that the message was posted into.  If the user un-selected their
+  current message sub-board, SlyEdit will also output a note explaining that
+  the BBS will say the message was aborted, even though it was posted into
+  other sub-boards and that is normal.
 - Navigation: Page up/down, home/end of line, and arrow keys
 - Slash commands (at the start of the line):
   /A: Abort
   /S: Save
   /Q: Quote message
+  /C: Cross-post message sub-board selection
 - Sysops can import a file (stored on the BBS machine) into the message
 - Sysops can export the current message to a file (on the BBS machine)
 - Configuration file with behavior and color settings.  See section 4
@@ -160,20 +188,21 @@ DCT Edit.  It also has the following features:
 The following is a summary of the keyboard shortcuts (from SlyEdit's command
 help screen):
 
-Help keys                                     Slash commands (@ line start)
----------                                     -----------------------------
-Ctrl-G       : General help                 | /A     : Abort
-Ctrl-P       : Command key help             | /S     : Save
-Ctrl-R       : Program information          | /Q     : Quote message
+Help keys                                     Slash commands (on blank line)
+---------                                     ------------------------------
+Ctrl-G       : General help                 ¦ /A     : Abort
+Ctrl-P       : Command key help             ¦ /S     : Save
+Ctrl-R       : Program information          ¦ /Q     : Quote message
+                                            ¦ /C     : Cross-post selection
 
 Command/edit keys
 -----------------
-Ctrl-A       : Abort message                | Ctrl-W : Page up
-Ctrl-Z       : Save message                 | Ctrl-S : Page down
-Ctrl-Q       : Quote message                | Ctrl-N : Find text
-Insert/Ctrl-I: Toggle insert/overwrite mode | ESC    : Command menu
-Ctrl-O       : Import a file                | Ctrl-X : Export to file
-Ctrl-D       : Delete line
+Ctrl-A       : Abort message                ¦ Ctrl-W : Page up
+Ctrl-Z       : Save message                 ¦ Ctrl-S : Page down
+Ctrl-Q       : Quote message                ¦ Ctrl-N : Find text
+Insert/Ctrl-I: Toggle insert/overwrite mode ¦ Ctrl-D : Delete line
+ESC          : Command menu                 ¦ Ctrl-C : Cross-post selection
+Ctrl-O       : Import a file                ¦ Ctrl-X : Export to file
 
 
 5. Configuration file
@@ -257,6 +286,10 @@ add3rdPartyExitScript             Add a 3rd-party JavaScript script to execute
 addJSOnExit                       Add a JavaScript command to run on exit.
                                   Example (don't actually do this):
                                   addJSOnStart=console.print("Hello\r\n\1p");
+
+allowCrossPosting                 Whether or not to allow cross-posting
+                                  messages into different/multiple message
+                                  sub-boards.  Valid values are true and false.
 
 Ice colors
 ----------
@@ -346,6 +379,46 @@ UnselectedOptionBorderColor       The color to use for the borders around
 UnselectedOptionTextColor         The color to use for the text for unselected
                                   multi-choice options
 
+crossPostBorder                   The color to use for the border of the cross-
+                                  post area selection box
+
+crossPostBorderText               The color to use for the top border text of
+                                  the cross-post area selection box
+
+crossPostMsgAreaNum               The color to use for the message group/sub-
+                                  board numbers in the cross-post area
+                                  selection box
+
+crossPostMsgAreaNumHighlight      The color to use for the highlighted
+                                  (lightbar) message group/sub-board numbers
+                                  in the cross-post area selection box
+
+crossPostMsgAreaDesc              The color to use for the message group/
+                                  sub-board descriptions in the cross-post
+                                  area selection box
+
+crossPostMsgAreaDescHighlight     The color to use for the highlighted
+                                  (lightbar) message group/sub-board
+                                  descriptions in the cross-post area selection
+                                  box
+
+crossPostChk                      The color to use for the checkmarks for the
+                                  enabled message sub-boards in the cross-post
+                                  area selection box
+
+crossPostChkHighlight             The color to use for the highlighted
+                                  (lightbar) checkmarks for the enabled
+                                  message sub-boards in the cross-post area
+                                  selection box
+
+crossPostMsgGrpMark               The color to use for the current message
+                                  group marker character in the cross-post area
+                                  selection box
+
+crossPostMsgGrpMarkHighlight      The color to use for the highlighted
+                                  (lightbar) current message group marker
+                                  character in the cross-post area selection
+                                  box
 
 7. DCT-style Color Theme Settings
 =================================
@@ -480,183 +553,43 @@ MenuUnselectedItems               The color to use for unselected items on the
 MenuHotkeys                       The color to use for the hotkey characters in the
                                   menu items on the drop-down menus
 
+crossPostBorder                   The color to use for the border of the cross-
+                                  post area selection box
 
-8. Revision History (change log)
-================================
-Version  Date         Description
--------  ----         -----------
-1.19     2013-01-02   Bug fix: When replying to low-numbered messages in a
-                      message area now get the correct author name.
-                      Previously, it would get the correct author name only
-                      from the later messages in a message area.
-1.18     2012-12-31   Bug fix: When prefixing quote lines with author initials,
-                      if re-wrapping quote lines resulted in an additional
-                      quote line being created, it wasn't prefixing that quote
-                      line with an additional > to indicate that it was being
-                      quoted again.  This was fixed.
-                      Also, updated so that when replying to a message,
-                      instead of getting the author's initials (for quoted
-                      lines) from the given "To" name, it will read the
-                      message's "From" name from the message database.  That
-                      way, if a user changes the "To" name when replying to a
-                      message, the correct initials will be used.
-                      If a BBS has Digital Distortion's Message Lister set up,
-                      then it must be updated to at least version 1.31 in order
-                      for message quoting with author's initials to work
-                      properly when replying to a message from Digital
-                      Distortion's Message Lister.
-                      The latest version of the Digital Distortion BBS doors &
-                      add-ons can be downloaded from the following web page:
-                      http://digdist.bbsindex.com/DigDistBBSStuff/DigDistBBSStuff.html
-1.17     2012-12-27   Updated to prefix quote lines with author initials.
-                      This is now the default behavior, but this can be
-                      disabled with the following line in SlyEdit.cfg:
-                      useQuoteLineInitials=false
-                      When disabled, SlyEdit will simply prefix quote lines
-                      with " > ", as was done in IceEdit, DCT Edit, and other
-                      message editors of the early-mid 1990s.
-                      Also, fixed a bug related to refreshing the text on the
-                      screen when a drop-down menu disappears.  This bug fix is
-                      only relevant for DCT mode.
-1.16     2012-12-21   Updated to look for the .cfg files first in
-                      the sbbs/ctrl directory, and if they're not
-                      found there, assume they're in the same
-                      directory as the .js files.
-1.15     2012-04-22   Improved quoting with the ability to re-wrap quote lines
-                      so that they are complete but still look good when
-                      quoted.  SlyEdit recognizes quote lines beginning with >
-                      or 1 or 2 intials followed by a >.  The configuration
-                      option "splitLongQuoteLines" was replaced by
-                      "reWrapQuoteLines", and it is enabled by default.
-                      Also, added the following configuration options and capabilities:
-                      add3rdPartyStartupScript:
-                                  Add a 3rd-party JavaScript script to execute
-                                  (via loading) upon startup of SlyEdit.  The
-                                  parameter must specify the full path & filename
-                                  of the JavaScript script.  For example (using
-                                  the excellent Desafortunadamente add-on by Art
-                                  of Fat Cats BBS):
-                                  add3rdPartyStartupScript=D:/BBS/sbbs/xtrn/desafortunadamente/desafortunadamente.js
-                      addJSOnStart:
-                                  Add a JavaScript command to run on startup.  Any
-                                  commands added this way will be executed after
-                                  3rd-party scripts are loaded.
-                                  Example (using the excellent Desafortunadamente
-                                  add-on by Art of Fat Cats BBS):
-                                  addJSOnStart=fortune_load();
-                      add3rdPartyExitScript:
-                                  Add a 3rd-party JavaScript script to execute
-                                  (via loading) upon exit of SlyEdit.  The
-                                  parameter must specify the full path & filename
-                                  of the JavaScript script.
-                      addJSOnExit:
-                                  Add a JavaScript command to run on exit.
-                                  Example (don't actually do this):
-                                  addJSOnStart=console.print("Hello\n\1p");
-1.145    2011-02-07   The time on the screen will now be updated.  The
-                      time is checked every 5 keystrokes and will be
-                      updated on the screen when it changes.
-1.144    2010-11-21   Minor bug fix: In DCT mode, if the top or bottom border
-                      of one of the menus or the abort confirmation box is
-                      on the first or last line of text on the screen and the
-                      text line ends before the box border ends, the box border
-                      is now fully erased when it disappears.
-1.143    2010-06-19   Minor bug fix: When typing an entire line of text that
-                      doesn't have any spaces, the last character was being
-                      discarded when wrapping to the next line.
-1.142    2010-02-04   Minor bug fix: When reading quote lines and the
-                      splitLongQuoteLines is disabled, it will no longer
-                      (incorrectly) insert "null" as the last quote line
-                      (as is done when the splitLongQuoteLines option is
-                      enabled).
-1.141    2010-01-23   Bug fix: The screen wouldn't update when pressing the Delete
-                      key on a blank line, which would remove the line.
-1.14     2010-01-19   Bug fix: The screen wouldn't update when pressing the Delete
-                      key at the end of a line (specifically, with a blank line
-                      below it followed by a non-blank line).
-                      Also, updated to allow combining quote lines by pressing
-                      the Delete key at the end of a quote line.
-1.131    2010-01-10   Minor update - The option for splitting long quote
-                      lines, which was enabled by default in the previous
-                      version, is now disabled by default in this verison.
-                      It seems that there may be more sysops that don't
-                      like it than those who do like it.
-                      The code in the .js files in this version is also
-                      a little more refactored.
-1.13     2010-01-04   Includes the ability to split up quote lines that
-                      are too long, rather than truncating them.  This
-                      is an option that can be toggled and is enabled by
-                      default.
-                      Includes several bug fixes related to message editing
-                      (i.e., such as word wrapping for the last word on a
-                      line) and other behind-the-scenes bug fixes.
-                      Efficiency of screen updates has been improved somewhat
-                      in this release.  This is more noticeable on slower
-                      connections.
-1.12     2009-12-14   Behavior change: Now never removes any spaces from
-                      the beginning of a line when the user presses enter
-                      at the beginning of a line.
-1.11     2009-12-10   Added the ability to customize the quote line color
-                      in the color theme files (QuoteLineColor).
-                      Fixed a bug where the text color temporarily went
-                      back to default (not using the customized text
-                      color) when moving to a new line when typing a
-                      message.
-                      Updated to (hopefully) fixed a bug that could
-                      cause the script to abort when adding a line to
-                      the message in rare circumstances.
-1.10     2009-12-03   Added support for customizable color themes.
-                      Fixed a couple of text editing bugs/annoyances.
-1.08     2009-11-10   Changed the way the message is saved back to the
-                      way SlyEdit was saving in 1.06 and earlier, as
-                      this simplifies the code.  The "Expand Line Feeds
-                      to CRLF" option needs to be enabled in SCFG for
-                      messages to be saved properly in all platforms.
-                      Added configuration options to enable/disable the
-                      user input timeout, and to specify the input timeout
-                      time (in MS).
-                      The sysop is now always exempt from the input timeout.
-                      Also, started to work on improving the efficiency
-                      of refreshing the message area.
-1.07     2009-10-23   Bug fix: Changed how the end-of-line newline
-                      characters are written to the message file so
-                      that the message text lines are saved correctly
-                      in Linux.  The bug in previous versions was causing
-                      messages going across certain networks to lose their
-                      end-of-line characters so that text lines weren't
-                      terminated where they were supposed to be.  Thanks
-                      goes to Tracker1 (sysop of The Roughnecks BBS) for
-                      the tip of how to fix this.
-                      New feature: Configuration file with settings
-                      for whether or not to display the ending info
-                      screen, as well as quote window colors for both
-                      Ice and DCT modes.
-1.06     2009-09-12   Bug fix: Updated the way it checks for printable
-                      characters.  This should fix the problem I've seen
-                      with some BBSs where it wouldn't allow typing an
-                      upper-case letter.
-1.05     2009-08-30   Bug fix: When editing an existing message, the cursor
-                      would be at the bottom of the edit area, and it would
-                      appear stuck there, unable to move up.  This has been
-                      fixed - Now the cursor is always initially placed at
-                      the start of the edit area.
-                      Bug fix: When saving a message, blank lines are now
-                      removed from the end of a message before saving.
-1.04     2009-08-27   Bug fix: When wrapping a text line, it would place
-                      individual words on lines by themselves, due to a
-                      change in 1.03.  This has been fixed.
-1.03     2009-08-27   Bug fix: With a small message (less than one screenful),
-                      Ctrl-S (page down) now doesn't crash SlyEdit.
-                      Bug fix: When typing and the end of the line and it has to
-                      wrap the word to the next line, it now always inserts a new
-                      line below the current line, pushing the rest of the message
-                      down.
-1.02     2009-08-26   Bug fix: Now prevents invalid text lines from quotes.txt or
-                      the message file from being used.
-1.01     2009-08-23   Bug fix: Blank edit lines would be removed
-                      when they weren't supposed to if the user
-                      used the /S or /A commands on a line that
-                      wasn't the last line.
-1.00     2009-08-22   First public release
-0.99     2009-08-13-  Test release.  Finishing up features, testing,
-         2009-08-20   and fixing bugs before general release.
+crossPostBorderText               The color to use for the top border text of
+                                  the cross-post area selection box
+
+crossPostMsgAreaNum               The color to use for the message group/sub-
+                                  board numbers in the cross-post area
+                                  selection box
+
+crossPostMsgAreaNumHighlight      The color to use for the highlighted
+                                  (lightbar) message group/sub-board numbers
+                                  in the cross-post area selection box
+
+crossPostMsgAreaDesc              The color to use for the message group/
+                                  sub-board descriptions in the cross-post
+                                  area selection box
+
+crossPostMsgAreaDescHighlight     The color to use for the highlighted
+                                  (lightbar) message group/sub-board
+                                  descriptions in the cross-post area selection
+                                  box
+
+crossPostChk                      The color to use for the checkmarks for the
+                                  enabled message sub-boards in the cross-post
+                                  area selection box
+
+crossPostChkHighlight             The color to use for the highlighted
+                                  (lightbar) checkmarks for the enabled
+                                  message sub-boards in the cross-post area
+                                  selection box
+
+crossPostMsgGrpMark               The color to use for the current message
+                                  group marker character in the cross-post area
+                                  selection box
+
+crossPostMsgGrpMarkHighlight      The color to use for the highlighted
+                                  (lightbar) current message group marker
+                                  character in the cross-post area selection
+                                  box

@@ -1,0 +1,197 @@
+This file contains upgrade notes for sysops who are upgrading from
+earlier versions of SlyEdit.
+
+Contents
+========
+1. "Expand Line Feeds to CRLF" option (for users of version 1.07 and
+   below
+2. New configuration file settings
+
+
+"Expand Line Feeds to CRLF" option
+==================================
+If upgrading version version 1.07 or earlier of SlyEdit, the option
+"Expand Line Feeds to CRLF" in SCFG should now be set to Yes.  This
+option enables Synchronet to save messages properly, regardless of
+whether Synchronet is running in Windows or a *nix system.  Enabling
+this option fixes problems with line wrapping that was seen on Linux
+Synchronet systems when the messages were sent across some networks
+to other BBSs.  Thanks goes to Access Denied, sysop of The Pharcyde,
+for helping to test this.
+
+In Synchronet's configuration program, your SlyEdit
+configuration should look like this (ICE mode is used here):
++[¦][?]--------------------------------------------------------------+
+¦                      SlyEdit (Ice style) Editor                    ¦
+¦--------------------------------------------------------------------¦
+¦ ¦Name                            SlyEdit  (Ice style)              ¦
+¦ ¦Internal Code                   SLYEDICE                          ¦
+¦ ¦Remote Command Line             ?SlyEdit.js %f ICE                ¦
+¦ ¦Access Requirements             ANSI                              ¦
+¦ ¦Intercept Standard I/O          No                                ¦
+¦ ¦Native (32-bit) Executable      No                                ¦
+¦ ¦Use Shell to Execute            No                                ¦
+¦ ¦Quoted Text                     All                               ¦
+¦ ¦Editor Information Files        QuickBBS MSGINF/MSGTMP            ¦
+¦ ¦Expand Line Feeds to CRLF       Yes                               ¦
+¦ ¦Strip FidoNet Kludge Lines      No                                ¦
+¦ ¦BBS Drop File Type              None                              ¦
++--------------------------------------------------------------------+
+
+
+2. Notes and new configuration file settings
+============================================
+Upgrading to version 1.20
+-------------------------
+Version 1.20 added a cross-posting feature, and there is a new configuration
+setting and some new color settings for cross-posting.  Also, starting with
+version 1.20, you can put your customized SlyEdit configuration file
+(SlyEdit.cfg) and color theme files in the sbbs/mods directory so that they
+won't be accidentally overwritten when updating the Synchronet files from the
+Synchronet CVS repository.
+
+New setting for SlyEdit.cfg:
+allowCrossPosting                 Whether or not to allow cross-posting
+                                  messages into different/multiple message
+                                  areas.  Valid values are true and false.
+
+New color settings (for both the DCT and Ice-style theme files):
+crossPostBorder                   The color to use for the border of the cross-
+                                  post area selection box
+
+crossPostBorderText               The color to use for the top border text of
+                                  the cross-post area selection box
+
+crossPostMsgAreaNum               The color to use for the message group/sub-
+                                  board numbers in the cross-post area
+                                  selection box
+
+crossPostMsgAreaNumHighlight      The color to use for the highlighted
+                                  (lightbar) message group/sub-board numbers
+                                  in the cross-post area selection box
+
+crossPostMsgAreaDesc              The color to use for the message group/
+                                  sub-board descriptions in the cross-post
+                                  area selection box
+
+crossPostMsgAreaDescHighlight     The color to use for the highlighted
+                                  (lightbar) message group/sub-board
+                                  descriptions in the cross-post area selection
+                                  box
+
+crossPostChk                      The color to use for the checkmarks for the
+                                  enabled message sub-boards in the cross-post
+                                  area selection box
+
+crossPostChkHighlight             The color to use for the highlighted
+                                  (lightbar) checkmarks for the enabled
+                                  message sub-boards in the cross-post area
+                                  selection box
+
+crossPostMsgGrpMark               The color to use for the current message
+                                  group marker character in the cross-post area
+                                  selection box
+
+crossPostMsgGrpMarkHighlight      The color to use for the highlighted
+                                  (lightbar) current message group marker
+                                  character in the cross-post area selection
+                                  box
+
+Upgrading to version 1.18
+-------------------------
+* Important: If you use Digital Distortion's Message Lister on your BBS, then
+you must update Digital Distortion's Message Lister must to at least version
+1.31 in order for message quoting with author's initials to work properly when
+replying to a message from Digital Distortion's Message Lister.
+The latest version of the Digital Distortion BBS doors & add-ons can be
+downloaded from the following web page:
+http://digdist.bbsindex.com/DigDistBBSStuff/DigDistBBSStuff.html
+
+A feature has been added to allow quoted lines with author's initials to be
+indented by a space.  It is disabled by default.  To enable that option,
+add the following line in SlyEdit.cfg in the [BEHAVIOR] section:
+indentQuoteLinesWithInitials=true
+That option can also be set to false to disable it.
+
+Upgrading to version 1.17
+-------------------------
+Starting with version 1.17, when replying to a message, quoted lines from the
+previous message will be prefixed with the last author's initials by default.
+If desired, this behavior can be disabled by adding the following line in the
+[BEHAVIOR] section of SlyEdit.cfg:
+useQuoteLineInitials=false
+When disabled, SlyEdit will quote message lines as before, prefixing them with
+" > " as was done in IceEdit, DCT Edit, and other editors of the early-mid
+1990s.
+Since many users participate in public message areas, it is recommended to let
+SlyEdit add the last author's initials to quote lines in order to make it
+easier for other readers to identify who wrote which parts and make it easier
+to follow the conversation.
+That option can also be set to true in SlyEdit.cfg to enable it.
+
+Upgrading to version 1.16
+-------------------------
+As of version 1.16, the configuration files may be placed in the sbbs/ctrl
+directory if desired, and the .js files can be placed anywhere else (for
+(example, sbbs/exec would work easily).
+
+Also, the following notes apply if upgrading from a version below 1.15:
+
+Upgrading to version 1.15
+-------------------------
+In version 1.15, the configuration setting "splitLongQuoteLines" was
+removed and replaced with the following setting:
+reWrapQuoteLines: Whether or not to re-wrap quote lines so that quoted
+                  text is complete yet still looks good when quoted.
+Also added the following configuration options and capabilities:
+add3rdPartyStartupScript:
+            Add a 3rd-party JavaScript script to execute
+            (via loading) upon startup of SlyEdit.  The
+            parameter must specify the full path & filename
+            of the JavaScript script.  For example (using
+            the excellent Desafortunadamente add-on by Art
+            of Fat Cats BBS):
+            add3rdPartyStartupScript=D:/BBS/sbbs/xtrn/desafortunadamente/desafortunadamente.js
+addJSOnStart:
+            Add a JavaScript command to run on startup.  Any
+            commands added this way will be executed after
+            3rd-party scripts are loaded.
+            Example (using the excellent Desafortunadamente
+            add-on by Art of Fat Cats BBS):
+            addJSOnStart=fortune_load();
+add3rdPartyExitScript:
+            Add a 3rd-party JavaScript script to execute
+            (via loading) upon exit of SlyEdit.  The
+            parameter must specify the full path & filename
+            of the JavaScript script.
+addJSOnExit:
+            Add a JavaScript command to run on exit.
+            Example (don't actually do this):
+            addJSOnStart=console.print("Hello\n\1p");
+
+Upgrading to version 1.08
+-------------------------
+In version 1.08, two new configuration settings were added to the main
+configuration file (SlyEdit.cfg) in the BEHAVIOR section:
+
+userInputTimeout                  Whether or not to use an input timeout
+                                  for users.  Valid values are true and
+                                  false.  Note: The input timeout is not
+                                  used for sysops.
+
+inputTimeoutMS                    The amount of time (in milliseconds) to
+                                  use for the input timeout.
+
+Note that the sysop is now always exempt from the input timeout.
+
+In version 1.13, another new setting was added to the main configuration
+file (SlyEdit.cfg) in the BEHAVIOR section:
+
+splitLongQuoteLines               Whether or not to split quote lines
+                                  that are too long (rather than truncating
+                                  them).  Valid values are true and false.
+                                  If true, quote lines that are too long will
+                                  be wrapped (rather than truncated), with the
+                                  last word(s) on their own separate line.
+                                  If this option is not specified, this feature
+                                  will be disabled by default.
