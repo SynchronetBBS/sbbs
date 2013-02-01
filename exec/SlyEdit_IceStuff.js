@@ -21,6 +21,10 @@
  *                              of the theme filename, since the path is
  *                              now set in ReadSlyEditConfigFile() in
  *                              SlyEdit_Misc.js.
+ * 2013-01-19 Eric Oulashin     Updated readColorConfig() to move the
+ *                              general color settings to gConfigSettings.genColors.*
+ * 2013-01-25 Eric Oulashin     Updated doIceESCMenu() to include an option
+ *                              for cross-posting, when allowed.
  */
 
 load("sbbsdefs.js");
@@ -31,6 +35,7 @@ var ICE_ESC_MENU_SAVE = 0;
 var ICE_ESC_MENU_ABORT = 1;
 var ICE_ESC_MENU_EDIT = 2;
 var ICE_ESC_MENU_HELP = 3;
+var ICE_ESC_MENU_CROSS_POST = 4;
 
 // Read the color configuration file
 readColorConfig(gConfigSettings.iceColors.ThemeFilename);
@@ -47,7 +52,44 @@ function readColorConfig(pFilename)
 {
    var colors = readValueSettingConfigFile(pFilename, 512);
    if (colors != null)
+   {
       gConfigSettings.iceColors = colors;
+      // Move the general color settings into gConfigSettings.genColors.*
+      if (EDITOR_STYLE == "ICE")
+      {
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostBorder"))
+           gConfigSettings.genColors.crossPostBorder = gConfigSettings.iceColors.crossPostBorder;
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostBorderText"))
+           gConfigSettings.genColors.crossPostBorderTxt = gConfigSettings.iceColors.crossPostBorderText;
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgAreaNum"))
+           gConfigSettings.genColors.crossPostMsgAreaNum = gConfigSettings.iceColors.crossPostMsgAreaNum;
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgAreaNumHighlight"))
+           gConfigSettings.genColors.crossPostMsgAreaNumHighlight = gConfigSettings.iceColors.crossPostMsgAreaNumHighlight;
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgAreaDesc"))
+           gConfigSettings.genColors.crossPostMsgAreaDesc = gConfigSettings.iceColors.crossPostMsgAreaDesc;
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgAreaDescHighlight"))
+           gConfigSettings.genColors.crossPostMsgAreaDescHighlight = gConfigSettings.iceColors.crossPostMsgAreaDescHighlight;
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostChk"))
+           gConfigSettings.genColors.crossPostChk = gConfigSettings.iceColors.crossPostChk;
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostChkHighlight"))
+           gConfigSettings.genColors.crossPostChkHighlight = gConfigSettings.iceColors.crossPostChkHighlight;
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgGrpMark"))
+           gConfigSettings.genColors.crossPostMsgGrpMark = gConfigSettings.iceColors.crossPostMsgGrpMark;
+        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgGrpMarkHighlight"))
+           gConfigSettings.genColors.crossPostMsgGrpMarkHighlight = gConfigSettings.iceColors.crossPostMsgGrpMarkHighlight;
+
+        delete gConfigSettings.iceColors.crossPostBorder;
+        delete gConfigSettings.iceColors.crossPostBorderText;
+        delete gConfigSettings.iceColors.crossPostMsgAreaNum;
+        delete gConfigSettings.iceColors.crossPostMsgAreaNumHighlight;
+        delete gConfigSettings.iceColors.crossPostMsgAreaDesc;
+        delete gConfigSettings.iceColors.crossPostMsgAreaDescHighlight;
+        delete gConfigSettings.iceColors.crossPostChk;
+        delete gConfigSettings.iceColors.crossPostChkHighlight;
+        delete gConfigSettings.iceColors.crossPostMsgGrpMark;
+        delete gConfigSettings.iceColors.crossPostMsgGrpMarkHighlight;
+      }
+   }
 }
 
 // Re-draws the screen, in the style of IceEdit.
@@ -625,14 +667,15 @@ function iceText(pString, pColor, pBkgColor)
 	return returnString;
 }
 
-// Displays & handles the input loop for the DCT Edit menu.
+// Displays & handles the input loop for the IceEdit menu.
 //
 // Parameters:
 //  pY: The line number on the screen for the menu
+//  pCanCrossPost: Whether or not cross-posting is allowed
 //
 // Return value: One of the ICE_ESC_MENU values, based on the
 //               user's response.
-function doIceESCMenu(pY)
+function doIceESCMenu(pY, pCanCrossPost)
 {
    var promptText = " Select An Option:  ";
 
@@ -640,8 +683,9 @@ function doIceESCMenu(pY)
    console.print(iceText(promptText, "w"));
    console.cleartoeol("n");
    // Input loop
-   var userInput;
+   var lastMenuItem = (pCanCrossPost ? ICE_ESC_MENU_CROSS_POST : ICE_ESC_MENU_HELP);
    var userChoice = ICE_ESC_MENU_SAVE;
+   var userInput;
    var continueOn = true;
    while (continueOn)
    {
@@ -655,24 +699,39 @@ function doIceESCMenu(pY)
             console.print(iceStyledPromptText("Abort", false) + "n ");
             console.print(iceStyledPromptText("Edit", false) + "n ");
             console.print(iceStyledPromptText("Help", false));
+            if (pCanCrossPost)
+               console.print("n " + iceStyledPromptText("Cross-post", false));
             break;
          case ICE_ESC_MENU_ABORT:
             console.print(iceStyledPromptText("Save", false) + "n ");
             console.print(iceStyledPromptText("Abort", true) + "n ");
             console.print(iceStyledPromptText("Edit", false) + "n ");
             console.print(iceStyledPromptText("Help", false));
+            if (pCanCrossPost)
+               console.print("n " + iceStyledPromptText("Cross-post", false));
             break;
          case ICE_ESC_MENU_EDIT:
             console.print(iceStyledPromptText("Save", false) + "n ");
             console.print(iceStyledPromptText("Abort", false) + "n ");
             console.print(iceStyledPromptText("Edit", true) + "n ");
             console.print(iceStyledPromptText("Help", false));
+            if (pCanCrossPost)
+               console.print("n " + iceStyledPromptText("Cross-post", false));
             break;
          case ICE_ESC_MENU_HELP:
             console.print(iceStyledPromptText("Save", false) + "n ");
             console.print(iceStyledPromptText("Abort", false) + "n ");
             console.print(iceStyledPromptText("Edit", false) + "n ");
             console.print(iceStyledPromptText("Help", true));
+            if (pCanCrossPost)
+               console.print("n " + iceStyledPromptText("Cross-post", false));
+            break;
+         case ICE_ESC_MENU_CROSS_POST:
+            console.print(iceStyledPromptText("Save", false) + "n ");
+            console.print(iceStyledPromptText("Abort", false) + "n ");
+            console.print(iceStyledPromptText("Edit", false) + "n ");
+            console.print(iceStyledPromptText("Help", false) + "n ");
+            console.print(iceStyledPromptText("Cross-post", true));
             break;
       }
 
@@ -684,12 +743,12 @@ function doIceESCMenu(pY)
          case KEY_LEFT:
             --userChoice;
             if (userChoice < ICE_ESC_MENU_SAVE)
-               userChoice = ICE_ESC_MENU_HELP;
+               userChoice = lastMenuItem;
             break;
          case KEY_DOWN:
          case KEY_RIGHT:
             ++userChoice;
-            if (userChoice > ICE_ESC_MENU_HELP)
+            if (userChoice > lastMenuItem)
                userChoice = ICE_ESC_MENU_SAVE;
             break;
          case "S": // Save
@@ -709,8 +768,17 @@ function doIceESCMenu(pY)
             userChoice = ICE_ESC_MENU_HELP;
             continueOn = false;
             break;
+         case "C": // Cross-post
+            if (pCanCrossPost)
+            {
+               userChoice = ICE_ESC_MENU_CROSS_POST;
+               continueOn = false;
+            }
+            break;
          case KEY_ENTER: // Accept the current choice
             continueOn = false;
+            break;
+         default:
             break;
       }
    }

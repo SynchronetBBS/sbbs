@@ -12,32 +12,6 @@
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
  * ....Removed some comments...
- * 2010-01-19 Eric Oulashin     Updated reAdjustTextLines() to return a boolean
- *                              to signify whether any text had been changed.
- *                              Moved isQuoteLine() to here from SlyEdit.js.
- *                              Updated isQuoteLine() to just use the isQuoteLine
- *                              property of the line and not check to see if the
- *                              line starts with a >.
- *                              Updated displayProgramInfo(): Removed my BBS
- *                              name & URL, as well as my handle.
- * 2010-02-14 Eric Oulashin     Updated reAdjustTextLines() so that it won't
- *                              assume it's splitting around a space: If a space
- *                              is not found in the line, it won't drop a
- *                              character from the line.
- * 2010-04-03 Eric Oulashin     Started working on Ctrl-A color support.
- * 2010-04-06 Eric Oulashin     Updated ReadSlyEditConfigFile() to read the
- *                              allowColorSelection value from the config file.
- * 2010-04-10 Eric Oulashin     Added toggleAttr().
- * 2012-02-17 Eric Oulashin     Added rewrapTextLines(). Changed the configuration
- *                              setting "splitLongQuoteLines" to "reWrapQuoteLines".
- * 2012-03-31 Eric Oulashin     Added the following configuration options:
- *                              add3rdPartyStartupScript
- *                              addJSOnStart
- *                              add3rdPartyExitScript
- *                              addJSOnExit
- * 2012-04-11 Eric Oulashin     Fixed a bug with quote line wrapping where it
- *                              was incorrectly dealing with quote lines that
- *                              were blank after the quote text.
  * 2012-12-21 Eric Oulashin     Updated to check for the .cfg files in the
  *                              sbbs/ctrl directory first, and if they aren't
  *                              there, assume they're in the same directory as
@@ -81,6 +55,25 @@
  *                              sub-board code and message offset to get
  *                              the header for the current message being
  *                              read.
+ * 2013-01-13 Eric Oulashin     Added calcPageNum().
+ * 2013-01-18 Eric Oulashin     Updated ReadSlyEditConfigFile() to include
+ *                              border color & border text color settings
+ *                              for choosing message areas for cross-posting.
+ * 2013-01-19 Eric Oulashin     Added postingInMsgSubBoard().  Updated
+ *                              ReadSlyEditConfigFile() to read a new setting,
+ *                              allowCrossPosting, from the config file.  Added
+ *                              CHECK_CHAR.
+ * 2013-01-20 Eric Oulashin     Added numObjProperties().  Also added
+ *                              postMsgToSubBoard(), for cross-posting support.
+ * 2013-01-22 Eric Oulashin     Updated displayProgramExitInfo(): Removed the
+ *                              SlyEdit block text so that the overall message
+ *                              it displays is shorter.
+ * 2013-01-24 Eric Oulashin     Updated ReadSlyEditConfigFile() to check the
+ *                              following directories, in order, for the
+ *                              configuration files:
+ *                              1. Mods directory
+ *                              2. Ctrl directory
+ *                              3. Current directory (where SlyEdit is located)
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -122,6 +115,7 @@ var LOWER_LEFT_VSINGLE_HDOUBLE = "‘";
 var LOWER_RIGHT_VSINGLE_HDOUBLE = "æ";
 // Other special characters
 var DOT_CHAR = "˙";
+var CHECK_CHAR = "˚";
 var THIN_RECTANGLE_LEFT = "›";
 var THIN_RECTANGLE_RIGHT = "ﬁ";
 var BLOCK1 = "∞"; // Dimmest block
@@ -420,8 +414,9 @@ function displayHelpHeader()
 //  pDisplayHeader: Whether or not to display the help header.
 //  pClear: Whether or not to clear the screen first
 //  pPause: Whether or not to pause at the end
+//  pCanCrossPost: Whether or not cross-posting is enabled
 //  pIsSysop: Whether or not the user is the sysop.
-function displayCommandList(pDisplayHeader, pClear, pPause, pIsSysop)
+function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop)
 {
    if (pClear)
       console.clear("n");
@@ -431,11 +426,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pIsSysop)
       console.crlf();
    }
 
-   var isSysop = false;
-   if (pIsSysop != null)
-      isSysop = pIsSysop;
-   else
-      isSysop = user.compare_ars("SYSOP");
+   var isSysop = (pIsSysop != null ? pIsSysop : user.compare_ars("SYSOP"));
 
    // This function displays a key and its description with formatting & colors.
    //
@@ -453,8 +444,14 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pIsSysop)
    // This function does the same, but outputs 2 on the same line.
    function displayCmdKeyFormattedDouble(pKey, pDesc, pKey2, pDesc2, pCR)
    {
-      printf("ch%-13sg: nc%-28s kh" + VERTICAL_SINGLE +
-             " ch%-7sg: nc%s", pKey, pDesc, pKey2, pDesc2);
+      var sepChar1 = ":";
+      var sepChar2 = ":";
+      if ((pKey.length == 0) && (pDesc.length == 0))
+         sepChar1 = " ";
+      if ((pKey2.length == 0) && (pDesc2.length == 0))
+         sepChar2 = " ";
+      printf("ch%-13sg" + sepChar1 + " nc%-28s kh" + VERTICAL_SINGLE +
+             " ch%-7sg" + sepChar2 + " nc%s", pKey, pDesc, pKey2, pDesc2);
       if (pCR)
          console.crlf();
    }
@@ -465,6 +462,8 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pIsSysop)
    displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
    displayCmdKeyFormattedDouble("Ctrl-P", "Command key help", "/S", "Save", true);
    displayCmdKeyFormattedDouble("Ctrl-R", "Program information", "/Q", "Quote message", true);
+   if (pCanCrossPost)
+      displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
    printf(" ch%-7sg  nc%s", "", "", "/?", "Show help");
    console.crlf();
    // Command/edit keys
@@ -473,10 +472,13 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pIsSysop)
    displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "Ctrl-S", "Page down", true);
    displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-N", "Find text", true);
    displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
-                                "ESC", "Command menu", true);
+                                "Ctrl-D", "Delete line", true);
+   if (pCanCrossPost)
+      displayCmdKeyFormattedDouble("ESC", "Command menu", "Ctrl-C", "Cross-post selection", true);
+   else
+      displayCmdKeyFormatted("ESC", "Command menu", true);
    if (isSysop)
       displayCmdKeyFormattedDouble("Ctrl-O", "Import a file", "Ctrl-X", "Export to file", true);
-   displayCmdKeyFormatted("Ctrl-D", "Delete line", true);
 
    if (pPause)
       console.pause();
@@ -576,19 +578,21 @@ function displayProgramExitInfo(pClearScreen)
 	if (pClearScreen)
 		console.clear("n");
 
-   console.print("ncYou have been using:\r\n");
-   console.print("hk€7ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ0€\r\n");
-   console.print("€7 nb7‹ﬂﬂﬂﬂ €       €ﬂﬂﬂﬂ    € ‹       hk0€\r\n");
-   console.print("€7 nb7ﬂ‹‹‹  € ‹   ‹ €‹‹‹   ‹‹€ ‹ ‹‹€‹‹ hk0€\r\n");
-   console.print("€7     nb7€ € €   € €     €  € €   €   hk0€\r\n");
-   console.print("€7 nb7ﬂﬂﬂﬂ  ﬂ  ﬂ‹ﬂ  ﬂﬂﬂﬂﬂ  ﬂﬂﬂ ﬂ   ﬂﬂﬂ hk0€\r\n");
-   console.print("€7         nb7‹ﬂ                       hk0€\r\n");
-   console.print("€7        nb7ﬂ                         hk0€\r\n");
-   console.print("ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ\r\n");
-   console.print("ngVersion hy" + EDITOR_VERSION + " nm(" +
-	              EDITOR_VER_DATE + ")");
-   console.crlf();
-	console.print("nbhby Eric Oulashin nwof chDncigital hDncistortion hBncBS");
+	/*console.print("ncYou have been using:\r\n");
+	console.print("hk€7ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ0€\r\n");
+	console.print("€7 nb7‹ﬂﬂﬂﬂ €       €ﬂﬂﬂﬂ    € ‹       hk0€\r\n");
+	console.print("€7 nb7ﬂ‹‹‹  € ‹   ‹ €‹‹‹   ‹‹€ ‹ ‹‹€‹‹ hk0€\r\n");
+	console.print("€7     nb7€ € €   € €     €  € €   €   hk0€\r\n");
+	console.print("€7 nb7ﬂﬂﬂﬂ  ﬂ  ﬂ‹ﬂ  ﬂﬂﬂﬂﬂ  ﬂﬂﬂ ﬂ   ﬂﬂﬂ hk0€\r\n");
+	console.print("€7         nb7‹ﬂ                       hk0€\r\n");
+	console.print("€7        nb7ﬂ                         hk0€\r\n");
+	console.print("ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ\r\n");
+	console.print("ngVersion hy" + EDITOR_VERSION + " nm(" +
+	              EDITOR_VER_DATE + ")");*/
+	console.print("ncYou have been using hSlyEdit ncversion g" + EDITOR_VERSION +
+	              " nm(" + EDITOR_VER_DATE + ")");
+	console.crlf();
+	console.print("ncby Eric Oulashin of chDncigital hDncistortion hBncBS");
 	console.crlf();
 	console.crlf();
 	console.print("ncAcknowledgements for look & feel go to the following people:");
@@ -684,14 +688,30 @@ function ReadSlyEditConfigFile()
    cfgObj.allowColorSelection = true;
    cfgObj.useQuoteLineInitials = true;
    // The next setting specifies whether or not quote lines
-   // shoudl be prefixed with a space when using author
+   // should be prefixed with a space when using author
    // initials.
    cfgObj.indentQuoteLinesWithInitials = false;
+   cfgObj.allowCrossPosting = true;
+
+   // General SlyEdit color settings
+   cfgObj.genColors = new Object();
+   cfgObj.genColors.crossPostBorder = "ng";
+   cfgObj.genColors.crossPostBorderTxt = "nbh";
+   cfgObj.genColors.crossPostMsgAreaNum = "nhw";
+   cfgObj.genColors.crossPostMsgAreaNumHighlight = "n4hw";
+   cfgObj.genColors.crossPostMsgAreaDesc = "nc";
+   cfgObj.genColors.crossPostMsgAreaDescHighlight = "n4c";
+   cfgObj.genColors.crossPostChk = "nhy";
+   cfgObj.genColors.crossPostChkHighlight = "n4hy";
+   cfgObj.genColors.crossPostMsgGrpMark = "nhg";
+   cfgObj.genColors.crossPostMsgGrpMarkHighlight = "n4hg";
 
    // Default Ice-style colors
    cfgObj.iceColors = new Object();
    // Ice color theme file
-   cfgObj.iceColors.ThemeFilename = system.ctrl_dir + "SlyIceColors_BlueIce.cfg";
+   cfgObj.iceColors.ThemeFilename = system.mods_dir + "SlyIceColors_BlueIce.cfg";
+   if (!file_exists(cfgObj.iceColors.ThemeFilename))
+      cfgObj.iceColors.ThemeFilename = system.ctrl_dir + "SlyIceColors_BlueIce.cfg";
    if (!file_exists(cfgObj.iceColors.ThemeFilename))
       cfgObj.iceColors.ThemeFilename = gStartupPath + "SlyIceColors_BlueIce.cfg";
    // Text edit color
@@ -724,7 +744,9 @@ function ReadSlyEditConfigFile()
    // Default DCT-style colors
    cfgObj.DCTColors = new Object();
    // DCT color theme file
-   cfgObj.DCTColors.ThemeFilename = system.ctrl_dir + "SlyDCTColors_Default.cfg";
+   cfgObj.DCTColors.ThemeFilename = system.mods_dir + "SlyDCTColors_Default.cfg";
+   if (!file_exists(cfgObj.DCTColors.ThemeFilename))
+      cfgObj.DCTColors.ThemeFilename = system.ctrl_dir + "SlyDCTColors_Default.cfg";
    if (!file_exists(cfgObj.DCTColors.ThemeFilename))
       cfgObj.DCTColors.ThemeFilename = gStartupPath + "SlyDCTColors_Default.cfg";
    // Text edit color
@@ -784,9 +806,13 @@ function ReadSlyEditConfigFile()
    cfgObj.DCTColors.MenuUnselectedItems = "nk7";
    cfgObj.DCTColors.MenuHotkeys = "nwh7";
 
-   // Open the configuration file
-   var ctrlCfgFileName = system.ctrl_dir + "SlyEdit.cfg";
-   var cfgFile = new File(file_exists(ctrlCfgFileName) ? ctrlCfgFileName : gStartupPath + "SlyEdit.cfg");
+   // Open the SlyEdit configuration file
+   var slyEdCfgFileName = system.mods_dir + "SlyEdit.cfg";
+   if (!file_exists(slyEdCfgFileName))
+      slyEdCfgFileName = system.ctrl_dir + "SlyEdit.cfg";
+   if (!file_exists(slyEdCfgFileName))
+      slyEdCfgFileName = gStartupPath + "SlyEdit.cfg";
+   var cfgFile = new File(slyEdCfgFileName);
    if (cfgFile.open("r"))
    {
       var settingsMode = "behavior";
@@ -872,14 +898,16 @@ function ReadSlyEditConfigFile()
                   cfgObj.runJSOnStart.push(value);
                else if (settingUpper == "ADDJSONEXIT")
                   cfgObj.runJSOnExit.push(value);
+               else if (settingUpper == "ALLOWCROSSPOSTING")
+                  cfgObj.allowCrossPosting = (valueUpper == "TRUE");
             }
             else if (settingsMode == "ICEColors")
             {
                if (settingUpper == "THEMEFILENAME")
                {
-                  //system.ctrl_dir
-                  //gStartupPath
-                  cfgObj.iceColors.ThemeFilename = system.ctrl_dir + value;
+                  cfgObj.iceColors.ThemeFilename = system.mods_dir + value;
+                  if (!file_exists(cfgObj.iceColors.ThemeFilename))
+                     cfgObj.iceColors.ThemeFilename = system.ctrl_dir + value;
                   if (!file_exists(cfgObj.iceColors.ThemeFilename))
                      cfgObj.iceColors.ThemeFilename = gStartupPath + value;
                }
@@ -888,7 +916,9 @@ function ReadSlyEditConfigFile()
             {
                if (settingUpper == "THEMEFILENAME")
                {
-                  cfgObj.DCTColors.ThemeFilename = system.ctrl_dir + value;
+                  cfgObj.DCTColors.ThemeFilename = system.mods_dir + value;
+                  if (!file_exists(cfgObj.DCTColors.ThemeFilename))
+                     cfgObj.DCTColors.ThemeFilename = system.ctrl_dir + value;
                   if (!file_exists(cfgObj.DCTColors.ThemeFilename))
                      cfgObj.DCTColors.ThemeFilename = gStartupPath + value;
                }
@@ -1984,6 +2014,116 @@ function getFromNameForCurMsg()
   }
 
   return fromName;
+}
+
+// Calculates & returns a page number.
+//
+// Parameters:
+//  pTopIndex: The index (0-based) of the topmost item on the page
+//  pNumPerPage: The number of items per page
+//
+// Return value: The page number
+function calcPageNum(pTopIndex, pNumPerPage)
+{
+  return ((pTopIndex / pNumPerPage) + 1);
+}
+
+// Returns whether or not the user is posting in a message sub-board.
+// If false, that means the user is sending private email or netmail.
+// This function determines whether the user is posting in a message
+// sub-board if the message area name is not "Electronic Mail" and
+// is not "NetMail".
+//
+// Parameters:
+//  pMsgAreaName: The name of the message area.
+function postingInMsgSubBoard(pMsgAreaName)
+{
+  if (typeof(pMsgAreaName) != "string")
+    return false;
+  if (pMsgAreaName.length == 0)
+    return false;
+
+  return ((pMsgAreaName != "Electronic Mail") && (pMsgAreaName != "NetMail"));
+}
+
+// Returns the number of properties of an object.
+//
+// Parameters:
+//  pObject: The object for which to count properties
+//
+// Return value: The number of properties of the object
+function numObjProperties(pObject)
+{
+  if (pObject == null)
+    return 0;
+
+  var numProps = 0;
+  for (var prop in pObject) ++numProps;
+  return numProps;
+}
+
+//
+// Paramters:
+//  pSubBoardCode: Synchronet's internal code for the sub-board to post in
+//  pTo: The name of the person to send the message to
+//  pSubj: The subject of the email
+//  pMessage: The email message
+//  pFromUserNum: The number of the user to use as the message sender.
+//                This is optional; if not specified, the current user
+//                will be used.
+//
+// Return value: String - Blank on success, or message on failure.
+function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
+{
+  // Return if the parameters are invalid.
+  if (typeof(pSubBoardCode) != "string")
+    return ("Sub-board code is not a string");
+  if (typeof(pTo) != "string")
+    return ("To name is not a string");
+  if (pTo.length == 0)
+    return ("The 'to' user name is blank");
+  if (typeof(pSubj) != "string")
+    return ("Subject is not a string");
+  if (pSubj.length == 0)
+    return ("The subject is blank");
+  if (typeof(pMessage) != "string")
+    return ("Message is not a string");
+  if (pMessage.length == 0)
+    return ("Not sending an empty message");
+  if (typeof(pFromUserNum) != "number")
+    return ("From user number is not a number");
+  if ((pFromUserNum <= 0) || (pFromUserNum > system.lastuser))
+    return ("Invalid user number");
+
+  // LOad the user record specified by pFromUserNum.  If it's a deleted user,
+  // then return an error.
+  var fromUser = new User(pFromUserNum);
+  if (fromUser.settings & USER_DELETED)
+    return ("The 'from' user is marked as deleted");
+
+  var msgbase = new MsgBase(pSubBoardCode);
+  if ((msgbase.open != undefined) && !msgbase.open())
+  {
+    msgbase.close();
+    return ("Error opening the message area: " + msgbase.last_error);
+  }
+
+  // Create the message header, and send the message.
+  var header = new Object();
+  header.to = pTo;
+  header.from_net_type = NET_NONE;
+  header.to_net_type = NET_NONE;
+  header.from = fromUser.alias;
+  header.from_ext = fromUser.number;
+  header.from_net_addr = fromUser.netmail;
+  header.subject = pSubj;
+  var saveRetval = msgbase.save_msg(header, pMessage);
+  msgbase.close();
+
+  if (!saveRetval)
+    return ("Error saving the message: " + msgbase.last_error);
+
+  return "";
 }
 
 // This function displays debug text at a given location on the screen, then

@@ -35,6 +35,10 @@
  *                              of the theme filename, since the path is
  *                              now set in ReadSlyEditConfigFile() in
  *                              SlyEdit_Misc.js.
+ * 2013-01-19 Eric Oulashin     Updated readColorConfig() to move the
+ *                              general color settings to gConfigSettings.genColors.*
+ * 2013-01-24 Eric Oulashin     Updated doDCTMenu() to include an option
+ *                              for cross-posting on the File menu.
  */
 
 load("sbbsdefs.js");
@@ -53,6 +57,7 @@ var DCTMENU_SYSOP_EXPORT_FILE = 11;
 var DCTMENU_HELP_COMMAND_LIST = 8;
 var DCTMENU_HELP_GENERAL = 9;
 var DCTMENU_HELP_PROGRAM_INFO = 10;
+var DCTMENU_CROSS_POST = 12;
 
 // Read the color configuration file
 readColorConfig(gConfigSettings.DCTColors.ThemeFilename);
@@ -68,7 +73,44 @@ function readColorConfig(pFilename)
 {
    var colors = readValueSettingConfigFile(pFilename, 512);
    if (colors != null)
+   {
       gConfigSettings.DCTColors = colors;
+      // Move the general color settings into gConfigSettings.genColors.*
+      if (EDITOR_STYLE == "DCT")
+      {
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostBorder"))
+           gConfigSettings.genColors.crossPostBorder = gConfigSettings.DCTColors.crossPostBorder;
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostBorderText"))
+           gConfigSettings.genColors.crossPostBorderTxt = gConfigSettings.DCTColors.crossPostBorderText;
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostMsgAreaNum"))
+           gConfigSettings.genColors.crossPostMsgAreaNum = gConfigSettings.DCTColors.crossPostMsgAreaNum;
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostMsgAreaNumHighlight"))
+           gConfigSettings.genColors.crossPostMsgAreaNumHighlight = gConfigSettings.DCTColors.crossPostMsgAreaNumHighlight;
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostMsgAreaDesc"))
+           gConfigSettings.genColors.crossPostMsgAreaDesc = gConfigSettings.DCTColors.crossPostMsgAreaDesc;
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostMsgAreaDescHighlight"))
+           gConfigSettings.genColors.crossPostMsgAreaDescHighlight = gConfigSettings.DCTColors.crossPostMsgAreaDescHighlight;
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostChk"))
+           gConfigSettings.genColors.crossPostChk = gConfigSettings.DCTColors.crossPostChk;
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostChkHighlight"))
+           gConfigSettings.genColors.crossPostChkHighlight = gConfigSettings.DCTColors.crossPostChkHighlight;
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostMsgGrpMark"))
+           gConfigSettings.genColors.crossPostMsgGrpMark = gConfigSettings.DCTColors.crossPostMsgGrpMark;
+        if (gConfigSettings.DCTColors.hasOwnProperty("crossPostMsgGrpMarkHighlight"))
+           gConfigSettings.genColors.crossPostMsgGrpMarkHighlight = gConfigSettings.DCTColors.crossPostMsgGrpMarkHighlight;
+
+        delete gConfigSettings.DCTColors.crossPostBorder;
+        delete gConfigSettings.DCTColors.crossPostBorderText;
+        delete gConfigSettings.DCTColors.crossPostMsgAreaNum;
+        delete gConfigSettings.DCTColors.crossPostMsgAreaNumHighlight;
+        delete gConfigSettings.DCTColors.crossPostMsgAreaDesc;
+        delete gConfigSettings.DCTColors.crossPostMsgAreaDescHighlight;
+        delete gConfigSettings.DCTColors.crossPostChk;
+        delete gConfigSettings.DCTColors.crossPostChkHighlight;
+        delete gConfigSettings.DCTColors.crossPostMsgGrpMark;
+        delete gConfigSettings.DCTColors.crossPostMsgGrpMarkHighlight;
+      }
+   }
 }
 
 // Re-draws the screen, in the style of DCTEdit.
@@ -647,12 +689,13 @@ function displayTime_DCTStyle(pTimeStr)
 //  pEditLineDiff: The difference between the current edit line and the top of
 //                 the edit area.
 //  pIsSysop: Whether or not the user is a sysop.
+//  pCanCrossPost: Whether or not cross-posting is allowed.
 //
 // Return value: An object containing the following properties:
 //               userInput: The user's input from the menu loop.
 //               returnVal: The return code from the menu.
 function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
-                    pEditLinesIndex, pEditLineDiff, pIsSysop)
+                    pEditLinesIndex, pEditLineDiff, pIsSysop, pCanCrossPost)
 {
    // This function displays the top menu options, with a given one highlighted.
    //
@@ -764,14 +807,19 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
    // Set up the menu objects.  Only create these objects once.
    if (typeof(doDCTMenu.allMenus) == "undefined")
    {
+      //function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
       doDCTMenu.allMenus = new Array();
       // File menu
       doDCTMenu.allMenus[fileMenuNum] = new DCTMenu(doDCTMenu.mainMenuItemPositions.fileX, doDCTMenu.mainMenuItemPositions.mainMenuY+1);
       doDCTMenu.allMenus[fileMenuNum].addItem("&Save    Ctrl-Z", DCTMENU_FILE_SAVE);
       doDCTMenu.allMenus[fileMenuNum].addItem("&Abort   Ctrl-A", DCTMENU_FILE_ABORT);
+      if (pCanCrossPost)
+         doDCTMenu.allMenus[fileMenuNum].addItem( "X-Post  Ctrl-&C", DCTMENU_CROSS_POST);
       doDCTMenu.allMenus[fileMenuNum].addItem("&Edit       ESC", DCTMENU_FILE_EDIT);
       doDCTMenu.allMenus[fileMenuNum].addExitLoopKey(CTRL_Z, DCTMENU_FILE_SAVE);
       doDCTMenu.allMenus[fileMenuNum].addExitLoopKey(CTRL_A, DCTMENU_FILE_ABORT);
+      if (pCanCrossPost)
+         doDCTMenu.allMenus[fileMenuNum].addExitLoopKey(CTRL_C, DCTMENU_CROSS_POST);
       doDCTMenu.allMenus[fileMenuNum].addExitLoopKey(KEY_ESC, DCTMENU_FILE_EDIT);
 
       // Edit menu
@@ -792,7 +840,7 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 
       // Help menu
       doDCTMenu.allMenus[helpMenuNum] = new DCTMenu(doDCTMenu.mainMenuItemPositions.helpX, doDCTMenu.mainMenuItemPositions.mainMenuY+1);
-      doDCTMenu.allMenus[helpMenuNum].addItem("&Command List   Ctrl-P", DCTMENU_HELP_COMMAND_LIST);
+      doDCTMenu.allMenus[helpMenuNum].addItem("C&ommand List   Ctrl-P", DCTMENU_HELP_COMMAND_LIST);
       doDCTMenu.allMenus[helpMenuNum].addItem("&General Help   Ctrl-G", DCTMENU_HELP_GENERAL);
       doDCTMenu.allMenus[helpMenuNum].addItem("&Program Info   Ctrl-R", DCTMENU_HELP_PROGRAM_INFO);
       doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_P, DCTMENU_HELP_COMMAND_LIST);
@@ -893,16 +941,21 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
          case CTRL_V:    // Insert/overwrite toggle
          case "F":       // Find text
          case CTRL_F:    // Find text
-         case "C":       // Command List
+         case "O":       // Command List
          case "G":       // General help
          case "P":       // Program info
          case "E":       // Edit the message
          case KEY_ESC:   // Edit the message
             continueOn = false;
             break;
+         case "C":       // Cross-post
+         case CTRL_C:    // Cross-post
+            if (pCanCrossPost)
+               continueOn = false;
+            break;
          default:
             break;
-		}
+      }
    }
 
    // We've exited the menu, so refresh the top menu border and the message text
