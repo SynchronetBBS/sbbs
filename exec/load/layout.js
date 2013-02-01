@@ -14,8 +14,10 @@
  * 
  * Layout methods:
  * 
- * 	addView(title,x,y,width,height,frame) 
- * 	getViewByTitle(title)
+ * 	addView(title,x,y,width,height) 
+ * 	getViewByName(title)
+ *	open()
+ *	close()
  * 	draw()
  * 	cycle()
  * 	getcmd(cmd)
@@ -40,8 +42,10 @@
  * 
  * LayoutView methods:
  * 
- * 	addTab(title,frame)
+ * 	addTab(title,type,content)
  * 	getTabByTitle(title)
+ *	open()
+ *	close()
  * 	draw()
  * 	cycle()
  * 	getcmd(cmd)
@@ -65,11 +69,33 @@
  * 	show_title = (true|false)
  * 	show_tabs = (true|false)
  * 
+ * NOTE: when adding a tab with the content parameter specified, 
+ * the content must correspond to one of the predefined object types
+ * listed below:
+ *
+ * 	content: Tree(), 	type: "tree"
+ *	content: Frame(), 	type: "graphic"
+ *	content: JSONChat(),type: "chat"
+ *	content: Graphic(),	type: "graphic"
  * 
- * 
+ * NOTE: default event handlers are included in the open, close, and activation
+ * methods of most layout objects:
+ *	
+ *	Layout.onOpen - run when layout.open() is called
+ *	Layout.onClose - run when layout.close() is called
+ *	LayoutView.onOpen - run when view.open() is called
+ *	LayoutView.onClose - run when view.close() is called
+ *	LayoutView.onEnter - run when view.active is set to true
+ *	LayoutView.onExit - run when view.active is set to false
+ *	ViewTab.onEnter - run when tab.active is set to true
+ *	ViewTab.onExit - run when tab.active is set to false
+ *	
  */
 
- load("funclib.js");
+if(js.global.getColor == undefined)
+	js.global.load(js.global,"funclib.js");
+if(js.global.Frame == undefined)
+	js.global.load(js.global,"frame.js");
 
 /* main layout object, intended to contain child layout view objects */ 
 function Layout(frame) {
@@ -131,6 +157,13 @@ function Layout(frame) {
 		frames.main.open();
 		for each(var v in properties.views)
 			v.open();
+		if(typeof this.onOpen == "function") 
+			this.onOpen();
+	}
+	this.close=function() {
+		frames.main.close();
+		if(typeof this.onClose == "function") 
+			this.onClose();
 	}
 	this.addView=function(title,x,y,w,h) {
 		var f = new Frame(x,y,w,h,undefined,frames.main);
@@ -313,24 +346,42 @@ function LayoutView(title,frame,parent) {
 		return true;
 	});
 	this.__defineSetter__("active",function(bool) {
-		if(typeof bool !== "boolean") 
+		if(typeof bool !== "boolean" || settings.active == bool) 
 			return false;
 		settings.active = bool;
-		if(settings.active)
+		if(settings.active) {
 			frames.title.attr = this.colors.title_bg+this.colors.title_fg;
-		else
+			setTitle();
+			if(typeof this.onEnter == "function") 
+				this.onEnter();
+		}
+		else {
 			frames.title.attr = this.colors.inactive_title_bg + this.colors.inactive_title_fg;
-		setTitle();
+			setTitle();
+			if(typeof this.onExit == "function") 
+				this.onExit();
+		}
 		return true;
 	});
 	
 	/* public methods */
 	this.open=function() {
-		for each(var t in properties.tabs) 
+		for each(var t in properties.tabs) {
 			if(typeof t.open == "function")
 				t.open();
+		}
 		this.current=0;
 		setViewFrames();
+		if(typeof this.onOpen == "function") 
+			this.onOpen();
+	}
+	this.close=function() {
+		for each(var t in properties.tabs) {
+			if(typeof t.close == "function")
+				t.close();
+		}
+		if(typeof this.onClose == "function") 
+			this.onClose();
 	}
 	this.draw=function() {
 		frames.main.draw();
@@ -687,11 +738,18 @@ function ViewTab(title,frame,parent) {
 	
 	/* settings */
 	this.__defineSetter__("active",function(bool) {
-		if(typeof bool !== "boolean") 
+		if(typeof bool !== "boolean" || settings.active == bool) 
 			return false;
 		settings.active = bool;
-		if(settings.active) 
+		if(settings.active) {
 			frames.main.top();
+			if(typeof this.onEnter == "function") 
+				this.onEnter();
+		}
+		else {
+			if(typeof this.onExit == "function") 
+				this.onExit();
+		}
 		return true;
 	});
 	this.__defineGetter__("hotkeys",function() {
