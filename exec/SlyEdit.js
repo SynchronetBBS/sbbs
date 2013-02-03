@@ -278,6 +278,7 @@ var fpHandleESCMenu = null;
 var fpDisplayTime = null;
 if (EDITOR_STYLE == "DCT")
 {
+  load(gStartupPath + "SlyEdit_DCTStuff.js");
 	gEditTop = 6;
 	gQuoteWinTextColor = gConfigSettings.DCTColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.DCTColors.QuoteLineHighlightColor;
@@ -285,7 +286,6 @@ if (EDITOR_STYLE == "DCT")
 	gQuoteLineColor = gConfigSettings.DCTColors.QuoteLineColor;
 
 	// Function pointers for the DCTEdit-style screen update functions
-	load(gStartupPath + "SlyEdit_DCTStuff.js");
 	fpDrawQuoteWindowTopBorder = DrawQuoteWindowTopBorder_DCTStyle;
 	fpDisplayTextAreaBottomBorder = DisplayTextAreaBottomBorder_DCTStyle;
 	fpDrawQuoteWindowBottomBorder = DrawQuoteWindowBottomBorder_DCTStyle;
@@ -297,6 +297,7 @@ if (EDITOR_STYLE == "DCT")
 }
 else if (EDITOR_STYLE == "ICE")
 {
+  load(gStartupPath + "SlyEdit_IceStuff.js");
 	gEditTop = 5;
 	gQuoteWinTextColor = gConfigSettings.iceColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.iceColors.QuoteLineHighlightColor;
@@ -304,7 +305,6 @@ else if (EDITOR_STYLE == "ICE")
 	gQuoteLineColor = gConfigSettings.iceColors.QuoteLineColor;
 
 	// Function pointers for the IceEdit-style screen update functions
-	load(gStartupPath + "SlyEdit_IceStuff.js");
 	fpDrawQuoteWindowTopBorder = DrawQuoteWindowTopBorder_IceStyle;
 	fpDisplayTextAreaBottomBorder = DisplayTextAreaBottomBorder_IceStyle;
 	fpDrawQuoteWindowBottomBorder = DrawQuoteWindowBottomBorder_IceStyle;
