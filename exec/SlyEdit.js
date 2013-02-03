@@ -83,6 +83,13 @@
  *                              Cross-posting & other udpates appear to be
  *                              working well and as expected, so releasing
  *                              this version now.
+ * 2013-02-03 Eric Oulashin     Version 1.21
+ *                              Bug fixes related to cross-posting:
+ *                              - Posting during newscan: The message telling
+ *                                which sub-board the message was posted in
+ *                                was incorrect if different from the user's
+ *                                current sub-board; this was fixed.
+ *                              - Now includes the user's signature when cross-posting
  */
 
 /* Command-line arguments:
@@ -155,8 +162,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.20";
-const EDITOR_VER_DATE = "2013-01-31";
+const EDITOR_VERSION = "1.21";
+const EDITOR_VER_DATE = "2013-02-03";
 
 
 // Program variables
@@ -386,6 +393,7 @@ console.clear();
 
 // Read the message from name, to name, and subject from the drop file
 // (msginf in the node directory).
+var gMsgAreaInfo = getCurMsgInfo(); // Contains info about the current sub-board
 var gMsgSubj = "";
 var gFromName = user.alias;
 var gToName = gInputFilename;
@@ -416,7 +424,7 @@ if (dropFileName != undefined)
         // drop file.
         // Remove any leading, multiple, or trailing spaces
         // that it might have.
-        var quotedName = trimSpaces(getFromNameForCurMsg(), true, true, true);
+        var quotedName = trimSpaces(getFromNameForCurMsg(gMsgAreaInfo), true, true, true);
         if (quotedName.length == 0)
           quotedName = trimSpaces(gToName, true, true, true);
         // If configured to indent quote lines w/ initials with
@@ -444,10 +452,26 @@ if (dropFileName != undefined)
 // If the user is posting in a message sub-board, then add its information
 // to gCrossPostMsgSubs.
 if (postingInMsgSubBoard(gMsgArea))
-  gCrossPostMsgSubs.add(bbs.cursub_code);
+  gCrossPostMsgSubs.add(gMsgAreaInfo.subBoardCode);
 // Set a variable to store whether or not cross-posting can be done.
 var gCanCrossPost = (gConfigSettings.allowCrossPosting && postingInMsgSubBoard(gMsgArea));
-
+// If the message area name (gMsgArea) is different from what's in gMsgAreaInfo,
+// then we probably want to use bbs.cursub_code instead of bbs.smb_sub_code, etc.
+if (msg_area.sub[gMsgAreaInfo.subBoardCode].name.indexOf(gMsgArea) == -1)
+{
+  gMsgAreaInfo.lastMsg = -1;
+  gMsgAreaInfo.curMsgNum = -1;
+  gMsgAreaInfo.subBoardCode = bbs.cursub_code;
+  gMsgAreaInfo.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
+  var tmpMsgBaseObj = new MsgBase(bbs.cursub_code);
+  if (tmpMsgBaseObj.open())
+  {
+    gMsgAreaInfo.totalNumMsgs = tmpMsgBaseObj.total_msgs;
+    tmpMsgBaseObj.close();
+  }
+  else
+    gMsgAreaInfo.totalNumMsgs = 0;
+}
 
 // Open the quote file / message file
 var inputFile = new File(gInputFilename);
@@ -579,14 +603,28 @@ if ((exitCode == 0) && (gEditLines.length > 0))
     //    Just append a "\r\n" to the line
     if (system.version_num >= 31500)
     {
+      var useHardNewline = false;
       for (var i = 0; i < gEditLines.length; ++i)
-        msgContents += gEditLines[i].text + (gEditLines[i].hardNewlineEnd ? "\r\n" : " \n");
+      {
+        // Use a hard newline if the current edit line has one or if this is
+        // the last line of the message.
+        useHardNewline = (gEditLines[i].hardNewlineEnd || (i == gEditLines.length-1));
+        msgContents += gEditLines[i].text + (useHardNewline ? "\r\n" : " \n");
+      }
     }
     else // Synchronet 3.14 and below
     {
       for (var i = 0; i < gEditLines.length; ++i)
         msgContents += gEditLines[i].text + "\r\n";
     }
+
+    // If the user has a signature file, then read it and append it to
+    // msgContents (with a blank line to separate the message & signature).
+    // Note: msgContents already has a newline at the end, so we don't have
+    // to append one here; just append the signature.
+    var msgSigInfo = readUserSigFile();
+    if (msgSigInfo.sigContents.length > 0)
+      msgContents += msgSigInfo.sigContents + "\r\n";
 
     console.print("n");
     console.crlf();
@@ -603,10 +641,10 @@ if ((exitCode == 0) && (gEditLines.length > 0))
       console.crlf();
       for (var subCode in gCrossPostMsgSubs[grpIndex])
       {
-        if (subCode == bbs.cursub_code)
+        if (subCode == gMsgAreaInfo.subBoardCode)
         {
           printf("  ng%-48s", msg_area.sub[subCode].description.substr(0, 48));
-          console.print(" c(your current message area)");
+          console.print(" c(original message area)");
         }
         // If subCode is not the user's current sub, then if the user is allowed
         // to post in that sub, then post the message there.
@@ -655,7 +693,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
   var saveMsgFile = true;
   if (postingInMsgSubBoard(gMsgArea))
   {
-    if (!gCrossPostMsgSubs.subCodeExists(bbs.cursub_code))
+    if (!gCrossPostMsgSubs.subCodeExists(gMsgAreaInfo.subBoardCode))
     {
       saveMsgFile = false;
       // If the message was cross-posted to other message areas and not in the
@@ -4377,11 +4415,8 @@ function doCrossPosting(pOriginalCurpos)
   // Erase the message area selection rectangle by re-drawing the message text.
   // Then, move the cursor back to where it was when we started the message
   // area selection.
-  //displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
-  //displayDebugText(1, 1, "About to refresh message rectangle", console.getxy(), true, true); // Temporary
   displayMessageRectangle(selBoxUpperLeft.x, selBoxUpperLeft.y, selBoxWidth,
                           selBoxHeight, editLineIndexAtSelBoxTopRow, true);
-  //displayDebugText(1, 2, "After refreshing message rectangle", console.getxy(), true, true); // Temporary
   console.gotoxy(origStartingCurpos);
 }
 // Displays a screenful of message groups, for the cross-posting
@@ -4502,7 +4537,7 @@ function writeMsgGroupLine(pGrpIndex, pTextWidth, pMsgGrpFieldLen, pHighlight)
    }
 
    // Write the message group information line
-   var markChar = (pGrpIndex == bbs.curgrp ? "*" : " ");
+   var markChar = (pGrpIndex == gMsgAreaInfo.grpIndex ? "*" : " ");
    printf(printfStr, markChar, +(pGrpIndex+1), msg_area.grp_list[pGrpIndex].description.substr(0, grpDescLen));
 }
 // For cross-posting: Lets the user choose a sub-board within a message group

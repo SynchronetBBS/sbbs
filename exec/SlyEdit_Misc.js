@@ -74,6 +74,7 @@
  *                              1. Mods directory
  *                              2. Ctrl directory
  *                              3. Current directory (where SlyEdit is located)
+ * 2013-02-03 Eric Oulashin     Added readUserSigFile().
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -1924,11 +1925,13 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
   }
 }
 
-// Returns an object containing the following values:
-// - lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
-// - totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
-// - curMsgNum: The number of the current message being read (i.e., bbs.smb_curmsg)
-// - subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code)
+// Returns an object containing the following properties:
+//  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
+//  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
+//  curMsgNum: The number of the current message being read (i.e., bbs.smb_curmsg)
+//  subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code)
+//  grpIndex: The message group index for the sub-board
+//
 // This function First tries to read the values from the file
 // DDML_SyncSMBInfo.txt in the node directory (written by the Digital
 // Distortion Message Lister v1.31 and higher).  If that file can't be read,
@@ -1941,46 +1944,54 @@ function getCurMsgInfo()
   retObj.totalNumMsgs = bbs.smb_total_msgs;
   retObj.curMsgNum = bbs.smb_curmsg;
   retObj.subBoardCode = bbs.smb_sub_code;
+  retObj.grpIndex = msg_area.sub[bbs.smb_sub_code].grp_index;
 
-  var SMBInfoFile = new File(system.node_dir + "DDML_SyncSMBInfo.txt");
-  if (SMBInfoFile.open("r"))
+  // If the Digital Distortion Message Lister drop file exists,
+  // then use the message information from that file instead.
+  var DDMLDropFileName = system.node_dir + "DDML_SyncSMBInfo.txt";
+  if (file_exists(DDMLDropFileName))
   {
-    var fileLine = null; // A line read from the file
-    var lineNum = 0; // Will be incremented at the start of the while loop, to start at 1.
-    while (!SMBInfoFile.eof)
+    var SMBInfoFile = new File(DDMLDropFileName);
+    if (SMBInfoFile.open("r"))
     {
-       ++lineNum;
+      var fileLine = null; // A line read from the file
+      var lineNum = 0; // Will be incremented at the start of the while loop, to start at 1.
+      while (!SMBInfoFile.eof)
+      {
+         ++lineNum;
 
-       // Read the next line from the config file.
-       fileLine = SMBInfoFile.readln(2048);
+         // Read the next line from the config file.
+         fileLine = SMBInfoFile.readln(2048);
 
-       // fileLine should be a string, but I've seen some cases
-       // where for some reason it isn't.  If it's not a string,
-       // then continue onto the next line.
-       if (typeof(fileLine) != "string")
-          continue;
+         // fileLine should be a string, but I've seen some cases
+         // where for some reason it isn't.  If it's not a string,
+         // then continue onto the next line.
+         if (typeof(fileLine) != "string")
+            continue;
 
-        // Depending on the line number, set the appropriate value
-        // in retObj.
-        switch (lineNum)
-        {
-          case 1:
-            retObj.lastMsg = +fileLine;
-            break;
-          case 2:
-            retObj.totalNumMsgs = +fileLine;
-            break;
-          case 3:
-            retObj.curMsgNum = +fileLine;
-            break;
-          case 4:
-            retObj.subBoardCode = fileLine;
-            break;
-          default:
-            break;
-        }
-     }
-     SMBInfoFile.close();
+          // Depending on the line number, set the appropriate value
+          // in retObj.
+          switch (lineNum)
+          {
+            case 1:
+              retObj.lastMsg = +fileLine;
+              break;
+            case 2:
+              retObj.totalNumMsgs = +fileLine;
+              break;
+            case 3:
+              retObj.curMsgNum = +fileLine;
+              break;
+            case 4:
+              retObj.subBoardCode = fileLine;
+              retObj.grpIndex = msg_area.sub[retObj.subBoardCode].grp_index;
+              break;
+            default:
+              break;
+          }
+       }
+       SMBInfoFile.close();
+    }
   }
 
   return retObj;
@@ -1991,7 +2002,12 @@ function getCurMsgInfo()
 // The message information is retrieved from DDML_SyncSMBInfo.txt
 // in the node dir if it exists or from the bbs object's properties.
 // On error, the string returned will be blank.
-function getFromNameForCurMsg()
+//
+// Parameters:
+//  pMsgInfo: Optional: An object returned by getCurMsgInfo().  If this
+//            parameter is not specified, this function will call
+//            getCurMsgInfo() to get it.
+function getFromNameForCurMsg(pMsgInfo)
 {
   var fromName = "";
 
@@ -1999,7 +2015,12 @@ function getFromNameForCurMsg()
   // DDML_SyncSMBInfo.txt in the node dir if it exists or from
   // the bbs object's properties.  Then open the message header
   // and get the 'from' name from it.
-  var msgInfo = getCurMsgInfo();
+  var msgInfo = null;
+  if ((pMsgInfo != null) && (typeof(pMsgInfo) != "undefined"))
+    msgInfo = pMsgInfo;
+  else
+    msgInfo = getCurMsgInfo();
+
   if (msgInfo.subBoardCode.length > 0)
   {
     var msgBase = new MsgBase(msgInfo.subBoardCode);
@@ -2124,6 +2145,47 @@ function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
     return ("Error saving the message: " + msgbase.last_error);
 
   return "";
+}
+
+// Reads the current user's message signature file (if it exists)
+// and returns its contents.
+//
+// Return value: An object containing the following properties:
+//               sigFileExists: Boolean - Whether or not the user's signature file exists
+//               sigContents: String - The user's message signature
+function readUserSigFile()
+{
+  var retObj = new Object();
+  retObj.sigFileExists = false;
+  retObj.sigContents = "";
+
+  // The user signature files are located in sbbs/data/user, and the filename
+  // is the user number (zero-padded up to 4 digits) + .sig
+  var userSigFilename = backslash(system.data_dir + "user") + format("%04d.sig", user.number);
+  retObj.sigFileExists = file_exists(userSigFilename);
+  if (retObj.sigFileExists)
+  {
+    var msgSigFile = new File(userSigFilename);
+    if (msgSigFile.open("r"))
+    {
+      var fileLine = ""; // A line read from the file
+      while (!msgSigFile.eof)
+      {
+        fileLine = msgSigFile.readln(2048);
+        // fileLine should be a string, but I've seen some cases
+        // where for some reason it isn't.  If it's not a string,
+        // then continue onto the next line.
+        if (typeof(fileLine) != "string")
+          continue;
+
+        retObj.sigContents += fileLine + "\r\n";
+      }
+
+      msgSigFile.close();
+    }
+  }
+
+  return retObj;
 }
 
 // This function displays debug text at a given location on the screen, then
