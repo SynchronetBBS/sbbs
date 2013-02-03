@@ -1940,11 +1940,29 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 function getCurMsgInfo()
 {
   var retObj = new Object();
-  retObj.lastMsg = bbs.smb_last_msg;
-  retObj.totalNumMsgs = bbs.smb_total_msgs;
-  retObj.curMsgNum = bbs.smb_curmsg;
-  retObj.subBoardCode = bbs.smb_sub_code;
-  retObj.grpIndex = msg_area.sub[bbs.smb_sub_code].grp_index;
+  if (bbs.smb_sub_code.length > 0)
+  {
+    retObj.lastMsg = bbs.smb_last_msg;
+    retObj.totalNumMsgs = bbs.smb_total_msgs;
+    retObj.curMsgNum = bbs.smb_curmsg;
+    retObj.subBoardCode = bbs.smb_sub_code;
+    retObj.grpIndex = msg_area.sub[bbs.smb_sub_code].grp_index;
+  }
+  else
+  {
+    retObj.lastMsg = -1;
+    retObj.curMsgNum = -1;
+    retObj.subBoardCode = bbs.cursub_code;
+    retObj.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
+    var tmpMsgBaseObj = new MsgBase(bbs.cursub_code);
+    if (tmpMsgBaseObj.open())
+    {
+      retObj.totalNumMsgs = tmpMsgBaseObj.total_msgs;
+      tmpMsgBaseObj.close();
+    }
+    else
+      retObj.totalNumMsgs = 0;
+  }
 
   // If the Digital Distortion Message Lister drop file exists,
   // then use the message information from that file instead.
