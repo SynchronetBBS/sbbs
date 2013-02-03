@@ -2,7 +2,7 @@
 // echicken -at- bbs.electronicchicken.com
 
 load('sbbsdefs.js');
-load('msgutils.js'); // Supplies getMessageThreads(sub)
+load('msgutils.js');
 
 function getSig() {
 	var sigFile = format("%04s", user.number.toString()) + ".sig";
@@ -37,23 +37,32 @@ function linkify(body) {
 
 function printBoards() {
 	for(var g = 0; g < msg_area.grp_list.length; g++) {
-		var out = "";
-		out += "<div class='border box msg'>";
-		out += format(
-			"<a class='ulLink' onclick='toggleVisibility(\"group-%s\")'>%s</a><br />",
-			msg_area.grp_list[g].name, msg_area.grp_list[g].name
-			);
-		out += msg_area.grp_list[g].sub_list.length + " sub-boards";
-		out += "</div>";
-		out += "<div id='group-" + msg_area.grp_list[g].name + "' style='display:none;'>";
+		var out = format(
+			"<div class='border box msg'>"
+			+ "<a class='ulLink' onclick='toggleVisibility(\"group-%s\")'>%s</a>"
+			+ "<br />%s sub-boards</div>"
+			+ "<div id='group-%s' style=display:none;'>",
+			msg_area.grp_list[g].name,
+			msg_area.grp_list[g].name,
+			msg_area.grp_list[g].sub_list.length,
+			msg_area.grp_list[g].name
+		);
 		for(var s = 0; s < msg_area.grp_list[g].sub_list.length; s++) {
-			out += "<div class='border msg indentBox1'>";
 			out += format(
-				"<a class='ulLink' onclick='loadThreads(\"http://%s/%sforum-async.ssjs\", \"%s\")'>%s</a><br />",
-				http_request.host, webIni.appendURL, msg_area.grp_list[g].sub_list[s].code, msg_area.grp_list[g].sub_list[s].name
+				"<div class='border msg indentBox1'>"
+				+ "<a class='ulLink' onclick='loadThreads(\"http://%s/%sforum-async.ssjs\", \"%s\")'>%s</a><br />",
+				http_request.host,
+				webIni.appendURL,
+				msg_area.grp_list[g].sub_list[s].code,
+				msg_area.grp_list[g].sub_list[s].name
 			);
-			var msgBase = new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-			msgBase.open();
+			try {
+				var msgBase = new MsgBase(msg_area.grp_list[g].sub_list[s].code);
+				msgBase.open();
+			} catch(err) {
+				log(LOG_ERR, err);
+				continue;
+			}
 			out += ((webIni.maxMessages > 0 && webIni.maxMessages < msgBase.total_msgs)?webIni.maxMessages:msgBase.total_msgs) + " messages.<br />";
 			var h = msgBase.get_msg_header(msgBase.last_msg);
 			msgBase.close();
@@ -61,17 +70,24 @@ function printBoards() {
 				out += format("Latest: %s, by %s on %s", h.subject, h.from, system.timestr(h.when_written_time));
 			if(user.alias != webIni.WebGuest && user.compare_ars(msgBase.cfg.post_ars)) {
 				out += format(
-					"<br /><a class='ulLink' onclick='addPost(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\")'>Post a new message</a>",
-					http_request.host, webIni.appendURL, msg_area.grp_list[g].sub_list[s].code, user.alias, user.name
+					"<br />"
+					+ "<a class='ulLink' onclick='addPost(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\")'>Post a new message</a>"
+					+ "<div id='sub-%s-newMsgBox'></div>",
+					http_request.host,
+					webIni.appendURL,
+					msg_area.grp_list[g].sub_list[s].code,
+					user.alias,
+					user.name,
+					msg_area.grp_list[g].sub_list[s].code
 				);
-				out += format("<div id='sub-%s-newMsgBox'></div>", msg_area.grp_list[g].sub_list[s].code);
 			}
-			out += "</div>";
 			out += format(
-				"<div id='sub-%s-info' class='border msg indentBox2' style='display:none;'></div>",
+				"</div>"
+				+ "<div id='sub-%s-info' class='border msg indentBox2' style='display:none;'></div>"
+				+ "<div id='sub-%s' style='display:none;'></div>",
+				msg_area.grp_list[g].sub_list[s].code,
 				msg_area.grp_list[g].sub_list[s].code
 			);
-			out += format("<div id='sub-%s' style='display:none;'></div>", msg_area.grp_list[g].sub_list[s].code);
 		}
 		out += "</div>";
 		print(out);
@@ -80,61 +96,93 @@ function printBoards() {
 }
 
 function printThreads(sub) {
-	var msgBase = new MsgBase(sub);
-	if(!msgBase.open())
+	try {
+		msgBase = new MsgBase(sub);
+		msgBase.open();
+	} catch(err) {
+		log(LOG_ERR, err);
 		return false;
+	}
 	msgBase.close();
 	var threads = getMessageThreads(sub, webIni.maxMessages);
 	for(var t in threads.order) {
-		var out = "";
 		var header = threads.thread[threads.order[t]].messages[0];
-		out += format("<a class='ulLink' name='thread-%s'></a>", header.number);
-		out += "<div class='border " + ((sub == "mail")?"box":"indentBox2") + " msg'>";
-		out += format(
-			"<a class='ulLink' onclick='loadThread(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\")'>%s</a><br />",
-			http_request.host, webIni.appendURL, sub, threads.order[t], header.subject
-			);
-		out += format("Started by %s on %s<br />", header.from, system.timestr(header.when_written_time));
+		var out = format(
+			"<a class='ulLink' name='thread-%s'></a>"
+			+ "<div class='border %s msg'>"
+			+ "<a class='ulLink' onclick='loadThread(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\")'>%s</a><br />"
+			+ "Started by %s on %s<br />",
+			header.number,
+			((sub == "mail")?"box":"indentBox2"),
+			http_request.host,
+			webIni.appendURL,
+			sub,
+			threads.order[t],
+			header.subject,
+			header.from,
+			system.timestr(header.when_written_time)
+		);
 		if(threads.thread[threads.order[t]].messages.length > 1) {
-			out += "Latest reply from ";
-			out += threads.thread[threads.order[t]].messages[threads.thread[threads.order[t]].messages.length - 1].from;
-			out += " on ";
-			out += system.timestr(threads.thread[threads.order[t]].messages[threads.thread[threads.order[t]].messages.length - 1].when_written_time);
+			out += format(
+				"Latest reply from %s on %s",
+				threads.thread[threads.order[t]].messages[threads.thread[threads.order[t]].messages.length - 1].from,
+				system.timestr(threads.thread[threads.order[t]].messages[threads.thread[threads.order[t]].messages.length - 1].when_written_time)
+			);
 		}
-		out += "</div>";
-		out += format("<div id='sub-%s-thread-%s' style='display:none;'></div>", sub, threads.order[t]);
-		out += format("<div id='sub-%s-thread-%s-info' class='border msg indentBox2' style='display:none;'></div>", sub, threads.order[t]);
+		out += format(
+			"</div>"
+			+ "<div id='sub-%s-thread-%s' style='display:none;'></div>"
+			+ "<div id='sub-%s-thread-%s-info' class='border msg indentBox2' style='display:none;'></div>",
+			sub, threads.order[t], sub, threads.order[t]
+		);
 		print(out);
 	}
 }
 
 function printThread(sub, t) {
-	var msgBase = new MsgBase(sub);
-	if(!msgBase.open())
+	try {
+		var msgBase = new MsgBase(sub);
+		msgBase.open();
+	} catch(err) {
+		log(LOG_ERR, err);
 		return false;
+	}
 	var threads = getMessageThreads(sub, webIni.maxMessages);
 	for(var m in threads.thread[t].messages) {
-		var out = "";
 		var header = threads.thread[t].messages[m];
 		var body = msgBase.get_msg_body(header.number, strip_ctrl_a=true);
 		if(body === null)
 			continue;
-		out += format("<a name='%s-%s'></a>", sub, header.number);
-		out += format("<div class='border " + ((sub == "mail")?"indentBox2":"indentBox3") + " msg' id='sub-%s-thread-%s-%s'>", sub, t, header.number);
-		out += format(
-			"From <b>%s</b> to <b>%s</b> on <b>%s</b><br /><br />",
-			header.from, header.to, system.timestr(header.when_written_time)
+		var out = format(
+			"<a name='%s-%s'></a>"
+			+ "<div class='border %s msg' id='sub-%s-thread-%s-%s'>"
+			+ "From <b>%s</b> to <b>%s</b> on <b>%s</b><br /><br />"
+			+ "%s<br /><br />",
+			sub,
+			header.number,
+			((sub == "mail")?"indentBox2":"indentBox3"),
+			sub,
+			t,
+			header.number,
+			header.from,
+			header.to,
+			system.timestr(header.when_written_time),
+			linkify(strip_exascii(body).replace(/\r\n/g, "<br />").replace(/\n/g, "<br />"))
 		);
-		out += linkify(strip_exascii(body).replace(/\r\n/g, "<br />").replace(/\n/g, "<br />"));
-		out += "<br /><br />";
 		if(sub != 'mail') {
 			out += format(
-				"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s#thread-%s'>Thread URL</a> - ",
-				msgBase.cfg.grp_name, sub, t, t
-			);
-			out += format(
-				"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s&message=%s#%s-%s'>Message URL</a> - ",
-				msgBase.cfg.grp_name, sub, t, header.number, sub, header.number
+				"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s#thread-%s'>Thread URL</a> -"
+				+ "<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s&message=%s#%s-%s'>Message URL</a> - ",
+				msgBase.cfg.grp_name,
+				sub,
+				t,
+				t,
+				msgBase.cfg.grp_name,
+				sub,
+				t,
+				header.number,
+				sub,
+				header.number
 			);
 		}
 		out += format("<a class='ulLink' onclick='toggleVisibility(\"sub-%s-thread-%s\")'>Collapse Thread</a>", sub, t);
@@ -150,9 +198,13 @@ function printThread(sub, t) {
 }
 
 function printMessage(sub, number) {
-	var msgBase = new MsgBase(sub);
-	if(!msgBase.open())
+	try {
+		var msgBase = new MsgBase(sub);
+		msgBase.open();
+	} catch(err) {
+		log(LOG_ERR, err);
 		return false;
+	}
 	if(sub != "mail" && (!user.compare_ars(msgBase.cfg.read_ars) || !user.compare_ars(msgBase.cfg.post_ars)))
 		return false;
 	var ret = { "header" : msgBase.get_msg_header(number) };
@@ -179,9 +231,13 @@ function postMessage(sub, irt, to, from, subject, body) {
 	}
 	if(user.alias != from && user.name != from)
 		return false;
-	var msgBase = new MsgBase(sub);
-	if(!msgBase.open())
+	try {
+		var msgBase = new MsgBase(sub);
+		msgBase.open();
+	} catch(err) {
+		log(LOG_ERR, err);
 		return false;
+	}
 	if(sub != "mail" && !user.compare_ars(msgBase.cfg.post_ars))
 		return false;
 	var header = {
