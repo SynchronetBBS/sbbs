@@ -20,12 +20,22 @@ exec/load/msgutils.js
 
 Installation:
 -------------
-Installation will depend on your command shell.  Some understanding of how to
-edit a command shell and add or modify a hotkey triggered event is required.
 
-To launch ecReader from a Javascript command shell:
+In SCFG (BBS->Configure in the Synchronet Control Panel on Windows), go to
+External Programs->Online Programs (Doors), and then select the area you wish
+to add ecReader to.  Create a new entry with the following details:
 
-bbs.exec("?/sbbs/xtrn/ecreader/ecReader.js");
+¦Name                       ecReader
+¦Internal Code              ECREADER
+¦Start-up Directory         ../xtrn/ecreader
+¦Command Line               ?ecReader.js
+¦Multiple Concurrent Users  Yes
+
+Leave all other options at their default settings.
+
+You can call this external via javascript with:
+
+bbs.exec_xtrn("ECREADER");
 
 Configuration:
 --------------
