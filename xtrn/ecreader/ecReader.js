@@ -48,21 +48,14 @@ var messageFrame = new Frame(1, 3, console.screen_columns, console.screen_rows -
 var headerFrame = new Frame(1, 3, console.screen_columns, 4, fbg|WHITE, messageFrame);
 var bodyFrame = new Frame(1, 7, console.screen_columns, console.screen_rows - 7, BG_BLACK|WHITE, messageFrame);
 var messageBar = new Frame(1, console.screen_rows, console.screen_columns, 1, fbg|WHITE, messageFrame);
-var promptFrame = new Frame(20, 8, 40, 6, fbg|WHITE, frame);
-var promptSubFrame = new Frame(22, 9, 36, 4, BG_BLACK|WHITE, promptFrame);
+var promptFrame = new Frame(20, Math.round(console.screen_rows / 2) - 3, console.screen_columns - 40, 6, fbg|WHITE, frame);
+var promptSubFrame = new Frame(22, promptFrame.y + 1, promptFrame.width - 4, 4, BG_BLACK|WHITE, promptFrame);
 
 frame.open();
 messageFrame.bottom();
 headerFrame.bottom();
 promptFrame.bottom();
 
-columnFrame.putmsg(
-	format("%-9s", "Msg #")
-	+ format("%-13s", "From")
-	+ format("%-13s", "To")
-	+ format("%-" + (console.screen_columns - 52) + "s", "Subject")
-	+ "Date"
-);
 helpFrame.center(
 	hfg + "UP" + sffg + "/" + hfg + "DN  "
 	+ hfg + "[" + sffg + "PgUp/PgDn" + hfg + "]  "
@@ -75,6 +68,7 @@ helpFrame.center(
 	+ hfg + "DEL" + sffg + "ete  "
 	+ hfg + "Q" + sffg + "uit"
 );
+
 messageBar.center(
 	hfg + "UP" + sffg + "/" + hfg + "DN  "
 	+ hfg + "[" + sffg + "PgUp/PgDn" + hfg + "]  "
@@ -86,13 +80,34 @@ messageBar.center(
 	+ hfg + "Q" + sffg + "uit"
 );
 
+var msgNumberWidth = 9;
+var dateWidth = 17;
+var subjectWidth = Math.round(((console.screen_columns - 2) - (msgNumberWidth + dateWidth)) / 2);
+var nameWidth = Math.round(subjectWidth / 2);
+while(msgNumberWidth + dateWidth + subjectWidth + nameWidth > (console.screen_columns - 2)) {
+	subjectWidth = subjectWidth - 1;
+}
+
+columnFrame.putmsg(
+	format(
+		"%-9s%-" + nameWidth + "s%-" + nameWidth + "s%-" + subjectWidth + "s%s",
+		"Msg #",
+		"From",
+		"To",
+		"Subject",
+		"Date"
+	)
+);
 function formatItem(messageNumber, from, to, subject, wwt) {
 	var retval = 
-			format("%-8s", messageNumber)
-			+ format("%-13s", from.substr(0, 12))
-			+ format("%-13s", to.substr(0, 12))
-			+ format("%-" + (console.screen_columns - 52) + "s", subject.substr(0, (console.screen_columns - 53)))
-			+ strftime("%m-%d-%Y %H:%I", wwt);
+		format(
+			"%-8s%-" + nameWidth + "s%-" + nameWidth + "s%-" + subjectWidth + "s%s",
+			messageNumber,
+			from.substr(0, nameWidth - 1),
+			to.substr(0, nameWidth - 1),
+			subject.substr(0, subjectWidth - 1),
+			strftime("%m-%d-%Y %H:%I", wwt)
+		);
 	return retval;
 }
 
@@ -103,50 +118,57 @@ function getFlatList() {
 		var mb = msgBase;
 	else
 		var mb = new MsgBase('mail');
-	mb.open();
-	if(maxMessages == 0)
-		var start = mb.first_msg;
-	else
-		var start = mb.last_msg - maxMessages;
-	for(var m = start; m <= mb.last_msg; m++) {
-		header = mb.get_msg_header(m);
-		if(
-			header === null
-			||
-			header.attr&MSG_DELETE
-			||
-			(mail
-				&&
-				header.to != user.alias
-				&&
-				header.to != user.name
-				&&
-				header.to_ext != user.number
+	try {
+		mb.open();
+		if(maxMessages == 0)
+			var start = mb.first_msg;
+		else
+			var start = mb.last_msg - maxMessages;
+		for(var m = start; m <= mb.last_msg; m++) {
+			header = mb.get_msg_header(m);
+			if(
+				header === null
+				||
+				header.attr&MSG_DELETE
+				||
+				(mail
+					&&
+					header.to != user.alias
+					&&
+					header.to != user.name
+					&&
+					header.to_ext != user.number
+				)
 			)
-		)
-			continue;
-		messages.push(header);
-	}
-	mb.close();
-	if(reverseThreads)
-		messages.reverse();
-	for(var m = 0; m < messages.length; m++) {
-		item = formatItem(messages[m].number, messages[m].from, messages[m].to, messages[m].subject, messages[m].when_written_time);;
-		var i = tree.addItem(item, showMessage, messages[m], mail);
-		if(!mail && messages[messages.length - 1].number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr)
-			i.attr = urm;
-		else if(mail && !(messages[messages.length - 1].attr&MSG_READ))
-			i.attr = urm;
+				continue;
+			messages.push(header);
+		}
+		mb.close();
+		if(reverseThreads)
+			messages.reverse();
+		for(var m = 0; m < messages.length; m++) {
+			item = formatItem(messages[m].number, messages[m].from, messages[m].to, messages[m].subject, messages[m].when_written_time);;
+			var i = tree.addItem(item, showMessage, messages[m], mail);
+			if(!mail && messages[messages.length - 1].number > msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_ptr)
+				i.attr = urm;
+			else if(mail && !(messages[messages.length - 1].attr&MSG_READ))
+				i.attr = urm;
+		}
+	} catch(err) {
+		log(LOG_DEBUG, err);
 	}
 	tree.open();
 	tree.cycle();
 }
 
 function getThreadedList() {
-	if(!mail)
+	if(!mail) {
 		var threads = getMessageThreads(msgBase.cfg.code, maxMessages);
-	else
+		var mb = msgBase;
+	} else {
 		var threads = getMessageThreads('mail', maxMessages);
+		var mb = new MsgBase('mail');
+	}
 	var item;
 	for(var t in ((!reverseThreads)?threads.thread:threads.order)) {
 		if(!reverseThreads)
@@ -154,7 +176,10 @@ function getThreadedList() {
 		else
 			var theThread = threads.thread[threads.order[t]];
 		if(theThread.messages.length < 2) {
-			messages.push(theThread.messages[0]);
+			mb.open();
+			var header = mb.get_msg_header(theThread.messages[0].number);
+			mb.close();
+			messages.push(header);
 			item = formatItem(
 				theThread.messages[0].number,
 				theThread.messages[0].from,
@@ -179,7 +204,10 @@ function getThreadedList() {
 		st = tree.addTree(item);
 		var mm = (reverseMessages) ? theThread.messages.length - 1 : 0;
 		for(var m = 0; m < theThread.messages.length; m++) {
-			messages.push(theThread.messages[mm]);
+			mb.open();
+			var header = mb.get_msg_header(theThread.messages[mm].number);
+			mb.close();
+			messages.push(header);
 			item = formatItem(
 				theThread.messages[mm].number,
 				theThread.messages[mm].from,
@@ -227,7 +255,7 @@ function getList() {
 		getFlatList(false);
 }
 
-function showMessage(header) {
+function showMessage(header, mail) {
 	var retval = "REFRESH";
 	var userInput = "";
 	var h = null;
@@ -248,11 +276,11 @@ function showMessage(header) {
 	var body = mb.get_msg_body(header.number);
 	mb.close();
 	headerFrame.putmsg(
-		hfg + format("%15s", "Subject: ") + sffg + header.subject.substr(0, 65)
+		hfg + format("%15s", "Subject: ") + sffg + header.subject.substr(0, console.screen_columns - 9)
 		+ "\r\n" +
-		hfg + format("%15s", "From: ") + sffg + header.from.substr(0, 65)
+		hfg + format("%15s", "From: ") + sffg + header.from.substr(0, console.screen_columns - 9)
 		+ "\r\n" +
-		hfg + format("%15s", "To: ") + sffg + header.to.substr(0, 65)
+		hfg + format("%15s", "To: ") + sffg + header.to.substr(0, console.screen_columns - 9)
 		+ "\r\n" +
 		hfg + format("%15s", "Date: ") + sffg + system.timestr(header.when_written_time)
 	);
@@ -261,7 +289,7 @@ function showMessage(header) {
 	bodyFrame.scrollTo(0, 0);
 	while(userInput != "Q") {
 		if(frame.cycle())
-			console.gotoxy(80, 24);
+			console.gotoxy(console.screen_columns, console.screen_rows);
 		userInput = console.getkey().toUpperCase();
 		switch(userInput) {
 			case "R":
@@ -271,12 +299,16 @@ function showMessage(header) {
 				f.close();
 				frame.invalidate();
 				console.clear();
-				if(!mail)
-					bbs.post_msg(mb.cfg.code, WM_QUOTE, header);
-				else if(mail && header.from_net_type == NET_NONE)
-					bbs.email(parseInt(header.from_ext), WM_EMAIL|WM_QUOTE, "", header.subject);
-				else if(mail)
-					bbs.netmail(header.from_net_addr, WM_NETMAIL|WM_QUOTE, header.subject);
+				try {
+					if(!mail)
+						bbs.post_msg(mb.cfg.code, WM_QUOTE, header);
+					else if(mail && header.from_net_type == NET_NONE)
+						bbs.email(parseInt(header.from_ext), WM_EMAIL|WM_QUOTE, "", header.subject);
+					else if(mail)
+						bbs.netmail(header.from_net_addr, WM_NETMAIL|WM_QUOTE, header.subject);
+				} catch(err) {
+					log(LOG_ERR, err);
+				}
 				frame.draw();
 				retval = header;
 				userInput = "Q";
@@ -365,8 +397,6 @@ function deleteMessage(header) {
 			ret = true;
 		}
 	} else if(mail && prompt("Delete this message")) {
-		/*	Could verify again that mail is addressed to this user, but
-			they shouldn't have been able to select it otherwise. */
 		var mailBase = new MsgBase("mail");
 		mailBase.open();
 		mailBase.remove_msg(header.number);
@@ -424,7 +454,7 @@ while(userInput != "Q") {
 			getList();
 			break;
 		case "A":
-			messageAreaSelector(4, 5, 70, 16, frame);
+			messageAreaSelector(4, 5, console.screen_columns - 6, console.screen_rows - 8, frame, showMail);
 			msgBase = new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
 			mail = false;
 			getList();
@@ -466,7 +496,7 @@ while(userInput != "Q") {
 			}
 			break;
 	}
-	userInput = console.inkey(5).toUpperCase();
+	userInput = console.inkey(K_NONE, 5).toUpperCase();
 	if(frame.cycle())
-		console.gotoxy(80, 24);
+		console.gotoxy(console.screen_columns, console.screen_rows);
 }
