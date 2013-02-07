@@ -1137,7 +1137,8 @@ static JSBool js_conio_resolve(JSContext *cx, JSObject *obj, jsid id)
 	}
 
 	ret=js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0);
-	free(name);
+	if(name)
+		free(name);
 	return ret;
 }
 
