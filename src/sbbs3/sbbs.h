@@ -128,6 +128,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 					(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
 				(ret)[*JSSTSlenptr]=0; \
 			} \
+			else JS_ReportError(cx, "Error alocating %lu bytes at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
 		} \
 	} \
 }
