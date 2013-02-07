@@ -139,6 +139,40 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	JSSTRING_TO_MSTRING((cx), JSVTSstr, (ret), lenptr); \
 }
 
+#define JSSTRING_TO_STRBUF(cx, str, ret, bufsize, lenptr) \
+{ \
+	size_t			*JSSTSlenptr=lenptr; \
+	size_t			JSSTSlen; \
+	size_t			JSSTSpos; \
+	const jschar	*JSSTSstrval; \
+\
+	if(JSSTSlenptr==NULL) \
+		JSSTSlenptr=&JSSTSlen; \
+	if(bufsize < 1 || str==NULL) \
+		*JSSTSlenptr = 0; \
+	else { \
+		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
+			if(*JSSTSlenptr >= bufsize) \
+				*JSSTSlenptr = bufsize-1; \
+			for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) \
+				(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
+		} \
+		else \
+			*JSSTSlenptr=0; \
+	} \
+	(ret)[*JSSTSlenptr]=0; \
+}
+
+#define JSVALUE_TO_STRBUF(cx, val, ret, bufsize, lenptr) \
+{ \
+	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
+	JSSTRING_TO_STRBUF((cx), JSVTSstr, (ret), (bufsize), lenptr); \
+}
+
+#define HANDLE_PENDING(cx) \
+	if(JS_IsExceptionPending(cx)) \
+		return JS_FALSE;
+
 #define JSSTRING_TO_STRING(cx, str, ret, lenptr) \
 { \
 	size_t			*JSSTSlenptr=lenptr; \
