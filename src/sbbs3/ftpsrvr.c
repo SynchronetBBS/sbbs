@@ -389,6 +389,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	FILE*	fp;
 	jsrefcount	rc;
 	char		*p;
+	size_t		len;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -399,12 +400,11 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		str = JS_ValueToString(cx, argv[i]);
 		if (!str)
 		    return JS_FALSE;
-		JSSTRING_TO_MSTRING(cx, str, p, NULL);
-		if(JS_IsExceptionPending(cx))
-			return JS_FALSE;
+		JSSTRING_TO_MSTRING(cx, str, p, &len);
+		HANDLE_PENDING(cx);
 		rc=JS_SUSPENDREQUEST(cx);
 		if(p) {
-			fputs(p, fp);
+			fwrite(p, len, 1, fp);
 			free(p);
 		}
 		JS_RESUMEREQUEST(cx, rc);
