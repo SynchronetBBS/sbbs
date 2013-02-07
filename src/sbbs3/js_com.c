@@ -187,16 +187,18 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], cp, &len);
+	JSVALUE_TO_MSTRING(cx, argv[0], cp, &len);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(comWriteBuf(p->com,(uint8_t *)cp,len)==len) {
+	if(cp && comWriteBuf(p->com,(uint8_t *)cp,len)==len) {
 		dbprintf(FALSE, p, "sent %u bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %u bytes failed",len);
 	}
+	if(cp)
+		free(cp);
 	JS_RESUMEREQUEST(cx, rc);
 		
 	return(JS_TRUE);
@@ -226,7 +228,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], fname, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
 	if(fname==NULL) {
 		JS_ReportError(cx,"Failure reading filename");
 		return(JS_FALSE);
@@ -235,9 +237,11 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	if((file=nopen(fname,O_RDONLY|O_BINARY))==-1) {
 		JS_RESUMEREQUEST(cx, rc);
+		free(fname);
 		return(JS_TRUE);
 	}
 
+	free(fname);
 	len=filelength(file);
 	if((buf=malloc(len))==NULL) {
 		close(file);
@@ -787,7 +791,7 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	obj=JS_NewObject(cx, &js_com_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if(argc > 0)
-		JSVALUE_TO_STRING(cx, argv[0], fname, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
 	if(argc==0 || fname==NULL) {
 		JS_ReportError(cx,"Failure reading port name");
 		return(JS_FALSE);
@@ -795,11 +799,12 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
 		JS_ReportError(cx,"malloc failed");
+		free(fname);
 		return(JS_FALSE);
 	}
 	memset(p,0,sizeof(private_t));
 
-	p->dev=strdup(fname);
+	p->dev=fname;
 	p->network_byte_order = TRUE;
 	p->baud_rate = 9600;
 	p->com = COM_HANDLE_INVALID;
