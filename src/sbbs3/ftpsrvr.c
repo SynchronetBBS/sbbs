@@ -400,13 +400,13 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		if (!str)
 		    return JS_FALSE;
 		JSSTRING_TO_MSTRING(cx, str, p, NULL);
+		if(JS_IsExceptionPending(cx))
+			return JS_FALSE;
 		rc=JS_SUSPENDREQUEST(cx);
 		if(p) {
 			fputs(p, fp);
 			free(p);
 		}
-		else
-			return JS_FALSE;
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
