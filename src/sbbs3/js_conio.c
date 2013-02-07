@@ -238,8 +238,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 				char	*bytes;
 
 				JSVALUE_TO_MSTRING(cx, *vp, bytes, &len);
-				if(JS_IsExceptionPending(cx))
-					return JS_FALSE;
+				HANDLE_PENDING(cx);
 				if(!bytes)
 					return JS_FALSE;
 				rc=JS_SUSPENDREQUEST(cx);
@@ -308,28 +307,23 @@ js_conio_init(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	int			ciolib_mode=CIOLIB_MODE_AUTO;
-	char*		mode;
+	char		mode[7];
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	if(argc>0) {
-		JSVALUE_TO_MSTRING(cx, argv[0], mode, NULL);
-		if(JS_IsExceptionPending(cx))
-			return JS_FALSE;
-		if(mode != NULL) {
-			if(!stricmp(mode,"STDIO"))
-				ciolib_mode=-1;
-			else if(!stricmp(mode,"AUTO"))
-				ciolib_mode=CIOLIB_MODE_AUTO;
-			else if(!stricmp(mode,"X"))
-				ciolib_mode=CIOLIB_MODE_X;
-			else if(!stricmp(mode,"ANSI"))
-				ciolib_mode=CIOLIB_MODE_ANSI;
-			else if(!stricmp(mode,"CONIO"))
-				ciolib_mode=CIOLIB_MODE_CONIO;
-			free(mode);
-		}
+		JSVALUE_TO_STRBUF(cx, argv[0], mode, sizeof(mode), NULL);
+		if(!stricmp(mode,"STDIO"))
+			ciolib_mode=-1;
+		else if(!stricmp(mode,"AUTO"))
+			ciolib_mode=CIOLIB_MODE_AUTO;
+		else if(!stricmp(mode,"X"))
+			ciolib_mode=CIOLIB_MODE_X;
+		else if(!stricmp(mode,"ANSI"))
+			ciolib_mode=CIOLIB_MODE_ANSI;
+		else if(!stricmp(mode,"CONIO"))
+			ciolib_mode=CIOLIB_MODE_CONIO;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -574,8 +568,7 @@ js_conio_loadfont(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		if(JS_IsExceptionPending(cx))
-			return JS_FALSE;
+		HANDLE_PENDING(cx);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(loadfont(str)));
@@ -597,8 +590,7 @@ js_conio_settitle(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		if(JS_IsExceptionPending(cx))
-			return JS_FALSE;
+		HANDLE_PENDING(cx);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			settitle(str);
@@ -621,8 +613,7 @@ js_conio_setname(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		if(JS_IsExceptionPending(cx))
-			return JS_FALSE;
+		HANDLE_PENDING(cx);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			setname(str);
@@ -645,8 +636,7 @@ js_conio_cputs(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		if(JS_IsExceptionPending(cx))
-			return JS_FALSE;
+		HANDLE_PENDING(cx);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			JS_SET_RVAL(cx, arglist,INT_TO_JSVAL(cputs(str)));
@@ -706,8 +696,7 @@ js_conio_getpass(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc==1) {
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
-		if(JS_IsExceptionPending(cx))
-			return JS_FALSE;
+		HANDLE_PENDING(cx);
 		if(str != NULL) {
 			rc=JS_SUSPENDREQUEST(cx);
 			pwd=getpass(str);
@@ -1145,8 +1134,7 @@ static JSBool js_conio_resolve(JSContext *cx, JSObject *obj, jsid id)
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			if(JS_IsExceptionPending(cx))
-				return JS_FALSE;
+			HANDLE_PENDING(cx);
 			if(name==NULL)
 				return JS_FALSE;
 		}
