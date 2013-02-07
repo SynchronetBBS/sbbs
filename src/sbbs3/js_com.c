@@ -188,8 +188,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cp, &len);
-	if(JS_IsExceptionPending(cx))
-		return JS_FALSE;
+	HANDLE_PENDING(cx);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(cp && comWriteBuf(p->com,(uint8_t *)cp,len)==len) {
@@ -231,8 +230,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
-	if(JS_IsExceptionPending(cx))
-		return JS_FALSE;
+	HANDLE_PENDING(cx);
 	if(fname==NULL) {
 		JS_ReportError(cx,"Failure reading filename");
 		return(JS_FALSE);
@@ -796,8 +794,7 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if(argc > 0) {
 		JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
-	if(JS_IsExceptionPending(cx))
-		return JS_FALSE;
+		HANDLE_PENDING(cx);
 		if(JS_IsExceptionPending(cx))
 			return JS_FALSE;
 	}
