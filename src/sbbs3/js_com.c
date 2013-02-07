@@ -795,8 +795,6 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc > 0) {
 		JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
 		HANDLE_PENDING(cx);
-		if(JS_IsExceptionPending(cx))
-			return JS_FALSE;
 	}
 	if(argc==0 || fname==NULL) {
 		JS_ReportError(cx,"Failure reading port name");
