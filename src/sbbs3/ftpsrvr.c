@@ -399,9 +399,14 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		str = JS_ValueToString(cx, argv[i]);
 		if (!str)
 		    return JS_FALSE;
-		JSSTRING_TO_STRING(cx, str, p, NULL);
+		JSSTRING_TO_MSTRING(cx, str, p, NULL);
 		rc=JS_SUSPENDREQUEST(cx);
-		fprintf(fp,"%s", p);
+		if(p) {
+			fputs(p, fp);
+			free(p);
+		}
+		else
+			return JS_FALSE;
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
