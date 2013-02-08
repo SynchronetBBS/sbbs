@@ -121,10 +121,9 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 \
 	if(JSSTSlenptr==NULL) \
 		JSSTSlenptr=&JSSTSlen; \
-	(ret)=NULL; \
 	if((str) != NULL) { \
 		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
-			if(*sizeptr < (*JSSTSlenptr+1)) { \
+			if((*sizeptr < (*JSSTSlenptr+1 )) || (ret)==NULL) { \
 				*sizeptr = *JSSTSlenptr+1; \
 				if((JSSTStmpptr=(char *)realloc((ret), *sizeptr))==NULL) { \
 					JS_ReportError(cx, "Error reallocating %lu bytes at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
