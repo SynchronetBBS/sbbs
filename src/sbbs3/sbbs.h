@@ -141,6 +141,10 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 			} \
 		} \
 	} \
+	else { \
+		if(ret) \
+			*ret=0; \
+	} \
 }
 
 #define JSVALUE_TO_RASTRING(cx, val, ret, sizeptr, lenptr) \
