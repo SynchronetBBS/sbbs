@@ -291,13 +291,15 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 
 	if((str=JS_ValueToString(parent_cx, argv[0]))==NULL)
 		return(JS_FALSE);
-	JSSTRING_TO_STRING(parent_cx, str, buf, NULL);
+	JSSTRING_TO_MSTRING(parent_cx, str, buf, &buflen);
+	HANDLE_PENDING(parent_cx);
 	if(buf==NULL)
-		return(JS_FALSE);
-	buflen=JS_GetStringLength(str);
+		return(JS_TRUE);
 
-	if((cx=JS_NewContext(JS_GetRuntime(parent_cx),JAVASCRIPT_CONTEXT_STACK))==NULL)
+	if((cx=JS_NewContext(JS_GetRuntime(parent_cx),JAVASCRIPT_CONTEXT_STACK))==NULL) {
+		free(buf);
 		return(JS_FALSE);
+	}
 
 	/* Use the error reporter from the parent context */
 	reporter=JS_SetErrorReporter(parent_cx,NULL);
@@ -311,6 +313,7 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	if((obj=JS_NewCompartmentAndGlobalObject(cx, &eval_class, NULL))==NULL
 		|| !JS_InitStandardClasses(cx,obj)) {
 		JS_DestroyContext(cx);
+		free(buf);
 		return(JS_FALSE);
 	}
 
@@ -320,6 +323,7 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 		JS_ExecuteScript(cx, obj, script, &rval);
 		JS_SET_RVAL(cx, arglist, rval);
 	}
+	free(buf);
 
 	JS_DestroyContext(cx);
 
@@ -358,8 +362,14 @@ js_report_error(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char	*p;
 
-	JSVALUE_TO_STRING(cx, argv[0], p, NULL);
-	JS_ReportError(cx,"%s",p);
+	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
+	HANDLE_PENDING(cx);
+	if(p==NULL)
+		JS_ReportError(cx,"NULL");
+	else {
+		JS_ReportError(cx,"%s",p);
+		free(p);
+	}
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -397,9 +407,13 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	JSVALUE_TO_STRING(cx, argv[0], p, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
+	HANDLE_PENDING(cx);
+	if(!p)
+		return JS_TRUE;
 	oldlist=list;
 	strListPush(&list,p);
+	free(p);
 	if(oldlist != list) {
 		if(glob==scope)
 			pd->exit_func=list;
@@ -456,16 +470,22 @@ static jsSyncMethodSpec js_functions[] = {
 static JSBool js_internal_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
+	JSBool			ret;
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		if(JSVAL_IS_STRING(idval))
-			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+		if(JSVAL_IS_STRING(idval)) {
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+			HANDLE_PENDING(cx);
+		}
 	}
 
-	return(js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0));
+	ret=js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0);
+	if(name)
+		free(name);
+	return(ret);
 }
 
 static JSBool js_internal_enumerate(JSContext *cx, JSObject *obj)
