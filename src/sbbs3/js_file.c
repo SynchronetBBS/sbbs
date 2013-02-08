@@ -648,7 +648,7 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 			free(section);
 		if(key)
 			free(key);
-		return JS_FALSE();
+		return JS_FALSE;
 	}
 	/*
 	 * Although section can be NULL (ie: root), a NULL key will cause a
@@ -1180,7 +1180,7 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	const char const *name_def="name";
+	const char	*name_def="name";
 	char*		name=(char *)name_def;
 	char*		sec_name;
 	char*		prefix=NULL;
@@ -1319,7 +1319,7 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	const char const * name_def = "name";
+	const char	*name_def = "name";
 	char*		name=(char *)name_def;
     jsuint      i;
     jsint       j;
@@ -1408,7 +1408,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	char*		cp;
 	char*		uubuf=NULL;
 	size_t		len;	/* string length */
-	int			tlen;	/* total length to write (may be greater than len) */
+	size_t		tlen;	/* total length to write (may be greater than len) */
 	JSString*	str;
 	private_t*	p;
 	jsrefcount	rc;
@@ -1497,7 +1497,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_writeln_internal(JSContext *cx, JSObject *obj, jsval *arg, jsval *rval)
 {
-	const char const *cp_def="";
+	const char	*cp_def="";
 	char*		cp=(char *)cp_def;
 	JSString*	str;
 	private_t*	p;
