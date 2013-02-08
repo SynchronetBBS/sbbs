@@ -129,7 +129,6 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	queued_value_t*	v;
 	int32 timeout=0;
 	jsrefcount	rc;
-	char	*p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -140,8 +139,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc && JSVAL_IS_STRING(argv[0])) {	/* value named specified */
 		ZERO_VAR(find_v);
-		JSVALUE_TO_STRING(cx, argv[0], p, NULL);
-		SAFECOPY(find_v.name,p);
+		JSVALUE_TO_STRBUF(cx, argv[0], find_v.name, sizeof(find_v.name), NULL);
 		rc=JS_SUSPENDREQUEST(cx);
 		v=msgQueueFind(q,&find_v,sizeof(find_v.name));
 		JS_RESUMEREQUEST(cx, rc);
@@ -269,10 +267,14 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 
 	val = argv[argn++];
 
-	if(argn < argc)
-		JSVALUE_TO_STRING(cx, argv[argn++], name, NULL);
+	if(argn < argc) {
+		JSVALUE_TO_MSTRING(cx, argv[argn++], name, NULL);
+		HANDLE_PENDING(cx);
+	}
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(js_enqueue_value(cx, q, val, name)));
+	if(name)
+		free(name);
 
 	return(JS_TRUE);
 }
@@ -372,16 +374,22 @@ static jsSyncMethodSpec js_queue_functions[] = {
 static JSBool js_queue_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
+	JSBool			ret;
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		if(JSVAL_IS_STRING(idval))
-			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+		if(JSVAL_IS_STRING(idval)) {
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+			HANDLE_PENDING(cx);
+		}
 	}
 
-	return(js_SyncResolve(cx, obj, name, js_queue_properties, js_queue_functions, NULL, 0));
+	ret=js_SyncResolve(cx, obj, name, js_queue_properties, js_queue_functions, NULL, 0);
+	if(name)
+		free(name);
+	return ret;
 }
 
 static JSBool js_queue_enumerate(JSContext *cx, JSObject *obj)
@@ -428,7 +436,7 @@ js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 
 	if(argn<argc && JSVAL_IS_STRING(argv[argn]))
-		JSVALUE_TO_STRING(cx, argv[argn++], name, NULL);
+		JSVALUE_TO_ASTRING(cx, argv[argn++], name, sizeof(q->name), NULL);
 
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn])) {
 		if(!JS_ValueToInt32(cx,argv[argn++],&flags))
