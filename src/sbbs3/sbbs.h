@@ -111,6 +111,45 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include <jsapi.h>
 #define JS_DestroyScript(cx,script)
 
+#define JSSTRING_TO_RASTRING(cx, str, ret, sizeptr, lenptr) \
+{ \
+	size_t			*JSSTSlenptr=lenptr; \
+	size_t			JSSTSlen; \
+	size_t			JSSTSpos; \
+	const jschar	*JSSTSstrval; \
+	char			*JSSTStmpptr; \
+\
+	if(JSSTSlenptr==NULL) \
+		JSSTSlenptr=&JSSTSlen; \
+	(ret)=NULL; \
+	if((str) != NULL) { \
+		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
+			if(*sizeptr < (*JSSTSlenptr+1)) { \
+				*sizeptr = *JSSTSlenptr+1; \
+				if((JSSTStmpptr=(char *)realloc((ret), *sizeptr))==NULL) { \
+					JS_ReportError(cx, "Error reallocating %lu bytes at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
+					(ret)=NULL; \
+					free(ret); \
+				} \
+				else { \
+					(ret)=JSSTStmpptr; \
+				} \
+			} \
+			if(ret) { \
+				for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) \
+					(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
+				(ret)[*JSSTSlenptr]=0; \
+			} \
+		} \
+	} \
+}
+
+#define JSVALUE_TO_RASTRING(cx, val, ret, sizeptr, lenptr) \
+{ \
+	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
+	JSSTRING_TO_RASTRING((cx), JSVTSstr, (ret), (sizeptr), (lenptr)); \
+}
+
 #define JSSTRING_TO_MSTRING(cx, str, ret, lenptr) \
 { \
 	size_t			*JSSTSlenptr=lenptr; \
