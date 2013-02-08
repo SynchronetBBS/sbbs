@@ -952,6 +952,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 #define LAZY_INTEGER(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if(name) free(name); \
 		v=INT_TO_JSVAL((PropValue)); \
 		JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,flags); \
 		if(name) return(JS_TRUE); \
@@ -959,6 +960,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 #define LAZY_UINTEGER(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if(name) free(name); \
 		v=UINT_TO_JSVAL((PropValue)); \
 		JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,flags); \
 		if(name) return(JS_TRUE); \
@@ -966,6 +968,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 #define LAZY_UINTEGER_EXPAND(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if(name) free(name); \
 		if(p->expand_fields || (PropValue)) { \
 			v=UINT_TO_JSVAL((PropValue)); \
 			JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,flags); \
@@ -976,6 +979,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 #define LAZY_UINTEGER_COND(PropName, Condition, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if(name) free(name); \
 		if(Condition) { \
 			v=UINT_TO_JSVAL((uint32_t)(PropValue)); \
 			JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,flags); \
@@ -986,6 +990,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 #define LAZY_STRING(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if(name) free(name); \
 		if((js_str=JS_NewStringCopyZ(cx, (PropValue)))!=NULL) { \
 			JS_DefineProperty(cx, obj, PropName, STRING_TO_JSVAL(js_str), NULL, NULL, flags); \
 			if(name) return(JS_TRUE); \
@@ -995,6 +1000,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 #define LAZY_STRING_TRUNCSP(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if(name) free(name); \
 		if((js_str=JS_NewStringCopyZ(cx, truncsp(PropValue)))!=NULL) { \
 			JS_DefineProperty(cx, obj, PropName, STRING_TO_JSVAL(js_str), NULL, NULL, flags); \
 			if(name) return(JS_TRUE); \
@@ -1004,6 +1010,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 #define LAZY_STRING_COND(PropName, Condition, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if(name) free(name); \
 		if((Condition) && (js_str=JS_NewStringCopyZ(cx, (PropValue)))!=NULL) { \
 			JS_DefineProperty(cx, obj, PropName, STRING_TO_JSVAL(js_str), NULL, NULL, flags); \
 			if(name) return(JS_TRUE); \
@@ -1013,6 +1020,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 
 #define LAZY_STRING_TRUNCSP_NULL(PropName, PropValue, flags) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if(name) free(name); \
 		if((PropValue) != NULL && (js_str=JS_NewStringCopyZ(cx, truncsp(PropValue)))!=NULL) { \
 			JS_DefineProperty(cx, obj, PropName, STRING_TO_JSVAL(js_str), NULL, NULL, flags); \
 			if(name) return(JS_TRUE); \
@@ -1043,15 +1051,19 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 		
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval))
-			JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(idval), name, 32, NULL);
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 	}
 
 	/* If we have already enumerated, we're done here... */
-	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL) {
+		if(name) free(name);
 		return(JS_TRUE);
+	}
 
-	if((p->msg).hdr.number==0) /* No valid message number/id/offset specified */
+	if((p->msg).hdr.number==0) { /* No valid message number/id/offset specified */
+		if(name) free(name);
 		return(JS_TRUE);
+	}
 
 	LAZY_UINTEGER("number", p->msg.hdr.number, JSPROP_ENUMERATE);
 	LAZY_UINTEGER("offset", p->msg.offset, JSPROP_ENUMERATE);
@@ -1112,6 +1124,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING("date", msgdate((p->msg).hdr.when_written,date), JSPROP_ENUMERATE);
 
 	if(name==NULL || strcmp(name,"reply_id")==0) {
+		if(name) free(name);
 		/* Reply-ID (References) */
 		if((p->msg).reply_id!=NULL)
 			val=(p->msg).reply_id;
@@ -1142,6 +1155,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	/* Message-ID */
 	if(name==NULL || strcmp(name,"id")==0) {
+		if(name) free(name);
 		if(p->expand_fields || (p->msg).id!=NULL) {
 			get_msgid(scfg,p->p->smb.subnum,&(p->msg),msg_id,sizeof(msg_id));
 			val=msg_id;
@@ -1172,6 +1186,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_TRUNCSP_NULL("ftn_flags", p->msg.ftn_flags, JSPROP_ENUMERATE);
 
 	if(name==NULL || strcmp(name,"field_list")==0) {
+		if(name) free(name);
 		/* Create hdr.field_list[] with repeating header fields (including type and data) */
 		if((array=JS_NewArrayObject(cx,0,NULL))!=NULL) {
 			JS_DefineProperty(cx,obj,"field_list",OBJECT_TO_JSVAL(array)
@@ -1223,6 +1238,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	}
 
 	if(name==NULL || strcmp(name, "can_read")==0) {
+		if(name) free(name);
 		v=BOOLEAN_TO_JSVAL(JS_FALSE);
 
 		do {
@@ -1298,11 +1314,11 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 		if(name)
 			return(JS_TRUE);
 	}
-
+	if(name) free(name);
 
 	/* DO NOT RETURN JS_FALSE on unknown names */
-	/* Doing so will preven toString() among others from working. */
-	
+	/* Doing so will prevent toString() among others from working. */
+
 	return(JS_TRUE);
 }
 
