@@ -143,16 +143,22 @@ static char* server_prop_desc[] = {
 static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
+	JSBool			ret;
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		if(JSVAL_IS_STRING(idval))
-			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+		if(JSVAL_IS_STRING(idval)) {
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+			HANDLE_PENDING(cx);
+		}
 	}
 
-	return(js_SyncResolve(cx, obj, name, js_server_properties, NULL, NULL, 0));
+	ret = js_SyncResolve(cx, obj, name, js_server_properties, NULL, NULL, 0);
+	if(name)
+		free(name);
+	return ret;
 }
 
 static JSBool js_server_enumerate(JSContext *cx, JSObject *obj)
