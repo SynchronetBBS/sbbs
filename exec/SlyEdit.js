@@ -90,6 +90,10 @@
  *                                was incorrect if different from the user's
  *                                current sub-board; this was fixed.
  *                              - Now includes the user's signature when cross-posting
+ * 2013-02-08 Eric Oulashin     Version 1.22
+ *                              Bug fix: When replying to a personal email
+ *                              or netmail, now uses the correct author's
+ *                              initials in quote lines.
  */
 
 /* Command-line arguments:
@@ -162,8 +166,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.21";
-const EDITOR_VER_DATE = "2013-02-03";
+const EDITOR_VERSION = "1.22";
+const EDITOR_VER_DATE = "2013-02-08";
 
 
 // Program variables
@@ -418,14 +422,20 @@ if (dropFileName != undefined)
 
       if (gConfigSettings.useQuoteLineInitials)
       {
-        // For the name to use for the initials, use the
-        // current message's "from" name if there is one,
-        // or the "To" name read from the message info
-        // drop file.
-        // Remove any leading, multiple, or trailing spaces
-        // that it might have.
-        var quotedName = trimSpaces(getFromNameForCurMsg(gMsgAreaInfo), true, true, true);
-        if (quotedName.length == 0)
+        // For the name to use for quote line initials:
+        // If posting in a message sub-board, get the author's name from the
+        // header of the current message being read in the sub-board (in
+        // case the user changes the "To" name).  Otherwise (if not posting in
+        // a message sub-board), use the gToName value read from the drop file.
+        // Remove any leading, multiple, or trailing spaces.
+        var quotedName = "";
+        if (postingInMsgSubBoard(gMsgArea))
+        {
+          quotedName = trimSpaces(getFromNameForCurMsg(gMsgAreaInfo), true, true, true);
+          if (quotedName.length == 0)
+            quotedName = trimSpaces(gToName, true, true, true);
+        }
+        else
           quotedName = trimSpaces(gToName, true, true, true);
         // If configured to indent quote lines w/ initials with
         // a space, then do it.
