@@ -761,8 +761,8 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	str=NULL;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
-	char		*cstr;
-	size_t		cstr_sz;
+	char		*cstr=NULL;
+	size_t		cstr_sz=0;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
