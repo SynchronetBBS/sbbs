@@ -1692,10 +1692,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
     uintN		i=0;
 	int32		level=LOG_INFO;
-    JSString*	str=NULL;
 	private_t*	p;
 	jsrefcount	rc;
-	char		*lstr;
+	char		*lstr=NULL;
+	size_t		lstr_sz=0;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1708,19 +1708,17 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	for(; i<argc; i++) {
-		JSVALUE_TO_STRING(cx, argv[i], lstr, NULL);
+		JSVALUE_TO_RASTRING(cx, argv[i], lstr, &lstr_sz, NULL);
+		HANDLE_PENDING(cx);
 		if(lstr==NULL)
-			return(JS_FALSE);
+			return(JS_TRUE);
 		rc=JS_SUSPENDREQUEST(cx);
 		lprintf(level,"%04d %s %s %s"
 			,p->sock,p->log_prefix,p->proc_name,lstr);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
-	if(str==NULL)
-		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-	else
-		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
+	free(lstr);
 
     return(JS_TRUE);
 }
