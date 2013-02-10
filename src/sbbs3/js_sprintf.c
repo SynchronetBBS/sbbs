@@ -41,16 +41,18 @@
 char* DLLCALL
 js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 {
+	char*		op;
 	char*		p;
 	char		*p2=NULL;
 	size_t		p2_sz;
 
-	JSVALUE_TO_MSTRING(cx, argv[argn++], p, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[argn++], op, NULL);
 	if(JS_IsExceptionPending(cx))
 		JS_ClearPendingException(cx);
 	if(p==NULL)
 		return(NULL);
 
+	p=op;
 	p=xp_asprintf_start(p);
     for(; argn<argc; argn++) {
 		if(JSVAL_IS_DOUBLE(argv[argn]))
@@ -74,7 +76,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 	if(p2)
 		free(p2);
 	p2=xp_asprintf_end(p, NULL);
-	free(p);
+	free(op);
 	return p2;
 }
 
