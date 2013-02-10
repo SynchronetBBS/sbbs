@@ -138,7 +138,10 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 	if(tiny==PROP_CHANGES)
 		return JS_ValueToBoolean(cx,*vp,&uifc->changes);
 	else if(tiny==PROP_HELPBUF) {
+		if(uifc->helpbuf)
+			free(uifc->helpbuf);
 		JSVALUE_TO_STRING(cx, *vp, uifc->helpbuf, NULL);
+		HANDLE_PENDING(cx);
 		return JS_TRUE;
 	}
 
@@ -250,7 +253,8 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
-	char*	title="Synchronet";
+	const char*	title_def="Synchronet";
+	char*	title=(char *)title_def;
 	char*	mode;
 	uifcapi_t* uifc;
 	jsrefcount	rc;
@@ -261,13 +265,14 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc) {
-		JSVALUE_TO_STRING(cx, argv[0], title, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[0], title, NULL);
+		HANDLE_PENDING(cx);
 		if(title==NULL)
-			return(JS_FALSE);
+			return(JS_TRUE);
 	}
 
 	if(argc>1) {
-		JSVALUE_TO_STRING(cx, argv[1], mode, NULL);
+		JSVALUE_TO_ASTRING(cx, argv[1], mode, 7, NULL);
 		if(mode != NULL) {
 			if(!stricmp(mode,"STDIO"))
 				ciolib_mode=-1;
@@ -286,22 +291,30 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 	if(ciolib_mode==-1) {
 		if(uifcinix(uifc)) {
 			JS_RESUMEREQUEST(cx, rc);
+			if(title != title_def)
+				free(title);
 			return(JS_TRUE);
 		}
 	} else {
 		if(initciolib(ciolib_mode)) {
 			JS_RESUMEREQUEST(cx, rc);
+			if(title != title_def)
+				free(title);
 			return(JS_TRUE);
 		}
 
 		if(uifcini32(uifc)) {
 			JS_RESUMEREQUEST(cx, rc);
+			if(title != title_def)
+				free(title);
 			return(JS_TRUE);
 		}
 	}
 
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	uifc->scrn(title);
+	if(title != title_def)
+		free(title);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -338,12 +351,14 @@ js_uifc_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	JSVALUE_TO_STRING(cx, argv[0], str, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx);
 	if(str==NULL)
-		return(JS_FALSE);
+		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	uifc->msg(str);
+	free(str);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -362,11 +377,15 @@ js_uifc_pop(JSContext *cx, uintN argc, jsval *arglist)
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
-		JSVALUE_TO_STRING(cx, argv[0], str, NULL);
+	if(argc) {
+		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+		HANDLE_PENDING(cx);
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	uifc->pop(str);
+	if(str)
+		free(str);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -403,38 +422,69 @@ js_uifc_input(JSContext *cx, uintN argc, jsval *arglist)
 		&& !JS_ValueToInt32(cx,argv[argn++],&top))
 		return(JS_FALSE);
 	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
-		JSVALUE_TO_STRING(cx, argv[argn++], prompt, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn++], prompt, NULL);
+		HANDLE_PENDING(cx);
 		if(prompt==NULL)
-			return(JS_FALSE);
+			return(JS_TRUE);
 	}
 	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
 		JSVALUE_TO_STRING(cx, argv[argn++], org, NULL);
+		if(JS_IsExceptionPending(cx)) {
+			if(prompt)
+				free(prompt);
+			return JS_FALSE;
+		}
 		if(org==NULL)
-			return(JS_FALSE);
+			return(JS_TRUE);
 	}
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
-		&& !JS_ValueToInt32(cx,argv[argn++],&maxlen))
+		&& !JS_ValueToInt32(cx,argv[argn++],&maxlen)) {
+		if(prompt)
+			free(prompt);
+		if(org)
+			free(org);
 		return(JS_FALSE);
+	}
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
-		&& !JS_ValueToInt32(cx,argv[argn++],&kmode))
+		&& !JS_ValueToInt32(cx,argv[argn++],&kmode)) {
+		if(prompt)
+			free(prompt);
+		if(org)
+			free(org);
 		return(JS_FALSE);
+	}
 
 	if(!maxlen)
 		maxlen=40;
 
-	if((str=(char*)alloca(maxlen+1))==NULL)
+	if((str=(char*)malloc(maxlen+1))==NULL) {
+		if(prompt)
+			free(prompt);
+		if(org)
+			free(org);
 		return(JS_FALSE);
+	}
 
 	memset(str,0,maxlen+1);
 
-	if(org)
+	if(org) {
 		strncpy(str,org,maxlen);
+		free(org);
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(uifc->input(mode, left, top, prompt, str, maxlen, kmode)<0) {
 		JS_RESUMEREQUEST(cx, rc);
+		if(prompt)
+			free(prompt);
+		if(str)
+			free(str);
 		return(JS_TRUE);
 	}
+	if(prompt)
+		free(prompt);
+	if(str)
+		free(str);
 	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,str)));
@@ -461,7 +511,8 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 	jsuint      i;
 	jsuint		numopts;
 	str_list_t	opts=NULL;
-	char		*opt;
+	char		*opt=NULL;
+	size_t		opt_sz;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -488,9 +539,8 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 		&& !JS_ValueToInt32(cx,argv[argn++],&bar))
 		return(JS_FALSE);
 	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
-		JSVALUE_TO_STRING(cx, argv[argn++], title, NULL);
-		if(title==NULL)
-			return(JS_FALSE);
+		JSVALUE_TO_MSTRING(cx, argv[argn++], title, NULL);
+		HANDLE_PENDING(cx);
 	}
 	if(argn<argc && JSVAL_IS_OBJECT(argv[argn])) {
 		if((objarg = JSVAL_TO_OBJECT(argv[argn++]))==NULL)
@@ -502,9 +552,15 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 			for(i=0;i<numopts;i++) {
 				if(!JS_GetElement(cx, objarg, i, &val))
 					break;
-				JSVALUE_TO_STRING(cx, val, opt, NULL);
+				JSVALUE_TO_RASTRING(cx, val, opt, &opt_sz, NULL);
+				if(JS_IsExceptionPending(cx)) {
+					if(title)
+						free(title);
+				}
 				strListPush(&opts,opt);
 			}
+			if(opt)
+				free(opt);
 		}
 	}
 
@@ -560,16 +616,22 @@ static jsSyncMethodSpec js_functions[] = {
 static JSBool js_uifc_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
+	JSBool			ret;
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
 		
 		JS_IdToValue(cx, id, &idval);
-		if(JSVAL_IS_STRING(idval))
-			JSSTRING_TO_STRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+		if(JSVAL_IS_STRING(idval)) {
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+			HANDLE_PENDING(cx);
+		}
 	}
 
-	return(js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0));
+	ret=js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0);
+	if(name)
+		free(name);
+	return ret;
 }
 
 static JSBool js_uifc_enumerate(JSContext *cx, JSObject *obj)
