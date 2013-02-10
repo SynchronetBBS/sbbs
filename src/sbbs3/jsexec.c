@@ -295,7 +295,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	int32		level=LOG_INFO;
     JSString*	str=NULL;
 	jsrefcount	rc;
-	char		*logstr;
+	char		*logstr=NULL;
+	size_t		logstr_sz=0;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -307,7 +308,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	for(; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			return(JS_FALSE);
-		JSSTRING_TO_STRING(cx, str, logstr, NULL);
+		JSSTRING_TO_RASTRING(cx, str, logstr, &logstr_sz, NULL);
 		if(logstr==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
@@ -319,6 +320,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	else
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
+	free(logstr);
 
     return(JS_TRUE);
 }
@@ -387,14 +389,15 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
     uintN		i;
     JSString*	str=NULL;
 	jsrefcount	rc;
-	char		*line;
+	char		*line=NULL;
+	size_t		line_sz=0;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
     for (i = 0; i < argc; i++) {
 		if((str=JS_ValueToString(cx, argv[0]))==NULL)
 		    return(JS_FALSE);
-		JSSTRING_TO_STRING(cx, str, line, NULL);
+		JSSTRING_TO_RASTRING(cx, str, line, &line_sz, NULL);
 		if(line==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
@@ -406,6 +409,8 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	else
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
+	if(line)
+		free(line);
     return(JS_TRUE);
 }
 
@@ -459,12 +464,13 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	JSVALUE_TO_STRING(cx, argv[0], line, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[0], line, NULL);
 	if(line==NULL)
 	    return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	fprintf(confp,"!%s\n",line);
+	free(line);
 	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, argv[0]);
@@ -487,9 +493,13 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
 	    return(JS_FALSE);
 
-	JSSTRING_TO_STRING(cx, str, cstr, NULL);
-	printf("%s (Y/n)? ", cstr);
+	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
+	HANDLE_PENDING(cx);
+	if(cstr==NULL)
+		return JS_TRUE;
 	rc=JS_SUSPENDREQUEST(cx);
+	printf("%s (Y/n)? ", cstr);
+	free(cstr);
 	fgets(instr,sizeof(instr),stdin);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -514,9 +524,13 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
 	    return(JS_FALSE);
 
-	JSSTRING_TO_STRING(cx, str, cstr, NULL);
-	printf("%s (N/y)? ", cstr);
+	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
+	HANDLE_PENDING(cx);
+	if(cstr==NULL)
+		return JS_TRUE;
 	rc=JS_SUSPENDREQUEST(cx);
+	printf("%s (N/y)? ", cstr);
+	free(cstr);
 	fgets(instr,sizeof(instr),stdin);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -538,19 +552,19 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc>0 && !JSVAL_IS_VOID(argv[0])) {
-		JSVALUE_TO_STRING(cx, argv[0], prstr, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[0], prstr, NULL);
+		HANDLE_PENDING(cx);
 		if(prstr==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
 		fprintf(confp,"%s: ",prstr);
+		free(prstr);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
 	if(argc>1) {
-		JSVALUE_TO_STRING(cx, argv[1], prstr, NULL);
-		if(prstr==NULL)
-		    return(JS_FALSE);
-		SAFECOPY(instr,prstr);
+		JSVALUE_TO_STRBUF(cx, argv[1], instr, sizeof(instr), NULL);
+		HANDLE_PENDING(cx);
 	} else
 		instr[0]=0;
 
@@ -574,16 +588,20 @@ js_chdir(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
 	jsrefcount	rc;
+	BOOL		ret;
 
-	JSVALUE_TO_STRING(cx, argv[0], p, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
+	HANDLE_PENDING(cx);
 	if(p==NULL) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 		return(JS_TRUE);
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(chdir(p)==0));
+	ret=chdir(p)==0;
+	free(p);
 	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
 	return(JS_TRUE);
 }
 
@@ -592,15 +610,23 @@ js_putenv(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p=NULL;
+	BOOL		ret;
+	jsrefcount	rc;
 
-	if(argc)
-		JSVALUE_TO_STRING(cx, argv[0], p, NULL);
+	if(argc) {
+		JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
+		HANDLE_PENDING(cx);
+	}
 	if(p==NULL) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 		return(JS_TRUE);
 	}
 
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(putenv(strdup(p))==0));
+	rc=JS_SUSPENDREQUEST(cx);
+	ret=putenv(strdup(p))==0;
+	free(p);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
 	return(JS_TRUE);
 }
 
@@ -921,8 +947,9 @@ long js_exec(const char *fname, char** args)
 	if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
 		char	*p;
 
-		JSVALUE_TO_STRING(js_cx, rval, p, NULL);
+		JSVALUE_TO_MSTRING(js_cx, rval, p, NULL);
 		mfprintf(statfp,"Using JavaScript exit_code: %s",p);
+		free(p);
 		JS_ValueToInt32(js_cx,rval,&result);
 	}
 	js_EvalOnExit(js_cx, js_glob, &cb);
