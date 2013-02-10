@@ -1718,7 +1718,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
-	free(lstr);
+	if(lstr)
+		free(lstr);
 
     return(JS_TRUE);
 }
