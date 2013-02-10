@@ -49,7 +49,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 	JSVALUE_TO_MSTRING(cx, argv[argn++], op, NULL);
 	if(JS_IsExceptionPending(cx))
 		JS_ClearPendingException(cx);
-	if(p==NULL)
+	if(op==NULL)
 		return(NULL);
 
 	p=op;
