@@ -252,7 +252,7 @@ int recvfilesocket(int sock, int file, off_t *offset, off_t count)
 		return(-1);
 	}
 		
-	if((buf=(char*)alloca((size_t)count))==NULL) {
+	if((buf=(char*)malloc((size_t)count))==NULL) {
 		errno=ENOMEM;
 		return(-1);
 	}
@@ -262,14 +262,17 @@ int recvfilesocket(int sock, int file, off_t *offset, off_t count)
 			return(-1);
 
 	rd=read(sock,buf,(size_t)count);
-	if(rd!=count)
+	if(rd!=count) {
+		free(buf);
 		return(-1);
+	}
 
 	wr=write(file,buf,rd);
 
 	if(offset!=NULL)
 		(*offset)+=wr;
 
+	free(buf);
 	return(wr);
 }
 
