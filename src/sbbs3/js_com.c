@@ -364,7 +364,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 
-	if((buf=(char*)alloca(len+1))==NULL) {
+	if((buf=(char*)malloc(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
@@ -374,12 +374,14 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	if(len<0) {
 		p->last_error=ERROR_VALUE;
+		free(buf);
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		return(JS_TRUE);
 	}
 	buf[len]=0;
 
 	str = JS_NewStringCopyN(cx, buf, len);
+	free(buf);
 	if(str==NULL)
 		return(JS_FALSE);
 
@@ -416,14 +418,16 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 
-	if((buf=(char*)alloca(len+1))==NULL) {
+	if((buf=(char*)malloc(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 
 	if(argc>1) {
-		if(!JS_ValueToInt32(cx,argv[1],&timeout))
+		if(!JS_ValueToInt32(cx,argv[1],&timeout)) {
+			free(buf);
 			return JS_FALSE;
+		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -437,6 +441,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_RESUMEREQUEST(cx, rc);
 	str = JS_NewStringCopyZ(cx, buf);
+	free(buf);
 	if(str==NULL)
 		return(JS_FALSE);
 
