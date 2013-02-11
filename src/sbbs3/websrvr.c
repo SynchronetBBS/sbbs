@@ -73,6 +73,7 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "xpmap.h"
+#include "xpprintf.h"
 
 static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
