@@ -3408,7 +3408,7 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
     if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
 		return(JS_FALSE);
 
-	if((index=(SOCKET *)alloca(sizeof(SOCKET)*limit))==NULL)
+	if((index=(SOCKET *)malloc(sizeof(SOCKET)*limit))==NULL)
 		return(JS_FALSE);
 
 	FD_ZERO(&socket_set);
@@ -3446,6 +3446,7 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(rarray));
 	}
+	free(index);
 	JS_RESUMEREQUEST(cx, rc);
 
     return(JS_TRUE);

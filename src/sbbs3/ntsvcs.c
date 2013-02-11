@@ -678,6 +678,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
     SC_HANDLE		hService;
 	DWORD			size;
 	DWORD			err;
+	DWORD			ret;
 	SERVICE_STATUS	status;
 	LPQUERY_SERVICE_CONFIG service_config;
 
@@ -704,7 +705,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 	if(state!=NULL && QueryServiceStatus(hService,&status))
 		*state=status.dwCurrentState;
 
-	if((service_config=alloca(size))==NULL) {
+	if((service_config=malloc(size))==NULL) {
 		printf("\n!ERROR allocating %u bytes of memory\n", size);
 		return(-1);
 	}
@@ -716,11 +717,14 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 		&size			/* address of variable for bytes needed */
 		)) {
 		printf("\n!QueryServiceConfig ERROR %u\n",GetLastError());
+		free(service_config);
 		return(-1);
 	}
     CloseServiceHandle(hService);
+	ret=service_config->dwStartType
+	free(service_config);
 
-	return(service_config->dwStartType);
+	return ret;
 }
 
 /****************************************************************************/

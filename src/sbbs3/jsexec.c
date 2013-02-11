@@ -340,7 +340,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		if(!JS_ValueToInt32(cx,argv[0],&len))
 			return JS_FALSE;
 	}
-	if((buf=alloca(len))==NULL)
+	if((buf=malloc(len))==NULL)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -349,6 +349,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(rd>=0)
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyN(cx,buf,rd)));
+	free(buf);
 
     return(JS_TRUE);
 }
@@ -368,7 +369,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 		if(!JS_ValueToInt32(cx,argv[0],&len))
 			return JS_FALSE;
 	}
-	if((buf=alloca(len+1))==NULL)
+	if((buf=malloc(len+1))==NULL)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -377,6 +378,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(p!=NULL)
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncnl(p))));
+	free(buf);
 
     return(JS_TRUE);
 }

@@ -401,8 +401,8 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 			return(JS_FALSE);
 	}
 
-	if((buf=alloca(len))==NULL)
-		return(JS_TRUE);
+	if((buf=malloc(len))==NULL)
+		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(fgets(buf,len,p->fp)!=NULL) {
@@ -422,6 +422,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	} else {
 		JS_RESUMEREQUEST(cx, rc);
 	}
+	free(buf);
 
 	return(JS_TRUE);
 }

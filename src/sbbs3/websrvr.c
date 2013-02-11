@@ -665,16 +665,13 @@ static void add_env(http_session_t *session, const char *name,const char *value)
 		if(*p=='-')
 			*p='_';
 	}
-	p=(char *)alloca(strlen(name)+strlen(value)+2);
+	p=xp_asprintf("%s=%s",newname,value);
 	if(p==NULL) {
 		lprintf(LOG_WARNING,"%04d Cannot allocate memory for string", session->socket);
 		return;
 	}
-#if 0	/* this is way too verbose for every request */
-	lprintf(LOG_DEBUG,"%04d Adding CGI environment variable %s=%s",session->socket,newname,value);
-#endif
-	sprintf(p,"%s=%s",newname,value);
 	strListPush(&session->req.cgi_env,p);
+	free(p);
 }
 
 /***************************************/
@@ -1069,7 +1066,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			session->req.ld->status=atoi(status);
 		return(TRUE);
 	}
-	headers=alloca(MAX_HEADERS_SIZE);
+	headers=malloc(MAX_HEADERS_SIZE);
 	if(headers==NULL)  {
 		lprintf(LOG_CRIT,"Could not allocate memory for response headers.");
 		return(FALSE);
@@ -1223,6 +1220,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	send_file = (bufprint(session,headers) && send_file);
 	drain_outbuf(session);
 	session->req.write_chunked=chunked;
+	free(headers);
 	return(send_file);
 }
 
@@ -2023,15 +2021,15 @@ static void js_add_header(http_session_t * session, char *key, char *value)
 	JSString*	js_str;
 	char		*lckey;
 
-	if((lckey=(char *)alloca(strlen(key)+1))==NULL)
+	if((lckey=strdup(key))==NULL)
 		return;
-	strcpy(lckey,key);
 	strlwr(lckey);
 	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL) {
 		return;
 	}
 	JS_DefineProperty(session->js_cx, session->js_header, lckey, STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	free(lckey);
 }
 
 #if 0
@@ -5163,7 +5161,7 @@ void http_session_thread(void* arg)
 	session.last_js_user_num=-1;
 	session.logon_time=0;
 
-	session.subscan=(subscan_t*)alloca(sizeof(subscan_t)*scfg.total_subs);
+	session.subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
 
 	while(!session.finished) {
 		init_error=FALSE;
@@ -5263,6 +5261,7 @@ void http_session_thread(void* arg)
 	sem_wait(&session.output_thread_terminated);
 	sem_destroy(&session.output_thread_terminated);
 	RingBufDispose(&session.outbuf);
+	free(session.subscan);
 
 	clients_remain=protected_uint32_adjust(&active_clients, -1);
 	update_clients();

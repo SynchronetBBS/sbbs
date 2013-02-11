@@ -2359,7 +2359,7 @@ static void smtp_thread(void* arg)
 		return;
 	} 
 
-	if((mailproc_to_match=alloca(sizeof(BOOL)*mailproc_count))==NULL) {
+	if((mailproc_to_match=malloc(sizeof(BOOL)*mailproc_count))==NULL) {
 		lprintf(LOG_CRIT,"%04d !SMTP ERROR allocating memory for mailproc_to_match", socket);
 		sockprintf(socket,sys_error);
 		mail_close_socket(socket);
@@ -2416,6 +2416,7 @@ static void smtp_thread(void* arg)
 			thread_down();
 			protected_uint32_adjust(&active_clients, -1);
 			update_clients();
+			free(mailproc_to_match);
 			return;
 		}
 
@@ -2428,6 +2429,7 @@ static void smtp_thread(void* arg)
 			thread_down();
 			protected_uint32_adjust(&active_clients, -1);
 			update_clients();
+			free(mailproc_to_match);
 			return;
 		}
 
@@ -2448,6 +2450,7 @@ static void smtp_thread(void* arg)
 				thread_down();
 				protected_uint32_adjust(&active_clients, -1);
 				update_clients();
+				free(mailproc_to_match);
 				return;
 			}
 		}
@@ -2462,6 +2465,7 @@ static void smtp_thread(void* arg)
 		thread_down();
 		protected_uint32_adjust(&active_clients, -1);
 		update_clients();
+		free(mailproc_to_match);
 		return;
 	}
 	SAFEPRINTF(spam.file,"%sspam",scfg.data_dir);
@@ -2485,6 +2489,7 @@ static void smtp_thread(void* arg)
 		thread_down();
 		protected_uint32_adjust(&active_clients, -1);
 		update_clients();
+		free(mailproc_to_match);
 		return;
 	}
 
@@ -4079,6 +4084,7 @@ static void smtp_thread(void* arg)
 		lprintf(LOG_INFO,"%04d SMTP Session thread terminated (%u threads remain, %lu clients served)"
 			,socket, remain, ++stats.smtp_served);
 	}
+	free(mailproc_to_match);
 
 	/* Must be last */
 	mail_close_socket(socket);
