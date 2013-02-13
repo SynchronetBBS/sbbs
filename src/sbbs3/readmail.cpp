@@ -521,8 +521,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 					bputs(text[MailOnSystemLstHdr]);
 				else
 					bputs(text[MailWaitingLstHdr]);
-				u=i;
-				for(;u<smb.msgs && !msgabort();u++) {
+				for(u=i;u<smb.msgs && !msgabort();u++) {
 					if(msg.total_hfields)
 						smb_freemsgmem(&msg);
 					msg.total_hfields=0;
