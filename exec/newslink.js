@@ -594,7 +594,7 @@ for(i in area) {
 		if(this.console!=undefined)
 			console.line_counter = 0;
 
-		if(article_list && !article_listed(article_list,ptr)) {
+		if(this.article_list!=undefined && !article_listed(article_list,ptr)) {
 			subpending--;
 			continue;
 		}
