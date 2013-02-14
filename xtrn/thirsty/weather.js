@@ -75,11 +75,11 @@ var makeWeatherList = function() {
 	weatherTab.frame.gotoxy(10, 1);
 	weatherTab.frame.putmsg(weather[player.day].name, WHITE);
 	weatherTab.frame.gotoxy(10, 2);
-	weatherTab.frame.putmsg(format("POP:  %s\%", weather[player.day].POP), WHITE);
+	weatherTab.frame.putmsg(format("Probability of Precipitation:  %s\%", weather[player.day].POP), WHITE);
 	weatherTab.frame.gotoxy(10, 3);
 	weatherTab.frame.putmsg(
 		format(
-			"Temp: %s%sC (%s%sF)",
+			"Temperature: %s%sC (%s%sF)",
 			weather[player.day].temperature.toFixed(),
 			ascii(248),
 			Math.round(celsiusToFahrenheit(weather[player.day].temperature)),
