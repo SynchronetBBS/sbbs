@@ -416,7 +416,8 @@ var playTurn = function() {
 			}
 		}
 	}
-
+	
+	var stockLosses = 0;
 	var lpi = 100 - demographics.vagrants.percentage;
 	if(Math.floor((Math.random() * 100) + 1) > lpi) {
 		var losses = [];
@@ -433,15 +434,19 @@ var playTurn = function() {
 			var loss = Math.floor((Math.random() * (player.inventory[ingredient].quantity)) + 1);
 			player.inventory[ingredient].quantity = player.inventory[ingredient].quantity - loss;
 			losses.push(loss + " units of " + player.inventory[ingredient].name + " from storage");
+			stockLosses = stockLosses + (player.inventory[ingredient].quantity * player.inventory[ingredient].cost);
 		}
-		report.push(
-			[	format(
-					"Your shop was looted by vagrants!  You lost %s.",
-					losses.join(", ")
-				),
-				LIGHTRED
-			]
-		);
+		if(losses.length > 0) {
+			report.push(
+				[	format(
+						"Your shop was looted by vagrants!  You lost %s.",
+						losses.join(", ")
+					),
+					LIGHTRED
+				]
+			);
+			makeStockList();
+		}
 	}
 	
 	var grossSales = 0;
