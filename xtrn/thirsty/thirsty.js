@@ -397,9 +397,11 @@ var playTurn = function() {
 
 	var stockCosts = 0;
 	var water = 0;
+	var electricity = 0;
 	for(var product in player.products) {
 		if(player.products[product].quantity < 1)
 			continue;
+		electricity = electricity + player.products[product].quantity;
 		for(var ingredient in products[product].ingredients) {
 			if(products[product].ingredients[ingredient] == "Water") {
 				water = water + player.products[product].quantity;
@@ -562,17 +564,19 @@ var playTurn = function() {
 		);
 	}
 	
-	player.money = player.money - gameSettings.electricityCost;
-	report.push(
-		[	format(
-				"The city of Thirstyville has charged you $%s for today's electricity usage.",
-				gameSettings.electricityCost.toFixed(2)
-			),
-			LIGHTRED
-		]
-	);
-
-	var overHeads = gameSettings.electricityCost + (water * gameSettings.waterCost);
+	if(electricity > 0) {
+		player.money = player.money - (electricity * gameSettings.electricityCost);
+		report.push(
+			[	format(
+					"The city of Thirstyville has charged you $%s for today's electricity usage.",
+					(electricity * gameSettings.electricityCost).toFixed(2)
+				),
+				LIGHTRED
+			]
+		);
+	}
+		
+	var overHeads = (electricity * gameSettings.electricityCost) + (water * gameSettings.waterCost);
 	var totalCosts = stockCosts + overHeads;
 	var grossProfit = grossSales - stockCosts;
 	var operatingProfit = grossProfit - overHeads;
