@@ -423,9 +423,16 @@ var playTurn = function() {
 		for(var product in player.products) {
 			if(player.products[product].quantity < 2)
 				continue;
-			var loss = Math.floor((Math.random() * (player.products[product].quantity * .7)) + 1);
+			var loss = Math.floor((Math.random() * (player.products[product].quantity)) + 1);
 			player.products[product].quantity = player.products[product].quantity - loss;
 			losses.push(loss + " units of " + player.products[product].name);
+		}
+		for(var ingredient in player.inventory) {
+			if(player.inventory[ingredient].quantity < 2)
+				continue;
+			var loss = Math.floor((Math.random() * (player.inventory[ingredient].quantity)) + 1);
+			player.inventory[ingredient].quantity = player.inventory[ingredient].quantity - loss;
+			losses.push(loss + " units of " + player.inventory[ingredient].name + " from storage");
 		}
 		report.push(
 			[	format(
