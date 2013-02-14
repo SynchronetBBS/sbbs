@@ -89,8 +89,8 @@ var dataInit = function() {
 		
 		news = [];
 		var newsKeys = jsonClient.keys("THIRSTY", "THIRSTY.NEWS", 1);
-		for(var key in newsKeys) {
-			news.push(jsonClient.read("THIRSTY", "THIRSTY.NEWS." + newsKeys[key], 1));
+		for(var k = ((newsKeys.length > 25) ? newsKeys.length - 25 : 0); k < newsKeys.length; k++) {
+			news.push(jsonClient.read("THIRSTY", "THIRSTY.NEWS." + newsKeys[k], 1));
 		}
 
 		demographics = getDemographics(update);
@@ -426,14 +426,28 @@ var playTurn = function() {
 				continue;
 			var loss = Math.floor((Math.random() * (player.products[product].quantity)) + 1);
 			player.products[product].quantity = player.products[product].quantity - loss;
-			losses.push(loss + " units of " + player.products[product].name);
+			losses.push(
+				format(
+					"%s unit%s of %s",
+					loss,
+					(loss > 1) ? "s" : "",
+					player.products[product].name
+				)
+			);
 		}
 		for(var ingredient in player.inventory) {
 			if(player.inventory[ingredient].quantity < 2)
 				continue;
 			var loss = Math.floor((Math.random() * (player.inventory[ingredient].quantity)) + 1);
 			player.inventory[ingredient].quantity = player.inventory[ingredient].quantity - loss;
-			losses.push(loss + " units of " + player.inventory[ingredient].name + " from storage");
+			losses.push(
+				format(
+					"%s unit%s of %s from storage",
+					loss,
+					(loss > 1) ? "s" : "",
+					player.inventory[ingredient].name
+				)
+			);
 			stockLosses = stockLosses + (player.inventory[ingredient].quantity * player.inventory[ingredient].cost);
 		}
 		if(losses.length > 0) {
@@ -449,8 +463,67 @@ var playTurn = function() {
 		}
 	}
 	
+	var storeClosed = false;
+	var loseAllStock = false;
+	if(Math.floor((Math.random() * 20) + 1) == 10) {
+		storeClosed = true;
+		if(precipitation && precipitationType == "snow") {
+			report.push([
+				"Blizzard conditions have kept all of the customers away!",
+				LIGHTRED
+			]);
+		} else if(precipitation && precipitationType == "rain")	{
+			loseAllStock = true;
+			var repairCost = Math.floor(Math.random() * (player.money * 0.5)) + Math.floor(Math.random() * (player.money * 0.2));
+			report.push([
+				format(
+					"Heavy rainfall has caused a flood!  Your inventory was destroyed, and you must pay $%s in clean-up costs.",
+					repairCost.toFixed(2)
+				),
+				LIGHTRED
+			]);
+			player.money = player.money - repairCost;
+		} else if(weather[player.day].temperature < -5) {
+			loseAllStock = true;
+			report.push([
+				"The cold weather caused vagrants to take shelter in your shop, and they've stolen all of your inventory!",
+				LIGHTRED
+			]);
+		} else {
+			var n = Math.floor(Math.random() * 2) + 1;
+			if(n == 1) {
+				loseAllStock = true;
+				var repairCost = Math.floor(Math.random() * (player.money * 0.8)) + Math.floor(Math.random() * (player.money * 0.1));
+				report.push([
+					format(
+						"Your shop caught fire!  Your inventory was destroyed, and you must pay $%s in repair costs.",
+						repairCost.toFixed(2)
+					),
+					LIGHTRED
+				]);
+				player.money = player.money - repairCost;
+			} else if(n == 2) {
+				report.push([
+					"Vagrants have camped out on your doorstep!  Customers are too afraid to enter.",
+					LIGHTRED
+				]);
+			}
+		}
+		if(loseAllStock) {
+			for(var product in player.products)
+				player.products[product].quantity = 0;
+			for(var ingredient in player.inventory)
+				player.inventory[ingredient].quantity = 0;
+		}
+		makeMenu();
+		makeStockList();
+	}
+	
 	var grossSales = 0;
 	for(var segment in demographics) {
+
+		if(storeClosed)
+			break;
 
 		var headCount = (gameSettings.population * (demographics[segment].percentage / 100)).toFixed();
 		var hotDrinkBuyers = (headCount * (hdpi / 100)).toFixed();
@@ -553,8 +626,9 @@ var playTurn = function() {
 
 		report.push(
 			[	format(
-					"%s units of %s had to be discarded, at a cost of $%s.",
+					"%s unit%s of %s had to be discarded, at a cost of $%s.",
 					player.products[product].quantity,
+					(player.products[product].quantity > 1) ? "s" : "",
 					player.products[product].name,
 					cost.toFixed(2)
 				),
@@ -603,9 +677,9 @@ var playTurn = function() {
 			player.alias,
 			grossSales.toFixed(2),
 			grossProfit.toFixed(2),
-			(grossProfit > 0) ? "profit" : "loss",
+			(grossProfit >= 0) ? "profit" : "loss",
 			overHeads.toFixed(2),
-			(operatingProfit > 0) ? "profit" : "loss",
+			(operatingProfit >= 0) ? "profit" : "loss",
 			operatingProfit.toFixed(2),
 			carryingCosts.toFixed(2)
 		)
