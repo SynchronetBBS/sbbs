@@ -10,6 +10,8 @@ var makePlayer = function() {
 		'money' : gameSettings.startingFunds,
 		'day' : 1,
 		'week' : gameSettings.week,
+		'weeks' : 1,
+		'lastRentPayment' : 0,
 		'marketReport' : 0,
 		'inventory' : {},
 		'products' : {}
@@ -49,6 +51,7 @@ var getPlayer = function() {
 			jsonClient.push("THIRSTY", "THIRSTY.NEWS", message, 2);
 		} else if(player.week != gameSettings.week) {
 			player.week = gameSettings.week;
+			player.weeks++;
 			player.day = 1;
 		} else {
 			return player;

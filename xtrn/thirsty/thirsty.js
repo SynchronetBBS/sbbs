@@ -66,6 +66,7 @@ var dataInit = function() {
 				'reportCost' : parseInt(gameIni.reportCost),
 				'waterCost' : parseFloat(gameIni.waterCost),
 				'electricityCost' : parseFloat(gameIni.electricityCost),
+				'rentCost' : parseFloat(gameIni.rentCost),
 				'week' : 1
 			};
 			var newsItem = [{ 
@@ -596,6 +597,30 @@ var playTurn = function() {
 	report.push([message.message, LIGHTGREEN]);
 	putNews(report);
 	jsonClient.push("THIRSTY", "THIRSTY.NEWS", message, 2);
+	
+	if(player.day == 1 && player.weeks == 1) {
+		player.money = player.money - gameSettings.startingFunds;
+		putNews(
+			"The bank collected on its $" + gameSettings.startingFunds + " loan.",
+			LIGHTRED
+		);
+	}
+	
+	if(player.weeks % 4 == 0) {
+		while(player.lastRentPayment < player.weeks) {
+			player.lastRentPayment = player.lastRentPayment + 4;
+			player.money = player.money - gameSettings.rentCost;
+			putNews(
+				format(
+					"Your landlord collected $%s in rent for month %s.",
+					gameSettings.rentCost, player.lastRentPayment
+				),
+				LIGHTRED
+			);
+			if(player.money < 0)
+				break;
+		}
+	}
 	
 	player.day++;
 	jsonClient.write("THIRSTY", "THIRSTY.PLAYERS." + playerID, player, 2);
