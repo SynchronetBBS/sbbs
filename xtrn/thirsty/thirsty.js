@@ -598,7 +598,7 @@ var playTurn = function() {
 	putNews(report);
 	jsonClient.push("THIRSTY", "THIRSTY.NEWS", message, 2);
 	
-	if(player.day == 1 && player.weeks == 1) {
+	if(player.day == 7 && player.weeks == 1) {
 		player.money = player.money - gameSettings.startingFunds;
 		putNews(
 			"The bank collected on its $" + gameSettings.startingFunds + " loan.",
