@@ -94,6 +94,7 @@ var showMarketReport = function() {
 		);
 	}
 	marketTab.frame.scrollTo(0, 0);
+	makeStats();
 }
 
 var buyMarketReport = function(cmd) {
