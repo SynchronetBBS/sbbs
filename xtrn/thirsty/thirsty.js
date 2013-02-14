@@ -129,7 +129,7 @@ var makeStats = function() {
 		format(
 			"Week %s, Day %s, Funds: $%s",
 			gameSettings.week,
-			player.day,
+			(player.day > 7) ? 7 : player.day,
 			player.money.toFixed(2)
 		),
 		LIGHTGREEN
