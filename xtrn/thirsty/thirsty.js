@@ -180,7 +180,7 @@ var graphicsInit = function() {
 		introFrame = new Frame(3, 4, 74, 18, 0, frame);
 		splashFrame = new Frame(1, 1, 80, 24, 0, frame);
 		gameFrame = new Frame(1, 1, frame.width, frame.height, BG_BLACK|WHITE, frame);
-		statsFrame = new Frame(2, 24, 48, 1, BG_BLACK|WHITE, frame);
+		statsFrame = new Frame(2, 24, 37, 1, BG_BLACK|WHITE, frame);
 		inputFrame = new Frame(2, 14, 78, 9, BG_BLACK|WHITE, gameFrame);
 		helpFrame.load(js.exec_dir + "graphics/help.bin", 63, 23);
 		introFrame.load(js.exec_dir + "graphics/intro.bin", 74, 18);
