@@ -75,6 +75,10 @@
  *                              2. Ctrl directory
  *                              3. Current directory (where SlyEdit is located)
  * 2013-02-03 Eric Oulashin     Added readUserSigFile().
+ * 2013-02-13 Eric Oulashin     Updated getCurMsgInfo() to get the first
+ *                              postable message sub-board if the user has no
+ *                              current sub-board (i.e., a new user is applying
+ *                              for access).
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -1952,16 +1956,36 @@ function getCurMsgInfo()
   {
     retObj.lastMsg = -1;
     retObj.curMsgNum = -1;
-    retObj.subBoardCode = bbs.cursub_code;
-    retObj.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
-    var tmpMsgBaseObj = new MsgBase(bbs.cursub_code);
-    if (tmpMsgBaseObj.open())
+    // If the user has a valid current sub-board code, then use it;
+    // otherwise, find the first sub-board the user is able to post
+    // in and use that.
+    if (typeof(msg_area.sub[bbs.cursub_code]) != "undefined")
     {
-      retObj.totalNumMsgs = tmpMsgBaseObj.total_msgs;
-      tmpMsgBaseObj.close();
+      retObj.subBoardCode = bbs.cursub_code;
+      retObj.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
     }
     else
-      retObj.totalNumMsgs = 0;
+    {
+      var firstPostableSubInfo = getFirstPostableSubInfo();
+      retObj.subBoardCode = firstPostableSubInfo.subCode;
+      retObj.grpIndex = firstPostableSubInfo.grpIndex;
+    }
+
+    // If we got a valid sub-board code, then open that sub-board
+    // and get the total number of messages from it.
+    if (retObj.subBoardCode.length > 0)
+    {
+      var tmpMsgBaseObj = new MsgBase(retObj.subBoardCode);
+      if (tmpMsgBaseObj.open())
+      {
+        retObj.totalNumMsgs = tmpMsgBaseObj.total_msgs;
+        tmpMsgBaseObj.close();
+      }
+      else
+        retObj.totalNumMsgs = 0;
+    }
+    else
+       retObj.totalNumMsgs = 0;
   }
 
   // If the Digital Distortion Message Lister drop file exists,
@@ -2201,6 +2225,38 @@ function readUserSigFile()
 
       msgSigFile.close();
     }
+  }
+
+  return retObj;
+}
+
+// Returns the sub-board code and group index for the first sub-board
+// the user is allowed to post in.  If none are found, the sub-board
+// code will be a blank string and the group index will be 0.
+//
+// Return value: An object with the following properties:
+//               subCode: The sub-board code
+//               grpIndex: The group index of the sub-board
+function getFirstPostableSubInfo()
+{
+  var retObj = new Object();
+  retObj.subCode = "";
+  retObj.grpIndex = 0;
+
+  var continueOn = true;
+  for (var groupIdx = 0; (groupIdx < msg_area.grp_list.length) && continueOn; ++groupIdx)
+  {
+     for (var subIdx = 0; (subIdx < msg_area.grp_list[groupIdx].sub_list.length) && continueOn; ++subIdx)
+     {
+        if (user.compare_ars(msg_area.grp_list[groupIdx].sub_list[subIdx].ars) &&
+            user.compare_ars(msg_area.grp_list[groupIdx].sub_list[subIdx].post_ars))
+        {
+           retObj.subCode = msg_area.grp_list[groupIdx].sub_list[subIdx].code;
+           retObj.grpIndex = groupIdx;
+           continueOn = false;
+           break;
+        }
+     }
   }
 
   return retObj;

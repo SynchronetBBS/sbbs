@@ -94,6 +94,12 @@
  *                              Bug fix: When replying to a personal email
  *                              or netmail, now uses the correct author's
  *                              initials in quote lines.
+ * 2013-02-13 Eric Oulashin     Version 1.23
+ *                              Bug fix: If the user doesn't have a current
+ *                              message sub-board (i.e., a new user applying
+ *                              for access), SlyEdit now uses the first sub-board
+ *                              that the user can post into.  This avoids crashes
+ *                              due to JavaScript errors.
  */
 
 /* Command-line arguments:
@@ -166,8 +172,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.22";
-const EDITOR_VER_DATE = "2013-02-08";
+const EDITOR_VERSION = "1.23";
+const EDITOR_VER_DATE = "2013-02-13";
 
 
 // Program variables
@@ -471,13 +477,33 @@ if (msg_area.sub[gMsgAreaInfo.subBoardCode].name.indexOf(gMsgArea) == -1)
 {
   gMsgAreaInfo.lastMsg = -1;
   gMsgAreaInfo.curMsgNum = -1;
-  gMsgAreaInfo.subBoardCode = bbs.cursub_code;
-  gMsgAreaInfo.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
-  var tmpMsgBaseObj = new MsgBase(bbs.cursub_code);
-  if (tmpMsgBaseObj.open())
+  // If the user has a valid current sub-board code, then use it;
+  // otherwise, find the first sub-board the user is able to post
+  // in and use that.
+  if (typeof(msg_area.sub[bbs.cursub_code]) != "undefined")
   {
-    gMsgAreaInfo.totalNumMsgs = tmpMsgBaseObj.total_msgs;
-    tmpMsgBaseObj.close();
+    gMsgAreaInfo.subBoardCode = bbs.cursub_code;
+    gMsgAreaInfo.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
+  }
+  else
+  {
+    var firstPostableSubInfo = getFirstPostableSubInfo();
+    gMsgAreaInfo.subBoardCode = firstPostableSubInfo.subCode;
+    gMsgAreaInfo.grpIndex = firstPostableSubInfo.grpIndex;
+  }
+
+  // If we got a valid sub-board code, then open that sub-board
+  // and get the total number of messages from it.
+  if (gMsgAreaInfo.subBoardCode.length > 0)
+  {
+    var tmpMsgBaseObj = new MsgBase(gMsgAreaInfo.subBoardCode);
+    if (tmpMsgBaseObj.open())
+    {
+      gMsgAreaInfo.totalNumMsgs = tmpMsgBaseObj.total_msgs;
+      tmpMsgBaseObj.close();
+    }
+    else
+      gMsgAreaInfo.totalNumMsgs = 0;
   }
   else
     gMsgAreaInfo.totalNumMsgs = 0;
