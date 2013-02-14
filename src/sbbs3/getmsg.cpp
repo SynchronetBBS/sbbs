@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -186,10 +186,14 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 
 	show_msghdr(msg);
 
-	if((text=smb_getmsgtxt(&smb,msg,GETMSGTXT_ALL))!=NULL) {
+	if((text=smb_getmsgtxt(&smb,msg,/* body and hfields: */0))!=NULL) {
 		if(!(console&CON_RAW_IN))
 			mode|=P_WORDWRAP;
 		putmsg(text, mode);
+		smb_freemsgtxt(text);
+	}
+	if((text=smb_getmsgtxt(&smb,msg,GETMSGTXT_TAIL_ONLY))!=NULL) {
+		putmsg(text, mode&(~P_WORDWRAP));
 		smb_freemsgtxt(text);
 	}
 }
