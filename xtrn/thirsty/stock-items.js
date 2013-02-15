@@ -149,6 +149,7 @@ var makeStockList = function() {
 	}
 	stockTree.colors.lfg = LIGHTCYAN;
 	stockTree.colors.lbg = BG_CYAN;
+	stockTree.colors.dfg = LIGHTGRAY;
 	stockTree.open();
 	stockTree.down();
 	var t = stockView.addTab("tree", "tree", stockTree);

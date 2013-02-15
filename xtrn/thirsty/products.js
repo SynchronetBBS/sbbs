@@ -170,7 +170,7 @@ var makeMenu = function() {
 	}
 	menuTree.colors.lfg = LIGHTCYAN;
 	menuTree.colors.lbg = BG_CYAN;
-	menuTree.colors.dfg = DARKGRAY;
+	menuTree.colors.dfg = LIGHTGRAY;
 	menuTree.colors.fg = WHITE;
 	menuTree.open();
 	menuTree.down();
