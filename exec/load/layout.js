@@ -669,7 +669,7 @@ function LayoutView(title,frame,parent) {
 		}
 		tab_str+=format("%-*s",max_width-console.strlen(tab_str),"");
 		f.home();
-		f.putmsg(left_arrow + tab_str + right_arrow);
+		f.putmsg(left_arrow + "\1n" + tab_str + "\1n" + right_arrow);
 	}
 	function setTitle() {
 		frames.title.clear();
