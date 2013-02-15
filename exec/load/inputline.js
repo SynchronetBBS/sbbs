@@ -3,11 +3,10 @@ if(js.global.getColor == undefined)
 if(js.global.Frame == undefined)
 	js.global.load(js.global,"frame.js");
 
-function InputLine(frame,text) {
+function InputLine(frame) {
 	/* private properties */
 	var properties = {
 		frame:undefined,
-		text:undefined,
 		attr:undefined,
 		cursor:undefined,
 		buffer:[]
@@ -20,7 +19,7 @@ function InputLine(frame,text) {
 		cursor_attr:BG_LIGHTGRAY|BLACK,
 		cursor_char:"_",
 		timeout:10,
-		max_buffer:200,
+		max_buffer:200
 	};
 	
 	/* protected properties */
@@ -107,6 +106,9 @@ function InputLine(frame,text) {
 		properties.frame.open();
 		if(properties.cursor)
 			properties.cursor.top();
+	}
+	this.cycle = function() {
+		properties.frame.cycle();
 	}
 	this.close = function() {
 		properties.frame.close();
@@ -257,11 +259,9 @@ function InputLine(frame,text) {
 			reset();
 		return cmd;
 	}
-	function init(frame,text) {
+	function init(frame) {
 		if(frame instanceof Frame)
 			properties.frame=frame;
-		if(text) 
-			properties.text = text;
 	}
 	init.apply(this,arguments);
 }
