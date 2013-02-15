@@ -533,6 +533,7 @@ function LayoutView(title,frame,parent) {
 			}
 			properties.chat = tab.chat;
 			tab.frame.lf_strict = false;
+			tab.frame.word_wrap = true;
 			tab.hotkeys = false;
 			break;
 		case "FRAME":
@@ -692,7 +693,7 @@ function LayoutView(title,frame,parent) {
 /* view tab object, meant to inhabit a layout view.
  * will generally occupy the same space as other view tabs
  * within a given view, cannot be effectively instantiated
- * on its own, but rather through ViewFrame.addTab() */
+ * on its own, but rather through LayoutView.addTab() */
 function ViewTab(title,frame,parent) {
 	/* private properties */
 	var properties={

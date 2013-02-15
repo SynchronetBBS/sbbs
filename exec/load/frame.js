@@ -133,24 +133,25 @@ function Frame(x,y,width,height,attr,parent) {
 		open:false,
 		ctrl_a:false,
 		id:0
-	}
+	};
 	var settings = {
 		v_scroll:true,
 		h_scroll:false,
 		scrollbars:false,
 		lf_strict:true,
 		checkbounds:true,
-		transparent:false
-	}
+		transparent:false,
+		word_wrap:false
+	};
 	var relations = {
 		parent:undefined,
 		child:[]
-	}
+	};
 	var position = {
 		cursor:new Cursor(0,0,this),
 		offset:new Offset(0,0,this),
 		stored:new Cursor(0,0,this)
-	}
+	};
 		
 	/* protected properties */
 	this.__defineGetter__("child", function() {
@@ -290,6 +291,15 @@ function Frame(x,y,width,height,attr,parent) {
 		else
 			throw("non-boolean v_scroll: " + bool);
 	});
+	this.__defineGetter__("word_wrap", function() {
+		return settings.word_wrap;
+	});
+	this.__defineSetter__("word_wrap", function(bool) {
+		if(typeof bool == "boolean")
+			settings.word_wrap=bool;
+		else
+			throw("non-boolean word_wrap: " + bool);
+	});
 	this.__defineGetter__("h_scroll", function() {
 		return settings.h_scroll;
 	});
@@ -322,6 +332,7 @@ function Frame(x,y,width,height,attr,parent) {
 			px += position.offset.x;
 			py += position.offset.y;
 		}
+		//I don't remember why I did this, but it was probably important at the time
 		//if(!properties.data[py] || !properties.data[py][px])
 		if(!properties.data[py])
 			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
@@ -831,6 +842,8 @@ function Frame(x,y,width,height,attr,parent) {
 	this.putmsg = function(str,attr) {
 		if(str == undefined)
 			return;
+		if(settings.word_wrap) 
+			str = word_wrap(str,this.width);
 		str = str.toString().split('');
 		var curattr = attr;
 		if(!curattr)
