@@ -631,9 +631,6 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 						this.ini.speed = this.ini.speed + this.ini.speedstep;
 				}
 				break;
-			case KEY_JUMP:
-				this.jump();
-				break;
 			case KEY_WEAPON:
 				this.putWeapon();
 				break;
