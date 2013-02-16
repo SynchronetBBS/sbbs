@@ -625,7 +625,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 				} else if(this.ini.movement == "rotating" && this.ini.constantmotion == 0) {
 					this.move("reverse");
 				} else {
-					if(this.ini.speed == this.ini.speedmin)
+					if(this.ini.speed >= this.ini.speedmin)
 						this.ini.speed = 0;
 					if(this.ini.speed <= this.ini.speedmin && this.ini.speed != 0)
 						this.ini.speed = this.ini.speed + this.ini.speedstep;
