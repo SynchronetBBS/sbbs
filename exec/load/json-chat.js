@@ -109,6 +109,11 @@ function JSONChat(usernum,jsonclient,host,port) {
 			chan.users = users;
 		if(this.userView)
 			updateUserView(this.userView,chan);
+		var uList=[];
+		for(var u in users) {
+			uList.push(users[u].nick);
+		}
+		chan.messages.push(new Message(undefined,"Users in " + chan.name + ": " + uList.join(", "),Date.now()));
 		return users;
 	}
 	
@@ -218,13 +223,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 			var cname = cmdstr.shift();
 			if(!cname)
 				cname = target;
-			var users = this.who(cname);
-			var chan = this.channels[target.toUpperCase()];
-			chan.messages.push(new Message(undefined,"users in " + cname + ":",Date.now()));
-			for(var u in users) {
-				this.channels[cname.toUpperCase()].users.push(users[u]);
-				chan.messages.push(new Message(undefined,"- " + users[u].nick,Date.now()));
-			}
+			this.who(cname);
 			break;
 		case "ME":
 			cmdstr.shift();
