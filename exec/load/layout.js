@@ -190,7 +190,7 @@ function Layout(frame) {
 	this.getcmd=function(cmd) {
 		if(!cmd) 
 			return false;
-		switch(cmd.toUpperCase()) {
+		switch(cmd) {
 		case '\x09': 
 			if(properties.views.length > 1) 
 				nextView();
@@ -404,8 +404,10 @@ function LayoutView(title,frame,parent) {
 		f.open();
 		setContent(t,type,content);
 		properties.tabs.push(t);
-		if(this.current)
-			this.current.active=true;
+		if(this.current) {
+			//this.current.active=true;
+			this.current = properties.index;
+		}
 		setTabs();
 		return t;
 	}
@@ -447,7 +449,7 @@ function LayoutView(title,frame,parent) {
 	this.getcmd=function(cmd) {
 		if(!cmd) 
 			return false;
-		switch(cmd.toUpperCase()) {
+		switch(cmd) {
 		case KEY_LEFT:
 			if(properties.tabs.length > 1) {
 				properties.tabs[properties.index].active = false;
@@ -507,19 +509,25 @@ function LayoutView(title,frame,parent) {
 			else
 				tab.chat = new JSONChat();
 			tab.getcmd = function(cmd) {
-				switch(cmd.toUpperCase()) {
+				switch(cmd) {
+				case KEY_HOME:
+					return this.frame.pageup();
+				case KEY_END:
+					return this.frame.pagedown();
 				case KEY_UP:
 					return this.frame.scroll(0,-1);
 				case KEY_DOWN:
 					return this.frame.scroll(0,1);
-				default:
+				default: 
+					this.frame.scrollTo(1,this.frame.data_height - this.frame.height);
 					return this.chat.submit.call(this.chat,this.title,cmd);
 				}
 			}
 			tab.cycle = function() {
 				var chan = this.chat.channels[this.title.toUpperCase()];
-				if(!chan) 
+				if(!chan || chan.messages.length == 0) 
 					return false;
+				this.frame.scrollTo(1,this.frame.data_height - this.frame.height);
 				while(chan.messages.length > 0) {
 					var msg = chan.messages.shift();
 					var str = "";
@@ -531,6 +539,7 @@ function LayoutView(title,frame,parent) {
 					this.frame.putmsg(str + "\r\n");
 				}
 			}
+			//tab.chat.chatView = tab.parent;
 			properties.chat = tab.chat;
 			tab.frame.lf_strict = false;
 			tab.frame.word_wrap = true;
@@ -538,7 +547,7 @@ function LayoutView(title,frame,parent) {
 			break;
 		case "FRAME":
 			tab.getcmd = function(cmd) {
-				switch(cmd.toUpperCase()) {
+				switch(cmd) {
 				case KEY_UP:
 					return this.frame.scroll(0,-1);
 				case KEY_DOWN:
