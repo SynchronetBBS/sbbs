@@ -100,6 +100,14 @@
  *                              for access), SlyEdit now uses the first sub-board
  *                              that the user can post into.  This avoids crashes
  *                              due to JavaScript errors.
+ * 2013-02-17 Eric Oulashin     Version 1.24
+ *                              Bug fix: If the user is posting a new message
+ *                              on a sub-board, SlyEdit now should have the
+ *                              correct sub-board info, even if the user is posting
+ *                              on a different sub-board than the one they're
+ *                              currently set for reading.
+ *                              Also, defaulted the option for indenting quote
+ *                              lines with initials to true.
  */
 
 /* Command-line arguments:
@@ -172,8 +180,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.23";
-const EDITOR_VER_DATE = "2013-02-13";
+const EDITOR_VERSION = "1.24";
+const EDITOR_VER_DATE = "2013-02-17";
 
 
 // Program variables
@@ -403,7 +411,8 @@ console.clear();
 
 // Read the message from name, to name, and subject from the drop file
 // (msginf in the node directory).
-var gMsgAreaInfo = getCurMsgInfo(); // Contains info about the current sub-board
+var gMsgAreaInfo = null; // Will store the value returned by getCurMsgInfo().
+var setMsgAreaInfoObj = false;
 var gMsgSubj = "";
 var gFromName = user.alias;
 var gToName = gInputFilename;
@@ -426,6 +435,14 @@ if (dropFileName != undefined)
 			gMsgSubj = info[2];
 			gMsgArea = info[4];
 
+      // Now that we know the name of the message area
+      // that the message is being posted in, call
+      // getCurMsgInfo() to set gMsgAreaInfo.
+			gMsgAreaInfo = getCurMsgInfo(gMsgArea);
+			setMsgAreaInfoObj = true;
+
+      // If we're configured to use poster's initials in the
+      // quote lines, then do it.
       if (gConfigSettings.useQuoteLineInitials)
       {
         // For the name to use for quote line initials:
@@ -465,49 +482,18 @@ if (dropFileName != undefined)
 	}
 	file_remove(dropFileName);
 }
+// If gMsgAreaInfo hasn't been set yet, then set it.
+if (!setMsgAreaInfoObj)
+{
+  gMsgAreaInfo = getCurMsgInfo(gMsgArea);
+  setMsgAreaInfoObj = true;
+}
+// Set a variable to store whether or not cross-posting can be done.
+var gCanCrossPost = (gConfigSettings.allowCrossPosting && postingInMsgSubBoard(gMsgArea));
 // If the user is posting in a message sub-board, then add its information
 // to gCrossPostMsgSubs.
 if (postingInMsgSubBoard(gMsgArea))
   gCrossPostMsgSubs.add(gMsgAreaInfo.subBoardCode);
-// Set a variable to store whether or not cross-posting can be done.
-var gCanCrossPost = (gConfigSettings.allowCrossPosting && postingInMsgSubBoard(gMsgArea));
-// If the message area name (gMsgArea) is different from what's in gMsgAreaInfo,
-// then we probably want to use bbs.cursub_code instead of bbs.smb_sub_code, etc.
-if (msg_area.sub[gMsgAreaInfo.subBoardCode].name.indexOf(gMsgArea) == -1)
-{
-  gMsgAreaInfo.lastMsg = -1;
-  gMsgAreaInfo.curMsgNum = -1;
-  // If the user has a valid current sub-board code, then use it;
-  // otherwise, find the first sub-board the user is able to post
-  // in and use that.
-  if (typeof(msg_area.sub[bbs.cursub_code]) != "undefined")
-  {
-    gMsgAreaInfo.subBoardCode = bbs.cursub_code;
-    gMsgAreaInfo.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
-  }
-  else
-  {
-    var firstPostableSubInfo = getFirstPostableSubInfo();
-    gMsgAreaInfo.subBoardCode = firstPostableSubInfo.subCode;
-    gMsgAreaInfo.grpIndex = firstPostableSubInfo.grpIndex;
-  }
-
-  // If we got a valid sub-board code, then open that sub-board
-  // and get the total number of messages from it.
-  if (gMsgAreaInfo.subBoardCode.length > 0)
-  {
-    var tmpMsgBaseObj = new MsgBase(gMsgAreaInfo.subBoardCode);
-    if (tmpMsgBaseObj.open())
-    {
-      gMsgAreaInfo.totalNumMsgs = tmpMsgBaseObj.total_msgs;
-      tmpMsgBaseObj.close();
-    }
-    else
-      gMsgAreaInfo.totalNumMsgs = 0;
-  }
-  else
-    gMsgAreaInfo.totalNumMsgs = 0;
-}
 
 // Open the quote file / message file
 var inputFile = new File(gInputFilename);

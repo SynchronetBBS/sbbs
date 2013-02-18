@@ -78,7 +78,8 @@
  * 2013-02-13 Eric Oulashin     Updated getCurMsgInfo() to get the first
  *                              postable message sub-board if the user has no
  *                              current sub-board (i.e., a new user is applying
- *                              for access).
+ *                              for access).  Also, updated ReadSlyEditConfigFile()
+ *                              to default indentQuoteLinesWithInitials to true.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -695,7 +696,7 @@ function ReadSlyEditConfigFile()
    // The next setting specifies whether or not quote lines
    // should be prefixed with a space when using author
    // initials.
-   cfgObj.indentQuoteLinesWithInitials = false;
+   cfgObj.indentQuoteLinesWithInitials = true;
    cfgObj.allowCrossPosting = true;
 
    // General SlyEdit color settings
@@ -1941,7 +1942,10 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 // Distortion Message Lister v1.31 and higher).  If that file can't be read,
 // the values will default to the values of bbs.smb_last_msg,
 // bbs.smb_total_msgs, and bbs.smb_curmsg.
-function getCurMsgInfo()
+//
+// Parameters:
+//  pMsgAreaName: The name of the message area being posted to
+function getCurMsgInfo(pMsgAreaName)
 {
   var retObj = new Object();
   if (bbs.smb_sub_code.length > 0)
@@ -1986,6 +1990,47 @@ function getCurMsgInfo()
     }
     else
        retObj.totalNumMsgs = 0;
+  }
+  // If pMsgAreaName is valid, then if it specifies a message area name that is
+  // different from what's in retObj, then we probably want to use bbs.cursub_code
+  // instead of bbs.smb_sub_code, etc.
+  if ((typeof(pMsgAreaName) == "string") && (pMsgAreaName.length > 0))
+  {
+    if (msg_area.sub[retObj.subBoardCode].name.indexOf(pMsgAreaName) == -1)
+    {
+      retObj.lastMsg = -1;
+      retObj.curMsgNum = -1;
+      // If the user has a valid current sub-board code, then use it;
+      // otherwise, find the first sub-board the user is able to post
+      // in and use that.
+      if (typeof(msg_area.sub[bbs.cursub_code]) != "undefined")
+      {
+        retObj.subBoardCode = bbs.cursub_code;
+        retObj.grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
+      }
+      else
+      {
+        var firstPostableSubInfo = getFirstPostableSubInfo();
+        retObj.subBoardCode = firstPostableSubInfo.subCode;
+        retObj.grpIndex = firstPostableSubInfo.grpIndex;
+      }
+
+      // If we got a valid sub-board code, then open that sub-board
+      // and get the total number of messages from it.
+      if (retObj.subBoardCode.length > 0)
+      {
+        var tmpMsgBaseObj = new MsgBase(retObj.subBoardCode);
+        if (tmpMsgBaseObj.open())
+        {
+          retObj.totalNumMsgs = tmpMsgBaseObj.total_msgs;
+          tmpMsgBaseObj.close();
+        }
+        else
+          retObj.totalNumMsgs = 0;
+      }
+      else
+       retObj.totalNumMsgs = 0;
+    }
   }
 
   // If the Digital Distortion Message Lister drop file exists,
