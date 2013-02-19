@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.21
-                        Release date: 2013-02-03
+                              Version 1.24
+                        Release date: 2013-02-17
 
                                   by
 
@@ -14,7 +14,7 @@
 This file describes SlyEdit, a message editor for Synchronet.
 Note: For sysops who already have a previous version of SlyEdit
 installed and are upgrading to this version, please see the file
-SlyEdit_Upgrading.txt.
+Upgrading.txt.
 
 Contents
 ========
