@@ -2,13 +2,18 @@ load("sbbsdefs.js");
 load("json-client.js");
 load("event-timer.js");
 load("frame.js");
+load("layout.js");
 load("sprite.js");
 
+var maxEnemies = 5;
+
 var sysStatus, userInput, player, timer, waveTimer, jsonClient, serverIni;
-var frame, splashFrame, fieldFrame, statusFrame, clockFrame, clockSubFrame, uhOhFrame, scoreFrame, helpFrame;
+var frame, fieldFrame, statusFrame, clockFrame, clockSubFrame, uhOhFrame;
+
 var player = {
 	round : 0,
 	score : 0,
+	shipName : "",
 	sprite : {}
 };
 var enemySprites = [];
@@ -20,6 +25,158 @@ var enemies = [
 	"gorn",
 	"pakled"
 ];
+var ships = [
+	"galaxy",
+	"intrepid",
+	"defiant"
+];
+
+var cycle = function() {
+	Sprite.cycle();
+	timer.cycle();
+	if(frame.cycle())
+		console.gotoxy(console.screen_columns, console.screen_rows);
+}
+
+var splash = function() {
+	var splashFrame = new Frame(1, 1, 80, 24, 0, frame);
+	splashFrame.load(js.exec_dir + "startrek.bin", 80, 24);
+	splashFrame.top();
+	splashFrame.open();
+	cycle();
+	console.getkey();
+	splashFrame.close();
+	splashFrame.delete();
+}
+
+var init = function() {
+	js.branch_limit = 0;
+	sysStatus = bbs.sys_status;
+	bbs.sys_status|=SS_MOFF;
+	KEY_WEAPON = " ";
+
+	frame = new Frame(1, 1, 80, 24, 0);
+	fieldFrame = new Frame(1, 1, 80, 24, 0, frame);
+	statusFrame = new Frame(1, 24, 66, 1, BG_BLUE|WHITE, frame);
+	clockFrame = new Frame(67, 24, 14, 1, BG_BLUE|WHITE, frame);
+	clockSubFrame = new Frame(78, 24, 2, 1, BG_BLUE|WHITE, clockFrame);
+	uhOhFrame = new Frame(1, 12, 80, 1, 0, frame);
+	uhOhFrame.transparent = true;
+	fieldFrame.load(js.exec_dir + "starfield.bin", 80, 24);
+
+	timer = new Timer();
+	
+	var f = new File(js.exec_dir + "server.ini");
+	f.open("r");
+	serverIni = f.iniGetObject();
+	f.close();
+	
+	frame.open();	
+	statusFrame.top();
+	frame.draw();
+}
+
+var removeShip = function(s) {
+	Sprite.aerials[s].remove();
+	Sprite.aerials[s].frame.delete();
+}
+
+var rotateSprites = function(sprites) {
+	for(var s in sprites)
+		sprites[s].turn("cw");
+}
+
+var ucfl = function(str) {
+	str = str[0].toUpperCase() + str.substr(1);
+	return str;
+}
+
+var dots = function(d) {
+	var str = "";
+	for(var dd = 0; dd < d; dd++)
+		str += ascii(254);
+	return str;
+}
+
+var setup = function() {
+	var setupFrame = new Frame(1, 1, 80, 24, 0, frame);
+	setupFrame.load(js.exec_dir + "starfield.bin", 80, 24);
+	
+	var layout = new Layout(setupFrame);
+	
+	var shipSprites = [];
+	var viewWidth = 13;
+	var x = Math.floor((80 - (ships.length * viewWidth)) / 2);
+	for(var s = 0; s < ships.length; s++) {
+		var view = layout.addView(ucfl(ships[s]), x, 4, viewWidth - 1, 16);
+		view.show_tabs = false;
+		var tab = view.addTab("frame", "frame");
+		var sprite = new Sprite.Aerial(ships[s], tab.frame, tab.frame.x, tab.frame.y, 'n');
+		var weapon = new Sprite.Aerial(sprite.ini.weapon, tab.frame, tab.frame.x, tab.frame.y, 'n');
+		sprite.ini.constantmotion = 0;
+		shipSprites.push(sprite);
+		weapon.remove();
+		weapon.frame.delete();
+		tab.frame.gotoxy(1, 7);
+		tab.frame.putmsg(
+			format(
+				"Speed\r\n\1h\1g%s\r\n\r\n\1h\1wShields\r\n\1h\1c%s\r\n\r\n\1h\1wWeapons\r\n\1h\1r%s",
+				dots(Math.floor((1 - sprite.ini.maximumspeed) * 10)),
+				dots(sprite.ini.health - 1),
+				dots(weapon.ini.damage * 3)
+			),
+			WHITE
+		);
+		x = x + viewWidth;
+	}
+	timer.addEvent(1000, true, rotateSprites, [shipSprites]);
+	
+	layout.open();
+	setupFrame.open();
+	setupFrame.gotoxy(1, 2);
+	setupFrame.center("What class of ship do you want to command, Captain " + ucfl(user.alias) + "?", WHITE);
+	setupFrame.draw();
+
+	var userInput = "";
+	setupFrame.top();
+	while(ascii(userInput) != 13) {
+		userInput = console.inkey(K_NONE, 5);
+		if(userInput == KEY_LEFT || userInput == KEY_RIGHT)
+			userInput = "\x09";
+		layout.getcmd(userInput);
+		layout.cycle();
+		cycle();
+	}
+	
+	setupFrame.gotoxy(1, 21);
+	setupFrame.center("What is the name of your " + layout.current.title + "-class starship?", WHITE);
+	cycle();
+	while(player.shipName == "") {
+		console.gotoxy(25, 23);
+		player.shipName = console.getstr("USS ", 30, K_LINE|K_EDIT);
+	}
+
+	for(var s in Sprite.aerials)
+		removeShip(s);
+
+	player.sprite = new Sprite.Aerial(layout.current.title.toLowerCase(), fieldFrame, 40, 10, 'n', 'normal');
+	layout.close();
+	setupFrame.close();
+	setupFrame.delete();
+	frame.invalidate();
+	timer.events = [];
+}
+
+var showHelp = function() {
+	var helpFrame = new Frame(8, 4, 64, 16, 0, frame);
+	helpFrame.load(js.exec_dir + "help.bin", 64, 16);
+	helpFrame.top();
+	helpFrame.open();
+	cycle();
+	console.getkey();
+	helpFrame.close();
+	helpFrame.delete();
+}
 
 var checkScreenEdge = function(sprite) {
 	if(sprite.x < -3)
@@ -46,7 +203,8 @@ var putEnemy = function(re) {
 
 var spawnEnemies = function() {
 	var re = Math.floor(Math.random() * enemies.length);
-	for(var x = 0; x < player.round; x++) {
+	var roundMax = Math.floor((player.round + 1) / 2);
+	for(var x = 0; x < ((roundMax > maxEnemies) ? maxEnemies : roundMax); x++) {
 		while(!putEnemy(re)) {
 		}
 	}
@@ -61,18 +219,21 @@ var spawnEnemies = function() {
 	putStats();
 	uhOhFrame.top();
 	statusFrame.top();
-	timer.addEvent(250, 12, cycleWarning, [Sprite.aerials[Sprite.aerials.length - 1].ini.name]);
+	timer.addEvent(250, 12, cycleWarning, ["Oh no! " + Sprite.aerials[Sprite.aerials.length - 1].ini.name + "!"]);
 	timer.addEvent(3000, false, removeWarning);
+	if(player.round % 5 == 0)
+		waveTimer.interval = waveTimer.interval - 5000;
 }
 
-var removeShip = function(s) {
-	Sprite.aerials[s].remove();
+var countdown = function() {
+	clockSubFrame.clear();
+	clockSubFrame.putmsg(parseInt(waveTimer.nextrun * .001));
 }
 
-var cycleWarning = function(enemy) {
+var cycleWarning = function(warning) {
 	var c = Math.floor(Math.random() * 15) + 1;
 	uhOhFrame.clear();
-	uhOhFrame.center("Oh no! " + enemy + "!", c);
+	uhOhFrame.center(warning, c);
 }
 
 var removeWarning = function() {
@@ -90,66 +251,28 @@ var putStats = function() {
 	);
 }
 
-var countdown = function() {
-	clockSubFrame.clear();
-	clockSubFrame.putmsg(parseInt(waveTimer.nextrun * .001));
-}
-
-var init = function() {
-	js.branch_limit = 0;
-	sysStatus = bbs.sys_status;
-	bbs.sys_status|=SS_MOFF;
-	KEY_WEAPON = " ";
-
-	frame = new Frame(1, 1, 80, 24, 0);
-	splashFrame = new Frame(1, 1, 80, 24, 0, frame);
-	fieldFrame = new Frame(1, 1, 80, 24, 0, frame);
-	statusFrame = new Frame(1, 24, 66, 1, BG_BLUE|WHITE, frame);
-	clockFrame = new Frame(67, 24, 14, 1, BG_BLUE|WHITE, frame);
-	clockSubFrame = new Frame(78, 24, 2, 1, BG_BLUE|WHITE, clockFrame);
-	uhOhFrame = new Frame(1, 12, 80, 1, 0, frame);
-	scoreFrame = new Frame(1, 1, 80, 24, BG_BLACK|WHITE, frame);
-	helpFrame = new Frame(8, 4, 64, 16, 0, frame);
-
-	uhOhFrame.transparent = true;
-	splashFrame.load(js.exec_dir + "startrek.bin", 80, 24);
-	fieldFrame.load(js.exec_dir + "starfield.bin", 80, 24);
-	helpFrame.load(js.exec_dir + "help.bin", 64, 16);
-
-	player.sprite = new Sprite.Aerial("enterprise", fieldFrame, 40, 10, 'n', 'normal');
-
-	timer = new Timer();
-	
-	var f = new File(js.exec_dir + "server.ini");
-	f.open("r");
-	serverIni = f.iniGetObject();
-	f.close();
-
-	frame.open();	
-	scoreFrame.bottom();
-	helpFrame.bottom();
-	statusFrame.top();
-	splashFrame.top();
-	frame.draw();
-}
-
-var showHelp = function() {
-	helpFrame.top();
-	frame.cycle();
-	console.getkey();
-	helpFrame.bottom();
+var deathKnell = function() {
+	uhOhFrame.top();
+	for(var n = 0; n < 20; n++) {
+		cycleWarning("You done goofed!");
+		cycle();
+		mswait(200);
+	}
+	while(console.input_buffer_level > 0) {
+		console.inkey();
+	}
 }
 
 var gamePlay = function() {
 	player.round = 1;
-	timer.addEvent(5000, 1, spawnEnemies);
+	player.sprite.frame.draw();
+	timer.addEvent(2000, 1, spawnEnemies);
 	waveTimer = timer.addEvent(30000, true, spawnEnemies);
 	putStats();
+	statusFrame.top();
 	while(!js.terminated) {
-		if(player.sprite.ini.health < 1) {
-			deathKnell();
+		if(player.sprite.ini.health < 1)
 			break;
-		}
 		userInput = console.inkey(K_NONE, 5);
 		if(ascii(userInput) == 27)
 			break;
@@ -185,7 +308,7 @@ var gamePlay = function() {
 					&&
 					(o[oo].owner != Sprite.aerials[s])
 				) {
-					Sprite.aerials[s].ini.health = Sprite.aerials[s].ini.health - 1;
+					Sprite.aerials[s].ini.health = Sprite.aerials[s].ini.health - parseInt(o[oo].ini.damage);
 					o[oo].remove();
 				} else if(
 					o[oo].ini.type == "ship" && Sprite.aerials[s].ini.type == "ship"
@@ -206,80 +329,87 @@ var gamePlay = function() {
 				putStats();
 			}
 		}
-		timer.cycle();
-		Sprite.cycle();
-		if(frame.cycle())
-			console.gotoxy(80, 24);
+		cycle();
 	}
-	waveTimer.abort = true;
-}
-
-var deathKnell = function() {
-	uhOhFrame.top();
-	for(var n = 0; n < 20; n++) {
-		cycleWarning("You done goofed");
-		frame.cycle();
-		mswait(200);
-	}
+	if(player.sprite.ini.health < 1)
+			deathKnell();
+	timer.events = [];
 }
 
 var scoreBoard = function() {
 	var scoreObj = {
 		'alias' : user.alias,
 		'system' : system.name,
+		'shipName' : player.shipName,
 		'round' : player.round - 1,
 		'score' : player.score,
 		'when' : time()
 	};
 	try {
 		jsonClient = new JSONClient(serverIni.host, serverIni.port);
-		var scores = jsonClient.read("STARTREK", "STARTREK.SCORES", 1);
+		var scores = jsonClient.read("STARTREK", "STARTREK.HIGHSCORES", 1);
 		if(scores === undefined) {
-			scores = [];
-			jsonClient.write("STARTREK", "STARTREK.SCORES", scores, 2);
+			scores = [scoreObj];
+			jsonClient.write("STARTREK", "STARTREK.HIGHSCORES", scores, 2);
 		}
-		jsonClient.push("STARTREK", "STARTREK.SCORES", scoreObj, 2);
-		jsonClient.disconnect();
 	} catch(err) {
 		log(LOG_ERR, "JSON client error: " + err);
 		return false;
 	}
-	scoreFrame.center("Recent scores");
+	var scoreFrame = new Frame(1, 1, 80, 24, BG_BLACK|WHITE, frame);
+	scoreFrame.open();
+	scoreFrame.center("High scores");
 	scoreFrame.putmsg("\r\n\r\n");
 	scoreFrame.putmsg(
 		format(
 			"%-30s%-30s%-10s%s\r\n\r\n",
-			"Player", "System", "Round", "Score"
+			"Player", "Ship", "Round", "Score"
 		),
 		LIGHTCYAN
 	);
-	scores.push(scoreObj);
-	shownUsers = [];
-	for(var s = scores.length - 1; s > (scores.length >= 19) ? scores.length - 20 : 0; s = s - 1) {
-		if(shownUsers.indexOf(scores[s].alias) >= 0)
-			continue;
-		shownUsers.push(scores[s].alias);
+	var writeBack = false;
+	for(var s = 0; s < scores.length; s++) {
+		if(player.score > scores[s].score && !writeBack) {
+			writeBack = true;
+			scores.splice(s, 0, scoreObj);
+		}
 		scoreFrame.putmsg(
 			format(
 				"%-30s%-30s%-10s%s\r\n",
-				scores[s].alias, scores[s].system, scores[s].round, scores[s].score
-			)
+				scores[s].alias, scores[s].shipName, scores[s].round, scores[s].score
+			),
+			WHITE
 		);
 	}
+	if(!writeBack && scores.length < 18) {
+		writeBack = true;
+		scores.push(scoreObj);
+		scoreFrame.putmsg(
+			format(
+				"%-30s%-30s%-10s%s\r\n",
+				scores[s].alias, scores[s].shipName, scores[s].round, scores[s].score
+			),
+			WHITE
+		);
+	}
+	if(writeBack) {
+		while(scores.length > 18) {
+			scores.pop();
+		}
+		jsonClient.write("STARTREK", "STARTREK.HIGHSCORES", scores, 2);
+	}
+	jsonClient.disconnect();
+	
 	scoreFrame.crlf();
 	scoreFrame.center("<Press any key>", LIGHTRED);
 	scoreFrame.top();
-	frame.cycle();
-	mswait(1000);
-	while(console.input_buffer_level > 0) {
-		console.inkey();
-	}
+	cycle();
 	console.getkey();
 }
 
 var main = function() {
-	console.getkey();
-	splashFrame.close();
+	splash();
+	setup();
 	gamePlay();
 	scoreBoard();
 }
