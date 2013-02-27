@@ -129,7 +129,7 @@ function Frame(x,y,width,height,attr,parent) {
 		height:undefined,
 		attr:undefined,
 		display:undefined,
-		data:[],
+		data:[[]],
 		open:false,
 		ctrl_a:false,
 		id:0
@@ -321,8 +321,10 @@ function Frame(x,y,width,height,attr,parent) {
 			px += position.offset.x;
 			py += position.offset.y;
 		}
+		// if(!properties.data[py] || !properties.data[py][px])
+			// throw("Frame.getData() - invalid coordinates: " + px + "," + py);
 		if(!properties.data[py] || !properties.data[py][px])
-			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
+			return new Char();
 		return properties.data[py][px];
 	}
 	this.setData = function(x,y,ch,attr,use_offset) {
@@ -334,8 +336,11 @@ function Frame(x,y,width,height,attr,parent) {
 		}
 		//I don't remember why I did this, but it was probably important at the time
 		//if(!properties.data[py] || !properties.data[py][px])
-		if(!properties.data[py])
-			throw("Frame.setData() - invalid coordinates: " + px + "," + py);
+			// throw("Frame.setData() - invalid coordinates: " + px + "," + py);
+		if(!properties.data[py]) 
+			properties.data[py] = [];
+		if(!properties.data[py][px]) 
+			properties.data[py][px] = new Char();
 		if(properties.data[py][px].ch == ch && properties.data[py][px].attr == attr)
 			return;
 		if(ch)
@@ -353,8 +358,8 @@ function Frame(x,y,width,height,attr,parent) {
 			py += position.offset.y;
 		}
 		if(!properties.data[py] || !properties.data[py][px])
-			throw("Frame.clearData() - invalid coordinates: " + px + "," + py);
-		if(properties.data[py][px].ch == undefined && properties.data[py][px].attr == undefined)
+			return;
+		else if(properties.data[py][px].ch == undefined && properties.data[py][px].attr == undefined)
 			return;
 		properties.data[py][px].ch = undefined;
 		properties.data[py][px].attr = undefined;
@@ -769,6 +774,26 @@ function Frame(x,y,width,height,attr,parent) {
 		if(update)
 			this.refresh();
 	}
+	this.insertLine = function(y) {
+		var l = undefined;
+		if(properties.data[y]) {
+			var l = new Array(this.width);
+			properties.data.splice(y,0,l);
+			for(var x=0;x<this.width;x++) {
+				properties.data[y][x] = new Char();
+			}
+			this.refresh();
+		}
+		return l;
+	}
+	this.deleteLine = function(y) {
+		var l = undefined;
+		if(properties.data[y]) {
+			l = properties.data.splice(y,1);
+			this.refresh();
+		}
+		return l;
+	}
 	this.screenShot = function(file,append) {
 		return properties.display.screenShot(file,append);
 	}
@@ -804,9 +829,11 @@ function Frame(x,y,width,height,attr,parent) {
 		if(attr == undefined)
 			attr = this.attr;
 		for(var y=0;y<properties.data.length;y++) {
-			for(var x=0;x<properties.data[y].length;x++) {
-				properties.data[y][x].ch = undefined;
-				properties.data[y][x].attr = attr;
+			for(var x=0;x<properties.data[y].length;x++) {	
+				if(properties.data[y][x]) {
+					properties.data[y][x].ch = undefined;
+					properties.data[y][x].attr = attr;
+				}
 			}
 		}
 		for(var y=0;y<this.height;y++) {
@@ -815,10 +842,13 @@ function Frame(x,y,width,height,attr,parent) {
 			}
 		}
 		this.home();
+		return true;
 	}
 	this.clearline = function(attr) {
 		if(attr == undefined)
 			attr = this.attr;
+		if(!properties.data[position.cursor.y])
+			return false;
 		for(var x=0;x<properties.data[position.cursor.y].length;x++) {
 			properties.data[position.cursor.y][x].ch = undefined;
 			properties.data[position.cursor.y][x].attr = attr;
@@ -826,10 +856,13 @@ function Frame(x,y,width,height,attr,parent) {
 		for(var x=0;x<this.width;x++) {
 			properties.display.updateChar(this,x,position.cursor.y);
 		}
+		return true;
 	}
 	this.cleartoeol = function(attr) {
 		if(attr == undefined)
 			attr = this.attr;
+		if(!properties.data[position.cursor.y])
+			return false;
 		for(var x=position.cursor.x;x<properties.data[position.cursor.y].length;x++) {
 			properties.data[position.cursor.y][x].ch = undefined;
 			properties.data[position.cursor.y][x].attr = attr;
@@ -837,6 +870,7 @@ function Frame(x,y,width,height,attr,parent) {
 		for(var x=position.cursor.x;x<this.width;x++) {
 			properties.display.updateChar(this,x,position.cursor.y);
 		}
+		return true;
 	}
 	this.crlf = function() {
 		position.cursor.x = 0;
@@ -954,6 +988,8 @@ function Frame(x,y,width,height,attr,parent) {
 					properties.ctrl_a = true;
 					break;
 				case '\7':		/* Beep */
+					break;
+				case '\x7f':	/* DELETE */
 					break;
 				case '\b':
 					if(pos.x > 0) {
@@ -1145,14 +1181,6 @@ function Frame(x,y,width,height,attr,parent) {
 		this.width = width;
 		this.height = height;
 		this.attr = attr;
-
-		for(var h=0;h<this.height;h++) {
-			properties.data.push(new Array(this.width));
-			for(var w=0;w<this.width;w++) {
-				properties.data[h][w] = new Char();
-			}
-		}
-		
 		//log(LOG_DEBUG,format("new frame initialized: %sx%s at %s,%s",this.width,this.height,this.x,this.y));
 	}
 	init.apply(this,arguments);
