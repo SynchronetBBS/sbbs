@@ -81,6 +81,12 @@
  * NOTE: default event handlers are included in the open, close, and activation
  * methods of most layout objects:
  *	
+ *	<obj>.onKeyPress[key] - run if defined and specified key is pressed
+ *
+ *	NOTE: onKeyPress handler available for all layout objects. if a handler is defined
+ *	it should return true (if the key was handled) or false (if the key was not handled) 
+ *	in order to stop the layout from attempting to pass it to other objects.
+ *
  *	Layout.onOpen - run when layout.open() is called
  *	Layout.onClose - run when layout.close() is called
  *	LayoutView.onOpen - run when view.open() is called
