@@ -763,6 +763,9 @@ function TreeItem(text,parent,func,args) {
 	this.__defineGetter__("attr",function() {
 		return properties.attr;
 	});
+	this.__defineGetter__("status",function() {
+		return properties.status;
+	});
 	this.__defineGetter__("hash",function() {
 		return properties.parent.hash+"\t"+properties.text;
 	});
