@@ -130,9 +130,26 @@ function Layout(frame) {
 	this.__defineGetter__("current",function() {
 		return properties.views[properties.index];
 	});
-	this.__defineSetter__("current",function(index) {
-		properties.index=index;
-		properties.views[properties.index].active=true;
+	this.__defineSetter__("current",function(title_or_index) {
+		if(title_or_index instanceof LayoutView)
+			title_or_index = title_or_index.title;
+		if(isNaN(title_or_index)) {
+			for(var v=0;v<properties.views.length;v++) {
+				if(properties.views[v].title.toUpperCase() == title_or_index.toUpperCase()) {
+					properties.views[properties.index].active=false;
+					properties.index = v;
+					properties.views[properties.index].active=true;
+					return true;
+				}
+			}
+		}
+		else if(properties.views[title_or_index]) {
+			properties.views[properties.index].active=false;
+			properties.index = title_or_index;
+			properties.views[properties.index].active=true;
+			return true;
+		}
+		return false;
 	});
 	
 	/* public properties */
@@ -346,6 +363,8 @@ function LayoutView(title,frame,parent) {
 		return properties.tabs[properties.index];
 	});
 	this.__defineSetter__("current",function(title_or_index) {
+		if(title_or_index instanceof ViewTab)
+			title_or_index = title_or_index.title;
 		if(isNaN(title_or_index)) {
 			for(var t=0;t<properties.tabs.length;t++) {
 				if(properties.tabs[t].title.toUpperCase() == title_or_index.toUpperCase()) {
