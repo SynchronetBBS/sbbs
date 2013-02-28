@@ -213,6 +213,8 @@ function Layout(frame) {
 	this.getcmd=function(cmd) {
 		if(!cmd) 
 			return false;
+		if(this.onKeyPress[cmd] && this.onKeyPress[cmd]())
+			return true;
 		switch(cmd) {
 		case '\x09': 
 			if(properties.views.length > 1) 
@@ -225,6 +227,11 @@ function Layout(frame) {
 		}
 		return false;
 	}
+
+	/* event handlers */
+	this.onOpen;
+	this.onClose;
+	this.onKeyPress = {};
 	
 	/* constructor */
 	function nextView() {
@@ -473,6 +480,8 @@ function LayoutView(title,frame,parent) {
 	this.getcmd=function(cmd) {
 		if(!cmd) 
 			return false;
+		if(this.onKeyPress[cmd] && this.onKeyPress[cmd]())
+			return true;
 		switch(cmd) {
 		case KEY_LEFT:
 			if(properties.tabs.length > 1) {
@@ -497,11 +506,22 @@ function LayoutView(title,frame,parent) {
 			}
 			break;
 		default:
-			if(properties.tabs.length > 0)
+			if(properties.tabs.length > 0) {
+				var t = properties.tabs[properties.index];
+				if(t.onKeyPress[cmd] && t.onKeyPress[cmd]())
+					return true;
 				return properties.tabs[properties.index].getcmd(cmd);
+			}
 			break;
 		}
 	}
+	
+	/* event handlers */
+	this.onEnter;
+	this.onExit;
+	this.onOpen;
+	this.onClose;
+	this.onKeyPress = {};
 	
 	/* private methods */
 	function setContent(tab,type,content) {
@@ -801,6 +821,11 @@ function ViewTab(title,frame,parent) {
 		frames.main.putmsg(cmd);
 		return true;
 	}
+	
+	/* event handlers */
+	this.onEnter;
+	this.onExit;
+	this.onKeyPress = {};
 	
 	/* constructor */
 	function init(title,frame,parent) {
