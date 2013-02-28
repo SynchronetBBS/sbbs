@@ -2934,6 +2934,7 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32		mode=0;
 	const char	*def=ALLFILES;
+	char*		afspec=NULL;
 	char*		fspec=(char *)def;
 	char		buf[MAX_PATH+1];
 	uint		dirnum;
@@ -2960,9 +2961,10 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
-			JSSTRING_TO_MSTRING(cx, js_str, fspec, NULL);
-			if(fspec==NULL)
+			JSSTRING_TO_MSTRING(cx, js_str, afspec, NULL);
+			if(afspec==NULL)
 				return JS_FALSE;
+			fspec=afspec;
 		}
 	}
 
@@ -2971,8 +2973,8 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 		fspec=padfname(fspec,buf);
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->listfiles(dirnum,fspec,0 /* tofile */,mode)));
-	if(fspec != def)
-		free(fspec);
+	if(afspec)
+		free(afspec);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
