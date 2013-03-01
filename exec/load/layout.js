@@ -233,10 +233,20 @@ function Layout(frame) {
 	}
 	
 	/* default command handler for views */
+	this.handleKeyEvent = function(cmd) {
+		if(this.current) {
+			if(this.current.handleKeyEvent(cmd))
+				return true;
+		}
+		if(this.onKeyPress[cmd]) {
+			return this.onKeyPress[cmd]();
+		}
+		return false;
+	}
 	this.getcmd=function(cmd) {
 		if(!cmd) 
 			return false;
-		if(this.onKeyPress[cmd] && this.onKeyPress[cmd]())
+		if(this.handleKeyEvent(cmd))
 			return true;
 		switch(cmd) {
 		case '\x09': 
@@ -502,10 +512,20 @@ function LayoutView(title,frame,parent) {
 		}
 		return tab;
 	}
+	this.handleKeyEvent = function(cmd) {
+		if(this.current) {
+			if(this.current.handleKeyEvent(cmd))
+				return true;
+		}
+		if(this.onKeyPress[cmd]) {
+			return this.onKeyPress[cmd]();
+		}
+		return false;
+	}
 	this.getcmd=function(cmd) {
 		if(!cmd) 
 			return false;
-		if(this.onKeyPress[cmd] && this.onKeyPress[cmd]())
+		if(this.handleKeyEvent(cmd))
 			return true;
 		switch(cmd) {
 		case KEY_LEFT:
@@ -840,6 +860,12 @@ function ViewTab(title,frame,parent) {
 
 	/* default command handler 
 	 * (can be overridden for specialized tabs) */
+	this.handleKeyEvent = function(cmd) {
+		if(this.onKeyPress[cmd]) {
+			return this.onKeyPress[cmd]();
+		}
+		return false;
+	}
 	this.getcmd = function(cmd) {
 		if(!cmd)
 			return false;
