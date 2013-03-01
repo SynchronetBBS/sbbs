@@ -196,6 +196,8 @@ function Layout(frame) {
 	}
 	this.delView=function(title_or_index) {
 		var view = false;
+		if(title_or_index instanceof LayoutView)
+			title_or_index = title_or_index.title;
 		if(isNaN(title_or_index)) {
 			for(var v=0;v<properties.views.length;v++) {
 				if(properties.views[v].title.toUpperCase() == title_or_index.toUpperCase()) {
@@ -490,6 +492,8 @@ function LayoutView(title,frame,parent) {
 	}
 	this.delTab=function(title_or_index) {
 		var tab = false;
+		if(title_or_index instanceof ViewTab)
+			title_or_index = title_or_index.title;
 		if(isNaN(title_or_index)) {
 			for(var t=0;t<properties.tabs.length;t++) {
 				if(properties.tabs[t].title.toUpperCase() == title_or_index.toUpperCase()) {
