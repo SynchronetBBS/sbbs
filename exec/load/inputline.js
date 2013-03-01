@@ -92,8 +92,7 @@ function InputLine(frame) {
 	this.__defineGetter__("timeout",function() {
 		return properties.timeout;
 	});
-	this.__defineSetter__("timeout",function() {
-		return properties.timeout;
+	this.__defineSetter__("timeout",function(num) {
 		if(num > 0 && num < 10000)
 			settings.timeout = Number(num);
 	});
@@ -182,7 +181,7 @@ function InputLine(frame) {
 		if(properties.buffer.length>properties.frame.width) 
 			printBuffer();
 		else 
-			properties.frame.putmsg(key,properties.frame.attr);
+			properties.frame.write(key);
 		if(settings.show_cursor)
 			printCursor();
 		return undefined;
@@ -195,7 +194,7 @@ function InputLine(frame) {
 			printBuffer();
 		else {
 			properties.frame.left();
-			properties.frame.putmsg(" ");
+			properties.frame.write(" ");
 			properties.frame.left();
 		}
 		if(settings.show_cursor)
@@ -210,7 +209,7 @@ function InputLine(frame) {
 			properties.frame.putmsg(truncated);
 		}
 		else {
-			properties.frame.putmsg(properties.buffer);
+			properties.frame.write(properties.buffer);
 		}
 	}
 	function gotoxy(position) {
@@ -225,7 +224,7 @@ function InputLine(frame) {
 			position.y=properties.frame.y;
 		}
 		else {
-			position.x=properties.frame.x+properties.buffer.length
+			position.x=properties.frame.x+properties.buffer.length;
 			position.y=properties.frame.y;
 		}
 		return position;
