@@ -132,6 +132,7 @@ function Frame(x,y,width,height,attr,parent) {
 		data:[[]],
 		open:false,
 		ctrl_a:false,
+		curr_attr:undefined,
 		id:0
 	};
 	var settings = {
@@ -880,9 +881,9 @@ function Frame(x,y,width,height,attr,parent) {
 		if(settings.word_wrap) 
 			str = word_wrap(str,this.width);
 		str = str.toString().split('');
-		var curattr = attr;
-		if(!curattr)
-			curattr = this.attr;
+		
+		if(attr)
+			properties.curr_attr = attr;
 		var pos = position.cursor;
 
 		while(str.length > 0) {
@@ -897,69 +898,69 @@ function Frame(x,y,width,height,attr,parent) {
 					pos.x++;
 					break;
 				case 'K':	/* Black */
-					curattr=(curattr)&0xf8;
+					properties.curr_attr=(properties.curr_attr)&0xf8;
 					break;
 				case 'R':	/* Red */
-					curattr=((curattr)&0xf8)|RED;
+					properties.curr_attr=((properties.curr_attr)&0xf8)|RED;
 					break;
 				case 'G':	/* Green */
-					curattr=((curattr)&0xf8)|GREEN;
+					properties.curr_attr=((properties.curr_attr)&0xf8)|GREEN;
 					break;
 				case 'Y':	/* Yellow */
-					curattr=((curattr)&0xf8)|BROWN;
+					properties.curr_attr=((properties.curr_attr)&0xf8)|BROWN;
 					break;
 				case 'B':	/* Blue */
-					curattr=((curattr)&0xf8)|BLUE;
+					properties.curr_attr=((properties.curr_attr)&0xf8)|BLUE;
 					break;
 				case 'M':	/* Magenta */
-					curattr=((curattr)&0xf8)|MAGENTA;
+					properties.curr_attr=((properties.curr_attr)&0xf8)|MAGENTA;
 					break;
 				case 'C':	/* Cyan */
-					curattr=((curattr)&0xf8)|CYAN;
+					properties.curr_attr=((properties.curr_attr)&0xf8)|CYAN;
 					break;
 				case 'W':	/* White */
-					curattr=((curattr)&0xf8)|LIGHTGRAY;
+					properties.curr_attr=((properties.curr_attr)&0xf8)|LIGHTGRAY;
 					break;
 				case '0':	/* Black */
-					curattr=(curattr)&0x8f;
+					properties.curr_attr=(properties.curr_attr)&0x8f;
 					break;
 				case '1':	/* Red */
-					curattr=((curattr)&0x8f)|(RED<<4);
+					properties.curr_attr=((properties.curr_attr)&0x8f)|(RED<<4);
 					break;
 				case '2':	/* Green */
-					curattr=((curattr)&0x8f)|(GREEN<<4);
+					properties.curr_attr=((properties.curr_attr)&0x8f)|(GREEN<<4);
 					break;
 				case '3':	/* Yellow */
-					curattr=((curattr)&0x8f)|(BROWN<<4);
+					properties.curr_attr=((properties.curr_attr)&0x8f)|(BROWN<<4);
 					break;
 				case '4':	/* Blue */
-					curattr=((curattr)&0x8f)|(BLUE<<4);
+					properties.curr_attr=((properties.curr_attr)&0x8f)|(BLUE<<4);
 					break;
 				case '5':	/* Magenta */
-					curattr=((curattr)&0x8f)|(MAGENTA<<4);
+					properties.curr_attr=((properties.curr_attr)&0x8f)|(MAGENTA<<4);
 					break;
 				case '6':	/* Cyan */
-					curattr=((curattr)&0x8f)|(CYAN<<4);
+					properties.curr_attr=((properties.curr_attr)&0x8f)|(CYAN<<4);
 					break;
 				case '7':	/* White */
-					curattr=((curattr)&0x8f)|(LIGHTGRAY<<4);
+					properties.curr_attr=((properties.curr_attr)&0x8f)|(LIGHTGRAY<<4);
 					break;
 				case 'H':	/* High Intensity */
-					curattr|=HIGH;
+					properties.curr_attr|=HIGH;
 					break;
 				case 'I':	/* Blink */
-					curattr|=BLINK;
+					properties.curr_attr|=BLINK;
 					break;
 				case 'N':	/* Normal (ToDo: Does this do ESC[0?) */
-					curattr=this.attr;
+					properties.curr_attr=this.attr;
 					break;
 				case '-':	/* Normal if High, Blink, or BG */
-					if(curattr & 0xf8)
-						curattr=this.attr;
+					if(properties.curr_attr & 0xf8)
+						properties.curr_attr=this.attr;
 					break;
 				case '_':	/* Normal if blink/background */
-					if(curattr & 0xf0)
-						curattr=this.attr;
+					if(properties.curr_attr & 0xf0)
+						properties.curr_attr=this.attr;
 					break;
 				case '[':	/* CR */
 					pos.x=0;
@@ -981,6 +982,7 @@ function Frame(x,y,width,height,attr,parent) {
 			else {
 				switch(ch) {
 				case '\1':		/* CTRL-A code */
+				case ctrl('A'):
 					properties.ctrl_a = true;
 					break;
 				case '\7':		/* Beep */
@@ -990,7 +992,7 @@ function Frame(x,y,width,height,attr,parent) {
 				case '\b':
 					if(pos.x > 0) {
 						pos.x--;
-						putChar.call(this," ",curattr);
+						putChar.call(this," ",properties.curr_attr);
 					}
 					break;
 				case '\r':
@@ -1007,7 +1009,7 @@ function Frame(x,y,width,height,attr,parent) {
 					}
 					break;
 				default:
-					putChar.call(this,ch,curattr);
+					putChar.call(this,ch,properties.curr_attr);
 					pos.x++;
 					break;
 				}
