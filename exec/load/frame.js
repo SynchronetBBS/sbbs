@@ -775,18 +775,12 @@ function Frame(x,y,width,height,attr,parent) {
 			this.refresh();
 	}
 	this.insertLine = function(y) {
-		var l = undefined;
-		if(properties.data[y]) {
-			var l = new Array(this.width);
-			properties.data.splice(y,0,l);
-			for(var x=0;x<this.width;x++) {
-				properties.data[y][x] = new Char();
-			}
-			this.refresh();
-		} else {
+		if(properties.data[y])
+			properties.data.splice(y,0,[]);
+		else
 			properties.data[y] = [];
-		}
-		return l;
+		this.refresh();
+		return properties.data[y];
 	}
 	this.deleteLine = function(y) {
 		var l = undefined;
