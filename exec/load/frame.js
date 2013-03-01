@@ -783,6 +783,8 @@ function Frame(x,y,width,height,attr,parent) {
 				properties.data[y][x] = new Char();
 			}
 			this.refresh();
+		} else {
+			properties.data[y] = [];
 		}
 		return l;
 	}
