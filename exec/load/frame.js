@@ -884,6 +884,8 @@ function Frame(x,y,width,height,attr,parent) {
 		
 		if(attr)
 			properties.curr_attr = attr;
+		else
+			properties.curr_attr = this.attr;
 		var pos = position.cursor;
 
 		while(str.length > 0) {
