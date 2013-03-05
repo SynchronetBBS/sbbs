@@ -10,9 +10,15 @@ ifndef BAJAPATH
  BAJAPATH	:=	./baja
 endif
 
-all :	default.bin \
+all :	\
+        cntnodes.bin \
+        default.bin \
+	dir.bin \
+	file_io.bin \
         ftp.bin \
         getimlst.bin \
+	html.bin \
+	lbshell.bin \
 	major.bin \
 	matrix.bin \
 	noyesbar.bin \
