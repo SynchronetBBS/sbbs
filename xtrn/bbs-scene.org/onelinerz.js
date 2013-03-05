@@ -48,14 +48,14 @@ function getOneLinerz() {
 		return false;
 	}
 
-	onelinerzFrame.clear();
+//	onelinerzFrame.clear();
 	for(var o in onelinerz) {
 		var userAtBBS = "\1h\1k(\1h\1w" + onelinerz[o].alias.substr(0, 13) + "\1h\1c@\1n\1w" + onelinerz[o].bbsname.substr(0, 7).toLowerCase() + "\1h\1k)";
 		while(console.strlen(userAtBBS) < 23) {
 			userAtBBS = "\1h\1k." + userAtBBS;
 		}
 		onelinerzFrame.putmsg(userAtBBS);
-		onelinerzFrame.putmsg(" \1n\1w" + pipeToCtrlA(onelinerz[o].oneliner.substr(0, console.screen_columns - 24)));
+		onelinerzFrame.putmsg(" \1n\1w" + pipeToCtrlA(onelinerz[o].oneliner.substr(0, console.screen_columns - 24)) + "\r\n");
 		onelinerzFrame.crlf();
 	}	
 	return true;
@@ -109,9 +109,8 @@ function postOneLiner() {
 		}
 		piped += userInput[c];
 	}
-
 	try {
-		var response = http.Post("http://bbs-scene.org/api/onelinerz.json", "&bbsname=" + system.qwk_id.toLowerCase() + "&alias=" + user.alias.replace(/\s/g, "+") + "&oneliner=" + piped.replace(/\s/g, "+") + " ", "", "");
+		var response = http.Post("http://bbs-scene.org/api/onelinerz.json", "&bbsname=" + system.qwk_id.toLowerCase() + "&alias=" + user.alias.replace(/\s/g, "+") + "&oneliner=" + piped.replace(/\s/g, "+") + "  ", "", "");
 	}
 	catch(err) {
 		log(LOG_INFO, "bbs-scene onelinerz http error: " + err);
@@ -137,8 +136,7 @@ console.clear();
 frame.open();
 headerFrame.load(js.exec_dir + "onelinerz.bin", 80, 6);
 headerFrame.gotoxy(1, 7);
-headerFrame.attr = LIGHTGRAY;
-headerFrame.putmsg(line);
+headerFrame.putmsg(line, LIGHTGRAY);
 helpFrame.putmsg(line);
 
 if(!getOneLinerz())
@@ -148,5 +146,4 @@ frame.cycle();
 console.gotoxy(((console.screen_columns - 48) / 2).toFixed(0), console.screen_rows - 1);
 if(!console.noyes("Post a new oneliner to bbs-scene.org"))
 	postOneLiner();
-
 frame.close();
