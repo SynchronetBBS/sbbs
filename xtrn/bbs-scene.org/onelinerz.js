@@ -82,7 +82,7 @@ function postOneLiner() {
 		if(frame.cycle())
 			console.gotoxy(80, 24);
 		if(ascii(userInput) == 9) {
-			inputLine.frame.attr = colorPicker(20, 10, inputFrame);
+			inputLine.attr = colorPicker(20, 10, inputFrame, inputLine.attr);
 			userInput = undefined;
 			continue;
 		}
