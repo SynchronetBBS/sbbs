@@ -63,11 +63,11 @@ function InputLine(frame) {
 		}
 	});
 	this.__defineGetter__("attr",function() {
-		return properties.frame.attr;
+		return properties.attr;
 	});
 	this.__defineSetter__("attr",function(attr) {
-		if(attr >= 0 && attr < 512)
-			properties.frame.attr = Number(attr);
+		if(!isNaN(attr))
+			properties.attr = Number(attr);
 	});
 	this.__defineGetter__("cursor_attr",function() {
 		return settings.cursor_attr;
