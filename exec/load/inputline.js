@@ -181,7 +181,7 @@ function InputLine(frame) {
 		if(properties.buffer.length>properties.frame.width) 
 			printBuffer();
 		else 
-			properties.frame.write(key);
+			properties.frame.write(key,properties.attr);
 		if(settings.show_cursor)
 			printCursor();
 		return undefined;
