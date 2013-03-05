@@ -48,7 +48,7 @@ function getOneLinerz() {
 		return false;
 	}
 
-//	onelinerzFrame.clear();
+	onelinerzFrame.clear();
 	for(var o in onelinerz) {
 		var userAtBBS = "\1h\1k(\1h\1w" + onelinerz[o].alias.substr(0, 13) + "\1h\1c@\1n\1w" + onelinerz[o].bbsname.substr(0, 7).toLowerCase() + "\1h\1k)";
 		while(console.strlen(userAtBBS) < 23) {
@@ -56,7 +56,6 @@ function getOneLinerz() {
 		}
 		onelinerzFrame.putmsg(userAtBBS);
 		onelinerzFrame.putmsg(" \1n\1w" + pipeToCtrlA(onelinerz[o].oneliner.substr(0, console.screen_columns - 24)) + "\r\n");
-		onelinerzFrame.crlf();
 	}	
 	return true;
 
