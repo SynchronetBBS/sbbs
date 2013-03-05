@@ -129,7 +129,7 @@ function Frame(x,y,width,height,attr,parent) {
 		height:undefined,
 		attr:undefined,
 		display:undefined,
-		data:[[]],
+		data:[],
 		open:false,
 		ctrl_a:false,
 		curr_attr:undefined,
@@ -826,6 +826,8 @@ function Frame(x,y,width,height,attr,parent) {
 		if(attr == undefined)
 			attr = this.attr;
 		for(var y=0;y<properties.data.length;y++) {
+			if(!properties.data[y])
+				continue;
 			for(var x=0;x<properties.data[y].length;x++) {	
 				if(properties.data[y][x]) {
 					properties.data[y][x].ch = undefined;
