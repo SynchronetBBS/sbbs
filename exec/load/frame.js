@@ -877,7 +877,7 @@ function Frame(x,y,width,height,attr,parent) {
 			position.cursor.y += 1;
 		else {}
 	}
-	this.write = function(str) {
+	this.write = function(str,attr) {
 		if(str == undefined)
 			return;
 		if(settings.word_wrap) 
