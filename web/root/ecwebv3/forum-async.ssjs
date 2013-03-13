@@ -11,7 +11,7 @@ if(http_request.query.hasOwnProperty('postmessage')) {
 		http_request.query.to,
 		http_request.query.from,
 		http_request.query.subject,
-		http_request.query.body
+		lfexpand(http_request.query.body)
 	);
 	if(!x)
 		print("An error was encountered.  Your message was not posted.");
