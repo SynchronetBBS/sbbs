@@ -5,8 +5,7 @@
 
 	- Resizes an IFrame to the height of its contents
 	- If 'width' is true, will also resize to content width */
-
-function loadIFrame(id, width) {
+var loadIFrame = function(id, width) {
 	document.getElementById(id).style.height = document.getElementById(id).contentWindow.document.body.scrollHeight;
 	if(width == 1)
 		document.getElementById(id).style.width = document.getElementById(id).contentWindow.document.body.scrollWidth;
@@ -16,8 +15,7 @@ function loadIFrame(id, width) {
 
 	Switches the "display" style of element 'elementID' between 'block'
 	and 'none'. */
-
-function toggleVisibility(elementID) {
+var toggleVisibility = function(elementID) {
 	if(document.getElementById(elementID).style.display == 'none') {
 		document.getElementById(elementID).style.display = 'block';
 		return true;
@@ -35,17 +33,13 @@ function toggleVisibility(elementID) {
 	the server or it times out.  If 'async' is true, it will return the
 	XMLHttpRequest object, and your function must monitor it for a
 	ReadyStateChange. */
-
-function httpGet(url, async) {
+var httpGet = function(url, async) {
 	if(async === undefined)
 		async = true;
 	var XMLReq = new XMLHttpRequest();
 	XMLReq.open('GET', url, async);
 	XMLReq.send(null);
-	if(async)
-		return XMLReq;
-	else
-		return XMLReq.responseText;
+	return (async) ? XMLReq : XMLReq.responseText;
 }
 
 /*	httpPost(url, postData, divID)
@@ -58,8 +52,7 @@ function httpGet(url, async) {
 	the server or it times out.  If 'async' is true, it will return the
 	XMLHttpRequest object, and your function must monitor it for a
 	ReadyStateChange. */
-
-function httpPost(url, headers, postData, async) {
+var httpPost = function(url, headers, postData, async) {
 	if(async === undefined)
 		async = true;
 	var XMLReq = new XMLHttpRequest();
@@ -67,10 +60,7 @@ function httpPost(url, headers, postData, async) {
 	for(var h in headers)
 		XMLReq.setRequestHeader(headers[h][0], headers[h][1]);
 	XMLReq.send(postData);
-	if(async)
-		return XMLReq;
-	else
-		return XMLReq.responseText;
+	return (async) ? XMLReq : XMLReq.responseText;
 }
 
 /*	httpLoad(url, elementID, popUp, async)
@@ -87,8 +77,7 @@ function httpPost(url, headers, postData, async) {
 	the server or it times out.  If 'async' is true, it will return the
 	XMLHttpRequest object, and your function must monitor it for a
 	ReadyStateChange. */
-
-function httpLoad(url, elementID, popUp, async) {
+var httpLoad = function(url, elementID, popUp, async) {
 	toggleVisibility(popUp);
 	document.getElementById(popUp).innerHTML = "Loading ...";
 	if(async === undefined)
@@ -122,8 +111,7 @@ function httpLoad(url, elementID, popUp, async) {
 	the server or it times out.  If 'async' is true, it will return the
 	XMLHttpRequest object, and your function must monitor it for a
 	ReadyStateChange. */
-
-function httpSend(url, elementID, headers, postData, async) {
+var httpSend = function(url, elementID, headers, postData, async) {
 	document.getElementById(elementID).innerHTML = "Sending ...";
 	if(async === undefined)
 		async = true;
@@ -141,8 +129,7 @@ function httpSend(url, elementID, headers, postData, async) {
 /*	addReply(url, sub, thread, number)
 
 	ecWeb forum use only. */
-
-function addReply(url, sub, thread, number) {
+var addReply = function(url, sub, thread, number) {
 	var response = httpGet(url + "?sub=" + sub + "&getmessage=" + number, false);
 	var outDivID = "sub-" + sub + "-thread-" + thread + "-" + number;
 	var divID = "sub-" + sub + "-thread-" + thread + "-" + number + "-reply";
@@ -172,7 +159,7 @@ function addReply(url, sub, thread, number) {
 	document.getElementById(outDivID).innerHTML += out;
 }
 
-function addPost(url, sub, alias, name, sig) {
+var addPost = function(url, sub, alias, name) {
 	var divID = "sub-" + sub + "-newMsgBox";
 	var formID = divID + "-newMsgForm";
 	var out = "<br /><br />";
@@ -199,8 +186,7 @@ function addPost(url, sub, alias, name, sig) {
 
 	Submits the form 'formID' to 'url' and pushes the response text into the
 	element with id 'elementID'. */
-
-function submitForm(url, elementID, formID) {
+var submitForm = function(url, elementID, formID) {
 	var theForm = document.getElementById(formID);
 	var postData = "";
 	for(var e in theForm.elements)
@@ -217,8 +203,7 @@ function submitForm(url, elementID, formID) {
 /*	loadThreads(url, sub, async)
 
 	ecWeb forum use only. */
-
-function loadThreads(url, sub, async) {
+var loadThreads = function(url, sub, async) {
 	if(toggleVisibility("sub-" + sub))
 		httpLoad(url + "?sub=" + sub, "sub-" + sub, "sub-" + sub + "-info", async);
 }
@@ -226,14 +211,13 @@ function loadThreads(url, sub, async) {
 /* loadThread(url, sub, htread, async)
 
 	ecWeb forum use only. */
-
-function loadThread(url, sub, thread, async) {
+var loadThread = function(url, sub, thread, async) {
 	if(toggleVisibility("sub-" + sub + "-thread-" + thread))
 		httpLoad(url + "?sub=" + sub + "&thread=" + thread, "sub-" + sub + "-thread-" + thread, "sub-" + sub + "-thread-" + thread + "-info", async);
 }
 
 // This sucks, but I don't feel like revisiting it just now. (Copied from v2)
-function validateNewUserForm() {
+var validateNewUserForm = function() {
 	var theForm = document.getElementById('newUser');
 	var sexCheck = 0;
 	var returnValue = true;
@@ -364,7 +348,7 @@ function validateNewUserForm() {
 		}
 	}
 	if(sexCheck == 2) {
-		document.getElementById('sexError').innerHTML = ' &lt;- Sex please.';
+		document.getElementById('sexError').innerHTML = ' &lt;- Sex please.'; // She said that.
 		returnValue = false;
 	}
 	return returnValue;

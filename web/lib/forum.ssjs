@@ -4,7 +4,7 @@
 load('sbbsdefs.js');
 load('msgutils.js');
 
-function getSig() {
+var getSig = function() {
 	var sigFile = format("%04s", user.number.toString()) + ".sig";
 	if(file_exists(system.data_dir + "user/" + sigFile)) {
 		var f = new File(system.data_dir + "user/" + sigFile);
@@ -18,7 +18,9 @@ function getSig() {
 		return false;
 }
 
-function linkify(body) {
+var sig = getSig();
+
+var linkify = function(body) {
 	// Magical URL-ify
 	urlRE=/(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
 	body=body.replace(urlRE, 
@@ -35,7 +37,7 @@ function linkify(body) {
 	return(body);
 }
 
-function printBoards() {
+var printBoards = function() {
 	for(var g = 0; g < msg_area.grp_list.length; g++) {
 		var out = format(
 			"<div class='border box msg'>"
@@ -71,7 +73,7 @@ function printBoards() {
 			if(user.alias != webIni.WebGuest && user.compare_ars(msgBase.cfg.post_ars)) {
 				out += format(
 					"<br />"
-					+ "<a class='ulLink' onclick='addPost(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\")'>Post a new message</a>"
+					+ "<a class='ulLink' onclick='addPost(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\")'>Post a new message</a>"
 					+ "<div id='sub-%s-newMsgBox'></div>",
 					http_request.host,
 					webIni.appendURL,
@@ -95,7 +97,7 @@ function printBoards() {
 	return;
 }
 
-function printThreads(sub) {
+var printThreads = function(sub) {
 	try {
 		msgBase = new MsgBase(sub);
 		msgBase.open();
@@ -139,7 +141,7 @@ function printThreads(sub) {
 	}
 }
 
-function printThread(sub, t) {
+var printThread = function(sub, t) {
 	try {
 		var msgBase = new MsgBase(sub);
 		msgBase.open();
@@ -197,7 +199,7 @@ function printThread(sub, t) {
 	msgBase.close();
 }
 
-function printMessage(sub, number) {
+var printMessage = function(sub, number) {
 	try {
 		var msgBase = new MsgBase(sub);
 		msgBase.open();
@@ -216,13 +218,12 @@ function printMessage(sub, number) {
 		"alias" : user.alias,
 		"name" : user.name
 	};
-	var sig = getSig();
 	if(sig)
 		ret.sig = sig;
 	print(JSON.stringify(ret));
 }
 
-function postMessage(sub, irt, to, from, subject, body) {
+var postMessage = function(sub, irt, to, from, subject, body) {
 	for(var a = 0; a < arguments.length; a++) {
 		if(a == "irt")
 			continue;
