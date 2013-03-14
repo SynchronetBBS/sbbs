@@ -7,6 +7,16 @@
 load("sbbsdefs.js");
 load("nodedefs.js");
 
+// Over-ride these default values by creating/modifying the [chat_sec] section in your ctrl/modopts.ini file
+var irc_server = "irc.synchro.net 6667";
+var irc_channel = "#Synchronet"
+var options = load("modopts.js", "chat_sec");
+if (options) {
+    if (options.irc_server)
+        irc_server = options.irc_server;
+    if (options.irc_channel)
+        irc_channel = options.irc_channel;
+}
 var cmdkey;
 
 if(user.compare_ars("rest C")) {
@@ -59,17 +69,16 @@ while(1) {
 			break;
 		case 'R':
 			{
-				var server = "irc.synchro.net 6667";
 				if(user.security.level >= 90 || user.security.exemptions&UFLAG_C) {
 					write("\r\n\001n\001y\001hIRC Server: ");
-					server=console.getstr(server, 40, K_EDIT|K_LINE|K_AUTODEL);
+					server=console.getstr(irc_server, 40, K_EDIT|K_LINE|K_AUTODEL);
 					if(console.aborted)
 						break;
 				}
 				write("\r\n\001n\001y\001hIRC Channel: ");
-				var channel=console.getstr("#Synchronet", 40, K_EDIT|K_LINE|K_AUTODEL);
+				var channel=console.getstr(irc_channel, 40, K_EDIT|K_LINE|K_AUTODEL);
 				if(!console.aborted)
-					bbs.exec("?irc -a " + server + " " + channel);
+					bbs.exec("?irc -a " + irc_server + " " + channel);
 			}
 			break;
 		case 'J':
