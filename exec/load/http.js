@@ -131,7 +131,7 @@ function HTTPRequest(username,password)
 			len -= ch.length;
 			if(len < 1)
 				len=1024;
-			js.gc();
+			flatten(this.body);
 		}
 	};
 
