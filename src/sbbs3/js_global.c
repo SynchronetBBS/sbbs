@@ -3695,6 +3695,19 @@ static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+static JSBool js_flatten(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+
+	if(!JSVAL_IS_STRING(argv[0])) {
+		JS_ReportError(cx, "get_size() error!  Parameter is not a string.");
+		return(JS_FALSE);
+	}
+	JS_FlattenString(cx, JSVAL_TO_STRING(argv[0]));
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	return(JS_TRUE);
+}
+
 
 static JSBool
 js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
@@ -4045,7 +4058,11 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"get_size",		js_getsize,			1,	JSTYPE_NUMBER,	JSDOCSTR("[number]")
 	,JSDOCSTR("Gets the size in bytes the object uses in memory (forces GC) ")
-	,314
+	,315
+	},
+	{"flatten",			js_flatten,			1,	JSTYPE_NUMBER,	JSDOCSTR("[null]")
+	,JSDOCSTR("Flattens a string ")
+	,315
 	},
 	{0}
 };
