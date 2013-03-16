@@ -4058,11 +4058,11 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"get_size",		js_getsize,			1,	JSTYPE_NUMBER,	JSDOCSTR("[number]")
 	,JSDOCSTR("Gets the size in bytes the object uses in memory (forces GC) ")
-	,315
+	,316
 	},
 	{"flatten",			js_flatten,			1,	JSTYPE_NUMBER,	JSDOCSTR("[null]")
 	,JSDOCSTR("Flattens a string ")
-	,315
+	,316
 	},
 	{0}
 };
