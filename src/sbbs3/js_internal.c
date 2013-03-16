@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -37,6 +37,9 @@
 
 #include "sbbs.h"
 #include "js_request.h"
+
+/* SpiderMonkey: */
+#include <jsdbgapi.h>
 
 enum {
 	 PROP_VERSION
@@ -219,7 +222,7 @@ static char* prop_desc[] = {
 	,"full path and filename of JS file executed"
 	,"directory of executed JS file"
 	,"JS filename executed (with no path)"
-	,"Either the configure startup directory in SCFG (for externals) or the cwd when jsexec is started"
+	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
 	,NULL
 };
 #endif
@@ -439,6 +442,35 @@ js_get_parent(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+	JSObject* tmp_obj;
+
+	if(!JSVAL_IS_OBJECT(argv[0])) {
+		JS_ReportError(cx, "get_size() error!  Parameter is not an object.");
+		return(JS_FALSE);
+	}
+	tmp_obj=JSVAL_TO_OBJECT(argv[0]);
+	if(!tmp_obj)
+		return(JS_FALSE);
+	JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL(JS_GetObjectTotalSize(cx, tmp_obj)));
+	return(JS_TRUE);
+}
+
+static JSBool js_flatten(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval	*argv=JS_ARGV(cx, arglist);
+
+	if(!JSVAL_IS_STRING(argv[0])) {
+		JS_ReportError(cx, "get_size() error!  Parameter is not a string.");
+		return(JS_FALSE);
+	}
+	JS_FlattenString(cx, JSVAL_TO_STRING(argv[0]));
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	return(JS_TRUE);
+}
+
 static jsSyncMethodSpec js_functions[] = {
 	{"eval",            js_eval,            0,	JSTYPE_UNDEF,	JSDOCSTR("script")
 	,JSDOCSTR("evaluate a JavaScript string in its own (secure) context, returning the result")
@@ -463,6 +495,14 @@ static jsSyncMethodSpec js_functions[] = {
 	{"get_parent",		js_get_parent,		1,	JSTYPE_OBJECT,	JSDOCSTR("object")
 	,JSDOCSTR("return the parent of the specified object")
 	,314
+	},
+	{"get_size",		js_getsize,			1,	JSTYPE_NUMBER,	JSDOCSTR("[object]")
+	,JSDOCSTR("return the size in bytes the object uses in memory (forces GC) ")
+	,316
+	},
+	{"flatten_string",	js_flatten,			1,	JSTYPE_VOID,	JSDOCSTR("[string]")
+	,JSDOCSTR("flattens a string, optimizing allocated memory used for concatenated strings")
+	,316
 	},
 	{0}
 };
@@ -580,7 +620,7 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"JavaScript execution and garbage collection control object",311);
+	js_DescribeSyncObject(cx,obj,"JavaScript engine internal control object",311);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", prop_desc, JSPROP_READONLY);
 #endif
 

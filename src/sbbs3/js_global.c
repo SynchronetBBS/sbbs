@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -3679,36 +3679,6 @@ js_list_named_queues(JSContext *cx, uintN argc, jsval *arglist)
     return(JS_TRUE);
 }
 
-static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
-{
-	jsval	*argv=JS_ARGV(cx, arglist);
-	JSObject* tmp_obj;
-
-	if(!JSVAL_IS_OBJECT(argv[0])) {
-		JS_ReportError(cx, "get_size() error!  Parameter is not an object.");
-		return(JS_FALSE);
-	}
-	tmp_obj=JSVAL_TO_OBJECT(argv[0]);
-	if(!tmp_obj)
-		return(JS_FALSE);
-	JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL(JS_GetObjectTotalSize(cx, tmp_obj)));
-	return(JS_TRUE);
-}
-
-static JSBool js_flatten(JSContext *cx, uintN argc, jsval *arglist)
-{
-	jsval	*argv=JS_ARGV(cx, arglist);
-
-	if(!JSVAL_IS_STRING(argv[0])) {
-		JS_ReportError(cx, "get_size() error!  Parameter is not a string.");
-		return(JS_FALSE);
-	}
-	JS_FlattenString(cx, JSVAL_TO_STRING(argv[0]));
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-	return(JS_TRUE);
-}
-
-
 static JSBool
 js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -4055,14 +4025,6 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("convert a string of security flags (letters) into their numeric value or vice-versa "
 	"(returns number OR string) - (added in v3.13)")
 	,313
-	},
-	{"get_size",		js_getsize,			1,	JSTYPE_NUMBER,	JSDOCSTR("[object]")
-	,JSDOCSTR("Gets the size in bytes the object uses in memory (forces GC) ")
-	,316
-	},
-	{"flatten",			js_flatten,			1,	JSTYPE_VOID,	JSDOCSTR("[string]")
-	,JSDOCSTR("Flattens a string ")
-	,316
 	},
 	{0}
 };
