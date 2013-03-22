@@ -4,6 +4,7 @@
 
 load("sbbsdefs.js");
 load("sockdefs.js");
+load("callsign.js");
 load("kissAX25lib.js");
 
 /*	This could be made into more of a proper RLogin client, but for now it's
@@ -107,13 +108,29 @@ while(!js.terminated) {
 				var a = new AX25.Client(AX25.tncs[tnc], packet);
 				var usernumber = system.matchuserdata(U_HANDLE, packet.sourceCallsign);
 				if(usernumber < 1) {
-					// Get Deuce's WD1CKS newuser creation thing to better
-					// populate user data here.
 					var u = system.new_user(packet.sourceCallsign);
 					u.alias = packet.sourceCallsign;
-					u.name = packet.sourceCallsign;
 					u.handle = packet.sourceCallsign;
 					u.security.password = time(); // Do something better here
+					try {
+						var callsign=CallSign.Lookup.Any(u.alias);
+					} catch (e) {
+						log("AX.25 Tunnel: " + e);
+					}
+					if(typeof callsign != "undefined") {
+						u.name = callsign.name;
+						u.address = callsign.address;
+						u.location = callsign.city + ", " + callsign.provstate;
+						u.zipcode = callsign.postalzip;
+					}
+					var out = format(
+						"Welcome to %s, %s! Your account has been created.\r\n"
+						+ "You can visit us on the internet at %s\r\n"
+						+ "Your password is %s. You'll need that to log in online"
+						+ "\r\n\r\n",
+						system.name, u.alias, system.inet_addr, u.security.password
+					);
+					a.sendString(out);
 				} else {
 					var u = new User(usernumber);
 				}
