@@ -1,90 +1,165 @@
-/*	ax25tunnel.js
-	echicken -at- bbs.electronicchicken.com (VE3XEC)
+// ax25tunnel.js
+// VE3XEC (echicken -at- bbs.electronicchicken.com)
+// Work-in-progress AX.25 unproto <-> Synchronet RLogin server tunnel
 
-	This script is responsible for handling connections from AX.25 clients
-	and then tunneling traffic between them and the packet-bbs.js service
-	that you'll also need to run.  It should be replaced by something that
-	creates an rlogin session for each connecting client and translates
-	output from the Synchronet terminal server for transmission to AX.25
-	clients.  I don't feel like writing an rlogin client in JS right now,
-	so this is what you get.
-	
-	Prior to running this script, you'll need to edit ctrl/kiss.ini in order
-	to configure your TNC(s).  You'll also need to add packet-bbs.js to your
-	ctrl/services.ini file (see the comments at the top of packet-bbs.js for
-	details.)  Once this is done, run this script via jsexec like so:
-	
-	jsexec -l ax25tunnel.js tnc1 tnc2 tnc3 etc...
-	
-	Where tnc1, tnc2, tnc3 are the names of sections from your ctrl/kiss.ini
-	file. */
-	
 load("sbbsdefs.js");
+load("sockdefs.js");
 load("kissAX25lib.js");
-load("event-timer.js");
 
-var timer = new Timer();
-var kissTNCs = [];
-for(var k = 0; k < argc; k++) {
-	kissTNCs.push(loadKISSInterface(argv[k]));
-}
-var kissFrame;
-var sockRet = "";
-var ax25Clients = new Object();
-
-var f = new File(system.ctrl_dir + "services.ini");
-f.open("r");
-var i = f.iniGetObject("Packet-BBS");
-f.close();
-
-function beaconAllTNCs() {
-	for(var k = 0; k < kissTNCs.length; k++) {
-		kissTNCs[k].beacon();
+/*	This could be made into more of a proper RLogin client, but for now it's
+	just the bare minimum required for the purposes of this script. */
+var RLogin = function(host, port, username, password, terminal) {
+	
+	var settings = {
+		'timeout'		: 30,
+		'receiveBuffer'	: 255
+	};
+	
+	var socket = new Socket();
+	
+	this.__defineGetter__(
+		"connected",
+		function() {
+			return socket.is_connected;
+		}
+	);
+	
+	this.__defineGetter__(
+		"dataWaiting",
+		function() {
+			return socket.data_waiting;
+		}
+	);
+	
+	this.connect = function() {
+		socket.connect(host, port);
+		socket.sendBin(0, 1);
+		socket.send(username);
+		socket.sendBin(0, 1);
+		socket.send(password);
+		socket.sendBin(0, 1);
+		socket.send(terminal);
+		socket.sendBin(0, 1);
+		var sTime = time();
+		while(time() - sTime < settings.timeout) {
+			if(socket.poll(.1))
+				break;
+		}
+		if(socket.recvBin(1) != 0)
+			return false;
+		return true;
 	}
+	
+	this.disconnect = function() {
+		socket.close();
+	}
+	
+	this.receive = function() {
+		if(!socket.is_connected || !socket.data_waiting)
+			return false;
+		var r = socket.recv(settings.receiveBuffer);
+		r = r.split("");
+		switch(r[0]) {
+			case 80:
+				r.shift();
+				break;
+			case 10:
+				r.shift();
+				break;
+			case 20:
+				r.shift();
+				break;
+			case 02:
+				r.shift();
+				break;
+			default:
+				break;
+		}
+		return (r.length > 0) ? r.join("") : "";
+	}
+	
+	this.send = function(str) {
+		if(!socket.is_connected || !socket.is_writeable)
+			return false;
+		socket.write(str);
+	}
+
 }
-timer.addEvent(600000, true, beaconAllTNCs);
-beaconAllTNCs();
+
+AX25.logging = true;
+var tnc = AX25.loadAllTNCs();
+var tunnels = {};
 
 while(!js.terminated) {
-	// Check for frames waiting on any KISS interface
-	for(var k = 0; k < kissTNCs.length; k++) {
-		kissFrame = kissTNCs[k].getKISSFrame();
-		if(!kissFrame)
-			continue;
-		var p = new ax25packet();
-		p.disassemble(kissFrame);
-		if(p.destination != kissTNCs[k].callsign || p.destinationSSID != kissTNCs[k].ssid)
-			continue;
-		if(!ax25Clients.hasOwnProperty(p.clientID)) {
-			ax25Clients[p.clientID] = new ax25Client(p.destination, p.destinationSSID, p.source, p.sourceSSID, kissTNCs[k]);
-			ax25Clients[p.clientID].sock = new Socket();
-			ax25Clients[p.clientID].sock.connect("localhost", i.Port);
-			ax25Clients[p.clientID].sock.send(ax25Clients[p.clientID].callsign + "\r\n");
-			ax25Clients[p.clientID].sock.send(ax25Clients[p.clientID].ssid + "\r\n");
-			ax25Clients[p.clientID].sock.send(ax25Clients[p.clientID].kissTNC.callsign + "\r\n");
-			ax25Clients[p.clientID].sock.send(ax25Clients[p.clientID].kissTNC.ssid + "\r\n");
-		}
-		sockRet = byteArrayToString(ax25Clients[p.clientID].receive(p));
-		if(sockRet)
-			ax25Clients[p.clientID].sock.send(sockRet + "\r\n");
-		if(!ax25Clients[p.clientID].connected) {
-			ax25Clients[p.clientID].sock.close();
-			delete(ax25Clients[p.clientID]);
+	
+	for(var tnc in AX25.tncs) {
+		AX25.tncs[tnc].cycle();
+		while(AX25.tncs[tnc].dataWaiting) {
+			var packet = AX25.tncs[tnc].receive();
+			if(
+				packet.destinationCallsign != AX25.tncs[tnc].callsign
+				||
+				packet.destinationSSID != AX25.tncs[tnc].ssid
+			) {
+				continue;
+			}
+			if(!AX25.clients.hasOwnProperty(packet.clientID)) {
+				var a = new AX25.Client(AX25.tncs[tnc], packet);
+				var usernumber = system.matchuserdata(U_HANDLE, packet.sourceCallsign);
+				if(usernumber < 1) {
+					// Get Deuce's WD1CKS newuser creation thing to better
+					// populate user data here.
+					var u = system.new_user(packet.sourceCallsign);
+					u.alias = packet.sourceCallsign;
+					u.name = packet.sourceCallsign;
+					u.handle = packet.sourceCallsign;
+					u.security.password = time(); // Do something better here
+				} else {
+					var u = new User(usernumber);
+				}
+				var username = u.alias;
+				var password = u.security.password;
+				tunnels[packet.clientID] = new RLogin(
+					system.inet_addr,
+					513,
+					username,
+					password,
+					"dumb/9600"
+				);
+				tunnels[packet.clientID].connect();
+			} else {
+				AX25.clients[packet.clientID].receivePacket(packet);
+			}
 		}
 	}
-	// Check for data waiting on any sockets
-	for(var c in ax25Clients) {
-		if(ax25Clients[c].wait)
+	
+	for(var c in AX25.clients) {
+		AX25.clients[c].cycle();
+		if(!AX25.clients[c].connected) {
+			if(tunnels.hasOwnProperty(AX25.clients[c].id)) {
+				tunnels[AX25.clients[c].id].disconnect();
+				delete tunnels[AX25.clients[c].id];
+			}
+			delete AX25.clients[c];
 			continue;
-		if(ax25Clients[c].sock.data_waiting && ax25Clients[c].nr == ax25Clients[c].ssv && !ax25Clients[c].reject) {
-			var sendMe = ax25Clients[c].sock.recvfrom(false, 256).data;
-			sendMe = stringToByteArray(sendMe);
-			ax25Clients[c].send(sendMe);
-		} else if(!ax25Clients[c].sock.is_connected) {
-			ax25Clients[c].disconnect();
-			log(LOG_INFO, ax25Clients[c].callsign + "-" + ax25Clients[c].ssid + " has disconnected from " + ax25Clients[c].kissTNC.name + ", " + ax25Clients[c].kissTNC.callsign + "-" + ax25Clients[c].kissTNC.ssid);
-			delete(ax25Clients[p.clientID]);
+		}
+		if(
+			!tunnels.hasOwnProperty(AX25.clients[c].id)
+			||
+			!tunnels[AX25.clients[c].id].connected
+		) {
+			AX25.clients[c].disconnect();
+			continue;
+		}
+		if(tunnels[AX25.clients[c].id].dataWaiting) {
+			var fromTunnel = tunnels[AX25.clients[c].id].receive();
+			AX25.clients[c].sendString(fromTunnel);
+		}
+		if(AX25.clients[c].dataWaiting) {
+			var fromClient = AX25.clients[c].receiveString();
+			tunnels[AX25.clients[c].id].send(fromClient);
 		}
 	}
-	timer.cycle();
+	
+	mswait(5);
 }
