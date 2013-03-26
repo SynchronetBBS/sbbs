@@ -205,14 +205,18 @@ Bot_Commands["CHANGE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			+ "This error message Copyright 2006 Deuce. ;)");
 		return;
 	}
-	if (parseInt(cmd[2]) >= lvl) {
+	var newlvl = parseInt(cmd[2]);
+	if (newlvl >= lvl) {
 		srv.o(target,"You cannot change an access level to be higher or equal "
 			+ "to your own. (" + lvl + ")");
 		return;
 	}
-	srv.o(target,"Access level for " + usr.alias + " changed to "
-		+ parseInt(cmd[2]));
-	usr.security.level = parseInt(cmd[2]);
+	if (newlvl < 0) {
+		srv.o(target,"Nice try, buddy.");
+		return;
+	}
+	srv.o(target,"Access level for " + usr.alias + " changed to " + newlvl);
+	usr.security.level = newlvl;
 	return;
 }
 
