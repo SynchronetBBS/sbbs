@@ -150,7 +150,7 @@ while(!js.terminated) {
 					513,
 					username,
 					password,
-					"dumb/9600"
+					"AX25/9600"
 				);
 				tunnels[packet.clientID].connect();
 			} else {
