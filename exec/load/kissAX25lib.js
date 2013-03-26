@@ -289,7 +289,7 @@ AX25.loadTNC = function(tncName) {
 			continue;
 		}
 		if(tnc.hasOwnProperty(property))
-			tnc[property] = tncIni[property];
+			tnc[property] = Number(tncIni[property]);
 		else
 			throw "AX25: Unknown TNC property " + property;
 	}
