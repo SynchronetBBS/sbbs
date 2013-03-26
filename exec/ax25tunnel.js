@@ -87,6 +87,23 @@ var RLogin = function(host, port, username, password, terminal) {
 
 }
 
+var f = new File(system.text_dir + "badwords.can");
+if(f.exists) {
+	f.open("r");
+	var badWords = f.readAll();
+	f.close();
+} else {
+	var badWords = [];
+}
+var censor = function(s) {
+	for(var b = 0; b < badWords.length; b++) {
+		var redact = badWords[b].replace(/./g, "*");
+		var re = new RegExp(badWords[b], "ig");
+		s = s.replace(re, redact);
+	}
+	return s;
+}
+
 AX25.logging = true;
 var tnc = AX25.loadAllTNCs();
 var tunnels = {};
@@ -163,7 +180,7 @@ while(!js.terminated) {
 		if(tunnels[AX25.clients[c].id].dataWaiting) {
 			var fromTunnel = tunnels[AX25.clients[c].id].receive();
 			if(fromTunnel.length > 0)
-				AX25.clients[c].sendString(fromTunnel);
+				AX25.clients[c].sendString(censor(fromTunnel));
 		}
 		if(AX25.clients[c].dataWaiting) {
 			var fromClient = AX25.clients[c].receiveString();
