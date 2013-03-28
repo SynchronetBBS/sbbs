@@ -62,6 +62,12 @@
 	  1.0.5 - Bugfix for greedy regexp
 */
 
+/* $id: $ 
+
+	mcmlxxix wuz here '13
+	
+*/
+
 function JPath( json, parent ) { 
     this.json = json; 
     this._parent = parent; 
@@ -157,21 +163,21 @@ JPath.prototype = {
 
    */   
    '$$': function( str ) {   
-      var r = this.$(str,true).json;
+      var r = this.$(str,true);
       var arr = new Array();
       
-      if ( r instanceof Array ) 
+      if ( r.json instanceof Array ) 
          arr = arr.concat(r); 
-      else if ( r !== null )
+      else if ( r.json !== null )
          arr.push(r);
          
       for ( var p in this.json ) {
          if ( typeof( this.json[p] ) == 'object' ) {
-            arr = arr.concat( new JPath( this.json[p], this ).$$(str).json );
+            arr = arr.concat( new JPath( this.json[p], this ).$$(str));
          }
       }
       
-      return new JPath( arr, this );
+      return arr;
    },
    
    /*
