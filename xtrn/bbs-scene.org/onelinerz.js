@@ -33,7 +33,7 @@ function getOneLinerz() {
 	frame.cycle();
 
 	try {
-		var response = http.Get("http://bbs-scene.org/api/onelinerzjson.php?limit=" + onelinerzFrame.height + "&ansi=1");
+		var response = http.Get("http://bbs-scene.org/api/onelinerz.php?limit=" + onelinerzFrame.height + "&ansi=1");
 	}
 	catch(err) {
 		log(LOG_INFO, "bbs-scene onelinerz http error: " + err);
@@ -41,10 +41,11 @@ function getOneLinerz() {
 	}
 
 	try {
-		var onelinerz = JSON.parse(response);
+		response = response.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, "");
+		var onelinerz = new XML(response);
 	}
 	catch(err) {
-		log(LOG_INFO, "bbs-scene onelinerz json error: " + err);
+		log(LOG_INFO, "bbs-scene onelinerz XML error: " + err);
 		return false;
 	}
 
@@ -82,7 +83,7 @@ function postOneLiner() {
 		if(frame.cycle())
 			console.gotoxy(80, 24);
 		if(ascii(userInput) == 9) {
-			inputLine.attr = colorPicker(20, 10, inputFrame, inputLine.attr);
+			inputLine.frame.attr = colorPicker(20, 10, inputFrame);
 			userInput = undefined;
 			continue;
 		}
