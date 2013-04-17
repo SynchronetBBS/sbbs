@@ -849,8 +849,10 @@ function Frame(x,y,width,height,attr,parent) {
 		if(!properties.data[position.cursor.y])
 			return false;
 		for(var x=0;x<properties.data[position.cursor.y].length;x++) {
-			properties.data[position.cursor.y][x].ch = undefined;
-			properties.data[position.cursor.y][x].attr = attr;
+			if(properties.data[position.cursor.y][x]) {
+				properties.data[position.cursor.y][x].ch = undefined;
+				properties.data[position.cursor.y][x].attr = attr;
+			}
 		}
 		for(var x=0;x<this.width;x++) {
 			properties.display.updateChar(this,x,position.cursor.y);
@@ -863,8 +865,10 @@ function Frame(x,y,width,height,attr,parent) {
 		if(!properties.data[position.cursor.y])
 			return false;
 		for(var x=position.cursor.x;x<properties.data[position.cursor.y].length;x++) {
-			properties.data[position.cursor.y][x].ch = undefined;
-			properties.data[position.cursor.y][x].attr = attr;
+			if(properties.data[position.cursor.y][x]) {
+				properties.data[position.cursor.y][x].ch = undefined;
+				properties.data[position.cursor.y][x].attr = attr;
+			}
 		}
 		for(var x=position.cursor.x;x<this.width;x++) {
 			properties.display.updateChar(this,x,position.cursor.y);
