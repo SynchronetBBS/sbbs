@@ -11,22 +11,18 @@ Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 	}
 
-	if (!cmd[1])
-		lstr=get_nicklocation(srv, onick);
-	if(cmd.length==2)
-		lstr=get_nicklocation(srv, cmd[1]);
-
-	var query = "";
-
 	cmd.shift();
+	if (!cmd[0])
+		lstr=get_nicklocation(srv, onick);
+	else if(srv.users[cmd[0].toUpperCase()])
+		lstr=get_nicklocation(srv, cmd[0]);
+	if(!lstr && cmd[0])
+		lstr=cmd.join(' ');
 	if (!lstr) {
-		var usr = new User(system.matchuser(cmd[1]));
-
+		var usr = new User(system.matchuser(cmd[0]));
 		if (typeof(usr)=='object')
 			lstr = usr.location;
 	}
-	if (!lstr)
-		lstr = cmd.join(' ');
 	query = encodeURIComponent(lstr);
 
 	var weather_url = "http://api.wunderground.com/auto/wui/geo/WXCurrentObXML/index.xml?query=" + query;
@@ -92,23 +88,21 @@ Bot_Commands["FORECAST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			i--;
 		}
 	}
-
-	if (!cmd[1])
-		lstr=get_nicklocation(srv, onick);
-	if(cmd.length==2)
-		lstr=get_nicklocation(srv, cmd[1]);
-
-	var query = "";
-
+	
 	cmd.shift();
+	if (!cmd[0])
+		lstr=get_nicklocation(srv, onick);
+	else if(srv.users[cmd[0].toUpperCase()])
+		lstr=get_nicklocation(srv, cmd[0]);
+	if(!lstr && cmd[0])
+		lstr=cmd.join(' ');
 	if (!lstr) {
-		var usr = new User(system.matchuser(cmd[1]));
-
+		var usr = new User(system.matchuser(cmd[0]));
 		if (typeof(usr)=='object')
 			lstr = usr.location;
 	}
-	if (!lstr)
-		lstr = cmd.join(' ');
+
+	var query = "";
 	query = encodeURIComponent(lstr);
 
 	var location_url = "http://api.wunderground.com/auto/wui/geo/GeoLookupXML/index.xml?query=" + query;
