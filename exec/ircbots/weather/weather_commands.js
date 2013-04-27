@@ -139,8 +139,14 @@ Bot_Commands["FORECAST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 				str += " " + fcast.title + ": " + fcast.fcttext;
 			}
 			str += ' (Provided by Weather Underground, Inc.)';
-			
+
+			var m;
+			while(m=str.match(/^(.*?\. )[^\.]+:/)) {
+				srv.o(target, m[1]);
+				str=str.substr(m[1].length);
+			}
 			srv.o(target, str);
+
 			break;
 		default:
 			srv.o(target, "Multiple matches for "+lstr);
