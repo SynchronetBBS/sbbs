@@ -141,7 +141,7 @@ Bot_Commands["FORECAST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			str += ' (Provided by Weather Underground, Inc.)';
 
 			var m;
-			while(m=str.match(/^(.*?\. )[^\.]+:/)) {
+			while(m=str.match(/^(.*?\. +)[^\.]+:/)) {
 				srv.o(target, m[1]);
 				str=str.substr(m[1].length);
 			}
