@@ -113,7 +113,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #define JSSTRING_TO_RASTRING(cx, str, ret, sizeptr, lenptr) \
 { \
-	size_t			*JSSTSlenptr=lenptr; \
+	size_t			*JSSTSlenptr=(lenptr); \
 	size_t			JSSTSlen; \
 	size_t			JSSTSpos; \
 	const jschar	*JSSTSstrval; \
@@ -123,9 +123,9 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 		JSSTSlenptr=&JSSTSlen; \
 	if((str) != NULL) { \
 		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
-			if((*sizeptr < (*JSSTSlenptr+1 )) || (ret)==NULL) { \
-				*sizeptr = *JSSTSlenptr+1; \
-				if((JSSTStmpptr=(char *)realloc((ret), *sizeptr))==NULL) { \
+			if((*(sizeptr) < (*JSSTSlenptr+1 )) || (ret)==NULL) { \
+				*(sizeptr) = *JSSTSlenptr+1; \
+				if((JSSTStmpptr=(char *)realloc((ret), *(sizeptr)))==NULL) { \
 					JS_ReportError(cx, "Error reallocating %lu bytes at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
 					(ret)=NULL; \
 					free(ret); \
@@ -143,7 +143,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	} \
 	else { \
 		if(ret) \
-			*ret=0; \
+			*(ret)=0; \
 	} \
 }
 
@@ -155,7 +155,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #define JSSTRING_TO_MSTRING(cx, str, ret, lenptr) \
 { \
-	size_t			*JSSTSlenptr=lenptr; \
+	size_t			*JSSTSlenptr=(lenptr); \
 	size_t			JSSTSlen; \
 	size_t			JSSTSpos; \
 	const jschar	*JSSTSstrval; \
@@ -170,7 +170,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 					(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
 				(ret)[*JSSTSlenptr]=0; \
 			} \
-			else JS_ReportError(cx, "Error allocating %lu bytes at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
+			else JS_ReportError((cx), "Error allocating %lu bytes at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
 		} \
 	} \
 }
@@ -183,19 +183,19 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #define JSSTRING_TO_STRBUF(cx, str, ret, bufsize, lenptr) \
 { \
-	size_t			*JSSTSlenptr=lenptr; \
+	size_t			*JSSTSlenptr=(lenptr); \
 	size_t			JSSTSlen; \
 	size_t			JSSTSpos; \
 	const jschar	*JSSTSstrval; \
 \
 	if(JSSTSlenptr==NULL) \
 		JSSTSlenptr=&JSSTSlen; \
-	if(bufsize < 1 || str==NULL) \
+	if((bufsize) < 1 || (str)==NULL) \
 		*JSSTSlenptr = 0; \
 	else { \
 		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
-			if(*JSSTSlenptr >= bufsize) \
-				*JSSTSlenptr = bufsize-1; \
+			if(*JSSTSlenptr >= (bufsize)) \
+				*JSSTSlenptr = (bufsize)-1; \
 			for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) \
 				(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
 		} \
@@ -217,7 +217,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #define JSSTRING_TO_ASTRING(cx, str, ret, maxsize, lenptr) \
 { \
-	size_t			*JSSTSlenptr=lenptr; \
+	size_t			*JSSTSlenptr=(lenptr); \
 	size_t			JSSTSlen; \
 	size_t			JSSTSpos; \
 	const jschar	*JSSTSstrval; \
@@ -227,14 +227,16 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	(ret)=NULL; \
 	if((str) != NULL) { \
 		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
-			if(*JSSTSlenptr >= maxsize) \
-				*JSSTSlenptr = maxsize-1; \
+			if(*JSSTSlenptr >= (maxsize)) { \
+				*JSSTSlenptr = (maxsize)-1; \
+			} \
 			if(((ret)=(char *)alloca(*JSSTSlenptr+1))) { \
-				for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) \
+				for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) { \
 					(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
+				} \
 				(ret)[*JSSTSlenptr]=0; \
 			} \
-			else JS_ReportError(cx, "Error allocating %lu bytes on stack at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
+			else JS_ReportError((cx), "Error allocating %lu bytes on stack at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
 		} \
 	} \
 }
