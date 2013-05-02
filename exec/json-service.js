@@ -573,7 +573,6 @@ engine = new (function() {
 			}
 			break;
 		}
-		log("packet operation: " + packet.oper + " module r/w: " + module.read + "/" + module.write);
 		return true;
 	}
 
