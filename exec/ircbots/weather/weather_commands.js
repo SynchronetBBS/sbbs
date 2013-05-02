@@ -2,6 +2,7 @@ Bot_Commands["WEATHER"] = new Bot_Command(0,false,false);
 Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var i;
 	var lstr;
+	var nick=onick;
 
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -12,12 +13,11 @@ Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 
 	cmd.shift();
-	if (!cmd[0])
-		lstr=get_nicklocation(srv, onick);
-	else if(srv.users[cmd[0].toUpperCase()])
-		lstr=get_nicklocation(srv, cmd[0]);
+	if(cmd[0])
+		nick=cmd[0];
+	lstr=get_nicklocation(srv, nick);
 	if (!lstr) {
-		var usr = new User(system.matchuser(cmd[0]));
+		var usr = new User(system.matchuser(nick));
 		if (typeof(usr)=='object')
 			lstr = usr.location;
 	}
@@ -80,6 +80,7 @@ Bot_Commands["FORECAST"] = new Bot_Command(0,false,false);
 Bot_Commands["FORECAST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var i;
 	var lstr;
+	var nick=onick;
 
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -90,20 +91,17 @@ Bot_Commands["FORECAST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	
 	cmd.shift();
-	if (!cmd[0])
-		lstr=get_nicklocation(srv, onick);
-	else if(srv.users[cmd[0].toUpperCase()])
-		lstr=get_nicklocation(srv, cmd[0]);
+	if(cmd[0])
+		nick=cmd[0];
+	lstr=get_nicklocation(srv, nick);
 	if (!lstr) {
-		var usr = new User(system.matchuser(cmd[0]));
+		var usr = new User(system.matchuser(nick));
 		if (typeof(usr)=='object')
 			lstr = usr.location;
 	}
 	if(!lstr && cmd[0])
 		lstr=cmd.join(' ');
-
-	var query = "";
-	query = encodeURIComponent(lstr);
+	var query = encodeURIComponent(lstr);
 
 	var location_url = "http://api.wunderground.com/auto/wui/geo/GeoLookupXML/index.xml?query=" + query;
 	var forecast_url = "http://api.wunderground.com/auto/wui/geo/ForecastXML/index.xml?query=" + query;
