@@ -32,7 +32,8 @@ function HTTPRequest(username,password)
 			this.request_headers.push(
 				"Via: "+client.protocol.toString().toLowerCase()+"/1.0 "+system.name);
 		// Request Headers
-		this.request_headers.push("Accept: text/*");
+		//this.request_headers.push("Accept: text/html,application/xhtml+xml,application/xml,text/*,*/*;q=0.9,*/*;q=0.8;q=0.7;q=0.6");
+		this.request_headers.push("Accept: text/*,*/*;q=0.9");
 		this.request_headers.push(
 			"Accept-Charset: ISO-8859-13,Latin-9,ISO-8859-15,ISO-8859-1,UTF-8;q=0.5,*;q=0.1");
 		this.request_headers.push("Accept-Encoding: ");
