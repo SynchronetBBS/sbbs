@@ -160,57 +160,59 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 				lprintf(LOG_DEBUG,"Node %d Telnet cmd from client: %s", cfg.node_num, dump);
 			}
 #endif
-			if(telnet_remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
-				if(*buf==0x1d) { // ^]
-					save_console=console;
-					console&=~CON_RAW_IN;	// Allow Ctrl-U/Ctrl-P
-					CRLF;
-					while(online) {
-						SYNC;
-						mnemonics("\1n\r\n\1h\1bTelnet Gate: \1y~D\1wisconnect, "
-							"\1y~E\1wcho toggle, \1y~L\1wist Users, \1y~P\1wrivate message, "
-							"\1y~Q\1wuit: ");
-						switch(getkeys("DELPQ",0)) {
-							case 'D':
-								closesocket(remote_socket);
-								break;
-							case 'E':
-								mode^=TG_ECHO;
-								bprintf(text[EchoIsNow]
-									,mode&TG_ECHO
-									? text[ON]:text[OFF]);
-								continue;
-							case 'L':
-								whos_online(true);
-								continue;
-							case 'P':
-								nodemsg();
-								continue;
+			if(!(mode&TG_RLOGIN)) {
+				if(telnet_remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
+					if(*buf==0x1d) { // ^]
+						save_console=console;
+						console&=~CON_RAW_IN;	// Allow Ctrl-U/Ctrl-P
+						CRLF;
+						while(online) {
+							SYNC;
+							mnemonics("\1n\r\n\1h\1bTelnet Gate: \1y~D\1wisconnect, "
+								"\1y~E\1wcho toggle, \1y~L\1wist Users, \1y~P\1wrivate message, "
+								"\1y~Q\1wuit: ");
+							switch(getkeys("DELPQ",0)) {
+								case 'D':
+									closesocket(remote_socket);
+									break;
+								case 'E':
+									mode^=TG_ECHO;
+									bprintf(text[EchoIsNow]
+										,mode&TG_ECHO
+										? text[ON]:text[OFF]);
+									continue;
+								case 'L':
+									whos_online(true);
+									continue;
+								case 'P':
+									nodemsg();
+									continue;
+							}
+							break;
 						}
-						break;
+						attr(LIGHTGRAY);
+						console=save_console;
 					}
-					attr(LIGHTGRAY);
-					console=save_console;
-				}
-				else if(*buf<' ' && mode&TG_CTRLKEYS)
-					handle_ctrlkey(*buf, K_NONE);
-				gotline=false;
-				if(mode&TG_LINEMODE && buf[0]!='\r') {
-					ungetkey(buf[0]);
-					l=K_CHAT;
-					if(!(mode&TG_ECHO))
-						l|=K_NOECHO;
-					rd=getstr((char*)buf,sizeof(buf)-1,l);
-					if(!rd)
-						continue;
-					strcat((char*)buf,crlf);
-					rd+=2;
-					gotline=true;
-				}
-				if(mode&TG_CRLF && buf[rd-1]=='\r')
-					buf[rd++]='\n';
-				if(!gotline && mode&TG_ECHO) {
-					RingBufWrite(&outbuf,buf,rd);
+					else if(*buf<' ' && mode&TG_CTRLKEYS)
+						handle_ctrlkey(*buf, K_NONE);
+					gotline=false;
+					if(mode&TG_LINEMODE && buf[0]!='\r') {
+						ungetkey(buf[0]);
+						l=K_CHAT;
+						if(!(mode&TG_ECHO))
+							l|=K_NOECHO;
+						rd=getstr((char*)buf,sizeof(buf)-1,l);
+						if(!rd)
+							continue;
+						strcat((char*)buf,crlf);
+						rd+=2;
+						gotline=true;
+					}
+					if(mode&TG_CRLF && buf[rd-1]=='\r')
+						buf[rd++]='\n';
+					if(!gotline && mode&TG_ECHO) {
+						RingBufWrite(&outbuf,buf,rd);
+					}
 				}
 			}
 			for(attempts=0;attempts<60 && online; attempts++) /* added retry loop here, Jan-20-2003 */
