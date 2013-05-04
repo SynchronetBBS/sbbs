@@ -135,14 +135,12 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 		sendsocket(remote_socket,(char*)buf,l);
 	}
 
-	else {
-		/* This is required for gating to Unix telnetd */
-		if(mode&TG_NOTERMTYPE)
-			request_telnet_opt(TELNET_DONT,TELNET_TERM_TYPE, 3000);	// Re-negotiation of terminal type
+	/* This is required for gating to Unix telnetd */
+	if(mode&TG_NOTERMTYPE)
+		request_telnet_opt(TELNET_DONT,TELNET_TERM_TYPE, 3000);	// Re-negotiation of terminal type
 
-		/* Text/NVT mode by default */
-		request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX, 3000);
-	}
+	/* Text/NVT mode by default */
+	request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX, 3000);
 
 	if(mode&(TG_PASSTHRU|TG_RLOGIN))
 		telnet_mode|=TELNET_MODE_GATE;	// Pass-through telnet commands
@@ -197,24 +195,22 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 				else if(*buf<' ' && mode&TG_CTRLKEYS)
 					handle_ctrlkey(*buf, K_NONE);
 				gotline=false;
-				if(!(mode&TG_RLOGIN)) {
-					if(mode&TG_LINEMODE && buf[0]!='\r') {
-						ungetkey(buf[0]);
-						l=K_CHAT;
-						if(!(mode&TG_ECHO))
-							l|=K_NOECHO;
-						rd=getstr((char*)buf,sizeof(buf)-1,l);
-						if(!rd)
-							continue;
-						strcat((char*)buf,crlf);
-						rd+=2;
-						gotline=true;
-					}
-					if(mode&TG_CRLF && buf[rd-1]=='\r')
-						buf[rd++]='\n';
-					if(!gotline && mode&TG_ECHO) {
-						RingBufWrite(&outbuf,buf,rd);
-					}
+				if(mode&TG_LINEMODE && buf[0]!='\r') {
+					ungetkey(buf[0]);
+					l=K_CHAT;
+					if(!(mode&TG_ECHO))
+						l|=K_NOECHO;
+					rd=getstr((char*)buf,sizeof(buf)-1,l);
+					if(!rd)
+						continue;
+					strcat((char*)buf,crlf);
+					rd+=2;
+					gotline=true;
+				}
+				if(mode&TG_CRLF && buf[rd-1]=='\r')
+					buf[rd++]='\n';
+				if(!gotline && mode&TG_ECHO) {
+					RingBufWrite(&outbuf,buf,rd);
 				}
 			}
 			for(attempts=0;attempts<60 && online; attempts++) /* added retry loop here, Jan-20-2003 */
@@ -266,10 +262,8 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	console&=~CON_RAW_IN;
 	telnet_mode&=~TELNET_MODE_GATE;
 
-	if(!(mode&TG_RLOGIN)) {
-		/* Disable Telnet Terminal Echo */
-		request_telnet_opt(TELNET_WILL,TELNET_ECHO);
-	}
+	/* Disable Telnet Terminal Echo */
+	request_telnet_opt(TELNET_WILL,TELNET_ECHO);
 
 	close_socket(remote_socket);
 
