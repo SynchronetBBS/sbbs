@@ -1488,6 +1488,9 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 
 bool sbbs_t::request_telnet_opt(uchar cmd, uchar opt, unsigned waitforack)
 {
+	if(telnet_mode&TELNET_MODE_OFF)	
+		return false;
+
 	if(cmd==TELNET_DO || cmd==TELNET_DONT) {	/* remote option */
 		if(telnet_remote_option[opt]==telnet_opt_ack(cmd))
 			return true;	/* already set in this mode, do nothing */
