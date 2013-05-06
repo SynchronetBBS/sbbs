@@ -721,7 +721,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 		return(-1);
 	}
     CloseServiceHandle(hService);
-	ret=service_config->dwStartType
+	ret=service_config->dwStartType;
 	free(service_config);
 
 	return ret;
