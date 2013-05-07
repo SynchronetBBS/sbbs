@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -957,7 +957,7 @@ js_print(JSContext *cx, uintN argc, jsval *arglist)
 	uintN		i;
 	sbbs_t*		sbbs;
 	char*		cstr=NULL;
-	size_t		cstr_sz;
+	size_t		cstr_sz=0;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1009,7 +1009,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs_t*		sbbs;
 	uintN		i;
 	char*		str=NULL;
-	size_t		str_sz;
+	size_t		str_sz=0;
 	size_t		len;
 	jsrefcount	rc;
 
@@ -1200,7 +1200,7 @@ js_uselect(JSContext *cx, uintN argc, jsval *arglist)
 	int32		num=0;
 	char*		title=NULL;
 	char*		item=NULL;
-	char*		ar_str;
+	char*		ar_str=NULL;
 	uchar*		ar=NULL;
 	sbbs_t*		sbbs;
     JSString*	js_str;
