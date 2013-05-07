@@ -24,6 +24,12 @@ var USING_JSON = false;
 /* Set to true to use Global High Scores server (FatCats BBS) -- recommended by author. */
 var USING_GLOBAL_SERVER = false;
 
+/* Default: 1.
+     Set to 0 if you see black lines render on the map.
+	 We will fallback to an uglier, safer render method. :|
+	 */
+var RENDER_MODE = 1;
+
 load("sbbsdefs.js");
 load("event-timer.js");
 load("json-client.js");
@@ -102,11 +108,28 @@ shopFrame.clear(BG_LIGHTGRAY);
 /* start this shit up */
 console.writeln("Starting FatFish:");
 
-/* Smooth water rendering? */
-var smoothing = true;
+/* Smooth water rendering?
+     Set to false if you see black lines render on the map.
+	 We will fallback to an uglier, safer render method. :|
+	 */
+var smoothing;
 
-/* Smooth land rendering? */
-var smoothing_land = true;
+/* Smooth land rendering? 
+     Set to false if you see black lines render on the map.
+	 We will fallback to an uglier, safer render method. :|
+	 */
+var smoothing_land;
+
+switch (RENDER_MODE) {
+	case 0:
+		smoothing = false;
+		smoothing_land = false;
+		break;
+	case 1:
+		smoothing = true;
+		smoothing_land = true;
+		break;
+}
 
 /* Boat object */
 var boat = { x: 0, y: 0 };
@@ -848,22 +871,19 @@ function Terrain(d) {
         case -3:
         case -2:
             // Deeper  water.
-            this.texture = ANSI.UNBOLD + ANSI.BG_BLUE + " ";
+            this.texture = ANSI.BG_BLUE + " ";
 
             if (smoothing) {
                 rm2 = random(3);
                 switch (rm2) {
                     // BG strong < \xB0\xB1\xB2\xDB > FG strong
                     case 0:
-                        //log(Math.floor(this.depth));
                         if (Math.floor(this.depth) <= -3.0) {
                             this.texture = ANSI.UNBOLD + ANSI.FG_BLACK + ANSI.BG_BLUE + "\xB0";
                         }
                         break;
                         
                     case 1:
-                        // This case appears to break on some systems?
-                        // TODO: alternate smoothing rendering engine.
                         if (Math.floor(this.depth) > -1.5) {
                             this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0";
                         } else {
@@ -884,44 +904,31 @@ function Terrain(d) {
 
         case -1:
             // Deep water.
-            this.texture = ANSI.UNBOLD + ANSI.BG_BLUE + " ";
+            this.texture = ANSI.BG_CYAN + " ";
 
             if (smoothing) {
                 rm1 = random(5);
 
                 switch (rm1) {
-                    // \xB0\xB1\xB2\xDB
                     case 0:
                         this.texture = ANSI.UNBOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB2";
                         break;
                     case 1:
-                        this.texture = ANSI.UNBOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB1";
+                    	this.texture = ANSI.UNBOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB1";
                         break;
                     case 2:
-                        // Definitely causes issues on some BBSes.
                         this.texture = ANSI.UNBOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0";                        
-                        // TODO: alternate smoothing rendering engine.
-                        //this.texture = ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0";
                         break;
                     case 3:
                         if (this.depth > -0.5) {
-                            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB2";
-                            // TODO: alternate smoothing rendering engine.
-                            //this.texture = ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB1";
+                            this.texture = ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB1";
                         } else {                            
-                            // Definitely causes issues on some BBSes.
                             this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_BLUE + "\xB0";
-                            // TODO: alternate smoothing rendering engine.
-                            // Bugfix?                            
-                            //this.texture = ANSI.FG_BLUE + ANSI.BG_GREEN + "\xB2";
                         }
                         break;
                     case 4:
                         // Definitely causes issues on some BBSes.
                         this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB0";
-                        // TODO: alternate smoothing rendering engine.
-                        // Bugfix?
-                        //this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_BLUE + "\xB1";
                         break;
                 }
             }
@@ -930,7 +937,7 @@ function Terrain(d) {
 
         case 0:
             // Water.
-            this.texture = ANSI.UNBOLD + ANSI.BG_CYAN + " ";
+            this.texture = ANSI.BG_CYAN + " ";
 
             if (smoothing) {
 
@@ -942,19 +949,19 @@ function Terrain(d) {
                         this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "\xB0";
                         break;
                     case 1:
-                        this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "\xB1";
+                    	this.texture = ANSI.BOLD + ANSI.FG_CYAN + ANSI.BG_CYAN + "\xB1";
                         break;
                     case 2:
                         this.texture = ANSI.UNBOLD + ANSI.FG_BLUE + ANSI.BG_CYAN + "\xB0";
                         break;
-                    case 3:
-                        this.texture = ANSI.UNBOLD + ANSI.FG_BLUE + ANSI.BG_CYAN + "\xB1";
+                	case 3:
+                		this.texture = ANSI.UNBOLD + ANSI.FG_BLUE + ANSI.BG_CYAN + "\xB1";
                         break;
                     case 4:
                         this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "\xB0";
                         break;
                     case 5:
-                        this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "\xB1";
+                    	this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_CYAN + "\xB1";
                         break;
                 }
             }
@@ -963,24 +970,20 @@ function Terrain(d) {
 
         case 1:
             // Sand.
-            this.texture = ANSI.BOLD + ANSI.FG_YELLOW + "\xDB";
+        	this.texture = ANSI.BG_YELLOW + " ";
             
             if (smoothing_land) {
                 r1 = random(3);
 
                 switch (r1) {
-                    // \xB0\xB1\xB2\xDB
                     case 0:
                         this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "\xB2";
                         break;
                     case 1:
-                        this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "\xB1";
+                    	this.texture = ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_YELLOW + "\xB1";
                         break;
                     case 2:
                         this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_YELLOW + "\xB1";
-                        // TODO: alternate smoothing rendering engine.
-                        // Bugfix?
-                        //this.texture = ANSI.FG_GREEN + ANSI.BG_YELLOW + "\xB1";
                         break;
                 }
             }
@@ -989,7 +992,7 @@ function Terrain(d) {
 
         case 2:
             // Grassland.
-            this.texture = ANSI.UNBOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + " ";
+            this.texture = ANSI.BG_GREEN + " ";
             
             c = " ";
             
@@ -997,7 +1000,6 @@ function Terrain(d) {
                 r2 = random(3);
 
                 switch (r2) {
-                    // BG strong < \xB0\xB1\xB2\xDB > FG strong
                     case 0:
                         this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + "\xB0";
                         break;
@@ -1027,12 +1029,25 @@ function Terrain(d) {
 
             // Depth > 2
             // Forest            
-            var tex = '^';
-            this.texture = ANSI.BOLD + ANSI.FG_GREEN + ANSI.BG_GREEN + tex;
+        	var tex = '^';
+        	r3 = random(3);
+        	switch (r3) {
+        		case 0:
+        			this.texture = ANSI.FG_YELLOW + ANSI.BG_GREEN + tex;
+        			break;
+        		case 1:
+        			this.texture = ANSI.FG_WHITE + ANSI.BG_GREEN + tex;
+        			break;
+        		case 2:
+        			this.texture = ANSI.FG_YELLOW + ANSI.BG_GREEN + ';';
+        			break;
+        	}
             
-            c = " ";
+            
+            
 
             if (smoothing_land) {
+            	//c = " ";
                 r3 = random(3);
                 switch (r3) {
                     case 0:

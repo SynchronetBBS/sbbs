@@ -33,12 +33,6 @@ Installation
 ------------
 1. Get the sources. They can be found on cvs.synchro.net, the official Synchronet repository.
 
-   Git it:
-     For the latest code/unstable branch, you can click the first 'snapshot' link here:
-       http://git.poorcoding.com/?p=fatfish
-     This will get the latest snapshot of the source from the repository in .tgz format.
-     Extract and put the 'fatfish' folder into /sbbs/xtrn.
-
 2. Configure the door in SCFG, if not already done:
 	╔[■][?]════════════════════════════════════════════════════╗
 	║                         Fat Fish                         ║
@@ -75,6 +69,24 @@ Installation
 Instructions
 ------------
 Please see the README.txt document for in-game instructions.
+
+---------------
+Troubleshooting
+---------------
+
+Black areas on screen:
+----------------------
+FatFish uses some smoothing routings to make things look awesome. Unfortunately, this causes issues on some BBSes. Confirm that you get black lines resembling this screenshot:
+
+
+In order to fix this, we must disable smoothing. Edit 'fatfish.js' and modify the RENDER_MODE to 0:
+
+/* Default: 1.
+     Set to 0 if you see black lines render on the map.
+	 We will fallback to an uglier, safer render method. :|
+	 */
+var RENDER_MODE = 0;
+
 
 ------------------------
 Hosting the JSON Service
