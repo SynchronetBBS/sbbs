@@ -957,7 +957,6 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
     JSString *	str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
-	char		*cstr;
     char 		*prompt;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
