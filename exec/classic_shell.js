@@ -9,7 +9,8 @@
 //###############################################################################
 //# This shell is an imitation of the Version 1c command set/structure	    	#
 //#									      			           				    #
-//# It also serves as an example of a complex command shell using JavaScript    #
+//# It also serves as an example of how to not write a complex command shell	#
+//# using JavaScript.  Seriously.  Don't look at this.                          #
 //#									      									    #
 //###############################################################################
 
