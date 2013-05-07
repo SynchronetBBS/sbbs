@@ -409,6 +409,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		return(false); 
 	}
 
+	smb.subnum = subnum;	/* Allow JS msgeditors to use bbs.smb_sub* */
+
 	if(console&CON_RAW_IN) {
 		bprintf(text[EnterMsgNowRaw]
 			,(ulong)cfg.level_linespermsg[useron_level]*MAX_LINE_LEN);
