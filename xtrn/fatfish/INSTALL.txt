@@ -76,8 +76,8 @@ Troubleshooting
 
 Black areas on screen:
 ----------------------
-FatFish uses some smoothing routings to make things look awesome. Unfortunately, this causes issues on some BBSes. Confirm that you get black lines resembling this screenshot:
-
+FatFish uses some smoothing routings to make things look awesome. Unfortunately, this causes issues on some BBSes, resembling this screenshot:
+  http://art.poorcoding.com/fatfish/smoothing-issue.png
 
 In order to fix this, we must disable smoothing. Edit 'fatfish.js' and modify the RENDER_MODE to 0:
 
