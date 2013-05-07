@@ -123,11 +123,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 		*(p++)=0;
 		p+=sprintf(p,"%s",useron.alias);
 		p++;	// Add NULL
-		if(mode&TG_SENDPASS) {
-			p+=sprintf(p,"%s",useron.pass);
-		} else {
-			p+=sprintf(p,"%s",useron.name);
-		}
+		p+=sprintf(p,"%s",useron.pass);
 		p++;	// Add NULL
 		p+=sprintf(p,"%s/57600",terminal);
 		p++;	// Add NULL
@@ -270,3 +266,197 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	lprintf(LOG_INFO,"Node %d Telnet gate to %s finished",cfg.node_num,destaddr);
 }
 
+void sbbs_t::rlogin_gate(char* destaddr, char* alias, char* pass, ulong mode)
+{
+	char*	p;
+	uchar	buf[512];
+	int		i;
+	int		rd;
+	uint	attempts;
+	ulong	l;
+	bool	gotline;
+	ushort	port = 513;
+	ulong	ip_addr;
+	ulong	save_console;
+	SOCKET	remote_socket;
+	SOCKADDR_IN	addr;
+
+	/* if port was specified with address, use it */
+	p=strchr(destaddr,':');
+	if(p!=NULL) {
+		*p=0;
+		port=atoi(p+1);
+	}
+
+	ip_addr=resolve_ip(destaddr);
+	if(ip_addr==INADDR_NONE) {
+		lprintf(LOG_NOTICE,"!RLOGIN Failed to resolve address: %s",destaddr);
+		bprintf("!Failed to resolve address: %s\r\n",destaddr);
+		return;
+	}
+
+    if((remote_socket = open_socket(SOCK_STREAM, client.protocol)) == INVALID_SOCKET) {
+		errormsg(WHERE,ERR_OPEN,"socket",0);
+		return;
+	}
+
+	/* todo: figure this shit out */
+	memset(&addr,0,sizeof(addr));
+	addr.sin_addr.s_addr = htonl(startup->telnet_interface);
+	addr.sin_family = AF_INET;
+
+	if((i=bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
+		lprintf(LOG_NOTICE,"!RLOGIN ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, remote_socket);
+		bprintf("!ERROR %d (%d) binding to socket\r\n",i, ERROR_VALUE);
+		close_socket(remote_socket);
+		return;
+	}
+
+	memset(&addr,0,sizeof(addr));
+	addr.sin_addr.s_addr = ip_addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port   = htons(port);
+
+	if((i=connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
+		lprintf(LOG_NOTICE,"!RLOGIN ERROR %d (%d) connecting to server: %s"
+			,i,ERROR_VALUE, destaddr);
+		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
+			,i,ERROR_VALUE, destaddr);
+		close_socket(remote_socket);
+		return;
+	}
+
+	l=1;
+
+	if((i = ioctlsocket(remote_socket, FIONBIO, &l))!=0) {
+		lprintf(LOG_NOTICE,"!RLOGIN ERROR %d (%d) disabling socket blocking"
+			,i, ERROR_VALUE);
+		close_socket(remote_socket);
+		return;
+	}
+
+	lprintf(LOG_INFO,"Node %d %s gate to %s port %u on socket %d"
+		,cfg.node_num
+		,"RLogin"
+		,destaddr,port,remote_socket);
+
+	/* rlogin handshake */
+	lprintf(LOG_NOTICE,"!RLOGIN terminal: %s",terminal);
+	p=(char*)buf;
+	*(p++)=0;
+	if(alias != NULL) {
+		p+=sprintf(p,"%s",alias);
+	}
+	else {
+		p+=sprintf(p,"%s",useron.alias);
+	}
+	p++;	// Add NULL
+	if(pass != NULL) {
+		p+=sprintf(p,"%s",pass);
+	} else {
+		p+=sprintf(p,"%s",useron.pass);
+	}
+	p++;	// Add NULL
+	p+=sprintf(p,"%s/57600",terminal);
+	p++;	// Add NULL
+	l=p-(char*)buf;
+	sendsocket(remote_socket,(char*)buf,l);
+
+	while(online) {
+		if(!(mode&TG_NOCHKTIME))
+			gettimeleft();
+		rd=RingBufRead(&inbuf,buf,sizeof(buf));
+		if(rd) {
+			if(telnet_remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
+				if(*buf==0x1d) { // ^]
+					save_console=console;
+					console&=~CON_RAW_IN;	// Allow Ctrl-U/Ctrl-P
+					CRLF;
+					while(online) {
+						SYNC;
+						mnemonics("\1n\r\n\1h\1bTelnet Gate: \1y~D\1wisconnect, "
+							"\1y~E\1wcho toggle, \1y~L\1wist Users, \1y~P\1wrivate message, "
+							"\1y~Q\1wuit: ");
+						switch(getkeys("DELPQ",0)) {
+							case 'D':
+								closesocket(remote_socket);
+								break;
+							case 'E':
+								mode^=TG_ECHO;
+								bprintf(text[EchoIsNow]
+									,mode&TG_ECHO
+									? text[ON]:text[OFF]);
+								continue;
+							case 'L':
+								whos_online(true);
+								continue;
+							case 'P':
+								nodemsg();
+								continue;
+						}
+						break;
+					}
+					attr(LIGHTGRAY);
+					console=save_console;
+				}
+				else if(*buf<' ' && mode&TG_CTRLKEYS)
+					handle_ctrlkey(*buf, K_NONE);
+					
+				gotline=false;
+				if(mode&TG_LINEMODE && buf[0]!='\r') {
+					ungetkey(buf[0]);
+					l=K_CHAT;
+					if(!(mode&TG_ECHO))
+						l|=K_NOECHO;
+					rd=getstr((char*)buf,sizeof(buf)-1,l);
+					if(!rd)
+						continue;
+					strcat((char*)buf,crlf);
+					rd+=2;
+					gotline=true;
+				}
+				if(!gotline && mode&TG_ECHO) {
+					RingBufWrite(&outbuf,buf,rd);
+				}
+			}
+			for(attempts=0;attempts<60 && online; attempts++) { 
+				if((i=sendsocket(remote_socket,(char*)buf,rd))>=0)
+					break;
+				if(ERROR_VALUE!=EWOULDBLOCK)
+					break;
+				mswait(500);
+			} 
+			if(i<0) {
+				lprintf(LOG_NOTICE,"!RLOGIN ERROR %d sending on socket %d",ERROR_VALUE,remote_socket);
+				break;
+			}
+		}
+		
+		rd=recv(remote_socket,(char*)buf,sizeof(buf),0);
+		if(rd<0) {
+			if(ERROR_VALUE==EWOULDBLOCK) {
+				if(mode&TG_NODESYNC) {
+					SYNC;
+				} else {
+					// Check if the node has been interrupted
+					getnodedat(cfg.node_num,&thisnode,0);
+					if(thisnode.misc&NODE_INTR)
+						break;
+				}
+				YIELD();
+				continue;
+			}
+			lprintf(LOG_NOTICE,"!RLOGIN ERROR %d receiving on socket %d",ERROR_VALUE,remote_socket);
+			break;
+		}
+		if(!rd) {
+			lprintf(LOG_INFO,"Node %d RLogin gate disconnected",cfg.node_num);
+			break;
+		}
+		
+		RingBufWrite(&outbuf,buf,rd);
+	}
+	
+	close_socket(remote_socket);
+	lprintf(LOG_INFO,"Node %d RLogin gate to %s finished",cfg.node_num,destaddr);
+}

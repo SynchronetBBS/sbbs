@@ -939,6 +939,7 @@ public:
 
 	/* telgate.cpp */
 	void	telnet_gate(char* addr, ulong mode);	// See TG_* for mode bits
+	void	rlogin_gate(char* addr, char* alias, char* pw, ulong mode);	// See TG_* for mode bits
 
 };
 

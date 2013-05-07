@@ -2621,6 +2621,80 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		addr;
+	char*		alias;
+	char*		pass;
+	bool		fail;
+	int32		mode = 0;
+	JSString*	js_addr;
+	JSString*	js_alias;
+	JSString*	js_pass;
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+ 	if(!js_argc(cx, argc, 1))
+		return(JS_FALSE);
+ 
+	if((sbbs=js_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_addr=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	JSSTRING_TO_MSTRING(cx, js_addr, addr, NULL);
+	if(addr==NULL) 
+		return(JS_FALSE);
+
+	/* if remote username & password supplied */
+	if(argc>2) {
+	
+		if((js_alias=JS_ValueToString(cx, argv[1]))==NULL) {
+			fail = true;
+		}
+			
+		if((js_pass=JS_ValueToString(cx, argv[2]))==NULL) {
+			fail = true;
+		}
+
+		JSSTRING_TO_MSTRING(cx, js_alias, alias, NULL);
+		JSSTRING_TO_MSTRING(cx, js_pass, pass, NULL);
+		
+		if(argc>3 && JSVAL_IS_NUMBER(argv[3])) {
+			if(!JS_ValueToInt32(cx,argv[3],&mode)) {
+				fail = true;
+			}
+		}
+	}
+	else if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
+		if(!JS_ValueToInt32(cx,argv[1],&mode)) {
+			fail = true;
+		}
+	}
+	
+	if(fail == true) {
+		lprintf(LOG_NOTICE,"fail!");
+		free(addr);
+		free(alias);
+		free(pass);
+		return JS_FALSE;
+	}
+
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->rlogin_gate(addr,alias,pass,mode);
+	free(addr);
+	free(alias);
+	free(pass);
+	JS_RESUMEREQUEST(cx, rc);
+	
+	return(JS_TRUE);
+}
+
+static JSBool
 js_pagesysop(JSContext *cx, uintN argc, jsval *arglist)
 {
 	sbbs_t*		sbbs;
@@ -3683,6 +3757,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},		
 	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,mode=<tt>TG_NONE</tt>]")
 	,JSDOCSTR("external telnet/rlogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
+	,310
+	},		
+	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [user=<tt>user.alias</tt>,pass=<tt>user.pass</tt>,mode=<tt>TG_NONE</tt>]")
+	,JSDOCSTR("external rlogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
 	,310
 	},		
 	/* security */
