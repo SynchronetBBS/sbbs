@@ -649,9 +649,9 @@
 	"yourself.\r\n"
 "\1_\1y\1h\r\nMessage: "                                   536 NodeMsgPrompt
 "\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you a message:\r\n"\   537 NodeMsgFmt
-	"\1w\1h4%s\1n\r\n"
+	"\1w\1h\x014%s\1n\r\n"
 "\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent all nodes a "\         538 AllNodeMsgFmt
-	"message:\r\n\1w\1h4%s\1n\r\n"
+	"message:\r\n\1w\1h\x014%s\1n\r\n"
 "\r\nPaging %s..."                                      539 PagingGuru
 "\1n\r\n\1cWaiting for \1hNode %d \1n\1cto join private "\   540 WaitingForNodeInPChat
 	"chat. Hit \1h\1iCtrl-C\1n\1c to abort.\1n\r\n\r\n"
@@ -799,7 +799,7 @@
 "\1n\1g(\1h%d\1n\1g) %s\1h\r\n"                               659 CfgLibLstFmt
 "\1_\1c\1hListing \1n\1c(\1h%u\1n\1c) %s "\                     660 BatchFlagPrompt
 	"(\1h%u\1n\1c) %s (\1h?\1n\1c=Menu) (\1h%u\1n\1c Files\1n\1c): \1n"
-"\1n\1l4  \1h\1y[\1wB\1y]atch Download  "\                   661 FileListBatchCommands
+"\1n\1l\x014  \1h\1y[\1wB\1y]atch Download  "\                   661 FileListBatchCommands
 	"[\1wV\1y]iew Content  [\1wE\1y]xtended "\
 	"Info  [\1wP\1y]revious Files  [\1wQ\1y]uit  \1n\r\n"
 "\r\nDownload attached file: \1w%s\1b (%s bytes)"         662 DownloadAttachedFileQ
