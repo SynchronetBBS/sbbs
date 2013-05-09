@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1686,7 +1686,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if(name==NULL) 
 		return(JS_FALSE);
 
-	JSSTRING_TO_ASTRING(cx, js_pw, pw, LEN_PASS+2, NULL);
+	JSSTRING_TO_MSTRING(cx, js_pw, pw, NULL);
 	if(pw==NULL) 
 		return(JS_FALSE);
 
