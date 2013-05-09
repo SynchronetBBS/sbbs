@@ -909,3 +909,4 @@
 "\1n\r\nSorry, you can't post that message.\r\n"	760 CantPostMsg
 "\r\n\1y\1hOperator: \1w"				761 OperatorPrompt
 "Add this sub-board to your new-scan list"         762 AddSubToNewScanQ
+"\1n\1r\1iWARNING: You are reading messages past the last unvalidated message (%u)" 763 UnvalidatedWarning
