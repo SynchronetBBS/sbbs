@@ -79,9 +79,9 @@
 "_\r\ngh      From                   "\              065 MailOnSystemLstHdr
 	"To                     Subject\r\nn"
 "gh%4d:ng %-22.22s %-22.22s h%cng %.25s\r\n"     066 MailOnSystemLstFmt
-"-\r\nc%-15.15s yh%-40.40s       "\                 067 NScanStatusFmt
-	"ncNew:h%4u ncofh %-u"
-"-\r\nc%-15.15s yh%-40.40s        w%u"             068 SearchSubFmt
+"-\r\nc%-15.15s yh%-44.44s "\                 067 NScanStatusFmt
+	"ncNew:h%5u ncofh %-u"
+"-\r\nc%-15.15s yh%-44.44s w%u"             068 SearchSubFmt
 "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
 "\r\nncPost : [h%unc][h%unc] h%unc/h%u"   070 ZScanPostHdr
 "n\r\ncþ hbReading ncþ [h%unc] %s "\           071 ReadingSub
