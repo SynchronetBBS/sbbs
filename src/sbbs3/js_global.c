@@ -2467,7 +2467,7 @@ js_internal_charfunc(JSContext *cx, uintN argc, jsval *arglist, char *(*func)(ch
 		return(JS_TRUE);
 
 	js_str = JS_NewStringCopyZ(cx, func(str));
-	free(str);
+	free(str);	/* MSVC detected heap corruption here! */
 	if(js_str==NULL)
 		return(JS_FALSE);
 
