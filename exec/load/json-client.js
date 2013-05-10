@@ -296,7 +296,7 @@ function JSONClient(serverAddr,serverPort) {
         this.send({
 			scope:scope,
 			func:"QUERY",
-			oper:"WRITE",
+			oper:"DELETE",
             location:location,
 			data:undefined,
 			lock:lock,
