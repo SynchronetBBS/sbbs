@@ -485,11 +485,11 @@ js_uifc_input(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if(prompt)
 		free(prompt);
-	if(str)
-		free(str);
 	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,str)));
+	if(str)
+		free(str);
 
 	return(JS_TRUE);
 }
