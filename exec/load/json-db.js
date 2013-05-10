@@ -103,7 +103,8 @@ function JSONdb (fileName, scope) {
 		STATUS:11,
 		KEYS:12,
 		SLICE:13,
-		KEYTYPES:14
+		KEYTYPES:14,
+		SPLICE:15
 	}
 	
 	/* error constants */
@@ -342,6 +343,38 @@ function JSONdb (fileName, scope) {
         }
 	}
 
+	/* splice an array */
+	this.splice = function(request,record) {
+		var client = request.client;
+		var data = request.data;
+		/* if the requested data does not exist, result is undefined */
+		if(record.data === undefined) {
+			this.error(client,errors.OBJECT_NOT_FOUND);
+			return true;
+		}
+		/* if this client has this record locked  */
+		else if(record.info.lock[client.id] && 
+			record.info.lock[client.id].type == locks.WRITE) {
+			if(record.data[record.property] instanceof Array) {
+				record.data[record.property].splice(request.data.start,request.data.num,request.data.data);
+
+				/* remove existing shadow records that have been replaced by new data */
+				record.shadow[record.property].splice(request.data.start,request.data.num,new Shadow());
+
+				/* populate this object's children with shadow objects */
+				composite_sketch(record.data[record.property][request.data.start],record.shadow[record.property][request.data.start]);
+			}
+			else {
+				this.error(client,errors.NON_ARRAY);
+			}
+			return true;
+		}
+        /* if there is no lock for this client, error */
+        else {
+            return false;
+        }
+	}
+	
 	/* push a record onto the end of an array */
 	this.unshift = function(request,record) {
 		var client = request.client;
@@ -720,6 +753,9 @@ function JSONdb (fileName, scope) {
 					break;
 				case "UNSHIFT":
 					result=this.unshift(request,record);
+					break;
+				case "SPLICE":
+					result=this.splice(request,record);
 					break;
 				case "SLICE":
 					result=this.slice(request,record);
