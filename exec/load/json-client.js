@@ -20,6 +20,8 @@ load("json-sock.js");
 	-	JSONClient.write(scope,location,lock);
 	-	JSONClient.push(scope,location,lock);
 	-	JSONClient.unshift(scope,location,lock);
+	-	JSONClient.splice(scope,location,start,end,data,lock)
+	-	JSONClient.slice(scope,location,start,end,lock)
 	-	JSONClient.lock(scope,location,lock);
 	-	JSONClient.unlock(scope,location);
 	-	JSONClient.subscribe(scope,location);
@@ -200,7 +202,8 @@ function JSONClient(serverAddr,serverPort) {
 			lock:lock,
  			timeout:this.settings.TIMEOUT
 		});
-		return this.wait();
+		if(this.settings.TIMEOUT >= 0)
+			return this.wait(this.settings.TIMEOUT);
 	}
 	
 	/* read multiple object data (lock for reading or writing, blocking) */

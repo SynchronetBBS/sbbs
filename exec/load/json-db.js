@@ -359,8 +359,8 @@ function JSONdb (fileName, scope) {
 				record.data[record.property].splice(request.data.start,request.data.num,request.data.data);
 
 				/* remove existing shadow records that have been replaced by new data */
-				record.shadow[record.property].splice(request.data.start,request.data.num,new Shadow());
-
+				// if(record.shadow[record.property] instanceof Array) 
+					// record.shadow[record.property].splice(request.data.start,request.data.num,new Shadow());
 				/* populate this object's children with shadow objects */
 				composite_sketch(record.data[record.property][request.data.start],record.shadow[record.property][request.data.start]);
 			}
