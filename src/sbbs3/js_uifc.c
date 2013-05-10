@@ -422,13 +422,15 @@ js_uifc_input(JSContext *cx, uintN argc, jsval *arglist)
 		&& !JS_ValueToInt32(cx,argv[argn++],&top))
 		return(JS_FALSE);
 	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
-		JSVALUE_TO_MSTRING(cx, argv[argn++], prompt, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn], prompt, NULL);
+		argn++;
 		HANDLE_PENDING(cx);
 		if(prompt==NULL)
 			return(JS_TRUE);
 	}
 	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
-		JSVALUE_TO_MSTRING(cx, argv[argn++], org, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn], org, NULL);
+		argn++;
 		if(JS_IsExceptionPending(cx)) {
 			if(prompt)
 				free(prompt);
@@ -539,7 +541,8 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 		&& !JS_ValueToInt32(cx,argv[argn++],&bar))
 		return(JS_FALSE);
 	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
-		JSVALUE_TO_MSTRING(cx, argv[argn++], title, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn], title, NULL);
+		argn++;
 		HANDLE_PENDING(cx);
 	}
 	if(argn<argc && JSVAL_IS_OBJECT(argv[argn])) {

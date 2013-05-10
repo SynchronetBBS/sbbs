@@ -424,7 +424,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		return(JS_FALSE);
 	}
-	JSVALUE_TO_MSTRING(cx, argv[argn++], filename, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
+	argn++;
 	if(filename==NULL) {	// This handles the pending error as well as a null JS string.
 		if(background) {
 			rc=JS_SUSPENDREQUEST(cx);
@@ -3132,12 +3133,14 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc==0 || JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_MSTRING(cx, argv[argn++], fname, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[argn], fname, NULL);
+	argn++;
 	HANDLE_PENDING(cx);
 	if(fname==NULL) 
 		return(JS_TRUE);
 	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
-		JSVALUE_TO_MSTRING(cx, argv[argn++], text, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn], text, NULL);
+		argn++;
 		if(JS_IsExceptionPending(cx)) {
 			free(fname);
 			return JS_FALSE;
@@ -3268,13 +3271,15 @@ js_wildmatch(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_BOOLEAN(argv[argn]))
 		JS_ValueToBoolean(cx, argv[argn++], &case_sensitive);
 
-	JSVALUE_TO_MSTRING(cx, argv[argn++], fname, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[argn], fname, NULL);
+	argn++;
 	HANDLE_PENDING(cx);
 	if(fname==NULL)
 		return(JS_TRUE);
 
 	if(argn<argc && argv[argn]!=JSVAL_VOID) {
-		JSVALUE_TO_MSTRING(cx, argv[argn++], spec, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn], spec, NULL);
+		argn++;
 		if(JS_IsExceptionPending(cx)) {
 			free(fname);
 			return JS_FALSE;
