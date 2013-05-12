@@ -1529,7 +1529,6 @@ void input_thread(void *arg)
 #endif
 
 	pthread_mutex_init(&sbbs->input_thread_mutex,NULL);
-	pthread_mutex_init(&sbbs->ssh_mutex,NULL);
     sbbs->input_thread_running = true;
 	sbbs->console|=CON_R_INPUT;
 
@@ -5385,6 +5384,7 @@ NO_SSH:
 			new_node->sys_status|=SS_RLOGIN;
 			new_node->telnet_mode|=TELNET_MODE_OFF; // RLogin does not use Telnet commands
 		}
+		pthread_mutex_init(&new_node->ssh_mutex,NULL);
 #ifdef USE_CRYPTLIB
 		if(ssh) {
 			SOCKET	tmp_sock;
