@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -495,6 +495,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		thisnode.action=NODE_RMSG;
 		putnodedat(cfg.node_num,&thisnode); 
 	}
+	current_msg=&msg;	/* For MSG_* @-codes and bbs.msg_* property values */
 	while(online && !done) {
 
 		action=NODE_RMSG;
@@ -753,6 +754,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					free(post);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
+				current_msg=NULL;
 				return(0);
 			case 'C':   /* Continuous */
 				mode|=SCAN_CONST;
@@ -1185,6 +1187,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		subscan[subnum].cfg|=SUB_CFG_NSCAN;
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
+	current_msg=NULL;
 	return(quit);
 }
 

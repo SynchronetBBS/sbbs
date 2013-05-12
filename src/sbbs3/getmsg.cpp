@@ -122,7 +122,6 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	char	*sender=NULL;
 	int 	i;
 
-	current_msg=msg;
 	attr(LIGHTGRAY);
 	if(useron.misc&CLRSCRN)
 		outchar(FF);
@@ -132,7 +131,6 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	sprintf(str,"%smenu/msghdr.*", cfg.text_dir);
 	if(fexist(str)) {
 		menu("msghdr");
-		current_msg=NULL;
 		return; 
 	}
 
@@ -165,16 +163,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 			bprintf(text[ForwardedFrom],sender
 				,timestr(*(time32_t *)msg->hfield_dat[i])); 
 	}
-
-	/* Debug stuff
-	if(SYSOP) {
-		bprintf("\1n\1c\r\nAux  : \1h%08lX",msg->hdr.auxattr);
-		bprintf("\1n\1c\r\nNum  : \1h%lu",msg->hdr.number); 
-		}
-	*/
-
 	CRLF;
-	current_msg=NULL;
 }
 
 /****************************************************************************/

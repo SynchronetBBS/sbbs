@@ -168,6 +168,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 			"allmail" : "sentmail");
 		menu(str); 
 	}
+	current_msg=&msg;	/* For MSG_* @-codes and bbs.msg_* property values */
 	while(online && !done) {
 		action=act;
 
@@ -768,5 +769,6 @@ void sbbs_t::readmail(uint usernumber, int which)
 
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
+	current_msg=NULL;
 }
 
