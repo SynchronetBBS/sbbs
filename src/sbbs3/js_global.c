@@ -2468,7 +2468,7 @@ js_internal_charfunc(JSContext *cx, uintN argc, jsval *arglist, char *(*func)(ch
 	if(str==NULL) 
 		return(JS_TRUE);
 	if(extra_bytes) {
-		rastr=realloc(str, strlen+extra_bytes);
+		rastr=realloc(str, strlen+extra_bytes+1 /* for terminator */);
 		if(rastr==NULL)
 			return JS_TRUE;
 	}
