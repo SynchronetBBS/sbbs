@@ -108,6 +108,19 @@
  *                              currently set for reading.
  *                              Also, defaulted the option for indenting quote
  *                              lines with initials to true.
+ * 2013-05-10 Eric Oulashin     Version 1.25 beta
+ *                              Started working on more reliably getting the
+ *                              message headers to correctly get author
+ *                              initials in all cases when replying to messages.
+ * 2013-05-14 Eric OUlashin     Version 1.25
+ *                              Updated to use bbs.msg_number instead of message
+ *                              indexes so that the correct message header (for
+ *                              retrieval of author initials) is correct in all
+ *                              cases, including when replying to messages during
+ *                              "Scan for messages to you":
+ *                              In SlyEdit_Misc.js, updated getCurMsgInfo() and
+ *                              getFromNameForCurMsg() to use the absolute message
+ *                              number (bbs.msg_number) rather than messages indexes.
  */
 
 /* Command-line arguments:
@@ -180,8 +193,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.24";
-const EDITOR_VER_DATE = "2013-02-17";
+const EDITOR_VERSION = "1.25";
+const EDITOR_VER_DATE = "2013-05-14";
 
 
 // Program variables

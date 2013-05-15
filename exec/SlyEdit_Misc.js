@@ -80,6 +80,12 @@
  *                              current sub-board (i.e., a new user is applying
  *                              for access).  Also, updated ReadSlyEditConfigFile()
  *                              to default indentQuoteLinesWithInitials to true.
+ * 2013-05-14 Eric Oulashin     Updated getCurMsgInfo() and getFromNameForCurMsg()
+ *                              to use the absolute message number (bbs.msg_number)
+ *                              rather than messages indexes so that it gets
+ *                              the correct message header in all cases, including
+ *                              when replying to messages during "Scan for messages
+ *                              to you".
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -1933,7 +1939,7 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 // Returns an object containing the following properties:
 //  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
 //  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
-//  curMsgNum: The number of the current message being read (i.e., bbs.smb_curmsg)
+//  curMsgNum: The absolute number of the current message being read (i.e., bbs.msg_number)
 //  subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code)
 //  grpIndex: The message group index for the sub-board
 //
@@ -1941,7 +1947,7 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 // DDML_SyncSMBInfo.txt in the node directory (written by the Digital
 // Distortion Message Lister v1.31 and higher).  If that file can't be read,
 // the values will default to the values of bbs.smb_last_msg,
-// bbs.smb_total_msgs, and bbs.smb_curmsg.
+// bbs.smb_total_msgs, and bbs.msg_number.
 //
 // Parameters:
 //  pMsgAreaName: The name of the message area being posted to
@@ -1952,7 +1958,8 @@ function getCurMsgInfo(pMsgAreaName)
   {
     retObj.lastMsg = bbs.smb_last_msg;
     retObj.totalNumMsgs = bbs.smb_total_msgs;
-    retObj.curMsgNum = bbs.smb_curmsg;
+    //retObj.curMsgNum = bbs.smb_curmsg; // OLD!
+    retObj.curMsgNum = bbs.msg_number; // New (2013-05-14)
     retObj.subBoardCode = bbs.smb_sub_code;
     retObj.grpIndex = msg_area.sub[bbs.smb_sub_code].grp_index;
   }
@@ -1994,6 +2001,9 @@ function getCurMsgInfo(pMsgAreaName)
   // If pMsgAreaName is valid, then if it specifies a message area name that is
   // different from what's in retObj, then we probably want to use bbs.cursub_code
   // instead of bbs.smb_sub_code, etc.
+  // Note: As of the May 8, 2013 build of Synchronet (3.16), the bbs.smb_sub*
+  // properties reflect the current sub-board being posted to, always.
+  // Digital Man committed a change in CVS for this on May 7, 2013.
   if ((typeof(pMsgAreaName) == "string") && (pMsgAreaName.length > 0))
   {
     if (msg_area.sub[retObj.subBoardCode].name.indexOf(pMsgAreaName) == -1)
@@ -2114,7 +2124,10 @@ function getFromNameForCurMsg(pMsgInfo)
     if (msgBase != null)
     {
       msgBase.open();
-      var hdr = msgBase.get_msg_header(true, msgInfo.curMsgNum, true);
+      // First parameter is false because we're not passing the message
+      // number by offset, we're passing the absolute message number
+      // (i.e., from bbs.msg_number) rather than the message offset.
+      var hdr = msgBase.get_msg_header(false, msgInfo.curMsgNum, true);
       if (hdr != null)
         fromName = hdr.from;
       msgBase.close();
