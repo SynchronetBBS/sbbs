@@ -3,6 +3,9 @@ Synchronet External X/Y/ZMODEM (SEXYZ) File Transfer Protocol Driver
 
 $Id$
 
+The live version of this document is online at:
+http://wiki.synchro.net/util:sexyz
+
 Overview
 --------
 SEXYZ was developed as a native (32-bit) TCP/socket-based replacement for the
@@ -398,6 +401,9 @@ OS: Win32
 Version: 5.02
 URL: http://www.emtec.com
 Tested: XMODEM, YMODEM, ZMODEM uploads and downloads
+ZMODEM: CRC-32
+RZ-rx-frames: ZFILE, ZDATA, ZCRCG, ZCRCW, ZCRCE, ZEOF, ZFIN
+RZ-tx-frames: ZRINIT, ZRPOS, ZACK, ZFIN
 Failed: none
 
 
