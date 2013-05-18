@@ -13,114 +13,21 @@
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
  * ....Removed some comments...
- * 2012-12-21 Eric Oulashin     Version 1.16
- *                              Updated to look for the .cfg files first in
- *                              the sbbs/ctrl directory, and if they're not
- *                              found there, assume they're in the same
- *                              directory as the .js files.
- * 2012-12-23 Eric Oulashin     Version 1.17 BETA
- *                              Started working on updating the quoting style,
- *                              to add the "To" user's initials or first 2
- *                              letters of their username to the quote prefix.
- * 2012-12-25 Eric Oulashin     When reading quote lines, if a quote line
- *                              contains only whitespace characters and/or >
- *                              characters, it will make the line blank before
- *                              adding it to gQuoteLines, to avoid weird
- *                              issues when prefixing the quote lines.
- * 2012-12-26 Eric Oulashin     Version 1.17
- *                              Updated printEditLine() to return the length of
- *                              text actually written.  Fixed a bug in
- *                              displayMessageRectangle() that was causing some
- *                              text lines not to be updated properly due to
- *                              incorrectly calculating text lengths, etc.
- * 2012-12-27 Eric Oulashin     Version 1.17
- *                              Bug fix: If the useQuoteLineInitials setting is
- *                              enabled but the reWrapQuoteLines setting was
- *                              disabled, it wasn't quoting lines; this has been
- *                              fixed.
- *                              Even though I had released v1.17 yesterday,
- *                              it appeared that nobody had downloaded it yet,
- *                              so I'm still calling this v1.17.
- * 2012-12-27 Eric Oulashin     Version 1.18 beta
- *                              Bug fix: When wrapping text lines while prefixing
- *                              the lines with initials, if wrapping a section
- *                              resulted in adding more lines, it wasn't properly
- *                              adding a > to the last line of the section to
- *                              indicate one more level of quoting.  This has
- *                              been fixed.
- * 2012-12-28 Eric Oulashin     Version 1.18 beta 3
- *                              Updated to use the new configuration setting
- *                              gConfigSettings.indentQuoteLinesWithInitials
- *                              to determine whether to prefix quote lines with
- *                              a space if using author's initials in quote lines.
- * 2012-12-30 Eric Oulashin     Version 1.18 beta 4
- *                              Updated so that when replying to a message
- *                              in a public sub-board, it will use the
- *                              message's "From" name, read from the message
- *                              database, rather than the given "To" name,
- *                              for the author's initials.  That way, if a
- *                              user changes the "To" name before replying to
- *                              a message, the correct initials will be used.
- * 2012-12-31 Eric Oulashin     Version 1.18 (final)
- *                              Releasing this version today, as testing has
- *                              shown that it's working well and as intended.
- * 2013-01-02 Eric Oulashin     Version 1.19
- *                              Fixed a bug where reading low-numbered messages
- *                              in a sub-board would result in getting the
- *                              incorrect original author name.  Updated
- *                              getFromNameForCurMsg() in SlyEdit_Misc.js
- *                              to just use the sub-board code and message
- *                              offset to get the header for the current
- *                              message being read.
- * 2013-01-13 Eric Oulashin     Version 1.20 beta
- *                              Started working on adding the ability to
- *                              cross-post to different message areas.
- *                              Started with the UI, selecting the message
- *                              group.
- * 2013-01-25 Eric Oulashin     Have still been making small changes to support
- *                              cross-posting.
- * 2013-01-31 Eric Oulashin     Version 1.20
- *                              Cross-posting & other udpates appear to be
- *                              working well and as expected, so releasing
- *                              this version now.
- * 2013-02-03 Eric Oulashin     Version 1.21
- *                              Bug fixes related to cross-posting:
- *                              - Posting during newscan: The message telling
- *                                which sub-board the message was posted in
- *                                was incorrect if different from the user's
- *                                current sub-board; this was fixed.
- *                              - Now includes the user's signature when cross-posting
- * 2013-02-08 Eric Oulashin     Version 1.22
- *                              Bug fix: When replying to a personal email
- *                              or netmail, now uses the correct author's
- *                              initials in quote lines.
- * 2013-02-13 Eric Oulashin     Version 1.23
- *                              Bug fix: If the user doesn't have a current
- *                              message sub-board (i.e., a new user applying
- *                              for access), SlyEdit now uses the first sub-board
- *                              that the user can post into.  This avoids crashes
- *                              due to JavaScript errors.
- * 2013-02-17 Eric Oulashin     Version 1.24
- *                              Bug fix: If the user is posting a new message
- *                              on a sub-board, SlyEdit now should have the
- *                              correct sub-board info, even if the user is posting
- *                              on a different sub-board than the one they're
- *                              currently set for reading.
- *                              Also, defaulted the option for indenting quote
- *                              lines with initials to true.
- * 2013-05-10 Eric Oulashin     Version 1.25 beta
- *                              Started working on more reliably getting the
- *                              message headers to correctly get author
- *                              initials in all cases when replying to messages.
- * 2013-05-14 Eric OUlashin     Version 1.25
- *                              Updated to use bbs.msg_number instead of message
- *                              indexes so that the correct message header (for
- *                              retrieval of author initials) is correct in all
- *                              cases, including when replying to messages during
- *                              "Scan for messages to you":
- *                              In SlyEdit_Misc.js, updated getCurMsgInfo() and
- *                              getFromNameForCurMsg() to use the absolute message
- *                              number (bbs.msg_number) rather than messages indexes.
+ * 2013-05-16 Eric Oulashin     Version 1.26 beta
+ *                              Fix for getting author initials for quote lines:
+ *                              Updated to use bbs.msg_number only for Synchronet
+ *                              3.16 builds starting on May 12, 2013 and to use
+ *                              bbs.smb_curmsg before that build date.  May 12,
+ *                              2013 was right after Digital Man put in his change
+ *                              to make bbs.msg_number work in JavaScript scripts,
+ *                              and it's accurate in all situations.
+ * 2013-05-17 Eric Oulashin     Version 1.26
+ *                              Made another change to make sure the call
+ *                              to bbs.get_msg_header() in getFromNameForCurMsg()
+ *                              in SlyEdit_Misc.js had the correct first parameter
+ *                              to specify whether the message number is an
+ *                              offset.  Released as version 1.26 after some
+ *                              testing.
  */
 
 /* Command-line arguments:
@@ -193,8 +100,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.25";
-const EDITOR_VER_DATE = "2013-05-14";
+const EDITOR_VERSION = "1.26";
+const EDITOR_VER_DATE = "2013-05-17";
 
 
 // Program variables

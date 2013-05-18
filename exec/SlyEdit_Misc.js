@@ -86,6 +86,12 @@
  *                              the correct message header in all cases, including
  *                              when replying to messages during "Scan for messages
  *                              to you".
+ * 2013-05-16 Eric Oulashin     Added compileDateAtLeast2013_05_12(), which
+ *                              returns whether the Synchronet compile date is at
+ *                              least May 12, 2013.  That was when Digital Man's
+ *                              change to make bbs.msg_number work when a script
+ *                              is running first went into the Synchronet daily
+ *                              builds.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -179,6 +185,11 @@ var CTRL_X = "\x18";
 var CTRL_Y = "\x19";
 var CTRL_Z = "\x1a";
 var KEY_ESC = "\x1b";
+
+// Store whether the Synchronet compile date is at least May 12, 2013
+// (we'll need to know this multiple times, and I don't want to run the
+// function more than once).
+var gCompileDateAtLeast2013_05_12 = compileDateAtLeast2013_05_12();
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
@@ -1939,7 +1950,13 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 // Returns an object containing the following properties:
 //  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
 //  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
-//  curMsgNum: The absolute number of the current message being read (i.e., bbs.msg_number)
+//  curMsgNum: The number/index of the current message being read.  Starting
+//             with Synchronet 3.16 on May 12, 2013, this is the absolute
+//             message number (bbs.msg_number).  For Synchronet builds before
+//             May 12, 2013, this is bbs.smb_curmsg.  Starting on May 12, 2013,
+//             bbs.msg_number is preferred because it works properly in all
+//             situations, whereas in earlier builds, bbs.msg_number was
+//             always given to JavaScript scripts as 0.
 //  subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code)
 //  grpIndex: The message group index for the sub-board
 //
@@ -1947,7 +1964,7 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 // DDML_SyncSMBInfo.txt in the node directory (written by the Digital
 // Distortion Message Lister v1.31 and higher).  If that file can't be read,
 // the values will default to the values of bbs.smb_last_msg,
-// bbs.smb_total_msgs, and bbs.msg_number.
+// bbs.smb_total_msgs, and bbs.msg_number/bbs.smb_curmsg.
 //
 // Parameters:
 //  pMsgAreaName: The name of the message area being posted to
@@ -1958,8 +1975,16 @@ function getCurMsgInfo(pMsgAreaName)
   {
     retObj.lastMsg = bbs.smb_last_msg;
     retObj.totalNumMsgs = bbs.smb_total_msgs;
-    //retObj.curMsgNum = bbs.smb_curmsg; // OLD!
-    retObj.curMsgNum = bbs.msg_number; // New (2013-05-14)
+    // If the Synchronet version is at least 3.16 and the Synchronet compile
+    // date is at least May 12, 2013, then use bbs.msg_number.  Otherwise,
+    // use bbs.smb_curmsg.  bbs.msg_number is the absolute message number and
+    // is always accurate, but bbs.msg_number only works properly in the
+    // Synchronet 3.16 daily builds starting on May 12, 2013, which was right
+    // after Digital Man committed his fix to make bbs.msg_number work properly.
+    if ((system.version_num >= 3.16) && gCompileDateAtLeast2013_05_12)
+      retObj.curMsgNum = bbs.msg_number; // New (2013-05-14)
+    else
+      retObj.curMsgNum = bbs.smb_curmsg; // For older Synchronet builds
     retObj.subBoardCode = bbs.smb_sub_code;
     retObj.grpIndex = msg_area.sub[bbs.smb_sub_code].grp_index;
   }
@@ -2124,10 +2149,17 @@ function getFromNameForCurMsg(pMsgInfo)
     if (msgBase != null)
     {
       msgBase.open();
-      // First parameter is false because we're not passing the message
-      // number by offset, we're passing the absolute message number
-      // (i.e., from bbs.msg_number) rather than the message offset.
-      var hdr = msgBase.get_msg_header(false, msgInfo.curMsgNum, true);
+      // The first parameter to msgBase.get_msg_header() is whether the message
+      // number is an offset.  We only want to use offsets for Synchronet builds
+      // before May 12, 2013.  On May 12, 2013, bbs.msg_number (the absolute
+      // message number/ID) was made to work for JavaScript scripts so it was
+      // no longer 0 all the time.  Since bbs.msg_number always gets the
+      // correct message header in all cases, that's the preferred method, but
+      // we can only use that for Synchronet 3.16 and above from at least May
+      // 12, 2013.
+      //var msgNumAsOffset = !((system.version_num >= 3.16) && gCompileDateAtLeast2013_05_12);
+      var msgNumAsOffset = ((system.version_num < 3.16) || !gCompileDateAtLeast2013_05_12);
+      var hdr = msgBase.get_msg_header(msgNumAsOffset, msgInfo.curMsgNum, true);
       if (hdr != null)
         fromName = hdr.from;
       msgBase.close();
@@ -2318,6 +2350,68 @@ function getFirstPostableSubInfo()
   }
 
   return retObj;
+}
+
+// Returns whether the Synchronet compile date is at least May 12, 2013.  That
+// was when Digital Man's change to make bbs.msg_number work when a script is
+// running first went into the Synchronet daily builds.
+function compileDateAtLeast2013_05_12()
+{
+  // system.compiled_when is in the following format:
+  // May 12 2013 05:02
+
+  var compileDateParts = system.compiled_when.split(" ");
+  if (compileDateParts.length < 4)
+    return false;
+
+  // Convert the month to a 1-based number
+  var compileMonth = 0;
+  if (/^Jan/.test(compileDateParts[0]))
+    compileMonth = 1;
+  else if (/^Feb/.test(compileDateParts[0]))
+    compileMonth = 2;
+  else if (/^Mar/.test(compileDateParts[0]))
+    compileMonth = 3;
+  else if (/^Apr/.test(compileDateParts[0]))
+    compileMonth = 4;
+  else if (/^May/.test(compileDateParts[0]))
+    compileMonth = 5;
+  else if (/^Jun/.test(compileDateParts[0]))
+    compileMonth = 6;
+  else if (/^Jul/.test(compileDateParts[0]))
+    compileMonth = 7;
+  else if (/^Aug/.test(compileDateParts[0]))
+    compileMonth = 8;
+  else if (/^Sep/.test(compileDateParts[0]))
+    compileMonth = 9;
+  else if (/^Oct/.test(compileDateParts[0]))
+    compileMonth = 10;
+  else if (/^Nov/.test(compileDateParts[0]))
+    compileMonth = 11;
+  else if (/^Dec/.test(compileDateParts[0]))
+    compileMonth = 12;
+
+  // Get the compileDay and compileYear as numeric variables
+  var compileDay = +compileDateParts[1];
+  var compileYear = +compileDateParts[2];
+
+  // Determine if the compile date is at least 2013-05-12
+  var compileDateIsAtLeastMin = true;
+  if (compileYear > 2013)
+    compileDateIsAtLeastMin = true;
+  else if (compileYear < 2013)
+    compileDateIsAtLeastMin = false;
+  else // compileYear is 2013
+  {
+    if (compileMonth > 5)
+      compileDateIsAtLeastMin = true
+    else if (compileMonth < 5)
+      compileDateIsAtLeastMin = false;
+    else // compileMonth is 5
+      compileDateIsAtLeastMin = (compileDay >= 12);
+  }
+
+  return compileDateIsAtLeastMin;
 }
 
 // This function displays debug text at a given location on the screen, then
