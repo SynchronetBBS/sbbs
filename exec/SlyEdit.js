@@ -28,6 +28,12 @@
  *                              to specify whether the message number is an
  *                              offset.  Released as version 1.26 after some
  *                              testing.
+ * 2013-05-18 Eric Oulashin     Speed optimization (hopefully)
+ *                              compileDateAtLeast2013_05_12() in SlyEdit_Misc.js:
+ *                              Made the return value a function property so
+ *                              that it only has to be figured out once, and
+ *                              eliminates the need for a global variable to
+ *                              store it for speed optimization purposes.
  */
 
 /* Command-line arguments:
@@ -101,7 +107,7 @@ if (!console.term_supports(USER_ANSI))
 
 // Constants
 const EDITOR_VERSION = "1.26";
-const EDITOR_VER_DATE = "2013-05-17";
+const EDITOR_VER_DATE = "2013-05-18";
 
 
 // Program variables

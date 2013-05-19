@@ -92,6 +92,12 @@
  *                              change to make bbs.msg_number work when a script
  *                              is running first went into the Synchronet daily
  *                              builds.
+ * 2013-05-18 Eric Oulashin     Speed optimization (hopefully) for
+ *                              compileDateAtLeast2013_05_12(): Made the return
+ *                              value a function property so that it only has
+ *                              to be figured out once, and eliminates the
+ *                              need for a global variable to store it for
+ *                              speed optimization purposes.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -185,11 +191,6 @@ var CTRL_X = "\x18";
 var CTRL_Y = "\x19";
 var CTRL_Z = "\x1a";
 var KEY_ESC = "\x1b";
-
-// Store whether the Synchronet compile date is at least May 12, 2013
-// (we'll need to know this multiple times, and I don't want to run the
-// function more than once).
-var gCompileDateAtLeast2013_05_12 = compileDateAtLeast2013_05_12();
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
@@ -1981,7 +1982,7 @@ function getCurMsgInfo(pMsgAreaName)
     // is always accurate, but bbs.msg_number only works properly in the
     // Synchronet 3.16 daily builds starting on May 12, 2013, which was right
     // after Digital Man committed his fix to make bbs.msg_number work properly.
-    if ((system.version_num >= 3.16) && gCompileDateAtLeast2013_05_12)
+    if ((system.version_num >= 3.16) && compileDateAtLeast2013_05_12())
       retObj.curMsgNum = bbs.msg_number; // New (2013-05-14)
     else
       retObj.curMsgNum = bbs.smb_curmsg; // For older Synchronet builds
@@ -2157,8 +2158,8 @@ function getFromNameForCurMsg(pMsgInfo)
       // correct message header in all cases, that's the preferred method, but
       // we can only use that for Synchronet 3.16 and above from at least May
       // 12, 2013.
-      //var msgNumAsOffset = !((system.version_num >= 3.16) && gCompileDateAtLeast2013_05_12);
-      var msgNumAsOffset = ((system.version_num < 3.16) || !gCompileDateAtLeast2013_05_12);
+      //var msgNumAsOffset = !((system.version_num >= 3.16) && compileDateAtLeast2013_05_12());
+      var msgNumAsOffset = ((system.version_num < 3.16) || !compileDateAtLeast2013_05_12());
       var hdr = msgBase.get_msg_header(msgNumAsOffset, msgInfo.curMsgNum, true);
       if (hdr != null)
         fromName = hdr.from;
@@ -2360,58 +2361,63 @@ function compileDateAtLeast2013_05_12()
   // system.compiled_when is in the following format:
   // May 12 2013 05:02
 
-  var compileDateParts = system.compiled_when.split(" ");
-  if (compileDateParts.length < 4)
-    return false;
-
-  // Convert the month to a 1-based number
-  var compileMonth = 0;
-  if (/^Jan/.test(compileDateParts[0]))
-    compileMonth = 1;
-  else if (/^Feb/.test(compileDateParts[0]))
-    compileMonth = 2;
-  else if (/^Mar/.test(compileDateParts[0]))
-    compileMonth = 3;
-  else if (/^Apr/.test(compileDateParts[0]))
-    compileMonth = 4;
-  else if (/^May/.test(compileDateParts[0]))
-    compileMonth = 5;
-  else if (/^Jun/.test(compileDateParts[0]))
-    compileMonth = 6;
-  else if (/^Jul/.test(compileDateParts[0]))
-    compileMonth = 7;
-  else if (/^Aug/.test(compileDateParts[0]))
-    compileMonth = 8;
-  else if (/^Sep/.test(compileDateParts[0]))
-    compileMonth = 9;
-  else if (/^Oct/.test(compileDateParts[0]))
-    compileMonth = 10;
-  else if (/^Nov/.test(compileDateParts[0]))
-    compileMonth = 11;
-  else if (/^Dec/.test(compileDateParts[0]))
-    compileMonth = 12;
-
-  // Get the compileDay and compileYear as numeric variables
-  var compileDay = +compileDateParts[1];
-  var compileYear = +compileDateParts[2];
-
-  // Determine if the compile date is at least 2013-05-12
-  var compileDateIsAtLeastMin = true;
-  if (compileYear > 2013)
-    compileDateIsAtLeastMin = true;
-  else if (compileYear < 2013)
-    compileDateIsAtLeastMin = false;
-  else // compileYear is 2013
+  // Determine this only once..  Create a property to store
+  // the true/false value if it hasn't been created yet, then
+  // return it.
+  if (typeof(compileDateAtLeast2013_05_12.dateMin) == "undefined")
   {
-    if (compileMonth > 5)
-      compileDateIsAtLeastMin = true
-    else if (compileMonth < 5)
-      compileDateIsAtLeastMin = false;
-    else // compileMonth is 5
-      compileDateIsAtLeastMin = (compileDay >= 12);
-  }
+    var compileDateParts = system.compiled_when.split(" ");
+    if (compileDateParts.length < 4)
+      return false;
 
-  return compileDateIsAtLeastMin;
+    // Convert the month to a 1-based number
+    var compileMonth = 0;
+    if (/^Jan/.test(compileDateParts[0]))
+      compileMonth = 1;
+    else if (/^Feb/.test(compileDateParts[0]))
+      compileMonth = 2;
+    else if (/^Mar/.test(compileDateParts[0]))
+      compileMonth = 3;
+    else if (/^Apr/.test(compileDateParts[0]))
+      compileMonth = 4;
+    else if (/^May/.test(compileDateParts[0]))
+      compileMonth = 5;
+    else if (/^Jun/.test(compileDateParts[0]))
+      compileMonth = 6;
+    else if (/^Jul/.test(compileDateParts[0]))
+      compileMonth = 7;
+    else if (/^Aug/.test(compileDateParts[0]))
+      compileMonth = 8;
+    else if (/^Sep/.test(compileDateParts[0]))
+      compileMonth = 9;
+    else if (/^Oct/.test(compileDateParts[0]))
+      compileMonth = 10;
+    else if (/^Nov/.test(compileDateParts[0]))
+      compileMonth = 11;
+    else if (/^Dec/.test(compileDateParts[0]))
+      compileMonth = 12;
+
+    // Get the compileDay and compileYear as numeric variables
+    var compileDay = +compileDateParts[1];
+    var compileYear = +compileDateParts[2];
+
+    // Determine if the compile date is at least 2013-05-12
+    compileDateAtLeast2013_05_12.dateMin = true;
+    if (compileYear > 2013)
+      compileDateAtLeast2013_05_12.dateMin = true;
+    else if (compileYear < 2013)
+      compileDateAtLeast2013_05_12.dateMin = false;
+    else // compileYear is 2013
+    {
+      if (compileMonth > 5)
+        compileDateAtLeast2013_05_12.dateMin = true
+      else if (compileMonth < 5)
+        compileDateAtLeast2013_05_12.dateMin = false;
+      else // compileMonth is 5
+        compileDateAtLeast2013_05_12.dateMin = (compileDay >= 12);
+    }
+  }
+  return compileDateAtLeast2013_05_12.dateMin;
 }
 
 // This function displays debug text at a given location on the screen, then
