@@ -2123,19 +2123,18 @@ void output_thread(void* arg)
 #ifdef USE_CRYPTLIB
 		if(sbbs->ssh_mode) {
 			int err;
-			pthread_mutex_lock(&sbbs->ssh_mutex);	/* exception here May-11-2013:
-
- 	sbbs.dll!pthread_mutex_lock(_RTL_CRITICAL_SECTION * mutex=0x070b3a74)  Line 147 + 0xc bytes	C
->	sbbs.dll!output_thread(void * arg=0x070add80)  Line 2127 + 0x11 bytes	C++
+			pthread_mutex_lock(&sbbs->ssh_mutex);	/* exception here May-22-2013:
+ 	sbbs.dll!pthread_mutex_lock(_RTL_CRITICAL_SECTION * mutex=0x0a45e95c)  Line 147 + 0xc bytes	C
+>	sbbs.dll!output_thread(void * arg=0x0a458c68)  Line 2126 + 0x11 bytes	C++
  	sbbs.dll!_callthreadstart()  Line 259 + 0xf bytes	C
- 	sbbs.dll!_threadstart(void * ptd=0x03daaa18)  Line 243	C
+ 	sbbs.dll!_threadstart(void * ptd=0x04b20c40)  Line 243	C
 
--		&sbbs->ssh_mutex	0x070b3a74 {DebugInfo=0x00000000 LockCount=-4 RecursionCount=0 ...}	_RTL_CRITICAL_SECTION *
+-		sbbs->ssh_mutex	{DebugInfo=0x00000000 LockCount=-4 RecursionCount=0 ...}	_RTL_CRITICAL_SECTION
 +		DebugInfo	0x00000000 {Type=??? CreatorBackTraceIndex=??? CriticalSection=??? ...}	_RTL_CRITICAL_SECTION_DEBUG *
 		LockCount	-4	long
 		RecursionCount	0	long
 		OwningThread	0x00000000	void *
-		LockSemaphore	0x00002028	void *
+		LockSemaphore	0x00006354	void *
 		SpinCount	0	unsigned long
 */
 			if(!cryptStatusOK((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
