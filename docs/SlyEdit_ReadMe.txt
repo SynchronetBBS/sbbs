@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.26
-                        Release date: 2013-05-17
+                              Version 1.27
+                        Release date: 2013-05-23
 
                                   by
 
@@ -22,9 +22,10 @@ Contents
 2. Introduction
 3. Installation & Setup
 4. Features
-5. Configuration file
-6. Ice-style Color Theme Settings
-7. DCT-style Color Theme Settings
+5. Digital Distortion Message Lister note
+6. Configuration file
+7. Ice-style Color Theme Settings
+8. DCT-style Color Theme Settings
 
 
 1. Disclaimer
@@ -205,7 +206,14 @@ ESC          : Command menu                 ¦ Ctrl-C : Cross-post selection
 Ctrl-O       : Import a file                ¦ Ctrl-X : Export to file
 
 
-5. Configuration file
+5. Digital Distortion Message Lister note
+-----------------------------------------
+If you use Digital Distortion's Message Lister, you must update it to version
+1.36 or newer in order to properly work with this version of SlyEdit when
+replying to messages.  See the file "SlyEdit_DD_Message_Lister_notes.txt" for a more
+detailed explanation.
+
+6. Configuration file
 =====================
 The configuration file, SlyEdit.cfg, is split up into 3 sections -
 Behavior, Ice colors, and DCT colors.  These sections are designated
@@ -315,7 +323,7 @@ The color theme files are plain text files that can be edited with a
 text editor.
 
 
-6. Ice-style Color Theme Settings
+7. Ice-style Color Theme Settings
 =================================
 The following options are valid for Ice-style theme files:
 ----------------------------------------------------------
@@ -420,7 +428,7 @@ crossPostMsgGrpMarkHighlight      The color to use for the highlighted
                                   character in the cross-post area selection
                                   box
 
-7. DCT-style Color Theme Settings
+8. DCT-style Color Theme Settings
 =================================
 The following options are valid for DCT-style theme files:
 ----------------------------------------------------------
