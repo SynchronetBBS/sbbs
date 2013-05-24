@@ -86,14 +86,13 @@
  *                              the correct message header in all cases, including
  *                              when replying to messages during "Scan for messages
  *                              to you".
- * 2013-05-16 Eric Oulashin     Added compileDateAtLeast2013_05_12(), which
- *                              returns whether the Synchronet compile date is at
- *                              least May 12, 2013.  That was when Digital Man's
- *                              change to make bbs.msg_number work when a script
- *                              is running first went into the Synchronet daily
- *                              builds.
- * 2013-05-18 Eric Oulashin     Speed optimization (hopefully) for
- *                              compileDateAtLeast2013_05_12(): Made the return
+ * 2013-05-16 Eric Oulashin     Added a function that returns whether the
+ *                              Synchronet compile date is at least May 12, 2013.
+ *                              That was when Digital Man's change to make
+ *                              bbs.msg_number work when a script is running
+ *                              first went into the Synchronet daily builds.
+ * 2013-05-18 Eric Oulashin     Speed optimization (hopefully) for the
+ *                              aforementioned function: Made the return
  *                              value a function property so that it only has
  *                              to be figured out once, and eliminates the
  *                              need for a global variable to store it for
@@ -191,6 +190,10 @@ var CTRL_X = "\x18";
 var CTRL_Y = "\x19";
 var CTRL_Z = "\x1a";
 var KEY_ESC = "\x1b";
+
+// Store the full path & filename of the Digital Distortion Message
+// Lister, since it will be used more than once.
+var gDDML_DROP_FILE_NAME = system.node_dir + "DDML_SyncSMBInfo.txt";
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
@@ -1976,16 +1979,11 @@ function getCurMsgInfo(pMsgAreaName)
   {
     retObj.lastMsg = bbs.smb_last_msg;
     retObj.totalNumMsgs = bbs.smb_total_msgs;
-    // If the Synchronet version is at least 3.16 and the Synchronet compile
-    // date is at least May 12, 2013, then use bbs.msg_number.  Otherwise,
-    // use bbs.smb_curmsg.  bbs.msg_number is the absolute message number and
-    // is always accurate, but bbs.msg_number only works properly in the
-    // Synchronet 3.16 daily builds starting on May 12, 2013, which was right
-    // after Digital Man committed his fix to make bbs.msg_number work properly.
-    if ((system.version_num >= 3.16) && compileDateAtLeast2013_05_12())
-      retObj.curMsgNum = bbs.msg_number; // New (2013-05-14)
-    else
-      retObj.curMsgNum = bbs.smb_curmsg; // For older Synchronet builds
+    // If bbs.msg_number is valid (greater than 0), then use it.  Otherwise,
+    // use the older behavior of using bbs.smb_curmsg (the offset) instead.
+    // bbs.msg_number was correct in Synchronet 3.16 builds starting on
+    // May 12, 2013.
+    retObj.curMsgNum = (bbs.msg_number > 0 ? bbs.msg_number : bbs.smb_curmsg);
     retObj.subBoardCode = bbs.smb_sub_code;
     retObj.grpIndex = msg_area.sub[bbs.smb_sub_code].grp_index;
   }
@@ -2071,10 +2069,9 @@ function getCurMsgInfo(pMsgAreaName)
 
   // If the Digital Distortion Message Lister drop file exists,
   // then use the message information from that file instead.
-  var DDMLDropFileName = system.node_dir + "DDML_SyncSMBInfo.txt";
-  if (file_exists(DDMLDropFileName))
+  if (file_exists(gDDML_DROP_FILE_NAME))
   {
-    var SMBInfoFile = new File(DDMLDropFileName);
+    var SMBInfoFile = new File(gDDML_DROP_FILE_NAME);
     if (SMBInfoFile.open("r"))
     {
       var fileLine = null; // A line read from the file
@@ -2151,15 +2148,16 @@ function getFromNameForCurMsg(pMsgInfo)
     {
       msgBase.open();
       // The first parameter to msgBase.get_msg_header() is whether the message
-      // number is an offset.  We only want to use offsets for Synchronet builds
-      // before May 12, 2013.  On May 12, 2013, bbs.msg_number (the absolute
-      // message number/ID) was made to work for JavaScript scripts so it was
-      // no longer 0 all the time.  Since bbs.msg_number always gets the
-      // correct message header in all cases, that's the preferred method, but
-      // we can only use that for Synchronet 3.16 and above from at least May
-      // 12, 2013.
-      //var msgNumAsOffset = !((system.version_num >= 3.16) && compileDateAtLeast2013_05_12());
-      var msgNumAsOffset = ((system.version_num < 3.16) || !compileDateAtLeast2013_05_12());
+      // number is an offset.  We only want to use offsets if bbs.msg_number is
+      // 0, since bbs.msg_number is 1-based.  bbs.msg_numer became valid in
+      // Synchronet 3.16 builds starting onMay 12, 2013.
+      //var msgNumAsOffset = (bbs.msg_number == 0);
+      // Use an offset if bbs.msg_number is 0 and Digital Distortion Message
+      // Lister's drop file does not exist.  Otherwise, we'll be using the
+      // absolute message number.  Note: If using Digital Distortion's Message
+      // Lister, this logic requires version 1.36 or newer of Digital Distortion's
+      // Message Lister, or else this might get the wrong message header.
+      var msgNumAsOffset = ((bbs.msg_number == 0) && !file_exists(gDDML_DROP_FILE_NAME));
       var hdr = msgBase.get_msg_header(msgNumAsOffset, msgInfo.curMsgNum, true);
       if (hdr != null)
         fromName = hdr.from;
@@ -2351,73 +2349,6 @@ function getFirstPostableSubInfo()
   }
 
   return retObj;
-}
-
-// Returns whether the Synchronet compile date is at least May 12, 2013.  That
-// was when Digital Man's change to make bbs.msg_number work when a script is
-// running first went into the Synchronet daily builds.
-function compileDateAtLeast2013_05_12()
-{
-  // system.compiled_when is in the following format:
-  // May 12 2013 05:02
-
-  // Determine this only once..  Create a property to store
-  // the true/false value if it hasn't been created yet, then
-  // return it.
-  if (typeof(compileDateAtLeast2013_05_12.dateMin) == "undefined")
-  {
-    var compileDateParts = system.compiled_when.split(" ");
-    if (compileDateParts.length < 4)
-      return false;
-
-    // Convert the month to a 1-based number
-    var compileMonth = 0;
-    if (/^Jan/.test(compileDateParts[0]))
-      compileMonth = 1;
-    else if (/^Feb/.test(compileDateParts[0]))
-      compileMonth = 2;
-    else if (/^Mar/.test(compileDateParts[0]))
-      compileMonth = 3;
-    else if (/^Apr/.test(compileDateParts[0]))
-      compileMonth = 4;
-    else if (/^May/.test(compileDateParts[0]))
-      compileMonth = 5;
-    else if (/^Jun/.test(compileDateParts[0]))
-      compileMonth = 6;
-    else if (/^Jul/.test(compileDateParts[0]))
-      compileMonth = 7;
-    else if (/^Aug/.test(compileDateParts[0]))
-      compileMonth = 8;
-    else if (/^Sep/.test(compileDateParts[0]))
-      compileMonth = 9;
-    else if (/^Oct/.test(compileDateParts[0]))
-      compileMonth = 10;
-    else if (/^Nov/.test(compileDateParts[0]))
-      compileMonth = 11;
-    else if (/^Dec/.test(compileDateParts[0]))
-      compileMonth = 12;
-
-    // Get the compileDay and compileYear as numeric variables
-    var compileDay = +compileDateParts[1];
-    var compileYear = +compileDateParts[2];
-
-    // Determine if the compile date is at least 2013-05-12
-    compileDateAtLeast2013_05_12.dateMin = true;
-    if (compileYear > 2013)
-      compileDateAtLeast2013_05_12.dateMin = true;
-    else if (compileYear < 2013)
-      compileDateAtLeast2013_05_12.dateMin = false;
-    else // compileYear is 2013
-    {
-      if (compileMonth > 5)
-        compileDateAtLeast2013_05_12.dateMin = true
-      else if (compileMonth < 5)
-        compileDateAtLeast2013_05_12.dateMin = false;
-      else // compileMonth is 5
-        compileDateAtLeast2013_05_12.dateMin = (compileDay >= 12);
-    }
-  }
-  return compileDateAtLeast2013_05_12.dateMin;
 }
 
 // This function displays debug text at a given location on the screen, then

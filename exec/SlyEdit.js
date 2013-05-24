@@ -28,12 +28,15 @@
  *                              to specify whether the message number is an
  *                              offset.  Released as version 1.26 after some
  *                              testing.
- * 2013-05-18 Eric Oulashin     Speed optimization (hopefully)
- *                              compileDateAtLeast2013_05_12() in SlyEdit_Misc.js:
- *                              Made the return value a function property so
- *                              that it only has to be figured out once, and
- *                              eliminates the need for a global variable to
- *                              store it for speed optimization purposes.
+ * 2013-05-23 Eric Oulashin     Version 1.27
+ *                              Updated to check whether bbs.msg_number is > 0
+ *                              rather than checking the Synchronet version
+ *                              >= 3.16 & build date at least May 12, 2013
+ *                              to determine whether to use bbs.msg_number or
+ *                              bbs.smb_curmsg.  Sysops who use Digital
+ *                              Message Lister must now update the message
+ *                              lister to version 1.36 or newer to properly
+ *                              work with this version of SlyEdit.
  */
 
 /* Command-line arguments:
@@ -106,8 +109,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.26";
-const EDITOR_VER_DATE = "2013-05-18";
+const EDITOR_VERSION = "1.27";
+const EDITOR_VER_DATE = "2013-05-23";
 
 
 // Program variables
