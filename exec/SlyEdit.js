@@ -28,7 +28,7 @@
  *                              to specify whether the message number is an
  *                              offset.  Released as version 1.26 after some
  *                              testing.
- * 2013-05-23 Eric Oulashin     Version 1.27
+ * 2013-05-24 Eric Oulashin     Version 1.27
  *                              Updated to check whether bbs.msg_number is > 0
  *                              rather than checking the Synchronet version
  *                              >= 3.16 & build date at least May 12, 2013
@@ -36,7 +36,11 @@
  *                              bbs.smb_curmsg.  Sysops who use Digital
  *                              Message Lister must now update the message
  *                              lister to version 1.36 or newer to properly
- *                              work with this version of SlyEdit.
+ *                              work with this version of SlyEdit.  Also,
+ *                              in SlyEdit_Misc.js, updated to add one more
+ *                              data member to the return object:
+ *                              msgNumIsOffset, which stores whether or not the
+ *                              message number is an offset.
  */
 
 /* Command-line arguments:
@@ -110,7 +114,7 @@ if (!console.term_supports(USER_ANSI))
 
 // Constants
 const EDITOR_VERSION = "1.27";
-const EDITOR_VER_DATE = "2013-05-23";
+const EDITOR_VER_DATE = "2013-05-24";
 
 
 // Program variables

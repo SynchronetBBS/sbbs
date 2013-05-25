@@ -97,6 +97,19 @@
  *                              to be figured out once, and eliminates the
  *                              need for a global variable to store it for
  *                              speed optimization purposes.
+ * 2013-05-23 Eric Oulashin     Simplified the decision of whether to use
+ *                              bbs.msg_number or bbs.smb_curmsg by checking
+ *                              whether bbs.msg_number is > 0 (if it is, then
+ *                              it's valid, so use it).  This is simpler than
+ *                              checking the Synchronet version & build date.
+ * 2013-05-24 Eric Oulashin     Updated getCurMsgInfo() to add one more
+ *                              data member to the return object:
+ *                              msgNumIsOffset, which stores whether or not the
+ *                              message number is an offset.  If not, then it's
+ *                              the aboslute message number (i.e., bbs.msg_number).
+ *                              That simplified getFromNameForCurMsg(), which can
+ *                              pass that to msgBase.get_msg_header().
+ *                              
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -1961,6 +1974,9 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 //             bbs.msg_number is preferred because it works properly in all
 //             situations, whereas in earlier builds, bbs.msg_number was
 //             always given to JavaScript scripts as 0.
+//  msgNumIsOffset: Boolean - Whether or not the message number is an offset.
+//                  If not, then it is the absolute message number (i.e.,
+//                  bbs.msg_number).
 //  subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code)
 //  grpIndex: The message group index for the sub-board
 //
@@ -1975,6 +1991,7 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 function getCurMsgInfo(pMsgAreaName)
 {
   var retObj = new Object();
+  retObj.msgNumIsOffset = false;
   if (bbs.smb_sub_code.length > 0)
   {
     retObj.lastMsg = bbs.smb_last_msg;
@@ -1983,7 +2000,14 @@ function getCurMsgInfo(pMsgAreaName)
     // use the older behavior of using bbs.smb_curmsg (the offset) instead.
     // bbs.msg_number was correct in Synchronet 3.16 builds starting on
     // May 12, 2013.
-    retObj.curMsgNum = (bbs.msg_number > 0 ? bbs.msg_number : bbs.smb_curmsg);
+    //retObj.curMsgNum = (bbs.msg_number > 0 ? bbs.msg_number : bbs.smb_curmsg);
+    if (bbs.msg_number > 0)
+      retObj.curMsgNum = bbs.msg_number;
+    else
+    {
+      retObj.curMsgNum = bbs.smb_curmsg;
+      retObj.msgNumIsOffset = true;
+    }
     retObj.subBoardCode = bbs.smb_sub_code;
     retObj.grpIndex = msg_area.sub[bbs.smb_sub_code].grp_index;
   }
@@ -2101,6 +2125,7 @@ function getCurMsgInfo(pMsgAreaName)
               break;
             case 3:
               retObj.curMsgNum = +fileLine;
+              retObj.msgNumIsOffset = false; // For Message Lister 1.36 and newer
               break;
             case 4:
               retObj.subBoardCode = fileLine;
@@ -2147,18 +2172,7 @@ function getFromNameForCurMsg(pMsgInfo)
     if (msgBase != null)
     {
       msgBase.open();
-      // The first parameter to msgBase.get_msg_header() is whether the message
-      // number is an offset.  We only want to use offsets if bbs.msg_number is
-      // 0, since bbs.msg_number is 1-based.  bbs.msg_numer became valid in
-      // Synchronet 3.16 builds starting onMay 12, 2013.
-      //var msgNumAsOffset = (bbs.msg_number == 0);
-      // Use an offset if bbs.msg_number is 0 and Digital Distortion Message
-      // Lister's drop file does not exist.  Otherwise, we'll be using the
-      // absolute message number.  Note: If using Digital Distortion's Message
-      // Lister, this logic requires version 1.36 or newer of Digital Distortion's
-      // Message Lister, or else this might get the wrong message header.
-      var msgNumAsOffset = ((bbs.msg_number == 0) && !file_exists(gDDML_DROP_FILE_NAME));
-      var hdr = msgBase.get_msg_header(msgNumAsOffset, msgInfo.curMsgNum, true);
+      var hdr = msgBase.get_msg_header(msgInfo.msgNumIsOffset, msgInfo.curMsgNum, true);
       if (hdr != null)
         fromName = hdr.from;
       msgBase.close();
