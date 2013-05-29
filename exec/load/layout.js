@@ -625,10 +625,10 @@ function LayoutView(title,frame,parent) {
 					var msg = chan.messages.shift();
 					var str = "";
 					if(msg.nick)
-						var str = getColor(this.chat.settings.NICK_COLOR) + msg.nick.name + "\1n: " + 
-						getColor(this.chat.settings.TEXT_COLOR) + msg.str;
+						var str = getColor(this.chat.colors.NICK_COLOR) + msg.nick.name + "\1n: " + 
+						getColor(this.chat.colors.TEXT_COLOR) + msg.str;
 					else
-						var str = getColor(this.chat.settings.NOTICE_COLOR) + msg.str;
+						var str = getColor(this.chat.colors.NOTICE_COLOR) + msg.str;
 					this.frame.putmsg(str + "\r\n");
 				}
 			}

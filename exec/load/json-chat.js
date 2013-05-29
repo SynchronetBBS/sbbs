@@ -3,19 +3,30 @@ if(!js.global.JSONClient)
 
 function JSONChat(usernum,jsonclient,host,port) {
 
-	this.nick;
-	this.channels = {};
-	this.client = jsonclient;
-	this.chatView = undefined;
-	this.userView = undefined;
-	this.settings = {
+	var colors = {
 		NICK_COLOR:GREEN,
 		TEXT_COLOR:LIGHTGRAY,
 		PRIV_COLOR:RED,
 		ACTION_COLOR:LIGHTGREEN,
 		NOTICE_COLOR:BROWN
 	}
+	var settings = {
+		MAX_HISTORY:20
+	};
 	
+	this.nick;
+	this.channels = {};
+	this.client = jsonclient;
+	this.chatView = undefined;
+	this.userView = undefined;
+	
+	this.__defineGetter__("colors",function() {
+		return colors;
+	});
+	this.__defineGetter__("settings",function() {
+		return settings;
+	});
+
 	if(!this.client) {
 		if(!host || isNaN(port))
 			throw("invalid client arguments");
@@ -74,7 +85,8 @@ function JSONChat(usernum,jsonclient,host,port) {
 	this.join = function(target,str) {
 		this.client.subscribe("chat","channels." + target + ".messages");
 		this.channels[target.toUpperCase()] = new Channel(target);
-		var history = this.client.read("chat","channels." + target + ".history",1);
+		var index = (-1 * this.settings.MAX_HISTORY);
+		var history = this.client.slice("chat","channels." + target + ".history",index,undefined,1);
 		var msgcount = 0;
 		var lastMsg = 0;
 		for each(var m in history) {
@@ -104,17 +116,15 @@ function JSONChat(usernum,jsonclient,host,port) {
 	
 	this.who = function(target) {
 		var chan = this.channels[target.toUpperCase()];
-		var users = this.client.who("chat","channels." + chan.name + ".messages");
-		if(chan)
-			chan.users = users;
+		chan.users = getUserList(this,chan);
 		if(this.userView)
 			updateUserView(this.userView,chan);
 		var uList=[];
-		for(var u in users) {
-			uList.push(users[u].nick);
+		for(var u in chan.users) {
+			uList.push(chan.users[u].nick);
 		}
 		chan.messages.push(new Message(undefined,"Users in " + chan.name + ": " + uList.join(", "),Date.now()));
-		return users;
+		return chan.users;
 	}
 	
 	this.disconnect = function() {
@@ -148,11 +158,11 @@ function JSONChat(usernum,jsonclient,host,port) {
 		switch(packet.oper.toUpperCase()) {
 		case "SUBSCRIBE":
 			channel.messages.push(new Message("",packet.data.nick + " is here.",Date.now()));
-			this.who(channel.name);
+			channel.users = getUserList(this,channel);
 			break;
 		case "UNSUBSCRIBE":
 			channel.messages.push(new Message("",packet.data.nick + " has left.",Date.now()));
-			this.who(channel.name);
+			channel.users = getUserList(this,channel);
 			break;
 		case "WRITE":
 			channel.messages.push(message);
@@ -274,6 +284,11 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.nick = nick;
 		this.str = str;
 		this.time = time;
+	}
+	
+	/* retrieve user list */
+	function getUserList(chat,chan) {
+		return chat.client.who("chat","channels." + chan.name + ".messages");
 	}
 	
 	/* adapter for updating chat layout view */
