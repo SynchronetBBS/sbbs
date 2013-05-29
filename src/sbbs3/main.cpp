@@ -1528,7 +1528,6 @@ void input_thread(void *arg)
 	lprintf(LOG_DEBUG,"Node %d input thread started",sbbs->cfg.node_num);
 #endif
 
-	pthread_mutex_init(&sbbs->input_thread_mutex,NULL);
     sbbs->input_thread_running = true;
 	sbbs->console|=CON_R_INPUT;
 
@@ -1766,11 +1765,6 @@ void input_thread(void *arg)
     sbbs->input_thread_running = false;
 	if(node_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)	// Shutdown locally
 		sbbs->terminated = true;	// Signal JS to stop execution
-
-	while(pthread_mutex_destroy(&sbbs->ssh_mutex)==EBUSY)
-		mswait(1);
-	while(pthread_mutex_destroy(&sbbs->input_thread_mutex)==EBUSY)
-		mswait(1);
 
 	thread_down();
 	lprintf(LOG_DEBUG,"Node %d input thread terminated (received %lu bytes in %lu blocks)"
@@ -3344,6 +3338,9 @@ bool sbbs_t::init()
 			} 
 	}
 
+	pthread_mutex_init(&ssh_mutex,NULL);
+	pthread_mutex_init(&input_thread_mutex,NULL);
+
 	reset_logon_vars();
 
 	online=ON_REMOTE;
@@ -3468,6 +3465,11 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(batdn_size);
 	FREE_AND_NULL(batdn_cdt);
 	FREE_AND_NULL(batdn_alt);
+
+	while(pthread_mutex_destroy(&ssh_mutex)==EBUSY)
+		mswait(1);
+	while(pthread_mutex_destroy(&input_thread_mutex)==EBUSY)
+		mswait(1);
 
 #if 0 && defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
 	if(!_CrtCheckMemory())
@@ -5383,7 +5385,6 @@ NO_SSH:
 			new_node->sys_status|=SS_RLOGIN;
 			new_node->telnet_mode|=TELNET_MODE_OFF; // RLogin does not use Telnet commands
 		}
-		pthread_mutex_init(&new_node->ssh_mutex,NULL);
 #ifdef USE_CRYPTLIB
 		if(ssh) {
 			SOCKET	tmp_sock;
