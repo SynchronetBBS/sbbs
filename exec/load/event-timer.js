@@ -30,7 +30,7 @@
 		
 		//will print "hello" infinitely at 20 second intervals
 		var event2 = timer.addEvent(20000,true,print,"hello");
-		
+		as
 		//will print "hello" once after 30 seconds
 		var event3 = timer.addEvent(30000,false,
 		
@@ -82,13 +82,13 @@ function Timer() {
 	
 	/* create a new event, do not include () on action parameter */
 	this.addEvent = function(interval,repeat,action,arguments,context) {
-		var event=new Event(interval,repeat,action,arguments,context);
+		var event=new TimerEvent(interval,repeat,action,arguments,context);
 		this.events.push(event);
 		return event;
 	}
 	
 	/* event object created by addEvent */
-	function Event(interval,repeat,action,arguments,context) {
+	function TimerEvent(interval,repeat,action,arguments,context) {
 		/* last time_t at which event was executed */
 		this.lastrun = Date.now();
 		/* seconds between event occurance */
@@ -117,4 +117,22 @@ function Timer() {
 	}
 };
 
+/* event emitter/handler adapter */
+function Event() { 
+	this.adapt = function(object) { 
+		object.prototype.__events__ = {};
+		object.prototype.on = function(event,handler) { 
+			this.__events__[event.toUpperCase()] = handler;
+		} 
+		object.prototype.emit = function(event,args) {
+			args = Array.prototype.slice.call(arguments).slice(1);
+			if(typeof this.__events__[event.toUpperCase()] == "function") {
+				this.__events__[event.toUpperCase()](args);
+			}
+		}
+	}
+};
+
+//js.global.timer = new Timer();
+//js.global.event = new Event();
 
