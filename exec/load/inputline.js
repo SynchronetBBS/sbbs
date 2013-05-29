@@ -9,7 +9,7 @@ function InputLine(frame) {
 		frame:undefined,
 		attr:undefined,
 		cursor:undefined,
-		buffer:[]
+		buffer:""
 	};
 	var settings = {
 		show_border:true,
@@ -279,7 +279,7 @@ function InputLine(frame) {
 		//gotoxy(position);
 	}
 	function reset() {
-		properties.buffer = [];
+		properties.buffer = "";
 		properties.frame.clear();
 		if(settings.show_cursor)
 			printCursor();
