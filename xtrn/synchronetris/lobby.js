@@ -43,10 +43,11 @@ var lobby=(function() {
 		input=new InputLine();
 		chat.chatView = chatView;
 		chat.join("#synchronetris");
-		input.init(2,24,78,1,frame);
+		input.init(2,24,78,1,frame,BG_RED|WHITE);
 		input.attr = BG_RED|WHITE;
-		var menu_frame = new Frame(2,24,78,1,BG_LIGHTGRAY+RED,frame);
-		var menu_items = [
+		input.show_cursor = true;
+		var menuFrame = new Frame(2,24,78,1,BG_LIGHTGRAY+RED,frame);
+		var menuItems = [
 			"~Play game",
 			"~Leave game",
 			"~Ready",
@@ -56,7 +57,7 @@ var lobby=(function() {
 			"~Quit"
 		];
 		hotkeys=true;
-		menu=new Menu(menu_items,menu_frame,"\1r\1h","\1n");	
+		menu=new Menu(menuItems,menuFrame,"\1r\1h","\1n");	
 		frame.load(root + "lobby.bin",80,24);
 		frame.open();
 		layout.open();
