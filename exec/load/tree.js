@@ -356,14 +356,18 @@ function Tree(frame,text,tree) {
 	this.open = function() {
 		if(properties.status&flags.CLOSED) {
 			properties.status&=~flags.CLOSED;
+			if(typeof this.onOpen == "function") 
+				this.onOpen();
+			this.refresh();
 		}
-		this.refresh();
 		return true;
 	}
 	this.close = function() {
 		if(properties.status&flags.CLOSED)
 			return false;
 		properties.status|=flags.CLOSED;
+		if(typeof this.onClose == "function") 
+			this.onClose();
 		this.refresh();
 		return true;
 	}
