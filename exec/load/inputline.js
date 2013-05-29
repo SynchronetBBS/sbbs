@@ -15,9 +15,11 @@ function InputLine(frame) {
 		show_border:true,
 		show_title:true,
 		show_cursor:false,
+		mask_input:false,
 		auto_clear:true,
 		cursor_attr:BG_LIGHTGRAY|BLACK,
 		cursor_char:"_",
+		mask_char:"*",
 		timeout:10,
 		max_buffer:200
 	};
@@ -62,7 +64,16 @@ function InputLine(frame) {
 			properties.cursor.close();
 		}
 	});
-	this.__defineGetter__("attr",function() {
+	this.__defineGetter__("mask_input",function() {
+		return settings.mask_input;
+	});
+	this.__defineSetter__("mask_input",function(bool) {
+		if(settings.mask_input == bool)
+			return;
+		if(typeof bool == "boolean")
+			settings.mask_input = bool;
+		printBuffer();
+	});	this.__defineGetter__("attr",function() {
 		return properties.attr;
 	});
 	this.__defineSetter__("attr",function(attr) {
@@ -83,10 +94,22 @@ function InputLine(frame) {
 		return settings.cursor_char;
 	});
 	this.__defineSetter__("cursor_char",function(ch) {
-		if(ch.length == 1) {
+		if(ch && ch.length == 1) {
 			settings.cursor_char = ch;
 			if(properties.cursor)
 				properties.cursor.putmsg("\r" + settings.cursor_char);
+		}
+	});
+	this.__defineGetter__("mask_char",function() {
+		return settings.mask_char;
+	});
+	this.__defineSetter__("mask_char",function(ch) {
+		if(ch == settings.mask_char)
+			return;
+		if(ch && ch.length == 1) {
+			settings.mask_char = ch;
+			if(settings.mask_input) 
+				printBuffer();
 		}
 	});
 	this.__defineGetter__("timeout",function() {
@@ -98,6 +121,9 @@ function InputLine(frame) {
 	});
 	this.__defineGetter__("buffer",function() {
 		return properties.buffer;
+	});
+	this.__defineGetter__("overrun",function() {
+		return properties.buffer.length-properties.frame.width;
 	});
 	
 	/* public methods */
@@ -122,11 +148,11 @@ function InputLine(frame) {
 		if(use_hotkeys) 
 			return key;
 		switch(key) {
+		case '\x0c':	/* CTRL-L */
 		case '\x00':	/* CTRL-@ (NULL) */
 		case '\x03':	/* CTRL-C */
 		case '\x04':	/* CTRL-D */
 		case '\x0b':	/* CTRL-K */
-		case '\x0c':	/* CTRL-L */
 		case '\x0e':	/* CTRL-N */
 		case '\x0f':	/* CTRL-O */
 		case '\x09': 	// TAB
@@ -178,10 +204,14 @@ function InputLine(frame) {
 		if(properties.buffer.length >= settings.max_buffer) 
 			return undefined;
 		properties.buffer+=key;
+		
 		if(properties.buffer.length>properties.frame.width) 
 			printBuffer();
-		else 
+		else if(settings.mask_input) 
+			properties.frame.write(settings.mask_char,properties.attr);
+		else
 			properties.frame.write(key,properties.attr);
+			
 		if(settings.show_cursor)
 			printCursor();
 		return undefined;
@@ -190,8 +220,9 @@ function InputLine(frame) {
 		if(properties.buffer.length == 0) 
 			return undefined;
 		properties.buffer=properties.buffer.substr(0,properties.buffer.length-1);
-		if(properties.buffer.length+1>=properties.frame.width) 
+		if(properties.buffer.length+1>=properties.frame.width) {
 			printBuffer();
+		}
 		else {
 			properties.frame.left();
 			properties.frame.write(" ");
@@ -202,14 +233,26 @@ function InputLine(frame) {
 		return undefined;
 	}
 	function printBuffer() {
+		if(settings.mask_input) {
+			maskBuffer();
+			return;
+		}
 		properties.frame.clear();
-		var overrun=properties.buffer.length-properties.frame.width;
-		if(overrun > 0) {
+		if(this.overrun > 0) {
 			var truncated=properties.buffer.substr(overrun);
-			properties.frame.putmsg(truncated);
+			properties.frame.write(truncated);
 		}
 		else {
 			properties.frame.write(properties.buffer);
+		}
+	}
+	function maskBuffer() {
+		properties.frame.clear();
+		if(this.overrun > 0) {
+			properties.frame.write(properties.buffer.substr(overrun).replace(/./g,settings.mask_char));
+		}
+		else {
+			properties.frame.write(properties.buffer.replace(/./g,settings.mask_char));
 		}
 	}
 	function gotoxy(position) {
