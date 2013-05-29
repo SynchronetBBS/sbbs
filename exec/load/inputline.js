@@ -73,7 +73,8 @@ function InputLine(frame) {
 		if(typeof bool == "boolean")
 			settings.mask_input = bool;
 		printBuffer();
-	});	this.__defineGetter__("attr",function() {
+	});	
+	this.__defineGetter__("attr",function() {
 		return properties.attr;
 	});
 	this.__defineSetter__("attr",function(attr) {
@@ -204,7 +205,7 @@ function InputLine(frame) {
 		if(properties.buffer.length >= settings.max_buffer) 
 			return undefined;
 		properties.buffer+=key;
-		
+	
 		if(properties.buffer.length>properties.frame.width) 
 			printBuffer();
 		else if(settings.mask_input) 
