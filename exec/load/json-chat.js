@@ -27,12 +27,6 @@ function JSONChat(usernum,jsonclient,host,port) {
 		return settings;
 	});
 
-	if(!this.client) {
-		if(!host || isNaN(port))
-			throw("invalid client arguments");
-		this.client = new JSONClient(host,port);
-	}
-		
 	this.connect = function() {
 		var usr;
 		if(usernum > 0 && system.username(usernum)) 
@@ -41,10 +35,20 @@ function JSONChat(usernum,jsonclient,host,port) {
 			this.nick = new Nick(usr.alias,system.name,usr.ip_address);
 		else if(user && user.number > 0)
 			this.nick = new Nick(user.alias,system.name,user.ip_address);
+			
+		if(!this.client) {
+			if(!host || isNaN(port))
+				throw("invalid client arguments");
+			this.client = new JSONClient(host,port);
+		}
+		this.client.connect();
+		
 		if(this.nick)
 			this.client.subscribe("chat","channels." + this.nick.name + ".messages");
 		else
 			throw("invalid user number");
+		for(var c in this.channels) 
+			this.join(c.name);
 	}
 	
 	this.submit = function(target,str) {
@@ -82,7 +86,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 		}
 	} 
 	
-	this.join = function(target,str) {
+	this.join = function(target) {
 		this.client.subscribe("chat","channels." + target + ".messages");
 		this.channels[target.toUpperCase()] = new Channel(target);
 		var index = (-1 * this.settings.MAX_HISTORY);
