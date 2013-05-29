@@ -87,6 +87,11 @@ function JSONClient(serverAddr,serverPort) {
 	this.callback;
 	this.updates=[];
 	
+	/* connection state */
+	this.__defineGetter__("connected",function() {
+		return this.socket.is_connected;
+	});
+	
 	/* convert null values to undefined when parsing */
 	Socket.prototype.reviver = function(k,v) { if(v === null) return undefined; return v; };
 	
