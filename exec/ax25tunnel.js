@@ -59,24 +59,7 @@ var RLogin = function(host, port, username, password, terminal) {
 		if(!socket.is_connected || !socket.data_waiting)
 			return false;
 		var r = socket.recv(settings.receiveBuffer);
-		r = r.split("");
-		switch(r[0]) {
-			case 80:
-				r.shift();
-				break;
-			case 10:
-				r.shift();
-				break;
-			case 20:
-				r.shift();
-				break;
-			case 02:
-				r.shift();
-				break;
-			default:
-				break;
-		}
-		return (r.length > 0) ? r.join("") : "";
+		return r;
 	}
 	
 	this.send = function(str) {
