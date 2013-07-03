@@ -1951,7 +1951,7 @@ var selected_command_handlers = {
 	},
 	UID:{
 		arguments_valid:function(count) {
-			if(count==3 || count==4)
+			if(count==2 || count==3 || count==4)
 				return(true);
 			return(false);
 		},
