@@ -32,8 +32,13 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 		if(this.replyto != undefined)
 			this.rfc822 += "Reply-To: "+this.replyto+"\r\n";
 		else {
-			if(this.subnum != -1)
-				this.rfc822 += 'Reply-To: "'+this.from+'" <sub:'+this.cfg.code+'@'+system.inet_addr+'>\r\n';
+			if(this.subnum != -1) {
+				this.rfc822 += 'Reply-To: "'+this.from;
+                if (this.cfg!=undefined) {
+                    this.rfc822 += '" <sub:'+this.cfg.code+'@'+system.inet_addr+'>';
+                }
+                this.rfc822 += '\r\n';
+            }
 		}
 		if(this.reply_id != undefined)
 			this.rfc822 += "In-Reply-To: "+this.reply_id+"\r\n";
