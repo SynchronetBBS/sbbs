@@ -2626,8 +2626,8 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		addr;
-	char*		alias;
-	char*		pass;
+	char*		alias=NULL;
+	char*		pass=NULL;
 	bool		fail;
 	int32		mode = 0;
 	JSString*	js_addr;
@@ -2686,7 +2686,7 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->rlogin_gate(addr,alias,pass,mode);
+	sbbs->telnet_gate(addr,mode|TG_RLOGIN,alias,pass);
 	free(addr);
 	free(alias);
 	free(pass);
@@ -3760,9 +3760,9 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("external telnet/rlogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
 	,310
 	},		
-	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [user=<tt>user.alias</tt>,pass=<tt>user.pass</tt>,mode=<tt>TG_NONE</tt>]")
-	,JSDOCSTR("external rlogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
-	,310
+	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,user=<tt>user.alias</tt>,pass=<tt>user.pass</tt>,mode=<tt>TG_NONE</tt>]")
+	,JSDOCSTR("external RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
+	,316
 	},		
 	/* security */
 	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
