@@ -1347,6 +1347,7 @@ function Screen_handle_key(key)  {
 			this.input_pos=0;
 			this.update_input_line();
 			break;
+		case "\x7f":
 		case "\x08":
 			if(this.input_pos > 0)  {
 				this.input_buffer=this.input_buffer.slice(0,this.input_pos-1)+this.input_buffer.slice(this.input_pos);
