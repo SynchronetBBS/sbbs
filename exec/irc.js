@@ -1348,6 +1348,11 @@ function Screen_handle_key(key)  {
 			this.update_input_line();
 			break;
 		case "\x7f":
+			if(this.input_buffer.length > this.input_pos) {
+				this.input_buffer=this.input_buffer.slice(0,this.input_pos)+this.input_buffer.slice(this.input_pos+1);
+				this.update_input_line();
+			}
+			break;
 		case "\x08":
 			if(this.input_pos > 0)  {
 				this.input_buffer=this.input_buffer.slice(0,this.input_pos-1)+this.input_buffer.slice(this.input_pos);
