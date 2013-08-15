@@ -410,7 +410,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_getche(void)
 		ciolib_putch(ch);
 		return(ch);
 	}
-	if(cio_api.getche())
+	if(cio_api.getche)
 		return(cio_api.getche());
 	else {
 		while(1) {
