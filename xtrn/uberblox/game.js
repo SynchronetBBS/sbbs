@@ -100,6 +100,7 @@ function blox()
 	
 	const points_base=			15;
 	const points_increment=		10;
+	const points_bonus=			5000;
 	const minimum_cluster=		3;
 	const colors=				[3,3,3,4,4,4,5,5,5,6,6,6]; //COLORS PER MAP (DEFAULT ex.: levels 1-4 have 3 colors)
 	const tiles_per_color=		[8,7,6,10,9,8,11,10,9,12,11,10];	//TARGET FOR LEVEL COMPLETION (DEFAULT ex. level 1 target: 220 total tiles minus 8 tiles per color times 3 colors = 196)
@@ -173,6 +174,23 @@ function blox()
 			}
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k) {
+				switch(k.toUpperCase()) {
+				case "W":
+					k = KEY_UP;
+					break;
+				case "S":
+					k = KEY_DOWN;
+					break;
+				case "A":
+					k = KEY_LEFT
+					break;
+				case "D":
+					k = KEY_RIGHT;
+					break;
+				case " ":
+					k = "\r";
+					break;
+				}
 				switch(k.toUpperCase())	{
 				case KEY_UP:
 				case KEY_DOWN:
@@ -211,6 +229,8 @@ function blox()
 		sely=0;
 		selection=[];
 		selected=false;
+		if(current.tiles == (columns * rows))
+			points+=points_bonus*level;
 		level+=1;
 		generateLevel();
 	}
@@ -242,19 +262,17 @@ function blox()
 	function generateLevel()
 	{
 		var numcolors=colors[level];
-		var tiles=(columns*rows)-(numcolors*tiles_per_color[level]);
+		var tiles_needed=(columns*rows)-(numcolors*tiles_per_color[level]);
 		
 		grid=new Array(columns);
-		for(var x=0;x<grid.length;x++)
-		{
+		for(var x=0;x<grid.length;x++) {
 			grid[x]=new Array(rows);
-			for(var y=0;y<grid[x].length;y++)
-			{
+			for(var y=0;y<grid[x].length;y++) {
 				var col=random(numcolors);
 				grid[x][y]=new Tile(bg[col],fg[col],x,y);
 			}
 		}
-		current=new Level(grid,tiles);
+		current=new Level(grid,tiles_needed);
 	}
 	function redraw()
 	{
@@ -342,38 +360,36 @@ function blox()
 	}
 	function processSelection()
 	{
-		if(selected) 
-		{
+		if(selected) {
 			removeBlocks();
 			drawGrid();
 			showScore();
-			if(!findValidMove())
-			{
-				if(current.tiles<=0) 
-				{
+			if(!findValidMove()) {
+				if(current.tiles_remaining<=0) {
 					mswait(1000);
 					levelUp();
 					redraw();
 				}
-				else gameover=true;
+				else {
+					gameover=true;
+				}
 			}
 			else
 			{
-				if(selx>=current.grid.length) selx=current.grid.length-1;
-				if(sely>=current.grid[selx].length) sely=current.grid[selx].length-1;
+				if(selx>=current.grid.length) 
+					selx=current.grid.length-1;
+				if(sely>=current.grid[selx].length) 
+					sely=current.grid[selx].length-1;
 				showPosition();
 			}
 		}
-		else
-		{
+		else {
 			counted=Grid(columns,rows);
 			search(selx,sely);
-			if(selection.length>=minimum_cluster)			
-			{
+			if(selection.length>=minimum_cluster) {
 				select();
 			}
-			else
-			{
+			else {
 				selection=[];
 			}
 		}
@@ -429,14 +445,16 @@ function blox()
 	{
 		sortSelection();
 		
-		for(var s=0;s<selection.length;s++)
-		{
+		for(var s=0;s<selection.length;s++) {
 			var coord=selection[s];
 			current.grid[coord.x].splice(coord.y,1);
-			if(current.grid[coord.x].length==0) current.grid.splice(coord.x,1);
+			if(current.grid[coord.x].length==0) 
+				current.grid.splice(coord.x,1);
 		}
-		current.tiles-=selection.length;
-		if(current.tiles<0) current.tiles=0;
+		current.tiles_remaining-=selection.length;
+		current.tiles+=selection.length;
+		if(current.tiles_remaining<0) 
+			current.tiles_remaining=0;
 		points+=calculatePoints();
 		selection=[];
 		unselect();
@@ -470,15 +488,13 @@ function blox()
 	function showTiles()
 	{
 		console.gotoxy(63,21);
-		console.putmsg(printPadded("\1w\1h" + current.tiles,15));
+		console.putmsg(printPadded("\1w\1h" + current.tiles_remaining,15));
 	}
 	function calculatePoints()
 	{
-		if(selection.length)
-		{
+		if(selection.length) {
 			var p=points_base;
-			for(var t=0;t<selection.length;t++)
-			{
+			for(var t=0;t<selection.length;t++) {
 				p+=points_base+(t*points_increment);
 			}
 			return p;
@@ -488,14 +504,11 @@ function blox()
 	function findValidMove()
 	{
 		counted=Grid(columns,rows);
-		for(var x=0;x<current.grid.length;x++)
-		{
-			for(var y=0;y<current.grid[x].length;y++)
-			{
+		for(var x=0;x<current.grid.length;x++) {
+			for(var y=0;y<current.grid[x].length;y++) {
 				selection=[];
 				search(x,y); 
-				if(selection.length>=minimum_cluster) 
-				{
+				if(selection.length>=minimum_cluster) {
 					selection=[];
 					return true;
 				}
@@ -640,10 +653,11 @@ function Player(name,score,laston,sys)
 	this.laston=laston?laston:time();
 	this.sys=sys?sys:system.name;
 }
-function Level(grid,tiles)
+function Level(grid,tiles_needed)
 {
 	this.grid=grid;
-	this.tiles=tiles;
+	this.tiles_remaining=tiles_needed;
+	this.tiles=0;
 }
 function Tile(bg,fg)
 {
