@@ -21,31 +21,36 @@ ifeq ($(os),openbsd)
  CFLAGS += -DHAVE_VASPRINTF
 endif
 
-ifdef USE_SYSTEM_CURSES
- CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
-else
- CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
-endif
-ifndef NO_X
- ifdef STATIC
-  CIOLIB-MT_LIBS		+=	-L$(X_PATH)$(DIRSEP)lib -lX11
+ifneq ($(os),win32)
+ ifdef USE_SYSTEM_CURSES
+  CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
  else
-  ifeq ($(os),darwin)
-   ifeq ($(shell uname -r),6.8)
+  CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
+ endif
+ ifndef NO_X
+  ifdef STATIC
+   CIOLIB-MT_LIBS		+=	-L$(X_PATH)$(DIRSEP)lib -lX11
+  else
+   ifeq ($(os),darwin)
+    ifeq ($(shell uname -r),6.8)
+     CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+    endif
+   endif
+   ifeq ($(os),linux)
+    CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+   endif
+   ifeq ($(os),sunos)
     CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
    endif
   endif
-  ifeq ($(os),linux)
-   CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
-  endif
-  ifeq ($(os),sunos)
-   CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
-  endif
+ else
+   ifeq ($(os),darwin)
+    CIOLIB-MT_CFLAGS		+=  -DDISABLE_X11=1
+   endif
  endif
 else
-  ifeq ($(os),darwin)
-   CIOLIB-MT_CFLAGS		+=  -DDISABLE_X11=1
-  endif
+ NO_X			 :=  1
+ CIOLIB-MT_CFLAGS        +=  -DDISABLE_X11=1
 endif
 
 # Find SDL headers!
