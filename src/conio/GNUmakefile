@@ -4,7 +4,9 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 
 CFLAGS += $(XPDEV-MT_CFLAGS) $(CIOLIB-MT_CFLAGS)
 
-ifneq ($(os),win32)
+ifeq ($(os),win32)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)win32cio$(OFILE)
+else
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)curs_cio$(OFILE)
 endif
 ifdef NO_X
