@@ -341,7 +341,7 @@ else
       #CFLAGS	   += -D_POSIX_PTHREAD_SEMANTICS
      else
       ifeq ($(os),win32) # Windows
-       CFLAGS		+= -D_WIN32 -D_WIN32_WINNT=0x0500 -DWINVER=0x0500 -D_WIN32_IE=0x0500
+       CFLAGS		+= -D_WIN32 -D_WIN32_WINNT=0x0501 -DWINVER=0x0501 -D_WIN32_IE=0x0500
        MT_CFLAGS	+= -D_WIN32
       else           # Linux / Other UNIX
        XP_SEM :=    1
