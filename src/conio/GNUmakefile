@@ -7,6 +7,7 @@ CFLAGS += $(XPDEV-MT_CFLAGS) $(CIOLIB-MT_CFLAGS)
 ifeq ($(os),win32)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)win32cio$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE)
 else
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)curs_cio$(OFILE)
 endif
@@ -58,3 +59,12 @@ $(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
 	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
 endif
 
+ifeq ($(os),win32)
+mtlib: $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}
+
+dl-mtlib: $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}
+
+$(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}: ciolib.rc syncicon64.ico
+	@echo Creating $< ...
+	$(QUIET)${WINDRES} ciolib.rc $@
+endif
