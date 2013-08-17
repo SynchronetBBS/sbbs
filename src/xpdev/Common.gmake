@@ -28,6 +28,9 @@ endif
 ifeq ($(os),linux)	# Linux
  XPDEV-MT_LIBS	+=	-lpthread
 endif
+ifeq ($(os),win32)	# MinGW32
+ XPDEV-MT_LIBS	+=	-lws2_32 -lwinmm
+endif
 ifeq ($(shell if [ -c /dev/urandom ] ; then echo YES ; fi),YES)
  XPDEV-MT_CFLAGS	+=	-DHAS_DEV_URANDOM -DURANDOM_DEV=\"/dev/urandom\"
  XPDEV_CFLAGS		+=	-DHAS_DEV_URANDOM -DURANDOM_DEV=\"/dev/urandom\"

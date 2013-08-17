@@ -262,7 +262,11 @@ endif
 LIBPREFIX	:= lib
 DIRSEP		:= /
 OFILE		:= .o
-EXEFILE		:=
+ifeq ($(os),win32)
+ EXEFILE		:= .exe
+else
+ EXEFILE		:=
+endif
 SOFILE		:= .so
 LIBFILE		:= .a
 UL_PRE		:=	-l
