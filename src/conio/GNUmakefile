@@ -66,5 +66,5 @@ dl-mtlib: $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}
 
 $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}: ciolib.rc syncicon64.ico
 	@echo Creating $< ...
-	$(QUIET)${WINDRES} ciolib.rc $@
+	$(QUIET)${WINDRES} -O coff -i ciolib.rc -o $@
 endif
