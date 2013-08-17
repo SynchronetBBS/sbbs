@@ -183,6 +183,7 @@ else
  AR				?=	ar
  RANLIB			?=	ranlib
 endif
+WINDRES	?=	windres
 
 ifdef DEBUG
  BUILD	=	debug
