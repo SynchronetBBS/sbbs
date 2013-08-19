@@ -390,7 +390,7 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 		srv.o(target, cl[c]+': '+t.timeStr+' '+t['Find rules at']);
 		displayed++;
 		if(displayed > 8) {
-			srv.o(target, "--- Aboring after 8 entries");
+			srv.o(target, "--- Aborting after 8 entries");
 			break;
 		}
 	}
