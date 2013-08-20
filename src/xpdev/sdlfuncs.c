@@ -78,6 +78,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->SemWaitTimeout=xp_dlsym(sdl_dll, SDL_SemWaitTimeout))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
 	if((sdlf->SemPost=xp_dlsym(sdl_dll, SDL_SemPost))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);

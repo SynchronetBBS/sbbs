@@ -21,6 +21,7 @@ struct sdlfuncs {
 					SDL_eventaction action, Uint32 mask);
 	char	*(HACK_HACK_HACK *VideoDriverName)	(char *namebuf, int maxlen);
 	int	(HACK_HACK_HACK *SemWait)	(SDL_sem *sem);
+	int	(HACK_HACK_HACK *SemWaitTimeout)(SDL_sem *sem, Uint32 timeout);
 	int	(HACK_HACK_HACK *SemPost)	(SDL_sem *sem);
 	Uint8	(HACK_HACK_HACK *EventState)	(Uint8 type, int state);
 	SDL_Surface	*(HACK_HACK_HACK *CreateRGBSurface)	(Uint32 flags, int width, int height, int depth,

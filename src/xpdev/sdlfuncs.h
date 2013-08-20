@@ -15,6 +15,7 @@ struct sdlfuncs {
 					SDL_eventaction action, Uint32 mask);
 	char	*(*VideoDriverName)	(char *namebuf, int maxlen);
 	int	(*SemWait)	(SDL_sem *sem);
+	int	(*SemWaitTimeout)	(SDL_sem *sem, Uint32 timeout);
 	int	(*SemPost)	(SDL_sem *sem);
 	Uint8	(*EventState)	(Uint8 type, int state);
 	SDL_Surface	*(*CreateRGBSurface)	(Uint32 flags, int width, int height, int depth,

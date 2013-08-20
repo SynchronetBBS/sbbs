@@ -391,7 +391,8 @@ void sdl_user_func(int func, ...)
 				return;
 			}
 			*(unsigned long *)ev.user.data2=va_arg(argptr, unsigned long);
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+				YIELD();
 			break;
 		case SDL_USEREVENT_SETNAME:
 		case SDL_USEREVENT_SETTITLE:
@@ -399,17 +400,20 @@ void sdl_user_func(int func, ...)
 				va_end(argptr);
 				return;
 			}
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+				YIELD();
 			break;
 		case SDL_USEREVENT_UPDATERECT:
 			ev.user.data1=va_arg(argptr, struct update_rect *);
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+				YIELD();
 			break;
 		case SDL_USEREVENT_COPY:
 		case SDL_USEREVENT_PASTE:
 		case SDL_USEREVENT_SHOWMOUSE:
 		case SDL_USEREVENT_HIDEMOUSE:
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+				YIELD();
 			break;
 	}
 	va_end(argptr);
@@ -428,20 +432,26 @@ int sdl_user_func_ret(int func, ...)
 	ev.user.data2=NULL;
 	ev.user.code=func;
 	va_start(argptr, func);
-	switch(func) {
-		case SDL_USEREVENT_SETVIDMODE:
-		case SDL_USEREVENT_FLUSH:
-		case SDL_USEREVENT_INIT:
-		case SDL_USEREVENT_QUIT:
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
-			passed=TRUE;
+	while(1) {
+		switch(func) {
+			case SDL_USEREVENT_SETVIDMODE:
+			case SDL_USEREVENT_FLUSH:
+			case SDL_USEREVENT_INIT:
+			case SDL_USEREVENT_QUIT:
+				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+					YIELD();
+				passed=TRUE;
+				break;
+		}
+		if(passed) {
+			if(sdl.SemWaitTimeout(sdl_ufunc_ret, 100)==0)
+				break;
+		}
+		else {
+			sdl_ufunc_retval=-1;
 			break;
+		}
 	}
-	if(passed) {
-		sdl.SemWait(sdl_ufunc_ret);
-	}
-	else
-		sdl_ufunc_retval=-1;
 	va_end(argptr);
 	sdl.mutexV(funcret_mutex);
 	return(sdl_ufunc_retval);
