@@ -1269,6 +1269,7 @@ int main(int argc, char **argv)
 				"syncterm-60-w|SyncTERM 132x60 No Status Line,\n"
 				"	cols#132,lines#60,use=syncterm,\n";
 
+	SetThreadName("Main Thread");
 	if(argc==2 && strcmp(argv[1],"-T")==0) {
 		write(STDOUT_FILENO, syncterm_termcap, strlen(syncterm_termcap));
 		return 0;

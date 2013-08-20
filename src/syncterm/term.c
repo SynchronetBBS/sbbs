@@ -859,6 +859,7 @@ void guts_background_download(void *cbdata)
 	zmodem_t	zm;
 	ulong		bytes_received;
 
+	SetThreadName("GUTS Download");
 	zmodem_mode=ZMODEM_MODE_RECV;
 
 	transfer_buf_len=0;
@@ -885,6 +886,7 @@ void guts_background_upload(void *cbdata)
 	ulong	fsize;
 	FILE*	fp;
 
+	SetThreadName("GUTS Upload");
 	if((fp=fopen(gi.files[0],"rb"))==NULL) {
 		fprintf(stderr,"Error %d opening %s for read",errno,gi.files[0]);
 		return;

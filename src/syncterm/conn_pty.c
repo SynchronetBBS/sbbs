@@ -289,8 +289,9 @@ void pty_input_thread(void *args)
 	int		rd;
 	int	buffered;
 	size_t	buffer;
-int i;
+	int i;
 
+	SetThreadName("PTY Input");
 	conn_api.input_thread_running=1;
 	while(master != -1 && !conn_api.terminate) {
 		if((i=waitpid(child_pid, &status, WNOHANG)))
@@ -338,6 +339,7 @@ void pty_output_thread(void *args)
 	int		ret;
 	int	sent;
 
+	SetThreadName("PTY Output");
 	conn_api.output_thread_running=1;
 	while(master != -1 && !conn_api.terminate) {
 		if(waitpid(child_pid, &status, WNOHANG))

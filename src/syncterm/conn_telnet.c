@@ -30,6 +30,7 @@ void telnet_input_thread(void *args)
 	char	rbuf[BUFFER_SIZE];
 	char	*buf;
 
+	SetThreadName("Telnet Input");
 	conn_api.input_thread_running=1;
 	while(telnet_sock != INVALID_SOCKET && !conn_api.terminate) {
 		FD_ZERO(&rds);
@@ -79,6 +80,7 @@ void telnet_output_thread(void *args)
 	char	ebuf[BUFFER_SIZE*2];
 	char	*buf;
 
+	SetThreadName("Telnet Output");
 	conn_api.output_thread_running=1;
 	while(telnet_sock != INVALID_SOCKET && !conn_api.terminate) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));

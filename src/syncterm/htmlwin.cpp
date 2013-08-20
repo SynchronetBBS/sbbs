@@ -283,6 +283,7 @@ void html_thread(void *args)
 	int argc=1;
 	char *argv[2];
 
+	SetThreadName("HTML Thread");
 	html_thread_running=true;
 	argv[0]=(char *)"wxHTML";
 	argv[1]=(char *)"--sync";

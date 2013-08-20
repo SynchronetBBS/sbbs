@@ -24,6 +24,7 @@ void modem_input_thread(void *args)
 	size_t	buffer;
 	BOOL	monitor_dsr=TRUE;
 
+	SetThreadName("Modem Input");
 	conn_api.input_thread_running=1;
 	if(args != NULL) {
 		if((comGetModemStatus(com)&COM_DSR) == 0)
@@ -59,6 +60,7 @@ void modem_output_thread(void *args)
 	int	sent;
 	BOOL	monitor_dsr=TRUE;
 
+	SetThreadName("Modem Output");
 	conn_api.output_thread_running=1;
 	if(args != NULL) {
 		if((comGetModemStatus(com)&COM_DSR) == 0)

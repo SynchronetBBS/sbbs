@@ -1357,6 +1357,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 /* Mouse event/keyboard thread */
 int sdl_mouse_thread(void *data)
 {
+	SetThreadName("SDL Mouse");
 	while(1) {
 		if(mouse_wait())
 			sdl_add_key(CIO_KEY_MOUSE);
