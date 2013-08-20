@@ -639,8 +639,8 @@ static void ansi_keyparse(void *par)
 	int		timedout=0;
 	int		unknown=0;
 
-	seq[0]=0;
 	SetThreadName("ANSI Keyparse");
+	seq[0]=0;
 	for(;;) {
 		if(ansi_got_row)
 			sem_wait(&goahead);
@@ -809,6 +809,7 @@ static void ansi_keythread(void *params)
 {
 	int	sval=1;
 
+	SetThreadName("ANSI Key");
 	_beginthread(ansi_keyparse,1024,NULL);
 
 	for(;;) {
