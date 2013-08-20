@@ -6,6 +6,7 @@
  #define USE_REAL_MAIN
 #endif
 #include "gen_defs.h"
+#include "threadwrap.h"
 #ifdef USE_REAL_MAIN
  #undef main
 #endif
@@ -402,6 +403,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 		}
 	}
 	if(sdl_video_initialized) {
+		SetThreadName("SDL Main");
 		atexit(sdl.Quit);
 		sdl_main_sem=sdl.SDL_CreateSemaphore(0);
 		sdl_exit_sem=sdl.SDL_CreateSemaphore(0);
