@@ -4144,6 +4144,33 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		strcat(str," ");
 	}
 
+	/* Exception here, Aug-21-2013:
+
+	websrvr.dll!js_log(JSContext * cx=0x0249fd34, unsigned int argc=129351904, unsigned __int64 * arglist=0x024004e8)  Line 4147 + 0xc bytes
+ 	mozjs185-1.0.dll!0f788fa6() 	
+ 	mozjs185-1.0.dll!0f754780() 	
+ 	mozjs185-1.0.dll!0f6f6078() 	
+ 	sbbs.dll!js_PrepareToExecute(JSContext * cx=0x024004e8, JSObject * obj=0x07bc2028, const char * filename=0x020b2060, const char * startup_dir=0x00000000)  Line 659 + 0x29 bytes
+ 	mozjs185-1.0.dll!0f6f82b2() 	
+ 	websrvr.dll!exec_ssjs(http_session_t * session=0x05888550, char * script=0x0071a540)  Line 4687 + 0x24 bytes
+ 	075fdfa4()	
+ 	websrvr.dll!http_session_thread(void * arg=0x00000000)  Line 5218 + 0xc bytes
+ 	websrvr.dll!_callthreadstart()  Line 259 + 0xf bytes
+ 	websrvr.dll!_threadstart(void * ptd=0x05889300)  Line 243
+
+	Locals:
+
+	cx	0x0249fd34	JSContext *
+		argc	129351904	unsigned int
++		arglist	0x024004e8	unsigned __int64 *
++		str	0x075fd680 "$w$ó}˜é…
+é"	char [512]
++		argv	0x075fd894	unsigned __int64 *
+		i	63	unsigned int
++		session	0xffff0001 {socket=??? addr={...} socket6=??? ...}	http_session_t *
+		rc	123720936	int
+		level	176547499	int
+*/
 	rc=JS_SUSPENDREQUEST(cx);
 	lprintf(level,"%04d %s",session->socket,str);
 	JS_RESUMEREQUEST(cx, rc);
