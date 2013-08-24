@@ -41,6 +41,15 @@
  *                              data member to the return object:
  *                              msgNumIsOffset, which stores whether or not the
  *                              message number is an offset.
+ * 2013-08-23 Eric Oulashin     Version 1.28 Beta (start)
+ *                              Added 8 new color settings for the text displayed
+ *                              when SlyEdit exits regarding which message
+ *                              areas the message was posted in, and the saved
+ *                              and abort messages.
+ * 2013-08-24 Eric Oulashin     Version 1.28
+ *                              Bug fix: SlyEdit sometimes didn't quote the last
+ *                              line of a message when using author's initials.
+ *                              This has been fixed.
  */
 
 /* Command-line arguments:
@@ -113,8 +122,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.27";
-const EDITOR_VER_DATE = "2013-05-24";
+const EDITOR_VERSION = "1.28";
+const EDITOR_VER_DATE = "2013-08-24";
 
 
 // Program variables
@@ -583,7 +592,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 
     console.print("n");
     console.crlf();
-    console.print("cYour message will be posted into the following area(s):");
+    console.print("n" + gConfigSettings.genColors.msgWillBePostedHdr + "Your message will be posted into the following area(s):");
     console.crlf();
     var postMsgErrStr = ""; // For storing errors related to saving the message
     for (var grpIndex in gCrossPostMsgSubs)
@@ -592,20 +601,20 @@ if ((exitCode == 0) && (gEditLines.length > 0))
       if ((grpIndex == "add") || (grpIndex == "remove") || (grpIndex == "subCodeExists") || (grpIndex == "numMsgGrps"))
         continue;
 
-      console.print("bh" + msg_area.grp_list[grpIndex].description + ":");
+      console.print("n" + gConfigSettings.genColors.msgPostedGrpHdr + msg_area.grp_list[grpIndex].description + ":");
       console.crlf();
       for (var subCode in gCrossPostMsgSubs[grpIndex])
       {
         if (subCode == gMsgAreaInfo.subBoardCode)
         {
-          printf("  ng%-48s", msg_area.sub[subCode].description.substr(0, 48));
-          console.print(" c(original message area)");
+          printf("n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-48s", msg_area.sub[subCode].description.substr(0, 48));
+          console.print("n " + gConfigSettings.genColors.msgPostedOriginalAreaText + "(original message area)");
         }
         // If subCode is not the user's current sub, then if the user is allowed
         // to post in that sub, then post the message there.
         else
         {
-          printf("  ng%-73s", msg_area.sub[subCode].description.substr(0, 73));
+          printf("n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
           if (user.compare_ars(msg_area.sub[subCode].post_ars))
           {
              postMsgErrStr = postMsgToSubBoard(subCode, gToName, gMsgSubj, msgContents, user.number);
@@ -716,22 +725,22 @@ bbs.sys_status = gOldStatus;
 // Set the end-of-program status message.
 var endStatusMessage = "";
 if (exitCode == 1)
-   endStatusMessage = "nmhMessage aborted.";
+   endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
 else if (exitCode == 0)
 {
    if (gEditLines.length > 0)
    {
       if (savedTheMessage)
-         endStatusMessage = "nchThe message has been saved.";
+         endStatusMessage = gConfigSettings.genColors.msgHasBeenSavedText + "The message has been saved.";
       else
-         endStatusMessage = "nmhMessage aborted.";
+         endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
    }
    else
-      endStatusMessage = "nmhEmpty message not sent.";
+      endStatusMessage = gConfigSettings.genColors.emptyMsgNotSentText + "Empty message not sent.";
 }
 // We shouldn't hit this else case, but it's here just to be safe.
 else
-   endStatusMessage = "nmhPossible message error.";
+   endStatusMessage = gConfigSettings.genColors.genMsgErrorText + "Possible message error.";
 console.print(endStatusMessage);
 console.crlf();
 

@@ -39,6 +39,8 @@
  *                              general color settings to gConfigSettings.genColors.*
  * 2013-01-24 Eric Oulashin     Updated doDCTMenu() to include an option
  *                              for cross-posting on the File menu.
+ * 2013-08-23 Eric Oulashin     Updated readColorConfig() with the new general color
+ *                              configuration settings.
  */
 
 load("sbbsdefs.js");
@@ -98,6 +100,22 @@ function readColorConfig(pFilename)
            gConfigSettings.genColors.crossPostMsgGrpMark = gConfigSettings.DCTColors.crossPostMsgGrpMark;
         if (gConfigSettings.DCTColors.hasOwnProperty("crossPostMsgGrpMarkHighlight"))
            gConfigSettings.genColors.crossPostMsgGrpMarkHighlight = gConfigSettings.DCTColors.crossPostMsgGrpMarkHighlight;
+        if (gConfigSettings.DCTColors.hasOwnProperty("msgWillBePostedHdr"))
+           gConfigSettings.genColors.msgWillBePostedHdr = gConfigSettings.DCTColors.msgWillBePostedHdr;
+        if (gConfigSettings.DCTColors.hasOwnProperty("msgPostedGrpHdr"))
+           gConfigSettings.genColors.msgPostedGrpHdr = gConfigSettings.DCTColors.msgPostedGrpHdr;
+        if (gConfigSettings.DCTColors.hasOwnProperty("msgPostedSubBoardName"))
+           gConfigSettings.genColors.msgPostedSubBoardName = gConfigSettings.DCTColors.msgPostedSubBoardName;
+        if (gConfigSettings.DCTColors.hasOwnProperty("msgPostedOriginalAreaText"))
+           gConfigSettings.genColors.msgPostedOriginalAreaText = gConfigSettings.DCTColors.msgPostedOriginalAreaText;
+        if (gConfigSettings.DCTColors.hasOwnProperty("msgHasBeenSavedText"))
+           gConfigSettings.genColors.msgHasBeenSavedText = gConfigSettings.DCTColors.msgHasBeenSavedText;
+        if (gConfigSettings.DCTColors.hasOwnProperty("msgAbortedText"))
+           gConfigSettings.genColors.msgAbortedText = gConfigSettings.DCTColors.msgAbortedText;
+        if (gConfigSettings.DCTColors.hasOwnProperty("emptyMsgNotSentText"))
+           gConfigSettings.genColors.emptyMsgNotSentText = gConfigSettings.DCTColors.emptyMsgNotSentText;
+        if (gConfigSettings.DCTColors.hasOwnProperty("genMsgErrorText"))
+           gConfigSettings.genColors.genMsgErrorText = gConfigSettings.DCTColors.genMsgErrorText;
 
         delete gConfigSettings.DCTColors.crossPostBorder;
         delete gConfigSettings.DCTColors.crossPostBorderText;
@@ -109,6 +127,14 @@ function readColorConfig(pFilename)
         delete gConfigSettings.DCTColors.crossPostChkHighlight;
         delete gConfigSettings.DCTColors.crossPostMsgGrpMark;
         delete gConfigSettings.DCTColors.crossPostMsgGrpMarkHighlight;
+        delete gConfigSettings.DCTColors.msgWillBePostedHdr;
+        delete gConfigSettings.DCTColors.msgPostedGrpHdr;
+        delete gConfigSettings.DCTColors.msgPostedSubBoardName;
+        delete gConfigSettings.DCTColors.msgPostedOriginalAreaText;
+        delete gConfigSettings.DCTColors.msgHasBeenSavedText;
+        delete gConfigSettings.DCTColors.msgAbortedText;
+        delete gConfigSettings.DCTColors.emptyMsgNotSentText;
+        delete gConfigSettings.DCTColors.genMsgErrorText;
       }
    }
 }

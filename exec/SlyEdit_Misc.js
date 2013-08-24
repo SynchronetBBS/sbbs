@@ -109,6 +109,10 @@
  *                              the aboslute message number (i.e., bbs.msg_number).
  *                              That simplified getFromNameForCurMsg(), which can
  *                              pass that to msgBase.get_msg_header().
+ * 2013-08-24 Eric Oulashin     Bug fix in wrapQuoteLines(): Off-by-one bug toward
+ *                              the end where there might be more quote lines
+ *                              than lineInfo objects, so it wouldn't quote the
+ *                              last line when using author initials.
  *                              
  */
 
@@ -735,6 +739,7 @@ function ReadSlyEditConfigFile()
 
    // General SlyEdit color settings
    cfgObj.genColors = new Object();
+   // Cross-posting UI element colors
    cfgObj.genColors.crossPostBorder = "ng";
    cfgObj.genColors.crossPostBorderTxt = "nbh";
    cfgObj.genColors.crossPostMsgAreaNum = "nhw";
@@ -745,6 +750,15 @@ function ReadSlyEditConfigFile()
    cfgObj.genColors.crossPostChkHighlight = "n4hy";
    cfgObj.genColors.crossPostMsgGrpMark = "nhg";
    cfgObj.genColors.crossPostMsgGrpMarkHighlight = "n4hg";
+   // Colors for certain output strings
+   cfgObj.genColors.msgWillBePostedHdr = "nc";
+   cfgObj.genColors.msgPostedGrpHdr = "nhb";
+   cfgObj.genColors.msgPostedSubBoardName = "ng";
+   cfgObj.genColors.msgPostedOriginalAreaText = "nc";
+   cfgObj.genColors.msgHasBeenSavedText = "nhc";
+   cfgObj.genColors.msgAbortedText = "nmh";
+   cfgObj.genColors.emptyMsgNotSentText = "nmh";
+   cfgObj.genColors.genMsgErrorText = "nmh";
 
    // Default Ice-style colors
    cfgObj.iceColors = new Object();
@@ -1942,6 +1956,15 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
   if (useAuthorInitials)
   {
     wrapTextLines(gQuoteLines, startArrIndex, gQuoteLines.length, 79 - gQuotePrefix.length);
+    // If there are now more quote lines than lineInfo objects, then determine the quote
+    // level for the remaining quote lines.
+    if (gQuoteLines.length > lineInfos.length)
+    {
+      var numLinesRemaining = gQuoteLines.length - lineInfos.length;
+      for (var quoteLineIndex = gQuoteLines.length-numLinesRemaining; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
+        lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], pUseAuthorInitials, pIndentQuoteLinesWithInitials));
+    }
+    // Wrap the quote lines
     for (i = 0; i < gQuoteLines.length; ++i)
     {
       // If not prefixing the quote lines with a space, then remove leading
