@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.27
-                        Release date: 2013-05-24
+                              Version 1.28
+                        Release date: 2013-08-24
 
                                   by
 
@@ -26,6 +26,7 @@ Contents
 6. Configuration file
 7. Ice-style Color Theme Settings
 8. DCT-style Color Theme Settings
+9. Common colors (appearing in both Ice and DCT color theme files)
 
 
 1. Disclaimer
@@ -210,7 +211,7 @@ Ctrl-O       : Import a file                ¦ Ctrl-X : Export to file
 -----------------------------------------
 If you use Digital Distortion's Message Lister, you must update it to version
 1.36 or newer in order to properly work with this version of SlyEdit when
-replying to messages.  See the file "SlyEdit_DD_Message_Lister_notes.txt" for a more
+replying to messages.  See the file "Message Lister notes.txt" for a more
 detailed explanation.
 
 6. Configuration file
@@ -387,47 +388,6 @@ UnselectedOptionBorderColor       The color to use for the borders around
 UnselectedOptionTextColor         The color to use for the text for unselected
                                   multi-choice options
 
-crossPostBorder                   The color to use for the border of the cross-
-                                  post area selection box
-
-crossPostBorderText               The color to use for the top border text of
-                                  the cross-post area selection box
-
-crossPostMsgAreaNum               The color to use for the message group/sub-
-                                  board numbers in the cross-post area
-                                  selection box
-
-crossPostMsgAreaNumHighlight      The color to use for the highlighted
-                                  (lightbar) message group/sub-board numbers
-                                  in the cross-post area selection box
-
-crossPostMsgAreaDesc              The color to use for the message group/
-                                  sub-board descriptions in the cross-post
-                                  area selection box
-
-crossPostMsgAreaDescHighlight     The color to use for the highlighted
-                                  (lightbar) message group/sub-board
-                                  descriptions in the cross-post area selection
-                                  box
-
-crossPostChk                      The color to use for the checkmarks for the
-                                  enabled message sub-boards in the cross-post
-                                  area selection box
-
-crossPostChkHighlight             The color to use for the highlighted
-                                  (lightbar) checkmarks for the enabled
-                                  message sub-boards in the cross-post area
-                                  selection box
-
-crossPostMsgGrpMark               The color to use for the current message
-                                  group marker character in the cross-post area
-                                  selection box
-
-crossPostMsgGrpMarkHighlight      The color to use for the highlighted
-                                  (lightbar) current message group marker
-                                  character in the cross-post area selection
-                                  box
-
 8. DCT-style Color Theme Settings
 =================================
 The following options are valid for DCT-style theme files:
@@ -561,6 +521,8 @@ MenuUnselectedItems               The color to use for unselected items on the
 MenuHotkeys                       The color to use for the hotkey characters in the
                                   menu items on the drop-down menus
 
+9. Common colors (appearing in both Ice and DCT color theme files)
+==================================================================
 crossPostBorder                   The color to use for the border of the cross-
                                   post area selection box
 
@@ -601,3 +563,31 @@ crossPostMsgGrpMarkHighlight      The color to use for the highlighted
                                   (lightbar) current message group marker
                                   character in the cross-post area selection
                                   box
+
+msgWillBePostedHdr                The color to use for the text "Your message
+                                  will be posted into the following area(s)"
+                                  text when exiting SlyEdit
+
+msgPostedGrpHdr                   The color to use for the group name header
+                                  when listing the message's posted message
+                                  areas when exiting SlyEdit
+
+msgPostedSubBoardName             The color to use for the message sub-boards
+                                  when listing the message's posted message
+                                  areas when exiting SlyEdit
+
+msgPostedOriginalAreaText         The color to use for the text "(original
+                                  message area)" when listing the message's
+                                  posted message areas when exiting SlyEdit
+
+msgHasBeenSavedText               The color to use for the text "The message
+                                  has been saved." when exiting SlyEdit
+
+msgAbortedText                    The color to use for the Message Aborted
+                                  text when exiting SlyEdit
+
+emptyMsgNotSentText               The color to use for the Message Not Sent
+                                  text when exiting SlyEdit
+
+genMsgErrorText                   The color to use for general message error
+                                  text when exiting SlyEdit
