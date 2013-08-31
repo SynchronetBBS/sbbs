@@ -71,7 +71,7 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	}
 
 	for(cur=res; cur; cur=cur->ai_next) {
-		new_socks=(struct xpms_sockdef *)realloc(xpms_set->socks, sizeof(struct xpms_set)*xpms_set->sock_count+1);
+		new_socks=(struct xpms_sockdef *)realloc(xpms_set->socks, sizeof(struct xpms_sockdef)*(xpms_set->sock_count+1));
 		if(new_socks==NULL) {
 			/* This may be a partial failure */
 			if(xpms_set->lprintf)
@@ -114,9 +114,9 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 				bind_init(TRUE);
 		}
 
-		if(!listen(xpms_set->socks[xpms_set->sock_count].sock, SOMAXCONN)) {
+		if(listen(xpms_set->socks[xpms_set->sock_count].sock, SOMAXCONN)==-1) {
 			if(xpms_set->lprintf)
-				xpms_set->lprintf(LOG_WARNING, "%04d !ERROR %d listen()ing op port %d"
+				xpms_set->lprintf(LOG_WARNING, "%04d !ERROR %d listen()ing on port %d"
 						, xpms_set->socks[xpms_set->sock_count].sock, ERROR_VALUE, port);
 			closesocket(xpms_set->socks[xpms_set->sock_count].sock);
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);

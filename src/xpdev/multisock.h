@@ -25,6 +25,10 @@ struct xpms_set {
 
 #define XPMS_FOREVER	UINT_MAX
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct xpms_set *xpms_create(unsigned int retries, unsigned int wait_secs,
 	int (*lprintf)(int level, const char *fmt, ...));
 void xpms_destroy(struct xpms_set *xpms_set);
@@ -33,5 +37,9 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	void (*sock_init)(SOCKET, void *), int(*bind_init)(BOOL), void *cbdata);
 SOCKET xpms_accept(struct xpms_set *, struct sockaddr * addr, 
 	socklen_t * addrlen, unsigned int timeout, void **cb_data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
