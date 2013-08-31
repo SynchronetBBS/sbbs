@@ -24,6 +24,8 @@ void xpms_destroy(struct xpms_set *xpms_set)
 {
 	int		i;
 
+	if(!xpms_set)
+		return;
 	for(i=0; i<xpms_set->sock_count; i++) {
 		if(xpms_set->socks[i].sock != INVALID_SOCKET) {
 			if(xpms_set->lprintf!=NULL)
