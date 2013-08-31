@@ -2,6 +2,7 @@
 #define MULTISOCK_H
 
 #include <sys/limits.h>
+#include <str_list.h>
 
 struct xpms_sockdef
 {
@@ -34,6 +35,9 @@ struct xpms_set *xpms_create(unsigned int retries, unsigned int wait_secs,
 void xpms_destroy(struct xpms_set *xpms_set);
 BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	int protocol, const char *addr, uint16_t port, const char *prot, 
+	void (*sock_init)(SOCKET, void *), int(*bind_init)(BOOL), void *cbdata);
+BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
+	int protocol, str_list_t list, uint16_t default_port, const char *prot, 
 	void (*sock_init)(SOCKET, void *), int(*bind_init)(BOOL), void *cbdata);
 SOCKET xpms_accept(struct xpms_set *, struct sockaddr * addr, 
 	socklen_t * addrlen, unsigned int timeout, void **cb_data);

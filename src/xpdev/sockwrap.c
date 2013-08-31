@@ -386,3 +386,27 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 	}
 	return result;
 }
+
+const char *inet_addrtop(SOCKADDR *in, char *dest, size_t size)
+{
+	switch(in->sa_family) {
+		case AF_INET:
+			return inet_ntop(in->sa_family, &((struct sockaddr_in *)in)->sin_addr, dest, size);
+		case AF_INET6:
+			return inet_ntop(in->sa_family, &((struct sockaddr_in6 *)in)->sin6_addr, dest, size);
+		default:
+			return NULL;
+	}
+}
+
+uint16_t inet_addrport(SOCKADDR *in)
+{
+	switch(in->sa_family) {
+		case AF_INET:
+			return ntohs(((struct sockaddr_in *)in)->sin_port);
+		case AF_INET6:
+			return ntohs(((struct sockaddr_in6 *)in)->sin6_port);
+		default:
+			return 0;
+	}
+}

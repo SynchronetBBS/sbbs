@@ -134,6 +134,40 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	return FALSE;
 }
 
+BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
+	int protocol, str_list_t list, uint16_t default_port, const char *prot, 
+	void (*sock_init)(SOCKET, void *), int(*bind_init)(BOOL), void *cbdata)
+{
+	char	**iface;
+	char	*host;
+	char	*p, *p2;
+	BOOL	one_good=FALSE;
+	
+	for(iface=list; iface && *iface; iface++) {
+		host=strdup(*iface);
+		WORD	port=default_port;
+
+		if(xpms_set->lprintf)
+			xpms_set->lprintf(LOG_INFO, "Adding %s listening socket on %s", prot, host);
+		p = strrchr(host, ':');
+		if(host[0]=='[') {
+			p2=strrchr(host,']');
+			if(p2)
+				*p2=0;
+			if(p2 > p)
+				p=NULL;
+		}
+		if(p!=NULL) {
+			*(p++)=0;
+			sscanf(p, "%hu", &port);
+		}
+		if(xpms_add(xpms_set, PF_UNSPEC, SOCK_STREAM, 0, host, port, prot, sock_init, bind_init, NULL))
+			one_good=TRUE;
+		free(host);
+	}
+	return one_good;
+}
+
 SOCKET xpms_accept(struct xpms_set *xpms_set, struct sockaddr * addr, 
 	socklen_t * addrlen, unsigned int timeout, void **cb_data)
 {
@@ -184,3 +218,4 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, struct sockaddr * addr,
 
 	return INVALID_SOCKET;
 }
+
