@@ -93,7 +93,7 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 			continue;
 		}
 		if(sock_init)
-			sock_init(cb_data);
+			sock_init(xpms_set->socks[xpms_set->sock_count].sock, cbdata);
 
 		if(bind_init) {
 			if(port < IPPORT_RESERVED && port > 0)
@@ -104,13 +104,13 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
 			if(bind_init) {
-				if(startup->telnet_port < IPPORT_RESERVED)
+				if(port < IPPORT_RESERVED)
 					bind_init(TRUE);
 			}
 			continue;
 		}
 		if(bind_init) {
-			if(port < IPPORT_RESERVED &&  && port > 0)
+			if(port < IPPORT_RESERVED && port > 0)
 				bind_init(TRUE);
 		}
 
