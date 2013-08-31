@@ -74,9 +74,7 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 			/* This may be a partial failure */
 			if(xpms_set->lprintf)
 				xpms_set->lprintf(LOG_CRIT, "!ERROR out of memory adding to multisocket");
-			if(added==0)
-				return FALSE;
-			return TRUE;
+			break;
 		}
 		xpms_set->socks=new_socks;
 		xpms_set->socks[xpms_set->sock_count].address = strdup(addr);
@@ -128,6 +126,7 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		xpms_set->sock_count++;
 	}
 
+	freeaddrinfo(res);
 	if(added)
 		return TRUE;
 	return FALSE;
