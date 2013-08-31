@@ -15,6 +15,7 @@ OBJS	= \
 	$(OBJODIR)$(DIRSEP)genwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)ini_file$(OFILE) \
 	$(OBJODIR)$(DIRSEP)link_list$(OFILE) \
+	$(OBJODIR)$(DIRSEP)multisock$(OFILE) \
 	$(OBJODIR)$(DIRSEP)netwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)sockwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)semfile$(OFILE) \
@@ -37,6 +38,7 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)ini_file$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)link_list$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)msg_queue$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)multisock$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)semwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)netwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)sockwrap$(OFILE) \
