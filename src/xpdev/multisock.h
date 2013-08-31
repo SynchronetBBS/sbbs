@@ -30,7 +30,7 @@ struct xpms_set *xpms_create(unsigned int retries, unsigned int wait_secs,
 void xpms_destroy(struct xpms_set *xpms_set);
 BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	int protocol, const char *addr, uint16_t port, const char *prot, 
-	void *cbdata);
+	void (*sock_init)(SOCKET, void *), void(*bind_init)(BOOL), void *cbdata);
 SOCKET xpms_accept(struct xpms_set *, struct sockaddr * addr, 
 	socklen_t * addrlen, unsigned int timeout, void **cb_data);
 

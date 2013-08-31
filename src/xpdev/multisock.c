@@ -42,7 +42,7 @@ void xpms_destroy(struct xpms_set *xpms_set)
 
 BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	int protocol, const char *addr, uint16_t port, const char *prot, 
-	void *cbdata)
+	void (*sock_init)(SOCKET, void *), void(*bind_init)(BOOL), void *cbdata)
 {
 	struct xpms_sockdef	*new_socks;
     struct addrinfo		hints;
@@ -92,12 +92,26 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
 			continue;
 		}
+		if(sock_init)
+			sock_init(cb_data);
 
+		if(bind_init) {
+			if(port < IPPORT_RESERVED && port > 0)
+				bind_init(FALSE);
+		}
 		if(retry_bind(xpms_set->socks[xpms_set->sock_count].sock, cur->ai_addr, cur->ai_addrlen, xpms_set->retries, xpms_set->wait_secs, prot, xpms_set->lprintf)==-1) {
 			closesocket(xpms_set->socks[xpms_set->sock_count].sock);
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
+			if(bind_init) {
+				if(startup->telnet_port < IPPORT_RESERVED)
+					bind_init(TRUE);
+			}
 			continue;
+		}
+		if(bind_init) {
+			if(port < IPPORT_RESERVED &&  && port > 0)
+				bind_init(TRUE);
 		}
 
 		if(!listen(xpms_set->socks[xpms_set->sock_count].sock, SOMAXCONN)) {
