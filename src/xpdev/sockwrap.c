@@ -395,6 +395,7 @@ const char *inet_addrtop(SOCKADDR *in, char *dest, size_t size)
 		case AF_INET6:
 			return inet_ntop(in->sa_family, &((struct sockaddr_in6 *)in)->sin6_addr, dest, size);
 		default:
+			safe_snprintf(dest, size, "<unknown address>");
 			return NULL;
 	}
 }
