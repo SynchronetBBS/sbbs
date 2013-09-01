@@ -7,17 +7,6 @@
 #include <sockwrap.h>
 #include <multisock.h>
 
-#ifdef _WIN32
-#undef socklen_t
-#include <ws2tcpip.h>
-# ifndef AI_ADDRCONFIG
-#  define AI_ADDRCONFIG 0x400 // Vista or later
-# endif
-# ifndef AI_NUMERICSERV
-#  define AI_NUMERICSERV 0		// Not supported by Win32
-# endif
-#endif
-
 struct xpms_set *xpms_create(unsigned int retries, unsigned int wait_secs,
 	int (*lprintf)(int level, const char *fmt, ...))
 {
@@ -70,10 +59,8 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	hints.ai_family=domain;
 	hints.ai_socktype=type;
 	hints.ai_protocol=protocol;
-	hints.ai_flags=AI_NUMERICSERV;
-#ifdef AI_ADDRCONFIG
+	hints.ai_flags|=AI_NUMERICSERV;
 	hints.ai_flags|=AI_ADDRCONFIG;
-#endif
 	sprintf(port_str, "%hu", port);
 	if((ret=getaddrinfo(addr, port_str, &hints, &res))!=0) {
 		if(xpms_set->lprintf)

@@ -42,8 +42,6 @@
 #include <stdio.h>		/* SEEK_SET */
 #include <string.h>
 #if defined(_WIN32)
- #undef socklen_t
- #include <ws2tcpip.h>
  #include <malloc.h>	/* alloca() on Win32 */
 #endif
 
@@ -391,6 +389,13 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 
 const char *inet_addrtop(SOCKADDR *in, char *dest, size_t size)
 {
+#ifdef _WIN32
+	DWORD	dsize=size;
+
+	if(WSAAddressToString(in, SOCK_MAXADDRLEN, NULL, dest, &dsize)==SOCKET_ERROR)
+		return NULL;
+	return dest;
+#else
 	switch(in->sa_family) {
 		case AF_INET:
 			return inet_ntop(in->sa_family, &((struct sockaddr_in *)in)->sin_addr, dest, size);
@@ -400,6 +405,7 @@ const char *inet_addrtop(SOCKADDR *in, char *dest, size_t size)
 			safe_snprintf(dest, size, "<unknown address>");
 			return NULL;
 	}
+#endif
 }
 
 uint16_t inet_addrport(SOCKADDR *in)
