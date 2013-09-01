@@ -140,6 +140,7 @@ BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 {
 	char	**iface;
 	char	*host;
+	char	*host_str;
 	char	*p, *p2;
 	BOOL	one_good=FALSE;
 	
@@ -147,10 +148,12 @@ BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 		host=strdup(*iface);
 		WORD	port=default_port;
 
+		host_str=host;
 		if(xpms_set->lprintf)
 			xpms_set->lprintf(LOG_INFO, "Adding %s listening socket on %s", prot, host);
 		p = strrchr(host, ':');
 		if(host[0]=='[') {
+			host_str++;
 			p2=strrchr(host,']');
 			if(p2)
 				*p2=0;
@@ -161,7 +164,7 @@ BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 			*(p++)=0;
 			sscanf(p, "%hu", &port);
 		}
-		if(xpms_add(xpms_set, PF_UNSPEC, SOCK_STREAM, 0, host, port, prot, sock_init, bind_init, NULL))
+		if(xpms_add(xpms_set, PF_UNSPEC, SOCK_STREAM, 0, host_str, port, prot, sock_init, bind_init, cbdata))
 			one_good=TRUE;
 		free(host);
 	}
