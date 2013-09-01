@@ -1,7 +1,7 @@
 #ifndef MULTISOCK_H
 #define MULTISOCK_H
 
-#include <sys/limits.h>
+#include <limits.h>
 #include <str_list.h>
 
 struct xpms_sockdef
