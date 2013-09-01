@@ -42,6 +42,8 @@
 #include <stdio.h>		/* SEEK_SET */
 #include <string.h>
 #if defined(_WIN32)
+ #undef socklen_t
+ #include <ws2tcpip.h>
  #include <malloc.h>	/* alloca() on Win32 */
 #endif
 

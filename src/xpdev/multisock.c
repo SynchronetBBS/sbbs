@@ -7,6 +7,17 @@
 #include <sockwrap.h>
 #include <multisock.h>
 
+#ifdef _WIN32
+#undef socklen_t
+#include <ws2tcpip.h>
+# ifndef AI_ADDRCONFIG
+#  define AI_ADDRCONFIG 0x400 // Vista or later
+# endif
+# ifndef AI_NUMERICSERV
+#  define AI_NUMERICSERV 0		// Not supported by Win32
+# endif
+#endif
+
 struct xpms_set *xpms_create(unsigned int retries, unsigned int wait_secs,
 	int (*lprintf)(int level, const char *fmt, ...))
 {
