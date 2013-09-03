@@ -40,9 +40,6 @@
 	#include <io.h>
 	#include <share.h>
 #endif
-#ifdef _WIN32
-	#include <windows.h>
-#endif
 
 /* ANSI */
 #include <stdio.h>

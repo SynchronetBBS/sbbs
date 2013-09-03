@@ -36,9 +36,6 @@
  ****************************************************************************/
 
 /* Platform-specific */
-#ifdef _WIN32
-	#include <windows.h>	/* avoid DWORD conflict */
-#endif
 
 /* ANSI */
 #include <stdio.h>
