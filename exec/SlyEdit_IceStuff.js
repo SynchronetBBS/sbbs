@@ -27,6 +27,11 @@
  *                              for cross-posting, when allowed.
  * 2013-08-23 Eric Oulashin     Updated readColorConfig() with the new general color
  *                              configuration settings.
+ * 2013-08-28 Eric Oulashin     Simplified readColorConfig() by having it call
+ *                              moveGenColorsToGenSettings() (defined in
+ *                              SlyEdit_Misc.js) to move the general colors
+ *                              into the genColors array in the configuration
+ *                              object.
  */
 
 load("sbbsdefs.js");
@@ -58,63 +63,7 @@ function readColorConfig(pFilename)
       gConfigSettings.iceColors = colors;
       // Move the general color settings into gConfigSettings.genColors.*
       if (EDITOR_STYLE == "ICE")
-      {
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostBorder"))
-           gConfigSettings.genColors.crossPostBorder = gConfigSettings.iceColors.crossPostBorder;
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostBorderText"))
-           gConfigSettings.genColors.crossPostBorderTxt = gConfigSettings.iceColors.crossPostBorderText;
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgAreaNum"))
-           gConfigSettings.genColors.crossPostMsgAreaNum = gConfigSettings.iceColors.crossPostMsgAreaNum;
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgAreaNumHighlight"))
-           gConfigSettings.genColors.crossPostMsgAreaNumHighlight = gConfigSettings.iceColors.crossPostMsgAreaNumHighlight;
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgAreaDesc"))
-           gConfigSettings.genColors.crossPostMsgAreaDesc = gConfigSettings.iceColors.crossPostMsgAreaDesc;
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgAreaDescHighlight"))
-           gConfigSettings.genColors.crossPostMsgAreaDescHighlight = gConfigSettings.iceColors.crossPostMsgAreaDescHighlight;
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostChk"))
-           gConfigSettings.genColors.crossPostChk = gConfigSettings.iceColors.crossPostChk;
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostChkHighlight"))
-           gConfigSettings.genColors.crossPostChkHighlight = gConfigSettings.iceColors.crossPostChkHighlight;
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgGrpMark"))
-           gConfigSettings.genColors.crossPostMsgGrpMark = gConfigSettings.iceColors.crossPostMsgGrpMark;
-        if (gConfigSettings.iceColors.hasOwnProperty("crossPostMsgGrpMarkHighlight"))
-           gConfigSettings.genColors.crossPostMsgGrpMarkHighlight = gConfigSettings.iceColors.crossPostMsgGrpMarkHighlight;
-        if (gConfigSettings.iceColors.hasOwnProperty("msgWillBePostedHdr"))
-           gConfigSettings.genColors.msgWillBePostedHdr = gConfigSettings.iceColors.msgWillBePostedHdr;
-        if (gConfigSettings.iceColors.hasOwnProperty("msgPostedGrpHdr"))
-           gConfigSettings.genColors.msgPostedGrpHdr = gConfigSettings.iceColors.msgPostedGrpHdr;
-        if (gConfigSettings.iceColors.hasOwnProperty("msgPostedSubBoardName"))
-           gConfigSettings.genColors.msgPostedSubBoardName = gConfigSettings.iceColors.msgPostedSubBoardName;
-        if (gConfigSettings.iceColors.hasOwnProperty("msgPostedOriginalAreaText"))
-           gConfigSettings.genColors.msgPostedOriginalAreaText = gConfigSettings.iceColors.msgPostedOriginalAreaText;
-        if (gConfigSettings.iceColors.hasOwnProperty("msgHasBeenSavedText"))
-           gConfigSettings.genColors.msgHasBeenSavedText = gConfigSettings.iceColors.msgHasBeenSavedText;
-        if (gConfigSettings.iceColors.hasOwnProperty("msgAbortedText"))
-           gConfigSettings.genColors.msgAbortedText = gConfigSettings.iceColors.msgAbortedText;
-        if (gConfigSettings.iceColors.hasOwnProperty("emptyMsgNotSentText"))
-           gConfigSettings.genColors.emptyMsgNotSentText = gConfigSettings.iceColors.emptyMsgNotSentText;
-        if (gConfigSettings.iceColors.hasOwnProperty("genMsgErrorText"))
-           gConfigSettings.genColors.genMsgErrorText = gConfigSettings.iceColors.genMsgErrorText;
-
-        delete gConfigSettings.iceColors.crossPostBorder;
-        delete gConfigSettings.iceColors.crossPostBorderText;
-        delete gConfigSettings.iceColors.crossPostMsgAreaNum;
-        delete gConfigSettings.iceColors.crossPostMsgAreaNumHighlight;
-        delete gConfigSettings.iceColors.crossPostMsgAreaDesc;
-        delete gConfigSettings.iceColors.crossPostMsgAreaDescHighlight;
-        delete gConfigSettings.iceColors.crossPostChk;
-        delete gConfigSettings.iceColors.crossPostChkHighlight;
-        delete gConfigSettings.iceColors.crossPostMsgGrpMark;
-        delete gConfigSettings.iceColors.crossPostMsgGrpMarkHighlight;
-        delete gConfigSettings.iceColors.msgWillBePostedHdr;
-        delete gConfigSettings.iceColors.msgPostedGrpHdr;
-        delete gConfigSettings.iceColors.msgPostedSubBoardName;
-        delete gConfigSettings.iceColors.msgPostedOriginalAreaText;
-        delete gConfigSettings.iceColors.msgHasBeenSavedText;
-        delete gConfigSettings.iceColors.msgAbortedText;
-        delete gConfigSettings.iceColors.emptyMsgNotSentText;
-        delete gConfigSettings.iceColors.genMsgErrorText;
-      }
+         moveGenColorsToGenSettings(gConfigSettings.iceColors, gConfigSettings);
    }
 }
 

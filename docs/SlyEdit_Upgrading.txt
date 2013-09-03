@@ -41,6 +41,46 @@ configuration should look like this (ICE mode is used here):
 
 2. Notes and new configuration file settings
 ============================================
+Upgrading to version 1.29
+-------------------------
+A new "text replacements" (AKA macros) feature has been added.  This feature
+lets you (the sysop) define words to be replaced with other text.  This feature
+can be used, for instance, to replace commonly misspelled words with their
+correct versions or to replace swear words with less offensive words as the user
+types a message.  For more details, see the section regarding text replacements
+in the "Read Me.txt" file.
+
+
+The color settings crossPostBorder and crossPostBorderText have been
+renamed to listBoxBorder and listBoxBorderText.  crossPostBorder and
+crossPostBorderText will still work, but if listBoxBorder and
+listBoxBorderText are used in your theme configuration files, those will be
+used instead.
+
+Also, the following color setting has been added (for both the DCT-style and
+Ice-style theme files):
+txtReplacementList         The color to use for the text replacements in the
+                           text replacement list.
+
+Upgrading to version 1.28
+-------------------------
+New general color settings (for both the DCT-style and Ice-style theme files):
+msgWillBePostedHdr         The color to use for the text “Your message will be posted into the following area(s)” text when exiting SlyEdit
+
+msgPostedGrpHdr            The color to use for the group name header when listing the message's posted message areas when exiting SlyEdit
+
+msgPostedSubBoardName      The color to use for the message sub-boards when listing the message's posted message areas when exiting SlyEdit
+
+msgPostedOriginalAreaText  The color to use for the text ”(original message area)” when listing the message's posted message areas when exiting SlyEdit
+
+msgHasBeenSavedText        The color to use for the text “The message has been saved.” when exiting SlyEdit
+
+msgAbortedText             The color to use for the Message Aborted text when exiting SlyEdit
+
+emptyMsgNotSentText        The color to use for the Message Not Sent text when exiting SlyEdit
+
+genMsgErrorText            The color to use for general message error text when exiting SlyEdit
+
 Upgrading to version 1.20
 -------------------------
 Version 1.20 added a cross-posting feature, and there is a new configuration

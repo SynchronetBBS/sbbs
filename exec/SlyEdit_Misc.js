@@ -12,107 +12,28 @@
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
  * ....Removed some comments...
- * 2012-12-21 Eric Oulashin     Updated to check for the .cfg files in the
- *                              sbbs/ctrl directory first, and if they aren't
- *                              there, assume they're in the same directory as
- *                              the .js file.
- * 2012-12-23 Eric Oulashin     Worked on updating wrapQuoteLines() and
- *                              firstNonQuoteTxtIndex() to support putting the
- *                              "To" user's initials before the > in quote lines.
- * 2012-12-25 Eric Oulashin     Updated wrapQuoteLines() to insert a > in quote
- *                              lines right after the leading quote characters
- *                              (if any), without a space afteward, to indicate
- *                              an additional level of quoting.
- * 2012-12-27 Eric Oulashin     Bug fix in wrapQuoteLines(): When prefixing
- *                              quote lines with author initials, if wrapping
- *                              resulted in additional quote lines, it wasn't
- *                              adding a > character to the additional line(s).
- * 2012-12-28 Eric Oulashin     Updated firstNonQuoteTxtIndex() to more
- *                              intelligently find the first non-quote index
- *                              when using author initials in quote lines.
- *                              I.e., dealing with multiply-quoted lines that
- *                              start like this:
- *                              > AD> 
- *                              > AD>>
- *                              etc..
- * 2012-12-30 Eric Oulashin     Added the getCurMsgInfo() and
- *                              getFromNameForCurMsg() functions.
- *                              getCurMsgInfo() reads DDML_SyncSMBInfo.txt,
- *                              which is written to the node directory by
- *                              the Digital Distortion Message Lister and
- *                              contains information about the current
- *                              message being read so that SlyEdit can
- *                              read it for getting the sender name from
- *                              the message header.  That was necessary
- *                              because the information about that in the
- *                              bbs object (provided by Synchronet) can't
- *                              be modified.
- * 2013-01-02 Eric Oulashin     Fixed a bug in getFromNameForCurMsg() where
- *                              reading low-numbered messages in a sub-board
- *                              would result in getting the incorrect
- *                              original author name.  Updated
- *                              getFromNameForCurMsg() to just use the
- *                              sub-board code and message offset to get
- *                              the header for the current message being
- *                              read.
- * 2013-01-13 Eric Oulashin     Added calcPageNum().
- * 2013-01-18 Eric Oulashin     Updated ReadSlyEditConfigFile() to include
- *                              border color & border text color settings
- *                              for choosing message areas for cross-posting.
- * 2013-01-19 Eric Oulashin     Added postingInMsgSubBoard().  Updated
- *                              ReadSlyEditConfigFile() to read a new setting,
- *                              allowCrossPosting, from the config file.  Added
- *                              CHECK_CHAR.
- * 2013-01-20 Eric Oulashin     Added numObjProperties().  Also added
- *                              postMsgToSubBoard(), for cross-posting support.
- * 2013-01-22 Eric Oulashin     Updated displayProgramExitInfo(): Removed the
- *                              SlyEdit block text so that the overall message
- *                              it displays is shorter.
- * 2013-01-24 Eric Oulashin     Updated ReadSlyEditConfigFile() to check the
- *                              following directories, in order, for the
- *                              configuration files:
- *                              1. Mods directory
- *                              2. Ctrl directory
- *                              3. Current directory (where SlyEdit is located)
- * 2013-02-03 Eric Oulashin     Added readUserSigFile().
- * 2013-02-13 Eric Oulashin     Updated getCurMsgInfo() to get the first
- *                              postable message sub-board if the user has no
- *                              current sub-board (i.e., a new user is applying
- *                              for access).  Also, updated ReadSlyEditConfigFile()
- *                              to default indentQuoteLinesWithInitials to true.
- * 2013-05-14 Eric Oulashin     Updated getCurMsgInfo() and getFromNameForCurMsg()
- *                              to use the absolute message number (bbs.msg_number)
- *                              rather than messages indexes so that it gets
- *                              the correct message header in all cases, including
- *                              when replying to messages during "Scan for messages
- *                              to you".
- * 2013-05-16 Eric Oulashin     Added a function that returns whether the
- *                              Synchronet compile date is at least May 12, 2013.
- *                              That was when Digital Man's change to make
- *                              bbs.msg_number work when a script is running
- *                              first went into the Synchronet daily builds.
- * 2013-05-18 Eric Oulashin     Speed optimization (hopefully) for the
- *                              aforementioned function: Made the return
- *                              value a function property so that it only has
- *                              to be figured out once, and eliminates the
- *                              need for a global variable to store it for
- *                              speed optimization purposes.
- * 2013-05-23 Eric Oulashin     Simplified the decision of whether to use
- *                              bbs.msg_number or bbs.smb_curmsg by checking
- *                              whether bbs.msg_number is > 0 (if it is, then
- *                              it's valid, so use it).  This is simpler than
- *                              checking the Synchronet version & build date.
- * 2013-05-24 Eric Oulashin     Updated getCurMsgInfo() to add one more
- *                              data member to the return object:
- *                              msgNumIsOffset, which stores whether or not the
- *                              message number is an offset.  If not, then it's
- *                              the aboslute message number (i.e., bbs.msg_number).
- *                              That simplified getFromNameForCurMsg(), which can
- *                              pass that to msgBase.get_msg_header().
  * 2013-08-24 Eric Oulashin     Bug fix in wrapQuoteLines(): Off-by-one bug toward
  *                              the end where there might be more quote lines
  *                              than lineInfo objects, so it wouldn't quote the
  *                              last line when using author initials.
+ * 2013-08-28 Eric Oulashin     Updated ReadSlyEditConfigFile() to read and
+ *                              set the enableTextReplacements setting.  It
+ *                              defaults to false.  Also added populateTxtReplacements().
+ *                              Added moveGenColorsToGenSettings(), which
+ *                              can be called by JavaScripts for different
+ *                              UI styles to move the general color settings
+ *                              from their own color array into the genColors
+ *                              array in the configuration object.
+ * 2013-08-31 Eric Oulashin     Added the function getWordFromEditLine().
+ * 2013-09-02 Eric Oulashin     Worked on the new function doMacroTxtReplacementInEditLine(),
+ *                              which performs text replacement (AKA macros) on
+ *                              one of the message edit lines.  Added
+ *                              genFullPathCfgFilename() so that the logic for finding
+ *                              the configuration files is all in one place.  Added
+ *                              getFirstLetterFromStr() and firstLetterIsUppercase(),
+ *                              which are helpers for doMacroTxtReplacementInEditLine()
+ *                              for checking & fixing first-letter capitalization
+ *                              after doing a regex replace.
  *                              
  */
 
@@ -360,8 +281,6 @@ function getCurrentTimeStr()
 function isPrintableChar(pText)
 {
    // Make sure pText is valid and is a string.
-   if ((pText == null) || (pText == undefined))
-      return false;
    if (typeof(pText) != "string")
       return false;
    if (pText.length == 0)
@@ -460,7 +379,8 @@ function displayHelpHeader()
 //  pPause: Whether or not to pause at the end
 //  pCanCrossPost: Whether or not cross-posting is enabled
 //  pIsSysop: Whether or not the user is the sysop.
-function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop)
+//  pTxtReplacments: Whether or not the text replacements feature is enabled
+function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop, pTxtReplacments)
 {
    if (pClear)
       console.clear("n");
@@ -506,6 +426,8 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
    displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
    displayCmdKeyFormattedDouble("Ctrl-P", "Command key help", "/S", "Save", true);
    displayCmdKeyFormattedDouble("Ctrl-R", "Program information", "/Q", "Quote message", true);
+   if (pTxtReplacments)
+      displayCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements", true);
    if (pCanCrossPost)
       displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
    printf(" ch%-7sg  nc%s", "", "", "/?", "Show help");
@@ -553,61 +475,23 @@ function displayGeneralHelp(pDisplayHeader, pClear, pPause)
       console.pause();
 }
 
-// Displays the text to display above program info screens.
-function displayProgInfoHeader()
-{
-   // Construct the header text lines only once.
-   if (typeof(displayProgInfoHeader.headerLines) == "undefined")
-   {
-      displayProgInfoHeader.headerLines = new Array();
-
-      var progNameLen = strip_ctrl(EDITOR_PROGRAM_NAME).length;
-
-      // Top border
-      var headerTextStr = "nhc" + UPPER_LEFT_SINGLE;
-      for (var i = 0; i < progNameLen + 2; ++i)
-         headerTextStr += HORIZONTAL_SINGLE;
-      headerTextStr += UPPER_RIGHT_SINGLE;
-      displayProgInfoHeader.headerLines.push(headerTextStr);
-
-      // Middle line: Header text string
-      headerTextStr = VERTICAL_SINGLE + "4y " + EDITOR_PROGRAM_NAME + " nhc"
-                    + VERTICAL_SINGLE;
-      displayProgInfoHeader.headerLines.push(headerTextStr);
-
-      // Lower border
-      headerTextStr = LOWER_LEFT_SINGLE;
-      for (var i = 0; i < progNameLen + 2; ++i)
-         headerTextStr += HORIZONTAL_SINGLE;
-      headerTextStr += LOWER_RIGHT_SINGLE;
-      displayProgInfoHeader.headerLines.push(headerTextStr);
-   }
-
-   // Print the header strings
-   for (var index in displayProgInfoHeader.headerLines)
-      console.center(displayProgInfoHeader.headerLines[index]);
-}
-
 // Displays program information.
 //
 // Parameters:
-//  pDisplayHeader: Whether or not to display the help header.
 //  pClear: Whether or not to clear the screen first
 //  pPause: Whether or not to pause at the end
-function displayProgramInfo(pDisplayHeader, pClear, pPause)
+function displayProgramInfo(pClear, pPause)
 {
    if (pClear)
       console.clear("n");
-   if (pDisplayHeader)
-      displayProgInfoHeader();
 
    // Print the program information
-   console.center("ncVersion g" + EDITOR_VERSION + " wh(b" +
-                  EDITOR_VER_DATE + "w)");
+   console.center("nhc" + EDITOR_PROGRAM_NAME + "n cVersion g" +
+                  EDITOR_VERSION + " wh(b" + EDITOR_VER_DATE + "w)");
    console.center("ncby Eric Oulashin");
    console.crlf();
-   console.print("ncSlyEdit is a full-screen message editor written for Synchronet that mimics\r\n");
-   console.print("the look & feel of IceEdit or DCT Edit.");
+   console.print("ncSlyEdit is a full-screen message editor for Synchronet that mimics the look &\r\n");
+   console.print("feel of IceEdit or DCT Edit.");
    console.crlf();
    if (pPause)
       console.pause();
@@ -736,12 +620,17 @@ function ReadSlyEditConfigFile()
    // initials.
    cfgObj.indentQuoteLinesWithInitials = true;
    cfgObj.allowCrossPosting = true;
+   cfgObj.enableTextReplacements = false;
+   cfgObj.textReplacementsUseRegex = false;
 
    // General SlyEdit color settings
    cfgObj.genColors = new Object();
    // Cross-posting UI element colors
-   cfgObj.genColors.crossPostBorder = "ng";
-   cfgObj.genColors.crossPostBorderTxt = "nbh";
+   // Deprecated colors:
+   //cfgObj.genColors.crossPostBorder = "ng";
+   //cfgObj.genColors.crossPostBorderTxt = "nbh";
+   cfgObj.genColors.listBoxBorder = "ng";
+   cfgObj.genColors.listBoxBorderText = "nbh";
    cfgObj.genColors.crossPostMsgAreaNum = "nhw";
    cfgObj.genColors.crossPostMsgAreaNumHighlight = "n4hw";
    cfgObj.genColors.crossPostMsgAreaDesc = "nc";
@@ -763,11 +652,7 @@ function ReadSlyEditConfigFile()
    // Default Ice-style colors
    cfgObj.iceColors = new Object();
    // Ice color theme file
-   cfgObj.iceColors.ThemeFilename = system.mods_dir + "SlyIceColors_BlueIce.cfg";
-   if (!file_exists(cfgObj.iceColors.ThemeFilename))
-      cfgObj.iceColors.ThemeFilename = system.ctrl_dir + "SlyIceColors_BlueIce.cfg";
-   if (!file_exists(cfgObj.iceColors.ThemeFilename))
-      cfgObj.iceColors.ThemeFilename = gStartupPath + "SlyIceColors_BlueIce.cfg";
+   cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename("SlyIceColors_BlueIce.cfg", gStartupPath);
    // Text edit color
    cfgObj.iceColors.TextEditColor = "nw";
    // Quote line color
@@ -798,11 +683,7 @@ function ReadSlyEditConfigFile()
    // Default DCT-style colors
    cfgObj.DCTColors = new Object();
    // DCT color theme file
-   cfgObj.DCTColors.ThemeFilename = system.mods_dir + "SlyDCTColors_Default.cfg";
-   if (!file_exists(cfgObj.DCTColors.ThemeFilename))
-      cfgObj.DCTColors.ThemeFilename = system.ctrl_dir + "SlyDCTColors_Default.cfg";
-   if (!file_exists(cfgObj.DCTColors.ThemeFilename))
-      cfgObj.DCTColors.ThemeFilename = gStartupPath + "SlyDCTColors_Default.cfg";
+   cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename("SlyDCTColors_Default.cfg", gStartupPath);
    // Text edit color
    cfgObj.DCTColors.TextEditColor = "nw";
    // Quote line color
@@ -861,11 +742,7 @@ function ReadSlyEditConfigFile()
    cfgObj.DCTColors.MenuHotkeys = "nwh7";
 
    // Open the SlyEdit configuration file
-   var slyEdCfgFileName = system.mods_dir + "SlyEdit.cfg";
-   if (!file_exists(slyEdCfgFileName))
-      slyEdCfgFileName = system.ctrl_dir + "SlyEdit.cfg";
-   if (!file_exists(slyEdCfgFileName))
-      slyEdCfgFileName = gStartupPath + "SlyEdit.cfg";
+   var slyEdCfgFileName = genFullPathCfgFilename("SlyEdit.cfg", gStartupPath);
    var cfgFile = new File(slyEdCfgFileName);
    if (cfgFile.open("r"))
    {
@@ -954,28 +831,29 @@ function ReadSlyEditConfigFile()
                   cfgObj.runJSOnExit.push(value);
                else if (settingUpper == "ALLOWCROSSPOSTING")
                   cfgObj.allowCrossPosting = (valueUpper == "TRUE");
+               else if (settingUpper == "ENABLETEXTREPLACEMENTS")
+               {
+                  // The enableTxtReplacements setting in the config file can
+                  // be regex, true, or false:
+                  //  - regex: Text replacement enabled using regular expressions
+                  //  - true: Text replacement enabled using exact match
+                  //  - false: Text replacement disabled
+                  cfgObj.textReplacementsUseRegex = (valueUpper == "REGEX");
+                  if (cfgObj.textReplacementsUseRegex)
+                     cfgObj.enableTextReplacements = true;
+                  else
+                     cfgObj.enableTextReplacements = (valueUpper == "TRUE");
+               }
             }
             else if (settingsMode == "ICEColors")
             {
                if (settingUpper == "THEMEFILENAME")
-               {
-                  cfgObj.iceColors.ThemeFilename = system.mods_dir + value;
-                  if (!file_exists(cfgObj.iceColors.ThemeFilename))
-                     cfgObj.iceColors.ThemeFilename = system.ctrl_dir + value;
-                  if (!file_exists(cfgObj.iceColors.ThemeFilename))
-                     cfgObj.iceColors.ThemeFilename = gStartupPath + value;
-               }
+                  cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(value, gStartupPath);
             }
             else if (settingsMode == "DCTColors")
             {
                if (settingUpper == "THEMEFILENAME")
-               {
-                  cfgObj.DCTColors.ThemeFilename = system.mods_dir + value;
-                  if (!file_exists(cfgObj.DCTColors.ThemeFilename))
-                     cfgObj.DCTColors.ThemeFilename = system.ctrl_dir + value;
-                  if (!file_exists(cfgObj.DCTColors.ThemeFilename))
-                     cfgObj.DCTColors.ThemeFilename = gStartupPath + value;
-               }
+                  cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(value, gStartupPath);
             }
          }
       }
@@ -2386,6 +2264,410 @@ function getFirstPostableSubInfo()
   }
 
   return retObj;
+}
+
+// Reads SlyEdit_TextReplacements.cfg (from sbbs/mods, sbbs/ctrl, or the
+// script's directory) and populates an associative array with the WORD=text
+// pairs.  When not using regular expressions, the key will be in all uppercase
+// and the value in lowercase.  This function will read up to 9999 replacements.
+//
+// Parameters:
+//  pArray: The array to populate.  Must be created as "new Array()".
+//  pRegex: Whether or not the text replace feature is configured to use regular
+//          expressions.  If so, then the search words in the array will not
+//          be converted to uppercase and the replacement text will not be
+//          converted to lowercase.
+//
+// Return value: The number of text replacements added to the array.
+function populateTxtReplacements(pArray, pRegex)
+{
+   var numTxtReplacements = 0;
+
+   // Note: Limited to words without spaces.
+   // Open the word replacements configuration file
+   var wordReplacementsFilename = genFullPathCfgFilename("SlyEdit_TextReplacements.cfg", gStartupPath);
+   var arrayPopulated = false;
+   var wordFile = new File(wordReplacementsFilename);
+   if (wordFile.open("r"))
+   {
+      var fileLine = null;      // A line read from the file
+      var equalsPos = 0;        // Position of a = in the line
+      var wordToSearch = null; // A word to be replaced
+      var substWord = null;    // The word to substitue
+      // This tests numTxtReplacements < 9999 so that the 9999th one is the last
+      // one read.
+      while (!wordFile.eof && (numTxtReplacements < 9999))
+      {
+         // Read the next line from the config file.
+         fileLine = wordFile.readln(2048);
+
+         // fileLine should be a string, but I've seen some cases
+         // where for some reason it isn't.  If it's not a string,
+         // then continue onto the next line.
+         if (typeof(fileLine) != "string")
+            continue;
+         // If the line starts with with a semicolon (the comment
+         // character) or is blank, then skip it.
+         if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+            continue;
+
+         // Look for an equals sign, and if found, separate the line
+         // into the setting name (before the =) and the value (after the
+         // equals sign).
+         equalsPos = fileLine.indexOf("=");
+         if (equalsPos <= 0)
+            continue; // = not found or is at the beginning, so go on to the next line
+
+         // Extract the word to search and substitution word from the line.  If
+         // not using regular expressions, then convert the word to search to
+         // all uppercase (for case-insensitive searching) and the substitution
+         // word to all lowercase (to make sure it looks good).
+         wordToSearch = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+         substWord = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+         // Make sure substWord only contains printable characters.  If not, then
+         // skip this one.
+         var substIsPrintable = true;
+         for (var i = 0; (i < substWord.length) && substIsPrintable; ++i)
+            substIsPrintable = isPrintableChar(substWord.charAt(i));
+         if (!substIsPrintable)
+            continue;
+
+         // And add the search word and replacement text to pArray.
+         if (pRegex)
+         {
+            if (wordToSearch.toUpperCase() != substWord.toUpperCase())
+            {
+               pArray[wordToSearch] = substWord;
+               ++numTxtReplacements;
+            }
+         }
+         else
+         {
+            wordToSearch = wordToSearch.toUpperCase();
+            substWord = substWord.toLowerCase();
+            if (wordToSearch != substWord.toUpperCase())
+            {
+               pArray[wordToSearch] = substWord;
+               ++numTxtReplacements;
+            }
+         }
+      }
+
+      wordFile.close();
+   }
+
+   return numTxtReplacements;
+}
+
+function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
+{
+   // Set up an array of color setting names 
+   var colorSettingStrings = new Array();
+   colorSettingStrings.push("crossPostBorder"); // Deprecated
+   colorSettingStrings.push("crossPostBorderText"); // Deprecated
+   colorSettingStrings.push("listBoxBorder");
+   colorSettingStrings.push("listBoxBorderText");
+   colorSettingStrings.push("crossPostMsgAreaNum");
+   colorSettingStrings.push("crossPostMsgAreaNumHighlight");
+   colorSettingStrings.push("crossPostMsgAreaDesc");
+   colorSettingStrings.push("crossPostMsgAreaDescHighlight");
+   colorSettingStrings.push("crossPostChk");
+   colorSettingStrings.push("crossPostChkHighlight");
+   colorSettingStrings.push("crossPostMsgGrpMark");
+   colorSettingStrings.push("crossPostMsgGrpMarkHighlight");
+   colorSettingStrings.push("msgWillBePostedHdr");
+   colorSettingStrings.push("msgPostedGrpHdr");
+   colorSettingStrings.push("msgPostedSubBoardName");
+   colorSettingStrings.push("msgPostedOriginalAreaText");
+   colorSettingStrings.push("msgHasBeenSavedText");
+   colorSettingStrings.push("msgAbortedText");
+   colorSettingStrings.push("emptyMsgNotSentText");
+   colorSettingStrings.push("genMsgErrorText");
+   colorSettingStrings.push("txtReplacementList");
+
+   var colorName = "";
+   for (var i = 0; i < colorSettingStrings.length; ++i)
+   {
+      colorName = colorSettingStrings[i];
+      if (pColorsArray.hasOwnProperty(colorName))
+      {
+         pCfgObj.genColors[colorName] = pColorsArray[colorName];
+         delete pColorsArray[colorName];
+      }
+   }
+   // If listBoxBorder and listBoxBorderText exist in the general colors settings,
+   // then remove crossPostBorder and crossPostBorderText if they exist.
+   if (pCfgObj.genColors.hasOwnProperty["listBoxBorder"] && pCfgObj.genColors.hasOwnProperty["crossPostBorder"])
+   {
+      // Favor crossPostBorder to preserve backwards compatibility.
+      pCfgObj.genColors["listBoxBorder"] = pCfgObj.genColors["crossPostBorder"];
+      delete pCfgObj.genColors["crossPostBorder"];
+   }
+   if (pCfgObj.genColors.hasOwnProperty["listBoxBorderText"] && pCfgObj.genColors.hasOwnProperty["crossPostBorderText"])
+   {
+      // Favor crossPostBorderText to preserve backwards compatibility.
+      pCfgObj.genColors["listBoxBorderText"] = pCfgObj.genColors["crossPostBorderText"];
+      delete pCfgObj.genColors["crossPostBorderText"];
+   }
+}
+
+// Returns whether or not a character is a letter.
+//
+// Parameters:
+//  pChar: The character to test
+//
+// Return value: Boolean - Whether or not the character is a letter
+function charIsLetter(pChar)
+{
+   return /^[ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈÌÒÙàèìòùÁÉÍÓÚÝáéíóúýÂÊÎÔÛâêîôûÃÑÕãñõÄËÏÖÜäëïöüçÇßØøÅåÆæÞþÐð]$/.test(pChar.toUpperCase());
+}
+
+// Returns the word in a text line at a given index.  If the index
+// is at a space, then this function will return the word before
+// (to the left of) the space.
+//
+// Parameters:
+//  pEditLinesIndex: The index of the line to look at (0-based)
+//  pCharIndex: The character index in the text line (0-based)
+//
+// Return value: An object containing the following properties:
+//               foundWord: Whether or not a word was found (boolean)
+//               word: The word in the edit line at the given indexes (text)
+//               editLineIndex: The index of the edit line (integer)
+//               startIdx: The index of the first character of the word (integer)
+//               endIndex: The index of the last character of the word (integer)
+function getWordFromEditLine(pEditLinesIndex, pCharIndex)
+{
+   var retObj = new Object();
+   retObj.foundWord = false;
+   retObj.word = "";
+   retObj.editLineIndex = pEditLinesIndex;
+   retObj.startIdx = 0;
+   retObj.endIndex = 0;
+
+   // Parameter checking
+   if ((pEditLinesIndex < 0) || (pEditLinesIndex >= gEditLines.length))
+   {
+      retObj.editLineIndex = 0;
+      return retObj;
+   }
+   if ((pCharIndex < 0) || (pCharIndex >= gEditLines[pEditLinesIndex].text.length))
+   {
+      //displayDebugText(1, 1, "pCharIndex: " + pCharIndex, null, true, false); // Temporary
+      //displayDebugText(1, 2, "Line len: " + gEditLines[pEditLinesIndex].text.length, console.getxy(), true, false); // Temporary
+      return retObj;
+   }
+
+   // If pCharIndex specifies the index of a space, then look for a non-space
+   // character before it.
+   var charIndex = pCharIndex;
+   while (gEditLines[pEditLinesIndex].text.charAt(charIndex) == " ")
+      --charIndex;
+   // Look for the start & end of the word based on the indexes of a space
+   // before and at/after the given character index.
+   var wordStartIdx = charIndex;
+   var wordEndIdx = charIndex;
+   while ((gEditLines[pEditLinesIndex].text.charAt(wordStartIdx) != " ") && (wordStartIdx >= 0))
+      --wordStartIdx;
+   ++wordStartIdx;
+   while ((gEditLines[pEditLinesIndex].text.charAt(wordEndIdx) != " ") && (wordEndIdx < gEditLines[pEditLinesIndex].text.length))
+      ++wordEndIdx;
+   --wordEndIdx;
+
+   retObj.foundWord = true;
+   retObj.startIdx = wordStartIdx;
+   retObj.endIndex = wordEndIdx;
+   retObj.word = gEditLines[pEditLinesIndex].text.substring(wordStartIdx, wordEndIdx+1);
+   return retObj;
+}
+
+// Performs text replacement (AKA macro replacement) in an edit line.
+//
+// Parameters:
+//  pTxtReplacements: An associative array of text to be replaced (i.e.,
+//                    gTxtReplacements)
+//  pEditLinesIndex: The index of the line in gEditLines
+//  pCharIndex: The current character index in the text line
+//  pUseRegex: Whether or not to treat the text replacement search string as a
+//             regular expression.
+//
+// Return value: An object containing the following properties:
+//               textLineIndex: The updated text line index (integer)
+//               wordLenDiff: The change in length of the word that
+//                            was replaced (integer)
+//               wordStartIdx: The index of the first character in the word.
+//                             Only valid if a word was found.  Otherwise, this
+//                             will be 0.
+//               newTextEndIdx: The index of the last character in the new
+//                              text.  Only valid if a word was replaced.
+//                              Otherwise, this will be 0.
+//               newTextLen: The length of the new text in the string.  Will be
+//                           the length of the existing word if the word wasn't
+//                           replaced or 0 if no word was found.
+//               madeTxtReplacement: Whether or not a text replacement was made
+//                                   (boolean)
+function doMacroTxtReplacementInEditLine(pTxtReplacements, pEditLinesIndex, pCharIndex, pUseRegex)
+{
+   var retObj = new Object();
+   retObj.textLineIndex = pCharIndex;
+   retObj.wordLenDiff = 0;
+   retObj.wordStartIdx = 0;
+   retObj.newTextEndIdx = 0;
+   retObj.newTextLen = 0;
+   retObj.madeTxtReplacement = false;
+
+   var wordObj = getWordFromEditLine(pEditLinesIndex, retObj.textLineIndex);
+   if (wordObj.foundWord)
+   {
+      retObj.wordStartIdx = wordObj.startIdx;
+      retObj.newTextLen = wordObj.word.length;
+
+      // See if the word starts with a capital letter; if so, we'll capitalize
+      // the replacement word.
+      //var firstCharUpper = (wordObj.word.charAt(0) == wordObj.word.charAt(0).toUpperCase());
+      var firstCharUpper = false;
+      var txtReplacement = "";
+      if (pUseRegex)
+      {
+         // Since a regular expression might have more characters in addition
+         // to the actual word, we need to go through all the replacement strings
+         // in pTxtReplacements and use the first one that changes the text.
+         for (var prop in pTxtReplacements)
+         {
+            if (pTxtReplacements.hasOwnProperty(prop))
+            {
+               var regex = new RegExp(prop);
+               txtReplacement = wordObj.word.replace(regex, pTxtReplacements[prop]);
+               retObj.madeTxtReplacement = (txtReplacement != wordObj.word);
+               // If a text replacement was made, then check and see if the first
+               // letter in the original text was uppercase, and if so, make the
+               // first letter in the new text (txtReplacement) uppercase.
+               if (retObj.madeTxtReplacement)
+               {
+                  if (firstLetterIsUppercase(wordObj.word))
+                  {
+                     var letterInfo = getFirstLetterFromStr(txtReplacement);
+                     if (letterInfo.idx > -1)
+                     {
+                        txtReplacement = txtReplacement.substr(0, letterInfo.idx)
+                                       + letterInfo.letter.toUpperCase()
+                                       + txtReplacement.substr(letterInfo.idx+1);
+                     }
+                  }
+                  // Now that we've made a text replacement, stop going through
+                  // pTxtReplacements looking for a matching regex.
+                  break;
+               }
+            }
+         }
+      }
+      else
+      {
+         // Not using a regular expression.
+         firstCharUpper = (wordObj.word.charAt(0) == wordObj.word.charAt(0).toUpperCase());
+         // Convert the word to all uppercase to do the case-insensitive lookup
+         // in pTxtReplacements.
+         wordObj.word = wordObj.word.toUpperCase();
+         if (pTxtReplacements.hasOwnProperty(wordObj.word))
+         {
+            txtReplacement = pTxtReplacements[wordObj.word].toLowerCase();
+            retObj.madeTxtReplacement = true;
+         }
+      }
+      if (retObj.madeTxtReplacement)
+      {
+         if (firstCharUpper)
+            txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
+         gEditLines[pEditLinesIndex].text = gEditLines[pEditLinesIndex].text.substr(0, wordObj.startIdx)
+                                          + txtReplacement
+                                          + gEditLines[pEditLinesIndex].text.substr(wordObj.endIndex+1);
+         // Based on the difference in word length, update the data that
+         // matters (retObj.textLineIndex, which keeps track of the index of the current line).
+         // Note: The horizontal cursor position variable should be replaced after calling this
+         // function.
+         retObj.wordLenDiff = txtReplacement.length - wordObj.word.length;
+         retObj.textLineIndex += retObj.wordLenDiff;
+         retObj.newTextEndIdx = wordObj.endIndex + retObj.wordLenDiff;
+         retObj.newTextLen = txtReplacement.length;
+      }
+   }
+
+   return retObj;
+}
+
+// For configuration files, this function returns a fully-pathed filename.
+// This function first checks to see if the file exists in the sbbs/mods
+// directory, then the sbbs/ctrl directory, and if the file is not found there,
+// this function defaults to the given default path.
+//
+// Parameters:
+//  pFilename: The name of the file to look for
+//  pDefaultPath: The default directory (must have a trailing separator character)
+function genFullPathCfgFilename(pFilename, pDefaultPath)
+{
+   var fullyPathedFilename = system.mods_dir + pFilename;
+   if (!file_exists(fullyPathedFilename))
+      fullyPathedFilename = system.ctrl_dir + pFilename;
+   if (!file_exists(fullyPathedFilename))
+   {
+      if (typeof(pDefaultPath) == "string")
+      {
+         // Make sure the default path has a trailing path separator
+         var defaultPath = backslash(pDefaultPath);
+         fullyPathedFilename = defaultPath + pFilename;
+      }
+      else
+         fullyPathedFilename = pFilename;
+   }
+   return fullyPathedFilename;
+}
+
+// Returns the first letter found in a string and its index.  If a letter is
+// not found, the string returned will be blank, and the index will be -1.
+//
+// Parameters:
+//  pString: The string to search
+//
+// Return value: An object with the following properties:
+//               letter: The first letter found in the string, or a blank string if none was found
+//               idx: The index of the first letter found, or -1 if none was found
+function getFirstLetterFromStr(pString)
+{
+   var retObj = new Object;
+   retObj.letter = "";
+   retObj.idx = -1;
+
+   var theChar = "";
+   for (var i = 0; (i < pString.length) && (retObj.idx == -1); ++i)
+   {
+      theChar = pString.charAt(i);
+      if (charIsLetter(theChar))
+      {
+         retObj.idx = i;
+         retObj.letter = theChar;
+      }
+   }
+
+   return retObj;
+}
+
+// Returns whether or not the first letter in a string is uppercase.  If the
+// string doesn't contain any letters, then this function will return false.
+//
+// Parameters:
+//  pString: The string to search
+//
+// Return value: Boolean - Whether or not the first letter in the string is uppercase
+function firstLetterIsUppercase(pString)
+{
+   var firstIsUpper = false;
+   var letterObj = getFirstLetterFromStr(pString);
+   if (letterObj.idx > -1)
+   {
+      var theLetter = pString.charAt(letterObj.idx);
+      firstIsUpper = (theLetter == theLetter.toUpperCase());
+   }
+   return firstIsUpper;
 }
 
 // This function displays debug text at a given location on the screen, then

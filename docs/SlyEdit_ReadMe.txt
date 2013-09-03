@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.28
-                        Release date: 2013-08-24
+                              Version 1.29
+                        Release date: 2013-09-02
 
                                   by
 
@@ -18,15 +18,16 @@ Upgrading.txt.
 
 Contents
 ========
-1. Disclaimer
-2. Introduction
-3. Installation & Setup
-4. Features
-5. Digital Distortion Message Lister note
-6. Configuration file
-7. Ice-style Color Theme Settings
-8. DCT-style Color Theme Settings
-9. Common colors (appearing in both Ice and DCT color theme files)
+ 1. Disclaimer
+ 2. Introduction
+ 3. Installation & Setup
+ 4. Features
+ 5. Digital Distortion Message Lister note
+ 6. Configuration file
+ 7. Ice-style Color Theme Settings
+ 8. DCT-style Color Theme Settings
+ 9. Common colors (appearing in both Ice and DCT color theme files)
+10. Text replacements (AKA Macros)
 
 
 1. Disclaimer
@@ -195,7 +196,9 @@ Help keys                                     Slash commands (on blank line)
 Ctrl-G       : General help                 ¦ /A     : Abort
 Ctrl-P       : Command key help             ¦ /S     : Save
 Ctrl-R       : Program information          ¦ /Q     : Quote message
+Ctrl-T       : List text replacements       ¦ /T     : List text replacements
                                             ¦ /C     : Cross-post selection
+
 
 Command/edit keys
 -----------------
@@ -299,6 +302,15 @@ addJSOnExit                       Add a JavaScript command to run on exit.
 allowCrossPosting                 Whether or not to allow cross-posting
                                   messages into different/multiple message
                                   sub-boards.  Valid values are true and false.
+
+enableTextReplacements            Toggles the use of text replacements (AKA
+                                  macros) as the user types a message.  Valid
+                                  values are true, false, and regex.  If regex
+                                  is used, text replacements will be enabled
+                                  and used as regular expressions as
+                                  implemented by JavaScript.  For more
+                                  information, see section 10 (Text
+                                  replacements (AKA Macros)).
 
 Ice colors
 ----------
@@ -523,11 +535,19 @@ MenuHotkeys                       The color to use for the hotkey characters in 
 
 9. Common colors (appearing in both Ice and DCT color theme files)
 ==================================================================
-crossPostBorder                   The color to use for the border of the cross-
-                                  post area selection box
+listBoxBorder                     The color to use for the border of list
+                                  boxes, such as the cross-post area selection
+                                  box and the text replacements list box.  Note
+                                  that this setting replaces crossPostBorder,
+                                  which was used in previous versions of
+                                  SlyEdit.
 
-crossPostBorderText               The color to use for the top border text of
-                                  the cross-post area selection box
+listBoxBorderText                 The color to use for text in the borders of
+                                  list boxes, such as the cross-post area
+                                  selection box and the text replacements list
+                                  box.  Note that this setting replaces
+                                  crossPostBorderText, which was used in
+                                  previous versions of SlyEdit.
 
 crossPostMsgAreaNum               The color to use for the message group/sub-
                                   board numbers in the cross-post area
@@ -591,3 +611,96 @@ emptyMsgNotSentText               The color to use for the Message Not Sent
 
 genMsgErrorText                   The color to use for general message error
                                   text when exiting SlyEdit
+
+10. Text replacements (AKA Macros)
+==================================
+SlyEdit version 1.29 added text replacements (AKA Macros), which lets you (the
+sysop) define words to be replaced with other text as the user types a message.
+This feature can be used, for instance, to replace commonly misspelled words
+with their correct versions or to replace swear words with less offensive
+words.  This feature is toggled by the enableTextReplacements option in
+SlyEdit.cfg can can have one of three values:
+false : Text replacement is disabled
+true  : Text replacement is enabled and performed as literal search and replace
+regex : Text replacement is enabled using regular expressions as implemented by
+        JavaScript (more accurately, Synchronet's JavaScript interpreter, which
+        at the time of this writing is Mozilla's JavaScript engine (AKA
+        JavaScript-C or "SpiderMonkey").
+
+The text searches are performed on single words only, as the user types the
+message, and are replaced by whatever text you configure for the word.  The
+configuration for text replacing is read from a configuration file called
+SlyEdit_TextReplacements.cfg, which is plain text and can be placed in either
+sbbs/ctrl or in the same directory as SlyEdit's .js files (SlyEdit.js,
+SlyEdit_Misc.js, etc.).  Each line in SlyEdit_TextReplacements.cfg needs to
+have the following format:
+originalWord=replacementText
+where originalWord is the word to be replaced, and replacementText is the text
+to replace the word with.
+
+The options for the enableTextReplacements configuration optoin are explained
+in more detail below:
+
+- false: Text replacing is disabled
+
+- true: Literal text search and replace - The words will be matched literally
+and replaced with the text on the right side of the = in
+SlyEdit_TextReplacements.cfg.  In this mode, word matching is not
+case-sensitive.  The words can have both uppercase and lowercase letters and
+will still be matched to the words configured in SlyEdit_TextReplacements.cfg.
+In this mode, if the first letter of the original word is uppercase, then the
+first letter of the replaced text will also be uppercase.
+While this works, one drawback to literal text searching is that it won't
+replace a word if there are punctuation characters or other characters around
+the word or if the word is misspelled.
+
+- regex: With this option, SlyEdit will treat the word searches (on the left
+side of the = in SlyEdit_TextReplacements.cfg) as regular expressions, as
+implemented by JavaScript.  When using regular expressions, SlyEdit will start
+trying all the regular expressions provided and apply only the first one that
+changes the text and will stop there.
+Regular expressions offer a more flexible way to serach and replace text.  For
+example, in case a word is surrounded by punctuation or other characters, a
+regular expression can be given that will still match the word.  For example,
+you might want a regular expression that changes "teh" to "the" (since "teh"
+is a common misspelling of "the").  To ensure that the word is replaced even if
+the word has other characters around it, you could use a regular exprssion and
+replacement such as this:
+(.*)teh(.*)=$1the$2
+That way, even if the word is enclosed in quotes (such as "teh"), the word will
+still be converted to "the".  And to preserve the first letter's case (if it's
+uppercase or lowercase), this regular expression and replacement string would
+handle that:
+(.*)([tT])eh(.*)=$1$2he$3
+SlyEdit applies the regular expressions on a per-word basis; that is, the
+expression .* in a regular expression will match any characters only in the
+last word the user typed, not the entire line.
+
+For more information on regular expressions, the
+following are some web pages that explain them:
+
+General information about regular expressions:
+http://www.regular-expressions.info/tutorial.html
+
+Information on text grouping and backreferencing with parenthesis (the page
+calls them "round brackets") - A very powerful feature of regular expressions:
+http://www.regular-expressions.info/brackets.html
+
+General information about regular expressions geared toward JavaScript:
+http://www.javascriptkit.com/javatutors/re.shtml
+
+Information about using backreferences with regular expressions in JavaScript:
+http://stackoverflow.com/questions/2447915/javascript-string-regex-backreferences
+
+JavaScript-specific information on regular exprssions:
+http://www.w3schools.com/js/js_obj_regexp.asp
+http://www.w3schools.com/jsref/jsref_obj_regexp.asp
+
+One nice thing about JavaScript's implementation (among others) of regular
+expressions is that it supports the use of parentheses for character grouping
+and backreferencing to place a portion of the matched text in the replacement
+text.  In JavaScript, each numbered capture buffer is preceded by a dollar sign
+($).  For example, the regular expression (darn) will match the word "darn" and
+store it in buffer 1, and in JavaScript (and with SlyEdit's search and
+replace), you would use $1 to refer to the word "darn".  For example, for
+(darn), the replacement $1it would replace the word "darn" with "darnit".
