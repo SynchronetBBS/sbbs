@@ -390,10 +390,29 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 const char *inet_addrtop(SOCKADDR *in, char *dest, size_t size)
 {
 #ifdef _WIN32
-	DWORD	dsize=size;
+	static INT (WSAAPI *a2s)(LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFO, LPTSTR, LPDWORD)=NULL;
+	static BOOL searched=FALSE;
 
-	if(WSAAddressToString(in, SOCK_MAXADDRLEN, NULL, dest, &dsize)==SOCKET_ERROR)
-		return NULL;
+	if(!searched) {
+		HMODULE hMod = LoadLibrary("ws2_32.dll");
+
+		searched = TRUE;
+		if(hMod)
+			a2s=(INT (WSAAPI *)(LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFO, LPTSTR, LPDWORD))GetProcAddress(hMod, "WSAAddressToString");
+	}
+
+	if(a2s) {
+		DWORD	dsize=size;
+
+		if(a2s(in, SOCK_MAXADDRLEN, NULL, dest, &dsize)==SOCKET_ERROR)
+			return NULL;
+		return dest;
+	}
+	if(in->sa_family != AF_INET)
+		strncpy(dest, "<Address Family Not Supported>", size);
+	else
+		strncpy(dest, inet_ntoa(((struct sockaddr_in *)in)->sin_addr), size);
+	dest[size-1]=0;
 	return dest;
 #else
 	switch(in->sa_family) {
