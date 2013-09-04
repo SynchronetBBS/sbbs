@@ -408,7 +408,7 @@ const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 			return NULL;
 		return dest;
 	}
-	if(addr->in.sa_family != AF_INET)
+	if(addr->addr.sa_family != AF_INET)
 		strncpy(dest, "<Address Family Not Supported>", size);
 	else
 		strncpy(dest, inet_ntoa(addr->in.sin_addr), size);
