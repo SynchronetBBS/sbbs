@@ -59,6 +59,7 @@
 #include <netdb.h>			/* gethostbyname */
 #include <sys/types.h>		/* For u_int32_t on FreeBSD */
 #include <netinet/in.h>		/* IPPROTO_IP */
+#include <sys/un.h>
 /* define _BSD_SOCKLEN_T_ in order to define socklen_t on darwin */
 #ifdef __DARWIN__
 #define _BSD_SOCKLEN_T_	int
@@ -85,6 +86,20 @@ typedef struct {
 	int		level;
 	int		value;
 } socket_option_t;
+
+/*
+ * Fancy sockaddr_* union
+ */
+union xp_sockaddr {
+	struct sockaddr			addr;
+	struct sockaddr_in		in;
+	struct sockaddr_in6		in6;
+#ifndef _WIN32
+	struct sockaddr_un		un;
+#endif
+	struct sockaddr_storage	store;
+};
+ 
 
 /**********************************/
 /* Socket Implementation-specific */
