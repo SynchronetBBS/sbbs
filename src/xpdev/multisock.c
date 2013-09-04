@@ -5,6 +5,7 @@
 #include <string.h>
 #include <gen_defs.h>
 #include <sockwrap.h>
+#include <dirwrap.h>
 #include <multisock.h>
 
 struct xpms_set *xpms_create(unsigned int retries, unsigned int wait_secs,
@@ -48,24 +49,49 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 {
 	struct xpms_sockdef	*new_socks;
     struct addrinfo		hints;
-    struct addrinfo		*res;
+    struct addrinfo		*res=NULL;
     struct addrinfo		*cur;
     unsigned int		added = 0;
     int					ret;
     char				port_str[6];
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_flags=AI_PASSIVE;
-	hints.ai_family=domain;
-	hints.ai_socktype=type;
-	hints.ai_protocol=protocol;
-	hints.ai_flags|=AI_NUMERICSERV;
-	hints.ai_flags|=AI_ADDRCONFIG;
-	sprintf(port_str, "%hu", port);
-	if((ret=getaddrinfo(addr, port_str, &hints, &res))!=0) {
-		if(xpms_set->lprintf)
-			xpms_set->lprintf(LOG_CRIT, "!ERROR %d calling getaddrinfo() on %s", ret, addr);
-		return FALSE;
+#ifndef _WIN32
+	struct addrinfo		dummy;
+	struct sockaddr_un	un_addr;
+
+	if(domain == AF_UNIX) {
+		memset(&dummy, 0, sizeof(dummy));
+		dummy.ai_family = AF_UNIX;
+		dummy.ai_socktype = type;
+		dummy.ai_addr = (struct sockaddr *)&un_addr;
+		un_addr.sun_family=AF_UNIX;
+
+		if(strlen(addr) >= sizeof(un_addr.sun_path)) {
+			if(xpms_set->lprintf)
+				xpms_set->lprintf(LOG_ERR, "!ERROR %s is too long for a AF_UNIX socket", addr);
+			return FALSE;
+		}
+		strcpy(un_addr.sun_path,addr);
+		if(fexist(addr))
+			unlink(addr);
+		dummy.ai_addrlen = sizeof(un_addr);
+		res = &dummy;
+	}
+#endif
+	if(res == NULL) {
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_flags=AI_PASSIVE;
+		hints.ai_family=domain;
+		hints.ai_socktype=type;
+		hints.ai_protocol=protocol;
+		hints.ai_flags|=AI_NUMERICSERV;
+		hints.ai_flags|=AI_ADDRCONFIG;
+		sprintf(port_str, "%hu", port);
+		if((ret=getaddrinfo(addr, port_str, &hints, &res))!=0) {
+			if(xpms_set->lprintf)
+				xpms_set->lprintf(LOG_CRIT, "!ERROR %d calling getaddrinfo() on %s", ret, addr);
+			return FALSE;
+		}
 	}
 
 	for(cur=res; cur; cur=cur->ai_next) {
@@ -126,7 +152,10 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		xpms_set->sock_count++;
 	}
 
-	freeaddrinfo(res);
+#ifndef _WIN32
+	if(res != &dummy)
+#endif
+		freeaddrinfo(res);
 	if(added)
 		return TRUE;
 	return FALSE;
