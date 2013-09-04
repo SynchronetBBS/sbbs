@@ -38,6 +38,11 @@
  *                              list the text replacements will only work if
  *                              text replacements is enabled.
  *                              After some more testing, I decided to release 1.29 today.
+ * 2013-09-03 Eric Oulashin     Version 1.30
+ *                              Updated so that macro text replacements won't
+ *                              lowercase the replacement text when in literal
+ *                              match & replace mode.  It will now take the
+ *                              replacement text as-is.
  */
 
 /* Command-line arguments:
@@ -110,8 +115,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.29";
-const EDITOR_VER_DATE = "2013-09-02";
+const EDITOR_VERSION = "1.30";
+const EDITOR_VER_DATE = "2013-09-03";
 
 
 // Program variables

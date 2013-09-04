@@ -34,6 +34,16 @@
  *                              which are helpers for doMacroTxtReplacementInEditLine()
  *                              for checking & fixing first-letter capitalization
  *                              after doing a regex replace.
+ * 2013-09-03 Eric Oulashin     Updated populateTxtReplacements() so that it won't
+ *                              force the replacement text strings to lowercase
+ *                              when not using regular expressions.  Also made
+ *                              use of strip_ctrl() with the replacement text to
+ *                              prevent the use of color codes, which might mess
+ *                              up SlyEdit's tracking of string indexes, etc.
+ *                              Updated doMacroTxtReplacementInEditLine() so
+ *                              that macro text replacements won't lowercase the
+ *                              replacement text when in literal match & replace
+ *                              mode.
  *                              
  */
 
@@ -2320,10 +2330,9 @@ function populateTxtReplacements(pArray, pRegex)
 
          // Extract the word to search and substitution word from the line.  If
          // not using regular expressions, then convert the word to search to
-         // all uppercase (for case-insensitive searching) and the substitution
-         // word to all lowercase (to make sure it looks good).
+         // all uppercase for case-insensitive searching.
          wordToSearch = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-         substWord = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+         substWord = strip_ctrl(trimSpaces(fileLine.substr(equalsPos+1), true, false, true));
          // Make sure substWord only contains printable characters.  If not, then
          // skip this one.
          var substIsPrintable = true;
@@ -2344,7 +2353,6 @@ function populateTxtReplacements(pArray, pRegex)
          else
          {
             wordToSearch = wordToSearch.toUpperCase();
-            substWord = substWord.toLowerCase();
             if (wordToSearch != substWord.toUpperCase())
             {
                pArray[wordToSearch] = substWord;
@@ -2570,7 +2578,7 @@ function doMacroTxtReplacementInEditLine(pTxtReplacements, pEditLinesIndex, pCha
          wordObj.word = wordObj.word.toUpperCase();
          if (pTxtReplacements.hasOwnProperty(wordObj.word))
          {
-            txtReplacement = pTxtReplacements[wordObj.word].toLowerCase();
+            txtReplacement = pTxtReplacements[wordObj.word];
             retObj.madeTxtReplacement = true;
          }
       }
