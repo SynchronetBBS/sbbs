@@ -250,6 +250,7 @@ typedef int32_t         time32_t;
 
 /* Windows Types */
 
+#ifndef _WIN32
 #ifndef BYTE
 #define BYTE    uint8_t
 #endif
@@ -267,11 +268,13 @@ typedef int32_t         time32_t;
 #define TRUE    1
 #define FALSE   0
 #endif
-#ifndef INT_TO_BOOL
-#define INT_TO_BOOL(x)  ((x)?TRUE:FALSE)
-#endif
 #ifndef HANDLE
 #define HANDLE  void*
+#endif
+#endif
+
+#ifndef INT_TO_BOOL
+#define INT_TO_BOOL(x)  ((x)?TRUE:FALSE)
 #endif
 
 /* Custom Types */
