@@ -442,3 +442,15 @@ uint16_t inet_addrport(union xp_sockaddr *addr)
 			return 0;
 	}
 }
+
+void inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
+{
+	switch(addr->addr.sa_family) {
+		case AF_INET:
+			addr->in.sin_port = htons(port);
+			break;
+		case AF_INET6:
+			addr->in6.sin6_port = htons(port);
+			break;
+	}
+}

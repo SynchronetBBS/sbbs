@@ -218,6 +218,7 @@ int 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 int		nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
 const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
 uint16_t inet_addrport(union xp_sockaddr *addr);
+void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
 
 #ifdef __cplusplus
 }
