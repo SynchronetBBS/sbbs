@@ -420,6 +420,10 @@ const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 			return inet_ntop(addr->in.sin_family, &addr->in.sin_addr, dest, size);
 		case AF_INET6:
 			return inet_ntop(addr->in6.sin6_family, &addr->in6.sin6_addr, dest, size);
+		case AF_UNIX:
+			strncpy(dest, addr->un.sun_path, size);
+			dest[size-1]=0;
+			return dest;
 		default:
 			safe_snprintf(dest, size, "<unknown address>");
 			return NULL;
