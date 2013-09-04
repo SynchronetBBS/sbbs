@@ -2024,7 +2024,11 @@ void output_thread(void* arg)
 	if(!sbbs->outbuf.highwater_mark) {
 		socklen_t	sl;
 		sl=sizeof(i);
-		if(!getsockopt(sbbs->client_socket, IPPROTO_TCP, TCP_MAXSEG, &i, &sl)) {
+		if(!getsockopt(sbbs->client_socket, IPPROTO_TCP, TCP_MAXSEG, 
+#ifdef _WIN32
+			(char *)
+#endif
+			&i, &sl)) {
 			/* Check for sanity... */
 			if(i>100) {
 				sbbs->outbuf.highwater_mark=i;
