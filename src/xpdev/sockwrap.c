@@ -387,7 +387,7 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 	return result;
 }
 
-const char *inet_addrtop(SOCKADDR *in, char *dest, size_t size)
+const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 {
 #ifdef _WIN32
 	static INT (WSAAPI *a2s)(LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFO, LPTSTR, LPDWORD)=NULL;
@@ -404,22 +404,22 @@ const char *inet_addrtop(SOCKADDR *in, char *dest, size_t size)
 	if(a2s) {
 		DWORD	dsize=size;
 
-		if(a2s(in, SOCK_MAXADDRLEN, NULL, dest, &dsize)==SOCKET_ERROR)
+		if(a2s(&addr->addr, SOCK_MAXADDRLEN, NULL, dest, &dsize)==SOCKET_ERROR)
 			return NULL;
 		return dest;
 	}
-	if(in->sa_family != AF_INET)
+	if(addr->in.sa_family != AF_INET)
 		strncpy(dest, "<Address Family Not Supported>", size);
 	else
-		strncpy(dest, inet_ntoa(((struct sockaddr_in *)in)->sin_addr), size);
+		strncpy(dest, inet_ntoa(addr->in.sin_addr), size);
 	dest[size-1]=0;
 	return dest;
 #else
-	switch(in->sa_family) {
+	switch(addr->addr.sa_family) {
 		case AF_INET:
-			return inet_ntop(in->sa_family, &((struct sockaddr_in *)in)->sin_addr, dest, size);
+			return inet_ntop(addr->in.sin_family, &addr->in.sin_addr, dest, size);
 		case AF_INET6:
-			return inet_ntop(in->sa_family, &((struct sockaddr_in6 *)in)->sin6_addr, dest, size);
+			return inet_ntop(addr->in6.sin6_family, &addr->in6.sin6_addr, dest, size);
 		default:
 			safe_snprintf(dest, size, "<unknown address>");
 			return NULL;
@@ -427,13 +427,13 @@ const char *inet_addrtop(SOCKADDR *in, char *dest, size_t size)
 #endif
 }
 
-uint16_t inet_addrport(SOCKADDR *in)
+uint16_t inet_addrport(union xp_sockaddr *addr)
 {
-	switch(in->sa_family) {
+	switch(addr->addr.sa_family) {
 		case AF_INET:
-			return ntohs(((struct sockaddr_in *)in)->sin_port);
+			return ntohs(addr->in.sin_port);
 		case AF_INET6:
-			return ntohs(((struct sockaddr_in6 *)in)->sin6_port);
+			return ntohs(addr->in6.sin6_port);
 		default:
 			return 0;
 	}
