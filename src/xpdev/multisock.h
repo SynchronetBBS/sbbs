@@ -39,7 +39,7 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 	int protocol, str_list_t list, uint16_t default_port, const char *prot, 
 	void (*sock_init)(SOCKET, void *), int(*bind_init)(BOOL), void *cbdata);
-SOCKET xpms_accept(struct xpms_set *, struct sockaddr * addr, 
+SOCKET xpms_accept(struct xpms_set *, union xp_sockaddr * addr, 
 	socklen_t * addrlen, unsigned int timeout, void **cb_data);
 
 #ifdef __cplusplus

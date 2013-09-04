@@ -169,7 +169,7 @@ BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 	return one_good;
 }
 
-SOCKET xpms_accept(struct xpms_set *xpms_set, struct sockaddr * addr, 
+SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr, 
 	socklen_t * addrlen, unsigned int timeout, void **cb_data)
 {
 	fd_set			read_fs;
@@ -208,7 +208,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, struct sockaddr * addr,
 				if(FD_ISSET(xpms_set->socks[i].sock, &read_fs)) {
 					if(cb_data)
 						*cb_data=xpms_set->socks[i].cb_data;
-					return accept(xpms_set->socks[i].sock, addr, addrlen);
+					return accept(xpms_set->socks[i].sock, &addr->addr, addrlen);
 				}
 				if(FD_ISSET(xpms_set->socks[i].sock, &except_fs)) {
 					closesocket(xpms_set->socks[i].sock);
