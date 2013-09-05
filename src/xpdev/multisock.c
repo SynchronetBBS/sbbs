@@ -175,8 +175,9 @@ BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 	BOOL	one_good=FALSE;
 	
 	for(iface=list; iface && *iface; iface++) {
-		host=strdup(*iface);
 		WORD	port=default_port;
+
+		host=strdup(*iface);
 
 		host_str=host;
 		if(xpms_set->lprintf)
