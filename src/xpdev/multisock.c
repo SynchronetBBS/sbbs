@@ -7,6 +7,7 @@
 #include <sockwrap.h>
 #include <dirwrap.h>
 #include <multisock.h>
+#include <stdarg.h>
 
 struct xpms_set *xpms_create(unsigned int retries, unsigned int wait_secs,
 	int (*lprintf)(int level, const char *fmt, ...))
@@ -191,7 +192,7 @@ BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 			*(p++)=0;
 			sscanf(p, "%hu", &port);
 		}
-		if(xpms_add(xpms_set, PF_UNSPEC, SOCK_STREAM, 0, host_str, port, prot, sock_init, bind_init, cbdata))
+		if(xpms_add(xpms_set, domain, type, protocol, host_str, port, prot, sock_init, bind_init, cbdata))
 			one_good=TRUE;
 		free(host);
 	}
@@ -248,4 +249,3 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 
 	return INVALID_SOCKET;
 }
-
