@@ -139,14 +139,16 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 				bind_init(TRUE);
 		}
 
-		if(listen(xpms_set->socks[xpms_set->sock_count].sock, SOMAXCONN)==-1) {
-			if(xpms_set->lprintf)
-				xpms_set->lprintf(LOG_WARNING, "%04d !ERROR %d listen()ing on port %d"
-						, xpms_set->socks[xpms_set->sock_count].sock, ERROR_VALUE, port);
-			closesocket(xpms_set->socks[xpms_set->sock_count].sock);
-			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);
-			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
-			continue;
+		if(type != SOCK_DGRAM) {
+			if(listen(xpms_set->socks[xpms_set->sock_count].sock, SOMAXCONN)==-1) {
+				if(xpms_set->lprintf)
+					xpms_set->lprintf(LOG_WARNING, "%04d !ERROR %d listen()ing on port %d"
+							, xpms_set->socks[xpms_set->sock_count].sock, ERROR_VALUE, port);
+				closesocket(xpms_set->socks[xpms_set->sock_count].sock);
+				FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);
+				FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
+				continue;
+			}
 		}
 
 		added++;
