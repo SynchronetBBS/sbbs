@@ -206,7 +206,6 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 	socklen_t * addrlen, unsigned int timeout, void **cb_data)
 {
 	fd_set			read_fs;
-	fd_set			except_fs;
 	int				i;
 	struct timeval	tv;
 	struct timeval	*tvp;
@@ -217,7 +216,6 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 		if(xpms_set->socks[i].sock == INVALID_SOCKET)
 			continue;
 		FD_SET(xpms_set->socks[i].sock, &read_fs);
-		FD_SET(xpms_set->socks[i].sock, &except_fs);
 		if(xpms_set->socks[i].sock > max_sock)
 			max_sock=xpms_set->socks[i].sock+1;
 	}
@@ -229,7 +227,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 		tv.tv_usec=(timeout%1000)*1000;
 		tvp=&tv;
 	}
-	switch(select(max_sock, &read_fs, NULL, &except_fs, tvp)) {
+	switch(select(max_sock, &read_fs, NULL, NULL, tvp)) {
 		case 0:
 			return INVALID_SOCKET;
 		case -1:
@@ -242,10 +240,6 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 					if(cb_data)
 						*cb_data=xpms_set->socks[i].cb_data;
 					return accept(xpms_set->socks[i].sock, &addr->addr, addrlen);
-				}
-				if(FD_ISSET(xpms_set->socks[i].sock, &except_fs)) {
-					closesocket(xpms_set->socks[i].sock);
-					xpms_set->socks[i].sock = INVALID_SOCKET;
 				}
 			}
 	}
