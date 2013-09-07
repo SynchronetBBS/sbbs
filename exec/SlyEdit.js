@@ -43,6 +43,10 @@
  *                              lowercase the replacement text when in literal
  *                              match & replace mode.  It will now take the
  *                              replacement text as-is.
+ * 2013-09-07 Eric Oulashin     Version 1.31
+ *                              Bug fix: Updated ReadSlyEditConfigFile() to
+ *                              default cfgObj.genColors.txtReplacementList to
+ *                              ensure that it gets defined.
  */
 
 /* Command-line arguments:
@@ -115,8 +119,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.30";
-const EDITOR_VER_DATE = "2013-09-03";
+const EDITOR_VERSION = "1.31";
+const EDITOR_VER_DATE = "2013-09-07";
 
 
 // Program variables

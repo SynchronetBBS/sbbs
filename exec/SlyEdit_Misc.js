@@ -44,7 +44,9 @@
  *                              that macro text replacements won't lowercase the
  *                              replacement text when in literal match & replace
  *                              mode.
- *                              
+ * 2013-09-07 Eric Oulashin     Bug fix: Updated ReadSlyEditConfigFile() to
+ *                              default cfgObj.genColors.txtReplacementList to
+ *                              ensure that it gets defined.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -658,6 +660,7 @@ function ReadSlyEditConfigFile()
    cfgObj.genColors.msgAbortedText = "nmh";
    cfgObj.genColors.emptyMsgNotSentText = "nmh";
    cfgObj.genColors.genMsgErrorText = "nmh";
+   cfgObj.genColors.txtReplacementList = "nc";
 
    // Default Ice-style colors
    cfgObj.iceColors = new Object();
@@ -2303,6 +2306,7 @@ function populateTxtReplacements(pArray, pRegex)
       var fileLine = null;      // A line read from the file
       var equalsPos = 0;        // Position of a = in the line
       var wordToSearch = null; // A word to be replaced
+      var wordToSearchUpper = null;
       var substWord = null;    // The word to substitue
       // This tests numTxtReplacements < 9999 so that the 9999th one is the last
       // one read.
@@ -2332,6 +2336,7 @@ function populateTxtReplacements(pArray, pRegex)
          // not using regular expressions, then convert the word to search to
          // all uppercase for case-insensitive searching.
          wordToSearch = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+         wordToSearchUpper = wordToSearch.toUpperCase();
          substWord = strip_ctrl(trimSpaces(fileLine.substr(equalsPos+1), true, false, true));
          // Make sure substWord only contains printable characters.  If not, then
          // skip this one.
@@ -2342,22 +2347,13 @@ function populateTxtReplacements(pArray, pRegex)
             continue;
 
          // And add the search word and replacement text to pArray.
-         if (pRegex)
+         if (wordToSearchUpper != substWord.toUpperCase())
          {
-            if (wordToSearch.toUpperCase() != substWord.toUpperCase())
-            {
+            if (pRegex)
                pArray[wordToSearch] = substWord;
-               ++numTxtReplacements;
-            }
-         }
-         else
-         {
-            wordToSearch = wordToSearch.toUpperCase();
-            if (wordToSearch != substWord.toUpperCase())
-            {
-               pArray[wordToSearch] = substWord;
-               ++numTxtReplacements;
-            }
+            else
+               pArray[wordToSearchUpper] = substWord;
+            ++numTxtReplacements;
          }
       }
 
