@@ -216,7 +216,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 		if(xpms_set->socks[i].sock == INVALID_SOCKET)
 			continue;
 		FD_SET(xpms_set->socks[i].sock, &read_fs);
-		if(xpms_set->socks[i].sock > max_sock)
+		if(xpms_set->socks[i].sock >= max_sock)
 			max_sock=xpms_set->socks[i].sock+1;
 	}
 
