@@ -47,6 +47,13 @@
  *                              Bug fix: Updated ReadSlyEditConfigFile() to
  *                              default cfgObj.genColors.txtReplacementList to
  *                              ensure that it gets defined.
+ *                              Bug fix: Made use of K_NOSPIN wherever user input
+ *                              is done so that the spinning cursor doesn't overwrite
+ *                              anything on the screen.
+ *                              Code refactor: Moved doMacroTxtReplacementInEditLine()
+ *                              and getWordFromEditLine() to TextLine member
+ *                              methods TextLine_doMacroTxtReplacement() and
+ *                              TextLine_getWord() in SlyEdit_Misc.js.
  */
 
 /* Command-line arguments:
@@ -124,7 +131,6 @@ const EDITOR_VER_DATE = "2013-09-07";
 
 
 // Program variables
-var gIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
 var gEditTop = 6;                         // The top line of the edit area
 var gEditBottom = console.screen_rows-2;  // The last line of the edit area
 // gEditLeft and gEditRight are the rightmost and leftmost columns of the edit
@@ -814,15 +820,7 @@ function doEditLoop()
    var continueOn = true;
    while (continueOn)
    {
-      // Get a key, and time out after 5 minutes.
-      // Get a keypress from the user.  If the setting for using the
-      // input timeout is enabled and the user is not a sysop, then use
-      // the input timeout specified in the config file.  Otherwise,
-      // don't use a timeout.
-      if (gConfigSettings.userInputTimeout && !gIsSysop)
-         userInput = console.inkey(K_NOCRLF|K_NOSPIN, gConfigSettings.inputTimeoutMS);
-      else
-         userInput = console.getkey(K_NOCRLF|K_NOSPIN);
+      userInput = getUserKey(K_NOCRLF|K_NOSPIN, gConfigSettings);
       // If userInput is blank, then the input timeout was probably
       // reached, so abort.
       if (userInput == "")
@@ -864,7 +862,7 @@ function doEditLoop()
             continueOn = false;
             break;
          case CMDLIST_HELP_KEY:
-            displayCommandList(true, true, true, gCanCrossPost, gIsSysop, gConfigSettings.enableTextReplacements);
+            displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop, gConfigSettings.enableTextReplacements);
             clearEditAreaBuffer();
             fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
                            gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
@@ -904,9 +902,8 @@ function doEditLoop()
             }
             break;
          case CHANGE_COLOR_KEY:
-                /*
             // Let the user change the text color.
-            if (gConfigSettings.allowColorSelection)
+            /*if (gConfigSettings.allowColorSelection)
             {
                var retObject = doColorSelection(curpos, currentWordLength);
                curpos.x = retObject.x;
@@ -921,8 +918,7 @@ function doEditLoop()
                   console.print("nhr" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
                   continue;
                }
-            }
-            */
+            }*/
             break;
          case KEY_UP:
             // Move the cursor up one line.
@@ -1162,7 +1158,7 @@ function doEditLoop()
                else if (retObject.showHelp)
                {
                   displayProgramInfo(true, false);
-                  displayCommandList(false, false, true, gCanCrossPost, gIsSysop, gConfigSettings.enableTextReplacements);
+                  displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop, gConfigSettings.enableTextReplacements);
                   clearEditAreaBuffer();
                   fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
                                 gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
@@ -1211,9 +1207,9 @@ function doEditLoop()
             break;
          case IMPORT_FILE_KEY:
             // Only let sysops import files.
-            if (gIsSysop)
+            if (gConfigSettings.userIsSysop)
             {
-               var retObj = importFile(gIsSysop, curpos);
+               var retObj = importFile(gConfigSettings.userIsSysop, curpos);
                curpos.x = retObj.x;
                curpos.y = retObj.y;
                currentWordLength = retObj.currentWordLength;
@@ -1222,9 +1218,9 @@ function doEditLoop()
             break;
          case EXPORT_FILE_KEY:
             // Only let sysops export files.
-            if (gIsSysop)
+            if (gConfigSettings.userIsSysop)
             {
-               exportToFile(gIsSysop);
+               exportToFile(gConfigSettings.userIsSysop);
                console.gotoxy(curpos);
             }
             break;
@@ -1780,9 +1776,8 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
    var madeTxtReplacement = false; // For screen refresh purposes
    if (gConfigSettings.enableTextReplacements && (pUserInput == " "))
    {
-      var txtReplaceObj = doMacroTxtReplacementInEditLine(gTxtReplacements, gEditLinesIndex,
-                                                     gTextLineIndex,
-                                                     gConfigSettings.textReplacementsUseRegex);
+      var txtReplaceObj = gEditLines[gEditLinesIndex].doMacroTxtReplacement(gTxtReplacements, gTextLineIndex,
+                                                            gConfigSettings.textReplacementsUseRegex);
       madeTxtReplacement = txtReplaceObj.madeTxtReplacement;
       if (madeTxtReplacement)
       {
@@ -2068,9 +2063,8 @@ function doEnterKey(pCurpos, pCurrentWordLength)
    var cursorHorizDiff = 0;
    if (gConfigSettings.enableTextReplacements)
    {
-      var txtReplaceObj = doMacroTxtReplacementInEditLine(gTxtReplacements, gEditLinesIndex,
-                                                     gTextLineIndex-1,
-                                                     gConfigSettings.textReplacementsUseRegex);
+      var txtReplaceObj = gEditLines[gEditLinesIndex].doMacroTxtReplacement(gTxtReplacements, gTextLineIndex-1,
+                                                             gConfigSettings.textReplacementsUseRegex);
       if (txtReplaceObj.madeTxtReplacement)
       {
          gTextLineIndex += txtReplaceObj.wordLenDiff;
@@ -2346,8 +2340,8 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
    var continueOn = true;
    while (continueOn)
    {
-      // Get a key, and time out after 1 minute.
-      userInput = console.inkey(0, 100000);
+      // Get a keypress from the user
+      userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
       if (userInput == "")
       {
          // The input timeout was reached.  Abort.
@@ -2965,7 +2959,7 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
    var editLineDiff = pCurpos.y - gEditTop;
    var menuChoice = doDCTMenu(gEditLeft, gEditRight, gEditTop,
                               displayMessageRectangle, gEditLinesIndex,
-                              editLineDiff, gIsSysop, gCanCrossPost);
+                              editLineDiff, gConfigSettings.userIsSysop, gCanCrossPost);
    // Take action according to the user's choice.
    // Save
    if ((menuChoice == "S") || (menuChoice == CTRL_Z) ||
@@ -2997,7 +2991,7 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
    // Import file (sysop only)
    else if (menuChoice == DCTMENU_SYSOP_IMPORT_FILE)
    {
-      var retval = importFile(gIsSysop, pCurpos);
+      var retval = importFile(gConfigSettings.userIsSysop, pCurpos);
       returnObj.x = retval.x;
       returnObj.y = retval.y;
       returnObj.currentWordLength = retval.currentWordLength;
@@ -3005,9 +2999,9 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
    // Import file for sysop, or Insert/Overwrite toggle for non-sysop
    else if (menuChoice == "I")
    {
-      if (gIsSysop)
+      if (gConfigSettings.userIsSysop)
       {
-         var retval = importFile(gIsSysop, pCurpos);
+         var retval = importFile(gConfigSettings.userIsSysop, pCurpos);
          returnObj.x = retval.x;
          returnObj.y = retval.y;
          returnObj.currentWordLength = retval.currentWordLength;
@@ -3026,7 +3020,7 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
    // Command List
    else if ((menuChoice == "O") || (menuChoice == DCTMENU_HELP_COMMAND_LIST))
    {
-      displayCommandList(true, true, true, gCanCrossPost, gIsSysop, gConfigSettings.enableTextReplacements);
+      displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop, gConfigSettings.enableTextReplacements);
       clearEditAreaBuffer();
       fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
                      gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
@@ -3053,9 +3047,9 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
    // Export the message
    else if ((menuChoice == "X") || (menuChoice == DCTMENU_SYSOP_EXPORT_FILE))
    {
-      if (gIsSysop)
+      if (gConfigSettings.userIsSysop)
       {
-         exportToFile(gIsSysop);
+         exportToFile(gConfigSettings.userIsSysop);
          console.gotoxy(returnObj.x, returnObj.y);
       }
    }
@@ -3065,11 +3059,16 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
       // We don't need to do do anything in here.
    }
    // Cross-post
-   else if ((menuChoice == CTRL_C) || (menuChoice == "C") ||
-             (menuChoice == DCTMENU_CROSS_POST))
+   else if ((menuChoice == CTRL_C) || (menuChoice == "C") || (menuChoice == DCTMENU_CROSS_POST))
    {
       if (gCanCrossPost)
          doCrossPosting(pCurpos);
+   }
+   // List text replacements
+   else if ((menuChoice == CTRL_T) || (menuChoice == "T") || (menuChoice == DCTMENU_LIST_TXT_REPLACEMENTS))
+   {
+      if (gConfigSettings.enableTextReplacements)
+         listTextReplacements();
    }
 
    // Make sure the edit color attribute is set back.
@@ -3126,7 +3125,7 @@ function handleIceESCMenu(pCurpos, pCurrentWordLength)
          break;
       case ICE_ESC_MENU_HELP:
          displayProgramInfo(true, false);
-         displayCommandList(false, false, true, gCanCrossPost, gIsSysop, gConfigSettings.enableTextReplacements);
+         displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop, gConfigSettings.enableTextReplacements);
          clearEditAreaBuffer();
          fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
                         gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
@@ -3693,11 +3692,12 @@ function doColorSelection(pCurpos, pCurrentWordLength)
    console.cleartoeol("n");
    console.crlf();
    console.clearline("n");
+   //Special: H:High Intensity I:Blinking N:Normal ¦ Choose Color: 
    console.print("Special: whH:n" + gTextAttrs + "hHigh Intensity wI:n" + gTextAttrs + "iBlinking nwhN:nNormal cþ nChoose Color: ");
    var attr = FORE_ATTR;
    var toggle = true;
    //var key = console.getkeys("KRGYBMCW01234567HIN").toString(); // Outputs a CR..  bad
-   var key = console.getkey(K_UPPER|K_NOCRLF);
+   var key = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
    switch (key)
    {
       // Foreground colors:
@@ -3791,8 +3791,8 @@ function doColorSelection(pCurpos, pCurrentWordLength)
    var continueOn = true;
    while (continueOn)
    {
-      // Get a key, and time out after 1 minute.
-      userInput = console.inkey(0, 100000);
+      // Get a keypress from the user
+      userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
       if (userInput == "")
       {
          // The input timeout was reached.  Abort.
@@ -4199,7 +4199,7 @@ function doCrossPosting(pOriginalCurpos)
     pageNum = calcPageNum(topMsgGrpIndex, selBoxInnerHeight);
 
     // Get a key from the user (upper-case) and take action based upon it.
-    userInput = console.getkey(K_UPPER | K_NOCRLF);
+    userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
     switch (userInput)
     {
       case KEY_UP: // Move up one message group in the list
@@ -4774,7 +4774,7 @@ function crossPosting_selectSubBoardInGrp(pGrpIndex, pSelBoxUpperLeft, pSelBoxLo
     pageNum = calcPageNum(topMsgSubIndex, pSelBoxInnerHeight);
 
     // Get a key from the user (upper-case) and take action based upon it.
-    userInput = console.getkey(K_UPPER | K_NOCRLF);
+    userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
     switch (userInput)
     {
       case KEY_UP: // Move up one message sub-board in the list
@@ -5467,7 +5467,7 @@ function listTextReplacements()
       }
 
       // Get a key from the user (upper-case) and take action based upon it.
-      userInput = console.getkey(K_UPPER | K_NOCRLF);
+      userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
       switch (userInput)
       {
          case KEY_UP:

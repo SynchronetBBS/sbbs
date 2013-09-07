@@ -47,6 +47,10 @@
  * 2013-09-07 Eric Oulashin     Bug fix: Updated ReadSlyEditConfigFile() to
  *                              default cfgObj.genColors.txtReplacementList to
  *                              ensure that it gets defined.
+ *                              Code refactor: Moved doMacroTxtReplacementInEditLine()
+ *                              and getWordFromEditLine() to TextLine member
+ *                              methods TextLine_doMacroTxtReplacement() and
+ *                              TextLine_getWord().
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -177,6 +181,8 @@ function TextLine(pText, pHardNewlineEnd, pIsQuoteLine)
    // Functions
    this.length = TextLine_Length;
    this.print = TextLine_Print;
+   this.doMacroTxtReplacement = TextLine_doMacroTxtReplacement;
+   this.getWord = TextLine_getWord;
 }
 // For the TextLine class: Returns the length of the text.
 function TextLine_Length()
@@ -194,6 +200,171 @@ function TextLine_Print(pClearToEOL)
    if (pClearToEOL)
       console.cleartoeol();
 }
+// Performs text replacement (AKA macro replacement) in the text line.
+//
+// Parameters:
+//  pTxtReplacements: An associative array of text to be replaced (i.e.,
+//                    gTxtReplacements)
+//  pCharIndex: The current character index in the text line
+//  pUseRegex: Whether or not to treat the text replacement search string as a
+//             regular expression.
+//
+// Return value: An object containing the following properties:
+//               textLineIndex: The updated text line index (integer)
+//               wordLenDiff: The change in length of the word that
+//                            was replaced (integer)
+//               wordStartIdx: The index of the first character in the word.
+//                             Only valid if a word was found.  Otherwise, this
+//                             will be 0.
+//               newTextEndIdx: The index of the last character in the new
+//                              text.  Only valid if a word was replaced.
+//                              Otherwise, this will be 0.
+//               newTextLen: The length of the new text in the string.  Will be
+//                           the length of the existing word if the word wasn't
+//                           replaced or 0 if no word was found.
+//               madeTxtReplacement: Whether or not a text replacement was made
+//                                   (boolean)
+function TextLine_doMacroTxtReplacement(pTxtReplacements, pCharIndex, pUseRegex)
+{
+   var retObj = new Object();
+   retObj.textLineIndex = pCharIndex;
+   retObj.wordLenDiff = 0;
+   retObj.wordStartIdx = 0;
+   retObj.newTextEndIdx = 0;
+   retObj.newTextLen = 0;
+   retObj.madeTxtReplacement = false;
+
+   var wordObj = this.getWord(retObj.textLineIndex);
+   if (wordObj.foundWord)
+   {
+      retObj.wordStartIdx = wordObj.startIdx;
+      retObj.newTextLen = wordObj.word.length;
+
+      // See if the word starts with a capital letter; if so, we'll capitalize
+      // the replacement word.
+      var firstCharUpper = false;
+      var txtReplacement = "";
+      if (pUseRegex)
+      {
+         // Since a regular expression might have more characters in addition
+         // to the actual word, we need to go through all the replacement strings
+         // in pTxtReplacements and use the first one that changes the text.
+         for (var prop in pTxtReplacements)
+         {
+            if (pTxtReplacements.hasOwnProperty(prop))
+            {
+               var regex = new RegExp(prop);
+               txtReplacement = wordObj.word.replace(regex, pTxtReplacements[prop]);
+               retObj.madeTxtReplacement = (txtReplacement != wordObj.word);
+               // If a text replacement was made, then check and see if the first
+               // letter in the original text was uppercase, and if so, make the
+               // first letter in the new text (txtReplacement) uppercase.
+               if (retObj.madeTxtReplacement)
+               {
+                  if (firstLetterIsUppercase(wordObj.word))
+                  {
+                     var letterInfo = getFirstLetterFromStr(txtReplacement);
+                     if (letterInfo.idx > -1)
+                     {
+                        txtReplacement = txtReplacement.substr(0, letterInfo.idx)
+                                       + letterInfo.letter.toUpperCase()
+                                       + txtReplacement.substr(letterInfo.idx+1);
+                     }
+                  }
+                  // Now that we've made a text replacement, stop going through
+                  // pTxtReplacements looking for a matching regex.
+                  break;
+               }
+            }
+         }
+      }
+      else
+      {
+         // Not using a regular expression.
+         firstCharUpper = (wordObj.word.charAt(0) == wordObj.word.charAt(0).toUpperCase());
+         // Convert the word to all uppercase to do the case-insensitive lookup
+         // in pTxtReplacements.
+         wordObj.word = wordObj.word.toUpperCase();
+         if (pTxtReplacements.hasOwnProperty(wordObj.word))
+         {
+            txtReplacement = pTxtReplacements[wordObj.word];
+            retObj.madeTxtReplacement = true;
+         }
+      }
+      if (retObj.madeTxtReplacement)
+      {
+         if (firstCharUpper)
+            txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
+         this.text = this.text.substr(0, wordObj.startIdx) + txtReplacement
+                   + this.text.substr(wordObj.endIndex+1);
+         // Based on the difference in word length, update the data that
+         // matters (retObj.textLineIndex, which keeps track of the index of the current line).
+         // Note: The horizontal cursor position variable should be replaced after calling this
+         // function.
+         retObj.wordLenDiff = txtReplacement.length - wordObj.word.length;
+         retObj.textLineIndex += retObj.wordLenDiff;
+         retObj.newTextEndIdx = wordObj.endIndex + retObj.wordLenDiff;
+         retObj.newTextLen = txtReplacement.length;
+      }
+   }
+
+   return retObj;
+}
+// Returns the word in a text line at a given index.  If the index
+// is at a space, then this function will return the word before
+// (to the left of) the space.
+//
+// Parameters:
+//  pEditLinesIndex: The index of the line to look at (0-based)
+//  pCharIndex: The character index in the text line (0-based)
+//
+// Return value: An object containing the following properties:
+//               foundWord: Whether or not a word was found (boolean)
+//               word: The word in the edit line at the given indexes (text).
+//                     This might include control/color codes, etc..
+//               plainWord: The word in the edit line without any control
+//                          or color codes, etc.  This may or may not be
+//                          the same as word.
+//               startIdx: The index of the first character of the word (integer)
+//               endIndex: The index of the last character of the word (integer)
+//                         This includes any control/color codes, etc.
+function TextLine_getWord(pCharIndex)
+{
+   var retObj = new Object();
+   retObj.foundWord = false;
+   retObj.word = "";
+   retObj.plainWord = "";
+   retObj.startIdx = 0;
+   retObj.endIndex = 0;
+
+   // Parameter checking
+   if ((pCharIndex < 0) || (pCharIndex >= this.text.length))
+      return retObj;
+
+   // If pCharIndex specifies the index of a space, then look for a non-space
+   // character before it.
+   var charIndex = pCharIndex;
+   while (this.text.charAt(charIndex) == " ")
+      --charIndex;
+   // Look for the start & end of the word based on the indexes of a space
+   // before and at/after the given character index.
+   var wordStartIdx = charIndex;
+   var wordEndIdx = charIndex;
+   while ((this.text.charAt(wordStartIdx) != " ") && (wordStartIdx >= 0))
+      --wordStartIdx;
+   ++wordStartIdx;
+   while ((this.text.charAt(wordEndIdx) != " ") && (wordEndIdx < this.text.length))
+      ++wordEndIdx;
+   --wordEndIdx;
+
+   retObj.foundWord = true;
+   retObj.startIdx = wordStartIdx;
+   retObj.endIndex = wordEndIdx;
+   retObj.word = this.text.substring(wordStartIdx, wordEndIdx+1);
+   retObj.plainWord = strip_ctrl(retObj.word);
+   return retObj;
+}
+
 
 // AbortConfirmFuncParams constructor: This object contains parameters used by
 // the abort confirmation function (actually, there are separate ones for
@@ -634,6 +805,7 @@ function ReadSlyEditConfigFile()
    cfgObj.allowCrossPosting = true;
    cfgObj.enableTextReplacements = false;
    cfgObj.textReplacementsUseRegex = false;
+   cfgObj.userIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
 
    // General SlyEdit color settings
    cfgObj.genColors = new Object();
@@ -2365,7 +2537,7 @@ function populateTxtReplacements(pArray, pRegex)
 
 function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
 {
-   // Set up an array of color setting names 
+   // Set up an array of color setting names
    var colorSettingStrings = new Array();
    colorSettingStrings.push("crossPostBorder"); // Deprecated
    colorSettingStrings.push("crossPostBorderText"); // Deprecated
@@ -2424,179 +2596,6 @@ function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
 function charIsLetter(pChar)
 {
    return /^[ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈÌÒÙàèìòùÁÉÍÓÚÝáéíóúýÂÊÎÔÛâêîôûÃÑÕãñõÄËÏÖÜäëïöüçÇßØøÅåÆæÞþÐð]$/.test(pChar.toUpperCase());
-}
-
-// Returns the word in a text line at a given index.  If the index
-// is at a space, then this function will return the word before
-// (to the left of) the space.
-//
-// Parameters:
-//  pEditLinesIndex: The index of the line to look at (0-based)
-//  pCharIndex: The character index in the text line (0-based)
-//
-// Return value: An object containing the following properties:
-//               foundWord: Whether or not a word was found (boolean)
-//               word: The word in the edit line at the given indexes (text)
-//               editLineIndex: The index of the edit line (integer)
-//               startIdx: The index of the first character of the word (integer)
-//               endIndex: The index of the last character of the word (integer)
-function getWordFromEditLine(pEditLinesIndex, pCharIndex)
-{
-   var retObj = new Object();
-   retObj.foundWord = false;
-   retObj.word = "";
-   retObj.editLineIndex = pEditLinesIndex;
-   retObj.startIdx = 0;
-   retObj.endIndex = 0;
-
-   // Parameter checking
-   if ((pEditLinesIndex < 0) || (pEditLinesIndex >= gEditLines.length))
-   {
-      retObj.editLineIndex = 0;
-      return retObj;
-   }
-   if ((pCharIndex < 0) || (pCharIndex >= gEditLines[pEditLinesIndex].text.length))
-   {
-      //displayDebugText(1, 1, "pCharIndex: " + pCharIndex, null, true, false); // Temporary
-      //displayDebugText(1, 2, "Line len: " + gEditLines[pEditLinesIndex].text.length, console.getxy(), true, false); // Temporary
-      return retObj;
-   }
-
-   // If pCharIndex specifies the index of a space, then look for a non-space
-   // character before it.
-   var charIndex = pCharIndex;
-   while (gEditLines[pEditLinesIndex].text.charAt(charIndex) == " ")
-      --charIndex;
-   // Look for the start & end of the word based on the indexes of a space
-   // before and at/after the given character index.
-   var wordStartIdx = charIndex;
-   var wordEndIdx = charIndex;
-   while ((gEditLines[pEditLinesIndex].text.charAt(wordStartIdx) != " ") && (wordStartIdx >= 0))
-      --wordStartIdx;
-   ++wordStartIdx;
-   while ((gEditLines[pEditLinesIndex].text.charAt(wordEndIdx) != " ") && (wordEndIdx < gEditLines[pEditLinesIndex].text.length))
-      ++wordEndIdx;
-   --wordEndIdx;
-
-   retObj.foundWord = true;
-   retObj.startIdx = wordStartIdx;
-   retObj.endIndex = wordEndIdx;
-   retObj.word = gEditLines[pEditLinesIndex].text.substring(wordStartIdx, wordEndIdx+1);
-   return retObj;
-}
-
-// Performs text replacement (AKA macro replacement) in an edit line.
-//
-// Parameters:
-//  pTxtReplacements: An associative array of text to be replaced (i.e.,
-//                    gTxtReplacements)
-//  pEditLinesIndex: The index of the line in gEditLines
-//  pCharIndex: The current character index in the text line
-//  pUseRegex: Whether or not to treat the text replacement search string as a
-//             regular expression.
-//
-// Return value: An object containing the following properties:
-//               textLineIndex: The updated text line index (integer)
-//               wordLenDiff: The change in length of the word that
-//                            was replaced (integer)
-//               wordStartIdx: The index of the first character in the word.
-//                             Only valid if a word was found.  Otherwise, this
-//                             will be 0.
-//               newTextEndIdx: The index of the last character in the new
-//                              text.  Only valid if a word was replaced.
-//                              Otherwise, this will be 0.
-//               newTextLen: The length of the new text in the string.  Will be
-//                           the length of the existing word if the word wasn't
-//                           replaced or 0 if no word was found.
-//               madeTxtReplacement: Whether or not a text replacement was made
-//                                   (boolean)
-function doMacroTxtReplacementInEditLine(pTxtReplacements, pEditLinesIndex, pCharIndex, pUseRegex)
-{
-   var retObj = new Object();
-   retObj.textLineIndex = pCharIndex;
-   retObj.wordLenDiff = 0;
-   retObj.wordStartIdx = 0;
-   retObj.newTextEndIdx = 0;
-   retObj.newTextLen = 0;
-   retObj.madeTxtReplacement = false;
-
-   var wordObj = getWordFromEditLine(pEditLinesIndex, retObj.textLineIndex);
-   if (wordObj.foundWord)
-   {
-      retObj.wordStartIdx = wordObj.startIdx;
-      retObj.newTextLen = wordObj.word.length;
-
-      // See if the word starts with a capital letter; if so, we'll capitalize
-      // the replacement word.
-      //var firstCharUpper = (wordObj.word.charAt(0) == wordObj.word.charAt(0).toUpperCase());
-      var firstCharUpper = false;
-      var txtReplacement = "";
-      if (pUseRegex)
-      {
-         // Since a regular expression might have more characters in addition
-         // to the actual word, we need to go through all the replacement strings
-         // in pTxtReplacements and use the first one that changes the text.
-         for (var prop in pTxtReplacements)
-         {
-            if (pTxtReplacements.hasOwnProperty(prop))
-            {
-               var regex = new RegExp(prop);
-               txtReplacement = wordObj.word.replace(regex, pTxtReplacements[prop]);
-               retObj.madeTxtReplacement = (txtReplacement != wordObj.word);
-               // If a text replacement was made, then check and see if the first
-               // letter in the original text was uppercase, and if so, make the
-               // first letter in the new text (txtReplacement) uppercase.
-               if (retObj.madeTxtReplacement)
-               {
-                  if (firstLetterIsUppercase(wordObj.word))
-                  {
-                     var letterInfo = getFirstLetterFromStr(txtReplacement);
-                     if (letterInfo.idx > -1)
-                     {
-                        txtReplacement = txtReplacement.substr(0, letterInfo.idx)
-                                       + letterInfo.letter.toUpperCase()
-                                       + txtReplacement.substr(letterInfo.idx+1);
-                     }
-                  }
-                  // Now that we've made a text replacement, stop going through
-                  // pTxtReplacements looking for a matching regex.
-                  break;
-               }
-            }
-         }
-      }
-      else
-      {
-         // Not using a regular expression.
-         firstCharUpper = (wordObj.word.charAt(0) == wordObj.word.charAt(0).toUpperCase());
-         // Convert the word to all uppercase to do the case-insensitive lookup
-         // in pTxtReplacements.
-         wordObj.word = wordObj.word.toUpperCase();
-         if (pTxtReplacements.hasOwnProperty(wordObj.word))
-         {
-            txtReplacement = pTxtReplacements[wordObj.word];
-            retObj.madeTxtReplacement = true;
-         }
-      }
-      if (retObj.madeTxtReplacement)
-      {
-         if (firstCharUpper)
-            txtReplacement = txtReplacement.charAt(0).toUpperCase() + txtReplacement.substr(1);
-         gEditLines[pEditLinesIndex].text = gEditLines[pEditLinesIndex].text.substr(0, wordObj.startIdx)
-                                          + txtReplacement
-                                          + gEditLines[pEditLinesIndex].text.substr(wordObj.endIndex+1);
-         // Based on the difference in word length, update the data that
-         // matters (retObj.textLineIndex, which keeps track of the index of the current line).
-         // Note: The horizontal cursor position variable should be replaced after calling this
-         // function.
-         retObj.wordLenDiff = txtReplacement.length - wordObj.word.length;
-         retObj.textLineIndex += retObj.wordLenDiff;
-         retObj.newTextEndIdx = wordObj.endIndex + retObj.wordLenDiff;
-         retObj.newTextLen = txtReplacement.length;
-      }
-   }
-
-   return retObj;
 }
 
 // For configuration files, this function returns a fully-pathed filename.
@@ -2672,6 +2671,26 @@ function firstLetterIsUppercase(pString)
       firstIsUpper = (theLetter == theLetter.toUpperCase());
    }
    return firstIsUpper;
+}
+
+// Gets a keypress from the user.  Uses the configured timeout if configured to
+// do so and the user is not a sysop; otherwise (no timeout configured or the
+// user is a sysop), the configured input timeout will be used.
+//
+// Parameters:
+//  pMode: The input mode flag(s)
+//  pCfgObj: The configuration object
+//
+// Return value: The user's keypress (the return value of console.getkey()
+//               or console.inkey()).
+function getUserKey(pMode, pCfgObj)
+{
+   var userKey = "";
+   if (!pCfgObj.userInputTimeout || pCfgObj.userIsSysop)
+      userKey = console.getkey(pMode);
+   else
+      userKey = console.inkey(pMode, pCfgObj.inputTimeoutMS);
+   return userKey;
 }
 
 // This function displays debug text at a given location on the screen, then

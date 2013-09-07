@@ -65,6 +65,7 @@ var DCTMENU_HELP_COMMAND_LIST = 8;
 var DCTMENU_HELP_GENERAL = 9;
 var DCTMENU_HELP_PROGRAM_INFO = 10;
 var DCTMENU_CROSS_POST = 12;
+var DCTMENU_LIST_TXT_REPLACEMENTS = 13;
 
 // Read the color configuration file
 readColorConfig(gConfigSettings.DCTColors.ThemeFilename);
@@ -582,8 +583,8 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj)
       // Move the cursor where it needs to be to write the "Yes"
       // or "No"
       console.gotoxy(boxX+20, boxY+2);
-      // Get a key, (time out after 1 minute), and take appropriate action.
-		  userInput = console.inkey(0, 100000).toUpperCase();
+      // Get a key and take appropriate action.
+		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
       if (userInput == KEY_ENTER)
          continueOn = false;
       else if (userInput == "Y")
@@ -818,6 +819,15 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
       doDCTMenu.allMenus[helpMenuNum].addItem("C&ommand List   Ctrl-P", DCTMENU_HELP_COMMAND_LIST);
       doDCTMenu.allMenus[helpMenuNum].addItem("&General Help   Ctrl-G", DCTMENU_HELP_GENERAL);
       doDCTMenu.allMenus[helpMenuNum].addItem("&Program Info   Ctrl-R", DCTMENU_HELP_PROGRAM_INFO);
+      if (gConfigSettings.enableTextReplacements)
+      {
+         // For some reason, Ctrl-T isn't working properly in this context - It
+         // exits the help menu but doesn't exit the menu overall.  So for now,
+         // I'm not showing or allowing Ctrl-T in this context.
+         //doDCTMenu.allMenus[helpMenuNum].addItem("&Text replcmts  Ctrl-T", DCTMENU_LIST_TXT_REPLACEMENTS);
+         //doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_T, DCTMENU_LIST_TXT_REPLACEMENTS);
+         doDCTMenu.allMenus[helpMenuNum].addItem("&Text replcmts        ", DCTMENU_LIST_TXT_REPLACEMENTS);
+      }
       doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_P, DCTMENU_HELP_COMMAND_LIST);
       doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_G, DCTMENU_HELP_GENERAL);
       doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_R, DCTMENU_HELP_PROGRAM_INFO);
@@ -865,7 +875,7 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
          userInput = menuRetObj.userInput;
       // If nothing from the menu was matched, then get a key from the user.
       else
-         userInput = console.inkey(K_UPPER, 60000);
+         userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
       menuRetObj.userInput = "";
 
 		// If a menu return code was matched or userInput is blank (the
@@ -928,6 +938,11 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
             if (pCanCrossPost)
                continueOn = false;
             break;
+         case "T": // List text replacements
+         //case CTRL_T: // List text replacements
+            if (gConfigSettings.enableTextReplacements)
+               continueOn = false;
+            break;
          default:
             break;
       }
@@ -967,6 +982,8 @@ function valMatchesMenuCode(pVal, pIsSysop)
                    (pVal == DCTMENU_EDIT_FIND_TEXT) || (pVal == DCTMENU_HELP_COMMAND_LIST) ||
                    (pVal == DCTMENU_HELP_GENERAL) || (pVal == DCTMENU_HELP_PROGRAM_INFO));
    }
+   if (gConfigSettings.enableTextReplacements)
+      valMatch = (valMatches || DCTMENU_LIST_TXT_REPLACEMENTS);
    return valMatches;
 }
 
@@ -983,7 +1000,7 @@ function inputMatchesMenuSelection(pInput, pIsSysop)
            (pInput == "S") || (pInput == "A") || (pInput == "E") ||
            (pInput == "I") || (pIsSysop && (pInput == "X")) ||
            (pInput == "F") || (pInput == "C") || (pInput == "G") ||
-           (pInput == "P"));
+           (pInput == "P") || (pInput == "T"));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -1341,8 +1358,7 @@ function DCTMenu_DoInputLoop()
    while (continueOn)
    {
       // Get a key, (time out after the selected time), and take appropriate action.
-		//returnObj.userInput = console.inkey(0, this.timeoutMS).toUpperCase();
-		returnObj.userInput = console.getkey(K_NONE);
+		returnObj.userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
 		// If the user input is blank, then the input timed out, and we should quit.
 		if (returnObj.userInput == "")
 		{

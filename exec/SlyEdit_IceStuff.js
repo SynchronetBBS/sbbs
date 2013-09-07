@@ -515,8 +515,8 @@ function promptYesNo_IceStyle(pQuestion, pDefaultYes)
       // Move the cursor to the start of the "Yes" or "No" text (whichever
       // one is currently selected).
       console.gotoxy(userResponse ? yesNoX : yesNoX+7, console.screen_rows);
-      // Get a key, (time out after 1 minute), and take appropriate action.
-		userInput = console.inkey(0, 100000).toUpperCase();
+      // Get a keypress from the user and take appropriate action.
+		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
 		// If userInput is blank, then the timeout was hit, so exit the loop.
 		// Also exit the loop of the user pressed enter.
 		if ((userInput == "") || (userInput == KEY_ENTER))
@@ -711,7 +711,7 @@ function doIceESCMenu(pY, pCanCrossPost)
       }
 
       // Get the user's choice
-      userInput = console.getkey(K_UPPER|K_ALPHA|K_NOECHO|K_NOSPIN|K_NOCRLF);
+      userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
       switch (userInput)
       {
          case KEY_UP:
