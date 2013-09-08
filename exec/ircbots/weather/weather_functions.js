@@ -44,6 +44,7 @@ function get_nicklocation(srv,nick)
 				|| userhost.search(/^172\.2[0-9]\./) != -1
 				|| userhost.search(/^172\.30\./) != -1
 				|| userhost.search(/^172\.31\./) != -1
+				|| userhost.search(/^127\.0\.0\./) != -1
 				|| (userhost.search(/^169\.254\./) != -1
 					&& userhost.search(/^169\.254\.0\./) == -1
 					&& userhost.search(/^169\.254\.255\./) == -1
