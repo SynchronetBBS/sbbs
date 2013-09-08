@@ -807,8 +807,8 @@ function handle_ctcp(prefix,message)  {
 		case "TIME":
 			from_nick=get_highlighted_nick(prefix,message);
 			to_nick=get_nick(prefix);
-			sock.send("NOTICE "+to_nick+" :\x01TIME "+strftime("%A, %B %d, %l:%M:%S%p, %G %Z",time())+"\x01\r\n");
-			screen.print_line(">"+from_nick+"<"+" CTCP TIME Reply: "+strftime("%A, %B %d, %l:%M:%S%p, %G %Z",time() ));
+			sock.send("NOTICE "+to_nick+" :\x01TIME "+strftime("%A, %B %d, %I:%M:%S%p, %G %Z",time())+"\x01\r\n");
+			screen.print_line(">"+from_nick+"<"+" CTCP TIME Reply: "+strftime("%A, %B %d, %I:%M:%S%p, %G %Z",time() ));
 			break;
 	}
 }
