@@ -27,29 +27,34 @@ Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return true;
 	}
 
-	location=get_nicklocation(srv.users[find.toUpperCase()].uh, srv.users[find.toUpperCase()].servername, find);
-	if (location) {
-		lstr=find+' is ';
-		if(location.cityName=='')
-			lstr += 'somewhere in ';
-		else
-			lstr += 'around '+location.cityName+', ';
-
-		if(location.regionName!='')
-			lstr += location.regionName+', ';
-
-		if(location.countryName!='')
-			lstr += location.countryName;
+	if(srv.users[find.toUpperCase()] == undefined) {
+		lstr=find+', who the f^@% is '+find+"?";
 	}
 	else {
-		var usr = new User(system.matchuser(cmd[1]));
+		location=get_nicklocation(srv.users[find.toUpperCase()].uh, srv.users[find.toUpperCase()].servername, find);
+		if (location) {
+			lstr=find+' is ';
+			if(location.cityName=='')
+				lstr += 'somewhere in ';
+			else
+				lstr += 'around '+location.cityName+', ';
 
-		if (typeof(usr)=='object' && usr.location)
-			lstr = find+' is located at '+usr.location;
+			if(location.regionName!='')
+				lstr += location.regionName+', ';
+	
+			if(location.countryName!='')
+				lstr += location.countryName;
+		}
+		else {
+			var usr = new User(system.matchuser(cmd[1]));
+
+			if (typeof(usr)=='object' && usr.location)
+				lstr = find+' is located at '+usr.location;
+		}
+
+		if(!lstr)
+			lstr="Unable to locate "+find;
 	}
-
-	if(!lstr)
-		lstr="Unable to locate "+find;
 
 	srv.o(target, lstr);
 
