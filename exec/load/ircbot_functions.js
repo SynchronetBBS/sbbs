@@ -259,7 +259,8 @@ function get_command_channel(srv,cmd) {
 }
 
 function parse_cmd_prefix(cmd) {
-	cmd[1] = cmd[1].substr(1).toUpperCase();
+	var pre=get_cmd_prefix();
+	cmd[1] = cmd[1].substr(pre.length).toUpperCase();
 	if ((cmd[1] == truncsp(get_cmd_prefix())) 
 		 && cmd[2]) {
 		cmd.shift();
