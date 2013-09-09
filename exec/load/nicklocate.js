@@ -26,7 +26,7 @@ function get_nicklocation(userhost,srvhost,nick)
 	}
 
 	try {
-		var userhost=srv.users[nick.toUpperCase()].uh.replace(/^.*\@/,'');
+		var userhost=userhost.replace(/^.*\@/,'');
 		// If the hostname is not a FQDN, use the server name and replace the first element...
 		if(userhost.indexOf('.')==-1)
 			userhost += (srvhost.replace(/^[^\.]+\./,'.'));
