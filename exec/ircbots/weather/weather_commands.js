@@ -19,7 +19,7 @@ Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target, nick+', who the f^@% is '+nick+"?");
 	}
 	else {
-		lstr=get_nicklocation(srv.users[nick.toUpperCase()].uh, srv.users[nick.toUpperCase()].servername, nick);
+		lstr=get_nickcoords(srv.users[nick.toUpperCase()].uh, srv.users[nick.toUpperCase()].servername, nick);
 		if (!lstr) {
 			var usr = new User(system.matchuser(nick));
 			if (typeof(usr)=='object')
@@ -98,7 +98,7 @@ Bot_Commands["FORECAST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	if(cmd[0])
 		nick=cmd[0];
-	lstr=get_nicklocation(srv.users[nick.toUpperCase()].uh, srv.users[nick.toUpperCase()].servername, nick);
+	lstr=get_nickcoords(srv.users[nick.toUpperCase()].uh, srv.users[nick.toUpperCase()].servername, nick);
 	if (!lstr) {
 		var usr = new User(system.matchuser(nick));
 		if (typeof(usr)=='object')
