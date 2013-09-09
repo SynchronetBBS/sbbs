@@ -643,7 +643,8 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 	if(!srv.users[onick.toUpperCase()])	
 		srv.users[onick.toUpperCase()] = new Server_User(ouh,onick);
 	srv.users[onick.toUpperCase()].last_spoke=time();
-	
+
+log("PARSING: ",cmd);
 	if (cmd[0][0] == "#" || cmd[0][0] == "&") {
 		var chan=srv.channel[cmd[0].toUpperCase()];
 		if(!chan) return;
@@ -655,6 +656,7 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 		}
 		
 		cmd=parse_cmd_prefix(cmd);
+print("CMD: ",cmd);
 		if(!cmd) return false;
 		
 		if(cmd[0].length == 0) {

@@ -1,5 +1,7 @@
 if(js.global.get_geoip==undefined)
 	js.global.load(js.global,"geoip.js");
+if(js.global.get_nicklocation==undefined)
+	js.global.load(js.global, "nicklocate.js");
 
 Bot_Commands["WHEREIS"] = new Bot_Command(0,false,false);
 Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
@@ -7,27 +9,6 @@ Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var find;
 	var lstr;
 	var location;
-
-	function get_nicklocation(nick)
-	{
-		var geo;
-
-		try {
-			var userhost=srv.users[nick.toUpperCase()].uh.replace(/^.*\@/,'');
-			// If the hostname is not a FQDN, use the server name and replace the first element...
-			if(userhost.indexOf('.')==-1)
-				userhost += (srv.users[nick.toUpperCase()].servername.replace(/^[^\.]+\./,'.'));
-			geo=get_geoip(userhost);
-			if(geo.countryName=='Reserved') {
-				userhost=srv.users[nick.toUpperCase()].servername
-				geo=get_geoip(userhost);
-			}
-			return geo;
-		}
-		catch(e) {
-			log("Error getting nick location for "+nick+": "+e);
-		}
-	}
 
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -46,7 +27,7 @@ Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return true;
 	}
 
-	location=get_nicklocation(find);
+	location=get_nicklocation(srv.users[find.toUpperCase()].uh, srv.users[find.toUpperCase()].servername, find);
 	if (location) {
 		lstr=find+' is ';
 		if(location.cityName=='')
