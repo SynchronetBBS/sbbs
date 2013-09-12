@@ -62,6 +62,7 @@ function Board(moves)
 	}
 }
 Board.prototype.drawn=false;
+Board.prototype.resigned=false;
 Board.prototype.handleMove=function(move)
 {
 	m=move.match(/^([a-h][1-8])([a-h][1-8])(.*)$/);
@@ -86,15 +87,22 @@ Board.prototype.handleMove=function(move)
 		if(!piece.moveTo(parsePos(m[2])))
 			return false;
 	}
-	if(move.search(/'D$/) != -1) {
-		if(this.draw_offer && this.draw_offer != this.turn())
-			this.drawn=true;
-		else if(m==null)
-			return false;
-		this.draw_offer = this.turn();
+	if(move=='R')
+		this.resigned=true;
+	else {
+		if(move.search(/'D$/) != -1) {
+			if(this.draw_offer && this.draw_offer != this.turn())
+				this.drawn=true;
+			else if(m==null)
+				return false;
+			this.draw_offer = this.turn();
+		}
+		else {
+			if(m==null)
+				return false;
+			delete this.draw_offer;
+		}
 	}
-	else
-		delete this.draw_offer;
 	this.moves.push(move);
 	return true;
 }
@@ -128,7 +136,10 @@ Board.prototype.newTurn=function()
 {
 	var t=this.turn();
 	var s,smaterial,i,count,piece,material_array,x,y,c,c2;
-	
+
+	if(this.resigned)
+		return 'RESIGNED';
+
 	if(this.drawn)
 		return 'DRAW';
 
