@@ -81,7 +81,6 @@ static char* badrsp_err	=	"%s replied with:\r\n\"%s\"\r\n"
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define DNSBL_THROTTLE_VALUE	1000	/* Milliseconds */
-#define SPAM_HASH_SUBJECT_MIN_LEN	10	/* characters */
 
 #define STATUS_WFC	"Listening"
 
@@ -2988,8 +2987,6 @@ static void smtp_thread(void* arg)
 					if((dnsbl_recvhdr || dnsbl_result.s_addr) && startup->options&MAIL_OPT_DNSBL_SPAMHASH)
 						is_spam=TRUE;
 
-					if(msg.subj==NULL || strlen(msg.subj) < SPAM_HASH_SUBJECT_MIN_LEN)
-						sources&=~(1<<SMB_HASH_SOURCE_SUBJECT);
 					lprintf(LOG_DEBUG,"%04d SMTP Calculating message hashes (sources=%lx, msglen=%u)"
 						,socket, sources, strlen(msgbuf));
 					if((hashes=smb_msghashes(&msg, (uchar*)msgbuf, sources)) != NULL) {
