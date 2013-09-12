@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -3738,7 +3738,6 @@ static void smtp_thread(void* arg)
 				SAFEPRINTF(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
 				if((stricmp(dest_host,scfg.sys_inetaddr)!=0
 						&& stricmp(dest_host,startup->host_name)!=0
-						&& resolve_ip(dest_host)!=server_addr.sin_addr.s_addr
 						&& findstr(dest_host,domain_list)==FALSE)
 					|| dest_port!=server_addr.sin_port) {
 
