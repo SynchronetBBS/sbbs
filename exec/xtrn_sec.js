@@ -13,6 +13,9 @@ load("text.js");
 if((options=load("modopts.js","xtrn_sec")) == null)
 	options = {multicolumn: true, sort: false};	// default values
 
+if(options.multicolumn == undefined)
+	options.multicolumn = true;
+
 function sort_by_name(a, b)
 { 
 	if(a.name.toLowerCase()>b.name.toLowerCase()) return 1; 
@@ -127,6 +130,8 @@ while(bbs.online) {
 			bbs.menu("xtrn/" + prog_list[i].code);
 			console.line_counter=0;
 		}
+		if(options.clear_screen_on_exec)
+			console.clear();
 		bbs.exec_xtrn(prog_list[i].code); 
 
 		if(prog_list[i].settings&XTRN_PAUSE)
