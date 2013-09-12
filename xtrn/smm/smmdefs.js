@@ -334,6 +334,65 @@ function user_t()
 	this.sizeof=992;
 	this.write=user_t_write;
 	this.read=user_t_read;
+	this.age=function() {
+		var swapped=system.datestr(60*60*24*20).substr(0,2)!='01';
+		var now=system.datestr();
+		var nowyear=parseInt(now.substr(-2),10);
+		var mmddnow=now.substr(0,5);
+		var mmddbirth=this.birth.substr(0,5);
+		var age;
+
+		if(swapped) {
+			mmddnow=mmddnow.substr(3)+mmddnow.substr(2,1)+mmddnow.substr(0,2);
+			mmddbirth=mmddbirth.substr(3)+mmddbirth.substr(2,1)+mmddbirth.substr(0,2);
+		}
+
+		/* TODO: Max age of 105 and min age of 6 */
+		if(nowyear < parseInt(this.birth.substr(-2), 10)+5)
+			nowyear += 100;
+		age=nowyear-parseInt(this.birth.substr(-2), 10);
+		if(mmddnow >= mmddbirth)
+			age++;
+	};
+	this.zodiac=function() {
+		var bmon,bday;
+
+		if(system.datestr(60*60*24*20).substr(0,2)!='01') {
+			bmon=birth.substr(3,2);
+			bday=parseInt(birth.substr(0,2), 10);
+		}
+		else {
+			bday=parseInt(birth.substr(3,2), 10);
+			bmon=birth.substr(0,2);
+		}
+		if((bmon=="03" && bday >= 21) || (bmon=="04" && bday <= 19)
+			return(ZODIAC_ARIES);
+		if((bmon=="04" && bday >= 20) || (bmon=="05" && bday <= 20)
+			return(ZODIAC_TAURUS);
+		if((bmon=="05" && bday >= 21) || (bmon=="06" && bday <= 20)
+			return(ZODIAC_GEMINI);
+		if((bmon=="06" && bday >= 21) || (bmon=="07" && bday <= 22)
+			return(ZODIAC_CANCER);
+		if((bmon=="07" && bday >= 23) || (bmon=="08" && bday <= 22)
+			return(ZODIAC_LEO);
+		if((bmon=="08" && bday >= 23) || (bmon=="09" && bday <= 22)
+			return(ZODIAC_VIRGO);
+		if((bmon=="09" && bday >= 23) || (bmon=="10" && bday <= 22)
+			return(ZODIAC_LIBRA);
+		if((bmon=="10" && bday >= 23) || (bmon=="11" && bday <= 21)
+			return(ZODIAC_SCORPIO);
+		if((bmon=="11" && bday >= 22) || (bmon=="12" && bday <= 21)
+			return(ZODIAC_SAGITTARIUS);
+		if((bmon=="12" && bday >= 22) || (bmon=="01" && bday <= 19)
+			return(ZODIAC_CAPRICORN);
+		if((bmon=="01" && bday >= 20) || (bmon=="02" && bday <= 18)
+			return(ZODIAC_AQUARIUS);
+		if((bmon=="02" && bday >= 19) || (bmon=="03" && bday <= 20)
+			return(ZODIAC_PISCES);
+		return(0xff);
+	}
+}
+
 }
 
 function wall_t_write(file)
