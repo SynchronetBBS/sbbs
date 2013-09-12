@@ -138,6 +138,9 @@ static socket_option_t socket_options[] = {
 #ifdef TCP_NOOPT			
 	{ "TCP_NOOPT",			SOCK_STREAM,	IPPROTO_TCP,	TCP_NOOPT			},
 #endif
+#if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
+	{ "IPV6_V6ONLY",		0,				IPPROTO_IPV6,	IPV6_V6ONLY			},
+#endif
 	{ NULL }
 };
 

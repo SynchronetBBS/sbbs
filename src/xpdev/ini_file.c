@@ -1279,10 +1279,31 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 	int			option;
 	int			level;
 	int			value;
+	int			type;
 	LINGER		linger;
 	socket_option_t* socket_options=getSocketOptionList();
+	union xp_sockaddr	addr;
 
+	len=sizeof(type);
+	if((result=getsockopt(sock, SOL_SOCKET, SO_TYPE, &type, &len)) != 0) {
+		safe_snprintf(error,errlen,"%d getting socket type", ERROR_VALUE);
+		return(result);
+	}
+#ifdef IPPROTO_IPV6
+	len=sizeof(addr);
+	if((result=getsockname(sock, &addr.addr, &len)) != 0) {
+		safe_snprintf(error,errlen,"%d getting socket name", ERROR_VALUE);
+		return(result);
+	}
+#endif
 	for(i=0;socket_options[i].name!=NULL;i++) {
+		if(socket_options[i].type != 0 
+				&& socket_options[i].type != type)
+			continue;
+#ifdef IPPROTO_IPV6
+		if(addr.addr.sa_family != AF_INET6 && socket_options[i].level == IPPROTO_IPV6)
+			continue;
+#endif
 		name = socket_options[i].name;
 		if(!iniValueExists(list, section, name))
 			continue;
