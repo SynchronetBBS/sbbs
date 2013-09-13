@@ -356,6 +356,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 	,EVENT_POST						/* Execute after posting a message		*/
 	,EVENT_UPLOAD					/* Execute after uploading a file		*/
 	,EVENT_DOWNLOAD					/* Execute after downloading a file		*/
+	,EVENT_LOCAL_CHAT				/* Execute upon local/sysop chat		*/
 } user_event_t;																
 																			
 									/* Misc bits for event_t.misc			*/
