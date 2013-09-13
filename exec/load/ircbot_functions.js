@@ -259,16 +259,17 @@ function get_command_channel(srv,cmd) {
 }
 
 function parse_cmd_prefix(cmd) {
-	var pre=get_cmd_prefix();
-	cmd[1] = cmd[1].substr(pre.length).toUpperCase();
-	if ((cmd[1] == truncsp(get_cmd_prefix())) 
+	var pre=truncsp(get_cmd_prefix());
+
+	cmd[1] = cmd[1].substr(1).toUpperCase();
+	if ((cmd[1] == pre) 
 		 && cmd[2]) {
 		cmd.shift();
 		cmd.shift();
-	} else if(cmd[1][0] == truncsp(get_cmd_prefix())) {
+	} else if(cmd[1].search(new RegExp(pre+"\b")) == 0) {
 		cmd.shift();
-		cmd[0] = cmd[0].substr(1);
-	} else if(get_cmd_prefix()=="") {
+		cmd[0] = cmd[0].replace(new RegExp(pre+"\s*"));
+	} else if(pre=="") {
 		cmd.shift();
 	} else {
 		return false;
