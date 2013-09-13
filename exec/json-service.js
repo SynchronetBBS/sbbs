@@ -79,6 +79,7 @@ function init(fileName) {
 	serviceIniFileDate = file_date(serviceIniFile);
 	timer = new Timer();
 	timer.addEvent(5000,true,checkUpdate);
+	js.branch_limit=0;
 }
 
 /* main service loop */
