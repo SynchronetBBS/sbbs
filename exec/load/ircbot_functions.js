@@ -266,7 +266,7 @@ function parse_cmd_prefix(cmd) {
 		 && cmd[2]) {
 		cmd.shift();
 		cmd.shift();
-	} else if(cmd[1].search(new RegExp(pre+"\b")) == 0) {
+	} else if(cmd[1].search(new RegExp(pre+"\s")) == 0) {
 		cmd.shift();
 		cmd[0] = cmd[0].replace(new RegExp(pre+"\s*"));
 	} else if(pre=="") {
