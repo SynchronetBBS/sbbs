@@ -1676,7 +1676,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	strcat(path,name);
 	getnodedat(cfg.node_num,&thisnode,1);
 	thisnode.aux=xtrnnum+1;
-	thisnode.action=NODE_XTRN;
+	if(action!=NODE_PCHT)
+		thisnode.action=NODE_XTRN;
 	putnodedat(cfg.node_num,&thisnode);
 	putuserrec(&cfg,useron.number,U_CURXTRN,8,cfg.xtrn[xtrnnum]->code);
 
