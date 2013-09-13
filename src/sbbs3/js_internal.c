@@ -198,8 +198,8 @@ static char* prop_desc[] = {
 	 "JavaScript engine version information (AKA system.js_version)"
 	,"set to <i>false</i> to disable the automatic termination of the script upon external request"
 	,"termination has been requested (stop execution as soon as possible)"
-	,"number of branch operations performed in this runtime"
-	,"maximum number of branches, used for infinite-loop detection (0=disabled)"
+	,"number of operation callbacks performed in this runtime"
+	,"maximum number of operation callbacks, used for infinite-loop detection (0=disabled)"
 	,"interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)"
 	,"interval of periodic garbage collection attempts (lower number=higher frequency, 0=disabled)"
 	,"number of garbage collections attempted in this runtime - <small>READ ONLY</small>"
@@ -242,7 +242,7 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 
 	/* Infinite loop? */
 	if(cb->limit && cb->counter > cb->limit) {
-		JS_ReportError(cx,"Infinite loop (%lu branches) detected",cb->counter);
+		JS_ReportError(cx,"Infinite loop (%lu operation callbacks) detected",cb->counter);
 		cb->counter=0;
 		return(JS_FALSE);
 	}
@@ -309,7 +309,7 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	JS_SetErrorReporter(parent_cx,reporter);
 	JS_SetErrorReporter(cx,reporter);
 
-	/* Use the branch callback from the parent context */
+	/* Use the operation callback from the parent context */
 	JS_SetContextPrivate(cx, JS_GetContextPrivate(parent_cx));
 	JS_SetOperationCallback(cx, JS_GetOperationCallback(parent_cx));
 
