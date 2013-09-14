@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -948,6 +948,9 @@ online program name.
 			case EVENT_DOWNLOAD:
 				strcpy(str,"File Downloaded");
 				break;
+			case EVENT_LOCAL_CHAT:
+				strcpy(str,"Local/Sysop Chat");
+				break;
 			default:
 				strcpy(str,"No");
 				break; 
@@ -1120,10 +1123,10 @@ set this option to `No`.
 						k=(cfg.xtrn[i]->misc&WWIVCOLOR) ? 0:1;
 						SETHELP(WHERE);
 /*
-.Program Uses WWIV Color Codes:.
+`Program Uses WWIV Color Codes:`
 
-If this program was written for use exclusively under WWIV, set this
-option to .Yes..
+If this program was written for use exclusively under ~WWIV~ BBS
+software, set this option to ~Yes~.
 */
 						k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 							,"Program Uses WWIV Color Codes"
@@ -1241,6 +1244,7 @@ modify the data of users who run the program, set this option to `Yes`.
 				strcpy(opt[k++],"Message Posted");
 				strcpy(opt[k++],"File Uploaded");
 				strcpy(opt[k++],"File Downloaded");
+				strcpy(opt[k++],"Local/Sysop Chat");
 				opt[k][0]=0;
 				k=cfg.xtrn[i]->event;
 				SETHELP(WHERE);
