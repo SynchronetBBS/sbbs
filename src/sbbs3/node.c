@@ -446,7 +446,7 @@ int main(int argc, char **argv)
 	printf("\nSynchronet Node Display/Control Utility v%s\n\n", revision);
 
 	if(sizeof(node_t)!=SIZEOF_NODE_T) {
-		printf("COMPILER ERROR: sizeof(node_t)=%d instead of %d\n"
+		printf("COMPILER ERROR: sizeof(node_t)=%u instead of %lu\n"
 			,sizeof(node_t),SIZEOF_NODE_T);
 		return(-1);
 	}
