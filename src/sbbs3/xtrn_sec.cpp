@@ -1790,6 +1790,7 @@ bool sbbs_t::user_event(user_event_t event)
 		if(cfg.xtrn[i]->event!=event)
 			continue;
 		if(!chk_ar(cfg.xtrn[i]->ar,&useron,&client)
+			|| !chk_ar(cfg.xtrn[i]->run_ar,&useron,&client)
 			|| !chk_ar(cfg.xtrnsec[cfg.xtrn[i]->sec]->ar,&useron,&client))
 			continue;
 		success=exec_xtrn(i); 
