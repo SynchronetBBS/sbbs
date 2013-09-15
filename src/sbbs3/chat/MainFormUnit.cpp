@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -117,7 +117,7 @@ void __fastcall TMainForm::FormShow(TObject *Sender)
     Caption="Waiting for "
         +AnsiString(user_name)+" on Node "+AnsiString(node_num);
 
-    wsprintf(node_path,"%sNODE.DAB",ctrl_dir);
+    wsprintf(node_path,"%snode.dab",ctrl_dir);
     nodedab=_sopen(node_path,O_RDWR|O_BINARY|O_CREAT, SH_DENYNONE,S_IREAD|S_IWRITE);
 
     if(nodedab==-1) {
@@ -127,14 +127,14 @@ void __fastcall TMainForm::FormShow(TObject *Sender)
 
     ToggleChat(true);
 
-	wsprintf(out_path,"%sLCHAT.DAB",node_dir);
+	wsprintf(out_path,"%slchat.dab",node_dir);
 	if((out=_sopen(out_path,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
 		,S_IREAD|S_IWRITE))==-1) {
 		Remote->Lines->Add("!Error opening " + AnsiString(out_path));
 		return;
     }
 
-	wsprintf(path,"%sCHAT.DAB",node_dir);
+	wsprintf(path,"%schat.dab",node_dir);
 #if 0
 	if(!fexist(path))		/* Wait while it's created for the first time */
 		mswait(2000);
@@ -143,7 +143,7 @@ void __fastcall TMainForm::FormShow(TObject *Sender)
 	if((in=_sopen(path,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
 		,S_IREAD|S_IWRITE))==-1) {
 		close(out);
-		Remote->Lines->Add("!Error opening CHAT.DAB");
+		Remote->Lines->Add("!Error opening chat.dab");
 		return;
     }
 
