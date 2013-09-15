@@ -476,7 +476,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		*p,*p2;
-	long		mode=0;
+	int32		mode=0;
 	uintN		i;
 	size_t		maxlen=0;
 	sbbs_t*		sbbs;
@@ -539,8 +539,8 @@ static JSBool
 js_getnum(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	ulong		maxnum=~0;
-	ulong		dflt=0;
+	uint32_t	maxnum=~0;
+	uint32_t	dflt=0;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -570,8 +570,8 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		key[2];
 	uintN		i;
-	long		val;
-	ulong		maxnum=~0;
+	int32		val;
+	uint32		maxnum=~0;
 	sbbs_t*		sbbs;
     JSString*	js_str=NULL;
 	char*		cstr;
@@ -624,7 +624,7 @@ js_gettemplate(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		str[128];
-	long		mode=0;
+	int32		mode=0;
 	uintN		i;
 	sbbs_t*		sbbs;
     JSString*	js_str=NULL;
@@ -1053,7 +1053,7 @@ static JSBool
 js_putmsg(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	long		mode=0;
+	int32		mode=0;
     JSString*	str;
 	sbbs_t*		sbbs;
 	char*		cstr;
@@ -1087,7 +1087,7 @@ static JSBool
 js_printfile(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	long		mode=0;
+	int32		mode=0;
     JSString*	str;
 	sbbs_t*		sbbs;
 	char*		cstr;
@@ -1122,7 +1122,7 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	int			lines=0;
-	long		mode=0;
+	int32		mode=0;
 	uintN		i;
 	sbbs_t*		sbbs;
     JSString*	js_str=NULL;
