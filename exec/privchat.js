@@ -17,6 +17,7 @@ const clr_chatremote = 14;
 var debug = false;
 var local = false;
 var node = 1;
+var error_log_level = LOG_WARNING;
 
 // Parse arguments
 for(i = 0; i < argc; i++) {
@@ -45,8 +46,8 @@ else
     console.print(bbs.text(WelcomeToPrivateChat));
 
 var outfile = new File(system.node_dir + "chat.dab");
-if(!outfile.open("rb+", /* shareable: */true)) {
-    alert("Error opening " + outfile.name);
+if(!outfile.open("wb+", /* shareable: */true)) {
+    alert("Error " + outfile.error + " opening " + outfile.name);
     exit();
 }
 
@@ -54,8 +55,8 @@ var infile = new File(local ? (system.node_dir + "lchat.dab") : (system.node_lis
 
 if(!file_exists(infile.name))   /* Wait while it's created for the first time */
     mswait(2000);
-if(!infile.open("rb+", /* shareable: */true)) {
-    alert("Error opening " + infile.name);
+if(!infile.open("wb+", /* shareable: */true, /* bufsize: */system.platform=="Win32" ? 1:0)) {
+    alert("Error " + infile.error + " opening " + infile.name);
     exit();
 }
 log(LOG_DEBUG,"infile error: " + infile.error);
@@ -103,11 +104,11 @@ while(true) {
         outfile.position--;
         if(ch==0) { /* hasn't wrapped */
             if(!outfile.writeBin(ascii(key), 1))
-                log(LOG_ERR, outfile.name + " write error " + outfile.error);
+                log(error_log_level, outfile.name + " write error " + outfile.error);
             else
                 outfile.flush();
         } else {
-            log(LOG_ERR,"wrapped!?!?");
+            log(error_log_level,"wrapped!?!?");
         }
     }
 
@@ -117,11 +118,12 @@ while(true) {
     file_utime(infile.name);
     ch=infile.readBin(1);
     if(ch < 0)
-        log(LOG_ERR, infile.name + " read error: " + infile.error);
+        log(error_log_level, infile.name + " read error: " + infile.error);
     else {
         infile.position--;
         if(ch != 0) {
-            log(LOG_DEBUG,"received " + ch);
+            if(debug)
+                log(LOG_DEBUG,"received " + ch);
             console.attributes = console.color_list[clr_chatremote];
             if(ch==ascii('\b') || ch==127 /* DELETE */)
                 console.backspace();
