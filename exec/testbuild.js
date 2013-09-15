@@ -92,7 +92,7 @@ var win32_dist
 		"src/sbbs3/ctrl/sbbsctrl.exe",
 		"3rdp/win32.release/mozjs/bin/*.dll",
 		"3rdp/win32.release/nspr/bin/*.dll",
-		"3rdp/win32.release/cryptlib/*.dll"
+		"3rdp/win32.release/cryptlib/bin/*.dll"
 	];
 
 var nix_dist
@@ -294,7 +294,7 @@ function send_email(subject, body)
 
 	var rcpt_list = [
 		{to: "Rob Swindell", to_ext: 1},
-		{to: "Stephen Hurd", to_net_addr: "sysop@nix.synchro.net", to_net_type: NET_INTERNET }
+		{to: "Stephen Hurd", to_net_addr: "deuce@synchro.net", to_net_type: NET_INTERNET }
 		];
 
 	if(!msgbase.save_msg(hdr, body, rcpt_list))
