@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -229,32 +229,35 @@ uint del_days,add_ml,update_ml,remove_ml,verify_ml,sbl_pause=1,notify_user;
 time_t now;
 
 /****************************************************************************/
-/* Generates a 24 character ASCII string that represents the time_t pointer */
+/* Generates a 24 character ASCII string that represents the 32b-ti time_t  */
 /* Used as a replacement for ctime()										*/
 /****************************************************************************/
-char *timestr(time_t *intime)
+char *timestr(uint32_t intime)
 {
 	static char str[256];
     char mer[3],hour;
     struct tm *gm;
+	time_t	t=intime;
 
-gm=localtime(intime);
-if(gm->tm_hour>=12) {
-    if(gm->tm_hour==12)
-        hour=12;
-    else
-        hour=gm->tm_hour-12;
-    strcpy(mer,"pm"); }
-else {
-    if(gm->tm_hour==0)
-        hour=12;
-    else
-        hour=gm->tm_hour;
-    strcpy(mer,"am"); }
-sprintf(str,"%s %s %02d %4d %02d:%02d %s"
-    ,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
-    ,hour,gm->tm_min,mer);
-return(str);
+	gm=localtime(&t);
+	if(gm==NULL)
+		return "invalid date/time";
+	if(gm->tm_hour>=12) {
+		if(gm->tm_hour==12)
+			hour=12;
+		else
+			hour=gm->tm_hour-12;
+		strcpy(mer,"pm"); }
+	else {
+		if(gm->tm_hour==0)
+			hour=12;
+		else
+			hour=gm->tm_hour;
+		strcpy(mer,"am"); }
+	sprintf(str,"%s %s %02d %4d %02d:%02d %s"
+		,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
+		,hour,gm->tm_min,mer);
+	return(str);
 }
 
 
@@ -486,17 +489,17 @@ CRLF;
 if(bbs.misc&FROM_SMB)
 	bputs("\1r\1hImported from message base.\r\n");
 bprintf("\1n\1cEntry created on \1h%s\1n\1c by \1h%s\r\n"
-	,timestr(&bbs.created),bbs.user);
+	,timestr(bbs.created),bbs.user);
 if(bbs.updated && bbs.userupdated[0])
 	bprintf("\1n\1c Last updated on \1h%s\1n\1c by \1h%s\r\n"
-		,timestr(&bbs.updated),bbs.userupdated);
+		,timestr(bbs.updated),bbs.userupdated);
 if(bbs.verified && bbs.userverified[0])
 	bprintf("\1n\1cLast verified on \1h%s\1n\1c by \1h%s"
 #if VERIFICATION_MOD
 	" \1y(%d/%d)"
 #endif
 	"\r\n"
-		,timestr(&bbs.verified),bbs.userverified
+		,timestr(bbs.verified),bbs.userverified
 		,bbs.verification_count,bbs.verification_attempts);
 CRLF;
 if(aborted) {
