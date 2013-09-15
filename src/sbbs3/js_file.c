@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -187,8 +187,13 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(FALSE, p, "opened: %s",p->name);
 		if(!bufsize)
 			setvbuf(p->fp,NULL,_IONBF,0);	/* no buffering */
-		else
+		else {
+#ifdef _WIN32
+			if(bufsize < 2)
+				bufsize = 2;
+#endif
 			setvbuf(p->fp,NULL,_IOFBF,bufsize);
+		}
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
