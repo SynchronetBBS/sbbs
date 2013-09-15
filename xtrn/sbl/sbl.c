@@ -729,7 +729,7 @@ char get_bbs_info(bbs_t * bbs)
 	if (!bbs->msgs)
 		bbs->msgs = 500;
 	bprintf("\1y\1hTotal Number of Public Messages: \1w");
-	sprintf(str, "%lu", bbs->msgs);
+	sprintf(str, "%"PRIu32, bbs->msgs);
 	if (getstr(str, 10, K_NUMBER | K_EDIT | K_AUTODEL))
 		bbs->msgs = atol(str);
 	if (aborted)
@@ -747,7 +747,7 @@ char get_bbs_info(bbs_t * bbs)
 	if (!bbs->files)
 		bbs->files = 250;
 	bprintf("\1y\1hTotal Number of Downloadable Files: \1w");
-	sprintf(str, "%lu", bbs->files);
+	sprintf(str, "%"PRIu32, bbs->files);
 	if (getstr(str, 10, K_NUMBER | K_EDIT | K_AUTODEL))
 		bbs->files = atol(str);
 	if (aborted)
@@ -765,7 +765,7 @@ char get_bbs_info(bbs_t * bbs)
 	if (!bbs->megs)
 		bbs->megs = 40;
 	bprintf("\1y\1hTotal Storage Space (in Megabytes): \1w");
-	sprintf(str, "%lu", bbs->megs);
+	sprintf(str, "%"PRIu32, bbs->megs);
 	if (getstr(str, 10, K_NUMBER | K_EDIT | K_AUTODEL))
 		bbs->megs = atol(str);
 	if (aborted)
@@ -945,7 +945,7 @@ int main(int argc, char **argv)
 							sprintf(str, "\1n\1hSBL: \1mPlease verify your BBS "
 								"entry for \1y%s\1m\r\n     "
 								"in the \1cSynchronet BBS List "
-								"\1mor it will be deleted in \1i\1r%u "
+								"\1mor it will be deleted in \1i\1r%lu "
 							"\1n\1h\1mdays.\r\n"
 								,bbs.name
 								,del_days - ((now - l) / (24L * 60L * 60L)));
