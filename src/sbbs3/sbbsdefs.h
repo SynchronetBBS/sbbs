@@ -79,12 +79,12 @@
 #define JAVASCRIPT_LOAD_PATH_LIST	"load_path_list"
 
 typedef struct {
-	uint32	counter;
-	uint32	limit;
-	uint32	yield_interval;
-	uint32	gc_interval;
-	uint32	gc_attempts;
-	BOOL	auto_terminate;
+	uint32_t		counter;
+	uint32_t		limit;
+	uint32_t		yield_interval;
+	uint32_t		gc_interval;
+	uint32_t		gc_attempts;
+	BOOL			auto_terminate;
 	volatile BOOL*	terminated;
 } js_callback_t;
 
