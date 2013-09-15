@@ -1674,11 +1674,12 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	if(cfg.xtrn[xtrnnum]->misc&XTRN_LWRCASE)
 		strlwr(name);
 	strcat(path,name);
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.aux=xtrnnum+1;
-	if(action!=NODE_PCHT)
+	if(action!=NODE_PCHT) {
+		getnodedat(cfg.node_num,&thisnode,1);
 		thisnode.action=NODE_XTRN;
-	putnodedat(cfg.node_num,&thisnode);
+		thisnode.aux=xtrnnum+1;
+		putnodedat(cfg.node_num,&thisnode);
+	}
 	putuserrec(&cfg,useron.number,U_CURXTRN,8,cfg.xtrn[xtrnnum]->code);
 
 	if(cfg.xtrn[xtrnnum]->misc&REALNAME)
