@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -124,7 +124,7 @@ static ptrdiff_t js_socket_recv(private_t *p, void *buf, size_t len, int flags, 
 			if(p->nonblocking)
 				return copied;
 			total += copied;
-			if(total>=len)
+			if(total>=(ptrdiff_t)len)
 				return total;
 			len-=copied;
 			buf=((uint8_t *)buf) + copied;
@@ -151,7 +151,7 @@ static ptrdiff_t js_socket_sendsocket(private_t *p, const void *msg, size_t len,
 				return copied;
 			}
 			total += copied;
-			if(total >= len) {
+			if(total >= (ptrdiff_t)len) {
 				if(flush) do_CryptFlush(p->session);
 				return total;
 			}
@@ -345,8 +345,11 @@ SOCKET DLLCALL js_socket(JSContext *cx, jsval val)
 		if(cl->flags&JSCLASS_HAS_PRIVATE)
 			if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)))!=NULL)
 				sock=*(SOCKET*)vp;
-	} else if(val!=JSVAL_VOID)
-		JS_ValueToInt32(cx,val,(int32*)&sock);
+	} else if(val!=JSVAL_VOID) {
+		int32	i;
+		if(JS_ValueToInt32(cx,val,&i))
+			sock = i;
+	}
 
 	return(sock);
 }
@@ -760,7 +763,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	DWORD		l;
 	int32		val=0;
 	size_t		wr=0;
-	size_t		size=sizeof(DWORD);
+	int32		size=sizeof(DWORD);
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -774,7 +777,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc && argv[0]!=JSVAL_VOID)
 		JS_ValueToInt32(cx,argv[0],&val);
 	if(argc>1 && argv[1]!=JSVAL_VOID) 
-		JS_ValueToInt32(cx,argv[1],(int32*)&size);
+		JS_ValueToInt32(cx,argv[1],&size);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	switch(size) {
@@ -1186,7 +1189,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	BYTE		b;
 	WORD		w;
 	DWORD		l;
-	int			size=sizeof(DWORD);
+	int32		size=sizeof(DWORD);
 	int			rd=0;
 	private_t*	p;
 	jsrefcount	rc;
@@ -1199,7 +1202,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(argc && argv[0]!=JSVAL_VOID) 
-		JS_ValueToInt32(cx,argv[0],(int32*)&size);
+		JS_ValueToInt32(cx,argv[0],&size);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	switch(size) {
@@ -1479,6 +1482,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	private_t*	p;
 	jsrefcount	rc;
 	BOOL		b;
+	int32		i;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		// Prototype access
@@ -1501,11 +1505,13 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 				cryptDestroySession(p->session);
 				p->session=-1;
 			}
-			JS_ValueToInt32(cx,*vp,(int32*)&(p->sock));
+			if(JS_ValueToInt32(cx,*vp,&i))
+				p->sock = i;
 			p->is_connected=TRUE;
 			break;
 		case SOCK_PROP_LAST_ERROR:
-			JS_ValueToInt32(cx,*vp,(int32*)&(p->last_error));
+			if(JS_ValueToInt32(cx,*vp,&i))
+				p->last_error = i;
 			break;
 		case SOCK_PROP_NONBLOCKING:
 			JS_ValueToBoolean(cx,*vp,&(p->nonblocking));

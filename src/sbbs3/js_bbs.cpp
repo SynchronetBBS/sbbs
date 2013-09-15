@@ -953,8 +953,10 @@ static uint get_subnum(JSContext* cx, sbbs_t* sbbs, jsval *argv, int argc, int p
 			if(!stricmp(sbbs->cfg.sub[subnum]->code,p))
 				break;
 	} else if(argc>pos && JSVAL_IS_NUMBER(argv[pos])) {
-		if(!JS_ValueToInt32(cx,argv[pos],(int32*)&subnum))
+		int32 i;
+		if(!JS_ValueToInt32(cx,argv[pos],&i))
 			return JS_FALSE;
+		subnum = i;
 	}
 	else if(sbbs->usrgrps>0)
 		subnum=sbbs->usrsub[sbbs->curgrp][sbbs->cursub[sbbs->curgrp]];
@@ -977,8 +979,10 @@ static uint get_dirnum(JSContext* cx, sbbs_t* sbbs, jsval val, bool dflt)
 				if(!stricmp(sbbs->cfg.dir[dirnum]->code,p))
 					break;
 		} else if(JSVAL_IS_NUMBER(val)) {
-			if(!JS_ValueToInt32(cx,val,(int32*)&dirnum))
+			int32 i;
+			if(!JS_ValueToInt32(cx,val,&i))
 				return JS_FALSE;
+			dirnum = i;
 		}
 		else if(sbbs->usrlibs>0)
 			dirnum=sbbs->usrdir[sbbs->curlib][sbbs->curdir[sbbs->curlib]];
@@ -3387,8 +3391,10 @@ js_getnstime(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToInt32(cx,argv[0],(int32*)&t))
+		int32 i;
+		if(!JS_ValueToInt32(cx,argv[0],&i))
 			return JS_FALSE;
+		t = i;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);

@@ -440,9 +440,9 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 	BYTE		*b;
 	WORD		*w;
 	DWORD		*l;
-	size_t		size=sizeof(DWORD);
+	int32		size=sizeof(DWORD);
 	private_t*	p;
-	size_t		count=1;
+	int32		count=1;
 	size_t		retlen;
 	void		*buffer=NULL;
 	size_t		i;
@@ -461,10 +461,10 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 
 	if(argc) {
-		if(!JS_ValueToInt32(cx,argv[0],(int32*)&size))
+		if(!JS_ValueToInt32(cx,argv[0],&size))
 			return(JS_FALSE);
 		if(argc>1) {
-			if(!JS_ValueToInt32(cx,argv[1],(int32*)&count))
+			if(!JS_ValueToInt32(cx,argv[1],&count))
 				return(JS_FALSE);
 		}
 	}
@@ -1413,8 +1413,8 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		cp;
 	char*		uubuf=NULL;
-	size_t		len;	/* string length */
-	size_t		tlen;	/* total length to write (may be greater than len) */
+	int32		len;	/* string length */
+	int32		tlen;	/* total length to write (may be greater than len) */
 	JSString*	str;
 	private_t*	p;
 	jsrefcount	rc;
@@ -1462,7 +1462,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	tlen=len;
 	if(argc>1) {
-		if(!JS_ValueToInt32(cx,argv[1],(int32*)&tlen)) {
+		if(!JS_ValueToInt32(cx,argv[1],&tlen)) {
 			free(cp);
 			return(JS_FALSE);
 		}
@@ -1481,7 +1481,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 				return(JS_FALSE);
 			}
 			memset(cp,p->etx,len);
-			if(fwrite(cp,1,len,p->fp) < len) {
+			if(fwrite(cp,1,len,p->fp) < (size_t)len) {
 				free(cp);
 				JS_RESUMEREQUEST(cx, rc);
 				return JS_TRUE;
@@ -1571,7 +1571,7 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 	WORD		*w;
 	DWORD		*l;
 	size_t		wr=0;
-	size_t		size=sizeof(DWORD);
+	int32		size=sizeof(DWORD);
 	jsuint		count=1;
 	void		*buffer;
 	private_t*	p;
@@ -1604,7 +1604,7 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 			return(JS_FALSE);
 	}
 	if(argc>1) {
-		if(!JS_ValueToInt32(cx,argv[1],(int32*)&size))
+		if(!JS_ValueToInt32(cx,argv[1],&size))
 			return(JS_FALSE);
 	}
 	if(size != sizeof(BYTE) && size != sizeof(WORD) && size != sizeof(DWORD)) {

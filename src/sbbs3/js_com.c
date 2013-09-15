@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -279,7 +279,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	DWORD		l;
 	int32		val=0;
 	size_t		wr=0;
-	size_t		size=sizeof(DWORD);
+	int32		size=sizeof(DWORD);
 	private_t*	p;
 	jsrefcount	rc;
 
@@ -296,7 +296,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	if(!JS_ValueToInt32(cx,argv[0],&val))
 		return JS_FALSE;
 
-	if(!JS_ValueToInt32(cx,argv[1],(int32*)&size))
+	if(!JS_ValueToInt32(cx,argv[1],&size))
 		return JS_FALSE;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -462,7 +462,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	BYTE		b;
 	WORD		w;
 	DWORD		l;
-	int			size=sizeof(DWORD);
+	int32		size=sizeof(DWORD);
 	int			rd=0;
 	private_t*	p;
 	jsrefcount	rc;
@@ -476,7 +476,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(argc) {
-		if(!JS_ValueToInt32(cx,argv[0],(int32*)&size))
+		if(!JS_ValueToInt32(cx,argv[0],&size))
 			return JS_FALSE;
 	}
 
@@ -556,6 +556,7 @@ static JSBool js_com_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 	private_t*	p;
 	jsrefcount	rc;
 	double		d;
+	int32		i;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		// Prototype access
@@ -574,13 +575,15 @@ static JSBool js_com_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 			JS_ValueToBoolean(cx,*vp,&(p->debug));
 			break;
 		case COM_PROP_DESCRIPTOR:
-			if(!JS_ValueToInt32(cx,*vp,(int32*)&(p->com)))
+			if(!JS_ValueToInt32(cx,*vp,&i))
 				return JS_FALSE;
+			p->com=(COM_HANDLE)i;
 			p->is_open=TRUE;
 			break;
 		case COM_PROP_LAST_ERROR:
-			if(!JS_ValueToInt32(cx,*vp,(int32*)&(p->last_error)))
+			if(!JS_ValueToInt32(cx,*vp,&i))
 				return JS_FALSE;
+			p->last_error=i;
 			break;
 		case COM_PROP_BAUD_RATE:
 			JS_ValueToNumber(cx,*vp,&d);

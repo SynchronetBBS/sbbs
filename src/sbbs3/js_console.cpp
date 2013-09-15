@@ -478,7 +478,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 	char		*p,*p2;
 	int32		mode=0;
 	uintN		i;
-	size_t		maxlen=0;
+	int32		maxlen=0;
 	sbbs_t*		sbbs;
     JSString*	js_str=NULL;
 	jsrefcount	rc;
@@ -491,11 +491,11 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
 			if(!maxlen) {
-				if(!JS_ValueToInt32(cx,argv[i],(int32*)&maxlen))
+				if(!JS_ValueToInt32(cx,argv[i],&maxlen))
 					return JS_FALSE;
 			}
 			else {
-				if(!JS_ValueToInt32(cx,argv[i],(int32*)&mode))
+				if(!JS_ValueToInt32(cx,argv[i],&mode))
 					return JS_FALSE;
 			}
 			continue;
@@ -540,7 +540,7 @@ js_getnum(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	uint32_t	maxnum=~0;
-	uint32_t	dflt=0;
+	int32_t		dflt=0;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -554,7 +554,7 @@ js_getnum(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx,argv[1],(int32*)&dflt))
+		if(!JS_ValueToInt32(cx,argv[1],&dflt))
 			return JS_FALSE;
 	}
 
@@ -1069,7 +1069,7 @@ js_putmsg(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx,argv[1],(int32*)&mode))
+		if(!JS_ValueToInt32(cx,argv[1],&mode))
 			return JS_FALSE;
 	}
 
@@ -1103,7 +1103,7 @@ js_printfile(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx,argv[1],(int32*)&mode))
+		if(!JS_ValueToInt32(cx,argv[1],&mode))
 			return JS_FALSE;
 	}
 
@@ -1121,7 +1121,7 @@ static JSBool
 js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	int			lines=0;
+	int32		lines=0;
 	int32		mode=0;
 	uintN		i;
 	sbbs_t*		sbbs;
@@ -1137,11 +1137,11 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
 			if(!lines) {
-				if(!JS_ValueToInt32(cx,argv[i],(int32*)&lines))
+				if(!JS_ValueToInt32(cx,argv[i],&lines))
 					return JS_FALSE;
 			}
 			else {
-				if(!JS_ValueToInt32(cx,argv[i],(int32*)&mode))
+				if(!JS_ValueToInt32(cx,argv[i],&mode))
 					return JS_FALSE;
 			}
 		} else if(JSVAL_IS_STRING(argv[i]))
