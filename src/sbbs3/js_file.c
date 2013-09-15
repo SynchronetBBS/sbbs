@@ -1413,8 +1413,9 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		cp;
 	char*		uubuf=NULL;
-	int32		len;	/* string length */
-	int32		tlen;	/* total length to write (may be greater than len) */
+	size_t		len;	/* string length */
+	size_t		tlen;	/* total length to write (may be greater than len) */
+	int32		i;
 	JSString*	str;
 	private_t*	p;
 	jsrefcount	rc;
@@ -1462,10 +1463,11 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	tlen=len;
 	if(argc>1) {
-		if(!JS_ValueToInt32(cx,argv[1],&tlen)) {
+		if(!JS_ValueToInt32(cx,argv[1],&i)) {
 			free(cp);
 			return(JS_FALSE);
 		}
+		tlen=i;
 		if(len>tlen)
 			len=tlen;
 	}
@@ -1481,7 +1483,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 				return(JS_FALSE);
 			}
 			memset(cp,p->etx,len);
-			if(fwrite(cp,1,len,p->fp) < (size_t)len) {
+			if(fwrite(cp,1,len,p->fp) < len) {
 				free(cp);
 				JS_RESUMEREQUEST(cx, rc);
 				return JS_TRUE;
