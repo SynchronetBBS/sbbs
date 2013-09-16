@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2711,7 +2711,7 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 	if(area.name && addr.zone!=fmsghdr.destzone)	/* Zone Gate */
 		fprintf(stream,"SEEN-BY: %d/%d\r",fmsghdr.destnet,fmsghdr.destnode);
 
-	if(area.name && addr.zone==fmsghdr.destzone) {	/* Not NetMail */
+	if(area.name /* && addr.zone==fmsghdr.destzone */) {	/* Not NetMail */
 		fprintf(stream,"SEEN-BY:");
 		for(i=0;i<seenbys.addrs;i++) {			  /* Put back original SEEN-BYs */
 			strcpy(seenby," ");
