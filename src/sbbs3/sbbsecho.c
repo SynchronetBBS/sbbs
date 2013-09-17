@@ -3335,7 +3335,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	ulong length;
 	faddr_t addr;
 
-	hdr.destzone=hdr.origzone=sys_faddr.zone;
+	hdr.destzone=sys_faddr.zone;
 	hdr.destpoint=hdr.origpoint=0;
 	getzpt(fidomsg,&hdr);				/* use kludge if found */
 	for(match=0;match<scfg.total_faddrs;match++)
@@ -4418,6 +4418,13 @@ int main(int argc, char **argv)
 				continue; 
 			}
 
+			if(pkthdr.pkttype != 2) {
+				fclose(fidomsg);
+				lprintf(LOG_WARNING,"%s is not a type 2 packet (type=%u)"
+					,packet, pkthdr.pkttype);
+				continue; 
+			}
+
 			pkt_faddr.zone=pkthdr.origzone ? pkthdr.origzone:sys_faddr.zone;
 			pkt_faddr.net=pkthdr.orignet;
 			pkt_faddr.node=pkthdr.orignode;
@@ -4426,18 +4433,18 @@ int main(int argc, char **argv)
 			printf("%21s: %s "
 				,secure ? "Importing Secure Pkt" : "Importing Packet",packet+offset);
 			memcpy(&two_plus,&pkthdr.empty,sizeof(two_plus));
-			if(two_plus.cword==_rotr(two_plus.cwcopy,8)  /* 2+ Packet Header */
+			if(two_plus.cword==_rotr(two_plus.cwcopy,8)  /* 2+ Packet Header (see FSC-48 for explanation of this insanity) */
 				&& two_plus.cword && two_plus.cword&1) {
 				pkt_type=PKT_TWO_PLUS;
-				pkt_faddr.point=two_plus.origpoint ? two_plus.origpoint:0;
-				if(pkt_faddr.point && pkthdr.orignet==-1)
-					pkt_faddr.net=two_plus.auxnet ? two_plus.auxnet:sys_faddr.zone;	/* is this right? should be .net? */
+				pkt_faddr.point=two_plus.origpoint;
+				if(pkt_faddr.point != 0 && pkthdr.orignet == -1)
+					pkt_faddr.net=two_plus.auxnet ? two_plus.auxnet:sys_faddr.net;
 				printf("(Type 2+)");
 				if(cfg.log&LOG_PACKETS)
 					logprintf("Importing %s%s (Type 2+) from %s"
 						,secure ? "(secure) ":"",packet+offset,smb_faddrtoa(&pkt_faddr,NULL)); 
 			}
-			else if(pkthdr.baud==2) {				/* Type 2.2 Packet Header */
+			else if(pkthdr.baud==2) {				/* Type 2.2 Packet Header (FSC-45) */
 				pkt_type=PKT_TWO_TWO;
 				memcpy(&two_two,&pkthdr.empty,sizeof(two_two));
 				pkt_faddr.point=pkthdr.year ? pkthdr.year:0;
@@ -4446,7 +4453,7 @@ int main(int argc, char **argv)
 					logprintf("Importing %s%s (Type 2.2) from %s"
 						,secure ? "(secure) ":"",packet+offset,smb_faddrtoa(&pkt_faddr,NULL)); 
 			}
-			else {
+			else {	/* Type 2.0, FTS-1 */
 				pkt_type=PKT_TWO;
 				printf("(Type 2)");
 				if(cfg.log&LOG_PACKETS)
