@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -38,7 +38,7 @@
 #ifndef _FIDODEFS_H_
 #define _FIDODEFS_H_
 
-#include "gen_defs.h"	/* uchar */
+#include "gen_defs.h"
 
 #define FIDO_NAME_LEN	36			/* Includes '\0' terminator				*/
 #define FIDO_SUBJ_LEN	72			/* Includes '\0' terminator				*/
@@ -76,45 +76,84 @@
 	#pragma pack(push,1)			/* Disk image structures must be packed */
 #endif
 
-typedef struct _PACK {				/* Fidonet Packet Header				*/
-    int16_t orignode,				/* Origination Node of Packet			*/
-          destnode,					/* Destination Node of Packet			*/
-          year,						/* Year of Packet Creation e.g. 1995	*/
-          month,					/* Month of Packet Creation 0-11		*/
-          day,						/* Day of Packet Creation 1-31			*/
-          hour,						/* Hour of Packet Creation 0-23			*/
-          min,						/* Minute of Packet Creation 0-59		*/
-          sec,						/* Second of Packet Creation 0-59		*/
-          baud,						/* Max Baud Rate of Orig & Dest			*/
-          pkttype,					/* Packet Type (-1 is obsolete)			*/
-          orignet,					/* Origination Net of Packet			*/
-          destnet;					/* Destination Net of Packet			*/
-    uchar prodcode,					/* Product Code (00h is Fido)			*/
-          sernum,					/* Binary Serial Number or NULL			*/
-          password[FIDO_PASS_LEN];	/* Session Password or NULL				*/
-    int16_t origzone,				/* Origination Zone of Packet or NULL	*/
-          destzone;					/* Destination Zone of Packet or NULL	*/
-	union {							
-		char padding[20];			/* Fill Characters (Type 2.0)			*/
-		struct {					/* OR Type 2+ Packet Header Info		*/
-			int16_t auxnet,			/* Orig Net if Origin is a Point		*/
-				  cwcopy;			/* Must be Equal to cword				*/
-			uchar prodcode, 		/* Product Code							*/
-				  revision; 		/* Revision								*/
-			int16_t cword,			/* Compatibility Word					*/
-				  origzone, 		/* Zone of Packet Sender or NULL		*/
-				  destzone, 		/* Zone of Packet Receiver or NULL		*/
-				  origpoint,		/* Origination Point of Packet			*/
-				  destpoint;		/* Destination Point of Packet			*/
-			char empty[4];			
-		} two_plus;					
-		struct {					/* OR Type 2.2 Packet Header Info		*/
-			char origdomn[8];		/* Origination Domain					*/
-			char destdomn[8];		/* Destination Domain					*/
-			char empty[4]; 			/* Product Specific Data				*/
-		} two_two;
-	} fill;
+typedef struct _PACK {				/* Fidonet Packet Header (types 2.0), FTS-1 */
+	uint16_t	orignode;			// Origination Node of Packet (all types)
+	uint16_t	destnode;			// Destination Node of Packet (all types)
+	uint16_t	year;				// Year of Packet Creation e.g. 1995
+	uint16_t	month;				// Month of Packet Creation 0-11
+	uint16_t	day;				// Day of Packet Creation 1-31
+	uint16_t	hour;				// Hour of Packet Creation 0-23
+	uint16_t	min;				// Minute of Packet Creation 0-59
+	uint16_t	sec;				// Second of Packet Creation 0-59
+	uint16_t	baud;				// Max Baud Rate of Orig & Dest
+	uint16_t	pkttype;			// Packet Type (2)
+	uint16_t	orignet;			// Origination Net of Packet
+	uint16_t	destnet;			// Destination Net of Packet
+	uint8_t		prodcode;			// Product Code (00h is Fido)
+	uint8_t		sernum;				// Binary Serial Number or NULL
+	uint8_t		password[FIDO_PASS_LEN];	// Session Password or NULL
+	uint16_t	origzone;			// Origination Zone of Packet or NULL (added in rev 12 of FTS-1)
+	uint16_t	destzone;			// Destination Zone of Packet or NULL (added in rev 12 of FTS-1)
+	uint8_t		fill[20];			// Unused (zeroed)
+} fpkthdr2_t;
 
+typedef struct _PACK {				/* Fidonet Packet Header (types 2+), FSC-48 */
+	uint16_t	orignode;			// Origination Node of Packet (all types)
+	uint16_t	destnode;			// Destination Node of Packet (all types)
+	uint16_t	year;				// Year of Packet Creation e.g. 1995
+	uint16_t	month;				// Month of Packet Creation 0-11
+	uint16_t	day;				// Day of Packet Creation 1-31
+	uint16_t	hour;				// Hour of Packet Creation 0-23
+	uint16_t	min;				// Minute of Packet Creation 0-59
+	uint16_t	sec;				// Second of Packet Creation 0-59
+	uint16_t	baud;				// Max Baud Rate of Orig & Dest
+	uint16_t	pkttype;			// Packet Type (2)
+	uint16_t	orignet;			// Origination Net of Packet
+	uint16_t	destnet;			// Destination Net of Packet
+	uint8_t		prodcodeLo;			// Product Code (00h is Fido)
+	uint8_t		revisionMaj;		// Revision (major)
+	uint8_t		password[FIDO_PASS_LEN];	// Session Password or NULL
+	uint16_t	oldOrigZone;		// Origination Zone in type 2.0 packet, unused in 2+
+	uint16_t	oldDestZone;		// Destination Zone in type 2.0 packet, unused in 2+
+	/* 2.0 Fill data area: */
+	uint16_t	auxnet;				// Orig Net if Origin is a Point
+	uint16_t	cwcopy;				// Must be Equal to cword (byte-swapped)
+	uint8_t		prodcodeHi;			// Product Code	
+	uint8_t		revisionMinor; 		// Revision (minor)
+	uint16_t	cword;				// Compatibility Word
+	uint16_t	origzone; 			// Zone of Packet Sender or NULL
+	uint16_t	destzone; 			// Zone of Packet Receiver or NULL
+	uint16_t	origpoint;			// Origination Point of Packet
+	uint16_t	destpoint;			// Destination Point of Packet
+	uint8_t		proddata[4];		// Product Specific Data
+} fpkthdr2plus_t;
+
+typedef struct _PACK {				/* Fidonet Packet Header (types 2.2), FSC-45 */
+	uint16_t	orignode;			// Origination Node of Packet (all types)
+	uint16_t	destnode;			// Destination Node of Packet (all types)
+	uint16_t	origpoint;			// Origination Point of Packet
+	uint16_t	destpoint;			// Destination Point of Packet
+	uint8_t		reserved[8];		// Reserved, must be zero
+	uint16_t	subversion;			// Packet sub-version (2, indicates type 2.2 packet header)
+	uint16_t	pkttype;			// Packet Type (2)
+	uint16_t	orignet;			// Origination Net of Packet
+	uint16_t	destnet;			// Destination Net of Packet
+	uint8_t		prodcode;			// Product code (00h is Fido)
+	uint8_t		prodrevision;		// Product revision level
+	uint8_t		password[FIDO_PASS_LEN];	// Session Password or NULL
+	uint16_t	origzone;			// Origination Zone of Packet or NULL (added in rev 12 of FTS-1)
+	uint16_t	destzone;			// Destination Zone of Packet or NULL (added in rev 12 of FTS-1)
+	/* 2.0 Fill data area: */
+	uint8_t		origdomn[8];		// Origination Domain
+	uint8_t		destdomn[8];		// Destination Domain
+	uint8_t		proddata[4];		// Product Specific Data
+} fpkthdr2_2_t;
+
+
+typedef union _PACK {				/* Fidonet Packet Header (types 2, 2+, and 2.2 */
+	fpkthdr2_t		type2;
+	fpkthdr2plus_t	type2plus;
+	fpkthdr2_2_t	type2_2;
 } fpkthdr_t;
 
 #define FIDO_PACKET_HDR_LEN			58
@@ -156,6 +195,15 @@ typedef struct _PACK {				/* FidoNet Stored Message Header *.msg	*/
 
 #define FIDO_STORED_MSG_HDR_LEN		190
 #define FIDO_STORED_MSG_TERMINATOR	'\0'	/* 8-bits */
+
+typedef struct _PACK {		/* FidoNet 4D address (zone:net/node.point) */
+
+	uint16_t	zone;
+	uint16_t	net;
+	uint16_t	node;
+	uint16_t	point;
+
+} faddr4d_t;
 
 #if defined(PRAGMA_PACK)
 #pragma pack(pop)		/* original packing */
