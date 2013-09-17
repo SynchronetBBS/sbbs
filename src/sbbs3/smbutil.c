@@ -685,7 +685,7 @@ void maint(void)
 				idx[m].attr|=MSG_DELETE; 
 			} 
 		}  /* mark for deletion */
-		printf("\r100%% (%lu flagged for deletion)\n",f); 
+		printf("\r100%% (%lu flagged for deletion due to age)\n",f); 
 	}
 
 	printf("Scanning for read messages to be killed...\n");
@@ -699,7 +699,7 @@ void maint(void)
 			idx[m].attr|=MSG_DELETE; 
 		} 
 	}
-	printf("\r100%% (%lu flagged for deletion)\n",f);
+	printf("\r100%% (%lu flagged for deletion due to read status)\n",f);
 
 	if(smb.status.max_msgs && l-flagged>smb.status.max_msgs) {
 		printf("Flagging excess messages for deletion...\n");
