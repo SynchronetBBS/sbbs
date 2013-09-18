@@ -263,7 +263,7 @@ If you want to delete all the messages for this sub-board, select `Yes`.
 			,cfg.sub[i]->op_arstr);
 		sprintf(opt[n++],"%-27.27s%.40s","Moderated Posting User"
 			,cfg.sub[i]->mod_arstr);
-		sprintf(opt[n++],"%-27.27s%lu","Maximum Messages"
+		sprintf(opt[n++],"%-27.27s%"PRIu32,"Maximum Messages"
             ,cfg.sub[i]->maxmsgs);
 		if(cfg.sub[i]->maxage)
             sprintf(str,"Enabled (%u days old)",cfg.sub[i]->maxage);
@@ -271,7 +271,7 @@ If you want to delete all the messages for this sub-board, select `Yes`.
             strcpy(str,"Disabled");
 		sprintf(opt[n++],"%-27.27s%s","Purge by Age",str);
 		if(cfg.sub[i]->maxcrcs)
-			sprintf(str,"Enabled (%lu message CRCs)",cfg.sub[i]->maxcrcs);
+			sprintf(str,"Enabled (%"PRIu32" message CRCs)",cfg.sub[i]->maxcrcs);
 		else
 			strcpy(str,"Disabled");
 		sprintf(opt[n++],"%-27.27s%s","Duplicate Checking",str);
@@ -384,7 +384,7 @@ sub-board's name and group name.
 				getar(str,cfg.sub[i]->mod_arstr);
                 break;
 			case 10:
-				sprintf(str,"%lu",cfg.sub[i]->maxmsgs);
+				sprintf(str,"%"PRIu32,cfg.sub[i]->maxmsgs);
                 SETHELP(WHERE);
 /*
 `Maximum Number of Messages:`
@@ -414,7 +414,7 @@ the sub-board.
                 cfg.sub[i]->misc|=SUB_HDRMOD;
 				break;
 			case 12:
-				sprintf(str,"%lu",cfg.sub[i]->maxcrcs);
+				sprintf(str,"%"PRIu32,cfg.sub[i]->maxcrcs);
 				SETHELP(WHERE);
 /*
 `Maximum Number of CRCs:`

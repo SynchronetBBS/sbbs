@@ -1134,7 +1134,7 @@ user.
 				else
 					strcpy(str,"None");
 				sprintf(opt[i++],"%-27.27s%s","Mail Database Backups",str);
-				sprintf(opt[i++],"%-27.27s%lX","Control Key Pass-through"
+				sprintf(opt[i++],"%-27.27s%"PRIX32,"Control Key Pass-through"
 					,cfg.ctrlkey_passthru);
 				opt[i][0]=0;
 				SETHELP(WHERE);
@@ -1312,7 +1312,7 @@ convert credits into minutes. A sysop can add minutes to a user's
 account regardless of this maximum. If this value is set to `0`, users
 will have no limit on the total number of minutes they can have.
 */
-						sprintf(str,"%lu",cfg.max_minutes);
+						sprintf(str,"%"PRIu32,cfg.max_minutes);
 						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Maximum Number of Minutes a User Can Have "
 							"(0=No Limit)"
@@ -1414,7 +1414,7 @@ use of a hexadecimal calculator.
 
 If unsure, leave this value set to `0`, the default.
 */
-						sprintf(str,"%lX",cfg.ctrlkey_passthru);
+						sprintf(str,"%"PRIX32,cfg.ctrlkey_passthru);
 						uifc.input(WIN_MID|WIN_SAV,0,0
 							,"Control Key Pass-through"
 							,str,8,K_UPPER|K_EDIT);
@@ -1836,7 +1836,7 @@ user's security values with very few key-strokes.
 						,ltoaf(cfg.val_rest[i],tmp));
 					sprintf(opt[j++],"%-22.22s%u days","Extend Expiration"
 						,cfg.val_expire[i]);
-					sprintf(opt[j++],"%-22.22s%lu","Additional Credits"
+					sprintf(opt[j++],"%-22.22s%u","Additional Credits"
 						,cfg.val_cdt[i]);
 					opt[j][0]=0;
 					j=uifc.list(WIN_RHT|WIN_SAV|WIN_ACT,2,1,0,&k,0

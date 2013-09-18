@@ -34,6 +34,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "strwrap.h"	/* itoa() */
 
 char *utos(char *str)
 {
@@ -503,7 +504,7 @@ export the current message group into.
 						,cfg.sub[j]->post_arstr
 						,cfg.sub[j]->op_arstr
 						);
-					fprintf(stream,"%lX\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n"
+					fprintf(stream,"%"PRIX32"\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n"
 						,cfg.sub[j]->misc
 						,cfg.sub[j]->tagline
 						,cfg.sub[j]->origline
@@ -511,7 +512,7 @@ export the current message group into.
 						,cfg.sub[j]->newsgroup
 						,smb_faddrtoa(&cfg.sub[j]->faddr,tmp)
 						);
-					fprintf(stream,"%lu\r\n%lu\r\n%u\r\n%u\r\n%s\r\n"
+					fprintf(stream,"%"PRIu32"\r\n%"PRIu32"\r\n%u\r\n%u\r\n%s\r\n"
 						,cfg.sub[j]->maxmsgs
 						,cfg.sub[j]->maxcrcs
 						,cfg.sub[j]->maxage
@@ -780,7 +781,7 @@ void msg_opts()
 		sprintf(opt[i++],"%-33.33s%u seconds"
 			,"Maximum Retry Time",cfg.smb_retry_time);
 		if(cfg.max_qwkmsgs)
-			sprintf(str,"%lu",cfg.max_qwkmsgs);
+			sprintf(str,"%"PRIu32,cfg.max_qwkmsgs);
 		else
 			sprintf(str,"Unlimited");
 		sprintf(opt[i++],"%-33.33s%s"
@@ -803,7 +804,7 @@ void msg_opts()
 			strcpy(str,"Daily");
 		sprintf(opt[i++],"%-33.33s%s","Purge Deleted E-mail",str);
 		if(cfg.mail_maxcrcs)
-			sprintf(str,"Enabled (%lu mail CRCs)",cfg.mail_maxcrcs);
+			sprintf(str,"Enabled (%"PRIu32" mail CRCs)",cfg.mail_maxcrcs);
 		else
 			strcpy(str,"Disabled");
 		sprintf(opt[i++],"%-33.33s%s","Duplicate E-mail Checking",str);
@@ -1177,7 +1178,7 @@ day.
 				}
                 break;
 			case 8:
-				sprintf(str,"%lu",cfg.mail_maxcrcs);
+				sprintf(str,"%"PRIu32,cfg.mail_maxcrcs);
                 SETHELP(WHERE);
 /*
 `Maximum Number of Mail CRCs:`

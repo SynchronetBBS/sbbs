@@ -295,7 +295,7 @@ outgoing network packets and must be accurate.
 			sprintf(opt[i++],"%-27.27s%s"
 				,"Kill NetMail After Sent"
 				,cfg.netmail_misc&NMAIL_KILL ? "Yes":"No");
-			sprintf(opt[i++],"%-27.27s%lu"
+			sprintf(opt[i++],"%-27.27s%"PRIu32
 				,"Cost to Send NetMail",cfg.netmail_cost);
 			opt[i][0]=0;
 			SETHELP(WHERE);
@@ -666,7 +666,7 @@ If you want the sending of NetMail to be free, set this value to `0`.
 			i=0;
 			strcpy(opt[i++],"Network Hubs...");
 			sprintf(opt[i++],"%-20.20s%-12s","Site Name",cfg.sys_psname);
-			sprintf(opt[i++],"%-20.20s%-lu","Site Number",cfg.sys_psnum);
+			sprintf(opt[i++],"%-20.20s%-"PRIu32,"Site Number",cfg.sys_psnum);
 			opt[i][0]=0;
 			SETHELP(WHERE);
 /*
@@ -808,7 +808,7 @@ This is the Site Name of this hub. It is used for only for reference.
 			sprintf(opt[i++],"%-27.27s%s"
 				,"Send E-mail Using Alias"
 				,cfg.inetmail_misc&NMAIL_ALIAS ? "Yes":"No");
-			sprintf(opt[i++],"%-27.27s%lu"
+			sprintf(opt[i++],"%-27.27s%"PRIu32
 				,"Cost to Send E-mail",cfg.inetmail_cost);
 			opt[i][0]=0;
 			SETHELP(WHERE);

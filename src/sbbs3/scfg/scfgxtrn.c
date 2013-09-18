@@ -904,7 +904,7 @@ online program name.
 		sprintf(opt[k++],"%-27.27s%.40s","Command Line",cfg.xtrn[i]->cmd);
 		sprintf(opt[k++],"%-27.27s%.40s","Clean-up Command Line",cfg.xtrn[i]->clean);
 		if(cfg.xtrn[i]->cost)
-			sprintf(str,"%lu credits",cfg.xtrn[i]->cost);
+			sprintf(str,"%"PRIu32" credits",cfg.xtrn[i]->cost);
 		else
 			strcpy(str,"None");
 		sprintf(opt[k++],"%-27.27s%s","Execution Cost",str);
