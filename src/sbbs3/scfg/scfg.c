@@ -618,7 +618,7 @@ configuration before deciding, hit ~ ESC ~.
 void txt_cfg()
 {
 	static int txt_dflt,bar;
-	char str[128],code[128],done=0,*p;
+	char str[128],code[128],done=0;
 	int j,k;
 	uint i;
 	static txtsec_t savtxtsec;
@@ -786,7 +786,7 @@ abreviation of the name.
 void shell_cfg()
 {
 	static int shell_dflt,shell_bar;
-	char str[128],code[128],done=0,*p;
+	char str[128],code[128],done=0;
 	int j,k;
 	uint i;
 	static shell_t savshell;

@@ -205,7 +205,7 @@ when running this chat pager, set this option to either `Standard` or ~Console~.
 void chan_cfg()
 {
 	static int chan_dflt,chan_bar,opt_dflt;
-	char str[128],code[128],done=0,*p;
+	char str[128],code[128],done=0;
 	int j,k;
 	uint i;
 	static chan_t savchan;
@@ -611,7 +611,7 @@ This is the output string that results from this chat action.
 void guru_cfg()
 {
 	static int guru_dflt,guru_bar,opt_dflt;
-	char str[128],code[128],done=0,*p;
+	char str[128],code[128],done=0;
 	int j,k;
 	uint i;
 	static guru_t savguru;

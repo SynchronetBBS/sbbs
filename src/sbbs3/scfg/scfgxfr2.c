@@ -679,7 +679,7 @@ command: `DIR /ON /AD /B > DIRS.RAW`
 void dir_cfg(uint libnum)
 {
 	static int dflt,bar,tog_dflt,tog_bar,adv_dflt,opt_dflt;
-	char str[128],str2[128],code[128],path[MAX_PATH+1],done=0,*p;
+	char str[128],str2[128],code[128],path[MAX_PATH+1],done=0;
 	char data_dir[MAX_PATH+1];
 	int j,n;
 	uint i,dirnum[MAX_OPTS+1];

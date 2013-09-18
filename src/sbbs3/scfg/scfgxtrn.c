@@ -781,7 +781,7 @@ re-initialized, set this option to ~Yes~.
 void xtrn_cfg(uint section)
 {
 	static int ext_dflt,ext_bar,sub_bar,opt_dflt,time_dflt;
-	char str[128],code[128],done=0,*p;
+	char str[128],code[128],done=0;
 	int j,k;
 	uint i,n,xtrnnum[MAX_OPTS+1];
 	static xtrn_t savxtrn;
@@ -1507,7 +1507,7 @@ option to `Yes`.
 void xedit_cfg()
 {
 	static int dflt,dfltopt,bar;
-	char str[81],code[81],done=0,*p;
+	char str[81],code[81],done=0;
 	int j,k;
 	uint i;
 	static xedit_t savxedit;
@@ -2079,7 +2079,7 @@ return(0);
 void xtrnsec_cfg()
 {
 	static int xtrnsec_dflt,xtrnsec_opt;
-	char str[128],code[128],done=0,*p;
+	char str[128],code[128],done=0;
 	int j,k;
 	uint i;
 	static xtrnsec_t savxtrnsec;

@@ -1218,7 +1218,7 @@ this option to `Strip out`.
 			,sizeof(ulong *)*(cfg.qhub[num]->subs+1)))==NULL
 		|| (cfg.qhub[num]->conf=(ushort *)realloc(cfg.qhub[num]->conf
             ,sizeof(ushort *)*(cfg.qhub[num]->subs+1)))==NULL
-		|| (cfg.qhub[num]->mode=(uchar *)realloc(cfg.qhub[num]->mode
+		|| (cfg.qhub[num]->mode=(char *)realloc(cfg.qhub[num]->mode
 			,sizeof(uchar *)*(cfg.qhub[num]->subs+1)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.qhub[num]->subs+1);
 			continue; 
