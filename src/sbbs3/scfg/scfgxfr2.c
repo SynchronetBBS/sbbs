@@ -43,7 +43,6 @@ static void append_dir_list(const char* parent, const char* dir, FILE* fp, int d
 	char*		p;
 	glob_t		g;
 	unsigned	gi;
-	BOOL		empty=TRUE;
 
 	SAFECOPY(path,dir);
 	backslash(path);
