@@ -45,12 +45,21 @@
  *                              replacement text when in literal match & replace
  *                              mode.
  * 2013-09-07 Eric Oulashin     Bug fix: Updated ReadSlyEditConfigFile() to
- *                              default cfgObj.genColors.txtReplacementList to
+ *                              default cfgObj.genColors.listBoxItemText to
  *                              ensure that it gets defined.
  *                              Code refactor: Moved doMacroTxtReplacementInEditLine()
  *                              and getWordFromEditLine() to TextLine member
  *                              methods TextLine_doMacroTxtReplacement() and
  *                              TextLine_getWord().
+ * 2013-09-13
+ * 2013-09-14 Eric Oulashin     Added functions for a new ChoiceScrollbox object
+ *                              type, which is a generic scrollable list box that
+ *                              allows a user to select an item.
+ *                              Added the functions readTxtFileIntoArray() and
+ *                              txtFileContainsLines().  Updated displayCommandList()
+ *                              to display the hotkey Ctrl-U for user settings.
+ *                              Moved the options for author initials in quote
+ *                              lines to user settings.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -149,8 +158,13 @@ var KEY_ESC = "\x1b";
 // Lister, since it will be used more than once.
 var gDDML_DROP_FILE_NAME = system.node_dir + "DDML_SyncSMBInfo.txt";
 
+var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".SlyEdit_Settings";
+
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
+
+//////
+// TextLine stuff
 
 // TextLine object constructor: This is used to keep track of a text line,
 // and whether it has a hard newline at the end (i.e., if the user pressed
@@ -379,6 +393,708 @@ function AbortConfirmFuncParams()
    this.displayMessageRectangle = displayMessageRectangle;
 }
 
+//////
+// ChoiceScrollbox stuff
+
+// Returns the minimum width for a ChoiceScrollbox
+function ChoiceScrollbox_MinWidth()
+{
+   return 73; // To leave room for the navigation text in the bottom border
+}
+
+// ChoiceScrollbox constructor
+//
+// Parameters:
+//  pLeftX: The horizontal component (column) of the upper-left coordinate
+//  pTopY: The vertical component (row) of the upper-left coordinate
+//  pWidth: The width of the box (including the borders)
+//  pHeight: The height of the box (including the borders)
+//  pTopBorderText: The text to include in the top border
+//  pSlyEdCfgObj: The SlyEdit configuration object (color settings are used)
+//  pAddTCharsAroundTopText: Optional, boolean - Whether or not to use left & right T characters
+//                           around the top border text.  Defaults to true.
+// pReplaceTopTextSpacesWithBorderChars: Optional, boolean - Whether or not to replace
+//                           spaces in the top border text with border characters.
+//                           Defaults to false.
+function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdCfgObj,
+                          pAddTCharsAroundTopText, pReplaceTopTextSpacesWithBorderChars)
+{
+   // The default is to add left & right T characters around the top border
+   // text.  But also use pAddTCharsAroundTopText if it's a boolean.
+   var addTopTCharsAroundText = true;
+   if (typeof(pAddTCharsAroundTopText) == "boolean")
+      addTopTCharsAroundText = pAddTCharsAroundTopText;
+   // If pReplaceTopTextSpacesWithBorderChars is true, then replace the spaces
+   // in pTopBorderText with border characters.
+   if (pReplaceTopTextSpacesWithBorderChars)
+   {
+      var startIdx = 0;
+      var firstSpcIdx = pTopBorderText.indexOf(" ", 0);
+      // Look for the first non-space after firstSpaceIdx
+      var nonSpcIdx = -1;
+      for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
+      {
+         if (pTopBorderText.charAt(i) != " ")
+            nonSpcIdx = i;
+      }
+      var firstStrPart = "";
+      var lastStrPart = "";
+      numSpaces = 0;
+      while ((firstSpcIdx > -1) && (nonSpcIdx > -1))
+      {
+         firstStrPart = pTopBorderText.substr(startIdx, (firstSpcIdx-startIdx));
+         lastStrPart = pTopBorderText.substr(nonSpcIdx);
+         numSpaces = nonSpcIdx - firstSpcIdx;
+         if (numSpaces > 0)
+         {
+            pTopBorderText = firstStrPart + "n" + pSlyEdCfgObj.genColors.listBoxBorder;
+            for (var i = 0; i < numSpaces; ++i)
+               pTopBorderText += HORIZONTAL_SINGLE;
+            pTopBorderText += "n" + pSlyEdCfgObj.genColors.listBoxBorderText + lastStrPart;
+         }
+
+         // Look for the next space and non-space character after that.
+         firstSpcIdx = pTopBorderText.indexOf(" ", nonSpcIdx);
+         // Look for the first non-space after firstSpaceIdx
+         nonSpcIdx = -1;
+         for (var i = firstSpcIdx; (i < pTopBorderText.length) && (nonSpcIdx == -1); ++i)
+         {
+            if (pTopBorderText.charAt(i) != " ")
+               nonSpcIdx = i;
+         }
+      }
+   }
+
+   this.SlyEdCfgObj = pSlyEdCfgObj;
+
+   var minWidth = ChoiceScrollbox_MinWidth();
+
+   this.dimensions = new Object();
+   this.dimensions.topLeftX = pLeftX;
+   this.dimensions.topLeftY = pTopY;
+   // Make sure the width is the minimum width
+   if ((pWidth < 0) || (pWidth < minWidth))
+      this.dimensions.width = minWidth;
+   else
+      this.dimensions.width = pWidth;
+   this.dimensions.height = pHeight;
+   this.dimensions.bottomRightX = this.dimensions.topLeftX + this.dimensions.width - 1;
+   this.dimensions.bottomRightY = this.dimensions.topLeftY + this.dimensions.height - 1;
+
+   // The text item array and member variables relating to it and the items
+   // displayed on the screen during the input loop
+   this.txtItemList = new Array();
+   this.chosenTextItemIndex = -1;
+   this.topItemIndex = 0;
+   this.bottomItemIndex = 0;
+
+   // Top border string
+   var innerBorderWidth = this.dimensions.width - 2;
+   // Calculate the maximum top border text length to account for the left/right
+   // T chars and "Page #### of ####" text
+   var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
+   if (strip_ctrl(pTopBorderText).length > maxTopBorderTextLen)
+      pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
+   this.topBorder = "n" + pSlyEdCfgObj.genColors.listBoxBorder + UPPER_LEFT_SINGLE;
+   if (addTopTCharsAroundText)
+      this.topBorder += RIGHT_T_SINGLE;
+   this.topBorder += "n" + pSlyEdCfgObj.genColors.listBoxBorderText
+     + pTopBorderText + "n" + pSlyEdCfgObj.genColors.listBoxBorder;
+   if (addTopTCharsAroundText)
+      this.topBorder += LEFT_T_SINGLE;
+   const topBorderTextLen = strip_ctrl(pTopBorderText).length;
+   var numHorizBorderChars = innerBorderWidth - topBorderTextLen - 20;
+   if (addTopTCharsAroundText)
+      numHorizBorderChars -= 2;
+   for (var i = 0; i <= numHorizBorderChars; ++i)
+      this.topBorder += HORIZONTAL_SINGLE;
+   this.topBorder += RIGHT_T_SINGLE + "n" + pSlyEdCfgObj.genColors.listBoxBorderText
+     + "Page    1 of    1" + "n" + pSlyEdCfgObj.genColors.listBoxBorder + LEFT_T_SINGLE
+     + UPPER_RIGHT_SINGLE;
+
+   // Bottom border string
+   this.btmBorderNavText = "nhcb, cb, cNy)bext, cPy)brev, "
+     + "cFy)birst, cLy)bast, cHOMEb, cENDb, cEntery=bSelect, "
+     + "cESCnc/hcQy=bEnd";
+   this.bottomBorder = "n" + pSlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE
+     + RIGHT_T_SINGLE + this.btmBorderNavText + "n" + pSlyEdCfgObj.genColors.listBoxBorder
+     + LEFT_T_SINGLE;
+   var numCharsRemaining = this.dimensions.width - strip_ctrl(this.btmBorderNavText).length - 6;
+   for (var i = 0; i < numCharsRemaining; ++i)
+      this.bottomBorder += HORIZONTAL_SINGLE;
+   this.bottomBorder += LOWER_RIGHT_SINGLE;
+
+   // Item format strings
+   this.listIemFormatStr = "n" + pSlyEdCfgObj.genColors.listBoxItemText + "%-"
+                          + +(this.dimensions.width-2) + "s";
+   this.listIemHighlightFormatStr = "n" + pSlyEdCfgObj.genColors.listBoxItemHighlight + "%-"
+                          + +(this.dimensions.width-2) + "s";
+
+   // Key functionality override function pointers
+   this.enterKeyOverrideFn = null;
+
+   // inputLoopeExitKeys is an object containing additional keypresses that will
+   // exit the input loop.
+   this.inputLoopExitKeys = new Object();
+
+   // "Class" functions
+   this.addTextItem = ChoiceScrollbox_AddTextItem; // Returns the index of the item
+   this.getTextItem = ChoiceScrollbox_GetTextIem;
+   this.replaceTextItem = ChoiceScrollbox_ReplaceTextItem;
+   this.delTextItem = ChoiceScrollbox_DelTextItem;
+   this.chgCharInTextItem = ChoiceScrollbox_ChgCharInTextItem;
+   this.getChosenTextItemIndex = ChoiceScrollbox_GetChosenTextItemIndex;
+   this.setItemArray = ChoiceScrollbox_SetItemArray; // Sets the item array; returns whether or not it was set.
+   this.clearItems = ChoiceScrollbox_ClearItems; // Empties the array of items
+   this.setEnterKeyOverrideFn = ChoiceScrollbox_SetEnterKeyOverrideFn;
+   this.clearEnterKeyOverrideFn = ChoiceScrollbox_ClearEnterKeyOverrideFn;
+   this.addInputLoopExitKey = ChoiceScrollbox_AddInputLoopExitKey;
+   this.setBottomBorderText = ChoiceScrollbox_SetBottomBorderText;
+   this.drawBorder = ChoiceScrollbox_DrawBorder;
+   this.refreshItemCharOnScreen = ChoiceScrollbox_RefreshItemCharOnScreen;
+   // Does the input loop.  Returns an object with the following properties:
+   //  itemWasSelected: Boolean - Whether or not an item was selected
+   //  selectedIndex: The index of the selected item
+   //  selectedItem: The text of the selected item
+   //  lastKeypress: The last key pressed by the user
+   this.doInputLoop = ChoiceScrollbox_DoInputLoop;
+}
+function ChoiceScrollbox_AddTextItem(pTextLine, pStripCtrl)
+{
+   var stripCtrl = true;
+   if (typeof(pStripCtrl) == "boolean")
+      stripCtrl = pStripCtrl;
+
+   if (stripCtrl)
+      this.txtItemList.push(strip_ctrl(pTextLine));
+   else
+      this.txtItemList.push(pTextLine);
+   // Return the index of the added item
+   return this.txtItemList.length-1;
+}
+function ChoiceScrollbox_GetTextIem(pItemIndex)
+{
+   if (typeof(pItemIndex) != "number")
+      return "";
+   if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length))
+      return "";
+
+   return this.txtItemList[pItemIndex];
+}
+function ChoiceScrollbox_ReplaceTextItem(pItemIndexOrStr, pNewItem)
+{
+   if (typeof(pNewItem) != "string")
+      return false;
+
+   // Find the item index
+   var itemIndex = -1;
+   if (typeof(pItemIndexOrStr) == "number")
+   {
+      if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
+         return false;
+      else
+         itemIndex = pItemIndexOrStr;
+   }
+   else if (typeof(pItemIndexOrStr) == "string")
+   {
+      itemIndex = -1;
+      for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
+      {
+         if (this.txtItemList[i] == pItemIndexOrStr)
+            itemIndex = i;
+      }
+   }
+   else
+      return false;
+
+   // Replace the item
+   var replacedIt = false;
+   if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
+   {
+      this.txtItemList[itemIndex] = pNewItem;
+      replacedIt = true;
+   }
+   return replacedIt;
+}
+function ChoiceScrollbox_DelTextItem(pItemIndexOrStr)
+{
+   // Find the item index
+   var itemIndex = -1;
+   if (typeof(pItemIndexOrStr) == "number")
+   {
+      if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
+         return false;
+      else
+         itemIndex = pItemIndexOrStr;
+   }
+   else if (typeof(pItemIndexOrStr) == "string")
+   {
+      itemIndex = -1;
+      for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
+      {
+         if (this.txtItemList[i] == pItemIndexOrStr)
+            itemIndex = i;
+      }
+   }
+   else
+      return false;
+
+   // Remove the item
+   var removedIt = false;
+   if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
+   {
+      this.txtItemList = this.txtItemList.splice(itemIndex, 1);
+      removedIt = true;
+   }
+   return removedIt;
+}
+function ChoiceScrollbox_ChgCharInTextItem(pItemIndexOrStr, pStrIndex, pNewText)
+{
+   // Find the item index
+   var itemIndex = -1;
+   if (typeof(pItemIndexOrStr) == "number")
+   {
+      if ((pItemIndexOrStr < 0) || (pItemIndexOrStr >= this.txtItemList.length))
+         return false;
+      else
+         itemIndex = pItemIndexOrStr;
+   }
+   else if (typeof(pItemIndexOrStr) == "string")
+   {
+      itemIndex = -1;
+      for (var i = 0; (i < this.txtItemList.length) && (itemIndex == -1); ++i)
+      {
+         if (this.txtItemList[i] == pItemIndexOrStr)
+            itemIndex = i;
+      }
+   }
+   else
+      return false;
+
+   // Change the character in the item
+   var changedIt = false;
+   if ((itemIndex > -1) && (itemIndex < this.txtItemList.length))
+   {
+      this.txtItemList[itemIndex] = chgCharInStr(this.txtItemList[itemIndex], pStrIndex, pNewText);
+      changedIt = true;
+   }
+   return changedIt;
+}
+function ChoiceScrollbox_GetChosenTextItemIndex()
+{
+   return this.chosenTextItemIndex;
+}
+function ChoiceScrollbox_SetItemArray(pArray, pStripCtrl)
+{
+   var safeToSet = false;
+   if (Object.prototype.toString.call(pArray) === "[object Array]")
+   {
+      if (pArray.length > 0)
+         safeToSet = (typeof(pArray[0]) == "string");
+      else
+         safeToSet = true; // It's safe to set an empty array
+   }
+
+   if (safeToSet)
+   {
+      delete this.txtItemList;
+      this.txtItemList = pArray;
+
+      var stripCtrl = true;
+      if (typeof(pStripCtrl) == "boolean")
+         stripCtrl = pStripCtrl;
+      if (stripCtrl)
+      {
+         // Remove attribute/color characters from the text lines in the array
+         for (var i = 0; i < this.txtItemList.length; ++i)
+            this.txtItemList[i] = strip_ctrl(this.txtItemList[i]);
+      }
+   }
+
+   return safeToSet;
+}
+function ChoiceScrollbox_ClearItems()
+{
+   this.txtItemList.length = 0;
+}
+function ChoiceScrollbox_SetEnterKeyOverrideFn(pOverrideFn)
+{
+   if (Object.prototype.toString.call(pOverrideFn) == "[object Function]")
+      this.enterKeyOverrideFn = pOverrideFn;
+}
+function ChoiceScrollbox_ClearEnterKeyOverrideFn()
+{
+   this.enterKeyOverrideFn = null;
+}
+function ChoiceScrollbox_AddInputLoopExitKey(pKeypress)
+{
+   this.inputLoopExitKeys[pKeypress] = true;
+}
+function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooLong)
+{
+   if (typeof(pText) != "string")
+      return;
+
+   const innerWidth = (pAddTChars ? this.dimensions.width-4 : this.dimensions.width-2);
+
+   if (pAutoStripIfTooLong)
+   {
+      if (strip_ctrl(pText).length > innerWidth)
+         pText = pText.substr(0, innerWidth);
+   }
+
+   // Re-build the bottom border string based on the new text
+   this.bottomBorder = "n" + this.SlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE;
+   if (pAddTChars)
+      this.bottomBorder += RIGHT_T_SINGLE;
+   if (pText.indexOf("n") != 0)
+      this.bottomBorder += "n";
+   this.bottomBorder += pText + "n" + this.SlyEdCfgObj.genColors.listBoxBorder;
+   if (pAddTChars)
+      this.bottomBorder += LEFT_T_SINGLE;
+   var numCharsRemaining = this.dimensions.width - strip_ctrl(this.bottomBorder).length - 3;
+   for (var i = 0; i < numCharsRemaining; ++i)
+      this.bottomBorder += HORIZONTAL_SINGLE;
+   this.bottomBorder += LOWER_RIGHT_SINGLE;
+}
+function ChoiceScrollbox_DrawBorder()
+{
+   console.gotoxy(this.dimensions.topLeftX, this.dimensions.topLeftY);
+   console.print(this.topBorder);
+   // Draw the side border characters
+   var screenRow = this.dimensions.topLeftY + 1;
+   for (var screenRow = this.dimensions.topLeftY+1; screenRow <= this.dimensions.bottomRightY-1; ++screenRow)
+   {
+      console.gotoxy(this.dimensions.topLeftX, screenRow);
+      console.print(VERTICAL_SINGLE);
+      console.gotoxy(this.dimensions.bottomRightX, screenRow);
+      console.print(VERTICAL_SINGLE);
+   }
+   // Draw the bottom border
+   console.gotoxy(this.dimensions.topLeftX, this.dimensions.bottomRightY);
+   console.print(this.bottomBorder);
+}
+function ChoiceScrollbox_RefreshItemCharOnScreen(pItemIndex, pCharIndex)
+{
+   if ((typeof(pItemIndex) != "number") || (typeof(pCharIndex) != "number"))
+      return;
+   if ((pItemIndex < 0) || (pItemIndex >= this.txtItemList.length) ||
+       (pItemIndex < this.topItemIndex) || (pItemIndex > this.bottomItemIndex))
+   {
+      return;
+   }
+   if ((pCharIndex < 0) || (pCharIndex >= this.txtItemList[pItemIndex].length))
+      return;
+
+   // Save the current cursor position so that we can restore it later
+   const originalCurpos = console.getxy();
+   // Go to the character's position on the screen and set the highlight or
+   // normal color, depending on whether the item is the currently selected item,
+   // then print the character on the screen.
+   const charScreenX = this.dimensions.topLeftX + 1 + pCharIndex;
+   const itemScreenY = this.dimensions.topLeftY + 1 + (pItemIndex - this.topItemIndex);
+   console.gotoxy(charScreenX, itemScreenY);
+   if (pItemIndex == this.chosenTextItemIndex)
+      console.print(this.SlyEdCfgObj.genColors.listBoxItemHighlight);
+   else
+      console.print(this.SlyEdCfgObj.genColors.listBoxItemText);
+   console.print(this.txtItemList[pItemIndex].charAt(pCharIndex));
+   // Move the cursor back to where it was originally
+   console.gotoxy(originalCurpos);
+}
+function ChoiceScrollbox_DoInputLoop(pDrawBorder)
+{
+   var retObj = new Object();
+   retObj.itemWasSelected = false;
+   retObj.selectedIndex = -1;
+   retObj.selectedItem = "";
+   retObj.lastKeypress = "";
+
+   // Don't do anything if the item list doesn't contain any items
+   if (this.txtItemList.length == 0)
+      return retObj;
+
+   //////////////////////////////////
+   // Locally-defined functions
+
+   // This function returns the index of the bottommost item that
+   // can be displayed in the box.
+   //
+   // Parameters:
+   //  pArray: The array containing the items
+   //  pTopindex: The index of the topmost item displayed in the box
+   //  pNumItemsPerPage: The number of items per page
+   function getBottommostItemIndex(pArray, pTopIndex, pNumItemsPerPage)
+   {
+      var bottomIndex = pTopIndex + pNumItemsPerPage - 1;
+      // If bottomIndex is beyond the last index, then adjust it.
+      if (bottomIndex >= pArray.length)
+         bottomIndex = pArray.length - 1;
+      return bottomIndex;
+   }
+
+
+
+   //////////////////////////////////
+   // Code
+
+   // Variables for keeping track of the item list
+   const numItemsPerPage = this.dimensions.height - 2;
+   this.topItemIndex = 0;    // The index of the message group at the top of the list
+   // Figure out the index of the last message group to appear on the screen.
+   this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, numItemsPerPage);
+   const numPages = Math.ceil(this.txtItemList.length / numItemsPerPage);
+   const topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
+
+   if (pDrawBorder)
+      this.drawBorder();
+
+   // User input loop
+   // For the horizontal location of the page number text for the box border:
+   // Based on the fact that there can be up to 9999 text replacements and 10
+   // per page, there will be up to 1000 pages of replacements.  To write the
+   // text, we'll want to be 20 characters to the left of the end of the border
+   // of the box.
+   const pageNumTxtStartX = this.dimensions.topLeftX + this.dimensions.width - 19;
+   const maxItemWidth = this.dimensions.width - 2;
+   var pageNum = 0;
+   var startArrIndex = 0;
+   this.chosenTextItemIndex = retObj.selectedIndex = 0;
+   var endArrIndex = 0; // One past the last array item
+   var screenY = 0;
+   var curpos = new Object(); // For keeping track of the current cursor position
+   curpos.x = 0;
+   curpos.y = 0;
+   var refreshList = true; // For screen redraw optimizations
+   var continueOn = true;
+   while (continueOn)
+   {
+      if (refreshList)
+      {
+         this.bottomItemIndex = getBottommostItemIndex(this.txtItemList, this.topItemIndex, numItemsPerPage);
+
+         // Write the list of items for the current page
+         startArrIndex = pageNum * numItemsPerPage;
+         endArrIndex = startArrIndex + numItemsPerPage;
+         if (endArrIndex > this.txtItemList.length)
+            endArrIndex = this.txtItemList.length;
+         var selectedItemRow = this.dimensions.topLeftY+1;
+         screenY = this.dimensions.topLeftY + 1;
+         for (var i = startArrIndex; i < endArrIndex; ++i)
+         {
+            console.gotoxy(this.dimensions.topLeftX+1, screenY);
+            if (i == retObj.selectedIndex)
+            {
+               printf(this.listIemHighlightFormatStr, this.txtItemList[i].substr(0, maxItemWidth));
+               selectedItemRow = screenY;
+            }
+            else
+               printf(this.listIemFormatStr, this.txtItemList[i].substr(0, maxItemWidth));
+            ++screenY;
+         }
+         // If the current screen row is below the bottom row inside the box,
+         // continue and write blank lines to the bottom of the inside of the box
+         // to blank out any text that might still be there.
+         while (screenY < this.dimensions.topLeftY+this.dimensions.height-1)
+         {
+            console.gotoxy(this.dimensions.topLeftX+1, screenY);
+            printf(this.listIemFormatStr, "");
+            ++screenY;
+         }
+
+         // Update the page number in the top border of the box.
+         console.gotoxy(pageNumTxtStartX, this.dimensions.topLeftY);
+         printf("n" + this.SlyEdCfgObj.genColors.listBoxBorderText + "Page %4d of %4d", pageNum+1, numPages);
+
+         // Just for sane appearance: Move the cursor to the first character of
+         // the currently-selected row and set the appropriate color.
+         curpos.x = this.dimensions.topLeftX+1;
+         curpos.y = selectedItemRow;
+         console.gotoxy(curpos.x, curpos.y);
+         console.print(this.SlyEdCfgObj.genColors.listBoxItemHighlight);
+
+         refreshList = false;
+      }
+
+      // Get a key from the user (upper-case) and take action based upon it.
+      retObj.lastKeypress = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, this.SlyEdCfgObj);
+      switch (retObj.lastKeypress)
+      {
+         case 'N': // Next page
+            refreshList = (pageNum < numPages-1);
+            if (refreshList)
+            {
+               ++pageNum;
+               this.topItemIndex += numItemsPerPage;
+               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+               // Note: this.bottomItemIndex is refreshed at the top of the loop
+            }
+            break;
+         case 'P': // Previous page
+            refreshList = (pageNum > 0);
+            if (refreshList)
+            {
+               --pageNum;
+               this.topItemIndex -= numItemsPerPage;
+               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+               // Note: this.bottomItemIndex is refreshed at the top of the loop
+            }
+            break;
+         case 'F': // First page
+            refreshList = (pageNum > 0);
+            if (refreshList)
+            {
+               pageNum = 0;
+               this.topItemIndex = 0;
+               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+               // Note: this.bottomItemIndex is refreshed at the top of the loop
+            }
+            break;
+         case 'L': // Last page
+            refreshList = (pageNum < numPages-1);
+            if (refreshList)
+            {
+               pageNum = numPages-1;
+               this.topItemIndex = topIndexForLastPage;
+               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+               // Note: this.bottomItemIndex is refreshed at the top of the loop
+            }
+            break;
+         case KEY_UP:
+            // Move the cursor up one item
+            if (retObj.selectedIndex > 0)
+            {
+               // If the previous item index is on the previous page, then we'll
+               // want to display the previous page.
+               var previousItemIndex = retObj.selectedIndex - 1;
+               if (previousItemIndex < this.topItemIndex)
+               {
+                  --pageNum;
+                  this.topItemIndex -= numItemsPerPage;
+                  // Note: this.bottomItemIndex is refreshed at the top of the loop
+                  refreshList = true;
+               }
+               else
+               {
+                  // Display the current line un-highlighted
+                  console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+                  printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+                  // Display the previous line highlighted
+                  curpos.x = this.dimensions.topLeftX+1;
+                  --curpos.y;
+                  console.gotoxy(curpos);
+                  printf(this.listIemHighlightFormatStr, this.txtItemList[previousItemIndex].substr(0, maxItemWidth));
+                  console.gotoxy(curpos); // Move the cursor into place where it should be
+                  refreshList = false;
+               }
+               this.chosenTextItemIndex = retObj.selectedIndex = previousItemIndex;
+            }
+            break;
+         case KEY_DOWN:
+            // Move the cursor down one item
+            if (retObj.selectedIndex < this.txtItemList.length - 1)
+            {
+               // If the next item index is on the next page, then we'll want to
+               // display the next page.
+               var nextItemIndex = retObj.selectedIndex + 1;
+               if (nextItemIndex > this.bottomItemIndex)
+               {
+                  ++pageNum;
+                  this.topItemIndex += numItemsPerPage;
+                  // Note: this.bottomItemIndex is refreshed at the top of the loop
+                  refreshList = true;
+               }
+               else
+               {
+                  // Display the current line un-highlighted
+                  console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+                  printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+                  // Display the previous line highlighted
+                  curpos.x = this.dimensions.topLeftX+1;
+                  ++curpos.y;
+                  console.gotoxy(curpos);
+                  printf(this.listIemHighlightFormatStr, this.txtItemList[nextItemIndex].substr(0, maxItemWidth));
+                  console.gotoxy(curpos); // Move the cursor into place where it should be
+                  refreshList = false;
+               }
+               this.chosenTextItemIndex = retObj.selectedIndex = nextItemIndex;
+            }
+            break;
+         case KEY_HOME: // Go to the first row in the box
+            if (retObj.selectedIndex > this.topItemIndex)
+            {
+               // Display the current line un-highlighted
+               console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+               printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+               // Select the top item, and display it highlighted.
+               this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+               curpos.x = this.dimensions.topLeftX+1;
+               curpos.y = this.dimensions.topLeftY+1;
+               console.gotoxy(curpos);
+               printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+               console.gotoxy(curpos); // Move the cursor into place where it should be
+               refreshList = false;
+            }
+            break;
+         case KEY_END: // Go to the last row in the box
+            if (retObj.selectedIndex < this.bottomItemIndex)
+            {
+               // Display the current line un-highlighted
+               console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+               printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+               // Select the bottommost item, and display it highlighted.
+               this.chosenTextItemIndex = retObj.selectedIndex = this.bottomItemIndex;
+               curpos.x = this.dimensions.topLeftX+1;
+               curpos.y = this.dimensions.bottomRightY-1;
+               console.gotoxy(curpos);
+               printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, maxItemWidth));
+               console.gotoxy(curpos); // Move the cursor into place where it should be
+               refreshList = false;
+            }
+            break;
+         case KEY_ENTER:
+            // If the enter key override function is set, then call it and pass
+            // this object into it.  Otherwise, just select the item and quit.
+            if (this.enterKeyOverrideFn !== null)
+               this.enterKeyOverrideFn(this);
+            else
+            {
+               retObj.itemWasSelected = true;
+               // Note: retObj.selectedIndex is already set.
+               retObj.selectedItem = this.txtItemList[retObj.selectedIndex];
+               refreshList = false;
+               continueOn = false;
+            }
+            break;
+         case KEY_ESC: // Quit
+         case CTRL_A:  // Quit
+         case 'Q':     // Quit
+            this.chosenTextItemIndex = retObj.selectedIndex = -1;
+            refreshList = false;
+            continueOn = false;
+            break;
+         default:
+            // If the keypress is an additional key to exit the input loop, then
+            // do so.
+            if (this.inputLoopExitKeys.hasOwnProperty(retObj.lastKeypress))
+            {
+               this.chosenTextItemIndex = retObj.selectedIndex = -1;
+               refreshList = false;
+               continueOn = false;
+            }
+            else
+            {
+               // Unrecognized command.  Don't refresh the list of the screen.
+               refreshList = false;
+            }
+            break;
+      }
+   }
+
+   console.print("n"); // To prevent outputting highlight colors, etc..
+   return retObj;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -563,7 +1279,9 @@ function displayHelpHeader()
 //  pCanCrossPost: Whether or not cross-posting is enabled
 //  pIsSysop: Whether or not the user is the sysop.
 //  pTxtReplacments: Whether or not the text replacements feature is enabled
-function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop, pTxtReplacments)
+//  pUserSettings: Whether or not the user settings feature is enabled
+function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop,
+                             pTxtReplacments, pUserSettings)
 {
    if (pClear)
       console.clear("n");
@@ -611,6 +1329,8 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
    displayCmdKeyFormattedDouble("Ctrl-R", "Program information", "/Q", "Quote message", true);
    if (pTxtReplacments)
       displayCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements", true);
+   if (pUserSettings)
+      displayCmdKeyFormattedDouble("", "", "/U", "Your settings", true);
    if (pCanCrossPost)
       displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
    printf(" ch%-7sg  nc%s", "", "", "/?", "Show help");
@@ -628,6 +1348,9 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
       displayCmdKeyFormatted("ESC", "Command menu", true);
    if (isSysop)
       displayCmdKeyFormattedDouble("Ctrl-O", "Import a file", "Ctrl-X", "Export to file", true);
+
+   if (pUserSettings)
+      displayCmdKeyFormatted("Ctrl-U", "Your settings", true);
 
    if (pPause)
       console.pause();
@@ -743,9 +1466,13 @@ function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib)
 //  pBoxTitle: For DCT mode, this specifies the title to use for the
 //             prompt box.  This is optional; if this is left out,
 //             the prompt box title will default to "Prompt".
+// pIceRefreshForBothAnswers: In Ice mode, whether or not to refresh the bottom
+//                            line on the screen for a "yes" as well as "no"
+//                            answer.  This is optional.  By default, only
+//                            refreshes for a "no" answer.
 //
 // Return value: Boolean - true for a "Yes" answer, false for "No"
-function promptYesNo(pQuestion, pDefaultYes, pBoxTitle)
+function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswers)
 {
    var userResponse = pDefaultYes;
 
@@ -768,9 +1495,10 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle)
       console.cleartoeol();
       console.gotoxy(1, console.screen_rows);
       userResponse = promptYesNo_IceStyle(pQuestion, pDefaultYes);
-      // If the user chose "No", then re-display the bottom help line and
-      // move the cursor back to its original position.
-      if (!userResponse)
+      // If the user chose "No", or if we are to refresh the bottom line
+      // regardless, then re-display the bottom help line and move the
+      // cursor back to its original position.
+      if (pIceRefreshForBothAnswers || !userResponse)
       {
          fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
          console.gotoxy(originalCurpos);
@@ -787,6 +1515,7 @@ function ReadSlyEditConfigFile()
 {
    var cfgObj = new Object(); // Configuration object
 
+   cfgObj.userIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
    // Default settings
    cfgObj.thirdPartyLoadOnStart = new Array();
    cfgObj.runJSOnStart = new Array();
@@ -798,21 +1527,17 @@ function ReadSlyEditConfigFile()
    cfgObj.reWrapQuoteLines = true;
    cfgObj.allowColorSelection = true;
    cfgObj.useQuoteLineInitials = true;
-   // The next setting specifies whether or not quote lines
-   // should be prefixed with a space when using author
-   // initials.
    cfgObj.indentQuoteLinesWithInitials = true;
    cfgObj.allowCrossPosting = true;
    cfgObj.enableTextReplacements = false;
    cfgObj.textReplacementsUseRegex = false;
-   cfgObj.userIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
+   cfgObj.enableTaglines = false;
+   cfgObj.tagLineFilename = "SlyEdit_Taglines.txt";
+   cfgObj.allowUserSettings = true;
 
    // General SlyEdit color settings
    cfgObj.genColors = new Object();
    // Cross-posting UI element colors
-   // Deprecated colors:
-   //cfgObj.genColors.crossPostBorder = "ng";
-   //cfgObj.genColors.crossPostBorderTxt = "nbh";
    cfgObj.genColors.listBoxBorder = "ng";
    cfgObj.genColors.listBoxBorderText = "nbh";
    cfgObj.genColors.crossPostMsgAreaNum = "nhw";
@@ -832,7 +1557,8 @@ function ReadSlyEditConfigFile()
    cfgObj.genColors.msgAbortedText = "nmh";
    cfgObj.genColors.emptyMsgNotSentText = "nmh";
    cfgObj.genColors.genMsgErrorText = "nmh";
-   cfgObj.genColors.txtReplacementList = "nc";
+   cfgObj.genColors.listBoxItemText = "nc";
+   cfgObj.genColors.listBoxItemHighlight = "n4wh";
 
    // Default Ice-style colors
    cfgObj.iceColors = new Object();
@@ -1029,6 +1755,12 @@ function ReadSlyEditConfigFile()
                   else
                      cfgObj.enableTextReplacements = (valueUpper == "TRUE");
                }
+               else if (settingUpper == "ENABLETAGLINES")
+                  cfgObj.enableTaglines = (valueUpper == "TRUE");
+               else if (settingUpper == "TAGLINEFILENAME")
+                  cfgObj.tagLineFilename = genFullPathCfgFilename(value, gStartupPath);
+               else if (settingUpper == "ALLOWUSERSETTINGS")
+                  cfgObj.allowUserSettings = (valueUpper == "TRUE");
             }
             else if (settingsMode == "ICEColors")
             {
@@ -1783,7 +2515,6 @@ function firstNonQuoteTxtIndex(pStr, pUseAuthorInitials, pIndentQuoteLinesWithIn
 
   // If we haven't found non-quote text but the line starts with quote text,
   // then set the starting index & quote level in retObj.
-  //displayDebugText(1, 2, "Search start index: " + searchStartIndex, console.getxy(), true, true);
   if (lineStartsWithQuoteText && ((retObj.startIndex == -1) || (retObj.quoteLevel == 0)))
   {
     retObj.startIndex = pStr.indexOf(">") + 1;
@@ -2559,7 +3290,8 @@ function moveGenColorsToGenSettings(pColorsArray, pCfgObj)
    colorSettingStrings.push("msgAbortedText");
    colorSettingStrings.push("emptyMsgNotSentText");
    colorSettingStrings.push("genMsgErrorText");
-   colorSettingStrings.push("txtReplacementList");
+   colorSettingStrings.push("listBoxItemText");
+   colorSettingStrings.push("listBoxItemHighlight");
 
    var colorName = "";
    for (var i = 0; i < colorSettingStrings.length; ++i)
@@ -2691,6 +3423,384 @@ function getUserKey(pMode, pCfgObj)
    else
       userKey = console.inkey(pMode, pCfgObj.inputTimeoutMS);
    return userKey;
+}
+
+// Gets a string of user input such that each character is validated against a
+// set of strings.  Each string contains a list of valid characters, and each
+// set of potential valid characters can only appear once in the user input.
+// This function was written to be used in color selection in lieu of
+// console.getkeys(), which outputs a carriage return at the end, which was not
+// desirable.  For instance, color selection involves prompting the user for
+// 3 characters (foreground, background, and special).
+//
+// Parameters:
+//  pMode: The input mode bit(s).  See K_* in sbbsdefs.js for mode bits.
+//  pValidKeyStrs: An array of strings containing valid keys
+//  pCfgObj: The SlyEdit configuration settings object
+//  pCurPos: Optional.  Contains x and y coordinates specifying the current
+//           cursor position.  If this is not specified, this function will
+//           get the cursor position by calling console.getxy().
+//
+// Return value: The user's input, as a string.  If nothing is input, this
+//               function will return an empty string.
+function getUserInputWithSetOfInputStrs(pMode, pValidKeyStrs, pCfgObj, pCurPos)
+{
+   if (pValidKeyStrs == null)
+      return "";
+   if (pValidKeyStrs.length == 0)
+      return "";
+
+   // Get the current cursor position, either from pCurPos or console.getxy().
+   var curPos = (pCurPos != null ? pCurPos : console.getxy());
+
+   // Build one string containing all the valid keys.
+   var allValidKeys = "";
+   for (var i = 0; i < pValidKeyStrs.length; ++i)
+      allValidKeys += pValidKeyStrs[i];
+
+   // User input loop
+   var displayChars = !((pMode & K_NOECHO) == K_NOECHO);
+   var userInput = "";
+   var inputKey = "";
+   var lastKey = "";
+   var validKey = false;
+   var idx = 0;
+   var continueOn = true;
+   while (continueOn)
+   {
+      inputKey = getUserKey(pMode|K_NOECHO, pCfgObj);
+      // If userInput is blank, then the timeout was probably reached, so don't
+      // continue inputting characters.
+      if (inputKey.length == 0)
+         break;
+
+      switch (inputKey)
+      {
+         case BACKSPACE:
+            // See if lastKey is in any of the strings in pValidKeyStrs.  If so,
+            // then append that string back onto allValidKeys.
+            for (var i = 0; i < pValidKeyStrs.length; ++i)
+            {
+               if (pValidKeyStrs[i].indexOf(lastKey) > -1)
+               {
+                  allValidKeys += pValidKeyStrs[i];
+                  break;
+               }
+            }
+
+            // If userInput has some characters in it, then remove the last
+            // one and move the cursor back one space on the screen.
+            if (userInput.length > 0)
+            {
+               userInput = userInput.substr(0, userInput.length-1);
+               // If we are to display the input characters, then also blank out
+               // the character on the screen and make sure the cursor is placed
+               // properly on the screen.
+               if (displayChars)
+               {
+                  console.gotoxy(--curPos.x, curPos.y);
+                  console.print(" ");
+                  console.gotoxy(curPos);
+               }
+            }
+            break;
+         // ESC and Ctrl-K: Cancel out of color selection, whereas
+         // ENTER will save the user's input before returning.
+         case KEY_ESC:
+         case CTRL_K:
+            userInput = "";
+         case KEY_ENTER:
+            continueOn = false;
+            break;
+         default:
+            validKey = (allValidKeys.indexOf(inputKey) > -1);
+            if (validKey)
+            {
+               // Find the key in one of the strings in pValidKeyStrs.  When
+               // found, remove that string from allValidKeys.
+               for (var i = 0; i < pValidKeyStrs.length; ++i)
+               {
+                  validKey = (pValidKeyStrs[i].indexOf(inputKey) > -1);
+                  if (validKey)
+                  {
+                     // Remove the current string from allValidKeys
+                     idx = allValidKeys.indexOf(pValidKeyStrs[i]);
+                     if (idx > -1)
+                     {
+                        allValidKeys = allValidKeys.substr(0, idx)
+                                     + allValidKeys.substr(idx + pValidKeyStrs[i].length);
+                     }
+
+                     break;
+                  }
+               }
+            }
+
+            // If the user pressed a valid key (found in the input strings), then
+            // append it to userInput.
+            if (validKey)
+            {
+               // If K_NOECHO wasn't passed in pMode, then output the keypress
+               if (displayChars)
+               {
+                  console.print(inputKey);
+                  ++curPos.x;
+               }
+               userInput += inputKey;
+            }
+            break;
+      }
+
+      // Update lastKey.  Default to the last keypress, but if there is anything
+      // in userInput, then set lastKey to the last character in userInput.
+      lastKey = inputKey;
+      if (userInput.length > 0)
+         lastKey = userInput.substr(userInput.length-1);
+   }
+   return userInput;
+}
+
+// Reads a text file and returns an array of strings containing the lines from
+// the text file.
+//
+// Parameters:
+//  pFilename: The name of the file to read
+//  pStripCtrl: Boolean - Whether or not to strip control characters from the lines
+//  pIgnoreBlankLines: Boolean - Whether or not to ignore blank lines
+//  pMaxNumLines: Optional - The maximum number of lines to read from the file
+//
+// Return value: An array of strings read from the file
+function readTxtFileIntoArray(pFilename, pStripCtrl, pIgnoreBlankLines, pMaxNumLines)
+{
+   var fileStrs = new Array();
+
+   var maxNumLines = -1;
+   if (typeof(pMaxNumLines) == "number")
+   {
+      if (pMaxNumLines > -1)
+         maxNumLines = pMaxNumLines;
+   }
+   if (maxNumLines == 0)
+      return fileStrs;
+
+   var txtFile = new File(pFilename);
+   if (txtFile.open("r"))
+   {
+      var fileLine = null;  // A line read from the file
+      var numLinesRead = 0;
+      while (!txtFile.eof)
+      {
+         // Read the next line from the config file.
+         fileLine = txtFile.readln(2048);
+
+         // fileLine should be a string, but I've seen some cases
+         // where for some reason it isn't.  If it's not a string,
+         // then continue onto the next line.
+         if (typeof(fileLine) != "string")
+            continue;
+
+         if (pStripCtrl)
+            fileLine = strip_ctrl(fileLine);
+
+         if (pIgnoreBlankLines && (fileLine.length == 0))
+            continue;
+
+         fileStrs.push(fileLine);
+
+         ++numLinesRead;
+         if ((maxNumLines > 0) && (numLinesRead >= maxNumLines))
+            break;
+      }
+
+      txtFile.close();
+   }
+
+   return fileStrs;
+}
+
+// Returns whether or not a text file contains lines in it.
+//
+// Parameters:
+//  pFilename: The name of the file to test
+//
+// Return value: Boolean - Whether or not the file contains lines
+function txtFileContainsLines(pFilename)
+{
+   var fileContainsLines = false;
+
+   var txtFile = new File(pFilename);
+   if (txtFile.open("r"))
+   {
+      var fileLine = null;  // A line read from the file
+      var numLinesRead = 0;
+      while (!txtFile.eof && (numLinesRead == 0))
+      {
+         // Read the next line from the config file.
+         fileLine = txtFile.readln(2048);
+
+         // fileLine should be a string, but I've seen some cases
+         // where for some reason it isn't.  If it's not a string,
+         // then continue onto the next line.
+         if (typeof(fileLine) != "string")
+            continue;
+         ++numLinesRead;
+      }
+      fileContainsLines = (numLinesRead > 0);
+
+      txtFile.close();
+   }
+
+   return fileContainsLines;
+}
+
+// Reads the user settings file and returns an object containing the user's
+// settings.
+//
+// Parameters:
+//  pSlyEdCfgObj: The SlyEdit configuration object, which contains defaults
+//                for some of the user settings.  This settings object should
+//                be populated before this function is called.
+//
+// Return value: An object containing the user's settings as properties.
+function ReadUserSettingsFile(pSlyEdCfgObj)
+{
+   var userSettingsObj = new Object();
+
+   // Default settings
+   userSettingsObj.enableTaglines = pSlyEdCfgObj.enableTaglines;
+   userSettingsObj.useQuoteLineInitials = pSlyEdCfgObj.useQuoteLineInitials;
+   // The next setting specifies whether or not quote lines
+   // should be prefixed with a space when using author
+   // initials.
+   userSettingsObj.indentQuoteLinesWithInitials = pSlyEdCfgObj.indentQuoteLinesWithInitials;
+
+   // Open the user settings file
+   var userSettingsFile = new File(gUserSettingsFilename);
+   if (userSettingsFile.open("r"))
+   {
+      var settingsMode = "behavior";
+      var fileLine = null;     // A line read from the file
+      var equalsPos = 0;       // Position of a = in the line
+      var commentPos = 0;      // Position of the start of a comment
+      var setting = null;      // A setting name (string)
+      var settingUpper = null; // Upper-case setting name
+      var value = null;        // A value for a setting (string)
+      var valueUpper = null;   // Upper-cased value
+      while (!userSettingsFile.eof)
+      {
+         // Read the next line from the config file.
+         fileLine = userSettingsFile.readln(2048);
+
+         // fileLine should be a string, but I've seen some cases
+         // where for some reason it isn't.  If it's not a string,
+         // then continue onto the next line.
+         if (typeof(fileLine) != "string")
+            continue;
+
+         // If the line starts with with a semicolon (the comment
+         // character) or is blank, then skip it.
+         if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+            continue;
+
+         // If in the "behavior" section, then set the behavior-related variables.
+         if (fileLine.toUpperCase() == "[BEHAVIOR]")
+         {
+            settingsMode = "behavior";
+            continue;
+         }
+
+         // If the line has a semicolon anywhere in it, then remove
+         // everything from the semicolon onward.
+         commentPos = fileLine.indexOf(";");
+         if (commentPos > -1)
+            fileLine = fileLine.substr(0, commentPos);
+
+         // Look for an equals sign, and if found, separate the line
+         // into the setting name (before the =) and the value (after the
+         // equals sign).
+         equalsPos = fileLine.indexOf("=");
+         if (equalsPos > 0)
+         {
+            // Read the setting & value, and trim leading & trailing spaces.
+            setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+            settingUpper = setting.toUpperCase();
+            value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+            valueUpper = value.toUpperCase();
+
+            if (settingsMode == "behavior")
+            {
+               if (settingUpper == "ENABLETAGLINES")
+                  userSettingsObj.enableTaglines = (valueUpper == "TRUE");
+               else if (settingUpper == "USEQUOTELINEINITIALS")
+                  userSettingsObj.useQuoteLineInitials = (valueUpper == "TRUE");
+               else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
+                  userSettingsObj.indentQuoteLinesWithInitials = (valueUpper == "TRUE");
+            }
+         }
+      }
+      userSettingsFile.close();
+   }
+   else
+   {
+      // We couldn't read the user settings file - So this is probably the
+      // first time the user has run SlyEdit.  So, save the settings to the
+      // file.
+      var saveSucceeded = WriteUserSettingsFile(userSettingsObj);
+   }
+
+   return userSettingsObj;
+}
+
+// Writes the user settings to the user settings file, overwriting the
+// existing file.
+//
+// Parameters:
+//  pUserSettingsObj: The object containing the user's settings
+//
+// Return value: Boolean - Whether or not this function succeeded in writing the file.
+function WriteUserSettingsFile(pUserSettingsObj)
+{
+   var writeSucceeded = false;
+
+   var userSettingsFile = new File(gUserSettingsFilename);
+   if (userSettingsFile.open("w"))
+   {
+      const behaviorBoolSettingNames = ["enableTaglines",
+                                         "useQuoteLineInitials",
+                                         "indentQuoteLinesWithInitials"];
+      userSettingsFile.writeln("[BEAVHIOR]");
+      for (var i = 0; i < behaviorBoolSettingNames.length; ++i)
+      {
+         if (pUserSettingsObj.hasOwnProperty(behaviorBoolSettingNames[i]))
+            userSettingsFile.writeln(behaviorBoolSettingNames[i] + "=" + (pUserSettingsObj[behaviorBoolSettingNames[i]] ? "true" : "false"));
+      }
+
+      userSettingsFile.close();
+      writeSucceeded = true;
+   }
+
+   return writeSucceeded;
+}
+
+// Changes a character in a string, and returns the new string.  If any of the
+// parameters are invalid, then the original string will be returned.
+//
+// Parameters:
+//  pStr: The original string
+//  pCharIndex: The index of the character to replace
+//  pNewText: The new character or text to place at that position in the string
+//
+// Return value: The new string
+function chgCharInStr(pStr, pCharIndex, pNewText)
+{
+   if (typeof(pStr) != "string")
+      return "";
+   if ((pCharIndex < 0) || (pCharIndex >= pStr.length))
+      return pStr;
+   if (typeof(pNewText) != "string")
+      return pStr;
+
+   return (pStr.substr(0, pCharIndex) + pNewText + pStr.substr(pCharIndex+1));
 }
 
 // This function displays debug text at a given location on the screen, then

@@ -45,7 +45,7 @@
  *                              replacement text as-is.
  * 2013-09-07 Eric Oulashin     Version 1.31
  *                              Bug fix: Updated ReadSlyEditConfigFile() to
- *                              default cfgObj.genColors.txtReplacementList to
+ *                              default cfgObj.genColors.listBoxItemText to
  *                              ensure that it gets defined.
  *                              Bug fix: Made use of K_NOSPIN wherever user input
  *                              is done so that the spinning cursor doesn't overwrite
@@ -54,6 +54,24 @@
  *                              and getWordFromEditLine() to TextLine member
  *                              methods TextLine_doMacroTxtReplacement() and
  *                              TextLine_getWord() in SlyEdit_Misc.js.
+ *                              Version 1.32 Beta
+ *                              Started working on color text support again
+ * 2013-09-07 Eric Oulashin     Disabled color text key action; started working
+ *                              on generic list box, tagline support, and
+ *                              user settings (to let users enable/disable
+ *                              tagline support for themselves).  Created
+ *                              the function doUserSettings().
+ * 2013-09-14 Eric Oulashin     Worked on user settings & tagline selection.
+ * 2013-09-15 Eric Oulashin     Worked on user settings & tagline selection.
+ *                              Also, moved the options for author initials in
+ *                              quote lines to user settings.
+ * 2013-09-17 Eric Oulashin     Continuing to make fixes & optimizations here
+ *                              and there over the past couple days.  SlyEdit
+ *                              now updates the user's time left on the screen,
+ *                              properly updates the INS/OVR mode text for insert/
+ *                              overwrite mode in DCT mode when using a wide
+ *                              terminal; the text replacement list now only draws
+ *                              the side borders once.
  */
 
 /* Command-line arguments:
@@ -91,8 +109,12 @@ if (typeof(argv[1]) != "undefined")
 load("sbbsdefs.js");
 load(gStartupPath + "SlyEdit_Misc.js");
 
-// Load program settings from SlyEdit.cfg
+// Determine whether the user settings file exists
+const userSettingsFileExistedOnStartup = file_exists(gUserSettingsFilename);
+
+// Load program settings from SlyEdit.cfg, and load the user configuratio nsettings
 var gConfigSettings = ReadSlyEditConfigFile();
+var gUserSettings = ReadUserSettingsFile(gConfigSettings);
 // Load any specified 3rd-party startup scripts
 for (var i = 0; i < gConfigSettings.thirdPartyLoadOnStart.length; ++i)
   load(gConfigSettings.thirdPartyLoadOnStart[i]);
@@ -101,6 +123,7 @@ for (var i = 0; i < gConfigSettings.runJSOnStart.length; ++i)
   eval(gConfigSettings.runJSOnStart[i]);
 
 const EDITOR_PROGRAM_NAME = "SlyEdit";
+const ERRORMSG_PAUSE_MS = 1500;
 
 // This script requires Synchronet version 3.14 or higher.
 // Exit if the Synchronet version is below the minimum.
@@ -126,8 +149,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.31";
-const EDITOR_VER_DATE = "2013-09-07";
+const EDITOR_VERSION = "1.32";
+const EDITOR_VER_DATE = "2013-09-18";
 
 
 // Program variables
@@ -174,7 +197,6 @@ gCrossPostMsgSubs.subCodeExists = function(pSubCode) {
     return false;
 
   var grpIndex = msg_area.sub[pSubCode].grp_index;
-  //displayDebugText(1, 3, "grpIndex: " + grpIndex, console.getxy(), true, false);
   var foundIt = false;
   if (this.hasOwnProperty(grpIndex))
     foundIt = this[grpIndex].hasOwnProperty(pSubCode);
@@ -239,6 +261,7 @@ var fpUpdateInsertModeOnScreen = null;
 var fpDisplayBottomHelpLine = null;
 var fpHandleESCMenu = null;
 var fpDisplayTime = null;
+var fpDisplayTimeRemaining = null;
 if (EDITOR_STYLE == "DCT")
 {
    load(gStartupPath + "SlyEdit_DCTStuff.js");
@@ -257,6 +280,7 @@ if (EDITOR_STYLE == "DCT")
    fpDisplayBottomHelpLine = DisplayBottomHelpLine_DCTStyle;
    fpHandleESCMenu = handleDCTESCMenu;
    fpDisplayTime = displayTime_DCTStyle;
+   fpDisplayTimeRemaining = displayTimeRemaining_DCTStyle;
 }
 else if (EDITOR_STYLE == "ICE")
 {
@@ -276,6 +300,7 @@ else if (EDITOR_STYLE == "ICE")
    fpDisplayBottomHelpLine = DisplayBottomHelpLine_IceStyle;
    fpHandleESCMenu = handleIceESCMenu;
    fpDisplayTime = displayTime_IceStyle;
+   fpDisplayTimeRemaining = displayTimeRemaining_IceStyle;
 }
 
 // Temporary (for testing): Make the edit area small
@@ -291,6 +316,7 @@ const gEditHeight = gEditBottom - gEditTop + 1;
 // Message display & edit variables
 var gInsertMode = "INS";       // Insert (INS) or overwrite (OVR) mode
 var gQuoteLines = new Array(); // Array of quote lines loaded from file, if in quote mode
+var gUserHasOpenedQuoteWindow = false; // Whether or not the user has opened the quote line selection window
 var gQuoteLinesTopIndex = 0;   // Index of the first displayed quote line
 var gQuoteLinesIndex = 0;      // Index of the current quote line
 // The gEditLines array will contain TextLine objects storing the line
@@ -386,49 +412,11 @@ if (dropFileName != undefined)
          gMsgSubj = info[2];
          gMsgArea = info[4];
 
-      // Now that we know the name of the message area
-      // that the message is being posted in, call
-      // getCurMsgInfo() to set gMsgAreaInfo.
+         // Now that we know the name of the message area
+         // that the message is being posted in, call
+         // getCurMsgInfo() to set gMsgAreaInfo.
          gMsgAreaInfo = getCurMsgInfo(gMsgArea);
          setMsgAreaInfoObj = true;
-
-      // If we're configured to use poster's initials in the
-      // quote lines, then do it.
-      if (gConfigSettings.useQuoteLineInitials)
-      {
-        // For the name to use for quote line initials:
-        // If posting in a message sub-board, get the author's name from the
-        // header of the current message being read in the sub-board (in
-        // case the user changes the "To" name).  Otherwise (if not posting in
-        // a message sub-board), use the gToName value read from the drop file.
-        // Remove any leading, multiple, or trailing spaces.
-        var quotedName = "";
-        if (postingInMsgSubBoard(gMsgArea))
-        {
-          quotedName = trimSpaces(getFromNameForCurMsg(gMsgAreaInfo), true, true, true);
-          if (quotedName.length == 0)
-            quotedName = trimSpaces(gToName, true, true, true);
-        }
-        else
-          quotedName = trimSpaces(gToName, true, true, true);
-        // If configured to indent quote lines w/ initials with
-        // a space, then do it.
-        gQuotePrefix = "";
-        if (gConfigSettings.indentQuoteLinesWithInitials)
-          gQuotePrefix = " ";
-            // Use the initials or first 2 characters from the
-            // quoted name for gQuotePrefix.
-            var spaceIndex = quotedName.indexOf(" ");
-            if (spaceIndex > -1) // If a space exists, use the initials
-            {
-          gQuotePrefix += quotedName.charAt(0).toUpperCase();
-               if (quotedName.length > spaceIndex+1)
-                  gQuotePrefix += quotedName.charAt(spaceIndex+1).toUpperCase();
-               gQuotePrefix += "> ";
-            }
-            else // A space doesn't exist; use the first 2 letters
-               gQuotePrefix += quotedName.substr(0, 2) + "> ";
-      }
       }
    }
    file_remove(dropFileName);
@@ -469,23 +457,6 @@ if (inputFile.open("r", false))
               textLine = "";
            gQuoteLines.push(textLine);
         }
-     }
-     // If the setting to re-wrap quote lines is enabled, then do it.
-     // wrapQuoteLines() will also prefix the quote lines with author's
-     // initials if configured to do so.
-     // If not configured to re-wrap quote lines, then if configured to
-     // prefix quote lines with author's initials, then we need to
-     // prefix them here with gQuotePrefix.
-     if (gQuoteLines.length > 0)
-     {
-       if (gConfigSettings.reWrapQuoteLines)
-         wrapQuoteLines(gConfigSettings.useQuoteLineInitials, gConfigSettings.indentQuoteLinesWithInitials);
-       else if (gConfigSettings.useQuoteLineInitials)
-       {
-         var maxQuoteLineWidth = gEditWidth - gQuotePrefix.length;
-         for (var i = 0; i < gQuoteLines.length; ++i)
-           gQuoteLines[i] = quote_msg(gQuoteLines[i], maxQuoteLineWidth, gQuotePrefix);
-       }
      }
    }
    else
@@ -781,8 +752,8 @@ function doEditLoop()
    // 1: Aborted
    var returnCode = 0;
 
-  // Set the shortcut keys.  Note: Avoid CTRL_H because that
-  // is backspace.
+   // Set the shortcut keys.  Note: Avoid CTRL_H because that
+   // is backspace.
    const ABORT_KEY                 = CTRL_A;
    const CROSSPOST_KEY             = CTRL_C;
    const DELETE_LINE_KEY           = CTRL_D;
@@ -796,6 +767,7 @@ function doEditLoop()
    const PROGRAM_INFO_HELP_KEY     = CTRL_R;
    const PAGE_DOWN_KEY             = CTRL_S;
    const LIST_TXT_REPLACEMENTS_KEY = CTRL_T;
+   const USER_SETTINGS_KEY         = CTRL_U;
    const PAGE_UP_KEY               = CTRL_W;
    const EXPORT_FILE_KEY           = CTRL_X;
    const SAVE_KEY                  = CTRL_Z;
@@ -812,6 +784,11 @@ function doEditLoop()
    curpos.x = gEditLeft;
    curpos.y = gEditTop;
    console.gotoxy(curpos);
+
+   // initialTimeLeft and updateTimeLeft will be used to keep track of the user's
+   // time remaining so that we can update the user's time left on the screen.
+   var initialTimeLeft = bbs.time_left;
+   var updateTimeLeft = false;
 
    // Input loop
    var userInput = "";
@@ -845,7 +822,7 @@ function doEditLoop()
       {
          case ABORT_KEY:
             // Before aborting, ask they user if they really want to abort.
-            if (promptYesNo("Abort message", false, "Abort"))
+            if (promptYesNo("Abort message", false, "Abort", false))
             {
                returnCode = 1; // Aborted
                continueOn = false;
@@ -862,7 +839,8 @@ function doEditLoop()
             continueOn = false;
             break;
          case CMDLIST_HELP_KEY:
-            displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop, gConfigSettings.enableTextReplacements);
+            displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
+                               gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
             clearEditAreaBuffer();
             fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
                            gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
@@ -905,13 +883,20 @@ function doEditLoop()
             // Let the user change the text color.
             /*if (gConfigSettings.allowColorSelection)
             {
-               var retObject = doColorSelection(curpos, currentWordLength);
-               curpos.x = retObject.x;
-               curpos.y = retObject.y;
-               currentWordLength = retObject.currentWordLength;
-               // If user input timed out, then abort.
-               if (retObject.timedOut)
+               var retObj = doColorSelection(gTextAttrs, curpos, currentWordLength);
+               if (!retObj.timedOut)
                {
+                  // Note: DoColorSelection() will prefix the color with the normal
+                  // attribute.
+                  gTextAttrs = retObj.txtAttrs;
+                  console.print(gTextAttrs);
+                  curpos.x = retObj.x;
+                  curpos.y = retObj.y;
+                  currentWordLength = retObj.currentWordLength;
+               }
+               else
+               {
+                  // User input timed out, so abort.
                   returnCode = 1; // Aborted
                   continueOn = false;
                   console.crlf();
@@ -1158,7 +1143,8 @@ function doEditLoop()
                else if (retObject.showHelp)
                {
                   displayProgramInfo(true, false);
-                  displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop, gConfigSettings.enableTextReplacements);
+                  displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
+                                     gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
                   clearEditAreaBuffer();
                   fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
                                 gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
@@ -1347,6 +1333,9 @@ function doEditLoop()
             if (gConfigSettings.enableTextReplacements)
                listTextReplacements();
             break;
+         case USER_SETTINGS_KEY:
+            doUserSettings(curpos, true);
+            break;
          default:
             // For the tab character, insert 3 spaces.  Otherwise,
             // if it's a printable character, add the character.
@@ -1374,10 +1363,50 @@ function doEditLoop()
             break;
       }
 
-      // For every 5 keys pressed, dheck the current time and update
-      // it on the screen if necessary.
-      if (numKeysPressed % 5 == 0)
-         updateTime();
+      // Update the time strings on the screen
+      updateTimeLeft = (initialTimeLeft - bbs.time_left >= 60);
+      // For every 5 keys pressed, check the current time and update
+      // it on the screen if necessary.  updateTime() is also being
+      // called when the first key is pressed so that the function's
+      // time string variable gets initially set.
+      // Note: The 2nd parameter to updateTime() is whether or not to move the
+      // cursor back to the original location after updating the time on the
+      // screen.  For optimization, we don't want to do that if we'll also be
+      // updating the time left on the screen.
+      if ((numKeysPressed == 1) || (numKeysPressed % 5 == 0))
+         updateTime(curpos, !updateTimeLeft);
+      // If the user's time left has gone down by at least 60 seconds, then
+      // update the time & user's time left on the screen.
+      if (updateTimeLeft)
+      {
+         fpDisplayTimeRemaining();
+         // Change back to the edit color and place the cursor back
+         // where it needs to be.
+         console.print(chooseEditColor());
+         console.gotoxy(curpos); // Place the cursor back where it needs to be
+
+         initialTimeLeft = bbs.time_left;
+      }
+   }
+
+   // If the user has not aborted the message and taglines is enabled in their
+   // user settings, then prompt them for a tag line to be appended to the message.
+   if ((returnCode == 0) && gUserSettings.enableTaglines &&
+        txtFileContainsLines(gConfigSettings.tagLineFilename))
+   {
+      if (promptYesNo("Add a tagline", true, "Add tagline", true))
+      {
+         var taglineRetObj = doTaglineSelection();
+         if (taglineRetObj.taglineWasSelected && taglineRetObj.tagline.length > 0)
+         {
+            // Append a blank line and then append the tagline to the message
+            gEditLines.push(new TextLine());
+            var newLine = new TextLine();
+            newLine.text = taglineRetObj.tagline;
+            gEditLines.push(newLine);
+            reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth);
+         }
+      }
    }
 
    // If gEditLines has only 1 line in it and it's blank, then
@@ -1964,7 +1993,7 @@ function doEnterKey(pCurpos, pCurrentWordLength)
       else if (lineUpper == "/A")
       {
          // Confirm with the user
-         if (promptYesNo("Abort message", false, "Abort"))
+         if (promptYesNo("Abort message", false, "Abort", false))
          {
             retObj.returnCode = 1; // 1: Abort
             retObj.continueOn = false;
@@ -2043,7 +2072,30 @@ function doEnterKey(pCurpos, pCurrentWordLength)
          gTextLineIndex = 0;
          retObj.x = gEditLeft;
          retObj.y = pCurpos.y;
-         // Blank out the /C on the screen
+         // Blank out the /T on the screen
+         //console.print("n" + gTextAttrs);
+         console.print(chooseEditColor());
+         retObj.x = gEditLeft;
+         console.gotoxy(retObj.x, retObj.y);
+         console.print("  ");
+         // Put the cursor where it should be and return.
+         console.gotoxy(retObj.x, retObj.y);
+         return(retObj);
+      }
+      else if (lineUpper == "/U")
+      {
+         var currentCursorPos = new Object();
+         currentCursorPos.x = retObj.x;
+         currentCursorPos.y = retObj.y;
+         doUserSettings(currentCursorPos, false);
+         // Blank out the data in the text line, set the data in
+         // retObj, and return it.
+         gEditLines[gEditLinesIndex].text = "";
+         retObj.currentWordLength = 0;
+         gTextLineIndex = 0;
+         retObj.x = gEditLeft;
+         retObj.y = pCurpos.y;
+         // Blank out the /T on the screen
          //console.print("n" + gTextAttrs);
          console.print(chooseEditColor());
          retObj.x = gEditLeft;
@@ -2310,6 +2362,68 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
    if ((gQuoteLines.length == 0) || !gUseQuotes)
       return retObj;
 
+   // The first time this function runs, save the user's settings for using initials
+   // in quote lines and whether or not to indent quote lines containing initials.
+   // These will be checked against the user's current settings to see if we need
+   // to wrap the quote lines again in case the user changed these settings.
+   if (typeof(doQuoteSelection.useQuoteLineInitials) == "undefined")
+      doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
+   if (typeof(doQuoteSelection.indentQuoteLinesWithInitials) == "undefined")
+      doQuoteSelection.indentQuoteLinesWithInitials = gUserSettings.indentQuoteLinesWithInitials;
+
+   // If the setting to re-wrap quote lines is enabled, then do it.
+   // We're re-wrapping the quote lines here in case the user changes their
+   // setting for prefixing quote lines with author initials.
+   // wrapQuoteLines() will also prefix the quote lines with author's
+   // initials if configured to do so.
+   // If not configured to re-wrap quote lines, then if configured to
+   // prefix quote lines with author's initials, then we need to
+   // prefix them here with gQuotePrefix.
+   if (gQuoteLines.length > 0)
+   {
+      // The first time this function runs, create a backup array of the original
+      // quote lines
+      if (typeof(doQuoteSelection.backupQuoteLines) == "undefined")
+      {
+         doQuoteSelection.backupQuoteLines = new Array();
+         for (var i = 0; i < gQuoteLines.length; ++i)
+            doQuoteSelection.backupQuoteLines.push(gQuoteLines[i]);
+      }
+
+      // If this is the first time the user has opened the quote window or if the
+      // user has changed their settings for using author's initials in quote lines,
+      // then re-copy the original quote lines into gQuoteLines and re-wrap them.
+      if (!gUserHasOpenedQuoteWindow ||
+          (doQuoteSelection.useQuoteLineInitials != gUserSettings.useQuoteLineInitials) ||
+          (doQuoteSelection.indentQuoteLinesWithInitials != gUserSettings.indentQuoteLinesWithInitials))
+      {
+         doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
+         doQuoteSelection.indentQuoteLinesWithInitials = gUserSettings.indentQuoteLinesWithInitials;
+
+         // If the user has opened the quote window before, then empty gQuoteLines
+         // and re-copy the original quote lines back into it.
+         if (gUserHasOpenedQuoteWindow)
+         {
+            gQuoteLines.length = 0;
+            for (var i = 0; i < doQuoteSelection.backupQuoteLines.length; ++i)
+               gQuoteLines.push(doQuoteSelection.backupQuoteLines[i]);
+         }
+
+         gQuoteLinesTopIndex = gQuoteLinesIndex = 0; // To prevent bad things
+
+         // Update the quote line prefix text and wrap the quote lines
+         setQuotePrefix();
+         if (gConfigSettings.reWrapQuoteLines)
+           wrapQuoteLines(gUserSettings.useQuoteLineInitials, gUserSettings.indentQuoteLinesWithInitials);
+         else if (gUserSettings.useQuoteLineInitials)
+         {
+           var maxQuoteLineWidth = gEditWidth - gQuotePrefix.length;
+           for (var i = 0; i < gQuoteLines.length; ++i)
+             gQuoteLines[i] = quote_msg(gQuoteLines[i], maxQuoteLineWidth, gQuotePrefix);
+         }
+      }
+   }
+
    // Set up some variables
    var curpos = new Object();
    curpos.x = pCurpos.x;
@@ -2485,6 +2599,8 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
    // Put the cursor where it should be.
    console.gotoxy(curpos);
 
+   gUserHasOpenedQuoteWindow = true;
+
    // Set the settings in the return object, and return it.
    retObj.x = curpos.x;
    retObj.y = curpos.y;
@@ -2641,7 +2757,7 @@ function getQuoteTextLine(pIndex, pMaxWidth)
    var textLine = "";
    if ((pIndex >= 0) && (pIndex < gQuoteLines.length))
    {
-      if (gConfigSettings.useQuoteLineInitials)
+      if (gUserSettings.useQuoteLineInitials)
       {
          if ((gQuoteLines[pIndex] != null) && (gQuoteLines[pIndex].length > 0))
           textLine = gQuoteLines[pIndex].substr(0, pMaxWidth-1);
@@ -2973,7 +3089,7 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
              (menuChoice == DCTMENU_FILE_ABORT))
    {
       // Before aborting, ask they user if they really want to abort.
-      if (promptYesNo("Abort message", false, "Abort"))
+      if (promptYesNo("Abort message", false, "Abort", false))
       {
          returnObj.returnCode = 1; // Aborted
          returnObj.continueOn = false;
@@ -3020,7 +3136,8 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
    // Command List
    else if ((menuChoice == "O") || (menuChoice == DCTMENU_HELP_COMMAND_LIST))
    {
-      displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop, gConfigSettings.enableTextReplacements);
+      displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
+                         gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
       clearEditAreaBuffer();
       fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
                      gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
@@ -3070,6 +3187,9 @@ function handleDCTESCMenu(pCurpos, pCurrentWordLength)
       if (gConfigSettings.enableTextReplacements)
          listTextReplacements();
    }
+   // User settings
+   else if ((menuChoice == CTRL_U) || (menuChoice == "N") || (menuChoice == DCTMENU_EDIT_SETTINGS))
+      doUserSettings(pCurpos, true);
 
    // Make sure the edit color attribute is set back.
    //console.print("n" + gTextAttrs);
@@ -3114,7 +3234,7 @@ function handleIceESCMenu(pCurpos, pCurrentWordLength)
          break;
       case ICE_ESC_MENU_ABORT:
          // Before aborting, ask they user if they really want to abort.
-         if (promptYesNo("Abort message", false, "Abort"))
+         if (promptYesNo("Abort message", false, "Abort", false))
          {
             returnObj.returnCode = 1; // Aborted
             returnObj.continueOn = false;
@@ -3123,9 +3243,13 @@ function handleIceESCMenu(pCurpos, pCurrentWordLength)
       case ICE_ESC_MENU_EDIT:
          // Nothing needs to be done for this option.
          break;
+      case ICE_ESC_MENU_SETTINGS:
+         doUserSettings(pCurpos, true);
+         break;
       case ICE_ESC_MENU_HELP:
          displayProgramInfo(true, false);
-         displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop, gConfigSettings.enableTextReplacements);
+         displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
+                            gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings);
          clearEditAreaBuffer();
          fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
                         gInsertMode, gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop),
@@ -3360,10 +3484,10 @@ function importFile(pIsSysop, pCurpos)
                continueOn = false;
             }
             else // Unable to open the file
-               writeWithPause(1, console.screen_rows, "yhUnable to open the file!", 1500);
+               writeWithPause(1, console.screen_rows, "yhUnable to open the file!", ERRORMSG_PAUSE_MS);
          }
          else // Could not find the correct case for the file (it doesn't exist?)
-            writeWithPause(1, console.screen_rows, "yhUnable to locate the file!", 1500);
+            writeWithPause(1, console.screen_rows, "yhUnable to locate the file!", ERRORMSG_PAUSE_MS);
       }
    }
 
@@ -3450,13 +3574,13 @@ function exportToFile(pIsSysop)
                outFile.write(gEditLines[i].text);
          }
          outFile.close();
-         writeWithPause(1, console.screen_rows, "mhMessage exported.", 1500);
+         writeWithPause(1, console.screen_rows, "mhMessage exported.", ERRORMSG_PAUSE_MS);
       }
       else // Could not open the file for writing
-         writeWithPause(1, console.screen_rows, "yhUnable to open the file for writing!", 1500);
+         writeWithPause(1, console.screen_rows, "yhUnable to open the file for writing!", ERRORMSG_PAUSE_MS);
    }
    else // No filename specified
-      writeWithPause(1, console.screen_rows, "mhMessage not exported.", 1500);
+      writeWithPause(1, console.screen_rows, "mhMessage not exported.", ERRORMSG_PAUSE_MS);
 
    // Refresh the help line on the bottom of the screen
    fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
@@ -3582,7 +3706,7 @@ function findText(pCurpos)
          console.gotoxy(1, console.screen_rows);
          console.cleartoeol("n");
          console.print("yhThe text wasn't found!");
-         mswait(1500);
+         mswait(ERRORMSG_PAUSE_MS);
 
          findText.searchStartIndex = 0;
       }
@@ -3634,7 +3758,12 @@ function calcBottomUpdateRow(pY, pTopIndex)
 
 // This function updates the time on the screen and puts
 // the cursor back to where it was.
-function updateTime()
+//
+// Parameters:
+//  pCurpos: An object containg the X and Y coordinates of the cursor position
+//  pMoveCursorBack: Boolean - Whether or not to move the cursor back after updating
+//                   the time on the screen
+function updateTime(pCurpos, pMoveCursorBack)
 {
    if (typeof(updateTime.timeStr) == "undefined")
       updateTime.timeStr = getCurrentTimeStr();
@@ -3646,13 +3775,14 @@ function updateTime()
    {
       // Get the current cursor position so we can move
       // the cursor back there when we're done.
-      var curpos = console.getxy();
+      var curpos = (typeof(pCurpos) == "object" ? pCurpos : console.getxy());
       // Display the current time on the screen
       fpDisplayTime(currentTime);
       // Make sure the edit color attribute is set.
       console.print("n" + gTextAttrs);
       // Move the cursor back to where it was
-      console.gotoxy(curpos);
+      if (pMoveCursorBack)
+         console.gotoxy(curpos);
       // Update this function's time variable
       updateTime.timeStr = currentTime;
    }
@@ -3661,281 +3791,72 @@ function updateTime()
 // This function lets the user change the text color and is called by doEditLoop().
 //
 // Parameters:
+//  pTxtAttrs: The current text color & attributes
 //  pCurpos: An object containing x and y values representing the
 //           cursor position.
 //  pCurrentWordLength: The length of the current word that has been typed
 //
 // Return value: An object containing the following properties:
+//               txtAttrs: The chosen text color & attributes
 //               x and y: The horizontal and vertical cursor position
 //               timedOut: Whether or not the user input timed out (boolean)
 //               currentWordLength: The length of the current word
-function doColorSelection(pCurpos, pCurrentWordLength)
+function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 {
    // Create the return object
    var retObj = new Object();
+   retObj.txtAttrs = pTxtAttrs;
    retObj.x = pCurpos.x;
    retObj.y = pCurpos.y;
    retObj.timedOut = false;
    retObj.currentWordLength = pCurrentWordLength;
+   
+   const originalScreenY = pCurpos.y; // For screen refreshing
 
-   // Note: The current text color is stored in gTextAttrs
-
+   // Display the 3 rows of color/attribute options and the prompt for the
+   // user
    var colorSelTopLine = console.screen_rows - 2;
    var curpos = new Object();
    curpos.x = 1;
    curpos.y = colorSelTopLine;
    console.gotoxy(curpos);
-   console.print("nForeground: whK:nkBlack whR:nrRed whG:ngGreen whY:nyYellow whB:nbBlue whM:nmMagenta whC:ncCyan whW:nwWhite");
+   console.print("ncForeground: whK:nkBlack whR:nrRed whG:ngGreen whY:nyYellow whB:nbBlue whM:nmMagenta whC:ncCyan whW:nwWhite");
    console.cleartoeol("n");
    console.crlf();
-   console.print("nBackground: wh0:n" + gTextAttrs + "0Blackn wh1:n" + gTextAttrs + "1Redn wh2:n" + gTextAttrs + "2Greenn wh3:n" + gTextAttrs + "3Yellown wh4:n" + gTextAttrs + "4Bluen wh5:n" + gTextAttrs + "5Magentan wh6:n" + gTextAttrs + "6Cyann wh7:n" + gTextAttrs + "7White");
+   console.print("ncBackground: wh0:n0Blackn wh1:n1Redn wh2:n2kGreenn wh3:3Yellown wh4:n4Bluen wh5:n5Magentan wh6:n6kCyann wh7:n7kWhite");
    console.cleartoeol("n");
    console.crlf();
    console.clearline("n");
-   //Special: H:High Intensity I:Blinking N:Normal ¦ Choose Color: 
-   console.print("Special: whH:n" + gTextAttrs + "hHigh Intensity wI:n" + gTextAttrs + "iBlinking nwhN:nNormal cþ nChoose Color: ");
-   var attr = FORE_ATTR;
-   var toggle = true;
+   console.print("cSpecial: whH:nhHigh Intensity wI:niBlinking nwhN:nNormal hgþ ncChoose colors/attributeshg: c");
+   // Get the attribute codes from the user.  Ideally, we'd use console.getkeys(),
+   // but that outputs a CR at the end, which is undesirable.  So instead, we call
+   // getUserInputWithSetOfInputStrs (defined in SlyEdit_Misc.js).
    //var key = console.getkeys("KRGYBMCW01234567HIN").toString(); // Outputs a CR..  bad
-   var key = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
-   switch (key)
+   var validKeys = ["KRGYBMCW", // Foreground color codes
+                    "01234567", // Background color codes
+                    "HIN"];     // Special color codes
+   var attrCodeKeys = getUserInputWithSetOfInputStrs(K_UPPER|K_NOCRLF|K_NOSPIN, validKeys, gConfigSettings);
+   // If the user entered some attributes, then set them in retObj.txtAttrs.
+   if (attrCodeKeys.length > 0)
    {
-      // Foreground colors:
-      case 'K': // Black
-      case 'R': // Red
-      case 'G': // Green
-      case 'Y': // Yellow
-      case 'B': // Blue
-      case 'M': // Magenta
-      case 'C': // Cyan
-      case 'W': // White
-         attr = FORE_ATTR;
-         break;
-      // Background colors:
-      case '0': // Black
-      case '1': // Red
-      case '2': // Green
-      case '3': // Yellow
-      case '4': // Blue
-      case '5': // Magenta
-      case '6': // Cyan
-      case '7': // White
-         attr = BKG_ATTR;
-         break;
-      // Special attributes:
-      case 'H': // High intensity
-      case 'I': // Blinking
-         attr = SPECIAL_ATTR;
-         break;
-      case 'N': // Normal
-         gTextAttrs = "N";
-         toggle = false;
-         break;
-      default:
-         toggle = false;
-         break;
+      retObj.txtAttrs = (attrCodeKeys.charAt(0) == "N" ? "" : "n");
+      for (var i = 0; i < attrCodeKeys.length; ++i)
+         retObj.txtAttrs += "" + attrCodeKeys.charAt(i);
    }
-   if (key != "Q")
-   {
-      if (toggle)
-      {
-         gTextAttrs = toggleAttr(attr, gTextAttrs, key);
-         // TODO: Set the attribute in the current text line
-      }
-   }
-
 
    // Display the parts of the screen text that we covered up with the
    // color selection: Message edit lines, bottom border, and bottom help line.
-   displayEditLines(colorSelTopLine, gEditLinesIndex-(gEditBottom-colorSelTopLine),
-                    gEditBottom, true, true);
+   var screenYDiff = colorSelTopLine - originalScreenY;
+   displayEditLines(colorSelTopLine, gEditLinesIndex + screenYDiff, gEditBottom, true, true);
    fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
                                  gInsertMode, gConfigSettings.allowColorSelection);
    fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
-
-   console.print(gTextAttrs);
 
    // Move the cursor to where it should be before returning
    curpos.x = pCurpos.x;
    curpos.y = pCurpos.y;
    console.gotoxy(curpos);
 
-   // This code was copied from doQuoteSelection().
-/*
-   // Set up some variables
-   var curpos = new Object();
-   curpos.x = pCurpos.x;
-   curpos.y = pCurpos.y;
-   const quoteWinHeight = 8;
-   // The first and last lines on the screen where quote lines are written
-   const quoteTopScreenRow = console.screen_rows - quoteWinHeight + 2;
-   const quoteBottomScreenRow = console.screen_rows - 2;
-   // Quote window parameters
-   const quoteWinTopScreenRow = quoteTopScreenRow-1;
-   const quoteWinWidth = gEditRight - gEditLeft + 1;
-
-   // Display the top border of the quote window.
-   fpDrawQuoteWindowTopBorder(quoteWinHeight, gEditLeft, gEditRight);
-
-   // Display the remainder of the quote window, with the quote lines in it.
-   displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true, gQuoteLinesIndex);
-
-   // Position the cursor at the currently-selected quote line.
-   var screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-   console.gotoxy(gEditLeft, screenLine);
-
-   // User input loop
-   var quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-   retObj.timedOut = false;
-   var userInput = null;
-   var continueOn = true;
-   while (continueOn)
-   {
-      // Get a keypress from the user
-      userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
-      if (userInput == "")
-      {
-         // The input timeout was reached.  Abort.
-         retObj.timedOut = true;
-         continueOn = false;
-         break;
-      }
-
-      // If we got here, that means the user input didn't time out.
-      switch (userInput)
-      {
-         case KEY_UP:
-            // Go up 1 quote line
-            if (gQuoteLinesIndex > 0)
-            {
-               // If the cursor is at the topmost position, then
-               // we need to scroll up 1 line in gQuoteLines.
-               if (screenLine == quoteTopScreenRow)
-               {
-                  --gQuoteLinesIndex;
-                  --gQuoteLinesTopIndex;
-                  quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-                  // Redraw the quote lines in the quote window.
-                  displayQuoteWindowLines(gQuoteLinesIndex, quoteWinHeight, quoteWinWidth,
-                                          true, gQuoteLinesIndex);
-                  // Put the cursor back where it should be.
-                  console.gotoxy(gEditLeft, screenLine);
-               }
-               // If the cursor is below the topmost position, then
-               // we can just go up 1 line.
-               else if (screenLine > quoteTopScreenRow)
-               {
-                  // Write the current quote line using the normal color
-                  // Note: This gets the quote line again using getQuoteTextLine()
-                  // so that the color codes in the line will be correct.
-                  quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-                  console.gotoxy(gEditLeft, screenLine);
-                  printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
-
-                  // Go up one line and display that quote line in the
-                  // highlighted color.
-                  --screenLine;
-                  --gQuoteLinesIndex;
-                  quoteLine = strip_ctrl(getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth));
-                  console.gotoxy(gEditLeft, screenLine);
-                  printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
-
-                  // Make sure the cursor is where it should be.
-                  console.gotoxy(gEditLeft, screenLine);
-               }
-            }
-            break;
-         case KEY_DOWN:
-            // Go down 1 line in the quote window.
-            var downRetObj = moveDownOneQuoteLine(gQuoteLinesIndex, screenLine,
-                                                  quoteWinHeight, quoteWinWidth,
-                                                  quoteBottomScreenRow);
-            gQuoteLinesIndex = downRetObj.quoteLinesIndex;
-            screenLine = downRetObj.screenLine;
-            quoteLine = downRetObj.quoteLine;
-            break;
-         case KEY_ENTER:
-            // numTimesToMoveDown specifies how many times to move the cursor
-            // down after inserting the quote line into the message.
-            var numTimesToMoveDown = 1;
-
-            // Insert the quote line into gEditLines after the current gEditLines index.
-            var insertedBelow = insertLineIntoMsg(gEditLinesIndex, quoteLine, true, true);
-            if (insertedBelow)
-            {
-               // The cursor will need to be moved down 1 more line.
-               // So, increment numTimesToMoveDown, and set curpos.x
-               // and gTextLineIndex to the beginning of the line.
-               ++numTimesToMoveDown;
-               curpos.x = gEditLeft;
-               gTextLineIndex = 0;
-               retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-            }
-            else
-               retObj.currentWordLength = 0;
-
-            // Refresh the part of the message that needs to be refreshed on the
-            // screen (above the quote window).
-            if (curpos.y < quoteTopScreenRow-1)
-               displayEditLines(curpos.y, gEditLinesIndex, quoteTopScreenRow-2, false, true);
-
-            gEditLinesIndex += numTimesToMoveDown;
-
-            // Go down one line in the quote window.
-            var tempReturnObj = moveDownOneQuoteLine(gQuoteLinesIndex, screenLine,
-                                              quoteWinHeight, quoteWinWidth,
-                                              quoteBottomScreenRow);
-            gQuoteLinesIndex = tempReturnObj.quoteLinesIndex;
-            screenLine = tempReturnObj.screenLine;
-            quoteLine = tempReturnObj.quoteLine;
-
-            // Move the cursor down as specified by numTimesToMoveDown.  If
-            // the cursor is at the bottom of the edit area, then refresh
-            // the message on the screen, scrolled down by one line.
-            for (var i = 0; i < numTimesToMoveDown; ++i)
-            {
-               if (curpos.y == gEditBottom)
-               {
-                  // Refresh the message on the screen, scrolled down by
-                  // one line, but only if this is the last time we're
-                  // doing this (for efficiency).
-                  if (i == numTimesToMoveDown-1)
-                  {
-                     displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop),
-                                      quoteTopScreenRow-2, false, true);
-                  }
-               }
-               else
-                  ++curpos.y;
-            }
-            break;
-         // ESC or CTRL-Q: Stop quoting
-         case KEY_ESC:
-         case CTRL_Q:
-            // Quit out of the input loop (get out of quote mode).
-            continueOn = false;
-            break;
-      }
-   }
-
-   // We've exited quote mode.  Refresh the message text on the screen.  Note:
-   // This will refresh only the quote window portion of the screen if the
-   // cursor row is at or below the top of the quote window, and it will also
-   // refresh the screen if the cursor row is above the quote window.
-   displayEditLines(quoteWinTopScreenRow, gEditLinesIndex-(curpos.y-quoteWinTopScreenRow),
-                    gEditBottom, true, true);
-
-   // Draw the bottom edit border to erase the bottom border of the
-   // quote window.
-   fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
-                                 gInsertMode, gConfigSettings.allowColorSelection);
-
-   // Make sure the color is correct for editing.
-   //console.print("n" + gTextAttrs);
-   console.print(chooseEditColor());
-   // Put the cursor where it should be.
-   console.gotoxy(curpos);
-*/
    // Set the settings in the return object, and return it.
    retObj.x = curpos.x;
    retObj.y = curpos.y;
@@ -5320,7 +5241,7 @@ function listTextReplacements()
 {
    if (gNumTxtReplacements == 0)
    {
-      writeMsgOntBtmHelpLineWithPause("nhyThere are no text replacements.", 1500);
+      writeMsgOntBtmHelpLineWithPause("nhyThere are no text replacements.", ERRORMSG_PAUSE_MS);
       return;
    }
 
@@ -5385,7 +5306,7 @@ function listTextReplacements()
    // printf format strings for the list
    if (typeof(listTextReplacements.listFormatStr) == "undefined")
    {
-      listTextReplacements.listFormatStr = "n" + gConfigSettings.genColors.txtReplacementList
+      listTextReplacements.listFormatStr = "n" + gConfigSettings.genColors.listBoxItemText
         + "%-" + txtWidth + "s %-" + txtWidth + "s";
    }
    if (typeof(listTextReplacements.listFormatStrNormalAttr) == "undefined")
@@ -5404,6 +5325,15 @@ function listTextReplacements()
    console.print(listTextReplacements.topBorder);
    console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY+boxInfo.height-1);
    console.print(listTextReplacements.bottomBorder);
+   // Draw the side borders
+   console.print("n" + gConfigSettings.genColors.listBoxBorder);
+   for (var i = 0; i < boxInfo.height-2; ++i)
+   {
+      console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY+i+1);
+      console.print(VERTICAL_SINGLE);
+      console.gotoxy(boxInfo.topLeftX+boxInfo.width-1, boxInfo.topLeftY+i+1);
+      console.print(VERTICAL_SINGLE);
+   }
 
    // Set up some variables for the user input loop
    const numItemsPerPage = boxInfo.height - 2;
@@ -5433,24 +5363,19 @@ function listTextReplacements()
          screenY = boxInfo.topLeftY + 1;
          for (var i = startArrIndex; i < endArrIndex; ++i)
          {
-            console.gotoxy(boxInfo.topLeftX, screenY);
-            console.print("n" + gConfigSettings.genColors.listBoxBorder + VERTICAL_SINGLE);
+            console.gotoxy(boxInfo.topLeftX+1, screenY);
             printf(listTextReplacements.listFormatStr,
                    listTextReplacements.txtReplacementArr[i].originalText.substr(0, txtWidth),
                    listTextReplacements.txtReplacementArr[i].replacement.substr(0, txtWidth));
-            console.print("n" + gConfigSettings.genColors.listBoxBorder + VERTICAL_SINGLE);
             ++screenY;
          }
          // If the current screen row is below the bottom row inside the box,
          // continue and write blank lines to the bottom of the inside of the box
          // to blank out any text that might still be there.
-         //if (screenY < boxInfo.topLeftY+boxInfo.height)
          while (screenY < boxInfo.topLeftY+boxInfo.height-1)
          {
-            console.gotoxy(boxInfo.topLeftX, screenY);
-            console.print("n" + gConfigSettings.genColors.listBoxBorder + VERTICAL_SINGLE);
+            console.gotoxy(boxInfo.topLeftX+1, screenY);
             printf(listTextReplacements.listFormatStrNormalAttr, "", "");
-            console.print("n" + gConfigSettings.genColors.listBoxBorder + VERTICAL_SINGLE);
             ++screenY;
          }
 
@@ -5463,7 +5388,7 @@ function listTextReplacements()
          // Just for sane appearance: Move the cursor to the first character of
          // the first row and make it the color for the text replacements.
          console.gotoxy(boxInfo.topLeftX+1, boxInfo.topLeftY+1);
-         console.print(gConfigSettings.genColors.txtReplacementList);
+         console.print(gConfigSettings.genColors.listBoxItemText);
       }
 
       // Get a key from the user (upper-case) and take action based upon it.
@@ -5505,6 +5430,228 @@ function listTextReplacements()
                            boxInfo.height, editLineIndexAtSelBoxTopRow, true);
    console.gotoxy(originalCurpos);
    console.print(chooseEditColor());
+}
+
+// Lets the user manage their preferences/settings.
+//
+// Parameters:
+//  pCurpos: The position of the cursor on the screen when this function is called.
+//           This is optional.  If not specified, this function will call console.getxy()
+//           to get the cursor position.
+//  pReturnCursorToOriginalPos: Optional, boolean - Whether or not to return the cursor
+//                              to its original position when done.
+function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
+{
+   if (!gConfigSettings.allowUserSettings)
+      return;
+
+   const originalCurpos = (typeof(pCurpos) == "object" ? pCurpos : console.getxy());
+   var returnCursorWhenDone = true;
+   if (typeof(pReturnCursorToOriginalPos) == "boolean")
+      returnCursorWhenDone = pReturnCursorToOriginalPos;
+
+   // Save the user's current settings so that we can check them later to see if any
+   // of them changed, in order to determine whether to save the user's settings file.
+   var originalSettings = new Object();
+   for (var prop in gUserSettings)
+   {
+      if (gUserSettings.hasOwnProperty(prop))
+         originalSettings[prop] = gUserSettings[prop];
+   }
+
+   // Create the user settings box
+   var optBoxTitle = "Setting                                      Enabled";
+   var optBoxWidth = ChoiceScrollbox_MinWidth();
+   var optBoxHeight = 5;
+   var optBoxStartX = gEditLeft + Math.floor((gEditWidth/2) - (optBoxWidth/2));
+   if (optBoxStartX < gEditLeft)
+      optBoxStartX = gEditLeft;
+   var optionBox = new ChoiceScrollbox(optBoxStartX, gEditTop+1, optBoxWidth, optBoxHeight, optBoxTitle,
+                                        gConfigSettings, false, true);
+   optionBox.addInputLoopExitKey(CTRL_U);
+   // Update the bottom help text to be more specific to the user settings box
+   var bottomBorderText = "nhcb, cb, cEntery=bSelectnc/hbtoggle, "
+            + "cESCnc/hCtrl-Uy=bClose";
+   // This one contains the page navigation keys..  Don't really need to show those,
+   // since the settings box only has one page right now:
+   /*var bottomBorderText = "nhcb, cb, cNy)bext, cPy)brev, "
+            + "cFy)birst, cLy)bast, cEntery=bSelectnc/hbtoggle, "
+            + "cCtrl-Uy=bClose";*/
+
+   optionBox.setBottomBorderText(bottomBorderText, true, false);
+   
+   // Add the options to the option box
+   const checkIdx = 48;
+   const TAGLINE_OPT_INDEX = optionBox.addTextItem("Taglines                                       [ ]");
+   const QUOTE_INITIALS_OPT_INDEX = optionBox.addTextItem("Quote with author's initials                   [ ]");
+   const QUOTE_INITIALS_INDENT_OPT_INDEX = optionBox.addTextItem("Indent quote lines containing initials         [ ]");
+   if (gUserSettings.enableTaglines)
+      optionBox.chgCharInTextItem(TAGLINE_OPT_INDEX, checkIdx, CHECK_CHAR);
+   if (gUserSettings.useQuoteLineInitials)
+      optionBox.chgCharInTextItem(QUOTE_INITIALS_OPT_INDEX, checkIdx, CHECK_CHAR);
+   if (gUserSettings.indentQuoteLinesWithInitials)
+      optionBox.chgCharInTextItem(QUOTE_INITIALS_INDENT_OPT_INDEX, checkIdx, CHECK_CHAR);
+
+   // Create an object containing toggle values (true/false) for each option index
+   var optionToggles = new Object();
+   optionToggles[TAGLINE_OPT_INDEX] = gUserSettings.enableTaglines;
+   optionToggles[QUOTE_INITIALS_OPT_INDEX] = gUserSettings.useQuoteLineInitials;
+   optionToggles[QUOTE_INITIALS_INDENT_OPT_INDEX] = gUserSettings.indentQuoteLinesWithInitials;
+
+   // Set up the enter key in the box to toggle the selected item.
+   optionBox.setEnterKeyOverrideFn(function(pBox) {
+      var itemIndex = pBox.getChosenTextItemIndex();
+      if (itemIndex > -1)
+      {
+         // If there's an option for the chosen item, then update the text on the
+         // screen depending on whether the option is enabled or not.
+         if (optionToggles.hasOwnProperty(itemIndex))
+         {
+            // Toggle the option and refresh it on the screen
+            optionToggles[itemIndex] = !optionToggles[itemIndex];
+            if (optionToggles[itemIndex])
+               optionBox.chgCharInTextItem(itemIndex, checkIdx, CHECK_CHAR);
+            else
+               optionBox.chgCharInTextItem(itemIndex, checkIdx, " ");
+            optionBox.refreshItemCharOnScreen(itemIndex, checkIdx);
+
+            // Toggle the setting for the user in global user setting object.
+            switch (itemIndex)
+            {
+               case TAGLINE_OPT_INDEX:
+                  gUserSettings.enableTaglines = !gUserSettings.enableTaglines;
+                  break;
+               case QUOTE_INITIALS_OPT_INDEX:
+                  gUserSettings.useQuoteLineInitials = !gUserSettings.useQuoteLineInitials;
+                  break;
+               case QUOTE_INITIALS_INDENT_OPT_INDEX:
+                  gUserSettings.indentQuoteLinesWithInitials = !gUserSettings.indentQuoteLinesWithInitials;
+                  break;
+               default:
+                  break;
+            }
+         }
+      }
+   }); // Option box enter key override function
+
+   // Display the option box and have it do its input loop
+   var boxRetObj = optionBox.doInputLoop(true);
+
+   // If the user changed any of their settings, then save the user settings.
+   // If the save fails, then output an error message.
+   var settingsChanged = false;
+   for (var prop in gUserSettings)
+   {
+      if (gUserSettings.hasOwnProperty(prop))
+      {
+         settingsChanged = (originalSettings[prop] != gUserSettings[prop]);
+         if (settingsChanged)
+            break;
+      }
+   }
+   if (settingsChanged)
+   {
+      if (!WriteUserSettingsFile(gUserSettings))
+         writeMsgOntBtmHelpLineWithPause("nyhFailed to save settings!n", ERRORMSG_PAUSE_MS);
+   }
+
+   // We're done, so erase the option box.
+   var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (originalCurpos.y-optionBox.dimensions.topLeftY);
+   displayMessageRectangle(optionBox.dimensions.topLeftX, optionBox.dimensions.topLeftY,
+                           optionBox.dimensions.width, optionBox.dimensions.height,
+                           editLineIndexAtSelBoxTopRow, true);
+
+   if (returnCursorWhenDone)
+      console.gotoxy(originalCurpos);
+}
+
+// Allows the user to select a tagline.  Returns an object with the following
+// properties:
+//  taglineWasSelected: Boolean - Whether or not a tag line was selected
+//  tagline: String - The tag line that was selected
+function doTaglineSelection()
+{
+   var retObj = new Object();
+   retObj.taglineWasSelected = false;
+   retObj.tagline = "";
+
+   // Read the tagline file
+   var taglines = readTxtFileIntoArray(gConfigSettings.tagLineFilename, true, true, 5000);
+   if (taglines.length == 0)
+      return;
+
+   // Create the list box for the taglines.  Make the box up to 14 lines tall.
+   var boxHeight = (taglines.length > 12 ? 14 : taglines.length+2);
+   var boxTopRow = gEditTop + Math.floor((gEditHeight/2) - (boxHeight/2));
+   var taglineBox = new ChoiceScrollbox(gEditLeft, boxTopRow, gEditWidth, boxHeight,
+                                         "Taglines", gConfigSettings, true, false);
+   var bottomBorderText = "nhcb, cb, cNy)bext, cPy)brev, "
+     + "cFy)birst, cLy)bast, cHOMEb, cENDb, cEntery=bSelect, "
+     + "cRy)bandom, cESCnc/hcQy=bEnd";
+   taglineBox.setBottomBorderText(bottomBorderText, false, false);
+   // Add R as an input loop exit key, to choose a random tagline.
+   taglineBox.addInputLoopExitKey("R");
+   taglineBox.addInputLoopExitKey("r");
+
+   // Set the tagline item array in the list box.  Don't strip control characters
+   // because we've already done that when we read the file.
+   taglineBox.setItemArray(taglines, false);
+   // Let the user choose a tagline
+   var taglineRetObj = taglineBox.doInputLoop(true);
+   retObj.taglineWasSelected = taglineRetObj.itemWasSelected;
+   if (retObj.taglineWasSelected)
+      retObj.tagline = taglineRetObj.selectedItem;
+   // If the R key was pressed, then choose a random tagline.
+   else if ((taglineRetObj.lastKeypress == "R") || (taglineRetObj.lastKeypress == "r"))
+   {
+      retObj.tagline = taglines[random(taglines.length)];
+      retObj.taglineWasSelected = true;
+   }
+
+   return retObj;
+}
+
+// Sets gQuotePrefix, the text to use for prefixing quote lines.
+function setQuotePrefix()
+{
+   gQuotePrefix = " > "; // The default
+   // If we're configured to use poster's initials in the
+   // quote lines, then do it.
+   if (gUserSettings.useQuoteLineInitials)
+   {
+     // For the name to use for quote line initials:
+     // If posting in a message sub-board, get the author's name from the
+     // header of the current message being read in the sub-board (in
+     // case the user changes the "To" name).  Otherwise (if not posting in
+     // a message sub-board), use the gToName value read from the drop file.
+     // Remove any leading, multiple, or trailing spaces.
+     var quotedName = "";
+     if (postingInMsgSubBoard(gMsgArea))
+     {
+       quotedName = trimSpaces(getFromNameForCurMsg(gMsgAreaInfo), true, true, true);
+       if (quotedName.length == 0)
+         quotedName = trimSpaces(gToName, true, true, true);
+     }
+     else
+       quotedName = trimSpaces(gToName, true, true, true);
+      // If configured to indent quote lines w/ initials with
+      // a space, then do it.
+      gQuotePrefix = "";
+      if (gUserSettings.indentQuoteLinesWithInitials)
+         gQuotePrefix = " ";
+      // Use the initials or first 2 characters from the
+      // quoted name for gQuotePrefix.
+      var spaceIndex = quotedName.indexOf(" ");
+      if (spaceIndex > -1) // If a space exists, use the initials
+      {
+         gQuotePrefix += quotedName.charAt(0).toUpperCase();
+         if (quotedName.length > spaceIndex+1)
+            gQuotePrefix += quotedName.charAt(spaceIndex+1).toUpperCase();
+         gQuotePrefix += "> ";
+      }
+      else // A space doesn't exist; use the first 2 letters
+         gQuotePrefix += quotedName.substr(0, 2) + "> ";
+   }
 }
 
 // Writes some text over the bottom help line, with a pause before erasing the

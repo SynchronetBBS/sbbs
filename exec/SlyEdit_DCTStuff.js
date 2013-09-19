@@ -46,6 +46,18 @@
  *                              SlyEdit_Misc.js) to move the general colors
  *                              into the genColors array in the configuration
  *                              object.
+ * 2013-09-14 Eric Oulashin     Updated doDCTMenu() and related functions with
+ *                              an option for user settings.  Also fixed the bug
+ *                              related to the CTRL key for listing text replacements
+ *                              not working.  Simplified the code in the function
+ *                              valMatchesMenuCode().
+ * 2013-09-15 Eric Oulashin     Bug fix: Updated displayTime_DCTStyle() to
+ *                              properly calculate the horizontal position at
+ *                              which to write the time rather than going to
+ *                              absolute coordinates; this accommodates terminals
+ *                              of different widths.
+ * 2013-09-16 Eric Oulashin     Fixed off-by-one bug for the horizontal position in
+ *                              Updated updateInsertModeOnScreen_DCTStyle().
  */
 
 load("sbbsdefs.js");
@@ -58,7 +70,7 @@ var DCTMENU_FILE_EDIT = 2;
 var DCTMENU_EDIT_INSERT_TOGGLE = 3;
 var DCTMENU_EDIT_FIND_TEXT = 4;
 //var DCTMENU_EDIT_SPELL_CHECKER = 5;
-//var DCTMENU_EDIT_SETUP = 6;
+var DCTMENU_EDIT_SETTINGS = 6;
 var DCTMENU_SYSOP_IMPORT_FILE = 7;
 var DCTMENU_SYSOP_EXPORT_FILE = 11;
 var DCTMENU_HELP_COMMAND_LIST = 8;
@@ -195,7 +207,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	fieldWidth = (console.screen_columns * (7/80)).toFixed(0);
 	startX = console.screen_columns - fieldWidth - 9;
 	console.gotoxy(startX, lineNum);
-	var timeStr = Math.floor(bbs.time_left / 60).toString();
+	var timeStr = Math.floor(bbs.time_left / 60).toString().substr(0, fieldWidth);
 	console.print(gConfigSettings.DCTColors.TopLabelColor + "Left" +
 	              gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 	              gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
@@ -413,7 +425,13 @@ function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes)
 //  pInsertMode: The insert mode ("INS" or "OVR")
 function updateInsertModeOnScreen_DCTStyle(pEditRight, pEditBottom, pInsertMode)
 {
-	console.gotoxy(pEditRight-6, pEditBottom+1);
+   // If the number of columns on the screen is more than 80, the horizontal
+   // position will be 1 more to the right due to the added vertical lines
+   // around the edit area.
+   if (console.screen_columns > 80)
+      console.gotoxy(pEditRight-5, pEditBottom+1);
+   else
+      console.gotoxy(pEditRight-6, pEditBottom+1);
 	console.print(gConfigSettings.DCTColors.EditModeBrackets + "[" +
 	              gConfigSettings.DCTColors.EditMode + pInsertMode +
 	              gConfigSettings.DCTColors.EditModeBrackets + "]");
@@ -642,11 +660,32 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj)
 //            then this funtion will get the current time.
 function displayTime_DCTStyle(pTimeStr)
 {
-	console.gotoxy(52, 3);
+	// Calculate the horizontal location for the time string, using basically
+	// the formula used for calculating the horizontal location of the message
+	// area in redrawScreen_DCTStyle(), which the time lines up with.
+	var fieldWidth = (console.screen_columns * (27/80)).toFixed(0);
+   //var curposX = console.screen_columns - fieldWidth - 9 + 8;
+   var curposX = console.screen_columns - fieldWidth - 1;
+   console.gotoxy(curposX, 3);
+
 	if (pTimeStr == null)
-		console.print(gConfigSettings.DCTColors.TopTimeColor + getCurrentTimeStr());
+		console.print("n" + gConfigSettings.DCTColors.TopTimeColor + getCurrentTimeStr());
 	else
-		console.print(gConfigSettings.DCTColors.TopTimeColor + pTimeStr);
+		console.print("n" + gConfigSettings.DCTColors.TopTimeColor + pTimeStr);
+}
+
+// Displays the number of minutes remaining on the screen.
+function displayTimeRemaining_DCTStyle()
+{
+   var fieldWidth = (console.screen_columns * (7/80)).toFixed(0);
+	var startX = console.screen_columns - fieldWidth - 1;
+	console.gotoxy(startX, 3);
+	var timeStr = Math.floor(bbs.time_left / 60).toString().substr(0, fieldWidth);
+	console.print(gConfigSettings.DCTColors.TopTimeLeftColor + timeStr +
+	              gConfigSettings.DCTColors.TopTimeLeftFillColor);
+	fieldWidth -= (timeStr.length+1);
+	for (var i = 0; i < fieldWidth; ++i)
+		console.print(DOT_CHAR);
 }
 
 // Displays & handles the input loop for the DCT Edit menu.
@@ -783,7 +822,6 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
    // Set up the menu objects.  Only create these objects once.
    if (typeof(doDCTMenu.allMenus) == "undefined")
    {
-      //function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
       doDCTMenu.allMenus = new Array();
       // File menu
       doDCTMenu.allMenus[fileMenuNum] = new DCTMenu(doDCTMenu.mainMenuItemPositions.fileX, doDCTMenu.mainMenuItemPositions.mainMenuY+1);
@@ -803,9 +841,10 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
       doDCTMenu.allMenus[editMenuNum].addItem("&Insert Mode    Ctrl-I", DCTMENU_EDIT_INSERT_TOGGLE);
       doDCTMenu.allMenus[editMenuNum].addItem("&Find Text      Ctrl-N", DCTMENU_EDIT_FIND_TEXT);
       //doDCTMenu.allMenus[editMenuNum].addItem("Spell &Checker  Ctrl-W", DCTMENU_EDIT_SPELL_CHECKER);
-      //doDCTMenu.allMenus[editMenuNum].addItem("&Setup          Ctrl-U", DCTMENU_EDIT_SETUP);
+      doDCTMenu.allMenus[editMenuNum].addItem("Setti&ngs       Ctrl-U", DCTMENU_EDIT_SETTINGS);
       doDCTMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_I, DCTMENU_EDIT_INSERT_TOGGLE);
       doDCTMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_N, DCTMENU_EDIT_FIND_TEXT);
+      doDCTMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_U, DCTMENU_EDIT_SETTINGS);
 
       // SysOp menu
       doDCTMenu.allMenus[sysopMenuNum] = new DCTMenu(doDCTMenu.mainMenuItemPositions.sysopX, doDCTMenu.mainMenuItemPositions.mainMenuY+1);
@@ -821,12 +860,8 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
       doDCTMenu.allMenus[helpMenuNum].addItem("&Program Info   Ctrl-R", DCTMENU_HELP_PROGRAM_INFO);
       if (gConfigSettings.enableTextReplacements)
       {
-         // For some reason, Ctrl-T isn't working properly in this context - It
-         // exits the help menu but doesn't exit the menu overall.  So for now,
-         // I'm not showing or allowing Ctrl-T in this context.
-         //doDCTMenu.allMenus[helpMenuNum].addItem("&Text replcmts  Ctrl-T", DCTMENU_LIST_TXT_REPLACEMENTS);
-         //doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_T, DCTMENU_LIST_TXT_REPLACEMENTS);
-         doDCTMenu.allMenus[helpMenuNum].addItem("&Text replcmts        ", DCTMENU_LIST_TXT_REPLACEMENTS);
+         doDCTMenu.allMenus[helpMenuNum].addItem("&Text replcmts  Ctrl-T", DCTMENU_LIST_TXT_REPLACEMENTS);
+         doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_T, DCTMENU_LIST_TXT_REPLACEMENTS);
       }
       doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_P, DCTMENU_HELP_COMMAND_LIST);
       doDCTMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_G, DCTMENU_HELP_GENERAL);
@@ -926,6 +961,8 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
          case CTRL_V:    // Insert/overwrite toggle
          case "F":       // Find text
          case CTRL_F:    // Find text
+         case "N":       // User settings
+         case CTRL_U:    // User settings
          case "O":       // Command List
          case "G":       // General help
          case "P":       // Program info
@@ -939,7 +976,7 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
                continueOn = false;
             break;
          case "T": // List text replacements
-         //case CTRL_T: // List text replacements
+         case CTRL_T: // List text replacements
             if (gConfigSettings.enableTextReplacements)
                continueOn = false;
             break;
@@ -967,23 +1004,15 @@ function doDCTMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 function valMatchesMenuCode(pVal, pIsSysop)
 {
    var valMatches = false;
-   if (pIsSysop)
-   {
-      valMatches = ((pVal == DCTMENU_FILE_SAVE) || (pVal == DCTMENU_FILE_ABORT) ||
-                   (pVal == DCTMENU_FILE_EDIT) || (pVal == DCTMENU_EDIT_INSERT_TOGGLE) ||
-                   (pVal == DCTMENU_EDIT_FIND_TEXT) || (pVal == DCTMENU_SYSOP_IMPORT_FILE) ||
-                   (pVal == DCTMENU_SYSOP_EXPORT_FILE) || (pVal == DCTMENU_HELP_COMMAND_LIST) ||
-                   (pVal == DCTMENU_HELP_GENERAL) || (pVal == DCTMENU_HELP_PROGRAM_INFO));
-   }
-   else
-   {
-      valMatches = ((pVal == DCTMENU_FILE_SAVE) || (pVal == DCTMENU_FILE_ABORT) ||
-                   (pVal == DCTMENU_FILE_EDIT) || (pVal == DCTMENU_EDIT_INSERT_TOGGLE) ||
-                   (pVal == DCTMENU_EDIT_FIND_TEXT) || (pVal == DCTMENU_HELP_COMMAND_LIST) ||
-                   (pVal == DCTMENU_HELP_GENERAL) || (pVal == DCTMENU_HELP_PROGRAM_INFO));
-   }
+   valMatches = ((pVal == DCTMENU_FILE_SAVE) || (pVal == DCTMENU_FILE_ABORT) ||
+                 (pVal == DCTMENU_FILE_EDIT) || (pVal == DCTMENU_EDIT_INSERT_TOGGLE) ||
+                 (pVal == DCTMENU_EDIT_FIND_TEXT) || (pVal == DCTMENU_HELP_COMMAND_LIST) ||
+                 (pVal == DCTMENU_HELP_GENERAL) || (pVal == DCTMENU_HELP_PROGRAM_INFO) ||
+                 (pVal == DCTMENU_EDIT_SETTINGS));
    if (gConfigSettings.enableTextReplacements)
-      valMatch = (valMatches || DCTMENU_LIST_TXT_REPLACEMENTS);
+      valMatches = (valMatches || (pVal == DCTMENU_LIST_TXT_REPLACEMENTS));
+   if (pIsSysop)
+      valMatches = (valMatches || (pVal == DCTMENU_SYSOP_IMPORT_FILE) || (pVal == DCTMENU_SYSOP_EXPORT_FILE));
    return valMatches;
 }
 
@@ -1140,7 +1169,7 @@ function DCTMenu_AddItem(pText, pReturnVal)
 function DCTMenu_AddExitLoopKey(pKey, pReturnValue)
 {
    var val = -1;
-   if ((pReturnValue != null) && (typeof(pReturnValue) != "undefined"))
+   if (typeof(pReturnValue) == "number")
       val = pReturnValue;
 
    this.exitLoopKeys[pKey] = val;

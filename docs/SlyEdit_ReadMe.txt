@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.31
-                        Release date: 2013-09-07
+                              Version 1.32
+                        Release date: 2013-09-18
 
                                   by
 
@@ -28,6 +28,8 @@ Contents
  8. DCT-style Color Theme Settings
  9. Common colors (appearing in both Ice and DCT color theme files)
 10. Text replacements (AKA Macros)
+11. User settings
+12. Taglines
 
 
 1. Disclaimer
@@ -259,22 +261,6 @@ reWrapQuoteLines                  Whether or not to re-wrap quote lines. Valid
                                   be trimmed to make room for the quote prefix
                                   character to be added to the front.
 
-useQuoteLineInitials              Whether or not to prefix quoted message lines
-                                  with the previous author's initials when
-                                  replying to a message.  Valued values are
-                                  true and false.  If this setting is disabled,
-                                  SlyEdit will simply prefix the quoted lines
-                                  with " > ", as was done in IceEdit, DCT Edit,
-                                  and other message editors of the early-mid
-                                  1990s.  This setting is enabled by default.
-
-indentQuoteLinesWithInitials      When prefixing quoted messages lines with the
-                                  previous author's initials, this setting
-                                  specifies whether or not to indent quoted
-                                  lines with a space.  Valued values are true
-                                  and false.  This setting is disabled by
-                                  default.
-
 add3rdPartyStartupScript          Add a 3rd-party JavaScript script to execute
                                   (via loading) upon startup of SlyEdit.  The
                                   parameter must specify the full path & filename
@@ -311,6 +297,43 @@ enableTextReplacements            Toggles the use of text replacements (AKA
                                   implemented by JavaScript.  For more
                                   information, see section 10 (Text
                                   replacements (AKA Macros)).
+
+tagLineFilename                   Specifies the name of the file that stores
+                                  taglines, which users can optionally choose
+                                  from to be appended to their message upon
+                                  saving the message.
+
+allowUserSettings                 Whether or not to allow users to configure
+                                  their own user settings.  This defaults to
+                                  true.
+
+useQuoteLineInitials              Whether or not to prefix quoted message lines
+                                  with the previous author's initials when
+                                  replying to a message.  Valued values are
+                                  true and false.  If this setting is disabled,
+                                  SlyEdit will simply prefix the quoted lines
+                                  with " > ", as was done in IceEdit, DCT Edit,
+                                  and other message editors of the early-mid
+                                  1990s.  This setting is enabled by default.
+                                  This setting serves as the default for the
+                                  user setting, which users can configure in
+                                  their own settings.
+
+indentQuoteLinesWithInitials      When prefixing quoted messages lines with the
+                                  previous author's initials, this setting
+                                  specifies whether or not to indent quoted
+                                  lines with a space.  Valued values are true
+                                  and false.  This setting is disabled by
+                                  default.  This setting serves as the default
+                                  for the user setting, which users can
+                                  configure in their own settings.
+
+enableTagLines                    Whether or not to enable the option for users
+                                  to choose a tagline to append to their
+                                  message upon saving the message.  This
+                                  setting serves as the default for the user
+                                  setting, which users can configure in their
+                                  own settings.
 
 Ice colors
 ----------
@@ -612,6 +635,14 @@ emptyMsgNotSentText               The color to use for the Message Not Sent
 genMsgErrorText                   The color to use for general message error
                                   text when exiting SlyEdit
 
+listBoxItemText                   The color to use for text appearing in list
+                                  boxes (such as the list of text replacements
+                                  and the list of tag lines)
+
+listBoxItemHighlight              The color to use for the currently selected
+                                  item in list boxes (such as the list of text
+                                  replacements and the list of tag lines)
+
 10. Text replacements (AKA Macros)
 ==================================
 SlyEdit version 1.29 added text replacements (AKA Macros), which lets you (the
@@ -704,3 +735,31 @@ text.  In JavaScript, each numbered capture buffer is preceded by a dollar sign
 store it in buffer 1, and in JavaScript (and with SlyEdit's search and
 replace), you would use $1 to refer to the word "darn".  For example, for
 (darn), the replacement $1it would replace the word "darn" with "darnit".
+
+11. User settings
+=================
+SlyEdit version 1.32 added the ability for each user to configure some settings
+for themselves.  The user settings include the following:
+- Whether or not to enable the option to use taglines
+- Whether or not to add the original author's initials to quote lines
+  (this was previously only configurable in SlyEdit.cfg)
+- Whether or not to indent quote lines that use author's intials (this was
+  previously only configurable in SlyEdit.cfg)
+
+The user settings files will be stored in the sbbs/data/user directory with the
+filename <user number>.SlyEdit_Settings, and the user number will be 0-padded
+up to 4 digits.
+
+12. Taglines
+============
+SlyEdit version 1.32 added the ability for users to optionally choose a tagline
+to be appended to their message upon saving the message.  Each user can
+configure in their user settings whether or not they want to enable this
+feature.  The setting enableTaglines in SlyEdit.cfg sets the default setting,
+but users are free to change it for themselves.
+
+The taglines are loaded from the text file SlyEdit_Taglines.txt, which can be
+located in any of the following directories, searched in the following order:
+- sbbs/mods
+- sbbs/ctrl
+- The same directory as SlyEdit's .js files

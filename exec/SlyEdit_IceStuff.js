@@ -32,6 +32,16 @@
  *                              SlyEdit_Misc.js) to move the general colors
  *                              into the genColors array in the configuration
  *                              object.
+ * 2013-09-14 Eric Oulashin     Added a settings option to doIceESCMenu().
+ * 2013-09-15 Eric Oulashin     Bug fix: Updated displayTime_IceStyle() to
+ *                              properly calculate the horizontal position at
+ *                              which to write the time rather than going to
+ *                              absolute coordinates; this accommodates terminals
+ *                              of different widths.  Also, in redrawScreen_IceStyle(),
+ *                              increased the maximum message area name length to
+ *                              35 characters.
+ * 2013-09-16 Eric Oulashin     Added displayTimeRemaining_IceStyle(), which updates
+ *                              the time remaining on the screen.
  */
 
 load("sbbsdefs.js");
@@ -41,8 +51,9 @@ load(gStartupPath + "SlyEdit_Misc.js");
 var ICE_ESC_MENU_SAVE = 0;
 var ICE_ESC_MENU_ABORT = 1;
 var ICE_ESC_MENU_EDIT = 2;
-var ICE_ESC_MENU_HELP = 3;
-var ICE_ESC_MENU_CROSS_POST = 4;
+var ICE_ESC_MENU_SETTINGS = 3;
+var ICE_ESC_MENU_HELP = 4;
+var ICE_ESC_MENU_CROSS_POST = 5;
 
 // Read the color configuration file
 readColorConfig(gConfigSettings.iceColors.ThemeFilename);
@@ -204,9 +215,10 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
                                            + THIN_RECTANGLE_RIGHT;
 
       // The message area name should be centered on the line.  So, based on its
-      // length (up to 20 characters), figure out its starting position before
+      // length (up to 35 characters), figure out its starting position before
       // printing it.
-      var msgAreaName = gMsgArea.substr(0, 20);
+      //var msgAreaName = gMsgArea.substr(0, 20); // Used to be 20 characters
+      var msgAreaName = gMsgArea.substr(0, 35);
       // 2 is subtracted from the starting position to leave room for the
       // block character and the space.
       var startPos = (console.screen_columns/2).toFixed(0) - (msgAreaName.length/2).toFixed(0) - 2;
@@ -553,11 +565,24 @@ function promptYesNo_IceStyle(pQuestion, pDefaultYes)
 //            then this funtion will get the current time.
 function displayTime_IceStyle(pTimeStr)
 {
-	console.gotoxy(73, 2);
+	console.gotoxy(console.screen_columns-7, 2);
 	if (pTimeStr == null)
-		console.print(gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopTimeColor + getCurrentTimeStr());
+		console.print("n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopTimeColor + getCurrentTimeStr());
 	else
-		console.print(gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopTimeColor + pTimeStr);
+		console.print("n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopTimeColor + pTimeStr);
+}
+
+// Displays the number of minutes remaining on the screen.
+function displayTimeRemaining_IceStyle()
+{
+   var fieldWidth = (console.screen_columns * (4/80)).toFixed(0);
+	var formatStr = "n" + gConfigSettings.iceColors.TopInfoBkgColor
+	              + gConfigSettings.iceColors.TopTimeLeftColor + "%-"
+	              + fieldWidth + "s";
+	var startX = console.screen_columns - fieldWidth - 5;
+	console.gotoxy(startX, 3);
+	var timeStr = Math.floor(bbs.time_left / 60).toString().substr(0, fieldWidth);
+	printf(formatStr, timeStr);
 }
 
 // For IceEdit mode: This function takes a string and returns a copy
@@ -673,6 +698,7 @@ function doIceESCMenu(pY, pCanCrossPost)
             console.print(iceStyledPromptText("Save", true) + "n ");
             console.print(iceStyledPromptText("Abort", false) + "n ");
             console.print(iceStyledPromptText("Edit", false) + "n ");
+            console.print(iceStyledPromptText("Settings", false) + "n ");
             console.print(iceStyledPromptText("Help", false));
             if (pCanCrossPost)
                console.print("n " + iceStyledPromptText("Cross-post", false));
@@ -681,6 +707,7 @@ function doIceESCMenu(pY, pCanCrossPost)
             console.print(iceStyledPromptText("Save", false) + "n ");
             console.print(iceStyledPromptText("Abort", true) + "n ");
             console.print(iceStyledPromptText("Edit", false) + "n ");
+            console.print(iceStyledPromptText("Settings", false) + "n ");
             console.print(iceStyledPromptText("Help", false));
             if (pCanCrossPost)
                console.print("n " + iceStyledPromptText("Cross-post", false));
@@ -689,6 +716,16 @@ function doIceESCMenu(pY, pCanCrossPost)
             console.print(iceStyledPromptText("Save", false) + "n ");
             console.print(iceStyledPromptText("Abort", false) + "n ");
             console.print(iceStyledPromptText("Edit", true) + "n ");
+            console.print(iceStyledPromptText("Settings", false) + "n ");
+            console.print(iceStyledPromptText("Help", false));
+            if (pCanCrossPost)
+               console.print("n " + iceStyledPromptText("Cross-post", false));
+            break;
+         case ICE_ESC_MENU_SETTINGS:
+            console.print(iceStyledPromptText("Save", false) + "n ");
+            console.print(iceStyledPromptText("Abort", false) + "n ");
+            console.print(iceStyledPromptText("Edit", false) + "n ");
+            console.print(iceStyledPromptText("Settings", true) + "n ");
             console.print(iceStyledPromptText("Help", false));
             if (pCanCrossPost)
                console.print("n " + iceStyledPromptText("Cross-post", false));
@@ -697,6 +734,7 @@ function doIceESCMenu(pY, pCanCrossPost)
             console.print(iceStyledPromptText("Save", false) + "n ");
             console.print(iceStyledPromptText("Abort", false) + "n ");
             console.print(iceStyledPromptText("Edit", false) + "n ");
+            console.print(iceStyledPromptText("Settings", false) + "n ");
             console.print(iceStyledPromptText("Help", true));
             if (pCanCrossPost)
                console.print("n " + iceStyledPromptText("Cross-post", false));
@@ -705,6 +743,7 @@ function doIceESCMenu(pY, pCanCrossPost)
             console.print(iceStyledPromptText("Save", false) + "n ");
             console.print(iceStyledPromptText("Abort", false) + "n ");
             console.print(iceStyledPromptText("Edit", false) + "n ");
+            console.print(iceStyledPromptText("Settings", false) + "n ");
             console.print(iceStyledPromptText("Help", false) + "n ");
             console.print(iceStyledPromptText("Cross-post", true));
             break;

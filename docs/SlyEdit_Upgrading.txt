@@ -1,46 +1,39 @@
-This file contains upgrade notes for sysops who are upgrading from
-earlier versions of SlyEdit.
-
-Contents
-========
-1. "Expand Line Feeds to CRLF" option (for users of version 1.07 and
-   below
-2. New configuration file settings
+This file contains upgrade notes for sysops who are upgrading from earlier
+versions of SlyEdit.  Only versions with significant/noteworthy configuration
+changes, etc. are listed in this file, with the most recent version on top.
 
 
-"Expand Line Feeds to CRLF" option
-==================================
-If upgrading version version 1.07 or earlier of SlyEdit, the option
-"Expand Line Feeds to CRLF" in SCFG should now be set to Yes.  This
-option enables Synchronet to save messages properly, regardless of
-whether Synchronet is running in Windows or a *nix system.  Enabling
-this option fixes problems with line wrapping that was seen on Linux
-Synchronet systems when the messages were sent across some networks
-to other BBSs.  Thanks goes to Access Denied, sysop of The Pharcyde,
-for helping to test this.
+Upgrading to version 1.32
+-------------------------
+A new color setting has been added, listBoxItemHighlight, which is used for the
+currently selected item in a list box.
 
-In Synchronet's configuration program, your SlyEdit
-configuration should look like this (ICE mode is used here):
-+[¦][?]--------------------------------------------------------------+
-¦                      SlyEdit (Ice style) Editor                    ¦
-¦--------------------------------------------------------------------¦
-¦ ¦Name                            SlyEdit  (Ice style)              ¦
-¦ ¦Internal Code                   SLYEDICE                          ¦
-¦ ¦Remote Command Line             ?SlyEdit.js %f ICE                ¦
-¦ ¦Access Requirements             ANSI                              ¦
-¦ ¦Intercept Standard I/O          No                                ¦
-¦ ¦Native (32-bit) Executable      No                                ¦
-¦ ¦Use Shell to Execute            No                                ¦
-¦ ¦Quoted Text                     All                               ¦
-¦ ¦Editor Information Files        QuickBBS MSGINF/MSGTMP            ¦
-¦ ¦Expand Line Feeds to CRLF       Yes                               ¦
-¦ ¦Strip FidoNet Kludge Lines      No                                ¦
-¦ ¦BBS Drop File Type              None                              ¦
-+--------------------------------------------------------------------+
+The color setting txtReplacementList has been changed to listBoxItemText.  This
+color applies to items written inside any list box, including the list of text
+replacements and the list of tag lines.
 
+Taglines: Users can now (optionally) select a tagline to append to their
+message upon saving their message.  Users can configure whether or not they
+want to use taglines in their user settings, which is also a new feature in
+this version of SlyEdit (see the paragraph below).
 
-2. Notes and new configuration file settings
-============================================
+New configuration settings habe been added in SlyEdit.cfg:
+- tagLineFilename: This specifies the name of a text file where tag lines are
+stored.  By default, it is SlyEdit_Taglines.txt.
+- enableTaglines: This serves as a default for user settings for whether or not
+to enable the option to add a tagline to their message upon saving the message.
+- allowUserSettings: Whether or not to allow users to configure their user
+settings.
+
+User settings: Users can now configure their own user settings in this version.
+Settings include whether or not to use tag lines, whether or not to quote
+messages using the original author's initials, and whether or not to indent
+quoted lines with initials.
+
+The configuration settings useQuoteLineInitials indentQuoteLinesWithInitials
+in SlyEdit.cfg now serve as defaults for user settings rather than being
+used for everyone.
+
 Upgrading to version 1.29
 -------------------------
 A new "text replacements" (AKA macros) feature has been added.  This feature
@@ -235,3 +228,33 @@ splitLongQuoteLines               Whether or not to split quote lines
                                   last word(s) on their own separate line.
                                   If this option is not specified, this feature
                                   will be disabled by default.
+
+Upgrading to version 1.07
+-------------------------
+If upgrading version version 1.07 or earlier of SlyEdit, the option
+"Expand Line Feeds to CRLF" in SCFG should now be set to Yes.  This
+option enables Synchronet to save messages properly, regardless of
+whether Synchronet is running in Windows or a *nix system.  Enabling
+this option fixes problems with line wrapping that was seen on Linux
+Synchronet systems when the messages were sent across some networks
+to other BBSs.  Thanks goes to Access Denied, sysop of The Pharcyde,
+for helping to test this.
+
+In Synchronet's configuration program, your SlyEdit
+configuration should look like this (ICE mode is used here):
++[¦][?]--------------------------------------------------------------+
+¦                      SlyEdit (Ice style) Editor                    ¦
+¦--------------------------------------------------------------------¦
+¦ ¦Name                            SlyEdit  (Ice style)              ¦
+¦ ¦Internal Code                   SLYEDICE                          ¦
+¦ ¦Remote Command Line             ?SlyEdit.js %f ICE                ¦
+¦ ¦Access Requirements             ANSI                              ¦
+¦ ¦Intercept Standard I/O          No                                ¦
+¦ ¦Native (32-bit) Executable      No                                ¦
+¦ ¦Use Shell to Execute            No                                ¦
+¦ ¦Quoted Text                     All                               ¦
+¦ ¦Editor Information Files        QuickBBS MSGINF/MSGTMP            ¦
+¦ ¦Expand Line Feeds to CRLF       Yes                               ¦
+¦ ¦Strip FidoNet Kludge Lines      No                                ¦
+¦ ¦BBS Drop File Type              None                              ¦
++--------------------------------------------------------------------+
