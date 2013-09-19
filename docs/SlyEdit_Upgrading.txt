@@ -17,7 +17,7 @@ message upon saving their message.  Users can configure whether or not they
 want to use taglines in their user settings, which is also a new feature in
 this version of SlyEdit (see the paragraph below).
 
-New configuration settings habe been added in SlyEdit.cfg:
+New configuration settings have been added in SlyEdit.cfg:
 - tagLineFilename: This specifies the name of a text file where tag lines are
 stored.  By default, it is SlyEdit_Taglines.txt.
 - enableTaglines: This serves as a default for user settings for whether or not
