@@ -60,6 +60,10 @@
  *                              to display the hotkey Ctrl-U for user settings.
  *                              Moved the options for author initials in quote
  *                              lines to user settings.
+ * 2013-09-19 Eric Oulashin     Added the shuffleArray() function.  Added 3
+ *                              more options to the config file, to be read by
+ *                              ReadSlyEditConfigFile(): taglinePrefix, quoteTaglines,
+ *                              and shuffleTaglines.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -1532,7 +1536,10 @@ function ReadSlyEditConfigFile()
    cfgObj.enableTextReplacements = false;
    cfgObj.textReplacementsUseRegex = false;
    cfgObj.enableTaglines = false;
-   cfgObj.tagLineFilename = "SlyEdit_Taglines.txt";
+   cfgObj.tagLineFilename = genFullPathCfgFilename("SlyEdit_Taglines.txt", gStartupPath);
+   cfgObj.taglinePrefix = "... ";
+   cfgObj.quoteTaglines = false;
+   cfgObj.shuffleTaglines = false;
    cfgObj.allowUserSettings = true;
 
    // General SlyEdit color settings
@@ -1663,7 +1670,8 @@ function ReadSlyEditConfigFile()
       var commentPos = 0;      // Position of the start of a comment
       var setting = null;      // A setting name (string)
       var settingUpper = null; // Upper-case setting name
-      var value = null;        // A value for a setting (string)
+      var value = null;        // A value for a setting (string), with spaces trimmed
+      var valueLiteral = null; // The value as it is in the config file, no processing
       var valueUpper = null;   // Upper-cased value
       while (!cfgFile.eof)
       {
@@ -1713,7 +1721,8 @@ function ReadSlyEditConfigFile()
             // Read the setting & value, and trim leading & trailing spaces.
             setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
             settingUpper = setting.toUpperCase();
-            value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+            valueLiteral = fileLine.substr(equalsPos+1);
+            value = trimSpaces(valueLiteral, true, false, true);
             valueUpper = value.toUpperCase();
 
             if (settingsMode == "behavior")
@@ -1759,6 +1768,12 @@ function ReadSlyEditConfigFile()
                   cfgObj.enableTaglines = (valueUpper == "TRUE");
                else if (settingUpper == "TAGLINEFILENAME")
                   cfgObj.tagLineFilename = genFullPathCfgFilename(value, gStartupPath);
+               else if (settingUpper == "TAGLINEPREFIX")
+                  cfgObj.taglinePrefix = valueLiteral;
+               else if (settingUpper == "QUOTETAGLINES")
+                  cfgObj.quoteTaglines = (valueUpper == "TRUE");
+               else if (settingUpper == "SHUFFLETAGLINES")
+                  cfgObj.shuffleTaglines = (valueUpper == "TRUE");
                else if (settingUpper == "ALLOWUSERSETTINGS")
                   cfgObj.allowUserSettings = (valueUpper == "TRUE");
             }
@@ -3801,6 +3816,33 @@ function chgCharInStr(pStr, pCharIndex, pNewText)
       return pStr;
 
    return (pStr.substr(0, pCharIndex) + pNewText + pStr.substr(pCharIndex+1));
+}
+
+// Shuffles (randomizes) the contents of an array and returns the new
+// array.  This function came from the following web page:
+// http://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array-in-javascript
+//
+// Parameters:
+//  pArray: The array to shuffle
+//
+// Return value: The new array
+function shuffleArray(pArray)
+{
+    var counter = pArray.length, temp, index;
+
+    // While there are elements in the pArray
+    while (counter--)
+    {
+        // Pick a random index
+        index = (Math.random() * (counter + 1)) | 0;
+
+        // And swap the last element with it
+        temp = pArray[counter];
+        pArray[counter] = pArray[index];
+        pArray[index] = temp;
+    }
+
+    return pArray;
 }
 
 // This function displays debug text at a given location on the screen, then

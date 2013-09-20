@@ -72,6 +72,11 @@
  *                              overwrite mode in DCT mode when using a wide
  *                              terminal; the text replacement list now only draws
  *                              the side borders once.
+ * 2013-09-18 Eric Oulashin     Version 1.32
+ *                              Releasing this version.
+ * 2013-09-19 Eric Oulashin     Version 1.33
+ *                              Added 3 options to the SlyEdit configuration file:
+ *                              taglinePrefix, quoteTaglines, and shuffleTaglines.
  */
 
 /* Command-line arguments:
@@ -149,8 +154,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.32";
-const EDITOR_VER_DATE = "2013-09-18";
+const EDITOR_VERSION = "1.33";
+const EDITOR_VER_DATE = "2013-09-19";
 
 
 // Program variables
@@ -5580,6 +5585,11 @@ function doTaglineSelection()
    if (taglines.length == 0)
       return;
 
+   // If the configuration option to shuffle the taglines is enabled, then
+   // shuffle them.
+   if (gConfigSettings.shuffleTaglines)
+      shuffleArray(taglines);
+
    // Create the list box for the taglines.  Make the box up to 14 lines tall.
    var boxHeight = (taglines.length > 12 ? 14 : taglines.length+2);
    var boxTopRow = gEditTop + Math.floor((gEditHeight/2) - (boxHeight/2));
@@ -5606,6 +5616,17 @@ function doTaglineSelection()
    {
       retObj.tagline = taglines[random(taglines.length)];
       retObj.taglineWasSelected = true;
+   }
+
+   // If a tagline was selected, then add the tagline prefix in front of it, and
+   // also quote the tagline if the option to do so is enabled.
+   if (retObj.taglineWasSelected)
+   {
+      if (gConfigSettings.taglinePrefix.length > 0)
+         retObj.tagline = gConfigSettings.taglinePrefix + retObj.tagline;
+      // If the option to quote taglines is enabled, then do it.
+      if (gConfigSettings.quoteTaglines)
+         retObj.tagline = "\"" + retObj.tagline + "\"";
    }
 
    return retObj;
