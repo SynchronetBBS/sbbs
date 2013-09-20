@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.32
-                        Release date: 2013-09-18
+                              Version 1.33
+                        Release date: 2013-09-19
 
                                   by
 
@@ -302,6 +302,29 @@ tagLineFilename                   Specifies the name of the file that stores
                                   taglines, which users can optionally choose
                                   from to be appended to their message upon
                                   saving the message.
+
+taglinePrefix                     Some text to be added to the front of
+                                  a tagline that is selected from the user.
+                                  The intention of this setting is to
+                                  differentiate taglines from the rest of the
+                                  message.  This defaults to the string "... "
+                                  (3 dots and a space).  If desired, this can
+                                  be set to a blank string (nothing after the
+                                  =) - for instance, if you only want to put
+                                  double quotes around text lines, you could
+                                  set this to blank and enable the
+                                  quoteTagLines setting.
+
+quoteTaglines                     Whether or not to put selected taglines in
+                                  double quotes.  This defaults to false.  If
+                                  you like taglines to have double quotes and
+                                  no prefix, you can set this to true and set
+                                  taglinePrefix to a blank string (nothing
+                                  after the =).
+
+shuffleTaglines                   Whether or not to shuffle (randomize) the
+                                  list of taglines displayed to the user for
+                                  selection.
 
 allowUserSettings                 Whether or not to allow users to configure
                                   their own user settings.  This defaults to
