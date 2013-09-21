@@ -175,6 +175,9 @@ Example .ini file (with default values given):
     EnableCallerID = AT+VCID=1  ; Enable Caller-ID support (or try AT#CID=1)
     Timeout = 5                 ; Seconds to wait for a response from modem
     ReInit = 60                 ; Minutes between re-init while waiting for call
+    Answer = ATA		; Answer command (for manual answer mode)
+    Ring = RING			; Ring indication string
+    ManualAnswer = FALSE	; Set to TRUE to disable auto-answer
 
     [TCP]
     Host = localhost            ; Hostname or IP address of TCP server
