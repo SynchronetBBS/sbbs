@@ -6,6 +6,12 @@
 /* Parse a single .ini section using the argument (to load) as the section name */
 /* and return an object containing the key=value pairs as properties */
 
+/* To avoid over-writing the parent script's "argc" and "argv" values, 
+   pass a scope object to load(), like this:
+
+   options=load(new Object, "modopts.js", "your_module_name");
+*/
+
 
 function get_mod_options(modname)
 {
