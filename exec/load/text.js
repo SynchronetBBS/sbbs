@@ -771,3 +771,4 @@ var CantReadSub=759;
 var CantPostMsg=760;
 var OperatorPrompt=761;
 var AddSubToNewScanQ=762;
+var UnvalidatedWarning=763;
