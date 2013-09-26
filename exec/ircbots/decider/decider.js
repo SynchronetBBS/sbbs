@@ -1,8 +1,3 @@
-if(!js.global || js.global.HTTPRequest==undefined)
-	js.global.load("http.js");
-if(!js.global || js.global.USCallsign==undefined)
-	js.global.load("callsign.js");
-
 Bot_Commands["SHOULD"] = new Bot_Command(0, false, false);
 Bot_Commands["SHOULD"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	// Remove empty cmd args
