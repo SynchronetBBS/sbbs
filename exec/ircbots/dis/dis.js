@@ -13,7 +13,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 			str=str.replace(/[\(\)\^\$\*\+\?\.\{\}\[\]]/g,'\\$1');
 		}
 
-		if(arg===undefined | arg==1)
+		if(arg===undefined)
 			arg=2;
 		if(iteration_limit===undefined)
 			iteration_limit=100;
@@ -23,7 +23,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	 
 		var new_matcher;
 		var i;
-		new_matcher = "\\s+(";
+		new_matcher = "[\\.\\?\\!]\\s+(";
 		for(i=0;i<arg;i++) {
 			if(i)
 				new_matcher += '\\s+';
@@ -32,7 +32,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 		new_matcher += ')';
 
 		// In use in the loop.
-		var re,orig=[],matched,remainder,last_matched,iteration=0,pos=0;
+		var re,orig=[],matched,remainder,last_matched='',iteration=0,pos=0;
 
 		last_match_point = -1;
 		while(1) {
@@ -43,10 +43,17 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 					pos++;
 				while(in_txt.charAt(pos)!==' ' && pos < in_txt.length)
 					pos++;
-			} while(pos >= in_txt.length);
+			} while(pos >= in_txt.length || (pos<=last_match_point && pos >=last_match_point-12));
 			if(last_matched) { // last thing we matched -- '' means take a stab
 				last_match_point = pos;
 				orig = last_matched.match(/([^\s]+)/).slice(1).map(clean_string);
+				if(out=='' || out.search(/[\.\?\!]\s*$/)!=-1) {
+					if(orig.length==0)
+						orig.push('');
+					if(orig[0]==undefined)
+						orig[0]='';
+					orig[orig.length-1]+='[\\.\\?\\!]';
+				}
 				re = new RegExp("\\b" + orig.join("\\s+") + "\\s+([^\\s]+" + (new Array(arg)).join("\\s+[^\\s]+") + ")(\\s+)",'i');
 				matched = remainder = '';
 				last_match_point = pos;
@@ -78,15 +85,11 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 				continue;
 			} else {
 				// We don't have a last_matched -- take a stab.
-				var frame, frame_size;
-				frame_size =  (arg + 3) * 8;
-				// Generously assume 8 chars per word.
 
-				pos = random(in_txt.length - frame_size);
 				log(LOG_DEBUG, "Taking a stab at pos "+(pos));
 				m=in_txt.substr(pos).match(new RegExp(new_matcher, 'i'));
 				if(m==null) {
-					pos=0;
+					pos=0;	// We assume the start is the beginning of a sentence.
 					m=in_txt.match(new RegExp(new_matcher, 'i'));
 				}
 				if(m != null) {
@@ -185,7 +188,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	if(posts.length < 200)
 		srv.o(target, "Not enough posts by "+cmd.slice(1).join(' '));
 	else
-		srv.o(target, dissociate(posts,3,random(5)+10));
+		srv.o(target, dissociate(posts,2,random(5)+10));
 
 	return true;
 }
