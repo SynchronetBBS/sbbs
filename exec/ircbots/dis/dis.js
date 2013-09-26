@@ -47,7 +47,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 			if(last_matched) { // last thing we matched -- '' means take a stab
 				last_match_point = pos;
 				orig = last_matched.match(/([^\s]+)/).slice(1).map(clean_string);
-				re = new RegExp("\\b" + orig.join("\\s+") + "\\s+([^\\s]+" + (new Array(degree)).join("\\s+[^\\s]+") + ")(\\s+)",'i');
+				re = new RegExp("\\b" + orig.join("\\s+") + "\\s+([^\\s]+" + (new Array(arg)).join("\\s+[^\\s]+") + ")(\\s+)",'i');
 				matched = remainder = '';
 				last_match_point = pos;
 
