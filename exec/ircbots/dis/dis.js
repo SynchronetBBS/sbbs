@@ -102,7 +102,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 			}
 		}
 
-		return out.replace(/\s{3,}/g,'  ').replace(/(\b(.*?)\s)\s*?\2\s+/g,'$1');;
+		return out.replace(/\s{3,}/g,'  ').replace(/(\b(.*?)\s)\s*?\2\s+/g,'$1');
 	}
 
 	function get_posts_by(name, subs)
@@ -116,6 +116,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 		var idx;
 		var hdr;
 		var body;
+		var all={};
 
 		if(subs==undefined) {
 			subs=[];
@@ -141,8 +142,16 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 					if(idx.from==crc) {
 						hdr=mb.get_msg_header(true, i);
 						if(hdr.from.toLowerCase()==name.toLowerCase()) {
-							body=mb.get_msg_body(true, i, false, false, false);
-							body=word_wrap(body, 65535).split(/\r?\n/);
+							body=mb.get_msg_body(true, i, false, false, false).split(/\r?\n/);
+							for(j=0; j<body.length; j++) {
+								if(all[body[j]] !== undefined) {
+									body.splice(j,1);
+									j--;
+									continue;
+								}
+								all[body[j]]='';
+							}
+							body=word_wrap(body.join('\n', 65535)).split(/\n/);
 							for(j=body.length-1; j>=body.length/2; j--) {
 								if(body[j].search(/^\s*$/)==0) {
 									body=body.slice(0, j);
