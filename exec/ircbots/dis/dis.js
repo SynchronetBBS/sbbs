@@ -95,11 +95,15 @@ Bot_Commands["QUOTE"].command = function (target, onick, ouh, srv, lbl, cmd) {
 		return true;
 
 	var posts=get_posts_by(cmd.slice(1).join(' '));
-	var m=null;
-	while(m==null) {
-		m=posts.substr(random(posts.length)).match(/[^\.][\.\!\?]\s+(.*?[^.][\.\!\?])[^.]/);
+	if(posts.search(/[^\.][\.\!\?]\s+(.*?[^.][\.\!\?])[^.]/)==-1)
+		srv.o(target, "Nothing quotable every posted by "+cmd.slice(1).join(' '));
+	else {
+		var m=null;
+		while(m==null) {
+			m=posts.substr(random(posts.length)).match(/[^\.][\.\!\?]\s+(.*?[^.][\.\!\?])[^.]/);
+		}
+		srv.o(target, cmd.slice(1).join(' ')+': "'+m[1]+'"');
 	}
-	srv.o(target, cmd.slice(1).join(' ')+': "'+m[1]+'"');
 }
 
 Bot_Commands["DIS"] = new Bot_Command(0, false, false);
