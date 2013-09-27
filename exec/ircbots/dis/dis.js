@@ -4,6 +4,104 @@
 if(!js.global || js.global.MSG_DELETE==undefined)
 	js.global.load("sbbsdefs.js");
 
+function get_posts_by(name, subs)
+{
+	var txt='';
+	var sub;
+	var mb;
+	var i,j;
+	var msgs;
+	var crc=crc16_calc(name.toLowerCase());
+	var idx;
+	var hdr;
+	var body;
+	var all={};
+
+	if(subs==undefined) {
+		subs=[];
+		for(sub in msg_area.sub) {
+			if(msg_area.sub[sub].settings & SUB_LZH)
+				continue;
+			if(sub=='syncprog')
+				continue;
+			if(sub.search(/^fidosync/)!=-1)
+				continue;
+			subs.push(sub);
+		}
+	}
+
+	for(sub in subs) {
+		mb=new MsgBase(subs[sub]);
+		if(mb.open()) {
+			msgs=mb.total_msgs;
+			for(i=0; i<msgs; i++) {
+				idx=mb.get_msg_index(true, i);
+				if(idx.attr & MSG_DELETE)
+					continue;
+				if(idx.from==crc) {
+					hdr=mb.get_msg_header(true, i);
+					if(hdr.from.toLowerCase()==name.toLowerCase()) {
+						body=mb.get_msg_body(true, i, false, false, false).split(/\r?\n/);
+						for(j=0; j<body.length; j++) {
+							if(all[body[j]] !== undefined) {
+								body.splice(j,1);
+								j--;
+								continue;
+							}
+							all[body[j]]='';
+						}
+						body=word_wrap(body.join('\n', 65535)).split(/\n/);
+						for(j=body.length-1; j>=body.length/2; j--) {
+							if(body[j].search(/^\s*$/)==0) {
+								body=body.slice(0, j);
+								break;
+							}
+							if(body[j].search(/^\s{20}/)==0) {
+								body=body.slice(0, j);
+								break;
+							}
+						}
+						for(j in body) {
+							if(body[j].search(/[\x00-\x1f\x7F-\xFF]/)!=-1)
+								continue;
+							if(body[j].search(/[0-9]{3}-[0-9]{3}-[0-9]{4}/)!=-1)
+								continue;
+							if(body[j].search(/^\s*[^a-zA-Z]/)!=-1)
+								continue;
+							if(body[j].search(/ "Real Fact" #[0-9]+:/)!=-1)
+								break;
+							if(body[j].search(/s*[\w]{0,2}[>:] /)==-1)
+								txt += body[j]+' ';
+						}
+					}
+				}
+			}
+		}
+	}
+	return txt;
+}
+
+Bot_Commands["QUOTE"] = new Bot_Command(0, false, false);
+Bot_Commands["QUOTE"].command = function (target, onick, ouh, srv, lbl, cmd) {
+	// Remove empty cmd args
+	for(i=1; i<cmd.length; i++) {
+		if(cmd[i].search(/^\s*$/)==0) {
+			cmd.splice(i,1);
+			i--;
+		}
+	}
+
+	if(cmd.length == 1)
+		return true;
+
+	var posts=get_posts_by(cmd.slice(1).join(' '));
+	var m=null;
+	while(m==null) {
+		m=posts.substr(random(posts.length)).match(/[^\.][\.\!\?]\s+(.*?[^.][\.\!\?])[^.]/);
+	}
+	srv.o(target, cmd.slice(1).join(' ')+': "'+m[1]+'"');
+}
+
 Bot_Commands["DIS"] = new Bot_Command(0, false, false);
 Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	function dissociate(in_txt, arg, iteration_limit) {
@@ -108,83 +206,6 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 		}
 
 		return out.replace(/\s{3,}/g,'  ').replace(/(\b(.*?)\s)\s*?\2\s+/g,'$1');
-	}
-
-	function get_posts_by(name, subs)
-	{
-		var txt='';
-		var sub;
-		var mb;
-		var i,j;
-		var msgs;
-		var crc=crc16_calc(name.toLowerCase());
-		var idx;
-		var hdr;
-		var body;
-		var all={};
-
-		if(subs==undefined) {
-			subs=[];
-			for(sub in msg_area.sub) {
-				if(msg_area.sub[sub].settings & SUB_LZH)
-					continue;
-				if(sub=='syncprog')
-					continue;
-				if(sub.search(/^fidosync/)!=-1)
-					continue;
-				subs.push(sub);
-			}
-		}
-
-		for(sub in subs) {
-			mb=new MsgBase(subs[sub]);
-			if(mb.open()) {
-				msgs=mb.total_msgs;
-				for(i=0; i<msgs; i++) {
-					idx=mb.get_msg_index(true, i);
-					if(idx.attr & MSG_DELETE)
-						continue;
-					if(idx.from==crc) {
-						hdr=mb.get_msg_header(true, i);
-						if(hdr.from.toLowerCase()==name.toLowerCase()) {
-							body=mb.get_msg_body(true, i, false, false, false).split(/\r?\n/);
-							for(j=0; j<body.length; j++) {
-								if(all[body[j]] !== undefined) {
-									body.splice(j,1);
-									j--;
-									continue;
-								}
-								all[body[j]]='';
-							}
-							body=word_wrap(body.join('\n', 65535)).split(/\n/);
-							for(j=body.length-1; j>=body.length/2; j--) {
-								if(body[j].search(/^\s*$/)==0) {
-									body=body.slice(0, j);
-									break;
-								}
-								if(body[j].search(/^\s{20}/)==0) {
-									body=body.slice(0, j);
-									break;
-								}
-							}
-							for(j in body) {
-								if(body[j].search(/[\x00-\x1f\x7F-\xFF]/)!=-1)
-									continue;
-								if(body[j].search(/[0-9]{3}-[0-9]{3}-[0-9]{4}/)!=-1)
-									continue;
-								if(body[j].search(/^\s*[^a-zA-Z]/)!=-1)
-									continue;
-								if(body[j].search(/ "Real Fact" #[0-9]+:/)!=-1)
-									break;
-								if(body[j].search(/s*[\w]{0,2}[>:] /)==-1)
-									txt += body[j]+' ';
-							}
-						}
-					}
-				}
-			}
-		}
-		return txt;
 	}
 
 	// Remove empty cmd args
