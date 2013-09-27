@@ -23,6 +23,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	 
 		var new_matcher;
 		var i;
+		var deads = 0;
 		new_matcher = "[\\.\\?\\!]\\s+(";
 		for(i=0;i<arg;i++) {
 			if(i)
@@ -31,11 +32,14 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 		}
 		new_matcher += ')';
 
+		if(in_txt.substr(pos).search(new RegExp(new_matcher, 'i'))==-1)
+			return 'No sentences found in any of ths posts.';
+
 		// In use in the loop.
 		var re,orig=[],matched,remainder,last_matched='',iteration=0,pos=0;
 
 		last_match_point = -1;
-		while(1) {
+		while(out.length < 510 && deads < iteration_limit) {
 			iteration++;
 			do {
 				pos = random(in_txt.length);
@@ -99,6 +103,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 					log(LOG_DEBUG, "Can't get an initial "+(arg)+"-token match");
 					break;
 				}
+				deads++;
 			}
 		}
 
