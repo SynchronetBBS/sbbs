@@ -102,7 +102,7 @@ Bot_Commands["DIS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 			}
 		}
 
-		return out.replace(/\s{3,}/,'  ');
+		return out.replace(/\s{3,}/g,'  ').replace(/(\b(.*?)\s)\s*?\2\s+/g,'$1');;
 	}
 
 	function get_posts_by(name, subs)
