@@ -150,6 +150,11 @@ var printThread = function(sub, t) {
 		return false;
 	}
 	var threads = getMessageThreads(sub, webIni.maxMessages);
+	if(typeof threads.thread[t] == "undefined") {
+		msgBase.close();
+		print("Thread does not exist.");
+		return true;
+	}
 	for(var m in threads.thread[t].messages) {
 		var header = threads.thread[t].messages[m];
 		var body = msgBase.get_msg_body(header.number, strip_ctrl_a=true);
@@ -271,6 +276,21 @@ var postMessage = function(sub, irt, to, from, subject, body) {
 }
 
 var deleteMessage = function(sub, message) {
-	print("Would delete " + sub + ", " + message);
+	try {
+		var msgBase = new MsgBase(sub);
+		msgBase.open();
+	} catch(err) {
+		log(LOG_ERR, err);
+		return false;
+	}
+	if(sub != "mail" && !user.compare_ars(msgBase.cfg.operator_ars))
+		return false;
+	var message = parseInt(message);
+	var header = msgBase.get_msg_header(message);
+	if(sub == "mail" && header.to != user.alias && header.to != user.name && header.to_ext != user.number)
+		return false;
+	header.attr|=MSG_DELETE;
+	msgBase.put_msg_header(message, header);
+	print("Message deleted.");
 	return true;
 }
