@@ -4,7 +4,7 @@
 load('webInit.ssjs');
 load("../web/lib/forum.ssjs");
 
-if(http_request.query.hasOwnProperty('postmessage')) {
+if(typeof http_request.query.postmessage != "undefined") {
 	var x = postMessage(
 		http_request.query.sub,
 		http_request.query.irt,
@@ -15,13 +15,15 @@ if(http_request.query.hasOwnProperty('postmessage')) {
 	);
 	if(!x)
 		print("An error was encountered.  Your message was not posted.");
-} else if(!http_request.query.hasOwnProperty('sub')) {
+} else if(typeof http_request.query.sub == "undefined") {
 	printBoards();
 } else {
-	if(http_request.query.hasOwnProperty('getmessage'))
+	if(typeof http_request.query.getmessage != "undefined")
 		printMessage(http_request.query.sub, parseInt(http_request.query.getmessage));
-	else if(!http_request.query.hasOwnProperty('thread'))
+	else if(typeof http_request.query.deletemessage != "undefined")
+		deleteMessage(http_request.query.sub, http_request.query.deletemessage);
+	else if(typeof http_request.query.thread == "undefined")
 		printThreads(http_request.query.sub);
-	else if(http_request.query.hasOwnProperty('sub') && http_request.query.hasOwnProperty('thread'))
+	else if(typeof http_request.query.sub != "undefined" && typeof http_request.query.thread != "undefined")
 		printThread(http_request.query.sub, parseInt(http_request.query.thread));
 }
