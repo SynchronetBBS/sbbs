@@ -198,7 +198,12 @@ var printThread = function(sub, t) {
 				header.number
 			);
 		}
-		out += format("<a class='ulLink' onclick='toggleVisibility(\"sub-%s-thread-%s\")'>Collapse Thread</a>", sub, t);
+		out += format(
+			"<a class='ulLink' href='#thread-%s' onclick='toggleVisibility(\"sub-%s-thread-%s\")'>Collapse Thread</a>",
+			t,
+			sub,
+			t
+		);
 		if(user.alias != webIni.WebGuest && sub == 'mail' || (sub != 'mail' && user.compare_ars(msgBase.cfg.post_ars)))
 			out += format(
 				" - <a class='ulLink' onclick='addReply(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\")'>Reply</a>",
