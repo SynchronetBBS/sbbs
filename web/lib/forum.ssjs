@@ -220,6 +220,9 @@ var printMessage = function(sub, number) {
 	}
 	if(sub != "mail" && (!user.compare_ars(msgBase.cfg.read_ars) || !user.compare_ars(msgBase.cfg.post_ars)))
 		return false;
+	var number = parseInt(number);
+	if(isNaN(number))
+		return false;
 	var ret = { "header" : msgBase.get_msg_header(number) };
 	if(ret.header === null)
 		return false;
@@ -283,12 +286,24 @@ var deleteMessage = function(sub, message) {
 		log(LOG_ERR, err);
 		return false;
 	}
-	if(sub != "mail" && !user.compare_ars(msgBase.cfg.operator_ars))
+	if(sub != "mail" && !user.compare_ars(msgBase.cfg.operator_ars)) {
+		print("You're not allowed to delete that message.");
 		return false;
+	}
 	var message = parseInt(message);
-	var header = msgBase.get_msg_header(message);
-	if(sub == "mail" && header.to != user.alias && header.to != user.name && header.to_ext != user.number)
+	if(isNaN(message)) {
+		print("Invalid message number.");
 		return false;
+	}
+	var header = msgBase.get_msg_header(message);
+	if(header === null) {
+		print("Invalid message.");
+		return false;
+	}
+	if(sub == "mail" && header.to != user.alias && header.to != user.name && header.to_ext != user.number) {
+		print("You're not allowed to delete that message.");
+		return false;
+	}
 	header.attr|=MSG_DELETE;
 	msgBase.put_msg_header(message, header);
 	print("Message deleted.");
