@@ -1824,10 +1824,13 @@ BOOL unpack_bundle(void)
 		}
 		if(gi<g.gl_pathc) {
 			SAFECOPY(fname,g.gl_pathv[gi]);
+			gi++;
 			lprintf(LOG_DEBUG,"Unpacking bundle: %s",fname);
 			if(unpack(fname)) {	/* failure */
 				lprintf(LOG_ERR,"!Unpack failure");
-				if(fdate(fname)+(48L*60L*60L)>time(NULL)) {
+				if(fdate(fname)+(48L*60L*60L)<time(NULL)) {	
+					/* If bundle file older than 48 hours, give up and rename
+					   to "*.?_?" or (if it exists) "*.?-?" */
 					SAFECOPY(str,fname);
 					str[strlen(str)-2]='_';
 					if(fexistcase(str))
@@ -1837,15 +1840,13 @@ BOOL unpack_bundle(void)
 					if(rename(fname,str))
 						lprintf(LOG_ERR,"ERROR line %d renaming %s to %s"
 							,__LINE__,fname,str); 
-				} 
+				}
+				continue;
 			}
-			else {
-				lprintf(LOG_DEBUG,"Deleting bundle: %s", fname);
-				if(delfile(fname))	/* successful, so delete bundle */
-					lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,fname
-						,strerror(errno));
-			}
-			gi++;
+			lprintf(LOG_DEBUG,"Deleting bundle: %s", fname);
+			if(delfile(fname))	/* successful, so delete bundle */
+				lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,fname
+					,strerror(errno));
 			return(TRUE); 
 		} 
 	}
