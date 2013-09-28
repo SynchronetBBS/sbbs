@@ -9,16 +9,38 @@ print("<span class='title'>Forum</span><br /><br />");
 
 printBoards();
 
-if(http_request.query.hasOwnProperty('board')) {
+if(typeof http_request.query.board != "undefined") {
 	print("<script type='text/javascript'>");
 	print("toggleVisibility('group-" + http_request.query.board + "');");
 	print("</script>");
 }
 
-if(http_request.query.hasOwnProperty('sub') && http_request.query.sub != 'mail') {
+if(typeof http_request.query.sub != "undefined" && http_request.query.sub != 'mail') {
 	print("<script type='text/javascript'>");
-	print("loadThreads('http://" + http_request.host + ":" + webIni.HTTPPort + "/forum-async.ssjs', '" + http_request.query.sub + "', " + ((http_request.query.hasOwnProperty('thread'))?false:true) + ");");
-	if(http_request.query.hasOwnProperty('thread'))
-		print("loadThread('http://" + http_request.host + ":" + webIni.HTTPPort + "/forum-async.ssjs', '" + http_request.query.sub + "', '" + http_request.query.thread + "', " + false + ");");
+	print(
+		"loadThreads('http://"
+		+ http_request.host
+		+ ":"
+		+ webIni.HTTPPort
+		+ "/forum-async.ssjs', '"
+		+ http_request.query.sub
+		+ "', "
+		+ ((http_request.query.hasOwnProperty('thread'))?false:true)
+		+ ");"
+	);
+	if(typeof http_request.query.thread != "undefined") {
+		print("loadThread('http://"
+			+ http_request.host
+			+ ":"
+			+ webIni.HTTPPort
+			+ "/forum-async.ssjs', '"
+			+ http_request.query.sub
+			+ "', '"
+			+ http_request.query.thread
+			+ "', "
+			+ false
+			+ ");"
+		);
+	}
 	print("</script>");
 }
