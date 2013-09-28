@@ -171,9 +171,15 @@ var printThread = function(sub, t) {
 			system.timestr(header.when_written_time),
 			linkify(strip_exascii(body).replace(/\r\n/g, "<br />").replace(/\n/g, "<br />"))
 		);
+		if(sub == 'mail' || user.compare_ars(msgBase.cfg.operator_ars)) {
+			out += format(
+				"<a class='ulLink' onclick='deleteMessage(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"sub-%s-thread-%s-%s\")'>Delete Message</a> - ",
+				http_request.host, webIni.appendURL, sub, header.number, sub, t, header.number
+			);
+		}
 		if(sub != 'mail') {
 			out += format(
-				"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s#thread-%s'>Thread URL</a> -"
+				"<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s#thread-%s'>Thread URL</a> - "
 				+ "<a class='ulLink' href='./index.xjs?page=002-forum.ssjs&board=%s&sub=%s&thread=%s&message=%s#%s-%s'>Message URL</a> - ",
 				msgBase.cfg.grp_name,
 				sub,
@@ -261,5 +267,10 @@ var postMessage = function(sub, irt, to, from, subject, body) {
 	msgBase.save_msg(header, body);
 	msgBase.close();
 	print("Your message has been posted.");
+	return true;
+}
+
+var deleteMessage = function(sub, message) {
+	print("Would delete " + sub + ", " + message);
 	return true;
 }
