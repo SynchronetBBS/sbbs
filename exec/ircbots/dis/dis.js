@@ -96,7 +96,7 @@ Bot_Commands["QUOTE"].command = function (target, onick, ouh, srv, lbl, cmd) {
 
 	var posts=get_posts_by(cmd.slice(1).join(' '));
 	if(posts.search(/[^\.][\.\!\?]\s+(.*?[^.][\.\!\?])[^.]/)==-1)
-		srv.o(target, "Nothing quotable every posted by "+cmd.slice(1).join(' '));
+		srv.o(target, "Nothing quotable ever posted by "+cmd.slice(1).join(' '));
 	else {
 		var m=null;
 		while(m==null) {
