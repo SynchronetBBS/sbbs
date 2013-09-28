@@ -150,7 +150,7 @@ var addReply = function(url, sub, thread, number) {
 	out += "<br />";
 	out += "Subject:<br /><input class='border' type='text' name='subject' value='" + response.header.subject + "' size='80' /><br />";
 	out += "<textarea class='border' name='body' cols='80' rows='10'>>" + response.body.replace(/\n/g, "\n>");
-	if(response.hasOwnProperty('sig'))
+	if(typeof response.sig != "undefined")
 		out += "\r\n\r\n\r\n" + response.sig;
 	out += "</textarea><br />";
 	out += "<input type='button' value='Submit' onclick='submitForm(\"" + url + "\", \"" + divID + "\", \"" + formID + "\")'>";
@@ -214,6 +214,10 @@ var loadThreads = function(url, sub, async) {
 var loadThread = function(url, sub, thread, async) {
 	if(toggleVisibility("sub-" + sub + "-thread-" + thread))
 		httpLoad(url + "?sub=" + sub + "&thread=" + thread, "sub-" + sub + "-thread-" + thread, "sub-" + sub + "-thread-" + thread + "-info", async);
+}
+
+var deleteMessage = function(url, sub, msg, elementId) {
+	httpLoad(url + "?sub=" + sub + "&deletemessage=" + msg, elementId, elementId, true);
 }
 
 // This sucks, but I don't feel like revisiting it just now. (Copied from v2)
