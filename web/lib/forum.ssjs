@@ -176,7 +176,8 @@ var printThread = function(sub, t) {
 			system.timestr(header.when_written_time),
 			linkify(strip_exascii(body).replace(/\r\n/g, "<br />").replace(/\n/g, "<br />"))
 		);
-		if(sub == 'mail' || user.compare_ars(msgBase.cfg.operator_ars)) {
+//		if(sub == 'mail' || user.compare_ars(msgBase.cfg.operator_ars)) {
+		if(sub == 'mail' || user.number == 1) {
 			out += format(
 				"<a class='ulLink' onclick='deleteMessage(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"sub-%s-thread-%s-%s\")'>Delete Message</a> - ",
 				http_request.host, webIni.appendURL, sub, header.number, sub, t, header.number
@@ -291,7 +292,8 @@ var deleteMessage = function(sub, message) {
 		log(LOG_ERR, err);
 		return false;
 	}
-	if(sub != "mail" && !user.compare_ars(msgBase.cfg.operator_ars)) {
+//	if(sub != "mail" && !user.compare_ars(msgBase.cfg.operator_ars)) {
+	if(sub != "mail" && !user.number != 1) {
 		print("You're not allowed to delete that message.");
 		return false;
 	}
