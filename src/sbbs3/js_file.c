@@ -577,7 +577,7 @@ static jsval get_value(JSContext *cx, char* value)
 	for(p=value;*p;p++) {
 		if(*p=='.' && !f)
 			f=TRUE;
-		else if(!isdigit(*p))
+		else if(!isdigit((uchar)*p))
 			break;
 	}
 	if(*p==0) {
@@ -590,7 +590,7 @@ static jsval get_value(JSContext *cx, char* value)
 	/* hexadecimal number? */
 	if(!strncmp(value,"0x",2)) {	
 		for(p=value+2;*p;p++)
-			if(!isxdigit(*p))
+			if(!isxdigit((uchar)*p))
 				break;
 		if(*p==0) {	
 			val=DOUBLE_TO_JSVAL((double)strtoul(value,NULL,0));
