@@ -684,10 +684,17 @@ function Tree(frame,text,tree) {
 	function matchHotkey(cmd) {
 		if(!cmd.match(/\w/))
 			return values.NOT_HANDLED;
+		for(var i=0;i<properties.items.length;i++) {
+			if(properties.items[i].hotkey.toUpperCase() == cmd.toUpperCase()) {
+				properties.index = i;
+				return properties.items[i].action();
+			}
+		}
 		var pattern=new RegExp(cmd,"i");
 		var stop=properties.items.length-1;
-		if(this.depth == 0)
+		if(this.depth == 0) {
 			stop=properties.index;
+		}
 		for(var i=properties.index+1;;i++) {
 			if(i >= properties.items.length) 
 				i=0;
@@ -699,8 +706,9 @@ function Tree(frame,text,tree) {
 					properties.items[i].index = -1;
 				return values.HANDLED;
 			}
-			if(i == stop)
+			if(i == stop) {
 				break;
+			}
 		}	
 		return values.NOT_HANDLED;
 	}
@@ -786,7 +794,13 @@ function TreeItem(text,parent,func,args) {
 		properties.parent.line=line;
 	});
 	this.__defineGetter__("hotkey",function() {
-		return properties.text.indexOf("|")+1;
+		var kIndex = properties.text.indexOf("|")+1;
+		if(kIndex > 0) {
+			return properties.text[kIndex];
+		}
+		else {
+			return undefined;
+		}
 	});
 	
 	/* public properties */
