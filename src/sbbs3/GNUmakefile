@@ -52,6 +52,8 @@ endif
 
 ifdef BUILD_JSDOCS
  CFLAGS += -DBUILD_JSDOCS
+ SBBS_LIBS += ${UIFC-MT_LDFLAGS} ${UIFC-MT_LIBS} $(CIOLIB-MT_LDFLAGS) ${CIOLIB-MT_LIBS}
+ OBJS += $(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE)
 endif
 
 ifeq ($(os),linux)
