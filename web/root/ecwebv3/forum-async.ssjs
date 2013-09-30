@@ -2,7 +2,7 @@
 // echicken -at- bbs.electronicchicken.com
 
 load('webInit.ssjs');
-load("../web/lib/forum.ssjs");
+load(webIni.WebDirectory + "/lib/forum.ssjs");
 
 if(typeof http_request.query.postmessage != "undefined") {
 	var x = postMessage(
