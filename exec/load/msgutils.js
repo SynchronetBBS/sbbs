@@ -369,6 +369,10 @@ function getMessageThreads(sub, max) {
 	var tbHeader;
 	var md5subject;
 	var msgBase = new MsgBase(sub);
+	var header_num={};
+	var all_headers=[];
+	var m;
+
 	msgBase.open();
 	if(!msgBase.is_open)
 		return false;
@@ -376,8 +380,14 @@ function getMessageThreads(sub, max) {
 		max = msgBase.first_msg;
 	else
 		max = msgBase.last_msg - max;
-	for(var m = max; m <= msgBase.last_msg; m++) {
-		header = msgBase.get_msg_header(m);
+	if(js.global.get_all_msg_headers !== undefined)
+		all_headers=msgBase.get_all_msg_headers();
+	else {
+		for(m=max; m <= msgBase.last_msg; m++)
+			all_headers.push(msgBase.get_msg_header(m));
+	}
+	for(m in all_headers) {
+		header = all_headers[m];
 		if(
 			header === null
 			||
@@ -393,81 +403,60 @@ function getMessageThreads(sub, max) {
 			)
 		)
 			continue;
+		header_num[header.number]=header;
 		md5subject = md5_calc(header.subject.toUpperCase().replace(/\s*RE:\s*/g, ''), hex=true);
 		if(header.thread_id === 0 && threadedMessages.indexOf(header.thread_back) >= 0) {
 			if(threads.thread.hasOwnProperty(header.thread_back)) {
 				// This is a reply to the first message in a thread
+				header.ec_thread = threads.thread[header.thread_back];
 				threads.thread[header.thread_back].newest = header.when_written_time;
 				threads.dates[threads.thread[header.thread_back].dateIndex] = header.when_written_time;
-				threads.thread[header.thread_back].messages.push(
-					{
-						number : header.number,
-						to : header.to,
-						from : header.from,
-						subject : header.subject,
-						thread_id : header.thread_id,
-						thread_back : header.thread_back,
-						when_written_time : header.when_written_time					
-					}
-				);
+				threads.thread[header.thread_back].messages.push(header);
 				threadedMessages.push(header.number);
 			} else {
-				tbHeader = msgBase.get_msg_header(header.thread_back);
+				tbHeader = header_num[header.thread_back];
+				if(tbHeader == null) {
+					tbHeader = msgBase.get_msg_header(header.thread_back);
+					if(tbHeader != null)
+						header_num[tbHeader.number]=tbHeader;
+				}
 				if(tbHeader !== null) {
-					// Heh - yeah, this part still sucks
-					outer:
-					for(var t in threads.thread) {
-						for(var mm in threads.thread[t].messages) {
-							if(threads.thread[t].messages[mm].number != tbHeader.number)
-								continue;
-							threads.thread[t].newest = header.when_written_time;
-							threads.dates[threads.thread[t].dateIndex] = header.when_written_time;
-							threads.thread[t].messages.push(
-								{
-									number : header.number,
-									to : header.to,
-									from : header.from,
-									subject : header.subject,
-									thread_id : header.thread_id,
-									thread_back : header.thread_back,
-									when_written_time : header.when_written_time					
-								}
-							);
-							threadedMessages.push(header.number);
-							break outer;
+					if(tbHeader.ec_thread !== undefined) {
+						tbHeader.ec_thread.newest = header.when_written_time;
+						threads.dates[tbHeader.ec_thread.dateIndex] = header.when_written_time;
+						tbHeader.ec_thread.messages.push(header);
+						threadedMessages.push(header.number);
+						header.ec_thread=tbHeader.ec_thread;
+					}
+					else {
+						// Heh - yeah, this part still sucks
+						outer:
+						for(var t in threads.thread) {
+							for(var mm in threads.thread[t].messages) {
+								if(threads.thread[t].messages[mm].number != tbHeader.number)
+									continue;
+								header.ec_thread = threads.thread[t];
+								threads.thread[t].newest = header.when_written_time;
+								threads.dates[threads.thread[t].dateIndex] = header.when_written_time;
+								threads.thread[t].messages.push(header);
+								threadedMessages.push(header.number);
+								break outer;
+							}
 						}
 					}
 				}
 			}			
 		} else if(header.thread_id !== header.number && threads.thread.hasOwnProperty(header.thread_id)) {
+			header.ec_thread = threads.thread[header.thread_id];
 			threads.thread[header.thread_id].newest = header.when_written_time;
 			threads.dates[threads.thread[header.thread_id].dateIndex] = header.when_written_time;
-			threads.thread[header.thread_id].messages.push(
-				{
-					number : header.number,
-					to : header.to,
-					from : header.from,
-					subject : header.subject,
-					thread_id : header.thread_id,
-					thread_back : header.thread_back,
-					when_written_time : header.when_written_time					
-				}
-			);
+			threads.thread[header.thread_id].messages.push(header);
 			threadedMessages.push(header.number);
 		} else if(subjects.hasOwnProperty(md5subject)) {
+			header.ec_thread = threads.thread[subjects[md5subject]];
 			threads.thread[subjects[md5subject]].newest = header.when_written_time;
 			threads.dates[threads.thread[subjects[md5subject]].dateIndex] = header.when_written_time;
-			threads.thread[subjects[md5subject]].messages.push(
-				{
-					number : header.number,
-					to : header.to,
-					from : header.from,
-					subject : header.subject,
-					thread_id : header.thread_id,
-					thread_back : header.thread_back,
-					when_written_time : header.when_written_time					
-				}
-			);
+			threads.thread[subjects[md5subject]].messages.push(header);
 			threadedMessages.push(header.number);
 		} else {
 			threads.dates.push(header.when_written_time);
@@ -475,17 +464,10 @@ function getMessageThreads(sub, max) {
 				newest : header.when_written_time,
 				dateIndex : threads.dates.length - 1,
 				messages : [
-					{
-						number : header.number,
-						to : header.to,
-						from : header.from,
-						subject : header.subject,
-						thread_id : header.thread_id,
-						thread_back : header.thread_back,
-						when_written_time : header.when_written_time					
-					}
+					header
 				]
 			}
+			header.ec_thread = threads.thread[((header.thread_id === 0)?header.number:header.thread_id)];
 			subjects[md5subject] = ((header.thread_id === 0)?header.number:header.thread_id);
 			threadedMessages.push(header.number);
 		}
