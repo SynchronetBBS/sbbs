@@ -1,5 +1,7 @@
 var e = directory(webIni.RootDirectory + "/pages/*");
 for(var g in e) {
+	if(file_isdir(e[g]))
+		continue;
 	var fn = file_getname(e[g]);
 	if(!checkWebCtrl(webIni.RootDirectory + "/pages/", fn))
 		continue;
