@@ -685,6 +685,9 @@ function Tree(frame,text,tree) {
 		if(!cmd.match(/\w/))
 			return values.NOT_HANDLED;
 		for(var i=0;i<properties.items.length;i++) {
+			if(!properties.items[i].hotkey) {
+				continue;
+			}
 			if(properties.items[i].hotkey.toUpperCase() == cmd.toUpperCase()) {
 				properties.index = i;
 				return properties.items[i].action();
