@@ -380,7 +380,7 @@ function getMessageThreads(sub, max) {
 		max = msgBase.first_msg;
 	else
 		max = msgBase.last_msg - max;
-	if(msgBase.get_all_msg_headers !== undefined)
+	if(msgBase.get_all_msg_headers !== undefined && max <= msgBase.first_msg)
 		all_headers=msgBase.get_all_msg_headers();
 	else {
 		for(m=max; m <= msgBase.last_msg; m++)
