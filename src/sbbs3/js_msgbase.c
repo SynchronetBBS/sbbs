@@ -1487,6 +1487,101 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	JSObject*	hdrobj;
+	JSBool		by_offset=JS_FALSE;
+	jsrefcount	rc;
+	privatemsg_t*	p;
+	private_t*	priv;
+	JSObject*	proto;
+	jsval		val;
+	uint32_t	off;
+    JSObject*	array;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+	if((priv=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(!SMB_IS_OPEN(&(priv->smb)))
+		return(JS_TRUE);
+
+    array = JS_NewArrayObject(cx, 0, NULL);
+    JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
+
+	rc=JS_SUSPENDREQUEST(cx);
+	if((priv->status=smb_locksmbhdr(&(priv->smb)))!=SMB_SUCCESS) {
+		JS_RESUMEREQUEST(cx, rc);
+		return(JS_TRUE);
+	}
+	JS_RESUMEREQUEST(cx, rc);
+
+	if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "MsgBase", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JS_ValueToObject(cx,val,&proto);
+		if(JS_GetProperty(cx, proto, "HeaderPrototype", &val) && !JSVAL_NULL_OR_VOID(val))
+			JS_ValueToObject(cx,val,&proto);
+		else
+			proto=NULL;
+	}
+	else
+		proto=NULL;
+
+	for(off=0; off < priv->smb.status.total_msgs; off++) {
+		if((p=(privatemsg_t*)malloc(sizeof(privatemsg_t)))==NULL) {
+			smb_unlocksmbhdr(&(priv->smb)); 
+			JS_ReportError(cx,"malloc failed");
+			return(JS_FALSE);
+		}
+
+		memset(p,0,sizeof(privatemsg_t));
+
+		/* Parse boolean arguments first */
+		p->p=priv;
+		p->expand_fields=JS_TRUE;	/* This parameter defaults to true */
+
+		p->msg.offset=off;
+		rc=JS_SUSPENDREQUEST(cx);
+		if((priv->status=smb_getmsgidx(&(priv->smb), &(p->msg)))!=SMB_SUCCESS) {
+			smb_unlocksmbhdr(&(priv->smb)); 
+			JS_RESUMEREQUEST(cx, rc);
+			return(JS_TRUE);
+		}
+
+		if((priv->status=smb_getmsghdr(&(priv->smb), &(p->msg)))!=SMB_SUCCESS) {
+			smb_unlocksmbhdr(&(priv->smb)); 
+			JS_RESUMEREQUEST(cx, rc);
+			return(JS_TRUE);
+		}
+
+		JS_RESUMEREQUEST(cx, rc);
+
+		if((hdrobj=JS_NewObject(cx,&js_msghdr_class,proto,obj))==NULL) {
+			smb_freemsgmem(&(p->msg));
+			smb_unlocksmbhdr(&(priv->smb)); 
+			return(JS_TRUE);
+		}
+
+		if(!JS_SetPrivate(cx, hdrobj, p)) {
+			JS_ReportError(cx,"JS_SetPrivate failed");
+			free(p);
+			smb_unlocksmbhdr(&(priv->smb));
+			return(JS_FALSE);
+		}
+
+		val=OBJECT_TO_JSVAL(hdrobj);
+		JS_SetElement(cx, array, off, &val);
+	}
+	smb_unlocksmbhdr(&(priv->smb));
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
@@ -2267,6 +2362,10 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<br><i>New in v3.12:</i> Pass <i>false</i> for the <i>expand_fields</i> argument (default: <i>true</i>) "
 	"if you will be re-writing the header later with <i>put_msg_header()</i>")
 	,312
+	},
+	{"get_all_msg_headers", js_get_all_msg_headers, 0, JSTYPE_ARRAY, JSDOCSTR("")
+	,JSDOCSTR("returns an array of all message headers.")
+	,316
 	},
 	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] number, object header")
 	,JSDOCSTR("write a message header")
