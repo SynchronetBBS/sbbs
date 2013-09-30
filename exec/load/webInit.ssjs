@@ -25,11 +25,15 @@ var webIni=(function() {
 
 	function setLoginCookie(u, sessionKey)
 	{
-		set_cookie('synchronet', u.number.toString() + ',' + sessionKey, time() + webIni.sessionTimeout, http_request.host.replace(/\:\d*/g, ""), "/");
-		login(u.alias, u.security.password);
+		if(u.number) {
+			set_cookie('synchronet', u.number.toString() + ',' + sessionKey, time() + webIni.sessionTimeout, http_request.host.replace(/\:\d*/g, ""), "/");
+			login(u.alias, u.security.password);
+		}
 	}
 	
 	var webIni = get_mod_options("ecweb");
+	if(webIni==null)
+		webIni={};
 	
 	var f = new File(file_cfgname(system.ctrl_dir,'sbbs.ini'));
 	f.open("r");
