@@ -1,6 +1,11 @@
 if(user.alias.toUpperCase() != webIni.WebGuest.toUpperCase()) {
 	print("You are logged in as <b>" + user.alias + "</b><br />");
-	print("<a href='./index.xjs?page=999-email.ssjs'>Email</a><br />");
+	print(
+		format(
+			"<a href='./index.xjs?page=999-email.ssjs'>Email</a>%s<br />",
+			(user.stats.mail_waiting > 0) ? " (" + user.stats.mail_waiting + ")" : ""
+		)
+	);
 	print("<script language='javascript' type='text/javascript'>");
 	print("document.write('<a href=./?logout=true&callback=' + location.pathname + location.search + '>Log out</a>');");
 	print("</script><br />");
