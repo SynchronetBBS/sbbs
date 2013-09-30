@@ -18,28 +18,26 @@ if(typeof http_request.query.board != "undefined") {
 if(typeof http_request.query.sub != "undefined" && http_request.query.sub != 'mail') {
 	print("<script type='text/javascript'>");
 	print(
-		"loadThreads('http://"
-		+ http_request.host
-		+ ":"
-		+ webIni.HTTPPort
-		+ "/forum-async.ssjs', '"
-		+ http_request.query.sub
-		+ "', "
-		+ ((http_request.query.hasOwnProperty('thread'))?false:true)
-		+ ");"
+		format(
+			"loadThreads('http://%s:%s%s/forum-async.ssjs', '%s', %s);",
+			http_request.host,
+			webIni.HTTPPort,
+			webIni.appendURL,
+			http_request.query.sub,
+			(typeof http_request.query.thread == "undefined") ? true : false
+		)
 	);
 	if(typeof http_request.query.thread != "undefined") {
-		print("loadThread('http://"
-			+ http_request.host
-			+ ":"
-			+ webIni.HTTPPort
-			+ "/forum-async.ssjs', '"
-			+ http_request.query.sub
-			+ "', '"
-			+ http_request.query.thread
-			+ "', "
-			+ false
-			+ ");"
+		print(
+			format(
+				"loadThread('http://%s:%s%s/forum-async.ssjs', '%s', '%s', %s);",
+				http_request.host,
+				webIni.HTTPPort,
+				webIni.appendURL,
+				http_request.query.sub,
+				http_request.query.thread,
+				false
+			)
 		);
 	}
 	print("</script>");
