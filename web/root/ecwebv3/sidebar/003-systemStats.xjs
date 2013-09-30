@@ -1,4 +1,4 @@
-<table border=0 cellpadding=0 cellspacing=0 class="font">
+<table border=0 cellpadding=0 cellspacing=0 class="font"p>
 	<tr>
 		<td>Sysop:</td>
 		<td>&nbsp;<?xjs write(system.operator); ?></td>
@@ -24,7 +24,7 @@
 		<td>&nbsp;<?xjs write(system.stats.total_logons); ?></td>
 	</tr>
 	<tr>
-		<td>Calls today:</td>
+		<td>Calls&nbsp;today:</td>
 		<td>&nbsp;<?xjs write(system.stats.logons_today); ?></td>
 	</tr>
 	<tr>
@@ -33,16 +33,14 @@
 	</tr>
 	<tr>
 		<td>U/L today:</td>
-		<td>&nbsp;
-			<?xjs write(system.stats.files_uploaded_today); ?> files 
-			(<?xjs write(system.stats.bytes_uploaded_today); ?> bytes)
+		<td>&nbsp;<?xjs write(system.stats.files_uploaded_today); ?> files<br>
+			&nbsp;(<?xjs write(system.stats.bytes_uploaded_today); ?> bytes)
 		</td>
 	</tr>
 	<tr>
-		<td>D/L today:</td>
-		<td>&nbsp;
-			<?xjs write(system.stats.files_downloaded_today); ?> files 
-			(<?xjs write(system.stats.bytes_downloaded_today); ?> bytes)
+		<td>D/L&nbsp;today:</td>
+		<td>&nbsp;<?xjs write(system.stats.files_downloaded_today); ?> files<br>
+			&nbsp;(<?xjs write(system.stats.bytes_downloaded_today); ?> bytes)
 		</td>
 	</tr>
 	<tr>
@@ -50,7 +48,7 @@
 		<td>&nbsp;<?xjs write(system.stats.total_messages); ?></td>
 	</tr>
 	<tr>
-		<td>Posts today:</td>
+		<td>Posts&nbsp;today:</td>
 		<td>&nbsp;<?xjs write(system.stats.messages_posted_today); ?></td>
 	</tr>
 </table>
