@@ -52,18 +52,16 @@
 		var fn = file_getname(d[f]);
 		if(!checkWebCtrl(webIni.RootDirectory + '/sidebar/', fn))
 			continue;
-		var ext = d[f].toUpperCase().split(".").slice(1).join(".");
-		if(ext == "XJS.SSJS")
-			continue;
-		if(ext == "SSJS") {
+		var ext = file_getext(fn).toUpperCase();
+		if(ext == ".SSJS" && fn.search(/\.xjs\.ssjs$/i)==-1) {
 			print('<div class="sidebarItem border box background">');
 			load(d[f]);
 			print('</div>')
-		} else if(ext == "XJS") {
+		} else if(ext == ".XJS") {
 			print('<div class="sidebarItem border box background">');
 			load(xjs_compile(d[f]));
 			print('</div>');
-		} else if(ext == "TXT" || ext == "HTML") {
+		} else if(ext == ".TXT" || ext == ".HTML") {
 			var handle = new File(d[f]);
 			handle.open("r");
 			var printme = handle.read();
@@ -94,7 +92,7 @@
 	var f = file_exists(webIni.RootDirectory + "/pages/" + page);
 	if(!f || !checkWebCtrl(webIni.RootDirectory + "/pages/", page)) {
 		print("Page not available.");
-	} else if(ext == ".SSJS") {
+	} else if(ext == ".SSJS" && page.search(/\.xjs\.ssjs$/i)==-1) {
 		load(webIni.RootDirectory + "/pages/" + page);
 	} else if(f && ext == ".HTML") {
 		var f = new File(webIni.RootDirectory + "/pages/" + page);
