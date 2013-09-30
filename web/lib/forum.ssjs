@@ -197,6 +197,9 @@ var printThread = function(sub, t) {
 				sub,
 				header.number
 			);
+		} else if(header.attr|MSG_READ) {
+			header.attr|=MSG_READ;
+			msgBase.put_msg_header(header.number, header);
 		}
 		out += format(
 			"<a class='ulLink' href='#thread-%s' onclick='toggleVisibility(\"sub-%s-thread-%s\")'>Collapse Thread</a>",
