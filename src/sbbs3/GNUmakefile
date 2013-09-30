@@ -50,6 +50,10 @@ ifdef DONT_BLAME_SYNCHRONET
  CFLAGS += -DDONT_BLAME_SYNCHRONET
 endif
 
+ifdef BUILD_JSDOCS
+ CFLAGS += -DBUILD_JSDOCS
+endif
+
 ifeq ($(os),linux)
  SBBS_LIBS += -lutil
  ifeq ($(shell test -f /usr/include/sys/capability.h && echo "yes"),yes)
