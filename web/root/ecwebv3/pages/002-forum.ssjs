@@ -3,7 +3,7 @@
 // echicken -at- bbs.electronicchicken.com
 
 load('webInit.ssjs');
-load(web_root_dir+"/../lib/forum.ssjs");
+load("../web/lib/forum.ssjs");
 
 print("<span class='title'>Forum</span><br /><br />");
 
