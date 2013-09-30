@@ -34,6 +34,8 @@ var webIni=(function() {
 	var webIni = get_mod_options("ecweb");
 	if(webIni==null)
 		webIni={};
+	if(typeof webIni.WebDirectory == "undefined")
+		webIni.WebDirectory = '../web/';
 	if(webIni.RootDirectory==undefined)
 		webIni.RootDirectory='../web/root/ecwebv3';
 	if(webIni.WebGuest==undefined)
