@@ -3,7 +3,7 @@
 // echicken -at- bbs.electronicchicken.com
 
 load('webInit.ssjs');
-load(session.web_root_dir+"/lib/forum.ssjs");
+load(web_root_dir+"/../lib/forum.ssjs");
 
 if(user.alias != webIni.WebGuest) {
 
