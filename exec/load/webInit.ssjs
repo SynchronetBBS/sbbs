@@ -34,6 +34,18 @@ var webIni=(function() {
 	var webIni = get_mod_options("ecweb");
 	if(webIni==null)
 		webIni={};
+	if(webIni.RootDirectory==undefined)
+		webIni.RootDirectory='../web/root/ecwebv3';
+	if(webIni.WebGuest==undefined)
+		webIni.WebGuest='Guest';
+	if(webIni.appendURL==undefined)
+		webIni.appendURL='/ecwebv3/';
+	if(webIni.sessionTimeout==undefined)
+		webIni.sessionTimeout=43200;
+	if(webIni.captchaLength==undefined)
+		webIni.captchaLength=5;
+	if(webIni.maxMessages==undefined)
+		webIni.maxMessages=0;
 	
 	var f = new File(file_cfgname(system.ctrl_dir,'sbbs.ini'));
 	f.open("r");
