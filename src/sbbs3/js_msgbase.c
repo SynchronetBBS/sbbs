@@ -1492,14 +1492,14 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	JSObject*	hdrobj;
-	JSBool		by_offset=JS_FALSE;
 	jsrefcount	rc;
 	privatemsg_t*	p;
 	private_t*	priv;
 	JSObject*	proto;
 	jsval		val;
 	uint32_t	off;
-    JSObject*	array;
+    JSObject*	retobj;
+	char		numstr[16];
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -1511,8 +1511,8 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	if(!SMB_IS_OPEN(&(priv->smb)))
 		return(JS_TRUE);
 
-    array = JS_NewArrayObject(cx, 0, NULL);
-    JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
+    retobj = JS_NewObject(cx, NULL, NULL, obj);
+    JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(retobj));
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if((priv->status=smb_locksmbhdr(&(priv->smb)))!=SMB_SUCCESS) {
@@ -1574,7 +1574,8 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 		}
 
 		val=OBJECT_TO_JSVAL(hdrobj);
-		JS_SetElement(cx, array, off, &val);
+		sprintf(numstr,"%u", off);
+		JS_SetProperty(cx, retobj, numstr, &val);
 	}
 	smb_unlocksmbhdr(&(priv->smb));
 
@@ -2364,7 +2365,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,312
 	},
 	{"get_all_msg_headers", js_get_all_msg_headers, 0, JSTYPE_ARRAY, JSDOCSTR("")
-	,JSDOCSTR("returns an array of all message headers.")
+	,JSDOCSTR("returns an object of all message headers indexed by message number.")
 	,316
 	},
 	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] number, object header")
