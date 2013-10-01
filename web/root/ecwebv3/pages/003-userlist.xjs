@@ -1,0 +1,100 @@
+<!--User List-->
+
+<?xjs
+
+	load("sbbsdefs.js");
+
+	var users = [];
+
+	var url = format(
+		"http://%s%s",
+		http_request.host,
+		http_request.request_string.split("&")[0]
+	);
+
+	var sortUsers = function(a, b) {
+		var ret = 0;
+		if(	typeof http_request.query.sortby != "undefined"
+			&&
+			typeof http_request.query.sortorder != "undefined"
+			&&
+			(	http_request.query.sortorder == "ascending"
+				||
+				http_request.query.sortorder == "descending"
+			)
+		) {
+			var sortBy = http_request.query.sortby.toString().toLowerCase();
+			var sortOrder = http_request.query.sortorder.toString().toLowerCase();
+			switch(sortBy) {
+				case "alias":
+					a = a.alias.toUpperCase();
+					b = b.alias.toUpperCase();
+					ret =	(a < b)
+							?
+							((sortOrder == "ascending") ? 1 : -1)
+							:
+							(	(a > b)
+								?
+								((sortOrder == "ascending") ? -1 : 1)
+								:
+								0
+							);
+					break;
+				case "lastcall":
+					ret =	(a.stats.laston_date < b.stats.laston_date)
+							?
+							((sortOrder == "ascending") ? -1 : 1)
+							:
+							(	(a.stats.laston_date > b.stats.laston_date)
+								?
+								((sortOrder == "ascending") ? 1 : -1)
+								:
+								0
+							);
+					break;
+				default:
+					break;
+			}
+		}
+		return ret;
+	}
+	
+	var makeSortURLs = function(field, order) {
+		return format(
+			'<a href="%s&sortby=%s&sortorder=ascending">Up</a> / <a href="%s&sortby=%s&sortorder=descending">Down</a>',
+			url,
+			field,
+			url,
+			field
+		);
+	}
+
+	for(var u = 1; u < system.lastuser; u++) {
+		var usr = new User(u);
+		users.push(usr);
+	}
+	users.sort(sortUsers);
+	
+?>
+
+<span class="title">User List</span>
+<table class="font" style="clear: both; margin: 0;">
+<tr>
+<td>Alias <?xjs print(makeSortURLs("alias")); ?></td>
+<td>Last on <?xjs print(makeSortURLs("lastcall")); ?></td>
+</tr>
+
+<?xjs
+
+for(var u = 0; u < users.length; u++) {
+	print(
+		format(
+			"<tr><td>%s</td><td>%s</td></tr>",
+			users[u].alias,
+			system.timestr(users[u].stats.laston_date)
+		)
+	);
+}
+
+?>
+</table>
