@@ -428,22 +428,6 @@ function getMessageThreads(sub, max) {
 						threadedMessages.push(header.number);
 						header.ec_thread=tbHeader.ec_thread;
 					}
-					else {
-						// Heh - yeah, this part still sucks
-						outer:
-						for(var t in threads.thread) {
-							for(var mm in threads.thread[t].messages) {
-								if(threads.thread[t].messages[mm].number != tbHeader.number)
-									continue;
-								header.ec_thread = threads.thread[t];
-								threads.thread[t].newest = header.when_written_time;
-								threads.dates[threads.thread[t].dateIndex] = header.when_written_time;
-								threads.thread[t].messages.push(header);
-								threadedMessages.push(header.number);
-								break outer;
-							}
-						}
-					}
 				}
 			}			
 		} else if(header.thread_id !== header.number && threads.thread.hasOwnProperty(header.thread_id)) {
