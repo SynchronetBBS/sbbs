@@ -11,6 +11,36 @@
 		http_request.host,
 		http_request.request_string.split("&")[0]
 	);
+	
+	var sortString = function(a, b, sortOrder) {
+		a = a.toUpperCase();
+		b = b.toUpperCase();
+		ret =	(a < b)
+				?
+				((sortOrder == "ascending") ? 1 : -1)
+				:
+				(	(a > b)
+					?
+					((sortOrder == "ascending") ? -1 : 1)
+					:
+					0
+				);
+		return ret;
+	}
+	
+	var sortNumber = function(a, b, sortOrder) {
+		ret =	(a < b)
+				?
+				((sortOrder == "ascending") ? -1 : 1)
+				:
+				(	(a > b)
+					?
+					((sortOrder == "ascending") ? 1 : -1)
+					:
+					0
+				);
+		return ret;
+	}
 
 	var sortUsers = function(a, b) {
 		var ret = 0;
@@ -27,30 +57,13 @@
 			var sortOrder = http_request.query.sortorder.toString().toLowerCase();
 			switch(sortBy) {
 				case "alias":
-					a = a.alias.toUpperCase();
-					b = b.alias.toUpperCase();
-					ret =	(a < b)
-							?
-							((sortOrder == "ascending") ? 1 : -1)
-							:
-							(	(a > b)
-								?
-								((sortOrder == "ascending") ? -1 : 1)
-								:
-								0
-							);
+					ret = sortString(a.alias, b.alias, sortOrder);
 					break;
 				case "lastcall":
-					ret =	(a.stats.laston_date < b.stats.laston_date)
-							?
-							((sortOrder == "ascending") ? -1 : 1)
-							:
-							(	(a.stats.laston_date > b.stats.laston_date)
-								?
-								((sortOrder == "ascending") ? 1 : -1)
-								:
-								0
-							);
+					ret = sortNumber(a.stats.laston_date, b.stats.laston_date, sortOrder);
+					break;
+				case "location":
+					ret = sortString(a.location, b.location, sortOrder);
 					break;
 				default:
 					break;
@@ -81,6 +94,7 @@
 <table class="font" style="clear: both; margin: 0;">
 <tr>
 <td>Alias <?xjs print(makeSortURLs("alias")); ?></td>
+<td>Location <?xjs print(makeSortURLs("location")); ?></td>
 <td>Last on <?xjs print(makeSortURLs("lastcall")); ?></td>
 </tr>
 
@@ -89,8 +103,10 @@
 for(var u = 0; u < users.length; u++) {
 	print(
 		format(
-			"<tr><td>%s</td><td>%s</td></tr>",
+			"<tr class='%s'><td>%s</td><td>%s</td><td>%s</td></tr>",
+			(u % 2 == 0) ? "row1" : "row2",
 			users[u].alias,
+			users[u].location,
 			system.timestr(users[u].stats.laston_date)
 		)
 	);
