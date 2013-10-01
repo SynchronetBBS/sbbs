@@ -441,6 +441,7 @@ function getMessageThreads(sub, max) {
 			threads.dates.push(header.when_written_time);
 			threads.thread[new_thread] = {
 				dateIndex : threads.dates.length - 1,
+				messages : [],
 			}
 			add_to_thread(header, threads.thread[new_thread]);
 		}
