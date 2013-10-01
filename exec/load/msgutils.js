@@ -364,7 +364,6 @@ function getMessageThreads(sub, max) {
 	var stime = system.timer;
 	var threads = { thread : {}, dates : [], order : [] };
 	var subjects = {};
-	var threadedMessages = [];
 	var header;
 	var tbHeader;
 	var md5subject;
@@ -394,7 +393,6 @@ function getMessageThreads(sub, max) {
 		thread.newest=header.when_written_time;
 		threads.dates[thread.dateIndex] = header.when_written_time;
 		thread.messages.push(header);
-		threadedMessages.push(header.number);
 	}
 
 	for(m in all_headers) {
@@ -416,7 +414,7 @@ function getMessageThreads(sub, max) {
 			continue;
 		header_num[header.number]=header;
 		md5subject = md5_calc(header.subject.toUpperCase().replace(/\s*RE:\s*/g, ''), hex=true);
-		if(header.thread_id === 0 && threadedMessages.indexOf(header.thread_back) >= 0) {
+		if(header.thread_id === 0 && header_num[header.thread_back] !== undefined) {
 			if(threads.thread.hasOwnProperty(header.thread_back))
 				add_to_thread(header, threads.thread[header.thread_back]);
 			else {
