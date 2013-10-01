@@ -362,7 +362,7 @@ function expand_body(body, sys_misc, mode)
 */
 function getMessageThreads(sub, max) {
 	var stime = system.timer;
-	var threads = { thread : {}, dates : [], order : [] };
+	var threads = { thread : {}, order : [] };
 	var subjects = {};
 	var header;
 	var tbHeader;
@@ -391,7 +391,6 @@ function getMessageThreads(sub, max) {
 	{
 		header.ec_thread = thread;
 		thread.newest=header.when_written_time;
-		threads.dates[thread.dateIndex] = header.when_written_time;
 		thread.messages.push(header);
 	}
 
@@ -436,27 +435,15 @@ function getMessageThreads(sub, max) {
 		} else {
 			new_thread = (header.thread_id === 0)?header.number:header.thread_id;
 			subjects[subject] = new_thread;
-			threads.dates.push(header.when_written_time);
 			threads.thread[new_thread] = {
-				dateIndex : threads.dates.length - 1,
 				messages : [],
 			}
 			add_to_thread(header, threads.thread[new_thread]);
 		}
 	}
 	msgBase.close();
-	
-	threads.dates.sort(function (a,b) {return b - a});
-	for(var d = 0; d < threads.dates.length; d++) {
-		if(threads.dates[d] !== threads.dates[d+1]) {
-			for(var t in threads.thread) {
-				if(threads.thread[t].newest != threads.dates[d])
-					continue;
-				threads.order.push(t);
-				break;
-			}
-		}
-	}
+
 	log(LOG_INFO, "Messages threaded in " + (system.timer - stime) + " seconds.");
+	threads.order=Object.keys(threads.thread).sort(function(a,b) {return threads.thread[b].newest-threads.thread[a].newest});
 	return threads;
 }
