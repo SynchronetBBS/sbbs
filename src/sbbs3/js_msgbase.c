@@ -1574,7 +1574,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 		}
 
 		val=OBJECT_TO_JSVAL(hdrobj);
-		sprintf(numstr,"%u", off);
+		sprintf(numstr,"%"PRIu32, p->msg.hdr.number);
 		JS_SetProperty(cx, retobj, numstr, &val);
 	}
 	smb_unlocksmbhdr(&(priv->smb));
