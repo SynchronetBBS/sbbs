@@ -366,7 +366,7 @@ function getMessageThreads(sub, max) {
 	var subjects = {};
 	var header;
 	var tbHeader;
-	var md5subject;
+	var subject;
 	var msgBase = new MsgBase(sub);
 	var header_num={};
 	var all_headers=[];
@@ -413,7 +413,7 @@ function getMessageThreads(sub, max) {
 		)
 			continue;
 		header_num[header.number]=header;
-		md5subject = md5_calc(header.subject.toUpperCase().replace(/\s*RE:\s*/g, ''), hex=true);
+		subject = header.subject.toUpperCase().replace(/\s*RE:\s*/g, '');
 		if(header.thread_id === 0 && header_num[header.thread_back] !== undefined) {
 			if(threads.thread.hasOwnProperty(header.thread_back))
 				add_to_thread(header, threads.thread[header.thread_back]);
@@ -431,11 +431,11 @@ function getMessageThreads(sub, max) {
 			}
 		} else if(header.thread_id !== header.number && threads.thread.hasOwnProperty(header.thread_id)) {
 			add_to_thread(header, threads.thread[header.thread_id]);
-		} else if(subjects.hasOwnProperty(md5subject)) {
-			add_to_thread(header, threads.thread[subjects[md5subject]]);
+		} else if(subjects.hasOwnProperty(subject)) {
+			add_to_thread(header, threads.thread[subjects[subject]]);
 		} else {
 			new_thread = (header.thread_id === 0)?header.number:header.thread_id;
-			subjects[md5subject] = new_thread;
+			subjects[subject] = new_thread;
 			threads.dates.push(header.when_written_time);
 			threads.thread[new_thread] = {
 				dateIndex : threads.dates.length - 1,
