@@ -28,21 +28,11 @@ var toggleVisibility = function(elementID) {
 /* As above but twiddles text as well. */
 var toggle_quote = function(container)
 {
-	for(child in container.parentNode.childNodes) {
-		if(container.parentNode.childNodes[child].nodeName=='BLOCKQUOTE') {
-			switch(container.parentNode.childNodes[child].style.display) {
-			case 'none':
-				container.parentNode.childNodes[child].style.display='block';
-				container.innerHTML="Hide quote";
-				break;
-			default:
-				container.parentNode.childNodes[child].style.display='none';
-				container.innerHTML="Show quote";
-				break;
-			}
-			break;
-		}
-	}
+	if(container.className == "hiddenQuote")
+		container.className = "";
+	else
+		container.className = "hiddenQuote";
+
 }
 
 /*	httpGet(url, async)
