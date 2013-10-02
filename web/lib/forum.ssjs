@@ -40,8 +40,8 @@ var linkify = function(body) {
 var printBoards = function() {
 	for(var g = 0; g < msg_area.grp_list.length; g++) {
 		var out = format(
-			"<div class='border box msg'>"
-			+ "<a class='ulLink' onclick='toggleVisibility(\"group-%s\")'>%s</a>"
+			"<div class='border box msg' onclick='toggleVisibility(\"group-%s\")'>"
+			+ "<a class='ulLink'>%s</a>"
 			+ "<br />%s sub-boards</div>"
 			+ "<div id='group-%s' style=display:none;'>",
 			msg_area.grp_list[g].name,
@@ -51,8 +51,8 @@ var printBoards = function() {
 		);
 		for(var s = 0; s < msg_area.grp_list[g].sub_list.length; s++) {
 			out += format(
-				"<div class='border msg indentBox1'>"
-				+ "<a class='ulLink' onclick='loadThreads(\"http://%s/%sforum-async.ssjs\", \"%s\")'>%s</a><br />",
+				"<div class='border msg indentBox1' onclick='loadThreads(\"http://%s/%sforum-async.ssjs\", \"%s\")'>"
+				+ "<a class='ulLink'>%s</a><br />",
 				http_request.host,
 				webIni.appendURL,
 				msg_area.grp_list[g].sub_list[s].code,
@@ -65,7 +65,7 @@ var printBoards = function() {
 				log(LOG_ERR, err);
 				continue;
 			}
-			out += ((webIni.maxMessages > 0 && webIni.maxMessages < msgBase.total_msgs)?webIni.maxMessages:msgBase.total_msgs) + " messages.<br />";
+ 			out += ((webIni.maxMessages > 0 && webIni.maxMessages < msgBase.total_msgs)?webIni.maxMessages:msgBase.total_msgs) + " messages.<br />";
 			var h = msgBase.get_msg_header(msgBase.last_msg);
 			msgBase.close();
 			if(h !== null)
@@ -111,8 +111,8 @@ var printThreads = function(sub) {
 		var header = threads.thread[threads.order[t]].messages[0];
 		var out = format(
 			"<a class='ulLink' name='thread-%s'></a>"
-			+ "<div class='border %s msg'>"
-			+ "<a class='ulLink' onclick='loadThread(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\")'>%s</a><br />"
+			+ "<div class='border %s msg' onclick='loadThread(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\")'>"
+			+ "<a class='ulLink'>%s</a><br />"
 			+ "Started by %s on %s<br />",
 			header.number,
 			((sub == "mail")?"box":"indentBox2"),
