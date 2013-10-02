@@ -169,9 +169,9 @@ var formatBody = function(body, ANSI_formatted, hide_quotes)
 	}
 	else {
 		if(hide_quotes==undefined || hide_quotes)
-			var blockquote_start='<div class="quote"><a class="quote-expander" href="#" onclick="toggle_quote(this);return false">Show quote</a><blockquote style="display: none">';
+			var blockquote_start='<div class="quote"><a class="ulLink" href="#" onclick="toggle_quote(this);return false">Show quote</a><blockquote style="display: none">';
 		else
-			var blockquote_start='<div class="quote"><a class="quote-expander" href="#" onclick="toggle_quote(this);return false">Hide quote</a><blockquote style="display: block">';
+			var blockquote_start='<div class="quote"><a class="ulLink" href="#" onclick="toggle_quote(this);return false">Hide quote</a><blockquote style="display: block">';
 		var blockquote_end='</blockquote></div>';
 
 		// Strip CTRL-A
