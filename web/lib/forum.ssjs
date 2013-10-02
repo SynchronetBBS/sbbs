@@ -297,7 +297,7 @@ var printThread = function(sub, t) {
 		if(body === null)
 			continue;
 		body = expand_body(body, system.settings);
-		body = formatBody(body, false, true);
+		body = formatBody(body, false, false);
 		var out = format(
 			"<a name='%s-%s'></a>"
 			+ "<div class='border %s msg' id='sub-%s-thread-%s-%s'>"
