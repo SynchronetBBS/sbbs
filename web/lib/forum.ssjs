@@ -168,12 +168,13 @@ var formatBody = function(body, ANSI_formatted, hide_quotes)
 		}
 	}
 	else {
+		
+		var blockquote_start = '<blockquote onclick="toggle_quote(this);return false" style="cursor:pointer"';
 		if(hide_quotes==undefined || hide_quotes)
-			var blockquote_start='<div class="quote"><a class="ulLink" href="#" onclick="toggle_quote(this);return false">Show quote</a><blockquote style="display: none">';
-		else
-			var blockquote_start='<div class="quote"><a class="ulLink" href="#" onclick="toggle_quote(this);return false">Hide quote</a><blockquote style="display: block">';
-		var blockquote_end='</blockquote></div>';
-
+			blockquote_start += ' class="hiddenQuote"';
+		blockquote_start += '>';
+		var blockquote_end = '</blockquote>';
+		
 		// Strip CTRL-A
 		body=body.replace(/\1./g,'');
 		// Strip ANSI
@@ -297,7 +298,7 @@ var printThread = function(sub, t) {
 		if(body === null)
 			continue;
 		body = expand_body(body, system.settings);
-		body = formatBody(body, false, false);
+		body = formatBody(body, false, true);
 		var out = format(
 			"<a name='%s-%s'></a>"
 			+ "<div class='border %s msg' id='sub-%s-thread-%s-%s'>"
