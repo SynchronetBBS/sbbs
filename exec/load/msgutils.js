@@ -81,9 +81,9 @@ function attr_to_ansi(atr, curatr)
 				break;
 		}
 	}
-	if(str.length==2)
+	if(str.length<=2)
 		return('');
-	str=str.substr(-1)+'m';
+	str=str.substr(0, -1)+'m';
 	return(str);
 }
 
