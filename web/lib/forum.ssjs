@@ -141,6 +141,142 @@ var printThreads = function(sub) {
 	}
 }
 
+var formatBody = function(body, ANSI_formatted, hide_quotes)
+{
+	if(ANSI_formatted) {
+		body=html_encode(body, true, false, true, true);
+		body=body.replace(/\r?\n+(<\/span>)?$/,'$1');
+		body=linkify(body);
+
+		// Get the last line
+		var body_m=body.match(/\n([^\n]*)$/);
+		if(body_m != null) {
+			body = '<pre>'+body;
+			body_m[1]=body_m[1].replace(/&[^;]*;/g,".");
+			body_m[1]=body_m[1].replace(/<[^>]*>/g,"");
+			var lenremain=80-body_m[1].length;
+			while(lenremain > 0) {
+				body += '&nbsp;';
+				lenremain--;
+			}
+			body += '</pre>';
+		}
+		else {
+			/* If we couldn't get the last line, add a line of 80 columns */
+			body = '<pre>'+body;
+			body += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</pre>';
+		}
+	}
+	else {
+		if(hide_quotes==undefined || hide_quotes)
+			var blockquote_start='<div class="quote"><a class="quote-expander" href="#" onclick="toggle_quote(this);return false">Show quote</a><blockquote style="display: none">';
+		else
+			var blockquote_start='<div class="quote"><a class="quote-expander" href="#" onclick="toggle_quote(this);return false">Hide quote</a><blockquote style="display: block">';
+		var blockquote_end='</blockquote></div>';
+
+		// Strip CTRL-A
+		body=body.replace(/\1./g,'');
+		// Strip ANSI
+		body=body.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g,'');
+		body=body.replace(/\x1b[\x40-\x7e]/g,'');
+		// Strip unprintable control chars (NULL, BEL, DEL, ESC)
+		body=body.replace(/[\x00\x07\x1b\x7f]/g,'');
+
+		// Wrap and encode
+		body=word_wrap(body, body.length);
+		body=html_encode(body, true, false, false, false);
+
+		// Magical quoting stuff!
+		/*
+		 * Each /[^ ]{0,3}> / is a quote block
+		 */
+		var lines=body.split(/\r?\n/);
+		var quote_depth=0;
+		var prefixes=new Array();
+		body='';
+		for (l in lines) {
+			var line_prefix='';
+			var m=lines[l].match(/^((?:\s?[^\s]{0,3}&gt;\s?)+)/);
+
+			if(m!=null) {
+				var new_prefixes=m[1].match(/\s?[^\s]{0,3}&gt;\s?/g);
+				var p;
+				var broken=false;
+
+				line=lines[l];
+				
+				// If the new length is smaller than the old one, close the extras
+				for(p=new_prefixes.length; p<prefixes.length; p++) {
+					if(quote_depth > 0) {
+						line_prefix = line_prefix + blockquote_end;
+						quote_depth--;
+					}
+					else {
+						log("BODY: Depth problem 1");
+					}
+				}
+				for(p in new_prefixes) {
+					// Remove prefix from start of line
+					line=line.substr(new_prefixes[p].length);
+
+					if(prefixes[p]==undefined) {
+						/* New depth */
+						line_prefix = line_prefix + blockquote_start;
+						quote_depth++;
+					}
+					else if(broken) {
+						line_prefix = line_prefix + blockquote_start;
+						quote_depth++;
+					}
+					else if(prefixes[p].replace(/^\s*(.*?)\s*$/,"$1") != new_prefixes[p].replace(/^\s*(.*?)\s*$/,"$1")) {
+						// Close all remaining old prefixes and start one new one
+						var o;
+						for(o=p; o<prefixes.length && o<new_prefixes.length; o++) {
+							if(quote_depth > 0) {
+								line_prefix = blockquote_end+line_prefix;
+								quote_depth--;
+							}
+							else {
+								log("BODY: Depth problem 2");
+							}
+						}
+						line_prefix = blockquote_start+line_prefix;
+						quote_depth++;
+						broken=true;
+					}
+				}
+				prefixes=new_prefixes.slice();
+				line=line_prefix+line;
+			}
+			else {
+				for(p=0; p<prefixes.length; p++) {
+					if(quote_depth > 0) {
+						line_prefix = line_prefix + blockquote_end;
+						quote_depth--;
+					}
+					else {
+						log("BODY: Depth problem 3");
+					}
+				}
+				prefixes=new Array();
+				line=line_prefix + lines[l];
+			}
+			body = body + line + "\r\n";
+		}
+		if(quote_depth != 0) {
+			log("BODY: Depth problem 4");
+			for(;quote_depth > 0; quote_depth--) {
+				body += blockquote_end;
+			}
+		}
+
+		body=linkify(body);
+		body=body.replace(/\r\n$/,'');
+		body=body.replace(/(\r?\n)/g, "<br>$1");
+		return body;
+	}
+}
+
 var printThread = function(sub, t) {
 	try {
 		var msgBase = new MsgBase(sub);
@@ -157,9 +293,11 @@ var printThread = function(sub, t) {
 	}
 	for(var m in threads.thread[t].messages) {
 		var header = threads.thread[t].messages[m];
-		var body = msgBase.get_msg_body(header.number, strip_ctrl_a=true);
+		var body = msgBase.get_msg_body(header.number, header, true /* strip_ctrl_a */);
 		if(body === null)
 			continue;
+		body = expand_body(body, system.settings);
+		body = formatBody(body, false, true);
 		var out = format(
 			"<a name='%s-%s'></a>"
 			+ "<div class='border %s msg' id='sub-%s-thread-%s-%s'>"
@@ -174,7 +312,7 @@ var printThread = function(sub, t) {
 			header.from,
 			header.to,
 			system.timestr(header.when_written_time),
-			linkify(strip_exascii(body).replace(/\r\n/g, "<br />").replace(/\n/g, "<br />"))
+			body
 		);
 		if(sub == 'mail' || msg_area.sub[msgBase.cfg.code].is_operator) {
 			out += format(
