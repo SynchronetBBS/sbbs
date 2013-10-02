@@ -15,7 +15,7 @@
 		for(var w = 0; w < webctrl.length; w++) {
 			if(webctrl[w].name != fileName)
 				continue;
-			if(webctrl[w].hasOwnProperty('AccessRequirements') && !user.compare_ars(webctrl[w].AccessRequirements))
+			if(typeof webctrl[w].AccessRequirements != "undefined" && !user.compare_ars(webctrl[w].AccessRequirements))
 				return false;
 		}
 		return true;
@@ -80,7 +80,7 @@
 <div id="content">
 <div id="subContent" class="border box background">
 <?xjs
-	if(http_request.query.hasOwnProperty("page"))
+	if(typeof http_request.query.page != "undefined")
 		var page = file_getname(http_request.query.page);
 	else
 		var page = "000-home.xjs";
