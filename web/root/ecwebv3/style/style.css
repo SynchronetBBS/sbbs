@@ -151,3 +151,10 @@ div {
 	color: #FFFFFF;
 	background-color: #303030;
 }
+
+.hiddenQuote {
+	font-style: italic;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
