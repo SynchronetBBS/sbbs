@@ -40,7 +40,7 @@ var linkify = function(body) {
 var printBoards = function() {
 	for(var g = 0; g < msg_area.grp_list.length; g++) {
 		var out = format(
-			"<div class='border box msg' onclick='toggleVisibility(\"group-%s\")'>"
+			"<div class='border box msg' onclick='toggleVisibility(\"group-%s\")' style='cursor:pointer'>"
 			+ "<a class='ulLink'>%s</a>"
 			+ "<br />%s sub-boards</div>"
 			+ "<div id='group-%s' style=display:none;'>",
@@ -51,7 +51,7 @@ var printBoards = function() {
 		);
 		for(var s = 0; s < msg_area.grp_list[g].sub_list.length; s++) {
 			out += format(
-				"<div class='border msg indentBox1' onclick='loadThreads(\"http://%s/%sforum-async.ssjs\", \"%s\")'>"
+				"<div class='border msg indentBox1' onclick='loadThreads(\"http://%s/%sforum-async.ssjs\", \"%s\")' style='cursor:pointer'>"
 				+ "<a class='ulLink'>%s</a><br />",
 				http_request.host,
 				webIni.appendURL,
@@ -111,7 +111,7 @@ var printThreads = function(sub) {
 		var header = threads.thread[threads.order[t]].messages[0];
 		var out = format(
 			"<a class='ulLink' name='thread-%s'></a>"
-			+ "<div class='border %s msg' onclick='loadThread(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\")'>"
+			+ "<div class='border %s msg' onclick='loadThread(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\")' style='cursor:pointer'>"
 			+ "<a class='ulLink'>%s</a><br />"
 			+ "Started by %s on %s<br />",
 			header.number,
