@@ -13,7 +13,7 @@
 			return false; // Directory is controlled but webctrl not openable
 		}
 		for(var w = 0; w < webctrl.length; w++) {
-			if(webctrl[w].name != fileName)
+			if(!wildmatch(fileName, webctrl[w].name))
 				continue;
 			if(typeof webctrl[w].AccessRequirements != "undefined" && !user.compare_ars(webctrl[w].AccessRequirements))
 				return false;
