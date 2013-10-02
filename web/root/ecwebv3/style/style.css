@@ -141,3 +141,13 @@ div {
 	font-size: 14pt;
 	font-weight: bold;
 }
+
+.row1 {
+	color: #000000;
+	background-color: #808080;
+}
+
+.row2 {
+	color: #FFFFFF;
+	background-color: #303030;
+}
