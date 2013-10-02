@@ -1,44 +1,57 @@
 <!--User List-->
 
 <?xjs
+	
+	// Uncomment/comment properties below to enable/disable list columns
+	var columns = {
+//		number : { name : "#", type : "number" },
+		alias : { name : "Alias", type : "string" },
+//		name : { name : "Name", type : "string" },
+//		age : { name : "Age", type : "number" },
+//		gender : { name : "Sex", type : "string" },
+		location : { name : "Location", type : "string" },
+		laston_date : { name : "Last On", type : "date" },
+//		firston_date : { name : "First On", type : "date" },
+//		total_logons : { name : "Calls", type : "number" },
+//		total_posts : { name : "Posts", type : "number" }
+	};
 
+	// Most people won't need to edit below this line
 	load("sbbsdefs.js");
 
 	var users = [];
-
 	var url = format(
 		"http://%s%s",
 		http_request.host,
 		http_request.request_string.split("&")[0]
 	);
 	
-	var sortString = function(a, b, sortOrder) {
-		a = a.toUpperCase();
-		b = b.toUpperCase();
-		ret =	(a < b)
-				?
-				((sortOrder == "ascending") ? 1 : -1)
-				:
-				(	(a > b)
-					?
-					((sortOrder == "ascending") ? -1 : 1)
-					:
-					0
-				);
-		return ret;
-	}
-	
-	var sortNumber = function(a, b, sortOrder) {
-		ret =	(a < b)
-				?
-				((sortOrder == "ascending") ? -1 : 1)
-				:
-				(	(a > b)
+	var sortUser = function(a, b, sortOrder, type) {
+		if(type == "string") {
+			a = a.toUpperCase();
+			b = b.toUpperCase();
+			ret =	(a < b)
 					?
 					((sortOrder == "ascending") ? 1 : -1)
 					:
-					0
-				);
+					(	(a > b)
+						?
+						((sortOrder == "ascending") ? -1 : 1)
+						:
+						0
+					);
+		} else if(type == "number" || type == "date") {
+			ret =	(a < b)
+					?
+					((sortOrder == "ascending") ? -1 : 1)
+					:
+					(	(a > b)
+						?
+						((sortOrder == "ascending") ? 1 : -1)
+						:
+						0
+					);
+		}
 		return ret;
 	}
 
@@ -55,18 +68,11 @@
 		) {
 			var sortBy = http_request.query.sortby.toString().toLowerCase();
 			var sortOrder = http_request.query.sortorder.toString().toLowerCase();
-			switch(sortBy) {
-				case "alias":
-					ret = sortString(a.alias, b.alias, sortOrder);
-					break;
-				case "lastcall":
-					ret = sortNumber(a.stats.laston_date, b.stats.laston_date, sortOrder);
-					break;
-				case "location":
-					ret = sortString(a.location, b.location, sortOrder);
-					break;
-				default:
-					break;
+			for(var c in columns) {
+				if(sortBy != c)
+					continue;
+				ret = sortUser(a[c], b[c], sortOrder, columns[c].type);
+				break;
 			}
 		}
 		return ret;
@@ -74,17 +80,32 @@
 	
 	var makeSortURLs = function(field, order) {
 		return format(
-			'<a href="%s&sortby=%s&sortorder=ascending">Up</a> / <a href="%s&sortby=%s&sortorder=descending">Down</a>',
+			'<a class="ulLink" href="%s&sortby=%s&sortorder=ascending">'
+			+ '<img src="./icons/up-arrow.png">'
+			+ '</a>'
+			+ '<a class="ulLink" href="%s&sortby=%s&sortorder=descending">'
+			+ '<img src="./icons/down-arrow.png">'
+			+ '</a>',
 			url,
 			field,
 			url,
 			field
 		);
 	}
+	
+	var copyProperties = function(source, dest) {
+		for(var property in source) {
+			if(typeof source[property] == "string" || typeof source[property] == "number")
+				dest[property] = source[property];
+		}
+		return dest;
+	}
 
 	for(var u = 1; u < system.lastuser; u++) {
-		var usr = new User(u);
-		users.push(usr);
+		var usr1 = new User(u);
+		var usr2 = copyProperties(usr1, {});
+		usr2 = copyProperties(usr1.stats, usr2);	
+		users.push(usr2);
 	}
 	users.sort(sortUsers);
 	
@@ -93,23 +114,25 @@
 <span class="title">User List</span>
 <table class="font" style="clear: both; margin: 0;">
 <tr>
-<td>Alias <?xjs print(makeSortURLs("alias")); ?></td>
-<td>Location <?xjs print(makeSortURLs("location")); ?></td>
-<td>Last on <?xjs print(makeSortURLs("lastcall")); ?></td>
+<?xjs
+	for(var c in columns)
+		print(format("<td>%s %s</td>", columns[c].name, makeSortURLs(c)));
+?>
 </tr>
 
 <?xjs
 
 for(var u = 0; u < users.length; u++) {
-	print(
-		format(
-			"<tr class='%s'><td>%s</td><td>%s</td><td>%s</td></tr>",
-			(u % 2 == 0) ? "row1" : "row2",
-			users[u].alias,
-			users[u].location,
-			system.timestr(users[u].stats.laston_date)
-		)
-	);
+	print(format("<tr class='%s'>", (u % 2 == 0) ? "row1" : "row2"));
+	for(var c in columns) {
+		print(
+			format(
+				"<td>%s</td>",
+				(columns[c].type == "date") ? system.timestr(users[u][c]) : users[u][c].toString()
+			)
+		);
+	}
+	print("</tr>");
 }
 
 ?>
