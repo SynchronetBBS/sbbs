@@ -345,7 +345,7 @@ var printThread = function(sub, t) {
 			sub,
 			t
 		);
-		if(user.alias != webIni.WebGuest && sub == 'mail' || (sub != 'mail' && user.compare_ars(msgBase.cfg.post_ars)))
+		if(user.alias != webIni.WebGuest && msg_area.sub[sub].can_post)
 			out += format(
 				" - <a class='ulLink' onclick='addReply(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\")'>Reply</a>",
 				http_request.host, webIni.appendURL, sub, t, header.number, header.from, user.alias, header.subject
