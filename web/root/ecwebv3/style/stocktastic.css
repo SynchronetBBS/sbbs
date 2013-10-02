@@ -140,4 +140,5 @@ a:active {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	height: 1em;
 }
