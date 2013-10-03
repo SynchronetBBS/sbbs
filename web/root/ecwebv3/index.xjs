@@ -35,7 +35,7 @@
 		if(pf.open("r")) {
 			var contents = pf.readAll();
 			pf.close();
-			var title = getTitle(contents, f.name);
+			var title = getTitle(contents, pf.name);
 			if(title == undefined)
 				title = 'main menu';
 			if(user.compare_ars('REST NOT G')) {
