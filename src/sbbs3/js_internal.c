@@ -627,6 +627,16 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 	return(obj);
 }
 
+#if defined(_MSC_VER)
+void msvc_invalid_parameter_handler(const wchar_t* expression,
+   const wchar_t* function, 
+   const wchar_t* file, 
+   unsigned int line, 
+   uintptr_t pReserved)
+{
+}
+#endif
+
 void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, const char* startup_dir)
 {
 	JSString*	str;
@@ -658,4 +668,7 @@ void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filen
 			JS_DefineProperty(cx, js, "startup_dir", STRING_TO_JSVAL(str)
 				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
+#if defined(_MSC_VER)
+	_set_invalid_parameter_handler(msvc_invalid_parameter_handler);
+#endif
 }
