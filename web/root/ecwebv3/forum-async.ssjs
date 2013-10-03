@@ -18,7 +18,9 @@ if(typeof http_request.query.postmessage != "undefined") {
 } else if(typeof http_request.query.sub == "undefined") {
 	printBoards();
 } else {
-	if(typeof http_request.query.deletemessage != "undefined")
+	if(typeof http_request.query.getmessage != "undefined")
+		printMessage(http_request.query.sub, http_request.query.getmessage);
+	else if(typeof http_request.query.deletemessage != "undefined")
 		deleteMessage(http_request.query.sub, http_request.query.deletemessage);
 	else if(typeof http_request.query.thread == "undefined")
 		printThreads(http_request.query.sub);
