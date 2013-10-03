@@ -1,4 +1,6 @@
 var update = 30000; // Milliseconds between updates
+if(js.global.webInit===undefined)
+	load('webInit.ssjs');
 
 load("nodedefs.js");
 if(typeof http_request.query.action != "undefined" && http_request.query.action == "show") {
