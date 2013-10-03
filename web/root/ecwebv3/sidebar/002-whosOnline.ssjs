@@ -30,7 +30,7 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 		if(u.compare_ars('REST G'))
 			continue;
 		if(u.connection == 'HTTP') {
-			if(u.logontime >= time()-(60*3)) {
+			if(u.logontime >= time()-(update/500)) {
 				print("<tr><td>WWW:&nbsp;</td>");
 				var f = new File(system.data_dir+format("user/%04d.ecweb",n));
 				var loc = '';
