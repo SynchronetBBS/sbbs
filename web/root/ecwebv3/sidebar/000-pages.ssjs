@@ -12,7 +12,7 @@ for(var g in e) {
 	var i = h.readAll();
 	h.close();
 	var title = getTitle(i, e[g]);
-	if(title == "HIDDEN" || title === undefined)
+	if(title===undefined || title.search(/^HIDDEN/)==0)
 		continue;
 	print("<a class='link' href=./index.xjs?page=" + file_getname(e[g]) + ">" + title + "</a><br />");
 }

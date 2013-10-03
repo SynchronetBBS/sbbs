@@ -3,7 +3,7 @@
 /*	The first comment line in an SSJS page will be used as its title in the
 	"pages" sidebar module (where the "Home", "Forum" and links to other
 	local pages appear.)  Edit "Document Title" above as desired, replacing
-	it with "HIDDEN" if you do not want this page to appear in the list. */
+	it with "HIDDEN:Title" if you do not want this page to appear in the list. */
 
 load('webInit.ssjs');
 

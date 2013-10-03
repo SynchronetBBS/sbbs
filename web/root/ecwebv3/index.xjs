@@ -111,7 +111,7 @@
 		load(xjs_compile(webIni.RootDirectory + "/pages/" + page));
 	} else if(f && ext == ".TXT") {
 		var f = new File(webIni.RootDirectory + "/pages/" + page);
-		if(contents[0] == "HIDDEN")
+		if(contents[0].search(/^HIDDEN/) == 0)
 			contents.shift();
 		contents = contents.join("\r\n");
 		print("<pre>" + contents + "</pre>");
@@ -119,7 +119,7 @@
 	if(user.compare_ars('REST NOT G')) {
 		f = new File(system.data_dir+format("user/%04d.ecweb",user.number));
 		if(f.open("w")) {
-			f.writeln(title);
+			f.writeln(title.replace(/^HIDDEN:\s*/,''));
 			f.close();
 		}
 	}

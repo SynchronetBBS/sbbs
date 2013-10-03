@@ -1,4 +1,4 @@
-//HIDDEN
+//HIDDEN:New User
 load('../web/lib/captchaLib.ssjs');
 print("<span class=title>New User Registration</span><br /><br />");
 

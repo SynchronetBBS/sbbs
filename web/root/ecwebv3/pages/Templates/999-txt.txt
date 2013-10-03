@@ -4,7 +4,7 @@ This is a text file.  It can contain whatever you want, but bear in mind that
 the first line of the file will be used as its title in the "pages" sidebar
 module.  If the first line of the file reads:
 
-HIDDEN
+HIDDEN:Title
 
 then it will not be shown in the list.  ("HIDDEN" will be removed from the
 output when the page is displayed.)

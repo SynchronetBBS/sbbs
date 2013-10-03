@@ -1,4 +1,4 @@
-//HIDDEN
+//HIDDEN:eMail
 // Private email page for ecwebv3
 // echicken -at- bbs.electronicchicken.com
 
