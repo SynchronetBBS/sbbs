@@ -141,7 +141,7 @@ var httpSend = function(url, elementID, headers, postData, async) {
 	ecWeb forum use only. */
 var addReply = function(url, sub, thread, number) {
 	var response = httpGet(url + "?sub=" + sub + "&getmessage=" + number, false);
-	var outDivID = "sub-" + sub + "-thread-" + thread + "-" + number;
+	var outDivID = "sub-" + sub + "-message-" + number + "-" + "replyBox";
 	var divID = "sub-" + sub + "-thread-" + thread + "-" + number + "-reply";
 	var formID = "sub-" + sub + "-thread-" + thread + "-" + number + "-reply-form";
 	response = JSON.parse(response);
@@ -166,7 +166,7 @@ var addReply = function(url, sub, thread, number) {
 	out += "<input type='button' value='Submit' onclick='submitForm(\"" + url + "\", \"" + divID + "\", \"" + formID + "\")'>";
 	out += "</form>";
 	out += "</div>";
-	document.getElementById(outDivID).innerHTML += out;
+	document.getElementById(outDivID).innerHTML = out;
 }
 
 var addPost = function(url, sub, alias, name) {
@@ -189,7 +189,7 @@ var addPost = function(url, sub, alias, name) {
 	out += "</textarea><br />";
 	out += "<input type='button' value='Submit' onclick='submitForm(\"" + url + "\", \"" + divID + "\", \"" + formID + "\")'>";
 	out += "</form>";
-	document.getElementById(divID).innerHTML += out;
+	document.getElementById(divID).innerHTML = out;
 }
 
 /*	submitForm(url, elementID, formID)
