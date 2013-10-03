@@ -135,8 +135,16 @@ a:active {
 	background-color: #303030;
 }
 
-.hiddenQuote {
+blockquote {
 	font-style: italic;
+	padding: 10px;
+	border-style: solid;
+	border-width: 1px;
+	border-color: #303030;
+	background-color: #808080;
+}
+
+.hiddenQuote {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
