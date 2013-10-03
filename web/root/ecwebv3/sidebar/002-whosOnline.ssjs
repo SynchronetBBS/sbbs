@@ -43,6 +43,13 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 		}
 	}
 	print("</table>");
+	if(user.compare_ars("REST NOT G")) {
+		var tg = system.get_telegram(user.number);
+		if(tg != null) {
+			tg = tg.replace(/\1./,'');
+			print("<script>alert("+tg.toSource()+")</script>");
+		}
+	}
 
 } else {
 
@@ -52,7 +59,7 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 	print("var XMLReq = new XMLHttpRequest();");
 	print("XMLReq.open('GET', './sidebar/002-whosOnline.ssjs?action=show', true);");
 	print("XMLReq.send(null);");
-	print("XMLReq.onreadystatechange = function() { if(XMLReq.readyState == 4) { document.getElementById('whosonline').innerHTML = XMLReq.responseText; } }");
+	print("XMLReq.onreadystatechange = function() { if(XMLReq.readyState == 4) { document.getElementById('whosonline').innerHTML = XMLReq.responseText; var m=XMLReq.responseText.match(/<script[^>]*>(.*?)<\\\/script>/); if(m) eval(m[1]); } }");
 	print("}");
 	print("setInterval('xhrwo()', " + update + ");");
 	print("xhrwo();");
