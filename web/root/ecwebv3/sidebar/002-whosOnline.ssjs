@@ -25,6 +25,8 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 	var u=new User(1);
 	for(n = 1; n <= system.lastuser; n++) {
 		u.number = n;
+		if(u.compare_ars('REST G'))
+			continue;
 		if(u.connection == 'HTTP') {
 			if(u.logontime >= time()-(60*3)) {
 				print("<tr><td>WWW:&nbsp;</td>");
