@@ -4,6 +4,8 @@ function getTitle(i, filename)
 	var j;
 	var k;
 	var ext=file_getext(filename).toUpperCase();
+	if(i==null)
+		return;
 
 	if(ext == ".JS" || (ext == ".SSJS" && filename.search(/\.xjs\.ssjs$/i)==-1)) {
 		var title = i[0].replace(/\/\//g, "");
