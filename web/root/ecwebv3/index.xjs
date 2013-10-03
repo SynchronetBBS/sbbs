@@ -21,13 +21,46 @@
 		}
 		return true;
 	}
+	if(typeof http_request.query.page != "undefined")
+		var page = file_getname(http_request.query.page);
+	else
+		var page = "000-home.xjs";
+	var pext = file_getext(page);
+	if(pext === undefined)
+		pext = false;
+	else
+		pext = pext.toUpperCase();
+	if(file_exists(webIni.RootDirectory + "/pages/" + page)) {
+		var pf = new File(webIni.RootDirectory + "/pages/" + page);
+		if(pf.open("r")) {
+			var contents = pf.readAll();
+			pf.close();
+			var title = getTitle(contents, f.name);
+			if(title == undefined)
+				title = 'main menu';
+			if(user.compare_ars('REST NOT G')) {
+				f = new File(system.data_dir+format("user/%04d.ecweb",user.number));
+				if(f.open("w")) {
+					f.writeln(title.replace(/^HIDDEN:\s*/,''));
+					f.close();
+				}
+			}
+		}
+		else
+			pf=false;
+	}
+	else
+		pf=false;
+	if(!pf || !checkWebCtrl(webIni.RootDirectory + "/pages/", page)) {
+		title = 'error page';
+	}
 ?>
 
 <html>
 
 <head>
 <title>
-	<?xjs write(system.name); ?>
+	<?xjs write(system.name+': '+title); ?>
 </title>
 <link rel="stylesheet" type="text/css" href="./style/style.css">
 <script language="javascript" type="text/javascript" src="./lib/client.js"></script>
@@ -81,47 +114,21 @@
 <div id="content">
 <div id="subContent" class="border box background">
 <?xjs
-	if(typeof http_request.query.page != "undefined")
-		var page = file_getname(http_request.query.page);
-	else
-		var page = "000-home.xjs";
-	var ext = file_getext(page);
-	if(ext === undefined)
-		ext = false;
-	else
-		ext = ext.toUpperCase();
-	var f = file_exists(webIni.RootDirectory + "/pages/" + page);
-	var f = new File(webIni.RootDirectory + "/pages/" + page);
-	f.open("r");
-	var contents = f.readAll();
-	f.close();
-	var title = getTitle(contents, f.name);
-	if(title == undefined)
-		title = 'main menu';
-
-	if(!f || !checkWebCtrl(webIni.RootDirectory + "/pages/", page)) {
+	if(!pf || !checkWebCtrl(webIni.RootDirectory + "/pages/", page)) {
 		print("Page not available.");
-		title = 'error page';
-	} else if(ext == ".SSJS" && page.search(/\.xjs\.ssjs$/i)==-1) {
+	} else if(pext == ".SSJS" && page.search(/\.xjs\.ssjs$/i)==-1) {
 		load(webIni.RootDirectory + "/pages/" + page);
-	} else if(f && ext == ".HTML") {
+	} else if(f && pext == ".HTML") {
 		var f = new File(webIni.RootDirectory + "/pages/" + page);
 		write(contents.join('\n'));
-	} else if(f && ext == ".XJS") {
+	} else if(f && pext == ".XJS") {
 		load(xjs_compile(webIni.RootDirectory + "/pages/" + page));
-	} else if(f && ext == ".TXT") {
+	} else if(f && pext == ".TXT") {
 		var f = new File(webIni.RootDirectory + "/pages/" + page);
 		if(contents[0].search(/^HIDDEN/) == 0)
 			contents.shift();
 		contents = contents.join("\r\n");
 		print("<pre>" + contents + "</pre>");
-	}
-	if(user.compare_ars('REST NOT G')) {
-		f = new File(system.data_dir+format("user/%04d.ecweb",user.number));
-		if(f.open("w")) {
-			f.writeln(title.replace(/^HIDDEN:\s*/,''));
-			f.close();
-		}
 	}
 ?>
 </div>
