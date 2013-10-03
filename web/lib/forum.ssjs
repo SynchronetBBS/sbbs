@@ -70,7 +70,7 @@ var printBoards = function() {
 			msgBase.close();
 			if(h !== null)
 				out += format("Latest: %s, by %s on %s", h.subject, h.from, system.timestr(h.when_written_time));
-			if(user.alias != webIni.WebGuest && user.compare_ars(msgBase.cfg.post_ars)) {
+			if(user.alias != webIni.WebGuest && msg_area.sub[msgBase.cfg.code].can_post) {
 				out += format(
 					"<br />"
 					+ "<a class='ulLink' onclick='addPost(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\")'>Post a new message</a>"
@@ -357,33 +357,6 @@ var printThread = function(sub, t) {
 	msgBase.close();
 }
 
-var printMessage = function(sub, number) {
-	try {
-		var msgBase = new MsgBase(sub);
-		msgBase.open();
-	} catch(err) {
-		log(LOG_ERR, err);
-		return false;
-	}
-	if(sub != "mail" && (!user.compare_ars(msgBase.cfg.read_ars) || !user.compare_ars(msgBase.cfg.post_ars)))
-		return false;
-	var number = parseInt(number);
-	if(isNaN(number))
-		return false;
-	var ret = { "header" : msgBase.get_msg_header(number) };
-	if(ret.header === null)
-		return false;
-	ret.body = strip_exascii(msgBase.get_msg_body(number));
-	msgBase.close();
-	ret.user = { 
-		"alias" : user.alias,
-		"name" : user.name
-	};
-	if(sig)
-		ret.sig = sig;
-	print(JSON.stringify(ret));
-}
-
 var postMessage = function(sub, irt, to, from, subject, body) {
 	for(var a = 0; a < arguments.length; a++) {
 		if(a == "irt")
@@ -400,7 +373,7 @@ var postMessage = function(sub, irt, to, from, subject, body) {
 		log(LOG_ERR, err);
 		return false;
 	}
-	if(sub != "mail" && !user.compare_ars(msgBase.cfg.post_ars))
+	if(sub != "mail" && !msg_area.sub[msgBase.cfg.code].can_post)
 		return false;
 	var header = {
 		"to" : to,
