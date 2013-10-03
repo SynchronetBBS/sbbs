@@ -22,6 +22,16 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 		else
 				print("<td style=font-style:italic;>" + NodeStatus[system.node_list[n].status] + "</td></tr>");
 	}
+	var u=new User(1);
+	for(n = 1; n <= system.lastuser; n++) {
+		u.number = n;
+		if(u.connection == 'HTTP') {
+			if(u.logontime >= time()-(60*3)) {
+				print("<tr><td>WWW:&nbsp;</td>");
+				print("<td style=font-style:italic;>"+u.alias+"</td></tr>");
+			}
+		}
+	}
 	print("</table>");
 
 } else {
