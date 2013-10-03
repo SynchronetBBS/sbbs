@@ -11,6 +11,7 @@
 //		gender : { name : "Sex", type : "string" },
 		location : { name : "Location", type : "string" },
 		laston_date : { name : "Last On", type : "date" },
+		connection : { name : "Via", type : "string" },
 //		firston_date : { name : "First On", type : "date" },
 //		total_logons : { name : "Calls", type : "number" },
 //		total_posts : { name : "Posts", type : "number" }
