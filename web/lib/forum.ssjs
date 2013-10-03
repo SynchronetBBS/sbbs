@@ -169,7 +169,7 @@ var formatBody = function(body, ANSI_formatted, hide_quotes)
 	}
 	else {
 		
-		var blockquote_start = '<blockquote onclick="toggle_quote(this);event.stopPropagation();return false" style="cursor:pointer"';
+		var blockquote_start = '<blockquote title="Click to expand" onclick="toggle_quote(this);event.stopPropagation();return false" style="cursor:pointer"';
 		if(hide_quotes==undefined || hide_quotes)
 			blockquote_start += ' class="hiddenQuote"';
 		blockquote_start += '>';
