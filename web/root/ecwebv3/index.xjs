@@ -38,10 +38,12 @@
 			var title = getTitle(contents, pf.name);
 			if(title == undefined)
 				title = 'main menu';
+			else
+				title = title.replace(/^HIDDEN:\s*/,'');
 			if(user.compare_ars('REST NOT G')) {
 				f = new File(system.data_dir+format("user/%04d.ecweb",user.number));
 				if(f.open("w")) {
-					f.writeln(title.replace(/^HIDDEN:\s*/,''));
+					f.writeln(title);
 					f.close();
 				}
 			}
