@@ -73,7 +73,7 @@ var printBoards = function() {
 			if(user.alias != webIni.WebGuest && msg_area.sub[msgBase.cfg.code].can_post) {
 				out += format(
 					"<br />"
-					+ "<a class='ulLink' onclick='addPost(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\")'>Post a new message</a>"
+					+ "<a class='ulLink' onclick='addPost(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\");event.stopPropagation()'>Post a new message</a>"
 					+ "<div id='sub-%s-newMsgBox'></div>",
 					http_request.host,
 					webIni.appendURL,
@@ -336,7 +336,7 @@ var printThread = function(sub, t) {
 				sub,
 				header.number
 			);
-		} else if(header.attr|MSG_READ) {
+		} else if(header.attr^MSG_READ) {
 			header.attr|=MSG_READ;
 			msgBase.put_msg_header(header.number, header);
 		}
@@ -351,6 +351,7 @@ var printThread = function(sub, t) {
 				" - <a class='ulLink' onclick='addReply(\"http://%s/%sforum-async.ssjs\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\")'>Reply</a>",
 				http_request.host, webIni.appendURL, sub, t, header.number, header.from, user.alias, header.subject
 			);
+		out += format("<div id='sub-%s-message-%s-replyBox'></div>", sub, header.number);
 		out += "</div>";
 		print(out);
 	}
