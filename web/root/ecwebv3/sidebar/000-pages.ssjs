@@ -1,3 +1,4 @@
+load(webIni.WebDirectory + '/lib/ecutils.js');
 var e = directory(webIni.RootDirectory + "/pages/*");
 for(var g in e) {
 	if(file_isdir(e[g]))
@@ -10,28 +11,8 @@ for(var g in e) {
 	h.open("r");
 	var i = h.readAll();
 	h.close();
-	if(ext == ".JS" || (ext == ".SSJS" && e[g].search(/\.xjs\.ssjs$/i)==-1)) {
-		var title = i[0].replace(/\/\//g, "");
-		if(title == "HIDDEN")
-			continue;
-		print("<a class='link' href=./index.xjs?page=" + file_getname(e[g]) + ">" + title + "</a><br />");
-	}
-	if(ext == ".HTML" || ext == ".XJS") {
-		// Seek first comment line in an HTML document
-		for(j = 0; j < i.length; j++) {
-			var k = i[j].match(/^\<\!\-\-.*\-\-\>$/);
-			if(k === null)
-				continue;
-			var title = k[0].replace(/[\<\!\-+|\-+\>]/g, "");
-			if(title.match("HIDDEN") != null)
-				break;
-			print("<a class='link' href=./index.xjs?page=" + file_getname(e[g]) + ">" + title + "</a><br />");
-			break;
-		}
-	}
-	if(ext == ".TXT") {
-		if(i[0] == "HIDDEN")
-			continue;
-		print("<a class='link' href=./index.xjs?page=" + file_getname(e[g]) + ">" + i[0] + "</a><br />");
-	}
+	var title = getTitle(i, e[g]);
+	if(title == "HIDDEN" || title === undefined)
+		continue;
+	print("<a class='link' href=./index.xjs?page=" + file_getname(e[g]) + ">" + title + "</a><br />");
 }

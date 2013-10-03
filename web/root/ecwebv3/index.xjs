@@ -1,6 +1,7 @@
 <?xjs
 	load('webInit.ssjs');
 	load('xjs.js');
+	load(webIni.WebDirectory + '/lib/ecutils.js');
 	function checkWebCtrl(path, fileName) {
 		if(!file_exists(path + "webctrl.ini"))
 			return true; // Directory is not controlled, allow access
@@ -90,28 +91,35 @@
 	else
 		ext = ext.toUpperCase();
 	var f = file_exists(webIni.RootDirectory + "/pages/" + page);
+	var f = new File(webIni.RootDirectory + "/pages/" + page);
+	f.open("r");
+	var contents = f.readAll();
+	f.close();
+	var title = getTitle(contents, f.name);
+	if(title == undefined)
+		title = 'main menu';
+
 	if(!f || !checkWebCtrl(webIni.RootDirectory + "/pages/", page)) {
 		print("Page not available.");
+		title = 'error page';
 	} else if(ext == ".SSJS" && page.search(/\.xjs\.ssjs$/i)==-1) {
 		load(webIni.RootDirectory + "/pages/" + page);
 	} else if(f && ext == ".HTML") {
 		var f = new File(webIni.RootDirectory + "/pages/" + page);
-		f.open("r");
-		var contents = f.read();
-		f.close();
-		write(contents);
+		write(contents.join('\n'));
 	} else if(f && ext == ".XJS") {
 		load(xjs_compile(webIni.RootDirectory + "/pages/" + page));
 	} else if(f && ext == ".TXT") {
 		var f = new File(webIni.RootDirectory + "/pages/" + page);
-		f.open("r");
-		var contents = f.readAll();
-		f.close();
 		if(contents[0] == "HIDDEN")
 			contents.shift();
 		contents = contents.join("\r\n");
 		print("<pre>" + contents + "</pre>");
 	}
+	f = new File(system.data_dir+format("user/%04d.ecweb",user.number));
+	if(f.open("w"))
+		f.writeln(title);
+	f.close();
 ?>
 </div>
 </div>

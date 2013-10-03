@@ -8,7 +8,7 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 	for(n = 0; n < system.node_list.length; n++) {
 		if(typeof system.node_list[n] == "undefined")
 			continue;
-		print("<tr><td>Node " + (n + 1) + ":&nbsp;</td>");
+		print("<tr><td nowrap>Node " + (n + 1) + ":&nbsp;</td>");
 		if(system.node_list[n].status == 3)
 				print(
 					format(
@@ -28,7 +28,13 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 		if(u.connection == 'HTTP') {
 			if(u.logontime >= time()-(60*3)) {
 				print("<tr><td>WWW:&nbsp;</td>");
-				print("<td style=font-style:italic;>"+u.alias+"</td></tr>");
+				var f = new File(system.data_dir+format("user/%04d.ecweb",n));
+				var loc = '';
+				if(f.open("r")) {
+					loc=' viewing ' + f.readln();
+					f.close();
+				}
+				print("<td style=font-style:italic;>"+u.alias+loc+"</td></tr>");
 			}
 		}
 	}
