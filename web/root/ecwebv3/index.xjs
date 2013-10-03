@@ -116,10 +116,13 @@
 		contents = contents.join("\r\n");
 		print("<pre>" + contents + "</pre>");
 	}
-	f = new File(system.data_dir+format("user/%04d.ecweb",user.number));
-	if(f.open("w"))
-		f.writeln(title);
-	f.close();
+	if(user.compare_ars('REST NOT G')) {
+		f = new File(system.data_dir+format("user/%04d.ecweb",user.number));
+		if(f.open("w")) {
+			f.writeln(title);
+			f.close();
+		}
+	}
 ?>
 </div>
 </div>
