@@ -46,7 +46,7 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 	if(user.compare_ars("REST NOT G")) {
 		var tg = system.get_telegram(user.number);
 		if(tg != null) {
-			tg = tg.replace(/\1./,'');
+			tg = tg.replace(/\1./g,'');
 			print("<script>alert("+tg.toSource()+")</script>");
 		}
 	}
