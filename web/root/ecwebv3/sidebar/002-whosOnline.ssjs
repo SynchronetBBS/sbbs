@@ -1,10 +1,9 @@
 var update = 30000; // Milliseconds between updates
-if(js.global.webIni===undefined)
-	load('webInit.ssjs');
 
 load("nodedefs.js");
 if(typeof http_request.query.action != "undefined" && http_request.query.action == "show") {
 
+	load('webInit.ssjs');
 	print("<b>Who's online</b><br><br>");
 	print("<table border=0 cellpadding=0 cellspacing=0 class='font'>");
 	for(n = 0; n < 6; n++) {
