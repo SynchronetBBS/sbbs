@@ -1,5 +1,5 @@
 var update = 30000; // Milliseconds between updates
-if(js.global.webInit===undefined)
+if(js.global.webIni===undefined)
 	load('webInit.ssjs');
 
 load("nodedefs.js");
@@ -7,7 +7,7 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 
 	print("<b>Who's online</b><br><br>");
 	print("<table border=0 cellpadding=0 cellspacing=0 class='font'>");
-	for(n = 0; n < system.node_list.length; n++) {
+	for(n = 0; n < 6; n++) {
 		if(typeof system.node_list[n] == "undefined")
 			continue;
 		print("<tr><td nowrap>Node " + (n + 1) + ":&nbsp;</td>");
