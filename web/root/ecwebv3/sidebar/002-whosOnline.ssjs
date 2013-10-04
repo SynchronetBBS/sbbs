@@ -6,7 +6,7 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 	load('webInit.ssjs');
 	print("<b>Who's online</b><br><br>");
 	print("<table border=0 cellpadding=0 cellspacing=0 class='font'>");
-	for(n = 0; n < 6; n++) {
+	for(n = 0; n < system.node_list.length; n++) {
 		if(typeof system.node_list[n] == "undefined")
 			continue;
 		print("<tr><td nowrap>Node " + (n + 1) + ":&nbsp;</td>");
