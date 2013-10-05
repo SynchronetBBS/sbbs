@@ -379,6 +379,47 @@ void strListSortAlphaCaseReverse(str_list_t list)
 	qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaCaseReverse);
 }
 
+str_list_t strListDup(str_list_t list)
+{
+	str_list_t	ret;
+	size_t		count=0;
+
+	ret = strListInit();
+	for(; *list; list++)
+		strListAppend(&ret, *list, count++);
+	return ret;
+}
+
+int strListCmp(str_list_t list1, str_list_t list2)
+{
+	str_list_t	l1=strListDup(list1);
+	str_list_t	l2=strListDup(list2);
+	int			tmp;
+
+	if(*l1 == NULL && *l2 == NULL)
+		return 0;
+	if(*l1 == NULL)
+		return -1;
+	if(*l2 == NULL)
+		return 1;
+
+	strListSortAlphaCase(l1);
+	strListSortAlphaCase(l2);
+
+	for(; *l1; l1++) {
+		l2++;
+		if(*l2==NULL)
+			return 1;
+		tmp = strcmp(*l1, *l2);
+		if(tmp != 0)
+			return tmp;
+	}
+	l2++;
+	if(*l2==NULL)
+		return 0;
+	return -1;
+}
+
 void strListFreeStrings(str_list_t list)
 {
 	size_t i;

@@ -125,6 +125,12 @@ char*		strListAppendBlock(char* block, str_list_t);
 size_t		strListBlockLength(char* block);
 void		strListFreeBlock(char*);
 
+/* Duplicates a list */
+str_list_t	strListDup(str_list_t list);
+
+/* Compares two lists */
+int			strListCmp(str_list_t list1, str_list_t list2);
+
 /************/
 /* File I/O */
 /************/
