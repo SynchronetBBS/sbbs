@@ -19,8 +19,6 @@ export SBBSCTRL=$SBBSDIR/ctrl
 PROG="$SBBSDIR/exec/sbbs"
 PIDFILE="/var/run/sbbs.pid"
 
-opts="${opts} restart"
-
 depend() {
 	need localmount
 	after bootmisc
