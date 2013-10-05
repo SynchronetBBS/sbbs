@@ -95,19 +95,27 @@ int pktdump(FILE* fp, const char* fname)
 
 	if(pkthdr.type2plus.cword==BYTE_SWAP_16(pkthdr.type2plus.cwcopy)  /* 2+ Packet Header */
 		&& pkthdr.type2plus.cword&1) {
-		fprintf(stdout,"2+");
+		fprintf(stdout,"2+ (prod: %02X%02X, rev: %u.%u)"
+			,pkthdr.type2plus.prodcodeHi	,pkthdr.type2plus.prodcodeLo
+			,pkthdr.type2plus.prodrevMajor	,pkthdr.type2plus.prodrevMinor);
 		dest.point=pkthdr.type2plus.destpoint;
 		if(pkthdr.type2plus.origpoint!=0 && orig.net==0xffff) {	/* see FSC-0048 for details */
 			orig.net=pkthdr.type2plus.auxnet;
 			orig.point=pkthdr.type2plus.origpoint;
 		}
+		if(pkthdr.type2plus.origzone != orig.zone)
+			printf("!Warning: origination zone mistmatch in type 2+ packet header (%u != %u)\n"
+				,pkthdr.type2plus.origzone, orig.zone);
+		if(pkthdr.type2plus.destzone != dest.zone)
+			printf("!Warning: destination zone mistmatch in type 2+ packet header (%u != %u)\n"
+				,pkthdr.type2plus.destzone, dest.zone);
 	} else if(pkthdr.type2_2.subversion==2) {					/* Type 2.2 Packet Header (FSC-45) */
-		fprintf(stdout,"2.2");
+		fprintf(stdout,"2.2 (prod: %02X, rev: %u)", pkthdr.type2_2.prodcode, pkthdr.type2_2.prodrev);
 		dest.point=pkthdr.type2_2.destpoint; 
 		sprintf(origdomn,"@%s",pkthdr.type2_2.origdomn);
 		sprintf(destdomn,"@%s",pkthdr.type2_2.destdomn);
 	} else
-		fprintf(stdout,"2.0");
+		fprintf(stdout,"2.0 (prod: %02X, serial: %u)", pkthdr.type2.prodcode, pkthdr.type2.sernum);
 
 	printf(" from %s%s",faddrtoa(&orig,NULL),origdomn);
 	printf(" to %s%s\n"	,faddrtoa(&dest,NULL),destdomn);

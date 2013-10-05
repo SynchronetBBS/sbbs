@@ -111,7 +111,7 @@ typedef struct _PACK {				/* Fidonet Packet Header (types 2+), FSC-48 */
 	uint16_t	orignet;			// Origination Net of Packet
 	uint16_t	destnet;			// Destination Net of Packet
 	uint8_t		prodcodeLo;			// Product Code (00h is Fido)
-	uint8_t		revisionMaj;		// Revision (major)
+	uint8_t		prodrevMajor;		// Revision (major)
 	uint8_t		password[FIDO_PASS_LEN];	// Session Password or NULL
 	uint16_t	oldOrigZone;		// Origination Zone in type 2.0 packet, unused in 2+
 	uint16_t	oldDestZone;		// Destination Zone in type 2.0 packet, unused in 2+
@@ -119,7 +119,7 @@ typedef struct _PACK {				/* Fidonet Packet Header (types 2+), FSC-48 */
 	uint16_t	auxnet;				// Orig Net if Origin is a Point
 	uint16_t	cwcopy;				// Must be Equal to cword (byte-swapped)
 	uint8_t		prodcodeHi;			// Product Code	
-	uint8_t		revisionMinor; 		// Revision (minor)
+	uint8_t		prodrevMinor; 		// Revision (minor)
 	uint16_t	cword;				// Compatibility Word
 	uint16_t	origzone; 			// Zone of Packet Sender or NULL
 	uint16_t	destzone; 			// Zone of Packet Receiver or NULL
@@ -139,7 +139,7 @@ typedef struct _PACK {				/* Fidonet Packet Header (types 2.2), FSC-45 */
 	uint16_t	orignet;			// Origination Net of Packet
 	uint16_t	destnet;			// Destination Net of Packet
 	uint8_t		prodcode;			// Product code (00h is Fido)
-	uint8_t		prodrevision;		// Product revision level
+	uint8_t		prodrev;			// Product revision level
 	uint8_t		password[FIDO_PASS_LEN];	// Session Password or NULL
 	uint16_t	origzone;			// Origination Zone of Packet or NULL (added in rev 12 of FTS-1)
 	uint16_t	destzone;			// Destination Zone of Packet or NULL (added in rev 12 of FTS-1)
