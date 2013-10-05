@@ -183,6 +183,12 @@ BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 		if(xpms_set->lprintf)
 			xpms_set->lprintf(LOG_INFO, "Adding %s listening socket on %s", prot, host);
 		p = strrchr(host, ':');
+		/*
+		 * If there isn't a [, and the first and last colons aren't the same
+		 * it's assumed to be an IPv6 address
+		 */
+		if(strchr(host,'[')==NULL && p != NULL && strchr(host, ':') != p)
+			p=NULL;
 		if(host[0]=='[') {
 			host_str++;
 			p2=strrchr(host,']');
