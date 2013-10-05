@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -121,8 +121,8 @@ int main(int argc, char **argv)
 	BOOL door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 
-	fprintf(stderr,"\nSBBSecho Configuration  Version %s  Copyright 2003 "
-		"Rob Swindell\n\n",SBBSECHO_VER);
+	fprintf(stderr,"\nSBBSecho Configuration  Version %u.%02u  Copyright %s "
+		"Rob Swindell\n\n",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR, __DATE__+7);
 
 	memset(&cfg,0,sizeof(config_t));
 	str[0]=0;
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 		if(argv[i][0]=='-')
 			switch(toupper(argv[i][1])) {
                 case 'D':
-					printf("NOTICE: The -d option is depreciated, use -id instead\r\n");
+					printf("NOTICE: The -d option is deprecated, use -id instead\r\n");
 					SLEEP(2000);
                     door_mode=TRUE;
                     break;
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 							ciolib_mode=CIOLIB_MODE_CURSES;
 							break;
 						case 0:
-							printf("NOTICE: The -i option is depreciated, use -if instead\r\n");
+							printf("NOTICE: The -i option is deprecated, use -if instead\r\n");
 							SLEEP(2000);
 						case 'F':
 							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
@@ -250,7 +250,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	sprintf(str,"SBBSecho Configuration v%s",SBBSECHO_VER);
+	sprintf(str,"SBBSecho Configuration v%u.%02u",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR);
 	uifc.scrn(str);
 
 	dflt=0;
