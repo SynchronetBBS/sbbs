@@ -1490,7 +1490,6 @@ static JSBool
 js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
-	jsval *argv=JS_ARGV(cx, arglist);
 	JSObject*	hdrobj;
 	jsrefcount	rc;
 	privatemsg_t*	p;
