@@ -1375,7 +1375,7 @@ ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong def
 	return(parseIpAddress(value));
 }
 
-struct in6_addr iniReadIp6Address(FILE* fp, const char* section, const char* key, ulong deflt)
+struct in6_addr iniReadIp6Address(FILE* fp, const char* section, const char* key, struct in6_addr deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
@@ -1401,7 +1401,7 @@ ulong iniGetIpAddress(str_list_t list, const char* section, const char* key, ulo
 	return(parseIpAddress(vp));
 }
 
-struct in6_addr iniGetIp6Address(str_list_t list, const char* section, const char* key, ulong deflt)
+struct in6_addr iniGetIp6Address(str_list_t list, const char* section, const char* key, struct in6_addr deflt)
 {
 	char*	vp=NULL;
 
