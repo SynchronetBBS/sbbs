@@ -2708,10 +2708,10 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 			,SBBSECHO_VER,PLATFORM_DESC,revision);
 	}
 			
-
+#if 0
 	if(area.name && addr.zone!=fmsghdr.destzone)	/* Zone Gate */
 		fprintf(stream,"SEEN-BY: %d/%d\r",fmsghdr.destnet,fmsghdr.destnode);
-
+#endif
 	if(area.name /* && addr.zone==fmsghdr.destzone */) {	/* Not NetMail */
 		fprintf(stream,"SEEN-BY:");
 		for(i=0;i<seenbys.addrs;i++) {			  /* Put back original SEEN-BYs */
@@ -4434,7 +4434,7 @@ int main(int argc, char **argv)
 			printf("%21s: %s "
 				,secure ? "Importing Secure Pkt" : "Importing Packet",packet+offset);
 			memcpy(&two_plus,&pkthdr.empty,sizeof(two_plus));
-			if(two_plus.cword==_rotr(two_plus.cwcopy,8)  /* 2+ Packet Header (see FSC-48 for explanation of this insanity) */
+			if(two_plus.cword==_rotr(two_plus.cwcopy,8)  /* 2+ Packet Header (see FSC-39 and FSC-48 for explanation of this insanity) */
 				&& two_plus.cword && two_plus.cword&1) {
 				pkt_type=PKT_TWO_PLUS;
 				pkt_faddr.point=two_plus.origpoint;
@@ -4576,7 +4576,7 @@ int main(int argc, char **argv)
 						else
 							printf("(Passthru) ");
 						fmsgbuf=getfmsg(fidomsg,NULL);
-						gen_psb(&msg_seen,&msg_path,fmsgbuf,pkthdr.destzone);
+						gen_psb(&msg_seen,&msg_path,fmsgbuf,pkthdr.origzone);	/* was destzone */
 						break; 
 					}
 
@@ -4589,7 +4589,7 @@ int main(int argc, char **argv)
 						else
 							printf("(Passthru) ");
 						fmsgbuf=getfmsg(fidomsg,NULL);
-						gen_psb(&msg_seen,&msg_path,fmsgbuf,pkthdr.destzone); 
+						gen_psb(&msg_seen,&msg_path,fmsgbuf,pkthdr.origzone);	/* was destzone */
 					}
 					else {
 						start_tick=0;
