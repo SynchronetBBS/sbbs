@@ -573,6 +573,15 @@ char* iniSetIpAddress(str_list_t* list, const char* section, const char* key, ul
 	in_addr.s_addr=htonl(value);
 	return iniSetString(list, section, key, inet_ntoa(in_addr), style);
 }
+
+char* iniSetIp6Address(str_list_t* list, const char* section, const char* key, struct in6_addr value
+					,ini_style_t* style)
+{
+	char	addr[INET6_ADDRSTRLEN];
+
+	inet_ntop(AF_INET6, &value, addr, sizeof(addr));
+	return iniSetString(list, section, key, addr, style);
+}
 #endif
 
 char* iniSetBool(str_list_t* list, const char* section, const char* key, BOOL value
@@ -1344,6 +1353,14 @@ static ulong parseIpAddress(const char* value)
 	return(ntohl(inet_addr(value)));
 }
 
+static struct in6_addr parseIp6Address(const char* value)
+{
+	struct in6_addr ret;
+
+	inet_pton(AF_INET6, value, &ret);
+	return ret;
+}
+
 ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
@@ -1358,6 +1375,20 @@ ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong def
 	return(parseIpAddress(value));
 }
 
+struct in6_addr iniReadIp6Address(FILE* fp, const char* section, const char* key, ulong deflt)
+{
+	char	buf[INI_MAX_VALUE_LEN];
+	char*	value;
+
+	if((value=read_value(fp,section,key,buf))==NULL)
+		return(deflt);
+
+	if(*value==0)		/* blank value */
+		return(deflt);
+
+	return(parseIp6Address(value));
+}
+
 ulong iniGetIpAddress(str_list_t list, const char* section, const char* key, ulong deflt)
 {
 	char*	vp=NULL;
@@ -1368,6 +1399,18 @@ ulong iniGetIpAddress(str_list_t list, const char* section, const char* key, ulo
 		return(deflt);
 
 	return(parseIpAddress(vp));
+}
+
+struct in6_addr iniGetIp6Address(str_list_t list, const char* section, const char* key, ulong deflt)
+{
+	char*	vp=NULL;
+
+	get_value(list, section, key, NULL, &vp);
+
+	if(vp==NULL || *vp==0)		/* blank value or missing key */
+		return(deflt);
+
+	return(parseIp6Address(vp));
 }
 
 #endif	/* !NO_SOCKET_SUPPORT */

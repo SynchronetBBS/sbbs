@@ -174,6 +174,12 @@ ulong		iniGetIpAddress(str_list_t, const char* section, const char* key
 					,ulong deflt);
 char*		iniSetIpAddress(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
+struct in6_addr	iniReadIp6Address(FILE*, const char* section, const char* key
+					,ulong deflt);
+struct in6_addr		iniGetIp6Address(str_list_t, const char* section, const char* key
+					,ulong deflt);
+char*		iniSetIp6Address(str_list_t*, const char* section, const char* key, ulong value
+					,ini_style_t*);
 int			iniGetSocketOptions(str_list_t, const char* section
 					,SOCKET sock, char* error, size_t errlen);
 #endif
