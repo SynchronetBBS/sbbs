@@ -19,9 +19,8 @@ if(typeof http_request.query.sub != "undefined" && http_request.query.sub != 'ma
 	print("<script type='text/javascript'>");
 	print(
 		format(
-			"loadThreads('http://%s:%s%s/forum-async.ssjs', '%s', %s);",
+			"loadThreads('http://%s%s/forum-async.ssjs', '%s', %s);",
 			http_request.host,
-			webIni.HTTPPort,
 			webIni.appendURL,
 			http_request.query.sub,
 			(typeof http_request.query.thread == "undefined") ? true : false
@@ -30,9 +29,8 @@ if(typeof http_request.query.sub != "undefined" && http_request.query.sub != 'ma
 	if(typeof http_request.query.thread != "undefined") {
 		print(
 			format(
-				"loadThread('http://%s:%s%s/forum-async.ssjs', '%s', '%s', %s);",
+				"loadThread('http://%s%s/forum-async.ssjs', '%s', '%s', %s);",
 				http_request.host,
-				webIni.HTTPPort,
 				webIni.appendURL,
 				http_request.query.sub,
 				http_request.query.thread,
