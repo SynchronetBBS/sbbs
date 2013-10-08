@@ -220,8 +220,8 @@ static char* prop_desc[] = {
 		"mods/somefile.js<br>"
 		"exec/somefile.js<br>"
 	,"full path and filename of JS file executed"
-	,"directory of executed JS file"
 	,"JS filename executed (with no path)"
+	,"directory of executed JS file"
 	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
 	,NULL
 };
