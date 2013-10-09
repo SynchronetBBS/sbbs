@@ -208,67 +208,18 @@ function execuser(line)
 var mail_gen = 0;
 function mail_line(text, ntn)
 {
-    var i, pos;
-    var fname;
-	var mailfiles = [
-		{ntn:-1, age:0, fp:null},
-		{ntn:-1, age:0, fp:null},
-		{ntn:-1, age:0, fp:null},
-		{ntn:-1, age:0, fp:null},
-		{ntn:-1, age:0, fp:null},
-		{ntn:-1, age:0, fp:null},
-		{ntn:-1, age:0, fp:null},
-		{ntn:-1, age:0, fp:null}
-	];
-
-    if(ntn == -1) { /* close all */
-        for(i = 0; i < 8; i++) {
-            if(mailfiles[i].fp != null)
-				mailfiles[i].fp.close();
-
-            mailfiles[i].ntn = -1;
-            mailfiles[i].age = 0;
-            mailfiles[i].fp = null;
-        }
-        return;
-    }
-
+	var fp;
+	
     if(ntn == 0 || ntn == 27) /* ignore god and rogue */
         return;
 
-    /* find the nation's mail file if already open... */
-
-    for(i = 0; i < 8; i++)
-        if(mailfiles[i].ntn == ntn) {
-            mailfiles[i].age = mail_gen++;
-            break;
-        }
-
-    if(i >= 8) { /* not open. */
-        pos = 0;
-
-        for(i = 1; i < 8; i++)
-            if(mailfiles[i].age < mailfiles[pos].age)
-                pos = i;
-
-        if(mailfiles[pos].fp != null)
-			mailfiles[pos].fp.close();
-
-        mailfiles[pos].ntn = -1;
-
-        fname = game_dir+'/'+format(MAILFL, ntn);
-        mailfiles[pos].fp = new File(fname);
-
-        if(!mailfiles[pos].fp.open('ab')) /* error, can't stop now... */
-            return;
-
-        mailfiles[pos].ntn = ntn;
-        mailfiles[pos].age = mail_gen++;
-
-    } else
-        pos = i;
-
-    mailfiles[pos].fp.write(text);
+	fname = game_dir+'/'+format(MAILFL, ntn);
+	fp = new File(fname);
+	if(fp.open('ab')) {
+		fp.write(text);
+		fp.close();
+	}
+	return;
 }
 
 function message_out(text, n1, n2, do_news)
@@ -428,7 +379,7 @@ function battle(a, b)
 	];
 	var ntns=[0,0];
 	var r, c, city, hi, total, rlose, rwin, l, i, d, dn;
-	var names, buff;
+	var names=['',''], buff;
 
 	ntns[0] = armies[a].nation;
 	ntns[1] = armies[b].nation;
@@ -873,7 +824,6 @@ function main(argc, argv)
             file_remove(fp.name);
         } else {
             print("\n"+nations[n].name+" of "+nationcity(n)+" is idle.\n");
-print("FILE: "+fp.name);
             nations[n].idle_turns++;
         }
 
