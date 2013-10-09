@@ -1,0 +1,108 @@
+
+             S O L O M O R I A H ' S
+
+           X    X    XX    XXXXX    XXX
+           X    X   X  X   X    X   XXX
+           X    X  X    X  X    X   XXX
+           X    X  XXXXXX  XXXXX     X 
+           X XX X  X    X  X   X       
+           XX  XX  X    X  X    X   XXX
+            X  X   X    X  X    X   XXX
+
+
+WAR Version 4.4                       "Code by Solomoriah"
+Copyright 1993, 1994, 2001, 2013 Chris Gonnerman
+All Rights Reserved.
+ 
+
+INTRODUCTION 
+ 
+Two separate doc files are included with WAR!  The one you 
+are reading, Manual, explains how to set up and run the 
+game.  The other file, Rules, explains the user 
+interface and basic game rules.  
+ 
+ 
+GAME SETUP 
+ 
+Since you are reading this file, you have obviously unZIPped 
+the game archive WARPROG.ZIP.  Put all the program files in 
+a directory by themselves.  
+ 
+Several basic game worlds are included with WAR!  A game 
+world is stored in two files: map and game.sav.  map is 
+never changed by the game programs (except WARTOOL), while 
+game.sav will be.  game.sav will be backed up in the form of 
+files named game.000, game.001, etc.  WAR! will clean up 
+(remove) old game save backups when they are five 
+generations out of date.  
+ 
+A third file, master.cmd, is supplied.  Generally you should 
+not tamper with the contents of any files you find in the 
+WAR! directory.  
+ 
+To install a game world, the easiest thing to do is to unZIP 
+the world file (WARSOLO.ZIP, WARALDER.ZIP, or WARROOK.ZIP) 
+in the directory you put the game programs in.  Other 
+arrangements will be explained later under the CONTROL FILES 
+heading.  
+ 
+ 
+PLAYING WAR! STANDALONE 
+ 
+To play WAR! change to the WAR directory and enter the 
+command WAR.  For example, if you installed WAR! in the 
+directory C:\WAR, you would start WAR! as follows: 
+
+    C:\> cd \war
+    C:\WAR> war
+
+When WAR! starts, it will ask you for your UID.  Any number 
+from 1 to 32,768 is legal.  The first time you play a turn 
+in WAR! you will be assigned a home city and asked for the 
+name of your national leader.  You may use any name you 
+like, up to 14 characters in length.  WAR! will then go to 
+the main screen.  See the Rules file for information on 
+actually playing the game.  
+ 
+ 
+RUNNING UPDATES 
+ 
+Running updates is done the same way.  Change to the 
+directory WAR! is installed in and enter the command WARUPD.
+WARUPD sends progress messages to stdout, so you can collect 
+them as follows: 
+
+    C:\WAR> warupd >message.txt
+
+On a BBS system you may want or need to automate the update 
+processing.  Note that WARUPD will run even if someone is 
+actively playing WAR! (I'm still thinking about how to fix 
+that), so you should try to run the updates when no one will 
+be playing the game.  
+ 
+It is recommended for normal BBS game play that updates be 
+run every 24 hours.  
+ 
+ 
+WARNEWS 
+ 
+WARNEWS is a stand-alone news viewer for WAR! It presents 
+the same user interface that the regular WAR program does in 
+newsreader mode.  
+ 
+ 
+WARMAP 
+ 
+WARMAP combines the MAP and GAME.SAV files to create an 
+up-to-date map of the WAR! world.  As with WARUPD, the map 
+is printed to stdout and may be collected in a file as 
+follows: 
+
+    C:\WAR> warmap >file.txt
+
+To print most maps you will need to put your printer in 
+condensed print.  To view the map on the screen you will 
+need a file viewer or editor that can scroll sideways.  The 
+MS-DOS 5 EDIT command can do this.  
+ 

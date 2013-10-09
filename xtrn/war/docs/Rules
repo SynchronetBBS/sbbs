@@ -1,0 +1,246 @@
+
+                S O L O M O R I A H ' S
+
+              X    X    XX    XXXXX    XXX
+              X    X   X  X   X    X   XXX
+              X    X  X    X  X    X   XXX
+              X    X  XXXXXX  XXXXX     X 
+              X XX X  X    X  X   X       
+              XX  XX  X    X  X    X   XXX
+               X  X   X    X  X    X   XXX
+
+    WAR Version 4.4             "Code by Solomoriah"
+    Copyright 1993, 1994, 2001, 2013 Chris Gonnerman
+    All Rights Reserved.
+
+
+Starting the Game:
+
+If you have never played WAR! before, you will be asked for your name 
+and your nation mark.  You may use any name you wish, up to 14 
+characters long.  This name will be used for your national leader (your 
+first hero) and will be shown on status displays.  You do not have to 
+use your real name.
+
+Enter a single exclamation mark (!) in place of the name to try for a 
+different city.
+
+The nation mark is the letter you wish to be used to represent your 
+nation's cities and armies in the game.  (Cities are uppercase, armies 
+are lowercase.)
+
+Next, you will be instructed to press a key to continue.  When you do,
+the following screen will appear:
+
+
+  --------------------------------
+ |                             . .|  ->   Victor (Hero)             8:8
+ |                             . .|       Verdant 1st Lt. Infantry  6:6
+ |     # #                        |
+ | . . . .                        |
+ | . . . .                        |
+ | . . . . % %                    |
+ | . . . % % * % V % %            |
+ | . . ^ * % % % %               ^|
+ | . ^ ^ ^ ^                   ^ ^|
+ | . ^ ^ ^ ^ *         . . % % ^ ^|
+ | % % % % % % # #   . . . % % % ^|
+ | % % % % % % # * # . . . . % % %|
+ | % % % % % % # # # . . . . . % %|
+ | # # % %           . . . . . % %|
+ | # # #             ^ ^ . . . % %|
+ | # # # #             ^ # # % % %|
+  --------------------------------
+  City:  Verdant (Verdant)
+
+  Welcome to Solomoriah's WAR!  Press ? for Help.
+
+(Of course, your screen may show a different city, and you probably 
+will name your hero something other than Victor...)
+
+If you enter the game before the first turn update, you will have your
+hero, your city, and one army.  For each turn after the first that
+passes before you enter the game, you will have an additional army, up
+to the limit of militia production (usually four or six).  This ensures 
+you will not be helpless if you enter the game late.
+
+The map uses the following symbols:
+
+    . Plains     * Neutral City
+    % Forest     ! Battle Zone
+    # Hills
+    ^ Mountains
+
+(Blank space represents water.)
+
+
+Playing WAR!
+
+Your first act upon entering the game will probably be to attack a
+neutral city nearby.  To do so you will need to move your army(s) into
+the city.
+
+Note the pointer (->) beside the hero, Victor, on the screen view
+above.  You use the <j> and <k> keys to move the pointer down or up.
+If you press the <space bar> a * will appear next to the army the
+pointer is pointing at.  (Pressing <space bar> again will remove the
+*.)  You may also press <*> to select all, or </> to unselect all.
+
+Once you have selected your armies, press <m> to move them.  A message
+will appear at the bottom of the screen, as follows:
+
+ Move Army          7 8 9      y k u    SPACE to Stop.
+                    4   6  or  h   l
+                    1 2 3      n j m
+
+The keys shown move your army stack in the corresponding direction.
+Note that if any army you have marked can't make a move, the entire
+stack can't.
+
+Next to each army name in the screen view, you will see a pair of
+numbers separated by a colon.  The first number is the army's maximum
+movement allowance, and the second is the amount remaining.  Note that
+different armies may have different costs for moving through a given 
+space.  Some terrain types may be totally impassable to a given army
+type; for instance, cavalry can't move through mountains, and most
+armies can't cross water.
+
+When you reach the neutral city, note that it will cost 2 movement
+points to enter.  (Entering a hostile city always costs 2 points;
+friendly cities always cost 1 point.)  Once you have entered you will
+see an exclamation point (!) indicating a battle zone.  You may not
+move armies out of a battle zone... so you should then just press
+<space bar> to finish moving.
+
+You may stop an army or an army stack anywhere, not just in a city;
+your remaining movement will still be available in that case.
+
+When the turn update runs, all battles will be resolved.  Note that if
+you attack a player-owned city, and he has moved additional armies
+into the city, the results may not be as you expect.
+
+The reason is, player commands are executed in random order.  The
+nation list is scrambled, then each nation's commands are executed,
+followed by battles.
+
+For instance, say you and your neighbor, both players, go to war.  You
+attack, moving a large army stack into a poorly-defended city.  He
+expects this, and moves a large army stack into the same city to
+defend it.
+
+If his commands execute first, there will be one large battle, as
+your army stack confronts his.  If your commands execute first, you may
+capture his city, only to be crushed when his defensive force arrives.
+
+Players may have as many as twelve armies in a friendly city.
+However, no more than ten armies belonging to a given nation may be in
+any other space, including an enemy city.  Note also that cities give
+a bonus to the combat ratings of friendly units (the defense value).
+
+Heros also give a bonus to friendly units they are grouped with.  Only
+the most powerful hero in a stack grants the stack his bonus.  (Only
+one commander per group.)
+
+
+Changing the View:
+
+The map shows your current group near the center; the cursor will be 
+on the exact spot.  To move the "focus" to another group, use the
+(n)ext and (p)revious commands.
+
+Pressing <n> for next moves the focus to the next group, in map order,
+which you own.  A group consists of a city and/or one or more armies.
+All armies in the group will be displayed in the right-hand column.
+Enemy army counts will be below your armies.  If the focus is on a
+city, the city name and owning nation will be below the map display.
+
+Similarly, <p> for previous moves to the previous group in map order.
+If there are no previous groups (or no more groups for next), a
+message will appear.
+
+You may also press <N> or <P> (capitalized) to move to the very last 
+(for N) or very first (for P) group.
+
+
+Viewing the Map:
+
+You may gain "recon" information about the map around any focus position 
+by entering (i)nformation mode.  While in "info mode" you may move the
+cursor around the screen, to any spot visible.  Notice that the focus
+remains in the same place.
+
+Information about the terrain and armies present in each spot you move the
+cursor over is shown just above the info mode help display, at the bottom
+of the screen.
+
+
+Status Display:
+
+The (s)tatus display shows the names of all nations, their rulers and nation
+marks, and a count of their currently owned cities, armies, and heros.  
+While in status display, you may use (n)ext and (p)revious to view other
+pages, or press ESC to return to the normal display.
+
+
+Drafting Armies:
+
+Each city can produce as many as four different types of units.
+Initially, each city is set up to produce the lowest-ranked unit type
+it can produce.  You can change this for friendly cities by pressing
+<a> for the armies command.  The available unit types will be shown,
+along with the time to produce in parenthesis.  The current type in
+production is also shown, along with the remaining time to produce the
+unit.
+
+If you change unit production, you lose any time spent producing a
+different type.  For instance, if one of your cities is producing Lt.
+Cavalry and needs four turns to produce a unit, and you have only two
+turns left to produce, then changing unit types causes you to lose the
+two turns you have spent already.
+
+Not all cities take the same time to produce the same unit type.  Some
+cities are better at producing certain types.  Also, not all cities
+produce the same types of armies.
+
+
+Transporting Armies:
+
+Certain special army types have the ability to transport other armies.
+For instance, a Navy unit can transport an entire stack of armies over
+water spaces.  There are units able to transport entire stacks, single 
+armies, or single heros.
+
+To use a transporting unit, simply select it along with the units you
+wish to have transported.  When you begin moving the stack, the movement
+costs will be applied to the transporting army.  Armies being carried
+pay a cost of 1 point per space moved through regardless of terrain
+type, and do not have to stop when they reach 0 movement (as long as
+the transporting army can still move).
+
+
+Special Hero Rules:
+
+As previously noted, a hero adds a bonus to all units stacked under him
+(or her).  This bonus, called the Command value, varies from hero to hero.
+
+Heros may make use of hero-transporting armies (such as Hippogryffs) as
+noted above.
+
+When a hero joins your nation, he or she has the movement capability (or
+costs) of the lowest-ranked unit produced in the hero's home city.  For
+most heros, this results in the hero moving like Lt. Infantry.  Elf 
+heros, however, have regular Elf movement (making it easier to move 
+through forests).
+
+
+Reading the News and Mail:
+
+You can read the News by pressing (R).  The News consists of information
+about recent battles (in capsule form), captured cities, etc. of all
+nations.
+
+You can read your Mail by pressing (M).  The results of your military 
+actions will be mailed to you in detail; also, you may receive mail from 
+other national leaders this way.  To send Mail, press (S).  You may enter
+the name of the leader, or the word All to post a message in the News.
+

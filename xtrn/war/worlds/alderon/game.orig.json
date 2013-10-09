@@ -1,0 +1,2047 @@
+{
+	"ncnt": 1,
+	"nations": [
+		{
+			"name": "Overlord",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "",
+			"uid": 0,
+			"city": 0,
+			"mark": "*",
+			"idle_turns": 0
+		},
+		{
+			"name": "Rogue",
+			"uid": -1,
+			"city": 0,
+			"mark": "?",
+			"idle_turns": 0
+		}
+	],
+	"cities": [
+		{
+			"name": "Indigo",
+			"cluster": 1,
+			"nation": 0,
+			"r": 62,
+			"c": 61,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				21
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Lavender",
+			"cluster": 1,
+			"nation": 0,
+			"r": 58,
+			"c": 4,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Crimson",
+			"cluster": 1,
+			"nation": 0,
+			"r": 57,
+			"c": 0,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				0,
+				1,
+				2,
+				3
+			],
+			"times": [
+				1,
+				2,
+				2,
+				4
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Saffron",
+			"cluster": 1,
+			"nation": 0,
+			"r": 62,
+			"c": 5,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				0,
+				1,
+				2,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				2,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Verdant",
+			"cluster": 1,
+			"nation": 0,
+			"r": 1,
+			"c": 0,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Metropolis",
+			"cluster": 2,
+			"nation": 0,
+			"r": 15,
+			"c": 11,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				3
+			],
+			"times": [
+				1,
+				2,
+				2,
+				4
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Gotham",
+			"cluster": 2,
+			"nation": 0,
+			"r": 14,
+			"c": 6,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Keystone City",
+			"cluster": 2,
+			"nation": 0,
+			"r": 20,
+			"c": 9,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				20
+			],
+			"times": [
+				1,
+				2,
+				2,
+				5
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Central City",
+			"cluster": 2,
+			"nation": 0,
+			"r": 18,
+			"c": 6,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Heliochrysum",
+			"cluster": 3,
+			"nation": 0,
+			"r": 32,
+			"c": 32,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				3
+			],
+			"times": [
+				1,
+				2,
+				2,
+				4
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Portulaca",
+			"cluster": 3,
+			"nation": 0,
+			"r": 28,
+			"c": 32,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Gaillardia",
+			"cluster": 3,
+			"nation": 0,
+			"r": 35,
+			"c": 33,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				3
+			],
+			"times": [
+				1,
+				2,
+				2,
+				4
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Coreopsis",
+			"cluster": 3,
+			"nation": 0,
+			"r": 34,
+			"c": 36,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				21
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Delphineum",
+			"cluster": 3,
+			"nation": 0,
+			"r": 33,
+			"c": 40,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Ruby",
+			"cluster": 4,
+			"nation": 0,
+			"r": 21,
+			"c": 18,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				3
+			],
+			"times": [
+				1,
+				2,
+				2,
+				4
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Amber",
+			"cluster": 4,
+			"nation": 0,
+			"r": 28,
+			"c": 23,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Emerald",
+			"cluster": 4,
+			"nation": 0,
+			"r": 26,
+			"c": 21,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Diamond",
+			"cluster": 4,
+			"nation": 0,
+			"r": 22,
+			"c": 22,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Sapphire",
+			"cluster": 4,
+			"nation": 0,
+			"r": 25,
+			"c": 25,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				20
+			],
+			"times": [
+				1,
+				2,
+				2,
+				5
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Zhentil Keep",
+			"cluster": 5,
+			"nation": 0,
+			"r": 39,
+			"c": 21,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				3
+			],
+			"times": [
+				1,
+				2,
+				2,
+				4
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Shadowdale",
+			"cluster": 5,
+			"nation": 0,
+			"r": 36,
+			"c": 21,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Silverdale",
+			"cluster": 5,
+			"nation": 0,
+			"r": 44,
+			"c": 25,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				20
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Battledale",
+			"cluster": 5,
+			"nation": 0,
+			"r": 41,
+			"c": 23,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				14
+			],
+			"times": [
+				1,
+				2,
+				2,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Dread",
+			"cluster": 6,
+			"nation": 0,
+			"r": 44,
+			"c": 6,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 2,
+			"types": [
+				6,
+				7,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				4,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Doom",
+			"cluster": 6,
+			"nation": 0,
+			"r": 50,
+			"c": 8,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 3,
+			"types": [
+				6,
+				7,
+				15,
+				-1
+			],
+			"times": [
+				1,
+				4,
+				6,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Despair",
+			"cluster": 6,
+			"nation": 0,
+			"r": 52,
+			"c": 7,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 2,
+			"types": [
+				6,
+				13,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				3,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Death",
+			"cluster": 6,
+			"nation": 0,
+			"r": 49,
+			"c": 5,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 2,
+			"types": [
+				6,
+				7,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				5,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Agony",
+			"cluster": 6,
+			"nation": 0,
+			"r": 52,
+			"c": 12,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 3,
+			"types": [
+				6,
+				13,
+				15,
+				-1
+			],
+			"times": [
+				1,
+				3,
+				6,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Gloom",
+			"cluster": 6,
+			"nation": 0,
+			"r": 49,
+			"c": 13,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 2,
+			"types": [
+				6,
+				7,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				5,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Iron",
+			"cluster": 7,
+			"nation": 0,
+			"r": 51,
+			"c": 41,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				8,
+				14
+			],
+			"times": [
+				1,
+				2,
+				3,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Gold",
+			"cluster": 7,
+			"nation": 0,
+			"r": 57,
+			"c": 36,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				8,
+				20
+			],
+			"times": [
+				1,
+				2,
+				3,
+				5
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Silver",
+			"cluster": 7,
+			"nation": 0,
+			"r": 51,
+			"c": 36,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				8,
+				14
+			],
+			"times": [
+				1,
+				2,
+				3,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Tin",
+			"cluster": 7,
+			"nation": 0,
+			"r": 49,
+			"c": 34,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 3,
+			"types": [
+				0,
+				1,
+				8,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				3,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Lead",
+			"cluster": 7,
+			"nation": 0,
+			"r": 54,
+			"c": 37,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 3,
+			"types": [
+				0,
+				1,
+				8,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				3,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Nyarlathotep",
+			"cluster": 8,
+			"nation": 0,
+			"r": 2,
+			"c": 17,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 2,
+			"types": [
+				9,
+				12,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				3,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Yogsothoth",
+			"cluster": 8,
+			"nation": 0,
+			"r": 8,
+			"c": 13,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 2,
+			"types": [
+				9,
+				12,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				3,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Cthulhu",
+			"cluster": 8,
+			"nation": 0,
+			"r": 1,
+			"c": 11,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 2,
+			"types": [
+				9,
+				13,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				3,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Hastor",
+			"cluster": 8,
+			"nation": 0,
+			"r": 4,
+			"c": 12,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 2,
+			"types": [
+				9,
+				13,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				3,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Olan",
+			"cluster": 9,
+			"nation": 0,
+			"r": 44,
+			"c": 37,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 2,
+			"types": [
+				4,
+				10,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				3,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Kaxandar",
+			"cluster": 9,
+			"nation": 0,
+			"r": 42,
+			"c": 39,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 2,
+			"types": [
+				4,
+				10,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				3,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Torgar",
+			"cluster": 9,
+			"nation": 0,
+			"r": 40,
+			"c": 37,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 3,
+			"ntypes": 2,
+			"types": [
+				4,
+				10,
+				-1,
+				-1
+			],
+			"times": [
+				1,
+				3,
+				-1,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Arras Charka",
+			"cluster": 10,
+			"nation": 0,
+			"r": 11,
+			"c": 53,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				0,
+				1,
+				21,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				6,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Derzon",
+			"cluster": 10,
+			"nation": 0,
+			"r": 11,
+			"c": 49,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				0,
+				1,
+				2,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				2,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Ekosiak",
+			"cluster": 10,
+			"nation": 0,
+			"r": 14,
+			"c": 54,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				2,
+				3
+			],
+			"times": [
+				1,
+				2,
+				2,
+				4
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Ish-Tako",
+			"cluster": 10,
+			"nation": 0,
+			"r": 13,
+			"c": 44,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				8,
+				14
+			],
+			"times": [
+				1,
+				2,
+				3,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Chishata",
+			"cluster": 10,
+			"nation": 0,
+			"r": 15,
+			"c": 49,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				0,
+				1,
+				8,
+				14
+			],
+			"times": [
+				1,
+				2,
+				3,
+				6
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Qualinesti",
+			"cluster": 11,
+			"nation": 0,
+			"r": 0,
+			"c": 39,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				17,
+				5,
+				11,
+				20
+			],
+			"times": [
+				1,
+				2,
+				2,
+				4
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Sylvanesti",
+			"cluster": 11,
+			"nation": 0,
+			"r": 6,
+			"c": 38,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				17,
+				5,
+				11,
+				16
+			],
+			"times": [
+				1,
+				2,
+				2,
+				7
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Rathwynn",
+			"cluster": 11,
+			"nation": 0,
+			"r": 5,
+			"c": 42,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				17,
+				5,
+				11,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				2,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Caledon",
+			"cluster": 11,
+			"nation": 0,
+			"r": 1,
+			"c": 43,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				17,
+				5,
+				11,
+				16
+			],
+			"times": [
+				1,
+				2,
+				2,
+				7
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Alfheim",
+			"cluster": 11,
+			"nation": 0,
+			"r": 62,
+			"c": 42,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 4,
+			"types": [
+				17,
+				5,
+				11,
+				16
+			],
+			"times": [
+				1,
+				2,
+				2,
+				7
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Atlantis",
+			"cluster": 12,
+			"nation": 0,
+			"r": 43,
+			"c": 54,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				18,
+				19,
+				22,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				8,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Mu",
+			"cluster": 12,
+			"nation": 0,
+			"r": 45,
+			"c": 58,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				18,
+				19,
+				22,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				8,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Poseidon",
+			"cluster": 12,
+			"nation": 0,
+			"r": 42,
+			"c": 59,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				18,
+				19,
+				22,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				8,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"name": "Neptune",
+			"cluster": 12,
+			"nation": 0,
+			"r": 47,
+			"c": 54,
+			"prod_type": 0,
+			"turns_left": 1,
+			"defense": 2,
+			"ntypes": 3,
+			"types": [
+				18,
+				19,
+				22,
+				-1
+			],
+			"times": [
+				1,
+				2,
+				8,
+				-1
+			],
+			"instance": [
+				0,
+				0,
+				0,
+				0
+			]
+		}
+	],
+	"ttypes": [
+		{
+			"name": "Lt. Infantry",
+			"combat": 2,
+			"move_rate": 6,
+			"move_tbl": 0,
+			"special_mv": 0
+		},
+		{
+			"name": "Hv. Infantry",
+			"combat": 3,
+			"move_rate": 4,
+			"move_tbl": 0,
+			"special_mv": 0
+		},
+		{
+			"name": "Lt. Cavalry",
+			"combat": 2,
+			"move_rate": 12,
+			"move_tbl": 1,
+			"special_mv": 0
+		},
+		{
+			"name": "Hv. Cavalry",
+			"combat": 3,
+			"move_rate": 8,
+			"move_tbl": 1,
+			"special_mv": 0
+		},
+		{
+			"name": "Dwarf Legion",
+			"combat": 3,
+			"move_rate": 4,
+			"move_tbl": 2,
+			"special_mv": 0
+		},
+		{
+			"name": "Elven Archers",
+			"combat": 3,
+			"move_rate": 6,
+			"move_tbl": 3,
+			"special_mv": 0
+		},
+		{
+			"name": "Zombie Legion",
+			"combat": 3,
+			"move_rate": 3,
+			"move_tbl": 0,
+			"special_mv": 0
+		},
+		{
+			"name": "Wraith Horde",
+			"combat": 4,
+			"move_rate": 6,
+			"move_tbl": 4,
+			"special_mv": 0
+		},
+		{
+			"name": "Elite Troopers",
+			"combat": 4,
+			"move_rate": 4,
+			"move_tbl": 0,
+			"special_mv": 0
+		},
+		{
+			"name": "Gug",
+			"combat": 3,
+			"move_rate": 4,
+			"move_tbl": 0,
+			"special_mv": 0
+		},
+		{
+			"name": "Dwarf Miners",
+			"combat": 4,
+			"move_rate": 4,
+			"move_tbl": 5,
+			"special_mv": 0
+		},
+		{
+			"name": "Scout",
+			"combat": 1,
+			"move_rate": 8,
+			"move_tbl": 6,
+			"special_mv": 0
+		},
+		{
+			"name": "Byakhee",
+			"combat": 2,
+			"move_rate": 7,
+			"move_tbl": 4,
+			"special_mv": 2
+		},
+		{
+			"name": "Ghouls",
+			"combat": 3,
+			"move_rate": 5,
+			"move_tbl": 0,
+			"special_mv": 0
+		},
+		{
+			"name": "Navy",
+			"combat": 2,
+			"move_rate": 10,
+			"move_tbl": 7,
+			"special_mv": 3
+		},
+		{
+			"name": "Undead Navy",
+			"combat": 3,
+			"move_rate": 8,
+			"move_tbl": 7,
+			"special_mv": 3
+		},
+		{
+			"name": "Elf Clipper",
+			"combat": 2,
+			"move_rate": 12,
+			"move_tbl": 7,
+			"special_mv": 3
+		},
+		{
+			"name": "Elf Infantry",
+			"combat": 2,
+			"move_rate": 8,
+			"move_tbl": 3,
+			"special_mv": 0
+		},
+		{
+			"name": "Mermen",
+			"combat": 2,
+			"move_rate": 6,
+			"move_tbl": 7,
+			"special_mv": 0
+		},
+		{
+			"name": "Tritons",
+			"combat": 3,
+			"move_rate": 4,
+			"move_tbl": 7,
+			"special_mv": 0
+		},
+		{
+			"name": "Pegasus",
+			"combat": 2,
+			"move_rate": 10,
+			"move_tbl": 4,
+			"special_mv": 1
+		},
+		{
+			"name": "Hippogryff",
+			"combat": 3,
+			"move_rate": 8,
+			"move_tbl": 4,
+			"special_mv": 1
+		},
+		{
+			"name": "Leviathan",
+			"combat": 5,
+			"move_rate": 4,
+			"move_tbl": 8,
+			"special_mv": 1
+		}
+	],
+	"armies": [],
+	"move_table": [
+		{
+			"cost": [
+				0,
+				1,
+				2,
+				2,
+				4
+			]
+		},
+		{
+			"cost": [
+				0,
+				1,
+				2,
+				3,
+				0
+			]
+		},
+		{
+			"cost": [
+				0,
+				1,
+				2,
+				1,
+				2
+			]
+		},
+		{
+			"cost": [
+				0,
+				1,
+				1,
+				2,
+				4
+			]
+		},
+		{
+			"cost": [
+				1,
+				1,
+				1,
+				1,
+				2
+			]
+		},
+		{
+			"cost": [
+				0,
+				1,
+				2,
+				2,
+				3
+			]
+		},
+		{
+			"cost": [
+				0,
+				1,
+				1,
+				1,
+				2
+			]
+		},
+		{
+			"cost": [
+				1,
+				0,
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"cost": [
+				1,
+				1,
+				2,
+				3,
+				4
+			]
+		}
+	],
+	"world": "Alderon's World",
+	"gen": 0
+}
