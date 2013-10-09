@@ -858,7 +858,7 @@ function main(argc, argv)
         exit(9);
     }
 
-    filename = format(filename, GAMEBAK, gen);
+    filename = format(GAMEBAK, gen);
 
     if(file_exists(game_dir+'/'+GAMESAVE) && !file_rename(game_dir+'/'+GAMESAVE, game_dir+'/'+filename)) {
         print("Can't Rename Game Save\n");
