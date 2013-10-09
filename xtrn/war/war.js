@@ -1763,7 +1763,7 @@ function help()
         console.cleartoeol();
 
         console.gotoxy(2, 23);
-        console.print("  (m)ove marked armies  (r)ename hero  (q)uit");
+        console.print("  (m)ove marked armies  (r)ename hero  (q)uit  (H)elp text");
         console.cleartoeol();
 
         console.gotoxy(2, 24);
@@ -2186,6 +2186,11 @@ function mainloop(ntn)
         case '?' :
             help();
             break;
+
+		case 'H' : /* help */
+			reader('help.news', 0);
+			force = 1;
+			break;
 
         case '\f' :
 			force = 1;
