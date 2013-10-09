@@ -1552,6 +1552,9 @@ function info_mode(rp, cp, n, ch)
             f_c--;
             break;
 
+		case 'i' :
+			break;
+
         case '\f' :
 	    // TODO: refresh
             break;
@@ -1572,7 +1575,7 @@ function info_mode(rp, cp, n, ch)
         city = my_city_at(t_r, t_c, n);
         army = my_army_at(t_r, t_c, n);
 
-        if(city >= 0 || army >= 0) {
+        if(ch != 'i' && (city >= 0 || army >= 0)) {
             showfocus(rp, cp, 0);
             r = rp = t_r;
             c = cp = t_c;
