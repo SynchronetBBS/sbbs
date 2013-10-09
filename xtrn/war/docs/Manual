@@ -52,7 +52,7 @@ Start-up Directory         ../xtrn/war
 Command Line               ?war.js
 Clean-up Command Line                          
 Execution Cost             None
-Access Requirements
+Access Requirements        ANSI
 Execution Requirements
 Multiple Concurrent Users  Yes
 Intercept I/O              No
