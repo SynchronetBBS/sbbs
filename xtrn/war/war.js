@@ -133,7 +133,9 @@ const terr_attr = {
 	'.':'HY3',
 	'%':'HG2',
 	'#':'HW3',
-	'^':'HW7'
+	'^':'HW7',
+	'*':'HW',
+	'!':'HR'
 };
 
 const terr_names = [
@@ -1000,6 +1002,7 @@ function showarmies()
 
 function gmapspot(r, c, terr, mark, focus)
 {
+	var attr;
     if(mark == ' ')
         mark = terr;
 
@@ -1010,10 +1013,14 @@ function gmapspot(r, c, terr, mark, focus)
         mark = ' ';
 
     console.gotoxy(c * 2 + 4, r + 2);
-    if(terr_attr[mark]==undefined)
-		console.attributes='N';
-	else
-		console.attributes=terr_attr[mark];
+	if(terr_attr[mark] == undefined)
+		attr = 'N';
+	else {
+   		attr = terr_attr[terr];
+		if(terr_attr[mark] != undefined)
+    		attr += terr_attr[mark];
+	}
+	console.attributes = attr;
     console.print(mark);
     console.attributes = terr_attr[terr];
     console.print(terr);
