@@ -1000,7 +1000,7 @@ function showarmies()
     }
 }
 
-function gmapspot(r, c, terr, mark, focus)
+function gmapspot(r, c, terr, mark, focus, extra_attr)
 {
 	var attr;
     if(mark == ' ')
@@ -1020,9 +1020,9 @@ function gmapspot(r, c, terr, mark, focus)
 		if(terr_attr[mark] != undefined)
     		attr += terr_attr[mark];
 	}
-	console.attributes = attr;
+	console.attributes = attr+extra_attr;
     console.print(mark);
-    console.attributes = terr_attr[terr];
+    console.attributes = terr_attr[terr]+extra_attr;
     console.print(terr);
 
     console.gotoxy(c * 2 + 4, r + 2);
@@ -1081,7 +1081,7 @@ function showmap(r, c, force)
             for(j = 0; j < 16; j++) {
                 zr = (ul_r+i) % map_height;
                 zc = (ul_c+j) % map_width;
-                gmapspot(i, j, map[zr][zc], mapovl[zr][zc], 0);
+                gmapspot(i, j, map[zr][zc], mapovl[zr][zc], 0, '');
             }
 
 	console.attributes='N';
@@ -1103,7 +1103,7 @@ function showfocus(r, c, mode)
     f_r = (r % gran) + rem;
     f_c = (c % gran) + rem;
 
-    gmapspot(f_r, f_c, map[r][c], mapovl[r][c], 1);
+    gmapspot(f_r, f_c, map[r][c], mapovl[r][c], 1, '');
     console.attributes='N';
 }
 
@@ -1496,11 +1496,16 @@ function info_mode(rp, cp, n, ch)
     f_r = (r % gran) + rem;
     f_c = (c % gran) + rem;
 
+    t_r = (ul_r + f_r + map_height) % map_height;
+    t_c = (ul_c + f_c + map_width) % map_width;
+
     done = 0;
 
     do {
         flag = 1;
 
+    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
+		console.attributes='N';
         switch(ch) {
 
         case '7' :
@@ -1571,6 +1576,7 @@ function info_mode(rp, cp, n, ch)
             showfocus(rp, cp, 0);
             r = rp = t_r;
             c = cp = t_c;
+
             setfocus(n, rp, cp);
             showmap(rp, cp, 0);
             showfocus(rp, cp, 1);
@@ -1580,13 +1586,19 @@ function info_mode(rp, cp, n, ch)
                 % map_width;
             f_r = (r % gran) + rem;
             f_c = (c % gran) + rem;
+
+        	t_r = (ul_r + f_r + map_height) % map_height;
+        	t_c = (ul_c + f_c + map_width) % map_width;
+
             done = 1;
+			ch = '';
         }
 
         if(flag)
-            show_info((ul_r + f_r + map_height) % map_height,
-                    (ul_c + f_c + map_width) % map_width);
+            show_info(t_r, t_c);
 
+    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 1, 'I');
+		console.attributes='N';
         console.gotoxy(f_c * 2 + 4, f_r + 2);
 
         if(!done)
@@ -1594,10 +1606,12 @@ function info_mode(rp, cp, n, ch)
 
     } while(!done);
 
+   	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
+	console.attributes='N';
     clearstat(-1);
 
     showfocus(rp, cp, 0);
-    return {r:rp,c:cp};
+    return {r:rp,c:cp,ch:ch};
 }
 
 function groupcmp(r1, c1, r2, c2)
@@ -2023,6 +2037,7 @@ function mainloop(ntn)
 {
     var ch, r, c, i, n, city, army, force, obj;
     var inbuf, buff;
+	var keep_ch = false;
 
     r = -1;
     c = -1;
@@ -2084,7 +2099,9 @@ function mainloop(ntn)
         force = 0;
 
         showfocus(r, c, 1);
-        ch = console.getkey();
+		if(!keep_ch)
+        	ch = console.getkey();
+		keep_ch = false;
         showfocus(r, c, 0);
 
         clearstat(-1);
@@ -2252,6 +2269,9 @@ function mainloop(ntn)
             obj = info_mode(r, c, ntn, ch);
             r = obj.r;
             c = obj.c;
+			ch = obj.ch;
+			if(ch != '')
+				keep_ch = true;
             setfocus(ntn, r, c);
             break;
 
