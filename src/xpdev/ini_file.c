@@ -577,10 +577,14 @@ char* iniSetIpAddress(str_list_t* list, const char* section, const char* key, ul
 char* iniSetIp6Address(str_list_t* list, const char* section, const char* key, struct in6_addr value
 					,ini_style_t* style)
 {
-	char	addr[INET6_ADDRSTRLEN];
+	char				addrstr[INET6_ADDRSTRLEN];
+	union xp_sockaddr	addr = {0};
 
-	inet_ntop(AF_INET6, &value, addr, sizeof(addr));
-	return iniSetString(list, section, key, addr, style);
+	addr.in6.sin6_addr = value;
+	addr.in6.sin6_family = AF_INET6;
+	addr.in6.sin6_len = sizeof(addr.in6);
+	inet_addrtop(&addr, addrstr, sizeof(addrstr));
+	return iniSetString(list, section, key, addrstr, style);
 }
 #endif
 
@@ -1355,9 +1359,24 @@ static ulong parseIpAddress(const char* value)
 
 static struct in6_addr parseIp6Address(const char* value)
 {
-	struct in6_addr ret;
+	struct addrinfo hints = {0};
+	struct addrinfo *res, *cur;
+	struct in6_addr ret = {0};
 
-	inet_pton(AF_INET6, value, &ret);
+	hints.ai_flags = AI_NUMERICHOST|AI_PASSIVE;
+	if(getaddrinfo(value, NULL, &hints, &res))
+		return ret;
+
+	for(cur = res; cur; cur++) {
+		if(cur->ai_addr->sa_family == AF_INET6)
+			break;
+	}
+	if(!cur) {
+		freeaddrinfo(res);
+		return ret;
+	}
+	memcpy(&ret, &((struct sockaddr_in6 *)(cur->ai_addr))->sin6_addr, sizeof(ret));
+	freeaddrinfo(res);
 	return ret;
 }
 
