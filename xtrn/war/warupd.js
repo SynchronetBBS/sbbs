@@ -417,9 +417,9 @@ function battle(a, b)
 
 		if((hi = stacks[i].hero) != -1) {
 			buff = " led by " +
-				armies[stacks[i].index[hi]].name[0] == '\0'
+				(armies[stacks[i].index[hi]].name[0] == '\0'
 					? "a nameless hero"
-					: armies[stacks[i].index[hi]].name;
+					: armies[stacks[i].index[hi]].name);
 			buff += '\n';
 			message_out(buff, ntns[0], ntns[1], 1);
 		} else
