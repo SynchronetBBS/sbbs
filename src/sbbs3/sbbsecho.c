@@ -2706,121 +2706,141 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 			,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,revision);
 	}
 			
-#if 0
-	if(area.name && addr.zone!=fmsghdr.destzone)	/* Zone Gate */
-		fprintf(stream,"SEEN-BY: %d/%d\r",fmsghdr.destnet,fmsghdr.destnode);
-#endif
-	if(area.name /* && addr.zone==fmsghdr.destzone */) {	/* Not NetMail */
-		fprintf(stream,"SEEN-BY:");
-		for(i=0;i<seenbys.addrs;i++) {			  /* Put back original SEEN-BYs */
-			strcpy(seenby," ");
-			if(seenbys.addr[i].zone!=addr.zone)
-				continue;
-			if(seenbys.addr[i].net!=addr.net || !net_exists) {
-				net_exists=1;
-				addr.net=seenbys.addr[i].net;
-				sprintf(str,"%d/",addr.net);
-				strcat(seenby,str); }
-			sprintf(str,"%d",seenbys.addr[i].node);
-			strcat(seenby,str);
-			if(lastlen+strlen(seenby)<80) {
-				fwrite(seenby,strlen(seenby),1,stream);
-				lastlen+=strlen(seenby); }
-			else {
-				--i;
-				lastlen=9; /* +strlen(seenby); */
-				net_exists=0;
-				fprintf(stream,"\rSEEN-BY:"); } }
-
-		for(i=0;i<area.uplinks;i++) {			/* Add all uplinks to SEEN-BYs */
-			strcpy(seenby," ");
-			if(area.uplink[i].zone!=addr.zone || area.uplink[i].point)
-				continue;
-			for(j=0;j<seenbys.addrs;j++)
-				if(!memcmp(&area.uplink[i],&seenbys.addr[j],sizeof(faddr_t)))
-					break;
-			if(j==seenbys.addrs) {
-				if(area.uplink[i].net!=addr.net || !net_exists) {
+	if(area.name) { /* EchoMail, Not NetMail */
+		if(!cfg.zone_blind && addr.zone!=fmsghdr.destzone)	/* Zone Gate */
+			fprintf(stream,"SEEN-BY: %d/%d\r",fmsghdr.destnet,fmsghdr.destnode);
+		else {
+			fprintf(stream,"SEEN-BY:");
+			for(i=0;i<seenbys.addrs;i++) {			  /* Put back original SEEN-BYs */
+				strcpy(seenby," ");
+				if(!cfg.zone_blind && seenbys.addr[i].zone!=addr.zone)
+					continue;
+				if(seenbys.addr[i].net!=addr.net || !net_exists) {
 					net_exists=1;
-					addr.net=area.uplink[i].net;
+					addr.net=seenbys.addr[i].net;
 					sprintf(str,"%d/",addr.net);
-					strcat(seenby,str); }
-				sprintf(str,"%d",area.uplink[i].node);
+					strcat(seenby,str); 
+				}
+				sprintf(str,"%d",seenbys.addr[i].node);
 				strcat(seenby,str);
 				if(lastlen+strlen(seenby)<80) {
 					fwrite(seenby,strlen(seenby),1,stream);
-					lastlen+=strlen(seenby); }
+					lastlen+=strlen(seenby); 
+				}
 				else {
 					--i;
 					lastlen=9; /* +strlen(seenby); */
 					net_exists=0;
-					fprintf(stream,"\rSEEN-BY:"); } } }
+					fprintf(stream,"\rSEEN-BY:"); 
+				} 
+			}
 
-		for(i=0;i<scfg.total_faddrs;i++) {				/* Add AKAs to SEEN-BYs */
-			strcpy(seenby," ");
-			if(scfg.faddr[i].zone!=addr.zone || scfg.faddr[i].point)
-				continue;
-			for(j=0;j<seenbys.addrs;j++)
-				if(!memcmp(&scfg.faddr[i],&seenbys.addr[j],sizeof(faddr_t)))
-					break;
-			if(j==seenbys.addrs) {
-				if(scfg.faddr[i].net!=addr.net || !net_exists) {
+			for(i=0;i<area.uplinks;i++) {			/* Add all uplinks to SEEN-BYs */
+				strcpy(seenby," ");
+				if((!cfg.zone_blind && area.uplink[i].zone!=addr.zone) || area.uplink[i].point)
+					continue;
+				for(j=0;j<seenbys.addrs;j++)
+					if(!memcmp(&area.uplink[i],&seenbys.addr[j],sizeof(faddr_t)))
+						break;
+				if(j==seenbys.addrs) {
+					if(area.uplink[i].net!=addr.net || !net_exists) {
+						net_exists=1;
+						addr.net=area.uplink[i].net;
+						sprintf(str,"%d/",addr.net);
+						strcat(seenby,str); 
+					}
+					sprintf(str,"%d",area.uplink[i].node);
+					strcat(seenby,str);
+					if(lastlen+strlen(seenby)<80) {
+						fwrite(seenby,strlen(seenby),1,stream);
+						lastlen+=strlen(seenby); 
+					}
+					else {
+						--i;
+						lastlen=9; /* +strlen(seenby); */
+						net_exists=0;
+						fprintf(stream,"\rSEEN-BY:"); 
+					} 
+				} 
+			}
+
+			for(i=0;i<scfg.total_faddrs;i++) {				/* Add AKAs to SEEN-BYs */
+				strcpy(seenby," ");
+				if((!cfg.zone_blind && scfg.faddr[i].zone!=addr.zone) || scfg.faddr[i].point)
+					continue;
+				for(j=0;j<seenbys.addrs;j++)
+					if(!memcmp(&scfg.faddr[i],&seenbys.addr[j],sizeof(faddr_t)))
+						break;
+				if(j==seenbys.addrs) {
+					if(scfg.faddr[i].net!=addr.net || !net_exists) {
+						net_exists=1;
+						addr.net=scfg.faddr[i].net;
+						sprintf(str,"%d/",addr.net);
+						strcat(seenby,str); }
+					sprintf(str,"%d",scfg.faddr[i].node);
+					strcat(seenby,str);
+					if(lastlen+strlen(seenby)<80) {
+						fwrite(seenby,strlen(seenby),1,stream);
+						lastlen+=strlen(seenby); 
+					}
+					else {
+						--i;
+						lastlen=9; /* +strlen(seenby); */
+						net_exists=0;
+						fprintf(stream,"\rSEEN-BY:"); 
+					} 
+				} 
+			}
+
+			lastlen=7;
+			net_exists=0;
+			fprintf(stream,"\r\1PATH:");
+			addr=getsysfaddr(fmsghdr.destzone);
+			for(i=0;i<paths.addrs;i++) {			  /* Put back the original PATH */
+				strcpy(seenby," ");
+				if((!cfg.zone_blind && paths.addr[i].zone!=addr.zone) || paths.addr[i].point)
+					continue;
+				if(paths.addr[i].net!=addr.net || !net_exists) {
 					net_exists=1;
-					addr.net=scfg.faddr[i].net;
+					addr.net=paths.addr[i].net;
 					sprintf(str,"%d/",addr.net);
-					strcat(seenby,str); }
-				sprintf(str,"%d",scfg.faddr[i].node);
+					strcat(seenby,str); 
+				}
+				sprintf(str,"%d",paths.addr[i].node);
 				strcat(seenby,str);
 				if(lastlen+strlen(seenby)<80) {
 					fwrite(seenby,strlen(seenby),1,stream);
-					lastlen+=strlen(seenby); }
+					lastlen+=strlen(seenby); 
+				}
 				else {
 					--i;
-					lastlen=9; /* +strlen(seenby); */
+					lastlen=7; /* +strlen(seenby); */
 					net_exists=0;
-					fprintf(stream,"\rSEEN-BY:"); } } }
+					fprintf(stream,"\r\1PATH:"); 
+				} 
+			}
 
-		lastlen=7;
-		net_exists=0;
-		fprintf(stream,"\r\1PATH:");
-		addr=getsysfaddr(fmsghdr.destzone);
-		for(i=0;i<paths.addrs;i++) {			  /* Put back the original PATH */
-			strcpy(seenby," ");
-			if(paths.addr[i].zone!=addr.zone || paths.addr[i].point)
-				continue;
-			if(paths.addr[i].net!=addr.net || !net_exists) {
-				net_exists=1;
-				addr.net=paths.addr[i].net;
-				sprintf(str,"%d/",addr.net);
-				strcat(seenby,str); }
-			sprintf(str,"%d",paths.addr[i].node);
-			strcat(seenby,str);
-			if(lastlen+strlen(seenby)<80) {
-				fwrite(seenby,strlen(seenby),1,stream);
-				lastlen+=strlen(seenby); }
-			else {
-				--i;
-				lastlen=7; /* +strlen(seenby); */
-				net_exists=0;
-				fprintf(stream,"\r\1PATH:"); } }
-
-		strcpy(seenby," ");         /* Add first address with same zone to PATH */
-		sysaddr=getsysfaddr(fmsghdr.destzone);
-		if(!sysaddr.point) {
-			if(sysaddr.net!=addr.net || !net_exists) {
-				net_exists=1;
-				addr.net=sysaddr.net;
-				sprintf(str,"%d/",addr.net);
-				strcat(seenby,str); }
-			sprintf(str,"%d",sysaddr.node);
-			strcat(seenby,str);
-			if(lastlen+strlen(seenby)<80)
-				fwrite(seenby,strlen(seenby),1,stream);
-			else {
-				fprintf(stream,"\r\1PATH:");
-				fwrite(seenby,strlen(seenby),1,stream); } }
-
-		fputc('\r',stream); }
+			strcpy(seenby," ");         /* Add first address with same zone to PATH */
+			sysaddr=getsysfaddr(fmsghdr.destzone);
+			if(!sysaddr.point) {
+				if(sysaddr.net!=addr.net || !net_exists) {
+					net_exists=1;
+					addr.net=sysaddr.net;
+					sprintf(str,"%d/",addr.net);
+					strcat(seenby,str); 
+				}
+				sprintf(str,"%d",sysaddr.node);
+				strcat(seenby,str);
+				if(lastlen+strlen(seenby)<80)
+					fwrite(seenby,strlen(seenby),1,stream);
+				else {
+					fprintf(stream,"\r\1PATH:");
+					fwrite(seenby,strlen(seenby),1,stream); 
+				} 
+			}
+			fputc('\r',stream); 
+		}
+	}
 
 	fputc(FIDO_PACKED_MSG_TERMINATOR, stream);
 }
@@ -2990,19 +3010,27 @@ void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char *inbuf
 
 /******************************************************************************
  This function takes the addrs passed to it and compares them to the address
- passed in inaddr.	1 is returned if inaddr matches any of the addrs
- otherwise a 0 is returned.
+ passed in compaddr.	TRUE is returned if inaddr matches any of the addrs
+ otherwise FALSE is returned.
 ******************************************************************************/
-int check_psb(addrlist_t* addrlist,faddr_t inaddr)
+BOOL check_psb(addrlist_t* addrlist, faddr_t compaddr)
 {
 	int i;
 
 	for(i=0;i<addrlist->addrs;i++) {
-		if(!memcmp(&addrlist->addr[i],&inaddr,sizeof(faddr_t)))
-			return(1); 
+		if(!cfg.zone_blind && compaddr.zone != addrlist->addr[i].zone)
+			continue;
+		if(compaddr.net != addrlist->addr[i].net)
+			continue;
+		if(compaddr.node != addrlist->addr[i].node)
+			continue;
+		if(compaddr.point != addrlist->addr[i].point)
+			continue;
+		return(TRUE); /* match found */
 	}
-	return(0);
+	return(FALSE);	/* match not found */
 }
+
 /******************************************************************************
  This function strips the message seen-bys and path from inbuf.
 ******************************************************************************/

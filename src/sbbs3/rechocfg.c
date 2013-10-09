@@ -200,6 +200,7 @@ void read_echo_cfg()
 	cfg.log=LOG_DEFAULTS;
 	cfg.log_level=LOG_INFO;
 	cfg.check_path=TRUE;
+	cfg.zone_blind=FALSE;
 	SAFECOPY(cfg.sysop_alias,"SYSOP");
 
 	while(1) {
@@ -265,6 +266,11 @@ void read_echo_cfg()
 
 		if(!stricmp(tmp,"NOPATHCHECK")) {
 			cfg.check_path=FALSE;
+			continue;
+		}
+
+		if(!stricmp(tmp,"ZONE_BLIND")) {
+			cfg.zone_blind=TRUE;
 			continue;
 		}
 

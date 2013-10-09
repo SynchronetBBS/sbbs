@@ -809,6 +809,8 @@ int main(int argc, char **argv)
 						,cfg.check_path ? "Enabled" : "Disabled");
 					sprintf(opt[i++],"%-50.50s%s","Bundle Attachments"
 						,misc&TRUNC_BUNDLES ? "Truncate" : "Kill");
+					sprintf(opt[i++],"%-50.50s%s","Zone Blind SEEN-BY and PATH Lines"
+						,cfg.zone_blind ? "Enabled" : "Disabled");
 					opt[i][0]=0;
 					j=uifc.list(0,0,0,65,&j,0,"Toggle Options",opt);
 					if(j==-1)
@@ -847,6 +849,10 @@ int main(int argc, char **argv)
 						case 10:
 							misc^=TRUNC_BUNDLES;
 							break;
+						case 11:
+							cfg.zone_blind=!cfg.zone_blind;
+							break;
+
 					} 
 				}
 				break;
@@ -1155,6 +1161,8 @@ int main(int argc, char **argv)
 				}
 				if(!cfg.check_path)
 					fprintf(stream,"NOPATHCHECK\n");
+				if(cfg.zone_blind)
+					fprintf(stream,"ZONE_BLIND\n");
 				if(cfg.notify)
 					fprintf(stream,"NOTIFY %u\n",cfg.notify);
 				if(misc&CONVERT_TEAR)
