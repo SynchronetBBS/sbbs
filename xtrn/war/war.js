@@ -1611,7 +1611,6 @@ function info_mode(rp, cp, n, ch)
 
    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
 	console.attributes='N';
-    clearstat(-1);
 
     showfocus(rp, cp, 0);
     return {r:rp,c:cp,ch:ch};
