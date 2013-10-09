@@ -78,6 +78,11 @@ var game_dir = js.exec_dir;
 */
 load("sbbsdefs.js");
 load(game_dir+'/warcommon.js');
+load("loadfont.js", '-H', game_dir+'/terrain.fnt');
+if(bbs.mods.CTerm_Version != null) {
+	console.write("\x1b[?31h\x1b[1;255 D");
+	js.on_exit('console.write("\x1b[?31l")');
+}
 
 // From display.c
 const gran = 2;
@@ -127,7 +132,7 @@ const terr_attr = {
 	'~':'HB4',
 	'.':'HY3',
 	'%':'HG2',
-	'#':'NW3',
+	'#':'HW3',
 	'^':'HW7'
 };
 
