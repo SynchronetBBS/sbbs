@@ -139,6 +139,13 @@ const terr_names = [
     "Mountains",
 ];
 
+const special_desc = [
+	"None",
+	"Transport Hero",
+	"Transport One",
+	"Transport Stack"
+];
+
 // From reader.c
 var r_index = [];
 var killed=[];
@@ -1767,6 +1774,7 @@ function help()
         console.cleartoeol();
 
         console.gotoxy(2, 24);
+        console.print("  view all (A)rmy details");
         console.cleartoeol();
 
         break;
@@ -1859,6 +1867,93 @@ function status()
 
         case 'n' :
             if(pos + 5 < nationcnt)
+                pos += 4;
+            break;
+
+        case 'p' :
+            if(pos - 3 > 0)
+                pos -= 4;
+            break;
+        }
+
+    } while(ch != '\033');
+
+    /* clean up */
+
+    mainscreen();
+}
+
+function armytypes()
+{
+    var ch, pos, i, j, hc, ac, cc;
+
+    /* set up screen */
+
+    console.clear(7);
+
+    console.gotoxy(21, 2);
+    console.print("Army Type Display");
+
+    console.gotoxy(2, 4);    console.print("Name:");
+    console.gotoxy(2, 5);    console.print("Combat:");
+    console.gotoxy(2, 6);    console.print("Move Rate:");
+    for(i = 0; terr_names[i] != undefined; i++) {
+		console.gotoxy(2, 7+i);   console.print(terr_names[i]+":");
+	}
+    console.gotoxy(2, 7+i);   console.print("Special:");
+
+    console.gotoxy(2, 9+i);   console.print("(n)ext page  (p)revious page  (SPACE) to exit");
+
+    /* display loop */
+
+    pos = 0;
+
+    do {
+        /* show the types. */
+
+        for(i = 4; i <= 8+terr_names.length; i++) {
+            console.gotoxy(17, i);
+            console.cleartoeol();
+        }
+
+        for(i = 0; i < 4; i++)
+            if(pos + 1 + i < ttypecnt) {
+                console.gotoxy(i * 16 + 17, 4);
+                console.print(ttypes[pos+1+i].name);
+
+                console.gotoxy(i * 16 + 17, 5);
+                console.print(format("%5d",ttypes[pos+1+i].combat));
+
+                console.gotoxy(i * 16 + 17, 6);
+                console.print(format("%5d",ttypes[pos+1+i].move_rate));
+
+                cc = 0;
+
+                for(j = 0; j < terr_names.length; j++) {
+					console.gotoxy(i * 16 + 17, 7+j);
+					if(move_table[ttypes[pos+1+i].move_tbl].cost[j] == 0)
+						console.print("Impassable");
+					else
+						console.print(format("%5d", move_table[ttypes[pos+1+i].move_tbl].cost[j]));
+				}
+                console.gotoxy(i * 16 + 17, 7+j);
+                console.print(special_desc[ttypes[pos+1+i].special_mv]);
+            }
+
+        /* handle input. */
+
+        console.gotoxy(71, 9+j);
+        console.print("< >\b\b");
+
+        switch((ch = console.getkey())) {
+
+        case ' ' :
+        case 'q' :
+            ch = '\033';
+            break;
+
+        case 'n' :
+            if(pos + 5 < ttypecnt)
                 pos += 4;
             break;
 
@@ -1991,6 +2086,11 @@ function mainloop(ntn)
             else
                 saystat("Must View Your Own City First.");
             break;
+
+		case 'A' : /* army types */
+			armytypes();
+			force = 1;
+			break;
 
         case '\016' : /* next army */
 			obj = nextarmy(ntn, r, c);
