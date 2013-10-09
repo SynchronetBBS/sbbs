@@ -1917,27 +1917,27 @@ function armytypes()
         }
 
         for(i = 0; i < 4; i++)
-            if(pos + 1 + i < ttypecnt) {
+            if(pos + i < ttypecnt) {
                 console.gotoxy(i * 16 + 17, 4);
-                console.print(ttypes[pos+1+i].name);
+                console.print(ttypes[pos+i].name);
 
                 console.gotoxy(i * 16 + 17, 5);
-                console.print(format("%5d",ttypes[pos+1+i].combat));
+                console.print(format("%5d",ttypes[pos+i].combat));
 
                 console.gotoxy(i * 16 + 17, 6);
-                console.print(format("%5d",ttypes[pos+1+i].move_rate));
+                console.print(format("%5d",ttypes[pos+i].move_rate));
 
                 cc = 0;
 
                 for(j = 0; j < terr_names.length; j++) {
 					console.gotoxy(i * 16 + 17, 7+j);
-					if(move_table[ttypes[pos+1+i].move_tbl].cost[j] == 0)
+					if(move_table[ttypes[pos+i].move_tbl].cost[j] == 0)
 						console.print("Impassable");
 					else
-						console.print(format("%5d", move_table[ttypes[pos+1+i].move_tbl].cost[j]));
+						console.print(format("%5d", move_table[ttypes[pos+i].move_tbl].cost[j]));
 				}
                 console.gotoxy(i * 16 + 17, 7+j);
-                console.print(special_desc[ttypes[pos+1+i].special_mv]);
+                console.print(special_desc[ttypes[pos+i].special_mv]);
             }
 
         /* handle input. */
