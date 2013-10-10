@@ -48,7 +48,17 @@ function loadSettings(filename) {
 /* check initial status of all games (may have activity after crash or reboot) */
 function updateGames() {
 	for each(var g in data.games) {
-		updateStatus(g.gameNumber);
+		try {
+			updateStatus(g.gameNumber);
+		}
+		catch(e) {
+			log(LOG_ERROR,"error updating game");
+			var gstring = "games: ";
+			for(var g in data.games) {
+				gstring += g + " ";
+			}
+			log(LOG_ERROR,gstring);
+		}
 	}
 }
 
@@ -111,6 +121,7 @@ function updateStatus(gameNumber) {
 		return false;
 	
 	if(game.status == status.PLAYING) {
+		log(LOG_WARNING,"updating turn info for game: " + game.gameNumber);
 		updateTurn(game);
 	}
 	else if(game.status == status.NEW) {

@@ -100,9 +100,7 @@ function Data()
 	}	
 	this.saveGame=function(game) {
 		var location = "games." + game.gameNumber;
-		client.lock(game_id,location,2);
-		client.write(game_id,location,game);
-		client.unlock(game_id,location);
+		client.write(game_id,location,game,2);
 		this.games[game.gameNumber]=game;
 	}
 	this.saveWinner=function(game) {

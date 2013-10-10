@@ -31,63 +31,6 @@ function loadGraphic(filename) {
 	f.open();
 	return f;
 }
-function menuPrompt(string, append, keepOpen, hotkeys) {
-	if(!append) 
-		promptFrame.clear();
-	if(!promptFrame.is_open) 
-		promptFrame.open();
-	promptFrame.putmsg(string);
-	promptFrame.draw();
-	
-	var cmd="";
-	while(!js.terminated) {
-		var k = console.getkey(K_NOECHO|K_NOCRLF|K_UPPER|K_NOSPIN);
-		if(hotkeys) { 
-			cmd = k;
-			break;
-		}
-		if(k == "\r") {
-			break;
-		}
-		cmd+=k;
-		promptFrame.putmsg(k);
-		promptFrame.cycle();
-	}
-	if(!keepOpen)
-		promptFrame.close();
-	return cmd;
-}
-function numberPrompt(string, append, keepOpen) {
-	if(!append) 
-		promptFrame.clear();
-	if(!promptFrame.is_open) 
-		promptFrame.open();
-	promptFrame.putmsg(string);
-	promptFrame.draw();
-	
-	var cmd=[];
-	while(!js.terminated) {
-		var k = console.getkey(K_NOECHO|K_NOCRLF|K_NUMBER|K_NOSPIN);
-		if(k == "\r") {
-			break;
-		}
-		else if(k == "\b") {
-			if(cmd.length > 0) {
-				cmd.pop();
-				promptFrame.putmsg(k);
-				promptFrame.cycle();
-			}
-		}
-		else {
-			cmd.push(k);
-			promptFrame.putmsg(k);
-			promptFrame.cycle();
-		}
-	}
-	if(!keepOpen)
-		promptFrame.close();
-	return cmd.join("");
-}
 function menuText(string,append) {
 	if(!append) 
 		promptFrame.clear();
@@ -110,10 +53,10 @@ function splash(file) {
 function submitMessage(f,msg) {
 	var str = "";
 	if(msg.nick)
-		var str = getColor(chat.settings.NICK_COLOR) + msg.nick.name + "\1n: " + 
-		getColor(chat.settings.TEXT_COLOR) + msg.str;
+		var str = getColor(chat.colors.NICK_COLOR) + msg.nick.name + "\1n: " + 
+		getColor(chat.colors.TEXT_COLOR) + msg.str;
 	else
-		var str = getColor(chat.settings.NOTICE_COLOR) + msg.str;
+		var str = getColor(chat.colors.NOTICE_COLOR) + msg.str;
 	f.putmsg(str + "\r\n");
 }
 
@@ -223,6 +166,7 @@ function lobby() {
 	}
 	function close() {
 		client.unsubscribe(game_id,"games");
+		chat.disconnect();
 	}
 	function cycle() {
 		client.cycle();
@@ -256,13 +200,14 @@ function lobby() {
 		return scores;
 	}	
 	function sortGameData(array) {
-		var sorted=new Object();
-		sorted.started=[];
-		sorted.waiting=[];
-		sorted.yourgames=[];
-		sorted.yourturn=[];
-		sorted.eliminated=[];
-		sorted.singleplayer=[];
+		var sorted= {
+			started:[],
+			waiting:[],
+			yourgames:[],
+			yourturn:[],
+			eliminated:[],
+			singleplayer:[]
+		};
 		
 		for(var i in array) {
 			var game=array[i];
@@ -270,8 +215,11 @@ function lobby() {
 			
 			if(game.single_player) {
 				sorted.singleplayer.push(i);
-				if(in_game>=0) {
+				if(in_game >= 0) {
 					sorted.yourgames.push(i);
+				}
+				if(game.turn == in_game) {
+					sorted.yourturn.push(i);
 				}
 			} 
 			else {
@@ -280,15 +228,20 @@ function lobby() {
 				}
 				if(game.status==status.PLAYING) {
 					sorted.started.push(i);
-					if(game.turn==in_game) 
+					if(game.turn==in_game) {
 						sorted.yourturn.push(i);
-					else if(in_game>=0 && !game.players[in_game].active)
+					}
+					else if(in_game>=0 && !game.players[in_game].active) {
 						sorted.eliminated.push(i);
+					}
 				}
 				else {
 					sorted.waiting.push(i);
 				}
 			}
+		}
+		for each(var s in sorted ) {
+			s.sort(function (a,b) { return a-b });
 		}
 		return sorted;
 	}
@@ -378,25 +331,10 @@ function lobby() {
 		
 		var player=findPlayer(game,user.alias);
 		if(player>=0) {
-			response=menuPrompt("Remove yourself from this game? [y/N]",false,false,true);
-			if(response=='Y') {
-				game.players.splice(player,1);
-				data.saveGame(game);
-				return;
-			}
-			response=menuPrompt("Change your vote? [y/N]",false,false,true);
-			if(response=='Y') {
-				current_vote=game.players[player].vote;
-				game.players[player].vote=(current_vote?false:true);
-			}
+			askRemove(game);
+			askChange(game);
 		} else {
-			response=menuPrompt("Join this game? [y/N]",false,false,true);
-			if(response!=='Y') {
-				infoFrame.close();
-				return;
-			}
-			vote=menuPrompt("Vote to start? [y/N]",false,false,true);
-			addPlayer(game,user.alias,system.name,(vote=="Y"?true:false));
+			askJoin(game);
 		}
 		
 		if(game.players.length>=settings.min_players) {
@@ -412,7 +350,33 @@ function lobby() {
 				return;
 			}
 		}
-		data.saveGame(game);
+	}
+	function askRemove(game) {
+		var response=menuPrompt("Remove yourself from this game? [y/N]",false,false,true);
+		if(response=='Y') {
+			game.players.splice(player,1);
+			return;
+		}
+	}
+	function askChange(game) {
+		var response=menuPrompt("Change your vote? [y/N]",false,false,true);
+		if(response=='Y') {
+			var vote=game.players[player].vote;
+			game.players[player].vote=(!vote);
+		}
+	}
+	function askJoin(game) {
+		var response=menuPrompt("Join this game? [y/N]",false,false,true);
+		if(response!=='Y') {
+			infoFrame.close();
+			return;
+		}
+		var vote=menuPrompt("Vote to start? [y/N]",false,false,true);
+		addPlayer(game,user.alias,system.name,(vote=="Y"?true:false));
+	}
+	function canView(gameNumber) {
+		//todo
+		return true;
 	}
 	function gameList()	{
 		listFrame.clear();
@@ -440,7 +404,10 @@ function lobby() {
 					return true;
 				} else {
 					infoFrame.open();
+					client.lock(game_id,"games." + num,2);
 					viewGameInfo(data.games[num]);
+					client.write(game_id,"games." + num,data.games[num]);
+					client.unlock(game_id,"games." + num);
 					infoFrame.close();
 				}
 				break;
@@ -461,8 +428,6 @@ function lobby() {
 		
 		var map = generateMap(game);
 		dispersePlayers(game,map);
-		
-		data.saveGame(game);
 		data.saveMap(map);
 	}
 	function createNewGame() {
@@ -543,7 +508,62 @@ function lobby() {
 		}
 		return false;
 	}
-	
+	function menuPrompt(string, append, keepOpen, hotkeys) {
+		if(!append) 
+			promptFrame.clear();
+		if(!promptFrame.is_open) 
+			promptFrame.open();
+		promptFrame.putmsg(string);
+		promptFrame.draw();
+		
+		var cmd="";
+		while(!js.terminated) {
+			var k = console.getkey(K_NOECHO|K_NOCRLF|K_UPPER|K_NOSPIN);
+			if(hotkeys) { 
+				cmd = k;
+				break;
+			}
+			if(k == "\r") {
+				break;
+			}
+			cmd+=k;
+			promptFrame.putmsg(k);
+			cycle();
+		}
+		if(!keepOpen)
+			promptFrame.close();
+		return cmd;
+	}
+	function numberPrompt(string, append, keepOpen) {
+		if(!append) 
+			promptFrame.clear();
+		if(!promptFrame.is_open) 
+			promptFrame.open();
+		promptFrame.putmsg(string);
+		promptFrame.draw();
+		
+		var cmd=[];
+		while(!js.terminated) {
+			var k = console.getkey(K_NOECHO|K_NOCRLF|K_NUMBER|K_NOSPIN);
+			if(k == "\r") {
+				break;
+			}
+			else if(k == "\b") {
+				if(cmd.length > 0) {
+					cmd.pop();
+					promptFrame.putmsg(k);
+				}
+			}
+			else {
+				cmd.push(k);
+				promptFrame.putmsg(k);
+			}
+			cycle();
+		}
+		if(!keepOpen)
+			promptFrame.close();
+		return cmd.join("");
+	}	
 	open();
 	main();
 	close();
