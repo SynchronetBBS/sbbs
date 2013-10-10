@@ -173,7 +173,27 @@ function loadfont()
 		font.close();
 
 		write_raw("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
-		write_raw(fontdata);
+		if(console.telnet_mode & TELNET_MODE_OFF)
+			write_raw(fontdata);
+		else {
+			/* From here on, it's socket access only */	 
+			console.lock_input(true);	 
+			while(console.output_buffer_level)	 
+				mswait(1);	 
+
+			var oldblock=client.socket.nonblocking;	 
+			client.socket.nonblocking=false;
+
+			fontdata=fontdata.replace(/\xff/g, "\xff\xff");
+			while(fontdata.length) {	 
+				if(client.socket.poll(0,true)) {
+					if(client.socket.send(fontdata.substr(0,1024)))	 
+						fontdata=fontdata.substr(1024);	 
+				}	 
+			}
+			client.socket.nonblocking=oldblock;
+			console.lock_input(false);
+		}
 		if(showprogress)
 			write_raw(".");
 	}
@@ -182,6 +202,5 @@ function loadfont()
 	if(showfont)
 		write_raw("\x1b[0;"+(firstslot+filenames.length-1)+" D");
 	console.ctrlkey_passthru=oldctrl;
-	console.lock_input(false);
 	return(0);
 }
