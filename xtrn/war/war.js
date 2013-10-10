@@ -2170,7 +2170,8 @@ function mainloop(ntn)
 
     /* enter the loop */
 
-    saystat("Welcome to Solomoriah's WAR!  Press ? for Help.");
+    //saystat("Welcome to Solomoriah's WAR!  Press ? for Help.");
+	help();
 
     force = false;
 
