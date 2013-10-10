@@ -476,14 +476,12 @@ function viewer(fp, pos, mode)
 
         switch(ch) {
 
-        case 'j' :
-        case 'n' :
+        case 'z' :
         case KEY_DOWN:
             pg++;
             break;
 
-        case 'k' :
-        case 'p' :
+        case 'a' :
         case KEY_UP:
             pg--;
             break;
@@ -624,12 +622,12 @@ function reader(fname, mode)
             pos--;
             break;
 
-        case 'n' :
+        case ']' :
         //case KEY_PAGEDOWN:
             pos += 11;
             break;
 
-        case 'p' :
+        case '[' :
         //case KEY_PAGEUP:
             pos -= 10;
             break;
@@ -1227,13 +1225,13 @@ function move_mode(ntn, rp, cp)
     console.print(format("Move %s", mvcnt > 1 ? "Armies" : "Army"));
 
     console.gotoxy(21, 23);
-    console.print("4   6");
+    console.print("4   6  or  d   g");
 
     console.gotoxy(21, 24);
-    console.print("1 2 3");
+    console.print("1 2 3      c v b");
 
     console.gotoxy(21, 22);
-    console.print("7 8 9               SPACE to Stop.  ");
+    console.print("7 8 9      e r t    SPACE to Stop.  ");
 
     setfocus(ntn, rp, cp);
     showmap(rp, cp, false);
@@ -1251,37 +1249,45 @@ function move_mode(ntn, rp, cp)
         switch(ch) { /* directions */
 
         case '7' :
+        case 'e' :
             t_r--;
             t_c--;
           break;
 
         case '8' :
+        case 'r' :
             t_r--;
             break;
 
         case '9' :
+        case 't' :
             t_r--;
             t_c++;
             break;
 
         case '4' :
+        case 'd' :
             t_c--;
             break;
 
         case '6' :
+        case 'g' :
             t_c++;
             break;
 
         case '1' :
+        case 'c' :
             t_r++;
             t_c--;
           break;
 
         case '2' :
+        case 'v' :
             t_r++;
             break;
 
         case '3' :
+        case 'b' :
             t_r++;
             t_c++;
             break;
@@ -1469,13 +1475,13 @@ function info_mode(rp, cp, n, ch)
     clearstat(-1);
 
     console.gotoxy(21,23);
-    console.print("4   6");
+    console.print("4   6  or  d   g");
 
     console.gotoxy(21,24);
-    console.print("1 2 3");
+    console.print("1 2 3      c v b");
 
     console.gotoxy(2,22);
-    console.print("Info Mode:         7 8 9               ESC to Stop.  ");
+    console.print("Info Mode:         7 8 9      e r t      ESC to Stop.  ");
 
     r = a_r = rp;
     c = a_c = cp;
@@ -1497,38 +1503,46 @@ function info_mode(rp, cp, n, ch)
         switch(ch) {
 
         case '7' :
+        case 'e' :
             f_r--;
             f_c--;
             break;
 
         case '8' :
+        case 'r' :
             f_r--;
             break;
 
         case '9' :
+        case 't' :
             f_r--;
             f_c++;
             break;
 
+        case '4' :
+        case 'd' :
+            f_c--;
+            break;
+
         case '6' :
+        case 'g' :
             f_c++;
             break;
 
         case '3' :
+        case 'c' :
             f_r++;
             f_c++;
             break;
 
         case '2' :
+        case 'v' :
             f_r++;
             break;
 
         case '1' :
+        case 'b' :
             f_r++;
-            f_c--;
-            break;
-
-        case '4' :
             f_c--;
             break;
 
@@ -1764,32 +1778,32 @@ function help()
 
     case 0 :
         console.gotoxy(2, 22);
-        console.print("  (n)ext group  (p)revious group  (N)last group  (P)first group  (q)uit game");
+        console.print("  (])ext group  ([)revious group  (})last group  ({)first group  (q)uit game");
         console.cleartoeol();
 
         console.gotoxy(2, 23);
-        console.print("  (CTRL-N) Next movable army  (CTRL-P) Previous movable army  (s)tatus display");
+        console.print("  (CTRL-]) Next movable army  (CTRL-[) Previous movable army  (s)tatus display");
         console.cleartoeol();
 
         console.gotoxy(2, 24);
-        console.print("  (A)rmy capabilities   (a)rmy production  (h/?) toggle help  (H)elp browser");
+        console.print("  (A)rmy capabilities   army (p)roduction  (h/?) toggle help  (H)elp browser");
         console.cleartoeol();
 
         break;
 
     case 1 :
         console.gotoxy(2, 22);
-        console.print("  (j/d/Down)pointer down  (k/u/Up)pointer up  (SPACE)mark/unmark  (*)mark all");
+        console.print("  (z/Down)pointer down  (a/Up)pointer up  (SPACE)mark/unmark  (*)mark all");
         console.cleartoeol();
 
         console.gotoxy(2, 23);
-        console.print("  (/)unmark all  (m)ove marked armies  (g)mark all and move  (r)ename hero");
+        console.print("  (/)unmark all  (m)ove marked armies  (f/5)mark all and move  (n)ame hero");
         console.cleartoeol();
 
         console.gotoxy(2, 24);
-        console.print("  (I)nformation about current army    (R)ead news  (S)end message  read (M)ail");
+        console.print("  (I)nformation about current army    Read (N)ews  (S)end message  read (M)ail");
         console.cleartoeol();
-
+1
         break;
 
     }
@@ -1816,7 +1830,7 @@ function status()
     console.gotoxy(2, 9);    console.print("Heros:");
     console.gotoxy(2, 10);   console.print("Armies:");
 
-    console.gotoxy(2, 12);   console.print("(n)ext page  (p)revious page  (SPACE) to exit");
+    console.gotoxy(2, 12);   console.print("<]> next page  <]> previous page  (SPACE) to exit");
 
     /* display loop */
 
@@ -1879,12 +1893,12 @@ function status()
             ch = '\033';
             break;
 
-        case 'n' :
+        case ']' :
             if(pos + 5 < nationcnt)
                 pos += 4;
             break;
 
-        case 'p' :
+        case '[' :
             if(pos - 3 > 0)
                 pos -= 4;
             break;
@@ -1916,7 +1930,7 @@ function armytypes()
 	}
     console.gotoxy(2, 7+i);   console.print("Special:");
 
-    console.gotoxy(2, 9+i);   console.print("(n)ext page  (p)revious page  (SPACE) to exit");
+    console.gotoxy(2, 9+i);   console.print("<]> next page  <[> previous page  (SPACE) to exit");
 
     /* display loop */
 
@@ -1966,12 +1980,12 @@ function armytypes()
             ch = '\033';
             break;
 
-        case 'n' :
+        case ']' :
             if(pos + 5 < ttypecnt)
                 pos += 4;
             break;
 
-        case 'p' :
+        case '[' :
             if(pos - 3 > 0)
                 pos -= 4;
             break;
@@ -2100,7 +2114,7 @@ function mainloop(ntn)
 
         switch(ch) {
 
-        case 'a' : /* armies */
+        case 'p' : /* production */
             city = city_at(r, c);
             if(city != -1 && cities[city].nation == ntn)
                 produce(city);
@@ -2113,7 +2127,7 @@ function mainloop(ntn)
 			force = true;
 			break;
 
-        case '\016' : /* next army */
+        case ctrl(']') : /* next army */
 			obj = nextarmy(ntn, r, c);
 			r = obj.r;
 			c = obj.c;
@@ -2123,7 +2137,7 @@ function mainloop(ntn)
                 setfocus(ntn, r, c);
             break;
 
-        case 'n' : /* next group */
+        case ']' : /* next group */
 			obj = nextgroup(ntn, r, c);
 			r = obj.r;
 			c = obj.c;
@@ -2133,7 +2147,7 @@ function mainloop(ntn)
                 setfocus(ntn, r, c);
             break;
 
-        case 'N' : /* last group */
+        case '}' : /* last group */
             while((obj = nextgroup(ntn, r, c)).ret) {
 				r = obj.r;
 				c = obj.c;
@@ -2143,7 +2157,7 @@ function mainloop(ntn)
             setfocus(ntn, r, c);
             break;
 
-        case '\020' : /* prev army */
+        case ctrl('[') : /* prev army */
 			obj = prevarmy(ntn, r, c);
 			r = obj.r;
 			c = obj.c;
@@ -2153,7 +2167,7 @@ function mainloop(ntn)
                 setfocus(ntn, r, c);
             break;
 
-        case 'p' : /* previous group */
+        case '[' : /* previous group */
 			obj = prevgroup(ntn, r, c);
 			r = obj.r;
 			c = obj.c;
@@ -2163,7 +2177,7 @@ function mainloop(ntn)
                 setfocus(ntn, r, c);
           break;
 
-        case 'P' : /* first group */
+        case '{' : /* first group */
             while((obj = prevgroup(ntn, r, c)).ret) {
 				r = obj.r;
 				c = obj.c;
@@ -2173,7 +2187,7 @@ function mainloop(ntn)
             setfocus(ntn, r, c);
             break;
 
-        case 'r' : /* rename hero */
+        case 'n' : /* name hero */
             if(avcnt > 0 && armies[armyview[avpnt].id].name.length == 0) {
                 saystat("Enter Hero's Name:  ");
                 inbuf = console.getstr(16);
@@ -2188,8 +2202,7 @@ function mainloop(ntn)
                 saystat("Can Only Rename Heros.");
             break;
 
-        case 'j' : /* next army */
-        case 'd' :
+        case 'z' : /* next army */
         case KEY_DOWN:
             if(avcnt > 0) {
                 avpnt++;
@@ -2199,8 +2212,7 @@ function mainloop(ntn)
                 saystat("No Armies!");
             break;
 
-        case 'k' : /* previous army */
-        case 'u' :
+        case 'a' : /* previous army */
         case KEY_UP:
             if(avcnt > 0) {
                 avpnt--;
@@ -2228,7 +2240,8 @@ function mainloop(ntn)
             break;
 
         case '*' : /* mark all */
-        case 'g' : /* mark all and move */
+        case 'f' : /* mark all and move */
+        case '5' : /* mark all and move */
             for(i = 0; i < avcnt; i++)
                 if(armies[armyview[i].id].move_left > 0)
                     armyview[i].mark = 1;
@@ -2253,11 +2266,18 @@ function mainloop(ntn)
         case '2' :
         case '3' :
         case '4' :
-        case '5' :
         case '6' :
         case '7' :
         case '8' :
         case '9' :
+        case 'e' :
+        case 'r' :
+        case 't' :
+        case 'd' :
+        case 'g' :
+        case 'c' :
+        case 'v' :
+        case 'b' :
             obj = info_mode(r, c, ntn, ch);
             r = obj.r;
             c = obj.c;
@@ -2266,7 +2286,7 @@ function mainloop(ntn)
 				keep_ch = true;
             break;
 
-        case 'R' : /* read... */
+        case 'N' : /* read news... */
             reader(NEWSFL, 0);
 			force = true;
             break;

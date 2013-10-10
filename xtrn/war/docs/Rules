@@ -81,7 +81,7 @@ neutral city nearby.  To do so you will need to move your army(s) into
 the city.
 
 Note the pointer (->) beside the hero, Victor, on the screen view
-above.  You use the <j> and <k> keys to move the pointer down or up.
+above.  You use the <z> and <a> keys to move the pointer down or up.
 If you press the <space bar> a * will appear next to the army the
 pointer is pointing at.  (Pressing <space bar> again will remove the
 *.)  You may also press <*> to select all, or </> to unselect all.
@@ -89,9 +89,9 @@ pointer is pointing at.  (Pressing <space bar> again will remove the
 Once you have selected your armies, press <m> to move them.  A message
 will appear at the bottom of the screen, as follows:
 
- Move Army          7 8 9               SPACE to Stop.
-                    4   6
-                    1 2 3
+ Move Army          7 8 9      e r t      SPACE to Stop.
+                    4   6  or  d   g
+                    1 2 3      c v b
 
 The keys shown move your army stack in the corresponding direction.
 Note that if any army you have marked can't make a move, the entire
@@ -146,20 +146,20 @@ Changing the View:
 
 The map shows your current group near the center; the cursor will be 
 on the exact spot.  To move the "focus" to another group, use the
-(n)ext and (p)revious commands.
+<]> next and <[> previous commands.
 
-Pressing <n> for next moves the focus to the next group, in map order,
+Pressing <]> for next moves the focus to the next group, in map order,
 which you own.  A group consists of a city and/or one or more armies.
 All armies in the group will be displayed in the right-hand column.
 Enemy army counts will be below your armies.  If the focus is on a
 city, the city name and owning nation will be below the map display.
 
-Similarly, <p> for previous moves to the previous group in map order.
+Similarly, <[> for previous moves to the previous group in map order.
 If there are no previous groups (or no more groups for next), a
 message will appear.
 
-You may also press <N> or <P> (capitalized) to move to the very last 
-(for N) or very first (for P) group.
+You may also press <}> or <{> (shifted) to move to the very last 
+(for }) or very first (for {) group.
 
 
 Viewing the Map:
@@ -178,7 +178,7 @@ Status Display:
 
 The (s)tatus display shows the names of all nations, their rulers and nation
 marks, and a count of their currently owned cities, armies, and heros.  
-While in status display, you may use (n)ext and (p)revious to view other
+While in status display, you may use <]> next and <[> previous to view other
 pages, or press ESC to return to the normal display.
 
 
@@ -187,7 +187,7 @@ Drafting Armies:
 Each city can produce as many as four different types of units.
 Initially, each city is set up to produce the lowest-ranked unit type
 it can produce.  You can change this for friendly cities by pressing
-<a> for the armies command.  The available unit types will be shown,
+<p> for the production command.  The available unit types will be shown,
 along with the time to produce in parenthesis.  The current type in
 production is also shown, along with the remaining time to produce the
 unit.
@@ -235,7 +235,7 @@ through forests).
 
 Reading the News and Mail:
 
-You can read the News by pressing (R).  The News consists of information
+You can read the News by pressing (N).  The News consists of information
 about recent battles (in capsule form), captured cities, etc. of all
 nations.
 
@@ -250,6 +250,6 @@ Browsing Unit Types:
 The (A)rmy types display shows the names of all the army types available
 to all users in the game, their combat rating, their movement capabilites,
 and if they can transport other units.  When in the army type display,
-you may use (n)ext and (p)revious to view other pages or press ESC to
+you may use <]> next and <[> previous to view other pages or press ESC to
 return to the normal display.
 
