@@ -136,13 +136,13 @@ const terr_attr = {
 const genattrs = {
 	'help':'N',
 	'prompt':'N',
-	'border':'NW4',
+	'border':'NW',
 	'header':'N',
 	'title':'N'
 };
 
 const attrs = {
-	'main_screen':'NW4',
+	'main_screen':'NW',
 	'status_area':'N',
 	'world_bar':'NK7',
 	'reader_pointer':'N',
@@ -150,10 +150,10 @@ const attrs = {
 	'reader_deleted':'N',
 	'viewer_deleted':'N',
 	'viewer_text':'N',
-	'army_area':'NW4',
-	'army_list':'NW4',
-	'army_total':'NW4',
-	'city_name':'NW4',
+	'army_area':'NW',
+	'army_list':'NW',
+	'army_total':'NW',
+	'city_name':'NW',
 	'nation_status':'N',
 	'army_types':'N',
 	'title_text':'N',
