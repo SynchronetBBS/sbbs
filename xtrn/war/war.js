@@ -701,6 +701,7 @@ function reader(fname, mode)
             break;
 
         case 'v' :
+	case '\r' :
             viewer(fp, pos, mode);
             show_screen(top, fp);
             break;
