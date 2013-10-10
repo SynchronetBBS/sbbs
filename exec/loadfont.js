@@ -132,14 +132,6 @@ function loadfont()
 		write("Loading fonts...");
 	}
 
-	/* From here on, it's socket access only */
-	console.lock_input(true);
-	while(console.output_buffer_level)
-		mswait(1);
-
-	var oldblock=client.socket.nonblocking;
-	client.socket.nonblocking=false;
-
 	for (i in filenames) {
 		var font=new File(filenames[i]);
 
@@ -180,29 +172,15 @@ function loadfont()
 		}
 		font.close();
 
-		client.socket.send("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
-
-		// This doesn't send it all...
-		// write(fontdata);
-		if(!(console.telnet_mode & TELNET_MODE_OFF))
-			fontdata=fontdata.replace(/\xff/g,"\xff\xff");
-		while(fontdata.length) {
-			if(client.socket.poll(0,true)) {
-			// Oh my aching head...
-				if(client.socket.send(fontdata.substr(0,1024)))
-					fontdata=fontdata.substr(1024);
-			//	if(client.socket.send(fontdata.substr(0,1)))
-			//		fontdata=fontdata.substr(1);
-			}
-		}
+		write_raw("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
+		write_raw(fontdata);
 		if(showprogress)
-			client.socket.send(".");
+			write_raw(".");
 	}
 	if(showprogress)
-		client.socket.send("done.\r\n");
+		write_raw("done.\r\n");
 	if(showfont)
-		client.socket.send("\x1b[0;"+(firstslot+filenames.length-1)+" D");
-	client.socket.nonblocking=oldblock;
+		write_raw("\x1b[0;"+(firstslot+filenames.length-1)+" D");
 	console.ctrlkey_passthru=oldctrl;
 	console.lock_input(false);
 	return(0);
