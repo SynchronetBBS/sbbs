@@ -1,4 +1,5 @@
-var game_dir = js.exec_dir;
+var orig_exec_dir = js.exec_dir;
+var game_dir = orig_exec_dir;
 /*
     Solomoriah's WAR!
 
@@ -716,6 +717,7 @@ function main(argc, argv)
     var rc, i, j, k, n, u;
     var fp;
     var filename, inbuf, p;
+    var arg;
 
     print(format("\nJSWARUPD Version %d.%d  \"Code by Solomoriah\"\n", 
         major_ver, minor_ver));
@@ -723,168 +725,171 @@ function main(argc, argv)
     print("JavaScript Version Copyright 2013, Stephen Hurd\n");
     print("All Rights Reserved.\n\n");
 
-    
-    /* load map file */
+	for(arg in argv) {
+		set_game(argv[arg]);
 
-    rc = loadmap();
+		/* load map file */
 
-    if(rc != 0) {
-        print("Error Loading Map ("+rc+")\n");
-        exit(1);
-    }
+		rc = loadmap();
 
-    /* load game save */
+		if(rc != 0) {
+			print("Error Loading Map ("+rc+")\n");
+			exit(1);
+		}
 
-    rc = loadsave();
+		/* load game save */
 
-    if(rc != 0) {
-        print("Error Loading Game Save ("+rc+")\n");
-        exit(1);
-    }
+		rc = loadsave();
 
-    if(world.length != 0)
-        print("World:  "+world+"\n");
+		if(rc != 0) {
+			print("Error Loading Game Save ("+rc+")\n");
+			exit(1);
+		}
 
-    /* open news output */
+		if(world.length != 0)
+			print("World:  "+world+"\n");
 
-    if(!news.open('ab')) {
-        print("Error Writing News File <"+news.name+">\n");
-        exit(10);
-    }
-    maint_in_progress = true;
+		/* open news output */
 
-    print("Turn Update "+gen+"\n\n");
+		if(!news.open('ab')) {
+			print("Error Writing News File <"+news.name+">\n");
+			exit(10);
+		}
+		maint_in_progress = true;
 
-    if(world.length != 0) {
-        news.write(" \b");
-        news.write(world);
-    } else
-        news.write(" \bSolomoriah's WAR!");
+		print("Turn Update "+gen+"\n\n");
 
-    news.write(" News Report     Turn "+gen+"\n\n");
+		if(world.length != 0) {
+			news.write(" \b");
+			news.write(world);
+		} else
+			news.write(" \bSolomoriah's WAR!");
 
-    /* execute master file */
+		news.write(" News Report     Turn "+gen+"\n\n");
 
-    print("Reading Master Commands...\r\n");
+		/* execute master file */
 
-	fp = new File(game_dir+'/'+MASTERFL);
+		print("Reading Master Commands...\r\n");
 
-    if(fp.open('rb')) {
-        for(i = 0; (inbuf = fp.readln()) != null; i++) {
-            rc = execpriv(inbuf);
-            if(rc != 0) {
-                print("Master Cmd Failed, Line "+(i+1)+", Code "+rc+"\n");
-                exit(2);
-            }
-        }
+		fp = new File(game_dir+'/'+MASTERFL);
 
-        fp.close();
-    }
+		if(fp.open('rb')) {
+			for(i = 0; (inbuf = fp.readln()) != null; i++) {
+				rc = execpriv(inbuf);
+				if(rc != 0) {
+					print("Master Cmd Failed, Line "+(i+1)+", Code "+rc+"\n");
+					exit(2);
+				}
+			}
 
-    /* open master for writing. */
+			fp.close();
+		}
 
-	mfile = new File(game_dir+'/'+MASTERFL);
+		/* open master for writing. */
 
-    if(!mfile.open('ab')) {
-        print("Can't Append to Master File");
-        exit(5);
-    }
+		mfile = new File(game_dir+'/'+MASTERFL);
 
-    /* execute player commands */
+		if(!mfile.open('ab')) {
+			print("Can't Append to Master File");
+			exit(5);
+		}
 
-    print("Reading Player Commands...\r\n");
+		/* execute player commands */
 
-    shuffle();
+		print("Reading Player Commands...\r\n");
 
-    for(k = 0; k < nlcnt; k++) {
+		shuffle();
 
-        n = nlist[k];
-        u = nations[n].uid;
+		for(k = 0; k < nlcnt; k++) {
 
-        filename = format(PLAYERFL, u);
+			n = nlist[k];
+			u = nations[n].uid;
 
-        fp = new File(game_dir+'/'+filename);
+			filename = format(PLAYERFL, u);
 
-        if(fp.open("rb")) {
+			fp = new File(game_dir+'/'+filename);
 
-            print("\n"+nations[n].name+" of "+nationcity(n)+" moves...\n");
+			if(fp.open("rb")) {
 
-            nations[n].idle_turns = 0;
+				print("\n"+nations[n].name+" of "+nationcity(n)+" moves...\n");
 
-            for(i = 0; (inbuf = fp.readln()) != null; i++) {
-                rc = execuser(inbuf);
-                if(rc != 0) {
-                    printf("Player Cmd Failed, Line "+(i+1)+", Code "+rc+"  ");
-                    exit(2);
-                }
-            }
+				nations[n].idle_turns = 0;
 
-            fp.close();
+				for(i = 0; (inbuf = fp.readln()) != null; i++) {
+					rc = execuser(inbuf);
+					if(rc != 0) {
+						printf("Player Cmd Failed, Line "+(i+1)+", Code "+rc+"  ");
+						exit(2);
+					}
+				}
 
-            file_remove(fp.name);
-        } else {
-            print("\n"+nations[n].name+" of "+nationcity(n)+" is idle.\n");
-            nations[n].idle_turns++;
-        }
+				fp.close();
 
-        combat(n);
+				file_remove(fp.name);
+			} else {
+				print("\n"+nations[n].name+" of "+nationcity(n)+" is idle.\n");
+				nations[n].idle_turns++;
+			}
 
-        if(nations[n].idle_turns >= TIME_TO_DESERT)
-            deserter(n);
-        else
-            creator(n);
-    }
+			combat(n);
 
-    /* do the update */
+			if(nations[n].idle_turns >= TIME_TO_DESERT)
+				deserter(n);
+			else
+				creator(n);
+		}
 
-    print("Global Update...\n");
+		/* do the update */
 
-    execpriv("global-update");
-    mfile.write("global-update\n");
+		print("Global Update...\n");
 
-    /* close up */
+		execpriv("global-update");
+		mfile.write("global-update\n");
 
-    news.close();
-    mfile.close();
+		/* close up */
 
-    mail_line(null, -1);
+		news.close();
+		mfile.close();
 
-    /* consolidate */
+		mail_line(null, -1);
 
-    filename = format(MASTERBAK, gen);
+		/* consolidate */
 
-    if(!file_rename(game_dir+'/'+MASTERFL, game_dir+'/'+filename)) {
-        print("Can't Rename Master Cmd File\n");
-        exit(9);
-    }
+		filename = format(MASTERBAK, gen);
 
-    filename = format(GAMEBAK, gen);
+		if(!file_rename(game_dir+'/'+MASTERFL, game_dir+'/'+filename)) {
+			print("Can't Rename Master Cmd File\n");
+			exit(9);
+		}
 
-    if(file_exists(game_dir+'/'+GAMESAVE) && !file_rename(game_dir+'/'+GAMESAVE, game_dir+'/'+filename)) {
-        print("Can't Rename Game Save\n");
-        exit(9);
-    }
+		filename = format(GAMEBAK, gen);
 
-	fp = new File(game_dir+'/'+GAMESAVE);
+		if(file_exists(game_dir+'/'+GAMESAVE) && !file_rename(game_dir+'/'+GAMESAVE, game_dir+'/'+filename)) {
+			print("Can't Rename Game Save\n");
+			exit(9);
+		}
 
-    if(!fp.open('wb')) {
-        print("Can't Create New Save File\n");
-        exit(9);
-    }
+		fp = new File(game_dir+'/'+GAMESAVE);
 
-    /* clean up outdated files. */
+		if(!fp.open('wb')) {
+			print("Can't Create New Save File\n");
+			exit(9);
+		}
 
-    if(gen - 4 > 0) {
-        filename = game_dir+'/'+format(MASTERBAK, gen - 4);
-        file_remove(filename);
+		/* clean up outdated files. */
 
-        filename = game_dir+'/'+format(GAMEBAK, gen - 4);
-        file_remove(filename);
-    }
+		if(gen - 4 > 0) {
+			filename = game_dir+'/'+format(MASTERBAK, gen - 4);
+			file_remove(filename);
 
-    savegame(fp);
+			filename = game_dir+'/'+format(GAMEBAK, gen - 4);
+			file_remove(filename);
+		}
 
-    fp.close();
+		savegame(fp);
+
+		fp.close();
+	}
 
     exit(0);
 }

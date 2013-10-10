@@ -1,4 +1,5 @@
-var game_dir = js.exec_dir;
+var orig_exec_dir = js.exec_dir;
+var game_dir = orig_exec_dir;
 /*
     Solomoriah's WAR!
 
@@ -78,11 +79,6 @@ var game_dir = js.exec_dir;
 */
 load("sbbsdefs.js");
 load(game_dir+'/warcommon.js');
-load("loadfont.js", '-H', game_dir+'/terrain.fnt');
-if(bbs.mods.CTerm_Version != null) {
-	console.write("\x1b[?31h\x1b[1;255 D");
-	js.on_exit('console.write("\x1b[?31l")');
-}
 
 // From display.c
 const gran = 2;
@@ -2479,6 +2475,15 @@ function main(argc, argv)
 	var gamedir='';
 	var st_buf;
 	var i;
+
+	if(argc)
+		set_game(argv[0]);
+
+	load("loadfont.js", '-H', game_dir+'/terrain.fnt');
+	if(bbs.mods.CTerm_Version != null) {
+		console.write("\x1b[?31h\x1b[1;255 D");
+		js.on_exit('console.write("\x1b[?31l")');
+	}
 
 	titlescreen();
 

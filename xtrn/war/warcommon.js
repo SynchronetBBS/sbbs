@@ -587,3 +587,12 @@ function isgreater(a1, a2)
     return 0;
 }
 
+function set_game(path)
+{
+	if(path.substr(0, 1)=='/' || (path.substr(1,1)==':' && path.substr(2,1)=='\\'))
+		game_dir = path;
+	else
+		game_dir = fullpath(orig_exec_dir+'/'+path);
+
+	news = new File(game_dir+'/news');
+}
