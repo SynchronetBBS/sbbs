@@ -2075,6 +2075,11 @@ function mainloop(ntn)
         return;
     }
 
+	/* Check for messages */
+	
+	inbuf = format(MAILFL, ntn);
+	reader(inbuf, 1);
+
     /* enter the loop */
 
     saystat("Welcome to Solomoriah's WAR!  Press ? for Help.");
