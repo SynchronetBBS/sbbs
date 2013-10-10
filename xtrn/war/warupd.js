@@ -725,6 +725,9 @@ function main(argc, argv)
     print("JavaScript Version Copyright 2013, Stephen Hurd\n");
     print("All Rights Reserved.\n\n");
 
+	if(argc == 0)
+		argv=[game_dir];
+
 	for(arg in argv) {
 		set_game(argv[arg]);
 
