@@ -1851,7 +1851,7 @@ function help()
         console.cleartoeol();
 
         console.gotoxy(2, 24);
-        console.print("  (A)rmy capabilities   army (p)roduction  (h/?) toggle help  (H)elp browser");
+        console.print("  (A)rmy capabilities   army (p)roduction  (?) toggle quick help  (h)elp");
         console.cleartoeol();
 
         break;
@@ -2171,8 +2171,7 @@ function mainloop(ntn)
 
     /* enter the loop */
 
-    //saystat("Welcome to Solomoriah's WAR!  Press ? for Help.");
-	help();
+    saystat("Welcome to Solomoriah's WAR!  Press <h> for Help.");
 
     force = false;
 
@@ -2401,11 +2400,11 @@ function mainloop(ntn)
             force = true;
             break;
 
-        case 'h' : /* help */
-        case '?' :
+        case '?' : /* help */
             help();
             break;
 
+        case 'h' : /* help */
 		case 'H' : /* help */
 			reader('help.news', 0);
 			force = true;
