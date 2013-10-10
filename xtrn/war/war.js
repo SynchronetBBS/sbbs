@@ -1842,7 +1842,7 @@ function help()
 
     case 0 :
         console.gotoxy(2, 22);
-        console.print("  (])ext group  ([)revious group  (})last group  ({)first group  (q)uit game");
+        console.print("  (])next group  ([)previous group  (})last group  ({)first group  (q)uit game");
         console.cleartoeol();
 
         console.gotoxy(2, 23);
