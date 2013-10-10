@@ -73,9 +73,9 @@ pointer is pointing at.  (Pressing <space bar> again will remove the
 Once you have selected your armies, press <m> to move them.  A message
 will appear at the bottom of the screen, as follows:
 
- Move Army          7 8 9      y k u    SPACE to Stop.
-                    4   6  or  h   l
-                    1 2 3      n j m
+ Move Army          7 8 9               SPACE to Stop.
+                    4   6
+                    1 2 3
 
 The keys shown move your army stack in the corresponding direction.
 Note that if any army you have marked can't make a move, the entire
@@ -236,4 +236,46 @@ to all users in the game, their combat rating, their movement capabilites,
 and if they can transport other units.  When in the army type display,
 you may use (n)ext and (p)revious to view other pages or press ESC to
 return to the normal display.
+
+
+ Main Keyboard Controls
+
+The following is a list of keyboard controls which work in the main and
+info modes.
+
+    A - List all army types and capabilities.
+    s - Status display
+    H - Display this help text
+    h - Display next help text (rotates through)
+    ? - Same as 'h'
+
+    j - Move to next army on right display
+    d - Move to next army on right display
+ Down - Move to next army on right display
+    k - Move to previous army on right display
+    u - Move to previous army on right display
+   Up - Move to previous army on right display
+    I - Displays information about current army
+Space - Toggle army
+    * - Mark all armies
+    / - Unmark all armies
+    m - Move marked armies
+    g - Select all armies and move
+
+    a - Set army production for the city
+    r - Rename hero (for unnamed heros only)
+
+    n - Next group
+    N - Last group
+   ^N - Next army which has moves left
+    p - Previous group
+    P - First group
+   ^P - Previous army which has moves left
+
+    M - read Mail
+    S - Send message
+    R - Read news
+
+    q - Quit
+   ^L - Redraw screen
 

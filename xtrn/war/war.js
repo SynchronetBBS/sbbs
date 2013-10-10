@@ -1227,13 +1227,13 @@ function move_mode(ntn, rp, cp)
     console.print(format("Move %s", mvcnt > 1 ? "Armies" : "Army"));
 
     console.gotoxy(21, 23);
-    console.print("4   6  or  h   l");
+    console.print("4   6");
 
     console.gotoxy(21, 24);
-    console.print("1 2 3      n j m");
+    console.print("1 2 3");
 
     console.gotoxy(21, 22);
-    console.print("7 8 9      y k u    SPACE to Stop.  ");
+    console.print("7 8 9               SPACE to Stop.  ");
 
     setfocus(ntn, rp, cp);
     showmap(rp, cp, false);
@@ -1251,45 +1251,37 @@ function move_mode(ntn, rp, cp)
         switch(ch) { /* directions */
 
         case '7' :
-        case 'y' :
             t_r--;
             t_c--;
           break;
 
         case '8' :
-        case 'k' :
             t_r--;
             break;
 
         case '9' :
-        case 'u' :
             t_r--;
             t_c++;
             break;
 
         case '4' :
-        case 'h' :
             t_c--;
             break;
 
         case '6' :
-        case 'l' :
             t_c++;
             break;
 
         case '1' :
-        case 'n' :
             t_r++;
             t_c--;
           break;
 
         case '2' :
-        case 'j' :
             t_r++;
             break;
 
         case '3' :
-        case 'm' :
             t_r++;
             t_c++;
             break;
@@ -1477,13 +1469,13 @@ function info_mode(rp, cp, n, ch)
     clearstat(-1);
 
     console.gotoxy(21,23);
-    console.print("4   6  or  h   l");
+    console.print("4   6");
 
     console.gotoxy(21,24);
-    console.print("1 2 3      n j m");
+    console.print("1 2 3");
 
     console.gotoxy(2,22);
-    console.print("Info Mode:         7 8 9      y k u    ESC to Stop.  ");
+    console.print("Info Mode:         7 8 9               ESC to Stop.  ");
 
     r = a_r = rp;
     c = a_c = cp;
@@ -1505,46 +1497,38 @@ function info_mode(rp, cp, n, ch)
         switch(ch) {
 
         case '7' :
-        case 'y' :
             f_r--;
             f_c--;
             break;
 
         case '8' :
-        case 'k' :
             f_r--;
             break;
 
         case '9' :
-        case 'u' :
             f_r--;
             f_c++;
             break;
 
         case '6' :
-        case 'l' :
             f_c++;
             break;
 
         case '3' :
-        case 'm' :
             f_r++;
             f_c++;
             break;
 
         case '2' :
-        case 'j' :
             f_r++;
             break;
 
         case '1' :
-        case 'n' :
             f_r++;
             f_c--;
             break;
 
         case '4' :
-        case 'h' :
             f_c--;
             break;
 
@@ -1780,34 +1764,34 @@ function help()
 
     case 0 :
         console.gotoxy(2, 22);
-        console.print("  (n)ext group  (p)revious group  (N)last (P)first");
+        console.print("  (n)ext group  (p)revious group  (N)last group  (P)first group  (q)uit game");
         console.cleartoeol();
 
         console.gotoxy(2, 23);
-        console.print("  (s)tatus display  (i)nformation mode");
-        console.print("  (a)rmy production");
+        console.print("  (CTRL-N) Next movable army  (CTRL-P) Previous movable army  (s)tatus display");
         console.cleartoeol();
 
         console.gotoxy(2, 24);
-        console.print("  (R)ead news  read (M)ail  (S)end mail  (q)uit");
+        console.print("  (A)rmy capabilities   (a)rmy production  (h/?) toggle help  (H)elp browser");
         console.cleartoeol();
 
         break;
 
     case 1 :
         console.gotoxy(2, 22);
-        console.print("  (j)pointer down  (k)pointer up  (SPACE)mark  (*)mark all");
+        console.print("  (j/d/Down)pointer down  (k/u/Up)pointer up  (SPACE)mark/unmark  (*)mark all");
         console.cleartoeol();
 
         console.gotoxy(2, 23);
-        console.print("  (m)ove marked armies  (r)ename hero  (q)uit  (H)elp text");
+        console.print("  (/)unmark all  (m)ove marked armies  (g)mark all and move  (r)ename hero");
         console.cleartoeol();
 
         console.gotoxy(2, 24);
-        console.print("  view all (A)rmy details");
+        console.print("  (I)nformation about current army    (R)ead news  (S)end message  read (M)ail");
         console.cleartoeol();
 
         break;
+
     }
 
     help_mode++;
