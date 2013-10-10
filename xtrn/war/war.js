@@ -1591,36 +1591,12 @@ function info_mode(rp, cp, n, ch)
         city = my_city_at(t_r, t_c, n);
         army = my_army_at(t_r, t_c, n);
 
-/*
-        if(ch != 'i' && (city >= 0 || army >= 0)) {
-			focus = false;
-            showfocus(rp, cp);
-            r = rp = t_r;
-            c = cp = t_c;
-
-            setfocus(n, rp, cp);
-            showmap(rp, cp, false);
-            showfocus(rp, cp);
-            ul_r = ((parseInt(r / gran) * gran - rem) + map_height)
-                % map_height;
-            ul_c = ((parseInt(c / gran) * gran - rem) + map_width)
-                % map_width;
-            f_r = (r % gran) + rem;
-            f_c = (c % gran) + rem;
-
-        	t_r = (ul_r + f_r + map_height) % map_height;
-        	t_c = (ul_c + f_c + map_width) % map_width;
-
-            done = 1;
-			ch = '';
-        }
-        */
         if(focus || army >= 0 || city >= 0) {
 			if(army >= 0|| city >= 0) {
 				a_r = t_r;
 				a_c = t_c;
+				setfocus(n, t_r, t_c);
 			}
-			setfocus(n, t_r, t_c);
 			showmap(rp, cp, false);
 			focus = false;
 		}
@@ -1639,7 +1615,6 @@ function info_mode(rp, cp, n, ch)
    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
 	console.attributes='N';
 
-    showfocus(rp, cp);
     return {r:a_r,c:a_c,ch:ch};
 }
 
