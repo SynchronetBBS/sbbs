@@ -2340,71 +2340,6 @@ function mainloop(ntn)
     }
 }
 
-function writemap(fp, ntn) {
-    var r, c, i, j, m;
-	var pmap=[];
-
-	function markup(r, c)
-	{
-		var r_origin, c_origin, i, j, fixed_r, fixed_c;
-
-		r_origin = parseInt(r / gran) * gran - 7;
-		c_origin = parseInt(c / gran) * gran - 7;
-
-		for(i = 0; i < 16; i++)
-			for(j = 0; j < 16; j++) {
-				fixed_r = fixrow(r_origin+i);
-				fixed_c = fixcol(c_origin+j);
-				if(pmap[fixed_r][fixed_c] == 0)
-					pmap[fixed_r][fixed_c] = 3;
-			}
-	}
-
-    /* clear the player map */
-
-    for(r = 0; r < map_height; r++) {
-		pmap[r]=[];
-        for(c = 0; c < map_width; c++) {
-            pmap[r][c] = 0;
-        }
-	}
-
-    /* find the nation's groups */
-
-    for(i = 0; i < armycnt; i++)
-        if(armies[i].nation == ntn) {
-            r = armies[i].r;
-            c = armies[i].c;
-            pmap[r][c] = 1;
-        }
-
-    for(i = 0; i < citycnt; i++)
-        if(cities[i].nation == ntn) {
-            r = cities[i].r;
-            c = cities[i].c;
-            pmap[r][c] = 1;
-        }
-
-    /* mark up the overlay */
-
-    for(c = 0; c < map_width; c++)
-        for(r = 0; r < map_height; r++)
-            if(pmap[r][c] == 1)
-                markup(r, c);
-
-    /* write map */
-
-    fp.printf("%c %d %d\n\n", 
-        marks[0][nations[ntn].mark], map_height, map_width);
-
-    for(r = 0; r < map_height; r++) {
-        for(c = 0; c < map_width; c++)
-            fp.printf("%s%s%u", 
-                map[r][c], mapovl[r][c], pmap[r][c]);
-        fp.write('\n');
-    }
-}
-
 function titlescreen()
 {
     var i;
@@ -2741,10 +2676,6 @@ function main(argc, argv)
 
 	pfile.close();
 
-	pfile = new File(format("%s/%04d.map", game_dir, uid));
-	pfile.open('wb');
-	writemap(pfile, n);
-	pfile.close();
 	exit(0);
 }
 
