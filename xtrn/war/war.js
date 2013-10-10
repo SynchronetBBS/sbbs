@@ -133,6 +133,40 @@ const terr_attr = {
 	'*':'HW',
 	'!':'HR'
 };
+const genattrs = {
+	'help':'N',
+	'prompt':'N',
+	'border':'NW4',
+	'header':'N',
+	'title':'N'
+};
+
+const attrs = {
+	'main_screen':'NW4',
+	'status_area':'N',
+	'world_bar':'NK7',
+	'reader_pointer':'N',
+	'reader_topbottom':'N',
+	'reader_deleted':'N',
+	'viewer_deleted':'N',
+	'viewer_text':'N',
+	'army_area':'NW4',
+	'army_list':'NW4',
+	'army_total':'NW4',
+	'city_name':'NW4',
+	'nation_status':'N',
+	'army_types':'N',
+	'title_text':'N',
+	'title_copyright':'N',
+	'title_world':'N',
+	'title_newcity':'N',
+	'title_retry':'N',
+	'title_symbollist':'N',
+	'title_symboltitle':'N',
+	'title_welcome':'N',
+	'title_anykey':'N',
+	'mailer':'N'
+};
 
 const terr_names = [
     "Water",
@@ -170,8 +204,9 @@ function mainscreen()
 {
     var i;
 
-    console.clear(7);
+    console.clear(attrs.main_screen);
 
+	console.attributes = genattrs.border;
 	console.gotoxy(2, 1);
 	console.print(ascii(201));
 	console.gotoxy(2, 18);
@@ -193,17 +228,24 @@ function mainscreen()
     }
 
     console.gotoxy(1, 20);
+	console.attributes = genattrs.border;
     console.print((new Array(81)).join(ascii(196)));
 
+	console.attributes = attrs.status_area;
+	for(i=21; i<=console.screen_rows; i++) {
+    	console.gotoxy(1, i);
+		console.cleartoeol();
+	}
+
     console.gotoxy(41, 1);
-    console.attributes = 'K7';
+    console.attributes = attrs.world_bar;
     console.print(format("   %-20s    Turn %d   ", world, gen));
-    console.attributes = 'N';
 }
 
 function saystat(msg)
 {
     console.gotoxy(2, 21);
+	console.attributes = attrs.status_area;
     console.print(msg);
     console.cleartoeol();
 }
@@ -226,12 +268,11 @@ function mailer(from, to)
 			nationname(from), nationcity(from), turn());
 	}
 
-	console.clear(7);
+	console.clear(attrs.mailer);
 	console.gotoxy(1,1);
 
 	f = new File(format("%s/%04d.tmpmsg", game_dir, nations[from].uid));
 	if(!f.open("wb")) {
-    	console.clear(7);
     	mainscreen();
 		saystat("Message Creation Failed (System Error)");
 		return;
@@ -246,7 +287,6 @@ function mailer(from, to)
 
 			if(!f.open('rb')) {
 				file_remove(f.name);
-    			console.clear(7);
     			mainscreen();
 				saystat("Mail Could Not Be Read...  Cancelled.");
 				return;
@@ -256,7 +296,6 @@ function mailer(from, to)
 
 			if(!fp.open('ab')) {
 				file_remove(f.name);
-    			console.clear(7);
     			mainscreen();
 				saystat("Mail Could Not Be Sent...  Cancelled.");
 				return;
@@ -281,7 +320,6 @@ function mailer(from, to)
 		}
 	}
 	file_remove(f.name);
-    console.clear(7);
     mainscreen();
 	saystat("Mail Sent.");
 
@@ -301,6 +339,7 @@ function showpage(fp, pg)
 
 	len = HEADERMARK.length;
 
+	console.attributes = attrs.viewer_text;
     for(i = 0; i < 19; i++) {
         if((inbuf = fp.readln(1024)) == null)
             break;
@@ -320,10 +359,12 @@ function showpage(fp, pg)
     }
 
     console.gotoxy(56, 22);
+	console.attributes = genattrs.help;
     console.print(format("Page %d of %d", pg + 1, page_cnt));
     console.cleartoeol();
 
     console.gotoxy(71, 22);
+	console.attribtes = attrs.reader_prompt;
     console.print("< >");
 }
 
@@ -331,29 +372,35 @@ function show_killed(pos)
 {
     console.gotoxy(41, 22);
 
-    if(killed[pos])
+    if(killed[pos]) {
+		console.attributes = attrs.viewer_deleted;
         console.print("[Deleted]");
-    else
+	}
+    else {
+		console.attributes = genattrs.help;
         console.print("         ");
+	}
 }
 
 function viewerscr(mode)
 {
-    console.clear(7);
+    console.clear(genattrs.header);
 
     console.gotoxy(3, 21);
 
+	console.attributes = genattrs.help;
     if(mode)
         console.print("Mail:  (d)elete  ");
     else
         console.print("News:  ");
 
-    console.print("(j)down  (k)up");
+    console.print("(z)down  (a)up");
 
     console.gotoxy(3, 22);
     console.print("Press SPACE to Exit.");
 
     console.gotoxy(71, 22);
+	console.attributes = attrs.viewer_prompt;
     console.print("< >");
 }
 
@@ -410,16 +457,17 @@ function delete_msgs(fn)
 
 function readerscr(mode)
 {
-    console.clear(7);
+    console.clear(genattrs.header);
 
     console.gotoxy(3, 21);
 
+	console.attributes = genattrs.help;
     if(mode)
         console.print("Mail:  (v)iew current  (d)elete  ");
     else
         console.print("News:  (v)iew current  ");
 
-    console.print("(j)down  (k)up  (n)ext  (p)revious");
+    console.print("(z)down  (a)up  (]) next  ([) previous");
 
     console.gotoxy(3, 22);
     console.print("Press SPACE to Exit.");
@@ -525,20 +573,27 @@ function show_screen(pos, fp)
         console.gotoxy(3, i+1);
 
         if(pos + i < index_cnt && pos + i >= 0) {
-            if(killed[pos+i])
+            if(killed[pos+i]) {
+				console.attributes = attrs.reader_deleted;
                 console.print('*');
-            else
+			}
+			else {
+				console.attributes = genattrs.header;
                 console.print(' ');
+			}
 			fp.position = r_index[pos+i];
 			inbuf = fp.readln(1024);
 			if(inbuf != null) {
 				inbuf = inbuf.substr(0, 77);
            		console.print(inbuf);
 			}
-        } else if(pos + i == -1)
-            console.print("*** Top of List ***");
-        else if(pos + i == index_cnt)
-            console.print("*** End of List ***");
+        } else {
+			console.attributes = attrs.reader_topbottom;
+			if(pos + i == -1)
+           		console.print("*** Top of List ***");
+        	else if(pos + i == index_cnt)
+            	console.print("*** End of List ***");
+		}
 
         console.cleartoeol();
     }
@@ -603,21 +658,23 @@ function reader(fname, mode)
 
     do {
         console.gotoxy(2, pos - top + 9);
+		console.attributes = attrs.reader_pointer;
         console.print('>');
 
         ch = console.getkey();
 
         console.gotoxy(2, pos - top + 9);
+		console.attributes = genattrs.header;
         console.print(' ');
 
         switch(ch) {
 
-        case 'j' :
+        case 'z' :
         case KEY_DOWN:
             pos++;
             break;
 
-        case 'k' :
+        case 'a' :
         case KEY_UP:
             pos--;
             break;
@@ -667,7 +724,6 @@ function reader(fname, mode)
 
     fp.close();
 
-    console.clear(7);
     mainscreen();
 
     /* handle deletion. */
@@ -830,6 +886,7 @@ function movecost(a, r, c)
 
 function clearstat(mode)
 {
+	console.attributes = attrs.status_area;
     if(mode == -1) {
         console.gotoxy(2, 21); console.cleartoeol();
         console.gotoxy(2, 22); console.cleartoeol();
@@ -952,6 +1009,7 @@ function showarmies()
     var i, a;
     var buff;
 
+	console.attributes = attrs.army_area;
     for(i = 0; i < 12; i++) {
 
         console.gotoxy(38, i + 3);
@@ -976,10 +1034,12 @@ function showarmies()
     }
 
     console.gotoxy(38, 14);
+	console.attributes = attrs.army_total;
     if(avcnt > 0)
         console.print(format("     Total %d Armies", avcnt));
     console.cleartoeol();
 
+	console.attributes = attrs.army_area;
     for(i = 0; i < 2; i++) {
         console.gotoxy(43, i + 16);
 
@@ -1049,7 +1109,8 @@ function showcity(r, c)
         buff = format("City:  %s (%s)",
             cities[i].name, cityowner(i));
     }
-    
+
+	console.attributes = attrs.city_name;
     console.print(format("%-40.40s", buff));
 }
 
@@ -1222,6 +1283,7 @@ function move_mode(ntn, rp, cp)
     clearstat(-1);
 
     console.gotoxy(2, 22);
+	console.attributes = attrs.status_area;
     console.print(format("Move %s", mvcnt > 1 ? "Armies" : "Army"));
 
     console.gotoxy(21, 23);
@@ -1475,6 +1537,7 @@ function info_mode(rp, cp, n, ch)
     clearstat(-1);
 
     console.gotoxy(21,23);
+	console.attributes = attrs.status_area;	
     console.print("4   6  or  d   g");
 
     console.gotoxy(21,24);
@@ -1530,7 +1593,7 @@ function info_mode(rp, cp, n, ch)
             break;
 
         case '3' :
-        case 'c' :
+        case 'b' :
             f_r++;
             f_c++;
             break;
@@ -1541,7 +1604,7 @@ function info_mode(rp, cp, n, ch)
             break;
 
         case '1' :
-        case 'b' :
+        case 'c' :
             f_r++;
             f_c--;
             break;
@@ -1771,6 +1834,7 @@ var help_mode = 0;
 function help()
 {
     console.gotoxy(2, 21);
+	console.attributes = attrs.status_area;
     console.print(format("Commands, Page %d  (Press ? for More Help)", help_mode + 1));
     console.cleartoeol();
 
@@ -1803,7 +1867,6 @@ function help()
         console.gotoxy(2, 24);
         console.print("  (I)nformation about current army    Read (N)ews  (S)end message  read (M)ail");
         console.cleartoeol();
-1
         break;
 
     }
@@ -1818,11 +1881,13 @@ function status()
 
     /* set up screen */
 
-    console.clear(7);
+    console.clear(attrs.nation_status);
 
     console.gotoxy(21, 2);
+	console.attributes = genattrs.title;
     console.print("Nation Status Display");
 
+	console.attributes = genattrs.header;
     console.gotoxy(2, 4);    console.print("Nation:");
     console.gotoxy(2, 5);    console.print("Ruler:");
     console.gotoxy(2, 6);    console.print("Mark:");
@@ -1830,7 +1895,8 @@ function status()
     console.gotoxy(2, 9);    console.print("Heros:");
     console.gotoxy(2, 10);   console.print("Armies:");
 
-    console.gotoxy(2, 12);   console.print("<]> next page  <]> previous page  (SPACE) to exit");
+	console.attributes = genattrs.help;
+    console.gotoxy(2, 12);   console.print("<]> next page  <[> previous page  (SPACE) to exit");
 
     /* display loop */
 
@@ -1844,6 +1910,7 @@ function status()
             console.cleartoeol();
         }
 
+		console.attributes = attrs.nation_status;
         for(i = 0; i < 4; i++)
             if(pos + 1 + i < nationcnt) {
                 console.gotoxy(i * 16 + 17, 4);
@@ -1884,6 +1951,7 @@ function status()
         /* handle input. */
 
         console.gotoxy(71, 12);
+		console.attributes = attrs.nstatus_prompt;
         console.print("< >\b\b");
 
         switch((ch = console.getkey())) {
@@ -1917,11 +1985,13 @@ function armytypes()
 
     /* set up screen */
 
-    console.clear(7);
+    console.clear(attrs.army_types);
 
     console.gotoxy(21, 2);
+	console.attributes = genattrs.title;
     console.print("Army Type Display");
 
+	console.attributes = genattrs.header;
     console.gotoxy(2, 4);    console.print("Name:");
     console.gotoxy(2, 5);    console.print("Combat:");
     console.gotoxy(2, 6);    console.print("Move Rate:");
@@ -1930,6 +2000,7 @@ function armytypes()
 	}
     console.gotoxy(2, 7+i);   console.print("Special:");
 
+	console.attributes = genattrs.help;
     console.gotoxy(2, 9+i);   console.print("<]> next page  <[> previous page  (SPACE) to exit");
 
     /* display loop */
@@ -1939,6 +2010,7 @@ function armytypes()
     do {
         /* show the types. */
 
+		console.attributes = attrs.army_types;
         for(i = 4; i <= 8+terr_names.length; i++) {
             console.gotoxy(17, i);
             console.cleartoeol();
@@ -1971,6 +2043,7 @@ function armytypes()
         /* handle input. */
 
         console.gotoxy(71, 9+j);
+		console.attributes = attrs.atype_prompt;
         console.print("< >\b\b");
 
         switch((ch = console.getkey())) {
@@ -2004,6 +2077,7 @@ function produce(city)
     var buff='';
     var okstring='';
 
+	console.attributes = attrs.status_area;
     console.gotoxy(2, 22);  console.cleartoeol();
     console.gotoxy(2, 23);  console.cleartoeol();
 
@@ -2364,13 +2438,14 @@ function titlescreen()
 		"            #  #   #    #  #    #   ###",
 	];
 
-    console.clear(7);
+    console.clear(attrs.title_text);
 
     for(i=0; i<title.length; i++) {
         console.gotoxy(11, i+3);
         console.print(title[i]);
     }
 
+	console.attributes = attrs.title_copyright;
     console.gotoxy(11, i+3);
     console.print('JSWAR Version '+(major_ver)+'.'+(minor_ver)+'             "Code by Solomoriah"');
 
@@ -2516,6 +2591,7 @@ function main(argc, argv)
 	}
 
 	console.gotoxy(11,17);
+	console.attributes = attrs.title_world;
 	if(world.length > 0)
 		console.print("World: "+world+"    ");
 	console.print("Turn:  "+gen);
@@ -2530,6 +2606,7 @@ function main(argc, argv)
 	}
 
 	console.gotoxy(11, 21);
+	console.attributes = attrs.status_area;
 	console.print("Reading Master Commands...  ");
 
 	fp = new File(game_dir+'/master.cmd');
@@ -2579,15 +2656,18 @@ function main(argc, argv)
 
             while(!confirmed) {
 				console.gotoxy(11,19);
+				console.attributes = attrs.title_newcity;
 				console.print("Your City is "+ cities[c].name);
 				console.cleartoeol();
 
 				inbuf='';
 				while(inbuf.length==0) {
 					console.gotoxy(11, 21);
+					console.attributes = attrs.title_retry;
 					console.print("(Enter ! to Retry)");
 					console.cleartoeol();
 					console.gotoxy(11, 20);
+					console.attributes = attrs.title_nameprompt;
 					console.print("Enter your name:  ");
 					console.cleartoeol();
 					inbuf = console.getstr(NATIONNMLEN);
@@ -2600,14 +2680,17 @@ function main(argc, argv)
 
 			name=inbuf;
 			console.gotoxy(11,22);
+			console.attributes = attrs.title_symboltitle;
 			console.print("Available:  ");
 			
 			inbuf = marks[0];
 			for(i=0; i<nationcnt; i++)
 				inbuf = inbuf.replace(nations[i].mark, '');
 			inbuf = inbuf.replace(' ','');
+			console.attributes = attrs.title_symbollist;
 			console.print(inbuf);
 			console.gotoxy(11, 21);
+			console.attributes = attrs.title_symbolprompt;
 			console.print("Select Nation Mark:  ");
 			console.cleartoeol();
 			ch = console.getkeys(inbuf);
@@ -2642,6 +2725,7 @@ function main(argc, argv)
 	/* execute player commands */
 
 	console.gotoxy(11, 21);
+	console.attributes = attrs.status_area;
 	console.print("Reading Player Commands...  ");
 	console.cleartoeol();
 	fp = new File(format("%s/%04d.cmd", game_dir, uid));
@@ -2681,9 +2765,11 @@ function main(argc, argv)
 			n = i;
 
 	console.gotoxy(11, 20);
+	console.attributes = attrs.title_welcome;
 	console.print("Welcome, "+nations[n].name+" of "+nationcity(n)+"!");
 	console.cleartoeol();
 	console.gotoxy(11, 21);
+	console.attributes = attrs.title_anykey;
 	console.print("Press Any Key to Begin...  ");
 	console.cleartoeol();
 	console.getkey();
