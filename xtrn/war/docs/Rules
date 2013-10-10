@@ -89,9 +89,9 @@ pointer is pointing at.  (Pressing <space bar> again will remove the
 Once you have selected your armies, press <m> to move them.  A message
 will appear at the bottom of the screen, as follows:
 
- Move Army          7 8 9      y k u    SPACE to Stop.
-                    4   6  or  h   l
-                    1 2 3      n j m
+ Move Army          7 8 9               SPACE to Stop.
+                    4   6
+                    1 2 3
 
 The keys shown move your army stack in the corresponding direction.
 Note that if any army you have marked can't make a move, the entire
