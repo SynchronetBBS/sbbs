@@ -1072,13 +1072,15 @@ function showmap(r, c, force)
     ul_r = ((parseInt(r / gran) * gran - rem) + map_height) % map_height;
     ul_c = ((parseInt(c / gran) * gran - rem) + map_width) % map_width;
 
-    if(old_ul_r != ul_r || old_ul_c != ul_c || force)
-        for(i = 0; i < 16; i++)
+    if(old_ul_r != ul_r || old_ul_c != ul_c || force) {
+        for(i = 0; i < 16; i++) {
             for(j = 0; j < 16; j++) {
                 zr = (ul_r+i) % map_height;
                 zc = (ul_c+j) % map_width;
                 gmapspot(i, j, map[zr][zc], mapovl[zr][zc], 0, '');
             }
+		}
+	}
 
 	console.attributes='N';
     old_ul_r = ul_r;
@@ -1090,7 +1092,7 @@ function showmap(r, c, force)
     console.gotoxy(f_c * 2 + 16, f_r + 8);
 }
 
-function showfocus(r, c, mode)
+function showfocus(r, c)
 {
     var f_r, f_c, rem;
 
@@ -1234,13 +1236,13 @@ function move_mode(ntn, rp, cp)
     console.print("7 8 9      y k u    SPACE to Stop.  ");
 
     setfocus(ntn, rp, cp);
-    showmap(rp, cp, 0);
-    showfocus(rp, cp, 1);
+    showmap(rp, cp, false);
+    showfocus(rp, cp);
 
     while(mvcnt > 0 && (ch = console.getkey()) != ' ' 
     && terminate.indexOf(ch) == -1) {
 
-        showfocus(rp, cp, 0);
+        showfocus(rp, cp);
         clearstat(0);
 
         t_r = rp;
@@ -1395,7 +1397,7 @@ function move_mode(ntn, rp, cp)
             showmap(rp, cp, ok);
         }
 
-        showfocus(rp, cp, 1);
+        showfocus(rp, cp);
     }
 
     if(ntn > -1)
@@ -1464,13 +1466,13 @@ function show_info(r, c)
 
 function info_mode(rp, cp, n, ch)
 {
-    var done, r, c, ul_r, ul_c, f_r, f_c, t_r, t_c;
-    var city, army, i, flag;
+    var done, r, c, ul_r, ul_c, f_r, f_c, t_r, t_c, a_r, a_c;
+    var city, army, i, focus;
     var rem;
 
     rem = parseInt((16 - gran) / 2);
 
-    showfocus(rp, cp, 1);
+    showfocus(rp, cp);
 
     clearstat(-1);
 
@@ -1483,8 +1485,8 @@ function info_mode(rp, cp, n, ch)
     console.gotoxy(2,22);
     console.print("Info Mode:         7 8 9      y k u    ESC to Stop.  ");
 
-    r = rp;
-    c = cp;
+    r = a_r = rp;
+    c = a_c = cp;
 
     ul_r = ((parseInt(r / gran) * gran - rem) + map_height) % map_height;
     ul_c = ((parseInt(c / gran) * gran - rem) + map_width) % map_width;
@@ -1498,8 +1500,6 @@ function info_mode(rp, cp, n, ch)
     done = 0;
 
     do {
-        flag = 1;
-
     	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
 		console.attributes='N';
         switch(ch) {
@@ -1559,11 +1559,31 @@ function info_mode(rp, cp, n, ch)
             done = 1;
         }
 
-        if(f_r < 0)  f_r = 0;
-        if(f_c < 0)  f_c = 0;
+        if(f_r < gran-1) {
+			f_r += gran;
+			ul_r -= gran;
+			rp = (rp - gran + map_height) % map_height;
+			focus = true;
+		}
+        if(f_c < gran-1) {
+			f_c += gran;
+			ul_c -= gran;
+			cp = (cp - gran + map_width) % map_width;
+			focus = true;
+		}
 
-        if(f_r > 15) f_r = 15;
-        if(f_c > 15) f_c = 15;
+        if(f_r > 15 - gran + 1) {
+			f_r -= gran;
+			ul_r += gran;
+			rp = (rp + gran + map_height) % map_height;
+			focus = true;
+		}
+        if(f_c > 15 - gran + 1) {
+			f_c -= gran;
+			ul_c += gran
+			cp = (cp + gran + map_width) % map_width;
+			focus = true;
+		}
 
         t_r = (ul_r + f_r + map_height) % map_height;
         t_c = (ul_c + f_c + map_width) % map_width;
@@ -1571,14 +1591,16 @@ function info_mode(rp, cp, n, ch)
         city = my_city_at(t_r, t_c, n);
         army = my_army_at(t_r, t_c, n);
 
+/*
         if(ch != 'i' && (city >= 0 || army >= 0)) {
-            showfocus(rp, cp, 0);
+			focus = false;
+            showfocus(rp, cp);
             r = rp = t_r;
             c = cp = t_c;
 
             setfocus(n, rp, cp);
-            showmap(rp, cp, 0);
-            showfocus(rp, cp, 1);
+            showmap(rp, cp, false);
+            showfocus(rp, cp);
             ul_r = ((parseInt(r / gran) * gran - rem) + map_height)
                 % map_height;
             ul_c = ((parseInt(c / gran) * gran - rem) + map_width)
@@ -1592,9 +1614,18 @@ function info_mode(rp, cp, n, ch)
             done = 1;
 			ch = '';
         }
+        */
+        if(focus || army >= 0 || city >= 0) {
+			if(army >= 0|| city >= 0) {
+				a_r = t_r;
+				a_c = t_c;
+			}
+			setfocus(n, t_r, t_c);
+			showmap(rp, cp, false);
+			focus = false;
+		}
 
-        if(flag)
-            show_info(t_r, t_c);
+		show_info(t_r, t_c);
 
     	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 1, 'I');
 		console.attributes='N';
@@ -1608,8 +1639,8 @@ function info_mode(rp, cp, n, ch)
    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
 	console.attributes='N';
 
-    showfocus(rp, cp, 0);
-    return {r:rp,c:cp,ch:ch};
+    showfocus(rp, cp);
+    return {r:a_r,c:a_c,ch:ch};
 }
 
 function groupcmp(r1, c1, r2, c2)
@@ -2089,18 +2120,17 @@ function mainloop(ntn)
 
     saystat("Welcome to Solomoriah's WAR!  Press ? for Help.");
 
-    force = 0;
+    force = false;
 
     for(;;) {
-
         showmap(r, c, force);
-        force = 0;
+        force = false;
 
-        showfocus(r, c, 1);
+        showfocus(r, c);
 		if(!keep_ch)
         	ch = console.getkey();
 		keep_ch = false;
-        showfocus(r, c, 0);
+        showfocus(r, c);
 
         clearstat(-1);
 
@@ -2116,7 +2146,7 @@ function mainloop(ntn)
 
 		case 'A' : /* army types */
 			armytypes();
-			force = 1;
+			force = true;
 			break;
 
         case '\016' : /* next army */
@@ -2270,18 +2300,17 @@ function mainloop(ntn)
 			ch = obj.ch;
 			if(ch != '')
 				keep_ch = true;
-            setfocus(ntn, r, c);
             break;
 
         case 'R' : /* read... */
             reader(NEWSFL, 0);
-			force = 1;
+			force = true;
             break;
 
         case 'M' : /* mail... */
             inbuf = format(MAILFL, ntn);
             reader(inbuf, 1);
-            force = 1;
+            force = true;
             break;
 
         case 'S' : /* send mail */
@@ -2303,13 +2332,13 @@ function mainloop(ntn)
 
             mailer(ntn, n);
 
-            force = 1;
+            force = true;
             clearstat(-1);
             break;
 
        case 's' : /* status */
             status();
-            force = 1;
+            force = true;
             break;
 
         case 'h' : /* help */
@@ -2319,11 +2348,11 @@ function mainloop(ntn)
 
 		case 'H' : /* help */
 			reader('help.news', 0);
-			force = 1;
+			force = true;
 			break;
 
         case '\f' :
-			force = 1;
+			force = true;
             break;
 
         case 'q' : /* quit */
