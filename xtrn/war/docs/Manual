@@ -67,7 +67,8 @@ Place Drop File In         Node Directory
 If you're running multiple games, you can create a data
 directory for each game then copy the map and game files
 into it, then pass the path as the first argument to
-war.js.
+war.js.  You will also need to copy help.news into the
+game directory.
  
  
 RUNNING UPDATES 
