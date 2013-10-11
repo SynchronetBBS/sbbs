@@ -1,7 +1,7 @@
 var orig_exec_dir = js.exec_dir;
 var game_dir = orig_exec_dir;
 /*
-    Solomoriah's WAR!
+	Solomoriah's WAR!
 
     warupd.js -- main procedure file for war update
 
