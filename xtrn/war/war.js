@@ -163,6 +163,7 @@ const attrs = {
 	'title_retry':'N',
 	'title_symbollist':'N',
 	'title_symboltitle':'N',
+	'title_symbolprompt':'N',
 	'title_welcome':'N',
 	'title_anykey':'N',
 	'title_nameprompt':'N',
