@@ -106,6 +106,9 @@ union xp_sockaddr {
 #endif
 	struct sockaddr_storage	store;
 };
+
+#define xp_sockaddr_len(a) ((((struct sockaddr *)a)->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : ((struct sockaddr *)a)->sa_len)
+
  
 
 /**********************************/
