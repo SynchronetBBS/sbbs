@@ -452,17 +452,18 @@ function battle(a, b)
 		d = -1;
 
 		if(stacks[rlose].ctot < parseInt(stacks[rwin].ctot / 2)
-		&& (hi = stacks[rlose].hero) != -1
-		&& armies[stacks[rlose].index[hi]].eparm1 != 1) {
+				&& (hi = stacks[rlose].hero) != -1
+				&& armies[stacks[rlose].index[hi]].eparm1 != 1) {
 			if(random(10) < 5) {
 				dn = -1;
 				if(stacks[rwin].count < 12 && random(10) < 5)
 					dn = ntns[rwin];
 				d = hi;
 			} else {
-				buff = "set-eparm "+stacks[d].index[hi]+" 1\n";
-				mfile.write(buff);
-				execpriv(buff);
+				// TODO: What the hell is this supposed to do?
+				//buff = "set-eparm "+stacks[d].index[hi]+" 1\n";
+				//mfile.write(buff);
+				//execpriv(buff);
 			}
 		}
 
