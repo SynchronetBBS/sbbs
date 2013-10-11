@@ -2223,7 +2223,7 @@ function mainloop(ntn)
 								}
 							}
 							if(city == -1) {
-								for(i = 0; i < armycnt; i++)
+								for(i = 0; i < armycnt; i++) {
 									if(armies[i].nation == ntn) {
 										city = 0;
 										break;
