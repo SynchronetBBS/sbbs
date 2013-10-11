@@ -74,6 +74,10 @@ function main(argc, main_argv)
 
 			fp.close();
 		}
+		else {
+			if(file_exists(fp.name))
+				continue;
+		}
 		for(n = 0; n < nationcnt; n++) {
 			if(nations[n].uid == 0) {
 				done_count++;
