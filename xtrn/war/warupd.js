@@ -297,8 +297,10 @@ function make_stack(stack, a)
 
 	stack.city = city_at(r, c);
 
-	if(cities[stack.city].nation != n)
-		stack.city = -1;
+	if(stack.city != -1) {
+		if(cities[stack.city].nation != n)
+			stack.city = -1;
+	}
 
 	if(stack.city != -1)
 		stack.ctot += stack.count * cities[stack.city].defense;
