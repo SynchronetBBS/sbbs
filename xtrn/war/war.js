@@ -165,6 +165,7 @@ const attrs = {
 	'title_symboltitle':'N',
 	'title_welcome':'N',
 	'title_anykey':'N',
+	'title_nameprompt':'N',
 	'mailer':'N'
 };
 
@@ -2690,11 +2691,14 @@ function main(argc, argv)
 			inbuf = inbuf.replace(' ','');
 			console.attributes = attrs.title_symbollist;
 			console.print(inbuf);
-			console.gotoxy(11, 21);
-			console.attributes = attrs.title_symbolprompt;
-			console.print("Select Nation Mark:  ");
-			console.cleartoeol();
-			ch = console.getkeys(inbuf);
+			ch='';
+			while(ch == '' || ch==null || inbuf.indexOf(ch)==-1) {
+				console.gotoxy(11, 21);
+				console.attributes = attrs.title_symbolprompt;
+				console.print("Select Nation Mark:  ");
+				console.cleartoeol();
+				ch = console.getkeys(inbuf);
+			}
 			console.gotoxy(11,22);
 			console.cleartoeol();
 			inbuf = "new-nation '"+name+"' "+uid+' '+c+' '+ch;
