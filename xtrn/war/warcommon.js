@@ -33,11 +33,11 @@ var mapovl=[];
 
 function loadmap()
 {
-    var fp;
-    var inbuf='';
-    var rows, cols, i, j, m;
+	var fp;
+	var inbuf='';
+	var rows, cols, i, j, m;
 
-    /* initialize map arrays */
+	/* initialize map arrays */
 
 	fp = new File(game_dir+'/map');
 	if(!fp.open('rb'))
@@ -60,26 +60,26 @@ function loadmap()
 
 	fp.readln();
 
-    for(i = 0; i < rows; i++) {
+	for(i = 0; i < rows; i++) {
 		map[i]=[];
 		mapovl[i]=[];
-        for(j = 0; j < cols; j++) {
-            map[i][j] = '~';
-            mapovl[i][j] = ' ';
-        }
+		for(j = 0; j < cols; j++) {
+			map[i][j] = '~';
+			mapovl[i][j] = ' ';
+		}
 	}
 
-    for(i = 0; i < rows; i++) {
+	for(i = 0; i < rows; i++) {
 		if((inbuf = fp.readln())==null) {
 			fp.close();
 			return 'Unexpected EOF';
 		}
 		for(j = 0; j<cols && j<inbuf.length; j++)
 			map[i][j] = inbuf.substr(j, 1) == ' ' ? '~' : inbuf.substr(j, 1);
-    }
-    fp.close();
+	}
+	fp.close();
 
-    return 0;
+	return 0;
 }
 
 // defined by loadsave()
@@ -95,10 +95,11 @@ var world='';
 var nations;
 var nationcnt=0;
 var gen=0;
+var was_polled;
 
 const marks = [
-    "*ABCDEFGHIJKLMNOPQRSTUVWXYZ?",
-    "@abcdefghijklmnopqrstuvwxyz "
+	"*ABCDEFGHIJKLMNOPQRSTUVWXYZ?",
+	"@abcdefghijklmnopqrstuvwxyz "
 ];
 
 function loadsave() {
@@ -114,17 +115,17 @@ function loadsave() {
 	game=JSON.parse(fp.readAll().join('\n'));
 	fp.close();
 
-    /* add cities to map overlay */
+	/* add cities to map overlay */
 
-    for(i = 0; i < game.cities.length; i++) {
-        if(mapovl[game.cities[i].r][game.cities[i].c] == ' '
-        || marks[1].indexOf(mapovl[game.cities[i].r][game.cities[i].c]) != -1)
-            mapovl[game.cities[i].r][game.cities[i].c] = game.nations[game.cities[i].nation].mark;
-        else
-            mapovl[game.cities[i].r][game.cities[i].c] = '!';
-    }
+	for(i = 0; i < game.cities.length; i++) {
+		if(mapovl[game.cities[i].r][game.cities[i].c] == ' '
+		|| marks[1].indexOf(mapovl[game.cities[i].r][game.cities[i].c]) != -1)
+			mapovl[game.cities[i].r][game.cities[i].c] = game.nations[game.cities[i].nation].mark;
+		else
+			mapovl[game.cities[i].r][game.cities[i].c] = '!';
+	}
 
-    /* clean up */
+	/* clean up */
 
 	cities=game.cities;
 	ttypes=game.ttypes;
@@ -133,16 +134,19 @@ function loadsave() {
 	move_table=game.move_table;
 	world=game.world;
 
-    citycnt = game.cities.length;
-    ttypecnt = game.ttypes.length;
-    nationcnt = game.ncnt;
-    armycnt = game.armies.length;
-    mvtcnt = game.move_table.length;
-    gen = game.gen;
+	citycnt = game.cities.length;
+	ttypecnt = game.ttypes.length;
+	nationcnt = game.ncnt;
+	armycnt = game.armies.length;
+	mvtcnt = game.move_table.length;
+	gen = game.gen;
+	was_polled = false;
+	if(game.polled !== undefined)
+		was_polled = game.polled;
 
-    fp.close();
+	fp.close();
 
-    return 0;
+	return 0;
 }
 
 var maint_in_progress = false;
@@ -156,32 +160,33 @@ function instance(n)
 {
 	var buff;
 	
-    if(n > 10 && n < 20) {
-        buff = format("%dth", n);
-        return buff;
-    }
+	if(n > 10 && n < 20) {
+		buff = format("%dth", n);
+		return buff;
+	}
 
-    switch(n % 10) {
-    case 1 :
-        buff = format("%dst", n);
-        break;
+	switch(n % 10) {
+	case 1 :
+		buff = format("%dst", n);
+		break;
 
-    case 2 :
-        buff = format("%dnd", n);
-        break;
+	case 2 :
+		buff = format("%dnd", n);
+		break;
 
-    case 3 :
-        buff = format("%drd", n);
-        break;
+	case 3 :
+		buff = format("%drd", n);
+		break;
 
-    default :
-        buff = format("%dth", n);
-        break;
-    }
+	default :
+		buff = format("%dth", n);
+		break;
+	}
 
-    return buff;
+	return buff;
 }
 
+var turn_done = false;
 var privtable = {
 	"global-update":function(argc, argv) {
 		var i, k, n, t, cnt, xch, max;
@@ -292,7 +297,7 @@ var privtable = {
 
 		return 0;
 	},
-    "new-nation":function(argc, argv) {
+	"new-nation":function(argc, argv) {
 		var i, r, c;
 
 		/* if in war update, add news entry */
@@ -323,7 +328,7 @@ var privtable = {
 
 		return 0;
 	},
-    "control-city":function(argc, argv) {
+	"control-city":function(argc, argv) {
 		var c;
 
 		cities[c = parseInt(argv[2], 10)].nation = parseInt(argv[1], 10);
@@ -333,7 +338,7 @@ var privtable = {
 
 		return 0;
 	},
-    "kill-army":function(argc, argv) {
+	"kill-army":function(argc, argv) {
 		var a, i, n;
 
 		a = parseInt(argv[1], 10);
@@ -369,7 +374,7 @@ var privtable = {
 
 		return 0;
 	},
-    "move-army":function(argc, argv) {
+	"move-army":function(argc, argv) {
 		var a, b;
 
 		a = parseInt(argv[1], 10);
@@ -387,7 +392,7 @@ var privtable = {
 
 		return 0;
 	},
-    "make-army":function(argc, argv) {
+	"make-army":function(argc, argv) {
 		/* no error, just don't do it. */
 
 		if(armycnt >= MAXARMIES)
@@ -411,7 +416,7 @@ var privtable = {
 
 		return 0;
 	},
-    "name-army":function(argc, argv) {
+	"name-army":function(argc, argv) {
 		var a;
 
 		a = parseInt(argv[1], 10);
@@ -423,7 +428,7 @@ var privtable = {
 
 		return 0;
 	},
-    "change-army":function(argc, argv) {
+	"change-army":function(argc, argv) {
 		var a, c, h;
 
 		a = parseInt(argv[1], 10);
@@ -438,7 +443,7 @@ var privtable = {
 
 		return 0;
 	},
-    "set-eparm":function(argc, argv) {
+	"set-eparm":function(argc, argv) {
 		var a;
 
 		a = parseInt(argv[1], 10);
@@ -450,7 +455,7 @@ var privtable = {
 
 		return 0;
 	},
-    "set-produce":function(argc, argv) {
+	"set-produce":function(argc, argv) {
 		var c;
 
 		c = parseInt(argv[1], 10);
@@ -458,6 +463,10 @@ var privtable = {
 		cities[c].prod_type = parseInt(argv[2], 10);
 		cities[c].turns_left = cities[c].times[cities[c].prod_type];
 
+		return 0;
+	},
+	'end-turn':function(argc, argv) {
+		turn_done = true;
 		return 0;
 	}
 };
@@ -482,13 +491,13 @@ function parseline(line) {
 
 function execpriv(line)
 {
-    var args=[];
-    var n;
+	var args=[];
+	var n;
 
-    args = parseline(line);
+	args = parseline(line);
 
-    if(args.length == 0)
-        return 'No Text on Line';
+	if(args.length == 0)
+		return 'No Text on Line';
 
 	if(privtable[args[0]] == undefined)
 		return 'No Such Command';
@@ -498,41 +507,41 @@ function execpriv(line)
 
 function my_city_at(r, c, n)
 {
-    var i;
+	var i;
 
-    for(i = 0; i < citycnt; i++)
-        if((n < 0 || cities[i].nation == n)
-        && cities[i].r == r
-        && cities[i].c == c)
-            return i;
+	for(i = 0; i < citycnt; i++)
+		if((n < 0 || cities[i].nation == n)
+		&& cities[i].r == r
+		&& cities[i].c == c)
+			return i;
 
-    return -1;
+	return -1;
 }
 
 function city_at(r, c)
 {
-    return my_city_at(r, c, -1);
+	return my_city_at(r, c, -1);
 }
 
 function nationcity(n)
 {
-    if(n == 0)  return "Militia";
-    if(n == 27) return "Rogue";
+	if(n == 0)  return "Militia";
+	if(n == 27) return "Rogue";
 
-    return cities[nations[n].city].name;
+	return cities[nations[n].city].name;
 }
 
 function armyname(a)
 {
-    var c, t, i, m;
-    var buff;
+	var c, t, i, m;
+	var buff;
 
-    if(armies[a].name.substr(0, 1) != '.')
-        return armies[a].name;
+	if(armies[a].name.substr(0, 1) != '.')
+		return armies[a].name;
 
-    c = 0;
-    t = 0;
-    i = -1;
+	c = 0;
+	t = 0;
+	i = -1;
 
 	m=armies[a].name.match(/([0-9]+)\/([0-9]+)\/([0-9]+)/);
 	if(m==null)
@@ -547,44 +556,44 @@ function armyname(a)
 
 function isgreater(a1, a2)
 {
-    var c1, c2, t1, t2, i1, i2;
-    var buf1='';
-    var buf2='';
-    var m;
+	var c1, c2, t1, t2, i1, i2;
+	var buf1='';
+	var buf2='';
+	var m;
 
-    if(armies[a1].hero > armies[a2].hero) return 1;
-    if(armies[a1].hero < armies[a2].hero) return 0;
+	if(armies[a1].hero > armies[a2].hero) return 1;
+	if(armies[a1].hero < armies[a2].hero) return 0;
 
-    if(armies[a1].special_mv > armies[a2].special_mv) return 1;
-    if(armies[a1].special_mv < armies[a2].special_mv) return 0;
+	if(armies[a1].special_mv > armies[a2].special_mv) return 1;
+	if(armies[a1].special_mv < armies[a2].special_mv) return 0;
 
-    if(armies[a1].combat > armies[a2].combat) return 1;
-    if(armies[a1].combat < armies[a2].combat) return 0;
+	if(armies[a1].combat > armies[a2].combat) return 1;
+	if(armies[a1].combat < armies[a2].combat) return 0;
 
-    if(armies[a1].move_rate > armies[a2].move_rate) return 1;
-    if(armies[a1].move_rate < armies[a2].move_rate) return 0;
+	if(armies[a1].move_rate > armies[a2].move_rate) return 1;
+	if(armies[a1].move_rate < armies[a2].move_rate) return 0;
 
-    if(armies[a1].name.substr(0,1) != '.' && armies[a2].name.substr(0,1) == '.')
-        return 1;
+	if(armies[a1].name.substr(0,1) != '.' && armies[a2].name.substr(0,1) == '.')
+		return 1;
 
-    if(armies[a1].name.substr(0,1) == '.' && armies[a2].name.substr(0,1) != '.')
-        return 0;
+	if(armies[a1].name.substr(0,1) == '.' && armies[a2].name.substr(0,1) != '.')
+		return 0;
 
-    if(armies[a1].name.substr(0,1) != '.' && armies[a2].name.substr(0,1) != '.')
-        if(armies[a1].name > armies[a2].name)
-            return 1;
-        else
-            return 0;
+	if(armies[a1].name.substr(0,1) != '.' && armies[a2].name.substr(0,1) != '.')
+		if(armies[a1].name > armies[a2].name)
+			return 1;
+		else
+			return 0;
 
 	if((m=armies[a1].name.match(/^\.([0-9]+)\/([0-9]+)\/([0-9]+)$/))!=null)
 		buf1=format("%03d%03d%03d", parseInt(m[1], 10),parseInt(m[2], 10),parseInt(m[3], 10));
 	if((m=armies[a2].name.match(/^\.([0-9]+)\/([0-9]+)\/([0-9]+)$/))!=null)
 		buf2=format("%03d%03d%03d", parseInt(m[1], 10),parseInt(m[2], 10),parseInt(m[3], 10));
 
-    if(buf1 > buf2)
-        return 1;
+	if(buf1 > buf2)
+		return 1;
 
-    return 0;
+	return 0;
 }
 
 function set_game(path)

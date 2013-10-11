@@ -3,7 +3,7 @@ var game_dir = orig_exec_dir;
 /*
     Solomoriah's WAR!
 
-    warupd.c -- main procedure file for war update
+    warupd.js -- main procedure file for war update
 
     Copyright 2013 Stephen Hurd
     All rights reserved.
@@ -77,7 +77,8 @@ var game_dir = orig_exec_dir;
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-load(game_dir+'/warcommon.js');
+if(major_ver === undefined)
+	load(game_dir+'/warcommon.js');
 
 var mfile;
 
@@ -187,6 +188,9 @@ var usertable = {
 
 		mfile.printf("set-produce %s %s\n", argv[1], argv[2]);
 
+		return 0;
+	},
+	"end-turn":function(argc, argv) {
 		return 0;
 	}
 };
@@ -709,6 +713,8 @@ function savegame(fp)
     game.armies.length=armycnt;
     game.move_table.length=mvtcnt;
     game.gen=gen;
+    if(polled_update !== undefined)
+		game.polled = true;
     fp.write(JSON.stringify(game, null, '\t'));
 }
 
@@ -747,6 +753,19 @@ function main(argc, argv)
 		if(rc != 0) {
 			print("Error Loading Game Save ("+rc+")\n");
 			exit(1);
+		}
+
+		if(was_polled && polled_update === undefined) {
+			print("Skipping update of "+world+" in "+game_dir)
+			print("because it had a polled update");
+			fp = new File(game_dir+'/'+GAMESAVE);
+			if(!fp.open('wb')) {
+				print("Can't Create New Save File\n");
+				exit(9);
+			}
+			savegame(fp);
+			fp.close();
+			continue;
 		}
 
 		if(world.length != 0)

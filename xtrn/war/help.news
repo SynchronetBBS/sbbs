@@ -249,7 +249,7 @@ return to the normal display.
 Down/z - Move to next army on right display
   Up/a - Move to previous army on right display
      I - Displays information about current army
- Space - Toggle army
+ Space - Toggle army                    x - End turn
      * - Mark all armies                / - Unmark all armies
      m - Move marked armies           f/5 - Select all armies and move
 

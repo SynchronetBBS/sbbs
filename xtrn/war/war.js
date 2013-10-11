@@ -1206,6 +1206,11 @@ function move_mode(ntn, rp, cp)
 
     var buff;
 
+	if(turn_done) {
+		saystat("Turn is currently done, cannot issue orders");
+        return {r:rp,c:cp};
+	}
+
     if(avcnt < 1) {
         saystat("No Army to Move.");
         return {r:rp,c:cp};
@@ -1560,12 +1565,14 @@ function info_mode(rp, cp, n, ch)
     t_r = (ul_r + f_r + map_height) % map_height;
     t_c = (ul_c + f_c + map_width) % map_width;
 
-    done = 0;
+    done = false;
 
     do {
     	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
 		console.attributes='N';
         switch(ch) {
+		case '' :
+			break;
 
         case '7' :
         case 'e' :
@@ -1619,7 +1626,7 @@ function info_mode(rp, cp, n, ch)
             break;
 
         default :
-            done = 1;
+            done = true;
         }
 
         if(f_r < gran-1) {
@@ -1670,9 +1677,17 @@ function info_mode(rp, cp, n, ch)
 		console.attributes='N';
         console.gotoxy(f_c * 2 + 4, f_r + 2);
 
-        if(!done)
-            ch = console.getkey();
-
+        if(!done) {
+			do {
+				if(turn_done) {
+					if(!file_exists(pfile.name)) {
+						ch = '';
+						done = true;
+					}
+				}
+				ch = console.inkey(2000);
+			} while(ch=='');
+		}
     } while(!done);
 
    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
@@ -2079,6 +2094,11 @@ function produce(city)
     var buff='';
     var okstring='';
 
+	if(turn_done) {
+		saystat("Turn is currently done, cannot issue orders");
+		return;
+	}
+
 	console.attributes = attrs.status_area;
     console.gotoxy(2, 22);  console.cleartoeol();
     console.gotoxy(2, 23);  console.cleartoeol();
@@ -2177,12 +2197,54 @@ function mainloop(ntn)
     force = false;
 
     for(;;) {
+
         showmap(r, c, force);
         force = false;
 
         showfocus(r, c);
-		if(!keep_ch)
-        	ch = console.getkey();
+		if(!keep_ch) {
+			do {
+				ch = console.inkey(5000);
+				if(turn_done) {
+					if(!file_exists(pfile.name)) {
+						if(pfile.open('ab', 0)) {
+							turn_done = false;
+							var orig_gen = gen;
+							while(orig_gen == gen) {
+								loadmap();
+								loadsave();
+							}
+							// Check if game is over!
+							city = -1;
+					        for(i = 0; i < citycnt; i++) {
+								if(cities[i].nation == ntn) {
+									city=0;
+									break;
+								}
+							}
+							if(city == -1) {
+								for(i = 0; i < armycnt; i++)
+									if(armies[i].nation == ntn) {
+										city = 0;
+										break;
+									}
+								}
+							}
+
+							if(city == -1) {
+								saystat("Nation is Destroyed.  Press Any Key:  ");
+								console.getkey();
+								return;
+							}
+							mainscreen();
+							setfocus(ntn, r, c);
+							showmap(r, c, true);
+							showfocus(r, c);
+						}
+					}
+				}
+			} while(ch=='');
+		}
 		keep_ch = false;
         showfocus(r, c);
 
@@ -2264,6 +2326,11 @@ function mainloop(ntn)
             break;
 
         case 'n' : /* name hero */
+			if(turn_done) {
+				saystat("Turn is currently done, cannot issue orders");
+				break;
+			}
+
             if(avcnt > 0 && armies[armyview[avpnt].id].name.length == 0) {
                 saystat("Enter Hero's Name:  ");
                 inbuf = console.getstr(16);
@@ -2413,6 +2480,20 @@ function mainloop(ntn)
 
         case '\f' :
 			force = true;
+            break;
+
+		case 'x' :
+			if(turn_done) {
+				saystat("Turn is currently done, cannot issue orders");
+				break;
+			}
+            saystat("End Turn?  (Y/N)  ");
+            if(console.getkey().toLowerCase() == 'y') {
+				pfile.write("end-turn\n");
+				pfile.close();
+				turn_done = true;
+			}
+            clearstat(-1);
             break;
 
         case 'q' : /* quit */
@@ -2733,7 +2814,7 @@ function main(argc, argv)
 	console.attributes = attrs.status_area;
 	console.print("Reading Player Commands...  ");
 	console.cleartoeol();
-	fp = new File(format("%s/%04d.cmd", game_dir, uid));
+	fp = new File(game_dir + '/' + format(PLAYERFL, uid));
 	if(fp.open('rb')) {
 		for(i=0; (inbuf = fp.readln()) != null; i++) {
 			if((rc = execpriv(inbuf))==0) {
@@ -2753,18 +2834,20 @@ function main(argc, argv)
 	}
 
 	/* append to player file... */
-	
-	pfile = new File(format("%s/%04d.cmd", game_dir, uid));
-	if(!pfile.open('ab', 0 /* Not buffered */)) {
-		console.gotoxy(11, 21);
-		console.print("Can't Create or Append Player Cmd's  ");
-		console.cleartoeol();
-		console.getkey();
-		exit(8);
+
+	pfile = new File(game_dir + '/' + format(PLAYERFL, uid));
+	if(!turn_done) {
+		if(!pfile.open('ab', 0 /* Not buffered */)) {
+			console.gotoxy(11, 21);
+			console.print("Can't Create or Append Player Cmd's  ");
+			console.cleartoeol();
+			console.getkey();
+			exit(8);
+		}
 	}
 
 	/* main loop */
-	
+
 	for(i=0; i<nationcnt; i++)
 		if(nations[i].uid == uid)
 			n = i;
@@ -2780,10 +2863,11 @@ function main(argc, argv)
 	console.getkey();
 	mainscreen();
 	mainloop(n);
-	
+
 	/* clean up */
 
-	pfile.close();
+	if(pfile.is_open)
+		pfile.close();
 
 	exit(0);
 }

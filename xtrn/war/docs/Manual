@@ -108,3 +108,27 @@ Always Run After Init/Re-init   No
 When running multiple games, you can pass each path as a
 separate argument to a single instance of warupd which will
 update all the listed games.
+
+If you want to permit the "turn done" functionality to advance
+the game automatically when all players are done, you'll need
+an event which calls warpoll.js as often as you want the check
+to occur.  You will need both events or the game will not
+advance until all players mark as done.
+
+An example timed event for SCFG follows:
+Internal Code                   WARPOLL          
+Start-up Directory              ../xtrn/war      
+Command Line                    ?warpoll.js      
+Enabled                         Yes              
+Execution Node                  1                
+Execution Months                Any              
+Execution Days of Month         Any              
+Execution Days of Week          All              
+Execution Frequency             1440 times a day 
+Requires Exclusive Execution    No               
+Force Users Off-line For Event  No               
+Native Executable               No               
+Use Shell to Execute            No               
+Background Execution            No               
+Always Run After Init/Re-init   No               
+
