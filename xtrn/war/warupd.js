@@ -77,7 +77,7 @@ var game_dir = orig_exec_dir;
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-if(major_ver === undefined)
+if(js.global.polled_update === undefined)
 	load(game_dir+'/warcommon.js');
 
 var mfile;
@@ -214,6 +214,7 @@ var mail_gen = 0;
 function mail_line(text, ntn)
 {
 	var fp;
+	var fname;
 	
     if(ntn <= 0 || ntn == 27) /* ignore god and rogue */
         return;
@@ -713,7 +714,7 @@ function savegame(fp)
     game.armies.length=armycnt;
     game.move_table.length=mvtcnt;
     game.gen=gen;
-    if(polled_update !== undefined)
+    if(js.global.polled_update !== undefined)
 		game.polled = true;
     fp.write(JSON.stringify(game, null, '\t'));
 }
@@ -755,7 +756,7 @@ function main(argc, argv)
 			exit(1);
 		}
 
-		if(was_polled && polled_update === undefined) {
+		if(was_polled && js.global.polled_update === undefined) {
 			print("Skipping update of "+world+" in "+game_dir)
 			print("because it had a polled update");
 			fp = new File(game_dir+'/'+GAMESAVE);
