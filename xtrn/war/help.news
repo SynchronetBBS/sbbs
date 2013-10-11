@@ -240,41 +240,19 @@ return to the normal display.
 
  Main Keyboard Controls
 
-The following is a list of keyboard controls which work in the main and
-info modes.
+     A - Detailed list of units.        M - read Mail
+     s - Status display                 S - Send message
+     h - Display this help              N - Read news
+     ? - Display next quick help page   q - Quit
+     p - Set city production            n - Name hero
 
-    A - List all army types and capabilities.
-    s - Status display
-    H - Display this help text
-    h - Display next help text (rotates through)
-    ? - Same as 'h'
+Down/z - Move to next army on right display
+  Up/a - Move to previous army on right display
+     I - Displays information about current army
+ Space - Toggle army
+     * - Mark all armies                / - Unmark all armies
+     m - Move marked armies           f/5 - Select all armies and move
 
-    z - Move to next army on right display
- Down - Move to next army on right display
-    a - Move to previous army on right display
-   Up - Move to previous army on right display
-    I - Displays information about current army
-Space - Toggle army
-    * - Mark all armies
-    / - Unmark all armies
-    m - Move marked armies
-    f - Select all armies and move
-    5 - Select all armies and move
-
-    p - Set army production for the city
-    n - Rename hero (for unnamed heros only)
-
-    ] - Next group
-    } - Last group
-   ^] - Next army which has moves left
-    [ - Previous group
-    { - First group
-   ^[ - Previous army which has moves left
-
-    M - read Mail
-    S - Send message
-    N - Read news
-
-    q - Quit
-   ^L - Redraw screen
-
+     ] - Next group                     [ - Previous group
+     } - Last group                     { - First group
+    ^] - Next army with moves left     ^[ - Previous army with moves left
