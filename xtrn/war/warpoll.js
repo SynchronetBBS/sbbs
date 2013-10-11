@@ -41,19 +41,23 @@ var game_dir = orig_exec_dir;
 load(game_dir+'/warcommon.js');
 
 polled_update = true;
-function main(argc, argv)
+function main(argc, main_argv)
 {
 	var done_count;
 	var fp;
 	var arg;
 	var n;
+	var i;
+	var filename;
+	var inbuf;
+	var rc;
 
 	if(argc==0)
-		argv = [orig_exec_dir];
+		main_argv = [orig_exec_dir];
 
-	for(arg in argv) {
+	for(arg in main_argv) {
 		done_count = 0;
-		set_game(argv[arg]);
+		set_game(main_argv[arg]);
 		if(loadmap() != 0)
 			continue;
 		if(loadsave() != 0)
