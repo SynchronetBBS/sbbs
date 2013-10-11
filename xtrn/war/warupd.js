@@ -460,10 +460,9 @@ function battle(a, b)
 					dn = ntns[rwin];
 				d = hi;
 			} else {
-				// TODO: What the hell is this supposed to do?
-				//buff = "set-eparm "+stacks[d].index[hi]+" 1\n";
-				//mfile.write(buff);
-				//execpriv(buff);
+				buff = "set-eparm "+stacks[rlose].index[hi]+" 1\n";
+				mfile.write(buff);
+				execpriv(buff);
 			}
 		}
 
