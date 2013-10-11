@@ -1082,7 +1082,7 @@ function gmapspot(r, c, terr, mark, focus, extra_attr)
     console.attributes = terr_attr[terr]+extra_attr;
     console.print(terr);
 
-    console.gotoxy(c * 2 + 4, r + 2);
+    console.gotoxy(c * 2 + 3, r + 2);
 
     return 0;
 }
@@ -1676,7 +1676,7 @@ function info_mode(rp, cp, n, ch)
 
     	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 1, 'I');
 		console.attributes='N';
-        console.gotoxy(f_c * 2 + 4, f_r + 2);
+        console.gotoxy(f_c * 2 + 3, f_r + 2);
 
         if(!done) {
 			do {
