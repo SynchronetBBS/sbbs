@@ -585,7 +585,6 @@ char* iniSetIp6Address(str_list_t* list, const char* section, const char* key, s
 
 	addr.in6.sin6_addr = value;
 	addr.in6.sin6_family = AF_INET6;
-	addr.in6.sin6_len = sizeof(addr.in6);
 	inet_addrtop(&addr, addrstr, sizeof(addrstr));
 	return iniSetString(list, section, key, addrstr, style);
 }
