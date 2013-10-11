@@ -56,6 +56,7 @@
 #if defined(__BORLANDC__)
 #undef _MSC_VER
 #endif
+	#include <wspiapi.h>	/* getaddrinfo() for Windows 2k */
 	#define SOCK_MAXADDRLEN sizeof(SOCKADDR_STORAGE)
 	/* Let's agree on a standard WinSock symbol here, people */
 	#define _WINSOCKAPI_
