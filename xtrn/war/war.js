@@ -1687,7 +1687,7 @@ function info_mode(rp, cp, n, ch)
 					}
 				}
 				ch = console.inkey(2000);
-			} while(ch=='');
+			} while(ch=='' && !done);
 		}
     } while(!done);
 
