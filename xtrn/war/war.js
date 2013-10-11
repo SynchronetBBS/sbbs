@@ -213,15 +213,15 @@ function mainscreen()
 	console.print(ascii(201));
 	console.gotoxy(2, 18);
 	console.print(ascii(200));
-	console.gotoxy(35, 1);
+	console.gotoxy(34, 1);
 	console.print(ascii(205)+ascii(187));
-	console.gotoxy(35, 18);
+	console.gotoxy(34, 18);
 	console.print(ascii(205)+ascii(188));
 
     for(i = 0; i < 16; i++) {
 		console.gotoxy(2, i+2);
 		console.print(ascii(186));
-		console.gotoxy(35, i+2);
+		console.gotoxy(34, i+2);
 		console.print(' '+ascii(186));
 		console.gotoxy(i*2+3, 1);
 		console.print(ascii(205)+ascii(205));
@@ -1069,7 +1069,7 @@ function gmapspot(r, c, terr, mark, focus, extra_attr)
     if(mark == '~')
         mark = ' ';
 
-    console.gotoxy(c * 2 + 4, r + 2);
+    console.gotoxy(c * 2 + 3, r + 2);
 	if(terr_attr[mark] == undefined)
 		attr = 'N';
 	else {
