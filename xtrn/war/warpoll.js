@@ -79,7 +79,7 @@ function main(argc, argv)
 			fp = new File(game_dir+'/'+filename);
 
 			turn_done = false;
-			if(fp.open("rb")) {
+			if(fp.open("rb", true)) {
 				for(i = 0; (inbuf = fp.readln()) != null; i++) {
 					if(inbuf.search(/^end-turn\s*$/)==0) {
 						turn_done = true;
@@ -88,6 +88,8 @@ function main(argc, argv)
 				}
 				fp.close();
 			}
+			else
+				break;
 
 			if(turn_done)
 				done_count++;
