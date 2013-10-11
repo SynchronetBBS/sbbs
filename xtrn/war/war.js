@@ -2498,9 +2498,14 @@ function mainloop(ntn)
             break;
 
         case 'q' : /* quit */
-            saystat("Quit?  (Y/N)  ");
-            if(console.getkey().toLowerCase() == 'y')
+            saystat("Quit?  (Y/N/X)  ");
+	   		switch(console.getkey().toLowerCase()) {
+			case 'y':
                 return;
+			case 'x':
+				pfile.write("end-turn\n");
+				return;
+			}
             clearstat(-1);
             break;
        }
