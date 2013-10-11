@@ -244,15 +244,16 @@ return to the normal display.
      s - Status display                 S - Send message
      h - Display this help              N - Read news
      ? - Display next quick help page   q - Quit
-     p - Set city production            n - Name hero
-
-Down/z - Move to next army on right display
-  Up/a - Move to previous army on right display
-     I - Displays information about current army
- Space - Toggle army                    x - End turn
-     * - Mark all armies                / - Unmark all armies
-     m - Move marked armies           f/5 - Select all armies and move
+     p - Set city production            x - End turn
 
      ] - Next group                     [ - Previous group
      } - Last group                     { - First group
     ^] - Next army with moves left     ^[ - Previous army with moves left
+
+     * - Mark all armies                / - Unmark all armies
+     m - Move marked armies           f/5 - Select all armies and move
+ Space - Toggle army on right display   n - Name hero
+Down/z - Move to next army on right display              Movement:
+  Up/a - Move to previous army on right display      e r t      7 8 9
+     I - Displays information about current army     d   g  or  4   6
+                                                     c v b      1 2 3
