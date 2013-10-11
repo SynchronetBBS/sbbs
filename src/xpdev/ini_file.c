@@ -44,6 +44,9 @@
 #include "dirwrap.h"	/* fexist */
 #include "filewrap.h"	/* chsize */
 #include "ini_file.h"
+#if !defined(NO_SOCKET_SUPPORT)
+#include "sockwrap.h"
+#endif
 
 /* Maximum length of entire line, includes '\0' */
 #define INI_MAX_LINE_LEN		(INI_MAX_VALUE_LEN*2)
