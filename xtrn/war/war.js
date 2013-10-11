@@ -2503,7 +2503,8 @@ function mainloop(ntn)
 			case 'y':
                 return;
 			case 'x':
-				pfile.write("end-turn\n");
+				if(!turn_done)
+					pfile.write("end-turn\n");
 				return;
 			}
             clearstat(-1);
