@@ -91,6 +91,8 @@ function main(argc, argv)
 
 			if(turn_done)
 				done_count++;
+			else
+				break;
 		}
 		if(done_count == nationcnt) {
 			print("Running maintenance for "+game_dir);
