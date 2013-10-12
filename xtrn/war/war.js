@@ -2235,6 +2235,7 @@ function mainloop(ntn)
     var ch, r, c, i, n, city, army, force, obj;
     var inbuf, buff;
 	var keep_ch = false;
+	var orig_pt = console.ctrlkey_passthru;
 
     r = -1;
     c = -1;
@@ -2281,9 +2282,11 @@ function mainloop(ntn)
     if(army == -1 && city == -1) {
         saystat("Nation is Destroyed.  Press Any Key:  ");
         console.getkey();
+		console.ctrlkey_passthru = orig_pt;
         return;
     }
 
+    console.ctrlkey_passthru = '+@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\]^_-[';
 	/* Check for messages */
 	
 	inbuf = format(MAILFL, ntn);
@@ -2343,6 +2346,7 @@ function mainloop(ntn)
 							if(city == -1) {
 								saystat("Nation is Destroyed.  Press Any Key:  ");
 								console.getkey();
+								console.ctrlkey_passthru = orig_pt;
 								return;
 							}
 							saystate("New turn has started!");
@@ -2625,6 +2629,7 @@ function mainloop(ntn)
             saystat("Quit?  (Y/N/X)  ");
 	   		switch(console.getkey().toLowerCase()) {
 			case 'y':
+				console.ctrlkey_passthru = orig_pt;
                 return;
 			case 'x':
 				if(!turn_done)
@@ -2633,8 +2638,9 @@ function mainloop(ntn)
 			}
             clearstat(-1);
             break;
-       }
+		}
     }
+	console.ctrlkey_passthru = orig_pt;
 }
 
 function titlescreen()
