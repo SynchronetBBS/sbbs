@@ -2170,17 +2170,19 @@ function update(ntn, or, oc)
 			if(ltop != upd_top) {
 				for(i=0; i<4; i++) {
 					console.gotoxy(2, 21+i);
-					if((m = lines[upd_top+i].match(/^([0-9]+) ([0-9]+) (.*)$/))!=null) {
-						if(upd_top+i == upd_pos) {
-							console.print('=> ');
-							r=m[1];
-							c=m[2];
+					if(upd_top + i < lines.length) {
+						if((m = lines[upd_top+i].match(/^([0-9]+) ([0-9]+) (.*)$/))!=null) {
+							if(upd_top+i == upd_pos) {
+								console.print('=> ');
+								r=m[1];
+								c=m[2];
+							}
+							else
+								console.print('   ');
+							console.print(m[3].substr(0,75));
 						}
-						else
-							console.print('   ');
-						console.print(m[3].substr(0,75));
-						console.cleartoeol();
 					}
+					console.cleartoeol();
 				}
 				console.gotoxy(4, 21+(upd_pos-upd_top));
 			}
