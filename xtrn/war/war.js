@@ -1103,7 +1103,6 @@ function cityowner(c)
     n = cities[c].nation;
 
     if(n == 0)  return "Neutral";
-    if(n == 27) return "Rogue";
 
     return cities[nations[n].city].name;
 }
@@ -2919,7 +2918,6 @@ function main(argc, argv)
 			inbuf = marks[0];
 			for(i=0; i<nationcnt; i++)
 				inbuf = inbuf.replace(nations[i].mark, '');
-			inbuf = inbuf.replace(' ','');
 			console.attributes = attrs.title_symbollist;
 			console.print(inbuf);
 			ch='';

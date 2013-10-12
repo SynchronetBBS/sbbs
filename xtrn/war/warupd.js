@@ -216,7 +216,7 @@ function mail_line(text, ntn)
 	var fp;
 	var fname;
 	
-    if(ntn <= 0 || ntn == 27) /* ignore god and rogue */
+    if(ntn <= 0) /* ignore god */
         return;
 
 	fname = game_dir+'/'+format(MAILFL, ntn);

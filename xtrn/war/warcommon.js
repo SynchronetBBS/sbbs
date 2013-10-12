@@ -99,8 +99,8 @@ var gen=0;
 var was_polled;
 
 const marks = [
-	"*ABCDEFGHIJKLMNOPQRSTUVWXYZ?",
-	"@abcdefghijklmnopqrstuvwxyz "
+	"*ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+	"@abcdefghijklmnopqrstuvwxyz"
 ];
 
 function loadsave() {
@@ -137,7 +137,7 @@ function loadsave() {
 
 	citycnt = game.cities.length;
 	ttypecnt = game.ttypes.length;
-	nationcnt = game.ncnt;
+	nationcnt = game.nations.length;
 	armycnt = game.armies.length;
 	mvtcnt = game.move_table.length;
 	gen = game.gen;
@@ -346,6 +346,7 @@ var privtable = {
 
 		/* create nation entry */
 
+		nations[nationcnt] = {};
 		nations[nationcnt].name = argv[1];
 		nations[nationcnt].uid = parseInt(argv[2], 10);
 		nations[nationcnt].city = parseInt(argv[3], 10);
@@ -566,7 +567,6 @@ function city_at(r, c)
 function nationcity(n)
 {
 	if(n == 0)  return "Militia";
-	if(n == 27) return "Rogue";
 
 	return cities[nations[n].city].name;
 }

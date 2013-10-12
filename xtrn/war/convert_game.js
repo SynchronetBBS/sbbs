@@ -1,5 +1,4 @@
 var game={
-	ncnt:0,
 	nations:[],
 	cities:[],
 	ttypes:[],
@@ -50,7 +49,7 @@ if(m==null) {
 	alert("Invalid header in "+fp.name);
 	exit(1);
 }
-game.ncnt=parseInt(m[1],10);
+ncnt=parseInt(m[1],10);
 cnt=parseInt(m[2],10);
 ttcnt=parseInt(m[3],10);
 acnt=parseInt(m[4],10);
@@ -62,8 +61,7 @@ game.world=game.world.replace(/_/g, ' ');
 
 /* load nations table */
 
-if(game.ncnt == 0) {
-	game.ncnt = 1;
+if(ncnt == 0) {
 	game.nations[0] = {
 		name:'God',
 		uid:0,
@@ -97,25 +95,6 @@ if(game.ncnt == 0) {
 		};
 	}
 }
-for(i=game.ncnt; i<27; i++) {
-	game.nations[i] = {
-		name:'',
-		uid:0,
-		city:0,
-		mark:'*',
-		idle_turns:0
-	};
-}
-
-/* set up the Rogue nation */
-
-game.nations[27] = {
-	name:'Rogue',
-	uid:-1,
-	city:0,
-	mark:'?',
-	idle_turns:0
-};
 
 /* load cities table */
 
