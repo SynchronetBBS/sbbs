@@ -2240,6 +2240,7 @@ function update(ntn, or, oc)
 				console.attributes = attrs.army_area;
 				console.gotoxy(38, avpnt + 3);
 				console.print('  ');
+				console.gotoxy(4, 21+(upd_pos-upd_top));
 				break;
 			default:
 				if(avcnt > 0) {
