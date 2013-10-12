@@ -223,7 +223,7 @@ function armyname(a)
 var turn_done = false;
 var privtable = {
 	"global-update":function(argc, argv) {
-		var i, k, n, t, cnt, xch, max;
+		var i, k, n, t, cnt, xch, max, an;
 
 		/* pack army list */
 
@@ -311,7 +311,11 @@ var privtable = {
 							armies[armycnt].special_mv =
 												ttypes[t].special_mv;
 							armies[armycnt].eparm1 = 0;
-							event(armyname(armycnt)+' created in '+cities[i].name, armies[armycnt].r, armies[armycnt].c, armies[armycnt].nation);
+							an = armyname(armycnt);
+							if(an.substr(0, cities[i].name.length) == cities[i].name)
+								event(an+' created', armies[armycnt].c, armies[armycnt].nation);
+							else
+								event(an+' created in '+cities[i].name, armies[armycnt].r, armies[armycnt].c, armies[armycnt].nation);
 
 							armycnt++;
 
