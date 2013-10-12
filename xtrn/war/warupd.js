@@ -857,7 +857,7 @@ function main(argc, argv)
 			n = nlist[k];
 			u = nations[n].uid;
 
-			filename = format(PLAYERFL, u);
+			filename = format(PLAYERFL, n);
 
 			fp = new File(game_dir+'/'+filename);
 

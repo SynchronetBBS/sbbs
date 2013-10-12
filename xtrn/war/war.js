@@ -2964,7 +2964,7 @@ function main(argc, argv)
 	console.attributes = attrs.status_area;
 	console.print("Reading Player Commands...  ");
 	console.cleartoeol();
-	fp = new File(game_dir + '/' + format(PLAYERFL, uid));
+	fp = new File(game_dir + '/' + format(PLAYERFL, n));
 	if(fp.open('rb')) {
 		for(i=0; (inbuf = fp.readln()) != null; i++) {
 			if((rc = execpriv(inbuf))==0) {
@@ -2985,7 +2985,7 @@ function main(argc, argv)
 
 	/* append to player file... */
 
-	pfile = new File(game_dir + '/' + format(PLAYERFL, uid));
+	pfile = new File(game_dir + '/' + format(PLAYERFL, n));
 	if(!turn_done) {
 		if(!pfile.open('ab', 0 /* Not buffered */)) {
 			console.gotoxy(11, 21);
