@@ -1016,7 +1016,7 @@ function setfocus(ntn, r, c)
     }
 }
 
-function showarmies()
+function showarmies(pointer)
 {
     var i, a;
     var buff;
@@ -1029,7 +1029,7 @@ function showarmies()
         if(i < avcnt) {
             a = armyview[i].id;
             console.print(format("%s %c ",
-                i == avpnt ? "=>" : "  ",
+                (pointer && i == avpnt) ? "=>" : "  ",
                 armyview[i].mark ? '*' : ' '));
             buff = armyname(a);
 
@@ -1128,13 +1128,13 @@ function showcity(r, c)
 
 var old_ul_r = -1;
 var old_ul_c = -1;
-function showmap(r, c, force)
+function showmap(r, c, force, pointer)
 {
     var ul_r, ul_c, f_r, f_c;
     var i, j, zr, zc;
     var rem;
 
-    showarmies();
+    showarmies(pointer);
 
     rem = parseInt((16 - gran) / 2);
     f_r = r % gran;
@@ -1313,7 +1313,7 @@ function move_mode(ntn, rp, cp)
     console.print("7 8 9      e r t    SPACE to Stop.  ");
 
     setfocus(ntn, rp, cp);
-    showmap(rp, cp, false);
+    showmap(rp, cp, false, true);
     showfocus(rp, cp);
 
     while(mvcnt > 0 && (ch = console.getkey()) != ' ' 
@@ -1471,7 +1471,7 @@ function move_mode(ntn, rp, cp)
             /* redo screen. */
 
             setfocus(ntn, rp, cp);
-            showmap(rp, cp, ok);
+            showmap(rp, cp, ok, true);
         }
 
         showfocus(rp, cp);
@@ -1677,7 +1677,7 @@ function info_mode(rp, cp, n, ch)
 				a_c = t_c;
 				setfocus(n, t_r, t_c);
 			}
-			showmap(rp, cp, false);
+			showmap(rp, cp, false, true);
 			focus = false;
 		}
 
@@ -2153,15 +2153,13 @@ function update(ntn, or, oc)
 	var r=or,c=oc;
 	var ch;
 
+	showmap(r, c, true, false);
 	console.attributes = attrs.status_area;
 	if(fp.open('rb')) {
 		lines=fp.readAll();
 		fp.close();
 		clearstat(-1);
 
-		console.attributes = attrs.army_area;
-        console.gotoxy(38, avpnt + 3);
-        console.print('  ');
 		console.gotoxy(45, 20);
 		console.attributes = genattrs.border;
 		console.print(ascii(180)+"(u) to move to the event location"+ascii(195));
@@ -2184,7 +2182,7 @@ function update(ntn, or, oc)
 					}
 					console.cleartoeol();
 				}
-				console.gotoxy(4, 21+(upd_pos-upd_top));
+				showfocus(or, oc);
 			}
 			else if(lpos != upd_pos) {
 				console.gotoxy(2, 21+(lpos-upd_top));
@@ -2195,6 +2193,7 @@ function update(ntn, or, oc)
 					r=m[1];
 					c=m[2];
 				}
+				showfocus(or, oc);
 			}
 			lpos = upd_pos;
 			ltop = upd_top;
@@ -2203,11 +2202,6 @@ function update(ntn, or, oc)
 			case '':
 				if(turn_done) {
 					if(!file_exists(pfile.name)) {
-						if(avcnt > 0) {
-							console.attributes = attrs.army_area;
-							console.gotoxy(38, avpnt + 3);
-							console.print('=>');
-						}
 						console.gotoxy(45, 20);
 						console.attributes = genattrs.border;
 						console.print((new Array(36)).join(ascii(196)));
@@ -2235,19 +2229,10 @@ function update(ntn, or, oc)
 				or = r;
 				oc = c;
 				setfocus(ntn, r, c);
-				showmap(r, c, false);
+				showmap(r, c, false, false);
 				showfocus(r, c);
-				console.attributes = attrs.army_area;
-				console.gotoxy(38, avpnt + 3);
-				console.print('  ');
-				console.gotoxy(4, 21+(upd_pos-upd_top));
 				break;
 			default:
-				if(avcnt > 0) {
-					console.attributes = attrs.army_area;
-					console.gotoxy(38, avpnt + 3);
-					console.print('=>');
-				}
 				console.gotoxy(45, 20);
 				console.attributes = genattrs.border;
 				console.print((new Array(36)).join(ascii(196)));
@@ -2321,7 +2306,7 @@ function mainloop(ntn)
 	
 	inbuf = format(MAILFL, ntn);
 	setfocus(ntn, r, c);
-	showmap(r, c, true);
+	showmap(r, c, true, false);
 	showfocus(r, c);
 	obj = update(ntn, r, c);
 	r = obj.r;
@@ -2338,7 +2323,7 @@ function mainloop(ntn)
 
     for(;;) {
 
-        showmap(r, c, force);
+        showmap(r, c, force, true);
         force = false;
 
         showfocus(r, c);
@@ -2380,7 +2365,7 @@ function mainloop(ntn)
 							saystate("New turn has started!");
 							mainscreen();
 							setfocus(ntn, r, c);
-							showmap(r, c, true);
+							showmap(r, c, true, true);
 							showfocus(r, c);
 							upd_pos=0;
 							upd_top=0;
