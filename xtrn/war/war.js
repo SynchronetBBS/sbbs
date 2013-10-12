@@ -2159,6 +2159,9 @@ function update(ntn, or, oc)
 		fp.close();
 		clearstat(-1);
 
+		console.attributes = attrs.army_area;
+        console.gotoxy(38, avpnt + 3);
+        console.print('  ');
 		console.gotoxy(45, 20);
 		console.attributes = genattrs.border;
 		console.print(ascii(180)+"(u) to move to the event location"+ascii(195));
@@ -2198,6 +2201,11 @@ function update(ntn, or, oc)
 			case '':
 				if(turn_done) {
 					if(!file_exists(pfile.name)) {
+						if(avcnt > 0) {
+							console.attributes = attrs.army_area;
+							console.gotoxy(38, avpnt + 3);
+							console.print('=>');
+						}
 						console.gotoxy(45, 20);
 						console.attributes = genattrs.border;
 						console.print((new Array(36)).join(ascii(196)));
@@ -2229,6 +2237,11 @@ function update(ntn, or, oc)
 				showfocus(r, c);
 				break;
 			default:
+				if(avcnt > 0) {
+					console.attributes = attrs.army_area;
+					console.gotoxy(38, avpnt + 3);
+					console.print('=>');
+				}
 				console.gotoxy(45, 20);
 				console.attributes = genattrs.border;
 				console.print((new Array(36)).join(ascii(196)));
