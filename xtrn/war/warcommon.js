@@ -214,7 +214,7 @@ function armyname(a)
 	i = -1;
 	m=armies[a].name.match(/([0-9]+)\/([0-9]+)\/([0-9]+)/);
 	if(m==null)
-		'(Unnamed Army)';
+		return '(Unnamed Army)';
 	c=parseInt(m[1], 10);
 	t=parseInt(m[2], 10);
 	i=parseInt(m[3], 10);
@@ -354,7 +354,7 @@ var privtable = {
 				return 0;
 			for(i = 0; i < armies.length; i++) {
 				while(armies[i].nation == n)
-					armies.splice(i, !);
+					armies.splice(i, 1);
 			}
 			return 0;
 		}
