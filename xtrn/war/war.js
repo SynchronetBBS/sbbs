@@ -643,10 +643,16 @@ function reader(fname, mode)
     var fp = new File(game_dir+'/'+fname);
 
     if(!fp.open("rb")) {
-        if(mode)
+		switch(mode) {
+		case 2:
+            saystat("Help file missing.");
+            break;
+        case 1:
             saystat("No Mail in your box.");
-        else
+            break;
+        default:
             saystat("No News to Read.");
+		}
         return;
     }
 
@@ -654,8 +660,9 @@ function reader(fname, mode)
 
     indexer(fp);
 
-    top = pos = index_cnt - 1;
-
+	pos = index_cnt - 1;
+    top = pos - 8;
+ 
     show_screen(top, fp);
 
     do {
@@ -703,7 +710,7 @@ function reader(fname, mode)
             break;
 
         case 'v' :
-	case '\r' :
+		case '\r' :
             viewer(fp, pos, mode);
             show_screen(top, fp);
             break;
@@ -2475,7 +2482,7 @@ function mainloop(ntn)
 
         case 'h' : /* help */
 		case 'H' : /* help */
-			reader('help.news', 0);
+			reader('help.news', 2);
 			force = true;
 			break;
 
