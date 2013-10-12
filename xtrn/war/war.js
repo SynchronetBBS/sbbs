@@ -2159,6 +2159,10 @@ function update(ntn, or, oc)
 		fp.close();
 		clearstat(-1);
 
+		console.gotoxy(45, 20);
+		console.attributes = genattrs.border;
+		console.print(ascii(180)+"(u) to move to the event location"+ascii(195));
+
 		for(;;) {
 			if(ltop != upd_top) {
 				for(i=0; i<4; i++) {
@@ -2193,8 +2197,12 @@ function update(ntn, or, oc)
 			switch((ch=console.inkey(5000))) {
 			case '':
 				if(turn_done) {
-					if(!file_exists(pfile.name))
+					if(!file_exists(pfile.name)) {
+						console.gotoxy(45, 20);
+						console.attributes = genattrs.border;
+						console.print((new Array(36)).join(ascii(196)));
 						return {r:or,c:oc,ch:''};
+					}
 				}
 				break;
 			case 'a':
@@ -2221,6 +2229,9 @@ function update(ntn, or, oc)
 				showfocus(r, c);
 				break;
 			default:
+				console.gotoxy(45, 20);
+				console.attributes = genattrs.border;
+				console.print((new Array(36)).join(ascii(196)));
 				return {r:or,c:oc,ch:ch};
 			}
 		}
@@ -2290,17 +2301,15 @@ function mainloop(ntn)
 	/* Check for messages */
 	
 	inbuf = format(MAILFL, ntn);
-	if(file_exists(game_dir + '/' + format(TURNFL, ntn))) {
-		setfocus(ntn, r, c);
-		showmap(r, c, true);
-		showfocus(r, c);
-		obj = update(ntn, r, c);
-		r = obj.r;
-		c = obj.c;
-		ch = obj.ch;
-		if(ch != '')
-			keep_ch = true;
-	}
+	setfocus(ntn, r, c);
+	showmap(r, c, true);
+	showfocus(r, c);
+	obj = update(ntn, r, c);
+	r = obj.r;
+	c = obj.c;
+	ch = obj.ch;
+	if(ch != '')
+		keep_ch = true;
 
     /* enter the loop */
 
