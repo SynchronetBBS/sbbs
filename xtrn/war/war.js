@@ -854,7 +854,7 @@ function movecost(a, r, c)
         /* search for a TRANS_ALL unit there */
         if(!(armies[a].r == r && armies[a].c == c)
         && armies[a].special_mv != TRANS_ALL)
-            for(a2 = 0; a2 < armycnt; a2++)
+            for(a2 = 0; a2 < armies.length; a2++)
                 if(a != a2
                 && armies[a2].r == r
                 && armies[a2].c == c
@@ -965,7 +965,7 @@ function setfocus(ntn, r, c)
 
     /* find the player's armies */
 
-    for(i = 0; i < armycnt; i++) {
+    for(i = 0; i < armies.length; i++) {
         if(r == armies[i].r
         && c == armies[i].c)
             if(armies[i].nation == ntn || ntn == -1) {
@@ -1004,7 +1004,7 @@ function setfocus(ntn, r, c)
 
     /* update map overlay with cities */
 
-    for(i = 0; i < citycnt; i++) {
+    for(i = 0; i < cities.length; i++) {
         if(mapovl[cities[i].r][cities[i].c] == ' '
         || marks[1].indexOf(mapovl[cities[i].r][cities[i].c]) != -1) {
             mapovl[cities[i].r][cities[i].c] =
@@ -1412,7 +1412,7 @@ function move_mode(ntn, rp, cp)
             if(ok && ntn > -1) {
                 cnt = 0;
 
-                for(i = 0; i < armycnt; i++)
+                for(i = 0; i < armies.length; i++)
                 if(armies[i].nation == ntn
                     && armies[i].r == t_r
                     && armies[i].c == t_c)
@@ -1435,7 +1435,7 @@ function move_mode(ntn, rp, cp)
             /* can't leave combat. */
 
             if(ok && ntn > -1)
-                for(i = 0; i < armycnt; i++)
+                for(i = 0; i < armies.length; i++)
                     if(armies[i].nation != ntn
                     && armies[i].r == rp
                     && armies[i].c == cp) {
@@ -1494,7 +1494,7 @@ function my_army_at(r, c, n)
 {
     var i;
 
-    for(i = 0; i < armycnt; i++)
+    for(i = 0; i < armies.length; i++)
         if(armies[i].nation == n
         && armies[i].r == r
         && armies[i].c == c)
@@ -1527,7 +1527,7 @@ function show_info(r, c)
     ac = 0;
     hc = 0;
 
-    for(i = 0; i < armycnt; i++)
+    for(i = 0; i < armies.length; i++)
         if(armies[i].r == r && armies[i].c == c)
             if(armies[i].hero > 0)
                 hc++;
@@ -1659,7 +1659,7 @@ function info_mode(rp, cp, n, ch)
 		}
         if(f_c > 15 - gran + 1) {
 			f_c -= gran;
-			ul_c += gran
+			ul_c += gran;
 			cp = (cp + gran + map_width) % map_width;
 			focus = true;
 		}
@@ -1745,7 +1745,7 @@ function prevgroup(ntn, rp, cp)
     t_r = -1;
     t_c = -1;
 
-    for(i = 0; i < citycnt; i++) {
+    for(i = 0; i < cities.length; i++) {
         if(cities[i].nation == ntn) {
             if(groupcmp(cities[i].r, cities[i].c, rp, cp) < 0
             && (t_r == -1
@@ -1756,7 +1756,7 @@ function prevgroup(ntn, rp, cp)
 		}
 	}
 
-    for(i = 0; i < armycnt; i++) {
+    for(i = 0; i < armies.length; i++) {
         if(armies[i].nation == ntn) {
             if(groupcmp(armies[i].r, armies[i].c, rp, cp) < 0
             && (t_r == -1
@@ -1780,7 +1780,7 @@ function prevarmy(ntn, rp, cp)
     t_r = -1;
     t_c = -1;
 
-    for(i = 0; i < armycnt; i++) {
+    for(i = 0; i < armies.length; i++) {
         if(armies[i].nation == ntn && armies[i].move_left > 0) {
             if(groupcmp(armies[i].r, armies[i].c, rp, cp) < 0
             && (t_r == -1
@@ -1804,7 +1804,7 @@ function nextgroup(ntn, rp, cp)
     t_r = -1;
     t_c = -1;
 
-    for(i = 0; i < citycnt; i++) {
+    for(i = 0; i < cities.length; i++) {
         if(cities[i].nation == ntn) {
             if(groupcmp(cities[i].r, cities[i].c, rp, cp) > 0
             && (t_r == -1
@@ -1815,7 +1815,7 @@ function nextgroup(ntn, rp, cp)
 		}
 	}
 
-    for(i = 0; i < armycnt; i++) {
+    for(i = 0; i < armies.length; i++) {
         if(armies[i].nation == ntn) {
             if(groupcmp(armies[i].r, armies[i].c, rp, cp) > 0
             && (t_r == -1
@@ -1839,7 +1839,7 @@ function nextarmy(ntn, rp, cp)
     t_r = -1;
     t_c = -1;
 
-    for(i = 0; i < armycnt; i++) {
+    for(i = 0; i < armies.length; i++) {
         if(armies[i].nation == ntn && armies[i].move_left > 0) {
             if(groupcmp(armies[i].r, armies[i].c, rp, cp) > 0
             && (t_r == -1
@@ -1938,7 +1938,7 @@ function status()
 
 		console.attributes = attrs.nation_status;
         for(i = 0; i < 4; i++)
-            if(pos + 1 + i < nationcnt) {
+            if(pos + 1 + i < nations.length) {
                 console.gotoxy(i * 16 + 17, 4);
                 console.print(nationcity(pos+1+i));
 
@@ -1950,14 +1950,14 @@ function status()
 
                 cc = 0;
 
-                for(j = 0; j < citycnt; j++)
+                for(j = 0; j < cities.length; j++)
                     if(cities[j].nation == pos + 1 + i)
                         cc++;
 
                 hc = 0;
                 ac = 0;
 
-                for(j = 0; j < armycnt; j++)
+                for(j = 0; j < armies.length; j++)
                     if(armies[j].nation == pos + 1 + i)
                         if(armies[j].hero > 0)
                             hc++;
@@ -1988,7 +1988,7 @@ function status()
             break;
 
         case ']' :
-            if(pos + 5 < nationcnt)
+            if(pos + 5 < nations.length)
                 pos += 4;
             break;
 
@@ -2043,7 +2043,7 @@ function armytypes()
         }
 
         for(i = 0; i < 4; i++)
-            if(pos + i < ttypecnt) {
+            if(pos + i < ttypes.length) {
                 console.gotoxy(i * 16 + 17, 4);
                 console.print(ttypes[pos+i].name);
 
@@ -2080,7 +2080,7 @@ function armytypes()
             break;
 
         case ']' :
-            if(pos + 5 < ttypecnt)
+            if(pos + 5 < ttypes.length)
                 pos += 4;
             break;
 
@@ -2151,6 +2151,7 @@ function update(ntn, or, oc)
 	var i;
 	var r=or,c=oc;
 	var ch;
+	var m;
 
 	showmap(r, c, true, false);
 	console.attributes = attrs.status_area;
@@ -2273,7 +2274,7 @@ function mainloop(ntn)
         city = -1;
 
     if(city == -1)
-        for(i = 0; i < citycnt; i++)
+        for(i = 0; i < cities.length; i++)
             if(cities[i].nation == ntn) {
                 r = cities[i].r;
                 c = cities[i].c;
@@ -2284,7 +2285,7 @@ function mainloop(ntn)
     /* find the player's first army */
 
     if(city == -1)
-        for(i = 0; i < armycnt; i++)
+        for(i = 0; i < armies.length; i++)
             if(armies[i].nation == ntn) {
                 r = armies[i].r;
                 c = armies[i].c;
@@ -2340,14 +2341,14 @@ function mainloop(ntn)
 							}
 							// Check if game is over!
 							city = -1;
-					        for(i = 0; i < citycnt; i++) {
+					        for(i = 0; i < cities.length; i++) {
 								if(cities[i].nation == ntn) {
 									city=0;
 									break;
 								}
 							}
 							if(city == -1) {
-								for(i = 0; i < armycnt; i++) {
+								for(i = 0; i < armies.length; i++) {
 									if(armies[i].nation == ntn) {
 										city = 0;
 										break;
@@ -2361,7 +2362,6 @@ function mainloop(ntn)
 								console.ctrlkey_passthru = orig_pt;
 								return;
 							}
-							saystate("New turn has started!");
 							mainscreen();
 							setfocus(ntn, r, c);
 							showmap(r, c, true, true);
@@ -2586,7 +2586,7 @@ function mainloop(ntn)
             inbuf = console.getstr(16);
 
             n = -1;
-            for(i = 0; i < nationcnt; i++)
+            for(i = 0; i < nations.length; i++)
                 if(nations[i].name.toUpperCase() == inbuf.toUpperCase())
                     n = i;
 
@@ -2702,7 +2702,7 @@ function newcity()
 	for(i = 0; i<MAXCITIES; i++)
 		clusters[i] = -1;
 
-	for(i=0; i<citycnt; i++) {
+	for(i=0; i<cities.length; i++) {
 		if(cities[i].nation > 0)
 			clusters[cities[i].cluster % MAXCITIES] = 1;
 		else if(clusters[cities[i].cluster % MAXCITIES] == -1)
@@ -2718,7 +2718,7 @@ function newcity()
     if(cc == 0) {   /* any city will do... */
         cc = 0;
 
-        for(i = 0; i < citycnt; i++)
+        for(i = 0; i < cities.length; i++)
             if(cities[i].nation == 0)
                 cc++;
 
@@ -2727,7 +2727,7 @@ function newcity()
 
         c = random(cc);
 
-        for(i = 0; i < citycnt; i++)
+        for(i = 0; i < cities.length; i++)
             if(cities[i].nation == 0)
                 if(c == 0)
                     return i;
@@ -2752,11 +2752,11 @@ function newcity()
         if(i < MAXCITIES) {
             cl = i;
             cc = 0;
-            for(i = 0; i < citycnt; i++)
+            for(i = 0; i < cities.length; i++)
                 if(cities[i].cluster == cl)
                     cc++;
             c = random(cc);
-            for(i = 0; i < citycnt; i++)
+            for(i = 0; i < cities.length; i++)
                 if(cities[i].cluster == cl)
                     if(c == 0)
                         return i;
@@ -2862,7 +2862,7 @@ function main(argc, argv)
 
     n = -1;
 
-    for(i = 0; i < nationcnt; i++) {
+    for(i = 0; i < nations.length; i++) {
         if(nations[i].uid == uid) {
 			/* TODO: Check for the canary file! */
             n = i;
@@ -2883,7 +2883,7 @@ function main(argc, argv)
 				exit(5);
 			}
 
-            n = nationcnt;
+            n = nations.length;
             confirmed = 0;
 
             while(!confirmed) {
@@ -2916,7 +2916,7 @@ function main(argc, argv)
 			console.print("Available:  ");
 			
 			inbuf = marks[0];
-			for(i=0; i<nationcnt; i++)
+			for(i=0; i<nations.length; i++)
 				inbuf = inbuf.replace(nations[i].mark, '');
 			console.attributes = attrs.title_symbollist;
 			console.print(inbuf);
@@ -2996,7 +2996,7 @@ function main(argc, argv)
 
 	/* main loop */
 
-	for(i=0; i<nationcnt; i++)
+	for(i=0; i<nations.length; i++)
 		if(nations[i].uid == uid)
 			n = i;
 

@@ -85,16 +85,11 @@ function loadmap()
 
 // defined by loadsave()
 var cities;
-var citycnt = 0;
 var ttypes;
-var ttypecnt = 0;
 var armies;
-var armycnt = 0;
 var move_table;
-var mvtcnt = 0;
 var world='';
 var nations;
-var nationcnt=0;
 var gen=0;
 var was_polled;
 
@@ -135,11 +130,6 @@ function loadsave() {
 	move_table=game.move_table;
 	world=game.world;
 
-	citycnt = game.cities.length;
-	ttypecnt = game.ttypes.length;
-	nationcnt = game.nations.length;
-	armycnt = game.armies.length;
-	mvtcnt = game.move_table.length;
 	gen = game.gen;
 	was_polled = false;
 	if(game.polled !== undefined)
@@ -226,47 +216,18 @@ var privtable = {
 		var i, k, n, t, cnt, xch, max, an;
 
 		/* pack army list */
-
-		do {
-			xch = 0;
-
-			for(k = 0; k < armycnt; k++)
-				if(armies[k].nation == -1)
-					break;
-
-			if(k < armycnt) {
-				for(i = armycnt - 1; i >= k; i--)
-					if(armies[i].nation != -1) 
-						break;
-					else
-						armycnt--;
-
-				if(i > k) {
-					armies[k].name = armies[i].name;
-					armies[k].nation = armies[i].nation;
-					armies[k].r = armies[i].r;
-					armies[k].c = armies[i].c;
-					armies[k].combat = armies[i].combat;
-					armies[k].hero = armies[i].hero;
-					armies[k].move_rate = armies[i].move_rate;
-					armies[k].move_tbl = armies[i].move_tbl;
-					armies[k].special_mv = armies[i].special_mv;
-					armies[k].eparm1 = armies[i].eparm1;
-
-					armycnt--;
-
-					xch = 1;
-				}
-			}
-		} while(xch);
+		for(k = 0; k < armies.length; k++) {
+			while(armies[k].nation == -1)
+				armies.splice(k, 1);
+		}
 
 		/* create new armies */
 
-		for(i = 0; i < citycnt; i++) {
+		for(i = 0; i < cities.length; i++) {
 
 			cnt = 0;
 
-			for(k = 0; k < armycnt; k++) {
+			for(k = 0; k < armies.length; k++) {
 				if(armies[k].nation == cities[i].nation
 						&& armies[k].r == cities[i].r
 						&& armies[k].c == cities[i].c)
@@ -292,32 +253,25 @@ var privtable = {
 				if(n >= 0 && n < 4) {
 					cities[i].turns_left--;
 					if(cities[i].turns_left < 1) {
-						if(armycnt < MAXARMIES - 1) {
+						if(armies.length < MAXARMIES - 1) {
 							t = cities[i].types[n];
-
-							armies[armycnt] = {};
-							armies[armycnt].name = format(".%03d/%03d/%03d"
-										, i, t, ++cities[i].instance[n]);
-
-							armies[armycnt].nation = cities[i].nation;
-							armies[armycnt].r = cities[i].r;
-							armies[armycnt].c = cities[i].c;
-
-							armies[armycnt].combat = ttypes[t].combat;
-							armies[armycnt].hero = 0;
-
-							armies[armycnt].move_rate = ttypes[t].move_rate;
-							armies[armycnt].move_tbl = ttypes[t].move_tbl;
-							armies[armycnt].special_mv =
-												ttypes[t].special_mv;
-							armies[armycnt].eparm1 = 0;
-							an = armyname(armycnt);
+							armies.push({
+								name: format(".%03d/%03d/%03d", i, t, ++cities[i].instance[n]),
+								nation: cities[i].nation,
+								r: cities[i].r,
+								c: cities[i].c,
+								combat: ttypes[t].combat,
+								hero: 0,
+								move_rate: ttypes[t].move_rate,
+								move_tbl: ttypes[t].move_tbl,
+								special_mv: ttypes[t].special_mv,
+								eparm1: 0
+							});
+							an = armyname(armies.length-1);
 							if(an.substr(0, cities[i].name.length) == cities[i].name)
-								event(an+' created', armies[armycnt].c, armies[armycnt].nation);
+								event(an+' created', armies[armies.length-1].c, armies[armies.length-1].nation);
 							else
-								event(an+' created in '+cities[i].name, armies[armycnt].r, armies[armycnt].c, armies[armycnt].nation);
-
-							armycnt++;
+								event(an+' created in '+cities[i].name, armies[armies.length-1].r, armies[armies.length-1].c, armies[armies.length-1].nation);
 
 							cities[i].turns_left = cities[i].times[n];
 
@@ -330,7 +284,7 @@ var privtable = {
 
 		/* update all armies' movement. */
 
-		for(i = 0; i < armycnt; i++)
+		for(i = 0; i < armies.length; i++)
 			armies[i].move_left = armies[i].move_rate;
 
 		gen++;
@@ -341,32 +295,27 @@ var privtable = {
 		var i, r, c;
 
 		/* if in war update, add news entry */
-
 		nation_news(argv[1], parseInt(argv[3],10));
 
 		/* create nation entry */
-
-		nations[nationcnt] = {};
-		nations[nationcnt].name = argv[1];
-		nations[nationcnt].uid = parseInt(argv[2], 10);
-		nations[nationcnt].city = parseInt(argv[3], 10);
-		nations[nationcnt].mark = argv[4].substr(0, 1);
+		nations.push({
+			name: argv[1],
+			uid: parseInt(argv[2], 10),
+			city: parseInt(argv[3], 10),
+			mark: argv[4].substr(0, 1),
+			idle_turns: 0
+		});
 
 		/* transfer armies */
-
-		r = cities[nations[nationcnt].city].r;
-		c = cities[nations[nationcnt].city].c;
-
-		for(i = 0; i < armycnt; i++)
+		r = cities[nations[nations.length-1].city].r;
+		c = cities[nations[nations.length-1].city].c;
+		for(i = 0; i < armies.length; i++)
 			if(armies[i].r == r
 			&& armies[i].c == c
 			&& armies[i].nation == 0)
-				armies[i].nation = nationcnt;
+				armies[i].nation = nations.length-1;
 
 		/* clean up */
-
-		nationcnt++;
-
 		return 0;
 	},
 	"control-city":function(argc, argv) {
@@ -398,9 +347,9 @@ var privtable = {
 
 		if(a == -1) {
 			n = parseInt(argv[2], 10);
-			if(n < 1 || n > nationcnt)
+			if(n < 1 || n > nations.length)
 				return 0;
-			for(i = 0; i < armycnt; i++)
+			for(i = 0; i < armies.length; i++)
 				if(armies[i].nation == n) {
 					armies[i].nation = -1;
 					armies[i].r = -1;
@@ -436,10 +385,10 @@ var privtable = {
 	"make-army":function(argc, argv) {
 		/* no error, just don't do it. */
 
-		if(armycnt >= MAXARMIES)
+		if(armies.length >= MAXARMIES)
 			return 0;
 
-		armies[armycnt] = {
+		armies.push({
 			name:argv[1].substr(0, ARMYNAMLEN),
 			nation:parseInt(argv[2], 10),
 			r:parseInt(argv[3], 10),
@@ -451,10 +400,7 @@ var privtable = {
 			move_tbl:parseInt(argv[8], 10),
 			special_mv:parseInt(argv[9], 10),
 			eparm1:parseInt(argv[10], 10)
-		};
-
-		armycnt++;
-
+		});
 		return 0;
 	},
 	"name-army":function(argc, argv) {
@@ -550,7 +496,7 @@ function my_city_at(r, c, n)
 {
 	var i;
 
-	for(i = 0; i < citycnt; i++)
+	for(i = 0; i < cities.length; i++)
 		if((n < 0 || cities[i].nation == n)
 		&& cities[i].r == r
 		&& cities[i].c == c)

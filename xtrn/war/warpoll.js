@@ -55,7 +55,7 @@ function main(argc, main_argv)
 	if(argc==0)
 		main_argv = [orig_exec_dir];
 
-	for(arg in main_argv) {
+	for(arg=0; arg < main_argv.legnth; arg++) {
 		done_count = 0;
 		set_game(main_argv[arg]);
 		if(loadmap() != 0)
@@ -78,7 +78,7 @@ function main(argc, main_argv)
 			if(file_exists(fp.name))
 				continue;
 		}
-		for(n = 0; n < nationcnt; n++) {
+		for(n = 0; n < nations.length; n++) {
 			if(nations[n].uid == 0) {
 				done_count++;
 				continue;
@@ -104,7 +104,7 @@ function main(argc, main_argv)
 			else
 				break;
 		}
-		if(done_count == nationcnt) {
+		if(done_count == nations.length) {
 			print("Running maintenance for "+game_dir);
 			load(orig_exec_dir+'/warupd.js',game_dir);
 		}
