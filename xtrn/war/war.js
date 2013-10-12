@@ -500,7 +500,7 @@ function viewer(fp, pos, mode)
     do {
         pages[page_cnt++] = fp.position;
 
-        for(i = 0; i < 15; i++) {
+        for(i = 0; i < 18; i++) {
             if((dummy = fp.readln(1024)) == null) {
                 done = 1;
                 break;
@@ -513,6 +513,8 @@ function viewer(fp, pos, mode)
         }
 
     } while(!done);
+    if(i <= 1)
+		page_cnt--;
 
     pg = 0;
 
@@ -2244,6 +2246,7 @@ function mainloop(ntn)
 								console.getkey();
 								return;
 							}
+							saystate("New turn has started!");
 							mainscreen();
 							setfocus(ntn, r, c);
 							showmap(r, c, true);
