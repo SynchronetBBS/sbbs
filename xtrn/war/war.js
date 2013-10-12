@@ -1869,30 +1869,30 @@ function help()
 
     case 0 :
         console.gotoxy(2, 22);
-        console.print("  (])next group  ([)previous group  (})last group  ({)first group  (q)uit game");
+        console.print("  (])next  ([)previous  (q)uit game  (u)pdates  (s)tatus display (x)end turn");
         console.cleartoeol();
 
         console.gotoxy(2, 23);
-        console.print("  (CTRL-]) Next movable army  (CTRL-[) Previous movable army  (s)tatus display");
+        console.print("  (})last  ({)first  (A)rmy capabilities   army (p)roduction  (h)elp");
         console.cleartoeol();
 
         console.gotoxy(2, 24);
-        console.print("  (A)rmy capabilities   army (p)roduction  (?) toggle quick help  (h)elp");
+        console.print("  (CTRL-]) Next movable (CTRL-[) Previous movable  (?) toggle quick help");
         console.cleartoeol();
 
         break;
 
     case 1 :
         console.gotoxy(2, 22);
-        console.print("  (z/Down)pointer down  (a/Up)pointer up  (SPACE)mark/unmark  (*)mark all");
+        console.print("  (z/Down)pointer down  (a/Up)pointer up  (SPACE)mark/unmark  (n)ame hero");
         console.cleartoeol();
 
         console.gotoxy(2, 23);
-        console.print("  (/)unmark all  (m)ove marked armies  (f/5)mark all and move  (n)ame hero");
+        console.print("  (*)mark all  (/)unmark all  (m)ove marked armies  (f/5)mark all and move");
         console.cleartoeol();
 
         console.gotoxy(2, 24);
-        console.print("  (I)nformation about current army    Read (N)ews  (S)end message  read (M)ail");
+        console.print("  (I)nformation about current army  Read (N)ews  (S)end message  read (M)ail");
         console.cleartoeol();
         break;
 
