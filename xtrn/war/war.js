@@ -2237,6 +2237,9 @@ function update(ntn, or, oc)
 				setfocus(ntn, r, c);
 				showmap(r, c, false);
 				showfocus(r, c);
+				console.attributes = attrs.army_area;
+				console.gotoxy(38, avpnt + 3);
+				console.print('  ');
 				break;
 			default:
 				if(avcnt > 0) {
