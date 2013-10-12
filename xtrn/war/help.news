@@ -56,8 +56,6 @@ The map uses the following symbols:
     ^ Mountains
 
 (Blank space represents water.)
-
-
  Playing WAR!
 
 Your first act upon entering the game will probably be to attack a
@@ -124,8 +122,6 @@ a bonus to the combat ratings of friendly units (the defense value).
 Heros also give a bonus to friendly units they are grouped with.  Only
 the most powerful hero in a stack grants the stack his bonus.  (Only
 one commander per group.)
-
-
  Changing the View
 
 The map shows your current group near the center; the cursor will be 
@@ -144,8 +140,6 @@ message will appear.
 
 You may also press <}> or <{> (shifted) to move to the very last 
 (for }) or very first (for {) group.
-
-
  Viewing the Map
 
 You may gain "recon" information about the map around any focus position 
@@ -156,16 +150,12 @@ remains in the same place.
 Information about the terrain and armies present in each spot you move the
 cursor over is shown just above the info mode help display, at the bottom
 of the screen.
-
-
  Status Display
 
 The (s)tatus display shows the names of all nations, their rulers and nation
 marks, and a count of their currently owned cities, armies, and heros.  
 While in status display, you may use <]> next and <[> previous to view other
 pages, or press ESC to return to the normal display.
-
-
  Drafting Armies
 
 Each city can produce as many as four different types of units.
@@ -185,8 +175,6 @@ two turns you have spent already.
 Not all cities take the same time to produce the same unit type.  Some
 cities are better at producing certain types.  Also, not all cities
 produce the same types of armies.
-
-
  Transporting Armies
 
 Certain special army types have the ability to transport other armies.
@@ -200,8 +188,6 @@ costs will be applied to the transporting army.  Armies being carried
 pay a cost of 1 point per space moved through regardless of terrain
 type, and do not have to stop when they reach 0 movement (as long as
 the transporting army can still move).
-
-
  Special Hero Rules
 
 As previously noted, a hero adds a bonus to all units stacked under him
@@ -215,8 +201,6 @@ costs) of the lowest-ranked unit produced in the hero's home city.  For
 most heros, this results in the hero moving like Lt. Infantry.  Elf 
 heros, however, have regular Elf movement (making it easier to move 
 through forests).
-
-
  Reading the News and Mail
 
 You can read the News by pressing (N).  The News consists of information
@@ -227,8 +211,6 @@ You can read your Mail by pressing (M).  The results of your military
 actions will be mailed to you in detail; also, you may receive mail from 
 other national leaders this way.  To send Mail, press (S).  You may enter
 the name of the leader, or the word All to post a message in the News.
-
-
  Browsing Unit Types
 
 The (A)rmy types display shows the names of all the army types available
@@ -236,8 +218,6 @@ to all users in the game, their combat rating, their movement capabilites,
 and if they can transport other units.  When in the army type display,
 you may use (n)ext and (p)revious to view other pages or press ESC to
 return to the normal display.
-
-
  Main Keyboard Controls
 
      A - Detailed list of units.        M - read Mail
