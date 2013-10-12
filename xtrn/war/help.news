@@ -225,7 +225,7 @@ return to the normal display.
      h - Display this help              N - Read news
      ? - Display next quick help page   q - Quit
      p - Set city production            x - End turn
-
+     u - View turn updates
      ] - Next group                     [ - Previous group
      } - Last group                     { - First group
     ^] - Next army with moves left     ^[ - Previous army with moves left

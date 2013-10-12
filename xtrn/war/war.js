@@ -1695,7 +1695,7 @@ function info_mode(rp, cp, n, ch)
 						done = true;
 					}
 				}
-				ch = console.inkey(2000);
+				ch = console.inkey(5000);
 			} while(ch=='' && !done);
 		}
     } while(!done);
@@ -2141,6 +2141,95 @@ function produce(city)
     clearstat(-1);
 }
 
+var upd_pos=0;
+var upd_top=0;
+function update(ntn, or, oc)
+{
+	var fp = new File(game_dir+'/'+format(TURNFL, ntn));
+	var lines;
+	var lpos = -1;
+	var ltop = -1;
+	var i;
+	var r=or,c=oc;
+	var ch;
+
+	console.attributes = attrs.status_area;
+	if(fp.open('rb')) {
+		lines=fp.readAll();
+		fp.close();
+		clearstat(-1);
+
+		for(;;) {
+			if(ltop != upd_top) {
+				for(i=0; i<4; i++) {
+					console.gotoxy(2, 21+i);
+					if((m = lines[upd_top+i].match(/^([0-9]+) ([0-9]+) (.*)$/))!=null) {
+						if(upd_top+i == upd_pos) {
+							console.print('=> ');
+							r=m[1];
+							c=m[2];
+						}
+						else
+							console.print('   ');
+						console.print(m[3].substr(0,75));
+						console.cleartoeol();
+					}
+				}
+				console.gotoxy(4, 21+(upd_pos-upd_top));
+			}
+			else if(lpos != upd_pos) {
+				console.gotoxy(2, 21+(lpos-upd_top));
+				console.print('  ');
+				console.gotoxy(2, 21+(upd_pos-upd_top));
+				console.print('=>');
+				if((m = lines[upd_pos].match(/^([0-9]+) ([0-9]+) (.*)$/))!=null) {
+					r=m[1];
+					c=m[2];
+				}
+			}
+			lpos = upd_pos;
+			ltop = upd_top;
+
+			switch((ch=console.inkey(5000))) {
+			case '':
+				if(turn_done) {
+					if(!file_exists(pfile.name))
+						return {r:or,c:oc,ch:''};
+				}
+				break;
+			case 'a':
+			case KEY_UP:
+				upd_pos--;
+				if(upd_pos < 0)
+					upd_pos = 0;
+				if(upd_pos < upd_top)
+					upd_top = upd_pos;
+				break;
+			case 'z':
+			case KEY_DOWN:
+				upd_pos++;
+				if(upd_pos >= lines.length)
+					upd_pos = lines.length-1;
+				if(upd_top+3 < upd_pos)
+					upd_top = upd_pos-3;
+				break;
+			case 'u':
+				or = r;
+				oc = c;
+				setfocus(ntn, r, c);
+				showmap(r, c, false);
+				showfocus(r, c);
+				break;
+			default:
+				return {r:or,c:oc,ch:ch};
+			}
+		}
+	}
+	else
+		saystat("No updates this turn!");
+	return {r:or,c:oc,ch:''};
+}
+
 function mainloop(ntn)
 {
     var ch, r, c, i, n, city, army, force, obj;
@@ -2198,7 +2287,17 @@ function mainloop(ntn)
 	/* Check for messages */
 	
 	inbuf = format(MAILFL, ntn);
-	reader(inbuf, 1);
+	if(file_exists(game_dir + '/' + format(TURNFL, ntn))) {
+		setfocus(ntn, r, c);
+		showmap(r, c, true);
+		showfocus(r, c);
+		obj = update(ntn, r, c);
+		r = obj.r;
+		c = obj.c;
+		ch = obj.ch;
+		if(ch != '')
+			keep_ch = true;
+	}
 
     /* enter the loop */
 
@@ -2251,6 +2350,12 @@ function mainloop(ntn)
 							setfocus(ntn, r, c);
 							showmap(r, c, true);
 							showfocus(r, c);
+							upd_pos=0;
+							upd_top=0;
+							obj = update(ntn, r, c);
+							r = obj.r;
+							c = obj.c;
+							ch = obj.ch;
 						}
 					}
 				}
@@ -2433,6 +2538,15 @@ function mainloop(ntn)
         case 'v' :
         case 'b' :
             obj = info_mode(r, c, ntn, ch);
+            r = obj.r;
+            c = obj.c;
+			ch = obj.ch;
+			if(ch != '')
+				keep_ch = true;
+            break;
+
+		case 'u' :
+            obj = update(ntn, r, c);
             r = obj.r;
             c = obj.c;
 			ch = obj.ch;

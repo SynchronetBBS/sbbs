@@ -24,6 +24,7 @@ const MASTERFL   = "master.cmd";
 const MASTERBAK  = "master.%03d";
 const GAMESAVE   = "game.save.json";
 const PLAYERFL   = "%04d.cmd";
+const TURNFL	 = "%04d.turn";
 
 // defined by loadmap()
 var map_width;
@@ -186,6 +187,39 @@ function instance(n)
 	return buff;
 }
 
+function event(text, r, c, ntn)
+{
+	var fp = new File(game_dir+'/'+format(TURNFL, ntn));
+	if(fp.open('ab')) {
+		fp.write(r+' '+c+' '+text+'\n');
+		fp.close();
+	}
+	return;
+}
+
+function armyname(a)
+{
+	var c, t, i, m;
+	var buff;
+
+	if(armies[a].name.substr(0, 1) != '.')
+		return armies[a].name;
+
+	c = 0;
+	t = 0;
+	i = -1;
+
+	m=armies[a].name.match(/([0-9]+)\/([0-9]+)\/([0-9]+)/);
+	if(m==null)
+		return "????";
+	c=parseInt(m[1], 10);
+	t=parseInt(m[2], 10);
+	i=parseInt(m[3], 10);
+
+	buff = cities[c].name+' '+instance(i)+' '+ttypes[t].name;
+	return buff;
+}
+
 var turn_done = false;
 var privtable = {
 	"global-update":function(argc, argv) {
@@ -232,11 +266,12 @@ var privtable = {
 
 			cnt = 0;
 
-			for(k = 0; k < armycnt; k++)
+			for(k = 0; k < armycnt; k++) {
 				if(armies[k].nation == cities[i].nation
-				&& armies[k].r == cities[i].r
-				&& armies[k].c == cities[i].c)
+						&& armies[k].r == cities[i].r
+						&& armies[k].c == cities[i].c)
 					cnt++;
+			}
 
 			max = cities[i].defense * 2;
 
@@ -276,6 +311,7 @@ var privtable = {
 							armies[armycnt].special_mv =
 												ttypes[t].special_mv;
 							armies[armycnt].eparm1 = 0;
+							event(armyname(armycnt)+' created in '+cities[i].name, armies[armycnt].r, armies[armycnt].c, armies[armycnt].nation);
 
 							armycnt++;
 
@@ -531,29 +567,6 @@ function nationcity(n)
 	return cities[nations[n].city].name;
 }
 
-function armyname(a)
-{
-	var c, t, i, m;
-	var buff;
-
-	if(armies[a].name.substr(0, 1) != '.')
-		return armies[a].name;
-
-	c = 0;
-	t = 0;
-	i = -1;
-
-	m=armies[a].name.match(/([0-9]+)\/([0-9]+)\/([0-9]+)/);
-	if(m==null)
-		return "????";
-	c=parseInt(m[1], 10);
-	t=parseInt(m[2], 10);
-	i=parseInt(m[3], 10);
-
-	buff = cities[c].name+' '+instance(i)+' '+ttypes[t].name;
-	return buff;
-}
-
 function isgreater(a1, a2)
 {
 	var c1, c2, t1, t2, i1, i2;
@@ -604,4 +617,13 @@ function set_game(path)
 		game_dir = fullpath(orig_exec_dir+'/'+path);
 
 	news = new File(game_dir+'/news');
+}
+
+function hero_name(hero)
+{
+	var hname = armies[hero].name;
+
+	if(hname == '')
+		hname = '(Nameless Hero)';
+	return hname;
 }

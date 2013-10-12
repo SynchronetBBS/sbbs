@@ -252,11 +252,14 @@ function capture(n, c)
 	buff = nationcity(n)+" captures "+cities[c].name;
 	message_out(buff, n, n2, 1);
 
+	event('You captured '+cities[c].name+(cities[c].nation > 0 ? ' from '+nationcity(n2) : ''), cities[c].r, cities[c].c, n);
 	if(cities[c].nation > 0) {
 		buff = " from "+nationcity(n2)+"\n";
 		message_out(buff, n, n2, 1);
-	} else
+		event(nationcity(n)+' captured '+cities[c].name, cities[c].r, cities[c].c, n2);
+	} else {
 		message_out("\n", n, n2, 1);
+	}
 
 	buff = "control-city "+n+" "+c+" 1\n";
 	mfile.write(buff);
@@ -362,18 +365,20 @@ function advance(hero)
         return;
 
     if(armies[hero].combat < 7 
-    && random(8) >= armies[hero].combat) {
+			&& random(8) >= armies[hero].combat) {
         print("advance "+hero+" combat\n");
 		buff = "change-army "+hero+" "+armies[hero].combat + 1+" "+armies[hero].hero+"\n";
+		event(hero_name(hero) + ' advanced in combat abilities to ' + (armies[hero].combat + 1), armies[hero].r, armies[hero].c, armies[hero].nation);
 		mfile.write(buff);
 		execpriv(buff);
         return;
     }
 
     if(armies[hero].hero < 3
-    && random(4) >= armies[hero].hero) {
+			&& random(4) >= armies[hero].hero) {
         print("advance "+hero+" hero\n");
 		buff = "change-army "+hero+" "+armies[hero].combat+" "+armies[hero].hero + 1+"\n";
+		event(hero_name(hero) + ' advanced in command value to ' + (armies[hero].hero + 1), armies[hero].r, armies[hero].c, armies[hero].nation);
 		mfile.write(buff);
 		execpriv(buff);
     }
@@ -460,6 +465,8 @@ function battle(a, b)
 					dn = ntns[rwin];
 				d = hi;
 			} else {
+				event(hero_name(stacks[rlose].index[hi]) + " has become loyal to you"
+						,r ,c ,ntns[rlose]);
 				buff = "set-eparm "+stacks[rlose].index[hi]+" 1\n";
 				mfile.write(buff);
 				execpriv(buff);
@@ -495,6 +502,17 @@ function battle(a, b)
 			} else
 				message_out("\n", ntns[0], ntns[1], 1);
 
+			event(hero_name(stacks[rlose].index[l]) + " deserted" + ((dn != -1) ? ' and joined '+nationcity(dn) : '')
+					,armies[stacks[rlose].index[l]].r
+					,armies[stacks[rlose].index[l]].c
+					,armies[stacks[rlose].index[l]].nation);
+			if(dn != -1) {
+				event(hero_name(stacks[rlose].index[l]) + " deserted and joined you"
+						,armies[stacks[rlose].index[l]].r
+						,armies[stacks[rlose].index[l]].c
+						,armies[stacks[rlose].index[l]].nation);
+			}
+
 			/* hero deserts */
 
 			buff = "kill-army -2 "+stacks[rlose].index[d]+" "+dn+"\n";
@@ -512,17 +530,24 @@ function battle(a, b)
 		stack_remove(stacks[rlose], l);
 	}
 
-	if(stacks[0].count < 1)
+	if(stacks[0].count < 1) {
 		rwin = 1;
-	else
+		rlose = 0;
+	}
+	else {
 		rwin = 0;
-
-	buff = names[rwin]+" wins!\n";
+		rlose = 1;
+	}
+	
 	message_out(buff, ntns[0], ntns[1], 1);
 
 	if(city != -1
-	&& cities[city].nation != ntns[rwin])
+			&& cities[city].nation != ntns[rwin])
 		capture(ntns[rwin], city);
+	else {
+		event('You lost a battle against '+nationcity(ntns[rwin]), r, c, ntns[rlose]);
+		event('You won a battle against '+nationcity(ntns[rlose]), r, c, ntns[rwin]);
+	}
 
 	if((hi = stacks[rwin].hero) != -1)
         advance(stacks[rwin].index[hi]);
@@ -601,6 +626,7 @@ function deserter(n)
 
 	mail_line(" \b", n);
 	buff = armyname(i)+" deserts "+nations[n].name+" of "+nationcity(n)+".";
+	event(armyname(i)+" deserted you", armies[i].r, armies[i].c, armies[i].nation);
 	message_out(buff, n, 0, 1);
 
 	buff = " (Turn "+gen+")";
@@ -681,7 +707,8 @@ function creator(n)
 	/* it's OK, do it. */
 
 	mail_line(" \b", n);
-	buff = "A hero arises in "+cities[c].name+" and joins "+nations[n].name+" of "+nationcity(n)+"!";
+	event("A hero arose in "+cities[c].name, cities[c].r, cities[c].c, n);
+	buff = "A hero arises in "+cities[c].name+" and joins "+nations[n].name+" of "+nationcity(n);
 	message_out(buff, n, 0, 1);
 
 	buff = " (Turn "+gen+")";
@@ -759,7 +786,7 @@ function main(argc, argv)
 		}
 
 		if(was_polled && js.global.polled_update === undefined) {
-			print("Skipping update of "+world+" in "+game_dir)
+			print("Skipping update of "+world+" in "+game_dir);
 			print("because it had a polled update");
 			fp = new File(game_dir+'/'+GAMESAVE);
 			if(!fp.open('wb')) {
