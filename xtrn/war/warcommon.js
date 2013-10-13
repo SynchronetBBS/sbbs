@@ -49,6 +49,7 @@ const TRANS_HERO = 1;
 const TRANS_ONE  = 2;
 const TRANS_ALL  = 3;
 const MAILFL     = "mail.%03d";
+const TMPMAILFL	 = "%04d.tmpmsg"
 const NEWSFL     = "news";
 const HEADERMARK = " \b";
 const MAILLOG    = "mail.log";
@@ -360,7 +361,7 @@ var privtable = {
 		}
 
 		/* Just the one army */
-		armies[a].splice(1, 0);
+		armies.splice(a, 1);
 		return 0;
 	},
 	"move-army":function(argc, argv) {
