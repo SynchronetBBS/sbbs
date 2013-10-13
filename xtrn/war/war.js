@@ -80,48 +80,12 @@ var game_dir = orig_exec_dir;
 load("sbbsdefs.js");
 load(game_dir+'/warcommon.js');
 
-// From display.c
+/*
+ * Granularity of map centering... doesn't move the map if the new
+ * focus is inside a gran x gran square at the centre
+ */
 const gran = 2;
-const terminate = "\033q ";
-var avcnt = 0;
-var avpnt = 0;
-var enemies = [
-	{nation:0, armies:0, heros:0},
-	{nation:0, armies:0, heros:0}
-];
-var armyview = [
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '},
-	{id:0, mark:' '}
-];
-var mvcnt = 0;
-var movestack = [
-	{ id:0, moved:0, dep:0 },
-	{ id:0, moved:0, dep:0 },
-	{ id:0, moved:0, dep:0 },
-	{ id:0, moved:0, dep:0 },
-	{ id:0, moved:0, dep:0 },
-	{ id:0, moved:0, dep:0 },
-	{ id:0, moved:0, dep:0 },
-	{ id:0, moved:0, dep:0 },
-	{ id:0, moved:0, dep:0 },
-	{ id:0, moved:0, dep:0 }
-];
 
-// These were extern...
-var trans;
-var pfile;
-
-// From data.c
 const terrain = "~.%#^";        /* standard types only. */
 const terr_attr = {
 	' ':'HB4',
@@ -185,12 +149,12 @@ const special_desc = [
 	"Transport Stack"
 ];
 
+// Player move file.  All commands are written here.
+var pfile;
+
 // From reader.c
 var r_index = [];
 var killed=[];
-var index_cnt = 0;
-var pages = [];
-var page_cnt = 0;
 
 function nationname(n)
 {
@@ -207,7 +171,6 @@ function mainscreen()
     var i;
 
     console.clear(attrs.main_screen);
-
 	console.attributes = genattrs.border;
 	console.gotoxy(2, 1);
 	console.print(ascii(201));
@@ -217,7 +180,6 @@ function mainscreen()
 	console.print(ascii(205)+ascii(187));
 	console.gotoxy(34, 18);
 	console.print(ascii(205)+ascii(188));
-
     for(i = 0; i < 16; i++) {
 		console.gotoxy(2, i+2);
 		console.print(ascii(186));
@@ -228,17 +190,14 @@ function mainscreen()
 		console.gotoxy(i*2+3, 18);
 		console.print(ascii(205)+ascii(205));
     }
-
     console.gotoxy(1, 20);
 	console.attributes = genattrs.border;
     console.print((new Array(81)).join(ascii(196)));
-
 	console.attributes = attrs.status_area;
 	for(i=21; i<=console.screen_rows; i++) {
     	console.gotoxy(1, i);
 		console.cleartoeol();
 	}
-
     console.gotoxy(41, 1);
     console.attributes = attrs.world_bar;
     console.print(format("   %-20s    Turn %d   ", world, gen));
@@ -269,10 +228,8 @@ function mailer(from, to)
 		heading = format("From %s of %s  (Turn %d)",
 			nationname(from), nationcity(from), turn());
 	}
-
 	console.clear(attrs.mailer);
 	console.gotoxy(1,1);
-
 	f = new File(format("%s/%04d.tmpmsg", game_dir, nations[from].uid));
 	if(!f.open("wb")) {
     	mainscreen();
@@ -286,33 +243,26 @@ function mailer(from, to)
 				fname = game_dir+'/'+format(MAILFL, to);
 			else
 				fname = game_dir + '/' + NEWSFL;
-
 			if(!f.open('rb')) {
 				file_remove(f.name);
     			mainscreen();
 				saystat("Mail Could Not Be Read...  Cancelled.");
 				return;
 			}
-
 			fp = new File(fname);
-
 			if(!fp.open('ab')) {
 				file_remove(f.name);
     			mainscreen();
 				saystat("Mail Could Not Be Sent...  Cancelled.");
 				return;
 			}
-
 			fp.write(HEADERMARK);
 			fp.write(heading);
 			fp.write("\n\n");
-
 			while((inbuf = f.readln()) != null)
 				fp.writeln(inbuf);
-
 			f.close();
 			fp.close();
-
 			logf = new File(game_dir+'/'+MAILLOG);
 			if(logf.open('ab')) {
 				logf.write(HEADERMARK);
@@ -332,7 +282,7 @@ function mailer(from, to)
     the file position in pages[pg], for 19 lines.
 */
 
-function showpage(fp, pg)
+function showpage(fp, pg, pages)
 {
     var i, len;
     var inbuf;
@@ -362,7 +312,7 @@ function showpage(fp, pg)
 
     console.gotoxy(56, 22);
 	console.attributes = genattrs.help;
-    console.print(format("Page %d of %d", pg + 1, page_cnt));
+    console.print(format("Page %d of %d", pg + 1, pages.length));
     console.cleartoeol();
 
     console.gotoxy(71, 22);
@@ -435,7 +385,7 @@ function delete_msgs(fn)
 		return;
 	}
 
-    for(i = 0; i < index_cnt; i++) {
+    for(i = 0; i < r_index.length; i++) {
         if(!killed[i]) {
 			outf.write(HEADERMARK);
 			inf.position = r_index[i];
@@ -485,6 +435,7 @@ function viewer(fp, pos, mode)
 {
     var ch, i, len, done, pg, opg;
     var dummy;
+    var pages;
 
     len = HEADERMARK.length;
 
@@ -494,11 +445,10 @@ function viewer(fp, pos, mode)
     show_killed(pos);
 
     done = 0;
-
-    page_cnt = 0;
+    pages = [];
 
     do {
-        pages[page_cnt++] = fp.position;
+        pages.push(fp.position);
 
         for(i = 0; i < 18; i++) {
             if((dummy = fp.readln(1024)) == null) {
@@ -514,11 +464,11 @@ function viewer(fp, pos, mode)
 
     } while(!done);
     if(i <= 1)
-		page_cnt--;
+		pages.pop();
 
     pg = 0;
 
-    showpage(fp, pg);
+    showpage(fp, pg, pages);
 
     do {
         console.gotoxy(72, 22);
@@ -550,8 +500,10 @@ function viewer(fp, pos, mode)
 
         }
 
-        if(pg < 0)         pg = 0;
-        if(pg >= page_cnt) pg = page_cnt - 1;
+        if(pg < 0)
+			pg = 0;
+        if(pg >= pages.length)
+			pg = pages.length - 1;
 
         if(pg != opg)
             showpage(fp, pg);
@@ -576,7 +528,7 @@ function show_screen(pos, fp)
     for(i = 0; i < 18; i++) {
         console.gotoxy(3, i+1);
 
-        if(pos + i < index_cnt && pos + i >= 0) {
+        if(pos + i < r_index.length && pos + i >= 0) {
             if(killed[pos+i]) {
 				console.attributes = attrs.reader_deleted;
                 console.print('*');
@@ -595,7 +547,7 @@ function show_screen(pos, fp)
 			console.attributes = attrs.reader_topbottom;
 			if(pos + i == -1)
            		console.print("*** Top of List ***");
-        	else if(pos + i == index_cnt)
+        	else if(pos + i == r_index.length)
             	console.print("*** End of List ***");
 		}
 
@@ -609,24 +561,23 @@ function show_screen(pos, fp)
     not shown on most printouts but is easily recognized.
 
     the array r_index[] contains the seek positions of each heading.
-    it is limited by index_cnt.
 */
 
 function indexer(fp)
 {
 	var inbuf, len, pos;
 
-    index_cnt = 0;
-
     len = HEADERMARK.length;
+    r_index = [];
+    killed = [];
 
     fp.rewind();
 
     for(pos = fp.position; (inbuf = fp.readln(1024)) != null; pos = fp.position) {
 		inbuf=inbuf.substr(0, 77);
 		if(inbuf.substr(0, len)==HEADERMARK) {
-			killed[index_cnt] = 0;
-			r_index[index_cnt++] = pos + len;
+			killed.push(0);
+			r_index.push(pos + len);
 		}
 	}
 }
@@ -662,7 +613,7 @@ function reader(fname, mode)
 
     indexer(fp);
 
-	pos = index_cnt - 1;
+	pos = r_index.length - 1;
     top = pos - 8;
  
     show_screen(top, fp);
@@ -724,8 +675,10 @@ function reader(fname, mode)
 
         }
 
-        if(pos < 0)      pos = 0;
-        if(pos >= index_cnt) pos = index_cnt - 1;
+        if(pos < 0)
+			pos = 0;
+        if(pos >= r_index.length)
+			pos = r_index.length - 1;
 
         if(pos > top + 8 || pos < top - 7) {
             top = pos;
@@ -741,12 +694,12 @@ function reader(fname, mode)
     /* handle deletion. */
 
     if(mode) {
-        for(killcnt = 0, pos = 0; pos < index_cnt; pos++)
+        for(killcnt = 0, pos = 0; pos < r_index.length; pos++)
             killcnt += killed[pos];
 
         if(killcnt != 0) { /* deleted some... */
 
-            if(killcnt == index_cnt) /* deleted ALL */
+            if(killcnt == r_index.length) /* deleted ALL */
                 file_remove(game_dir+'/'+fname);
             else
                 delete_msgs(fname);
@@ -754,13 +707,13 @@ function reader(fname, mode)
     }
 }
 
-function analyze_stack(ms, mc)
+function analyze_stack(ms)
 {
     var i, j, a, b, mmode;
 
     mmode = 0;
 
-    for(i = 0; i < mc; i++)
+    for(i = 0; i < ms.length; i++)
         if(armies[ms[i].id].special_mv > mmode)
             mmode = armies[ms[i].id].special_mv;
 
@@ -770,7 +723,7 @@ function analyze_stack(ms, mc)
 
         /* locate fastest transporter */
         j = -1;
-        for(i = 0; i < mc; i++) {
+        for(i = 0; i < ms.length; i++) {
             a = ms[i].id;
             if(armies[a].special_mv == TRANS_ALL) {
                 if(j == -1 || armies[a].move_left > armies[j].move_left)
@@ -780,7 +733,7 @@ function analyze_stack(ms, mc)
         }
 
         /* set (almost) all */
-        for(i = 0; i < mc; i++) {
+        for(i = 0; i < ms.length; i++) {
             a = ms[i].id;
             if(armies[a].special_mv == TRANS_ALL)
                 ms[i].dep = a;
@@ -793,7 +746,7 @@ function analyze_stack(ms, mc)
     case TRANS_SELF :
 
         /* easy... all move by themselves */
-        for(i = 0; i < mc; i++)
+        for(i = 0; i < ms.length; i++)
             ms[i].dep = ms[i].id;
 
         break;
@@ -802,10 +755,10 @@ function analyze_stack(ms, mc)
         /* transport hero and/or one army */
 
         /* set all heros for transportation */
-        for(i = 0; i < mc; i++) {
+        for(i = 0; i < ms.length; i++) {
             a = ms[i].id;
             if(armies[a].hero > 0)
-                for(j = 0; j < mc; j++) {
+                for(j = 0; j < ms.length; j++) {
                     b = ms[j].id;
                     if(armies[b].special_mv == TRANS_HERO
                     && ms[j].dep == -1) {
@@ -817,11 +770,11 @@ function analyze_stack(ms, mc)
         }
 
         /* set remaining for transportation */
-        for(i = 0; i < mc; i++) {
+        for(i = 0; i < ms.length; i++) {
             a = ms[i].id;
             if(ms[i].dep == -1
             && armies[a].special_mv == TRANS_SELF) {
-                for(j = 0; j < mc; j++) {
+                for(j = 0; j < ms.length; j++) {
                     b = ms[j].id;
                     if(armies[b].special_mv == TRANS_ONE
                     && ms[j].dep == -1) {
@@ -834,7 +787,7 @@ function analyze_stack(ms, mc)
         }
 
         /* leftovers transport self. */
-        for(i = 0; i < mc; i++)
+        for(i = 0; i < ms.length; i++)
             if(ms[i].dep == -1)
                 ms[i].dep = ms[i].id;
 
@@ -909,151 +862,140 @@ function clearstat(mode)
     }
 }
 
-function mark_of(a)
+function unit_mark(nation_mark)
 {
-    var i;
-
-    if(mvcnt < 1)
-        return 0;
-
-    for(i = 0; i < mvcnt; i++)
-        if(movestack[i].id == a)
-            return 1;
-
-    return 0;
+	if(marks[0].indexOf(nation_mark) == -1)
+		return '?';
+	return marks[1].substr(marks[0].indexOf(nation_mark), 1);
 }
 
-function sortview()
+/*
+ * This returns a list of armies AND updates the overlay
+ */
+function get_armylist(ntn, r, c)
 {
-    var gap, i, j, temp;
+	var e;
+	var alist = {};
+	var i,k;
 
-    avpnt = 0;
-
-    for(gap = parseInt(avcnt / 2); gap > 0; gap = parseInt(gap / 2)) {
-        for(i = gap; i < avcnt; i++) {
-            for(j = i - gap; j >= 0 && isgreater(armyview[j+gap].id, armyview[j].id); j -= gap) {
-                temp = armyview[j].id;
-                armyview[j].id = armyview[j+gap].id;
-                armyview[j+gap].id = temp;
-                temp = armyview[j].mark;
-                armyview[j].mark = armyview[j+gap].mark;
-                armyview[j+gap].mark = temp;
-            }
+	for(i = 0; i<map_height; i++) {
+		for(k = 0; k < map_width; k++) {
+			mapovl[i][k] = ' ';
 		}
 	}
-}
 
-function setfocus(ntn, r, c)
-{
-    var i, j, e;
-
-    avcnt = 0;
-
-    /* clear the enemies list */
-
-    for(e = 0; e < 2; e++) {
-        enemies[e].nation = -1;
-        enemies[e].armies = 0;
-        enemies[e].heros = 0;
-    }
-
-    /* clear the map overlay */
-
-    for(i = 0; i < map_height; i++)
-        for(j = 0; j < map_height; j++)
-            mapovl[i][j] = ' ';
-
-    /* find the player's armies */
+	alist.view=[];
+	alist.enemies=[];
 
     for(i = 0; i < armies.length; i++) {
-        if(r == armies[i].r
-        && c == armies[i].c)
+        if(r == armies[i].r && c == armies[i].c) {
             if(armies[i].nation == ntn || ntn == -1) {
-                armyview[avcnt].id = i;
-                armyview[avcnt++].mark = mark_of(i);
-            } else {
-
-                e = 0;
-
-                if(enemies[0].nation != armies[i].nation
-                && enemies[0].nation != -1)
-                    e = 1;
-
-                enemies[e].nation = armies[i].nation;
+				alist.view.push({id:i, marked: false});
+            }
+            else {
+				if(alist.enemies.length == 0) {
+					alist.enemies.push({
+						nation:armies[i].nation, 
+						hero:0, 
+						armies:0, 
+						multiple:false
+					});
+					e = alist.enemies[0];
+				}
+				else if(alist.enemies[0].nation == armies[i].nation) {
+					e = alist.enemies[0];
+				}
+				else {
+					if(alist.enemies.length == 1) {
+						alist.enemies.push({
+							nation:armies[i].nation, 
+							hero:0, 
+							armies:0, 
+							multiple:false
+						});
+					}
+					e = alist.enemies[alist.enemies.length-1];
+				}
+				if(e.nation != armies[i].nation)
+					e.multiple = true;
 
                 if(armies[i].hero > 0)
-                    enemies[e].heros++;
+                    e.heros++;
                 else
-                    enemies[e].armies++;
+                    e.armies++;
             }
-
-        if(armies[i].nation >= 0) {
-            if(mapovl[armies[i].r][armies[i].c] == ' '
-            || mapovl[armies[i].r][armies[i].c] ==
-               marks[1].substr(marks[0].indexOf([nations[armies[i].nation].mark]), 1)) {
-                mapovl[armies[i].r][armies[i].c] =
-                    marks[1].substr(marks[0].indexOf([nations[armies[i].nation].mark]), 1);
-			}
-            else {
-                mapovl[armies[i].r][armies[i].c] = '!';
-			}
         }
+        
+        /* Mark all armies on the overlay */
+        if(mapovl[armies[i].r][armies[i].c] == ' ' 
+				|| mapovl[armies[i].r][armies[i].c] == unit_mark(nations[armies[i].nation].mark)) {
+			mapovl[armies[i].r][armies[i].c] = unit_mark(nations[armies[i].nation].mark);
+		}
+		else if(mapovl[armies[i].r][armies[i].c] != nations[armies[i].nation].mark) {
+			mapovl[armies[i].r][armies[i].c] = '!';
+		}
     }
 
-    sortview();
-
-    /* update map overlay with cities */
-
+	/* Update city marks on the overlay */
     for(i = 0; i < cities.length; i++) {
-        if(mapovl[cities[i].r][cities[i].c] == ' '
-        || marks[1].indexOf(mapovl[cities[i].r][cities[i].c]) != -1) {
-            mapovl[cities[i].r][cities[i].c] =
-                nations[cities[i].nation].mark;
+        if(mapovl[cities[i].r][cities[i].c] == ' ' 
+				|| mapovl[cities[i].r][cities[i].c] == unit_mark(nations[cities[i].nation].mark)) {
+            mapovl[cities[i].r][cities[i].c] = nations[cities[i].nation].mark;
         }
         else {
             mapovl[cities[i].r][cities[i].c] = '!';
 		}
     }
+
+	alist.view = alist.view.sort(function(a,b) { return isgreater(b.id, a.id) ? 1 : 0; });
+	return alist;
 }
 
-function showarmies(pointer)
+function setfocus(ntn, r, c)
+{
+    var i, j, e;
+    var alist;
+
+	alist = get_armylist(ntn, r, c);
+	return alist;
+}
+
+function showarmies(alist, enemies, pointer)
 {
     var i, a;
     var buff;
 
 	console.attributes = attrs.army_area;
-    for(i = 0; i < 12; i++) {
-
+    for(i = 0; i < alist.length && i < 12; i++) {
         console.gotoxy(38, i + 3);
-
-        if(i < avcnt) {
-            a = armyview[i].id;
+        if(i < alist.length) {
+            a = alist[i].id;
             console.print(format("%s %c ",
-                (pointer && i == avpnt) ? "=>" : "  ",
-                armyview[i].mark ? '*' : ' '));
+                (pointer > -1 && i == pointer) ? "=>" : "  ",
+                alist[i].mark ? '*' : ' '));
             buff = armyname(a);
-
             if(armies[a].name.length == 0 && armies[a].hero > 0)
                 buff = "(Nameless Hero)";
             else if(armies[a].hero > 0)
                 buff += " (Hero)";
-
             console.print(format("%-31.31s %d:%d", buff,
                 armies[a].move_rate, armies[a].move_left));
         }
-
         console.cleartoeol();
     }
-
-    console.gotoxy(38, 14);
+    for(;i < 12;i++) {
+        console.gotoxy(38, i + 3);
+        console.cleartoeol();
+	}
+    console.gotoxy(38, 15);
 	console.attributes = attrs.army_total;
-    if(avcnt > 0)
-        console.print(format("     Total %d Armies", avcnt));
+    if(alist.length > 0)
+        console.print(format("     Total %d Armies", alist.length));
     console.cleartoeol();
 
 	console.attributes = attrs.army_area;
-    for(i = 0; i < 2; i++) {
-        console.gotoxy(43, i + 16);
+    for(i = 0; i < enemies.length; i++) {
+        console.gotoxy(43, i + 17);
 
         if(enemies[i].nation != -1)
             console.print(format("%-15.15s %3d Armies, %3d Heros",
@@ -1064,6 +1006,10 @@ function showarmies(pointer)
 
         console.cleartoeol();
     }
+    for(;i<2; i++) {
+        console.gotoxy(43, i + 17);
+        console.cleartoeol();
+	}
 }
 
 function gmapspot(r, c, terr, mark, focus, extra_attr)
@@ -1127,13 +1073,15 @@ function showcity(r, c)
 
 var old_ul_r = -1;
 var old_ul_c = -1;
-function showmap(r, c, force, pointer)
+function showmap(ntn, r, c, force, pointer)
 {
     var ul_r, ul_c, f_r, f_c;
     var i, j, zr, zc;
     var rem;
+	var alist;
 
-    showarmies(pointer);
+	alist = setfocus(ntn, r, c);
+    showarmies(alist.view, alist.enemies, pointer);
 
     rem = parseInt((16 - gran) / 2);
     f_r = r % gran;
@@ -1160,6 +1108,7 @@ function showmap(r, c, force, pointer)
         showcity(r, c);
 
     console.gotoxy(f_c * 2 + 16, f_r + 8);
+    return alist.view;
 }
 
 function showfocus(r, c)
@@ -1191,28 +1140,14 @@ function fixcol(c)
     return c;
 }
 
-function move_mode(ntn, rp, cp)
+function move_mode(alist, avpnt, ntn, rp, cp)
 {
     var i, j, mv, ch, city, army, t_r, t_c, a, b, ok, cnt, max, flag;
     var ac, hc, mmode;
     var mvc = new Array(TRANS_ALL+1);
     var gap, temp;
-    var unmarked = [
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 },
-		{ id:0, moved:0, dep:0 }
-    ];
-    var uncnt;
-
+	var movestack = [];
+    var unmarked = [];
     var buff;
 
 	if(turn_done) {
@@ -1220,38 +1155,41 @@ function move_mode(ntn, rp, cp)
         return {r:rp,c:cp};
 	}
 
-    if(avcnt < 1) {
+    if(alist.length < 1) {
         saystat("No Army to Move.");
         return {r:rp,c:cp};
     }
 
-    mvcnt = 0;
     flag = 0;
 
-    for(i = 0; i < avcnt; i++) {
-        if(armyview[i].mark)
+    for(i = 0; i < alist.length; i++) {
+        if(alist[i].mark)
             flag = 1;
-        if(armyview[i].mark
-        && (armies[armyview[i].id].move_left > 0 || ntn == -1)) {
-            if(mvcnt >= 10 && ntn >= 0) {
+        if(alist[i].mark
+				&& (armies[alist[i].id].move_left > 0 || ntn == -1)) {
+            if(movestack.length >= 10 && ntn >= 0) {
                 saystat("Too Many Armies for Group.");
         		return {r:rp,c:cp};
             }
-            movestack[mvcnt].moved = 0;
-            movestack[mvcnt].dep = -1;
-            movestack[mvcnt++].id = armyview[i].id;
+            movestack.push({
+				id:alist[i].id,
+				moved:0,
+				dep:-1
+			});
         }
     }
 
-    if(mvcnt < 1 && !flag
-    && (armies[armyview[avpnt].id].move_left > 0 || ntn == -1)) {
-        movestack[mvcnt].moved = 0;
-        movestack[mvcnt].dep = -1;
-        movestack[mvcnt++].id = armyview[avpnt].id;
-        armyview[avpnt].mark = 1;
+    if(movestack.length < 1 && !flag
+			&& (armies[alist[avpnt].id].move_left > 0 || ntn == -1)) {
+		movestack.push({
+			id:alist[avpnt].id,
+			moved:0,
+			dep:-1
+		});
+        alist[avpnt].mark = 1;
     }
 
-    if(mvcnt < 1 && ntn > -1) {
+    if(movestack.length < 1 && ntn > -1) {
         saystat("Armies Have No Movement Left.");
         return {r:rp,c:cp};
     }
@@ -1266,23 +1204,23 @@ function move_mode(ntn, rp, cp)
 
     if(ntn > -1) {
 
-        uncnt = 0;
-
-        for(i = 0; i < avcnt; i++) {
-            if(!armyview[i].mark) {
-                unmarked[uncnt].moved = 0;
-                unmarked[uncnt].dep = -1;
-                unmarked[uncnt++].id = armyview[i].id;
+        for(i = 0; i < alist.length; i++) {
+            if(!alist[i].mark) {
+				unmarked.push({
+					moved: 0,
+					dep: -1,
+					id: alist[i].id
+				});
             }
         }
 
-        analyze_stack(unmarked, uncnt);
+        analyze_stack(unmarked);
 
-        for(i = 0; i < uncnt; i++) {
+        for(i = 0; i < unmarked.length; i++) {
             a = unmarked[i].id;
             if(unmarked[i].dep == a
-            && armies[a].special_mv != TRANS_ALL
-            && movecost(a, armies[a].r, armies[a].c) == 0) {
+					&& armies[a].special_mv != TRANS_ALL
+					&& movecost(a, armies[a].r, armies[a].c) == 0) {
                 saystat("Armies Would Be Stranded...  Movement Cancelled.");
                 return {r:rp,c:cp};
             }
@@ -1292,7 +1230,7 @@ function move_mode(ntn, rp, cp)
     /* analyze move stack */
 
     if(ntn > -1)
-        analyze_stack(movestack, mvcnt);
+        analyze_stack(movestack);
 
     /* perform movement */
 
@@ -1300,7 +1238,7 @@ function move_mode(ntn, rp, cp)
 
     console.gotoxy(2, 22);
 	console.attributes = attrs.status_area;
-    console.print(format("Move %s", mvcnt > 1 ? "Armies" : "Army"));
+    console.print(format("Move %s", movestack.length > 1 ? "Armies" : "Army"));
 
     console.gotoxy(21, 23);
     console.print("4   6  or  d   g");
@@ -1311,12 +1249,10 @@ function move_mode(ntn, rp, cp)
     console.gotoxy(21, 22);
     console.print("7 8 9      e r t    SPACE to Stop.  ");
 
-    setfocus(ntn, rp, cp);
-    showmap(rp, cp, false, true);
-    showfocus(rp, cp);
+    alist = showmap(ntn, rp, cp, false, avpnt);
 
-    while(mvcnt > 0 && (ch = console.getkey()) != ' ' 
-    && terminate.indexOf(ch) == -1) {
+    while(movestack.length > 0 && (ch = console.getkey()) != ' '
+			&& ch != 'q' && ch != '\x1b') {
 
         showfocus(rp, cp);
         clearstat(0);
@@ -1387,7 +1323,7 @@ function move_mode(ntn, rp, cp)
 
             if(ntn > -1) {
 
-                for(i = 0; i < mvcnt; i++) {
+                for(i = 0; i < movestack.length; i++) {
 
                     a = movestack[i].id;
 
@@ -1426,7 +1362,7 @@ function move_mode(ntn, rp, cp)
                 && cities[city].nation == ntn)
                     max = 12;
 
-                if(mvcnt + cnt > max) {
+                if(movestack.length + cnt > max) {
                     ok = 0;
                     saystat("Too Many Armies There.");
                 }
@@ -1447,7 +1383,7 @@ function move_mode(ntn, rp, cp)
             /* do it! */
 
             if(ok) {
-                for(i = 0; i < mvcnt; i++) {
+                for(i = 0; i < movestack.length; i++) {
                     a = movestack[i].id;
 
                     if(ntn > -1) {
@@ -1469,23 +1405,20 @@ function move_mode(ntn, rp, cp)
 
             /* redo screen. */
 
-            setfocus(ntn, rp, cp);
-            showmap(rp, cp, ok, true);
+            alist = showmap(ntn, rp, cp, ok, avpnt);
         }
 
         showfocus(rp, cp);
     }
 
-    if(ntn > -1)
-        for(i = 0; i < mvcnt; i++)
+    if(ntn > -1 && ch != 'q' && ch != '\x1b')
+        for(i = 0; i < movestack.length; i++)
             if(movestack[i].moved > 0 || ntn == -1)
                 pfile.write(format("move-army %d %d %d %d %d\n",
                     movestack[i].id, movestack[i].moved,
                     rp, cp, movestack[i].dep));
 
     clearstat(-1);
-
-    mvcnt = 0;
 
     return {r:rp,c:cp};
 }
@@ -1540,7 +1473,7 @@ function show_info(r, c)
     saystat(buff);
 }
 
-function info_mode(rp, cp, n, ch)
+function info_mode(rp, cp, n, ch, avpnt)
 {
     var done, r, c, ul_r, ul_c, f_r, f_c, t_r, t_c, a_r, a_c;
     var city, army, i, focus;
@@ -1674,9 +1607,8 @@ function info_mode(rp, cp, n, ch)
 			if(army >= 0|| city >= 0) {
 				a_r = t_r;
 				a_c = t_c;
-				setfocus(n, t_r, t_c);
 			}
-			showmap(rp, cp, false, true);
+			showmap(n, rp, cp, false, avpnt);
 			focus = false;
 		}
 
@@ -2152,8 +2084,9 @@ function update(ntn, or, oc)
 	var r=or,c=oc;
 	var ch;
 	var m;
+	var alist;
 
-	showmap(r, c, true, false);
+	alist = showmap(ntn, r, c, true, -1);
 	console.attributes = attrs.status_area;
 	if(fp.open('rb')) {
 		lines=fp.readAll();
@@ -2228,8 +2161,7 @@ function update(ntn, or, oc)
 			case 'u':
 				or = r;
 				oc = c;
-				setfocus(ntn, r, c);
-				showmap(r, c, false, false);
+				alist = showmap(ntn, r, c, false, -1);
 				showfocus(r, c);
 				break;
 			default:
@@ -2251,6 +2183,8 @@ function mainloop(ntn)
     var inbuf, buff;
 	var keep_ch = false;
 	var orig_pt = console.ctrlkey_passthru;
+	var alist;
+	var avpnt = 0;
 
     r = -1;
     c = -1;
@@ -2263,7 +2197,7 @@ function mainloop(ntn)
         i = nations[ntn].city;
         r = cities[i].r;
         c = cities[i].c;
-       setfocus(ntn, r, c);
+        alist = setfocus(ntn, r, c);
     }
 
     /* find the player's first city */
@@ -2278,7 +2212,7 @@ function mainloop(ntn)
             if(cities[i].nation == ntn) {
                 r = cities[i].r;
                 c = cities[i].c;
-                setfocus(ntn, r, c);
+                alist = setfocus(ntn, r, c);
                 break;
             }
 
@@ -2290,7 +2224,7 @@ function mainloop(ntn)
                 r = armies[i].r;
                 c = armies[i].c;
                 army = i;
-             setfocus(ntn, r, c);
+				alist = setfocus(ntn, r, c);
                 break;
             }
 
@@ -2305,8 +2239,7 @@ function mainloop(ntn)
 	/* Check for messages */
 	
 	inbuf = format(MAILFL, ntn);
-	setfocus(ntn, r, c);
-	showmap(r, c, true, false);
+	alist = showmap(ntn, r, c, true, -1);
 	showfocus(r, c);
 	obj = update(ntn, r, c);
 	r = obj.r;
@@ -2323,7 +2256,7 @@ function mainloop(ntn)
 
     for(;;) {
 
-        showmap(r, c, force, true);
+        alist = showmap(ntn, r, c, force, avpnt);
         force = false;
 
         showfocus(r, c);
@@ -2363,8 +2296,7 @@ function mainloop(ntn)
 								return;
 							}
 							mainscreen();
-							setfocus(ntn, r, c);
-							showmap(r, c, true, true);
+							alist = showmap(ntn, r, c, true, avpnt);
 							showfocus(r, c);
 							upd_pos=0;
 							upd_top=0;
@@ -2403,18 +2335,14 @@ function mainloop(ntn)
 			c = obj.c;
             if(!obj.ret)
                 saystat("No Next Army with Movement Found");
-            else
-                setfocus(ntn, r, c);
             break;
 
         case ']' : /* next group */
 			obj = nextgroup(ntn, r, c);
 			r = obj.r;
 			c = obj.c;
-            if(!obj.ret) {
+            if(!obj.ret)
                 saystat("No More Groups Remain.");
-            } else
-                setfocus(ntn, r, c);
             break;
 
         case '}' : /* last group */
@@ -2424,7 +2352,6 @@ function mainloop(ntn)
 			}
 			r = obj.r;
 			c = obj.c;
-            setfocus(ntn, r, c);
             break;
 
         case ctrl('[') : /* prev army */
@@ -2433,18 +2360,14 @@ function mainloop(ntn)
 			c = obj.c;
             if(!obj.ret)
                 saystat("No Previous Army with Movement Found");
-            else
-                setfocus(ntn, r, c);
             break;
 
         case '[' : /* previous group */
 			obj = prevgroup(ntn, r, c);
 			r = obj.r;
 			c = obj.c;
-            if(!obj.ret) {
+            if(!obj.ret)
                 saystat("No Previous Groups Remain.");
-            } else
-                setfocus(ntn, r, c);
           break;
 
         case '{' : /* first group */
@@ -2454,7 +2377,6 @@ function mainloop(ntn)
 			}
 			r = obj.r;
 			c = obj.c;
-            setfocus(ntn, r, c);
             break;
 
         case 'n' : /* name hero */
@@ -2463,15 +2385,14 @@ function mainloop(ntn)
 				break;
 			}
 
-            if(avcnt > 0 && armies[armyview[avpnt].id].name.length == 0) {
+            if(alist.length > 0 && armies[alist[avpnt].id].name.length == 0) {
                 saystat("Enter Hero's Name:  ");
                 inbuf = console.getstr(16);
 
-                buff = format("name-army %d '%s'\n", armyview[avpnt].id, inbuf);
+                buff = format("name-army %d '%s'\n", alist[avpnt].id, inbuf);
                 pfile.write(buff);
                 execpriv(buff);
 
-                setfocus(ntn, r, c);
                 clearstat(-1);
             } else
                 saystat("Can Only Rename Heros.");
@@ -2479,33 +2400,33 @@ function mainloop(ntn)
 
         case 'z' : /* next army */
         case KEY_DOWN:
-            if(avcnt > 0) {
+            if(alist.length > 0) {
                 avpnt++;
-             avpnt += avcnt;
-                avpnt %= avcnt;
+             avpnt += alist.length;
+                avpnt %= alist.length;
             } else
                 saystat("No Armies!");
             break;
 
         case 'a' : /* previous army */
         case KEY_UP:
-            if(avcnt > 0) {
+            if(alist.length > 0) {
                 avpnt--;
-                avpnt += avcnt;
-                avpnt %= avcnt;
+                avpnt += alist.length;
+                avpnt %= alist.length;
             } else
                 saystat("No Armies!");
             break;
 
         case ' ' : /* mark */
-            if(avcnt > 0)
-                armyview[avpnt].mark =
-                    armyview[avpnt].mark ? 0 : 1;
+            if(alist.length > 0)
+                alist[avpnt].mark =
+                    alist[avpnt].mark ? 0 : 1;
             break;
 
         case 'I' : /* army information */
-            if(avcnt > 0) {
-                var id = armyview[avpnt].id;
+            if(alist.length > 0) {
+                var id = alist[avpnt].id;
                 buff = format("%s: Combat %d / Hero %d %s",
                     armyname(id), armies[id].combat, armies[id].hero,
                     ((armies[id].hero > 0 && armies[id].eparm1) ? "(Loyal)" : ""));
@@ -2517,23 +2438,22 @@ function mainloop(ntn)
         case '*' : /* mark all */
         case 'f' : /* mark all and move */
         case '5' : /* mark all and move */
-            for(i = 0; i < avcnt; i++)
-                if(armies[armyview[i].id].move_left > 0)
-                    armyview[i].mark = 1;
+            for(i = 0; i < alist.length; i++)
+                if(armies[alist[i].id].move_left > 0)
+                    alist[i].mark = 1;
             if(ch == '*')
                 break;
             /* fall through */
 
         case 'm' : /* move */
-            obj = move_mode(ntn, r, c);
+            obj = move_mode(alist, avpnt, ntn, r, c);
             r = obj.r;
             c = obj.c;
-            setfocus(ntn, r, c);
             break;
 
         case '/' : /* unmark all */
-            for(i = 0; i < avcnt; i++)
-                armyview[i].mark = 0;
+            for(i = 0; i < alist.length; i++)
+                alist[i].mark = 0;
             break;
 
         case 'i' : /* information */
@@ -2553,7 +2473,7 @@ function mainloop(ntn)
         case 'c' :
         case 'v' :
         case 'b' :
-            obj = info_mode(r, c, ntn, ch);
+            obj = info_mode(r, c, ntn, ch, avpnt);
             r = obj.r;
             c = obj.c;
 			ch = obj.ch;
