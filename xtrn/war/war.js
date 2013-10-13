@@ -1921,12 +1921,14 @@ function mainloop(ntn)
     force = false;
     for(;;) {
         alist = showmap(ntn, r, c, force, avpnt);
+        if(alist.length <= avpnt)
+			avpnt = alist.length - 1;
         force = false;
         showfocus(r, c);
 		if(!keep_ch) {
 			do {
 				ch = console.inkey(5000);
-				
+
 				/* Handle a new turn starting */
 				if(turn_done) {
 					if(!file_exists(pfile.name)) {
@@ -2070,8 +2072,7 @@ function mainloop(ntn)
             break;
         case ' ' : /* mark */
             if(alist.length > 0)
-                alist[avpnt].mark =
-                    alist[avpnt].mark ? 0 : 1;
+                alist[avpnt].mark = !alist[avpnt].mark;
             break;
         case 'I' : /* army information */
             if(alist.length > 0) {
