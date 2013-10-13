@@ -42,6 +42,10 @@
  *                              35 characters.
  * 2013-09-16 Eric Oulashin     Added displayTimeRemaining_IceStyle(), which updates
  *                              the time remaining on the screen.
+ * 2013-10-12 Eric Oulashin     Updated displayIceYesNoText() and iceStyledPromptText()
+ *                              to use the new gConfigSettings.iceColors.menuOptClassicColors
+ *                              configuration setting for new vs. classic Ice-style
+ *                              menu option colors.
  */
 
 load("sbbsdefs.js");
@@ -813,14 +817,28 @@ function doIceESCMenu(pY, pCanCrossPost)
 function iceStyledPromptText(pText, pHighlight)
 {
    var styledText;
-   if (pHighlight)
-      styledText = gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT
-                 + gConfigSettings.iceColors.SelectedOptionTextColor + pText
-                 + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT;
+   if (gConfigSettings.iceColors.menuOptClassicColors)
+   {
+      if (pHighlight)
+         styledText = gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT
+                    + gConfigSettings.iceColors.SelectedOptionTextColor + pText
+                    + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT;
+      else
+         styledText = gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT
+                    + iceText(pText, "w") + gConfigSettings.iceColors.UnselectedOptionBorderColor
+                    + THIN_RECTANGLE_RIGHT;
+   }
    else
-      styledText = gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT
-                 + iceText(pText, "w") + gConfigSettings.iceColors.UnselectedOptionBorderColor
-                 + THIN_RECTANGLE_RIGHT;
+   {
+      if (pHighlight)
+         styledText = gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT
+                    + "n4hy" + pText.substr(0, 1) + "c" + pText.substr(1) + "n"
+                    + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT;
+      else
+         styledText = gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT
+                    + iceText(pText, "c") + gConfigSettings.iceColors.UnselectedOptionBorderColor
+                    + THIN_RECTANGLE_RIGHT;
+   }
    return styledText;
 }
 
@@ -832,23 +850,47 @@ function displayIceYesNoText(pYesSelected)
 {
    if (pYesSelected)
    {
-      console.print(gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
-                    gConfigSettings.iceColors.SelectedOptionTextColor + "YES" +
-                    gConfigSettings.iceColors.SelectedOptionBorderColor +
-                    THIN_RECTANGLE_RIGHT + gConfigSettings.iceColors.UnselectedOptionBorderColor +
-                    "  " + THIN_RECTANGLE_LEFT + gConfigSettings.iceColors.UnselectedOptionTextColor +
-                    "NO" + gConfigSettings.iceColors.UnselectedOptionBorderColor +
-                    THIN_RECTANGLE_RIGHT);
+      if (gConfigSettings.iceColors.menuOptClassicColors)
+      {
+         console.print(gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+                       gConfigSettings.iceColors.SelectedOptionTextColor + "YES" +
+                       gConfigSettings.iceColors.SelectedOptionBorderColor +
+                       THIN_RECTANGLE_RIGHT + gConfigSettings.iceColors.UnselectedOptionBorderColor +
+                       "  " + THIN_RECTANGLE_LEFT + gConfigSettings.iceColors.UnselectedOptionTextColor +
+                       "NO" + gConfigSettings.iceColors.UnselectedOptionBorderColor +
+                       THIN_RECTANGLE_RIGHT + "n");
+      }
+      else
+      {
+         console.print(gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+                       "n4hyYcesn" + gConfigSettings.iceColors.SelectedOptionBorderColor +
+                       THIN_RECTANGLE_RIGHT + gConfigSettings.iceColors.UnselectedOptionBorderColor +
+                       "  " + THIN_RECTANGLE_LEFT + "nhcNnco" +
+                       gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
+                       "n");
+      }
    }
    else
    {
-      console.print(gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT +
-                    gConfigSettings.iceColors.UnselectedOptionTextColor + "YES" +
-                    gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
-                    "  " + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
-                    gConfigSettings.iceColors.SelectedOptionTextColor + "NO" +
-                    gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
-                    "n");
+      if (gConfigSettings.iceColors.menuOptClassicColors)
+      {
+         console.print(gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+                       gConfigSettings.iceColors.UnselectedOptionTextColor + "YES" +
+                       gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
+                       "  " + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+                       gConfigSettings.iceColors.SelectedOptionTextColor + "NO" +
+                       gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
+                       "n");
+      }
+      else
+      {
+         console.print(gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+                       "nhcYnces" + gConfigSettings.iceColors.UnselectedOptionBorderColor +
+                       THIN_RECTANGLE_RIGHT + "  " + gConfigSettings.iceColors.SelectedOptionBorderColor +
+                       THIN_RECTANGLE_LEFT + "n4hyNcon" +
+                       gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
+                       "n");
+      }
    }
 }
 

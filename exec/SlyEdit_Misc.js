@@ -1569,6 +1569,7 @@ function ReadSlyEditConfigFile()
 
    // Default Ice-style colors
    cfgObj.iceColors = new Object();
+   cfgObj.iceColors.menuOptClassicColors = true;
    // Ice color theme file
    cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename("SlyIceColors_BlueIce.cfg", gStartupPath);
    // Text edit color
@@ -1781,6 +1782,8 @@ function ReadSlyEditConfigFile()
             {
                if (settingUpper == "THEMEFILENAME")
                   cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(value, gStartupPath);
+               else if (settingUpper == "MENUOPTCLASSICCOLORS")
+                  cfgObj.iceColors.menuOptClassicColors = (valueUpper == "TRUE");
             }
             else if (settingsMode == "DCTColors")
             {
@@ -2674,15 +2677,38 @@ function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
         // Splice in a quote line info object for each new line added
         // by the wrapping process.
         var insertEndIndex = endArrIndex + numLinesAdded - 1;
-        for (var insertIndex = endArrIndex-1; insertIndex < insertEndIndex; ++insertIndex)
+        // Find a lineInfo within this line range that has a begOfLine that has a
+        // non-zero length, so that we can add that one to the new lineInfo object
+        // in lineInfos.
+        var lineInfoNonBlankBegOfLineIdx = startArrIndex;
+        for (; lineInfoNonBlankBegOfLineIdx < insertEndIndex; ++lineInfoNonBlankBegOfLineIdx)
         {
+          if (lineInfos[lineInfoNonBlankBegOfLineIdx].begOfLine.length > 0)
+            break;
+        }
+        // Add new lineInfo objects into lineInfos
+        for (var insertIndex = endArrIndex-1; insertIndex < insertEndIndex; ++insertIndex)
           lineInfos.splice(insertIndex, 0, getDefaultQuoteStrObj());
-          lineInfos[insertIndex].startIndex = lineInfos[startArrIndex].startIndex;
-          lineInfos[insertIndex].quoteLevel = lineInfos[startArrIndex].quoteLevel;
-          lineInfos[insertIndex].begOfLine = lineInfos[startArrIndex].begOfLine;
+        // Go through all of the lineInfo objects for this section of quote lines
+        // and ensure that the beginning of line text, etc. is correct for them,
+        // in case the text on some of the lines was wrapped to the next line.
+        for (var lineInfoIdx = startArrIndex; lineInfoIdx < endArrIndex; ++lineInfoIdx)
+        {
+          if (gQuoteLines[lineInfoIdx].length > 0)
+          {
+            lineInfos[lineInfoIdx].startIndex = lineInfos[lineInfoNonBlankBegOfLineIdx].startIndex;
+            lineInfos[lineInfoIdx].quoteLevel = lineInfos[lineInfoNonBlankBegOfLineIdx].quoteLevel;
+            lineInfos[lineInfoIdx].begOfLine = lineInfos[lineInfoNonBlankBegOfLineIdx].begOfLine;
+          }
+          else
+          {
+            lineInfos[lineInfoIdx].startIndex = -1;
+            lineInfos[lineInfoIdx].quoteLevel = 0;
+            lineInfos[lineInfoIdx].begOfLine = "";
+          }
         }
       }
-      // Put the beginnings of the wrapped lines back on them.
+      // Put the beginnings of the wrapped lines back on the lines.
       if ((quoteLineIndex > 0) && (lastQuoteLevel > 0))
       {
         // If using the author's initials in the quote lines, then
@@ -2984,6 +3010,9 @@ function getCurMsgInfo(pMsgAreaName)
 //  pMsgInfo: Optional: An object returned by getCurMsgInfo().  If this
 //            parameter is not specified, this function will call
 //            getCurMsgInfo() to get it.
+//
+// Return value: The from name of the current message being replied
+//               to (a string).
 function getFromNameForCurMsg(pMsgInfo)
 {
   var fromName = "";

@@ -77,6 +77,24 @@
  * 2013-09-19 Eric Oulashin     Version 1.33
  *                              Added 3 options to the SlyEdit configuration file:
  *                              taglinePrefix, quoteTaglines, and shuffleTaglines.
+ * 2013-10-12 Eric Oulashin     Version 1.34 Beta
+ *                              Bug fix: When quoting a message with author initials,
+ *                              sometimes sone of the quoted lines didn't get prefixed
+ *                              properly when text was wrapped to a new line.
+ *                              This has been fixed.
+ *                              Speed optimization/enhancement: The original author's
+ *                              name (used for prefixing quote lines) is saved in a
+ *                              persistent variable to minimize disk reads in case the
+ *                              the user changes their preference for using author
+ *                              initials in quote lines.
+ *                              Added a new configuration option for Ice-style
+ *                              colors: menuOptClassicColors.  If this option is set
+ *                              to false, then new color options will be used
+ *                              for Ice-style menu options.  If this is set to
+ *                              true, then the classic Ice-style menu option
+ *                              colors will be used.
+ * 2013-10-13 Eric Oulashin     Verison 1.34
+ *                              Releasing version 1.34.
  */
 
 /* Command-line arguments:
@@ -154,8 +172,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.33";
-const EDITOR_VER_DATE = "2013-09-19";
+const EDITOR_VERSION = "1.34";
+const EDITOR_VER_DATE = "2013-10-13";
 
 
 // Program variables
@@ -5632,10 +5650,19 @@ function doTaglineSelection()
    return retObj;
 }
 
-// Sets gQuotePrefix, the text to use for prefixing quote lines.
+// Sets the quote prefix, gQuotePrefix (the text to use for prefixing quote lines).
 function setQuotePrefix()
 {
-   gQuotePrefix = " > "; // The default
+   // To minimize disk reads in case the user changes their preference for author
+   // initials in quote lines, get the from name of the message being replied to
+   // and store it in a persistent variable.  This is done at the beginning of
+   // this function whether or not the user wants author initials in quote lines
+   // to ensure we get the correct name in case anything in the message base
+   // changes after this function is first called.
+   if (!setQuotePrefix.curMsgFromName)
+      setQuotePrefix.curMsgFromName = getFromNameForCurMsg(gMsgAreaInfo);
+
+   gQuotePrefix = " > "; // The default quote prefix
    // If we're configured to use poster's initials in the
    // quote lines, then do it.
    if (gUserSettings.useQuoteLineInitials)
@@ -5649,7 +5676,7 @@ function setQuotePrefix()
      var quotedName = "";
      if (postingInMsgSubBoard(gMsgArea))
      {
-       quotedName = trimSpaces(getFromNameForCurMsg(gMsgAreaInfo), true, true, true);
+       quotedName = trimSpaces(setQuotePrefix.curMsgFromName, true, true, true);
        if (quotedName.length == 0)
          quotedName = trimSpaces(gToName, true, true, true);
      }
