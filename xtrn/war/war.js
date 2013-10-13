@@ -152,10 +152,6 @@ const special_desc = [
 // Player move file.  All commands are written here.
 var pfile;
 
-// From reader.c
-var r_index = [];
-var killed=[];
-
 function nationname(n)
 {
     return nations[n].name;
@@ -288,43 +284,35 @@ function showpage(fp, pg, pages)
     var inbuf;
 
 	fp.position = pages[pg];
-
 	len = HEADERMARK.length;
-
 	console.attributes = attrs.viewer_text;
     for(i = 0; i < 19; i++) {
         if((inbuf = fp.readln(1024)) == null)
             break;
 		inbuf = inbuf.substr(0, 77);
-
         if(inbuf.substr(0, 2) == HEADERMARK)
             break;
-
         console.gotoxy(3, i+1);
         console.print(inbuf);
         console.cleartoeol();
     }
-
     for(; i < 19; i++) {
         console.gotoxy(3, i+1);
         console.cleartoeol();
     }
-
     console.gotoxy(56, 22);
 	console.attributes = genattrs.help;
     console.print(format("Page %d of %d", pg + 1, pages.length));
     console.cleartoeol();
-
     console.gotoxy(71, 22);
 	console.attribtes = attrs.reader_prompt;
     console.print("< >");
 }
 
-function show_killed(pos)
+function show_killed(killed)
 {
     console.gotoxy(41, 22);
-
-    if(killed[pos]) {
+    if(killed) {
 		console.attributes = attrs.viewer_deleted;
         console.print("[Deleted]");
 	}
@@ -337,20 +325,15 @@ function show_killed(pos)
 function viewerscr(mode)
 {
     console.clear(genattrs.header);
-
     console.gotoxy(3, 21);
-
 	console.attributes = genattrs.help;
     if(mode)
         console.print("Mail:  (d)elete  ");
     else
         console.print("News:  ");
-
     console.print("(z)down  (a)up");
-
     console.gotoxy(3, 22);
     console.print("Press SPACE to Exit.");
-
     console.gotoxy(71, 22);
 	console.attributes = attrs.viewer_prompt;
     console.print("< >");
@@ -358,19 +341,17 @@ function viewerscr(mode)
 
 /*
     delete_msgs() deletes messages from the named file, using the
-    information in the r_index[] and killed[] arrays.
+    information in the index[] array.
 */
 
-function delete_msgs(fn)
+function delete_msgs(fn, index)
 {
     var i, done, len;
     var tmp, inbuf;
     var inf, outf;
 
     len = HEADERMARK.length;
-
 	tmp = 'tmp'+fn;
-
 	inf = new File(game_dir+'/'+fn);
 	outf = new File(game_dir+'/'+tmp);
 	if(!inf.open("rb")) {
@@ -384,25 +365,22 @@ function delete_msgs(fn)
 		saystat("Message Deletion Failed (System Error)");
 		return;
 	}
-
-    for(i = 0; i < r_index.length; i++) {
-        if(!killed[i]) {
+    for(i = 0; i < index.length; i++) {
+        if(!index[i].killed) {
 			outf.write(HEADERMARK);
-			inf.position = r_index[i];
-			done = 0;
+			inf.position = index[i].pos;
+			done = false;
 			while((inbuf = inf.readln(1024)) != null && !done) {
 				inbuf = inbuf.substr(0, 77);
 				if(inbuf.substr(0, len) == HEADERMARK)
-					done = 1;
+					done = true;
 				else
 					outf.write(inbuf+'\n');
 			}
         }
 	}
-
 	inf.close();
 	outf.close();
-
     file_remove(inf.name);
     file_rename(outf.name, inf.name);
 }
@@ -410,17 +388,13 @@ function delete_msgs(fn)
 function readerscr(mode)
 {
     console.clear(genattrs.header);
-
     console.gotoxy(3, 21);
-
 	console.attributes = genattrs.help;
     if(mode)
         console.print("Mail:  (v)iew current  (d)elete  ");
     else
         console.print("News:  (v)iew current  ");
-
     console.print("(z)down  (a)up  (]) next  ([) previous");
-
     console.gotoxy(3, 22);
     console.print("Press SPACE to Exit.");
 }
@@ -431,85 +405,65 @@ function readerscr(mode)
     a HEADERMARK is encountered.
 */
 
-function viewer(fp, pos, mode)
+function viewer(fp, mode, index)
 {
     var ch, i, len, done, pg, opg;
     var dummy;
     var pages;
 
     len = HEADERMARK.length;
-
-	fp.position = r_index[pos];
-
+	fp.position = index.pos;
     viewerscr(mode);
-    show_killed(pos);
-
-    done = 0;
+    show_killed(index.killed);
+    done = false;
     pages = [];
-
     do {
         pages.push(fp.position);
-
         for(i = 0; i < 18; i++) {
             if((dummy = fp.readln(1024)) == null) {
-                done = 1;
+                done = true;
                 break;
             }
 			dummy = dummy.substr(0, 77);
             if(dummy.substr(0, len) == HEADERMARK) {
-                done = 1;
+                done = true;
                 break;
             }
         }
-
     } while(!done);
     if(i <= 1)
 		pages.pop();
-
     pg = 0;
-
     showpage(fp, pg, pages);
-
     do {
         console.gotoxy(72, 22);
         ch = console.getkey();
-
         opg = pg;
-
         switch(ch) {
-
         case 'z' :
         case KEY_DOWN:
             pg++;
             break;
-
         case 'a' :
         case KEY_UP:
             pg--;
             break;
-
         case 'd' :
-            killed[pos] = killed[pos] ? 0 : 1;
-            show_killed(pos);
+            index.killed = !index.killed;
+            show_killed(index.killed);
             break;
-
         case ' ' :
         case 'q' :
             ch = '\033';
             break;
-
         }
-
         if(pg < 0)
 			pg = 0;
         if(pg >= pages.length)
 			pg = pages.length - 1;
-
         if(pg != opg)
-            showpage(fp, pg);
-
+            showpage(fp, pg, pages);
     } while(ch != '\033');
-
     readerscr(mode);
 }
 
@@ -517,19 +471,17 @@ function viewer(fp, pos, mode)
     show_screen() shows headers from the given file, centering at the
     header number given.
 */
-
-function show_screen(pos, fp)
+function show_screen(pos, fp, index)
 {
-    var i;
+    var i,m;
     var inbuf;
 
     pos -= 8;
-
     for(i = 0; i < 18; i++) {
+		m = pos + i;
         console.gotoxy(3, i+1);
-
-        if(pos + i < r_index.length && pos + i >= 0) {
-            if(killed[pos+i]) {
+        if(m < index.length && m >= 0) {
+            if(index[m].killed) {
 				console.attributes = attrs.reader_deleted;
                 console.print('*');
 			}
@@ -537,7 +489,7 @@ function show_screen(pos, fp)
 				console.attributes = genattrs.header;
                 console.print(' ');
 			}
-			fp.position = r_index[pos+i];
+			fp.position = index[m].pos;
 			inbuf = fp.readln(1024);
 			if(inbuf != null) {
 				inbuf = inbuf.substr(0, 77);
@@ -545,12 +497,11 @@ function show_screen(pos, fp)
 			}
         } else {
 			console.attributes = attrs.reader_topbottom;
-			if(pos + i == -1)
+			if(m == -1)
            		console.print("*** Top of List ***");
-        	else if(pos + i == r_index.length)
+        	else if(m == index.length)
             	console.print("*** End of List ***");
 		}
-
         console.cleartoeol();
     }
 }
@@ -560,26 +511,23 @@ function show_screen(pos, fp)
     are flagged with a space-backspace combination (" \b") which is
     not shown on most printouts but is easily recognized.
 
-    the array r_index[] contains the seek positions of each heading.
+    the array index[] contains the seek positions of each heading.
 */
 
 function indexer(fp)
 {
 	var inbuf, len, pos;
+	var index = [];
 
     len = HEADERMARK.length;
-    r_index = [];
-    killed = [];
-
     fp.rewind();
-
     for(pos = fp.position; (inbuf = fp.readln(1024)) != null; pos = fp.position) {
 		inbuf=inbuf.substr(0, 77);
 		if(inbuf.substr(0, len)==HEADERMARK) {
-			killed.push(0);
-			r_index.push(pos + len);
+			index.push({killed:false, pos:(pos+len)});
 		}
 	}
+	return index;
 }
 
 /*
@@ -592,7 +540,7 @@ function indexer(fp)
 
 function reader(fname, mode)
 {
-    var top, pos, ch, killcnt;
+    var top, pos, ch, killcnt, index;
     var fp = new File(game_dir+'/'+fname);
 
     if(!fp.open("rb")) {
@@ -608,101 +556,73 @@ function reader(fname, mode)
 		}
         return;
     }
-
     readerscr(mode);
-
-    indexer(fp);
-
-	pos = r_index.length - 1;
+    index = indexer(fp);
+	pos = index.length - 1;
     top = pos - 8;
- 
-    show_screen(top, fp);
-
+    show_screen(top, fp, index);
     do {
         console.gotoxy(2, pos - top + 9);
 		console.attributes = attrs.reader_pointer;
         console.print('>');
-
         ch = console.getkey();
-
         console.gotoxy(2, pos - top + 9);
 		console.attributes = genattrs.header;
         console.print(' ');
-
         switch(ch) {
-
         case 'z' :
         case KEY_DOWN:
             pos++;
             break;
-
         case 'a' :
         case KEY_UP:
             pos--;
             break;
-
         case ']' :
         //case KEY_PAGEDOWN:
             pos += 11;
             break;
-
         case '[' :
         //case KEY_PAGEUP:
             pos -= 10;
             break;
-
         case 'd' :
             if(!mode)
                 break;
-
-            killed[pos]++;
-            killed[pos] %= 2;
-
-            show_screen(top, fp);
-
+            index[pos].killed = !index[pos].killed;
+            show_screen(top, fp, index, index);
             break;
-
         case 'v' :
 		case '\r' :
-            viewer(fp, pos, mode);
-            show_screen(top, fp);
+            viewer(fp, mode, index[pos]);
+            show_screen(top, fp, index);
             break;
-
         case ' ' :
         case 'q' :
             ch = '\033';
             break;
-
         }
-
         if(pos < 0)
 			pos = 0;
-        if(pos >= r_index.length)
-			pos = r_index.length - 1;
-
+        if(pos >= index.length)
+			pos = index.length - 1;
         if(pos > top + 8 || pos < top - 7) {
             top = pos;
-            show_screen(top, fp);
+            show_screen(top, fp, index);
         }
-
     } while(ch != '\033');
-
     fp.close();
-
     mainscreen();
 
     /* handle deletion. */
-
     if(mode) {
-        for(killcnt = 0, pos = 0; pos < r_index.length; pos++)
-            killcnt += killed[pos];
-
+        for(killcnt = 0, pos = 0; pos < index.length; pos++)
+            killcnt += index[pos].killed;
         if(killcnt != 0) { /* deleted some... */
-
-            if(killcnt == r_index.length) /* deleted ALL */
+            if(killcnt == index.length) /* deleted ALL */
                 file_remove(game_dir+'/'+fname);
             else
-                delete_msgs(fname);
+                delete_msgs(fname, index);
         }
     }
 }
