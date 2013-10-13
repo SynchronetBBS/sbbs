@@ -157,9 +157,9 @@ function nationname(n)
     return nations[n].name;
 }
 
-function turn()
+function getpath(fn)
 {
-    return gen;
+	return backslash(game_dir)+fn;
 }
 
 function mainscreen()
@@ -219,14 +219,14 @@ function mailer(from, to)
 	if(to > 0) {
 		heading = format("From %s of %s to %s of %s  (Turn %d)",
 			nationname(from), nationcity(from),
-			nationname(to), nationcity(to), turn());
+			nationname(to), nationcity(to), gen);
 	} else {
 		heading = format("From %s of %s  (Turn %d)",
-			nationname(from), nationcity(from), turn());
+			nationname(from), nationcity(from), gen);
 	}
 	console.clear(attrs.mailer);
 	console.gotoxy(1,1);
-	f = new File(format("%s/%04d.tmpmsg", game_dir, nations[from].uid));
+	f = new File(getpath(format(TMPMAILFL, from)));
 	if(!f.open("wb")) {
     	mainscreen();
 		saystat("Message Creation Failed (System Error)");
@@ -236,9 +236,9 @@ function mailer(from, to)
 	if(console.editfile(f.name)) {
 		if(file_size(f.name) > 0) {
 			if(to > 0)
-				fname = game_dir+'/'+format(MAILFL, to);
+				fname = getpath(format(MAILFL, to));
 			else
-				fname = game_dir + '/' + NEWSFL;
+				fname = getpath(NEWSFL);
 			if(!f.open('rb')) {
 				file_remove(f.name);
     			mainscreen();
@@ -259,7 +259,7 @@ function mailer(from, to)
 				fp.writeln(inbuf);
 			f.close();
 			fp.close();
-			logf = new File(game_dir+'/'+MAILLOG);
+			logf = new File(getpath(MAILLOG));
 			if(logf.open('ab')) {
 				logf.write(HEADERMARK);
 				logf.write(heading);
@@ -270,7 +270,6 @@ function mailer(from, to)
 	file_remove(f.name);
     mainscreen();
 	saystat("Mail Sent.");
-
 }
 
 /*
@@ -352,8 +351,8 @@ function delete_msgs(fn, index)
 
     len = HEADERMARK.length;
 	tmp = 'tmp'+fn;
-	inf = new File(game_dir+'/'+fn);
-	outf = new File(game_dir+'/'+tmp);
+	inf = new File(getpath(fn));
+	outf = new File(getpath(tmp));
 	if(!inf.open("rb")) {
 		log("Message Deletion Failed (System Error)");
 		saystat("Message Deletion Failed (System Error)");
@@ -541,7 +540,7 @@ function indexer(fp)
 function reader(fname, mode)
 {
     var top, pos, ch, killcnt, index;
-    var fp = new File(game_dir+'/'+fname);
+    var fp = new File(getpath(fname));
 
     if(!fp.open("rb")) {
 		switch(mode) {
@@ -620,7 +619,7 @@ function reader(fname, mode)
             killcnt += index[pos].killed;
         if(killcnt != 0) { /* deleted some... */
             if(killcnt == index.length) /* deleted ALL */
-                file_remove(game_dir+'/'+fname);
+                file_remove(getpath(fname));
             else
                 delete_msgs(fname, index);
         }
@@ -632,15 +631,13 @@ function analyze_stack(ms)
     var i, j, a, b, mmode;
 
     mmode = 0;
-
-    for(i = 0; i < ms.length; i++)
+    for(i = 0; i < ms.length; i++) {
         if(armies[ms[i].id].special_mv > mmode)
             mmode = armies[ms[i].id].special_mv;
+	}
 
     switch(mmode) {
-
     case TRANS_ALL :
-
         /* locate fastest transporter */
         j = -1;
         for(i = 0; i < ms.length; i++) {
@@ -660,24 +657,18 @@ function analyze_stack(ms)
             else if(ms[i].dep == -1)
                 ms[i].dep = j;
         }
-
         break;
-
     case TRANS_SELF :
-
         /* easy... all move by themselves */
         for(i = 0; i < ms.length; i++)
             ms[i].dep = ms[i].id;
-
         break;
-
     default :
         /* transport hero and/or one army */
-
         /* set all heros for transportation */
         for(i = 0; i < ms.length; i++) {
             a = ms[i].id;
-            if(armies[a].hero > 0)
+            if(armies[a].hero > 0) {
                 for(j = 0; j < ms.length; j++) {
                     b = ms[j].id;
                     if(armies[b].special_mv == TRANS_HERO
@@ -687,6 +678,7 @@ function analyze_stack(ms)
                         break;
                     }
                 }
+            }
         }
 
         /* set remaining for transportation */
@@ -710,7 +702,6 @@ function analyze_stack(ms)
         for(i = 0; i < ms.length; i++)
             if(ms[i].dep == -1)
                 ms[i].dep = ms[i].id;
-
         break;
     }
 }
@@ -720,52 +711,50 @@ function movecost(a, r, c)
     var t, tbl, mv, city, cost, a2;
 
     city = city_at(r, c);
-
     if(city == -1) {
         /* not a city */
-
         /* search for a TRANS_ALL unit there */
         if(!(armies[a].r == r && armies[a].c == c)
-        && armies[a].special_mv != TRANS_ALL)
-            for(a2 = 0; a2 < armies.length; a2++)
+				&& armies[a].special_mv != TRANS_ALL) {
+            for(a2 = 0; a2 < armies.length; a2++) {
                 if(a != a2
-                && armies[a2].r == r
-                && armies[a2].c == c
-                && armies[a2].nation == armies[a].nation
-                && armies[a2].special_mv == TRANS_ALL)
+						&& armies[a2].r == r && armies[a2].c == c
+						&& armies[a2].nation == armies[a].nation
+						&& armies[a2].special_mv == TRANS_ALL) {
                     return 1;
+				}
+			}
+		}
 
         /* else do this: */
 		t = terrain.indexOf(map[r][c]);
         if(t != -1) {
             tbl = armies[a].move_tbl;
             mv = move_table[tbl].cost[t];
-            
             if(mv == 0
-                /* otherwise can't move, and */
-            && map[r][c] != '~' 
-                /* target space is not water, and */
-            && map[armies[a].r][armies[a].c] == '~'
-                /* current space is water, and */
-            && (cost = move_table[tbl].cost[0]) > 0)
-                /* this unit moves on water, then */
-                mv = cost * 2; /* beaching is allowed */
-        } else {
+					/* otherwise can't move, and */
+					&& map[r][c] != '~' 
+					/* target space is not water, and */
+					&& map[armies[a].r][armies[a].c] == '~'
+					/* current space is water, and */
+					&& (cost = move_table[tbl].cost[0]) > 0)
+					/* this unit moves on water, then */
+				mv = cost * 2; /* beaching is allowed */
+        }
+        else {
             if(map[r][c] == '+')
                 mv = 1;
             else
                 mv = 3;
 		}
-    } else {
-
+    }
+    else {
         /* city */
-
         if(armies[a].nation == cities[city].nation)
             mv = 1;
         else
             mv = 2;
     }
-
     return mv;
 }
 
@@ -803,10 +792,8 @@ function get_armylist(ntn, r, c)
 			mapovl[i][k] = ' ';
 		}
 	}
-
 	alist.view=[];
 	alist.enemies=[];
-
     for(i = 0; i < armies.length; i++) {
         if(r == armies[i].r && c == armies[i].c) {
             if(armies[i].nation == ntn || ntn == -1) {
@@ -838,7 +825,6 @@ function get_armylist(ntn, r, c)
 				}
 				if(e.nation != armies[i].nation)
 					e.multiple = true;
-
                 if(armies[i].hero > 0)
                     e.heros++;
                 else
@@ -871,28 +857,18 @@ function get_armylist(ntn, r, c)
 	return alist;
 }
 
-function setfocus(ntn, r, c)
-{
-    var i, j, e;
-    var alist;
-
-	alist = get_armylist(ntn, r, c);
-	return alist;
-}
-
-function showarmies(alist, enemies, pointer)
+function showarmies(full_list, pointer)
 {
     var i, a;
     var buff;
 
 	console.attributes = attrs.army_area;
-    for(i = 0; i < alist.length && i < 12; i++) {
+    for(i = 0; i < full_list.view.length && i < 12; i++) {
         console.gotoxy(38, i + 3);
-        if(i < alist.length) {
-            a = alist[i].id;
-            console.print(format("%s %c ",
-                (pointer > -1 && i == pointer) ? "=>" : "  ",
-                alist[i].mark ? '*' : ' '));
+        if(i < full_list.view.length) {
+            a = full_list.view[i].id;
+			console.print((i==pointer)?'=> ':'   ');
+			console.print((full_list.view[i].mark)?'* ':'  ');
             buff = armyname(a);
             if(armies[a].name.length == 0 && armies[a].hero > 0)
                 buff = "(Nameless Hero)";
@@ -909,21 +885,19 @@ function showarmies(alist, enemies, pointer)
 	}
     console.gotoxy(38, 15);
 	console.attributes = attrs.army_total;
-    if(alist.length > 0)
-        console.print(format("     Total %d Armies", alist.length));
+    if(full_list.view.length > 0)
+        console.print(format("     Total %d Armies", full_list.view.length));
     console.cleartoeol();
-
 	console.attributes = attrs.army_area;
-    for(i = 0; i < enemies.length; i++) {
+    for(i = 0; i < full_list.enemies.length; i++) {
         console.gotoxy(43, i + 17);
-
-        if(enemies[i].nation != -1)
+        if(full_list.enemies[i].nation != -1) {
             console.print(format("%-15.15s %3d Armies, %3d Heros",
-                i == 1
+                (i == 1 && full_list.enemies[i].multiple)
                     ? "(Other Nations)"
-                    : nationcity(enemies[i].nation),
-                enemies[i].armies, enemies[i].heros));
-
+                    : nationcity(full_list.enemies[i].nation),
+                full_list.enemies[i].armies, full_list.enemies[i].heros));
+		}
         console.cleartoeol();
     }
     for(;i<2; i++) {
@@ -932,18 +906,15 @@ function showarmies(alist, enemies, pointer)
 	}
 }
 
-function gmapspot(r, c, terr, mark, focus, extra_attr)
+function gmapspot(r, c, terr, mark, extra_attr)
 {
 	var attr;
     if(mark == ' ')
         mark = terr;
-
     if(terr == '~')
         terr = ' ';
-
     if(mark == '~')
         mark = ' ';
-
     console.gotoxy(c * 2 + 3, r + 2);
 	if(terr_attr[mark] == undefined)
 		attr = 'N';
@@ -956,9 +927,7 @@ function gmapspot(r, c, terr, mark, focus, extra_attr)
     console.print(mark);
     console.attributes = terr_attr[terr]+extra_attr;
     console.print(terr);
-
     console.gotoxy(c * 2 + 3, r + 2);
-
     return 0;
 }
 
@@ -967,9 +936,8 @@ function cityowner(c)
     var n;
 
     n = cities[c].nation;
-
-    if(n == 0)  return "Neutral";
-
+    if(n == 0)
+		return "Neutral";
     return cities[nations[n].city].name;
 }
 
@@ -979,16 +947,29 @@ function showcity(r, c)
     var buff = '';
 
     console.gotoxy(4, 19);
-
     i = city_at(r, c);
-
     if(i != -1) {
         buff = format("City:  %s (%s)",
             cities[i].name, cityowner(i));
     }
-
 	console.attributes = attrs.city_name;
     console.print(format("%-40.40s", buff));
+}
+
+/*
+ * Adjusts the passed row for wrapping.
+ */
+function fixrow(r)
+{
+	return (r + map_height) % map_width;
+}
+
+/*
+ * Adjusts the passed column for wrapping.
+ */
+function fixcol(c)
+{
+	return (c + map_width) % map_height;
 }
 
 var old_ul_r = -1;
@@ -1000,64 +981,43 @@ function showmap(ntn, r, c, force, pointer)
     var rem;
 	var alist;
 
-	alist = setfocus(ntn, r, c);
-    showarmies(alist.view, alist.enemies, pointer);
-
+	full_list = get_armylist(ntn, r, c);
+    showarmies(full_list, pointer);
     rem = parseInt((16 - gran) / 2);
     f_r = r % gran;
     f_c = c % gran;
-
-    ul_r = ((parseInt(r / gran) * gran - rem) + map_height) % map_height;
-    ul_c = ((parseInt(c / gran) * gran - rem) + map_width) % map_width;
-
+    ul_r = fixrow(parseInt(r / gran) * gran - rem);
+    ul_c = fixcol(parseInt(c / gran) * gran - rem);
     if(old_ul_r != ul_r || old_ul_c != ul_c || force) {
         for(i = 0; i < 16; i++) {
             for(j = 0; j < 16; j++) {
-                zr = (ul_r+i) % map_height;
-                zc = (ul_c+j) % map_width;
-                gmapspot(i, j, map[zr][zc], mapovl[zr][zc], 0, '');
+                zr = fixrow(ul_r+i);
+                zc = fixcol(ul_c+j);
+                gmapspot(i, j, map[zr][zc], mapovl[zr][zc], '');
             }
 		}
 	}
-
 	console.attributes='N';
     old_ul_r = ul_r;
     old_ul_c = ul_c;
-
     if(mapovl[r][c] != ' ')
         showcity(r, c);
-
     console.gotoxy(f_c * 2 + 16, f_r + 8);
-    return alist.view;
+    return full_list.view;
 }
 
+/*
+ * Redraws the current focus point of the map
+ */
 function showfocus(r, c)
 {
     var f_r, f_c, rem;
 
     rem = parseInt((16 - gran) / 2);
-
     f_r = (r % gran) + rem;
     f_c = (c % gran) + rem;
-
-    gmapspot(f_r, f_c, map[r][c], mapovl[r][c], 1, '');
+    gmapspot(f_r, f_c, map[r][c], mapovl[r][c], '');
     console.attributes='N';
-}
-
-function fixrow(r)
-{
-    r += map_height;
-    r %= map_height;
-
-    return r;
-}
-
-function fixcol(c)
-{
-    c += map_width;
-    c %= map_width;
-
-    return c;
 }
 
 function move_mode(alist, avpnt, ntn, rp, cp)
@@ -1074,14 +1034,11 @@ function move_mode(alist, avpnt, ntn, rp, cp)
 		saystat("Turn is currently done, cannot issue orders");
         return {r:rp,c:cp};
 	}
-
     if(alist.length < 1) {
         saystat("No Army to Move.");
         return {r:rp,c:cp};
     }
-
     flag = 0;
-
     for(i = 0; i < alist.length; i++) {
         if(alist[i].mark)
             flag = 1;
@@ -1098,7 +1055,6 @@ function move_mode(alist, avpnt, ntn, rp, cp)
 			});
         }
     }
-
     if(movestack.length < 1 && !flag
 			&& (armies[alist[avpnt].id].move_left > 0 || ntn == -1)) {
 		movestack.push({
@@ -1108,7 +1064,6 @@ function move_mode(alist, avpnt, ntn, rp, cp)
 		});
         alist[avpnt].mark = 1;
     }
-
     if(movestack.length < 1 && ntn > -1) {
         saystat("Armies Have No Movement Left.");
         return {r:rp,c:cp};
@@ -1121,9 +1076,7 @@ function move_mode(alist, avpnt, ntn, rp, cp)
         create a "movestack" of the unmarked.
         if they can move, stranding can't occur.
     */
-
     if(ntn > -1) {
-
         for(i = 0; i < alist.length; i++) {
             if(!alist[i].mark) {
 				unmarked.push({
@@ -1133,9 +1086,7 @@ function move_mode(alist, avpnt, ntn, rp, cp)
 				});
             }
         }
-
         analyze_stack(unmarked);
-
         for(i = 0; i < unmarked.length; i++) {
             a = unmarked[i].id;
             if(unmarked[i].dep == a
@@ -1148,109 +1099,80 @@ function move_mode(alist, avpnt, ntn, rp, cp)
     }
 
     /* analyze move stack */
-
     if(ntn > -1)
         analyze_stack(movestack);
 
     /* perform movement */
-
     clearstat(-1);
-
     console.gotoxy(2, 22);
 	console.attributes = attrs.status_area;
     console.print(format("Move %s", movestack.length > 1 ? "Armies" : "Army"));
-
     console.gotoxy(21, 23);
     console.print("4   6  or  d   g");
-
     console.gotoxy(21, 24);
     console.print("1 2 3      c v b");
-
     console.gotoxy(21, 22);
     console.print("7 8 9      e r t    SPACE to Stop.  ");
-
     alist = showmap(ntn, rp, cp, false, avpnt);
-
     while(movestack.length > 0 && (ch = console.getkey()) != ' '
 			&& ch != 'q' && ch != '\x1b') {
-
         showfocus(rp, cp);
         clearstat(0);
-
         t_r = rp;
         t_c = cp;
-
         switch(ch) { /* directions */
-
         case '7' :
         case 'e' :
             t_r--;
             t_c--;
-          break;
-
+            break;
         case '8' :
         case 'r' :
             t_r--;
             break;
-
         case '9' :
         case 't' :
             t_r--;
             t_c++;
             break;
-
         case '4' :
         case 'd' :
             t_c--;
             break;
-
         case '6' :
         case 'g' :
             t_c++;
             break;
-
         case '1' :
         case 'c' :
             t_r++;
             t_c--;
-          break;
-
+            break;
         case '2' :
         case 'v' :
             t_r++;
             break;
-
         case '3' :
         case 'b' :
             t_r++;
             t_c++;
             break;
-
         case '\f' :
 			// TODO: Refresh
             break;
         }
-
         t_r = fixrow(t_r);
         t_c = fixcol(t_c);
-
         if(t_r != rp || t_c != cp) {
             /* actual move code... */
-
             ok = 1;
 
             /* verify that all units can make the move. */
-
             if(ntn > -1) {
-
                 for(i = 0; i < movestack.length; i++) {
-
                     a = movestack[i].id;
-
                     if(movestack[i].dep == a) {
-
                         mv = movecost(a, t_r, t_c);
-
                         if(mv > armies[a].move_left
                         || mv == 0) {
                             ok = 0;
@@ -1264,24 +1186,17 @@ function move_mode(alist, avpnt, ntn, rp, cp)
             }
 
             /* prevent overstacking. */
-
             if(ok && ntn > -1) {
                 cnt = 0;
-
                 for(i = 0; i < armies.length; i++)
                 if(armies[i].nation == ntn
-                    && armies[i].r == t_r
-                    && armies[i].c == t_c)
-                        cnt++;
-
+						&& armies[i].r == t_r && armies[i].c == t_c)
+                    cnt++;
                 city = city_at(t_r, t_c);
-
                 max = 10;
-
                 if(city != -1
                 && cities[city].nation == ntn)
                     max = 12;
-
                 if(movestack.length + cnt > max) {
                     ok = 0;
                     saystat("Too Many Armies There.");
@@ -1289,23 +1204,21 @@ function move_mode(alist, avpnt, ntn, rp, cp)
             }
 
             /* can't leave combat. */
-
-            if(ok && ntn > -1)
-                for(i = 0; i < armies.length; i++)
+            if(ok && ntn > -1) {
+                for(i = 0; i < armies.length; i++) {
                     if(armies[i].nation != ntn
-                    && armies[i].r == rp
-                    && armies[i].c == cp) {
+							&& armies[i].r == rp && armies[i].c == cp) {
                         ok = 0;
-                    saystat("Can't Leave Combat.");
+						saystat("Can't Leave Combat.");
                         break;
                     }
+                }
+            }
 
             /* do it! */
-
             if(ok) {
                 for(i = 0; i < movestack.length; i++) {
                     a = movestack[i].id;
-
                     if(ntn > -1) {
                         if(movestack[i].dep == a)
                             mv = movecost(a, t_r, t_c);
@@ -1313,7 +1226,6 @@ function move_mode(alist, avpnt, ntn, rp, cp)
                             mv = armies[a].move_left ? 1 : 0;
                     } else
                         mv = 0;
-
                     movestack[i].moved += mv;
                     armies[a].move_left -= mv;
                     armies[a].r = t_r;
@@ -1324,72 +1236,70 @@ function move_mode(alist, avpnt, ntn, rp, cp)
             }
 
             /* redo screen. */
-
             alist = showmap(ntn, rp, cp, ok, avpnt);
         }
-
         showfocus(rp, cp);
     }
-
-    if(ntn > -1 && ch != 'q' && ch != '\x1b')
-        for(i = 0; i < movestack.length; i++)
-            if(movestack[i].moved > 0 || ntn == -1)
+    if(ntn > -1 && ch != 'q' && ch != '\x1b') {
+        for(i = 0; i < movestack.length; i++) {
+            if(movestack[i].moved > 0 || ntn == -1) {
                 pfile.write(format("move-army %d %d %d %d %d\n",
                     movestack[i].id, movestack[i].moved,
                     rp, cp, movestack[i].dep));
-
+            }
+		}
+	}
     clearstat(-1);
-
     return {r:rp,c:cp};
 }
 
+/*
+ * Returns the first army belonging to n at r/c
+ */
 function my_army_at(r, c, n)
 {
     var i;
 
-    for(i = 0; i < armies.length; i++)
+    for(i = 0; i < armies.length; i++) {
         if(armies[i].nation == n
-        && armies[i].r == r
-        && armies[i].c == c)
+				&& armies[i].r == r && armies[i].c == c)
             return i;
-
+	}
     return -1;
 }
 
+/*
+ * Shows the information about the specified tile in the status area
+ */
 function show_info(r, c)
 {
-    var buff, buf2;
-    var i, ch, city, ntn, ac, hc;
+    var buff;
+    var i, city, ac, hc;
 
     buff = '';
     city = city_at(r, c);
-
     if(city != -1) {
         buff = format("City:  %s (%s)", cities[city].name,
             nationcity(cities[city].nation));
-    } else {
-        ch = map[r][c];
-
-	i=terrain.indexOf(ch);
-	if(i==-1 && ch==' ')
-		buff = "Ocean";
-	else
-		buff = terr_names[i];
     }
-
+    else {
+		i=terrain.indexOf(map[r][c]);
+		if(i==-1 && map[r][c]==' ')
+			buff = "Ocean";
+		else
+			buff = terr_names[i];
+    }
     ac = 0;
     hc = 0;
-
-    for(i = 0; i < armies.length; i++)
-        if(armies[i].r == r && armies[i].c == c)
+    for(i = 0; i < armies.length; i++) {
+        if(armies[i].r == r && armies[i].c == c) {
             if(armies[i].hero > 0)
                 hc++;
             else
                 ac++;
-
-    buf2 = format("  %d Armies, %d Heros", ac, hc);
-    buff += buf2;
-
+		}
+    }
+    buff += format("  %d Armies, %d Heros", ac, hc);
     saystat(buff);
 }
 
@@ -1400,129 +1310,102 @@ function info_mode(rp, cp, n, ch, avpnt)
     var rem;
 
     rem = parseInt((16 - gran) / 2);
-
     showfocus(rp, cp);
-
     clearstat(-1);
-
     console.gotoxy(21,23);
 	console.attributes = attrs.status_area;	
     console.print("4   6  or  d   g");
-
     console.gotoxy(21,24);
     console.print("1 2 3      c v b");
-
     console.gotoxy(2,22);
     console.print("Info Mode:         7 8 9      e r t      ESC to Stop.  ");
-
     r = a_r = rp;
     c = a_c = cp;
-
-    ul_r = ((parseInt(r / gran) * gran - rem) + map_height) % map_height;
-    ul_c = ((parseInt(c / gran) * gran - rem) + map_width) % map_width;
-
+    ul_r = fixrow(parseInt(r / gran) * gran - rem);
+    ul_c = fixcol(parseInt(c / gran) * gran - rem);
     f_r = (r % gran) + rem;
     f_c = (c % gran) + rem;
-
-    t_r = (ul_r + f_r + map_height) % map_height;
-    t_c = (ul_c + f_c + map_width) % map_width;
-
+    t_r = fixrow(ul_r + f_r);
+    t_c = fixcol(ul_c + f_c);
     done = false;
-
     do {
-    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
+    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], '');
 		console.attributes='N';
         switch(ch) {
 		case '' :
 			break;
-
         case '7' :
         case 'e' :
             f_r--;
             f_c--;
             break;
-
         case '8' :
         case 'r' :
             f_r--;
             break;
-
         case '9' :
         case 't' :
             f_r--;
             f_c++;
             break;
-
         case '4' :
         case 'd' :
             f_c--;
             break;
-
         case '6' :
         case 'g' :
             f_c++;
             break;
-
         case '3' :
         case 'b' :
             f_r++;
             f_c++;
             break;
-
         case '2' :
         case 'v' :
             f_r++;
             break;
-
         case '1' :
         case 'c' :
             f_r++;
             f_c--;
             break;
-
 		case 'i' :
 			break;
-
         case '\f' :
 	    // TODO: refresh
             break;
-
         default :
             done = true;
         }
-
         if(f_r < gran-1) {
 			f_r += gran;
 			ul_r -= gran;
-			rp = (rp - gran + map_height) % map_height;
+			rp = fixrow(rp - gran);
 			focus = true;
 		}
         if(f_c < gran-1) {
 			f_c += gran;
 			ul_c -= gran;
-			cp = (cp - gran + map_width) % map_width;
+			cp = fixcol(cp - gran);
 			focus = true;
 		}
-
         if(f_r > 15 - gran + 1) {
 			f_r -= gran;
 			ul_r += gran;
-			rp = (rp + gran + map_height) % map_height;
+			rp = fixrow(rp + gran);
 			focus = true;
 		}
         if(f_c > 15 - gran + 1) {
 			f_c -= gran;
 			ul_c += gran;
-			cp = (cp + gran + map_width) % map_width;
+			cp = fixcol(cp + gran);
 			focus = true;
 		}
-
-        t_r = (ul_r + f_r + map_height) % map_height;
-        t_c = (ul_c + f_c + map_width) % map_width;
-
+        t_r = fixrow(ul_r + f_r);
+        t_c = fixcol(ul_c + f_c);
         city = my_city_at(t_r, t_c, n);
         army = my_army_at(t_r, t_c, n);
-
         if(focus || army >= 0 || city >= 0) {
 			if(army >= 0|| city >= 0) {
 				a_r = t_r;
@@ -1531,13 +1414,9 @@ function info_mode(rp, cp, n, ch, avpnt)
 			showmap(n, rp, cp, false, avpnt);
 			focus = false;
 		}
-
 		show_info(t_r, t_c);
-
-    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 1, 'I');
-		console.attributes='N';
+    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 'I');
         console.gotoxy(f_c * 2 + 3, f_r + 2);
-
         if(!done) {
 			do {
 				if(turn_done) {
@@ -1550,162 +1429,92 @@ function info_mode(rp, cp, n, ch, avpnt)
 			} while(ch=='' && !done);
 		}
     } while(!done);
-
-   	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 0, '');
+   	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], '');
 	console.attributes='N';
-
     return {r:a_r,c:a_c,ch:ch};
 }
 
 function groupcmp(r1, c1, r2, c2)
 {
     /* quadrant check */
-
     if(parseInt(r1 / 16) > parseInt(r2 / 16))
         return 1;
-
     if(parseInt(r1 / 16) < parseInt(r2 / 16))
         return -1;
-
     if(parseInt(c1 / 16) > parseInt(c2 / 16))
         return 1;
-
     if(parseInt(c1 / 16) < parseInt(c2 / 16))
         return -1;
 
     /* exact check */
-
     if(r1 > r2)
         return 1;
-
     if(r1 < r2)
         return -1;
-
     if(c1 > c2)
         return 1;
-
     if(c1 < c2)
         return -1;
-
     return 0;
+}
+
+function skipto(next, group, ntn, rp, cp)
+{
+    var i, t_r, t_c;
+	var cmp;
+
+	if(next)
+		cmp = function(x) { return x > 0; };
+	else
+		cmp = function(x) { return x < 0; };
+
+    t_r = -1;
+    t_c = -1;
+    if(group) {
+		for(i = 0; i < cities.length; i++) {
+			if(cities[i].nation == ntn) {
+				if(cmp(groupcmp(cities[i].r, cities[i].c, rp, cp))
+						&& (t_r == -1 || !cmp(groupcmp(cities[i].r, cities[i].c, t_r, t_c)))) {
+					t_r = cities[i].r;
+					t_c = cities[i].c;
+				}
+			}
+		}
+	}
+    for(i = 0; i < armies.length; i++) {
+		if(!group && armies[i].move_left <= 0)
+			continue;
+        if(armies[i].nation == ntn) {
+            if(cmp(groupcmp(armies[i].r, armies[i].c, rp, cp))
+					&& (t_r == -1 || !cmp(groupcmp(armies[i].r, armies[i].c, t_r, t_c)))) {
+                t_r = armies[i].r;
+                t_c = armies[i].c;
+			}
+		}
+	}
+    if(t_r != -1)
+		return {r:t_r,c:t_c,ret:true};
+    return {r:rp,c:cp,ret:false};
 }
 
 function prevgroup(ntn, rp, cp)
 {
-    var i, t_r, t_c;
-
-    t_r = -1;
-    t_c = -1;
-
-    for(i = 0; i < cities.length; i++) {
-        if(cities[i].nation == ntn) {
-            if(groupcmp(cities[i].r, cities[i].c, rp, cp) < 0
-            && (t_r == -1
-            || groupcmp(cities[i].r, cities[i].c, t_r, t_c) > 0)) {
-                t_r = cities[i].r;
-                t_c = cities[i].c;
-			}
-		}
-	}
-
-    for(i = 0; i < armies.length; i++) {
-        if(armies[i].nation == ntn) {
-            if(groupcmp(armies[i].r, armies[i].c, rp, cp) < 0
-            && (t_r == -1
-            || groupcmp(armies[i].r, armies[i].c, t_r, t_c) > 0)) {
-                t_r = armies[i].r;
-                t_c = armies[i].c;
-			}
-		}
-	}
-
-    if(t_r != -1)
-		return {r:t_r,c:t_c,ret:true};
-	else
-        return {r:rp,c:cp,ret:false};
+	return skipto(false, true, ntn, rp, cp);
 }
 
 function prevarmy(ntn, rp, cp)
 {
-    var i, t_r, t_c;
-
-    t_r = -1;
-    t_c = -1;
-
-    for(i = 0; i < armies.length; i++) {
-        if(armies[i].nation == ntn && armies[i].move_left > 0) {
-            if(groupcmp(armies[i].r, armies[i].c, rp, cp) < 0
-            && (t_r == -1
-            || groupcmp(armies[i].r, armies[i].c, t_r, t_c) > 0)) {
-                t_r = armies[i].r;
-                t_c = armies[i].c;
-			}
-		}
-	}
-
-    if(t_r != -1)
-		return {r:t_r,c:t_c,ret:true};
-	else
-        return {r:rp,c:cp,ret:false};
+	return skipto(false, false, ntn, rp, cp);
 }
 
 function nextgroup(ntn, rp, cp)
 {
-    var i, t_r, t_c;
-
-    t_r = -1;
-    t_c = -1;
-
-    for(i = 0; i < cities.length; i++) {
-        if(cities[i].nation == ntn) {
-            if(groupcmp(cities[i].r, cities[i].c, rp, cp) > 0
-            && (t_r == -1
-            || groupcmp(cities[i].r, cities[i].c, t_r, t_c) < 0)) {
-                t_r = cities[i].r;
-                t_c = cities[i].c;
-			}
-		}
-	}
-
-    for(i = 0; i < armies.length; i++) {
-        if(armies[i].nation == ntn) {
-            if(groupcmp(armies[i].r, armies[i].c, rp, cp) > 0
-            && (t_r == -1
-            || groupcmp(armies[i].r, armies[i].c, t_r, t_c) < 0)) {
-                t_r = armies[i].r;
-                t_c = armies[i].c;
-			}
-		}
-	}
-
-    if(t_r != -1)
-		return {r:t_r,c:t_c,ret:true};
-    else
-        return {r:rp,c:cp,ret:false};
+	return skipto(true, true, ntn, rp, cp);
 }
 
 function nextarmy(ntn, rp, cp)
 {
-    var i, t_r, t_c;
-
-    t_r = -1;
-    t_c = -1;
-
-    for(i = 0; i < armies.length; i++) {
-        if(armies[i].nation == ntn && armies[i].move_left > 0) {
-            if(groupcmp(armies[i].r, armies[i].c, rp, cp) > 0
-            && (t_r == -1
-            || groupcmp(armies[i].r, armies[i].c, t_r, t_c) < 0)) {
-                t_r = armies[i].r;
-                t_c = armies[i].c;
-			}
-		}
-	}
-
-    if(t_r != -1)
-		return {r:t_r,c:t_c,ret:true};
-    else
-		return {r:rp,c:cp,ret:false};
+	return skipto(true, false, ntn, rp, cp);
 }
 
 var help_mode = 0;
@@ -1715,40 +1524,30 @@ function help()
 	console.attributes = attrs.status_area;
     console.print(format("Commands, Page %d  (Press ? for More Help)", help_mode + 1));
     console.cleartoeol();
-
     switch(help_mode) {
-
     case 0 :
         console.gotoxy(2, 22);
         console.print("  (])next  ([)previous  (q)uit game  (u)pdates  (s)tatus display (x)end turn");
         console.cleartoeol();
-
         console.gotoxy(2, 23);
         console.print("  (})last  ({)first  (A)rmy capabilities   army (p)roduction  (h)elp");
         console.cleartoeol();
-
         console.gotoxy(2, 24);
         console.print("  (CTRL-]) Next movable (CTRL-[) Previous movable  (?) toggle quick help");
         console.cleartoeol();
-
         break;
-
     case 1 :
         console.gotoxy(2, 22);
         console.print("  (z/Down)pointer down  (a/Up)pointer up  (SPACE)mark/unmark  (n)ame hero");
         console.cleartoeol();
-
         console.gotoxy(2, 23);
         console.print("  (*)mark all  (/)unmark all  (m)ove marked armies  (f/5)mark all and move");
         console.cleartoeol();
-
         console.gotoxy(2, 24);
         console.print("  (I)nformation about current army  Read (N)ews  (S)end message  read (M)ail");
         console.cleartoeol();
         break;
-
     }
-
     help_mode++;
     help_mode %= 2;
 }
@@ -1758,13 +1557,10 @@ function status()
     var ch, pos, i, j, hc, ac, cc;
 
     /* set up screen */
-
     console.clear(attrs.nation_status);
-
     console.gotoxy(21, 2);
 	console.attributes = genattrs.title;
     console.print("Nation Status Display");
-
 	console.attributes = genattrs.header;
     console.gotoxy(2, 4);    console.print("Nation:");
     console.gotoxy(2, 5);    console.print("Ruler:");
@@ -1772,88 +1568,71 @@ function status()
     console.gotoxy(2, 8);    console.print("Cities:");
     console.gotoxy(2, 9);    console.print("Heros:");
     console.gotoxy(2, 10);   console.print("Armies:");
-
 	console.attributes = genattrs.help;
     console.gotoxy(2, 12);   console.print("<]> next page  <[> previous page  (SPACE) to exit");
 
     /* display loop */
-
     pos = 0;
-
     do {
         /* show the nations. */
-
         for(i = 4; i <= 11; i++) {
             console.gotoxy(17, i);
             console.cleartoeol();
         }
-
 		console.attributes = attrs.nation_status;
-        for(i = 0; i < 4; i++)
+        for(i = 0; i < 4; i++) {
             if(pos + 1 + i < nations.length) {
                 console.gotoxy(i * 16 + 17, 4);
                 console.print(nationcity(pos+1+i));
-
                 console.gotoxy(i * 16 + 17, 5);
                 console.print(nations[pos+1+i].name);
-
                 console.gotoxy(i * 16 + 20, 6);
                 console.print(nations[pos+1+i].mark);
-
                 cc = 0;
-
-                for(j = 0; j < cities.length; j++)
+                for(j = 0; j < cities.length; j++) {
                     if(cities[j].nation == pos + 1 + i)
                         cc++;
-
+				}
                 hc = 0;
                 ac = 0;
-
-                for(j = 0; j < armies.length; j++)
-                    if(armies[j].nation == pos + 1 + i)
+                for(j = 0; j < armies.length; j++) {
+                    if(armies[j].nation == pos + 1 + i) {
                         if(armies[j].hero > 0)
                             hc++;
                         else
                             ac++;
-
+                    }
+                }
                 console.gotoxy(i * 16 + 17, 8);
                 console.print(format("%5d", cc));
-
                 console.gotoxy(i * 16 + 17, 9);
                 console.print(format("%5d", hc));
-
                 console.gotoxy(i * 16 + 17, 10);
                 console.print(format("%5d", ac));
             }
+        }
 
         /* handle input. */
-
         console.gotoxy(71, 12);
 		console.attributes = attrs.nstatus_prompt;
         console.print("< >\b\b");
-
         switch((ch = console.getkey())) {
-
         case ' ' :
         case 'q' :
             ch = '\033';
             break;
-
         case ']' :
             if(pos + 5 < nations.length)
                 pos += 4;
             break;
-
         case '[' :
             if(pos - 3 > 0)
                 pos -= 4;
             break;
         }
-
     } while(ch != '\033');
 
     /* clean up */
-
     mainscreen();
 }
 
@@ -1862,13 +1641,10 @@ function armytypes()
     var ch, pos, i, j, hc, ac, cc;
 
     /* set up screen */
-
     console.clear(attrs.army_types);
-
     console.gotoxy(21, 2);
 	console.attributes = genattrs.title;
     console.print("Army Type Display");
-
 	console.attributes = genattrs.header;
     console.gotoxy(2, 4);    console.print("Name:");
     console.gotoxy(2, 5);    console.print("Combat:");
@@ -1877,36 +1653,27 @@ function armytypes()
 		console.gotoxy(2, 7+i);   console.print(terr_names[i]+":");
 	}
     console.gotoxy(2, 7+i);   console.print("Special:");
-
 	console.attributes = genattrs.help;
     console.gotoxy(2, 9+i);   console.print("<]> next page  <[> previous page  (SPACE) to exit");
 
     /* display loop */
-
     pos = 0;
-
     do {
         /* show the types. */
-
 		console.attributes = attrs.army_types;
         for(i = 4; i <= 8+terr_names.length; i++) {
             console.gotoxy(17, i);
             console.cleartoeol();
         }
-
-        for(i = 0; i < 4; i++)
+        for(i = 0; i < 4; i++) {
             if(pos + i < ttypes.length) {
                 console.gotoxy(i * 16 + 17, 4);
                 console.print(ttypes[pos+i].name);
-
                 console.gotoxy(i * 16 + 17, 5);
                 console.print(format("%5d",ttypes[pos+i].combat));
-
                 console.gotoxy(i * 16 + 17, 6);
                 console.print(format("%5d",ttypes[pos+i].move_rate));
-
                 cc = 0;
-
                 for(j = 0; j < terr_names.length; j++) {
 					console.gotoxy(i * 16 + 17, 7+j);
 					if(move_table[ttypes[pos+i].move_tbl].cost[j] == 0)
@@ -1917,38 +1684,35 @@ function armytypes()
                 console.gotoxy(i * 16 + 17, 7+j);
                 console.print(special_desc[ttypes[pos+i].special_mv]);
             }
+        }
 
         /* handle input. */
-
         console.gotoxy(71, 9+j);
 		console.attributes = attrs.atype_prompt;
         console.print("< >\b\b");
-
         switch((ch = console.getkey())) {
-
         case ' ' :
         case 'q' :
             ch = '\033';
             break;
-
         case ']' :
             if(pos + 5 < ttypes.length)
                 pos += 4;
             break;
-
         case '[' :
             if(pos - 3 > 0)
                 pos -= 4;
             break;
         }
-
     } while(ch != '\033');
 
     /* clean up */
-
     mainscreen();
 }
 
+/*
+ * Select the unit a city iwll produce
+ */
 function produce(city)
 {
     var i, t, ch;
@@ -1959,11 +1723,9 @@ function produce(city)
 		saystat("Turn is currently done, cannot issue orders");
 		return;
 	}
-
 	console.attributes = attrs.status_area;
     console.gotoxy(2, 22);  console.cleartoeol();
     console.gotoxy(2, 23);  console.cleartoeol();
-
     for(i = 0; i < cities[city].ntypes; i++) {
         if(cities[city].types[i] != -1) {
             console.gotoxy(parseInt(i / 2) * 30 + 2, (i % 2) + 22);
@@ -1973,22 +1735,18 @@ function produce(city)
             okstring += (i+1);
         }
     }
-
 	console.gotoxy(2, 24);
     t = cities[city].types[cities[city].prod_type];
 	console.print(format("Current:  %s (%d turns left)    ESC to Cancel",
         ttypes[t].name,
         cities[city].turns_left));
     console.cleartoeol();
-
     saystat(format("Set Army Production for %s:  ", cities[city].name));
-
     if(okstring.indexOf(ch = console.getkeys(okstring+'\x1b', 0)) != -1) {
         buff = format("set-produce %d %d\n", city, ch - 1);
         pfile.write(buff);
         execpriv(buff);
     }
-
     clearstat(-1);
 }
 
@@ -1996,7 +1754,7 @@ var upd_pos=0;
 var upd_top=0;
 function update(ntn, or, oc)
 {
-	var fp = new File(game_dir+'/'+format(TURNFL, ntn));
+	var fp = new File(getpath(format(TURNFL, ntn)));
 	var lines;
 	var lpos = -1;
 	var ltop = -1;
@@ -2012,11 +1770,9 @@ function update(ntn, or, oc)
 		lines=fp.readAll();
 		fp.close();
 		clearstat(-1);
-
 		console.gotoxy(45, 20);
 		console.attributes = genattrs.border;
 		console.print(ascii(180)+"(u) to move to the event location"+ascii(195));
-
 		for(;;) {
 			if(ltop != upd_top) {
 				for(i=0; i<4; i++) {
@@ -2050,7 +1806,6 @@ function update(ntn, or, oc)
 			}
 			lpos = upd_pos;
 			ltop = upd_top;
-
 			switch((ch=console.inkey(5000))) {
 			case '':
 				if(turn_done) {
@@ -2108,56 +1863,49 @@ function mainloop(ntn)
 
     r = -1;
     c = -1;
-
     army = -1;
 
     /* find the player's capitol city */
-
     if(cities[nations[ntn].city].nation == ntn) {
         i = nations[ntn].city;
         r = cities[i].r;
         c = cities[i].c;
-        alist = setfocus(ntn, r, c);
     }
 
     /* find the player's first city */
-
     city = city_at(r, c);
-
     if(city != -1 && cities[city].nation != ntn)
         city = -1;
-
-    if(city == -1)
-        for(i = 0; i < cities.length; i++)
+    if(city == -1) {
+        for(i = 0; i < cities.length; i++) {
             if(cities[i].nation == ntn) {
                 r = cities[i].r;
                 c = cities[i].c;
-                alist = setfocus(ntn, r, c);
                 break;
             }
+		}
+	}
 
     /* find the player's first army */
-
-    if(city == -1)
-        for(i = 0; i < armies.length; i++)
+    if(city == -1) {
+        for(i = 0; i < armies.length; i++) {
             if(armies[i].nation == ntn) {
                 r = armies[i].r;
                 c = armies[i].c;
                 army = i;
-				alist = setfocus(ntn, r, c);
                 break;
             }
-
+		}
+	}
     if(army == -1 && city == -1) {
         saystat("Nation is Destroyed.  Press Any Key:  ");
         console.getkey();
 		console.ctrlkey_passthru = orig_pt;
         return;
     }
-
     console.ctrlkey_passthru = '+@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\]^_-[';
+
 	/* Check for messages */
-	
 	inbuf = format(MAILFL, ntn);
 	alist = showmap(ntn, r, c, true, -1);
 	showfocus(r, c);
@@ -2169,20 +1917,17 @@ function mainloop(ntn)
 		keep_ch = true;
 
     /* enter the loop */
-
     saystat("Welcome to Solomoriah's WAR!  Press <h> for Help.");
-
     force = false;
-
     for(;;) {
-
         alist = showmap(ntn, r, c, force, avpnt);
         force = false;
-
         showfocus(r, c);
 		if(!keep_ch) {
 			do {
 				ch = console.inkey(5000);
+				
+				/* Handle a new turn starting */
 				if(turn_done) {
 					if(!file_exists(pfile.name)) {
 						if(pfile.open('ab', 0)) {
@@ -2231,11 +1976,8 @@ function mainloop(ntn)
 		}
 		keep_ch = false;
         showfocus(r, c);
-
         clearstat(-1);
-
         switch(ch) {
-
         case 'p' : /* production */
             city = city_at(r, c);
             if(city != -1 && cities[city].nation == ntn)
@@ -2243,12 +1985,10 @@ function mainloop(ntn)
             else
                 saystat("Must View Your Own City First.");
             break;
-
 		case 'A' : /* army types */
 			armytypes();
 			force = true;
 			break;
-
         case ctrl(']') : /* next army */
 			obj = nextarmy(ntn, r, c);
 			r = obj.r;
@@ -2256,7 +1996,6 @@ function mainloop(ntn)
             if(!obj.ret)
                 saystat("No Next Army with Movement Found");
             break;
-
         case ']' : /* next group */
 			obj = nextgroup(ntn, r, c);
 			r = obj.r;
@@ -2264,7 +2003,6 @@ function mainloop(ntn)
             if(!obj.ret)
                 saystat("No More Groups Remain.");
             break;
-
         case '}' : /* last group */
             while((obj = nextgroup(ntn, r, c)).ret) {
 				r = obj.r;
@@ -2273,7 +2011,6 @@ function mainloop(ntn)
 			r = obj.r;
 			c = obj.c;
             break;
-
         case ctrl('[') : /* prev army */
 			obj = prevarmy(ntn, r, c);
 			r = obj.r;
@@ -2281,15 +2018,13 @@ function mainloop(ntn)
             if(!obj.ret)
                 saystat("No Previous Army with Movement Found");
             break;
-
         case '[' : /* previous group */
 			obj = prevgroup(ntn, r, c);
 			r = obj.r;
 			c = obj.c;
             if(!obj.ret)
                 saystat("No Previous Groups Remain.");
-          break;
-
+            break;
         case '{' : /* first group */
             while((obj = prevgroup(ntn, r, c)).ret) {
 				r = obj.r;
@@ -2298,13 +2033,11 @@ function mainloop(ntn)
 			r = obj.r;
 			c = obj.c;
             break;
-
         case 'n' : /* name hero */
 			if(turn_done) {
 				saystat("Turn is currently done, cannot issue orders");
 				break;
 			}
-
             if(alist.length > 0 && armies[alist[avpnt].id].name.length == 0) {
                 saystat("Enter Hero's Name:  ");
                 inbuf = console.getstr(16);
@@ -2317,7 +2050,6 @@ function mainloop(ntn)
             } else
                 saystat("Can Only Rename Heros.");
             break;
-
         case 'z' : /* next army */
         case KEY_DOWN:
             if(alist.length > 0) {
@@ -2327,7 +2059,6 @@ function mainloop(ntn)
             } else
                 saystat("No Armies!");
             break;
-
         case 'a' : /* previous army */
         case KEY_UP:
             if(alist.length > 0) {
@@ -2337,13 +2068,11 @@ function mainloop(ntn)
             } else
                 saystat("No Armies!");
             break;
-
         case ' ' : /* mark */
             if(alist.length > 0)
                 alist[avpnt].mark =
                     alist[avpnt].mark ? 0 : 1;
             break;
-
         case 'I' : /* army information */
             if(alist.length > 0) {
                 var id = alist[avpnt].id;
@@ -2354,28 +2083,25 @@ function mainloop(ntn)
             } else
                 saystat("No Armies!");
             break;
-
         case '*' : /* mark all */
         case 'f' : /* mark all and move */
         case '5' : /* mark all and move */
-            for(i = 0; i < alist.length; i++)
+            for(i = 0; i < alist.length; i++) {
                 if(armies[alist[i].id].move_left > 0)
                     alist[i].mark = 1;
+            }
             if(ch == '*')
                 break;
             /* fall through */
-
         case 'm' : /* move */
             obj = move_mode(alist, avpnt, ntn, r, c);
             r = obj.r;
             c = obj.c;
             break;
-
         case '/' : /* unmark all */
             for(i = 0; i < alist.length; i++)
                 alist[i].mark = 0;
             break;
-
         case 'i' : /* information */
         case '1' :
         case '2' :
@@ -2400,7 +2126,6 @@ function mainloop(ntn)
 			if(ch != '')
 				keep_ch = true;
             break;
-
 		case 'u' :
             obj = update(ntn, r, c);
             r = obj.r;
@@ -2409,60 +2134,48 @@ function mainloop(ntn)
 			if(ch != '')
 				keep_ch = true;
             break;
-
         case 'N' : /* read news... */
             reader(NEWSFL, 0);
 			force = true;
             break;
-
         case 'M' : /* mail... */
             inbuf = format(MAILFL, ntn);
             reader(inbuf, 1);
             force = true;
             break;
-
         case 'S' : /* send mail */
             saystat("Send Mail -- Enter Ruler's Name, or All to Post News:  ");
             inbuf = console.getstr(16);
-
             n = -1;
-            for(i = 0; i < nations.length; i++)
+            for(i = 0; i < nations.length; i++) {
                 if(nations[i].name.toUpperCase() == inbuf.toUpperCase())
                     n = i;
-
+            }
             if(n == -1 && "all" == inbuf.toLowerCase())
                 n = 0;
-
             if(n == -1) {
                 saystat("No Such Ruler.");
                 break;
             }
-
             mailer(ntn, n);
-
             force = true;
             clearstat(-1);
             break;
-
        case 's' : /* status */
             status();
             force = true;
             break;
-
         case '?' : /* help */
             help();
             break;
-
         case 'h' : /* help */
 		case 'H' : /* help */
 			reader('help.news', 2);
 			force = true;
 			break;
-
         case '\f' :
 			force = true;
             break;
-
 		case 'x' :
 			if(turn_done) {
 				saystat("Turn is currently done, cannot issue orders");
@@ -2476,7 +2189,6 @@ function mainloop(ntn)
 			}
             clearstat(-1);
             break;
-
         case 'q' : /* quit */
             saystat("Quit?  (Y/N/X)  ");
 	   		switch(console.getkey().toLowerCase()) {
@@ -2511,22 +2223,17 @@ function titlescreen()
 	];
 
     console.clear(attrs.title_text);
-
     for(i=0; i<title.length; i++) {
         console.gotoxy(11, i+3);
         console.print(title[i]);
     }
-
 	console.attributes = attrs.title_copyright;
     console.gotoxy(11, i+3);
     console.print('JSWAR Version '+(major_ver)+'.'+(minor_ver)+'             "Code by Solomoriah"');
-
     console.gotoxy(11, i+5);
     console.print("Original Copyright 1993, 1994, 2001, 2013, Chris Gonnerman");
-
     console.gotoxy(11, i+6);
     console.print("JavaScript Version Copyright 2013, Stephen Hurd");
-
     console.gotoxy(11, i+7);
     console.print("All Rights Reserved.");
 }
@@ -2541,71 +2248,66 @@ function newcity()
 
 	for(i = 0; i<MAXCITIES; i++)
 		clusters[i] = -1;
-
 	for(i=0; i<cities.length; i++) {
 		if(cities[i].nation > 0)
 			clusters[cities[i].cluster % MAXCITIES] = 1;
 		else if(clusters[cities[i].cluster % MAXCITIES] == -1)
 			clusters[cities[i].cluster % MAXCITIES] = 0;
 	}
-
     cc = 0;
-
-    for(i = 0; i < MAXCITIES; i++)
+    for(i = 0; i < MAXCITIES; i++) {
         if(clusters[i] == 0)
             cc++;
-
+    }
     if(cc == 0) {   /* any city will do... */
         cc = 0;
-
         for(i = 0; i < cities.length; i++)
             if(cities[i].nation == 0)
                 cc++;
-
         if(cc == 0)
             return -1;
-
         c = random(cc);
-
-        for(i = 0; i < cities.length; i++)
-            if(cities[i].nation == 0)
+        for(i = 0; i < cities.length; i++) {
+            if(cities[i].nation == 0) {
                 if(c == 0)
                     return i;
                 else
                     c--;
+            }
+        }
 
         /* should not get here... */
-
         return -1;
-
-    } else {        /* find an empty cluster... */
-
+    }
+    else {        /* find an empty cluster... */
         c = random(cc);
-
-        for(i = 0; i < MAXCITIES; i++)
-            if(clusters[i] == 0)
+        for(i = 0; i < MAXCITIES; i++) {
+            if(clusters[i] == 0) {
                 if(c == 0)
                     break;
                 else
                     c--;
-
+            }
+        }
         if(i < MAXCITIES) {
             cl = i;
             cc = 0;
-            for(i = 0; i < cities.length; i++)
+            for(i = 0; i < cities.length; i++) {
                 if(cities[i].cluster == cl)
                     cc++;
+            }
             c = random(cc);
-            for(i = 0; i < cities.length; i++)
-                if(cities[i].cluster == cl)
+            for(i = 0; i < cities.length; i++) {
+                if(cities[i].cluster == cl) {
                     if(c == 0)
                         return i;
                     else
                         c--;
+                }
+            }
         }
 
         /* should not get here. */
-
         return -1;
     }
 }
@@ -2638,17 +2340,14 @@ function main(argc, argv)
 
 	if(argc)
 		set_game(argv[0]);
-
-	load("loadfont.js", '-H', game_dir+'/terrain.fnt');
+	load("loadfont.js", '-H', getpath('terrain.fnt'));
 	if(bbs.mods.CTerm_Version != null) {
 		console.write("\x1b[?31h\x1b[1;255 D");
 		js.on_exit('console.write("\x1b[?31l")');
 	}
-
 	titlescreen();
 
 	/* load map file */
-
 	if((rc = loadmap()) != 0) {
 		console.gotoxy(11,21);
 		console.print("Error Loading Map ("+rc+")\r\n");
@@ -2661,27 +2360,22 @@ function main(argc, argv)
 		console.getkey();
 		exit(2);
 	}
-
 	console.gotoxy(11,17);
 	console.attributes = attrs.title_world;
 	if(world.length > 0)
 		console.print("World: "+world+"    ");
 	console.print("Turn:  "+gen);
-
 	uid = user.number;
-
 	if(uid == undefined || uid == 0) {
 		console.gotoxy(11, 21);
 		console.print("UID Not Available; Aborting.");
 		console.getkey();
 		exit(3);
 	}
-
 	console.gotoxy(11, 21);
 	console.attributes = attrs.status_area;
 	console.print("Reading Master Commands...  ");
-
-	fp = new File(game_dir+'/master.cmd');
+	fp = new File(getpath(MASTERFL));
 	if(fp.open('rb')) {
 		for(i=0; (inbuf = fp.readln())!=null; i++) {
 			if((rc=execpriv(inbuf)==0)) {
@@ -2699,9 +2393,7 @@ function main(argc, argv)
 	}
 
     /* check if nation is entered. */
-
     n = -1;
-
     for(i = 0; i < nations.length; i++) {
         if(nations[i].uid == uid) {
 			/* TODO: Check for the canary file! */
@@ -2709,12 +2401,10 @@ function main(argc, argv)
             break;
         }
 	}
-
     if(n == -1) { /* nation not entered yet... */
         c = newcity();
-
         if(c >= 0) {
-            fp = new File(game_dir+'/master.cmd');
+            fp = new File(getpath(MASTERFL));
             if(!fp.open('ab')) {
 				console.gotoxy(11,21);
 				console.print("Can't Write Master Cmd's  ");
@@ -2722,16 +2412,13 @@ function main(argc, argv)
 				console.getkey();
 				exit(5);
 			}
-
             n = nations.length;
-            confirmed = 0;
-
+            confirmed = false;
             while(!confirmed) {
 				console.gotoxy(11,19);
 				console.attributes = attrs.title_newcity;
 				console.print("Your City is "+ cities[c].name);
 				console.cleartoeol();
-
 				inbuf='';
 				while(inbuf.length==0) {
 					console.gotoxy(11, 21);
@@ -2747,14 +2434,12 @@ function main(argc, argv)
 				if(inbuf == '!')
 					c = newcity();
 				else
-					confirmed = 1;
+					confirmed = true;
             }
-
 			name=inbuf;
 			console.gotoxy(11,22);
 			console.attributes = attrs.title_symboltitle;
 			console.print("Available:  ");
-			
 			inbuf = marks[0];
 			for(i=0; i<nations.length; i++)
 				inbuf = inbuf.replace(nations[i].mark, '');
@@ -2797,12 +2482,11 @@ function main(argc, argv)
 	}
 
 	/* execute player commands */
-
 	console.gotoxy(11, 21);
 	console.attributes = attrs.status_area;
 	console.print("Reading Player Commands...  ");
 	console.cleartoeol();
-	fp = new File(game_dir + '/' + format(PLAYERFL, n));
+	fp = new File(getpath(format(PLAYERFL, n)));
 	if(fp.open('rb')) {
 		for(i=0; (inbuf = fp.readln()) != null; i++) {
 			if((rc = execpriv(inbuf))==0) {
@@ -2822,8 +2506,7 @@ function main(argc, argv)
 	}
 
 	/* append to player file... */
-
-	pfile = new File(game_dir + '/' + format(PLAYERFL, n));
+	pfile = new File(getpath(format(PLAYERFL, n)));
 	if(!turn_done) {
 		if(!pfile.open('ab', 0 /* Not buffered */)) {
 			console.gotoxy(11, 21);
@@ -2835,11 +2518,10 @@ function main(argc, argv)
 	}
 
 	/* main loop */
-
-	for(i=0; i<nations.length; i++)
+	for(i=0; i<nations.length; i++) {
 		if(nations[i].uid == uid)
 			n = i;
-
+	}
 	console.gotoxy(11, 20);
 	console.attributes = attrs.title_welcome;
 	console.print("Welcome, "+nations[n].name+" of "+nationcity(n)+"!");
@@ -2853,10 +2535,8 @@ function main(argc, argv)
 	mainloop(n);
 
 	/* clean up */
-
 	if(pfile.is_open)
 		pfile.close();
-
 	exit(0);
 }
 
