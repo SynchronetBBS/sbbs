@@ -481,7 +481,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(argc>1) {
-		if(!JS_ValueToInt32(cx,argv[1],&timeout));
+		if(!JS_ValueToInt32(cx,argv[1],&timeout))
 			return JS_FALSE;
 	}
 
