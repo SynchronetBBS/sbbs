@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.33
-                        Release date: 2013-09-19
+                              Version 1.34
+                        Release date: 2013-10-13
 
                                   by
 
@@ -367,6 +367,15 @@ ThemeFilename                     The name of the color theme file to use.
                                   in Section 5: Ice-style Color Theme Settings.
                                   If no theme file is specified, then default
                                   colors will be used.
+menuOptClassicColors              Whether or not to use the classic Ice-style
+                                  menu option colors.  Valid options are true
+                                  and false.  If this option is set to false,
+                                  then new colors will be used for Ice-style
+                                  menu options.  If this is set to true, then
+                                  the classic Ice-style menu option colors will
+                                  be used.  Note that if this is set to false,
+                                  the color setting SelectedOptionTextColor
+                                  won't be used.
 
 DCT colors
 ----------

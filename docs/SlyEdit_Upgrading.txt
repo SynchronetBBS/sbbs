@@ -2,6 +2,12 @@ This file contains upgrade notes for sysops who are upgrading from earlier
 versions of SlyEdit.  Only versions with significant/noteworthy configuration
 changes, etc. are listed in this file, with the most recent version on top.
 
+Upgrading to version 1.34
+-------------------------
+This version includes a new configuration option in SlyEdit.cfg for Ice-style
+colors: menuOptClassicColors.  If this option is set to false, then new colors
+will be used for Ice-style menu options.  If this is set to false, then the
+classic Ice-style menu option colors will be used.
 
 Upgrading to version 1.33
 -------------------------
