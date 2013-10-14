@@ -857,11 +857,13 @@ function get_armylist(ntn, r, c)
 	return alist;
 }
 
-function showarmies(full_list, pointer)
+function showarmies(ntn, r, c, pointer)
 {
     var i, a;
     var buff;
+	var full_list;
 
+	full_list = get_armylist(ntn, r, c);
 	console.attributes = attrs.army_area;
     for(i = 0; i < full_list.view.length && i < 12; i++) {
         console.gotoxy(38, i + 3);
@@ -904,6 +906,7 @@ function showarmies(full_list, pointer)
         console.gotoxy(43, i + 17);
         console.cleartoeol();
 	}
+	return full_list.view;
 }
 
 function gmapspot(r, c, terr, mark, extra_attr)
@@ -974,15 +977,13 @@ function fixcol(c)
 
 var old_ul_r = -1;
 var old_ul_c = -1;
-function showmap(ntn, r, c, force, pointer)
+function showmap(ntn, r, c, force)
 {
     var ul_r, ul_c, f_r, f_c;
     var i, j, zr, zc;
     var rem;
 	var alist;
 
-	full_list = get_armylist(ntn, r, c);
-    showarmies(full_list, pointer);
     rem = parseInt((16 - gran) / 2);
     f_r = r % gran;
     f_c = c % gran;
@@ -1003,7 +1004,6 @@ function showmap(ntn, r, c, force, pointer)
     if(mapovl[r][c] != ' ')
         showcity(r, c);
     console.gotoxy(f_c * 2 + 16, f_r + 8);
-    return full_list.view;
 }
 
 /*
@@ -1113,7 +1113,8 @@ function move_mode(alist, avpnt, ntn, rp, cp)
     console.print("1 2 3      c v b");
     console.gotoxy(21, 22);
     console.print("7 8 9      e r t    SPACE to Stop.  ");
-    alist = showmap(ntn, rp, cp, false, avpnt);
+	alist = showarmies(ntn, rp, cp, avpnt);
+    showmap(ntn, rp, cp, false);
     while(movestack.length > 0 && (ch = console.getkey()) != ' '
 			&& ch != 'q' && ch != '\x1b') {
         showfocus(rp, cp);
@@ -1236,7 +1237,7 @@ function move_mode(alist, avpnt, ntn, rp, cp)
             }
 
             /* redo screen. */
-            alist = showmap(ntn, rp, cp, ok, avpnt);
+            showmap(ntn, rp, cp, ok);
         }
         showfocus(rp, cp);
     }
@@ -1330,7 +1331,6 @@ function info_mode(rp, cp, n, ch, avpnt)
     done = false;
     do {
     	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], '');
-		console.attributes='N';
         switch(ch) {
 		case '' :
 			break;
@@ -1410,8 +1410,11 @@ function info_mode(rp, cp, n, ch, avpnt)
 			if(army >= 0|| city >= 0) {
 				a_r = t_r;
 				a_c = t_c;
+				showarmies(n, a_r, a_c, avpnt);
 			}
-			showmap(n, rp, cp, false, avpnt);
+			else {
+				showmap(n, rp, cp, false);
+			}
 			focus = false;
 		}
 		show_info(t_r, t_c);
@@ -1430,7 +1433,6 @@ function info_mode(rp, cp, n, ch, avpnt)
 		}
     } while(!done);
    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], '');
-	console.attributes='N';
     return {r:a_r,c:a_c,ch:ch};
 }
 
@@ -1764,7 +1766,8 @@ function update(ntn, or, oc)
 	var m;
 	var alist;
 
-	alist = showmap(ntn, r, c, true, -1);
+	alist = showarmies(ntn, r, c, -1);
+	showmap(ntn, r, c, true);
 	console.attributes = attrs.status_area;
 	if(fp.open('rb')) {
 		lines=fp.readAll();
@@ -1836,7 +1839,8 @@ function update(ntn, or, oc)
 			case 'u':
 				or = r;
 				oc = c;
-				alist = showmap(ntn, r, c, false, -1);
+				alist = showarmies(ntn, r, c, -1);
+				showmap(ntn, r, c, false);
 				showfocus(r, c);
 				break;
 			default:
@@ -1907,7 +1911,8 @@ function mainloop(ntn)
 
 	/* Check for messages */
 	inbuf = format(MAILFL, ntn);
-	alist = showmap(ntn, r, c, true, -1);
+	alist = showarmies(ntn, r, c, avpnt);
+	showmap(ntn, r, c, true);
 	showfocus(r, c);
 	obj = update(ntn, r, c);
 	r = obj.r;
@@ -1920,7 +1925,8 @@ function mainloop(ntn)
     saystat("Welcome to Solomoriah's WAR!  Press <h> for Help.");
     force = false;
     for(;;) {
-        alist = showmap(ntn, r, c, force, avpnt);
+		alist = showarmies(ntn, r, c, avpnt);
+        showmap(ntn, r, c, force);
         if(alist.length <= avpnt)
 			avpnt = alist.length - 1;
         force = false;
@@ -1963,7 +1969,8 @@ function mainloop(ntn)
 								return;
 							}
 							mainscreen();
-							alist = showmap(ntn, r, c, true, avpnt);
+							alist = showarmies(ntn, r, c, avpnt);
+							showmap(ntn, r, c, true);
 							showfocus(r, c);
 							upd_pos=0;
 							upd_top=0;
