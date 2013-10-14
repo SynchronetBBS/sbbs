@@ -854,22 +854,24 @@ function get_armylist(ntn, r, c)
     }
 
 	alist.view = alist.view.sort(function(a,b) { return isgreater(b.id, a.id) ? 1 : 0; });
+	if(alist.view.length)
+		alist.pointer = 0;
+	else
+		alist.pointer = -1;
 	return alist;
 }
 
-function showarmies(ntn, r, c, pointer)
+function showarmies(full_list, showptr)
 {
     var i, a;
     var buff;
-	var full_list;
 
-	full_list = get_armylist(ntn, r, c);
 	console.attributes = attrs.army_area;
     for(i = 0; i < full_list.view.length && i < 12; i++) {
         console.gotoxy(38, i + 3);
         if(i < full_list.view.length) {
             a = full_list.view[i].id;
-			console.print((i==pointer)?'=> ':'   ');
+			console.print((i==full_list.pointer && showptr)?'=> ':'   ');
 			console.print((full_list.view[i].mark)?'* ':'  ');
             buff = armyname(a);
             if(armies[a].name.length == 0 && armies[a].hero > 0)
@@ -964,7 +966,7 @@ function showcity(r, c)
  */
 function fixrow(r)
 {
-	return (r + map_height) % map_width;
+	return (r + map_height) % map_height;
 }
 
 /*
@@ -972,7 +974,7 @@ function fixrow(r)
  */
 function fixcol(c)
 {
-	return (c + map_width) % map_height;
+	return (c + map_width) % map_width;
 }
 
 var old_ul_r = -1;
@@ -982,7 +984,6 @@ function showmap(ntn, r, c, force)
     var ul_r, ul_c, f_r, f_c;
     var i, j, zr, zc;
     var rem;
-	var alist;
 
     rem = parseInt((16 - gran) / 2);
     f_r = r % gran;
@@ -1020,7 +1021,7 @@ function showfocus(r, c)
     console.attributes='N';
 }
 
-function move_mode(alist, avpnt, ntn, rp, cp)
+function move_mode(full_list, ntn, rp, cp)
 {
     var i, j, mv, ch, city, army, t_r, t_c, a, b, ok, cnt, max, flag;
     var ac, hc, mmode;
@@ -1032,41 +1033,41 @@ function move_mode(alist, avpnt, ntn, rp, cp)
 
 	if(turn_done) {
 		saystat("Turn is currently done, cannot issue orders");
-        return {r:rp,c:cp};
+        return {r:rp,c:cp,full_list:full_list};
 	}
-    if(alist.length < 1) {
+    if(full_list.view.length < 1) {
         saystat("No Army to Move.");
-        return {r:rp,c:cp};
+        return {r:rp,c:cp,full_list:full_list};
     }
     flag = 0;
-    for(i = 0; i < alist.length; i++) {
-        if(alist[i].mark)
+    for(i = 0; i < full_list.view.length; i++) {
+        if(full_list.view[i].mark)
             flag = 1;
-        if(alist[i].mark
-				&& (armies[alist[i].id].move_left > 0 || ntn == -1)) {
+        if(full_list.view[i].mark
+				&& (armies[full_list.view[i].id].move_left > 0 || ntn == -1)) {
             if(movestack.length >= 10 && ntn >= 0) {
                 saystat("Too Many Armies for Group.");
-        		return {r:rp,c:cp};
+        		return {r:rp,c:cp,full_list:full_list};
             }
             movestack.push({
-				id:alist[i].id,
+				id:full_list.view[i].id,
 				moved:0,
 				dep:-1
 			});
         }
     }
     if(movestack.length < 1 && !flag
-			&& (armies[alist[avpnt].id].move_left > 0 || ntn == -1)) {
+			&& (armies[full_list.view[full_list.pointer].id].move_left > 0 || ntn == -1)) {
 		movestack.push({
-			id:alist[avpnt].id,
+			id:full_list.view[full_list.pointer].id,
 			moved:0,
 			dep:-1
 		});
-        alist[avpnt].mark = 1;
+        full_list.view[full_list.pointer].mark = 1;
     }
     if(movestack.length < 1 && ntn > -1) {
         saystat("Armies Have No Movement Left.");
-        return {r:rp,c:cp};
+        return {r:rp,c:cp,full_list:full_list};
     }
 
     /* 
@@ -1077,12 +1078,12 @@ function move_mode(alist, avpnt, ntn, rp, cp)
         if they can move, stranding can't occur.
     */
     if(ntn > -1) {
-        for(i = 0; i < alist.length; i++) {
-            if(!alist[i].mark) {
+        for(i = 0; i < full_list.view.length; i++) {
+            if(!full_list.view[i].mark) {
 				unmarked.push({
 					moved: 0,
 					dep: -1,
-					id: alist[i].id
+					id: full_list.view[i].id
 				});
             }
         }
@@ -1093,7 +1094,7 @@ function move_mode(alist, avpnt, ntn, rp, cp)
 					&& armies[a].special_mv != TRANS_ALL
 					&& movecost(a, armies[a].r, armies[a].c) == 0) {
                 saystat("Armies Would Be Stranded...  Movement Cancelled.");
-                return {r:rp,c:cp};
+                return {r:rp,c:cp,full_list:full_list};
             }
         }
     }
@@ -1113,7 +1114,7 @@ function move_mode(alist, avpnt, ntn, rp, cp)
     console.print("1 2 3      c v b");
     console.gotoxy(21, 22);
     console.print("7 8 9      e r t    SPACE to Stop.  ");
-	alist = showarmies(ntn, rp, cp, avpnt);
+	showarmies(full_list, false);
     showmap(ntn, rp, cp, false);
     while(movestack.length > 0 && (ch = console.getkey()) != ' '
 			&& ch != 'q' && ch != '\x1b') {
@@ -1234,6 +1235,14 @@ function move_mode(alist, avpnt, ntn, rp, cp)
                 }
                 rp = t_r;
                 cp = t_c;
+				full_list = get_armylist(ntn, rp, cp);
+				for(i = 0; i < movestack.length; i++) {
+					for(j = 0; j < full_list.view.length; j++) {
+						if(full_list.view[j].id == movestack[i].id)
+							full_list.view[j].mark = true;
+					}
+				}
+				showarmies(full_list, false);
             }
 
             /* redo screen. */
@@ -1251,7 +1260,7 @@ function move_mode(alist, avpnt, ntn, rp, cp)
 		}
 	}
     clearstat(-1);
-    return {r:rp,c:cp};
+    return {r:rp,c:cp,full_list:full_list};
 }
 
 /*
@@ -1304,7 +1313,7 @@ function show_info(r, c)
     saystat(buff);
 }
 
-function info_mode(rp, cp, n, ch, avpnt)
+function info_mode(full_list, rp, cp, n, ch)
 {
     var done, r, c, ul_r, ul_c, f_r, f_c, t_r, t_c, a_r, a_c;
     var city, army, i, focus;
@@ -1330,7 +1339,7 @@ function info_mode(rp, cp, n, ch, avpnt)
     t_c = fixcol(ul_c + f_c);
     done = false;
     do {
-    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], '');
+   		gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], '');
         switch(ch) {
 		case '' :
 			break;
@@ -1380,26 +1389,27 @@ function info_mode(rp, cp, n, ch, avpnt)
         }
         if(f_r < gran-1) {
 			f_r += gran;
-			ul_r -= gran;
+			ul_r = fixrow(ul_r - gran);
 			rp = fixrow(rp - gran);
 			focus = true;
 		}
         if(f_c < gran-1) {
 			f_c += gran;
-			ul_c -= gran;
+			ul_c = fixcol(ul_c - gran);
 			cp = fixcol(cp - gran);
 			focus = true;
 		}
         if(f_r > 15 - gran + 1) {
 			f_r -= gran;
-			ul_r += gran;
+			ul_r = fixrow(ul_r + gran);
 			rp = fixrow(rp + gran);
 			focus = true;
 		}
         if(f_c > 15 - gran + 1) {
 			f_c -= gran;
-			ul_c += gran;
-			cp = fixcol(cp + gran);
+			ul_c = fixcol(ul_c + gran);
+			cp += gran;
+			cp = fixcol(cp);
 			focus = true;
 		}
         t_r = fixrow(ul_r + f_r);
@@ -1407,13 +1417,12 @@ function info_mode(rp, cp, n, ch, avpnt)
         city = my_city_at(t_r, t_c, n);
         army = my_army_at(t_r, t_c, n);
         if(focus || army >= 0 || city >= 0) {
-			if(army >= 0|| city >= 0) {
+			showmap(n, rp, cp, false);
+			if(army >= 0 || city >= 0) {
 				a_r = t_r;
 				a_c = t_c;
-				showarmies(n, a_r, a_c, avpnt);
-			}
-			else {
-				showmap(n, rp, cp, false);
+				full_list = get_armylist(n, a_r, a_c);
+				showarmies(full_list, true);
 			}
 			focus = false;
 		}
@@ -1433,7 +1442,7 @@ function info_mode(rp, cp, n, ch, avpnt)
 		}
     } while(!done);
    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], '');
-    return {r:a_r,c:a_c,ch:ch};
+    return {r:a_r,c:a_c,ch:ch,full_list:full_list};
 }
 
 function groupcmp(r1, c1, r2, c2)
@@ -1754,7 +1763,7 @@ function produce(city)
 
 var upd_pos=0;
 var upd_top=0;
-function update(ntn, or, oc)
+function update(full_list, ntn, or, oc)
 {
 	var fp = new File(getpath(format(TURNFL, ntn)));
 	var lines;
@@ -1764,9 +1773,8 @@ function update(ntn, or, oc)
 	var r=or,c=oc;
 	var ch;
 	var m;
-	var alist;
 
-	alist = showarmies(ntn, r, c, -1);
+	showarmies(full_list, false);
 	showmap(ntn, r, c, true);
 	console.attributes = attrs.status_area;
 	if(fp.open('rb')) {
@@ -1784,8 +1792,8 @@ function update(ntn, or, oc)
 						if((m = lines[upd_top+i].match(/^([0-9]+) ([0-9]+) (.*)$/))!=null) {
 							if(upd_top+i == upd_pos) {
 								console.print('=> ');
-								r=m[1];
-								c=m[2];
+								r=parseInt(m[1], 10);
+								c=parseInt(m[2], 10);
 							}
 							else
 								console.print('   ');
@@ -1802,8 +1810,8 @@ function update(ntn, or, oc)
 				console.gotoxy(2, 21+(upd_pos-upd_top));
 				console.print('=>');
 				if((m = lines[upd_pos].match(/^([0-9]+) ([0-9]+) (.*)$/))!=null) {
-					r=m[1];
-					c=m[2];
+					r=parseInt(m[1]);
+					c=parseInt(m[2]);
 				}
 				showfocus(or, oc);
 			}
@@ -1816,7 +1824,7 @@ function update(ntn, or, oc)
 						console.gotoxy(45, 20);
 						console.attributes = genattrs.border;
 						console.print((new Array(36)).join(ascii(196)));
-						return {r:or,c:oc,ch:''};
+						return {r:or,c:oc,ch:'',full_list:full_list};
 					}
 				}
 				break;
@@ -1837,23 +1845,26 @@ function update(ntn, or, oc)
 					upd_top = upd_pos-3;
 				break;
 			case 'u':
-				or = r;
-				oc = c;
-				alist = showarmies(ntn, r, c, -1);
-				showmap(ntn, r, c, false);
-				showfocus(r, c);
+				if(or != r || oc != c) {
+					or = r;
+					oc = c;
+					full_list = get_armylist(ntn, r, c);
+					showarmies(full_list, false);
+					showmap(ntn, or, oc, false);
+					showfocus(or, oc);
+				}
 				break;
 			default:
 				console.gotoxy(45, 20);
 				console.attributes = genattrs.border;
 				console.print((new Array(36)).join(ascii(196)));
-				return {r:or,c:oc,ch:ch};
+				return {r:or,c:oc,ch:ch,full_list:full_list};
 			}
 		}
 	}
 	else
 		saystat("No updates this turn!");
-	return {r:or,c:oc,ch:''};
+	return {r:or,c:oc,ch:'',full_list:full_list};
 }
 
 function mainloop(ntn)
@@ -1862,8 +1873,7 @@ function mainloop(ntn)
     var inbuf, buff;
 	var keep_ch = false;
 	var orig_pt = console.ctrlkey_passthru;
-	var alist;
-	var avpnt = 0;
+	var full_list;
 
     r = -1;
     c = -1;
@@ -1911,13 +1921,15 @@ function mainloop(ntn)
 
 	/* Check for messages */
 	inbuf = format(MAILFL, ntn);
-	alist = showarmies(ntn, r, c, avpnt);
+	full_list = get_armylist(ntn, r, c);
+	showarmies(full_list, true);
 	showmap(ntn, r, c, true);
 	showfocus(r, c);
-	obj = update(ntn, r, c);
+	obj = update(full_list, ntn, r, c);
 	r = obj.r;
 	c = obj.c;
 	ch = obj.ch;
+	full_list = obj.full_list;
 	if(ch != '')
 		keep_ch = true;
 
@@ -1925,10 +1937,9 @@ function mainloop(ntn)
     saystat("Welcome to Solomoriah's WAR!  Press <h> for Help.");
     force = false;
     for(;;) {
-		alist = showarmies(ntn, r, c, avpnt);
+		// TODO : Should be conditional
+		showarmies(full_list, true);
         showmap(ntn, r, c, force);
-        if(alist.length <= avpnt)
-			avpnt = alist.length - 1;
         force = false;
         showfocus(r, c);
 		if(!keep_ch) {
@@ -1969,15 +1980,17 @@ function mainloop(ntn)
 								return;
 							}
 							mainscreen();
-							alist = showarmies(ntn, r, c, avpnt);
+							full_list = get_armylist(ntn, r, c);
+							showarmies(full_list, true);
 							showmap(ntn, r, c, true);
 							showfocus(r, c);
 							upd_pos=0;
 							upd_top=0;
-							obj = update(ntn, r, c);
+							obj = update(full_list, ntn, r, c);
 							r = obj.r;
 							c = obj.c;
 							ch = obj.ch;
+							full_list = obj.full_list;
 						}
 					}
 				}
@@ -2047,11 +2060,11 @@ function mainloop(ntn)
 				saystat("Turn is currently done, cannot issue orders");
 				break;
 			}
-            if(alist.length > 0 && armies[alist[avpnt].id].name.length == 0) {
+            if(full_list.view.length > 0 && armies[full_list.view[full_list.pointer].id].name.length == 0) {
                 saystat("Enter Hero's Name:  ");
                 inbuf = console.getstr(16);
 
-                buff = format("name-army %d '%s'\n", alist[avpnt].id, inbuf);
+                buff = format("name-army %d '%s'\n", full_list.view[full_list.pointer].id, inbuf);
                 pfile.write(buff);
                 execpriv(buff);
 
@@ -2061,29 +2074,31 @@ function mainloop(ntn)
             break;
         case 'z' : /* next army */
         case KEY_DOWN:
-            if(alist.length > 0) {
-                avpnt++;
-             avpnt += alist.length;
-                avpnt %= alist.length;
+            if(full_list.view.length > 0) {
+                full_list.pointer++;
+                full_list.pointer += full_list.view.length;
+                full_list.pointer %= full_list.view.length;
             } else
                 saystat("No Armies!");
             break;
         case 'a' : /* previous army */
         case KEY_UP:
-            if(alist.length > 0) {
-                avpnt--;
-                avpnt += alist.length;
-                avpnt %= alist.length;
+            if(full_list.view.length > 0) {
+                full_list.pointer--;
+                full_list.pointer += full_list.view.length;
+                full_list.pointer %= full_list.view.length;
             } else
                 saystat("No Armies!");
             break;
         case ' ' : /* mark */
-            if(alist.length > 0)
-                alist[avpnt].mark = !alist[avpnt].mark;
+            if(full_list.view.length > 0) {
+                full_list.view[full_list.pointer].mark = !full_list.view[full_list.pointer].mark;
+				showarmies(full_list, true);
+			}
             break;
         case 'I' : /* army information */
-            if(alist.length > 0) {
-                var id = alist[avpnt].id;
+            if(full_list.view.length > 0) {
+                var id = full_list.view[full_list.pointer].id;
                 buff = format("%s: Combat %d / Hero %d %s",
                     armyname(id), armies[id].combat, armies[id].hero,
                     ((armies[id].hero > 0 && armies[id].eparm1) ? "(Loyal)" : ""));
@@ -2094,21 +2109,22 @@ function mainloop(ntn)
         case '*' : /* mark all */
         case 'f' : /* mark all and move */
         case '5' : /* mark all and move */
-            for(i = 0; i < alist.length; i++) {
-                if(armies[alist[i].id].move_left > 0)
-                    alist[i].mark = 1;
+            for(i = 0; i < full_list.view.length; i++) {
+                if(armies[full_list.view[i].id].move_left > 0)
+                    full_list.view[i].mark = 1;
             }
             if(ch == '*')
                 break;
             /* fall through */
         case 'm' : /* move */
-            obj = move_mode(alist, avpnt, ntn, r, c);
+            obj = move_mode(full_list, ntn, r, c);
             r = obj.r;
             c = obj.c;
+			full_list = obj.full_list;
             break;
         case '/' : /* unmark all */
-            for(i = 0; i < alist.length; i++)
-                alist[i].mark = 0;
+            for(i = 0; i < full_list.view.length; i++)
+                full_list.view[i].mark = 0;
             break;
         case 'i' : /* information */
         case '1' :
@@ -2127,18 +2143,20 @@ function mainloop(ntn)
         case 'c' :
         case 'v' :
         case 'b' :
-            obj = info_mode(r, c, ntn, ch, avpnt);
+            obj = info_mode(full_list, r, c, ntn, ch);
             r = obj.r;
             c = obj.c;
 			ch = obj.ch;
+			full_list = obj.full_list;
 			if(ch != '')
 				keep_ch = true;
             break;
 		case 'u' :
-            obj = update(ntn, r, c);
+            obj = update(full_list, ntn, r, c);
             r = obj.r;
             c = obj.c;
 			ch = obj.ch;
+			full_list = obj.full_list;
 			if(ch != '')
 				keep_ch = true;
             break;
@@ -2545,7 +2563,6 @@ function main(argc, argv)
 	/* clean up */
 	if(pfile.is_open)
 		pfile.close();
-	exit(0);
 }
 
 main(argc, argv);
