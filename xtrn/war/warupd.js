@@ -77,7 +77,7 @@ var game_dir = orig_exec_dir;
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-if(js.global.polled_update === undefined)
+if(this.major_ver === undefined)
 	load(game_dir+'/warcommon.js');
 
 // The generated master file listing all moves that were taken
@@ -111,6 +111,8 @@ var usertable = {
 		var a, b;
 
 		a = parseInt(argv[1], 10);
+		if(a > armies.length)
+			return "Invalid Army Movement";
 		if(armies[a].nation == -1)
 			return 0;
 		if(argc > 5) {
