@@ -853,7 +853,6 @@ function main(argc, argv)
 		savegame(fp);
 		fp.close();
 	}
-    exit(0);
 }
 
 main(argc, argv);
