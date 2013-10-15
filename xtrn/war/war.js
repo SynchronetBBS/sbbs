@@ -791,11 +791,13 @@ function unit_mark(nation_mark)
 /*
  * This returns a list of armies AND updates the overlay
  */
-function get_armylist(ntn, pos)
+function get_armylist(alist, ntn, pos)
 {
 	var e;
-	var alist = {};
 	var i,k;
+
+	if(alist == undefined)
+		alist = {};
 
 	for(i = 0; i<map_height; i++) {
 		for(k = 0; k < map_width; k++) {
@@ -1025,11 +1027,11 @@ function move_mode(full_list, ntn, pos)
 
 	if(turn_done) {
 		saystat("Turn is currently done, cannot issue orders");
-        return {full_list:full_list};
+        return;
 	}
     if(full_list.view.length < 1) {
         saystat("No Army to Move.");
-        return {full_list:full_list};
+        return;
     }
     flag = 0;
     for(i = 0; i < full_list.view.length; i++) {
@@ -1039,7 +1041,7 @@ function move_mode(full_list, ntn, pos)
 				&& (armies[full_list.view[i].id].move_left > 0 || ntn == -1)) {
             if(movestack.length >= 10 && ntn >= 0) {
                 saystat("Too Many Armies for Group.");
-        		return {full_list:full_list};
+        		return;
             }
             movestack.push({
 				id:full_list.view[i].id,
@@ -1059,7 +1061,7 @@ function move_mode(full_list, ntn, pos)
     }
     if(movestack.length < 1 && ntn > -1) {
         saystat("Armies Have No Movement Left.");
-        return {full_list:full_list};
+        return;
     }
 
     /* 
@@ -1086,7 +1088,7 @@ function move_mode(full_list, ntn, pos)
 					&& armies[a].special_mv != TRANS_ALL
 					&& movecost(a, new Position(armies[a].r, armies[a].c)) == 0) {
                 saystat("Armies Would Be Stranded...  Movement Cancelled.");
-                return {full_list:full_list};
+                return;
             }
         }
     }
@@ -1225,7 +1227,7 @@ function move_mode(full_list, ntn, pos)
                 }
 				pos.r = t.r;
 				pos.c = t.c;
-				full_list = get_armylist(ntn, pos);
+				get_armylist(full_list, ntn, pos);
 				for(i = 0; i < movestack.length; i++) {
 					for(j = 0; j < full_list.view.length; j++) {
 						if(full_list.view[j].id == movestack[i].id)
@@ -1250,7 +1252,7 @@ function move_mode(full_list, ntn, pos)
 		}
 	}
     clearstat(-1);
-    return {full_list:full_list};
+    return;
 }
 
 /*
@@ -1411,7 +1413,7 @@ function info_mode(full_list, pos, n, ch)
 			if(army >= 0 || city >= 0) {
 				pos.r = t.r;
 				pos.c = t.c;
-				full_list = get_armylist(n, pos);
+				get_armylist(full_list, n, pos);
 				showarmies(full_list, true);
 			}
 			focus = false;
@@ -1432,7 +1434,7 @@ function info_mode(full_list, pos, n, ch)
 		}
     } while(!done);
    	gmapspot(f_r, f_c, t, '');
-    return {ch:ch,full_list:full_list};
+    return ch;
 }
 
 function groupcmp(pos1, pos2)
@@ -1817,7 +1819,7 @@ function update(full_list, ntn, pos)
 						console.gotoxy(45, 20);
 						console.attributes = genattrs.border;
 						console.print((new Array(36)).join(ascii(196)));
-						return {ch:'',full_list:full_list};
+						return '';
 					}
 				}
 				break;
@@ -1841,7 +1843,7 @@ function update(full_list, ntn, pos)
 				if(pos.r != upos.r || pos.c != upos.c) {
 					pos.r = upos.r;
 					pos.c = upos.c;
-					full_list = get_armylist(ntn, upos);
+					get_armylist(full_list, ntn, upos);
 					showarmies(full_list, false);
 					showmap(ntn, pos, false);
 					showfocus(pos);
@@ -1851,19 +1853,19 @@ function update(full_list, ntn, pos)
 				console.gotoxy(45, 20);
 				console.attributes = genattrs.border;
 				console.print((new Array(36)).join(ascii(196)));
-				return {ch:ch,full_list:full_list};
+				return ch;
 			}
 		}
 	}
 	else
 		saystat("No updates this turn!");
-	return {ch:'',full_list:full_list};
+	return '';
 }
 
 function mainloop(ntn)
 {
 	var pos = new Position();
-    var ch, i, n, city, army, force, obj;
+    var ch, i, n, city, army, force;
     var inbuf, buff;
 	var keep_ch = false;
 	var orig_pt = console.ctrlkey_passthru;
@@ -1914,13 +1916,11 @@ function mainloop(ntn)
 
 	/* Check for messages */
 	inbuf = format(MAILFL, ntn);
-	full_list = get_armylist(ntn, pos);
+	full_list = get_armylist(undefined, ntn, pos);
 	showarmies(full_list, true);
 	showmap(ntn, pos, true);
 	showfocus(pos);
-	obj = update(full_list, ntn, pos);
-	ch = obj.ch;
-	full_list = obj.full_list;
+	ch = update(full_list, ntn, pos);
 	if(ch != '')
 		keep_ch = true;
 
@@ -1971,15 +1971,13 @@ function mainloop(ntn)
 								return;
 							}
 							mainscreen();
-							full_list = get_armylist(ntn, pos);
+							get_armylist(full_list, ntn, pos);
 							showarmies(full_list, true);
 							showmap(ntn, pos, true);
 							showfocus(pos);
 							upd_pos=0;
 							upd_top=0;
-							obj = update(full_list, ntn, pos);
-							ch = obj.ch;
-							full_list = obj.full_list;
+							ch = update(full_list, ntn, pos);
 						}
 					}
 				}
@@ -2002,35 +2000,35 @@ function mainloop(ntn)
 			break;
         case ctrl(']') : /* next army */
 			if(nextarmy(ntn, pos))
-				full_list = get_armylist(ntn, pos);
+				get_armylist(full_list, ntn, pos);
 			else
                 saystat("No Next Army with Movement Found");
             break;
         case ']' : /* next group */
 			if(nextgroup(ntn, pos))
-				full_list = get_armylist(ntn, pos);
+				get_armylist(full_list, ntn, pos);
 			else
                 saystat("No More Groups Remain.");
             break;
         case '}' : /* last group */
             while(nextgroup(ntn, pos));
-			full_list = get_armylist(ntn, pos);
+			get_armylist(full_list, ntn, pos);
             break;
         case ctrl('[') : /* prev army */
 			if(prevarmy(ntn, pos))
-				full_list = get_armylist(ntn, pos);
+				get_armylist(full_list, ntn, pos);
 			else
                 saystat("No Previous Army with Movement Found");
             break;
         case '[' : /* previous group */
 			if(prevgroup(ntn, pos))
-				full_list = get_armylist(ntn, pos);
+				get_armylist(full_list, ntn, pos);
 			else
                 saystat("No Previous Groups Remain.");
             break;
         case '{' : /* first group */
             while(prevgroup(ntn, pos));
-			full_list = get_armylist(ntn, pos);
+			get_armylist(full_list, ntn, pos);
             break;
         case 'n' : /* name hero */
 			if(turn_done) {
@@ -2094,8 +2092,7 @@ function mainloop(ntn)
                 break;
             /* fall through */
         case 'm' : /* move */
-            obj = move_mode(full_list, ntn, pos);
-			full_list = obj.full_list;
+            move_mode(full_list, ntn, pos);
             break;
         case '/' : /* unmark all */
             for(i = 0; i < full_list.view.length; i++)
@@ -2118,16 +2115,12 @@ function mainloop(ntn)
         case 'c' :
         case 'v' :
         case 'b' :
-            obj = info_mode(full_list, pos, ntn, ch);
-			ch = obj.ch;
-			full_list = obj.full_list;
+            ch = info_mode(full_list, pos, ntn, ch);
 			if(ch != '')
 				keep_ch = true;
             break;
 		case 'u' :
-            obj = update(full_list, ntn, pos);
-			ch = obj.ch;
-			full_list = obj.full_list;
+            ch = update(full_list, ntn, pos);
 			if(ch != '')
 				keep_ch = true;
             break;
