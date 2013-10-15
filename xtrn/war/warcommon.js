@@ -568,11 +568,12 @@ function Position(r, c)
 {
 	if(r==undefined)
 		this.__r = -1;
+	else
+		this.__r = (r + map_height) % map_height;
 	if(c==undefined)
 		this.__c = -1;
-	this.__r = (r + map_height) % map_height;
-	this.__c = (c + map_width) % map_width;
-
+	else
+		this.__c = (c + map_width) % map_width;
 }
 Object.defineProperty(Position.prototype, 'r', {
 	get: function() {
