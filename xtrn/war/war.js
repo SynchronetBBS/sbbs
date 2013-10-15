@@ -1415,6 +1415,7 @@ function info_mode(full_list, pos, n, ch)
 				pos.c = t.c;
 				get_armylist(full_list, n, pos);
 				showarmies(full_list, true);
+				showcity(pos);
 			}
 			focus = false;
 		}
