@@ -354,14 +354,19 @@ var privtable = {
 			if(n < 1 || n > nations.length)
 				return 0;
 			for(i = 0; i < armies.length; i++) {
-				while(armies[i].nation == n)
-					armies.splice(i, 1);
+				while(armies[i].nation == n) {
+					armies[i].nation = -1;
+					armies[i].r = -1;
+					armies[i].c = -1;
+				}
 			}
 			return 0;
 		}
 
 		/* Just the one army */
-		armies.splice(a, 1);
+		armies[a].nation = -1;
+		armies[r].r = -1;
+		armies[c].c = -1;
 		return 0;
 	},
 	"move-army":function(argc, argv) {
