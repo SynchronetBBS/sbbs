@@ -789,138 +789,137 @@ function unit_mark(nation_mark)
 }
 
 /*
- * This returns a list of armies AND updates the overlay
+ * Army list class
  */
-function get_armylist(alist, ntn, pos)
-{
-	var e;
-	var i,k;
+function ArmyList(ntn) {
+	this.view=[];
+	this.enemies=[];
+	this.pointer = -1;
+	this.ntn = ntn;
+	this.update = function(pos) {
+		var e;
+		var i,k;
 
-	if(alist == undefined)
-		alist = {};
-
-	for(i = 0; i<map_height; i++) {
-		for(k = 0; k < map_width; k++) {
-			mapovl[i][k] = ' ';
+		for(i = 0; i<map_height; i++) {
+			for(k = 0; k < map_width; k++) {
+				mapovl[i][k] = ' ';
+			}
 		}
-	}
-	alist.view=[];
-	alist.enemies=[];
-    for(i = 0; i < armies.length; i++) {
-        if(pos.r == armies[i].r && pos.c == armies[i].c) {
-            if(armies[i].nation == ntn || ntn == -1) {
-				alist.view.push({id:i, marked: false});
-            }
-            else {
-				if(alist.enemies.length == 0) {
-					alist.enemies.push({
-						nation:armies[i].nation, 
-						hero:0, 
-						armies:0, 
-						multiple:false
-					});
-					e = alist.enemies[0];
-				}
-				else if(alist.enemies[0].nation == armies[i].nation) {
-					e = alist.enemies[0];
+		this.view=[];
+		this.enemies=[];
+		for(i = 0; i < armies.length; i++) {
+			if(pos.r == armies[i].r && pos.c == armies[i].c) {
+				if(armies[i].nation == this.ntn || this.ntn == -1) {
+					this.view.push({id:i, marked: false});
 				}
 				else {
-					if(alist.enemies.length == 1) {
-						alist.enemies.push({
+					if(this.enemies.length == 0) {
+						this.enemies.push({
 							nation:armies[i].nation, 
 							hero:0, 
 							armies:0, 
 							multiple:false
 						});
+						e = this.enemies[0];
 					}
-					e = alist.enemies[alist.enemies.length-1];
+					else if(this.enemies[0].nation == armies[i].nation) {
+						e = this.enemies[0];
+					}
+					else {
+						if(this.enemies.length == 1) {
+							this.enemies.push({
+								nation:armies[i].nation, 
+								hero:0, 
+								armies:0, 
+								multiple:false
+							});
+						}
+						e = this.enemies[this.enemies.length-1];
+					}
+					if(e.nation != armies[i].nation)
+						e.multiple = true;
+					if(armies[i].hero > 0)
+						e.heros++;
+					else
+						e.armies++;
 				}
-				if(e.nation != armies[i].nation)
-					e.multiple = true;
-                if(armies[i].hero > 0)
-                    e.heros++;
-                else
-                    e.armies++;
-            }
-        }
-        
-        /* Mark all armies on the overlay */
-        if(mapovl[armies[i].r][armies[i].c] == ' ' 
-				|| mapovl[armies[i].r][armies[i].c] == unit_mark(nations[armies[i].nation].mark)) {
-			mapovl[armies[i].r][armies[i].c] = unit_mark(nations[armies[i].nation].mark);
+			}
+			
+			/* Mark all armies on the overlay */
+			if(mapovl[armies[i].r][armies[i].c] == ' ' 
+					|| mapovl[armies[i].r][armies[i].c] == unit_mark(nations[armies[i].nation].mark)) {
+				mapovl[armies[i].r][armies[i].c] = unit_mark(nations[armies[i].nation].mark);
+			}
+			else if(mapovl[armies[i].r][armies[i].c] != nations[armies[i].nation].mark) {
+				mapovl[armies[i].r][armies[i].c] = '!';
+			}
 		}
-		else if(mapovl[armies[i].r][armies[i].c] != nations[armies[i].nation].mark) {
-			mapovl[armies[i].r][armies[i].c] = '!';
+
+		/* Update city marks on the overlay */
+		for(i = 0; i < cities.length; i++) {
+			if(mapovl[cities[i].r][cities[i].c] == ' ' 
+					|| mapovl[cities[i].r][cities[i].c] == unit_mark(nations[cities[i].nation].mark)) {
+				mapovl[cities[i].r][cities[i].c] = nations[cities[i].nation].mark;
+			}
+			else {
+				mapovl[cities[i].r][cities[i].c] = '!';
+			}
 		}
-    }
 
-	/* Update city marks on the overlay */
-    for(i = 0; i < cities.length; i++) {
-        if(mapovl[cities[i].r][cities[i].c] == ' ' 
-				|| mapovl[cities[i].r][cities[i].c] == unit_mark(nations[cities[i].nation].mark)) {
-            mapovl[cities[i].r][cities[i].c] = nations[cities[i].nation].mark;
-        }
-        else {
-            mapovl[cities[i].r][cities[i].c] = '!';
+		this.view = this.view.sort(function(a,b) { return isgreater(b.id, a.id) ? 1 : 0; });
+		if(this.view.length)
+			this.pointer = 0;
+		else
+			this.pointer = -1;
+	};
+	this.show = function(showptr)
+	{
+		var i, a;
+		var buff;
+
+		console.attributes = attrs.army_area;
+		for(i = 0; i < this.view.length && i < 12; i++) {
+			console.gotoxy(38, i + 3);
+			if(i < this.view.length) {
+				a = this.view[i].id;
+				console.print((i==this.pointer && showptr)?'=> ':'   ');
+				console.print((this.view[i].mark)?'* ':'  ');
+				buff = armyname(a);
+				if(armies[a].name.length == 0 && armies[a].hero > 0)
+					buff = "(Nameless Hero)";
+				else if(armies[a].hero > 0)
+					buff += " (Hero)";
+				console.print(format("%-31.31s %d:%d", buff,
+					armies[a].move_rate, armies[a].move_left));
+			}
+			console.cleartoeol();
 		}
-    }
-
-	alist.view = alist.view.sort(function(a,b) { return isgreater(b.id, a.id) ? 1 : 0; });
-	if(alist.view.length)
-		alist.pointer = 0;
-	else
-		alist.pointer = -1;
-	return alist;
-}
-
-function showarmies(full_list, showptr)
-{
-    var i, a;
-    var buff;
-
-	console.attributes = attrs.army_area;
-    for(i = 0; i < full_list.view.length && i < 12; i++) {
-        console.gotoxy(38, i + 3);
-        if(i < full_list.view.length) {
-            a = full_list.view[i].id;
-			console.print((i==full_list.pointer && showptr)?'=> ':'   ');
-			console.print((full_list.view[i].mark)?'* ':'  ');
-            buff = armyname(a);
-            if(armies[a].name.length == 0 && armies[a].hero > 0)
-                buff = "(Nameless Hero)";
-            else if(armies[a].hero > 0)
-                buff += " (Hero)";
-            console.print(format("%-31.31s %d:%d", buff,
-                armies[a].move_rate, armies[a].move_left));
-        }
-        console.cleartoeol();
-    }
-    for(;i < 12;i++) {
-        console.gotoxy(38, i + 3);
-        console.cleartoeol();
-	}
-    console.gotoxy(38, 15);
-	console.attributes = attrs.army_total;
-    if(full_list.view.length > 0)
-        console.print(format("     Total %d Armies", full_list.view.length));
-    console.cleartoeol();
-	console.attributes = attrs.army_area;
-    for(i = 0; i < full_list.enemies.length; i++) {
-        console.gotoxy(43, i + 17);
-        if(full_list.enemies[i].nation != -1) {
-            console.print(format("%-15.15s %3d Armies, %3d Heros",
-                (i == 1 && full_list.enemies[i].multiple)
-                    ? "(Other Nations)"
-                    : nationcity(full_list.enemies[i].nation),
-                full_list.enemies[i].armies, full_list.enemies[i].heros));
+		for(;i < 12;i++) {
+			console.gotoxy(38, i + 3);
+			console.cleartoeol();
 		}
-        console.cleartoeol();
-    }
-    for(;i<2; i++) {
-        console.gotoxy(43, i + 17);
-        console.cleartoeol();
-	}
-	return full_list.view;
+		console.gotoxy(38, 15);
+		console.attributes = attrs.army_total;
+		if(this.view.length > 0)
+			console.print(format("     Total %d Armies", this.view.length));
+		console.cleartoeol();
+		console.attributes = attrs.army_area;
+		for(i = 0; i < this.enemies.length; i++) {
+			console.gotoxy(43, i + 17);
+			if(this.enemies[i].nation != -1) {
+				console.print(format("%-15.15s %3d Armies, %3d Heros",
+					(i == 1 && this.enemies[i].multiple)
+						? "(Other Nations)"
+						: nationcity(this.enemies[i].nation),
+					this.enemies[i].armies, this.enemies[i].heros));
+			}
+			console.cleartoeol();
+		}
+		for(;i<2; i++) {
+			console.gotoxy(43, i + 17);
+			console.cleartoeol();
+		}
+	};
 }
 
 function gmapspot(r, c, pos, extra_attr)
@@ -1108,7 +1107,7 @@ function move_mode(full_list, ntn, pos)
     console.print("1 2 3      c v b");
     console.gotoxy(21, 22);
     console.print("7 8 9      e r t    SPACE to Stop.  ");
-	showarmies(full_list, false);
+	full_list.show(false);
     showmap(ntn, pos, false);
     while(movestack.length > 0 && (ch = console.getkey()) != ' '
 			&& ch != 'q' && ch != '\x1b') {
@@ -1227,14 +1226,14 @@ function move_mode(full_list, ntn, pos)
                 }
 				pos.r = t.r;
 				pos.c = t.c;
-				get_armylist(full_list, ntn, pos);
+				full_list.update(pos);
 				for(i = 0; i < movestack.length; i++) {
 					for(j = 0; j < full_list.view.length; j++) {
 						if(full_list.view[j].id == movestack[i].id)
 							full_list.view[j].mark = true;
 					}
 				}
-				showarmies(full_list, false);
+				full_list.show(false);
             }
 
             /* redo screen. */
@@ -1413,8 +1412,8 @@ function info_mode(full_list, pos, n, ch)
 			if(army >= 0 || city >= 0) {
 				pos.r = t.r;
 				pos.c = t.c;
-				get_armylist(full_list, n, pos);
-				showarmies(full_list, true);
+				full_list.update(pos);
+				full_list.show(true);
 				showcity(pos);
 			}
 			focus = false;
@@ -1770,7 +1769,7 @@ function update(full_list, ntn, pos)
 	var ch;
 	var m;
 
-	showarmies(full_list, false);
+	full_list.show(false);
 	showmap(ntn, upos, true);
 	console.attributes = attrs.status_area;
 	if(fp.open('rb')) {
@@ -1844,8 +1843,8 @@ function update(full_list, ntn, pos)
 				if(pos.r != upos.r || pos.c != upos.c) {
 					pos.r = upos.r;
 					pos.c = upos.c;
-					get_armylist(full_list, ntn, upos);
-					showarmies(full_list, false);
+					full_list.update(upos);
+					full_list.show(false);
 					showmap(ntn, pos, false);
 					showfocus(pos);
 				}
@@ -1917,8 +1916,9 @@ function mainloop(ntn)
 
 	/* Check for messages */
 	inbuf = format(MAILFL, ntn);
-	full_list = get_armylist(undefined, ntn, pos);
-	showarmies(full_list, true);
+	full_list = new ArmyList(ntn);
+	full_list.update(pos);
+	full_list.show(true);
 	showmap(ntn, pos, true);
 	showfocus(pos);
 	ch = update(full_list, ntn, pos);
@@ -1930,7 +1930,7 @@ function mainloop(ntn)
     force = false;
     for(;;) {
 		// TODO : Should be conditional
-		showarmies(full_list, true);
+		full_list.show(true);
         showmap(ntn, pos, force);
         force = false;
         showfocus(pos);
@@ -1972,8 +1972,8 @@ function mainloop(ntn)
 								return;
 							}
 							mainscreen();
-							get_armylist(full_list, ntn, pos);
-							showarmies(full_list, true);
+							full_list.update(pos);
+							full_list.show(true);
 							showmap(ntn, pos, true);
 							showfocus(pos);
 							upd_pos=0;
@@ -2001,35 +2001,35 @@ function mainloop(ntn)
 			break;
         case ctrl(']') : /* next army */
 			if(nextarmy(ntn, pos))
-				get_armylist(full_list, ntn, pos);
+				full_list.update(pos);
 			else
                 saystat("No Next Army with Movement Found");
             break;
         case ']' : /* next group */
 			if(nextgroup(ntn, pos))
-				get_armylist(full_list, ntn, pos);
+				full_list.update(pos);
 			else
                 saystat("No More Groups Remain.");
             break;
         case '}' : /* last group */
             while(nextgroup(ntn, pos));
-			get_armylist(full_list, ntn, pos);
+			full_list.update(pos);
             break;
         case ctrl('[') : /* prev army */
 			if(prevarmy(ntn, pos))
-				get_armylist(full_list, ntn, pos);
+				full_list.update(pos);
 			else
                 saystat("No Previous Army with Movement Found");
             break;
         case '[' : /* previous group */
 			if(prevgroup(ntn, pos))
-				get_armylist(full_list, ntn, pos);
+				full_list.update(pos);
 			else
                 saystat("No Previous Groups Remain.");
             break;
         case '{' : /* first group */
             while(prevgroup(ntn, pos));
-			get_armylist(full_list, ntn, pos);
+			full_list.update(pos);
             break;
         case 'n' : /* name hero */
 			if(turn_done) {
@@ -2069,7 +2069,7 @@ function mainloop(ntn)
         case ' ' : /* mark */
             if(full_list.view.length > 0) {
                 full_list.view[full_list.pointer].mark = !full_list.view[full_list.pointer].mark;
-				showarmies(full_list, true);
+				full_list.show(true);
 			}
             break;
         case 'I' : /* army information */
