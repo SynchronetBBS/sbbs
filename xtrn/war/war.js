@@ -815,6 +815,7 @@ function ArmyList(ntn) {
 	this.generation = 0;
 	this.last_gen = -1;
 	this.last_pointer = -1;
+	this.ptr_showed_last;
 	this.army = function(i) {
 		return armies[this.view[i].id];
 	};
@@ -997,17 +998,18 @@ function ArmyList(ntn) {
 			this.last_gen = this.generation;
 		}
 		else {
-			if(this.last_pointer != this.pointer) {
+			if(this.ptr_show_last != showptr || this.last_pointer != this.pointer) {
 				if(this.last_pointer >= 0) {
 					console.gotoxy(38, this.last_pointer + 3);
 					console.print('  ');
 				}
 				if(this.pointer >= 0) {
 					console.gotoxy(38, this.pointer + 3);
-					console.print('=>');
+					console.print(showptr ? '=>' : '  ');
 				}
 			}
 		}
+		this.ptr_show_last = showptr;
 		this.last_pointer = this.pointer;
 	};
 }
