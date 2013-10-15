@@ -198,7 +198,7 @@ function event(text, r, c, ntn)
 	var fp = new File(game_dir+'/'+format(TURNFL, ntn));
 
 	if(fp.open('ab')) {
-		fp.write(pos.r+' '+pos.c+' '+text+'\n');
+		fp.write(r+' '+c+' '+text+'\n');
 		fp.close();
 	}
 }
