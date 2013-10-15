@@ -921,6 +921,7 @@ function ArmyList(ntn) {
 	this.toggle_mark = function(index) {
 		this.view[index].mark = !this.view[index].mark;
 		console.gotoxy(41, index+3);
+		console.attributes = attrs.army_area;
 		console.print(this.view[index].mark ? '*' : ' ');
 	};
 	this.mark_all = function() {
