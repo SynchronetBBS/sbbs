@@ -365,8 +365,8 @@ var privtable = {
 
 		/* Just the one army */
 		armies[a].nation = -1;
-		armies[r].r = -1;
-		armies[c].c = -1;
+		armies[a].r = -1;
+		armies[a].c = -1;
 		return 0;
 	},
 	"move-army":function(argc, argv) {
