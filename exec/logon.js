@@ -91,8 +91,8 @@ if(file_exists(system.text_dir + "menu/logon" + user.security.level + ".*"))
 	bbs.menu("logon" + user.security.level);
 
 // Print successively numbered logon screens (logon, logon1, logon2, etc.)
-for(i=0;;i++) {
-	fname="logon";
+for(var i=0;;i++) {
+	var fname="logon";
 	if(i)
 		fname+=i;
 	if(!file_exists(system.text_dir + "menu/" + fname + ".*")) {
