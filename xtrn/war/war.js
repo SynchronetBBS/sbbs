@@ -2001,26 +2001,36 @@ function mainloop(ntn)
 			force = true;
 			break;
         case ctrl(']') : /* next army */
-			if(!nextarmy(ntn, pos))
+			if(nextarmy(ntn, pos))
+				full_list = get_armylist(ntn, pos);
+			else
                 saystat("No Next Army with Movement Found");
             break;
         case ']' : /* next group */
-			if(!nextgroup(ntn, pos))
+			if(nextgroup(ntn, pos))
+				full_list = get_armylist(ntn, pos);
+			else
                 saystat("No More Groups Remain.");
             break;
         case '}' : /* last group */
             while(nextgroup(ntn, pos));
+			full_list = get_armylist(ntn, pos);
             break;
         case ctrl('[') : /* prev army */
-			if(!prevarmy(ntn, pos))
+			if(prevarmy(ntn, pos))
+				full_list = get_armylist(ntn, pos);
+			else
                 saystat("No Previous Army with Movement Found");
             break;
         case '[' : /* previous group */
-			if(!prevgroup(ntn, pos))
+			if(prevgroup(ntn, pos))
+				full_list = get_armylist(ntn, pos);
+			else
                 saystat("No Previous Groups Remain.");
             break;
         case '{' : /* first group */
             while(prevgroup(ntn, pos));
+			full_list = get_armylist(ntn, pos);
             break;
         case 'n' : /* name hero */
 			if(turn_done) {
