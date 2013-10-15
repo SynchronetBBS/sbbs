@@ -2389,7 +2389,7 @@ function cleararea(xpos,ypos,width,height,eol_allowed)
 		var bgx;
 		var bgy;
 		var bgw;
-		var bbh;
+		var bgh;
 		var bgxo;
 		var bgyo;
 		var between;
