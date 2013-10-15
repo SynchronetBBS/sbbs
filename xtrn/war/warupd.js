@@ -303,7 +303,7 @@ function make_stack(stack, a)
 	}
 
 	/* And find the city (make sure it belongs to the armies nation) */
-	stack.city = city_at(r, c);
+	stack.city = city_at(new Position(r, c));
 	if(stack.city != -1) {
 		if(cities[stack.city].nation != n)
 			stack.city = -1;
@@ -388,7 +388,7 @@ function battle(a, b)
 	names[1] = nationcity(ntns[1]);
 	r = armies[a].r;
 	c = armies[a].c;
-	city = city_at(r, c);
+	city = city_at(new Position(r, c));
 
 	/* announce the battle */
 	buff = "Battle between "+names[0]+" and "+names[1];
@@ -548,7 +548,7 @@ function combat(n)
 	 */
 	for(i = 0; i < armies.length; i++) {
 		if(armies[i].nation == n) {
-			if((c = city_at(armies[i].r, armies[i].c)) != -1
+			if((c = city_at(new Position(armies[i].r, armies[i].c))) != -1
 					&& cities[c].nation != n) {
 				mail_line(HEADERMARK, armies[i].nation);
 				mail_line(HEADERMARK, cities[c].nation);

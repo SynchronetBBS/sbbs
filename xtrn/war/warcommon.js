@@ -49,7 +49,7 @@ const TRANS_HERO = 1;
 const TRANS_ONE  = 2;
 const TRANS_ALL  = 3;
 const MAILFL     = "mail.%03d";
-const TMPMAILFL	 = "%04d.tmpmsg"
+const TMPMAILFL	 = "%04d.tmpmsg";
 const NEWSFL     = "news";
 const HEADERMARK = " \b";
 const MAILLOG    = "mail.log";
@@ -198,7 +198,7 @@ function event(text, r, c, ntn)
 	var fp = new File(game_dir+'/'+format(TURNFL, ntn));
 
 	if(fp.open('ab')) {
-		fp.write(r+' '+c+' '+text+'\n');
+		fp.write(pos.r+' '+pos.c+' '+text+'\n');
 		fp.close();
 	}
 }
@@ -474,21 +474,21 @@ function execpriv(line)
 	return privtable[args[0]](args.length, args);
 }
 
-function my_city_at(r, c, n)
+function my_city_at(pos, n)
 {
 	var i;
 
 	for(i = 0; i < cities.length; i++) {
 		if((n < 0 || cities[i].nation == n)
-				&& cities[i].r == r && cities[i].c == c)
+				&& cities[i].r == pos.r && cities[i].c == pos.c)
 			return i;
 	}
 	return -1;
 }
 
-function city_at(r, c)
+function city_at(pos)
 {
-	return my_city_at(r, c, -1);
+	return my_city_at(pos, -1);
 }
 
 function nationcity(n)
@@ -563,3 +563,30 @@ function hero_name(hero)
 		hname = '(Nameless Hero)';
 	return hname;
 }
+
+function Position(r, c)
+{
+	if(r==undefined)
+		this.__r = -1;
+	if(c==undefined)
+		this.__c = -1;
+	this.__r = (r + map_height) % map_height;
+	this.__c = (c + map_width) % map_width;
+
+}
+Object.defineProperty(Position.prototype, 'r', {
+	get: function() {
+		return this.__r;
+	},
+	set: function(r) {
+		this.__r = (r + map_height) % map_height;
+	}
+});
+Object.defineProperty(Position.prototype, 'c', {
+	get: function() {
+		return this.__c;
+	},
+	set: function(c) {
+		this.__c = (c + map_width) % map_width;
+	}
+});

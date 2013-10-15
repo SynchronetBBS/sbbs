@@ -706,19 +706,29 @@ function analyze_stack(ms)
     }
 }
 
-function movecost(a, r, c)
+function mappos(pos)
+{
+	return map[pos.r][pos.c];
+}
+
+function mapovlpos(pos)
+{
+	return mapovl[pos.r][pos.c];
+}
+
+function movecost(a, pos)
 {
     var t, tbl, mv, city, cost, a2;
 
-    city = city_at(r, c);
+    city = city_at(pos);
     if(city == -1) {
         /* not a city */
         /* search for a TRANS_ALL unit there */
-        if(!(armies[a].r == r && armies[a].c == c)
+        if(!(armies[a].r == pos.r && armies[a].c == pos.c)
 				&& armies[a].special_mv != TRANS_ALL) {
             for(a2 = 0; a2 < armies.length; a2++) {
                 if(a != a2
-						&& armies[a2].r == r && armies[a2].c == c
+						&& armies[a2].r == pos.r && armies[a2].c == pos.c
 						&& armies[a2].nation == armies[a].nation
 						&& armies[a2].special_mv == TRANS_ALL) {
                     return 1;
@@ -727,13 +737,13 @@ function movecost(a, r, c)
 		}
 
         /* else do this: */
-		t = terrain.indexOf(map[r][c]);
+		t = terrain.indexOf(mappos(pos));
         if(t != -1) {
             tbl = armies[a].move_tbl;
             mv = move_table[tbl].cost[t];
             if(mv == 0
 					/* otherwise can't move, and */
-					&& map[r][c] != '~' 
+					&& mappos(pos) != '~' 
 					/* target space is not water, and */
 					&& map[armies[a].r][armies[a].c] == '~'
 					/* current space is water, and */
@@ -742,7 +752,7 @@ function movecost(a, r, c)
 				mv = cost * 2; /* beaching is allowed */
         }
         else {
-            if(map[r][c] == '+')
+            if(mappos(pos) == '+')
                 mv = 1;
             else
                 mv = 3;
@@ -781,7 +791,7 @@ function unit_mark(nation_mark)
 /*
  * This returns a list of armies AND updates the overlay
  */
-function get_armylist(ntn, r, c)
+function get_armylist(ntn, pos)
 {
 	var e;
 	var alist = {};
@@ -795,7 +805,7 @@ function get_armylist(ntn, r, c)
 	alist.view=[];
 	alist.enemies=[];
     for(i = 0; i < armies.length; i++) {
-        if(r == armies[i].r && c == armies[i].c) {
+        if(pos.r == armies[i].r && pos.c == armies[i].c) {
             if(armies[i].nation == ntn || ntn == -1) {
 				alist.view.push({id:i, marked: false});
             }
@@ -911,8 +921,10 @@ function showarmies(full_list, showptr)
 	return full_list.view;
 }
 
-function gmapspot(r, c, terr, mark, extra_attr)
+function gmapspot(r, c, pos, extra_attr)
 {
+	var terr = mappos(pos);
+	var mark = mapovlpos(pos);
 	var attr;
     if(mark == ' ')
         mark = terr;
@@ -946,13 +958,13 @@ function cityowner(c)
     return cities[nations[n].city].name;
 }
 
-function showcity(r, c)
+function showcity(pos)
 {
     var i;
     var buff = '';
 
     console.gotoxy(4, 19);
-    i = city_at(r, c);
+    i = city_at(pos);
     if(i != -1) {
         buff = format("City:  %s (%s)",
             cities[i].name, cityowner(i));
@@ -961,69 +973,49 @@ function showcity(r, c)
     console.print(format("%-40.40s", buff));
 }
 
-/*
- * Adjusts the passed row for wrapping.
- */
-function fixrow(r)
+var old_ul = new Position();
+function showmap(ntn, pos, force)
 {
-	return (r + map_height) % map_height;
-}
+    var rem = parseInt((16 - gran) / 2);
+	var ul = new Position(parseInt(pos.r / gran) * gran - rem, parseInt(pos.c / gran) * gran - rem);
+	var f_r = pos.r % gran;
+	var f_c = pos.c % gran;
+	var z = new Position();
+    var i, j;
 
-/*
- * Adjusts the passed column for wrapping.
- */
-function fixcol(c)
-{
-	return (c + map_width) % map_width;
-}
-
-var old_ul_r = -1;
-var old_ul_c = -1;
-function showmap(ntn, r, c, force)
-{
-    var ul_r, ul_c, f_r, f_c;
-    var i, j, zr, zc;
-    var rem;
-
-    rem = parseInt((16 - gran) / 2);
-    f_r = r % gran;
-    f_c = c % gran;
-    ul_r = fixrow(parseInt(r / gran) * gran - rem);
-    ul_c = fixcol(parseInt(c / gran) * gran - rem);
-    if(old_ul_r != ul_r || old_ul_c != ul_c || force) {
+    if(old_ul.r != ul.r || old_ul.c != ul.c || force) {
         for(i = 0; i < 16; i++) {
             for(j = 0; j < 16; j++) {
-                zr = fixrow(ul_r+i);
-                zc = fixcol(ul_c+j);
-                gmapspot(i, j, map[zr][zc], mapovl[zr][zc], '');
+				z.r = ul.r+i;
+				z.c = ul.c+j;
+                gmapspot(i, j, z, '');
             }
 		}
 	}
-	console.attributes='N';
-    old_ul_r = ul_r;
-    old_ul_c = ul_c;
-    if(mapovl[r][c] != ' ')
-        showcity(r, c);
+    old_ul = ul;
+    if(mapovlpos(pos) != ' ')
+        showcity(pos);
     console.gotoxy(f_c * 2 + 16, f_r + 8);
 }
 
 /*
  * Redraws the current focus point of the map
  */
-function showfocus(r, c)
+function showfocus(pos)
 {
     var f_r, f_c, rem;
 
     rem = parseInt((16 - gran) / 2);
-    f_r = (r % gran) + rem;
-    f_c = (c % gran) + rem;
-    gmapspot(f_r, f_c, map[r][c], mapovl[r][c], '');
+    f_r = (pos.r % gran) + rem;
+    f_c = (pos.c % gran) + rem;
+    gmapspot(f_r, f_c, pos, '');
     console.attributes='N';
 }
 
-function move_mode(full_list, ntn, rp, cp)
+function move_mode(full_list, ntn, pos)
 {
-    var i, j, mv, ch, city, army, t_r, t_c, a, b, ok, cnt, max, flag;
+    var i, j, mv, ch, city, army, a, b, ok, cnt, max, flag;
+	var t = new Position();
     var ac, hc, mmode;
     var mvc = new Array(TRANS_ALL+1);
     var gap, temp;
@@ -1033,11 +1025,11 @@ function move_mode(full_list, ntn, rp, cp)
 
 	if(turn_done) {
 		saystat("Turn is currently done, cannot issue orders");
-        return {r:rp,c:cp,full_list:full_list};
+        return {full_list:full_list};
 	}
     if(full_list.view.length < 1) {
         saystat("No Army to Move.");
-        return {r:rp,c:cp,full_list:full_list};
+        return {full_list:full_list};
     }
     flag = 0;
     for(i = 0; i < full_list.view.length; i++) {
@@ -1047,7 +1039,7 @@ function move_mode(full_list, ntn, rp, cp)
 				&& (armies[full_list.view[i].id].move_left > 0 || ntn == -1)) {
             if(movestack.length >= 10 && ntn >= 0) {
                 saystat("Too Many Armies for Group.");
-        		return {r:rp,c:cp,full_list:full_list};
+        		return {full_list:full_list};
             }
             movestack.push({
 				id:full_list.view[i].id,
@@ -1067,7 +1059,7 @@ function move_mode(full_list, ntn, rp, cp)
     }
     if(movestack.length < 1 && ntn > -1) {
         saystat("Armies Have No Movement Left.");
-        return {r:rp,c:cp,full_list:full_list};
+        return {full_list:full_list};
     }
 
     /* 
@@ -1092,9 +1084,9 @@ function move_mode(full_list, ntn, rp, cp)
             a = unmarked[i].id;
             if(unmarked[i].dep == a
 					&& armies[a].special_mv != TRANS_ALL
-					&& movecost(a, armies[a].r, armies[a].c) == 0) {
+					&& movecost(a, new Position(armies[a].r, armies[a].c)) == 0) {
                 saystat("Armies Would Be Stranded...  Movement Cancelled.");
-                return {r:rp,c:cp,full_list:full_list};
+                return {full_list:full_list};
             }
         }
     }
@@ -1115,57 +1107,55 @@ function move_mode(full_list, ntn, rp, cp)
     console.gotoxy(21, 22);
     console.print("7 8 9      e r t    SPACE to Stop.  ");
 	showarmies(full_list, false);
-    showmap(ntn, rp, cp, false);
+    showmap(ntn, pos, false);
     while(movestack.length > 0 && (ch = console.getkey()) != ' '
 			&& ch != 'q' && ch != '\x1b') {
-        showfocus(rp, cp);
+        showfocus(pos);
         clearstat(0);
-        t_r = rp;
-        t_c = cp;
+		t.r = pos.r;
+		t.c = pos.c;
         switch(ch) { /* directions */
         case '7' :
         case 'e' :
-            t_r--;
-            t_c--;
+            t.r--;
+            t.c--;
             break;
         case '8' :
         case 'r' :
-            t_r--;
+            t.r--;
             break;
         case '9' :
         case 't' :
-            t_r--;
-            t_c++;
+            t.r--;
+            t.c++;
             break;
         case '4' :
         case 'd' :
-            t_c--;
+            t.c--;
             break;
         case '6' :
         case 'g' :
-            t_c++;
+            t.c++;
             break;
         case '1' :
         case 'c' :
-            t_r++;
-            t_c--;
+            t.r++;
+            t.c--;
             break;
         case '2' :
         case 'v' :
-            t_r++;
+            t.r++;
             break;
         case '3' :
         case 'b' :
-            t_r++;
-            t_c++;
+            t.r++;
+            t.c++;
             break;
         case '\f' :
 			// TODO: Refresh
             break;
         }
-        t_r = fixrow(t_r);
-        t_c = fixcol(t_c);
-        if(t_r != rp || t_c != cp) {
+        if(t.r != pos.r || t.c != pos.c) {
             /* actual move code... */
             ok = 1;
 
@@ -1174,7 +1164,7 @@ function move_mode(full_list, ntn, rp, cp)
                 for(i = 0; i < movestack.length; i++) {
                     a = movestack[i].id;
                     if(movestack[i].dep == a) {
-                        mv = movecost(a, t_r, t_c);
+                        mv = movecost(a, t);
                         if(mv > armies[a].move_left
                         || mv == 0) {
                             ok = 0;
@@ -1192,9 +1182,9 @@ function move_mode(full_list, ntn, rp, cp)
                 cnt = 0;
                 for(i = 0; i < armies.length; i++)
                 if(armies[i].nation == ntn
-						&& armies[i].r == t_r && armies[i].c == t_c)
+						&& armies[i].r == t.r && armies[i].c == t.c)
                     cnt++;
-                city = city_at(t_r, t_c);
+                city = city_at(t);
                 max = 10;
                 if(city != -1
                 && cities[city].nation == ntn)
@@ -1209,7 +1199,7 @@ function move_mode(full_list, ntn, rp, cp)
             if(ok && ntn > -1) {
                 for(i = 0; i < armies.length; i++) {
                     if(armies[i].nation != ntn
-							&& armies[i].r == rp && armies[i].c == cp) {
+							&& armies[i].r == pos.r && armies[i].c == pos.c) {
                         ok = 0;
 						saystat("Can't Leave Combat.");
                         break;
@@ -1223,19 +1213,19 @@ function move_mode(full_list, ntn, rp, cp)
                     a = movestack[i].id;
                     if(ntn > -1) {
                         if(movestack[i].dep == a)
-                            mv = movecost(a, t_r, t_c);
+                            mv = movecost(a, t);
                         else
                             mv = armies[a].move_left ? 1 : 0;
                     } else
                         mv = 0;
                     movestack[i].moved += mv;
                     armies[a].move_left -= mv;
-                    armies[a].r = t_r;
-                    armies[a].c = t_c;
+                    armies[a].r = t.r;
+                    armies[a].c = t.c;
                 }
-                rp = t_r;
-                cp = t_c;
-				full_list = get_armylist(ntn, rp, cp);
+				pos.r = t.r;
+				pos.c = t.c;
+				full_list = get_armylist(ntn, pos);
 				for(i = 0; i < movestack.length; i++) {
 					for(j = 0; j < full_list.view.length; j++) {
 						if(full_list.view[j].id == movestack[i].id)
@@ -1246,33 +1236,33 @@ function move_mode(full_list, ntn, rp, cp)
             }
 
             /* redo screen. */
-            showmap(ntn, rp, cp, ok);
+            showmap(ntn, pos, ok);
         }
-        showfocus(rp, cp);
+        showfocus(pos);
     }
     if(ntn > -1 && ch != 'q' && ch != '\x1b') {
         for(i = 0; i < movestack.length; i++) {
             if(movestack[i].moved > 0 || ntn == -1) {
                 pfile.write(format("move-army %d %d %d %d %d\n",
                     movestack[i].id, movestack[i].moved,
-                    rp, cp, movestack[i].dep));
+                    pos.r, pos.c, movestack[i].dep));
             }
 		}
 	}
     clearstat(-1);
-    return {r:rp,c:cp,full_list:full_list};
+    return {full_list:full_list};
 }
 
 /*
  * Returns the first army belonging to n at r/c
  */
-function my_army_at(r, c, n)
+function my_army_at(pos, n)
 {
     var i;
 
     for(i = 0; i < armies.length; i++) {
         if(armies[i].nation == n
-				&& armies[i].r == r && armies[i].c == c)
+				&& armies[i].r == pos.r && armies[i].c == pos.c)
             return i;
 	}
     return -1;
@@ -1281,20 +1271,20 @@ function my_army_at(r, c, n)
 /*
  * Shows the information about the specified tile in the status area
  */
-function show_info(r, c)
+function show_info(pos)
 {
     var buff;
     var i, city, ac, hc;
 
     buff = '';
-    city = city_at(r, c);
+    city = city_at(pos);
     if(city != -1) {
         buff = format("City:  %s (%s)", cities[city].name,
             nationcity(cities[city].nation));
     }
     else {
-		i=terrain.indexOf(map[r][c]);
-		if(i==-1 && map[r][c]==' ')
+		i=terrain.indexOf(mappos(pos));
+		if(i==-1 && mappos(pos)==' ')
 			buff = "Ocean";
 		else
 			buff = terr_names[i];
@@ -1302,7 +1292,7 @@ function show_info(r, c)
     ac = 0;
     hc = 0;
     for(i = 0; i < armies.length; i++) {
-        if(armies[i].r == r && armies[i].c == c) {
+        if(armies[i].r == pos.r && armies[i].c == pos.c) {
             if(armies[i].hero > 0)
                 hc++;
             else
@@ -1313,14 +1303,17 @@ function show_info(r, c)
     saystat(buff);
 }
 
-function info_mode(full_list, rp, cp, n, ch)
+function info_mode(full_list, pos, n, ch)
 {
-    var done, r, c, ul_r, ul_c, f_r, f_c, t_r, t_c, a_r, a_c;
+	var p, ul, t, a;
+	var f_r, f_c;
+    var done;
     var city, army, i, focus;
     var rem;
+	var centre = new Position(pos.r, pos.c);
 
     rem = parseInt((16 - gran) / 2);
-    showfocus(rp, cp);
+    showfocus(pos);
     clearstat(-1);
     console.gotoxy(21,23);
 	console.attributes = attrs.status_area;	
@@ -1329,17 +1322,15 @@ function info_mode(full_list, rp, cp, n, ch)
     console.print("1 2 3      c v b");
     console.gotoxy(2,22);
     console.print("Info Mode:         7 8 9      e r t      ESC to Stop.  ");
-    r = a_r = rp;
-    c = a_c = cp;
-    ul_r = fixrow(parseInt(r / gran) * gran - rem);
-    ul_c = fixcol(parseInt(c / gran) * gran - rem);
-    f_r = (r % gran) + rem;
-    f_c = (c % gran) + rem;
-    t_r = fixrow(ul_r + f_r);
-    t_c = fixcol(ul_c + f_c);
+	p = new Position(pos.r, pos.c);
+	a = new Position(pos.r, pos.c);
+	ul = new Position(parseInt(pos.r / gran) * gran - rem, parseInt(pos.c / gran) * gran - rem);
+    f_r = (pos.r % gran) + rem;
+    f_c = (pos.c % gran) + rem;
+	t = new Position(ul.r + f_r, ul.c + f_c);
     done = false;
     do {
-   		gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], '');
+   		gmapspot(f_r, f_c, t, '');
         switch(ch) {
 		case '' :
 			break;
@@ -1389,45 +1380,44 @@ function info_mode(full_list, rp, cp, n, ch)
         }
         if(f_r < gran-1) {
 			f_r += gran;
-			ul_r = fixrow(ul_r - gran);
-			rp = fixrow(rp - gran);
+			ul.r -= gran;
+			centre.r -= gran;
 			focus = true;
 		}
         if(f_c < gran-1) {
 			f_c += gran;
-			ul_c = fixcol(ul_c - gran);
-			cp = fixcol(cp - gran);
+			ul.c -= gran;
+			centre.c -= gran;
 			focus = true;
 		}
         if(f_r > 15 - gran + 1) {
 			f_r -= gran;
-			ul_r = fixrow(ul_r + gran);
-			rp = fixrow(rp + gran);
+			ul.r += gran;
+			centre.r += gran;
 			focus = true;
 		}
         if(f_c > 15 - gran + 1) {
 			f_c -= gran;
-			ul_c = fixcol(ul_c + gran);
-			cp += gran;
-			cp = fixcol(cp);
+			ul.c += gran;
+			centre.c += gran;
 			focus = true;
 		}
-        t_r = fixrow(ul_r + f_r);
-        t_c = fixcol(ul_c + f_c);
-        city = my_city_at(t_r, t_c, n);
-        army = my_army_at(t_r, t_c, n);
+        t.r = ul.r + f_r;
+        t.c = ul.c + f_c;
+        city = my_city_at(t, n);
+        army = my_army_at(t, n);
         if(focus || army >= 0 || city >= 0) {
-			showmap(n, rp, cp, false);
+			showmap(n, centre, false);
 			if(army >= 0 || city >= 0) {
-				a_r = t_r;
-				a_c = t_c;
-				full_list = get_armylist(n, a_r, a_c);
+				pos.r = t.r;
+				pos.c = t.c;
+				full_list = get_armylist(n, pos);
 				showarmies(full_list, true);
 			}
 			focus = false;
 		}
-		show_info(t_r, t_c);
-    	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], 'I');
+		show_info(t);
+    	gmapspot(f_r, f_c, t, 'I');
         console.gotoxy(f_c * 2 + 3, f_r + 2);
         if(!done) {
 			do {
@@ -1441,37 +1431,38 @@ function info_mode(full_list, rp, cp, n, ch)
 			} while(ch=='' && !done);
 		}
     } while(!done);
-   	gmapspot(f_r, f_c, map[t_r][t_c], mapovl[t_r][t_c], '');
-    return {r:a_r,c:a_c,ch:ch,full_list:full_list};
+   	gmapspot(f_r, f_c, t, '');
+    return {ch:ch,full_list:full_list};
 }
 
-function groupcmp(r1, c1, r2, c2)
+function groupcmp(pos1, pos2)
 {
     /* quadrant check */
-    if(parseInt(r1 / 16) > parseInt(r2 / 16))
+    if(parseInt(pos1.r / 16) > parseInt(pos2.r / 16))
         return 1;
-    if(parseInt(r1 / 16) < parseInt(r2 / 16))
+    if(parseInt(pos1.r / 16) < parseInt(pos2.r / 16))
         return -1;
-    if(parseInt(c1 / 16) > parseInt(c2 / 16))
+    if(parseInt(pos1.c / 16) > parseInt(pos2.c / 16))
         return 1;
-    if(parseInt(c1 / 16) < parseInt(c2 / 16))
+    if(parseInt(pos1.c / 16) < parseInt(pos2.c / 16))
         return -1;
 
     /* exact check */
-    if(r1 > r2)
+    if(pos1.r > pos2.r)
         return 1;
-    if(r1 < r2)
+    if(pos1.r < pos2.r)
         return -1;
-    if(c1 > c2)
+    if(pos1.c > pos2.c)
         return 1;
-    if(c1 < c2)
+    if(pos1.c < pos2.c)
         return -1;
     return 0;
 }
 
-function skipto(next, group, ntn, rp, cp)
+function skipto(next, group, ntn, pos)
 {
-    var i, t_r, t_c;
+	var t = new Position();
+    var i;
 	var cmp;
 
 	if(next)
@@ -1479,15 +1470,13 @@ function skipto(next, group, ntn, rp, cp)
 	else
 		cmp = function(x) { return x < 0; };
 
-    t_r = -1;
-    t_c = -1;
     if(group) {
 		for(i = 0; i < cities.length; i++) {
 			if(cities[i].nation == ntn) {
-				if(cmp(groupcmp(cities[i].r, cities[i].c, rp, cp))
-						&& (t_r == -1 || !cmp(groupcmp(cities[i].r, cities[i].c, t_r, t_c)))) {
-					t_r = cities[i].r;
-					t_c = cities[i].c;
+				if(cmp(groupcmp(new Position(cities[i].r, cities[i].c), pos))
+						&& (t.r == -1 || !cmp(groupcmp(cities[i].r, cities[i].c, t.r, t.c)))) {
+					t.r = cities[i].r;
+					t.c = cities[i].c;
 				}
 			}
 		}
@@ -1496,36 +1485,39 @@ function skipto(next, group, ntn, rp, cp)
 		if(!group && armies[i].move_left <= 0)
 			continue;
         if(armies[i].nation == ntn) {
-            if(cmp(groupcmp(armies[i].r, armies[i].c, rp, cp))
-					&& (t_r == -1 || !cmp(groupcmp(armies[i].r, armies[i].c, t_r, t_c)))) {
-                t_r = armies[i].r;
-                t_c = armies[i].c;
+            if(cmp(groupcmp(new Position(armies[i].r, armies[i].c), pos))
+					&& (t.r == -1 || !cmp(groupcmp(armies[i].r, armies[i].c, t.r, t.c)))) {
+                t.r = armies[i].r;
+                t.c = armies[i].c;
 			}
 		}
 	}
-    if(t_r != -1)
-		return {r:t_r,c:t_c,ret:true};
-    return {r:rp,c:cp,ret:false};
+    if(t.r != -1 && t.c != -1) {
+		pos.r = t.r;
+		pos.c = t.c;
+		return true;
+	}
+    return false;
 }
 
-function prevgroup(ntn, rp, cp)
+function prevgroup(ntn, pos)
 {
-	return skipto(false, true, ntn, rp, cp);
+	return skipto(false, true, ntn, pos);
 }
 
-function prevarmy(ntn, rp, cp)
+function prevarmy(ntn, pos)
 {
-	return skipto(false, false, ntn, rp, cp);
+	return skipto(false, false, ntn, pos);
 }
 
-function nextgroup(ntn, rp, cp)
+function nextgroup(ntn, pos)
 {
-	return skipto(true, true, ntn, rp, cp);
+	return skipto(true, true, ntn, pos);
 }
 
-function nextarmy(ntn, rp, cp)
+function nextarmy(ntn, pos)
 {
-	return skipto(true, false, ntn, rp, cp);
+	return skipto(true, false, ntn, pos);
 }
 
 var help_mode = 0;
@@ -1763,19 +1755,19 @@ function produce(city)
 
 var upd_pos=0;
 var upd_top=0;
-function update(full_list, ntn, or, oc)
+function update(full_list, ntn, pos)
 {
 	var fp = new File(getpath(format(TURNFL, ntn)));
 	var lines;
 	var lpos = -1;
 	var ltop = -1;
 	var i;
-	var r=or,c=oc;
+	var upos = new Position(pos.r, pos.c);
 	var ch;
 	var m;
 
 	showarmies(full_list, false);
-	showmap(ntn, r, c, true);
+	showmap(ntn, upos, true);
 	console.attributes = attrs.status_area;
 	if(fp.open('rb')) {
 		lines=fp.readAll();
@@ -1792,8 +1784,8 @@ function update(full_list, ntn, or, oc)
 						if((m = lines[upd_top+i].match(/^([0-9]+) ([0-9]+) (.*)$/))!=null) {
 							if(upd_top+i == upd_pos) {
 								console.print('=> ');
-								r=parseInt(m[1], 10);
-								c=parseInt(m[2], 10);
+								upos.r=parseInt(m[1], 10);
+								upos.c=parseInt(m[2], 10);
 							}
 							else
 								console.print('   ');
@@ -1802,7 +1794,7 @@ function update(full_list, ntn, or, oc)
 					}
 					console.cleartoeol();
 				}
-				showfocus(or, oc);
+				showfocus(pos);
 			}
 			else if(lpos != upd_pos) {
 				console.gotoxy(2, 21+(lpos-upd_top));
@@ -1810,10 +1802,10 @@ function update(full_list, ntn, or, oc)
 				console.gotoxy(2, 21+(upd_pos-upd_top));
 				console.print('=>');
 				if((m = lines[upd_pos].match(/^([0-9]+) ([0-9]+) (.*)$/))!=null) {
-					r=parseInt(m[1]);
-					c=parseInt(m[2]);
+					upos.r=parseInt(m[1]);
+					upos.c=parseInt(m[2]);
 				}
-				showfocus(or, oc);
+				showfocus(pos);
 			}
 			lpos = upd_pos;
 			ltop = upd_top;
@@ -1824,7 +1816,7 @@ function update(full_list, ntn, or, oc)
 						console.gotoxy(45, 20);
 						console.attributes = genattrs.border;
 						console.print((new Array(36)).join(ascii(196)));
-						return {r:or,c:oc,ch:'',full_list:full_list};
+						return {ch:'',full_list:full_list};
 					}
 				}
 				break;
@@ -1845,56 +1837,56 @@ function update(full_list, ntn, or, oc)
 					upd_top = upd_pos-3;
 				break;
 			case 'u':
-				if(or != r || oc != c) {
-					or = r;
-					oc = c;
-					full_list = get_armylist(ntn, r, c);
+				if(pos.r != upos.r || pos.c != upos.c) {
+					pos.r = upos.r;
+					pos.c = upos.c;
+					full_list = get_armylist(ntn, upos);
 					showarmies(full_list, false);
-					showmap(ntn, or, oc, false);
-					showfocus(or, oc);
+					showmap(ntn, pos, false);
+					showfocus(pos);
 				}
 				break;
 			default:
 				console.gotoxy(45, 20);
 				console.attributes = genattrs.border;
 				console.print((new Array(36)).join(ascii(196)));
-				return {r:or,c:oc,ch:ch,full_list:full_list};
+				return {ch:ch,full_list:full_list};
 			}
 		}
 	}
 	else
 		saystat("No updates this turn!");
-	return {r:or,c:oc,ch:'',full_list:full_list};
+	return {ch:'',full_list:full_list};
 }
 
 function mainloop(ntn)
 {
-    var ch, r, c, i, n, city, army, force, obj;
+	var pos = new Position();
+    var ch, i, n, city, army, force, obj;
     var inbuf, buff;
 	var keep_ch = false;
 	var orig_pt = console.ctrlkey_passthru;
 	var full_list;
+	var id;
 
-    r = -1;
-    c = -1;
     army = -1;
 
     /* find the player's capitol city */
     if(cities[nations[ntn].city].nation == ntn) {
         i = nations[ntn].city;
-        r = cities[i].r;
-        c = cities[i].c;
+        pos.r = cities[i].r;
+        pos.c = cities[i].c;
     }
 
     /* find the player's first city */
-    city = city_at(r, c);
+    city = city_at(pos);
     if(city != -1 && cities[city].nation != ntn)
         city = -1;
     if(city == -1) {
         for(i = 0; i < cities.length; i++) {
             if(cities[i].nation == ntn) {
-                r = cities[i].r;
-                c = cities[i].c;
+                pos.r = cities[i].r;
+                pos.c = cities[i].c;
                 break;
             }
 		}
@@ -1904,8 +1896,8 @@ function mainloop(ntn)
     if(city == -1) {
         for(i = 0; i < armies.length; i++) {
             if(armies[i].nation == ntn) {
-                r = armies[i].r;
-                c = armies[i].c;
+                pos.r = armies[i].r;
+                pos.c = armies[i].c;
                 army = i;
                 break;
             }
@@ -1921,13 +1913,11 @@ function mainloop(ntn)
 
 	/* Check for messages */
 	inbuf = format(MAILFL, ntn);
-	full_list = get_armylist(ntn, r, c);
+	full_list = get_armylist(ntn, pos);
 	showarmies(full_list, true);
-	showmap(ntn, r, c, true);
-	showfocus(r, c);
-	obj = update(full_list, ntn, r, c);
-	r = obj.r;
-	c = obj.c;
+	showmap(ntn, pos, true);
+	showfocus(pos);
+	obj = update(full_list, ntn, pos);
 	ch = obj.ch;
 	full_list = obj.full_list;
 	if(ch != '')
@@ -1939,9 +1929,9 @@ function mainloop(ntn)
     for(;;) {
 		// TODO : Should be conditional
 		showarmies(full_list, true);
-        showmap(ntn, r, c, force);
+        showmap(ntn, pos, force);
         force = false;
-        showfocus(r, c);
+        showfocus(pos);
 		if(!keep_ch) {
 			do {
 				ch = console.inkey(5000);
@@ -1980,15 +1970,13 @@ function mainloop(ntn)
 								return;
 							}
 							mainscreen();
-							full_list = get_armylist(ntn, r, c);
+							full_list = get_armylist(ntn, pos);
 							showarmies(full_list, true);
-							showmap(ntn, r, c, true);
-							showfocus(r, c);
+							showmap(ntn, pos, true);
+							showfocus(pos);
 							upd_pos=0;
 							upd_top=0;
-							obj = update(full_list, ntn, r, c);
-							r = obj.r;
-							c = obj.c;
+							obj = update(full_list, ntn, pos);
 							ch = obj.ch;
 							full_list = obj.full_list;
 						}
@@ -1997,11 +1985,11 @@ function mainloop(ntn)
 			} while(ch=='');
 		}
 		keep_ch = false;
-        showfocus(r, c);
+        showfocus(pos);
         clearstat(-1);
         switch(ch) {
         case 'p' : /* production */
-            city = city_at(r, c);
+            city = city_at(pos);
             if(city != -1 && cities[city].nation == ntn)
                 produce(city);
             else
@@ -2012,48 +2000,26 @@ function mainloop(ntn)
 			force = true;
 			break;
         case ctrl(']') : /* next army */
-			obj = nextarmy(ntn, r, c);
-			r = obj.r;
-			c = obj.c;
-            if(!obj.ret)
+			if(!nextarmy(ntn, pos))
                 saystat("No Next Army with Movement Found");
             break;
         case ']' : /* next group */
-			obj = nextgroup(ntn, r, c);
-			r = obj.r;
-			c = obj.c;
-            if(!obj.ret)
+			if(!nextgroup(ntn, pos))
                 saystat("No More Groups Remain.");
             break;
         case '}' : /* last group */
-            while((obj = nextgroup(ntn, r, c)).ret) {
-				r = obj.r;
-				c = obj.c;
-			}
-			r = obj.r;
-			c = obj.c;
+            while(nextgroup(ntn, pos));
             break;
         case ctrl('[') : /* prev army */
-			obj = prevarmy(ntn, r, c);
-			r = obj.r;
-			c = obj.c;
-            if(!obj.ret)
+			if(!prevarmy(ntn, pos))
                 saystat("No Previous Army with Movement Found");
             break;
         case '[' : /* previous group */
-			obj = prevgroup(ntn, r, c);
-			r = obj.r;
-			c = obj.c;
-            if(!obj.ret)
+			if(!prevgroup(ntn, pos))
                 saystat("No Previous Groups Remain.");
             break;
         case '{' : /* first group */
-            while((obj = prevgroup(ntn, r, c)).ret) {
-				r = obj.r;
-				c = obj.c;
-			}
-			r = obj.r;
-			c = obj.c;
+            while(prevgroup(ntn, pos));
             break;
         case 'n' : /* name hero */
 			if(turn_done) {
@@ -2098,7 +2064,7 @@ function mainloop(ntn)
             break;
         case 'I' : /* army information */
             if(full_list.view.length > 0) {
-                var id = full_list.view[full_list.pointer].id;
+                id = full_list.view[full_list.pointer].id;
                 buff = format("%s: Combat %d / Hero %d %s",
                     armyname(id), armies[id].combat, armies[id].hero,
                     ((armies[id].hero > 0 && armies[id].eparm1) ? "(Loyal)" : ""));
@@ -2117,9 +2083,7 @@ function mainloop(ntn)
                 break;
             /* fall through */
         case 'm' : /* move */
-            obj = move_mode(full_list, ntn, r, c);
-            r = obj.r;
-            c = obj.c;
+            obj = move_mode(full_list, ntn, pos);
 			full_list = obj.full_list;
             break;
         case '/' : /* unmark all */
@@ -2143,18 +2107,14 @@ function mainloop(ntn)
         case 'c' :
         case 'v' :
         case 'b' :
-            obj = info_mode(full_list, r, c, ntn, ch);
-            r = obj.r;
-            c = obj.c;
+            obj = info_mode(full_list, pos, ntn, ch);
 			ch = obj.ch;
 			full_list = obj.full_list;
 			if(ch != '')
 				keep_ch = true;
             break;
 		case 'u' :
-            obj = update(full_list, ntn, r, c);
-            r = obj.r;
-            c = obj.c;
+            obj = update(full_list, ntn, pos);
 			ch = obj.ch;
 			full_list = obj.full_list;
 			if(ch != '')
@@ -2200,6 +2160,7 @@ function mainloop(ntn)
 			force = true;
 			break;
         case '\f' :
+			mainscreen();
 			force = true;
             break;
 		case 'x' :
