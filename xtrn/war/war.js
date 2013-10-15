@@ -1474,7 +1474,7 @@ function skipto(next, group, ntn, pos)
 		for(i = 0; i < cities.length; i++) {
 			if(cities[i].nation == ntn) {
 				if(cmp(groupcmp(new Position(cities[i].r, cities[i].c), pos))
-						&& (t.r == -1 || !cmp(groupcmp(cities[i].r, cities[i].c, t.r, t.c)))) {
+						&& (t.r == -1 || !cmp(groupcmp(new Position(cities[i].r, cities[i].c), t)))) {
 					t.r = cities[i].r;
 					t.c = cities[i].c;
 				}
@@ -1486,12 +1486,13 @@ function skipto(next, group, ntn, pos)
 			continue;
         if(armies[i].nation == ntn) {
             if(cmp(groupcmp(new Position(armies[i].r, armies[i].c), pos))
-					&& (t.r == -1 || !cmp(groupcmp(armies[i].r, armies[i].c, t.r, t.c)))) {
+					&& (t.r == -1 || !cmp(groupcmp(new Position(armies[i].r, armies[i].c), t)))) {
                 t.r = armies[i].r;
                 t.c = armies[i].c;
 			}
 		}
 	}
+
     if(t.r != -1 && t.c != -1) {
 		pos.r = t.r;
 		pos.c = t.c;
