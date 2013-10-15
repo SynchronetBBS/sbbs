@@ -167,6 +167,7 @@ function mainscreen()
     var i;
 
     console.clear(attrs.main_screen);
+    stat.line = ['','','',''];
 	console.attributes = genattrs.border;
 	console.gotoxy(2, 1);
 	console.print(ascii(201));
@@ -199,13 +200,41 @@ function mainscreen()
     console.print(format("   %-20s    Turn %d   ", world, gen));
 }
 
-function saystat(msg)
+function StatusArea()
 {
-    console.gotoxy(2, 21);
-	console.attributes = attrs.status_area;
-    console.print(msg);
-    console.cleartoeol();
+	this.line = ['','','',''];
+	this.last_line = [undefined,undefined,undefined,undefined];
+	this.clear = function(line) {
+		if(line == undefined || line < 0 || line > this.line.length) {
+			/* clear all */
+			var l;
+			for(l=0; l<this.line.length; l++)
+				this.clear(l);
+		}
+		else {
+			this.say('', line);
+		}
+	};
+	this.say = function(msg, line, char) {
+		if(line == undefined || line < 0 || line > this.line.length)
+			line = 0;
+		if(char == undefined)
+			char = 0;
+		msg=msg.substr(0, (line==3?78:79)-char);
+		if(this.line[line] != msg) {
+			console.attributes = attrs.status_area;
+			if(char > 0) {
+				console.gotoxy(2, 21+line);
+				console.cleartoeol();
+			}
+			console.gotoxy(2+char, 21+line);
+			console.print(msg);
+			console.cleartoeol();
+			this.line[line]=format("%*s%s",char,'',msg);
+		}
+	};
 }
+var stat = new StatusArea();
 
 function mailer(from, to)
 {
@@ -229,7 +258,7 @@ function mailer(from, to)
 	f = new File(getpath(format(TMPMAILFL, from)));
 	if(!f.open("wb")) {
     	mainscreen();
-		saystat("Message Creation Failed (System Error)");
+		stat.say("Message Creation Failed (System Error)");
 		return;
 	}
 	f.close();
@@ -242,14 +271,14 @@ function mailer(from, to)
 			if(!f.open('rb')) {
 				file_remove(f.name);
     			mainscreen();
-				saystat("Mail Could Not Be Read...  Cancelled.");
+				stat.say("Mail Could Not Be Read...  Cancelled.");
 				return;
 			}
 			fp = new File(fname);
 			if(!fp.open('ab')) {
 				file_remove(f.name);
     			mainscreen();
-				saystat("Mail Could Not Be Sent...  Cancelled.");
+				stat.say("Mail Could Not Be Sent...  Cancelled.");
 				return;
 			}
 			fp.write(HEADERMARK);
@@ -269,7 +298,7 @@ function mailer(from, to)
 	}
 	file_remove(f.name);
     mainscreen();
-	saystat("Mail Sent.");
+	stat.say("Mail Sent.");
 }
 
 /*
@@ -355,13 +384,13 @@ function delete_msgs(fn, index)
 	outf = new File(getpath(tmp));
 	if(!inf.open("rb")) {
 		log("Message Deletion Failed (System Error)");
-		saystat("Message Deletion Failed (System Error)");
+		stat.say("Message Deletion Failed (System Error)");
 		return;
 	}
 	if(!outf.open("wb")) {
 		inf.close();
 		log("Message Deletion Failed (System Error)");
-		saystat("Message Deletion Failed (System Error)");
+		stat.say("Message Deletion Failed (System Error)");
 		return;
 	}
     for(i = 0; i < index.length; i++) {
@@ -545,13 +574,13 @@ function reader(fname, mode)
     if(!fp.open("rb")) {
 		switch(mode) {
 		case 2:
-            saystat("Help file missing.");
+            stat.say("Help file missing.");
             break;
         case 1:
-            saystat("No Mail in your box.");
+            stat.say("No Mail in your box.");
             break;
         default:
-            saystat("No News to Read.");
+            stat.say("No News to Read.");
 		}
         return;
     }
@@ -768,19 +797,6 @@ function movecost(a, pos)
     return mv;
 }
 
-function clearstat(mode)
-{
-	console.attributes = attrs.status_area;
-    if(mode == -1) {
-        console.gotoxy(2, 21); console.cleartoeol();
-        console.gotoxy(2, 22); console.cleartoeol();
-        console.gotoxy(2, 23); console.cleartoeol();
-        console.gotoxy(2, 24); console.cleartoeol();
-    } else {
-        console.gotoxy(2, 21+mode); console.cleartoeol();
-    }
-}
-
 function unit_mark(nation_mark)
 {
 	if(marks[0].indexOf(nation_mark) == -1)
@@ -796,6 +812,35 @@ function ArmyList(ntn) {
 	this.enemies=[];
 	this.pointer = -1;
 	this.ntn = ntn;
+	this.generation = 0;
+	this.last_gen = -1;
+	this.last_pointer = -1;
+	this.army = function(i) {
+		return armies[this.view[i].id];
+	};
+	this.curr_army = function() {
+		return this.army(this.pointer);
+	};
+	this.next = function() {
+		if(this.view.length > 0) {
+			this.pointer++;
+			this.pointer = this.pointer % this.view.length;
+			this.show(true, false);
+			return true;
+		}
+		this.pointer = -1;
+		return false;
+	};
+	this.prev = function() {
+		if(this.view.length > 0) {
+			this.pointer--;
+			this.pointer = (this.pointer + this.view.length) % this.view.length;
+			this.show(true, false);
+			return true;
+		}
+		this.pointer = -1;
+		return false;
+	};
 	this.update = function(pos) {
 		var e;
 		var i,k;
@@ -807,6 +852,7 @@ function ArmyList(ntn) {
 		}
 		this.view=[];
 		this.enemies=[];
+		this.generation++;
 		for(i = 0; i < armies.length; i++) {
 			if(pos.r == armies[i].r && pos.c == armies[i].c) {
 				if(armies[i].nation == this.ntn || this.ntn == -1) {
@@ -872,53 +918,96 @@ function ArmyList(ntn) {
 		else
 			this.pointer = -1;
 	};
-	this.show = function(showptr)
+	this.toggle_mark = function(index) {
+		this.view[index].mark = !this.view[index].mark;
+		console.gotoxy(41, index+3);
+		console.print(this.view[index].mark ? '*' : ' ');
+	};
+	this.mark_all = function() {
+		var i;
+
+		for(i = 0; i < this.view.length; i++) {
+			if(!this.view[i].mark) {
+				if(armies[this.view[i].id].move_left > 0)
+					this.toggle_mark(i);
+			}
+			else {
+				if(armies[this.view[i].id].move_left <= 0)
+					this.toggle_mark(i);
+			}
+		}
+	};
+	this.unmark_all = function() {
+		var i;
+
+		for(i = 0; i < this.view.length; i++) {
+			if(this.view[i].mark)
+				this.toggle_mark(i);
+		}
+	};
+	this.show = function(showptr, force)
 	{
 		var i, a;
 		var buff;
 
 		console.attributes = attrs.army_area;
-		for(i = 0; i < this.view.length && i < 12; i++) {
-			console.gotoxy(38, i + 3);
-			if(i < this.view.length) {
-				a = this.view[i].id;
-				console.print((i==this.pointer && showptr)?'=> ':'   ');
-				console.print((this.view[i].mark)?'* ':'  ');
-				buff = armyname(a);
-				if(armies[a].name.length == 0 && armies[a].hero > 0)
-					buff = "(Nameless Hero)";
-				else if(armies[a].hero > 0)
-					buff += " (Hero)";
-				console.print(format("%-31.31s %d:%d", buff,
-					armies[a].move_rate, armies[a].move_left));
+		if(force || this.last_gen != this.generation) {
+			for(i = 0; i < this.view.length && i < 12; i++) {
+				console.gotoxy(38, i + 3);
+				if(i < this.view.length) {
+					a = this.view[i].id;
+					console.print((i==this.pointer && showptr)?'=> ':'   ');
+					console.print((this.view[i].mark)?'* ':'  ');
+					buff = armyname(a);
+					if(armies[a].name.length == 0 && armies[a].hero > 0)
+						buff = "(Nameless Hero)";
+					else if(armies[a].hero > 0)
+						buff += " (Hero)";
+					console.print(format("%-31.31s %d:%d", buff,
+						armies[a].move_rate, armies[a].move_left));
+				}
+				console.cleartoeol();
 			}
-			console.cleartoeol();
-		}
-		for(;i < 12;i++) {
-			console.gotoxy(38, i + 3);
-			console.cleartoeol();
-		}
-		console.gotoxy(38, 15);
-		console.attributes = attrs.army_total;
-		if(this.view.length > 0)
-			console.print(format("     Total %d Armies", this.view.length));
-		console.cleartoeol();
-		console.attributes = attrs.army_area;
-		for(i = 0; i < this.enemies.length; i++) {
-			console.gotoxy(43, i + 17);
-			if(this.enemies[i].nation != -1) {
-				console.print(format("%-15.15s %3d Armies, %3d Heros",
-					(i == 1 && this.enemies[i].multiple)
-						? "(Other Nations)"
-						: nationcity(this.enemies[i].nation),
-					this.enemies[i].armies, this.enemies[i].heros));
+			for(;i < 12;i++) {
+				console.gotoxy(38, i + 3);
+				console.cleartoeol();
 			}
+			console.gotoxy(38, 15);
+			console.attributes = attrs.army_total;
+			if(this.view.length > 0)
+				console.print(format("     Total %d Armies", this.view.length));
 			console.cleartoeol();
+			console.attributes = attrs.army_area;
+			for(i = 0; i < this.enemies.length; i++) {
+				console.gotoxy(43, i + 17);
+				if(this.enemies[i].nation != -1) {
+					console.print(format("%-15.15s %3d Armies, %3d Heros",
+						(i == 1 && this.enemies[i].multiple)
+							? "(Other Nations)"
+							: nationcity(this.enemies[i].nation),
+						this.enemies[i].armies, this.enemies[i].heros));
+				}
+				console.cleartoeol();
+			}
+			for(;i<2; i++) {
+				console.gotoxy(43, i + 17);
+				console.cleartoeol();
+			}
+			this.last_gen = this.generation;
 		}
-		for(;i<2; i++) {
-			console.gotoxy(43, i + 17);
-			console.cleartoeol();
+		else {
+			if(this.last_pointer != this.pointer) {
+				if(this.last_pointer >= 0) {
+					console.gotoxy(38, this.last_pointer + 3);
+					console.print('  ');
+				}
+				if(this.pointer >= 0) {
+					console.gotoxy(38, this.pointer + 3);
+					console.print('=>');
+				}
+			}
 		}
+		this.last_pointer = this.pointer;
 	};
 }
 
@@ -945,7 +1034,6 @@ function gmapspot(r, c, pos, extra_attr)
     console.print(mark);
     console.attributes = terr_attr[terr]+extra_attr;
     console.print(terr);
-    console.gotoxy(c * 2 + 3, r + 2);
     return 0;
 }
 
@@ -974,9 +1062,13 @@ function showcity(pos)
     console.print(format("%-40.40s", buff));
 }
 
-var old_ul = new Position();
+//var old_ul = new Position();
 function showmap(ntn, pos, force)
 {
+	if(this.old_ul == undefined)
+		this.old_ul = new Position();
+	if(this.old_pos == undefined)
+		this.old_pos = new Position();
     var rem = parseInt((16 - gran) / 2);
 	var ul = new Position(parseInt(pos.r / gran) * gran - rem, parseInt(pos.c / gran) * gran - rem);
 	var f_r = pos.r % gran;
@@ -984,7 +1076,7 @@ function showmap(ntn, pos, force)
 	var z = new Position();
     var i, j;
 
-    if(old_ul.r != ul.r || old_ul.c != ul.c || force) {
+    if(this.old_ul.r != ul.r || this.old_ul.c != ul.c || force) {
         for(i = 0; i < 16; i++) {
             for(j = 0; j < 16; j++) {
 				z.r = ul.r+i;
@@ -993,9 +1085,13 @@ function showmap(ntn, pos, force)
             }
 		}
 	}
-    old_ul = ul;
-    if(mapovlpos(pos) != ' ')
-        showcity(pos);
+    this.old_ul = ul;
+    if(mapovlpos(pos) != ' ') {
+		if(this.old_pos.r != pos.r || this.old_pos.c != pos.c)
+			showcity(pos);
+	}
+	this.old_pos.r = pos.r;
+	this.old_pos.c = pos.c;
     console.gotoxy(f_c * 2 + 16, f_r + 8);
 }
 
@@ -1010,7 +1106,7 @@ function showfocus(pos)
     f_r = (pos.r % gran) + rem;
     f_c = (pos.c % gran) + rem;
     gmapspot(f_r, f_c, pos, '');
-    console.attributes='N';
+    console.gotoxy(f_r * 2 + 3, f_c + 2);
 }
 
 function move_mode(full_list, ntn, pos)
@@ -1025,21 +1121,21 @@ function move_mode(full_list, ntn, pos)
     var buff;
 
 	if(turn_done) {
-		saystat("Turn is currently done, cannot issue orders");
+		stat.say("Turn is currently done, cannot issue orders");
         return;
 	}
     if(full_list.view.length < 1) {
-        saystat("No Army to Move.");
+        stat.say("No Army to Move.");
         return;
     }
-    flag = 0;
+    flag = false;
     for(i = 0; i < full_list.view.length; i++) {
         if(full_list.view[i].mark)
-            flag = 1;
+            flag = true;
         if(full_list.view[i].mark
-				&& (armies[full_list.view[i].id].move_left > 0 || ntn == -1)) {
+				&& (full_list.army(i).move_left > 0 || ntn == -1)) {
             if(movestack.length >= 10 && ntn >= 0) {
-                saystat("Too Many Armies for Group.");
+                stat.say("Too Many Armies for Group.");
         		return;
             }
             movestack.push({
@@ -1050,7 +1146,7 @@ function move_mode(full_list, ntn, pos)
         }
     }
     if(movestack.length < 1 && !flag
-			&& (armies[full_list.view[full_list.pointer].id].move_left > 0 || ntn == -1)) {
+			&& (full_list.curr_army().move_left > 0 || ntn == -1)) {
 		movestack.push({
 			id:full_list.view[full_list.pointer].id,
 			moved:0,
@@ -1059,7 +1155,7 @@ function move_mode(full_list, ntn, pos)
         full_list.view[full_list.pointer].mark = 1;
     }
     if(movestack.length < 1 && ntn > -1) {
-        saystat("Armies Have No Movement Left.");
+        stat.say("Armies Have No Movement Left.");
         return;
     }
 
@@ -1086,7 +1182,7 @@ function move_mode(full_list, ntn, pos)
             if(unmarked[i].dep == a
 					&& armies[a].special_mv != TRANS_ALL
 					&& movecost(a, new Position(armies[a].r, armies[a].c)) == 0) {
-                saystat("Armies Would Be Stranded...  Movement Cancelled.");
+                stat.say("Armies Would Be Stranded...  Movement Cancelled.");
                 return;
             }
         }
@@ -1097,22 +1193,16 @@ function move_mode(full_list, ntn, pos)
         analyze_stack(movestack);
 
     /* perform movement */
-    clearstat(-1);
-    console.gotoxy(2, 22);
-	console.attributes = attrs.status_area;
-    console.print(format("Move %s", movestack.length > 1 ? "Armies" : "Army"));
-    console.gotoxy(21, 23);
-    console.print("4   6  or  d   g");
-    console.gotoxy(21, 24);
-    console.print("1 2 3      c v b");
-    console.gotoxy(21, 22);
-    console.print("7 8 9      e r t    SPACE to Stop.  ");
-	full_list.show(false);
+    stat.clear(0);
+    stat.say(format("Move %15s 7 8 9      e r t    SPACE to Stop.  ", movestack.length > 1 ? "Armies" : "Army  "), 1);
+    stat.say("4   6  or  d   g", 2, 20);
+    stat.say("1 2 3      c v b", 3, 20);
+	full_list.show(false, false);
     showmap(ntn, pos, false);
     while(movestack.length > 0 && (ch = console.getkey()) != ' '
 			&& ch != 'q' && ch != '\x1b') {
         showfocus(pos);
-        clearstat(0);
+        stat.clear(0);
 		t.r = pos.r;
 		t.c = pos.c;
         switch(ch) { /* directions */
@@ -1171,7 +1261,7 @@ function move_mode(full_list, ntn, pos)
                             ok = 0;
                             buff = format("%s Can't Move There.",
                                 armyname(a));
-                            saystat(buff);
+                            stat.say(buff);
                             break;
                         }
                     }
@@ -1192,7 +1282,7 @@ function move_mode(full_list, ntn, pos)
                     max = 12;
                 if(movestack.length + cnt > max) {
                     ok = 0;
-                    saystat("Too Many Armies There.");
+                    stat.say("Too Many Armies There.");
                 }
             }
 
@@ -1202,7 +1292,7 @@ function move_mode(full_list, ntn, pos)
                     if(armies[i].nation != ntn
 							&& armies[i].r == pos.r && armies[i].c == pos.c) {
                         ok = 0;
-						saystat("Can't Leave Combat.");
+						stat.say("Can't Leave Combat.");
                         break;
                     }
                 }
@@ -1233,7 +1323,7 @@ function move_mode(full_list, ntn, pos)
 							full_list.view[j].mark = true;
 					}
 				}
-				full_list.show(false);
+				full_list.show(false, false);
             }
 
             /* redo screen. */
@@ -1250,7 +1340,7 @@ function move_mode(full_list, ntn, pos)
             }
 		}
 	}
-    clearstat(-1);
+    stat.clear();
     return;
 }
 
@@ -1301,7 +1391,7 @@ function show_info(pos)
 		}
     }
     buff += format("  %d Armies, %d Heros", ac, hc);
-    saystat(buff);
+    stat.say(buff);
 }
 
 function info_mode(full_list, pos, n, ch)
@@ -1315,14 +1405,10 @@ function info_mode(full_list, pos, n, ch)
 
     rem = parseInt((16 - gran) / 2);
     showfocus(pos);
-    clearstat(-1);
-    console.gotoxy(21,23);
-	console.attributes = attrs.status_area;	
-    console.print("4   6  or  d   g");
-    console.gotoxy(21,24);
-    console.print("1 2 3      c v b");
-    console.gotoxy(2,22);
-    console.print("Info Mode:         7 8 9      e r t      ESC to Stop.  ");
+    stat.clear(0);
+    stat.say("Info Mode:         7 8 9      e r t      ESC to Stop.  ", 1);
+    stat.say("4   6  or  d   g", 2, 20);
+    stat.say("1 2 3      c v b", 3, 20);
 	p = new Position(pos.r, pos.c);
 	a = new Position(pos.r, pos.c);
 	ul = new Position(parseInt(pos.r / gran) * gran - rem, parseInt(pos.c / gran) * gran - rem);
@@ -1413,7 +1499,7 @@ function info_mode(full_list, pos, n, ch)
 				pos.r = t.r;
 				pos.c = t.c;
 				full_list.update(pos);
-				full_list.show(true);
+				full_list.show(true, false);
 				showcity(pos);
 			}
 			focus = false;
@@ -1526,32 +1612,17 @@ function nextarmy(ntn, pos)
 var help_mode = 0;
 function help()
 {
-    console.gotoxy(2, 21);
-	console.attributes = attrs.status_area;
-    console.print(format("Commands, Page %d  (Press ? for More Help)", help_mode + 1));
-    console.cleartoeol();
+    stat.say(format("Commands, Page %d  (Press ? for More Help)", help_mode + 1), 0);
     switch(help_mode) {
     case 0 :
-        console.gotoxy(2, 22);
-        console.print("  (])next  ([)previous  (q)uit game  (u)pdates  (s)tatus display (x)end turn");
-        console.cleartoeol();
-        console.gotoxy(2, 23);
-        console.print("  (})last  ({)first  (A)rmy capabilities   army (p)roduction  (h)elp");
-        console.cleartoeol();
-        console.gotoxy(2, 24);
-        console.print("  (CTRL-]) Next movable (CTRL-[) Previous movable  (?) toggle quick help");
-        console.cleartoeol();
+        stat.say("  (])next  ([)previous  (q)uit game  (u)pdates  (s)tatus display (x)end turn", 1);
+        stat.say("  (})last  ({)first  (A)rmy capabilities   army (p)roduction  (h)elp", 2);
+        stat.say("  (CTRL-]) Next movable (CTRL-[) Previous movable  (?) toggle quick help", 3);
         break;
     case 1 :
-        console.gotoxy(2, 22);
-        console.print("  (z/Down)pointer down  (a/Up)pointer up  (SPACE)mark/unmark  (n)ame hero");
-        console.cleartoeol();
-        console.gotoxy(2, 23);
-        console.print("  (*)mark all  (/)unmark all  (m)ove marked armies  (f/5)mark all and move");
-        console.cleartoeol();
-        console.gotoxy(2, 24);
-        console.print("  (I)nformation about current army  Read (N)ews  (S)end message  read (M)ail");
-        console.cleartoeol();
+        stat.say("  (z/Down)pointer down  (a/Up)pointer up  (SPACE)mark/unmark  (n)ame hero", 1);
+        stat.say("  (*)mark all  (/)unmark all  (m)ove marked armies  (f/5)mark all and move", 2);
+        stat.say("  (I)nformation about current army  Read (N)ews  (S)end message  read (M)ail", 3);
         break;
     }
     help_mode++;
@@ -1726,12 +1797,13 @@ function produce(city)
     var okstring='';
 
 	if(turn_done) {
-		saystat("Turn is currently done, cannot issue orders");
+		stat.say("Turn is currently done, cannot issue orders");
 		return;
 	}
-	console.attributes = attrs.status_area;
-    console.gotoxy(2, 22);  console.cleartoeol();
-    console.gotoxy(2, 23);  console.cleartoeol();
+	stat.clear(1);
+	stat.line[1] = 'magic';
+	stat.clear(2);
+	stat.line[2] = 'magic';
     for(i = 0; i < cities[city].ntypes; i++) {
         if(cities[city].types[i] != -1) {
             console.gotoxy(parseInt(i / 2) * 30 + 2, (i % 2) + 22);
@@ -1741,19 +1813,17 @@ function produce(city)
             okstring += (i+1);
         }
     }
-	console.gotoxy(2, 24);
     t = cities[city].types[cities[city].prod_type];
-	console.print(format("Current:  %s (%d turns left)    ESC to Cancel",
+	stat.say(format("Current:  %s (%d turns left)    ESC to Cancel",
         ttypes[t].name,
-        cities[city].turns_left));
-    console.cleartoeol();
-    saystat(format("Set Army Production for %s:  ", cities[city].name));
+        cities[city].turns_left), 3);
+    stat.say(format("Set Army Production for %s:  ", cities[city].name));
     if(okstring.indexOf(ch = console.getkeys(okstring+'\x1b', 0)) != -1) {
         buff = format("set-produce %d %d\n", city, ch - 1);
         pfile.write(buff);
         execpriv(buff);
     }
-    clearstat(-1);
+    stat.clear();
 }
 
 var upd_pos=0;
@@ -1769,33 +1839,34 @@ function update(full_list, ntn, pos)
 	var ch;
 	var m;
 
-	full_list.show(false);
+	full_list.show(false, false);
 	showmap(ntn, upos, true);
 	console.attributes = attrs.status_area;
 	if(fp.open('rb')) {
 		lines=fp.readAll();
 		fp.close();
-		clearstat(-1);
 		console.gotoxy(45, 20);
 		console.attributes = genattrs.border;
 		console.print(ascii(180)+"(u) to move to the event location"+ascii(195));
 		for(;;) {
+			console.attributes = attrs.status_area;
 			if(ltop != upd_top) {
 				for(i=0; i<4; i++) {
-					console.gotoxy(2, 21+i);
 					if(upd_top + i < lines.length) {
 						if((m = lines[upd_top+i].match(/^([0-9]+) ([0-9]+) (.*)$/))!=null) {
 							if(upd_top+i == upd_pos) {
-								console.print('=> ');
+								stat.say('=> '+m[3].substr(0,75),i);
 								upos.r=parseInt(m[1], 10);
 								upos.c=parseInt(m[2], 10);
 							}
 							else
-								console.print('   ');
-							console.print(m[3].substr(0,75));
+								stat.say('   '+m[3].substr(0,75),i);
 						}
+						else
+							stat.clear(i);
 					}
-					console.cleartoeol();
+					else
+						stat.clear(i);
 				}
 				showfocus(pos);
 			}
@@ -1844,7 +1915,7 @@ function update(full_list, ntn, pos)
 					pos.r = upos.r;
 					pos.c = upos.c;
 					full_list.update(upos);
-					full_list.show(false);
+					full_list.show(false, false);
 					showmap(ntn, pos, false);
 					showfocus(pos);
 				}
@@ -1858,7 +1929,7 @@ function update(full_list, ntn, pos)
 		}
 	}
 	else
-		saystat("No updates this turn!");
+		stat.say("No updates this turn!");
 	return '';
 }
 
@@ -1871,6 +1942,7 @@ function mainloop(ntn)
 	var orig_pt = console.ctrlkey_passthru;
 	var full_list;
 	var id;
+	var list_gen = -1;
 
     army = -1;
 
@@ -1907,7 +1979,7 @@ function mainloop(ntn)
 		}
 	}
     if(army == -1 && city == -1) {
-        saystat("Nation is Destroyed.  Press Any Key:  ");
+        stat.say("Nation is Destroyed.  Press Any Key:  ");
         console.getkey();
 		console.ctrlkey_passthru = orig_pt;
         return;
@@ -1918,7 +1990,7 @@ function mainloop(ntn)
 	inbuf = format(MAILFL, ntn);
 	full_list = new ArmyList(ntn);
 	full_list.update(pos);
-	full_list.show(true);
+	full_list.show(true, false);
 	showmap(ntn, pos, true);
 	showfocus(pos);
 	ch = update(full_list, ntn, pos);
@@ -1926,11 +1998,13 @@ function mainloop(ntn)
 		keep_ch = true;
 
     /* enter the loop */
-    saystat("Welcome to Solomoriah's WAR!  Press <h> for Help.");
+    stat.say("Welcome to Solomoriah's WAR!  Press <h> for Help.");
     force = false;
     for(;;) {
-		// TODO : Should be conditional
-		full_list.show(true);
+		if(force || full_list.generation != list_gen) {
+			full_list.show(true, force);
+			list_gen = full_list.generation;
+		}
         showmap(ntn, pos, force);
         force = false;
         showfocus(pos);
@@ -1966,14 +2040,14 @@ function mainloop(ntn)
 							}
 
 							if(city == -1) {
-								saystat("Nation is Destroyed.  Press Any Key:  ");
+								stat.say("Nation is Destroyed.  Press Any Key:  ");
 								console.getkey();
 								console.ctrlkey_passthru = orig_pt;
 								return;
 							}
 							mainscreen();
 							full_list.update(pos);
-							full_list.show(true);
+							full_list.show(true, false);
 							showmap(ntn, pos, true);
 							showfocus(pos);
 							upd_pos=0;
@@ -1986,14 +2060,14 @@ function mainloop(ntn)
 		}
 		keep_ch = false;
         showfocus(pos);
-        clearstat(-1);
+		stat.clear();
         switch(ch) {
         case 'p' : /* production */
             city = city_at(pos);
             if(city != -1 && cities[city].nation == ntn)
                 produce(city);
             else
-                saystat("Must View Your Own City First.");
+                stat.say("Must View Your Own City First.");
             break;
 		case 'A' : /* army types */
 			armytypes();
@@ -2003,13 +2077,13 @@ function mainloop(ntn)
 			if(nextarmy(ntn, pos))
 				full_list.update(pos);
 			else
-                saystat("No Next Army with Movement Found");
+                stat.say("No Next Army with Movement Found");
             break;
         case ']' : /* next group */
 			if(nextgroup(ntn, pos))
 				full_list.update(pos);
 			else
-                saystat("No More Groups Remain.");
+                stat.say("No More Groups Remain.");
             break;
         case '}' : /* last group */
             while(nextgroup(ntn, pos));
@@ -2019,13 +2093,13 @@ function mainloop(ntn)
 			if(prevarmy(ntn, pos))
 				full_list.update(pos);
 			else
-                saystat("No Previous Army with Movement Found");
+                stat.say("No Previous Army with Movement Found");
             break;
         case '[' : /* previous group */
 			if(prevgroup(ntn, pos))
 				full_list.update(pos);
 			else
-                saystat("No Previous Groups Remain.");
+                stat.say("No Previous Groups Remain.");
             break;
         case '{' : /* first group */
             while(prevgroup(ntn, pos));
@@ -2033,44 +2107,35 @@ function mainloop(ntn)
             break;
         case 'n' : /* name hero */
 			if(turn_done) {
-				saystat("Turn is currently done, cannot issue orders");
+				stat.say("Turn is currently done, cannot issue orders");
 				break;
 			}
-            if(full_list.view.length > 0 && armies[full_list.view[full_list.pointer].id].name.length == 0) {
-                saystat("Enter Hero's Name:  ");
+            if(full_list.view.length > 0 && full_list.curr_army().name.length == 0) {
+                stat.say("Enter Hero's Name:  ");
                 inbuf = console.getstr(16);
 
                 buff = format("name-army %d '%s'\n", full_list.view[full_list.pointer].id, inbuf);
                 pfile.write(buff);
                 execpriv(buff);
 
-                clearstat(-1);
-            } else
-                saystat("Can Only Rename Heros.");
+                stat.clear();
+            }
+            else
+                stat.say("Can Only Rename Heros.");
             break;
         case 'z' : /* next army */
         case KEY_DOWN:
-            if(full_list.view.length > 0) {
-                full_list.pointer++;
-                full_list.pointer += full_list.view.length;
-                full_list.pointer %= full_list.view.length;
-            } else
-                saystat("No Armies!");
+			if(!full_list.next())
+                stat.say("No Armies!");
             break;
         case 'a' : /* previous army */
         case KEY_UP:
-            if(full_list.view.length > 0) {
-                full_list.pointer--;
-                full_list.pointer += full_list.view.length;
-                full_list.pointer %= full_list.view.length;
-            } else
-                saystat("No Armies!");
+            if(!full_list.prev())
+                stat.say("No Armies!");
             break;
         case ' ' : /* mark */
-            if(full_list.view.length > 0) {
-                full_list.view[full_list.pointer].mark = !full_list.view[full_list.pointer].mark;
-				full_list.show(true);
-			}
+            if(full_list.view.length > 0)
+                full_list.toggle_mark(full_list.pointer);
             break;
         case 'I' : /* army information */
             if(full_list.view.length > 0) {
@@ -2078,17 +2143,15 @@ function mainloop(ntn)
                 buff = format("%s: Combat %d / Hero %d %s",
                     armyname(id), armies[id].combat, armies[id].hero,
                     ((armies[id].hero > 0 && armies[id].eparm1) ? "(Loyal)" : ""));
-                saystat(buff);
-            } else
-                saystat("No Armies!");
+                stat.say(buff);
+            }
+            else
+                stat.say("No Armies!");
             break;
         case '*' : /* mark all */
         case 'f' : /* mark all and move */
         case '5' : /* mark all and move */
-            for(i = 0; i < full_list.view.length; i++) {
-                if(armies[full_list.view[i].id].move_left > 0)
-                    full_list.view[i].mark = 1;
-            }
+			full_list.mark_all();
             if(ch == '*')
                 break;
             /* fall through */
@@ -2096,8 +2159,7 @@ function mainloop(ntn)
             move_mode(full_list, ntn, pos);
             break;
         case '/' : /* unmark all */
-            for(i = 0; i < full_list.view.length; i++)
-                full_list.view[i].mark = 0;
+			full_list.unmark_all();
             break;
         case 'i' : /* information */
         case '1' :
@@ -2135,7 +2197,7 @@ function mainloop(ntn)
             force = true;
             break;
         case 'S' : /* send mail */
-            saystat("Send Mail -- Enter Ruler's Name, or All to Post News:  ");
+            stat.say("Send Mail -- Enter Ruler's Name, or All to Post News:  ");
             inbuf = console.getstr(16);
             n = -1;
             for(i = 0; i < nations.length; i++) {
@@ -2145,12 +2207,11 @@ function mainloop(ntn)
             if(n == -1 && "all" == inbuf.toLowerCase())
                 n = 0;
             if(n == -1) {
-                saystat("No Such Ruler.");
+                stat.say("No Such Ruler.");
                 break;
             }
             mailer(ntn, n);
             force = true;
-            clearstat(-1);
             break;
        case 's' : /* status */
             status();
@@ -2170,19 +2231,18 @@ function mainloop(ntn)
             break;
 		case 'x' :
 			if(turn_done) {
-				saystat("Turn is currently done, cannot issue orders");
+				stat.say("Turn is currently done, cannot issue orders");
 				break;
 			}
-            saystat("End Turn?  (Y/N)  ");
+            stat.say("End Turn?  (Y/N)  ");
             if(console.getkey().toLowerCase() == 'y') {
 				pfile.write("end-turn\n");
 				pfile.close();
 				turn_done = true;
 			}
-            clearstat(-1);
             break;
         case 'q' : /* quit */
-            saystat("Quit?  (Y/N/X)  ");
+            stat.say("Quit?  (Y/N/X)  ");
 	   		switch(console.getkey().toLowerCase()) {
 			case 'y':
 				console.ctrlkey_passthru = orig_pt;
@@ -2192,7 +2252,6 @@ function mainloop(ntn)
 					pfile.write("end-turn\n");
 				return;
 			}
-            clearstat(-1);
             break;
 		}
     }
