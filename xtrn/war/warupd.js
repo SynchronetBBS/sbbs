@@ -760,7 +760,7 @@ function main(argc, argv)
 		/* erase turn files */
 		print("Erasing Event Files...\r\n");
 		for(k = 0; k < nations.length; k++)
-			file_remove(game_dir+'/'+format(TURNFL, ntn));
+			file_remove(game_dir+'/'+format(TURNFL, k));
 
 		/* execute master file */
 		print("Reading Master Commands...\r\n");
