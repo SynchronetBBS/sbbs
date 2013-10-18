@@ -46,6 +46,9 @@
  *                              to use the new gConfigSettings.iceColors.menuOptClassicColors
  *                              configuration setting for new vs. classic Ice-style
  *                              menu option colors.
+ * 2013-10-17 Eric Oulashin     Bug fix: Updated readColorConfig() to make a backup of
+ *                              the menuOptClassicColors setting and set it back in the
+ *                              iceColors object after reading & setting the colors.
  */
 
 load("sbbsdefs.js");
@@ -75,10 +78,14 @@ function readColorConfig(pFilename)
    var colors = readValueSettingConfigFile(pFilename, 512);
    if (colors != null)
    {
+      // Make a backup of the menuOptClassicColors setting so we can set it
+      // back in the Ice color settings object after setting the colors.
+      var useClassicColorsBackup = gConfigSettings.iceColors.menuOptClassicColors;
       gConfigSettings.iceColors = colors;
       // Move the general color settings into gConfigSettings.genColors.*
       if (EDITOR_STYLE == "ICE")
          moveGenColorsToGenSettings(gConfigSettings.iceColors, gConfigSettings);
+      gConfigSettings.iceColors.menuOptClassicColors = useClassicColorsBackup;
    }
 }
 

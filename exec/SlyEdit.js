@@ -95,6 +95,11 @@
  *                              colors will be used.
  * 2013-10-13 Eric Oulashin     Verison 1.34
  *                              Releasing version 1.34.
+ * 2013-10-17 Eric Oulashin     Version 1.35
+ *                              Bug fix: The menuOptClassicColors setting for Ice
+ *                              mode is now being honored correctly.  Previously,
+ *                              it was being read as false because the property
+ *                              was being deleted after reading the Ice colors.
  */
 
 /* Command-line arguments:
@@ -172,8 +177,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.34";
-const EDITOR_VER_DATE = "2013-10-13";
+const EDITOR_VERSION = "1.35";
+const EDITOR_VER_DATE = "2013-10-17";
 
 
 // Program variables
