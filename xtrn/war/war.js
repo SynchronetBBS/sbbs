@@ -1825,6 +1825,7 @@ function produce(city)
 	stat.line[1] = 'magic';
 	stat.clear(2);
 	stat.line[2] = 'magic';
+	console.attributes = attrs.status_area;
     for(i = 0; i < cities[city].ntypes; i++) {
         if(cities[city].types[i] != -1) {
             console.gotoxy(parseInt(i / 2) * 30 + 2, (i % 2) + 22);
