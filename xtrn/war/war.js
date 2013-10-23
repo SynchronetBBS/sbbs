@@ -1109,7 +1109,7 @@ function showfocus(pos)
     f_r = (pos.r % gran) + rem;
     f_c = (pos.c % gran) + rem;
     gmapspot(f_r, f_c, pos, '');
-    console.gotoxy(f_r * 2 + 3, f_c + 2);
+    console.gotoxy(f_c * 2 + 3, f_r + 2);
 }
 
 function move_mode(full_list, ntn, pos)
@@ -1202,9 +1202,9 @@ function move_mode(full_list, ntn, pos)
     stat.say("1 2 3      c v b", 3, 20);
 	full_list.show(false, false);
     showmap(ntn, pos, false);
+	showfocus(pos);
     while(movestack.length > 0 && (ch = console.getkey()) != ' '
 			&& ch != 'q' && ch != '\x1b') {
-        showfocus(pos);
         stat.clear(0);
 		t.r = pos.r;
 		t.c = pos.c;
@@ -1420,7 +1420,8 @@ function info_mode(full_list, pos, n, ch)
 	t = new Position(ul.r + f_r, ul.c + f_c);
     done = false;
     do {
-   		gmapspot(f_r, f_c, t, '');
+    	gmapspot(f_r, f_c, t, 'I');
+        console.gotoxy(f_c * 2 + 3, f_r + 2);
         switch(ch) {
 		case '' :
 			break;
@@ -1844,6 +1845,7 @@ function update(full_list, ntn, pos)
 
 	full_list.show(false, false);
 	showmap(ntn, upos, true);
+	showfocus(upos);
 	console.attributes = attrs.status_area;
 	if(fp.open('rb')) {
 		lines=fp.readAll();
@@ -2062,7 +2064,6 @@ function mainloop(ntn)
 			} while(ch=='');
 		}
 		keep_ch = false;
-        showfocus(pos);
 		stat.clear();
         switch(ch) {
         case 'p' : /* production */
