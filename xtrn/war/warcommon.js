@@ -273,7 +273,7 @@ var privtable = {
 							});
 							an = armyname(armies.length-1);
 							if(an.substr(0, cities[i].name.length) == cities[i].name)
-								event(an+' created', armies[armies.length-1].c, armies[armies.length-1].nation);
+								event(an+' created', armies[armies.length-1].r, armies[armies.length-1].c, armies[armies.length-1].nation);
 							else
 								event(an+' created in '+cities[i].name, armies[armies.length-1].r, armies[armies.length-1].c, armies[armies.length-1].nation);
 
