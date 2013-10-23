@@ -1069,7 +1069,7 @@ function cityowner(c)
     return cities[nations[n].city].name;
 }
 
-function showcity(pos)
+function showcity(n, pos)
 {
     var i;
     var buff = '';
@@ -1077,8 +1077,10 @@ function showcity(pos)
     console.gotoxy(4, 19);
     i = city_at(pos);
     if(i != -1) {
-        buff = format("City:  %s (%s)",
-            cities[i].name, cityowner(i));
+		if(n != cities[i].nation)
+        	buff = format("City:  %s (%s)", cities[i].name, cityowner(i));
+		else
+			buff = format("City:  %s  [%s]", cities[i].name, ttypes[cities[i].types[cities[i].prod_type]].name);
     }
 	console.attributes = attrs.city_name;
     console.print(format("%-40.40s", buff));
@@ -1110,7 +1112,7 @@ function showmap(ntn, pos, force)
     this.old_ul = ul;
     if(mapovlpos(pos) != ' ') {
 		if(this.old_pos.r != pos.r || this.old_pos.c != pos.c)
-			showcity(pos);
+			showcity(ntn, pos);
 	}
 	this.old_pos.r = pos.r;
 	this.old_pos.c = pos.c;
@@ -1521,7 +1523,7 @@ function info_mode(full_list, pos, n, ch)
 				pos.c = t.c;
 				full_list.update(pos);
 				full_list.show(true, false);
-				showcity(pos);
+				showcity(n, pos);
 			}
 			focus = false;
 		}
