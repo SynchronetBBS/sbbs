@@ -1420,8 +1420,6 @@ function info_mode(full_list, pos, n, ch)
 	t = new Position(ul.r + f_r, ul.c + f_c);
     done = false;
     do {
-    	gmapspot(f_r, f_c, t, 'I');
-        console.gotoxy(f_c * 2 + 3, f_r + 2);
         switch(ch) {
 		case '' :
 			break;
@@ -1522,8 +1520,8 @@ function info_mode(full_list, pos, n, ch)
 				ch = console.inkey(5000);
 			} while(ch=='' && !done);
 		}
+    	gmapspot(f_r, f_c, t, '');
     } while(!done);
-   	gmapspot(f_r, f_c, t, '');
     return ch;
 }
 
