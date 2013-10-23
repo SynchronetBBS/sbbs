@@ -2248,10 +2248,12 @@ function mainloop(ntn)
 	   		switch(console.getkey().toLowerCase()) {
 			case 'y':
 				console.ctrlkey_passthru = orig_pt;
+				file_remove(getpath(format(TURNFL, ntn)));
                 return;
 			case 'x':
 				if(!turn_done)
 					pfile.write("end-turn\n");
+				file_remove(getpath(format(TURNFL, ntn)));
 				return;
 			}
             break;
