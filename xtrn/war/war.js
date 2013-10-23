@@ -812,6 +812,7 @@ function ArmyList(ntn) {
 	this.enemies=[];
 	this.pointer = -1;
 	this.ntn = ntn;
+	this.pos = new Position();
 	this.generation = 0;
 	this.last_gen = -1;
 	this.last_pointer = -1;
@@ -845,7 +846,15 @@ function ArmyList(ntn) {
 	this.update = function(pos) {
 		var e;
 		var i,k;
+		var ov;
+		var op;
 
+		if(pos.r == this.pos.r && pos.c == this.pos.c) {
+			ov = this.view;
+			op = this.pointer;
+		}
+		this.pos.r = pos.r;
+		this.pos.c = pos.c;
 		for(i = 0; i<map_height; i++) {
 			for(k = 0; k < map_width; k++) {
 				mapovl[i][k] = ' ';
@@ -858,6 +867,14 @@ function ArmyList(ntn) {
 			if(pos.r == armies[i].r && pos.c == armies[i].c) {
 				if(armies[i].nation == this.ntn || this.ntn == -1) {
 					this.view.push({id:i, marked: false});
+					if(ov != undefined) {
+						for(k=0; k<ov.length; k++) {
+							if(ov[k].id == i && ov[k].marked) {
+								this.view[this.view.length-1].marked = true;
+								break;
+							}
+						}
+					}
 				}
 				else {
 					if(this.enemies.length == 0) {
@@ -914,22 +931,24 @@ function ArmyList(ntn) {
 		}
 
 		this.view = this.view.sort(function(a,b) { return isgreater(b.id, a.id) ? 1 : 0; });
-		if(this.view.length)
-			this.pointer = 0;
-		else
-			this.pointer = -1;
+		if(op == undefined) {
+			if(this.view.length)
+				this.pointer = 0;
+			else
+				this.pointer = -1;
+		}
 	};
 	this.toggle_mark = function(index) {
-		this.view[index].mark = !this.view[index].mark;
+		this.view[index].marked = !this.view[index].marked;
 		console.gotoxy(41, index+3);
 		console.attributes = attrs.army_area;
-		console.print(this.view[index].mark ? '*' : ' ');
+		console.print(this.view[index].marked ? '*' : ' ');
 	};
 	this.mark_all = function() {
 		var i;
 
 		for(i = 0; i < this.view.length; i++) {
-			if(!this.view[i].mark) {
+			if(!this.view[i].marked) {
 				if(armies[this.view[i].id].move_left > 0)
 					this.toggle_mark(i);
 			}
@@ -943,7 +962,7 @@ function ArmyList(ntn) {
 		var i;
 
 		for(i = 0; i < this.view.length; i++) {
-			if(this.view[i].mark)
+			if(this.view[i].marked)
 				this.toggle_mark(i);
 		}
 	};
@@ -959,7 +978,7 @@ function ArmyList(ntn) {
 				if(i < this.view.length) {
 					a = this.view[i].id;
 					console.print((i==this.pointer && showptr)?'=> ':'   ');
-					console.print((this.view[i].mark)?'* ':'  ');
+					console.print((this.view[i].marked)?'* ':'  ');
 					buff = armyname(a);
 					if(armies[a].name.length == 0 && armies[a].hero > 0)
 						buff = "(Nameless Hero)";
@@ -983,7 +1002,6 @@ function ArmyList(ntn) {
 			for(i = 0; i < this.enemies.length; i++) {
 				console.gotoxy(43, i + 17);
 				if(this.enemies[i].nation != -1) {
-log("ENEMY: "+this.enemies.toSource());
 					console.print(format("%-15.15s %3d Armies, %3d Heros",
 						(i == 1 && this.enemies[i].multiple)
 							? "(Other Nations)"
@@ -1134,9 +1152,9 @@ function move_mode(full_list, ntn, pos)
     }
     flag = false;
     for(i = 0; i < full_list.view.length; i++) {
-        if(full_list.view[i].mark)
+        if(full_list.view[i].marked)
             flag = true;
-        if(full_list.view[i].mark
+        if(full_list.view[i].marked
 				&& (full_list.army(i).move_left > 0 || ntn == -1)) {
             if(movestack.length >= 10 && ntn >= 0) {
                 stat.say("Too Many Armies for Group.");
@@ -1156,7 +1174,7 @@ function move_mode(full_list, ntn, pos)
 			moved:0,
 			dep:-1
 		});
-        full_list.view[full_list.pointer].mark = 1;
+        full_list.view[full_list.pointer].marked = true;
     }
     if(movestack.length < 1 && ntn > -1) {
         stat.say("Armies Have No Movement Left.");
@@ -1172,7 +1190,7 @@ function move_mode(full_list, ntn, pos)
     */
     if(ntn > -1) {
         for(i = 0; i < full_list.view.length; i++) {
-            if(!full_list.view[i].mark) {
+            if(!full_list.view[i].marked) {
 				unmarked.push({
 					moved: 0,
 					dep: -1,
@@ -1324,7 +1342,7 @@ function move_mode(full_list, ntn, pos)
 				for(i = 0; i < movestack.length; i++) {
 					for(j = 0; j < full_list.view.length; j++) {
 						if(full_list.view[j].id == movestack[i].id)
-							full_list.view[j].mark = true;
+							full_list.view[j].marked = true;
 					}
 				}
 				full_list.show(false, false);
