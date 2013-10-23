@@ -194,9 +194,9 @@ function parse_news_header(hdr, line)
  */
 function decode_news_body(hdr, body)
 {
-	if(hdr["content-transfer-encoding"]===undefined)
+	if(hdr.extra_headers==undefined || hdr.extra_headers["content-transfer-encoding"]===undefined)
 		return(body);
-	switch(hdr["content-transfer-encoding"].hdr_data.toLowerCase()) {
+	switch(hdr.extra_headers["content-transfer-encoding"].toLowerCase()) {
 		case '7bit':
 		case '8bit':
 		case 'binary':
@@ -210,13 +210,13 @@ function decode_news_body(hdr, body)
 
 			/* Collapse =XX encoded bytes */
 			body=body.replace(/=([0-9A-F][0-9A-F])/g,function(str, p1) { return(ascii(parseInt(p1,16))); });
-			hdr["content-transfer-encoding"].hdr_data='8bit';
+			hdr.extra_headers["content-transfer-encoding"].hdr_data='8bit';
 			break;
 		case 'base64':
 			/* Remove non-base64 bytes */
 			body=body.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+\/=]/g,'');
 			body=base64_decode(body);
-			hdr["content-transfer-encoding"].hdr_data='8bit';
+			hdr.extra_headers["content-transfer-encoding"].hdr_data='8bit';
 			break;
 	}
 	return(body);
