@@ -2140,9 +2140,10 @@ function mainloop(ntn)
                 execpriv(buff);
 
                 stat.clear();
+				full_list.update(pos);
             }
             else
-                stat.say("Can Only Rename Heros.");
+                stat.say("Can Only Rename Unnamed Heros.");
             break;
         case 'z' : /* next army */
         case KEY_DOWN:
