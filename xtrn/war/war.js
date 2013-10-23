@@ -863,7 +863,7 @@ function ArmyList(ntn) {
 					if(this.enemies.length == 0) {
 						this.enemies.push({
 							nation:armies[i].nation, 
-							hero:0, 
+							heros:0, 
 							armies:0, 
 							multiple:false
 						});
@@ -876,7 +876,7 @@ function ArmyList(ntn) {
 						if(this.enemies.length == 1) {
 							this.enemies.push({
 								nation:armies[i].nation, 
-								hero:0, 
+								heros:0, 
 								armies:0, 
 								multiple:false
 							});
@@ -983,6 +983,7 @@ function ArmyList(ntn) {
 			for(i = 0; i < this.enemies.length; i++) {
 				console.gotoxy(43, i + 17);
 				if(this.enemies[i].nation != -1) {
+log("ENEMY: "+this.enemies.toSource());
 					console.print(format("%-15.15s %3d Armies, %3d Heros",
 						(i == 1 && this.enemies[i].multiple)
 							? "(Other Nations)"
