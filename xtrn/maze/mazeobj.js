@@ -33,8 +33,7 @@ function GameData()
 			".status", 
 			status,2);
 	}
-	this.storeGameWinner=function(gameNumber,raceTime,winner) {
-		this.games[gameNumber].raceTime = raceTime;
+	this.storeRaceWinner=function(gameNumber,winner) {
 		this.games[gameNumber].winner = winner;
 		this.profiles[winner].wins++;
 		client.write(game_id,
@@ -43,20 +42,18 @@ function GameData()
 			".winner", 
 			winner,2);
 		client.write(game_id,
-			"games." + 
-			gameNumber + 
-			".raceTime", 
-			raceTime,2);
-		client.write(game_id,
 			"profiles." +
 			winner +
 			".wins",
 			this.profiles[winner].wins,2);
-		if(raceTime < this.profiles[winner].best_time || this.profiles[winner].best_time == 0) {
-			this.profiles[winner].best_time = raceTime;
+	}
+	this.storeRaceTime=function(gameNumber,raceTime,player) {
+		this.games[gameNumber].raceTime = raceTime;
+		if(raceTime < this.profiles[player].best_time || this.profiles[player].best_time == 0) {
+			this.profiles[player].best_time = raceTime;
 			client.write(game_id,
 				"profiles." +
-				winner +
+				player +
 				".best_time",
 				raceTime,2);
 		}
