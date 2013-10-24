@@ -331,8 +331,8 @@ function lobby() {
 		
 		var player=findPlayer(game,user.alias);
 		if(player>=0) {
-			askRemove(game);
-			askChange(game);
+			askRemove(game,player);
+			askChange(game,player);
 		} else {
 			askJoin(game);
 		}
@@ -351,14 +351,14 @@ function lobby() {
 			}
 		}
 	}
-	function askRemove(game) {
+	function askRemove(game,player) {
 		var response=menuPrompt("Remove yourself from this game? [y/N]",false,false,true);
 		if(response=='Y') {
 			game.players.splice(player,1);
 			return;
 		}
 	}
-	function askChange(game) {
+	function askChange(game,player) {
 		var response=menuPrompt("Change your vote? [y/N]",false,false,true);
 		if(response=='Y') {
 			var vote=game.players[player].vote;
