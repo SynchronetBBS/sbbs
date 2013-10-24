@@ -2265,6 +2265,7 @@ function mainloop(ntn)
 				pfile.close();
 				turn_done = true;
 			}
+			stat.clear();
             break;
         case 'q' : /* quit */
             stat.say("Quit?  (Y/N/X)  ");
@@ -2279,6 +2280,7 @@ function mainloop(ntn)
 				file_remove(getpath(format(TURNFL, ntn)));
 				return;
 			}
+			stat.clear();
             break;
 		}
     }
