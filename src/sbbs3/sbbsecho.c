@@ -1184,7 +1184,7 @@ void command(char* instr, faddr_t addr, char* to)
 		alter_config(addr,cfg.arcdef[cfg.nodecfg[node].arctype].name
 			,i<cfg.arcdefs?cfg.arcdef[i].name:p,0);
 		cfg.nodecfg[node].arctype=i;
-		sprintf(str,"Compression type changed to %s.",cfg.arcdef[i].name);
+		sprintf(str,"Compression type changed to %s.",i<cfg.arcdefs?cfg.arcdef[i].name:p);
 		create_netmail(to,"Compression Type Change",str,addr,FALSE);
 		return; 
 	}
