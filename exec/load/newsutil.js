@@ -167,7 +167,7 @@ function parse_news_header(hdr, line)
 			if(hdr.field_list==undefined)
 				hdr.field_list=[];
 			if(hdr.extra_headers==undefined)
-				hdr.extra_headers=[];
+				hdr.extra_headers={};
 			hdr.extra_headers[line.toLowerCase()]=
 				{	type: RFC822HEADER, 
 					get data() { return(this.hdr_name+': '+this.hdr_data); },
@@ -196,7 +196,7 @@ function decode_news_body(hdr, body)
 {
 	if(hdr.extra_headers==undefined || hdr.extra_headers["content-transfer-encoding"]===undefined)
 		return(body);
-	switch(hdr.extra_headers["content-transfer-encoding"].toLowerCase()) {
+	switch(hdr.extra_headers["content-transfer-encoding"].hdr_data.toLowerCase()) {
 		case '7bit':
 		case '8bit':
 		case 'binary':
