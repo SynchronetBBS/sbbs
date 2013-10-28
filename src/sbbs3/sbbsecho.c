@@ -1051,7 +1051,11 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 				for(j=k=0;j<cfg.nodecfgs;j++) {
 					if(j==i)
 						continue;
-					if(!stricmp(cfg.arcdef[cfg.nodecfg[j].arctype].name,tmp2)) {
+					if(cfg.nodecfg[j].arctype < cfg.arcdefs)
+						tp = cfg.arcdef[cfg.nodecfg[j].arctype].name;
+					else
+						tp = "NONE";
+					if(!stricmp(tp,tmp2)) {
 						if(!k) {
 							fprintf(outfile,"%-10s %s",tmp,tmp2);
 							k++; }
