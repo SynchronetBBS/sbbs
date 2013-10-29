@@ -52,6 +52,7 @@
 #include <sys/types.h>	/* _dev_t */
 #include <sys/stat.h>	/* struct stat */
 #include <limits.h>	/* struct stat */
+#include <stdlib.h>		/* realloc() */
 
 #include "filewrap.h"	/* Verify prototypes */
 
@@ -276,6 +277,9 @@ int DLLCALL unlock(int file, off_t offset, off_t size)
 	return(i);
 }
 
+#endif	/* !Unix && (MSVC || MinGW) */
+
+#if defined(_WIN32 )
 static size_t
 p2roundup(size_t n)
 {
@@ -315,13 +319,10 @@ static int expandtofit(char **linep, size_t len, size_t *linecapp)
 	return 0;
 }
 
-long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
+long DLLCALL getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
 {
 	size_t	linelen;
-	char	lbuf[1024];
-	size_t	bc;
-	char	*term = NULL;
-	long	pos = ftell(stream);
+	int		ch;
 
 	if(linep == NULL || linecapp == NULL)
 		return -1;
@@ -336,26 +337,21 @@ long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
 
 	linelen = 0;
 	for(;;) {
-		bc = fread(lbuf, 1, sizeof(lbuf), stream);
-		if(expandtofit(linep, linelen+bc, linecapp))
+		ch = fgetc(stream);
+		if(ch == EOF)
+			break;
+		if(expandtofit(linep, linelen+1, linecapp))
 			return -1;
-		memcpy(*linep+linelen, lbuf, bc);
-		term = strchr(*linep+linelen, delimiter);
-		linelen += bc;
-		if(bc < sizeof(lbuf))
-			break;
-		if(term)
+		(*linep)[linelen++]=ch;
+		if(ch == delimiter)
 			break;
 	}
-	if(term) {
-		linelen = term - *linep;
-		linelen++;
-		fseek(stream, pos+linelen, SEEK_SET);
-	}
+	(*linep)[linelen]=0;
+	if(linelen==0)
+		return -1;
 	return linelen;
 }
-
-#endif	/* !Unix && (MSVC || MinGW) */
+#endif
 
 #ifdef __unix__
 FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
