@@ -51,6 +51,7 @@
 /* ANSI */
 #include <sys/types.h>	/* _dev_t */
 #include <sys/stat.h>	/* struct stat */
+#include <limits.h>	/* struct stat */
 
 #include "filewrap.h"	/* Verify prototypes */
 
@@ -275,10 +276,10 @@ int DLLCALL unlock(int file, off_t offset, off_t size)
 	return(i);
 }
 
-static inline size_t
+static size_t
 p2roundup(size_t n)
 {
-        if(n & (n-1)) {	// If n isn't a power of two already...
+	if(n & (n-1)) {	// If n isn't a power of two already...
 		n--;
 		n |= n >> 1;
 		n |= n >> 2;
@@ -293,7 +294,7 @@ p2roundup(size_t n)
 	return (n);
 }
 
-static inline int expandtofit(char **linep, size_t len, size_t *linecapp)
+static int expandtofit(char **linep, size_t len, size_t *linecapp)
 {
 	char	*newline;
 	size_t	newcap;
@@ -305,7 +306,7 @@ static inline int expandtofit(char **linep, size_t len, size_t *linecapp)
 			newcap = LONG_MAX + 1;
 		else
 			newcap = p2roundup(len);
-		newline = realloc(*linep, newcap);
+		newline = (char *)realloc(*linep, newcap);
 		if(newline == NULL)
 			return -1;
 		*linecapp = newcap;
