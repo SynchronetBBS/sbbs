@@ -48,7 +48,6 @@
 #ifndef _WINSOCKAPI_
 	#include <winsock2.h>	/* socket/bind/etc. */
 	#include <mswsock.h>	/* Microsoft WinSock2 extensions */
-	#include <wspiapi.h>	/* getaddrinfo() for Windows 2000 apparently */
 #if defined(__BORLANDC__)
 // Borland C++ builder 6 comes with a broken ws2tcpip.h header for GCC.
 #define _MSC_VER 7
