@@ -166,6 +166,10 @@ extern "C" {
 	DLLEXPORT int	DLLCALL unlock(int fd, off_t pos, off_t len);
 #endif
 
+#if (defined(_MSC_VER) || defined(__MINGW32__) || defined(__DMC__)) && !defined(__unix__)
+	long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
+#endif
+
 #if !defined(__BORLANDC__) && defined(__unix__)
 	DLLEXPORT int		DLLCALL sopen(const char* fn, int sh_access, int share, ...);
 	DLLEXPORT off_t		DLLCALL filelength(int fd);
