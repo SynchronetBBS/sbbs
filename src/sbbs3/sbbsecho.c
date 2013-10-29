@@ -1213,7 +1213,7 @@ void command(char* instr, faddr_t addr, char* to)
 			fclose(tmpf);
 			return; 
 		}
-		if(cfg.nodecfg[node].arctype >= 0 && cfg.nodecfg[node].arctype < cfg.arcdefs)
+		if(cfg.nodecfg[node].arctype < cfg.arcdefs)
 			buf = cfg.arcdef[cfg.nodecfg[node].arctype].name;
 		else
 			buf = "NONE";
