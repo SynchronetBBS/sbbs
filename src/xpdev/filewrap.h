@@ -167,7 +167,7 @@ extern "C" {
 #endif
 
 #if (defined(_MSC_VER) || defined(__MINGW32__) || defined(__DMC__)) && !defined(__unix__)
-	long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
+	long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream);
 #endif
 
 #if !defined(__BORLANDC__) && defined(__unix__)
