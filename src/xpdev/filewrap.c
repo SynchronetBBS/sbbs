@@ -340,7 +340,7 @@ long DLLCALL getdelim(char **linep, size_t *linecapp, int delimiter, FILE *strea
 		ch = fgetc(stream);
 		if(ch == EOF)
 			break;
-		if(expandtofit(linep, linelen+1, linecapp))
+		if(expandtofit(linep, linelen+2, linecapp))
 			return -1;
 		(*linep)[linelen++]=ch;
 		if(ch == delimiter)
