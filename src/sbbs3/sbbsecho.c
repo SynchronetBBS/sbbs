@@ -1185,7 +1185,11 @@ void command(char* instr, faddr_t addr, char* to)
 			fclose(tmpf);
 			return; 
 		}
-		alter_config(addr,cfg.arcdef[cfg.nodecfg[node].arctype].name
+		if(cfg.nodecfg[node].arctype >= 0 && cfg.nodecfg[node].arctype < cfg.arcdefs)
+			buf = cfg.arcdef[cfg.nodecfg[node].arctype].name;
+		else
+			buf = "NONE";
+		alter_config(addr,buf
 			,(i>=0 && i<cfg.arcdefs)?cfg.arcdef[i].name:p,0);
 		cfg.nodecfg[node].arctype=i;
 		sprintf(str,"Compression type changed to %s.",(i>=0 && i<cfg.arcdefs)?cfg.arcdef[i].name:p);
