@@ -13,93 +13,13 @@
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
  * ....Removed some comments...
- * 2013-08-24 Eric Oulashin     Version 1.28
- *                              Bug fix: SlyEdit sometimes didn't quote the last
- *                              line of a message when using author's initials.
- *                              This has been fixed.
- *                              Added 8 new color settings for the text displayed
- *                              when SlyEdit exits regarding which message
- *                              areas the message was posted in, and the saved
- *                              and abort messages.
- * 2013-08-28 Eric Oulashin     Version 1.29 Beta (started)
- *                              Started working on a macros feature as in
- *                              QuikEdit.  I'll call it text replacements.
- * 2013-08-31 Eric Oulashin     Worked on doPrintableChar() for text replacements
- *                              and started working on doEnterKey() for text
- *                              replacements.
- * 2013-09-01 Eric Oulashin     Worked on doEnterKey() for text replacements.
- *                              Started working on a new function, listTextReplacements().
- * 2013-09-02 Eric Oulashin     Version 1.29
- *                              Worked on doEnterKey() for text replacements to
- *                              improve the line splitting if the new text has
- *                              spaces in it.  Updated the text replacment list
- *                              box in the UI to show the page number and total
- *                              number of pages.  Updated so that the command to
- *                              list the text replacements will only work if
- *                              text replacements is enabled.
- *                              After some more testing, I decided to release 1.29 today.
- * 2013-09-03 Eric Oulashin     Version 1.30
- *                              Updated so that macro text replacements won't
- *                              lowercase the replacement text when in literal
- *                              match & replace mode.  It will now take the
- *                              replacement text as-is.
- * 2013-09-07 Eric Oulashin     Version 1.31
- *                              Bug fix: Updated ReadSlyEditConfigFile() to
- *                              default cfgObj.genColors.listBoxItemText to
- *                              ensure that it gets defined.
- *                              Bug fix: Made use of K_NOSPIN wherever user input
- *                              is done so that the spinning cursor doesn't overwrite
- *                              anything on the screen.
- *                              Code refactor: Moved doMacroTxtReplacementInEditLine()
- *                              and getWordFromEditLine() to TextLine member
- *                              methods TextLine_doMacroTxtReplacement() and
- *                              TextLine_getWord() in SlyEdit_Misc.js.
- *                              Version 1.32 Beta
- *                              Started working on color text support again
- * 2013-09-07 Eric Oulashin     Disabled color text key action; started working
- *                              on generic list box, tagline support, and
- *                              user settings (to let users enable/disable
- *                              tagline support for themselves).  Created
- *                              the function doUserSettings().
- * 2013-09-14 Eric Oulashin     Worked on user settings & tagline selection.
- * 2013-09-15 Eric Oulashin     Worked on user settings & tagline selection.
- *                              Also, moved the options for author initials in
- *                              quote lines to user settings.
- * 2013-09-17 Eric Oulashin     Continuing to make fixes & optimizations here
- *                              and there over the past couple days.  SlyEdit
- *                              now updates the user's time left on the screen,
- *                              properly updates the INS/OVR mode text for insert/
- *                              overwrite mode in DCT mode when using a wide
- *                              terminal; the text replacement list now only draws
- *                              the side borders once.
- * 2013-09-18 Eric Oulashin     Version 1.32
- *                              Releasing this version.
- * 2013-09-19 Eric Oulashin     Version 1.33
- *                              Added 3 options to the SlyEdit configuration file:
- *                              taglinePrefix, quoteTaglines, and shuffleTaglines.
- * 2013-10-12 Eric Oulashin     Version 1.34 Beta
- *                              Bug fix: When quoting a message with author initials,
- *                              sometimes sone of the quoted lines didn't get prefixed
- *                              properly when text was wrapped to a new line.
- *                              This has been fixed.
- *                              Speed optimization/enhancement: The original author's
- *                              name (used for prefixing quote lines) is saved in a
- *                              persistent variable to minimize disk reads in case the
- *                              the user changes their preference for using author
- *                              initials in quote lines.
- *                              Added a new configuration option for Ice-style
- *                              colors: menuOptClassicColors.  If this option is set
- *                              to false, then new color options will be used
- *                              for Ice-style menu options.  If this is set to
- *                              true, then the classic Ice-style menu option
- *                              colors will be used.
- * 2013-10-13 Eric Oulashin     Verison 1.34
- *                              Releasing version 1.34.
- * 2013-10-17 Eric Oulashin     Version 1.35
- *                              Bug fix: The menuOptClassicColors setting for Ice
- *                              mode is now being honored correctly.  Previously,
- *                              it was being read as false because the property
- *                              was being deleted after reading the Ice colors.
+ * 2013-10-22 Eric Oulashin     Version 1.36 Beta
+ *                              Worked on debugging & fixing a bug when quoting
+ *                              with author initials to fix a bug where a large
+ *                              section in certain messages wasn't getting quoted.
+ * 2013-10-28 Eric Oulashin     Version 1.36
+ *                              Releasing this version, as it seems to be quoting
+ *                              all messages well with author initials.
  */
 
 /* Command-line arguments:
@@ -177,8 +97,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.35";
-const EDITOR_VER_DATE = "2013-10-17";
+const EDITOR_VERSION = "1.36";
+const EDITOR_VER_DATE = "2013-10-28";
 
 
 // Program variables
@@ -215,6 +135,20 @@ var gQuotePrefix = " > ";
 // objects whose name is the index to the message group in msg_area.grp_list
 // to which the sub-board codes belong.
 var gCrossPostMsgSubs = new Object();
+// This function returns whether or not a property of the gCrossPostMsgSubs
+// object is one of its member functions (i.e., something to skip when looking
+// only for the message groups).
+//
+// Parameters:
+//  pPropName: The name of a property
+//
+// Return value: Boolean - Whether or not the property is the name of one of the
+//               functions in the gCrossPostMsgSubs object
+gCrossPostMsgSubs.propIsFuncName = function(pPropName) {
+   return((pPropName == "propIsFuncName") || (pPropName == "add") || (pPropName == "remove") ||
+           (pPropName == "subCodeExists") || (pPropName == "numMsgGrps") ||
+           (pPropName == "numSubBoards"));
+};
 // This function returns whether or not the a message sub-coard code exists in
 // gCrossPostMsgSubs.
 //
@@ -267,15 +201,25 @@ gCrossPostMsgSubs.numMsgGrps = function() {
   var msgGrpCount = 0;
   for (var prop in this)
   {
-    if ((prop == "add") || (prop == "remove") || (prop == "subCodeExists") ||
-        (prop == "numMsgGrps"))
-    {
-      continue;
-    }
-    ++msgGrpCount;
+    if (!this.propIsFuncName(prop))
+      ++msgGrpCount;
   }
   return msgGrpCount;
 };
+// This function returns the number of sub-boards the user has chosen to post
+// the message into.
+gCrossPostMsgSubs.numSubBoards = function () {
+  var numMsgSubs = 0;
+  for (var grpIndex in this)
+  {
+    if (!this.propIsFuncName(grpIndex))
+    {
+      for (var subCode in gCrossPostMsgSubs[grpIndex])
+        ++numMsgSubs;
+    }
+  }
+  return numMsgSubs;
+}
 
 
 
@@ -559,54 +503,73 @@ if (gConfigSettings.displayEndInfoScreen)
 var savedTheMessage = false;
 if ((exitCode == 0) && (gEditLines.length > 0))
 {
+  // Store whether the user is still posting the message in the original sub-board
+  // and whether that's the only sub-board they're posting in.
+  var postingInOriginalSubBoard = gCrossPostMsgSubs.subCodeExists(gMsgAreaInfo.subBoardCode);
+  var postingOnlyInOriginalSubBoard = (postingInOriginalSubBoard && (gCrossPostMsgSubs.numSubBoards() == 1));
+
   // If some message areas have been selected for cross-posting, then otuput
   // which areas will be cross-posted into, and do the cross-posting.
   var crossPosted = false;
   if (gCrossPostMsgSubs.numMsgGrps() > 0)
   {
-    // Create a string containing the user's entire message
+    // If the will cross-post into other sub-boards, then create a string containing
+    // the user's entire message.
     var msgContents = "";
-    // Append each line to msgContents.  Then,
-    //  - If using Synchronet 3.15 or higher:
-    //    Depending on whether the line has a hard newline
-    //    or a soft newline, append a "\r\n" or a " \n", as
-    //    per Synchronet's standard as of 3.15.
-    //  - Otherwise (Synchronet 3.14 and below):
-    //    Just append a "\r\n" to the line
-    if (system.version_num >= 31500)
+    if (!postingOnlyInOriginalSubBoard)
     {
-      var useHardNewline = false;
-      for (var i = 0; i < gEditLines.length; ++i)
+      // Append each line to msgContents.  Then,
+      //  - If using Synchronet 3.15 or higher:
+      //    Depending on whether the line has a hard newline
+      //    or a soft newline, append a "\r\n" or a " \n", as
+      //    per Synchronet's standard as of 3.15.
+      //  - Otherwise (Synchronet 3.14 and below):
+      //    Just append a "\r\n" to the line
+      if (system.version_num >= 31500)
       {
-        // Use a hard newline if the current edit line has one or if this is
-        // the last line of the message.
-        useHardNewline = (gEditLines[i].hardNewlineEnd || (i == gEditLines.length-1));
-        msgContents += gEditLines[i].text + (useHardNewline ? "\r\n" : " \n");
+        var useHardNewline = false;
+        for (var i = 0; i < gEditLines.length; ++i)
+        {
+          // Use a hard newline if the current edit line has one or if this is
+          // the last line of the message.
+          useHardNewline = (gEditLines[i].hardNewlineEnd || (i == gEditLines.length-1));
+          msgContents += gEditLines[i].text + (useHardNewline ? "\r\n" : " \n");
+        }
       }
-    }
-    else // Synchronet 3.14 and below
-    {
-      for (var i = 0; i < gEditLines.length; ++i)
-        msgContents += gEditLines[i].text + "\r\n";
-    }
+      else // Synchronet 3.14 and below
+      {
+        for (var i = 0; i < gEditLines.length; ++i)
+          msgContents += gEditLines[i].text + "\r\n";
+      }
 
-    // If the user has a signature file, then read it and append it to
-    // msgContents (with a blank line to separate the message & signature).
-    // Note: msgContents already has a newline at the end, so we don't have
-    // to append one here; just append the signature.
-    var msgSigInfo = readUserSigFile();
-    if (msgSigInfo.sigContents.length > 0)
-      msgContents += msgSigInfo.sigContents + "\r\n";
+      // If the user has a signature file, then read it and append it to
+      // msgContents (with a blank line to separate the message & signature).
+      // Note: msgContents already has a newline at the end, so we don't have
+      // to append one here; just append the signature.
+      var msgSigInfo = readUserSigFile();
+      if (msgSigInfo.sigContents.length > 0)
+        msgContents += msgSigInfo.sigContents + "\r\n";
+    }
 
     console.print("n");
     console.crlf();
     console.print("n" + gConfigSettings.genColors.msgWillBePostedHdr + "Your message will be posted into the following area(s):");
     console.crlf();
+    // If the user is posting in the originally-chosen sub-board and other sub-boards,
+    // then make a log in the BBS log that the user is posting a message (for
+    // cross-post logging).
+    if (postingInOriginalSubBoard && !postingOnlyInOriginalSubBoard)
+    {
+      log(LOG_INFO, "SlyEdit: " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
+          " " + msg_area.sub[gMsgAreaInfo.subBoardCode].description + " (" + gMsgSubj + ")");
+      bbs.log_str("SlyEdit: " + user.alias + " is posting a message in " + msg_area.sub[gMsgAreaInfo.subBoardCode].grp_name +
+          " " + msg_area.sub[gMsgAreaInfo.subBoardCode].description + " (" + gMsgSubj + ")");
+    }
     var postMsgErrStr = ""; // For storing errors related to saving the message
     for (var grpIndex in gCrossPostMsgSubs)
     {
       // Skip the function names (we only want the group indexes)
-      if ((grpIndex == "add") || (grpIndex == "remove") || (grpIndex == "subCodeExists") || (grpIndex == "numMsgGrps"))
+      if (gCrossPostMsgSubs.propIsFuncName(grpIndex))
         continue;
 
       console.print("n" + gConfigSettings.genColors.msgPostedGrpHdr + msg_area.grp_list[grpIndex].description + ":");
@@ -622,6 +585,14 @@ if ((exitCode == 0) && (gEditLines.length > 0))
         // to post in that sub, then post the message there.
         else
         {
+          // Write a log in the BBS log about which message area the user is
+          // cross-posting into.
+          log(LOG_INFO, "SlyEdit: " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
+              " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
+          bbs.log_str("SlyEdit: " + user.alias + " is cross-posting a message in " + msg_area.sub[subCode].grp_name +
+              " " + msg_area.sub[subCode].description + " (" + gMsgSubj + ")");
+
+          // Write the cross-posting message area on the user's screen.
           printf("n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
           if (user.compare_ars(msg_area.sub[subCode].post_ars))
           {
