@@ -995,113 +995,140 @@ void alter_areas(area_t* add_area, area_t* del_area, faddr_t addr, char* to)
 void alter_config(faddr_t addr, char *old, char *new, int option)
 {
 	FILE *outfile,*cfgfile;
-	char str[257],outpath[MAX_PATH+1],tmp[257],tmp2[257],*outname,*p,*tp
+	char outpath[MAX_PATH+1],cmd[32],arcname[32],*outname,*p,*tp
 		,match=0;
-	int i,j,k;
+	char *afline=NULL;
+	size_t afline_size;
+	int cfgnum;
+	int j,k;
 	faddr_t taddr;
 
-	i=matchnode(addr,0);				  /* i = config number from here on */
+	cfgnum=matchnode(addr,0);
 	SAFECOPY(outpath,cfg.cfgfile);
 	*getfname(outpath)=0;
 	if((outname=tempname(outpath,"CFG"))==NULL) {
 		lprintf(LOG_ERR,"ERROR tempnam(%s,CFG)",outpath);
-		return; }
+		return;
+	}
 	if((outfile=fopen(outname,"w+"))==NULL) {
 		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,outname);
 		free(outname);
-		return; }
+		return;
+	}
 	if((cfgfile=fopen(cfg.cfgfile,"r"))==NULL) {
 		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,cfg.cfgfile);
 		fclose(outfile);
 		free(outname);
-		return; }
+		return;
+	}
 
 	while(!feof(cfgfile)) {
-		if(!fgets(str,sizeof(str),cfgfile))
+		if(getdelim(&afline, &afline_size, '\n', cfgfile)==-1)
 			break;
-		truncsp(str);
-		p=str;
+		truncsp(afline);
+		p=afline;
 		SKIP_WHITESPACE(p);
 		if(*p==';') {
-			fprintf(outfile,"%s\n",str);
-			continue; }
-		sprintf(tmp,"%-.25s",p);
-		tp=strchr(tmp,' ');
+			fprintf(outfile,"%s\n",afline);
+			continue;
+		}
+		sprintf(cmd,"%-.25s",p);
+		tp=strchr(cmd,' ');
 		if(tp)
 			*tp=0;								/* Chop off at space */
-		strupr(tmp);							/* Convert code to uppercase */
+		strupr(cmd);							/* Convert code to uppercase */
 		FIND_WHITESPACE(p);						/* Skip code */
 		SKIP_WHITESPACE(p);						/* Skip white space */
 
-		if(option==0 && !strcmp(tmp,"USEPACKER")) {     /* Change Compression */
-			if(!*p)
-				continue;
-			strcpy(tmp2,p);
-			p=tmp2;
-			FIND_WHITESPACE(p);
-			*p=0;
-			p++;
-			if(!stricmp(new,tmp2)) {   /* Add to new definition */
-				fprintf(outfile,"%-10s %s %s %s\n",tmp,tmp2
-					,smb_faddrtoa(&cfg.nodecfg[i].faddr,NULL)
-					,(*p) ? p : "");
-				match=1;
-				continue; }
-			else if(!stricmp(old,tmp2)) {	/* Remove from old def */
-				for(j=k=0;j<cfg.nodecfgs;j++) {
-					if(j==i)
-						continue;
-					if(cfg.nodecfg[j].arctype < cfg.arcdefs)
-						tp = cfg.arcdef[cfg.nodecfg[j].arctype].name;
-					else
-						tp = "NONE";
-					if(!stricmp(tp,tmp2)) {
-						if(!k) {
-							fprintf(outfile,"%-10s %s",tmp,tmp2);
-							k++; }
-						fprintf(outfile," %s"
-							,smb_faddrtoa(&cfg.nodecfg[j].faddr,NULL)); } }
-				fprintf(outfile,"\n");
-				continue; } }
-
-		if(option==1 && !strcmp(tmp,"AREAFIX")) {       /* Change Password */
-			if(!*p)
-				continue;
-			taddr=smb_atofaddr(&sys_faddr,p);
-			if(!memcmp(&cfg.nodecfg[i].faddr,&taddr,sizeof(faddr_t))) {
-				FIND_WHITESPACE(p); /* Skip over address */
-				SKIP_WHITESPACE(p);	/* Skip over whitespace */
-				FIND_WHITESPACE(p); /* Skip over password */
-				SKIP_WHITESPACE(p);	/* Skip over whitespace */
-				fprintf(outfile,"%-10s %s %s %s\n",tmp
-					,smb_faddrtoa(&cfg.nodecfg[i].faddr,NULL),new,p);
-				continue; } }
-
-		if(option>1 && !strcmp(tmp,"PASSIVE")) {        /* Toggle Passive Areas */
+		if(option==0 && !strcmp(cmd,"USEPACKER")) {     /* Change Compression */
+			if(*p) {
+				sprintf(arcname, "%-.25s", p);
+				tp=strchr(arcname,' ');
+				if(tp)
+					*tp = 0;
+				strupr(arcname);
+				FIND_WHITESPACE(p);
+				if(*p)
+					p++;
+				if(!stricmp(new,arcname)) {   /* Add to new definition */
+					if(!match) {
+						fprintf(outfile,"%-10s %s %s %s\n",cmd,arcname
+							,smb_faddrtoa(&cfg.nodecfg[cfgnum].faddr,NULL)
+							,p);
+						match=1;
+					}
+				}
+				else if(!stricmp(old,arcname)) {	/* Remove from old def */
+					for(j=k=0;j<cfg.nodecfgs;j++) {
+						if(j==cfgnum)
+							continue;
+						if(cfg.nodecfg[j].arctype < cfg.arcdefs)
+							tp = cfg.arcdef[cfg.nodecfg[j].arctype].name;
+						else
+							tp = "NONE";
+						if(!stricmp(tp,arcname)) {
+							if(!k) {
+								fprintf(outfile,"%-10s %s",cmd,arcname);
+								k++;
+							}
+							fprintf(outfile," %s"
+								,smb_faddrtoa(&cfg.nodecfg[j].faddr,NULL));
+						}
+					}
+					fprintf(outfile,"\n");
+				}
+			}
+		}
+		else if(option==1 && !strcmp(cmd,"AREAFIX")) {       /* Change Password */
+			if(*p) {
+				taddr=smb_atofaddr(&sys_faddr,p);
+				if(!memcmp(&cfg.nodecfg[cfgnum].faddr,&taddr,sizeof(faddr_t))) {
+					FIND_WHITESPACE(p); /* Skip over address */
+					SKIP_WHITESPACE(p);	/* Skip over whitespace */
+					FIND_WHITESPACE(p); /* Skip over password */
+					SKIP_WHITESPACE(p);	/* Skip over whitespace */
+					fprintf(outfile,"%-10s %s %s %s\n",cmd
+						,smb_faddrtoa(&cfg.nodecfg[cfgnum].faddr,NULL),new,p);
+				}
+			}
+		}
+		else if(option>1 && !strcmp(cmd,"PASSIVE")) {        /* Toggle Passive Areas */
 			match=1;
 			for(j=k=0;j<cfg.nodecfgs;j++) {
-				if(option==2 && j==i) {
-					if(!k) fprintf(outfile,"%-10s",tmp);
+				if(option==2 && j==cfgnum) {
+					if(!k)
+						fprintf(outfile,"%-10s",cmd);
 					fprintf(outfile," %s",smb_faddrtoa(&cfg.nodecfg[j].faddr,NULL));
 					k++;
-					continue; }
-				if(option==3 && j==i)
+					continue;
+				}
+				if(option==3 && j==cfgnum)
 					continue;
 				if(cfg.nodecfg[j].attr&ATTR_PASSIVE) {
-					if(!k) fprintf(outfile,"%-10s",tmp);
+					if(!k)
+						fprintf(outfile,"%-10s",cmd);
 					fprintf(outfile," %s",smb_faddrtoa(&cfg.nodecfg[j].faddr,NULL));
-					k++; } }
-			if(k) fprintf(outfile,"\n");
-			continue; }
-		fprintf(outfile,"%s\n",str); }
+					k++;
+				}
+			}
+			if(k)
+				fprintf(outfile,"\n");
+		}
+		else
+			fprintf(outfile,"%s\n",afline);
+	}
 
 	if(!match) {
 		if(option==0)
 			fprintf(outfile,"%-10s %s %s\n","USEPACKER",new
-				,smb_faddrtoa(&cfg.nodecfg[i].faddr,NULL));
+				,smb_faddrtoa(&cfg.nodecfg[cfgnum].faddr,NULL));
 		if(option==2)
 			fprintf(outfile,"%-10s %s\n","PASSIVE"
-				,smb_faddrtoa(&cfg.nodecfg[i].faddr,NULL)); }
+				,smb_faddrtoa(&cfg.nodecfg[cfgnum].faddr,NULL));
+	}
+
+	if(afline != NULL)
+		free(afline);
 
 	fclose(cfgfile);
 	fclose(outfile);
@@ -1112,6 +1139,7 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 		lprintf(LOG_ERR,"ERROR line %d renaming %s to %s",__LINE__,outname,cfg.cfgfile);
 	free(outname);
 }
+
 /******************************************************************************
  Used by AREAFIX to process any '%' commands that come in via netmail
 ******************************************************************************/
