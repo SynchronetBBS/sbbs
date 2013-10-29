@@ -180,7 +180,9 @@ int matchnode(faddr_t addr, int exact)
 #define SKIPCODE(p)		while(*p<0 || *p>' ') p++
 void read_echo_cfg()
 {
-	char str[1025],tmp[512],*p,*tp;
+	char *str = NULL;
+	size_t str_size;
+	char tmp[512],*p,*tp;
 	short attr=0;
 	int i,j,file;
 	FILE *stream;
@@ -204,7 +206,7 @@ void read_echo_cfg()
 	SAFECOPY(cfg.sysop_alias,"SYSOP");
 
 	while(1) {
-		if(!fgets(str,256,stream))
+		if(getdelim(&str,&str_size,'\n',stream)==-1)
 			break;
 		truncsp(str);
 		p=str;
@@ -244,7 +246,7 @@ void read_echo_cfg()
 			tp=cfg.arcdef[cfg.arcdefs].hexid;
 			SKIPCODE(tp);
 			*tp=0;
-			while(fgets(str,256,stream) && strnicmp(str,"END",3)) {
+			while((getdelim(&str,&str_size,'\n',stream) != -1) && strnicmp(str,"END",3)) {
 				p=str;
 				SKIPCTRLSP(p);
 				if(!strnicmp(p,"PACK ",5)) {
@@ -642,6 +644,8 @@ void read_echo_cfg()
 	if(cfg.maxbdlsize<1024)
 		cfg.maxbdlsize=DFLT_BDL_SIZE;
 
+	if(str)
+		free(str);
 	printf("\n");
 }
 
