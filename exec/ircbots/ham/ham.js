@@ -61,7 +61,7 @@ function get_mfg_uris(uri)
 	var base = uri;
 	base = base.replace(/[^\/]*$/,'');
 	list=list.replace(/^[\x00-\xff]*?<\/table>/i,'');
-	var URLexp = /a href="([^"]*)">([^<]*)<\/a>/ig;
+	var URLexp = /a href="([^"]*)"[^>]*>([^<]*)<\/a>/ig;
 	var m;
 	var uri;
 
@@ -114,7 +114,7 @@ function update_rig_specs(rig)
 	var table = t[1];
 	if(table==null)
 		return;
-	var row=/<tr>([\x00-\xff]*?)<\/tr>/ig;
+	var row=/<tr[^>]*>([\x00-\xff]*?)<\/tr>/ig;
 	var m;
 	var s;
 	var i;
@@ -122,7 +122,7 @@ function update_rig_specs(rig)
 
 	while((m=row.exec(table)) !== null) {
 		var r=m[1]
-		r=r.match(/<td>([\x00-\xff]*?)<\/td>(?:[^<])*<td>([\x00-\xff]*?)<\/td>/i);
+		r=r.match(/<td[^>]*>([\x00-\xff]*?)<\/td>(?:[^<])*<td<^]>*>([\x00-\xff]*?)<\/td>/i);
 		if(r != null) {
 			if(r[2]=='')
 				continue;
