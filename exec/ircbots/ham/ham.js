@@ -122,7 +122,7 @@ function update_rig_specs(rig)
 
 	while((m=row.exec(table)) !== null) {
 		var r=m[1]
-		r=r.match(/<td[^>]*>([\x00-\xff]*?)<\/td>(?:[^<])*<td<^]>*>([\x00-\xff]*?)<\/td>/i);
+		r=r.match(/<td[^>]*>([\x00-\xff]*?)<\/td>(?:[^<])*<td[^>]*>([\x00-\xff]*?)<\/td>/i);
 		if(r != null) {
 			if(r[2]=='')
 				continue;
