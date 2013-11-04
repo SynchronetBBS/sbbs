@@ -15,6 +15,8 @@ var last_solar_update=0;
 var solar_x;
 var contests={};
 var last_contest_update=0;
+var rig_index={};
+var last_rig_index=0;
 
 function main(srv,target)
 {
@@ -50,6 +52,155 @@ function main(srv,target)
 		}
 	}
 	last_update=time();
+}
+
+function get_mfg_uris(uri)
+{
+	var req=new HTTPRequest();
+	var list=req.Get(uri);
+	var base = uri;
+	base = base.replace(/[^\/]*$/,'');
+	list=list.replace(/^[\x00-\xff]*?<\/table>/i,'');
+	var URLexp = /a href="([^"]*)">([^<]*)<\/a>/ig;
+	var m;
+	var uri;
+
+	while((m=URLexp.exec(list)) !== null) {
+		uri = m[1];
+		if(uri.substr(0,1) != '/' && uri.substr(0,7) != 'http://')
+			uri = base+m[1];
+		rig_index[m[2].toUpperCase()]={'uri':uri,name:m[2]};
+	}
+}
+
+function update_rig_index()
+{
+	// Only parse indexes once per week...
+	if((time() - last_rig_index) < 7*24*60*60) return;
+	last_rig_index=time();
+	log("Updating rig index");
+	var req=new HTTPRequest();
+	var root=req.Get('http://www.rigpix.com/');
+	var base = 'http://www.rigpix.com/';
+	root = root.replace(/^[\x00-\xff]*?font size="1">([\x00-\xff]*)<br><br>[\x00-\xff]*$/,"$1");
+	var URLexp = /href="([^"]*)"/gi;
+	var m;
+
+	while((m=URLexp.exec(root)) !== null) {
+		uri = m[1];
+		if(uri.substr(0,1) != '/' && uri.substr(0,7) != 'http://')
+			uri = base+m[1];
+		if(uri == 'http://www.rigpix.com/iss/iss.htm')
+			return;
+		if(uri.search(/\/\/.*\/.*\//)==-1)
+			continue;
+		log("Getting URIs from "+uri);
+		get_mfg_uris(uri);
+	}
+}
+
+function update_rig_specs(rig)
+{
+	var req=new HTTPRequest();
+	var specs=req.Get(rig_index[rig].uri);
+	var base = rig_index[rig].uri;
+	base = base.replace(/[^\/]*$/,'');
+	specs=specs.replace(/^[\x00-\xff]*?SPECIFICATIONS/i,'');
+	var t=specs.match(/<table[^>]*>([\x00-\xff]*)<\/table>/i);
+	if(t==null) {
+		log("Specification table missing! "+specs);
+		return;
+	}
+	var table = t[1];
+	if(table==null)
+		return;
+	var row=/<tr>([\x00-\xff]*?)<\/tr>/ig;
+	var m;
+	var s;
+	var i;
+	rig_index[rig].specs = [];
+
+	while((m=row.exec(table)) !== null) {
+		var r=m[1]
+		r=r.match(/<td>([\x00-\xff]*?)<\/td>(?:[^<])*<td>([\x00-\xff]*?)<\/td>/i);
+		if(r != null) {
+			if(r[2]=='')
+				continue;
+			if(r[1].indexOf('Options')!=-1)
+				continue;
+			if(r[1].indexOf('Accessories')!=-1)
+				continue;
+			s = r[1]+' '+r[2];
+			s = s.replace(/\s*<br>\s*/ig,'<br>    ');
+			s = s.replace(/<a\s+href="([^"]*)"[^>]*>([^<]*)<\/a>/i,function(m, uri, desc) {
+				if(uri.substr(0,1) != '/' && uri.substr(0,7) != 'http://')
+					uri = base+uri;
+				return(desc+' '+uri);
+			});
+			s = s.split(/<br>/i);
+			for(i=0; i<s.length; i++) {
+				s[i]=s[i].replace(/  <STRONG>/ig,'');
+				s[i]=s[i].replace(/<[^>]*>/g,'');
+				s[i]=s[i].replace(/[\x00-\x1F]/g,'');
+				if(s[i].search(/^\s*$/) == -1)
+					rig_index[rig].specs.push(s[i]);
+			}
+		}
+	}
+}
+
+Bot_Commands["SPECS"] = new Bot_Command(0, false, false);
+Bot_Commands["SPECS"].command = function (target, onick, ouh, srv, lbl, cmd) {
+	var i;
+
+	// Remove empty cmd args
+	for(i=1; i<cmd.length; i++) {
+		if(cmd[i].search(/^\s*$/)==0) {
+			cmd.splice(i,1);
+			i--;
+		}
+	}
+
+	if(cmd.length >= 2) {
+		var rigname = cmd.slice(1).join(' ');
+		var rig = rigname.toUpperCase();
+		if(rig_index[rig] == undefined) {
+			update_rig_index();
+			if(rig_index[rig] == undefined) {
+				srv.o(target, "Unable to locate rig "+rigname);
+				var suggestions=[];
+				for(i in rig_index) {
+					if(rig_index[i].name == undefined)
+						continue;
+					if(i.toUpperCase().indexOf(rig.toUpperCase())!=-1)
+						suggestions.push(rig_index[i].name);
+				}
+				if(suggestions.length == 0)
+					return true;
+				if(suggestions.length > 1) {
+					srv.o(target,"Suggestions: "+suggestions.join(', '));
+					return true;
+				}
+				if(rig_index[suggestions[0].toUpperCase()] == undefined)
+					return true;
+				rig = suggestions[0].toUpperCase();
+				rigname = suggestions[0];
+				srv.o(target,"Showing specs for "+rigname);
+			}
+		}
+		if(rig_index[rig].specs == undefined) {
+			update_rig_specs(rig);
+			if(rig_index[rig].specs == undefined) {
+				srv.o(target, "Unable to locate specs for rig "+rigname);
+				return true;
+			}
+		}
+		for(i in rig_index[rig].specs)
+			srv.o(target, rig_index[rig].specs[i]);
+		srv.o(target, "Provided by rigpix.com");
+	}
+
+	return true;
 }
 
 Bot_Commands["Z"] = new Bot_Command(0, false, false);
