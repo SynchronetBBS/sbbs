@@ -121,7 +121,7 @@ function updateStatus(gameNumber) {
 		return false;
 	
 	if(game.status == status.PLAYING) {
-		log(LOG_WARNING,"updating turn info for game: " + game.gameNumber);
+		//log(LOG_WARNING,"updating turn info for game: " + game.gameNumber);
 		updateTurn(game);
 	}
 	else if(game.status == status.NEW) {
@@ -143,7 +143,11 @@ function updateStatus(gameNumber) {
 
 /* handle turn update, possibly launch AI background thread */
 function updateTurn(game) {
-	
+	// log(LOG_WARNING,
+		// "game: " + game.gameNumber + 
+		// " turn: " + game.turn + 
+		// " name: " + game.players[game.turn].name + 
+		// " ai: " + game.players[game.turn].AI);
 	if(game.players[game.turn].AI) {
 		/* if we have already launched the background thread, abort */
 		if(aiTakingTurns[game.gameNumber]) 

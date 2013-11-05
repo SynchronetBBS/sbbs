@@ -361,13 +361,12 @@ function attack() {
 				d.roll(roll);
 			}
 			
-			data.saveActivity(game,"\1n\1m" + attacker.name + " attacked " + defender.name);
+			attackMessage(attacker,defender,a,d);
 			if(a.total>d.total) {
 				if(countTiles(map,defending.owner)==1 && defender.active) {
 					data.scoreKiller(attacker);
 					data.scoreLoser(defender);
-					data.saveActivity(game,"\1r\1h" + attacker.name + 
-						" eliminated " + defender.name + "!");
+					killMessage(attacker,defender);
 				}
 				data.assignTile(map,defending,attacking.owner,attacking.dice-1);
 				updateStatus(game,map);
@@ -383,6 +382,16 @@ function attack() {
 	
 	computer.AI.turns++;
 	return attackCount;
+}
+function attackMessage(attacker,defender,a,d) {
+	data.saveActivity(game,"\1n\1m" + 
+		attacker.name + 
+		" (\1h" + a.total + "\1n\1m) vs (\1h" + d.total + "\1n\1m) " + 
+		defender.name);
+}
+function killMessage(attacker,defender) {
+	data.saveActivity(game,"\1r\1h" + attacker.name + 
+		" eliminated " + defender.name + "!");
 }
 function getAttackOptions() {
 	var territories=getPlayerTiles(map,game.turn);

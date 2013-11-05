@@ -331,7 +331,8 @@ function lobby() {
 		
 		var player=findPlayer(game,user.alias);
 		if(player>=0) {
-			askRemove(game,player);
+			if(askRemove(game,player))
+				return;
 			askChange(game,player);
 		} else {
 			askJoin(game);
@@ -355,8 +356,9 @@ function lobby() {
 		var response=menuPrompt("Remove yourself from this game? [y/N]",false,false,true);
 		if(response=='Y') {
 			game.players.splice(player,1);
-			return;
+			return true;
 		}
+		return false
 	}
 	function askChange(game,player) {
 		var response=menuPrompt("Change your vote? [y/N]",false,false,true);
@@ -428,6 +430,7 @@ function lobby() {
 		
 		var map = generateMap(game);
 		dispersePlayers(game,map);
+		data.saveGame(game);
 		data.saveMap(map);
 	}
 	function createNewGame() {
@@ -594,6 +597,7 @@ function playGame(gameNumber) {
 	/* init shit */
 	function open() {
 		client.subscribe(game_id,"maps." + game.gameNumber);
+		client.subscribe(game_id,"games." + game.gameNumber);
 		client.subscribe(game_id,"metadata." + game.gameNumber);
 		var menuItems=[
 			"~Take turn",
@@ -631,6 +635,7 @@ function playGame(gameNumber) {
 	}
 	function close() {
 		client.unsubscribe(game_id,"maps." + game.gameNumber);
+		client.unsubscribe(game_id,"games." + game.gameNumber);
 		client.unsubscribe(game_id,"metadata." + game.gameNumber);
 		gameBackground.delete();
 		activityFrame.delete();
@@ -945,7 +950,7 @@ function playGame(gameNumber) {
 		return coords;
 	}
 	function battle(a,d) {
-		msgAlert("\1n" + game.players[a.pnum].name + " vs. " + game.players[d.pnum].name);
+		msgAlert("\1n" + game.players[a.pnum].name + " vs " + game.players[d.pnum].name);
 		msgAlert("\1n" + game.players[a.pnum].name + " rolls " + 
 			a.rolls.length + (a.rolls.length>1?" dice":" die")+"\1h: \1c" + a.total);
 		msgAlert("\1n" + game.players[d.pnum].name + " rolls " + 

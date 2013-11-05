@@ -399,7 +399,6 @@ function nextTurn(game) {
 		nextTurn(game);
 	}
 	else {
-		//log("incrementing turn: " + game.turn);
 		data.saveTurn(game);
 	}
 }
