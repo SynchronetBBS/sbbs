@@ -111,7 +111,7 @@ function canAttack(map,base) {
 	}
 	return valid_targets;
 }
-function countConnected(map,tiles,playerNum) {	
+function getLargestCluster(map,tiles,playerNum) {	
 	var counted=[];
 	var largest_group=0;
 	for(var t=0;t<tiles.length;t++) {
@@ -127,6 +127,24 @@ function countConnected(map,tiles,playerNum) {
 		}
 	}
 	return largest_group;
+}
+function getAllClusters(map,tiles,playerNum) {
+	var counted=[];
+	var groups=[];
+	for(var t=0;t<tiles.length;t++) {
+		if(!counted[tiles[t].id]) {
+			var count=[];
+			count[tiles[t].id]=true;
+			var grid=getBorders(map,tiles[t]);
+			var connections=trace(map,grid,count,playerNum);
+			counted.concat(connections);
+			groups.push(connections);
+		}
+	}
+	groups.sort(function(a,b) {
+		return countMembers(b) - countMembers(a);
+	});
+	return groups;
 }
 function trace(map,grid,counted,match) {
 	for(var x in grid) {
@@ -328,7 +346,7 @@ function getWinner(game,map) {
 }
 function getReinforcements(game,map,playerNum) {
 	var tiles=getPlayerTiles(map,playerNum);
-	var reinforcements=countConnected(map,tiles,playerNum);
+	var reinforcements=getLargestCluster(map,tiles,playerNum);
 	var player=game.players[playerNum];
 	var updated={};
 	

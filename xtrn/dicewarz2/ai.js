@@ -14,14 +14,16 @@ var sortFunctions={
 	killMost:killMostDiceAISort, 
 	paranoia:paranoiaAISort, 
 	randomAI:randomAISort, 
-	groupParanoid:groupAndParanoidAISort
+	groupParanoid:groupAndParanoidAISort,
+	cluster:clusterAISort
 };
 var checkFunctions={
 	random:randomAICheck, 
 	paranoid:paranoidAICheck, 
 	wild:wildAndCrazyAICheck, 
 	ultraParanoid:ultraParanoidAICheck, 
-	weakest:weakestCheck
+	weakest:weakestAICheck,
+	cluster:clusterAICheck
 };
 var qtyFunctions={
 	random:randomAttackQuantity, 
@@ -63,8 +65,7 @@ function paranoiaAISort(a,b) {
 	return(bscore-ascore);
 }
 function randomAISort(a,b) {
-	var sortfuncs=new Array(randomSort, slowAndSteadyAISort, wildAndCrazyAISort, killMostDiceAISort, paranoiaAISort);
-
+	var sortfuncs=new Array(randomSort, slowAndSteadyAISort, wildAndCrazyAISort, killMostDiceAISort, paranoiaAISort, clusterAISort);
 	return(sortfuncs[random(sortfuncs.length)](a,b));
 }
 function groupAndParanoidAISort(a,b) {
@@ -89,9 +90,47 @@ function groupAndParanoidAISort(a,b) {
 		return(paranoiaAISort(a,b));
 	return(aopts-bopts);
 }
+function clusterAISort(a,b) {
+
+	/* TODO */
+	var tiles = getPlayerTiles(map,a.base.owner);
+	var clusters = getAllClusters(map,tiles,a.base.owner);
+	var acluster, bcluster;
+	
+	/* find the cluster each attack base is in */
+	for(var c in clusters) {
+		var clust = clusters[c];
+		for(var t in clust) {
+			if(t == a.base.id) 
+				acluster = countMembers(clust);
+			else if(t == b.base.id) 
+				bcluster = countMembers(clust);
+			if(bcluster && acluster)
+				break;
+		}
+		if(bcluster && acluster)
+			break;
+	}
+	
+	/* compare size of each, bigger cluster wins */
+	if(bcluster == acluster)
+		return paranoiaAISort(a,b);
+	return acluster-bcluster;
+}
 
 /* Callbacks for deciding if a given attack should go into the targets array */
-function weakestCheck(game, map, base, target) {
+function clusterAICheck(game, map, base, target) {
+	var computer_tiles=getPlayerTiles(map,base.owner);
+	var clusters = getAllClusters(map,computer_tiles,base.owner);
+	/* if the base tile is part of the player's largest cluster, use it to attack */
+	for(var t in clusters[0]) {
+		if(t == base.id) {
+			return true;
+		}
+	}
+	return false;
+}
+function weakestAICheck(game, map, base, target) {
 	var target_tiles = countTiles(map, target.owner);
 	var neighbors = getNeighboringTiles(base,map);
 	
@@ -117,7 +156,7 @@ function randomAICheck(game, map, base, target) {
 		if(rand>50 || base.dice==settings.max_dice) {
 			if(computer_tiles.length>map.tiles.length/6 || computer.reserve>=settings.max_reserve*.66)
 				return(true);
-			if(countConnected(map,computer_tiles,base.owner)+computer.reserve>=settings.max_dice)
+			if(getLargestCluster(map,computer_tiles,base.owner)+computer.reserve>=settings.max_dice)
 				return(true);
 		}
 	}
@@ -151,7 +190,7 @@ function wildAndCrazyAICheck(game, map, base, target) {
 		if(computer_tiles.length>map.tiles.length/6 || computer.reserve>=settings.max_reserve*.66)
 			return(true);
 		else {
-			if(countConnected(map,computer_tiles,base.owner)+computer.reserve>=settings.max_dice)
+			if(getLargestCluster(map,computer_tiles,base.owner)+computer.reserve>=settings.max_dice)
 				return(true);
 		}
 	}
@@ -332,7 +371,6 @@ function attack() {
 	do {
 		/* Randomize the targets array */
 		attacks=getAttackOptions();
-		attacks.sort(randomSort);
 		attackQuantity=qtyFunctions[computer.AI.qty](attacks.length);
 		if(attackQuantity<1) 
 			break;
