@@ -378,7 +378,7 @@ void read_echo_cfg()
 		if(!stricmp(tmp,"USEPACKER")) {          /* Which packer to use */
 			if(!*p)
 				continue;
-			SAFECOPY(str,p);
+			strcpy(str,p);
 			p=str;
 			SKIPCODE(p);
 			if(!*p)
@@ -430,7 +430,7 @@ void read_echo_cfg()
 		if(!stricmp(tmp,"PKTTYPE")) {            /* Packet Type to Use */
 			if(!*p)
 				continue;
-			SAFECOPY(str,p);
+			strcpy(str,p);
 			p=str;
 			SKIPCODE(p);
 			*p=0;
