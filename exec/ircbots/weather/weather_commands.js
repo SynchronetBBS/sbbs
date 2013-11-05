@@ -98,7 +98,8 @@ Bot_Commands["FORECAST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	if(cmd[0])
 		nick=cmd[0];
-	lstr=get_nickcoords(srv.users[nick.toUpperCase()].uh, srv.users[nick.toUpperCase()].servername, nick);
+	if(srv.users[nick.toUpperCase()])
+		lstr=get_nickcoords(srv.users[nick.toUpperCase()].uh, srv.users[nick.toUpperCase()].servername, nick);
 	if (!lstr) {
 		var usr = new User(system.matchuser(nick));
 		if (typeof(usr)=='object')
