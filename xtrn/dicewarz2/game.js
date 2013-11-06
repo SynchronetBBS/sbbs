@@ -650,7 +650,7 @@ function playGame(gameNumber) {
 		while(1) {
 			cycle();
 			var cmd=input.getkey(hotkeys);
-			if(!cmd)
+			if(cmd === undefined)
 				continue;
 			switch(cmd) {
 			case KEY_UP:
