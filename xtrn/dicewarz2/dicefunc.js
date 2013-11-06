@@ -161,12 +161,14 @@ function addComputers(game) {
 	var num=settings.num_players-game.players.length;
 	if(num == 0)
 		return;
+	for(var a in ai) 
+		ai[a].name = a;
 	var aiList = compressList(ai);
 	while(num>0) {
 		var n=random(aiList.length);
 		var a=aiList[n];
 		var player=new Player(a.name,"AI",true);
-		player.AI=new AI(a.sort,a.check,a.qty);
+		player.AI=new AI(a.sort,a.check,a.quantity);
 		game.players.push(player);
 		aiList.splice(n,1);
 		num--;
