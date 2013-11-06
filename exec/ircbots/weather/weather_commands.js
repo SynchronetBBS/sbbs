@@ -137,6 +137,7 @@ Bot_Commands["FORECAST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 				str += " " + fcast.title + ": " + fcast.fcttext;
 			}
 			str += ' (Provided by Weather Underground, Inc.)';
+			str = str.replace(/&deg;/g,'');
 
 			var m;
 			while(m=str.match(/^(.*?\. +)[^\.]+:/)) {
