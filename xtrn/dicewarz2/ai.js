@@ -266,7 +266,7 @@ function ultraParanoidAICheck(game, map, base, target) {
 	var computer=game.players[base.owner];
 
 	/* First, check that we have a dice advantage */
-	if(base.dice <= target.dice)
+	if(base.dice < target.dice)
 		return(false);
 
 	var computer_tiles=getPlayerTiles(map,base.owner);
@@ -484,11 +484,25 @@ function close() {
 function attack() {
 	var computer=game.players[game.turn];
 	var attackCount=0;
-	var attacks;
+	var attacks, territories;
 	
 	do {
 		/* Randomize the targets array */
-		attacks=getAttackOptions();
+		territories=getPlayerTiles(map,game.turn);
+		attacks=getAttackOptions(territories, computer);
+		kills=getKillOptions(territories, computer);
+		
+		/* always attempt all kill options */
+		while(kills.length > 0) {
+			var attack=kills.shift();
+			if(attack.base.owner == attack.target.owner)
+				continue;
+			doAttack(attack.base,attack.target);
+			computer.AI.moves++;
+			attackCount++;
+			mswait(1000);
+		}
+		
 		attackQuantity=qtyFunctions[computer.AI.qty](attacks.length);
 		if(attackQuantity<1) 
 			break;
@@ -496,48 +510,46 @@ function attack() {
 		attacks.sort(sortFunctions[computer.AI.sort]);
 		for(var n=0;n<attackQuantity;n++) {
 			var attack=attacks.shift();
-			var attacking=attack.base;
-			var defending=attack.target;
-			
-			if(attacking.owner == defending.owner)
+			if(attack.base.owner == attack.target.owner)
 				continue;
-				
-			var attacker=game.players[attacking.owner];
-			var defender=game.players[defending.owner];
-			
-			var a=new Roll(attacking.owner);
-			for(var r=0;r<attacking.dice;r++) {
-				var roll=random(6)+1;
-				a.roll(roll);
-			}
-			
-			var d=new Roll(defending.owner);
-			for(var r=0;r<defending.dice;r++) {
-				var roll=random(6)+1;
-				d.roll(roll);
-			}
-			
-			attackMessage(attacker,defender,a,d);
-			if(a.total>d.total) {
-				if(countTiles(map,defending.owner)==1 && defender.active) {
-					data.scoreKiller(attacker);
-					data.scoreLoser(defender);
-					killMessage(attacker,defender);
-				}
-				data.assignTile(map,defending,attacking.owner,attacking.dice-1);
-				updateStatus(game,map);
-			}
-			
-			data.assignTile(map,attacking,attacking.owner,1);
+			doAttack(attack.base,attack.target);
 			computer.AI.moves++;
 			attackCount++;
 			mswait(1000);
-			
 		} 
 	} while(attacks.length > 0);
 	
 	computer.AI.turns++;
 	return attackCount;
+}
+function doAttack(attacking,defending) {
+	var attacker=game.players[attacking.owner];
+	var defender=game.players[defending.owner];
+	
+	var a=new Roll(attacking.owner);
+	for(var r=0;r<attacking.dice;r++) {
+		var roll=random(6)+1;
+		a.roll(roll);
+	}
+	
+	var d=new Roll(defending.owner);
+	for(var r=0;r<defending.dice;r++) {
+		var roll=random(6)+1;
+		d.roll(roll);
+	}
+	
+	attackMessage(attacker,defender,a,d);
+	if(a.total>d.total) {
+		if(countTiles(map,defending.owner)==1 && defender.active) {
+			data.scoreKiller(attacker);
+			data.scoreLoser(defender);
+			killMessage(attacker,defender);
+		}
+		data.assignTile(map,defending,attacking.owner,attacking.dice-1);
+		updateStatus(game,map);
+	}
+	
+	data.assignTile(map,attacking,attacking.owner,1);
 }
 function attackMessage(attacker,defender,a,d) {
 	data.saveActivity(game,"\1n\1m" + 
@@ -549,11 +561,30 @@ function killMessage(attacker,defender) {
 	data.saveActivity(game,"\1r\1h" + attacker.name + 
 		" eliminated " + defender.name + "!");
 }
-function getAttackOptions() {
-	var territories=getPlayerTiles(map,game.turn);
-	var computer=game.players[game.turn];
+function getKillOptions(territories, player) {
 	var attacks=[];
-	
+	/* For each owned territory */
+	for(var t=0;t<territories.length;t++) {
+		var base=territories[t];
+		/* If we have enough to attack */
+		var attackOptions=canAttack(map,base);
+		if(attackOptions.length>0) {
+			var basetargets=[];
+			for(var o=0;o<attackOptions.length;o++) {
+				var target=attackOptions[o];
+				var numTiles=countTiles(map,target.owner);
+				
+				/* kill option! */
+				if(numTiles == 1 && checkFunctions['paranoid'](game,map,base,target)) {
+					attacks.push({map:map,target:target,base:base});
+				}
+			}
+		}
+	}
+	return attacks;
+}
+function getAttackOptions(territories, player) {
+	var attacks=[];
 	/* For each owned territory */
 	for(var t=0;t<territories.length;t++) {
 		var base=territories[t];
@@ -564,17 +595,16 @@ function getAttackOptions() {
 			for(var o=0;o<attackOptions.length;o++) {
 				var target=attackOptions[o];
 				/* Check if this is an acceptable attack */
-				if(checkFunctions[computer.AI.check](game,map,base,target))
+				if(checkFunctions[player.AI.check](game,map,base,target))
 					basetargets.push({map:map,target:target,base:base});
 			}
 			/* If we found acceptable attacks, sort them and choose the best one */
 			if(basetargets.length > 0) {
-				basetargets.sort(sortFunctions[computer.AI.sort]);
+				basetargets.sort(sortFunctions[player.AI.sort]);
 				attacks.push(basetargets.shift());
 			}
 		}
 	}
-	
 	return attacks;
 }
 function forfeit(computer) {
