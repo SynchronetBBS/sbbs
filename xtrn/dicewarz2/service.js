@@ -15,6 +15,7 @@ load("funclib.js");
 load("sbbsdefs.js");
 
 var game_id = "dicewarz2";
+var timer = new Timer();
 var client = new JSONClient(serverAddr,serverPort);
 var settings = loadSettings("dice.ini");
 var ai = loadAI("ai.ini");
@@ -206,6 +207,30 @@ function deletePlayer(gameNumber,playerName) {
 	delete data.games[gameNumber].players[playerName];
 }
 
+/* scan games for inactivity */
+function scanInactivity() {
+	var timeout = settings.inactivity_timeout * 24 * 60 * 60 * 1000;
+	for(var g in data.games) {
+		var game = data.games[g];
+		if(Date.now() - timeout >= game.last_turn) {
+			if(game.single_player) {
+				deleteGame(game.gameNumber);
+			}
+			else {
+				var player = game.players[game.turn];
+				player.AI = {
+					sort:"random",
+					check:"random",
+					qty:"single",
+					turns:0,
+					moves:0
+				}
+				updateTurn(game);
+			}
+		}
+	}
+}
+
 /* initialize service */
 function open() {
 	js.branch_limit=0;
@@ -220,9 +245,11 @@ function open() {
 		data.players = {};
 	
 	updateGames();
+	timer.addEvent(86400000,true,scanInactivity);	
 	log(LOG_INFO,"Dicewarz II background service initialized");
 }
 
+/* shutdown service */
 function close() {
 	client.unsubscribe(game_id,"games");
 	client.unsubscribe(game_id,"players");
@@ -232,8 +259,9 @@ function close() {
 /* main loop */
 function main() {
 	while(!js.terminated && !parent_queue.poll()) {
-		if(client.socket.poll(.1))
+		if(client.socket.poll(.5))
 			client.cycle();
+		timer.cycle();
 	}
 }
 

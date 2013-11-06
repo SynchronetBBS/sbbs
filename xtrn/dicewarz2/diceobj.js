@@ -34,6 +34,7 @@ function Game(gameNumber,hidden_names)
 	this.winner=false;
 	this.turn=0;
 	this.round=0;
+	this.last_turn=Date.now();
 }
 function Tile(id)
 {
@@ -113,7 +114,10 @@ function Data()
 	}
 	this.saveTurn=function(game) {
 		var location="games." + game.gameNumber;
-		client.write(game_id,location + ".turn",game.turn,2);
+		client.lock(game_id,location,2);
+		client.write(game_id,location + ".turn",game.turn);
+		client.write(game_id,location + ".last_turn",Date.now());
+		client.unlock(game_id,location);
 	}
 	this.saveRound=function(game) {
 		var location="games." + game.gameNumber;
