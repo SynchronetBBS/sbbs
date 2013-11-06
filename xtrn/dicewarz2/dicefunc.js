@@ -181,7 +181,6 @@ function shufflePlayers(game) {
 	game.players=shuffle(game.players);
 }
 function dispersePlayers(game,map) {
-	log(game.toSource());
 	var tiles_per_player=map.tiles.length/game.players.length;
 	var placeholder=[];
 	

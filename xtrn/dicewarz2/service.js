@@ -140,6 +140,7 @@ function updateStatus(gameNumber) {
 		updateTurn(game);
 	}
 	else if(game.status == status.NEW) {
+		aiTakingTurns[gameNumber] = false;
 		var pcount=0;
 		for(var p in game.players) {
 			if(game.players[p])
@@ -150,6 +151,7 @@ function updateStatus(gameNumber) {
 		}
 	}
 	else if(game.status == status.FINISHED) {
+		aiTakingTurns[gameNumber] = false;
 		var online = client.who(game_id,"maps." + gameNumber);
 		if(online.length == 0)
 			deleteGame(gameNumber);
@@ -166,7 +168,7 @@ function updateTurn(game) {
 	if(game.players[game.turn].AI) {
 		/* if we have already launched the background thread, abort */
 		if(aiTakingTurns[game.gameNumber]) {
-			log(LOG_WARNING,"ai already loaded.. ignoring turn update");
+			//log(LOG_WARNING,"ai already loaded.. ignoring turn update");
 			return;
 		}
 		/* disable this function until it is a human player's turn 
@@ -189,7 +191,6 @@ function deleteGame(gameNumber) {
 	client.remove(game_id,"maps." + gameNumber,2);
 	client.remove(game_id,"metadata." + gameNumber,2);
 	delete data.games[gameNumber];
-	aiTakingTurns[game.gameNumber] = false;
 }
 
 /* load game data from database */

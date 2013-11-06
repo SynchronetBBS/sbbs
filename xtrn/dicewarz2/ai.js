@@ -236,7 +236,6 @@ function randomAICheck(game, map, base, target) {
 	return(false);
 }
 function paranoidAICheck(game, map, base, target) {
-	var computer=game.players[base.owner];
 	/* If we have an advantage, add to targets array */
 	if(base.dice>target.dice || base.dice==settings.max_dice)
 		return(true);
@@ -362,7 +361,9 @@ function connectAICheck(game, map, base, target) {
 				return true;
 		}
 	}
-	return(false);
+	
+	/* if we cant connect two islands right now, do something else */
+	return paranoidAICheck(game,map,base,target);
 }
 
 /* Callbacks for selecting the number of targets to use */
@@ -557,11 +558,11 @@ function getAttackOptions() {
 	for(var t=0;t<territories.length;t++) {
 		var base=territories[t];
 		/* If we have enough to attack */
-		var attack_options=canAttack(map,base);
-		if(attack_options.length>0) {
+		var attackOptions=canAttack(map,base);
+		if(attackOptions.length>0) {
 			var basetargets=[];
-			for(var o=0;o<attack_options.length;o++) {
-				var target=attack_options[o];
+			for(var o=0;o<attackOptions.length;o++) {
+				var target=attackOptions[o];
 				/* Check if this is an acceptable attack */
 				if(checkFunctions[computer.AI.check](game,map,base,target))
 					basetargets.push({map:map,target:target,base:base});
