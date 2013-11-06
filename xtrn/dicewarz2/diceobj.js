@@ -114,10 +114,8 @@ function Data()
 	}
 	this.saveTurn=function(game) {
 		var location="games." + game.gameNumber;
-		client.lock(game_id,location,2);
-		client.write(game_id,location + ".turn",game.turn);
-		client.write(game_id,location + ".last_turn",Date.now());
-		client.unlock(game_id,location);
+		client.write(game_id,location + ".last_turn",Date.now(),2);
+		client.write(game_id,location + ".turn",game.turn,2);
 	}
 	this.saveRound=function(game) {
 		var location="games." + game.gameNumber;
@@ -216,7 +214,6 @@ function Player(name,sys_name,vote)
 	this.vote=vote;
 	this.reserve=0;
 	this.active=true;
-	this.lastTurn=0;
 	this.AI=false;
 }
 function AI(sort,check,qty)

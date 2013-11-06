@@ -613,6 +613,7 @@ function playGame(gameNumber) {
 		setMenuCommands();
 		chat.join(channel);
 		activityFrame.lf_strict=false;
+		activityFrame.word_wrap=true;
 		gameFrame.transparent = true;
 		gameBackground.open();
 		activityFrame.open();
@@ -677,7 +678,6 @@ function playGame(gameNumber) {
 						break;
 					case "A":
 						doAttacks();
-						listPlayers();
 						break;
 					case "E":
 						endTurn();
@@ -819,6 +819,7 @@ function playGame(gameNumber) {
 		var coords;
 		do {
 			coords=attack(coords);
+			listPlayers();
 		}
 		while(coords !== false);
 		cursor.close();
