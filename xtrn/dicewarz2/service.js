@@ -17,8 +17,8 @@ load("sbbsdefs.js");
 var game_id = "dicewarz2";
 var client = new JSONClient(serverAddr,serverPort);
 var settings = loadSettings("dice.ini");
+var ai = loadAI("ai.ini");
 var aiTakingTurns = {};
-//var aiSettings = loadAI("ai.ini");
 
 var data = { 
 	games:client.read(game_id,"games",1),
@@ -41,6 +41,21 @@ function loadSettings(filename) {
 	data.text_colors=file.iniGetObject("text_colors");
 	data.point_set=file.iniGetObject("point_set");
 	
+	file.close();
+	return data;
+}
+
+/* load AI settings */
+function loadAI(filename) {
+	var file=new File(root + filename);
+	file.open('r',true);
+	
+	var data = {};
+	var names = file.iniGetSections();
+	for(var n=0;n<names.length;n++) {
+		var name = names[n];
+		data[name] = file.iniGetObject(name);
+	}
 	file.close();
 	return data;
 }
@@ -150,8 +165,10 @@ function updateTurn(game) {
 		// " ai: " + game.players[game.turn].AI);
 	if(game.players[game.turn].AI) {
 		/* if we have already launched the background thread, abort */
-		if(aiTakingTurns[game.gameNumber]) 
+		if(aiTakingTurns[game.gameNumber]) {
+			log(LOG_WARNING,"ai already loaded.. ignoring turn update");
 			return;
+		}
 		/* disable this function until it is a human player's turn 
 		(to avoid launching multiple background threads) */
 		aiTakingTurns[game.gameNumber] = true;
@@ -172,6 +189,7 @@ function deleteGame(gameNumber) {
 	client.remove(game_id,"maps." + gameNumber,2);
 	client.remove(game_id,"metadata." + gameNumber,2);
 	delete data.games[gameNumber];
+	aiTakingTurns[game.gameNumber] = false;
 }
 
 /* load game data from database */
@@ -193,6 +211,7 @@ function open() {
 	client.subscribe(game_id,"games");
 	client.subscribe(game_id,"players");
 	client.write(game_id,"settings",settings,2);
+	client.write(game_id,"ai",ai,2);
 	client.callback = processUpdate;
 	if(!data.games)
 		data.games = {};

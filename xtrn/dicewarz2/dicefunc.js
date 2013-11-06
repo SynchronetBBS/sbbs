@@ -2,6 +2,7 @@ load("funclib.js");
 
 var game_id=	"dicewarz2";
 var settings=	client.read(game_id,"settings",1);
+var ai=			client.read(game_id,"ai",1);
 var data=		new Data();
 var dice=		loadDice();
 
@@ -112,79 +113,63 @@ function canAttack(map,base) {
 	return valid_targets;
 }
 function getLargestCluster(map,tiles,playerNum) {	
-	var counted=[];
-	var largest_group=0;
-	for(var t=0;t<tiles.length;t++) {
-		if(!counted[tiles[t].id]) {
-			var count=[];
-			count[tiles[t].id]=true;
-			var grid=getBorders(map,tiles[t]);
-			var connections=trace(map,grid,count,playerNum);
-			counted.concat(connections);
-			var group_size=countMembers(connections);
-			if(group_size>largest_group) 
-				largest_group=group_size;
-		}
-	}
-	return largest_group;
+	return countMembers(getAllClusters(map,tiles,playerNum)[0]);
 }
 function getAllClusters(map,tiles,playerNum) {
-	var counted=[];
-	var groups=[];
+	/* keep track of which tiles have been searched for links */
+	var counted={};
+	/* store individual clusters in an array */
+	var clusters=[];
+	/* scan all player tiles, looking for connections to other tiles 
+	belonging to the same player */
 	for(var t=0;t<tiles.length;t++) {
+		/* mark each tile as scanned */
 		if(!counted[tiles[t].id]) {
-			var count=[];
-			count[tiles[t].id]=true;
-			var grid=getBorders(map,tiles[t]);
-			var connections=trace(map,grid,count,playerNum);
-			counted.concat(connections);
-			groups.push(connections);
+			var connections={};
+			connections[tiles[t].id]=true;
+			/* trace all connected tiles from this point */
+			var connections=trace(map,getBorders(map,tiles[t]),connections,playerNum);
+			/* update overall scanned list with trace data */
+			for(var c in connections) 
+				counted[c]=true;
+			clusters.push(connections);
 		}
 	}
-	groups.sort(function(a,b) {
+	/* sort clusters from largest to smallest */
+	clusters.sort(function(a,b) {
 		return countMembers(b) - countMembers(a);
 	});
-	return groups;
+	return clusters;
 }
-function trace(map,grid,counted,match) {
+function trace(map,grid,connections,match) {
 	for(var x in grid) {
 		for(var y in grid[x]) {
 			if(map.grid[x][y]>=0) {
 				var tile=map.tiles[map.grid[x][y]];
-				if(tile.owner==match) {
-					if(!counted[tile.id]) {
-						counted[tile.id]=true;
-						counted.concat(trace(map,getBorders(map,tile),counted,match));
-					}
+				if(tile.owner==match && !connections[tile.id]) {
+					connections[tile.id]=true;
+					connections = trace(map,getBorders(map,tile),connections,match);
 				}
 			}
 		}
 	}
-	return counted;
+	return connections;
 }
 
 /* map initialization functions */
 function addComputers(game) {
 	var num=settings.num_players-game.players.length;
-	if(num>0) {
-		var aifile=new File(root + settings.ai_file);
-		aifile.open("r",true);
-		var possibleplayers=aifile.iniGetSections();
-		while(num>0) {
-			var p=random(possibleplayers.length);
-			var name=possibleplayers[p];
-			
-			var player=new Player(name,"Computer",true);
-			var sort=aifile.iniGetValue(name, "sort");
-			var check=aifile.iniGetValue(name, "check");
-			var qty=aifile.iniGetValue(name, "quantity");
-			player.AI=new AI(sort,check,qty);
-			game.players.push(player);
-			
-			possibleplayers.splice(p,1);
-			num--;
-		}
-		aifile.close();
+	if(num == 0)
+		return;
+	var aiList = compressList(ai);
+	while(num>0) {
+		var n=random(aiList.length);
+		var a=aiList[n];
+		var player=new Player(a.name,"AI",true);
+		player.AI=new AI(a.sort,a.check,a.qty);
+		game.players.push(player);
+		aiList.splice(n,1);
+		num--;
 	}
 }
 function addPlayer(game,name,sys_name,vote) {
@@ -344,10 +329,10 @@ function getWinner(game,map) {
 	}
 	return winner;
 }
-function getReinforcements(game,map,playerNum) {
-	var tiles=getPlayerTiles(map,playerNum);
-	var reinforcements=getLargestCluster(map,tiles,playerNum);
-	var player=game.players[playerNum];
+function getReinforcements(game,map,playerNumber) {
+	var tiles=getPlayerTiles(map,playerNumber);
+	var reinforcements=getLargestCluster(map,tiles,playerNumber);
+	var player=game.players[playerNumber];
 	var updated={};
 	
 	while(reinforcements>0 && tiles.length>0) {
@@ -386,7 +371,7 @@ function getReinforcements(game,map,playerNum) {
 			reinforcements -= (player.reserve-settings.max_reserve);
 			player.reserve = settings.max_reserve;
 		}
-		data.savePlayer(game,playerNum);
+		data.savePlayer(game,playerNumber);
 	}
 	
 	var totalPlaced=0;
@@ -444,15 +429,15 @@ function findPlayer(game,name) {
 	}
 	return -1;
 }
-function countDice(map,p) {
+function countDice(map,playerNumber) {
 	var dice=0;
-	var tiles=getPlayerTiles(map,p);
+	var tiles=getPlayerTiles(map,playerNumber);
 	for(var t=0;t<tiles.length;t++) 
 		dice+=tiles[t].dice;
 	return dice;
 }
-function countTiles(map,p) {
-	return getPlayerTiles(map,p).length;
+function countTiles(map,playerNumber) {
+	return getPlayerTiles(map,playerNumber).length;
 }
 
 /* dice rolling */

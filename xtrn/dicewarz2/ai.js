@@ -9,21 +9,26 @@ load(root+"diceobj.js");
 load(root+"dicefunc.js");
 
 var sortFunctions={
-	random:randomSort, 
-	wild:wildAndCrazyAISort, 
+	all:allAISort, 
+	random:randomAISort, 
+	killLeast:killLeastDiceAISort, 
 	killMost:killMostDiceAISort, 
-	paranoia:paranoiaAISort, 
-	randomAI:randomAISort, 
+	paranoid:paranoidAISort, 
+	stupid:stupidAISort,
 	groupParanoid:groupAndParanoidAISort,
-	cluster:clusterAISort
+	cluster:clusterAISort,
+	killFirst:killFirstPlaceAISort,
+	killLast:killLastPlaceAISort
 };
 var checkFunctions={
-	random:randomAICheck, 
+	all:allAICheck, 
+	random:randomAICheck,
 	paranoid:paranoidAICheck, 
 	wild:wildAndCrazyAICheck, 
 	ultraParanoid:ultraParanoidAICheck, 
 	weakest:weakestAICheck,
-	cluster:clusterAICheck
+	cluster:clusterAICheck,
+	connect:connectAICheck
 };
 var qtyFunctions={
 	random:randomAttackQuantity, 
@@ -32,10 +37,16 @@ var qtyFunctions={
 };
 
 /* Callbacks for sorting the targets array */
-function randomSort() {
+function allAISort(a,b) {
+	var funcs = [];
+	for(var sf in sortFunctions) 
+		funcs.push(sortFunctions[sf]);
+	return(funcs[random(funcs.length)](a,b));
+}
+function randomAISort(a,b) {
 	return(random(2)*2-1);
 }
-function slowAndSteadyAISort(a, b) {
+function stupidAISort(a, b) {
 	var adiff=0;
 	var bdiff=0;
 
@@ -43,18 +54,13 @@ function slowAndSteadyAISort(a, b) {
 	bdiff=b.base.dice - b.target.dice;
 	return(adiff-bdiff);
 }
-function wildAndCrazyAISort(a, b) {
-	var adiff=0;
-	var bdiff=0;
-
-	adiff=a.base.dice - a.target.dice;
-	bdiff=b.base.dice - b.target.dice;
-	return(bdiff-adiff);
-}
 function killMostDiceAISort(a, b) {
-	return(b.base.dice - a.target.dice);
+	return(b.target.dice - a.target.dice);
 }
-function paranoiaAISort(a,b) {
+function killLeastDiceAISort(a,b) {
+	return(a.target.dice - b.target.dice);
+}
+function paranoidAISort(a,b) {
 	var ascore=0;
 	var bscore=0;
 
@@ -63,10 +69,6 @@ function paranoiaAISort(a,b) {
 	bscore = b.base.dice - b.target.dice;
 	bscore *= b.target.dice;
 	return(bscore-ascore);
-}
-function randomAISort(a,b) {
-	var sortfuncs=new Array(randomSort, slowAndSteadyAISort, wildAndCrazyAISort, killMostDiceAISort, paranoiaAISort, clusterAISort);
-	return(sortfuncs[random(sortfuncs.length)](a,b));
 }
 function groupAndParanoidAISort(a,b) {
 	var aopts=0;
@@ -87,7 +89,7 @@ function groupAndParanoidAISort(a,b) {
 	var bopts=countem(b.map, b.target, b.base.owner);
 
 	if(aopts==bopts)
-		return(paranoiaAISort(a,b));
+		return(paranoidAISort(a,b));
 	return(aopts-bopts);
 }
 function clusterAISort(a,b) {
@@ -114,13 +116,73 @@ function clusterAISort(a,b) {
 	
 	/* in case of equal cluster, most dice wins */
 	if(bcluster == acluster) 
-		return paranoiaAISort(a,b);
+		return paranoidAISort(a,b);
 	
 	/* compare size of each, bigger cluster wins */
 	return acluster-bcluster;
 }
+function killFirstPlaceAISort(a,b) {
+	/* determine which player has the most tiles */
+	var firstCount;
+	var firstPlayer;
+	for(var p=0;p<game.players.length;p++) {
+		var numTiles = countTiles(map,p);
+		if(!firstPlayer || numTiles > firstCount) {
+			firstCount = numTiles;
+			firstPlayer = p;
+		}
+		/* if two players have the same amount of tiles, 
+		choose the player with the most dice */
+		else if(numTiles == firstCount) {
+			var acount = countDice(map,firstPlayer);
+			var bcount = countDice(map,p);
+			if(bcount > acount) {
+				firstPlayer = p;
+			}
+		}
+	}
+	/* if both tiles have the same owner, dont sort */
+	if(a.owner == b.owner) 
+		return (b.dice - a.dice);
+	if(a.owner == firstPlayer)
+		return -1;
+	return 1;
+}
+function killLastPlaceAISort(a,b) {
+	/* determine which player has the least tiles */
+	var lastCount;
+	var lastPlayer;
+	for(var p=0;p<game.players.length;p++) {
+		var numTiles = countTiles(map,p);
+		if(!lastPlayer || numTiles < lastCount) {
+			lastCount = numTiles;
+			lastPlayer = p;
+		}
+		/* if two players have the same amount of tiles, 
+		choose the player with the least dice */
+		else if(numTiles == lastCount) {
+			var acount = countDice(map,lastPlayer);
+			var bcount = countDice(map,p);
+			if(bcount < acount) {
+				lastPlayer = p;
+			}
+		}
+	}
+	/* if both tiles have the same owner, take the easy win */
+	if(a.owner == b.owner) 
+		return (b.dice - a.dice);
+	if(a.owner == lastPlayer)
+		return -1;
+	return 1;
+}
 
 /* Callbacks for deciding if a given attack should go into the targets array */
+function allAICheck(game, map, base, target) {
+	var funcs = [];
+	for(var cf in checkFunctions) 
+		funcs.push(checkFunctions[cf]);
+	return(funcs[random(funcs.length)](game, map, base, target));
+}
 function clusterAICheck(game, map, base, target) {
 	var computer_tiles=getPlayerTiles(map,base.owner);
 	var clusters = getAllClusters(map,computer_tiles,base.owner);
@@ -144,10 +206,13 @@ function weakestAICheck(game, map, base, target) {
 			continue;
 		if(neighbor.owner!=base.owner) {
 			var neighbor_tiles=countTiles(map, neighbor.owner);
-			if(neighbor_tiles<target_tiles) return(false);
+			if(neighbor_tiles<target_tiles) 
+				return(false);
 		}
 	}
-	return(true);
+	if(base.dice>target.dice || base.dice==settings.max_dice)
+		return(true);
+	return(false);
 }
 function randomAICheck(game, map, base, target) {
 	var computer=game.players[base.owner];
@@ -200,8 +265,11 @@ function wildAndCrazyAICheck(game, map, base, target) {
 }
 function ultraParanoidAICheck(game, map, base, target) {
 	var computer=game.players[base.owner];
-	var rand=random(100);
-	
+
+	/* First, check that we have a dice advantage */
+	if(base.dice <= target.dice)
+		return(false);
+
 	var computer_tiles=getPlayerTiles(map,base.owner);
 	/* If we don't have our "fair share" of territories, use paranoid attack */
 	if(computer_tiles.length < map.tiles.length/game.players.length) {
@@ -225,13 +293,9 @@ function ultraParanoidAICheck(game, map, base, target) {
 		var neighbor=neighbors[n];
 		if(neighbors[n].id==target.id)
 			continue;
-		if(neighbor.owner!=base.owner && neighbor.dice>=2)
+		if(neighbor.owner!=base.owner && neighbor.dice>2)
 			return(false);
 	}
-
-	/* Next, check that we have a dice advantage */
-	if(base.dice <= target.dice)
-		return(false);
 
 	/* Finally, check that we will still be at least equal to all neighbors after the capture */
 	neighbors=getNeighboringTiles(target,map);
@@ -245,18 +309,73 @@ function ultraParanoidAICheck(game, map, base, target) {
 	}
 	return(true);
 }
+function connectAICheck(game, map, base, target) {
+	var computer=game.players[base.owner];
+	var baseCluster;
+	
+	/* First, check that we have a reasonable chance of winning */
+	if(base.dice < target.dice)
+		return(false);
+
+	var computer_tiles=getPlayerTiles(map,base.owner);
+	var clusters = getAllClusters(map,computer_tiles,base.owner);
+	
+	/* if we have only one cluster, use a different check method */
+	if(clusters.length == 1) 
+		return paranoidAICheck(game,map,base,target);
+	
+	/* find and store the cluster we are attacking from */
+	for(var c=0;c<clusters.length;c++) {
+		for(var t in clusters[c]) {
+			if(t == base.id) {
+				baseCluster = clusters[c];
+				break;
+			}
+		}
+		if(baseCluster)
+			break;
+	}
+
+	/* check to see if the target tile is neighbored by any of our tiles,
+	to potential bridge two isolated clusters */
+	neighbors=getNeighboringTiles(target,map);
+	for(var n=0;n<neighbors.length;n++) {
+		var neighbor=neighbors[n];
+		/* we found a neighbor that we own */
+		if(neighbor.owner==base.owner) {
+			/* skip the tile we are scanning from */
+			if(neighbor.id==base.id)
+				continue;
+			var noGood = false;
+			/* scan the base cluster to see if the neighbor
+			tile is part of the same group */
+			for(var t in baseCluster) {
+				if(t == neighbor.id) {
+					noGood = true;
+					break;
+				}
+			}
+			/* if we've found a neighbor of the target tile
+			that is ours and not part of the cluster we're
+			attacking from, it's a link! */
+			if(!noGood) 
+				return true;
+		}
+	}
+	return(false);
+}
 
 /* Callbacks for selecting the number of targets to use */
-function randomAttackQuantity(tlen) {
-	if(tlen <= 2)
-		return(tlen); 
-	return(random(tlen-2)+2);
+function randomAttackQuantity(numTargets) {
+	if(numTargets < 2)
+		return(numTargets); 
+	return(random(numTargets)+1);
 }
-function fullAttackQuantity(tlen) {
-	return(tlen);
+function fullAttackQuantity(numTargets) {
+	return(numTargets);
 }
-function singleAttackQuantity(tlen) {
-	if(tlen > 0)
+function singleAttackQuantity(numTargets) {
+	if(numTargets > 0)
 		return(1);
 	return(0);
 }
@@ -441,8 +560,6 @@ function getAttackOptions() {
 		var attack_options=canAttack(map,base);
 		if(attack_options.length>0) {
 			var basetargets=[];
-			/* Randomize the order to check in */
-			attack_options.sort(randomSort);
 			for(var o=0;o<attack_options.length;o++) {
 				var target=attack_options[o];
 				/* Check if this is an acceptable attack */
