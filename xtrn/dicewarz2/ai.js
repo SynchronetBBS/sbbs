@@ -112,9 +112,11 @@ function clusterAISort(a,b) {
 			break;
 	}
 	
-	/* compare size of each, bigger cluster wins */
-	if(bcluster == acluster)
+	/* in case of equal cluster, most dice wins */
+	if(bcluster == acluster) 
 		return paranoiaAISort(a,b);
+	
+	/* compare size of each, bigger cluster wins */
 	return acluster-bcluster;
 }
 
@@ -125,7 +127,9 @@ function clusterAICheck(game, map, base, target) {
 	/* if the base tile is part of the player's largest cluster, use it to attack */
 	for(var t in clusters[0]) {
 		if(t == base.id) {
-			return true;
+			/* If we have an advantage, add to targets array */
+			if(base.dice>target.dice || base.dice == settings.max_dice)
+				return(true);
 		}
 	}
 	return false;
@@ -168,15 +172,9 @@ function randomAICheck(game, map, base, target) {
 }
 function paranoidAICheck(game, map, base, target) {
 	var computer=game.players[base.owner];
-	var rand=random(100);
-
 	/* If we have an advantage, add to targets array */
-	if(base.dice>target.dice)
+	if(base.dice>target.dice || base.dice==settings.max_dice)
 		return(true);
-	/* If we are equal, only add to targets if we are maxDice */
-	if(base.dice==target.dice && base.dice==settings.max_dice) {
-		return(true);
-	}
 	return(false);
 }
 function wildAndCrazyAICheck(game, map, base, target) {
