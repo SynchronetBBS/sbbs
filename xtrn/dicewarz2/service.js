@@ -216,8 +216,9 @@ function scanInactivity() {
 			if(game.single_player) {
 				deleteGame(game.gameNumber);
 			}
-			else {
+			else if(game.status == status.PLAYING) {
 				var player = game.players[game.turn];
+				player.name += " AI";
 				player.AI = {
 					sort:"random",
 					check:"random",
@@ -225,6 +226,7 @@ function scanInactivity() {
 					turns:0,
 					moves:0
 				}
+				client.write(game_id,"games." + gameNumber + ".players." + player.name,player,2)
 				updateTurn(game);
 			}
 		}
