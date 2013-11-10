@@ -69,8 +69,15 @@
  *                              a large section in certain messages wasn't getting
  *                              quoted.
  * 2013-10-22 to
- * 2012-10-27 Eric Oulashin     Worked on quote line wrapping to fix issues when
+ * 2013-10-27 Eric Oulashin     Worked on quote line wrapping to fix issues when
  *                              quoting messages with author initials.
+ * 2013-11-09 Eric Oulashin     Added an optional parameter to wrapTextLines() as
+ *                              an array to return indexes of lines that needed a
+ *                              new line inserted after it.  This was done to help
+ *                              wrapQuoteLinesUsingAuthorInitials() move its line
+ *                              info objects down when a new line is added.
+ * 2013-11-10 Eric Oulashin     Made some more refinements, mainly for
+ *                              wrapQuoteLinesUsingAuthorInitials().
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -2337,9 +2344,11 @@ function toggleAttr(pAttrType, pAttrs, pNewAttr)
 //             last line in the array, use the array's .length property
 //             for this parameter.
 //  pLineWidth: The maximum width of each line
+//  pIdxesRequiringNL (OUT): Optional - An array to contain the indexes of original
+//                           wrapped lines that required a new line to be added.
 //
-// Return value: The number of strings in lineArr
-function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth)
+// Return value: The number of new lines added
+function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesRequiringNL)
 {
   // Validate parameters
   if (pLineArr == null)
@@ -2351,7 +2360,14 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth)
   if ((typeof(pEndIndex) != "number") || (pEndIndex == null) || (pEndIndex > pLineArr.length))
     pEndIndex = pLineArr.length;
 
-  // Now for the actual code:
+  // Determine whether pIdxesRequiringNL is an array (actually, the most we can
+  // do is check whether it's an object).
+  var pNewLineIndexesIsArray = (typeof(pIdxesRequiringNL) == "object");
+  if (pNewLineIndexesIsArray)
+    pIdxesRequiringNL.length = 0;
+
+  // Wrap the text lines
+  var origNumLines = pLineArr.length; // So we can return the # of lines added
   var trimLen = 0;   // The number of characters to trim from the end of a string
   var trimIndex = 0; // The index of where to start trimming
   for (var i = pStartLineIndex; i < pEndIndex; ++i)
@@ -2381,6 +2397,9 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth)
           // wrapping the lines.
           if (i < pEndIndex-1)
             ++pEndIndex;
+
+          if (pNewLineIndexesIsArray)
+            pIdxesRequiringNL.push(i);
         }
         else
         {
@@ -2400,10 +2419,13 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth)
         // wrapping the lines.
         if (i < pEndIndex-1)
           ++pEndIndex;
+
+        if (pNewLineIndexesIsArray)
+          pIdxesRequiringNL.push(i);
       }
     }
   }
-  return pLineArr.length;
+  return(pLineArr.length - origNumLines);
 }
 
 // Returns an object containing default quote string information.
@@ -2420,6 +2442,11 @@ function getDefaultQuoteStrObj()
   retObj.startIndex = -1;
   retObj.quoteLevel = 0;
   retObj.begOfLine = ""; // Will store the beginning of the line, before the >
+  retObj.copy = function(pThatQuoteStrObj) {
+    this.startIndex = pThatQuoteStrObj.startIndex;
+    this.quoteLevel = pThatQuoteStrObj.quoteLevel;
+    this.begOfLine = pThatQuoteStrObj.begOfLine;
+  };
   return retObj;
 }
 
@@ -2770,54 +2797,34 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
       // not automatically want to add this to every line.
       maxBegOfLineLen += gQuotePrefix.length;
 
-      // Store the current number of quote lines so that later we can see if any
-      // quote lines were added after wrapping.  Then, wrap the quote lines for
-      // this section.
-      var numLinesBefore = gQuoteLines.length;
-
       // Wrap the current section of quote lines
-      wrapTextLines(gQuoteLines, quoteSections[sIndex].startArrIndex,
-                    quoteSections[sIndex].endArrIndex, 79 - maxBegOfLineLen);
+      var idxesAddedNL = new Array();
+      var numLinesAdded = wrapTextLines(gQuoteLines, quoteSections[sIndex].startArrIndex,
+                                    quoteSections[sIndex].endArrIndex, 79 - maxBegOfLineLen,
+                                    idxesAddedNL);
       // If quote lines were added as a result of wrapping, then determine the
       // number of lines added and update the end index of this object in
       // quoteSections and the start & end indexes of the subsequent objects in
       // quoteSections.
-      var numLinesAdded = 0; // Will store the number of lines added after wrapping
-      if (gQuoteLines.length > numLinesBefore)
+      if (numLinesAdded > 0)
       {
-         numLinesAdded = gQuoteLines.length - numLinesBefore;
-
-         // Insert lineInfo objects for the new lines
+         // Splice new lineInfo objects into the lineInfos array at the end of this
+         // section for each new line added in this section.
          for (var counter = 0; counter < numLinesAdded; ++counter)
+            lineInfos.splice(quoteSections[sIndex].endArrIndex, 0, getDefaultQuoteStrObj());
+         // Now we can update this section's end index.  Then, after each index that
+         // required a new line to be added, move the lineInfo information down one line.
+         quoteSections[sIndex].endArrIndex += numLinesAdded;
+         for (var NLArrIdx = 0; NLArrIdx < idxesAddedNL.length; ++NLArrIdx)
          {
-            // Find the index of the first non-blank quote line in the current
-            // section's range.  We'll then copy its lineInfo object properties
-            // to the new lines in the section.
-            var nonBlankLnIdx = quoteSections[sIndex].startArrIndex;
-            while ((gQuoteLines[nonBlankLnIdx].length == 0) && (nonBlankLnIdx < quoteSections[sIndex].endArrIndex))
-               ++nonBlankLnIdx;
-
-            var lineInfoObj = getDefaultQuoteStrObj();
-            lineInfoObj.startIndex = lineInfos[nonBlankLnIdx].startIndex;
-            lineInfoObj.quoteLevel = lineInfos[nonBlankLnIdx].quoteLevel;
-            lineInfoObj.begOfLine = lineInfos[nonBlankLnIdx].begOfLine;
-            /*// Temproary
-            if (sIndex == 2)
+            for (var lnInfoMoveIdx = quoteSections[sIndex].endArrIndex-1;
+                 lnInfoMoveIdx > idxesAddedNL[NLArrIdx]; --lnInfoMoveIdx)
             {
-               console.clear("\1n");
-               console.print("Copying line info from line " + +(nonBlankLnIdx+1) + " to line " + quoteSections[sIndex].endArrIndex + ":\r\n")
-               console.print(":" + gQuoteLines[nonBlankLnIdx] + ":\r\n");
-               for (var prop in lineInfoObj)
-                  console.print(prop + ":" + lineInfoObj[prop] + ":\r\n");
-               console.pause();
+               lineInfos[lnInfoMoveIdx].copy(lineInfos[lnInfoMoveIdx-1]);
             }
-            // End Temporary*/
-            lineInfos.splice(quoteSections[sIndex].endArrIndex, 0, lineInfoObj);
          }
 
-         // Update this section's end index as well as the start & end indexes
-         // of the following sections.
-         quoteSections[sIndex].endArrIndex += numLinesAdded;
+         // Update the start & end indexes of the following sections.
          for (var sIndex2 = sIndex+1; sIndex2 < quoteSections.length; ++sIndex2)
          {
             quoteSections[sIndex2].startArrIndex += numLinesAdded;
@@ -2931,14 +2938,13 @@ function wrapQuoteLines_NoAuthorInitials()
       // (2*(lastQuoteLevel+1) + gQuotePrefix.length)
       // That is because we'll be prepending "> " to the quote lines,
       // and then SlyEdit will prepend gQuotePrefix to them during quoting.
-      var numLinesBefore = gQuoteLines.length;
-      wrapTextLines(gQuoteLines, startArrIndex, endArrIndex, 79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
+      var numLinesAdded =  wrapTextLines(gQuoteLines, startArrIndex, endArrIndex,
+                                         79 - (2*(lastQuoteLevel+1) + gQuotePrefix.length));
       // If quote lines were added as a result of wrapping, then
       // determine the number of lines added, and update endArrIndex
       // and quoteLineIndex accordingly.
-      if (gQuoteLines.length > numLinesBefore)
+      if (numLinesAdded > 0)
       {
-        var numLinesAdded = gQuoteLines.length - numLinesBefore;
         endArrIndex += numLinesAdded;
         quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
       }

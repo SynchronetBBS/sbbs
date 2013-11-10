@@ -20,6 +20,13 @@
  * 2013-10-28 Eric Oulashin     Version 1.36
  *                              Releasing this version, as it seems to be quoting
  *                              all messages well with author initials.
+ * 2013-11-09 Eric Oulashin     Version 1.37 Beta
+ *                              Started trying to debug an issue where SlyEdit
+ *                              sometimes uses the replying user's initials
+ *                              in the last line of a paragraph of the original
+ *                              author's message.
+ * 2013-11-10 Eric Oulashin     Version 1.37
+ *                              Releasing this version
  */
 
 /* Command-line arguments:
@@ -97,8 +104,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.36";
-const EDITOR_VER_DATE = "2013-10-28";
+const EDITOR_VERSION = "1.37";
+const EDITOR_VER_DATE = "2013-11-10";
 
 
 // Program variables
