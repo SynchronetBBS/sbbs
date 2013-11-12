@@ -27,6 +27,11 @@
  *                              author's message.
  * 2013-11-10 Eric Oulashin     Version 1.37
  *                              Releasing this version
+ * 2013-11-11 Eric Oulashin     Version 1.38
+ *                              Minor bug fix: If there are no text replacements
+ *                              to list when the user tries to list them, the cursor
+ *                              now returns to its proper place after displaying
+ *                              the error.
  */
 
 /* Command-line arguments:
@@ -104,8 +109,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.37";
-const EDITOR_VER_DATE = "2013-11-10";
+const EDITOR_VERSION = "1.38";
+const EDITOR_VER_DATE = "2013-11-11";
 
 
 // Program variables
@@ -5247,7 +5252,10 @@ function listTextReplacements()
 {
    if (gNumTxtReplacements == 0)
    {
+      var originalCurpos = console.getxy();
       writeMsgOntBtmHelpLineWithPause("nhyThere are no text replacements.", ERRORMSG_PAUSE_MS);
+      console.print(chooseEditColor()); // Make sure the edit color is correct
+      console.gotoxy(originalCurpos);
       return;
    }
 
