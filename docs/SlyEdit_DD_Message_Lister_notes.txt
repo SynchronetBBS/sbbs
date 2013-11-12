@@ -1,8 +1,8 @@
 Please note that if you use Digital Distortion Message Lister, you must update
-the message lister to version 1.36 in order for it to work properly with
-this version of SlyEdit (1.32).  The reason is due to the way SlyEdit looks up
-message header information to get author's initials when quoting messages, and
-due to information that Digital Distortion Message Lister provides to SlyEdit.
+the message lister to version 1.36 in order for it to work properly with this
+version of SlyEdit.  The reason is due to the way SlyEdit looks up message
+header information to get author's initials when quoting messages, and due to
+information that Digital Distortion Message Lister provides to SlyEdit.
 Version 1.36 of the message lister now always writes the message number to its
 drop file (earlier versions wrote either the message number or message offset,
 depending on the version and build of Synchronet).  This version of SlyEdit
