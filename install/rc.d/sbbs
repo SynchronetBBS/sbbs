@@ -18,7 +18,7 @@ load_rc_config ${name}
 # DO NOT CHANGE THESE DEFAULT VALUES HERE
 #
 sbbs_enable=${sbbs_enable-"NO"}
-sbbs_flags=${sbbs_flags-""}
+sbbs_flags=${sbbs_flags-"d"}
 sbbs_pidfile=${sbbs_pidfile-"/var/run/sbbs.pid"}
 sbbs_dir=${sbbs_dir-"/sbbs"}
 sbbs_ctrldir=${sbbs_ctrldir-"${sbbs_dir}/ctrl"}
