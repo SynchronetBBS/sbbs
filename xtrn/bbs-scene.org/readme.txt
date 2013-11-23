@@ -1,6 +1,11 @@
 BBS-Scene.org scripts for Synchronet 3.16+
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
+*** UNSUPPORTED ***
+
+The author is no longer interested in supporting these scripts.
+Have fun.
+
 Requirements:
 -=-=-=-=-=-=-
 
