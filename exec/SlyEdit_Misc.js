@@ -78,6 +78,14 @@
  *                              info objects down when a new line is added.
  * 2013-11-10 Eric Oulashin     Made some more refinements, mainly for
  *                              wrapQuoteLinesUsingAuthorInitials().
+ * 2013-11-25 Eric Oulashin     Minor bug fix in wrapQuoteLinesUsingAuthorInitials()
+ *                              starting on line 2739: Added more checks to ensure
+ *                              that the gQuoteLines object it references is valid.
+ *                              Bug fix in DisplayTextAreaBottomBorder_IceStyle() in
+ *                              SlyEdit_IceStuff.js to ensure that the parenthesis in the
+ *                              CTRL key help text at the right in the bottom border are
+ *                              correctly displayed with a high blue color, regardless of
+ *                              what is specified in the color theme file.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -2733,8 +2741,16 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
          sectionInfo.quoteLevel = lastQuoteLevel;
          // If the end array index is for a blank quote line, then
          // adjust it to the first non-blank quote line before it.
-         while (gQuoteLines[sectionInfo.endArrIndex-1].length == 0)
+         while ((sectionInfo.endArrIndex-1 >= 0) &&
+                (typeof(gQuoteLines[sectionInfo.endArrIndex-1]) == "string") &&
+                gQuoteLines[sectionInfo.endArrIndex-1].length == 0)
+         {
             --sectionInfo.endArrIndex;
+         }
+         // If we moved sectionInfo.endArrIndex back too far, then increment it.
+         while (typeof(gQuoteLines[sectionInfo.endArrIndex]) != "string")
+            ++sectionInfo.endArrIndex;
+
          quoteSections.push(sectionInfo);
 
          startArrIndex = quoteLineIndex;

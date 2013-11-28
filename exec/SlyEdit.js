@@ -32,6 +32,17 @@
  *                              to list when the user tries to list them, the cursor
  *                              now returns to its proper place after displaying
  *                              the error.
+ * 2013-11-25 Eric Oulashin     Version 1.39 Beta
+ *                              Minor bug fix in wrapQuoteLinesUsingAuthorInitials() in
+ *                              SlyEdit_Misc.js starting on line 2739: Added more
+ *                              checks to ensure that the gQuoteLines object it
+ *                              references is valid.
+ *                              Minor bug fix: Updated the Ice-style color display
+ *                              for the control key help text in the lower right so
+ *                              that normal/high attributes don't interfere with the
+ *                              high blue color of the parenthesis.
+ * 2013-11-27 Eric Oulashin     Version 1.39
+ *                              Releasing this version after having done some testing.
  */
 
 /* Command-line arguments:
@@ -109,8 +120,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.38";
-const EDITOR_VER_DATE = "2013-11-11";
+const EDITOR_VERSION = "1.39";
+const EDITOR_VER_DATE = "2013-11-27";
 
 
 // Program variables

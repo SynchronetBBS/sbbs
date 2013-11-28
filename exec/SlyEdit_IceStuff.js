@@ -49,6 +49,11 @@
  * 2013-10-17 Eric Oulashin     Bug fix: Updated readColorConfig() to make a backup of
  *                              the menuOptClassicColors setting and set it back in the
  *                              iceColors object after reading & setting the colors.
+ *                              Bug fix in DisplayTextAreaBottomBorder_IceStyle() in
+ *                              SlyEdit_IceStuff.js to ensure that the parenthesis in the
+ *                              CTRL key help text at the right in the bottom border are
+ *                              correctly displayed with a high blue color, regardless of
+ *                              what is specified in the color theme file.
  */
 
 load("sbbsdefs.js");
@@ -328,16 +333,16 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
    if (typeof(DisplayTextAreaBottomBorder_IceStyle.border) == "undefined")
    {
       // Build the string of CTRL key combinations that will be displayed
-      var ctrlKeyHelp = gConfigSettings.iceColors.KeyInfoLabelColor
-                      + "CTRL b(nwAhb)n"
+      var ctrlKeyHelp = "n" + gConfigSettings.iceColors.KeyInfoLabelColor
+                      + "CTRL nhb(nwAhb)n"
                       + gConfigSettings.iceColors.KeyInfoLabelColor + "Abort";
       if (pUseQuotes)
       {
-         ctrlKeyHelp += " b(nwQhb)n"
+         ctrlKeyHelp += " nhb(nwQhb)n"
                       + gConfigSettings.iceColors.KeyInfoLabelColor + "Quote";
       }
-      ctrlKeyHelp += " b(nwZhb)n" + gConfigSettings.iceColors.KeyInfoLabelColor
-                   + "Save";
+      ctrlKeyHelp += " nhb(nwZhb)n"
+                   + gConfigSettings.iceColors.KeyInfoLabelColor + "Save";
 
       // Start the border text with the first 2 border characters
       // The beginning of this line shows that SlyEdit is registered
