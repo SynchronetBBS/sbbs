@@ -167,7 +167,7 @@ Bot_Commands["SPECS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 		if(rig_index[rig] == undefined) {
 			update_rig_index();
 			if(rig_index[rig] == undefined) {
-				srv.o(target, "Unable to locate rig "+rigname);
+				srv.o(onick, "Unable to locate rig "+rigname, "NOTICE");
 				var suggestions=[];
 				for(i in rig_index) {
 					if(rig_index[i].name == undefined)
@@ -178,26 +178,26 @@ Bot_Commands["SPECS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 				if(suggestions.length == 0)
 					return true;
 				if(suggestions.length > 1) {
-					srv.o(target,"Suggestions: "+suggestions.join(', '));
+					srv.o(onick,"Suggestions: "+suggestions.join(', '),"NOTICE");
 					return true;
 				}
 				if(rig_index[suggestions[0].toUpperCase()] == undefined)
 					return true;
 				rig = suggestions[0].toUpperCase();
 				rigname = suggestions[0];
-				srv.o(target,"Showing specs for "+rigname);
+				srv.o(onick,"Showing specs for "+rigname,"NOTICE");
 			}
 		}
 		if(rig_index[rig].specs == undefined) {
 			update_rig_specs(rig);
 			if(rig_index[rig].specs == undefined) {
-				srv.o(target, "Unable to locate specs for rig "+rigname);
+				srv.o(onick, "Unable to locate specs for rig "+rigname,"NOTICE");
 				return true;
 			}
 		}
 		for(i in rig_index[rig].specs)
-			srv.o(target, rig_index[rig].specs[i]);
-		srv.o(target, "Provided by rigpix.com");
+			srv.o(onick, rig_index[rig].specs[i],"NOTICE");
+		srv.o(onick, "Provided by rigpix.com","NOTICE");
 	}
 
 	return true;
@@ -272,9 +272,10 @@ function update_contests()
 			return ret;
 		}
 
-		m=cont.match(/<tr><td colspan="3" class="bgray"><strong><a[^>]*>(.[^<]*)<\/a>([^<]*)<\/strong>/)
+		m=cont.match(/<tr><td colspan="3" class="bgray"><strong><a[^>]*>(.[^<]*)<\/a>[\s:]*([^<]*)<\/strong>/)
 		if(m != null) {
 			c=m[1];
+			c += '<!-- '+(contest_order.length+1)+' -->';
 			var times=m[2].split(/ and /);
 
 			contest_order.push(c);
@@ -538,7 +539,7 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 	var displayed=0;
 	for(c in cl) {
 		var t=contests[cl[c]];
-		srv.o(target, cl[c]+': '+t.timeStr+' '+t['Find rules at']);
+		srv.o(target, cl[c].replace(/<!--[^-]*-->/,'')+': '+t.timeStr+' '+t['Find rules at']);
 		displayed++;
 		if(displayed > 8) {
 			srv.o(target, "--- Aborting after 8 entries");
