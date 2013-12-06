@@ -117,6 +117,15 @@ function Tree(frame,text,tree) {
 	this.__defineGetter__("items",function() {
 		return properties.items;
 	});
+	this.__defineSetter__("items",function(items) {
+		if(items instanceof Array) {
+			properties.items = items;
+			return true;
+		}
+		else {
+			throw("items parameter must be an array");
+		}
+	});
 	this.__defineGetter__("parent",function() {
 		return properties.parent;
 	});
