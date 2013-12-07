@@ -41,18 +41,24 @@ Socket.prototype.recvJSON = function() {
 		try {
 			packet=JSON.parse(packet,this.reviver);
 			if(packet.scope && packet.scope.toUpperCase() == "SOCKET") {
-				this.pingIn(packet);
-				this.pingOut("PONG");
-				packet = null;
+				this.process(packet);
 			}
 		} 
 		catch(e) {
 			log(LOG_ERROR,e);
-			packet = null;
 		}
 	}
 	return packet;
 };
+
+Socket.prototype.process = function(packet) {
+	if(packet.func && packet.func.toUpperCase() == "PONG") {
+		this.pingIn(packet);
+	}
+	else if(packet.func && packet.func.toUpperCase() == "PING") {
+		this.pingOut("PONG");
+	}
+}
 
 /* ping pong */		
 Socket.prototype.pingOut = function(func) {
