@@ -12,7 +12,7 @@ Socket.prototype.recv_wait = 30;
 /* last ping sent */
 Socket.prototype.ping_sent = 0;
 /* debug logging */
-Socket.prototype.debug_logging = false;
+Socket.prototype.debug_logging = true;
 
 /* socket prototype to automatically encode JSON data */
 Socket.prototype.sendJSON = function(object) {
@@ -40,6 +40,11 @@ Socket.prototype.recvJSON = function() {
 			log(LOG_DEBUG,"<--" + this.descriptor + ": " + packet);
 		try {
 			packet=JSON.parse(packet,this.reviver);
+			if(packet.scope && packet.scope.toUpperCase() == "SOCKET") {
+				this.pingIn(packet);
+				this.pingOut("PONG");
+				packet = null;
+			}
 		} 
 		catch(e) {
 			log(LOG_ERROR,e);
@@ -68,6 +73,6 @@ Socket.prototype.pingIn = function(packet) {
 	if(this.time_offset != gap) {
 		this.time_offset=gap;
 		this.latency=latency;
-		log(LOG_DEBUG,this.descriptor + "latency rt: " + this.latency + " ow: " + this.time_offset);
+		log(LOG_DEBUG,"<--" + this.descriptor + ": rt " + this.latency + " ow " + this.time_offset);
 	}
 };
