@@ -86,7 +86,9 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		hints.ai_socktype=type;
 		hints.ai_protocol=protocol;
 		hints.ai_flags|=AI_NUMERICSERV;
+#ifdef AI_ADDRCONFIG
 		hints.ai_flags|=AI_ADDRCONFIG;
+#endif
 		sprintf(port_str, "%hu", port);
 		if((ret=getaddrinfo(addr, port_str, &hints, &res))!=0) {
 			if(xpms_set->lprintf)
