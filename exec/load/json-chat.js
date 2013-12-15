@@ -41,7 +41,9 @@ function JSONChat(usernum,jsonclient,host,port) {
 				throw("invalid client arguments");
 			this.client = new JSONClient(host,port);
 		}
-		this.client.connect();
+		if(!this.client.connect()) {
+			return false;
+		}
 		
 		if(this.nick)
 			this.client.subscribe("chat","channels." + this.nick.name + ".messages");
@@ -49,6 +51,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 			throw("invalid user number");
 		for(var c in this.channels) 
 			this.join(c.name);
+		return true;
 	}
 	
 	this.submit = function(target,str) {
@@ -94,6 +97,8 @@ function JSONChat(usernum,jsonclient,host,port) {
 		var msgcount = 0;
 		var lastMsg = 0;
 		for each(var m in history) {
+			if(m == undefined)
+				continue;
 			this.channels[target.toUpperCase()].messages.push(m);
 			lastMsg = m.time;
 			msgcount++;
@@ -148,12 +153,16 @@ function JSONChat(usernum,jsonclient,host,port) {
 		while(arr.length > 0) {
 			switch(arr.shift().toUpperCase()) {
 			case "CHANNELS":
+				if(!arr[0])
+					break;
 				channel = this.channels[arr[0].toUpperCase()];
 				break;
 			case "MESSAGES":
 				message = packet.data;
 				break;
 			case "USERS":
+				if(!arr[0])
+					break;
 				usr = channel.users[arr[0].toUpperCase()];
 				break;
 			}
