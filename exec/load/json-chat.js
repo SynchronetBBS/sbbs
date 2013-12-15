@@ -168,6 +168,8 @@ function JSONChat(usernum,jsonclient,host,port) {
 			}
 		}
 		
+		if(!channel)
+			return false;
 		switch(packet.oper.toUpperCase()) {
 		case "SUBSCRIBE":
 			channel.messages.push(new Message("",packet.data.nick + " is here.",Date.now()));
