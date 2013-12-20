@@ -184,7 +184,7 @@ function Data()
 		score.losses++;
 		score.points+=Number(settings.point_set.loss);
 		if(score.points < settings.min_points)
-			score.points = settings.min_points;
+			score.points = Number(settings.min_points);
 		this.scores[player.name]=score;
 		
 		client.write(game_id,"scores." + player.name,score);
@@ -199,6 +199,8 @@ function Data()
 			
 		score.losses++;
 		score.points+=Number(settings.point_set.forfeit);
+		if(score.points < settings.min_points)
+			score.points = Number(settings.min_points);
 		this.scores[player.name]=score;
 		
 		client.write(game_id,"scores." + player.name,score);
