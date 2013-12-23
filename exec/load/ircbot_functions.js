@@ -258,19 +258,20 @@ function get_command_channel(srv,cmd) {
 	return chan;
 }
 
+/*
+ * Supports both "prefix command" and "prefixcommand" formats
+ * Maybe a separate option is needed?
+ */
 function parse_cmd_prefix(cmd) {
-	var pre=truncsp(get_cmd_prefix());
+	var pre=command_prefix || '';
 
 	cmd[1] = cmd[1].substr(1).toUpperCase();
-	if ((cmd[1] == pre) 
-		 && cmd[2]) {
+	if ((cmd[1] == pre) && cmd[2]) {
 		cmd.shift();
 		cmd.shift();
-	} else if(cmd[1].search(new RegExp(pre+"\s")) == 0) {
+	} else if(cmd[1].substr(0, pre.length) == pre) {
 		cmd.shift();
-		cmd[0] = cmd[0].replace(new RegExp(pre+"\s*"));
-	} else if(pre=="") {
-		cmd.shift();
+		cmd[0] = cmd[0].substr(pre.length);
 	} else {
 		return false;
 	}
@@ -278,12 +279,15 @@ function parse_cmd_prefix(cmd) {
 	return cmd;
 }
 
+/*
+ * Used to construct help strings
+ */
 function get_cmd_prefix() {
-	if(command_prefix) {
-		if(command_prefix.length<=1) return command_prefix.toUpperCase()+"";
-		return command_prefix.toUpperCase()+" ";
-	}
-	return "";
+	var ret = command_prefix || '';
+
+	if(ret.length > 1)
+		ret += ' ';
+	return ret;
 }
 
 function parse_channel_list(str) {
