@@ -168,7 +168,7 @@ function Data()
 			score=new Score(winner.name,winner.system);
 			
 		score.wins++;
-		score.points+=Number(settings.point_set.win);
+		score.points=Number(score.points) + Number(settings.point_set.win);
 		this.scores[winner.name]=score;
 		
 		client.write(game_id,"scores." + winner.name,score);
@@ -182,7 +182,7 @@ function Data()
 			score=new Score(player.name,player.system);
 			
 		score.losses++;
-		score.points+=Number(settings.point_set.loss);
+		score.points=Number(score.points) + Number(settings.point_set.loss);
 		if(score.points < settings.min_points)
 			score.points = Number(settings.min_points);
 		this.scores[player.name]=score;
@@ -198,7 +198,7 @@ function Data()
 			score=new Score(player.name,player.system);
 			
 		score.losses++;
-		score.points+=Number(settings.point_set.forfeit);
+		score.points=Number(score.points) + Number(settings.point_set.forfeit);
 		if(score.points < settings.min_points)
 			score.points = Number(settings.min_points);
 		this.scores[player.name]=score;
