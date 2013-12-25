@@ -713,22 +713,47 @@ function LayoutView(title,frame,parent) {
 			setTabs();
 	}
 	function setBorder() {
-		var f = frames.border;
-		var h = "\xC4";
-		var v = "\xB3";
-		var tl = "\xDA";
-		var tr = "\xBF";
-		var bl = "\xC0";
-		var br = "\xD9";
-		var hline = "";
-		for(var x=0;x<frames.main.width-2;x++)
-			hline+=h;
-		var vline = format(v + "%*s" + v,frames.main.width-2,"");
-		f.home();
-		f.putmsg(tl + hline + tr + "\r\n");
-		for(var y=0;y<frames.main.height-2;y++)
-			f.putmsg(vline + "\r\n");
-		f.putmsg(bl + hline + br);
+        for(var y = 1; y <= frames.border.height; y++) {
+            for(var x = 1; x <= frames.border.width; x++) {
+                if(y > 1 && y < frames.border.height && x > 1 && x < frames.border.width)
+                    continue;
+                frames.border.gotoxy(x, y);
+                frames.border.putmsg(
+                    ascii(
+                        (y==1)
+                        ?
+                        (   (x==1)
+                            ?
+                            218
+                            : 
+                            (   (x==frames.border.width)
+                                ?
+                                191
+                                :
+                                196
+                            )
+                        )
+                        :
+                        (   (y==frames.border.height)
+                            ?
+                            (   (x==1)
+                                ?
+                                192
+                                :
+                                (   (x==frames.border.width)
+                                    ?
+                                    217
+                                    :
+                                    196
+                                )
+                            )
+                            :
+                            179 
+                        )
+                    )
+                );
+            }
+        }
 	}
 	function setTabs() {
 		var f = frames.tabs;
