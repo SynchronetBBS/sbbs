@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -207,19 +207,19 @@ void prep_cfg(scfg_t* cfg)
 			sprintf(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
 		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir, sizeof(cfg->dir[i]->data_dir));
 
+		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
+		SAFEPRINTF2(cfg->dir[i]->code,"%s%s"
+			,cfg->lib[cfg->dir[i]->lib]->code_prefix
+			,cfg->dir[i]->code_suffix);
+
+		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
+
 		if(!cfg->dir[i]->path[0])		/* no file storage path specified */
             sprintf(cfg->dir[i]->path,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
 		else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
 			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 		else
 			prep_dir(cfg->ctrl_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
-
-		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
-		sprintf(cfg->dir[i]->code,"%s%s"
-			,cfg->lib[cfg->dir[i]->lib]->code_prefix
-			,cfg->dir[i]->code_suffix);
-
-		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
 
 		prep_path(cfg->dir[i]->upload_sem);
 	}
