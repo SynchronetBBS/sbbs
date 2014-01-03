@@ -468,7 +468,7 @@ static void lzh_update(lzh_t* lzh, short int c)
 
 			c = l;
 		}
-	} while ((c = lzh->prnt[c]) != 0);	/* do it until reaching the root */
+	} while (((c = lzh->prnt[c]) != 0) && c < (sizeof(lzh->son)/sizeof(lzh->son[0])));	/* do it until reaching the root */
 }
 
 static void lzh_encode_char(lzh_t* lzh, unsigned short c, uint8_t *outbuf, int32_t *outlen)
