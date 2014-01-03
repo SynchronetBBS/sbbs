@@ -449,7 +449,7 @@ static void lzh_update(lzh_t* lzh, short int c)
 		k = ++lzh->freq[c];
 
 		/* swap nodes to keep the tree freq-ordered */
-		if (k > lzh->freq[l = c + 1]) {
+		if (((unsigned)k) > ((unsigned)lzh->freq[l = c + 1])) {
 			while (k > lzh->freq[++l]);
 			l--;
 			lzh->freq[c] = lzh->freq[l];
