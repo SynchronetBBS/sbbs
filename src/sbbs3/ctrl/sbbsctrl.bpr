@@ -48,7 +48,7 @@
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
-    <USERDEFINES value="SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB"/>
+    <USERDEFINES value="SBBS;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB;_DEBUG"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
     <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\3rdp\win32.release\cryptlib\include;..\..\comio"/>
@@ -61,7 +61,7 @@
     <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib 
       -I$(BCB)\include -I$(BCB)\include\vcl 
       -I..\..\..\3rdp\win32.release\cryptlib\include -I..\..\comio -src_suffix 
-      cpp -DSBBS -D_DEBUG -DRINGBUF_SEM -DRINGBUF_MUTEX -DUSE_CRYPTLIB -boa"/>
+      cpp -DSBBS -DRINGBUF_SEM -DRINGBUF_MUTEX -DUSE_CRYPTLIB -D_DEBUG -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
       -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
@@ -126,7 +126,7 @@ AutoIncBuild=1
 MajorVer=3
 MinorVer=16
 Release=1
-Build=0
+Build=3
 Debug=0
 PreRelease=0
 Special=0
@@ -138,14 +138,17 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
-FileVersion=3.16.1.0
+FileVersion=3.16.1.3
 InternalName=
-LegalCopyright=(C) 2012 Rob Swindell
+LegalCopyright=(C) 2014 Rob Swindell
 LegalTrademarks=
 OriginalFilename=sbbsctrl.exe
 ProductName=Synchronet BBS
 ProductVersion=3.16b
 Comments=
+
+[Excluded Packages]
+c:\borland\cbuilder6\Bin\dclite60.bpl=Borland Integrated Translation Environment
 
 [HistoryLists\hlIncludePath]
 Count=29
@@ -216,14 +219,16 @@ Item1=$(BCB)\source\vcl;C:\src\xpdev\
 Item2=$(BCB)\source\vcl
 
 [HistoryLists\hlConditionals]
-Count=7
-Item0=SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB
-Item1=SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX
-Item2=SBBS;_DEBUG;RINGBUF_SEM
-Item3=SBBS;_DEBUG
-Item4=SBBS
-Item5=SBBS;SMB_GETMSGTXT;_DEBUG
-Item6=SBBS;SMB_GETMSGTXT
+Count=9
+Item0=SBBS;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB;_DEBUG
+Item1=SBBS;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB
+Item2=SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB
+Item3=SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX
+Item4=SBBS;_DEBUG;RINGBUF_SEM
+Item5=SBBS;_DEBUG
+Item6=SBBS
+Item7=SBBS;SMB_GETMSGTXT;_DEBUG
+Item8=SBBS;SMB_GETMSGTXT
 
 [Debugging]
 DebugSourceDirs=$(BCB)\source\vcl;C:\src\xpdev\;C:\src\sbbs3\
@@ -249,10 +254,5 @@ LinkCGLIB=0
 AddServerUnit=1
 AddClientUnit=1
 PrecompiledHeaders=1
-
-[Language]
-ActiveLang=
-ProjectLang=
-RootDir=
   </IDEOPTIONS>
 </PROJECT>
