@@ -306,8 +306,8 @@ static int expandtofit(char **linep, size_t len, size_t *linecapp)
 	if(len+1 >= LONG_MAX)
 		return -1;
 	if(len > *linecapp) {
-		if(len == LONG_MAX + 1)
-			newcap = LONG_MAX + 1;
+		if(len == LONG_MAX)
+			newcap = LONG_MAX;
 		else
 			newcap = p2roundup(len);
 		newline = (char *)realloc(*linep, newcap);
