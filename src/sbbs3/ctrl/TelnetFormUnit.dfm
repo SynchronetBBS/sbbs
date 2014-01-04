@@ -6,22 +6,23 @@ object TelnetForm: TTelnetForm
   Caption = 'Terminal Server'
   Color = clBtnFace
   UseDockManager = True
+  DefaultMonitor = dmPrimary
   DragKind = dkDock
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -14
+  Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   Position = poDefault
   OnHide = FormHide
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object ToolBar: TToolBar
     Left = 0
     Top = 0
-    Width = 583
+    Width = 575
     Height = 25
     Caption = 'ToolBar'
     EdgeBorders = []
@@ -148,12 +149,12 @@ object TelnetForm: TTelnetForm
   object Log: TRichEdit
     Left = 0
     Top = 25
-    Width = 583
-    Height = 156
+    Width = 575
+    Height = 151
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -14
+    Font.Height = -12
     Font.Name = 'MS Sans Serif'
     Font.Style = []
     HideScrollBars = False

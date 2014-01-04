@@ -13498,7 +13498,7 @@ object MainForm: TMainForm
   object TopPanel: TPanel
     Left = 0
     Top = 30
-    Width = 632
+    Width = 624
     Height = 134
     Align = alTop
     BevelOuter = bvNone
@@ -13528,7 +13528,7 @@ object MainForm: TMainForm
     object UpperRightPageControl: TPageControl
       Left = 237
       Top = 0
-      Width = 395
+      Width = 387
       Height = 134
       Align = alClient
       DockSite = True
@@ -13540,8 +13540,8 @@ object MainForm: TMainForm
   object BottomPanel: TPanel
     Left = 0
     Top = 165
-    Width = 632
-    Height = 164
+    Width = 624
+    Height = 152
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
@@ -13550,7 +13550,7 @@ object MainForm: TMainForm
       Left = 235
       Top = 0
       Width = 2
-      Height = 164
+      Height = 152
       Cursor = crHSplit
       MinSize = 1
     end
@@ -13558,7 +13558,7 @@ object MainForm: TMainForm
       Left = 0
       Top = 0
       Width = 235
-      Height = 164
+      Height = 152
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -13568,8 +13568,8 @@ object MainForm: TMainForm
     object LowerRightPageControl: TPageControl
       Left = 237
       Top = 0
-      Width = 395
-      Height = 164
+      Width = 387
+      Height = 152
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -13579,8 +13579,8 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 329
-    Width = 632
+    Top = 317
+    Width = 624
     Height = 25
     Panels = <
       item

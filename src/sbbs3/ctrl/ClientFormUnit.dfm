@@ -5,47 +5,48 @@ object ClientForm: TClientForm
   Height = 345
   Caption = 'Clients'
   Color = clBtnFace
+  DefaultMonitor = dmPrimary
   DragKind = dkDock
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -13
+  Font.Height = -10
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   OnHide = FormHide
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object ListView: TListView
     Left = 0
     Top = 0
-    Width = 623
-    Height = 312
+    Width = 615
+    Height = 307
     Align = alClient
     Columns = <
       item
         Caption = 'Socket'
-        Width = 60
+        Width = 49
       end
       item
         Caption = 'Protocol'
-        Width = 65
+        Width = 53
       end
       item
         Caption = 'User'
-        Width = 90
+        Width = 73
       end
       item
         Caption = 'Address'
-        Width = 100
+        Width = 81
       end
       item
         Caption = 'Host Name'
-        Width = 100
+        Width = 81
       end
       item
         Caption = 'Port'
-        Width = 55
+        Width = 45
       end
       item
         AutoSize = True

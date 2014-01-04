@@ -1810,6 +1810,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	TelnetForm->Width=Registry->ReadInteger("TelnetFormWidth");
 	if(Registry->ValueExists("TelnetFormHeight"))
     	TelnetForm->Height=Registry->ReadInteger("TelnetFormHeight");
+	if(Registry->ValueExists("TelnetFormMonitor"))
+    	TelnetForm->DefaultMonitor=(TDefaultMonitor)Registry->ReadInteger("TelnetFormMonitor");
 
 	if(Registry->ValueExists("EventsFormTop"))
     	EventsForm->Top=Registry->ReadInteger("EventsFormTop");
@@ -1819,6 +1821,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	EventsForm->Width=Registry->ReadInteger("EventsFormWidth");
 	if(Registry->ValueExists("EventsFormHeight"))
     	EventsForm->Height=Registry->ReadInteger("EventsFormHeight");
+	if(Registry->ValueExists("EventsFormMonitor"))
+    	EventsForm->DefaultMonitor=(TDefaultMonitor)Registry->ReadInteger("EventsFormMonitor");
 
 	if(Registry->ValueExists("ServicesFormTop"))
     	ServicesForm->Top=Registry->ReadInteger("ServicesFormTop");
@@ -1828,6 +1832,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	ServicesForm->Width=Registry->ReadInteger("ServicesFormWidth");
 	if(Registry->ValueExists("ServicesFormHeight"))
     	ServicesForm->Height=Registry->ReadInteger("ServicesFormHeight");
+	if(Registry->ValueExists("ServicesFormMonitor"))
+    	ServicesForm->DefaultMonitor=(TDefaultMonitor)Registry->ReadInteger("ServicesFormMonitor");
 
 	if(Registry->ValueExists("FtpFormTop"))
     	FtpForm->Top=Registry->ReadInteger("FtpFormTop");
@@ -1837,6 +1843,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	FtpForm->Width=Registry->ReadInteger("FtpFormWidth");
 	if(Registry->ValueExists("FtpFormHeight"))
     	FtpForm->Height=Registry->ReadInteger("FtpFormHeight");
+	if(Registry->ValueExists("FtpFormMonitor"))
+    	FtpForm->DefaultMonitor=(TDefaultMonitor)Registry->ReadInteger("FtpFormMonitor");
 
 	if(Registry->ValueExists("WebFormTop"))
     	WebForm->Top=Registry->ReadInteger("WebFormTop");
@@ -1846,6 +1854,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	WebForm->Width=Registry->ReadInteger("WebFormWidth");
 	if(Registry->ValueExists("WebFormHeight"))
     	WebForm->Height=Registry->ReadInteger("WebFormHeight");
+	if(Registry->ValueExists("WebFormMonitor"))
+    	WebForm->DefaultMonitor=(TDefaultMonitor)Registry->ReadInteger("WebFormMonitor");
 
 	if(Registry->ValueExists("MailFormTop"))
     	MailForm->Top=Registry->ReadInteger("MailFormTop");
@@ -1855,6 +1865,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	MailForm->Width=Registry->ReadInteger("MailFormWidth");
 	if(Registry->ValueExists("MailFormHeight"))
     	MailForm->Height=Registry->ReadInteger("MailFormHeight");
+	if(Registry->ValueExists("MailFormMonitor"))
+    	MailForm->DefaultMonitor=(TDefaultMonitor)Registry->ReadInteger("MailFormMonitor");
 
 	if(Registry->ValueExists("NodeFormTop"))
     	NodeForm->Top=Registry->ReadInteger("NodeFormTop");
@@ -1864,6 +1876,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	NodeForm->Width=Registry->ReadInteger("NodeFormWidth");
 	if(Registry->ValueExists("NodeFormHeight"))
     	NodeForm->Height=Registry->ReadInteger("NodeFormHeight");
+	if(Registry->ValueExists("NodeFormMonitor"))
+    	NodeForm->DefaultMonitor=(TDefaultMonitor)Registry->ReadInteger("NodeFormMonitor");
 
 	if(Registry->ValueExists("StatsFormTop"))
     	StatsForm->Top=Registry->ReadInteger("StatsFormTop");
@@ -1873,6 +1887,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	StatsForm->Width=Registry->ReadInteger("StatsFormWidth");
 	if(Registry->ValueExists("StatsFormHeight"))
     	StatsForm->Height=Registry->ReadInteger("StatsFormHeight");
+	if(Registry->ValueExists("StatsFormMonitor"))
+    	StatsForm->DefaultMonitor=(TDefaultMonitor)Registry->ReadInteger("StatsFormMonitor");
 
 	if(Registry->ValueExists("ClientFormTop"))
     	ClientForm->Top=Registry->ReadInteger("ClientFormTop");
@@ -1882,6 +1898,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	ClientForm->Width=Registry->ReadInteger("ClientFormWidth");
 	if(Registry->ValueExists("ClientFormHeight"))
     	ClientForm->Height=Registry->ReadInteger("ClientFormHeight");
+	if(Registry->ValueExists("ClientFormMonitor"))
+    	ClientForm->DefaultMonitor=(TDefaultMonitor)Registry->ReadInteger("ClientFormMonitor");
 
     for(int i=0;i<ClientForm->ListView->Columns->Count;i++) {
         char str[128];
@@ -2366,16 +2384,19 @@ void __fastcall TMainForm::SaveRegistrySettings(TObject* Sender)
     Registry->WriteInteger("NodeFormLeft",NodeForm->Left);
     Registry->WriteInteger("NodeFormHeight",NodeForm->Height);
     Registry->WriteInteger("NodeFormWidth",NodeForm->Width);
+    Registry->WriteInteger("NodeFormMonitor",NodeForm->DefaultMonitor);
 
     Registry->WriteInteger("StatsFormTop",StatsForm->Top);
     Registry->WriteInteger("StatsFormLeft",StatsForm->Left);
     Registry->WriteInteger("StatsFormHeight",StatsForm->Height);
     Registry->WriteInteger("StatsFormWidth",StatsForm->Width);
+    Registry->WriteInteger("StatsFormMonitor",StatsForm->DefaultMonitor);
 
     Registry->WriteInteger("ClientFormTop",ClientForm->Top);
     Registry->WriteInteger("ClientFormLeft",ClientForm->Left);
     Registry->WriteInteger("ClientFormHeight",ClientForm->Height);
     Registry->WriteInteger("ClientFormWidth",ClientForm->Width);
+    Registry->WriteInteger("ClientFormMonitor",ClientForm->DefaultMonitor);
 
     for(int i=0;i<ClientForm->ListView->Columns->Count;i++) {
         char str[128];
@@ -2388,31 +2409,37 @@ void __fastcall TMainForm::SaveRegistrySettings(TObject* Sender)
     Registry->WriteInteger("TelnetFormLeft",TelnetForm->Left);
     Registry->WriteInteger("TelnetFormHeight",TelnetForm->Height);
     Registry->WriteInteger("TelnetFormWidth",TelnetForm->Width);
+    Registry->WriteInteger("TelnetFormMonitor",TelnetForm->DefaultMonitor);
 
     Registry->WriteInteger("EventsFormTop",EventsForm->Top);
     Registry->WriteInteger("EventsFormLeft",EventsForm->Left);
     Registry->WriteInteger("EventsFormHeight",EventsForm->Height);
     Registry->WriteInteger("EventsFormWidth",EventsForm->Width);
+    Registry->WriteInteger("EventsFormMonitor",EventsForm->DefaultMonitor);
 
     Registry->WriteInteger("ServicesFormTop",ServicesForm->Top);
     Registry->WriteInteger("ServicesFormLeft",ServicesForm->Left);
     Registry->WriteInteger("ServicesFormHeight",ServicesForm->Height);
     Registry->WriteInteger("ServicesFormWidth",ServicesForm->Width);
+    Registry->WriteInteger("ServicesFormMonitor",ServicesForm->DefaultMonitor);
 
     Registry->WriteInteger("FtpFormTop",FtpForm->Top);
     Registry->WriteInteger("FtpFormLeft",FtpForm->Left);
     Registry->WriteInteger("FtpFormHeight",FtpForm->Height);
     Registry->WriteInteger("FtpFormWidth",FtpForm->Width);
+    Registry->WriteInteger("FtpFormMonitor",FtpForm->DefaultMonitor);
 
     Registry->WriteInteger("WebFormTop",WebForm->Top);
     Registry->WriteInteger("WebFormLeft",WebForm->Left);
     Registry->WriteInteger("WebFormHeight",WebForm->Height);
     Registry->WriteInteger("WebFormWidth",WebForm->Width);
+    Registry->WriteInteger("WebFormMonitor",WebForm->DefaultMonitor);
 
     Registry->WriteInteger("MailFormTop",MailForm->Top);
     Registry->WriteInteger("MailFormLeft",MailForm->Left);
     Registry->WriteInteger("MailFormHeight",MailForm->Height);
     Registry->WriteInteger("MailFormWidth",MailForm->Width);
+    Registry->WriteInteger("MailFormMonitor",MailForm->DefaultMonitor);    
 
     Registry->WriteInteger("TopPanelHeight",TopPanel->Height);
  	Registry->WriteInteger("UpperLeftPageControlWidth"
@@ -2563,6 +2590,7 @@ void __fastcall TMainForm::ImportFormSettings(TMemIniFile* IniFile, const char* 
    	Form->Left=IniFile->ReadInteger(section,"Left",Form->Left);
    	Form->Width=IniFile->ReadInteger(section,"Width",Form->Width);
    	Form->Height=IniFile->ReadInteger(section,"Height",Form->Height);
+   	Form->DefaultMonitor=(TDefaultMonitor)IniFile->ReadInteger(section,"Monitor",Form->DefaultMonitor);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ExportFormSettings(TMemIniFile* IniFile, const char* section, TForm* Form)
@@ -2573,6 +2601,7 @@ void __fastcall TMainForm::ExportFormSettings(TMemIniFile* IniFile, const char* 
     IniFile->WriteInteger(section,"Height",Form->Height);
     IniFile->WriteInteger(section,"Page",PageNum((TPageControl*)Form->HostDockSite));
     IniFile->WriteBool(section,"Floating",Form->Floating);
+    IniFile->WriteInteger(section,"Monitor",Form->DefaultMonitor);    
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ImportFont(TMemIniFile* IniFile, const char* section, AnsiString prefix, TFont* Font)
