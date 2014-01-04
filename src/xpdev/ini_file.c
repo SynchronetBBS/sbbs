@@ -1300,7 +1300,7 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 	union xp_sockaddr	addr;
 
 	len=sizeof(type);
-	if((result=getsockopt(sock, SOL_SOCKET, SO_TYPE, &type, &len)) != 0) {
+	if((result=getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&type, &len)) != 0) {
 		safe_snprintf(error,errlen,"%d getting socket type", ERROR_VALUE);
 		return(result);
 	}
