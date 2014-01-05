@@ -1,9 +1,8 @@
+/* $Id$ */
+
 var root = argv[0];
-if(!file_exists(root + "server.ini")) {
-	throw("server initialization file missing");
-}
 /* load server connection information from server.ini */
-var server_file = new File(root + "server.ini");
+var server_file = new File(file_cfgname(root, "server.ini"));
 server_file.open('r',true);
 var serverAddr=server_file.iniGetValue(null,"host");
 var serverPort=server_file.iniGetValue(null,"port");
