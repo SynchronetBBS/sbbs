@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load("event-timer.js");
 load("json-sock.js");
 load("json-db.js");
@@ -404,8 +406,6 @@ admin = new (function() {
 			return false;
 		}
 		var usr = new User(usernum);
-		var pass = md5_calc(usr.security.password,true);
-		
 		if(md5_calc(usr.security.password,true) != pw) {
 			error(client,errors.INVALID_PASSWORD);
 			return false;
