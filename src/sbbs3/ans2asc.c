@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
 	for(i=1; i<argc; i++)  {
 		if(argv[i][0]=='-') {
-			if(stricmp(argv[i], "-delay") == 0) {
+			if(strcmp(argv[i], "-delay") == 0) {
 				if(i+1 == argc) {
 					print_usage(argv[0]);
 					return -1;
@@ -82,9 +82,9 @@ int main(int argc, char **argv)
 					return -1;
 				}
 			}
-			else if(stricmp(argv[i], "-clear") == 0)
+			else if(strcmp(argv[i], "-clear") == 0)
 				clear = 1;
-			else if(stricmp(argv[i], "-pause") == 0)
+			else if(strcmp(argv[i], "-pause") == 0)
 				pause = 1;
 			else {
 				print_usage(argv[0]);
