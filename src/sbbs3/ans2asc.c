@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -40,39 +40,71 @@
 #include <ctype.h>		/* isdigit */
 #include <string.h>		/* strcmp */
 
-int main(int argc, char **argv)
+static void print_usage(const char* prog)
 {
-	unsigned char esc,n[25];
 	char revision[16];
-	int i,ch,ni;
-	FILE *in,*out;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
+	fprintf(stderr,"\nSynchronet ANSI-Terminal-Sequence to Ctrl-A-Code Conversion Utility v%s\n",revision);
+	fprintf(stderr,"\nusage: %s infile.ans [outfile.asc] [[option] [...]]\n",prog);
+	fprintf(stderr,"\noptions:\n\n");
+	fprintf(stderr,"-clear            insert a clear screen code at beginning of output file\n");
+	fprintf(stderr,"-pause            append a pause (hit a key) code to end of output file\n");
+	fprintf(stderr,"-delay <interval> insert a 1/10th second delay code at output byte interval\n");
+	fprintf(stderr,"                  (lower interval values result in more delays, slower display)\n");
+}
+
+int main(int argc, char **argv)
+{
+	unsigned char esc,n[25];
+	int i,ch,ni;
+	FILE *in=stdin;
+	FILE *out=stdout;
+	int delay=0;
+	int clear=0;
+	int pause=0;
+
 	if(argc<2) {
-		fprintf(stderr,"\nans2asc %s\n",revision);
-		fprintf(stderr,"\nusage: %s infile.ans [outfile.asc]\n",argv[0]);
+		print_usage(argv[0]);
 		return(0); 
 	}
 
-	if(strcmp(argv[1],"-")) {
-		if((in=fopen(argv[1],"rb"))==NULL) {
-			perror(argv[1]);
-			return(1); 
+	for(i=1; i<argc; i++)  {
+		if(argv[i][0]=='-') {
+			if(stricmp(argv[i], "-delay") == 0) {
+				if(i+1 == argc) {
+					print_usage(argv[0]);
+					return -1;
+				}
+				if((delay=atoi(argv[++i])) < 1) {
+					print_usage(argv[0]);
+					return -1;
+				}
+			}
+			else if(stricmp(argv[i], "-clear") == 0)
+				clear = 1;
+			else if(stricmp(argv[i], "-pause") == 0)
+				pause = 1;
+			else {
+				print_usage(argv[0]);
+				return 0;
+			}
+		} else if(in==stdin) {
+			if((in=fopen(argv[i],"rb"))==NULL) {
+				perror(argv[i]);
+				return(1); 
+			}
+		} else if(out==stdout) {
+			if((out=fopen(argv[i],"wb"))==NULL) {
+				perror(argv[i]);
+				return(1);
+			}
 		}
 	}
-	else
-		in=stdin;
 
-	if(argc > 2 && (strcmp(argv[2],"-"))) {
-		if((out=fopen(argv[2],"wb"))==NULL) {
-			perror(argv[2]);
-			return(1);
-		}
-	}
-	else
-		out=stdout;
-
+	if(clear)
+		fprintf(out,"\1n\1l");
 	esc=0;
 	while((ch=fgetc(in))!=EOF) {
 		if(ch=='[' && esc) {    /* ANSI escape sequence */
@@ -219,7 +251,11 @@ int main(int argc, char **argv)
 			esc=0;
 			fputc(ch,out); 
 		} 
+		if(delay && (ftell(out)%delay)==0)
+			fprintf(out,"\1,");
 	}
+	if(pause)
+		fprintf(out,"\1p");
 	return(0);
 }
 
