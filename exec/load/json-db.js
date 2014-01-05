@@ -1,3 +1,5 @@
+/* $Id$ */
+
 /*     
 	JSON database  - for Synchronet 3.15a+ (2011)
 
@@ -699,7 +701,7 @@ function JSONdb (fileName, scope) {
 
         /* initialize autosave timer */
         this.settings.LAST_SAVE = Date.now();
-		log(LOG_INFO,"database initialized (v" + this.VERSION + ")");
+		log(LOG_INFO,"database initialized (v" + this.VERSION + "): " + fileName);
 	};
  
 	/* schedule client for subscription and lock release */
