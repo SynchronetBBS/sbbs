@@ -742,9 +742,9 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		rc=JS_SUSPENDREQUEST(cx);
 		cstr2=iniReadString(p->fp,section,key,cstr,buf);
-		FREE_AND_NULL(cstr);
 		JS_RESUMEREQUEST(cx, rc);
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cstr2)));
+		FREE_AND_NULL(cstr);
 	}
 	FREE_AND_NULL(section);
 	FREE_AND_NULL(key);
