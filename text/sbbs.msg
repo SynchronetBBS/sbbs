@@ -12,14 +12,14 @@
 gh
 32-bit Multi-threaded Bulletin Board System Software for the Internet Age
 ng
-Integrated TCP/IP Servers: hong Telnet/RLogin
+Integrated TCP/IP Servers: hong Telnet/RLogin/SSH
                            hong SMTP/POP3 (inbound and outbound e-mail)
                            hong FTP (with dynamic ASCII and HTML index files)
                            hong Network News Transfer Protocol (e.g. USENET)
                            hong Web (HTTP with server-side JavaScript and CGI)
                            hong Finger, Gopher, and IRC
 h
-Native versions for Win32 and Unix x86 (Linux, FreeBSD, and OpenBSD) platforms
+Native versions for Win32 and Unix (e.g. Linux, FreeBSD, and OpenBSD) platforms
 n@CLS@-----------------------------------------------------------------------------
 hRemembering these keys will help you enjoy your cSynchronetw Telnet experience:
 n-----------------------------------------------------------------------------
