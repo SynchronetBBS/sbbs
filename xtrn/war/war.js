@@ -910,12 +910,14 @@ function ArmyList(ntn) {
 			}
 			
 			/* Mark all armies on the overlay */
-			if(mapovl[armies[i].r][armies[i].c] == ' ' 
-					|| mapovl[armies[i].r][armies[i].c] == unit_mark(nations[armies[i].nation].mark)) {
-				mapovl[armies[i].r][armies[i].c] = unit_mark(nations[armies[i].nation].mark);
-			}
-			else if(mapovl[armies[i].r][armies[i].c] != nations[armies[i].nation].mark) {
-				mapovl[armies[i].r][armies[i].c] = '!';
+			if(armies[i].nation >= 0) {
+				if(mapovl[armies[i].r][armies[i].c] == ' ' 
+						|| mapovl[armies[i].r][armies[i].c] == unit_mark(nations[armies[i].nation].mark)) {
+					mapovl[armies[i].r][armies[i].c] = unit_mark(nations[armies[i].nation].mark);
+				}
+				else if(mapovl[armies[i].r][armies[i].c] != nations[armies[i].nation].mark) {
+					mapovl[armies[i].r][armies[i].c] = '!';
+				}
 			}
 		}
 
@@ -1218,7 +1220,7 @@ function move_mode(full_list, ntn, pos)
 
     /* perform movement */
     stat.clear(0);
-    stat.say(format("Move %15s 7 8 9      e r t    SPACE to Stop.  ", movestack.length > 1 ? "Armies" : "Army  "), 1);
+    stat.say(format("Move %-14s 7 8 9      e r t    SPACE to Stop.  ", movestack.length > 1 ? "Armies" : "Army  "), 1);
     stat.say("4   6  or  d   g", 2, 20);
     stat.say("1 2 3      c v b", 3, 20);
 	full_list.show(false, false);
