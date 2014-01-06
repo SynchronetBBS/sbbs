@@ -108,7 +108,7 @@ var setup = function() {
 	var viewWidth = 13;
 	var x = Math.floor((80 - (ships.length * viewWidth)) / 2);
 	for(var s = 0; s < ships.length; s++) {
-		var view = layout.addView(ucfl(ships[s]), x, 4, viewWidth - 1, 16);
+		var view = layout.addView(ucfl(ships[s]), x, 5, viewWidth - 1, 16);
 		view.show_tabs = false;
 		var tab = view.addTab("frame", "frame");
 		var sprite = new Sprite.Aerial(ships[s], tab.frame, tab.frame.x, tab.frame.y, 'n');
@@ -134,15 +134,18 @@ var setup = function() {
 	layout.open();
 	setupFrame.open();
 	setupFrame.gotoxy(1, 2);
-	setupFrame.center("What class of ship do you want to command, Captain " + ucfl(user.alias) + "?", WHITE);
+	setupFrame.center(
+		"What class of ship do you want to command, Captain " + ucfl(user.alias) + "?",
+		WHITE
+	);
+	setupFrame.gotoxy(1, 3);
+	setupFrame.center("Press [TAB] to change ships, [Enter] to select.", CYAN);
 	setupFrame.draw();
 
 	var userInput = "";
 	setupFrame.top();
 	while(ascii(userInput) != 13) {
 		userInput = console.inkey(K_NONE, 5);
-		if(userInput == KEY_LEFT || userInput == KEY_RIGHT)
-			userInput = "\x09";
 		layout.getcmd(userInput);
 		layout.cycle();
 		cycle();
