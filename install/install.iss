@@ -32,7 +32,7 @@ OutputBaseFilename=setup
 Compression=lzma
 SolidCompression=yes
 MinVersion = 5.1
-InfoBeforeFile=\install\install.rtf
+InfoBeforeFile=\stock\docs\install.rtf
 ChangesEnvironment=yes
 
 [Languages]
@@ -47,7 +47,7 @@ Name: "startupicon"; Description: "Create a shortcut in the Startup folder"; Gro
 Source: "\src\sbbs3\ctrl\sbbsctrl.exe";                         DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "\src\sbbs3\chat\chat.exe";                             DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "\src\sbbs3\useredit\useredit.exe";                     DestDir: "{app}\exec";  Flags: ignoreversion
-Source: "\src\sbbs3\msvc.win32.exe.{#release}\*.exe";           DestDir: "{app}\exec";  Flags: ignoreversion
+Source: "\src\sbbs3\msvc.win32.exe.{#release}\*.exe";           DestDir: "{app}\exec";  Flags: ignoreversion; Excludes: "textgen.exe, v4upgrade.exe"
 Source: "\src\sbbs3\msvc.win32.dll.{#release}\*.dll";           DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "\src\sbbs3\msvc.win32.dll.release\sbbsexec.dll";       DestDir: "{sys}";
 Source: "\src\sbbs3\scfg\msvc.win32.exe.{#release}\scfg.exe";   DestDir: "{app}\exec";  Flags: ignoreversion
@@ -63,12 +63,12 @@ Source: "\stock\node1\node.cnf";                                DestDir: "{app}\
 Source: "\stock\node1\node.cnf";                                DestDir: "{app}\node2"; Flags: ignoreversion
 Source: "\stock\node1\node.cnf";                                DestDir: "{app}\node3"; Flags: ignoreversion
 Source: "\stock\node1\node.cnf";                                DestDir: "{app}\node4"; Flags: ignoreversion
-Source: "\stock\exec\*";  DestDir: "{app}\exec";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS"
-Source: "\stock\ctrl\*";  DestDir: "{app}\ctrl";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,*.?.cnf"
-Source: "\stock\text\*";  DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS"
-Source: "\stock\xtrn\*";  DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,server.ini"
-Source: "\stock\docs\*";  DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS"
-Source: "\stock\web\*";   DestDir: "{app}\web";   Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS"
+Source: "\stock\exec\*";  DestDir: "{app}\exec";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*,menu.js,menuedit.js,sbbsedit.js,jsdocs.js,testbuild.js,load\menulib.js"
+Source: "\stock\ctrl\*";  DestDir: "{app}\ctrl";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*,*.?.cnf"
+Source: "\stock\text\*";  DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
+Source: "\stock\xtrn\*";  DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*,server.ini"
+Source: "\stock\docs\*";  DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
+Source: "\stock\web\*";   DestDir: "{app}\web";   Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
 Source: "s:\sbbs\xtrn\sbl\*.exe"; DestDir: "{app}\xtrn\sbl"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
@@ -92,3 +92,6 @@ Root: HKLM; Subkey: "System\CurrentControlSet\Control\Session Manager\Environmen
 
 [INI]
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Global"; Key: "CtrlDirectory"; String: "{app}\ctrl"
+
+[Dirs]
+Name: "{app}\data"
