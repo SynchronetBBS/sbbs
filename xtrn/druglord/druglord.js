@@ -29,10 +29,11 @@ var druglord_config = {
     GAME_DAYS: 30,
     INTEREST_RATE: 1.05,
     JSON_PORT: 10088,
-    JSON_SERVER: "fatcatsbbs.com",
-    MAX_INVENTORY: 100,     /* Maximum number of units player can hold. */
-    MAX_LOAN: 75000,        /* Maximum amount bank will load. */
-    USE_JSON: false,         /* Use JSON interbbs functions? false to disable. */
+    JSON_SERVER: "romulusbbs.com",
+    MAX_INVENTORY: 100,			/* Maximum number of units player can hold. */
+    MAX_LOAN: 75000,			/* Maximum amount bank will load. */
+    USE_JSON: true,				/* Use JSON interbbs functions? false to disable. */
+	USE_GLOBAL_SERVER: false,	/* Use author's recommended global InterBBS server? */
 }
 
 var druglord_state = {
@@ -63,15 +64,32 @@ druglord_state['location'] = druglord_state['locations'][0];
 /* Initialize drugs. */
 drugs_init();
 
-/* TODO: JSON initialize code. */
+/* JSON initialize code. */
 if (druglord_config['USE_JSON']) {
     load("json-client.js");
+	try {
 
-    /* JSON client object. */
-    var json = new JSONClient(druglord_config['JSON_SERVER'], druglord_config['JSON_PORT']);
-    /*  If you want to host the JSON service on your own BBS, use the
-        localhost line below, and comment out the above. */
-    //var json = new JSONClient("localhost", 10088);
+		/* Note: to override JSON server settings, please use the standard server.ini file. */		
+		if (!druglord_config['USE_GLOBAL_SERVER']) {
+			var server_file = new File(file_cfgname(PATH_DRUGLORD, "server.ini"));
+			server_file.open('r', true);
+			druglord_config['JSON_SERVER'] = server_file.iniGetValue(null, "host", "localhost");
+			druglord_config['JSON_PORT'] = server_file.iniGetValue(null, "port", 10088);
+			server_file.close();			
+		}
+
+		log("DrugLord connecting to InterBBS server: " + druglord_config['JSON_SERVER'] + ":" + druglord_config['JSON_PORT'] + "... ");
+		console.writeln("Connecting to InterBBS server: " + druglord_config['JSON_SERVER'] + ":" + druglord_config['JSON_PORT'] + "... ");
+
+		/* JSON client object. */
+		var json = new JSONClient(druglord_config['JSON_SERVER'], druglord_config['JSON_PORT']);
+	} catch (e) {
+		/* Exception thrown connecting. Disable JSON this session to avoid heartbreak. */
+		druglord_config['USE_JSON'] = false;
+
+		console.writeln("Error connecting to InterBBS server: " + e.message + ". InterBBS mode disabled for this session.");
+		console.pause();
+	}
 }
 
 druglord_state['day'] = 0;

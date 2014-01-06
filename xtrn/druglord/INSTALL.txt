@@ -89,6 +89,4 @@ By default, when InterBBS enabled, DrugLord will send and retrieve InterBBS data
 
 3. Restart the Synchronet Services service.
 
-4. Edit 'druglord.js'. Modify the line:
-	var json = new JSONClient("fatcatsbbs.com", 10088);
-   Change "fatcatsbbs.com" to "localhost", for example.
+4. Edit 'server.ini' to set the host and port to the desired JSON service.
