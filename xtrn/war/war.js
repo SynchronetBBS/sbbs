@@ -574,6 +574,7 @@ function reader(fname, mode)
 	switch(mode) {
 		case 2:
     		var fp = new File(backslash(orig_exec_dir)+fname);
+		break;
 		default:
     		var fp = new File(getpath(fname));
 	}
