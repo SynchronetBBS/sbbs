@@ -67,10 +67,13 @@ while(this.client!=undefined && client.socket.data_waiting) {
 //	log(format("client request: '%s'",request));
 }
 
-if(this.server==undefined) {	/* CGI, so send CGI/HTTP headers */
-	writeln("Content-Type: text/html");
-	writeln();
-}
+if(this.server!=undefined) 	/* !CGI */
+	writeln("HTTP/1.0 200 OK");
+
+/* send HTTP headers */
+writeln("Content-Type: text/html");
+writeln();
+
 // HTML Header
 writeln("<html>");
 writeln("<head>");
