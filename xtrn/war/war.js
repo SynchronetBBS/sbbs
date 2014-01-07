@@ -418,7 +418,7 @@ function readerscr(mode)
     console.clear(genattrs.header);
     console.gotoxy(3, 21);
 	console.attributes = genattrs.help;
-    if(mode)
+    if(mode == 1)
         console.print("Mail:  (v)iew current  (d)elete  ");
     else
         console.print("News:  (v)iew current  ");
@@ -569,7 +569,14 @@ function indexer(fp)
 function reader(fname, mode)
 {
     var top, pos, ch, killcnt, index;
-    var fp = new File(getpath(fname));
+    var fp;
+
+	switch(mode) {
+		case 2:
+    		var fp = new File(backslash(orig_exec_dir)+fname);
+		default:
+    		var fp = new File(getpath(fname));
+	}
 
     if(!fp.open("rb")) {
 		switch(mode) {
@@ -615,7 +622,7 @@ function reader(fname, mode)
             pos -= 10;
             break;
         case 'd' :
-            if(!mode)
+            if(mode != 1)
                 break;
             index[pos].killed = !index[pos].killed;
             show_screen(top, fp, index, index);
@@ -643,7 +650,7 @@ function reader(fname, mode)
     mainscreen();
 
     /* handle deletion. */
-    if(mode) {
+    if(mode != 1) {
         for(killcnt = 0, pos = 0; pos < index.length; pos++)
             killcnt += index[pos].killed;
         if(killcnt != 0) { /* deleted some... */
