@@ -1,62 +1,126 @@
-Sample configuration in Synchronet (SBBSCFG.EXE):
-
-[SynchronETRIS]
- 1: Name                       Synchronetris
- 2: Internal Code              TETRIS
- 3: Start-up Directory         
- 4: Command Line               *../xtrn/synchronetris/tetris.js
- 5: Clean-up Command Line      
- 6: Execution Cost             None
- 7: Access Requirements        
- 8: Execution Requirements     
- 9: Multiple Concurrent Users  Yes
-10: Intercept Standard I/O     No
-11: Native (32-bit) Executable No
-12: Use Shell to Execute       No
-13: Modify User Data           No
-14: Execute on Event           No
-15: Pause After Execution      No
-16: BBS Drop File Type         None
-17: Place Drop File In         Node Directory
-18: Time Options...
-	
-NOTE:	It is recommended that you check frequently for updates 
-	from the Synchronet CVS repository located at:
-	
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/xtrn/synchronetris/
-	
-	LINKS:
-	
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/tetris.js
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/game.js
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/lobby.js
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/tetrisobj.js
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/board.bin
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/icon.bin
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/exit.bin
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/lobby.bin
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/sysop.doc
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/interbbs.doc
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/instructions.bin
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/synchronetris/synchronetris.bin
-	
-	Replace any outdated local copies with the latest releases from these links.
-	(by default, these files are to be located in your 'XTRN/SYNCHRONETRIS/' path)
+Please report any bugs, issues or questions to: mcmlxxix at bbs dot thebrokenbubble dot com
 
 *****UPDATING YOUR LOCAL LIBRARIES******
 
-Before you attempt to install the inter-BBS service, it is recommended that you
-update your relative 'EXEC/' and 'EXEC/LOAD/' paths
+NOTE: It is recommended that you check frequently for game updates from the 
+Synchronet CVS repository located at:
+	
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/xtrn/synchronetris/
+	
+Before you attempt to install the program, it is recommended that you
+update your relative 'exec/' and 'exec/load/' paths
 with the latest files from the Synchronet CVS repository at:
 	
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/load/
 	
-Please report any bugs, issues or questions to: mcmlxxix at bbs dot thebrokenbubble dot com
+
+*****CONFIGURING YOUR EXTERNAL PROGRAM*****
+
+Sample configuration in SCFG -> external programs:
+
+	[SynchronETRIS]
+	 1: Name                       Synchronetris
+	 2: Internal Code              TETRIS
+	 3: Start-up Directory         ../xtrn/synchronetris/
+	 4: Command Line               *tetris.js
+	 5: Clean-up Command Line      
+	 6: Execution Cost             None
+	 7: Access Requirements        
+	 8: Execution Requirements     
+	 9: Multiple Concurrent Users  Yes
+	10: Intercept Standard I/O     No
+	11: Native (32-bit) Executable No
+	12: Use Shell to Execute       No
+	13: Modify User Data           No
+	14: Execute on Event           No
+	15: Pause After Execution      No
+	16: BBS Drop File Type         None
+	17: Place Drop File In         Node Directory
+	18: Time Options...
+	
+	
+*****CONFIGURING THE GAME HOST******
+
+There is a SERVER.INI file included with every inter-BBS JavaScript game.
+If you wish to connect your BBS to an existing network, edit the file and 
+put the appropriate hostname or IP address, and the port on which the network is 
+operating (default: 10088)
+
+	Default SERVER.INI text for local play:
+	
+		host=localhost
+		port=10088
 
 
+*****SETTING UP THE GAME SERVICE WITH SYNCHRONET*****
 
+NOTE: You only need to do this part if you plan to host the game yourself
 
+If you wish to host your own service for others to connect to or to play locally, you must edit 
+the file SERVICES.INI in your relative 'ctrl/' path. You must also open whichever port you 
+specify on your router to allow other systems to connect (and edit your local server.ini
+files so that you connect to your service).
 
+	Default SERVICES.INI text for the service:
+	
+		[JSON]
+		Port = 10088
+		Options = STATIC | LOOP
+		Command = json-service.js
+		
+You must also edit the file JSON-SERVICE.INI in your relative 'ctrl/' path and either 
+uncomment the [synchronetris] section, or add it yourself. 
 
+	Default JSON-SERVICE.INI text for Synchronetris:
+	
+		[synchronetris]
+		dir=../xtrn/synchronetris/
 
+The inter-BBS features of this program require that the appropriate services be configured, 
+and that all of your files are up to date. The following files are needed to operate 
+this program in inter-BBS mode, and can be downloaded from the Synchronet CVS repository at:
 
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/
+
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/json-service.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-db.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-sock.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-chat.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-client.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/ctrl/json-service.ini
+	
+[EXEC/LOAD/JSON-CHAT.JS]
+
+	This handles all inbound/outbound chat messages, and packages them for delivery json client.
+	
+[EXEC/LOAD/JSON-DB.JS]
+	
+	This file acts as a JSON object database, which is used by JSON-SERVICE, but can be used 
+	on the client side as well. 
+	
+[EXEC/LOAD/JSON-CLIENT.JS]
+
+	This file is the gateway to the program's interbbs server. It contains the methods needed to 
+	lock, unlock, read, write and delete objects from the server database.
+	
+[EXEC/JSON-SERVICE.JS]
+
+	This file acts as an socket service. It contains the methods needed to lock, unlock,
+	read, write and delete objects from the server database, and also accepts JSON-CLIENT connections
+	and acts as the main source for all dynamic program data. The file also contains instructions for
+	setting up a server.
+	
+[CTRL/JSON-SERVICE.INI]
+
+	This file tells JSON-SERVICE.JS where a program's files are located.
+	
+	This file is critical for the service to operate properly. If you have installed the programs that 
+	use this service to their default locations, no additional configuration should be required other 
+	than to un-comment the lines corresponding with the games you wish to host.
+	
+[XTRN/<GAME_DIR>/SERVER.INI]
+
+	This file should be located in the program's working directory, as it contains information for 
+	the host and port the program will be connecting to. Deleting this file will cause
+	your program not to function.
