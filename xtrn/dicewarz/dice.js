@@ -1594,6 +1594,9 @@ function	GameStatusInfo()
 		}
 		for(var completed in this.completed) {
 			var gm=this.completed[completed];
+			/* skip games that have already been deleted */
+			if(!this.gameData[gm])
+				continue;
 			var daysOld=(time()-this.gameData[gm].lastModified)/daySeconds;
 			if(this.gameData[gm].singlePlayer===true || daysOld>=settings.keepGameData)	{
 				file_remove(this.gameData[gm].fileName);
