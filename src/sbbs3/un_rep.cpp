@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -381,11 +381,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 				/**************************/
 		else {	/* message on a sub-board */
 				/**************************/
-			n=resolve_qwkconf(atol((char *)block+1)); /* conference number */
-
-			if(n==INVALID_SUB) {
-				bprintf(text[QWKInvalidConferenceN],n);
-				SAFEPRINTF2(str,"%s: Invalid QWK conference number %lu",useron.alias,n);
+			long confnum = atol((char *)block+1);
+			if((n=resolve_qwkconf(confnum))==INVALID_SUB) {
+				bprintf(text[QWKInvalidConferenceN],confnum);
+				SAFEPRINTF2(str,"%s: Invalid QWK conference number %ld",useron.alias,confnum);
 				logline(LOG_NOTICE,"P!",str);
 				continue; 
 			}
