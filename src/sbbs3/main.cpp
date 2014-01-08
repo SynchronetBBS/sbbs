@@ -2323,7 +2323,7 @@ void event_thread(void* arg)
 			offset=strlen(str);
 			strcat(str,"*.rep");
 			glob(str,0,NULL,&g);
-			for(i=0;i<(int)g.gl_pathc;i++) {
+			for(i=0;i<(int)g.gl_pathc && !sbbs->terminated;i++) {
 				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && flength(g.gl_pathv[i])>0) {
@@ -2351,7 +2351,7 @@ void event_thread(void* arg)
 			SAFEPRINTF(str,"%spack*.now",sbbs->cfg.data_dir);
 			offset=strlen(sbbs->cfg.data_dir)+4;
 			glob(str,0,NULL,&g);
-			for(i=0;i<(int)g.gl_pathc;i++) {
+			for(i=0;i<(int)g.gl_pathc && !sbbs->terminated;i++) {
 				eprintf(LOG_INFO,"QWK pack semaphore signaled: %s", g.gl_pathv[i]);
 				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
 				SAFEPRINTF2(semfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
@@ -2515,7 +2515,7 @@ void event_thread(void* arg)
 		}
 
 		/* QWK Networking Call-out Events */
-		for(i=0;i<sbbs->cfg.total_qhubs;i++) {
+		for(i=0;i<sbbs->cfg.total_qhubs && !sbbs->terminated;i++) {
 			if(sbbs->cfg.qhub[i]->node<first_node ||
 				sbbs->cfg.qhub[i]->node>last_node)
 				continue;
@@ -2625,7 +2625,7 @@ void event_thread(void* arg)
 		}
 
 		/* PostLink Networking Call-out Events */
-		for(i=0;i<sbbs->cfg.total_phubs;i++) {
+		for(i=0;i<sbbs->cfg.total_phubs && !sbbs->terminated;i++) {
 			if(sbbs->cfg.phub[i]->node<first_node 
 				|| sbbs->cfg.phub[i]->node>last_node)
 				continue;
@@ -2666,7 +2666,7 @@ void event_thread(void* arg)
 		}
 
 		/* Timed Events */
-		for(i=0;i<sbbs->cfg.total_events;i++) {
+		for(i=0;i<sbbs->cfg.total_events && !sbbs->terminated;i++) {
 			if(!sbbs->cfg.event[i]->node 
 				|| sbbs->cfg.event[i]->node>sbbs->cfg.sys_nodes)
 				continue;	// ignore events for invalid nodes
