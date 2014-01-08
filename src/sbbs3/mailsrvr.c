@@ -4811,7 +4811,7 @@ static void cleanup(int code)
 {
 	int					i;
 
-	if(protected_uint32_value(thread_count)) {
+	if(protected_uint32_value(thread_count) > 1) {
 		lprintf(LOG_DEBUG,"#### Waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
 		while(protected_uint32_value(thread_count) > 1) {
 			mswait(100);
@@ -5298,7 +5298,7 @@ void DLLCALL mail_server(void* arg)
 
 		while(server_socket!=INVALID_SOCKET && !terminate_server) {
 
-			if(protected_uint32_value(active_clients)==0 && protected_uint32_value(thread_count) <= 1) {
+			if(protected_uint32_value(thread_count) <= 1) {
 				if(!(startup->options&MAIL_OPT_NO_RECYCLE)) {
 					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 						lprintf(LOG_INFO,"%04d Recycle semaphore file (%s) detected"
