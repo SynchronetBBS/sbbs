@@ -119,7 +119,7 @@
 		u++
 	) {
 		usr.number = u;
-		if(usr.settings&USER_DELETED || usr.compare_ars("REST Q"))
+		if(usr.settings&USER_DELETED || usr.security.restrictions&UFLAG_Q)
 			continue;
 		var usr2 = copyProperties(usr, {});
 		users.push(copyProperties(usr.stats, usr2));
