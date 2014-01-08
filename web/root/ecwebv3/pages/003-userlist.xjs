@@ -17,19 +17,8 @@
 //		total_posts : { name : "Posts", type : "number" }
 	};
 
-	var pageSize = 50000;
-	var offset = 1;
-
 	// Most people won't need to edit below this line
 	load("sbbsdefs.js");
-
-	if(typeof http_request.query.offset != "undefined") {
-		offset = parseInt(http_request.query.offset[0]);
-		if(isNaN(offset) || offset < 1)
-			offset = 1;
-	}
-	var previousOffset = Math.max(1, offset - pageSize);
-	var nextOffset = Math.min(offset + pageSize, offset + (system.lastuser - offset));
 
 	var users = [];
 	var url = format(
@@ -88,18 +77,16 @@
 	
 	var makeSortURLs = function(field, order) {
 		return format(
-			'<a class="ulLink" href="%s&sortby=%s&sortorder=ascending&offset=%s">'
+			'<a class="ulLink" href="%s&sortby=%s&sortorder=ascending">'
 			+ '<img src="./icons/up-arrow.png">'
 			+ '</a>'
-			+ '<a class="ulLink" href="%s&sortby=%s&sortorder=descending&offset=%s">'
+			+ '<a class="ulLink" href="%s&sortby=%s&sortorder=descending&">'
 			+ '<img src="./icons/down-arrow.png">'
 			+ '</a>',
 			url,
 			field,
-			offset,
 			url,
-			field,
-			offset
+			field
 		);
 	}
 	
@@ -114,10 +101,7 @@
 	}
 
 	var usr = new User(1);
-	for(var u = offset;
-		u < ((system.lastuser - offset > pageSize) ? offset + pageSize : system.lastuser);
-		u++
-	) {
+	for(var u = 1; u < system.lastuser; u++) {
 		usr.number = u;
 		if(usr.settings&USER_DELETED || usr.security.restrictions&UFLAG_Q)
 			continue;
@@ -157,11 +141,5 @@ for(var u in users) {
 </table>
 
 <?xjs
-
-if(offset > 1)
-	print(format('<a href="%s&offset=%s">Previous</a>&nbsp;&nbsp;',	url, previousOffset));
-
-if(system.lastuser - offset > pageSize)
-	print(format('<a href="%s&offset=%s">Next</a>',	url, nextOffset));
 
 ?>
