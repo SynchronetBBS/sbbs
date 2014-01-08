@@ -104,8 +104,8 @@
 	}
 	
 	var copyProperties = function(source, dest) {
-		for(var property in source) {
-			if(columns[property] == undefined)
+		for(var property in columns) {
+			if(source[property] == undefined)
 				continue;
 			if(typeof source[property] == "string" || typeof source[property] == "number")
 				dest[property] = source[property];
