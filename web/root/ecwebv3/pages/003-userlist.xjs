@@ -17,7 +17,7 @@
 //		total_posts : { name : "Posts", type : "number" }
 	};
 
-	var pageSize = 500;
+	var pageSize = 50000;
 	var offset = 1;
 
 	// Most people won't need to edit below this line
