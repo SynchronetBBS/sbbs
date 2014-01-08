@@ -24,13 +24,13 @@
 
 	if(	typeof http_request.query.offset == "undefined"
 		||
-		isNaN(parseInt(http_request.query.offset))
+		isNaN(parseInt(http_request.query.offset[0]))
 		||
-		http_request.query.offset < 1
+		http_request.query.offset[0] < 1
 	) {
 		var offset = 1;
 	} else {
-		var offset = parseInt(http_request.query.offset);
+		var offset = parseInt(http_request.query.offset[0]);
 	}
 	var previousOffset = Math.max(1, offset - pageSize);
 	var nextOffset = Math.min(offset + pageSize, offset + (system.lastuser - offset));
@@ -42,56 +42,57 @@
 		http_request.request_string.split("&")[0]
 	);
 	
-	var sortUser = function(a, b, sortOrder, type) {
-		if(type == "string") {
-			a = a.toUpperCase();
-			b = b.toUpperCase();
-			ret =	(a < b)
-					?
-					((sortOrder == "ascending") ? 1 : -1)
-					:
-					(	(a > b)
-						?
-						((sortOrder == "ascending") ? -1 : 1)
-						:
-						0
-					);
-		} else if(type == "number" || type == "date") {
-			ret =	(a < b)
-					?
-					((sortOrder == "ascending") ? -1 : 1)
-					:
-					(	(a > b)
-						?
-						((sortOrder == "ascending") ? 1 : -1)
-						:
-						0
-					);
-		}
-		return ret;
-	}
+	var sortUsers;
+	var sortBy;
+	var sortOrder;
 
-	var sortUsers = function(a, b) {
-		var ret = 0;
-		if(	typeof http_request.query.sortby != "undefined"
+	if(	typeof http_request.query.sortby == "undefined"
+		||
+		typeof http_request.query.sortorder == "undefined"
+		||
+		(	http_request.query.sortorder != "ascending"
 			&&
-			typeof http_request.query.sortorder != "undefined"
-			&&
-			(	http_request.query.sortorder == "ascending"
-				||
-				http_request.query.sortorder == "descending"
-			)
-		) {
-			var sortBy = http_request.query.sortby.toString().toLowerCase();
-			var sortOrder = http_request.query.sortorder.toString().toLowerCase();
-			for(var c in columns) {
-				if(sortBy != c)
-					continue;
-				ret = sortUser(a[c], b[c], sortOrder, columns[c].type);
+			http_request.query.sortorder != "descending"
+		)
+		||
+		columns[http_request.query.sortby[0].toLowerCase()] == undefined
+		||
+		columns[http_request.query.sortby[0].toLowerCase()].type == undefined
+	) {
+		sortUsers = function(a,b) { return 0; }
+	}
+	else {
+		sortBy = http_request.query.sortby[0].toLowerCase()
+		sortOrder = http_request.query.sortorder[0];
+		switch(columns[sortBy].type) {
+			case 'string':
+				if(sortOrder == "ascending")
+					sortUsers = function(a,b) {
+						if(a[sortBy].toLowerCase() < b[sortBy].toLowerCase())
+							return -1;
+						if(a[sortBy].toLowerCase() > b[sortBy].toLowerCase())
+							return 1;
+						return 0;
+					};
+				else
+					sortUsers = function(a,b) {
+						if(a[sortBy].toLowerCase() > b[sortBy].toLowerCase())
+							return -1;
+						if(a[sortBy].toLowerCase() < b[sortBy].toLowerCase())
+							return 1;
+						return 0;
+					};
 				break;
-			}
+			case 'date':
+			case 'number':
+				if(sortOrder == "ascending")
+					sortUsers = function(a,b) { return a[sortBy]-b[sortBy]; };
+				else
+					sortUsers = function(a,b) { return b[sortBy]-a[sortBy]; };
+				break;
+			default:
+				sortUsers = function(a,b) { return 0; }
 		}
-		return ret;
 	}
 	
 	var makeSortURLs = function(field, order) {
