@@ -113,15 +113,16 @@
 		return dest;
 	}
 
+	var usr = new User(1);
 	for(var u = offset;
 		u < ((system.lastuser - offset > pageSize) ? offset + pageSize : system.lastuser);
 		u++
 	) {
-		var usr1 = new User(u);
-		if(usr1.settings&USER_DELETED || usr1.compare_ars("REST Q"))
+		usr.number = u;
+		if(usr.settings&USER_DELETED || usr.compare_ars("REST Q"))
 			continue;
-		var usr2 = copyProperties(usr1, {});
-		users.push(copyProperties(usr1.stats, usr2));
+		var usr2 = copyProperties(usr, {});
+		users.push(copyProperties(usr.stats, usr2));
 	}
 	users.sort(sortUsers);
 	
