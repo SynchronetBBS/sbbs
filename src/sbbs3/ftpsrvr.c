@@ -191,7 +191,7 @@ static void status(char* str)
 static void update_clients(void)
 {
 	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,active_clients.value);
+		startup->clients(startup->cbdata,protected_uint32_value(active_clients));
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -206,11 +206,10 @@ static void client_off(SOCKET sock)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
 
-static int32_t thread_up(BOOL setuid)
+static void thread_up(BOOL setuid)
 {
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,TRUE, setuid);
-	return thread_count.value;
 }
 
 static int32_t thread_down(void)
@@ -2716,7 +2715,7 @@ static void ctrl_thread(void* arg)
 				if(node.status==NODE_INUSE)
 					sockprintf(sock," Node %3d: %s",i+1, username(&scfg,node.useron,str));
 			}
-			sockprintf(sock,"211 End (%d active FTP clients)", active_clients.value);
+			sockprintf(sock,"211 End (%d active FTP clients)", protected_uint32_value(active_clients));
 			continue;
 		}
 		if(!stricmp(cmd, "SITE VER")) {
@@ -4498,6 +4497,13 @@ static void cleanup(int code, int line)
 	lprintf(LOG_DEBUG,"0000 cleanup called from line %d",line);
 #endif
 
+	if(protected_uint32_value(thread_count) > 1) {
+		lprintf(LOG_DEBUG,"#### FTP Server waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
+		while(protected_uint32_value(thread_count) > 1) {
+			mswait(100);
+		}
+	}
+
 	free_cfg(&scfg);
 	free_text(text);
 
@@ -4507,19 +4513,12 @@ static void cleanup(int code, int line)
 	if(server_socket!=INVALID_SOCKET)
 		ftp_close_socket(&server_socket,__LINE__);
 
-	if(thread_count.value > 1) {
-		lprintf(LOG_DEBUG,"#### Waiting for %d child threads to terminate", thread_count.value-1);
-		while(thread_count.value > 1) {
-			mswait(100);
-		}
-	}
+	update_clients();	/* active_clients is destroyed below */
 
-	if(active_clients.value)
-		lprintf(LOG_WARNING,"#### !FTP Server terminating with %ld active clients", active_clients.value);
+	if(protected_uint32_value(active_clients))
+		lprintf(LOG_WARNING,"#### !FTP Server terminating with %ld active clients", protected_uint32_value(active_clients));
 	else
 		protected_uint32_destroy(active_clients);
-
-	update_clients();
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0) 
@@ -4801,7 +4800,7 @@ void DLLCALL ftp_server(void* arg)
 
 		while(server_socket!=INVALID_SOCKET && !terminate_server) {
 
-			if(thread_count.value <= 1) {
+			if(protected_uint32_value(thread_count) <= 1) {
 				if(!(startup->options&FTP_OPT_NO_RECYCLE)) {
 					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 						lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
@@ -4873,7 +4872,7 @@ void DLLCALL ftp_server(void* arg)
 				continue;
 			}
 			
-			if(active_clients.value>=startup->max_clients) {
+			if(protected_uint32_value(active_clients)>=startup->max_clients) {
 				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, startup->max_clients);
 				sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
@@ -4903,14 +4902,14 @@ void DLLCALL ftp_server(void* arg)
 		lprintf(LOG_DEBUG,"0000 server_socket: %d",server_socket);
 		lprintf(LOG_DEBUG,"0000 terminate_server: %d",terminate_server);
 #endif
-		if(active_clients.value) {
+		if(protected_uint32_value(active_clients)) {
 			lprintf(LOG_DEBUG,"%04d Waiting for %d active clients to disconnect..."
-				,server_socket, active_clients.value);
+				,server_socket, protected_uint32_value(active_clients));
 			start=time(NULL);
-			while(active_clients.value) {
+			while(protected_uint32_value(active_clients)) {
 				if(time(NULL)-start>startup->max_inactivity) {
 					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for %d active clients"
-						,server_socket, active_clients.value);
+						,server_socket, protected_uint32_value(active_clients));
 					break;
 				}
 				mswait(100);

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -120,7 +120,7 @@ static const char* status(const char* str)
 static void update_clients()
 {
 	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,node_threads_running.value);
+		startup->clients(startup->cbdata,protected_uint32_value(node_threads_running));
 }
 
 void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -1528,7 +1528,6 @@ void input_thread(void *arg)
 	lprintf(LOG_DEBUG,"Node %d input thread started",sbbs->cfg.node_num);
 #endif
 
-    sbbs->input_thread_running = true;
 	sbbs->console|=CON_R_INPUT;
 
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
@@ -1796,8 +1795,6 @@ void passthru_output_thread(void* arg)
 	SetThreadName("Passthrough Output");
 	thread_up(FALSE /* setuid */);
 
-    sbbs->passthru_output_thread_running = true;
-
 	while(sbbs->client_socket!=INVALID_SOCKET && sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
 		if(!sbbs->input_thread_mutex_locked) {
 			SLEEP(1);
@@ -1912,8 +1909,6 @@ void passthru_input_thread(void* arg)
 	SetThreadName("Passthrough Input");
 	thread_up(FALSE /* setuid */);
 
-	sbbs->passthru_input_thread_running = true;
-
 	while(sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
 		tv.tv_sec=1;
 		tv.tv_usec=0;
@@ -2013,7 +2008,6 @@ void output_thread(void* arg)
 	lprintf(LOG_DEBUG,"%s output thread started",node);
 #endif
 
-    sbbs->output_thread_running = true;
 	sbbs->console|=CON_R_ECHO;
 
 #ifdef TCP_MAXSEG
@@ -2233,8 +2227,6 @@ void event_thread(void* arg)
 	struct tm	tm;
 
 	eprintf(LOG_INFO,"BBS Events thread started");
-
-	sbbs->event_thread_running = true;
 
 	sbbs_srand();	/* Seed random number generator */
 
@@ -4818,6 +4810,7 @@ NO_SSH:
 		cleanup(1);
 		return;
 	}
+    sbbs->output_thread_running = true;
 	_beginthread(output_thread, 0, sbbs);
 
 	if(!(startup->options&BBS_OPT_NO_EVENTS)) {
@@ -4828,6 +4821,7 @@ NO_SSH:
 			cleanup(1);
 			return;
 		}
+		events->event_thread_running = true;
 		_beginthread(event_thread, 0, events);
 	}
 
@@ -4940,7 +4934,7 @@ NO_SSH:
 
 	while(!terminate_server) {
 
-		if(node_threads_running.value==0) {	/* check for re-run flags and recycle/shutdown sem files */
+		if(protected_uint32_value(node_threads_running)==0) {	/* check for re-run flags and recycle/shutdown sem files */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
 
 				bool rerun=false;
@@ -5471,7 +5465,9 @@ NO_SSH:
 				goto NO_PASSTHRU;
 			}
 			close_socket(tmp_sock);
+			new_node->passthru_output_thread_running = true;
 			_beginthread(passthru_output_thread, 0, new_node);
+			new_node->passthru_input_thread_running = true;
 			_beginthread(passthru_input_thread, 0, new_node);
 
 NO_PASSTHRU:
@@ -5489,7 +5485,9 @@ NO_PASSTHRU:
 #endif
 
 	    protected_uint32_adjust(&node_threads_running, 1);
+	    new_node->input_thread_running = true;
 		new_node->input_thread=(HANDLE)_beginthread(input_thread,0, new_node);
+	    new_node->output_thread_running = true;
 		_beginthread(output_thread, 0, new_node);
 		_beginthread(node_thread, 0, new_node);
 		served++;
@@ -5524,13 +5522,13 @@ NO_PASSTHRU:
     sem_post(&sbbs->outbuf.sem);
 
     // Wait for all node threads to terminate
-	if(node_threads_running.value) {
-		lprintf(LOG_INFO,"Waiting for %d node threads to terminate...", node_threads_running.value);
+	if(protected_uint32_value(node_threads_running)) {
+		lprintf(LOG_INFO,"Waiting for %d node threads to terminate...", protected_uint32_value(node_threads_running));
 		start=time(NULL);
-		while(node_threads_running.value) {
+		while(protected_uint32_value(node_threads_running)) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
 				lprintf(LOG_ERR,"!TIMEOUT waiting for %d node thread(s) to "
-            		"terminate", node_threads_running.value);
+            		"terminate", protected_uint32_value(node_threads_running));
 				break;
 			}
 			mswait(100);
