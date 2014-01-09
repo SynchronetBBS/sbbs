@@ -50,7 +50,7 @@ function encode_string(str)
 		return('""');
 
 	if(str.search(/[\r\n\x80-\xff]/)==-1) {
-		str=str.replace(/[\\\"]/, "\\$1");
+		str=str.replace(/([\\\"])/g, "\\$1");
 		return '"'+str+'"';
 	}
 
