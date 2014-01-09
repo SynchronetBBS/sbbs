@@ -1090,7 +1090,7 @@ function sublist(group, match, subscribed)
 		for(sub in msg_area.grp_list[grp].sub_list) {
 			if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
 				if((!subscribed) || (msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW && (!(msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_YONLY))))
-					ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-');
+					ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-'));
 			}
 		}
 	}
