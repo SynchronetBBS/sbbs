@@ -14,12 +14,16 @@
 
 /* Path to FatFish. */
 var PATH_FATFISH = js.exec_dir;
+// Note: the above doesn't work when calling within another JS program. :|
+// If you are calling it from within JS, uncomment the override below and
+// set the appropriate path.
+//PATH_FATFISH = "/sbbs/xtrn/fatfish/"
 
 /* Set to true for slow processor or low memory. Restricts lake size to 80x25 maximum. */
 var SHITTY_BOX = false;
 
 /* Set to true to enable JSON -- recommended by author. */
-var USING_JSON = false;
+var USING_JSON = true;
 
 /* Set to true to use Global High Scores server (FatCats BBS) -- recommended by author. */
 var USING_GLOBAL_SERVER = false;
@@ -29,6 +33,9 @@ var USING_GLOBAL_SERVER = false;
 	 We will fallback to an uglier, safer render method. :|
 	 */
 var RENDER_MODE = 1;
+
+console.write(ANSI.DEFAULT);
+console.clear();
 
 load("sbbsdefs.js");
 load("event-timer.js");
@@ -59,7 +66,7 @@ if (USING_JSON) {
             server_file.close();
         } else {
             /* Use global server if enabled. */
-            serverAddr = "FatCatsBBS.com";
+            serverAddr = "RomulusBBS.com";
             serverPort = 10088;
         }
 
@@ -370,6 +377,8 @@ while (is_fatfishing) {
                     renderBar("Fish finder used: " + fish_finder_points + " points left.");
 
                     fish_finder_locked = true;
+
+					// TODO: avoid full-screen functions until lock is done.
                 }
             } else {
                 renderBar("No fish finder points available. Woe is u.");
