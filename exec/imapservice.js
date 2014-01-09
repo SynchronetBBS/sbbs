@@ -1620,6 +1620,7 @@ function do_search(args, uid)
 	var failed;
 	var idx,hdr,body;
 	var result=[];
+	var offsets=index.offsets;
 
 	function get_func(args)
 	{
@@ -1803,14 +1804,18 @@ function do_search(args, uid)
 		return([type,search]);
 	}
 
+	if(args[0].search(/^(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?,)*(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?)$/)==0) {
+		offsets=parse_seq_set(args.shift(), false);
+	}
+
 	while(args.length) {
 		i=get_func(args);
 		search_set[i[0]].push(i[1]);
 	}
 
-	for(i in index.offsets) {
+	for(i in offsets) {
 		failed=false;
-		idx=index.idx[index.offsets[i]];
+		idx=index.idx[offsets[i]];
 		if(search_set.idx.length > 0) {
 			for(j in search_set.idx) {
 				if(search_set.idx[j](idx)==false)
