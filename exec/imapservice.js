@@ -1085,12 +1085,12 @@ function sublist(group, match, subscribed)
 
 	for(grp in msg_area.grp_list) {
 		if(re.test(msg_area.grp_list[grp].description))
-			ret.push(msg_area.grp_list[grp].description+sepchar);
+			ret.push((msg_area.grp_list[grp].description+sepchar).replace(/&/g,'&-'));
 
 		for(sub in msg_area.grp_list[grp].sub_list) {
 			if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
 				if((!subscribed) || (msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW && (!(msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_YONLY))))
-					ret.push(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description);
+					ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-');
 			}
 		}
 	}
@@ -1104,6 +1104,7 @@ function getsub(longname) {
 
 	if(longname=='INBOX')
 		return("mail");
+	longname = longname.replace(/&-/g,'&');
 	components=longname.split(sepchar);
 	for(grp in msg_area.grp_list) {
 		if(msg_area.grp_list[grp].description==components[0]) {
