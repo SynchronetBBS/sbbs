@@ -492,7 +492,7 @@ function send_fetch_response(msgnum, fmat, uid)
 					break;
 				case 'INTERNALDATE':
 					get_header();
-					resp += 'INTERNALDATE '+strftime('"%d-%b-%C%y %H:%M:%S ', hdr.when_imported_time)+format('%+05d" ', hdr.when_imported_zone_offset);
+					resp += 'INTERNALDATE '+strftime('"%d-%b-%Y %H:%M:%S ', hdr.when_imported_time)+format('%+05d" ', hdr.when_imported_zone_offset);
 					break;
 				case 'RFC822.SIZE':
 					get_rfc822_size();
@@ -1579,7 +1579,7 @@ function do_store(seq, uid, item, data)
 
 function datestr(date)
 {
-	return(strftime('%d-%b-%C%y', date));
+	return(strftime('%d-%b-%Y', date));
 }
 
 function parse_date(date)
