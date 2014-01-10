@@ -2016,6 +2016,7 @@ function read_cfg(sub)
 	var secs;
 	var sec;
 	var seen;
+	var this_sec;
 
 	if(saved_config[sub]==undefined)
 		saved_config[sub]={};
@@ -2024,22 +2025,22 @@ function read_cfg(sub)
 		secs=cfg.iniGetSections();
 		for(sec in secs) {
 			if(secs[sec].search(/\.seen$/)!=-1) {
-				if(saved_config[secs[sec]]==undefined)
-					saved_config[secs[sec]]={};
-				saved_config[secs[sec]].Seen=cfg.iniGetObject(secs[sec]);
-				if(saved_config[secs[sec]].Seen==null)
-					saved_config[secs[sec]].Seen={};
+				this_sec = secs[sec].replace(/(?:\.seen)+$/,'');
+				if(saved_config[this_sec]==undefined)
+					saved_config[this_sec]={};
+				saved_config[this_sec].Seen=cfg.iniGetObject(secs[sec]);
+				if(saved_config[this_sec].Seen==null)
+					saved_config[this_sec].Seen={};
 			}
 			else {
 				if(saved_config[secs[sec]] != undefined && saved_config[secs[sec]].Seen != undefined)
 					seen = saved_config[secs[sec]].Seen;
 				else
-					seen = undefined;
+					seen = {};
 				saved_config[secs[sec]]=cfg.iniGetObject(secs[sec]);
 				if(saved_config[secs[sec]]==null)
 					saved_config[secs[sec]]={};
-				if(seen != undefined)
-					saved_config[secs[sec]].Seen=seen;
+				saved_config[secs[sec]].Seen=seen;
 			}
 		}
 		cfg.close();
