@@ -190,7 +190,7 @@ function init_users() {
 			while (uid_str[0] == "0") {
 				uid_str = uid_str.slice(1);
 			}
-			printf("***Reading: " + us_file.name + "\r\n");
+			log("***Reading: " + us_file.name + "\r\n");
 			var read_Masks = us_file.iniGetValue(null, "masks");
 			if (read_Masks)
 				Masks[parseInt(uid_str)] = read_Masks.split(",");
