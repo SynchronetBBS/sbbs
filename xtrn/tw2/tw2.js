@@ -40,6 +40,10 @@ var LOCK_WRITE=2;
 var LOCK_READ=1;
 
 Settings=new GameSettings();
+if(db==undefined) {
+	alert("ERROR: Configuation invalid");
+	exit(1);
+}
 
 load(fname("ports.js"));
 load(fname("planets.js"));

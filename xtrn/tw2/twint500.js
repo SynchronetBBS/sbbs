@@ -12,13 +12,21 @@ var LOCK_READ=1;
 load(fname("gamesettings.js"));
 load(fname("sector_map.js"));
 load(fname("ports_map.js"));
-var Settings=new GameSettings();
+var Settings;
+try {
+	Settings=new GameSettings();
+}
+catch (e) {
+	print(e);
+}
 var db;
 
 function ConfigureSettings()
 {
 	var i;
 	var last=0;
+	var connected=false;
+	var old_help;
 
 	for(;;) {
 		var list=new Array();
@@ -33,15 +41,35 @@ function ConfigureSettings()
 				var q=uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Save Changes?", ["Yes", "No"]);
 				if(q!=-1) {
 					if(q==0)
-						db=new JSONClient(Settings.Server,Settings.Port);
-						db.connect();
+						try {
+							db=new JSONClient(Settings.Server,Settings.Port);
+							db.connect();
+							connected=true;
+						}
+						catch (e) {
+							old_help=uifc.help_text;
+							uifc.help_text=e;
+							uifc.msg("WARNING: Unable to connect to server (F1 for details)");
+							uifc.help_text=old_help;
+							connected=false;
+						}
 						Settings.save();
 					break;
 				}
 			}
 			else {
-				db=new JSONClient(Settings.Server,Settings.Port);
-				db.connect();
+				try {
+					db=new JSONClient(Settings.Server,Settings.Port);
+					db.connect();
+					connected=true;
+				}
+				catch (e) {
+					old_help=uifc.help_text;
+					uifc.help_text=e;
+					uifc.msg("WARNING: Unable to connect to server (F1 for details)");
+					uifc.help_text=old_help;
+					connected=false;
+				}
 				break;
 			}
 		}

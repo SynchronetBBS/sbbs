@@ -137,6 +137,7 @@ function GameSettings()
 	var f=new File(fname("game.ini"));
 	var i;
 
+	this.save=GameSettings_Save;
 	if(file_exists(f.name)) {
 		f.open("r+");
 		for(i=0; i<GameSettingProperties.length; i++) {
@@ -149,10 +150,14 @@ function GameSettings()
 			this[GameSettingProperties[i].prop]=GameSettingProperties[i].def;
 		}
 	}
-	db=new JSONClient(this.Server,this.Port);
-	var s=db.read(this.DB,'settings',LOCK_READ);
-	for(i in s) {
-		this[i]=s[i];
+	try {
+		db=new JSONClient(this.Server,this.Port);
+		var s=db.read(this.DB,'settings',LOCK_READ);
+		for(i in s) {
+			this[i]=s[i];
+		}
 	}
-	this.save=GameSettings_Save;
+	catch(e) {
+		db=undefined;
+	}
 }
