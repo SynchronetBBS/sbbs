@@ -766,8 +766,7 @@ var any_state_command_handlers = {
 
 			untagged("BYE I'll go now");
 			tagged(tag, "OK", "Thanks for stopping by.");
-			client.socket.close();
-			exit();
+			exit(0);
 		}
 	},
 	IDLE:{	// RFC2177
@@ -784,7 +783,6 @@ var any_state_command_handlers = {
 					elapsed += 5;
 					if(elapsed > 1800) {
 						untagged("BYE And I though *I* liked to idle!");
-						client.socket.close();
 						exit(0);
 					}
 					update_status();
@@ -2066,7 +2064,6 @@ while(1) {
 	}
 	else {
 		untagged("BYE No lolligaggers here!");
-		client.socket.close();
 		exit(0);
 	}
 }
