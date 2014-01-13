@@ -187,13 +187,13 @@ function debug_log(line, rx)
 function tagged(tag, msg, desc)
 {
 	client.socket.send(tag+" "+msg+" "+desc+"\r\n");
-	debug_log("IMAP Send: "+tag+" "+msg+" "+desc, false);
+	debug_log("Send: "+tag+" "+msg+" "+desc, false);
 }
 
 function untagged(msg)
 {
 	client.socket.send("* "+msg+"\r\n");
-	debug_log("IMAP Send: * "+msg, false);
+	debug_log("Send: * "+msg, false);
 }
 
 
@@ -2059,7 +2059,7 @@ client.socket.send("* OK Give 'er\r\n");
 while(1) {
 	line=client.socket.recvline(10240, 1800);
 	if(line != null) {
-		debug_log("IMAP RECV: "+line, true);
+		debug_log("RECV: "+line, true);
 		parse_command(line);
 	}
 	else {
