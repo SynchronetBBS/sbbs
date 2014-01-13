@@ -28,12 +28,6 @@ Installation
 ------------
 1. Get the sources. They can be found on cvs.synchro.net, the official Synchronet repository.
 
-   Git it:
-     For the latest code/unstable branch, you can click the first 'snapshot' link here:
-       http://git.poorcoding.com/?p=druglord
-     This will get the latest snapshot of the source from the repository in .tgz format.
-     Extract and put the 'druglord' folder into /sbbs/xtrn.
-
 2. Configure the door in SCFG:
 	╔[■][?]════════════════════════════════════════════════════╗
 	║                         DrugLord                         ║
@@ -57,15 +51,15 @@ Installation
 	║ │Place Drop File In         Node Directory               ║
 	╚══════════════════════════════════════════════════════════╝
 	
-3. InterBBS is disabled by default, but is simple to enable. Ensure you have read the requirements section. If you want to enable InterBBS mode, please edit 'druglord.js' and set the 'USE_JSON' key in druglord_config to true:
+3. InterBBS global scores are by default, but is simple to enable. Edit 'druglord.js' and set the 'USE_GLOBAL_SERVER' key in druglord_config to true:
 
 	var druglord_config = {
 		...
-		USE_JSON: true,         /* Use JSON interbbs functions? false to disable. */
+		USE_GLOBAL_SERVER: true,
 		...
 	}
 
-   If you wish to host your own high scores service please read the hosting section below.
+   If you wish to use another InterBBS server or host your own high scores service please read the hosting section below.
 
 ------------
 Instructions
@@ -83,10 +77,20 @@ By default, when InterBBS enabled, DrugLord will send and retrieve InterBBS data
 	Options=STATIC | LOOP
 	Command=json-service.js
 
-2. Edit ctrl/json-service.ini, adding the line:
+2. Edit ctrl/json-service.ini, adding:
+    [druglord]
 	druglord=../xtrn/druglord/
    Note that if you changed the installation path, this line must be similarly changed.
 
 3. Restart the Synchronet Services service.
 
 4. Edit 'server.ini' to set the host and port to the desired JSON service.
+
+5. Edit 'druglord.js' and change the settings to:
+
+	var druglord_config = {
+		...
+		USE_JSON: true,
+		USE_GLOBAL_SERVER: false,
+		...
+	}
