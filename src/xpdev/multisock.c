@@ -22,7 +22,7 @@ struct xpms_set *xpms_create(unsigned int retries, unsigned int wait_secs,
 	return ret;
 }
 
-void xpms_destroy(struct xpms_set *xpms_set)
+void xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *), void *cbdata)
 {
 	int		i;
 
@@ -35,6 +35,8 @@ void xpms_destroy(struct xpms_set *xpms_set)
 						, xpms_set->socks[i].sock, xpms_set->socks[i].prot?xpms_set->socks[i].prot:"unknown"
 						, xpms_set->socks[i].port);
 			closesocket(xpms_set->socks[i].sock);
+			if(sock_destroy)
+				sock_destroy(xpms_set->socks[xpms_set->sock_count].sock, cbdata);
 		}
 		xpms_set->socks[i].sock = INVALID_SOCKET;
 		FREE_AND_NULL(xpms_set->socks[i].address);
