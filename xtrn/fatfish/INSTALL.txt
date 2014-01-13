@@ -63,35 +63,19 @@ Installation
        var USING_JSON = true;
        var USING_GLOBAL_SERVER = true;
 
-     If you want to host your own InterBBS or local BBS scores, see the hosting section below.
+     If you want to use another InterBBS scores server or host your own, see the hosting section below.
 
 ------------
 Instructions
 ------------
 Please see the README.txt document for in-game instructions.
 
----------------
-Troubleshooting
----------------
-
-Black areas on screen:
-----------------------
-FatFish uses some smoothing routings to make things look awesome. Unfortunately, this causes issues on some BBSes, resembling this screenshot:
-  http://art.poorcoding.com/fatfish/smoothing-issue.png
-
-In order to fix this, we must disable smoothing. Edit 'fatfish.js' and modify the RENDER_MODE to 0:
-
-/* Default: 1.
-     Set to 0 if you see black lines render on the map.
-	 We will fallback to an uglier, safer render method. :|
-	 */
-var RENDER_MODE = 0;
-
-
 ------------------------
 Hosting the JSON Service
 ------------------------
-FatFish can send and retrieve InterBBS data from the global server (Fatcats BBS). If you want to host your own JSON service, you are mostly on your own, please note:
+FatFish can send and retrieve InterBBS data from the global server.  If you want to use another server, skip to step 5.
+
+If you want to host your own JSON service, follow these steps:
 
 1. Your BBS should be configured with the JSON service. In your ctrl/services.ini, ensure this is enabled:
 	[JSON]
@@ -99,8 +83,9 @@ FatFish can send and retrieve InterBBS data from the global server (Fatcats BBS)
 	Options=STATIC | LOOP | NO_RECYCLE
 	Command=json-service.js
 
-2. Edit ctrl/json-service.ini, adding the line:
-	fatfish=../xtrn/fatfish/
+2. Edit ctrl/json-service.ini, adding:
+	[fatfish]
+	dir=../xtrn/fatfish/
    Note that if you changed the installation path, this line must be similarly changed.
 
 3. Restart the Synchronet Services service.
@@ -110,4 +95,21 @@ FatFish can send and retrieve InterBBS data from the global server (Fatcats BBS)
        var USING_JSON = true;
        var USING_GLOBAL_SERVER = false;
 
-   Edit "service.ini" in the FatFish path to tweak your settings, if you wish to use another InterBBS server other than localhost. You can set "host" and "port" values in this INI file.
+5. Edit "server.ini" in the FatFish path to tweak your settings, if you wish to use another InterBBS server other than localhost. You can set "host" and "port" values in this INI file.
+
+---------------
+Troubleshooting
+---------------
+
+Black areas on screen:
+----------------------
+FatFish uses some smoothing routines to make things look awesome. Unfortunately, this causes issues on some BBSes, resembling this screenshot:
+  http://art.poorcoding.com/fatfish/smoothing-issue.png
+
+In order to fix this, we must disable smoothing. Edit 'fatfish.js' and modify the RENDER_MODE to 0:
+
+/* Default: 1.
+     Set to 0 if you see black lines render on the map.
+	 We will fallback to an uglier, safer render method. :|
+	 */
+var RENDER_MODE = 0;
