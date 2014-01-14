@@ -51,7 +51,7 @@ Installation
 	║ │Place Drop File In         Node Directory               ║
 	╚══════════════════════════════════════════════════════════╝
 	
-3. InterBBS global scores are by default, but is simple to enable. Edit 'druglord.js' and set the 'USE_GLOBAL_SERVER' key in druglord_config to true:
+3. InterBBS global scores are disabled by default, but is simple to enable. Edit 'druglord.js' and set the 'USE_GLOBAL_SERVER' key in druglord_config to true:
 
 	var druglord_config = {
 		...
@@ -69,7 +69,9 @@ Please see the README.txt document for in-game instructions.
 ------------------------
 Hosting the JSON Service
 ------------------------
-By default, when InterBBS enabled, DrugLord will send and retrieve InterBBS data from the global server (Fatcats BBS). If you want to host your own JSON service, you are mostly on your own, please note:
+DrugLord can send and retrieve InterBBS data from the global server.  If you want to use another server, skip to step 4.
+
+If you want to host your own JSON service, follow these steps:
 
 1. Your BBS should be configured with the JSON service. In your ctrl/services.ini, ensure this is enabled:
 	[JSON]
@@ -79,7 +81,7 @@ By default, when InterBBS enabled, DrugLord will send and retrieve InterBBS data
 
 2. Edit ctrl/json-service.ini, adding:
     [druglord]
-	druglord=../xtrn/druglord/
+	dir=../xtrn/druglord/
    Note that if you changed the installation path, this line must be similarly changed.
 
 3. Restart the Synchronet Services service.
