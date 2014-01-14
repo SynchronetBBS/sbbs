@@ -4,12 +4,10 @@
 
 # $Id$
 
-# EXEODIR, LIBODIR, DIRSEP, and EXEFILE must be pre-defined
+# EXEODIR, LIBODIR, SLASH, and EXEFILE must be pre-defined
 
-MENUEDIT=	$(EXEODIR)$(DIRSEP)menuedit$(EXEFILE) 
+MENUEDIT=	$(EXEODIR)$(SLASH)menuedit$(EXEFILE) 
 
-all:		$(MTOBJODIR) \
-		$(EXEODIR) \
+all:		$(EXEODIR) \
 		$(LIBODIR) \
-		xpdev-mt uifc-mt ciolib-mt \
 		$(MENUEDIT)

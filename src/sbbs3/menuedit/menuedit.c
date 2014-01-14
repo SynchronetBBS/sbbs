@@ -36,9 +36,9 @@
  ****************************************************************************/
 
 #include <stdlib.h>
-#include "genwrap.h"
-#include "ciolib.h"
+#include <malloc.h>		/* alloca */
 #include "uifc.h"
+#include "genwrap.h"
 #include "dirwrap.h"
 #include "ini_file.h"
 
@@ -47,20 +47,9 @@ uifcapi_t uifc; /* User Interface (UIFC) Library API */
 static int yesno(char *prompt, BOOL dflt)
 {
 	char*	opt[]={"Yes","No",NULL};
-	int		i=!dflt;	/* reverse logic */
+	int		i=dflt ? 0:1;
 
-	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,prompt,opt);
-	if(i>=0) {
-		i=!i;	/* reverse logic */
-		if(i!=dflt)
-			uifc.changes=TRUE;
-	}
-	return(i);
-}
-
-static const char* boolstr(BOOL val)
-{
-	return(val?"Yes":"No");
+	return(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,prompt,opt));
 }
 
 static void edit_menu(char* path)
@@ -69,21 +58,10 @@ static void edit_menu(char* path)
 	FILE*	fp;
 	int		i;
 	static	dflt;
-	char	title[MAX_PATH+1];
 	char	value[INI_MAX_VALUE_LEN];
-	char*	p;
 	char*	opt[MAX_OPTS+1];
-	char	exec[INI_MAX_VALUE_LEN];
-	char	prompt[INI_MAX_VALUE_LEN];
-	char	menu_file[MAX_PATH+1];
-	char	menu_format[INI_MAX_VALUE_LEN];
-	size_t	menu_column_width;
-	BOOL	menu_reverse;
-	BOOL	hotkeys;
-	BOOL	expert;
+	char	prompt[256];
 	const char* opt_fmt = "%-25.25s %s";
-	str_list_t	list;
-	ini_style_t style;
 
 	/* Open menu file */
 	if((fp=fopen(path,"r"))==NULL) {
@@ -93,44 +71,23 @@ static void edit_menu(char* path)
 	}
 
 	/* Read menu file */
-	SAFECOPY(prompt,iniReadString(fp,ROOT_SECTION, "prompt", "'Command: '", value));
-	SAFECOPY(exec,iniReadString(fp,ROOT_SECTION, "exec", "", value));
-	SAFECOPY(menu_file,iniReadString(fp,ROOT_SECTION, "menu_file", "", value));
-	SAFECOPY(menu_format,iniReadString(fp,ROOT_SECTION, "menu_format", "\1n\1h\1w%s \1b%s", value));
-	menu_column_width=iniReadInteger(fp,ROOT_SECTION,"menu_column_width", 39);
-	menu_reverse=iniReadBool(fp,ROOT_SECTION,"menu_reverse", FALSE);
-
-	hotkeys=iniReadBool(fp,ROOT_SECTION,"hotkeys",TRUE);
-	expert=iniReadBool(fp,ROOT_SECTION,"expert",TRUE);
-
+	SAFECOPY(prompt,iniGetString(fp, ROOT_SECTION, "prompt", "'Command: '", value));
 	fclose(fp);
 
 
 	for(i=0;i<MAX_OPTS+1;i++)
 		opt[i]=(char *)alloca(MAX_OPLN+1);
 
-	SAFECOPY(str,getfname(path));
-	if((p=getfext(str))!=NULL)
-		*p=0;
-	SAFEPRINTF(title, "Menu: %s", str);
 	uifc.changes=0;
 	while(1) {
 
 		/* Create option list */
 		i=0;
-		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Menu File", menu_file[0] ? menu_file : "<Dynamic>");
-		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Execute (JS Expression)",exec[0] ? exec : "<nothing>");
-		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Prompt (JS String)",prompt[0] ? prompt : "<none>");
-		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Hot Key Input",boolstr(hotkeys));
-		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Display Menu"
-			,expert ? "Based on User \"Expert\" Setting"
-			: "Always");
-		safe_snprintf(opt[i++],MAX_OPLN,"Commands...");
-
+		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Prompt",prompt);
 		opt[i][0]=0;
 
 		i=uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_BOT,0,0,10,&dflt,0
-			,title,opt);
+			,getfname(path),opt);
 		if(i==-1) {
 			if(uifc.changes) {
 				i=yesno("Save Changes",TRUE);
@@ -143,65 +100,9 @@ static void edit_menu(char* path)
 		}
 		switch(i) {
 			case 0:
-				i=yesno("Use Static Menu File", menu_file[0]);
-				if(i==-1)
-					break;
-				if(i==TRUE)
-					uifc.input(WIN_MID|WIN_SAV,0,0,"Base Filename"
-						,menu_file,sizeof(menu_file)-1,K_EDIT);
-				else {
-					menu_file[0]=0;
-				}
-				break;
-			case 1:
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Execute (JS Expression)",exec,sizeof(exec)-1,K_EDIT);
-				break;
-			case 2:
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Prompt (JS String)",prompt,sizeof(prompt)-1,K_EDIT);
-				break;
-			case 3:
-				i=yesno("Use Hot Key Input (ENTER key not used)",hotkeys);
-				if(i>=0) hotkeys=i;
-				break;
-			case 4:
-				i=yesno("Display Menu Always (Ignore \"Expert\" User Setting)",!expert);
-				if(i>=0) expert=!i;
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Prompt",prompt,sizeof(prompt)-1,K_EDIT);
 				break;
 		}
-	}
-
-	if(uifc.changes) {	/* Saving changes? */
-
-		/* Open menu file */
-		if((fp=fopen(path,"r+"))==NULL) {
-			sprintf(str,"ERROR %u opening %s",errno,path);
-			uifc.msg(str);
-			return;
-		}
-
-		/* Set .ini style */
-		memset(&style, 0, sizeof(style));
-		style.value_separator=": ";
-
-		/* Read menu file */
-		if((list=iniReadFile(fp))!=NULL) {
-
-			/* Update options */
-			iniSetString(&list,ROOT_SECTION,"prompt",prompt,&style);
-			iniSetString(&list,ROOT_SECTION,"menu_file",menu_file,&style);
-			iniSetString(&list,ROOT_SECTION,"menu_format",menu_format,&style);
-			iniSetInteger(&list,ROOT_SECTION,"menu_column_width",menu_column_width,&style);
-			iniSetBool(&list,ROOT_SECTION,"menu_reverse",menu_reverse,&style);
-
-			iniSetBool(&list,ROOT_SECTION,"hotkeys",hotkeys,&style);
-			iniSetBool(&list,ROOT_SECTION,"expert",expert,&style);
-
-			/* Write menu file */
-			iniWriteFile(fp,list);
-			strListFree(&list);
-		}
-
-		fclose(fp);
 	}
 }
 
@@ -242,9 +143,11 @@ int main(int argc, char **argv)
 	uifc.esc_delay=25;
 
 	uifc.size=sizeof(uifc);
+#if defined(USE_UIFC32)
 	if(!door_mode)
 		i=uifcini32(&uifc);  /* curses/conio */
 	else
+#endif
 		i=uifcinix(&uifc);  /* stdio */
 	if(i!=0) {
 		printf("!ERROR: UIFC library init returned: %d\n",i);
@@ -270,7 +173,7 @@ int main(int argc, char **argv)
 			,"Edit Menu",opt);
 		if(i==-1)
 			break;
-		if(i>=0 && i<(int)g.gl_pathc)
+		if(i>=0 && i<g.gl_pathc)
 			edit_menu(g.gl_pathv[i]);
 		globfree(&g);
 	}
