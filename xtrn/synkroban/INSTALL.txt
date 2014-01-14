@@ -1,0 +1,86 @@
+---------
+Synkroban
+---------
+Synkroban is a Sokoban engine for Synchronet BBS. Sokoban is an awesome warehouse game, where you move the boxes onto the goals.
+
+Note that InterBBS features are disabled by default. See the Installation section to enable, recommended by the author.
+
+
+------------
+Requirements
+------------
+You need the following libraries, from the Synchronet CVS:
+- json-client.js
+- frame.js
+You can grab this from the Synchronet CVS repository, if you don't have it already.
+
+
+------------
+Installation
+------------
+1. Get the sources. They can be found on cvs.synchro.net, the official Synchronet repository.
+
+2. Configure the door in SCFG:
++[¦][?]----------------------------------------------------+
+¦                         Synkroban                        ¦
+¦----------------------------------------------------------¦
+¦ ¦Name                       Synkroban                    ¦ <--- pay attention!
+¦ ¦Internal Code              SOKOBAN                      ¦ <--- pay attention!
+¦ ¦Start-up Directory         ../xtrn/synkroban            ¦ <--- pay attention!
+¦ ¦Command Line               ?synkroban                   ¦ <--- pay attention!
+¦ ¦Clean-up Command Line                                   ¦
+¦ ¦Execution Cost             None                         ¦
+¦ ¦Access Requirements                                     ¦
+¦ ¦Execution Requirements                                  ¦
+¦ ¦Multiple Concurrent Users  Yes                          ¦ <--- PAY ATTENTION!
+¦ ¦Intercept I/O              Standard, WWIV Color         ¦
+¦ ¦Native Executable          No                           ¦
+¦ ¦Use Shell to Execute       No                           ¦
+¦ ¦Modify User Data           No                           ¦
+¦ ¦Execute on Event           No                           ¦
+¦ ¦Pause After Execution      No                           ¦
+¦ ¦BBS Drop File Type         None                         ¦
+¦ ¦Place Drop File In         Node Directory               ¦
++----------------------------------------------------------+
+
+3. InterBBS global scores are disabled by default, but is simple to enable. Edit 'synkroban.js' and set the 'USE_GLOBAL_SERVER' key in skb_config to true:
+
+	var skb_config = {
+		...
+		USE_GLOBAL_SERVER: true,
+		...
+	}
+
+   If you wish to use another InterBBS server or host your own high scores service please read the hosting section below.
+
+
+------------------------
+Hosting the JSON Service
+------------------------
+Synkroban can send and retrieve InterBBS data from the global server.  If you want to use another server, skip to step 4.
+
+If you want to host your own JSON service, follow these steps:
+
+1. Your BBS should be configured with the JSON service. In your ctrl/services.ini, ensure this is enabled:
+	[JSON]
+	Port=10088
+	Options=STATIC | LOOP
+	Command=json-service.js
+
+2. Edit ctrl/json-service.ini, adding:
+    [synkroban]
+    dir=../xtrn/synkroban/
+   Note that if you changed the installation path, this line must be similarly changed.
+
+3. Restart the Synchronet Services service.
+
+4. Edit 'server.ini' to set the host and port to the desired JSON service.
+
+5. Edit 'synkroban.js' and change the settings to:
+
+	var skb_config = {
+		...
+		USE_JSON: true,
+		USE_GLOBAL_SERVER: false,
+		...
+	}
