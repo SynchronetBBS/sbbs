@@ -2683,9 +2683,11 @@ char *pktname(BOOL temp)
 	return(NULL);	/* This should never happen */
 }
 
-BOOL zone_blind(uint16_t zone)
+BOOL foreign_zone(uint16_t zone1, uint16_t zone2)
 {
-	return cfg.zone_blind && zone <= cfg.zone_blind_threshold;
+	if(cfg.zone_blind && zone1 <= cfg.zone_blind_threshold && zone2 <= cfg.zone_blind_threshold)
+		return FALSE;
+	return zone1!=zone2;
 }
 
 /******************************************************************************
@@ -2749,13 +2751,13 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 	}
 			
 	if(area.name) { /* EchoMail, Not NetMail */
-		if(!zone_blind(fmsghdr.destzone) && addr.zone!=fmsghdr.destzone)	/* Zone Gate */
+		if(foreign_zone(addr.zone, fmsghdr.destzone))	/* Zone Gate */
 			fprintf(stream,"SEEN-BY: %d/%d\r",fmsghdr.destnet,fmsghdr.destnode);
 		else {
 			fprintf(stream,"SEEN-BY:");
 			for(i=0;i<seenbys.addrs;i++) {			  /* Put back original SEEN-BYs */
 				strcpy(seenby," ");
-				if(!zone_blind(seenbys.addr[i].zone) && seenbys.addr[i].zone!=addr.zone)
+				if(foreign_zone(addr.zone, seenbys.addr[i].zone))
 					continue;
 				if(seenbys.addr[i].net!=addr.net || !net_exists) {
 					net_exists=1;
@@ -2782,7 +2784,7 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 				if(node<cfg.nodecfgs && (cfg.nodecfg[node].attr&ATTR_PASSIVE))
 					continue;
 				strcpy(seenby," ");
-				if((!zone_blind(area.uplink[i].zone) && area.uplink[i].zone!=addr.zone) || area.uplink[i].point)
+				if(foreign_zone(addr.zone, area.uplink[i].zone) || area.uplink[i].point)
 					continue;
 				for(j=0;j<seenbys.addrs;j++)
 					if(!memcmp(&area.uplink[i],&seenbys.addr[j],sizeof(faddr_t)))
@@ -2811,7 +2813,7 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 
 			for(i=0;i<scfg.total_faddrs;i++) {				/* Add AKAs to SEEN-BYs */
 				strcpy(seenby," ");
-				if((!zone_blind(scfg.faddr[i].zone) && scfg.faddr[i].zone!=addr.zone) || scfg.faddr[i].point)
+				if(foreign_zone(addr.zone, scfg.faddr[i].zone) || scfg.faddr[i].point)
 					continue;
 				for(j=0;j<seenbys.addrs;j++)
 					if(!memcmp(&scfg.faddr[i],&seenbys.addr[j],sizeof(faddr_t)))
@@ -2842,8 +2844,10 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 			fprintf(stream,"\r\1PATH:");
 			addr=getsysfaddr(fmsghdr.destzone);
 			for(i=0;i<paths.addrs;i++) {			  /* Put back the original PATH */
+				if(paths.addr[i].net == 0)
+					continue;	// Invalid node number/address, don't include "0/0" in PATH
 				strcpy(seenby," ");
-				if((!zone_blind(paths.addr[i].zone) && paths.addr[i].zone!=addr.zone) || paths.addr[i].point)
+				if(foreign_zone(addr.zone, paths.addr[i].zone) || paths.addr[i].point)
 					continue;
 				if(paths.addr[i].net!=addr.net || !net_exists) {
 					net_exists=1;
@@ -2867,7 +2871,7 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 
 			strcpy(seenby," ");         /* Add first address with same zone to PATH */
 			sysaddr=getsysfaddr(fmsghdr.destzone);
-			if(!sysaddr.point) {
+			if(sysaddr.net!=0 && sysaddr.point==0) {
 				if(sysaddr.net!=addr.net || !net_exists) {
 					net_exists=1;
 					addr.net=sysaddr.net;
@@ -3063,7 +3067,7 @@ BOOL check_psb(addrlist_t* addrlist, faddr_t compaddr)
 	int i;
 
 	for(i=0;i<addrlist->addrs;i++) {
-		if(!zone_blind(addrlist->addr[i].zone) && compaddr.zone != addrlist->addr[i].zone)
+		if(foreign_zone(compaddr.zone, addrlist->addr[i].zone))
 			continue;
 		if(compaddr.net != addrlist->addr[i].net)
 			continue;
