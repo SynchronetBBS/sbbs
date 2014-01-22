@@ -257,7 +257,7 @@ service = new (function() {
 
 /* chat handler */
 chat = new (function() {
-	this.db = new JSONdb(system.data_dir+"chat.json");
+	this.db = new JSONdb(system.data_dir+"chat.json","CHAT");
 	this.authenticated = [];
 	this.deny_hosts = [];
 	
