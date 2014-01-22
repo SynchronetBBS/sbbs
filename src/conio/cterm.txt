@@ -117,6 +117,15 @@ CSI = 255 h
 
 	SOURCE: BANSI.TXT
 
+CSI ? 6 h
+	NON-STANDARD EXTENSION
+    Enable origin mode.
+    
+    In this mode, position parameters are relative to the top left of the
+    scrolling region, not the screen.
+    
+    SOURCE: Digital VT102 User Guide
+
 CSI ? 7 h
 	NON-STANDARD EXTENSION
     Enable auto wrap.
@@ -176,6 +185,15 @@ CSI ? 7 l
     
     SOURCE: Digital VT102 User Guide
 
+CSI ? 6 h
+	NON-STANDARD EXTENSION
+    Disable origin mode.
+    
+    In this mode, position parameters are relative to the top left of the
+    screen, not the scrolling region.
+    
+    SOURCE: Digital VT102 User Guide
+
 CSI ? 31 l
 	NON-STANDARD EXTENSION
 	Disable alt character set
@@ -218,6 +236,15 @@ CSI [ p1 [ ; p2 ] ] * r
 	11		115200
 
 	SOURCE: VT4xx Specification from http://www.vt100.net/
+
+CSI [ p1 [ ; p2 ] ] r
+	NON-STANDARD EXTENSION.
+    Set Top and Bottom Margins
+    Defaults: p1 = 1
+              p2 = last line on screen
+    Selects top and bottom margins, defining the scrolling region. P1 is
+    the line number of the first line in the scrolling region. P2 is the line
+    number of the bottom line.
 
 CSI [ p1 ] @
 	Insert Character(s)
