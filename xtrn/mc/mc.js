@@ -521,7 +521,7 @@ function mc_main()
 				}
 				break;
 			case '4':
-				if(stranger_does_kathy) {
+				if(stranger_dates_kathy) {
 					console.print('All the tables are filled right now.\r\n');
 					console.print('Please try again later.\r\n');
 				}
