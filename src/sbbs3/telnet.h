@@ -146,11 +146,15 @@ enum {
 #undef DLLCALL
 #endif
 
-#if defined(_WIN32) && !defined(TELNET_NO_DLL)
-	#ifdef SBBS_EXPORTS
-		#define DLLEXPORT __declspec(dllexport)
+#if defined(_WIN32)
+	#if !defined(TELNET_NO_DLL)
+		#ifdef SBBS_EXPORTS
+			#define DLLEXPORT __declspec(dllexport)
+		#else
+			#define DLLEXPORT __declspec(dllimport)
+		#endif
 	#else
-		#define DLLEXPORT __declspec(dllimport)
+		#define DLLEXPORT
 	#endif
 	#ifdef __BORLANDC__
 		#define DLLCALL __stdcall
