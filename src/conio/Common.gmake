@@ -20,6 +20,9 @@ endif
 ifeq ($(os),openbsd)
  CFLAGS += -DHAVE_VASPRINTF
 endif
+ifeq ($(os),win32)
+ CFLAGS += -I${SRC_ROOT}/../include/sdl
+endif
 
 ifneq ($(os),win32)
  ifdef USE_SYSTEM_CURSES
