@@ -16,6 +16,7 @@ int drawwin(void)
 
     gettextinfo(&txtinfo);
 
+#if 0
 	switch(ciolib_to_screen(txtinfo.currmode)) {
 		case SCREEN_MODE_ATARI:
 		case SCREEN_MODE_ATARI_XEP80:
@@ -29,6 +30,9 @@ int drawwin(void)
 		default:
 			strcpy(str,"SyncTERM ");
 	}
+#else
+	strcpy(str,"         ");
+#endif
 
 	if(txtinfo.screenwidth < 80)
 		term.width=40;
