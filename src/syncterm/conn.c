@@ -420,6 +420,18 @@ int conn_socket_connect(struct bbslist *bbs)
 	uifc.pop("Looking up host");
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags=PF_UNSPEC;
+	switch(bbs->address_family) {
+		case ADDRESS_FAMILY_INET:
+			hints.ai_family=PF_INET;
+			break;
+		case ADDRESS_FAMILY_INET6:
+			hints.ai_family=PF_INET6;
+			break;
+		case ADDRESS_FAMILY_UNSPEC:
+		default:
+			hints.ai_family=PF_UNSPEC;
+			break;
+	}
 	hints.ai_socktype=SOCK_STREAM;
 	hints.ai_protocol=IPPROTO_TCP;
 	hints.ai_flags=AI_NUMERICSERV;

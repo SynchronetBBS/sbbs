@@ -53,6 +53,12 @@ enum {
 	,SCREEN_MODE_TERMINATOR
 };
 
+enum {
+	 ADDRESS_FAMILY_UNSPEC
+	,ADDRESS_FAMILY_INET
+	,ADDRESS_FAMILY_INET6
+};
+
 /* NOTE: changing this may require updating sort_order in bbslist.c */
 struct bbslist {
 	char			name[LIST_NAME_MAX+1];
@@ -77,6 +83,7 @@ struct bbslist {
 	int				telnet_loglevel;
 	int				bpsrate;
 	int				music;
+	int				address_family;
 	char			font[80];
 };
 

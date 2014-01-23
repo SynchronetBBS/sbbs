@@ -1207,6 +1207,7 @@ int main(int argc, char **argv)
 	int		conn_type=CONN_TYPE_TELNET;
 	int		text_mode;
 	BOOL	override_conn=FALSE;
+	int		addr_family=PF_UNSPEC;
 	char	*last_bbs=NULL;
 	const char syncterm_termcap[]="\n# terminfo database entry for SyncTERM\n"
 				"syncterm|SyncTERM 80x25,\n"
@@ -1229,7 +1230,7 @@ int main(int argc, char **argv)
 				"	il=\\E[%p1%dL,cub=\\E[%p1%dD,cuf=\\E[%p1%dC,rin=\\E[%p1%dT,cuu=\\E[%p1%dA,\n"
 				"	rc=\\E[u,sc=\\E[s,ind=\\E[S,ri=\\E[T,setab=\\E[4%p1%dm,setaf=\\E[3%p1%dm,\n"
 				"	sgr=\\E[0%?%p1%p6%|%t;1%;%?%p4%|%t;5%;%?%p1%p3%|%t;7%;%?%p7%|%t;8%;m,\n"
-				"	smso=\\E[0;1;7m,\n"
+				"	smso=\\E[0;1;7m,csr=\\E[%i%p1%d;%p2%dr\n"
 				"syncterm-25|SyncTERM No Status Line,\n"
 				"	lines#25,use=syncterm,\n"
 				"syncterm-27|SyncTERM 80x28 With Status,\n"
@@ -1301,6 +1302,12 @@ int main(int argc, char **argv)
 #endif
             )
             switch(toupper(argv[i][1])) {
+				case '6':
+					addr_family=ADDRESS_FAMILY_INET6;
+					break;
+				case '4':
+					addr_family=ADDRESS_FAMILY_INET;
+					break;
                 case 'E':
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
@@ -1450,6 +1457,8 @@ int main(int argc, char **argv)
 			parse_url(url, bbs, conn_type, FALSE);
 			strListFree(&inilines);
 		}
+		if(addr_family != ADDRESS_FAMILY_UNSPEC)
+			bbs->address_family=addr_family;
 		if(bbs->port==0)
 			goto USAGE;
 	}
@@ -1599,6 +1608,8 @@ int main(int argc, char **argv)
 		"-t  =  use telnet mode if URL does not include the scheme\n"
 		"-r  =  use rlogin mode if URL does not include the scheme\n"
 		"-h  =  use SSH mode if URL does not include the scheme\n"
+		"-4  =  Only resolve IPv4 addresses\n"
+		"-6  =  Only resolve IPv6 addresses\n"
 		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
 		"-T  =  when the ONLY argument, dumps the terminfo entry to stdout and exits\n"
 		"\n"
