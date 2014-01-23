@@ -1352,7 +1352,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						max_row = cterm->bottom_margin - cterm->top_margin + 1;
 					col=1;
 					*p=0;
-					if(strlen(cterm->escbuf)>1) {
+					if(strlen(cterm->escbuf)>2) {
 						if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
 							row=strtoul(p,NULL,10);
 							if((p=strtok(NULL,";"))!=NULL) {
@@ -1769,7 +1769,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					else {
 						row = 1;
 						max_row = cterm->height;
-						if(strlen(cterm->escbuf)>1) {
+						if(strlen(cterm->escbuf)>2) {
 							if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
 								row=strtoul(p,NULL,10);
 								if((p=strtok(NULL,";"))!=NULL) {
