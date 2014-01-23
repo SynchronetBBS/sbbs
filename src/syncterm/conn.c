@@ -451,6 +451,7 @@ int conn_socket_connect(struct bbslist *bbs)
 	while(kbhit())
 		getch();
 	for(cur=res; cur && failcode==FAILURE_WHAT_FAILURE; cur=cur->ai_next) {
+fprintf(stderr, "Looping...\n");
 		if(sock==INVALID_SOCKET) {
 			sock=socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
 			if(sock==INVALID_SOCKET) {
@@ -470,7 +471,7 @@ int conn_socket_connect(struct bbslist *bbs)
 #if (EAGAIN!=EWOULDBLOCK)
 				case EWOULDBLOCK:
 #endif
-					for(;;) {
+					for(;sock!=INVALID_SOCKET;) {
 						tv.tv_sec=1;
 						tv.tv_usec=0;
 
@@ -488,7 +489,11 @@ int conn_socket_connect(struct bbslist *bbs)
 								sock=INVALID_SOCKET;
 								continue;
 							case 1:
-								goto connected;
+								if(socket_check(sock, NULL, NULL, 0))
+									goto connected;
+								closesocket(sock);
+								sock=INVALID_SOCKET;
+								continue;
 							default:
 								break;
 						}
