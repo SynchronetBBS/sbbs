@@ -890,7 +890,7 @@ static void scrolldown(struct cterminal *cterm)
 static void scrollup(struct cterminal *cterm)
 {
 	int top = cterm->y+cterm->top_margin-1;
-	int height = cterm->bottom_margin;
+	int height = cterm->bottom_margin-cterm->top_margin+1;
 	int x,y;
 
 	cterm->backpos++;
@@ -912,7 +912,7 @@ static void scrollup(struct cterminal *cterm)
 static void dellines(struct cterminal * cterm, int lines)
 {
 	int top = cterm->y+cterm->top_margin-1;
-	int height = cterm->bottom_margin;
+	int height = cterm->bottom_margin-cterm->top_marging+1;
 	int i;
 	int linestomove;
 	int x,y;
