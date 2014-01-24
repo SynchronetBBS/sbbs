@@ -177,6 +177,8 @@ rfc5322abnf.obs_mbox_list="(?:(?:"+rfc5322abnf.CFWS+",)*"+rfc5322abnf.mailbox+"(
 
 // 3.4 Address Specifications
 rfc5322abnf.mailbox_list="(?:(?:"+rfc5322abnf.mailbox+"(?:,"+rfc5322abnf.mailbox+")*)|"+rfc5322abnf.obs_mbox_list+")";
+rfc5322abnf.group_list="(?:"+rfc5322abnf.mailbox_list+"|"+rfc5322abnf.CFWS+"|"+rfc5322abnf.obs_group_list+")";
+rfc5322abnf.group="(?:"+rfc5322abnf.display_name+":"+rfc5322abnf.group_list+"?;"+rfc5322abnf.CFWS+"?)";
 rfc5322abnf.address="(?:"+rfc5322abnf.mailbox+"|"+rfc5322abnf.group+")";
 
 // 4.4 Obsolete Addressing
@@ -187,10 +189,6 @@ rfc5322abnf.address_list="(?:(?:"+rfc5322abnf.address+"(?:,"+rfc5322abnf.address
 
 // 4.4 Obsolete Addressing
 rfc5322abnf.obs_group_list="(?:(?:"+rfc5322abnf.CFWS+"?,)+"+rfc5322abnf.CFWS+"?)";
-
-// 3.4 Address Specifications
-rfc5322abnf.group_list="(?:"+rfc5322abnf.mailbox_list+"|"+rfc5322abnf.CFWS+"|"+rfc5322abnf.obs_group_list+")";
-rfc5322abnf.group="(?:"+rfc5322abnf.display_name+":"+rfc5322abnf.group_list+"?;"+rfc5322abnf.CFWS+"?)";
 
 // 3.6.1 The Origination Date field
 rfc5322abnf.orig_date="(?:Date:"+rfc5322abnf.date_time+abnf.CRLF+")";
@@ -446,6 +444,10 @@ abnf.obs_mbox_list="(?:(?:"+abnf.CFWS+",)*"+abnf.mailbox+"(?:,(?:"+abnf.mailbox+
 
 // 3.4 Address Specifications
 abnf.mailbox_list=abnf.obs_mbox_list;
+abnf.obs_group_list="(?:(?:"+abnf.CFWS+"?,)+"+abnf.CFWS+"?)";
+abnf.group_list=abnf.obs_group_list;
+abnf.group="(?:"+abnf.display_name+":"+abnf.group_list+"?;"+abnf.CFWS+"?)";
+
 abnf.address="(?:"+abnf.mailbox+"|"+abnf.group+")";
 
 // 4.4 Obsolete Addressing
@@ -455,12 +457,8 @@ abnf.obs_addr_list="(?:(?:"+abnf.CFWS+",)*"+abnf.address+"(?:,(?:"+abnf.address+
 abnf.address_list=abnf.obs_addr_list;
 
 // 4.4 Obsolete Addressing
-abnf.obs_group_list="(?:(?:"+abnf.CFWS+"?,)+"+abnf.CFWS+"?)";
 
 // 3.4 Address Specifications
-abnf.group_list=abnf.obs_group_list;
-abnf.group="(?:"+abnf.display_name+":"+abnf.group_list+"?;"+abnf.CFWS+"?)";
-
 // 3.6.1 The Origination Date field
 abnf.orig_date="(?:Date:"+abnf.date_time+abnf.CRLF+")";
 
