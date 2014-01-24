@@ -301,7 +301,7 @@ rfc5322abnf.obs_fields="(?:(?:"+rfc5322abnf.obs_return+"|"+rfc5322abnf.obs_recei
 
 // 3.5 Overall Message Syntax
 rfc5322abnf.body="(?:(?:(?:"+rfc5322abnf.text+"{0,998}"+abnf.CRLF+")*"+rfc5322abnf.text+"{0,998})|"+rfc5322abnf.obs_body+")";
-rfc5322abnf.message="(?:(?:"+rfc5322abnf.fields+"|"+rfc5322abnf.obs_fields+")(?:"+rfc5322abnf.CFLF+rfc5322abnf.body+")?)";
+rfc5322abnf.message="(?:(?:"+rfc5322abnf.fields+"|"+rfc5322abnf.obs_fields+")(?:"+rfc5322abnf.CRLF+rfc5322abnf.body+")?)";
 
 /***************************/
 /* Simplified from RFC5322 */
@@ -566,11 +566,11 @@ abnf.obs_received="(?:Received"+abnf.WSP+"*:"+abnf.received_token+"*;"+abnf.date
 abnf.obs_optional="(?:"+abnf.field_name+abnf.WSP+"*:"+abnf.unstructured+abnf.CRLF+")";
 
 // 4.5 Obsolete Header Fields
-abnf.obs_fields="(?:abnf.obs_optional*)";
+abnf.obs_fields="(?:"+abnf.obs_optional+"*)";
 
 // 3.5 Overall Message Syntax
 abnf.body="(?:(?:(?:"+abnf.text+"{0,998}"+abnf.CRLF+")*"+abnf.text+"{0,998})|"+abnf.obs_body+")";
-abnf.message="(?:(?:"+abnf.fields+"|"+abnf.obs_fields+")(?:"+abnf.CFLF+abnf.body+")?)";
+abnf.message="(?:(?:"+abnf.fields+"|"+abnf.obs_fields+")(?:"+abnf.CRLF+abnf.body+")?)";
 
 /*************************/
 /* From MIME RFCs (2045) */
