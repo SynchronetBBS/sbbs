@@ -174,6 +174,7 @@ rfc5322abnf.mailbox="(?:"+rfc5322abnf.name_addr+"|"+rfc5322abnf.addr_spec+")";
 
 // 4.4 Obsolete Addressing
 rfc5322abnf.obs_mbox_list="(?:(?:"+rfc5322abnf.CFWS+",)*"+rfc5322abnf.mailbox+"(?:,(?:"+rfc5322abnf.mailbox+"|"+rfc5322abnf.CFWS+")?)*)";
+rfc5322abnf.obs_group_list="(?:(?:"+rfc5322abnf.CFWS+"?,)+"+rfc5322abnf.CFWS+"?)";
 
 // 3.4 Address Specifications
 rfc5322abnf.mailbox_list="(?:(?:"+rfc5322abnf.mailbox+"(?:,"+rfc5322abnf.mailbox+")*)|"+rfc5322abnf.obs_mbox_list+")";
@@ -186,9 +187,6 @@ rfc5322abnf.obs_addr_list="(?:(?:"+rfc5322abnf.CFWS+",)*"+rfc5322abnf.address+"(
 
 // 3.4 Address Specifications
 rfc5322abnf.address_list="(?:(?:"+rfc5322abnf.address+"(?:,"+rfc5322abnf.address+")*)|"+rfc5322abnf.obs_addr_list+")";
-
-// 4.4 Obsolete Addressing
-rfc5322abnf.obs_group_list="(?:(?:"+rfc5322abnf.CFWS+"?,)+"+rfc5322abnf.CFWS+"?)";
 
 // 3.6.1 The Origination Date field
 rfc5322abnf.orig_date="(?:Date:"+rfc5322abnf.date_time+abnf.CRLF+")";
@@ -299,7 +297,7 @@ rfc5322abnf.obs_fields="(?:(?:"+rfc5322abnf.obs_return+"|"+rfc5322abnf.obs_recei
 
 // 3.5 Overall Message Syntax
 rfc5322abnf.body="(?:(?:(?:"+rfc5322abnf.text+"{0,998}"+abnf.CRLF+")*"+rfc5322abnf.text+"{0,998})|"+rfc5322abnf.obs_body+")";
-rfc5322abnf.message="(?:(?:"+rfc5322abnf.fields+"|"+rfc5322abnf.obs_fields+")(?:"+rfc5322abnf.CRLF+rfc5322abnf.body+")?)";
+rfc5322abnf.message="(?:(?:"+rfc5322abnf.fields+"|"+rfc5322abnf.obs_fields+")(?:"+abnf.CRLF+rfc5322abnf.body+")?)";
 
 /***************************/
 /* Simplified from RFC5322 */
