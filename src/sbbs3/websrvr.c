@@ -428,8 +428,8 @@ time_gm(struct tm *tm)
         /* save value in case *tm is overwritten by gmtime() */
         sec = tm->tm_sec;
 
-        tm2 = gmtime(&t);
-        if ((t2 = sub_mkgmt(tm2)) == (time_t) -1)
+        tm2 = gmtime(&t);	/* why not use gmtime_r instead? */
+        if (tm2 == NULL || (t2 = sub_mkgmt(tm2)) == (time_t) -1)
                 return (time_t) -1;
 
         if (t2 < t || tm2->tm_sec != sec) {
