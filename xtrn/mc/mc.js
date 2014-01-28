@@ -516,7 +516,7 @@ function mc_main()
 				if(check_played(3)) {
 					twenty=true;
 					player.played_twenty1++;
-					twenty1.play();
+					Twenty1.play();
 					twenty=false;
 				}
 				break;
