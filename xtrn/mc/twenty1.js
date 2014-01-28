@@ -154,9 +154,9 @@ function twenty1_get_bet()
 				break;
 		}
 		if(this.player_bet % 10) {
-			console.print('The dealer looks down at you and says: ');
-			console.print(user.name+', all bets must be in multiples of 10. ');
-			console.print('Please redo your bet.');
+			console.print('The dealer looks down at you and says:\r\n');
+			console.print(user.name+', all bets must be in multiples of 10.\r\n');
+			console.print('Please redo your bet.\r\n');
 			console.crlf();
 			console.crlf();
 		}
