@@ -118,7 +118,7 @@ load(game_dir+"twenty1.js");
 var roulette=new Roulette();
 var slots=new Slots();
 var baccarat=new Baccarat();
-var Twenty1=new Twenty1();
+var twenty1=new Twenty1();
 
 function create_player()
 {
@@ -516,7 +516,7 @@ function mc_main()
 				if(check_played(3)) {
 					twenty=true;
 					player.played_twenty1++;
-					Twenty1.play();
+					twenty1.play();
 					twenty=false;
 				}
 				break;
