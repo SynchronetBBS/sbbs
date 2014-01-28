@@ -148,9 +148,10 @@ function show_intro()
 	if(getkeys("PQ")=='Q')
 		exit(0);
 
-	console.crlf();
 	console.attributes=MAGENTA;
 	playmusic("MFT64L64O5CDP32CDP32CDP16");
+	console.write("\x0f\b \b");
+	console.crlf();
 	console.attributes=GREEN;
 	console.writeln("If your terminal supports ANSI sound, you just heard some.");
 	console.writeln("If it doesnt, you just saw some wierd characters.");
