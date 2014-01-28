@@ -198,7 +198,7 @@ function baccarat_instructions()
 
 function baccarat_welcome()
 {
-	console.print('  As you enter the baccarat room, you notice how quite things\r\n');
+	console.print('  As you enter the baccarat room, you notice how quiet things\r\n');
 	console.print('seem to be.  There are only 8 tables in this room, and you see\r\n');
 	console.print('huge amounts of money being lost and won.  You observe as one\r\n');
 	console.print('player plays against the stranger you saw in one of the other\r\n');
