@@ -1,258 +1,216 @@
+/*	Provides the Feed object, representing a loaded RSS or Atom feed.
+
+	Usage Example:
+
+	load("sbbsdefs.js");
+	load("rss-atom.js");
+	console.clear(BG_BLACK|LIGHTGRAY);
+	var f = new Feed("http://bbs.electronicchicken.com/rss/bullshitrss.xml");
+	for(var c = 0; c < f.channels.length; c++) {
+		console.putmsg(f.channels[c].title + "\r\n");
+		console.putmsg(f.channels[c].updated + "\r\n");
+		for(var i = 0; i < f.channels[c].items.length; i++) {
+			console.putmsg(f.channels[c].items[i].title + "\r\n");
+			console.putmsg(f.channels[c].items[i].author + "\r\n");
+			console.putmsg(f.channels[c].items[i].date + "\r\n");
+			console.putmsg(f.channels[c].items[i].body + "\r\n");
+			console.putmsg("---\r\n");
+		}
+		console.putmsg("---\r\n");
+	}
+	console.pause();
+
+	Properties:
+
+	Feed.channels (Array)
+
+		An array of 'Channel' objects, representing an RSS <channel />
+		or an Atom <feed />.  (In most cases, you'll be dealing with
+		Feed.channels[0].)
+
+	Methods:
+
+	Feed.load();
+
+		Loads the feed via HTTP.  This is called automatically upon
+		instantiation, however it is available as a public method if
+		you wish to reload the feed at any time.
+
+	Channel objects:
+
+		Each element in a Feed's 'channels' array is a Channel object.  This
+		object represents an RSS channel or an Atom feed.
+	
+		Properties:
+
+		Channel.title (String)
+
+			The title of the channel/feed.
+
+		Channel.description (String)
+
+			The RSS <description /> or Atom <subtitle /> of this channel/feed.
+
+		Channel.link (String)
+
+			The <link /> of this channel/feed. (Note: this needs to be cleaned
+			up a bit. Presently if there are multiple <link /> elements, their
+			values will be concatenated into a single string.
+
+		Channel.updated (String)
+
+			The RSS <lastBuildDate /> or Atom <updated /> value for this
+			channel/feed. (Just a string for now.)
+
+		Channel.items (Array)
+
+			An array of Item objects, representing the articles/entries in the
+			channel/feed.
+
+	Item objects:
+
+		Each element in a Feed's 'channels' array's 'items' array is an Item
+		object.  This object represents an RSS <item /> or Atom <entry />.
+
+		Properties:
+
+		Item.id (String)
+
+			A unique identifier for this item. (RSS <guid />, Atom <id />)
+
+		Item.title (String)
+
+			The title of this item.
+
+		Item.date (String)
+
+			The date this item was last updated. (Just a string for now.)
+
+		Item.author (String)
+
+			The author of this item.
+
+		Item.body (String)
+
+			The RSS <description /> or Atom <summary /> for this item/entry.
+
+		Item.link (String)
+
+			The <link /> value for this item. (This needs cleaning up. If
+			there are multiple <link /> elements, their values are joined
+			into a single string.)
+
+		Item.extra (Object)
+
+			If the item/entry contains additional elements not provided for
+			above, they are tacked on to this object in case you may need
+			to access them.  Presumably these will all be E4X XML objects.
+
+*/
+
 load("http.js");
 
-var getFeed = function(url) {
-	var httpRequest = new HTTPRequest();
-	var response = httpRequest.Get(url);
-	if(
-		typeof response == "undefined"
-		||
-		response === null
-		||
-		response == ""
-	) {
-		throw "Empty response";
+// Hacky e4x namespace weirdness
+var toLocal = function(xmlObject) {
+	for each(var element in xmlObject) {
+		element.setName(element.localName());
+		toLocal(element);
 	}
-	response = response.replace(/^<\?xml.*\?>/g, "");
-	response = response.replace(/<feed.*>/g, "<feed>");
-	response = response.replace(/<\/?rss.*>/g, "");
-	return new XML(response);
 }
 
-var objectsMatch = function(obj1, obj2) {
-	for(var property in obj1) {
-		if(!obj2.hasOwnProperty(property) || obj1[property] != obj2[property])
-			return false;
-	}
-	for(var property in obj2) {
-		if(!obj1.hasOwnProperty(property))
-			return false;
-	}
-	return true;
-}
+var Feed = function(url) {
 
-var RSS = function(url) {
-	
-	var updated = false;
-	this.__defineGetter__(
-		"updated",
-		function() {
-			var ret = updated;
-			if(updated)
-				updated = false;
-			return ret;
-		}
-	);
-	
-	this.properties = {
-		title			: "",
-		link			: "",
-		description		: "",
-		language		: "",
-		copyright		: "",
-		managingEditor	: "",
-		webMaster		: "",
-		pubDate			: "",
-		lastBuildDate	: "",
-		category		: "",
-		generator		: "",
-		docs			: "",
-		cloud			: "",
-		ttl				: "",
-		image			: "",
-		rating			: "",
-		textInput		: "",
-		skipHours		: "",
-		skipDays		: "",
-		url				: (typeof url == "undefined") ? "" : url
-	};
-	
-	var Item = function(xmlObj) {
-	
-		this.properties = {
-			title		: "",
-			link		: "",
-			description	: "",
-			author		: "",
-			category	: "",
-			comments	: "",
-			enclosure	: "",
-			guid		: "",
-			pubDate		: "",
-			source		: ""
-		};
-		
-		for each(var element in xmlObj) {
-			if(element.name() == "pubDate") {
-				var d = new Date(element.toString());
-				this.properties[element.name()] = d.getTime() * .001;
-			} else {
-				this.properties[element.name()] = element;
-			}
-		}
-		
-		if(this.properties.title == "" && this.properties.description == "")
-			throw "Invalid feed item";
-	
-	}
-	
-	this.items = [];
-	
-	this.load = function() {
-		if(this.properties.url == "")
-			throw "Feed URL not supplied";
-		var feed = getFeed(this.properties.url);
-		for each(var element in feed) {
-			if(element.name() == "item") {
-				var item = new Item(element);
-				var add = true;
-				for(var i = 0; i < this.items.length; i++) {
-					if(!objectsMatch(this.items[i].properties, item.properties))
-						continue;
-					add = false;
-					break;
-				}
-				if(add) {
-					this.items.push(item);
-					updated = true;
-				}
-			} else {
-				this.properties[element.name()] = element;
-			}
-		}
-		
-		if(
-			this.properties.title == ""
-			||
-			this.properties.link == ""
-			||
-			this.properties.description == ""
-		) {
-			throw "Invalid feed";
-		}
-	}
-		
-}
+	var Item = function(xmlObject) {
 
-var Atom = function(url) {
-	
-	var updated = false;
-	this.__defineGetter__(
-		"updated",
-		function() {
-			var ret = updated;
-			if(updated)
-				updated = false;
-			return ret;
-		}
-	);
-	
-	this.properties = {
-		id			: "",
-		title		: "",
-		updated		: "",
-		author		: "",
-		link		: "",
-		category	: "",
-		contributor	: "",
-		generator	: "",
-		icon		: "",
-		logo		: "",
-		rights		: "",
-		subtitle	: "",
-		url			: (typeof url == "undefined") ? "" : url
-	};
-	
-	var toTimestamp = function(datestr) {
-		var yy   = datestr.substring(0,4);
-		var mo   = datestr.substring(5,7);
-		var dd   = datestr.substring(8,10);
-		var hh   = datestr.substring(11,13);
-		var mi   = datestr.substring(14,16);
-		var ss   = datestr.substring(17,19);
-		var tzs  = datestr.substring(19,20);
-//		var tzhh = datestr.substring(20,22);
-//		var tzmi = datestr.substring(23,25);
-		var myutc = Date.UTC(yy-0,mo-1,dd-0,hh-0,mi-0,ss-0);
-//		var tzos = (tzs+(tzhh * 60 + tzmi * 1)) * 60000;
-//		var d = new Date(myutc-tzos);
-		var d = new Date(myutc);
-		return d.getTime() * .001;
-	}
-	
-	var Entry = function(xmlObj) {
-		
-		this.properties = {
-			id			: "",
-			title		: "",
-			updated		: "",
-			author		: "",
-			content		: "",
-			link		: "",
-			summary		: "",
-			category	: "",
-			contributor	: "",
-			published	: "",
-			source		: "",
-			rights		: ""
-		};
-		
-		for each(var element in xmlObj) {
-			if(element.name() == "link" && element.hasOwnProperty("@href"))
-				this.properties[element.name()] = element.@href;
-			else if(element.name() == "updated" || element.name() == "published")
-				this.properties[element.name()] = toTimestamp(element.toString());
+		this.id = "";
+		this.title = "";
+		this.date = "";
+		this.author = "";
+		this.body = "";
+		this.link = "";
+		this.extra = {};
+
+		for each(var element in xmlObject) {
+			if(element.name() == "guid" || element.name() == "id")
+				this.id = element;
+			else if(element.name() == "title")
+				this.title = element;
+			else if(element.name() == "pubDate" || element.name() == "updated")
+				this.date = element;
+			else if(element.name() == "author")
+				this.author = element.text(); // To do: deal with Atom-style <author>
+			else if(element.name() == "description" || element.name() == "summary")
+				this.body = element;
+			else if(element.name() == "link")
+				this.link = element.text(); // To do: deal with multiple links
 			else
-				this.properties[element.name()] = element;
-		}
-		
-		if(
-			this.properties.id == ""
-			||
-			this.properties.title == ""
-			||
-			this.properties.description == ""
-		) {
-			throw "Invalid feed item";
+				this.extra[element.name()] = element;
+
 		}
 
 	}
-	
-	this.entries = [];
+
+	var Channel = function(xmlObject) {
+
+		this.title = "a";
+		this.description = "";
+		this.link = "";
+		this.updated = "";
+		this.items = [];
+
+		if(typeof xmlObject.title != "undefined")
+			this.title = xmlObject.title;
+
+		if(typeof xmlObject.description != "undefined")
+			this.description = xmlObject.description;
+		else if(typeof xmlObject.subtitle != "undefined")
+			this.description = xmlObject.subtitle;
+
+		// To do: deal with multiple links
+		if(typeof xmlObject.link != "undefined")
+			this.link = xmlObject.link.text();
+
+		if(typeof xmlObject.lastBuildDate != "undefined")
+			this.updated = xmlObject.lastBuildDate;
+		else if(typeof xmlObject.updated != "undefined")
+			this.updated = xmlObject.updated;
+
+		var items = xmlObject.elements("item");
+		for each(var item in items) {
+			this.items.push(new Item(item));
+		}
+
+		var entries = xmlObject.elements("entry");
+		for each(var entry in entries) {
+			this.items.push(new Item(entry));
+		}
+
+	}
+
+	this.channels = [];
 
 	this.load = function() {
-		if(typeof this.properties.url == "undefined")
-			throw "Feed URL not supplied";
-		var feed = getFeed(this.properties.url);
-		for each(var element in feed) {
-			if(element.name() == "entry") {
-				var entry = new Entry(element);
-				var add = true;
-				for(var e = 0; e < this.entries.length; e++) {
-					if(!objectsMatch(this.entries[e].properties, entry.properties))
-						continue;
-					add = false;
-					break;
-				}
-				if(add) {
-					this.entries.push(new Entry(element));
-					updated = true;
-				}
-			} else if(element.name() == "updated") {
-				this.properties[element.name()] = toTimestamp(element);
-			} else {
-				this.properties[element.name()] = element;
-			}
-		}
-		
-		if(
-			this.properties.id == ""
-			||
-			this.properties.title == ""
-			||
-			this.properties.updated == ""
-		) {
-			throw "Invalid feed";
+		var httpRequest = new HTTPRequest();
+		var response = httpRequest.Get(url);
+		if(typeof response == "undefined" || response == "")
+			throw "Empty response from server.";
+
+		var feed = new XML(response.replace(/^<\?xml.*\?>/g, ""));
+		toLocal(feed); // This is shitty
+		switch(feed.localName()) {
+			case "rss":
+				var channels = feed.elements("channel");
+				for each(var element in channels)
+					this.channels.push(new Channel(element));
+				break;
+			case "feed":
+				this.channels.push(new Channel(feed));
+				break;
+			default:
+				break;
 		}
 	}
-	
+
+	this.load();
+
 }
