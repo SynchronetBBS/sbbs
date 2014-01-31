@@ -65,7 +65,6 @@ function ReadPMsg()
 
 		if(msg.To==player.Record && !msg.Read) {
 			count++;
-log("Found message #"+count);
 			if(msg.From==-98)
 				msgstr += "A deleted player destroyed "+msg.Destroyed+" fighters.\r\n";
 			else if(msg.From==-1) {
@@ -82,7 +81,6 @@ log("Found message #"+count);
 	}
 	db.write(Settings.DB,'updates',updates);
 	db.unlock(Settings.DB,'updates');
-log('count='+count+', msgstr='+msgstr);
 	if(count==0)
 		console.writeln("Nothing");
 	else
