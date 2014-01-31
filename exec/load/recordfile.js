@@ -32,7 +32,17 @@ function GetRecordLength(RecordDef)
 	return(len);
 }
 
-function RecordFileRecord_ReInit()
+function RecordFile(filename, definition)
+{
+	this.file=new File(filename);
+	this.fields=definition;
+	this.RecordLength=GetRecordLength(this.fields);
+	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength))
+		return(null);
+	this.__defineGetter__("length", function() {return parseInt(this.file.length/this.RecordLength);});
+}
+
+RecordFile.prototype.ReInit = function()
 {
 	var i;
 
@@ -40,7 +50,7 @@ function RecordFileRecord_ReInit()
 		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource());
 }
 
-function RecordFileRecord_Put()
+RecordFile.prototype.Put = function()
 {
 	var i;
 
@@ -49,7 +59,7 @@ function RecordFileRecord_Put()
 		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type, this.parent.fields[i].def);
 }
 
-function RecordFileRecord_ReLoad(num)
+RecordFile.prototype.ReLoad = function(num)
 {
 	var i;
 
@@ -58,7 +68,7 @@ function RecordFileRecord_ReLoad(num)
 		this[this.parent.fields[i].prop]=this.parent.ReadField(this.parent.fields[i].type);
 }
 
-function RecordFile_Get(num)
+RecordFile.prototype.Get = function(num)
 {
 	var rec=0;
 	var i;
@@ -85,7 +95,7 @@ function RecordFile_Get(num)
 	return(ret);
 }
 
-function RecordFile_New()
+RecordFile.prototype.New = function()
 {
 	var i;
 	var ret=new Object();
@@ -102,7 +112,7 @@ function RecordFile_New()
 	return(ret);
 }
 
-function RecordFile_ReadField(fieldtype)
+RecordFile.prototype.ReadField = function(fieldtype)
 {
 	var i;
 	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
@@ -145,7 +155,7 @@ function RecordFile_ReadField(fieldtype)
 	}
 }
 
-function RecordFile_WriteField(val, fieldtype, def)
+RecordFile.prototype.WriteField = function(val, fieldtype, def)
 {
 	var i;
 	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
@@ -208,24 +218,5 @@ function RecordFile_WriteField(val, fieldtype, def)
 				break;
 		}
 	}
-}
-
-function RecordFile(filename, definition)
-{
-	this.file=new File(filename);
-	this.fields=definition;
-	this.RecordLength=GetRecordLength(this.fields);
-	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength))
-		return(null);
-	this.__defineGetter__("length", function() {return parseInt(this.file.length/this.RecordLength);});
-
-	/* Read a record by index */
-	this.Get=RecordFile_Get;
-	/* Create a new record */
-	this.New=RecordFile_New;
-	/* Read a single field from the current position */
-	this.ReadField=RecordFile_ReadField;
-	/* Write a single field from the current position */
-	this.WriteField=RecordFile_WriteField;
 }
 
