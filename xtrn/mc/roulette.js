@@ -355,7 +355,7 @@ function roulette_bets()
 			switch((ch=console.getkeys("BS", 5000))) {
 				default:
 					money=parseInt(ch);
-					if(money < 10 || money > 500 || isNaN(money))
+					if(money < 10 || money > 5000 || isNaN(money))
 						console.print('Illegal amount'+'\r\n');
 					if(money % 10) {
 						console.crlf();
