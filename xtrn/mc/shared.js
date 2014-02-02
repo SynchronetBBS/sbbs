@@ -114,7 +114,7 @@ var PlayerProperties = [
 		,def:0
 	}
 	,{
-		 prop:"Bruno"
+		 prop:"bruno"
 		,name:"Bruno"
 		,type:"Integer"
 		,def:0
