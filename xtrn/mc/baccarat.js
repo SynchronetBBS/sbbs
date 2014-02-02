@@ -48,13 +48,13 @@ function baccarat_bet()
 				return(false);
 			default:
 				this.betamount=parseInt(bac_bet);
-				if(this.betamount > stranger.strangers_money) {
+				if(isNaN(this.betamount) || this.betamount > stranger.strangers_money) {
 					console.print("You can't bet that much.\r\n");
 					this.betamount=0;
 				}
 				break;
 		}
-	} while(this.betamount==0);
+	} while(isNaN(this.betamount) || this.betamount==0);
 	temp_money=player.players_money-this.betamount;
 	if(temp_money < 0)
 		temp_money=sell_to_bruno(temp_money);

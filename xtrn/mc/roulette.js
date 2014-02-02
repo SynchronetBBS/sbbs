@@ -373,7 +373,7 @@ function roulette_bets()
 					player_stats();
 					break;
 			}
-		} while(money < 10 || money > 5000 || money % 10);
+		} while(isNaN(money) || money < 10 || money > 5000 || money % 10);
 		this.betamount.push(money);
 		temp_money -= money;
 		if(temp_money < 0)

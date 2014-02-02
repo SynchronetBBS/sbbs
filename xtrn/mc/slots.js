@@ -149,7 +149,7 @@ function slots_bet()
 			console.print('Please redo your bet.');
 			console.crlf();
 		}
-	} while(this.betamount < 5 || this.betamount > 5000 || this.betamount % 10);
+	} while(isNaN(this.betamount) || this.betamount < 5 || this.betamount > 5000 || this.betamount % 10);
 	temp_money=player.players_money-this.betamount
 	if(temp_money < 0)
 		temp_money=sell_to_bruno(temp_money);
