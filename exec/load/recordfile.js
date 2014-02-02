@@ -42,24 +42,13 @@ function RecordFile(filename, definition)
 	this.__defineGetter__("length", function() {return parseInt(this.file.length/this.RecordLength);});
 }
 
-RecordFile.prototype.ReInit = function()
+function RecordFileRecord(parent, num)
 {
-	var i;
-
-	for(i=0; i<this.parent.fields.length; i++)
-		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource());
+	this.parent=parent;
+	this.Record=num;
 }
 
-RecordFile.prototype.Put = function()
-{
-	var i;
-
-	this.parent.file.position=this.Record * this.parent.RecordLength;
-	for(i=0; i<this.parent.fields.length; i++)
-		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type, this.parent.fields[i].def);
-}
-
-RecordFile.prototype.ReLoad = function(num)
+RecordFileRecord.prototype.ReLoad = function(num)
 {
 	var i;
 
@@ -68,11 +57,27 @@ RecordFile.prototype.ReLoad = function(num)
 		this[this.parent.fields[i].prop]=this.parent.ReadField(this.parent.fields[i].type);
 }
 
+RecordFileRecord.prototype.Put = function()
+{
+	var i;
+
+	this.parent.file.position=this.Record * this.parent.RecordLength;
+	for(i=0; i<this.parent.fields.length; i++)
+		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type, this.parent.fields[i].def);
+}
+
+RecordFileRecord.prototype.ReInit = function()
+{
+	var i;
+
+	for(i=0; i<this.parent.fields.length; i++)
+		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource());
+}
+
 RecordFile.prototype.Get = function(num)
 {
 	var rec=0;
 	var i;
-	var ret=new Object();
 
 	if(num==undefined || num < 0 || parseInt(num)!=num)
 		return(null);
@@ -81,12 +86,7 @@ RecordFile.prototype.Get = function(num)
 	if(num>=this.length)
 		return(null);
 
-	ret.parent=this;
-	ret.Put=RecordFileRecord_Put;
-	ret.ReLoad=RecordFileRecord_ReLoad;
-	ret.ReInit=RecordFileRecord_ReInit;
-
-	ret.Record=num;
+	var ret = new RecordFileRecord(this, num);
 
 	this.file.position=ret.Record * this.RecordLength;
 	for(i=0; i<this.fields.length; i++)
@@ -98,16 +98,11 @@ RecordFile.prototype.Get = function(num)
 RecordFile.prototype.New = function()
 {
 	var i;
-	var ret=new Object();
 
 	for(i=0; i<this.fields.length; i++)
 		ret[this.fields[i].prop]=eval(this.fields[i].def.toSource());
 
-	ret.parent=this;
-	ret.Put=RecordFileRecord_Put;
-	ret.ReLoad=RecordFileRecord_ReLoad;
-	ret.ReInit=RecordFileRecord_ReInit;
-	ret.Record=this.length;
+	var ret=new RecordFileRecord(this, this.length);
 	ret.Put();
 	return(ret);
 }
