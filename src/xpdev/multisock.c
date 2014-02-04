@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <gen_defs.h>
-#include <sockwrap.h>
-#include <dirwrap.h>
-#include <multisock.h>
+#include "gen_defs.h"
+#include "sockwrap.h"
+#include "dirwrap.h"
+#include "multisock.h"
 #include <stdarg.h>
 
 struct xpms_set *xpms_create(unsigned int retries, unsigned int wait_secs,

@@ -2,7 +2,7 @@
 #define MULTISOCK_H
 
 #include <limits.h>
-#include <str_list.h>
+#include "str_list.h"
 
 struct xpms_sockdef
 {
