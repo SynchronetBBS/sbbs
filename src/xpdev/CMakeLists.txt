@@ -155,3 +155,38 @@ CHECK_INCLUDE_FILES(alsa/asoundlib.h USE_ALSA_SOUND)
 if(HAS_INTTYPES_H)
     target_compile_definitions(xpdev PRIVATE USE_ALSA_SOUND)
 endif()
+
+set(INSTALL_HEADERS
+	conwrap.h
+	dat_file.h
+	datewrap.h
+	dirwrap.h
+	eventwrap.h
+	filewrap.h
+	gen_defs.h
+	genwrap.h
+	ini_file.h
+	link_list.h
+	msg_queue.h
+	multisock.h
+	netwrap.h
+	semfile.h
+	semwrap.h
+	sockwrap.h
+	str_list.h
+	strwrap.h
+	threadwrap.h
+	wrapdll.h
+	xp_dl.h
+	xp_syslog.h
+	xpbeep.h
+	xpdatetime.h
+	xpendian.h
+	xpevent.h
+	xpmap.h
+	xpprintf.h
+	xpsem.h
+)
+
+install(TARGETS xpdev DESTINATION bin)
+install(FILES ${INSTALL_HEADERS} DESTINATION include/xpdev)
