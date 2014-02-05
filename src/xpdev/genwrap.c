@@ -327,7 +327,7 @@ long DLLCALL xp_random(int n)
 	if(n<2)
 		return(0);
 
-	limit = ((1U<<((sizeof(long)*CHAR_BIT)-1)) / n) * n - 1;
+	limit = ((1UL<<((sizeof(long)*CHAR_BIT)-1)) / n) * n - 1;
 
 	while(1) {
 		curr=random();
