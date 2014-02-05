@@ -1077,16 +1077,16 @@ char *xp_asprintf_next(char *format, int type, ...)
 					switch(type) {
 						case XP_PRINTF_TYPE_CHAR:
 						case XP_PRINTF_TYPE_INT:
-							pntr=(void *)i;
+							pntr=(void *)((intptr_t)i);
 							break;
 						case XP_PRINTF_TYPE_UINT:
-							pntr=(void *)ui;
+							pntr=(void *)((intptr_t)ui);
 							break;
 						case XP_PRINTF_TYPE_LONG:
-							pntr=(void *)l;
+							pntr=(void *)((intptr_t)l);
 							break;
 						case XP_PRINTF_TYPE_ULONG:
-							pntr=(void *)ul;
+							pntr=(void *)((intptr_t)ul);
 							break;
 #if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
@@ -1097,18 +1097,18 @@ char *xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							pntr=(void *)cp;
+							pntr=(void *)((intptr_t)cp);
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
-							pntr=(void *)(long int)d;
+							pntr=(void *)((intptr_t)d);
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
-							pntr=(void *)(long int)ld;
+							pntr=(void *)((intptr_t)ld);
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							break;
 						case XP_PRINTF_TYPE_SIZET:
-							pntr=(void *)s;
+							pntr=(void *)((intptr_t)s);
 							break;
 					}
 					break;
