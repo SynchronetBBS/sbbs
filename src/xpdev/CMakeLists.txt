@@ -1,13 +1,17 @@
+project (XPDev C)
+
 cmake_minimum_required(VERSION 2.8)
 
 INCLUDE (CheckIncludeFiles)
-INCLUDE (CheckFunctionExists) 
+INCLUDE (CheckFunctionExists)
+INCLUDE (FindThreads)
+INCLUDE (FindSDL)
+INCLUDE (FindX11)
+INCLUDE (FindPkgConfig)
 
-project (XPDev C)
+option(SDL_AUDIO				"Set to OFF to disable SDL for audio output" ON)
 
-option(SDL_AUDIO	"Set to OFF to disable SDL for audio output" ON)
-
-add_library(xpdev SHARED
+set(SOURCE
     conwrap.c
     dat_file.c
     datewrap.c
@@ -29,10 +33,29 @@ add_library(xpdev SHARED
     xpbeep.c
     xpdatetime.c
     xpmap.c
+    xpsem.c
     xpprintf.c
 )
 
-CHECK_INCLUDE_FILES(inttypes.h HAS_INTTYPES_H) 
+if(NOT WIN32)
+	list(APPEND SOURCE xpevent.c)
+endif()
+
+if(SDL_AUDIO)
+	if(SDL_FOUND)
+		list(APPEND SOURCE sdlfuncs.c)
+		if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+			list(APPEND SOURCE SDLMain.m)
+		endif()
+		if(WIN32)
+			list(APPEND SOURCE SDL_win32_main.c)
+		endif()
+	endif()
+endif()
+
+add_library(xpdev SHARED ${SOURCE})
+
+CHECK_INCLUDE_FILES(inttypes.h HAS_INTTYPES_H)
 if(HAS_INTTYPES_H)
     target_compile_definitions(xpdev PUBLIC HAS_INTTYPES_H)
 endif()
@@ -41,24 +64,24 @@ CHECK_INCLUDE_FILES(sys/soundcard.h HAS_SYS_SOUNDCARD_H)
 CHECK_INCLUDE_FILES(soundcard.h HAS_SOUNDCARD_H) 
 CHECK_INCLUDE_FILES(linux/inttypes.h HAS_LINUX_SOUNDCARD_H) 
 if(HAS_SYS_SOUNDCARD_H)
-    target_compile_definitions(xpdev PUBLIC SOUNDCARD_H_IN=1)
+    target_compile_definitions(xpdev PRIVATE SOUNDCARD_H_IN=1)
 elseif(HAS_SOUNDCARD_H)
-    target_compile_definitions(xpdev PUBLIC SOUNDCARD_H_IN=2)
+    target_compile_definitions(xpdev PRIVATE SOUNDCARD_H_IN=2)
 elseif(HAS_LINUX_SOUNDCARD_H)
-    target_compile_definitions(xpdev PUBLIC SOUNDCARD_H_IN=3)
+    target_compile_definitions(xpdev PRIVATE SOUNDCARD_H_IN=3)
 endif()
 
 CHECK_INCLUDE_FILES(dev/speaker/speaker.h HAS_DEV_SPEAKER_SPEAKER_H)
 if(HAS_DEV_SPEAKER_SPEAKER_H)
-	target_compile_definitions(xpdev PUBLIC HAS_DEV_SPEAKER_SPEAKER_H)
+	target_compile_definitions(xpdev PRIVATE HAS_DEV_SPEAKER_SPEAKER_H)
 endif()
 CHECK_INCLUDE_FILES(dev/machine/speaker.h HAS_DEV_MACHINE_SPEAKER_H)
 if(HAS_DEV_MACHINE_SPEAKER_H)
-	target_compile_definitions(xpdev PUBLIC HAS_DEV_MACHINE_SPEAKER_H)
+	target_compile_definitions(xpdev PRIVATE HAS_DEV_MACHINE_SPEAKER_H)
 endif()
 CHECK_INCLUDE_FILES(dev/speaker/spkr.h HAS_DEV_MACHINE_SPKR_H)
 if(HAS_DEV_MACHINE_SPKR_H)
-	target_compile_definitions(xpdev PUBLIC HAS_DEV_MACHINE_SPKR_H)
+	target_compile_definitions(xpdev PRIVATE HAS_DEV_MACHINE_SPKR_H)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
@@ -81,18 +104,54 @@ elseif(WIN32)
 endif()
 
 if(EXISTS /dev/urandom)
-	target_compile_definitions(xpdev PUBLIC HAS_DEV_URANDOM URANDOM_DEV="/dev/urandom")
+	target_compile_definitions(xpdev PRIVATE HAS_DEV_URANDOM URANDOM_DEV="/dev/urandom")
 endif()
 if(EXISTS /dev/random)
-	target_compile_definitions(xpdev PUBLIC HAS_DEV_RANDOM RANDOM_DEV="/dev/random")
+	target_compile_definitions(xpdev PRIVATE HAS_DEV_RANDOM RANDOM_DEV="/dev/random")
 endif()
 
 CHECK_FUNCTION_EXISTS(random HAS_RANDOM_FUNC) 
 if(HAS_RANDOM_FUNC)
-	target_compile_definitions(xpdev PUBLIC HAS_RANDOM_FUNC)
+	target_compile_definitions(xpdev PRIVATE HAS_RANDOM_FUNC)
 endif()
 
 CHECK_FUNCTION_EXISTS(srandomdev HAS_SRANDOMDEV_FUNC)
 if(HAS_SRANDOMDEV_FUNC)
-	target_compile_definitions(xpdev PUBLIC HAS_SRANDOMDEV_FUNC)
+	target_compile_definitions(xpdev PRIVATE HAS_SRANDOMDEV_FUNC)
+endif()
+
+if(SDL_AUDIO)
+	if(SDL_FOUND)
+		target_include_directories(xpdev PRIVATE ${SDL_INCLUDE_DIR})
+		target_compile_definitions(xpdev PRIVATE ${WITH_SDL_AUDIO})
+	endif()
+endif()
+
+if(X11_FOUND)
+	target_include_directories(xpdev PRIVATE X11_INCLUDE_DIR)
+endif()
+
+pkg_check_modules(PORTAUDIO2 portaudio-2.0)
+if(PORTAUDIO2_FOUND)
+	set(PORTAUDIO_FOUND TRUE)
+	set(PORTAUDIO_LIBS PORTAUDIO2_LIBS)
+	set(PORTAUDIO_CFLAGS PORTAUDIO2_CFLAGS)
+else()
+	find_library(PORTAUDIO_LIBS portaudio)
+	if(NOT PORTAUDIO_LIBS STREQUAL PORTAUDIO_LIBS-NOTFOUND)
+		find_path(PORTAUDIO_INCLUDEDIR portaudio.h)
+		if(NOT PORTAUDIO_INCLUDEDIR STREQUAL PORTAUDIO_INCLUDEIDR-NOTFOUND)
+			set(PORTAUDIO_FOUND TRUE)
+		endif()
+	endif()
+endif()
+
+if(PORTAUDIO_FOUND)
+	target_include_directories(xpdev PRIVATE ${PORTAUDIO_INCLUDEDIR})
+	target_link_libraries(xpdev ${PORTAUDIO_LIBS})
+endif()
+
+CHECK_INCLUDE_FILES(alsa/asoundlib.h USE_ALSA_SOUND)
+if(HAS_INTTYPES_H)
+    target_compile_definitions(xpdev PRIVATE USE_ALSA_SOUND)
 endif()
