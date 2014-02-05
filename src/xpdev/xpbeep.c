@@ -505,7 +505,7 @@ BOOL xptone_open(void)
 				alsa_device_open_failed=TRUE;
 		}
 		if(alsa_api!=NULL) {
-			int rate=S_RATE;
+			unsigned int rate=S_RATE;
 			if((alsa_api->snd_pcm_open(&playback_handle, "default", SND_PCM_STREAM_PLAYBACK, 0)<0)
 					|| (alsa_api->snd_pcm_hw_params_malloc(&hw_params)<0)
 					|| (alsa_api->snd_pcm_hw_params_any(playback_handle, hw_params)<0)
