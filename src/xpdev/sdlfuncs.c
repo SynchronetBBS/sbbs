@@ -20,7 +20,7 @@ struct sdlfuncs sdl;
 #ifdef STATIC_SDL
 #define STATIC_LINK
 #endif
-#include <xp_dl.h>
+#include "xp_dl.h"
 
 static int sdl_funcs_loaded=0;
 static int sdl_initialized=0;
