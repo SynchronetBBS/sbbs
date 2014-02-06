@@ -451,7 +451,6 @@ int conn_socket_connect(struct bbslist *bbs)
 	while(kbhit())
 		getch();
 	for(cur=res; cur && failcode==FAILURE_WHAT_FAILURE; cur=cur->ai_next) {
-fprintf(stderr, "Looping...\n");
 		if(sock==INVALID_SOCKET) {
 			sock=socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
 			if(sock==INVALID_SOCKET) {
