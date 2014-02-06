@@ -49,7 +49,6 @@
 #include "ciolib.h"
 #include "curs_cio.h"
 #include "keys.h"
-#include "mouse.h"
 #include "vidmodes.h"
 
 static unsigned char curs_nextgetch=0;

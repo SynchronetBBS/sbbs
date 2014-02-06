@@ -39,7 +39,7 @@
 #include <threadwrap.h>
 #include <link_list.h>
 
-#include "mouse.h"
+#include "ciolib.h"
 
 #define MSEC_CLOCK()	(msclock()*MSCLOCKS_PER_SEC/1000)
 

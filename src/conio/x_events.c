@@ -23,7 +23,7 @@
 #include "allfonts.h"
 
 #include "keys.h"
-#include "mouse.h"
+#include "ciolib.h"
 #include "bitmap_con.h"
 #include "link_list.h"
 #include "x_events.h"
