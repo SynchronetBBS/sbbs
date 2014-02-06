@@ -49,7 +49,6 @@
 #endif
 
 #include "ciolib.h"
-#include "keys.h"
 #include "x_cio.h"
 #include "x_events.h"
 

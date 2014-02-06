@@ -46,7 +46,6 @@
 #endif
 
 #include "ciolib.h"
-#include "keys.h"
 #include "vidmodes.h"
 #include "win32cio.h"
 

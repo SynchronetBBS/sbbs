@@ -54,7 +54,6 @@
 #endif
 
 #include "ciolib.h"
-#include "keys.h"
 
 #include "cterm.h"
 #include "allfonts.h"

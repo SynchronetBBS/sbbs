@@ -22,7 +22,6 @@
 #include "vidmodes.h"
 #include "allfonts.h"
 
-#include "keys.h"
 #include "ciolib.h"
 #include "bitmap_con.h"
 #include "link_list.h"
