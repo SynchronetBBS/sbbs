@@ -9,8 +9,6 @@ INCLUDE (FindSDL)
 INCLUDE (FindX11)
 INCLUDE (FindPkgConfig)
 
-option(SDL_AUDIO				"Set to OFF to disable SDL for audio output" ON)
-
 set(SOURCE
     conwrap.c
     dat_file.c
@@ -41,15 +39,13 @@ if(NOT WIN32)
     list(APPEND SOURCE xpsem.c)
 endif()
 
-if(SDL_AUDIO)
-	if(SDL_FOUND)
-		list(APPEND SOURCE sdlfuncs.c)
-		if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-			list(APPEND SOURCE SDLMain.m)
-		endif()
-		if(WIN32)
-			list(APPEND SOURCE SDL_win32_main.c)
-		endif()
+if(SDL_FOUND)
+	list(APPEND SOURCE sdlfuncs.c)
+	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+		list(APPEND SOURCE SDLMain.m)
+	endif()
+	if(WIN32)
+		list(APPEND SOURCE SDL_win32_main.c)
 	endif()
 endif()
 
@@ -126,11 +122,9 @@ if(HAS_SRANDOMDEV_FUNC)
 	target_compile_definitions(xpdev PRIVATE HAS_SRANDOMDEV_FUNC)
 endif()
 
-if(SDL_AUDIO)
-	if(SDL_FOUND)
-		target_include_directories(xpdev PRIVATE ${SDL_INCLUDE_DIR})
-		target_compile_definitions(xpdev PRIVATE ${WITH_SDL_AUDIO})
-	endif()
+if(SDL_FOUND)
+	target_include_directories(xpdev PRIVATE ${SDL_INCLUDE_DIR})
+	target_compile_definitions(xpdev PUBLIC ${WITH_SDL_AUDIO})
 endif()
 
 if(X11_FOUND)
@@ -192,5 +186,9 @@ if(NOT WIN32)
     list(APPEND INSTALL_HEADERS xpsem.h)
 endif()
 
-install(TARGETS xpdev DESTINATION bin)
+export(PACKAGE XPDev)
+export(TARGETS xpdev FILE xpdev.cmake)
+
+install(TARGETS xpdev DESTINATION lib EXPORT XPDev)
 install(FILES ${INSTALL_HEADERS} DESTINATION include/xpdev)
+install(EXPORT XPDev DESTINATION lib/cmake/xpdev)
