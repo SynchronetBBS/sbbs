@@ -57,6 +57,7 @@ CHECK_INCLUDE_FILES(inttypes.h HAS_INTTYPES_H)
 if(HAS_INTTYPES_H)
     target_compile_definitions(xpdev PUBLIC HAS_INTTYPES_H)
 endif()
+target_compile_definitions(xpdev PUBLIC LINK_LIST_THREADSAFE)
 
 CHECK_INCLUDE_FILES(sys/soundcard.h HAS_SYS_SOUNDCARD_H) 
 CHECK_INCLUDE_FILES(soundcard.h HAS_SOUNDCARD_H) 
