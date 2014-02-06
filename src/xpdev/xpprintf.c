@@ -1080,13 +1080,13 @@ char *xp_asprintf_next(char *format, int type, ...)
 							pntr=(void *)((intptr_t)i);
 							break;
 						case XP_PRINTF_TYPE_UINT:
-							pntr=(void *)((intptr_t)ui);
+							pntr=(void *)((uintptr_t)ui);
 							break;
 						case XP_PRINTF_TYPE_LONG:
 							pntr=(void *)((intptr_t)l);
 							break;
 						case XP_PRINTF_TYPE_ULONG:
-							pntr=(void *)((intptr_t)ul);
+							pntr=(void *)((uintptr_t)ul);
 							break;
 #if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
@@ -1097,7 +1097,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							pntr=(void *)((intptr_t)cp);
+							pntr=(void *)(cp);
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							pntr=(void *)((intptr_t)d);
