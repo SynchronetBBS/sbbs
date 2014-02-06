@@ -1,8 +1,8 @@
-# smblib/Makefile
+# uifc/Makefile
 
 #########################################################################
-# Makefile for Synchronet Message Base Library (SMBLIB)					#
-# For use with Borland C++ Builder 5+ or Borland C++ 5.5 for Win32      #
+# Makefile for Synchronet User Interface Library (UIFC)					#
+# For use with GNU make for *nix								        #
 # @format.tab-size 4													#
 #																		#
 # usage: make															#
