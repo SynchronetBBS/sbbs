@@ -16,6 +16,7 @@ include(${XPDev_CONFIG})
 add_dependencies(uifc xpdev)
 target_include_directories(uifc PRIVATE "${XPDev_DIR}/../../../include/xpdev")
 target_compile_definitions(uifc PRIVATE $<TARGET_PROPERTY:xpdev,INTERFACE_COMPILE_DEFINITIONS>)
+target_include_directories(uifc PRIVATE $<TARGET_PROPERTY:xpdev,INTERFACE_INCLUDE_DIRECTORIES>)
 target_link_libraries(uifc xpdev)
 
 find_package(CIOLib REQUIRED)
@@ -23,6 +24,7 @@ include(${CIOLib_CONFIG})
 add_dependencies(uifc ciolib)
 target_include_directories(uifc PRIVATE "${CIOLib_DIR}/../../../include")
 target_compile_definitions(uifc PRIVATE $<TARGET_PROPERTY:ciolib,INTERFACE_COMPILE_DEFINITIONS>)
+target_include_directories(uifc PRIVATE $<TARGET_PROPERTY:ciolib,INTERFACE_INCLUDE_DIRECTORIES>)
 target_link_libraries(uifc ciolib)
 
 set(INSTALL_HEADERS
