@@ -5,8 +5,6 @@
 #include <genwrap.h>
 #include <ciolib.h>
 #include <cterm.h>
-#include <mouse.h>
-#include <keys.h>
 
 #include "threadwrap.h"
 #include "filewrap.h"

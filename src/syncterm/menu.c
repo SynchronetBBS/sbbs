@@ -5,7 +5,6 @@
 #include <genwrap.h>
 #include <uifc.h>
 #include <ciolib.h>
-#include <keys.h>
 
 #include "cterm.h"
 #include "term.h"

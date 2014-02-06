@@ -7,7 +7,6 @@
 #include <ini_file.h>
 #include <uifc.h>
 #include "filepick.h"
-#include "allfonts.h"
 
 #include "syncterm.h"
 #include "fonts.h"
@@ -15,8 +14,6 @@
 #include "uifcinit.h"
 #include "conn.h"
 #include "ciolib.h"
-#include "keys.h"
-#include "mouse.h"
 #include "cterm.h"
 #include "window.h"
 #include "term.h"
