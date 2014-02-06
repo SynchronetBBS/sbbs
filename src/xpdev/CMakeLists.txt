@@ -33,12 +33,12 @@ set(SOURCE
     xpbeep.c
     xpdatetime.c
     xpmap.c
-    xpsem.c
     xpprintf.c
 )
 
 if(NOT WIN32)
 	list(APPEND SOURCE xpevent.c)
+    list(APPEND SOURCE xpsem.c)
 endif()
 
 if(SDL_AUDIO)
@@ -84,7 +84,10 @@ if(HAS_DEV_MACHINE_SPKR_H)
 	target_compile_definitions(xpdev PRIVATE HAS_DEV_MACHINE_SPKR_H)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+target_compile_definitions(xpdev PRIVATE WRAPPER_EXPORTS)
+if(WIN32)
+	target_link_libraries(xpdev Iphlpapi Ws2_32 Winmm)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 	target_link_libraries(xpdev m)
 	target_link_libraries(xpdev network)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
@@ -138,7 +141,7 @@ if(PORTAUDIO2_FOUND)
 	set(PORTAUDIO_CFLAGS PORTAUDIO2_CFLAGS)
 else()
 	find_path(PORTAUDIO_INCLUDEDIR portaudio.h)
-	if(NOT PORTAUDIO_INCLUDEDIR STREQUAL PORTAUDIO_INCLUDEIDR-NOTFOUND)
+	if(PORTAUDIO_INCLUDEDIR)
 		set(PORTAUDIO_FOUND TRUE)
 	endif()
 endif()
@@ -178,11 +181,13 @@ set(INSTALL_HEADERS
 	xpbeep.h
 	xpdatetime.h
 	xpendian.h
-	xpevent.h
 	xpmap.h
 	xpprintf.h
-	xpsem.h
 )
+if(NOT WIN32)
+	list(APPEND INSTALL_HEADERS xpevent.h)
+    list(APPEND INSTALL_HEADERS xpsem.h)
+endif()
 
 install(TARGETS xpdev DESTINATION bin)
 install(FILES ${INSTALL_HEADERS} DESTINATION include/xpdev)
