@@ -13,7 +13,6 @@
 #include <ciolib.h>
 #include <setjmp.h>
 #include <mouse.h>
-#include <keys.h>
 //#include <dos.h>
 
 #define EGA 3 //EGA color adapters
