@@ -157,8 +157,6 @@ typedef long    int32_t;
 typedef uchar   uint8_t;
 typedef ushort  uint16_t;
 typedef ulong   uint32_t;
-typedef long	intptr_t;
-typedef ulong	uintptr_t;
 
 #endif
 
@@ -176,6 +174,11 @@ typedef uint64_t	uintmax_t;
 #define _UINTMAX_T_DECLARED
 typedef int64_t		intmax_t;
 #define _INTMAX_T_DECLARED
+
+#if !defined(HAS_STDINT_H)
+typedef long	intmax_t;
+typedef ulong	uintmax_t;
+#endif
 
 /* printf integer formatters: */
 
