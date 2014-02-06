@@ -187,7 +187,7 @@ if(NOT WIN32)
 endif()
 
 export(PACKAGE XPDev)
-export(TARGETS xpdev FILE xpdev.cmake)
+export(TARGETS xpdev FILE XPDevConfig.cmake)
 
 install(TARGETS xpdev DESTINATION lib EXPORT XPDevConfig)
 install(FILES ${INSTALL_HEADERS} DESTINATION include/xpdev)
