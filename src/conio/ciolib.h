@@ -219,6 +219,16 @@ struct text_info {
 
 extern struct text_info cio_textinfo;
 
+struct mouse_event {
+	int event;
+	int bstate;
+	int kbsm;
+	int startx;
+	int starty;
+	int endx;
+	int endy;
+};
+
 typedef struct {
 	int		mode;
 	int		mouse;
@@ -409,16 +419,6 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#endif
 	#define	main	CIOLIB_main
 #endif
-
-struct mouse_event {
-	int event;
-	int bstate;
-	int kbsm;
-	int startx;
-	int starty;
-	int endx;
-	int endy;
-};
 
 #define CIOLIB_BUTTON_1	1
 #define CIOLIB_BUTTON_2	2
