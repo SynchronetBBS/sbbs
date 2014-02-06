@@ -56,7 +56,6 @@
 #include "ciolib.h"
 
 #include "cterm.h"
-#include "allfonts.h"
 
 #define	BUFSIZE	2048
 
