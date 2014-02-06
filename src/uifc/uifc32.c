@@ -50,7 +50,6 @@
 #endif
 
 #include "ciolib.h"
-#include "keys.h"
 #include "uifc.h"
 #define MAX_GETSTR	5120
 
