@@ -55,6 +55,8 @@ endif()
 
 add_library(xpdev SHARED ${SOURCE})
 
+target_link_libraries(xpdev ${CMAKE_DL_LIBS})
+
 CHECK_INCLUDE_FILES(inttypes.h HAS_INTTYPES_H)
 if(HAS_INTTYPES_H)
     target_compile_definitions(xpdev PUBLIC HAS_INTTYPES_H)
