@@ -33,6 +33,11 @@ static SDL_sem *sdl_main_sem;
 SDL_sem *sdl_exit_sem;
 
 int CIOLIB_main(int argc, char **argv, char **enviro);
+int XPDEV_main(int argc, char **argv, char **enviro)
+{
+	return CIOLIB_main(argc, argv, enviro);
+}
+
 
 int load_sdl_funcs(struct sdlfuncs *sdlf)
 {
