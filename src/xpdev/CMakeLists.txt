@@ -124,8 +124,8 @@ if(HAS_SRANDOMDEV_FUNC)
 endif()
 
 if(SDL_FOUND)
-	target_include_directories(xpdev PRIVATE ${SDL_INCLUDE_DIR})
-	target_compile_definitions(xpdev PUBLIC ${WITH_SDL_AUDIO})
+	target_include_directories(xpdev PUBLIC ${SDL_INCLUDE_DIR})
+	target_compile_definitions(xpdev PUBLIC WITH_SDL_AUDIO)
 endif()
 
 if(X11_FOUND)
