@@ -2,7 +2,6 @@
 
 #include <ciolib.h>
 #include <gen_defs.h>
-#include <keys.h>
 
 #include "syncdraw.h"
 #include "key.h"

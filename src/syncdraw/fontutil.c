@@ -1,7 +1,6 @@
 /* same license as Mystic Draw */
 #include <gen_defs.h>
 #include <ciolib.h>
-#include <keys.h>
 #include <genwrap.h>
 #include <stdio.h>
 #include <stdlib.h>

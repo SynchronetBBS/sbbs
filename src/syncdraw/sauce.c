@@ -3,7 +3,6 @@
 
 #include <ciolib.h>
 #include <gen_defs.h>
-#include <keys.h>
 
 #include "xpendian.h"
 

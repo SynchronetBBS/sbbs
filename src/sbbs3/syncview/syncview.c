@@ -4,7 +4,6 @@
 #include "dirwrap.h"
 
 #include "ciolib.h"
-#include "keys.h"
 #include "cterm.h"
 
 #define SCROLL_LINES	100000

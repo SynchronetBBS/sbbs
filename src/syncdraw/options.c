@@ -5,7 +5,6 @@
 
 #include <gen_defs.h>
 #include <ciolib.h>
-#include <keys.h>
 
 #include "config.h"
 #include "effekt.h"

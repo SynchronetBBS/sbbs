@@ -21,7 +21,6 @@
 
 #include <stdio.h>
 #include <gen_defs.h>
-#include <keys.h>
 #include <genwrap.h>
 #include <ciolib.h>
 #include <ctype.h>

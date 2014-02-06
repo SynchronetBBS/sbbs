@@ -1,6 +1,5 @@
 #include <ciolib.h>
 #include <gen_defs.h>
-#include <keys.h>
 #include <string.h>
 
 #include "options.h"

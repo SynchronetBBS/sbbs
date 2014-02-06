@@ -46,7 +46,6 @@
 #include <unistd.h>
 
 #include "ciolib.h"
-#include "keys.h"
 #define __COLORS		/* Disable the colour macros in sbbsdefs.h ToDo */
 #include "sbbs.h"
 #include "genwrap.h"
