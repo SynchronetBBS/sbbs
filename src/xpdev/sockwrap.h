@@ -108,7 +108,7 @@ union xp_sockaddr {
 	struct sockaddr_storage	store;
 };
 
-#define xp_sockaddr_len(a) ((((struct sockaddr *)a)->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : ((struct sockaddr *)a)->sa_len)
+#define xp_sockaddr_len(a) ((((struct sockaddr *)a)->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in))
 
  
 
@@ -177,6 +177,7 @@ union xp_sockaddr {
 #define SHUT_RDWR		SD_BOTH
 
 #define s_addr			S_un.S_addr
+#define sa_family_t		ushort
 
 static  int wsa_error;
 #define ERROR_VALUE		((wsa_error=WSAGetLastError())>0 ? wsa_error-WSABASEERR : wsa_error)
@@ -227,6 +228,7 @@ int 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 				   ,uint retries, uint wait_secs, const char* prot
 				   ,int (*lprintf)(int level, const char *fmt, ...));
 int		nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
+union xp_sockaddr *inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size);
 const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
 uint16_t inet_addrport(union xp_sockaddr *addr);
 void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
