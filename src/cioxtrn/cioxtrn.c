@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "genwrap.h"
 #include "ciolib.h"
-#include "keys.h"
 
 HANDLE				console_output;
 HANDLE				console_input;
