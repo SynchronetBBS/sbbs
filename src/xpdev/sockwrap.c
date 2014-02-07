@@ -424,7 +424,7 @@ const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 
 		searched = TRUE;
 		if(hMod)
-			a2s=(INT (WSAAPI *)(LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFO, LPTSTR, LPDWORD))GetProcAddress(hMod, "WSAAddressToString");
+			a2s=(INT (WSAAPI *)(LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFO, LPTSTR, LPDWORD))GetProcAddress(hMod, "WSAAddressToStringA");
 	}
 
 	if(a2s) {
