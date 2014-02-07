@@ -36,7 +36,7 @@ void xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *
 						, xpms_set->socks[i].port);
 			closesocket(xpms_set->socks[i].sock);
 			if(sock_destroy)
-				sock_destroy(xpms_set->socks[xpms_set->sock_count].sock, cbdata);
+				sock_destroy(xpms_set->socks[i].sock, cbdata);
 		}
 		xpms_set->socks[i].sock = INVALID_SOCKET;
 		FREE_AND_NULL(xpms_set->socks[i].address);
