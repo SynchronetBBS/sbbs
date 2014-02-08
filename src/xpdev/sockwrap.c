@@ -416,29 +416,8 @@ union xp_sockaddr *inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t 
 const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 {
 #ifdef _WIN32
-	static INT (WSAAPI *a2s)(LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFO, LPTSTR, LPDWORD)=NULL;
-	static BOOL searched=FALSE;
-
-	if(!searched) {
-		HMODULE hMod = LoadLibrary("ws2_32.dll");
-
-		searched = TRUE;
-		if(hMod)
-			a2s=(INT (WSAAPI *)(LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFO, LPTSTR, LPDWORD))GetProcAddress(hMod, "WSAAddressToStringA");
-	}
-
-	if(a2s) {
-		DWORD	dsize=size;
-
-		if(a2s(&addr->addr, SOCK_MAXADDRLEN, NULL, dest, &dsize)==SOCKET_ERROR)
-			return NULL;
-		return dest;
-	}
-	if(addr->addr.sa_family != AF_INET)
-		strncpy(dest, "<Address Family Not Supported>", size);
-	else
-		strncpy(dest, inet_ntoa(addr->in.sin_addr), size);
-	dest[size-1]=0;
+	if(getnameinfo(addr, xp_sockaddr_len(addr), dest, size, NULL, 0, NI_NUMERICHOST))
+		strncpy(dest, "<Unable to convert address>", size);
 	return dest;
 #else
 	switch(addr->addr.sa_family) {
