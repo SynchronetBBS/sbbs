@@ -1896,6 +1896,8 @@ struct cterminal *cterm_init(int height, int width, int xpos, int ypos, int back
 	cterm->ciolib_clrscr=ciolib_clrscr;
 	cterm->ciolib_setvideoflags=ciolib_setvideoflags;
 	cterm->ciolib_getvideoflags=ciolib_getvideoflags;
+	cterm->ciolib_setscaling=ciolib_setscaling;
+	cterm->ciolib_getscaling=ciolib_getscaling;
 	cterm->ciolib_putch=ciolib_putch;
 	cterm->ciolib_puttext=ciolib_puttext;
 	cterm->ciolib_window=ciolib_window;

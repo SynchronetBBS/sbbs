@@ -145,6 +145,8 @@ struct cterminal {
 	void	(*ciolib_clrscr)		(struct cterminal *);
 	void	(*ciolib_setvideoflags)	(struct cterminal *,int flags);
 	int		(*ciolib_getvideoflags)	(struct cterminal *);
+	void	(*ciolib_setscaling)	(struct cterminal *,int new_value);
+	int		(*ciolib_getscaling)	(struct cterminal *);
 	int		(*ciolib_putch)			(struct cterminal *,int);
 	int		(*ciolib_puttext)		(struct cterminal *,int,int,int,int,void *);
 	void	(*ciolib_window)		(struct cterminal *,int,int,int,int);
@@ -163,6 +165,8 @@ struct cterminal {
 	void	CIOLIBCALL (*ciolib_clrscr)		(void);
 	void	CIOLIBCALL (*ciolib_setvideoflags)	(int flags);
 	int		CIOLIBCALL (*ciolib_getvideoflags)	(void);
+	void	CIOLIBCALL (*ciolib_setscaling)		(int new_value);
+	int		CIOLIBCALL (*ciolib_getscaling)		(void);
 	int		CIOLIBCALL (*ciolib_putch)			(int);
 	int		CIOLIBCALL (*ciolib_puttext)		(int,int,int,int,void *);
 	void	CIOLIBCALL (*ciolib_window)		(int,int,int,int);
