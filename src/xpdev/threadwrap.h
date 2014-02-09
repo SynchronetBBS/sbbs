@@ -115,11 +115,11 @@ pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive);
 
 #else
 
-int pthread_mutex_init(pthread_mutex_t*, void* attr);
-int pthread_mutex_lock(pthread_mutex_t*);
-int pthread_mutex_trylock(pthread_mutex_t*);
-int pthread_mutex_unlock(pthread_mutex_t*);
-int pthread_mutex_destroy(pthread_mutex_t*);
+DLLEXPORT int DLLCALL pthread_mutex_init(pthread_mutex_t*, void* attr);
+DLLEXPORT int DLLCALL pthread_mutex_lock(pthread_mutex_t*);
+DLLEXPORT int DLLCALL pthread_mutex_trylock(pthread_mutex_t*);
+DLLEXPORT int DLLCALL pthread_mutex_unlock(pthread_mutex_t*);
+DLLEXPORT int DLLCALL pthread_mutex_destroy(pthread_mutex_t*);
 
 #define SetThreadName(c)
 
@@ -162,19 +162,19 @@ typedef struct {
 } protected_uint64_t;
 
 /* Return 0 on success, non-zero on failure (see pthread_mutex_init): */
-int			protected_int32_init(protected_int32_t*,	int32_t value);
+DLLEXPORT int DLLCALL protected_int32_init(protected_int32_t*,	int32_t value);
 #define protected_uint32_init(i, val)	protected_int32_init((protected_int32_t*)i, val)
-int			protected_int64_init(protected_int64_t*,	int64_t value);
+DLLEXPORT int DLLCALL protected_int64_init(protected_int64_t*,	int64_t value);
 #define protected_uint64_init(i, val)	protected_int64_init((protected_int64_t*)i, val)
 
 /* Return new value: */
-int32_t		protected_int32_adjust(protected_int32_t*,	int32_t adjustment);
+DLLEXPORT int32_t DLLCALL protected_int32_adjust(protected_int32_t*,	int32_t adjustment);
 #define protected_int32_value(i)		protected_int32_adjust(&i,0)
-uint32_t	protected_uint32_adjust(protected_uint32_t*,int32_t adjustment);
+DLLEXPORT uint32_t DLLCALL protected_uint32_adjust(protected_uint32_t*,int32_t adjustment);
 #define protected_uint32_value(i)		protected_uint32_adjust(&i,0)
-int64_t		protected_int64_adjust(protected_int64_t*,	int64_t adjustment);
+DLLEXPORT int64_t DLLCALL protected_int64_adjust(protected_int64_t*,	int64_t adjustment);
 #define protected_int64_value(i)		protected_int64_adjust(&i,0)
-uint64_t	protected_uint64_adjust(protected_uint64_t*,int64_t adjustment);
+DLLEXPORT uint64_t DLLCALL protected_uint64_adjust(protected_uint64_t*,int64_t adjustment);
 #define protected_uint64_value(i)		protected_uint64_adjust(&i,0)
 
 /* Return 0 on success, non-zero on failure (see pthread_mutex_destroy): */

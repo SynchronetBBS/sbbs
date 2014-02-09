@@ -189,7 +189,7 @@ struct alsa_api_struct *alsa_api=NULL;
 /********************************************************************************/
 /* Calculate and generate a sound wave pattern (thanks to Deuce!)				*/
 /********************************************************************************/
-void makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape)
+void DLLCALL makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape)
 {
 	int	i;
 	int midpoint;
@@ -315,7 +315,7 @@ static int portaudio_callback(void *inputBuffer
 #endif
 
 #ifdef WITH_SDL_AUDIO
-void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
+void DLLCALL sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 {
 	int	copylen=len;
 	int maxlen=sdl_audio_buf_len-sdl_audio_buf_pos;
@@ -340,7 +340,7 @@ void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 }
 #endif
 
-BOOL xptone_open(void)
+BOOL DLLCALL xptone_open(void)
 {
 #ifdef _WIN32
 	WAVEFORMATEX	w;
@@ -562,7 +562,7 @@ BOOL xptone_open(void)
 	return(FALSE);
 }
 
-void xptone_complete(void)
+void DLLCALL xptone_complete(void)
 {
 	if(handle_type==SOUND_DEVICE_CLOSED)
 		return;
@@ -614,7 +614,7 @@ void xptone_complete(void)
 
 }
 
-BOOL xptone_close(void)
+BOOL DLLCALL xptone_close(void)
 {
 	xptone_complete();
 #ifdef WITH_PORTAUDIO
@@ -664,7 +664,7 @@ BOOL xptone_close(void)
 }
 
 #ifdef XPDEV_THREAD_SAFE
-void xp_play_sample_thread(void *data)
+void DLLCALL xp_play_sample_thread(void *data)
 {
 	BOOL			must_close=FALSE;
 	BOOL			posted_last=TRUE;
@@ -1034,7 +1034,7 @@ void DLLCALL unix_beep(int freq, int dur)
 /********************************************************************************/
 /* Play sound through DSP/wave device, if unsuccessful, play through PC speaker	*/
 /********************************************************************************/
-void xpbeep(double freq, DWORD duration)
+void DLLCALL xpbeep(double freq, DWORD duration)
 {
 	if(xptone(freq,duration,WAVE_SHAPE_SINE_SAW_HARM))
 		return;

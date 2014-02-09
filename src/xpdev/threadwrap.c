@@ -52,7 +52,7 @@
 /****************************************************************************/
 #if defined(__unix__)
 #if defined(_POSIX_THREADS)
-ulong _beginthread(void( *start_address )( void * )
+ulong DLLCALL _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist)
 {
 	pthread_t	thread;
@@ -104,7 +104,7 @@ ulong _beginthread(void( *start_address )( void * )
 /****************************************************************************/
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
-pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive)
+pthread_mutex_t DLLCALL pthread_mutex_initializer_np(BOOL recursive)
 {
 	pthread_mutex_t	mutex;
 #if defined(_POSIX_THREADS)
@@ -126,7 +126,7 @@ pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive)
 
 #if !defined(_POSIX_THREADS)
 
-int pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
+int DLLCALL pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
 {
 	(void)attr;
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
@@ -139,7 +139,7 @@ int pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
 #endif
 }
 
-int pthread_mutex_lock(pthread_mutex_t* mutex)
+int DLLCALL pthread_mutex_lock(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
 	return (WaitForSingleObject(*mutex, INFINITE)==WAIT_OBJECT_0 ? 0 : EBUSY);
@@ -151,7 +151,7 @@ int pthread_mutex_lock(pthread_mutex_t* mutex)
 #endif
 }
 
-int pthread_mutex_trylock(pthread_mutex_t* mutex)
+int DLLCALL pthread_mutex_trylock(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
 	return (WaitForSingleObject(*mutex, 0)==WAIT_OBJECT_0 ? 0 : EBUSY);
@@ -163,7 +163,7 @@ int pthread_mutex_trylock(pthread_mutex_t* mutex)
 #endif
 }
 
-int pthread_mutex_unlock(pthread_mutex_t* mutex)
+int DLLCALL pthread_mutex_unlock(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
 	return (ReleaseMutex(*mutex) ? 0 : GetLastError());
@@ -175,7 +175,7 @@ int pthread_mutex_unlock(pthread_mutex_t* mutex)
 #endif
 }
 
-int pthread_mutex_destroy(pthread_mutex_t* mutex)
+int DLLCALL pthread_mutex_destroy(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
 	return (CloseHandle(*mutex) ? 0 : GetLastError());
@@ -193,19 +193,19 @@ int pthread_mutex_destroy(pthread_mutex_t* mutex)
 /* Protected (thread-safe) Integers (e.g. atomic/interlocked variables) */
 /************************************************************************/
 
-int	protected_int32_init(protected_int32_t* prot, int32_t value)
+int	DLLCALL protected_int32_init(protected_int32_t* prot, int32_t value)
 {
 	prot->value = value;
 	return pthread_mutex_init(&prot->mutex,NULL);
 }
 
-int	protected_int64_init(protected_int64_t* prot, int64_t value)
+int	DLLCALL protected_int64_init(protected_int64_t* prot, int64_t value)
 {
 	prot->value = value;
 	return pthread_mutex_init(&prot->mutex,NULL);
 }
 
-int32_t protected_int32_adjust(protected_int32_t* i, int32_t adjustment)
+int32_t DLLCALL protected_int32_adjust(protected_int32_t* i, int32_t adjustment)
 {
 	int32_t	newval;
 	pthread_mutex_lock(&i->mutex);
@@ -214,7 +214,7 @@ int32_t protected_int32_adjust(protected_int32_t* i, int32_t adjustment)
 	return newval;
 }
 
-uint32_t protected_uint32_adjust(protected_uint32_t* i, int32_t adjustment)
+uint32_t DLLCALL protected_uint32_adjust(protected_uint32_t* i, int32_t adjustment)
 {
 	uint32_t newval;
 	pthread_mutex_lock(&i->mutex);
@@ -223,7 +223,7 @@ uint32_t protected_uint32_adjust(protected_uint32_t* i, int32_t adjustment)
 	return newval;
 }
 
-int64_t protected_int64_adjust(protected_int64_t* i, int64_t adjustment)
+int64_t DLLCALL protected_int64_adjust(protected_int64_t* i, int64_t adjustment)
 {
 	int64_t	newval;
 	pthread_mutex_lock(&i->mutex);
@@ -232,7 +232,7 @@ int64_t protected_int64_adjust(protected_int64_t* i, int64_t adjustment)
 	return newval;
 }
 
-uint64_t protected_uint64_adjust(protected_uint64_t* i, int64_t adjustment)
+uint64_t DLLCALL protected_uint64_adjust(protected_uint64_t* i, int64_t adjustment)
 {
 	uint64_t newval;
 	pthread_mutex_lock(&i->mutex);
