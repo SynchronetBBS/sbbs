@@ -156,10 +156,10 @@ extern "C" {
 
 	/* Prototypes.
 	 */
-	DIR            *	opendir  (const char *__dirname);
-	struct dirent  *	readdir  (DIR *__dir);
-	int                 closedir (DIR *__dir);
-	void                rewinddir(DIR *__dir);
+	DLLEXPORT DIR* DLLCALL opendir  (const char *__dirname);
+	DLLEXPORT struct dirent* DLLCALL readdir  (DIR *__dir);
+	DLLEXPORT int DLLCALL closedir (DIR *__dir);
+	DLLEXPORT void DLLCALL rewinddir(DIR *__dir);
 #elif !defined(__WATCOMC__)
 	#include <dirent.h>	/* POSIX directory functions */
 #endif

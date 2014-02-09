@@ -334,7 +334,7 @@ long DLLCALL getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only
 /* POSIX directory operations using Microsoft _findfirst/next API.			*/
 /****************************************************************************/
 #if defined(_MSC_VER) || defined(__DMC__)
-DIR* opendir(const char* dirname)
+DIR* DLLCALL opendir(const char* dirname)
 {
 	DIR*	dir;
 
@@ -354,7 +354,7 @@ DIR* opendir(const char* dirname)
 	}
 	return(dir);
 }
-struct dirent* readdir(DIR* dir)
+struct dirent* DLLCALL readdir(DIR* dir)
 {
 	if(dir==NULL)
 		return(NULL);
@@ -367,7 +367,7 @@ struct dirent* readdir(DIR* dir)
 		dir->end=TRUE;
 	return(&dir->dirent);
 }
-int closedir (DIR* dir)
+int DLLCALL closedir (DIR* dir)
 {
 	if(dir==NULL)
 		return(-1);
@@ -375,7 +375,7 @@ int closedir (DIR* dir)
 	free(dir);
 	return(0);
 }
-void rewinddir(DIR* dir)
+void DLLCALL rewinddir(DIR* dir)
 {
 	if(dir==NULL)
 		return;
