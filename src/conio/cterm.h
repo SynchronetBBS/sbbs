@@ -43,6 +43,7 @@ enum { false, true };
 #endif
 #include <link_list.h>
 #include <semwrap.h>
+#include "ciolib.h"
 
 typedef enum {
 	 CTERM_MUSIC_NORMAL
@@ -183,13 +184,13 @@ struct cterminal {
 extern "C" {
 #endif
 
-struct cterminal *cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback, int emulation);
-char *cterm_write(struct cterminal *cterm, const unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed);
-int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
-void cterm_closelog(struct cterminal *cterm);
-void cterm_end(struct cterminal *cterm);
-void cterm_clearscreen(struct cterminal *cterm, char attr);
-void cterm_start(struct cterminal *cterm);
+CIOLIBEXPORT struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback, int emulation);
+CIOLIBEXPORT char CIOLIBCALL *cterm_write(struct cterminal *cterm, const unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed);
+CIOLIBEXPORT int CIOLIBCALL cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
+CIOLIBEXPORT void CIOLIBCALL cterm_closelog(struct cterminal *cterm);
+CIOLIBEXPORT void CIOLIBCALL cterm_end(struct cterminal *cterm);
+CIOLIBEXPORT void CIOLIBCALL cterm_clearscreen(struct cterminal *cterm, char attr);
+CIOLIBEXPORT void CIOLIBCALL cterm_start(struct cterminal *cterm);
 #ifdef __cplusplus
 }
 #endif
