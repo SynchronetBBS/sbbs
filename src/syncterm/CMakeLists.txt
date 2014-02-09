@@ -33,7 +33,6 @@ set(SOURCE
 	ooii_cmenus.c
 	ooii_bmenus.c
 	ooii_sounds.c
-	ssh.c
 	modem.c
 	../comio/comio.c
 	conn_pty.c
@@ -43,6 +42,11 @@ if(WIN32)
 	list(APPEND SOURCE ../comio/comio_win32.c)
 else()
 	list(APPEND SOURCE ../comio/comio_nix.c)
+endif()
+
+CHECK_INCLUDE_FILES(cryptlib.h HAS_CRYPTLIB_H)
+if(HAS_CRYPTLIB_H)
+	list(APPEND SOURCE ssh.c)
 endif()
 
 add_executable(syncterm ${SOURCE})
@@ -85,7 +89,6 @@ if(WIN32)
 	include_directories(syncterm PRIVATE ../../3rdp/win32.release/cryptlib/include)
 endif()
 target_link_libraries(syncterm m)
-CHECK_INCLUDE_FILES(cryptlib.h HAS_CRYPTLIB_H)
 if(NOT HAS_CRYPTLIB_H)
     target_compile_definitions(syncterm PRIVATE WITHOUT_CRYPTLIB)
 endif()
