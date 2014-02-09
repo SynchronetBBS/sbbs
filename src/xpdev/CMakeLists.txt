@@ -84,6 +84,7 @@ if(HAS_DEV_MACHINE_SPKR_H)
 endif()
 
 target_compile_definitions(xpdev PRIVATE WRAPPER_EXPORTS)
+target_compile_definitions(xpdev INTERFACE WRAPPER_IMPORTS)
 if(WIN32)
 	target_link_libraries(xpdev Iphlpapi Ws2_32 Winmm)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
