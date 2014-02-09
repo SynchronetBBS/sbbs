@@ -2,6 +2,8 @@ project (SyncTERM C)
 
 cmake_minimum_required(VERSION 2.8.11)
 
+INCLUDE (CheckIncludeFiles)
+
 set(SOURCE
 	uifc32.c
 	uifcx.c
@@ -79,7 +81,14 @@ target_include_directories(syncterm PRIVATE ../uifc)
 target_include_directories(syncterm PRIVATE ../sbbs3)
 target_include_directories(syncterm PRIVATE ../comio)
 target_include_directories(syncterm PRIVATE ../smblib)
+if(WIN32)
+	include_directories(syncterm PRIVATE ../../3rdp/win32.release/cryptlib/include)
+endif()
 target_link_libraries(syncterm m)
+CHECK_INCLUDE_FILES(cryptlib.h HAS_CRYPTLIB_H)
+if(NOT HAS_CRYPTLIB_H)
+    target_compile_definitions(syncterm PRIVATE WITHOUT_CRYPTLIB)
+endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
 	target_link_libraries(syncterm util)
@@ -90,6 +99,5 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	target_link_libraries(syncterm util)
 endif()
-
 
 install(TARGETS syncterm DESTINATION bin)
