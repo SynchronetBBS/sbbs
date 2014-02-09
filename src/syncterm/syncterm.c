@@ -802,8 +802,19 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		SAFECOPY(bbs->user,p1);
 		p1=p3+1;
 	}
+	p2 = p1;
+	if(*p1=='[') {
+		p2=strchr(p1, ']');
+		if(p2 != NULL) {
+			p1++;
+			*p2=0;
+			p2++;
+		}
+		else
+			p2 = p1;
+	}
 	SAFECOPY(bbs->name,p1);
-	p2=strchr(p1,':');
+	p2=strrchr(p2,':');
 	if(p2!=NULL) {
 		*p2=0;
 		p2++;
