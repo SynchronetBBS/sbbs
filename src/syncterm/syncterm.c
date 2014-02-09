@@ -38,10 +38,6 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include <filewrap.h>	// STDOUT_FILENO
 
 #include "ciolib.h"
-#undef HAS_VSTAT
-#ifdef HAS_VSTAT
-#include "bitmap_con.h"
-#endif
 #include "cterm.h"
 
 #include "st_crypt.h"
@@ -1174,9 +1170,7 @@ void load_settings(struct syncterm_settings *set)
 	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, FALSE);
 	iniReadString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path);
 	set->scaling_factor=iniReadInteger(inifile,"SyncTERM","ScalingFactor",0);
-#ifdef HAS_VSTAT
-	vstat.scaling=set->scaling_factor;
-#endif
+	setscaling(set->scaling_factor);
 
 	/* Modem settings */
 	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F&C1&D2", set->mdm.init_string);
@@ -1569,8 +1563,7 @@ int main(int argc, char **argv)
 		bbs=NULL;
 	}
 	// Save changed settings
-#ifdef HAS_VSTAT
-	if(vstat.scaling > 0 && vstat.scaling != settings.scaling_factor) {
+	if(getscaling() > 0 && getscaling() != settings.scaling_factor) {
 		char	inipath[MAX_PATH+1];
 		FILE	*inifile;
 		str_list_t	inicontents;
@@ -1583,13 +1576,12 @@ int main(int argc, char **argv)
 		else {
 			inicontents=strListInit();
 		}
-		iniSetInteger(&inicontents,"SyncTERM","ScalingFactor",vstat.scaling,&ini_style);
+		iniSetInteger(&inicontents,"SyncTERM","ScalingFactor",getscaling(),&ini_style);
 		if((inifile=fopen(inipath,"w"))!=NULL) {
 			iniWriteFile(inifile,inicontents);
 			fclose(inifile);
 		}
 	}
-#endif
 	uifcbail();
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0) 
