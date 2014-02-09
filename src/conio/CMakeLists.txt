@@ -61,10 +61,6 @@ if(SDL_FOUND)
 	target_compile_definitions(ciolib PUBLIC WITH_SDL)
 endif()
 
-if(NEED_BITMAP)
-	target_compile_definitions(ciolib PUBLIC HAS_VSTAT)
-endif()
-
 if(NOT WIN32)
 	target_link_libraries(ciolib pthread)
 endif()

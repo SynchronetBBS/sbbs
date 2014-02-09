@@ -295,6 +295,8 @@ typedef struct {
 	void	(*setcustomcursor)	(int startline, int endline, int range, int blink, int visible);
 	void	(*setvideoflags)	(int flags);
 	int		(*getvideoflags)	(void);
+	void	(*setscaling)	(int new_value);
+	int		(*getscaling)	(void);
 	int		*ESCDELAY;
 } cioapi_t;
 
@@ -360,6 +362,8 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_getcustomcursor(int *startline, int *endline
 CIOLIBEXPORT void CIOLIBCALL ciolib_setcustomcursor(int startline, int endline, int range, int blink, int visible);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setvideoflags(int flags);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getvideoflags(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_setscaling(int flags);
+CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -419,6 +423,8 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define setcustomcursor(a,b,c,d,e)	ciolib_setcustomcursor(a,b,c,d,e)
 	#define setvideoflags(a)		ciolib_setvideoflags(a)
 	#define getvideoflags()			ciolib_getvideoflags()
+	#define setscaling(a)			ciolib_setscaling(a)
+	#define getscaling()			ciolib_getscaling()
 #endif
 
 #ifdef WITH_SDL

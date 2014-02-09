@@ -577,6 +577,17 @@ int bitmap_getfont(void)
 	return(current_font);
 }
 
+void bitmap_setscaling(int new_value)
+{
+	if(new_value > 0)
+		vstat.scaling = new_value;
+}
+
+int bitmap_getscaling(void)
+{
+	return vstat.scaling;
+}
+
 /* Called from event thread only */
 int bitmap_loadfont(char *filename)
 {

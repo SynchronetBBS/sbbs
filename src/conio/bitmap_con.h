@@ -28,5 +28,7 @@ void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v);
 void bitmap_setcustomcursor(int s, int e, int r, int b, int v);
 int bitmap_getvideoflags(void);
 void bitmap_setvideoflags(int flags);
+void bitmap_setscaling(int new_value);
+int bitmap_getscaling(void);
 
 #endif

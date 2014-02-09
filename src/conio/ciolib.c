@@ -113,6 +113,8 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_getpass(const char *prompt);
 CIOLIBEXPORT void CIOLIBCALL ciolib_copytext(const char *text, size_t buflen);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int *xpos, int *ypos);
+CIOLIBEXPORT void CIOLIBCALL ciolib_setscaling(int new_value);
+CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
 
 #define CIOLIB_INIT()		{ if(initialized != 1) initciolib(CIOLIB_MODE_AUTO); }
 
@@ -152,6 +154,8 @@ int try_sdl_init(int mode)
 		cio_api.getcliptext=sdl_getcliptext;
 #endif
 		cio_api.get_window_info=sdl_get_window_info;
+		cio_api.setscaling=bitmap_setscaling;
+		cio_api.getscaling=bitmap_getscaling;
 		return(1);
 	}
 	return(0);
@@ -189,6 +193,8 @@ int try_x_init(int mode)
 		cio_api.copytext=x_copytext;
 		cio_api.getcliptext=x_getcliptext;
 		cio_api.get_window_info=x_get_window_info;
+		cio_api.setscaling=bitmap_setscaling;
+		cio_api.getscaling=bitmap_getscaling;
 		return(1);
 	}
 	return(0);
@@ -1319,5 +1325,20 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_getvideoflags(void)
 {
 	if(cio_api.getvideoflags)
 		return(cio_api.getvideoflags());
+	return(0);
+}
+
+/* Optional */
+CIOLIBEXPORT void CIOLIBCALL ciolib_setscaling(int new_value)
+{
+	if(cio_api.setscaling)
+		cio_api.setscaling(new_value);
+}
+
+/* Optional */
+CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void)
+{
+	if(cio_api.getscaling)
+		return(cio_api.getscaling());
 	return(0);
 }
