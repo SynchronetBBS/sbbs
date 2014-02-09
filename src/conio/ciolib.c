@@ -1340,5 +1340,5 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void)
 {
 	if(cio_api.getscaling)
 		return(cio_api.getscaling());
-	return(0);
+	return(1);
 }
