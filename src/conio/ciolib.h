@@ -493,18 +493,18 @@ extern int ciolib_mouse_initialized;
 #ifdef __cplusplus
 extern "C" {
 #endif
-void ciomouse_gotevent(int event, int x, int y);
-int mouse_trywait(void);
-int mouse_wait(void);
-int mouse_pending(void);
-int ciolib_getmouse(struct mouse_event *mevent);
-int ciolib_ungetmouse(struct mouse_event *mevent);
-void ciolib_mouse_thread(void *data);
-int ciomouse_setevents(int events);
-int ciomouse_addevents(int events);
-int ciomouse_delevents(int events);
-int ciomouse_addevent(int event);
-int ciomouse_delevent(int event);
+CIOLIBEXPORT void CIOLIBCALL ciomouse_gotevent(int event, int x, int y);
+CIOLIBEXPORT int CIOLIBCALL mouse_trywait(void);
+CIOLIBEXPORT int CIOLIBCALL mouse_wait(void);
+CIOLIBEXPORT int CIOLIBCALL mouse_pending(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_getmouse(struct mouse_event *mevent);
+CIOLIBEXPORT int CIOLIBCALL ciolib_ungetmouse(struct mouse_event *mevent);
+CIOLIBEXPORT void CIOLIBCALL ciolib_mouse_thread(void *data);
+CIOLIBEXPORT int CIOLIBCALL ciomouse_setevents(int events);
+CIOLIBEXPORT int CIOLIBCALL ciomouse_addevents(int events);
+CIOLIBEXPORT int CIOLIBCALL ciomouse_delevents(int events);
+CIOLIBEXPORT int CIOLIBCALL ciomouse_addevent(int event);
+CIOLIBEXPORT int CIOLIBCALL ciomouse_delevent(int event);
 #ifdef __cplusplus
 }
 #endif

@@ -58,6 +58,8 @@ target_include_directories(ciolib PRIVATE "${XPDev_DIR}/../../../include/xpdev")
 target_compile_definitions(ciolib PRIVATE $<TARGET_PROPERTY:xpdev,INTERFACE_COMPILE_DEFINITIONS>)
 target_include_directories(ciolib PRIVATE $<TARGET_PROPERTY:xpdev,INTERFACE_INCLUDE_DIRECTORIES>)
 target_link_libraries(ciolib xpdev)
+target_compile_definitions(ciolib PRIVATE CIOLIB_EXPORTS)
+target_compile_definitions(ciolib INTERFACE CIOLIB_IMPORTS)
 
 if(SDL_FOUND)
 	target_include_directories(ciolib PRIVATE ${SDL_INCLUDE_DIR})
