@@ -18,7 +18,7 @@ set(SOURCE
 )
 
 if(WIN32)
-	list(APPEND SOURCE SDL_win32_main.c win32cio.c ciolib_res.c)
+	list(APPEND SOURCE win32cio.c ciolib.rc)
 endif()
 
 if(CURSES_FOUND)
@@ -34,6 +34,9 @@ endif()
 if(SDL_FOUND)
 	list(APPEND SOURCE sdl_con.c)
 	list(APPEND SOURCE sdlfuncs.c)
+	if(WIN32)
+		list(APPEND SOURCE SDL_win32_main.c)
+	endif()
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 		list(APPEND SOURCE SDLMain.m)
 	endif()
