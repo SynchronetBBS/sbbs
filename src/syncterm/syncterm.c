@@ -37,8 +37,7 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include <dirwrap.h>
 #include <filewrap.h>	// STDOUT_FILENO
 
-#include "ciolib.h"
-#include "cterm.h"
+#include <cterm.h>
 
 #include "st_crypt.h"
 #include "fonts.h"
