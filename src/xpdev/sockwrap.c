@@ -144,7 +144,7 @@ static socket_option_t socket_options[] = {
 	{ NULL }
 };
 
-int getSocketOptionByName(const char* name, int* level)
+int DLLCALL getSocketOptionByName(const char* name, int* level)
 {
 	int i;
 
@@ -162,12 +162,12 @@ int getSocketOptionByName(const char* name, int* level)
 	return(strtol(name,NULL,0));
 }
 
-socket_option_t* getSocketOptionList(void)
+socket_option_t* DLLCALL getSocketOptionList(void)
 {
 	return(socket_options);
 }
 
-int sendfilesocket(int sock, int file, off_t *offset, off_t count)
+int DLLCALL sendfilesocket(int sock, int file, off_t *offset, off_t count)
 {
 	char		buf[1024*16];
 	off_t		len;
@@ -229,7 +229,7 @@ int sendfilesocket(int sock, int file, off_t *offset, off_t count)
 	return(total);
 }
 
-int recvfilesocket(int sock, int file, off_t *offset, off_t count)
+int DLLCALL recvfilesocket(int sock, int file, off_t *offset, off_t count)
 {
 	/* Writes a file from a socket -
 	 *
@@ -281,7 +281,7 @@ int recvfilesocket(int sock, int file, off_t *offset, off_t count)
 
 
 /* Return true if connected, optionally sets *rd_p to true if read data available */
-BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
+BOOL DLLCALL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 {
 	char	ch;
 	int		i,rd;
@@ -340,7 +340,7 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	return(FALSE);
 }
 
-int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
+int DLLCALL retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			   ,uint retries, uint wait_secs
 			   ,const char* prot
 			   ,int (*lprintf)(int level, const char *fmt, ...))
@@ -369,7 +369,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 	return(result);
 }
 
-int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigned timeout)
+int DLLCALL nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigned timeout)
 {
 	int result;
 
@@ -391,7 +391,7 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 }
 
 
-union xp_sockaddr *inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size)
+union xp_sockaddr* DLLCALL inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size)
 {
     struct addrinfo hints = {0};
     struct addrinfo *res, *cur;
@@ -413,7 +413,7 @@ union xp_sockaddr *inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t 
     return addr;
 }
 
-const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
+const char* DLLCALL inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 {
 #ifdef _WIN32
 	if(getnameinfo(addr, xp_sockaddr_len(addr), dest, size, NULL, 0, NI_NUMERICHOST))
@@ -436,7 +436,7 @@ const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 #endif
 }
 
-uint16_t inet_addrport(union xp_sockaddr *addr)
+uint16_t DLLCALL inet_addrport(union xp_sockaddr *addr)
 {
 	switch(addr->addr.sa_family) {
 		case AF_INET:
@@ -448,7 +448,7 @@ uint16_t inet_addrport(union xp_sockaddr *addr)
 	}
 }
 
-void inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
+void DLLCALL inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
 {
 	switch(addr->addr.sa_family) {
 		case AF_INET:

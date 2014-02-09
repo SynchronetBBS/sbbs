@@ -66,177 +66,177 @@ extern "C" {
 
 /* Read all section names and return as an allocated string list */
 /* Optionally (if prefix!=NULL), returns a subset of section names */
-str_list_t	iniReadSectionList(FILE*, const char* prefix);
+DLLEXPORT str_list_t DLLCALL	iniReadSectionList(FILE*, const char* prefix);
 /* Returns number (count) of sections */
-size_t		iniReadSectionCount(FILE*, const char* prefix);
+DLLEXPORT size_t DLLCALL		iniReadSectionCount(FILE*, const char* prefix);
 /* Read all key names and return as an allocated string list */
-str_list_t	iniReadKeyList(FILE*, const char* section);
+DLLEXPORT str_list_t DLLCALL	iniReadKeyList(FILE*, const char* section);
 /* Read all key and value pairs and return as a named string list */
-named_string_t**
+DLLEXPORT named_string_t** DLLCALL
 			iniReadNamedStringList(FILE*, const char* section);
 
 /* Return the supported Log Levels in a string list - for *LogLevel macros */
-str_list_t	iniLogLevelStringList(void);
+DLLEXPORT str_list_t DLLCALL	iniLogLevelStringList(void);
 
 /* These functions read a single key of the specified type */
-char*		iniReadString(FILE*, const char* section, const char* key
+DLLEXPORT char* DLLCALL		iniReadString(FILE*, const char* section, const char* key
 					,const char* deflt, char* value);
 /* If the key doesn't exist, iniReadExistingString just returns NULL */
-char*		iniReadExistingString(FILE*, const char* section, const char* key
+DLLEXPORT char* DLLCALL		iniReadExistingString(FILE*, const char* section, const char* key
 					,const char* deflt, char* value);
-str_list_t	iniReadStringList(FILE*, const char* section, const char* key
+DLLEXPORT str_list_t DLLCALL	iniReadStringList(FILE*, const char* section, const char* key
 					,const char* sep, const char* deflt);
-long		iniReadInteger(FILE*, const char* section, const char* key
+DLLEXPORT long DLLCALL		iniReadInteger(FILE*, const char* section, const char* key
 					,long deflt);
-ushort		iniReadShortInt(FILE*, const char* section, const char* key
+DLLEXPORT ushort DLLCALL		iniReadShortInt(FILE*, const char* section, const char* key
 					,ushort deflt);
-ulong		iniReadLongInt(FILE*, const char* section, const char* key
+DLLEXPORT ulong DLLCALL		iniReadLongInt(FILE*, const char* section, const char* key
 					,ulong deflt);
-int64_t		iniReadBytes(FILE*, const char* section, const char* key
+DLLEXPORT int64_t DLLCALL		iniReadBytes(FILE*, const char* section, const char* key
 					,ulong unit, int64_t deflt);
-double		iniReadFloat(FILE*, const char* section, const char* key
+DLLEXPORT double DLLCALL		iniReadFloat(FILE*, const char* section, const char* key
 					,double deflt);
-BOOL		iniReadBool(FILE*, const char* section, const char* key
+DLLEXPORT BOOL DLLCALL		iniReadBool(FILE*, const char* section, const char* key
 					,BOOL deflt);
-time_t		iniReadDateTime(FILE*, const char* section, const char* key
+DLLEXPORT time_t DLLCALL		iniReadDateTime(FILE*, const char* section, const char* key
 					,time_t deflt);
-unsigned	iniReadEnum(FILE*, const char* section, const char* key
+DLLEXPORT unsigned DLLCALL	iniReadEnum(FILE*, const char* section, const char* key
 					,str_list_t names, unsigned deflt);
-unsigned*	iniReadEnumList(FILE*, const char* section, const char* key
+DLLEXPORT unsigned* DLLCALL	iniReadEnumList(FILE*, const char* section, const char* key
 					,str_list_t names, unsigned* count, const char* sep, const char* deflt);
-long		iniReadNamedInt(FILE*, const char* section, const char* key
+DLLEXPORT long DLLCALL		iniReadNamedInt(FILE*, const char* section, const char* key
 					,named_long_t*, long deflt);
-double		iniReadNamedFloat(FILE*, const char* section, const char* key
+DLLEXPORT double DLLCALL		iniReadNamedFloat(FILE*, const char* section, const char* key
 					,named_double_t*, double deflt);
-ulong		iniReadBitField(FILE*, const char* section, const char* key
+DLLEXPORT ulong DLLCALL		iniReadBitField(FILE*, const char* section, const char* key
 					,ini_bitdesc_t* bitdesc, ulong deflt);
 #define		iniReadLogLevel(f,s,k,d) iniReadEnum(f,s,k,iniLogLevelStringList(),d)
 
 /* Free string list returned from iniRead*List functions */
-void*		iniFreeStringList(str_list_t list);
+DLLEXPORT void* DLLCALL		iniFreeStringList(str_list_t list);
 
 /* Free named string list returned from iniReadNamedStringList */
-void*		iniFreeNamedStringList(named_string_t** list);
+DLLEXPORT void* DLLCALL		iniFreeNamedStringList(named_string_t** list);
 
 
 /* File I/O Functions */
-char*		iniFileName(char* dest, size_t maxlen, const char* dir, const char* fname);
-FILE*		iniOpenFile(const char* fname, BOOL create);
-str_list_t	iniReadFile(FILE*);
-BOOL		iniWriteFile(FILE*, const str_list_t);
-BOOL		iniCloseFile(FILE*);
+DLLEXPORT char* DLLCALL		iniFileName(char* dest, size_t maxlen, const char* dir, const char* fname);
+DLLEXPORT FILE* DLLCALL		iniOpenFile(const char* fname, BOOL create);
+DLLEXPORT str_list_t DLLCALL	iniReadFile(FILE*);
+DLLEXPORT BOOL DLLCALL		iniWriteFile(FILE*, const str_list_t);
+DLLEXPORT BOOL DLLCALL		iniCloseFile(FILE*);
 
 /* StringList functions */
-str_list_t	iniGetSectionList(str_list_t list, const char* prefix);
-size_t		iniGetSectionCount(str_list_t list, const char* prefix);
-str_list_t	iniGetKeyList(str_list_t list, const char* section);
-named_string_t**
+DLLEXPORT str_list_t DLLCALL	iniGetSectionList(str_list_t list, const char* prefix);
+DLLEXPORT size_t DLLCALL		iniGetSectionCount(str_list_t list, const char* prefix);
+DLLEXPORT str_list_t DLLCALL	iniGetKeyList(str_list_t list, const char* section);
+DLLEXPORT named_string_t** DLLCALL
 			iniGetNamedStringList(str_list_t list, const char* section);
 
-char*		iniGetString(str_list_t, const char* section, const char* key
+DLLEXPORT char* DLLCALL		iniGetString(str_list_t, const char* section, const char* key
 					,const char* deflt, char* value /* may be NULL */);
 /* If the key doesn't exist, iniGetExistingString just returns NULL */
-char*		iniGetExistingString(str_list_t, const char* section, const char* key
+DLLEXPORT char* DLLCALL		iniGetExistingString(str_list_t, const char* section, const char* key
 					,const char* deflt, char* value /* may be NULL */);
-str_list_t	iniGetStringList(str_list_t, const char* section, const char* key
+DLLEXPORT str_list_t DLLCALL	iniGetStringList(str_list_t, const char* section, const char* key
 					,const char* sep, const char* deflt);
-long		iniGetInteger(str_list_t, const char* section, const char* key
+DLLEXPORT long DLLCALL		iniGetInteger(str_list_t, const char* section, const char* key
 					,long deflt);
-ushort		iniGetShortInt(str_list_t, const char* section, const char* key
+DLLEXPORT ushort DLLCALL		iniGetShortInt(str_list_t, const char* section, const char* key
 					,ushort deflt);
-ulong		iniGetLongInt(str_list_t, const char* section, const char* key
+DLLEXPORT ulong DLLCALL		iniGetLongInt(str_list_t, const char* section, const char* key
 					,ulong deflt);
-int64_t		iniGetBytes(str_list_t, const char* section, const char* key
+DLLEXPORT int64_t DLLCALL		iniGetBytes(str_list_t, const char* section, const char* key
 					,ulong unit, int64_t deflt);
-double		iniGetFloat(str_list_t, const char* section, const char* key
+DLLEXPORT double DLLCALL		iniGetFloat(str_list_t, const char* section, const char* key
 					,double deflt);
-BOOL		iniGetBool(str_list_t, const char* section, const char* key
+DLLEXPORT BOOL DLLCALL		iniGetBool(str_list_t, const char* section, const char* key
 					,BOOL deflt);
-time_t		iniGetDateTime(str_list_t, const char* section, const char* key
+DLLEXPORT time_t DLLCALL		iniGetDateTime(str_list_t, const char* section, const char* key
 					,time_t deflt);
-unsigned	iniGetEnum(str_list_t, const char* section, const char* key
+DLLEXPORT unsigned DLLCALL	iniGetEnum(str_list_t, const char* section, const char* key
 					,str_list_t names, unsigned deflt);
-unsigned*	iniGetEnumList(str_list_t, const char* section, const char* key
+DLLEXPORT unsigned* DLLCALL	iniGetEnumList(str_list_t, const char* section, const char* key
 					,str_list_t names, unsigned* count, const char* sep, const char* deflt);
-long		iniGetNamedInt(str_list_t, const char* section, const char* key
+DLLEXPORT long DLLCALL		iniGetNamedInt(str_list_t, const char* section, const char* key
 					,named_long_t*, long deflt);
-double		iniGetNamedFloat(str_list_t, const char* section, const char* key
+DLLEXPORT double DLLCALL		iniGetNamedFloat(str_list_t, const char* section, const char* key
 					,named_double_t*, double deflt);
-ulong		iniGetBitField(str_list_t, const char* section, const char* key
+DLLEXPORT ulong DLLCALL		iniGetBitField(str_list_t, const char* section, const char* key
 					,ini_bitdesc_t* bitdesc, ulong deflt);
-str_list_t	iniGetSection(str_list_t, const char *section);
+DLLEXPORT str_list_t DLLCALL	iniGetSection(str_list_t, const char *section);
 #define		iniGetLogLevel(l,s,k,d) iniGetEnum(l,s,k,iniLogLevelStringList(),d)
 
 #if !defined(NO_SOCKET_SUPPORT)
-ulong		iniReadIpAddress(FILE*, const char* section, const char* key
+DLLEXPORT ulong DLLCALL		iniReadIpAddress(FILE*, const char* section, const char* key
 					,ulong deflt);
-ulong		iniGetIpAddress(str_list_t, const char* section, const char* key
+DLLEXPORT ulong DLLCALL		iniGetIpAddress(str_list_t, const char* section, const char* key
 					,ulong deflt);
-char*		iniSetIpAddress(str_list_t*, const char* section, const char* key, ulong value
+DLLEXPORT char* DLLCALL		iniSetIpAddress(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
-struct in6_addr	iniReadIp6Address(FILE*, const char* section, const char* key
+DLLEXPORT struct in6_addr DLLCALL	iniReadIp6Address(FILE*, const char* section, const char* key
 					,struct in6_addr deflt);
-struct in6_addr		iniGetIp6Address(str_list_t, const char* section, const char* key
+DLLEXPORT struct in6_addr DLLCALL		iniGetIp6Address(str_list_t, const char* section, const char* key
 					,struct in6_addr deflt);
-char*		iniSetIp6Address(str_list_t*, const char* section, const char* key, struct in6_addr value
+DLLEXPORT char* DLLCALL		iniSetIp6Address(str_list_t*, const char* section, const char* key, struct in6_addr value
 					,ini_style_t*);
-int			iniGetSocketOptions(str_list_t, const char* section
+DLLEXPORT int DLLCALL			iniGetSocketOptions(str_list_t, const char* section
 					,SOCKET sock, char* error, size_t errlen);
 #endif
 
-void		iniSetDefaultStyle(ini_style_t);
+DLLEXPORT void DLLCALL		iniSetDefaultStyle(ini_style_t);
 
-char*		iniSetString(str_list_t*, const char* section, const char* key, const char* value
+DLLEXPORT char* DLLCALL		iniSetString(str_list_t*, const char* section, const char* key, const char* value
 					,ini_style_t*);
-char*		iniSetInteger(str_list_t*, const char* section, const char* key, long value
+DLLEXPORT char* DLLCALL		iniSetInteger(str_list_t*, const char* section, const char* key, long value
 					,ini_style_t*);
-char*		iniSetShortInt(str_list_t*, const char* section, const char* key, ushort value
+DLLEXPORT char* DLLCALL		iniSetShortInt(str_list_t*, const char* section, const char* key, ushort value
 					,ini_style_t*);
-char*		iniSetLongInt(str_list_t*, const char* section, const char* key, ulong value
+DLLEXPORT char* DLLCALL		iniSetLongInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
-char*		iniSetBytes(str_list_t*, const char* section, const char* key, ulong unit, int64_t value
+DLLEXPORT char* DLLCALL		iniSetBytes(str_list_t*, const char* section, const char* key, ulong unit, int64_t value
 					,ini_style_t*);
-char*		iniSetHexInt(str_list_t*, const char* section, const char* key, ulong value
+DLLEXPORT char* DLLCALL		iniSetHexInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
-char*		iniSetFloat(str_list_t*, const char* section, const char* key, double value
+DLLEXPORT char* DLLCALL		iniSetFloat(str_list_t*, const char* section, const char* key, double value
 					,ini_style_t*);
-char*		iniSetBool(str_list_t*, const char* section, const char* key, BOOL value
+DLLEXPORT char* DLLCALL		iniSetBool(str_list_t*, const char* section, const char* key, BOOL value
 					,ini_style_t*);
-char*		iniSetDateTime(str_list_t*, const char* section, const char* key, BOOL include_time, time_t
+DLLEXPORT char* DLLCALL		iniSetDateTime(str_list_t*, const char* section, const char* key, BOOL include_time, time_t
 					,ini_style_t*);
-char*		iniSetEnum(str_list_t*, const char* section, const char* key, str_list_t names
+DLLEXPORT char* DLLCALL		iniSetEnum(str_list_t*, const char* section, const char* key, str_list_t names
 					,unsigned value, ini_style_t*);
-char*		iniSetEnumList(str_list_t*, const char* section, const char* key 
+DLLEXPORT char* DLLCALL		iniSetEnumList(str_list_t*, const char* section, const char* key 
 					,const char* sep, str_list_t names, unsigned* values, unsigned count, ini_style_t*);
-char*		iniSetNamedInt(str_list_t*, const char* section, const char* key, named_long_t*
+DLLEXPORT char* DLLCALL		iniSetNamedInt(str_list_t*, const char* section, const char* key, named_long_t*
 					,long value, ini_style_t*);
-char*		iniSetNamedFloat(str_list_t*, const char* section, const char* key, named_double_t*
+DLLEXPORT char* DLLCALL		iniSetNamedFloat(str_list_t*, const char* section, const char* key, named_double_t*
 					,double value, ini_style_t*);
-char*		iniSetBitField(str_list_t*, const char* section, const char* key, ini_bitdesc_t*, ulong value
+DLLEXPORT char* DLLCALL		iniSetBitField(str_list_t*, const char* section, const char* key, ini_bitdesc_t*, ulong value
 					,ini_style_t*);
-char*		iniSetStringList(str_list_t*, const char* section, const char* key
+DLLEXPORT char* DLLCALL		iniSetStringList(str_list_t*, const char* section, const char* key
 					,const char* sep, str_list_t value, ini_style_t*);
 #define		iniSetLogLevel(l,s,k,v,style) iniSetEnum(l,s,k,iniLogLevelStringList(),v,style)
 
-size_t		iniAddSection(str_list_t*, const char* section
+DLLEXPORT size_t DLLCALL		iniAddSection(str_list_t*, const char* section
 					,ini_style_t*);
 
-size_t		iniAppendSection(str_list_t*, const char* section
+DLLEXPORT size_t DLLCALL		iniAppendSection(str_list_t*, const char* section
 					,ini_style_t*);
 
-BOOL		iniSectionExists(str_list_t, const char* section);
-BOOL		iniKeyExists(str_list_t, const char* section, const char* key);
-BOOL		iniValueExists(str_list_t, const char* section, const char* key);
-char*		iniPopKey(str_list_t*, const char* section, const char* key, char* value);
-BOOL		iniRemoveKey(str_list_t*, const char* section, const char* key);
-BOOL		iniRemoveValue(str_list_t*, const char* section, const char* key);
-BOOL		iniRemoveSection(str_list_t*, const char* section);
-BOOL		iniRenameSection(str_list_t*, const char* section, const char* newname);
+DLLEXPORT BOOL DLLCALL		iniSectionExists(str_list_t, const char* section);
+DLLEXPORT BOOL DLLCALL		iniKeyExists(str_list_t, const char* section, const char* key);
+DLLEXPORT BOOL DLLCALL		iniValueExists(str_list_t, const char* section, const char* key);
+DLLEXPORT char* DLLCALL		iniPopKey(str_list_t*, const char* section, const char* key, char* value);
+DLLEXPORT BOOL DLLCALL		iniRemoveKey(str_list_t*, const char* section, const char* key);
+DLLEXPORT BOOL DLLCALL		iniRemoveValue(str_list_t*, const char* section, const char* key);
+DLLEXPORT BOOL DLLCALL		iniRemoveSection(str_list_t*, const char* section);
+DLLEXPORT BOOL DLLCALL		iniRenameSection(str_list_t*, const char* section, const char* newname);
 
 /*
  * Too handy to leave internal
  */
-unsigned* parseEnumList(const char* values, const char* sep, str_list_t names, unsigned* count);
+DLLEXPORT unsigned* DLLCALL parseEnumList(const char* values, const char* sep, str_list_t names, unsigned* count);
 
 #if defined(__cplusplus)
 }

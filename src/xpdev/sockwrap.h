@@ -87,6 +87,7 @@
 #endif
 
 #include <errno.h>		/* errno */
+#include "wrapdll.h"	/* DLLEXPORT/DLLCALL */
 
 typedef struct {
 	char*	name;
@@ -217,21 +218,21 @@ static  int wsa_error;
 extern "C" {
 #endif
 
-socket_option_t*
+DLLEXPORT socket_option_t* DLLCALL
 		getSocketOptionList(void);
-int		getSocketOptionByName(const char* name, int* level);
+DLLEXPORT int DLLCALL		getSocketOptionByName(const char* name, int* level);
 
-int		sendfilesocket(int sock, int file, off_t* offset, off_t count);
-int		recvfilesocket(int sock, int file, off_t* offset, off_t count);
-BOOL	socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout);
-int 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
+DLLEXPORT int DLLCALL		sendfilesocket(int sock, int file, off_t* offset, off_t count);
+DLLEXPORT int DLLCALL		recvfilesocket(int sock, int file, off_t* offset, off_t count);
+DLLEXPORT BOOL DLLCALL	socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout);
+DLLEXPORT int DLLCALL 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 				   ,uint retries, uint wait_secs, const char* prot
 				   ,int (*lprintf)(int level, const char *fmt, ...));
-int		nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
-union xp_sockaddr *inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size);
-const char *inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
-uint16_t inet_addrport(union xp_sockaddr *addr);
-void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
+DLLEXPORT int DLLCALL		nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
+DLLEXPORT union xp_sockaddr* DLLCALL inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size);
+DLLEXPORT const char* DLLCALLinet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
+DLLEXPORT uint16_t DLLCALL inet_addrport(union xp_sockaddr *addr);
+DLLEXPORT void DLLCALL inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
 
 #ifdef __cplusplus
 }

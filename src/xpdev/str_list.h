@@ -41,6 +41,7 @@
 #include <stdio.h>			/* FILE */
 #include <stddef.h>         /* size_t */
 #include "gen_defs.h"
+#include "wrapdll.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -51,38 +52,38 @@ extern "C" {
 typedef char** str_list_t;
 
 /* Returns an allocated and terminated string list */
-str_list_t	strListInit(void);
+DLLEXPORT str_list_t DLLCALL	strListInit(void);
 
 /* Frees the strings in the list (and the list itself) */
-void		strListFree(str_list_t*);
+DLLEXPORT void DLLCALL		strListFree(str_list_t*);
 
 /* Frees the strings in the list */
-void		strListFreeStrings(str_list_t);
+DLLEXPORT void DLLCALL		strListFreeStrings(str_list_t);
 
 /* Pass a pointer to a string list, the string to add (append) */
 /* Returns the updated list or NULL on error */
-char*		strListAppend(str_list_t*, const char* str, size_t index);
+DLLEXPORT char* DLLCALL		strListAppend(str_list_t*, const char* str, size_t index);
 
 /* Append a string list onto another string list */
-size_t		strListAppendList(str_list_t*, const str_list_t append_list);
+DLLEXPORT size_t DLLCALL		strListAppendList(str_list_t*, const str_list_t append_list);
 
 /* Inserts a string into the list at a specific index */
-char*		strListInsert(str_list_t*, const char* str, size_t index);
+DLLEXPORT char* DLLCALL		strListInsert(str_list_t*, const char* str, size_t index);
 
 /* Insert a string list into another string list */
-size_t		strListInsertList(str_list_t*, const str_list_t append_list, size_t index);
+DLLEXPORT size_t DLLCALL		strListInsertList(str_list_t*, const str_list_t append_list, size_t index);
 
 /* Remove a string at a specific index */
-char*		strListRemove(str_list_t*, size_t index);
+DLLEXPORT char* DLLCALL		strListRemove(str_list_t*, size_t index);
 
 /* Remove and free a string at a specific index */
-BOOL		strListDelete(str_list_t*, size_t index);
+DLLEXPORT BOOL DLLCALL		strListDelete(str_list_t*, size_t index);
 
 /* Replace a string at a specific index */
-char*		strListReplace(const str_list_t, size_t index, const char* str);
+DLLEXPORT char* DLLCALL		strListReplace(const str_list_t, size_t index, const char* str);
 
 /* Swap the strings at index1 and index2 */
-BOOL		strListSwap(const str_list_t, size_t index1, size_t index2);
+DLLEXPORT BOOL DLLCALL		strListSwap(const str_list_t, size_t index1, size_t index2);
 
 /* Convenience macros for pushing, popping strings (LIFO stack) */
 #define		strListPush(list, str)	strListAppend(list, str, STR_LIST_LAST_INDEX)
@@ -90,46 +91,46 @@ BOOL		strListSwap(const str_list_t, size_t index1, size_t index2);
 
 /* Add to an exiting or new string list by splitting specified string (str) */
 /* into multiple strings, separated by one of the delimit characters */
-str_list_t	strListSplit(str_list_t*, char* str, const char* delimit);
+DLLEXPORT str_list_t DLLCALL	strListSplit(str_list_t*, char* str, const char* delimit);
 
 /* Same as above, but copies str to temporary heap buffer first */
-str_list_t	strListSplitCopy(str_list_t*, const char* str, const char* delimit);
+DLLEXPORT str_list_t DLLCALL	strListSplitCopy(str_list_t*, const char* str, const char* delimit);
 
 /* Merge 2 string lists (no copying of string data) */
-size_t		strListMerge(str_list_t*, str_list_t append_list);
+DLLEXPORT size_t DLLCALL		strListMerge(str_list_t*, str_list_t append_list);
 
 /* Create a single delimited string from the specified list */
 /* If buf is NULL, the buf is malloc'd and should be freed using strListFreeBlock() */
 /* Note: maxlen includes '\0' terminator */
-char*		strListCombine(str_list_t, char* buf, size_t maxlen, const char* delimit);
+DLLEXPORT char* DLLCALL		strListCombine(str_list_t, char* buf, size_t maxlen, const char* delimit);
 
 /* Count the number of strings in the list and returns the count */
-size_t		strListCount(const str_list_t);
+DLLEXPORT size_t DLLCALL		strListCount(const str_list_t);
 
 /* Returns the index of the specified str (by ptr compare) or -1 if not found */
-int			strListIndexOf(const str_list_t, const char* str);
+DLLEXPORT int DLLCALL			strListIndexOf(const str_list_t, const char* str);
 
 /* Sort the strings in the string list */
-void		strListSortAlpha(str_list_t);
-void		strListSortAlphaReverse(str_list_t);
+DLLEXPORT void DLLCALL		strListSortAlpha(str_list_t);
+DLLEXPORT void DLLCALL		strListSortAlphaReverse(str_list_t);
 
 /* Case-sensitive sorting */
-void		strListSortAlphaCase(str_list_t);
-void		strListSortAlphaCaseReverse(str_list_t);
+DLLEXPORT void DLLCALL		strListSortAlphaCase(str_list_t);
+DLLEXPORT void DLLCALL		strListSortAlphaCaseReverse(str_list_t);
 
 /* Create/Copy/Append/Free NULL-terminated string block */
 /* (e.g. for environment variable blocks) */
-char*		strListCreateBlock(str_list_t);
-char*		strListCopyBlock(char* block);
-char*		strListAppendBlock(char* block, str_list_t);
-size_t		strListBlockLength(char* block);
-void		strListFreeBlock(char*);
+DLLEXPORT char* DLLCALL		strListCreateBlock(str_list_t);
+DLLEXPORT char* DLLCALL		strListCopyBlock(char* block);
+DLLEXPORT char* DLLCALL		strListAppendBlock(char* block, str_list_t);
+DLLEXPORT size_t DLLCALL		strListBlockLength(char* block);
+DLLEXPORT void DLLCALL		strListFreeBlock(char*);
 
 /* Duplicates a list */
-str_list_t	strListDup(str_list_t list);
+DLLEXPORT str_list_t DLLCALL	strListDup(str_list_t list);
 
 /* Compares two lists */
-int			strListCmp(str_list_t list1, str_list_t list2);
+DLLEXPORT int DLLCALL			strListCmp(str_list_t list1, str_list_t list2);
 
 /************/
 /* File I/O */
@@ -137,11 +138,11 @@ int			strListCmp(str_list_t list1, str_list_t list2);
 
 /* Read lines from file appending each line to string list */
 /* Pass NULL list to have list allocated for you */
-str_list_t	strListReadFile(FILE*, str_list_t*, size_t max_line_len);
-size_t		strListInsertFile(FILE*, str_list_t*, size_t index, size_t max_line_len);
+DLLEXPORT str_list_t DLLCALL	strListReadFile(FILE*, str_list_t*, size_t max_line_len);
+DLLEXPORT size_t DLLCALL		strListInsertFile(FILE*, str_list_t*, size_t index, size_t max_line_len);
 
 /* Write to file (fp) each string in the list, optionally separated by separator (e.g. "\n") */
-size_t		strListWriteFile(FILE*, const str_list_t, const char* separator);
+DLLEXPORT size_t DLLCALL		strListWriteFile(FILE*, const str_list_t, const char* separator);
 
 #if defined(__cplusplus)
 }
