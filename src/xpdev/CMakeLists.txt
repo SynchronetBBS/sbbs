@@ -149,7 +149,7 @@ if(PORTAUDIO_FOUND)
 endif()
 
 CHECK_INCLUDE_FILES(alsa/asoundlib.h USE_ALSA_SOUND)
-if(HAS_INTTYPES_H)
+if(USE_ALSA_SOUND)
     target_compile_definitions(xpdev PRIVATE USE_ALSA_SOUND)
 endif()
 
