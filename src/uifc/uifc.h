@@ -53,6 +53,30 @@
 	#include <sys/param.h>	/* PATH_MAX */
 #endif
 
+#ifdef _WIN32
+        #ifdef __BORLANDC__
+                #define UIFCCALL __stdcall
+        #else
+                #define UIFCCALL
+        #endif
+        #if defined(UIFC_IMPORTS) || defined(UIFC_EXPORTS)
+                #if defined(UIFC_IMPORTS)
+                        #define UIFCEXPORT __declspec( dllimport )
+                        #define UIFCEXPORTVAR __declspec( dllimport )
+                #else
+                        #define UIFCEXPORT __declspec( dllexport )
+                        #define UIFCEXPORTVAR __declspec( dllexport )
+                #endif
+        #else   /* self-contained executable */
+                #define UIFCEXPORT
+                #define UIFCEXPORTVAR	extern
+        #endif
+#else
+        #define UIFCCALL
+        #define UIFCEXPORT
+        #define UIFCEXPORTVAR	extern
+#endif
+
 #if defined(__unix__) && !defined(stricmp)
     #define stricmp strcasecmp
 	#define strnicmp strncasecmp
@@ -417,7 +441,7 @@ enum {
 	uifcNo=1
 };
 
-extern char* uifcYesNoOpts[];
+UIFCEXPORTVAR char* uifcYesNoOpts[];
 
 /****************************************************************************/
 /* Initialization routines for each UIFC implementation.					*/
@@ -425,7 +449,7 @@ extern char* uifcYesNoOpts[];
 /****************************************************************************/
 int uifcini(uifcapi_t*);	/* Original implementation based on conio		*/
 int uifcinix(uifcapi_t*);	/* Standard I/O implementation					*/
-int uifcini32(uifcapi_t*);	/* conio/curses implementation					*/
+UIFCEXPORT int UIFCCALL uifcini32(uifcapi_t*);	/* modern implementation	*/
 /****************************************************************************/
 
 #ifdef __cplusplus

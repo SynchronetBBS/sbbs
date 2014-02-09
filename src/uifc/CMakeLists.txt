@@ -30,6 +30,8 @@ target_include_directories(uifc PRIVATE "${CIOLib_DIR}/../../../include")
 target_compile_definitions(uifc PRIVATE $<TARGET_PROPERTY:ciolib,INTERFACE_COMPILE_DEFINITIONS>)
 target_include_directories(uifc PRIVATE $<TARGET_PROPERTY:ciolib,INTERFACE_INCLUDE_DIRECTORIES>)
 target_link_libraries(uifc ciolib)
+target_compile_definitions(ciolib PRIVATE UIFC_EXPORTS)
+target_compile_definitions(ciolib INTERFACE UIFC_IMPORTS)
 
 set(INSTALL_HEADERS
 	uifc.h
