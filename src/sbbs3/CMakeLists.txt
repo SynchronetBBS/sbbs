@@ -2,8 +2,11 @@ project (SBBS3 C CXX)
 
 cmake_minimum_required(VERSION 2.8.11)
 
-INCLUDE (FindPkgConfig)
 INCLUDE (CheckFunctionExists)
+
+if(MSVC)
+	set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS /wd4996)
+endif()
 
 macro(require_lib_dir TARGET LIB LIBDIR)
 	if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
@@ -16,7 +19,6 @@ macro(require_lib_dir TARGET LIB LIBDIR)
 	target_include_directories(${TARGET} PRIVATE ../${LIBDIR})
 	target_compile_definitions(${TARGET} PRIVATE $<TARGET_PROPERTY:${LIB},INTERFACE_COMPILE_DEFINITIONS>)
 	target_link_libraries(${TARGET} ${LIB})
-	add_dependencies(${TARGET} ${LIB})
 endmacro()
 
 macro(require_lib TARGET LIB)
@@ -25,36 +27,22 @@ endmacro()
 
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS RINGBUF_SEM RINGBUF_EVENT RINGBUF_MUTEX)
 
-if(EXISTS /dev/urandom)
-	set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS HAS_DEV_URANDOM URANDOM_DEV="/dev/urandom")
-endif()
 if(EXISTS /dev/random)
 	set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS HAS_DEV_RANDOM RANDOM_DEV="/dev/random")
 endif()
 
-add_library(ftpsrvr SHARED ftpsrvr.c nopen.c)
-require_lib(ftpsrvr xpdev)
-target_include_directories(ftpsrvr PRIVATE ../smblib)
-target_include_directories(ftpsrvr PRIVATE ../comio)
-target_compile_definitions(ftpsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-
-add_library(mailsrvr SHARED mailsrvr.c mxlookup.c mime.c ars.c base64.c)
-require_lib(mailsrvr xpdev)
-target_include_directories(mailsrvr PRIVATE ../smblib)
-target_include_directories(mailsrvr PRIVATE ../comio)
-target_compile_definitions(mailsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-
-add_library(services SHARED services.c sbbs_ini.c)
-require_lib(services xpdev)
-target_include_directories(services PRIVATE ../smblib)
-target_include_directories(services PRIVATE ../comio)
-target_compile_definitions(services PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-
-add_library(websrvr SHARED websrvr.c base64.c ars.c ringbuf.c)
-require_lib(websrvr xpdev)
-target_include_directories(websrvr PRIVATE ../smblib)
-target_include_directories(websrvr PRIVATE ../comio)
-target_compile_definitions(websrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+####
+# Add 3rd party lib dirs
+####
+if(WIN32)
+	link_directories(../../3rdp/win32.release/mozjs/bin ../../3rdp/win32.release/cryptlib/bin)
+	link_directories(../../3rdp/win32.release/nspr/bin)
+else()
+	# TODO HACK HACK HACK!
+	link_directories(../../3rdp/cc.freebsd.amd64.release/mozjs/lib)
+	link_directories(../../3rdp/cc.freebsd.amd64.release/cl)
+	# END OF HACK
+endif()
 
 set(SBBS_OBJS
 	ansiterm
@@ -173,10 +161,58 @@ else()
 endif()
 add_library(sbbs SHARED ${SBBS_OBJS})
 require_lib(sbbs xpdev)
-target_include_directories(sbbs PRIVATE ../smblib)
+require_lib(sbbs smblib)
 target_include_directories(sbbs PRIVATE ../comio)
 target_compile_definitions(sbbs PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+if(WIN32)
+	target_link_libraries(sbbs mozjs)
+	target_link_libraries(sbbs cl32)
+else()
+	target_link_libraries(sbbs mozjs185-1.0)
+	target_link_libraries(sbbs cl)
+endif()
 
+add_library(ftpsrvr SHARED ftpsrvr.c nopen.c)
+require_lib(ftpsrvr xpdev)
+require_lib(ftpsrvr smblib)
+target_link_libraries(ftpsrvr sbbs)
+target_include_directories(ftpsrvr PRIVATE ../comio)
+target_compile_definitions(ftpsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+
+add_library(mailsrvr SHARED mailsrvr.c mxlookup.c mime.c ars.c base64.c)
+require_lib(mailsrvr xpdev)
+require_lib(mailsrvr smblib)
+target_link_libraries(mailsrvr sbbs)
+target_include_directories(mailsrvr PRIVATE ../comio)
+target_compile_definitions(mailsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+
+add_library(services SHARED services.c sbbs_ini.c)
+require_lib(services xpdev)
+require_lib(services smblib)
+target_link_libraries(services sbbs)
+target_include_directories(services PRIVATE ../comio)
+target_compile_definitions(services PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+
+add_library(websrvr SHARED websrvr.c base64.c ars.c ringbuf.c)
+require_lib(websrvr xpdev)
+require_lib(websrvr smblib)
+target_link_libraries(websrvr sbbs)
+target_include_directories(websrvr PRIVATE ../comio)
+target_compile_definitions(websrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+
+add_executable(sbbscon sbbscon.c sbbs_ini.c)
+set_target_properties(sbbscon PROPERTIES OUTPUT_NAME sbbs)
+require_lib(sbbscon xpdev)
+require_lib(sbbscon smblib)
+target_link_libraries(sbbscon ftpsrvr)
+target_link_libraries(sbbscon mailsrvr)
+target_link_libraries(sbbscon websrvr)
+target_link_libraries(sbbscon services)
+target_link_libraries(sbbscon sbbs)
+
+####
+# Add 3rd party stuff here.
+####
 if(WIN32)
 	target_include_directories(sbbs PRIVATE ../../3rdp/win32.release/mozjs/include)
 	target_include_directories(ftpsrvr PRIVATE ../../3rdp/win32.release/mozjs/include)
@@ -184,7 +220,9 @@ if(WIN32)
 	target_include_directories(websrvr PRIVATE ../../3rdp/win32.release/mozjs/include)
 	target_include_directories(services PRIVATE ../../3rdp/win32.release/mozjs/include)
 	target_include_directories(sbbs PRIVATE ../../3rdp/win32.release/cryptlib/include)
+	target_include_directories(sbbscon PRIVATE ../../3rdp/win32.release/mozjs/include)
 	link_directories(../../3rdp/win32.release/mozjs/bin ../../3rdp/win32.release/cryptlib/bin)
+	link_directories(../../3rdp/win32.release/nspr/bin)
 else()
 	# TODO HACK HACK HACK!
 	target_include_directories(ftpsrvr PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
@@ -192,41 +230,10 @@ else()
 	target_include_directories(services PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
 	target_include_directories(websrvr PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
 	target_include_directories(sbbs PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
+	target_include_directories(sbbscon PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
 	link_directories(../../3rdp/cc.freebsd.amd64.release/mozjs/lib)
 	link_directories(../../3rdp/cc.freebsd.amd64.release/cl)
 	# END OF HACK
-endif()
-
-require_lib(ftpsrvr sbbs)
-require_lib(mailsrvr sbbs)
-require_lib(websrvr sbbs)
-require_lib(services sbbs)
-
-add_executable(sbbscon sbbscon.c sbbs_ini.c)
-set_target_properties(sbbscon PROPERTIES OUTPUT_NAME sbbs)
-require_lib(sbbscon xpdev)
-require_lib(sbbscon smblib)
-target_include_directories(sbbscon PRIVATE ../smblib)
-target_link_libraries(sbbscon ftpsrvr)
-target_link_libraries(sbbscon mailsrvr)
-target_link_libraries(sbbscon websrvr)
-target_link_libraries(sbbscon services)
-target_link_libraries(sbbscon sbbs)
-
-if(WIN32)
-	target_include_directories(sbbscon PRIVATE ../../3rdp/win32.release/mozjs/include)
-else()
-	# TODO HACK HACK HACK!
-	target_include_directories(sbbscon PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
-	# END OF HACK
-endif()
-
-target_link_libraries(sbbscon mozjs185-1.0)
-target_link_libraries(sbbscon cl)
-
-if(WIN32)
-	link_directories(../../3rdp/win32.release/nspr/bin)
-else()
 	execute_process(COMMAND nspr-config --cflags OUTPUT_VARIABLE NSPR_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
 	execute_process(COMMAND nspr-config --includedir OUTPUT_VARIABLE NSPR_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 	execute_process(COMMAND nspr-config --libs OUTPUT_VARIABLE NSPR_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -235,6 +242,7 @@ else()
 	set_property(TARGET sbbscon APPEND PROPERTY LINK_FLAGS "${NSPR_LIBS}")
 endif()
 
+# For forkpty...
 if(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
         target_link_libraries(sbbscon util)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
@@ -443,6 +451,7 @@ add_executable(asc2ans
 )
 
 install(TARGETS
+	sbbscon
 	baja
 	unbaja
 	node
@@ -465,3 +474,10 @@ install(TARGETS
 	ans2asc
 	asc2ans
 DESTINATION bin)
+install(TARGETS
+	sbbs
+	ftpsrvr
+	mailsrvr
+	websrvr
+	services
+DESTINATION lib)
