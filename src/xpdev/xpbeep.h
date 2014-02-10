@@ -4,6 +4,7 @@
 #define _XPBEEP_H_
 
 #include "gen_defs.h"
+#include "wrapdll.h"
 
 #if defined(_WIN32)
 	#if 0
