@@ -230,7 +230,7 @@ DLLEXPORT int DLLCALL 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen
 				   ,int (*lprintf)(int level, const char *fmt, ...));
 DLLEXPORT int DLLCALL		nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
 DLLEXPORT union xp_sockaddr* DLLCALL inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size);
-DLLEXPORT const char* DLLCALLinet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
+DLLEXPORT const char* DLLCALL inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
 DLLEXPORT uint16_t DLLCALL inet_addrport(union xp_sockaddr *addr);
 DLLEXPORT void DLLCALL inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
 
