@@ -66,7 +66,7 @@ static void sethelp(int line, char* file);
 /* Initialization function, see uifc.h for details.							*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
-int uifcinix(uifcapi_t* uifcapi)
+int UIFCCALL uifcinix(uifcapi_t* uifcapi)
 {
 
     if(uifcapi==NULL || uifcapi->size!=sizeof(uifcapi_t))

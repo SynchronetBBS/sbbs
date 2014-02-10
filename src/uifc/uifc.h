@@ -448,7 +448,7 @@ UIFCEXPORTVAR char* uifcYesNoOpts[];
 /* Returns 0 on success, non-zero on failure.								*/
 /****************************************************************************/
 int uifcini(uifcapi_t*);	/* Original implementation based on conio		*/
-int uifcinix(uifcapi_t*);	/* Standard I/O implementation					*/
+UIFCEXPORT int UIFCCALL uifcinix(uifcapi_t*);	/* Standard I/O implementation					*/
 UIFCEXPORT int UIFCCALL uifcini32(uifcapi_t*);	/* modern implementation	*/
 /****************************************************************************/
 
