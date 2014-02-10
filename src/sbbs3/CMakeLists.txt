@@ -2,6 +2,9 @@ project (SBBS3 C CXX)
 
 cmake_minimum_required(VERSION 2.8.11)
 
+INCLUDE (FindPkgConfig)
+INCLUDE (CheckFunctionExists)
+
 macro(require_lib_dir TARGET LIB LIBDIR)
 	if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
 		if(NOT DEFINED ${LIBDIR}_DONE)
@@ -21,6 +24,232 @@ macro(require_lib TARGET LIB)
 endmacro()
 
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS RINGBUF_SEM RINGBUF_EVENT RINGBUF_MUTEX)
+
+if(EXISTS /dev/urandom)
+	set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS HAS_DEV_URANDOM URANDOM_DEV="/dev/urandom")
+endif()
+if(EXISTS /dev/random)
+	set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS HAS_DEV_RANDOM RANDOM_DEV="/dev/random")
+endif()
+
+add_library(ftpsrvr SHARED ftpsrvr.c nopen.c)
+require_lib(ftpsrvr xpdev)
+target_include_directories(ftpsrvr PRIVATE ../smblib)
+target_include_directories(ftpsrvr PRIVATE ../comio)
+target_compile_definitions(ftpsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+
+add_library(mailsrvr SHARED mailsrvr.c mxlookup.c mime.c ars.c base64.c)
+require_lib(mailsrvr xpdev)
+target_include_directories(mailsrvr PRIVATE ../smblib)
+target_include_directories(mailsrvr PRIVATE ../comio)
+target_compile_definitions(mailsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+
+add_library(services SHARED services.c sbbs_ini.c)
+require_lib(services xpdev)
+target_include_directories(services PRIVATE ../smblib)
+target_include_directories(services PRIVATE ../comio)
+target_compile_definitions(services PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+
+add_library(websrvr SHARED websrvr.c base64.c ars.c ringbuf.c)
+require_lib(websrvr xpdev)
+target_include_directories(websrvr PRIVATE ../smblib)
+target_include_directories(websrvr PRIVATE ../comio)
+target_compile_definitions(websrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+
+set(SBBS_OBJS
+	ansiterm
+	answer
+	ars
+	atcodes
+	bat_xfer
+	base64
+	bulkmail
+	chat.cpp
+	chk_ar
+	../comio/comio
+	con_hi
+	con_out
+	dat_rec
+	data
+	data_ovl
+	date_str
+	download
+	email
+	exec
+	execfile
+	execfunc
+	execmisc
+	execmsg
+	execnet
+	fido
+	file
+	filedat
+	getkey
+	getmail
+	getmsg
+	getnode
+	getstats
+	getstr
+	inkey
+	ident
+	jsdebug
+	js_bbs
+	js_client
+	js_com
+	js_console
+	js_file
+	js_file_area
+	js_global
+	js_internal
+	js_msg_area
+	js_msgbase
+	js_queue
+	js_request
+	js_rtpool
+	js_server
+	js_socket
+	js_sprintf
+	js_system
+	js_user
+	js_xtrn_area
+	listfile
+	load_cfg
+	logfile
+	login
+	logon
+	logout
+	mail
+	main
+	msg_id
+	msgdate
+	msgtoqwk
+	netmail
+	newuser
+	nopen
+	pack_qwk
+	pack_rep
+	postmsg
+	prntfile
+	putmsg
+	putnode
+	qwk
+	qwktomsg
+	readmail
+	readmsgs
+	readtext
+	ringbuf
+	scandirs
+	scansubs
+	scfglib1
+	scfglib2
+	scfgsave
+	sockopts
+	sortdir
+	str
+	str_util
+	telgate
+	telnet
+	text_defaults
+	text_sec
+	tmp_xfer
+	un_qwk
+	un_rep
+	upload
+	userdat
+	useredit.cpp
+	uucode
+	viewfile
+	wordwrap
+	writemsg
+	xtrn
+	xtrn_sec
+	yenc
+	ver
+)
+if(WIN32)
+	list(APPEND SBBS_OBJS ../comio/comio_win32)
+else()
+	list(APPEND SBBS_OBJS ../comio/comio_nix)
+endif()
+add_library(sbbs SHARED ${SBBS_OBJS})
+require_lib(sbbs xpdev)
+target_include_directories(sbbs PRIVATE ../smblib)
+target_include_directories(sbbs PRIVATE ../comio)
+target_compile_definitions(sbbs PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+
+if(WIN32)
+	target_include_directories(sbbs PRIVATE ../../3rdp/win32.release/mozjs/include)
+	target_include_directories(ftpsrvr PRIVATE ../../3rdp/win32.release/mozjs/include)
+	target_include_directories(mailsrvr PRIVATE ../../3rdp/win32.release/mozjs/include)
+	target_include_directories(websrvr PRIVATE ../../3rdp/win32.release/mozjs/include)
+	target_include_directories(services PRIVATE ../../3rdp/win32.release/mozjs/include)
+	target_include_directories(sbbs PRIVATE ../../3rdp/win32.release/cryptlib/include)
+	link_directories(../../3rdp/win32.release/mozjs/bin ../../3rdp/win32.release/cryptlib/bin)
+else()
+	# TODO HACK HACK HACK!
+	target_include_directories(ftpsrvr PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
+	target_include_directories(mailsrvr PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
+	target_include_directories(services PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
+	target_include_directories(websrvr PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
+	target_include_directories(sbbs PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
+	link_directories(../../3rdp/cc.freebsd.amd64.release/mozjs/lib)
+	link_directories(../../3rdp/cc.freebsd.amd64.release/cl)
+	# END OF HACK
+endif()
+
+require_lib(ftpsrvr sbbs)
+require_lib(mailsrvr sbbs)
+require_lib(websrvr sbbs)
+require_lib(services sbbs)
+
+add_executable(sbbscon sbbscon.c sbbs_ini.c)
+set_target_properties(sbbscon PROPERTIES OUTPUT_NAME sbbs)
+require_lib(sbbscon xpdev)
+require_lib(sbbscon smblib)
+target_include_directories(sbbscon PRIVATE ../smblib)
+target_link_libraries(sbbscon ftpsrvr)
+target_link_libraries(sbbscon mailsrvr)
+target_link_libraries(sbbscon websrvr)
+target_link_libraries(sbbscon services)
+target_link_libraries(sbbscon sbbs)
+
+if(WIN32)
+	target_include_directories(sbbscon PRIVATE ../../3rdp/win32.release/mozjs/include)
+else()
+	# TODO HACK HACK HACK!
+	target_include_directories(sbbscon PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
+	# END OF HACK
+endif()
+
+target_link_libraries(sbbscon mozjs185-1.0)
+target_link_libraries(sbbscon cl)
+
+if(WIN32)
+	link_directories(../../3rdp/win32.release/nspr/bin)
+else()
+	execute_process(COMMAND nspr-config --cflags OUTPUT_VARIABLE NSPR_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND nspr-config --includedir OUTPUT_VARIABLE NSPR_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(COMMAND nspr-config --libs OUTPUT_VARIABLE NSPR_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+	target_compile_options(sbbscon PRIVATE ${NSPR_CFLAGS})
+	target_include_directories(sbbscon PRIVATE ${NSPR_INCLUDE_DIR})
+	set_property(TARGET sbbscon APPEND PROPERTY LINK_FLAGS "${NSPR_LIBS}")
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
+        target_link_libraries(sbbscon util)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+        target_link_libraries(sbbscon util)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+        target_link_libraries(sbbscon util)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        target_link_libraries(sbbscon util)
+endif()
+list(APPEND CMAKE_REQUIRED_LIBRARIES util)
+CHECK_FUNCTION_EXISTS(forkpty HAS_FORKPTY)
+if(HAS_FORKPTY)
+else()
+	target_compile_definitions(sbbs PRIVATE NEEDS_FORKPTY)
+endif()
 
 add_executable(baja baja.c ars.c)
 require_lib(baja xpdev)
