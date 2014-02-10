@@ -39,6 +39,7 @@
 #define _XPMAP_H
 
 #include "gen_defs.h"
+#include "wrapdll.h"
 
 enum xpmap_type {
 	XPMAP_READ,
@@ -70,7 +71,7 @@ struct xpmapping {
 
 #endif
 
-struct xpmapping *xpmap(const char *filename, enum xpmap_type type);
-void xpunmap(struct xpmapping *map);
+DLLEXPORT struct xpmapping* DLLCALL xpmap(const char *filename, enum xpmap_type type);
+DLLEXPORT void DLLCALL xpunmap(struct xpmapping *map);
 
 #endif

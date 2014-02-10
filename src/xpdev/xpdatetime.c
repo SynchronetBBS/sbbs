@@ -43,7 +43,7 @@
 /* Cross-platform date/time functions */
 /**************************************/
 
-xpDateTime_t xpDateTime_create(unsigned year, unsigned month, unsigned day
+xpDateTime_t DLLCALL xpDateTime_create(unsigned year, unsigned month, unsigned day
 							  ,unsigned hour, unsigned minute, float second
 							  ,xpTimeZone_t zone)
 {
@@ -60,7 +60,7 @@ xpDateTime_t xpDateTime_create(unsigned year, unsigned month, unsigned day
 	return xpDateTime;
 }
 
-xpDateTime_t xpDateTime_now(void)
+xpDateTime_t DLLCALL xpDateTime_now(void)
 {
 #if defined(_WIN32)
 	SYSTEMTIME systime;
@@ -84,7 +84,7 @@ xpDateTime_t xpDateTime_now(void)
 #endif
 }
 
-xpTimeZone_t xpTimeZone_local(void)
+xpTimeZone_t DLLCALL xpTimeZone_local(void)
 {
 #if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__DARWIN__)
 	struct tm tm;
@@ -123,7 +123,7 @@ xpTimeZone_t xpTimeZone_local(void)
 #endif
 }
 
-time_t xpDateTime_to_time(xpDateTime_t xpDateTime)
+time_t DLLCALL xpDateTime_to_time(xpDateTime_t xpDateTime)
 {
 	struct tm tm;
 
@@ -143,7 +143,7 @@ time_t xpDateTime_to_time(xpDateTime_t xpDateTime)
 	return sane_mktime(&tm);
 }
 
-xpDateTime_t time_to_xpDateTime(time_t ti, xpTimeZone_t zone)
+xpDateTime_t DLLCALL time_to_xpDateTime(time_t ti, xpTimeZone_t zone)
 {
 	xpDateTime_t	never;
 	struct tm tm;
@@ -158,7 +158,7 @@ xpDateTime_t time_to_xpDateTime(time_t ti, xpTimeZone_t zone)
 		,zone==xpTimeZone_LOCAL ? xpTimeZone_local() : zone);
 }
 
-xpDateTime_t gmtime_to_xpDateTime(time_t ti)
+xpDateTime_t DLLCALL gmtime_to_xpDateTime(time_t ti)
 {
 	xpDateTime_t	never;
 	struct tm tm;
@@ -177,7 +177,7 @@ xpDateTime_t gmtime_to_xpDateTime(time_t ti)
 /* Decimal-coded ISO-8601 date/time functions */
 /**********************************************/
 
-isoDate_t xpDateTime_to_isoDateTime(xpDateTime_t xpDateTime, isoTime_t* isoTime)
+isoDate_t DLLCALL xpDateTime_to_isoDateTime(xpDateTime_t xpDateTime, isoTime_t* isoTime)
 {
 	if(isoTime!=NULL)
 		*isoTime=0;
@@ -191,13 +191,13 @@ isoDate_t xpDateTime_to_isoDateTime(xpDateTime_t xpDateTime, isoTime_t* isoTime)
 	return isoDate_create(xpDateTime.date.year,xpDateTime.date.month,xpDateTime.date.day);
 }
 
-xpDateTime_t isoDateTime_to_xpDateTime(isoDate_t date, isoTime_t ti)
+xpDateTime_t DLLCALL isoDateTime_to_xpDateTime(isoDate_t date, isoTime_t ti)
 {
 	return xpDateTime_create(isoDate_year(date),isoDate_month(date),isoDate_day(date)
 		,isoTime_hour(ti),isoTime_minute(ti),(float)isoTime_second(ti),xpTimeZone_local());
 }
 
-isoDate_t time_to_isoDateTime(time_t ti, isoTime_t* isoTime)
+isoDate_t DLLCALL time_to_isoDateTime(time_t ti, isoTime_t* isoTime)
 {
 	struct tm tm;
 
@@ -214,7 +214,7 @@ isoDate_t time_to_isoDateTime(time_t ti, isoTime_t* isoTime)
 	return isoDate_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday);
 }
 
-isoTime_t time_to_isoTime(time_t ti)
+isoTime_t DLLCALL time_to_isoTime(time_t ti)
 {
 	isoTime_t isoTime;
 	
@@ -223,7 +223,7 @@ isoTime_t time_to_isoTime(time_t ti)
 	return isoTime;
 }
 
-isoDate_t gmtime_to_isoDateTime(time_t ti, isoTime_t* isoTime)
+isoDate_t DLLCALL gmtime_to_isoDateTime(time_t ti, isoTime_t* isoTime)
 {
 	struct tm tm;
 
@@ -240,7 +240,7 @@ isoDate_t gmtime_to_isoDateTime(time_t ti, isoTime_t* isoTime)
 	return isoDate_create(1900+tm.tm_year,1+tm.tm_mon,tm.tm_mday);
 }
 
-isoTime_t gmtime_to_isoTime(time_t ti)
+isoTime_t DLLCALL gmtime_to_isoTime(time_t ti)
 {
 	isoTime_t isoTime;
 	
@@ -249,7 +249,7 @@ isoTime_t gmtime_to_isoTime(time_t ti)
 	return isoTime;
 }
 
-time_t isoDateTime_to_time(isoDate_t date, isoTime_t ti)
+time_t DLLCALL isoDateTime_to_time(isoDate_t date, isoTime_t ti)
 {
 	struct tm tm;
 
@@ -273,7 +273,7 @@ time_t isoDateTime_to_time(isoDate_t date, isoTime_t ti)
 /* Conversion from xpDate/Time/Zone to isoDate/Time/Zone Strings			*/
 /****************************************************************************/
 
-char* xpDate_to_isoDateStr(xpDate_t date, const char* sep, char* str, size_t maxlen)
+char* DLLCALL xpDate_to_isoDateStr(xpDate_t date, const char* sep, char* str, size_t maxlen)
 {
 	if(sep==NULL)
 		sep="-";
@@ -294,7 +294,7 @@ char* xpDate_to_isoDateStr(xpDate_t date, const char* sep, char* str, size_t max
  * 2            "14:02:39.82"
  * 3            "14:02:39.829"
  */
-char* xpTime_to_isoTimeStr(xpTime_t ti, const char* sep, int precision
+char* DLLCALL xpTime_to_isoTimeStr(xpTime_t ti, const char* sep, int precision
 								   ,char* str, size_t maxlen)
 {
 	if(sep==NULL)
@@ -319,7 +319,7 @@ char* xpTime_to_isoTimeStr(xpTime_t ti, const char* sep, int precision
 	return str;
 }
 
-char* xpTimeZone_to_isoTimeZoneStr(xpTimeZone_t zone, const char* sep
+char* DLLCALL xpTimeZone_to_isoTimeZoneStr(xpTimeZone_t zone, const char* sep
 								   ,char *str, size_t maxlen)
 {
 	xpTimeZone_t	tz=zone;
@@ -342,7 +342,7 @@ char* xpTimeZone_to_isoTimeZoneStr(xpTimeZone_t zone, const char* sep
 	return str;
 }
 
-char* xpDateTime_to_isoDateTimeStr(xpDateTime_t dt
+char* DLLCALL xpDateTime_to_isoDateTimeStr(xpDateTime_t dt
 								   ,const char* date_sep, const char* datetime_sep, const char* time_sep
 								   ,int precision
 								   ,char* str, size_t maxlen)
@@ -366,7 +366,7 @@ char* xpDateTime_to_isoDateTimeStr(xpDateTime_t dt
 /* isoDate/Time/Zone String parsing functions								*/
 /****************************************************************************/
 
-BOOL isoTimeZoneStr_parse(const char* str, xpTimeZone_t* zone)
+BOOL DLLCALL isoTimeZoneStr_parse(const char* str, xpTimeZone_t* zone)
 {
 	unsigned hour=0,minute=0;
 
@@ -391,7 +391,7 @@ BOOL isoTimeZoneStr_parse(const char* str, xpTimeZone_t* zone)
 }
 
 /* TODO: adjust times in 24:xx:xx format */
-xpDateTime_t isoDateTimeStr_parse(const char* str)
+xpDateTime_t DLLCALL isoDateTimeStr_parse(const char* str)
 {
 	char zone[16];
 	xpDateTime_t	xpDateTime;

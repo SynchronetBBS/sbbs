@@ -39,6 +39,7 @@
 #define _XPDATETIME_H_
 
 #include "gen_defs.h"	/* uint32_t and time_t */
+#include "wrapdll.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -72,14 +73,14 @@ typedef struct {
 	xpTimeZone_t	zone;	/* minutes +/- UTC */
 } xpDateTime_t;
 
-xpDateTime_t	xpDateTime_create(unsigned year, unsigned month, unsigned day
+DLLEXPORT xpDateTime_t	DLLCALL xpDateTime_create(unsigned year, unsigned month, unsigned day
 								   ,unsigned hour, unsigned minute, float second
 								   ,xpTimeZone_t);
-xpDateTime_t	xpDateTime_now(void);
-time_t			xpDateTime_to_time(xpDateTime_t);
-xpDateTime_t	time_to_xpDateTime(time_t, xpTimeZone_t);
-xpDateTime_t	gmtime_to_xpDateTime(time_t);
-xpTimeZone_t	xpTimeZone_local(void);
+DLLEXPORT xpDateTime_t	DLLCALL xpDateTime_now(void);
+DLLEXPORT time_t		DLLCALL xpDateTime_to_time(xpDateTime_t);
+DLLEXPORT xpDateTime_t	DLLCALL time_to_xpDateTime(time_t, xpTimeZone_t);
+DLLEXPORT xpDateTime_t	DLLCALL gmtime_to_xpDateTime(time_t);
+DLLEXPORT xpTimeZone_t	DLLCALL xpTimeZone_local(void);
 
 /**********************************************/
 /* Decimal-coded ISO-8601 date/time functions */
@@ -99,17 +100,17 @@ typedef uint32_t	isoTime_t;	/* HHMMSS   (decimal) */
 #define			isoTime_minute(time)			(((time)/100)%100)
 #define			isoTime_second(time)			((time)%100)
 
-BOOL			isoTimeZoneStr_parse(const char* str, xpTimeZone_t*);
-xpDateTime_t	isoDateTimeStr_parse(const char* str);
+DLLEXPORT BOOL			DLLCALL isoTimeZoneStr_parse(const char* str, xpTimeZone_t*);
+DLLEXPORT xpDateTime_t	DLLCALL isoDateTimeStr_parse(const char* str);
 
 /**************************************************************/
 /* Conversion between time_t (local and GMT) and isoDate/Time */
 /**************************************************************/
-isoTime_t		time_to_isoTime(time_t);
-isoTime_t		gmtime_to_isoTime(time_t);
-isoDate_t		time_to_isoDateTime(time_t, isoTime_t*);
-isoDate_t		gmtime_to_isoDateTime(time_t, isoTime_t*);
-time_t			isoDateTime_to_time(isoDate_t, isoTime_t);
+DLLEXPORT isoTime_t		DLLCALL time_to_isoTime(time_t);
+DLLEXPORT isoTime_t		DLLCALL gmtime_to_isoTime(time_t);
+DLLEXPORT isoDate_t		DLLCALL time_to_isoDateTime(time_t, isoTime_t*);
+DLLEXPORT isoDate_t		DLLCALL gmtime_to_isoDateTime(time_t, isoTime_t*);
+DLLEXPORT time_t		DLLCALL isoDateTime_to_time(isoDate_t, isoTime_t);
 #define			time_to_isoDate(t)		time_to_isoDateTime(t,NULL)
 #define			gmtime_to_isoDate(t)	gmtime_to_isoDateTime(t,NULL)
 
@@ -120,8 +121,8 @@ time_t			isoDateTime_to_time(isoDate_t, isoTime_t);
 #define			xpDate_to_isoDate(date)	isoDate_create((date).year,(date).month,(date).day)
 #define			xpTime_to_isoTime(time)	isoTime_create((time).hour,(time).minute,(unsigned)((time).second))
 
-xpDateTime_t	isoDateTime_to_xpDateTime(isoDate_t, isoTime_t);
-isoDate_t		xpDateTime_to_isoDateTime(xpDateTime_t, isoTime_t*);
+DLLEXPORT xpDateTime_t	DLLCALL isoDateTime_to_xpDateTime(isoDate_t, isoTime_t);
+DLLEXPORT isoDate_t		DLLCALL xpDateTime_to_isoDateTime(xpDateTime_t, isoTime_t*);
 
 /*****************************************************************/
 /* Conversion from xpDate/Time/Zone to isoDate/Time/Zone Strings */
@@ -137,17 +138,17 @@ isoDate_t		xpDateTime_to_isoDateTime(xpDateTime_t, isoTime_t*);
  * 2            "14.02:39.82"
  * 3            "14.02:39.829"
  */
-char* xpDate_to_isoDateStr(xpDate_t
+DLLEXPORT char* DLLCALL xpDate_to_isoDateStr(xpDate_t
 						,const char* sep
 						,char* str, size_t maxlen);
-char* xpTime_to_isoTimeStr(xpTime_t
+DLLEXPORT char* DLLCALL xpTime_to_isoTimeStr(xpTime_t
 						,const char* sep
 						,int precision
 						,char* str, size_t maxlen);
-char* xpTimeZone_to_isoTimeZoneStr(xpTimeZone_t
+DLLEXPORT char* DLLCALL xpTimeZone_to_isoTimeZoneStr(xpTimeZone_t
 						,const char* sep
 						,char *str, size_t maxlen);
-char* xpDateTime_to_isoDateTimeStr(xpDateTime_t
+DLLEXPORT char* DLLCALL xpDateTime_to_isoDateTimeStr(xpDateTime_t
 						,const char* date_sep, const char* datetime_sep, const char* time_sep
 						,int precision
 						,char* str, size_t maxlen);

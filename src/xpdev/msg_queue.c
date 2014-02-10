@@ -42,7 +42,7 @@
 #include "threadwrap.h"	/* pthread_self */
 #include "msg_queue.h"
 
-msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
+msg_queue_t* DLLCALL msgQueueInit(msg_queue_t* q, long flags)
 {
 	if(q==NULL) {
 		if((q=(msg_queue_t*)malloc(sizeof(msg_queue_t)))==NULL)
@@ -63,7 +63,7 @@ msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
 	return(q);
 }
 
-BOOL msgQueueFree(msg_queue_t* q)
+BOOL DLLCALL msgQueueFree(msg_queue_t* q)
 {
 	if(q==NULL)
 		return(FALSE);
@@ -77,7 +77,7 @@ BOOL msgQueueFree(msg_queue_t* q)
 	return(TRUE);
 }
 
-long msgQueueAttach(msg_queue_t* q)
+long DLLCALL msgQueueAttach(msg_queue_t* q)
 {
 	if(q==NULL)
 		return(-1);
@@ -87,7 +87,7 @@ long msgQueueAttach(msg_queue_t* q)
 	return(q->refs);
 }
 
-long msgQueueDetach(msg_queue_t* q)
+long DLLCALL msgQueueDetach(msg_queue_t* q)
 {
 	int refs;
 
@@ -100,7 +100,7 @@ long msgQueueDetach(msg_queue_t* q)
 	return(refs);
 }
 
-void* msgQueueSetPrivateData(msg_queue_t* q, void* p)
+void* DLLCALL msgQueueSetPrivateData(msg_queue_t* q, void* p)
 {
 	void* old;
 
@@ -112,7 +112,7 @@ void* msgQueueSetPrivateData(msg_queue_t* q, void* p)
 	return(old);
 }
 
-void* msgQueueGetPrivateData(msg_queue_t* q)
+void* DLLCALL msgQueueGetPrivateData(msg_queue_t* q)
 {
 	if(q==NULL)
 		return(NULL);
@@ -141,7 +141,7 @@ static link_list_t* msgQueueWriteList(msg_queue_t* q)
 	return(&q->in);
 }
 
-long msgQueueReadLevel(msg_queue_t* q)
+long DLLCALL msgQueueReadLevel(msg_queue_t* q)
 {
 	return listCountNodes(msgQueueReadList(q));
 }
@@ -171,7 +171,7 @@ static BOOL list_wait(link_list_t* list, long timeout)
 #endif
 }
 
-BOOL msgQueueWait(msg_queue_t* q, long timeout)
+BOOL DLLCALL msgQueueWait(msg_queue_t* q, long timeout)
 {
 	BOOL			result;
 	link_list_t*	list = msgQueueReadList(q);
@@ -185,7 +185,7 @@ BOOL msgQueueWait(msg_queue_t* q, long timeout)
 	return(result);
 }
 
-void* msgQueueRead(msg_queue_t* q, long timeout)
+void* DLLCALL msgQueueRead(msg_queue_t* q, long timeout)
 {
 	link_list_t*	list = msgQueueReadList(q);
 
@@ -194,7 +194,7 @@ void* msgQueueRead(msg_queue_t* q, long timeout)
 	return listShiftNode(list);
 }
 
-void* msgQueuePeek(msg_queue_t* q, long timeout)
+void* DLLCALL msgQueuePeek(msg_queue_t* q, long timeout)
 {
 	link_list_t*	list = msgQueueReadList(q);
 
@@ -207,7 +207,7 @@ void* msgQueuePeek(msg_queue_t* q, long timeout)
 	return listNodeData(listFirstNode(list));
 }
 
-void* msgQueueFind(msg_queue_t* q, const void* data, size_t length)
+void* DLLCALL msgQueueFind(msg_queue_t* q, const void* data, size_t length)
 {
 	link_list_t*	list = msgQueueReadList(q);
 	list_node_t*	node;
@@ -217,22 +217,22 @@ void* msgQueueFind(msg_queue_t* q, const void* data, size_t length)
 	return listRemoveNode(list,node,/* Free Data? */FALSE);
 }
 
-list_node_t* msgQueueFirstNode(msg_queue_t* q)
+list_node_t* DLLCALL msgQueueFirstNode(msg_queue_t* q)
 {
 	return listFirstNode(msgQueueReadList(q));
 }
 
-list_node_t* msgQueueLastNode(msg_queue_t* q)
+list_node_t* DLLCALL msgQueueLastNode(msg_queue_t* q)
 {
 	return listLastNode(msgQueueReadList(q));
 }
 
-long msgQueueWriteLevel(msg_queue_t* q)
+long DLLCALL msgQueueWriteLevel(msg_queue_t* q)
 {
 	return listCountNodes(msgQueueWriteList(q));
 }
 
-BOOL msgQueueWrite(msg_queue_t* q, const void* data, size_t length)
+BOOL DLLCALL msgQueueWrite(msg_queue_t* q, const void* data, size_t length)
 {
 	return listPushNodeData(msgQueueWriteList(q),data,length)!=NULL;
 }

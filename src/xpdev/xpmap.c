@@ -46,7 +46,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-struct xpmapping *xpmap(const char *filename, enum xpmap_type type)
+struct xpmapping* DLLCALL xpmap(const char *filename, enum xpmap_type type)
 {
 	int					fd;
 	void				*addr=NULL;
@@ -91,7 +91,7 @@ struct xpmapping *xpmap(const char *filename, enum xpmap_type type)
 	return ret;
 }
 
-void xpunmap(struct xpmapping *map)
+void DLLCALL xpunmap(struct xpmapping *map)
 {
 	munmap(map->addr, map->size);
 	close(map->fd);
@@ -100,7 +100,7 @@ void xpunmap(struct xpmapping *map)
 
 #elif defined(_WIN32)
 
-struct xpmapping *xpmap(const char *filename, enum xpmap_type type)
+struct xpmapping* DLLCALL xpmap(const char *filename, enum xpmap_type type)
 {
 	HFILE				fd;
 	HANDLE				md;
@@ -149,7 +149,7 @@ struct xpmapping *xpmap(const char *filename, enum xpmap_type type)
 	return ret;
 }
 
-void xpunmap(struct xpmapping *map)
+void DLLCALL xpunmap(struct xpmapping *map)
 {
 	UnmapViewOfFile(map->addr);
 	CloseHandle(map->md);
