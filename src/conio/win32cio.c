@@ -38,14 +38,7 @@
  #include <malloc.h>	/* alloca() on Win32 */
 #endif
 
-#if (defined CIOLIB_IMPORTS)
- #undef CIOLIB_IMPORTS
-#endif
-#if (defined CIOLIB_EXPORTS)
- #undef CIOLIB_EXPORTS
-#endif
-
-#include "ciolib.h"
+#include <ciolib.h>
 #include "vidmodes.h"
 #include "win32cio.h"
 
@@ -57,7 +50,7 @@ struct keyvals {
 		,ALT;
 };
 
-const struct keyvals keyval[] =
+CIOLIBEXPORTVAR const struct keyvals keyval[] =
 {
 	{VK_BACK, 0x08, 0x08, 0x7f, 0x0e00},
 	{VK_TAB, 0x09, 0x0f00, 0x9400, 0xa500},
