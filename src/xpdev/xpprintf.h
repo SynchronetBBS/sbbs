@@ -40,6 +40,7 @@
 #define _XPPRINTF_H_
 
 #include <stdarg.h>
+#include "wrapdll.h"
 
 /* Supported printf argument types */
 #define XP_PRINTF_TYPE_AUTO			0
@@ -71,13 +72,13 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-void xp_asprintf_free(char *format);
-char *xp_asprintf_start(const char *format);
-char *xp_asprintf_next(char *format, int type, ...);
-char *xp_asprintf_end(char *format, size_t *endlen);
-char *xp_asprintf(const char *format, ...);
-char *xp_vasprintf(const char *format, va_list va);
-int xp_printf_get_type(const char *format);
+DLLEXPORT void DLLCALL xp_asprintf_free(char *format);
+DLLEXPORT char* DLLCALL xp_asprintf_start(const char *format);
+DLLEXPORT char* DLLCALL xp_asprintf_next(char *format, int type, ...);
+DLLEXPORT char* DLLCALL xp_asprintf_end(char *format, size_t *endlen);
+DLLEXPORT char* DLLCALL xp_asprintf(const char *format, ...);
+DLLEXPORT char* DLLCALL xp_vasprintf(const char *format, va_list va);
+DLLEXPORT int DLLCALL xp_printf_get_type(const char *format);
 #if defined(__cplusplus)
 }
 #endif
