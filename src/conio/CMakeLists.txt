@@ -49,15 +49,16 @@ if(NEED_BITMAP)
 endif()
 
 add_library(ciolib SHARED ${SOURCE})
-if(NOT ${PARENT_DIRECTORY})
-	find_package(XPDev REQUIRED)
-	include(${XPDev_CONFIG})
-endif()
-add_dependencies(ciolib XPDev)
-target_include_directories(ciolib PRIVATE "${XPDev_DIR}/../../../include/xpdev")
+
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
+	add_subdirectory(../xpdev xpdev)
+ENDIF()
+add_dependencies(ciolib xpdev)
+target_include_directories(ciolib PRIVATE ../xpdev)
 target_compile_definitions(ciolib PRIVATE $<TARGET_PROPERTY:xpdev,INTERFACE_COMPILE_DEFINITIONS>)
 target_include_directories(ciolib PRIVATE $<TARGET_PROPERTY:xpdev,INTERFACE_INCLUDE_DIRECTORIES>)
 target_link_libraries(ciolib xpdev)
+
 target_compile_definitions(ciolib PRIVATE CIOLIB_EXPORTS)
 target_compile_definitions(ciolib INTERFACE CIOLIB_IMPORTS)
 
