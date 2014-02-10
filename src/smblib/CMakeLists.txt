@@ -34,6 +34,8 @@ target_compile_definitions(smblib PRIVATE MD5_EXPORTS)
 target_compile_definitions(smblib INTERFACE MD5_IMPORTS)
 target_compile_definitions(smblib PRIVATE LZH_EXPORTS)
 target_compile_definitions(smblib INTERFACE LZH_IMPORTS)
+target_compile_definitions(smblib PRIVATE CRC_EXPORTS)
+target_compile_definitions(smblib INTERFACE CRC_IMPORTS)
 target_link_libraries(smblib ${CMAKE_DL_LIBS})
 
 set(INSTALL_HEADERS

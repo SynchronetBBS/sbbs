@@ -41,14 +41,30 @@
 #include <stdio.h>	/* FILE */
 #include "gen_defs.h"	/* uint32_t */
 
+#if defined(_WIN32) && (defined(CRC_IMPORTS) || defined(CRC_EXPORTS))
+	#if defined(CRC_IMPORTS)
+		#define CRCEXPORT	__declspec(dllimport)
+	#else
+		#define CRCEXPORT	__declspec(dllexport)
+	#endif
+	#if defined(__BORLANDC__)
+		#define CRCCALL __stdcall
+	#else
+		#define CRCCALL
+	#endif
+#else	/* !_WIN32 */
+	#define CRCEXPORT
+	#define CRCCALL
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern int32_t crc32tbl[];
+CRCEXPORT extern int32_t crc32tbl[];
 
-uint32_t crc32i(uint32_t crc, const char* buf, unsigned long len);
-uint32_t fcrc32(FILE* fp, unsigned long len);
+CRCEXPORT uint32_t CRCCALL crc32i(uint32_t crc, const char* buf, unsigned long len);
+CRCEXPORT uint32_t CRCCALL fcrc32(FILE* fp, unsigned long len);
 
 #ifdef __cplusplus
 }

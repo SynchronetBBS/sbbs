@@ -39,14 +39,15 @@
 #define _CRC16_H_
 
 #include "gen_defs.h"
+#include "crc32.h"	/* CRCEXPORT/CRCCALL */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern uint16_t crc16tbl[];
+CRCEXPORT extern uint16_t crc16tbl[];
 
-uint16_t crc16(const char* data, unsigned long len);
+CRCEXPORT uint16_t CRCCALL crc16(const char* data, unsigned long len);
 
 #ifdef __cplusplus
 }
