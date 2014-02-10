@@ -38,7 +38,7 @@
  #include <malloc.h>	/* alloca() on Win32 */
 #endif
 
-#include <ciolib.h>
+#include "ciolib.h"
 #include "vidmodes.h"
 #include "win32cio.h"
 

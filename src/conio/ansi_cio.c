@@ -44,7 +44,7 @@
 	struct termios tio_default;				/* Initial term settings */
 #endif
 
-#include <ciolib.h>
+#include "ciolib.h"
 #include "ansi_cio.h"
 
 int	CIOLIB_ANSI_TIMEOUT=500;
