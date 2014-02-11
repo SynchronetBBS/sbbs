@@ -8,6 +8,11 @@ if(MSVC)
 	set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS /wd4996)
 endif()
 
+if(WIN32)
+	add_subdirectory(chat)
+	add_subdirectory(ctrl)
+endif()
+
 macro(require_lib_dir TARGET LIB LIBDIR)
 	if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
 		if(NOT DEFINED ${LIBDIR}_DONE)
