@@ -59,7 +59,7 @@ if(NOT WIN32)
 		list(GET PATHS 3 LEGACY_EXEDIR)
 		list(GET PATHS 4 LEGACY_3RDPDIR)
 	else()
-		message(SEND_ERROR "Unable to lcoate GNU make");
+		message(SEND_ERROR "Unable to lcoate GNU make")
 	endif()
 endif()
 
