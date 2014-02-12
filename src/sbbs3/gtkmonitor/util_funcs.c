@@ -126,7 +126,7 @@ void exec_cmdline(void *cmdline)
 	pthread_mutex_lock(&run_cmd_mutex);
 	system((char *)cmdline);
 	free(cmdline);
-	w=glade_xml_get_widget(xml, "MainWindow");
+	w=GTK_WIDGET(gtk_builder_get_object (builder, "MainWindow"));
 	gtk_widget_set_sensitive(GTK_WIDGET(w), TRUE);
 	pthread_mutex_unlock(&run_cmd_mutex);
 }
@@ -151,7 +151,7 @@ void run_external(char *path, char *filename)
 	static char	cmdline[MAX_PATH*2];
 	GtkWidget	*w;
 
-	w=glade_xml_get_widget(xml, "MainWindow");
+	w=GTK_WIDGET(gtk_builder_get_object (builder, "MainWindow"));
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 	complete_path(cmdline,path,filename);
 	_beginthread(exec_cmdline, 0, strdup(cmdline));
@@ -163,7 +163,7 @@ void exec_cmdstr(char *cmdstr, char *path, char *filename)
 	GtkWidget	*w;
 
 	complete_path(p,path,filename);
-	w=glade_xml_get_widget(xml, "MainWindow");
+	w=GTK_WIDGET(gtk_builder_get_object (builder, "MainWindow"));
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 	_beginthread(exec_cmdline, 0, mycmdstr(cmdstr, p));
 }
@@ -255,7 +255,7 @@ void display_message(char *title, char *message, char *icon)
 	GtkWidget *dialog, *label;
 
 	dialog=gtk_dialog_new_with_buttons(title
-			,GTK_WINDOW(glade_xml_get_widget(xml, "MainWindow"))
+			,GTK_WINDOW(GTK_WIDGET(gtk_builder_get_object (builder, "MainWindow")))
 			,GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT
 			,GTK_STOCK_OK
 			,GTK_RESPONSE_NONE
