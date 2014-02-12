@@ -36,6 +36,33 @@ if(EXISTS /dev/random)
 	set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS HAS_DEV_RANDOM RANDOM_DEV="/dev/random")
 endif()
 
+find_program(GNU_MAKE
+	NAMES gmake make
+)
+if(NOT ${GNU_MAKE} STREQUAL "GNU_MAKE-NOTFOUND")
+	execute_process(
+		COMMAND ${GNU_MAKE} DONT_CLOBBER_CC=please
+		WORKING_DIRECTORY ../build
+		OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.txt
+		ERROR_VARIABLE PATH_ERRORS
+	)
+	file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.txt PATHS)
+	list(GET PATHS 0 LEGACY_LIBDIR)
+	list(GET PATHS 1 LEGACY_OBJDIR)
+	list(GET PATHS 2 LEGACY_MTOBJBDIR)
+	list(GET PATHS 3 LEGACY_EXEDIR)
+	list(GET PATHS 4 LEGACY_3RDPDIR)
+else()
+# TODO: This is an error.
+endif()
+
+if(NOT ${WIN32})
+	add_custom_target(3rdp
+		${GNU_MAKE} cryptlib libmozjs DONT_CLOBBER_CC=please `sh -c 'if [ 1 -eq 1 ] ; then echo DEBUG=1 ; else echo RELEASE=1 ; fi'`
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/build
+	)
+endif()
+
 ####
 # Add 3rd party lib dirs
 ####
@@ -43,10 +70,8 @@ if(WIN32)
 	link_directories(../../3rdp/win32.release/mozjs/bin ../../3rdp/win32.release/cryptlib/bin)
 	link_directories(../../3rdp/win32.release/nspr/bin)
 else()
-	# TODO HACK HACK HACK!
-	link_directories(../../3rdp/cc.freebsd.amd64.release/mozjs/lib)
-	link_directories(../../3rdp/cc.freebsd.amd64.release/cl)
-	# END OF HACK
+	link_directories(../../3rdp/${LEGACY_3RDPDIR}/mozjs/lib)
+	link_directories(../../3rdp/${LEGACY_3RDPDIR}/cl)
 endif()
 
 set(SBBS_OBJS
@@ -176,6 +201,9 @@ else()
 	target_link_libraries(sbbs mozjs185-1.0)
 	target_link_libraries(sbbs cl)
 endif()
+if(NOT ${WIN32})
+	add_dependencies(sbbs 3rdp)
+endif()
 
 add_library(ftpsrvr SHARED ftpsrvr.c nopen.c)
 require_lib(ftpsrvr xpdev)
@@ -183,6 +211,9 @@ require_lib(ftpsrvr smblib)
 target_link_libraries(ftpsrvr sbbs)
 target_include_directories(ftpsrvr PRIVATE ../comio)
 target_compile_definitions(ftpsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+if(NOT ${WIN32})
+	add_dependencies(sbbs 3rdp)
+endif()
 
 add_library(mailsrvr SHARED mailsrvr.c mxlookup.c mime.c ars.c base64.c)
 require_lib(mailsrvr xpdev)
@@ -190,6 +221,9 @@ require_lib(mailsrvr smblib)
 target_link_libraries(mailsrvr sbbs)
 target_include_directories(mailsrvr PRIVATE ../comio)
 target_compile_definitions(mailsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+if(NOT ${WIN32})
+	add_dependencies(sbbs 3rdp)
+endif()
 
 add_library(services SHARED services.c sbbs_ini.c)
 require_lib(services xpdev)
@@ -197,6 +231,9 @@ require_lib(services smblib)
 target_link_libraries(services sbbs)
 target_include_directories(services PRIVATE ../comio)
 target_compile_definitions(services PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+if(NOT ${WIN32})
+	add_dependencies(sbbs 3rdp)
+endif()
 
 add_library(websrvr SHARED websrvr.c base64.c ars.c ringbuf.c)
 require_lib(websrvr xpdev)
@@ -204,6 +241,9 @@ require_lib(websrvr smblib)
 target_link_libraries(websrvr sbbs)
 target_include_directories(websrvr PRIVATE ../comio)
 target_compile_definitions(websrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+if(NOT ${WIN32})
+	add_dependencies(sbbs 3rdp)
+endif()
 
 add_executable(sbbscon sbbscon.c sbbs_ini.c)
 set_target_properties(sbbscon PROPERTIES OUTPUT_NAME sbbs)
@@ -214,6 +254,9 @@ target_link_libraries(sbbscon mailsrvr)
 target_link_libraries(sbbscon websrvr)
 target_link_libraries(sbbscon services)
 target_link_libraries(sbbscon sbbs)
+if(NOT ${WIN32})
+	add_dependencies(sbbs 3rdp)
+endif()
 
 ####
 # Add 3rd party stuff here.
@@ -229,16 +272,14 @@ if(WIN32)
 	link_directories(../../3rdp/win32.release/mozjs/bin ../../3rdp/win32.release/cryptlib/bin)
 	link_directories(../../3rdp/win32.release/nspr/bin)
 else()
-	# TODO HACK HACK HACK!
-	target_include_directories(ftpsrvr PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
-	target_include_directories(mailsrvr PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
-	target_include_directories(services PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
-	target_include_directories(websrvr PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
-	target_include_directories(sbbs PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
-	target_include_directories(sbbscon PRIVATE ../../3rdp/cc.freebsd.amd64.release/mozjs/include/js)
-	link_directories(../../3rdp/cc.freebsd.amd64.release/mozjs/lib)
-	link_directories(../../3rdp/cc.freebsd.amd64.release/cl)
-	# END OF HACK
+	target_include_directories(ftpsrvr PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
+	target_include_directories(mailsrvr PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
+	target_include_directories(services PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
+	target_include_directories(websrvr PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
+	target_include_directories(sbbs PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
+	target_include_directories(sbbscon PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
+	link_directories(../../3rdp/${LEGACY_3RDPDIR}/mozjs/lib)
+	link_directories(../../3rdp/${LEGACY_3RDPDIR}/cl)
 	execute_process(COMMAND nspr-config --cflags OUTPUT_VARIABLE NSPR_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
 	execute_process(COMMAND nspr-config --includedir OUTPUT_VARIABLE NSPR_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 	execute_process(COMMAND nspr-config --libs OUTPUT_VARIABLE NSPR_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
