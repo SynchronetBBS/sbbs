@@ -6,8 +6,8 @@ macro(makelib name)
 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${name}.lib
 		COMMAND implib ${CMAKE_CURRENT_SOURCE_DIR}/${name}.lib ${SBBS3_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${name}.dll
 	)
-	add_custom_target(${name}_lib ALL)
-	add_dependencies(${name}_lib ${name})
+	add_custom_target(${name}_OMG_lib ALL)
+	add_dependencies(${name}_OMF_lib ${name})
 endmacro()
 
 file(TO_NATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR} SOURCE_DIR)
@@ -201,6 +201,6 @@ makelib(mailsrvr)
 makelib(ftpsrvr)
 makelib(websrvr)
 makelib(services)
-add_dependencies(sbbsctrl sbbs_lib mailsrvr_lib ftpsrvr_lib websrvr_lib services_lib)
+add_dependencies(sbbsctrl sbbs_OMF_lib mailsrvr_OMF_lib ftpsrvr_OMF_lib websrvr_OMF_lib services_OMF_lib)
 
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/sbbsctrl.exe DESTINATION bin)
