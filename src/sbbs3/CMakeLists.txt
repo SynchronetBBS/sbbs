@@ -36,29 +36,36 @@ if(EXISTS /dev/random)
 	set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS HAS_DEV_RANDOM RANDOM_DEV="/dev/random")
 endif()
 
-find_program(GNU_MAKE
-	NAMES gmake make
-)
-if(NOT ${GNU_MAKE} STREQUAL "GNU_MAKE-NOTFOUND")
-	execute_process(
-		COMMAND ${GNU_MAKE} DONT_CLOBBER_CC=please
-		WORKING_DIRECTORY ../build
-		OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.txt
-		ERROR_VARIABLE PATH_ERRORS
+if(NOT WIN32)
+	find_program(GNU_MAKE
+		NAMES gmake make
 	)
-	file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.txt PATHS)
-	list(GET PATHS 0 LEGACY_LIBDIR)
-	list(GET PATHS 1 LEGACY_OBJDIR)
-	list(GET PATHS 2 LEGACY_MTOBJBDIR)
-	list(GET PATHS 3 LEGACY_EXEDIR)
-	list(GET PATHS 4 LEGACY_3RDPDIR)
-else()
-# TODO: This is an error.
+	if(NOT ${GNU_MAKE} STREQUAL "GNU_MAKE-NOTFOUND")
+		if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+			set(BUILD_TYPE_FLAG DEBUG=1)
+		else()
+			set(BUILD_TYPE_FLAG RELEASE=1)
+		endif()
+		execute_process(
+			COMMAND ${GNU_MAKE} --no-print-directory DONT_CLOBBER_CC=please ${BUILD_TYPE_FLAG}
+			WORKING_DIRECTORY ../build
+			OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.txt
+			ERROR_VARIABLE PATH_ERRORS
+		)
+		file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.txt PATHS)
+		list(GET PATHS 0 LEGACY_LIBDIR)
+		list(GET PATHS 1 LEGACY_OBJDIR)
+		list(GET PATHS 2 LEGACY_MTOBJBDIR)
+		list(GET PATHS 3 LEGACY_EXEDIR)
+		list(GET PATHS 4 LEGACY_3RDPDIR)
+	else()
+		message(SEND_ERROR "Unable to lcoate GNU make");
+	endif()
 endif()
 
-if(NOT ${WIN32})
+if(NOT WIN32)
 	add_custom_target(3rdp
-		${GNU_MAKE} cryptlib libmozjs DONT_CLOBBER_CC=please `sh -c 'if [ 1 -eq 1 ] ; then echo DEBUG=1 ; else echo RELEASE=1 ; fi'`
+		${GNU_MAKE} cryptlib libmozjs DONT_CLOBBER_CC=please  ${BUILD_TYPE_FLAG}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/build
 	)
 endif()
@@ -201,7 +208,7 @@ else()
 	target_link_libraries(sbbs mozjs185-1.0)
 	target_link_libraries(sbbs cl)
 endif()
-if(NOT ${WIN32})
+if(NOT WIN32)
 	add_dependencies(sbbs 3rdp)
 endif()
 
@@ -211,7 +218,7 @@ require_lib(ftpsrvr smblib)
 target_link_libraries(ftpsrvr sbbs)
 target_include_directories(ftpsrvr PRIVATE ../comio)
 target_compile_definitions(ftpsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-if(NOT ${WIN32})
+if(NOT WIN32)
 	add_dependencies(sbbs 3rdp)
 endif()
 
@@ -221,7 +228,7 @@ require_lib(mailsrvr smblib)
 target_link_libraries(mailsrvr sbbs)
 target_include_directories(mailsrvr PRIVATE ../comio)
 target_compile_definitions(mailsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-if(NOT ${WIN32})
+if(NOT WIN32)
 	add_dependencies(sbbs 3rdp)
 endif()
 
@@ -231,7 +238,7 @@ require_lib(services smblib)
 target_link_libraries(services sbbs)
 target_include_directories(services PRIVATE ../comio)
 target_compile_definitions(services PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-if(NOT ${WIN32})
+if(NOT WIN32)
 	add_dependencies(sbbs 3rdp)
 endif()
 
@@ -241,7 +248,7 @@ require_lib(websrvr smblib)
 target_link_libraries(websrvr sbbs)
 target_include_directories(websrvr PRIVATE ../comio)
 target_compile_definitions(websrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-if(NOT ${WIN32})
+if(NOT WIN32)
 	add_dependencies(sbbs 3rdp)
 endif()
 
@@ -254,7 +261,7 @@ target_link_libraries(sbbscon mailsrvr)
 target_link_libraries(sbbscon websrvr)
 target_link_libraries(sbbscon services)
 target_link_libraries(sbbscon sbbs)
-if(NOT ${WIN32})
+if(NOT WIN32)
 	add_dependencies(sbbs 3rdp)
 endif()
 
