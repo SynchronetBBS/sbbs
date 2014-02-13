@@ -2,11 +2,10 @@
 #define _GTKUSERLIST_H_
 
 #include <gtk/gtk.h>
-#include <glade/glade.h>
 
 #include "sbbs.h"
 
-extern GladeXML		*lxml;
+extern GtkBuilder	*builder;
 extern scfg_t		cfg;
 extern uchar		*arbuf;
 
