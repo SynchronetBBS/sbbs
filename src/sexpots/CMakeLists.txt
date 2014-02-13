@@ -18,7 +18,7 @@ else()
 endif()
 
 add_executable(sexpots ${SOURCE})
-require_lib(sexports xpdev)
+require_lib(sexpots xpdev)
 
 target_include_directories(sexpots PRIVATE ../sbbs3)
 target_include_directories(sexpots PRIVATE ../comio)
