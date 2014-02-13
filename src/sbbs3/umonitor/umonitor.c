@@ -38,12 +38,10 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <time.h>
-#include <sys/time.h>
 #ifdef __QNX__
 #include <string.h>
 #endif
 #include <stdio.h>
-#include <unistd.h>
 
 #include "ciolib.h"
 #define __COLORS		/* Disable the colour macros in sbbsdefs.h ToDo */
@@ -934,7 +932,9 @@ int main(int argc, char** argv)  {
            }
     }
 
+#ifdef SIGPIPE
 	signal(SIGPIPE, SIG_IGN);
+#endif
 
 	uifc.size=sizeof(uifc);
 	i=initciolib(ciolib_mode);

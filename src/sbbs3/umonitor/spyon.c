@@ -35,20 +35,29 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <unistd.h>
 #include <stdlib.h>
 #include "sockwrap.h"	/* Must go before <sys/un.h> */
+#ifndef _WIN32
 #include <sys/un.h>
+#endif
 #include <stdio.h>
 #include <string.h>
-#include "sockwrap.h"
+
+#include <genwrap.h>
+#include <sockwrap.h>
 #include "spyon.h"
 #include "ciolib.h"
 #include "cterm.h"
+#include "uifc.h"
 
 struct cterminal *cterm;
+extern uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
 int spyon(char *sockname)  {
+#if defined _WIN32
+	uifc.msg("Spying not supported on Win32 yet!");
+	return SPY_SOCKETLOST;
+#else
 	SOCKET		spy_sock=INVALID_SOCKET;
 	struct sockaddr_un spy_name;
 	socklen_t	spy_len;
@@ -160,5 +169,6 @@ int spyon(char *sockname)  {
 	textattr(ti.attribute);
 	gotoxy(ti.curx,ti.cury);
 	return(retval);
+#endif
 }
 

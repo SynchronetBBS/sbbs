@@ -36,8 +36,8 @@
  ****************************************************************************/
 
 #include <sys/types.h>
-#include <utime.h>
 
+#include <genwrap.h>
 #include "ciolib.h"
 #define __COLORS
 #include "sbbs.h"
