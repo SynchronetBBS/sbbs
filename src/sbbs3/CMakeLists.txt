@@ -2,6 +2,7 @@ project (SBBS3 C CXX)
 
 cmake_minimum_required(VERSION 2.8.11)
 
+INCLUDE (../build/SynchronetMacros.cmake)
 INCLUDE (CheckFunctionExists)
 
 if(MSVC)
@@ -20,23 +21,6 @@ add_subdirectory(scfg)
 add_subdirectory(syncview)
 add_subdirectory(uedit)
 add_subdirectory(umonitor)
-
-macro(require_lib_dir TARGET LIB LIBDIR)
-	if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-		if(NOT DEFINED ${LIBDIR}_DONE)
-			add_subdirectory(../${LIBDIR} ${LIB})
-			set(${LIBDIR}_DONE TRUE)
-		endif()
-	endif()
-	add_dependencies(${TARGET} ${LIB})
-	target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../${LIBDIR})
-	target_compile_definitions(${TARGET} PRIVATE $<TARGET_PROPERTY:${LIB},INTERFACE_COMPILE_DEFINITIONS>)
-	target_link_libraries(${TARGET} ${LIB})
-endmacro()
-
-macro(require_lib TARGET LIB)
-	require_lib_dir(${TARGET} ${LIB} ${LIB})
-endmacro()
 
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS RINGBUF_SEM RINGBUF_EVENT RINGBUF_MUTEX)
 
@@ -86,6 +70,15 @@ if(WIN32)
 else()
 	link_directories(../../3rdp/${LEGACY_3RDPDIR}/mozjs/lib)
 	link_directories(../../3rdp/${LEGACY_3RDPDIR}/cl)
+	execute_process(COMMAND nspr-config --libs OUTPUT_VARIABLE NSPR_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+	separate_arguments(ADD_NSPR_LIBS UNIX_COMMAND ${NSPR_LIBS})
+	foreach(LIBOPT IN ITEMS ${ADD_NSPR_LIBS})
+		string(SUBSTRING ${LIBOPT} 0 2 PREFIX)
+		string(SUBSTRING ${LIBOPT} 2 -1 SUFFIX)
+		if(${PREFIX} STREQUAL "-L")
+			link_directories(${SUFFIX})
+		endif()
+	endforeach()
 endif()
 
 set(SBBS_OBJS
@@ -204,10 +197,9 @@ else()
 	list(APPEND SBBS_OBJS ../comio/comio_nix)
 endif()
 add_library(sbbs SHARED ${SBBS_OBJS})
-require_lib(sbbs xpdev)
-require_lib(sbbs smblib)
-target_include_directories(sbbs PRIVATE ../comio)
-target_compile_definitions(sbbs PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+require_libs(sbbs xpdev smblib)
+target_include_directories(sbbs PUBLIC ../comio)
+target_compile_definitions(sbbs PUBLIC SBBS SBBS_EXPORTS JAVASCRIPT)
 if(WIN32)
 	target_link_libraries(sbbs mozjs)
 	target_link_libraries(sbbs cl32)
@@ -220,72 +212,40 @@ if(NOT WIN32)
 endif()
 
 add_library(ftpsrvr SHARED ftpsrvr.c nopen.c)
-require_lib(ftpsrvr xpdev)
-require_lib(ftpsrvr smblib)
+require_libs(ftpsrvr xpdev smblib)
 target_link_libraries(ftpsrvr sbbs)
-target_include_directories(ftpsrvr PRIVATE ../comio)
-target_compile_definitions(ftpsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-if(NOT WIN32)
-	add_dependencies(sbbs 3rdp)
-endif()
 
 add_library(mailsrvr SHARED mailsrvr.c mxlookup.c mime.c ars.c base64.c)
-require_lib(mailsrvr xpdev)
-require_lib(mailsrvr smblib)
+require_libs(mailsrvr xpdev smblib)
 target_link_libraries(mailsrvr sbbs)
-target_include_directories(mailsrvr PRIVATE ../comio)
-target_compile_definitions(mailsrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-if(NOT WIN32)
-	add_dependencies(sbbs 3rdp)
-endif()
 
 add_library(services SHARED services.c sbbs_ini.c)
-require_lib(services xpdev)
-require_lib(services smblib)
+require_libs(services xpdev smblib)
 target_link_libraries(services sbbs)
-target_include_directories(services PRIVATE ../comio)
-target_compile_definitions(services PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-if(NOT WIN32)
-	add_dependencies(sbbs 3rdp)
-endif()
 
 add_library(websrvr SHARED websrvr.c base64.c ars.c ringbuf.c)
-require_lib(websrvr xpdev)
-require_lib(websrvr smblib)
+require_libs(websrvr xpdev smblib)
 target_link_libraries(websrvr sbbs)
-target_include_directories(websrvr PRIVATE ../comio)
-target_compile_definitions(websrvr PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-if(NOT WIN32)
-	add_dependencies(sbbs 3rdp)
-endif()
 
 add_executable(sbbscon sbbscon.c sbbs_ini.c)
-target_compile_definitions(sbbscon PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
 set_target_properties(sbbscon PROPERTIES OUTPUT_NAME sbbs)
-require_lib(sbbscon xpdev)
-require_lib(sbbscon smblib)
+require_libs(sbbscon xpdev smblib)
 target_link_libraries(sbbscon ftpsrvr)
 target_link_libraries(sbbscon mailsrvr)
 target_link_libraries(sbbscon websrvr)
 target_link_libraries(sbbscon services)
 target_link_libraries(sbbscon sbbs)
-target_include_directories(sbbscon PRIVATE ../comio)
-if(NOT WIN32)
-	add_dependencies(sbbscon 3rdp)
-endif()
 
 if(WIN32)
 	add_executable(ntsvcs ntsvcs.c sbbs_ini.c)
 	target_compile_definitions(ntsvcs PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
 	set_target_properties(ntsvcs PROPERTIES OUTPUT_NAME sbbs)
-	require_lib(ntsvcs xpdev)
-	require_lib(ntsvcs smblib)
+	require_libs(ntsvcs xpdev smblib)
 	target_link_libraries(ntsvcs ftpsrvr)
 	target_link_libraries(ntsvcs mailsrvr)
 	target_link_libraries(ntsvcs websrvr)
 	target_link_libraries(ntsvcs services)
 	target_link_libraries(ntsvcs sbbs)
-	target_include_directories(ntsvcs PRIVATE ../comio)
 endif()
 
 add_executable(jsexec
@@ -295,54 +255,36 @@ add_executable(jsexec
 	jsdebug.c
 )
 target_compile_definitions(jsexec PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-require_lib(jsexec xpdev)
-require_lib(jsexec smblib)
-require_lib_dir(jsexec ciolib conio)
-require_lib(jsexec uifc)
+require_libs(jsexec xpdev smblib ciolib uifc)
 target_link_libraries(jsexec ftpsrvr)
 target_link_libraries(jsexec mailsrvr)
 target_link_libraries(jsexec websrvr)
 target_link_libraries(jsexec services)
 target_link_libraries(jsexec sbbs)
-target_include_directories(jsexec PRIVATE ../comio)
-if(NOT WIN32)
-	add_dependencies(jsexec 3rdp)
-endif()
 
 ####
 # Add 3rd party stuff here.
 ####
 if(WIN32)
-	target_include_directories(sbbs PRIVATE ../../3rdp/win32.release/mozjs/include)
-	target_include_directories(ftpsrvr PRIVATE ../../3rdp/win32.release/mozjs/include)
-	target_include_directories(mailsrvr PRIVATE ../../3rdp/win32.release/mozjs/include)
-	target_include_directories(websrvr PRIVATE ../../3rdp/win32.release/mozjs/include)
-	target_include_directories(services PRIVATE ../../3rdp/win32.release/mozjs/include)
-	target_include_directories(sbbs PRIVATE ../../3rdp/win32.release/cryptlib/include)
-	target_include_directories(sbbscon PRIVATE ../../3rdp/win32.release/mozjs/include)
-	target_include_directories(ntsvcs PRIVATE ../../3rdp/win32.release/mozjs/include)
-	target_include_directories(jsexec PRIVATE ../../3rdp/win32.release/mozjs/include)
+	target_include_directories(sbbs PUBLIC ../../3rdp/win32.release/mozjs/include)
+	target_include_directories(sbbs PUBLIC ../../3rdp/win32.release/cryptlib/include)
 	link_directories(../../3rdp/win32.release/mozjs/bin ../../3rdp/win32.release/cryptlib/bin)
 	link_directories(../../3rdp/win32.release/nspr/bin)
 else()
-	target_include_directories(ftpsrvr PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
-	target_include_directories(mailsrvr PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
-	target_include_directories(services PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
-	target_include_directories(websrvr PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
-	target_include_directories(sbbs PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
-	target_include_directories(sbbscon PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
-	target_include_directories(jsexec PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
+	target_include_directories(sbbs PUBLIC ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
 	link_directories(../../3rdp/${LEGACY_3RDPDIR}/mozjs/lib)
 	link_directories(../../3rdp/${LEGACY_3RDPDIR}/cl)
 	execute_process(COMMAND nspr-config --cflags OUTPUT_VARIABLE NSPR_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
 	execute_process(COMMAND nspr-config --includedir OUTPUT_VARIABLE NSPR_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-	execute_process(COMMAND nspr-config --libs OUTPUT_VARIABLE NSPR_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
-	target_compile_options(sbbscon PRIVATE ${NSPR_CFLAGS})
-	target_include_directories(sbbscon PRIVATE ${NSPR_INCLUDE_DIR})
-	set_property(TARGET sbbscon APPEND PROPERTY LINK_FLAGS "${NSPR_LIBS}")
-	target_compile_options(jsexec PRIVATE ${NSPR_CFLAGS})
-	target_include_directories(jsexec PRIVATE ${NSPR_INCLUDE_DIR})
-	set_property(TARGET jsexec APPEND PROPERTY LINK_FLAGS "${NSPR_LIBS}")
+	target_compile_options(sbbs PUBLIC ${NSPR_CFLAGS})
+	target_include_directories(sbbs PUBLIC ${NSPR_INCLUDE_DIR})
+	foreach(LIBOPT IN ITEMS ${ADD_NSPR_LIBS})
+		string(SUBSTRING ${LIBOPT} 0 2 PREFIX)
+		string(SUBSTRING ${LIBOPT} 2 -1 SUFFIX)
+		if(${PREFIX} STREQUAL "-l")
+			target_link_libraries(sbbs ${SUFFIX})
+		endif()
+	endforeach()
 endif()
 
 # For forkpty...
@@ -368,28 +310,23 @@ else()
 endif()
 
 add_executable(baja baja.c ars.c)
-require_lib(baja xpdev)
-require_lib(baja smblib)
+require_libs(baja xpdev smblib)
 
 add_executable(unbaja unbaja.c)
-require_lib(unbaja xpdev)
-require_lib(unbaja smblib)
+require_libs(unbaja xpdev smblib)
 
 add_executable(node node.c)
-require_lib(node xpdev)
+require_libs(node xpdev)
 target_include_directories(node PRIVATE ../smblib)
 
 add_executable(fixsmb fixsmb.c str_util.c)
-require_lib(fixsmb smblib)
-require_lib(fixsmb xpdev)
+require_libs(fixsmb smblib xpdev)
 
 add_executable(chksmb chksmb.c)
-require_lib(chksmb smblib)
-require_lib(chksmb xpdev)
+require_libs(chksmb smblib xpdev)
 
 add_executable(smbutil smbutil.c str_util.c)
-require_lib(smbutil smblib)
-require_lib(smbutil xpdev)
+require_libs(smbutil smblib xpdev)
 
 add_executable(sbbsecho
 	sbbsecho.c
@@ -405,8 +342,7 @@ add_executable(sbbsecho
 	rechocfg.c
 	msg_id.c
 )
-require_lib(sbbsecho xpdev)
-require_lib(sbbsecho smblib)
+require_libs(sbbsecho xpdev smblib)
 
 add_executable(echocfg
 	echocfg.c
@@ -414,9 +350,7 @@ add_executable(echocfg
 	nopen.c
 	str_util.c
 )
-require_lib(echocfg xpdev)
-require_lib_dir(echocfg ciolib conio)
-require_lib(echocfg uifc)
+require_libs(echocfg xpdev ciolib uifc)
 target_include_directories(echocfg PRIVATE ../smblib)
 
 add_executable(addfiles
@@ -432,7 +366,7 @@ add_executable(addfiles
 	userdat.c
 	filedat.c
 )
-require_lib(addfiles xpdev)
+require_libs(addfiles xpdev)
 target_include_directories(addfiles PRIVATE ../smblib)
 
 add_executable(filelist
@@ -447,7 +381,7 @@ add_executable(filelist
 	dat_rec.c
 	filedat.c
 )
-require_lib(filelist xpdev)
+require_libs(filelist xpdev)
 target_include_directories(filelist PRIVATE ../smblib)
 
 add_executable(makeuser
@@ -462,7 +396,7 @@ add_executable(makeuser
 	dat_rec.c
 	userdat.c
 )
-require_lib(makeuser xpdev)
+require_libs(makeuser xpdev)
 target_include_directories(makeuser PRIVATE ../smblib)
 
 add_executable(sexyz
@@ -473,8 +407,7 @@ add_executable(sexyz
 	nopen.c
 	telnet.c
 )
-require_lib(sexyz xpdev)
-require_lib(sexyz smblib)
+require_libs(sexyz xpdev smblib)
 
 add_executable(qwknodes
 	qwknodes.c
@@ -486,14 +419,13 @@ add_executable(qwknodes
 	str_util.c
 	ars.c
 )
-require_lib(qwknodes xpdev)
-require_lib(qwknodes smblib)
+require_libs(qwknodes xpdev smblib)
 
 add_executable(slog
 	slog.c
 	nopen.c
 )
-require_lib(slog xpdev)
+require_libs(slog xpdev)
 target_include_directories(slog PRIVATE ../smblib)
 
 add_executable(allusers
@@ -501,7 +433,7 @@ add_executable(allusers
 	str_util.c
 	ars.c
 )
-require_lib(allusers xpdev)
+require_libs(allusers xpdev)
 target_include_directories(allusers PRIVATE ../smblib)
 
 add_executable(delfiles
@@ -515,7 +447,7 @@ add_executable(delfiles
 	filedat.c
 	dat_rec.c
 )
-require_lib(delfiles xpdev)
+require_libs(delfiles xpdev)
 target_include_directories(delfiles PRIVATE ../smblib)
 
 add_executable(dupefind
@@ -527,8 +459,7 @@ add_executable(dupefind
 	ars.c
 	nopen.c
 )
-require_lib(dupefind xpdev)
-require_lib(dupefind smblib)
+require_libs(dupefind xpdev smblib)
 
 add_executable(smbactiv
 	smbactiv.c
@@ -539,15 +470,14 @@ add_executable(smbactiv
 	ars.c
 	nopen.c
 )
-require_lib(smbactiv xpdev)
-require_lib(smbactiv smblib)
+require_libs(smbactiv xpdev smblib)
 
 add_executable(dstsedit
 	dstsedit.c
 	date_str.c
 	nopen.c
 )
-require_lib(dstsedit xpdev)
+require_libs(dstsedit xpdev)
 target_include_directories(dstsedit PRIVATE ../smblib)
 
 add_executable(ans2asc
@@ -561,10 +491,11 @@ add_executable(asc2ans
 add_executable(textgen
 	textgen.c
 )
-require_lib(textgen xpdev)
+require_libs(textgen xpdev)
 
 install(TARGETS
 	sbbscon
+	jsexec
 	baja
 	unbaja
 	node
