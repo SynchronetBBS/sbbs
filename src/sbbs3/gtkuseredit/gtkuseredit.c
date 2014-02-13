@@ -1,5 +1,4 @@
 #include <gtk/gtk.h>
-#include <glade/glade.h>
 
 #include "sbbs.h"
 #include "dirwrap.h"
@@ -7,53 +6,89 @@
 #include "events.h"
 #include "gtkuseredit.h"
 
-scfg_t	cfg;
-user_t	user;
-GladeXML *xml;
-int		totalusers=0;
-int		current_user=0;
-char	glade_path[MAX_PATH+1];
+scfg_t		cfg;
+user_t		user;
+int			totalusers=0;
+int			current_user=0;
+char		glade_path[MAX_PATH+1];
+GtkBuilder*	builder;
 
 /* Refreshes global variables... ie: Number of users */
 int refresh_globals(void)
 {
 	char		str[1024];
-	GtkWidget	*cCommandShell;
-	GtkWidget	*cExternalEditor;
-	GtkWidget	*cDefaultDownloadProtocol;
-	GtkWidget	*cTempQWKFileType;
+	GtkComboBox	*cCommandShell;
+	GtkListStore*cCS;
+	GtkComboBox	*cExternalEditor;
+	GtkListStore*cEE;
+	GtkComboBox	*cDefaultDownloadProtocol;
+	GtkListStore*cDDP;
+	GtkComboBox	*cTempQWKFileType;
+	GtkListStore*cTQFT;
 	GtkWidget	*w;
+	GtkTreeIter	curr;
 	int			i;
+	GtkCellRenderer *column;
+	gboolean	notatend;
 
-	/* Clear out old combo boxes */
-	cCommandShell=glade_xml_get_widget(xml, "cCommandShell");
-	if(w==NULL) {
-		fprintf(stderr,"Cannot get the command shell widget\n");
-		return(-1);
+	/* Create new lists as needed */
+	cCommandShell=GTK_COMBO_BOX(gtk_builder_get_object(builder, "cCommandShell"));
+	if((cCS = GTK_LIST_STORE(gtk_combo_box_get_model(cCommandShell))) == NULL) {
+		cCS = gtk_list_store_new(1, G_TYPE_STRING);
+		gtk_combo_box_set_model(cCommandShell, GTK_TREE_MODEL(cCS));
+		column = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(cCommandShell), column, TRUE);
+		gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(cCommandShell), column,
+				"text", 0,
+				NULL
+		);
+		gtk_combo_box_set_active(GTK_COMBO_BOX(cCommandShell), 0);
 	}
-	for(i=0; i<cfg.total_shells; i++)
-		gtk_combo_box_remove_text(GTK_COMBO_BOX(cCommandShell), 0);
-	cExternalEditor=glade_xml_get_widget(xml, "cExternalEditor");
-	if(w==NULL) {
-		fprintf(stderr,"Cannot get the external editor widget\n");
-		return(-1);
+
+	cExternalEditor=GTK_COMBO_BOX(gtk_builder_get_object(builder, "cExternalEditor"));
+	if((cEE = GTK_LIST_STORE(gtk_combo_box_get_model(cExternalEditor))) == NULL) {
+		cEE = gtk_list_store_new(1, G_TYPE_STRING);
+		gtk_combo_box_set_model(cExternalEditor, GTK_TREE_MODEL(cEE));
+		gtk_list_store_insert(cEE, &curr, 0);
+printf("Adding default\n");
+		gtk_list_store_set(cEE, &curr, 0, "Internal Editor", -1);
+printf("Edded default\n");
+		column = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(cExternalEditor), column, TRUE);
+		gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(cExternalEditor), column,
+				"text", 0,
+				NULL
+		);
+		gtk_combo_box_set_active(GTK_COMBO_BOX(cExternalEditor), 0);
 	}
-	for(i=0; i<cfg.total_xedits; i++)
-		gtk_combo_box_remove_text(GTK_COMBO_BOX(cExternalEditor), 0);
-	cDefaultDownloadProtocol=glade_xml_get_widget(xml, "cDefaultDownloadProtocol");
-	if(w==NULL) {
-		fprintf(stderr,"Cannot get the default download protocol widget\n");
-		return(-1);
+
+	cDefaultDownloadProtocol=GTK_COMBO_BOX(gtk_builder_get_object(builder, "cDefaultDownloadProtocol"));
+	if((cDDP = GTK_LIST_STORE(gtk_combo_box_get_model(cDefaultDownloadProtocol))) == NULL) {
+		cDDP = gtk_list_store_new(1, G_TYPE_STRING);
+		gtk_combo_box_set_model(cDefaultDownloadProtocol, GTK_TREE_MODEL(cDDP));
+		gtk_list_store_insert(cDDP, &curr, 0);
+		gtk_list_store_set(cDDP, &curr, 0, "Not Specified", -1);
+		column = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(cDefaultDownloadProtocol), column, TRUE);
+		gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(cDefaultDownloadProtocol), column,
+				"text", 0,
+				NULL
+		);
+		gtk_combo_box_set_active(GTK_COMBO_BOX(cDefaultDownloadProtocol), 0);
 	}
-	for(i=0; i<cfg.total_prots; i++)
-		gtk_combo_box_remove_text(GTK_COMBO_BOX(cDefaultDownloadProtocol), 0);
-	cTempQWKFileType=glade_xml_get_widget(xml, "cTempQWKFileType");
-	if(w==NULL) {
-		fprintf(stderr,"Cannot get the temp/QWK file type widget\n");
-		return(-1);
+
+	cTempQWKFileType=GTK_COMBO_BOX(gtk_builder_get_object(builder, "cTempQWKFileType"));
+	if((cTQFT = GTK_LIST_STORE(gtk_combo_box_get_model(cTempQWKFileType))) == NULL) {
+		cTQFT = gtk_list_store_new(1, G_TYPE_STRING);
+		gtk_combo_box_set_model(cTempQWKFileType, GTK_TREE_MODEL(cTQFT));
+		column = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(cTempQWKFileType), column, TRUE);
+		gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(cTempQWKFileType), column,
+				"text", 0,
+				NULL
+		);
+		gtk_combo_box_set_active(GTK_COMBO_BOX(cTempQWKFileType), 0);
 	}
-	for(i=0; i<cfg.total_fcomps; i++)
-		gtk_combo_box_remove_text(GTK_COMBO_BOX(cTempQWKFileType), 0);
 
     /* Read .cfg files here */
     if(!load_cfg(&cfg, NULL, TRUE, str)) {
@@ -62,20 +97,53 @@ int refresh_globals(void)
 	}
 
 	/* Re-add combobox values */
-	for(i=0; i<cfg.total_shells; i++)
-		gtk_combo_box_append_text(GTK_COMBO_BOX(cCommandShell), cfg.shell[i]->name);
-	gtk_combo_box_append_text(GTK_COMBO_BOX(cExternalEditor), "Internal Editor");
-	for(i=0; i<cfg.total_xedits; i++)
-		gtk_combo_box_append_text(GTK_COMBO_BOX(cExternalEditor), cfg.xedit[i]->name);
-	gtk_combo_box_append_text(GTK_COMBO_BOX(cDefaultDownloadProtocol), "Not Specified");
-	for(i=0; i<cfg.total_prots; i++)
-		gtk_combo_box_append_text(GTK_COMBO_BOX(cDefaultDownloadProtocol), cfg.prot[i]->name);
-	for(i=0; i<cfg.total_fcomps; i++)
-		gtk_combo_box_append_text(GTK_COMBO_BOX(cTempQWKFileType), cfg.fcomp[i]->ext);
+	notatend = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(cCS), &curr);
+	for(i=0; i<cfg.total_shells; i++) {
+		if(!notatend)
+			gtk_list_store_append(cCS, &curr);
+		gtk_list_store_set(cCS, &curr, 0, cfg.shell[i]->name, -1);
+		notatend = gtk_tree_model_iter_next(GTK_TREE_MODEL(cCS), &curr);
+	}
+	while(notatend)
+		notatend = gtk_list_store_remove(cCS, &curr);
+
+	notatend = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(cEE), &curr);
+	if(notatend)
+		notatend = gtk_tree_model_iter_next(GTK_TREE_MODEL(cEE), &curr);
+	for(i=0; i<cfg.total_xedits; i++) {
+		if(!notatend)
+			gtk_list_store_append(cEE, &curr);
+		gtk_list_store_set(cEE, &curr, 0, cfg.xedit[i]->name, -1);
+		notatend = gtk_tree_model_iter_next(GTK_TREE_MODEL(cEE), &curr);
+	}
+	while(notatend)
+		notatend = gtk_list_store_remove(cEE, &curr);
+
+	notatend = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(cDDP), &curr);
+	if(notatend)
+		notatend = gtk_tree_model_iter_next(GTK_TREE_MODEL(cDDP), &curr);
+	for(i=0; i<cfg.total_prots; i++) {
+		if(!notatend)
+			gtk_list_store_append(cDDP, &curr);
+		gtk_list_store_set(cDDP, &curr, 0, cfg.prot[i]->name, -1);
+		notatend = gtk_tree_model_iter_next(GTK_TREE_MODEL(cDDP), &curr);
+	}
+	while(notatend)
+		notatend = gtk_list_store_remove(cDDP, &curr);
+
+	notatend = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(cTQFT), &curr);
+	for(i=0; i<cfg.total_fcomps; i++) {
+		if(!notatend)
+			gtk_list_store_append(cTQFT, &curr);
+		gtk_list_store_set(cTQFT, &curr, 0, cfg.fcomp[i]->ext, -1);
+		notatend = gtk_tree_model_iter_next(GTK_TREE_MODEL(cTQFT), &curr);
+	}
+	while(notatend)
+		notatend = gtk_list_store_remove(cTQFT, &curr);
 
 	totalusers=lastuser(&cfg);
 	sprintf(str,"of %d",totalusers);
-	w=glade_xml_get_widget(xml, "lTotalUsers");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "lTotalUsers"));
 	if(w==NULL) {
 		fprintf(stderr,"Cannot get the total users widget\n");
 		return(-1);
@@ -106,16 +174,6 @@ int read_config(void)
     cfg.size=sizeof(cfg);
     SAFECOPY(cfg.ctrl_dir,ctrl_dir);
 
-	/*
-	 * The following are to make up for Glade hacks... we want a text list
-	 * in the combo boxes... Galde does this *if* there's predefined text.
-	 * So, we need to remove it during the refresh.
-	 */
-	cfg.total_shells=1;
-	cfg.total_xedits=1;
-	cfg.total_prots=1;
-	cfg.total_fcomps=1;
-
 	if(refresh_globals())
 		return(-1);
 	if(totalusers > 0)
@@ -124,19 +182,29 @@ int read_config(void)
 }
 
 int main(int argc, char *argv[]) {
+	GtkWindow *xml;
+	GError* error = NULL;
 
     gtk_init(&argc, &argv);
-    glade_init();
 
     /* load the interface */
 	strcpy(glade_path, argv[0]);
 	strcpy(getfname(glade_path), "gtkuseredit.glade");
-    xml = glade_xml_new(glade_path, "MainWindow", NULL);
+	builder = gtk_builder_new ();
+	if (!gtk_builder_add_from_file (builder, glade_path, &error)) {
+		g_warning ("Couldn't load builder file: %s", error->message);
+		g_error_free (error);
+	}
+
     /* connect the signals in the interface */
-    glade_xml_signal_autoconnect(xml);
-	/* Set up the global config stuff. */
+	gtk_builder_connect_signals (builder, NULL);
+
 	if(read_config())
 		return(1);
+
+	/* Get MainWindow and display it */
+	xml = GTK_WINDOW (gtk_builder_get_object (builder, "MainWindow"));
+	gtk_window_present(xml);
 
 	if(argc>1) {
 		if(atoi(argv[1]))
@@ -147,10 +215,9 @@ int main(int argc, char *argv[]) {
 			if(nu)
 				update_current_user(nu);
 			else {
-				GladeXML        *cxml;
-				cxml = glade_xml_new(glade_path, "NotFoundWindow", NULL);
-				glade_xml_signal_autoconnect(cxml);
-				gtk_window_present(GTK_WINDOW(glade_xml_get_widget(cxml, "NotFoundWindow")));
+				GtkWindow        *cxml;
+				cxml = GTK_WINDOW(gtk_builder_get_object(builder, "NotFoundWindow"));
+				gtk_window_present(cxml);
 			}
 		}
 	}

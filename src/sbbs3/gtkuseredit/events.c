@@ -1,5 +1,4 @@
 #include <gtk/gtk.h>
-#include <glade/glade.h>
 
 #include "sbbs.h"
 #include "dirwrap.h"
@@ -13,16 +12,16 @@
 /*
  * Sets the save buttons sensitive.
  */
-void user_changed(GtkWidget *wiggy, gpointer data)
+G_MODULE_EXPORT void user_changed(GtkWidget *wiggy, gpointer data)
 {
 	GtkWidget	*w;
 
-	w=glade_xml_get_widget(xml, "bSaveUser");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "bSaveUser"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the save user button widget\n");
 	else
 		gtk_widget_set_sensitive(GTK_WIDGET(w),TRUE);
-	w=glade_xml_get_widget(xml, "save1");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "save1"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the save user menu widget\n");
 	else
@@ -32,7 +31,7 @@ void user_changed(GtkWidget *wiggy, gpointer data)
 /*
  * Prevents anything but digits from being entered into an input box
  */
-void digit_insert_text_handler (GtkEntry *entry, const gchar *text, gint length, gint *position, gpointer data)
+G_MODULE_EXPORT void digit_insert_text_handler (GtkEntry *entry, const gchar *text, gint length, gint *position, gpointer data)
 {
 	GtkEditable *editable = GTK_EDITABLE(entry);
 	int i, count=0, beep=0;
@@ -67,7 +66,7 @@ void digit_insert_text_handler (GtkEntry *entry, const gchar *text, gint length,
  * This is one of the two big gruntwork functions
  * (the other being save_user)
  */
-void load_user(GtkWidget *wiggy, gpointer data)
+G_MODULE_EXPORT void load_user(GtkWidget *wiggy, gpointer data)
 {
 	GtkWidget	*w;
 	char		str[1024];
@@ -91,24 +90,24 @@ void load_user(GtkWidget *wiggy, gpointer data)
 
 	/* Toolbar indicators */
 		b=user.misc&DELETED?TRUE:FALSE;
-		w=glade_xml_get_widget(xml, "bDelete");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "bDelete"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the deleted toolbar widget\n");
 		else
 			gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(w),b);
-		w=glade_xml_get_widget(xml, "delete1");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "delete1"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the deleted menu widget\n");
 		else
 			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w),b);
 
 		b=user.misc&INACTIVE?TRUE:FALSE;
-		w=glade_xml_get_widget(xml, "bRemove");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "bRemove"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the removed toolbar widget\n");
 		else
 			gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(w),b);
-		w=glade_xml_get_widget(xml, "remove1");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "remove1"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the remove menu widget\n");
 		else
@@ -117,56 +116,56 @@ void load_user(GtkWidget *wiggy, gpointer data)
 
 	/* Peronal Tab */
 		/* Alias */
-		w=glade_xml_get_widget(xml, "eUserAlias");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eUserAlias"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the alias widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.alias);
 
 		/* Real Name */
-		w=glade_xml_get_widget(xml, "eRealName");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eRealName"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the real name widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.name);
 
 		/* Computer */
-		w=glade_xml_get_widget(xml, "eComputer");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eComputer"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the computer widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.comp);
 
 		/* NetMail */
-		w=glade_xml_get_widget(xml, "eNetMail");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eNetMail"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the netmail widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.netmail);
 
 		/* Phone */
-		w=glade_xml_get_widget(xml, "ePhone");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "ePhone"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the phone widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.phone);
 
 		/* Note */
-		w=glade_xml_get_widget(xml, "eNote");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eNote"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the note widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.note);
 
 		/* Comment */
-		w=glade_xml_get_widget(xml, "eComment");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eComment"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the comment widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.comment);
 
 		/* Gender */
-		w=glade_xml_get_widget(xml, "eGender");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eGender"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the gender widget\n");
 		else {
@@ -176,49 +175,49 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		}
 
 		/* Connection */
-		w=glade_xml_get_widget(xml, "eConnection");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eConnection"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the connection widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.modem);
 
 		/* Chat Handle */
-		w=glade_xml_get_widget(xml, "eHandle");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eHandle"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the handle widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.handle);
 
 		/* Birthdate */
-		w=glade_xml_get_widget(xml, "eBirthdate");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eBirthdate"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the birthdate widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.birth);
 
 		/* Password */
-		w=glade_xml_get_widget(xml, "ePassword");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "ePassword"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the password widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.pass);
 
 		/* Address */
-		w=glade_xml_get_widget(xml, "eAddress");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eAddress"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the address widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.address);
 
 		/* Location */
-		w=glade_xml_get_widget(xml, "eLocation");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eLocation"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the location widget\n");
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.location);
 
 		/* Postal/ZIP code */
-		w=glade_xml_get_widget(xml, "eZip");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eZip"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the postal/zip code widget\n");
 		else
@@ -226,14 +225,14 @@ void load_user(GtkWidget *wiggy, gpointer data)
 
 	/* Security Tab */
 		/* Level */
-		w=glade_xml_get_widget(xml, "sLevel");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sLevel"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the level widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.level);
 
 		/* Expiration */
-		w=glade_xml_get_widget(xml, "eExpiration");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eExpiration"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expiration widget\n");
 		else {
@@ -248,7 +247,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tFlagSet1.");
 		for(i=0;i<26;i++) {
 			str[9]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -260,7 +259,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tFlagSet2.");
 		for(i=0;i<26;i++) {
 			str[9]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -272,7 +271,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tFlagSet3.");
 		for(i=0;i<26;i++) {
 			str[9]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -284,7 +283,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tFlagSet4.");
 		for(i=0;i<26;i++) {
 			str[9]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -297,7 +296,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tExemptions.");
 		for(i=0;i<26;i++) {
 			str[11]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -310,7 +309,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tRestrictions.");
 		for(i=0;i<26;i++) {
 			str[13]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -320,21 +319,21 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		}
 
 		/* Credits */
-		w=glade_xml_get_widget(xml, "sCredits");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sCredits"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the credits widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.cdt);
 
 		/* Free Credits */
-		w=glade_xml_get_widget(xml, "sFreeCredits");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sFreeCredits"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the free credits widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.freecdt);
 
 		/* Minutes */
-		w=glade_xml_get_widget(xml, "sMinutes");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sMinutes"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the minutes widget\n");
 		else
@@ -342,7 +341,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 
 	/* Statistics */
 		/* First On */
-		w=glade_xml_get_widget(xml, "eFirstOn");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eFirstOn"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the first on widget\n");
 		else {
@@ -354,7 +353,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		}
 
 		/* Last On */
-		w=glade_xml_get_widget(xml, "eLastOn");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eLastOn"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the last on widget\n");
 		else {
@@ -366,257 +365,257 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		}
 
 		/* Total Logons */
-		w=glade_xml_get_widget(xml, "sLogonsTotal");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sLogonsTotal"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total logons widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.logons);
 
 		/* Logons today */
-		w=glade_xml_get_widget(xml, "sLogonsToday");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sLogonsToday"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the logons today widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.ltoday);
 
 		/* Total Posts */
-		w=glade_xml_get_widget(xml, "sTotalPosts");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTotalPosts"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total posts widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.posts);
 
 		/* Posts Today */
-		w=glade_xml_get_widget(xml, "sPostsToday");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sPostsToday"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the posts today widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.ptoday);
 
 		/* Total Uploads */
-		w=glade_xml_get_widget(xml, "sTotalUploads");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTotalUploads"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total uploads widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.uls);
 
 		/* Upload Bytes */
-		w=glade_xml_get_widget(xml, "sUploadBytes");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sUploadBytes"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the upload bytes widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.ulb);
 
 		/* Total Time On */
-		w=glade_xml_get_widget(xml, "sTotalTimeOn");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTotalTimeOn"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total time on widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.timeon);
 
 		/* Time On Today */
-		w=glade_xml_get_widget(xml, "sTimeOnToday");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTimeOnToday"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the time on today widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.ttoday);
 
 		/* Time On Last Call */
-		w=glade_xml_get_widget(xml, "sTimeOnLastCall");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTimeOnLastCall"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the last call time on widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.tlast);
 
 		/* Time On Extra */
-		w=glade_xml_get_widget(xml, "sTimeOnExtra");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTimeOnExtra"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the extra time on widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.textra);
 
 		/* Total Downloads */
-		w=glade_xml_get_widget(xml, "sDownloadsTotal");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sDownloadsTotal"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total downloads widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.dls);
 
 		/* Download Bytes */
-		w=glade_xml_get_widget(xml, "sDownloadsBytes");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sDownloadsBytes"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the download bytes widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.dlb);
 
 		/* Download Leeches */
-		w=glade_xml_get_widget(xml, "sDownloadsLeech");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sDownloadsLeech"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the downloads leech widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.leech);
 
 		/* Total Email */
-		w=glade_xml_get_widget(xml, "sEmailTotal");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sEmailTotal"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total email widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.emails);
 
 		/* Email Today */
-		w=glade_xml_get_widget(xml, "sEmailToday");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sEmailToday"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the email today widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.etoday);
 
 		/* Email To Sysop */
-		w=glade_xml_get_widget(xml, "sEmailToSysop");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sEmailToSysop"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the email to sysop widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.fbacks);
 
 	/* Settings */
-		w=glade_xml_get_widget(xml, "cUserAUTOTERM");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserAUTOTERM"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the autoterm widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&AUTOTERM);
 
-		w=glade_xml_get_widget(xml, "cUserNO_EXASCII");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserNO_EXASCII"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the no exascii widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&NO_EXASCII);
 
-		w=glade_xml_get_widget(xml, "cUserANSI");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserANSI"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the ansi widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&ANSI);
 
-		w=glade_xml_get_widget(xml, "cUserCOLOR");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCOLOR"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the color widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&COLOR);
 
-		w=glade_xml_get_widget(xml, "cUserRIP");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserRIP"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the RIP widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&RIP);
 
-		w=glade_xml_get_widget(xml, "cUserWIP");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserWIP"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the WIP widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&WIP);
 
-		w=glade_xml_get_widget(xml, "cUserUPAUSE");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserUPAUSE"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the upause widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&UPAUSE);
 
-		w=glade_xml_get_widget(xml, "cUserCOLDKEYS");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCOLDKEYS"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the coldkeys widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&COLDKEYS);
 
-		w=glade_xml_get_widget(xml, "cUserSPIN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserSPIN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the spin widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&SPIN);
 
-		w=glade_xml_get_widget(xml, "cUserRIP");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserRIP"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the RIP widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&RIP);
 
-		w=glade_xml_get_widget(xml, "sRows");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sRows"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the rows widget\n");
 		else
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(w),user.rows);
 
-		w=glade_xml_get_widget(xml, "cCommandShell");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cCommandShell"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the command shell widget\n");
 		else
 			gtk_combo_box_set_active(GTK_COMBO_BOX(w),user.shell);
 
-		w=glade_xml_get_widget(xml, "cUserEXPERT");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserEXPERT"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expert widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&EXPERT);
 
-		w=glade_xml_get_widget(xml, "cUserASK_NSCAN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserASK_NSCAN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the ask new scan widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&ASK_NSCAN);
 
-		w=glade_xml_get_widget(xml, "cUserASK_SSCAN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserASK_SSCAN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the ask to you scan widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&ASK_SSCAN);
 
-		w=glade_xml_get_widget(xml, "cUserCURSUB");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCURSUB"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the save current sub widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&CURSUB);
 
-		w=glade_xml_get_widget(xml, "cUserQUIET");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQUIET"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the quiet mode widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&QUIET);
 
-		w=glade_xml_get_widget(xml, "cUserAUTOLOGON");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserAUTOLOGON"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the auto logon widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&AUTOLOGON);
 
-		w=glade_xml_get_widget(xml, "cUserEXPERT");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserEXPERT"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expert widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&EXPERT);
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_ECHO");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_ECHO"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat echo widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.chat&CHAT_ECHO);
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_ACTION");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_ACTION"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat action widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.chat&CHAT_ACTION);
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_NOPAGE");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_NOPAGE"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat nopage widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.chat&CHAT_NOPAGE);
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_NOACT");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_NOACT"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat no activity widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.chat&CHAT_NOACT);
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_SPLITP");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_SPLITP"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat split personal widget\n");
 		else
@@ -624,55 +623,55 @@ void load_user(GtkWidget *wiggy, gpointer data)
 
 	/* Msg/File Settings */
 
-		w=glade_xml_get_widget(xml, "cUserNETMAIL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserNETMAIL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the netmail widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&NETMAIL);
 
-		w=glade_xml_get_widget(xml, "cUserCLRSCRN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCLRSCRN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the clear screen widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&CLRSCRN);
 
-		w=glade_xml_get_widget(xml, "cUserANFSCAN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserANFSCAN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the ask new file scan widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&ANFSCAN);
 
-		w=glade_xml_get_widget(xml, "cUserEXTDESC");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserEXTDESC"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the extended descriptions widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&EXTDESC);
 
-		w=glade_xml_get_widget(xml, "cUserBATCHFLAG");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserBATCHFLAG"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the batch flagging widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&BATCHFLAG);
 
-		w=glade_xml_get_widget(xml, "cUserAUTOHANG");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserAUTOHANG"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the auto hangup after transfer widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&AUTOHANG);
 
-		w=glade_xml_get_widget(xml, "cUserCLRSCRN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCLRSCRN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the clear screen widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&CLRSCRN);
 
-		w=glade_xml_get_widget(xml, "cExternalEditor");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cExternalEditor"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the external editor widget\n");
 		else
 			gtk_combo_box_set_active(GTK_COMBO_BOX(w),user.xedit);
 
-		w=glade_xml_get_widget(xml, "cDefaultDownloadProtocol");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cDefaultDownloadProtocol"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the default download protocol widget\n");
 		else {
@@ -685,7 +684,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cTempQWKFileType");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cTempQWKFileType"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the temp QWK file type widget\n");
 		else {
@@ -698,80 +697,80 @@ void load_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_FILES");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_FILES"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include new files list widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_FILES);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_EMAIL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_EMAIL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include unread email widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_EMAIL);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_ALLMAIL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_ALLMAIL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include all email widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_ALLMAIL);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_DELMAIL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_DELMAIL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the delete email widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_DELMAIL);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_BYSELF");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_BYSELF"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include messages by self widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_BYSELF);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_EXPCTLA");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_EXPCTLA"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expand ctrl-a widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_EXPCTLA);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_RETCTLA");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_RETCTLA"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the retain ctrl-a widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_RETCTLA);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_ATTACH");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_ATTACH"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include attachments widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_ATTACH);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_NOINDEX");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_NOINDEX"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the don't include index files widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_NOINDEX);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_TZ");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_TZ"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include TZ widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_TZ);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_VIA");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_VIA"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include VIA widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_VIA);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_NOCTRL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_NOCTRL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include extraneous control files widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_NOCTRL);
 
 	/* Extended Comment */
-		w=glade_xml_get_widget(xml, "tExtendedComment");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "tExtendedComment"));
 
 		gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), &start);
 		gtk_text_buffer_get_end_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), &end);
@@ -788,19 +787,19 @@ void load_user(GtkWidget *wiggy, gpointer data)
 	/*
 	 * Set the save buttons as inactive to indicate that no changes were made
 	 */
-	w=glade_xml_get_widget(xml, "bSaveUser");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "bSaveUser"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the save user button widget\n");
 	else
 		gtk_widget_set_sensitive(GTK_WIDGET(w),FALSE);
-	w=glade_xml_get_widget(xml, "save1");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "save1"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the save user menu widget\n");
 	else
 		gtk_widget_set_sensitive(GTK_WIDGET(w),FALSE);
 }
 
-void save_user(GtkWidget *wiggy, gpointer data)
+G_MODULE_EXPORT void save_user(GtkWidget *wiggy, gpointer data)
 {
 	GtkWidget	*w;
 	char		str[1024];
@@ -812,7 +811,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 
 	/* Toolbar indicators */
 		b=user.misc&DELETED?TRUE:FALSE;
-		w=glade_xml_get_widget(xml, "bDelete");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "bDelete"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the deleted toolbar widget\n");
 		else {
@@ -826,7 +825,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		}
 
 		b=user.misc&INACTIVE?TRUE:FALSE;
-		w=glade_xml_get_widget(xml, "bRemove");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "bRemove"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the removed toolbar widget\n");
 		else {
@@ -842,7 +841,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 
 	/* Peronal Tab */
 		/* Alias */
-		w=glade_xml_get_widget(xml, "eUserAlias");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eUserAlias"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the alias widget\n");
 		else {
@@ -856,63 +855,63 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		}
 
 		/* Real Name */
-		w=glade_xml_get_widget(xml, "eRealName");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eRealName"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the real name widget\n");
 		else
 			strcpy(user.name, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Computer */
-		w=glade_xml_get_widget(xml, "eComputer");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eComputer"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the computer widget\n");
 		else
 			strcpy(user.comp, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* NetMail */
-		w=glade_xml_get_widget(xml, "eNetMail");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eNetMail"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the netmail widget\n");
 		else
 			strcpy(user.netmail, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Phone */
-		w=glade_xml_get_widget(xml, "ePhone");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "ePhone"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the phone widget\n");
 		else
 			strcpy(user.phone,gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Note */
-		w=glade_xml_get_widget(xml, "eNote");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eNote"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the note widget\n");
 		else
 			strcpy(user.note, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Comment */
-		w=glade_xml_get_widget(xml, "eComment");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eComment"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the comment widget\n");
 		else
 			strcpy(user.comment, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Gender */
-		w=glade_xml_get_widget(xml, "eGender");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eGender"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the gender widget\n");
 		else
 			user.sex=*(gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Connection */
-		w=glade_xml_get_widget(xml, "eConnection");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eConnection"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the connection widget\n");
 		else
 			strcpy(user.modem, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Chat Handle */
-		w=glade_xml_get_widget(xml, "eHandle");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eHandle"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the handle widget\n");
 		else
@@ -921,28 +920,28 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		/* Birthdate - Already done */
 
 		/* Password */
-		w=glade_xml_get_widget(xml, "ePassword");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "ePassword"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the password widget\n");
 		else
 			strcpy(user.pass, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Address */
-		w=glade_xml_get_widget(xml, "eAddress");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eAddress"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the address widget\n");
 		else
 			strcpy(user.address, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Location */
-		w=glade_xml_get_widget(xml, "eLocation");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eLocation"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the location widget\n");
 		else
 			strcpy(user.location, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Postal/ZIP code */
-		w=glade_xml_get_widget(xml, "eZip");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eZip"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the postal/zip code widget\n");
 		else
@@ -950,7 +949,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 
 	/* Security Tab */
 		/* Level */
-		w=glade_xml_get_widget(xml, "sLevel");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sLevel"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the level widget\n");
 		else
@@ -962,7 +961,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tFlagSet1.");
 		for(i=0;i<26;i++) {
 			str[9]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -979,7 +978,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tFlagSet2.");
 		for(i=0;i<26;i++) {
 			str[9]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -996,7 +995,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tFlagSet3.");
 		for(i=0;i<26;i++) {
 			str[9]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -1013,7 +1012,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tFlagSet4.");
 		for(i=0;i<26;i++) {
 			str[9]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -1031,7 +1030,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tExemptions.");
 		for(i=0;i<26;i++) {
 			str[11]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -1049,7 +1048,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		strcpy(str,"tRestrictions.");
 		for(i=0;i<26;i++) {
 			str[13]='A'+i;
-			w=glade_xml_get_widget(xml, str);
+			w=GTK_WIDGET(gtk_builder_get_object(builder, str));
 			if(w==NULL)
 				fprintf(stderr,"Cannot get the %s widget\n",str);
 			else {
@@ -1064,21 +1063,21 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		}
 
 		/* Credits */
-		w=glade_xml_get_widget(xml, "sCredits");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sCredits"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the credits widget\n");
 		else
 			user.cdt = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Free Credits */
-		w=glade_xml_get_widget(xml, "sFreeCredits");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sFreeCredits"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the free credits widget\n");
 		else
 			user.freecdt = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Minutes */
-		w=glade_xml_get_widget(xml, "sMinutes");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sMinutes"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the minutes widget\n");
 		else
@@ -1090,119 +1089,119 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		/* Last On - Already done */
 
 		/* Total Logons */
-		w=glade_xml_get_widget(xml, "sLogonsTotal");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sLogonsTotal"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total logons widget\n");
 		else
 			user.logons = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Logons today */
-		w=glade_xml_get_widget(xml, "sLogonsToday");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sLogonsToday"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the logons today widget\n");
 		else
 			user.ltoday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Total Posts */
-		w=glade_xml_get_widget(xml, "sTotalPosts");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTotalPosts"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total posts widget\n");
 		else
 			user.posts = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Posts Today */
-		w=glade_xml_get_widget(xml, "sPostsToday");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sPostsToday"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the posts today widget\n");
 		else
 			user.ptoday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Total Uploads */
-		w=glade_xml_get_widget(xml, "sTotalUploads");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTotalUploads"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total uploads widget\n");
 		else
 			user.uls = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Upload Bytes */
-		w=glade_xml_get_widget(xml, "sUploadBytes");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sUploadBytes"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the upload bytes widget\n");
 		else
 			user.ulb = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Total Time On */
-		w=glade_xml_get_widget(xml, "sTotalTimeOn");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTotalTimeOn"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total time on widget\n");
 		else
 			user.timeon = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Time On Today */
-		w=glade_xml_get_widget(xml, "sTimeOnToday");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTimeOnToday"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the time on today widget\n");
 		else
 			user.ttoday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Time On Last Call */
-		w=glade_xml_get_widget(xml, "sTimeOnLastCall");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTimeOnLastCall"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the last call time on widget\n");
 		else
 			user.tlast = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Time On Extra */
-		w=glade_xml_get_widget(xml, "sTimeOnExtra");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sTimeOnExtra"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the extra time on widget\n");
 		else
 			user.textra = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Total Downloads */
-		w=glade_xml_get_widget(xml, "sDownloadsTotal");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sDownloadsTotal"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total downloads widget\n");
 		else
 			user.dls = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Download Bytes */
-		w=glade_xml_get_widget(xml, "sDownloadsBytes");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sDownloadsBytes"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the download bytes widget\n");
 		else
 			user.dlb = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Download Leeches */
-		w=glade_xml_get_widget(xml, "sDownloadsLeech");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sDownloadsLeech"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the downloads leech widget\n");
 		else
 			user.leech = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Total Email */
-		w=glade_xml_get_widget(xml, "sEmailTotal");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sEmailTotal"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the total email widget\n");
 		else
 			user.emails = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Email Today */
-		w=glade_xml_get_widget(xml, "sEmailToday");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sEmailToday"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the email today widget\n");
 		else
 			user.etoday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 		/* Email To Sysop */
-		w=glade_xml_get_widget(xml, "sEmailToSysop");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sEmailToSysop"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the email to sysop widget\n");
 		else
 			user.fbacks = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
 	/* Settings */
-		w=glade_xml_get_widget(xml, "cUserAUTOTERM");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserAUTOTERM"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the autoterm widget\n");
 		else {
@@ -1215,7 +1214,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserNO_EXASCII");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserNO_EXASCII"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the no exascii widget\n");
 		else {
@@ -1228,7 +1227,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserANSI");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserANSI"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the ansi widget\n");
 		else {
@@ -1242,7 +1241,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		}
 				
 
-		w=glade_xml_get_widget(xml, "cUserCOLOR");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCOLOR"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the color widget\n");
 		else {
@@ -1255,7 +1254,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserRIP");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserRIP"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the RIP widget\n");
 		else {
@@ -1268,7 +1267,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserWIP");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserWIP"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the WIP widget\n");
 		else {
@@ -1281,7 +1280,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserUPAUSE");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserUPAUSE"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the upause widget\n");
 		else {
@@ -1294,7 +1293,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserCOLDKEYS");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCOLDKEYS"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the coldkeys widget\n");
 		else {
@@ -1307,7 +1306,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserSPIN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserSPIN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the spin widget\n");
 		else {
@@ -1320,7 +1319,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserRIP");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserRIP"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the RIP widget\n");
 		else {
@@ -1333,19 +1332,19 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "sRows");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "sRows"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the rows widget\n");
 		else
 			user.rows = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 
-		w=glade_xml_get_widget(xml, "cCommandShell");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cCommandShell"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the command shell widget\n");
 		else
 			user.shell = gtk_combo_box_get_active(GTK_COMBO_BOX(w));
 
-		w=glade_xml_get_widget(xml, "cUserEXPERT");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserEXPERT"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expert widget\n");
 		else {
@@ -1358,7 +1357,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserASK_NSCAN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserASK_NSCAN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the ask new scan widget\n");
 		else {
@@ -1371,7 +1370,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserASK_SSCAN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserASK_SSCAN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the ask to you scan widget\n");
 		else {
@@ -1384,7 +1383,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserCURSUB");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCURSUB"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the save current sub widget\n");
 		else {
@@ -1397,7 +1396,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQUIET");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQUIET"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the quiet mode widget\n");
 		else {
@@ -1410,7 +1409,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserAUTOLOGON");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserAUTOLOGON"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the auto logon widget\n");
 		else {
@@ -1423,7 +1422,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserEXPERT");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserEXPERT"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expert widget\n");
 		else {
@@ -1436,7 +1435,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_ECHO");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_ECHO"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat echo widget\n");
 		else {
@@ -1449,7 +1448,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_ACTION");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_ACTION"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat action widget\n");
 		else {
@@ -1462,7 +1461,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_NOPAGE");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_NOPAGE"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat nopage widget\n");
 		else {
@@ -1475,7 +1474,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_NOACT");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_NOACT"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat no activity widget\n");
 		else {
@@ -1488,7 +1487,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserCHAT_SPLITP");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCHAT_SPLITP"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the chat split personal widget\n");
 		else {
@@ -1503,7 +1502,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 
 	/* Msg/File Settings */
 
-		w=glade_xml_get_widget(xml, "cUserNETMAIL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserNETMAIL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the netmail widget\n");
 		else {
@@ -1516,7 +1515,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserCLRSCRN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCLRSCRN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the clear screen widget\n");
 		else {
@@ -1529,7 +1528,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserANFSCAN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserANFSCAN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the ask new file scan widget\n");
 		else {
@@ -1542,7 +1541,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserEXTDESC");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserEXTDESC"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the extended descriptions widget\n");
 		else {
@@ -1555,7 +1554,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserBATCHFLAG");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserBATCHFLAG"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the batch flagging widget\n");
 		else {
@@ -1568,7 +1567,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserAUTOHANG");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserAUTOHANG"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the auto hangup after transfer widget\n");
 		else {
@@ -1581,7 +1580,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserCLRSCRN");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserCLRSCRN"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the clear screen widget\n");
 		else {
@@ -1594,13 +1593,13 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cExternalEditor");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cExternalEditor"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the external editor widget\n");
 		else
 			user.xedit = gtk_combo_box_get_active(GTK_COMBO_BOX(w));
 
-		w=glade_xml_get_widget(xml, "cDefaultDownloadProtocol");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cDefaultDownloadProtocol"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the default download protocol widget\n");
 		else {
@@ -1610,13 +1609,13 @@ void save_user(GtkWidget *wiggy, gpointer data)
 				user.prot=cfg.prot[gtk_combo_box_get_active(GTK_COMBO_BOX(w))-1]->mnemonic;
 		}
 
-		w=glade_xml_get_widget(xml, "cTempQWKFileType");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cTempQWKFileType"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the temp QWK file type widget\n");
 		else
 			strcpy(user.tmpext, cfg.fcomp[gtk_combo_box_get_active(GTK_COMBO_BOX(w))]->ext);
 
-		w=glade_xml_get_widget(xml, "cUserQWK_FILES");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_FILES"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include new files list widget\n");
 		else {
@@ -1629,7 +1628,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_EMAIL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_EMAIL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include unread email widget\n");
 		else {
@@ -1642,7 +1641,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_ALLMAIL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_ALLMAIL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include all email widget\n");
 		else {
@@ -1655,7 +1654,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_DELMAIL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_DELMAIL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the delete email widget\n");
 		else {
@@ -1668,7 +1667,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_BYSELF");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_BYSELF"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include messages by self widget\n");
 		else {
@@ -1681,7 +1680,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_EXPCTLA");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_EXPCTLA"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expand ctrl-a widget\n");
 		else {
@@ -1694,7 +1693,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_RETCTLA");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_RETCTLA"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the retain ctrl-a widget\n");
 		else {
@@ -1707,7 +1706,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_ATTACH");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_ATTACH"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include attachments widget\n");
 		else {
@@ -1720,7 +1719,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_NOINDEX");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_NOINDEX"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the don't include index files widget\n");
 		else {
@@ -1733,7 +1732,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_TZ");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_TZ"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include TZ widget\n");
 		else {
@@ -1746,7 +1745,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_VIA");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_VIA"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include VIA widget\n");
 		else {
@@ -1759,7 +1758,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			}
 		}
 
-		w=glade_xml_get_widget(xml, "cUserQWK_NOCTRL");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserQWK_NOCTRL"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the include extraneous control files widget\n");
 		else {
@@ -1774,7 +1773,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 
 	/* Extended Comment */
 		sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
-		w=glade_xml_get_widget(xml, "tExtendedComment");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "tExtendedComment"));
 		gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), &start);
 		gtk_text_buffer_get_end_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), &end);
 		f=fopen(str,"w");
@@ -1793,7 +1792,7 @@ void save_user(GtkWidget *wiggy, gpointer data)
 	}
 }
 
-void new_user(GtkWidget *wiggy, gpointer data)
+G_MODULE_EXPORT void new_user(GtkWidget *wiggy, gpointer data)
 {
 	GtkWidget	*eCurrentUser;
 	int			i;
@@ -1840,7 +1839,7 @@ void new_user(GtkWidget *wiggy, gpointer data)
 	if(cfg.new_expire)
 		user.expire=time(NULL)+((long)cfg.new_expire*24L*60L*60L);
 
-	eCurrentUser=glade_xml_get_widget(xml, "eCurrentUser");
+	eCurrentUser=GTK_WIDGET(gtk_builder_get_object(builder, "eCurrentUser"));
 	if(eCurrentUser==NULL) {
 		fprintf(stderr,"Cannot get the current user widget\n");
 		load_user(wiggy, data);
@@ -1859,7 +1858,7 @@ int update_current_user(int new_user)
 	if(new_user<1 || new_user>totalusers)
 		new_user=current_user;
 	sprintf(str,"%d",new_user);
-	eCurrentUser=glade_xml_get_widget(xml, "eCurrentUser");
+	eCurrentUser=GTK_WIDGET(gtk_builder_get_object(builder, "eCurrentUser"));
 	if(eCurrentUser==NULL) {
 		fprintf(stderr,"Cannot get the current user widget\n");
 		return(-1);
@@ -1873,7 +1872,7 @@ int update_current_user(int new_user)
 	return(0);
 }
 
-void current_user_changed(GtkWidget *w, gpointer data)
+G_MODULE_EXPORT void current_user_changed(GtkWidget *w, gpointer data)
 {
 	int new_user;
 
@@ -1881,52 +1880,51 @@ void current_user_changed(GtkWidget *w, gpointer data)
 	update_current_user(new_user);
 }
 
-void first_user(GtkWidget *w, gpointer data)
+G_MODULE_EXPORT void first_user(GtkWidget *w, gpointer data)
 {
 	update_current_user(1);
 }
 
-void prev_user(GtkWidget *w, gpointer data)
+G_MODULE_EXPORT void prev_user(GtkWidget *w, gpointer data)
 {
 	update_current_user(current_user-1);
 }
 
-void next_user(GtkWidget *w, gpointer data)
+G_MODULE_EXPORT void next_user(GtkWidget *w, gpointer data)
 {
 	update_current_user(current_user+1);
 }
 
-void last_user(GtkWidget *w, gpointer data)
+G_MODULE_EXPORT void last_user(GtkWidget *w, gpointer data)
 {
 	update_current_user(totalusers);
 }
 
-void show_about_box(GtkWidget *unused, gpointer data)
+G_MODULE_EXPORT void show_about_box(GtkWidget *unused, gpointer data)
 {
-	GladeXML	*axml;
-    axml = glade_xml_new(glade_path, "AboutWindow", NULL);
+	GtkWindow	*axml;
+    axml = GTK_WINDOW(gtk_builder_get_object(builder, "AboutWindow"));
 	if(axml==NULL) {
 		fprintf(stderr,"Could not locate AboutWindow widget\n");
 		return;
 	}
     /* connect the signals in the interface */
-    glade_xml_signal_autoconnect(axml);
-	gtk_window_present(GTK_WINDOW(glade_xml_get_widget(axml, "AboutWindow")));
+	gtk_window_present(axml);
 }
 
-void user_toggle_delete(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void user_toggle_delete(GtkWidget *t, gpointer data)
 {
 	gboolean	deleted;
 	GtkWidget	*w;
 
 	g_object_get(G_OBJECT(t), "active", &deleted, NULL);
 
-	w=glade_xml_get_widget(xml, "bDelete");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "bDelete"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the deleted toolbar widget\n");
 	else
 		gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(w),deleted);
-	w=glade_xml_get_widget(xml, "delete1");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "delete1"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the deleted menu widget\n");
 	else
@@ -1934,19 +1932,19 @@ void user_toggle_delete(GtkWidget *t, gpointer data)
 	user_changed(t, data);
 }
 
-void user_toggle_inactive(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void user_toggle_inactive(GtkWidget *t, gpointer data)
 {
 	gboolean	inactive;
 	GtkWidget	*w;
 
 	g_object_get(G_OBJECT(t), "active", &inactive, NULL);
 
-	w=glade_xml_get_widget(xml, "bRemove");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "bRemove"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the removed toolbar widget\n");
 	else
 		gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(w),inactive);
-	w=glade_xml_get_widget(xml, "remove1");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "remove1"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the remove menu widget\n");
 	else
@@ -1954,44 +1952,49 @@ void user_toggle_inactive(GtkWidget *t, gpointer data)
 	user_changed(t, data);
 }
 
-void find_user(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void find_user(GtkWidget *t, gpointer data)
 {
 	GtkWidget	*w;
 	unsigned int	nu;
 
-	w=glade_xml_get_widget(xml, "eMatchUser");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "eMatchUser"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the find user entry widget\n");
 	else {
 		nu=matchuser(&cfg, (char *)gtk_entry_get_text(GTK_ENTRY(w)), TRUE);
 		if(nu==0) {
-			GladeXML	*cxml;
-			cxml = glade_xml_new(glade_path, "NotFoundWindow", NULL);
-		    /* connect the signals in the interface */
-		    glade_xml_signal_autoconnect(cxml);
+			GtkWindow*	cxml;
+			cxml = GTK_WINDOW(gtk_builder_get_object(builder, "NotFoundWindow"));
 			if(cxml==NULL)
 				fprintf(stderr,"Could not locate NotFoundWindow widget\n");
-			gtk_window_present(GTK_WINDOW(glade_xml_get_widget(cxml, "NotFoundWindow")));
+			gtk_window_present(cxml);
 		}
 		else
 			update_current_user(nu);
 	}
 }
 
-void close_this_window(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void close_this_window(GtkWidget *t, gpointer data)
 {
 	gtk_widget_destroy(GTK_WIDGET(gtk_widget_get_toplevel(t)));
 }
 
-int got_date;
+G_MODULE_EXPORT void hide_this_window(GtkWidget *t, gpointer data)
+{
+	printf("Hiding the window!");
+	gtk_widget_hide(GTK_WIDGET(gtk_widget_get_toplevel(t)));
+}
 
-void destroy_calendar_window(GtkWidget *t, gpointer data)
+int got_date=0;
+
+G_MODULE_EXPORT void destroy_calendar_window(GtkWidget *t, gpointer data)
 {
 	if(!got_date)
 		gtk_main_quit();
+	gtk_widget_hide_on_delete(GTK_WIDGET(gtk_widget_get_toplevel(GTK_WIDGET(t))));
 }
 
-void changed_day(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void changed_day(GtkWidget *t, gpointer data)
 {
 	got_date=1;
 	gtk_main_quit();
@@ -1999,7 +2002,7 @@ void changed_day(GtkWidget *t, gpointer data)
 
 int get_date(GtkWidget *t, isoDate_t *date)
 {
-	GladeXML	*cxml;
+	GtkWindow	*cxml;
 	GtkWidget	*w;
 	GtkWidget	*win;
 	GtkWidget	*thiswin;
@@ -2011,14 +2014,12 @@ int get_date(GtkWidget *t, isoDate_t *date)
 	isoDate_t	odate=*date;
 
 	got_date=0;
-    cxml = glade_xml_new(glade_path, "CalendarWindow", NULL);
+    cxml = GTK_WINDOW(gtk_builder_get_object(builder, "CalendarWindow"));
 	if(cxml==NULL) {
 		fprintf(stderr,"Could not locate Calendar Window XML\n");
 		return(-1);
 	}
-    /* connect the signals in the interface */
-    glade_xml_signal_autoconnect(cxml);
-	win=glade_xml_get_widget(cxml, "CalendarWindow");
+	win=GTK_WIDGET(gtk_builder_get_object(builder, "CalendarWindow"));
 	if(win==NULL) {
 		fprintf(stderr,"Could not locate Calendar window\n");
 		return(-1);
@@ -2037,7 +2038,7 @@ int get_date(GtkWidget *t, isoDate_t *date)
 
 	gtk_window_move(GTK_WINDOW(win), x+x_off, y+y_off);
 
-	w=glade_xml_get_widget(cxml, "Calendar");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "Calendar"));
 	if(w==NULL) {
 		fprintf(stderr,"Could not locate Calendar widget\n");
 		return(-1);
@@ -2047,16 +2048,16 @@ int get_date(GtkWidget *t, isoDate_t *date)
 	gtk_window_present(GTK_WINDOW(win));
 	/* Wait for window to close... */
 	gtk_main();
-	w=glade_xml_get_widget(cxml, "Calendar");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "Calendar"));
 	if(w==NULL)
 		return(-1);
 	gtk_calendar_get_date(GTK_CALENDAR(w), &year, &month, &day);
-	gtk_widget_destroy(GTK_WIDGET(gtk_widget_get_toplevel(GTK_WIDGET(w))));
+	gtk_widget_hide(GTK_WIDGET(gtk_widget_get_toplevel(GTK_WIDGET(w))));
 	*date=isoDate_create(year, month+1, day);
 	return(odate!=*date);
 }
 
-void get_expiration(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void get_expiration(GtkWidget *t, gpointer data)
 {
 	isoDate_t	date;
 	GtkWidget	*w;
@@ -2066,7 +2067,7 @@ void get_expiration(GtkWidget *t, gpointer data)
 	if(!get_date(t, &date)) {
 		user.expire = isoDateTime_to_time(date,0);
 		user_changed(t, data);
-		w=glade_xml_get_widget(xml, "eExpiration");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eExpiration"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expiration widget\n");
 		else {
@@ -2079,11 +2080,11 @@ void get_expiration(GtkWidget *t, gpointer data)
 	}
 }
 
-void clear_expire(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void clear_expire(GtkWidget *t, gpointer data)
 {
 	GtkWidget	*w;
 
-	w=glade_xml_get_widget(xml, "eExpiration");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "eExpiration"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the expiration widget\n");
 	user.expire=0;
@@ -2091,7 +2092,7 @@ void clear_expire(GtkWidget *t, gpointer data)
 	user_changed(t,data);
 }
 
-void get_birthdate(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void get_birthdate(GtkWidget *t, gpointer data)
 {
 	isoDate_t	date;
 	GtkWidget	*w;
@@ -2106,11 +2107,11 @@ void get_birthdate(GtkWidget *t, gpointer data)
 		date=isoDate_create(year, atoi(user.birth), atoi(user.birth+3));
 	if(!get_date(t, &date)) {
 		if(cfg.sys_misc&SM_EURODATE)
-			sprintf(user.birth,"%02u/%02u/%02u",isoDate_day(date),isoDate_month(date),isoDate_year(date));
+			sprintf(user.birth,"%02u/%02u/%02u",isoDate_day(date),isoDate_month(date),isoDate_year(date)%100);
 		else
-			sprintf(user.birth,"%02u/%02u/%02u",isoDate_month(date),isoDate_day(date),isoDate_year(date));
+			sprintf(user.birth,"%02u/%02u/%02u",isoDate_month(date),isoDate_day(date),isoDate_year(date)%100);
 		user_changed(t, data);
-		w=glade_xml_get_widget(xml, "eBirthdate");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eBirthdate"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the birthdate widget\n");
 		else
@@ -2119,7 +2120,7 @@ void get_birthdate(GtkWidget *t, gpointer data)
 }
 
 
-void get_firston(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void get_firston(GtkWidget *t, gpointer data)
 {
 	isoDate_t	date;
 	GtkWidget	*w;
@@ -2129,7 +2130,7 @@ void get_firston(GtkWidget *t, gpointer data)
 	if(!get_date(t, &date)) {
 		user.firston = isoDateTime_to_time(date,0);
 		user_changed(t, data);
-		w=glade_xml_get_widget(xml, "eFirstOn");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eFirstOn"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the first on widget\n");
 		else {
@@ -2142,11 +2143,11 @@ void get_firston(GtkWidget *t, gpointer data)
 	}
 }
 
-void clear_firston(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void clear_firston(GtkWidget *t, gpointer data)
 {
 	GtkWidget	*w;
 
-	w=glade_xml_get_widget(xml, "eFirstOn");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "eFirstOn"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the first on widget\n");
 	user.firston=0;
@@ -2154,7 +2155,7 @@ void clear_firston(GtkWidget *t, gpointer data)
 	user_changed(t,data);
 }
 
-void get_laston(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void get_laston(GtkWidget *t, gpointer data)
 {
 	isoDate_t	date;
 	GtkWidget	*w;
@@ -2164,7 +2165,7 @@ void get_laston(GtkWidget *t, gpointer data)
 	if(!get_date(t, &date)) {
 		user.laston = isoDateTime_to_time(date,0);
 		user_changed(t, data);
-		w=glade_xml_get_widget(xml, "eLastOn");
+		w=GTK_WIDGET(gtk_builder_get_object(builder, "eLastOn"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expiration widget\n");
 		else {
@@ -2177,11 +2178,11 @@ void get_laston(GtkWidget *t, gpointer data)
 	}
 }
 
-void clear_laston(GtkWidget *t, gpointer data)
+G_MODULE_EXPORT void clear_laston(GtkWidget *t, gpointer data)
 {
 	GtkWidget	*w;
 
-	w=glade_xml_get_widget(xml, "eLastOn");
+	w=GTK_WIDGET(gtk_builder_get_object(builder, "eLastOn"));
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the expiration widget\n");
 	user.laston=0;
