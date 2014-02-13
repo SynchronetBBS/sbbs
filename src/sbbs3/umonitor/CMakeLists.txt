@@ -22,10 +22,7 @@ add_executable(umonitor
 	spyon.c
 	umonitor.c
 )
-double_require_lib(umonitor xpdev)
-double_require_lib_dir(umonitor ciolib conio)
-double_require_lib(umonitor smblib)
-double_require_lib(umonitor uifc)
+double_require_libs(umonitor xpdev ciolib smblib uifc)
 target_include_directories(umonitor PRIVATE ..)
 if(CURSES_FOUND)
 	target_compile_definitions(umonitor PRIVATE HAS_CURSES)
