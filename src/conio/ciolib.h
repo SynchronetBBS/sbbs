@@ -217,7 +217,7 @@ struct text_info {
 	unsigned char cury;           /* y-coordinate in current window */
 };
 
-extern struct text_info cio_textinfo;
+CIOLIBEXPORTVAR struct text_info cio_textinfo;
 
 struct mouse_event {
 	int event;
