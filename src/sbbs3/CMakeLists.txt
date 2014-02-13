@@ -16,6 +16,9 @@ add_subdirectory(gtkchat)
 add_subdirectory(gtkmonitor)
 add_subdirectory(gtkuseredit)
 add_subdirectory(gtkuserlist)
+add_subdirectory(syncview)
+add_subdirectory(uedit)
+add_subdirectory(umonitor)
 
 macro(require_lib_dir TARGET LIB LIBDIR)
 	if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
@@ -177,7 +180,7 @@ set(SBBS_OBJS
 	str_util
 	telgate
 	telnet
-	text_defaults
+	text_defaults.c
 	text_sec
 	tmp_xfer
 	un_qwk
@@ -256,6 +259,7 @@ if(NOT WIN32)
 endif()
 
 add_executable(sbbscon sbbscon.c sbbs_ini.c)
+target_compile_definitions(sbbscon PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
 set_target_properties(sbbscon PROPERTIES OUTPUT_NAME sbbs)
 require_lib(sbbscon xpdev)
 require_lib(sbbscon smblib)
@@ -264,8 +268,44 @@ target_link_libraries(sbbscon mailsrvr)
 target_link_libraries(sbbscon websrvr)
 target_link_libraries(sbbscon services)
 target_link_libraries(sbbscon sbbs)
+target_include_directories(sbbscon PRIVATE ../comio)
 if(NOT WIN32)
-	add_dependencies(sbbs 3rdp)
+	add_dependencies(sbbscon 3rdp)
+endif()
+
+if(WIN32)
+	add_executable(ntsvcs ntsvcs.c sbbs_ini.c)
+	target_compile_definitions(ntsvcs PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+	set_target_properties(ntsvcs PROPERTIES OUTPUT_NAME sbbs)
+	require_lib(ntsvcs xpdev)
+	require_lib(ntsvcs smblib)
+	target_link_libraries(ntsvcs ftpsrvr)
+	target_link_libraries(ntsvcs mailsrvr)
+	target_link_libraries(ntsvcs websrvr)
+	target_link_libraries(ntsvcs services)
+	target_link_libraries(ntsvcs sbbs)
+	target_include_directories(ntsvcs PRIVATE ../comio)
+endif()
+
+add_executable(jsexec
+	jsexec.c
+	js_uifc.c
+	js_conio.c
+	jsdebug.c
+)
+target_compile_definitions(jsexec PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
+require_lib(jsexec xpdev)
+require_lib(jsexec smblib)
+require_lib_dir(jsexec ciolib conio)
+require_lib(jsexec uifc)
+target_link_libraries(jsexec ftpsrvr)
+target_link_libraries(jsexec mailsrvr)
+target_link_libraries(jsexec websrvr)
+target_link_libraries(jsexec services)
+target_link_libraries(jsexec sbbs)
+target_include_directories(jsexec PRIVATE ../comio)
+if(NOT WIN32)
+	add_dependencies(jsexec 3rdp)
 endif()
 
 ####
@@ -279,6 +319,8 @@ if(WIN32)
 	target_include_directories(services PRIVATE ../../3rdp/win32.release/mozjs/include)
 	target_include_directories(sbbs PRIVATE ../../3rdp/win32.release/cryptlib/include)
 	target_include_directories(sbbscon PRIVATE ../../3rdp/win32.release/mozjs/include)
+	target_include_directories(ntsvcs PRIVATE ../../3rdp/win32.release/mozjs/include)
+	target_include_directories(jsexec PRIVATE ../../3rdp/win32.release/mozjs/include)
 	link_directories(../../3rdp/win32.release/mozjs/bin ../../3rdp/win32.release/cryptlib/bin)
 	link_directories(../../3rdp/win32.release/nspr/bin)
 else()
@@ -288,6 +330,7 @@ else()
 	target_include_directories(websrvr PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
 	target_include_directories(sbbs PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
 	target_include_directories(sbbscon PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
+	target_include_directories(jsexec PRIVATE ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
 	link_directories(../../3rdp/${LEGACY_3RDPDIR}/mozjs/lib)
 	link_directories(../../3rdp/${LEGACY_3RDPDIR}/cl)
 	execute_process(COMMAND nspr-config --cflags OUTPUT_VARIABLE NSPR_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -296,23 +339,31 @@ else()
 	target_compile_options(sbbscon PRIVATE ${NSPR_CFLAGS})
 	target_include_directories(sbbscon PRIVATE ${NSPR_INCLUDE_DIR})
 	set_property(TARGET sbbscon APPEND PROPERTY LINK_FLAGS "${NSPR_LIBS}")
+	target_compile_options(jsexec PRIVATE ${NSPR_CFLAGS})
+	target_include_directories(jsexec PRIVATE ${NSPR_INCLUDE_DIR})
+	set_property(TARGET jsexec APPEND PROPERTY LINK_FLAGS "${NSPR_LIBS}")
 endif()
 
 # For forkpty...
 if(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
         target_link_libraries(sbbscon util)
+        target_link_libraries(jsexec util)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
         target_link_libraries(sbbscon util)
+        target_link_libraries(jsexec util)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
         target_link_libraries(sbbscon util)
+        target_link_libraries(jsexec util)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         target_link_libraries(sbbscon util)
+        target_link_libraries(jsexec util)
 endif()
 list(APPEND CMAKE_REQUIRED_LIBRARIES util)
 CHECK_FUNCTION_EXISTS(forkpty HAS_FORKPTY)
 if(HAS_FORKPTY)
 else()
 	target_compile_definitions(sbbs PRIVATE NEEDS_FORKPTY)
+	target_compile_definitions(jsexec PRIVATE NEEDS_FORKPTY)
 endif()
 
 add_executable(baja baja.c ars.c)
@@ -505,6 +556,11 @@ add_executable(ans2asc
 add_executable(asc2ans
 	asc2ans.c
 )
+
+add_executable(textgen
+	textgen.c
+)
+require_lib(textgen xpdev)
 
 install(TARGETS
 	sbbscon
