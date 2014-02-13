@@ -2,6 +2,7 @@ project (SyncTERM C)
 
 cmake_minimum_required(VERSION 2.8.11)
 
+INCLUDE (../build/SynchronetMacros.cmake)
 INCLUDE (CheckIncludeFiles)
 
 set(SOURCE
@@ -51,33 +52,7 @@ if(HAS_CRYPTLIB_H)
 endif()
 
 add_executable(syncterm ${SOURCE})
-
-if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-	add_subdirectory(../xpdev xpdev)
-ENDIF()
-add_dependencies(syncterm xpdev)
-target_include_directories(syncterm PRIVATE ../xpdev)
-target_compile_definitions(syncterm PRIVATE $<TARGET_PROPERTY:xpdev,INTERFACE_COMPILE_DEFINITIONS>)
-target_include_directories(syncterm PRIVATE $<TARGET_PROPERTY:xpdev,INTERFACE_INCLUDE_DIRECTORIES>)
-target_link_libraries(syncterm xpdev)
-
-if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-	add_subdirectory(../conio ciolib)
-ENDIF()
-add_dependencies(syncterm ciolib)
-target_include_directories(syncterm PRIVATE ../conio)
-target_compile_definitions(syncterm PRIVATE $<TARGET_PROPERTY:ciolib,INTERFACE_COMPILE_DEFINITIONS>)
-target_include_directories(syncterm PRIVATE $<TARGET_PROPERTY:ciolib,INTERFACE_INCLUDE_DIRECTORIES>)
-target_link_libraries(syncterm ciolib)
-
-if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-	add_subdirectory(../uifc uifc)
-ENDIF()
-add_dependencies(syncterm uifc)
-target_include_directories(syncterm PRIVATE ../uifc)
-target_compile_definitions(syncterm PRIVATE $<TARGET_PROPERTY:uifc,INTERFACE_COMPILE_DEFINITIONS>)
-target_include_directories(syncterm PRIVATE $<TARGET_PROPERTY:uifc,INTERFACE_INCLUDE_DIRECTORIES>)
-target_link_libraries(syncterm uifc)
+require_libs(syncterm xpdev ciolib uifc)
 
 target_include_directories(syncterm PRIVATE ../sbbs3)
 target_include_directories(syncterm PRIVATE ../comio)
@@ -102,3 +77,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 install(TARGETS syncterm DESTINATION bin)
+if(UNIX)
+	install(FILES syncterm.desktop DESTINATION share/applications)
+        install(FILES syncterm.png DESTINATION share/icons/hicolor/64x64/apps)
+endif()
