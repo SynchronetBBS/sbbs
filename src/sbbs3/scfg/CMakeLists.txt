@@ -2,22 +2,7 @@ project(SCFG C)
 
 cmake_minimum_required(VERSION 2.8.11)
 
-macro(double_require_lib_dir TARGET LIB LIBDIR)
-	if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-		if(NOT DEFINED ${LIBDIR}_DONE)
-			add_subdirectory(../../${LIBDIR} ${LIB})
-			set(${LIBDIR}_DONE TRUE)
-		endif()
-	endif()
-	add_dependencies(${TARGET} ${LIB})
-	target_include_directories(${TARGET} PRIVATE ../../${LIBDIR})
-	target_compile_definitions(${TARGET} PRIVATE $<TARGET_PROPERTY:${LIB},INTERFACE_COMPILE_DEFINITIONS>)
-	target_link_libraries(${TARGET} ${LIB})
-endmacro()
-
-macro(double_require_lib TARGET LIB)
-	double_require_lib_dir(${TARGET} ${LIB} ${LIB})
-endmacro()
+INCLUDE (../../build/SynchronetMacros.cmake)
 
 add_executable(scfg
 	scfg.c
@@ -49,3 +34,27 @@ target_compile_definitions(scfg PRIVATE SCFG)
 
 add_executable(makehelp makehelp.c)
 double_require_lib(makehelp xpdev)
+
+add_custom_command(OUTPUT
+		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.dat
+		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.ixb
+	COMMAND makehelp "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}"
+	DEPENDS makehelp
+		scfg.c
+		scfgsys.c
+		scfgmsg.c
+		scfgsub.c
+		scfgnode.c
+		scfgchat.c
+		scfgxfr1.c
+		scfgxfr2.c
+		scfgnet.c
+		scfgxtrn.c
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_custom_target(help ALL 
+	DEPENDS
+		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.dat
+		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.ixb
+)
