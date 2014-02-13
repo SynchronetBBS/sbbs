@@ -493,6 +493,8 @@ add_executable(textgen
 )
 require_libs(textgen xpdev)
 
+export(PACKAGE sbbs)
+
 install(TARGETS
 	sbbscon
 	jsexec
@@ -524,4 +526,5 @@ install(TARGETS
 	mailsrvr
 	websrvr
 	services
-DESTINATION lib)
+DESTINATION lib EXPORT SBBSConfig)
+install(EXPORT SBBSConfig DESTINATION lib/cmake/SBBS)
