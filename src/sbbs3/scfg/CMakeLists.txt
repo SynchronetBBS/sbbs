@@ -26,10 +26,7 @@ add_executable(scfg
 	../str_util.c
 )
 target_include_directories(scfg PRIVATE ..)
-double_require_lib(scfg xpdev)
-double_require_lib_dir(scfg ciolib conio)
-double_require_lib(scfg uifc)
-double_require_lib(scfg smblib)
+double_require_libs(scfg xpdev ciolib uifc smblib)
 target_compile_definitions(scfg PRIVATE SCFG)
 
 add_executable(makehelp makehelp.c)
