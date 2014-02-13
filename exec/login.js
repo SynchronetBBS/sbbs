@@ -52,6 +52,7 @@ for(var c=0; c<10; c++) {
 		bbs.logon();
 		exit();
 	}
+	console.clearkeybuffer();	// Clear pending input (e.g. mistyped system password)
 	if(options && options.email_passwords) {
 		var usernum = system.matchuser(str);
 		if(usernum) {
