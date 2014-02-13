@@ -35,8 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "ciolib.h"
-#include "sbbs.h"
 #include <sys/types.h>
 #include <time.h>
 #ifdef __QNX__
@@ -48,6 +46,9 @@
 #include <sys/time.h>
 #include <signal.h>
 #endif
+
+#include "ciolib.h"
+#include "sbbs.h"
 
 #include "genwrap.h"
 #include "uifc.h"
@@ -201,12 +202,14 @@ int do_cmd(char *cmd)
 {
 	int i;
 
-#ifdef __unix__
-	endwin();
+#ifdef HAS_CURSES
+	if(cio_api.mode == CIOLIB_MODE_CURSES || cio_api.mode == CIOLIB_MODE_CURSES_IBM)
+		endwin();
 #endif
 	i=system(cmd);
-#ifdef __unix__
-	refresh();
+#ifdef HAS_CURSES
+	if(cio_api.mode == CIOLIB_MODE_CURSES || cio_api.mode == CIOLIB_MODE_CURSES_IBM)
+		refresh();
 #endif
 	return(i);
 }
