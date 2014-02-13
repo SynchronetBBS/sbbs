@@ -6,7 +6,7 @@ macro(makelib name)
 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${name}.lib
 		COMMAND implib ${CMAKE_CURRENT_SOURCE_DIR}/${name}.lib ${SBBS3_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${name}.dll
 	)
-	add_custom_target(${name}_OMG_lib ALL)
+	add_custom_target(${name}_OMF_lib ALL)
 	add_dependencies(${name}_OMF_lib ${name})
 endmacro()
 
