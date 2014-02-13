@@ -12,6 +12,10 @@ if(WIN32)
 	add_subdirectory(chat)
 	add_subdirectory(ctrl)
 endif()
+add_subdirectory(gtkchat)
+add_subdirectory(gtkmonitor)
+add_subdirectory(gtkuseredit)
+add_subdirectory(gtkuserlist)
 
 macro(require_lib_dir TARGET LIB LIBDIR)
 	if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
@@ -21,7 +25,7 @@ macro(require_lib_dir TARGET LIB LIBDIR)
 		endif()
 	endif()
 	add_dependencies(${TARGET} ${LIB})
-	target_include_directories(${TARGET} PRIVATE ../${LIBDIR})
+	target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../${LIBDIR})
 	target_compile_definitions(${TARGET} PRIVATE $<TARGET_PROPERTY:${LIB},INTERFACE_COMPILE_DEFINITIONS>)
 	target_link_libraries(${TARGET} ${LIB})
 endmacro()
@@ -47,10 +51,9 @@ if(NOT WIN32)
 			set(BUILD_TYPE_FLAG RELEASE=1)
 		endif()
 		execute_process(
-			COMMAND ${GNU_MAKE} --no-print-directory DONT_CLOBBER_CC=please ${BUILD_TYPE_FLAG}
-			WORKING_DIRECTORY ../build
+			COMMAND ${GNU_MAKE} -C ${CMAKE_CURRENT_SOURCE_DIR}/../build --no-print-directory DONT_CLOBBER_CC=please ${BUILD_TYPE_FLAG}
 			OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.txt
-			ERROR_VARIABLE PATH_ERRORS
+			ERROR_FILE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.err
 		)
 		file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.txt PATHS)
 		list(GET PATHS 0 LEGACY_LIBDIR)
