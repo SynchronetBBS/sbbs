@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "dirwrap.h"	// MAX_PATH
 #include "gen_defs.h"
 
 /****************************************************************************/
