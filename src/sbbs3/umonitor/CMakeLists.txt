@@ -27,3 +27,5 @@ target_include_directories(umonitor PRIVATE ..)
 if(CURSES_FOUND)
 	target_compile_definitions(umonitor PRIVATE HAS_CURSES)
 endif()
+
+install(TARGETS umonitor DESTINATION bin)
