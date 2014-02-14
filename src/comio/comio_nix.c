@@ -40,7 +40,7 @@
 #include "comio.h"
 #include "genwrap.h"
 
-char* comVersion(char* str, size_t len)
+char* COMIOCALL comVersion(char* str, size_t len)
 {
 	char revision[16];
 
@@ -50,7 +50,7 @@ char* comVersion(char* str, size_t len)
 	return str;
 }
 
-COM_HANDLE comOpen(const char* device)
+COM_HANDLE COMIOCALL comOpen(const char* device)
 {
 	COM_HANDLE handle;
 	struct termios t;
@@ -101,12 +101,12 @@ Fun snippet from the FreeBSD manpage:
 	return handle;
 }
 
-BOOL comClose(COM_HANDLE handle)
+BOOL COMIOCALL comClose(COM_HANDLE handle)
 {
 	return (!close(handle));
 }
 
-long comGetBaudRate(COM_HANDLE handle)
+long COMIOCALL comGetBaudRate(COM_HANDLE handle)
 {
 	struct termios t;
 	speed_t	in;
@@ -124,7 +124,7 @@ long comGetBaudRate(COM_HANDLE handle)
 	return ((long)(in>out?in:out));
 }
 
-BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
+BOOL COMIOCALL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 {
 	struct termios t;
 
@@ -139,7 +139,7 @@ BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 	return TRUE;
 }
 
-int comGetModemStatus(COM_HANDLE handle)
+int COMIOCALL comGetModemStatus(COM_HANDLE handle)
 {
 	int status;
 
@@ -149,24 +149,24 @@ int comGetModemStatus(COM_HANDLE handle)
 	return status;
 }
 
-BOOL comRaiseDTR(COM_HANDLE handle)
+BOOL COMIOCALL comRaiseDTR(COM_HANDLE handle)
 {
 	int flags = TIOCM_DTR;
 	return(ioctl(handle, TIOCMBIS, &flags)==0);
 }
 
-BOOL comLowerDTR(COM_HANDLE handle)
+BOOL COMIOCALL comLowerDTR(COM_HANDLE handle)
 {
 	int flags = TIOCM_DTR;
 	return(ioctl(handle, TIOCMBIC, &flags)==0);
 }
 
-BOOL comWriteByte(COM_HANDLE handle, BYTE ch)
+BOOL COMIOCALL comWriteByte(COM_HANDLE handle, BYTE ch)
 {
 	return(write(handle, &ch, 1)==1);
 }
 
-int comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
+int COMIOCALL comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 {
 	return write(handle, buf, buflen);
 }
@@ -174,27 +174,27 @@ int comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 /*
  * TODO: This seem kinda dangerous for short writes...
  */
-int comWriteString(COM_HANDLE handle, const char* str)
+int COMIOCALL comWriteString(COM_HANDLE handle, const char* str)
 {
 	return comWriteBuf(handle, (BYTE*)str, strlen(str));
 }
 
-BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
+BOOL COMIOCALL comReadByte(COM_HANDLE handle, BYTE* ch)
 {
 	return(read(handle, ch, 1)==1);
 }
 
-BOOL comPurgeInput(COM_HANDLE handle)
+BOOL COMIOCALL comPurgeInput(COM_HANDLE handle)
 {
 	return(tcflush(handle, TCIFLUSH)==0);
 }
 
-BOOL comPurgeOutput(COM_HANDLE handle)
+BOOL COMIOCALL comPurgeOutput(COM_HANDLE handle)
 {
 	return(tcflush(handle, TCOFLUSH)==0);
 }
 
-BOOL comDrainOutput(COM_HANDLE handle)
+BOOL COMIOCALL comDrainOutput(COM_HANDLE handle)
 {
 	return(tcdrain(handle)==0);
 }

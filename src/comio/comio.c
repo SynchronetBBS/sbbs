@@ -38,7 +38,7 @@
 #include "comio.h"
 #include "genwrap.h"	/* msclock */
 
-size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, const char* terminators, int timeout)
+size_t COMIOCALL comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, const char* terminators, int timeout)
 {
 	BYTE		ch;
 	size_t		len=0;
@@ -59,7 +59,7 @@ size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, const char* termi
 	return len;
 }
 
-size_t comReadLine(COM_HANDLE handle, char* buf, size_t buflen, int timeout)
+size_t COMIOCALL comReadLine(COM_HANDLE handle, char* buf, size_t buflen, int timeout)
 {
 	size_t	len;
 

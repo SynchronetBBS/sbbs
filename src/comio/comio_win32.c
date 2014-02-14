@@ -38,7 +38,7 @@
 #include "comio.h"
 #include "genwrap.h"
 
-char* comVersion(char* str, size_t len)
+char* COMIOCALL comVersion(char* str, size_t len)
 {
 	char revision[16];
 
@@ -48,7 +48,7 @@ char* comVersion(char* str, size_t len)
 	return str;
 }
 
-COM_HANDLE comOpen(const char* device)
+COM_HANDLE COMIOCALL comOpen(const char* device)
 {
 	COM_HANDLE handle;
 	COMMTIMEOUTS timeouts;
@@ -85,12 +85,12 @@ COM_HANDLE comOpen(const char* device)
 	return handle;
 }
 
-BOOL comClose(COM_HANDLE handle)
+BOOL COMIOCALL comClose(COM_HANDLE handle)
 {
 	return CloseHandle(handle);
 }
 
-long comGetBaudRate(COM_HANDLE handle)
+long COMIOCALL comGetBaudRate(COM_HANDLE handle)
 {
 	DCB dcb;
 
@@ -100,7 +100,7 @@ long comGetBaudRate(COM_HANDLE handle)
 	return dcb.BaudRate;
 }
 
-BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
+BOOL COMIOCALL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 {
 	DCB dcb;
 
@@ -112,7 +112,7 @@ BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 	return SetCommState(handle, &dcb);
 }
 
-int comGetModemStatus(COM_HANDLE handle)
+int COMIOCALL comGetModemStatus(COM_HANDLE handle)
 {
 	DWORD status=0;
 	
@@ -122,24 +122,24 @@ int comGetModemStatus(COM_HANDLE handle)
 		return COM_ERROR;
 }
 
-BOOL comRaiseDTR(COM_HANDLE handle)
+BOOL COMIOCALL comRaiseDTR(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, SETDTR);
 }
 
-BOOL comLowerDTR(COM_HANDLE handle)
+BOOL COMIOCALL comLowerDTR(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, CLRDTR);
 }
 
-BOOL comWriteByte(COM_HANDLE handle, BYTE ch)
+BOOL COMIOCALL comWriteByte(COM_HANDLE handle, BYTE ch)
 {
 	DWORD wr=0;
 
 	return WriteFile(handle, &ch, sizeof(ch), &wr, NULL) && wr==sizeof(BYTE);
 }
 
-int comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
+int COMIOCALL comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 {
 	DWORD wr=0;
 
@@ -149,24 +149,24 @@ int comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 	return wr;
 }
 
-int comWriteString(COM_HANDLE handle, const char* str)
+int COMIOCALL comWriteString(COM_HANDLE handle, const char* str)
 {
 	return comWriteBuf(handle, str, strlen(str));
 }
 
-BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
+BOOL COMIOCALL comReadByte(COM_HANDLE handle, BYTE* ch)
 {
 	DWORD rd;
 
 	return ReadFile(handle, ch, sizeof(BYTE), &rd, NULL) && rd==sizeof(BYTE);
 }
 
-BOOL comPurgeInput(COM_HANDLE handle)
+BOOL COMIOCALL comPurgeInput(COM_HANDLE handle)
 {
 	return PurgeComm(handle, PURGE_RXCLEAR);
 }
 
-BOOL comPurgeOutput(COM_HANDLE handle)
+BOOL COMIOCALL comPurgeOutput(COM_HANDLE handle)
 {
 	return PurgeComm(handle, PURGE_TXCLEAR);
 }
