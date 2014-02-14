@@ -12,8 +12,8 @@ set(SOURCE
 add_library(uifc SHARED ${SOURCE})
 require_libs(uifc xpdev ciolib)
 
-target_compile_definitions(ciolib PRIVATE UIFC_EXPORTS)
-target_compile_definitions(ciolib INTERFACE UIFC_IMPORTS)
+target_compile_definitions(uifc PRIVATE UIFC_EXPORTS)
+target_compile_definitions(uifc INTERFACE UIFC_IMPORTS)
 
 export(PACKAGE UIFC)
 

@@ -58,7 +58,6 @@ set(SBBS_OBJS
 	bulkmail
 	chat.cpp
 	chk_ar
-	../comio/comio
 	con_hi
 	con_out
 	dat_rec
@@ -158,22 +157,16 @@ set(SBBS_OBJS
 	yenc
 	ver
 )
-if(WIN32)
-	list(APPEND SBBS_OBJS ../comio/comio_win32)
-else()
-	list(APPEND SBBS_OBJS ../comio/comio_nix)
-endif()
 add_library(sbbs SHARED ${SBBS_OBJS})
-require_libs(sbbs xpdev smblib)
-target_include_directories(sbbs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../comio)
+require_libs(sbbs xpdev smblib comio)
 target_compile_definitions(sbbs PUBLIC SBBS SBBS_EXPORTS JAVASCRIPT)
 
-
+get_filename_component(3RDP_DIR ../../3rdp ABSOLUTE)
 if(WIN32)
-	find_library(MOZJS_LIB mozjs PATHS ../../3rdp/win32.release/mozjs/bin NO_DEFAULT_PATH)
-	find_library(CRYPTLIB_LIB cl32 PATHS ../../3rdp/win32.release/cryptlib/bin NO_DEFAULT_PATH)
-	target_include_directories(sbbs PUBLIC ../../3rdp/win32.release/mozjs/include)
-	target_include_directories(sbbs PUBLIC ../../3rdp/win32.release/cryptlib/include)
+	find_library(MOZJS_LIB mozjs PATHS ${3RDP_DIR}/win32.release/mozjs/bin NO_DEFAULT_PATH)
+	find_library(CRYPTLIB_LIB cl32 PATHS ${3RDP_DIR}/win32.release/cryptlib/bin NO_DEFAULT_PATH)
+	target_include_directories(sbbs PUBLIC ${3RDP_DIR}/win32.release/mozjs/include)
+	target_include_directories(sbbs PUBLIC ${3RDP_DIR}/win32.release/cryptlib/include)
 else()
 	execute_process(COMMAND nspr-config --libs OUTPUT_VARIABLE NSPR_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
 	separate_arguments(ADD_NSPR_LIBS UNIX_COMMAND ${NSPR_LIBS})
@@ -193,33 +186,33 @@ else()
 	execute_process(COMMAND nspr-config --includedir OUTPUT_VARIABLE NSPR_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 	target_compile_options(sbbs PUBLIC ${NSPR_CFLAGS})
 	target_include_directories(sbbs PUBLIC ${NSPR_INCLUDE_DIR})
-	find_library(MOZJS_LIB mozjs185-1.0 PATHS ../../3rdp/${LEGACY_3RDPDIR}/mozjs/lib NO_DEFAULT_PATH)
-	find_library(CRYPTLIB_LIB cl PATHS ../../3rdp/${LEGACY_3RDPDIR}/cl NO_DEFAULT_PATH)
-	target_include_directories(sbbs PUBLIC ../../3rdp/${LEGACY_3RDPDIR}/mozjs/include/js)
+	find_library(MOZJS_LIB mozjs185-1.0 PATHS ${3RDP_DIR}/${LEGACY_3RDPDIR}/mozjs/lib NO_DEFAULT_PATH)
+	find_library(CRYPTLIB_LIB cl PATHS ${3RDP_DIR}/${LEGACY_3RDPDIR}/cl NO_DEFAULT_PATH)
+	target_include_directories(sbbs PUBLIC ${3RDP_DIR}/${LEGACY_3RDPDIR}/mozjs/include/js)
 	add_dependencies(sbbs 3rdp)
 endif()
 target_link_libraries(sbbs ${MOZJS_LIB})
 target_link_libraries(sbbs ${CRYPTLIB_LIB})
 
 add_library(ftpsrvr SHARED ftpsrvr.c nopen.c)
-require_libs(ftpsrvr xpdev smblib)
+require_libs(ftpsrvr xpdev smblib comio)
 target_link_libraries(ftpsrvr sbbs)
 
 add_library(mailsrvr SHARED mailsrvr.c mxlookup.c mime.c ars.c base64.c)
-require_libs(mailsrvr xpdev smblib)
+require_libs(mailsrvr xpdev smblib comio)
 target_link_libraries(mailsrvr sbbs)
 
 add_library(services SHARED services.c sbbs_ini.c)
-require_libs(services xpdev smblib)
+require_libs(services xpdev smblib comio)
 target_link_libraries(services sbbs)
 
 add_library(websrvr SHARED websrvr.c base64.c ars.c ringbuf.c)
-require_libs(websrvr xpdev smblib)
+require_libs(websrvr xpdev smblib comio)
 target_link_libraries(websrvr sbbs)
 
 add_executable(sbbscon sbbscon.c sbbs_ini.c)
 set_target_properties(sbbscon PROPERTIES OUTPUT_NAME sbbs)
-require_libs(sbbscon xpdev smblib)
+require_libs(sbbscon xpdev smblib comio)
 target_link_libraries(sbbscon ftpsrvr)
 target_link_libraries(sbbscon mailsrvr)
 target_link_libraries(sbbscon websrvr)
@@ -230,7 +223,7 @@ if(WIN32)
 	add_executable(ntsvcs ntsvcs.c sbbs_ini.c)
 	target_compile_definitions(ntsvcs PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
 	set_target_properties(ntsvcs PROPERTIES OUTPUT_NAME sbbs)
-	require_libs(ntsvcs xpdev smblib)
+	require_libs(ntsvcs xpdev smblib comio)
 	target_link_libraries(ntsvcs ftpsrvr)
 	target_link_libraries(ntsvcs mailsrvr)
 	target_link_libraries(ntsvcs websrvr)
@@ -245,7 +238,7 @@ add_executable(jsexec
 	jsdebug.c
 )
 target_compile_definitions(jsexec PRIVATE SBBS SBBS_EXPORTS JAVASCRIPT)
-require_libs(jsexec xpdev smblib ciolib uifc)
+require_libs(jsexec xpdev smblib ciolib uifc comio)
 target_link_libraries(jsexec ftpsrvr)
 target_link_libraries(jsexec mailsrvr)
 target_link_libraries(jsexec websrvr)

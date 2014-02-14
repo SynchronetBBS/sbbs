@@ -35,15 +35,11 @@ set(SOURCE
 	ooii_bmenus.c
 	ooii_sounds.c
 	modem.c
-	../comio/comio.c
 	conn_pty.c
 )
 
 if(WIN32)
-	list(APPEND SOURCE ../comio/comio_win32.c)
 	list(APPEND CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../../3rdp/win32.release/cryptlib/include)
-else()
-	list(APPEND SOURCE ../comio/comio_nix.c)
 endif()
 
 CHECK_INCLUDE_FILES(cryptlib.h HAS_CRYPTLIB_H)
@@ -52,10 +48,9 @@ if(HAS_CRYPTLIB_H)
 endif()
 
 add_executable(syncterm ${SOURCE})
-require_libs(syncterm xpdev ciolib uifc)
+require_libs(syncterm xpdev ciolib uifc comio)
 
 target_include_directories(syncterm PRIVATE ../sbbs3)
-target_include_directories(syncterm PRIVATE ../comio)
 target_include_directories(syncterm PRIVATE ../smblib)
 
 if(NOT HAS_CRYPTLIB_H)
