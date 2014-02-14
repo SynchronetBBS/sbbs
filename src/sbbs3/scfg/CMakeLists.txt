@@ -55,3 +55,6 @@ add_custom_target(help ALL
 		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.dat
 		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.ixb
 )
+
+install(TARGETS scfg DESTINATION bin)
+install(FILES scfghelp.dat scfghelp.ixb DESTINATION share/scfg)
