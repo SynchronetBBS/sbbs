@@ -14,7 +14,7 @@ int				quickslots=0;
 GtkListStore	*quickstore = NULL;
 GtkBuilder*	builder;
 struct gtkmonitor_config gtkm_conf;
-char			glade_path[MAX_PATH+1];
+extern const char builder_interface[];
 
 void read_ini(void)
 {
@@ -474,15 +474,8 @@ int main(int argc, char *argv[]) {
 
     gtk_init(&argc, &argv);
 
-    /* load the interface */
-	strcpy(glade_path, argv[0]);
-	strcpy(getfname(glade_path), "gtkmonitor.glade");
-
-	builder = gtk_builder_new ();
-	if (!gtk_builder_add_from_file (builder, glade_path, &error)) {
-		g_warning ("Couldn't load builder file: %s", error->message);
-		g_error_free (error);
-	}
+	builder = gtk_builder_new();
+	gtk_builder_add_from_string(builder, builder_interface, -1, NULL);
 
     /* connect the signals in the interface */
 	gtk_builder_connect_signals (builder, NULL);
