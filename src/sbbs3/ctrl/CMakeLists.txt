@@ -3,8 +3,8 @@ project (SBBSCtrl C CXX)
 cmake_minimum_required(VERSION 2.8)
 
 macro(makelib name)
-	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${name}.lib
-		COMMAND implib ${CMAKE_CURRENT_SOURCE_DIR}/${name}.lib ${SBBS3_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${name}.dll
+	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}//${name}.lib
+		COMMAND implib ${CMAKE_CURRENT_SOURCE_DIR}/${name}.lib ${SBBS3_BINARY_DIR}/${name}.dll
 	)
 	add_custom_target(${name}_OMF_lib ALL)
 	add_dependencies(${name}_OMF_lib ${name})
@@ -106,8 +106,8 @@ if(WIN32)
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
 	add_custom_target(sbbsctrl ALL
-		COMMAND if not exist \"${BINARY_DIR}\\$<CONFIGURATION>\" mkdir \"${BINARY_DIR}\\$<CONFIGURATION>\"
-		COMMAND copy \"${SOURCE_DIR}\\sbbsctrl.exe\" \"${BINARY_DIR}\\$<CONFIGURATION>\\\"
+		COMMAND if not exist \"${BINARY_DIR}\" mkdir \"${BINARY_DIR}\"
+		COMMAND copy \"${SOURCE_DIR}\\sbbsctrl.exe\" \"${BINARY_DIR}\\\"
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/sbbsctrl.exe
 		SOURCES 
 			AboutBoxFormUnit.cpp
@@ -204,5 +204,5 @@ if(WIN32)
 	makelib(services)
 	add_dependencies(sbbsctrl sbbs_OMF_lib mailsrvr_OMF_lib ftpsrvr_OMF_lib websrvr_OMF_lib services_OMF_lib)
 
-	install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/sbbsctrl.exe DESTINATION bin)
+	install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/sbbsctrl.exe DESTINATION bin)
 endif()

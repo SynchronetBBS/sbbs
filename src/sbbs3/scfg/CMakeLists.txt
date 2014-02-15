@@ -33,9 +33,9 @@ add_executable(makehelp makehelp.c)
 double_require_lib(makehelp xpdev)
 
 add_custom_command(OUTPUT
-		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.dat
-		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.ixb
-	COMMAND makehelp "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}"
+		${CMAKE_CURRENT_BINARY_DIR}/scfghelp.dat
+		${CMAKE_CURRENT_BINARY_DIR}/scfghelp.ixb
+	COMMAND makehelp "${CMAKE_CURRENT_BINARY_DIR}"
 	DEPENDS makehelp
 		scfg.c
 		scfgsys.c
@@ -52,9 +52,13 @@ add_custom_command(OUTPUT
 
 add_custom_target(help ALL 
 	DEPENDS
-		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.dat
-		${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/scfghelp.ixb
+		${CMAKE_CURRENT_BINARY_DIR}/scfghelp.dat
+		${CMAKE_CURRENT_BINARY_DIR}/scfghelp.ixb
 )
 
 install(TARGETS scfg DESTINATION bin)
-install(FILES scfghelp.dat scfghelp.ixb DESTINATION share/scfg)
+install(FILES 
+		${CMAKE_CURRENT_BINARY_DIR}/scfghelp.dat 
+		${CMAKE_CURRENT_BINARY_DIR}/scfghelp.ixb 
+	DESTINATION share/scfg
+)

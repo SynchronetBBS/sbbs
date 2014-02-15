@@ -16,8 +16,7 @@ if(WIN32)
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
 	add_custom_target(chat ALL
-		COMMAND if not exist \"${BINARY_DIR}\\$<CONFIGURATION>\" mkdir \"${BINARY_DIR}\\$<CONFIGURATION>\"
-		COMMAND copy \"${SOURCE_DIR}\\chat.exe\" \"${BINARY_DIR}\\$<CONFIGURATION>\\\"
+		COMMAND copy \"${SOURCE_DIR}\\chat.exe\" \"${BINARY_DIR}\\\"
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/chat.exe
 		SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/chat.cpp
 			${CMAKE_CURRENT_SOURCE_DIR}/MainFormUnit.cpp
@@ -27,5 +26,5 @@ if(WIN32)
 			${CMAKE_CURRENT_SOURCE_DIR}/chat.res
 	)
 
-	install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/chat.exe DESTINATION bin)
+	install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/chat.exe DESTINATION bin)
 endif()
