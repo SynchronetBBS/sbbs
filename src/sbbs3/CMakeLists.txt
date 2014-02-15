@@ -5,6 +5,15 @@ cmake_minimum_required(VERSION 2.8.11)
 INCLUDE (../build/SynchronetMacros.cmake)
 INCLUDE (CheckFunctionExists)
 
+if(UNIX)
+	set(SBBS_USE_DOSEMU FALSE
+		CACHE BOOL "Set if you intend on using dosemu on Linux"
+	)
+endif()
+set(SBBS_BUILD_JSDOCS FALSE
+	CACHE INTERNAL "DEVELOPER ONLY - Build only to run jsdocs.js (not a BBS)"
+)
+
 if(MSVC)
 	set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS /wd4996)
 endif()
@@ -16,17 +25,17 @@ if(EXISTS /dev/random)
 endif()
 
 if(NOT WIN32)
-	find_program(GNU_MAKE
+	find_program(3RDP_GNU_MAKE
 		NAMES gmake make
 	)
-	if(NOT ${GNU_MAKE} STREQUAL "GNU_MAKE-NOTFOUND")
+	if(NOT ${3RDP_GNU_MAKE} STREQUAL "3RDP_GNU_MAKE-NOTFOUND")
 		if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 			set(BUILD_TYPE_FLAG DEBUG=1)
 		else()
 			set(BUILD_TYPE_FLAG RELEASE=1)
 		endif()
 		execute_process(
-			COMMAND ${GNU_MAKE} -C ${CMAKE_CURRENT_SOURCE_DIR}/../build --no-print-directory DONT_CLOBBER_CC=please ${BUILD_TYPE_FLAG}
+			COMMAND ${3RDP_GNU_MAKE} -C ${CMAKE_CURRENT_SOURCE_DIR}/../build --no-print-directory DONT_CLOBBER_CC=please ${BUILD_TYPE_FLAG}
 			OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.txt
 			ERROR_FILE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/paths.err
 		)
@@ -43,7 +52,7 @@ endif()
 
 if(NOT WIN32)
 	add_custom_target(3rdp
-		${GNU_MAKE} cryptlib libmozjs DONT_CLOBBER_CC=please  ${BUILD_TYPE_FLAG}
+		${3RDP_GNU_MAKE} cryptlib libmozjs DONT_CLOBBER_CC=please  ${BUILD_TYPE_FLAG}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/build
 	)
 endif()
@@ -157,14 +166,24 @@ set(SBBS_OBJS
 	yenc
 	ver
 )
+if(SBBS_BUILD_JSDOCS)
+	list(APPEND SBBS_OBJS js_uifc.c)
+endif()
 add_library(sbbs SHARED ${SBBS_OBJS})
 require_libs(sbbs xpdev smblib comio)
+if(SBBS_BUILD_JSDOCS)
+	require_libs(sbbs uifc ciolib)
+	target_compile_definitions(sbbs PRIVATE BUILD_JSDOCS)
+endif()
+if(SBBS_USE_DOSEMU)
+	target_compile_definitions(sbbs PRIVATE USE_DOSEMU)
+endif()
 target_compile_definitions(sbbs PUBLIC SBBS SBBS_EXPORTS JAVASCRIPT)
 
 get_filename_component(3RDP_DIR ../../3rdp ABSOLUTE)
 if(WIN32)
-	find_library(MOZJS_LIB mozjs PATHS ${3RDP_DIR}/win32.release/mozjs/bin NO_DEFAULT_PATH)
-	find_library(CRYPTLIB_LIB cl32 PATHS ${3RDP_DIR}/win32.release/cryptlib/bin NO_DEFAULT_PATH)
+	find_library(3RDP_MOZJS_LIB mozjs PATHS ${3RDP_DIR}/win32.release/mozjs/bin NO_DEFAULT_PATH)
+	find_library(3RDP_CRYPTLIB_LIB cl32 PATHS ${3RDP_DIR}/win32.release/cryptlib/bin NO_DEFAULT_PATH)
 	target_include_directories(sbbs PUBLIC ${3RDP_DIR}/win32.release/mozjs/include)
 	target_include_directories(sbbs PUBLIC ${3RDP_DIR}/win32.release/cryptlib/include)
 else()
@@ -178,21 +197,21 @@ else()
 			link_directories(${SUFFIX})
 		endif()
 		if(${PREFIX} STREQUAL "-l")
-			find_library(NSPR_LIB ${SUFFIX} PATHS ${NSPR_LINK_DIR})
-			target_link_libraries(sbbs ${NSPR_LIB})
+			find_library(3RDP_NSPR_LIB ${SUFFIX} PATHS ${NSPR_LINK_DIR})
+			target_link_libraries(sbbs ${3RDP_NSPR_LIB})
 		endif()
 	endforeach()
 	execute_process(COMMAND nspr-config --cflags OUTPUT_VARIABLE NSPR_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
 	execute_process(COMMAND nspr-config --includedir OUTPUT_VARIABLE NSPR_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 	target_compile_options(sbbs PUBLIC ${NSPR_CFLAGS})
 	target_include_directories(sbbs PUBLIC ${NSPR_INCLUDE_DIR})
-	find_library(MOZJS_LIB mozjs185-1.0 PATHS ${3RDP_DIR}/${LEGACY_3RDPDIR}/mozjs/lib NO_DEFAULT_PATH)
-	find_library(CRYPTLIB_LIB cl PATHS ${3RDP_DIR}/${LEGACY_3RDPDIR}/cl NO_DEFAULT_PATH)
+	find_library(3RDP_MOZJS_LIB mozjs185-1.0 PATHS ${3RDP_DIR}/${LEGACY_3RDPDIR}/mozjs/lib NO_DEFAULT_PATH)
+	find_library(3RDP_CRYPTLIB_LIB cl PATHS ${3RDP_DIR}/${LEGACY_3RDPDIR}/cl NO_DEFAULT_PATH)
 	target_include_directories(sbbs PUBLIC ${3RDP_DIR}/${LEGACY_3RDPDIR}/mozjs/include/js)
 	add_dependencies(sbbs 3rdp)
 endif()
-target_link_libraries(sbbs ${MOZJS_LIB})
-target_link_libraries(sbbs ${CRYPTLIB_LIB})
+target_link_libraries(sbbs ${3RDP_MOZJS_LIB})
+target_link_libraries(sbbs ${3RDP_CRYPTLIB_LIB})
 
 add_library(ftpsrvr SHARED ftpsrvr.c nopen.c)
 require_libs(ftpsrvr xpdev smblib comio)
