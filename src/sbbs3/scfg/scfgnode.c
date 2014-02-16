@@ -52,22 +52,21 @@ while(1) {
 		j|=WIN_INS;
 	if(savnode)
 		j|=WIN_PUT;
-SETHELP(WHERE);
-/*
-Node List:
-
-This is the list of configured nodes in your system.
-
-To add a node, hit  INS .
-
-To delete a node, hit  DEL .
-
-To configure a node, select it using the arrow keys and hit  ENTER .
-
-To copy a node's configuration to another node, first select the source
-node with the arrow keys and hit  F5 . Then select the destination
-node and hit  F6 .
-*/
+uifc.helpbuf=
+	"Node List:\n"
+	"\n"
+	"This is the list of configured nodes in your system.\n"
+	"\n"
+	"To add a node, hit  INS .\n"
+	"\n"
+	"To delete a node, hit  DEL .\n"
+	"\n"
+	"To configure a node, select it using the arrow keys and hit  ENTER .\n"
+	"\n"
+	"To copy a node's configuration to another node, first select the source\n"
+	"node with the arrow keys and hit  F5 . Then select the destination\n"
+	"node and hit  F6 .\n"
+;
 
 	i=uifc.list(j,0,0,13,&node_menu_dflt,&node_bar,"Nodes",opt);
 	if(i==-1) {
@@ -82,13 +81,12 @@ node and hit  F6 .
 		opt[2][0]=0;
 		sprintf(str,"Delete Node %d",cfg.sys_nodes);
 		i=1;
-SETHELP(WHERE);
-/*
-Delete Node:
-
-If you are positive you want to delete this node, select Yes. Otherwise,
-select No or hit  ESC .
-*/
+uifc.helpbuf=
+	"Delete Node:\n"
+	"\n"
+	"If you are positive you want to delete this node, select Yes. Otherwise,\n"
+	"select No or hit  ESC .\n"
+;
 		i=uifc.list(WIN_MID,0,0,0,&i,0,str,opt);
 		if(!i) {
 			--cfg.sys_nodes;
@@ -106,19 +104,18 @@ select No or hit  ESC .
 		uifc.pop(0);
 		sprintf(str,"../node%d/",i);
 		sprintf(tmp,"Node %d Path",i);
-SETHELP(WHERE);
-/*
-Node Path:
-
-This is the path to this node's private directory where its separate
-configuration and data files are stored.
-
-The drive and directory of this path can be set to any valid DOS
-directory that can be accessed by ALL nodes and MUST NOT be on a RAM disk
-or other volatile media.
-
-If you want to abort the creation of this new node, hit  ESC .
-*/
+uifc.helpbuf=
+	"Node Path:\n"
+	"\n"
+	"This is the path to this node's private directory where its separate\n"
+	"configuration and data files are stored.\n"
+	"\n"
+	"The drive and directory of this path can be set to any valid DOS\n"
+	"directory that can be accessed by ALL nodes and MUST NOT be on a RAM disk\n"
+	"or other volatile media.\n"
+	"\n"
+	"If you want to abort the creation of this new node, hit  ESC .\n"
+;
 		j=uifc.input(WIN_MID,0,0,tmp,str,50,K_EDIT);
 		uifc.changes=0;
 		if(j<2)
@@ -190,15 +187,14 @@ while(1) {
 	strcpy(opt[i++],"Advanced Options...");
 	opt[i][0]=0;
 	sprintf(str,"Node %d Configuration",cfg.node_num);
-SETHELP(WHERE);
-/*
-Node Configuration Menu:
-
-This is the node configuration menu. The options available from this
-menu will only affect the selected node's configuration.
-
-Options with a trailing ... will produce a sub-menu of more options.
-*/
+uifc.helpbuf=
+	"Node Configuration Menu:\n"
+	"\n"
+	"This is the node configuration menu. The options available from this\n"
+	"menu will only affect the selected node's configuration.\n"
+	"\n"
+	"Options with a trailing ... will produce a sub-menu of more options.\n"
+;
 	switch(uifc.list(WIN_ACT|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&node_dflt,0
 		,str,opt)) {
 		case -1:
@@ -211,12 +207,11 @@ Options with a trailing ... will produce a sub-menu of more options.
 				return;
 			break;
 		case 0:
-SETHELP(WHERE);
-/*
-`Node Phone Number:`
-This is the phone number to access the selected node (e.g. for SEXPOTS).
-This value is used for documentary purposes only.
-*/
+uifc.helpbuf=
+	"`Node Phone Number:`\n"
+	"This is the phone number to access the selected node (e.g. for SEXPOTS).\n"
+	"This value is used for documentary purposes only.\n"
+;
             uifc.input(WIN_MID|WIN_SAV,0,10,"Phone Number",cfg.node_phone,sizeof(cfg.node_phone)-1,K_EDIT);
             break;
 		case 1:
@@ -245,15 +240,14 @@ This value is used for documentary purposes only.
 					,cfg.node_misc&NM_CLOSENODEDAB ? "No":"Yes");
 
 				opt[i][0]=0;
-SETHELP(WHERE);
-/*
-Node Toggle Options:
-
-This is the toggle options menu for the selected node's configuration.
-
-The available options from this menu can all be toggled between two or
-more states, such as Yes and No.
-*/
+uifc.helpbuf=
+	"Node Toggle Options:\n"
+	"\n"
+	"This is the toggle options menu for the selected node's configuration.\n"
+	"\n"
+	"The available options from this menu can all be toggled between two or\n"
+	"more states, such as Yes and No.\n"
+;
 				switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT|WIN_SAV,3,2,35,&tog_dflt
 					,&tog_bar,"Toggle Options",opt)) {
 					case -1:
@@ -265,18 +259,17 @@ more states, such as Yes and No.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						SETHELP(WHERE);
-/*
-Low Priority String Input:
-
-Normally, Synchronet will not give up time slices (under a multitasker)
-when users are prompted for a string of characters. This is considered
-a high priority task.
-
-Setting this option to Yes will force Synchronet to give up time slices
-during string input, possibly causing jerky keyboard input from the
-user, but improving aggregate system performance under multitaskers.
-*/
+						uifc.helpbuf=
+							"Low Priority String Input:\n"
+							"\n"
+							"Normally, Synchronet will not give up time slices (under a multitasker)\n"
+							"when users are prompted for a string of characters. This is considered\n"
+							"a high priority task.\n"
+							"\n"
+							"Setting this option to Yes will force Synchronet to give up time slices\n"
+							"during string input, possibly causing jerky keyboard input from the\n"
+							"user, but improving aggregate system performance under multitaskers.\n"
+						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Low Priority String Input",opt);
 						if(i==0 && !(cfg.node_misc&NM_LOWPRIO)) {
@@ -292,13 +285,12 @@ user, but improving aggregate system performance under multitaskers.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						SETHELP(WHERE);
-/*
-Allow Login by User Number:
-
-If you want users to be able login using their user number at the NN:
-set this option to Yes.
-*/
+						uifc.helpbuf=
+							"Allow Login by User Number:\n"
+							"\n"
+							"If you want users to be able login using their user number at the NN:\n"
+							"set this option to Yes.\n"
+						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Allow Login by User Number",opt);
 						if(i==0 && cfg.node_misc&NM_NO_NUM) {
@@ -313,13 +305,12 @@ set this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						SETHELP(WHERE);
-/*
-Allow Login by Real Name:
-
-If you want users to be able login using their real name as well as
-their alias, set this option to Yes.
-*/
+						uifc.helpbuf=
+							"Allow Login by Real Name:\n"
+							"\n"
+							"If you want users to be able login using their real name as well as\n"
+							"their alias, set this option to Yes.\n"
+						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Allow Login by Real Name",opt);
 						if(i==0 && !(cfg.node_misc&NM_LOGON_R)) {
@@ -334,13 +325,12 @@ their alias, set this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						SETHELP(WHERE);
-/*
-Always Prompt for Password:
-
-If you want to have attempted logins using an unknown user name still
-prompt for a password, set this option to Yes.
-*/
+						uifc.helpbuf=
+							"Always Prompt for Password:\n"
+							"\n"
+							"If you want to have attempted logins using an unknown user name still\n"
+							"prompt for a password, set this option to Yes.\n"
+						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Always Prompt for Password",opt);
 						if(i==0 && !(cfg.node_misc&NM_LOGON_P)) {
@@ -355,14 +345,13 @@ prompt for a password, set this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						SETHELP(WHERE);
-/*
-Allow 8-bit Remote Input During Login:
-
-If you wish to allow E-7-1 terminals to use this node, you must set this
-option to No. This will also eliminate the ability of 8-bit remote users
-to send IBM extended ASCII characters during the login sequence.
-*/
+						uifc.helpbuf=
+							"Allow 8-bit Remote Input During Login:\n"
+							"\n"
+							"If you wish to allow E-7-1 terminals to use this node, you must set this\n"
+							"option to No. This will also eliminate the ability of 8-bit remote users\n"
+							"to send IBM extended ASCII characters during the login sequence.\n"
+						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Allow 8-bit Remote Input During Login",opt);
 						if(i==1 && !(cfg.node_misc&NM_7BITONLY)) {
@@ -377,13 +366,12 @@ to send IBM extended ASCII characters during the login sequence.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						SETHELP(WHERE);
-/*
-Spinning Pause Prompt:
-
-If you want to have a spinning cursor at the [Hit a key] prompt, set
-this option to Yes.
-*/
+						uifc.helpbuf=
+							"Spinning Pause Prompt:\n"
+							"\n"
+							"If you want to have a spinning cursor at the [Hit a key] prompt, set\n"
+							"this option to Yes.\n"
+						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Spinning Cursor at Pause Prompt",opt);
 						if(i==0 && cfg.node_misc&NM_NOPAUSESPIN) {
@@ -398,15 +386,14 @@ this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						SETHELP(WHERE);
-/*
-Keep Node File Open:
-
-If you want to keep the shared node file (ctrl/node.dab) open,
-(for better performance and reliability) set this option to Yes.
-If want to keep the file closed (for Samba compatiblity), set this
-option to No.
-*/
+						uifc.helpbuf=
+							"Keep Node File Open:\n"
+							"\n"
+							"If you want to keep the shared node file (ctrl/node.dab) open,\n"
+							"(for better performance and reliability) set this option to Yes.\n"
+							"If want to keep the file closed (for Samba compatiblity), set this\n"
+							"option to No.\n"
+						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 							,"Keep Node File Open",opt);
 						if(i==0 && cfg.node_misc&NM_CLOSENODEDAB) {
@@ -435,14 +422,13 @@ option to No.
 				sprintf(opt[i++],"%-27.27s%.40s","Daily Event",cfg.node_daily);
 				sprintf(opt[i++],"%-27.27s%.40s","Text Directory",cfg.text_dir);
 				opt[i][0]=0;
-SETHELP(WHERE);
-/*
-Node Advanced Options:
-
-This is the advanced options menu for the selected node. The available
-options are of an advanced nature and should not be modified unless you
-are sure of the consequences and necessary preparation.
-*/
+uifc.helpbuf=
+	"Node Advanced Options:\n"
+	"\n"
+	"This is the advanced options menu for the selected node. The available\n"
+	"options are of an advanced nature and should not be modified unless you\n"
+	"are sure of the consequences and necessary preparation.\n"
+;
 				switch(uifc.list(WIN_T2B|WIN_RHT|WIN_ACT|WIN_SAV,2,0,60,&adv_dflt,0
 					,"Advanced Options",opt)) {
                     case -1:
@@ -450,31 +436,29 @@ are sure of the consequences and necessary preparation.
                         break;
 					case 0:
 						ultoa(cfg.node_valuser,str,10);
-SETHELP(WHERE);
-/*
-Validation User Number:
-
-When a caller logs onto the system as New, he or she must send
-validation feedback to the sysop. This feature can be disabled by
-setting this value to 0, allowing new users to logon without sending
-validation feedback. If you want new users on this node to be forced to
-send validation feedback, set this value to the number of the user to
-whom the feedback is sent. The normal value of this option is 1 for
-user number one.
-*/
+uifc.helpbuf=
+	"Validation User Number:\n"
+	"\n"
+	"When a caller logs onto the system as New, he or she must send\n"
+	"validation feedback to the sysop. This feature can be disabled by\n"
+	"setting this value to 0, allowing new users to logon without sending\n"
+	"validation feedback. If you want new users on this node to be forced to\n"
+	"send validation feedback, set this value to the number of the user to\n"
+	"whom the feedback is sent. The normal value of this option is 1 for\n"
+	"user number one.\n"
+;
 						uifc.input(WIN_MID,0,13,"Validation User Number (0=Nobody)"
 							,str,4,K_NUMBER|K_EDIT);
 						cfg.node_valuser=atoi(str);
 						break;
 					case 1:
 						ultoa(cfg.node_sem_check,str,10);
-SETHELP(WHERE);
-/*
-Semaphore Check Frequency While Waiting for Call (in seconds):
-
-This is the number of seconds between semaphore checks while this node
-is waiting for a caller. Default is 60 seconds.
-*/
+uifc.helpbuf=
+	"Semaphore Check Frequency While Waiting for Call (in seconds):\n"
+	"\n"
+	"This is the number of seconds between semaphore checks while this node\n"
+	"is waiting for a caller. Default is 60 seconds.\n"
+;
 						uifc.input(WIN_MID|WIN_SAV,0,14
 							,"Seconds Between Semaphore Checks"
 							,str,3,K_NUMBER|K_EDIT);
@@ -482,13 +466,12 @@ is waiting for a caller. Default is 60 seconds.
                         break;
 					case 2:
 						ultoa(cfg.node_stat_check,str,10);
-SETHELP(WHERE);
-/*
-Statistics Check Frequency While Waiting for Call (in seconds):
-
-This is the number of seconds between static checks while this node
-is waiting for a caller. Default is 10 seconds.
-*/
+uifc.helpbuf=
+	"Statistics Check Frequency While Waiting for Call (in seconds):\n"
+	"\n"
+	"This is the number of seconds between static checks while this node\n"
+	"is waiting for a caller. Default is 10 seconds.\n"
+;
 						uifc.input(WIN_MID|WIN_SAV,0,14
 							,"Seconds Between Statistic Checks"
 							,str,3,K_NUMBER|K_EDIT);
@@ -496,13 +479,12 @@ is waiting for a caller. Default is 10 seconds.
                         break;
 					case 3:
 						ultoa(cfg.sec_warn,str,10);
-SETHELP(WHERE);
-/*
-Seconds Before Inactivity Warning:
-
-This is the number of seconds the user must be inactive before a
-warning will be given. Default is 180 seconds.
-*/
+uifc.helpbuf=
+	"Seconds Before Inactivity Warning:\n"
+	"\n"
+	"This is the number of seconds the user must be inactive before a\n"
+	"warning will be given. Default is 180 seconds.\n"
+;
 						uifc.input(WIN_MID|WIN_SAV,0,14
 							,"Seconds Before Inactivity Warning"
 							,str,4,K_NUMBER|K_EDIT);
@@ -510,49 +492,46 @@ warning will be given. Default is 180 seconds.
                         break;
 					case 4:
 						ultoa(cfg.sec_hangup,str,10);
-SETHELP(WHERE);
-/*
-Seconds Before Inactivity Disconnection:
-
-This is the number of seconds the user must be inactive before they
-will be automatically disconnected. Default is 300 seconds.
-*/
+uifc.helpbuf=
+	"Seconds Before Inactivity Disconnection:\n"
+	"\n"
+	"This is the number of seconds the user must be inactive before they\n"
+	"will be automatically disconnected. Default is 300 seconds.\n"
+;
 						uifc.input(WIN_MID|WIN_SAV,0,14
 							,"Seconds Before Inactivity Disconnection"
 							,str,4,K_NUMBER|K_EDIT);
 						cfg.sec_hangup=atoi(str);
                         break;
 					case 5:
-SETHELP(WHERE);
-/*
-Daily Event:
-
-If you have an event that this node should run every day, enter the
-command line for that event here.
-
-An event can be any valid DOS command line. If multiple programs or
-commands are required, use a batch file.
-
-Remember: The %! command line specifier is an abreviation for your
-		  configured EXEC directory path.
-*/
+uifc.helpbuf=
+	"Daily Event:\n"
+	"\n"
+	"If you have an event that this node should run every day, enter the\n"
+	"command line for that event here.\n"
+	"\n"
+	"An event can be any valid DOS command line. If multiple programs or\n"
+	"commands are required, use a batch file.\n"
+	"\n"
+	"Remember: The %! command line specifier is an abreviation for your\n"
+	"         configured EXEC directory path.\n"
+;
 						uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
 							,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
 						break;
 					case 6:
-SETHELP(WHERE);
-/*
-Text Directory:
-
-Your text directory contains read-only text files. Synchronet never
-writes to any files in this directory so it CAN be placed on a RAM
-disk or other volatile media. This directory contains the system's menus
-and other important text files, so be sure the files and directories are
-moved to this directory if you decide to change it.
-
-This option allows you to change the location of your control directory.
-The \TEXT\ suffix (sub-directory) cannot be changed or removed.
-*/
+uifc.helpbuf=
+	"Text Directory:\n"
+	"\n"
+	"Your text directory contains read-only text files. Synchronet never\n"
+	"writes to any files in this directory so it CAN be placed on a RAM\n"
+	"disk or other volatile media. This directory contains the system's menus\n"
+	"and other important text files, so be sure the files and directories are\n"
+	"moved to this directory if you decide to change it.\n"
+	"\n"
+	"This option allows you to change the location of your control directory.\n"
+	"The \\TEXT\\ suffix (sub-directory) cannot be changed or removed.\n"
+;
 						uifc.input(WIN_MID|WIN_SAV,0,10,"Text Directory"
 							,cfg.text_dir,sizeof(cfg.text_dir)-1,K_EDIT);
 						break; 

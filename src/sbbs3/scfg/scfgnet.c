@@ -119,13 +119,12 @@ while(1) {
 	strcpy(opt[i++],"FidoNet EchoMail and NetMail");
 	strcpy(opt[i++],"PostLink Networks");
 	opt[i][0]=0;
-	SETHELP(WHERE);
-/*
-`Configure Networks:`
-
-This is the network configuration menu. Select the type of network
-technology that you want to configure.
-*/
+	uifc.helpbuf=
+		"`Configure Networks:`\n"
+		"\n"
+		"This is the network configuration menu. Select the type of network\n"
+		"technology that you want to configure.\n"
+	;
 	i=uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&net_dflt,0,"Networks",opt);
 	if(i==1) {	/* QWK net stuff */
 		done=0;
@@ -134,15 +133,14 @@ technology that you want to configure.
 			strcpy(opt[i++],"Network Hubs...");
 			strcpy(opt[i++],"Default Tagline");
 			opt[i][0]=0;
-			SETHELP(WHERE);
-/*
-`QWK Packet Networks:`
-
-From this menu you can configure the default tagline to use for
-outgoing messages on QWK networked sub-boards, or you can select
-`Network Hubs...` to add, delete, or configure QWK hubs that your system
-calls to exchange packets with.
-*/
+			uifc.helpbuf=
+				"`QWK Packet Networks:`\n"
+				"\n"
+				"From this menu you can configure the default tagline to use for\n"
+				"outgoing messages on QWK networked sub-boards, or you can select\n"
+				"`Network Hubs...` to add, delete, or configure QWK hubs that your system\n"
+				"calls to exchange packets with.\n"
+			;
 			i=uifc.list(WIN_ACT|WIN_RHT|WIN_BOT|WIN_CHE,0,0,0,&qnet_dflt,0
 				,"QWK Packet Networks",opt);
 			switch(i) {
@@ -150,14 +148,13 @@ calls to exchange packets with.
 					done=1;
 					break;
 				case 1:
-					SETHELP(WHERE);
-/*
-`QWK Network Default Tagline:`
-
-This is the default tagline to use for outgoing messages on QWK
-networked sub-boards. This default can be overridden on a per sub-board
-basis with the sub-board configuration `Network Options...`.
-*/
+					uifc.helpbuf=
+						"`QWK Network Default Tagline:`\n"
+						"\n"
+						"This is the default tagline to use for outgoing messages on QWK\n"
+						"networked sub-boards. This default can be overridden on a per sub-board\n"
+						"basis with the sub-board configuration `Network Options...`.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,nulstr
 						,cfg.qnet_tagline,sizeof(cfg.qnet_tagline)-1,K_MSG|K_EDIT);
 					break;
@@ -171,20 +168,19 @@ basis with the sub-board configuration `Network Options...`.
 							i|=WIN_INS|WIN_INSACT|WIN_XTR;
 						if(cfg.total_qhubs)
 							i|=WIN_DEL;
-						SETHELP(WHERE);
-/*
-`QWK Network Hubs:`
-
-This is a list of QWK network hubs that your system calls to exchange
-packets with.
-
-To add a hub, select the desired location with the arrow keys and hit
-~ INS ~.
-
-To delete a hub, select it and hit ~ DEL ~.
-
-To configure a hub, select it and hit ~ ENTER ~.
-*/
+						uifc.helpbuf=
+							"`QWK Network Hubs:`\n"
+							"\n"
+							"This is a list of QWK network hubs that your system calls to exchange\n"
+							"packets with.\n"
+							"\n"
+							"To add a hub, select the desired location with the arrow keys and hit\n"
+							"~ INS ~.\n"
+							"\n"
+							"To delete a hub, select it and hit ~ DEL ~.\n"
+							"\n"
+							"To configure a hub, select it and hit ~ ENTER ~.\n"
+						;
 						i=uifc.list(i,0,0,0,&qhub_dflt,0
 							,"QWK Network Hubs",opt);
 						if(i==-1)
@@ -200,13 +196,12 @@ To configure a hub, select it and hit ~ ENTER ~.
                                 continue; 
 							}
 
-							SETHELP(WHERE);
-/*
-`QWK Network Hub System ID:`
-
-This is the QWK System ID of this hub. It is used for incoming and
-outgoing network packets and must be accurate.
-*/
+							uifc.helpbuf=
+								"`QWK Network Hub System ID:`\n"
+								"\n"
+								"This is the QWK System ID of this hub. It is used for incoming and\n"
+								"outgoing network packets and must be accurate.\n"
+							;
 							if(uifc.input(WIN_MID|WIN_SAV,0,0
 								,"System ID",str,LEN_QWKID,K_UPPER)<1)
 								continue;
@@ -298,14 +293,13 @@ outgoing network packets and must be accurate.
 			sprintf(opt[i++],"%-27.27s%"PRIu32
 				,"Cost to Send NetMail",cfg.netmail_cost);
 			opt[i][0]=0;
-			SETHELP(WHERE);
-/*
-`FidoNet EchoMail and NetMail:`
-
-This menu contains configuration options that pertain specifically to
-networking E-mail (NetMail) and sub-boards (EchoMail) through networks
-using FidoNet technology.
-*/
+			uifc.helpbuf=
+				"`FidoNet EchoMail and NetMail:`\n"
+				"\n"
+				"This menu contains configuration options that pertain specifically to\n"
+				"networking E-mail (NetMail) and sub-boards (EchoMail) through networks\n"
+				"using FidoNet technology.\n"
+			;
 			i=uifc.list(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&fnet_dflt,0
 				,"FidoNet EchoMail and NetMail",opt);
 			switch(i) {
@@ -313,14 +307,13 @@ using FidoNet technology.
 					done=1;
 					break;
 				case 0:
-					SETHELP(WHERE);
-/*
-`System FidoNet Addresses:`
-
-This is the FidoNet address of this system used to receive NetMail.
-The Main address is also used as the default address for sub-boards.
-Format: `Zone:Net/Node[.Point]`
-*/
+					uifc.helpbuf=
+						"`System FidoNet Addresses:`\n"
+						"\n"
+						"This is the FidoNet address of this system used to receive NetMail.\n"
+						"The Main address is also used as the default address for sub-boards.\n"
+						"Format: `Zone:Net/Node[.Point]`\n"
+					;
 					k=l=0;
 					while(1) {
 						for(i=0;i<cfg.total_faddrs && i<MAX_OPTS;i++) {
@@ -387,14 +380,13 @@ Format: `Zone:Net/Node[.Point]`
                     break;
 				case 1:
 					i=0;
-					SETHELP(WHERE);
-/*
-`Use Default Outbound NetMail Address:`
-
-If you would like to have a default FidoNet address adding to outbound
-NetMail mail messages that do not have an address specified, select
-`Yes`.
-*/
+					uifc.helpbuf=
+						"`Use Default Outbound NetMail Address:`\n"
+						"\n"
+						"If you would like to have a default FidoNet address adding to outbound\n"
+						"NetMail mail messages that do not have an address specified, select\n"
+						"`Yes`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Use Default Outbound NetMail Address",uifcYesNoOpts);
 					if(i==1) {
@@ -410,15 +402,14 @@ NetMail mail messages that do not have an address specified, select
 						uifc.changes=1; 
 					}
 					smb_faddrtoa(&cfg.dflt_faddr,str);
-					SETHELP(WHERE);
-/*
-`Default Outbound FidoNet NetMail Address:`
-
-If you would like to automatically add a FidoNet address to outbound
-NetMail that does not have an address specified, set this option
-to that address. This is useful for Fido/UUCP gateway mail.
-Format: `Zone:Net/Node[.Point]`
-*/
+					uifc.helpbuf=
+						"`Default Outbound FidoNet NetMail Address:`\n"
+						"\n"
+						"If you would like to automatically add a FidoNet address to outbound\n"
+						"NetMail that does not have an address specified, set this option\n"
+						"to that address. This is useful for Fido/UUCP gateway mail.\n"
+						"Format: `Zone:Net/Node[.Point]`\n"
+					;
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound Address"
 						,str,25,K_EDIT)) {
 						cfg.dflt_faddr=atofaddr(str);
@@ -426,90 +417,83 @@ Format: `Zone:Net/Node[.Point]`
 					}
                     break;
 				case 2:
-					SETHELP(WHERE);
-/*
-`Default Origin Line:`
-
-This is the default origin line used for sub-boards networked via
-EchoMail. This origin line can be overridden on a per sub-board basis
-with the sub-board configuration `Network Options...`.
-*/
+					uifc.helpbuf=
+						"`Default Origin Line:`\n"
+						"\n"
+						"This is the default origin line used for sub-boards networked via\n"
+						"EchoMail. This origin line can be overridden on a per sub-board basis\n"
+						"with the sub-board configuration `Network Options...`.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"* Origin"
 						,cfg.origline,sizeof(cfg.origline)-1,K_EDIT);
                     break;
 				case 3:
-					SETHELP(WHERE);
-/*
-`NetMail Semaphore File:`
-
-This is a filename that will be used as a semaphore (signal) to your
-FidoNet front-end that new NetMail has been created and the messages
-should be re-scanned.
-*/
+					uifc.helpbuf=
+						"`NetMail Semaphore File:`\n"
+						"\n"
+						"This is a filename that will be used as a semaphore (signal) to your\n"
+						"FidoNet front-end that new NetMail has been created and the messages\n"
+						"should be re-scanned.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail Semaphore"
 						,cfg.netmail_sem,sizeof(cfg.netmail_sem)-1,K_EDIT);
                     break;
 				case 4:
-					SETHELP(WHERE);
-/*
-`EchoMail Semaphore File:`
-
-This is a filename that will be used as a semaphore (signal) to your
-FidoNet front-end that new EchoMail has been created and the messages
-should be re-scanned.
-*/
+					uifc.helpbuf=
+						"`EchoMail Semaphore File:`\n"
+						"\n"
+						"This is a filename that will be used as a semaphore (signal) to your\n"
+						"FidoNet front-end that new EchoMail has been created and the messages\n"
+						"should be re-scanned.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"EchoMail Semaphore"
 						,cfg.echomail_sem,sizeof(cfg.echomail_sem)-1,K_EDIT);
                     break;
 				case 5:
-					SETHELP(WHERE);
-/*
-`Inbound File Directory:`
-
-This directory is where inbound files are placed. This directory is
-only used when an incoming message has a file attached.
-*/
+					uifc.helpbuf=
+						"`Inbound File Directory:`\n"
+						"\n"
+						"This directory is where inbound files are placed. This directory is\n"
+						"only used when an incoming message has a file attached.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound Files"
 						,cfg.fidofile_dir,sizeof(cfg.fidofile_dir)-1,K_EDIT);
                     break;
 				case 6:
-					SETHELP(WHERE);
-/*
-`EchoMail Base Directory:`
-
-This is an optional field used as a base directory for the location
-of EchoMail messages for sub-boards that do not have a specified
-`EchoMail Storage Directory`. If a sub-board does not have a specified
-storage directory for EchoMail, its messages will be imported from and
-exported to a sub-directory off of this base directory. The name of the
-sub-directory is the same as the internal code for the sub-directory.
-
-If all EchoMail sub-boards have specified EchoMail storage directories,
-this option is not used at all.
-*/
+					uifc.helpbuf=
+						"`EchoMail Base Directory:`\n"
+						"\n"
+						"This is an optional field used as a base directory for the location\n"
+						"of EchoMail messages for sub-boards that do not have a specified\n"
+						"`EchoMail Storage Directory`. If a sub-board does not have a specified\n"
+						"storage directory for EchoMail, its messages will be imported from and\n"
+						"exported to a sub-directory off of this base directory. The name of the\n"
+						"sub-directory is the same as the internal code for the sub-directory.\n"
+						"\n"
+						"If all EchoMail sub-boards have specified EchoMail storage directories,\n"
+						"this option is not used at all.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"EchoMail Base"
 						,cfg.echomail_dir,sizeof(cfg.echomail_dir)-1,K_EDIT);
                     break;
 				case 7:
-					SETHELP(WHERE);
-/*
-`NetMail Directory:`
-
-This is the directory where NetMail will be imported from and exported
-to.
-*/
+					uifc.helpbuf=
+						"`NetMail Directory:`\n"
+						"\n"
+						"This is the directory where NetMail will be imported from and exported\n"
+						"to.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail"
 						,cfg.netmail_dir,sizeof(cfg.netmail_dir)-1,K_EDIT);
                     break;
 				case 8:
 					i=0;
-					SETHELP(WHERE);
-/*
-`Allow Users to Send NetMail:`
-
-If you are on a FidoNet style network and want your users to be allowed
-to send NetMail, set this option to `Yes`.
-*/
+					uifc.helpbuf=
+						"`Allow Users to Send NetMail:`\n"
+						"\n"
+						"If you are on a FidoNet style network and want your users to be allowed\n"
+						"to send NetMail, set this option to `Yes`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Allow Users to Send NetMail",uifcYesNoOpts);
 					if(!i && !(cfg.netmail_misc&NMAIL_ALLOW)) {
@@ -523,13 +507,12 @@ to send NetMail, set this option to `Yes`.
 					break;
 				case 9:
 					i=0;
-					SETHELP(WHERE);
-/*
-`Allow Users to Send NetMail File Attachments:`
-
-If you are on a FidoNet style network and want your users to be allowed
-to send NetMail file attachments, set this option to `Yes`.
-*/
+					uifc.helpbuf=
+						"`Allow Users to Send NetMail File Attachments:`\n"
+						"\n"
+						"If you are on a FidoNet style network and want your users to be allowed\n"
+						"to send NetMail file attachments, set this option to `Yes`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Allow Users to Send NetMail File Attachments",uifcYesNoOpts);
 					if(!i && !(cfg.netmail_misc&NMAIL_FILE)) {
@@ -543,15 +526,14 @@ to send NetMail file attachments, set this option to `Yes`.
                     break;
 				case 10:
 					i=1;
-					SETHELP(WHERE);
-/*
-`Use Aliases in NetMail:`
-
-If you allow aliases on your system and wish users to have their NetMail
-contain their alias as the `From User`, set this option to `Yes`. If you
-want all NetMail to be sent using users' real names, set this option to
-`No`.
-*/
+					uifc.helpbuf=
+						"`Use Aliases in NetMail:`\n"
+						"\n"
+						"If you allow aliases on your system and wish users to have their NetMail\n"
+						"contain their alias as the `From User`, set this option to `Yes`. If you\n"
+						"want all NetMail to be sent using users' real names, set this option to\n"
+						"`No`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Use Aliases in NetMail",uifcYesNoOpts);
 					if(!i && !(cfg.netmail_misc&NMAIL_ALIAS)) {
@@ -565,13 +547,12 @@ want all NetMail to be sent using users' real names, set this option to
                     break;
 				case 11:
 					i=1;
-					SETHELP(WHERE);
-/*
-`NetMail Defaults to Crash Status:`
-
-If you want all NetMail to default to crash (send immediately) status,
-set this option to `Yes`.
-*/
+					uifc.helpbuf=
+						"`NetMail Defaults to Crash Status:`\n"
+						"\n"
+						"If you want all NetMail to default to crash (send immediately) status,\n"
+						"set this option to `Yes`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"NetMail Defaults to Crash Status",uifcYesNoOpts);
 					if(!i && !(cfg.netmail_misc&NMAIL_CRASH)) {
@@ -585,13 +566,12 @@ set this option to `Yes`.
                     break;
 				case 12:
 					i=1;
-					SETHELP(WHERE);
-/*
-`NetMail Defaults to Direct Status:`
-
-If you want all NetMail to default to direct (send directly) status,
-set this option to `Yes`.
-*/
+					uifc.helpbuf=
+						"`NetMail Defaults to Direct Status:`\n"
+						"\n"
+						"If you want all NetMail to default to direct (send directly) status,\n"
+						"set this option to `Yes`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"NetMail Defaults to Direct Status",uifcYesNoOpts);
 					if(!i && !(cfg.netmail_misc&NMAIL_DIRECT)) {
@@ -605,13 +585,12 @@ set this option to `Yes`.
                     break;
 				case 13:
 					i=1;
-					SETHELP(WHERE);
-/*
-`NetMail Defaults to Hold Status:`
-
-If you want all NetMail to default to hold status, set this option to
-`Yes`.
-*/
+					uifc.helpbuf=
+						"`NetMail Defaults to Hold Status:`\n"
+						"\n"
+						"If you want all NetMail to default to hold status, set this option to\n"
+						"`Yes`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"NetMail Defaults to Hold Status",uifcYesNoOpts);
 					if(!i && !(cfg.netmail_misc&NMAIL_HOLD)) {
@@ -625,13 +604,12 @@ If you want all NetMail to default to hold status, set this option to
                     break;
 				case 14:
 					i=0;
-					SETHELP(WHERE);
-/*
-`Kill NetMail After it is Sent:`
-
-If you want NetMail messages to be deleted after they are successfully
-sent, set this option to `Yes`.
-*/
+					uifc.helpbuf=
+						"`Kill NetMail After it is Sent:`\n"
+						"\n"
+						"If you want NetMail messages to be deleted after they are successfully\n"
+						"sent, set this option to `Yes`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Kill NetMail After it is Sent",uifcYesNoOpts);
 					if(!i && !(cfg.netmail_misc&NMAIL_KILL)) {
@@ -645,13 +623,12 @@ sent, set this option to `Yes`.
                     break;
 				case 15:
 					ultoa(cfg.netmail_cost,str,10);
-					SETHELP(WHERE);
-/*
-`Cost in Credits to Send NetMail:`
-
-This is the number of credits it will cost your users to send NetMail.
-If you want the sending of NetMail to be free, set this value to `0`.
-*/
+					uifc.helpbuf=
+						"`Cost in Credits to Send NetMail:`\n"
+						"\n"
+						"This is the number of credits it will cost your users to send NetMail.\n"
+						"If you want the sending of NetMail to be free, set this value to `0`.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0
 						,"Cost in Credits to Send NetMail"
 						,str,10,K_EDIT|K_NUMBER);
@@ -668,12 +645,11 @@ If you want the sending of NetMail to be free, set this value to `0`.
 			sprintf(opt[i++],"%-20.20s%-12s","Site Name",cfg.sys_psname);
 			sprintf(opt[i++],"%-20.20s%-"PRIu32,"Site Number",cfg.sys_psnum);
 			opt[i][0]=0;
-			SETHELP(WHERE);
-/*
-`PostLink Networks:`
-
-From this menu you can configure PostLink or PCRelay Networks.
-*/
+			uifc.helpbuf=
+				"`PostLink Networks:`\n"
+				"\n"
+				"From this menu you can configure PostLink or PCRelay Networks.\n"
+			;
 			i=uifc.list(WIN_ACT|WIN_RHT|WIN_BOT|WIN_CHE,0,0,0,&pnet_dflt,0
 				,"PostLink Networks",opt);
 			switch(i) {
@@ -681,24 +657,22 @@ From this menu you can configure PostLink or PCRelay Networks.
 					done=1;
 					break;
 				case 1:
-					SETHELP(WHERE);
-/*
-`PostLink Site Name:`
-
-If your system is networked via PostLink or PCRelay, this should be the
-Site Name for your BBS.
-*/
+					uifc.helpbuf=
+						"`PostLink Site Name:`\n"
+						"\n"
+						"If your system is networked via PostLink or PCRelay, this should be the\n"
+						"Site Name for your BBS.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Site Name"
 						,cfg.sys_psname,sizeof(cfg.sys_psname)-1,K_UPPER|K_EDIT);
 					break;
 				case 2:
-					SETHELP(WHERE);
-/*
-`PostLink Site Number:`
-
-If your system is networked via PostLink or PCRelay, this should be the
-Site Number for your BBS.
-*/
+					uifc.helpbuf=
+						"`PostLink Site Number:`\n"
+						"\n"
+						"If your system is networked via PostLink or PCRelay, this should be the\n"
+						"Site Number for your BBS.\n"
+					;
 					ultoa(cfg.sys_psnum,str,10);
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Site Number"
 						,str,10,K_NUMBER|K_EDIT);
@@ -714,20 +688,19 @@ Site Number for your BBS.
 							i|=WIN_INS|WIN_INSACT|WIN_XTR;
 						if(cfg.total_phubs)
 							i|=WIN_DEL;
-						SETHELP(WHERE);
-/*
-`PostLink Network Hubs:`
-
-This is a list of PostLink and/or PCRelay network hubs that your system
-calls to exchange packets with.
-
-To add a hub, select the desired location with the arrow keys and hit
-~ INS ~.
-
-To delete a hub, select it and hit ~ DEL ~.
-
-To configure a hub, select it and hit ~ ENTER ~.
-*/
+						uifc.helpbuf=
+							"`PostLink Network Hubs:`\n"
+							"\n"
+							"This is a list of PostLink and/or PCRelay network hubs that your system\n"
+							"calls to exchange packets with.\n"
+							"\n"
+							"To add a hub, select the desired location with the arrow keys and hit\n"
+							"~ INS ~.\n"
+							"\n"
+							"To delete a hub, select it and hit ~ DEL ~.\n"
+							"\n"
+							"To configure a hub, select it and hit ~ ENTER ~.\n"
+						;
 						i=uifc.list(i,0,0,0,&phub_dflt,0
 							,"PostLink Hubs",opt);
 						if(i==-1)
@@ -743,12 +716,11 @@ To configure a hub, select it and hit ~ ENTER ~.
                                 continue; 
 							}
 
-							SETHELP(WHERE);
-/*
-`Network Hub Site Name:`
-
-This is the Site Name of this hub. It is used for only for reference.
-*/
+							uifc.helpbuf=
+								"`Network Hub Site Name:`\n"
+								"\n"
+								"This is the Site Name of this hub. It is used for only for reference.\n"
+							;
 							if(uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Site Name",str,10,K_UPPER)<1)
 								continue;
@@ -811,13 +783,12 @@ This is the Site Name of this hub. It is used for only for reference.
 			sprintf(opt[i++],"%-27.27s%"PRIu32
 				,"Cost to Send E-mail",cfg.inetmail_cost);
 			opt[i][0]=0;
-			SETHELP(WHERE);
-/*
-`Internet E-mail:`
-
-This menu contains configuration options that pertain specifically to
-Internet E-mail.
-*/
+			uifc.helpbuf=
+				"`Internet E-mail:`\n"
+				"\n"
+				"This menu contains configuration options that pertain specifically to\n"
+				"Internet E-mail.\n"
+			;
 			i=uifc.list(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&inet_dflt,0
 				,"Internet E-mail",opt);
 			switch(i) {
@@ -825,49 +796,45 @@ Internet E-mail.
 					done=1;
 					break;
 				case 0:
-					SETHELP(WHERE);
-/*
-`Sytem Internet Address:`
-
-Enter your system's Internet address (hostname or IP address) here
-(e.g. `joesbbs.com`).
-*/
+					uifc.helpbuf=
+						"`Sytem Internet Address:`\n"
+						"\n"
+						"Enter your system's Internet address (hostname or IP address) here\n"
+						"(e.g. `joesbbs.com`).\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,""
 						,cfg.sys_inetaddr,sizeof(cfg.sys_inetaddr)-1,K_EDIT);
                     break;
 				case 1:
-					SETHELP(WHERE);
-/*
-`Inbound Internet E-mail Semaphore File:`
-
-This is a filename that will be used as a semaphore (signal) to any
-external Internet e-mail processors that new mail has been received
-and the message base should be re-scanned.
-*/
+					uifc.helpbuf=
+						"`Inbound Internet E-mail Semaphore File:`\n"
+						"\n"
+						"This is a filename that will be used as a semaphore (signal) to any\n"
+						"external Internet e-mail processors that new mail has been received\n"
+						"and the message base should be re-scanned.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound Semaphore"
 						,cfg.smtpmail_sem,sizeof(cfg.smtpmail_sem)-1,K_EDIT);
                     break;
 				case 2:
-					SETHELP(WHERE);
-/*
-`Outbound Internet E-mail Semaphore File:`
-
-This is a filename that will be used as a semaphore (signal) to any
-external Internet gateways (if supported) that new mail has been created
-and the message base should be re-scanned.
-*/
+					uifc.helpbuf=
+						"`Outbound Internet E-mail Semaphore File:`\n"
+						"\n"
+						"This is a filename that will be used as a semaphore (signal) to any\n"
+						"external Internet gateways (if supported) that new mail has been created\n"
+						"and the message base should be re-scanned.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound Semaphore"
 						,cfg.inetmail_sem,sizeof(cfg.inetmail_sem)-1,K_EDIT);
                     break;
 				case 3:
 					i=0;
-					SETHELP(WHERE);
-/*
-`Allow Users to Send Internet E-mail:`
-
-If you want your users to be allowed to send Internet E-mail, set this
-option to `Yes`.
-*/
+					uifc.helpbuf=
+						"`Allow Users to Send Internet E-mail:`\n"
+						"\n"
+						"If you want your users to be allowed to send Internet E-mail, set this\n"
+						"option to `Yes`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Allow Users to Send E-mail",uifcYesNoOpts);
 					if(!i && !(cfg.inetmail_misc&NMAIL_ALLOW)) {
@@ -881,13 +848,12 @@ option to `Yes`.
 					break;
 				case 4:
 					i=0;
-					SETHELP(WHERE);
-/*
-`Allow Users to Send Internet E-mail File Attachments:`
-
-If you want your users to be allowed to send Internet E-mail with file
-attachments, set this option to `Yes`.
-*/
+					uifc.helpbuf=
+						"`Allow Users to Send Internet E-mail File Attachments:`\n"
+						"\n"
+						"If you want your users to be allowed to send Internet E-mail with file\n"
+						"attachments, set this option to `Yes`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Allow Users to Send E-mail with File Attachments",uifcYesNoOpts);
 					if(!i && !(cfg.inetmail_misc&NMAIL_FILE)) {
@@ -901,15 +867,14 @@ attachments, set this option to `Yes`.
                     break;
 				case 5:
 					i=1;
-					SETHELP(WHERE);
-/*
-`Use Aliases in Internet E-mail:`
-
-If you allow aliases on your system and wish users to have their
-Internet E-mail contain their alias as the `From User`, set this option to
-`Yes`. If you want all E-mail to be sent using users' real names, set this
-option to `No`.
-*/
+					uifc.helpbuf=
+						"`Use Aliases in Internet E-mail:`\n"
+						"\n"
+						"If you allow aliases on your system and wish users to have their\n"
+						"Internet E-mail contain their alias as the `From User`, set this option to\n"
+						"`Yes`. If you want all E-mail to be sent using users' real names, set this\n"
+						"option to `No`.\n"
+					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Use Aliases in Internet E-mail",uifcYesNoOpts);
 					if(!i && !(cfg.inetmail_misc&NMAIL_ALIAS)) {
@@ -923,14 +888,13 @@ option to `No`.
 					break;
 				case 6:
 					ultoa(cfg.inetmail_cost,str,10);
-					SETHELP(WHERE);
-/*
-`Cost in Credits to Send Internet E-mail:`
-
-This is the number of credits it will cost your users to send Internet
-E-mail. If you want the sending of Internet E-mail to be free, set this
-value to `0`.
-*/
+					uifc.helpbuf=
+						"`Cost in Credits to Send Internet E-mail:`\n"
+						"\n"
+						"This is the number of credits it will cost your users to send Internet\n"
+						"E-mail. If you want the sending of Internet E-mail to be free, set this\n"
+						"value to `0`.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,0
 						,"Cost in Credits to Send Internet E-mail"
 						,str,10,K_EDIT|K_NUMBER);
@@ -978,73 +942,67 @@ while(!done) {
 	strcpy(opt[i++],"Networked Sub-boards...");
 	opt[i][0]=0;
 	sprintf(str,"%s Network Hub",cfg.qhub[num]->id);
-	SETHELP(WHERE);
-/*
-`QWK Network Hub Configuration:`
-
-This menu allows you to configure options specific to this QWK network
-hub.
-*/
+	uifc.helpbuf=
+		"`QWK Network Hub Configuration:`\n"
+		"\n"
+		"This menu allows you to configure options specific to this QWK network\n"
+		"hub.\n"
+	;
 	switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&qhub_dflt,0
 		,str,opt)) {
 		case -1:
 			done=1;
 			break;
 		case 0:
-			SETHELP(WHERE);
-/*
-`QWK Network Hub System ID:`
-
-This is the QWK System ID of this hub. It is used for incoming and
-outgoing network packets and must be accurate.
-*/
+			uifc.helpbuf=
+				"`QWK Network Hub System ID:`\n"
+				"\n"
+				"This is the QWK System ID of this hub. It is used for incoming and\n"
+				"outgoing network packets and must be accurate.\n"
+			;
 			strcpy(str,cfg.qhub[num]->id);	/* save */
 			if(!uifc.input(WIN_MID|WIN_SAV,0,0,"QWK Network Hub System ID"
 				,cfg.qhub[num]->id,LEN_QWKID,K_UPPER|K_EDIT))
 				strcpy(cfg.qhub[num]->id,str);
 			break;
 		case 1:
-			SETHELP(WHERE);
-/*
-`REP Packet Creation Command:`
-
-This is the command line to use to create (compress) REP packets for
-this QWK network hub.
-*/
+			uifc.helpbuf=
+				"`REP Packet Creation Command:`\n"
+				"\n"
+				"This is the command line to use to create (compress) REP packets for\n"
+				"this QWK network hub.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,""
 				,cfg.qhub[num]->pack,sizeof(cfg.qhub[num]->pack)-1,K_EDIT);
 			break;
 		case 2:
-			SETHELP(WHERE);
-/*
-`QWK Packet Extraction Command:`
-
-This is the command line to use to extract (decompress) QWK packets from
-this QWK network hub.
-*/
+			uifc.helpbuf=
+				"`QWK Packet Extraction Command:`\n"
+				"\n"
+				"This is the command line to use to extract (decompress) QWK packets from\n"
+				"this QWK network hub.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,""
 				,cfg.qhub[num]->unpack,sizeof(cfg.qhub[num]->unpack)-1,K_EDIT);
 			break;
 		case 3:
-			SETHELP(WHERE);
-/*
-`QWK Network Hub Call-out Command Line:`
-
-This is the command line to use to initiate a call-out to this QWK
-network hub.
-*/
+			uifc.helpbuf=
+				"`QWK Network Hub Call-out Command Line:`\n"
+				"\n"
+				"This is the command line to use to initiate a call-out to this QWK\n"
+				"network hub.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,""
 				,cfg.qhub[num]->call,sizeof(cfg.qhub[num]->call)-1,K_EDIT);
 			break;
 		case 4:
 			sprintf(str,"%u",cfg.qhub[num]->node);
-			SETHELP(WHERE);
-/*
-`Node to Perform Call-out:`
-
-This is the number of the node to perform the call-out for this QWK
-network hub.
-*/
+			uifc.helpbuf=
+				"`Node to Perform Call-out:`\n"
+				"\n"
+				"This is the number of the node to perform the call-out for this QWK\n"
+				"network hub.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Node to Perform Call-out",str,3,K_EDIT|K_NUMBER);
 			cfg.qhub[num]->node=atoi(str);
@@ -1056,13 +1014,12 @@ network hub.
 					sprintf(opt[i],"%s        %s"
 						,wday[i],(cfg.qhub[num]->days&(1<<i)) ? "Yes":"No");
 				opt[i][0]=0;
-				SETHELP(WHERE);
-/*
-`Days to Perform Call-out:`
-
-These are the days that a call-out will be performed for this QWK
-network hub.
-*/
+				uifc.helpbuf=
+					"`Days to Perform Call-out:`\n"
+					"\n"
+					"These are the days that a call-out will be performed for this QWK\n"
+					"network hub.\n"
+				;
 				i=uifc.list(WIN_MID,0,0,0,&j,0
 					,"Days to Perform Call-out",opt);
 				if(i==-1)
@@ -1073,27 +1030,25 @@ network hub.
 			break;
 		case 6:
 			i=1;
-			SETHELP(WHERE);
-/*
-`Perform Call-out at a Specific Time:`
-
-If you want the system call this QWK network hub at a specific time,
-set this option to `Yes`. If you want the system to call this network
-hub more than once a day at predetermined intervals, set this option to
-`No`.
-*/
+			uifc.helpbuf=
+				"`Perform Call-out at a Specific Time:`\n"
+				"\n"
+				"If you want the system call this QWK network hub at a specific time,\n"
+				"set this option to `Yes`. If you want the system to call this network\n"
+				"hub more than once a day at predetermined intervals, set this option to\n"
+				"`No`.\n"
+			;
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Perform Call-out at a Specific Time",uifcYesNoOpts);
 			if(i==0) {
 				sprintf(str,"%2.2u:%2.2u",cfg.qhub[num]->time/60
 					,cfg.qhub[num]->time%60);
-				SETHELP(WHERE);
-/*
-`Time to Perform Call-out:`
-
-This is the time (in 24 hour HH:MM format) to perform the call-out to
-this QWK network hub.
-*/
+				uifc.helpbuf=
+					"`Time to Perform Call-out:`\n"
+					"\n"
+					"This is the time (in 24 hour HH:MM format) to perform the call-out to\n"
+					"this QWK network hub.\n"
+				;
 				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Time to Perform Call-out (HH:MM)"
 					,str,5,K_UPPER|K_EDIT)>0) {
@@ -1106,16 +1061,15 @@ this QWK network hub.
 			else if(i==1) {
 				sprintf(str,"%u",cfg.qhub[num]->freq
 					&& cfg.qhub[num]->freq<=1440 ? 1440/cfg.qhub[num]->freq : 0);
-				SETHELP(WHERE);
-/*
-`Number of Call-outs Per Day:`
-
-This is the maximum number of times the system will perform a call-out
-per day to this QWK network hub. This value is actually converted by
-Synchronet into minutes between call-outs and when the BBS is idle
-and this number of minutes since the last call-out is reached, it will
-perform a call-out.
-*/
+				uifc.helpbuf=
+					"`Number of Call-outs Per Day:`\n"
+					"\n"
+					"This is the maximum number of times the system will perform a call-out\n"
+					"per day to this QWK network hub. This value is actually converted by\n"
+					"Synchronet into minutes between call-outs and when the BBS is idle\n"
+					"and this number of minutes since the last call-out is reached, it will\n"
+					"perform a call-out.\n"
+				;
 				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Number of Call-outs Per Day"
 					,str,4,K_NUMBER|K_EDIT)>0) {
@@ -1155,20 +1109,19 @@ while(1) {
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(cfg.qhub[num]->subs)
 		j|=WIN_DEL;
-	SETHELP(WHERE);
-/*
-`QWK Networked Sub-boards:`
-
-This is a list of the sub-boards that are networked with this QWK
-network hub.
-
-To add a sub-board, select the desired location and hit ~ INS ~.
-
-To remove a sub-board, select it and hit ~ DEL ~.
-
-To configure a sub-board for this QWK network hub, select it and hit
-~ ENTER ~.
-*/
+	uifc.helpbuf=
+		"`QWK Networked Sub-boards:`\n"
+		"\n"
+		"This is a list of the sub-boards that are networked with this QWK\n"
+		"network hub.\n"
+		"\n"
+		"To add a sub-board, select the desired location and hit ~ INS ~.\n"
+		"\n"
+		"To remove a sub-board, select it and hit ~ DEL ~.\n"
+		"\n"
+		"To configure a sub-board for this QWK network hub, select it and hit\n"
+		"~ ENTER ~.\n"
+	;
 	j=uifc.list(j,0,0,0,&k,&bar
 		,"Networked Sub-boards",opt);
 	if(j==-1)
@@ -1177,19 +1130,18 @@ To configure a sub-board for this QWK network hub, select it and hit
 		j&=MSK_OFF;
 		if((l=getsub())==-1)
 			continue;
-		SETHELP(WHERE);
-/*
-`Conference Number on Hub:`
-
-This is the number of the conference on the QWK network hub, that this
-sub-board is networked with. On Synchronet systems, this number is
-derived by multiplying the group number by 10 and adding the sub-board
-number. For example, group 2, sub-board 3, is conference number 203.
-
-It is important to understand that this is `NOT` the conference number of
-this sub-board on your system. It is the number of the conference this
-sub-board is networked with on this `QWK network hub`.
-*/
+		uifc.helpbuf=
+			"`Conference Number on Hub:`\n"
+			"\n"
+			"This is the number of the conference on the QWK network hub, that this\n"
+			"sub-board is networked with. On Synchronet systems, this number is\n"
+			"derived by multiplying the group number by 10 and adding the sub-board\n"
+			"number. For example, group 2, sub-board 3, is conference number 203.\n"
+			"\n"
+			"It is important to understand that this is `NOT` the conference number of\n"
+			"this sub-board on your system. It is the number of the conference this\n"
+			"sub-board is networked with on this `QWK network hub`.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0
 			,"Conference Number on Hub"
 			,str,5,K_NUMBER)<1)
@@ -1199,18 +1151,17 @@ sub-board is networked with on this `QWK network hub`.
 		strcpy(opt[2],"Expand to ANSI");
 		opt[3][0]=0;
 		m=0;
-		SETHELP(WHERE);
-/*
-`Ctrl-A Codes:`
-
-You are being prompted for the method of handling Ctrl-A attribute codes
-generated by Synchronet. If this QWK network hub is a Synchronet BBS,
-set this option to `Leave in`. If the QWK network hub is not a Synchronet
-BBS, but allows ANSI escape sequences in messages, set this option to
-`Expand to ANSI`. If the QWK network hub is not a Synchronet BBS and does
-not support ANSI escape sequences in messages (or you're not sure), set
-this option to `Strip out`.
-*/
+		uifc.helpbuf=
+			"`Ctrl-A Codes:`\n"
+			"\n"
+			"You are being prompted for the method of handling Ctrl-A attribute codes\n"
+			"generated by Synchronet. If this QWK network hub is a Synchronet BBS,\n"
+			"set this option to `Leave in`. If the QWK network hub is not a Synchronet\n"
+			"BBS, but allows ANSI escape sequences in messages, set this option to\n"
+			"`Expand to ANSI`. If the QWK network hub is not a Synchronet BBS and does\n"
+			"not support ANSI escape sequences in messages (or you're not sure), set\n"
+			"this option to `Strip out`.\n"
+		;
 		if((m=uifc.list(WIN_MID|WIN_SAV,0,0,0,&m,0
 			,"Ctrl-A Codes",opt))==-1)
 			continue;
@@ -1269,13 +1220,12 @@ this option to `Strip out`.
 			"Strip out" : cfg.qhub[num]->mode[j]==A_LEAVE ?
 			"Leave in" : "Expand to ANSI");
 		opt[n][0]=0;
-		SETHELP(WHERE);
-/*
-`QWK Netted Sub-board:`
-
-You are configuring the options for this sub-board for this QWK network
-hub.
-*/
+		uifc.helpbuf=
+			"`QWK Netted Sub-board:`\n"
+			"\n"
+			"You are configuring the options for this sub-board for this QWK network\n"
+			"hub.\n"
+		;
 		l=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,
 			22+LEN_GSNAME+LEN_SSNAME,&l,0
 			,"Netted Sub-board",opt);
@@ -1289,19 +1239,18 @@ hub.
 			} 
 		}
 		else if(l==1) {
-			SETHELP(WHERE);
-/*
-`Conference Number on Hub:`
-
-This is the number of the conference on the QWK network hub, that this
-sub-board is networked with. On Synchronet systems, this number is
-derived by multiplying the group number by 10 and adding the sub-board
-number. For example, group 2, sub-board 3, is conference number 203.
-
-It is important to understand that this is `NOT` the conference number of
-this sub-board on your system. It is the number of the conference this
-sub-board is networked with on this `QWK network hub`.
-*/
+			uifc.helpbuf=
+				"`Conference Number on Hub:`\n"
+				"\n"
+				"This is the number of the conference on the QWK network hub, that this\n"
+				"sub-board is networked with. On Synchronet systems, this number is\n"
+				"derived by multiplying the group number by 10 and adding the sub-board\n"
+				"number. For example, group 2, sub-board 3, is conference number 203.\n"
+				"\n"
+				"It is important to understand that this is `NOT` the conference number of\n"
+				"this sub-board on your system. It is the number of the conference this\n"
+				"sub-board is networked with on this `QWK network hub`.\n"
+			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Conference Number on Hub"
 				,str,5,K_NUMBER)>0)
@@ -1313,18 +1262,17 @@ sub-board is networked with on this `QWK network hub`.
 			strcpy(opt[2],"Expand to ANSI");
 			opt[3][0]=0;
 			m=0;
-			SETHELP(WHERE);
-/*
-`Ctrl-A Codes:`
-
-You are being prompted for the method of handling Ctrl-A attribute codes
-generated by Synchronet. If this QWK network hub is a Synchronet BBS,
-set this option to `Leave in`. If the QWK network hub is not a Synchronet
-BBS, but allows ANSI escape sequences in messages, set this option to
-`Expand to ANSI`. If the QWK network hub is not a Synchronet BBS and does
-not support ANSI escape sequences in messages (or you're not sure), set
-this option to `Strip out`.
-*/
+			uifc.helpbuf=
+				"`Ctrl-A Codes:`\n"
+				"\n"
+				"You are being prompted for the method of handling Ctrl-A attribute codes\n"
+				"generated by Synchronet. If this QWK network hub is a Synchronet BBS,\n"
+				"set this option to `Leave in`. If the QWK network hub is not a Synchronet\n"
+				"BBS, but allows ANSI escape sequences in messages, set this option to\n"
+				"`Expand to ANSI`. If the QWK network hub is not a Synchronet BBS and does\n"
+				"not support ANSI escape sequences in messages (or you're not sure), set\n"
+				"this option to `Strip out`.\n"
+			;
 			m=uifc.list(WIN_MID|WIN_SAV,0,0,0,&m,0
 				,"Ctrl-A Codes",opt);
 			uifc.changes=1;
@@ -1362,49 +1310,45 @@ while(!done) {
 	}
 	opt[i][0]=0;
 	sprintf(str,"%s Network Hub",cfg.phub[num]->name);
-	SETHELP(WHERE);
-/*
-`PostLink Network Hub Configuration:`
-
-This menu allows you to configure options specific to this network hub.
-*/
+	uifc.helpbuf=
+		"`PostLink Network Hub Configuration:`\n"
+		"\n"
+		"This menu allows you to configure options specific to this network hub.\n"
+	;
 	switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&phub_dflt,0
 		,str,opt)) {
 		case -1:
 			done=1;
 			break;
 		case 0:
-			SETHELP(WHERE);
-/*
-`Network Hub Site Name:`
-
-This is the Site Name of this hub. It is used for only for reference.
-*/
+			uifc.helpbuf=
+				"`Network Hub Site Name:`\n"
+				"\n"
+				"This is the Site Name of this hub. It is used for only for reference.\n"
+			;
 			strcpy(str,cfg.phub[num]->name);	/* save */
 			if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Hub Site Name"
 				,cfg.phub[num]->name,sizeof(cfg.phub[num]->name)-1,K_UPPER|K_EDIT))
 				strcpy(cfg.phub[num]->name,str);	/* restore */
 			break;
 		case 1:
-			SETHELP(WHERE);
-/*
-`Network Hub Call-out Command Line:`
-
-This is the command line to use to initiate a call-out to this network
-hub.
-*/
+			uifc.helpbuf=
+				"`Network Hub Call-out Command Line:`\n"
+				"\n"
+				"This is the command line to use to initiate a call-out to this network\n"
+				"hub.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Call-out Command"
 				,cfg.phub[num]->call,sizeof(cfg.phub[num]->call)-1,K_EDIT);
 			break;
 		case 2:
 			sprintf(str,"%u",cfg.phub[num]->node);
-			SETHELP(WHERE);
-/*
-`Node to Perform Call-out:`
-
-This is the number of the node to perform the call-out for this network
-hub.
-*/
+			uifc.helpbuf=
+				"`Node to Perform Call-out:`\n"
+				"\n"
+				"This is the number of the node to perform the call-out for this network\n"
+				"hub.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Node to Perform Call-out",str,3,K_EDIT|K_NUMBER);
 			cfg.phub[num]->node=atoi(str);
@@ -1416,13 +1360,12 @@ hub.
 					sprintf(opt[i],"%s        %s"
 						,wday[i],(cfg.phub[num]->days&(1<<i)) ? "Yes":"No");
 				opt[i][0]=0;
-				SETHELP(WHERE);
-/*
-`Days to Perform Call-out:`
-
-These are the days that a call-out will be performed for this network
-hub.
-*/
+				uifc.helpbuf=
+					"`Days to Perform Call-out:`\n"
+					"\n"
+					"These are the days that a call-out will be performed for this network\n"
+					"hub.\n"
+				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 					,"Days to Perform Call-out",opt);
 				if(i==-1)
@@ -1433,26 +1376,24 @@ hub.
 			break;
 		case 4:
 			i=1;
-			SETHELP(WHERE);
-/*
-`Perform Call-out at a Specific Time:`
-
-If you want the system call this network hub at a specific time, set
-this option to `Yes`. If you want the system to call this hub more than
-once a day at predetermined intervals, set this option to `No`.
-*/
+			uifc.helpbuf=
+				"`Perform Call-out at a Specific Time:`\n"
+				"\n"
+				"If you want the system call this network hub at a specific time, set\n"
+				"this option to `Yes`. If you want the system to call this hub more than\n"
+				"once a day at predetermined intervals, set this option to `No`.\n"
+			;
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Perform Call-out at a Specific Time",uifcYesNoOpts);
 			if(i==0) {
 				sprintf(str,"%2.2u:%2.2u",cfg.phub[num]->time/60
 					,cfg.phub[num]->time%60);
-				SETHELP(WHERE);
-/*
-`Time to Perform Call-out:`
-
-This is the time (in 24 hour HH:MM format) to perform the call-out to
-this network hub.
-*/
+				uifc.helpbuf=
+					"`Time to Perform Call-out:`\n"
+					"\n"
+					"This is the time (in 24 hour HH:MM format) to perform the call-out to\n"
+					"this network hub.\n"
+				;
 				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Time to Perform Call-out (HH:MM)"
 					,str,5,K_UPPER|K_EDIT)>0) {
@@ -1465,16 +1406,15 @@ this network hub.
 			else if(i==1) {
 				sprintf(str,"%u",cfg.phub[num]->freq
 					&& cfg.phub[num]->freq<=1440 ? 1440/cfg.phub[num]->freq : 0);
-				SETHELP(WHERE);
-/*
-`Number of Call-outs Per Day:`
-
-This is the maximum number of times the system will perform a call-out
-per day to this network hub. This value is actually converted by
-Synchronet into minutes between call-outs and when the BBS is idle
-and this number of minutes since the last call-out is reached, it will
-perform a call-out.
-*/
+				uifc.helpbuf=
+					"`Number of Call-outs Per Day:`\n"
+					"\n"
+					"This is the maximum number of times the system will perform a call-out\n"
+					"per day to this network hub. This value is actually converted by\n"
+					"Synchronet into minutes between call-outs and when the BBS is idle\n"
+					"and this number of minutes since the last call-out is reached, it will\n"
+					"perform a call-out.\n"
+				;
 				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Number of Call-outs Per Day"
 					,str,4,K_NUMBER|K_EDIT)>0) {

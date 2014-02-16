@@ -14,9 +14,3 @@ $(SCFG): $(OBJS)
 	@echo Linking $@
         ${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -e$@ $(OBJS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
-
-$(MAKEHELP): makehelp.c
-	$(QUIET)$(CC) $(CFLAGS) -e$(MAKEHELP) makehelp.c
-
-$(SCFGHELP): $(OBJS) $(MAKEHELP)
-	$(QUIET)$(MAKEHELP) $(EXEODIR)

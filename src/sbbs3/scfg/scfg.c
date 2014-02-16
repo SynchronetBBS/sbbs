@@ -311,26 +311,25 @@ int main(int argc, char **argv)
 	strcpy(mopt[i++],"Text File Sections");
 	mopt[i][0]=0;
 	while(1) {
-		SETHELP(WHERE);
-/*
-`Main Configuration Menu:`
-
-This is the main menu of the Synchronet configuration utility (SCFG).
-From this menu, you have the following choices:
-
-	Nodes				  : Add, delete, or configure nodes
-	System				  : System-wide configuration options
-	Networks			  : Message networking configuration
-	File Areas			  : File area configuration
-	File Options		  : File area options
-	Chat Features		  : Chat actions, sections, pagers, and gurus
-	Message Areas		  : Message area configuration
-	Message Options 	  : Message and email options
-	External Programs	  : Events, editors, and online programs
-	Text File Sections	  : General text file area
-
-Use the arrow keys and ~ ENTER ~ to select an option, or ~ ESC ~ to exit.
-*/
+		uifc.helpbuf=
+			"`Main Configuration Menu:`\n"
+			"\n"
+			"This is the main menu of the Synchronet configuration utility (SCFG).\n"
+			"From this menu, you have the following choices:\n"
+			"\n"
+			"    Node                 : Add, delete, or configure nodes\n"
+			"    Syste                : System-wide configuration options\n"
+			"    Network              : Message networking configuration\n"
+			"    File Area            : File area configuration\n"
+			"    File Option          : File area options\n"
+			"    Chat Feature         : Chat actions, sections, pagers, and gurus\n"
+			"    Message Area         : Message area configuration\n"
+			"    Message Options      : Message and email options\n"
+			"    External Program     : Events, editors, and online programs\n"
+			"    Text File Section    : General text file area\n"
+			"\n"
+			"Use the arrow keys and ~ ENTER ~ to select an option, or ~ ESC ~ to exit.\n"
+		;
 		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,30,&main_dflt,0
 			,"Configure",mopt)) {
 			case 0:
@@ -567,13 +566,12 @@ Use the arrow keys and ~ ENTER ~ to select an option, or ~ ESC ~ to exit.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				SETHELP(WHERE);
-/*
-`Exit SCFG:`
-
-If you want to exit the Synchronet configuration utility, select `Yes`.
-Otherwise, select `No` or hit ~ ESC ~.
-*/
+				uifc.helpbuf=
+					"`Exit SCFG:`\n"
+					"\n"
+					"If you want to exit the Synchronet configuration utility, select `Yes`.\n"
+					"Otherwise, select `No` or hit ~ ESC ~.\n"
+				;
 				i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SCFG",opt);
 				if(!i)
 					bail(0);
@@ -600,15 +598,14 @@ int save_changes(int mode)
 	strcpy(opt[0],"Yes");
 	strcpy(opt[1],"No");
 	opt[2][0]=0;
-	SETHELP(WHERE);
-/*
-`Save uifc.changes:`
-
-You have made some uifc.changes to the configuration. If you want to save
-these uifc.changes, select `Yes`. If you are positive you DO NOT want to save
-these uifc.changes, select `No`. If you are not sure and want to review the
-configuration before deciding, hit ~ ESC ~.
-*/
+	uifc.helpbuf=
+		"`Save uifc.changes:`\n"
+		"\n"
+		"You have made some uifc.changes to the configuration. If you want to save\n"
+		"these uifc.changes, select `Yes`. If you are positive you DO NOT want to save\n"
+		"these uifc.changes, select `No`. If you are not sure and want to review the\n"
+		"configuration before deciding, hit ~ ESC ~.\n"
+	;
 	i=uifc.list(mode|WIN_ACT,0,0,0,&i,0,"Save Changes",opt);
 	if(i!=-1)
 		uifc.changes=0;
@@ -634,23 +631,22 @@ void txt_cfg()
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savtxtsec.name[0])
 			j|=WIN_PUT;
-		SETHELP(WHERE);
-/*
-`Text File Sections:`
-
-This is a list of `General Text File (G-File) Sections` configured for
-your system. G-File sections are used to store text files that can be
-viewed freely by the users. Common text file section topics include
-`ANSI Artwork`, `System Information`, `Game Help Files`, and other special
-interest topics.
-
-To add a text file section, select the desired location with the arrow
-keys and hit ~ INS ~.
-
-To delete a text file section, select it and hit ~ DEL ~.
-
-To configure a text file, select it and hit ~ ENTER ~.
-*/
+		uifc.helpbuf=
+			"`Text File Sections:`\n"
+			"\n"
+			"This is a list of `General Text File (G-File) Sections` configured for\n"
+			"your system. G-File sections are used to store text files that can be\n"
+			"viewed freely by the users. Common text file section topics include\n"
+			"`ANSI Artwork`, `System Information`, `Game Help Files`, and other special\n"
+			"interest topics.\n"
+			"\n"
+			"To add a text file section, select the desired location with the arrow\n"
+			"keys and hit ~ INS ~.\n"
+			"\n"
+			"To delete a text file section, select it and hit ~ DEL ~.\n"
+			"\n"
+			"To configure a text file, select it and hit ~ ENTER ~.\n"
+		;
 		i=uifc.list(j,0,0,45,&txt_dflt,&bar,"Text File Sections",opt);
 		if((signed)i==-1) {
 			j=save_changes(WIN_MID);
@@ -665,25 +661,23 @@ To configure a text file, select it and hit ~ ENTER ~.
 		if((i&MSK_ON)==MSK_INS) {
 			i&=MSK_OFF;
 			strcpy(str,"ANSI Artwork");
-			SETHELP(WHERE);
-/*
-`Text Section Name:`
-
-This is the name of this text section.
-*/
+			uifc.helpbuf=
+				"`Text Section Name:`\n"
+				"\n"
+				"This is the name of this text section.\n"
+			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Name",str,40
 				,K_EDIT)<1)
 				continue;
 			SAFECOPY(code,str);
 			prep_code(code,/* prefix: */NULL);
-			SETHELP(WHERE);
-/*
-`Text Section Internal Code:`
-
-Every text file section must have its own unique internal code for
-Synchronet to reference it by. It is helpful if this code is an
-abreviation of the name.
-*/
+			uifc.helpbuf=
+				"`Text Section Internal Code:`\n"
+				"\n"
+				"Every text file section must have its own unique internal code for\n"
+				"Synchronet to reference it by. It is helpful if this code is an\n"
+				"abreviation of the name.\n"
+			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Internal Code",code,LEN_CODE
 				,K_EDIT)<1)
 				continue;
@@ -743,12 +737,11 @@ abreviation of the name.
 					done=1;
 					break;
 				case 0:
-					SETHELP(WHERE);
-/*
-`Text Section Name:`
-
-This is the name of this text section.
-*/
+					uifc.helpbuf=
+						"`Text Section Name:`\n"
+						"\n"
+						"This is the name of this text section.\n"
+					;
 					strcpy(str,cfg.txtsec[i]->name);	/* save */
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10
 						,"Text File Section Name"
@@ -761,14 +754,13 @@ This is the name of this text section.
 					break;
 				case 2:
 					strcpy(str,cfg.txtsec[i]->code);
-					SETHELP(WHERE);
-/*
-`Text Section Internal Code:`
-
-Every text file section must have its own unique internal code for
-Synchronet to reference it by. It is helpful if this code is an
-abreviation of the name.
-*/
+					uifc.helpbuf=
+						"`Text Section Internal Code:`\n"
+						"\n"
+						"Every text file section must have its own unique internal code for\n"
+						"Synchronet to reference it by. It is helpful if this code is an\n"
+						"abreviation of the name.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT);
 					if(code_ok(str))
@@ -802,21 +794,20 @@ void shell_cfg()
 			j|=WIN_INS|WIN_INSACT|WIN_XTR;
 		if(savshell.name[0])
 			j|=WIN_PUT;
-		SETHELP(WHERE);
-/*
-`Command Shells:`
-
-This is a list of `Command Shells` configured for your system.
-Command shells are the programmable command and menu structures which
-are available for your BBS.
-
-To add a command shell section, select the desired location with the
-arrow keys and hit ~ INS ~.
-
-To delete a command shell, select it and hit ~ DEL ~.
-
-To configure a command shell, select it and hit ~ ENTER ~.
-*/
+		uifc.helpbuf=
+			"`Command Shells:`\n"
+			"\n"
+			"This is a list of `Command Shells` configured for your system.\n"
+			"Command shells are the programmable command and menu structures which\n"
+			"are available for your BBS.\n"
+			"\n"
+			"To add a command shell section, select the desired location with the\n"
+			"arrow keys and hit ~ INS ~.\n"
+			"\n"
+			"To delete a command shell, select it and hit ~ DEL ~.\n"
+			"\n"
+			"To configure a command shell, select it and hit ~ ENTER ~.\n"
+		;
 		i=uifc.list(j,0,0,45,&shell_dflt,&shell_bar,"Command Shells",opt);
 		if((signed)i==-1) {
 			j=save_changes(WIN_MID);
@@ -832,29 +823,27 @@ To configure a command shell, select it and hit ~ ENTER ~.
 		if((i&MSK_ON)==MSK_INS) {
 			i&=MSK_OFF;
 			strcpy(str,"Menu Shell");
-			SETHELP(WHERE);
-/*
-`Command Shell Name:`
-
-This is the descriptive name of this command shell.
-*/
+			uifc.helpbuf=
+				"`Command Shell Name:`\n"
+				"\n"
+				"This is the descriptive name of this command shell.\n"
+			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Name",str,40
 				,K_EDIT)<1)
 				continue;
 			SAFECOPY(code,str);
 			prep_code(code,/* prefix: */NULL);
-			SETHELP(WHERE);
-/*
-`Command Shell Internal Code:`
-
-Every command shell must have its own unique internal code for
-Synchronet to reference it by. It is helpful if this code is an
-abreviation of the name.
-
-This code will be the base filename used to load the shell from your
-EXEC directory. e.g. A shell with an internal code of `MYBBS` would
-indicate a Baja shell file named `MYBBS.BIN` in your EXEC directory.
-*/
+			uifc.helpbuf=
+				"`Command Shell Internal Code:`\n"
+				"\n"
+				"Every command shell must have its own unique internal code for\n"
+				"Synchronet to reference it by. It is helpful if this code is an\n"
+				"abreviation of the name.\n"
+				"\n"
+				"This code will be the base filename used to load the shell from your\n"
+				"EXEC directory. e.g. A shell with an internal code of `MYBBS` would\n"
+				"indicate a Baja shell file named `MYBBS.BIN` in your EXEC directory.\n"
+			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,LEN_CODE
 				,K_EDIT)<1)
 				continue;
@@ -908,32 +897,30 @@ indicate a Baja shell file named `MYBBS.BIN` in your EXEC directory.
 				,cfg.shell[i]->arstr);
 			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.shell[i]->code);
 			opt[k][0]=0;
-			SETHELP(WHERE);
-/*
-`Command Shell:`
-
-A command shell is a programmed command and menu structure that you or
-your users can use to navigate the BBS. For every command shell
-configured here, there must be an associated .BIN file in your EXEC
-directory for Synchronet to execute.
-
-Command shell files are created by using the Baja command shell compiler
-to turn Baja source code (.SRC) files into binary files (.BIN) for
-Synchronet to interpret. See the example .SRC files in the TEXT
-directory and the documentation for the Baja compiler for more details.
-*/
+			uifc.helpbuf=
+				"`Command Shell:`\n"
+				"\n"
+				"A command shell is a programmed command and menu structure that you or\n"
+				"your users can use to navigate the BBS. For every command shell\n"
+				"configured here, there must be an associated .BIN file in your EXEC\n"
+				"directory for Synchronet to execute.\n"
+				"\n"
+				"Command shell files are created by using the Baja command shell compiler\n"
+				"to turn Baja source code (.SRC) files into binary files (.BIN) for\n"
+				"Synchronet to interpret. See the example .SRC files in the TEXT\n"
+				"directory and the documentation for the Baja compiler for more details.\n"
+			;
 			switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.shell[i]->name
 				,opt)) {
 				case -1:
 					done=1;
 					break;
 				case 0:
-					SETHELP(WHERE);
-/*
-`Command Shell Name:`
-
-This is the descriptive name of this command shell.
-*/
+					uifc.helpbuf=
+						"`Command Shell Name:`\n"
+						"\n"
+						"This is the descriptive name of this command shell.\n"
+					;
 					strcpy(str,cfg.shell[i]->name);    /* save */
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10
 						,"Command Shell Name"
@@ -946,18 +933,17 @@ This is the descriptive name of this command shell.
 					break;
 				case 2:
 					strcpy(str,cfg.shell[i]->code);
-					SETHELP(WHERE);
-/*
-`Command Shell Internal Code:`
-
-Every command shell must have its own unique internal code for
-Synchronet to reference it by. It is helpful if this code is an
-abreviation of the name.
-
-This code will be the base filename used to load the shell from your
-EXEC directory. e.g. A shell with an internal code of `MYBBS` would
-indicate a Baja shell file named `MYBBS.BIN` in your EXEC directory.
-*/
+					uifc.helpbuf=
+						"`Command Shell Internal Code:`\n"
+						"\n"
+						"Every command shell must have its own unique internal code for\n"
+						"Synchronet to reference it by. It is helpful if this code is an\n"
+						"abreviation of the name.\n"
+						"\n"
+						"This code will be the base filename used to load the shell from your\n"
+						"EXEC directory. e.g. A shell with an internal code of `MYBBS` would\n"
+						"indicate a Baja shell file named `MYBBS.BIN` in your EXEC directory.\n"
+					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT);
 					if(code_ok(str))
@@ -982,20 +968,19 @@ int whichlogic(void)
 	strcpy(opt[2],"Not Equal");
 	strcpy(opt[3],"Less than");
 	opt[4][0]=0;
-	SETHELP(WHERE);
-/*
-`Select Logic for Requirement:`
-
-This menu allows you to choose the type of logic evaluation to use
-in determining if the requirement is met. If, for example, the user's
-level is being evaluated and you select `Greater than or Equal` from
-this menu and set the required level to `50`, the user must have level
-`50 or higher` to meet this requirement. If you selected `Equal` from
-this menu and set the required level to `50`, the user must have level
-`50 exactly`. If you select `Not equal` and level `50`, then the user
-must have `any level BUT 50`. And if you select `Less than` from this
-menu and level `50`, the user must have a level `below 50`.
-*/
+	uifc.helpbuf=
+		"`Select Logic for Requirement:`\n"
+		"\n"
+		"This menu allows you to choose the type of logic evaluation to use\n"
+		"in determining if the requirement is met. If, for example, the user's\n"
+		"level is being evaluated and you select `Greater than or Equal` from\n"
+		"this menu and set the required level to `50`, the user must have level\n"
+		"`50 or higher` to meet this requirement. If you selected `Equal` from\n"
+		"this menu and set the required level to `50`, the user must have level\n"
+		"`50 exactly`. If you select `Not equal` and level `50`, then the user\n"
+		"must have `any level BUT 50`. And if you select `Less than` from this\n"
+		"menu and level `50`, the user must have a level `below 50`.\n"
+	;
 	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Logic",opt);
 	return(i);
 }
@@ -1008,18 +993,17 @@ int whichcond(void)
 	strcpy(opt[0],"AND (Both/All)");
 	strcpy(opt[1],"OR  (Either/Any)");
 	opt[2][0]=0;
-	SETHELP(WHERE);
-/*
-`Select Logic for Multiple Requirements:`
-
-If you wish this new parameter to be required along with the other
-parameters, select `AND` to specify that `both` or `all` of the
-parameter requirments must be met.
-
-If you wish this new parameter to only be required if the other
-parameter requirements aren't met, select `OR` to specify that `either`
-or `any` of the parameter requirements must be met.
-*/
+	uifc.helpbuf=
+		"`Select Logic for Multiple Requirements:`\n"
+		"\n"
+		"If you wish this new parameter to be required along with the other\n"
+		"parameters, select `AND` to specify that `both` or `all` of the\n"
+		"parameter requirments must be met.\n"
+		"\n"
+		"If you wish this new parameter to only be required if the other\n"
+		"parameter requirements aren't met, select `OR` to specify that `either`\n"
+		"or `any` of the parameter requirements must be met.\n"
+	;
 	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Multiple Requirement Logic",opt);
 	return(i);
 }
@@ -1220,41 +1204,39 @@ void getar(char *desc, char *inar)
 	strcpy(opt[i++],"Set Required Time Remaining");
 	strcpy(opt[i++],"Set Required Days Till Expiration");
 	opt[i][0]=0;
-	SETHELP(WHERE);
-/*
-`Access Requirements:`
-
-This menu allows you to edit the access requirement string for the
-selected feature/section of your BBS. You can edit the string
-directly (see documentation for details) or use the `Set Required...`
-options from this menu to automatically fill in the string for you.
-*/
+	uifc.helpbuf=
+		"`Access Requirements:`\n"
+		"\n"
+		"This menu allows you to edit the access requirement string for the\n"
+		"selected feature/section of your BBS. You can edit the string\n"
+		"directly (see documentation for details) or use the `Set Required...`\n"
+		"options from this menu to automatically fill in the string for you.\n"
+	;
 	sprintf(str,"%s Requirements",desc);
 	switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&curar,0,str,opt)) {
 		case -1:
 			done=1;
 			break;
 		case 0:
-			SETHELP(WHERE);
-/*
-Key word	Symbol		Description
-컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
-AND 		  & 		More than one requirement (optional)
-NOT 		  ! 		Logical negation (i.e. NOT EQUAL)
-EQUAL		  = 		Equality required
-OR			  | 		Either of two or more parameters is required
-AGE 		  $A		User's age (years since birthdate, 0-255)
-BPS 		  $B		User's current connect rate (bps)
-FLAG		  $F		User's flag (A-Z)
-LEVEL		  $L		User's level (0-99)
-NODE		  $N		Current node (1-250)
-PCR 		  $P		User's post/call ratio (0-100)
-SEX 		  $S		User's sex/gender (M or F)
-TIME		  $T		Time of day (HH:MM, 00:00-23:59)
-TLEFT		  $R		User's time left online (minutes, 0-255)
-TUSED		  $O		User's time online this call (minutes, 0-255)
-USER		  $U		User's number (1-xxxx)
-*/
+			uifc.helpbuf=
+				"Key wor    Symbo       Description\n"
+				"컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\n"
+				"AND          &         More than one requirement (optional)\n"
+				"NOT          !         Logical negation (i.e. NOT EQUAL)\n"
+				"EQUA         =         Equality required\n"
+				"O            |         Either of two or more parameters is required\n"
+				"AGE          $         User's age (years since birthdate, 0-255)\n"
+				"BPS          $         User's current connect rate (bps)\n"
+				"FLA          $         User's flag (A-Z)\n"
+				"LEVE         $         User's level (0-99)\n"
+				"NOD          $         Current node (1-250)\n"
+				"PCR          $         User's post/call ratio (0-100)\n"
+				"SEX          $         User's sex/gender (M or F)\n"
+				"TIM          $         Time of day (HH:MM, 00:00-23:59)\n"
+				"TLEF         $         User's time left online (minutes, 0-255)\n"
+				"TUSE         $         User's time online this call (minutes, 0-255)\n"
+				"USE          $         User's number (1-xxxx)\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Requirement String",ar,LEN_ARSTR
                 ,K_EDIT|K_UPPER);
 			break;
@@ -1263,13 +1245,12 @@ USER		  $U		User's number (1-xxxx)
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
-			SETHELP(WHERE);
-/*
-`Clear Requirements:`
-
-If you wish to clear the current requirement string, select `Yes`.
-Otherwise, select `No`.
-*/
+			uifc.helpbuf=
+				"`Clear Requirements:`\n"
+				"\n"
+				"If you wish to clear the current requirement string, select `Yes`.\n"
+				"Otherwise, select `No`.\n"
+			;
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Are You Sure",opt);
 			if(!i) {
 				ar[0]=0;
@@ -1283,13 +1264,12 @@ Otherwise, select `No`.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Level:`
-
-You are being prompted to enter the security level to be used in this
-requirement evaluation. The valid range is 0 (zero) through 99.
-*/
+			uifc.helpbuf=
+				"`Required Level:`\n"
+				"\n"
+				"You are being prompted to enter the security level to be used in this\n"
+				"requirement evaluation. The valid range is 0 (zero) through 99.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Level",str,2,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1327,13 +1307,12 @@ requirement evaluation. The valid range is 0 (zero) through 99.
 			if(i==-1)
                 break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Flag:`
-
-You are being prompted to enter the security flag to be used in this
-requirement evaluation. The valid range is A through Z.
-*/
+			uifc.helpbuf=
+				"`Required Flag:`\n"
+				"\n"
+				"You are being prompted to enter the security flag to be used in this\n"
+				"requirement evaluation. The valid range is A through Z.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Flag (A-Z)",str,1
 				,K_UPPER|K_ALPHA);
 			if(!str[0])
@@ -1359,13 +1338,12 @@ requirement evaluation. The valid range is A through Z.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Age:`
-
-You are being prompted to enter the user's age to be used in this
-requirement evaluation. The valid range is 0 through 255.
-*/
+			uifc.helpbuf=
+				"`Required Age:`\n"
+				"\n"
+				"You are being prompted to enter the user's age to be used in this\n"
+				"requirement evaluation. The valid range is 0 through 255.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Age",str,3,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1395,14 +1373,13 @@ requirement evaluation. The valid range is 0 through 255.
 				uifc.msg("Maximum string length reached");
                 break; }
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Sex:`
-
-You are being prompted to enter the user's gender to be used in this
-requirement evaluation. The valid values are M or F (for male or
-female).
-*/
+			uifc.helpbuf=
+				"`Required Sex:`\n"
+				"\n"
+				"You are being prompted to enter the user's gender to be used in this\n"
+				"requirement evaluation. The valid values are M or F (for male or\n"
+				"female).\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Sex (M or F)",str,1
 				,K_UPPER|K_ALPHA);
 			if(!str[0])
@@ -1426,13 +1403,12 @@ female).
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Connect Rate (BPS):`
-
-You are being prompted to enter the connect rate to be used in this
-requirement evaluation. The valid range is 300 through 57600.
-*/
+			uifc.helpbuf=
+				"`Required Connect Rate (BPS):`\n"
+				"\n"
+				"You are being prompted to enter the connect rate to be used in this\n"
+				"requirement evaluation. The valid range is 300 through 57600.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Connect Rate (BPS)",str,5,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1469,13 +1445,12 @@ requirement evaluation. The valid range is 300 through 57600.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Post/Call Ratio:`
-
-You are being prompted to enter the post/call ratio to be used in this
-requirement evaluation (percentage). The valid range is 0 through 100.
-*/
+			uifc.helpbuf=
+				"`Required Post/Call Ratio:`\n"
+				"\n"
+				"You are being prompted to enter the post/call ratio to be used in this\n"
+				"requirement evaluation (percentage). The valid range is 0 through 100.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Post/Call Ratio (percentage)"
 				,str,3,K_NUMBER);
 			if(!str[0])
@@ -1509,14 +1484,13 @@ requirement evaluation (percentage). The valid range is 0 through 100.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Number of Credits:`
-
-You are being prompted to enter the number of credits (in `kilobytes`) to
-be used in this requirement evaluation. The valid range is 0 through
-65535.
-*/
+			uifc.helpbuf=
+				"`Required Number of Credits:`\n"
+				"\n"
+				"You are being prompted to enter the number of credits (in `kilobytes`) to\n"
+				"be used in this requirement evaluation. The valid range is 0 through\n"
+				"65535.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Required Credits",str,5,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1549,15 +1523,14 @@ be used in this requirement evaluation. The valid range is 0 through
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Upload/Download Byte Ratio:`
-
-You are being prompted to enter the upload/download ratio to be used in
-this requirement evaluation (percentage). The valid range is 0 through
-100. This ratio is based on the number of `bytes` uploaded by the user
-divided by the number of bytes downloaded.
-*/
+			uifc.helpbuf=
+				"`Required Upload/Download Byte Ratio:`\n"
+				"\n"
+				"You are being prompted to enter the upload/download ratio to be used in\n"
+				"this requirement evaluation (percentage). The valid range is 0 through\n"
+				"100. This ratio is based on the number of `bytes` uploaded by the user\n"
+				"divided by the number of bytes downloaded.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Upload/Download Byte Ratio (percentage)"
 				,str,3,K_NUMBER);
 			if(!str[0])
@@ -1591,15 +1564,14 @@ divided by the number of bytes downloaded.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Upload/Download File Ratio:`
-
-You are being prompted to enter the upload/download ratio to be used in
-this requirement evaluation (percentage). The valid range is 0 through
-100. This ratio is based on the number of `files` uploaded by the user
-divided by the number of files downloaded.
-*/
+			uifc.helpbuf=
+				"`Required Upload/Download File Ratio:`\n"
+				"\n"
+				"You are being prompted to enter the upload/download ratio to be used in\n"
+				"this requirement evaluation (percentage). The valid range is 0 through\n"
+				"100. This ratio is based on the number of `files` uploaded by the user\n"
+				"divided by the number of files downloaded.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Upload/Download File Ratio (percentage)"
 				,str,3,K_NUMBER);
@@ -1638,14 +1610,13 @@ divided by the number of files downloaded.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Time of Day:`
-
-You are being prompted to enter the time of day to be used in this
-requirement evaluation (24 hour HH:MM format). The valid range is 0
-through 23:59.
-*/
+			uifc.helpbuf=
+				"`Required Time of Day:`\n"
+				"\n"
+				"You are being prompted to enter the time of day to be used in this\n"
+				"requirement evaluation (24 hour HH:MM format). The valid range is 0\n"
+				"through 23:59.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Time of Day (HH:MM)",str,5,K_UPPER);
 			if(!str[0])
 				break;
@@ -1669,13 +1640,12 @@ through 23:59.
 			i=whichlogic();
 			if(i==-1)
 				break;
-			SETHELP(WHERE);
-/*
-`Required Day of Week:`
-
-You are being prompted to select a day of the week as an access
-requirement value.
-*/
+			uifc.helpbuf=
+				"`Required Day of Week:`\n"
+				"\n"
+				"You are being prompted to select a day of the week as an access\n"
+				"requirement value.\n"
+			;
 			for(n=0;n<7;n++)
 				strcpy(opt[n],wday[n]);
 			opt[n][0]=0;
@@ -1714,13 +1684,12 @@ requirement value.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Node:`
-
-You are being prompted to enter the number of a node to be used in this
-requirement evaluation. The valid range is 1 through 250.
-*/
+			uifc.helpbuf=
+				"`Required Node:`\n"
+				"\n"
+				"You are being prompted to enter the number of a node to be used in this\n"
+				"requirement evaluation. The valid range is 1 through 250.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Node Number",str,3,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1753,13 +1722,12 @@ requirement evaluation. The valid range is 1 through 250.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required User Number:`
-
-You are being prompted to enter the user's number to be used in this
-requirement evaluation.
-*/
+			uifc.helpbuf=
+				"`Required User Number:`\n"
+				"\n"
+				"You are being prompted to enter the user's number to be used in this\n"
+				"requirement evaluation.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"User Number",str,5,K_NUMBER);
 			if(!str[0])
 				break;
@@ -1793,13 +1761,12 @@ requirement evaluation.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Time Remaining:`
-
-You are being prompted to enter the time remaining to be used in this
-requirement evaluation (in `minutes`). The valid range is 0 through 255.
-*/
+			uifc.helpbuf=
+				"`Required Time Remaining:`\n"
+				"\n"
+				"You are being prompted to enter the time remaining to be used in this\n"
+				"requirement evaluation (in `minutes`). The valid range is 0 through 255.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Time Remaining (minutes)"
 				,str,3,K_NUMBER);
 			if(!str[0])
@@ -1834,13 +1801,12 @@ requirement evaluation (in `minutes`). The valid range is 0 through 255.
 			if(i==-1)
 				break;
 			str[0]=0;
-			SETHELP(WHERE);
-/*
-`Required Days Till User Account Expiration:`
-
-You are being prompted to enter the required number of days till the
-user's account will expire.
-*/
+			uifc.helpbuf=
+				"`Required Days Till User Account Expiration:`\n"
+				"\n"
+				"You are being prompted to enter the required number of days till the\n"
+				"user's account will expire.\n"
+			;
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Days Till Expiration"
 				,str,5,K_NUMBER);
 			if(!str[0])

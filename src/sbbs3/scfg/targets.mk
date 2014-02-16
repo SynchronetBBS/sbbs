@@ -7,8 +7,6 @@
 # LIBODIR, SLASH, LIBFILE, EXEFILE, and DELETE must be pre-defined
 
 SCFG	=	$(EXEODIR)$(DIRSEP)scfg$(EXEFILE) 
-MAKEHELP=	$(EXEODIR)$(DIRSEP)makehelp$(EXEFILE) 
-SCFGHELP=	$(EXEODIR)$(DIRSEP)scfghelp.dat
 
 all:		xpdev-mt \
 		uifc-mt \

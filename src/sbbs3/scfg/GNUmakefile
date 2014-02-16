@@ -9,9 +9,3 @@ vpath %.c ..
 $(SCFG): $(OBJS)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -o$@ $(OBJS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
-
-$(MAKEHELP): makehelp.c
-	$(QUIET)$(CC) $(CFLAGS) makehelp.c -o $(MAKEHELP)
-
-$(SCFGHELP): $(OBJS) $(MAKEHELP)
-	$(QUIET)$(MAKEHELP) $(EXEODIR)

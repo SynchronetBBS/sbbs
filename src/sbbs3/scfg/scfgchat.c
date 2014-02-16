@@ -54,30 +54,28 @@ while(1) {
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savpage.cmd[0])
 		j|=WIN_PUT;
-	SETHELP(WHERE);
-/*
-`External Sysop Chat Pagers:`
-
-This is a list of the configured external sysop chat pagers.
-
-To add a pager, select the desired location and hit ~ INS ~.
-
-To delete a pager, select it and hit ~ DEL ~.
-
-To configure a pager, select it and hit ~ ENTER ~.
-*/
+	uifc.helpbuf=
+		"`External Sysop Chat Pagers:`\n"
+		"\n"
+		"This is a list of the configured external sysop chat pagers.\n"
+		"\n"
+		"To add a pager, select the desired location and hit ~ INS ~.\n"
+		"\n"
+		"To delete a pager, select it and hit ~ DEL ~.\n"
+		"\n"
+		"To configure a pager, select it and hit ~ ENTER ~.\n"
+	;
 	i=uifc.list(j,0,0,45,&dflt,&bar,"External Sysop Chat Pagers",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;
 		sprintf(str,"%%!tone +chatpage.ton");
-		SETHELP(WHERE);
-/*
-`External Chat Pager Command Line:`
-
-This is the command line to execute for this external chat pager.
-*/
+		uifc.helpbuf=
+			"`External Chat Pager Command Line:`\n"
+			"\n"
+			"This is the command line to execute for this external chat pager.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Line",str,50
 			,K_EDIT)<1)
             continue;
@@ -137,12 +135,11 @@ This is the command line to execute for this external chat pager.
 				done=1;
 				break;
 			case 0:
-				SETHELP(WHERE);
-/*
-`External Chat Pager Command Line:`
-
-This is the command line to execute for this external chat pager.
-*/
+				uifc.helpbuf=
+					"`External Chat Pager Command Line:`\n"
+					"\n"
+					"This is the command line to execute for this external chat pager.\n"
+				;
 				strcpy(str,cfg.page[i]->cmd);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Command Line"
 					,cfg.page[i]->cmd,sizeof(cfg.page[i]->cmd)-1,K_EDIT))
@@ -166,13 +163,12 @@ This is the command line to execute for this external chat pager.
 				strcpy(opt[1],"Console");
 				strcpy(opt[2],"No");
 				opt[3][0]=0;
-				SETHELP(WHERE);
-/*
-`Intercept I/O:`
-
-If you wish the screen output and keyboard input to be intercepted
-when running this chat pager, set this option to either `Standard` or ~Console~.
-*/
+				uifc.helpbuf=
+					"`Intercept I/O:`\n"
+					"\n"
+					"If you wish the screen output and keyboard input to be intercepted\n"
+					"when running this chat pager, set this option to either `Standard` or ~Console~.\n"
+				;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept I/O"
 					,opt)) {
 				case 0:
@@ -221,44 +217,41 @@ while(1) {
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savchan.name[0])
 		j|=WIN_PUT;
-	SETHELP(WHERE);
-/*
-`Multinode Chat Channels:`
-
-This is a list of the configured multinode chat channels.
-
-To add a channel, select the desired location with the arrow keys and
-hit ~ INS ~.
-
-To delete a channel, select it with the arrow keys and hit ~ DEL ~.
-
-To configure a channel, select it with the arrow keys and hit ~ ENTER ~.
-*/
+	uifc.helpbuf=
+		"`Multinode Chat Channels:`\n"
+		"\n"
+		"This is a list of the configured multinode chat channels.\n"
+		"\n"
+		"To add a channel, select the desired location with the arrow keys and\n"
+		"hit ~ INS ~.\n"
+		"\n"
+		"To delete a channel, select it with the arrow keys and hit ~ DEL ~.\n"
+		"\n"
+		"To configure a channel, select it with the arrow keys and hit ~ ENTER ~.\n"
+	;
 	i=uifc.list(j,0,0,45,&chan_dflt,&chan_bar,"Multinode Chat Channels",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;
 		strcpy(str,"Open");
-		SETHELP(WHERE);
-/*
-`Channel Name:`
-
-This is the name or description of the chat channel.
-*/
+		uifc.helpbuf=
+			"`Channel Name:`\n"
+			"\n"
+			"This is the name or description of the chat channel.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Chat Channel Name",str,25
 			,K_EDIT)<1)
             continue;
 		SAFECOPY(code,str);
 		prep_code(code,/* prefix: */NULL);
-		SETHELP(WHERE);
-/*
-`Chat Channel Internal Code:`
-
-Every chat channel must have its own unique code for Synchronet to refer
-to it internally. This code is usually an abreviation of the chat
-channel name.
-*/
+		uifc.helpbuf=
+			"`Chat Channel Internal Code:`\n"
+			"\n"
+			"Every chat channel must have its own unique code for Synchronet to refer\n"
+			"to it internally. This code is usually an abreviation of the chat\n"
+			"channel name.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
 			,code,LEN_CODE,K_EDIT|K_UPPER)<1)
 			continue;
@@ -327,38 +320,35 @@ channel name.
         sprintf(opt[k++],"%-27.27s%s","Channel Action Set"
             ,cfg.actset[cfg.chan[i]->actset]->name);
 		opt[k][0]=0;
-		SETHELP(WHERE);
-/*
-`Chat Channel Configuration:`
-
-This menu is for configuring the selected chat channel.
-*/
+		uifc.helpbuf=
+			"`Chat Channel Configuration:`\n"
+			"\n"
+			"This menu is for configuring the selected chat channel.\n"
+		;
 		sprintf(str,"%s Chat Channel",cfg.chan[i]->name);
 		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str,opt)) {
 			case -1:
 				done=1;
 				break;
 			case 0:
-				SETHELP(WHERE);
-/*
-`Chat Channel Name:`
-
-This is the name or description of the chat channel.
-*/
+				uifc.helpbuf=
+					"`Chat Channel Name:`\n"
+					"\n"
+					"This is the name or description of the chat channel.\n"
+				;
 				strcpy(str,cfg.chan[i]->name);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Chat Channel Name"
 					,cfg.chan[i]->name,sizeof(cfg.chan[i]->name)-1,K_EDIT))
 					strcpy(cfg.chan[i]->name,str);
 				break;
 			case 1:
-				SETHELP(WHERE);
-/*
-`Chat Channel Internal Code:`
-
-Every chat channel must have its own unique code for Synchronet to refer
-to it internally. This code is usually an abreviation of the chat
-channel name.
-*/
+				uifc.helpbuf=
+					"`Chat Channel Internal Code:`\n"
+					"\n"
+					"Every chat channel must have its own unique code for Synchronet to refer\n"
+					"to it internally. This code is usually an abreviation of the chat\n"
+					"channel name.\n"
+				;
 				strcpy(str,cfg.chan[i]->code);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
 					,str,LEN_CODE,K_UPPER|K_EDIT))
@@ -373,14 +363,13 @@ channel name.
                 break;
 			case 2:
 				ultoa(cfg.chan[i]->cost,str,10);
-                SETHELP(WHERE);
-/*
-`Chat Channel Cost to Join:`
-
-If you want users to be charged credits to join this chat channel, set
-this value to the number of credits to charge. If you want this channel
-to be free, set this value to `0`.
-*/
+                uifc.helpbuf=
+	                "`Chat Channel Cost to Join:`\n"
+	                "\n"
+	                "If you want users to be charged credits to join this chat channel, set\n"
+	                "this value to the number of credits to charge. If you want this channel\n"
+	                "to be free, set this value to `0`.\n"
+                ;
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Cost to Join (in Credits)"
                     ,str,10,K_EDIT|K_NUMBER);
 				cfg.chan[i]->cost=atol(str);
@@ -391,13 +380,12 @@ to be free, set this value to `0`.
 				break;
 			case 4:
 				k=1;
-				SETHELP(WHERE);
-/*
-`Allow Channel to be Password Protected:`
-
-If you want to allow the first user to join this channel to password
-protect it, set this option to `Yes`.
-*/
+				uifc.helpbuf=
+					"`Allow Channel to be Password Protected:`\n"
+					"\n"
+					"If you want to allow the first user to join this channel to password\n"
+					"protect it, set this option to `Yes`.\n"
+				;
 				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Allow Channel to be Password Protected"
 					,uifcYesNoOpts);
@@ -412,13 +400,12 @@ protect it, set this option to `Yes`.
 				break;
 			case 5:
 				k=1;
-				SETHELP(WHERE);
-/*
-`Guru Joins This Channel When Empty:`
-
-If you want the system guru to join this chat channel when there is
-only one user, set this option to `Yes`.
-*/
+				uifc.helpbuf=
+					"`Guru Joins This Channel When Empty:`\n"
+					"\n"
+					"If you want the system guru to join this chat channel when there is\n"
+					"only one user, set this option to `Yes`.\n"
+				;
 				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Guru Joins This Channel When Empty"
 					,uifcYesNoOpts);
@@ -432,13 +419,12 @@ only one user, set this option to `Yes`.
 				}
 				break;
 			case 6:
-SETHELP(WHERE);
-/*
-`Channel Guru:`
-
-This is a list of available chat Gurus.  Select the one that you wish
-to have available in this channel.
-*/
+uifc.helpbuf=
+	"`Channel Guru:`\n"
+	"\n"
+	"This is a list of available chat Gurus.  Select the one that you wish\n"
+	"to have available in this channel.\n"
+;
 				k=0;
 				for(j=0;j<cfg.total_gurus && j<MAX_OPTS;j++)
 					sprintf(opt[j],"%-25s",cfg.guru[j]->name);
@@ -450,13 +436,12 @@ to have available in this channel.
 				cfg.chan[i]->guru=k;
 				break;
 			case 7:
-SETHELP(WHERE);
-/*
-`Channel Action Set:`
-
-This is a list of available chat action sets.  Select the one that you
-wish to have available in this channel.
-*/
+uifc.helpbuf=
+	"`Channel Action Set:`\n"
+	"\n"
+	"This is a list of available chat action sets.  Select the one that you\n"
+	"wish to have available in this channel.\n"
+;
 				k=0;
 				for(j=0;j<cfg.total_actsets && j<MAX_OPTS;j++)
 					sprintf(opt[j],"%-25s",cfg.actset[j]->name);
@@ -497,46 +482,43 @@ while(1) {
 		i|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savchatact.cmd[0])
 		i|=WIN_PUT;
-	SETHELP(WHERE);
-/*
-`Multinode Chat Actions:`
-
-This is a list of the configured multinode chat actions.  The users can
-use these actions in multinode chat by turning on action commands with
-the `/A` command in multinode chat.  Then if a line is typed which
-begins with a valid `action command` and has a user name, chat handle,
-or node number following, the output string will be displayed replacing
-the `%s` symbols with the sending user's name and the receiving user's
-name (in that order).
-
-To add an action, select the desired location with the arrow keys and
-hit ~ INS ~.
-
-To delete an action, select it with the arrow keys and hit ~ DEL ~.
-
-To configure an action, select it with the arrow keys and hit ~ ENTER ~.
-*/
+	uifc.helpbuf=
+		"`Multinode Chat Actions:`\n"
+		"\n"
+		"This is a list of the configured multinode chat actions.  The users can\n"
+		"use these actions in multinode chat by turning on action commands with\n"
+		"the `/A` command in multinode chat.  Then if a line is typed which\n"
+		"begins with a valid `action command` and has a user name, chat handle,\n"
+		"or node number following, the output string will be displayed replacing\n"
+		"the `%s` symbols with the sending user's name and the receiving user's\n"
+		"name (in that order).\n"
+		"\n"
+		"To add an action, select the desired location with the arrow keys and\n"
+		"hit ~ INS ~.\n"
+		"\n"
+		"To delete an action, select it with the arrow keys and hit ~ DEL ~.\n"
+		"\n"
+		"To configure an action, select it with the arrow keys and hit ~ ENTER ~.\n"
+	;
 	sprintf(str,"%s Chat Actions",cfg.actset[setnum]->name);
 	i=uifc.list(i,0,0,70,&chatact_dflt,&chatact_bar,str,opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;
-		SETHELP(WHERE);
-/*
-`Chat Action Command:`
-
-This is the command word (normally a verb) to trigger the action output.
-*/
+		uifc.helpbuf=
+			"`Chat Action Command:`\n"
+			"\n"
+			"This is the command word (normally a verb) to trigger the action output.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Action Command",cmd,LEN_CHATACTCMD
 			,K_UPPER)<1)
             continue;
-		SETHELP(WHERE);
-/*
-`Chat Action Output String:`
-
-This is the output string displayed with this action output.
-*/
+		uifc.helpbuf=
+			"`Chat Action Output String:`\n"
+			"\n"
+			"This is the output string displayed with this action output.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"",out,LEN_CHATACTOUT
 			,K_MSG)<1)
             continue;
@@ -583,24 +565,22 @@ This is the output string displayed with this action output.
 		uifc.changes=1;
         continue; 
 	}
-	SETHELP(WHERE);
-/*
-`Chat Action Command:`
-
-This is the command that triggers this chat action.
-*/
+	uifc.helpbuf=
+		"`Chat Action Command:`\n"
+		"\n"
+		"This is the command that triggers this chat action.\n"
+	;
 	strcpy(str,cfg.chatact[chatnum[i]]->cmd);
 	if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Chat Action Command"
 		,cfg.chatact[chatnum[i]]->cmd,LEN_CHATACTCMD,K_EDIT|K_UPPER)) {
 		strcpy(cfg.chatact[chatnum[i]]->cmd,str);
 		continue; 
 	}
-	SETHELP(WHERE);
-/*
-`Chat Action Output String:`
-
-This is the output string that results from this chat action.
-*/
+	uifc.helpbuf=
+		"`Chat Action Output String:`\n"
+		"\n"
+		"This is the output string that results from this chat action.\n"
+	;
 	strcpy(str,cfg.chatact[chatnum[i]]->out);
 	if(!uifc.input(WIN_MID|WIN_SAV,0,10,""
 		,cfg.chatact[chatnum[i]]->out,LEN_CHATACTOUT,K_EDIT|K_MSG))
@@ -627,42 +607,39 @@ while(1) {
 		j|=WIN_INS|WIN_INSACT|WIN_XTR;
 	if(savguru.name[0])
 		j|=WIN_PUT;
-	SETHELP(WHERE);
-/*
-`Gurus:`
-
-This is a list of the configured Gurus.
-
-To add a Guru, select the desired location with the arrow keys and
-hit ~ INS ~.
-
-To delete a Guru, select it with the arrow keys and hit ~ DEL ~.
-
-To configure a Guru, select it with the arrow keys and hit ~ ENTER ~.
-*/
+	uifc.helpbuf=
+		"`Gurus:`\n"
+		"\n"
+		"This is a list of the configured Gurus.\n"
+		"\n"
+		"To add a Guru, select the desired location with the arrow keys and\n"
+		"hit ~ INS ~.\n"
+		"\n"
+		"To delete a Guru, select it with the arrow keys and hit ~ DEL ~.\n"
+		"\n"
+		"To configure a Guru, select it with the arrow keys and hit ~ ENTER ~.\n"
+	;
 	i=uifc.list(j,0,0,45,&guru_dflt,&guru_bar,"Artificial Gurus",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;
-		SETHELP(WHERE);
-/*
-`Guru Name:`
-
-This is the name of the selected Guru.
-*/
+		uifc.helpbuf=
+			"`Guru Name:`\n"
+			"\n"
+			"This is the name of the selected Guru.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Guru Name",str,25
 			,0)<1)
             continue;
 		SAFECOPY(code,str);
 		prep_code(code,/* prefix: */NULL);
-		SETHELP(WHERE);
-/*
-`Guru Internal Code:`
-
-Every Guru must have its own unique code for Synchronet to refer to
-it internally. This code is usually an abreviation of the Guru name.
-*/
+		uifc.helpbuf=
+			"`Guru Internal Code:`\n"
+			"\n"
+			"Every Guru must have its own unique code for Synchronet to refer to\n"
+			"it internally. This code is usually an abreviation of the Guru name.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
 			,code,LEN_CODE,K_EDIT|K_UPPER)<1)
 			continue;
@@ -721,37 +698,34 @@ it internally. This code is usually an abreviation of the Guru name.
 		sprintf(opt[k++],"%-27.27s%s","Guru Internal Code",cfg.guru[i]->code);
 		sprintf(opt[k++],"%-27.27s%.40s","Access Requirements",cfg.guru[i]->arstr);
 		opt[k][0]=0;
-		SETHELP(WHERE);
-/*
-`Guru Configuration:`
-
-This menu is for configuring the selected Guru.
-*/
+		uifc.helpbuf=
+			"`Guru Configuration:`\n"
+			"\n"
+			"This menu is for configuring the selected Guru.\n"
+		;
 		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,cfg.guru[i]->name
 			,opt)) {
 			case -1:
 				done=1;
 				break;
 			case 0:
-				SETHELP(WHERE);
-/*
-`Guru Name:`
-
-This is the name of the selected Guru.
-*/
+				uifc.helpbuf=
+					"`Guru Name:`\n"
+					"\n"
+					"This is the name of the selected Guru.\n"
+				;
 				strcpy(str,cfg.guru[i]->name);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Guru Name"
 					,cfg.guru[i]->name,sizeof(cfg.guru[i]->name)-1,K_EDIT))
 					strcpy(cfg.guru[i]->name,str);
 				break;
 			case 1:
-SETHELP(WHERE);
-/*
-`Guru Internal Code:`
-
-Every Guru must have its own unique code for Synchronet to refer to
-it internally. This code is usually an abreviation of the Guru name.
-*/
+uifc.helpbuf=
+	"`Guru Internal Code:`\n"
+	"\n"
+	"Every Guru must have its own unique code for Synchronet to refer to\n"
+	"it internally. This code is usually an abreviation of the Guru name.\n"
+;
 				strcpy(str,cfg.guru[i]->code);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Guru Internal Code"
 					,str,LEN_CODE,K_EDIT|K_UPPER))
@@ -791,31 +765,29 @@ while(1) {
         j|=WIN_INS|WIN_INSACT|WIN_XTR;
     if(savactset.name[0])
         j|=WIN_PUT;
-    SETHELP(WHERE);
-/*
-`Chat Action Sets:`
-
-This is a list of the configured action sets.
-
-To add an action set, select the desired location with the arrow keys and
-hit ~ INS ~.
-
-To delete an action set, select it with the arrow keys and hit ~ DEL ~.
-
-To configure an action set, select it with the arrow keys and hit
-~ ENTER ~.
-*/
+    uifc.helpbuf=
+	    "`Chat Action Sets:`\n"
+	    "\n"
+	    "This is a list of the configured action sets.\n"
+	    "\n"
+	    "To add an action set, select the desired location with the arrow keys and\n"
+	    "hit ~ INS ~.\n"
+	    "\n"
+	    "To delete an action set, select it with the arrow keys and hit ~ DEL ~.\n"
+	    "\n"
+	    "To configure an action set, select it with the arrow keys and hit\n"
+	    "~ ENTER ~.\n"
+    ;
 	i=uifc.list(j,0,0,45,&actset_dflt,&actset_bar,"Chat Action Sets",opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;
-        SETHELP(WHERE);
-/*
-`Chat Action Set Name:`
-
-This is the name of the selected chat action set.
-*/
+        uifc.helpbuf=
+	        "`Chat Action Set Name:`\n"
+	        "\n"
+	        "This is the name of the selected chat action set.\n"
+        ;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Chat Action Set Name",str,25
 			,0)<1)
             continue;
@@ -866,12 +838,11 @@ This is the name of the selected chat action set.
         sprintf(opt[k++],"%-27.27s%s","Action Set Name",cfg.actset[i]->name);
         sprintf(opt[k++],"%-27.27s","Configure Chat Actions...");
 		opt[k][0]=0;
-        SETHELP(WHERE);
-/*
-`Chat Action Set Configuration:`
-
-This menu is for configuring the selected chat action set.
-*/
+        uifc.helpbuf=
+	        "`Chat Action Set Configuration:`\n"
+	        "\n"
+	        "This menu is for configuring the selected chat action set.\n"
+        ;
 		sprintf(str,"%s Chat Action Set",cfg.actset[i]->name);
 		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&opt_dflt,0,str
             ,opt)) {
@@ -879,12 +850,11 @@ This menu is for configuring the selected chat action set.
                 done=1;
                 break;
             case 0:
-                SETHELP(WHERE);
-/*
-`Chat Action Set Name:`
-
-This is the name of the selected action set.
-*/
+                uifc.helpbuf=
+	                "`Chat Action Set Name:`\n"
+	                "\n"
+	                "This is the name of the selected action set.\n"
+                ;
                 strcpy(str,cfg.actset[i]->name);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Action Set Name"
                     ,cfg.actset[i]->name,sizeof(cfg.actset[i]->name)-1,K_EDIT))

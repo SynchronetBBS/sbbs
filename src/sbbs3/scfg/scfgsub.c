@@ -66,72 +66,67 @@ while(1) {
 		i|=WIN_INS|WIN_XTR|WIN_INSACT;
 	if(savsub.sname[0])
 		i|=WIN_PUT;
-	SETHELP(WHERE);
-/*
-`Message Sub-boards:`
-
-This is a list of message sub-boards that have been configured for the
-selected message group.
-
-To add a sub-board, select the desired position with the arrow keys and
-hit ~ INS ~.
-
-To delete a sub-board, select it with the arrow keys and hit ~ DEL ~.
-
-To configure a sub-board, select it with the arrow keys and hit ~ ENTER ~.
-*/
+	uifc.helpbuf=
+		"`Message Sub-boards:`\n"
+		"\n"
+		"This is a list of message sub-boards that have been configured for the\n"
+		"selected message group.\n"
+		"\n"
+		"To add a sub-board, select the desired position with the arrow keys and\n"
+		"hit ~ INS ~.\n"
+		"\n"
+		"To delete a sub-board, select it with the arrow keys and hit ~ DEL ~.\n"
+		"\n"
+		"To configure a sub-board, select it with the arrow keys and hit ~ ENTER ~.\n"
+	;
 	i=uifc.list(i,24,1,LEN_SLNAME+5,&dflt,&bar,str,opt);
 	if((signed)i==-1)
 		return;
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;
 		strcpy(str,"General");
-		SETHELP(WHERE);
-/*
-`Sub-board Long Name:`
-
-This is a description of the message sub-board which is displayed in all
-sub-board listings.
-*/
+		uifc.helpbuf=
+			"`Sub-board Long Name:`\n"
+			"\n"
+			"This is a description of the message sub-board which is displayed in all\n"
+			"sub-board listings.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Long Name",str,LEN_SLNAME
 			,K_EDIT)<1)
 			continue;
 		sprintf(str2,"%.*s",LEN_SSNAME,str);
-		SETHELP(WHERE);
-/*
-`Sub-board Short Name:`
-
-This is a short description of the message sub-board which is displayed
-at the main and reading messages prompts.
-*/
+		uifc.helpbuf=
+			"`Sub-board Short Name:`\n"
+			"\n"
+			"This is a short description of the message sub-board which is displayed\n"
+			"at the main and reading messages prompts.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Short Name",str2,LEN_SSNAME
 			,K_EDIT)<1)
 			continue;
 #if 0
 		sprintf(str3,"%.10s",str2);
-		SETHELP(WHERE);
-/*
-`Sub-board QWK Name:`
-
-This is the name of the sub-board used for QWK off-line readers.
-*/
+		uifc.helpbuf=
+			"`Sub-board QWK Name:`\n"
+			"\n"
+			"This is the name of the sub-board used for QWK off-line readers.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board QWK Name",str3,10
             ,K_EDIT)<1)
             continue;
 #endif
 		SAFECOPY(code,str2);
 		prep_code(code,/* prefix: */NULL);
-		SETHELP(WHERE);
-/*
-`Sub-board Internal Code Suffix:`
-
-Every sub-board must have its own unique code for Synchronet to refer to
-it internally. This code should be descriptive of the sub-board's topic,
-usually an abreviation of the sub-board's name.
-
-`Note:` The internal code is constructed from the message group's code
-prefix (if present) and the sub-board's code suffix.
-*/
+		uifc.helpbuf=
+			"`Sub-board Internal Code Suffix:`\n"
+			"\n"
+			"Every sub-board must have its own unique code for Synchronet to refer to\n"
+			"it internally. This code should be descriptive of the sub-board's topic,\n"
+			"usually an abreviation of the sub-board's name.\n"
+			"\n"
+			"`Note:` The internal code is constructed from the message group's code\n"
+			"prefix (if present) and the sub-board's code suffix.\n"
+		;
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Internal Code Suffix",code,LEN_CODE
 			,K_EDIT|K_UPPER)<1)
 			continue;
@@ -187,12 +182,11 @@ prefix (if present) and the sub-board's code suffix.
 		continue; }
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
-		SETHELP(WHERE);
-/*
-`Delete Data in Sub-board:`
-
-If you want to delete all the messages for this sub-board, select `Yes`.
-*/
+		uifc.helpbuf=
+			"`Delete Data in Sub-board:`\n"
+			"\n"
+			"If you want to delete all the messages for this sub-board, select `Yes`.\n"
+		;
 		j=1;
 		strcpy(opt[0],"Yes");
 		strcpy(opt[1],"No");
@@ -281,65 +275,60 @@ If you want to delete all the messages for this sub-board, select `Yes`.
 		strcpy(opt[n++],"Advanced Options...");
 		opt[n][0]=0;
 		sprintf(str,"%s Sub-board",cfg.sub[i]->sname);
-		SETHELP(WHERE);
-/*
-`Sub-board Configuration:`
-
-This menu allows you to configure the individual selected sub-board.
-Options with a trailing `...` provide a sub-menu of more options.
-*/
+		uifc.helpbuf=
+			"`Sub-board Configuration:`\n"
+			"\n"
+			"This menu allows you to configure the individual selected sub-board.\n"
+			"Options with a trailing `...` provide a sub-menu of more options.\n"
+		;
 		switch(uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT
 			,0,0,60,&opt_dflt,0,str,opt)) {
 			case -1:
 				done=1;
 				break;
 			case 0:
-				SETHELP(WHERE);
-/*
-`Sub-board Long Name:`
-
-This is a description of the message sub-board which is displayed in all
-sub-board listings.
-*/
+				uifc.helpbuf=
+					"`Sub-board Long Name:`\n"
+					"\n"
+					"This is a description of the message sub-board which is displayed in all\n"
+					"sub-board listings.\n"
+				;
 				strcpy(str,cfg.sub[i]->lname);	/* save */
 				if(!uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Listings"
 					,cfg.sub[i]->lname,LEN_SLNAME,K_EDIT))
 					strcpy(cfg.sub[i]->lname,str);	/* restore */
 				break;
 			case 1:
-				SETHELP(WHERE);
-/*
-`Sub-board Short Name:`
-
-This is a short description of the message sub-board which is displayed
-at the main and reading messages prompts.
-*/
+				uifc.helpbuf=
+					"`Sub-board Short Name:`\n"
+					"\n"
+					"This is a short description of the message sub-board which is displayed\n"
+					"at the main and reading messages prompts.\n"
+				;
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Prompts"
 					,cfg.sub[i]->sname,LEN_SSNAME,K_EDIT);
 				break;
 			case 2:
-				SETHELP(WHERE);
-/*
-`Sub-board QWK Name:`
-
-This is the name of the sub-board used for QWK off-line readers.
-*/
+				uifc.helpbuf=
+					"`Sub-board QWK Name:`\n"
+					"\n"
+					"This is the name of the sub-board used for QWK off-line readers.\n"
+				;
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for QWK Packets"
 					,cfg.sub[i]->qwkname,10,K_EDIT);
                 break;
 			case 3:
-                SETHELP(WHERE);
-/*
-`Sub-board Internal Code Suffix:`
-
-Every sub-board must have its own unique code for Synchronet to refer
-to it internally. This code should be descriptive of the sub-board's
-topic, usually an abreviation of the sub-board's name.
-
-`Note:` The internal code displayed is the complete internal code
-constructed from the message group's code prefix and the sub-board's
-code suffix.
-*/
+                uifc.helpbuf=
+	                "`Sub-board Internal Code Suffix:`\n"
+	                "\n"
+	                "Every sub-board must have its own unique code for Synchronet to refer\n"
+	                "to it internally. This code should be descriptive of the sub-board's\n"
+	                "topic, usually an abreviation of the sub-board's name.\n"
+	                "\n"
+	                "`Note:` The internal code displayed is the complete internal code\n"
+	                "constructed from the message group's code prefix and the sub-board's\n"
+	                "code suffix.\n"
+                ;
                 strcpy(str,cfg.sub[i]->code_suffix);
                 uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Suffix (unique)"
                     ,str,LEN_CODE,K_EDIT|K_UPPER);
@@ -352,14 +341,13 @@ code suffix.
 				}
                 break;
 			case 4:
-				SETHELP(WHERE);
-/*
-Newsgroup Name:
-
-This is the name of the sub-board used for newsgroup readers. If no name
-is configured here, a name will be automatically generated from the
-sub-board's name and group name.
-*/
+				uifc.helpbuf=
+					"Newsgroup Name:\n"
+					"\n"
+					"This is the name of the sub-board used for newsgroup readers. If no name\n"
+					"is configured here, a name will be automatically generated from the\n"
+					"sub-board's name and group name.\n"
+				;
 				uifc.input(WIN_MID|WIN_SAV,0,17,""
 					,cfg.sub[i]->newsgroup,sizeof(cfg.sub[i]->newsgroup)-1,K_EDIT);
                 break;
@@ -385,15 +373,14 @@ sub-board's name and group name.
                 break;
 			case 10:
 				sprintf(str,"%"PRIu32,cfg.sub[i]->maxmsgs);
-                SETHELP(WHERE);
-/*
-`Maximum Number of Messages:`
-
-This value is the maximum number of messages that will be kept in the
-sub-board. Once this maximum number of messages is reached, the oldest
-messages will be automatically purged. Usually, 100 messages is a
-sufficient maximum.
-*/
+                uifc.helpbuf=
+	                "`Maximum Number of Messages:`\n"
+	                "\n"
+	                "This value is the maximum number of messages that will be kept in the\n"
+	                "sub-board. Once this maximum number of messages is reached, the oldest\n"
+	                "messages will be automatically purged. Usually, 100 messages is a\n"
+	                "sufficient maximum.\n"
+                ;
                 uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of Messages"
                     ,str,9,K_EDIT|K_NUMBER);
                 cfg.sub[i]->maxmsgs=atoi(str);
@@ -401,13 +388,12 @@ sufficient maximum.
 				break;
 			case 11:
 				sprintf(str,"%u",cfg.sub[i]->maxage);
-                SETHELP(WHERE);
-/*
-`Maximum Age of Messages:`
-
-This value is the maximum number of days that messages will be kept in
-the sub-board.
-*/
+                uifc.helpbuf=
+	                "`Maximum Age of Messages:`\n"
+	                "\n"
+	                "This value is the maximum number of days that messages will be kept in\n"
+	                "the sub-board.\n"
+                ;
                 uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Age of Messages (in days)"
                     ,str,5,K_EDIT|K_NUMBER);
                 cfg.sub[i]->maxage=atoi(str);
@@ -415,14 +401,13 @@ the sub-board.
 				break;
 			case 12:
 				sprintf(str,"%"PRIu32,cfg.sub[i]->maxcrcs);
-				SETHELP(WHERE);
-/*
-`Maximum Number of CRCs:`
-
-This value is the maximum number of CRCs that will be kept in the
-sub-board for duplicate message checking. Once this maximum number of
-CRCs is reached, the oldest CRCs will be automatically purged.
-*/
+				uifc.helpbuf=
+					"`Maximum Number of CRCs:`\n"
+					"\n"
+					"This value is the maximum number of CRCs that will be kept in the\n"
+					"sub-board for duplicate message checking. Once this maximum number of\n"
+					"CRCs is reached, the oldest CRCs will be automatically purged.\n"
+				;
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of CRCs"
 					,str,9,K_EDIT|K_NUMBER);
 				cfg.sub[i]->maxcrcs=atol(str);
@@ -466,13 +451,12 @@ CRCs is reached, the oldest CRCs will be automatically purged.
 						,cfg.sub[i]->misc&SUB_LZH ? "Yes" : "No");
 
 					opt[n][0]=0;
-					SETHELP(WHERE);
-/*
-`Sub-board Toggle Options:`
-
-This menu allows you to toggle certain options for the selected
-sub-board between two or more settings, such as `Yes` and `No`.
-*/
+					uifc.helpbuf=
+						"`Sub-board Toggle Options:`\n"
+						"\n"
+						"This menu allows you to toggle certain options for the selected\n"
+						"sub-board between two or more settings, such as `Yes` and `No`.\n"
+					;
 					n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,36,&tog_dflt,0
 						,"Toggle Options",opt);
 					if(n==-1)
@@ -487,15 +471,14 @@ sub-board between two or more settings, such as `Yes` and `No`.
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Only");
 							opt[3][0]=0;
-							SETHELP(WHERE);
-/*
-`Allow Private Posts on Sub-board:`
-
-If you want users to be able to post private messages to other users
-on this sub-board, set this value to `Yes`. Usually, E-mail is the
-preferred method of private communication. If you want users to be able
-to post private messages only on this sub-board, select `Only`.
-*/
+							uifc.helpbuf=
+								"`Allow Private Posts on Sub-board:`\n"
+								"\n"
+								"If you want users to be able to post private messages to other users\n"
+								"on this sub-board, set this value to `Yes`. Usually, E-mail is the\n"
+								"preferred method of private communication. If you want users to be able\n"
+								"to post private messages only on this sub-board, select `Only`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Allow Private Posts",opt);
 							if(n==-1)
@@ -524,15 +507,14 @@ to post private messages only on this sub-board, select `Only`.
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Only");
 							opt[3][0]=0;
-							SETHELP(WHERE);
-/*
-`Allow Anonymous Posts on Sub-board:`
-
-If you want users with the `A` exemption to be able to post anonymously on
-this sub-board, select `Yes`. If you want all posts on this sub-board to be
-forced anonymous, select `Only`. If you do not want anonymous posts allowed
-on this sub-board at all, select `No`.
-*/
+							uifc.helpbuf=
+								"`Allow Anonymous Posts on Sub-board:`\n"
+								"\n"
+								"If you want users with the `A` exemption to be able to post anonymously on\n"
+								"this sub-board, select `Yes`. If you want all posts on this sub-board to be\n"
+								"forced anonymous, select `Only`. If you do not want anonymous posts allowed\n"
+								"on this sub-board at all, select `No`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Allow Anonymous Posts",opt);
 							if(n==-1)
@@ -557,14 +539,13 @@ on this sub-board at all, select `No`.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`User Real Names in Posts on Sub-board:`
-
-If you allow aliases on your system, you can have messages on this
-sub-board automatically use the real name of the posting user by setting
-this option to `Yes`.
-*/
+							uifc.helpbuf=
+								"`User Real Names in Posts on Sub-board:`\n"
+								"\n"
+								"If you allow aliases on your system, you can have messages on this\n"
+								"sub-board automatically use the real name of the posting user by setting\n"
+								"this option to `Yes`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Use Real Names in Posts",opt);
 							if(n==-1)
@@ -586,14 +567,13 @@ this option to `Yes`.
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Last Post Only");
 							opt[3][0]=0;
-							SETHELP(WHERE);
-/*
-`Users Can Edit Posts on Sub-board:`
-
-If you wish to allow users to edit their messages after they have been
-posted, this option to `Yes`. If you wish to allow users to edit only the
-last message on a message base, set this option to `Last Post Only`.
-*/
+							uifc.helpbuf=
+								"`Users Can Edit Posts on Sub-board:`\n"
+								"\n"
+								"If you wish to allow users to edit their messages after they have been\n"
+								"posted, this option to `Yes`. If you wish to allow users to edit only the\n"
+								"last message on a message base, set this option to `Last Post Only`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Users Can Edit Messages",opt);
 							if(n==-1)
@@ -633,16 +613,15 @@ last message on a message base, set this option to `Last Post Only`.
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Last Post Only");
 							opt[3][0]=0;
-							SETHELP(WHERE);
-/*
-`Users Can Delete Posts on Sub-board:`
-
-If you want users to be able to delete any of their own posts on this
-sub-board, set this option to `Yes`. If you want to allow users the
-ability to delete their message only if it is the last message on the
-sub-board, select `Last Post Only`. If you want to disallow users from
-deleting any of their posts, set this option to `No`.
-*/
+							uifc.helpbuf=
+								"`Users Can Delete Posts on Sub-board:`\n"
+								"\n"
+								"If you want users to be able to delete any of their own posts on this\n"
+								"sub-board, set this option to `Yes`. If you want to allow users the\n"
+								"ability to delete their message only if it is the last message on the\n"
+								"sub-board, select `Last Post Only`. If you want to disallow users from\n"
+								"deleting any of their posts, set this option to `No`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Users Can Delete Posts",opt);
 							if(n==-1)
@@ -670,13 +649,12 @@ deleting any of their posts, set this option to `No`.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Default On for New Scan:`
-
-If you want this sub-board to be included in all user new message scans
-by default, set this option to `Yes`.
-*/
+							uifc.helpbuf=
+								"`Default On for New Scan:`\n"
+								"\n"
+								"If you want this sub-board to be included in all user new message scans\n"
+								"by default, set this option to `Yes`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Default On for New Scan",opt);
 							if(n==-1)
@@ -694,14 +672,13 @@ by default, set this option to `Yes`.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Forced On for New Scan:`
-
-If you want this sub-board to be included in all user new message scans
-even if the user has removed it from their new scan configuration, set
-this option to `Yes`.
-*/
+							uifc.helpbuf=
+								"`Forced On for New Scan:`\n"
+								"\n"
+								"If you want this sub-board to be included in all user new message scans\n"
+								"even if the user has removed it from their new scan configuration, set\n"
+								"this option to `Yes`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Forced New Scan",opt);
 							if(n==-1)
@@ -719,13 +696,12 @@ this option to `Yes`.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Default On for Your Scan:`
-
-If you want this sub-board to be included in all user personal message
-scans by default, set this option to `Yes`.
-*/
+							uifc.helpbuf=
+								"`Default On for Your Scan:`\n"
+								"\n"
+								"If you want this sub-board to be included in all user personal message\n"
+								"scans by default, set this option to `Yes`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Default On for Your Scan",opt);
 							if(n==-1)
@@ -743,14 +719,13 @@ scans by default, set this option to `Yes`.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Prompt for 'To' User on Public Posts:`
-
-If you want all posts on this sub-board to be prompted for a 'To' user,
-set this option to `Yes`. This is a useful option for sub-boards that
-are on a network that does not allow private posts.
-*/
+							uifc.helpbuf=
+								"`Prompt for 'To' User on Public Posts:`\n"
+								"\n"
+								"If you want all posts on this sub-board to be prompted for a 'To' user,\n"
+								"set this option to `Yes`. This is a useful option for sub-boards that\n"
+								"are on a network that does not allow private posts.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Prompt for 'To' User on Public Posts",opt);
 							if(n==-1)
@@ -768,13 +743,12 @@ are on a network that does not allow private posts.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Allow Message Quoting:`
-
-If you want users to be allowed to quote messages on this sub-board, set
-this option to `Yes`.
-*/
+							uifc.helpbuf=
+								"`Allow Message Quoting:`\n"
+								"\n"
+								"If you want users to be allowed to quote messages on this sub-board, set\n"
+								"this option to `Yes`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Allow Message Quoting",opt);
 							if(n==-1)
@@ -792,13 +766,12 @@ this option to `Yes`.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-Suppress User Signatures:
-
-If you do not wish to have user signatures automatically appended to
-messages posted in this sub-board, set this option to Yes.
-*/
+							uifc.helpbuf=
+								"Suppress User Signatures:\n"
+								"\n"
+								"If you do not wish to have user signatures automatically appended to\n"
+								"messages posted in this sub-board, set this option to Yes.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Suppress User Signatures",opt);
 							if(n==-1)
@@ -816,14 +789,13 @@ messages posted in this sub-board, set this option to Yes.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Operator Messages Automatically Permanent:`
-
-If you want messages posted by `System` and `Sub-board Operators` to be
-automatically permanent (non-purgable) for this sub-board, set this
-option to `Yes`.
-*/
+							uifc.helpbuf=
+								"`Operator Messages Automatically Permanent:`\n"
+								"\n"
+								"If you want messages posted by `System` and `Sub-board Operators` to be\n"
+								"automatically permanent (non-purgable) for this sub-board, set this\n"
+								"option to `Yes`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Permanent Operator Messages",opt);
 							if(n==-1)
@@ -845,14 +817,13 @@ option to `Yes`.
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Private");
 							opt[3][0]=0;
-							SETHELP(WHERE);
-/*
-`Kill Read Messages Automatically:`
-
-If you want messages that have been read by the intended recipient to
-be automatically deleted by `SMBUTIL`, set this option to `Yes` or
-`Private` if you want only private messages to be automatically deleted.
-*/
+							uifc.helpbuf=
+								"`Kill Read Messages Automatically:`\n"
+								"\n"
+								"If you want messages that have been read by the intended recipient to\n"
+								"be automatically deleted by `SMBUTIL`, set this option to `Yes` or\n"
+								"`Private` if you want only private messages to be automatically deleted.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Kill Read Messages",opt);
 							if(n==-1)
@@ -876,20 +847,19 @@ be automatically deleted by `SMBUTIL`, set this option to `Yes` or
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Compress Messages with LZH Encoding:`
-
-If you want all messages in this sub-board to be automatically
-compressed via `LZH` (Lempel/Ziv/Huffman algorithm used in LHarc, LHA,
-and other popular compression and archive programs), this option to `Yes`.
-
-Compression will slow down the reading and writing of messages slightly,
-but the storage space saved can be as much as `50 percent`.
-
-Before setting this option to `Yes`, make sure that all of the SMB
-compatible mail programs you use support the `LZH` translation.
-*/
+							uifc.helpbuf=
+								"`Compress Messages with LZH Encoding:`\n"
+								"\n"
+								"If you want all messages in this sub-board to be automatically\n"
+								"compressed via `LZH` (Lempel/Ziv/Huffman algorithm used in LHarc, LHA,\n"
+								"and other popular compression and archive programs), this option to `Yes`.\n"
+								"\n"
+								"Compression will slow down the reading and writing of messages slightly,\n"
+								"but the storage space saved can be as much as `50 percent`.\n"
+								"\n"
+								"Before setting this option to `Yes`, make sure that all of the SMB\n"
+								"compatible mail programs you use support the `LZH` translation.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Compress Messages (LZH)",opt);
 							if(n==-1)
@@ -927,13 +897,12 @@ compatible mail programs you use support the `LZH` translation.
                         ,smb_faddrtoa(&cfg.sub[i]->faddr,tmp));
 					sprintf(opt[n++],"EchoMail Origin Line");
 					opt[n][0]=0;
-					SETHELP(WHERE);
-/*
-`Sub-board Network Options:`
-
-This menu contains options for the selected sub-board that pertain
-specifically to message networking.
-*/
+					uifc.helpbuf=
+						"`Sub-board Network Options:`\n"
+						"\n"
+						"This menu contains options for the selected sub-board that pertain\n"
+						"specifically to message networking.\n"
+					;
 					n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,60,&net_dflt,0
 						,"Network Options",opt);
 					if(n==-1)
@@ -944,14 +913,13 @@ specifically to message networking.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Append Tag/Origin Line to Posts:`
-
-If you want to disable the automatic addition of a network tagline or
-origin line to the bottom of outgoing networked posts from this
-sub-board, set this option to `No`.
-*/
+							uifc.helpbuf=
+								"`Append Tag/Origin Line to Posts:`\n"
+								"\n"
+								"If you want to disable the automatic addition of a network tagline or\n"
+								"origin line to the bottom of outgoing networked posts from this\n"
+								"sub-board, set this option to `No`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Append Tag/Origin Line to Posts",opt);
 							if(n==-1)
@@ -969,14 +937,13 @@ sub-board, set this option to `No`.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Export ASCII Characters Only:`
-
-If the network that this sub-board is echoed on does not allow extended
-ASCII (>127) or control codes (<20, not including CR), set this option
-to `Yes`.
-*/
+							uifc.helpbuf=
+								"`Export ASCII Characters Only:`\n"
+								"\n"
+								"If the network that this sub-board is echoed on does not allow extended\n"
+								"ASCII (>127) or control codes (<20, not including CR), set this option\n"
+								"to `Yes`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Export ASCII Characters Only",opt);
 							if(n==-1)
@@ -994,23 +961,22 @@ to `Yes`.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Gate Between Net Types:`
-
-If this sub-board is networked using more than one network technology,
-and you want messages to be `gated` between the networks, set this
-option to `Yes`.
-
-If this option is set to `No`, messages imported from one network type
-will `not` be exported to another network type. This is the default and
-should be used unless you have `specific` permission from both networks
-to gate this sub-board. Incorrectly gated sub-boards can cause duplicate
-messages loops and cross-posted messages.
-
-This option does not affect the exporting of messages created on your
-BBS.
-*/
+							uifc.helpbuf=
+								"`Gate Between Net Types:`\n"
+								"\n"
+								"If this sub-board is networked using more than one network technology,\n"
+								"and you want messages to be `gated` between the networks, set this\n"
+								"option to `Yes`.\n"
+								"\n"
+								"If this option is set to `No`, messages imported from one network type\n"
+								"will `not` be exported to another network type. This is the default and\n"
+								"should be used unless you have `specific` permission from both networks\n"
+								"to gate this sub-board. Incorrectly gated sub-boards can cause duplicate\n"
+								"messages loops and cross-posted messages.\n"
+								"\n"
+								"This option does not affect the exporting of messages created on your\n"
+								"BBS.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Gate Between Net Types",opt);
 							if(n==-1)
@@ -1028,16 +994,15 @@ BBS.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Sub-board Networked via QWK Packets:`
-
-If this sub-board is networked with other BBSs via QWK packets, this
-option should be set to `Yes`. With this option set to `Yes`, titles of
-posts on this sub-board will be limited to the QWK packet limitation of
-25 characters. It also allows the `N`etwork restriction to function
-properly.
-*/
+							uifc.helpbuf=
+								"`Sub-board Networked via QWK Packets:`\n"
+								"\n"
+								"If this sub-board is networked with other BBSs via QWK packets, this\n"
+								"option should be set to `Yes`. With this option set to `Yes`, titles of\n"
+								"posts on this sub-board will be limited to the QWK packet limitation of\n"
+								"25 characters. It also allows the `N`etwork restriction to function\n"
+								"properly.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Networked via QWK Packets",opt);
 							if(n==-1)
@@ -1051,14 +1016,13 @@ properly.
 								cfg.sub[i]->misc&=~SUB_QNET; }
                             break;
 						case 4:
-							SETHELP(WHERE);
-/*
-`Sub-board QWK Network Tagline:`
-
-If you want to use a different QWK tagline than the configured default
-tagline in the `Networks` configuration, you should enter that tagline
-here. If this option is left blank, the default tagline is used.
-*/
+							uifc.helpbuf=
+								"`Sub-board QWK Network Tagline:`\n"
+								"\n"
+								"If you want to use a different QWK tagline than the configured default\n"
+								"tagline in the `Networks` configuration, you should enter that tagline\n"
+								"here. If this option is left blank, the default tagline is used.\n"
+							;
 							uifc.input(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->tagline
 								,sizeof(cfg.sub[i]->tagline)-1,K_MSG|K_EDIT);
 							break;
@@ -1067,15 +1031,14 @@ here. If this option is left blank, the default tagline is used.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Sub-board Networked via Internet:`
-
-If this sub-board is networked to the Internet via UUCP or NNTP, this
-option should be set to `Yes`.
-
-It will allow the `N`etwork user restriction to function properly.
-*/
+							uifc.helpbuf=
+								"`Sub-board Networked via Internet:`\n"
+								"\n"
+								"If this sub-board is networked to the Internet via UUCP or NNTP, this\n"
+								"option should be set to `Yes`.\n"
+								"\n"
+								"It will allow the `N`etwork user restriction to function properly.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Networked via Internet",opt);
 							if(n==-1)
@@ -1093,16 +1056,15 @@ It will allow the `N`etwork user restriction to function properly.
                             strcpy(opt[0],"Yes");
                             strcpy(opt[1],"No");
                             opt[2][0]=0;
-                            SETHELP(WHERE);
-/*
-`Sub-board Networked via PostLink or PCRelay:`
-
-If this sub-board is networked with other BBSs via PostLink or PCRelay,
-this option should be set to `Yes`. With this option set to `Yes`,
-titles of posts on this sub-board will be limited to the UTI
-specification limitation of 25 characters. It also allows the `N`etwork
-restriction to function properly.
-*/
+                            uifc.helpbuf=
+	                            "`Sub-board Networked via PostLink or PCRelay:`\n"
+	                            "\n"
+	                            "If this sub-board is networked with other BBSs via PostLink or PCRelay,\n"
+	                            "this option should be set to `Yes`. With this option set to `Yes`,\n"
+	                            "titles of posts on this sub-board will be limited to the UTI\n"
+	                            "specification limitation of 25 characters. It also allows the `N`etwork\n"
+	                            "restriction to function properly.\n"
+                            ;
                             n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
                                 ,"Networked via PostLink or PCRelay",opt);
                             if(n==-1)
@@ -1120,13 +1082,12 @@ restriction to function properly.
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							SETHELP(WHERE);
-/*
-`Sub-board Networked via FidoNet EchoMail:`
-
-If this sub-board is part of a FidoNet EchoMail conference, set this
-option to `Yes`.
-*/
+							uifc.helpbuf=
+								"`Sub-board Networked via FidoNet EchoMail:`\n"
+								"\n"
+								"If this sub-board is part of a FidoNet EchoMail conference, set this\n"
+								"option to `Yes`.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Networked via FidoNet EchoMail",opt);
 							if(n==-1)
@@ -1141,28 +1102,26 @@ option to `Yes`.
                             break;
 						case 8:
 							smb_faddrtoa(&cfg.sub[i]->faddr,str);
-							SETHELP(WHERE);
-/*
-`Sub-board FidoNet Address:`
-
-If this sub-board is part of a FidoNet EchoMail conference, this is
-the address used for this sub-board. Format: `Zone:Net/Node[.Point]`
-*/
+							uifc.helpbuf=
+								"`Sub-board FidoNet Address:`\n"
+								"\n"
+								"If this sub-board is part of a FidoNet EchoMail conference, this is\n"
+								"the address used for this sub-board. Format: `Zone:Net/Node[.Point]`\n"
+							;
 							uifc.input(WIN_MID|WIN_SAV,0,0,"FidoNet Address"
 								,str,25,K_EDIT);
 							cfg.sub[i]->faddr=atofaddr(str);
 							break;
 						case 9:
-							SETHELP(WHERE);
-/*
-`Sub-board FidoNet Origin Line:`
-
-If this sub-board is part of a FidoNet EchoMail conference and you
-want to use an origin line other than the default origin line in the
-`Networks` configuration, set this value to the desired origin line.
-
-If this option is blank, the default origin line is used.
-*/
+							uifc.helpbuf=
+								"`Sub-board FidoNet Origin Line:`\n"
+								"\n"
+								"If this sub-board is part of a FidoNet EchoMail conference and you\n"
+								"want to use an origin line other than the default origin line in the\n"
+								"`Networks` configuration, set this value to the desired origin line.\n"
+								"\n"
+								"If this option is blank, the default origin line is used.\n"
+							;
 							uifc.input(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->origline
 								,sizeof(cfg.sub[i]->origline)-1,K_EDIT);
                             break;
@@ -1190,31 +1149,29 @@ If this option is blank, the default origin line is used.
 					sprintf(opt[n++],"%-27.27s%.40s","Semaphore File",cfg.sub[i]->post_sem);
 					sprintf(opt[n++],"%-27.27s%u","Pointer File Index",cfg.sub[i]->ptridx);
 					opt[n][0]=0;
-					SETHELP(WHERE);
-/*
-`Sub-board Advanced Options:`
-
-This menu contains options for the selected sub-board that are advanced
-in nature.
-*/
+					uifc.helpbuf=
+						"`Sub-board Advanced Options:`\n"
+						"\n"
+						"This menu contains options for the selected sub-board that are advanced\n"
+						"in nature.\n"
+					;
 					n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,60,&adv_dflt,0
 						,"Advanced Options",opt);
 					if(n==-1)
 						break;
                     switch(n) {
                         case 0:
-							SETHELP(WHERE);
-/*
-`Sub-board QWK Conference Number:`
-
-If you wish to have the QWK conference number for this sub-board
-automatically generated by Synchronet (based on the group number
-and sub-board number for the user), set this option to `Dynamic`.
-
-If you wish to have the same QWK conference number for this sub-board
-regardless of which user access it, set this option to `Static`
-by entering the conference number you want to use.
-*/
+							uifc.helpbuf=
+								"`Sub-board QWK Conference Number:`\n"
+								"\n"
+								"If you wish to have the QWK conference number for this sub-board\n"
+								"automatically generated by Synchronet (based on the group number\n"
+								"and sub-board number for the user), set this option to `Dynamic`.\n"
+								"\n"
+								"If you wish to have the same QWK conference number for this sub-board\n"
+								"regardless of which user access it, set this option to `Static`\n"
+								"by entering the conference number you want to use.\n"
+							;
 							if(cfg.sub[i]->qwkconf)
 								sprintf(str,"%u",cfg.sub[i]->qwkconf);
 							else
@@ -1230,26 +1187,25 @@ by entering the conference number you want to use.
 							strcpy(opt[1],"Fast Allocation");
 							strcpy(opt[2],"Self-packing");
 							opt[3][0]=0;
-							SETHELP(WHERE);
-/*
-`Self-Packing` is the slowest storage method because it conserves disk
-  space as it imports messages by using deleted message header and data
-  blocks for new messages automatically. If you use this storage method,
-  you will not need to run `SMBUTIL P` on this message base unless you
-  accumilate a large number of deleted message blocks and wish to free
-  that disk space. You can switch from self-packing to fast allocation
-  storage method and back again as you wish.
-`Fast Allocation` is faster than self-packing because it does not search
-  for deleted message blocks for new messages. It automatically places
-  all new message blocks at the end of the header and data files. If you
-  use this storage method, you will need to run `SMBUTIL P` on this
-  message base periodically or it will continually use up disk space.
-`Hyper Allocation` is the fastest storage method because it does not
-  maintain allocation files at all. Once a message base is setup to use
-  this storage method, it should not be changed without first deleting
-  the message base data files in your `DATA\DIRS\SUBS` directory for this
-  sub-board. You must use `SMBUTIL P` as with the fast allocation method.
-*/
+							uifc.helpbuf=
+								"`Self-Packing` is the slowest storage method because it conserves disk\n"
+								"  space as it imports messages by using deleted message header and data\n"
+								"  blocks for new messages automatically. If you use this storage method,\n"
+								"  you will not need to run `SMBUTIL P` on this message base unless you\n"
+								"  accumilate a large number of deleted message blocks and wish to free\n"
+								"  that disk space. You can switch from self-packing to fast allocation\n"
+								"  storage method and back again as you wish.\n"
+								"`Fast Allocation` is faster than self-packing because it does not search\n"
+								"  for deleted message blocks for new messages. It automatically places\n"
+								"  all new message blocks at the end of the header and data files. If you\n"
+								"  use this storage method, you will need to run `SMBUTIL P` on this\n"
+								"  message base periodically or it will continually use up disk space.\n"
+								"`Hyper Allocation` is the fastest storage method because it does not\n"
+								"  maintain allocation files at all. Once a message base is setup to use\n"
+								"  this storage method, it should not be changed without first deleting\n"
+								"  the message base data files in your `DATA\\DIRS\\SUBS` directory for this\n"
+								"  sub-board. You must use `SMBUTIL P` as with the fast allocation method.\n"
+							;
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Storage Method",opt);
 							if(n==-1)
@@ -1296,36 +1252,33 @@ by entering the conference number you want to use.
 							}
 							break;
 						case 2:
-							SETHELP(WHERE);
-/*
-`Sub-board Storage Directory:`
-
-Use this if you wish to place the data directory for this sub-board on
-another drive or in another directory besides the default setting.
-*/
+							uifc.helpbuf=
+								"`Sub-board Storage Directory:`\n"
+								"\n"
+								"Use this if you wish to place the data directory for this sub-board on\n"
+								"another drive or in another directory besides the default setting.\n"
+							;
 							uifc.input(WIN_MID|WIN_SAV,0,17,"Directory"
 								,cfg.sub[i]->data_dir,sizeof(cfg.sub[i]->data_dir)-1,K_EDIT);
 							break; 
 						case 3:
-							SETHELP(WHERE);
-/*
-`Sub-board Semaphore File:`
-
-This is a filename that will be created as a semaphore (signal) to an
-external program or event whenever a message is posted in this sub-board.
-*/
+							uifc.helpbuf=
+								"`Sub-board Semaphore File:`\n"
+								"\n"
+								"This is a filename that will be created as a semaphore (signal) to an\n"
+								"external program or event whenever a message is posted in this sub-board.\n"
+							;
 							uifc.input(WIN_MID|WIN_SAV,0,17,"Semaphore File"
 								,cfg.sub[i]->post_sem,sizeof(cfg.sub[i]->post_sem)-1,K_EDIT);
 							break; 
 						case 4:
-							SETHELP(WHERE);
-/*
-`Sub-board Pointer Index:`
-
-You should normally have no reason to modify this value. If you get
-crossed-up or duplicate ptridx values, then you may want to adjust
-this value, but do so with great care and trepidation.
-*/
+							uifc.helpbuf=
+								"`Sub-board Pointer Index:`\n"
+								"\n"
+								"You should normally have no reason to modify this value. If you get\n"
+								"crossed-up or duplicate ptridx values, then you may want to adjust\n"
+								"this value, but do so with great care and trepidation.\n"
+							;
 							sprintf(str,"%u",cfg.sub[i]->ptridx);
 							if(uifc.input(WIN_MID|WIN_SAV,0,17
 								,"Pointer File Index (Danger!)"
