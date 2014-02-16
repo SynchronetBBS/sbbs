@@ -271,11 +271,6 @@ int main(int argc, char **argv)
 		else 
 	   		sprintf(str,"%s../exec",cfg.ctrl_dir);
 	}
-	FULLPATH(uifc.helpdatfile,str,sizeof(uifc.helpdatfile));
-	backslash(uifc.helpdatfile);
-	SAFECOPY(uifc.helpixbfile,uifc.helpdatfile);
-	strcat(uifc.helpdatfile,"scfghelp.dat");
-	strcat(uifc.helpixbfile,"scfghelp.ixb");
 
 	sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
 	if(uifc.scrn(str)) {
@@ -283,14 +278,6 @@ int main(int argc, char **argv)
 		bail(1);
 	}
 
-	if(!fexist(uifc.helpdatfile)) {
-		sprintf(errormsg,"Help file (%s) missing!",uifc.helpdatfile);
-		uifc.msg(errormsg);
-	}
-	if(!fexist(uifc.helpixbfile)) {
-		sprintf(errormsg,"Help file (%s) missing!",uifc.helpixbfile);
-		uifc.msg(errormsg);
-	}
 	sprintf(str,"%smain.cnf",cfg.ctrl_dir);
 	if(!fexist(str)) {
 		sprintf(errormsg,"Main configuration file (%s) missing!",str);
