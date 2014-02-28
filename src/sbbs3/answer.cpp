@@ -52,7 +52,7 @@ bool sbbs_t::answer()
 	useron.number=0;
 	answertime=logontime=starttime=now=time(NULL);
 	/* Caller ID is IP address */
-	SAFECOPY(cid,client_ipaddr);
+	SAFECOPY(cid,inet_ntoa(client_addr.sin_addr));
 
 	memset(&tm,0,sizeof(tm));
     localtime_r(&now,&tm); 
