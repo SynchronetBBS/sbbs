@@ -43,7 +43,8 @@ extern "C" void client_on(SOCKET sock, client_t* client, BOOL update);
 bool sbbs_t::answer()
 {
 	char	str[MAX_PATH+1],str2[MAX_PATH+1],c;
-	char 	tmp[MAX_PATH+1];
+	char 	tmp[(MAX_PATH > CRYPT_MAX_TEXTSIZE ? MAX_PATH:CRYPT_MAX_TEXTSIZE)+1];
+	char 	tmpname[CRYPT_MAX_TEXTSIZE+1];
 	char 	path[MAX_PATH+1];
 	int		i,l,in;
 	struct tm tm;
@@ -51,7 +52,7 @@ bool sbbs_t::answer()
 	useron.number=0;
 	answertime=logontime=starttime=now=time(NULL);
 	/* Caller ID is IP address */
-	SAFECOPY(cid,inet_ntoa(client_addr.sin_addr)); 
+	SAFECOPY(cid,client_ipaddr);
 
 	memset(&tm,0,sizeof(tm));
     localtime_r(&now,&tm); 
@@ -190,19 +191,19 @@ bool sbbs_t::answer()
 #ifdef USE_CRYPTLIB
 	if(sys_status&SS_SSH) {
 		pthread_mutex_lock(&ssh_mutex);
-		cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, rlogin_name, &i);
-		rlogin_name[i]=0;
-		cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, rlogin_pass, &i);
+		cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, tmpname, &i);
+		tmpname[i]=0;
+		SAFECOPY(rlogin_name, tmpname);
+		cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, tmp, &i);
+		tmp[i]=0;
+		SAFECOPY(rlogin_pass, tmp);
 		pthread_mutex_unlock(&ssh_mutex);
-		rlogin_pass[i]=0;
 		lprintf(LOG_DEBUG,"Node %d SSH login: '%s'"
-			,cfg.node_num, rlogin_name);
-		useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name);
+			,cfg.node_num, tmpname);
+		useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, tmpname);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
 			useron.misc&=~TERM_FLAGS;
-			SAFECOPY(tmp
-				,rlogin_pass);
 			for(i=0;i<3;i++) {
 				if(stricmp(tmp,useron.pass)) {
 					badlogin(useron.alias, tmp);
