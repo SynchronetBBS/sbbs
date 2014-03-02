@@ -14,7 +14,6 @@ gameroot = gameroot.replace(/[^\/\\]*$/,"");
 
 load("graphic.js");
 load("sbbsdefs.js")
-load("helpfile.js");
 load("funclib.js");
  
 var oldpass=console.ctrl_key_passthru;
@@ -237,7 +236,7 @@ function cells()
 				}
 				if(t || b)
 				{
-					if(x==79 && line==24) break;
+					if(x==console.screen_columns-1 && line==console.screen_rows) break;
 					console.gotoxy(x+1,line);
 					if(!b)
 					{

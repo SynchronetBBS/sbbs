@@ -15,7 +15,6 @@ var game_id = "boggle";
 
 load("graphic.js");
 load("sbbsdefs.js");
-load("helpfile.js");
 load("funclib.js");
 load("calendar.js");
 load(root + "timer.js");
