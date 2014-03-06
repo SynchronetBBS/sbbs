@@ -135,6 +135,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* name, char* passwd)
 		p++;	// Add NULL
 		l=p-(char*)buf;
 		sendsocket(remote_socket,(char*)buf,l);
+		mode|=TG_NOLF;	/* Send LF (to remote host) when Telnet client sends CRLF (when not in binary mode) */
 	}
 
 	/* This is required for gating to Unix telnetd */
@@ -194,10 +195,10 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* name, char* passwd)
 					attr(LIGHTGRAY);
 					console=save_console;
 				}
-				else if(*buf<' ' && mode&TG_CTRLKEYS)
+				else if(*buf<' ' && (mode&TG_CTRLKEYS))
 					handle_ctrlkey(*buf, K_NONE);
 				gotline=false;
-				if(mode&TG_LINEMODE && buf[0]!='\r') {
+				if((mode&TG_LINEMODE) && buf[0]!='\r') {
 					ungetkey(buf[0]);
 					l=K_CHAT;
 					if(!(mode&TG_ECHO))
@@ -209,14 +210,14 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* name, char* passwd)
 					rd+=2;
 					gotline=true;
 				}
-				if(mode&TG_CRLF && buf[rd-1]=='\r')
+				if((mode&TG_CRLF) && buf[rd-1]=='\r')
 					buf[rd++]='\n';
-				else if(mode&TG_NOLF && buf[rd-1]=='\n')
+				else if((mode&TG_NOLF) && buf[rd-1]=='\n')
 					rd--;
 				if(!gotline && (mode&TG_ECHO) && rd) {
 					RingBufWrite(&outbuf,buf,rd);
 				}
-			}
+			} /* Not Telnet Binary mode */
 			if(rd > 0) {
 				for(attempts=0;attempts<60 && online; attempts++) /* added retry loop here, Jan-20-2003 */
 				{
