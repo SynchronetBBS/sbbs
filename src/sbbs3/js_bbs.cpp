@@ -2632,7 +2632,7 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 	char*		addr;
 	char*		alias=NULL;
 	char*		pass=NULL;
-	bool		fail;
+	bool		fail = false;
 	int32		mode = 0;
 	JSString*	js_addr;
 	JSString*	js_alias;
@@ -2681,22 +2681,16 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	
-	if(fail == true) {
-		lprintf(LOG_NOTICE,"fail!");
-		free(addr);
-		free(alias);
-		free(pass);
-		return JS_FALSE;
+	if(!fail) {
+		rc=JS_SUSPENDREQUEST(cx);
+		sbbs->telnet_gate(addr,mode|TG_RLOGIN,alias,pass);
+		JS_RESUMEREQUEST(cx, rc);
 	}
-
-	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->telnet_gate(addr,mode|TG_RLOGIN,alias,pass);
-	free(addr);
-	free(alias);
-	free(pass);
-	JS_RESUMEREQUEST(cx, rc);
+	FREE_AND_NULL(addr);
+	FREE_AND_NULL(alias);
+	FREE_AND_NULL(pass);
 	
-	return(JS_TRUE);
+	return(fail ? JS_FALSE : JS_TRUE);
 }
 
 static JSBool
