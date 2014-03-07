@@ -153,6 +153,16 @@ function IsSSHEnabled() {
 	return (FBBSOptions.indexOf("ALLOW_SSH") !== -1);
 }
 
+function StringToBytes(InLine) {
+	var Result = [];
+
+	for (var i = 0; i < InLine.length; i++) {
+		Result.push(InLine.charCodeAt(i));
+	}
+
+	return Result;
+}
+
 function UsingSecondRLoginName() {
 	GetSBBSIniValues();
 	return (FBBSOptions.indexOf("USE_2ND_RLOGIN") !== -1);
