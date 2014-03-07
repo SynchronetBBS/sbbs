@@ -377,14 +377,17 @@ int DLLCALL nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size,
 
 	if(result==SOCKET_ERROR
 		&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
-		fd_set		socket_set;
+		fd_set		wsocket_set;
+		fd_set		esocket_set;
 		struct		timeval tv;
 		socklen_t	optlen=sizeof(result);
 		tv.tv_sec = timeout;
 		tv.tv_usec = 0;
-		FD_ZERO(&socket_set);
-		FD_SET(sock,&socket_set);
-		if(select(sock+1,NULL,&socket_set,NULL,&tv)==1)
+		FD_ZERO(&wsocket_set);
+		FD_SET(sock,&wsocket_set);
+		FD_ZERO(&esocket_set);
+		FD_SET(sock,&esocket_set);
+		if(select(sock+1,NULL,&wsocket_set,&esocket_set,&tv)==1)
 			getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen);
 	}
 	return result;
