@@ -11,7 +11,7 @@ options=load("modopts.js","newuser");
 
 qnet=false;
 
-if(bbs.sys_status&SS_RLOGIN)
+if(options && (bbs.sys_status&SS_RLOGIN))
 	options.ask_qnet=false;
 
 console.clear();
