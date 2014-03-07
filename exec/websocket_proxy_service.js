@@ -86,54 +86,58 @@ try {
             // Check which port was requested
             if (Port == 23) {
                 log(LOG_INFO, "Re-directing to " + Host + ":" + Port);
-                SendToWebSocketClient("Re-directing to telnet server...".split(""));
+                SendToWebSocketClient(StringToBytes("Re-directing to " + Host + ":" + Port + "\r\n"));
 
-        // Connect to the local synchronet server
-        FServerSocket = new Socket();
-        if (FServerSocket.connect(Host, Port)) {
-            // Variables we'll use in the loop
-            var DoYield = true;
-            var ClientData = [];
-            var ServerData = [];
+                // Connect to the local synchronet server
+                FServerSocket = new Socket();
+                if (FServerSocket.connect(Host, Port)) {
+                    // Variables we'll use in the loop
+                    var DoYield = true;
+                    var ClientData = [];
+                    var ServerData = [];
 
-            // Loop while we're still connected on both ends
-            while ((client.socket.is_connected) && (FServerSocket.is_connected)) {
-            // Should we yield or not (default true, but disable if we had line activity)
-            DoYield = true;
+                    // Loop while we're still connected on both ends
+                    while ((client.socket.is_connected) && (FServerSocket.is_connected)) {
+                        // Should we yield or not (default true, but disable if we had line activity)
+                        DoYield = true;
 
-            // Check if the client sent anything
-            ClientData = GetFromWebSocketClient();
-            if (ClientData.length > 0) {
-                SendToTelnetServer(ClientData);
-                DoYield = false;
-            }
+                        // Check if the client sent anything
+                        ClientData = GetFromWebSocketClient();
+                        if (ClientData.length > 0) {
+                            SendToTelnetServer(ClientData);
+                            DoYield = false;
+                        }
 
-            // Check if the server sent anything
-            ServerData = GetFromTelnetServer();
-            if (ServerData.length > 0) {
-                SendToWebSocketClient(ServerData);
-                DoYield = false;
-            }
+                        // Check if the server sent anything
+                        ServerData = GetFromTelnetServer();
+                        if (ServerData.length > 0) {
+                            SendToWebSocketClient(ServerData);
+                            DoYield = false;
+                        }
 
-            // Yield if we didn't transfer any data
-            if (DoYield) {
-                mswait(10);
-                yield();
-            }
-            }
-            if (!client.socket.is_connected) log(LOG_DEBUG, 'Client socket no longer connected');
-            if (!FServerSocket.is_connected) log(LOG_DEBUG, 'Server socket no longer connected');
-        } else {
-            // FServerSocket.connect() failed
-            log(LOG_ERR, "Unable to connect to telnet server");
-            SendToWebSocketClient("Unable to connect to telnet server".split(""));
-            mswait(2500);
-        }
+                        // Yield if we didn't transfer any data
+                        if (DoYield) {
+                            mswait(10);
+                            yield();
+                        }
+                    }
+                    if (!client.socket.is_connected) log(LOG_DEBUG, 'Client socket no longer connected');
+                    if (!FServerSocket.is_connected) log(LOG_DEBUG, 'Server socket no longer connected');
+                } else {
+                    // FServerSocket.connect() failed
+                    log(LOG_ERR, "Unable to connect to telnet server");
+                    SendToWebSocketClient(StringToBytes("ERROR: Unable to connect to '" + Host + ":" + Port + "'\r\n"));
+                    mswait(2500);
+                }
             } else {
                 log(LOG_ERR, "Port " + Port + " was requested and denied");
+                SendToWebSocketClient(StringToBytes("ERROR: Only connections to port 23 are allowed by this proxy\r\n"));
+                mswait(2500);
             }
-    } else {
-            log(LOG_ERR, "No Host:Port was specified");
+        } else {
+            log(LOG_ERR, "No Host:Port was specified (got '" + HostAndPort + "')");
+            SendToWebSocketClient(StringToBytes("ERROR: No Host:Port was specified (got '" + HostAndPort + "')\r\n"));
+            mswait(2500);
         }
     } else {
         log(LOG_ERR, "ShakeHands() failed");
@@ -588,7 +592,7 @@ function ShakeHandsVersion7() {
                        "Upgrade: websocket\r\n" +
                        "Connection: Upgrade\r\n" +
                        "Sec-WebSocket-Accept: " + Encoded + "\r\n";
-        if ('SubProtocol' in FWebSocketHeader) Response += "Sec-WebSocket-Protocol: " + FWebSocketHeader['SubProtocol'] + "\r\n";
+        if ('SubProtocol' in FWebSocketHeader) Response += "Sec-WebSocket-Protocol: plain\r\n"; // Only sub-protocol we support
         Response += "\r\n";
 
         // Send the response and return
