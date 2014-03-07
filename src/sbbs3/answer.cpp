@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -97,24 +97,24 @@ bool sbbs_t::answer()
 				terminal[i]=in;
 			}
 			terminal[i]=0;
-			truncstr(terminal,"/");
 			lprintf(LOG_DEBUG,"Node %d RLogin: '%.*s' / '%.*s' / '%s'"
 				,cfg.node_num
 				,LEN_ALIAS*2,str
 				,LEN_ALIAS*2,str2
 				,terminal);
-			SAFECOPY(rlogin_name
-				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
-			SAFECOPY(rlogin_pass
-				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str : str2);
+			SAFECOPY(rlogin_term, terminal);
+			SAFECOPY(rlogin_name, str2);
+			SAFECOPY(rlogin_pass, str);
+			/* Truncate terminal speed (e.g. "/57600") from terminal-type string 
+			   (but keep full terminal type/speed string in rlogin_term): */
+			truncstr(terminal,"/");	
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
 				useron.misc&=~TERM_FLAGS;
 				SAFEPRINTF(path,"%srlogin.cfg",cfg.ctrl_dir);
 				if(!findstr(client.addr,path)) {
-					SAFECOPY(tmp
-						,rlogin_pass);
+					SAFECOPY(tmp, rlogin_pass);
 					for(i=0;i<3;i++) {
 						if(stricmp(tmp,useron.pass)) {
 							badlogin(useron.alias, tmp);

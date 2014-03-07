@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -167,7 +167,7 @@ static struct init_field {
 #define BBS_OPT_DEBUG_TELNET		(1<<3)	/* Debug telnet commands			*/
 #define BBS_OPT_SYSOP_AVAILABLE		(1<<4)	/* Available for chat				*/
 #define BBS_OPT_ALLOW_RLOGIN		(1<<5)	/* Allow logins via BSD RLogin		*/
-#define BBS_OPT_USE_2ND_RLOGIN		(1<<6)	/* Use 2nd username in BSD RLogin	*/
+#define BBS_OPT_USE_2ND_RLOGIN		(1<<6)	/* Use 2nd username in BSD RLogin - DEPRECATED (Always enabled)	*/
 #define BBS_OPT_NO_QWK_EVENTS		(1<<7)	/* Don't run QWK-related events		*/
 #define BBS_OPT_NO_TELNET_GA		(1<<8)	/* Don't send periodic Telnet GAs	*/
 #define BBS_OPT_NO_EVENTS			(1<<9)	/* Don't run event thread			*/
@@ -191,7 +191,6 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_DEBUG_TELNET			,"DEBUG_TELNET"			},
 	{ BBS_OPT_SYSOP_AVAILABLE		,"SYSOP_AVAILABLE"		},
 	{ BBS_OPT_ALLOW_RLOGIN			,"ALLOW_RLOGIN"			},
-	{ BBS_OPT_USE_2ND_RLOGIN		,"USE_2ND_RLOGIN"		},
 	{ BBS_OPT_NO_QWK_EVENTS			,"NO_QWK_EVENTS"		},
 	{ BBS_OPT_NO_TELNET_GA			,"NO_TELNET_GA"			},
 	{ BBS_OPT_NO_EVENTS				,"NO_EVENTS"			},

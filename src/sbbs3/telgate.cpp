@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "telnet.h" 
 
-void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* name, char* passwd)
+void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* client_user_name, char* server_user_name, char* term_type)
 {
 	char*	p;
 	uchar	buf[512];
@@ -121,17 +121,14 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* name, char* passwd)
 	if(mode&TG_RLOGIN) {
 		p=(char*)buf;
 		*(p++)=0;
-		p+=sprintf(p,"%s",name==NULL ? useron.alias : name);
+		p+=sprintf(p,"%s",client_user_name==NULL ? useron.alias : client_user_name);
 		p++;	// Add NULL
-		if(passwd!=NULL)
-			p+=sprintf(p,"%s",passwd);
-		else if(mode&TG_SENDPASS) {
-			p+=sprintf(p,"%s",useron.pass);
-		} else {
-			p+=sprintf(p,"%s",useron.name);
-		}
+		p+=sprintf(p,"%s",server_user_name==NULL ? useron.name : server_user_name);
 		p++;	// Add NULL
-		p+=sprintf(p,"%s/57600",terminal);
+		if(term_type!=NULL)
+			p+=sprintf(p,"%s",term_type);
+		else
+			p+=sprintf(p,"%s/%u",terminal, cur_rate);
 		p++;	// Add NULL
 		l=p-(char*)buf;
 		sendsocket(remote_socket,(char*)buf,l);

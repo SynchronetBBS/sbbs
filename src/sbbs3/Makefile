@@ -23,7 +23,7 @@ CFLAGS = $(CFLAGS) -DJAVASCRIPT
 !ifdef JSINCLUDE
 	CFLAGS = $(CFLAGS) -I$(JSINCLUDE)
 !else
-	CFLAGS = $(CFLAGS) -I$(SRC_ROOT)\..\include\mozilla\js
+	CFLAGS = $(CFLAGS) -I$(SRC_ROOT)\..\lib\js\win32\include\js
 !endif
 !ifdef NSPRINCLUDE
 	CFLAGS = $(CFLAGS) -I$(NSPRINCLUDE)

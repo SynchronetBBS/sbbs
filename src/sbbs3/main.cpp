@@ -2941,6 +2941,7 @@ sbbs_t::sbbs_t(ushort node_num, SOCKADDR_IN addr, const char* name, SOCKET sd,
 	terminal[0]=0;
 	rlogin_name[0]=0;
 	rlogin_pass[0]=0;
+	rlogin_term[0]=0;
 
 	/* Init some important variables */
 
