@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -111,8 +111,6 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
 
     RLoginEnabledCheckBox->Checked
         =MainForm->bbs_startup.options&BBS_OPT_ALLOW_RLOGIN;
-    RLogin2ndNameCheckBox->Checked
-        =MainForm->bbs_startup.options&BBS_OPT_USE_2ND_RLOGIN;
     SshEnabledCheckBox->Checked
         =MainForm->bbs_startup.options&BBS_OPT_ALLOW_SSH;
 
@@ -242,10 +240,6 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->bbs_startup.options|=BBS_OPT_ALLOW_RLOGIN;
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_ALLOW_RLOGIN;
-	if(RLogin2ndNameCheckBox->Checked==true)
-    	MainForm->bbs_startup.options|=BBS_OPT_USE_2ND_RLOGIN;
-    else
-	    MainForm->bbs_startup.options&=~BBS_OPT_USE_2ND_RLOGIN;
 
 	if(SshEnabledCheckBox->Checked==true)
     	MainForm->bbs_startup.options|=BBS_OPT_ALLOW_SSH;
@@ -281,7 +275,6 @@ void __fastcall TTelnetCfgDlg::RLoginEnabledCheckBoxClick(TObject *Sender)
     RLoginPortEdit->Enabled = RLoginEnabledCheckBox->Checked;
     RLoginInterfaceEdit->Enabled = RLoginEnabledCheckBox->Checked;
     RLoginIPallowButton->Enabled = RLoginEnabledCheckBox->Checked;
-    RLogin2ndNameCheckBox->Enabled = RLoginEnabledCheckBox->Checked;
     RLoginPortLabel->Enabled = RLoginEnabledCheckBox->Checked;
     RLoginInterfaceLabel->Enabled = RLoginEnabledCheckBox->Checked;
 }

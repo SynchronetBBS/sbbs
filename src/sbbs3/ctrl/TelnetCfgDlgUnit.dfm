@@ -271,23 +271,12 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 76
         Width = 103
         Height = 26
-        Hint = 'IP addresses of trusted hosts to allow RLogins from'
+        Hint = 'IP addresses of trusted hosts to allow unauthenticed RLogins from'
         Caption = 'Allowed IPs'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
         OnClick = RLoginIPallowButtonClick
-      end
-      object RLogin2ndNameCheckBox: TCheckBox
-        Left = 9
-        Top = 76
-        Width = 169
-        Height = 26
-        Hint = 'Use 2nd RLogin account name for the BBS user name'
-        Caption = 'Use 2nd Login Name'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 3
       end
     end
     object SshTabSheet: TTabSheet
