@@ -33,7 +33,11 @@ for(var c=0; c<10; c++) {
 	console.print("\r\nNN:\b\b\bLogin: \1w");
 
 	// Get login string
-	var str=console.getstr(/* maximum user name length: */ LEN_ALIAS
+	var str;
+	if(bbs.rlogin_name.length)
+		print(str=bbs.rlogin_name);
+	else
+		str=console.getstr(/* maximum user name length: */ LEN_ALIAS
 						 , /* getkey/str mode flags: */ K_UPRLWR | K_TAB | K_ANSI_CPR);
 	truncsp(str);
 	if(!str.length) // blank
@@ -53,6 +57,7 @@ for(var c=0; c<10; c++) {
 		exit();
 	}
 	console.clearkeybuffer();	// Clear pending input (e.g. mistyped system password)
+	bbs.rlogin_name='';		// Clear user/login name (if supplied via protocol)
 	if(options && options.email_passwords) {
 		var usernum = system.matchuser(str);
 		if(usernum) {
