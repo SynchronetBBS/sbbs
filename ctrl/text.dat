@@ -401,7 +401,7 @@
 "\1_\1b\1h[\1cû\1b] \1yEnter your full name or alias: \1w"     338 EnterYourAlias
 "\1_\1b\1h[\1cû\1b] \1yEnter your full real name: \1w"         339 EnterYourRealName
 "\1_\1b\1h[\1cû\1b] \1yEnter your company name: \1w"           340 EnterYourCompany
-"\1_\1b\1h[\1cû\1b] \1yEnter your chat handle: \1w"            341 EnterYourHandle
+"\1_\1b\1h[\1cû\1b] \1yEnter your handle or call-sign: \1w"    341 EnterYourHandle
 "\1_\1b\1h[\1cû\1b] \1yEnter your sex (M/F): \1w"              342 EnterYourSex
 "\1_\1b\1h[\1cû\1b] \1yEnter your street address: \1w"         343 EnterYourAddress
 "\1_\1b\1h[\1cû\1b] \1yEnter your voice phone number: \1w"     344 EnterYourPhoneNumber
