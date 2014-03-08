@@ -393,7 +393,8 @@ bool sbbs_t::answer()
 	SAFECOPY(useron.comp,client_name);
 
 	if(!useron.number && rlogin_name[0]!=0 && !(cfg.sys_misc&SM_CLOSED) && !matchuser(&cfg, rlogin_name, /* Sysop alias: */FALSE)) {
-		CRLF;
+		lprintf(LOG_INFO,"Node %d UNKNOWN %s-specified USERNAME: %s, starting new user signup",cfg.node_num,client.protocol,rlogin_name);
+		bprintf("%s: %s\r\n", text[UNKNOWN_USER], rlogin_name);
 		newuser();
 	}
 
