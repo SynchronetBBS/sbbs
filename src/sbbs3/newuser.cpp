@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -187,11 +187,7 @@ BOOL sbbs_t::newuser()
 		else
 			useron.misc&=~NO_EXASCII;
 
-#ifdef USE_CRYPTLIB
-		if((sys_status&SS_RLOGIN || sys_status&SS_SSH) && rlogin_name[0])
-#else
-		if(sys_status&SS_RLOGIN && rlogin_name[0])
-#endif
+		if(rlogin_name[0])
 			SAFECOPY(useron.alias,rlogin_name);
 
 		while(online) {
@@ -306,7 +302,7 @@ BOOL sbbs_t::newuser()
 				break; 
 		}
 		if(!online) return(FALSE);
-		while(!(sys_status&SS_RLOGIN) && !(cfg.uq&UQ_NONETMAIL) && online) {
+		while(!(cfg.uq&UQ_NONETMAIL) && online) {
 			bputs(text[EnterNetMailAddress]);
 			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
 				&& !trashcan(useron.netmail,"email"))

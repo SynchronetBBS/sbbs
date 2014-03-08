@@ -363,8 +363,7 @@ bool sbbs_t::logon()
 						break; 
 				} 
 			}
-			if(!(sys_status&SS_RLOGIN) 
-				&& !(cfg.uq&UQ_NONETMAIL) && !useron.netmail[0]) {
+			if(!(cfg.uq&UQ_NONETMAIL) && !useron.netmail[0]) {
 				while(online) {
 					bputs(text[EnterNetMailAddress]);
 					if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)

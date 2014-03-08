@@ -73,7 +73,6 @@ bool sbbs_t::answer()
 
 	online=ON_REMOTE;
 
-	rlogin_name[0]=0;
 	if(sys_status&SS_RLOGIN) {
 		if(incom(1000)==0) {
 			for(i=0;i<(int)sizeof(str)-1;i++) {
@@ -184,9 +183,7 @@ bool sbbs_t::answer()
 		request_telnet_opt(TELNET_DO,TELNET_TERM_SPEED);
 		request_telnet_opt(TELNET_DO,TELNET_SEND_LOCATION);
 		request_telnet_opt(TELNET_DO,TELNET_NEGOTIATE_WINDOW_SIZE);
-#ifdef SBBS_TELNET_ENVIRON_SUPPORT
 		request_telnet_opt(TELNET_DO,TELNET_NEW_ENVIRON);
-#endif
 	}
 #ifdef USE_CRYPTLIB
 	if(sys_status&SS_SSH) {
@@ -349,7 +346,7 @@ bool sbbs_t::answer()
 
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)
-		&& startup->options&BBS_OPT_AUTO_LOGON && cid[0]) {
+		&& (startup->options&BBS_OPT_AUTO_LOGON) && cid[0]) {
 		useron.number=userdatdupe(0, U_NOTE, LEN_NOTE, cid);
 		if(useron.number) {
 			getuserdat(&cfg, &useron);
@@ -395,7 +392,7 @@ bool sbbs_t::answer()
 	useron.misc|=autoterm;
 	SAFECOPY(useron.comp,client_name);
 
-	if(!useron.number && sys_status&SS_RLOGIN) {
+	if(!useron.number && rlogin_name[0]!=0 && !(cfg.sys_misc&SM_CLOSED) && !matchuser(&cfg, rlogin_name, /* Sysop alias: */FALSE)) {
 		CRLF;
 		newuser();
 	}

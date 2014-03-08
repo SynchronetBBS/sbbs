@@ -51,6 +51,7 @@
 	#endif
 #endif
 
+#define SBBS_TELNET_ENVIRON_SUPPORT 1
 //---------------------------------------------------------------------------
 
 #define TELNET_SERVER "Synchronet Terminal Server"
@@ -1312,17 +1313,34 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 						BYTE*	p;
 						BYTE*   end=sbbs->telnet_cmd+(sbbs->telnet_cmdlen-2);
 						for(p=sbbs->telnet_cmd+4; p < end; ) {
-							if(*p==TELNET_ENVIRON_VAR) {
-								char tmp[128];
-								p++;
-								c_escape_str((char*)p,tmp,sizeof(tmp),TRUE);
-								lprintf(LOG_DEBUG,"Node %d %s telnet environment var/val: %.*s (%s)"
-	                				,sbbs->cfg.node_num
-									,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
-									,end-p
-									,p
-									,tmp);
-								p+=strlen((char*)p);
+							if(*p==TELNET_ENVIRON_VAR || *p==TELNET_ENVIRON_USERVAR) {
+								BYTE type=*p++;
+								char* name=(char*)p;
+								/* RFC 1572: The characters following a "type" up to the next "type" or VALUE specify the variable name. */
+								while(p < end) {
+									if(*p==TELNET_ENVIRON_VAR || *p==TELNET_ENVIRON_USERVAR || *p == TELNET_ENVIRON_VALUE)
+										break;
+									p++;
+								}
+								if(p < end) {
+									char* value=(char*)p+1;
+									*(p++)=0;
+									while(p < end) {
+										if(*p==TELNET_ENVIRON_VAR || *p==TELNET_ENVIRON_USERVAR || *p == TELNET_ENVIRON_VALUE)
+											break;
+										p++;
+									}
+									*p=0;
+									lprintf(LOG_DEBUG,"Node %d %s telnet %s environment variable '%s' = '%s'"
+	                					,sbbs->cfg.node_num
+										,type==TELNET_ENVIRON_VAR ? "well-known" : "user-defined"
+										,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+										,name
+										,value);
+									if(strcmp(name,"USER") == 0) {
+										SAFECOPY(sbbs->rlogin_name, value);
+									}
+								}
 							} else
 								p++;
 						}
@@ -1439,9 +1457,9 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 									,sbbs->cfg.node_num);
 
 							char	buf[64];
-							int len=sprintf(buf,"%c%c%c%c%c%c%c"
+							int len=sprintf(buf,"%c%c%c%c%c%c"
 								,TELNET_IAC,TELNET_SB
-								,TELNET_NEW_ENVIRON,TELNET_ENVIRON_SEND,TELNET_ENVIRON_VAR
+								,TELNET_NEW_ENVIRON,TELNET_ENVIRON_SEND //,TELNET_ENVIRON_VAR
 								,TELNET_IAC,TELNET_SE);
 							sbbs->putcom(buf,len);
 						}
