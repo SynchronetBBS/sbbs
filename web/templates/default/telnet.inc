@@ -7,7 +7,7 @@
 <TABLE>
 <TR ALIGN=CENTER><TD COLSPAN=2>
 <!-- Here begins the applet code -->
-<APPLET ARCHIVE="classes.zip" CODE="appWrapper.class" WIDTH=590 HEIGHT=430>
+<APPLET ARCHIVE="classes.zip" CODE="appWrapper.class" WIDTH=800 HEIGHT=600>
   <PARAM NAME=applet      VALUE="telnet">
 
   <!-- optional (WIDTH and HEIGHT should be changed!) -->
