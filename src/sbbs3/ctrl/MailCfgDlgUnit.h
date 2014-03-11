@@ -147,6 +147,10 @@ __published:
     TEdit *SubPortEdit;
     TCheckBox *DebugHeadersCheckBox;
     TCheckBox *UseSubPortCheckBox;
+    TLabel *MaxMsgsLabel;
+    TEdit *MaxMsgsWaitingEdit;
+    TLabel *ConnectTimeoutLabel;
+    TEdit *ConnectTimeoutEdit;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
