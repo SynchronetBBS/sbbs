@@ -132,12 +132,14 @@ BOOL DLLCALL listFree(link_list_t* list)
 	if(list->flags&LINK_LIST_MUTEX) { 
 		while(pthread_mutex_destroy((pthread_mutex_t*)&list->mutex)==EBUSY) 
 			SLEEP(1);
+		list->flags&=~LINK_LIST_MUTEX;
 	}
 
 	if(list->flags&LINK_LIST_SEMAPHORE) {
 		while(sem_destroy(&list->sem)==-1 && errno==EBUSY)
 			SLEEP(1);
 		//list->sem=(sem_t)NULL; /* Removed 08-20-08 - list->sem is never checked and this causes an error with gcc 4.1.2 (ThetaSigma) */
+		list->flags&=~LINK_LIST_SEMAPHORE;
 	}
 #endif
 
