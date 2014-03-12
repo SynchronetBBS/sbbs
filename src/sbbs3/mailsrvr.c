@@ -3276,7 +3276,8 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,"250-SOML");
 			sockprintf(socket,"250-SAML");
 			sockprintf(socket,"250-8BITMIME");
-			sockprintf(socket,"250 SIZE %lu", startup->max_msg_size);
+			if(startup->max_msg_size)
+				sockprintf(socket,"250 SIZE %lu", startup->max_msg_size);
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
