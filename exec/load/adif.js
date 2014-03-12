@@ -1184,3 +1184,14 @@ ADIF_specification.fields.QSL_SENT.enumeration=ADIF_specification.enumerations.Q
 ADIF_specification.fields.QSL_SENT_VIA.enumeration=ADIF_specification.enumerations.QSLVia;
 ADIF_specification.fields.QSO_COMPLETE.enumeration=ADIF_specification.enumerations.QSOComplete;
 ADIF_specification.fields.SUBMODE.enumeration=ADIF_specification.enumerations.Submode;
+
+function ADIF_Log(app_name, path)
+{
+	this.app_name = app_name;
+	if(this.app_name==undefined)
+		this.app_name = 'The Nameless App';
+	if(path != undefined) {
+		import_log(path);
+	}
+}
+
