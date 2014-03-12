@@ -98,6 +98,7 @@ __published:
     TCheckBox *SshEnabledCheckBox;
     TLabel *SshInterfaceLabel;
     TEdit *SshInterfaceEdit;
+        TCheckBox *DosSupportCheckBox;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);
