@@ -809,11 +809,11 @@ function parse_mime(hdrs, text)
 	// Decode message/multipart 			RFC 2046
 	if(ret.parsed['content-type'].vals[0]=="multipart") {
 		if(ret.parsed["content-type"].attrs.boundary==undefined)
-			return(undefined);
+			return({});
 		re=new RegExp("\x0d\x0a--"+ret.parsed["content-type"].attrs.boundary+"(?:--)?"+abnf.CFWS+"?\x0d\x0a","i");
 		tmp=text.split(re);
 		if(tmp.length < 2) {
-			return(undefined);
+			return({});
 		}
 		tmp.shift();
 		tmp.pop();
