@@ -1331,10 +1331,10 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 										p++;
 									}
 									*p=0;
-									lprintf(LOG_DEBUG,"Node %d %s telnet %s environment variable '%s' = '%s'"
+									lprintf(LOG_DEBUG,"Node %d telnet %s %s environment variable '%s' = '%s'"
 	                					,sbbs->cfg.node_num
-										,type==TELNET_ENVIRON_VAR ? "well-known" : "user-defined"
 										,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+										,type==TELNET_ENVIRON_VAR ? "well-known" : "user-defined"
 										,name
 										,value);
 									if(strcmp(name,"USER") == 0) {
