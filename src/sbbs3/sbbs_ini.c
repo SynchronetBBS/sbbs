@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -466,7 +466,7 @@ void sbbs_read_ini(
 		mail->max_recipients
 			=iniGetShortInt(list,section,"MaxRecipients",100);
 		mail->max_msg_size
-			=iniGetInteger(list,section,"MaxMsgSize",DEFAULT_MAX_MSG_SIZE);
+			=iniGetBytes(list,section,"MaxMsgSize",/* units: */1,DEFAULT_MAX_MSG_SIZE);
 		mail->max_msgs_waiting
 			=iniGetInteger(list,section,"MaxMsgsWaiting",DEFAULT_MAX_MSGS_WAITING);
 		mail->connect_timeout
@@ -929,7 +929,7 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetShortInt(lp,section,"MaxRecipients",mail->max_recipients,&style))
 			break;
-		if(!iniSetInteger(lp,section,"MaxMsgSize",mail->max_msg_size,&style))
+		if(!iniSetBytes(lp,section,"MaxMsgSize",/* unit: */1,mail->max_msg_size,&style))
 			break;
 		if(!iniSetInteger(lp,section,"MaxMsgsWaiting",mail->max_msgs_waiting,&style))
 			break;
