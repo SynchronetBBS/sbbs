@@ -20,7 +20,7 @@
 #define RT_UNIQUE	0
 #define RT_SHARED	1
 #define RT_SINGLE	2
-#define RT_TYPE		RT_SHARED
+#define RT_TYPE		RT_UNIQUE
 
 struct jsrt_queue {
 	JSRuntime       *rt;
@@ -37,7 +37,7 @@ struct jsrt_queue {
 #if (RT_TYPE == RT_SINGLE)
 #define JSRT_QUEUE_SIZE		1
 #else
-#define JSRT_QUEUE_SIZE		128
+#define JSRT_QUEUE_SIZE		256
 #endif
 struct jsrt_queue jsrt_queue[JSRT_QUEUE_SIZE];
 static pthread_mutex_t		jsrt_mutex;
