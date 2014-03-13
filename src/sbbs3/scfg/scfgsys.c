@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -840,6 +840,7 @@ while(1) {
 							"options available.\n"
 						;
 						j=0;
+						k=0;
                         while(1) {
                             i=0;
 							sprintf(opt[i++],"%-27.27s %-3.3s"
@@ -879,7 +880,7 @@ while(1) {
 								,"Auto Hang-up After Xfer"
 								,cfg.new_misc&AUTOHANG ? "Yes":"No");
 							opt[i][0]=0;
-							j=uifc.list(WIN_BOT|WIN_RHT,2,1,0,&j,0
+							j=uifc.list(WIN_BOT|WIN_RHT,2,1,0,&j,&k
 								,"Default Toggle Options",opt);
                             if(j==-1)
                                 break;
@@ -933,6 +934,7 @@ while(1) {
 							"user.\n"
 						;
 						j=0;
+						k=0;
                         while(1) {
                             i=0;
 							sprintf(opt[i++],"%-27.27s %-3.3s"
@@ -948,10 +950,10 @@ while(1) {
 								,"Company Name"
 								,cfg.uq&UQ_COMPANY ? "Yes":"No");
 							sprintf(opt[i++],"%-27.27s %-3.3s"
-								,"Multinode Chat Handle"
+								,"Chat Handle / Call Sign"
 								,cfg.uq&UQ_HANDLE ? "Yes":"No");
 							sprintf(opt[i++],"%-27.27s %-3.3s"
-								,"Force Unique Chat Handle"
+								,"Force Unique Handle / Call Sign"
 								,cfg.uq&UQ_DUPHAND ? "Yes":"No");
                             sprintf(opt[i++],"%-27.27s %-3.3s"
                                 ,"E-mail/NetMail Address"
@@ -986,8 +988,11 @@ while(1) {
 							sprintf(opt[i++],"%-27.27s %-3.3s"
 								,"Default Settings"
 								,cfg.uq&UQ_NODEF ? "No":"Yes");
+							sprintf(opt[i++],"%-27.27s %-3.3s"
+								,"Color Terminal"
+								,cfg.uq&UQ_COLORTERM ? "Yes":"No");
 							opt[i][0]=0;
-							j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0,&j,0
+							j=uifc.list(WIN_BOT|WIN_RHT,2,1,0,&j,&k
 								,"New User Questions",opt);
                             if(j==-1)
                                 break;
@@ -1044,6 +1049,9 @@ while(1) {
 								case 16:
 									cfg.uq^=UQ_NODEF;
                                     break;
+								case 17:
+									cfg.uq^=UQ_COLORTERM;
+									break;
 							} 
 						}
 					break; 
