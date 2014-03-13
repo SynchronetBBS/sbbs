@@ -118,7 +118,7 @@ typedef struct {
 #define LEN_SSNAME	25		/* Sub/Dir short name						*/
 #define LEN_SLNAME	40		/* Sub/Dir long name						*/
 						
-									/* User Questions						*/
+									/* User Questions (e.g. for new users)	*/
 #define UQ_ALIASES		(1L<<0) 	/* Ask for alias						*/
 #define UQ_LOCATION		(1L<<1) 	/* Ask for location 					*/
 #define UQ_ADDRESS		(1L<<2) 	/* Ask for address						*/
@@ -139,6 +139,7 @@ typedef struct {
 #define UQ_NOCOMMAS		(1L<<17)	/* Do not require commas in location	*/
 #define UQ_NONETMAIL	(1L<<18)	/* Don't ask for e-mail/netmail address	*/
 #define UQ_NOUPRLWR		(1L<<19)	/* Don't force upper/lower case strings */
+#define UQ_COLORTERM	(1L<<20)	/* Ask if new user has color terminal	*/
 						
 						
 									/* Different bits in sys_misc				*/

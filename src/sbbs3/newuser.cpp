@@ -51,20 +51,7 @@ BOOL sbbs_t::newuser()
 	long	kmode;
 	bool	usa;
 
-#if 0
-	if(cur_rate<cfg.node_minbps) {
-		bprintf(text[MinimumModemSpeed],cfg.node_minbps);
-		sprintf(str,"%stooslow.msg",cfg.text_dir);
-		if(fexist(str))
-			printfile(str,0);
-		sprintf(str,"New user modem speed: %lu<%u"
-			,cur_rate,cfg.node_minbps);
-		logline("N!",str);
-		hangup();
-		return(FALSE); 
-	}
-#endif
-
+	bputs(text[StartingNewUserRegistration]);
 	getnodedat(cfg.node_num,&thisnode,0);
 	if(thisnode.misc&NODE_LOCK) {
 		bputs(text[NodeLocked]);
@@ -175,7 +162,7 @@ BOOL sbbs_t::newuser()
 
 		if(useron.misc&ANSI) {
 			useron.rows=0;	/* Auto-rows */
-			if(useron.misc&(RIP|WIP|HTML) || text[ColorTerminalQ][0]==0 || yesno(text[ColorTerminalQ]))
+			if(!(cfg.uq&UQ_COLORTERM) || useron.misc&(RIP|WIP|HTML) || text[ColorTerminalQ][0]==0 || yesno(text[ColorTerminalQ]))
 				useron.misc|=COLOR; 
 			else
 				useron.misc&=~COLOR;

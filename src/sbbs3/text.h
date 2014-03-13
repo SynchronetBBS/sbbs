@@ -807,6 +807,7 @@ enum {
 	,OperatorPrompt
 	,AddSubToNewScanQ
 	,UnvalidatedWarning
+	,StartingNewUserRegistration
 
 	,TOTAL_TEXT
 };
