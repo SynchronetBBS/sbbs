@@ -57,10 +57,10 @@ if (!options) {
 		}
 	} else {
 		templatefile = "ftelnet_external.inc";
-		template.ClientUserName = UsingSecondRLoginName() ? user.security.password : user.alias;
-		template.ServerUserName = UsingSecondRLoginName() ? user.alias : user.security.password;
+		template.ClientUserName = user.security.password;
+		template.ServerUserName = user.alias;
 		template.TerminalType = "xtrn=" + http_request.query.code;
-		template.HostName = system.inet_addr;
+		template.HostName = system.host_name;
 		template.Port = GetRLoginPort();
 		template.ServerName = system.name;
 		template.SocketPolicyPort = GetFlashSocketPolicyServicePort();
