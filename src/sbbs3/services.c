@@ -1805,6 +1805,8 @@ void DLLCALL services_thread(void* arg)
 
 		sbbs_srand();	/* Seed random number generator */
 
+		protected_uint32_init(&threads_pending_start,0);
+
 		if(!winsock_startup()) {
 			cleanup(1);
 			return;
@@ -1863,9 +1865,10 @@ void DLLCALL services_thread(void* arg)
 
 		/* Open and Bind Listening Sockets */
 		total_sockets=0;
-		for(i=0;i<(int)services;i++) {
-
+		for(i=0;i<(int)services;i++)
 			service[i].socket=INVALID_SOCKET;
+
+		for(i=0;i<(int)services && !startup->shutdown_now;i++) {
 
 			if((socket = open_socket(
 				(service[i].options&SERVICE_OPT_UDP) ? SOCK_DGRAM : SOCK_STREAM
@@ -1941,8 +1944,6 @@ void DLLCALL services_thread(void* arg)
 			cleanup(1);
 			return;
 		}
-
-		protected_uint32_init(&threads_pending_start,0);
 
 		/* Setup static service threads */
 		for(i=0;i<(int)services;i++) {
