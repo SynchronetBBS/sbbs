@@ -26,7 +26,7 @@ if (!ftelnethelperloaded) {
 	}
 } else {
 	templatefile = "ftelnet.inc";
-	template.HostName = system.inet_addr;
+	template.HostName = system.host_name;
 	template.Port = GetTelnetPort();
 	template.ServerName = system.name;
 	template.SocketPolicyPort = GetFlashSocketPolicyServicePort();
