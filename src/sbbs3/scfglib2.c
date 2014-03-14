@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -961,6 +961,7 @@ void free_file_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->fextr);
 	}
+	cfg->total_fextrs=0;
 
 	if(cfg->fcomp!=NULL) {
 		for(i=0;i<cfg->total_fcomps;i++) {
@@ -969,6 +970,7 @@ void free_file_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->fcomp);
 	}
+	cfg->total_fcomps=0;
 
 	if(cfg->fview!=NULL) {
 		for(i=0;i<cfg->total_fviews;i++) {
@@ -977,6 +979,7 @@ void free_file_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->fview);
 	}
+	cfg->total_fviews=0;
 
 	if(cfg->ftest!=NULL) {
 		for(i=0;i<cfg->total_ftests;i++) {
@@ -985,6 +988,7 @@ void free_file_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->ftest);
 	}
+	cfg->total_ftests=0;
 
 	if(cfg->dlevent!=NULL) {
 		for(i=0;i<cfg->total_dlevents;i++) {
@@ -993,6 +997,7 @@ void free_file_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->dlevent);
 	}
+	cfg->total_dlevents=0;
 
 	if(cfg->prot!=NULL) {
 		for(i=0;i<cfg->total_prots;i++) {
@@ -1001,12 +1006,14 @@ void free_file_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->prot);
 	}
+	cfg->total_prots=0;
 
 	if(cfg->altpath!=NULL) {
 		for(i=0;i<cfg->altpaths;i++)
 			FREE_AND_NULL(cfg->altpath[i]);
 		FREE_AND_NULL(cfg->altpath);
 	}
+	cfg->altpaths=0;
 
 	if(cfg->lib!=NULL) {
 		for(i=0;i<cfg->total_libs;i++) {
@@ -1015,6 +1022,7 @@ void free_file_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->lib);
 	}
+	cfg->total_libs=0;
 
 	if(cfg->dir!=NULL) {
 		for(i=0;i<cfg->total_dirs;i++) {
@@ -1031,6 +1039,7 @@ void free_file_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->dir);
 	}
+	cfg->total_dirs=0;
 
 	if(cfg->txtsec!=NULL) {
 		for(i=0;i<cfg->total_txtsecs;i++) {
@@ -1039,6 +1048,7 @@ void free_file_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->txtsec);
 	}
+	cfg->total_txtsecs=0;
 }
 
 void free_chat_cfg(scfg_t* cfg)
@@ -1051,6 +1061,7 @@ void free_chat_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->actset);
 	}
+	cfg->total_actsets=0;
 
 	if(cfg->chatact!=NULL) {
 		for(i=0;i<cfg->total_chatacts;i++) {
@@ -1058,6 +1069,7 @@ void free_chat_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->chatact);
 	}
+	cfg->total_chatacts=0;
 
 	if(cfg->chan!=NULL) {
 		for(i=0;i<cfg->total_chans;i++) {
@@ -1066,6 +1078,7 @@ void free_chat_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->chan);
 	}
+	cfg->total_chans=0;
 
 	if(cfg->guru!=NULL) {
 		for(i=0;i<cfg->total_gurus;i++) {
@@ -1074,6 +1087,7 @@ void free_chat_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->guru);
 	}
+	cfg->total_gurus=0;
 
 	if(cfg->page!=NULL) {
 		for(i=0;i<cfg->total_pages;i++) {
@@ -1082,6 +1096,7 @@ void free_chat_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->page);
 	}
+	cfg->total_pages=0;
 
 }
 
@@ -1095,6 +1110,7 @@ void free_xtrn_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->swap);
 	}
+	cfg->total_swaps=0;
 
 	if(cfg->xedit!=NULL) {
 		for(i=0;i<cfg->total_xedits;i++) {
@@ -1103,6 +1119,7 @@ void free_xtrn_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->xedit);
 	}
+	cfg->total_xedits=0;
 
 	if(cfg->xtrnsec!=NULL) {
 		for(i=0;i<cfg->total_xtrnsecs;i++) {
@@ -1111,6 +1128,7 @@ void free_xtrn_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->xtrnsec);
 	}
+	cfg->total_xtrnsecs=0;
 
 	if(cfg->xtrn!=NULL) {
 		for(i=0;i<cfg->total_xtrns;i++) {
@@ -1120,6 +1138,7 @@ void free_xtrn_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->xtrn);
 	}
+	cfg->total_xtrns=0;
 
 	if(cfg->event!=NULL) {
 		for(i=0;i<cfg->total_events;i++) {
@@ -1127,6 +1146,7 @@ void free_xtrn_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->event);
 	}
+	cfg->total_events=0;
 
 	if(cfg->natvpgm!=NULL) {
 		for(i=0;i<cfg->total_natvpgms;i++) {
@@ -1134,4 +1154,5 @@ void free_xtrn_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->natvpgm);
 	}
+	cfg->total_natvpgms=0;
 }
