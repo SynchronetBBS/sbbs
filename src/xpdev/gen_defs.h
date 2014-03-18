@@ -175,7 +175,7 @@ typedef uint64_t	uintmax_t;
 typedef int64_t		intmax_t;
 #define _INTMAX_T_DECLARED
 
-#if !defined(HAS_STDINT_H)
+#if !defined(HAS_STDINT_H) && !defined(_UINTPTR_T_DEFINED)
 typedef uintmax_t	uintptr_t;
 typedef intmax_t	intptr_t;
 #endif
