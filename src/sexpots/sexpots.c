@@ -1290,8 +1290,19 @@ BOOL handle_call(void)
 				lprintf(LOG_WARNING,"Socket Disconnected");
 				break;
 			}
-			lprintf(LOG_ERR,"SOCKET RECV ERROR %d",ERROR_VALUE);
-			continue;
+			if(ERROR_VALUE == EAGAIN)
+				continue;
+        	else if(ERROR_VALUE == ENOTSOCK)
+   	            lprintf(LOG_WARNING,"Socket closed by peer on receive");
+       	    else if(ERROR_VALUE==ECONNRESET) 
+				lprintf(LOG_WARNING,"Connection reset by peer on receive");
+			else if(ERROR_VALUE==ESHUTDOWN)
+				lprintf(LOG_WARNING,"Socket shutdown on receive");
+       	    else if(ERROR_VALUE==ECONNABORTED) 
+				lprintf(LOG_WARNING,"Connection aborted by peer on receive");
+			else
+				lprintf(LOG_ERR,"SOCKET RECV ERROR %d",ERROR_VALUE);
+			break;
 		}
 
 		if(telnet)
