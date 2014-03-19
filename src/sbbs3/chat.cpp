@@ -1823,8 +1823,9 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 /****************************************************************************/
 bool sbbs_t::guruexp(char **ptrptr, char *line)
 {
-	char	c,*cp,str[256];
+	char	*cp,str[256];
 	int		nest;
+	unsigned c;
 	bool	result=false,_and=false,_or=false;
 	uchar	*ar;
 
