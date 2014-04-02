@@ -203,7 +203,7 @@ var CallSign={
 		if(callsign.search(/^AX/)==0)
 			return 'Australia';
 		if(callsign.search(/^A[Y-Z]/)==0)
-			return 'Argentine Repibluc';
+			return 'Argentine Republic';
 		if(callsign.search(/^A2/)==0)
 			return 'Botswana';
 		if(callsign.search(/^A3/)==0)
