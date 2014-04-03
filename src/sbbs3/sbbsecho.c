@@ -82,7 +82,7 @@ char		compiler[32];
 BOOL pause_on_exit=FALSE;
 BOOL pause_on_abend=FALSE;
 
-#ifndef __NT__
+#if !defined(_WIN32)
 #define delfile(x) remove(x)
 #else
 int delfile(char *filename)
@@ -1660,7 +1660,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 		}
 		fclose(stream);
 		if(!error)			/* remove bundles.sbe if no error occurred */		
-			remove(fname);	/* used to truncate here, August-20-2002 */
+			delfile(fname);	/* used to truncate here, August-20-2002 */
 		if(num_mfncrc)
 			free(mfncrc);
 		return(0); 
