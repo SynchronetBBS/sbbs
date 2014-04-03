@@ -940,7 +940,8 @@ var CallSign={
 			lat:match.country.lat,
 			lon:match.country.lon,
 			GMToff:match.country.GNToff,
-			prefix:match.country.prefix
+			prefix:match.country.prefix,
+			WAEDC:match.WAEDC
 		};
 		for(i in ret) {
 			if(match[i]!=undefined)
