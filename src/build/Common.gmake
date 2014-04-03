@@ -359,9 +359,6 @@ else
  endif
 endif
 
-# We use C99 now...
-CFLAGS	+=	-std=c99
-
 SHLIBOPTS   :=  -shared
 ifeq ($(os),darwin)
  MKSHLIB        :=  libtool -dynamic -framework System -lcc_dynamic
@@ -422,7 +419,7 @@ endif
 # Implicit C Compile Rule
 $(OBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(OBJODIR)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
+	$(QUIET)$(CC) -std=c99 $(CFLAGS) $(CCFLAGS) -o $@ -c $<
 
 # Implicit C++ Compile Rule
 $(OBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(OBJODIR)
@@ -432,7 +429,7 @@ $(OBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(OBJODIR)
 # Implicit MT C Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -o $@ -c $<
+	$(QUIET)$(CC) -std=c99 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
 # Implicit MT C++ Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(MTOBJODIR)
