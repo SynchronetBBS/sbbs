@@ -812,6 +812,7 @@ var CallSign={
 	},
 
 	CTYDAT:function(callsign, ctydat, ctydatfname) {
+		callsign=callsign.toUpperCase();
 		var curcty={};
 		var line;
 		var incountry=false;
@@ -820,7 +821,7 @@ var CallSign={
 			AN:'Antarctica',
 			AS:'Asia',
 			EU:'Europe',
-			NA:'North Americal',
+			NA:'North America',
 			OC:'Oceania',
 			SA:'South America'
 		};
@@ -923,7 +924,7 @@ var CallSign={
 			match = ctydat.exact[callsign];
 			matched=callsign;
 		}
-		for(var i=0; i<callsign.length && match==undefined; i++) {
+		for(var i=callsign.length; i>0 && match==undefined; i--) {
 			if(ctydat.prefix[callsign.substr(0, i)]!=undefined) {
 				match=ctydat.prefix[callsign.substr(0, i)];
 				matched=callsign.substr(0, i);
@@ -939,7 +940,7 @@ var CallSign={
 			continent:match.country.continent,
 			lat:match.country.lat,
 			lon:match.country.lon,
-			GMToff:match.country.GNToff,
+			GMToff:match.country.GMToff,
 			prefix:match.country.prefix,
 			WAEDC:match.WAEDC
 		};
