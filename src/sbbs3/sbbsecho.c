@@ -1429,6 +1429,7 @@ char* process_areafix(faddr_t addr, char* inbuf, char* password, char* to)
 			action='+';
 		SAFECOPY(str,p+l);
 		truncstr(str,"\r\n");
+		truncsp(str);	/* Remove trailing white-space, April-4-2014 */
 		switch(action) {
 			case '+':                       /* Add Area */
 				if((add_area.tag=(char **)realloc(add_area.tag
