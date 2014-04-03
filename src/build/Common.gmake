@@ -359,6 +359,9 @@ else
  endif
 endif
 
+# We use C99 now...
+CFLAGS	+=	-std=c99
+
 SHLIBOPTS   :=  -shared
 ifeq ($(os),darwin)
  MKSHLIB        :=  libtool -dynamic -framework System -lcc_dynamic
