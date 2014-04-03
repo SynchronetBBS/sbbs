@@ -554,7 +554,8 @@ void file_to_netmail(FILE *infile,char *title,faddr_t addr,char *to)
 /* Returns TRUE if area is linked with specified node address */
 BOOL area_is_linked(unsigned area_num, faddr_t* addr)
 {
-	for(unsigned i=0;i<cfg.area[area_num].uplinks;i++)
+	unsigned i;
+	for(i=0;i<cfg.area[area_num].uplinks;i++)
 		if(!memcmp(addr,&cfg.area[area_num].uplink[i],sizeof(faddr_t)))
 			return TRUE;
 	return FALSE;
@@ -627,6 +628,7 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 	FILE *stream,*tmpf;
 	char str[256],title[128],match,*p,*tp;
 	int i,j,k,x,y;
+	unsigned areas=0;
 
 	if(type == AREALIST_ALL)
 		strcpy(title,"List of Available Areas");
@@ -648,6 +650,7 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 			if(type == AREALIST_UNLINKED && !area_is_linked(i,&addr))
 				continue;
 			fprintf(tmpf,"%s\r\n",cfg.area[i].name); 
+			areas++;
 		} 
 	}
 
@@ -680,8 +683,10 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 								for(y=0;y<cfg.areas;y++)
 									if(!stricmp(cfg.area[y].name,p))
 										break;
-								if(y>=cfg.areas || !area_is_linked(y,&addr))
+								if(y>=cfg.areas || !area_is_linked(y,&addr)) {
 									fprintf(tmpf,"%s\r\n",p); 
+									areas++;
+								}
 							}
 							fclose(stream);
 							match=1;
@@ -697,6 +702,7 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 		create_netmail(to,title,"None.",addr,FALSE);
 	else
 		file_to_netmail(tmpf,title,addr,to);
+	lprintf(LOG_INFO,"Created AreaFix response netmail with %s (%u bytes, %u areas)", title, ftell(tmpf), areas);
 	fclose(tmpf);
 }
 
@@ -3518,6 +3524,8 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 		addr.net=hdr.orignet;
 		addr.node=hdr.orignode;
 		addr.point=hdr.origpoint;
+		if(cfg.log&LOG_AREAFIX)
+			logprintf(info);
 		p=process_areafix(addr,fmsgbuf,/* Password: */hdr.subj, /* To: */hdr.from);
 		if(p && cfg.notify) {
 			SAFECOPY(hdr.to,scfg.sys_op);
@@ -3531,8 +3539,6 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 		}
 		if(fmsgbuf)
 			free(fmsgbuf);
-		if(cfg.log&LOG_AREAFIX)
-			logprintf(info);
 		return(-2); 
 	}
 
