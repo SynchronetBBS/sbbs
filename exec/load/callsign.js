@@ -810,4 +810,137 @@ var CallSign={
 			return 'Trinidad and Tobago';
 		throw("No country match for "+callsign);
 	},
+
+	CTYDAT:function(callsign, ctydat, ctydatfname) {
+		var curcty={};
+		var line;
+		var incountry=false;
+		var continents={
+			AF:'Africa', 
+			AN:'Antarctica',
+			AS:'Asia',
+			EU:'Europe',
+			NA:'North Americal',
+			OC:'Oceania',
+			SA:'South America'
+		};
+
+		if(ctydatfname.length > 0) {
+			var cf = new File(ctydatfname);
+			if(ctydat.time == undefined || ctydat.time < cf.date) {
+				for(var i in ctydat) {
+					delete ctydat[i];
+				}
+				if(cf.open("rb")) {
+					ctydat.time=cf.date;
+					ctydat.prefix={};
+					ctydat.exact={};
+					ctydat.countries=[];
+					while(line=cf.readln()) {
+						line=line.replace(/[\r\n]/,'');
+						line=line.trim();
+						if(!incountry) {
+							var x=line.split(/ *[:\r\n]+ */);
+							if(x.length == 9) {
+								var continent=continents[x[3]];
+								if(continent==undefined) {
+									log("Undefined continent "+x[3]);
+									continent=x[3];
+								}
+								curcty={name:x[0], cq:x[1], itu:x[2], continent:continent, lat:x[4], lon:x[5], GMToff:x[6], prefix:x[7]};
+								if(curcty.prefix.charAt(0)=='*') {
+									curcty.prefix.replace(/^\*/, '');
+									curcty.WAEDC=true;
+								}
+								else {
+									curcty.WAEDC=false;
+								}
+								ctydat.countries.push(curcty);
+								incountry=true;
+							}
+							else {
+								log("Unable to parse country line "+line+'--'+x.toSource());
+							}
+						}
+						else {
+							if(line.search(/^[ \t]/)!=-1) {
+								log("ERROR PARSING LINE "+line);
+							}
+							if(line.search(/;$/)!=-1) {
+								incountry=false;
+							}
+							var x=line.split(/[,;]/);
+							for(var i in x) {
+								var call={country:curcty};
+								var ecallsign=x[i].replace(/^\*/,'');
+								var m=ecallsign.match(/\(([0-9]+)\)/);
+								if(m) {
+									call.cq=m[1];
+									ecallsign=ecallsign.replace(/\([0-9]+\)/,'');
+								}
+								var m=ecallsign.match(/\[([0-9]+)\]/);
+								if(m) {
+									call.itu=m[1];
+									ecallsign=ecallsign.replace(/\[[0-9]+\]/,'');
+								}
+								var m=ecallsign.match(/\<([^>\/]*)\/([^>\/]*)\>/);
+								if(m) {
+									call.lat=m[1];
+									call.lon=m[2];
+									ecallsign=ecallsign.replace(/\<[^>\/]*\/[^>\/]*\>/,'');
+								}
+								var m=ecallsign.match(/\{([^\}]*)\}/);
+								if(m) {
+									call.continent=continents[m[1]];
+									if(call.continent==undefined) {
+										log("Undefined continent "+m[1]);
+										call.continent=m[1];
+									}
+									ecallsign=ecallsign.replace(/\{[^\}]+\}/,'');
+								}
+								var m=ecallsign.match(/\~([^~]*)\~/);
+								if(m) {
+									call.GMToff=m[1];
+									ecallsign=ecallsign.replace(/\~[^~]*\~/,'');
+								}
+								if(ecallsign.charAt(0)=='=') {
+									ecallsign=ecallsign.substr(1);
+									ctydat.exact[ecallsign]=call;
+								}
+								else {
+									ctydat.prefix[ecallsign]=call;
+								}
+							}
+						}
+					}
+					cf.close();
+				}
+			}
+		}
+		var match;
+		if(ctydat.exact[callsign] != undefined) {
+			match = ctydat.exact[callsign];
+		}
+		for(var i=0; i<callsign.length && match==undefined; i++) {
+			if(ctydat.prefix[callsign.substr(0, i)]!=undefined)
+				match=ctydat.prefix[callsign.substr(0, i)];
+		}
+		if(match==undefined)
+			return match;
+		var ret={
+			name:match.country.name,
+			cq:match.country.cq,
+			itu:match.country.itu,
+			continent:match.country.continent,
+			lat:match.country.lat,
+			lon:match.country.lon,
+			GMToff:match.country.GNToff,
+			prefix:match.country.prefix
+		};
+		for(i in ret) {
+			if(match[i]!=undefined)
+				ret[i]=match[i];
+		}
+		return ret;
+	},
 };
