@@ -625,10 +625,9 @@ enum arealist_type {
 };
 void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 {
-	FILE *stream,*tmpf;
 	char str[256],title[128],match,*p,*tp;
 	int i,j,k,x,y;
-	unsigned areas=0;
+	str_list_t	area_list;
 
 	if(type == AREALIST_ALL)
 		strcpy(title,"List of Available Areas");
@@ -637,8 +636,8 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 	else
 		strcpy(title,"List of Unlinked Areas");
 
-	if((tmpf=tmpfile())==NULL) {
-		lprintf(LOG_ERR,"ERROR line %d couldn't open tmpfile",__LINE__);
+	if((area_list=strListInit()) == NULL) {
+		lprintf(LOG_ERR,"ERROR line %d couldn't allocate string list",__LINE__);
 		return; 
 	}
 
@@ -648,8 +647,7 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 			continue;
 		if(type == AREALIST_UNLINKED && area_is_linked(i,&addr))
 			continue;
-		fprintf(tmpf,"%s\r\n",cfg.area[i].name); 
-		areas++;
+		strListPush(&area_list, cfg.area[i].name); 
 	} 
 
 	if(type != AREALIST_CONNECTED) {
@@ -662,14 +660,15 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 					for(x=0;x<cfg.nodecfg[i].numflags;x++) {
 						if(!stricmp(cfg.listcfg[j].flag[k].flag
 							,cfg.nodecfg[i].flag[x].flag)) {
-							if((stream=fopen(cfg.listcfg[j].listpath,"r"))==NULL) {
+							FILE* fp;
+							if((fp=fopen(cfg.listcfg[j].listpath,"r"))==NULL) {
 								lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s"
 									,errno,strerror(errno),__LINE__,cfg.listcfg[j].listpath);
 								match=1;
 								break; 
 							}
-							while(!feof(stream)) {
-								if(!fgets(str,sizeof(str),stream))
+							while(!feof(fp)) {
+								if(!fgets(str,sizeof(str),fp))
 									break;
 								p=str;
 								SKIP_WHITESPACE(p);
@@ -681,12 +680,10 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 								for(y=0;y<cfg.areas;y++)
 									if(!stricmp(cfg.area[y].name,p))
 										break;
-								if(y>=cfg.areas || !area_is_linked(y,&addr)) {
-									fprintf(tmpf,"%s\r\n",p); 
-									areas++;
-								}
+								if(y>=cfg.areas || !area_is_linked(y,&addr))
+									strListPush(&area_list, p); 
 							}
-							fclose(stream);
+							fclose(fp);
 							match=1;
 							break; 
 						}
@@ -695,13 +692,21 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 			} 
 		} 
 	}
-
-	if(!ftell(tmpf))
+	strListSortAlpha(area_list);
+	if(!strListCount(area_list))
 		create_netmail(to,title,"None.",addr,FALSE);
-	else
-		file_to_netmail(tmpf,title,addr,to);
-	lprintf(LOG_INFO,"Created AreaFix response netmail with %s (%u bytes, %u areas)", title, ftell(tmpf), areas);
-	fclose(tmpf);
+	else {
+		FILE* fp;
+		if((fp=tmpfile())==NULL) {
+			lprintf(LOG_ERR,"ERROR line %d couldn't open tmpfile",__LINE__);
+		} else {
+			strListWriteFile(fp, area_list, "\r\n");
+			file_to_netmail(fp,title,addr,to);
+			fclose(fp);
+		}
+	}
+	lprintf(LOG_INFO,"Created AreaFix response netmail with %s (%u areas)", title, strListCount(area_list));
+	strListFree(&area_list);
 }
 
 /******************************************************************************
