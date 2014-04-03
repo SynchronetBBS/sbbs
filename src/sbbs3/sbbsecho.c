@@ -90,7 +90,7 @@ int delfile(char *filename)
 	int i=0;
 
 	while(remove(filename) && i++<120)	/* Wait up to 60 seconds to delete file */
-		delay(500); 					/* for Win95 bug fix */
+		Sleep(500); 					/* for Win95 bug fix */
 	return(i);
 }
 #endif
@@ -642,19 +642,17 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 		return; 
 	}
 
-	if(type == AREALIST_CONNECTED || !(misc&ELIST_ONLY)) {
-		/* Include relevant areas from the area file (e.g. areas.bbs): */
-		for(i=0;i<cfg.areas;i++) {
-			if(type == AREALIST_CONNECTED && !area_is_linked(i,&addr))
-				continue;
-			if(type == AREALIST_UNLINKED && area_is_linked(i,&addr))
-				continue;
-			fprintf(tmpf,"%s\r\n",cfg.area[i].name); 
-			areas++;
-		} 
-	}
+	/* Include relevant areas from the area file (e.g. areas.bbs): */
+	for(i=0;i<cfg.areas;i++) {
+		if((type == AREALIST_CONNECTED || (misc&ELIST_ONLY)) && !area_is_linked(i,&addr))
+			continue;
+		if(type == AREALIST_UNLINKED && area_is_linked(i,&addr))
+			continue;
+		fprintf(tmpf,"%s\r\n",cfg.area[i].name); 
+		areas++;
+	} 
 
-	if(type == AREALIST_ALL || (type == AREALIST_UNLINKED && (misc&ELIST_ONLY))) {
+	if(type != AREALIST_CONNECTED) {
 		i=matchnode(addr,0);
 		if(i<cfg.nodecfgs) {
 			for(j=0;j<cfg.listcfgs;j++) {
@@ -904,7 +902,7 @@ void alter_areas(area_t* add_area, area_t* del_area, faddr_t addr, char* to)
 							bail(1); 
 							return;
 						}
-						memcpy(&cfg.area[i].uplink[j],&addr,sizeof(faddr_t));
+						memcpy(&cfg.area[i].uplink[cfg.area[i].uplinks-1],&addr,sizeof(faddr_t));
 
 						fprintf(afileout,"%-16s%-23s ",field1,field2);
 						for(j=0;j<cfg.area[i].uplinks;j++)
