@@ -14,6 +14,7 @@ var last_wflength=-1;
 var last_solar_update=0;
 var solar_x;
 var contests={};
+var ctydat={};
 var last_contest_update=0;
 var rig_index={};
 var last_rig_index=0;
@@ -23,14 +24,13 @@ function main(srv,target)
 	if((time() - last_update) < update_interval) return;
 
 	var config = new File(system.ctrl_dir + js.global.config_filename);
-	var watch=new File();
 	if(!config.open('r')) {
 		log("Unable to open config!");
 		return;
 	}
 	var wfname=config.iniGetValue("module_Ham", 'watchfile');
 	config.close();
-	if(wfname.length > 0) {
+	if(wfname != undefined) {
 		var wf=new File(wfname);
 		var len=wf.length;
 		// Ignore contents at start up.
@@ -150,6 +150,8 @@ function update_rig_specs(rig)
 }
 
 Bot_Commands["SPECS"] = new Bot_Command(0, false, false);
+Bot_Commands["SPECS"].usage = get_cmd_prefix() + "SPECS <model>";
+Bot_Commands["SPECS"].help = "Fetches the specs for the <model> rig from RigPix.com and sends them as a NOTICE";
 Bot_Commands["SPECS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	var i;
 
@@ -204,6 +206,8 @@ Bot_Commands["SPECS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 }
 
 Bot_Commands["Z"] = new Bot_Command(0, false, false);
+Bot_Commands["Z"].usage = get_cmd_prefix() + "Z";
+Bot_Commands["Z"].help = "Displays the current Zulu time (UTC)";
 Bot_Commands["Z"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -338,6 +342,8 @@ function trim(val)
 }
 
 Bot_Commands["GEO"] = new Bot_Command(0, false, false);
+Bot_Commands["GEO"].usage = get_cmd_prefix() + "GEO";
+Bot_Commands["GEO"].help = "Gives you a summary of current geomagneting and solar conditions from N0NBH - Updated every four hours";
 Bot_Commands["GEO"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -360,6 +366,8 @@ Bot_Commands["GEO"].command = function (target, onick, ouh, srv, lbl, cmd) {
 }
 
 Bot_Commands["VHF"] = new Bot_Command(0, false, false);
+Bot_Commands["VHF"].usage = get_cmd_prefix() + "VHF";
+Bot_Commands["VHF"].help = "Displays the current VHF propagation predictions for VHF";
 Bot_Commands["VHF"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -382,6 +390,8 @@ Bot_Commands["VHF"].command = function (target, onick, ouh, srv, lbl, cmd) {
 }
 
 Bot_Commands["HF"] = new Bot_Command(0, false, false);
+Bot_Commands["HF"].usage = get_cmd_prefix() + "HF";
+Bot_Commands["Z"].help = "Displays the current HF propagation predictions";
 Bot_Commands["HF"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -404,7 +414,47 @@ Bot_Commands["HF"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	return true;
 }
 
+Bot_Commands["COUNTRY"] = new Bot_Command(0,false,false);
+Bot_Commands["COUNTRY"].usage = get_cmd_prefix() + "COUNTRY <call>";
+Bot_Commands["COUNTRY"].help = "Displays the details for the specified call/prefix if available";
+Bot_Commands["COUNTRY"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	var callsign;
+	var i;
+	var config = new File(system.ctrl_dir + js.global.config_filename);
+	if(!config.open('r')) {
+		log("Unable to open config!");
+		return;
+	}
+	var ctyfname=config.iniGetValue("module_Ham", 'ctydat');
+	config.close();
+	if(ctyfname!= undefined && ctyfname.length > 0) {
+		// Remove empty cmd args
+		for(i=1; i<cmd.length; i++) {
+			if(cmd[i].search(/^\s*$/)==0) {
+				cmd.splice(i,1);
+				i--;
+			}
+		}
+
+		if(cmd.length==2)
+			callsign=cmd[1].toUpperCase();
+		else {
+			return true;
+		}
+
+		var ret=CallSign.CTYDAT(callsign, ctydat, ctyfname);
+		if(ret == undefined) {
+			srv.o(target, "Unable to match prefix!");
+		}
+		else {
+			srv.o(target, 'Prefix "'+ret.matched+'" is from '+ret.name+' ('+ret.continent+') ITU:'+ret.itu+' CQ:'+ret.cq+(ret.WAEDC?' DARC WAEDC list only':''));
+		}
+	}
+}
+
 Bot_Commands["CALLSIGN"] = new Bot_Command(0,false,false);
+Bot_Commands["CALLSIGN"].usage = get_cmd_prefix() + "CALLSIGN <call>";
+Bot_Commands["CALLSIGN"].help = "Displays the details for the specified call if available";
 Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var callsign;
 	var i;
@@ -453,6 +503,9 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["CONTESTS"] = new Bot_Command(0,false,false);
+Bot_Commands["CONTESTS"].usage = get_cmd_prefix() + "CONTESTS [arg1 [agr2 [...]]]";
+Bot_Commands["CONTESTS"].help = "Lists the current and upcoming contests thanks to WA7BNM "
+		+ "Multiple filters are supported: hf vhf uhf ssb cw phone sstv rttv psk digital data feld hell am fm"
 Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) {
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -470,6 +523,7 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 		var c;
 		var rules;
 		var matches;
+		var invalid=false;
 
 		for(contest in contest_order) {
 			c=contests[contest_order[contest]];
@@ -498,7 +552,7 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 							matches++;
 							break;
 						}
-						else if(r=='UHF' && ((bn > 1.25 && bn < 10) || (bn >= 420))) {
+						else if(r=='uhf' && ((bn > 1.25 && bn < 10) || (bn >= 420))) {
 							matches++;
 							break;
 						}
@@ -525,6 +579,7 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 					}
 				}
 				else {
+					invalid=true;
 					matches++;
 				}
 			}
@@ -532,25 +587,29 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 				ret.push(contest_order[contest]);
 			}
 		}
+		if(invalid)
+			return undefined;
 		return ret;
 	}
 
 	var cl=match_contests(cmd.slice(1));
+	if(cl===undefined)
+		return;
 	var displayed=0;
 	for(c in cl) {
 		var t=contests[cl[c]];
-		srv.o(target, cl[c].replace(/<!--[^-]*-->/,'')+': '+t.timeStr+' '+t['Find rules at']);
+		srv.o(onick, cl[c].replace(/<!--[^-]*-->/,'')+': '+t.timeStr+' '+t['Find rules at'], "NOTICE");
 		displayed++;
-		if(displayed > 8) {
-			srv.o(target, "--- Aborting after 8 entries");
-			break;
-		}
+//		if(displayed > 8) {
+//			srv.o(onick, "--- Aborting after 8 entries", "NOTICE");
+//			break;
+//		}
 	}
 	if(displayed) {
-		srv.o(target,'Provided by WA7BNM Contest Calendar');
+		srv.o(onick,'Provided by WA7BNM Contest Calendar', "NOTICE");
 	}
 	else {
-		srv.o(target,'No contests found');
+		srv.o(onick,'No contests found', "NOTICE");
 	}
 }
 
