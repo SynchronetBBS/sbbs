@@ -550,6 +550,16 @@ void file_to_netmail(FILE *infile,char *title,faddr_t addr,char *to)
 	}
 	free(buf);
 }
+
+/* Returns TRUE if area is linked with specified node address */
+BOOL area_is_linked(unsigned area_num, faddr_t* addr)
+{
+	for(unsigned i=0;i<cfg.area[area_num].uplinks;i++)
+		if(!memcmp(addr,&cfg.area[area_num].uplink[i],sizeof(faddr_t)))
+			return TRUE;
+	return FALSE;
+}
+
 /******************************************************************************
  This function sends a notify list to applicable nodes, this list includes the
  settings configured for the node, as well as a list of areas the node is
@@ -594,17 +604,15 @@ void notify_list(void)
 			sprintf(str,"%s\r\n",cfg.area[i].name);
 			if(str[0]=='*')
 				continue;
-			for(j=0;j<cfg.area[i].uplinks;j++)
-				if(!memcmp(&cfg.nodecfg[k].faddr,&cfg.area[i].uplink[j]
-					,sizeof(faddr_t)))
-					break;
-			if(j<cfg.area[i].uplinks)
-				fprintf(tmpf,"%s",str); }
+			if(area_is_linked(i,&cfg.nodecfg[k].faddr))
+				fprintf(tmpf,"%s",str); 
+		}
 
 		if(ftell(tmpf))
 			file_to_netmail(tmpf,"SBBSecho Notify List",cfg.nodecfg[k].faddr, /* To: */NULL);
 		fclose(tmpf); }
 }
+
 /******************************************************************************
  This function creates a netmail to addr showing a list of available areas (0),
  a list of connected areas (1), or a list of removed areas (2).
@@ -633,27 +641,24 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 	}
 
 	if(type == AREALIST_CONNECTED || !(misc&ELIST_ONLY)) {
+		/* Include relevant areas from the area file (e.g. areas.bbs): */
 		for(i=0;i<cfg.areas;i++) {
-			if(type != AREALIST_ALL) {
-				for(j=0;j<cfg.area[i].uplinks;j++)
-					if(!memcmp(&addr,&cfg.area[i].uplink[j],sizeof(faddr_t)))
-						break;
-				if((type == AREALIST_CONNECTED && j<cfg.area[i].uplinks) ||
-					(type == AREALIST_UNLINKED && j==cfg.area[i].uplinks))
-						fprintf(tmpf,"%s\r\n",cfg.area[i].name); 
-			} else
-				fprintf(tmpf,"%s\r\n",cfg.area[i].name); 
+			if(type == AREALIST_CONNECTED && area_is_linked(i,&addr))
+				continue;
+			if(type == AREALIST_UNLINKED && !area_is_linked(i,&addr))
+				continue;
+			fprintf(tmpf,"%s\r\n",cfg.area[i].name); 
 		} 
 	}
 
-	if(type == AREALIST_ALL) {
+	if(type == AREALIST_ALL || (type == AREALIST_UNLINKED && (misc&ELIST_ONLY))) {
 		i=matchnode(addr,0);
 		if(i<cfg.nodecfgs) {
 			for(j=0;j<cfg.listcfgs;j++) {
 				match=0;
 				for(k=0;k<cfg.listcfg[j].numflags;k++) {
 					if(match) break;
-					for(x=0;x<cfg.nodecfg[i].numflags;x++)
+					for(x=0;x<cfg.nodecfg[i].numflags;x++) {
 						if(!stricmp(cfg.listcfg[j].flag[k].flag
 							,cfg.nodecfg[i].flag[x].flag)) {
 							if((stream=fopen(cfg.listcfg[j].listpath,"r"))==NULL) {
@@ -672,20 +677,17 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 								tp=p;
 								FIND_WHITESPACE(tp);
 								*tp=0;
-								if(!(misc&ELIST_ONLY)) {
-									for(y=0;y<cfg.areas;y++)
-										if(!stricmp(cfg.area[y].name,p))
-											break;
-									if(y==cfg.areas)
-										fprintf(tmpf,"%s\r\n",p); 
-								}
-								else
+								for(y=0;y<cfg.areas;y++)
+									if(!stricmp(cfg.area[y].name,p))
+										break;
+								if(y>=cfg.areas || !area_is_linked(y,&addr))
 									fprintf(tmpf,"%s\r\n",p); 
 							}
 							fclose(stream);
 							match=1;
 							break; 
-						} 
+						}
+					}
 				} 
 			} 
 		} 
@@ -824,11 +826,7 @@ void alter_areas(area_t* add_area, area_t* del_area, faddr_t addr, char* to)
 			if(i<del_area->tags) {
 				for(i=0;i<cfg.areas;i++) {
 					if(!stricmp(field2,cfg.area[i].name)) {
-						for(j=0;j<cfg.area[i].uplinks;j++)
-							if(!memcmp(&cfg.area[i].uplink[j],&addr
-								,sizeof(faddr_t)))
-								break;
-						if(j==cfg.area[i].uplinks) {
+						if(!area_is_linked(i,&addr)) {
 							fprintf(afileout,"%s\n",fields);
 							/* bugfix here Mar-25-2004 (wasn't breaking for "-ALL") */
 							if(stricmp(del_area->tag[0],"-ALL"))
@@ -881,11 +879,7 @@ void alter_areas(area_t* add_area, area_t* del_area, faddr_t addr, char* to)
 					add_area->tag[i][0]=0;  /* So we can check other lists */
 				for(i=0;i<cfg.areas;i++) {
 					if(!stricmp(field2,cfg.area[i].name)) {
-						for(j=0;j<cfg.area[i].uplinks;j++)
-							if(!memcmp(&cfg.area[i].uplink[j],&addr
-								,sizeof(faddr_t)))
-								break;
-						if(j<cfg.area[i].uplinks) {
+						if(area_is_linked(i,&addr)) {
 							fprintf(afileout,"%s\n",fields);
 							fprintf(nmfile,"%s already connected.\r\n",field2);
 							break; }
@@ -3735,10 +3729,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 		if(i<0 || i>=scfg.total_subs)	/* Don't scan pass-through areas */
 			continue;
 		if(addr.zone) { 		/* Skip areas not meant for this address */
-			for(k=0;k<cfg.area[area].uplinks;k++)
-				if(!memcmp(&cfg.area[area].uplink[k],&addr,sizeof(faddr_t)))
-					break;
-			if(k==cfg.area[area].uplinks)
+			if(!area_is_linked(area,&addr))
 				continue; 
 		}
 		if(sub_code[0] && stricmp(sub_code,scfg.sub[i]->code))
@@ -4686,10 +4677,7 @@ int main(int argc, char **argv)
 				}
 
 				if((misc&SECURE) && cfg.area[i].sub!=INVALID_SUB) {
-					for(j=0;j<cfg.area[i].uplinks;j++)
-						if(!memcmp(&cfg.area[i].uplink[j],&pkt_faddr,sizeof(faddr_t)))
-							break;
-					if(j==cfg.area[i].uplinks) {
+					if(!area_is_linked(i,&pkt_faddr)) {
 						if(cfg.log&LOG_SECURE)
 							logprintf("%s: Security violation - %s not in AREAS.BBS"
 								,areatagstr,smb_faddrtoa(&pkt_faddr,NULL));
