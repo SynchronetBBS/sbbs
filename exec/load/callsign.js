@@ -918,16 +918,21 @@ var CallSign={
 			}
 		}
 		var match;
+		var matched;
 		if(ctydat.exact[callsign] != undefined) {
 			match = ctydat.exact[callsign];
+			matched=callsign;
 		}
 		for(var i=0; i<callsign.length && match==undefined; i++) {
-			if(ctydat.prefix[callsign.substr(0, i)]!=undefined)
+			if(ctydat.prefix[callsign.substr(0, i)]!=undefined) {
 				match=ctydat.prefix[callsign.substr(0, i)];
+				matched=callsign.substr(0, i);
+			}
 		}
 		if(match==undefined)
 			return match;
 		var ret={
+			matched:matched,
 			name:match.country.name,
 			cq:match.country.cq,
 			itu:match.country.itu,
