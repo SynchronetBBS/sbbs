@@ -645,9 +645,9 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 	if(type == AREALIST_CONNECTED || !(misc&ELIST_ONLY)) {
 		/* Include relevant areas from the area file (e.g. areas.bbs): */
 		for(i=0;i<cfg.areas;i++) {
-			if(type == AREALIST_CONNECTED && area_is_linked(i,&addr))
+			if(type == AREALIST_CONNECTED && !area_is_linked(i,&addr))
 				continue;
-			if(type == AREALIST_UNLINKED && !area_is_linked(i,&addr))
+			if(type == AREALIST_UNLINKED && area_is_linked(i,&addr))
 				continue;
 			fprintf(tmpf,"%s\r\n",cfg.area[i].name); 
 			areas++;
