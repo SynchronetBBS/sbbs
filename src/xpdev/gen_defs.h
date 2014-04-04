@@ -137,14 +137,12 @@ enum {
 
 /* Unsigned type short-hands    */
 #ifndef uchar
-        #define uchar   unsigned char
+    #define uchar   unsigned char
 #endif
-#ifndef __GLIBC__
-        #ifndef ushort
-        #define ushort  unsigned short
-        typedef unsigned int uint;			/* Incompatible with Spidermonkey header files when #define'd */
-        #define ulong   unsigned long
-        #endif
+#ifndef ushort
+	#define ushort  unsigned short
+	typedef unsigned int uint;			/* Incompatible with Spidermonkey header files when #define'd */
+	#define ulong   unsigned long
 #endif
 
 #if !defined(HAS_INTTYPES_H) && !defined(XPDEV_DONT_DEFINE_INTTYPES)
