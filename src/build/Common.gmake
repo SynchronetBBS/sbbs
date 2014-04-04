@@ -309,7 +309,7 @@ endif
 
 # PThread-specific flags
 ifeq ($(os),linux)    # Linux
- CFLAGS	+=	-D_GNU_SOURCE
+ CFLAGS	+=	-DPOSIX_C_SOURCE=200809L -D_BSD_SOURCE -D_XOPEN_SOURCE=700
  ifndef THREADS_ACTUALLY_WORK
   CFLAGS    += -D_THREAD_SUID_BROKEN
  endif
