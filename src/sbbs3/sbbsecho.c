@@ -4634,9 +4634,11 @@ int main(int argc, char **argv)
 				truncsp(str);
 				p=strstr(str,"AREA:");
 				if(p!=str) {					/* Netmail */
+					long pos = ftell(fidomsg);
 					start_tick=0;
-					if(import_netmail("",hdr,fidomsg))
-						seektonull(fidomsg);
+					import_netmail("", hdr, fidomsg);
+					fseek(fidomsg, pos, SEEK_SET);
+					seektonull(fidomsg);
 					printf("\n");
 					continue; 
 				}
