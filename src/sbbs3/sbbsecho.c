@@ -714,22 +714,19 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 ******************************************************************************/
 char *tempname(char *dir, char *prefix)
 {
-	char str[MAX_PATH+1],*p;
+	char str[MAX_PATH+1];
 	int i;
 
 	for(i=0;i<1000;i++) {
-		sprintf(str,"%s%s%03u.$$$",dir,prefix,i);
+		SAFEPRINTF3(str,"%s%s%03u.$$$",dir,prefix,i);
 		if(!fexist(str))
-			break; }
+			break; 
+	}
 	if(i>=1000) {
 		lprintf(LOG_ERR,"tempnam: too many files");
-		return(NULL); }
-	p=malloc(strlen(str)+1);
-	if(!p) {
-		lprintf(LOG_CRIT,"tempnam: couldn't malloc %u",strlen(str)+1);
-		return(NULL); }
-	strcpy(p,str);
-	return(p);
+		return(NULL); 
+	}
+	return(strdup(str));
 }
 
 int check_elists(char *areatag,faddr_t addr)
@@ -1052,20 +1049,16 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 			fprintf(outfile,"%s\n",afline);
 			continue;
 		}
-		sprintf(cmd,"%-.25s",p);
-		tp=strchr(cmd,' ');
-		if(tp)
-			*tp=0;								/* Chop off at space */
+		SAFECOPY(cmd,p);
+		truncstr(cmd," ");						/* Chop off at space */
 		strupr(cmd);							/* Convert code to uppercase */
 		FIND_WHITESPACE(p);						/* Skip code */
 		SKIP_WHITESPACE(p);						/* Skip white space */
 
 		if(option==0 && !strcmp(cmd,"USEPACKER")) {     /* Change Compression */
 			if(*p) {
-				sprintf(arcname, "%-.25s", p);
-				tp=strchr(arcname,' ');
-				if(tp)
-					*tp = 0;
+				SAFECOPY(arcname, p);
+				truncstr(arcname," ");
 				strupr(arcname);
 				FIND_WHITESPACE(p);
 				if(*p)
@@ -1555,6 +1548,18 @@ void pack(char *srcfile,char *destfile,faddr_t dest)
 			,j,errno,__LINE__,mycmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile)); }
 }
 
+/* Reads a single FTS-1 stored message header from the specified file stream and terminates C-strings */
+BOOL fread_fmsghdr(fmsghdr_t* hdr, FILE* fp)
+{
+	if(fread(hdr, sizeof(fmsghdr_t), 1, fp) != 1)
+		return FALSE;
+	TERMINATE(hdr->from);
+	TERMINATE(hdr->to);
+	TERMINATE(hdr->subj);
+	TERMINATE(hdr->time);
+	return TRUE;
+}
+
 enum {
 	 ATTACHMENT_ADD
 	,ATTACHMENT_NETMAIL
@@ -1584,8 +1589,9 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 
 	if(mode==ATTACHMENT_CHECK) {				/* Check for existance in BUNDLES.SBE */
 		while(!feof(stream)) {
-			if(!fread(&attach,1,sizeof(attach_t),stream))
+			if(!fread(&attach,sizeof(attach_t),1,stream))
 				break;
+			TERMINATE(attach.fname);
 			if(!stricmp(attach.fname,bundlename)) {
 				fclose(stream);
 				return(1); 
@@ -1626,10 +1632,9 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 				fclose(fidomsg);
 				continue; 
 			}
-			if(fread(&hdr,sizeof(fmsghdr_t),1,fidomsg)!=1) {
+			if(!fread_fmsghdr(&hdr,fidomsg)) {
 				fclose(fidomsg);
-				lprintf(LOG_ERR,"ERROR line %d reading %u bytes from %s"
-					,__LINE__,sizeof(fmsghdr_t),path);
+				lprintf(LOG_ERR,"ERROR line %d reading fido msghdr from %s",__LINE__,path);
 				continue; 
 			}
 			fclose(fidomsg);
@@ -1647,9 +1652,10 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 		globfree(&g);
 
 		while(!feof(stream)) {
-			if(!fread(&attach,1,sizeof(attach_t),stream))
+			if(!fread(&attach,sizeof(attach_t),1,stream))
 				break;
-			sprintf(str,"%s%s",cfg.outbound,attach.fname);
+			TERMINATE(attach.fname);
+			SAFEPRINTF2(str,"%s%s",cfg.outbound,attach.fname);
 			if(!fexistcase(str))
 				continue;
 			fncrc=crc32(strupr(attach.fname),0);
@@ -1671,8 +1677,9 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 	}
 
 	while(!feof(stream)) {
-		if(!fread(&attach,1,sizeof(attach_t),stream))
+		if(!fread(&attach,sizeof(attach_t),1,stream))
 			break;
+		TERMINATE(attach.fname);
 		if(!stricmp(attach.fname,bundlename)) {
 			fclose(stream);
 			return(0); 
@@ -1680,7 +1687,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 	}
 
 	memcpy(&attach.dest,&dest,sizeof(faddr_t));
-	strcpy(attach.fname,bundlename);
+	SAFECOPY(attach.fname,bundlename);
 	/* TODO: Write of unpacked struct */
 	fwrite(&attach,sizeof(attach_t),1,stream);
 	fclose(stream);
@@ -2145,7 +2152,7 @@ ulong matchname(char *inname)
 			"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
 			,""); }
 
-	strcpy(str,inname);
+	SAFECOPY(str,inname);
 	strupr(str);
 	crc=crc32(str,0);
 	for(l=0;l<total_users;l++)
@@ -4329,7 +4336,7 @@ int main(int argc, char **argv)
 
 		FIND_WHITESPACE(p);				/* Skip code */
 		SKIP_WHITESPACE(p);				/* Skip white space */
-		sprintf(tmp,"%-.50s",p);        /* Area tag */
+		SAFECOPY(tmp,p);		       /* Area tag */
 		truncstr(tmp,"\t ");
 		strupr(tmp);
 		if(tmp[0]=='*')         /* UNKNOWN-ECHO area */
@@ -4340,8 +4347,7 @@ int main(int argc, char **argv)
 			bail(1); 
 			return -1;
 		}
-		strcpy(cfg.area[cfg.areas].name,tmp);
-		strupr(tmp);
+		SAFECOPY(cfg.area[cfg.areas].name,tmp);
 		cfg.area[cfg.areas].tag=crc32(tmp,0);
 
 		FIND_WHITESPACE(p);		/* Skip tag */
@@ -4920,11 +4926,11 @@ int main(int argc, char **argv)
 					,filelength(fmsg),path);
 				fclose(fidomsg);
 				continue; }
-			if(fread(&hdr,sizeof(fmsghdr_t),1,fidomsg)!=1) {
+			if(!fread_fmsghdr(&hdr,fidomsg)) {
 				fclose(fidomsg);
-				lprintf(LOG_ERR,"ERROR line %d reading %u bytes from %s",__LINE__
-					,sizeof(fmsghdr_t),path);
-				continue; }
+				lprintf(LOG_ERR,"ERROR line %d reading fido msghdr from %s",__LINE__,path);
+				continue; 
+			}
 			i=import_netmail(path,hdr,fidomsg);
 			/**************************************/
 			/* Delete source netmail if specified */
@@ -4971,16 +4977,18 @@ int main(int argc, char **argv)
 
 			if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
 				lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,path);
-				continue; }
+				continue; 
+			}
 			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
 				lprintf(LOG_WARNING,"%s Invalid length of %lu bytes",path,filelength(fmsg));
 				fclose(fidomsg);
-				continue; }
-			if(fread(&hdr,sizeof(fmsghdr_t),1,fidomsg)!=1) {
+				continue; 
+			}
+			if(!fread_fmsghdr(&hdr,fidomsg)) {
 				fclose(fidomsg);
-				lprintf(LOG_ERR,"ERROR line %d reading %u bytes from %s",__LINE__
-					,sizeof(fmsghdr_t),path);
-				continue; }
+				lprintf(LOG_ERR,"ERROR line %d reading fido msghdr from %s",__LINE__,path);
+				continue; 
+			}
 			hdr.destzone=hdr.origzone=sys_faddr.zone;
 			hdr.destpoint=hdr.origpoint=0;
 			getzpt(fidomsg,&hdr);				/* use kludge if found */
