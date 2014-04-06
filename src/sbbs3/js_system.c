@@ -341,7 +341,7 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 
 	switch(tiny) {
 		case SYS_PROP_MISC:
-			JS_ValueToInt32(cx, *vp, (int32*)&cfg->sys_misc);
+			JS_ValueToInt32(cx, *vp, &cfg->sys_misc);
 			break;
 	}
 
@@ -1842,8 +1842,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("log a suspected hack attempt")
 	,310
 	},
-	{"filter_ip",		js_filter_ip,		4,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, reason, host, ip, username]")
-	,JSDOCSTR("add an IP address (with comment) to the system's IP filter file")
+	{"filter_ip",		js_filter_ip,		4,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, reason, host, ip, username, filename]")
+	,JSDOCSTR("add an IP address (with comment) to an IP filter file. If filename is not specified, the ip.can file is used")
 	,311
 	},		
 	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("node_number")
