@@ -709,26 +709,6 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 	strListFree(&area_list);
 }
 
-/******************************************************************************
- Imitation of Borland's tempnam function because Watcom doesn't have it
-******************************************************************************/
-char *tempname(char *dir, char *prefix)
-{
-	char str[MAX_PATH+1];
-	int i;
-
-	for(i=0;i<1000;i++) {
-		SAFEPRINTF3(str,"%s%s%03u.$$$",dir,prefix,i);
-		if(!fexist(str))
-			break; 
-	}
-	if(i>=1000) {
-		lprintf(LOG_ERR,"tempnam: too many files");
-		return(NULL); 
-	}
-	return(strdup(str));
-}
-
 int check_elists(char *areatag,faddr_t addr)
 {
 	FILE *stream;
@@ -783,7 +763,7 @@ void alter_areas(area_t* add_area, area_t* del_area, faddr_t addr, char* to)
 
 	SAFECOPY(outpath,cfg.areafile);
 	*getfname(outpath)=0;
-	if((outname=tempname(outpath,"AREAS"))==NULL) {
+	if((outname=tempnam(outpath,"AREAS"))==NULL) {
 		lprintf(LOG_ERR,"ERROR tempnam(%s,AREAS)",outpath);
 		return; }
 	if((nmfile=tmpfile())==NULL) {
@@ -1023,7 +1003,7 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 	cfgnum=matchnode(addr,0);
 	SAFECOPY(outpath,cfg.cfgfile);
 	*getfname(outpath)=0;
-	if((outname=tempname(outpath,"CFG"))==NULL) {
+	if((outname=tempnam(outpath,"CFG"))==NULL) {
 		lprintf(LOG_ERR,"ERROR tempnam(%s,CFG)",outpath);
 		return;
 	}
