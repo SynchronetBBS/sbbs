@@ -466,7 +466,7 @@ void sbbs_read_ini(
 		mail->max_recipients
 			=iniGetShortInt(list,section,"MaxRecipients",100);
 		mail->max_msg_size
-			=iniGetBytes(list,section,"MaxMsgSize",/* units: */1,DEFAULT_MAX_MSG_SIZE);
+			=(DWORD)iniGetBytes(list,section,"MaxMsgSize",/* units: */1,DEFAULT_MAX_MSG_SIZE);
 		mail->max_msgs_waiting
 			=iniGetInteger(list,section,"MaxMsgsWaiting",DEFAULT_MAX_MSGS_WAITING);
 		mail->connect_timeout
