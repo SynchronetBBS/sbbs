@@ -4186,6 +4186,10 @@ static JSClass js_global_class = {
 BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t* startup, JSObject**glob)
 {
 	global_private_t*	p;
+	JSRuntime*			rt;
+
+	if((rt=JS_GetRuntime(cx)) != NULL)
+		JS_SetRuntimePrivate(rt, cfg);
 
 	if((p = (global_private_t*)malloc(sizeof(global_private_t)))==NULL)
 		return(FALSE);

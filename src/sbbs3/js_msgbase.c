@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -40,8 +40,6 @@
 #include "userdat.h"
 
 #ifdef JAVASCRIPT
-
-static scfg_t* 		scfg=NULL;
 
 typedef struct
 {
@@ -1045,6 +1043,9 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	privatemsg_t*	p;
 	char*			name=NULL;
 	jsrefcount		rc;
+	scfg_t*			scfg;
+
+	scfg=JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
@@ -2048,6 +2049,9 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	JSBool		ret=JS_TRUE;
 	jsrefcount	rc;
+	scfg_t*			scfg;
+
+	scfg=JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -2517,13 +2521,16 @@ static JSClass js_msgbase_class = {
 static JSBool
 js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *obj;
-	jsval *argv=JS_ARGV(cx, arglist);
-	JSString*	js_str;
-	JSObject*	cfgobj;
-	char*		base;
-	private_t*	p;
+	JSObject *		obj;
+	jsval *			argv=JS_ARGV(cx, arglist);
+	JSString*		js_str;
+	JSObject*		cfgobj;
+	char*			base;
+	private_t*		p;
+	scfg_t*			scfg;
 
+	scfg=JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	
 	obj=JS_NewObject(cx, &js_msgbase_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
@@ -2740,7 +2747,6 @@ JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t*
 	JSObject*	constructor;
 	jsval		val;
 
-	scfg = cfg;
 	obj = JS_InitClass(cx, parent, NULL
 		,&js_msgbase_class
 		,js_msgbase_constructor
