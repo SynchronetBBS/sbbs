@@ -4321,7 +4321,7 @@ int main(int argc, char **argv)
 		strupr(tmp);
 		if(tmp[0]=='*')         /* UNKNOWN-ECHO area */
 			cfg.badecho=cfg.areas;
-		if((cfg.area[cfg.areas].name=strdup(tmp)==NULL)) {
+		if((cfg.area[cfg.areas].name=strdup(tmp))==NULL) {
 			lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag name."
 				,cfg.areas+1);
 			bail(1); 
