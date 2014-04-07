@@ -4321,13 +4321,12 @@ int main(int argc, char **argv)
 		strupr(tmp);
 		if(tmp[0]=='*')         /* UNKNOWN-ECHO area */
 			cfg.badecho=cfg.areas;
-		if((cfg.area[cfg.areas].name=(char *)malloc(strlen(tmp)+1))==NULL) {
+		if((cfg.area[cfg.areas].name=strdup(tmp)==NULL)) {
 			lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag name."
 				,cfg.areas+1);
 			bail(1); 
 			return -1;
 		}
-		SAFECOPY(cfg.area[cfg.areas].name,tmp);
 		cfg.area[cfg.areas].tag=crc32(tmp,0);
 
 		FIND_WHITESPACE(p);		/* Skip tag */
