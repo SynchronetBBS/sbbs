@@ -115,6 +115,51 @@ var CallSign={
 			throw("No IC results");
 		},
 
+		Australia:function(callsign) {
+			// First request returns a link to the license
+			var result=new HTTPRequest().Post('http://web.acma.gov.au/pls/radcom/register_search.search_dispatcher','pSEARCH_TYPE=Licences&pSUB_TYPE=Callsign&pEXACT_IND=matches&pQRY='+callsign);
+			var m=result.match(/<a title="Licence Details" [^>]*\r?\n[^>]*href="([^"]*)">[0-9]+<\/a/);
+			if(m!=null) {
+				var ret={};
+				result=new HTTPRequest().Get('http://web.acma.gov.au'+m[1]);
+				var re=new RegExp('<tr>[ \t]*\r?\n[ \t]*<td class="tddetail" valign="top"[^>]*>([^<]*)</td>[ \t]*\r?\n[ \t]*<td class="tddetail2" valign="top"[^>]*>([\x00-\xff]*?)</td>',"mg");
+				while((m=re.exec(result)) !== null) {
+					switch(m[1]) {
+						case 'Client':
+							ret.name=m[2].replace(/<[^>]*>/g,'');
+							ret.name=ret.name.replace(/^[ \t\r\n]*/,'');
+							m=m[2].match(/href="([^"]*)"/);
+							if(m!=null) {
+								var re2=new RegExp('<tr>[ \t]*\r?\n[ \t]*<td class="tddetail" valign="top"[^>]*>([^<]*)</td>[ \t]*\r?\n[ \t]*<td class="tddetail2" valign="top"[^>]*>([\x00-\xff]*?)</td>',"mg");
+								var resultC=new HTTPRequest().Get('http://web.acma.gov.au'+m[1]);
+								while((m=re2.exec(resultC)) !== null) {
+									switch(m[1]) {
+										case 'Postal Address':
+											ret.address=m[2];
+											ret.address=ret.address.replace(/<br>/g,', ');
+											ret.address=ret.address.replace(/[\r\n\t\v]/g,' ');
+											ret.address=ret.address.replace(/  +/g,' ');
+									}
+								}
+							}
+							break;
+						case 'Licence Category':
+							ret.qualifications=m[2];
+							break;
+						case 'Status':
+							ret.status=m[2];
+							break;
+						case 'Callsign':
+							ret.callsign=m[2];
+							break;
+					}
+				}
+				if(ret.callsign != undefined)
+					return ret;
+			}
+			throw("No ACMA results");
+		},
+
 		Hamcall:function(callsign) {
 			var req=new HTTPRequest();
 			var config = js.global.load("modopts.js","hamcall");
@@ -189,6 +234,12 @@ var CallSign={
 			if(country == 'Canada') {
 				try {
 					matched=CallSign.Lookup.Canada(callsign);
+				}
+				catch(e) {}
+			}
+			if(country == 'Australia') {
+				try {
+					matched=CallSign.Lookup.Australia(callsign);
 				}
 				catch(e) {}
 			}
