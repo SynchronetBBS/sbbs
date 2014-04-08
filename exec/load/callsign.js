@@ -136,6 +136,35 @@ var CallSign={
 			throw("No match");
 		},
 
+		MagicQRZuri:undefined,
+		QRZ:function(callsign) {
+			var ret={};
+			default xml namespace='http://xmldata.qrz.com';
+			if(CallSign.Lookup.MagicQRZuri===undefined)
+				throw("No match (no magic URI specified)");
+
+			var result=new HTTPRequest().Get(CallSign.Lookup.MagicQRZuri+callsign);
+			if(result.search(/<Callsign>/)==-1)
+				throw("No match");
+			result=result.replace(/<\?.*?\?>[\r\n]*/mg,'');
+			var rx=new XML(result);
+			if(rx.Callsign.fname!=undefined && rx.Callsign.name!=undefined)
+				ret.name=rx.Callsign.fname+' '+rx.Callsign.name;
+			else if(rx.Callsign.fname==undefined)
+				ret.name=rx.Callsign.name.toString();
+			else
+				ret.name=rx.Callsign.fname.toString();
+			ret.callsign=rx.Callsign.call.toString();
+			ret.address=rx.Callsign.addr1.toString();
+			ret.city=rx.Callsign.addr2.toString();
+			ret.provstate=rx.Callsign.state.toString();
+			ret.country=rx.Callsign.country.toString();
+			ret.postalzip=rx.Callsign.zip.toString();
+			ret.qualifictions=rx.Callsign.class.toString();
+			ret.note='Found on QRZ.com';
+			return ret;
+		},
+
 		USSpecialEvent:function(callsign) {
 			var result=new HTTPRequest().Post('http://www.arrl.org/special-event-stations', '_method=POST&data%5BSearch%5D%5Bcall_sign%5D='+callsign+'&data%5BSearch%5D%5Bkeywords%5D=&data%5BLocation%5D%5Bzip%5D=&data%5BLocation%5D%5Barea%5D=&data%5BLocation%5D%5Bcity%5D=&data%5BLocation%5D%5Bstate%5D=&data%5BLocation%5D%5Bdivision_id%5D=&data%5BLocation%5D%5Bsection_id%5D=&data%5BLocation%5D%5Bcountry%5D=&data%5BDate%5D%5Bstart%5D=&data%5BDate%5D%5Bend%5D=');
 			var m=result.match(/<h3>\s*([\s\S]*?)<\/p/);
@@ -179,6 +208,12 @@ var CallSign={
 			}
 			if(matched==undefined) {
 				try {
+					matched=CallSign.Lookup.QRZ(callsign);
+				}
+				catch(e) {log(e)}
+			}
+			if(matched==undefined) {
+				try {
 					matched=CallSign.Lookup.Hamcall(callsign);
 				}
 				catch(e) {log(e)}
@@ -186,6 +221,8 @@ var CallSign={
 			if(matched==undefined) {
 				throw("Unable to match callsign from "+country+" in any databases.");
 			}
+			if(matched.country==undefined)
+				matched.country=country;
 			return matched;
 		},
 	},
