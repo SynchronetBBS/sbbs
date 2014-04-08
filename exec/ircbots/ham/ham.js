@@ -28,6 +28,7 @@ function main(srv,target)
 		log("Unable to open config!");
 		return;
 	}
+	CallSign.Lookup.MagicQRZuri=config.iniGetValue("module_Ham", 'MagicQRZuri');
 	var wfname=config.iniGetValue("module_Ham", 'watchfile');
 	config.close();
 	if(wfname != undefined) {
@@ -489,10 +490,17 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 				str += ", "+matched.provstate;
 			if(matched.postalzip != undefined)
 				str += " "+matched.postalzip;
+			if(matched.country != undefined)
+				str += ", "+matched.country;
 			if(matched.qualifications != undefined)
 				str += ". "+matched.qualifications;
 			if(matched.status != undefined)
 				str += " ("+matched.status+")";
+			if(matched.note != undefined)
+				str += " ("+matched.note+")";
+			str=str.replace(/ +([\.\,])/g,'$1');
+			str=str.replace(/([,.])[,.]+/g,'$1');
+			str=str.replace(/  +/g,' ');
 			srv.o(target, str);
 		}
 	}
