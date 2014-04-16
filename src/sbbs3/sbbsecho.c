@@ -668,11 +668,13 @@ void netmail_arealist(enum arealist_type type, faddr_t addr, char* to)
 								break; 
 							}
 							while(!feof(fp)) {
+								memset(str,0,sizeof(str));
 								if(!fgets(str,sizeof(str),fp))
 									break;
+								truncsp(str);
 								p=str;
 								SKIP_WHITESPACE(p);
-								if(*p==';')     /* Ignore Comment Lines */
+								if(*p==0 || *p==';')     /* Ignore Blank and Comment Lines */
 									continue;
 								tp=p;
 								FIND_WHITESPACE(tp);
