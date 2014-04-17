@@ -165,11 +165,6 @@ typedef struct {
 	} flag_t;
 
 typedef struct {
-	uint tags;					/* Number of area tags */
-	char **tag; 				/* Name of each area tag */
-	} area_t;
-
-typedef struct {
 	FILE *stream;				/* The stream associated with this packet (NULL if not-open) */
 	faddr_t uplink; 			/* The current uplink for this packet */
 	char filename[MAX_PATH+1];	/* Name of the file */
