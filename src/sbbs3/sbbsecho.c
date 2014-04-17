@@ -836,7 +836,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, faddr_t addr, char* t
 		else
 			field3[0]=0;
 		if(strListCount(del_area)) { 				/* Check for areas to remove */
-			lprintf(LOG_DEBUG,"Removing areas for %s from %s", faddrtoa(&addr), cfg.areafile);
+			lprintf(LOG_DEBUG,"Removing areas for %s from %s", smb_faddrtoa(&addr,NULL), cfg.areafile);
 			for(i=0;del_area[i]!=NULL;i++) {
 				if(!stricmp(del_area[i],field2) ||
 					!stricmp(del_area[0],"-ALL"))     /* Match Found */
@@ -845,7 +845,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, faddr_t addr, char* t
 			if(del_area[i]!=NULL) {
 				for(i=0;i<cfg.areas;i++) {
 					if(!stricmp(field2,cfg.area[i].name)) {
-						lprintf(LOG_DEBUG,"Unlinking area (%s) for %s in %s", field2, faddrtoa(&addr), cfg.areafile);
+						lprintf(LOG_DEBUG,"Unlinking area (%s) for %s in %s", field2, smb_faddrtoa(&addr,NULL), cfg.areafile);
 						if(!area_is_linked(i,&addr)) {
 							fprintf(afileout,"%s\n",fields);
 							/* bugfix here Mar-25-2004 (wasn't breaking for "-ALL") */
@@ -894,7 +894,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, faddr_t addr, char* t
 			} 				/* Area match so continue on */
 		}
 		if(strListCount(add_area)) { 				/* Check for areas to add */
-			lprintf(LOG_DEBUG,"Adding areas for %s to %s", faddrtoa(&addr), cfg.areafile);
+			lprintf(LOG_DEBUG,"Adding areas for %s to %s", smb_faddrtoa(&addr,NULL), cfg.areafile);
 			for(i=0;add_area[i]!=NULL;i++)
 				if(!stricmp(add_area[i],field2) ||
 					!stricmp(add_area[0],"+ALL"))      /* Match Found */
@@ -904,7 +904,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, faddr_t addr, char* t
 					add_area[i][0]=0;  /* So we can check other lists */
 				for(i=0;i<cfg.areas;i++) {
 					if(!stricmp(field2,cfg.area[i].name)) {
-						lprintf(LOG_DEBUG,"Linking area (%s) for %s in %s", field2, faddrtoa(&addr), cfg.areafile);
+						lprintf(LOG_DEBUG,"Linking area (%s) for %s in %s", field2, smb_faddrtoa(&addr,NULL), cfg.areafile);
 						if(area_is_linked(i,&addr)) {
 							fprintf(afileout,"%s\n",fields);
 							fprintf(nmfile,"%s already connected.\r\n",field2);
