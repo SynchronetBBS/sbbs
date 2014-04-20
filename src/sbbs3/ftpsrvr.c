@@ -2845,6 +2845,8 @@ static void ctrl_thread(void* arg)
 
 				if((result=bind(pasv_sock, (struct sockaddr *) &pasv_addr,sizeof(pasv_addr)))==0)
 					break;
+				if(port==startup->pasv_port_high)
+					break;
 			}
 			if(result!= 0) {
 				lprintf(LOG_ERR,"%04d !PASV ERROR %d (%d) binding socket to port %u"
