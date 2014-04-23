@@ -2702,50 +2702,59 @@ static void help(void)
 
 	_setcursortype(_NOCURSOR);
 
-	if(api->helpbuf!=NULL)
-		strcpy(hbuf,api->helpbuf);
-	else {
-		if((fp=fopen(api->helpixbfile,"rb"))==NULL) {
-			sprintf(hbuf,"\2 ERROR \2 Cannot open help index:\r\n          %s"
-				,api->helpixbfile);
-		}
-		else {
-			p=strrchr(helpfile,'/');
-			if(p==NULL)
-				p=strrchr(helpfile,'\\');
-			if(p==NULL)
-				p=helpfile;
-			else
-				p++;
-			l=-1L;
-			while(!feof(fp)) {
-				if(!fread(str,12,1,fp))
-					break;
-				str[12]=0;
-				fread(&line,sizeof(line),1,fp);
-				if(stricmp(str,p) || line!=helpline) {
-					fseek(fp,sizeof(l),SEEK_CUR);
-					continue; 
-				}
-				fread(&l,sizeof(l),1,fp);
-				break;
-			}
-			fclose(fp);
-			if(l==-1L)
-				sprintf(hbuf,"\2 ERROR \2 Cannot locate help key (%s:%u) in:\r\n"
-					"         %s",p,helpline,api->helpixbfile);
-			else {
-				if((fp=fopen(api->helpdatfile,"rb"))==NULL)
-					sprintf(hbuf,"\2 ERROR \2 Cannot open help file:\r\n          %s"
-						,api->helpdatfile);
-				else {
-					fseek(fp,l,SEEK_SET);
-					fread(hbuf,HELPBUF_SIZE,1,fp);
+    if(!api->helpbuf) {
+        if((fp=fopen(api->helpixbfile,"rb"))==NULL)
+            sprintf(hbuf,"ERROR: Cannot open help index: %s"
+                ,api->helpixbfile);
+        else {
+            p=strrchr(helpfile,'/');
+            if(p==NULL)
+                p=strrchr(helpfile,'\\');
+            if(p==NULL)
+                p=helpfile;
+            else
+                p++;
+            l=-1L;
+            while(!feof(fp)) {
+                if(fread(str,12,1,fp)!=1)
+                    break;
+                str[12]=0;
+                if(fread(&line,2,1,fp)!=1);
+                if(stricmp(str,p) || line!=helpline) {
+                    if(fseek(fp,4,SEEK_CUR)==0)
+						break;
+                    continue;
+                }
+                if(fread(&l,4,1,fp)!=1)
+					l=-1L;
+                break;
+            }
+            fclose(fp);
+            if(l==-1L)
+                sprintf(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %s"
+                    ,p,helpline,api->helpixbfile);
+            else {
+                if((fp=fopen(api->helpdatfile,"rb"))==NULL)
+                    sprintf(hbuf,"ERROR: Cannot open help file: %s"
+                        ,api->helpdatfile);
+                else {
+                    if(fseek(fp,l,SEEK_SET)!=0) {
+						sprintf(hbuf,"ERROR: Cannot seek to help key (%s:%u) at %ld in: %s"
+							,p,helpline,l,api->helpixbfile);
+					}
+					else {
+						if(fread(hbuf,1,HELPBUF_SIZE,fp)<1) {
+							sprintf(hbuf,"ERROR: Cannot read help key (%s:%u) at %ld in: %s"
+								,p,helpline,l,api->helpixbfile);
+						}
+					}
 					fclose(fp); 
 				}
 			}
 		}
+		showbuf(WIN_MID|WIN_HLP, 0, 0, 76, api->scrn_len, "Online Help", hbuf, NULL, NULL);
 	}
-
-	showbuf(WIN_MID|WIN_HLP, 0, 0, 76, api->scrn_len, "Online Help", hbuf, NULL, NULL);
+    else {
+		showbuf(WIN_MID|WIN_HLP, 0, 0, 76, api->scrn_len, "Online Help", api->helpbuf, NULL, NULL);
+	}
 }

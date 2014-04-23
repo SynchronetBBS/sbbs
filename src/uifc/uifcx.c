@@ -411,15 +411,19 @@ void help()
                 p++;
             l=-1L;
             while(!feof(fp)) {
-                if(!fread(str,12,1,fp))
+                if(fread(str,12,1,fp)!=1)
                     break;
                 str[12]=0;
-                fread(&line,2,1,fp);
+                if(fread(&line,2,1,fp)!=1);
                 if(stricmp(str,p) || line!=helpline) {
-                    fseek(fp,4,SEEK_CUR);
-                    continue; }
-                fread(&l,4,1,fp);
-                break; }
+                    if(fseek(fp,4,SEEK_CUR)==0)
+						break;
+                    continue;
+                }
+                if(fread(&l,4,1,fp)!=1)
+					l=-1L;
+                break;
+            }
             fclose(fp);
             if(l==-1L)
                 sprintf(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %s"
@@ -429,21 +433,31 @@ void help()
                     sprintf(hbuf,"ERROR: Cannot open help file: %s"
                         ,api->helpdatfile);
                 else {
-                    fseek(fp,l,SEEK_SET);
-                    fread(hbuf,HELPBUF_SIZE,1,fp);
-                    fclose(fp); 
-				} 
-			} 
-		} 
+                    if(fseek(fp,l,SEEK_SET)!=0) {
+						sprintf(hbuf,"ERROR: Cannot seek to help key (%s:%u) at %ld in: %s"
+							,p,helpline,l,api->helpixbfile);
+					}
+					else {
+						if(fread(hbuf,1,HELPBUF_SIZE,fp)<1) {
+							sprintf(hbuf,"ERROR: Cannot read help key (%s:%u) at %ld in: %s"
+								,p,helpline,l,api->helpixbfile);
+						}
+					}
+					fclose(fp); 
+				}
+			}
+		}
+		uputs(hbuf);
+		if(strlen(hbuf)>200) {
+			printf("Hit enter");
+			getstr(str,sizeof(str)-1);
+		}
 	}
-    else
-        strcpy(hbuf,api->helpbuf);
-
-    uputs(hbuf);
-    if(strlen(hbuf)>200) {
-        printf("Hit enter");
-        getstr(str,sizeof(str)-1);
-    }
+    else {
+		uputs(api->helpbuf);
+		if(strlen(api->helpbuf)>200) {
+			printf("Hit enter");
+			getstr(str,sizeof(str)-1);
+		}
+	}
 }
-
-
