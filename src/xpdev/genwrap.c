@@ -473,7 +473,7 @@ clock_t DLLCALL msclock(void)
 	struct timeval tv;
 	if(gettimeofday(&tv,NULL)==1)
 		return(-1);
-	usecs=tv.tv_sec*1000000+tv.tv_usec;
+	usecs=((long long int)tv.tv_sec)*((long long int)1000000)+tv.tv_usec;
 	return((clock_t)(usecs/(1000000/MSCLOCKS_PER_SEC)));
 }
 #endif
