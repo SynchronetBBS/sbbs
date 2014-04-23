@@ -533,6 +533,10 @@ int bitmap_setfont(int font, int force, int font_num)
 			gettext(1,1,ow,oh,old);
 			textmode(newmode);
 			new=malloc(ti.screenwidth*ti.screenheight*2);
+			if(!new) {
+				free(old);
+				return -1;
+			}
 			pold=old;
 			pnew=new;
 			for(row=0; row<ti.screenheight; row++) {
