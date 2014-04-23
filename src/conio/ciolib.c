@@ -874,6 +874,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(const char *fmat, ...)
 	else
 		ret=EOF;
 	free(str);
+    va_end(argptr);
 #else
 
 #ifdef _MSC_VER
