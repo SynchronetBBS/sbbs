@@ -961,6 +961,8 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 	int samples;
 
 	wave=(unsigned char *)malloc(S_RATE*15/2+1);
+	if(!wave)
+		return FALSE;
 	if(freq<17 && freq != 0)
 		freq=17;
 	samples=S_RATE*duration/1000;
