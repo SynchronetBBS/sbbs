@@ -1483,13 +1483,15 @@ int sdl_video_event_thread(void *data)
 								force_redraws=1;
 							}
 							else {
-								upd_rects[0].x=0;
-								upd_rects[0].y=0;
-								upd_rects[0].w=new_rect->w;
-								upd_rects[0].h=new_rect->h;
-								sdl.BlitSurface(new_rect, upd_rects, win, upd_rects);
-								sdl.UpdateRects(win,1,upd_rects);
-								rectsused=0;
+								if(upd_rects) {
+									upd_rects[0].x=0;
+									upd_rects[0].y=0;
+									upd_rects[0].w=new_rect->w;
+									upd_rects[0].h=new_rect->h;
+									sdl.BlitSurface(new_rect, upd_rects, win, upd_rects);
+									sdl.UpdateRects(win,1,upd_rects);
+									rectsused=0;
+								}
 							}
 						}
 						break;
@@ -1506,7 +1508,7 @@ int sdl_video_event_thread(void *data)
 									SDL_Rect r;
 									int x,y,offset;
 
-									if(!win) {
+									if(!win || !upd_rects) {
 										free(rect->data);
 										free(rect);
 										break;
