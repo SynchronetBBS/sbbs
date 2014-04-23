@@ -489,8 +489,6 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str)
 				if(ciolib_getche()==1)
 					goto early_return;
 				break;
-			case '\r':	/* Skip \r (ToDo: Should this be treated as a \n? */
-				break;
 			case '\b':
 				if(len==0) {
 					ciolib_putch(7);
