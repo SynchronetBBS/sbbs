@@ -329,21 +329,21 @@ int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 								 ,unsigned flags, const void* data, size_t length)
 {
 	int			retval;
-	size_t		n;
+	size_t		n=2;
 	hash_t**	hashes;
 	hash_t		found;
 
-	if((hashes=(hash_t**)malloc(sizeof(hash_t*)*2))==NULL)
+	if((hashes=(hash_t**)calloc(n, sizeof(hash_t*)))==NULL)
 		return(SMB_ERR_MEM);
 
 	if(length==0)
 		hashes[0]=smb_hashstr(0,0,source,flags,data);
 	else
 		hashes[0]=smb_hash(0,0,source,flags,data,length);
-	if(hashes[0]==NULL)
+	if(hashes[0]==NULL) {
+		FREE_LIST(hashes,n);
 		return(SMB_ERR_MEM);
-
-	hashes[1]=NULL;	/* terminate list */
+	}
 
 	if((retval=smb_findhash(smb, hashes, &found, 1<<source, FALSE))==SMB_SUCCESS) {
 		if(found.number==0)
