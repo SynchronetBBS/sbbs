@@ -185,15 +185,19 @@ int CIOLIBCALL more_multies(int button, int clicks)
 		case 0:
 			if(mouse_events & (1<<CIOLIB_BUTTON_CLICK(button)))
 				return(1);
+			/* Fall-through */
 		case 1:
 			if(mouse_events & (1<<CIOLIB_BUTTON_DBL_CLICK(button)))
 				return(1);
+			/* Fall-through */
 		case 2:
 			if(mouse_events & (1<<CIOLIB_BUTTON_TRPL_CLICK(button)))
 				return(1);
+			/* Fall-through */
 		case 3:
 			if(mouse_events & (1<<CIOLIB_BUTTON_QUAD_CLICK(button)))
 				return(1);
+			/* Fall-through */
 	}
 	return(0);
 }
