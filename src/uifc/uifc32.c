@@ -2086,6 +2086,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						}
 						continue;
 					}
+					/* Fall-through at beginning of string */
 				case CIO_KEY_DC:	/* delete */
 				case DEL:			/* sdl_getch() is returning 127 when keypad "Del" is hit */
 					if(i<j)
@@ -2480,7 +2481,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		}
 		for(i=2;i<(width-j);i+=2)
    		      tmp_buffer2[i]='Ä';
-		if(api->mode&UIFC_MOUSE && !mode&WIN_DYN) {
+		if((api->mode&UIFC_MOUSE) && (!(mode&WIN_DYN))) {
 			tmp_buffer2[2]='[';
 			tmp_buffer2[3]=api->hclr|(api->bclr<<4);
 			/* tmp_buffer2[4]='þ'; */
