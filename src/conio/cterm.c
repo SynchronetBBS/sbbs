@@ -2089,6 +2089,9 @@ char* CIOLIBCALL cterm_write(struct cterminal * cterm, const unsigned char *buf,
 										FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
 										conio_fontdata[cterm->font_slot].desc=strdup("Remote Defined Font");
 										break;
+									default:
+										FREE_AND_NULL(buf2);
+										break;
 								}
 							}
 							else
