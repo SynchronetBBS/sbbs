@@ -1721,8 +1721,10 @@ unsigned* DLLCALL parseEnumList(const char* values, const char* sep, str_list_t 
 
 	free(vals);
 
-	if((*count=strListCount(list)) < 1)
+	if((*count=strListCount(list)) < 1) {
+		strListFree(&list);
 		return NULL;
+	}
 
 	if((enum_list=(unsigned *)malloc((*count)*sizeof(unsigned)))!=NULL) {
 		for(i=0;i<*count;i++)
