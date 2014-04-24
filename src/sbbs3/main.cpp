@@ -51,7 +51,7 @@
 	#endif
 #endif
 
-#define SBBS_TELNET_ENVIRON_SUPPORT 1
+//#define SBBS_TELNET_ENVIRON_SUPPORT 1
 //---------------------------------------------------------------------------
 
 #define TELNET_SERVER "Synchronet Terminal Server"
