@@ -121,7 +121,8 @@ static int getstr(char* str, int maxlen)
 	istty=isatty(fileno(stdin));
 #endif
     while(1) {
-		fread(&ch,1,1,stdin);
+		if(fread(&ch,1,1,stdin)!=1)
+			break;
 #ifdef __unix__
 		if(!istty)  {
 			printf("%c",ch);
@@ -414,7 +415,8 @@ void help()
                 if(fread(str,12,1,fp)!=1)
                     break;
                 str[12]=0;
-                if(fread(&line,2,1,fp)!=1);
+                if(fread(&line,2,1,fp)!=1)
+					break;
                 if(stricmp(str,p) || line!=helpline) {
                     if(fseek(fp,4,SEEK_CUR)==0)
 						break;

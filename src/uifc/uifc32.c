@@ -2719,7 +2719,8 @@ static void help(void)
                 if(fread(str,12,1,fp)!=1)
                     break;
                 str[12]=0;
-                if(fread(&line,2,1,fp)!=1);
+                if(fread(&line,2,1,fp)!=1)
+					break;
                 if(stricmp(str,p) || line!=helpline) {
                     if(fseek(fp,4,SEEK_CUR)==0)
 						break;
