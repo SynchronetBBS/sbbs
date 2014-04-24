@@ -394,30 +394,49 @@ int DLLCALL strListCmp(str_list_t list1, str_list_t list2)
 {
 	str_list_t	l1=strListDup(list1);
 	str_list_t	l2=strListDup(list2);
+	str_list_t	ol1=l1;
+	str_list_t	ol2=l2;
 	int			tmp;
+	int			ret;
 
-	if(*l1 == NULL && *l2 == NULL)
-		return 0;
-	if(*l1 == NULL)
-		return -1;
-	if(*l2 == NULL)
-		return 1;
+	if(*l1 == NULL && *l2 == NULL) {
+		ret=0;
+		goto early_return;
+	}
+	if(*l1 == NULL) {
+		ret = -1;
+		goto early_return;
+	}
+	if(*l2 == NULL) {
+		ret = 1;
+		goto early_return;
+	}
 
 	strListSortAlphaCase(l1);
 	strListSortAlphaCase(l2);
 
 	for(; *l1; l1++) {
 		l2++;
-		if(*l2==NULL)
-			return 1;
+		if(*l2==NULL) {
+			ret=1;
+			goto early_return;
+		}
 		tmp = strcmp(*l1, *l2);
-		if(tmp != 0)
-			return tmp;
+		if(tmp != 0) {
+			ret=tmp;
+			goto early_return;
+		}
 	}
 	l2++;
 	if(*l2==NULL)
-		return 0;
-	return -1;
+		ret=0;
+	else
+		ret=-1;
+
+early_return:
+	strListFree(&ol1);
+	strListFree(&ol2);
+	return ret;
 }
 
 void DLLCALL strListFreeStrings(str_list_t list)
