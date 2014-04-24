@@ -292,7 +292,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 	va_list vars;
 	char			*p;
 	char			*newbuf;
-	int				i,j;
+	int				i=0,j;
 	unsigned int	ui=0;
 	long int		l=0;
 	unsigned long int	ul=0;
