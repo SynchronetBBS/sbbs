@@ -669,7 +669,7 @@ void DLLCALL xp_play_sample_thread(void *data)
 	BOOL			must_close=FALSE;
 	BOOL			posted_last=TRUE;
 	BOOL			waited=FALSE;
-	unsigned char	*sample;
+	unsigned char	*sample=NULL;
 	size_t			this_sample_size;
 
 #ifdef AFMT_U8
@@ -712,11 +712,12 @@ void DLLCALL xp_play_sample_thread(void *data)
 		if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 			if(pa_api->ver >= 1899) {
 				pa_api->write(portaudio_stream, sample, this_sample_size);
-				free(sample);
+				FREE_AND_NULL(sample);
 			}
 			else {
 				xptone_complete();
 				pawave=sample;
+				sample=NULL;
 				portaudio_buf_pos=0;
 				portaudio_buf_len=this_sample_size;
 				pa_api->start(portaudio_stream);
@@ -728,6 +729,7 @@ void DLLCALL xp_play_sample_thread(void *data)
 		if(handle_type==SOUND_DEVICE_SDL) {
 			sdl.LockAudio();
 			swave=sample;
+			sample=NULL;
 			sdl_audio_buf_pos=0;
 			sdl_audio_buf_len=this_sample_size;
 			sdl.UnlockAudio();
@@ -743,6 +745,7 @@ void DLLCALL xp_play_sample_thread(void *data)
 			}
 			FREE_AND_NULL(wh[curr_wh].lpData);
 			wh[curr_wh].lpData=sample;
+			sample=NULL;
 			wh[curr_wh].dwBufferLength=this_sample_size;
 			if(waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
 				if(waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
@@ -771,7 +774,7 @@ void DLLCALL xp_play_sample_thread(void *data)
 				written += ret;
 			}
 #ifndef AFMT_U8
-			free(sample);
+			FREE_AND_NULL(sample);
 #endif
 		}
 	#endif
@@ -784,7 +787,7 @@ void DLLCALL xp_play_sample_thread(void *data)
 				if(i>=0)
 					wr+=i;
 			}
-			free(sample);
+			FREE_AND_NULL(sample);
 		}
 	#endif
 		sem_post(&sample_complete_sem);
@@ -798,6 +801,17 @@ void DLLCALL xp_play_sample_thread(void *data)
 	}
 
 error_return:
+#ifdef _WIN32
+	if(handle_type==SOUND_DEVICE_WIN32) {
+		if(wh[curr_wh].dwFlags & WHDR_PREPARED) {
+			while(waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==WAVERR_STILLPLAYING)
+				SLEEP(1);
+		}
+		FREE_AND_NULL(wh[curr_wh].lpData);
+	}
+#endif
+
+	FREE_AND_NULL(sample);
 	xptone_close();
 	if(!posted_last)
 		sem_post(&sample_complete_sem);
