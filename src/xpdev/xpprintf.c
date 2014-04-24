@@ -293,18 +293,18 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 	char			*p;
 	char			*newbuf;
 	int				i,j;
-	unsigned int	ui;
-	long int		l;
-	unsigned long int	ul;
+	unsigned int	ui=0;
+	long int		l=0;
+	unsigned long int	ul=0;
 #if defined(XP_PRINTF_TYPE_LONGLONG)
-	long long int	ll;
-	unsigned long long int	ull;
+	long long int	ll=0;
+	unsigned long long int	ull=0;
 #endif
-	double			d;
-	long double		ld;
-	char*			cp;
-	void*			pntr;
-	size_t			s;
+	double			d=0;
+	long double		ld=0;
+	char*			cp=NULL;
+	void*			pntr=NULL;
+	size_t			s=0;
 	unsigned long	offset=0;
 	unsigned long	offset2=0;
 	size_t			format_len;
