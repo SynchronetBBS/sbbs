@@ -260,9 +260,12 @@ int DLLCALL recvfilesocket(int sock, int file, off_t *offset, off_t count)
 		return(-1);
 	}
 
-	if(offset!=NULL)
-		if(lseek(file,*offset,SEEK_SET)<0)
+	if(offset!=NULL) {
+		if(lseek(file,*offset,SEEK_SET)<0) {
+			free(buf);
 			return(-1);
+		}
+	}
 
 	rd=read(sock,buf,(size_t)count);
 	if(rd!=count) {
