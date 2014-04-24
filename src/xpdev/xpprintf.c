@@ -65,7 +65,7 @@ int DLLCALL xp_printf_get_type(const char *format)
 	const char	*p;
 	int		modifier=0;
 	int		j;
-	int		correct_type;
+	int		correct_type=0;
 
 	if(!*(size_t *)format)
 		return(0);
