@@ -460,7 +460,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 			}
 			break;
 		case 'l':
-			modifier='h';
+			modifier='l';
 			*(fmt++)=*(p++);
 			if(*p=='l') {
 				*(fmt++)=*(p++);
