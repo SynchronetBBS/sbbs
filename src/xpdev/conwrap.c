@@ -152,7 +152,8 @@ int getch(void)
     	_termios_setup();
 
     /* get a char out of stdin */
-    read(STDIN_FILENO, &c, 1);
+    if(read(STDIN_FILENO, &c, 1)==-1)
+		return 0;
 
     return c;
 }
