@@ -375,20 +375,31 @@ int DLLCALL nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size,
 
 	result=connect(sock, addr, size);
 
-	if(result==SOCKET_ERROR
-		&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
-		fd_set		wsocket_set;
-		fd_set		esocket_set;
-		struct		timeval tv;
-		socklen_t	optlen=sizeof(result);
-		tv.tv_sec = timeout;
-		tv.tv_usec = 0;
-		FD_ZERO(&wsocket_set);
-		FD_SET(sock,&wsocket_set);
-		FD_ZERO(&esocket_set);
-		FD_SET(sock,&esocket_set);
-		if(select(sock+1,NULL,&wsocket_set,&esocket_set,&tv)==1)
-			getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen);
+	if(result==SOCKET_ERROR) {
+		result=ERROR_VALUE;
+		if(result==EWOULDBLOCK || result==EINPROGRESS) {
+			fd_set		wsocket_set;
+			fd_set		esocket_set;
+			struct		timeval tv;
+			socklen_t	optlen=sizeof(result);
+			tv.tv_sec = timeout;
+			tv.tv_usec = 0;
+			FD_ZERO(&wsocket_set);
+			FD_SET(sock,&wsocket_set);
+			FD_ZERO(&esocket_set);
+			FD_SET(sock,&esocket_set);
+			switch(select(sock+1,NULL,&wsocket_set,&esocket_set,&tv)) {
+				case 1:
+					if(getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen)==SOCKET_ERROR)
+						result=ERROR_VALUE;
+					break;
+				case 0:
+					break;
+				case SOCKET_ERROR:
+					result=ERROR_VALUE;
+					break;
+			}
+		}
 	}
 	return result;
 }
