@@ -281,9 +281,11 @@ char* DLLCALL strtok_r(char *str, const char *delim, char **last)
 /****************************************************************************/
 void DLLCALL xp_randomize(void)
 {
+#if !(defined(HAS_SRANDOMDEV_FUNC) && defined(HAS_RANDOM_FUNC))
 	unsigned seed=~0;
 #if defined(HAS_DEV_URANDOM) && defined(URANDOM_DEV)
 	int		rf;
+#endif
 #endif
 
 #if defined(HAS_SRANDOMDEV_FUNC) && defined(HAS_RANDOM_FUNC)
