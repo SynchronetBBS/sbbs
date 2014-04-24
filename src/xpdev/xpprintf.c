@@ -124,7 +124,7 @@ int DLLCALL xp_printf_get_type(const char *format)
 			}
 			break;
 		case 'l':
-			modifier='h';
+			modifier='l';
 			p++;
 			if(*p=='l') {
 				p++;
