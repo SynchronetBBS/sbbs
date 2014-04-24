@@ -289,7 +289,7 @@ void DLLCALL xp_randomize(void)
 #if defined(HAS_SRANDOMDEV_FUNC) && defined(HAS_RANDOM_FUNC)
 	srandomdev();
 	return;
-#endif
+#else
 
 #if defined(HAS_DEV_URANDOM) && defined(URANDOM_DEV)
 	if((rf=open(URANDOM_DEV, O_RDONLY))!=-1) {
@@ -315,6 +315,7 @@ void DLLCALL xp_randomize(void)
  	srandom(seed);
 #else
  	srand(seed);
+#endif
 #endif
 }
 
