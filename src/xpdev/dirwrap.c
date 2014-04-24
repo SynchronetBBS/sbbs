@@ -870,11 +870,13 @@ ulong DLLCALL getdisksize(const char* path, ulong unit)
 char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 	char	*out;
 	char	*p;
+	BOOL	target_alloced=FALSE;
 
 	if(target==NULL)  {
 		if((target=malloc(MAX_PATH+1))==NULL) {
 			return(NULL);
 		}
+		target_alloced=TRUE;
 	}
 	out=target;
 	*out=0;
@@ -883,7 +885,8 @@ char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 		if(*path == '~') {
 			p=getenv("HOME");
 			if(p==NULL || strlen(p)+strlen(path)>=size) {
-				free(target);
+				if(target_alloced)
+					free(target);
 				return(NULL);
 			}
 			strcpy(target,p);
@@ -893,7 +896,8 @@ char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 		else {
 			p=getcwd(NULL,size);
 			if(p==NULL || strlen(p)+strlen(path)>=size) {
-				free(target);
+				if(target_alloced)
+					free(target);
 				return(NULL);
 			}
 			strcpy(target,p);
