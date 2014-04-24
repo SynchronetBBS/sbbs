@@ -249,7 +249,7 @@ str_list_t* dataParseList(const str_list_t records, str_list_t* columns, dataLin
 	if(records==NULL)
 		return(NULL);
 
-	if((list=(str_list_t*)malloc(sizeof(str_list_t*)*(strListCount(records)+1)))==NULL)
+	if((list=(str_list_t*)malloc(sizeof(str_list_t)*(strListCount(records)+1)))==NULL)
 		return(NULL);
 
 	if(columns!=NULL) {
