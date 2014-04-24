@@ -77,14 +77,20 @@ struct xpmapping* DLLCALL xpmap(const char *filename, enum xpmap_type type)
 	fd=open(filename, oflags);
 	if(fd == -1)
 		return NULL;
-	if(fstat(fd, &sb)==-1)
+	if(fstat(fd, &sb)==-1) {
+		close(fd);
 		return NULL;
+	}
 	addr=mmap(NULL, sb.st_size, mprot, mflags, fd, 0);
-	if(addr==MAP_FAILED)
+	if(addr==MAP_FAILED) {
+		close(fd);
 		return NULL;
+	}
 	ret=(struct xpmapping *)malloc(sizeof(struct xpmapping));
-	if(ret==NULL)
+	if(ret==NULL) {
+		close(fd);
 		return NULL;
+	}
 	ret->addr=addr;
 	ret->fd=fd;
 	ret->size=sb.st_size;
