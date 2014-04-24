@@ -882,16 +882,20 @@ char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 	if(*path != '/')  {
 		if(*path == '~') {
 			p=getenv("HOME");
-			if(p==NULL || strlen(p)+strlen(path)>=size)
+			if(p==NULL || strlen(p)+strlen(path)>=size) {
+				free(target);
 				return(NULL);
+			}
 			strcpy(target,p);
 			out=strrchr(target,'\0');
 			path++;
 		}
 		else {
 			p=getcwd(NULL,size);
-			if(p==NULL || strlen(p)+strlen(path)>=size)
+			if(p==NULL || strlen(p)+strlen(path)>=size) {
+				free(target);
 				return(NULL);
+			}
 			strcpy(target,p);
 			free(p);
 			out=strrchr(target,'\0');
