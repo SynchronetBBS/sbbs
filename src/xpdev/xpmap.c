@@ -88,6 +88,7 @@ struct xpmapping* DLLCALL xpmap(const char *filename, enum xpmap_type type)
 	}
 	ret=(struct xpmapping *)malloc(sizeof(struct xpmapping));
 	if(ret==NULL) {
+		munmap(addr, sb.st_size);
 		close(fd);
 		return NULL;
 	}
