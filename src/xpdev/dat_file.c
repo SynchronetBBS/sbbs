@@ -253,8 +253,10 @@ str_list_t* dataParseList(const str_list_t records, str_list_t* columns, dataLin
 		return(NULL);
 
 	if(columns!=NULL) {
-		if((*columns=lineParser(records[ri++]))==NULL)
+		if((*columns=lineParser(records[ri++]))==NULL) {
+			free(list);
 			return(NULL);
+		}
 	}
 
 	while(records[ri]!=NULL)
