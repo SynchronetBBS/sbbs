@@ -703,18 +703,26 @@ int removecase(const char *path)
 /****************************************************************************/
 ulong DLLCALL delfiles(const char *inpath, const char *spec)
 {
-	char	path[MAX_PATH+1];
+	char	*path;
 	char	lastch;
     uint	i,files=0;
 	glob_t	g;
+	size_t	inpath_len=strlen(inpath);
 
-	lastch=*lastchar(inpath);
+	if(inpath_len==0)
+		lastch=0;
+	else
+		lastch=inpath[inpath_len-1];
+	path=(char *)malloc(inpath_len+1/*Delim*/+strlen(spec)+1/*Terminator*/);
+	if(path==NULL)
+		return 0;
 	if(!IS_PATH_DELIM(lastch) && lastch)
 		sprintf(path,"%s%c",inpath,PATH_DELIM);
 	else
 		strcpy(path,inpath);
 	strcat(path,spec);
 	glob(path,0,NULL,&g);
+	free(path);
 	for(i=0;i<g.gl_pathc;i++) {
 		if(isdir(g.gl_pathv[i]))
 			continue;
