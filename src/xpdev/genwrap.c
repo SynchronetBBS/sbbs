@@ -49,8 +49,8 @@
 	#include <sys/utsname.h>	/* uname() */
 	#include <signal.h>
 #elif defined(_WIN32)
-	#include <Windows.h>
-	#include <LM.h>		/* NetWkstaGetInfo() */
+	#include <windows.h>
+	#include <lm.h>		/* NetWkstaGetInfo() */
 #endif
 
 #include "genwrap.h"	/* Verify prototypes */
