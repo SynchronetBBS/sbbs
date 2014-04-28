@@ -334,7 +334,7 @@ char* DLLCALL strListCombine(str_list_t list, char* buf, size_t maxlen, const ch
 }
 
 #if defined(_WIN32)
-	#define QSORT_CALLBACK_TYPE	_cdecl
+	#define QSORT_CALLBACK_TYPE	__cdecl
 #else
 	#define QSORT_CALLBACK_TYPE
 #endif
