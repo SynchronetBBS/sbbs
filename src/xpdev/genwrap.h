@@ -107,6 +107,16 @@ extern "C" {
 
 	#define DESCRIBE_COMPILER(str) SAFEPRINTF(str,"MSC %u", _MSC_VER);
 
+#elif defined(__clang__) && defined(__clang_patchlevel__)
+
+	#define DESCRIBE_COMPILER(str) SAFEPRINTF3(str,"Clang %u.%u.%u" \
+		,__clang_major__,__clang_minor__,__clang_patchlevel__);
+
+#elif defined(__clang__) && defined(__clang_minor__)
+
+	#define DESCRIBE_COMPILER(str) SAFEPRINTF2(str,"Clang %u.%u" \
+		,__clang_major__,__clang_minor__);
+
 #elif defined(__GNUC__) && defined(__GNUC_PATCHLEVEL__)
 
 	#define DESCRIBE_COMPILER(str) SAFEPRINTF3(str,"GCC %u.%u.%u" \
