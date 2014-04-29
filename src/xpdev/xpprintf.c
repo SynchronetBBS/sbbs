@@ -39,9 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#if defined(_WIN32)
- #include <malloc.h>    /* alloca() on Win32 */
-#endif
+#include "genwrap.h"    /* alloca() */
 
 #include "xpprintf.h"
 #include "gen_defs.h"
