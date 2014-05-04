@@ -241,33 +241,6 @@ static jsval* js_CopyValue(JSContext* cx, jsrefcount *cx_rc, jsval val, JSContex
 	return rval;
 }
 
-JSBool BGContextCallback(JSContext *cx, uintN contextOp)
-{
-	JSObject	*gl=JS_GetGlobalObject(cx);
-	global_private_t*	p;
-
-	if(!gl)
-		return JS_TRUE;
-
-	if((p=(global_private_t*)JS_GetPrivate(cx,gl))==NULL)
-		return(JS_TRUE);
-
-	switch(contextOp) {
-		case JSCONTEXT_DESTROY:
-			while(p->bg_count) {
-				while(p->bg_count && sem_trywait(&p->bg_sem)==0)
-					p->bg_count--;
-				if(!p->bg_count)
-					break;
-
-				if(sem_wait(&p->bg_sem)==0)
-					p->bg_count--;
-			}
-			break;
-	}
-	return JS_TRUE;
-}
-
 static JSBool
 js_load(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -613,7 +586,6 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		success = _beginthread(background_thread,0,bg)!=-1;
 		JS_RESUMEREQUEST(cx, rc);
 		if(success) {
-			JS_SetContextCallback(JS_GetRuntime(cx), BGContextCallback);
 			p->bg_count++;
 		}
 
@@ -4128,8 +4100,14 @@ static void js_global_finalize(JSContext *cx, JSObject *obj)
 
 	p=(global_private_t*)JS_GetPrivate(cx,obj);
 
-	if(p!=NULL)
+	if(p!=NULL) {
+		while(p->bg_count) { 
+			if(sem_wait(&p->bg_sem)==0) 
+				p->bg_count--; 
+		}
+		sem_destroy(&p->bg_sem);
 		free(p);
+	}
 
 	p=NULL;
 	JS_SetPrivate(cx,obj,p);
