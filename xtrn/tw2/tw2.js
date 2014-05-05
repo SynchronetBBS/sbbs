@@ -343,7 +343,7 @@ try {
 		}
 	}
 }
-catch (e) { log(e); log(e.toSource); throw(e); }
+catch (e) { log(e); log(e.toSource()); throw(e); }
 }
 
 main();
