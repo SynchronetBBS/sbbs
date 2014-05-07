@@ -1103,7 +1103,10 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 				if(*p)
 					p++;
 				if(!stricmp(new,arcname)) {   /* Add to new definition */
-					if(!match) {
+					if(match) {
+						fprintf(outfile,"%-10s %s %s\n", cmd, arcname, p);
+					}
+					else {
 						fprintf(outfile,"%-10s %s %s %s\n",cmd,arcname
 							,smb_faddrtoa(&cfg.nodecfg[cfgnum].faddr,NULL)
 							,p);
