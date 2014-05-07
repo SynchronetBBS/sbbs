@@ -1142,6 +1142,8 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 					fprintf(outfile,"%-10s %s %s %s\n",cmd
 						,smb_faddrtoa(&cfg.nodecfg[cfgnum].faddr,NULL),new,p);
 				}
+				else
+					fprintf(outfile,"%-10s %s\n", cmd, p);
 			}
 		}
 		else if(option>1 && !strcmp(cmd,"PASSIVE")) {        /* Toggle Passive Areas */
