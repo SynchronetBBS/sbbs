@@ -43,6 +43,16 @@
  *                              high blue color of the parenthesis.
  * 2013-11-27 Eric Oulashin     Version 1.39
  *                              Releasing this version after having done some testing.
+ * 2014-05-12 Eric Oulashin     Version 1.40 (not released yet)
+ *                              Added a check in wrapQuoteLinesUsingAuthorInitials() in
+ *                              SlyEdit_Misc.js: When building the last section info object,
+ *                              added a check to the while loop that makes sure
+ *                              sectionInfo.endArrIndex is greater than 0 to avoid an index
+ *                              out-of-bounds issue with the check that references
+ *                              gQuoteLines[sectionInfo.endArrIndex-1].  This should hopefully
+ *                              fix a bug with SlyEdit crashing at that point.
+ * 2014-05-21 Eric Oulashin     Version 1.40
+ *                              Going ahead and releasing this version
  */
 
 /* Command-line arguments:
@@ -120,8 +130,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.39";
-const EDITOR_VER_DATE = "2013-11-27";
+const EDITOR_VERSION = "1.40";
+const EDITOR_VER_DATE = "2014-05-21";
 
 
 // Program variables

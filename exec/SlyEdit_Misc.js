@@ -86,6 +86,12 @@
  *                              CTRL key help text at the right in the bottom border are
  *                              correctly displayed with a high blue color, regardless of
  *                              what is specified in the color theme file.
+ * 2014-05-12 Eric Oulashin     Added a check in wrapQuoteLinesUsingAuthorInitials(): When
+ *                              building the last section info object, added a check to
+ *                              the while loop that makes sure sectionInfo.endArrIndex is
+ *                              greater than 0 to avoid an index out-of-bounds issue with
+ *                              the check that references gQuoteLines[sectionInfo.endArrIndex-1].
+ *                              This should hopefully fix a bug with SlyEdit crashing at that point.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -2767,7 +2773,7 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
       sectionInfo.quoteLevel = lastQuoteLevel;
       // If the end array index is for a blank quote line, then
       // adjust it to the first non-blank quote line before it.
-      while (gQuoteLines[sectionInfo.endArrIndex-1].length == 0)
+      while ((sectionInfo.endArrIndex > 0) && (gQuoteLines[sectionInfo.endArrIndex-1].length == 0))
          --sectionInfo.endArrIndex;
       quoteSections.push(sectionInfo);
    }
