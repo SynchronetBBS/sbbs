@@ -356,6 +356,7 @@ AX25.KISSTNC = function(serialPort, baudRate, callsign, ssid) {
 				throw "Unable to open nonexistent serial port.";
 			com = new COM(serialPort);
 			com.open();
+			com.dtr = true;
 			if(!com.is_open) {
 				throw format(
 					"Error opening serial port '%s': %s.",
@@ -387,6 +388,7 @@ AX25.KISSTNC = function(serialPort, baudRate, callsign, ssid) {
 					com.close();
 				com.baud_rate = settings.baudRate;
 				com.open();
+				com.dtr = true;
 				if(!com.is_open) {
 					throw format(
 						"Error setting baud rate '%s': %s",
