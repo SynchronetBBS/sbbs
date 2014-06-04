@@ -35,9 +35,9 @@ var RLogin = function(host, port, username, password, terminal) {
 	this.connect = function() {
 		socket.connect(host, port);
 		socket.sendBin(0, 1);
-		socket.send(username);
-		socket.sendBin(0, 1);
 		socket.send(password);
+		socket.sendBin(0, 1);
+		socket.send(username);
 		socket.sendBin(0, 1);
 		socket.send(terminal);
 		socket.sendBin(0, 1);
