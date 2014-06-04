@@ -2,6 +2,24 @@ project (SyncTERM C)
 
 cmake_minimum_required(VERSION 2.8.11)
 
+# CPack stuff...
+set(CPACK_PACKAGE_NAME SyncTERM)
+set(CPACK_PACKAGE_VENDOR Deuce)
+set(CPACK_PACKAGE_VERSION_MAJOR 0)
+set(CPACK_PACKAGE_VERSION_MINOR 9)
+set(CPACK_PACKAGE_VERSION_PATCH 5)
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SyncTERM is a Telnet/RLogin/SSH BBS Client")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY SyncTERM)
+#set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/syncterm.png)
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/LICENCE)
+set(CPACK_MONOLITHIC_INSTALL TRUE)
+set(CPACK_PACKAGE_EXECUTABLES "syncterm;SyncTERM")
+set(CPACK_DEBIAN_PACKAGE_NAME syncterm)
+set(CPACK_DEBIAN_PACKAGE_VERSION 0.9.5)
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Stephen Hurd")
+INCLUDE(CPack)
+######
+
 INCLUDE (../build/SynchronetMacros.cmake)
 INCLUDE (CheckIncludeFiles)
 
@@ -72,6 +90,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 install(TARGETS syncterm DESTINATION bin)
+install(TARGETS xpdev DESTINATION lib EXPORT XPDevConfig)
 if(UNIX)
 	install(FILES syncterm.desktop DESTINATION share/applications)
         install(FILES syncterm.png DESTINATION share/icons/hicolor/64x64/apps)
