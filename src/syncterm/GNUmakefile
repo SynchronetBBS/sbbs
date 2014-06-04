@@ -94,10 +94,11 @@ ifdef USE_GUTS
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)gutsz$(OFILE)
 endif
 
+DESTDIR	?=
 PREFIX	?= /usr/local
 DESKTOPDIR ?= $(PREFIX)/share/applications
 
-CFLAGS	+=	-DPREFIX=\"${PREFIX}\"
+CFLAGS	+=	-DPREFIX=\"${DESTDIR}${PREFIX}\"
 ifeq ($(PREFIX),/usr)
  MANPREFIX ?= /usr/share
  SYSTEM_LIST_DIR ?= /etc
@@ -166,17 +167,17 @@ syncterm.1.gz: syncterm.man
 	gzip < syncterm.man > syncterm.1.gz
 
 installdirs:
-	-mkdir -p ${PREFIX}/bin
-	-mkdir -p ${DESKTOPDIR}
-	-mkdir -p ${MANPREFIX}/man/man1
-	-mkdir -p ${PREFIX}/share/icons/hicolor/64x64/apps
+	-mkdir -p ${DESTDIR}${PREFIX}/bin
+	-mkdir -p ${DESTDIR}${DESKTOPDIR}
+	-mkdir -p ${DESTDIR}${MANPREFIX}/man/man1
+	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
 
 install: $(SYNCTERM) syncterm.1.gz installdirs
 	@echo Installing...
-	${INSTALL_EXE} ${SYNCTERM} ${PREFIX}/bin
-	${INSTALL_DATA} syncterm.png ${PREFIX}/share/icons/hicolor/64x64/apps
-	${INSTALL_DATA} syncterm.desktop ${DESKTOPDIR}
-	${INSTALL_DATA} syncterm.1.gz ${MANPREFIX}/man/man1
+	${INSTALL_EXE} ${SYNCTERM} ${DESTDIR}${PREFIX}/bin
+	${INSTALL_DATA} syncterm.png ${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
+	${INSTALL_DATA} syncterm.desktop ${DESTDIR}${DESKTOPDIR}
+	${INSTALL_DATA} syncterm.1.gz ${DESTDIR}${MANPREFIX}/man/man1
 
 devel: tags cscope.out
 
