@@ -1,3 +1,15 @@
+Version 0.9.5
+-------------
+Fix handling of ESC[m
+Add IPv6 Support
+Add support for ESC [?7h and ESC [?7l to disable/enable auto-wrap
+Also add ESC [?Xs and ESC [?Xu to save/restore modes controlled by h and l
+On Vista and newer, use the system configured download path
+Add a -T argument to dump a SyncTERM terminfo entry on stdout
+Increase the maximim password sizes to 128
+Add support for scrolling regions
+Stop using the 'SyncTERM' background
+
 Version 0.9.4
 -------------
 X/Y/Zmodem improvements for large files
