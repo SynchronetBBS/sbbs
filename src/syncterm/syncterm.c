@@ -48,7 +48,7 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include "uifcinit.h"
 #include "window.h"
 
-char* syncterm_version = "SyncTERM 0.9.5b"
+char* syncterm_version = "SyncTERM 0.9.5"
 #ifdef _DEBUG
 	" Debug ("__DATE__")"
 #endif
