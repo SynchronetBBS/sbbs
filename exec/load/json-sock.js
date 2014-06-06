@@ -12,7 +12,7 @@ Socket.prototype.recv_wait = 30;
 /* last ping sent */
 Socket.prototype.ping_sent = 0;
 /* debug logging */
-Socket.prototype.debug_logging = true;
+Socket.prototype.debug_logging = false;
 
 /* socket prototype to automatically encode JSON data */
 Socket.prototype.sendJSON = function(object) {
