@@ -854,7 +854,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(const char *fmat, ...)
 {
     va_list argptr;
 	int		ret;
-#if defined(_MSC_VER) || define(__MSVCRT__)	/* Can't figure out a way to allocate a "big enough" buffer for Win32. */
+#if defined(_MSC_VER) || defined(__MSVCRT__)	/* Can't figure out a way to allocate a "big enough" buffer for Win32. */
 	char	str[16384];
 #else
 	char	*str;
