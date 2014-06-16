@@ -1,6 +1,5 @@
-/* $Id$ */
-
 var root = argv[0];
+
 /* load server connection information from server.ini */
 var server_file = new File(file_cfgname(root, "server.ini"));
 server_file.open('r',true);
@@ -225,7 +224,7 @@ function scanInactivity() {
 					turns:0,
 					moves:0
 				}
-				client.write(game_id,"games." + gameNumber + ".players." + player.name,player,2)
+				client.write(game_id,"games." + game.gameNumber + ".players." + player.name,player,2)
 				updateTurn(game);
 			}
 		}
@@ -266,6 +265,16 @@ function main() {
 	}
 }
 
+try {
+
+
 open();
 main();
 close();
+
+} catch(e) {
+	var ef = new File(root + "e.log");
+	ef.open('a',true);
+	ef.writeln(e.toSource());
+	ef.close();
+}
