@@ -1,10 +1,12 @@
 var root = argv[0];
-
+if(!file_exists(root + "server.ini")) {
+	throw("server initialization file missing");
+}
 /* load server connection information from server.ini */
-var server_file = new File(file_cfgname(root, "server.ini"));
+var server_file = new File(root + "server.ini");
 server_file.open('r',true);
-var serverAddr=server_file.iniGetValue(null,"host","localhost");
-var serverPort=server_file.iniGetValue(null,"port",10088);
+var serverAddr=server_file.iniGetValue(null,"host");
+var serverPort=server_file.iniGetValue(null,"port");
 server_file.close();
 
 load("json-client.js");
@@ -210,9 +212,11 @@ function scanInactivity() {
 	var timeout = settings.inactivity_timeout * 24 * 60 * 60 * 1000;
 	for(var g in data.games) {
 		var game = data.games[g];
-		if(Date.now() - timeout >= game.last_turn) {
+		elog("game " + game.gameNumber + " last turn: " + game.last_turn + " inactive: " + (Date.now() - game.last_turn));
+		if(Date.now() - game.last_turn >= timeout) {
 			if(game.single_player) {
 				deleteGame(game.gameNumber);
+				elog("inactive game deleted");
 			}
 			else if(game.status == status.PLAYING) {
 				var player = game.players[game.turn];
@@ -224,11 +228,20 @@ function scanInactivity() {
 					turns:0,
 					moves:0
 				}
-				client.write(game_id,"games." + game.gameNumber + ".players." + player.name,player,2)
+				client.write(game_id,"games." + game.gameNumber + ".players." + game.turn,player,2)
 				updateTurn(game);
+				elog("inactive player changed to AI");
 			}
 		}
 	}
+}
+
+/* error log / debug log */
+function elog(str) {
+	var ef = new File(root + "e.log");
+	ef.open('a',true);
+	ef.writeln(str + " (" + system.timestr() + ")");
+	ef.close();
 }
 
 /* initialize service */
@@ -245,7 +258,8 @@ function open() {
 		data.players = {};
 	
 	updateGames();
-	timer.addEvent(86400000,true,scanInactivity);	
+	scanInactivity();
+	timer.addEvent(43200000,true,scanInactivity);	
 	log(LOG_INFO,"Dicewarz II background service initialized");
 }
 
@@ -267,14 +281,10 @@ function main() {
 
 try {
 
-
 open();
 main();
 close();
 
 } catch(e) {
-	var ef = new File(root + "e.log");
-	ef.open('a',true);
-	ef.writeln(e.toSource());
-	ef.close();
+	elog(e.toSource());
 }
