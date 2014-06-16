@@ -347,6 +347,8 @@ function lobby() {
 			}
 			if(vote_to_start) {
 				startGame(game); 
+				data.games[game.gameNumber]=game;
+				client.write(game_id,"games." + game.gameNumber,game);
 				return;
 			}
 		}
@@ -429,7 +431,6 @@ function lobby() {
 		
 		var map = generateMap(game);
 		dispersePlayers(game,map);
-		data.saveGame(game);
 		data.saveMap(map);
 	}
 	function createNewGame() {
@@ -500,11 +501,15 @@ function lobby() {
 		addPlayer(game,user.alias,system.name,start_now);
 		data.games[gameNumber] = game;
 		
+		if(single_player) {
+			startGame(game);
+		}
+		
+		data.games[gameNumber]=game;
 		client.write(game_id,"games." + gameNumber,game);
 		client.unlock(game_id,"games");
 		
 		if(single_player) {
-			startGame(game);
 			playGame(gameNumber);
 			return true;
 		}
