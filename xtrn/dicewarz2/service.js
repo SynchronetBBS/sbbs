@@ -214,12 +214,13 @@ function scanInactivity() {
 		var game = data.games[g];
 		elog("game " + game.gameNumber + " last turn: " + game.last_turn + " inactive: " + (Date.now() - game.last_turn));
 		if(Date.now() - game.last_turn >= timeout) {
+			var player = game.players[game.turn];
 			if(game.single_player) {
+				scoreForfeit(player);
 				deleteGame(game.gameNumber);
 				elog("inactive game deleted");
 			}
 			else if(game.status == status.PLAYING) {
-				var player = game.players[game.turn];
 				player.name += " AI";
 				player.AI = {
 					sort:"random",
@@ -234,6 +235,23 @@ function scanInactivity() {
 			}
 		}
 	}
+}
+
+/* forfeit points */
+function scoreForfeit(player) {
+		client.lock(game_id,"scores." + player.name,2);
+		
+		var score=client.read(game_id,"scores." + player.name);
+		if(!score)
+			score=new Score(player.name,player.system);
+			
+		score.losses++;
+		score.points=Number(score.points) + Number(settings.point_set.forfeit);
+		if(score.points < settings.min_points)
+			score.points = Number(settings.min_points);
+		
+		client.write(game_id,"scores." + player.name,score);
+		client.unlock(game_id,"scores." + player.name);
 }
 
 /* error log / debug log */
