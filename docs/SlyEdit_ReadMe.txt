@@ -14,7 +14,7 @@
 This file describes SlyEdit, a message editor for Synchronet.
 Note: For sysops who already have a previous version of SlyEdit
 installed and are upgrading to this version, please see the file
-Upgrading.txt.
+SlyEdit_Upgrading.txt.
 
 Contents
 ========
@@ -216,8 +216,8 @@ Ctrl-O       : Import a file                ¦ Ctrl-X : Export to file
 -----------------------------------------
 If you use Digital Distortion's Message Lister, you must update it to version
 1.36 or newer in order to properly work with this version of SlyEdit when
-replying to messages.  See the file "Message Lister notes.txt" for a more
-detailed explanation.
+replying to messages.  See the file "SlyEdit_DD_Message_Lister_notes.txt" for a
+more detailed explanation.
 
 6. Configuration file
 =====================
