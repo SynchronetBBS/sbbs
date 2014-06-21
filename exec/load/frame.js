@@ -1228,7 +1228,7 @@ function Canvas(frame,display) {
 			return undefined;
 		if(xpos >= this.frame.width || ypos >= this.frame.height)
 			return undefined;
-		if(this.frame.transparent && this.frame.getData(xpos,ypos).ch == undefined)
+		if(this.frame.transparent && this.frame.getData(xpos,ypos,true).ch == undefined)
 			return undefined;
 		return true;
 	}
