@@ -27,6 +27,10 @@ ifeq ($(shell perl -e 'print "$(machine)"=~/\.arm/?"YES":"NO"'),YES)
  endif
 endif
 
+.PHONY: cryptlib libmozjs
+cryptlib: $(CRYPTLIB_BUILD)
+libmozjs: $(JSLIB_BUILD)
+
 ###############
 # Directories #
 ###############
@@ -68,6 +72,7 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)b
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < random_exit.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < SSL-fix.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < Dynamic-linked-static-lib.patch
+	$(QUIET)patch -p0 -d $(CRYPT_SRC) < terminal-params.patch
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) make
 	$(QUIET)cp $(CRYPT_SRC)$(DIRSEP)libcl.a $(CRYPT_IDIR)
 	$(QUIET)cp $(CRYPT_SRC)$(DIRSEP)cryptlib.h $(CRYPT_IDIR)
