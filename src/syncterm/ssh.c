@@ -141,7 +141,7 @@ int ssh_connect(struct bbslist *bbs)
 	int status;
 	char password[MAX_PASSWD_LEN+1];
 	char username[MAX_USER_LEN+1];
-	struct winsize ws;
+	int	rows,cols;
 	struct text_info ti;
 
 	init_uifc(TRUE, TRUE);
@@ -239,28 +239,28 @@ int ssh_connect(struct bbslist *bbs)
 
 	gettextinfo(&ti);
 	if(ti.screenwidth < 80)
-		ws.ws_col=40;
+		cols=40;
 	else {
 		if(ti.screenwidth < 132)
-			ws.ws_col=80;
+			cols=80;
 		else
-			ws.ws_col=132;
+			cols=132;
 	}
-	ws.ws_row=ti.screenheight;
+	rows=ti.screenheight;
 	if(!bbs->nostatus)
-		ws.ws_row--;
-	if(ws.ws_row<24)
-		ws.ws_row=24;
+		rows--;
+	if(rows<24)
+		rows=24;
 
 	uifc.pop(NULL);
 	uifc.pop("Setting Terminal Width");
 	/* Pass socket to cryptlib */
-	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_WIDTH, ws.ws_col);
+	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_WIDTH, cols);
 
 	uifc.pop(NULL);
 	uifc.pop("Setting Terminal Height");
 	/* Pass socket to cryptlib */
-	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_HEIGHT, ws.ws_row);
+	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_HEIGHT, rows);
 
 	/* Activate the session */
 	uifc.pop(NULL);
