@@ -9,7 +9,7 @@
 #define CRYPT_ATTRIBUTE_ERRORMESSAGE	CRYPT_ATTRIBUTE_INT_ERRORMESSAGE
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MSVCRT__)
 	#undef C_RET 
 	#define C_RET int
 #endif
