@@ -74,6 +74,14 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)b
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < Dynamic-linked-static-lib.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < terminal-params.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-mingw32.patch
+ifeq ($(CC),mingw32-gcc)
+	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make target-mingw
+else
+ifdef MINGW32
+	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make target-mingw
+else
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make
+endif
+endif
 	$(QUIET)cp $(CRYPT_SRC)$(DIRSEP)libcl.a $(CRYPT_IDIR)
 	$(QUIET)cp $(CRYPT_SRC)$(DIRSEP)cryptlib.h $(CRYPT_IDIR)
