@@ -1,6 +1,6 @@
 diff -ur ../cl.patched/io/tcp.h ./io/tcp.h
 --- ../cl.patched/io/tcp.h	2014-06-23 03:18:20.000000000 -0700
-+++ ./io/tcp.h	2014-06-23 03:49:37.000000000 -0700
++++ ./io/tcp.h	2014-06-24 00:35:54.000000000 -0700
 @@ -199,7 +199,7 @@
  	  defined( __ECOS__ ) || defined( __MVS__ ) || \
  	  defined( __PALMOS__ ) || defined( __RTEMS__ ) || \
@@ -10,10 +10,31 @@ diff -ur ../cl.patched/io/tcp.h ./io/tcp.h
  
  /* C_IN is a cryptlib.h value which is also defined in some versions of
     netdb.h, so we have to undefine it before we include any network header
-Only in ./io: tcp.h.orig
+@@ -838,8 +838,7 @@
+ 	 strangely it is present for straight x86 builds), and also for older 
+ 	 WinCE builds, in which case we have to explicitly define it 
+ 	 ourselves */
+-  #if defined( __WINDOWS__ ) && !defined( IPV6_V6ONLY ) && \
+-	  ( defined( _M_X64 ) || defined( __WINCE__ ) )
++  #if defined( __WINDOWS__ ) && !defined( IPV6_V6ONLY )
+ 	#define IPV6_V6ONLY		27		/* Force dual stack to use only IPv6 */
+   #endif /* Some Windows build environments */
+ #endif /* IPv6 */
+diff -ur ../cl.patched/kernel/sec_mem.c ./kernel/sec_mem.c
+--- ../cl.patched/kernel/sec_mem.c	2014-06-23 03:18:15.000000000 -0700
++++ ./kernel/sec_mem.c	2014-06-24 00:52:37.000000000 -0700
+@@ -314,7 +314,7 @@
+ #if defined( __WIN32__ )
+ 
+ #if !defined( NDEBUG ) && !defined( NT_DRIVER ) && !defined( __BORLANDC__ )
+-  #define USE_HEAP_CHECKING
++//  #define USE_HEAP_CHECKING
+ #endif /* Win32 debug version */
+ 
+ #ifdef USE_HEAP_CHECKING
 diff -ur ../cl.patched/makefile ./makefile
 --- ../cl.patched/makefile	2014-06-23 03:18:24.000000000 -0700
-+++ ./makefile	2014-06-23 03:49:39.000000000 -0700
++++ ./makefile	2014-06-24 00:49:18.000000000 -0700
 @@ -2299,9 +2299,8 @@
  
  target-mingw:
@@ -25,11 +46,10 @@ diff -ur ../cl.patched/makefile ./makefile
  
  # MIPS running Linux: Little-endian, 2.x kernel.  Note that we use $(CFLAGS)
  # rather than $(XCFLAGS) since this is a Unix system, just not the same as
-Only in .: makefile.orig
 diff -ur ../cl.patched/misc/config.h ./misc/config.h
 --- ../cl.patched/misc/config.h	2014-06-23 03:18:16.000000000 -0700
-+++ ./misc/config.h	2014-06-23 03:49:40.000000000 -0700
-@@ -268,7 +268,7 @@
++++ ./misc/config.h	2014-06-24 00:44:01.000000000 -0700
+@@ -268,10 +268,10 @@
  
  #if defined( __WIN32__ )
    #ifndef __BORLANDC__
@@ -37,11 +57,14 @@ diff -ur ../cl.patched/misc/config.h ./misc/config.h
 +//	#define USE_PKCS11
    #endif /* Borland C can't handle PKCS #11 headers */
    #if !defined( NDEBUG )
- 	#define USE_HARDWARE
-Only in ./misc: config.h.orig
+-	#define USE_HARDWARE
++//	#define USE_HARDWARE
+   #endif /* Windows debug mode only */
+ #endif /* __WIN32__ */
+ #ifdef HAS_PKCS11
 diff -ur ../cl.patched/misc/os_spec.c ./misc/os_spec.c
 --- ../cl.patched/misc/os_spec.c	2014-06-23 03:18:16.000000000 -0700
-+++ ./misc/os_spec.c	2014-06-23 03:49:42.000000000 -0700
++++ ./misc/os_spec.c	2014-06-24 00:24:48.000000000 -0700
 @@ -1077,6 +1077,7 @@
    #pragma comment( linker, "/export:DllRegisterServer=_DllRegisterServer@0,PRIVATE" )
  #endif /* Win64 */
@@ -58,27 +81,18 @@ diff -ur ../cl.patched/misc/os_spec.c ./misc/os_spec.c
  #endif /* !( NT_DRIVER || STATIC_LIB ) */
  
  /* Borland's archaic compilers don't recognise DllMain() but still use the
-Only in ./misc: os_spec.c.orig
 diff -ur ../cl.patched/misc/os_spec.h ./misc/os_spec.h
 --- ../cl.patched/misc/os_spec.h	2014-06-23 03:18:16.000000000 -0700
-+++ ./misc/os_spec.h	2014-06-23 03:49:43.000000000 -0700
-@@ -664,14 +664,14 @@
-    fairly easy but under Unix it's supported somewhat selectively and may be
-    buggy or platform-specific */
++++ ./misc/os_spec.h	2014-06-24 00:32:50.000000000 -0700
+@@ -39,7 +39,7 @@
+    different versions of Visual C (it's different for each of VC 2.0, 2.1,
+    4.0, and 4.1.  It actually remains the same after 4.1) */
  
--#if defined( __WINDOWS__ ) || \
-+#if defined( __WINDOWS__ ) || defined( __MSVCRT__) || \
- 	( defined( __UNIX__ ) && \
- 	  ( ( defined( sun ) && OSVERSION > 4 ) || defined( __linux__ ) || \
- 		defined( _AIX ) || ( defined( __APPLE__ ) && !defined( __MAC__ ) ) ) )
-   #define DYNAMIC_LOAD
- 
-   /* Macros to map OS-specific dynamic-load values to generic ones */
--  #if defined( __WINDOWS__ )
-+  #if defined( __WINDOWS__ ) || defined( __MSVCRT__ )
- 	HMODULE WINAPI SafeLoadLibrary( LPCTSTR lpFileName );
- 
- 	#define INSTANCE_HANDLE		HINSTANCE
+-#if !defined( __WINDOWS__ ) && ( defined( _Windows ) || defined( _WINDOWS ) )
++#if !defined( __WINDOWS__ ) && ( defined( _Windows ) || defined( _WINDOWS ) || defined( WIN32 ))
+   #define __WINDOWS__
+ #endif /* Win16 */
+ #if !defined( __WIN32__ ) && ( defined( WIN32 ) || defined( _WIN32 ) )
 @@ -944,7 +944,8 @@
    #define EOL "\n"
    #define EOL_LEN 1
@@ -89,10 +103,9 @@ diff -ur ../cl.patched/misc/os_spec.h ./misc/os_spec.h
  #endif /* OS-specific EOL markers */
  
  /* If we're compiling on IBM mainframes, enable EBCDIC <-> ASCII string
-Only in ./misc: os_spec.h.orig
 diff -ur ../cl.patched/random/win32.c ./random/win32.c
 --- ../cl.patched/random/win32.c	2014-06-23 03:18:14.000000000 -0700
-+++ ./random/win32.c	2014-06-23 03:49:45.000000000 -0700
++++ ./random/win32.c	2014-06-24 00:24:48.000000000 -0700
 @@ -1216,7 +1216,7 @@
  /* If we're running under Win64 there's no need to include Win95/98 
     backwards-compatibility features */
@@ -111,10 +124,9 @@ diff -ur ../cl.patched/random/win32.c ./random/win32.c
  	if( getSysVar( SYSVAR_ISWIN95 ) == TRUE )
  		{
  		hThread = ( HANDLE ) _beginthreadex( NULL, 0, threadSafeSlowPollWin95,
-Only in ./random: win32.c.orig
 diff -ur ../cl.patched/tools/buildlib.sh ./tools/buildlib.sh
 --- ../cl.patched/tools/buildlib.sh	2014-06-23 03:18:20.000000000 -0700
-+++ ./tools/buildlib.sh	2014-06-23 03:49:46.000000000 -0700
++++ ./tools/buildlib.sh	2014-06-24 00:24:48.000000000 -0700
 @@ -69,7 +69,7 @@
  		echo "Need to set up ucLinux link command" ;;
  
@@ -125,4 +137,3 @@ diff -ur ../cl.patched/tools/buildlib.sh ./tools/buildlib.sh
 +		( $AR rc $LIBNAME $* && $RANLIB $LIBNAME )
  
  esac
-Only in ./tools: buildlib.sh.orig
