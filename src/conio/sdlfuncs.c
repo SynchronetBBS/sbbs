@@ -328,7 +328,7 @@ void run_sdl_drawing_thread(int (*drawing_thread)(void *data), void (*exit_drawi
 
 static void QuitWrap(void)
 {
-	if(sdl.Quit)
+	if(sdl.Quit && sdl_initialized)
 		sdl.Quit();
 }
 
