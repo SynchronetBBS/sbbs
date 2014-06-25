@@ -1,0 +1,14 @@
+--- tools/buildlib.sh.orig	2012-11-06 03:55:52.000000000 -0800
++++ tools/buildlib.sh	2014-06-25 01:59:50.000000000 -0700
+@@ -75,7 +75,9 @@
+ 		echo "Need to set up ucLinux link command" ;;
+ 
+ 	*)
+-		$AR rcs $LIBNAME $* || \
+-		( $AR rc $LIBNAME $* && ranlib $LIBNAME )
++		if [ "$RANLIB" = "" ] ; then
++			RANLIB = ranlib
++		fi
++		( $AR rc $LIBNAME $* && $RANLIB $LIBNAME )
+ 
+ esac
