@@ -1586,7 +1586,6 @@ int main(int argc, char **argv)
 	if(WSAInitialized && WSACleanup()!=0) 
 		fprintf(stderr,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
-		atexit(exit_crypt);
 	return(0);
 
 	USAGE:
