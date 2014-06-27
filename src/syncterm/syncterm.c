@@ -54,6 +54,45 @@ char* syncterm_version = "SyncTERM 1.0b"
 #endif
 	;
 
+char	*usage = 
+		"\nusage: syncterm [options] [URL]"
+        "\n\noptions:\n\n"
+        "-e# =  set escape delay to #msec\n"
+		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
+		"       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
+		"       O[W|F] = SDL overlay mode (hardware scaled)\n"
+#ifdef __unix__
+		"       X = X11 mode\n"
+		"       C = Curses mode\n"
+		"       F = Curses mode with forced IBM charset\n"
+#else
+		"       W[F] = Win32 native mode, F for fullscreen\n"
+#endif
+		"       A = ANSI mode\n"
+        "-l# =  set screen lines to # (default=auto-detect)\n"
+		"-t  =  use telnet mode if URL does not include the scheme\n"
+		"-r  =  use rlogin mode if URL does not include the scheme\n"
+		"-h  =  use SSH mode if URL does not include the scheme\n"
+		"-4  =  Only resolve IPv4 addresses\n"
+		"-6  =  Only resolve IPv6 addresses\n"
+		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
+		"-T  =  when the ONLY argument, dumps the terminfo entry to stdout and exits\n"
+		"\n"
+		"URL format is: [(rlogin|telnet|ssh|raw)://][user[:password]@]domainname[:port]\n"
+		"raw:// URLs MUST include a port.\n"
+#ifdef __unix__
+		"shell:command URLs are also supported.\n"
+#endif
+		"examples: rlogin://deuce:password@nix.synchro.net:5885\n"
+		"          telnet://deuce@nix.synchro.net\n"
+		"          nix.synchro.net\n"
+		"          telnet://nix.synchro.net\n"
+		"          raw://nix.synchro.net:23\n"
+#ifdef __unix__
+		"          shell:/usr/bin/sh\n"
+#endif
+		;
+
 char *inpath=NULL;
 int default_font=0;
 struct syncterm_settings settings;
@@ -1213,6 +1252,7 @@ int main(int argc, char **argv)
 	BOOL	override_conn=FALSE;
 	int		addr_family=PF_UNSPEC;
 	char	*last_bbs=NULL;
+	char	*p, *lp;
 	const char syncterm_termcap[]="\n# terminfo database entry for SyncTERM\n"
 				"syncterm|SyncTERM 80x25,\n"
 				"	am,bce,mir,msgr,\n"
@@ -1591,45 +1631,31 @@ int main(int argc, char **argv)
 	USAGE:
 	uifcbail();
 	clrscr();
-    cprintf("\nusage: syncterm [options] [URL]"
-        "\n\noptions:\n\n"
-        "-e# =  set escape delay to #msec\n"
-		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
-		"       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
-		"       O[W|F] = SDL overlay mode (hardware scaled)\n"
-#ifdef __unix__
-		"       X = X11 mode\n"
-		"       C = Curses mode\n"
-		"       F = Curses mode with forced IBM charset\n"
-#else
-		"       W[F] = Win32 native mode, F for fullscreen\n"
-#endif
-		"       A = ANSI mode\n"
-        "-l# =  set screen lines to # (default=auto-detect)\n"
-		"-t  =  use telnet mode if URL does not include the scheme\n"
-		"-r  =  use rlogin mode if URL does not include the scheme\n"
-		"-h  =  use SSH mode if URL does not include the scheme\n"
-		"-4  =  Only resolve IPv4 addresses\n"
-		"-6  =  Only resolve IPv6 addresses\n"
-		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
-		"-T  =  when the ONLY argument, dumps the terminfo entry to stdout and exits\n"
-		"\n"
-		"URL format is: [(rlogin|telnet|ssh|raw)://][user[:password]@]domainname[:port]\n"
-		"raw:// URLs MUST include a port.\n"
-#ifdef __unix__
-		"shell:command URLs are also supported.\n"
-#endif
-		"examples: rlogin://deuce:password@nix.synchro.net:5885\n"
-		"          telnet://deuce@nix.synchro.net\n"
-		"          nix.synchro.net\n"
-		"          telnet://nix.synchro.net\n"
-		"          raw://nix.synchro.net:23\n"
-#ifdef __unix__
-		"          shell:/usr/bin/sh\n"
-#endif
-		"\nPress any key to exit..."
-        );
+    gettextinfo(&txtinfo);
+    p=lp=usage;
+    textattr(LIGHTGRAY);
+	gettextinfo(&txtinfo);
+	i=0;
+	for(lp=usage; *lp; p=strchr(lp, '\n')) {
+		if(p==NULL)
+			p=strchr(lp, 0)-1;
+		cprintf("%.*s", p-lp+1, lp);
+		lp = p+1;
+		i++;
+		if(i >= txtinfo.screenheight-1) {
+			textattr(WHITE);
+			cputs("<Press A Key>");
+			getch();
+			textattr(LIGHTGRAY);
+			gotoxy(1, txtinfo.screenheight);
+			delline();
+			i=0;
+		}
+	}
+	textattr(WHITE);
+	cputs("<Press A Key to Exit>");
 	getch();
+	textattr(LIGHTGRAY);
 	return(0);
 }
 
