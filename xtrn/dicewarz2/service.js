@@ -13,6 +13,7 @@ load("json-client.js");
 load("event-timer.js");
 load("funclib.js");
 load("sbbsdefs.js");
+load(root + "diceobj.js");
 
 var game_id = "dicewarz2";
 var timer = new Timer();
@@ -25,11 +26,6 @@ var data = {
 	games:client.read(game_id,"games",1),
 	players:client.read(game_id,"players",1)
 };
-var status = {
-	NEW:-1,
-	PLAYING:0,
-	FINISHED:1
-}
 
 /* load game settings */
 function loadSettings(filename) {
