@@ -1456,6 +1456,8 @@ var authenticated_command_handlers = {
 			var base;
 			var mademap=false;
 			var index;
+			var old_saved;
+			var base_code;
 
 			if(typeof(items)!="object")
 				items=[items];
@@ -1466,7 +1468,18 @@ var authenticated_command_handlers = {
 			}
 			if(base.cfg != undefined && orig_ptrs[base.subnum]==undefined)
 				orig_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
+			
+			if(base.cfg != undefined)
+				base_code=base.cfg.code;
+			else
+				base_code='mail';
+			if (saved_config[base_code] != undefined)
+				old_saved = saved_config[base_code];
+			read_cfg(base_code);
 			index=read_index(base);
+			delete saved_config[base_code];
+			if (old_saved != undefined)
+				saved_config[base_code] = old_saved;
 			base.close();
 			for(i in items) {
 				switch(items[i].toUpperCase()) {
