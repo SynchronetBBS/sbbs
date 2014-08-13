@@ -226,6 +226,7 @@ static char* uifc_prop_desc[] = {
 	,"text colour"
 	,"inverse colour"
 	,"lightbar colour"
+	,NULL
 };
 #endif
 
