@@ -101,27 +101,7 @@ function Unregistered_Commands(cmdline) {
 	if (debug)
 		log(LOG_DEBUG,"[UNREG]: " + cmdline);
 
-	// Detect JSON message
-	if (cmdline[0] == "{")
-		this.JSON_Unregistered_Commands(cmdline);
-	else
-		this.IRC_Unregistered_Commands(cmdline);
-}
-
-function JSON_Unregistered_Commands(cmdline) {
-	var msg = JSON.parse(cmdline);
-	if (msg.realname)
-		this.realname = msg.realname.slice(0,50);
-	if (msg.nick) {
-		msg.nick = msg.nick.slice(0,max_nicklen);
-		if (this.check_nickname(msg.nick))
-			this.nick = msg.nick;
-	}
-	if (msg.uprefix)
-		this.uprefix = parse_username(msg.uprefix);
-	if (msg.password)
-		this.password = msg.password;
-	this.rawout(JSON.stringify(this));
+	this.IRC_Unregistered_Commands(cmdline);
 }
 
 function IRC_Unregistered_Commands(cmdline) {
@@ -330,11 +310,6 @@ function Unregistered_Quit(msg) {
 	delete Unregistered[this.id];
 	delete this;
 	rebuild_socksel_array = true;
-	/* debug */
-	log("end of Unregistered_Quit()");
-	for (x in Unregistered) {
-		log("Unreg member: " + x);
-	}
 }
 
 function Unregistered_Resolve_Check() {
