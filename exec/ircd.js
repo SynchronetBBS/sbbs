@@ -18,7 +18,7 @@
 // Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
-load("synchronet-json.js");
+//load("synchronet-json.js");
 
 load("sbbsdefs.js");
 load("sockdefs.js");
@@ -158,8 +158,6 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 }
 
 read_config_file();
-
-log("---got past read_config---");
 
 if(this.server==undefined) {		// Running from JSexec?
 	if (!jsexec_revision_detail)
