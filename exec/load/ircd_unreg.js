@@ -48,7 +48,7 @@ function Unregistered_Client(id,socket) {
 	////////// FUNCTIONS
 	// Functions we use to control clients (specific)
 	this.work = Unregistered_Commands;
-	this.JSON_Unregistered_Commands = JSON_Unregistered_Commands;
+//	this.JSON_Unregistered_Commands = JSON_Unregistered_Commands;
 	this.IRC_Unregistered_Commands = IRC_Unregistered_Commands;
 	this.quit = Unregistered_Quit;
 	this.check_timeout = IRCClient_check_timeout;
