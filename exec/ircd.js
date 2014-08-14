@@ -18,6 +18,8 @@
 // Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
+load("synchronet-json.js");
+
 load("sbbsdefs.js");
 load("sockdefs.js");
 load("nodedefs.js");
@@ -156,6 +158,8 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 }
 
 read_config_file();
+
+log("---got past read_config---");
 
 if(this.server==undefined) {		// Running from JSexec?
 	if (!jsexec_revision_detail)
@@ -379,7 +383,7 @@ function searchbyserver(servnick) {
 // 9 characters for 'anonymous' users (i.e. not using PASS to authenticate.)
 // hostile characters like !,@,: etc would be bad here :)
 function parse_username(str) {
-	str.replace(/[^\w]/g,"");
+	str = str.replace(/[^\w]/g,"").toLowerCase();
 	if (!str)
 		str = "user"; // nothing? we'll give you something boring.
 	return str.slice(0,9);

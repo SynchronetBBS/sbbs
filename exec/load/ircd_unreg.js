@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2010 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 // ** Handle unregistered clients.
 //
@@ -48,6 +48,8 @@ function Unregistered_Client(id,socket) {
 	////////// FUNCTIONS
 	// Functions we use to control clients (specific)
 	this.work = Unregistered_Commands;
+	this.JSON_Unregistered_Commands = JSON_Unregistered_Commands;
+	this.IRC_Unregistered_Commands = IRC_Unregistered_Commands;
 	this.quit = Unregistered_Quit;
 	this.check_timeout = IRCClient_check_timeout;
 	this.check_queues = IRCClient_check_queues;
@@ -83,23 +85,50 @@ function Unregistered_Client(id,socket) {
 	} else {
 		this.pending_resolve = load(true,"dnshelper.js",this.ip);
 	}
-	this.server_notice("*** " + VERSION + " (" + serverdesc + ") Ready.");
+	this.server_notice("*** " + VERSION + " (" + serverdesc + ") Ready. " + id);
 }
 
 ////////// Command Parsers //////////
 
 function Unregistered_Commands(cmdline) {
+	// Only accept up to 512 bytes from unregistered clients.
+	cmdline = cmdline.slice(0,512);
+
+	// Kludge for broken clients.
+	if ((cmdline[0] == "\r") || (cmdline[0] == "\n"))
+		cmdline = cmdline.slice(1);
+
+	if (debug)
+		log(LOG_DEBUG,"[UNREG]: " + cmdline);
+
+	// Detect JSON message
+	if (cmdline[0] == "{")
+		this.JSON_Unregistered_Commands(cmdline);
+	else
+		this.IRC_Unregistered_Commands(cmdline);
+}
+
+function JSON_Unregistered_Commands(cmdline) {
+	var msg = JSON.parse(cmdline);
+	if (msg.realname)
+		this.realname = msg.realname.slice(0,50);
+	if (msg.nick) {
+		msg.nick = msg.nick.slice(0,max_nicklen);
+		if (this.check_nickname(msg.nick))
+			this.nick = msg.nick;
+	}
+	if (msg.uprefix)
+		this.uprefix = parse_username(msg.uprefix);
+	if (msg.password)
+		this.password = msg.password;
+	this.rawout(JSON.stringify(this));
+}
+
+function IRC_Unregistered_Commands(cmdline) {
 	var clockticks = system.timer;
 	var cmd;
 	var command;
 
-	// Only accept up to 512 bytes from unregistered clients.
-	cmdline = cmdline.slice(0,512);
-	// Kludge for broken clients.
-	if ((cmdline[0] == "\r") || (cmdline[0] == "\n"))
-		cmdline = cmdline.slice(1);
-	if (debug)
-		log(LOG_DEBUG,"[UNREG]: " + cmdline);
 	cmd = cmdline.split(" ");
 	if (cmdline[0] == ":") {
 		// Silently ignore NULL originator commands.
@@ -266,7 +295,7 @@ function Unregistered_Commands(cmdline) {
 			if (usernum) {
 				var bbsuser = new User(usernum);
 				if (this.password.toUpperCase() == bbsuser.security.password) {
-					this.uprefix = parse_username(bbsuser.handle).toLowerCase().slice(0,10);
+					this.uprefix = parse_username(bbsuser.handle);
 					bbsuser.connection = "IRC";
 					bbsuser.logontime = time();
 				}
@@ -301,6 +330,11 @@ function Unregistered_Quit(msg) {
 	delete Unregistered[this.id];
 	delete this;
 	rebuild_socksel_array = true;
+	/* debug */
+	log("end of Unregistered_Quit()");
+	for (x in Unregistered) {
+		log("Unreg member: " + x);
+	}
 }
 
 function Unregistered_Resolve_Check() {
