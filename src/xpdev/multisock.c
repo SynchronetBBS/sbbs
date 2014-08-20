@@ -71,13 +71,14 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 
 		if(strlen(addr) >= sizeof(un_addr.sun_path)) {
 			if(xpms_set->lprintf)
-				xpms_set->lprintf(LOG_ERR, "!ERROR %s is too long for a AF_UNIX socket", addr);
+				xpms_set->lprintf(LOG_ERR, "!ERROR %s is too long for a portable AF_UNIX socket", addr);
 			return FALSE;
 		}
 		strcpy(un_addr.sun_path,addr);
 		if(fexist(addr))
 			unlink(addr);
 		dummy.ai_addrlen = sizeof(un_addr);
+		un_addr.sun_len=SUN_LEN(&un_addr);
 		res = &dummy;
 	}
 #endif

@@ -1294,7 +1294,7 @@ int DLLCALL iniGetSocketOptions(str_list_t list, const char* section, SOCKET soc
 	int			option;
 	int			level;
 	int			value;
-	int			type;
+	int			type=0;	// Assignment is to silence Valgrind.
 	LINGER		linger;
 	socket_option_t* socket_options=getSocketOptionList();
 	union xp_sockaddr	addr;
