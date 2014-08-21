@@ -64,6 +64,7 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 
 	if(domain == AF_UNIX) {
 		memset(&dummy, 0, sizeof(dummy));
+		memset(&un_addr, 0, sizeof(un_addr));
 		dummy.ai_family = AF_UNIX;
 		dummy.ai_socktype = type;
 		dummy.ai_addr = (struct sockaddr *)&un_addr;
@@ -77,11 +78,6 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		strcpy(un_addr.sun_path,addr);
 		if(fexist(addr))
 			unlink(addr);
-		dummy.ai_addrlen = SUN_LEN(&un_addr);
-		((struct sockaddr *)(&un_addr))->sa_len = SUN_LEN(&un_addr);
-		/* This *may* have clobbered something... re-fill */
-		un_addr.sun_family=AF_UNIX;
-		strcpy(un_addr.sun_path,addr);
 		res = &dummy;
 	}
 #endif
