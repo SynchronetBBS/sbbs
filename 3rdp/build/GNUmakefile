@@ -65,7 +65,7 @@ $(CRYPT_SRC): | $(3RDPSRCDIR)
 $(CRYPT_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(CRYPT_IDIR)
 
-$(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)build/SSL-fix.patch $(3RDP_ROOT)$(DIRSEP)build/random_exit.patch $(3RDP_ROOT)$(DIRSEP)build/Dynamic-linked-static-lib.patch $(3RDP_ROOT)$(DIRSEP)build/terminal-params.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw32-static.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ranlib.patch | $(CRYPT_SRC) $(CRYPT_IDIR)
+$(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)build/SSL-fix.patch $(3RDP_ROOT)$(DIRSEP)build/random_exit.patch $(3RDP_ROOT)$(DIRSEP)build/Dynamic-linked-static-lib.patch $(3RDP_ROOT)$(DIRSEP)build/terminal-params.patch $(3RDP_ROOT)$(DIRSEP)build/cl-mingw32-static.patch $(3RDP_ROOT)$(DIRSEP)build/cl-ranlib.patch $(3RDP_ROOT)$(DIRSEP)build/cl-tls-psk-userfix.patch | $(CRYPT_SRC) $(CRYPT_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(CRYPT_SRC)/*
 	$(QUIET)unzip -oa $(3RDPDISTDIR)$(DIRSEP)cryptlib.zip -d $(CRYPT_SRC)
@@ -75,6 +75,7 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)b
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < terminal-params.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-mingw32-static.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-ranlib.patch
+	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-tls-psk-userfix.patch
 ifeq ($(CC),mingw32-gcc)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make toolscripts

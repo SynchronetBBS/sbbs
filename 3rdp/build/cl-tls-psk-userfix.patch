@@ -1,0 +1,11 @@
+--- session/ssl_cli.c.orig	2014-08-22 03:20:26.000000000 -0700
++++ session/ssl_cli.c	2014-08-22 03:20:53.000000000 -0700
+@@ -1342,7 +1342,7 @@
+ 										 CRYPT_SESSINFO_PASSWORD );
+ 			const ATTRIBUTE_LIST *userNamePtr = \
+ 						findSessionInfo( sessionInfoPtr->attributeList,
+-										 CRYPT_SESSINFO_PASSWORD );
++										 CRYPT_SESSINFO_USERNAME );
+ 
+ 			REQUIRES( passwordPtr != NULL );
+ 			REQUIRES( userNamePtr != NULL );
