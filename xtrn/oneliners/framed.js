@@ -145,7 +145,7 @@ var cycle = function() {
 	} catch(err) {
 		log(LOG_ERR, "Oneliners error: " + err);
 	}
-	if(frame.cycle())
+	if(frame.cycle() && !inInput)
 		console.gotoxy(console.screen_columns, console.screen_rows);
 	return (inInput)?inputLine.getkey():console.inkey(K_NONE,5).toUpperCase();
 }
