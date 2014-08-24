@@ -30,13 +30,29 @@ var Oneliners = function(server, port, callback) {
 	this.__defineSetter__('count', function() {});
 
 	this.read = function(start, end) {
-		return jsonClient.slice(
+		var ret = [];
+		var lines = jsonClient.slice(
 			"ONELINERS",
 			"ONELINERS",
 			start,
 			(typeof end == "undefined") ? undefined : end,
 			1
 		);
+		while(lines.length > 0) {
+			var line = lines.shift();
+			if(	typeof line.time != "number" ||
+				typeof line.client != "string" ||
+				typeof line.alias != "string" ||
+				typeof line.systemName != "string" ||
+				typeof line.systemHost != "string" ||
+				typeof line.qwkid != "string" || line.qwkid.length > 8 ||
+				typeof line.oneliner != "string"
+			) {
+				continue;
+			}
+			ret.push(line);
+		}
+		return ret;
 	}
 
 	this.post = function(alias, oneliner) {
