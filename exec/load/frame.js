@@ -57,6 +57,8 @@ METHODS:
 	frame.gotoxy(x,y)
 	frame.pushxy()
 	frame.popxy()
+	frame.drawBorder(color)		//draw a border along the inside edge of the frame; see sbbsdefs.js for valid 'color' arguments
+								//'color' can be an array of colors (try it to see the effect)
 	
 PROPERTIES:
 
@@ -1210,6 +1212,43 @@ function Frame(x,y,width,height,attr,parent) {
 	init.apply(this,arguments);
 }
 
+Frame.prototype.drawBorder = function(color) {
+	var theColor = color;
+	if(Array.isArray(color));
+		var sectionLength = Math.round(this.width / color.length);
+	this.pushxy();
+	for(var y = 1; y <= this.height; y++) {
+		for(var x = 1; x <= this.width; x++) {
+			if(x > 1 && x < this.width && y > 1 && y < this.height)
+				continue;
+			var msg;
+			this.gotoxy(x, y);
+			if(y == 1 && x == 1)
+				msg = ascii(218);
+			else if(y == 1 && x == this.width)
+				msg = ascii(191);
+			else if(y == this.height && x == 1)
+				msg = ascii(192);
+			else if(y == this.height && x == this.width)
+				msg = ascii(217);
+			else if(x == 1 || x == this.width)
+				msg = ascii(179);
+			else
+				msg = ascii(196);
+			if(Array.isArray(color)) {
+				if(x == 1)
+					theColor = color[0];
+				else if(x % sectionLength == 0 && x < this.width)
+					theColor = color[x / sectionLength];
+				else if(x == this.width)
+					theColor = color[color.length - 1];
+			}
+			this.putmsg(msg, theColor);
+		}
+	}
+	this.popxy();
+}
+
 /* frame reference object */
 function Canvas(frame,display) {
 	this.frame = frame;
@@ -1228,7 +1267,7 @@ function Canvas(frame,display) {
 			return undefined;
 		if(xpos >= this.frame.width || ypos >= this.frame.height)
 			return undefined;
-		if(this.frame.transparent && this.frame.getData(xpos,ypos,true).ch == undefined)
+		if(this.frame.transparent && this.frame.getData(xpos,ypos).ch == undefined)
 			return undefined;
 		return true;
 	}
