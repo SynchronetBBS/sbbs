@@ -8,6 +8,7 @@ Contents
 1.2) Connecting to a remote wall
 1.3) Hosting your own wall
 1.4) External program configuration
+1.5) XJS oneliners lister for the web
 2) Rules (there are none)
 3) Support
 4) To-do list
@@ -74,6 +75,24 @@ If you want this program run automatically when a user logs in, set 'Execute
 on Event' to 'Logon', and answer 'No' to 'Execute as Event Only.'
 
 There are a bunch of other options that you can leave in their default states.
+
+1.5) XJS oneliners lister for the web
+
+If you're running ecWeb, you can place the "oneliners.xjs" file in your
+"web/root/ecwebv3/sidebar/" directory.  This will add a "Synchronet Oneliners"
+sidebar module listing the (by default) five most recent oneliners.  Adjusting
+the number of displayed oneliners is a simple matter of changing the value of
+the "show" variable at the top of the script.
+
+As always, you can rename the file when placing it in the sidebar directory to
+change the order in which it will be loaded ("004-oneliners.xjs", etc.)
+Sidebar modules are loaded based no the numeric and then alphabetical order of
+their filenames.
+
+There is nothing about this script that makes it particular to ecWeb.  If
+you're running the stock Synchronet web interface or something of your own
+devising, this file can always be loaded on its own, or in an iframe or
+whatever works for you.
 
 2) Rules (there are none)
 
