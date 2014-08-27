@@ -14,8 +14,6 @@ var initFrames = function() {
 
 	console.clear(BG_BLACK|LIGHTGRAY);
 
-	/* frame.drawBorder(color)		//draw a border along the inside edge of the frame; see sbbsdefs.js for valid 'color' arguments
-									//'color' can be an array of colors (try it to see the effect) */
 	Frame.prototype.drawBorder = function(color) {
 		var theColor = color;
 		if(Array.isArray(color));

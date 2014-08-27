@@ -4,25 +4,17 @@ by echicken
 Contents
 
 1) Installation
-1.1) Prerequisites
-1.2) Connecting to a remote wall
-1.3) Hosting your own wall
-1.4) External program configuration
-1.5) XJS oneliners lister for the web
+1.1) Connecting to a remote wall
+1.2) Hosting your own wall
+1.3) External program configuration
+1.4) XJS oneliners lister for the web
 2) Rules (there are none)
 3) Support
 4) To-do list
 
 1) Installation
 
-1.1) Prerequisites
-
-I've only tested this with Synchronet installations up-to-date with the
-Synchronet CVS (http://wiki.synchro.net/dev:cvs) as of August 24th, 2014.
-You'll want to grab the latest copy of 'exec/load/frame.js', as this module
-relies on a recent update to that script.  Other updates may be required.
-
-1.2) Connecting to a remote service
+1.1) Connecting to a remote service
 
 Connecting to a remote service means accessing a shared, inter-BBS oneliners
 wall.  Most sysops will likely want to go this route, as it will mean more
@@ -36,7 +28,7 @@ port=10088
 
 Your oneliners scripts will now access the shared wall that I host.
 
-1.3) Hosting your own wall
+1.2) Hosting your own wall
 
 If you'd prefer to host your own wall, just leave the 'settings.ini' file in
 your 'xtrn/oneliners/' directory as-is.
@@ -57,7 +49,7 @@ You'll also need to add the following to your 'ctrl/json-service.ini' file:
 [oneliners]
 dir=../xtrn/oneliners/
 
-1.4) External Program Configuration
+1.3) External Program Configuration
 
 In 'scfg' (that's 'BBS->Configure' from the Synchronet Control Panel in
 Windows,) go to 'External Programs->Online Programs (Doors)', select or create
@@ -76,7 +68,7 @@ on Event' to 'Logon', and answer 'No' to 'Execute as Event Only.'
 
 There are a bunch of other options that you can leave in their default states.
 
-1.5) XJS oneliners lister for the web
+1.4) XJS oneliners lister for the web
 
 If you're running ecWeb, you can place the "oneliners.xjs" file in your
 "web/root/ecwebv3/sidebar/" directory.  This will add a "Synchronet Oneliners"
