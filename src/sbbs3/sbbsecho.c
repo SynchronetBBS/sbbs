@@ -1711,7 +1711,7 @@ void pack_bundle(char *infile,faddr_t dest)
 	sprintf(day,"%-.2s",ctime(&now));
 	strupr(day);
 	if(misc&FLO_MAILER) {
-		if(node<cfg.nodecfgs && cfg.nodecfg[node].route.zone) {
+		if(node<cfg.nodecfgs && !(cfg.nodecfg[node].attr&ATTR_DIRECT) && cfg.nodecfg[node].route.zone) {
 			dest=cfg.nodecfg[node].route;
 			if(cfg.log&LOG_ROUTING)
 				lprintf(LOG_NOTICE,"Routing %s to %s",infile,smb_faddrtoa(&dest,NULL));
