@@ -1980,23 +1980,25 @@ int mv(char *src, char *dest, BOOL copy)
 }
 
 /****************************************************************************/
+/* Returns negative value on error											*/
 /****************************************************************************/
-ulong getlastmsg(uint subnum, uint32_t *ptr, /* unused: */time_t *t)
+long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */time_t *t)
 {
 	int i;
 	smb_t smbfile;
 
+	if(ptr) (*ptr)=0;
 	ZERO_VAR(smbfile);
 	if(subnum>=scfg.total_subs) {
 		lprintf(LOG_ERR,"ERROR line %d getlastmsg %d",__LINE__,subnum);
 		bail(1); 
-		return 0;
+		return -1;
 	}
 	sprintf(smbfile.file,"%s%s",scfg.sub[subnum]->data_dir,scfg.sub[subnum]->code);
 	smbfile.retry_time=scfg.smb_retry_time;
 	if((i=smb_open(&smbfile))!=SMB_SUCCESS) {
 		lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s",i,smbfile.last_error,__LINE__,smbfile.file);
-		return(0); 
+		return -1;
 	}
 
 	if(!filelength(fileno(smbfile.shd_fp))) {			/* Empty base */
@@ -3790,10 +3792,10 @@ void export_echomail(char *sub_code,faddr_t addr)
 			ptr=read_export_ptr(i, tag);
 
 		msgs=getlastmsg(i,&lastmsg,0);
-		if(!msgs || (!addr.zone && !(misc&IGNORE_MSGPTRS) && ptr>=lastmsg)) {
+		if(msgs<1 || (!addr.zone && !(misc&IGNORE_MSGPTRS) && ptr>=lastmsg)) {
 			lprintf(LOG_DEBUG,"No new messages.");
-			if(ptr>lastmsg && !addr.zone && !(misc&LEAVE_MSGPTRS)) {
-				lprintf(LOG_DEBUG,"Fixing new-scan pointer.");
+			if(msgs>=0 && ptr>lastmsg && !addr.zone && !(misc&LEAVE_MSGPTRS)) {
+				lprintf(LOG_DEBUG,"Fixing new-scan pointer (%u, lastmsg=%u).", ptr, lastmsg);
 				write_export_ptr(i, lastmsg, tag);
 			}
 			continue; 
@@ -5191,8 +5193,8 @@ int main(int argc, char **argv)
 				continue;
 			lprintf(LOG_DEBUG,"\n%-*.*s -> %s"
 				,LEN_EXTCODE, LEN_EXTCODE, scfg.sub[i]->code, cfg.area[j].name);
-			getlastmsg(i,&lastmsg,0);
-			write_export_ptr(i, lastmsg, cfg.area[j].name);
+			if(getlastmsg(i,&lastmsg,0) >= 0)
+				write_export_ptr(i, lastmsg, cfg.area[j].name);
 		}
 	}
 
