@@ -2963,6 +2963,7 @@ sbbs_t::sbbs_t(ushort node_num, SOCKADDR_IN addr, const char* name, SOCKET sd,
 
 	/* Init some important variables */
 
+	input_thread_mutex_created = false;
 #ifdef USE_CRYPTLIB
 	ssh_mode=false;
 	ssh_mutex_created=false;
@@ -3359,6 +3360,7 @@ bool sbbs_t::init()
 	ssh_mutex_created = true;
 #endif
 	pthread_mutex_init(&input_thread_mutex,NULL);
+	input_thread_mutex_created = true;
 
 	reset_logon_vars();
 
@@ -3489,7 +3491,7 @@ sbbs_t::~sbbs_t()
 	while(ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex)==EBUSY)
 		mswait(1);
 #endif
-	while(pthread_mutex_destroy(&input_thread_mutex)==EBUSY)
+	while(input_thread_mutex_created && pthread_mutex_destroy(&input_thread_mutex)==EBUSY)
 		mswait(1);
 
 #if 0 && defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
