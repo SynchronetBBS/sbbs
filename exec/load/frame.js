@@ -910,10 +910,9 @@ function Frame(x,y,width,height,attr,parent) {
 		if(str == undefined)
 			return;
 		if(settings.word_wrap) {
-			var breakPoint = this.width - position.cursor.x;
-			var firstChunk = str.substr(0,breakPoint) + "\n";
-			var secondChunk = word_wrap(str.substr(breakPoint),this.width);
-			str = firstChunk + secondChunk;
+			var remainingWidth = this.width - position.cursor.x;
+			str = word_wrap(str,remainingWidth).split('\n');
+			str = str.shift() + '\n' + word_wrap(str.join(''),this.width);
 		}
 		str = str.toString().split('');
 		
