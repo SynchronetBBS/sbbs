@@ -240,18 +240,16 @@ function Frame(x,y,width,height,attr,parent) {
 	this.__defineGetter__("data_height", function() {
 		return properties.data.length;
 	});
-        this.__defineGetter__("data_width", function() {
-                if(typeof properties.data[0] == "undefined")
-                        return 0;
-                var longest = 0;
-                for(var d = 0; d < properties.data.length; d++) {
-                        for(var dd in properties.data[d]) {
-                                if(dd > longest)
-                                        longest = parseInt(dd);
-                        }
-                }
-                return longest + 1;
-        });
+	this.__defineGetter__("data_width", function() {
+		if(typeof properties.data[0] == "undefined")
+			return 0;
+		var longest = 0;
+		for(var d = 0; d < properties.data.length; d++) {
+			if(properties.data[d].length > longest)
+				longest = properties.data[d].length;
+		}
+		return longest + 1;
+	});
 	this.__defineGetter__("data", function() {
 		return properties.data;
 	});
