@@ -244,7 +244,7 @@ function Frame(x,y,width,height,attr,parent) {
 		if(typeof properties.data[0] == "undefined")
 			return 0;
 		var longest = 0;
-		for(var d = 0; d < properties.data.length; d++) {
+		for(var d in properties.data) {
 			if(properties.data[d].length > longest)
 				longest = properties.data[d].length;
 		}
