@@ -90,7 +90,6 @@
 
 		To do:
 
-			- Download as .ANS or .TXT in addition to .BIN
 			- Block cut/copy/paste operations
 			- "iCe colors"? Meh.
 			- Blink attr? (I don't think it works with frame.js presently.)
@@ -223,7 +222,7 @@ var ANSIEdit = function(options) {
 			frames.top
 		);
 		frames.menu.center(settings.menuHeading);
-		frames.menu.gotoxy(1, frames.menu.y + frames.menu.height - 1);
+		frames.menu.gotoxy(1, frames.menu.height);
 		frames.menu.center("Press <TAB> to exit");
 
 		frames.subMenu = new Frame(
@@ -427,18 +426,20 @@ var ANSIEdit = function(options) {
 			frames.canvas.refresh();
 
 		frames.canvas.setData(
-			((typeof ch.x == "undefined") ? state.cursor.x : ch.x) - frames.canvas.x,
-			((typeof ch.y == "undefined") ? state.cursor.y : ch.y) - frames.canvas.y,
+			(typeof ch.x == "undefined") ? (state.cursor.x - frames.canvas.x) : ch.x,
+			(typeof ch.y == "undefined") ? (state.cursor.y - frames.canvas.y) : ch.y,
 			ch.ch,
 			(typeof ch.attr == "undefined") ? state.attr : ch.attr
 		);
 
-		if(typeof ch.x != "undefined")
+		if(typeof ch.x != "undefined") {
+			this.cycle(true);
 			return;
+		}
 
 		var ret = {
-			'x' : state.cursor.x,
-			'y' : state.cursor.y,
+			'x' : state.cursor.x - frames.canvas.x,
+			'y' : state.cursor.y - frames.canvas.y,
 			'ch' : ch.ch,
 			'attr' : state.attr
 		};
@@ -474,8 +475,8 @@ var ANSIEdit = function(options) {
 				lowerMenu();
 			if(ret == "CLEAR") {
 				var retval = {
-					'x' : state.cursor.x,
-					'y' : state.cursor.y,
+					'x' : state.cursor.x - frames.canvas.x,
+					'y' : state.cursor.y - frames.canvas.y,
 					'ch' : "CLEAR",
 					'attr' : state.attr
 				}
@@ -614,27 +615,21 @@ var ANSIEdit = function(options) {
 
 		this.cycle();
 
-		return
-			(typeof retval != "undefined")
-			?
-			retval
-			:
-			{	'x' : state.cursor.x,
-				'y' : state.cursor.y,
-				'ch' : false,
-				'attr' : state.attr
-			};
+		return (typeof retval != "undefined") ?	retval : ({ 'x' : state.cursor.x - frames.canvas.x, 'y' : state.cursor.y - frames.canvas.y,	'ch' : false, 'attr' : state.attr });
 
 	}
 
-	this.cycle = function() {
+	this.cycle = function(force) {
 
-		if(	(	state.cursor.x != state.lastCursor.x
+		if(typeof parentFrame == "undefined")
+			frames.top.cycle();
+
+		if(	(typeof force == "boolean" && force)
+			||
+			(	state.cursor.x != state.lastCursor.x
 				||
 				state.cursor.y != state.lastCursor.y
 			)
-			||
-			(typeof parentFrame == "undefined" && frames.top.cycle())
 		) {
 
 			console.attributes = state.attr;
