@@ -892,7 +892,7 @@ function Frame(x,y,width,height,attr,parent) {
 		if(str == undefined)
 			return;
 		if(settings.word_wrap) 
-			str = word_wrap(str,this.width);
+			str = word_wrap(str, this.width,str.length, false);
 		str = str.toString().split('');
 		
 		if(attr)
@@ -912,8 +912,8 @@ function Frame(x,y,width,height,attr,parent) {
 		if(settings.word_wrap) {
 			var remainingWidth = this.width - position.cursor.x;
 			if(str.length > remainingWidth) {
-				str = word_wrap(str,remainingWidth).split('\n');
-				str = str.shift() + '\n' + word_wrap(str.join(''),this.width);
+				str = word_wrap(str,remainingWidth,str.length).split('\n');
+				str = str.shift() + '\n' + word_wrap(str.join('\n'),this.width,remainingWidth,false);
 			}
 		}
 		str = str.toString().split('');
