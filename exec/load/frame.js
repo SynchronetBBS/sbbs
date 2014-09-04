@@ -909,8 +909,12 @@ function Frame(x,y,width,height,attr,parent) {
 	this.putmsg = function(str,attr) {
 		if(str == undefined)
 			return;
-		if(settings.word_wrap) 
-			str = word_wrap(str,this.width);
+		if(settings.word_wrap) {
+			var breakPoint = this.width - position.cursor.x;
+			var firstChunk = str.substr(0,breakPoint) + "\n";
+			var secondChunk = word_wrap(str.substr(breakPoint),this.width);
+			str = firstChunk + secondChunk;
+		}
 		str = str.toString().split('');
 		
 		if(attr)
