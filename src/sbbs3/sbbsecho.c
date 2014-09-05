@@ -5049,7 +5049,7 @@ int main(int argc, char **argv)
 			}
 			printf("\n%s to %s ",getfname(path),smb_faddrtoa(&addr,NULL));
 			if(cfg.log&LOG_PACKING)
-				logprintf("Packing %s (%s)",path,smb_faddrtoa(&addr,NULL));
+				logprintf("Packing %s (%s) attr=%04hX",path,smb_faddrtoa(&addr,NULL),hdr.attr);
 			fmsgbuf=getfmsg(fidomsg,NULL);
 			if(!fmsgbuf) {
 				lprintf(LOG_ERR,"ERROR line %d allocating memory for NetMail fmsgbuf"
