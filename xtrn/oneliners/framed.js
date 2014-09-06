@@ -67,6 +67,7 @@ var initFrames = function() {
 		LIGHTGRAY,
 		frame
 	);
+	onelinersFrame.v_scroll = true;
 
 	inputAliasFrame = new Frame(
 		onelinersFrame.x,
@@ -141,6 +142,9 @@ var init = function() {
 }
 
 var putOneliner = function(oneliner) {
+	oneliner.oneliner = strip_exascii(oneliner.oneliner);
+	if(oneliner.oneliner.length < 1)
+		return;
 	onelinersFrame.putmsg(
 		format(
 			"\1n\1w%s\1n\1c@\1h\1b%s\1h\1k: \1n\1w%s\r\n",
@@ -206,7 +210,9 @@ var main = function() {
 				userInput = userInput.replace(/\\1/g, ascii(1));
 				if(console.strlen(userInput) < 1)
 					continue;
-				postOneliner(user.alias, userInput);
+				var o = postOneliner(user.alias, userInput);
+				if(o)
+					putOneliner(o);
 			}
 			continue;
 		}

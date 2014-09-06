@@ -10,7 +10,7 @@ var initSettings = function(path) {
 
 var postOneliner = function(alias, userInput) {
 	try {
-		oneliners.post(alias, userInput);
+		return oneliners.post(alias, userInput);
 	} catch(err) {
 		log(LOG_ERR, "JSON client error: " + err);
 		exit();
@@ -40,13 +40,17 @@ var Oneliners = function(server, port, callback) {
 		);
 		while(lines.length > 0) {
 			var line = lines.shift();
+			if(typeof line == "undefined") // Probably a deleted oneliner
+				continue;
 			if(	typeof line.time != "number" ||
 				typeof line.client != "string" ||
 				typeof line.alias != "string" ||
 				typeof line.systemName != "string" ||
 				typeof line.systemHost != "string" ||
 				typeof line.qwkid != "string" || line.qwkid.length > 8 ||
-				typeof line.oneliner != "string"
+				typeof line.oneliner != "string" ||
+				typeof strip_ctrl(line.oneliner) == "undefined" ||
+				strip_ctrl(line.oneliner).length < 1
 			) {
 				continue;
 			}
@@ -56,6 +60,9 @@ var Oneliners = function(server, port, callback) {
 	}
 
 	this.post = function(alias, oneliner) {
+		var o = strip_ctrl(oneliner.oneliner);
+		if(typeof o == "undefined")
+			return false;
 		var obj = {
 			'time' : time(),
 			'client' : (typeof client != "undefined") ? client.ip_address : system.inet_addr,
@@ -71,6 +78,7 @@ var Oneliners = function(server, port, callback) {
 			obj,
 			2
 		);
+		return obj;
 	}
 
 	this.cycle = function() {
