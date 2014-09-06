@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -58,6 +58,8 @@ extern "C" char* DLLCALL msg_program_id(char* pid)
 
 int msgbase_open(scfg_t* cfg, smb_t* smb, int* storage, long* dupechk_hashes, uint16_t* xlat)
 {
+	int i;
+
 	*storage=SMB_SELFPACK;
 	*dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 	*xlat=XLAT_NONE;
@@ -90,7 +92,13 @@ int msgbase_open(scfg_t* cfg, smb_t* smb, int* storage, long* dupechk_hashes, ui
 	if(smb->status.max_crcs==0)	/* no CRC checking means no body text dupe checking */
 		*dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 
-	return smb_open(smb);
+	if((i=smb_open(smb)) != SMB_SUCCESS)
+		return i;
+
+	if(filelength(fileno(smb->shd_fp)) < 1) /* MsgBase doesn't exist yet, create it */
+		i=smb_create(smb);
+
+	return i;
 }
 
 
