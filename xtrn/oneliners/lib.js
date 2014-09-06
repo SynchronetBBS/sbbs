@@ -60,7 +60,7 @@ var Oneliners = function(server, port, callback) {
 	}
 
 	this.post = function(alias, oneliner) {
-		var o = strip_ctrl(oneliner.oneliner);
+		var o = strip_ctrl(oneliner);
 		if(typeof o == "undefined")
 			return false;
 		var obj = {

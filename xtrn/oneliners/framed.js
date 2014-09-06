@@ -178,6 +178,8 @@ var putOneliner = function(oneliner) {
 			)
 		)
 	);
+	if(onelinersFrame.data_height > onelinersFrame.height)
+		onelinersFrame.scroll(0, 1);
 }
 
 var cycle = function() {
@@ -210,9 +212,7 @@ var main = function() {
 				userInput = userInput.replace(/\\1/g, ascii(1));
 				if(console.strlen(userInput) < 1)
 					continue;
-				var o = postOneliner(user.alias, userInput);
-				if(o)
-					putOneliner(o);
+				postOneliner(user.alias, userInput);
 			}
 			continue;
 		}
