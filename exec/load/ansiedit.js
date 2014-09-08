@@ -33,11 +33,12 @@
 		- 'y', Y coordinate of top left corner of editor (number) (required)
 		- 'width', Width of the editor (number) (required)
 		- 'height', Height of the editor (number) (required)
+		- 'attr', Default attributes (number) (optional) (LIGHTGRAY)
 		- 'parentFrame', Frame object this a child of (Frame) (optional)
-		- 'vScroll', Vertical scrolling (boolean) (optional)
-		- 'hScroll', Horizontal scrolling (boolean) (optional)
-		- 'showPosition', Show cursor position readout (boolean) (optional)
-		- 'menuHeading', Text at the top of the <TAB> menu (string) (optional)
+		- 'vScroll', Vertical scrolling (boolean) (optional) (false)
+		- 'hScroll', Horizontal scrolling (boolean) (optional) (false)
+		- 'showPosition', Show position readout (boolean) (optional) (false)
+		- 'menuHeading', Menu heading (string) (optional) ("ANSI Editor Menu")
 
 		var ansiEdit = new ANSIEdit(options);
 
@@ -143,33 +144,34 @@ var ANSIEdit = function(options) {
 		'menuHeading' : (typeof options.menuHeading != "string") ? "ANSI Editor" : options.menuHeading
 	};
 
+	// Map sbbsdefs.js console attributes to values usable in ANSI sequences
 	var attrMap = {};
-	attrMap[HIGH] = 1;
-	attrMap[BLINK] = 5;
-	attrMap[BLACK] = 30;
-	attrMap[DARKGRAY] = 30;
-	attrMap[RED] = 31;
-	attrMap[LIGHTRED] = 31;
-	attrMap[GREEN] = 32;
-	attrMap[LIGHTGREEN] = 32;
-	attrMap[BROWN] = 33;
-	attrMap[YELLOW] = 33;
-	attrMap[BLUE] = 34;
-	attrMap[LIGHTBLUE] = 34;
-	attrMap[MAGENTA] = 35;
-	attrMap[LIGHTMAGENTA] = 35;
-	attrMap[CYAN] = 36;
-	attrMap[LIGHTCYAN] = 36;
-	attrMap[LIGHTGRAY] = 37;
-	attrMap[WHITE] = 37;
-	attrMap[BG_BLACK] = 40;
-	attrMap[BG_RED] = 41;
-	attrMap[BG_GREEN] = 42;
-	attrMap[BG_BROWN] = 43;
-	attrMap[BG_BLUE] = 44;
-	attrMap[BG_MAGENTA] = 45;
-	attrMap[BG_CYAN] = 46;
-	attrMap[BG_LIGHTGRAY] = 47;
+		attrMap[HIGH] = 1;
+		attrMap[BLINK] = 5;
+		attrMap[BLACK] = 30;
+		attrMap[RED] = 31;
+		attrMap[GREEN] = 32;
+		attrMap[BROWN] = 33;
+		attrMap[BLUE] = 34;
+		attrMap[MAGENTA] = 35;
+		attrMap[CYAN] = 36;
+		attrMap[LIGHTGRAY] = 37;
+		attrMap[DARKGRAY] = attrMap[BLACK];
+		attrMap[LIGHTRED] = attrMap[RED];
+		attrMap[LIGHTGREEN] = attrMap[GREEN];
+		attrMap[YELLOW] = attrMap[BROWN];
+		attrMap[LIGHTBLUE] = attrMap[BLUE];
+		attrMap[LIGHTMAGENTA] = attrMap[MAGENTA];
+		attrMap[LIGHTCYAN] = attrMap[CYAN];
+		attrMap[WHITE] = attrMap[LIGHTGRAY];
+		attrMap[BG_BLACK] = 40;
+		attrMap[BG_RED] = 41;
+		attrMap[BG_GREEN] = 42;
+		attrMap[BG_BROWN] = 43;
+		attrMap[BG_BLUE] = 44;
+		attrMap[BG_MAGENTA] = 45;
+		attrMap[BG_CYAN] = 46;
+		attrMap[BG_LIGHTGRAY] = 47;
 
 	var initFrames = function() {
 
@@ -215,9 +217,9 @@ var ANSIEdit = function(options) {
 
 		frames.menu = new Frame(
 			Math.floor((frames.top.width - 28) / 2),
-			frames.canvas.y,
+			frames.canvas.y + 1,
 			28,
-			frames.canvas.height,
+			frames.canvas.height - 2,
 			BG_BLUE|WHITE,
 			frames.top
 		);
@@ -376,7 +378,10 @@ var ANSIEdit = function(options) {
 		if(typeof f != "undefined") {
 			console.clear(LIGHTGRAY);
 			bbs.send_file(f, user.download_protocol);
-			frames.top.invalidate();
+			if(typeof frames.top.parent != "undefined")
+				frames.top.parent.invalidate();
+			else
+				frames.top.invalidate();
 		}
 		return "DONE";
 	}
@@ -389,6 +394,7 @@ var ANSIEdit = function(options) {
 	var lowerMenu = function() {
 		state.inMenu = false;
 		frames.menu.bottom();
+		self.cycle(true);
 	}
 
 	this.open = function() {
