@@ -1,6 +1,6 @@
 // Forum functions for ecWeb v3
 // echicken -at- bbs.electronicchicken.com
-
+ 
 load('sbbsdefs.js');
 load('msgutils.js');
 
