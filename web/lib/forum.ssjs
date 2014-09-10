@@ -39,6 +39,8 @@ var linkify = function(body) {
 
 var printBoards = function() {
 	for(var g = 0; g < msg_area.grp_list.length; g++) {
+		if(msg_area.grp_list[g].sub_list.length < 1)
+			continue;
 		var out = format(
 			"<div class='border box msg' onclick='toggleVisibility(\"group-%s\")' style='cursor:pointer'>"
 			+ "<a class='ulLink'>%s</a>"
