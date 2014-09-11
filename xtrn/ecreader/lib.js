@@ -221,7 +221,9 @@ var Lister = function(options) {
 	var frames = {}, tree, chooser;
 
 	var threadFooter = format(
-		"%sC%shange group/area, %sO%srder, %sT%shread order, %sF%slat view, %sP%sost, %sQ%suit",
+		"%sC%shange group/area, %sO%srder, %sT%shread order, %sF%slat view, %sP%sost, %s[%s Pg Up/Dn %s]%s, %sQ%suit",
+		settings.colors.fhc, settings.colors.fvc,
+		settings.colors.fhc, settings.colors.fvc,
 		settings.colors.fhc, settings.colors.fvc,
 		settings.colors.fhc, settings.colors.fvc,
 		settings.colors.fhc, settings.colors.fvc,
@@ -233,7 +235,8 @@ var Lister = function(options) {
 	);
 
 	var flatFooter = format(
-		"%sC%shange group/area, %sO%srder, %sT%shreaded view, %sP%sost, %sQ%suit",
+		"%sC%shange group/area, %sO%srder, %sT%shreaded view, %sP%sost, %s[%s Pg Up/Dn %s]%s, %sQ%suit",
+		settings.colors.fhc, settings.colors.fvc,
 		settings.colors.fhc, settings.colors.fvc,
 		settings.colors.fhc, settings.colors.fvc,
 		settings.colors.fhc, settings.colors.fvc,
