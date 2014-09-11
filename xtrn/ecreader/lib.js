@@ -485,7 +485,8 @@ var Reader = function(options) {
 		'width' : (typeof options.width != "number") ? console.screen_columns : options.width,
 		'height' : (typeof options.height != "number") ? console.screen_rows : options.height,
 		'fhc' : (typeof options.fhc != "number") ? "\1h\1c" : getColor(options.fhc),
-		'fvc' : (typeof options.fvc != "number") ? "\1h\1w" : getColor(options.fvc)
+		'fvc' : (typeof options.fvc != "number") ? "\1h\1w" : getColor(options.fvc),
+		'thread' : (typeof options.thread != "boolean") ? true : false
 	};
 	settings.msg = (typeof options.msg == "undefined") ? msg_area.sub[settings.sub].scan_ptr : options.msg;
 
@@ -529,18 +530,22 @@ var Reader = function(options) {
 		);
 		// Herrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrp
 		// Sometimes I do these things just to amuse myself.
-		frames.footer.putmsg(
-			format(
-				"%sUp%s/%sDn%s scroll, %s[%sPg Up/Dn%s]%s, %sLEFT%s Browse %sRIGHT%s, %s< %sThread %s. >%s, %sR%seply, %sP%sost, %sQ%suit",
-				settings.fhc, settings.fvc, settings.fhc, settings.fvc, // Up/Dn
-				settings.fhc, settings.fvc, settings.fhc, settings.fvc, // [Page Up/Dn]
-				settings.fhc, settings.fvc, settings.fhc, settings.fvc, // LEFT Browse RIGHT
-				settings.fhc, settings.fvc, settings.fhc, settings.fvc, // < Thread . >
-				settings.fhc, settings.fvc, // Reply
-				settings.fhc, settings.fvc, // Post
-				settings.fhc, settings.fvc // Quit
-			)
+		var footerString = format(
+			"%sUp%s/%sDn%s scroll, %s[%sPg Up/Dn%s]%s, %sLEFT%s Browse %sRIGHT%s, %s< %sThread %s. >%s, %sR%seply, %sP%sost, %sQ%suit",
+			settings.fhc, settings.fvc, settings.fhc, settings.fvc, // Up/Dn
+			settings.fhc, settings.fvc, settings.fhc, settings.fvc, // [Page Up/Dn]
+			settings.fhc, settings.fvc, settings.fhc, settings.fvc, // LEFT Browse RIGHT
+			settings.fhc, settings.fvc, settings.fhc, settings.fvc, // < Thread . >
+			settings.fhc, settings.fvc, // Reply
+			settings.fhc, settings.fvc, // Post
+			settings.fhc, settings.fvc // Quit
 		);
+		if(!settings.thread) {
+			footerString = footerString.split(",");
+			footerString.splice(3, 1);
+			footerString = footerString.join();
+		}
+		frames.footer.putmsg(footerString);
 
 		if(typeof frames.top.parent == "undefined" || frames.top.parent.is_open)
 			frames.top.open();
