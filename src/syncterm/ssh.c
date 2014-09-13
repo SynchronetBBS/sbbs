@@ -77,6 +77,7 @@ void ssh_input_thread(void *args)
 					break;
 				}
 				cryptlib_error_message(status, "recieving data");
+				ssh_active=FALSE;
 				break;
 			}
 			else {
@@ -119,6 +120,7 @@ void ssh_output_thread(void *args)
 						break;
 					}
 					cryptlib_error_message(status, "sending data");
+					ssh_active=FALSE;
 					break;
 				}
 				sent += ret;
