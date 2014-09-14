@@ -60,8 +60,6 @@ var main = function() {
 	while(bbs.online) {
 		getMenus();
 		doMenu();
-		if(ascii(console.inkey(K_NONE, 250)) == 27)
-			exit();
 	}
 }
 
@@ -70,5 +68,5 @@ try {
 } catch(err) {
 	log(LOG_ERR, err);
 }
-//bbs.hangup();
+bbs.hangup();
 exit();
