@@ -1,4 +1,7 @@
+// Useful functions to call from command shells
+
 load("sbbsdefs.js");
+load("text.js");
 
 // To-do:
 // findFiles Prompt for filespec/search string bbs.list_files(filespec or string, FL_FINDDESC|FL_VIEW)
@@ -7,11 +10,11 @@ load("sbbsdefs.js");
 // I'm not sure about the handling of bbs.curgrp vs. msg_area.grp_list index here
 var selectMessageGroup = function() {
 
-	console.putmsg(bbs.text(133));
+	console.putmsg(bbs.text(CfgGrpLstHdr));
 	for(var g = 0; g < msg_area.grp_list.length; g++) {
 		console.putmsg(
 			format(
-				((g == bbs.curgrp) ? " * " : "   ") + bbs.text(134),
+				((g == bbs.curgrp) ? " * " : "   ") + bbs.text(CfgGrpLstFmt),
 				g + 1,
 				msg_area.grp_list[g].description
 			)
@@ -19,7 +22,7 @@ var selectMessageGroup = function() {
 	}
 	console.mnemonics(
 		format(
-			bbs.text(503),
+			bbs.text(JoinWhichGrp),
 			bbs.curgrp + 1
 		)
 	);
@@ -32,7 +35,7 @@ var selectMessageGroup = function() {
 // Not sure about the handling of bbs.cursb vs sub_list index here
 var selectMessageArea = function() {
 
-	console.putmsg(format(bbs.text(125), msg_area.sub[bbs.cursub_code].grp_name));
+	console.putmsg(format(bbs.text(SubLstHdr), msg_area.sub[bbs.cursub_code].grp_name));
 	for(var s = 0; s < msg_area.grp_list[bbs.curgrp].sub_list.length; s++) {
 		var mb = new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[s].code);
 		mb.open();
@@ -40,7 +43,7 @@ var selectMessageArea = function() {
 		mb.close();
 		console.putmsg(
 			format(
-				((s == bbs.cursub) ? " * " : "   ") + bbs.text(126),
+				((s == bbs.cursub) ? " * " : "   ") + bbs.text(SubLstFmt),
 				s + 1,
 				msg_area.grp_list[bbs.curgrp].sub_list[s].description,
 				"",
@@ -50,7 +53,7 @@ var selectMessageArea = function() {
 	}
 	console.mnemonics(
 		format(
-			bbs.text(503),
+			bbs.text(JoinWhichSub),
 			bbs.cursub + 1
 		)
 	);
@@ -67,7 +70,7 @@ var selectGroupAndArea = function() {
 
 var scanSubs = function() {
 
-	console.putmsg(bbs.text(116));
+	console.putmsg(bbs.text(MessageScan));
 	console.crlf();
 	var youOnly = (console.noyes("To you only")) ? 0 : SCAN_TOYOU;
 	bbs.scan_subs(SCAN_NEW|youOnly);
@@ -76,14 +79,14 @@ var scanSubs = function() {
 
 var sendMail = function() {
 
-	console.putmsg(bbs.text(10));
+	console.putmsg(bbs.text(Email));
 	console.crlf();
 	var nameOrNumber = console.getstr("", 30, K_EDIT|K_LINE);
 	if(isNaN(parseInt(nameOrNumber)))
 		nameOrNumber = system.matchuser(nameOrNumber);
 	if(nameOrNumber < 1) {
 		console.crlf();
-		console.putmsg(bbs.text(30));
+		console.putmsg(bbs.text(Aborted));
 		return;
 	}
 	bbs.email(nameOrNumber, WM_EMAIL);
@@ -130,9 +133,9 @@ var findMessages = function() {
 	}
 
 	var main = function() {
-		console.mnemonics(bbs.text(621));
+		console.mnemonics(bbs.text(SubGroupOrAll));
 		var sga = console.getkeys("SGA");
-		console.putmsg(bbs.text(76));
+		console.putmsg(bbs.text(SearchStringPrompt));
 		console.crlf();
 		text = console.getstr(
 			"",
@@ -142,7 +145,7 @@ var findMessages = function() {
 		if(text == "")
 			return false;
 		console.crlf();
-		subjectsOnly = console.yesno(bbs.text(625));
+		subjectsOnly = console.yesno(bbs.text(DisplaySubjectsOnlyQ));
 		var ret = true;
 		switch(sga) {
 			case "S":
@@ -162,8 +165,8 @@ var findMessages = function() {
 
 	var complete = function(ret) {
 		console.putmsg(
-			bbs.text(116) +
-			((ret) ? format(bbs.text(117), subs) : bbs.text(118))
+			bbs.text(MessageScan) +
+			((ret) ? format(bbs.text(MessageScanComplete), subs) : bbs.text(MessageScanAborted))
 		);
 		console.pause();
 	}
@@ -181,7 +184,7 @@ var findUser = function() {
 	console.crlf();
 	var name = console.getstr("", 30, K_EDIT|K_LINE);
 	if(name == "") {
-		console.putmsg(bbs.text(30));
+		console.putmsg(bbs.text(Aborted));
 		return;
 	}
 	bbs.finduser(name);

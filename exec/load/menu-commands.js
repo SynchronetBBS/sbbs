@@ -1,3 +1,5 @@
+// Mapping of menuedit/menushell 'commands' to built-in or helper functions
+
 var inBBS = function() {
 	return (typeof js.global.bbs == "undefined") ? false : true;
 }
