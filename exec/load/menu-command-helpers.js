@@ -1,21 +1,76 @@
 load("sbbsdefs.js");
 
 // To-do:
-// bbs.list_files Filespec?
-// bbs.list_file_info FL_EXFIND With filespec
 // findFiles Prompt for filespec/search string bbs.list_files(filespec or string, FL_FINDDESC|FL_VIEW)
-// bbs.scan_dirs All dirs?
+// select file group & directory
+
+// I'm not sure about the handling of bbs.curgrp vs. msg_area.grp_list index here
+var selectMessageGroup = function() {
+
+	console.putmsg(bbs.text(133));
+	for(var g = 0; g < msg_area.grp_list.length; g++) {
+		console.putmsg(
+			format(
+				((g == bbs.curgrp) ? " * " : "   ") + bbs.text(134),
+				g + 1,
+				msg_area.grp_list[g].description
+			)
+		);
+	}
+	console.mnemonics(
+		format(
+			bbs.text(503),
+			bbs.curgrp + 1
+		)
+	);
+	var g = console.getkeys("Q", msg_area.grp_list.length);
+	if(g != "Q" && g != "")
+		bbs.curgrp = parseInt(g) - 1;
+
+}
+
+// Not sure about the handling of bbs.cursb vs sub_list index here
+var selectMessageArea = function() {
+
+	console.putmsg(format(bbs.text(125), msg_area.sub[bbs.cursub_code].grp_name));
+	for(var s = 0; s < msg_area.grp_list[bbs.curgrp].sub_list.length; s++) {
+		var mb = new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[s].code);
+		mb.open();
+		var tm = mb.total_msgs;
+		mb.close();
+		console.putmsg(
+			format(
+				((s == bbs.cursub) ? " * " : "   ") + bbs.text(126),
+				s + 1,
+				msg_area.grp_list[bbs.curgrp].sub_list[s].description,
+				"",
+				tm
+			)
+		);
+	}
+	console.mnemonics(
+		format(
+			bbs.text(503),
+			bbs.cursub + 1
+		)
+	);
+	var s = console.getkeys("Q", msg_area.grp_list[bbs.curgrp].sub_list.length);
+	if(s != "Q" && s != "")
+		bbs.cursub = parseInt(s) - 1;
+
+}
+
+var selectGroupAndArea = function() {
+	selectMessageGroup();
+	selectMessageArea();
+}
 
 var scanSubs = function() {
 
 	console.putmsg(bbs.text(116));
 	console.crlf();
-	var cursub = console.noyes("Current sub only");
 	var youOnly = (console.noyes("To you only")) ? 0 : SCAN_TOYOU;
-	if(!cursub)
-		bbs.scan_msgs(bbs.cursub_code, SCAN_NEW|youOnly);
-	else
-		bbs.scan_subs(SCAN_NEW|youOnly);
+	bbs.scan_subs(SCAN_NEW|youOnly);
 
 }
 
