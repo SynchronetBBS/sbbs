@@ -1,3 +1,26 @@
+/*	Menu Shell - uses menus created via 'menuedit.js'
+
+	Create your menus by running the following in your exec directory:
+
+		jsexec menuedit.js
+
+	Install the shell by first compiling the Baja launcher stub:
+
+		baja menushel.src
+
+	Then add the command shell to your configuration:
+
+		scfg
+			Command Shells
+				(Add a new entry)
+					Command Shell Name: Menu Shell
+					Command Shell Internal Code: MENUSHEL
+
+	This is not an example command shell.  See classic_shell.js or lbshell.js
+	for examples of how to write your own shell, and consult Synchronet's JS
+	Object model documentation (http://synchro.net/docs/jsobjs.html) for help.
+*/
+
 load("sbbsdefs.js");
 load("menu-commands.js");
 
@@ -47,11 +70,15 @@ var doMenu = function() {
 	if(typeof command.menu != "undefined") {
 		menu = command.menu;
 	} else {
-		var path = command.command.split(".");
-		if(path[1] == "Externals")
-			bbs.exec_xtrn(path[2]);
-		else
-			Commands[path[1]][path[2]].Action();
+		try { // Let's not lose the entire session because of a bad command.
+			var path = command.command.split(".");
+			if(path[1] == "Externals")
+				bbs.exec_xtrn(path[2]);
+			else
+				Commands[path[1]][path[2]].Action();
+		} catch(err) {
+			log(LOG_ERR, err);
+		}
 	}
 
 }
