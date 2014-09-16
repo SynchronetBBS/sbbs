@@ -1,3 +1,9 @@
+/*	Menu editor for menushell.js, menushell-lb.js
+	echicken -at- bbs.electronicchicken.com
+
+	I am not the least bit proud of this mess.  But it "works."
+*/
+
 load("sbbsdefs.js");
 load("uifcdefs.js");
 load("menu-commands.js");
@@ -43,6 +49,22 @@ var help = {
 		"    Files: File area functions.",
 		"Externals: External programs.",
 		"    Menus: Other menus."
+	],
+	'editLightbarOptions' : [
+		"Lightbar Options",
+		"Position: Centered, Left, Right, or Fixed",
+		"x: X-coordinate of top left corner of menu box (fixed only)",
+		"y: Y-coordinate of top left corner of menu (fixed only)",
+		"Width: Width of menu box (fixed only)", 
+		"Height: Height of menu box (fixed only)",
+		"Background: Background graphic to load",
+		"ActiveForeground: CTRL-A code, active item foreground color",
+		"ActiveBackground: CTRL-A code, active item background color",
+		"InactiveForeground: CTRL-A code, inactive item foreground",
+		"InactiveBackground: CTRL-A code, inactive item background",
+		"HotkeyColor: CTRL-A code, hotkey color",
+		"BorderColor: CTRL-A code, menu box border color",
+		"Hotkeys: Whether or not to use hotkeys"
 	],
 	'commands' : []
 };
@@ -127,8 +149,8 @@ var main = function() {
 		if(selection < 0) {
 			break;
 		} else if(selection&MSK_DEL) {
-			selection = selection^MSK_DEL;
-			Commands.Menus.delete(menus[selection]);
+			selection ^= MSK_DEL;
+			delete Commands.Menus[menus[selection]];
 			selection--;
 		} else if(selection >= menus.length) {
 			editMenu();
@@ -149,10 +171,25 @@ var editMenu = function(menu) {
 			var ID = time();
 		Commands.Menus[ID] = {
 			'Title' : "Title",
-			'Header' : "",
+			'Header' : "head.asc",
 			'List' : true,
 			'Prompt' : "Your choice:",
-			'Commands' : []
+			'Commands' : [],
+			'Lightbar' : {
+				'Position' : "Centered",
+				'x' : 1,
+				'y' : 1,
+				'Width' : 1,
+				'Height' : 1,
+				'Background' : "",
+				'ActiveForeground' : "\\1h\\1w",
+				'ActiveBackground' : "\\16",
+				'InactiveForeground' : "\\1n\\1w",
+				'InactiveBackground' : "\\10",
+				'HotkeyColor' : "\\1h\\1c",
+				'BorderColor' : "\\1h\\1w",
+				'Hotkeys' : true
+			}
 		};
 		var keys = Object.keys(Commands.Menus);
 		var menu = keys[keys.length - 1];
@@ -211,6 +248,9 @@ var editMenu = function(menu) {
 			case "Commands":
 				editCommands(menu);
 				break;
+			case "Lightbar":
+				editLightbarOptions(menu);
+				break;
 			case "Default":
 				var yes = uifcYesNo("Default menu");
 				Commands.Menus[menu].Default = (yes);
@@ -243,10 +283,10 @@ var editCommands = function(menu) {
 		uifcHelp("editCommands");
 		var menuCommands = [];
 		for(var c in Commands.Menus[menu].Commands) {
-			if(Commands.Menus[menu].Commands[c].command.split(".")[1] == "Menu") {
+			if(Commands.Menus[menu].Commands[c].command.split(".")[1] == "Menus") {
 				menuCommands.push(
 					format(
-						"%s  %-30s  %s",
+						"%s  %-30s  Menus->%s",
 						Commands.Menus[menu].Commands[c].hotkey,
 						Commands.Menus[menu].Commands[c].text.substr(0, 30),
 						Commands.Menus[Commands.Menus[menu].Commands[c].menu].Title.substr(0, uifc.screen_width - 35)
@@ -438,6 +478,188 @@ var chooseXtrn = function(area) {
 	var selection = uifc.list(WIN_MID, "External Programs", xtrns);
 	if(selection >=0 )
 		return codes[selection];
+}
+
+var editLightbarOptions = function(menu) {
+	var last = 0;
+	while(1) {
+		var options = [];
+		for(var property in Commands.Menus[menu].Lightbar) {
+			options.push(
+				format(
+					"%22s  %s",
+					property, Commands.Menus[menu].Lightbar[property]
+				)
+			);
+		}
+		var selection = uifc.list(
+			WIN_ORG|WIN_MID|WIN_ACT,
+			0, 0, 0, last, last,
+			"Lightbar Options",
+			options
+		);
+		last = selection;
+		if(selection < 0)
+			return;
+		switch(selection) {
+			case 0:
+				var opts = ["Centered", "Left", "Right", "Fixed"];
+				var pos = uifc.list(WIN_MID, "Lightbar menu position", opts);
+				if(pos >= 0)
+					Commands.Menus[menu].Lightbar.Position = opts[pos];
+				break;
+			case 1:
+				if(Commands.Menus[menu].Lightbar.Position != "Fixed")
+					break;
+				var x = parseInt(
+					uifc.input(
+						WIN_MID,
+						"X coordinate",
+						Commands.Menus[menu].Lightbar.x.toString(),
+						2,
+						K_EDIT
+					)
+				);
+				if(!isNaN(x) && x > 0)
+					Commands.Menus[menu].Lightbar.x = x;
+				break;
+			case 2:
+				if(Commands.Menus[menu].Lightbar.Position != "Fixed")
+					break;
+				var y = parseInt(
+					uifc.input(
+						WIN_MID,
+						"Y coordinate",
+						Commands.Menus[menu].Lightbar.y.toString(),
+						2,
+						K_EDIT
+					)
+				);
+				if(!isNaN(y) && y > 0)
+					Commands.Menus[menu].Lightbar.y = y;
+				break;
+			case 3:
+				if(Commands.Menus[menu].Lightbar.Position != "Fixed")
+					break;
+				var w = parseInt(
+					uifc.input(
+						WIN_MID,
+						"Width",
+						Commands.Menus[menu].Lightbar.Width.toString(),
+						2,
+						K_EDIT
+					)
+				);
+				if(!isNaN(w) && w > 0)
+					Commands.Menus[menu].Lightbar.Width = w;
+				break;
+			case 4:
+				if(Commands.Menus[menu].Lightbar.Position != "Fixed")
+					break;
+				var h = parseInt(
+					uifc.input(
+						WIN_MID,
+						"Height",
+						Commands.Menus[menu].Lightbar.Height.toString(),
+						2,
+						K_EDIT
+					)
+				);
+				if(!isNaN(h) && h > 0)
+					Commands.Menus[menu].Lightbar.Height = h;
+				break;
+			case 5:
+				var b = uifc.list(
+					WIN_ORG|WIN_MID,
+					"Background file:",
+					["Enter a path", "Browse"]
+				);
+				if(b == 0) {
+					var b = uifc.input(
+						WIN_MID,
+						Commands.Menus[menu].Lightbar.Background,
+						0,
+						K_EDIT
+					);
+				} else if(b == 1) {
+					var bg = fileBrowser(system.text_dir + "menu/");
+				}
+				if(typeof bg == "string")
+					Commands.Menus[menu].Lightbar.Background = bg.replace(system.text_dir + "menu/", "");
+				break;
+			case 6:
+				var fg = uifc.input(
+					WIN_MID,
+					"Active foreground",
+					Commands.Menus[menu].Lightbar.ActiveForeground,
+					12,
+					K_EDIT
+				);
+				if(typeof fg != "undefined" && fg != "")
+					Commands.Menus[menu].Lightbar.ActiveForeground = fg;
+				break;
+			case 7:
+				var bg = uifc.input(
+					WIN_MID,
+					"Active background",
+					Commands.Menus[menu].Lightbar.ActiveBackground,
+					6,
+					K_EDIT
+				);
+				if(typeof bg != "undefined" && bg != "")
+					Commands.Menus[menu].Lightbar.ActiveBackground = bg;
+				break;
+			case 8:
+				var fg = uifc.input(
+					WIN_MID,
+					"Inactive foreground",
+					Commands.Menus[menu].Lightbar.InactiveForeground,
+					12,
+					K_EDIT
+				);
+				if(typeof fg != "undefined" && fg != "")
+					Commands.Menus[menu].Lightbar.InactiveForeground = fg;
+				break;
+			case 9:
+				var bg = uifc.input(
+					WIN_MID,
+					"Inactive background",
+					Commands.Menus[menu].Lightbar.InactiveBackground,
+					6,
+					K_EDIT
+				);
+				if(typeof bg != "undefined" && bg != "")
+					Commands.Menus[menu].Lightbar.InactiveBackground = bg;
+				break;
+			case 10:
+				var h = uifc.input(
+					WIN_MID,
+					"Hotkey color",
+					Commands.Menus[menu].Lightbar.HotkeyColor,
+					12,
+					K_EDIT
+				);
+				if(typeof h != "undefined" && h != "")
+					Commands.Menus[menu].Lightbar.InactiveForeground = h;
+				break;
+			case 11:
+				var b = uifc.input(
+					WIN_MID,
+					"Border color",
+					Commands.Menus[menu].Lightbar.BorderColor,
+					12,
+					K_EDIT
+				);
+				if(typeof b != "undefined" && b != "")
+					Commands.Menus[menu].Lightbar.BorderColor = b;
+				break;
+			case 12:
+				Commands.Menus[menu].Lightbar.Hotkeys = uifcYesNo("Hotkeys");
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 try {
