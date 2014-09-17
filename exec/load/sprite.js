@@ -854,6 +854,9 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 								  
 		sprite.lastMove		The time when the sprite last moved (as read
 							from system.timer
+
+		sprite.lastYMove	The time when the sprite's Y coordinate last
+							changed
 								  
 		sprite.lastAttack	The time when the sprite last used its weapon
 							(as read from system.timer)
@@ -898,6 +901,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 	this.lastBearing = bearing;
 	this.lastPosition = position;
 	this.lastMove = system.timer;
+	this.lastYMove = system.timer;
 	this.lastAttack = system.timer;
 	this.open = true;
 	this.inJump = false;
@@ -905,7 +909,6 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 	this.jumpStart = 0;
 	this.bearings = {undefined:0};
 	this.positions = {undefined:0};
-
 
 
 	this.move = function(direction) {
@@ -1112,7 +1115,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		var ret = false;
 		if(this.ini.constantmotion > 0 && this.ini.speed > 0 && system.timer - this.lastMove > this.ini.speed)
 			this.move("forward");
-		if(this.inJump && system.timer - this.lastMove > this.ini.speed) {
+		if(this.inJump && system.timer - this.lastYMove > this.ini.speed) {
 			if(Sprite.checkAbove(this) || this.y == this.jumpStart - this.ini.jumpheight) {
 				this.inJump = false;
 				this.inFall = true;
@@ -1120,14 +1123,14 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 					this.changePosition("fall");
 			} else {
 				this.y = this.y - 1;
-				this.lastMove = system.timer;
+				this.lastYMove = system.timer;
 			}
 		}
-		if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastMove > this.ini.speed) {
+		if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastYMove > this.ini.speed) {
 		
 			if(!Sprite.checkBelow(this)) {
 				this.y = this.y + 1;
-				this.lastMove = system.timer;
+				this.lastYMove = system.timer;
 			} 
 			
 			if(this.inFall && Sprite.checkBelow(this)) {
