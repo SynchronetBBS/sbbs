@@ -22,8 +22,8 @@ function update_exec_dir()
 				printf("!Error %u removing %s\n", errno, f2);
 				return false;
 			}
-		} else if(!file_rename(f2, f2 + ".old")) {
-				printf("!Error %u renaming %s\n", errno, f2);
+		} else if(!file_backup(f2, /* levels: */100, /* rename: */true)) {
+				printf("!Error backing-up %s\n", f2);
 				return false;
 		}
 	}
