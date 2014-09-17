@@ -82,7 +82,7 @@ function html2asc(buf, mono)
 	buf=buf.replace(/<h1[^<]*>([^<]*)<\/h1>/gi,"\r\n" + HEADING1 + "*** $1 ***" + NORMAL + "\r\n\r\n");
 	buf=buf.replace(/<h2[^<]*>([^<]*)<\/h2>/gi,"\r\n" + HEADING2 + "%%% $1 %%%" + NORMAL + "\r\n");
 	buf=buf.replace(/<h3[^<]*>([^<]*)<\/h3>/gi,"\r\n" + HEADING3 + "--- $1 ---" + NORMAL + "\r\n");
-	buf=buf.replace(/<h4[^<]*>([^<]*)<\/h4>/gi,"\r\n" + HEADING4 + "-=< $1 >=-" + NORMAL + "\r\n");
+	buf=buf.replace(/<h4[^<]*>([^<]*)<\/h4>/gi,"\r\n" + HEADING4 + "-=&lt; $1 &gt;=-" + NORMAL + "\r\n");
 	buf=buf.replace(/<h5[^<]*>([^<]*)<\/h5>/gi,"\r\n" + HEADING5 + "... $1 ..." + NORMAL + "\r\n");
 	buf=buf.replace(/<h6[^<]*>([^<]*)<\/h6>/gi,"\r\n" + HEADING6 + "___ $1 ___" + NORMAL + "\r\n");
 
