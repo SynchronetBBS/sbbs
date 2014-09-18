@@ -136,5 +136,3 @@ function html2asc(buf, mono, footnotes)
 	return buf;
 }
 
-print(html2asc('<a href="http://money.cnn.com/2014/09/15/news/companies/gm-compensation-feinberg/index.html">Nineteen deaths have been linked to a flaw in\r\n \r\n \r	\n ignition switches in General Motors vehicles</a>, according to the attorney overseeing a compensation fund for victims. <br> <br> "Already there are more deaths than GM said from Day One," attorney Ken Feinberg told CNNMoney. "Of course there will be additional eligible deaths; how many is pure speculation, but there will be eligible death claims." <p> <p> \r\n GM initially said 13 deaths were tied to the problem, which went unreported for a decade, years after company engineers discovered it. <br> <br> Get complete coverage of breaking news on CNN TV, <a href="http://www.cnn.com">CNN.com</a> and CNN Mobile.', false, true));
-
