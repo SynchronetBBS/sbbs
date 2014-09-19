@@ -223,6 +223,8 @@ var Sprite = {
 			margin = 0;
 		function checkOverlap(sprites,sprite,margin) {
 			for(var s = 0; s < sprites.length; s++) {
+				if(!sprites[s].open)
+					continue;
 				if(sprites[s] == sprite)
 					continue;
 				if(sprite.x >= sprites[s].x + sprites[s].frame.width + margin 
@@ -245,7 +247,9 @@ var Sprite = {
 		var yarg=[];
 		function checkBelow(sprites,sprite) {
 			for(var s = 0; s < sprites.length; s++) {
-				if(sprite.y + sprite.frame.height != sprites[s].y)
+				if(!sprites[s].open)
+					continue;
+				if((sprite.y + sprite.frame.height != sprites[s].y))
 					continue;
 				if(sprite.x >= sprites[s].x + sprites[s].frame.width 
 					|| sprite.x + sprite.frame.width <= sprites[s].x)
@@ -264,6 +268,8 @@ var Sprite = {
 		var yarg=[];
 		function checkAbove(sprites,sprite) {
 			for(var s = 0; s < sprites.length; s++) {
+				if(!sprites[s].open)
+					continue;
 				if(sprite.y <= sprites[s].y 
 					|| sprite.y > sprites[s].y + sprites[s].frame.height)
 					continue;
@@ -391,6 +397,22 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 //	this.positions = {undefined:0};
 	this.bearings = {};
 	this.positions = {};
+	this.index = Sprite.aerials.length;
+
+	// Only for use in this.getcmd()
+	this.canMove = function(bearing) {
+		if(	((this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
+			&&
+			(system.timer - this.lastMove < this.ini.speed * 2))
+			||
+			((this.bearing == "e" || this.bearing == "w" || this.bearing == "n" || this.bearing == "s")
+			&&
+			(system.timer - this.lastMove < this.ini.speed))
+		) {
+			return false;
+		}
+		return true;
+	}
 
 	this.move = function(direction) {
 		if(
@@ -909,7 +931,22 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 	this.jumpStart = 0;
 	this.bearings = {undefined:0};
 	this.positions = {undefined:0};
+	this.index = Sprite.profiles.length;
 
+	// Only for use in this.getcmd()
+	this.canMove = function(bearing) {
+		if(	((this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
+			&&
+			(system.timer - this.lastMove < this.ini.speed * 2))
+			||
+			((this.bearing == "e" || this.bearing == "w" || this.bearing == "n" || this.bearing == "s")
+			&&
+			(system.timer - this.lastMove < this.ini.speed))
+		) {
+			return false;
+		}
+		return true;
+	}
 
 	this.move = function(direction) {
 	
@@ -1057,6 +1094,8 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 	this.getcmd = function(userInput) {
 		switch(userInput.toUpperCase()) {
 			case KEY_LEFT:
+				if(!this.canMove())
+					break;
 				if(this.ini.bearings.indexOf("w") >= 0) {
 					if(this.bearing != "w")
 						this.turnTo("w");
@@ -1065,6 +1104,8 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 				}
 				break;
 			case KEY_RIGHT:
+				if(!this.canMove())
+					break;
 				if(this.ini.bearings.indexOf("e") >= 0) {
 					if(this.bearing != "e")
 						this.turnTo("e");
@@ -1073,6 +1114,8 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 				} 
 				break;
 			case KEY_UP:
+				if(!this.canMove())
+					break;
 				if(this.ini.bearings.indexOf("n") >= 0) {
 					if(this.bearing != "n")
 						this.turnTo("n");
@@ -1088,6 +1131,8 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 				}
 				break;
 			case KEY_DOWN:
+				if(!this.canMove())
+					break;
 				if(this.ini.bearings.indexOf("s") >= 0) {
 					if(this.bearing != "s")
 						this.turnTo("s");
@@ -1127,13 +1172,10 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 			}
 		}
 		if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastYMove > this.ini.speed) {
-		
 			if(!Sprite.checkBelow(this)) {
 				this.y = this.y + 1;
 				this.lastYMove = system.timer;
-			} 
-			
-			if(this.inFall && Sprite.checkBelow(this)) {
+			} else if(this.inFall) {
 				this.inFall = false;
 				if(this.positions["normal"] != undefined)
 					this.changePosition("normal");
@@ -1305,6 +1347,7 @@ Sprite.Platform = function(parentFrame, x, y, width, height, ch, attr) {
 	this.y = y;
 	this.origin = { x : x, y : y };
 	this.open = true;
+	this.index = Sprite.platforms.length;
 
 	/* frame init */
 	this.frame = new Frame(x, y, width, height, attr, parentFrame);
