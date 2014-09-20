@@ -92,6 +92,8 @@ function html2asc(buf, mono, footnotes)
 	buf=buf.replace(/<\/ol>/gi,"\r\n");				// Replace </ol>
 	buf=buf.replace(/<\/caption>/gi,"\r\n");		// Replace </caption>
 	buf=buf.replace(/<\/table>/gi,"\r\n");			// Replace </table>
+	buf=buf.replace(/^[\r\n]+/,"");					// Remove leading line breaks
+	buf=buf.replace(/[\r\n]+$/,"");					// Remove trailing line breaks
 
 	buf=buf.replace(/<td[^<]*>/gi," ");
 	buf=buf.replace(/<th[^<]*>/gi," ");
@@ -135,4 +137,3 @@ function html2asc(buf, mono, footnotes)
 
 	return buf;
 }
-
