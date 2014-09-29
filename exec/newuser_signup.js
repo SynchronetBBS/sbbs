@@ -186,16 +186,17 @@ function create_newuser()
 				console.print(bbs.text(EnterYourAlias));
 			else
 				console.print(bbs.text(EnterYourRealName));
-			newuser.alias = console.getstr(newuser.alias, LEN_ALIAS, kmode);
-			truncsp(newuser.alias);
-			if (!system.check_name(newuser.alias)
-				|| (!(system.newuser_questions & UQ_ALIASES) && newuser.alias.indexOf(' ') == -1)) {
+			var tempAlias = console.getstr(newuser.alias, LEN_ALIAS, kmode);
+			truncsp(tempAlias);
+			if(!system.check_name(tempAlias)
+				|| (!(system.newuser_questions & UQ_ALIASES) && tempAlias.indexOf(' ') == -1)) {
 				console.print(bbs.text(YouCantUseThatName));
 				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
 					newuser.comment = "Coudn't make up a name";
 					newuser.settings |= USER_DELETED;
 					return false;
 				}
+				newuser.alias = tempAlias;
 				continue;
 			}
 			break; 
@@ -208,14 +209,16 @@ function create_newuser()
 		if((system.newuser_questions & UQ_ALIASES) && (system.newuser_questions & UQ_REALNAME)) {
 			while(bbs.online) {
 				console.print(bbs.text(EnterYourRealName));
-				newuser.name = console.getstr(newuser.name, LEN_NAME, kmode);
-				if (!system.check_name(newuser.name)
-					|| newuser.name.indexOf(' ') == -1
+				var tempName = console.getstr(newuser.name, LEN_NAME, kmode);
+				if (!system.check_name(tempName) {
+					|| tempName.indexOf(' ') == -1
 					|| ((system.newuser_questions & UQ_DUPREAL)
-						&& system.matchuserdata(U_NAME, newuser.name, newuser.number)))
+						&& system.matchuserdata(U_NAME, tempName, newuser.number)))
 					console.print(bbs.text(YouCantUseThatName));
-				else
-					break; 
+				} else {
+					newuser.name = tempName;
+					break;
+				}
 				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
 					newuser.comment = "Failed to create alias";
 					newuser.settings |= USER_DELETED;
