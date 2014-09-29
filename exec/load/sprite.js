@@ -2,15 +2,15 @@
 // echicken -at- bbs.electronicchicken.com, 2012
 
 /*	Usage:
-	
+
 	Create a "sprites" subdirectory in the directory where your script resides.
 	For each sprite, you must create two files in the "sprites" directory:
-	
+
 	<sprite>.ini	- Settings and additional information about this sprite.
 	<sprite>.bin	- ANSI art saved in .bin format (PabloDraw recommended)
-	
+
 	<sprite>.ini format:
-	
+
 		width		The width of the sprite (REQUIRED)
 
 		height		The height of the sprite (ie. the height of one
@@ -20,7 +20,7 @@
 					sprite (eg. n,ne,e,se,s,sw,w,nw). Bearings must
 					be in the order you wish to cycle through
 					them, if movement is "rotating" (REQUIRED)
-					
+
 		positions	A comma separated list of positions available to this
 					sprite (e.g. crouch,stand,jump,kick,explode)
 
@@ -30,7 +30,7 @@
 					are pressed.  If "directional" the sprite will
 					turn to face the direction of the arrow key that
 					was pressed.
-					
+
 		constantmotion
 					1 or 0, whether or not this sprite is constantly
 					moving or only moves when a key is pressed.
@@ -61,122 +61,122 @@
 
 		range		Applicable only to weapon sprites, how far the sprite
 					can travel before disappearing.
-		
+
 		You can add any number of other key=value pairs to a <sprite>.ini file
 		for your own use.  They are accessible as properties of your sprite
 		object via Sprite.ini.<keyname>.
-	
+
 	<sprite>.bin format:
-	
+
 		Each sprite can be comprised of many different graphics.  You're
-		free to give your sprite any width and height that you wish.  
-		Each "graphic" should be as wide and as	tall as the 'width' and 'height' 
+		free to give your sprite any width and height that you wish.
+		Each "graphic" should be as wide and as	tall as the 'width' and 'height'
 		values defined in <sprite>.ini. To give a sprite different graphics
 		depending on the sprite's bearing, draw additional graphics in a vertical
-		sequence (with no spaces in between) in the same order as your 'bearings' 
-		in <sprite>.ini. To give your sprite different positions (which you can 
+		sequence (with no spaces in between) in the same order as your 'bearings'
+		in <sprite>.ini. To give your sprite different positions (which you can
 		manipulate as you see fit), draw additional graphics in horizontal
 		sequence (with no spaces in between) in the same order as your
 		'positions' in <sprite>.ini, respectively, for each bearing.
-		
+
 		Example <sprite>.bin layout:
-		
+
 			STAND	JUMP	SIT
-		N	[...]	[...]	[...]		
-		NE	[...]	[...]	[...]			
-		E	[...]	[...]	[...]		
-		SE	[...]	[...]	[...]		
-		S	[...]	[...]	[...]		
-		SW	[...]	[...]	[...]		
-		W	[...]	[...]	[...]		
-		NW	[...]	[...]	[...]		
-		
+		N	[...]	[...]	[...]
+		NE	[...]	[...]	[...]
+		E	[...]	[...]	[...]
+		SE	[...]	[...]	[...]
+		S	[...]	[...]	[...]
+		SW	[...]	[...]	[...]
+		W	[...]	[...]	[...]
+		NW	[...]	[...]	[...]
+
 	The 'Sprite' namespace:
-	
+
 		After you load this file, a namespace object called 'Sprite' is created.  Each
 		new Sprite.<type> that you create is pushed into an array corresponding to
-		the type of sprite you created. You will need to add Sprite.cycle() to your 
+		the type of sprite you created. You will need to add Sprite.cycle() to your
 		main loop (or any loop that updates the sprites) in order to process updates
 		to the screen (this is in addition to calling frame.cycle(), as documented in
 		frame.js).
-		
+
 	Creating a Sprite:
-		
+
 		Aerial sprites (top-down):
 			var s = new Sprite.Aerial(fileName, parentFrame, x, y, bearing, position);
-			
+
 		Profile sprites (side-view):
 			var s = new Sprite.Profile(fileName, parentFrame, x, y, bearing, position);
-			
+
 		Platform sprites (walls, floors):
 			var s = new Sprite.Platform(parentFrame, x, y, width, height, ch, attr);
-			
+
 		Where 'fileName' is the name of a pair of files in the 'sprites'
 		subdirectory. 'fileName' can either be an absolute path and root file name
 		(without extension), or it can be simply the root filename of a sprite,
 		if the files are located in ./sprites/
-		
-		If you have ./sprites/<sprite name>.ini and ./sprites/<sprite name>.bin, 
-		supply "<sprite name>" for 'fileName'. If you have the files elsewhere, 
-		you must supply the full path/file name (without extension). 
-		
+
+		If you have ./sprites/<sprite name>.ini and ./sprites/<sprite name>.bin,
+		supply "<sprite name>" for 'fileName'. If you have the files elsewhere,
+		you must supply the full path/file name (without extension).
+
 		'parentFrame' is a reference to a Frame object of which this sprite
 		will be a child.  You must already have created this frame, and
 		your script will need to cycle the parent frame in order for any
 		changes to your sprites to be seen.
-		
+
 		'x' and 'y' are the coordinates of the top left-hand (northwest)
 		corner of this sprite, eg. 1, 1 for the top left corner of the
 		screen.
-		
+
 		'bearing' is the direction which this sprite will be facing when
 		it is created.
-		
+
 		'position' is the variation of the sprite's appearance/posture when
 		it is created.
-		
+
 		'width' & 'height' are the width and height of a platform sprite.
-		
+
 		'ch' is the character to fill in a platform sprite.
-		
+
 		'attr' is the color attribute to fill in a platform sprite.
-		
+
 	Sprite Object Methods (all sprites):
-	
+
 		sprite.getcmd(cmd)	Process and acts upon user input (eg. a value
 							returned by console.inkey()).  Calls 'turn'
 							'move' or 'putWeapon' as required.
-								  
+
 		sprite.cycle()		Various housekeeping tasks.  Must be called
 							in order to apply any changes to sprite's
 							position or orientation.
-							  
+
 		sprite.remove()		Removes the sprite from the screen and sets
 							the value of its 'open' property to false.
-	
+
 		sprite.moveTo(x, y)	Move the sprite to an absolute position within
 							its parent frame.
 
 	Sprite Object Properties (All sprites):
-	
-		Sprite.x								  
+
+		Sprite.x
 		Sprite.y			The current x and y coordinates of the top
 							left corner of this sprite. (Normally the
 							same as Sprite.frame.x and Sprite.frame.y)
-										  
+
 		Sprite.origin.x
 		Sprite.origin.y		The x and y coordinates where this sprite
 							first appeared on the screen.
-								  
+
 		Sprite.frame		A Frame object; how this Sprite is actually
 							displayed on the screen.
-								  
+
 		Sprite.open			true or false, whether or not this sprite is
 							currently displayed on the screen.
-	
-	**	Additional properties and methods are listed above each sprite 
+
+	**	Additional properties and methods are listed above each sprite
 		definition below, as some properties and methods are not shared
-		but every type. 
+		by every type.
 */
 
 load("sbbsdefs.js");
@@ -189,11 +189,11 @@ var KEY_JUMP = " "; // Redefine this in your scripts as desired
 /* Sprite Class Namespace
 
 	Methods (static):
-	
+
 		Sprite.cycle() 		Iterates all sprites stored in the namespace
 							allowing sprites to update display, movement
 							and check for interference.
-	
+
 		Sprite.checkOverlap(sprite,margin)
 							Returns an array of all other sprites that
 							overlap on the screen with this one, or
@@ -201,9 +201,9 @@ var KEY_JUMP = " "; // Redefine this in your scripts as desired
 							you to decide what to do in case of overlap,
 							eg. let the player collect a prize, or make
 							it explode if it stepped on a landmine.)
-		
+
 		Sprite.checkBelow(sprite)
-		Sprite.checkAbove(sprite)	
+		Sprite.checkAbove(sprite)
 							These are mostly for internal use.  They
 							return true if there is something directly
 							above or below the sprite.  (This is what
@@ -215,7 +215,7 @@ var Sprite = {
 	aerials:[],
 	profiles:[],
 	platforms:[],
-	
+
 	/* library methods */
 	checkOverlap:function(sprite,margin) {
 		var yarg = [];
@@ -225,7 +225,7 @@ var Sprite = {
 			for(var s = 0; s < sprites.length; s++) {
 				if(!sprites[s].open)
 					continue;
-				if(sprites[s] == sprite)
+				if(sprites[s] === sprite)
 					continue;
 				if(sprite.x >= sprites[s].x + sprites[s].frame.width + margin 
 					|| sprite.x + sprite.frame.width + margin <= sprites[s].x)
@@ -286,6 +286,48 @@ var Sprite = {
 			return yarg;
 		return false;
 	},
+	checkLeft:function(sprite) {
+		var xarg = [];
+		function checkLeft(sprites, sprite) {
+			for(var s = 0; s < sprites.length; s++) {
+				if(!sprites[s].open)
+					continue;
+				if(	sprite.y + sprite.frame.height <= sprites[s].y
+					|| sprite.y >= sprites[s].y + sprites[s].frame.height)
+					continue;
+				if(sprites[s].x + sprites[s].frame.width != sprite.x)
+					continue;
+				xarg.push(sprites[s]);
+			}
+		}
+		checkLeft(this.aerials, sprite);
+		checkLeft(this.profiles, sprite);
+		checkLeft(this.platforms, sprite);
+		if(xarg.length > 0)
+			return xarg;
+		return false;
+	},
+	checkRight:function(sprite) {
+		var xarg = [];
+		function checkRight(sprites, sprite) {
+			for(var s = 0; s < sprites.length; s++) {
+				if(!sprites[s].open)
+					continue;
+				if(	sprite.y + sprite.frame.height <= sprites[s].y
+					|| sprite.y >= sprites[s].y + sprites[s].frame.height)
+					continue;
+				if(sprite.x + sprite.frame.width != sprites[s].x)
+					continue;
+				xarg.push(sprites[s]);
+			}
+		}
+		checkRight(this.aerials, sprite);
+		checkRight(this.profiles, sprite);
+		checkRight(this.platforms, sprite);
+		if(xarg.length > 0)
+			return xarg;
+		return false;
+	},
 	cycle:function() {
 		function cycle(sprites) {
 			for(var s = 0;s<sprites.length;s++) {
@@ -298,7 +340,7 @@ var Sprite = {
 	}
 };
 
-/*	Aerial Sprite 
+/*	Aerial Sprite
 
 	This is the type of sprite you might use for an RTS game, space flying game,
 	or anything that requires omnidirectional movement, constant movement.
@@ -306,7 +348,7 @@ var Sprite = {
 	Platforms can be used along with Aerial sprites to create walls and obstacles.
 
 	Methods:
-		
+
 		sprite.move(direction)
 							Where 'direction' is either "forward" or
 							"reverse", will cause the sprite to move in
@@ -319,10 +361,10 @@ var Sprite = {
 							cause the sprite to change to the next
 							available bearing in that direction and
 							load the applicable graphic.
-							
+
 		sprite.turnTo(bearing)
 							Rotate the sprite to an absolute bearing.
-								  
+
 		sprite.putWeapon()	Finds the center of the sprite's forward
 							facing side and produces a weapon at that
 							point. (The weapon will be another sprite
@@ -330,7 +372,7 @@ var Sprite = {
 							directory, and should have constantmotion
 							set to 1 in its own ini file, and have a
 							range defined.)
-								  
+
 		sprite.pursue(sprite)
 							Causes Sprite to turn clockwise, once, toward
 							'sprite'.  Returns true if Sprite is facing
@@ -338,39 +380,39 @@ var Sprite = {
 							called, Sprite will start moving toward
 							'sprite'.)  Useful for causing enemies to
 							chase after the player, etc.
-							
+
 	Properties:
 
 		sprite.bearing		The direction that the sprite is facing
 							(ex: n,ne,e,se,s,sw, or w). (Top of screen is
 							north, right side of screen is east, and so
 							on.)
-								  
+
 		sprite.position		The alternate graphic to be shown for the sprite.
 							These are specified in your <sprite>.ini file
 							and can allow for animated motion by shifting
 							the position setting during movement.
-								  
+
 		sprite.lastMove		The time when the sprite last moved (as read
 							from system.timer
-								  
+
 		sprite.lastAttack	The time when the sprite last used its weapon
 							(as read from system.timer)
-								  
+
 		sprite.weaponCoordinates
 							Where the sprite's weapon should appear on
 							the screen (calculated by sprite.putWeapon())
-								  
+
 		sprite.ini			Has sub-properties for every value defined in
 							this sprite's ini file.
-								  
+
 		sprite.bearings		An array of vertical offsets to the top row of
 							each of the bearing graphics in the <sprite>.bin file.
-		
+
 		sprite.positions	An array of horizontal offsets to the left column
-							of each additional sprite position as drawn in the 
+							of each additional sprite position as drawn in the
 							<sprite>.bin. file.
-								  
+
 */
 Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 	if(!file_exists(fileName + ".ini"))
@@ -381,7 +423,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 	if(!file_exists(fileName + ".bin")) {
 		throw("Sprite file missing: " + fileName + ".bin");
 	}
-		
+
 	this.x = x;
 	this.y = y;
 	this.origin = { x : x, y : y };
@@ -526,7 +568,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 			b=this.ini.bearings.length-1;
 		this.bearing = this.ini.bearings[b];
 	}
-	
+
 	this.putWeapon = function() {
 		if(!this.ini.weapon || system.timer - this.lastAttack < this.ini.attackspeed)
 			return false;
@@ -542,7 +584,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 				this.weaponCoordinates = {
 					x : this.x + this.frame.width,
 					y : this.y - this.ini.weaponHeight
-				}			
+				}
 				break;
 			case "e":
 				this.weaponCoordinates = {
@@ -592,7 +634,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 		w.frame.open(); // Shouldn't be necessary, but sprite doesn't appear unless I do this
 		return(w);
 	}
-	
+
 	this.getcmd = function(userInput) {
 		switch(userInput.toUpperCase()) {
 			case KEY_LEFT:
@@ -626,7 +668,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 					if(this.bearing != "n")
 						this.turnTo("n");
 					else if(this.ini.constantmotion < 1)
-						this.move("forward");				
+						this.move("forward");
 				} else if(this.ini.movement == "rotating" && this.ini.constantmotion == 0) {
 					this.move("forward");
 				} else {
@@ -660,7 +702,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 				break;
 		}
 	}
-	
+
 	this.cycle = function() {
 		var ret = false;
 		if(this.ini.constantmotion > 0 && this.ini.speed > 0 && system.timer - this.lastMove > this.ini.speed)
@@ -669,7 +711,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 			ret = true;
 			this.lastBearing = this.bearing;
 			this.lastPosition = this.position;
-			this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);			
+			this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);
 		}
 		if(this.x != this.frame.x || this.y != this.frame.y) {
 			ret = true;
@@ -744,18 +786,18 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 		this.open = false;
 		this.frame.close();	
 	}
-	
+
 	this.moveTo = function(x, y) {
 		this.x = x;
 		this.y = y;
 		this.frame.moveTo(x, y);
 	}
-	
+
 	this.turnTo = function(bearing) {
 		if(this.ini.bearings.indexOf(bearing) < 0)
 			return false;
 		this.bearing = bearing;
-		this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);			
+		this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);
 	}
 
 	function init(fileName, parentFrame, x, y, bearing, position) {
@@ -763,7 +805,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 		f.open("r",true);
 		this.ini = f.iniGetObject();
 		f.close();
-		
+
 		/* y offset for directional bearings */
 		if(this.ini.hasOwnProperty("bearings")) {
 			this.ini.bearings = this.ini.bearings.split(",");
@@ -832,7 +874,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 	Platform and Profile sprites are best friends.
 
 	Methods:
-		
+
 		sprite.move(direction)
 							Where 'direction' is either "forward" or
 							"reverse", will cause the sprite to move in
@@ -841,7 +883,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 
 		sprite.turnTo(bearing)
 							Turn the sprite to an absolute bearing.
-								  
+
 		sprite.putWeapon()	Finds the center of the sprite's forward
 							facing side and produces a weapon at that
 							point. (The weapon will be another sprite
@@ -849,7 +891,7 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 							directory, and should have constantmotion
 							set to 1 in its own ini file, and have a
 							range defined.)
-								  
+
 		sprite.pursue(sprite)
 							Causes Sprite to turn towards
 							'sprite'.  Returns true if sprite is facing
@@ -857,50 +899,50 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 							called, sprite will start moving toward
 							'sprite'.)  Useful for causing enemies to
 							chase after the player, etc.
-		
+
 		sprite.jump()
 							Initiate a sprite's jump sequence.
 							Will only work if the sprite is not already
 							jumping.
-	
+
 	Properties:
-		
+
 		sprite.bearing		The direction that the sprite is facing. For
-							the vast majority of Profile sprites, this 
+							the vast majority of Profile sprites, this
 							will likely be either "e" or "w"
-							
+
 		sprite.position		The alternate graphic to be shown for the sprite.
 							These are specified in your <sprite>.ini file
 							and can allow for animated motion by shifting
 							the position setting during movement.
-								  
+
 		sprite.lastMove		The time when the sprite last moved (as read
 							from system.timer
 
 		sprite.lastYMove	The time when the sprite's Y coordinate last
 							changed
-								  
+
 		sprite.lastAttack	The time when the sprite last used its weapon
 							(as read from system.timer)
-								  
+
 		sprite.weaponCoordinates
 							Where the sprite's weapon should appear on
 							the screen (calculated by sprite.putWeapon())
-								  
+
 		sprite.ini			Has sub-properties for every value defined in
 							this sprite's ini file.
-								  
+
 		sprite.bearings		An array of vertical offsets to the top row of
 							each of the bearing graphics in the <sprite>.bin file.
-		
+
 		sprite.positions	An array of horizontal offsets to the left column
-							of each additional sprite position as drawn in the 
+							of each additional sprite position as drawn in the
 							<sprite>.bin. file
-							
+
 		sprite.inJump		True if the sprite is jumping
-		
+
 		sprite.inFall		True if the sprite is falling
-		
+
 		sprite.jumpStart	The time when a jump began (as read from
 							system.timer)
 */
@@ -913,7 +955,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 	if(!file_exists(fileName + ".bin")) {
 		throw("Sprite file missing: " + fileName + ".bin");
 	}
-	
+
 	this.x = x;
 	this.y = y;
 	this.bearing = bearing;
@@ -933,30 +975,40 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 	this.positions = {undefined:0};
 	this.index = Sprite.profiles.length;
 
-	// Only for use in this.getcmd()
-	this.canMove = function(bearing) {
-		if(	((this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
-			&&
-			(system.timer - this.lastMove < this.ini.speed * 2))
-			||
-			((this.bearing == "e" || this.bearing == "w" || this.bearing == "n" || this.bearing == "s")
-			&&
-			(system.timer - this.lastMove < this.ini.speed))
-		) {
-			return false;
+	this.canMove = function() {
+		var n = (this.bearing.match(/n/) !== null);
+		var s = (this.bearing.match(/s/) !== null);
+		var e = (this.bearing.match(/e/) !== null);
+		var w = (this.bearing.match(/w/) !== null);
+		var canMoveEW = true;
+		if(e)
+			var beside = Sprite.checkRight(this);
+		else if(w)
+			var beside = Sprite.checkLeft(this);
+		if(typeof beside != "undefined") {
+			for(var b = 0; b < beside.length; b++) {
+				if(!(beside[b] instanceof Sprite.Platform))
+					continue;
+				canMoveEW = false;
+				break;
+			}
 		}
-		return true;
+		if((n || s) && ((e || w) && canMoveEW) && system.timer - this.lastMove >= this.ini.speed * 2)
+			return true;
+		if(n || s || ((e || w) && canMoveEW) && system.timer - this.lastMove >= this.ini.speed)
+			return true;
+		return false;
 	}
 
-	this.move = function(direction) {
-	
-		if(
-			(this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
+	this.move = function(direction, exempt) {
+
+		if(	(this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
 			&&
 			(system.timer - this.lastMove < this.ini.speed * 2)
 		)
 			return;
-		this.lastMove = system.timer;
+		if(typeof exempt != "boolean" || !exempt)
+			this.lastMove = system.timer;
 		switch(this.bearing) {
 			case "n":
 				if(direction == "forward") {
@@ -1053,7 +1105,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		/* increment or decrement bearing */
 		if(direction = "cw")
 			b++;
-		else if(direction == "ccw") 
+		else if(direction == "ccw")
 			b--;
 		if(b>=this.ini.bearings.length)
 			b=0;
@@ -1061,7 +1113,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 			b=this.ini.bearings.length-1;
 		this.bearing = this.ini.bearings[b];
 	}
-	
+
 	this.putWeapon = function() {
 		if(!this.ini.weapon || system.timer - this.lastAttack < this.ini.attackspeed)
 			return false;
@@ -1085,42 +1137,41 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > 80 
 			|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > 24)
 			return false;
-		var w = new Sprite(this.ini.weapon, this.frame.parent, 
-			this.weaponCoordinates.x, this.weaponCoordinates.y, this.bearing);
+		var w = new Sprite.Profile(
+			this.ini.weapon,
+			this.frame.parent,
+			this.weaponCoordinates.x,
+			this.weaponCoordinates.y,
+			this.bearing
+		);
 		w.owner = this;
 		w.frame.open();
 	}
-	
+
 	this.getcmd = function(userInput) {
 		switch(userInput.toUpperCase()) {
 			case KEY_LEFT:
-				if(!this.canMove())
-					break;
 				if(this.ini.bearings.indexOf("w") >= 0) {
 					if(this.bearing != "w")
 						this.turnTo("w");
-					else if(this.ini.constantmotion == 0)
+					else if(this.ini.constantmotion == 0 && this.canMove())
 						this.move("forward");
 				}
 				break;
 			case KEY_RIGHT:
-				if(!this.canMove())
-					break;
 				if(this.ini.bearings.indexOf("e") >= 0) {
 					if(this.bearing != "e")
 						this.turnTo("e");
-					else if(this.ini.constantmotion == 0)
+					else if(this.ini.constantmotion == 0 && this.canMove())
 						this.move("forward");
-				} 
+				}
 				break;
 			case KEY_UP:
-				if(!this.canMove())
-					break;
 				if(this.ini.bearings.indexOf("n") >= 0) {
 					if(this.bearing != "n")
 						this.turnTo("n");
-					else if(this.ini.constantmotion == 0)
-						this.move("forward");				
+					else if(this.ini.constantmotion == 0 && this.canMove())
+						this.move("forward");
 				} else if(this.ini.constantmotion == 1) {
 					if(this.ini.speed > this.ini.speedmax)
 						this.ini.speed = this.ini.speed - this.ini.speedstep;
@@ -1131,12 +1182,10 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 				}
 				break;
 			case KEY_DOWN:
-				if(!this.canMove())
-					break;
 				if(this.ini.bearings.indexOf("s") >= 0) {
 					if(this.bearing != "s")
 						this.turnTo("s");
-					else if(this.ini.constantmotion == 0)
+					else if(this.ini.constantmotion == 0 && this.canMove())
 						this.move("forward");
 				} else if(this.ini.constantmotion == 1) {
 					if(this.ini.speed == this.ini.speedmin)
@@ -1155,7 +1204,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 				break;
 		}
 	}
-	
+
 	this.cycle = function() {
 		var ret = false;
 		if(this.ini.constantmotion > 0 && this.ini.speed > 0 && system.timer - this.lastMove > this.ini.speed)
@@ -1164,7 +1213,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 			if(Sprite.checkAbove(this) || this.y == this.jumpStart - this.ini.jumpheight) {
 				this.inJump = false;
 				this.inFall = true;
-				if(this.positions["fall"] != undefined)
+				if(typeof this.positions["fall"] != "undefined")
 					this.changePosition("fall");
 			} else {
 				this.y = this.y - 1;
@@ -1173,11 +1222,12 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		}
 		if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastYMove > this.ini.speed) {
 			if(!Sprite.checkBelow(this)) {
+				this.inFall = true;
 				this.y = this.y + 1;
 				this.lastYMove = system.timer;
 			} else if(this.inFall) {
 				this.inFall = false;
-				if(this.positions["normal"] != undefined)
+				if(typeof this.positions["normal"] != "undefined")
 					this.changePosition("normal");
 			}
 		}
@@ -1207,11 +1257,11 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 			return;
 		this.jumpStart = this.y;
 		this.inJump = true;
-		
-		if(this.positions["jump"] != undefined)
+
+		if(typeof this.positions["jump"] != "undefined")
 			this.changePosition("jump");
 	}
-	
+
 	this.pursue = function(s) {
 		var targetBearing;
 		var attack = false;
@@ -1219,7 +1269,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 			targetBearing = "w";
 		else if(this.x + this.width < s.x)
 			targetBearing = "e";
-		
+
 		if(this.bearing != targetBearing)
 			this.turnTo(targetBearing);
 		else if(s.inJump && !this.inJump)
@@ -1233,25 +1283,25 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		this.open = false;
 		this.frame.close();	
 	}
-	
+
 	this.moveTo = function(x, y) {
 		this.x = x;
 		this.y = y;
 		this.frame.moveTo(x, y);
 	}
-	
+
 	this.turnTo = function(bearing) {
 		if(this.ini.bearings.indexOf(bearing) < 0)
 			return false;
 		this.bearing = bearing;
-		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);			
+		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
 	}
-	
+
 	this.changePosition = function(position) {
 		if(this.ini.positions.indexOf(position) < 0)
 			return false;
 		this.position = position;
-		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);			
+		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
 	}
 
 	function init(fileName, parentFrame, x, y, bearing, position) {
@@ -1281,7 +1331,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		this.ini.speedstep = parseFloat(this.ini.speedstep);
 		this.ini.speedmax = parseFloat(this.ini.maximumspeed);
 		this.ini.speedmin = parseFloat(this.ini.minimumspeed);
-		
+
 		if(this.ini.hasOwnProperty("constantmotion"))
 			this.ini.constantmotion = parseInt(this.ini.constantmotion);
 		else
@@ -1341,135 +1391,197 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 								specified.
 
 */
-Sprite.Platform = function(parentFrame, x, y, width, height, ch, attr) {
+Sprite.Platform = function(parentFrame, x, y, width, height, ch, attr, upDown, leftRight, speed) {
 
 	this.x = x;
 	this.y = y;
 	this.origin = { x : x, y : y };
 	this.open = true;
 	this.index = Sprite.platforms.length;
+	this.lastMove = system.timer;
+	this.moved = false;
 
 	/* frame init */
 	this.frame = new Frame(x, y, width, height, attr, parentFrame);
 	this.frame.checkbounds = false;
 	this.frame.top();
-	
-	if(ch != undefined) {
-		for(var x=0;x<this.frame.width;x++) {
-			for(var y=0;y<this.frame.height;y++) {
-				this.frame.setData(x,y,ch);
+
+	var self = this;
+	var init = function() {
+		if(ch != undefined) {
+			for(var x=0;x<self.frame.width;x++) {
+				for(var y=0;y<self.frame.height;y++)
+					self.frame.setData(x,y,ch);
 			}
 		}
 	}
-	
+	init();
+
+	this.__defineGetter__("attr", function() { return self.frame.attr; });
+	this.__defineSetter__(
+		"attr",
+		function(attr) {
+			self.frame.attr = attr;
+			init();
+		}
+	);
+
+	this.upDown = (typeof upDown == "undefined") ? false : upDown;
+	this.leftRight = (typeof leftRight == "undefined") ? false : leftRight;
+	this.speed = (typeof speed != "number") ? 0 : speed;
+
+	if(this.upDown && this.leftRight)
+		this.bearing = "ne";
+	else if(this.upDown)
+		this.bearing = "n";
+	else if(this.leftRight)
+		this.bearing = "e";
+
+	this.index = Sprite.platforms.length;
 	/* push this sprite into the stack */
 	Sprite.platforms.push(this);
 
-	this.cycle = function() {
-		//ToDo: add movement support, maybe?
-		return false;
-	
-		var ret = false;
-		if(this.ini.constantmotion > 0 && this.ini.speed > 0 && system.timer - this.lastMove > this.ini.speed)
-			this.move("forward");
-		if(this.inJump && system.timer - this.lastMove > this.ini.speed) {
-			if(this.checkAbove() || this.y == this.jumpStart - this.ini.jumpheight) {
-				this.inJump = false;
-				this.inFall = true;
-			} else {
-				this.y = this.y - 1;
-				this.lastMove = system.timer;
-			}
-		}
-		if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastMove > this.ini.speed) {
-			if(!this.checkBelow()) {
-				this.y = this.y + 1;
-				this.lastMove = system.timer;
-			} else {
-				this.inFall = false;
-			}
-		}
-		if(this.bearing != this.lastBearing || this.position != this.lastPosition) {
-			ret = true;
-			this.lastBearing = this.bearing;
-			this.lastPosition = this.position;
-			this.frame.scrollTo(this.positions[this.position], this.offsets[this.bearing]);			
-		}
-		if(this.x != this.frame.x || this.y != this.frame.y) {
-			ret = true;
-			this.frame.moveTo(this.x, this.y);
-		}
-		if(
-			this.ini.range > 0
-			&&
-			(
-				this.x - this.origin.x >= this.ini.range
-				||
-				this.origin.x - this.x >= this.ini.range
-				||
-				this.y - this.origin.y >= this.ini.range / 2
-				||
-				this.origin.y - this.y >= this.ini.range / 2
-			)
-		) {
-			this.frame.close();
-			this.open = false;
-		}
-		return ret;
-	}
-
-	this.remove = function() {
-		this.open = false;
-		this.frame.close();	
-	}
-	
-	this.move = function(direction) {
-		switch(direction) {
+	this.reverse = function() {
+		switch(this.bearing) {
 			case "n":
-				this.frame.move(0, -1);
-				this.y = this.y - 1;
-				break;
-			case "ne":
-				this.frame.move(1, -1);
-				this.x++;
-				this.y = this.y - 1;
-				break;
-			case "e":
-				this.frame.move(1, 0);
-				this.x++;
-				break;
-			case "se":
-				this.frame.move(1, 1);
-				this.x++;
-				this.y++;
+				this.bearing = "s";
 				break;
 			case "s":
-				this.frame.move(0, 1);
-				this.y++;
+				this.bearing = "n";
 				break;
-			case "sw":
-				this.frame.move(-1, 1);
-				this.x = this.x - 1;
-				this.y++;
+			case "e":
+				this.bearing = "w";
 				break;
 			case "w":
-				this.frame.move(-1, 0);
-				this.x = this.x - 1;
+				this.bearing = "e";
+				break;
+			case "ne":
+				this.bearing = "sw";
+				break;
+			case "se":
+				this.bearing = "nw";
+				break;
+			case "sw":
+				this.bearing = "ne";
 				break;
 			case "nw":
-				this.frame.move(-1, -1);
-				this.x = this.x - 1;
-				this.y = this.y - 1;
+				this.bearing = "se";
 				break;
 			default:
 				break;
 		}
 	}
-	
+
+	this.cycle = function() {
+
+		if((this.upDown || this.leftRight) && this.speed > 0) {
+			if(this.bearing.substr(0, 1).match(/n|s/) !== null && system.timer - this.lastMove > (this.speed * 2))
+				this.move("forward");
+			else if(system.timer - this.lastMove > this.speed)
+				this.move("forward");
+		}
+
+	}
+
+	this.remove = function() {
+		this.open = false;
+		this.frame.close();
+	}
+
+	this.move = function(direction) {
+		this.moved = true;
+		switch(this.bearing) {
+			case "n":
+				if(direction == "forward") {
+					this.frame.move(0, -1);
+					this.y--;
+				} else {
+					this.frame.move(0, 1);
+					this.y--;
+				}
+				break;
+			case "ne":
+				if(direction == "forward") {
+					this.frame.move(1, -1);
+					this.x++;
+					this.y--;
+				} else {
+					this.frame.move(-1, 1);
+					this.x--;
+					this.y++;
+				}
+				break;
+			case "e":
+				if(direction == "forward") {
+					this.frame.move(1, 0);
+					this.x++;
+				} else {
+					this.frame.move(-1, 0);
+					this.x--;
+				}
+				break;
+			case "se":
+				if(direction == "forward") {
+					this.frame.move(1, 1);
+					this.x++;
+					this.y++;
+				} else {
+					this.frame.move(-1, -1);
+					this.x--;
+					this.y--;
+				}
+				break;
+			case "s":
+				if(direction == "forward") {
+					this.frame.move(0, 1);
+					this.y++;
+				} else {
+					this.frame.move(0, -1);
+					this.y--;
+				}
+				break;
+			case "sw":
+				if(direction == "forward") {
+					this.frame.move(-1, 1);
+					this.x--;
+					this.y++;
+				} else {
+					this.frame.move(1, -1);
+					this.x++;
+					this.y--;
+				}
+				break;
+			case "w":
+				if(direction == "forward") {
+					this.frame.move(-1, 0);
+					this.x = this.x - 1;
+				} else {
+					this.frame.move(1, 0);
+					this.x++;
+				}
+				break;
+			case "nw":
+				if(direction == "forward") {
+					this.frame.move(-1, -1);
+					this.x--;
+					this.y--;
+				} else {
+					this.frame.move(1, 1);
+					this.x++;
+					this.y++;
+				}
+				break;
+			default:
+				this.moved = false;
+				break;
+		}
+		this.lastMove = system.timer;
+	}
+
 	this.moveTo = function(x, y) {
 		this.x = x;
 		this.y = y;
 		this.frame.moveTo(x, y);
 	}
-	
+
 }
