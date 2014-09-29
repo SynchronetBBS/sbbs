@@ -414,7 +414,7 @@ function create_newuser()
 	}
 	else {
 		for (i=0; i<LEN_PASS; ) {	/* Create random password... TODO: this can be improved */
-			newuser.security.password += String.fromCharCode(random(43)+'0'.charCode());
+			newuser.security.password += String.fromCharCode(random(43)+'0'.charCodeAt(0));
 			if (newuser.security.password.substr(-1, 1).search(/[0-9A-Za-z]/) == 0)
 				i++;
 		}
