@@ -105,7 +105,7 @@ function create_newuser()
 	console.print(bbs.text(CheckingSlots));	// Moved here from bottom since this is where it's done now...
 	for(i=0; ; i++) {
 		try {
-			newuser = (system.new_user("New"+i?i:'', client));
+			newuser = (system.new_user("New"+i, client));
 			break;
 		}
 		catch(e) {
@@ -123,11 +123,11 @@ function create_newuser()
 	newuser.host_name = client.host_name;
 	newuser.ip_address = client.ip_address;
 	if ((dupe_user = system.matchuserdata(U_NOTE, client.ip_address)) != 0)
-		logline(LOG_NOTICE, "N!", "Warning: same IP address as user #"+olduser+" "+system.username(olduser));
+		logline(LOG_NOTICE, "N!", "Warning: same IP address as user #"+dupe_user+" "+system.username(dupe_user));
 	newuser.connection = client.protocol;
 
 	/* NOTE: If the sysop aborts after this, it will never happen again. */
-	if (system.lastuser()==1) { /* Automatic sysop access for first user */
+	if (system.lastuser==1) { /* Automatic sysop access for first user */
 		console.print("Creating sysop account... System password required.\r\n");
 		if (!console.check_syspass()) {
 			newuser.comment = "Sysop creation failed sysop password";
