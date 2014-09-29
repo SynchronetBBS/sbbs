@@ -494,7 +494,12 @@ function create_newuser()
 	delallmail(newuser.number, MAIL_ANY);
 
 	/* We need to login to call user_config() */
-	bbs.login(newuser.alias);
+	for(var i = 0; i < 5; i++) {
+		if(bbs.login(newuser.alias, bbs.text(PasswordPrompt)))
+			break;
+		if(i == 4)
+			bbs.hangup();
+	}
 	if(!(system.newuser_questions & UQ_NODEF))
 		bbs.user_config();
 
@@ -509,7 +514,7 @@ function create_newuser()
 			if(bbs.online)				/* didn't hang up */
 				console.print(format(bbs.text(NoFeedbackWarning), system.username(bbs.node_val_user)));
 		}
-		bbs.email(cfg.node_valuser,str,"New User Validation",WM_EMAIL|WM_SUBJ_RO|WM_FORCEFWD);
+		bbs.email(cfg.node_valuser,str,"New User Validation",WM_EMAIL|(|WM_FORCEFWD);
 		if(!useron.fbacks && !useron.emails) {
 			if(online) {						/* didn't hang up */
 				console.print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
