@@ -210,7 +210,7 @@ function create_newuser()
 			while(bbs.online) {
 				console.print(bbs.text(EnterYourRealName));
 				var tempName = console.getstr(newuser.name, LEN_NAME, kmode);
-				if (!system.check_name(tempName) {
+				if (!system.check_name(tempName)
 					|| tempName.indexOf(' ') == -1
 					|| ((system.newuser_questions & UQ_DUPREAL)
 						&& system.matchuserdata(U_NAME, tempName, newuser.number)))
