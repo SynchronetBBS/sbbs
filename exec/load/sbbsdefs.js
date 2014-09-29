@@ -718,6 +718,9 @@ var WM_NOTOP		=(1<<5);	/* Don't add top because we need top line   */
 var WM_QUOTE		=(1<<6);	/* Quote file available 					*/
 var WM_QWKNET		=(1<<7);	/* Writing QWK NetMail (25 char title)		*/
 var WM_PRIVATE		=(1<<8);	/* Private (for creating MSGINF file)		*/
+var WM_SUBJ_RO		=(1<<9);	/* Subject/title is read-only				*/
+var WM_EDIT			=(1<<10);	/* Editing existing message					*/
+var WM_FORCEFWD		=(1<<11);	/* Force "yes" to ForwardMailQ for email	*/
 								/********************************************/
 
 								/* Values for MsgBase.status */
