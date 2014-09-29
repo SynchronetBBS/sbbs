@@ -328,8 +328,8 @@ function create_newuser()
 		while((system.newuser_questions & UQ_BIRTH) && bbs.online) {
 			console.print(format(bbs.text(EnterYourBirthday)
 				,system.settings & SYS_EURODATE ? "DD/MM/YY" : "MM/DD/YY"));
-			if((newuser.birth = gettmplt(newuser.birth,"nn/nn/nn",K_EDIT)).length==8 && newuser.age)
-				break; 
+			if((newuser.birthdate = console.gettemplate("nn/nn/nn", newuser.birthdate, K_EDIT)).length==8 && newuser.age)
+				break;
 		}
 		if(!bbs.online) {
 			newuser.comment = "Hung up in creation";
@@ -337,10 +337,10 @@ function create_newuser()
 			return false;
 		}
 		while(!(system.newuser_questions & UQ_NONETMAIL) && bbs.online) {
-			console.printf(bbs.text(EnterNetMailAddress));
+			printf(bbs.text(EnterNetMailAddress));
 			if((newuser.netmail = console.getstr(newuser.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)) != null
 				&& !system.trashcan("email", newuser.netmail))
-				break;
+			break;
 		}
 		if(newuser.netmail.length > 0 && system.settings & SYS_FWDTONET && bbs.text(ForwardMailQ).length > 0 && console.yesno(bbs.text(ForwardMailQ)))
 			newuser.settings |= USER_NETMAIL;
@@ -437,7 +437,7 @@ function create_newuser()
 
 		i=0;
 		while(bbs.online) {
-			console.printf(bbs.text(NewUserPasswordVerify));
+			printf(bbs.text(NewUserPasswordVerify));
 			console.status |= CON_R_ECHOX;
 			str = '';
 			str = getstr(str,LEN_PASS*2,K_UPPER);
