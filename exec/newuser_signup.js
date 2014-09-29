@@ -213,7 +213,7 @@ function create_newuser()
 				if (!system.check_name(tempName)
 					|| tempName.indexOf(' ') == -1
 					|| ((system.newuser_questions & UQ_DUPREAL)
-						&& system.matchuserdata(U_NAME, tempName, newuser.number)))
+						&& system.matchuserdata(U_NAME, tempName, newuser.number))) {
 					console.print(bbs.text(YouCantUseThatName));
 				} else {
 					newuser.name = tempName;
