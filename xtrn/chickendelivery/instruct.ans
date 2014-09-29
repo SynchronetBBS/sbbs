@@ -1,20 +1,21 @@
-[0m[1;35mÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-³[0m [1mStory[0m[60C[1;35m³
-³[0m[66C[1;35m³
-³[0m [1mY[35mou are a chicken on a mission[37m.[35m [37mY[35mou must deliver yourself[0m [1;35mto the[0m [1;35m³
-³[0m [1;35mdoorstep of a customer named [37mP[35mhil[37m,[35m  who believes that deliveries[0m [1;35m³
-³[0m [1;35mshould arrive promptly and at a reasonable hour[37m.[35m    [37mO[35mn your way[37m,[0m [1;35m³
-³[0m [1;35myou'll pass through many levels riddled with [37mBBS[35m references and [0m [1;35m³
-³[0m [1;35minside jokes[37m.[35m  [37mG[35mood luck[37m![0m[40C[1;35m³
-³[0m[66C[1;35m³
-³[0m[66C[1;35m³
-³[0m [1mControls[0m[57C[1;35m³
-³[0m[66C[1;35m³
-³[0m[7C[1m[0m [1;35mMove to the left[0m  [1m³[0m [1mT[35mhe chicken can move from side[0m [1;35mto[0m    [1;35m³
-³[0m[7C[1m[0m [1;35mMove to the right[0m [1m³[0m [1;35mside in mid[37m-[35mjump or mid[37m-[35mflight[37m.[0m[6C[1;35m³
-³[0m[7C[1m[0m [1;35mJump[0m[14C[1m³[0m[38C[1;35m³
-³[0m[7C[1m [35mDrop[0m[14C[1m³[0m [1mP[35mress the spacebar at the apex of[0m [1;35ma[0m  [1;35m³
-³[0m [1m[Space][0m [1;35mFly[0m[15C[1m³[0m [1;35mjump to fly for a brief period[37m.[0m [1mH[35mit[0m  [1;35m³
-³[0m [1m  [Esc][0m [1;35mPause / Quit[0m[6C[1m³[0m [1m[35m to drop out of flight immediately.[0m [1;35m³
-³[0m[66C[1;35m³
-ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+[0m
+ [1mChicken Delivery
+
+[0m [36mYou[1;37m are a chicken on a mission[0;36m.[1;37m  [0;36mYou[1;37m must deliver yourself to the doorstep
+[0m [1mof a customer named [0;36mPhil,[1;37m who believes that deliveries should arrive
+[0m [1mpromptly and at a reasonable hour[0;36m.[1;37m  [0;36mOn[1;37m your way[0;36m,[1;37m you will pass through
+[0m [1mmany levels riddled with [0;36mBBS[1;37m references and unfunny inside jokes[0;36m.[37m  [36mYour
+[37m [1mgoal in each level is to reach the [0;36mdoor[1;37m.
+
+[0m[24C[1;31mÛ±Û[0m[6C[36m  Ü  [37m[6CÛ[1;47;36mÜ[0mÛ[1;47;36mÜ[0mÛ
+[22C[1mÜ ÛßÛ[0m[5C[36mÜÜÜÛÛÜ[37m[6CÛ[1;47;36mÜ[0mÛ[1;47;36mÜ[0mÛ
+[22C[1mÛÛÛÛ[33mÛ[0m[8C[36mÛß    [37m   [1;47;33mÜ[0mÛÛÛÛ
+[22C[1;33mÜÛ[37mß[33mÛÜ[0m[8C[36m [37m[8CÛÛÛÛÛ
+ [36mControls
+
+[1;37m  LEFT[35m [0;36mMove to the left[1;35m  [0m [1m³[0m  [1mChickens[0;36m can fly[1;37m,[0;36m but not for long[1;37m.[0;36m  [1;37mYou[0;36m can
+[1;37m RIGHT[35m [0;36mMove to the right[1;35m [0m [1m³[0m  [36mincrease your flight time by picking up a
+[1;37m SPACE[35m [0;36mJump [1;37m/[0;36m Fly [1;37m/[0;36m Land[37m  [1m³[0m  [1mflight[0;36m power[1;37m-[0;36mup if you see one[1;37m.[0;36m [1;37mWhen[0;36m flying[1;37m,
+   ESC[35m [0;36mPause [1;37m/[0;36m Quit[37m[7C[1m³[0m  [36myou can land by pressing [1;37mSPACE[0;36m again[1;37m.
+
+[0m[16C[36m<[1;37m Press any key to return to the main menu [0;36m>

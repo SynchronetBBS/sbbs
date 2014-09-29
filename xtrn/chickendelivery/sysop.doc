@@ -1,4 +1,33 @@
-Sample configuration in Synchronet (SBBSCFG.EXE):
+Chicken Delivery
+by echicken -at- bbs.electronicchicken.com
+
+1) JSON Database Setup
+2) External Program Configuration
+3) Support
+
+1) JSON Database Setup
+
+To connect to the inter-BBS scoreboard, create a 'server.ini' file in your
+'xtrn/chickendelivery/' directory containing the following:
+
+host = bbs.electronicchicken.com
+port = 10088
+
+Or, if you wish to host your own scoreboard, you must add the following to
+your 'ctrl/json-service.ini' file:
+
+[chickendelivery2]
+dir=../xtrn/chickendelivery/
+
+And ensure that the JSON service is enabled in your 'ctrl/services.ini' file:
+
+[JSON]
+Port=10088
+Options=STATIC|LOOP
+Command=json-service.js
+
+
+2) External Program Configuration
 
 [Chicken Delivery]
  1: Name                       Chicken Delivery
@@ -38,15 +67,13 @@ with the latest files from the Synchronet CVS repository at:
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-sock.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-client.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/frame.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/sprite.js
 		
 	NOTE:	Replace any outdated local copies with the latest releases from these links.
 
-Please report any bugs, issues or questions to: echicken at bbs dot electronicchicken dot com
 
+3) Support
 
-
-
-
-
-
-
+Post a message to 'echicken' in any of the Synchronet sub-boards on DOVE-Net,
+find me on IRC in #synchronet on irc.synchro.net, or send an email to
+echicken -at- bbs.electronicchicken.com.
