@@ -24,7 +24,7 @@ function delallmail(usernumber, which, permanent)
 		return;
 	for (i=mail.first_msg; i<=mail.last_msg; i++) {
 		hdr = mail.get_msg_header(i);
-		if (hdr.number == 0)
+		if (hdr === null || hdr.number == 0)
 			continue;
 		if (hdr.addr & MSG_DELETE)
 			continue;
@@ -228,7 +228,7 @@ function create_newuser()
 		}
 		else if(system.newuser_questions & UQ_COMPANY) {
 				console.print(bbs.text(EnterYourCompany));
-				newuser.name = getstr(newuser.name, LEN_NAME, (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL); 
+				newuser.name = console.getstr(newuser.name, LEN_NAME, (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL); 
 		}
 		if(newuser.name.length == 0)
 			newuser.name = newuser.alias;
@@ -266,7 +266,7 @@ function create_newuser()
 		if(system.newuser_questions & UQ_ADDRESS)
 			while(bbs.online) { 	   /* Get address and zip code */
 				console.print(bbs.text(EnterYourAddress));
-				if((newuser.address = getstr(newuser.address,LEN_ADDRESS,kmode)) != null)
+				if((newuser.address = console.getstr(newuser.address,LEN_ADDRESS,kmode)) != null)
 					break; 
 			}
 		if(!bbs.online) {
@@ -377,7 +377,7 @@ function create_newuser()
 	bbs.answer_time = time();		/* could take 10 minutes to get this far */
 
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
-	if (newuser.compare_ars(xtrn_area.editor[system.newuser_editor].ars))
+	if (newuser.compare_ars(xtrn_area.editor[system.newuser_editor.toLowerCase()].ars))
 		newuser.editor = system.newuser_editor;
 	else
 		newuser.editor = '';
@@ -440,7 +440,7 @@ function create_newuser()
 			printf(bbs.text(NewUserPasswordVerify));
 			console.status |= CON_R_ECHOX;
 			str = '';
-			str = getstr(str,LEN_PASS*2,K_UPPER);
+			str = console.getstr(str,LEN_PASS*2,K_UPPER);
 			console.status &= ~(CON_R_ECHOX|CON_L_ECHOX);
 			if(str == newuser.security.password)
 				break;
