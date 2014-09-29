@@ -95,7 +95,7 @@ function create_newuser()
 		}
 		if(attempts==4) {
 			if(file_exists(system.text_dir+"nupguess.msg"))
-				printfile(system.text_dir+"nupguess.msg");
+				console.printfile(system.text_dir+"nupguess.msg");
 			bbs.hangup();
 			return false;
 		}
@@ -337,7 +337,7 @@ function create_newuser()
 			return false;
 		}
 		while(!(system.newuser_questions & UQ_NONETMAIL) && bbs.online) {
-			printf(bbs.text(EnterNetMailAddress));
+			console.print(bbs.text(EnterNetMailAddress));
 			if((newuser.netmail = console.getstr(newuser.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)) != null
 				&& !system.trashcan("email", newuser.netmail))
 			break;
@@ -437,7 +437,7 @@ function create_newuser()
 
 		i=0;
 		while(bbs.online) {
-			printf(bbs.text(NewUserPasswordVerify));
+			console.print(bbs.text(NewUserPasswordVerify));
 			console.status |= CON_R_ECHOX;
 			str = '';
 			str = console.getstr(str,LEN_PASS*2,K_UPPER);
@@ -469,7 +469,6 @@ function create_newuser()
 		str = console.getstr(str,50,K_UPPER);
 		if(str != system.newuser_magic_word) {
 			console.print(bbs.text(FailedMagicWord));
-			SAFEPRINTF2(tmp,"%s failed magic word: '%s'",useron.alias,str);
 			logline(LOG_INFO, "N!",newuser.alias+" failed magic word: '"+str+"'");
 			bbs.hangup();
 		}
