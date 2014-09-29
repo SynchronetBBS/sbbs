@@ -1,3 +1,5 @@
+js.branch_limit = 0;
+js.time_limit = 0;
 load("json-client.js");
 load("event-timer.js");
 

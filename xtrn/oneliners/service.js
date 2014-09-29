@@ -1,3 +1,5 @@
+js.branch_limit = 0;
+js.time_limit = 0;
 var root = argv[0];
 load(root + "lib.js");
 load("json-client.js");
