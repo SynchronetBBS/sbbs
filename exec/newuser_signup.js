@@ -173,7 +173,7 @@ function create_newuser()
 		}
 		else
 			newuser.screen_rows=24;
-		if(bbs.text(ExAsciiTerminalQ).length > 0 && !bbs.yesno(text(ExAsciiTerminalQ)))
+		if(bbs.text(ExAsciiTerminalQ).length > 0 && !console.yesno(bbs.text(ExAsciiTerminalQ)))
 			newuser.settings |= USER_NO_EXASCII;
 		else
 			newuser.settings &= ~USER_NO_EXASCII;
