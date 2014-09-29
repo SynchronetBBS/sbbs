@@ -196,9 +196,9 @@ function create_newuser()
 					newuser.settings |= USER_DELETED;
 					return false;
 				}
-				newuser.alias = tempAlias;
 				continue;
 			}
+			newuser.alias = tempAlias;
 			break; 
 		}
 		if(!bbs.online) {
