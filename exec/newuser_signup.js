@@ -119,7 +119,6 @@ function create_newuser()
 	}
 	/* Sets defaults per sysop config */
 	newuser.settings |= (system.newuser_settings &~ (USER_INACTIVE|USER_QUIET|USER_NETMAIL));
-	/* Set as deleted for now so we can return early without problems */
 	newuser.host_name = client.host_name;
 	newuser.ip_address = client.ip_address;
 	if ((dupe_user = system.matchuserdata(U_NOTE, client.ip_address)) != 0)
