@@ -165,12 +165,12 @@ function create_newuser()
 		}
 		name = user.name.toUpperCase();
 		alias = user.alias.toUpperCase();
-		if ((m = alias.match(/^(.*?) (.*)$/)) != null) {
+		if ((m = name.match(/^(.*?) (.*)$/)) != null) {
 			first = m[1];
 			last = m[2];
 		}
 		else
-			first = user.alias;
+			first = user.name;
 		handle = user.handle.toUpperCase();
 		sysop = system.operator.toUpperCase();
 		sysname = system.name.toUpperCase();
