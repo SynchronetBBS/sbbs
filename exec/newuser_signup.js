@@ -125,7 +125,6 @@ function create_newuser()
 		logline(LOG_NOTICE, "N!", "Warning: same IP address as user #"+dupe_user+" "+system.username(dupe_user));
 	newuser.connection = client.protocol;
 
-	/* NOTE: If the sysop aborts after this, it will never happen again. */
 	if (system.lastuser==1) { /* Automatic sysop access for first user */
 		console.print("Creating sysop account... System password required.\r\n");
 		if (!console.check_syspass()) {
