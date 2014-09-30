@@ -619,7 +619,7 @@ function create_newuser()
 				bbs.hangup();
 			}
 			text_print(bbs.text(IncorrectPassword));
-			text_print(format(bbs.text(YourPasswordIs),useron.pass));
+			text_print(format(bbs.text(YourPasswordIs),useron.security.password));
 		}
 	}
 
