@@ -169,6 +169,8 @@ function create_newuser()
 			first = m[1];
 			last = m[2];
 		}
+		else
+			first = user.alias;
 		handle = user.handle.toUpperCase();
 		sysop = system.operator.toUpperCase();
 		sysname = system.name.toUpperCase();
