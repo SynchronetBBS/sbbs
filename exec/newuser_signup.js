@@ -141,7 +141,7 @@ function create_newuser()
 			text_print(bbs.text(PasswordTooShort));
 			return false;
 		}
-		if (pass == user.pass) {
+		if (pass == user.security.password) {
 			text_print(bbs.text(PasswordNotChanged));
 			return false;
 		}
@@ -176,8 +176,8 @@ function create_newuser()
 		handle = user.handle.toUpperCase();
 		sysop = system.operator.toUpperCase();
 		sysname = system.name.toUpperCase();
-		if((user.pass.length > 0
-				&& (pass.indexOf(user.pass) > -1 || user.pass.indexOf(pass) > -1))
+		if((user.security.password.length > 0
+				&& (pass.indexOf(user.security.password) > -1 || user.security.password.indexOf(pass) > -1))
 			|| (name.length > 0
 				&& (pass.indexOf(name) > -1 || name.indexOf(pass) > -1))
 			|| pass.indexOf(alias) > -1 || alias.indexOf(pass) > -1
