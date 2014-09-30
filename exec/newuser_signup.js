@@ -129,6 +129,82 @@ function create_newuser()
 		check_level(template, "User.");
 	}
 
+	function good_password(pass, user)
+	{
+		var c=0,d=0,first='',last='',sysop='',sysname='',p='';
+		var alias='', name='', handle='';
+		var m;
+
+		pass=pass.toUpperCase();
+
+		if (pass.length < 4) {
+			console.print(bbs.text(PasswordTooShort));
+			return false;
+		}
+		if (pass == user.pass) {
+			console.print(bbs.text(PasswordNotChanged));
+			return false;
+		}
+		d=pass.length;
+		for(c=1;c<d;c++)
+			if(pass.substr(c, 1)!=pass.substr(c-1, 1))
+				break;
+		if(c==d) {
+			console.print(bbs.text(PasswordInvalid));
+			return false;
+		}
+		for(c=0;c<3;c++)	/* check for 1234 and ABCD */
+			if(pass.substr(c, 1) != ascii(ascii(pass.substr(c+1, 1))+1))
+				break;
+		if(c==3) {
+			console.print(bbs.text(PasswordObvious));
+			return false;
+		}
+		for(c=0;c<3;c++)	/* check for 4321 and ZYXW */
+			if(pass.substr(c, 1) != ascii(ascii(pass.substr(c+1, 1))-1))
+				break;
+		if(c==3) {
+			console.print(bbs.text(PasswordObvious));
+			return(false); 
+		}
+		name = user.name.toUpperCase();
+		alias = user.alias.toUpperCase();
+		if ((m = alias.match(/^(.*?) (.*)$/)) != null) {
+			first = m[1];
+			last = m[2];
+		}
+		handle = user.handle.toUpperCase();
+		sysop = system.operator.toUpperCase();
+		sysname = system.name.toUpperCase();
+		if((user.pass.length > 0
+				&& (pass.indexOf(user.pass) > -1 || user.pass.indexOf(pass) > -1))
+			|| (name.length > 0
+				&& (pass.indexOf(name) > -1 || name.indexOf(pass) > -1))
+			|| pass.indexOf(alias) > -1 || alias.indexOf(pass) > -1
+			|| pass.indexIf(first) > -1 || first.indexOf(pass) > -1
+			|| (last.length > 0
+				&& (pass.indexOf(last) > -1 || last.indexOf(pass) > -1))
+			|| pass.indexOf(handle) > -1 || handle.indexOf(pass) > -1
+			|| (user.zipcode.length > 0
+				&& (pass.indexOf(user.zipcode) > -1 || user.zipcode.indexOf(pass) > -1))
+			|| (sysname.length > 0
+				&& (pass.indexOf(sysname) > -1 || sysname.indexOf(pass) > -1))
+			|| (sysop.length > 0
+				&& (pass.indexOf(sysop) > -1 || sysop.indexOf(pass) > -1))
+			|| (system.qwk_id.length > 0
+				&& (pass.indexOf(system.qwk_id) > -1 || system.qwk_id.indexOf(pass) > -1))
+			|| (user.phone.length > 0 && user.phone.indexOf(pass) > -1)
+			|| pass.substr(0, 3) == 'QWE'
+			|| pass.substr(0, 3) == 'ASD'
+			|| pass.substr(0, 3) == '!@#'
+			)
+			{
+			console.print(bbs.text(PasswordObvious));
+			return false;
+		}
+		return (!bbs.trashcan("password", pass));
+	}
+
 	console.print(bbs.text(StartingNewUserRegistration));
 	if (node.misc & NODE_LOCK) {
 		console.print(bbs.text(NodeLocked));
@@ -460,7 +536,7 @@ log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthd
 	*/
 
 	// TODO: Doesn't take the user argument...
-	if(bbs.rlogin_password.length > 0 && bbs.good_password(bbs.rlogin_password.length)) {
+	if(bbs.rlogin_password.length > 0 && good_password(bbs.rlogin_password.length, useron)) {
 		console.crlf();
 		/* passwords are case insensitive, but assumed (in some places) to be uppercase in the user database */
 		useron.security.password = bbs.rlogin_password.toUpperCase();
@@ -482,7 +558,7 @@ log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthd
 				console.print(bbs.text(NewPassword));
 				str = console.getstr('',LEN_PASS,K_UPPER|K_LINE);
 				str = truncsp(str);
-				if(bbs.good_password(str)) {
+				if(good_password(str, useron)) {
 					useron.security.password = str;
 					console.crlf();
 					console.print(format(bbs.text(YourPasswordIs),useron.security.password));
