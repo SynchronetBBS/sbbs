@@ -470,7 +470,6 @@ function create_newuser()
 			if((useron.birthdate = console.gettemplate("nn/nn/nn", useron.birthdate, K_EDIT)).length==8 && system.datestr(useron.birthdate) > 0)
 				break;
 		}
-log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthdate).toString());
 		if(!bbs.online)
 			return false;
 		while(!(system.newuser_questions & UQ_NONETMAIL) && bbs.online) {
