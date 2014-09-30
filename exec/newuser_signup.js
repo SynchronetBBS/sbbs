@@ -138,11 +138,11 @@ function create_newuser()
 		pass=pass.toUpperCase();
 
 		if (pass.length < 4) {
-			console.print(bbs.text(PasswordTooShort));
+			text_print(bbs.text(PasswordTooShort));
 			return false;
 		}
 		if (pass == user.pass) {
-			console.print(bbs.text(PasswordNotChanged));
+			text_print(bbs.text(PasswordNotChanged));
 			return false;
 		}
 		d=pass.length;
@@ -150,21 +150,21 @@ function create_newuser()
 			if(pass.substr(c, 1)!=pass.substr(c-1, 1))
 				break;
 		if(c==d) {
-			console.print(bbs.text(PasswordInvalid));
+			text_print(bbs.text(PasswordInvalid));
 			return false;
 		}
 		for(c=0;c<3;c++)	/* check for 1234 and ABCD */
 			if(pass.substr(c, 1) != ascii(ascii(pass.substr(c+1, 1))+1))
 				break;
 		if(c==3) {
-			console.print(bbs.text(PasswordObvious));
+			text_print(bbs.text(PasswordObvious));
 			return false;
 		}
 		for(c=0;c<3;c++)	/* check for 4321 and ZYXW */
 			if(pass.substr(c, 1) != ascii(ascii(pass.substr(c+1, 1))-1))
 				break;
 		if(c==3) {
-			console.print(bbs.text(PasswordObvious));
+			text_print(bbs.text(PasswordObvious));
 			return(false); 
 		}
 		name = user.name.toUpperCase();
@@ -199,15 +199,23 @@ function create_newuser()
 			|| pass.substr(0, 3) == '!@#'
 			)
 			{
-			console.print(bbs.text(PasswordObvious));
+			text_print(bbs.text(PasswordObvious));
 			return false;
 		}
 		return (!bbs.trashcan("password", pass));
 	}
 
-	console.print(bbs.text(StartingNewUserRegistration));
+	function text_print(text)
+	{
+		text = text.replace(/@([^@]+)@/g, function(m, code) {
+			return bbs.atcode(code);
+		});
+		console.print(text);
+	}
+
+	text_print(bbs.text(StartingNewUserRegistration));
 	if (node.misc & NODE_LOCK) {
-		console.print(bbs.text(NodeLocked));
+		text_print(bbs.text(NodeLocked));
 		// TODO: No logline function!
 		logline(LOG_WARNING, "N!","New user locked node logon attempt");
 		bbs.hangup();
@@ -215,7 +223,7 @@ function create_newuser()
 	}
 
 	if (system.settings & SYS_CLOSED) {
-		console.print(bbs.text(NoNewUsers));
+		text_print(bbs.text(NoNewUsers));
 		bbs.hangup();
 		return false;
 	}
@@ -225,7 +233,7 @@ function create_newuser()
 	if (system.newuser_password.length > 0 && bbs.online == ON_REMOTE) {
 		str = '';
 		for(attempts = 1; attempts < 4; attempts++) {
-			console.print(bbs.text(NewUserPasswordPrompt));
+			text_print(bbs.text(NewUserPasswordPrompt));
 			str = console.getstr(str, 40, K_UPPER);
 			if (str === system.newuser_password)
 				break;
@@ -334,14 +342,14 @@ function create_newuser()
 
 		while(bbs.online) {
 			if(system.newuser_questions & UQ_ALIASES)
-				console.print(bbs.text(EnterYourAlias));
+				text_print(bbs.text(EnterYourAlias));
 			else
-				console.print(bbs.text(EnterYourRealName));
+				text_print(bbs.text(EnterYourRealName));
 			var tempAlias = console.getstr(useron.alias, LEN_ALIAS, kmode);
 			truncsp(tempAlias);
 			if(!system.check_name(tempAlias)
 				|| (!(system.newuser_questions & UQ_ALIASES) && tempAlias.indexOf(' ') == -1)) {
-				console.print(bbs.text(YouCantUseThatName));
+				text_print(bbs.text(YouCantUseThatName));
 				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ)))
 					return false;
 				continue;
@@ -354,13 +362,13 @@ function create_newuser()
 
 		if((system.newuser_questions & UQ_ALIASES) && (system.newuser_questions & UQ_REALNAME)) {
 			while(bbs.online) {
-				console.print(bbs.text(EnterYourRealName));
+				text_print(bbs.text(EnterYourRealName));
 				var tempName = console.getstr(useron.name, LEN_NAME, kmode);
 				if (!system.check_name(tempName)
 					|| tempName.indexOf(' ') == -1
 					|| ((system.newuser_questions & UQ_DUPREAL)
 						&& system.matchuser(tempName))) {
-					console.print(bbs.text(YouCantUseThatName));
+					text_print(bbs.text(YouCantUseThatName));
 				} else {
 					useron.name = tempName;
 					break;
@@ -373,7 +381,7 @@ function create_newuser()
 			} 
 		}
 		else if(system.newuser_questions & UQ_COMPANY) {
-				console.print(bbs.text(EnterYourCompany));
+				text_print(bbs.text(EnterYourCompany));
 				useron.name = console.getstr(useron.name, LEN_NAME, (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL); 
 		}
 		if(useron.name.length == 0)
@@ -383,7 +391,7 @@ function create_newuser()
 		if(useron.handle.length == 0)
 			useron.handle = useron.alias.substr(0, LEN_HANDLE);
 		while((system.newuser_questions & UQ_HANDLE) && bbs.online) {
-			console.print(bbs.text(EnterYourHandle));
+			text_print(bbs.text(EnterYourHandle));
 			if((useron.handle = console.getstr(
 						useron.handle,
 						LEN_HANDLE,
@@ -392,7 +400,7 @@ function create_newuser()
 					|| ((system.newuser_questions & UQ_DUPHAND)
 						&& system.matchuser(useron.handle))
 					|| system.trashcan("name", useron.handle))
-				console.print(bbs.text(YouCantUseThatName));
+				text_print(bbs.text(YouCantUseThatName));
 			else
 				break; 
 			if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ)))
@@ -405,23 +413,23 @@ function create_newuser()
 		}
 		if(system.newuser_questions & UQ_ADDRESS)
 			while(bbs.online) { 	   /* Get address and zip code */
-				console.print(bbs.text(EnterYourAddress));
+				text_print(bbs.text(EnterYourAddress));
 				if((useron.address = console.getstr(useron.address,LEN_ADDRESS,kmode)) != null)
 					break; 
 			}
 		if(!bbs.online)
 			return false;
 		while((system.newuser_questions & UQ_LOCATION) && bbs.online) {
-			console.print(bbs.text(EnterYourCityState));
+			text_print(bbs.text(EnterYourCityState));
 			if((useron.location = console.getstr(useron.location, LEN_LOCATION, kmode)) != null
 				&& ((system.newuser_questions & UQ_NOCOMMAS) || useron.location.indexOf(',') != -1))
 				break;
-			console.print(bbs.text(CommaInLocationRequired));
+			text_print(bbs.text(CommaInLocationRequired));
 			useron.location = ''; 
 		}
 		if(system.newuser_questions & UQ_ADDRESS)
 			while(bbs.online) {
-				console.print(bbs.text(EnterYourZipCode));
+				text_print(bbs.text(EnterYourZipCode));
 				if(console.getstr(useron.zipcode,LEN_ZIPCODE
 					,K_UPPER|(system.newuser_questions & UQ_NOEXASC)|K_EDIT|K_AUTODEL))
 					break; 
@@ -434,7 +442,7 @@ function create_newuser()
 			else
 				usa=false;
 			while(bbs.online && bbs.text(EnterYourPhoneNumber).length > 0) {
-				console.print(bbs.text(EnterYourPhoneNumber));
+				text_print(bbs.text(EnterYourPhoneNumber));
 				if(!usa) {
 					if((useron.phone = console.getstr(useron.phone,LEN_PHONE
 						,K_UPPER|K_LINE|(system.newuser_questions & UQ_NOEXASC)|K_EDIT|K_AUTODEL)).length < 5)
@@ -453,11 +461,11 @@ function create_newuser()
 		if(!bbs.online)
 			return false;
 		if(system.newuser_questions & UQ_SEX) {
-			console.print(bbs.text(EnterYourSex));
+			text_print(bbs.text(EnterYourSex));
 			useron.gender=console.getkeys("MF");
 		}
 		while((system.newuser_questions & UQ_BIRTH) && bbs.online) {
-			console.print(format(bbs.text(EnterYourBirthday)
+			text_print(format(bbs.text(EnterYourBirthday)
 				,system.settings & SYS_EURODATE ? "DD/MM/YY" : "MM/DD/YY"));
 			if((useron.birthdate = console.gettemplate("nn/nn/nn", useron.birthdate, K_EDIT)).length==8 && system.datestr(useron.birthdate) > 0)
 				break;
@@ -466,7 +474,7 @@ log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthd
 		if(!bbs.online)
 			return false;
 		while(!(system.newuser_questions & UQ_NONETMAIL) && bbs.online) {
-			console.print(bbs.text(EnterNetMailAddress));
+			text_print(bbs.text(EnterNetMailAddress));
 			if((useron.netmail = console.getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)) != null
 				&& !system.trashcan("email", useron.netmail))
 			break;
@@ -551,17 +559,17 @@ log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthd
 				useron.security.password = useron.security.password.substr(0, i);
 		}
 
-		console.print(format(bbs.text(YourPasswordIs),useron.security.password));
+		text_print(format(bbs.text(YourPasswordIs),useron.security.password));
 
 		if(system.settings & SYS_PWEDIT && bbs.text(NewPasswordQ).length > 0 && console.yesno(bbs.text(NewPasswordQ)))
 			while(bbs.online) {
-				console.print(bbs.text(NewPassword));
+				text_print(bbs.text(NewPassword));
 				str = console.getstr('',LEN_PASS,K_UPPER|K_LINE);
 				str = truncsp(str);
 				if(good_password(str, useron)) {
 					useron.security.password = str;
 					console.crlf();
-					console.print(format(bbs.text(YourPasswordIs),useron.security.password));
+					text_print(format(bbs.text(YourPasswordIs),useron.security.password));
 					break; 
 				}
 				console.crlf();
@@ -569,7 +577,7 @@ log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthd
 
 		i=0;
 		while(bbs.online) {
-			console.print(bbs.text(NewUserPasswordVerify));
+			text_print(bbs.text(NewUserPasswordVerify));
 			console.status |= CON_R_ECHOX;
 			str = '';
 			str = console.getstr(str,LEN_PASS*2,K_UPPER);
@@ -585,19 +593,19 @@ log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthd
 				logline(LOG_NOTICE,"N!","Couldn't figure out password.");
 				bbs.hangup();
 			}
-			console.print(bbs.text(IncorrectPassword));
-			console.print(format(bbs.text(YourPasswordIs),useron.pass));
+			text_print(bbs.text(IncorrectPassword));
+			text_print(format(bbs.text(YourPasswordIs),useron.pass));
 		}
 	}
 
 	if(!bbs.online)
 		return false;
 	if(system.newuser_magic_word.length > 0) {
-		console.print(bbs.text(MagicWordPrompt));
+		text_print(bbs.text(MagicWordPrompt));
 		str = '';
 		str = console.getstr(str,50,K_UPPER);
 		if(str != system.newuser_magic_word) {
-			console.print(bbs.text(FailedMagicWord));
+			text_print(bbs.text(FailedMagicWord));
 			logline(LOG_INFO, "N!",useron.alias+" failed magic word: '"+str+"'");
 			bbs.hangup();
 		}
@@ -607,7 +615,7 @@ log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthd
 
 	/* Find a new user name that's available */
 	// TODO: This still has a race condition on real name and handle!
-	console.print(bbs.text(CheckingSlots));
+	text_print(bbs.text(CheckingSlots));
 	try {
 		newuser = (system.new_user(useron.alias, client));
 	}
@@ -658,12 +666,12 @@ log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthd
 		newuser.cached = false;
 		if(!newuser.stats.total_feedbacks && !newuser.stats.total_emails) {
 			if(bbs.online) {						/* didn't hang up */
-				console.print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
+				text_print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
 				bbs.email(bbs.node_val_user,str,"New User Validation",WM_EMAIL|WM_SUBJ_RO|WM_FORCEFWD);
 			} /* give 'em a 2nd try */
 			newuser.cached = false;
 			if(!newuser.stats.total_feedbacks && !newuser.stats.total_emails) {
-        		console.print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
+        		text_print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
 				logline(LOG_NOTICE,"N!","Aborted feedback");
 				newuser.comment = "Didn't leave feedback";
 				newuser.settings |= USER_DELETED;
