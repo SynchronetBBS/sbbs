@@ -34,6 +34,7 @@ var skb_config = {
 var skb_state = {
 	frame: new Frame(1, 1, console.screen_columns, console.screen_rows, BG_LIGHTGRAY),
 	frame_items: undefined,
+  frame_items_last: undefined,
 	frame_status: undefined,
 	frame_level: undefined,
 	frame_player: undefined,
@@ -44,8 +45,13 @@ var skb_state = {
 	levels_raw: new Array(),
 	popup_data: new Array(),
 	push_lock: false,
+	push_x_current: undefined,
+	push_y_current: undefined,
+	push_x_preserved: undefined,
+	push_y_preserved: undefined,
 	set_complete: false,
 	steps: 0,
+  undoable: false,
 	x: 0,
 	x_last: undefined,
 	y: 0,
@@ -486,6 +492,11 @@ function main() {
 				level_load(skb_state.level);
 				break;
 
+		  case "U":
+		    // Undo one previous step.
+		    undo();
+		    break;
+
 			case "$":
 				show_scores();
 				break;
@@ -773,6 +784,8 @@ function player_move_to(x, y) {
 	if (check_level_completed()) {
 		next_level();
 	}
+
+	//log("player_move_to(): check undoable: " + skb_state.undoable);
 }
 
 function popup() {
@@ -819,9 +832,14 @@ function push_box(x, y) {
 
 		// Check diff is moveable.
 		if (check_moveable(x_proposed, y_proposed)) {
-			// Push the box.
+		  //
+		  // Push the box.
+		  //
 
-			// Remove from old location.
+		  // Preserve undo state.
+		  undo_preserve(x,y, x_proposed, y_proposed);
+
+			// Remove item from old location.
 			skb_state.frame_items.clearData(x, y);
 
 			// Add to new location.		
@@ -893,6 +911,8 @@ function show_help() {
 	frame_help.putmsg("  q    Quit.");
 	frame_help.crlf();
 	frame_help.putmsg("  R    Restart level (case-sensitive).");
+	frame_help.crlf();
+	frame_help.putmsg("  U    Undo last box push (step penalty, case-sensitive).");
 	frame_help.crlf();
 
 	frame_help.crlf();
@@ -1046,6 +1066,54 @@ function show_scores() {
 function textpane_update_steps() {
 	skb_state.frame_textpane.gotoxy(1, 2);
 	skb_state.frame_textpane.putmsg(" Steps: " + skb_state.steps, WHITE | BG_MAGENTA);
+}
+
+function undo() {
+  //
+  // Undo the last move.
+  //
+  //log("Undoing...");
+  if (skb_state.undoable) {
+    //log("- Undoable.");
+
+    // Player movement.
+    player_move_to(skb_state.x_last, skb_state.y_last);
+
+    // Items frame.
+    skb_state.frame_items.clearData(skb_state.push_x_current, skb_state.push_y_current);
+    if (skb_state.frame_level.getData(skb_state.push_x_preserved, skb_state.push_y_preserved).ch == '.')
+      skb_state.frame_items.setData(skb_state.push_x_preserved, skb_state.push_y_preserved, skb_symbols.BOX, YELLOW | BG_GREEN);
+    else
+      skb_state.frame_items.setData(skb_state.push_x_preserved, skb_state.push_y_preserved, skb_symbols.BOX, YELLOW | BG_LIGHTGRAY);
+
+    // We only allow a single step for undo. Less cheaty. :|
+    skb_state.undoable = false;
+
+    // Apply step penalty for undo.
+    penalty = Math.max(1, Math.round((skb_state.steps - 1)*0.1));
+    log("Penalty applied: +" + penalty);
+    skb_state.steps += penalty;
+  } else {
+    //log("- Not undoable.");
+  }
+}
+
+function undo_preserve(x_preserved, y_preserved, x_current, y_current) {
+  //
+  // Preserve last state for undo.
+  //
+
+  // Player.
+  skb_state.x_last = skb_state.x;
+  skb_state.y_last = skb_state.y;
+  
+  // Items.
+  skb_state.push_x_preserved = x_preserved;
+  skb_state.push_y_preserved = y_preserved;
+  skb_state.push_x_current = x_current;
+  skb_state.push_y_current = y_current;
+
+  skb_state.undoable = true;
 }
 
 /*
