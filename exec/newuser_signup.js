@@ -141,10 +141,6 @@ function create_newuser()
 			text_print(bbs.text(PasswordTooShort));
 			return false;
 		}
-		if (pass == user.security.password) {
-			text_print(bbs.text(PasswordNotChanged));
-			return false;
-		}
 		d=pass.length;
 		for(c=1;c<d;c++)
 			if(pass.substr(c, 1)!=pass.substr(c-1, 1))
