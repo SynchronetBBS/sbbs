@@ -513,7 +513,7 @@ function create_newuser()
 			if(bbs.online)				/* didn't hang up */
 				console.print(format(bbs.text(NoFeedbackWarning), system.username(bbs.node_val_user)));
 		}
-		bbs.email(bbs.node_val_user,str,"New User Validation",WM_EMAIL|(|WM_FORCEFWD);
+		bbs.email(bbs.node_val_user,str,"New User Validation",WM_EMAIL|WM_SUBJ_RO|WM_FORCEFWD);
 		if(!newuser.fbacks && !newuser.emails) {
 			if(online) {						/* didn't hang up */
 				console.print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
