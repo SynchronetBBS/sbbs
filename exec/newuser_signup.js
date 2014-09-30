@@ -181,7 +181,7 @@ function create_newuser()
 			|| (name.length > 0
 				&& (pass.indexOf(name) > -1 || name.indexOf(pass) > -1))
 			|| pass.indexOf(alias) > -1 || alias.indexOf(pass) > -1
-			|| pass.indexIf(first) > -1 || first.indexOf(pass) > -1
+			|| pass.indexOf(first) > -1 || first.indexOf(pass) > -1
 			|| (last.length > 0
 				&& (pass.indexOf(last) > -1 || last.indexOf(pass) > -1))
 			|| pass.indexOf(handle) > -1 || handle.indexOf(pass) > -1
