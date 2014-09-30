@@ -339,8 +339,10 @@ var Level = function(level, stats) {
 		time = 0,
 		flight = 1,
 		flightTimer = 0,
-		score = 0,
-		quit = false; // heh :|
+		quit = false, // heh :|
+		self = this;
+
+	this.score = stats.score;
 
 	var headFrame, fieldFrame, footFrame, timeFrame, scoreFrame;
 
@@ -387,7 +389,7 @@ var Level = function(level, stats) {
 			footFrame
 		);
 		scoreFrame.open();
-		scoreFrame.putmsg(stats.score);
+		scoreFrame.putmsg(self.score);
 
 		timeFrame = new Frame(
 			footFrame.x + footFrame.width - 10,
@@ -475,28 +477,13 @@ var Level = function(level, stats) {
 
 	}
 
-	this.__defineGetter__(
-		"score",
-		function() {
-			return score;
-		}
-	);
-	this.__defineSetter__(
-		"score",
-		function(s) {
-			score = s;
-			scoreFrame.clear();
-			scoreFrame.putmsg(stats.score + score);
-		}
-	);
-
 	this.powerUp = function(item) {
 		item.remove();
 		switch(item.ini.powerUpName) {
 			case "flightTime":
 				flight = flight + Number(item.ini.powerUpValue);
 				break;
-			case "levelTime":
+			case "extraTime":
 				time = time + parseInt(item.ini.powerUpValue);
 				break;
 			default:
@@ -849,6 +836,16 @@ var Game = function(firstLevel) {
 			level.close();
 			level = false;
 			stats.level++;
+			if(stats.level % 5 == 0) {
+				var extra = 1 + Math.floor(stats.score / 10000);
+				popUpMessage(
+					format(
+						"You got %s extra %s!",
+						extra, (extra > 1) ? "lives" : "life"
+					)
+				);
+				stats.lives += extra;
+			}
 			if(stats.level >= levels.length) {
 				pushScore();
 				popUpMessage("Congratulations - the chicken has been delivered!");
