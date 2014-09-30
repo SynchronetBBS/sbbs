@@ -564,12 +564,10 @@ log(LOG_DEBUG, "datestr('"+useron.birthdate+"') = "+system.datestr(useron.birthd
 	delallmail(newuser.number, MAIL_ANY);
 
 	/* We need to login to call user_config() */
-	for(var i = 0; i < 5; i++) {
-		if(bbs.login(newuser.alias, bbs.text(PasswordPrompt)))
-			break;
-		if(i == 4)
-			bbs.hangup();
-	}
+	tmp = newuser.security.password;
+	newuser.security.password = '';
+	bbs.login(newuser.alias, bbs.text(PasswordPrompt));
+	newuser.security.password = tmp;
 	if(!(system.newuser_questions & UQ_NODEF))
 		bbs.user_config();
 
