@@ -13,7 +13,9 @@ function create_newuser()
 	var useron = {
 		name:'', 
 		handle:'', 
-		alias:'', 
+		alias:'',
+		zipcode:'',
+		phone:'',
 		stats:{
 			laston_date:0, 
 			firston_date:0, 
