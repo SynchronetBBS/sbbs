@@ -172,29 +172,55 @@ function create_newuser()
 		handle = user.handle.toUpperCase();
 		sysop = system.operator.toUpperCase();
 		sysname = system.name.toUpperCase();
-		if((user.security.password.length > 0
-				&& (pass.indexOf(user.security.password) > -1 || user.security.password.indexOf(pass) > -1))
-			|| (name.length > 0
-				&& (pass.indexOf(name) > -1 || name.indexOf(pass) > -1))
-			|| pass.indexOf(alias) > -1 || alias.indexOf(pass) > -1
-			|| pass.indexOf(first) > -1 || first.indexOf(pass) > -1
-			|| (last.length > 0
-				&& (pass.indexOf(last) > -1 || last.indexOf(pass) > -1))
-			|| pass.indexOf(handle) > -1 || handle.indexOf(pass) > -1
-			|| (user.zipcode.length > 0
-				&& (pass.indexOf(user.zipcode) > -1 || user.zipcode.indexOf(pass) > -1))
-			|| (sysname.length > 0
-				&& (pass.indexOf(sysname) > -1 || sysname.indexOf(pass) > -1))
-			|| (sysop.length > 0
-				&& (pass.indexOf(sysop) > -1 || sysop.indexOf(pass) > -1))
-			|| (system.qwk_id.length > 0
-				&& (pass.indexOf(system.qwk_id) > -1 || system.qwk_id.indexOf(pass) > -1))
-			|| (user.phone.length > 0 && user.phone.indexOf(pass) > -1)
-			|| pass.substr(0, 3) == 'QWE'
-			|| pass.substr(0, 3) == 'ASD'
-			|| pass.substr(0, 3) == '!@#'
-			)
-			{
+		if (name.length > 0
+				&& (pass.indexOf(name) > -1 || name.indexOf(pass) > -1)) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (pass.indexOf(alias) > -1 || alias.indexOf(pass) > -1) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (pass.indexOf(first) > -1 || first.indexOf(pass) > -1) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (last.length > 0
+				&& (pass.indexOf(last) > -1 || last.indexOf(pass) > -1)) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (pass.indexOf(handle) > -1 || handle.indexOf(pass) > -1) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (user.zipcode.length > 0
+				&& (pass.indexOf(user.zipcode) > -1 || user.zipcode.indexOf(pass) > -1)) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (sysname.length > 0
+				&& (pass.indexOf(sysname) > -1 || sysname.indexOf(pass) > -1)) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (sysop.length > 0
+				&& (pass.indexOf(sysop) > -1 || sysop.indexOf(pass) > -1)) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (system.qwk_id.length > 0
+				&& (pass.indexOf(system.qwk_id) > -1 || system.qwk_id.indexOf(pass) > -1)) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (user.phone.length > 0 && user.phone.indexOf(pass) > -1) {
+			text_print(bbs.text(PasswordObvious));
+			return false;
+		}
+		if (pass.substr(0, 3) == 'QWE'
+				|| pass.substr(0, 3) == 'ASD'
+				|| pass.substr(0, 3) == '!@#') {
 			text_print(bbs.text(PasswordObvious));
 			return false;
 		}
