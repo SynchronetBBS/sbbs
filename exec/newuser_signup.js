@@ -454,7 +454,7 @@ function create_newuser()
 				bbs.hangup();
 			}
 			console.print(bbs.text(IncorrectPassword));
-			console.print(format(bbs.text(YourPasswordIs),useron.pass));
+			console.print(format(bbs.text(YourPasswordIs),newuser.pass));
 		}
 	}
 
@@ -514,12 +514,12 @@ function create_newuser()
 				console.print(format(bbs.text(NoFeedbackWarning), system.username(bbs.node_val_user)));
 		}
 		bbs.email(bbs.node_val_user,str,"New User Validation",WM_EMAIL|(|WM_FORCEFWD);
-		if(!useron.fbacks && !useron.emails) {
+		if(!newuser.fbacks && !newuser.emails) {
 			if(online) {						/* didn't hang up */
 				console.print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
 				bbs.email(bbs.node_val_user,str,"New User Validation",WM_EMAIL|WM_SUBJ_RO|WM_FORCEFWD);
 			} /* give 'em a 2nd try */
-			if(!useron.fbacks && !useron.emails) {
+			if(!newuser.fbacks && !newuser.emails) {
         		console.print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
 				logline(LOG_NOTICE,"N!","Aborted feedback");
 				bbs.hangup();
