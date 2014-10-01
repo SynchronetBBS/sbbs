@@ -476,11 +476,11 @@ function create_newuser()
 				}
 				else {
 					/* TODO: cfg.sys_phonefmt isn't available! */
-					if((useron.phone = console.gettempalte(/*cfg.sys_phonefmt*/'!!!!!!!!!!!!', useron.phone
-						,K_LINE|(system.newuser_questions & UQ_NOEXASC)|K_EDIT)).length < strlen(/*cfg.sys_phonefmt*/'!!!!!!!!!!!!'))
+					if((useron.phone = console.gettemplate(/*cfg.sys_phonefmt*/'!!!!!!!!!!!!', useron.phone
+						,K_LINE|(system.newuser_questions & UQ_NOEXASC)|K_EDIT)).length < /*cfg.sys_phonefmt*/'!!!!!!!!!!!!'.length)
 						continue; 
 				}
-				if(!trashcan("phone", useron.phone))
+				if(!system.trashcan("phone", useron.phone))
 					break; 
 			}
 		}
