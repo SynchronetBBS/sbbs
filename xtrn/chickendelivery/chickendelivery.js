@@ -676,11 +676,15 @@ var Level = function(level, stats) {
 			if(Sprite.profiles[p].y >= fieldFrame.y + fieldFrame.height)
 				Sprite.profiles[p].remove();
 
-			var below = Sprite.checkBelow(Sprite.profiles[p]);
-			if(below) {
-				for(var b = 0; b < below.length; b++) {
-					if(below[b].ini.type == "player" && Sprite.profiles[p].ini.gravity == 1)
-						return LEVEL_DEAD;
+			if(Sprite.profiles[p].ini.gravity == 1 && system.timer -  Sprite.profiles[p].lastYMove >= (Sprite.profiles[p].ini.speed * 2)) {
+				var below = Sprite.checkBelow(Sprite.profiles[p]);
+				if(below) {
+					for(var b = 0; b < below.length; b++) {
+						if(below[b].ini.type != "player")
+							continue;
+						Sprite.profiles[p].moveTo(Sprite.profiles[p].x, Sprite.profiles[p].y + 1);
+						break;
+					}
 				}
 			}
 
@@ -747,7 +751,7 @@ var Level = function(level, stats) {
 					} else {
 						return LEVEL_DEAD;
 					}
-				} else if(collisions[c].ini.type == "enemy") {
+				} else if(collisions[c].ini.type == "enemy" && Sprite.doubleCheckOverlap(collisions[c], player)) {
 					return LEVEL_DEAD;
 				} else if(collisions[c].ini.type == "door") {
 					this.score += ((time + stats.lives + Sprite.profiles.length - 1) * (stats.level + 1));
