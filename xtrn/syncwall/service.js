@@ -4,9 +4,16 @@ load("json-client.js");
 load("event-timer.js");
 
 var root = argv[0];
-
+log("SyncWall service loaded");
 var jsonClient, users, systems, state, timer, month, dbName, historyPath, httpPath;
 var dummy = [ { 'x' : 1, 'y' : 1, 'c' : "CLEAR", 'a' : 0, 'u' : 0, 's' : 0 } ];
+
+var checkConnection = function() {
+	if(jsonClient.connected)
+		return;
+	log(LOG_INFO, "SyncWall service: attempting to reconnect ...");
+	jsonClient.connect();
+}
 
 var newMonth = function() {
 
@@ -25,17 +32,10 @@ var newMonth = function() {
 	};
 
 	var len = jsonClient.read(dbName, "SEQUENCE.length", 1);
-	for(var i = 0; i < len; i = i + ((len - 1 > 100) ? 100 : len - i)) {
-		var history = jsonClient.splice(
-			dbName,
-			"SEQUENCE",
-			i,
-			((len - i > 100) ? 100 : len)
-		);
-		oldMonth.SEQUENCE = oldMonth.SEQUENCE.concat(history);
-	}
+	for(var i = 0; i < len; i++)
+		oldMonth.SEQUENCE.push(jsonClient.shift(dbName, "SEQUENCE", 2));
 
-	var state = {};
+	state = {};
 	jsonClient.write(dbName, "STATE", state, 2);
 	jsonClient.write(dbName, "SEQUENCE", dummy,	2);
 	jsonClient.write(dbName, "LATEST", dummy, 2);
@@ -125,37 +125,25 @@ var init = function() {
 	for(var h = 0; h < historyFiles.length; h++)
 		historyFiles[h] = httpPath + "/" + file_getname(historyFiles[h]);
 	var months = jsonClient.read(dbName, "MONTHS", 1);
-	if(!months) {
-		var months = historyFiles;
-		jsonClient.write(dbName, "MONTHS", months, 2);
-	}
+	if(!months)
+		jsonClient.write(dbName, "MONTHS", historyFiles, 2);
 	for(var h = 0; h < historyFiles.length; h++) {
 		if(months.indexOf(historyFiles[h]) < 0)
 			jsonClient.push(dbName, "MONTHS", historyFiles[h], 2);
 	}
 
 	users = jsonClient.read(dbName, "USERS", 1);
-	if(!users) {
-		users = [ usr.alias ];
-		jsonClient.write(dbName, "USERS", users, 2);
-	}
+	if(!users)
+		jsonClient.write(dbName, "USERS", [ usr.alias ], 2);
 	jsonClient.subscribe(dbName, "USERS");
 
 	systems = jsonClient.read(dbName, "SYSTEMS", 1);
-	if(!systems) {
-		systems = [ system.name ];
-		jsonClient.write(dbName, "SYSTEMS", systems, 2);
-	}
+	if(!systems)
+		jsonClient.write(dbName, "SYSTEMS", [ system.name ], 2);
 	jsonClient.subscribe(dbName, "SYSTEMS");
 
-	if(!jsonClient.read(dbName, "SEQUENCE", 1)) {
-		jsonClient.write(
-			dbName,
-			"SEQUENCE",
-			dummy,
-			2
-		);
-	}
+	if(!jsonClient.read(dbName, "SEQUENCE", 1))
+		jsonClient.write(dbName, "SEQUENCE", dummy,	2);
 
 	state = jsonClient.read(dbName, "STATE", 1);
 	if(!state)
@@ -165,9 +153,9 @@ var init = function() {
 
 	// Monthly maintenance will happen on startup, or between midnight and
 	// one o'clock AM, depending on start time.
-	var event = timer.addEvent(3600000, true, newMonth);
-	event.run();
-
+	timer.addEvent(3600000, true, newMonth);
+	timer.addEvent(60000, true, checkConnection);
+	newMonth();
 }
 
 var main = function() {
