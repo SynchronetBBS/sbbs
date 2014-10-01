@@ -243,6 +243,24 @@ var Sprite = {
 			return yarg;
 		return false;
 	},
+	doubleCheckOverlap:function(sprite1, sprite2) {
+		for(var x = sprite1.x; x < sprite1.x + sprite1.frame.width; x++) {
+			if(x < sprite2.x || x >= sprite2.x + sprite2.frame.width)
+				continue;
+			for(var y = sprite1.y; y < sprite1.y + sprite1.frame.height; y++) {
+				if(y < sprite2.y || y >= sprite2.y + sprite2.frame.height)
+					continue;
+				if(	typeof sprite1.frame.getData(x - sprite1.x, y - sprite1.y, true).ch != "undefined"
+					&&
+					typeof sprite2.frame.getData(x - sprite2.x, y - sprite2.y, true).ch != "undefined"
+				) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	},
 	checkBelow:function(sprite) {
 		var yarg=[];
 		function checkBelow(sprites,sprite) {
@@ -1213,7 +1231,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 			if(Sprite.checkAbove(this) || this.y == this.jumpStart - this.ini.jumpheight) {
 				this.inJump = false;
 				this.inFall = true;
-				if(typeof this.positions["fall"] != "undefined")
+				if(this.positions["fall"] != undefined)
 					this.changePosition("fall");
 			} else {
 				this.y = this.y - 1;
@@ -1222,12 +1240,11 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		}
 		if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastYMove > this.ini.speed) {
 			if(!Sprite.checkBelow(this)) {
-				this.inFall = true;
 				this.y = this.y + 1;
 				this.lastYMove = system.timer;
 			} else if(this.inFall) {
 				this.inFall = false;
-				if(typeof this.positions["normal"] != "undefined")
+				if(this.positions["normal"] != undefined)
 					this.changePosition("normal");
 			}
 		}
@@ -1258,7 +1275,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		this.jumpStart = this.y;
 		this.inJump = true;
 
-		if(typeof this.positions["jump"] != "undefined")
+		if(this.positions["jump"] != undefined)
 			this.changePosition("jump");
 	}
 
@@ -1372,6 +1389,13 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 			(this.ini.height * countMembers(this.ini.bearings)));
 		this.frame.top();
 		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
+		var bgMask = (1<<4)|(1<<5)|(1<<6);
+		for(var y = 0; y < this.frame.data.length; y++) {
+			for(var x = 0; x < this.frame.data[y].length; x++) {
+				if(this.frame.data[y][x].ch == " " && (this.frame.data[y][x].attr&bgMask) == 0)
+					this.frame.clearData(x, y);
+			}
+		}
 	}
 	init.apply(this,arguments);
 	Sprite.profiles.push(this);	
