@@ -1389,13 +1389,13 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 			(this.ini.height * countMembers(this.ini.bearings)));
 		this.frame.top();
 		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
-		var bgMask = (1<<4)|(1<<5)|(1<<6);
-		for(var y = 0; y < this.frame.data.length; y++) {
-			for(var x = 0; x < this.frame.data[y].length; x++) {
-				if(this.frame.data[y][x].ch == " " && (this.frame.data[y][x].attr&bgMask) == 0)
-					this.frame.clearData(x, y);
-			}
-		}
+		// var bgMask = (1<<4)|(1<<5)|(1<<6);
+		// for(var y = 0; y < this.frame.data.length; y++) {
+		// 	for(var x = 0; x < this.frame.data[y].length; x++) {
+		// 		if(this.frame.data[y][x].ch == " " && (this.frame.data[y][x].attr&bgMask) == 0)
+		// 			this.frame.clearData(x, y);
+		// 	}
+		// }
 	}
 	init.apply(this,arguments);
 	Sprite.profiles.push(this);	
