@@ -102,10 +102,8 @@ function create_newuser()
 			var prop;
 
 			for (prop in usr) {
-				if (tmp[prop] == undefined) {
-					log(LOG_DEBUG, "New user creation: template missing property "+prefix+prop);
+				if (tmp[prop] == undefined)
 					continue;
-				}
 				if (typeof(usr[prop])=='object') {
 					copy_level(tmp[prop], usr[prop], prefix+prop+'.');
 					delete tmp[prop];
@@ -131,108 +129,11 @@ function create_newuser()
 		check_level(template, "User.");
 	}
 
-	function good_password(pass, user)
-	{
-		var c=0,d=0,first='',last='',sysop='',sysname='',p='';
-		var alias='', name='', handle='';
-		var m;
-
-		pass=pass.toUpperCase();
-
-		if (pass.length < 4) {
-			text_print(bbs.text(PasswordTooShort));
-			return false;
-		}
-		d=pass.length;
-		for(c=1;c<d;c++)
-			if(pass.substr(c, 1)!=pass.substr(c-1, 1))
-				break;
-		if(c==d) {
-			text_print(bbs.text(PasswordInvalid));
-			return false;
-		}
-		for(c=0;c<3;c++)	/* check for 1234 and ABCD */
-			if(pass.substr(c, 1) != ascii(ascii(pass.substr(c+1, 1))+1))
-				break;
-		if(c==3) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		for(c=0;c<3;c++)	/* check for 4321 and ZYXW */
-			if(pass.substr(c, 1) != ascii(ascii(pass.substr(c+1, 1))-1))
-				break;
-		if(c==3) {
-			text_print(bbs.text(PasswordObvious));
-			return(false); 
-		}
-		name = user.name.toUpperCase();
-		alias = user.alias.toUpperCase();
-		if ((m = name.match(/^(.*?) (.*)$/)) != null) {
-			first = m[1];
-			last = m[2];
-		}
-		else
-			first = user.name;
-		handle = user.handle.toUpperCase();
-		sysop = system.operator.toUpperCase();
-		sysname = system.name.toUpperCase();
-		if (name.length > 0
-				&& (pass.indexOf(name) > -1 || name.indexOf(pass) > -1)) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (pass.indexOf(alias) > -1 || alias.indexOf(pass) > -1) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (pass.indexOf(first) > -1 || first.indexOf(pass) > -1) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (last.length > 0
-				&& (pass.indexOf(last) > -1 || last.indexOf(pass) > -1)) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (pass.indexOf(handle) > -1 || handle.indexOf(pass) > -1) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (user.zipcode.length > 0
-				&& (pass.indexOf(user.zipcode) > -1 || user.zipcode.indexOf(pass) > -1)) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (sysname.length > 0
-				&& (pass.indexOf(sysname) > -1 || sysname.indexOf(pass) > -1)) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (sysop.length > 0
-				&& (pass.indexOf(sysop) > -1 || sysop.indexOf(pass) > -1)) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (system.qwk_id.length > 0
-				&& (pass.indexOf(system.qwk_id) > -1 || system.qwk_id.indexOf(pass) > -1)) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (user.phone.length > 0 && user.phone.indexOf(pass) > -1) {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		if (pass.substr(0, 3) == 'QWE'
-				|| pass.substr(0, 3) == 'ASD'
-				|| pass.substr(0, 3) == '!@#') {
-			text_print(bbs.text(PasswordObvious));
-			return false;
-		}
-		return (!bbs.trashcan("password", pass));
-	}
-
 	function text_print(text)
 	{
+		if (user != undefined)
+			bbs.user_sync();
+
 		text = text.replace(/@([^@]+)@/g, function(m, code) {
 			return bbs.atcode(code);
 		});
@@ -291,7 +192,7 @@ function create_newuser()
 		logline(LOG_NOTICE, "N!", "Warning: same IP address as user #"+dupe_user+" "+system.username(dupe_user));
 	useron.connection = client.protocol;
 
-	if (system.lastuser==0) { /* Automatic sysop access for first user */
+	if (system.lastuser==0) { /* Automatic sysop access for first user NOTE: Breaks after failed attempt! */
 		console.print("Creating sysop account... System password required.\r\n");
 		if (!console.check_syspass())
 			return false;
@@ -376,92 +277,151 @@ function create_newuser()
 			if(!system.check_name(tempAlias)
 				|| (!(system.newuser_questions & UQ_ALIASES) && tempAlias.indexOf(' ') == -1)) {
 				text_print(bbs.text(YouCantUseThatName));
-				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ)))
+				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
+					if (newuser !== undefined) {
+						newuser.comment = "Did not continue after duplicate alias";
+						newuser.settings |= USER_DELETED;
+						bbs.user_sync();
+					}
 					return false;
+				}
 				continue;
 			}
 			useron.alias = tempAlias;
 			break; 
 		}
-		if(!bbs.online)
+		if(!bbs.online) {
+			if (newuser !== undefined) {
+				newuser.comment = "Disconnected after selecting alias";
+				newuser.settings |= USER_DELETED;
+				bbs.user_sync();
+			}
 			return false;
+		}
+
+		if (newuser === undefined) {
+			text_print(bbs.text(CheckingSlots));
+			try {
+				newuser = (system.new_user(useron.alias, client));
+			}
+			catch(e) {
+				newuser.settings |= USER_DELETED;
+				console.print("Sorry, a user with your alias was created while you signed up!");
+				logline(LOG_ERROR, "N!", "New user couldn't be created (user created while signing up)");
+				bbs.hangup();
+				return false;
+			}
+			if (typeof newuser === 'number') {
+				logline(LOG_ERROR, "N!", "New user couldn't be created (error code "+newuser+")");
+				bbs.hangup();
+				return false;
+			}
+			tmp = newuser.security.password;
+			newuser.security.password = '';
+			bbs.login(newuser.alias, bbs.text(PasswordPrompt));
+			newuser.security.password = tmp;
+
+			logline(LOG_INFO, '', "Created user record #"+newuser.number+": "+newuser.alias);
+			copy_user_template_to_user(useron, newuser);
+			useron = newuser;
+		}
 
 		if((system.newuser_questions & UQ_ALIASES) && (system.newuser_questions & UQ_REALNAME)) {
 			while(bbs.online) {
 				text_print(bbs.text(EnterYourRealName));
-				var tempName = console.getstr(useron.name, LEN_NAME, kmode);
+				var tempName = console.getstr(newuser.name, LEN_NAME, kmode);
+				bbs.user_sync();
 				if (!system.check_name(tempName)
 					|| tempName.indexOf(' ') == -1
 					|| ((system.newuser_questions & UQ_DUPREAL)
 						&& system.matchuser(tempName))) {
 					text_print(bbs.text(YouCantUseThatName));
 				} else {
-					useron.name = tempName;
+					newuser.name = tempName;
 					break;
 				}
 				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
-					useron.comment = "Failed to create alias";
-					useron.settings |= USER_DELETED;
+					newuser.comment = "Did not continue after duplicate real name";
+					newuser.settings |= USER_DELETED;
+					bbs.user_sync();
 					return false;
 				}
 			} 
 		}
 		else if(system.newuser_questions & UQ_COMPANY) {
-				text_print(bbs.text(EnterYourCompany));
-				useron.name = console.getstr(useron.name, LEN_NAME, (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL); 
+			text_print(bbs.text(EnterYourCompany));
+			newuser.name = console.getstr(newuser.name, LEN_NAME, (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL); 
 		}
-		if(useron.name.length == 0)
-			useron.name = useron.alias.substr(0, LEN_ALIAS);
-		if(!bbs.online)
+		if(newuser.name.length == 0)
+			newuser.name = newuser.alias.substr(0, LEN_ALIAS);
+		if(!bbs.online) {
+			newuser.comment = "Hung up after entering real name";
+			newuser.settings |= USER_DELETED;
+			bbs.user_sync();
 			return false;
-		if(useron.handle.length == 0)
-			useron.handle = useron.alias.substr(0, LEN_HANDLE);
+		}
+		if(newuser.handle.length == 0)
+			newuser.handle = newuser.alias.substr(0, LEN_HANDLE);
 		while((system.newuser_questions & UQ_HANDLE) && bbs.online) {
 			text_print(bbs.text(EnterYourHandle));
-			if((useron.handle = console.getstr(
-						useron.handle,
+			bbs.user_sync();
+			if((newuser.handle = console.getstr(
+						newuser.handle,
 						LEN_HANDLE,
 						K_LINE|K_EDIT|K_AUTODEL|(system.newuser_questions&UQ_NOEXASC))) == null
-					|| useron.handle.indexOf('\xff') != -1
+					|| newuser.handle.indexOf('\xff') != -1
 					|| ((system.newuser_questions & UQ_DUPHAND)
-						&& system.matchuser(useron.handle))
-					|| system.trashcan("name", useron.handle))
+						&& system.matchuser(newuser.handle))
+					|| system.trashcan("name", newuser.handle))
 				text_print(bbs.text(YouCantUseThatName));
 			else
 				break; 
-			if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ)))
+			if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
+				newuser.comment = "Did not continue after duplicate handle";
+				newuser.settings |= USER_DELETED;
+				bbs.user_sync();
 				return false;
+			}
 		}
 		if(!bbs.online) {
-			useron.comment = "Hung up in creation";
-			useron.settings |= USER_DELETED;
+			newuser.comment = "Hung up after entering handle";
+			newuser.settings |= USER_DELETED;
+			bbs.user_sync();
 			return false;
 		}
 		if(system.newuser_questions & UQ_ADDRESS)
 			while(bbs.online) { 	   /* Get address and zip code */
 				text_print(bbs.text(EnterYourAddress));
-				if((useron.address = console.getstr(useron.address,LEN_ADDRESS,kmode)) != null)
+				if((newuser.address = console.getstr(newuser.address,LEN_ADDRESS,kmode)) != null)
 					break; 
 			}
-		if(!bbs.online)
+		if(!bbs.online) {
+			newuser.comment = "Hung up after entering address";
+			newuser.settings |= USER_DELETED;
+			bbs.user_sync();
 			return false;
+		}
 		while((system.newuser_questions & UQ_LOCATION) && bbs.online) {
 			text_print(bbs.text(EnterYourCityState));
-			if((useron.location = console.getstr(useron.location, LEN_LOCATION, kmode)) != null
-				&& ((system.newuser_questions & UQ_NOCOMMAS) || useron.location.indexOf(',') != -1))
+			if((newuser.location = console.getstr(newuser.location, LEN_LOCATION, kmode)) != null
+				&& ((system.newuser_questions & UQ_NOCOMMAS) || newuser.location.indexOf(',') != -1))
 				break;
 			text_print(bbs.text(CommaInLocationRequired));
-			useron.location = ''; 
+			newuser.location = ''; 
 		}
 		if(system.newuser_questions & UQ_ADDRESS)
 			while(bbs.online) {
 				text_print(bbs.text(EnterYourZipCode));
-				if(console.getstr(useron.zipcode,LEN_ZIPCODE
+				if(console.getstr(newuser.zipcode,LEN_ZIPCODE
 					,K_UPPER|(system.newuser_questions & UQ_NOEXASC)|K_EDIT|K_AUTODEL))
 					break; 
 			}
-		if(!bbs.online)
+		if(!bbs.online) {
+			newuser.comment = "Hung up after entering ZIP/postal code";
+			newuser.settings |= USER_DELETED;
+			bbs.user_sync();
 			return false;
+		}
 		if(system.newuser_questions & UQ_PHONE) {
 			if(bbs.text(CallingFromNorthAmericaQ).length > 0)
 				usa=console.yesno(bbs.text(CallingFromNorthAmericaQ));
@@ -470,55 +430,70 @@ function create_newuser()
 			while(bbs.online && bbs.text(EnterYourPhoneNumber).length > 0) {
 				text_print(bbs.text(EnterYourPhoneNumber));
 				if(!usa) {
-					if((useron.phone = console.getstr(useron.phone,LEN_PHONE
+					if((newuser.phone = console.getstr(newuser.phone,LEN_PHONE
 						,K_UPPER|K_LINE|(system.newuser_questions & UQ_NOEXASC)|K_EDIT|K_AUTODEL)).length < 5)
 						continue; 
 				}
 				else {
 					/* TODO: cfg.sys_phonefmt isn't available! */
-					if((useron.phone = console.gettemplate(/*cfg.sys_phonefmt*/'!!!!!!!!!!!!', useron.phone
+					if((newuser.phone = console.gettemplate(/*cfg.sys_phonefmt*/'!!!!!!!!!!!!', newuser.phone
 						,K_LINE|(system.newuser_questions & UQ_NOEXASC)|K_EDIT)).length < /*cfg.sys_phonefmt*/'!!!!!!!!!!!!'.length)
 						continue; 
 				}
-				if(!system.trashcan("phone", useron.phone))
+				if(!system.trashcan("phone", newuser.phone))
 					break; 
 			}
 		}
-		if(!bbs.online)
+		if(!bbs.online) {
+			newuser.comment = "Hung up after entering phone number";
+			newuser.settings |= USER_DELETED;
+			bbs.user_sync();
 			return false;
+		}
 		if(system.newuser_questions & UQ_SEX) {
 			text_print(bbs.text(EnterYourSex));
-			useron.gender=console.getkeys("MF");
+			newuser.gender=console.getkeys("MF");
 		}
 		while((system.newuser_questions & UQ_BIRTH) && bbs.online) {
 			text_print(format(bbs.text(EnterYourBirthday)
 				,system.settings & SYS_EURODATE ? "DD/MM/YY" : "MM/DD/YY"));
-			if((useron.birthdate = console.gettemplate("nn/nn/nn", useron.birthdate, K_EDIT)).length==8 && system.datestr(useron.birthdate) > 0)
-				break;
+			if ((newuser.birthdate = console.gettemplate("nn/nn/nn", newuser.birthdate, K_EDIT)).length==8)
+				newuser.cached = false;
+				if (newuser.age > 0)
+					break;
 		}
-		if(!bbs.online)
+		if(!bbs.online) {
+			newuser.comment = "Hung up after entering birth date";
+			newuser.settings |= USER_DELETED;
+			bbs.user_sync();
 			return false;
+		}
 		while(!(system.newuser_questions & UQ_NONETMAIL) && bbs.online) {
 			text_print(bbs.text(EnterNetMailAddress));
-			if((useron.netmail = console.getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)) != null
-				&& !system.trashcan("email", useron.netmail))
+			if((newuser.netmail = console.getstr(newuser.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)) != null
+				&& !system.trashcan("email", newuser.netmail))
 			break;
 		}
-		if(useron.netmail.length > 0 && system.settings & SYS_FWDTONET && bbs.text(ForwardMailQ).length > 0 && console.yesno(bbs.text(ForwardMailQ)))
-			useron.settings |= USER_NETMAIL;
+		if(newuser.netmail.length > 0 && system.settings & SYS_FWDTONET && bbs.text(ForwardMailQ).length > 0 && console.yesno(bbs.text(ForwardMailQ)))
+			newuser.settings |= USER_NETMAIL;
 		else 
-			useron.settings &= ~USER_NETMAIL;
+			newuser.settings &= ~USER_NETMAIL;
 		if(bbs.text(UserInfoCorrectQ).length > 0 || console.yesno(bbs.text(UserInfoCorrectQ)))
 			break; 
 	}
 	if(!bbs.online) {
-		useron.comment = "Hung up in creation";
-		useron.settings |= USER_DELETED;
+		newuser.comment = "Hung up after entering user info";
+		newuser.settings |= USER_DELETED;
+		bbs.user_sync();
 		return false;
 	}
-	logline(LOG_INFO, "N", "New user: "+useron.alias);
-	if(!bbs.online)
+	logline(LOG_INFO, "N", "New user: "+newuser.alias);
+	if(!bbs.online) {
+		newuser.comment = "Hung up after new user log entry made";
+		newuser.settings |= USER_DELETED;
+		bbs.user_sync();
 		return false;
+	}
 	console.clear();
 	
 	console.printfile(system.text_dir+"sbbs.msg", P_NOABORT);
@@ -536,13 +511,11 @@ function create_newuser()
 	bbs.answer_time = time();		/* could take 10 minutes to get this far */
 
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
-	/* TODO: No way to compare ARS for non User object */
-	/*
+	bbs.user_sync();
 	if (newuser.compare_ars(xtrn_area.editor[system.newuser_editor.toLowerCase()].ars))
 		newuser.editor = system.newuser_editor;
 	else
-	*/
-		useron.editor = '';
+		newuser.editor = '';
 
 	if (xtrn_area.editor.length > 0 && (system.newuser_questions & UQ_XEDIT) && bbs.text(UseExternalEditorQ).length > 0) {
 		if(console.yesno(bbs.text(UseExternalEditorQ))) {
@@ -553,9 +526,9 @@ function create_newuser()
 				console.uselect(i+1,bbs.text(ExternalEditorHeading),xtrn_area.editor[editors[i]].name,xtrn_area.editor[editors[i]].ars);
 			// TODO: console.uselect doesn't allow setting a default!
 			if((i=console.uselect())>=0)
-				useron.editor = editors[i-1] 
+				newuser.editor = editors[i-1] 
 		} else
-			useron.editor = '';
+			newuser.editor = '';
 	}
 
 	// TODO: No way to do this!
@@ -563,38 +536,42 @@ function create_newuser()
 	if(cfg.total_shells>1 && (cfg.uq&UQ_CMDSHELL)) {
 		for(i=0;i<cfg.total_shells;i++)
 			uselect(1,i,text[CommandShellHeading],cfg.shell[i]->name,cfg.shell[i]->ar);
-		if((int)(i=uselect(0,useron.shell,0,0,0))>=0)
-			useron.shell=i; 
+		if((int)(i=uselect(0,newuser.shell,0,0,0))>=0)
+			newuser.shell=i; 
 	}
 	*/
+	bbs.user_sync();
+	bbs.select_shell();
+	newuser.cached = false;
 
 	// TODO: Doesn't take the user argument...
-	if(bbs.rlogin_password.length > 0 && good_password(bbs.rlogin_password.length, useron)) {
+	if(bbs.rlogin_password.length > 0 && bbs.good_password(bbs.rlogin_password)) {
 		console.crlf();
 		/* passwords are case insensitive, but assumed (in some places) to be uppercase in the user database */
-		useron.security.password = bbs.rlogin_password.toUpperCase();
+		newuser.security.password = bbs.rlogin_password.toUpperCase();
 	}
 	else {
-		useron.security.password = '';
+		newuser.security.password = '';
 		for (i=0; i<LEN_PASS; ) {	/* Create random password... TODO: this can be improved */
-			useron.security.password += ascii(random(43)+ascii('0'));
-			if (useron.security.password.substr(-1, 1).search(/[0-9A-Za-z]/) == 0)
+			newuser.security.password += ascii(random(43)+ascii('0'));
+			if (newuser.security.password.substr(-1, 1).search(/[0-9A-Za-z]/) == 0)
 				i++;
 			else
-				useron.security.password = useron.security.password.substr(0, i);
+				newuser.security.password = newuser.security.password.substr(0, i);
 		}
 
-		text_print(format(bbs.text(YourPasswordIs),useron.security.password));
+		text_print(format(bbs.text(YourPasswordIs),newuser.security.password));
 
 		if(system.settings & SYS_PWEDIT && bbs.text(NewPasswordQ).length > 0 && console.yesno(bbs.text(NewPasswordQ)))
 			while(bbs.online) {
 				text_print(bbs.text(NewPassword));
 				str = console.getstr('',LEN_PASS,K_UPPER|K_LINE);
 				str = truncsp(str);
-				if(good_password(str, useron)) {
-					useron.security.password = str;
+				if(bbs.good_password(str)) {
+					newuser.security.password = str;
+					bbs.user_sync();
 					console.crlf();
-					text_print(format(bbs.text(YourPasswordIs),useron.security.password));
+					text_print(format(bbs.text(YourPasswordIs),newuser.security.password));
 					break; 
 				}
 				console.crlf();
@@ -607,64 +584,56 @@ function create_newuser()
 			str = '';
 			str = console.getstr(str,LEN_PASS*2,K_UPPER);
 			console.status &= ~(CON_R_ECHOX|CON_L_ECHOX);
-			if(str == useron.security.password)
+			if(str == newuser.security.password)
 				break;
 			if(system.settings & SYS_ECHO_PW)
-				tmp = useron.alias + " FAILED Password verification: '"+str+"' instead of '"+useron.security.password+"'";
+				tmp = newuser.alias + " FAILED Password verification: '"+str+"' instead of '"+newuser.security.password+"'";
 			else
-				tmp = useron.alias + " FAILED Password verification";
+				tmp = newuser.alias + " FAILED Password verification";
 			logline(LOG_NOTICE,'',tmp);
 			if(++i==4) {
 				logline(LOG_NOTICE,"N!","Couldn't figure out password.");
+				newuser.comment = "Unable to validate password";
+				newuser.settings |= USER_DELETED;
 				bbs.hangup();
+				return false;
 			}
 			text_print(bbs.text(IncorrectPassword));
-			text_print(format(bbs.text(YourPasswordIs),useron.security.password));
+			text_print(format(bbs.text(YourPasswordIs),newuser.security.password));
 		}
 	}
 
-	if(!bbs.online)
+	if(!bbs.online) {
+		newuser.comment = "Hung up after validating password";
+		newuser.settings |= USER_DELETED;
+		bbs.user_sync();
 		return false;
+	}
 	if(system.newuser_magic_word.length > 0) {
 		text_print(bbs.text(MagicWordPrompt));
 		str = '';
 		str = console.getstr(str,50,K_UPPER);
 		if(str != system.newuser_magic_word) {
+			newuser.comment = "Failed to guess the magic word";
+			newuser.settings |= USER_DELETED;
 			text_print(bbs.text(FailedMagicWord));
-			logline(LOG_INFO, "N!",useron.alias+" failed magic word: '"+str+"'");
+			logline(LOG_INFO, "N!",newuser.alias+" failed magic word: '"+str+"'");
+			bbs.user_sync();
 			bbs.hangup();
-		}
-		if(!bbs.online)
 			return false;
+		}
+		if(!bbs.online) {
+			newuser.comment = "Hung up after guessing magic word";
+			newuser.settings |= USER_DELETED;
+			bbs.user_sync();
+			return false;
+		}
 	}
-
-	/* Find a new user name that's available */
-	// TODO: This still has a race condition on real name and handle!
-	text_print(bbs.text(CheckingSlots));
-	try {
-		newuser = (system.new_user(useron.alias, client));
-	}
-	catch(e) {
-		newuser.settings |= USER_DELETED;
-		console.print("Sorry, a user with your alias was created while you signed up!");
-		logline(LOG_ERROR, "N!", "New user couldn't be created (user created while signing up)");
-		bbs.hangup();
-		return false;
-	}
-	if (typeof newuser === 'number') {
-		newuser.settings |= USER_DELETED;
-		logline(LOG_ERROR, "N!", "New user couldn't be created (error code "+newuser+")");
-		bbs.hangup();
-		return false;
-	}
-
-	logline(LOG_INFO, '', "Created user record #"+newuser.number+": "+newuser.alias);
-	copy_user_template_to_user(useron, newuser);
 
 	/* TODO: No way to do this in Javascript */
 	/*
 	if(cfg.new_sif[0]) {
-		SAFEPRINTF2(str,"%suser/%4.4u.dat",cfg.data_dir,useron.number);
+		SAFEPRINTF2(str,"%suser/%4.4u.dat",cfg.data_dir,newuser.number);
 		create_sif_dat(cfg.new_sif,str); 
 	}
 	*/
@@ -672,13 +641,11 @@ function create_newuser()
 	/* TODO: delallmail() isn't available... do it the hard way! */
 	delallmail(newuser.number, MAIL_ANY);
 
-	/* We need to login to call user_config() */
-	tmp = newuser.security.password;
-	newuser.security.password = '';
-	bbs.login(newuser.alias, bbs.text(PasswordPrompt));
-	newuser.security.password = tmp;
-	if(!(system.newuser_questions & UQ_NODEF))
+	if(!(system.newuser_questions & UQ_NODEF)) {
+		bbs.user_sync();
 		bbs.user_config();
+		user.cached = false;
+	}
 
 	if(newuser.number != 1 && bbs.node_val_user) {
 		console.clear();
@@ -700,6 +667,7 @@ function create_newuser()
 				logline(LOG_NOTICE,"N!","Aborted feedback");
 				newuser.comment = "Didn't leave feedback";
 				newuser.settings |= USER_DELETED;
+				bbs.user_sync();
 				bbs.hangup();
 				bbs.logout();
 				return false;
