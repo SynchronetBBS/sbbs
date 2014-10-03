@@ -47,6 +47,7 @@ load("rss-atom.js");
 var forceFrom = false; // Always use the 'from' name (specified below)
 var from = "Web Feed Importer"; // If forceFrom OR no item author
 var to = "All"; // Probably a safe bet
+var appendString = "\r\n\r\n"; // Tack something on to the end of a message
 var appendLink = true; // Append the item's <link /> value to the message
 var reverseOrder = true; // Leave this unless your feeds sort oldest to newest
 
@@ -74,6 +75,7 @@ var importItem = function(sub, item) {
 		'from_net_type' : NET_UNKNOWN,
 		'subject' : item.title
 	};
+	item.body += appendString;
 	var msgBase = new MsgBase(sub);
 	msgBase.open();
 	msgBase.save_msg(header, item.body);
