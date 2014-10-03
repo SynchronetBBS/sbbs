@@ -48,6 +48,7 @@ function create_newuser()
 	var kmode;
 	var editors;
 	var orig_at = js.auto_terminate;
+	js.auto_terminate = false;
 
 	function logline(level, code, str)
 	{
