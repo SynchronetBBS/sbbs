@@ -107,7 +107,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			backspace();
 		return(0); 
 	}
-	if(ch==CTRL_Z && !(mode&K_MSG)
+	if(ch==CTRL_Z && !(mode&K_MSG|K_GETSTR)
 		&& action!=NODE_PCHT) {	 /* Ctrl-Z toggle raw input mode */
 		if(hotkey_inside>1)	/* only allow so much recursion */
 			return(0);
