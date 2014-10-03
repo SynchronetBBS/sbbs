@@ -47,6 +47,7 @@ function create_newuser()
 	var i;
 	var kmode;
 	var editors;
+	var orig_at = js.auto_terminate;
 
 	function logline(level, code, str)
 	{
@@ -160,12 +161,14 @@ function create_newuser()
 		// TODO: No logline function!
 		logline(LOG_WARNING, "N!","New user locked node logon attempt");
 		bbs.hangup();
+		js.auto_terminate = orig_at;
 		return false;
 	}
 
 	if (system.settings & SYS_CLOSED) {
 		text_print(bbs.text(NoNewUsers));
 		bbs.hangup();
+		js.auto_terminate = orig_at;
 		return false;
 	}
 
@@ -184,6 +187,7 @@ function create_newuser()
 			if(file_exists(system.text_dir+"nupguess.msg"))
 				console.printfile(system.text_dir+"nupguess.msg");
 			bbs.hangup();
+			js.auto_terminate = orig_at;
 			return false;
 		}
 	}
@@ -208,8 +212,10 @@ function create_newuser()
 
 	if (system.lastuser==0) { /* Automatic sysop access for first user NOTE: Breaks after failed attempt! */
 		console.print("Creating sysop account... System password required.\r\n");
-		if (!console.check_syspass())
+		if (!console.check_syspass()) {
+			js.auto_terminate = orig_at;
 			return false;
+		}
 		useron.security.level=99;
 		useron.security.exemptions = useron.security.flags1 = useron.security.flags2 = 0xffffffff;
 		useron.security.flags3 = useron.security.flags4 = 0xffffffff;
@@ -293,6 +299,7 @@ function create_newuser()
 				text_print(bbs.text(YouCantUseThatName));
 				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
 					kill_user("Did not continue after duplicate alias");
+					js.auto_terminate = orig_at;
 					return false;
 				}
 				continue;
@@ -300,8 +307,10 @@ function create_newuser()
 			useron.alias = tempAlias;
 			break; 
 		}
-		if (!check_online("Disconnected after selecting alias"))
+		if (!check_online("Disconnected after selecting alias")) {
+			js.auto_terminate = orig_at;
 			return false;
+		}
 
 		if (newuser === undefined) {
 			text_print(bbs.text(CheckingSlots));
@@ -314,11 +323,13 @@ function create_newuser()
 				newuser.settings |= USER_DELETED;
 				newuser.comment = 'Exception during thrown by system.new_user() (duplicate alias?)';
 				bbs.hangup();
+				js.auto_terminate = orig_at;
 				return false;
 			}
 			if (typeof newuser === 'number') {
 				logline(LOG_ERROR, "N!", "New user couldn't be created (error code "+newuser+")");
 				bbs.hangup();
+				js.auto_terminate = orig_at;
 				return false;
 			}
 			tmp = newuser.security.password;
@@ -346,6 +357,7 @@ function create_newuser()
 				}
 				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
 					kill_user("Did not continue after duplicate real name");
+					js.auto_terminate = orig_at;
 					return false;
 				}
 			} 
@@ -356,8 +368,10 @@ function create_newuser()
 		}
 		if(user.name.length == 0)
 			user.name = user.alias.substr(0, LEN_ALIAS);
-		if(!check_online("Hung up after entering real name"))
+		if(!check_online("Hung up after entering real name")) {
+			js.auto_terminate = orig_at;
 			return false;
+		}
 		if(user.handle.length == 0)
 			user.handle = user.alias.substr(0, LEN_HANDLE);
 		while((system.newuser_questions & UQ_HANDLE) && bbs.online) {
@@ -375,19 +389,24 @@ function create_newuser()
 				break; 
 			if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
 				kill_user("Did not continue after duplicate handle");
+				js.auto_terminate = orig_at;
 				return false;
 			}
 		}
-		if(!check_online("Hung up after entering handle"))
+		if(!check_online("Hung up after entering handle")) {
+			js.auto_terminate = orig_at;
 			return false;
+		}
 		if(system.newuser_questions & UQ_ADDRESS)
 			while(bbs.online) { 	   /* Get address and zip code */
 				text_print(bbs.text(EnterYourAddress));
 				if((user.address = console.getstr(user.address,LEN_ADDRESS,kmode)) != null)
 					break; 
 			}
-		if(!check_online("Hung up after entering address"))
+		if(!check_online("Hung up after entering address")) {
+			js.auto_terminate = orig_at;
 			return false;
+		}
 		while((system.newuser_questions & UQ_LOCATION) && bbs.online) {
 			text_print(bbs.text(EnterYourCityState));
 			if((user.location = console.getstr(user.location, LEN_LOCATION, kmode)) != null
@@ -403,8 +422,10 @@ function create_newuser()
 					,K_UPPER|(system.newuser_questions & UQ_NOEXASC)|K_EDIT|K_AUTODEL))
 					break; 
 			}
-		if(!check_online("Hung up after entering ZIP/postal code"))
+		if(!check_online("Hung up after entering ZIP/postal code")) {
+			js.auto_terminate = orig_at;
 			return false;
+		}
 		if(system.newuser_questions & UQ_PHONE) {
 			if(bbs.text(CallingFromNorthAmericaQ).length > 0)
 				usa=console.yesno(bbs.text(CallingFromNorthAmericaQ));
@@ -427,8 +448,10 @@ function create_newuser()
 					break; 
 			}
 		}
-		if(!check_online("Hung up after entering phone number"))
+		if(!check_online("Hung up after entering phone number")) {
+			js.auto_terminate = orig_at;
 			return false;
+		}
 		if(system.newuser_questions & UQ_SEX) {
 			text_print(bbs.text(EnterYourSex));
 			user.gender=console.getkeys("MF");
@@ -441,8 +464,10 @@ function create_newuser()
 				if (user.age > 0)
 					break;
 		}
-		if(!check_online("Hung up after entering birth date"))
+		if(!check_online("Hung up after entering birth date")) {
+			js.auto_terminate = orig_at;
 			return false;
+		}
 		while(!(system.newuser_questions & UQ_NONETMAIL) && bbs.online) {
 			text_print(bbs.text(EnterNetMailAddress));
 			if((user.netmail = console.getstr(user.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)) != null
@@ -456,11 +481,15 @@ function create_newuser()
 		if(bbs.text(UserInfoCorrectQ).length > 0 && console.yesno(bbs.text(UserInfoCorrectQ)))
 			break; 
 	}
-	if(!check_online("Hung up after entering user info"))
+	if(!check_online("Hung up after entering user info")) {
+		js.auto_terminate = orig_at;
 		return false;
+	}
 	logline(LOG_INFO, "N", "New user: "+user.alias);
-	if(!check_online("Hung up after new user log entry made"))
+	if(!check_online("Hung up after new user log entry made")) {
+		js.auto_terminate = orig_at;
 		return false;
+	}
 	console.clear();
 	
 	console.printfile(system.text_dir+"sbbs.msg", P_NOABORT);
@@ -560,6 +589,7 @@ function create_newuser()
 				newuser.comment = "Unable to validate password";
 				newuser.settings |= USER_DELETED;
 				bbs.hangup();
+				js.auto_terminate = orig_at;
 				return false;
 			}
 			text_print(bbs.text(IncorrectPassword));
@@ -567,8 +597,10 @@ function create_newuser()
 		}
 	}
 
-	if(!check_online("Hung up after validating password"))
+	if(!check_online("Hung up after validating password")) {
+		js.auto_terminate = orig_at;
 		return false;
+	}
 	if(system.newuser_magic_word.length > 0) {
 		text_print(bbs.text(MagicWordPrompt));
 		str = '';
@@ -579,10 +611,13 @@ function create_newuser()
 			text_print(bbs.text(FailedMagicWord));
 			logline(LOG_INFO, "N!",newuser.alias+" failed magic word: '"+str+"'");
 			bbs.hangup();
+			js.auto_terminate = orig_at;
 			return false;
 		}
-		if(!check_online("Hung up after guessing magic word"))
+		if(!check_online("Hung up after guessing magic word")) {
+			js.auto_terminate = orig_at;
 			return false;
+		}
 	}
 
 	/* TODO: No way to do this in Javascript */
@@ -621,6 +656,7 @@ function create_newuser()
 				logline(LOG_NOTICE,"N!","Aborted feedback");
 				kill_user("Didn't leave feedback");
 				bbs.hangup();
+				js.auto_terminate = orig_at;
 				return false;
 			}
 		}
@@ -638,5 +674,6 @@ function create_newuser()
 	logline(LOG_INFO, "N+","Successful new user logon");
 	bbs.sys_status |= SS_NEWUSER;
 
+	js.auto_terminate = orig_at;
 	return true;
 }
