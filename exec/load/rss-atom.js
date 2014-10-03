@@ -40,7 +40,7 @@
 
 		Each element in a Feed's 'channels' array is a Channel object.  This
 		object represents an RSS channel or an Atom feed.
-	
+
 		Properties:
 
 		Channel.title (String)
@@ -94,6 +94,10 @@
 
 			The RSS <description /> or Atom <summary /> for this item/entry.
 
+		Item.content (String)
+
+			The RSS <content:encoded /> for this item, if available.
+
 		Item.link (String)
 
 			The <link /> value for this item. (This needs cleaning up. If
@@ -110,7 +114,7 @@
 
 load("http.js");
 
-// Hacky e4x namespace weirdness
+// This is really not the way to do things, but meh.
 var toLocal = function(xmlObject) {
 	for each(var element in xmlObject) {
 		element.setName(element.localName());
@@ -127,6 +131,7 @@ var Feed = function(url) {
 		this.date = "";
 		this.author = "";
 		this.body = "";
+		this.content = "";
 		this.link = "";
 		this.extra = {};
 
@@ -143,6 +148,8 @@ var Feed = function(url) {
 				this.body = element;
 			else if(element.name() == "link")
 				this.link = element.text(); // To do: deal with multiple links
+			else if(element.name() == "encoded") // content:encoded
+				this.content = element;
 			else
 				this.extra[element.name()] = element;
 
