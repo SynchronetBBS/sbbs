@@ -321,8 +321,6 @@ function create_newuser()
 			catch(e) {
 				console.print("Sorry, a user with your alias was created while you signed up!");
 				logline(LOG_ERROR, "N!", "New user couldn't be created (user created while signing up)");
-				newuser.settings |= USER_DELETED;
-				newuser.comment = 'Exception during thrown by system.new_user() (duplicate alias?)';
 				bbs.hangup();
 				js.auto_terminate = orig_at;
 				return false;
