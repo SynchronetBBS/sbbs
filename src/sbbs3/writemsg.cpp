@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -197,7 +197,6 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 	char 	tmp[512];
 	int		i,j,file,linesquoted=0;
 	long	length,qlen=0,qtime=0,ex_mode=0;
-	int		max_title_len=LEN_TITLE;
 	ulong	l;
 	FILE*	stream;
 	FILE*	fp;
@@ -373,23 +372,18 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 	}
 
 	if(!(mode&(WM_EXTDESC|WM_SUBJ_RO))) {
+		int	max_title_len;
+
 		if(mode&WM_FILE) {
-#if 0
-			max_title_len=12;	/* ToDo: implied 8.3 filename limit! */
-#endif
 			CRLF;
 			bputs(text[Filename]); 
 		}
 		else {
-#if 0
-			max_title_len=LEN_TITLE;
-			if(mode&WM_QWKNET
-				|| (subnum!=INVALID_SUB 
-					&& (cfg.sub[subnum]->misc&(SUB_QNET|SUB_INET|SUB_FIDO))==SUB_QNET))
-				max_title_len=25;
-#endif
 			bputs(text[SubjectPrompt]); 
 		}
+		max_title_len=cols-column-1;
+		if(max_title_len > LEN_TITLE)
+			max_title_len = LEN_TITLE;
 		if(!getstr(title,max_title_len,mode&WM_FILE ? K_LINE : K_LINE|K_EDIT|K_AUTODEL)
 			&& useron_level && useron.logons) {
 			free(buf);
@@ -490,7 +484,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 				fgets(str,sizeof(str),fp);
 				fgets(str,sizeof(str),fp);
 				truncsp(str);
-				safe_snprintf(title,max_title_len,"%s",str);
+				safe_snprintf(title,LEN_TITLE,"%s",str);
 				fclose(fp);
 			}
 		}
