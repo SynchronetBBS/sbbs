@@ -196,7 +196,7 @@ function create_newuser()
 	/* Sets defaults per sysop config */
 	useron.settings |= (system.newuser_settings &~ (USER_INACTIVE|USER_QUIET|USER_NETMAIL));
 	useron.qwk=QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL;
-	useron.stats.firston_date = useron.stats.laston_date = useron.security.password_date = time();
+	useron.security.password_date = time();
 	if (system.newuser_expiration_days > 0) {
 		useron.security.expiration_date = time()+system.newuser_expiration_days*24*60*60;
 	}
@@ -509,7 +509,7 @@ function create_newuser()
 	if (bbs.compare_ars(xtrn_area.editor[system.newuser_editor.toLowerCase()].ars))
 		user.editor = system.newuser_editor;
 	else
-		newuser.editor = '';
+		user.editor = '';
 
 	if (xtrn_area.editor.length > 0 && (system.newuser_questions & UQ_XEDIT) && bbs.text(UseExternalEditorQ).length > 0) {
 		if(console.yesno(bbs.text(UseExternalEditorQ))) {
@@ -530,30 +530,30 @@ function create_newuser()
 	if(cfg.total_shells>1 && (cfg.uq&UQ_CMDSHELL)) {
 		for(i=0;i<cfg.total_shells;i++)
 			uselect(1,i,text[CommandShellHeading],cfg.shell[i]->name,cfg.shell[i]->ar);
-		if((int)(i=uselect(0,newuser.shell,0,0,0))>=0)
-			newuser.shell=i; 
+		if((int)(i=uselect(0,user.shell,0,0,0))>=0)
+			user.shell=i; 
 	}
 	*/
 	bbs.select_shell();
-	newuser.cached = false;
+	user.cached = false;
 
 	// TODO: Doesn't take the user argument...
 	if(bbs.rlogin_password.length > 0 && bbs.good_password(bbs.rlogin_password)) {
 		console.crlf();
 		/* passwords are case insensitive, but assumed (in some places) to be uppercase in the user database */
-		newuser.security.password = bbs.rlogin_password.toUpperCase();
+		user.security.password = bbs.rlogin_password.toUpperCase();
 	}
 	else {
-		newuser.security.password = '';
+		user.security.password = '';
 		for (i=0; i<LEN_PASS; ) {	/* Create random password... TODO: this can be improved */
-			newuser.security.password += ascii(random(43)+ascii('0'));
-			if (newuser.security.password.substr(-1, 1).search(/[0-9A-Za-z]/) == 0)
+			user.security.password += ascii(random(43)+ascii('0'));
+			if (user.security.password.substr(-1, 1).search(/[0-9A-Za-z]/) == 0)
 				i++;
 			else
-				newuser.security.password = newuser.security.password.substr(0, i);
+				user.security.password = user.security.password.substr(0, i);
 		}
 
-		text_print(format(bbs.text(YourPasswordIs),newuser.security.password));
+		text_print(format(bbs.text(YourPasswordIs),user.security.password));
 
 		if(system.settings & SYS_PWEDIT && bbs.text(NewPasswordQ).length > 0 && console.yesno(bbs.text(NewPasswordQ)))
 			while(bbs.online) {
@@ -561,9 +561,9 @@ function create_newuser()
 				str = console.getstr('',LEN_PASS,K_UPPER|K_LINE);
 				str = truncsp(str);
 				if(bbs.good_password(str)) {
-					newuser.security.password = str;
+					user.security.password = str;
 					console.crlf();
-					text_print(format(bbs.text(YourPasswordIs),newuser.security.password));
+					text_print(format(bbs.text(YourPasswordIs),user.security.password));
 					break; 
 				}
 				console.crlf();
@@ -576,23 +576,23 @@ function create_newuser()
 			str = '';
 			str = console.getstr(str,LEN_PASS*2,K_UPPER);
 			console.status &= ~(CON_R_ECHOX|CON_L_ECHOX);
-			if(str == newuser.security.password)
+			if(str == user.security.password)
 				break;
 			if(system.settings & SYS_ECHO_PW)
-				tmp = newuser.alias + " FAILED Password verification: '"+str+"' instead of '"+newuser.security.password+"'";
+				tmp = user.alias + " FAILED Password verification: '"+str+"' instead of '"+user.security.password+"'";
 			else
-				tmp = newuser.alias + " FAILED Password verification";
+				tmp = user.alias + " FAILED Password verification";
 			logline(LOG_NOTICE,'',tmp);
 			if(++i==4) {
 				logline(LOG_NOTICE,"N!","Couldn't figure out password.");
-				newuser.comment = "Unable to validate password";
-				newuser.settings |= USER_DELETED;
+				user.comment = "Unable to validate password";
+				user.settings |= USER_DELETED;
 				bbs.hangup();
 				js.auto_terminate = orig_at;
 				return false;
 			}
 			text_print(bbs.text(IncorrectPassword));
-			text_print(format(bbs.text(YourPasswordIs),newuser.security.password));
+			text_print(format(bbs.text(YourPasswordIs),user.security.password));
 		}
 	}
 
@@ -605,10 +605,10 @@ function create_newuser()
 		str = '';
 		str = console.getstr(str,50,K_UPPER);
 		if(str != system.newuser_magic_word) {
-			newuser.comment = "Failed to guess the magic word";
-			newuser.settings |= USER_DELETED;
+			user.comment = "Failed to guess the magic word";
+			user.settings |= USER_DELETED;
 			text_print(bbs.text(FailedMagicWord));
-			logline(LOG_INFO, "N!",newuser.alias+" failed magic word: '"+str+"'");
+			logline(LOG_INFO, "N!",user.alias+" failed magic word: '"+str+"'");
 			bbs.hangup();
 			js.auto_terminate = orig_at;
 			return false;
@@ -622,35 +622,35 @@ function create_newuser()
 	/* TODO: No way to do this in Javascript */
 	/*
 	if(cfg.new_sif[0]) {
-		SAFEPRINTF2(str,"%suser/%4.4u.dat",cfg.data_dir,newuser.number);
+		SAFEPRINTF2(str,"%suser/%4.4u.dat",cfg.data_dir,user.number);
 		create_sif_dat(cfg.new_sif,str); 
 	}
 	*/
 
 	/* TODO: delallmail() isn't available... do it the hard way! */
-	delallmail(newuser.number, MAIL_ANY);
+	delallmail(user.number, MAIL_ANY);
 
 	if(!(system.newuser_questions & UQ_NODEF)) {
 		bbs.user_config();
 		user.cached = false;
 	}
 
-	if(newuser.number != 1 && bbs.node_val_user) {
+	if(user.number != 1 && bbs.node_val_user) {
 		console.clear();
 		console.printfile(system.text_dir+"feedback.msg", P_NOABORT);
 		str = format(bbs.text(NewUserFeedbackHdr)
-			,'',newuser.age,newuser.gender,newuser.birthdate
-			,newuser.name,newuser.phone,newuser.computer,newuser.connection);
+			,'',user.age,user.gender,user.birthdate
+			,user.name,user.phone,user.computer,user.connection);
 
 		bbs.email(bbs.node_val_user,str,"New User Validation",WM_EMAIL|WM_SUBJ_RO|WM_FORCEFWD);
-		newuser.cached = false;
-		if(!newuser.stats.total_feedbacks && !newuser.stats.total_emails) {
+		user.cached = false;
+		if(!user.stats.total_feedbacks && !user.stats.total_emails) {
 			if(bbs.online) {						/* didn't hang up */
 				text_print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
 				bbs.email(bbs.node_val_user,str,"New User Validation",WM_EMAIL|WM_SUBJ_RO|WM_FORCEFWD);
 			} /* give 'em a 2nd try */
-			newuser.cached = false;
-			if(!newuser.stats.total_feedbacks && !newuser.stats.total_emails) {
+			user.cached = false;
+			if(!user.stats.total_feedbacks && !user.stats.total_emails) {
         		text_print(format(bbs.text(NoFeedbackWarning),system.username(bbs.node_val_user)));
 				logline(LOG_NOTICE,"N!","Aborted feedback");
 				kill_user("Didn't leave feedback");
