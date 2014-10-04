@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -58,13 +58,15 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 		console&=~CON_INSERT;
 	sys_status&=~SS_ABORT;
 	if(mode&K_LINE && term_supports(ANSI) && !(mode&K_NOECHO)) {
+		if(column + (long)maxlen >= cols)	/* Don't cause the terminal to line-wrap, just shorten the max input string length instead */
+			maxlen = cols-column-1;
 		attr(cfg.color[clr_inputline]);
 		for(i=0;i<maxlen;i++)
 			outchar(' ');
 		cursor_left(maxlen); 
 	}
 	if(wordwrap[0]) {
-		strcpy(str1,wordwrap);
+		SAFECOPY(str1,wordwrap);
 		wordwrap[0]=0; 
 	}
 	else str1[0]=0;
@@ -406,9 +408,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				console|=CON_DELETELINE;
 				break;
 			case CTRL_Z:	/* Undo */
+				if(!(mode&K_NOECHO)) {
+					while(i--)
+						backspace();
+				}
 				SAFECOPY(str1,undo);
 				i=l=strlen(str1);
-				rprintf("\r%s",str1);
+				rputs(str1);
 				cleartoeol();
 				break;
 			case 28:    /* Ctrl-\ Previous word */
