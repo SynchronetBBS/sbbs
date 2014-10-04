@@ -336,7 +336,8 @@ function create_newuser()
 			newuser.security.password = '';
 			if (bbs.login(newuser.alias, bbs.text(PasswordPrompt))) {
 				user.security.password = tmp;
-
+				user.number = tmp;
+				bbs.user_sync();
 				logline(LOG_INFO, '', "Created user record #"+user.number+": "+user.alias);
 				useron = user;
 			}
