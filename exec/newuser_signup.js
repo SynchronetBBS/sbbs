@@ -334,11 +334,19 @@ function create_newuser()
 			copy_user_template_to_user(useron, user);
 			tmp = newuser.security.password;
 			newuser.security.password = '';
-			bbs.login(newuser.alias, bbs.text(PasswordPrompt));
-			user.security.password = tmp;
+			if (bbs.login(newuser.alias, bbs.text(PasswordPrompt))) {
+				user.security.password = tmp;
 
-			logline(LOG_INFO, '', "Created user record #"+user.number+": "+user.alias);
-			useron = user;
+				logline(LOG_INFO, '', "Created user record #"+user.number+": "+user.alias);
+				useron = user;
+			}
+			else {
+				logline(LOG_INFO, '', "bbs.login() failed");
+				user.comment = 'Initial login failed!';
+				newuser.settings |= USER_DELETED;
+				delete newuser;
+				continue;
+			}
 		}
 
 		if((system.newuser_questions & UQ_ALIASES) && (system.newuser_questions & UQ_REALNAME)) {
