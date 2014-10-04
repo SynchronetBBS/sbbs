@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -246,7 +246,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			lncntr=0;
 			hotkey_inside--;
 			return(0); 
-		case CTRL_K:  /*  Ctrl-k Control key menu */
+		case CTRL_K:  /*  Ctrl-K Control key menu */
 			if(sys_status&SS_SPLITP)
 				return(ch);
 			if(!(sys_status&SS_USERON))
@@ -259,7 +259,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			SAVELINE;
 			attr(LIGHTGRAY);
 			lncntr=0;
-			bputs(text[ControlKeyMenu]);
+			if(mode&K_GETSTR)
+				bputs(text[GetStrMenu]);
+			else
+				bputs(text[ControlKeyMenu]);
 			ASYNC;
 			RESTORELINE;
 			lncntr=0;

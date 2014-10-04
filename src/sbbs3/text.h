@@ -808,6 +808,7 @@ enum {
 	,AddSubToNewScanQ
 	,UnvalidatedWarning
 	,StartingNewUserRegistration
+	,GetStrMenu
 
 	,TOTAL_TEXT
 };

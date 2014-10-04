@@ -672,14 +672,13 @@
 "\r\nNow       : %s"                                    553 TiNow
 "\r\nTime on   : %s"                                    554 TiTimeon
 "\r\nTime left : %s\r\n\r\n"                            555 TiTimeLeft
-"\r\n\r\n\1nCtrl-Key Commands (From Anywhere)\r\n"\      556 ControlKeyMenu
-	"\r\nCtrl-S  Pause Current Process"\
-	"\r\nCtrl-Q  Continue Current Process"\
+"\r\n\r\n\1nCtrl-Key Commands (from most anywhere)\r\n"\ 556 ControlKeyMenu
+        "\r\nCtrl-K  This Menu"\
 	"\r\nCtrl-C  Abort Current Process"\
-	"\r\nCtrl-O  Toggle Pause Temporarily"\
-	"\r\nCtrl-Z  Toggle Raw Input Mode"\
+	"\r\nCtrl-O  Toggle Pause Prompt Temporarily"\
+	"\r\nCtrl-Z  Toggle Raw Input Mode (e.g. for ASCII-uploading message text)"\
 	"\r\nCtrl-U  List Users Online"\
-	"\r\nCtrl-P  Send Private Message to Another Node"\
+	"\r\nCtrl-P  Send Private Message To or Chat with Another Node"\
 	"\r\nCtrl-T  Time Information\r\n\r\n"
 "\r\n\1nYou've taken too long to log on.\r\n"            557 TakenTooLongToLogon
 "\r\n\1nYou've been inactive too long.\r\n"              558 CallBackWhenYoureThere
@@ -911,3 +910,25 @@
 "Add this sub-board to your new-scan list"         762 AddSubToNewScanQ
 "\1n\1r\1iWARNING: You are reading messages past the last unvalidated message (%u)" 763 UnvalidatedWarning
 "\1n\1hStarting the new user registration process...\r\n" 764 StartingNewUserRegistration
+"\r\n\r\n\1nCtrl-Key Commands (during text string input)\r\n"\ 765 GetStrMenu
+        "\r\nCtrl-K  This Menu"\
+	"\r\nCtrl-C  Abort Current String Input"\
+        "\r\nCtrl-B  Move to Beginning of String"\
+        "\r\nCtrl-E  Move to End of String"\
+        "\r\nCtrl-F  Move Cursor Forward (to the right)"\
+        "\r\nCtrl-N  Move to Next Word in String"\
+        "\r\nCtrl-\\  Move to Previous Word in String"\
+        "\r\nCtrl-D  Delete Word to the Right"\
+        "\r\nCtrl-W  Delete Word to the Left"\
+        "\r\nCtrl-H  Delete Character to the Left"\
+        "\r\nCtrl-Y  Delete to End of String"\
+        "\r\nCtrl-X  Delete Entire String"\
+        "\r\nCtrl-L  Center String (and complete input)"\
+	"\r\nCtrl-Z  Undo (revert edited string)"\
+        "\r\nCtrl-V  Toggle Insert/Overwrite Mode"\
+        "\r\nCtrl-R  Redraw Line"\
+        "\r\nCtrl-A  Insert Attribute Code (if allowed)"\
+        "\r\nCtrl-G  Insert Beep (if allowed)"\
+	"\r\nCtrl-U  List Users Online"\
+	"\r\nCtrl-P  Send Private Message To or Chat With Another Node"\
+	"\r\nCtrl-T  Time Information\r\n\r\n"
