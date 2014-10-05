@@ -773,3 +773,4 @@ var OperatorPrompt=761;
 var AddSubToNewScanQ=762;
 var UnvalidatedWarning=763;
 var StartingNewUserRegistration=764;
+var GetStrMenu=765;
