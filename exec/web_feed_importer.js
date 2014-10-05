@@ -60,6 +60,60 @@ var dupeCheck = function(sub, id) {
 	return (header !== null);
 }
 
+var prepareText = function(text) {
+	/*	Some things aren't caught by html_decode()
+		Each property name in 'replacements' will replace any of the strings
+		in the replacements[property] array that are present in 'text'. */
+	var replacements = {
+		" " : [
+			"&ensp;",
+			"&emsp;",
+			"&thinsp;",
+			"&#8194;",
+			"&#8195;",
+			"&#8201;"
+		],
+		"\"" : [
+			"&ldquo;",
+			"&rdquo;",
+			"&#8220;",
+			"&#8221;",
+			// I'm sure there's a better way to deal with these and similar
+			ascii(226) + ascii(128) + ascii(156),
+			ascii(226) + ascii(128) + ascii(157)
+		],
+		"'" : [
+			"&lsquo;",
+			"&rsquo;",
+			"&#8216;",
+			"&#8217",
+			"Æ",
+			ascii(226) + ascii(128) + ascii(153)
+		],
+		"-" : [
+			"&ndash;",
+			"&mdash;",
+			"&#8211;",
+			"&#8212;",
+			ascii(226) + ascii(128) + ascii(148),
+			ascii(226) + ascii(128) + ascii(147)
+		],
+		"..." : [
+			"&hellip;",
+			"&#8230;"
+		]
+	};
+	text = html_decode(text);
+	for(var r in replacements) {
+		var re = new RegExp(replacements[r].join("|"), "g");
+		text = text.replace(re, r);
+	}
+	text = text.replace(/(<([^>]+)>)/g, "");
+	text = text.replace(/(\r?\n\s*\t*){2,}/g, "\r\n\r\n");
+	text = truncsp(text);
+	return text;
+}
+
 var importItem = function(sub, item) {
 	var id = format(
 		"<%s@%s>",
@@ -75,12 +129,16 @@ var importItem = function(sub, item) {
 		'from_net_type' : NET_UNKNOWN,
 		'subject' : item.title
 	};
-	item.body += appendString;
 	var msgBase = new MsgBase(sub);
 	msgBase.open();
-	msgBase.save_msg(header, item.body);
+	msgBase.save_msg(
+		header,
+		((item.content == "") ? item.body : item.content) + appendString
+	);
 	msgBase.close();
-	log(LOG_INFO, format("Imported item: %s, %s into %s", item.title, item.date, sub));
+	log(LOG_INFO,
+		format("Imported item: %s, %s into %s", item.title, item.date, sub)
+	);
 }
 
 var importSubFeeds = function(sub, feeds) {
@@ -94,11 +152,14 @@ var importSubFeeds = function(sub, feeds) {
 					item.author = channel.title + ((item.author == "") ? "" : " (" + item.author + ")");
 					if(item.title == "")
 						item.title = channel.title;
-					item.title = html_decode(item.title).replace(/(<([^>]+)>)/ig, "");
-					item.body = html_decode(item.body).replace(/(<([^>]+)>)/ig, "");
-					if(appendLink && item.link != "")
+					item.title = prepareText(item.title);
+					item.body = prepareText(item.body);
+					item.content = prepareText(item.content);
+					if(appendLink && item.link != "") {
 						item.body += "\r\n\r\n" + item.link;
-					if(item.body == "")
+						item.content += "\r\n\r\n" + item.link;
+					}
+					if(item.body == "" && item.content == "")
 						continue;
 					importItem(sub, item);
 				}
