@@ -157,7 +157,8 @@ var importSubFeeds = function(sub, feeds) {
 					item.content = prepareText(item.content);
 					if(appendLink && item.link != "") {
 						item.body += "\r\n\r\n" + item.link;
-						item.content += "\r\n\r\n" + item.link;
+						if(item.content != "")
+							item.content += "\r\n\r\n" + item.link;
 					}
 					if(item.body == "" && item.content == "")
 						continue;
