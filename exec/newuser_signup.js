@@ -313,6 +313,61 @@ function create_newuser()
 			return false;
 		}
 
+		if((system.newuser_questions & UQ_ALIASES) && (system.newuser_questions & UQ_REALNAME)) {
+			while(bbs.online) {
+				text_print(bbs.text(EnterYourRealName));
+				var tempName = console.getstr(useron.name, LEN_NAME, kmode);
+				if (!system.check_name(tempName)
+					|| tempName.indexOf(' ') == -1
+					|| ((system.newuser_questions & UQ_DUPREAL)
+						&& system.matchuser(tempName))) {
+					text_print(bbs.text(YouCantUseThatName));
+				} else {
+					useron.name = tempName;
+					break;
+				}
+				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
+					kill_user("Did not continue after duplicate real name");
+					js.auto_terminate = orig_at;
+					return false;
+				}
+			} 
+		}
+		else if(system.newuser_questions & UQ_COMPANY) {
+			text_print(bbs.text(EnterYourCompany));
+			useron.name = console.getstr(useron.name, LEN_NAME, (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL); 
+		}
+		if(useron.name.length == 0)
+			useron.name = useron.alias.substr(0, LEN_ALIAS);
+		if(!check_online("Hung up after entering real name")) {
+			js.auto_terminate = orig_at;
+			return false;
+		}
+		if(useron.handle.length == 0)
+			useron.handle = useron.alias.substr(0, LEN_HANDLE);
+		while((system.newuser_questions & UQ_HANDLE) && bbs.online) {
+			text_print(bbs.text(EnterYourHandle));
+			if((useron.handle = console.getstr(
+						useron.handle,
+						LEN_HANDLE,
+						K_LINE|K_EDIT|K_AUTODEL|(system.newuser_questions&UQ_NOEXASC))) == null
+					|| useron.handle.indexOf('\xff') != -1
+					|| ((system.newuser_questions & UQ_DUPHAND)
+						&& system.matchuser(useron.handle))
+					|| system.trashcan("name", useron.handle))
+				text_print(bbs.text(YouCantUseThatName));
+			else
+				break; 
+			if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
+				kill_user("Did not continue after duplicate handle");
+				js.auto_terminate = orig_at;
+				return false;
+			}
+		}
+		if(!check_online("Hung up after entering handle")) {
+			js.auto_terminate = orig_at;
+			return false;
+		}
 		if (newuser === undefined) {
 			text_print(bbs.text(CheckingSlots));
 			try {
@@ -350,61 +405,6 @@ function create_newuser()
 			}
 		}
 
-		if((system.newuser_questions & UQ_ALIASES) && (system.newuser_questions & UQ_REALNAME)) {
-			while(bbs.online) {
-				text_print(bbs.text(EnterYourRealName));
-				var tempName = console.getstr(user.name, LEN_NAME, kmode);
-				if (!system.check_name(tempName)
-					|| tempName.indexOf(' ') == -1
-					|| ((system.newuser_questions & UQ_DUPREAL)
-						&& system.matchuser(tempName))) {
-					text_print(bbs.text(YouCantUseThatName));
-				} else {
-					user.name = tempName;
-					break;
-				}
-				if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
-					kill_user("Did not continue after duplicate real name");
-					js.auto_terminate = orig_at;
-					return false;
-				}
-			} 
-		}
-		else if(system.newuser_questions & UQ_COMPANY) {
-			text_print(bbs.text(EnterYourCompany));
-			user.name = console.getstr(user.name, LEN_NAME, (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL); 
-		}
-		if(user.name.length == 0)
-			user.name = user.alias.substr(0, LEN_ALIAS);
-		if(!check_online("Hung up after entering real name")) {
-			js.auto_terminate = orig_at;
-			return false;
-		}
-		if(user.handle.length == 0)
-			user.handle = user.alias.substr(0, LEN_HANDLE);
-		while((system.newuser_questions & UQ_HANDLE) && bbs.online) {
-			text_print(bbs.text(EnterYourHandle));
-			if((user.handle = console.getstr(
-						user.handle,
-						LEN_HANDLE,
-						K_LINE|K_EDIT|K_AUTODEL|(system.newuser_questions&UQ_NOEXASC))) == null
-					|| user.handle.indexOf('\xff') != -1
-					|| ((system.newuser_questions & UQ_DUPHAND)
-						&& system.matchuser(user.handle))
-					|| system.trashcan("name", user.handle))
-				text_print(bbs.text(YouCantUseThatName));
-			else
-				break; 
-			if(bbs.text(ContinueQ).length > 0 && !console.yesno(bbs.text(ContinueQ))) {
-				kill_user("Did not continue after duplicate handle");
-				js.auto_terminate = orig_at;
-				return false;
-			}
-		}
-		if(!check_online("Hung up after entering handle")) {
-			js.auto_terminate = orig_at;
-			return false;
-		}
 		if(system.newuser_questions & UQ_ADDRESS)
 			while(bbs.online) { 	   /* Get address and zip code */
 				text_print(bbs.text(EnterYourAddress));
