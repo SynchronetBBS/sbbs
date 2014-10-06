@@ -1056,7 +1056,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			case 15:
 				uifc.helpbuf=	"`Comm Rate (in bits-per-second)`\n\n"
 								"`For TCP connections:`\n"
-								"Select the rate which recieved characters will be displayed.\n\n"
+								"Select the rate which received characters will be displayed.\n\n"
 								"This allows animated ANSI and some games to work as intended.\n\n"
 								"`For Modem/Direct COM port connections:`\n"
 								"Select the `DTE Rate` to use."
