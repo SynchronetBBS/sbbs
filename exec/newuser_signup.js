@@ -543,6 +543,7 @@ function create_newuser()
 			user.shell=i; 
 	}
 	*/
+	bbs.user_sync();
 	bbs.select_shell();
 	user.cached = false;
 
@@ -569,6 +570,7 @@ function create_newuser()
 				text_print(bbs.text(NewPassword));
 				str = console.getstr('',LEN_PASS,K_UPPER|K_LINE);
 				str = truncsp(str);
+				bbs.user_sync();
 				if(bbs.good_password(str)) {
 					user.security.password = str;
 					console.crlf();
@@ -640,6 +642,7 @@ function create_newuser()
 	delallmail(user.number, MAIL_ANY);
 
 	if(!(system.newuser_questions & UQ_NODEF)) {
+		bbs.user_sync();
 		bbs.user_config();
 		user.cached = false;
 	}
@@ -651,6 +654,7 @@ function create_newuser()
 			,'',user.age,user.gender,user.birthdate
 			,user.name,user.phone,user.computer,user.connection);
 
+		bbs.user_sync();
 		bbs.email(bbs.node_val_user,str,"New User Validation",WM_EMAIL|WM_SUBJ_RO|WM_FORCEFWD);
 		user.cached = false;
 		if(!user.stats.total_feedbacks && !user.stats.total_emails) {
