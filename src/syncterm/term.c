@@ -787,7 +787,7 @@ static BOOL is_connected(void* unused)
 static int guts_lputs(void* cbdata, int level, const char* str)
 {
 	struct GUTS_info *gi=cbdata;
-	/* ToDo: Do something usefull here. */
+	/* ToDo: Do something useful here. */
 	/* fprintf(stderr,"%s\n",str); */
 	return(0);
 }
@@ -795,7 +795,7 @@ static int guts_lputs(void* cbdata, int level, const char* str)
 void guts_zmodem_progress(void* cbdata, ulong current_pos)
 {
 	struct GUTS_info *gi=cbdata;
-	/* ToDo: Do something usefull here. */
+	/* ToDo: Do something useful here. */
 	return;
 }
 
@@ -1950,7 +1950,7 @@ void capture_control(struct bbslist *bbs)
 		uifc.helpbuf="`Capture Type`\n\n"
 					"~ ASCII ~ Strips out ANSI sequences\n"
 					"~ Raw ~   Leaves ANSI sequences in\n\n"
-					"Raw is usefull for stealing ANSI screens from other systems.\n"
+					"Raw is useful for stealing ANSI screens from other systems.\n"
 					"Don't do that though.  :-)";
 		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Type",opts)!=-1) {
 			j=filepick(&uifc, "Capture File", &fpick, bbs->dldir, NULL, UIFC_FP_ALLOWENTRY);
