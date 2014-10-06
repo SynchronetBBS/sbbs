@@ -280,7 +280,7 @@ int DLLCALL xp_printf_get_type(const char *format)
  *
  * Does not currently support the $ argument selector.
  *
- * Currently, the type is not overly usefull, but this could be used for
+ * Currently, the type is not overly useful, but this could be used for
  * automatic type conversions (ie: int to char *).  Right now it just assures
  * that the type passed to sprintf() is the type passed to
  * xp_asprintf_next().
