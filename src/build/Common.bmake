@@ -17,7 +17,7 @@
 #					  (Mutually exclusive, if both are set, RELEASE 		#
 #						is cleared)											#
 #  DONT_CLOBBER_CC	- Do not change the default setting of CC				#
-#  OBJPATH_SUFFIX	- Suffix appended to OBJPATH usefull for compiling 		#
+#  OBJPATH_SUFFIX	- Suffix appended to OBJPATH useful for compiling 		#
 #					  different options of the same source file				#
 #																			#
 # Common Build Macros Defined:												#
