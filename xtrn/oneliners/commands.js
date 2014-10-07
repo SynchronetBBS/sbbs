@@ -1,7 +1,3 @@
-var root = argv[0];
-load(root + "/lib.js");
-var settings = initSettings(root);
-
 this.QUERY = function(client, packet) {
 	var openOpers = [
 		"SUBSCRIBE",
