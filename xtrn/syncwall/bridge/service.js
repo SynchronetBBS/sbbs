@@ -168,7 +168,10 @@ var processUpdate = function(update) {
 
 var init = function() {
 
+	month = strftime("%m%y");
+
 	jsonClient = new JSONClient(host, port);
+	jsonClient.socket.debug_logging = true;
 	jsonClient.callback = processUpdate;
 
 	users = jsonClient.read(sw2DB, "USERS", 1);
@@ -179,9 +182,15 @@ var init = function() {
 	if(!systems)
 		systems = [];
 
-	var c = jsonClient.read(sw1DB, "canvas", 1);
-	if(!c)
+	var keys = jsonClient.keys(sw1DB, "canvas", 1);
+	if(!keys) {
 		jsonClient.write(sw1DB, "canvas", {}, 2);
+	} else {
+		for(var k = 0; k < keys.length; k++) {
+			if(keys[k] != month)
+				jsonClient.write(sw1DB, "canvas." + keys[k], {}, 2);
+		}
+	}
 	jsonClient.subscribe(sw1DB, "canvas");
 
 	jsonClient.subscribe(sw2DB, "USERS");
@@ -189,7 +198,6 @@ var init = function() {
 	jsonClient.subscribe(sw2DB, "LATEST");
 
 	timer = new Timer();
-	month = strftime("%m%y");
 	var event = timer.addEvent(3600000, true, newMonth);
 	event.run();
 
