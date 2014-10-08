@@ -427,7 +427,7 @@ var Level = function(stats) {
 				}
 			);
 		}
-		if(!fruit)
+		if(fruit instanceof Sprite.Aerial)
 			return;
 		fruitEvent = timer.addEvent(
 			15000,
@@ -450,8 +450,8 @@ var Level = function(stats) {
 					15000,
 					false,
 					function() {
-						fruit.remove();
-						fruit = false;
+						if(fruit instanceof Sprite.Aerial && fruit.open)
+							fruit.remove();
 					}
 				);
 			}
@@ -558,7 +558,6 @@ var Level = function(stats) {
 				self.score = self.score + (fruitPoints * stats.level);
 				sprite.remove();
 				fruitRemoveEvent.abort = true;
-				fruit = false;
 				break;
 			default:
 				break;
