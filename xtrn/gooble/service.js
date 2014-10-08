@@ -29,7 +29,7 @@ var updateScores = function(data) {
 		changed = true;
 		break;
 	}
-	if(hs.length < 20 && !changed) {
+	if((!hs || hs.length < 20) && !changed) {
 		hs.push(data);
 		changed = true;
 	}
