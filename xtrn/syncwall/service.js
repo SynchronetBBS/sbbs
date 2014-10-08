@@ -142,7 +142,7 @@ var init = function() {
 		jsonClient.write(dbName, "SYSTEMS", [ system.name ], 2);
 	jsonClient.subscribe(dbName, "SYSTEMS");
 
-	if(!jsonClient.read(dbName, "SEQUENCE", 1))
+	if(!jsonClient.read(dbName, "SEQUENCE.length", 1))
 		jsonClient.write(dbName, "SEQUENCE", dummy,	2);
 
 	state = jsonClient.read(dbName, "STATE", 1);
