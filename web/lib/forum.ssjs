@@ -68,10 +68,14 @@ var printBoards = function() {
 				continue;
 			}
  			out += ((webIni.maxMessages > 0 && webIni.maxMessages < msgBase.total_msgs)?webIni.maxMessages:msgBase.total_msgs) + " messages.<br />";
-			var h = msgBase.get_msg_header(msgBase.last_msg);
-			msgBase.close();
-			if(h !== null)
+ 			for(var n = msgBase.last_msg; n >= msgBase.first_msg; n--) {
+				var h = msgBase.get_msg_header(n);
+				if(h === null || h.attr&MSG_DELETE)
+					continue;
 				out += format("Latest: %s, by %s on %s", h.subject, h.from, system.timestr(h.when_written_time));
+				break;
+			}
+			msgBase.close();
 			if(user.alias != webIni.WebGuest && msg_area.sub[msgBase.cfg.code].can_post) {
 				out += format(
 					"<br />"
