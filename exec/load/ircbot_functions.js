@@ -19,6 +19,8 @@
 /* Server methods */
 function Server_command(srv,cmdline,onick,ouh) {
 	var cmd=IRC_parsecommand(cmdline);
+	if (cmd === 0)
+		return;
 	var chan=get_command_channel(srv,cmd);
 	var main_cmd=cmd.shift();
 	if(Server_Commands[main_cmd]) Server_Commands[main_cmd](srv,cmd,onick,ouh);
@@ -32,6 +34,8 @@ function Server_command(srv,cmdline,onick,ouh) {
 			&& module.Server_Commands[main_cmd]) {
 			try {
 				cmd=IRC_parsecommand(cmdline);
+				if (cmd === 0)
+					return;
 				cmd.shift();
 				module.Server_Commands[main_cmd](srv,cmd,onick,ouh);	
 			} catch(e) {
@@ -95,6 +99,8 @@ function Server_CTCP_reply(nick,str) {
 
 function Server_bot_command(srv,bot_cmds,target,onick,ouh,cmdline) {
 	var cmd=IRC_parsecommand(cmdline);
+	if (cmd === 0)
+		return 0;
 	
 	var access_level = srv.bot_access(onick,ouh);
 	var botcmd = bot_cmds[cmd[0].toUpperCase()];

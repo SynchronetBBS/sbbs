@@ -4,6 +4,8 @@
 function Server_command(srv,cmdline,onick,ouh) 
 {
 	var cmd=IRC_parsecommand(cmdline);
+	if (cmd===0)
+		return;
 	switch (cmd[0]) {
 		case "PRIVMSG":
 			if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
