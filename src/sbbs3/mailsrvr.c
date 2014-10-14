@@ -3816,7 +3816,7 @@ static void smtp_thread(void* arg)
 				if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user,&client))
 					continue;
 
-				if(findstr_in_list(p, mailproc_list[i].to)) {
+				if(findstr_in_list(p, mailproc_list[i].to) || findstr_in_list(rcpt_addr, mailproc_list[i].to)) {
 					mailproc_to_match[i]=TRUE;
 					break;
 				}
