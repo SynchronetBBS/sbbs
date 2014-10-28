@@ -49,7 +49,9 @@ char sbbs_t::getkey(long mode)
 	char	ch,coldkey,c=0,spin=sbbs_random(5);
 	time_t	last_telnet_cmd=0;
 
-	if(!online || !input_thread_running) {
+	if(online==ON_REMOTE && !input_thread_running)
+		online=FALSE;
+	if(!online) {
 		YIELD();	// just in case someone is looping on getkey() when they shouldn't
 		return(0);
 	}

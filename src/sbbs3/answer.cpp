@@ -71,8 +71,6 @@ bool sbbs_t::answer()
 		logline("@*",str);
 	}
 
-	online=ON_REMOTE;
-
 	if(sys_status&SS_RLOGIN) {
 		if(incom(1000)==0) {
 			for(i=0;i<(int)sizeof(str)-1;i++) {
