@@ -1517,10 +1517,10 @@ static BOOL check_ars(http_session_t * session)
 		if(!http_checkuser(session))
 			return(FALSE);
 		if(scfg.sys_misc&SM_ECHO_PW && session->req.auth.type==AUTHENTICATION_BASIC)
-			lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: %s, Password: %s"
+			lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: '%s' (password: %s)"
 				,session->socket,session->req.auth.username,session->req.auth.password);
 		else
-			lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: %s"
+			lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: '%s'"
 				,session->socket,session->req.auth.username);
 		return(FALSE);
 	}
@@ -4202,7 +4202,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 		if(stricmp(user.pass,p)) { /* Wrong password */
 			rc=JS_SUSPENDREQUEST(cx);
-			lprintf(LOG_WARNING,"%04d !INVALID PASSWORD ATTEMPT FOR USER: %s"
+			lprintf(LOG_WARNING,"%04d !INVALID PASSWORD ATTEMPT FOR USER: '%s'"
 				,session->socket,user.alias);
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);

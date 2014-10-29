@@ -905,10 +905,10 @@ static void pop3_thread(void* arg)
 		user.number=matchuser(&scfg,username,FALSE /*sysop_alias*/);
 		if(!user.number) {
 			if(scfg.sys_misc&SM_ECHO_PW)
-				lprintf(LOG_NOTICE,"%04d !POP3 UNKNOWN USER: %s (password: %s)"
+				lprintf(LOG_NOTICE,"%04d !POP3 UNKNOWN USER: '%s' (password: %s)"
 					,socket, username, password);
 			else
-				lprintf(LOG_NOTICE,"%04d !POP3 UNKNOWN USER: %s"
+				lprintf(LOG_NOTICE,"%04d !POP3 UNKNOWN USER: '%s'"
 					,socket, username);
 			badlogin(socket, client.protocol, pop_err, username, password, host_name, &pop3.client_addr);
 			break;
@@ -3340,10 +3340,10 @@ static void smtp_thread(void* arg)
 
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
 				if(scfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s (password: %s)"
+					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: '%s' (password: %s)"
 						,socket, user_name, user_pass);
 				else
-					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s"
+					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: '%s'"
 						,socket, user_name);
 				badlogin(socket, client.protocol, badauth_rsp, user_name, user_pass, host_name, &smtp.client_addr);
 				break;
@@ -3413,7 +3413,7 @@ static void smtp_thread(void* arg)
 				p=response;
 			SAFECOPY(user_name,response);
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
-				lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s"
+				lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: '%s'"
 					,socket, user_name);
 				badlogin(socket, client.protocol, badauth_rsp, user_name, user_pass, host_name, &smtp.client_addr);
 				break;
@@ -3912,10 +3912,10 @@ static void smtp_thread(void* arg)
 			if(!usernum && startup->default_user[0]) {
 				usernum=matchuser(&scfg,startup->default_user,TRUE /* sysop_alias */);
 				if(usernum)
-					lprintf(LOG_INFO,"%04d SMTP Forwarding mail for UNKNOWN USER to default user: %s #%u"
+					lprintf(LOG_INFO,"%04d SMTP Forwarding mail for UNKNOWN USER to default user: '%s' #%u"
 						,socket,startup->default_user,usernum);
 				else
-					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN DEFAULT USER: %s"
+					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN DEFAULT USER: '%s'"
 						,socket,startup->default_user);
 			}
 
@@ -3925,7 +3925,7 @@ static void smtp_thread(void* arg)
 				continue;
 			}
 			if(!usernum) {
-				lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s", socket, rcpt_to);
+				lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: '%s'", socket, rcpt_to);
 				sockprintf(socket, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}

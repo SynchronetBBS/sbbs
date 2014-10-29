@@ -2544,9 +2544,9 @@ static void ctrl_thread(void* arg)
 			user.number=matchuser(&scfg,user.alias,FALSE /*sysop_alias*/);
 			if(!user.number) {
 				if(scfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: %s, Password: %s",sock,user.alias,p);
+					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: '%s' (password: %s)",sock,user.alias,p);
 				else
-					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: %s",sock,user.alias);
+					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: '%s'",sock,user.alias);
 				if(badlogin(sock, &login_attempts, user.alias, p, host_name, &ftp.client_addr))
 					break;
 				continue;
