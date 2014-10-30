@@ -474,7 +474,7 @@ object WebCfgDlg: TWebCfgDlg
         Top = 76
         Width = 192
         Height = 24
-        Hint = 'Sound file to play when users disconnect'
+        Hint = 'Sound file to play when hack attempts are detected'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
