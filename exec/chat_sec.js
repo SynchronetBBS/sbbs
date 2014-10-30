@@ -36,8 +36,7 @@ while(1) {
 
 	// Update node status
 	bbs.node_action=NODE_CHAT;
-
-	// async
+	bbs.nodesync();
 	write("\r\n\001_\1y\001hChat: \001n");
 
 	switch(cmdkey=console.getkeys("ACDFIJPQRST?\r",K_UPPER)) {
