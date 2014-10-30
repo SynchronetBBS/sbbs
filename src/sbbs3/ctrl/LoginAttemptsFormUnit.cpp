@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -83,8 +83,8 @@ void __fastcall TLoginAttemptsForm::FillListView(TObject *Sender)
         Item->SubItems->Add(attempt->user);
         Item->SubItems->Add(attempt->pass);
         localtime_r(&attempt->time,&tm);
-        sprintf(str,"%u/%u %02u:%02u:%02u"
-            ,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec);
+        sprintf(str,"%u/%u/%u %02u:%02u:%02u"
+            ,tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec);
         Item->SubItems->Add(str);
     }
     ListView->AlphaSort();
@@ -191,6 +191,85 @@ void __fastcall TLoginAttemptsForm::RefreshPopupClick(TObject *Sender)
     ListView->Items->Clear();
     ListView->Items->EndUpdate();    
     FillListView(Sender);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
+{
+	char 	str[256];
+    int		res;
+    TListItem* ListItem;
+    TItemStates State;
+
+    ListItem=ListView->Selected;
+    State << isSelected;
+
+    while(ListItem!=NULL) {
+
+    	struct in_addr addr;
+    	HOSTENT*	h;
+
+    	AnsiString ip_addr 	= ListItem->SubItems->Strings[1];
+   	AnsiString prot 	= ListItem->SubItems->Strings[2];
+	AnsiString username = ListItem->SubItems->Strings[3];
+
+    	wsprintf(str,"Disallow future connections from %s"
+        	,ip_addr);
+    	res=Application->MessageBox(str,"Filter IP?"
+        		,MB_YESNOCANCEL|MB_ICONQUESTION);
+        if(res==IDCANCEL)
+    		break;
+    	if(res==IDYES) {
+		char* hostname = NULL;
+
+	    	addr.s_addr=inet_addr(ip_addr.c_str());
+		Screen->Cursor=crHourGlass;
+	    	h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
+		Screen->Cursor=crDefault;
+	        if(h!=NULL)
+	            hostname = h->h_name;
+		filter_ip(&MainForm->cfg, prot.c_str(), "abuse", hostname
+				,ip_addr.c_str(), username.c_str(), NULL);
+	}
+        if(ListView->Selected == NULL)
+        	break;
+        ListItem=ListView->GetNextItem(ListItem,sdAll,State);
+    }
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TLoginAttemptsForm::ResolveHostnameMenuItemClick(
+      TObject *Sender)
+{
+	char 	str[256];
+    int		res;
+    TListItem* ListItem;
+    TItemStates State;
+
+    ListItem=ListView->Selected;
+    State << isSelected;
+
+    while(ListItem!=NULL) {
+
+    	struct in_addr addr;
+    	HOSTENT*	h;
+        char*       ip_addr=ListItem->SubItems->Strings[1].c_str();
+        char*       hostname="<unknown>";
+
+       	addr.s_addr=inet_addr(ip_addr);
+		Screen->Cursor=crHourGlass;
+	    	h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
+		Screen->Cursor=crDefault;
+        if(h!=NULL)
+            hostname = h->h_name;
+    	wsprintf(str,"%s hostname is %s", ip_addr, hostname);
+
+        Application->MessageBox(str, "Hostname Lookup", MB_OK|MB_ICONINFORMATION);
+
+        if(ListView->Selected == NULL)
+        	break;
+        ListItem=ListView->GetNextItem(ListItem,sdAll,State);
+    }
 }
 //---------------------------------------------------------------------------
 
