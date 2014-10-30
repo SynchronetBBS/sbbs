@@ -2188,12 +2188,6 @@ static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, SOCKADDR
 /****************************************************************************/
 /* Consecutive failed login (possible password hack) attempt tracking		*/
 /****************************************************************************/
-/* Counter is global so it is tracked between multiple connections.			*/
-/* Failed consecutive login attempts > 10 will generate a hacklog entry	and	*/
-/* immediately disconnect (after the usual failed-login delay).				*/
-/* A failed login from a different host resets the counter.					*/
-/* A successful login from the same host resets the counter.				*/
-/****************************************************************************/
 
 static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passwd, char* host, SOCKADDR_IN* addr)
 {
