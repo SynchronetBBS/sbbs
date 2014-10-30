@@ -2734,7 +2734,7 @@ long DLLCALL loginAttemptListClear(link_list_t* list)
 }
 
 /****************************************************************************/
-static list_node_t* login_attempted(link_list_t* list, SOCKADDR_IN* addr)
+static list_node_t* login_attempted(link_list_t* list, const SOCKADDR_IN* addr)
 {
 	list_node_t*		node;
 	login_attempt_t*	attempt;
@@ -2748,7 +2748,7 @@ static list_node_t* login_attempted(link_list_t* list, SOCKADDR_IN* addr)
 }
 
 /****************************************************************************/
-long DLLCALL loginAttempts(link_list_t* list, SOCKADDR_IN* addr)
+long DLLCALL loginAttempts(link_list_t* list, const SOCKADDR_IN* addr)
 {
 	long				count=0;
 	list_node_t*		node;
@@ -2762,7 +2762,7 @@ long DLLCALL loginAttempts(link_list_t* list, SOCKADDR_IN* addr)
 }
 
 /****************************************************************************/
-void DLLCALL loginSuccess(link_list_t* list, SOCKADDR_IN* addr)
+void DLLCALL loginSuccess(link_list_t* list, const SOCKADDR_IN* addr)
 {
 	list_node_t*		node;
 
@@ -2775,7 +2775,7 @@ void DLLCALL loginSuccess(link_list_t* list, SOCKADDR_IN* addr)
 /****************************************************************************/
 /* Returns number of *unique* login attempts (excludes consecutive dupes)	*/
 /****************************************************************************/
-ulong DLLCALL loginFailure(link_list_t* list, SOCKADDR_IN* addr, const char* prot, const char* user, const char* pass)
+ulong DLLCALL loginFailure(link_list_t* list, const SOCKADDR_IN* addr, const char* prot, const char* user, const char* pass)
 {
 	list_node_t*		node;
 	login_attempt_t		first;

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -147,9 +147,9 @@ typedef struct {
 DLLEXPORT link_list_t*		DLLCALL	loginAttemptListInit(link_list_t*);
 DLLEXPORT BOOL				DLLCALL	loginAttemptListFree(link_list_t*);
 DLLEXPORT long				DLLCALL	loginAttemptListClear(link_list_t*);
-DLLEXPORT long				DLLCALL loginAttempts(link_list_t*, SOCKADDR_IN*);
-DLLEXPORT void				DLLCALL	loginSuccess(link_list_t*, SOCKADDR_IN*);
-DLLEXPORT ulong				DLLCALL loginFailure(link_list_t*, SOCKADDR_IN*, const char* prot, const char* user, const char* pass);
+DLLEXPORT long				DLLCALL loginAttempts(link_list_t*, const SOCKADDR_IN*);
+DLLEXPORT void				DLLCALL	loginSuccess(link_list_t*, const SOCKADDR_IN*);
+DLLEXPORT ulong				DLLCALL loginFailure(link_list_t*, const SOCKADDR_IN*, const char* prot, const char* user, const char* pass);
 
 #ifdef __cplusplus
 }
