@@ -3188,6 +3188,12 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->JS_YieldIntervalEdit->Text=IntToStr(global.js.yield_interval);
     PropertiesDlg->JS_LoadPathEdit->Text=global.js.load_path;
     PropertiesDlg->ErrorSoundEdit->Text=ErrorSoundFile;
+    PropertiesDlg->LoginAttemptDelayEdit->Text=IntToStr(global.login_attempt_delay);
+    PropertiesDlg->LoginAttemptThrottleEdit->Text=IntToStr(global.login_attempt_throttle);
+    PropertiesDlg->LoginAttemptHackThresholdEdit->Text
+        =global.login_attempt_hack_threshold ? IntToStr(global.login_attempt_hack_threshold) : AnsiString("<disabled>");
+    PropertiesDlg->LoginAttemptFilterThresholdEdit->Text
+        =global.login_attempt_filter_threshold ? IntToStr(global.login_attempt_filter_threshold) : AnsiString("<disabled>");
 
     if(MaxLogLen==0)
 		PropertiesDlg->MaxLogLenEdit->Text="<unlimited>";
@@ -3257,6 +3263,12 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         if(memcmp(&web_startup.js,&js,sizeof(js))==0)       web_startup.js=global.js;
         if(memcmp(&mail_startup.js,&js,sizeof(js))==0)      mail_startup.js=global.js;
         if(memcmp(&services_startup.js,&js,sizeof(js))==0)  services_startup.js=global.js;
+
+        /* Security parameters */
+        global.login_attempt_delay = PropertiesDlg->LoginAttemptDelayEdit->Text.ToIntDef(0);
+        global.login_attempt_throttle = PropertiesDlg->LoginAttemptThrottleEdit->Text.ToIntDef(0);
+        global.login_attempt_hack_threshold = PropertiesDlg->LoginAttemptHackThresholdEdit->Text.ToIntDef(0);
+        global.login_attempt_filter_threshold = PropertiesDlg->LoginAttemptFilterThresholdEdit->Text.ToIntDef(0);
 
         MaxLogLen
         	=PropertiesDlg->MaxLogLenEdit->Text.ToIntDef(0);

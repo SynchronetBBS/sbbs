@@ -113,6 +113,16 @@ __published:
     TEdit *ErrorSoundEdit;
     TButton *ErrorSoundButton;
     TOpenDialog *OpenDialog;
+    TTabSheet *SecurityTabSheet;
+    TGroupBox *FailedLoginAttemptGroupBox;
+    TLabel *LoginAttemptDelayLabel;
+    TEdit *LoginAttemptDelayEdit;
+    TLabel *LoginAttemptThrottleLabel;
+    TEdit *LoginAttemptThrottleEdit;
+    TLabel *LoginAttemptHackThreshold;
+    TEdit *LoginAttemptHackThresholdEdit;
+    TLabel *LoginAttemptFilterThresholdLabel;
+    TEdit *LoginAttemptFilterThresholdEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 	void __fastcall SourceComboBoxChange(TObject *Sender);

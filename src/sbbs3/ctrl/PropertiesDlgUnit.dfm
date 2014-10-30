@@ -43,9 +43,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 7
     Width = 254
     Height = 221
-    ActivePage = JavaScriptTabSheet
+    ActivePage = SecurityTabSheet
     Anchors = [akLeft, akTop, akBottom]
-    TabIndex = 3
+    TabIndex = 1
     TabOrder = 2
     object SettingsTabSheet: TTabSheet
       Caption = 'Settings'
@@ -101,7 +101,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 98
         Top = 10
         Width = 137
-        Height = 24
+        Height = 21
         Hint = 'Login command-line or URL (default = telnet://127.0.0.1)'
         ParentShowHint = False
         ShowHint = True
@@ -111,7 +111,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 98
         Top = 36
         Width = 137
-        Height = 24
+        Height = 21
         Hint = 'Configuration command line'
         ParentShowHint = False
         ShowHint = True
@@ -121,7 +121,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 195
         Top = 62
         Width = 20
-        Height = 24
+        Height = 21
         Hint = 'Frequency of updates to Node window'
         ParentShowHint = False
         ShowHint = True
@@ -132,7 +132,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 215
         Top = 62
         Width = 16
-        Height = 19
+        Height = 21
         Associate = NodeIntEdit
         Min = 1
         Max = 99
@@ -144,7 +144,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 195
         Top = 88
         Width = 20
-        Height = 24
+        Height = 21
         Hint = 'Frequency of updates to clients window'
         ParentShowHint = False
         ShowHint = True
@@ -155,7 +155,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 215
         Top = 88
         Width = 16
-        Height = 19
+        Height = 21
         Associate = ClientIntEdit
         Min = 1
         Max = 99
@@ -179,7 +179,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 98
         Top = 167
         Width = 137
-        Height = 24
+        Height = 21
         Hint = 'Required password for restoring from system tray icon'
         ParentShowHint = False
         PasswordChar = '*'
@@ -190,7 +190,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 195
         Top = 112
         Width = 20
-        Height = 24
+        Height = 21
         Hint = 'Frequency of checks for signaled semaphore files'
         ParentShowHint = False
         ShowHint = True
@@ -201,13 +201,91 @@ object PropertiesDlg: TPropertiesDlg
         Left = 215
         Top = 112
         Width = 15
-        Height = 20
+        Height = 21
         Associate = SemFreqEdit
         Min = 1
         Max = 99
         Position = 1
         TabOrder = 7
         Wrap = False
+      end
+    end
+    object SecurityTabSheet: TTabSheet
+      Caption = 'Security'
+      ImageIndex = 4
+      object FailedLoginAttemptGroupBox: TGroupBox
+        Left = 8
+        Top = 8
+        Width = 225
+        Height = 129
+        Caption = 'Failed Login Attempts'
+        TabOrder = 0
+        object LoginAttemptDelayLabel: TLabel
+          Left = 8
+          Top = 24
+          Width = 92
+          Height = 19
+          Caption = 'Delay (milliseconds)'
+        end
+        object LoginAttemptThrottleLabel: TLabel
+          Left = 8
+          Top = 48
+          Width = 101
+          Height = 19
+          Caption = 'Throttle (milliseconds)'
+        end
+        object LoginAttemptHackThreshold: TLabel
+          Left = 8
+          Top = 72
+          Width = 97
+          Height = 19
+          Caption = 'Hack Log Threshold'
+        end
+        object LoginAttemptFilterThresholdLabel: TLabel
+          Left = 8
+          Top = 96
+          Width = 85
+          Height = 13
+          Caption = 'IP Filter Threshold'
+        end
+        object LoginAttemptDelayEdit: TEdit
+          Left = 128
+          Top = 24
+          Width = 65
+          Height = 21
+          Hint = 'Delay after each failed login attempt'
+          TabOrder = 0
+        end
+        object LoginAttemptThrottleEdit: TEdit
+          Left = 128
+          Top = 48
+          Width = 65
+          Height = 21
+          Hint = 
+            'Delay successive connections after a failed logi' +
+            'n attempt'
+          TabOrder = 1
+        end
+        object LoginAttemptHackThresholdEdit: TEdit
+          Left = 128
+          Top = 72
+          Width = 65
+          Height = 21
+          Hint = 
+            'Consecutive failed login attempts before logging ' +
+            'hack attempt'
+          TabOrder = 2
+        end
+        object LoginAttemptFilterThresholdEdit: TEdit
+          Left = 128
+          Top = 96
+          Width = 65
+          Height = 21
+          Hint = 
+            'Consecutive failed login attempts before client IP is ' +
+            'blocked'
+          TabOrder = 3
+        end
       end
     end
     object CustomizeTabSheet: TTabSheet
@@ -236,7 +314,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 125
         Top = 10
         Width = 110
-        Height = 24
+        Height = 21
         TabOrder = 1
         Text = 'Scheme'
       end
@@ -325,7 +403,7 @@ object PropertiesDlg: TPropertiesDlg
           Left = 119
           Top = 46
           Width = 96
-          Height = 24
+          Height = 21
           TabOrder = 1
           Text = 'Example'
         end
@@ -387,7 +465,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 98
         Top = 10
         Width = 137
-        Height = 24
+        Height = 21
         Hint = 'Control directory (e.g. c:\sbbs\ctrl)'
         ParentShowHint = False
         ShowHint = True
@@ -397,7 +475,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 98
         Top = 62
         Width = 137
-        Height = 24
+        Height = 21
         Hint = 'Hostname (if different than configured in SCFG)'
         ParentShowHint = False
         ShowHint = True
@@ -407,7 +485,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 98
         Top = 88
         Width = 137
-        Height = 24
+        Height = 21
         Hint = 
           'Maximum number of lines to store in log windows before auto-dele' +
           'ting old lines'
@@ -419,7 +497,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 98
         Top = 36
         Width = 137
-        Height = 24
+        Height = 21
         Hint = 'Temp directory (e.g. C:\SBBSTEMP)'
         ParentShowHint = False
         ShowHint = True
@@ -451,7 +529,7 @@ object PropertiesDlg: TPropertiesDlg
         Left = 98
         Top = 114
         Width = 112
-        Height = 24
+        Height = 21
         Hint = 'Sound file to play when an error condition is logged'
         ParentShowHint = False
         ShowHint = True
