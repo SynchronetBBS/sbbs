@@ -1763,6 +1763,9 @@ static BOOL check_ars(http_session_t * session)
 		/* Should use real name if set to do so somewhere ToDo */
 		add_env(session,"REMOTE_USER",session->user.alias);
 
+		if(thisuser.pass[0])
+			loginSuccess(startup->login_attempt_list, &session->addr);
+
 		return(TRUE);
 	}
 
