@@ -1634,8 +1634,8 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 	if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
 		filter_ip(&scfg, prot, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
 			,host, inet_ntoa(addr->sin_addr), user, /* fname: */NULL);
-
-	mswait(startup->login_attempt_delay);
+	if(count>1)
+		mswait(startup->login_attempt_delay);
 }
 
 static BOOL check_ars(http_session_t * session)
@@ -1725,7 +1725,7 @@ static BOOL check_ars(http_session_t * session)
 			if(!digest_authentication(session, auth_allowed, thisuser, &reason)) {
 				lprintf(LOG_NOTICE,"%04d !DIGEST AUTHENTICATION FAILURE (reason: %s) for user '%s'"
 						,session->socket,reason,session->req.auth.username);
-				badlogin(session->socket,session->client.protocol, session->req.auth.username, session->req.auth.password, session->host_name, &session->addr);
+				badlogin(session->socket,session->client.protocol, session->req.auth.username, "<digest>", session->host_name, &session->addr);
 				return(FALSE);
 			}
 			break;
@@ -3153,7 +3153,7 @@ static BOOL check_request(http_session_t * session)
 					break;
 				case AUTHENTICATION_DIGEST:
 					snprintf(p,sizeof(str)-(p-str),"%s%s: Digest realm=\"%s\", nonce=\"%s@%u\", qop=\"auth\"%s"
-							,newline,get_header(HEAD_WWWAUTH),session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name),session->client.addr,time(NULL),session->req.auth.stale?", stale=true":"");
+							,newline,get_header(HEAD_WWWAUTH),session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name),session->client.addr,(unsigned)time(NULL),session->req.auth.stale?", stale=true":"");
 					str[sizeof(str)-1]=0;
 					break;
 			}
@@ -5111,6 +5111,7 @@ void http_session_thread(void* arg)
 	char			*redirp;
 	http_session_t	session;
 	int				loop_count;
+	ulong			login_attempts=0;
 	BOOL			init_error;
 	int32_t			clients_remain;
 
@@ -5212,6 +5213,13 @@ void http_session_thread(void* arg)
 	session.client.user=session.username;
 	session.client.size=sizeof(session.client);
 	client_on(session.socket, &session.client, /* update existing client record? */FALSE);
+
+	if(startup->login_attempt_throttle
+		&& (login_attempts=loginAttempts(startup->login_attempt_list, &session.addr)) > 1) {
+		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%u login attempts)"
+			,socket, session.client.protocol, session.host_ip, login_attempts);
+		mswait(login_attempts*startup->login_attempt_throttle);
+	}
 
 	session.last_user_num=-1;
 	session.last_js_user_num=-1;
