@@ -52,6 +52,7 @@ object LoginAttemptsForm: TLoginAttemptsForm
         Caption = 'Time of Last Attempt'
       end>
     MultiSelect = True
+    ReadOnly = True
     RowSelect = True
     PopupMenu = PopupMenu
     TabOrder = 0
