@@ -41,7 +41,7 @@ var GET_CLIENT_INFO=24;
 var UPLOAD_ANYWHERE=25;
 var ANY_NAME=26;
 var NO_AGREEMENT=27;
-var SEND_FILE_COMMENT=28;
+var SET_FILE_COMMENT=28;
 var SET_FOLDER_COMMENT=29;
 var VIEW_DROP_BOXES=30;
 var MAKE_ALIAS=31;
@@ -110,9 +110,9 @@ function add_privs(privs, ret)
 		ret += '\x00';
 
 	for (i in privs) {
-		k=ascii(privs.substr(Math.floor(privs[i]/8), 1));
+		k=ascii(ret.substr(Math.floor(privs[i]/8), 1));
 		k |= privs[i] % 8;
-		ret = privs.substr(0, Math.floor(privs[i]/8)) + ascii(k) + privs.substr(Math.floor(privs[i]/8) + 1);
+		ret = ret.substr(0, Math.floor(privs[i]/8)) + ascii(k) + ret.substr(Math.floor(privs[i]/8) + 1);
 	}
 	if (ret.length != 8)
 		rage_quit("Unable to encode privs!");
@@ -238,8 +238,13 @@ function send_message(type, args, is_reply, id, error)
 	if (error == undefined)
 		error = 0;
 
+log(LOG_DEBUG, "Message type: "+ type);
 	for (i=0; i<args.length; i++) {
 		outbuf += encode_integer(args[i].id);
+if (args[i].id == 100 && error)
+log(LOG_DEBUG, "Sending error: "+args[i].value);
+else
+log(LOG_DEBUG, "Parameter: "+args[i].id);
 		switch (get_param_type(args[i].id)) {
 			case BINARY:
 			case STRING:
@@ -615,13 +620,13 @@ function handle_message(msg)
 			}
 			if (j)
 				break;
-			logged_in = true;
 			update_online_user(usr.alias, icon, flags);
 			send_response(msg.hdr, [{id:160, value:151},{id:161, value:0},{id:162, value:system.name}]);
 			// TODO: send banner...
-			send_message(109, [{id:101, value:"Do you agree?"}]);
+			send_message(109, [{id:101, value:"Do you agree?"}, {id:154, value:1}, /* {id:152, value:1}, {id:153, value:'http://nix.synchro.net:7070//images/default/sync_pbgj1_grey_bg.gif'} */]);
 			break;
 		case 121:	// Accept agreement...
+			logged_in = true;
 			send_response(msg.hdr, []);
 			if (msg.params[104] != undefined) {
 				icon = parseInt(msg.params[104].data, 10);
@@ -631,7 +636,7 @@ function handle_message(msg)
 			}
 			update_online_user(usr.alias, icon, flags);
 			var tmp;
-			tmp = add_privs([UPLOAD_FILE, DOWNLOAD_FILE, READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SHOW_IN_LIST, OPEN_USER, CHANGE_OWN_PASSWORD, SEND_PRIVATE_MESSAGE, NEWS_READ_ARTICLE, NEWS_POST_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, BROADCAST]);
+			tmp = add_privs([UPLOAD_FILE, DOWNLOAD_FILE, READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, SEND_PRIVATE_MESSAGE, NEWS_READ_ARTICLE, NEWS_POST_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, BROADCAST]);
 			if (usr.is_sysop)
 				tmp = add_privs([DELETE_FILE, RENAME_FILE, MOVE_FILE, RENAME_FOLDER, DELETE_USER, MODIFY_USER, DISCONNECT_USER, CANNOT_BE_DISCONNECTED, SET_FOLDER_COMMENT, NEWS_DELETE_ARTICLE], tmp);
 			send_message(354, [{id:110, value:tmp}]);
@@ -889,20 +894,17 @@ function time_to_timestamp(time)
 }
 
 log(LOG_DEBUG, "Connected!");
+var ver = client.socket.recvBin();
+if (ver != 0x54525450)
+	rage_quit(format("Invalid version %08x", ver));
+var subprot = client.socket.recvBin();
+var version = client.socket.recvBin(2);
+var subver = client.socket.recvBin(2);
+log(LOG_DEBUG, "Ver="+ver+"-"+subprot+", "+version+"-"+subver);
+client.socket.send("TRTP\0\0\0\0");
 while(client.socket.is_connected) {
-	if (!logged_in) {
-		var ver = client.socket.recvBin();
-		if (ver != 0x54525450)
-			rage_quit(format("Invalid version %08x", ver));
-		var subprot = client.socket.recvBin();
-		var version = client.socket.recvBin(2);
-		var subver = client.socket.recvBin(2);
-		log(LOG_DEBUG, "Ver="+ver+"-"+subprot+", "+version+"-"+subver);
-		client.socket.send("TRTP\0\0\0\0");
-	}
-
 	var msg = read_msg(client.socket);
-	if ((!logged_in) && msg.hdr.type != 107) {
+	if ((!logged_in) && msg.hdr.type != 107 && msg.hdr.type != 121) {
 		send_response(msg.hdr, [{id:100, value:"Not logged in!"}]);
 		continue;
 	}
