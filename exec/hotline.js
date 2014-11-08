@@ -238,7 +238,7 @@ function read_msg(sock)
 	while(sock.is_connected) {
 		if(logged_in)
 			update_data();
-		if (sock.poll(0.5))
+		if (sock.poll(0.25))
 			break;
 	}
 
