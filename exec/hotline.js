@@ -154,6 +154,27 @@ function update_data()
 	var found;
 	var new_usrs = read_online_users();
 
+	var msg = system.get_telegram(usr.number);
+	if (msg != null) {
+		var params=[];
+		msg = msg.replace(/\x01./g, '');
+		msg = msg.replace(/\r\n/g, '\r');
+		msg = msg.replace(/\n/g, '\r');
+		msg = msg.replace(/\t/g, ' ');
+		msg = msg.replace(/[\x00-\x0C\x0E-\x1f]/g, '');
+		var m = msg.match(/^Hotline message from ([^:]+):\r([\x00-\xff]*)$/);
+		if (m != null) {
+			params.push({id:102, value:m[1]});
+			var alias = m[1];
+			msg = m[2];
+			for (i in new_usrs) {
+				if (alias == new_usrs[i].alias && new_usrs[i].id < 0x8000)
+					params.push({id:103, value:new_usrs[i].id});
+			}
+		}
+		params.push({id:101, value:msg});
+		send_message(104, params);
+	}
 	for (i in new_usrs) {
 		/*
 		 * For each user in new_usrs, check if it's in usrs and update/notify as needed.
@@ -426,6 +447,8 @@ function update_online_user(username, icon, flags)
 
 		for (i in lines) {
 			var u=parse_user_line(lines[i]);
+			if(u.id & 0x8000)
+				continue;
 			if (u.alias == username) {
 				found = true;
 				lines[i] = username+' '+icon+' '+flags;
@@ -462,7 +485,7 @@ function read_online_users()
 		if ((system.node_list[i].status == NODE_INUSE) || (usr.is_sysop && system.node_list[i].status == NODE_QUIET)) {
 			var uo = new User(system.node_list[i].useron);
 			if (uo != null) {
-				var usro = {alias:uo.alias, icon:412, flags:0x01};
+				var usro = {node:i, alias:uo.alias, icon:412, flags:0x01};
 				if (uo.is_sysop)
 					usro.flags |= 0x02;
 				usro.id = uo.number | 0x8000; 
@@ -483,6 +506,8 @@ function remove_online_user(username)
 		var lines = f.readAll(2048);
 		for (i = 0; i<lines.length; i++) {
 			var u = parse_user_line(lines[i]);
+			if(u.id & 0x8000)
+				continue;
 			if (u.alias == username) {
 				found = true;
 				lines.splice(i, 1);
@@ -501,6 +526,7 @@ function remove_online_user(username)
 // TODO: modopts.ini thingie.
 var include_real_name = false;
 var include_age_gender = false;
+var agreement_file = undefined;
 function get_user_info_str(u)
 {
 	var ret = '';
@@ -663,7 +689,7 @@ function handle_message(msg)
 			usrs = read_online_users();
 			j = false;
 			for (i in usrs) {
-				if (usrs[i].alias == usr.alias) {
+				if (usrs[i].id == usr.id) {
 					j = true;
 					send_response(msg.hdr, [{id:100, value:"You are already logged in!"}], 1);
 					usr = undefined;
@@ -675,8 +701,42 @@ function handle_message(msg)
 			update_online_user(usr.alias, icon, flags);
 			send_response(msg.hdr, [{id:160, value:151},{id:161, value:0},{id:162, value:system.name}]);
 			// TODO: send banner...
-			send_message(109, [{id:101, value:"Do you agree?"}, {id:154, value:1}, /* {id:152, value:1}, {id:153, value:'http://nix.synchro.net:7070//images/default/sync_pbgj1_grey_bg.gif'} */]);
+			if (agreement_file == null) {
+				send_message(109, [{id:154, value:1}]);
+				update_online_user(usr.alias, icon, flags);
+				send_privs();
+				logged_in = true;
+			}
+			else {
+				var agreementf = new File(agreement_file);
+				if (f.open("r", true)) {
+					var tmp = f.read();
+					f.close();
+					send_message(109, [{id:101, value:tmp}]);
+				}
+				else {
+					rage_quit("Unable to open agreement file");
+				}
+			}
 			break;
+		case 108:
+			var userid = msg.params[103].data;
+			if (userid == undefined) {
+				send_response(msg.hdr, [{id:100, value:'No User ID Specified'}], 1);
+				break;
+			}
+			if (msg.params[101] != undefined) {
+				if (userid & 0x8000) {
+					var new_usrs = read_online_users();
+					for (i in new_usrs) {
+						if (new_usrs[i].id == userid)
+							system.put_node_message(new_usrs[i].node, "\1n\1b\1r\7Hotline \1n\1gmessage from \1n\1h"+usr.alias+":\r\n\1h"+msg.params[101].data);
+					}
+				}
+				else
+					system.put_telegram(userid, "\1n\1b\1r\7Hotline \1n\1gmessage from \1n\1h"+usr.alias+":\r\n\1h"+msg.params[101].data);
+				send_response(msg.hdr, []);
+			}
 		case 121:	// Accept agreement...
 			send_response(msg.hdr, []);
 			if (msg.params[104] != undefined) {
@@ -781,7 +841,7 @@ function handle_message(msg)
 			break;
 		case 303:
 			if (msg.params[103] != undefined) {
-				var tmp = new User(msg.params[103].data);
+				var tmp = new User(msg.params[103].data & 0x7fff);
 				if (tmp != null)
 					send_response(msg.hdr, [{id:102, value:tmp.alias}, {id:101, value:get_user_info_str(tmp)}]);
 				else
