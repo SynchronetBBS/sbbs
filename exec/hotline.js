@@ -12,6 +12,7 @@ var usr;
 var usrs=[];
 var icon = 412;
 var flags = 0;
+var sent_privs = false;
 
 var DELETE_FILE=0;
 var UPLOAD_FILE=1;
@@ -242,6 +243,9 @@ function read_msg(sock)
 			break;
 	}
 
+	if (!sock.is_connected)
+		return msg;
+
 	msg.hdr.flags = sock.recvBin(1);
 	msg.hdr.is_reply = sock.recvBin(1);
 	msg.hdr.type = sock.recvBin(2);
@@ -282,6 +286,7 @@ function rage_quit(reason)
 	log(LOG_DEBUG, "Rage quit: "+reason);
 	if (usr != undefined)
 		remove_online_user(usr.alias);
+	send_msg(111, [{id:101, value:reason}]);
 	client.socket.close();
 	exit();
 }
@@ -308,7 +313,7 @@ log(LOG_DEBUG, "Message type: "+ type);
 	for (i=0; i<args.length; i++) {
 		outbuf += encode_integer(args[i].id);
 if (args[i].id == 100 && error)
-log(LOG_DEBUG, "Sending error: "+args[i].value);
+log(LOG_DEBUG, "Error: "+args[i].value);
 else
 log(LOG_DEBUG, "Parameter: "+args[i].id);
 		switch (get_param_type(args[i].id)) {
@@ -362,10 +367,6 @@ function mb_from_path(path)
 					continue;
 				if (msg_area.grp_list[i].description == grpdesc) {
 					for (j in msg_area.grp_list[i].sub_list) {
-						if (!usr.compare_ars(msg_area.grp_list[i].sub_list[j].ars))
-							continue;
-						if (!usr.compare_ars(msg_area.grp_list[i].sub_list[j].read_ars))
-							continue;
 						if (msg_area.grp_list[i].sub_list[j].description == subdesc) {
 							mb = new MsgBase(msg_area.grp_list[i].sub_list[j].code);
 							if (!mb.open())
@@ -382,6 +383,8 @@ function mb_from_path(path)
 
 function get_sub(path)
 {
+	if (path == undefined)
+		return undefined;
 	var i, j;
 	var liblen = decode_integer(path.data.substr(4,1));
 	var libdesc = path.data.substr(5, liblen);
@@ -393,7 +396,7 @@ function get_sub(path)
 			continue;
 		if (file_area.lib_list[i].description == libdesc) {
 			for (j in file_area.lib_list[i].dir_list) {
-				if (!usr.compare_ars(file_area.lib_list[i].dir_list[j].ars))
+				if (!file_area.lib_list[i].dir_list[j].can_download)
 					continue;
 				if (file_area.lib_list[i].dir_list[j].description == dirdesc)
 					return file_area.lib_list[i].dir_list[j];
@@ -405,6 +408,8 @@ function get_sub(path)
 
 function get_path(path)
 {
+	if (path == undefined)
+		return undefined;
 	var sub = get_sub(path);
 	if (sub != undefined)
 		return backslash(sub.path);
@@ -587,10 +592,11 @@ function get_user_info_str(u)
 function send_privs()
 {
 	var tmp;
-	tmp = add_privs([UPLOAD_FILE, DOWNLOAD_FILE, READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, SEND_PRIVATE_MESSAGE, NEWS_READ_ARTICLE, NEWS_POST_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, BROADCAST, DOWNLOAD_FOLDER, SEND_MESSAGE, CHANGE_ICON, REFUSE_CHAT, VISIBLE]);
+	tmp = add_privs([UPLOAD_FILE, DOWNLOAD_FILE, READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, SEND_PRIVATE_MESSAGE, NEWS_READ_ARTICLE, NEWS_POST_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, DOWNLOAD_FOLDER, SEND_MESSAGE, CHANGE_ICON, REFUSE_CHAT, VISIBLE]);
 	if (usr.is_sysop)
-		tmp = add_privs([DELETE_FILE, RENAME_FILE, MOVE_FILE, RENAME_FOLDER, DELETE_USER, MODIFY_USER, DISCONNECT_USER, CANNOT_BE_DISCONNECTED, SET_FOLDER_COMMENT, NEWS_DELETE_ARTICLE, CAN_VIEW_INVISIBLE], tmp);
+		tmp = add_privs([DELETE_FILE, RENAME_FILE, MOVE_FILE, RENAME_FOLDER, DELETE_USER, MODIFY_USER, DISCONNECT_USER, CANNOT_BE_DISCONNECTED, SET_FOLDER_COMMENT, NEWS_DELETE_ARTICLE, BROADCAST, CAN_VIEW_INVISIBLE], tmp);
 	send_message(354, [{id:110, value:tmp}]);
+	sent_privs = true;
 }
 
 function get_chat_users(id)
@@ -728,7 +734,7 @@ function handle_message(msg)
 			send_chat_msg(chatid, chatopt, chatstr);
 			break;
 		case 107:	// Login
-			if (msg.params[105] == undefined || msg.params[106] == undefined) {
+			if (msg.params[105] == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Incorrect parameters to login"}], 1);
 				break;
 			}
@@ -738,19 +744,17 @@ function handle_message(msg)
 				icon = msg.params[104].data;
 			var uid = system.matchuser(decode_string(msg.params[105].data));
 			if (uid == 0) {
-				send_response(msg.hdr, [{id:100, value:"No such user"}], 1);
+				send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
+				break;
+			}
+			if(!login(uid, decode_string(msg.params[106] == undefined ? '' : msg.params[106].data).toLowerCase())) {
+				send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
 				break;
 			}
 			usr = new User(uid);
 			if (usr == null) {
-				send_response(msg.hdr, [{id:100, value:"No such user"}], 1);
+				send_response(msg.hdr, [{id:100, value:"Failed to fetch user info"}], 1);
 				break;
-			}
-			if (!(usr.compare_ars('REST G'))) {
-				if (usr.security.password.toLowerCase() != decode_string(msg.params[106].data).toLowerCase()) {
-					send_response(msg.hdr, [{id:100, value:"Incorrect password"}], 1);
-					break;
-				}
 			}
 			usrs = read_online_users();
 			j = false;
@@ -770,7 +774,7 @@ function handle_message(msg)
 			if (agreement_file == null) {
 				send_message(109, [{id:154, value:1}]);
 				update_online_user(usr.alias, icon, flags);
-				send_privs();
+				client.user_name = usr.alias;
 				logged_in = true;
 			}
 			else {
@@ -815,8 +819,9 @@ function handle_message(msg)
 					flags |= 0x02;
 			}
 			update_online_user(usr.alias, icon, flags);
-			send_privs();
+			client.user_name = usr.alias;
 			logged_in = true;
+			send_privs();
 			break;
 		case 200:	// File list
 			var tmp=[];
@@ -842,7 +847,7 @@ function handle_message(msg)
 						if (file_area.lib_list[i].description == libdesc) {
 							k = true;
 							for (j in file_area.lib_list[i].dir_list) {
-								if (!usr.compare_ars(file_area.lib_list[i].dir_list[j].ars))
+								if (!file_area.lib_list[i].dir_list[j].can_download)
 									continue;
 								tmp.push({id:200, value:'fldr\x00\x00\x00\x01'+encode_long(0)+encode_long(0)+encode_short(0)+encode_short(file_area.lib_list[i].dir_list[j].description.length)+file_area.lib_list[i].dir_list[j].description});
 							}
@@ -878,11 +883,15 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:'No such directory'}], 1);
 				break;
 			}
-			if (!usr.compare_ars(sub.download_ars)) {
+			if (!sub.can_download) {
 				send_response(msg.hdr, [{id:100, value:'Permission denied'}], 1);
 				break;
 			}
 			var path = sub.path;
+			if (msg.params[201] == undefined) {
+				send_response(msg.hdr, [{id:100, value:'Missing Filename'}], 1);
+				break;
+			}
 			path += file_getname(msg.params[201].data);
 			if (!file_exists(path)) {
 				send_response(msg.hdr, [{id:100, value:'No such file'}], 1);
@@ -897,6 +906,8 @@ function handle_message(msg)
 			send_response(msg.hdr, [{id:108, value:file_size(path)+122}, {id:207, value:file_size(path)}, {id:107, value:tid}, /*{id:116, value:tcount}*/]);
 			break;
 		case 300:
+			if (!sent_privs)
+				send_privs();
 			usrs = read_online_users();
 			var tmp = [];
 			for (i in usrs) {
@@ -939,7 +950,7 @@ function handle_message(msg)
 							continue;
 						if (msg_area.grp_list[i].description == grpdesc) {
 							for (j in msg_area.grp_list[i].sub_list) {
-								if (!usr.compare_ars(msg_area.grp_list[i].sub_list[j].ars))
+								if (!msg_area.grp_list[i].sub_list[j].can_read)
 									continue;
 								var mb = new MsgBase(msg_area.grp_list[i].sub_list[j].code);
 								if (!mb.open()) {
@@ -976,28 +987,30 @@ function handle_message(msg)
 				}
 				var hdrs = mb.get_all_msg_headers();
 				var msgs = '';
-				for (i in hdrs) {
-					if (hdrs[i].attr & MSG_DELETE)
-						continue;
-					if ((hdrs[i].attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED)
-						continue;
-					if ((hdrs[i].attr & MSG_PRIVATE) && (hdrs[i].to_ext != usr.number))
-						continue;
-					items.count++;
-					// TODO: Attachments etc.
-					var body = mb.get_msg_body(parseInt(i, 10), true);
-					if (body == null)
-						continue;
-					if (body.length > 65535 || body.length < 1)	// Message too long
-						continue;
-					if (hdrs[i].subject.length > 255)	// Subject too long
-						continue;
-					if (hdrs[i].subject.length < 1)	// Subject too short
-						continue;
-					if (hdrs[i].from.length < 1 || hdrs[i].from.length > 255)	// From too long
-						continue;
-					// TODO: Encode the flags...
-					msgs += encode_long(hdrs[i].number)+time_to_timestamp(hdrs[i].when_written_time)+encode_long(hdrs[i].thread_back)+encode_long(0)+encode_short(1)+ascii(hdrs[i].subject.length)+hdrs[i].subject+ascii(hdrs[i].from.length)+hdrs[i].from+ascii("text/plain".length)+"text/plain"+encode_short(body.length);
+				if (msg_area.sub[mb.cfg.code].can_read) {
+					for (i in hdrs) {
+						if (hdrs[i].attr & MSG_DELETE)
+							continue;
+						if ((hdrs[i].attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED)
+							continue;
+						if ((hdrs[i].attr & MSG_PRIVATE) && (hdrs[i].to_ext != usr.number))
+							continue;
+						items.count++;
+						// TODO: Attachments etc.
+						var body = mb.get_msg_body(parseInt(i, 10), true);
+						if (body == null)
+							continue;
+						if (body.length > 65535 || body.length < 1)	// Message too long
+							continue;
+						if (hdrs[i].subject.length > 255)	// Subject too long
+							continue;
+						if (hdrs[i].subject.length < 1)	// Subject too short
+							continue;
+						if (hdrs[i].from.length < 1 || hdrs[i].from.length > 255)	// From too long
+							continue;
+						// TODO: Encode the flags...
+						msgs += encode_long(hdrs[i].number)+time_to_timestamp(hdrs[i].when_written_time)+encode_long(hdrs[i].thread_back)+encode_long(0)+encode_short(1)+ascii(hdrs[i].subject.length)+hdrs[i].subject+ascii(hdrs[i].from.length)+hdrs[i].from+ascii("text/plain".length)+"text/plain"+encode_short(body.length);
+					}
 				}
 				hdrs={};
 				mb.close();
@@ -1020,18 +1033,110 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
 				break;
 			}
-			var hdr = mb.get_msg_header(msg.params[326].data);
-			if (hdr == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Message ID"}], 1);
+			if (msg.params[326] == undefined) {
+				send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
 				break;
 			}
+			if (!msg_area.sub[mb.cfg.code].can_read) {
+				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+				break;
+			}
+			var hdr = mb.get_msg_header(msg.params[326].data);
+			if (hdr == undefined) {
+				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+				break;
+			}
+			if (hdr.attr & MSG_DELETE) {
+				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+				break;
+			}
+			if ((hdr.attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED) {
+				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+				break;
+			}
+			if ((hdr.attr & MSG_PRIVATE) && (hdr.to_ext != usr.number)) }
+				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+				break;
+			}
+
 			var body = mb.get_msg_body(hdr.number, true);
 			if (body == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Message ID"}], 1);
+				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
 			}
 			// TODO (?) update last-read pointer...
 			send_response(msg.hdr, [{id:328, value:hdr.subject}, {id:329, value:hdr.from}, {id:330, value:time_to_timestamp(hdr.when_written_time)}, {id:331, value:msg.params[326].data-1}, {id:332, value:msg.params[326]+1}, {id:335, value:hdr.thread_back}, {id:336, value:hdr.thread_first}, {id:327, value:"text/plain"}, {id:333, value:body}]);
+			break;
+		case 410:	// Post message
+			var mb = mb_from_path(msg.params[325], true);
+			if (mb == undefined) {
+				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
+				break;
+			}
+			if (!msg_area.sub[mb.cfg.code].can_post) {
+				send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
+				break;
+			}
+			if (msg.params[328] == undefined) {
+				send_response(msg.hdr, [{id:100, value:"Missing title"}], 1);
+				break;
+			}
+			if (msg.params[333] == undefined) {
+				send_response(msg.hdr, [{id:100, value:"Missing article"}], 1);
+				break;
+			}
+			var hdr = {to:'All', from:usr.alias};
+			if (msg.params[326] != undefined) {
+				hdr.thread_orig = msg.params[326].data;
+				var ohdr = mb.get_msg_header(hdr.thread_orig);
+				if (ohdr != null) {
+					if (ohdr.thread_id == 0)
+						hdr.thread_id = hdr.thread_orig;
+					else
+						hdr.thread_id = ohdr.thread_id;
+					if (ohdr.from != undefined)
+						hdr.to = ohdr.from;
+				}
+			}
+			hdr.subject = msg.params[328].data;
+			// TODO: Flags...
+			if (msg.params[327] != undefined) {
+				if (msg.params[327].data != 'text/plain') {
+					send_response(msg.hdr, [{id:100, value:"Unhandled message type"}], 1);
+					break;
+				}
+			}
+			if (!mb.save_msg(hdr, client, msg.params[333].data)) {
+				send_response(msg.hdr, [{id:101, value:"Error saving message"}], 1);
+				break;
+			}
+			send_response(msg.hdr, []);
+			break;
+		case 411:
+			var mb = mb_from_path(msg.params[325]);
+			if (mb == undefined) {
+				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
+				break;
+			}
+			if (!msg_area.sub[mb.cfg.code].is_operator) {
+				send_response(msg.hdr, [{id:100, value:"You're not allowed to delete messages here"}], 1);
+				break;
+			}
+			if (msg.params[326] == undefined) {
+				send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
+				break;
+			}
+			var hdr = mb.get_msg_header(msg.params[326].data);
+			if (hdr == undefined) {
+				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+				break;
+			}
+			hdr.attr |= MSG_DELETE;
+			if (!mb.put_msg_header(hdr.number, hdr)) {
+				send_response(msg.hdr, [{id:100, value:"Delete Failed"}], 1);
+				break;
+			}
+			send_response(msg.hdr, []);
 			break;
 		default:
 			send_response(msg.hdr, [{id:100, value:"Unsupported command"}], 1);
@@ -1079,8 +1184,10 @@ log(LOG_DEBUG, "Ver="+ver+"-"+subprot+", "+version+"-"+subver);
 client.socket.send("TRTP\0\0\0\0");
 while(client.socket.is_connected) {
 	var msg = read_msg(client.socket);
+	if (msg.hdr.type == undefined || msg.hdr.type == -1)
+		continue;
 	if ((!logged_in) && msg.hdr.type != 107 && msg.hdr.type != 121) {
-		send_response(msg.hdr, [{id:100, value:"Not logged in!"}]);
+		send_response(msg.hdr, [{id:100, value:"Not logged in!"}], 1);
 		continue;
 	}
 	handle_message(msg);
