@@ -491,19 +491,19 @@ var include_age_gender = false;
 function get_user_info_str(u)
 {
 	var ret = '';
-	ret += "User: "+u.alias+' #'+u.number+'\n';
+	ret += "User: "+u.alias+' #'+u.number+'\r';
 	if(include_real_name)
-		ret += "In real life: "+u.name+'\n';
+		ret += "In real life: "+u.name+'\r';
 
-	ret += "From: "+u.location+'\n';
-	ret += "Handle: "+u.handle+'\n';
+	ret += "From: "+u.location+'\r';
+	ret += "Handle: "+u.handle+'\r';
 	if(include_age_gender) {
-		ret += 'Birth: '+u.birthdate+' (Age: '+u.age+' years)\n';
-		ret += 'Gender: '+u.gender+'\n';
+		ret += 'Birth: '+u.birthdate+' (Age: '+u.age+' years)\r';
+		ret += 'Gender: '+u.gender+'\r';
 	}
-	ret += "Shell: "+u.command_shell+'\n';
-	ret += "Editor: "+u.editor+"\n";
-	ret += format("Last login %s %s\nvia %s from %s [%s]\n"
+	ret += "Shell: "+u.command_shell+'\r';
+	ret += "Editor: "+u.editor+"\r";
+	ret += format("Last login %s %s\rvia %s from %s [%s]\r"
 			  ,system.timestr(u.stats.laston_date)
 			  ,system.zonestr()
 			  ,u.connection
@@ -514,12 +514,12 @@ function get_user_info_str(u)
 	if(file_exists(plan)) {
 		var pf = new File(plan);
 		if (pf.open("rb", true)) {
-			ret += 'Plan:\n'+pf.readAll(2048).join('\n');
+			ret += 'Plan:\r'+pf.readAll(2048).join('\r');
 			pf.close();
 		}
 	}
 	else
-		ret += "No plan.\n";
+		ret += "No plan.\r";
 	return ret.substr(0, 65535);
 }
 
@@ -641,9 +641,11 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"No such user"}], 1);
 				break;
 			}
-			if (usr.security.password.toLowerCase() != decode_string(msg.params[106].data).toLowerCase()) {
-				send_response(msg.hdr, [{id:100, value:"Incorrect password"}], 1);
-				break;
+			if (!(usr.compare_ars('REST G'))) {
+				if (usr.security.password.toLowerCase() != decode_string(msg.params[106].data).toLowerCase()) {
+					send_response(msg.hdr, [{id:100, value:"Incorrect password"}], 1);
+					break;
+				}
 			}
 			usrs = read_online_users();
 			j = false;
