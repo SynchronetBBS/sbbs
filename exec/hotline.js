@@ -70,16 +70,16 @@ var ADMIN_IN_SPECTOR=53;
 var POST_BEFORE=54;
 
 var params = {
-	100:{type:STRING},
-	101:{type:BINARY},
+	100:{type:STRING, name:"Error Message"},
+	101:{type:BINARY, name:"Data"},
 	102:{type:STRING, name:"User Name"},
 	103:{type:INTEGER, name:"User ID"},
 	104:{type:INTEGER, name:"User Icon ID"},
-	105:{type:STRING},
-	106:{type:STRING},
+	105:{type:STRING, name:"User Login"},
+	106:{type:STRING, name:"User Password"},
 	107:{type:INTEGER, name:"Reference Number"},
 	108:{type:INTEGER, name:"Transfer Size"},
-	109:{type:INTEGER},
+	109:{type:INTEGER, name:"Chat Options"},
 	110:{type:BINARY, name:"User Access"},
 	112:{type:INTEGER, name:"User Flags"},
 	113:{type:INTEGER, name:"Options"},
@@ -137,7 +137,6 @@ function add_privs(privs, ret)
 	for (i=0; i<ret.length; i++) {
 		dbg += format("%02x", ascii(ret.substr(i, 1)));
 	}
-	log(LOG_DEBUG, "Privs: "+dbg);
 	return ret;
 }
 
@@ -152,11 +151,12 @@ function update_data()
 {
 	var i, j;
 	var found;
+	var params;
 	var new_usrs = read_online_users();
 
 	var msg = system.get_telegram(usr.number);
 	if (msg != null) {
-		var params=[];
+		params=[];
 		msg = msg.replace(/\x01./g, '');
 		msg = msg.replace(/\r\n/g, '\r');
 		msg = msg.replace(/\n/g, '\r');
@@ -175,6 +175,27 @@ function update_data()
 		params.push({id:101, value:msg});
 		send_message(104, params);
 	}
+
+	var f = new File(system.temp_dir+'hotline.chat.'+usr.number);
+	if (f.open("r+b")) {
+		var cmsgs = f.readAll(5120);
+		f.rewind();
+		f.truncate();
+		f.close();
+
+		for (i in cmsgs) {
+			m = cmsgs[i].match(/^([0-9]+) ([0-9]+) ([\x00-\xff]*)$/);
+			if (m != null) {
+				var alias = new User(parseInt(m[2], 10)).alias;
+				params = [{id:101, value:'\r'+alias+': '+m[3]}, {id:103, value:parseInt(m[2])}];
+				var chatid = parseInt(m[1], 10);
+				if (chatid)
+					params.push({id:114, value:chatid});
+				send_message(106, params);
+			}
+		}
+	}
+
 	for (i in new_usrs) {
 		/*
 		 * For each user in new_usrs, check if it's in usrs and update/notify as needed.
@@ -521,6 +542,7 @@ function remove_online_user(username)
 		}
 		f.close();
 	}
+	file_remove(system.temp_dir+'hotline.chat.'+usr.number);
 }
 
 // TODO: modopts.ini thingie.
@@ -569,6 +591,37 @@ function send_privs()
 	if (usr.is_sysop)
 		tmp = add_privs([DELETE_FILE, RENAME_FILE, MOVE_FILE, RENAME_FOLDER, DELETE_USER, MODIFY_USER, DISCONNECT_USER, CANNOT_BE_DISCONNECTED, SET_FOLDER_COMMENT, NEWS_DELETE_ARTICLE, CAN_VIEW_INVISIBLE], tmp);
 	send_message(354, [{id:110, value:tmp}]);
+}
+
+function get_chat_users(id)
+{
+	var ret = [];
+	var i;
+
+	if (id == 0) {
+		var new_usrs = read_online_users();
+		for (i in new_usrs) {
+			if (new_usrs[i].id & 0x8000)
+				continue;
+			ret.push(new_usrs[i].id);
+		}
+	}
+	return ret;
+}
+
+function send_chat_msg(id, opt, msg)
+{
+	var i;
+	var ids = get_chat_users(id);
+	var f;
+
+	for (i in ids) {
+		f = new File(system.temp_dir+'hotline.chat.'+ids[i]);
+		if (f.open('ab')) {
+			f.writeln(id+' '+usr.number+' '+msg);
+			f.close();
+		}
+	}
 }
 
 function handle_message(msg)
@@ -661,6 +714,19 @@ function handle_message(msg)
 			}
 			send_response(msg.hdr, [{id:101, value:message}]);
 			break;
+		case 105:	// Send Chat
+			var chatid = 0;
+			var chatstr = '';
+			var chatopt = 0;
+
+			if (msg.params[114] != undefined)
+				chatid = msg.params[114].data;
+			if (msg.params[101] != undefined)
+				chatstr = msg.params[101].data;
+			if (msg.params[109] != undefined)
+				chatopt = msg.params[109].data;
+			send_chat_msg(chatid, chatopt, chatstr);
+			break;
 		case 107:	// Login
 			if (msg.params[105] == undefined || msg.params[106] == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Incorrect parameters to login"}], 1);
@@ -709,7 +775,7 @@ function handle_message(msg)
 			}
 			else {
 				var agreementf = new File(agreement_file);
-				if (f.open("r", true)) {
+				if (f.open("rb", true)) {
 					var tmp = f.read();
 					f.close();
 					send_message(109, [{id:101, value:tmp}]);
