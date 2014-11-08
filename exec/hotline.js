@@ -51,6 +51,23 @@ var NEWS_CREATE_CATEGORY=34;
 var NEWS_DELETE_CATEGORY=35;
 var NEWS_CREATE_FOLDER=36;
 var NEWS_DELETE_FILDER=37;
+var UPLOAD_FOLDER=38;
+var DOWNLOAD_FOLDER=39;
+var SEND_MESSAGE=40;
+var FAKE_RED=41;
+var AWAY=42;
+var CHANGE_NICK=43;
+var CHANGE_ICON=44;
+var SPEAK_BEFORE=45;
+var REFUSE_CHAT=46;
+var BLOCK_DOWNLOAD=47;
+var VISIBLE=48;
+var CAN_VIEW_INVISIBLE=49;
+var CAN_FLOOD=50;
+var VIEW_OWN_DROPBOX=51;
+var DONT_QUEUE=52;
+var ADMIN_IN_SPECTOR=53;
+var POST_BEFORE=54;
 
 var params = {
 	100:{type:STRING},
@@ -63,7 +80,7 @@ var params = {
 	107:{type:INTEGER, name:"Reference Number"},
 	108:{type:INTEGER, name:"Transfer Size"},
 	109:{type:INTEGER},
-	110:{type:BINARY},
+	110:{type:BINARY, name:"User Access"},
 	112:{type:INTEGER, name:"User Flags"},
 	113:{type:INTEGER, name:"Options"},
 	114:{type:INTEGER, name:"Chat ID"},
@@ -111,11 +128,16 @@ function add_privs(privs, ret)
 
 	for (i in privs) {
 		k=ascii(ret.substr(Math.floor(privs[i]/8), 1));
-		k |= privs[i] % 8;
-		ret = ret.substr(0, Math.floor(privs[i]/8)) + ascii(k) + ret.substr(Math.floor(privs[i]/8) + 1);
+		k |= 1<<(7-(privs[i] % 8));
+		ret = ret.substr(0, Math.floor(privs[i]/8)) + ascii(k) + ret.substr(Math.floor(privs[i]/8)+1);
 	}
 	if (ret.length != 8)
 		rage_quit("Unable to encode privs!");
+	var dbg='';
+	for (i=0; i<ret.length; i++) {
+		dbg += format("%02x", ascii(ret.substr(i, 1)));
+	}
+	log(LOG_DEBUG, "Privs: "+dbg);
 	return ret;
 }
 
@@ -137,6 +159,8 @@ function update_data()
 		 * For each user in new_usrs, check if it's in usrs and update/notify as needed.
 		 * Mark matched ones as such so unmatched ones can be notified of deletion
 		 */
+		if (new_usrs[i].alias == usr.alias)
+			continue;
 		found = false;
 		var u=system.matchuser(new_usrs[i].alias);
 		if (!u)
@@ -153,6 +177,8 @@ function update_data()
 			send_message(301, [{id:103, value:u}, {id:104, value:new_usrs[i].icon}, {id:112, value:new_usrs[i].flags}, {id:102, value:new_usrs[i].alias}]);
 	}
 	for (i in usrs) {
+		if (usrs[i].alias == usr.alias)
+			continue;
 		if (!usrs[i].matched) {
 			var u=system.matchuser(usrs[i].alias);
 			if (u)
@@ -497,6 +523,15 @@ function get_user_info_str(u)
 	return ret.substr(0, 65535);
 }
 
+function send_privs()
+{
+	var tmp;
+	tmp = add_privs([UPLOAD_FILE, DOWNLOAD_FILE, READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, SEND_PRIVATE_MESSAGE, NEWS_READ_ARTICLE, NEWS_POST_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, BROADCAST, DOWNLOAD_FOLDER, SEND_MESSAGE, CHANGE_ICON, REFUSE_CHAT, VISIBLE]);
+	if (usr.is_sysop)
+		tmp = add_privs([DELETE_FILE, RENAME_FILE, MOVE_FILE, RENAME_FOLDER, DELETE_USER, MODIFY_USER, DISCONNECT_USER, CANNOT_BE_DISCONNECTED, SET_FOLDER_COMMENT, NEWS_DELETE_ARTICLE, CAN_VIEW_INVISIBLE], tmp);
+	send_message(354, [{id:110, value:tmp}]);
+}
+
 function handle_message(msg)
 {
 	var i, j, k;
@@ -616,6 +651,8 @@ function handle_message(msg)
 				if (usrs[i].alias == usr.alias) {
 					j = true;
 					send_response(msg.hdr, [{id:100, value:"You are already logged in!"}], 1);
+					usr = undefined;
+					break;
 				}
 			}
 			if (j)
@@ -626,7 +663,6 @@ function handle_message(msg)
 			send_message(109, [{id:101, value:"Do you agree?"}, {id:154, value:1}, /* {id:152, value:1}, {id:153, value:'http://nix.synchro.net:7070//images/default/sync_pbgj1_grey_bg.gif'} */]);
 			break;
 		case 121:	// Accept agreement...
-			logged_in = true;
 			send_response(msg.hdr, []);
 			if (msg.params[104] != undefined) {
 				icon = parseInt(msg.params[104].data, 10);
@@ -635,11 +671,8 @@ function handle_message(msg)
 				flags = parseInt(msg.params[113].data, 10);
 			}
 			update_online_user(usr.alias, icon, flags);
-			var tmp;
-			tmp = add_privs([UPLOAD_FILE, DOWNLOAD_FILE, READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, SEND_PRIVATE_MESSAGE, NEWS_READ_ARTICLE, NEWS_POST_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, BROADCAST]);
-			if (usr.is_sysop)
-				tmp = add_privs([DELETE_FILE, RENAME_FILE, MOVE_FILE, RENAME_FOLDER, DELETE_USER, MODIFY_USER, DISCONNECT_USER, CANNOT_BE_DISCONNECTED, SET_FOLDER_COMMENT, NEWS_DELETE_ARTICLE], tmp);
-			send_message(354, [{id:110, value:tmp}]);
+			send_privs();
+			logged_in = true;
 			break;
 		case 200:	// File list
 			var tmp=[];
@@ -804,7 +837,7 @@ function handle_message(msg)
 				for (i in hdrs) {
 					if (hdrs[i].attr & MSG_DELETE)
 						continue;
-					if ((hdrs[i].attr & (MSG_MODERATED|MSG_VERIFIED)) == MSG_MODERATED)
+					if ((hdrs[i].attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED)
 						continue;
 					if ((hdrs[i].attr & MSG_PRIVATE) && (hdrs[i].to_ext != usr.number))
 						continue;
