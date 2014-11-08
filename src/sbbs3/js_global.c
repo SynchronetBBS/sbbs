@@ -839,7 +839,7 @@ js_ascii(JSContext *cx, uintN argc, jsval *arglist)
 	str[0]=(uchar)i;
 	str[1]=0;
 
-	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
+	if((js_str = JS_NewStringCopyN(cx, str, 1))==NULL)
 		return(JS_FALSE);
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
