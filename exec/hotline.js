@@ -159,30 +159,28 @@ function update_data()
 		 * For each user in new_usrs, check if it's in usrs and update/notify as needed.
 		 * Mark matched ones as such so unmatched ones can be notified of deletion
 		 */
-		if (new_usrs[i].alias == usr.alias)
+		if (new_usrs[i].id == usr.number)
 			continue;
 		found = false;
-		var u=system.matchuser(new_usrs[i].alias);
-		if (!u)
+		if (!new_usrs[i].id)
 			continue;
 		for (j in usrs) {
-			if (usrs[j].alias == new_usrs[i].alias) {
+			if (usrs[j].id == new_usrs[i].id) {
 				found = true;
 				usrs[j].matched=true;
 				if (usrs[j].icon != new_usrs[i].icon || usrs[j].flags != new_usrs[i].flags)
-					send_message(301, [{id:103, value:u}, {id:104, value:new_usrs[i].icon}, {id:112, value:new_usrs[i].flags}, {id:102, value:new_usrs[i].alias}]);
+					send_message(301, [{id:103, value:new_usrs[i].id}, {id:104, value:new_usrs[i].icon}, {id:112, value:new_usrs[i].flags}, {id:102, value:new_usrs[i].alias}]);
 			}
 		}
 		if (!found)
-			send_message(301, [{id:103, value:u}, {id:104, value:new_usrs[i].icon}, {id:112, value:new_usrs[i].flags}, {id:102, value:new_usrs[i].alias}]);
+			send_message(301, [{id:103, value:new_usrs[i].id}, {id:104, value:new_usrs[i].icon}, {id:112, value:new_usrs[i].flags}, {id:102, value:new_usrs[i].alias}]);
 	}
 	for (i in usrs) {
-		if (usrs[i].alias == usr.alias)
+		if (usrs[i].id == usr.number)
 			continue;
 		if (!usrs[i].matched) {
-			var u=system.matchuser(usrs[i].alias);
-			if (u)
-				send_message(302, [{id:103, value:u}]);
+			if (usrs[i].id)
+				send_message(302, [{id:103, value:usrs[i].id}]);
 		}
 	}
 	usrs = new_usrs;
@@ -408,6 +406,7 @@ function parse_user_line(line)
 		ret.alias = m[1];
 		ret.icon = parseInt(m[2], 10);
 		ret.flags = parseInt(m[3], 10);
+		ret.id = system.matchuser(ret.alias);
 	}
 	return ret;
 }
@@ -455,6 +454,20 @@ function read_online_users()
 
 		for (i in lines) {
 			ret.push(parse_user_line(lines[i]));
+		}
+	}
+
+	// Now add users who are on the BBS
+	for (i in system.node_list) {
+		if ((system.node_list[i].status == NODE_INUSE) || (usr.is_sysop && system.node_list[i].status == NODE_QUIET)) {
+			var uo = new User(system.node_list[i].useron);
+			if (uo != null) {
+				var usro = {alias:uo.alias, icon:412, flags:0x01};
+				if (uo.is_sysop)
+					usro.flags |= 0x02;
+				usro.id = uo.number | 0x8000; 
+				ret.push(usro);
+			}
 		}
 	}
 	return ret;
@@ -671,6 +684,9 @@ function handle_message(msg)
 			}
 			if (msg.params[113] != undefined) {
 				flags = parseInt(msg.params[113].data, 10);
+				flags &= 0x0c;
+				if(usr.is_sysop)
+					flags |= 0x02;
 			}
 			update_online_user(usr.alias, icon, flags);
 			send_privs();
@@ -758,10 +774,8 @@ function handle_message(msg)
 			usrs = read_online_users();
 			var tmp = [];
 			for (i in usrs) {
-				var u = system.matchuser(usrs[i].alias);
-				if (u) {
-					tmp.push({id:300, value:encode_short(u)+encode_short(usrs[i].icon)+encode_short(usrs[i].flags)+encode_short(usrs[i].alias.length)+usrs[i].alias});
-				}
+				if (usrs[i].id)
+					tmp.push({id:300, value:encode_short(usrs[i].id)+encode_short(usrs[i].icon)+encode_short(usrs[i].flags)+encode_short(usrs[i].alias.length)+usrs[i].alias});
 			}
 			send_response(msg.hdr, tmp);
 			break;
