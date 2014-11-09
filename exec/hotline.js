@@ -1054,7 +1054,7 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
 			}
-			if ((hdr.attr & MSG_PRIVATE) && (hdr.to_ext != usr.number)) }
+			if ((hdr.attr & MSG_PRIVATE) && (hdr.to_ext != usr.number)) {
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
 			}
