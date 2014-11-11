@@ -377,16 +377,6 @@ function mb_from_path(path)
 				}
 			}
 		}
-		else if(depth == 1) {
-			var grplen = decode_integer(path.data.substr(4,1));
-			var grpdesc = path.data.substr(5, grplen);
-			if (grpdesc == 'Personal E-Mail') {
-					mb = new MsgBase('mail');
-					if (!mb.open())
-						rage_quit("Unable to open message base!");
-					return mb;
-			}
-		}
 	}
 	return undefined;
 }
@@ -602,7 +592,9 @@ function get_user_info_str(u)
 function send_privs()
 {
 	var tmp;
-	tmp = add_privs([SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, NEWS_READ_ARTICLE, NEWS_POST_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, CHANGE_ICON, VISIBLE]);
+	tmp = add_privs([SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, NEWS_READ_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, CHANGE_ICON, VISIBLE]);
+	if (!usr.compare_ars("REST P"))
+		tmp = add_privs([NEWS_POST_ARTICLE], tmp);
 	if (!usr.compare_ars("REST C"))
 		tmp = add_privs([READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SEND_PRIVATE_MESSAGE, SEND_MESSAGE, REFUSE_CHAT], tmp);
 	if (!usr.compare_ars("REST D"))
@@ -809,7 +801,7 @@ function handle_message(msg)
 				}
 			}
 			break;
-		case 108:
+		case 108:	// Send instant message
 			var userid = msg.params[103].data;
 			if (userid == undefined) {
 				send_response(msg.hdr, [{id:100, value:'No User ID Specified'}], 1);
@@ -916,7 +908,7 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:'Permission denied'}], 1);
 				break;
 			}
-			if (usr.compare_ars("REST D") || usr.compare_ars("REST T")) {
+			if (usr.compare_ars("REST T")) {
 				send_response(msg.hdr, [{id:100, value:"Permission denied"}]);
 				break;
 			}
@@ -938,7 +930,7 @@ function handle_message(msg)
 			var tcount = 0;
 			send_response(msg.hdr, [{id:108, value:file_size(path)+122}, {id:207, value:file_size(path)}, {id:107, value:tid}, /*{id:116, value:tcount}*/]);
 			break;
-		case 300:
+		case 300:	// Get User Name List
 			if (!sent_privs)
 				send_privs();
 			usrs = read_online_users();
@@ -949,7 +941,7 @@ function handle_message(msg)
 			}
 			send_response(msg.hdr, tmp);
 			break;
-		case 303:
+		case 303:	// Get client info text
 			if (msg.params[103] != undefined) {
 				var tmp = new User(msg.params[103].data & 0x7fff);
 				if (tmp != null)
@@ -960,7 +952,7 @@ function handle_message(msg)
 			else
 				send_response(msg.hdr, [{id:100, value:"User number not specified"}], 1);
 			break;
-		case 304:	// TODO: "Automatic response"
+		case 304:	// Set client user info // TODO: "Automatic response"
 			if (msg.params[104] != undefined) {
 				icon = parseInt(msg.params[104].data, 10);
 			}
@@ -1007,7 +999,6 @@ function handle_message(msg)
 						continue;
 					tmp.push({id:323, value:"\x00\x02"+encode_short(msg_area.grp_list[i].sub_list.length)+ascii(msg_area.grp_list[i].description.length)+msg_area.grp_list[i].description});
 				}
-				tmp.push({id:323, value:"\x00\x03"+encode_short(usr.mail_waiting)+'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+encode_long(0)+encode_long(0)+ascii('Personal E-Mail'.length)+'Personal E-Mail'});
 			}
 			send_response(msg.hdr, tmp);
 			break;
@@ -1021,20 +1012,14 @@ function handle_message(msg)
 				}
 				var hdrs = mb.get_all_msg_headers();
 				var msgs = '';
-				if (mb.cfg == undefined /* e-mail */ || msg_area.sub[mb.cfg.code].can_read) {
+				if (msg_area.sub[mb.cfg.code].can_read) {
 					for (i in hdrs) {
 						if (hdrs[i].attr & MSG_DELETE)
 							continue;
-						if (mb.cfg == undefined /* e-mail */) {
-							if (hdrs[i].to_ext != usr.number)
-								continue;
-						}
-						else {
-							if ((hdrs[i].attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED)
-								continue;
-							if ((hdrs[i].attr & MSG_PRIVATE) && (hdrs[i].to_ext != usr.number))
-								continue;
-						}
+						if ((hdrs[i].attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED)
+							continue;
+						if ((hdrs[i].attr & MSG_PRIVATE) && (hdrs[i].to_ext != usr.number))
+							continue;
 						items.count++;
 						// TODO: Attachments etc.
 						var body = mb.get_msg_body(parseInt(i, 10), true);
@@ -1054,16 +1039,8 @@ function handle_message(msg)
 				}
 				hdrs={};
 				mb.close();
-				var name;
-				var desc;
-				if (mb.cfg == undefined) {
-					desc = "Personal E-Mail";
-					name = "E-Mail";
-				}
-				else {
-					desc = mb.cfg.description;
-					name = mb.cfg.name;
-				}
+				var desc = mb.cfg.description;
+				var name = mb.cfg.name;
 				var overhead = 26+4+4+1+name.length+1+desc.length;
 				while (overhead + msgs.length > 65535) {
 					var sublen=ascii(msgs.substr(22,1));
@@ -1087,11 +1064,9 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
 				break;
 			}
-			if (mb.cfg != undefined) {
-				if (!msg_area.sub[mb.cfg.code].can_read) {
-					send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-					break;
-				}
+			if (!msg_area.sub[mb.cfg.code].can_read) {
+				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+				break;
 			}
 			var hdr = mb.get_msg_header(msg.params[326].data);
 			if (hdr == undefined) {
@@ -1110,12 +1085,6 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
 			}
-			if (mb.cfg == undefined) {
-				if (hdr.to_ext != usr.number) {
-					send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-					break;
-				}
-			}
 			var body = ascii_str(mb.get_msg_body(hdr.number, true));
 			if (body == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
@@ -1130,24 +1099,9 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
 				break;
 			}
-			if (mb.cfg == undefined) {
-				// TODO: Send email!
+			if (!msg_area.sub[mb.cfg.code].can_post) {
 				send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
 				break;
-			}
-			else {
-				if (!msg_area.sub[mb.cfg.code].can_post) {
-					send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
-					break;
-				}
-				if (usr.compare_ars("REST P")) {
-					send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
-					break;
-				}
-				if ((mb.cfg.settings & (SUB_QNET|SUB_PNET|SUB_FIDO)) && usr.compare_ars("REST N")) {
-					send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
-					break;
-				}
 			}
 			if (msg.params[328] == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Missing title"}], 1);
@@ -1184,7 +1138,7 @@ function handle_message(msg)
 			}
 			send_response(msg.hdr, []);
 			break;
-		case 411:
+		case 411:	// Delete message
 			var mb = mb_from_path(msg.params[325]);
 			if (mb == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
