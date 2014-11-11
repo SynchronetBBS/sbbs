@@ -769,7 +769,7 @@ function handle_message(msg)
 			if (j)
 				break;
 			update_online_user(usr.alias, icon, flags);
-			send_response(msg.hdr, [{id:160, value:151},{id:161, value:0},{id:162, value:system.name}]);
+			send_response(msg.hdr, [{id:160, value:190},{id:161, value:0},{id:162, value:system.name}]);
 			// TODO: send banner...
 			if (agreement_file == null) {
 				send_message(109, [{id:154, value:1}, {id:101, value:"No Terms Specified."}]);
