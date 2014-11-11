@@ -377,6 +377,16 @@ function mb_from_path(path)
 				}
 			}
 		}
+		else if(depth == 1) {
+			var grplen = decode_integer(path.data.substr(4,1));
+			var grpdesc = path.data.substr(5, grplen);
+			if (grpdesc == 'Personal E-Mail') {
+					mb = new MsgBase('mail');
+					if (!mb.open())
+						rage_quit("Unable to open message base!");
+					return mb;
+			}
+		}
 	}
 	return undefined;
 }
@@ -592,7 +602,13 @@ function get_user_info_str(u)
 function send_privs()
 {
 	var tmp;
-	tmp = add_privs([UPLOAD_FILE, DOWNLOAD_FILE, READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, SEND_PRIVATE_MESSAGE, NEWS_READ_ARTICLE, NEWS_POST_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, DOWNLOAD_FOLDER, SEND_MESSAGE, CHANGE_ICON, REFUSE_CHAT, VISIBLE]);
+	tmp = add_privs([SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, NEWS_READ_ARTICLE, NEWS_POST_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, CHANGE_ICON, VISIBLE]);
+	if (!usr.compare_ars("REST C"))
+		tmp = add_privs([READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SEND_PRIVATE_MESSAGE, SEND_MESSAGE, REFUSE_CHAT], tmp);
+	if (!usr.compare_ars("REST D"))
+		tmp = add_privs([DOWNLOAD_FILE, DOWNLOAD_FOLDER], tmp);
+	if (!usr.compare_ars("REST U"))
+		tmp = add_privs([UPLOAD_FILE], tmp);
 	if (usr.is_sysop)
 		tmp = add_privs([DELETE_FILE, RENAME_FILE, MOVE_FILE, RENAME_FOLDER, DELETE_USER, MODIFY_USER, DISCONNECT_USER, CANNOT_BE_DISCONNECTED, SET_FOLDER_COMMENT, NEWS_DELETE_ARTICLE, BROADCAST, CAN_VIEW_INVISIBLE], tmp);
 	send_message(354, [{id:110, value:tmp}]);
@@ -641,7 +657,7 @@ function handle_message(msg)
 			if(f.open("rb",true)) {
 				message = f.read();
 				f.close();
-				message=strip_exascii(message).replace(/@([^@]*)@/g,
+				message=ascii_str(message).replace(/@([^@]*)@/g,
 					function(matched, code) {
 						var fmt="%s";
 						ma=new Array();
@@ -725,6 +741,10 @@ function handle_message(msg)
 			var chatstr = '';
 			var chatopt = 0;
 
+			if (usr.compare_ars("REST C")) {
+				send_response(msg.hdr, [{id:100, value:"You are not allowed to chat"}]);
+				break;
+			}
 			if (msg.params[114] != undefined)
 				chatid = msg.params[114].data;
 			if (msg.params[101] != undefined)
@@ -795,6 +815,10 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:'No User ID Specified'}], 1);
 				break;
 			}
+			if (usr.compare_ars("REST C")) {
+				send_response(msg.hdr, [{id:100, value:"You are not allowed to chat"}]);
+				break;
+			}
 			if (msg.params[101] != undefined) {
 				if (userid & 0x8000) {
 					var new_usrs = read_online_users();
@@ -825,6 +849,11 @@ function handle_message(msg)
 			break;
 		case 200:	// File list
 			var tmp=[];
+
+			if (usr.compare_ars("REST T")) {
+				send_response(msg.hdr, [{id:100, value:"You are not allowed to access files"}]);
+				break;
+			}
 			if (msg.params[202] == undefined || decode_integer(msg.params[202].data.substr(0,2))==0) {
 				// Root
 				for (i in file_area.lib_list) {
@@ -885,6 +914,10 @@ function handle_message(msg)
 			}
 			if (!sub.can_download) {
 				send_response(msg.hdr, [{id:100, value:'Permission denied'}], 1);
+				break;
+			}
+			if (usr.compare_ars("REST D") || usr.compare_ars("REST T")) {
+				send_response(msg.hdr, [{id:100, value:"Permission denied"}]);
 				break;
 			}
 			var path = sub.path;
@@ -974,6 +1007,7 @@ function handle_message(msg)
 						continue;
 					tmp.push({id:323, value:"\x00\x02"+encode_short(msg_area.grp_list[i].sub_list.length)+ascii(msg_area.grp_list[i].description.length)+msg_area.grp_list[i].description});
 				}
+				tmp.push({id:323, value:"\x00\x03"+encode_short(usr.mail_waiting)+'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+encode_long(0)+encode_long(0)+ascii('Personal E-Mail'.length)+'Personal E-Mail'});
 			}
 			send_response(msg.hdr, tmp);
 			break;
@@ -987,14 +1021,20 @@ function handle_message(msg)
 				}
 				var hdrs = mb.get_all_msg_headers();
 				var msgs = '';
-				if (msg_area.sub[mb.cfg.code].can_read) {
+				if (mb.cfg == undefined /* e-mail */ || msg_area.sub[mb.cfg.code].can_read) {
 					for (i in hdrs) {
 						if (hdrs[i].attr & MSG_DELETE)
 							continue;
-						if ((hdrs[i].attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED)
-							continue;
-						if ((hdrs[i].attr & MSG_PRIVATE) && (hdrs[i].to_ext != usr.number))
-							continue;
+						if (mb.cfg == undefined /* e-mail */) {
+							if (hdrs[i].to_ext != usr.number)
+								continue;
+						}
+						else {
+							if ((hdrs[i].attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED)
+								continue;
+							if ((hdrs[i].attr & MSG_PRIVATE) && (hdrs[i].to_ext != usr.number))
+								continue;
+						}
 						items.count++;
 						// TODO: Attachments etc.
 						var body = mb.get_msg_body(parseInt(i, 10), true);
@@ -1014,14 +1054,24 @@ function handle_message(msg)
 				}
 				hdrs={};
 				mb.close();
-				var overhead = 26+4+4+1+mb.cfg.name.length+1+mb.cfg.description.length;
+				var name;
+				var desc;
+				if (mb.cfg == undefined) {
+					desc = "Personal E-Mail";
+					name = "E-Mail";
+				}
+				else {
+					desc = mb.cfg.description;
+					name = mb.cfg.name;
+				}
+				var overhead = 26+4+4+1+name.length+1+desc.length;
 				while (overhead + msgs.length > 65535) {
 					var sublen=ascii(msgs.substr(22,1));
 					var fromlen=ascii(msgs.substr(23+sublen,1));
 					msgs=msgs.substr(37+sublen+fromlen);
 					items.count--;
 				}
-				send_response(msg.hdr, [{id:321, value:encode_long(0)+encode_long(items.count)+ascii(mb.cfg.name.length)+mb.cfg.name+ascii(mb.cfg.description.length)+mb.cfg.description+msgs}]);
+				send_response(msg.hdr, [{id:321, value:encode_long(0)+encode_long(items.count)+ascii(name.length)+name+ascii(desc.length)+desc+msgs}]);
 			}
 			else {
 				send_response(msg.hdr, [{id:100, value:"No path specified!"}], 1)
@@ -1037,9 +1087,11 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
 				break;
 			}
-			if (!msg_area.sub[mb.cfg.code].can_read) {
-				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-				break;
+			if (mb.cfg != undefined) {
+				if (!msg_area.sub[mb.cfg.code].can_read) {
+					send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+					break;
+				}
 			}
 			var hdr = mb.get_msg_header(msg.params[326].data);
 			if (hdr == undefined) {
@@ -1054,12 +1106,17 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
 			}
-			if ((hdr.attr & MSG_PRIVATE) && (hdr.to_ext != usr.number)) {
+			if ((hdr.attr & MSG_PRIVATE) && (system.matchuser(hdr.to) != usr.number)) {
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
 			}
-
-			var body = mb.get_msg_body(hdr.number, true);
+			if (mb.cfg == undefined) {
+				if (hdr.to_ext != usr.number) {
+					send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+					break;
+				}
+			}
+			var body = ascii_str(mb.get_msg_body(hdr.number, true));
 			if (body == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
@@ -1073,9 +1130,24 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
 				break;
 			}
-			if (!msg_area.sub[mb.cfg.code].can_post) {
+			if (mb.cfg == undefined) {
+				// TODO: Send email!
 				send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
 				break;
+			}
+			else {
+				if (!msg_area.sub[mb.cfg.code].can_post) {
+					send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
+					break;
+				}
+				if (usr.compare_ars("REST P")) {
+					send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
+					break;
+				}
+				if ((mb.cfg.settings & (SUB_QNET|SUB_PNET|SUB_FIDO)) && usr.compare_ars("REST N")) {
+					send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
+					break;
+				}
 			}
 			if (msg.params[328] == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Missing title"}], 1);
