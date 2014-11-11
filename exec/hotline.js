@@ -772,7 +772,7 @@ function handle_message(msg)
 			send_response(msg.hdr, [{id:160, value:151},{id:161, value:0},{id:162, value:system.name}]);
 			// TODO: send banner...
 			if (agreement_file == null) {
-				send_message(109, [{id:154, value:1}]);
+				send_message(109, [{id:154, value:1}, {id:101, value:"No Terms Specified."}]);
 				update_online_user(usr.alias, icon, flags);
 				client.user_name = usr.alias;
 				logged_in = true;
