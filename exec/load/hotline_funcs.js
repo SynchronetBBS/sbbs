@@ -1,3 +1,40 @@
+function address_to_bin(addr)
+{
+	var m;
+	var i, j;
+	var ret = '';
+
+	m = addr.match(/^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$/);
+	if (m != null) {
+		for (i=1; i<=4; i++)
+			ret += ascii(parseInt(m[i], 10));
+		return ret;
+	}
+	else {
+		ret = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00';
+
+		var blocks = addr.split(/:/);
+		for (i = 0; i<blocks.length; i++) {
+			if (blocks[i]=='')
+				break;
+			while(blocks[i].length < 4)
+				blocks[i] = '0'+blocks[i];
+			ret = ret.substr(0, i*2)+ascii(parseInt(blocks[i].substr(0,2), 16))+ascii(parseInt(blocks[i].substr(2, 2), 16)) + ret.substr(i*2 + 2);
+		}
+		if (i != 8) {
+			// Work backward now...
+			for (j = blocks.length - 1; j >=0; j--) {
+				if (blocks[j]=='')
+					break;
+				while(blocks[j].length < 4)
+					blocks[j] = '0'+blocks[j];
+				ret = ret.substr(0, (8 - (blocks.length - j))*2)+ascii(parseInt(blocks[j].substr(0,2), 16))+ascii(parseInt(blocks[j].substr(2, 2), 16)) + ret.substr((8 - (blocks.length - j))*2 + 2);
+			}
+		}
+		return ret;
+	}
+}
+
 function time_to_timestamp(time)
 {
 	var ret ='';
