@@ -592,15 +592,19 @@ function get_user_info_str(u)
 function send_privs()
 {
 	var tmp;
-	tmp = add_privs([SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, NEWS_READ_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, SET_FILE_COMMENT, CHANGE_ICON, VISIBLE]);
+	tmp = add_privs([SHOW_IN_LIST, OPEN_USER, CHANGE_PASSWORD, NEWS_READ_ARTICLE, GET_CLIENT_INFO, NO_AGREEMENT, CHANGE_ICON, VISIBLE]);
 	if (!usr.compare_ars("REST P"))
 		tmp = add_privs([NEWS_POST_ARTICLE], tmp);
 	if (!usr.compare_ars("REST C"))
 		tmp = add_privs([READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SEND_PRIVATE_MESSAGE, SEND_MESSAGE, REFUSE_CHAT], tmp);
-	if (!usr.compare_ars("REST D"))
-		tmp = add_privs([DOWNLOAD_FILE, DOWNLOAD_FOLDER], tmp);
-	if (!usr.compare_ars("REST U"))
-		tmp = add_privs([UPLOAD_FILE], tmp);
+	if (!usr.compare_ars("REST R"))
+		tmp = add_privs([SET_FILE_COMMENT]);
+	if (!usr.compare_ars("REST T")) {
+		if (!usr.compare_ars("REST D"))
+			tmp = add_privs([DOWNLOAD_FILE, DOWNLOAD_FOLDER], tmp);
+		if (!usr.compare_ars("REST U"))
+			tmp = add_privs([UPLOAD_FILE], tmp);
+	}
 	if (usr.is_sysop)
 		tmp = add_privs([DELETE_FILE, RENAME_FILE, MOVE_FILE, RENAME_FOLDER, DELETE_USER, MODIFY_USER, DISCONNECT_USER, CANNOT_BE_DISCONNECTED, SET_FOLDER_COMMENT, NEWS_DELETE_ARTICLE, BROADCAST, CAN_VIEW_INVISIBLE], tmp);
 	send_message(354, [{id:110, value:tmp}]);
