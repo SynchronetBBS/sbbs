@@ -1201,6 +1201,8 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	setsid();	/* Disassociate from controlling terminal */
 	umask(077);
+#elif defined(_WIN32)
+	CreateMutex(NULL, FALSE, "sbbs_running");	/* For use by Inno Setup */
 #endif
 	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
