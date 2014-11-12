@@ -908,10 +908,6 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:'Permission denied'}], 1);
 				break;
 			}
-			if (usr.compare_ars("REST T")) {
-				send_response(msg.hdr, [{id:100, value:"Permission denied"}]);
-				break;
-			}
 			var path = sub.path;
 			if (msg.params[201] == undefined) {
 				send_response(msg.hdr, [{id:100, value:'Missing Filename'}], 1);
