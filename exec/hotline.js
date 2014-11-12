@@ -1,5 +1,6 @@
 load("sbbsdefs.js");
 load("hotline_funcs.js");
+load("hmac.js");
 
 var logged_in = false;
 
@@ -114,6 +115,8 @@ var params = {
 	333:{type:STRING, name:"News Article Data"},
 	335:{type:INTEGER, name:"Parent Article ID"},
 	336:{type:INTEGER, name:"First Child ID"},
+	3587:{type:BINARY, name:"Session Key"},
+	3588:{type:BINARY, name:"MAC Algorithms"},
 };
 
 var client_version = 0;
@@ -286,7 +289,7 @@ function rage_quit(reason)
 	log(LOG_DEBUG, "Rage quit: "+reason);
 	if (usr != undefined)
 		remove_online_user(usr.alias);
-	send_msg(111, [{id:101, value:reason}]);
+	send_message(111, [{id:101, value:reason}]);
 	client.socket.close();
 	exit();
 }
@@ -642,6 +645,45 @@ function send_chat_msg(id, opt, msg)
 	}
 }
 
+function parse_mac_algs(alg_list)
+{
+	var i;
+	var ret = [];
+	var total_algs = decode_integer(alg_list.substr(0, 2));
+	var len;
+
+	alg_list = alg_list.substr(2);
+	for (i=0; i<total_algs; i++) {
+		len = ascii(alg_list.substr(0, 1));
+		ret.push(alg_list.substr(1, len));
+		alg_list = alg_list.substr(len+1);
+	}
+	return ret;
+}
+
+function generate_session_key()
+{
+	var ret = '';
+
+	ret += address_to_bin(client.socket.local_ip_address);
+	ret += encode_short(client.socket.local_port);
+	while(ret.length < 32)
+		ret += ascii(random(256));
+
+	return ret;
+}
+
+function log_bin(str)
+{
+	var os = '';
+	var i;
+
+	for (i=0; i<str.length; i++)
+		os += format("%02X ", ascii(str.substr(i, 1)));
+
+	log(LOG_DEBUG, "Binary data: "+os);
+}
+
 function handle_message(msg)
 {
 	var i, j, k;
@@ -738,7 +780,7 @@ function handle_message(msg)
 			var chatopt = 0;
 
 			if (usr.compare_ars("REST C")) {
-				send_response(msg.hdr, [{id:100, value:"You are not allowed to chat"}]);
+				send_response(msg.hdr, [{id:100, value:"You are not allowed to chat"}], 1);
 				break;
 			}
 			if (msg.params[114] != undefined)
@@ -750,20 +792,75 @@ function handle_message(msg)
 			send_chat_msg(chatid, chatopt, chatstr);
 			break;
 		case 107:	// Login
-			if (msg.params[105] == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Incorrect parameters to login"}], 1);
-				break;
+			var username='';
+			var password='';
+			if (msg.params[3588] != undefined) {
+				// Secure login...
+				var macalgs = parse_mac_algs(msg.params[3588].data);
+				var session_key = generate_session_key();
+				var best_hmac;
+				var hmac_type;
+				for (i in macalgs) {
+					switch(macalgs[i]) {
+						case 'HMAC-MD5':
+							if (best_hmac == undefined) {
+								best_hmac = hmac_md5;
+								hmac_type = macalgs[i];
+							}
+							break;
+						case 'HMAC-SHA1':
+							best_hmac = hmac_sha1;
+							hmac_type = macalgs[i];
+							break;
+					}
+				}
+				if (best_hmac == undefined) {
+					send_response(msg.hdr, [{id:100, value:"No supported HMAC algorithms"}], 1);
+					break;
+				}
+				send_response(msg.hdr, [{id:3587, value:session_key}, {id:3588, value:'\x00\x01'+ascii(hmac_type.length)+hmac_type}, {id:106, value:hmac_type}]);
+				msg = read_msg(client.socket);
+				if (msg.hdr.type == undefined)
+					rage_quit("Disconnected during secure login");
+				if (msg.params[105] == undefined) {
+					send_response(msg.hdr, [{id:100, value:"Incorrect parameters to login"}], 1);
+					break;
+				}
+				username = decode_string(msg.params[105].data);
+				var uid = system.matchuser(username);
+				if (uid == 0) {
+					send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
+					break;
+				}
+				if (msg.params[106] != undefined) {
+					var tmpusr = new User(uid);
+					if ((msg.params[106].data != best_hmac(tmpusr.security.password.toLowerCase(), session_key))
+							&& (msg.params[106].data != best_hmac(tmpusr.security.password.toUpperCase(), session_key))
+							&& (msg.params[106].data != best_hmac(tmpusr.security.password, session_key))) {
+						send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
+						break;
+					}
+					password = tmpusr.security.password;
+				}
+			}
+			else {
+				if (msg.params[105] == undefined) {
+					send_response(msg.hdr, [{id:100, value:"Incorrect parameters to login"}], 1);
+					break;
+				}
+				username = decode_string(msg.params[105].data);
+				password = decode_string(msg.params[106] == undefined ? '' : msg.params[106].data).toLowerCase();
 			}
 			if (msg.params[160] != undefined)
 				client_version = msg.params[160].data;
 			if (msg.params[104] != undefined)
 				icon = msg.params[104].data;
-			var uid = system.matchuser(decode_string(msg.params[105].data));
+			var uid = system.matchuser(username);
 			if (uid == 0) {
 				send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
 				break;
 			}
-			if(!login(uid, decode_string(msg.params[106] == undefined ? '' : msg.params[106].data).toLowerCase())) {
+			if(!login(uid, password)) {
 				send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
 				break;
 			}
