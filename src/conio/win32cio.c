@@ -517,7 +517,6 @@ static BOOL WINAPI ControlHandler(unsigned long CtrlType)
 int win32_initciolib(long inmode)
 {
 	DWORD	conmode;
-	int		i,j;
 	HANDLE	h;
 	CONSOLE_SCREEN_BUFFER_INFO	sbuff;
 
@@ -545,58 +544,58 @@ int win32_initciolib(long inmode)
 		return(0);
 
 	if(GetConsoleScreenBufferInfo(h, &sbuff)==0) {
-		win32_textmode(C80);
+		win32_textmode(C80);	// TODO: This likely won't work...
 	}
 	else {
 		/* Switch to closest mode to current screen size */
-		i=sbuff.srWindow.Right-sbuff.srWindow.Left+1;
-		j=sbuff.srWindow.Bottom-sbuff.srWindow.Top+1;
-		if(i>=132) {
-			if(j<25)
+		cio_textinfo.screenwidth=sbuff.srWindow.Right-sbuff.srWindow.Left+1;
+		cio_textinfo.screenheight=sbuff.srWindow.Bottom-sbuff.srWindow.Top+1;
+		if(cio_textinfo.screenwidth>=132) {
+			if(cio_textinfo.screenheight<25)
 				win32_textmode(VESA_132X21);
-			else if(j<28)
+			else if(cio_textinfo.screenheight<28)
 				win32_textmode(VESA_132X25);
-			else if(j<30)
+			else if(cio_textinfo.screenheight<30)
 				win32_textmode(VESA_132X28);
-			else if(j<34)
+			else if(cio_textinfo.screenheight<34)
 				win32_textmode(VESA_132X30);
-			else if(j<43)
+			else if(cio_textinfo.screenheight<43)
 				win32_textmode(VESA_132X34);
-			else if(j<50)
+			else if(cio_textinfo.screenheight<50)
 				win32_textmode(VESA_132X43);
-			else if(j<60)
+			else if(cio_textinfo.screenheight<60)
 				win32_textmode(VESA_132X50);
 			else
 				win32_textmode(VESA_132X60);
 		}
-		else if(i>=80) {
-			if(j<21)
+		else if(cio_textinfo.screenwidth>=80) {
+			if(cio_textinfo.screenheight<21)
 				win32_textmode(C80X14);
-			else if(j<25)
+			else if(cio_textinfo.screenheight<25)
 				win32_textmode(C80X21);
-			else if(j<28)
+			else if(cio_textinfo.screenheight<28)
 				win32_textmode(C80);
-			else if(j<43)
+			else if(cio_textinfo.screenheight<43)
 				win32_textmode(C80X28);
-			else if(j<50)
+			else if(cio_textinfo.screenheight<50)
 				win32_textmode(C80X43);
-			else if(j<60)
+			else if(cio_textinfo.screenheight<60)
 				win32_textmode(C80X50);
 			else
 				win32_textmode(C80X60);
 		}
 		else {
-			if(j<21)
+			if(cio_textinfo.screenheight<21)
 				win32_textmode(C40X14);
-			else if(j<25)
+			else if(cio_textinfo.screenheight<25)
 				win32_textmode(C40X21);
-			else if(j<28)
+			else if(cio_textinfo.screenheight<28)
 				win32_textmode(C40);
-			else if(j<43)
+			else if(cio_textinfo.screenheight<43)
 				win32_textmode(C40X28);
-			else if(j<50)
+			else if(cio_textinfo.screenheight<50)
 				win32_textmode(C40X43);
-			else if(j<60)
+			else if(cio_textinfo.screenheight<60)
 				win32_textmode(C40X50);
 			else
 				win32_textmode(C40X60);
