@@ -28,6 +28,10 @@
  *                              key support, improved paragraph detetion & wrapping
  *                              for quote lines, backspace fix, and fixed DCT quote
  *                              window top border for wide terminals.
+ * 2014-11-15 Eric Oulashin     Version 1.42
+ *                              Updated the cross-post selection box to use the
+ *                              PageUp & PageDown keys for paging instead of P
+ *                              and N.
  */
 
 /* Command-line arguments:
@@ -105,7 +109,7 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.41";
+const EDITOR_VERSION = "1.42";
 const EDITOR_VER_DATE = "2014-11-15";
 
 
@@ -4004,10 +4008,10 @@ function drawInitialCrossPostSelBoxBottomBorder(pBottomLeft, pWidth, pBorderColo
 {
   console.gotoxy(pBottomLeft);
   console.print(pBorderColor + LOWER_LEFT_SINGLE + RIGHT_T_SINGLE +
-                "nhcb, cb, cNy)bext, cPy)brev, cFy)birst, cLy)bast, cEntery=b"
+                "nhcb, cb, cPgUpb, cPgDnb, cFy)birst, cLy)bast, cEntery=b"
                 + (pMsgSubs ? "Toggle" : "Select") + ", cCtrl-Cnc/hQy=bEnd, c?y=bHelpn"
                 + pBorderColor + LEFT_T_SINGLE);
-  len = pWidth - 73;
+  len = pWidth - 71;
   for (var i = 0; i < len; ++i)
     console.print(HORIZONTAL_SINGLE);
   console.print(LOWER_RIGHT_SINGLE);
@@ -4123,8 +4127,6 @@ function doCrossPosting(pOriginalCurpos)
     // write the "Choose group" text
     console.gotoxy(pSelBoxUpperLeft.x+17, pSelBoxUpperLeft.y);
     console.print("n" + gConfigSettings.genColors.listBoxBorderText + "Choose group");
-    //Choose group
-    //Areas in <xxxxx>
     // Re-write the border characters to overwrite the message group name
     grpDesc = msg_area.grp_list[pGrpIndex].description.substr(0, pSelBoxInnerWidth-25);
     // Write the updated border character(s)
@@ -4226,7 +4228,7 @@ function doCrossPosting(pOriginalCurpos)
     pageNum = calcPageNum(topMsgGrpIndex, selBoxInnerHeight);
 
     // Get a key from the user (upper-case) and take action based upon it.
-    userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
+    userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
     switch (userInput)
     {
       case KEY_UP: // Move up one message group in the list
@@ -4330,7 +4332,7 @@ function doCrossPosting(pOriginalCurpos)
             console.gotoxy(curpos);
          }
          break;
-      case 'N': // Go to the next page
+      case KEY_PAGE_DOWN: // Go to the next page
          var nextPageTopIndex = topMsgGrpIndex + numItemsPerPage;
          if (nextPageTopIndex < msg_area.grp_list.length)
          {
@@ -4348,7 +4350,7 @@ function doCrossPosting(pOriginalCurpos)
             console.gotoxy(curpos);
          }
          break;
-      case 'P': // Go to the previous page
+      case KEY_PAGE_UP: // Go to the previous page
          var prevPageTopIndex = topMsgGrpIndex - numItemsPerPage;
          if (prevPageTopIndex >= 0)
          {
@@ -4417,7 +4419,7 @@ function doCrossPosting(pOriginalCurpos)
 
          // Update the Enter action text in the bottom border to say "Select"
          // (instead of "Toggle").
-         console.gotoxy(selBoxUpperLeft.x+43, selBoxLowerRight.y);
+         console.gotoxy(selBoxUpperLeft.x+41, selBoxLowerRight.y);
          console.print("nhbSelect");
          // Refresh the top border of the selection box, refresh the list of
          // message groups in the box, and move the cursor back to its original
@@ -4493,7 +4495,7 @@ function doCrossPosting(pOriginalCurpos)
                }
                // Update the Enter action text in the bottom border to say "Select"
                // (instead of "Toggle").
-               console.gotoxy(selBoxUpperLeft.x+43, selBoxLowerRight.y);
+               console.gotoxy(selBoxUpperLeft.x+41, selBoxLowerRight.y);
                console.print("nhbSelect");
                // Refresh the top border of the selection box
                reWriteInitialTopBorderText(selBoxUpperLeft, selBoxInnerWidth, chosenGrpIndex);
@@ -4763,7 +4765,7 @@ function crossPosting_selectSubBoardInGrp(pGrpIndex, pSelBoxUpperLeft, pSelBoxLo
 
   // Update the Enter action text in the bottom border to say "Toggle"
   // (instead of "Select").
-  console.gotoxy(pSelBoxUpperLeft.x+43, pSelBoxLowerRight.y);
+  console.gotoxy(pSelBoxUpperLeft.x+41, pSelBoxLowerRight.y);
   console.print("nhbToggle");
 
   // Variables for keeping track of the message group/area list
@@ -4801,7 +4803,7 @@ function crossPosting_selectSubBoardInGrp(pGrpIndex, pSelBoxUpperLeft, pSelBoxLo
     pageNum = calcPageNum(topMsgSubIndex, pSelBoxInnerHeight);
 
     // Get a key from the user (upper-case) and take action based upon it.
-    userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
+    userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
     switch (userInput)
     {
       case KEY_UP: // Move up one message sub-board in the list
@@ -4913,7 +4915,7 @@ function crossPosting_selectSubBoardInGrp(pGrpIndex, pSelBoxUpperLeft, pSelBoxLo
             console.gotoxy(curpos);
          }
          break;
-      case 'N': // Go to the next page
+      case KEY_PAGE_DOWN: // Go to the next page
          var nextPageTopIndex = topMsgSubIndex + numItemsPerPage;
          if (nextPageTopIndex < msg_area.grp_list[pGrpIndex].sub_list.length)
          {
@@ -4931,7 +4933,7 @@ function crossPosting_selectSubBoardInGrp(pGrpIndex, pSelBoxUpperLeft, pSelBoxLo
             console.gotoxy(curpos);
          }
          break;
-      case 'P': // Go to the previous page
+      case KEY_PAGE_UP: // Go to the previous page
          var prevPageTopIndex = topMsgSubIndex - numItemsPerPage;
          if (prevPageTopIndex >= 0)
          {
@@ -5020,7 +5022,7 @@ function crossPosting_selectSubBoardInGrp(pGrpIndex, pSelBoxUpperLeft, pSelBoxLo
          break;
       case '?': // Display cross-post help
          displayCrossPostHelp(pSelBoxUpperLeft, pSelBoxLowerRight);
-         console.gotoxy(pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y);
+         console.gotoxy(pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1);
          console.pause();
          ListScreenfulOfMsgSubs(pGrpIndex, topMsgSubIndex, selectedMsgSubIndex,
                          pSelBoxUpperLeft.y+1, pSelBoxUpperLeft.x+1, pSelBoxLowerRight.y-1,
