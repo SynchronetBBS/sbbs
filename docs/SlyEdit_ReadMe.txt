@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.40
-                        Release date: 2014-05-21
+                              Version 1.41
+                        Release date: 2014-11-15
 
                                   by
 
@@ -14,7 +14,7 @@
 This file describes SlyEdit, a message editor for Synchronet.
 Note: For sysops who already have a previous version of SlyEdit
 installed and are upgrading to this version, please see the file
-SlyEdit_Upgrading.txt.
+Upgrading.txt.
 
 Contents
 ========
@@ -190,34 +190,36 @@ DCT Edit.  It also has the following features:
 - Configuration file with behavior and color settings.  See section 4
   (Configuration File) for more information.
 
-The following is a summary of the keyboard shortcuts (from SlyEdit's command
-help screen):
+The following is a summary of the keyboard shortcuts, from SlyEdit's command
+help screen (note that file import, with Ctrl-O & Ctrl-X, are only available to
+the sysop or users with sysop access, and file import/export takes place on the
+BBS machine):
 
 Help keys                                     Slash commands (on blank line)
 ---------                                     ------------------------------
-Ctrl-G       : General help                 ¦ /A     : Abort
-Ctrl-P       : Command key help             ¦ /S     : Save
-Ctrl-R       : Program information          ¦ /Q     : Quote message
-Ctrl-T       : List text replacements       ¦ /T     : List text replacements
-                                            ¦ /C     : Cross-post selection
-
+Ctrl-G       : General help                 ¦ /A      : Abort
+Ctrl-P       : Command key help             ¦ /S      : Save
+Ctrl-R       : Program information          ¦ /Q      : Quote message
+Ctrl-T       : List text replacements       ¦ /T      : List text replacements
+                                            ¦ /U      : Your settings
 
 Command/edit keys
 -----------------
-Ctrl-A       : Abort message                ¦ Ctrl-W : Page up
-Ctrl-Z       : Save message                 ¦ Ctrl-S : Page down
-Ctrl-Q       : Quote message                ¦ Ctrl-N : Find text
-Insert/Ctrl-I: Toggle insert/overwrite mode ¦ Ctrl-D : Delete line
-ESC          : Command menu                 ¦ Ctrl-C : Cross-post selection
-Ctrl-O       : Import a file                ¦ Ctrl-X : Export to file
+Ctrl-A       : Abort message                ¦ PageUp  : Page up
+Ctrl-Z       : Save message                 ¦ PageDown: Page down
+Ctrl-Q       : Quote message                ¦ Ctrl-N  : Find text
+Insert/Ctrl-I: Toggle insert/overwrite mode ¦ Ctrl-D  : Delete line
+ESC          : Command menu
+Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
+Ctrl-U       : Your settings
 
 
 5. Digital Distortion Message Lister note
 -----------------------------------------
 If you use Digital Distortion's Message Lister, you must update it to version
 1.36 or newer in order to properly work with this version of SlyEdit when
-replying to messages.  See the file "SlyEdit_DD_Message_Lister_notes.txt" for a
-more detailed explanation.
+replying to messages.  See the file "Message Lister notes.txt" for a more
+detailed explanation.
 
 6. Configuration file
 =====================
