@@ -399,7 +399,7 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
       // This line contains the copyright mesage & ESC key help
       var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "w") + "ch"
                       + EDITOR_VERSION.toString() + "   "
-                      + iceText("Copyright", "w") + " ch2013 "
+                      + iceText("Copyright", "w") + " ch2014 "
                       + iceText("Eric Oulashin", "w") + " nb" + DOT_CHAR + " "
                       + iceText("Press ESCape For Help", "w");
       // Calculate the starting position to center the help text, and front-pad
@@ -491,19 +491,23 @@ function DrawQuoteWindowBottomBorder_IceStyle(pEditLeft, pEditRight)
                                                              gConfigSettings.iceColors.BorderColor1,
                                                              gConfigSettings.iceColors.BorderColor2)
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
-                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "^Q/ESC-End"
+                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "^Q/ESC=End"
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
                 + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
                 + gConfigSettings.iceColors.BorderColor2  + THIN_RECTANGLE_LEFT
-                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "CR-Accept"
+                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "CR=Accept"
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
                 + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
-                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down-Scroll"
+                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn=Scroll"
+                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
+                + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
+                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
+                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "F/L=First/Last pg"
                 + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT;
       // The border from here to the end of the line: Random high/low blue
       var screenText = "";
-      for (var posX = pEditLeft + 43; posX <= pEditRight; ++posX)
+      for (var posX = pEditLeft + 73; posX <= pEditRight; ++posX)
          screenText += HORIZONTAL_DOUBLE;
       screenText += LOWER_RIGHT_VSINGLE_HDOUBLE;
       DrawQuoteWindowBottomBorder_IceStyle.border += randomTwoColorString(screenText,

@@ -58,6 +58,10 @@
  *                              of different widths.
  * 2013-09-16 Eric Oulashin     Fixed off-by-one bug for the horizontal position in
  *                              Updated updateInsertModeOnScreen_DCTStyle().
+ * 2014-11-04 Eric Oulashin     Fixed the quote window top border length in
+ *                              DrawQuoteWindowTopBorder_DCTStyle().  Updated the
+ *                              quote window bottom border to display the new
+ *                              scroll keys in DrawQuoteWindowBottomBorder_DCTStyle().
  */
 
 load("sbbsdefs.js");
@@ -453,8 +457,8 @@ function DrawQuoteWindowTopBorder_DCTStyle(pQuoteWinHeight, pEditLeft, pEditRigh
                                 + gConfigSettings.DCTColors.QuoteWinBorderTextColor
                                 + "Quote Window " + gConfigSettings.DCTColors.QuoteWinBorderColor;
       var curLength = strip_ctrl(DrawQuoteWindowTopBorder_DCTStyle.border).length;
-      var endCol = console.screen_columns-1;
-      for (var i = curLength; i < endCol; ++i)
+      var borderWidth = pEditRight - pEditLeft;
+      for (var i = curLength; i < borderWidth; ++i)
          DrawQuoteWindowTopBorder_DCTStyle.border += HORIZONTAL_SINGLE;
       DrawQuoteWindowTopBorder_DCTStyle.border += UPPER_RIGHT_SINGLE;
    }
@@ -478,22 +482,20 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
    if (typeof(DrawQuoteWindowBottomBorder_DCTStyle.border) == "undefined")
    {
       // Create a string containing the quote help text.
-      var quoteHelpText = " " + gConfigSettings.DCTColors.QuoteWinBorderTextColor
-                         + "[Enter] Quote Line " + gConfigSettings.DCTColors.QuoteWinBorderColor
-                         + " ";
-      for (var i = 0; i < 3; ++i)
-         quoteHelpText += HORIZONTAL_SINGLE;
-      quoteHelpText += " " +  gConfigSettings.DCTColors.QuoteWinBorderTextColor
-                     + "[ESC] Stop Quoting " + gConfigSettings.DCTColors.QuoteWinBorderColor
-                     + " ";
-      for (var i = 0; i < 3; ++i)
-         quoteHelpText += HORIZONTAL_SINGLE;
-      quoteHelpText += " " + gConfigSettings.DCTColors.QuoteWinBorderTextColor
-                     + "[Up/Down] Scroll Lines ";
+      var quoteHelpText = gConfigSettings.DCTColors.QuoteWinBorderTextColor
+                         + "[Enter] Accept" + gConfigSettings.DCTColors.QuoteWinBorderColor
+                         + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+                         + "[^Q/ESC] End" + gConfigSettings.DCTColors.QuoteWinBorderColor
+                         + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+                         + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn] Scroll"
+                         + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
+                         + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+                         + "[F/L] First/last page";
+      var helpTextLen = strip_ctrl(quoteHelpText).length;
 
       // Figure out the starting horizontal position on the screen so that
       // the quote help text line can be centered.
-      var helpTextStartX = ((console.screen_columns/2) - (strip_ctrl(quoteHelpText).length/2)).toFixed(0);
+      var helpTextStartX = Math.floor((console.screen_columns/2) - (helpTextLen/2));
 
       // Start creating DrawQuoteWindowBottomBorder_DCTStyle.border with the
       // bottom border lines, up until helpTextStartX.
@@ -504,7 +506,7 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
       // Add the help text, then display the rest of the bottom border characters.
       DrawQuoteWindowBottomBorder_DCTStyle.border += quoteHelpText
                                                    + gConfigSettings.DCTColors.QuoteWinBorderColor;
-      for (var XPos = pEditLeft+2+strip_ctrl(quoteHelpText).length; XPos <= pEditRight-1; ++XPos)
+      for (var XPos = helpTextStartX + helpTextLen; XPos <= pEditRight-2; ++XPos)
          DrawQuoteWindowBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
       DrawQuoteWindowBottomBorder_DCTStyle.border += LOWER_RIGHT_SINGLE;
    }

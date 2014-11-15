@@ -12,86 +12,28 @@
  * 2009-08-22 Eric Oulashin     Version 1.00
  *                              Initial public release
  * ....Removed some comments...
- * 2013-08-24 Eric Oulashin     Bug fix in wrapQuoteLines(): Off-by-one bug toward
- *                              the end where there might be more quote lines
- *                              than lineInfo objects, so it wouldn't quote the
- *                              last line when using author initials.
- * 2013-08-28 Eric Oulashin     Updated ReadSlyEditConfigFile() to read and
- *                              set the enableTextReplacements setting.  It
- *                              defaults to false.  Also added populateTxtReplacements().
- *                              Added moveGenColorsToGenSettings(), which
- *                              can be called by JavaScripts for different
- *                              UI styles to move the general color settings
- *                              from their own color array into the genColors
- *                              array in the configuration object.
- * 2013-08-31 Eric Oulashin     Added the function getWordFromEditLine().
- * 2013-09-02 Eric Oulashin     Worked on the new function doMacroTxtReplacementInEditLine(),
- *                              which performs text replacement (AKA macros) on
- *                              one of the message edit lines.  Added
- *                              genFullPathCfgFilename() so that the logic for finding
- *                              the configuration files is all in one place.  Added
- *                              getFirstLetterFromStr() and firstLetterIsUppercase(),
- *                              which are helpers for doMacroTxtReplacementInEditLine()
- *                              for checking & fixing first-letter capitalization
- *                              after doing a regex replace.
- * 2013-09-03 Eric Oulashin     Updated populateTxtReplacements() so that it won't
- *                              force the replacement text strings to lowercase
- *                              when not using regular expressions.  Also made
- *                              use of strip_ctrl() with the replacement text to
- *                              prevent the use of color codes, which might mess
- *                              up SlyEdit's tracking of string indexes, etc.
- *                              Updated doMacroTxtReplacementInEditLine() so
- *                              that macro text replacements won't lowercase the
- *                              replacement text when in literal match & replace
- *                              mode.
- * 2013-09-07 Eric Oulashin     Bug fix: Updated ReadSlyEditConfigFile() to
- *                              default cfgObj.genColors.listBoxItemText to
- *                              ensure that it gets defined.
- *                              Code refactor: Moved doMacroTxtReplacementInEditLine()
- *                              and getWordFromEditLine() to TextLine member
- *                              methods TextLine_doMacroTxtReplacement() and
- *                              TextLine_getWord().
- * 2013-09-13
- * 2013-09-14 Eric Oulashin     Added functions for a new ChoiceScrollbox object
- *                              type, which is a generic scrollable list box that
- *                              allows a user to select an item.
- *                              Added the functions readTxtFileIntoArray() and
- *                              txtFileContainsLines().  Updated displayCommandList()
- *                              to display the hotkey Ctrl-U for user settings.
- *                              Moved the options for author initials in quote
- *                              lines to user settings.
- * 2013-09-19 Eric Oulashin     Added the shuffleArray() function.  Added 3
- *                              more options to the config file, to be read by
- *                              ReadSlyEditConfigFile(): taglinePrefix, quoteTaglines,
- *                              and shuffleTaglines.
- * 2013-10-22 Eric Oulashin     Worked on the wrapQuoteLines() function to improve
- *                              quoting with author initials to fix a bug where
- *                              a large section in certain messages wasn't getting
- *                              quoted.
- * 2013-10-22 to
- * 2013-10-27 Eric Oulashin     Worked on quote line wrapping to fix issues when
- *                              quoting messages with author initials.
- * 2013-11-09 Eric Oulashin     Added an optional parameter to wrapTextLines() as
- *                              an array to return indexes of lines that needed a
- *                              new line inserted after it.  This was done to help
- *                              wrapQuoteLinesUsingAuthorInitials() move its line
- *                              info objects down when a new line is added.
- * 2013-11-10 Eric Oulashin     Made some more refinements, mainly for
- *                              wrapQuoteLinesUsingAuthorInitials().
- * 2013-11-25 Eric Oulashin     Minor bug fix in wrapQuoteLinesUsingAuthorInitials()
- *                              starting on line 2739: Added more checks to ensure
- *                              that the gQuoteLines object it references is valid.
- *                              Bug fix in DisplayTextAreaBottomBorder_IceStyle() in
- *                              SlyEdit_IceStuff.js to ensure that the parenthesis in the
- *                              CTRL key help text at the right in the bottom border are
- *                              correctly displayed with a high blue color, regardless of
- *                              what is specified in the color theme file.
- * 2014-05-12 Eric Oulashin     Added a check in wrapQuoteLinesUsingAuthorInitials(): When
- *                              building the last section info object, added a check to
- *                              the while loop that makes sure sectionInfo.endArrIndex is
- *                              greater than 0 to avoid an index out-of-bounds issue with
- *                              the check that references gQuoteLines[sectionInfo.endArrIndex-1].
- *                              This should hopefully fix a bug with SlyEdit crashing at that point.
+ * 2014-11-01 Eric Oulashin     Added getKeyWithESCChars(), along with the key definitions
+ *                              KEY_PAGE_UP and KEY_PAGE_DOWN, to support inputting the
+ *                              PageUp & PageDown keys from the user.
+ * 2014-11-08 Eric Oulashin     Updated wrapQuoteLinesUsingAuthorInitials() and
+ *                              wrapQuoteLines_NoAuthorInitials() so that if the
+ *                              current line's indentation differs from the previous
+ *                              line's indentation, it will mark a new section for
+ *                              the quote lines so that lines of different paragraphs
+ *                              don't get wrapped together.
+ * 2014-11-09 Eric Oulashin     Bug fix in wrapTextLines(): For the edge case when
+ *                              text is trimmed from the end of the last line in
+ *                              the paragraph, it will insert a new line in the
+ *                              array at the end of the paragraph for the trimmed
+ *                              text.  For lines before the last line in the
+ *                              paragraph, it will just prepend the text to the
+ *                              next line in the array.  Also, updated
+ *                              wrapQuoteLinesUsingAuthorInitials() to trim leading
+ *                              spaces from non-quote text sections to leave more
+ *                              room for wrapping the lines and to avoid having
+ *                              whole sections of quote lines that start with
+ *                              several spaces.  Also made a similar update to
+ *                              wrapQuoteLines_NoAuthorInitials().
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -185,6 +127,15 @@ var CTRL_X = "\x18";
 var CTRL_Y = "\x19";
 var CTRL_Z = "\x1a";
 var KEY_ESC = "\x1b";
+// Key code strings returned by getKeyWithESCChars() - Not real key codes, as
+// the keys they represent are returned as multiple key captures.
+var KEY_PAGE_UP = "\1PgUp";
+var KEY_PAGE_DOWN = "\1PgDn";
+var KEY_F1 = "\1F1";
+var KEY_F2 = "\1F2";
+var KEY_F3 = "\1F3";
+var KEY_F4 = "\1F4";
+var KEY_F5 = "\1F5";
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
@@ -1226,7 +1177,7 @@ function isPrintableChar(pText)
 // Removes multiple, leading, and/or trailing spaces
 // The search & replace regular expressions used in this
 // function came from the following URL:
-//  http://qodo.co.uk/blog/javascript-trim-leading-and-trailing-spaces
+// http://qodo.co.uk/blog/javascript-trim-leading-and-trailing-spaces
 //
 // Parameters:
 //  pString: The string to trim
@@ -1348,7 +1299,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
       if ((pKey2.length == 0) && (pDesc2.length == 0))
          sepChar2 = " ";
       printf("ch%-13sg" + sepChar1 + " nc%-28s kh" + VERTICAL_SINGLE +
-             " ch%-7sg" + sepChar2 + " nc%s", pKey, pDesc, pKey2, pDesc2);
+             " ch%-8sg" + sepChar2 + " nc%s", pKey, pDesc, pKey2, pDesc2);
       if (pCR)
          console.crlf();
    }
@@ -1369,8 +1320,8 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
    console.crlf();
    // Command/edit keys
    console.print("ngCommand/edit keys\r\nkh컴컴컴컴컴컴컴컴�\r\n");
-   displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "Ctrl-W", "Page up", true);
-   displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "Ctrl-S", "Page down", true);
+   displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
+   displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
    displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-N", "Find text", true);
    displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
                                 "Ctrl-D", "Delete line", true);
@@ -1385,7 +1336,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
       displayCmdKeyFormatted("Ctrl-U", "Your settings", true);
 
    if (pPause)
-      console.pause();
+      consolePauseWithESCChars(isSysop);
 }
 
 // Displays the general help screen.
@@ -2422,8 +2373,28 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
           if (trimmedText.charAt(trimmedText.length-1) != " ")
             trimmedText += " "
         }
-        // Prepend the trimmed text to the next line.
-        pLineArr[i+1] = trimmedText + pLineArr[i+1];
+        // Prepend the trimmed text to the next line.  If the next line's index
+        // is within the paragraph we're wrapping, then go ahead and prepend the
+        // text to the next line.  Otherwise, add a new line to the array and
+        // add the text to the new line.
+        if (i+1 < pEndIndex)
+          pLineArr[i+1] = trimmedText + pLineArr[i+1];
+        else
+        {
+          // Add the trimmed text on a new line in the array.  Then, if the
+          // trimmed text's length is longer then the allowed line width, then
+          // we'll want to extend the end index so we can continue wrapping the
+          // lines in the current paragraph.  Otherwise, add the current line's
+          // index to the array of lines requiring a newline.
+          pLineArr.splice(i+1, 0, trimmedText);
+          if (trimmedText.length > pLineWidth)
+            ++pEndIndex;
+          else
+          {
+            if (pNewLineIndexesIsArray)
+              pIdxesRequiringNL.push(i);
+          }
+        }
       }
       else
       {
@@ -2738,6 +2709,8 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
       if (gQuoteLines[quoteLineIndex].length == 0)
          continue;
 
+      // If this line has a different quote level than the previous line, then
+      // it marks a new section.
       if (lineInfos[quoteLineIndex].quoteLevel != lastQuoteLevel)
       {
          endArrIndex = quoteLineIndex;
@@ -2758,9 +2731,33 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
             ++sectionInfo.endArrIndex;
 
          quoteSections.push(sectionInfo);
-
          startArrIndex = quoteLineIndex;
          lastQuoteLevel = lineInfos[quoteLineIndex].quoteLevel;
+      }
+      // For lines with a quote level of 0, if this line's indentation differs from
+      // the previous line's indentation, then that marks a new section.
+      else if ((lineInfos[quoteLineIndex].quoteLevel == 0) && (lastQuoteLevel == 0) &&
+                (lineInfos[quoteLineIndex].startIndex > lineInfos[quoteLineIndex-1].startIndex))
+      {
+         endArrIndex = quoteLineIndex; // One past the last index of the current paragraph
+         var sectionInfo = new Object();
+         sectionInfo.startArrIndex = startArrIndex;
+         sectionInfo.endArrIndex = endArrIndex;
+         sectionInfo.quoteLevel = 0;
+         // If the end array index is for a blank quote line, then
+         // adjust it to the first non-blank quote line before it.
+         while ((sectionInfo.endArrIndex-1 >= 0) &&
+                (typeof(gQuoteLines[sectionInfo.endArrIndex-1]) == "string") &&
+                gQuoteLines[sectionInfo.endArrIndex-1].length == 0)
+         {
+            --sectionInfo.endArrIndex;
+         }
+         // If we moved sectionInfo.endArrIndex back too far, then increment it.
+         while (typeof(gQuoteLines[sectionInfo.endArrIndex]) != "string")
+            ++sectionInfo.endArrIndex;
+
+         quoteSections.push(sectionInfo);
+         startArrIndex = quoteLineIndex;
       }
    }
    // If we only found one section or we're at the last section, then add it to
@@ -2778,9 +2775,24 @@ function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
       quoteSections.push(sectionInfo);
    }
 
-   // 3. Go through each section of the quote lines and quote appropriately
+   // 3. Go through each section of the quote lines and wrap & quote appropriately
    for (var sIndex = 0; sIndex < quoteSections.length; ++sIndex)
    {
+      // If the section is not quoted text (in other words, it was written by
+      // author of the message), then remove leading whitespace from the text
+      // lines in this section to leave more room for wrapping and so that we
+      // don't end up with a section of quote lines that all start with several
+      // spaces.
+      if (quoteSections[sIndex].quoteLevel == 0)
+      {
+         for (var i = quoteSections[sIndex].startArrIndex; i < quoteSections[sIndex].endArrIndex; ++i)
+         {
+            gQuoteLines[i] = trimSpaces(gQuoteLines[i], true, true, false);
+            lineInfos[i].startIndex = 0;
+            lineInfos[i].begOfLine = "";
+         }
+      }
+
       // Remove the quote strings from the lines we're about to wrap
       var maxBegOfLineLen = 0;
       for (var i = quoteSections[sIndex].startArrIndex; i < quoteSections[sIndex].endArrIndex; ++i)
@@ -2914,34 +2926,29 @@ function wrapQuoteLines_NoAuthorInitials()
   if (gQuoteLines.length == 0)
     return;
 
-  // Create an array for line information objects, and append the
-  // first line's info to it.  Also, store the first line's quote
-  // level in the lastQuoteLevel variable.
+  // Create an array for line information objects.
   var lineInfos = new Array();
-  var retObj = firstNonQuoteTxtIndex(gQuoteLines[0], false, false);
-  lineInfos.push(retObj);
-  var lastQuoteLevel = retObj.quoteLevel;
+  for (var quoteLineIndex = 0; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
+    lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], false, false));
+
+  // Set an initial value for lastQuoteLevel, which will be used to compare the
+  // quote levels of each line.
+  var lastQuoteLevel = lineInfos[0].quoteLevel;
 
   // Loop through the array starting at the 2nd line and wrap the lines
   var startArrIndex = 0;
   var endArrIndex = 0;
   var quoteStr = "";
   var quoteLevel = 0;
-  var retObj = null;
   var i = 0; // Index variable
   for (var quoteLineIndex = 1; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
   {
-    retObj = firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], false, false);
-    lineInfos.push(retObj);
-    if (retObj.quoteLevel != lastQuoteLevel)
+    if (lineInfos[quoteLineIndex].quoteLevel != lastQuoteLevel)
     {
       endArrIndex = quoteLineIndex;
       // Remove the quote strings from the lines we're about to wrap
       for (i = startArrIndex; i < endArrIndex; ++i)
       {
-        // TODO
-        // Error on next line: !JavaScript  TypeError: lineInfos[i] is undefined
-        // Fixed by checking that lineInfos[i] is not null..  but why would it be?
         if (lineInfos[i] != null)
         {
           if (lineInfos[i].startIndex > -1)
@@ -2953,10 +2960,10 @@ function wrapQuoteLines_NoAuthorInitials()
           if (/^ +$/.test(gQuoteLines[i])) gQuoteLines[i] = "";
         }
       }
-      // Wrap the text lines in the range we've seen
+      // Wrap the text lines in the range we've seen.
       // Note: 79 is assumed as the maximum line length because
       // that seems to be a commonly-accepted message width for
-      // BBSs.  Also, the following length is subtracted from it:
+      // BBSes.  Also, the following length is subtracted from it:
       // (2*(lastQuoteLevel+1) + gQuotePrefix.length)
       // That is because we'll be prepending "> " to the quote lines,
       // and then SlyEdit will prepend gQuotePrefix to them during quoting.
@@ -2969,6 +2976,10 @@ function wrapQuoteLines_NoAuthorInitials()
       {
         endArrIndex += numLinesAdded;
         quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
+        // Splice new lineInfo objects into the lineInfos array at the end of this
+        // section for each new line added in this section.
+        for (var counter = 0; counter < numLinesAdded; ++counter)
+          lineInfos.splice(endArrIndex, 0, getDefaultQuoteStrObj());
       }
       // Put quote strings ("> ") back into the lines we just wrapped
       if ((quoteLineIndex > 0) && (lastQuoteLevel > 0))
@@ -2979,7 +2990,43 @@ function wrapQuoteLines_NoAuthorInitials()
         for (i = startArrIndex; i < endArrIndex; ++i)
           gQuoteLines[i] = quoteStr + gQuoteLines[i].replace(/^\s*>/, ">");
       }
-      lastQuoteLevel = retObj.quoteLevel;
+      lastQuoteLevel = lineInfos[quoteLineIndex].quoteLevel;
+      startArrIndex = quoteLineIndex;
+    }
+    // For lines with a quote level of 0, if this line's indentation differs from
+    // the previous line's indentation, then that marks a new section.
+    else if ((lineInfos[quoteLineIndex].quoteLevel == 0) && (lastQuoteLevel == 0) &&
+             (lineInfos[quoteLineIndex].startIndex > lineInfos[quoteLineIndex-1].startIndex))
+    {
+      endArrIndex = quoteLineIndex;
+
+      // Remove leading whitespace from the text lines in this section to leave
+      // more room for wrapping and so that we don't end up with a section of
+      // quote lines that all start with several spaces.
+      for (var i = startArrIndex; i < endArrIndex; ++i)
+      {
+         gQuoteLines[i] = trimSpaces(gQuoteLines[i], true, true, false);
+         lineInfos[i].startIndex = 0;
+         lineInfos[i].begOfLine = "";
+      }
+
+      // Wrap the text lines in the range we've seen.
+      // Note: 79 is assumed as the maximum line length because
+      // that seems to be a commonly-accepted message width for
+      // BBSes.
+      var numLinesAdded =  wrapTextLines(gQuoteLines, startArrIndex, endArrIndex, 79);
+      // If quote lines were added as a result of wrapping, then
+      // determine the number of lines added, and update endArrIndex
+      // and quoteLineIndex accordingly.
+      if (numLinesAdded > 0)
+      {
+        endArrIndex += numLinesAdded;
+        quoteLineIndex += (numLinesAdded-1); // - 1 because quoteLineIndex will be incremented by the for loop
+        // Splice new lineInfo objects into the lineInfos array at the end of this
+        // section for each new line added in this section.
+        for (var counter = 0; counter < numLinesAdded; ++counter)
+          lineInfos.splice(endArrIndex, 0, getDefaultQuoteStrObj());
+      }
       startArrIndex = quoteLineIndex;
     }
   }
@@ -3626,17 +3673,38 @@ function firstLetterIsUppercase(pString)
 //
 // Parameters:
 //  pMode: The input mode flag(s)
-//  pCfgObj: The configuration object
+//  pCfgObj: The configuration object (stores the input timeout setting)
 //
 // Return value: The user's keypress (the return value of console.getkey()
 //               or console.inkey()).
 function getUserKey(pMode, pCfgObj)
 {
+   var defaultTimeoutMS = 300000;
    var userKey = "";
-   if (!pCfgObj.userInputTimeout || pCfgObj.userIsSysop)
-      userKey = console.getkey(pMode);
-   else
-      userKey = console.inkey(pMode, pCfgObj.inputTimeoutMS);
+
+   if (typeof(pCfgObj) == "object")
+   {
+      // If the user is a sysop, don't use an input timeout.
+      if ((typeof(pCfgObj.userIsSysop) == "boolean") && pCfgObj.userIsSysop)
+         userKey = console.getkey(pMode);
+      else if (typeof(pCfgObj.userInputTimeout) == "number")
+         userKey = console.inkey(pMode, pCfgObj.inputTimeoutMS);
+      else
+         userKey = console.inkey(pMode, defaultTimeoutMS);
+   }
+   else if (typeof(pCfgObj) == "boolean")
+   {
+      // pCfgObj is a boolean that specifies whether or not the user is a sysop.
+      // If so, then use console.getkey().  If the user isn't a sysop, use a
+      // timeout of 5 minutes.
+      if (pCfgObj)
+         userKey = console.getkey(pMode);
+      else
+         userKey = console.inkey(pMode, defaultTimeoutMS);
+   }
+   else // pCfgObj is not a known type, so use the default input timeout.
+      userKey = console.inkey(pMode, defaultTimeoutMS);
+
    return userKey;
 }
 
@@ -4043,6 +4111,78 @@ function shuffleArray(pArray)
     }
 
     return pArray;
+}
+
+// Performs the same function as console.pause(), but also allows input of multi-key
+// sequences such as PageUp, PageDown, F1, etc. without writing extra characters on
+// the screen.
+//
+// Parameters:
+//  pCfgObj: Optional - The configuration object, which specifies the input timeout.
+function consolePauseWithESCChars(pCfgObj)
+{
+   console.print("\1n" + bbs.text(563)); // 563 is the "Press a key" text in text.dat
+   getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO, pCfgObj);
+}
+
+// Inputs a keypress from the user and handles some ESC-based
+// characters such as PageUp, PageDown, and ESC.  If PageUp
+// or PageDown are pressed, this function will return the
+// string "\1PgUp" (KEY_PAGE_UP) or "\1Pgdn" (KEY_PAGE_DOWN),
+// respectively.  Also, F1-F5 will be returned as "\1F1"
+// through "\1F5", respectively.
+// Thanks goes to Psi-Jack for the original impementation
+// of this function.
+//
+// Parameters:
+//  pGetKeyMode: Optional - The mode bits for console.getkey().
+//               If not specified, K_NONE will be used.
+//  pCfgObj: The configuration object (stores the input timeout setting)
+//
+// Return value: The user's keypress
+function getKeyWithESCChars(pGetKeyMode, pCfgObj)
+{
+   var getKeyMode = K_NONE;
+   if (typeof(pGetKeyMode) == "number")
+      getKeyMode = pGetKeyMode;
+
+   var userInput = getUserKey(getKeyMode, pCfgObj);
+   if (userInput == KEY_ESC) {
+      switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
+         case '[':
+            switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
+               case 'V':
+                  userInput = KEY_PAGE_UP;
+                  break;
+               case 'U':
+                  userInput = KEY_PAGE_DOWN;
+                  break;
+           }
+           break;
+         case 'O':
+           switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
+              case 'P':
+                 userInput = KEY_F1;
+                 break;
+              case 'Q':
+                 userInput = KEY_F2;
+                 break;
+              case 'R':
+                 userInput = KEY_F3;
+                 break;
+              case 'S':
+                 userInput = KEY_F4;
+                 break;
+              case 't':
+                 userInput = KEY_F5;
+                 break;
+           }
+         default:
+           break;
+      }
+   }
+
+   return userInput;
 }
 
 // This function displays debug text at a given location on the screen, then
