@@ -241,6 +241,9 @@ DLLEXPORT void DLLCALL inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
 #ifndef IPPORT_HTTP
 #define IPPORT_HTTP			80
 #endif
+#ifndef IPPORT_HTTPS
+#define IPPORT_HTTPS			443
+#endif
 #ifndef IPPORT_FTP
 #define IPPORT_FTP			21
 #endif
