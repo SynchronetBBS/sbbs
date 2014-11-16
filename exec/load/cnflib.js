@@ -65,7 +65,7 @@ var CNF = new (function() {
 				case "obj":
 					data[p] = readRecord(file,struct[p].bytes);
 					break;
-				case "lst":
+				case "arr":
 					data[p] = readArray(file,struct[p].bytes);
 					break;
 				case "ntv":
@@ -122,7 +122,7 @@ var CNF = new (function() {
 				case "obj":
 					writeRecord(file,struct[p].bytes,record[p]);
 					break;
-				case "lst":
+				case "arr":
 					writeArray(file,struct[p].bytes,record[p]);
 					break;
 				case "ntv":
@@ -159,11 +159,12 @@ var CNF = new (function() {
 	/* write records to .cnf file */
 	this.write = function(fileName,struct,data) {
 		var f = new File(fileName);
-		f.open('wb',true);
+		if(!f.open('wb',true))
+			return false;
 		
 		writeRecord(f,struct,data);
-
 		f.close();
+		return true;
 	}
 
 })();
