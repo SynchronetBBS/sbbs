@@ -18,9 +18,8 @@ js_cryptcon_error(JSContext *cx, CRYPT_CONTEXT ctx, int error)
 {
 	char *errstr;
 	int errlen;
-	struct private_data* p;
 
-	if (cryptGetAttributeString(p->ctx, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &errlen) != CRYPT_OK) {
+	if (cryptGetAttributeString(ctx, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &errlen) != CRYPT_OK) {
 		JS_ReportError(cx, "CryptLib error %d", error);
 		return;
 	}
@@ -28,7 +27,7 @@ js_cryptcon_error(JSContext *cx, CRYPT_CONTEXT ctx, int error)
 		JS_ReportError(cx, "CryptLib error %d", error);
 		return;
 	}
-	if (cryptGetAttributeString(p->ctx, CRYPT_ATTRIBUTE_ERRORMESSAGE, errstr, &errlen) != CRYPT_OK) {
+	if (cryptGetAttributeString(ctx, CRYPT_ATTRIBUTE_ERRORMESSAGE, errstr, &errlen) != CRYPT_OK) {
 		free(errstr);
 		JS_ReportError(cx, "CryptLib error %d", error);
 		return;
@@ -173,7 +172,6 @@ js_do_encrption(JSContext *cx, uintN argc, jsval *arglist, int encrypt)
 	jsval *argv;
 	size_t len;
 	char *cipherText;
-	char *tmp;
 	int status;
 	jsrefcount rc;
 	JSString* str;
@@ -257,7 +255,6 @@ static char* cryptcon_prop_desc[] = {
 	,"Mode constant (CryptContext.MODE.XXX)"
 	,"Algorithm name"
 	,"Mode name"
-	,"Data Carrier Detect"
 	,NULL
 };
 #endif
@@ -302,7 +299,6 @@ js_cryptcon_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 	jsval idval;
     jsint tiny;
 	struct private_data* p;
-	jsrefcount rc;
 
 	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
@@ -401,8 +397,6 @@ js_cryptcon_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsval idval;
     jsint tiny;
 	struct private_data* p;
-	jsrefcount rc;
-	JSBool ret;
 
 	if ((p=(struct private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		return JS_TRUE;
