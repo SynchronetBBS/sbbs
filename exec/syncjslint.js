@@ -183,7 +183,7 @@ SOFTWARE.
     list_named_queues,flags_str,
     argc,argv,errno,errnostr,socket_errno,
     global,js,system,server,client,user,bbs,console,msg_area,
-    file_area,xtrn_area,MsgBase,File,Queue,Socket,User,
+    file_area,xtrn_area,MsgBase,File,Queue,Socket,User,COM,CryptContext
 
     paranoidbrace, multiload, noradix, noescapement, poorrelations,
     noliteral, noextracomma
@@ -710,6 +710,7 @@ var JSLINT = function () {
 			netaddr_type: true,
 			list_named_queues	: true,
 			flags_str	: true,
+			login		: true,
 
 			argc		: true,
 			argv		: true,
@@ -732,7 +733,9 @@ var JSLINT = function () {
 			File		: true,
 			Queue		: true,
 			Socket		: true,
-			User		: true
+			User		: true,
+			COM			: true,
+			CryptContext: true
 		},
 
         scope,      // The current scope
