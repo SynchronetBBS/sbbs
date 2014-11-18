@@ -4279,6 +4279,10 @@ BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		if(js_CreateCOMClass(js_cx, *glob)==NULL)
 			break;
 
+		/* CryptContext Class */
+		if(js_CreateCryptContextClass(js_cx, *glob)==NULL)
+			break;
+
 		/* Area Objects */
 		if(!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */NULL, client, /* html_index_fname: */NULL, /* subscan: */NULL)) 
 			break;
