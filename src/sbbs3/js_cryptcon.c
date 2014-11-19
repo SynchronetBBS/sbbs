@@ -1,8 +1,9 @@
+/* $Id$ */
+
 // Cyrptlib encryption context...
 
-#include <jsapi.h>
-#include <cryptlib.h>
 #include "sbbs.h"
+#include <cryptlib.h>
 #include "js_request.h"
 #include "js_socket.h"
 
@@ -600,8 +601,9 @@ JSObject* DLLCALL js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, algo, "IDEA", INT_TO_JSVAL(CRYPT_ALGO_IDEA), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, algo, "CAST", INT_TO_JSVAL(CRYPT_ALGO_CAST), NULL, NULL
-				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+// CRYPT_ALGO_CAST is undefined:
+//			JS_DefineProperty(cx, algo, "CAST", INT_TO_JSVAL(CRYPT_ALGO_CAST), NULL, NULL
+//				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, algo, "RC2", INT_TO_JSVAL(CRYPT_ALGO_RC2), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, algo, "RC4", INT_TO_JSVAL(CRYPT_ALGO_RC4), NULL, NULL
