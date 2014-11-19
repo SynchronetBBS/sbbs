@@ -117,31 +117,68 @@ var params = {
 	336:{type:INTEGER, name:"First Child ID"},
 	3587:{type:BINARY, name:"Session Key"},
 	3588:{type:BINARY, name:"MAC Algorithms"},
+	3777:{type:BINARY, name:"Server Cipher Algorithms"},
+	3778:{type:BINARY, name:"Client Cipher Algorithms"},
+	3779:{type:BINARY, name:"Server Cipher Mode"},
+	3780:{type:BINARY, name:"Client Cipher Mode"},
+	3781:{type:BINARY, name:"Server Cipher IV"},
+	3782:{type:BINARY, name:"Client Cipher IV"},
 };
 
 var client_version = 0;
 var next_id = 1;
+var ecc;
+var ecc_key;
+var dcc;
+var dcc_key;
+var dcc_blocksize = 1;
+var best_hmac;
+var session_key;
+var decrypted_bytes = 0;
+var encrypted_tail = '\x00\x00\x00\x00\x00\x00\x00\x00';
+var decrypted_tail = '\x00\x00\x00\x00\x00\x00\x00\x00';
+var rekey_rounds = 0;
+var rekey_iv = '';
 
-function add_privs(privs, ret)
+function parse_user_line(line)
 {
-	var i,k;
-	if (ret == undefined)
-		ret = '\x00\x00\x00\x00\x00\x00\x00\x00';
-	while(ret.length < 8)
-		ret += '\x00';
-
-	for (i in privs) {
-		k=ascii(ret.substr(Math.floor(privs[i]/8), 1));
-		k |= 1<<(7-(privs[i] % 8));
-		ret = ret.substr(0, Math.floor(privs[i]/8)) + ascii(k) + ret.substr(Math.floor(privs[i]/8)+1);
-	}
-	if (ret.length != 8)
-		rage_quit("Unable to encode privs!");
-	var dbg='';
-	for (i=0; i<ret.length; i++) {
-		dbg += format("%02x", ascii(ret.substr(i, 1)));
+	var ret = {};
+	var m = line.match(/^(.*) ([0-9]+) ([0-9]+)$/);
+	if (m != null) {
+		ret.alias = m[1];
+		ret.icon = parseInt(m[2], 10);
+		ret.flags = parseInt(m[3], 10);
+		ret.id = system.matchuser(ret.alias);
 	}
 	return ret;
+}
+
+function remove_online_user(username)
+{
+	var i;
+	var f = new File(system.temp_dir+'hotline.users');
+	var found = false;
+
+	if (f.open('r+b')) {
+		var lines = f.readAll(2048);
+		for (i = 0; i<lines.length; i++) {
+			var u = parse_user_line(lines[i]);
+			if(u.id & 0x8000)
+				continue;
+			if (u.alias == username) {
+				found = true;
+				lines.splice(i, 1);
+				i--;
+			}
+		}
+		if (found) {
+			f.rewind();
+			f.truncate();
+			f.writeAll(lines);
+		}
+		f.close();
+	}
+	file_remove(system.temp_dir+'hotline.chat.'+usr.number);
 }
 
 function get_param_type(id)
@@ -149,149 +186,6 @@ function get_param_type(id)
 	if (params[id] == undefined)
 		return BINARY;
 	return params[id].type;
-}
-
-function update_data()
-{
-	var i, j;
-	var found;
-	var params;
-	var new_usrs = read_online_users();
-
-	var msg = system.get_telegram(usr.number);
-	if (msg != null) {
-		params=[];
-		msg = msg.replace(/\x01./g, '');
-		msg = msg.replace(/\r\n/g, '\r');
-		msg = msg.replace(/\n/g, '\r');
-		msg = msg.replace(/\t/g, ' ');
-		msg = msg.replace(/[\x00-\x0C\x0E-\x1f]/g, '');
-		var m = msg.match(/^Hotline message from ([^:]+):\r([\x00-\xff]*)$/);
-		if (m != null) {
-			params.push({id:102, value:m[1]});
-			var alias = m[1];
-			msg = m[2];
-			for (i in new_usrs) {
-				if (alias == new_usrs[i].alias && new_usrs[i].id < 0x8000)
-					params.push({id:103, value:new_usrs[i].id});
-			}
-		}
-		params.push({id:101, value:msg});
-		send_message(104, params);
-	}
-
-	var f = new File(system.temp_dir+'hotline.chat.'+usr.number);
-	if (f.open("r+b")) {
-		var cmsgs = f.readAll(5120);
-		f.rewind();
-		f.truncate();
-		f.close();
-
-		for (i in cmsgs) {
-			m = cmsgs[i].match(/^([0-9]+) ([0-9]+) ([\x00-\xff]*)$/);
-			if (m != null) {
-				var alias = new User(parseInt(m[2], 10)).alias;
-				params = [{id:101, value:'\r'+alias+': '+m[3]}, {id:103, value:parseInt(m[2])}];
-				var chatid = parseInt(m[1], 10);
-				if (chatid)
-					params.push({id:114, value:chatid});
-				send_message(106, params);
-			}
-		}
-	}
-
-	for (i in new_usrs) {
-		/*
-		 * For each user in new_usrs, check if it's in usrs and update/notify as needed.
-		 * Mark matched ones as such so unmatched ones can be notified of deletion
-		 */
-		if (new_usrs[i].id == usr.number)
-			continue;
-		found = false;
-		if (!new_usrs[i].id)
-			continue;
-		for (j in usrs) {
-			if (usrs[j].id == new_usrs[i].id) {
-				found = true;
-				usrs[j].matched=true;
-				if (usrs[j].icon != new_usrs[i].icon || usrs[j].flags != new_usrs[i].flags)
-					send_message(301, [{id:103, value:new_usrs[i].id}, {id:104, value:new_usrs[i].icon}, {id:112, value:new_usrs[i].flags}, {id:102, value:new_usrs[i].alias}]);
-			}
-		}
-		if (!found)
-			send_message(301, [{id:103, value:new_usrs[i].id}, {id:104, value:new_usrs[i].icon}, {id:112, value:new_usrs[i].flags}, {id:102, value:new_usrs[i].alias}]);
-	}
-	for (i in usrs) {
-		if (usrs[i].id == usr.number)
-			continue;
-		if (!usrs[i].matched) {
-			if (usrs[i].id)
-				send_message(302, [{id:103, value:usrs[i].id}]);
-		}
-	}
-	usrs = new_usrs;
-}
-
-function read_msg(sock)
-{
-	var i;
-	var msg={};
-
-	msg.hdr={};
-
-	while(sock.is_connected) {
-		if(logged_in)
-			update_data();
-		if (sock.poll(0.25))
-			break;
-	}
-
-	if (!sock.is_connected)
-		return msg;
-
-	msg.hdr.flags = sock.recvBin(1);
-	msg.hdr.is_reply = sock.recvBin(1);
-	msg.hdr.type = sock.recvBin(2);
-log(LOG_DEBUG, "Type: "+msg.hdr.type);
-	msg.hdr.id = sock.recvBin(4);
-	msg.hdr.err = sock.recvBin(4);
-	msg.hdr.total_size = sock.recvBin(4);
-	msg.hdr.data_size = sock.recvBin(4);
-	msg.param_count = sock.recvBin(2);
-log(LOG_DEBUG, "Params: "+msg.param_count);
-	msg.params={};
-	for (i=0; i<msg.param_count; i++) {
-		var id = sock.recvBin(2);
-		var param;
-
-log(LOG_DEBUG, "Getting parameter ID: "+id);
-		if (msg.params[id] != undefined) {
-			if (!msg.params[id].isArray())
-				msg.params[id] = [msg.params[id]];
-			msg.params[id].push({});
-			param = msg.params[id][msg.params[id].length-1];
-		}
-		else {
-			msg.params[id]={};
-			param = msg.params[id];
-		}
-		param.size = sock.recvBin(2);
-		if (get_param_type(id)==INTEGER)
-			param.data = sock.recvBin(param.size);
-		else
-			param.data = sock.recv(param.size);
-	}
-	return msg;
-}
-
-function rage_quit(reason)
-{
-	log(LOG_DEBUG, "Rage quit: "+reason);
-	if (usr != undefined)
-		remove_online_user(usr.alias);
-	send_message(111, [{id:101, value:reason}]);
-	client.socket.close();
-	exit();
 }
 
 function send_message(type, args, is_reply, id, error)
@@ -339,13 +233,289 @@ log(LOG_DEBUG, "Parameter: "+args[i].id);
 	outbuf = encode_long(id) + outbuf;	// Message ID
 	outbuf = encode_short(type) + outbuf;	// Type
 	outbuf = ascii(is_reply?1:0) + outbuf;	// Is Reply
+	// TODO: Rekey randomly...
 	outbuf = ascii(0) + outbuf;	// Flags
+	if (ecc != undefined)
+		outbuf = ecc.encrypt(outbuf);
 	client.socket.send(outbuf);
 	if (!is_reply) {
 		next_id++;
 		if (next_id == 0 || next_id >= 1<<32)
 			next_id = 1;
 	}
+}
+
+function rage_quit(reason)
+{
+	log(LOG_DEBUG, "Rage quit: "+reason);
+	if (usr != undefined)
+		remove_online_user(usr.alias);
+	send_message(111, [{id:101, value:reason}]);
+	client.socket.close();
+	exit();
+}
+
+function add_privs(privs, ret)
+{
+	var i,k;
+	if (ret == undefined)
+		ret = '\x00\x00\x00\x00\x00\x00\x00\x00';
+	while(ret.length < 8)
+		ret += '\x00';
+
+	for (i in privs) {
+		k=ascii(ret.substr(Math.floor(privs[i]/8), 1));
+		k |= 1<<(7-(privs[i] % 8));
+		ret = ret.substr(0, Math.floor(privs[i]/8)) + ascii(k) + ret.substr(Math.floor(privs[i]/8)+1);
+	}
+	if (ret.length != 8)
+		rage_quit("Unable to encode privs!");
+	var dbg='';
+	for (i=0; i<ret.length; i++) {
+		dbg += format("%02x", ascii(ret.substr(i, 1)));
+	}
+	return ret;
+}
+
+function read_online_users()
+{
+	var ret = [];
+	var i;
+	var f = new File(system.temp_dir+'hotline.users');
+
+	if (f.open('rb')) {
+		var lines = f.readAll(2048);
+		f.close();
+
+		for (i in lines) {
+			ret.push(parse_user_line(lines[i]));
+		}
+	}
+
+	// Now add users who are on the BBS
+	for (i in system.node_list) {
+		if ((system.node_list[i].status == NODE_INUSE) || (usr.is_sysop && system.node_list[i].status == NODE_QUIET)) {
+			var uo = new User(system.node_list[i].useron);
+			if (uo != null) {
+				var usro = {node:i, alias:uo.alias, icon:412, flags:0x01};
+				if (uo.is_sysop)
+					usro.flags |= 0x02;
+				usro.id = uo.number | 0x8000; 
+				ret.push(usro);
+			}
+		}
+	}
+	return ret;
+}
+
+function update_data()
+{
+	var i, j;
+	var found;
+	var params;
+	var new_usrs = read_online_users();
+	var alias;
+
+	var msg = system.get_telegram(usr.number);
+	if (msg != null) {
+		params=[];
+		msg = msg.replace(/\x01./g, '');
+		msg = msg.replace(/\r\n/g, '\r');
+		msg = msg.replace(/\n/g, '\r');
+		msg = msg.replace(/\t/g, ' ');
+		msg = msg.replace(/[\x00-\x0C\x0E-\x1f]/g, '');
+		var m = msg.match(/^Hotline message from ([^:]+):\r([\x00-\xff]*)$/);
+		if (m != null) {
+			params.push({id:102, value:m[1]});
+			alias = m[1];
+			msg = m[2];
+			for (i in new_usrs) {
+				if (alias == new_usrs[i].alias && new_usrs[i].id < 0x8000)
+					params.push({id:103, value:new_usrs[i].id});
+			}
+		}
+		params.push({id:101, value:msg});
+		send_message(104, params);
+	}
+
+	var f = new File(system.temp_dir+'hotline.chat.'+usr.number);
+	if (f.open("r+b")) {
+		var cmsgs = f.readAll(5120);
+		f.rewind();
+		f.truncate();
+		f.close();
+
+		for (i in cmsgs) {
+			m = cmsgs[i].match(/^([0-9]+) ([0-9]+) ([\x00-\xff]*)$/);
+			if (m != null) {
+				alias = new User(parseInt(m[2], 10)).alias;
+				params = [{id:101, value:'\r'+alias+': '+m[3]}, {id:103, value:parseInt(m[2])}];
+				var chatid = parseInt(m[1], 10);
+				if (chatid)
+					params.push({id:114, value:chatid});
+				send_message(106, params);
+			}
+		}
+	}
+
+	for (i in new_usrs) {
+		/*
+		 * For each user in new_usrs, check if it's in usrs and update/notify as needed.
+		 * Mark matched ones as such so unmatched ones can be notified of deletion
+		 */
+		if (new_usrs[i].id == usr.number)
+			continue;
+		found = false;
+		if (!new_usrs[i].id)
+			continue;
+		for (j in usrs) {
+			if (usrs[j].id == new_usrs[i].id) {
+				found = true;
+				usrs[j].matched=true;
+				if (usrs[j].icon != new_usrs[i].icon || usrs[j].flags != new_usrs[i].flags)
+					send_message(301, [{id:103, value:new_usrs[i].id}, {id:104, value:new_usrs[i].icon}, {id:112, value:new_usrs[i].flags}, {id:102, value:new_usrs[i].alias}]);
+			}
+		}
+		if (!found)
+			send_message(301, [{id:103, value:new_usrs[i].id}, {id:104, value:new_usrs[i].icon}, {id:112, value:new_usrs[i].flags}, {id:102, value:new_usrs[i].alias}]);
+	}
+	for (i in usrs) {
+		if (usrs[i].id == usr.number)
+			continue;
+		if (!usrs[i].matched) {
+			if (usrs[i].id)
+				send_message(302, [{id:103, value:usrs[i].id}]);
+		}
+	}
+	usrs = new_usrs;
+}
+
+function do_decrypt(val)
+{
+	if (val.length == 0)
+		return val;
+	encrypted_tail += val;
+	val = dcc.decrypt(val);
+	decrypted_tail += val;
+	decrypted_bytes += val.length;
+	while(decrypted_bytes >= dcc_blocksize) {
+		decrypted_bytes -= dcc_blocksize;
+		encrypted_tail = encrypted_tail.substr(dcc_blocksize);
+		decrypted_tail = decrypted_tail.substr(dcc_blocksize);
+	}
+	return val;
+}
+
+function derive_old_key()
+{
+	var i;
+	var oldiv='';
+
+	for (i=0; i<dcc_blocksize; i++)
+		oldiv += ascii(ascii(encrypted_tail.substr(i, 1)) ^ ascii(decrypted_tail.substr(i, 1)));
+	return oldiv;
+}
+
+function rekey(rounds)
+{
+	var oldiv;
+	var i;
+
+	oldiv = derive_old_key();
+	for (i=0; i<rounds; i++)
+		dcc_key = best_hmac(dcc_key, session_key);
+	dcc = new CryptContext(dcc.algo);
+	dcc.mode = CryptContext.MODE.OFB;
+	dcc.iv = oldiv;
+	dcc.set_key(dcc_key);
+}
+
+function readsock_bytes(sock, size)
+{
+	var val1 = '';
+	var val2 = '';
+
+	if (dcc != undefined && rekey_rounds) {
+		if (size >= (dcc_blocksize - decrypted_bytes)) {
+			val1 = sock.recv(dcc_blocksize - decrypted_bytes);
+			size -= (dcc_blocksize - decrypted_bytes);
+			val1 = do_decrypt(val1);
+			rekey(rekey_rounds);
+			rekey_rounds = 0;
+		}
+	}
+	val2 = sock.recv(size);
+	if (dcc != undefined)
+		val2 = do_decrypt(val2);
+	return val1 + val2;
+}
+
+function readsock_integer(sock, size)
+{
+	return decode_integer(readsock_bytes(sock, size));
+}
+
+function read_msg(sock)
+{
+	var i;
+	var msg={};
+
+	msg.hdr={};
+
+	while(sock.is_connected) {
+		if(logged_in)
+			update_data();
+		if (sock.poll(0.25))
+			break;
+	}
+
+	if (!sock.is_connected)
+		return msg;
+
+	msg.hdr.flags = readsock_integer(sock, 1);
+log(LOG_DEBUG, "Flags: "+msg.hdr.flags);
+	msg.hdr.is_reply = readsock_integer(sock, 1);
+	msg.hdr.type = readsock_integer(sock, 2);
+log(LOG_DEBUG, "Type: "+msg.hdr.type);
+	msg.hdr.id = readsock_integer(sock, 4);
+	msg.hdr.err = readsock_integer(sock, 4);
+	msg.hdr.total_size = readsock_integer(sock, 4);
+	msg.hdr.data_size = readsock_integer(sock, 4);
+	msg.param_count = readsock_integer(sock, 2);
+	if (msg.hdr.flags && dcc != undefined) {
+		// Re-key...
+		if (decrypted_bytes == 0) {
+			rekey(msg.hdr.flags);
+		}
+		else {
+			rekey_rounds = msg.hdr.flags;
+log(LOG_DEBUG, "Rekeying with "+rekey_rounds+" rounds in "+(dcc_blocksize - decrypted_bytes)+" bytes");
+		}
+	}
+log(LOG_DEBUG, "Params: "+msg.param_count);
+	msg.params={};
+	for (i=0; i<msg.param_count; i++) {
+		var id = readsock_integer(sock, 2);
+		var param;
+
+log(LOG_DEBUG, "Getting parameter ID: "+id);
+		if (msg.params[id] != undefined) {
+			if (!msg.params[id].isArray())
+				msg.params[id] = [msg.params[id]];
+			msg.params[id].push({});
+			param = msg.params[id][msg.params[id].length-1];
+		}
+		else {
+			msg.params[id]={};
+			param = msg.params[id];
+		}
+		param.size = readsock_integer(sock, 2);
+		if (get_param_type(id)==INTEGER)
+			param.data = readsock_integer(sock, param.size);
+		else
+			param.data = readsock_bytes(sock, param.size);
+	}
+	return msg;
 }
 
 function send_response(hdr, args, error)
@@ -425,6 +595,7 @@ function setup_transfer(path)
 	var f = new File(system.temp_dir+'hotline.transfers');
 	var ret=undefined;
 	var i;
+	var m;
 
 	if (f.open("a+b")) {
 		f.rewind();
@@ -444,19 +615,6 @@ function setup_transfer(path)
 		}
 		f.writeln(ret + ' ' + client.ip_address + ' ' + time() + ' ' + path);
 		f.close();
-	}
-	return ret;
-}
-
-function parse_user_line(line)
-{
-	var ret = {};
-	var m = line.match(/^(.*) ([0-9]+) ([0-9]+)$/);
-	if (m != null) {
-		ret.alias = m[1];
-		ret.icon = parseInt(m[2], 10);
-		ret.flags = parseInt(m[3], 10);
-		ret.id = system.matchuser(ret.alias);
 	}
 	return ret;
 }
@@ -492,65 +650,6 @@ function update_online_user(username, icon, flags)
 		return;
 	}
 	rage_quit("Unable to open user file!");
-}
-
-function read_online_users()
-{
-	var ret = [];
-	var i;
-	var f = new File(system.temp_dir+'hotline.users');
-
-	if (f.open('rb')) {
-		var lines = f.readAll(2048);
-		f.close();
-
-		for (i in lines) {
-			ret.push(parse_user_line(lines[i]));
-		}
-	}
-
-	// Now add users who are on the BBS
-	for (i in system.node_list) {
-		if ((system.node_list[i].status == NODE_INUSE) || (usr.is_sysop && system.node_list[i].status == NODE_QUIET)) {
-			var uo = new User(system.node_list[i].useron);
-			if (uo != null) {
-				var usro = {node:i, alias:uo.alias, icon:412, flags:0x01};
-				if (uo.is_sysop)
-					usro.flags |= 0x02;
-				usro.id = uo.number | 0x8000; 
-				ret.push(usro);
-			}
-		}
-	}
-	return ret;
-}
-
-function remove_online_user(username)
-{
-	var i;
-	var f = new File(system.temp_dir+'hotline.users');
-	found = false;
-
-	if (f.open('r+b')) {
-		var lines = f.readAll(2048);
-		for (i = 0; i<lines.length; i++) {
-			var u = parse_user_line(lines[i]);
-			if(u.id & 0x8000)
-				continue;
-			if (u.alias == username) {
-				found = true;
-				lines.splice(i, 1);
-				i--;
-			}
-		}
-		if (found) {
-			f.rewind();
-			f.truncate();
-			f.writeAll(lines);
-		}
-		f.close();
-	}
-	file_remove(system.temp_dir+'hotline.chat.'+usr.number);
 }
 
 // TODO: modopts.ini thingie.
@@ -645,7 +744,7 @@ function send_chat_msg(id, opt, msg)
 	}
 }
 
-function parse_mac_algs(alg_list)
+function parse_login_list(alg_list)
 {
 	var i;
 	var ret = [];
@@ -653,11 +752,14 @@ function parse_mac_algs(alg_list)
 	var len;
 
 	alg_list = alg_list.substr(2);
+log(LOG_DEBUG, "Total algs: "+total_algs);
 	for (i=0; i<total_algs; i++) {
 		len = ascii(alg_list.substr(0, 1));
 		ret.push(alg_list.substr(1, len));
 		alg_list = alg_list.substr(len+1);
 	}
+for (i in ret)
+log(LOG_DEBUG, "Got alg: "+ret[i]);
 	return ret;
 }
 
@@ -672,7 +774,6 @@ function generate_session_key()
 
 	return ret;
 }
-
 function log_bin(str)
 {
 	var os = '';
@@ -684,20 +785,42 @@ function log_bin(str)
 	log(LOG_DEBUG, "Binary data: "+os);
 }
 
+function decode_string(str)
+{
+	var i;
+	var ret='';
+
+	for (i=0; i<str.length; i++) {
+		ret += ascii(ascii(str.substr(i, 1)) ^ 255);
+	}
+	return ret;
+}
+
 function handle_message(msg)
 {
 	var i, j, k;
+	var ma, fmt;
+	var f, message;
+	var days, hours, min, seconds, mins, ut;
+	var chatid, chatstr, chatopt;
+	var username, password, macalgs, cryptalgs;
+	var hmac_type, best_crypt, crypt_type, uid, tmpusr, agreementf, tmp;
+	var userid, new_usrs;
+	var depth;
+	var mb;
+	var body;
+	var hdr;
 
 	switch(msg.hdr.type) {
 		case 101:	// Get Message...
-			var f=new File(system.text_dir+"welcome.msg");
-			var message = "Welcome to "+system.name;
+			f=new File(system.text_dir+"welcome.msg");
+			message = "Welcome to "+system.name;
 			if(f.open("rb",true)) {
 				message = f.read();
 				f.close();
 				message=ascii_str(message).replace(/@([^@]*)@/g,
 					function(matched, code) {
-						var fmt="%s";
+						fmt="%s";
 						ma=new Array();
 						if((ma=code.match(/^(.*)-L.*$/))!=undefined) {
 							fmt="%-"+(code.length)+"s";
@@ -719,17 +842,17 @@ function handle_message(msg)
 							case 'OS_VER':
 								return(format(fmt,system.os_version.toString()));
 							case 'UPTIME':
-								var days=0;
-								var hours=0;
-								var min=0;
-								var seconds=0;
-								var ut=time()-system.uptime;
+								days=0;
+								hours=0;
+								min=0;
+								seconds=0;
+								ut=time()-system.uptime;
 								days=(ut/86400);
 								ut%=86400;
 								hours=(ut/3600);
 								ut%=3600;
 								mins=(ut/60);
-								secsonds=parseInt(ut%60);
+								seconds=parseInt(ut%60);
 								if(parseInt(days)!=0)
 									ut=format("%d days %d:%02d",days,hours,mins);
 								else
@@ -775,9 +898,9 @@ function handle_message(msg)
 			send_response(msg.hdr, [{id:101, value:message}]);
 			break;
 		case 105:	// Send Chat
-			var chatid = 0;
-			var chatstr = '';
-			var chatopt = 0;
+			chatid = 0;
+			chatstr = '';
+			chatopt = 0;
 
 			if (usr.compare_ars("REST C")) {
 				send_response(msg.hdr, [{id:100, value:"You are not allowed to chat"}], 1);
@@ -792,14 +915,19 @@ function handle_message(msg)
 			send_chat_msg(chatid, chatopt, chatstr);
 			break;
 		case 107:	// Login
-			var username='';
-			var password='';
+			username='';
+			password='';
 			if (msg.params[3588] != undefined) {
 				// Secure login...
-				var macalgs = parse_mac_algs(msg.params[3588].data);
-				var session_key = generate_session_key();
-				var best_hmac;
-				var hmac_type;
+				macalgs = parse_login_list(msg.params[3588].data);
+				cryptalgs = [];
+				if (msg.params[3778] != undefined)
+					cryptalgs = parse_login_list(msg.params[3778].data);
+				session_key = generate_session_key();
+				best_hmac = undefined;
+				hmac_type = undefined;
+				best_crypt = undefined;
+				crypt_type = undefined;
 				for (i in macalgs) {
 					switch(macalgs[i]) {
 						case 'HMAC-MD5':
@@ -814,11 +942,29 @@ function handle_message(msg)
 							break;
 					}
 				}
+				for (i in cryptalgs) {
+log(LOG_DEBUG, "Checking for "+cryptalgs[i]);
+					switch(cryptalgs[i]) {
+						case 'BLOWFISH':
+							if (best_crypt == undefined) {
+								best_crypt = CryptContext.ALGO.Blowfish;
+								crypt_type = cryptalgs[i];
+							}
+							break;
+						case 'IDEA':
+							best_crypt = CryptContext.ALGO.Blowfish;
+							crypt_type = cryptalgs[i];
+							break;
+					}
+				}
 				if (best_hmac == undefined) {
 					send_response(msg.hdr, [{id:100, value:"No supported HMAC algorithms"}], 1);
 					break;
 				}
-				send_response(msg.hdr, [{id:3587, value:session_key}, {id:3588, value:'\x00\x01'+ascii(hmac_type.length)+hmac_type}, {id:106, value:hmac_type}]);
+				if (crypt_type != undefined)
+					send_response(msg.hdr, [{id:3587, value:session_key}, {id:3588, value:'\x00\x01'+ascii(hmac_type.length)+hmac_type}, {id:105, value:hmac_type}, {id:106, value:hmac_type}, {id:3777, value:'\x00\x01'+ascii(crypt_type.length)+crypt_type}, {id:3778, value:'\x00\x01'+ascii(crypt_type.length)+crypt_type}]);
+				else
+					send_response(msg.hdr, [{id:3587, value:session_key}, {id:3588, value:'\x00\x01'+ascii(hmac_type.length)+hmac_type}, {id:106, value:hmac_type}]);
 				msg = read_msg(client.socket);
 				if (msg.hdr.type == undefined)
 					rage_quit("Disconnected during secure login");
@@ -826,21 +972,66 @@ function handle_message(msg)
 					send_response(msg.hdr, [{id:100, value:"Incorrect parameters to login"}], 1);
 					break;
 				}
-				username = decode_string(msg.params[105].data);
-				var uid = system.matchuser(username);
+				// Find User ID
+				username = undefined;
+				password = undefined;
+				for (i = 0; i<system.lastuser; i++) {
+					tmpusr = new User(i);
+					if (tmpusr.settings & (USER_DELETED|USER_INACTIVE))
+						continue;
+					if (msg.params[105].data == best_hmac(tmpusr.alias.toLowerCase(), session_key))
+						username = tmpusr.alias.toLowerCase();
+					else if (msg.params[105].data == best_hmac(tmpusr.alias.toUpperCase(), session_key))
+						username = tmpusr.alias.toUpperCase();
+					else if (msg.params[105].data == best_hmac(tmpusr.alias, session_key))
+						username = tmpusr.alias;
+					if (username != undefined) {
+						if (msg.params[106] != undefined) {
+							if (msg.params[106].data == best_hmac(tmpusr.security.password.toLowerCase(), session_key))
+								password = tmpusr.security.password.toLowerCase();
+							else if (msg.params[106].data == best_hmac(tmpusr.security.password.toUpperCase(), session_key))
+								password = tmpusr.security.password.toUpperCase();
+							else if (msg.params[106].data == best_hmac(tmpusr.security.password, session_key))
+								password = tmpusr.security.password;
+							if (password != undefined)
+								break;
+						}
+						else {
+							if (tmpusr.compare_ars("REST G"))
+								break;
+						}
+					}
+				}
+				if (username == undefined) {
+					send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
+					break;
+				}
+				uid = system.matchuser(username);
 				if (uid == 0) {
 					send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
 					break;
 				}
 				if (msg.params[106] != undefined) {
-					var tmpusr = new User(uid);
-					if ((msg.params[106].data != best_hmac(tmpusr.security.password.toLowerCase(), session_key))
-							&& (msg.params[106].data != best_hmac(tmpusr.security.password.toUpperCase(), session_key))
-							&& (msg.params[106].data != best_hmac(tmpusr.security.password, session_key))) {
+					if (best_crypt != undefined) {
+						ecc = new CryptContext(best_crypt);
+						dcc = new CryptContext(best_crypt);
+						dcc_blocksize = dcc.blocksize;
+						ecc.mode = CryptContext.MODE.OFB;
+						dcc.mode = CryptContext.MODE.OFB;
+						ecc.iv = "\x00\x00\x00\x00\x00\x00\x00\x00";
+						dcc.iv = "\x00\x00\x00\x00\x00\x00\x00\x00";
+					}
+					tmpusr = new User(uid);
+					if (password == undefined) {
 						send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
 						break;
 					}
-					password = tmpusr.security.password;
+					if (ecc != undefined) {
+						ecc_key = best_hmac(password, best_hmac(password, session_key));
+						ecc.set_key(ecc_key);
+						dcc_key = best_hmac(password, ecc_key);
+						dcc.set_key(dcc_key);
+					}
 				}
 			}
 			else {
@@ -855,7 +1046,7 @@ function handle_message(msg)
 				client_version = msg.params[160].data;
 			if (msg.params[104] != undefined)
 				icon = msg.params[104].data;
-			var uid = system.matchuser(username);
+			uid = system.matchuser(username);
 			if (uid == 0) {
 				send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
 				break;
@@ -891,9 +1082,9 @@ function handle_message(msg)
 				logged_in = true;
 			}
 			else {
-				var agreementf = new File(agreement_file);
+				agreementf = new File(agreement_file);
 				if (f.open("rb", true)) {
-					var tmp = f.read();
+					tmp = f.read();
 					f.close();
 					send_message(109, [{id:101, value:tmp}]);
 				}
@@ -903,7 +1094,7 @@ function handle_message(msg)
 			}
 			break;
 		case 108:	// Send instant message
-			var userid = msg.params[103].data;
+			userid = msg.params[103].data;
 			if (userid == undefined) {
 				send_response(msg.hdr, [{id:100, value:'No User ID Specified'}], 1);
 				break;
@@ -914,7 +1105,7 @@ function handle_message(msg)
 			}
 			if (msg.params[101] != undefined) {
 				if (userid & 0x8000) {
-					var new_usrs = read_online_users();
+					new_usrs = read_online_users();
 					for (i in new_usrs) {
 						if (new_usrs[i].id == userid)
 							system.put_node_message(new_usrs[i].node, "\1n\1b\1r\7Hotline \1n\1gmessage from \1n\1h"+usr.alias+":\r\n\1h"+msg.params[101].data);
@@ -924,6 +1115,10 @@ function handle_message(msg)
 					system.put_telegram(userid, "\1n\1b\1r\7Hotline \1n\1gmessage from \1n\1h"+usr.alias+":\r\n\1h"+msg.params[101].data);
 				send_response(msg.hdr, []);
 			}
+			else {
+				send_response(msg.hdr, [{id:100, value:'No Message Specified'}], 1);
+			}
+			break;
 		case 121:	// Accept agreement...
 			send_response(msg.hdr, []);
 			if (msg.params[104] != undefined) {
@@ -941,7 +1136,7 @@ function handle_message(msg)
 			send_privs();
 			break;
 		case 200:	// File list
-			var tmp=[];
+			tmp=[];
 
 			if (usr.compare_ars("REST T")) {
 				send_response(msg.hdr, [{id:100, value:"You are not allowed to access files"}]);
@@ -956,7 +1151,7 @@ function handle_message(msg)
 				}
 			}
 			else {
-				var depth = decode_integer(msg.params[202].data.substr(0,2));
+				depth = decode_integer(msg.params[202].data.substr(0,2));
 				if (depth == 1) {
 					// DIRs...
 					var liblen = decode_integer(msg.params[202].data.substr(4,1));
@@ -1009,7 +1204,7 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:'Permission denied'}], 1);
 				break;
 			}
-			var path = sub.path;
+			path = sub.path;
 			if (msg.params[201] == undefined) {
 				send_response(msg.hdr, [{id:100, value:'Missing Filename'}], 1);
 				break;
@@ -1031,7 +1226,7 @@ function handle_message(msg)
 			if (!sent_privs)
 				send_privs();
 			usrs = read_online_users();
-			var tmp = [];
+			tmp = [];
 			for (i in usrs) {
 				if (usrs[i].id)
 					tmp.push({id:300, value:encode_short(usrs[i].id)+encode_short(usrs[i].icon)+encode_short(usrs[i].flags)+encode_short(usrs[i].alias.length)+usrs[i].alias});
@@ -1040,7 +1235,7 @@ function handle_message(msg)
 			break;
 		case 303:	// Get client info text
 			if (msg.params[103] != undefined) {
-				var tmp = new User(msg.params[103].data & 0x7fff);
+				tmp = new User(msg.params[103].data & 0x7fff);
 				if (tmp != null)
 					send_response(msg.hdr, [{id:102, value:tmp.alias}, {id:101, value:get_user_info_str(tmp)}]);
 				else
@@ -1059,9 +1254,9 @@ function handle_message(msg)
 			update_online_user(usr.alias, icon, flags);
 			break;
 		case 370:	// Get News Category Name List
-			var tmp = [];
+			tmp = [];
 			if (msg.params[325] != undefined && decode_integer(msg.params[325].data.substr(0,2)) > 0) {
-				var depth = decode_integer(msg.params[325].data.substr(0,2));
+				depth = decode_integer(msg.params[325].data.substr(0,2));
 
 				if (depth == 1) {
 					var grplen = decode_integer(msg.params[325].data.substr(4,1));
@@ -1074,7 +1269,7 @@ function handle_message(msg)
 							for (j in msg_area.grp_list[i].sub_list) {
 								if (!msg_area.grp_list[i].sub_list[j].can_read)
 									continue;
-								var mb = new MsgBase(msg_area.grp_list[i].sub_list[j].code);
+								mb = new MsgBase(msg_area.grp_list[i].sub_list[j].code);
 								if (!mb.open()) {
 									log(LOG_ERR, "Unable to open message base "+msg_area.grp_list[i].sub_list[j].code);
 									continue;
@@ -1102,7 +1297,7 @@ function handle_message(msg)
 		case 371:	// Get article list
 			if (msg.params[325] != undefined) {
 				var items={count:0};
-				var mb = mb_from_path(msg.params[325]);
+				mb = mb_from_path(msg.params[325]);
 				if (mb == undefined) {
 					send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
 					break;
@@ -1119,7 +1314,7 @@ function handle_message(msg)
 							continue;
 						items.count++;
 						// TODO: Attachments etc.
-						var body = mb.get_msg_body(parseInt(i, 10), true);
+						body = mb.get_msg_body(parseInt(i, 10), true);
 						if (body == null)
 							continue;
 						if (body.length > 65535 || body.length < 1)	// Message too long
@@ -1148,11 +1343,11 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:321, value:encode_long(0)+encode_long(items.count)+ascii(name.length)+name+ascii(desc.length)+desc+msgs}]);
 			}
 			else {
-				send_response(msg.hdr, [{id:100, value:"No path specified!"}], 1)
+				send_response(msg.hdr, [{id:100, value:"No path specified!"}], 1);
 			}
 			break;
 		case 400:	// Get message
-			var mb = mb_from_path(msg.params[325]);
+			mb = mb_from_path(msg.params[325]);
 			if (mb == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
 				break;
@@ -1165,7 +1360,7 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
 			}
-			var hdr = mb.get_msg_header(msg.params[326].data);
+			hdr = mb.get_msg_header(msg.params[326].data);
 			if (hdr == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
@@ -1182,7 +1377,7 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
 			}
-			var body = ascii_str(mb.get_msg_body(hdr.number, true));
+			body = ascii_str(mb.get_msg_body(hdr.number, true));
 			if (body == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
@@ -1191,7 +1386,7 @@ function handle_message(msg)
 			send_response(msg.hdr, [{id:328, value:hdr.subject}, {id:329, value:hdr.from}, {id:330, value:time_to_timestamp(hdr.when_written_time)}, {id:331, value:msg.params[326].data-1}, {id:332, value:msg.params[326]+1}, {id:335, value:hdr.thread_back}, {id:336, value:hdr.thread_first}, {id:327, value:"text/plain"}, {id:333, value:body}]);
 			break;
 		case 410:	// Post message
-			var mb = mb_from_path(msg.params[325], true);
+			mb = mb_from_path(msg.params[325], true);
 			if (mb == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
 				break;
@@ -1208,7 +1403,7 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Missing article"}], 1);
 				break;
 			}
-			var hdr = {to:'All', from:usr.alias};
+			hdr = {to:'All', from:usr.alias};
 			if (msg.params[326] != undefined) {
 				hdr.thread_orig = msg.params[326].data;
 				var ohdr = mb.get_msg_header(hdr.thread_orig);
@@ -1236,7 +1431,7 @@ function handle_message(msg)
 			send_response(msg.hdr, []);
 			break;
 		case 411:	// Delete message
-			var mb = mb_from_path(msg.params[325]);
+			mb = mb_from_path(msg.params[325]);
 			if (mb == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
 				break;
@@ -1249,7 +1444,7 @@ function handle_message(msg)
 				send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
 				break;
 			}
-			var hdr = mb.get_msg_header(msg.params[326].data);
+			hdr = mb.get_msg_header(msg.params[326].data);
 			if (hdr == undefined) {
 				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
 				break;
@@ -1265,35 +1460,6 @@ function handle_message(msg)
 			send_response(msg.hdr, [{id:100, value:"Unsupported command"}], 1);
 			break;
 	}
-}
-
-function decode_string(str)
-{
-	var i;
-	var ret='';
-
-	for (i=0; i<str.length; i++) {
-		ret += ascii(ascii(str.substr(i, 1)) ^ 255);
-	}
-	return ret;
-}
-
-function time_to_timestamp(time)
-{
-	var ret ='';
-	var d = new Date(time*1000);
-	var y = new Date(time*1000);
-
-	y.setMonth(0);
-	y.setDate(1);
-	y.setHours(0);
-	y.setMinutes(0);
-	y.setSeconds(0);
-	y.setMilliseconds(0);
-	ret = encode_short(d.getYear()+1900);
-	ret += encode_short(0);
-	ret += encode_long((d.valueOf()-y.valueOf())/1000);
-	return ret;
 }
 
 log(LOG_DEBUG, "Connected!");
