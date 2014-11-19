@@ -700,7 +700,7 @@ function send_privs()
 	if (!usr.compare_ars("REST C"))
 		tmp = add_privs([READ_CHAT, SEND_CHAT, OPEN_CHAT, CLOSE_CHAT, SEND_PRIVATE_MESSAGE, SEND_MESSAGE, REFUSE_CHAT], tmp);
 	if (!usr.compare_ars("REST R"))
-		tmp = add_privs([SET_FILE_COMMENT]);
+		tmp = add_privs([SET_FILE_COMMENT], tmp);
 	if (!usr.compare_ars("REST T")) {
 		if (!usr.compare_ars("REST D"))
 			tmp = add_privs([DOWNLOAD_FILE, DOWNLOAD_FOLDER], tmp);
@@ -796,671 +796,762 @@ function decode_string(str)
 	return ret;
 }
 
-function handle_message(msg)
+function expand_at_codes(message)
 {
-	var i, j, k;
-	var ma, fmt;
-	var f, message;
-	var days, hours, min, seconds, mins, ut;
-	var chatid, chatstr, chatopt;
-	var username, password, macalgs, cryptalgs;
-	var hmac_type, best_crypt, crypt_type, uid, tmpusr, agreementf, tmp;
-	var userid, new_usrs;
-	var depth;
-	var mb;
-	var body;
-	var hdr;
 
-	switch(msg.hdr.type) {
-		case 101:	// Get Message...
-			f=new File(system.text_dir+"welcome.msg");
-			message = "Welcome to "+system.name;
-			if(f.open("rb",true)) {
-				message = f.read();
-				f.close();
-				message=ascii_str(message).replace(/@([^@]*)@/g,
-					function(matched, code) {
-						fmt="%s";
-						ma=new Array();
-						if((ma=code.match(/^(.*)-L.*$/))!=undefined) {
-							fmt="%-"+(code.length)+"s";
-							code=ma[1];
-						}
-						if((ma=code.match(/^(.*)-R.*$/))!=undefined) {
-							fmt="%"+(code.length)+"s";
-							code=ma[1];
-						}
-						switch(code.toUpperCase()) {
-							case 'BBS':
-								return(format(fmt,system.name.toString()));
-							case 'LOCATION':
-								return(format(fmt,system.location.toString()));
-							case 'SYSOP':
-								return(format(fmt,system.operator.toString()));
-							case 'HOSTNAME':
-								return(format(fmt,system.host_name.toString()));
-							case 'OS_VER':
-								return(format(fmt,system.os_version.toString()));
-							case 'UPTIME':
-								days=0;
-								hours=0;
-								min=0;
-								seconds=0;
-								ut=time()-system.uptime;
-								days=(ut/86400);
-								ut%=86400;
-								hours=(ut/3600);
-								ut%=3600;
-								mins=(ut/60);
-								seconds=parseInt(ut%60);
-								if(parseInt(days)!=0)
-									ut=format("%d days %d:%02d",days,hours,mins);
-								else
-									ut=format("%d:%02d",hours,mins);
-								return(format(fmt,ut.toString()));
-							case 'TUSER':
-								return(format(fmt,system.stats.total_users.toString()));
-							case 'STATS.NUSERS':
-								return(format(fmt,system.stats.new_users_today.toString()));
-							case 'STATS.LOGONS':
-								return(format(fmt,system.stats.total_logons.toString()));
-							case 'STATS.LTODAY':
-								return(format(fmt,system.stats.logons_today.toString()));
-							case 'STATS.TIMEON':
-								return(format(fmt,system.stats.total_timeon.toString()));
-							case 'STATS.TTODAY':
-								return(format(fmt,system.stats.timeon_today.toString()));
-							case 'TMSG':
-								return(format(fmt,system.stats.total_messages.toString()));
-							case 'STATS.PTODAY':
-								return(format(fmt,system.stats.messages_posted_today.toString()));
-							case 'MAILW:0':
-								return(format(fmt,system.stats.total_email.toString()));
-							case 'STATS.ETODAY':
-								return(format(fmt,system.stats.email_sent_today.toString()));
-							case 'MAILW:1':
-								return(format(fmt,system.stats.total_feedback.toString()));
-							case 'STATS.FTODAY':
-								return(format(fmt,system.stats.feedback_sent_today.toString()));
-							case 'TFILE':
-								return(format(fmt,system.stats.total_files.toString()));
-							case 'STATS.ULS':
-								return(format(fmt,system.stats.files_uploaded_today.toString()));
-							case 'STATS.DLS':
-								return(format(fmt,system.stats.files_downloaded_today.toString()));
-							case 'STATS.DLB':
-								return(format(fmt,system.stats.bytes_downloaded_today.toString()));
-							default:
-								return('@'+code+'@');
-						}
-					});
+	message=ascii_str(message).replace(/@([^@]*)@/g,
+		function(matched, code) {
+			var fmt="%s";
+			var ma=new Array();
+			if((ma=code.match(/^(.*)-L.*$/))!=undefined) {
+				fmt="%-"+(code.length)+"s";
+				code=ma[1];
 			}
-			send_response(msg.hdr, [{id:101, value:message}]);
-			break;
-		case 105:	// Send Chat
-			chatid = 0;
-			chatstr = '';
-			chatopt = 0;
-
-			if (usr.compare_ars("REST C")) {
-				send_response(msg.hdr, [{id:100, value:"You are not allowed to chat"}], 1);
-				break;
+			if((ma=code.match(/^(.*)-R.*$/))!=undefined) {
+				fmt="%"+(code.length)+"s";
+				code=ma[1];
 			}
-			if (msg.params[114] != undefined)
-				chatid = msg.params[114].data;
-			if (msg.params[101] != undefined)
-				chatstr = msg.params[101].data;
-			if (msg.params[109] != undefined)
-				chatopt = msg.params[109].data;
-			send_chat_msg(chatid, chatopt, chatstr);
-			break;
-		case 107:	// Login
-			username='';
-			password='';
-			if (msg.params[3588] != undefined) {
-				// Secure login...
-				macalgs = parse_login_list(msg.params[3588].data);
-				cryptalgs = [];
-				if (msg.params[3778] != undefined)
-					cryptalgs = parse_login_list(msg.params[3778].data);
-				session_key = generate_session_key();
-				best_hmac = undefined;
-				hmac_type = undefined;
-				best_crypt = undefined;
-				crypt_type = undefined;
-				for (i in macalgs) {
-					switch(macalgs[i]) {
-						case 'HMAC-MD5':
-							if (best_hmac == undefined) {
-								best_hmac = hmac_md5;
-								hmac_type = macalgs[i];
-							}
-							break;
-						case 'HMAC-SHA1':
-							best_hmac = hmac_sha1;
-							hmac_type = macalgs[i];
-							break;
-					}
-				}
-				for (i in cryptalgs) {
-log(LOG_DEBUG, "Checking for "+cryptalgs[i]);
-					switch(cryptalgs[i]) {
-						case 'BLOWFISH':
-							if (best_crypt == undefined) {
-								best_crypt = CryptContext.ALGO.Blowfish;
-								crypt_type = cryptalgs[i];
-							}
-							break;
-						case 'IDEA':
-							best_crypt = CryptContext.ALGO.Blowfish;
-							crypt_type = cryptalgs[i];
-							break;
-					}
-				}
-				if (best_hmac == undefined) {
-					send_response(msg.hdr, [{id:100, value:"No supported HMAC algorithms"}], 1);
-					break;
-				}
-				if (crypt_type != undefined)
-					send_response(msg.hdr, [{id:3587, value:session_key}, {id:3588, value:'\x00\x01'+ascii(hmac_type.length)+hmac_type}, {id:105, value:hmac_type}, {id:106, value:hmac_type}, {id:3777, value:'\x00\x01'+ascii(crypt_type.length)+crypt_type}, {id:3778, value:'\x00\x01'+ascii(crypt_type.length)+crypt_type}]);
-				else
-					send_response(msg.hdr, [{id:3587, value:session_key}, {id:3588, value:'\x00\x01'+ascii(hmac_type.length)+hmac_type}, {id:106, value:hmac_type}]);
-				msg = read_msg(client.socket);
-				if (msg.hdr.type == undefined)
-					rage_quit("Disconnected during secure login");
-				if (msg.params[105] == undefined) {
-					send_response(msg.hdr, [{id:100, value:"Incorrect parameters to login"}], 1);
-					break;
-				}
-				// Find User ID
-				username = undefined;
-				password = undefined;
-				for (i = 0; i<system.lastuser; i++) {
-					tmpusr = new User(i);
-					if (tmpusr.settings & (USER_DELETED|USER_INACTIVE))
-						continue;
-					if (msg.params[105].data == best_hmac(tmpusr.alias.toLowerCase(), session_key))
-						username = tmpusr.alias.toLowerCase();
-					else if (msg.params[105].data == best_hmac(tmpusr.alias.toUpperCase(), session_key))
-						username = tmpusr.alias.toUpperCase();
-					else if (msg.params[105].data == best_hmac(tmpusr.alias, session_key))
-						username = tmpusr.alias;
-					if (username != undefined) {
-						if (msg.params[106] != undefined) {
-							if (msg.params[106].data == best_hmac(tmpusr.security.password.toLowerCase(), session_key))
-								password = tmpusr.security.password.toLowerCase();
-							else if (msg.params[106].data == best_hmac(tmpusr.security.password.toUpperCase(), session_key))
-								password = tmpusr.security.password.toUpperCase();
-							else if (msg.params[106].data == best_hmac(tmpusr.security.password, session_key))
-								password = tmpusr.security.password;
-							if (password != undefined)
-								break;
-						}
-						else {
-							if (tmpusr.compare_ars("REST G"))
-								break;
-						}
-					}
-				}
-				if (username == undefined) {
-					send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
-					break;
-				}
-				uid = system.matchuser(username);
-				if (uid == 0) {
-					send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
-					break;
-				}
-				if (msg.params[106] != undefined) {
-					if (best_crypt != undefined) {
-						ecc = new CryptContext(best_crypt);
-						dcc = new CryptContext(best_crypt);
-						dcc_blocksize = dcc.blocksize;
-						ecc.mode = CryptContext.MODE.OFB;
-						dcc.mode = CryptContext.MODE.OFB;
-						ecc.iv = "\x00\x00\x00\x00\x00\x00\x00\x00";
-						dcc.iv = "\x00\x00\x00\x00\x00\x00\x00\x00";
-					}
-					tmpusr = new User(uid);
-					if (password == undefined) {
-						send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
-						break;
-					}
-					if (ecc != undefined) {
-						ecc_key = best_hmac(password, best_hmac(password, session_key));
-						ecc.set_key(ecc_key);
-						dcc_key = best_hmac(password, ecc_key);
-						dcc.set_key(dcc_key);
-					}
-				}
-			}
-			else {
-				if (msg.params[105] == undefined) {
-					send_response(msg.hdr, [{id:100, value:"Incorrect parameters to login"}], 1);
-					break;
-				}
-				username = decode_string(msg.params[105].data);
-				password = decode_string(msg.params[106] == undefined ? '' : msg.params[106].data).toLowerCase();
-			}
-			if (msg.params[160] != undefined)
-				client_version = msg.params[160].data;
-			if (msg.params[104] != undefined)
-				icon = msg.params[104].data;
-			uid = system.matchuser(username);
-			if (uid == 0) {
-				send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
-				break;
-			}
-			if(!login(uid, password)) {
-				send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
-				break;
-			}
-			usr = new User(uid);
-			if (usr == null) {
-				send_response(msg.hdr, [{id:100, value:"Failed to fetch user info"}], 1);
-				break;
-			}
-			usrs = read_online_users();
-			j = false;
-			for (i in usrs) {
-				if (usrs[i].id == usr.id) {
-					j = true;
-					send_response(msg.hdr, [{id:100, value:"You are already logged in!"}], 1);
-					usr = undefined;
-					break;
-				}
-			}
-			if (j)
-				break;
-			update_online_user(usr.alias, icon, flags);
-			send_response(msg.hdr, [{id:160, value:190},{id:161, value:0},{id:162, value:system.name}]);
-			// TODO: send banner...
-			if (agreement_file == null) {
-				send_message(109, [{id:154, value:1}, {id:101, value:"No Terms Specified."}]);
-				update_online_user(usr.alias, icon, flags);
-				client.user_name = usr.alias;
-				logged_in = true;
-			}
-			else {
-				agreementf = new File(agreement_file);
-				if (f.open("rb", true)) {
-					tmp = f.read();
-					f.close();
-					send_message(109, [{id:101, value:tmp}]);
-				}
-				else {
-					rage_quit("Unable to open agreement file");
-				}
-			}
-			break;
-		case 108:	// Send instant message
-			userid = msg.params[103].data;
-			if (userid == undefined) {
-				send_response(msg.hdr, [{id:100, value:'No User ID Specified'}], 1);
-				break;
-			}
-			if (usr.compare_ars("REST C")) {
-				send_response(msg.hdr, [{id:100, value:"You are not allowed to chat"}]);
-				break;
-			}
-			if (msg.params[101] != undefined) {
-				if (userid & 0x8000) {
-					new_usrs = read_online_users();
-					for (i in new_usrs) {
-						if (new_usrs[i].id == userid)
-							system.put_node_message(new_usrs[i].node, "\1n\1b\1r\7Hotline \1n\1gmessage from \1n\1h"+usr.alias+":\r\n\1h"+msg.params[101].data);
-					}
-				}
-				else
-					system.put_telegram(userid, "\1n\1b\1r\7Hotline \1n\1gmessage from \1n\1h"+usr.alias+":\r\n\1h"+msg.params[101].data);
-				send_response(msg.hdr, []);
-			}
-			else {
-				send_response(msg.hdr, [{id:100, value:'No Message Specified'}], 1);
-			}
-			break;
-		case 121:	// Accept agreement...
-			send_response(msg.hdr, []);
-			if (msg.params[104] != undefined) {
-				icon = parseInt(msg.params[104].data, 10);
-			}
-			if (msg.params[113] != undefined) {
-				flags = parseInt(msg.params[113].data, 10);
-				flags &= 0x0c;
-				if(usr.is_sysop)
-					flags |= 0x02;
-			}
-			update_online_user(usr.alias, icon, flags);
-			client.user_name = usr.alias;
-			logged_in = true;
-			send_privs();
-			break;
-		case 200:	// File list
-			tmp=[];
-
-			if (usr.compare_ars("REST T")) {
-				send_response(msg.hdr, [{id:100, value:"You are not allowed to access files"}]);
-				break;
-			}
-			if (msg.params[202] == undefined || decode_integer(msg.params[202].data.substr(0,2))==0) {
-				// Root
-				for (i in file_area.lib_list) {
-					if (!usr.compare_ars(file_area.lib_list[i].ars))
-						continue;
-					tmp.push({id:200, value:'fldr\x00\x00\x00\x01'+encode_long(0)+encode_long(file_area.lib_list[i].dir_list.length)+encode_short(0)+encode_short(file_area.lib_list[i].description.length)+file_area.lib_list[i].description});
-				}
-			}
-			else {
-				depth = decode_integer(msg.params[202].data.substr(0,2));
-				if (depth == 1) {
-					// DIRs...
-					var liblen = decode_integer(msg.params[202].data.substr(4,1));
-					var libdesc = msg.params[202].data.substr(5, liblen);
-
-					k = false;
-					for (i in file_area.lib_list) {
-						if (!usr.compare_ars(file_area.lib_list[i].ars))
-							continue;
-						if (file_area.lib_list[i].description == libdesc) {
-							k = true;
-							for (j in file_area.lib_list[i].dir_list) {
-								if (!file_area.lib_list[i].dir_list[j].can_download)
-									continue;
-								tmp.push({id:200, value:'fldr\x00\x00\x00\x01'+encode_long(0)+encode_long(0)+encode_short(0)+encode_short(file_area.lib_list[i].dir_list[j].description.length)+file_area.lib_list[i].dir_list[j].description});
-							}
-						}
-					}
-					if (!k) {
-						send_response(msg.hdr, [{id:100, value:'No such directory'}], 1);
-						break;
-					}
-				}
-				else {
-					if (depth != 2) {
-						send_response(msg.hdr, [{id:100, value:'No such directory'}], 1);
-						break;
-					}
-					var path = get_path(msg.params[202]);
-					if (path == undefined) {
-						send_response(msg.hdr, [{id:100, value:'No such directory'}], 1);
-						break;
-					}
-					var files = directory(path+'*');
-					for (i in files) {
-						var fname = file_getname(files[i]);
-						tmp.push({id:200, value:'file\x00\x00\x00\x01'+encode_long(file_size(files[i]))+encode_long(0)+encode_short(0)+encode_short(fname.length)+fname});
-					}
-				}
-			}
-			send_response(msg.hdr, tmp);
-			break;
-		case 202:	// File download... pass off to transfer thingie.
-			var sub = get_sub(msg.params[202]);
-			if (sub == undefined) {
-				send_response(msg.hdr, [{id:100, value:'No such directory'}], 1);
-				break;
-			}
-			if (!sub.can_download) {
-				send_response(msg.hdr, [{id:100, value:'Permission denied'}], 1);
-				break;
-			}
-			path = sub.path;
-			if (msg.params[201] == undefined) {
-				send_response(msg.hdr, [{id:100, value:'Missing Filename'}], 1);
-				break;
-			}
-			path += file_getname(msg.params[201].data);
-			if (!file_exists(path)) {
-				send_response(msg.hdr, [{id:100, value:'No such file'}], 1);
-				break;
-			}
-			if (msg.params[203] != undefined) {
-				send_response(msg.hdr, [{id:100, value:'Resume not supported'}], 1);
-				break;
-			}
-			var tid = setup_transfer(path);
-			var tcount = 0;
-			send_response(msg.hdr, [{id:108, value:file_size(path)+122}, {id:207, value:file_size(path)}, {id:107, value:tid}, /*{id:116, value:tcount}*/]);
-			break;
-		case 300:	// Get User Name List
-			if (!sent_privs)
-				send_privs();
-			usrs = read_online_users();
-			tmp = [];
-			for (i in usrs) {
-				if (usrs[i].id)
-					tmp.push({id:300, value:encode_short(usrs[i].id)+encode_short(usrs[i].icon)+encode_short(usrs[i].flags)+encode_short(usrs[i].alias.length)+usrs[i].alias});
-			}
-			send_response(msg.hdr, tmp);
-			break;
-		case 303:	// Get client info text
-			if (msg.params[103] != undefined) {
-				tmp = new User(msg.params[103].data & 0x7fff);
-				if (tmp != null)
-					send_response(msg.hdr, [{id:102, value:tmp.alias}, {id:101, value:get_user_info_str(tmp)}]);
-				else
-					send_response(msg.hdr, [{id:100, value:"Can't find user #"+msg.params[103].data}], 1);
-			}
-			else
-				send_response(msg.hdr, [{id:100, value:"User number not specified"}], 1);
-			break;
-		case 304:	// Set client user info // TODO: "Automatic response"
-			if (msg.params[104] != undefined) {
-				icon = parseInt(msg.params[104].data, 10);
-			}
-			if (msg.params[113] != undefined) {
-				flags = parseInt(msg.params[113].data, 10);
-			}
-			update_online_user(usr.alias, icon, flags);
-			break;
-		case 370:	// Get News Category Name List
-			tmp = [];
-			if (msg.params[325] != undefined && decode_integer(msg.params[325].data.substr(0,2)) > 0) {
-				depth = decode_integer(msg.params[325].data.substr(0,2));
-
-				if (depth == 1) {
-					var grplen = decode_integer(msg.params[325].data.substr(4,1));
-					var grpdesc = msg.params[325].data.substr(5, grplen);
-
-					for (i in msg_area.grp_list) {
-						if (!usr.compare_ars(msg_area.grp_list[i].ars))
-							continue;
-						if (msg_area.grp_list[i].description == grpdesc) {
-							for (j in msg_area.grp_list[i].sub_list) {
-								if (!msg_area.grp_list[i].sub_list[j].can_read)
-									continue;
-								mb = new MsgBase(msg_area.grp_list[i].sub_list[j].code);
-								if (!mb.open()) {
-									log(LOG_ERR, "Unable to open message base "+msg_area.grp_list[i].sub_list[j].code);
-									continue;
-								}
-								tmp.push({id:323, value:"\x00\x03"+encode_short(mb.total_msgs)+'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+encode_long(0)+encode_long(0)+ascii(mb.cfg.description.length)+mb.cfg.description});
-								mb.close();
-							}
-						}
-					}
-				}
-				else {
-					send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
-					break;
-				}
-			}
-			else {
-				for (i in msg_area.grp_list) {
-					if (!usr.compare_ars(msg_area.grp_list[i].ars))
-						continue;
-					tmp.push({id:323, value:"\x00\x02"+encode_short(msg_area.grp_list[i].sub_list.length)+ascii(msg_area.grp_list[i].description.length)+msg_area.grp_list[i].description});
-				}
-			}
-			send_response(msg.hdr, tmp);
-			break;
-		case 371:	// Get article list
-			if (msg.params[325] != undefined) {
-				var items={count:0};
-				mb = mb_from_path(msg.params[325]);
-				if (mb == undefined) {
-					send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
-					break;
-				}
-				var hdrs = mb.get_all_msg_headers();
-				var msgs = '';
-				if (msg_area.sub[mb.cfg.code].can_read) {
-					for (i in hdrs) {
-						if (hdrs[i].attr & MSG_DELETE)
-							continue;
-						if ((hdrs[i].attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED)
-							continue;
-						if ((hdrs[i].attr & MSG_PRIVATE) && (hdrs[i].to_ext != usr.number))
-							continue;
-						items.count++;
-						// TODO: Attachments etc.
-						body = mb.get_msg_body(parseInt(i, 10), true);
-						if (body == null)
-							continue;
-						if (body.length > 65535 || body.length < 1)	// Message too long
-							continue;
-						if (hdrs[i].subject.length > 255)	// Subject too long
-							continue;
-						if (hdrs[i].subject.length < 1)	// Subject too short
-							continue;
-						if (hdrs[i].from.length < 1 || hdrs[i].from.length > 255)	// From too long
-							continue;
-						// TODO: Encode the flags...
-						msgs += encode_long(hdrs[i].number)+time_to_timestamp(hdrs[i].when_written_time)+encode_long(hdrs[i].thread_back)+encode_long(0)+encode_short(1)+ascii(hdrs[i].subject.length)+hdrs[i].subject+ascii(hdrs[i].from.length)+hdrs[i].from+ascii("text/plain".length)+"text/plain"+encode_short(body.length);
-					}
-				}
-				hdrs={};
-				mb.close();
-				var desc = mb.cfg.description;
-				var name = mb.cfg.name;
-				var overhead = 26+4+4+1+name.length+1+desc.length;
-				while (overhead + msgs.length > 65535) {
-					var sublen=ascii(msgs.substr(22,1));
-					var fromlen=ascii(msgs.substr(23+sublen,1));
-					msgs=msgs.substr(37+sublen+fromlen);
-					items.count--;
-				}
-				send_response(msg.hdr, [{id:321, value:encode_long(0)+encode_long(items.count)+ascii(name.length)+name+ascii(desc.length)+desc+msgs}]);
-			}
-			else {
-				send_response(msg.hdr, [{id:100, value:"No path specified!"}], 1);
-			}
-			break;
-		case 400:	// Get message
-			mb = mb_from_path(msg.params[325]);
-			if (mb == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
-				break;
-			}
-			if (msg.params[326] == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
-				break;
-			}
-			if (!msg_area.sub[mb.cfg.code].can_read) {
-				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-				break;
-			}
-			hdr = mb.get_msg_header(msg.params[326].data);
-			if (hdr == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-				break;
-			}
-			if (hdr.attr & MSG_DELETE) {
-				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-				break;
-			}
-			if ((hdr.attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED) {
-				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-				break;
-			}
-			if ((hdr.attr & MSG_PRIVATE) && (system.matchuser(hdr.to) != usr.number)) {
-				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-				break;
-			}
-			body = ascii_str(mb.get_msg_body(hdr.number, true));
-			if (body == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-				break;
-			}
-			// TODO (?) update last-read pointer...
-			send_response(msg.hdr, [{id:328, value:hdr.subject}, {id:329, value:hdr.from}, {id:330, value:time_to_timestamp(hdr.when_written_time)}, {id:331, value:msg.params[326].data-1}, {id:332, value:msg.params[326]+1}, {id:335, value:hdr.thread_back}, {id:336, value:hdr.thread_first}, {id:327, value:"text/plain"}, {id:333, value:body}]);
-			break;
-		case 410:	// Post message
-			mb = mb_from_path(msg.params[325], true);
-			if (mb == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
-				break;
-			}
-			if (!msg_area.sub[mb.cfg.code].can_post) {
-				send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
-				break;
-			}
-			if (msg.params[328] == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Missing title"}], 1);
-				break;
-			}
-			if (msg.params[333] == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Missing article"}], 1);
-				break;
-			}
-			hdr = {to:'All', from:usr.alias};
-			if (msg.params[326] != undefined) {
-				hdr.thread_orig = msg.params[326].data;
-				var ohdr = mb.get_msg_header(hdr.thread_orig);
-				if (ohdr != null) {
-					if (ohdr.thread_id == 0)
-						hdr.thread_id = hdr.thread_orig;
+			switch(code.toUpperCase()) {
+				case 'BBS':
+					return(format(fmt,system.name.toString()));
+				case 'LOCATION':
+					return(format(fmt,system.location.toString()));
+				case 'SYSOP':
+					return(format(fmt,system.operator.toString()));
+				case 'HOSTNAME':
+					return(format(fmt,system.host_name.toString()));
+				case 'OS_VER':
+					return(format(fmt,system.os_version.toString()));
+				case 'UPTIME':
+					var days;
+					var hours;
+					var mins;
+					var seconds;
+					var ut=time()-system.uptime;
+					days=(ut/86400);
+					ut%=86400;
+					hours=(ut/3600);
+					ut%=3600;
+					mins=(ut/60);
+					seconds=parseInt(ut%60);
+					if(parseInt(days)!=0)
+						ut=format("%d days %d:%02d",days,hours,mins);
 					else
-						hdr.thread_id = ohdr.thread_id;
-					if (ohdr.from != undefined)
-						hdr.to = ohdr.from;
-				}
+						ut=format("%d:%02d",hours,mins);
+					return(format(fmt,ut.toString()));
+				case 'TUSER':
+					return(format(fmt,system.stats.total_users.toString()));
+				case 'STATS.NUSERS':
+					return(format(fmt,system.stats.new_users_today.toString()));
+				case 'STATS.LOGONS':
+					return(format(fmt,system.stats.total_logons.toString()));
+				case 'STATS.LTODAY':
+					return(format(fmt,system.stats.logons_today.toString()));
+				case 'STATS.TIMEON':
+					return(format(fmt,system.stats.total_timeon.toString()));
+				case 'STATS.TTODAY':
+					return(format(fmt,system.stats.timeon_today.toString()));
+				case 'TMSG':
+					return(format(fmt,system.stats.total_messages.toString()));
+				case 'STATS.PTODAY':
+					return(format(fmt,system.stats.messages_posted_today.toString()));
+				case 'MAILW:0':
+					return(format(fmt,system.stats.total_email.toString()));
+				case 'STATS.ETODAY':
+					return(format(fmt,system.stats.email_sent_today.toString()));
+				case 'MAILW:1':
+					return(format(fmt,system.stats.total_feedback.toString()));
+				case 'STATS.FTODAY':
+					return(format(fmt,system.stats.feedback_sent_today.toString()));
+				case 'TFILE':
+					return(format(fmt,system.stats.total_files.toString()));
+				case 'STATS.ULS':
+					return(format(fmt,system.stats.files_uploaded_today.toString()));
+				case 'STATS.DLS':
+					return(format(fmt,system.stats.files_downloaded_today.toString()));
+				case 'STATS.DLB':
+					return(format(fmt,system.stats.bytes_downloaded_today.toString()));
+				default:
+					return('@'+code+'@');
 			}
-			hdr.subject = msg.params[328].data;
-			// TODO: Flags...
-			if (msg.params[327] != undefined) {
-				if (msg.params[327].data != 'text/plain') {
-					send_response(msg.hdr, [{id:100, value:"Unhandled message type"}], 1);
+		});
+
+	return message;
+}
+
+function get_message(msg)
+{
+	var f=new File(system.text_dir+"welcome.msg");
+	var message = "Welcome to "+system.name;
+	if(f.open("rb",true)) {
+		message = f.read();
+		f.close();
+		message = expand_at_codes(message);
+	}
+	send_response(msg.hdr, [{id:101, value:message}]);
+}
+
+function send_chat(msg)
+{
+	var chatid = 0;
+	var chatstr = '';
+	var chatopt = 0;
+
+	if (usr == undefined || usr.compare_ars("REST C")) {
+		send_response(msg.hdr, [{id:100, value:"You are not allowed to chat"}], 1);
+		return;
+	}
+	if (msg.params[114] != undefined)
+		chatid = msg.params[114].data;
+	if (msg.params[101] != undefined)
+		chatstr = msg.params[101].data;
+	if (msg.params[109] != undefined)
+		chatopt = msg.params[109].data;
+	send_chat_msg(chatid, chatopt, chatstr);
+}
+
+function secure_login(msg)
+{
+	// Secure login...
+	var macalgs = parse_login_list(msg.params[3588].data);
+	var cryptalgs = [];
+	var uid;
+	var i;
+	var credentials = {};
+	var tmpusr;
+
+	if (msg.params[3778] != undefined)
+		cryptalgs = parse_login_list(msg.params[3778].data);
+	session_key = generate_session_key();
+	best_hmac = undefined;
+	var hmac_type = undefined;
+	var best_crypt = undefined;
+	var crypt_type = undefined;
+	for (i in macalgs) {
+		switch(macalgs[i]) {
+			case 'HMAC-MD5':
+				if (best_hmac == undefined) {
+					best_hmac = hmac_md5;
+					hmac_type = macalgs[i];
+				}
+				break;
+			case 'HMAC-SHA1':
+				best_hmac = hmac_sha1;
+				hmac_type = macalgs[i];
+				break;
+		}
+	}
+	for (i in cryptalgs) {
+		switch(cryptalgs[i]) {
+			case 'BLOWFISH':
+				if (best_crypt == undefined) {
+					best_crypt = CryptContext.ALGO.Blowfish;
+					crypt_type = cryptalgs[i];
+				}
+				break;
+			case 'IDEA':
+				best_crypt = CryptContext.ALGO.Blowfish;
+				crypt_type = cryptalgs[i];
+				break;
+		}
+	}
+	if (best_hmac == undefined)
+		throw {error_msg:"No supported HMAC algorithms"};
+	if (crypt_type != undefined)
+		send_response(msg.hdr, [{id:3587, value:session_key}, {id:3588, value:'\x00\x01'+ascii(hmac_type.length)+hmac_type}, {id:105, value:hmac_type}, {id:106, value:hmac_type}, {id:3777, value:'\x00\x01'+ascii(crypt_type.length)+crypt_type}, {id:3778, value:'\x00\x01'+ascii(crypt_type.length)+crypt_type}]);
+	else
+		send_response(msg.hdr, [{id:3587, value:session_key}, {id:3588, value:'\x00\x01'+ascii(hmac_type.length)+hmac_type}, {id:106, value:hmac_type}]);
+	msg = read_msg(client.socket);
+	if (msg.hdr.type == undefined)
+		rage_quit("Disconnected during secure login");
+	if (msg.params[105] == undefined)
+		throw {error_msg:"Incorrect parameters to login"};
+	// Find User ID
+	for (i = 0; i<system.lastuser; i++) {
+		tmpusr = new User(i);
+		if (tmpusr.settings & (USER_DELETED|USER_INACTIVE))
+			continue;
+		if (msg.params[105].data == best_hmac(tmpusr.alias.toLowerCase(), session_key))
+			credentials.username = tmpusr.alias.toLowerCase();
+		else if (msg.params[105].data == best_hmac(tmpusr.alias.toUpperCase(), session_key))
+			credentials.username = tmpusr.alias.toUpperCase();
+		else if (msg.params[105].data == best_hmac(tmpusr.alias, session_key))
+			credentials.username = tmpusr.alias;
+		if (credentials.username != undefined) {
+			if (msg.params[106] != undefined) {
+				if (msg.params[106].data == best_hmac(tmpusr.security.password.toLowerCase(), session_key))
+					credentials.password = tmpusr.security.password.toLowerCase();
+				else if (msg.params[106].data == best_hmac(tmpusr.security.password.toUpperCase(), session_key))
+					credentials.password = tmpusr.security.password.toUpperCase();
+				else if (msg.params[106].data == best_hmac(tmpusr.security.password, session_key))
+					credentials.password = tmpusr.security.password;
+				if (credentials.password != undefined)
 					break;
-				}
 			}
-			if (!mb.save_msg(hdr, client, msg.params[333].data)) {
-				send_response(msg.hdr, [{id:101, value:"Error saving message"}], 1);
-				break;
+			else {
+				if (tmpusr.compare_ars("REST G"))
+					break;
 			}
-			send_response(msg.hdr, []);
-			break;
-		case 411:	// Delete message
-			mb = mb_from_path(msg.params[325]);
-			if (mb == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
-				break;
-			}
-			if (!msg_area.sub[mb.cfg.code].is_operator) {
-				send_response(msg.hdr, [{id:100, value:"You're not allowed to delete messages here"}], 1);
-				break;
-			}
-			if (msg.params[326] == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
-				break;
-			}
-			hdr = mb.get_msg_header(msg.params[326].data);
-			if (hdr == undefined) {
-				send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
-				break;
-			}
-			hdr.attr |= MSG_DELETE;
-			if (!mb.put_msg_header(hdr.number, hdr)) {
-				send_response(msg.hdr, [{id:100, value:"Delete Failed"}], 1);
-				break;
-			}
-			send_response(msg.hdr, []);
-			break;
-		default:
-			send_response(msg.hdr, [{id:100, value:"Unsupported command"}], 1);
-			break;
+		}
+	}
+	if (credentials.username == undefined)
+		throw {error_msg:"Login failed"};
+	uid = system.matchuser(credentials.username);
+	if (uid == 0)
+		throw {error_msg:"Login failed"};
+	if (msg.params[106] != undefined) {
+		if (best_crypt != undefined) {
+			ecc = new CryptContext(best_crypt);
+			dcc = new CryptContext(best_crypt);
+			dcc_blocksize = dcc.blocksize;
+			ecc.mode = CryptContext.MODE.OFB;
+			dcc.mode = CryptContext.MODE.OFB;
+			ecc.iv = "\x00\x00\x00\x00\x00\x00\x00\x00";
+			dcc.iv = "\x00\x00\x00\x00\x00\x00\x00\x00";
+		}
+		tmpusr = new User(uid);
+		if (credentials.password == undefined) {
+			send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
+			return;
+		}
+		if (ecc != undefined) {
+			ecc_key = best_hmac(credentials.password, best_hmac(credentials.password, session_key));
+			ecc.set_key(ecc_key);
+			dcc_key = best_hmac(credentials.password, ecc_key);
+			dcc.set_key(dcc_key);
+		}
+	}
+
+	return credentials;
+}
+
+function do_login(msg)
+{
+	var credentials={};
+	var uid;
+	var usrs;
+	var i, j;
+	var agreementf;
+	var tmp;
+
+	if (msg.params[3588] != undefined) {
+		try {
+			credentials = secure_login(msg);
+		}
+		catch (e) {
+			if (e.error_msg != undefined)
+				send_response(msg.hdr, [{id:100, value:e.error_msg}], 1);
+			else
+				send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
+			return;
+		}
+	}
+	else {
+		if (msg.params[105] == undefined) {
+			send_response(msg.hdr, [{id:100, value:"Incorrect parameters to login"}], 1);
+			return;
+		}
+		credentials.username = decode_string(msg.params[105].data);
+		credentials.password = decode_string(msg.params[106] == undefined ? '' : msg.params[106].data).toLowerCase();
+	}
+	if (msg.params[160] != undefined)
+		client_version = msg.params[160].data;
+	if (msg.params[104] != undefined)
+		icon = msg.params[104].data;
+	uid = system.matchuser(credentials.username);
+	if (uid == 0) {
+		send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
+		return;
+	}
+	if(!login(uid, credentials.password)) {
+		send_response(msg.hdr, [{id:100, value:"Login failed"}], 1);
+		return;
+	}
+	usr = new User(uid);
+	if (usr == null) {
+		send_response(msg.hdr, [{id:100, value:"Failed to fetch user info"}], 1);
+		return;
+	}
+	usrs = read_online_users();
+	tmp = false;
+	for (i in usrs) {
+		if (usrs[i].id == usr.id) {
+			tmp = true;
+			send_response(msg.hdr, [{id:100, value:"You are already logged in!"}], 1);
+			usr = undefined;
+			return;
+		}
+	}
+	if (tmp)
+		return;
+	update_online_user(usr.alias, icon, flags);
+	send_response(msg.hdr, [{id:160, value:190},{id:161, value:0},{id:162, value:system.name}]);
+	// TODO: send banner...
+	if (agreement_file == null) {
+		send_message(109, [{id:154, value:1}, {id:101, value:"No Terms Specified."}]);
+		update_online_user(usr.alias, icon, flags);
+		client.user_name = usr.alias;
+		logged_in = true;
+	}
+	else {
+		agreementf = new File(agreement_file);
+		if (agreementf.open("rb", true)) {
+			tmp = agreementf.read();
+			agreementf.close();
+			send_message(109, [{id:101, value:tmp}]);
+		}
+		else {
+			rage_quit("Unable to open agreement file");
+		}
 	}
 }
+
+function send_im(msg)
+{
+	var userid = msg.params[103].data;
+	var new_usrs;
+	var i;
+
+	if (userid == undefined) {
+		send_response(msg.hdr, [{id:100, value:'No User ID Specified'}], 1);
+		return;
+	}
+	if (usr.compare_ars("REST C")) {
+		send_response(msg.hdr, [{id:100, value:"You are not allowed to chat"}]);
+		return;
+	}
+	if (msg.params[101] != undefined) {
+		if (userid & 0x8000) {
+			new_usrs = read_online_users();
+			for (i in new_usrs) {
+				if (new_usrs[i].id == userid)
+					system.put_node_message(new_usrs[i].node, "\1n\1b\1r\7Hotline \1n\1gmessage from \1n\1h"+usr.alias+":\r\n\1h"+msg.params[101].data);
+			}
+		}
+		else
+			system.put_telegram(userid, "\1n\1b\1r\7Hotline \1n\1gmessage from \1n\1h"+usr.alias+":\r\n\1h"+msg.params[101].data);
+		send_response(msg.hdr, []);
+	}
+	else {
+		send_response(msg.hdr, [{id:100, value:'No Message Specified'}], 1);
+	}
+}
+
+function accept_agreement(msg)
+{
+	send_response(msg.hdr, []);
+	if (msg.params[104] != undefined) {
+		icon = parseInt(msg.params[104].data, 10);
+	}
+	if (msg.params[113] != undefined) {
+		flags = parseInt(msg.params[113].data, 10);
+		flags &= 0x0c;
+		if(usr.is_sysop)
+			flags |= 0x02;
+	}
+	update_online_user(usr.alias, icon, flags);
+	client.user_name = usr.alias;
+	logged_in = true;
+	send_privs();
+}
+
+function file_list(msg)
+{
+	var list=[];
+	var i, j;
+	var depth;
+	var liblen;
+	var libdesc;
+	var found;
+	var files;
+	var path;
+	var fname;
+
+	if (usr.compare_ars("REST T")) {
+		send_response(msg.hdr, [{id:100, value:"You are not allowed to access files"}]);
+		return;
+	}
+	if (msg.params[202] == undefined || decode_integer(msg.params[202].data.substr(0,2))==0) {
+		// Root
+		for (i in file_area.lib_list) {
+			if (!usr.compare_ars(file_area.lib_list[i].ars))
+				continue;
+			list.push({id:200, value:'fldr\x00\x00\x00\x01'+encode_long(0)+encode_long(file_area.lib_list[i].dir_list.length)+encode_short(0)+encode_short(file_area.lib_list[i].description.length)+file_area.lib_list[i].description});
+		}
+	}
+	else {
+		depth = decode_integer(msg.params[202].data.substr(0,2));
+		if (depth == 1) {
+			// DIRs...
+			liblen = decode_integer(msg.params[202].data.substr(4,1));
+			libdesc = msg.params[202].data.substr(5, liblen);
+
+			found = false;
+			for (i in file_area.lib_list) {
+				if (!usr.compare_ars(file_area.lib_list[i].ars))
+					continue;
+				if (file_area.lib_list[i].description == libdesc) {
+					found = true;
+					for (j in file_area.lib_list[i].dir_list) {
+						if (!file_area.lib_list[i].dir_list[j].can_download)
+							continue;
+						list.push({id:200, value:'fldr\x00\x00\x00\x01'+encode_long(0)+encode_long(0)+encode_short(0)+encode_short(file_area.lib_list[i].dir_list[j].description.length)+file_area.lib_list[i].dir_list[j].description});
+					}
+				}
+			}
+			if (!found) {
+				send_response(msg.hdr, [{id:100, value:'No such directory'}], 1);
+				return;
+			}
+		}
+		else {
+			if (depth != 2) {
+				send_response(msg.hdr, [{id:100, value:'No such directory'}], 1);
+				return;
+			}
+			path = get_path(msg.params[202]);
+			if (path == undefined) {
+				send_response(msg.hdr, [{id:100, value:'No such directory'}], 1);
+				return;
+			}
+			files = directory(path+'*');
+			for (i in files) {
+				fname = file_getname(files[i]);
+				list.push({id:200, value:'file\x00\x00\x00\x01'+encode_long(file_size(files[i]))+encode_long(0)+encode_short(0)+encode_short(fname.length)+fname});
+			}
+		}
+	}
+
+	send_response(msg.hdr, list);
+}
+
+function file_download(msg)
+{
+	var sub = get_sub(msg.params[202]);
+	var path;
+	var tid;
+	var tcount;
+
+	if (sub == undefined) {
+		send_response(msg.hdr, [{id:100, value:'No such directory'}], 1);
+		return;
+	}
+	if (!sub.can_download) {
+		send_response(msg.hdr, [{id:100, value:'Permission denied'}], 1);
+		return;
+	}
+	path = sub.path;
+	if (msg.params[201] == undefined) {
+		send_response(msg.hdr, [{id:100, value:'Missing Filename'}], 1);
+		return;
+	}
+	path += file_getname(msg.params[201].data);
+	if (!file_exists(path)) {
+		send_response(msg.hdr, [{id:100, value:'No such file'}], 1);
+		return;
+	}
+	if (msg.params[203] != undefined) {
+		send_response(msg.hdr, [{id:100, value:'Resume not supported'}], 1);
+		return;
+	}
+	tid = setup_transfer(path);
+	tcount = 0;
+	send_response(msg.hdr, [{id:108, value:file_size(path)+122}, {id:207, value:file_size(path)}, {id:107, value:tid}, /*{id:116, value:tcount}*/]);
+}
+
+function get_user_name_list(msg)
+{
+	var i;
+	var usrs;
+	var list = [];
+
+	if (!sent_privs)
+		send_privs();
+	usrs = read_online_users();
+	for (i in usrs) {
+		if (usrs[i].id)
+			list.push({id:300, value:encode_short(usrs[i].id)+encode_short(usrs[i].icon)+encode_short(usrs[i].flags)+encode_short(usrs[i].alias.length)+usrs[i].alias});
+	}
+	send_response(msg.hdr, list);
+}
+
+function get_client_info_text(msg)
+{
+	var tmpusr;
+
+	if (msg.params[103] != undefined) {
+		tmpusr = new User(msg.params[103].data & 0x7fff);
+		if (tmpusr != null)
+			send_response(msg.hdr, [{id:102, value:tmpusr.alias}, {id:101, value:get_user_info_str(tmpusr)}]);
+		else
+			send_response(msg.hdr, [{id:100, value:"Can't find user #"+msg.params[103].data}], 1);
+	}
+	else
+		send_response(msg.hdr, [{id:100, value:"User number not specified"}], 1);
+}
+
+function set_client_user_info(msg)
+{
+	if (msg.params[104] != undefined)
+		icon = parseInt(msg.params[104].data, 10);
+	if (msg.params[113] != undefined)
+		flags = parseInt(msg.params[113].data, 10);
+	update_online_user(usr.alias, icon, flags);
+}
+
+function get_news_category_name_list(msg)
+{
+	var list = [];
+	var depth;
+	var i, j;
+	var grplen;
+	var grpdesc;
+	var mb;
+
+	if (msg.params[325] != undefined && decode_integer(msg.params[325].data.substr(0,2)) > 0) {
+		depth = decode_integer(msg.params[325].data.substr(0,2));
+
+		if (depth == 1) {
+			grplen = decode_integer(msg.params[325].data.substr(4,1));
+			grpdesc = msg.params[325].data.substr(5, grplen);
+
+			for (i in msg_area.grp_list) {
+				if (!usr.compare_ars(msg_area.grp_list[i].ars))
+					continue;
+				if (msg_area.grp_list[i].description == grpdesc) {
+					for (j in msg_area.grp_list[i].sub_list) {
+						if (!msg_area.grp_list[i].sub_list[j].can_read)
+							continue;
+						mb = new MsgBase(msg_area.grp_list[i].sub_list[j].code);
+						if (!mb.open()) {
+							log(LOG_ERR, "Unable to open message base "+msg_area.grp_list[i].sub_list[j].code);
+							continue;
+						}
+						list.push({id:323, value:"\x00\x03"+encode_short(mb.total_msgs)+'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+encode_long(0)+encode_long(0)+ascii(mb.cfg.description.length)+mb.cfg.description});
+						mb.close();
+					}
+				}
+			}
+		}
+		else {
+			send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
+			return;
+		}
+	}
+	else {
+		for (i in msg_area.grp_list) {
+			if (!usr.compare_ars(msg_area.grp_list[i].ars))
+				continue;
+			list.push({id:323, value:"\x00\x02"+encode_short(msg_area.grp_list[i].sub_list.length)+ascii(msg_area.grp_list[i].description.length)+msg_area.grp_list[i].description});
+		}
+	}
+	send_response(msg.hdr, list);
+}
+
+function get_article_list(msg)
+{
+	var items = 0;
+	var mb;
+	var hdrs;
+	var msgs = '';
+	var i;
+	var desc;
+	var name;
+	var overhead;
+	var sublen;
+	var fromlen;
+	var body;
+
+	if (msg.params[325] != undefined) {
+		mb = mb_from_path(msg.params[325]);
+		if (mb == undefined) {
+			send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
+			return;
+		}
+		hdrs = mb.get_all_msg_headers();
+		if (msg_area.sub[mb.cfg.code].can_read) {
+			for (i in hdrs) {
+				if (hdrs[i].attr & MSG_DELETE)
+					continue;
+				if ((hdrs[i].attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED)
+					continue;
+				if ((hdrs[i].attr & MSG_PRIVATE) && (hdrs[i].to_ext != usr.number))
+					continue;
+				items++;
+				// TODO: Attachments etc.
+				body = mb.get_msg_body(parseInt(i, 10), true);
+				if (body == null)
+					continue;
+				if (body.length > 65535 || body.length < 1)	// Message too long
+					continue;
+				if (hdrs[i].subject.length > 255)	// Subject too long
+					continue;
+				if (hdrs[i].subject.length < 1)	// Subject too short
+					continue;
+				if (hdrs[i].from.length < 1 || hdrs[i].from.length > 255)	// From too long
+					continue;
+				// TODO: Encode the flags...
+				msgs += encode_long(hdrs[i].number)+time_to_timestamp(hdrs[i].when_written_time)+encode_long(hdrs[i].thread_back)+encode_long(0)+encode_short(1)+ascii(hdrs[i].subject.length)+hdrs[i].subject+ascii(hdrs[i].from.length)+hdrs[i].from+ascii("text/plain".length)+"text/plain"+encode_short(body.length);
+			}
+		}
+		mb.close();
+		desc = mb.cfg.description;
+		name = mb.cfg.name;
+		overhead = 26+4+4+1+name.length+1+desc.length;
+		while (overhead + msgs.length > 65535) {
+			sublen=ascii(msgs.substr(22,1));
+			fromlen=ascii(msgs.substr(23+sublen,1));
+			msgs=msgs.substr(37+sublen+fromlen);
+			items--;
+		}
+		send_response(msg.hdr, [{id:321, value:encode_long(0)+encode_long(items)+ascii(name.length)+name+ascii(desc.length)+desc+msgs}]);
+	}
+	else
+		send_response(msg.hdr, [{id:100, value:"No path specified!"}], 1);
+}
+
+function get_message_text(msg)
+{
+	var mb = mb_from_path(msg.params[325]);
+	var hdr;
+	var body;
+
+	if (mb == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
+		return;
+	}
+	if (msg.params[326] == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
+		return;
+	}
+	if (!msg_area.sub[mb.cfg.code].can_read) {
+		send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+		return;
+	}
+	hdr = mb.get_msg_header(msg.params[326].data);
+	if (hdr == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+		return;
+	}
+	if (hdr.attr & MSG_DELETE) {
+		send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+		return;
+	}
+	if ((hdr.attr & (MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED) {
+		send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+		return;
+	}
+	if ((hdr.attr & MSG_PRIVATE) && (system.matchuser(hdr.to) != usr.number)) {
+		send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+		return;
+	}
+	body = ascii_str(mb.get_msg_body(hdr.number, true));
+	if (body == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+		return;
+	}
+	// TODO (?) update last-read pointer...
+	send_response(msg.hdr, [{id:328, value:hdr.subject}, {id:329, value:hdr.from}, {id:330, value:time_to_timestamp(hdr.when_written_time)}, {id:331, value:msg.params[326].data-1}, {id:332, value:msg.params[326]+1}, {id:335, value:hdr.thread_back}, {id:336, value:hdr.thread_first}, {id:327, value:"text/plain"}, {id:333, value:body}]);
+}
+
+function post_message(msg)
+{
+	var mb = mb_from_path(msg.params[325], true);
+	var hdr;
+	var ohdr;
+
+	if (mb == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
+		return;
+	}
+	if (!msg_area.sub[mb.cfg.code].can_post) {
+		send_response(msg.hdr, [{id:100, value:"You're not allowed to post here"}], 1);
+		return;
+	}
+	if (msg.params[328] == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Missing title"}], 1);
+		return;
+	}
+	if (msg.params[333] == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Missing article"}], 1);
+		return;
+	}
+	hdr = {to:'All', from:usr.alias};
+	if (msg.params[326] != undefined) {
+		hdr.thread_orig = msg.params[326].data;
+		ohdr = mb.get_msg_header(hdr.thread_orig);
+		if (ohdr != null) {
+			if (ohdr.thread_id == 0)
+				hdr.thread_id = hdr.thread_orig;
+			else
+				hdr.thread_id = ohdr.thread_id;
+			if (ohdr.from != undefined)
+				hdr.to = ohdr.from;
+		}
+	}
+	hdr.subject = msg.params[328].data;
+	// TODO: Flags...
+	if (msg.params[327] != undefined) {
+		if (msg.params[327].data != 'text/plain') {
+			send_response(msg.hdr, [{id:100, value:"Unhandled message type"}], 1);
+			return;
+		}
+	}
+	if (!mb.save_msg(hdr, client, msg.params[333].data)) {
+		send_response(msg.hdr, [{id:101, value:"Error saving message"}], 1);
+		return;
+	}
+	send_response(msg.hdr, []);
+}
+
+function delete_message(msg)
+{
+	var mb = mb_from_path(msg.params[325]);
+	var hdr;
+
+	if (mb == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Invalid path"}], 1);
+		return;
+	}
+	if (!msg_area.sub[mb.cfg.code].is_operator) {
+		send_response(msg.hdr, [{id:100, value:"You're not allowed to delete messages here"}], 1);
+		return;
+	}
+	if (msg.params[326] == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Missing Message ID"}], 1);
+		return;
+	}
+	hdr = mb.get_msg_header(msg.params[326].data);
+	if (hdr == undefined) {
+		send_response(msg.hdr, [{id:100, value:"Bad Message ID"}], 1);
+		return;
+	}
+	hdr.attr |= MSG_DELETE;
+	if (!mb.put_msg_header(hdr.number, hdr)) {
+		send_response(msg.hdr, [{id:100, value:"Delete Failed"}], 1);
+		return;
+	}
+	send_response(msg.hdr, []);
+}
+
+// TODO: Should the functions be defined in here directly?
+var command_handlers = {
+	101: get_message,
+	105: send_chat,
+	107: do_login,
+	108: send_im,
+	121: accept_agreement,
+	200: file_list,
+	202: file_download,
+	300: get_user_name_list,
+	303: get_client_info_text,
+	304: set_client_user_info,
+	370: get_news_category_name_list,
+	371: get_article_list,
+	400: get_message_text,
+	410: post_message,
+	411: delete_message,
+};
 
 log(LOG_DEBUG, "Connected!");
 var ver = client.socket.recvBin();
@@ -1479,7 +1570,10 @@ while(client.socket.is_connected) {
 		send_response(msg.hdr, [{id:100, value:"Not logged in!"}], 1);
 		continue;
 	}
-	handle_message(msg);
+	if (command_handlers[msg.hdr.type] != undefined)
+		command_handlers[msg.hdr.type](msg);
+	else
+		send_response(msg.hdr, [{id:100, value:"Unsupported command"}], 1);
 }
 if (usr != undefined)
 	remove_online_user(usr.alias);
