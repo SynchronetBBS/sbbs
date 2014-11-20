@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -45,8 +45,11 @@ typedef struct {
 	DWORD	size;				/* sizeof(ftp_startup_t) */
 	WORD	port;
 	WORD	max_clients;
+#define FTP_DEFAULT_MAX_CLIENTS		10
 	WORD	max_inactivity;
+#define FTP_DEFAULT_MAX_INACTIVITY	300
 	WORD	qwk_timeout;
+#define FTP_DEFAULT_QWK_TIMEOUT		600
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
     DWORD   interface_addr;
 	DWORD	pasv_ip_addr;

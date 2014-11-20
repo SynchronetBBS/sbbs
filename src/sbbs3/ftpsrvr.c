@@ -4598,8 +4598,8 @@ void DLLCALL ftp_server(void* arg)
 
 	/* Setup intelligent defaults */
 	if(startup->port==0)					startup->port=IPPORT_FTP;
-	if(startup->qwk_timeout==0)				startup->qwk_timeout=600;		/* seconds */
-	if(startup->max_inactivity==0)			startup->max_inactivity=300;	/* seconds */
+	if(startup->qwk_timeout==0)				startup->qwk_timeout=FTP_DEFAULT_QWK_TIMEOUT;		/* seconds */
+	if(startup->max_inactivity==0)			startup->max_inactivity=FTP_DEFAULT_MAX_INACTIVITY;	/* seconds */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;		/* seconds */
 	if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"00index");
 	if(startup->html_index_file[0]==0)		SAFECOPY(startup->html_index_file,"00index.html");

@@ -72,9 +72,6 @@ static const char*	strJavaScriptLoadPath		="JavaScriptLoadPath";
 static const char*	strSemFileCheckFrequency	="SemFileCheckFrequency";
 
 #define DEFAULT_LOG_LEVEL				LOG_DEBUG
-#define DEFAULT_MAX_MSG_SIZE			(20*1024*1024)	/* 20MB */
-#define DEFAULT_MAX_MSGS_WAITING		100
-#define DEFAULT_CONNECT_TIMEOUT			30		/* seconds */
 #define DEFAULT_BIND_RETRY_COUNT		2
 #define DEFAULT_BIND_RETRY_DELAY		15
 #define DEFAULT_LOGIN_ATTEMPT_DELAY		5000	/* milliseconds */
@@ -379,11 +376,11 @@ void sbbs_read_ini(
 		ftp->port
 			=iniGetShortInt(list,section,strPort,IPPORT_FTP);
 		ftp->max_clients
-			=iniGetShortInt(list,section,strMaxClients,10);
+			=iniGetShortInt(list,section,strMaxClients,FTP_DEFAULT_MAX_CLIENTS);
 		ftp->max_inactivity
-			=iniGetShortInt(list,section,strMaxInactivity,300);	/* seconds */
+			=iniGetShortInt(list,section,strMaxInactivity,FTP_DEFAULT_MAX_INACTIVITY);	/* seconds */
 		ftp->qwk_timeout
-			=iniGetShortInt(list,section,"QwkTimeout",600);		/* seconds */
+			=iniGetShortInt(list,section,"QwkTimeout",FTP_DEFAULT_QWK_TIMEOUT);		/* seconds */
 		ftp->sem_chk_freq
 			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
@@ -452,25 +449,25 @@ void sbbs_read_ini(
 		mail->relay_port
 			=iniGetShortInt(list,section,"RelayPort",IPPORT_SMTP);
 		mail->max_clients
-			=iniGetShortInt(list,section,strMaxClients,10);
+			=iniGetShortInt(list,section,strMaxClients,MAIL_DEFAULT_MAX_CLIENTS);
 		mail->max_inactivity
-			=iniGetShortInt(list,section,strMaxInactivity,120);		/* seconds */
+			=iniGetShortInt(list,section,strMaxInactivity,MAIL_DEFAULT_MAX_INACTIVITY);		/* seconds */
 		mail->max_delivery_attempts
-			=iniGetShortInt(list,section,"MaxDeliveryAttempts",50);
+			=iniGetShortInt(list,section,"MaxDeliveryAttempts",MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
 		mail->rescan_frequency
-			=iniGetShortInt(list,section,"RescanFrequency",3600);	/* 60 minutes */
+			=iniGetShortInt(list,section,"RescanFrequency",MAIL_DEFAULT_RESCAN_FREQUENCY);	/* 60 minutes */
 		mail->sem_chk_freq
 			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 		mail->lines_per_yield
-			=iniGetShortInt(list,section,"LinesPerYield",10);
+			=iniGetShortInt(list,section,"LinesPerYield",MAIL_DEFAULT_LINES_PER_YIELD);
 		mail->max_recipients
-			=iniGetShortInt(list,section,"MaxRecipients",100);
+			=iniGetShortInt(list,section,"MaxRecipients",MAIL_DEFAULT_MAX_RECIPIENTS);
 		mail->max_msg_size
-			=(DWORD)iniGetBytes(list,section,"MaxMsgSize",/* units: */1,DEFAULT_MAX_MSG_SIZE);
+			=(DWORD)iniGetBytes(list,section,"MaxMsgSize",/* units: */1,MAIL_DEFAULT_MAX_MSG_SIZE);
 		mail->max_msgs_waiting
-			=iniGetInteger(list,section,"MaxMsgsWaiting",DEFAULT_MAX_MSGS_WAITING);
+			=iniGetInteger(list,section,"MaxMsgsWaiting",MAIL_DEFAULT_MAX_MSGS_WAITING);
 		mail->connect_timeout
-			=iniGetInteger(list,section,"ConnectTimeout",DEFAULT_CONNECT_TIMEOUT);
+			=iniGetInteger(list,section,"ConnectTimeout",MAIL_DEFAULT_CONNECT_TIMEOUT);
 
 		SAFECOPY(mail->host_name
 			,iniGetString(list,section,strHostName,global->host_name,value));
@@ -578,9 +575,9 @@ void sbbs_read_ini(
 		web->port
 			=iniGetShortInt(list,section,strPort,IPPORT_HTTP);
 		web->max_clients
-			=iniGetShortInt(list,section,strMaxClients,10);
+			=iniGetShortInt(list,section,strMaxClients,WEB_DEFAULT_MAX_CLIENTS);
 		web->max_inactivity
-			=iniGetShortInt(list,section,strMaxInactivity,120);		/* seconds */
+			=iniGetShortInt(list,section,strMaxInactivity,WEB_DEFAULT_MAX_INACTIVITY);		/* seconds */
 		web->sem_chk_freq
 			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
@@ -618,10 +615,8 @@ void sbbs_read_ini(
 		SAFECOPY(web->js_ext
 			,iniGetString(list,section,"EmbJavaScriptExtension",".bbs",value));
 
-		web->max_inactivity
-			=iniGetShortInt(list,section,strMaxInactivity,120);		/* seconds */
 		web->max_cgi_inactivity
-			=iniGetShortInt(list,section,"MaxCgiInactivity",120);	/* seconds */
+			=iniGetShortInt(list,section,"MaxCgiInactivity",WEB_DEFAULT_MAX_CGI_INACTIVITY);	/* seconds */
 
 		SAFECOPY(web->answer_sound
 			,iniGetString(list,section,strAnswerSound,nulstr,value));
