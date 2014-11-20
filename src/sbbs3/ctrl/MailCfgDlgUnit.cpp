@@ -241,16 +241,13 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
    	MainForm->mail_startup.submission_port=SubPortEdit->Text.ToIntDef(IPPORT_SUBMISSION);
     MainForm->mail_startup.pop3_port=POP3PortEdit->Text.ToIntDef(IPPORT_POP3);
     MainForm->mail_startup.relay_port=RelayPortEdit->Text.ToIntDef(IPPORT_SMTP);
-    MainForm->mail_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
-    MainForm->mail_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(120);
-    MainForm->mail_startup.max_recipients=MaxRecipientsEdit->Text.ToIntDef(0);
-    MainForm->mail_startup.max_msg_size
-    	=MaxMsgSizeEdit->Text.ToIntDef(MainForm->mail_startup.max_msg_size);
-    MainForm->mail_startup.max_msgs_waiting
-        =MaxMsgsWaitingEdit->Text.ToIntDef(0);
-    MainForm->mail_startup.max_delivery_attempts
-        =DeliveryAttemptsEdit->Text.ToIntDef(10);
-    MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(300);
+    MainForm->mail_startup.max_clients=MaxClientsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_CLIENTS);
+    MainForm->mail_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_INACTIVITY);
+    MainForm->mail_startup.max_recipients=MaxRecipientsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_RECIPIENTS);
+    MainForm->mail_startup.max_msg_size=MaxMsgSizeEdit->Text.ToIntDef(0);
+    MainForm->mail_startup.max_msgs_waiting=MaxMsgsWaitingEdit->Text.ToIntDef(0);
+    MainForm->mail_startup.max_delivery_attempts=DeliveryAttemptsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
+    MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(MAIL_DEFAULT_RESCAN_FREQUENCY);
     MainForm->mail_startup.lines_per_yield=LinesPerYieldEdit->Text.ToIntDef(0);
 
     SAFECOPY(MainForm->mail_startup.default_charset

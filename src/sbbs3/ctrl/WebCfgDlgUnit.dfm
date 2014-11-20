@@ -78,7 +78,7 @@ object WebCfgDlg: TWebCfgDlg
         Top = 108
         Width = 48
         Height = 24
-        Hint = 'Maximum number of simultaneous clients (default=10)'
+        Hint = 'Maximum number of simultaneous clients (0=unlimited)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4

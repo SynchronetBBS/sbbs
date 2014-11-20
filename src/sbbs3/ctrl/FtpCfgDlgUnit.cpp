@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -156,10 +156,10 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     } else
         MainForm->ftp_startup.pasv_ip_addr=0;
 
-    MainForm->ftp_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
-    MainForm->ftp_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(300);
-    MainForm->ftp_startup.qwk_timeout=QwkTimeoutEdit->Text.ToIntDef(600);
-    MainForm->ftp_startup.port=PortEdit->Text.ToIntDef(23);
+    MainForm->ftp_startup.max_clients=MaxClientsEdit->Text.ToIntDef(FTP_DEFAULT_MAX_CLIENTS);
+    MainForm->ftp_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(FTP_DEFAULT_MAX_INACTIVITY);
+    MainForm->ftp_startup.qwk_timeout=QwkTimeoutEdit->Text.ToIntDef(FTP_DEFAULT_QWK_TIMEOUT);
+    MainForm->ftp_startup.port=PortEdit->Text.ToIntDef(IPPORT_FTP);
     MainForm->FtpAutoStart=AutoStartCheckBox->Checked;
     MainForm->FtpLogFile=LogFileCheckBox->Checked;
 

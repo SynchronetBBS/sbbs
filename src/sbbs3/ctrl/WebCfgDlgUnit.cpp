@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -143,9 +143,9 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
         MainForm->web_startup.interface_addr=addr;
     } else
         MainForm->web_startup.interface_addr=0;
-    MainForm->web_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
-    MainForm->web_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(300);
-    MainForm->web_startup.port=PortEdit->Text.ToIntDef(23);
+    MainForm->web_startup.max_clients=MaxClientsEdit->Text.ToIntDef(0);
+    MainForm->web_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(WEB_DEFAULT_MAX_INACTIVITY);
+    MainForm->web_startup.port=PortEdit->Text.ToIntDef(IPPORT_HTTP);
     MainForm->WebAutoStart=AutoStartCheckBox->Checked;
 
     SAFECOPY(MainForm->web_startup.root_dir
@@ -162,7 +162,7 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
     SAFECOPY(MainForm->web_startup.default_cgi_content
         ,CGIContentEdit->Text.c_str());
     MainForm->web_startup.max_cgi_inactivity
-        =CGIMaxInactivityEdit->Text.ToIntDef(120);
+        =CGIMaxInactivityEdit->Text.ToIntDef(WEB_DEFAULT_MAX_CGI_INACTIVITY);
 
     strListFree(&MainForm->web_startup.index_file_name);
     strListSplitCopy(&MainForm->web_startup.index_file_name,
