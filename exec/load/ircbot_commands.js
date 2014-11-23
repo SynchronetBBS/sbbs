@@ -55,7 +55,7 @@ Bot_Commands["LOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 Bot_Commands["JOIN"] = new Bot_Command(99,true,true);
 Bot_Commands["JOIN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
-	if(cmd[0][0]!="#" && cmd[0][0]!="&") {
+	if(cmd.length == 0 || (cmd[0][0]!="#" && cmd[0][0]!="&")) {
 		srv.o(target,"Invalid channel name","NOTICE");
 		return;
 	}
@@ -655,12 +655,13 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 		}
 		
 		cmd=parse_cmd_prefix(cmd);
-		if(!cmd) return false;
-		
-		if(cmd[0].length == 0) {
+		if(!cmd)
 			return false;
-		}
-		
+		if(cmd.length == 0)
+			return false;
+		if(cmd[0].length == 0)
+			return false;
+
 		/* check main bot commands */
 		try {
 			srv.bot_command(srv,Bot_Commands,chan.name,onick,ouh,cmd.join(" "));
