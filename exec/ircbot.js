@@ -190,7 +190,7 @@ function init_users() {
 			while (uid_str[0] == "0") {
 				uid_str = uid_str.slice(1);
 			}
-			log("***Reading: " + us_file.name + "\r\n");
+			printf("***Reading: " + us_file.name + "\r\n");
 			var read_Masks = us_file.iniGetValue(null, "masks");
 			if (read_Masks)
 				Masks[parseInt(uid_str)] = read_Masks.split(",");
@@ -259,7 +259,7 @@ function main() {
 					var next_output=srv.buffers.shift();
 					if(!srv.sock.write(next_output.buffer.shift())) {
 						srv.sock.close();
-						srv.sock=0;
+						src.sock=0;
 						continue;
 					}
 					if(next_output.buffer.length) srv.buffers.push(next_output);
@@ -286,7 +286,7 @@ function main() {
 				var srv=Bot_Servers[socks[s].srv];
 				if(srv.sock && (!srv.sock.is_connected)) {
 					srv.sock.close();
-					srv.sock=0;
+					src.sock=0;
 				}
 				if (srv.sock && srv.sock.poll(0.1) &&
 						(cmdline=srv.sock.recvline(4096,0))) {
@@ -341,8 +341,8 @@ function main() {
 					continue;
 				var usr = new User(system.matchuser(DCC_Chats[c].id));
 				var cmd = line.split(" ");
-				cmd[0] = cmd[0].toUpperCase();
 				try {
+					cmd[0] = cmd[0].toUpperCase();
 					DCC_Chats[c].bot_command(cmd);
 				} catch (err) {
 					DCC_Chats[c].o(null,err);
