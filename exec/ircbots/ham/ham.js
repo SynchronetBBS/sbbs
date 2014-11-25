@@ -206,24 +206,231 @@ Bot_Commands["SPECS"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	return true;
 }
 
-Bot_Commands["Z"] = new Bot_Command(0, false, false);
-Bot_Commands["Z"].usage = get_cmd_prefix() + "Z";
-Bot_Commands["Z"].help = "Displays the current Zulu time (UTC)";
-Bot_Commands["Z"].command = function (target, onick, ouh, srv, lbl, cmd) {
-	// Remove empty cmd args
-	for(i=1; i<cmd.length; i++) {
-		if(cmd[i].search(/^\s*$/)==0) {
-			cmd.splice(i,1);
-			i--;
-		}
+TimeZoneConversion = {
+	zones:{
+		ACDT: [{name:"Australian Central Daylight Savings Time", offset:+10*60+30}],
+		ACST: [{name:"Australian Central Standard Time", offset:+9*60+30}],
+		ACT: [{name:"ASEAN Common Time", offset:+8*60}],
+		ADT: [{name:"Atlantic Daylight Time", offset:-3*60}],
+		AEDT: [{name:"Australian Eastern Daylight Savings Time", offset:+11*60}],
+		AEST: [{name:"Australian Eastern Standard Time", offset:+10*60}],
+		AFT: [{name:"Afghanistan Time", offset:+4*60+30}],
+		AKDT: [{name:"Alaska Daylight Time", offset:-8*60}],
+		AKST: [{name:"Alaska Standard Time", offset:-9*60}],
+		AMST: [{name:"Amazon Summer Time (Brazil)[1]", offset:-3*60},
+			{name:"Armenia Summer Time", offset:+5*60}],
+		AMT: [{name:"Amazon Time (Brazil)[2]", offset:-4*60},
+			{name:"Armenia Time", offset:+4*60}],
+		ART: [{name:"Argentina Time", offset:-3*60}],
+		AST: [{name:"Arabia Standard Time", offset:+3*60},
+			{name:"Atlantic Standard Time", offset:-4*60}],
+		AWDT: [{name:"Australian Western Daylight Time", offset:+9*60}],
+		AWST: [{name:"Australian Western Standard Time", offset:+8*60}],
+		AZOST: [{name:"Azores Standard Time", offset:-1*60}],
+		AZT: [{name:"Azerbaijan Time", offset:+4*60}],
+		BDT: [{name:"Brunei Time", offset:+8*60}],
+		BIOT: [{name:"British Indian Ocean Time", offset:+6*60}],
+		BIT: [{name:"Baker Island Time", offset:-12*60}],
+		BOT: [{name:"Bolivia Time", offset:-4*60}],
+		BRT: [{name:"Brasilia Time", offset:-3*60}],
+		BST: [{name:"Bangladesh Standard Time", offset:+6*60},
+			{name:"British Summer Time (British Standard Time from Feb 1968 to Oct 1971)", offset:+1*60}],
+		BTT: [{name:"Bhutan Time", offset:+6*60}],
+		CAT: [{name:"Central Africa Time", offset:+2*60}],
+		CCT: [{name:"Cocos Islands Time", offset:+6*60+30}],
+		CDT: [{name:"Central Daylight Time (North America)", offset:-5*60},
+			{name:"Cuba Daylight Time[3]", offset:-4*60}],
+		CEDT: [{name:"Central European Daylight Time", offset:+2*60}],
+		CEST: [{name:"Central European Summer Time (Cf. HAEC)", offset:+2*60}],
+		CET: [{name:"Central European Time", offset:+1*60}],
+		CHADT: [{name:"Chatham Daylight Time", offset:+13*60+45}],
+		CHAST: [{name:"Chatham Standard Time", offset:+12*60+45}],
+		CHOT: [{name:"Choibalsan", offset:+8*60}],
+		CHST: [{name:"Chamorro Standard Time", offset:+10*60}],
+		CHUT: [{name:"Chuuk Time", offset:+10*60}],
+		CIST: [{name:"Clipperton Island Standard Time", offset:-8*60}],
+		CIT: [{name:"Central Indonesia Time", offset:+8*60}],
+		CKT: [{name:"Cook Island Time", offset:-10*60}],
+		CLST: [{name:"Chile Summer Time", offset:-3*60}],
+		CLT: [{name:"Chile Standard Time", offset:-4*60}],
+		COST: [{name:"Colombia Summer Time", offset:-4*60}],
+		COT: [{name:"Colombia Time", offset:-5*60}],
+		CST: [{name:"Central Standard Time (North America)", offset:-6*60},
+			{name:"China Standard Time", offset:+8*60},
+			{name:"Cuba Standard Time", offset:-5*60}],
+		CT: [{name:"China time", offset:+8*60}],
+		CVT: [{name:"Cape Verde Time", offset:-1*60}],
+		CWST: [{name:"Central Western Standard Time (Australia) unofficial", offset:+8*60+45}],
+		CXT: [{name:"Christmas Island Time", offset:+7*60}],
+		DAVT: [{name:"Davis Time", offset:+7*60}],
+		DDUT: [{name:"Dumont d'Urville Time", offset:+10*60}],
+		DFT: [{name:"AIX specific equivalent of Central European Time[4]", offset:+1*60}],
+		EASST: [{name:"Easter Island Standard Summer Time", offset:-5*60}],
+		EAST: [{name:"Easter Island Standard Time", offset:-6*60}],
+		EAT: [{name:"East Africa Time", offset:+3*60}],
+		ECT: [{name:"Eastern Caribbean Time (does not recognise DST)", offset:-4*60},
+			{name:"Ecuador Time", offset:-5*60}],
+		EDT: [{name:"Eastern Daylight Time (North America)", offset:-4*60}],
+		EEDT: [{name:"Eastern European Daylight Time", offset:+3*60}],
+		EEST: [{name:"Eastern European Summer Time", offset:+3*60}],
+		EET: [{name:"Eastern European Time", offset:+2*60}],
+		EGST: [{name:"Eastern Greenland Summer Time", offset:+0*60}],
+		EGT: [{name:"Eastern Greenland Time", offset:-1*60}],
+		EIT: [{name:"Eastern Indonesian Time", offset:+9*60}],
+		EST: [{name:"Eastern Standard Time (North America)", offset:-5*60}],
+		FET: [{name:"Further-eastern European Time", offset:+3*60}],
+		FJT: [{name:"Fiji Time", offset:+12*60}],
+		FKST: [{name:"Falkland Islands Standard Time", offset:-3*60},
+			{name:"Falkland Islands Summer Time", offset:-3*60}],
+		FKT: [{name:"Falkland Islands Time", offset:-4*60}],
+		FNT: [{name:"Fernando de Noronha Time", offset:-2*60}],
+		GALT: [{name:"Galapagos Time", offset:-6*60}],
+		GAMT: [{name:"Gambier Islands", offset:-9*60}],
+		GET: [{name:"Georgia Standard Time", offset:+4*60}],
+		GFT: [{name:"French Guiana Time", offset:-3*60}],
+		GILT: [{name:"Gilbert Island Time", offset:+12*60}],
+		GIT: [{name:"Gambier Island Time", offset:-9*60}],
+		GMT: [{name:"Greenwich Mean Time", offset:0}],
+		GST: [{name:"South Georgia and the South Sandwich Islands", offset:-2*60},
+			{name:"Gulf Standard Time", offset:+4*60}],
+		GYT: [{name:"Guyana Time", offset:-4*60}],
+		HADT: [{name:"Hawaii-Aleutian Daylight Time", offset:-9*60}],
+		HAEC: [{name:"Heure Avancée d'Europe Centrale francised name for CEST", offset:+2*60}],
+		HAST: [{name:"Hawaii-Aleutian Standard Time", offset:-10*60}],
+		HKT: [{name:"Hong Kong Time", offset:+8*60}],
+		HMT: [{name:"Heard and McDonald Islands Time", offset:+5*60}],
+		HOVT: [{name:"Khovd Time", offset:+7*60}],
+		HST: [{name:"Hawaii Standard Time", offset:-10*60}],
+		ICT: [{name:"Indochina Time", offset:+7*60}],
+		IDT: [{name:"Israel Daylight Time", offset:+3*60}],
+		IOT: [{name:"Indian Ocean Time", offset:+3*60}],
+		IRDT: [{name:"Iran Daylight Time", offset:+4*60+30}],
+		IRKT: [{name:"Irkutsk Time", offset:+9*60}],
+		IRST: [{name:"Iran Standard Time", offset:+3*60+30}],
+		IST: [{name:"Indian Standard Time", offset:+5*60+30},
+			{name:"Irish Standard Time[5]", offset:+1*60},
+			{name:"Israel Standard Time", offset:+2*60}],
+		JST: [{name:"Japan Standard Time", offset:+9*60}],
+		KGT: [{name:"Kyrgyzstan time", offset:+6*60}],
+		KOST: [{name:"Kosrae Time", offset:+11*60}],
+		KRAT: [{name:"Krasnoyarsk Time", offset:+7*60}],
+		KST: [{name:"Korea Standard Time", offset:+9*60}],
+		LHST: [{name:"Lord Howe Standard Time", offset:+10*60+30},
+			{name:"Lord Howe Summer Time", offset:+11*60}],
+		LINT: [{name:"Line Islands Time", offset:+14*60}],
+		MAGT: [{name:"Magadan Time", offset:+12*60}],
+		MART: [{name:"Marquesas Islands Time", offset:-9*60-30}],
+		MAWT: [{name:"Mawson Station Time", offset:+5*60}],
+		MDT: [{name:"Mountain Daylight Time (North America)", offset:-6*60}],
+		MET: [{name:"Middle European Time Same zone as CET", offset:+1*60}],
+		MEST: [{name:"Middle European Saving Time Same zone as CEST", offset:+2*60}],
+		MHT: [{name:"Marshall Islands", offset:+12*60}],
+		MIST: [{name:"Macquarie Island Station Time", offset:+11*60}],
+		MIT: [{name:"Marquesas Islands Time", offset:-9*60-30}],
+		MMT: [{name:"Myanmar Time", offset:+6*60+30}],
+		MSK: [{name:"Moscow Time", offset:+4*60}],
+		MST: [{name:"Malaysia Standard Time", offset:+8*60},
+			{name:"Mountain Standard Time (North America)", offset:-7*60},
+			{name:"Myanmar Standard Time", offset:+6*60+30}],
+		MUT: [{name:"Mauritius Time", offset:+4*60}],
+		MVT: [{name:"Maldives Time", offset:+5*60}],
+		MYT: [{name:"Malaysia Time", offset:+8*60}],
+		NCT: [{name:"New Caledonia Time", offset:+11*60}],
+		NDT: [{name:"Newfoundland Daylight Time", offset:-2*60-30}],
+		NFT: [{name:"Norfolk Time", offset:+11*60+30}],
+		NPT: [{name:"Nepal Time", offset:+5*60+45}],
+		NST: [{name:"Newfoundland Standard Time", offset:-3*60-30}],
+		NT: [{name:"Newfoundland Time", offset:-3*60-30}],
+		NUT: [{name:"Niue Time", offset:-11*60}],
+		NZDT: [{name:"New Zealand Daylight Time", offset:+13*60}],
+		NZST: [{name:"New Zealand Standard Time", offset:+12*60}],
+		OMST: [{name:"Omsk Time", offset:+7*60}],
+		ORAT: [{name:"Oral Time", offset:+5*60}],
+		PDT: [{name:"Pacific Daylight Time (North America)", offset:-7*60}],
+		PET: [{name:"Peru Time", offset:-5*60}],
+		PETT: [{name:"Kamchatka Time", offset:+12*60}],
+		PGT: [{name:"Papua New Guinea Time", offset:+10*60}],
+		PHOT: [{name:"Phoenix Island Time", offset:+13*60}],
+		PKT: [{name:"Pakistan Standard Time", offset:+5*60}],
+		PMDT: [{name:"Saint Pierre and Miquelon Daylight time", offset:-2*60}],
+		PMST: [{name:"Saint Pierre and Miquelon Standard Time", offset:-3*60}],
+		PONT: [{name:"Pohnpei Standard Time", offset:+11*60}],
+		PST: [{name:"Philippine Standard Time", offset:+8*60},
+			{name:"Pacific Standard Time (North America)", offset:-8*60}],
+		PYST: [{name:"Paraguay Summer Time (South America)[6]", offset:-3*60}],
+		PYT: [{name:"Paraguay Time (South America)[7]", offset:-4*60}],
+		RET: [{name:"Réunion Time", offset:+4*60}],
+		ROTT: [{name:"Rothera Research Station Time", offset:-3*60}],
+		SAKT: [{name:"Sakhalin Island time", offset:+11*60}],
+		SAMT: [{name:"Samara Time", offset:+4*60}],
+		SAST: [{name:"South African Standard Time", offset:+2*60}],
+		SBT: [{name:"Solomon Islands Time", offset:+11*60}],
+		SCT: [{name:"Seychelles Time", offset:+4*60}],
+		SGT: [{name:"Singapore Time", offset:+8*60}],
+		SLST: [{name:"Sri Lanka Time", offset:+5*60+30}],
+		SRT: [{name:"Suriname Time", offset:-3*60}],
+		SST: [{name:"Samoa Standard Time", offset:-11*60},
+			{name:"Singapore Standard Time", offset:+8*60}],
+		SYOT: [{name:"Showa Station Time", offset:+3*60}],
+		TAHT: [{name:"Tahiti Time", offset:-10*60}],
+		THA: [{name:"Thailand Standard Time", offset:+7*60}],
+		TFT: [{name:"Indian/Kerguelen", offset:+5*60}],
+		TJT: [{name:"Tajikistan Time", offset:+5*60}],
+		TKT: [{name:"Tokelau Time", offset:+13*60}],
+		TLT: [{name:"Timor Leste Time", offset:+9*60}],
+		TMT: [{name:"Turkmenistan Time", offset:+5*60}],
+		TOT: [{name:"Tonga Time", offset:+13*60}],
+		TVT: [{name:"Tuvalu Time", offset:+12*60}],
+		UCT: [{name:"Coordinated Universal Time", offset:0}],
+		ULAT: [{name:"Ulaanbaatar Time", offset:+8*60}],
+		UTC: [{name:"Coordinated Universal Time", offset:0}],
+		UYST: [{name:"Uruguay Summer Time", offset:-2*60}],
+		UYT: [{name:"Uruguay Standard Time", offset:-3*60}],
+		UZT: [{name:"Uzbekistan Time", offset:+5*60}],
+		VET: [{name:"Venezuelan Standard Time", offset:-4*60-30}],
+		VLAT: [{name:"Vladivostok Time", offset:+10*60}],
+		VOLT: [{name:"Volgograd Time", offset:+4*60}],
+		VOST: [{name:"Vostok Station Time", offset:+6*60}],
+		VUT: [{name:"Vanuatu Time", offset:+11*60}],
+		WAKT: [{name:"Wake Island Time", offset:+12*60}],
+		WAST: [{name:"West Africa Summer Time", offset:+2*60}],
+		WAT: [{name:"West Africa Time", offset:+1*60}],
+		WEDT: [{name:"Western European Daylight Time", offset:+1*60}],
+		WEST: [{name:"Western European Summer Time", offset:+1*60}],
+		WET: [{name:"Western European Time", offset:0}],
+		WIT: [{name:"Western Indonesian Time", offset:+7*60}],
+		WST: [{name:"Western Standard Time", offset:+8*60}],
+		YAKT: [{name:"Yakutsk Time", offset:+10*60}],
+		YEKT: [{name:"Yekaterinburg Time", offset:+6*60}],
+		Z: [{name:"Zulu Time (Coordinated Universal Time)", offset:0}]
 	}
+};
 
-	if(cmd.length == 1) {
-		var d=new Date(time()*1000);
-		srv.o(target,d.toGMTString());
-	}
-
-	return true;
+for (var ham_ircbot_zone in TimeZoneConversion.zones) {
+	Bot_Commands[ham_ircbot_zone] = new Bot_Command(0, false, false);
+	Bot_Commands[ham_ircbot_zone].usage = get_cmd_prefix() + ham_ircbot_zone;
+	Bot_Commands[ham_ircbot_zone].help = "Displays the current "-TimeZoneConversion.zones[ham_ircbot_zone].name;
+	Bot_Commands[ham_ircbot_zone].command = eval("function (target, onick, ouh, srv, lbl, cmd) {\n"+
+	"var i;\n"+
+	"var d;\n"+
+	"// Remove empty cmd args\n"+
+	"for(i=1; i<cmd.length; i++) {\n"+
+	"	if(cmd[i].search(/^\s*$/)==0) {\n"+
+	"		cmd.splice(i,1);\n"+
+	"		i--;\n"+
+	"	}\n"+
+	"}\n"+
+	"\n"+
+	"if(cmd.length == 1) {\n"+
+	"	for (i=0; i<TimeZoneConversion.zones['"+ham_ircbot_zone+"'].length; i++) {"+
+	"		d=new Date(time()*1000+(TimeZoneConversion.zones['"+ham_ircbot_zone+"'][i].offset*60*1000));\n"+
+	"		srv.o(target,d.toGMTString().replace(/[A-Z]+$/, '"+ham_ircbot_zone+"')+' - '+TimeZoneConversion.zones['"+ham_ircbot_zone+"'][i].name);\n"+
+	"	}\n"+
+	"}\n"+
+	"\n"+
+	"return true;\n"+
+	"\n"+
+	"}\n");
 }
 
 function update_contests()
@@ -392,7 +599,7 @@ Bot_Commands["VHF"].command = function (target, onick, ouh, srv, lbl, cmd) {
 
 Bot_Commands["HF"] = new Bot_Command(0, false, false);
 Bot_Commands["HF"].usage = get_cmd_prefix() + "HF";
-Bot_Commands["Z"].help = "Displays the current HF propagation predictions";
+Bot_Commands["HF"].help = "Displays the current HF propagation predictions";
 Bot_Commands["HF"].command = function (target, onick, ouh, srv, lbl, cmd) {
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -513,7 +720,7 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 Bot_Commands["CONTESTS"] = new Bot_Command(0,false,false);
 Bot_Commands["CONTESTS"].usage = get_cmd_prefix() + "CONTESTS [arg1 [agr2 [...]]]";
 Bot_Commands["CONTESTS"].help = "Lists the current and upcoming contests thanks to WA7BNM "
-		+ "Multiple filters are supported: hf vhf uhf ssb cw phone sstv rttv psk digital data feld hell am fm"
+		+ "Multiple filters are supported: hf vhf uhf ssb cw phone sstv rttv psk digital data feld hell am fm l#"
 Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) {
 	// Remove empty cmd args
 	for(i=1; i<cmd.length; i++) {
@@ -532,13 +739,22 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 		var rules;
 		var matches;
 		var invalid=false;
+		var limit=100;
+		var r;
+		var m;
 
+		for(rule in rules) {
+			if((m=rules[rule].match(/^L([0-9]+)$/i))!=null)
+				limit=m[1];
+		}
 		for(contest in contest_order) {
 			c=contests[contest_order[contest]];
 			matches=0;
 			for(rule in rules) {
-				var r=rules[rule].toLowerCase();
-				if(r == 'hf' || r.search(/^[0-9]+$/)!= -1 || r == 'vhf'
+				r=rules[rule].toLowerCase();
+				if(r.search(/^L([0-9]+)$/i)==0)
+					matches++;
+				else if(r == 'hf' || r.search(/^[0-9]+$/)!= -1 || r == 'vhf'
 						|| r == 'uhf') {
 					for(band in c.Bands) {
 						var b=c.Bands[band].toLowerCase();
@@ -593,6 +809,8 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 			}
 			if(matches==rules.length) {
 				ret.push(contest_order[contest]);
+				if(ret.length>=limit)
+					break;
 			}
 		}
 		if(invalid)
