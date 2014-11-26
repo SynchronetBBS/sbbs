@@ -147,9 +147,12 @@ var ScrollBar = function(frame, opts) {
 		);
 		bar.height = (isNaN(adj) || adj < 1) ? 1 : adj;
 
-		var adj = Math.round(
-			(scrollArea.height - bar.height) * (
-				Math.max(0, settings.tree.line - frame.height) / (height - frame.height)
+		var adj = Math.min(
+			scrollArea.height - bar.height,
+			Math.round(
+				(scrollArea.height - bar.height) * (
+					Math.max(0, settings.tree.line - frame.height) / (height - frame.height)
+				)
 			)
 		);
 		bar.y = scrollArea.y + (isNaN(adj) ? 0 : adj);
@@ -172,9 +175,12 @@ var ScrollBar = function(frame, opts) {
 		);
 		bar.height = (isNaN(adj) || adj < 1) ? 1 : adj;
 
-		var adj = Math.round(
-			(scrollArea.height - bar.height) * (
-				frame.offset.y / (frame.data_height - frame.height)
+		var adj = Math.min(
+			scrollArea.height - bar.height,
+			Math.round(
+				(scrollArea.height - bar.height) * (
+					frame.offset.y / (frame.data_height - frame.height)
+				)
 			)
 		);
 		bar.y = scrollArea.y + (isNaN(adj) ? 0 : adj);
@@ -194,9 +200,12 @@ var ScrollBar = function(frame, opts) {
 		);
 		bar.width = (isNaN(adj) || adj < 1) ? 1 : adj;
 
-		var adj = Math.round(
-			(scrollArea.width - bar.width) * (
-				frame.offset.x / (frame.data_width - frame.width)
+		var adj = Math.min(
+			scrollArea.width - bar.width,
+			Math.round(
+				(scrollArea.width - bar.width) * (
+					frame.offset.x / (frame.data_width - frame.width)
+				)
 			)
 		);
 		bar.x = scrollArea.x + (isNaN(adj) ? 0 : adj);
@@ -235,22 +244,22 @@ function Scrollbar(x,y,length,orientation,color)
 	this.orientation=orientation;
 	this.length=length-2;
 	this.color=color?color:'';
-	
+
 	this.draw=function(index, range)
 	{
-		if(index>range) 
+		if(index>range)
 			return;
 		if((isNaN(index) || isNaN(range)) &&
 			(!this.index || !this.bar))
 			return;
-			
+
 		this.index=Math.ceil(((index+1)/range)*this.length);
 		this.bar=Math.ceil((this.length/range)*this.length);
-		
-		
+
+
 		if(this.orientation == "vertical")
 			this.drawVert(this.index,this.index+this.bar);
-		else 
+		else
 			this.drawHoriz(this.index,this.index+this.bar);
 	}
 	this.drawVert=function(s,f)
