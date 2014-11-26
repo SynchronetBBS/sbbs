@@ -17,6 +17,7 @@
 		current
 		currentItem
 		currentTree
+		height
 	
 	methods:
 	
@@ -205,6 +206,21 @@ function Tree(frame,text,tree) {
 		while(current.current instanceof Tree) 
 			current = current.current;
 		return current;
+	});
+
+	this.__defineGetter__("height", function() {
+		var c = 0;
+		for(var i = 0; i < properties.items.length; i++) {
+			if(properties.items[i] instanceof TreeItem && properties.items[i].status != flags.HIDDEN) {
+				c++;
+			} else if(properties.items[i] instanceof Tree) {
+				if(properties.items[i].status == 0)
+					c = c + properties.items[i].height;
+				else if(properties.items[i].status != flags.HIDDEN)
+					c++;
+			}
+		}
+		return c;
 	});
 	
 	/* public properties */
