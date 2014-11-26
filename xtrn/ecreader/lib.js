@@ -56,6 +56,7 @@ load("funclib.js");
 load("frame.js");
 load("tree.js");
 load("msgutils.js");
+load("scrollbar.js");
 
 var Chooser = function(options) {
 
@@ -81,7 +82,7 @@ var Chooser = function(options) {
 		}		
 	};
 
-	var frames = {}, tree;
+	var frames = {}, tree, scroller;
 
 	var initFrames = function() {
 
@@ -158,6 +159,8 @@ var Chooser = function(options) {
 			}
 		}
 		tree.open();
+		scroller = new ScrollBar(tree, { autohide : true });
+		scroller.open();
 	}
 
 	var init = function() {
@@ -172,8 +175,12 @@ var Chooser = function(options) {
 	}
 
 	this.cycle = function() {
-		if(typeof frames.top.parent == "undefined" && frames.top.cycle())
+		if(typeof frames.top.parent != "undefined") {
+			scroller.cycle();
+		} else if(frames.top.cycle()) {
+			scroller.cycle();
 			console.gotoxy(console.screen_columns, console.screen_rows);
+		}
 	}
 
 	this.close = function() {
@@ -218,7 +225,7 @@ var Lister = function(options) {
 		'choosing' : false
 	};
 
-	var frames = {}, tree, chooser;
+	var frames = {}, tree, chooser, scroller;
 
 	var threadFooter = format(
 		"%sC%shange group/area, %sO%srder, %sT%shread order, %sF%slat view, %sP%sost, %s[%s Pg Up/Dn %s]%s, %sQ%suit",
@@ -318,7 +325,7 @@ var Lister = function(options) {
 	var formatListItem = function(header) {
 		var nameWidth = Math.floor(frames.list.width / 5);
 		var dateWidth = 14;
-		var subjectWidth = frames.list.width - dateWidth - (nameWidth * 2) - 4;
+		var subjectWidth = frames.list.width - dateWidth - (nameWidth * 2) - 5;
 		return format(
 			"%-" + nameWidth + "s %-" + nameWidth + "s %-" + subjectWidth + "s %s",
 			header.from.substr(0, nameWidth),
@@ -340,6 +347,8 @@ var Lister = function(options) {
 			buildThreadedTree();
 		else
 			buildFlatTree();
+		scroller = new ScrollBar(tree);
+		scroller.open();
 		tree.open();
 	}
 
@@ -463,8 +472,12 @@ var Lister = function(options) {
 	}
 
 	this.cycle = function() {
-		if(typeof frames.top.parent == "undefined" && frames.top.cycle())
+		if(typeof frames.top.parent != "undefined") {
+			scroller.cycle();
+		} else if(frames.top.cycle()) {
+			scroller.cycle();
 			console.gotoxy(console.screen_columns, console.screen_rows);
+		}
 	}
 
 	this.close = function() {
@@ -493,7 +506,7 @@ var Reader = function(options) {
 	};
 	settings.msg = (typeof options.msg == "undefined") ? msg_area.sub[settings.sub].scan_ptr : options.msg;
 
-	var frames = {};
+	var frames = {}, scroller;
 
 	var state = {
 		'header' : {},
@@ -625,6 +638,8 @@ var Reader = function(options) {
 		frames.message.open();
 		while(frames.message.offset.y > 0)
 			frames.message.scroll(0, -1);
+		scroller = new ScrollBar(frames.message, { autohide : true });
+		scroller.open();
 	}
 	
 	var init = function() {
@@ -746,8 +761,12 @@ var Reader = function(options) {
 	}
 
 	this.cycle = function() {
-		if(typeof frames.top.parent == "undefined" && frames.top.cycle())
+		if(typeof frames.top.parent != "undefined") {
+			scroller.cycle();
+		} else if(frames.top.cycle()) {
+			scroller.cycle();
 			console.gotoxy(console.screen_columns, console.screen_rows);
+		}
 	}
 
 	this.close = function() {
