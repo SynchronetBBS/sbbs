@@ -2069,14 +2069,23 @@ function read_cfg(sub)
 
 js.on_exit("exit_func()");
 client.socket.send("* OK Give 'er\r\n");
+var waited=0;
 while(1) {
-	line=client.socket.recvline(10240, 1800);
+	line=client.socket.recvline(10240, 1);
 	if(line != null) {
+		waited = 0;
 		debug_log("RECV: "+line, true);
 		parse_command(line);
 	}
 	else {
-		untagged("BYE No lolligaggers here!");
+		waited++;
+		if (waited >= 1800) {
+			untagged("BYE No lolligaggers here!");
+			exit(0);
+		}
+	}
+	if (js.termianted) {
+		untagged("BYE server terminated.");
 		exit(0);
 	}
 }
