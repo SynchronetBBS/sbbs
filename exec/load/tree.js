@@ -341,12 +341,14 @@ function Tree(frame,text,tree) {
 		return retval;
 	}
 	this.addTree = function(text) {
+		var tree;
 		if(text instanceof Tree) {
+			tree = text;
 			this.items.push(tree);
 			tree.frame = this.frame;
 		}
 		else {
-			var tree=new Tree(this.frame,text,this);
+			tree=new Tree(this.frame,text,this);
 			this.items.push(tree);
 		}
 		if(!(this.status&flags.CLOSED))
@@ -354,13 +356,15 @@ function Tree(frame,text,tree) {
 		return tree;
 	}
 	this.addItem = function(text,func,args) {
+		var item;
 		if(text instanceof TreeItem) {
-			this.items.push(text);
-			text.parent = this;
+			item = text;
+			this.items.push(item);
+			item.parent = this;
 		}
 		else {
 			var args = Array.prototype.slice.apply(arguments);
-			var item=new TreeItem(args.shift(),this,args.shift(),args);
+			item=new TreeItem(args.shift(),this,args.shift(),args);
 			this.items.push(item);
 		}
 		if(!(this.status&flags.CLOSED))
