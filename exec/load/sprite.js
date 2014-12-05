@@ -643,8 +643,8 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 			default:
 				break;
 		}
-		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > 80 
-			|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > 24)
+		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > this.frame.parent.width 
+			|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > this.frame.parent.height)
 			return false;
 		var w = new Sprite.Aerial(this.ini.weapon, this.frame.parent, 
 			this.weaponCoordinates.x, this.weaponCoordinates.y, this.bearing);
@@ -1152,8 +1152,8 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 			default:
 				break;
 		}
-		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > 80 
-			|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > 24)
+		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > this.frame.parent.width 
+			|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > this.frame.parent.height)
 			return false;
 		var w = new Sprite.Profile(
 			this.ini.weapon,
