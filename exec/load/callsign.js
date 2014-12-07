@@ -199,13 +199,20 @@ var CallSign={
 				ret.name=rx.Callsign.name.toString();
 			else
 				ret.name=rx.Callsign.fname.toString();
-			ret.callsign=rx.Callsign.call.toString();
-			ret.address=rx.Callsign.addr1.toString();
-			ret.city=rx.Callsign.addr2.toString();
-			ret.provstate=rx.Callsign.state.toString();
-			ret.country=rx.Callsign.country.toString();
-			ret.postalzip=rx.Callsign.zip.toString();
-			ret.qualifictions=rx.Callsign.class.toString();
+			if (rx.Callsign.call != undefined)
+				ret.callsign=rx.Callsign.call.toString();
+			if (rx.Callsign.addr1 != undefined)
+				ret.address=rx.Callsign.addr1.toString();
+			if (rx.Callsign.addr2 != undefined)
+				ret.city=rx.Callsign.addr2.toString();
+			if (rx.Callsign.state != undefined)
+				ret.provstate=rx.Callsign.state.toString();
+			if (rx.Callsign.country != undefined)
+				ret.country=rx.Callsign.country.toString();
+			if (rx.Callsign.zip != undefined)
+				ret.postalzip=rx.Callsign.zip.toString();
+			if (rx.Callsign.class != undefined)
+				ret.qualifictions=rx.Callsign.class.toString();
 			ret.note='Found on QRZ.com';
 			return ret;
 		},
