@@ -456,9 +456,9 @@ function process_control_msg(cmd_list)
 				response.body.push("Available commands:");
 				response.body.push("    lists");
                 response.body.push("                                Request a list of mailing lists");
-				response.body.push("    subscribe <list-name> [address]");
+				response.body.push("    subscribe <list-name>" + (use_sender_address ? "":" [address]"));
                 response.body.push("                                Subscribe to specified mailing list (or * for all)");
-				response.body.push("    unsubscribe <list-name> [address]");
+				response.body.push("    unsubscribe <list-name>" + (use_sender_address ? "":" [address]"));
                 response.body.push("                                Unsubscribe from specified mailing list (or * for all)");
 				response.body.push("    help");
                 response.body.push("                                This help message");
