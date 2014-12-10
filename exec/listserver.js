@@ -67,7 +67,7 @@ for(var l in list_array) {
 	var msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
 		log(LOG_ERR,format("%s !ERROR %d (%s) opening msgbase: %s"
-			,list.name, msgsbase.status, msgbase.error, list.sub));
+			,list.name.toUpperCase(), msgsbase.status, msgbase.error, list.sub));
 		continue;
 	}
 	list.msgbase_file = msgbase.file;
@@ -214,15 +214,15 @@ for(var l in list_array) {
 	var list = list_array[l];
 
 	if(list.disabled) {
-		log(LOG_INFO,format("%s: disabled", list.name));
+		log(LOG_INFO,format("%s: disabled", list.name.toUpperCase()));
 		continue;
 	}
 
-	log(LOG_INFO,format("Processing list: %s", list.name));
+	log(LOG_INFO,format("Processing list: %s", list.name.toUpperCase()));
 	msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
 		log(LOG_ERR,format("%s !ERROR %d (%s) opening msgbase: %s"
-			,list.name, msgbase.status, msgbase.error, list.sub));
+			,list.name.toUpperCase(), msgbase.status, msgbase.error, list.sub));
 		delete msgbase;
 		continue;
 	}
@@ -230,7 +230,7 @@ for(var l in list_array) {
 	/* Get subscriber list */
 	var user_list = get_user_list(list);
 	if(!user_list.length) {
-		log(LOG_INFO,format("%s has no subscribers", list.name));
+		log(LOG_INFO,format("%s has no subscribers", list.name.toUpperCase()));
 		delete msgbase;
 		continue;
 	}
@@ -256,7 +256,7 @@ for(var l in list_array) {
 	var last_msg = msgbase.last_msg;
 
 	log(LOG_DEBUG,format("%s pointer read: %u"
-		,list.name, ptr));
+		,list.name.toUpperCase(), ptr));
 
 	if(isNaN(ptr))
 		ptr = msgbase.last_msg+1;		// export none
@@ -273,19 +273,19 @@ for(var l in list_array) {
 		if(hdr == null) {
 			/**
 			log(LOG_WARNING,format("%s !ERROR %d (%s) getting msg header #%lu"
-				,list.name, msgbase.status, msgbase.error, ptr));
+				,list.name.toUpperCase(), msgbase.status, msgbase.error, ptr));
 			**/
 			continue;
 		}
 		if(hdr.attr&(MSG_DELETE|MSG_PRIVATE))	{ /* marked for deletion */
 			log(LOG_NOTICE,format("%s Skipping %s message #%lu from %s: %s"
-				,list.name, hdr.attr&MSG_DELETE ? "deleted":"private"
+				,list.name.toUpperCase(), hdr.attr&MSG_DELETE ? "deleted":"private"
 				,ptr, hdr.from, hdr.subject));
 			continue;
 		}
 		if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
 			log(LOG_NOTICE,format("%s Stopping at unvalidated moderated message #%lu from %s: %s"
-				,list.name, ptr, hdr.from, hdr.subject));
+				,list.name.toUpperCase(), ptr, hdr.from, hdr.subject));
 			ptr--;
 			break;
 		}
@@ -299,7 +299,7 @@ for(var l in list_array) {
 				);
 		if(body == null) {
 			log(LOG_ERR,format("%s !ERROR %d (%s) reading text of message #%lu"
-				,list.name, msgbase.status, msgbase.error, ptr));
+				,list.name.toUpperCase(), msgbase.status, msgbase.error, ptr));
 			continue;
 		}
 
@@ -312,7 +312,7 @@ for(var l in list_array) {
 			if(!user_list[u].name)
 				user_list[u].name = user_list[u].address;
 			log(LOG_DEBUG,format("%s Enqueing message #%lu for %s <%s>"
-				,list.name, ptr, user_list[u].name, user_list[u].address));
+				,list.name.toUpperCase(), ptr, user_list[u].name, user_list[u].address));
 			rcpt_list.push(	{	to:				user_list[u].name,
 								to_net_addr:	user_list[u].address, 
 								to_net_type:	NET_INTERNET 
@@ -328,7 +328,7 @@ for(var l in list_array) {
 		}
 
 		log(LOG_INFO,format("%s Sending message #%lu from %s to %lu recipients: %s"
-			,list.name, ptr, hdr.from, rcpt_list.length, hdr.subject));
+			,list.name.toUpperCase(), ptr, hdr.from, rcpt_list.length, hdr.subject));
 
 		hdr.replyto_net_type = NET_INTERNET;
 		hdr.replyto_net_addr = list.address;
@@ -338,7 +338,7 @@ for(var l in list_array) {
 			hdr.subject = "[" + list.name + "] " + hdr.subject;
 		if(!mailbase.save_msg(hdr,body,rcpt_list))
 			log(LOG_ERR,format("%s !ERROR %d (%s) saving mail message"
-				,list.name, mailbase.status, mailbase.error));
+				,list.name.toUpperCase(), mailbase.status, mailbase.error));
 	}
 
 	if(ptr > last_msg)
@@ -350,7 +350,7 @@ for(var l in list_array) {
 		ini_file.iniSetValue("ListServer", "export_ptr", ptr);
 		ini_file.close();
 		log(LOG_DEBUG,format("%s pointer written: %u"
-			,list.name, ptr));
+			,list.name.toUpperCase(), ptr));
 		if(file_exists(ptr_fname))
 			file_remove(ptr_fname);
 	}
@@ -417,41 +417,64 @@ function process_control_msg(cmd_list)
 		var address=token[2];
 		switch(cmd.toLowerCase()) {
 			case "lists":
-				response.body.push("List of lists:");
+				response.body.push("List of mailing lists:");
 				for(var l in list_array) {
 					var list = list_array[l];
-					if(!list.disabled)
-						response.body.push("\t"+list.name.toUpperCase()
-										  +"\t\t"+list.description);
+					if(!list.disabled) {
+						response.body.push("    "+list.name.toUpperCase());
+						response.body.push("                                "+list.description);
+                        }
 				}
 				break;
+            case "who":
+                if(!user.compare_ars("SYSOP"))
+                    break;
 			case "subscribe":
 			case "unsubscribe":
 				if(!listname || !listname.length) {
 					response.body.push("!List name not specified");
 					break;
 				}
+                var found=false;
 				for(var l in list_array) {
 					var list = list_array[l];
 					if(list.disabled || list.closed)
 						continue;
 					if(list.name.toLowerCase()==listname.toLowerCase()
-						|| list.address.toLowerCase()==listname.toLowerCase()) {
+						|| list.address.toLowerCase()==listname.toLowerCase()
+                        || listname=='*') {
 						response.body.push(subscription_control(cmd, list, address));
-						return(response);
+                        found=true;
 					}
 				}
-				response.body.push("!List not found: " + listname);
+                if(!found)
+    				response.body.push("!List not found: " + listname);
 				break;
 			default:
 				response.body.push("!Bad command: " + cmd);
 			case "help":
 				response.body.push("Available commands:");
-				response.body.push("\tlists");
-				response.body.push("\tsubscribe [address]");
-				response.body.push("\tunsubscribe [address]");
-				response.body.push("\thelp");
-				response.body.push("\tend");
+				response.body.push("    lists");
+                response.body.push("                                Request a list of mailing lists");
+				response.body.push("    subscribe <list-name> [address]");
+                response.body.push("                                Subscribe to specified mailing list (or * for all)");
+				response.body.push("    unsubscribe <list-name> [address]");
+                response.body.push("                                Unsubscribe from specified mailing list (or * for all)");
+				response.body.push("    help");
+                response.body.push("                                This help message");
+				response.body.push("    end");
+                response.body.push("                                End of command list (same as '---')");
+                if(user.compare_ars("SYSOP")) {
+				    response.body.push("    who <list-name>");
+                    response.body.push("                                Request a list of subscribers to specified mailing list (or * for all)");
+                }
+                response.body.push("");
+                if(subj_cmd)
+                    response.body.push("A single command may be specified in the message subject.");
+                else
+                    response.body.push("Commands may not be specified in the message subject.");
+                if(body_cmd)
+                    response.body.push("One or more commands may be specified in the message body.");
 			case "end":
 				return(response);
 		}
@@ -466,7 +489,7 @@ function open_user_list(list, mode)
 	var user_file = new File(user_fname);
 	if(!user_file.open(mode)) {
 		log(LOG_ERR,format("%s !ERROR %d opening file: %s"
-			,list.name, user_file.error, user_fname));
+			,list.name.toUpperCase(), user_file.error, user_fname));
 		return(null);
 	}
 
@@ -523,7 +546,7 @@ function subscription_control(cmd, list, address)
 		address=sender_address;
 
 	log(LOG_INFO,format("%s Subscription control command (%s) from %s"
-		,list.name,cmd,address));
+		,list.name.toUpperCase(),cmd,address));
 
 	/* Get subscriber list */
 	if((user_file=open_user_list(list,"r+"))==null)
@@ -536,14 +559,14 @@ function subscription_control(cmd, list, address)
 			if(remove_user(user_list, address)) {
 				write_user_list(user_list, user_file);
 				return log(LOG_INFO,format("%s %s unsubscribed successfully"
-					,list.name, address));
+					,list.name.toUpperCase(), address));
 			}
 			return log(LOG_WARNING,format("%s !subscriber not found: %s"
-				,list.name, address));
+				,list.name.toUpperCase(), address));
 		case "subscribe":
 			if(find_user(user_list, address)!=-1)
 				return log(LOG_WARNING,format("%s !%s is already subscribed"
-					,list.name, address));
+					,list.name.toUpperCase(), address));
 			var now=time();
 			user_list.push({ 
 				 name:					sender_name 
@@ -554,7 +577,14 @@ function subscription_control(cmd, list, address)
 				});
 			write_user_list(user_list, user_file);
 			return log(LOG_INFO,format("%s %s subscription successful"
-				,list.name, address));
+				,list.name.toUpperCase(), address));
+        case "who":
+        {
+            var response = list.name.toUpperCase() + " has "+user_list.length+" subscribers:\n";
+            for(u in user_list)
+                response += user_list[u].address + ' "' + user_list[u].name + '" since ' + user_list[u].created + '\n';
+            return response;
+        }
 	}
 }
 
@@ -570,7 +600,7 @@ function process_contribution(header, body, list)
 	if(sender_address!=list.submitter
         && find_user(user_list, sender_address)==-1) {
 		error_file.writeln(log(LOG_WARNING,format("%s !ERROR %s is not a subscriber"
-			,list.name, sender_address)));
+			,list.name.toUpperCase(), sender_address)));
 //		error_file.writeln();
 //		error_file.writeln("To subscribe to this list, send an e-mail to " 
 //			+ listserver_address);
@@ -581,7 +611,7 @@ function process_contribution(header, body, list)
 	var msgbase=new MsgBase(list.sub);
 	if(!msgbase.open()) {
 		error_file.writeln(log(LOG_ERR,format("%s !ERROR %d (%s) opening msgbase: %s"
-			,list.name, msgbase.status, msgbase.error, list.sub)));
+			,list.name.toUpperCase(), msgbase.status, msgbase.error, list.sub)));
 		return(false);
 	}
 
@@ -593,7 +623,7 @@ function process_contribution(header, body, list)
 
 	if(!msgbase.save_msg(header, body.join('\r\n'))) {
 		log(LOG_ERR,format("%s !ERROR %d (%s) saving message to sub: %s"
-			,list.name, msgbase.status, msgbase.error, list.sub));
+			,list.name.toUpperCase(), msgbase.status, msgbase.error, list.sub));
 		return(false);
 	}
 
