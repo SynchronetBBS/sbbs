@@ -29,7 +29,9 @@ if(!ini_file.open("r")) {
 listserver_address=ini_file.iniGetValue(null,"address","listserver@"+system.inet_addr);
 listserver_name=ini_file.iniGetValue(null,"name","Synchronet ListServer");
 use_sender_address=ini_file.iniGetValue(null,"use_sender_address",true);
-subj_cmd=ini_file.iniGetValue(null,"SubjectCommand",false);
+var body_cmd = true;
+if((subj_cmd = ini_file.iniGetValue(null, "SubjectCommand", false)) == true)
+    body_cmd = ini_file.iniGetValue(null, "BodyCommand", true);
 disabled=ini_file.iniGetValue(null,"disabled",false);
 list_array=ini_file.iniGetAllObjects("name");
 ini_file.close();
@@ -172,8 +174,11 @@ if(js.global.recipient_list_filename!=undefined) {
 
 	file_remove(recipient_list_filename);
 
-	if(subj_cmd)
-		body.unshift(header.subject);	/* Process the subject as a command */
+	if(subj_cmd) {
+        if(!body_cmd)
+            body.length = 0;
+        body.unshift(header.subject);	/* Process the subject as a command */
+	}
 
 	var response = process_control_msg(body);
 	var resp_hdr = {};
