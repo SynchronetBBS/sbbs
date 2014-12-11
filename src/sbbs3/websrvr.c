@@ -1381,10 +1381,11 @@ void http_logon(http_session_t * session, user_t *usr)
 	else {
 		SAFECOPY(session->username,session->user.alias);
 		/* Adjust Connect and host */
-		putuserrec(&scfg,session->user.number,U_MODEM,LEN_MODEM,"HTTP");
-		putuserrec(&scfg,session->user.number,U_COMP,LEN_COMP,session->host_name);
-		putuserrec(&scfg,session->user.number,U_NOTE,LEN_NOTE,session->host_ip);
-		putuserrec(&scfg,session->user.number,U_LOGONTIME,0,ultoa((ulong)session->logon_time,str,16));
+		SAFECOPY(session->user.modem, session->is_tls?"HTTPS":"HTTP");
+		SAFECOPY(session->user.comp, session->host_name);
+		SAFECOPY(session->user.note, session->host_ip);
+		session->user.logontime = session->logon_time;
+		putuserdat(&scfg, &session->user);
 	}
 	session->client.user=session->username;
 	client_on(session->socket, &session->client, /* update existing client record? */TRUE);
