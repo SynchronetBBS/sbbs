@@ -2661,13 +2661,13 @@ static void ctrl_thread(void* arg)
 			sprintf(qwkfile,"%sfile/%04d.qwk",scfg.data_dir,user.number);
 
 			/* Adjust User Total Logons/Logons Today */
-			adjustuserrec(&scfg,user.number,U_LOGONS,5,1);
-			putuserrec(&scfg,user.number,U_LTODAY,5,ultoa(user.ltoday+1,str,10));
-			putuserrec(&scfg,user.number,U_MODEM,LEN_MODEM,"FTP");
-			putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
-			putuserrec(&scfg,user.number,U_NOTE,LEN_NOTE,host_ip);
-			putuserrec(&scfg,user.number,U_LOGONTIME,0,ultoa((ulong)logintime,str,16));
-			getuserdat(&scfg, &user);	/* make user current */
+			user.logons++;
+			user.ltoday++;
+			SAFECOPY(user.modem,"FTP");
+			SAFECOPY(user.comp,host_name);
+			SAFECOPY(user.note,host_ip);
+			user.logontime=logintime;
+			putuserdat(&scfg, &user);
 
 			continue;
 		}
