@@ -1360,8 +1360,6 @@ static void send_error(http_session_t * session, const char* message)
 
 void http_logon(http_session_t * session, user_t *usr)
 {
-	char	str[128];
-
 	if(usr==NULL)
 		getuserdat(&scfg, &session->user);
 	else
@@ -1381,10 +1379,10 @@ void http_logon(http_session_t * session, user_t *usr)
 	else {
 		SAFECOPY(session->username,session->user.alias);
 		/* Adjust Connect and host */
-		SAFECOPY(session->user.modem, session->is_tls?"HTTPS":"HTTP");
+		SAFECOPY(session->user.modem, session->client.protocol);
 		SAFECOPY(session->user.comp, session->host_name);
 		SAFECOPY(session->user.note, session->host_ip);
-		session->user.logontime = session->logon_time;
+		session->user.logontime = (time32_t)session->logon_time;
 		putuserdat(&scfg, &session->user);
 	}
 	session->client.user=session->username;
