@@ -451,5 +451,5 @@ SEXYZ includes portions of the Synchronet XPDEV and SMBLIB libraries which
 are licensed under the GNU Lesser General Public License (LGPL).
 http://www.fsf.org/licensing/licenses/lgpl.txt
 
-Synchronet BBS software is written by and copyright 2008 Rob Swindell.
+Synchronet BBS software is written by and copyright 2014 Rob Swindell.
 http://www.synchro.net/docs/copyright.html
