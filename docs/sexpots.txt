@@ -1,7 +1,7 @@
      Synchronet External Plain Old Telephone System (POTS) Support
      -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                             a.k.a. SEXPOTS
-                     Copyright 2012 Rob Swindell
+                     Copyright 2014 Rob Swindell
 
 For current documentation, see http://wiki.synchro.net/util:sexpots
 
