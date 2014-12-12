@@ -183,6 +183,14 @@ function 	Map(c,r,p,gn)
 		
 		if(killer.user>0) {
 			games.loadRankings();
+			if(!scores[killer.user]) {
+				scores[killer.user] = {
+					'score':0,
+					'kills':0,
+					'wins':0,
+					'losses':0
+				}
+			}
 			if(this.singlePlayer) 
 				scores[killer.user].score+=settings.killPointsSolo;
 			else 
@@ -194,6 +202,14 @@ function 	Map(c,r,p,gn)
 			if(!updaterankings)	{
 				games.loadRankings();
 				updaterankings=true;
+			}
+			if(!scores[dead.user]) {
+				scores[dead.user] = {
+					'score':0,
+					'kills':0,
+					'wins':0,
+					'losses':0
+				}
 			}
 			scores[dead.user].losses+=1;
 			if(this.singlePlayer) {
@@ -355,7 +371,6 @@ function 	Map(c,r,p,gn)
 		var checked=[];
 		var counted=[];
 		var tocheck=[];
-		var y=10;
 		for(tttt in terr) {
 			var count=1;
 			tocheck.push(terr[tttt]);
