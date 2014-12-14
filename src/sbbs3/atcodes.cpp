@@ -147,9 +147,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 
 	if(!strcmp(sp,"UPTIME")) {
 		extern volatile time_t uptime;
-		time_t up=time(NULL)-uptime;
-		if(up<0)
-			up=0;
+		time_t up=0;
+		now = time(NULL);
+		if (uptime != 0 && now >= uptime)
+			up = now-uptime;
 		char   days[64]="";
 		if((up/(24*60*60))>=2) {
 	        sprintf(days,"%lu days ",(ulong)(up/(24L*60L*60L)));
