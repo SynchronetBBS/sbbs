@@ -913,7 +913,7 @@ function Frame(x,y,width,height,attr,parent) {
 			var remainingWidth = this.width - position.cursor.x;
 			if(str.length > remainingWidth) {
 				str = word_wrap(str,remainingWidth,str.length,false).split('\n');
-				str = str.shift() + '\n' + word_wrap(str.join('\n'),this.width,remainingWidth,false);
+				str = str.shift() + '\r\n' + word_wrap(str.join('\r\n'),this.width,remainingWidth,false);
 			}
 		}
 		str = str.toString().split('');
