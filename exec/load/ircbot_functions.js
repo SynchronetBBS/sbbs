@@ -67,6 +67,8 @@ function Server_CTCP(onick,ouh,cmd) {
 							sock.write("Enter your password.\r\n");
 							dcc_chats.push(new DCC_Chat(sock,onick));
 						}
+						else
+							sock.close();
 				}
 			}
 			break;

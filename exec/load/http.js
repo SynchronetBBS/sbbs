@@ -77,8 +77,10 @@ function HTTPRequest(username,password)
 	this.SendRequest=function() {
 		if((this.sock=new Socket(SOCK_STREAM))==null)
 			throw("Unable to create socket");
-		if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443)))
+		if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443))) {
+			this.sock.close();
 			throw("Unable to connect");
+		}
 		if(this.url.scheme=='https')
 			this.sock.ssl_session=true;
 		if(!this.sock.send(this.request+"\r\n"))

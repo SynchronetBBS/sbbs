@@ -654,6 +654,8 @@ function connect_to_server(this_cline,the_port) {
 		Unregistered[new_id].sendps = false; // Don't do P/S pair again
 		Unregistered[new_id].outgoing = true; /* Outgoing Connection */
 	}
+	else
+		connect_sock.close();
 	this_cline.lastconnect = time();
 }
 

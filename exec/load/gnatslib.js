@@ -78,6 +78,7 @@ function GNATS_connect()
 {
 	this.socket.connect(this.host,1529);
 	if(!this.socket.is_connected) {
+		this.socket.close();
 		this.error="Cannot connect to GNATS database";
 		return(false);
 	}

@@ -52,6 +52,7 @@ function IRC_client_connect(hostname,nick,username,realname,port,password) {
 		sock.send("USER " + username + " * * :" + realname + "\r\n");
 		return sock;
 	} else {
+		sock.close();
 		return 0;
 	}
 }
@@ -78,6 +79,7 @@ function IRC_server_connect(hostname,servername,password,description,port) {
 		sock.send("SERVER " + servername + " 1 :" +description+"\r\n");
 		return sock;
 	} else {
+		sock.close();
 		return 0;
 	}
 }

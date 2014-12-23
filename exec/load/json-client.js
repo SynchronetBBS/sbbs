@@ -103,8 +103,10 @@ function JSONClient(serverAddr,serverPort) {
         this.socket=new Socket();
 		this.socket.connect(this.serverAddr,this.serverPort,this.settings.CONNECTION_TIMEOUT);
 		
-		if(!this.socket.is_connected)
+		if(!this.socket.is_connected) {
+			this.socket.close();
 			throw("error " + this.socket.error + " connecting to TCP port " + this.serverPort + " on server " + this.serverAddr);
+		}
 		return true;
     }
     

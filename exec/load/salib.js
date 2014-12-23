@@ -35,6 +35,7 @@ function Message_DoCommand(command)
 	var	inserted_header_fields="";
 
 	if(!sock.connect(this.addr, this.port)) {
+		sock.close();
 		ret.error='Failed to connect to spamd';
 		return(ret);
 	}

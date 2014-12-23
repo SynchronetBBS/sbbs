@@ -46,6 +46,7 @@ for(h in host_list) {
 		continue;
 	}
 	if(!sock.connect(host_list[h],8467)) {
+		sock.close();
 		printf("Error %lu connecting to %s\r\n",sock.last_error,host_list[h]);
 		continue;
 	}
