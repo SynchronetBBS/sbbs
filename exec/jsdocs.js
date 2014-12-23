@@ -311,6 +311,10 @@ if(js.global.COM != undefined) {
 	com.close();
 	if(com != undefined)		document_object("COM"	,com, "class");
 }
+if(js.global.CryptContext != undefined) {
+	cc = new CryptContext(CryptContext.ALGO.AES);
+	if(cc != undefined)			document_object("CryptContext",cc, "class");
+}
 
 f.writeln("</ol>");
 
