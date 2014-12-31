@@ -240,3 +240,39 @@ uint64_t DLLCALL protected_uint64_adjust(protected_uint64_t* i, int64_t adjustme
 	pthread_mutex_unlock(&i->mutex);
 	return newval;
 }
+
+int32_t DLLCALL protected_int32_set(protected_int32_t* i, int32_t val)
+{
+	int32_t	newval;
+	pthread_mutex_lock(&i->mutex);
+	newval = i->value = val;
+	pthread_mutex_unlock(&i->mutex);
+	return newval;
+}
+
+uint32_t DLLCALL protected_uint32_set(protected_uint32_t* i, uint32_t val)
+{
+	uint32_t newval;
+	pthread_mutex_lock(&i->mutex);
+	newval = i->value = val;
+	pthread_mutex_unlock(&i->mutex);
+	return newval;
+}
+
+int64_t DLLCALL protected_int64_set(protected_int64_t* i, int64_t val)
+{
+	int64_t	newval;
+	pthread_mutex_lock(&i->mutex);
+	newval = i->value = val;
+	pthread_mutex_unlock(&i->mutex);
+	return newval;
+}
+
+uint64_t DLLCALL protected_uint64_set(protected_uint64_t* i, uint64_t val)
+{
+	uint64_t newval;
+	pthread_mutex_lock(&i->mutex);
+	newval = i->value = val;
+	pthread_mutex_unlock(&i->mutex);
+	return newval;
+}
