@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -987,6 +987,38 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 			,current_msg->hdr.attr&MSG_VALIDATED	? "Validated  " :nulstr
 			,current_msg->hdr.attr&MSG_REPLIED		? "Replied  "	:nulstr
 			,current_msg->hdr.attr&MSG_NOREPLY		? "NoReply  "	:nulstr
+			);
+		return(str);
+	}
+	if(!strcmp(sp,"MSG_AUXATTR") && current_msg!=NULL) {
+		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s"
+			,current_msg->hdr.auxattr&MSG_FILEREQUEST	? "FileRequest  "   :nulstr
+			,current_msg->hdr.auxattr&MSG_FILEATTACH	? "FileAttach  "    :nulstr
+			,current_msg->hdr.auxattr&MSG_TRUNCFILE		? "TruncFile  "		:nulstr
+			,current_msg->hdr.auxattr&MSG_KILLFILE		? "KillFile  "      :nulstr
+			,current_msg->hdr.auxattr&MSG_RECEIPTREQ	? "ReceiptReq  "	:nulstr
+			,current_msg->hdr.auxattr&MSG_CONFIRMREQ	? "ConfirmReq  "    :nulstr
+			,current_msg->hdr.auxattr&MSG_NODISP		? "DontDisplay  "	:nulstr
+			);
+		return(str);
+	}
+	if(!strcmp(sp,"MSG_NETATTR") && current_msg!=NULL) {
+		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
+			,current_msg->hdr.netattr&MSG_LOCAL			? "Local  "			:nulstr
+			,current_msg->hdr.netattr&MSG_INTRANSIT		? "InTransit  "     :nulstr
+			,current_msg->hdr.netattr&MSG_SENT			? "Sent  "			:nulstr
+			,current_msg->hdr.netattr&MSG_KILLSENT		? "KillSent  "      :nulstr
+			,current_msg->hdr.netattr&MSG_ARCHIVESENT	? "ArcSent  "		:nulstr
+			,current_msg->hdr.netattr&MSG_HOLD			? "Hold  "			:nulstr
+			,current_msg->hdr.netattr&MSG_CRASH			? "Crash  "			:nulstr
+			,current_msg->hdr.netattr&MSG_IMMEDIATE		? "Immediate  "		:nulstr
+			,current_msg->hdr.netattr&MSG_DIRECT		? "Direct  "		:nulstr
+			,current_msg->hdr.netattr&MSG_GATE			? "Gate  "			:nulstr
+			,current_msg->hdr.netattr&MSG_ORPHAN		? "Orphan  "		:nulstr
+			,current_msg->hdr.netattr&MSG_FPU			? "ForcePickup  "	:nulstr
+			,current_msg->hdr.netattr&MSG_TYPELOCAL		? "LocalUse  "		:nulstr
+			,current_msg->hdr.netattr&MSG_TYPEECHO		? "EchoMail  "		:nulstr
+			,current_msg->hdr.netattr&MSG_TYPENET		? "NetMail  "		:nulstr
 			);
 		return(str);
 	}
