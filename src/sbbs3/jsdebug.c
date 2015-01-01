@@ -129,6 +129,7 @@ static void killscript_handler(JSContext *cx, JSScript *script, void *callerdata
 			pnode=listPrevNode(node);
 			free(cs->fname);
 			listRemoveNode(&scripts, node, TRUE);
+			break;
 		}
 	}
 }
