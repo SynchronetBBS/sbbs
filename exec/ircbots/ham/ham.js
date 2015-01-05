@@ -410,9 +410,9 @@ for (var ham_ircbot_zone in TimeZoneConversion.zones) {
 	Bot_Commands[ham_ircbot_zone] = new Bot_Command(0, false, false);
 	Bot_Commands[ham_ircbot_zone].usage = get_cmd_prefix() + ham_ircbot_zone;
 	Bot_Commands[ham_ircbot_zone].help = "Displays the current "-TimeZoneConversion.zones[ham_ircbot_zone].name;
-	Bot_Commands[ham_ircbot_zone].command = eval("function (target, onick, ouh, srv, lbl, cmd) {\n"+
 	if (ham_ircbot_zone !== 'Z')
 		Bot_Commands[ham_ircbot_zone].no_help = true;
+	Bot_Commands[ham_ircbot_zone].command = eval("function (target, onick, ouh, srv, lbl, cmd) {\n"+
 	"var i;\n"+
 	"var d;\n"+
 	"// Remove empty cmd args\n"+
