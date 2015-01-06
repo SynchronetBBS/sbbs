@@ -409,8 +409,15 @@ TimeZoneConversion = {
 for (var ham_ircbot_zone in TimeZoneConversion.zones) {
 	Bot_Commands[ham_ircbot_zone] = new Bot_Command(0, false, false);
 	Bot_Commands[ham_ircbot_zone].usage = get_cmd_prefix() + ham_ircbot_zone;
-	Bot_Commands[ham_ircbot_zone].help = "Displays the current "-TimeZoneConversion.zones[ham_ircbot_zone].name;
-	if (ham_ircbot_zone !== 'Z')
+	Bot_Commands[ham_ircbot_zone].help = "Displays the current ";
+	for (var onezone = 0; onezone < TimeZoneConversion.zones[ham_ircbot_zone].length; onezone++) {
+		if (TimeZoneConversion.zones[ham_ircbot_zone].length > 1 && (onezone + 1 == TimeZoneConversion.zones[ham_ircbot_zone].length))
+			Bot_Commands[ham_ircbot_zone].help += ', and ';
+		else if(TimeZoneConversion.zones[ham_ircbot_zone].length > 1 && onezone > 0)
+			Bot_Commands[ham_ircbot_zone].help += ', ';
+		Bot_Commands[ham_ircbot_zone].help += TimeZoneConversion.zones[ham_ircbot_zone][onezone].name;
+	}
+	if (ham_ircbot_zone != 'Z')
 		Bot_Commands[ham_ircbot_zone].no_help = true;
 	Bot_Commands[ham_ircbot_zone].command = eval("function (target, onick, ouh, srv, lbl, cmd) {\n"+
 	"var i;\n"+
