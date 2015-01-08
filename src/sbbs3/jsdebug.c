@@ -122,14 +122,14 @@ static void killscript_handler(JSContext *cx, JSScript *script, void *callerdata
 
 	if(dbg==NULL)
 		return;
-	for(node=listFirstNode(&scripts); node; node=listNextNode(node)) {
+	for(node=listFirstNode(&scripts); node; node==NULL?listFirstNode(&scripts):listNextNode(node)) {
 		cs=(struct cur_script *)node->data;
 
 		if(cs->script == script) {
 			pnode=listPrevNode(node);
 			free(cs->fname);
 			listRemoveNode(&scripts, node, TRUE);
-			break;
+			node = pnode;
 		}
 	}
 }
