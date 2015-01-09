@@ -297,8 +297,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	int		listwidth;
 	char	**dir_list=NULL;
 	char	**file_list=NULL;
-	int		currfield=DIR_LIST;
-	int		lastfield=DIR_LIST;
+	int		currfield;
+	int		lastfield;
 	int		i;
 	int		root=0;						/* Is this the root of the file system? */
 										/* On *nix, this just means no .. on Win32,
@@ -330,6 +330,11 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	/* Illegal options */
 	if((opts & UIFC_FP_MULTI)==UIFC_FP_MULTI && (opts & (UIFC_FP_ALLOWENTRY|UIFC_FP_OVERPROMPT|UIFC_FP_CREATPROMPT)))
 		return(-1);
+
+	if (opts & UIFC_FP_DIRSEL)
+		currfield = lastfield = DIR_LIST;
+	else
+		currfield = lastfield = FILE_LIST;
 
 	fp->files=0;
 	fp->selected=NULL;
