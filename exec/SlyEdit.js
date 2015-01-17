@@ -32,6 +32,12 @@
  *                              Updated the cross-post selection box to use the
  *                              PageUp & PageDown keys for paging instead of P
  *                              and N.
+ * 2015-01-11 Eric Oulashin     Version 1.43 Beta
+ *                              Bug fixes in wrapTextLines() in SlyEdit_Misc:
+ *                              No more extra blank lines added to quote lines,
+ *                              and no more leading spaces added to quote lines.
+ * 2015-11-16 Eric Oulashin     Version 1.43
+ *                              Releasing this version after several days of testing.
  */
 
 /* Command-line arguments:
@@ -109,8 +115,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.42";
-const EDITOR_VER_DATE = "2014-11-15";
+const EDITOR_VERSION = "1.43";
+const EDITOR_VER_DATE = "2015-01-16";
 
 
 // Program variables

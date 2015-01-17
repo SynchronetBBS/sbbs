@@ -34,6 +34,16 @@
  *                              whole sections of quote lines that start with
  *                              several spaces.  Also made a similar update to
  *                              wrapQuoteLines_NoAuthorInitials().
+ * 2015-11-11 Eric Oulashin     Bug fix in wrapTextLines(): After wrapping a line
+ *                              of text, there was a section of code that would
+ *                              check to see if the next line is blank and add
+ *                              another line if so, which was causing an extra
+ *                              blank line to be added in some situations where
+ *                              that shouldn't happen.  Seems to be fixed after
+ *                              an update.  Also, made another bug fix in that
+ *                              function where sometimes a leading space would
+ *                              be added to wrapped text on a new line.  That
+ *                              seems to be fixed as well.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -2352,9 +2362,16 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
       pLineArr[i] = pLineArr[i].substr(0, trimIndex);
       if (i < pLineArr.length - 1)
       {
+        // Append a space to the end of the trimmed text if it doesn't have one.
+        if ((trimmedText.length > 0) && (trimmedText.charAt(trimmedText.length-1) != " "))
+          trimmedText += " "
+        // 2015-01-11: The following commented-out code is older - It has a bug
+        // that would sometmies cause an extra empty line to be inserted.
+        /*
         // If the next line is blank, then append another blank
         // line there to preserve the message's formatting.
-        if (pLineArr[i+1].length == 0)
+        //if (pLineArr[i+1].length == 0)
+        if (false) // For testing, to see if the above check really isn't necessary
         {
           pLineArr.splice(i+1, 0, "");
           // If the current line index is before the specified end index, then
@@ -2370,9 +2387,10 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
         {
           // Since the next line is not blank, then append a space
           // to the end of the trimmed text if it doesn't have one.
-          if (trimmedText.charAt(trimmedText.length-1) != " ")
+          if ((trimmedText.length > 0) && (trimmedText.charAt(trimmedText.length-1) != " "))
             trimmedText += " "
         }
+        */
         // Prepend the trimmed text to the next line.  If the next line's index
         // is within the paragraph we're wrapping, then go ahead and prepend the
         // text to the next line.  Otherwise, add a new line to the array and
@@ -2398,6 +2416,9 @@ function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesR
       }
       else
       {
+        // New on 2015-01-11
+        // Remove any leading spaces 
+        // End new on 2015-01-11
         pLineArr.push(trimmedText);
         // If the current line index is before the specified end index, then
         // increment the end index since we've added a line in order to continue

@@ -399,7 +399,7 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
       // This line contains the copyright mesage & ESC key help
       var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "w") + "ch"
                       + EDITOR_VERSION.toString() + "   "
-                      + iceText("Copyright", "w") + " ch2014 "
+                      + iceText("Copyright", "w") + " ch2015 "
                       + iceText("Eric Oulashin", "w") + " nb" + DOT_CHAR + " "
                       + iceText("Press ESCape For Help", "w");
       // Calculate the starting position to center the help text, and front-pad
