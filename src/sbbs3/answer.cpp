@@ -305,7 +305,7 @@ bool sbbs_t::answer()
 	str[l]=0;
 
     if(l) {
-		c_escape_str(str,tmp,sizeof(tmp),TRUE);
+		c_escape_str(str,tmp,sizeof(tmp)-1,TRUE);
 		lprintf(LOG_DEBUG,"Node %d received terminal auto-detection response: '%s'"
 			,cfg.node_num,tmp);
         if(str[0]==ESC && str[1]=='[' && str[l-1]=='R') {
@@ -341,7 +341,7 @@ bool sbbs_t::answer()
 	rioctl(IOFI); /* flush left-over or late response chars */
 
 	if(!autoterm && str[0]) {
-		c_escape_str(str,tmp,sizeof(tmp),TRUE);
+		c_escape_str(str,tmp,sizeof(tmp)-1,TRUE);
 		lprintf(LOG_NOTICE,"Node %d terminal auto-detection failed, response: '%s'"
 			,cfg.node_num, tmp);
 	}
