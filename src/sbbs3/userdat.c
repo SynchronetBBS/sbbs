@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2739,6 +2739,8 @@ static list_node_t* login_attempted(link_list_t* list, const SOCKADDR_IN* addr)
 	list_node_t*		node;
 	login_attempt_t*	attempt;
 
+	if(list==NULL)
+		return NULL;
 	for(node=list->first; node!=NULL; node=node->next) {
 		attempt=node->data;
 		if(memcmp(&attempt->addr,&addr->sin_addr,sizeof(attempt->addr))==0)
