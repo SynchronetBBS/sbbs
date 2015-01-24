@@ -3,9 +3,7 @@
 #include <stdlib.h>
 
 #include <ciolib.h>
-#if defined(_WIN32)
- #include <malloc.h>	/* alloca() on Win32 */
-#endif
+#include <genwrap.h>	// For alloca()
 
 #include "crt.h"
 #include "key.h"
