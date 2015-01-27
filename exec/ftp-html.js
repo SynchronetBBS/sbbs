@@ -1,10 +1,16 @@
 // JavaScript HTML Index for Synchronet FTP Server
 // $Id$
 
-var start=new Date();
-var time_stamp=start.valueOf().toString(36);    // Used to defeat caching browsers
-
 load("sbbsdefs.js");    // Synchronet constants
+
+var start=new Date();
+var time_stamp = '';
+var time_stamp_only = '';
+var new_time_stamp='$'+start.valueOf().toString(36);    // Used to defeat caching browsers
+if (!(user.security.restrictions&UFLAG_G)) {
+	time_stamp=new_time_stamp;
+	time_stamp_only = '%3F' + time_stamp;
+}
 
 /* Utility Functions */
 
@@ -60,7 +66,7 @@ writeln("<form>");  // Netscape requires this to be in a form <sigh>
 writeln(format(
     "<select " +
     "onChange='if(selectedIndex>0) location=options[selectedIndex].value + \"%s\";'>"
-    ,"%%3F$" + time_stamp));
+    ,time_stamp_only));
 writeln("<option>Go To...</option>");
 writeln(format("<option value=/%s>Root</option>",html_index_file));
 for(l in file_area.lib_list) {
@@ -89,7 +95,7 @@ if(!(user.security.restrictions&UFLAG_G) && system.matchuser("Guest")) { /* !Gue
     writeln("<table align=right>");
     writeln("<form>");
     writeln("<input type=button value=Logout onclick='location=\"ftp://" 
-        + format("%s/%s%%3F$%s",system.host_name + port,html_index_file,time_stamp)
+        + format("%s/%s%s",system.host_name + port,html_index_file,time_stamp_only)
         + "\";'>");
     writeln("</form>");
     writeln("</table>");
@@ -148,8 +154,8 @@ if(!(user.security.restrictions&UFLAG_G) && system.matchuser("Guest")) { /* !Gue
         write("var url='ftp://'"); 
         write("+ escape(document.login.username.value) + ':'");
         write("+ escape(document.login.password.value) + '@'");
-        write(format("+ '%s/%s%%3F$%s'\r\n"
-            ,system.host_name + port,html_index_file,time_stamp));
+        write(format("+ '%s/%s%%3F%s'\r\n"
+            ,system.host_name + port,html_index_file,new_time_stamp));
 //      writeln("alert(url);");
         writeln("location = url;");
         writeln("}");
@@ -165,13 +171,13 @@ writeln("<h3>" + hdr_font + "Path: ");
 if(ftp.curlib.name==undefined) 
     writeln(dat_font + "Root");
 else
-    writeln("Root".link(format("/%s%%3F$%s",html_index_file,time_stamp)));
+    writeln("Root".link(format("/%s%s",html_index_file,time_stamp_only)));
 if(ftp.curlib.name!=undefined) {
     if(ftp.curdir.name==undefined)
         writeln(" / " + dat_font + ftp.curlib.description);
     else
-        writeln(" / " + ftp.curlib.description.link(format("/%s/%s%%3F$%s"
-            ,ftp.curlib.name,html_index_file,time_stamp)));
+        writeln(" / " + ftp.curlib.description.link(format("/%s/%s%s"
+            ,ftp.curlib.name,html_index_file,time_stamp_only)));
 }       
 if(ftp.curdir.name!=undefined) 
     writeln(" / " + dat_font + ftp.curdir.description);
@@ -207,7 +213,7 @@ if(ftp.dir_list.length) {
     
         /* filename */
         writeln("<th nowrap align=left>" + dat_font 
-            + ftp.dir_list[i].description.link(ftp.dir_list[i].link + "%3F$" + time_stamp));
+            + ftp.dir_list[i].description.link(ftp.dir_list[i].link + time_stamp_only));
 
         if(ftp.curlib.name!=undefined) {
             writeln("<td align=right><font color=black>" + dat_font + ftp.dir_list[i].size);
@@ -275,17 +281,17 @@ if(ftp.file_list.length) {
     writeln("<tr bgcolor=" + hdr_background + ">");
 
     /* File */
-    writeln(format("<th><a href=%s%%3Fsort=name%s$%s>%sFile</a>"
+    writeln(format("<th><a href=%s%%3Fsort=name%s%s>%sFile</a>"
         ,html_index_file
         ,(ftp.sort=="name" && !ftp.reverse) ? "&reverse":"", time_stamp, hdr_font));
 
     /* Credits or Size */
     if(ftp.curdir.settings!=undefined && !(ftp.curdir.settings&DIR_FREE))
-        writeln(format("<th><a href=%s%%3Fsort=credits%s$%s>%sCredits</a>"
+        writeln(format("<th><a href=%s%%3Fsort=credits%s%s>%sCredits</a>"
             ,html_index_file
             ,(ftp.sort=="credits" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
     else
-        writeln(format("<th><a href=%s%%3Fsort=size%s$%s>%sSize</a>"
+        writeln(format("<th><a href=%s%%3Fsort=size%s%s>%sSize</a>"
             ,html_index_file
             ,(ftp.sort=="size" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
 
@@ -293,22 +299,22 @@ if(ftp.file_list.length) {
     write("<th>" + hdr_font + "Description");
     if(ftp.extended_descriptions)
         writeln(format(" [%s]"
-            ,(hdr_font+"short").link(format("%s%%3Fext=off$%s",html_index_file, time_stamp))));
+            ,(hdr_font+"short").link(format("%s%%3Fext=off%s",html_index_file, time_stamp))));
     else
         writeln(format(" [%s]"
-            ,(hdr_font+"extended").link(format("%s%%3Fext=on$%s",html_index_file, time_stamp))));
+            ,(hdr_font+"extended").link(format("%s%%3Fext=on%s",html_index_file, time_stamp))));
 
     /* Date/Time */
-    writeln(format("<th><a href=%s%%3Fsort=time%s$%s>%sDate/Time</a>"
+    writeln(format("<th><a href=%s%%3Fsort=time%s%s>%sDate/Time</a>"
         ,html_index_file
         ,(ftp.sort=="time" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
 
     /* Uploader and Hits (downloads) */
     if(ftp.curdir.name!=undefined) {    /* not valid for aliased files in root */
-        writeln(format("<th><a href=%s%%3Fsort=uploader%s$%s>%sUploader</a>"
+        writeln(format("<th><a href=%s%%3Fsort=uploader%s%s>%sUploader</a>"
             ,html_index_file
             ,(ftp.sort=="uploader" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
-        writeln(format("<th><a href=%s%%3Fsort=hits%s$%s>%sHits</a>"
+        writeln(format("<th><a href=%s%%3Fsort=hits%s%s>%sHits</a>"
             ,html_index_file
             ,(ftp.sort=="hits" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
     }
