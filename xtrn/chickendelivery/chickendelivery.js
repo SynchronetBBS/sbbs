@@ -32,12 +32,6 @@ var	attr,
 	uid = base64_encode(user.alias + "@" + system.name, true),
 	initLevel = 0;
 
-if(typeof Array.isArray === 'undefined') {
-  Array.isArray = function(obj) {
-    return Object.prototype.toString.call(obj) === '[object Array]';
-  }
-}
-
 Frame.prototype.drawBorder = function(color) {
 	var theColor = color;
 	if(Array.isArray(color));
