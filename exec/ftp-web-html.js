@@ -68,7 +68,7 @@ writeln("<form>");  // Netscape requires this to be in a form <sigh>
 writeln(format(
     "<select " +
     "onChange='if(selectedIndex>0) location=options[selectedIndex].value + \"%s\";'>"
-    ,"?$" + time_stamp));
+    ,"%%3F$" + time_stamp));
 writeln("<option>Go To...</option>");
 writeln(format("<option value=/%s>Root</option>",html_index_file));
 for(l in file_area.lib_list) {
@@ -97,7 +97,7 @@ if(!(user.security.restrictions&UFLAG_G) && system.matchuser("Guest")) { /* !Gue
     writeln("<table align=right>");
     writeln("<form>");
     writeln("<input type=button value=Logout onclick='location=\"ftp://" 
-        + format("%s/%s?$%s",system.host_name + port,html_index_file,time_stamp)
+        + format("%s/%s%%3F$%s",system.host_name + port,html_index_file,time_stamp)
         + "\";'>");
     writeln("</form>");
     writeln("</table><br /><br />");
@@ -166,7 +166,7 @@ if(!(user.security.restrictions&UFLAG_G) && system.matchuser("Guest")) { /* !Gue
         write("var url='ftp://'"); 
         write("+ escape(document.login.username.value) + ':'");
         write("+ escape(document.login.password.value) + '@'");
-        write(format("+ '%s/%s?$%s'\r\n"
+        write(format("+ '%s/%s%%3F$%s'\r\n"
             ,system.host_name + port,html_index_file,time_stamp));
 //      writeln("alert(url);");
         writeln("location = url;");
@@ -192,13 +192,13 @@ writeln('<table align="center" width="100%"  border="0" cellspacing="0" cellpadd
         if(ftp.curlib.name==undefined) 
             writeln('<span class="tlink">FTP Server Root</span>');
         else
-    writeln('<a class="tlink" href="' + format("/%s?$%s",html_index_file,time_stamp) 
+    writeln('<a class="tlink" href="' + format("/%s%%3F$%s",html_index_file,time_stamp) 
         + '">FTP Server Root</a>');
     if(ftp.curlib.name!=undefined) {
         if(ftp.curdir.name==undefined)
             writeln('<span class="tlink">' + ftp.curlib.description + '</span>');
         else
-            writeln('<a class="tlink" href="' + format("/%s/%s?$%s",ftp.curlib.name,html_index_file,time_stamp) + '">' 
+            writeln('<a class="tlink" href="' + format("/%s/%s%%3F$%s",ftp.curlib.name,html_index_file,time_stamp) + '">' 
             + ftp.curlib.description + '</a>');
 }       
 if(ftp.curdir.name!=undefined) 
@@ -234,7 +234,7 @@ if(ftp.dir_list.length) {
     
         /* filename */
         writeln('<th class="ftp_dirlist" nowrap align="left"><a class="ftp_dirlist" href="' 
-            + ftp.dir_list[i].link + '?$' + time_stamp + '">' + ftp.dir_list[i].description + '</a></th>');
+            + ftp.dir_list[i].link + '%3F$' + time_stamp + '">' + ftp.dir_list[i].description + '</a></th>');
 
         if(ftp.curlib.name!=undefined) {
             writeln('<td class="ftp_dirlist" align="right">' + ftp.dir_list[i].size);
@@ -305,17 +305,17 @@ if(ftp.file_list.length) {
     writeln('<tr>');
 
     /* File */
-    writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s?sort=name%s$%s>File</a>'
+    writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s%%3Fsort=name%s$%s>File</a>'
         ,html_index_file
         ,(ftp.sort=="name" && !ftp.reverse) ? '&reverse':'', time_stamp) + '</th>');
 
     /* Credits or Size */
     if(ftp.curdir.settings!=undefined && !(ftp.curdir.settings&DIR_FREE))
-        writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s?sort=credits%s$%s>Credits</a>'
+        writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s%%3Fsort=credits%s$%s>Credits</a>'
             ,html_index_file
             ,(ftp.sort=="credits" && !ftp.reverse) ? '&reverse' : '', time_stamp) + '</th>');
     else
-        writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s?sort=size%s$%s>Size</a>'
+        writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s%%3Fsort=size%s$%s>Size</a>'
             ,html_index_file
             ,(ftp.sort=="size" && !ftp.reverse) ? '&reverse' : '', time_stamp) + '</th>');
 
@@ -323,22 +323,22 @@ if(ftp.file_list.length) {
     write('<th class="ftp_dirlist_hdr">Description');
     if(ftp.extended_descriptions)
         writeln(' [<a class="ftp_dirlist_hdr" href="' 
-        + format("%s?ext=off$%s",html_index_file, time_stamp) + '">short</a>]</th>');
+        + format("%s%%3Fext=off$%s",html_index_file, time_stamp) + '">short</a>]</th>');
     else
         writeln(' [<a class="ftp_dirlist_hdr" href="' 
-        + format("%s?ext=on$%s",html_index_file, time_stamp) + '">extended</a>]</th>');
+        + format("%s%%3Fext=on$%s",html_index_file, time_stamp) + '">extended</a>]</th>');
 
     /* Date/Time */
-    writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s?sort=time%s$%s>Date/Time</a>'
+    writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s%%3Fsort=time%s$%s>Date/Time</a>'
         ,html_index_file
         ,(ftp.sort=="time" && !ftp.reverse) ? '&reverse' : '', time_stamp) + '</th>');
 
     /* Uploader and Hits (downloads) */
     if(ftp.curdir.name!=undefined) {    /* not valid for aliased files in root */
-        writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s?sort=uploader%s$%s>Uploader</a>'
+        writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s%%3Fsort=uploader%s$%s>Uploader</a>'
             ,html_index_file
             ,(ftp.sort=="uploader" && !ftp.reverse) ? '&reverse' : '', time_stamp) + '</th>');
-        writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s?sort=hits%s$%s>Hits</a>'
+        writeln(format('<th class="ftp_dirlist_hdr"><a class="ftp_dirlist_hdr" href=%s%%3Fsort=hits%s$%s>Hits</a>'
             ,html_index_file
             ,(ftp.sort=="hits" && !ftp.reverse) ? '&reverse' : '', time_stamp) + '</th>');
     }
