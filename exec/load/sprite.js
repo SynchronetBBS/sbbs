@@ -459,365 +459,6 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 	this.positions = {};
 	this.index = Sprite.aerials.length;
 
-	// Only for use in this.getcmd()
-	this.canMove = function(bearing) {
-		if(	((this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
-			&&
-			(system.timer - this.lastMove < this.ini.speed * 2))
-			||
-			((this.bearing == "e" || this.bearing == "w" || this.bearing == "n" || this.bearing == "s")
-			&&
-			(system.timer - this.lastMove < this.ini.speed))
-		) {
-			return false;
-		}
-		return true;
-	}
-
-	this.move = function(direction) {
-		if(
-			(this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
-			&&
-			(system.timer - this.lastMove < this.ini.speed * 2)
-		)
-			return;
-		this.lastMove = system.timer;
-		switch(this.bearing) {
-			case "n":
-				if(direction == "forward") {
-					this.frame.move(0, -1);
-					this.y = this.y - 1;
-				} else {
-					this.frame.move(0, 1);
-					this.y++;
-				}
-				break;
-			case "ne":
-				if(direction == "forward") {
-					this.frame.move(1, -1);
-					this.x++;
-					this.y = this.y - 1;
-				} else {
-					this.frame.move(-1, 1);
-					this.x = this.x - 1;
-					this.y++;
-				}
-				break;
-			case "e":
-				if(direction == "forward") {
-					this.frame.move(1, 0);
-					this.x++;
-				} else {
-					this.frame.move(-1, 0);
-					this.x = this.x - 1;
-				}
-				break;
-			case "se":
-				if(direction == "forward") {
-					this.frame.move(1, 1);
-					this.x++;
-					this.y++;
-				} else {
-					this.frame.move(-1, -1);
-					this.x = this.x - 1;
-					this.y = this.y - 1;
-				}
-				break;
-			case "s":
-				if(direction == "forward") {
-					this.frame.move(0, 1);
-					this.y++;
-				} else {
-					this.frame.move(0, -1);
-					this.y = this.y - 1;
-				}
-				break;
-			case "sw":
-				if(direction == "forward") {
-					this.frame.move(-1, 1);
-					this.x = this.x - 1;
-					this.y++;
-				} else {
-					this.frame.move(1, -1);
-					this.x++;
-					this.y = this.y - 1;
-				}
-				break;
-			case "w":
-				if(direction == "forward") {
-					this.frame.move(-1, 0);
-					this.x = this.x - 1;
-				} else {
-					this.frame.move(1, 0);
-					this.x++;
-				}
-				break;
-			case "nw":
-				if(direction == "forward") {
-					this.frame.move(-1, -1);
-					this.x = this.x - 1;
-					this.y = this.y - 1;
-				} else {
-					this.frame.move(1, 1);
-					this.x++;
-					this.y++;
-				}
-				break;
-			default:
-				break;
-		}
-	}
-
-	this.turn = function(direction) {
-		/* locate current bearing in ini settings */
-		var b=0;
-		for(;b<this.ini.bearings.length;b++) {
-			if(this.ini.bearings[b] == this.bearing)
-				break;
-		}
-		/* increment or decrement bearing */
-		if(direction == "cw")
-			b++;
-		else if(direction == "ccw") 
-			b--;
-		if(b>=this.ini.bearings.length)
-			b=0;
-		else if(b<0)
-			b=this.ini.bearings.length-1;
-		this.bearing = this.ini.bearings[b];
-	}
-
-	this.putWeapon = function() {
-		if(!this.ini.weapon || system.timer - this.lastAttack < this.ini.attackspeed)
-			return false;
-		this.lastAttack = system.timer;
-		switch(this.bearing) {
-			case "n":
-				this.weaponCoordinates = {
-					x : parseInt(this.x + (this.frame.width / 2)),
-					y : this.y - this.ini.weaponHeight
-				}
-				break;
-			case "ne":
-				this.weaponCoordinates = {
-					x : this.x + this.frame.width,
-					y : this.y - this.ini.weaponHeight
-				}
-				break;
-			case "e":
-				this.weaponCoordinates = {
-					x : this.x + this.frame.width,
-					y : parseInt(this.y + (this.frame.height / 2))
-				}
-				break;
-			case "se":
-				this.weaponCoordinates = {
-					x : this.x + this.frame.width,
-					y : this.y + this.frame.height
-				}
-				break;
-			case "s":
-				this.weaponCoordinates = {
-					x : parseInt(this.x + (this.frame.width / 2)),
-					y : this.y + this.frame.height
-				}
-				break;
-			case "sw":
-				this.weaponCoordinates = {
-					x : this.x - this.ini.weaponWidth,
-					y : this.y + this.frame.height
-				}
-				break;
-			case "w":
-				this.weaponCoordinates = {
-					x : this.x - this.ini.weaponWidth,
-					y : parseInt(this.y + (this.frame.height / 2))
-				}
-				break;
-			case "nw":
-				this.weaponCoordinates = {
-					x : this.x - this.ini.weaponWidth,
-					y : this.y - this.ini.weaponHeight
-				}
-				break;
-			default:
-				break;
-		}
-		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > this.frame.parent.width 
-			|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > this.frame.parent.height)
-			return false;
-		var w = new Sprite.Aerial(this.ini.weapon, this.frame.parent, 
-			this.weaponCoordinates.x, this.weaponCoordinates.y, this.bearing);
-		w.owner = this;
-		w.frame.open(); // Shouldn't be necessary, but sprite doesn't appear unless I do this
-		return(w);
-	}
-
-	this.getcmd = function(userInput) {
-		switch(userInput.toUpperCase()) {
-			case KEY_LEFT:
-				if(this.ini.movement == "directional" && this.ini.bearings.indexOf("w") >= 0) {
-					if(this.bearing != "w")
-						this.turnTo("w");
-					else if(this.ini.constantmotion == 0)
-						this.move("forward");
-				} else if(this.ini.movement == "rotating") {
-					this.turn("ccw");
-					while(this.ini.bearings.indexOf(this.bearing) < 0) {
-						this.turn("ccw");
-					}
-				}
-				break;
-			case KEY_RIGHT:
-				if(this.ini.movement == "directional" && this.ini.bearings.indexOf("e") >= 0) {
-					if(this.bearing != "e")
-						this.turnTo("e");
-					else if(this.ini.constantmotion == 0)
-						this.move("forward");
-				} else if(this.ini.movement == "rotating") {
-					this.turn("cw");
-					while(this.ini.bearings.indexOf(this.bearing) < 0) {
-						this.turn("cw");
-					}
-				}
-				break;
-			case KEY_UP:
-				if(this.ini.movement == "directional" && this.ini.bearings.indexOf("n") >= 0) {
-					if(this.bearing != "n")
-						this.turnTo("n");
-					else if(this.ini.constantmotion < 1)
-						this.move("forward");
-				} else if(this.ini.movement == "rotating" && this.ini.constantmotion == 0) {
-					this.move("forward");
-				} else {
-					if(this.ini.speed > this.ini.speedmax)
-						this.ini.speed = this.ini.speed - this.ini.speedstep;
-					if(this.ini.speed <= this.ini.speedmax && this.ini.speed != 0)
-						this.ini.speed = this.ini.speedmax;
-					if(this.ini.speed == 0)
-						this.ini.speed = this.ini.speedmin;
-				}
-				break;
-			case KEY_DOWN:
-				if(this.ini.movement == "directional" && this.ini.bearings.indexOf("s") >= 0) {
-					if(this.bearing != "s")
-						this.turnTo("s");
-					else if(this.ini.constantmotion < 1)
-						this.move("forward");
-				} else if(this.ini.movement == "rotating" && this.ini.constantmotion == 0) {
-					this.move("reverse");
-				} else {
-					if(this.ini.speed >= this.ini.speedmin)
-						this.ini.speed = 0;
-					if(this.ini.speed <= this.ini.speedmin && this.ini.speed != 0)
-						this.ini.speed = this.ini.speed + this.ini.speedstep;
-				}
-				break;
-			case KEY_WEAPON:
-				this.putWeapon();
-				break;
-			default:
-				break;
-		}
-	}
-
-	this.cycle = function() {
-		var ret = false;
-		if(this.ini.constantmotion > 0 && this.ini.speed > 0 && system.timer - this.lastMove > this.ini.speed)
-			this.move("forward");
-		if(this.bearing != this.lastBearing || this.position != this.lastPosition) {
-			ret = true;
-			this.lastBearing = this.bearing;
-			this.lastPosition = this.position;
-			this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);
-		}
-		if(this.x != this.frame.x || this.y != this.frame.y) {
-			ret = true;
-			this.frame.moveTo(this.x, this.y);
-		}
-		if(
-			this.ini.range > 0
-			&&
-			(
-				this.x - this.origin.x >= this.ini.range
-				||
-				this.origin.x - this.x >= this.ini.range
-				||
-				this.y - this.origin.y >= this.ini.range / 2
-				||
-				this.origin.y - this.y >= this.ini.range / 2
-			)
-		) {
-			this.frame.close();
-			this.open = false;
-		}
-		return ret;
-	}
-
-	this.pursue = function(s) {
-		var shoot = false;
-		if(this.x >= s.x + s.frame.width && this.y >= s.y + s.frame.height && this.ini.bearings.indexOf("nw") >= 0) {
-			if(this.bearing != "nw")
-				this.turn("cw");
-			else
-				shoot = true;
-		} else if(this.x + this.frame.width <= s.x && this.y >= s.y + s.frame.height && this.ini.bearings.indexOf("ne") >= 0) {
-			if(this.bearing != "ne")
-				this.turn("cw");
-			else
-				shoot = true;
-		} else if(this.x >= s.x + s.frame.width && this.y + this.frame.height <= s.y && this.ini.bearings.indexOf("sw") >= 0) {
-			if(this.bearing != "sw")
-				this.turn("cw");
-			else
-				shoot = true;
-		} else if(this.x + this.frame.width <= s.x && this.y + this.frame.height <= s.y && this.ini.bearings.indexOf("se") >= 0) {
-			if(this.bearing != "se")
-				this.turn("cw");
-			else
-				shoot = true;
-		} else if((this.x >= s.x && this.x <= s.x + s.frame.width) && this.y >= s.y + s.frame.height) {
-			if(this.bearing != "n")
-				this.turn("cw");
-			else
-				shoot = true;
-		} else if((this.x >= s.x && this.x <= s.x + s.frame.width) && this.y + this.frame.height <= s.y) {
-			if(this.bearing != "s")
-				this.turn("cw");
-			else
-				shoot = true;
-		} else if((this.y >= s.y && this.y <= s.y + s.frame.height) && this.x >= s.x + s.frame.width) {
-			if(this.bearing != "w")
-				this.turn("cw");
-			else
-				shoot = true;
-		} else if((this.y >= s.y && this.y <= s.y + s.frame.height) && this.x + this.frame.width <= s.x) {
-			if(this.bearing != "e")
-				this.turn("cw");
-			else
-				shoot = true;
-		}
-		return shoot;
-	}
-
-	this.remove = function() {
-		this.open = false;
-		this.frame.close();	
-	}
-
-	this.moveTo = function(x, y) {
-		this.x = x;
-		this.y = y;
-		this.frame.moveTo(x, y);
-	}
-
-	this.turnTo = function(bearing) {
-		if(this.ini.bearings.indexOf(bearing) < 0)
-			return false;
-		this.bearing = bearing;
-		this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);
-	}
-
 	function init(fileName, parentFrame, x, y, bearing, position) {
 		var f = new File(fileName + ".ini");
 		f.open("r",true);
@@ -882,7 +523,356 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
 	}
 	init.apply(this,arguments);
+	
 	Sprite.aerials.push(this);
+}
+Sprite.Aerial.prototype.canMove = function(bearing) {
+	if(	((this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
+		&&
+		(system.timer - this.lastMove < this.ini.speed * 2))
+		||
+		((this.bearing == "e" || this.bearing == "w" || this.bearing == "n" || this.bearing == "s")
+		&&
+		(system.timer - this.lastMove < this.ini.speed))
+	) {
+		return false;
+	}
+	return true;
+}
+Sprite.Aerial.prototype.move = function(direction) {
+	if(
+		(this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
+		&&
+		(system.timer - this.lastMove < this.ini.speed * 2)
+	)
+		return;
+	this.lastMove = system.timer;
+	switch(this.bearing) {
+		case "n":
+			if(direction == "forward") {
+				this.frame.move(0, -1);
+				this.y = this.y - 1;
+			} else {
+				this.frame.move(0, 1);
+				this.y++;
+			}
+			break;
+		case "ne":
+			if(direction == "forward") {
+				this.frame.move(1, -1);
+				this.x++;
+				this.y = this.y - 1;
+			} else {
+				this.frame.move(-1, 1);
+				this.x = this.x - 1;
+				this.y++;
+			}
+			break;
+		case "e":
+			if(direction == "forward") {
+				this.frame.move(1, 0);
+				this.x++;
+			} else {
+				this.frame.move(-1, 0);
+				this.x = this.x - 1;
+			}
+			break;
+		case "se":
+			if(direction == "forward") {
+				this.frame.move(1, 1);
+				this.x++;
+				this.y++;
+			} else {
+				this.frame.move(-1, -1);
+				this.x = this.x - 1;
+				this.y = this.y - 1;
+			}
+			break;
+		case "s":
+			if(direction == "forward") {
+				this.frame.move(0, 1);
+				this.y++;
+			} else {
+				this.frame.move(0, -1);
+				this.y = this.y - 1;
+			}
+			break;
+		case "sw":
+			if(direction == "forward") {
+				this.frame.move(-1, 1);
+				this.x = this.x - 1;
+				this.y++;
+			} else {
+				this.frame.move(1, -1);
+				this.x++;
+				this.y = this.y - 1;
+			}
+			break;
+		case "w":
+			if(direction == "forward") {
+				this.frame.move(-1, 0);
+				this.x = this.x - 1;
+			} else {
+				this.frame.move(1, 0);
+				this.x++;
+			}
+			break;
+		case "nw":
+			if(direction == "forward") {
+				this.frame.move(-1, -1);
+				this.x = this.x - 1;
+				this.y = this.y - 1;
+			} else {
+				this.frame.move(1, 1);
+				this.x++;
+				this.y++;
+			}
+			break;
+		default:
+			break;
+	}
+}
+Sprite.Aerial.prototype.turn = function(direction) {
+	/* locate current bearing in ini settings */
+	var b=0;
+	for(;b<this.ini.bearings.length;b++) {
+		if(this.ini.bearings[b] == this.bearing)
+			break;
+	}
+	/* increment or decrement bearing */
+	if(direction == "cw")
+		b++;
+	else if(direction == "ccw") 
+		b--;
+	if(b>=this.ini.bearings.length)
+		b=0;
+	else if(b<0)
+		b=this.ini.bearings.length-1;
+	this.bearing = this.ini.bearings[b];
+}
+Sprite.Aerial.prototype.putWeapon = function() {
+	if(!this.ini.weapon || system.timer - this.lastAttack < this.ini.attackspeed)
+		return false;
+	this.lastAttack = system.timer;
+	switch(this.bearing) {
+		case "n":
+			this.weaponCoordinates = {
+				x : parseInt(this.x + (this.frame.width / 2)),
+				y : this.y - this.ini.weaponHeight
+			}
+			break;
+		case "ne":
+			this.weaponCoordinates = {
+				x : this.x + this.frame.width,
+				y : this.y - this.ini.weaponHeight
+			}
+			break;
+		case "e":
+			this.weaponCoordinates = {
+				x : this.x + this.frame.width,
+				y : parseInt(this.y + (this.frame.height / 2))
+			}
+			break;
+		case "se":
+			this.weaponCoordinates = {
+				x : this.x + this.frame.width,
+				y : this.y + this.frame.height
+			}
+			break;
+		case "s":
+			this.weaponCoordinates = {
+				x : parseInt(this.x + (this.frame.width / 2)),
+				y : this.y + this.frame.height
+			}
+			break;
+		case "sw":
+			this.weaponCoordinates = {
+				x : this.x - this.ini.weaponWidth,
+				y : this.y + this.frame.height
+			}
+			break;
+		case "w":
+			this.weaponCoordinates = {
+				x : this.x - this.ini.weaponWidth,
+				y : parseInt(this.y + (this.frame.height / 2))
+			}
+			break;
+		case "nw":
+			this.weaponCoordinates = {
+				x : this.x - this.ini.weaponWidth,
+				y : this.y - this.ini.weaponHeight
+			}
+			break;
+		default:
+			break;
+	}
+	if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > this.frame.parent.width 
+		|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > this.frame.parent.height)
+		return false;
+	var w = new Sprite.Aerial(this.ini.weapon, this.frame.parent, 
+		this.weaponCoordinates.x, this.weaponCoordinates.y, this.bearing);
+	w.owner = this;
+	w.frame.open(); // Shouldn't be necessary, but sprite doesn't appear unless I do this
+	return(w);
+}
+Sprite.Aerial.prototype.getcmd = function(userInput) {
+	switch(userInput.toUpperCase()) {
+		case KEY_LEFT:
+			if(this.ini.movement == "directional" && this.ini.bearings.indexOf("w") >= 0) {
+				if(this.bearing != "w")
+					this.turnTo("w");
+				else if(this.ini.constantmotion == 0)
+					this.move("forward");
+			} else if(this.ini.movement == "rotating") {
+				this.turn("ccw");
+				while(this.ini.bearings.indexOf(this.bearing) < 0) {
+					this.turn("ccw");
+				}
+			}
+			break;
+		case KEY_RIGHT:
+			if(this.ini.movement == "directional" && this.ini.bearings.indexOf("e") >= 0) {
+				if(this.bearing != "e")
+					this.turnTo("e");
+				else if(this.ini.constantmotion == 0)
+					this.move("forward");
+			} else if(this.ini.movement == "rotating") {
+				this.turn("cw");
+				while(this.ini.bearings.indexOf(this.bearing) < 0) {
+					this.turn("cw");
+				}
+			}
+			break;
+		case KEY_UP:
+			if(this.ini.movement == "directional" && this.ini.bearings.indexOf("n") >= 0) {
+				if(this.bearing != "n")
+					this.turnTo("n");
+				else if(this.ini.constantmotion < 1)
+					this.move("forward");
+			} else if(this.ini.movement == "rotating" && this.ini.constantmotion == 0) {
+				this.move("forward");
+			} else {
+				if(this.ini.speed > this.ini.speedmax)
+					this.ini.speed = this.ini.speed - this.ini.speedstep;
+				if(this.ini.speed <= this.ini.speedmax && this.ini.speed != 0)
+					this.ini.speed = this.ini.speedmax;
+				if(this.ini.speed == 0)
+					this.ini.speed = this.ini.speedmin;
+			}
+			break;
+		case KEY_DOWN:
+			if(this.ini.movement == "directional" && this.ini.bearings.indexOf("s") >= 0) {
+				if(this.bearing != "s")
+					this.turnTo("s");
+				else if(this.ini.constantmotion < 1)
+					this.move("forward");
+			} else if(this.ini.movement == "rotating" && this.ini.constantmotion == 0) {
+				this.move("reverse");
+			} else {
+				if(this.ini.speed >= this.ini.speedmin)
+					this.ini.speed = 0;
+				if(this.ini.speed <= this.ini.speedmin && this.ini.speed != 0)
+					this.ini.speed = this.ini.speed + this.ini.speedstep;
+			}
+			break;
+		case KEY_WEAPON:
+			this.putWeapon();
+			break;
+		default:
+			break;
+	}
+}
+Sprite.Aerial.prototype.cycle = function() {
+	var ret = false;
+	if(this.ini.constantmotion > 0 && this.ini.speed > 0 && system.timer - this.lastMove > this.ini.speed)
+		this.move("forward");
+	if(this.bearing != this.lastBearing || this.position != this.lastPosition) {
+		ret = true;
+		this.lastBearing = this.bearing;
+		this.lastPosition = this.position;
+		this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);
+	}
+	if(this.x != this.frame.x || this.y != this.frame.y) {
+		ret = true;
+		this.frame.moveTo(this.x, this.y);
+	}
+	if(
+		this.ini.range > 0
+		&&
+		(
+			this.x - this.origin.x >= this.ini.range
+			||
+			this.origin.x - this.x >= this.ini.range
+			||
+			this.y - this.origin.y >= this.ini.range / 2
+			||
+			this.origin.y - this.y >= this.ini.range / 2
+		)
+	) {
+		this.frame.close();
+		this.open = false;
+	}
+	return ret;
+}
+Sprite.Aerial.prototype.pursue = function(s) {
+	var shoot = false;
+	if(this.x >= s.x + s.frame.width && this.y >= s.y + s.frame.height && this.ini.bearings.indexOf("nw") >= 0) {
+		if(this.bearing != "nw")
+			this.turn("cw");
+		else
+			shoot = true;
+	} else if(this.x + this.frame.width <= s.x && this.y >= s.y + s.frame.height && this.ini.bearings.indexOf("ne") >= 0) {
+		if(this.bearing != "ne")
+			this.turn("cw");
+		else
+			shoot = true;
+	} else if(this.x >= s.x + s.frame.width && this.y + this.frame.height <= s.y && this.ini.bearings.indexOf("sw") >= 0) {
+		if(this.bearing != "sw")
+			this.turn("cw");
+		else
+			shoot = true;
+	} else if(this.x + this.frame.width <= s.x && this.y + this.frame.height <= s.y && this.ini.bearings.indexOf("se") >= 0) {
+		if(this.bearing != "se")
+			this.turn("cw");
+		else
+			shoot = true;
+	} else if((this.x >= s.x && this.x <= s.x + s.frame.width) && this.y >= s.y + s.frame.height) {
+		if(this.bearing != "n")
+			this.turn("cw");
+		else
+			shoot = true;
+	} else if((this.x >= s.x && this.x <= s.x + s.frame.width) && this.y + this.frame.height <= s.y) {
+		if(this.bearing != "s")
+			this.turn("cw");
+		else
+			shoot = true;
+	} else if((this.y >= s.y && this.y <= s.y + s.frame.height) && this.x >= s.x + s.frame.width) {
+		if(this.bearing != "w")
+			this.turn("cw");
+		else
+			shoot = true;
+	} else if((this.y >= s.y && this.y <= s.y + s.frame.height) && this.x + this.frame.width <= s.x) {
+		if(this.bearing != "e")
+			this.turn("cw");
+		else
+			shoot = true;
+	}
+	return shoot;
+}
+Sprite.Aerial.prototype.remove = function() {
+	this.open = false;
+	this.frame.close();	
+}
+Sprite.Aerial.prototype.moveTo = function(x, y) {
+	this.x = x;
+	this.y = y;
+	this.frame.moveTo(x, y);
+}
+Sprite.Aerial.prototype.turnTo = function(bearing) {
+	if(this.ini.bearings.indexOf(bearing) < 0)
+		return false;
+	this.bearing = bearing;
+	this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);
 }
 
 /*	Profile Sprite 
@@ -993,334 +983,6 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 	this.positions = {undefined:0};
 	this.index = Sprite.profiles.length;
 
-	this.canMove = function() {
-		var n = (this.bearing.match(/n/) !== null);
-		var s = (this.bearing.match(/s/) !== null);
-		var e = (this.bearing.match(/e/) !== null);
-		var w = (this.bearing.match(/w/) !== null);
-		var canMoveEW = true;
-		if(e)
-			var beside = Sprite.checkRight(this);
-		else if(w)
-			var beside = Sprite.checkLeft(this);
-		if(typeof beside != "undefined") {
-			for(var b = 0; b < beside.length; b++) {
-				if(!(beside[b] instanceof Sprite.Platform))
-					continue;
-				canMoveEW = false;
-				break;
-			}
-		}
-		if((n || s) && ((e || w) && canMoveEW) && system.timer - this.lastMove >= this.ini.speed * 2)
-			return true;
-		if(n || s || ((e || w) && canMoveEW) && system.timer - this.lastMove >= this.ini.speed)
-			return true;
-		return false;
-	}
-
-	this.move = function(direction, exempt) {
-
-		if(	(this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
-			&&
-			(system.timer - this.lastMove < this.ini.speed * 2)
-		)
-			return;
-		if(typeof exempt != "boolean" || !exempt)
-			this.lastMove = system.timer;
-		switch(this.bearing) {
-			case "n":
-				if(direction == "forward") {
-					this.frame.move(0, -1);
-					this.y = this.y - 1;
-				} else {
-					this.frame.move(0, 1);
-					this.y++;
-				}
-				break;
-			case "ne":
-				if(direction == "forward") {
-					this.frame.move(1, -1);
-					this.x++;
-					this.y = this.y - 1;
-				} else {
-					this.frame.move(-1, 1);
-					this.x = this.x - 1;
-					this.y++;
-				}
-				break;
-			case "e":
-				if(direction == "forward") {
-					this.frame.move(1, 0);
-					this.x++;
-				} else {
-					this.frame.move(-1, 0);
-					this.x = this.x - 1;
-				}
-				break;
-			case "se":
-				if(direction == "forward") {
-					this.frame.move(1, 1);
-					this.x++;
-					this.y++;
-				} else {
-					this.frame.move(-1, -1);
-					this.x = this.x - 1;
-					this.y = this.y - 1;
-				}
-				break;
-			case "s":
-				if(direction == "forward") {
-					this.frame.move(0, 1);
-					this.y++;
-				} else {
-					this.frame.move(0, -1);
-					this.y = this.y - 1;
-				}
-				break;
-			case "sw":
-				if(direction == "forward") {
-					this.frame.move(-1, 1);
-					this.x = this.x - 1;
-					this.y++;
-				} else {
-					this.frame.move(1, -1);
-					this.x++;
-					this.y = this.y - 1;
-				}
-				break;
-			case "w":
-				if(direction == "forward") {
-					this.frame.move(-1, 0);
-					this.x = this.x - 1;
-				} else {
-					this.frame.move(1, 0);
-					this.x++;
-				}
-				break;
-			case "nw":
-				if(direction == "forward") {
-					this.frame.move(-1, -1);
-					this.x = this.x - 1;
-					this.y = this.y - 1;
-				} else {
-					this.frame.move(1, 1);
-					this.x++;
-					this.y++;
-				}
-				break;
-			default:
-				break;
-		}
-	}
-
-	this.turn = function(direction) {
-		/* locate current bearing in ini settings */
-		var b=0;
-		for(;b<this.ini.bearings.length;b++) {
-			if(this.ini.bearings[b] == this.bearing)
-				break;
-		}
-		/* increment or decrement bearing */
-		if(direction = "cw")
-			b++;
-		else if(direction == "ccw")
-			b--;
-		if(b>=this.ini.bearings.length)
-			b=0;
-		else if(b<0)
-			b=this.ini.bearings.length-1;
-		this.bearing = this.ini.bearings[b];
-	}
-
-	this.putWeapon = function() {
-		if(!this.ini.weapon || system.timer - this.lastAttack < this.ini.attackspeed)
-			return false;
-		this.lastAttack = system.timer;
-		switch(this.bearing) {
-			case "e":
-				this.weaponCoordinates = {
-					x : this.x + this.frame.width,
-					y : parseInt(this.y + (this.frame.height / 2))
-				}
-				break;
-			case "w":
-				this.weaponCoordinates = {
-					x : this.x - this.ini.weaponWidth,
-					y : parseInt(this.y + (this.frame.height / 2))
-				}
-				break;
-			default:
-				break;
-		}
-		if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > this.frame.parent.width 
-			|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > this.frame.parent.height)
-			return false;
-		var w = new Sprite.Profile(
-			this.ini.weapon,
-			this.frame.parent,
-			this.weaponCoordinates.x,
-			this.weaponCoordinates.y,
-			this.bearing
-		);
-		w.owner = this;
-		w.frame.open();
-	}
-
-	this.getcmd = function(userInput) {
-		switch(userInput.toUpperCase()) {
-			case KEY_LEFT:
-				if(this.ini.bearings.indexOf("w") >= 0) {
-					if(this.bearing != "w")
-						this.turnTo("w");
-					else if(this.ini.constantmotion == 0 && this.canMove())
-						this.move("forward");
-				}
-				break;
-			case KEY_RIGHT:
-				if(this.ini.bearings.indexOf("e") >= 0) {
-					if(this.bearing != "e")
-						this.turnTo("e");
-					else if(this.ini.constantmotion == 0 && this.canMove())
-						this.move("forward");
-				}
-				break;
-			case KEY_UP:
-				if(this.ini.bearings.indexOf("n") >= 0) {
-					if(this.bearing != "n")
-						this.turnTo("n");
-					else if(this.ini.constantmotion == 0 && this.canMove())
-						this.move("forward");
-				} else if(this.ini.constantmotion == 1) {
-					if(this.ini.speed > this.ini.speedmax)
-						this.ini.speed = this.ini.speed - this.ini.speedstep;
-					if(this.ini.speed <= this.ini.speedmax && this.ini.speed != 0)
-						this.ini.speed = this.ini.speedmax;
-					if(this.ini.speed == 0)
-						this.ini.speed = this.ini.speedmin;
-				}
-				break;
-			case KEY_DOWN:
-				if(this.ini.bearings.indexOf("s") >= 0) {
-					if(this.bearing != "s")
-						this.turnTo("s");
-					else if(this.ini.constantmotion == 0 && this.canMove())
-						this.move("forward");
-				} else if(this.ini.constantmotion == 1) {
-					if(this.ini.speed == this.ini.speedmin)
-						this.ini.speed = 0;
-					if(this.ini.speed <= this.ini.speedmin && this.ini.speed != 0)
-						this.ini.speed = this.ini.speed + this.ini.speedstep;
-				}
-				break;
-			case KEY_JUMP:
-				this.jump();
-				break;
-			case KEY_WEAPON:
-				this.putWeapon();
-				break;
-			default:
-				break;
-		}
-	}
-
-	this.cycle = function() {
-		var ret = false;
-		if(this.ini.constantmotion > 0 && this.ini.speed > 0 && system.timer - this.lastMove > this.ini.speed)
-			this.move("forward");
-		if(this.inJump && system.timer - this.lastYMove > this.ini.speed) {
-			if(Sprite.checkAbove(this) || this.y == this.jumpStart - this.ini.jumpheight) {
-				this.inJump = false;
-				this.inFall = true;
-				if(this.positions["fall"] != undefined)
-					this.changePosition("fall");
-			} else {
-				this.y = this.y - 1;
-				this.lastYMove = system.timer;
-			}
-		}
-		if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastYMove > this.ini.speed) {
-			if(!Sprite.checkBelow(this)) {
-				this.y = this.y + 1;
-				this.lastYMove = system.timer;
-			} else if(this.inFall) {
-				this.inFall = false;
-				if(this.positions["normal"] != undefined)
-					this.changePosition("normal");
-			}
-		}
-		if(this.bearing != this.lastBearing || this.position != this.lastPosition) {
-			ret = true;
-			this.lastBearing = this.bearing;
-			this.lastPosition = this.position;
-			this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);			
-		}
-		if(this.x != this.frame.x || this.y != this.frame.y) {
-			ret = true;
-			this.frame.moveTo(this.x, this.y);
-		}
-		if(this.ini.range > 0 &&
-			(	this.x - this.origin.x >= this.ini.range
-			|| 	this.origin.x - this.x >= this.ini.range
-			|| 	this.y - this.origin.y >= this.ini.range / 2
-			|| 	this.origin.y - this.y >= this.ini.range / 2)) {
-			this.frame.close();
-			this.open = false;
-		}
-		return ret;
-	}
-
-	this.jump = function() {
-		if(this.inJump || this.inFall)
-			return;
-		this.jumpStart = this.y;
-		this.inJump = true;
-
-		if(this.positions["jump"] != undefined)
-			this.changePosition("jump");
-	}
-
-	this.pursue = function(s) {
-		var targetBearing;
-		var attack = false;
-		if(this.x > s.x + s.frame.width) 
-			targetBearing = "w";
-		else if(this.x + this.width < s.x)
-			targetBearing = "e";
-
-		if(this.bearing != targetBearing)
-			this.turnTo(targetBearing);
-		else if(s.inJump && !this.inJump)
-			this.jump();
-		//else 
-			//this.move("forward");
-		return attack;
-	}
-
-	this.remove = function() {
-		this.open = false;
-		this.frame.close();	
-	}
-
-	this.moveTo = function(x, y) {
-		this.x = x;
-		this.y = y;
-		this.frame.moveTo(x, y);
-	}
-
-	this.turnTo = function(bearing) {
-		if(this.ini.bearings.indexOf(bearing) < 0)
-			return false;
-		this.bearing = bearing;
-		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
-	}
-
-	this.changePosition = function(position) {
-		if(this.ini.positions.indexOf(position) < 0)
-			return false;
-		this.position = position;
-		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
-	}
-
 	function init(fileName, parentFrame, x, y, bearing, position) {
 		var f = new File(fileName + ".ini");
 		f.open("r",true);
@@ -1400,6 +1062,322 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 	init.apply(this,arguments);
 	Sprite.profiles.push(this);	
 }
+Sprite.Profile.prototype.canMove = function() {
+	var n = (this.bearing.match(/n/) !== null);
+	var s = (this.bearing.match(/s/) !== null);
+	var e = (this.bearing.match(/e/) !== null);
+	var w = (this.bearing.match(/w/) !== null);
+	var canMoveEW = true;
+	if(e)
+		var beside = Sprite.checkRight(this);
+	else if(w)
+		var beside = Sprite.checkLeft(this);
+	if(typeof beside != "undefined") {
+		for(var b = 0; b < beside.length; b++) {
+			if(!(beside[b] instanceof Sprite.Platform))
+				continue;
+			canMoveEW = false;
+			break;
+		}
+	}
+	if((n || s) && ((e || w) && canMoveEW) && system.timer - this.lastMove >= this.ini.speed * 2)
+		return true;
+	if(n || s || ((e || w) && canMoveEW) && system.timer - this.lastMove >= this.ini.speed)
+		return true;
+	return false;
+}
+Sprite.Profile.prototype.move = function(direction, exempt) {
+
+	if(	(this.bearing == "ne" || this.bearing == "se" || this.bearing == "sw" || this.bearing == "nw")
+		&&
+		(system.timer - this.lastMove < this.ini.speed * 2)
+	)
+		return;
+	if(typeof exempt != "boolean" || !exempt)
+		this.lastMove = system.timer;
+	switch(this.bearing) {
+		case "n":
+			if(direction == "forward") {
+				this.frame.move(0, -1);
+				this.y = this.y - 1;
+			} else {
+				this.frame.move(0, 1);
+				this.y++;
+			}
+			break;
+		case "ne":
+			if(direction == "forward") {
+				this.frame.move(1, -1);
+				this.x++;
+				this.y = this.y - 1;
+			} else {
+				this.frame.move(-1, 1);
+				this.x = this.x - 1;
+				this.y++;
+			}
+			break;
+		case "e":
+			if(direction == "forward") {
+				this.frame.move(1, 0);
+				this.x++;
+			} else {
+				this.frame.move(-1, 0);
+				this.x = this.x - 1;
+			}
+			break;
+		case "se":
+			if(direction == "forward") {
+				this.frame.move(1, 1);
+				this.x++;
+				this.y++;
+			} else {
+				this.frame.move(-1, -1);
+				this.x = this.x - 1;
+				this.y = this.y - 1;
+			}
+			break;
+		case "s":
+			if(direction == "forward") {
+				this.frame.move(0, 1);
+				this.y++;
+			} else {
+				this.frame.move(0, -1);
+				this.y = this.y - 1;
+			}
+			break;
+		case "sw":
+			if(direction == "forward") {
+				this.frame.move(-1, 1);
+				this.x = this.x - 1;
+				this.y++;
+			} else {
+				this.frame.move(1, -1);
+				this.x++;
+				this.y = this.y - 1;
+			}
+			break;
+		case "w":
+			if(direction == "forward") {
+				this.frame.move(-1, 0);
+				this.x = this.x - 1;
+			} else {
+				this.frame.move(1, 0);
+				this.x++;
+			}
+			break;
+		case "nw":
+			if(direction == "forward") {
+				this.frame.move(-1, -1);
+				this.x = this.x - 1;
+				this.y = this.y - 1;
+			} else {
+				this.frame.move(1, 1);
+				this.x++;
+				this.y++;
+			}
+			break;
+		default:
+			break;
+	}
+}
+Sprite.Profile.prototype.turn = function(direction) {
+	/* locate current bearing in ini settings */
+	var b=0;
+	for(;b<this.ini.bearings.length;b++) {
+		if(this.ini.bearings[b] == this.bearing)
+			break;
+	}
+	/* increment or decrement bearing */
+	if(direction = "cw")
+		b++;
+	else if(direction == "ccw")
+		b--;
+	if(b>=this.ini.bearings.length)
+		b=0;
+	else if(b<0)
+		b=this.ini.bearings.length-1;
+	this.bearing = this.ini.bearings[b];
+}
+Sprite.Profile.prototype.putWeapon = function() {
+	if(!this.ini.weapon || system.timer - this.lastAttack < this.ini.attackspeed)
+		return false;
+	this.lastAttack = system.timer;
+	switch(this.bearing) {
+		case "e":
+			this.weaponCoordinates = {
+				x : this.x + this.frame.width,
+				y : parseInt(this.y + (this.frame.height / 2))
+			}
+			break;
+		case "w":
+			this.weaponCoordinates = {
+				x : this.x - this.ini.weaponWidth,
+				y : parseInt(this.y + (this.frame.height / 2))
+			}
+			break;
+		default:
+			break;
+	}
+	if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > this.frame.parent.width 
+		|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > this.frame.parent.height)
+		return false;
+	var w = new Sprite.Profile(
+		this.ini.weapon,
+		this.frame.parent,
+		this.weaponCoordinates.x,
+		this.weaponCoordinates.y,
+		this.bearing
+	);
+	w.owner = this;
+	w.frame.open();
+}
+Sprite.Profile.prototype.getcmd = function(userInput) {
+	switch(userInput.toUpperCase()) {
+		case KEY_LEFT:
+			if(this.ini.bearings.indexOf("w") >= 0) {
+				if(this.bearing != "w")
+					this.turnTo("w");
+				else if(this.ini.constantmotion == 0 && this.canMove())
+					this.move("forward");
+			}
+			break;
+		case KEY_RIGHT:
+			if(this.ini.bearings.indexOf("e") >= 0) {
+				if(this.bearing != "e")
+					this.turnTo("e");
+				else if(this.ini.constantmotion == 0 && this.canMove())
+					this.move("forward");
+			}
+			break;
+		case KEY_UP:
+			if(this.ini.bearings.indexOf("n") >= 0) {
+				if(this.bearing != "n")
+					this.turnTo("n");
+				else if(this.ini.constantmotion == 0 && this.canMove())
+					this.move("forward");
+			} else if(this.ini.constantmotion == 1) {
+				if(this.ini.speed > this.ini.speedmax)
+					this.ini.speed = this.ini.speed - this.ini.speedstep;
+				if(this.ini.speed <= this.ini.speedmax && this.ini.speed != 0)
+					this.ini.speed = this.ini.speedmax;
+				if(this.ini.speed == 0)
+					this.ini.speed = this.ini.speedmin;
+			}
+			break;
+		case KEY_DOWN:
+			if(this.ini.bearings.indexOf("s") >= 0) {
+				if(this.bearing != "s")
+					this.turnTo("s");
+				else if(this.ini.constantmotion == 0 && this.canMove())
+					this.move("forward");
+			} else if(this.ini.constantmotion == 1) {
+				if(this.ini.speed == this.ini.speedmin)
+					this.ini.speed = 0;
+				if(this.ini.speed <= this.ini.speedmin && this.ini.speed != 0)
+					this.ini.speed = this.ini.speed + this.ini.speedstep;
+			}
+			break;
+		case KEY_JUMP:
+			this.jump();
+			break;
+		case KEY_WEAPON:
+			this.putWeapon();
+			break;
+		default:
+			break;
+	}
+}
+Sprite.Profile.prototype.cycle = function() {
+	var ret = false;
+	if(this.ini.constantmotion > 0 && this.ini.speed > 0 && system.timer - this.lastMove > this.ini.speed)
+		this.move("forward");
+	if(this.inJump && system.timer - this.lastYMove > this.ini.speed) {
+		if(Sprite.checkAbove(this) || this.y == this.jumpStart - this.ini.jumpheight) {
+			this.inJump = false;
+			this.inFall = true;
+			if(this.positions["fall"] != undefined)
+				this.changePosition("fall");
+		} else {
+			this.y = this.y - 1;
+			this.lastYMove = system.timer;
+		}
+	}
+	if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastYMove > this.ini.speed) {
+		if(!Sprite.checkBelow(this)) {
+			this.y = this.y + 1;
+			this.lastYMove = system.timer;
+		} else if(this.inFall) {
+			this.inFall = false;
+			if(this.positions["normal"] != undefined)
+				this.changePosition("normal");
+		}
+	}
+	if(this.bearing != this.lastBearing || this.position != this.lastPosition) {
+		ret = true;
+		this.lastBearing = this.bearing;
+		this.lastPosition = this.position;
+		this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);			
+	}
+	if(this.x != this.frame.x || this.y != this.frame.y) {
+		ret = true;
+		this.frame.moveTo(this.x, this.y);
+	}
+	if(this.ini.range > 0 &&
+		(	this.x - this.origin.x >= this.ini.range
+		|| 	this.origin.x - this.x >= this.ini.range
+		|| 	this.y - this.origin.y >= this.ini.range / 2
+		|| 	this.origin.y - this.y >= this.ini.range / 2)) {
+		this.frame.close();
+		this.open = false;
+	}
+	return ret;
+}
+Sprite.Profile.prototype.jump = function() {
+	if(this.inJump || this.inFall)
+		return;
+	this.jumpStart = this.y;
+	this.inJump = true;
+
+	if(this.positions["jump"] != undefined)
+		this.changePosition("jump");
+}
+Sprite.Profile.prototype.pursue = function(s) {
+	var targetBearing;
+	var attack = false;
+	if(this.x > s.x + s.frame.width) 
+		targetBearing = "w";
+	else if(this.x + this.width < s.x)
+		targetBearing = "e";
+
+	if(this.bearing != targetBearing)
+		this.turnTo(targetBearing);
+	else if(s.inJump && !this.inJump)
+		this.jump();
+	//else 
+		//this.move("forward");
+	return attack;
+}
+Sprite.Profile.prototype.remove = function() {
+	this.open = false;
+	this.frame.close();	
+}
+Sprite.Profile.prototype.moveTo = function(x, y) {
+	this.x = x;
+	this.y = y;
+	this.frame.moveTo(x, y);
+}
+Sprite.Profile.prototype.turnTo = function(bearing) {
+	if(this.ini.bearings.indexOf(bearing) < 0)
+		return false;
+	this.bearing = bearing;
+	this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
+}
+Sprite.Profile.prototype.changePosition = function(position) {
+	if(this.ini.positions.indexOf(position) < 0)
+		return false;
+	this.position = position;
+	this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
+}
 
 /* Platform Sprite
 
@@ -1465,147 +1443,143 @@ Sprite.Platform = function(parentFrame, x, y, width, height, ch, attr, upDown, l
 	/* push this sprite into the stack */
 	Sprite.platforms.push(this);
 
-	this.reverse = function() {
-		switch(this.bearing) {
-			case "n":
-				this.bearing = "s";
-				break;
-			case "s":
-				this.bearing = "n";
-				break;
-			case "e":
-				this.bearing = "w";
-				break;
-			case "w":
-				this.bearing = "e";
-				break;
-			case "ne":
-				this.bearing = "sw";
-				break;
-			case "se":
-				this.bearing = "nw";
-				break;
-			case "sw":
-				this.bearing = "ne";
-				break;
-			case "nw":
-				this.bearing = "se";
-				break;
-			default:
-				break;
-		}
+}
+Sprite.Platform.prototype.reverse = function() {
+	switch(this.bearing) {
+		case "n":
+			this.bearing = "s";
+			break;
+		case "s":
+			this.bearing = "n";
+			break;
+		case "e":
+			this.bearing = "w";
+			break;
+		case "w":
+			this.bearing = "e";
+			break;
+		case "ne":
+			this.bearing = "sw";
+			break;
+		case "se":
+			this.bearing = "nw";
+			break;
+		case "sw":
+			this.bearing = "ne";
+			break;
+		case "nw":
+			this.bearing = "se";
+			break;
+		default:
+			break;
 	}
+}
+Sprite.Platform.prototype.cycle = function() {
 
-	this.cycle = function() {
-
-		if((this.upDown || this.leftRight) && this.speed > 0) {
-			if(this.bearing.substr(0, 1).match(/n|s/) !== null && system.timer - this.lastMove > (this.speed * 2))
-				this.move("forward");
-			else if(system.timer - this.lastMove > this.speed)
-				this.move("forward");
-		}
-
-	}
-
-	this.remove = function() {
-		this.open = false;
-		this.frame.close();
-	}
-
-	this.move = function(direction) {
-		this.moved = true;
-		switch(this.bearing) {
-			case "n":
-				if(direction == "forward") {
-					this.frame.move(0, -1);
-					this.y--;
-				} else {
-					this.frame.move(0, 1);
-					this.y--;
-				}
-				break;
-			case "ne":
-				if(direction == "forward") {
-					this.frame.move(1, -1);
-					this.x++;
-					this.y--;
-				} else {
-					this.frame.move(-1, 1);
-					this.x--;
-					this.y++;
-				}
-				break;
-			case "e":
-				if(direction == "forward") {
-					this.frame.move(1, 0);
-					this.x++;
-				} else {
-					this.frame.move(-1, 0);
-					this.x--;
-				}
-				break;
-			case "se":
-				if(direction == "forward") {
-					this.frame.move(1, 1);
-					this.x++;
-					this.y++;
-				} else {
-					this.frame.move(-1, -1);
-					this.x--;
-					this.y--;
-				}
-				break;
-			case "s":
-				if(direction == "forward") {
-					this.frame.move(0, 1);
-					this.y++;
-				} else {
-					this.frame.move(0, -1);
-					this.y--;
-				}
-				break;
-			case "sw":
-				if(direction == "forward") {
-					this.frame.move(-1, 1);
-					this.x--;
-					this.y++;
-				} else {
-					this.frame.move(1, -1);
-					this.x++;
-					this.y--;
-				}
-				break;
-			case "w":
-				if(direction == "forward") {
-					this.frame.move(-1, 0);
-					this.x = this.x - 1;
-				} else {
-					this.frame.move(1, 0);
-					this.x++;
-				}
-				break;
-			case "nw":
-				if(direction == "forward") {
-					this.frame.move(-1, -1);
-					this.x--;
-					this.y--;
-				} else {
-					this.frame.move(1, 1);
-					this.x++;
-					this.y++;
-				}
-				break;
-			default:
-				this.moved = false;
-				break;
-		}
-		this.lastMove = system.timer;
-	}
-
-	this.moveTo = function(x, y) {
-		this.x = x;
-		this.y = y;
-		this.frame.moveTo(x, y);
+	if((this.upDown || this.leftRight) && this.speed > 0) {
+		if(this.bearing.substr(0, 1).match(/n|s/) !== null && system.timer - this.lastMove > (this.speed * 2))
+			this.move("forward");
+		else if(system.timer - this.lastMove > this.speed)
+			this.move("forward");
 	}
 
 }
+Sprite.Platform.prototype.remove = function() {
+	this.open = false;
+	this.frame.close();
+}
+Sprite.Platform.prototype.move = function(direction) {
+	this.moved = true;
+	switch(this.bearing) {
+		case "n":
+			if(direction == "forward") {
+				this.frame.move(0, -1);
+				this.y--;
+			} else {
+				this.frame.move(0, 1);
+				this.y--;
+			}
+			break;
+		case "ne":
+			if(direction == "forward") {
+				this.frame.move(1, -1);
+				this.x++;
+				this.y--;
+			} else {
+				this.frame.move(-1, 1);
+				this.x--;
+				this.y++;
+			}
+			break;
+		case "e":
+			if(direction == "forward") {
+				this.frame.move(1, 0);
+				this.x++;
+			} else {
+				this.frame.move(-1, 0);
+				this.x--;
+			}
+			break;
+		case "se":
+			if(direction == "forward") {
+				this.frame.move(1, 1);
+				this.x++;
+				this.y++;
+			} else {
+				this.frame.move(-1, -1);
+				this.x--;
+				this.y--;
+			}
+			break;
+		case "s":
+			if(direction == "forward") {
+				this.frame.move(0, 1);
+				this.y++;
+			} else {
+				this.frame.move(0, -1);
+				this.y--;
+			}
+			break;
+		case "sw":
+			if(direction == "forward") {
+				this.frame.move(-1, 1);
+				this.x--;
+				this.y++;
+			} else {
+				this.frame.move(1, -1);
+				this.x++;
+				this.y--;
+			}
+			break;
+		case "w":
+			if(direction == "forward") {
+				this.frame.move(-1, 0);
+				this.x = this.x - 1;
+			} else {
+				this.frame.move(1, 0);
+				this.x++;
+			}
+			break;
+		case "nw":
+			if(direction == "forward") {
+				this.frame.move(-1, -1);
+				this.x--;
+				this.y--;
+			} else {
+				this.frame.move(1, 1);
+				this.x++;
+				this.y++;
+			}
+			break;
+		default:
+			this.moved = false;
+			break;
+	}
+	this.lastMove = system.timer;
+}
+Sprite.Platform.prototype.moveTo = function(x, y) {
+	this.x = x;
+	this.y = y;
+	this.frame.moveTo(x, y);
+}
+
