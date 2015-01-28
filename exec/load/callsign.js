@@ -289,7 +289,7 @@ var CallSign={
 		callsign=callsign.toUpperCase();
 		if(callsign.search(/^A[A-L]/)==0)
 			return 'United States of America';
-		if(callsign.search(/^A[M-Z]/)==0)
+		if(callsign.search(/^A[M-O]/)==0)
 			return 'Spain';
 		if(callsign.search(/^A[P-S]/)==0)
 			return 'Pakistan';
