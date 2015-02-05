@@ -108,14 +108,6 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP")
-			writeln("ANSCAP\tToggle ANSI capture.");
-		if(str=="ANSCAP") {
-			bbs.sys_status^=SS_ANSCAP;
-			printf(bbs.text(ANSICaptureIsNow),bbs.sys_status&SS_ANSCAP?bbs.text(ON):bbs.text(OFF));
-			return;
-		}
-
 		if(str=="HELP") {
 			writeln("LIST <filename>");
 			writeln("\tDisplays a file.");
