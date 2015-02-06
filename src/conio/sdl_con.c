@@ -1247,7 +1247,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 						expect=sdl_keyval[i].shift;
 				}
 				else {
-					if(mod & KMOD_CAPS && (toupper(sdl_keyval[i].key) == expect=sdl_keyval[i].shift))
+					if(mod & KMOD_CAPS && (toupper(sdl_keyval[i].key) == sdl_keyval[i].shift))
 						expect=sdl_keyval[i].shift;
 					else
 						expect=sdl_keyval[i].key;
