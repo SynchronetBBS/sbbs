@@ -35,6 +35,7 @@ struct sdlfuncs {
 	void	(*KillThread)	(SDL_Thread *thread);
 	void	(*WaitThread)	(SDL_Thread *thread, int *status);
 	int	(*WaitEvent)	(SDL_Event *event);
+	int	(*PollEvent)	(SDL_Event *event);
 	SDL_Surface	*(*SetVideoMode)	(int width, int height, int bpp, Uint32 flags);
 	void	(*FreeSurface)	(SDL_Surface *surface);
 	void	(*WM_SetCaption)	(const char *title, const char *icon);

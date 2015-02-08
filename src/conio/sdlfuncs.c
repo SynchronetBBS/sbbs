@@ -151,6 +151,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->PollEvent=xp_dlsym(sdl_dll, SDL_PollEvent))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
 	if((sdlf->SetVideoMode=xp_dlsym(sdl_dll, SDL_SetVideoMode))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
