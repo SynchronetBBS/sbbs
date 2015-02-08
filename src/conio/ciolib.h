@@ -238,7 +238,7 @@ struct conio_font_data_struct {
 
 CIOLIBEXPORTVAR struct conio_font_data_struct conio_fontdata[257];
 
-#define CONIO_FIRST_FREE_FONT	41
+#define CONIO_FIRST_FREE_FONT	43
 
 typedef struct {
 	int		mode;
