@@ -81,11 +81,10 @@ struct yuv_settings {
 	int			changed;
 	int			best_format;
 	SDL_Overlay	*overlay;
-	SDL_mutex	*mutex;
 	Uint8		colours[sizeof(dac_default)/sizeof(struct dac_colors)][3];
 };
 
-static struct yuv_settings yuv={0,0,0,0,0,0,0,NULL,NULL};
+static struct yuv_settings yuv={0,0,0,0,0,0,0,NULL};
 
 struct sdl_keyvals {
 	int	keysym
@@ -857,10 +856,8 @@ void setup_surfaces(void)
 			}
 		}
 		if(yuv.enabled) {
-			if(yuv.overlay) {
-				sdl.mutexV(yuv.mutex);
+			if(yuv.overlay)
 				sdl.FreeYUVOverlay(yuv.overlay);
-			}
 			if(yuv.best_format==0) {
 				yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YV12_OVERLAY, win);
 				if(yuv.overlay)
@@ -897,11 +894,11 @@ void setup_surfaces(void)
 					sdl.FreeYUVOverlay(yuv.overlay);
 			}
 			yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, yuv.best_format, win);
-			sdl.mutexP(yuv.mutex);
 			sdl_setup_yuv_colours();
 		}
 		sdl_setup_colours(new_rect);
 		sdl_setup_colours(win);
+		force_redraws++;
 	}
 	else if(sdl_init_good) {
 		ev.type=SDL_QUIT;
@@ -920,7 +917,6 @@ void sdl_add_key(unsigned int keyval)
 		else
 			cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		setup_surfaces();
-		force_redraws++;
 		return;
 	}
 	if(keyval <= 0xffff) {
@@ -1484,7 +1480,6 @@ int sdl_video_event_thread(void *data)
 								pthread_mutex_unlock(&vstatlock);
 							}
 							setup_surfaces();
-							force_redraws++;
 						}
 						break;
 					case SDL_VIDEOEXPOSE:
@@ -1555,8 +1550,8 @@ int sdl_video_event_thread(void *data)
 									}
 									free(rect->data);
 									free(rect);
-									break;
 								}
+								break;
 							case SDL_USEREVENT_FLUSH:
 								if(win && new_rect) {
 									if(yuv.enabled) {
@@ -1568,9 +1563,7 @@ int sdl_video_event_thread(void *data)
 											dstrect.h=win->h;
 											dstrect.x=0;
 											dstrect.y=0;
-											sdl.mutexV(yuv.mutex);
 											sdl.DisplayYUVOverlay(yuv.overlay, &dstrect);
-											sdl.mutexP(yuv.mutex);
 										}
 									}
 									else {
@@ -1621,7 +1614,6 @@ int sdl_video_event_thread(void *data)
 									}
 								}
 								setup_surfaces();
-								force_redraws++;
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);
 								break;
@@ -1852,7 +1844,6 @@ int sdl_initciolib(int mode)
 	sdl_copybuf_mutex=sdl.SDL_CreateMutex();
 #endif
 	funcret_mutex=sdl.SDL_CreateMutex();
-	yuv.mutex=sdl.SDL_CreateMutex();
 	run_sdl_drawing_thread(sdl_video_event_thread, exit_sdl_con);
 	return(sdl_init(mode));
 }
