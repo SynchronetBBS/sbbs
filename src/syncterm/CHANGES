@@ -1,3 +1,12 @@
+Version 1.0
+-----------
+Add Topaz Plus and Micro Knight Plus Amiga fonts
+Fix Function keys with Caps Lock in SDL mode
+Windows console mode resize fixes
+SSH stability fixes
+Paginate help output
+Statically link Cryptlib
+
 Version 0.9.5
 -------------
 Fix handling of ESC[m
