@@ -838,6 +838,17 @@ void setup_surfaces(void)
 	else
 		win=sdl.SetVideoMode(char_width,char_height,8,flags);
 
+	if(sdl_x11available && sdl_using_x11) {
+		XEvent respond;
+		SDL_SysWMinfo	wmi;
+		SDL_VERSION(&(wmi.version));
+		sdl.GetWMInfo(&wmi);
+		respond.type=ConfigureNotify;
+		respond.xconfigure.height = win->h;
+		respond.xconfigure.width = win->w;
+		sdl_x11.XSendEvent(wmi.info.x11.display,wmi.info.x11.window,0,0,&respond);
+	}
+
 	if(win!=NULL) {
 		if(new_rect)
 			sdl.FreeSurface(new_rect);
