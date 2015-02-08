@@ -332,10 +332,10 @@ CSI [ p1 [ ; p2 ] ] sp D
 		36 - Atari
 		37 - P0T NOoDLE (Amiga) 
 		38 - mO'sOul (Amiga)    
-		39 - MicroKnight (Amiga)
-		40 - Topaz (Amiga)      
-		41 - MicroKnight Plus (Amiga)
-		42 - Topaz Plus (Amiga)      
+		39 - MicroKnight Plus (Amiga)
+		40 - Topaz Plus (Amiga)      
+		41 - MicroKnight (Amiga)
+		42 - Topaz (Amiga)      
 	Not all fonts are supported in all modes.  If a font is not supported in
 	the current mode, no action is taken.
 
