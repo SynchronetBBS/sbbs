@@ -1512,7 +1512,7 @@ int sdl_video_event_thread(void *data)
 									SDL_Rect r;
 									int x,y,offset;
 
-									if(!win || !upd_rects) {
+									if(!win) {
 										free(rect->data);
 										free(rect);
 										break;
@@ -1531,6 +1531,11 @@ int sdl_video_event_thread(void *data)
 										}
 									}
 									if(!yuv.enabled) {
+										if (!upd_rects) {
+											free(rect->data);
+											free(rect);
+											break;
+										}
 										upd_rects[rectsused].x=rect->x*vstat.scaling;
 										upd_rects[rectsused].y=rect->y*vstat.scaling;
 										upd_rects[rectsused].w=rect->width*vstat.scaling;
