@@ -1934,8 +1934,14 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				}
 				else
    	       			bp=telnet_expand(buf, rd, output_buf, output_len);
-			} else			/* LF to CRLF expansion */
+			} else if (!(mode & EX_STDIO)) {
+				/* LF to CRLF expansion */
 				bp=lf_expand(buf, rd, output_buf, output_len);
+			}
+			else {
+				bp=buf;
+				output_len=rd;
+			}
 
 			/* Did expansion overrun the output buffer? */
 			if(output_len>sizeof(output_buf)) {
@@ -2257,7 +2263,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                     break;
                 case 'I':   /* IP address */
 					if(user!=NULL)
-						strcat(cmd,user->note);
+						strcat(cmd,user->ipaddr);
                     break;
                 case 'J':
                     strcat(cmd,cfg->data_dir);
