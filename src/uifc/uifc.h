@@ -278,6 +278,60 @@ typedef struct {
 } win_t;
 
 typedef struct {
+	char	background;
+	char	help_char;
+	char	close_char;
+	char	up_arrow;
+	char	down_arrow;
+	char	button_left;
+	char	button_right;
+
+	char	list_top_left;
+	char	list_top;
+	char	list_top_right;
+	char	list_separator_left;
+	char	list_separator_right;
+	char	list_horizontal_separator;
+	char	list_left;
+	char	list_right;
+	char	list_bottom_left;
+	char	list_bottom_right;
+	char	list_bottom;
+	char	list_scrollbar_separator;
+
+	char	input_top_left;
+	char	input_top;
+	char	input_top_right;
+	char	input_left;
+	char	input_right;
+	char	input_bottom_left;
+	char	input_bottom_right;
+	char	input_bottom;
+
+	char	popup_top_left;
+	char	popup_top;
+	char	popup_top_right;
+	char	popup_left;
+	char	popup_right;
+	char	popup_bottom_left;
+	char	popup_bottom_right;
+	char	popup_bottom;
+
+	char	help_top_left;
+	char	help_top;
+	char	help_top_right;
+	char	help_left;
+	char	help_right;
+	char	help_bottom_left;
+	char	help_bottom_right;
+	char	help_bottom;
+	char	help_titlebreak_left;
+	char	help_titlebreak_right;
+	char	help_hitanykey_left;
+	char	help_hitanykey_right;
+} uifc_graphics_t;
+
+typedef struct {
 /****************************************************************************/
 /* Size of the structure (for version compatibility verification).			*/
 /****************************************************************************/
@@ -341,6 +395,11 @@ typedef struct {
 /* Have we initialized successfully?										*/
 /****************************************************************************/
 	BOOL	initialized;
+
+/****************************************************************************/
+/* Custom drawing characters												*/
+/****************************************************************************/
+	uifc_graphics_t	*chars;
 
 /****************************************************************************/
 /* Exit/uninitialize function.												*/
