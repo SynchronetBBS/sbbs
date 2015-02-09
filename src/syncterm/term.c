@@ -172,6 +172,7 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	now=time(NULL);
 	if(now==lastupd && speed==oldspeed)
 		return;
+	ciolib_xlat = TRUE;
 	lastupd=now;
 	oldspeed=speed;
 	timeon=now - bbs->connected;
@@ -226,6 +227,7 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
 	gotoxy(txtinfo.curx,txtinfo.cury);
 	hold_update=olddmc;
+	ciolib_xlat = FALSE;
 }
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
