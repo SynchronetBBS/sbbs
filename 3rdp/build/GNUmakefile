@@ -79,14 +79,14 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)b
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-tls-psk-userfix.patch
 	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-vcxproj.patch
 ifeq ($(CC),mingw32-gcc)
-	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make directories
-	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make toolscripts
-	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make MINGW32_NT-6.1 OSNAME=win32
+	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
+	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts
+	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make MINGW32_NT-6.1 OSNAME=win32
 else
 ifdef MINGW32
-	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make target-mingw
+	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make target-mingw
 else
-	$(QUIET)cd $(CRYPT_SRC) && env - PATH=$(PATH) CC=$(CC) AR=$(AR) RANLIB=$(RANLIB) make
+	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make
 endif
 endif
 	$(QUIET)cp $(CRYPT_SRC)$(DIRSEP)libcl.a $(CRYPT_IDIR)
