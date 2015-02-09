@@ -175,6 +175,7 @@ int sortorder[sizeof(sort_order)/sizeof(struct sort_order_info)];
 char *sort_orders[]={"Entry Name","Address","Connection Type","Port","Date Added","Date Last Connected"};
 
 char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128 (40col)", "C128 (80col)", "Atari", "Atari XEP80", NULL};
+char *screen_modes_enum[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128-40col", "C128-80col", "Atari", "Atari-XEP80", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 char *log_level_desc[]={"None", "Alerts", "Critical Errors", "Errors", "Warnings", "Notices", "Normal", "All (Debug)", NULL};
 
@@ -267,33 +268,11 @@ void viewofflinescroll(void)
 				,(sbtxtinfo.screenwidth-scrollback_cols)/2+scrollback_cols
 				,sbtxtinfo.screenheight
 				,scrollback_buf+(scrollback_cols*2*top));
-		switch(ciolib_to_screen(scrollback_mode)) {
-		case SCREEN_MODE_ATARI:
-		case SCREEN_MODE_ATARI_XEP80:
-			cputs("3crollback");
-			break;
-		case SCREEN_MODE_C64:
-		case SCREEN_MODE_C128_40:
-		case SCREEN_MODE_C128_80:
-			cputs("SCROLLBACK");
-			break;
-		default:
-			cputs("Scrollback");
-		}
+		ciolib_xlat=TRUE;
+		cputs("Scrollback");
 		gotoxy(scrollback_cols-9,1);
-		switch(ciolib_to_screen(scrollback_mode)) {
-		case SCREEN_MODE_ATARI:
-		case SCREEN_MODE_ATARI_XEP80:
-			cputs("3crollback");
-			break;
-		case SCREEN_MODE_C64:
-		case SCREEN_MODE_C128_40:
-		case SCREEN_MODE_C128_80:
-			cputs("SCROLLBACK");
-			break;
-		default:
-			cputs("Scrollback");
-		}
+		cputs("Scrollback");
+		ciolib_xlat=FALSE;
 		gotoxy(1,1);
 		key=getch();
 		switch(key) {
@@ -632,7 +611,7 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
 	}
 	section=iniGetSection(listfile,bbsname);
 	iniGetString(section,NULL,"Address","",entry->addr);
-	entry->conn_type=iniGetEnum(section,NULL,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
+	entry->conn_type=iniGetEnum(section,NULL,"ConnectionType",conn_types_enum,CONN_TYPE_RLOGIN);
 	entry->port=iniGetShortInt(section,NULL,"Port",conn_ports[entry->conn_type]);
 	entry->added=iniGetDateTime(section,NULL,"Added",0);
 	entry->connected=iniGetDateTime(section,NULL,"LastConnected",0);
@@ -642,7 +621,7 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
 	iniGetString(section,NULL,"SystemPassword","",entry->syspass);
 	if(iniGetBool(section,NULL,"BeDumb",FALSE))	/* Legacy */
 		entry->conn_type=CONN_TYPE_RAW;
-	entry->screen_mode=iniGetEnum(section,NULL,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
+	entry->screen_mode=iniGetEnum(section,NULL,"ScreenMode",screen_modes_enum,SCREEN_MODE_CURRENT);
 	entry->nostatus=iniGetBool(section,NULL,"NoStatus",FALSE);
 	iniGetString(section,NULL,"DownloadPath",home,entry->dldir);
 	iniGetString(section,NULL,"UploadPath",home,entry->uldir);
@@ -949,7 +928,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						break;
 					default:
 						item->conn_type++;
-						iniSetEnum(&inifile,itemname,"ConnectionType",conn_types,item->conn_type,&ini_style);
+						iniSetEnum(&inifile,itemname,"ConnectionType",conn_types_enum,item->conn_type,&ini_style);
 
 						if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL
 #ifdef __unix__
@@ -977,7 +956,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						item->screen_mode=i;
 						break;
 					default:
-						iniSetEnum(&inifile,itemname,"ScreenMode",screen_modes,item->screen_mode,&ini_style);
+						iniSetEnum(&inifile,itemname,"ScreenMode",screen_modes_enum,item->screen_mode,&ini_style);
 						if(item->screen_mode == SCREEN_MODE_C64) {
 							strcpy(item->font,font_names[33]);
 							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
@@ -1157,8 +1136,8 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetString(&inifile,bbs->name,"UserName",bbs->user,&ini_style);
 	iniSetString(&inifile,bbs->name,"Password",bbs->password,&ini_style);
 	iniSetString(&inifile,bbs->name,"SystemPassword",bbs->syspass,&ini_style);
-	iniSetEnum(&inifile,bbs->name,"ConnectionType",conn_types,bbs->conn_type,&ini_style);
-	iniSetEnum(&inifile,bbs->name,"ScreenMode",screen_modes,bbs->screen_mode,&ini_style);
+	iniSetEnum(&inifile,bbs->name,"ConnectionType",conn_types_enum,bbs->conn_type,&ini_style);
+	iniSetEnum(&inifile,bbs->name,"ScreenMode",screen_modes_enum,bbs->screen_mode,&ini_style);
 	iniSetBool(&inifile,bbs->name,"NoStatus",bbs->nostatus,&ini_style);
 	iniSetString(&inifile,bbs->name,"DownloadPath",bbs->dldir,&ini_style);
 	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,&ini_style);
@@ -1282,7 +1261,7 @@ void change_settings(void)
 						continue;
 					default:
 						settings.startup_mode=j;
-						iniSetEnum(&inicontents,"SyncTERM","ScreenMode",screen_modes,settings.startup_mode,&ini_style);
+						iniSetEnum(&inicontents,"SyncTERM","ScreenMode",screen_modes_enum,settings.startup_mode,&ini_style);
 						break;
 				}
 				break;

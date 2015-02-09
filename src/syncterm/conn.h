@@ -11,6 +11,7 @@
 #include "bbslist.h"
 
 extern char *conn_types[];
+extern char *conn_types_enum[];
 extern short unsigned int conn_ports[];
 
 enum {
