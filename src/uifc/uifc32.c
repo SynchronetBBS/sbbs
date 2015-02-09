@@ -103,7 +103,7 @@ static void reset_dynamic(void) {
 	save_menu_opts=-1;
 }
 
-static uifc_graphics_t default_chars = {
+static uifc_graphics_t cp437_chars = {
 	.background=0xb0,
 	.help_char='?',
 	.close_char=0xfe,
@@ -155,6 +155,60 @@ static uifc_graphics_t default_chars = {
 	.help_titlebreak_right=0xc3,
 	.help_hitanykey_left=0xb4,
 	.help_hitanykey_right=0xc3,
+};
+
+static uifc_graphics_t ascii_chars = {
+	.background='#',
+	.help_char='?',
+	.close_char='X',
+	.up_arrow='^',
+	.down_arrow='V',
+	.button_left='[',
+	.button_right=']',
+
+	.list_top_left='+',
+	.list_top='-',
+	.list_top_right='+',
+	.list_separator_left='+',
+	.list_separator_right='+',
+	.list_horizontal_separator='-',
+	.list_left='|',
+	.list_right='|',
+	.list_bottom_left='+',
+	.list_bottom_right='+',
+	.list_bottom='-',
+	.list_scrollbar_separator='|',
+
+	.input_top_left='+',
+	.input_top='-',
+	.input_top_right='+',
+	.input_left='|',
+	.input_right='|',
+	.input_bottom_left='+',
+	.input_bottom_right='+',
+	.input_bottom='-',
+
+	.popup_top_left='+',
+	.popup_top='-',
+	.popup_top_right='+',
+	.popup_left='|',
+	.popup_right='|',
+	.popup_bottom_left='+',
+	.popup_bottom_right='+',
+	.popup_bottom='-',
+
+	.help_top_left='+',
+	.help_top='-',
+	.help_top_right='+',
+	.help_left='|',
+	.help_right='|',
+	.help_bottom_left='+',
+	.help_bottom_right='+',
+	.help_bottom='-',
+	.help_titlebreak_left='|',
+	.help_titlebreak_right='|',
+	.help_hitanykey_left='|',
+	.help_hitanykey_right='|',
 };
 
 /****************************************************************************/
@@ -209,8 +263,25 @@ int UIFCCALL uifcini32(uifcapi_t* uifcapi)
         return(-1);
 
     api=uifcapi;
-    if (api->chars == NULL)
-		api->chars = &default_chars;
+    if (api->chars == NULL) {
+		switch(getfont()) {
+			case 0:
+			case 17:
+			case 18:
+			case 19:
+			case 25:
+			case 26:
+			case 27:
+			case 28:
+			case 29:
+			case 31:
+				api->chars = &cp437_chars;
+				break;
+			default:
+				api->chars = &ascii_chars;
+				break;
+		}
+	}
 
     /* install function handlers */
     api->bail=uifcbail;
