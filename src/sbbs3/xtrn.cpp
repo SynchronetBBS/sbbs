@@ -1934,7 +1934,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				}
 				else
    	       			bp=telnet_expand(buf, rd, output_buf, output_len);
-			} else if (!(mode & EX_STDIO)) {
+			} else if ((mode & EX_STDIO) != EX_STDIO) {
 				/* LF to CRLF expansion */
 				bp=lf_expand(buf, rd, output_buf, output_len);
 			}
