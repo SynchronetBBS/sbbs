@@ -230,10 +230,11 @@ struct mouse_event {
 };
 
 struct conio_font_data_struct {
-        char *eight_by_sixteen;
-        char *eight_by_fourteen;
-        char *eight_by_eight;
-        char *desc;
+        char 	*eight_by_sixteen;
+        char 	*eight_by_fourteen;
+        char 	*eight_by_eight;
+        char	*put_xlat;
+        char 	*desc;
 };
 
 CIOLIBEXPORTVAR struct conio_font_data_struct conio_fontdata[257];
@@ -305,6 +306,7 @@ CIOLIBEXPORTVAR int _wscroll;
 CIOLIBEXPORTVAR int directvideo;
 CIOLIBEXPORTVAR int hold_update;
 CIOLIBEXPORTVAR int puttext_can_move;
+CIOLIBEXPORTVAR int ciolib_xlat;
 
 #define _conio_kbhit()		kbhit()
 
