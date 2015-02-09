@@ -838,6 +838,7 @@ void setup_surfaces(void)
 	else
 		win=sdl.SetVideoMode(char_width,char_height,8,flags);
 
+#if !defined(NO_X) && defined(__unix__)
 	if(sdl_x11available && sdl_using_x11) {
 		XEvent respond;
 		SDL_SysWMinfo	wmi;
@@ -848,6 +849,7 @@ void setup_surfaces(void)
 		respond.xconfigure.width = win->w;
 		sdl_x11.XSendEvent(wmi.info.x11.display,wmi.info.x11.window,0,0,&respond);
 	}
+#endif
 
 	if(win!=NULL) {
 		if(new_rect)
