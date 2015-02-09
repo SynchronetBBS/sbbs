@@ -13,26 +13,11 @@ int drawwin(void)
 	char	*p;
 	char	str[32];
 	int		x,y,c;
+	int		old_xlat;
 
     gettextinfo(&txtinfo);
 
-#if 0
-	switch(ciolib_to_screen(txtinfo.currmode)) {
-		case SCREEN_MODE_ATARI:
-		case SCREEN_MODE_ATARI_XEP80:
-			strcpy(str,"3ync4%2- ");
-			break;
-		case SCREEN_MODE_C64:
-		case SCREEN_MODE_C128_40:
-		case SCREEN_MODE_C128_80:
-			strcpy(str,"SYNCTERM ");
-			break;
-		default:
-			strcpy(str,"SyncTERM ");
-	}
-#else
 	strcpy(str,"         ");
-#endif
 
 	if(txtinfo.screenwidth < 80)
 		term.width=40;
@@ -73,6 +58,9 @@ int drawwin(void)
 			winbuf[c++]=YELLOW|(BLUE<<4);
 		}
 	}
+	old_xlat = ciolib_xlat;
+	ciolib_xlat = TRUE;
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,winbuf);
+	ciolib_xlat = old_xlat;
 	return(0);
 }
