@@ -352,6 +352,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	else {
 		SAFECOPY(cmsk,msk);
 	}
+	sprintf(cfile,"%s%s",cpath,cmsk);
 	listwidth=SCRN_RIGHT-SCRN_LEFT+1;
 	listwidth-=listwidth%2;
 	listwidth-=3;
