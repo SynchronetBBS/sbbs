@@ -1,6 +1,12 @@
 Version 1.0
 -----------
-Add Topaz Plus and Micro Knight Plus Amiga fonts
+Properly save/restor the RLogin Reversed connection mode
+Properly save/restore the C128 (80col) and Atari XEP80 modes
+Fix separator character in status bar with fonts that don't support lines
+No longer switch font to CP437 when displaying menus
+Workaround SDL bug when resizing on X11
+Fix the "black window" Overlay issue
+Add Topaz and Micro Knight (non-Plus) Amiga fonts
 Fix Function keys with Caps Lock in SDL mode
 Windows console mode resize fixes
 SSH stability fixes
