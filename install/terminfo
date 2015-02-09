@@ -26,4 +26,5 @@ ansi-bbs,
 	kpp=\E[V, nel=^M^J, op=\E[m, rc=\E[u, rev=\E[7m, 
 	rs1=\E[m\E[2J\E[H, sc=\E[s, setab=\E[4%p1%dm, 
 	setaf=\E[3%p1%dm, sgr0=\E[m, smul=\E[4m, 
-	sgr=\E[0%?%p1%p6%|%t;1%;%?%p1%p3%|%t;7%;%?%p7%|%t;8%;m
+	sgr=\E[0%?%p1%p6%|%t;1%;%?%p1%p3%|%t;7%;%?%p7%|%t;8%;m,
+
