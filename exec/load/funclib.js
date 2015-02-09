@@ -9,6 +9,9 @@ function getColorExpression(colour)
 		load("sbbsdefs.js");
 	var ret = '';
 
+	if (colour & BLINK)
+		ret += 'BLINK|';
+
 	switch(colour & (0x07<<4)) {
 		case BG_BLACK:
 			ret+="BG_BLACK";
