@@ -168,7 +168,24 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	static int lastupd=0;
 	static int oldspeed=0;
 	int	timeon;
+	char sep;
 
+	switch(getfont()) {
+			case 0:
+			case 17:
+			case 18:
+			case 19:
+			case 25:
+			case 26:
+			case 27:
+			case 28:
+			case 29:
+			case 31:
+				sep = 0xb3;
+				break;
+			default:
+				sep = '|';
+	}
 	now=time(NULL);
 	if(now==lastupd && speed==oldspeed)
 		return;
@@ -209,15 +226,15 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 		case CIOLIB_MODE_CURSES_IBM:
 		case CIOLIB_MODE_ANSI:
 			if(timeon>359999)
-				cprintf(" %-29.29s \263 %-6.6s \263 Connected: Too Long \263 CTRL-S for menu ",nbuf,conn_types[bbs->conn_type]);
+				cprintf(" %-29.29s %c %-6.6s %c Connected: Too Long %c CTRL-S for menu ",nbuf,sep,conn_types[bbs->conn_type],sep,sep);
 			else
-				cprintf(" %-29.29s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 CTRL-S for menu ",nbuf,conn_types[bbs->conn_type],timeon/3600,(timeon/60)%60,timeon%60);
+				cprintf(" %-29.29s %c %-6.6s %c Connected: %02d:%02d:%02d %c CTRL-S for menu ",nbuf,sep,conn_types[bbs->conn_type],sep,timeon/3600,(timeon/60)%60,timeon%60,sep);
 			break;
 		default:
 			if(timeon>359999)
-				cprintf(" %-30.30s \263 %-6.6s \263 Connected: Too Long \263 "ALT_KEY_NAME3CH"-Z for menu ",nbuf,conn_types[bbs->conn_type]);
+				cprintf(" %-30.30s %c %-6.6s %c Connected: Too Long %c "ALT_KEY_NAME3CH"-Z for menu ",nbuf,sep,conn_types[bbs->conn_type],sep,sep);
 			else
-				cprintf(" %-30.30s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 "ALT_KEY_NAME3CH"-Z for menu ",nbuf,conn_types[bbs->conn_type],timeon/3600,(timeon/60)%60,timeon%60);
+				cprintf(" %-30.30s %c %-6.6s %c Connected: %02d:%02d:%02d %c "ALT_KEY_NAME3CH"-Z for menu ",nbuf,sep,conn_types[bbs->conn_type],sep,timeon/3600,(timeon/60)%60,timeon%60,sep);
 			break; /*    1+29     +3    +6    +3    +11        +3+3+2        +3    +6    +4  +5 */
 	}
 	if(wherex()>=80)
