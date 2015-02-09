@@ -3,6 +3,92 @@
 	by MCMLXXIX 
 */
 
+function getColorExpression(colour)
+{
+	if (js.global.BG_BLACK==undefined)
+		load("sbbsdefs.js");
+	var ret = '';
+
+	switch(colour & (0x07<<4)) {
+		case BG_BLACK:
+			ret+="BG_BLACK";
+			break;
+		case BG_BLUE:
+			ret+="BG_BLUE";
+			break;
+		case BG_GREEN:
+			ret+="BG_GREEN";
+			break;
+		case BG_CYAN:
+			ret+="BG_CYAN";
+			break;
+		case BG_RED:
+			ret+="BG_RED";
+			break;
+		case BG_MAGENTA:
+			ret+="BG_MAGENTA";
+			break;
+		case BG_BROWN:
+			ret+="BG_BROWN";
+			break;
+		case BG_LIGHTGRAY:
+			ret+="BG_LIGHTGRAY";
+			break;
+	}
+	ret += '|';
+	switch(colour & 0x0f) {
+		case BLACK:
+			ret+="BLACK";
+			break;
+		case BLUE:
+			ret+="BLUE";
+			break;
+		case GREEN:
+			ret+="GREEN";
+			break;
+		case CYAN:
+			ret+="CYAN";
+			break;
+		case RED:
+			ret+="RED";
+			break;
+		case MAGENTA:
+			ret+="MAGENTA";
+			break;
+		case BROWN:
+			ret+="BROWN";
+			break;
+		case LIGHTGRAY:
+			ret+="LIGHTGRAY";
+			break;
+		case DARKGRAY:
+			ret+="DARKGRAY";
+			break;
+		case LIGHTBLUE:
+			ret+="LIGHTBLUE";
+			break;
+		case LIGHTGREEN:
+			ret+="LIGHTGREEN";
+			break;
+		case LIGHTCYAN:
+			ret+="LIGHTCYAN";
+			break;
+		case LIGHTRED:
+			ret+="LIGHTRED";
+			break;
+		case LIGHTMAGENTA:
+			ret+="LIGHTMAGENTA";
+			break;
+		case YELLOW:
+			ret+="YELLOW";
+			break;
+		case WHITE:
+			ret+="WHITE";
+			break;
+	}
+	return ret;
+}
+
 function getColor(color)
 {
 	if(isNaN(color)) color=color.toUpperCase();
