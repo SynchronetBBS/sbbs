@@ -2263,7 +2263,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                     break;
                 case 'I':   /* IP address */
 					if(user!=NULL)
-						strcat(cmd,user->ipaddr);
+						strcat(cmd,user->note);
                     break;
                 case 'J':
                     strcat(cmd,cfg->data_dir);
