@@ -169,6 +169,7 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	static int oldspeed=0;
 	int	timeon;
 	char sep;
+	int old_xlat = ciolib_xlat;
 
 	switch(getfont()) {
 			case 0:
@@ -244,7 +245,7 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
 	gotoxy(txtinfo.curx,txtinfo.cury);
 	hold_update=olddmc;
-	ciolib_xlat = FALSE;
+	ciolib_xlat = old_xlat;
 }
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
@@ -1896,6 +1897,7 @@ void font_control(struct bbslist *bbs)
 	char *buf;
 	struct	text_info txtinfo;
 	int i,j,k;
+	int enable_xlat = 0;
 
 	if(safe_mode)
 		return;
@@ -1927,12 +1929,18 @@ void font_control(struct bbslist *bbs)
 						loadfont(fpick.selected[0]);
 					filepick_free(&fpick);
 				}
-				else
+				else {
 					setfont(i,FALSE,1);
+					if (i >=32 && i<= 35 && cterm->emulation != CTERM_EMULATION_PETASCII)
+						enable_xlat = TRUE;
+					if (i==36 && cterm->emulation != CTERM_EMULATION_ATASCII)
+						enable_xlat = TRUE;
+				}
 			}
 		break;
 	}
 	uifcbail();
+	ciolib_xlat = enable_xlat;
 	setup_mouse_events();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);

@@ -19,6 +19,7 @@ static int uifc_initialized=0;
 #define WITH_BOT	(1<<2)
 
 static void (*bottomfunc)(int);
+int orig_ciolib_xlat;
 
 int	init_uifc(BOOL scrn, BOOL bottom) {
 	int	i;
@@ -29,6 +30,7 @@ int	init_uifc(BOOL scrn, BOOL bottom) {
 	if(!uifc_initialized) {
 		/* Set scrn_len to 0 to prevent textmode() call */
 		uifc.scrn_len=0;
+		orig_ciolib_xlat = ciolib_xlat;
 		ciolib_xlat = TRUE;
 		uifc.chars = NULL;
 		if((i=uifcini32(&uifc))!=0) {
@@ -72,7 +74,7 @@ void uifcbail(void)
 {
 	if(uifc_initialized) {
 		uifc.bail();
-		ciolib_xlat = FALSE;
+		ciolib_xlat = orig_ciolib_xlat;
 	}
 	uifc_initialized=0;
 }

@@ -23,6 +23,7 @@ void viewscroll(void)
 	struct	text_info txtinfo;
 	int	x,y;
 	struct mouse_event mevent;
+	int old_xlat=ciolib_xlat;
 
 	x=wherex();
 	y=wherey();
@@ -49,7 +50,7 @@ void viewscroll(void)
 		cputs("Scrollback");
 		gotoxy(cterm->width-9,1);
 		cputs("Scrollback");
-		ciolib_xlat = FALSE;
+		ciolib_xlat = old_xlat;
 		gotoxy(1,1);
 		key=getch();
 		switch(key) {
