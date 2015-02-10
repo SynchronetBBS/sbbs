@@ -168,6 +168,36 @@ static int compare_prefix(char *old_prefix, int old_prefix_bytes, const char *ne
 	return(0);
 }
 
+int get_word_len(char *buf, int starting_pos)
+{
+	int	next_len=0;
+	int	pos;
+
+	for(pos=0; ; pos++) {
+		if (starting_pos + next_len < 0)
+			return 0;
+		if (!buf[starting_pos+pos])
+			break;
+		else if (isspace(buf[starting_pos+pos]))
+			break;
+		else if (buf[starting_pos+pos]=='\x1f')
+			continue;
+		else if (buf[starting_pos+pos]=='\x01') {
+			pos++;
+			if(buf[starting_pos+pos]!='\x01')
+				continue;
+		}
+		else if (buf[starting_pos+pos]=='\b') {
+			// This doesn't handle BS the same way... bit it's kinda BS anyway.
+			next_len--;
+			continue;
+		}
+		next_len++;
+	}
+
+	return next_len;
+}
+
 char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 {
 	int			l;
@@ -185,6 +215,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 	int			old_prefix_bytes=0;
 	int			outbuf_size=0;
 	int			inbuf_len=strlen(inbuf);
+	unsigned	next_len;
 
 	outbuf_size=inbuf_len*3+1;
 	if((outbuf=(char*)malloc(outbuf_size))==NULL)
@@ -288,7 +319,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 				else {
 					if(icol < oldlen) {			/* If this line is overly long, It's impossible for the next word to fit */
 						/* k will equal the length of the first word on the next line */
-						for(k=0; inbuf[i+1+k] && (!isspace((unsigned char)inbuf[i+1+k])); k++);
+						k = get_word_len(inbuf, i+1);
 						if(icol+k+1 < oldlen) {	/* The next word would have fit but isn't here.  Must be a hard CR */
 							linebuf[l++]='\r';
 							linebuf[l++]='\n';
@@ -352,13 +383,19 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 				linebuf[l++]=inbuf[i];
 				ocol++;
 				icol++;
-				if(ocol>len && !isspace((unsigned char)inbuf[i])) {		/* Need to wrap here */
+				if(ocol>len && inbuf[i+1] && !isspace((unsigned char)inbuf[i+1])) {		/* Need to wrap here */
 					/* Find the start of the last word */
 					k=l;									/* Original next char */
 					l--;									/* Move back to the last char */
 					while((!isspace((unsigned char)linebuf[l])) && l>0)		/* Move back to the last non-space char */
 						l--;
-					if(l==0) {		/* Couldn't wrap... must chop. */
+					/*
+					 * Look ahead and check how long this next "word" is.
+					 * If it's longer than len, there's no point in trying
+					 * to make it fit, so we can just chop it.
+					 */
+					next_len=(ocol-1)-(l+1) + get_word_len(inbuf, i+1);
+					if(next_len > len) {		/* Won't be able to wrap... may as well chop. */
 						l=k;
 						while(l>1 && linebuf[l-2]=='\x01' && linebuf[l-1]!='\x01')
 							l-=2;
