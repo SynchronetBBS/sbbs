@@ -1,6 +1,8 @@
 Version 1.0
 -----------
-Properly save/restor the RLogin Reversed connection mode
+Don't conditionally compile shell support, just treat it as disabled
+Support Commodore and Atari fonts when not using their native emulation
+Properly save/restore the RLogin Reversed connection mode
 Properly save/restore the C128 (80col) and Atari XEP80 modes
 Fix separator character in status bar with fonts that don't support lines
 No longer switch font to CP437 when displaying menus
