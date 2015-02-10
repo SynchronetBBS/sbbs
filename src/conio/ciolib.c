@@ -1032,22 +1032,24 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e)
 
 	if(ciolib_xlat) {
 		font = ciolib_getfont();
-		buf=malloc((c-a+1)*(d-b+1)*2);
-		if (conio_fontdata[font].put_xlat == NULL) {
-			memcpy(buf, e, (c-a+1)*(d-b+1)*2);
-		}
-		else {
-			for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
-				if (((char *)e)[i] > 31 && ((char *)e)[i] < 127)
-					buf[i] = conio_fontdata[font].put_xlat[((char *)e)[i]-32];
-				else
-					buf[i] = ((char *)e)[i];
-				buf[i+1]=((char *)e)[i+1];
+		if (font >= 0) {
+			buf=malloc((c-a+1)*(d-b+1)*2);
+			if (conio_fontdata[font].put_xlat == NULL) {
+				memcpy(buf, e, (c-a+1)*(d-b+1)*2);
+			}
+			else {
+				for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
+					if (((char *)e)[i] > 31 && ((char *)e)[i] < 127)
+						buf[i] = conio_fontdata[font].put_xlat[((char *)e)[i]-32];
+					else
+						buf[i] = ((char *)e)[i];
+					buf[i+1]=((char *)e)[i+1];
+				}
 			}
 		}
 	}
 	ret = cio_api.puttext(a,b,c,d,(void *)buf);
-	if (ciolib_xlat)
+	if (buf != e)
 		free(buf);
 	return ret;
 }
@@ -1065,14 +1067,16 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e)
 	ret = cio_api.gettext(a,b,c,d,e);
 	if(ciolib_xlat) {
 		font = ciolib_getfont();
-		if (conio_fontdata[font].put_xlat) {
-			for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
-				xlat = ((char *)e)[i];
-				if (xlat > 31 && xlat < 127) {
-					if ((ch = memchr(conio_fontdata[font].put_xlat, ((char *)e)[i], 128))!=NULL)
-						xlat = (char)(ch-conio_fontdata[font].put_xlat)+32;
+		if (font >= 0) {
+			if (conio_fontdata[font].put_xlat) {
+				for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
+					xlat = ((char *)e)[i];
+					if (xlat > 31 && xlat < 127) {
+						if ((ch = memchr(conio_fontdata[font].put_xlat, ((char *)e)[i], 128))!=NULL)
+							xlat = (char)(ch-conio_fontdata[font].put_xlat)+32;
+					}
+					((char *)e)[i] = xlat;
 				}
-				((char *)e)[i] = xlat;
 			}
 		}
 	}
