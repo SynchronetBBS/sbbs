@@ -23,9 +23,7 @@ enum {
 	,CONN_TYPE_SSH
 	,CONN_TYPE_MODEM
 	,CONN_TYPE_SERIAL
-#ifdef __unix__
 	,CONN_TYPE_SHELL
-#endif
 	,CONN_TYPE_TERMINATOR
 };
 

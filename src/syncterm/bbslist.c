@@ -193,16 +193,11 @@ char *address_family_help =	"`Address Family`\n\n"
 							"`IPv6 only`...: Only uses IPv6 addresses.\n";
 
 char *address_help=	
-#ifdef __unix__
 					"`Address`, `Phone Number`, `Serial Port`, or `Command`\n\n"
 					"Enter the hostname, IP address, phone number, or serial port device of\n"
 					"the system to connect to. Example: `nix.synchro.net`\n\n"
-					"In the case of the Shell type, enter the command to run.";
-#else
-					"`Address`, `Phone Number`, or `Serial Port`\n\n"
-					"Enter the hostname, IP address, phone number, or serial port device of\n"
-					"the system to connect to. Example: `nix.synchro.net`";
-#endif
+					"In the case of the Shell type, enter the command to run.\n"
+					"Shell types are only functional under *nix\n";
 char *conn_type_help=			"`Connection Type`\n\n"
 								"Select the type of connection you wish to make:\n\n"
 								"`RLogin`...........: Auto-login with RLogin protocol\n"
@@ -212,11 +207,8 @@ char *conn_type_help=			"`Connection Type`\n\n"
 								"`SSH`..............: Connect using the Secure Shell (SSH-2) protocol\n"
 								"`Modem`............: Connect using a dial-up modem\n"
 								"`Serial`...........: Connect directly to a serial communications port\n"
-#ifdef __unix__
-								"`Shell`............: Connect to a local PTY\n";
-#else
+								"`Shell`............: Connect to a local PTY (*nix only)\n";
 								;
-#endif
 
 ini_style_t ini_style = {
 	/* key_len */ 15, 
@@ -765,18 +757,14 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				sprintf(opt[i++], "Phone Number      %s",item->addr);
 			else if(item->conn_type==CONN_TYPE_SERIAL)
 				sprintf(opt[i++], "Device Name       %s",item->addr);
-#ifdef __unix__
 			else if(item->conn_type==CONN_TYPE_SHELL)
 				sprintf(opt[i++], "Command           %s",item->addr);
-#endif
 			else
 				sprintf(opt[i++], "Address           %s",item->addr);
 		}
 		sprintf(opt[i++], "Connection Type   %s",conn_types[item->conn_type]);
 		if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL
-#ifdef __unix__
 			&& item->conn_type!=CONN_TYPE_SHELL
-#endif
 			)
 			sprintf(opt[i++], "TCP Port          %hu",item->port);
 		sprintf(opt[i++], "Username          %s",item->user);
@@ -817,9 +805,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 		if(i>=0 && isdefault)
 			i+=2;
 		if(i>=3 && (item->conn_type==CONN_TYPE_MODEM || item->conn_type==CONN_TYPE_SERIAL
-#ifdef __unix__
 				|| item->conn_type==CONN_TYPE_SHELL
-#endif
 				))
 			i++;	/* no port number */
 		switch(i) {
@@ -870,9 +856,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,item->conn_type==CONN_TYPE_MODEM ? "Phone Number"
 					:item->conn_type==CONN_TYPE_SERIAL ? "Device Name"
-#ifdef __unix__
 					:item->conn_type==CONN_TYPE_SHELL ? "Command"
-#endif
 					: "Address"
 					,item->addr,LIST_ADDR_MAX,K_EDIT);
 				iniSetString(&inifile,itemname,"Address",item->addr,&ini_style);
@@ -931,9 +915,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						iniSetEnum(&inifile,itemname,"ConnectionType",conn_types_enum,item->conn_type,&ini_style);
 
 						if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL
-#ifdef __unix__
 								&& item->conn_type!=CONN_TYPE_SHELL
-#endif
 								) {
 							/* Set the port too */
 							j=conn_ports[item->conn_type];
@@ -1236,11 +1218,7 @@ void change_settings(void)
 		sprintf(opts[7],"Modem Init String       %s",settings.mdm.init_string);
 		sprintf(opts[8],"Modem Dial String       %s",settings.mdm.dial_string);
 		sprintf(opts[9],"List Path               %s",settings.list_path);
-#ifdef __unix__
 		sprintf(opts[10],"TERM For Shell          %s",settings.TERM);
-#else
-		opts[10][0]=0;
-#endif
 		switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
@@ -1426,7 +1404,6 @@ void change_settings(void)
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"List Path",settings.list_path,MAX_PATH,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ListPath",settings.list_path,&ini_style);
 				break;
-#ifdef __unix__
 			case 10:
 				uifc.helpbuf=   "`TERM For Shell`\n\n"
 								"The value to set the TERM envirnonment variable to goes here.\n\n"
@@ -1434,7 +1411,6 @@ void change_settings(void)
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"TERM",settings.TERM,LIST_NAME_MAX,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","TERM",settings.TERM,&ini_style);
 				break;
-#endif
 		}
 	}
 write_ini:
@@ -1671,9 +1647,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 								list[listcount-1]->conn_type++;
 								if(list[listcount-1]->conn_type!=CONN_TYPE_MODEM
 									&& list[listcount-1]->conn_type!=CONN_TYPE_SERIAL
-#ifdef __unix__
 									&& list[listcount-1]->conn_type!=CONN_TYPE_SHELL
-#endif
 									) {
 									/* Set the port too */
 									j=conn_ports[list[listcount-1]->conn_type];
@@ -1690,9 +1664,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,list[listcount-1]->conn_type==CONN_TYPE_MODEM ? "Phone Number"
 									:list[listcount-1]->conn_type==CONN_TYPE_SERIAL ? "Device Name"
-#ifdef __unix__
 									:list[listcount-1]->conn_type==CONN_TYPE_SHELL ? "Command"
-#endif
 									:"Address"
 									,list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
 							}
