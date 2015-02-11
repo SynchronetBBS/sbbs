@@ -2,10 +2,11 @@
 #import <Cocoa/Cocoa.h>
 
 #include <stddef.h>
+#include <stdio.h>
 
 void OSX_copytext(const char *text)
 {
-	NSString *cp = [NSString stringWithCString:text encoding:NSUTF8StringEncoding];
+	NSString *cp = [NSString stringWithCString:text encoding:CFStringConvertEncodingToNSStringEncoding(CFStringConvertWindowsCodepageToEncoding(437))];
 	if (cp != nil) {
 		NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
 		[pasteboard clearContents];
@@ -24,7 +25,7 @@ char *OSX_getcliptext(void)
 		NSArray *objectsToPaste = [pasteboard readObjectsForClasses:classArray options:options];
 		NSString *ct = [objectsToPaste objectAtIndex:0];
 		if (ct != nil) {
-			const char *ptr = [ct cStringUsingEncoding:NSASCIIStringEncoding];
+			const char *ptr = [ct cStringUsingEncoding:CFStringConvertEncodingToNSStringEncoding(CFStringConvertWindowsCodepageToEncoding(437))];
 			if (ptr)
 				return strdup(ptr);
 		}
