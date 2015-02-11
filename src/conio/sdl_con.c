@@ -54,6 +54,8 @@ char *sdl_copybuf=NULL;
 char *sdl_pastebuf=NULL;
 
 SDL_sem *sdl_ufunc_ret;
+SDL_sem *sdl_ufunc_rec;
+SDL_mutex *sdl_ufunc_mtx;
 int sdl_ufunc_retval;
 SDL_mutex	*funcret_mutex;
 
@@ -62,7 +64,6 @@ int pending_updates=0;
 
 int fullscreen=0;
 
-SDL_sem	*sdl_init_complete;
 int	sdl_init_good=0;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
@@ -392,8 +393,15 @@ void sdl_user_func(int func, ...)
 				return;
 			}
 			*(unsigned long *)ev.user.data2=va_arg(argptr, unsigned long);
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
-				YIELD();
+			sdl.mutexP(sdl_ufunc_mtx);
+			while(1) {
+				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+					YIELD();
+				if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
+					continue;
+				break;
+			}
+			sdl.mutexV(sdl_ufunc_mtx);
 			break;
 		case SDL_USEREVENT_SETNAME:
 		case SDL_USEREVENT_SETTITLE:
@@ -401,20 +409,41 @@ void sdl_user_func(int func, ...)
 				va_end(argptr);
 				return;
 			}
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
-				YIELD();
+			sdl.mutexP(sdl_ufunc_mtx);
+			while(1) {
+				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+					YIELD();
+				if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
+					continue;
+				break;
+			};
+			sdl.mutexV(sdl_ufunc_mtx);
 			break;
 		case SDL_USEREVENT_UPDATERECT:
 			ev.user.data1=va_arg(argptr, struct update_rect *);
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
-				YIELD();
+			sdl.mutexP(sdl_ufunc_mtx);
+			while(1) {
+				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+					YIELD();
+				if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
+					continue;
+				break;
+			}
+			sdl.mutexV(sdl_ufunc_mtx);
 			break;
 		case SDL_USEREVENT_COPY:
 		case SDL_USEREVENT_PASTE:
 		case SDL_USEREVENT_SHOWMOUSE:
 		case SDL_USEREVENT_HIDEMOUSE:
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
-				YIELD();
+			sdl.mutexP(sdl_ufunc_mtx);
+			while(1) {
+				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1)
+					YIELD();
+				if (sdl.SemWaitTimeout(sdl_ufunc_rec, 1000) != 0)
+					continue;
+				break;
+			}
+			sdl.mutexV(sdl_ufunc_mtx);
 			break;
 	}
 	va_end(argptr);
@@ -433,6 +462,7 @@ int sdl_user_func_ret(int func, ...)
 	ev.user.data2=NULL;
 	ev.user.code=func;
 	va_start(argptr, func);
+	sdl.mutexP(sdl_ufunc_mtx);
 	while(1) {
 		switch(func) {
 			case SDL_USEREVENT_SETVIDMODE:
@@ -445,10 +475,20 @@ int sdl_user_func_ret(int func, ...)
 				break;
 		}
 		if(passed) {
-			if(sdl.SemWaitTimeout(sdl_ufunc_ret, 100)==0)
+			/*
+			 * This is needed for lost event detection.
+			 * Lost events only occur on SYSWMEVENT which is what
+			 * we need for copy/paste on X11.
+			 * This hack can be removed for SDL2
+			 */
+			if(sdl.SemWaitTimeout(sdl_ufunc_rec, 1000)!=0)
+				continue;
+			sdl.mutexV(sdl_ufunc_mtx);
+			if(sdl.SemWait(sdl_ufunc_ret)==0)
 				break;
 		}
 		else {
+			sdl.mutexV(sdl_ufunc_mtx);
 			sdl_ufunc_retval=-1;
 			break;
 		}
@@ -683,8 +723,6 @@ int sdl_init(int mode)
 				sdl_x11available=FALSE;
 			}
 		}
-		if(sdl_x11available)
-			sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 #endif
 		return(0);
 	}
@@ -1517,10 +1555,12 @@ int sdl_video_event_thread(void *data)
 						/* Tell SDL to do various stuff... */
 						switch(ev.user.code) {
 							case SDL_USEREVENT_QUIT:
+								sdl.SemPost(sdl_ufunc_rec);
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);
 								return(0);
 							case SDL_USEREVENT_UPDATERECT:
+								sdl.SemPost(sdl_ufunc_rec);
 								{
 									struct update_rect *rect=(struct update_rect *)ev.user.data1;
 									SDL_Rect r;
@@ -1566,6 +1606,7 @@ int sdl_video_event_thread(void *data)
 								}
 								break;
 							case SDL_USEREVENT_FLUSH:
+								sdl.SemPost(sdl_ufunc_rec);
 								if(win && new_rect) {
 									if(yuv.enabled) {
 										if(new_rect && yuv.overlay && yuv.changed) {
@@ -1590,10 +1631,12 @@ int sdl_video_event_thread(void *data)
 								sdl.SemPost(sdl_ufunc_ret);
 								break;
 							case SDL_USEREVENT_SETNAME:
+								sdl.SemPost(sdl_ufunc_rec);
 								sdl.WM_SetCaption((char *)ev.user.data1,(char *)ev.user.data1);
 								free(ev.user.data1);
 								break;
 							case SDL_USEREVENT_SETICON:
+								sdl.SemPost(sdl_ufunc_rec);
 								if(sdl_icon != NULL)
 									sdl.FreeSurface(sdl_icon);
 								sdl_icon=sdl.CreateRGBSurfaceFrom(ev.user.data1
@@ -1610,10 +1653,12 @@ int sdl_video_event_thread(void *data)
 								free(ev.user.data2);
 								break;
 							case SDL_USEREVENT_SETTITLE:
+								sdl.SemPost(sdl_ufunc_rec);
 								sdl.WM_SetCaption((char *)ev.user.data1,NULL);
 								free(ev.user.data1);
 								break;
 							case SDL_USEREVENT_SETVIDMODE:
+								sdl.SemPost(sdl_ufunc_rec);
 								if(!yuv.enabled) {
 									rectspace=vstat.cols*vstat.rows+vstat.cols;
 									rectsused=0;
@@ -1631,12 +1676,15 @@ int sdl_video_event_thread(void *data)
 								sdl.SemPost(sdl_ufunc_ret);
 								break;
 							case SDL_USEREVENT_HIDEMOUSE:
+								sdl.SemPost(sdl_ufunc_rec);
 								sdl.ShowCursor(SDL_DISABLE);
 								break;
 							case SDL_USEREVENT_SHOWMOUSE:
+								sdl.SemPost(sdl_ufunc_rec);
 								sdl.ShowCursor(SDL_ENABLE);
 								break;
 							case SDL_USEREVENT_INIT:
+								sdl.SemPost(sdl_ufunc_rec);
 								if(!sdl_init_good) {
 									if(sdl.WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO) {
 										if(win != NULL) {
@@ -1648,9 +1696,14 @@ int sdl_video_event_thread(void *data)
 									}
 								}
 								sdl_ufunc_retval=0;
+#if !defined(NO_X) && defined(__unix__)
+								if(sdl_x11available)
+									sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
+#endif
 								sdl.SemPost(sdl_ufunc_ret);
 								break;
 							case SDL_USEREVENT_COPY:
+								sdl.SemPost(sdl_ufunc_rec);
 	#if (defined(__MACH__) && defined(__APPLE__)) && defined(USE_SCRAP_MANAGER)
 								if(!sdl_using_x11) {
 									ScrapRef	scrap;
@@ -1680,6 +1733,7 @@ int sdl_video_event_thread(void *data)
 	#endif
 								break;
 							case SDL_USEREVENT_PASTE:
+								sdl.SemPost(sdl_ufunc_rec);
 	#if (defined(__MACH__) && defined(__APPLE__)) && defined(USE_SCRAP_MANAGER)
 								if(!sdl_using_x11) {
 									ScrapRef	scrap;
@@ -1850,6 +1904,8 @@ int sdl_initciolib(int mode)
 	}
 	sdl_key_pending=sdl.SDL_CreateSemaphore(0);
 	sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
+	sdl_ufunc_rec=sdl.SDL_CreateSemaphore(0);
+	sdl_ufunc_mtx=sdl.SDL_CreateMutex();
 	sdl_keylock=sdl.SDL_CreateMutex();
 #if !defined(NO_X) && defined(__unix__)
 	sdl_pastebuf_set=sdl.SDL_CreateSemaphore(0);
