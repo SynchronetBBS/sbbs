@@ -1,5 +1,6 @@
 Version 1.0
 -----------
+Add copy/paste support back into OS X builds using Pasteboard
 Don't conditionally compile shell support, just treat it as disabled
 Support Commodore and Atari fonts when not using their native emulation
 Properly save/restore the RLogin Reversed connection mode
