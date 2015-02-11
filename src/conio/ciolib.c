@@ -1021,6 +1021,140 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_normvideo(void)
 	ciolib_textattr(cio_textinfo.normattr);
 }
 
+static char c64_bg_xlat(char colour)
+{
+	switch(colour) {
+		case BLACK:
+			return 0;
+		case BLUE:
+			return 6;
+		case GREEN:
+			return 5;
+		case CYAN:
+			return 3;
+		case RED:
+			return 2;
+		case MAGENTA:
+			return 4;
+		case BROWN:
+			return 7;
+		case LIGHTGRAY:
+			return 1;
+	}
+	return 0;
+}
+
+static char c64_bg_rev(char colour)
+{
+	switch(colour) {
+		case 0:
+			return BLACK;
+		case 6:
+			return BLUE;
+		case 5:
+			return GREEN;
+		case 3:
+			return CYAN;
+		case 2:
+			return RED;
+		case 4:
+			return MAGENTA;
+		case 7:
+			return BROWN;
+		case 1:
+			return LIGHTGRAY;
+	}
+	return 0;
+}
+
+static char c64_color_xlat(char colour)
+{
+	switch(colour) {
+		case BLACK:
+			return 0;
+		case BLUE:
+			return 6;
+		case GREEN:
+			return 5;
+		case CYAN:
+			return 3;
+		case RED:
+			return 2;
+		case MAGENTA:
+			return 4;
+		case BROWN:
+			return 9;
+		case LIGHTGRAY:
+			return 15;
+		case DARKGRAY:
+			return 11;
+		case LIGHTBLUE:	
+			return 14;
+		case LIGHTGREEN:
+			return 13;
+		case LIGHTCYAN:
+			return 12;	// Gray...
+		case LIGHTRED:
+			return 10;
+		case LIGHTMAGENTA:
+			return 8;
+		case YELLOW:
+			return 7;
+		case WHITE:
+			return 1;
+	}
+	return 0;
+}
+
+static char c64_color_rev(char colour)
+{
+	switch(colour) {
+		case 0:
+			return BLACK;
+		case 6:
+			return BLUE;
+		case 5:
+			return GREEN;
+		case 3:
+			return CYAN;
+		case 2:
+			return RED;
+		case 4:
+			return MAGENTA;
+		case 9:
+			return BROWN;
+		case 15:
+			return LIGHTGRAY;
+		case 11:
+			return DARKGRAY;
+		case 14:
+			return LIGHTBLUE;
+		case 13:
+			return LIGHTGREEN;
+		case 12:
+			return LIGHTCYAN;
+		case 10:
+			return LIGHTRED;
+		case 8:
+			return LIGHTMAGENTA;
+		case 7:
+			return YELLOW;
+		case 1:
+			return WHITE;
+	}
+	return 0;
+}
+
+static char c64_attr_xlat(unsigned char orig)
+{
+	return (orig & 0x80) | c64_color_xlat(orig & 0x0f) | (c64_bg_xlat((orig&0x70)>>4)<<4);
+}
+
+static char c64_attr_rev(unsigned char orig)
+{
+	return (orig & 0x80) | c64_color_rev(orig & 0x0f) | (c64_bg_rev((orig&0x70)>>4)<<4);
+}
+
 /* **MUST** be implemented */
 CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e)
 {
@@ -1034,16 +1168,19 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e)
 		font = ciolib_getfont();
 		if (font >= 0) {
 			buf=malloc((c-a+1)*(d-b+1)*2);
-			if (conio_fontdata[font].put_xlat == NULL) {
+			if (conio_fontdata[font].put_xlat == NULL && cio_textinfo.currmode != C64_40X25) {
 				memcpy(buf, e, (c-a+1)*(d-b+1)*2);
 			}
 			else {
 				for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
-					if (((char *)e)[i] > 31 && ((char *)e)[i] < 127)
+					if (((char *)e)[i] > 31 && ((char *)e)[i] < 127 && conio_fontdata[font].put_xlat != NULL)
 						buf[i] = conio_fontdata[font].put_xlat[((char *)e)[i]-32];
 					else
 						buf[i] = ((char *)e)[i];
-					buf[i+1]=((char *)e)[i+1];
+					if (cio_textinfo.currmode == C64_40X25)
+						buf[i+1]=c64_attr_xlat(((char *)e)[i+1]);
+					else
+						buf[i+1]=((char *)e)[i+1];
 				}
 			}
 		}
@@ -1068,14 +1205,19 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e)
 	if(ciolib_xlat) {
 		font = ciolib_getfont();
 		if (font >= 0) {
-			if (conio_fontdata[font].put_xlat) {
+			if (conio_fontdata[font].put_xlat || cio_textinfo.currmode == C64_40X25) {
 				for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
-					xlat = ((char *)e)[i];
-					if (xlat > 31 && xlat < 127) {
-						if ((ch = memchr(conio_fontdata[font].put_xlat, ((char *)e)[i], 128))!=NULL)
-							xlat = (char)(ch-conio_fontdata[font].put_xlat)+32;
+					if (conio_fontdata[font].put_xlat) {
+						xlat = ((char *)e)[i];
+						if (xlat > 31 && xlat < 127) {
+							if ((ch = memchr(conio_fontdata[font].put_xlat, ((char *)e)[i], 128))!=NULL)
+								xlat = (char)(ch-conio_fontdata[font].put_xlat)+32;
+						}
+						((char *)e)[i] = xlat;
 					}
-					((char *)e)[i] = xlat;
+					if (cio_textinfo.currmode == C64_40X25) {
+							((char *)e)[i+1] = c64_attr_rev(((char *)e)[i+1]);;
+					}
 				}
 			}
 		}
