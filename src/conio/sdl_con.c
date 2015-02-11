@@ -1,5 +1,7 @@
 #if (defined(__MACH__) && defined(__APPLE__))
 #include <Carbon/Carbon.h>
+#define USE_PASTEBOARD
+#include "pasteboard.h"
 #endif
 
 #include <stdarg.h>
@@ -1704,7 +1706,19 @@ int sdl_video_event_thread(void *data)
 								break;
 							case SDL_USEREVENT_COPY:
 								sdl.SemPost(sdl_ufunc_rec);
-	#if (defined(__MACH__) && defined(__APPLE__)) && defined(USE_SCRAP_MANAGER)
+#if (defined(__MACH__) && defined(__APPLE__)) 
+#if defined(USE_PASTEBOARD)
+								if(!sdl_using_x11) {
+									sdl.mutexP(sdl_copybuf_mutex);
+									if(sdl_copybuf!=NULL) {
+										OSX_copytext(sdl_copybuf);
+									}
+									FREE_AND_NULL(sdl_copybuf);
+									sdl.mutexV(sdl_copybuf_mutex);
+									break;
+								}
+#endif
+#if defined(USE_SCRAP_MANAGER)
 								if(!sdl_using_x11) {
 									ScrapRef	scrap;
 									sdl.mutexP(sdl_copybuf_mutex);
@@ -1719,7 +1733,8 @@ int sdl_video_event_thread(void *data)
 									sdl.mutexV(sdl_copybuf_mutex);
 									break;
 								}
-	#endif
+#endif
+#endif
 
 	#if !defined(NO_X) && defined(__unix__) && defined(SDL_VIDEO_DRIVER_X11)
 								if(sdl_x11available && sdl_using_x11) {
@@ -1734,7 +1749,15 @@ int sdl_video_event_thread(void *data)
 								break;
 							case SDL_USEREVENT_PASTE:
 								sdl.SemPost(sdl_ufunc_rec);
-	#if (defined(__MACH__) && defined(__APPLE__)) && defined(USE_SCRAP_MANAGER)
+#if (defined(__MACH__) && defined(__APPLE__))
+#if defined(USE_PASTEBOARD)
+									FREE_AND_NULL(sdl_pastebuf);
+									sdl_pastebuf = OSX_getcliptext();
+									sdl.SemPost(sdl_pastebuf_set);
+									sdl.SemWait(sdl_pastebuf_copied);
+									break;
+#endif
+#if defined(USE_SCRAP_MANAGER)
 								if(!sdl_using_x11) {
 									ScrapRef	scrap;
 									UInt32	fl;
@@ -1758,7 +1781,8 @@ int sdl_video_event_thread(void *data)
 									sdl.SemWait(sdl_pastebuf_copied);
 									break;
 								}
-	#endif
+#endif
+#endif
 
 	#if !defined(NO_X) && defined(__unix__) && defined(SDL_VIDEO_DRIVER_X11)
 								if(sdl_x11available && sdl_using_x11) {
