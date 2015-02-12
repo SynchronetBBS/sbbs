@@ -401,9 +401,11 @@ BOOL DLLCALL iniRenameSection(str_list_t* list, const char* section, const char*
 	if(section==ROOT_SECTION)
 		return(FALSE);
 
-	i=find_section_index(*list,newname);
-	if((*list)[i]!=NULL)	/* duplicate */
-		return(FALSE);
+	if (stricmp(section, newname)) {
+		i=find_section_index(*list,newname);
+		if((*list)[i]!=NULL)	/* duplicate */
+			return(FALSE);
+	}
 
 	i=find_section_index(*list,section);
 	if((*list)[i]==NULL)	/* not found */
