@@ -740,6 +740,8 @@ int sdl_init(int mode)
 				sdl_x11available=FALSE;
 			}
 		}
+		if(sdl_x11available)
+			sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 #endif
 		return(0);
 	}
@@ -1713,10 +1715,6 @@ int sdl_video_event_thread(void *data)
 									}
 								}
 								sdl_ufunc_retval=0;
-#if !defined(NO_X) && defined(__unix__)
-								if(sdl_x11available)
-									sdl.EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-#endif
 								sdl.SemPost(sdl_ufunc_ret);
 								break;
 							case SDL_USEREVENT_COPY:
