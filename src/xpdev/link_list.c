@@ -761,6 +761,7 @@ void* DLLCALL listRemoveTaggedNode(link_list_t* list, list_node_tag_t tag, BOOL 
 
 long DLLCALL listRemoveNodes(link_list_t* list, list_node_t* node, long max, BOOL free_data)
 {
+	list_node_t	*next_node;
 	long count;
 
 	if(list==NULL)
@@ -771,9 +772,11 @@ long DLLCALL listRemoveNodes(link_list_t* list, list_node_t* node, long max, BOO
 	if(node==FIRST_NODE)
 		node=list->first;
 
-	for(count=0; node!=NULL && count<max; node=node->next, count++)
+	for(count=0; node!=NULL && count<max; node=next_node, count++) {
+		next_node = node->next;
 		if(listRemoveNode(list, node, free_data)==NULL)
 			break;
+	}
 
 	listUnlock(list);
 	
