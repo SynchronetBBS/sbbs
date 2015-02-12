@@ -165,7 +165,14 @@ ifdef WITH_SDL_AUDIO
  endif
 endif
 
-X_PATH ?=      $(shell if [ -f /usr/X11R6/include/X11/Xlib.h ]; then echo /usr/X11R6 ; elif [ -f /usr/local/include/X11/Xlib.h ] ; then echo /usr/local ; elif [ -f /usr/X11R7/include/X11/Xlib.h ] ; then echo /usr/X11R7 ; elif [ -f /usr/X11/include/X11/Xlib.h ] ; then echo /usr/X11 ; elif [ -f /usr/X/include/X11/Xlib.h ] ; then echo /usr/X ; elif [ -f /usr/include/X11/Xlib.h ] ; then echo /usr ; else echo 0 ; fi)
+X_PATH ?=      $(shell if [ -f /usr/X11R6/include/X11/Xlib.h ]; then echo /usr/X11R6 ; \
+				elif [ -f /usr/local/include/X11/Xlib.h ] ; then echo /usr/local ; \
+				elif [ -f /usr/X11R7/include/X11/Xlib.h ] ; then echo /usr/X11R7 ; \
+				elif [ -f /usr/X11/include/X11/Xlib.h ] ; then echo /usr/X11 ; \
+				elif [ -f /usr/X/include/X11/Xlib.h ] ; then echo /usr/X ; \
+				elif [ -f /usr/include/X11/Xlib.h ] ; then echo /usr ; \
+				elif [ -f /opt/X11/include/Xlib.h ] ; then echo /opt/X11 ; \
+				else echo 0 ; fi)
 
 ifeq ($(os),sunos)
  X_PATH	?=	/usr/X
