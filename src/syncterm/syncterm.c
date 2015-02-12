@@ -892,7 +892,7 @@ static char *get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 		if(FSRefMakePath(&ref, (unsigned char*)fn, fnlen)!=noErr)
 			return(NULL);
 		backslash(fn);
-		strncat(fn, "SyncTERM", fnlen);
+		strncat(fn, "SyncTERM", fnlen-strlen(fn)-1);
 		backslash(fn);
 		if(!isdir(fn)) {
 			if(MKDIR(fn))
@@ -923,10 +923,10 @@ static char *get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 
 	switch(type) {
 	case SYNCTERM_PATH_INI:
-		strncat(fn, "SyncTERM.ini", fnlen);
+		strncat(fn, "SyncTERM.ini", fnlen-strlen(fn)-1);
 		return(fn);
 	case SYNCTERM_PATH_LIST:
-		strncat(fn, "SyncTERM.lst", fnlen);
+		strncat(fn, "SyncTERM.lst", fnlen-strlen(fn)-1);
 		return(fn);
 	}
 	return(NULL);
@@ -1058,15 +1058,15 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 	switch(type) {
 		case SYNCTERM_PATH_INI:
 			backslash(fn);
-			strncat(fn,"syncterm.ini",fnlen);
+			strncat(fn,"syncterm.ini",fnlen-strlen(fn)-1);
 			break;
 		case SYNCTERM_PATH_LIST:
 			backslash(fn);
-			strncat(fn,"syncterm.lst",fnlen);
+			strncat(fn,"syncterm.lst",fnlen-strlen(fn)-1);
 			break;
 		case SYNCTERM_PATH_CACHE:
 			backslash(fn);
-			strncat(fn,"SyncTERM",fnlen);
+			strncat(fn,"SyncTERM",fnlen-strlen(fn)-1);
 			backslash(fn);
 			if(!isdir(fn)) {
 				if(MKDIR(fn)) {
@@ -1074,7 +1074,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 					break;
 				}
 			}
-			strncat(fn,"cache",fnlen);
+			strncat(fn,"cache",fnlen-strlen(fn)-1);
 			backslash(fn);
 			if(!isdir(fn)) {
 				if(MKDIR(fn))
@@ -1117,7 +1117,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 		backslash(oldlst);
 		strcat(oldlst,"syncterm.lst");
 		sprintf(fn,"%.*s",fnlen,home);
-		strncat(fn, "/.syncterm", fnlen);
+		strncat(fn, "/.syncterm", fnlen-strlen(fn)-1);
 		backslash(fn);
 	}
 
@@ -1140,13 +1140,13 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 
 	switch(type) {
 		case SYNCTERM_PATH_INI:
-			strncat(fn,"syncterm.ini",fnlen);
+			strncat(fn,"syncterm.ini",fnlen-strlen(fn)-1);
 			break;
 		case SYNCTERM_PATH_LIST:
-			strncat(fn,"syncterm.lst",fnlen);
+			strncat(fn,"syncterm.lst",fnlen-strlen(fn)-1);
 			break;
 		case SYNCTERM_PATH_CACHE:
-			strncat(fn,"cache",fnlen);
+			strncat(fn,"cache",fnlen-strlen(fn)-1);
 			backslash(fn);
 #if !(defined(__APPLE__) && defined(__MACH__))
 			if(!isdir(fn)) {
