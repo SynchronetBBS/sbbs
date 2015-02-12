@@ -460,14 +460,18 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int 
 
 	width=ex-sx;
 	height=ey-sy;
-	buf=(unsigned char *)alloca((width+1)*(height+1)*2);
+	buf=(unsigned char *)malloc((width+1)*(height+1)*2);
 	if(buf==NULL)
 		return(0);
 	if(!ciolib_gettext(sx,sy,ex,ey,buf))
-		return(0);
+		goto fail;
 	if(!ciolib_puttext(dx,dy,dx+width,dy+height,buf))
-		return(0);
+		goto fail;
 	return(1);
+
+fail:
+	free(buf);
+	return 0;
 }
 
 /* Optional */
@@ -775,7 +779,9 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 
 	width=cio_textinfo.winright-cio_textinfo.winleft+1-cio_textinfo.curx+1;
 	height=1;
-	buf=(unsigned char *)alloca(width*height*2);
+	buf=(unsigned char *)malloc(width*height*2);
+	if (!buf)
+		return;
 	for(i=0;i<width*height*2;) {
 		buf[i++]=' ';
 		buf[i++]=cio_textinfo.attribute;
@@ -786,6 +792,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 			cio_textinfo.winright,
 			cio_textinfo.cury+cio_textinfo.wintop-1,
 			buf);
+	free(buf);
 }
 
 /* Optional */
@@ -804,7 +811,9 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 
 	width=cio_textinfo.winright-cio_textinfo.winleft+1;
 	height=cio_textinfo.winbottom-cio_textinfo.wintop+1;
-	buf=(unsigned char *)alloca(width*height*2);
+	buf=(unsigned char *)malloc(width*height*2);
+	if(!buf)
+		return;
 	for(i=0;i<width*height*2;) {
 		buf[i++]=' ';
 		buf[i++]=cio_textinfo.attribute;
@@ -813,6 +822,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 	ciolib_puttext(cio_textinfo.winleft,cio_textinfo.wintop,cio_textinfo.winright,cio_textinfo.winbottom,buf);
 	ciolib_gotoxy(1,1);
 	puttext_can_move=old_ptcm;
+	free(buf);
 }
 
 /* Optional */
@@ -1168,6 +1178,8 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_puttext(int a,int b,int c,int d,void *e)
 		font = ciolib_getfont();
 		if (font >= 0) {
 			buf=malloc((c-a+1)*(d-b+1)*2);
+			if(!buf)
+				return 0;
 			if (conio_fontdata[font].put_xlat == NULL && cio_textinfo.currmode != C64_40X25) {
 				memcpy(buf, e, (c-a+1)*(d-b+1)*2);
 			}
