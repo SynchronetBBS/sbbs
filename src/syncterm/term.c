@@ -1246,23 +1246,24 @@ static BOOL xmodem_check_abort(void* vp)
 	time_t					now=time(NULL);
 	int						key;
 
+	if (xm == NULL)
+		return FALSE;
+
 	if(last_check != now) {
 		last_check=now;
-		if(xm!=NULL) {
-			while(kbhit()) {
-				switch((key=getch())) {
-					case ESC:
-					case CTRL_C:
-					case CTRL_X:
-						xm->cancelled=TRUE;
-						break;
-					case 0:
-					case 0xff:
-						key |= (getch() << 8);
-						if(key==CIO_KEY_MOUSE)
-							getmouse(NULL);
-						break;
-				}
+		while(kbhit()) {
+			switch((key=getch())) {
+				case ESC:
+				case CTRL_C:
+				case CTRL_X:
+					xm->cancelled=TRUE;
+					break;
+				case 0:
+				case 0xff:
+					key |= (getch() << 8);
+					if(key==CIO_KEY_MOUSE)
+						getmouse(NULL);
+					break;
 			}
 		}
 	}
