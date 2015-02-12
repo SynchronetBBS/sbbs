@@ -360,7 +360,7 @@ BOOL DLLCALL xptone_open(void)
 #ifdef WITH_PORTAUDIO
 	if(!portaudio_device_open_failed) {
 		if(pa_api==NULL) {
-			dll_handle dl;
+			dll_handle dl=NULL;
 			const char *libnames[]={"portaudio",NULL};
 			if(((pa_api=(struct portaudio_api_struct *)malloc(sizeof(struct portaudio_api_struct)))==NULL)
 					|| ((dl=xp_dlopen(libnames,RTLD_LAZY,0))==NULL)
@@ -477,7 +477,7 @@ BOOL DLLCALL xptone_open(void)
 #ifdef USE_ALSA_SOUND
 	if(!alsa_device_open_failed) {
 		if(alsa_api==NULL) {
-			dll_handle dl;
+			dll_handle dl=NULL;
 			const char *libnames[]={"asound", NULL};
 			if(((alsa_api=(struct alsa_api_struct *)malloc(sizeof(struct alsa_api_struct)))==NULL)
 					|| ((dl=xp_dlopen(libnames,RTLD_LAZY,2))==NULL)
