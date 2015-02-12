@@ -2,17 +2,17 @@
 #import <Cocoa/Cocoa.h>
 
 #include <stddef.h>
-#include <stdio.h>
 
-void OSX_copytext(const char *text)
+void OSX_copytext(const char *text, size_t len)
 {
-	NSString *cp = [NSString stringWithCString:text encoding:CFStringConvertEncodingToNSStringEncoding(CFStringConvertWindowsCodepageToEncoding(437))];
+	NSString *cp = [[NSString alloc] initWithBytes:text length:len encoding:CFStringConvertEncodingToNSStringEncoding(CFStringConvertWindowsCodepageToEncoding(437))];
 	if (cp != nil) {
 		NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
 		[pasteboard clearContents];
 		NSArray *copiedObjects = [NSArray arrayWithObject:cp];
 		[pasteboard writeObjects:copiedObjects];
 	}
+	[cp release];
 }
 
 char *OSX_getcliptext(void)
