@@ -1,5 +1,7 @@
 Version 1.0
 -----------
+Allow case-only changes to directory entries
+Translate copies from non-ASCII screens screen modes to ASCII
 Add copy/paste support back into OS X builds using Pasteboard
 Don't conditionally compile shell support, just treat it as disabled
 Support Commodore and Atari fonts when not using their native emulation
