@@ -242,6 +242,9 @@ static int _putch(unsigned char ch, BOOL refresh_now)
 			case 219:
 				cha=ACS_BLOCK;
 				break;
+			case 254:
+				cha=ACS_BULLET;
+				break;
 			default:
 				cha=ch;
 		}
