@@ -487,7 +487,7 @@ void docopy(void)
 						outpos=0;
 						for(y=starty-1;y<endy;y++) {
 							for(x=startx-1;x<endx;x++) {
-								copybuf[outpos++]=screen[(y*api->scrn_width+x)*2];
+								copybuf[outpos++]=screen[(y*api->scrn_width+x)*2]?screen[(y*api->scrn_width+x)*2]:' ';
 							}
 							#ifdef _WIN32
 								copybuf[outpos++]='\r';
