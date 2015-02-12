@@ -79,8 +79,6 @@ void modem_output_thread(void *args)
 				if(ret==COM_ERROR)
 					break;
 			}
-			if(ret==COM_ERROR) {
-			}
 		}
 		else
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
