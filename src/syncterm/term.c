@@ -82,17 +82,24 @@ void mousedrag(unsigned char *scrollback)
 	int	key;
 	struct mouse_event mevent;
 	unsigned char *screen;
+	unsigned char *tscreen;
 	unsigned char *sbuffer;
 	int sbufsize;
 	int pos, startpos,endpos, lines;
 	int outpos;
-	char *copybuf;
+	char *copybuf=NULL;
+	char *newcopybuf;
 	int lastchar;
+	int old_xlat = ciolib_xlat;
 
 	sbufsize=term.width*2*term.height;
-	screen=(unsigned char*)alloca(sbufsize);
-	sbuffer=(unsigned char*)alloca(sbufsize);
+	screen=(unsigned char*)malloc(sbufsize);
+	sbuffer=(unsigned char*)malloc(sbufsize);
+	tscreen=(unsigned char*)malloc(sbufsize);
 	gettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
+	ciolib_xlat = TRUE;
+	gettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,tscreen);
+	ciolib_xlat = old_xlat;
 	while(1) {
 		key=getch();
 		if(key==0 || key==0xff)
@@ -127,12 +134,16 @@ void mousedrag(unsigned char *scrollback)
 						break;
 					default:
 						lines=abs(mevent.endy-mevent.starty)+1;
-						copybuf=alloca(endpos-startpos+4+lines*2);
+						newcopybuf=realloc(copybuf, endpos-startpos+4+lines*2);
+						if (newcopybuf)
+							copybuf = newcopybuf;
+						else
+							goto cleanup;
 						outpos=0;
 						lastchar=0;
 						for(pos=startpos;pos<=endpos;pos++) {
-							copybuf[outpos++]=screen[pos*2];
-							if(screen[pos*2]!=' ' && screen[pos*2])
+							copybuf[outpos++]=tscreen[pos*2];
+							if(tscreen[pos*2]!=' ' && tscreen[pos*2])
 								lastchar=outpos;
 							if((pos+1)%term.width==0) {
 								outpos=lastchar;
@@ -146,15 +157,23 @@ void mousedrag(unsigned char *scrollback)
 						copybuf[outpos]=0;
 						copytext(copybuf, strlen(copybuf));
 						puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
-						return;
+						goto cleanup;
 				}
 				break;
 			default:
 				puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
 				ungetch(key);
-				return;
+				goto cleanup;
 		}
 	}
+
+cleanup:
+	free(screen);
+	free(sbuffer);
+	free(tscreen);
+	if(copybuf)
+		free(copybuf);
+	return;
 }
 
 void update_status(struct bbslist *bbs, int speed, int ooii_mode)
@@ -2577,7 +2596,7 @@ BOOL doterm(struct bbslist *bbs)
 						char *buf;
 
    						gettextinfo(&txtinfo);
-						buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
+						buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 						gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 						i=0;
 						init_uifc(FALSE, FALSE);
@@ -2598,11 +2617,13 @@ BOOL doterm(struct bbslist *bbs)
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
+							free(buf);
 							return(key==0x2d00 /* Alt-X? */);
 						}
 						uifcbail();
 						setup_mouse_events();
 						puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+						free(buf);
 						window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
 						textattr(txtinfo.attribute);
 						gotoxy(txtinfo.curx,txtinfo.cury);
