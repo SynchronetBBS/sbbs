@@ -1209,10 +1209,8 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_gettext(int a,int b,int c,int d,void *e)
 				for (i=0; i<(c-a+1)*(d-b+1)*2; i+=2) {
 					if (conio_fontdata[font].put_xlat) {
 						xlat = ((char *)e)[i];
-						if (xlat > 31 && xlat < 127) {
-							if ((ch = memchr(conio_fontdata[font].put_xlat, ((char *)e)[i], 128))!=NULL)
-								xlat = (char)(ch-conio_fontdata[font].put_xlat)+32;
-						}
+						if ((ch = memchr(conio_fontdata[font].put_xlat, ((char *)e)[i], 128))!=NULL)
+							xlat = (char)(ch-conio_fontdata[font].put_xlat)+32;
 						((char *)e)[i] = xlat;
 					}
 					if (cio_textinfo.currmode == C64_40X25) {
