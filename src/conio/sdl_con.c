@@ -1489,7 +1489,9 @@ int sdl_video_event_thread(void *data)
 		}
 
 		while(1) {
-			if(sdl.WaitEvent(&ev)==1) {
+			if(sdl.PollEvent(&ev)!=1)
+				SLEEP(1);
+			else {
 				switch (ev.type) {
 					case SDL_ACTIVEEVENT:		/* Focus change */
 						break;
