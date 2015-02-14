@@ -1047,7 +1047,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		else
 			y=top+tbrdrwidth+(*cur);
 		i=(*cur)+(top+tbrdrwidth-y);
-		j=2;
+		j=tbrdrwidth-1;
 
 		longopt=0;
 		while(j<height-bbrdrwidth-1) {
