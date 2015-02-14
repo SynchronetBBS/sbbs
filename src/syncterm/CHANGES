@@ -1,5 +1,6 @@
 Version 1.0
 -----------
+Allow left/right to switch dir/file columns in file picker
 Allow case-only changes to directory entries
 Translate copies from non-ASCII screens screen modes to ASCII
 Add copy/paste support back into OS X builds using Pasteboard
