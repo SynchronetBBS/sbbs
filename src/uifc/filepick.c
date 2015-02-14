@@ -436,12 +436,12 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 			hold_update = FALSE;
 			switch(currfield) {
 				case DIR_LIST:
-					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS|WIN_UNGETMOUSE,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
+					i=api->list(WIN_DYN|WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS|WIN_UNGETMOUSE|WIN_REDRAW,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
 					if(i==-1) {		/* ESC */
 						retval=fp->files=0;
 						goto cleanup;
 					}
-					if(i==-2-'\t')	/* TAB */
+					if(i==-2-'\t' || i==-2-CIO_KEY_RIGHT)	/* TAB */
 						fieldmove=1;
 					if(i==-3842)	/* Backtab */
 						fieldmove=-1;
@@ -456,7 +456,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					}
 					break;
 				case FILE_LIST:
-					i=api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS|WIN_UNGETMOUSE,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
+					i=api->list(WIN_DYN|WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_EXTKEYS|WIN_UNGETMOUSE|WIN_REDRAW,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
 					if(i==-1) {
 						retval=fp->files=0;
 						goto cleanup;
@@ -484,7 +484,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					}
 					if(i==-2-'\t')
 						fieldmove=1;
-					if(i==-3842)	/* Backtab */
+					if(i==-3842 || i==-2-CIO_KEY_LEFT)	/* Backtab */
 						fieldmove=-1;
 					if(i==-2-CIO_KEY_MOUSE)
 						currfield=mousetofield(currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
