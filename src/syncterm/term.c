@@ -725,7 +725,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 
 	if((fp=fopen(path,"rb"))==NULL) {
 		SAFEPRINTF2(str,"Error %d opening %s for read",errno,path);
-		uifcmsg("ERROR",str);
+		uifcmsg("Error opening file",str);
 		uifcbail();
 		setup_mouse_events();
 		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
