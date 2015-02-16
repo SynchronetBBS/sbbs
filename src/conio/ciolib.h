@@ -307,7 +307,7 @@ CIOLIBEXPORTVAR int directvideo;
 CIOLIBEXPORTVAR int hold_update;
 CIOLIBEXPORTVAR int puttext_can_move;
 CIOLIBEXPORTVAR int ciolib_xlat;
-CIOLIBEXPORTVAR int ciolib_reaper=TRUE;
+CIOLIBEXPORTVAR int ciolib_reaper;
 
 #define _conio_kbhit()		kbhit()
 

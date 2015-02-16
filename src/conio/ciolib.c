@@ -77,6 +77,7 @@ CIOLIBEXPORT int directvideo=0;
 CIOLIBEXPORT int hold_update=0;
 CIOLIBEXPORT int puttext_can_move=0;
 CIOLIBEXPORT int ciolib_xlat=0;
+CIOLIBEXPORT int ciolib_reaper=TRUE;
 static int initialized=0;
 
 CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
