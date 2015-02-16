@@ -1465,6 +1465,17 @@ int win_to_text_ypos(int winpos)
 }
 
 /* Event Thread */
+/*
+ * This function waits 500ms then calls exit().
+ * It's used to handle the "close" button if the program doesn't deal
+ * with CIO_KEY_QUIT.
+ */
+void cheery_reaper(void)
+{
+	SLEEP(500);
+	exit(0);
+}
+
 int sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
@@ -1537,6 +1548,7 @@ int sdl_video_event_thread(void *data)
 						break;
 					case SDL_QUIT:
 						sdl_add_key(CIO_KEY_QUIT);
+						cheery_reaper();
 						break;
 					case SDL_VIDEORESIZE:
 						if(ev.resize.w > 0 && ev.resize.h > 0) {
