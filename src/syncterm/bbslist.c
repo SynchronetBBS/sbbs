@@ -1596,6 +1596,8 @@ struct bbslist *show_bbslist(char *current, int connected)
 								if(settings.confirm_close && !confirm("Are you sure you want to exit?",NULL))
 									continue;
 							}
+							// Fall-through
+						case -2-CIO_KEY_QUIT:
 							free_list(&list[0],listcount);
 							return(NULL);
 					}
@@ -1801,6 +1803,8 @@ struct bbslist *show_bbslist(char *current, int connected)
 							if(settings.confirm_close && !confirm("Are you sure you want to exit?",NULL))
 								continue;
 						}
+						// Fall-through
+					case -2-CIO_KEY_QUIT:
 						free_list(&list[0],listcount);
 						return(NULL);
 					case 0:			/* Edit default connection settings */
@@ -1834,6 +1838,10 @@ struct bbslist *show_bbslist(char *current, int connected)
 									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 									|WIN_SEL|WIN_INACT
 									,0,0,0,&opt,&bar,"Directory",(char **)list);
+							}
+							else if (i==-2-CIO_KEY_QUIT) {
+								free_list(&list[0],listcount);
+								return(NULL);
 							}
 						}
 						break;

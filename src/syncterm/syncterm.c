@@ -1452,6 +1452,7 @@ int main(int argc, char **argv)
 
 	if(initciolib(ciolib_mode))
 		return(1);
+	ciolib_reaper=FALSE;
 	seticon(syncterm_icon.pixel_data,syncterm_icon.width);
 	textmode(text_mode);
 
