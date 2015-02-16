@@ -1470,7 +1470,7 @@ int win_to_text_ypos(int winpos)
  * It's used to handle the "close" button if the program doesn't deal
  * with CIO_KEY_QUIT.
  */
-void cheery_reaper(void)
+int cheery_reaper(void *data)
 {
 	SLEEP(500);
 	exit(0);
@@ -1548,7 +1548,7 @@ int sdl_video_event_thread(void *data)
 						break;
 					case SDL_QUIT:
 						sdl_add_key(CIO_KEY_QUIT);
-						cheery_reaper();
+						sdl.CreateThread(cheery_reaper, NULL);
 						break;
 					case SDL_VIDEORESIZE:
 						if(ev.resize.w > 0 && ev.resize.h > 0) {
