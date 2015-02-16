@@ -927,7 +927,7 @@ static void clear2bol(struct cterminal * cterm)
 	int i,j,k;
 
 	k=WHEREX();
-	buf=(char *)alloca(k*2);
+	buf=(char *)malloc(k*2);
 	j=0;
 	for(i=0;i<k;i++) {
 		if(cterm->emulation == CTERM_EMULATION_ATASCII)
@@ -937,6 +937,7 @@ static void clear2bol(struct cterminal * cterm)
 		buf[j++]=cterm->attr;
 	}
 	PUTTEXT(cterm->x,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,buf);
+	free(buf);
 }
 
 void CIOLIBCALL cterm_clearscreen(struct cterminal *cterm, char attr)
@@ -1492,13 +1493,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						i=1;
 					if(i>cterm->width-WHEREX())
 						i=cterm->width-WHEREX();
-					p2=alloca(i*2);
+					p2=malloc(i*2);
 					j=0;
 					for(k=0;k<i;k++) {
 						p2[j++]=' ';
 						p2[j++]=cterm->attr;
 					}
 					PUTTEXT(cterm->x+WHEREX()-1,cterm->y+WHEREY()-1,cterm->x+WHEREX()-1+i-1,cterm->y+WHEREY()-1,p2);
+					free(p2);
 					break;
 				case 'Z':
 					i=strtoul(cterm->escbuf+1,NULL,10);
