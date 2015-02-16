@@ -1536,8 +1536,8 @@ int sdl_video_event_thread(void *data)
 						}
 						break;
 					case SDL_QUIT:
-						sdl.SemPost(sdl_exit_sem);
-						return(sdl_exitcode);
+						sdl_add_key(CIO_KEY_QUIT);
+						break;
 					case SDL_VIDEORESIZE:
 						if(ev.resize.w > 0 && ev.resize.h > 0) {
 							if(yuv.enabled) {
