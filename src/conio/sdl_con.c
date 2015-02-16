@@ -1548,7 +1548,8 @@ int sdl_video_event_thread(void *data)
 						break;
 					case SDL_QUIT:
 						sdl_add_key(CIO_KEY_QUIT);
-						sdl.CreateThread(cheery_reaper, NULL);
+						if (ciolib_reaper)
+							sdl.CreateThread(cheery_reaper, NULL);
 						break;
 					case SDL_VIDEORESIZE:
 						if(ev.resize.w > 0 && ev.resize.h > 0) {
