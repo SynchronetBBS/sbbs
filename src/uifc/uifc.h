@@ -206,6 +206,9 @@
 #define BL_EDIT     (1<<4)  /* Edit key */
 #define BL_HELP     (1<<5)  /* Help key */
 
+						/* Extra exit flags */
+#define UIFC_XF_QUIT	(1<<0)	/* Returned -1 due to CIO_KEY_QUIT */
+
 #define HELPBUF_SIZE 4000
 
 #ifndef _GEN_DEFS_H
@@ -395,6 +398,11 @@ typedef struct {
 /* Have we initialized successfully?										*/
 /****************************************************************************/
 	BOOL	initialized;
+
+/****************************************************************************/
+/* UIFC_XF_* bits for extra exit status										*/
+/****************************************************************************/
+	uint	exit_flags;
 
 /****************************************************************************/
 /* Custom drawing characters												*/

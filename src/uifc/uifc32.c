@@ -644,6 +644,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	int gotkey;
 	uchar	hclr,lclr,bclr,cclr,lbclr;
 
+	api->exit_flags = 0;
 	hclr=api->hclr;
 	lclr=api->lclr;
 	bclr=api->bclr;
@@ -1240,6 +1241,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					break;
 				case CIO_KEY_ABORTED:
 					gotkey=ESC;
+					break;
+				case CIO_KEY_QUIT:
+					api->exit_flags |= UIFC_XF_QUIT;
+					if(!(mode&WIN_EXTKEYS))
+						gotkey=ESC;
 					break;
 			}
 			if(gotkey>255) {
@@ -2009,6 +2015,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	char	*pastebuf=NULL;
 	unsigned char	*pb=NULL;
 
+	api->exit_flags = 0;
 	if((str=alloca(max+1))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,(max+1));
@@ -2041,6 +2048,11 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		}
 #endif
 		f=inkey();
+		if(f==CIO_KEY_QUIT) {
+			api->exit_flags |= UIFC_XF_QUIT;
+			return -1;
+		}
+
 		if(f==CIO_KEY_MOUSE) {
 			f=uifc_getmouse(&mevnt);
 			if(f==0 || (f==ESC && mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
@@ -2226,6 +2238,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						j--;
 					}
 					continue;
+				case CIO_KEY_QUIT:
+					api->exit_flags |= UIFC_XF_QUIT;
 				case CIO_KEY_ABORTED:
 				case CTRL_C:
 				case ESC:
@@ -2553,6 +2567,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	uint title_len=0;
 	struct mouse_event	mevnt;
 
+	api->exit_flags = 0;
 	_setcursortype(_NOCURSOR);
 	
 	title_len=strlen(title);
@@ -2799,6 +2814,9 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 						p = p+((width-2-pad-pad)*2);
 						break;
 
+					case CIO_KEY_QUIT:
+						api->exit_flags |= UIFC_XF_QUIT;
+						// Fall-through
 					default:
 						i=1;
 				}
@@ -2825,6 +2843,7 @@ static void help(void)
 	long l;
 	FILE *fp;
 
+	api->exit_flags = 0;
 	if(api->helpbuf==NULL && api->helpixbfile[0]==0)
 		return;
 
