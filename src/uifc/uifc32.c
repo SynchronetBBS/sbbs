@@ -1108,8 +1108,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		gotkey=0;
 		textattr(((api->lbclr)&0x0f)|((api->lbclr >> 4)&0x0f));
 		gotoxy(s_left+lbrdrwidth+2+left, s_top+y);
-		if(kbwait() || (mode&(WIN_POP|WIN_SEL))) {
-			if(mode&WIN_POP)
+		if((api->exit_flags & UIFC_XF_QUIT) || kbwait() || (mode&(WIN_POP|WIN_SEL))) {
+			if(api->exit_flags & UIFC_XF_QUIT)
+				gotkey = CIO_KEY_QUIT;
+			else if(mode&WIN_POP)
 				gotkey=ESC;
 			else if(mode&WIN_SEL)
 				gotkey=CR;
@@ -2172,6 +2174,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				case CTRL_Z:
 				case CIO_KEY_F(1):	/* F1 Help */
 					api->showhelp();
+					if(api->exit_flags & UIFC_XF_QUIT)
+						f = CIO_KEY_QUIT;
 					continue;
 				case CIO_KEY_LEFT:	/* left arrow */
 					if(i)
