@@ -76,6 +76,11 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 			return FALSE;
 		}
 		strcpy(un_addr.sun_path,addr);
+#ifdef SUN_LEN
+		dummy.ai_addrlen = SUN_LEN(&un_addr);
+#else
+		dummy.ai_addrlen = offsetof(struct sockaddr_un, un_addr.sun_path) + strlen(addr) + 1;
+#endif
 		if(fexist(addr))
 			unlink(addr);
 		res = &dummy;
