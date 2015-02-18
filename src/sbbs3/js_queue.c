@@ -77,7 +77,6 @@ static size_t js_decode_value(JSContext *cx, JSObject *parent
 		return(count);
 
 	JS_ReadStructuredClone(cx, v->value, v->size, JS_STRUCTURED_CLONE_VERSION, rval, NULL, NULL);
-	free(v->value);
 
 	return(count);
 }
@@ -157,6 +156,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		jsval	rval;
 
 		js_decode_value(cx, obj, v, &rval, /* peek */FALSE);
+		free(v->value);
 		free(v);
 		JS_SET_RVAL(cx, arglist, rval);
 	}
