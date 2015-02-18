@@ -67,7 +67,7 @@ static void js_finalize_queue(JSContext *cx, JSObject *obj)
 }
 
 static size_t js_decode_value(JSContext *cx, JSObject *parent
-							   ,queued_value_t* v, jsval* rval, BOOL peek)
+							   ,queued_value_t* v, jsval* rval)
 {
 	size_t			count=1;
 
@@ -155,7 +155,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	if(v!=NULL) {
 		jsval	rval;
 
-		js_decode_value(cx, obj, v, &rval, /* peek */FALSE);
+		js_decode_value(cx, obj, v, &rval);
 		free(v->value);
 		free(v);
 		JS_SET_RVAL(cx, arglist, rval);
@@ -191,7 +191,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	if(v!=NULL) {
 		jsval	rval;
-		js_decode_value(cx, obj, v, &rval, /* peek */TRUE);
+		js_decode_value(cx, obj, v, &rval);
 		JS_SET_RVAL(cx, arglist, rval);
 	}
 
