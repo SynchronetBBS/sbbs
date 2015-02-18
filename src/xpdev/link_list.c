@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -236,7 +236,7 @@ BOOL DLLCALL listSemTryWaitBlock(link_list_t* list, unsigned long timeout)
 
 BOOL DLLCALL listLock(link_list_t* list)
 {
-	BOOL	ret=TRUE;
+	int	ret=0;
 
 	if(list==NULL)
 		return(FALSE);
@@ -244,7 +244,7 @@ BOOL DLLCALL listLock(link_list_t* list)
 	if((list->flags&LINK_LIST_MUTEX) && (ret=pthread_mutex_lock(&list->mutex))==0)
 #endif
 		list->locks++;
-	return(ret);
+	return(ret==0);
 }
 
 BOOL DLLCALL listIsLocked(const link_list_t* list)
@@ -256,7 +256,7 @@ BOOL DLLCALL listIsLocked(const link_list_t* list)
 
 BOOL DLLCALL listUnlock(link_list_t* list)
 {
-	BOOL	ret=TRUE;
+	int	ret=0;
 
 	if(list==NULL)
 		return(FALSE);
@@ -264,7 +264,7 @@ BOOL DLLCALL listUnlock(link_list_t* list)
 	if((list->flags&LINK_LIST_MUTEX) && (ret=pthread_mutex_unlock(&list->mutex))==0)
 #endif
 		list->locks--;
-	return(ret);
+	return(ret==0);
 }
 
 long DLLCALL listCountNodes(link_list_t* list)
