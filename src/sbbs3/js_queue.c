@@ -66,17 +66,17 @@ static void js_finalize_queue(JSContext *cx, JSObject *obj)
 	JS_SetPrivate(cx, obj, NULL);
 }
 
-static size_t js_decode_value(JSContext *cx, JSObject *parent
+static void js_decode_value(JSContext *cx, JSObject *parent
 							   ,queued_value_t* v, jsval* rval)
 {
 	*rval = JSVAL_VOID;
 
 	if(v==NULL)
-		return(1);
+		return;
 
 	JS_ReadStructuredClone(cx, v->value, v->size, JS_STRUCTURED_CLONE_VERSION, rval, NULL, NULL);
 
-	return(1);
+	return;
 }
 
 /* Queue Object Methods */
