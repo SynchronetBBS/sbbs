@@ -100,6 +100,7 @@ unsigned int  scrollback_cols=80;
 int	safe_mode=0;
 FILE* log_fp;
 extern ini_style_t ini_style;
+BOOL quitting=FALSE;
 
 #ifdef _WINSOCKAPI_
 
@@ -769,6 +770,19 @@ char *output_enum[]={
 	,"SDLOverlay"
 	,"SDLOverlayFullscreen"
 ,NULL};
+
+BOOL check_exit(BOOL force)
+{
+	if (force || (uifc.exit_flags & UIFC_XF_QUIT)) {
+		if (settings.confirm_close) {
+			if (!confirm("Are you sure you want to exit?",NULL))
+				return false;
+		}
+		quitting=TRUE;
+		return TRUE;
+	}
+	return FALSE;
+}
 
 void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults)
 {
@@ -1506,7 +1520,7 @@ int main(int argc, char **argv)
 		return(1);
 
 	load_font_files();
-	while(bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL) {
+	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL)) {
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		FREE_AND_NULL(last_bbs);
 		if(!conn_connect(bbs)) {
@@ -1548,7 +1562,8 @@ int main(int argc, char **argv)
 				fprintf(log_fp,"%.15s Log opened\n", ctime(&now)+4);
 			}
 
-			exit_now=doterm(bbs);
+			if(doterm(bbs))
+				quitting=TRUE;
 			setvideoflags(0);
 
 			if(log_fp!=NULL) {
@@ -1568,7 +1583,7 @@ int main(int argc, char **argv)
 			}
 			settitle("SyncTERM");
 		}
-		if(exit_now || url[0]) {
+		if(quitting || url[0]) {
 			if(bbs != NULL && bbs->id==-1) {
 				if(!safe_mode) {
 					if(settings.prompt_save) {

@@ -95,6 +95,7 @@ void uifcmsg(char *msg, char *helpbuf)
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
 		uifc.msg(msg);
+		check_exit(FALSE);
 	}
 	else
 		fprintf(stderr,"%s\n",msg);
@@ -120,6 +121,7 @@ void uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
 		uifc.input(WIN_MID|WIN_SAV, 0, 0, title, msg, len, mode);
+		check_exit(FALSE);
 	}
 	else
 		fprintf(stderr,"%s\n",msg);
@@ -150,8 +152,10 @@ int confirm(char *msg, char *helpbuf)
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
-		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&copt,NULL,msg,options)!=0)
+		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&copt,NULL,msg,options)!=0) {
+			check_exit(FALSE);
 			ret=FALSE;
+		}
 	}
 	if(!i) {
 		uifcbail();

@@ -302,6 +302,11 @@ static BOOL zmodem_check_abort(void* vp)
 	time_t					now=time(NULL);
 	int						key;
 
+	if (quitting) {
+		zm->cancelled=TRUE;
+		zm->local_abort=TRUE;
+		return TRUE;
+	}
 	if(last_check != now) {
 		last_check=now;
 		if(zm!=NULL) {
@@ -318,6 +323,12 @@ static BOOL zmodem_check_abort(void* vp)
 						key |= (getch() << 8);
 						if(key==CIO_KEY_MOUSE)
 							getmouse(NULL);
+						if (key==CIO_KEY_QUIT) {
+							if (check_exit(FALSE)) {
+								zm->cancelled=TRUE;
+								zm->local_abort=TRUE;
+							}
+						}
 						break;
 				}
 			}
@@ -712,6 +723,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 	result=filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
 	
 	if(result==-1 || fpick.files<1) {
+		check_exit(FALSE);
 		filepick_free(&fpick);
 		uifcbail();
 		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
@@ -791,6 +803,9 @@ void begin_download(struct bbslist *bbs)
 	uifc.helpbuf="Select Protocol";
 	hold_update=FALSE;
 	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Protocol",opts)) {
+		case -1:
+			check_exit(FALSE);
+			break;
 		case 0:
 			zmodem_download(bbs);
 			break;
@@ -999,6 +1014,7 @@ void guts_transfer(struct bbslist *bbs)
 			result=filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
 
 			if(result==-1 || fpick.files<1) {
+				check_exit(FALSE);
 				filepick_free(&fpick);
 				uifcbail();
 				setup_mouse_events();
@@ -1125,7 +1141,10 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	if(log_fp!=NULL)
 		fflush(log_fp);
-	getch();
+	if (getch()==0) {
+		if (getch()<<8 == CIO_KEY_QUIT)
+			check_exit(FALSE);
+	}
 
 	erase_transfer_window();
 }
@@ -1160,6 +1179,13 @@ BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
 		i=0;
 		uifc.helpbuf="Duplicate file... choose action\n";
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Duplicate File Name",opts)) {
+			case -1:
+				if (check_exit(FALSE)) {
+					ret=FALSE;
+					break;
+				}
+				loop=TRUE;
+				break;
 			case 0:	/* Overwrite */
 				sprintf(fpath,"%s/%s",cb->bbs->dldir,zm->current_file_name);
 				unlink(fpath);
@@ -1228,7 +1254,10 @@ void zmodem_download(struct bbslist *bbs)
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	if(log_fp!=NULL)
 		fflush(log_fp);
-	getch();
+	if (getch()==0) {
+		if (getch()<<8 == CIO_KEY_QUIT)
+			check_exit(FALSE);
+	}
 
 	erase_transfer_window();
 }
@@ -1249,6 +1278,11 @@ static BOOL xmodem_check_abort(void* vp)
 	if (xm == NULL)
 		return FALSE;
 
+	if (quitting) {
+		xm->cancelled=TRUE;
+		return TRUE;
+	}
+
 	if(last_check != now) {
 		last_check=now;
 		while(kbhit()) {
@@ -1263,6 +1297,10 @@ static BOOL xmodem_check_abort(void* vp)
 					key |= (getch() << 8);
 					if(key==CIO_KEY_MOUSE)
 						getmouse(NULL);
+					if (key==CIO_KEY_QUIT) {
+						if (check_exit(FALSE))
+							xm->cancelled=TRUE;
+					}
 					break;
 			}
 		}
@@ -1503,7 +1541,10 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	if(log_fp!=NULL)
 		fflush(log_fp);
-	getch();
+	if (getch()==0) {
+		if (getch()<<8 == CIO_KEY_QUIT)
+			check_exit(FALSE);
+	}
 
 	erase_transfer_window();
 }
@@ -1537,6 +1578,13 @@ BOOL xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t path
 		i=0;
 		uifc.helpbuf="Duplicate file... choose action\n";
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Duplicate File Name",opts)) {
+			case -1:
+				if (check_exit(FALSE)) {
+					ret=FALSE;
+					break;
+				}
+				loop=TRUE;
+				break;
 			case 0:	/* Overwrite */
 				unlink(path);
 				ret=TRUE;
@@ -1858,7 +1906,10 @@ end:
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	if(log_fp!=NULL)
 		fflush(log_fp);
-	getch();
+	if (getch()==0) {
+		if (getch()<<8 == CIO_KEY_QUIT)
+			check_exit(FALSE);
+	}
 
 	erase_transfer_window();
 }
@@ -1904,6 +1955,8 @@ void music_control(struct bbslist *bbs)
 				"according to the ANSI spec.  Specifically ESC[|.";
 	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"ANSI Music Setup",opts)!=-1)
 		cterm->music_enable=i;
+	else
+		check_exit(FALSE);
 	uifcbail();
 	setup_mouse_events();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
@@ -1934,6 +1987,7 @@ void font_control(struct bbslist *bbs)
 		case CIOLIB_MODE_ANSI:
 			uifcmsg("Not supported in this video output mode."
 				,"Font cannot be changed in the current video output mode");
+			check_exit(FALSE);
 			break;
 		default:
 			i=j=getfont();
@@ -1944,6 +1998,7 @@ void font_control(struct bbslist *bbs)
 				if(k & MSK_INS) {
 					struct file_pick fpick;
 					j=filepick(&uifc, "Load Font From File", &fpick, ".", NULL, 0);
+					check_exit(FALSE);
 
 					if(j!=-1 && fpick.files>=1)
 						loadfont(fpick.selected[0]);
@@ -1957,6 +2012,8 @@ void font_control(struct bbslist *bbs)
 						enable_xlat = TRUE;
 				}
 			}
+			else
+				check_exit(FALSE);
 		break;
 	}
 	uifcbail();
@@ -1997,11 +2054,14 @@ void capture_control(struct bbslist *bbs)
 					"Don't do that though.  :-)";
 		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Type",opts)!=-1) {
 			j=filepick(&uifc, "Capture File", &fpick, bbs->dldir, NULL, UIFC_FP_ALLOWENTRY);
+			check_exit(FALSE);
 
 			if(j!=-1 && fpick.files>=1)
 				cterm_openlog(cterm, fpick.selected[0], i?CTERM_LOG_RAW:CTERM_LOG_ASCII);
 			filepick_free(&fpick);
 		}
+		else
+			check_exit(FALSE);
 	}
 	else {
 		if(cterm->log & CTERM_LOG_PAUSED) {
@@ -2015,6 +2075,9 @@ void capture_control(struct bbslist *bbs)
 						"~ Close ~   Closes the log\n\n";
 			if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Control",opts)!=-1) {
 				switch(i) {
+					case -1:
+						check_exit(FALSE);
+						break;
 					case 0:
 						cterm->log=cterm->log & CTERM_LOG_MASK;
 						break;
@@ -2035,6 +2098,9 @@ void capture_control(struct bbslist *bbs)
 						"~ Close ~ Closes the log\n\n";
 			if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Control",opts)!=-1) {
 				switch(i) {
+					case -1:
+						check_exit(FALSE);
+						break;
 					case 0:
 						cterm->log=cterm->log |= CTERM_LOG_PAUSED;
 						break;
@@ -2267,7 +2333,7 @@ BOOL doterm(struct bbslist *bbs)
 	/* Main input loop */
 	oldmc=hold_update;
 	showmouse();
-	for(;;) {
+	for(;!quitting;) {
 		hold_update=TRUE;
 		sleep=TRUE;
 		if(!term.nostatus)
@@ -2293,6 +2359,7 @@ BOOL doterm(struct bbslist *bbs)
 							}
 #endif
 							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
+							check_exit(FALSE);
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
 							cterm_end(cterm);
@@ -2461,20 +2528,24 @@ BOOL doterm(struct bbslist *bbs)
 		hold_update=oldmc;
 
 		/* Get local input */
-		while(kbhit()) {
+		while(quitting || kbhit()) {
 			struct mouse_event mevent;
 
 			updated=TRUE;
 			gotoxy(wherex(), wherey());
-			key=getch();
-			if(key==0 || key==0xff) {
-				key|=getch()<<8;
-				if(cterm->doorway_mode && ((key & 0xff) == 0) && key != 0x2c00 /* ALT-Z */) {
-					ch[0]=0;
-					ch[1]=key>>8;
-					conn_send(ch,2,0);
-					key=0;
-					continue;
+			if (quitting)
+				key = CIO_KEY_QUIT;
+			else {
+				key=getch();
+				if(key==0 || key==0xff) {
+					key|=getch()<<8;
+					if(cterm->doorway_mode && ((key & 0xff) == 0) && key != 0x2c00 /* ALT-Z */) {
+						ch[0]=0;
+						ch[1]=key>>8;
+						conn_send(ch,2,0);
+						key=0;
+						continue;
+					}
 				}
 			}
 
@@ -2586,24 +2657,14 @@ BOOL doterm(struct bbslist *bbs)
 						break;
 					}
 					/* FALLTHROUGH for curses/ansi modes */
-				case CIO_KEY_QUIT:
 				case 0x2d00:	/* Alt-X - Exit */
+				case CIO_KEY_QUIT:
+					if(!check_exit(TRUE))
+						break;
+					// Fallthrough
 				case 0x2300:	/* Alt-H - Hangup */
 					{
-						char *opts[3]={
-										 "Yes"
-										,"No"
-										,""
-									  };
-						char *buf;
-
-   						gettextinfo(&txtinfo);
-						buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
-						gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
-						i=0;
-						init_uifc(FALSE, FALSE);
-						uifc.helpbuf="Selecting Yes closes the connection\n";
-						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Disconnect... Are you sure?",opts)==0) {
+						if(quitting || confirm("Disconnect... Are you sure?", "Selecting Yes closes the connection\n")) {
 #ifdef WITH_WXWIDGETS
 							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
@@ -2611,7 +2672,6 @@ BOOL doterm(struct bbslist *bbs)
 								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
-							uifcbail();
 							setup_mouse_events();
 							cterm_clearscreen(cterm,cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
@@ -2619,13 +2679,9 @@ BOOL doterm(struct bbslist *bbs)
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
-							free(buf);
 							return(key==0x2d00 /* Alt-X? */ || key == CIO_KEY_QUIT);
 						}
-						uifcbail();
 						setup_mouse_events();
-						puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
-						free(buf);
 						window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
 						textattr(txtinfo.attribute);
 						gotoxy(txtinfo.curx,txtinfo.cury);
