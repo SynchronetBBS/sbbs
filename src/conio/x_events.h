@@ -80,6 +80,8 @@ struct x11 {
 	Status	(*XGetWindowAttributes)	(Display*,Window,XWindowAttributes*);
 	XWMHints* (*XAllocWMHints) (void);
 	void	(*XSetWMProperties) (Display*, Window, XTextProperty*, XTextProperty*, char**, int, XSizeHints*, XWMHints*, XClassHint*);
+	Status	(*XSetWMProtocols) (Display*, Window, Atom *, int);
+	Atom	(*XInternAtom) (Display *, char *, Bool);
 };
 
 

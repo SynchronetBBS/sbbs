@@ -348,6 +348,14 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XSetWMProtocols=xp_dlsym(dl,XSetWMProtocols))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XInternAtom=xp_dlsym(dl,XInternAtom))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 
 	if(sem_init(&pastebuf_set, 0, 0)) {
 		xp_dlclose(dl);
