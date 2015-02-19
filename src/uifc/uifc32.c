@@ -1246,8 +1246,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					break;
 				case CIO_KEY_QUIT:
 					api->exit_flags |= UIFC_XF_QUIT;
-					if(!(mode&WIN_EXTKEYS))
-						gotkey=ESC;
+					gotkey=ESC;
 					break;
 			}
 			if(gotkey>255) {
