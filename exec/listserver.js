@@ -5,6 +5,7 @@
 // $Id$
 
 load("sbbsdefs.js");
+load("mailproc_util.js");	// import parse_msg_header() and get_msg_body()
 
 const REVISION = "$Revision$".split(' ')[1];
 const user_list_ext = ".list.sub";
@@ -122,8 +123,6 @@ if(js.global.recipient_list_filename!=undefined) {
 	var msgtxt = msgtxt_file.readAll()
 	msgtxt_file.close();
 	file_remove(message_text_filename);
-
-	load("mailproc_util.js");	// import parse_msg_header() and get_msg_body()
 
 	var header = parse_msg_header(msgtxt);
 	header = convert_msg_header(header);
@@ -334,6 +333,16 @@ for(var l in list_array) {
 		hdr.replyto_net_addr = list.address;
 		hdr.from_agent = AGENT_PROCESS;
 		hdr.reverse_path = listserver_address;
+   		// Create RFC2919 'List-ID' header
+		hdr.field_list = [ { type: RFC822HEADER, data: 'List-ID: '     + list.description +" <"+ list.name+'.'+system.inet_addr +">"} ];
+        // Create RFC2369 Mailing List headers
+        if(subj_cmd || body_cmd) {
+            var mailto_verb = subj_cmd ? "subject":"body";
+            hdr.field_list.push({ type: RFC822HEADER, data: 'List-Help: '   + "<mailto:"+listserver_address+"?"+mailto_verb+"=help>"});
+            hdr.field_list.push({ type: RFC822HEADER, data: 'List-Unsubscribe: '   + "<mailto:"+listserver_address+"?"+mailto_verb+"=unsubscribe "+list.name+">"});
+        }
+        if(!list.disabled && !list.readonly)
+            hdr.field_list.push({ type: RFC822HEADER, data: 'List-Post: '   + "<mailto:"+list.address+">"});
 		if(list.subject_mod==true && hdr.subject.indexOf("[" + list.name + "]")==-1)
 			hdr.subject = "[" + list.name + "] " + hdr.subject;
 		if(!mailbase.save_msg(hdr,body,rcpt_list))
