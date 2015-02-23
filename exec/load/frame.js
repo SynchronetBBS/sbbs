@@ -959,7 +959,7 @@ Frame.prototype.putmsg = function(str,attr) {
 				k = k.toUpperCase();
 			switch(k) {
 			case '\1':	/* A "real" ^A code */
-				this.__putChar__.call(this,ch,curattr);
+				this.__putChar__.call(this,ch,this.__properties__.curr_attr);
 				pos.x++;
 				break;
 			case 'K':	/* Black */
