@@ -1162,13 +1162,6 @@ static void show_usage(char *cmd)
 		printf(web_usage);
 }
 
-#if SBBS_MAGIC_FILENAMES
-static int command_is(char *cmdline, char *cmd)
-{
-	return(strnicmp(getfname(cmdline),cmd,strlen(cmd))==0);
-}
-#endif
-
 /****************************************************************************/
 /* Main Entry Point															*/
 /****************************************************************************/
@@ -1352,44 +1345,7 @@ int main(int argc, char** argv)
 
 	read_startup_ini(/* recycle? */FALSE
 		,&bbs_startup, &ftp_startup, &web_startup, &mail_startup, &services_startup);
-
-#if SBBS_MAGIC_FILENAMES	/* This stuff is just broken */
-
-	if(!command_is(argv[0],"sbbs"))  {
-		run_bbs=has_bbs=FALSE;
-		run_ftp=has_ftp=FALSE;
-		run_mail=has_mail=FALSE;
-		run_services=has_services=FALSE;
-		run_web=has_web=FALSE;
-	}
-	if(command_is(argv[0],"sbbs_ftp"))
-		run_ftp=has_ftp=TRUE;
-	else if(command_is(argv[0],"sbbs_mail"))
-		run_mail=has_mail=TRUE;
-	else if(command_is(argv[0],"sbbs_bbs"))
-		run_bbs=has_bbs=TRUE;
-#ifndef NO_SERVICES
-	else if(command_is(argv[0],"sbbs_srvc"))
-		run_services=has_services=TRUE;
-#endif
-#ifndef NO_WEB_SERVER
-	else if(command_is(argv[0],"sbbs_web"))
-		run_web=has_web=TRUE;
-#endif
-	else {
-		run_bbs=has_bbs=TRUE;
-		run_ftp=has_ftp=TRUE;
-		run_mail=has_mail=TRUE;
-#ifndef NO_SERVICES
-		run_services=has_services=TRUE;
-#endif
-#ifndef NO_WEB_SERVER
-		run_web=has_web=TRUE;
-#endif
-	}
-#else
 	has_web=has_bbs=has_ftp=has_mail=has_services=TRUE;
-#endif	/* Removed broken stuff */
 
 	/* Post-INI command-line switches */
 	for(i=1;i<argc;i++) {
