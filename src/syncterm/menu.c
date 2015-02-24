@@ -163,18 +163,21 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						"`Scrollback`     Allows to you to view the scrollback buffer\n"
 						"`Disconnect`     Disconnects the current connection\n"
 						"`Send Login`     Sends the username and password pair separated by CR\n"
-						"`Upload`         Initiates a file upload (ZMODEM or ASCII)\n"
-						"`Download`       Initiates a file download (ZMODEM)\n"
-						"`Log Level`      Changes the minimum log level for ZMODEM information\n"
+						"`Upload`         Initiates a file upload\n"
+						"`Download`       Initiates a file download\n"
 						"`Output Rate`    Changes the speed characters are output to the screen\n"
+						"`Log Level`      Changes the minimum log level for transfer information\n"
 						"`Capture`        Enables/Disables screen capture\n"
 						"`ANSI Music`     Enables/Disables ANSI Music\n"
 						"`Font`           Changes the current font (when supported)\n"
 						"`Doorway Mode`   Toggles the current DoorWay (keyboard input) setting\n"
 #ifndef WITHOUT_OOII
-						"`Operation Overkill ][ Mode`   Toggles the current Operation Overkill ][ setting\n"
+						"`Operation Overkill ][ Mode`\n"
+						"               Toggles the current Operation Overkill ][ setting\n"
 #endif
-						"`Exit`           Disconnects and closes Syncterm";
+						"`Exit`           Disconnects and closes Syncterm\n"
+						"`Edit Dialing Directory`\n"
+						"               Opens the directory/setting menu\n";
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
 		switch(i) {
 			case -1:	/* Cancel */

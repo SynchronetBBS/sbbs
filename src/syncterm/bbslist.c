@@ -1248,7 +1248,9 @@ void change_settings(void)
 						"~ Modem Dial String ~\n"
 						"        The command string to use to dial the modem.\n\n"
 						"~ List Path ~\n"
-						"        The complete path to the users BBS list.\n\n";
+						"        The complete path to the user's BBS list.\n\n"
+						"~ TERM For Shell ~\n"
+						"        The value to set the TERM envirnonment variable to goes here.\n\n";
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Prompt to Save          %s",settings.prompt_save?"Yes":"No");
 		sprintf(opts[2],"Startup Screen Mode     %s",screen_modes[settings.startup_mode]);
@@ -1923,7 +1925,10 @@ struct bbslist *show_bbslist(char *current, int connected)
 						}
 						break;
 					case 2:			/* Font management */
-						if(!safe_mode) font_management();
+						if(!safe_mode) {
+							font_management();
+							load_font_files();
+						}
 						break;
 					case 3:			/* Program settings */
 						change_settings();

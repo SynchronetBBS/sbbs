@@ -1573,7 +1573,6 @@ int main(int argc, char **argv)
 				fclose(log_fp);
 				log_fp=NULL;
 			}
-			load_font_files();
 			textmode(txtinfo.currmode);
 			for(i=CONIO_FIRST_FREE_FONT; i<256; i++) {
 				FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
@@ -1581,6 +1580,7 @@ int main(int argc, char **argv)
 				FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
 				FREE_AND_NULL(conio_fontdata[i].desc);
 			}
+			load_font_files();
 			settitle("SyncTERM");
 		}
 		if(quitting || url[0]) {
