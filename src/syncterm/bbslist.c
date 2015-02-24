@@ -806,13 +806,45 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 
 		uifc.helpbuf=	"`Edit Directory Entry`\n\n"
 						"Select item to edit.\n\n"
+						"~ Name ~\n"
+						"        The name of the BBS entry\n\n"
+						"~ Phone Number / Device Name / Command / Address ~\n"
+						"        Required information to establish the connection (type specific)\n\n"
+						"~ Conection Type ~\n"
+						"        Type of connection\n\n"
+						"~ TCP Port ~ (if applicable)\n"
+						"        TCP port to connect to (applicable types only)\n\n"
+						"~ Username ~\n"
+						"        Username sent by the auto-login command\n\n"
+						"~ Password ~\n"
+						"        Password sent by auto-login command (not securely stored)\n\n"
+						"~ System Password ~\n"
+						"        System Password sent by auto-login command (not securely stored)\n\n"
+						"~ Screen Mode ~\n"
+						"        Display mode to use\n\n"
 						"~ Hide Status Line ~\n"
 						"        Selects if the status line should be hidden, giving an extra\n"
 						"        display row\n\n"
+						"~ Download Path ~\n"
+						"        Default path to store downloaded files\n\n"
+						"~ Upload Path ~\n"
+						"        Default path for uploads\n\n"
+						"~ Log File ~\n"
+						"        Log file name when logging is enabled\n\n"
 						"~ Log Transfers ~\n"
 						"        Cycles through the various transfer log settings.\n\n"
 						"~ Log Telnet Cmds ~\n"
 						"        Cycles through the various telnet command log settings.\n\n"
+						"~ Append Log File ~\n"
+						"        Append log file (instead of overwrite) on each connection\n\n"
+						"~ Comm Rate ~\n"
+						"        Display speed\n\n"
+						"~ ANSI Music ~\n"
+						"        ANSI music type selection\n\n"
+						"~ Address Family ~\n"
+						"        IPv4 or IPv6\n\n"
+						"~ Font ~\n"
+						"        Select font to use for the entry\n\n"
 						;
 		i=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&copt,&bar
 			,isdefault ? "Edit Default Connection":"Edit Directory Entry"
@@ -1135,6 +1167,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 		if(uifc.changes)
 			changed=1;
 	}
+	return (changed);
 }
 
 void add_bbs(char *listpath, struct bbslist *bbs)
