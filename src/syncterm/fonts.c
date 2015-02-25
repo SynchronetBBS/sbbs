@@ -101,7 +101,7 @@ struct font_files *read_font_files(int *count)
 		return(ret);
 	}
 	fonts=iniReadSectionList(inifile, "Font:");
-	while((fontid=strListPop(&fonts))!=NULL) {
+	while((fontid=strListRemove(&fonts, 0))!=NULL) {
 		if(!fontid[5]) {
 			free(fontid);
 			continue;
