@@ -1459,6 +1459,7 @@ int win_to_text_ypos(int winpos)
 int sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
+	int			new_scaling = -1;
 
 	if(!init_sdl_video()) {
 		char	driver[16];
@@ -1480,8 +1481,19 @@ int sdl_video_event_thread(void *data)
 		}
 
 		while(1) {
-			if(sdl.PollEvent(&ev)!=1)
+			if(sdl.PollEvent(&ev)!=1) {
+				if (new_scaling != -1) {
+					if (pthread_mutex_trylock(&vstatlock) == 0) {
+						vstat.scaling=new_scaling;
+						new_scaling = -1;
+						if(vstat.scaling < 1)
+							vstat.scaling=1;
+						pthread_mutex_unlock(&vstatlock);
+						setup_surfaces();
+					}
+				}
 				SLEEP(1);
+			}
 			else {
 				switch (ev.type) {
 					case SDL_ACTIVEEVENT:		/* Focus change */
@@ -1538,16 +1550,8 @@ int sdl_video_event_thread(void *data)
 								yuv.win_width=ev.resize.w;
 								yuv.win_height=ev.resize.h;
 							}
-							else {
-								if (vstat.scaling!=(int)(ev.resize.w/(vstat.charwidth*vstat.cols))) {
-									pthread_mutex_lock(&vstatlock);
-									vstat.scaling=(int)(ev.resize.w/(vstat.charwidth*vstat.cols));
-									if(vstat.scaling < 1)
-										vstat.scaling=1;
-									pthread_mutex_unlock(&vstatlock);
-								}
-							}
-							setup_surfaces();
+							else
+								new_scaling = (int)(ev.resize.w/(vstat.charwidth*vstat.cols));
 						}
 						break;
 					case SDL_VIDEOEXPOSE:
