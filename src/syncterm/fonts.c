@@ -153,7 +153,7 @@ void load_font_files(void)
 		else
 			continue;
 		if(ff[i].path8x8 && ff[i].path8x8[0]) {
-			if((fontfile=fopen(ff[i].path8x8,"r"))!=NULL) {
+			if((fontfile=fopen(ff[i].path8x8,"rb"))!=NULL) {
 				if((fontdata=(char *)malloc(2048))!=NULL) {
 					if(fread(fontdata, 1, 2048, fontfile)==2048) {
 						conio_fontdata[nextfont].eight_by_eight=fontdata;
@@ -166,7 +166,7 @@ void load_font_files(void)
 			}
 		}
 		if(ff[i].path8x14 && ff[i].path8x14[0]) {
-			if((fontfile=fopen(ff[i].path8x14,"r"))!=NULL) {
+			if((fontfile=fopen(ff[i].path8x14,"rb"))!=NULL) {
 				if((fontdata=(char *)malloc(3584))!=NULL) {
 					if(fread(fontdata, 1, 3584, fontfile)==3584) {
 						conio_fontdata[nextfont].eight_by_fourteen=fontdata;
@@ -179,7 +179,7 @@ void load_font_files(void)
 			}
 		}
 		if(ff[i].path8x16 && ff[i].path8x16[0]) {
-			if((fontfile=fopen(ff[i].path8x16,"r"))!=NULL) {
+			if((fontfile=fopen(ff[i].path8x16,"rb"))!=NULL) {
 				if((fontdata=(char *)malloc(4096))!=NULL) {
 					if(fread(fontdata, 1, 4096, fontfile)==4096) {
 						conio_fontdata[nextfont].eight_by_sixteen=fontdata;
