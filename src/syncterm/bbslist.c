@@ -413,40 +413,7 @@ int listcmp(const void *aptr, const void *bptr)
 
 void sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, char *current)  {
 	int i;
-#if 0
-	struct bbslist *tmp;
-	unsigned int	i,j,swapped=1;
-
-	while(swapped) {
-		swapped=0;
-		for(i=1;list[i]!=NULL && list[i-1]->name[0] && list[i]->name[0];i++) {
-			int	cmp=stricmp(list[i-1]->name,list[i]->name);
-			if(cmp>0 || (cmp==0 && list[i-1]->type==SYSTEM_BBSLIST && list[i]->type==USER_BBSLIST)) {
-				tmp=list[i];
-				list[i]=list[i-1];
-				list[i-1]=tmp;
-				swapped=1;
-			}
-			if(cmp==0) {
-				/* Duplicate.  Remove the one from system BBS list */
-				tmp=list[i];
-				for(j=i;list[j]!=NULL && list[j]->name[0];j++) {
-					list[j]=list[j+1];
-				}
-				if(tmp)
-					free(tmp);
-				for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
-					list[j]->id=j;
-				}
-				(*listcount)--;
-				swapped=1;
-				break;
-			}
-		}
-	}
-#else
 	qsort(list, *listcount, sizeof(struct bbslist *), listcmp);
-#endif
 	if(cur && current) {
 		for(i=0; i<*listcount; i++) {
 			if(strcmp(list[i]->name,current)==0) {
