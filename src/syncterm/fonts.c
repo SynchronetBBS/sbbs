@@ -315,11 +315,11 @@ void font_management(void)
 			switch(i) {
 				case 0:
 					SAFECOPY(str,fonts[cur].name);
-					FREE_AND_NULL(fonts[cur].name);
 					uifc.helpbuf="Enter the name of the font as you want it to appear\nin menus.";
 					if (uifc.input(WIN_SAV|WIN_MID,0,0,"Font Name",str,50,K_EDIT)==-1)
 						check_exit(FALSE);
 					else {
+						FREE_AND_NULL(fonts[cur].name);
 						fonts[cur].name=strdup(str);
 						show_filepick=0;
 					}
