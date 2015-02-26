@@ -65,9 +65,6 @@ else
  OBJS += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
  CFLAGS	+=	$(CRYPT_CFLAGS)
  EXTRA_LIBS	+=	$(CRYPT_LIBS)
-endif
-
-ifdef STATIC
  STATIC_CRYPTLIB	:= true
 endif
 
