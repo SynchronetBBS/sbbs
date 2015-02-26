@@ -162,7 +162,7 @@ static uifc_graphics_t ascii_chars = {
 	.help_char='?',
 	.close_char='X',
 	.up_arrow='^',
-	.down_arrow='V',
+	.down_arrow='v',
 	.button_left='[',
 	.button_right=']',
 
