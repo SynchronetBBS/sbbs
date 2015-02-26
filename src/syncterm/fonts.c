@@ -244,8 +244,10 @@ void font_management(void)
 						"Allows you to add and remove font files to/from the default font set.\n\n"
 						"`INS` Adds a new font.\n"
 						"`DEL` Removes an existing font.\n\n"
-						"Selecting a font allows you to set the files for all three font sizes:\n"
-						"8x8, 8x14, and 8x16.";
+						"Selecting a font allows you to set the files for all three font sizes:\n\n"
+						"`8x8`  Used for screen modes with 35 or more lines and all C64/C128 modes\n"
+						"`8x14` Used for screen modes with 28 and 34 lines\n"
+						"`8x16` Used for screen modes with 30 lines or fewer than 28 lines.";
 		if(fonts) {
 			for(j=0;fonts[j].name && fonts[j].name[0]; j++)
 				opt[j]=fonts[j].name;
@@ -278,7 +280,7 @@ void font_management(void)
 			}
 			if(i&MSK_INS) {
 				str[0]=0;
-				uifc.helpbuf="Enter the name of the font as you want it to appear\nin menus.";
+				uifc.helpbuf="Enter the name of the font as you want it to appear in menus.";
 				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Font Name",str,50,0)==-1) {
 					check_exit(FALSE);
 					break;
@@ -301,7 +303,10 @@ void font_management(void)
 			}
 			for(i=0; i<5; i++)
 				opt[i]=opts[i];
-			uifc.helpbuf="Font Details\n";
+			uifc.helpbuf="`Font Details`\n\n"
+						"`8x8`  Used for screen modes with 35 or more lines and all C64/C128 modes\n"
+						"`8x14` Used for screen modes with 28 and 34 lines\n"
+						"`8x16` Used for screen modes with 30 lines or fewer than 28 lines.";
 			sprintf(opts[0],"Name: %.50s",fonts[cur].name?fonts[cur].name:"<undefined>");
 			sprintf(opts[1],"8x8   %.50s",fonts[cur].path8x8?fonts[cur].path8x8:"<undefined>");
 			sprintf(opts[2],"8x14  %.50s",fonts[cur].path8x14?fonts[cur].path8x14:"<undefined>");
