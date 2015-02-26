@@ -1992,7 +1992,10 @@ void font_control(struct bbslist *bbs)
 		default:
 			i=j=getfont();
 			uifc.helpbuf="`Font Setup`\n\n"
-						"Change the current font.  Must support the current video mode.";
+						"Change the current font.  Font must support the current video mode:\n\n"
+						"`8x8`  Used for screen modes with 35 or more lines and all C64/C128 modes\n"
+						"`8x14` Used for screen modes with 28 and 34 lines\n"
+						"`8x16` Used for screen modes with 30 lines or fewer than 28 lines.";
 			k=uifc.list(WIN_MID|WIN_SAV|WIN_INS,0,0,0,&i,&j,"Font Setup",font_names);
 			if(k!=-1) {
 				if(k & MSK_INS) {
