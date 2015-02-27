@@ -1662,8 +1662,9 @@ struct bbslist *show_bbslist(char *current, int connected)
 							}
 							break;
 						case -1:		/* ESC */
-							if (!check_exit(TRUE))
-								continue;
+							if(!connected)
+								if (!check_exit(TRUE))
+									continue;
 							free_list(&list[0],listcount);
 							return(NULL);
 					}
@@ -1881,8 +1882,9 @@ struct bbslist *show_bbslist(char *current, int connected)
 						at_settings=!at_settings;
 						break;
 					case -1:		/* ESC */
-						if (!check_exit(TRUE))
-							continue;
+						if (!connected)
+							if (!check_exit(TRUE))
+								continue;
 						free_list(&list[0],listcount);
 						return(NULL);
 					case 0:			/* Edit default connection settings */
