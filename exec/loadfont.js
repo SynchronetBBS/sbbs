@@ -4,6 +4,7 @@
  * -H causes the last sent font NOT be made active. (Default is activate font)
  * -S### sets the first font slot to ### default is 256 - number of fonts
  * -P shows progress indicator.
+ * -B loads the alternate/blink font.
  * Multiple files can be sent at the same time.
  */
 
@@ -19,6 +20,7 @@ function loadfont()
 	var showprogress=false;
 	var firstslot=-1;
 	var i;
+	var primary=true;
 
 	for(i=0; i<argc; i++) {
 		if(argv[i].toString().substr(0,1)=="-") {
@@ -31,6 +33,9 @@ function loadfont()
 					break;
 				case 'P':	/* Show progress indicator */
 					showprogress=true;
+					break;
+				case 'B':	/* Load alternate/blink font */
+					primary=false;
 					break;
 			}
 		}
@@ -199,8 +204,11 @@ function loadfont()
 	}
 	if(showprogress)
 		write_raw("done.\r\n");
-	if(showfont)
-		write_raw("\x1b[0;"+(firstslot+filenames.length-1)+" D");
+	if(showfont) {
+		write_raw("\x1b[" + (primary ? '0':'2') +";"+(firstslot+filenames.length-1)+" D");
+		if(!primary) // Use alternate font (2) for blink, disable blink
+			write_raw("\x1b[?34h\x1b[?35h");
+	}
 	console.ctrlkey_passthru=oldctrl;
 	return(0);
 }
