@@ -117,8 +117,9 @@ size_t conn_buf_free(struct conn_buffer *buf)
  * leaving them in the buffer.  Returns the number of bytes
  * copied out of the buffer
  */
-size_t conn_buf_peek(struct conn_buffer *buf, unsigned char *outbuf, size_t outlen)
+size_t conn_buf_peek(struct conn_buffer *buf, void *voutbuf, size_t outlen)
 {
+	unsigned char *outbuf = (unsigned char *)voutbuf;
 	size_t copy_bytes;
 	size_t chunk;
 
@@ -142,8 +143,9 @@ size_t conn_buf_peek(struct conn_buffer *buf, unsigned char *outbuf, size_t outl
  * removing them from the buffer.  Returns the number of
  * bytes removed from the buffer.
  */
-size_t conn_buf_get(struct conn_buffer *buf, unsigned char *outbuf, size_t outlen)
+size_t conn_buf_get(struct conn_buffer *buf, void *voutbuf, size_t outlen)
 {
+	unsigned char *outbuf = (unsigned char *)voutbuf;
 	size_t ret;
 	size_t atstart;
 
@@ -164,8 +166,9 @@ size_t conn_buf_get(struct conn_buffer *buf, unsigned char *outbuf, size_t outle
  * Places up to outlen bytes from outbuf into the buffer
  * returns the number of bytes written into the buffer
  */
-size_t conn_buf_put(struct conn_buffer *buf, const unsigned char *outbuf, size_t outlen)
+size_t conn_buf_put(struct conn_buffer *buf, const void *voutbuf, size_t outlen)
 {
+	const unsigned char *outbuf = (unsigned char *)voutbuf;
 	size_t write_bytes;
 	size_t chunk;
 
@@ -260,8 +263,9 @@ BOOL conn_connected(void)
 	return(FALSE);
 }
 
-int conn_recv_upto(char *buffer, size_t buflen, unsigned timeout)
+int conn_recv_upto(void *vbuffer, size_t buflen, unsigned timeout)
 {
+	char *buffer = (char *)vbuffer;
 	size_t	found=0;
 
 	pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -272,8 +276,9 @@ int conn_recv_upto(char *buffer, size_t buflen, unsigned timeout)
 }
 
 
-int conn_recv(char *buffer, size_t buflen, unsigned timeout)
+int conn_recv(void *vbuffer, size_t buflen, unsigned timeout)
 {
+	char *buffer = (char *)vbuffer;
 	size_t found;
 
 	pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -284,8 +289,9 @@ int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 	return(found);
 }
 
-int conn_peek(char *buffer, size_t buflen)
+int conn_peek(void *vbuffer, size_t buflen)
 {
+	char *buffer = (char *)vbuffer;
 	size_t found;
 
 	pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -296,8 +302,9 @@ int conn_peek(char *buffer, size_t buflen)
 	return(found);
 }
 
-int conn_send(char *buffer, size_t buflen, unsigned int timeout)
+int conn_send(void *vbuffer, size_t buflen, unsigned int timeout)
 {
+	char *buffer = (char *)vbuffer;
 	size_t found;
 
 	pthread_mutex_lock(&(conn_outbuf.mutex));
@@ -404,7 +411,6 @@ enum failure_reason {
 int conn_socket_connect(struct bbslist *bbs)
 {
 	SOCKET			sock=INVALID_SOCKET;
-	char			*p;
 	int				nonblock;
 	struct timeval	tv;
 	fd_set			wfd;
