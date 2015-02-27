@@ -1,5 +1,6 @@
 Version 1.0
 -----------
+New ability to use the blink attribute to select alternate font
 Fixes for user font management
 Help text cleanup
 Handle the close window button gracefully
