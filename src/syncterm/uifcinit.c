@@ -21,6 +21,8 @@ static int uifc_initialized=0;
 static void (*bottomfunc)(int);
 int orig_ciolib_xlat;
 int orig_vidflags;
+int orig_x;
+int orig_y;
 
 int	init_uifc(BOOL scrn, BOOL bottom) {
 	int	i;
@@ -33,6 +35,8 @@ int	init_uifc(BOOL scrn, BOOL bottom) {
 		uifc.scrn_len=0;
 		orig_ciolib_xlat = ciolib_xlat;
 		orig_vidflags = getvideoflags();
+		orig_x=wherex();
+		orig_y=wherey();
 		setvideoflags(orig_vidflags&(CIOLIB_VIDEO_NOBLINK|CIOLIB_VIDEO_BGBRIGHT));
 		ciolib_xlat = TRUE;
 		uifc.chars = NULL;
@@ -80,6 +84,7 @@ void uifcbail(void)
 		ciolib_xlat = orig_ciolib_xlat;
 		setvideoflags(orig_vidflags);
 		loadfont(NULL);
+		gotoxy(orig_x, orig_y);
 	}
 	uifc_initialized=0;
 }
