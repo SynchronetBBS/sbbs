@@ -64,6 +64,9 @@ mono:	xpdev-mt smblib \
 		$(MTOBJODIR) $(EXEODIR) \
 		$(SBBSMONO)
 
+.PHONY: sexyz
+sexyz:	$(SEXYZ)
+
 
 # Library dependencies
 $(SBBS): 
