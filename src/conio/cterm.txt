@@ -149,6 +149,12 @@ CSI ? 31 h
 	With this mode set, the bright (1) graphic rendition selects characters
 	from an alternate character set.
 
+CSI ? 32 h
+	NON-STANDARD EXTENSION
+	Bright Intensity Enable
+
+	Reverses CSI ? 32 l
+
 CSI ? 33 h
 	NON-STANDARD EXTENSION
 	Blink to Bright Intensity Background
@@ -162,11 +168,14 @@ CSI = 255 l
 
 	SOURCE: BANSI.TXT
 
-CSI ? 25 l
+CSI ? 6 h
 	NON-STANDARD EXTENSION
-	Hide the cursor
-
-	SOURCE: "Installing and Using the VT320 Video Terminal"
+    Disable origin mode.
+    
+    In this mode, position parameters are relative to the top left of the
+    screen, not the scrolling region.
+    
+    SOURCE: Digital VT102 User Guide
 
 CSI ? 7 l
 	NON-STANDARD EXTENSION
@@ -178,14 +187,11 @@ CSI ? 7 l
     
     SOURCE: Digital VT102 User Guide
 
-CSI ? 6 h
+CSI ? 25 l
 	NON-STANDARD EXTENSION
-    Disable origin mode.
-    
-    In this mode, position parameters are relative to the top left of the
-    screen, not the scrolling region.
-    
-    SOURCE: Digital VT102 User Guide
+	Hide the cursor
+
+	SOURCE: "Installing and Using the VT320 Video Terminal"
 
 CSI ? 31 l
 	NON-STANDARD EXTENSION
@@ -197,7 +203,8 @@ CSI ? 32 l
 	NON-STANDARD EXTENSION
 	Bright Intensity Disable
 
-	Reverses CSI ? 32 h
+	Causes "bright" foreground characters to not be bright.
+	Most useful in combination with CSI ? 31 h
 
 CSI ? 33 l
 	NON-STANDARD EXTENSION
