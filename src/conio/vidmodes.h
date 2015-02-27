@@ -80,7 +80,9 @@ struct video_stats {
 	int bright_background;
 	int blink;
 	int no_bright;
+	int no_blink;
 	int bright_altcharset;
+	int blink_altcharset;
 	int currattr;
 	int scaling;
 	struct dac_colors dac_colors[256];

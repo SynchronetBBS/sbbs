@@ -181,6 +181,8 @@ int load_vmode(struct video_stats *vs, int mode)
 	vs->bright_background=0;
 	vs->no_bright=0;
 	vs->bright_altcharset=0;
+	vs->no_blink=0;
+	vs->blink_altcharset=0;
 	if(vs->curs_row < 0)
 		vs->curs_row=0;
 	if(vs->curs_row >= vparams[i].rows)

@@ -116,9 +116,11 @@ enum {
 #define BLINK 128
 #endif
 
-#define CIOLIB_VIDEO_ALTCHARS	(1<<0)	// Attribute bit 3 selects alternate char set
-#define CIOLIB_VIDEO_NOBRIGHT	(1<<1)	// Attribute bit 3 does not increase intensity
-#define CIOLIB_VIDEO_BGBRIGHT	(1<<2)	// Attribute bit 7 selects high intensity background, not blink
+#define CIOLIB_VIDEO_ALTCHARS		(1<<0)	// Attribute bit 3 selects alternate char set
+#define CIOLIB_VIDEO_NOBRIGHT		(1<<1)	// Attribute bit 3 does not increase intensity
+#define CIOLIB_VIDEO_BGBRIGHT		(1<<2)	// Attribute bit 7 selects high intensity background, not blink
+#define CIOLIB_VIDEO_BLINKALTCHARS	(1<<3)	// Attribute bit 7 selects alternate char set
+#define CIOLIB_VIDEO_NOBLINK		(1<<4)	// Attribute bit 7 has no effect
 
 enum text_modes
 {

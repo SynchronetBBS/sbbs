@@ -29,8 +29,7 @@ int screenheight=0;
 #define PIXEL_OFFSET(x,y)	( (y)*screenwidth+(x) )
 
 static int default_font=-99;
-static int current_font=-99;
-static int current_secondary_font=-99;
+static int current_font[4]={-99, -99, -99, -99};
 static int bitmap_initialized=0;
 struct video_stats vstat;
 static int *damaged=NULL;
@@ -43,8 +42,7 @@ struct bitmap_callbacks {
 pthread_mutex_t		vstatlock;
 pthread_mutex_t		screenlock;
 static struct bitmap_callbacks callbacks;
-static unsigned char *font;
-static unsigned char *secondary_font;
+static unsigned char *font[4];
 static unsigned char space=' ';
 int force_redraws=0;
 
@@ -168,7 +166,8 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	memset(screen,vstat.palette[0],screenwidth*screenheight);
 	pthread_mutex_unlock(&screenlock);
 	pthread_mutex_unlock(&vstatlock);
-	current_font=current_secondary_font=default_font;
+	for (i=0; i<sizeof(current_font)/sizeof(current_font[0]); i++)
+		current_font[i]=default_font;
 	bitmap_loadfont(NULL);
 
 	cio_textinfo.attribute=7;
@@ -272,6 +271,10 @@ int bitmap_getvideoflags(void)
 		flags |= CIOLIB_VIDEO_NOBRIGHT;
 	if(vstat.bright_altcharset)
 		flags |= CIOLIB_VIDEO_ALTCHARS;
+	if(vstat.no_blink)
+		flags |= CIOLIB_VIDEO_NOBLINK;
+	if(vstat.blink_altcharset)
+		flags |= CIOLIB_VIDEO_BLINKALTCHARS;
 	return(flags);
 }
 
@@ -291,6 +294,16 @@ void bitmap_setvideoflags(int flags)
 		vstat.bright_altcharset=1;
 	else
 		vstat.bright_altcharset=0;
+
+	if(flags & CIOLIB_VIDEO_NOBLINK)
+		vstat.no_blink=1;
+	else
+		vstat.no_blink=0;
+
+	if(flags & CIOLIB_VIDEO_BLINKALTCHARS)
+		vstat.blink_altcharset=1;
+	else
+		vstat.blink_altcharset=0;
 }
 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
@@ -510,14 +523,17 @@ int bitmap_setfont(int font, int force, int font_num)
 			default_font=font;
 			/* Fall-through */
 		case 1:
-			current_font=font;
+			current_font[0]=font;
 			if(font==36 /* ATARI */)
 				space=0;
 			else
 				space=' ';
 			break;
 		case 2:
-			current_secondary_font=font;
+		case 3:
+		case 4:
+			current_font[font_num-1]=font;
+			break;
 	}
 	pthread_mutex_unlock(&vstatlock);
 
@@ -578,7 +594,7 @@ error_return:
 
 int bitmap_getfont(void)
 {
-	return(current_font);
+	return(current_font[0]);
 }
 
 void bitmap_setscaling(int new_value)
@@ -604,27 +620,31 @@ int bitmap_loadfont(char *filename)
 
 	if(!bitmap_initialized)
 		return(-1);
-	if(current_font==-99 || current_font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
+	if(current_font[0]==-99 || current_font[0]>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
 		for(i=0; conio_fontdata[i].desc != NULL; i++) {
 			if(!strcmp(conio_fontdata[i].desc, "Codepage 437 English")) {
-				current_font=i;
+				current_font[0]=i;
 				break;
 			}
 		}
 		if(conio_fontdata[i].desc==NULL)
-			current_font=0;
+			current_font[0]=0;
 	}
-	if(current_font==-1)
+	if(current_font[0]==-1)
 		filename=current_filename;
-	else if(conio_fontdata[current_font].desc==NULL)
+	else if(conio_fontdata[current_font[0]].desc==NULL)
 		return(-1);
 
-	if(current_secondary_font==-99)
-		current_secondary_font=current_font;
-	if(current_secondary_font==-1)
-		;
-	else if(conio_fontdata[current_secondary_font].desc==NULL)
-		current_secondary_font=current_font;
+	if(current_font[0]==-99) {
+		for (i=1; i<sizeof(current_font)/sizeof(current_font[0]); i++)
+			current_font[i]=current_font[0];
+	}
+	for (i=1; i<sizeof(current_font)/sizeof(current_font[0]); i++) {
+		if(current_font[i]==-1)
+			;
+		else if(conio_fontdata[current_font[i]].desc==NULL)
+			current_font[i]=current_font[0];
+	}
 
 	pthread_mutex_lock(&vstatlock);
 	fh=vstat.charheight;
@@ -632,75 +652,65 @@ int bitmap_loadfont(char *filename)
 
 	fontsize=fw*fh*256*sizeof(unsigned char);
 
-	if(font)
-		FREE_AND_NULL(font);
-	if(secondary_font)
-		FREE_AND_NULL(secondary_font);
-	if((font=(unsigned char *)malloc(fontsize))==NULL)
-		goto error_return;
-	if((secondary_font=(unsigned char *)malloc(fontsize))==NULL)
-		goto error_return;
+	for (i=0; i<sizeof(font)/sizeof(font[0]); i++) {
+		if(font[i])
+			FREE_AND_NULL(font[i]);
+		if((font[i]=(unsigned char *)malloc(fontsize))==NULL)
+			goto error_return;
+	}
 
 	if(filename != NULL) {
 		if(flength(filename)!=fontsize)
 			goto error_return;
 		if((fontfile=fopen(filename,"rb"))==NULL)
 			goto error_return;
-		if(fread(font, 1, fontsize, fontfile)!=fontsize)
+		if(fread(font[0], 1, fontsize, fontfile)!=fontsize)
 			goto error_return;
 		fclose(fontfile);
 		fontfile=NULL;
-		current_font=-1;
+		current_font[0]=-1;
 		if(filename != current_filename)
 			SAFECOPY(current_filename,filename);
-		if(current_secondary_font==-1)
-			memcpy(secondary_font, font, fontsize);
+		for (i=1; i<sizeof(font)/sizeof(font[0]); i++) {
+			if (current_font[i]==-1)
+				memcpy(font[i], font[0], fontsize);
+		}
 	}
-	if(current_font != -1 || current_secondary_font != -1) {
+	for (i=0; i<sizeof(font)/sizeof(font[0]); i++) {
+		if (current_font[i] == -1)
+			continue;
 		switch(vstat.charwidth) {
 			case 8:
 				switch(vstat.charheight) {
 					case 8:
-						if(current_font != -1) {
-							if(conio_fontdata[current_font].eight_by_eight==NULL)
+						if(conio_fontdata[current_font[i]].eight_by_eight==NULL) {
+							if (i==0)
 								goto error_return;
-							memcpy(font, conio_fontdata[current_font].eight_by_eight, fontsize);
-						}
-						if(current_secondary_font != -1) {
-							if(conio_fontdata[current_secondary_font].eight_by_eight==NULL) {
-								FREE_AND_NULL(secondary_font);
-							}
 							else
-								memcpy(secondary_font, conio_fontdata[current_secondary_font].eight_by_eight, fontsize);
+								FREE_AND_NULL(font[i]);
 						}
+						else
+							memcpy(font[i], conio_fontdata[current_font[i]].eight_by_eight, fontsize);
 						break;
 					case 14:
-						if(current_font != -1) {
-							if(conio_fontdata[current_font].eight_by_fourteen==NULL)
+						if(conio_fontdata[current_font[i]].eight_by_fourteen==NULL) {
+							if (i==0)
 								goto error_return;
-							memcpy(font, conio_fontdata[current_font].eight_by_fourteen, fontsize);
-						}
-						if(current_secondary_font != -1) {
-							if(conio_fontdata[current_secondary_font].eight_by_fourteen==NULL) {
-								FREE_AND_NULL(secondary_font);
-							}
 							else
-								memcpy(secondary_font, conio_fontdata[current_secondary_font].eight_by_fourteen, fontsize);
+								FREE_AND_NULL(font[i]);
 						}
+						else
+							memcpy(font[i], conio_fontdata[current_font[i]].eight_by_fourteen, fontsize);
 						break;
 					case 16:
-						if(current_font != -1) {
-							if(conio_fontdata[current_font].eight_by_sixteen==NULL)
+						if(conio_fontdata[current_font[i]].eight_by_sixteen==NULL) {
+							if (i==0)
 								goto error_return;
-							memcpy(font, conio_fontdata[current_font].eight_by_sixteen, fontsize);
-						}
-						if(current_secondary_font != -1) {
-							if(conio_fontdata[current_secondary_font].eight_by_sixteen==NULL) {
-								FREE_AND_NULL(secondary_font);
-							}
 							else
-								memcpy(secondary_font, conio_fontdata[current_secondary_font].eight_by_sixteen, fontsize);
+								FREE_AND_NULL(font[i]);
 						}
+						else
+							memcpy(font[i], conio_fontdata[current_font[i]].eight_by_sixteen, fontsize);
 						break;
 					default:
 						goto error_return;
@@ -716,8 +726,8 @@ int bitmap_loadfont(char *filename)
     return(0);
 
 error_return:
-	FREE_AND_NULL(font);
-	FREE_AND_NULL(secondary_font);
+	for (i=0; i<sizeof(font)/sizeof(font[0]); i++)
+		FREE_AND_NULL(font[i]);
 	if(fontfile)
 		fclose(fontfile);
 	pthread_mutex_unlock(&vstatlock);
@@ -789,6 +799,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	int		x;
 	int		y;
 	int		fontoffset;
+	int		altfont;
 	unsigned char *this_font;
 	WORD	sch;
 
@@ -806,25 +817,25 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 
 	sch=vstat.vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)];
 
+	altfont = (sch>>11 & 0x01) | ((sch>>14) & 0x02);
 	if(vstat.bright_background) {
 		bg=(sch&0xf000)>>12;
 		fg=(sch&0x0f00)>>8;
 	}
 	else {
 		bg=(sch&0x7000)>>12;
-		if(sch&0x8000 && vstat.blink)
+		if(sch&0x8000 && vstat.blink && (!vstat.no_blink))
 			fg=bg;
 		else
 			fg=(sch&0x0f00)>>8;
 	}
-	this_font=font;
-	if(vstat.bright_altcharset) {
-		if(fg & 0x08) {
-			this_font=secondary_font;
-			if(this_font==NULL)
-				this_font=font;
-		}
-	}
+	if (!vstat.bright_altcharset)
+		altfont &= ~0x01;
+	if (!vstat.blink_altcharset)
+		altfont &= ~0x02;
+	this_font=font[altfont];
+	if (this_font == NULL)
+		this_font = font[0];
 	if(vstat.no_bright)
 		fg &= 0x07;
 	fontoffset=(sch&0xff)*vstat.charheight;
@@ -908,7 +919,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 			for(x=0;x<width;x++) {
 				if(force
 						|| (last_vmem[pos] != vstat.vmem[pos]) 					/* Different char */
-						|| (vstat.blink != vs.blink && vstat.vmem[pos]>>15) 	/* Blinking char */
+						|| ((vstat.blink != vs.blink) && (vstat.vmem[pos]>>15) && (!vstat.no_blink)) 	/* Blinking char */
 						|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (vstat.curs_col==sx+x && vstat.curs_row==sy+y)))	/* Cursor */
 						) {
 					last_vmem[pos] = vstat.vmem[pos];

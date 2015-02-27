@@ -89,13 +89,15 @@ struct cterminal {
 	char				DA[1024];		// Device Attributes
 	bool				autowrap;
 	bool				origin_mode;
-#define	CTERM_SAVEMODE_AUTOWRAP		0x01
-#define CTERM_SAVEMODE_CURSOR		0x02
-#define	CTERM_SAVEMODE_ALTCHARS		0x04
-#define CTERM_SAVEMODE_NOBRIGHT		0x08
-#define CTERM_SAVEMODE_BGBRIGHT		0x10
-#define CTERM_SAVEMODE_DOORWAY		0x20
-#define CTERM_SAVEMODE_ORIGIN		0x40
+#define	CTERM_SAVEMODE_AUTOWRAP			0x001
+#define CTERM_SAVEMODE_CURSOR			0x002
+#define	CTERM_SAVEMODE_ALTCHARS			0x004
+#define CTERM_SAVEMODE_NOBRIGHT			0x008
+#define CTERM_SAVEMODE_BGBRIGHT			0x010
+#define CTERM_SAVEMODE_DOORWAY			0x020
+#define CTERM_SAVEMODE_ORIGIN			0x040
+#define	CTERM_SAVEMODE_BLINKALTCHARS	0x080
+#define CTERM_SAVEMODE_NOBLINK			0x100
 	int32_t				saved_mode;
 	int32_t				saved_mode_mask;
 
@@ -185,7 +187,7 @@ extern "C" {
 #endif
 
 CIOLIBEXPORT struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback, int emulation);
-CIOLIBEXPORT char CIOLIBCALL *cterm_write(struct cterminal *cterm, const unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed);
+CIOLIBEXPORT char CIOLIBCALL *cterm_write(struct cterminal *cterm, const void *buf, int buflen, char *retbuf, size_t retsize, int *speed);
 CIOLIBEXPORT int CIOLIBCALL cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
 CIOLIBEXPORT void CIOLIBCALL cterm_closelog(struct cterminal *cterm);
 CIOLIBEXPORT void CIOLIBCALL cterm_end(struct cterminal *cterm);

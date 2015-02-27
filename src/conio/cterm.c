@@ -1019,6 +1019,16 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							i|=CIOLIB_VIDEO_BGBRIGHT;
 							SETVIDEOFLAGS(i);
 						}
+						if(!strcmp(cterm->escbuf,"[?34h")) {
+							i=GETVIDEOFLAGS();
+							i|=CIOLIB_VIDEO_BLINKALTCHARS;
+							SETVIDEOFLAGS(i);
+						}
+						if(!strcmp(cterm->escbuf,"[?35h")) {
+							i=GETVIDEOFLAGS();
+							i|=CIOLIB_VIDEO_NOBLINK;
+							SETVIDEOFLAGS(i);
+						}
 						if(!strcmp(cterm->escbuf,"[=255h"))
 							cterm->doorway_mode=1;
 						break;
@@ -1049,6 +1059,16 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							i&=~CIOLIB_VIDEO_BGBRIGHT;
 							SETVIDEOFLAGS(i);
 						}
+						if(!strcmp(cterm->escbuf,"[?34l")) {
+							i=GETVIDEOFLAGS();
+							i&=~CIOLIB_VIDEO_BLINKALTCHARS;
+							SETVIDEOFLAGS(i);
+						}
+						if(!strcmp(cterm->escbuf,"[?35l")) {
+							i=GETVIDEOFLAGS();
+							i&=~CIOLIB_VIDEO_NOBLINK;
+							SETVIDEOFLAGS(i);
+						}
 						if(!strcmp(cterm->escbuf,"[=255l"))
 							cterm->doorway_mode=0;
 						break;
@@ -1067,6 +1087,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								cterm->saved_mode |= (i&CIOLIB_VIDEO_ALTCHARS)?CTERM_SAVEMODE_ALTCHARS:0;
 								cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBRIGHT)?CTERM_SAVEMODE_NOBRIGHT:0;
 								cterm->saved_mode |= (i&CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
+								cterm->saved_mode |= (i&CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
+								cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
 								cterm->saved_mode |= (cterm->doorway_mode)?CTERM_SAVEMODE_DOORWAY:0;
 								cterm->saved_mode |= (cterm->origin_mode)?CTERM_SAVEMODE_ORIGIN:0;
 								break;
@@ -1103,6 +1125,16 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->saved_mode &= ~(CTERM_SAVEMODE_BGBRIGHT);
 									cterm->saved_mode |= (i&CIOLIB_VIDEO_BGBRIGHT)?CTERM_SAVEMODE_BGBRIGHT:0;
 								}
+								if(!strcmp(cterm->escbuf,"?34")) {
+									cterm->saved_mode_mask |= CTERM_SAVEMODE_BLINKALTCHARS;
+									cterm->saved_mode &= ~(CTERM_SAVEMODE_BLINKALTCHARS);
+									cterm->saved_mode |= (i&CIOLIB_VIDEO_BLINKALTCHARS)?CTERM_SAVEMODE_BLINKALTCHARS:0;
+								}
+								if(!strcmp(cterm->escbuf,"?35")) {
+									cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBLINK;
+									cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBLINK);
+									cterm->saved_mode |= (i&CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
+								}
 								if(!strcmp(cterm->escbuf,"=255")) {
 									cterm->saved_mode_mask |= CTERM_SAVEMODE_DOORWAY;
 									cterm->saved_mode &= ~(CTERM_SAVEMODE_DOORWAY);
@@ -1133,11 +1165,23 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									else
 										i &= ~CIOLIB_VIDEO_ALTCHARS;
 								}
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
+									if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
+										i |= CIOLIB_VIDEO_BLINKALTCHARS;
+									else
+										i &= ~CIOLIB_VIDEO_BLINKALTCHARS;
+								}
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBRIGHT) {
 									if(cterm->saved_mode & CTERM_SAVEMODE_NOBRIGHT)
 										i |= CIOLIB_VIDEO_NOBRIGHT;
 									else
 										i &= ~CIOLIB_VIDEO_NOBRIGHT;
+								}
+								if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
+									if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
+										i |= CIOLIB_VIDEO_NOBLINK;
+									else
+										i &= ~CIOLIB_VIDEO_NOBLINK;
 								}
 								if(cterm->saved_mode_mask & CTERM_SAVEMODE_BGBRIGHT) {
 									if(cterm->saved_mode & CTERM_SAVEMODE_BGBRIGHT)
@@ -1194,6 +1238,24 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											i |= CIOLIB_VIDEO_BGBRIGHT;
 										else
 											i &= ~CIOLIB_VIDEO_BGBRIGHT;
+										SETVIDEOFLAGS(i);
+									}
+								}
+								if(!strcmp(cterm->escbuf,"?34")) {
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_BLINKALTCHARS) {
+										if(cterm->saved_mode & CTERM_SAVEMODE_BLINKALTCHARS)
+											i |= CIOLIB_VIDEO_BLINKALTCHARS;
+										else
+											i &= ~CIOLIB_VIDEO_BLINKALTCHARS;
+										SETVIDEOFLAGS(i);
+									}
+								}
+								if(!strcmp(cterm->escbuf,"?35")) {
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_NOBLINK) {
+										if(cterm->saved_mode & CTERM_SAVEMODE_NOBLINK)
+											i |= CIOLIB_VIDEO_NOBLINK;
+										else
+											i &= ~CIOLIB_VIDEO_NOBLINK;
 										SETVIDEOFLAGS(i);
 									}
 								}
@@ -1294,8 +1356,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 							}
 							switch(i) {
-								case 0:	/* Only the primary and secondary font is currently supported */
+								case 0:	/* Four fonts are currently supported */
 								case 1:
+								case 2:
+								case 3:
 									SETFONT(j,FALSE,i+1);
 							}
 						}
@@ -2023,8 +2087,9 @@ static void ctputs(struct cterminal *cterm, char *buf)
 	*cterm->_wscroll=oldscroll;
 }
 
-char* CIOLIBCALL cterm_write(struct cterminal * cterm, const unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed)
+char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
+	const unsigned char *buf = (unsigned char *)vbuf;
 	unsigned char ch[2];
 	unsigned char prn[BUFSIZE];
 	int j,k,l;

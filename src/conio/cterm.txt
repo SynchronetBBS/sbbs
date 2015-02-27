@@ -144,16 +144,18 @@ CSI ? 25 h
 
 CSI ? 31 h
 	NON-STANDARD EXTENSION
-	Enable alt character set
+	Enable bright alt character set
 
 	With this mode set, the bright (1) graphic rendition selects characters
 	from an alternate character set.
 
 CSI ? 32 h
 	NON-STANDARD EXTENSION
-	Bright Intensity Enable
+	Bright Intensity Disable
 
-	Reverses CSI ? 32 l
+	This makes the bright intensity bit not control the intesnity.
+	Mostly for use with CSI ? 31 h to permit fonts in the same
+	colours.
 
 CSI ? 33 h
 	NON-STANDARD EXTENSION
@@ -161,6 +163,21 @@ CSI ? 33 h
 
 	With this mode set, the blink (5,6) graphic renditions cause the
 	background colour to be high intensity rather than causing blink
+
+CSI ? 34 h
+	NON-STANDARD EXTENSION
+	Enable blink alt character set
+
+	With this mode set, the blink (5,6) graphic renditions selects
+	characters from an alternate character set.
+
+CSI ? 35 h
+	NON-STANDARD EXTENSION
+	Blink Disabled
+
+	This makes the blink bit not cause the character to blink.
+	Mostly for use with CSI ? 34 h to permit fonts to be used without
+	blinking.
 
 CSI = 255 l
 	NON-STANDARD EXTENSION
@@ -201,16 +218,28 @@ CSI ? 31 l
 
 CSI ? 32 l
 	NON-STANDARD EXTENSION
-	Bright Intensity Disable
+	Bright Intensity Enable
 
-	Causes "bright" foreground characters to not be bright.
-	Most useful in combination with CSI ? 31 h
+	Causes "bright" foreground characters to be bright.
+	Reverses CSI ? 32 h
 
 CSI ? 33 l
 	NON-STANDARD EXTENSION
 	Blink Normal
 
 	Reverses CSI ? 33 h
+
+CSI ? 34 l
+	NON-STANDARD EXTENSION
+	Disable alt character set
+
+	Reverses CSI ? 34 h
+
+CSI ? 35 l
+	NON-STANDARD EXTENSION
+	Blink Enabled
+
+	Reverses CSI ? 35 h
 
 CSI [ p1 [ ; p2 ] ] * r
 	NON-STANDARD EXTENSION.
@@ -295,10 +324,17 @@ CSI [ p1 [ ; p2 ] ] sp D
 	Font Selection
 	Defaults: p1 = 0  p2 = 0
 	"sp" indicates a single space character.
-	Sets font p1 to be the one indicated bu p2.  Currently only the primary
-	font (Font zero) and secondary font (Font one) are supported.  p2 must 
-	be between 0 and 255.  Not all output types support font selection.  Only
-	X11 and SDL currently do.
+	Sets font p1 to be the one indicated bu p2.  Currently four fonts are
+	supported.  p2 must be between 0 and 255.  Not all output types support
+	font selection.  Only X11 and SDL currently do.
+	Supported p1 values:
+		0  - Default font
+		1  - Font selected by the high intensity bit when CSI [ ? 31 h is
+			 enabled
+		2  - Font selected by the blink intensity bit when CSI [ ? 34 h is
+			 enabled
+		3  - Font selected by both the high intensity and blink bits when
+			 both CSI [ ? 31 h and CSI [ ? 34 h are enabled
 	Currently included fonts are:
 		0  - Codepage 437 English
 		1  - Codepage 1251 Cyrillic, (swiss)
