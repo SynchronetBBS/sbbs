@@ -497,8 +497,11 @@ void edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, c
 		ret=uifc.list(WIN_XTR|WIN_DEL|WIN_INS|WIN_INSACT|WIN_ACT|WIN_SAV
 					,0,0,0,&curr,&bar,"Sort Order",opts);
 		if(ret==-1) {
-			if(check_exit(FALSE))
-				break;
+			if (uifc.exit_flags & UIFC_XF_QUIT) {
+				if (!check_exit(FALSE));
+					continue;
+			}
+			break;
 		}
 		if(ret & MSK_INS) {		/* Insert sorting */
 			j=0;
