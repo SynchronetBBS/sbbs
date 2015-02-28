@@ -1460,6 +1460,8 @@ int sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
 	int			new_scaling = -1;
+	int			old_scaling = vstat.scaling;
+fprintf(stderr, "At start, scaling is %d\n", old_scaling);
 
 	if(!init_sdl_video()) {
 		char	driver[16];
@@ -1482,7 +1484,9 @@ int sdl_video_event_thread(void *data)
 
 		while(1) {
 			if(sdl.PollEvent(&ev)!=1) {
-				if (new_scaling != -1) {
+				if (new_scaling != -1 || vstat.scaling != old_scaling) {
+					if (new_scaling == -1)
+						new_scaling = vstat.scaling;
 					if (pthread_mutex_trylock(&vstatlock) == 0) {
 						vstat.scaling=new_scaling;
 						new_scaling = -1;
@@ -1491,6 +1495,7 @@ int sdl_video_event_thread(void *data)
 						pthread_mutex_unlock(&vstatlock);
 						setup_surfaces();
 					}
+					old_scaling = vstat.scaling;
 				}
 				SLEEP(1);
 			}

@@ -65,6 +65,8 @@ static unsigned long black;
 static unsigned long white;
 static int bitmap_width=0;
 static int bitmap_height=0;
+static int old_scaling = 0;
+
 
 /* Array of Graphics Contexts */
 static GC gca[sizeof(dac_default)/sizeof(struct dac_colors)];
@@ -428,6 +430,7 @@ static void handle_resize_event(int width, int height)
 		vstat.scaling=newFSH;
 	else
 		vstat.scaling=newFSW;
+	old_scaling = vstat.scaling;
 	if(vstat.scaling > 16)
 		vstat.scaling=16;
 	/*
@@ -814,6 +817,14 @@ static int x11_event(XEvent *ev)
 	return(0);
 }
 
+void check_scaling(void)
+{
+	if (old_scaling != vstat.scaling) {
+		resize_window();
+		old_scaling = vstat.scaling;
+	}
+}
+
 void x11_event_thread(void *args)
 {
 	int x;
@@ -836,6 +847,8 @@ void x11_event_thread(void *args)
 		high_fd=xfd;
 
 	for (;;) {
+		check_scaling();
+
 		tv.tv_sec=0;
 		tv.tv_usec=54925; /* was 54925 (was also 10) */ 
 
