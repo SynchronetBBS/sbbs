@@ -1461,7 +1461,6 @@ int sdl_video_event_thread(void *data)
 	SDL_Event	ev;
 	int			new_scaling = -1;
 	int			old_scaling = vstat.scaling;
-fprintf(stderr, "At start, scaling is %d\n", old_scaling);
 
 	if(!init_sdl_video()) {
 		char	driver[16];
