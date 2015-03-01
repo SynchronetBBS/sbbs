@@ -1,11 +1,16 @@
 // Loads a font to the remote system
 /*
  * Supported arguments:
- * -H causes the last sent font NOT be made active. (Default is activate font)
- * -S### sets the first font slot to ### default is 256 - number of fonts
  * -P shows progress indicator.
- * -A# loads the alternate font (into alternate font #).
- * Multiple files can be sent at the same time.
+ * -S### sets the first font slot to ### default is 256 - number of fonts
+ * -H causes the next font on the command-line to NOT be made active. (Default is activate font)
+ * -A# activates the next font font into alternate font #.
+ * Multiple files can be sent at the same time.  A -H or -A# only affects
+ * the next font file.
+ * 
+ * ie: load("loadfonts.js", "-P", "-H", "/path/to/unused/font",
+ * 			"/path/to/default/font", "-A1", "/path/to/bright/font", 
+ * 			"-A2", "/path/to/blink/font", "-A3", "/path/to/bright/blink/font");
  */
 
 load("sbbsdefs.js");
@@ -15,18 +20,19 @@ loadfont();
 
 function loadfont()
 {
-	var filenames=new Array();
-	var showfont=true;
+	var filenames=[];
+	var activate=[undefined, undefined, undefined, undefined];
 	var showprogress=false;
 	var firstslot=-1;
 	var i;
-	var set=0;
+	var next_set = -1;
 
 	for(i=0; i<argc; i++) {
 		if(argv[i].toString().substr(0,1)=="-") {
 			switch(argv[i].substr(1,1).toUpperCase()) {
 				case 'H':	/* Hidden update */
 					showfont=false;
+					next_set = -1;
 					break;
 				case 'S':	/* First font slot */
 					firstslot=parseInt(argv[i].substr(2));
@@ -35,12 +41,16 @@ function loadfont()
 					showprogress=true;
 					break;
 				case 'A':	/* Load alternate font */
-					if(!(set=parseInt(argv[i].substr(2))))
-						set=2;
+					if(!(next_set=parseInt(argv[i].substr(2))))
+						next_set=2;
 					break;
 			}
 		}
 		else {
+			if (next_set != -1) {
+				activate[next_set] = filenames.length;
+				next_set = 0;
+			}
 			if(argv[i].constructor==Array)
 				filenames=filenames.concat(argv[i]);
 			else
@@ -64,7 +74,7 @@ function loadfont()
 		return(-1);
 	}
 
-	if(firstslot < 32) {
+	if(firstslot < 43) {
 		alert("Cannot overwrite default fonts!");
 		log(LOG_ERR, "!ERROR Cannot overwrite default fonts!");
 		return(-1);
@@ -205,14 +215,14 @@ function loadfont()
 	}
 	if(showprogress)
 		write_raw("done.\r\n");
-	if(showfont) {
-		if(showprogress)
-			print("Activing font for set " + set);
-		write_raw("\x1b[" + set +";"+(firstslot+filenames.length-1)+" D");
-		if(set&2) /* Alternate font for Blink attribute */
-			write_raw("\x1b[?34h\x1b[?35h");
-		if(set&1) /* Alternate font for High-intensity attribute */
-			write_raw("\x1b[?31h\x1b[?32h");
+	for (i in activate) {
+		if (activate[i] !== undefined) {
+			write_raw("\x1b[" + i +";"+(firstslot+activate[i])+" D");
+			if(i&2) /* Alternate font for Blink attribute */
+				write_raw("\x1b[?34h\x1b[?35h");
+			if(i&1) /* Alternate font for High-intensity attribute */
+				write_raw("\x1b[?31h");
+		}
 	}
 	console.ctrlkey_passthru=oldctrl;
 	return(0);
