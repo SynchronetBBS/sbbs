@@ -706,11 +706,11 @@ function race(gameNumber)	{
 			game.winner = player.name;
 			data.storeRaceWinner(gameNumber,game.winner);
 		}
-
+		if(game.fog)
+			fog.close();
 		end_time = Date.now();
 		game.raceTime = end_time - start_time;
 		data.storeRaceTime(gameNumber,game.raceTime,player.name);
-		
 		data.storeGameStatus(gameNumber,status.FINISHED);
 	}
 	function showWinner() {
@@ -718,7 +718,8 @@ function race(gameNumber)	{
 		winFrame.open();
 		winFrame.crlf();
 		winFrame.center("\1r\1hGAME OVER\r\n");
-		winFrame.center("\1y\1hWinner: " + game.winner + "\r\n");
+		if(game.winner)
+			winFrame.center("\1y\1hWinner: " + game.winner + "\r\n");
 		winFrame.center("\1w\1hTime: " + formatTime(game.raceTime) + "\r\n");
 		winFrame.crlf();
 		winFrame.center("\1c\1h<SPACE to continue>");
