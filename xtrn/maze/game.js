@@ -554,7 +554,6 @@ function race(gameNumber)	{
 					var x = update.data.x+1;
 					var y = update.data.y+1;
 					maze.players[pName].frame.moveTo(x,y);
-					clearFog(p);
 				}
 				else if(p[0].toUpperCase() == "HEALTH") {
 					maze.players[pName].health = update.data;
