@@ -1939,7 +1939,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						break;
 					case 3:			/* Program settings */
 						change_settings();
-						load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, (listcount && list[opt])?strdup(list[opt]->name):NULL);
+						load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?strdup(list[opt]->name):NULL);
 						oldopt=-1;
 						break;
 				}
