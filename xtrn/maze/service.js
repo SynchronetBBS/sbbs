@@ -18,7 +18,7 @@ var data = {
 	timers:{}
 };
 var settings = {
-	damage:true,
+	//damage:true,
 	damage_qty:5,
 	min_players:1,
 	max_players:10,
@@ -186,7 +186,7 @@ function createMaze(game) {
 	var maze = generateMaze(settings.columns,settings.rows);
 	var start = getRandomCorner(maze,0,E);
 	var finish = getRandomCorner(maze,settings.columns-1,W);
-	var race = new Race(game.gameNumber,game.players,game.damage,maze,start,finish);
+	var race = new Race(game.gameNumber,game.players,game.damage,game.fog,maze,start,finish);
 	
 	data.mazes[game.gameNumber] = race;
 	client.write("mazerace","mazes." + game.gameNumber,race);
@@ -237,10 +237,11 @@ function main() {
 }
 
 /* race object */
-function Race(gameNumber,players,damage,maze,start,finish) {
+function Race(gameNumber,players,damage,fog,maze,start,finish) {
 	this.gameNumber = gameNumber;
 	this.players = players;
 	this.damage = damage;
+	this.fog = fog;
 	this.maze = maze;
 	this.start = start;
 	this.finish = finish;

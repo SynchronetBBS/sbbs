@@ -128,6 +128,7 @@ function Game(gameNumber)
 	this.gameNumber=gameNumber;
 	this.players={};
 
-	this.damage=settings.DAMAGE;
+	this.damage=false;
+	this.fog=false;
 	this.status=status.WAITING;
 }

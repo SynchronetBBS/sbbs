@@ -87,7 +87,9 @@ function lobby() {
 			"~Join race",
 			"~Leave race",
 			"~Ready",
-			"S~ettings",
+			// "S~ettings",
+			"~Damage",
+			"~Fog",
 			"~Scores",
 			"~Chat",
 			"~Help",
@@ -106,6 +108,8 @@ function lobby() {
 		profile=data.profiles[user.alias];
 		menu.disable("L");
 		menu.disable("R");
+		menu.disable("D");
+		menu.disable("F");
 		layout.open();
 		menu.draw();
 		menu.frame.top();
@@ -145,6 +149,12 @@ function lobby() {
 					break;
 				case "R":
 					toggleReady();
+					break;
+				case "D":
+					toggleDamage();
+					break;
+				case "F":
+					toggleFog();
 					break;
 				case "L":
 					leaveMaze();
@@ -200,6 +210,7 @@ function lobby() {
 			data.mazes[gnum] = client.read(game_id,"mazes." + gnum,1);
 			race(gnum);
 			leaveMaze();
+			menu.draw();
 		}
 	}
 	function getGameNumber() {
@@ -294,18 +305,21 @@ function lobby() {
 			idle[p.nick] = p;
 		}
 		for each(var g in data.games) {
-			playerFrame.putmsg("\1c\1h MAZE #" + g.gameNumber + ":");
-			
+			playerFrame.putmsg("\1c\1h " + g.gameNumber + ": ");
+			if(g.damage)
+				playerFrame.putmsg("\1n\1r[D]");
+			if(g.fog)
+				playerFrame.putmsg("\1k\1h[F]");
 			if(g.status == status.WAITING)
-				playerFrame.putmsg(" \1r\1h[waiting]\r\n");
+				playerFrame.putmsg("\1n\1y[waiting]\r\n");
 			else if(g.status == status.STARTING) 
-				playerFrame.putmsg(" \1y\1h[starting]\r\n");
+				playerFrame.putmsg("\1y\1h[starting]\r\n");
 			else if(g.status == status.RACING)
-				playerFrame.putmsg(" \1g\1h[racing]\r\n");
+				playerFrame.putmsg("\1g\1h[racing]\r\n");
 			else if(g.status == status.FINISHED)
-				playerFrame.putmsg(" \1k\1h[finished]\r\n");
+				playerFrame.putmsg("\1k\1h[finished]\r\n");
 			else 
-				playerFrame.putmsg(" \1n\1r[error]\r\n");
+				playerFrame.putmsg("\1n\1r[error]\r\n");
 				
 			for each(var p in g.players) {
 				if(p.ready == true)
@@ -385,6 +399,8 @@ function lobby() {
 		client.unlock("mazerace","games." + gnum);
 		menu.enable("L");
 		menu.enable("R");
+		menu.enable("D");
+		menu.enable("F");
 		menu.disable("J");
 		data.updated=true;
 	}
@@ -406,12 +422,24 @@ function lobby() {
 		client.remove("mazerace","games."+gnum+".players."+profile.name,2);
 		menu.disable("L");
 		menu.disable("R");
+		menu.disable("D");
+		menu.disable("F");
 		menu.enable("J");
+		data.updated=true;
+	}
+	function toggleDamage() {
+		data.games[gnum].damage = !data.games[gnum].damage;
+		client.write("mazerace","games."+gnum+".damage",data.games[gnum].damage,2);
+		data.updated=true;
+	}
+	function toggleFog() {
+		data.games[gnum].fog = !data.games[gnum].fog;
+		client.write("mazerace","games."+gnum+".fog",data.games[gnum].fog,2);
 		data.updated=true;
 	}
 	function toggleReady() {
 		var player = data.games[gnum].players[profile.name];
-		player.ready = player.ready?false:true;
+		player.ready = !player.ready;
 		client.write("mazerace","games."+gnum+".players."+profile.name+".ready",player.ready,2);
 		data.updated=true;
 	}
@@ -445,8 +473,9 @@ function race(gameNumber)	{
 	var player = maze.players[user.alias];
 
 	/* display frames */
-	var screen = new Frame(1,1,80,23,BG_BLACK + CYAN,frame);
-	var info = new Frame(1,24,80,1,BG_BLUE + YELLOW,frame);
+	var screen = new Frame(1,1,80,23,BG_BLACK | CYAN,frame);
+	var fog = new Frame(1,1,80,23,BG_BLACK | RED,frame);
+	var info = new Frame(1,24,80,1,BG_BLUE | YELLOW,frame);
 	var start_time = Date.now();
 	var end_time = undefined;
 	
@@ -454,10 +483,15 @@ function race(gameNumber)	{
 	function open() {
 		client.subscribe(game_id,"mazes." + gameNumber);
 		loadMaze();
+		if(game.fog)
+			loadFog();
 		loadPlayers();
 		screen.open();
+		if(game.fog)
+			fog.open();
 		info.open();
 		showPlayerInfo();
+		clearFog(player);
 	}
 	function main()	{
 		while(game.status != status.FINISHED) {
@@ -490,6 +524,7 @@ function race(gameNumber)	{
 	}
 	function close() {
 		screen.close();
+		fog.close();
 		info.close();
 		client.unsubscribe(game_id,"mazes." + maze.gameNumber);
 	}
@@ -519,6 +554,7 @@ function race(gameNumber)	{
 					var x = update.data.x+1;
 					var y = update.data.y+1;
 					maze.players[pName].frame.moveTo(x,y);
+					clearFog(p);
 				}
 				else if(p[0].toUpperCase() == "HEALTH") {
 					maze.players[pName].health = update.data;
@@ -645,7 +681,11 @@ function race(gameNumber)	{
 		}
 		screen.setData(maze.start.x*3+1,maze.start.y*2+1,"\xAF",LIGHTGREEN);
 		screen.setData(maze.finish.x*3+2,maze.finish.y*2+1,"\xAF",LIGHTRED);
-	}	
+	}
+	function loadFog() {
+		fog.load(root + "fog.bin",80,23);
+		fog.transparent = true;
+	}
 	function loadPlayers() {
 		var x = maze.start.x*3+1;
 		var y = maze.start.y*2+1;
@@ -688,6 +728,7 @@ function race(gameNumber)	{
 	}
 	function redraw() {
 		screen.draw();
+		fog.draw();
 	}
 	function showPlayerInfo() {
 		info.clear();
@@ -729,15 +770,25 @@ function race(gameNumber)	{
 		player.coords.x += x;
 		player.coords.y += y;
 		player.frame.move(x,y);
+		clearFog(player);
 		data.storePlayerPosition(gameNumber,player);
 	}
+	function clearFog(p) {
+		if(game.fog) {
+			for(var x=p.coords.x-3;x<p.coords.x+3;x++) {
+				for(var y=p.coords.y-2;y<p.coords.y+2;y++) {
+					fog.clearData(x,y);
+				}
+			}
+		}
+	}
 	function takeDamage() {
-		if(settings.damage) {
+		if(game.damage) {
 			player.health -= settings.damage_qty;
 			write(ascii(7));
+			data.storePlayerHealth(gameNumber,player);
+			showPlayerInfo();
 		}
-		data.storePlayerHealth(gameNumber,player);
-		showPlayerInfo();
 	}
 	function playerDead() {
 		if(player.health <= 0) 
