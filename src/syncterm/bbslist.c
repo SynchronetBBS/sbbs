@@ -498,7 +498,7 @@ void edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, c
 					,0,0,0,&curr,&bar,"Sort Order",opts);
 		if(ret==-1) {
 			if (uifc.exit_flags & UIFC_XF_QUIT) {
-				if (!check_exit(FALSE));
+				if (!check_exit(FALSE))
 					continue;
 			}
 			break;
@@ -1939,7 +1939,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						break;
 					case 3:			/* Program settings */
 						change_settings();
-						load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, listcount && list[listcount-1]?strdup(list[listcount-1]->name):NULL);
+						load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, (listcount && list[opt])?strdup(list[opt]->name):NULL);
 						oldopt=-1;
 						break;
 				}
