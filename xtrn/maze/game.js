@@ -705,8 +705,9 @@ function race(gameNumber)	{
 			game.winner = player.name;
 			data.storeRaceWinner(gameNumber,game.winner);
 		}
-		if(game.fog)
+		if(game.fog) {
 			fog.close();
+		}
 		end_time = Date.now();
 		game.raceTime = end_time - start_time;
 		data.storeRaceTime(gameNumber,game.raceTime,player.name);

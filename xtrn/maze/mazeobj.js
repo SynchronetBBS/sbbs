@@ -49,6 +49,11 @@ function GameData()
 	}
 	this.storeRaceTime=function(gameNumber,raceTime,player) {
 		this.games[gameNumber].raceTime = raceTime;
+		client.write(game_id,
+			"games." + 
+			gameNumber + 
+			".raceTime", 
+			raceTime,2);
 		if(raceTime < this.profiles[player].best_time || this.profiles[player].best_time == 0) {
 			this.profiles[player].best_time = raceTime;
 			client.write(game_id,
