@@ -143,6 +143,8 @@ int bitmap_init_mode(int mode, int *width, int *height)
 		pthread_mutex_unlock(&vstatlock);
 		return(-1);
 	}
+	if(damaged)
+		free(damaged);
 	damaged=newdamaged;
 
 	/* Initialize video memory with black background, white foreground */
