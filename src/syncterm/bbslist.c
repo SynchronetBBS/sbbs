@@ -1137,6 +1137,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 		if(uifc.changes)
 			changed=1;
 	}
+	strListFree(&inifile);
 	return (changed);
 }
 
@@ -1489,6 +1490,7 @@ write_ini:
 			fclose(inifile);
 		}
 	}
+	strListFree(&inicontents);
 }
 
 void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaults, char *listpath, size_t listpathsize, char *shared_list, size_t shared_listsize, int *listcount, int *cur, int *bar, char *current)
