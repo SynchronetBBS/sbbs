@@ -47,8 +47,9 @@ Bot_Commands["RELOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 Bot_Commands["LOAD"] = new Bot_Command(90,false,true);
 Bot_Commands["LOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
-	load("" + cmd[0]);
-	srv.o(target,"loaded " + cmd[0],"NOTICE");
+	var fName = cmd.shift();
+	load("" + fName,cmd[0],cmd[1],cmd[2],cmd[3],cmd[4]);
+	srv.o(target,"loaded " + fName,"NOTICE");
 	return;
 }
 
