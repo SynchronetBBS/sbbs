@@ -44,8 +44,10 @@ unsigned char		sdl_keynext=0;			/* Index into keybuf for next free position */
 int sdl_exitcode=0;
 
 SDL_Surface	*win=NULL;
+SDL_mutex	*win_mutex;
 SDL_Surface	*sdl_icon=NULL;
 SDL_Surface	*new_rect=NULL;
+SDL_mutex	*newrect_mutex;
 
 /* *nix copy/paste stuff */
 SDL_sem	*sdl_pastebuf_set;
@@ -70,9 +72,6 @@ SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
 Uint32	sdl_dac_default[sizeof(dac_default)/sizeof(struct dac_colors)];
-SDL_Rect	*upd_rects=NULL;
-int			rectspace=0;
-int			rectsused=0;
 
 struct yuv_settings {
 	int			enabled;
@@ -622,8 +621,7 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 
 void sdl_flush(void)
 {
-	if(rectsused || yuv.enabled)
-		sdl_user_func_ret(SDL_USEREVENT_FLUSH);
+	sdl_user_func_ret(SDL_USEREVENT_FLUSH);
 }
 
 int sdl_init_mode(int mode)
@@ -816,6 +814,7 @@ int sdl_hidemouse(void)
 
 int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 {
+	sdl.mutexP(win_mutex);
 	if(width)
 		*width=win->h;
 	if(height)
@@ -824,6 +823,7 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 		*xpos=-1;
 	if(ypos)
 		*ypos=-1;
+	sdl.mutexV(win_mutex);
 	
 	return(0);
 }
@@ -874,6 +874,7 @@ void setup_surfaces(void)
 	else
 		flags |= SDL_RESIZABLE;
 
+	sdl.mutexP(win_mutex);
 	if(yuv.enabled) {
 		if(!yuv.win_width)
 			yuv.win_width=vstat.charwidth*vstat.cols;
@@ -901,6 +902,7 @@ void setup_surfaces(void)
 #endif
 
 	if(win!=NULL) {
+		sdl.mutexP(newrect_mutex);
 		if(new_rect)
 			sdl.FreeSurface(new_rect);
 		new_rect=NULL;
@@ -917,6 +919,7 @@ void setup_surfaces(void)
 				sdl.FreeSurface(tmp_rect);
 			}
 		}
+		sdl.mutexV(newrect_mutex);
 		if(yuv.enabled) {
 			if(yuv.overlay)
 				sdl.FreeYUVOverlay(yuv.overlay);
@@ -958,7 +961,9 @@ void setup_surfaces(void)
 			yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, yuv.best_format, win);
 			sdl_setup_yuv_colours();
 		}
+		sdl.mutexP(newrect_mutex);
 		sdl_setup_colours(new_rect);
+		sdl.mutexV(newrect_mutex);
 		sdl_setup_colours(win);
 		force_redraws++;
 	}
@@ -967,6 +972,7 @@ void setup_surfaces(void)
 		sdl_exitcode=1;
 		sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
 	}
+	sdl.mutexV(win_mutex);
 }
 
 /* Called from event thread only */
@@ -1442,16 +1448,28 @@ int sdl_mouse_thread(void *data)
 
 int win_to_text_xpos(int winpos)
 {
-	if(yuv.enabled)
-		return(winpos*vstat.cols/win->w+1);
+	if(yuv.enabled) {
+		int ret;
+
+		sdl.mutexP(win_mutex);
+		ret = winpos*vstat.cols/win->w+1;
+		sdl.mutexV(win_mutex);
+		return(ret);
+	}
 	else
 		return(winpos/(vstat.charwidth*vstat.scaling)+1);
 }
 
 int win_to_text_ypos(int winpos)
 {
-	if(yuv.enabled)
-		return(winpos*vstat.rows/win->h+1);
+	if(yuv.enabled) {
+		int ret;
+
+		sdl.mutexP(win_mutex);
+		ret = winpos*vstat.rows/win->h+1;
+		sdl.mutexV(win_mutex);
+		return(ret);
+	}
 	else
 		return(winpos/(vstat.charheight*vstat.scaling)+1);
 }
@@ -1461,6 +1479,9 @@ int sdl_video_event_thread(void *data)
 	SDL_Event	ev;
 	int			new_scaling = -1;
 	int			old_scaling = vstat.scaling;
+	SDL_Rect	*upd_rects=NULL;
+	int			rectspace=0;
+	int			rectsused=0;
 
 	if(!init_sdl_video()) {
 		char	driver[16];
@@ -1567,10 +1588,14 @@ int sdl_video_event_thread(void *data)
 								if(upd_rects) {
 									upd_rects[0].x=0;
 									upd_rects[0].y=0;
+									sdl.mutexP(win_mutex);
+									sdl.mutexP(newrect_mutex);
 									upd_rects[0].w=new_rect->w;
 									upd_rects[0].h=new_rect->h;
 									sdl.BlitSurface(new_rect, upd_rects, win, upd_rects);
+									sdl.mutexV(newrect_mutex);
 									sdl.UpdateRects(win,1,upd_rects);
+									sdl.mutexV(win_mutex);
 									rectsused=0;
 								}
 							}
@@ -1590,11 +1615,14 @@ int sdl_video_event_thread(void *data)
 									SDL_Rect r;
 									int x,y,offset;
 
+									sdl.mutexP(win_mutex);
 									if(!win) {
+										sdl.mutexV(win_mutex);
 										free(rect->data);
 										free(rect);
 										break;
 									}
+									sdl.mutexP(newrect_mutex);
 									for(y=0; y<rect->height; y++) {
 										offset=y*rect->width;
 										for(x=0; x<rect->width; x++) {
@@ -1612,6 +1640,8 @@ int sdl_video_event_thread(void *data)
 										if (!upd_rects) {
 											free(rect->data);
 											free(rect);
+											sdl.mutexV(newrect_mutex);
+											sdl.mutexV(win_mutex);
 											break;
 										}
 										upd_rects[rectsused].x=rect->x*vstat.scaling;
@@ -1625,14 +1655,18 @@ int sdl_video_event_thread(void *data)
 											rectsused=0;
 										}
 									}
+									sdl.mutexV(newrect_mutex);
+									sdl.mutexV(win_mutex);
 									free(rect->data);
 									free(rect);
 								}
 								break;
 							case SDL_USEREVENT_FLUSH:
+								sdl.mutexP(win_mutex);
+								sdl.mutexP(newrect_mutex);
 								if(win && new_rect) {
 									if(yuv.enabled) {
-										if(new_rect && yuv.overlay && yuv.changed) {
+										if(yuv.overlay && yuv.changed) {
 											SDL_Rect	dstrect;
 	
 											yuv.changed=0;
@@ -1650,6 +1684,8 @@ int sdl_video_event_thread(void *data)
 										}
 									}
 								}
+								sdl.mutexP(newrect_mutex);
+								sdl.mutexV(win_mutex);
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);
 								break;
@@ -1703,12 +1739,14 @@ int sdl_video_event_thread(void *data)
 							case SDL_USEREVENT_INIT:
 								if(!sdl_init_good) {
 									if(sdl.WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO) {
+										sdl.mutexP(win_mutex);
 										if(win != NULL) {
 											sdl.EnableUNICODE(1);
 											sdl.EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 											mouse_thread=sdl.CreateThread(sdl_mouse_thread, NULL);
 											sdl_init_good=1;
 										}
+										sdl.mutexV(win_mutex);
 									}
 								}
 								sdl_ufunc_retval=0;
@@ -1873,6 +1911,8 @@ int sdl_initciolib(int mode)
 	sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
 	sdl_ufunc_rec=sdl.SDL_CreateSemaphore(0);
 	sdl_ufunc_mtx=sdl.SDL_CreateMutex();
+	newrect_mutex=sdl.SDL_CreateMutex();
+	win_mutex=sdl.SDL_CreateMutex();
 	sdl_keylock=sdl.SDL_CreateMutex();
 #if !defined(NO_X) && defined(__unix__)
 	sdl_pastebuf_set=sdl.SDL_CreateSemaphore(0);
