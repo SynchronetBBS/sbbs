@@ -288,7 +288,7 @@ function GlobalWarPlayer(playerNumber, playerName, vote, lastTurn, cards) {
 }
 
 /* if we are running as an external program (logon event?) */
-else if(argv[0] !== undefined) {
+if(argv[0] !== undefined) {
 	if(!file_isdir(argv[0]))
 		throw("Global War path invalid: " + argv[0]);
 	var GWAR = new GlobalWar(argv[0]);
