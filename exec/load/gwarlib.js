@@ -76,6 +76,7 @@ function GlobalWar(path) {
 	this.lastUpdate = 0;
 	this.gamePath = path;
 	this.gameList = {};
+	this.players = {};
 	
 	this.countryList = [
 		"Afghanistan","Alaska","Alberta","Argentina","Brazil","Mexico",
@@ -115,6 +116,19 @@ GlobalWar.prototype.loadGame = function(gameNumber) {
 		this.gameList[gameNumber].loadGame();
 		return this.gameList[gameNumber];
 	}
+}
+GlobalWar.prototype.loadScores = function() {
+	var w = new File(this.gamePath + "winners.war");
+	w.open('r',true);
+	while(!w.eof) {
+		var p = {
+			score:Number(w.readln()),
+			name:w.readln(),
+			system:w.readln()
+		};
+		this.players[p.name] = p;
+	}
+	w.close();
 }
 GlobalWar.prototype.hasContinent = function(gameNumber,playerName,continent) {
 	var g = this.gameList[gameNumber];
@@ -204,7 +218,27 @@ function GlobalWarGame(rootFileName, gameNumber) {
 	 100 is added to the above value if Hidden names are in effect.
 	1000 is added if Adjacent Fortifications are in effect.
    10000 is added to the above value if non-sequential plays are in effect. */
+
+	/* in progress, sequential, fixed, adjacent, hidden */
+	/* 1									1000	100	*/
+	/* 401101											*/
 	
+	/*
+			GAME 20 STANDINGS: 100145
+
+		Game type (normal or team) : Normal
+		Turn order                 : Fixed
+		Player names will be       : Hidden
+		Fortification type         : Direct
+		Fortifications allowed     : 5
+		Play Sequence              : Sequential Plays
+		Number of players          : 4 to 5
+		The following people have signed up to play so far:
+			 Player 1 from JumpStart BBS, who votes to start.
+			 MCMLXXIX from The BROKeN BUbBLe, who votes to wait.
+			 Player 3 from JumpStart BBS, who votes to wait.
+			 Player 4 from JumpStart BBS, who votes to start.    */
+
 	this.gameEvent; 		/* line 1 */
 	this.eventDay;			/* line 2 */
 	this.players = [];		/* lines 3 - 38 */
