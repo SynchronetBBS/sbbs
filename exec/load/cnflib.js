@@ -8,10 +8,17 @@ var CNF = new (function() {
 		return i;
 	}
 
-	/* read a string from a cnf file */
-	function getStr(file,bytes) {
-		var s = file.read(bytes);
-		return s.replace(/\0/g,'');
+	/* read a string from a cnf file (optional string length record) */
+	function getStr(file,bytes,length) {
+		if(length == true) {
+			var i = file.readBin(length);
+			var s = file.read(bytes);
+			return s.substr(0,i);
+		}
+		else {
+			var s = file.read(bytes);
+			return s.replace(/\0/g,'');
+		}
 	}
 
 	/* write an int to a cnf file */
@@ -19,8 +26,11 @@ var CNF = new (function() {
 		file.writeBin(val,bytes);
 	}
 
-	/* write a null-padded string to a cnf file */
-	function setStr(file,bytes,str) {
+	/* write a null-padded string to a cnf file (optional string length record) */
+	function setStr(file,bytes,length,str) {
+		if(length == true) {
+			setInt(file,length,str.length);
+		}
 		file.write(str,bytes);
 	}
 
@@ -38,12 +48,9 @@ var CNF = new (function() {
 	/* read a set of records from xtrn.cnf */
 	function readArray(file,struct,length) {
 		var list = [];
-		var records;
 		if(length == undefined)
-			records = getInt(file,UINT16_T);
-		else
-			records = length;
-		for(var i=0;i<records;i++) {
+			length = getInt(file,UINT16_T);
+		for(var i=0;i<length;i++) {
 			var data = readRecord(file,struct);
 			list[i] = data;
 		}
@@ -64,7 +71,7 @@ var CNF = new (function() {
 					data[p] = getInt(file,struct[p].bytes);
 					break;
 				case "str":
-					data[p] = getStr(file,struct[p].bytes);
+					data[p] = getStr(file,struct[p].bytes,struct[p].length);
 					break;
 				case "obj":
 					data[p] = readRecord(file,struct[p].bytes);
@@ -103,8 +110,10 @@ var CNF = new (function() {
 	}
 
 	/* write a set of records to xtrn.cnf */
-	function writeArray(file,struct,records) {
-		setInt(file,UINT16_T,records.length);
+	function writeArray(file,struct,length,records) {
+		if(length == undefined) {
+			setInt(file,UINT16_T,records.length);
+		}
 		for(var i=0;i<records.length;i++) {
 			writeRecord(file,struct,records[i]);
 		}
@@ -121,13 +130,13 @@ var CNF = new (function() {
 					setInt(file,struct[p].bytes,record[p]);
 					break;
 				case "str":
-					setStr(file,struct[p].bytes,record[p]);
+					setStr(file,struct[p].bytes,struct[p].length,record[p]);
 					break;
 				case "obj":
 					writeRecord(file,struct[p].bytes,record[p]);
 					break;
 				case "lst":
-					writeArray(file,struct[p].bytes,record[p]);
+					writeArray(file,struct[p].bytes,struct[p].length,record[p]);
 					break;
 				case "ntv":
 					writeNative(file,struct[p].bytes,record[p]);
@@ -153,6 +162,8 @@ var CNF = new (function() {
 		var bytes = 0;
 		for each(var p in struct) {
 			bytes += p.bytes;
+			if(p.type == "str" && p.length > 0)
+				bytes += p.length;
 		}
 		return bytes;
 	}
