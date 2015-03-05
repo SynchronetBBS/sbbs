@@ -187,49 +187,7 @@ function GlobalWarGame(rootFileName, gameNumber) {
 	this.baseDate = new Date("January 1, 1985 00:00:00");
 	this.dayMS = 24 * 60 * 60 * 1000;
 
-	/* Game_Event     (0..611166)
-		   0 = Normal game, not started
-		   1 = Normal game, in progress
-		   2 = Normal game, completed and awaiting auto-deletion.
-		   3 = Team   game, not started
-		   4 = Team   game, in progress
-		   5 = Team   game, completed and awaiting auto-deletion.
-		  33 = Normal game,   3 players, not started
-		  34 = Normal game, 3-4 players, not started
-		  35 = Normal game, 3-5 players, not started
-		  36 = Normal game, 3-6 players, not started
-		  44 = Normal game,   4 players, not started
-		  45 = Normal game, 4-5 players, not started
-		  46 = Normal game, 4-6 players, not started
-		  55 = Normal game,   5 players, not started
-		  56 = Normal game, 5-6 players, not started
-		  66 = Normal game,   6 players, not started 
-
-	 100 is added to the above value if Hidden names are in effect.
-	1000 is added if Adjacent Fortifications are in effect.
-   10000 is added to the above value if non-sequential plays are in effect. */
-
-	/* in progress, sequential, fixed, adjacent, hidden */
-	/* 1									1000	100	*/
-	/* 401101											*/
-	
-	/*
-			GAME 20 STANDINGS: 100145
-
-		Game type (normal or team) : Normal
-		Turn order                 : Fixed
-		Player names will be       : Hidden
-		Fortification type         : Direct
-		Fortifications allowed     : 5
-		Play Sequence              : Sequential Plays
-		Number of players          : 4 to 5
-		The following people have signed up to play so far:
-			 Player 1 from JumpStart BBS, who votes to start.
-			 MCMLXXIX from The BROKeN BUbBLe, who votes to wait.
-			 Player 3 from JumpStart BBS, who votes to wait.
-			 Player 4 from JumpStart BBS, who votes to start.    */
-
-	this.gameEvent; 		/* line 1 */
+	this.gameEvent;			/* line 1 */
 	this.eventDay;			/* line 2 */
 	this.players = [];		/* lines 3 - 38 */
 	this.cardSets;			/* line 39 */
@@ -237,8 +195,22 @@ function GlobalWarGame(rootFileName, gameNumber) {
 	this.passwords = [];	/* lines 124 - 126 */
 	this.maxForts;			/* line 127 */
 	
+	/* populated after load */
+	this.settings = { 		
+		team:false,
+		started:false,
+		completed:false,
+		minPlayers:3,
+		maxPlayers:6,
+		hidden:false,
+		adjacent:false,
+		sequential:true,
+		date:undefined
+	};
+	
 	/* constructor */
 	this.loadGame();
+	this.parseEvent();
 }
 
 /* global war game data methods */
@@ -265,6 +237,44 @@ GlobalWarGame.prototype.loadGame = function() {
 	f.close();
 	
 	this.lastUpdate = Date.now();
+}
+GlobalWarGame.prototype.parseEvent = function() {
+	this.settings.date = new Date(this.baseDate.getTime() + (this.dayMS * this.eventDay));
+	var event = this.gameEvent.substr(1);
+	if(event > 10000) 
+		this.settings.sequential = false;
+	if(event.substr(1) > 1000)
+		this.settings.adjacent = true;
+	if(event.substr(2) > 100)
+		this.settings.hidden = true;
+	event = event.substr(3);
+	if(Number(event) < 6) {
+		switch(event) {
+		case 1:
+			this.settings.started = true;
+			break;
+		case 2:
+			this.settings.started = true;
+			this.settings.completed = true;
+			break;
+		case 3:
+			this.settings.team = true;
+			break;
+		case 4:
+			this.settings.team = true;
+			this.settings.started = true;
+			break;
+		case 5:
+			this.settings.team = true;
+			this.settings.started = true;
+			this.settings.completed = true;
+			break;
+		}
+	}
+	else {
+		this.settings.minPlayers = event[0];
+		this.settings.maxPlayers = event[1];
+	}
 }
 GlobalWarGame.prototype.loadPlayer = function(file, playerNumber) {
 	var playerName = file.readln(); 
