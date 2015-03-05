@@ -36,9 +36,13 @@ var CNF = new (function() {
 	}
 
 	/* read a set of records from xtrn.cnf */
-	function readArray(file,struct) {
+	function readArray(file,struct,length) {
 		var list = [];
-		var records = getInt(file,UINT16_T);
+		var records;
+		if(length == undefined)
+			records = getInt(file,UINT16_T);
+		else
+			records = length;
 		for(var i=0;i<records;i++) {
 			var data = readRecord(file,struct);
 			list[i] = data;
@@ -66,7 +70,7 @@ var CNF = new (function() {
 					data[p] = readRecord(file,struct[p].bytes);
 					break;
 				case "lst":
-					data[p] = readArray(file,struct[p].bytes);
+					data[p] = readArray(file,struct[p].bytes,struct[p].length);
 					break;
 				case "ntv":
 					data[p] = readNative(file,struct[p].bytes);
@@ -144,6 +148,15 @@ var CNF = new (function() {
 		}
 	}
 
+	/* determine the size of a record (in bytes) */
+	this.getBytes = function(struct) {
+		var bytes = 0;
+		for each(var p in struct) {
+			bytes += p.bytes;
+		}
+		return bytes;
+	}
+	
 	/* read records from .cnf file */
 	this.read = function(fileName,struct) {
 		var f = new File(fileName);
