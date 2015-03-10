@@ -1408,7 +1408,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						max_row = cterm->bottom_margin - cterm->top_margin + 1;
 					col=1;
 					*p=0;
-					if(strlen(cterm->escbuf)>2) {
+					if(strlen(cterm->escbuf)>1) {	// Remember, we truncated the 'H' or 'f'
 						if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
 							row=strtoul(p,NULL,10);
 							if((p=strtok(NULL,";"))!=NULL) {
