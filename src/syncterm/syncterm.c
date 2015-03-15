@@ -1022,7 +1022,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 			}
 			if(we_got_this) {
 				if (type != SYNCTERM_DEFAULT_TRANSFER_PATH) {
-					if(snprintf(fn, fnlen, "%S\\SyncTERM", path) >= fnlen) {
+					if(snprintf(fn, fnlen, "%S\\SyncTERM", path) >= fnlen)
 						we_got_this=FALSE;
 				}
 				// Convert unicode to string.
