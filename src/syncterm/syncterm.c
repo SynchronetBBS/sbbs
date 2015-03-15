@@ -1021,9 +1021,11 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 					break;
 			}
 			if(we_got_this) {
-				// Convert unicode to string.
-				if(snprintf(fn, fnlen, "%S\\SyncTERM", path) >= fnlen) {
-					we_got_this=FALSE;
+				if (type != SYNCTERM_DEFAULT_TRANSFER_PATH) {
+					// Convert unicode to string.
+					if(snprintf(fn, fnlen, "%S\\SyncTERM", path) >= fnlen) {
+						we_got_this=FALSE;
+					}
 				}
 				CTMF(path);
 			}
