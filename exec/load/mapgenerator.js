@@ -232,23 +232,24 @@ function Map(width,height) {
 	});
 	
 	/* return a cross section (horizontal) */
-	this.xSection = function(y,height) {
+	this.xSection = function(y,ceiling) {
 		var section = [];
-		if(!height)
-			height = this.sectionHeight;
+		if(!ceiling)
+			ceiling = this.sectionHeight;
 		for(var x=0;x<this.length;x++) {
 			section[x]=[];
 			
-			var a = this[x][y];
-			var b = a-this.min;
-			var c = b/this.range;
-			var d = c*(height-2);
-			
-			//log(format("a:%f,b:%f,c:%f,d:%f",a,b,c,d));
+			// var a = this[x][y];
+			// if(a == undefined)
+				// throw("Invalid elevation data '" + a + "' at " + x + ":" + y);
+			// var b = a-this.min;
+			// var c = b/this.range;
+			// var d = c*(height);
+			var d = this[x][y];
 			var i=0;
 			for(;i<d;i++) 
 				section[x].unshift(1);
-			for(;i<height;i++)
+			for(;i<ceiling;i++)
 				section[x].unshift(0);
 		}
 		
@@ -256,25 +257,24 @@ function Map(width,height) {
 	}
 	
 	/* return a cross section (vertical) */
-	this.ySection = function(x,height) {
+	this.ySection = function(x,ceiling) {
 		var section = [];
-		if(!height)
-			height = this.sectionHeight;
+		if(!ceiling)
+			ceiling = this.sectionHeight;
 		for(var y=0;y<this[x].length;y++) {
 			section[y]=[];
 			
-			var a = this[x][y];
-			if(a == undefined)
-				throw("Invalid elevation data '" + a + "' at " + x + ":" + y);
-			var b = a-this.min;
-			var c = b/this.range;
-			var d = c*(height-2);
-			
-			//log(format("a:%f,b:%f,c:%f,d:%f",a,b,c,d));
+			// var a = this[x][y];
+			// if(a == undefined)
+				// throw("Invalid elevation data '" + a + "' at " + x + ":" + y);
+			// var b = a-this.min;
+			// var c = b/this.range;
+			// var d = c*(height-2);
+			var d = this[x][y];
 			var i=0;
 			for(;i<d;i++) 
 				section[y].unshift(1);
-			for(;i<height;i++)
+			for(;i<ceiling;i++)
 				section[y].unshift(0);
 		}
 		
@@ -322,9 +322,13 @@ function Map(width,height) {
 				var a = this[x][y];
 				if(a == undefined)
 					throw("Invalid elevation data '" + a + "' at " + x + ":" + y);
+				/* current elevation minus map minimum elevation */
 				var b = a-this.min;
+				/* distance above min elevation over elevation range */
 				var c = b/this.range;
-				var d = c * peak;
+				/* adjusted current elevation based on maximum elevation */
+				var d = c * (peak-base);
+				/* adjusted distance above min elevation */
 				var e = d + base;
 				this[x][y] = e;
 			}
