@@ -299,6 +299,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.nick = nick;
 		this.str = str;
 		this.time = time;
+		this.str = this.str.replace(/[\f\r\n\x14\x15\x10\b]/g,'');
 	}
 	
 	/* retrieve user list */
