@@ -2,12 +2,12 @@
 .SH NAME
 syncterm \- BBS terminal program
 .SH SYNOPSIS
-\fBsyncterm\fP [-e\fIdly\fP] [-i\fIifc\fP] [-l\fIlns\fP] [-t|-r|-h] [-s] [\fIURL\fP]
+\fBsyncterm\fP [\-e\fIdly\fP] [\-i\fIifc\fP] [\-l\fIlns\fP] [\-t|\-r|\-h] [\-s] [\fIURL\fP]
 .SH DESCRIPTION
 \fBSyncTERM\fP is a terminal program designed specifically for connecting to
 a Bulletin Board System (\fBBBS\fP)
 .SS Options
-.IP \fB-e\fIdly\fR
+.IP \fB\-e\fIdly\fR
 Specify the "escape delay" in milliseconds for curses(3) mode. Since curses
 uses the escape key for its own purposes, using the escape key for other
 control requires a timeout. If this timeout is too low, extended keystrokes
@@ -15,17 +15,17 @@ such as arrow keys will be interpreted as an escape keypress followed by other
 characters. If this delay is too high, there will be a large delay after a
 single escape is pressed. If an escape delay of less than 10ms is specified, it
 is forced to 25ms.
-.IP \fB-i\fIifc\fR
+.IP \fB\-i\fIifc\fR
 .RS
 Specify the interface to use. Depending on compile options and library
 availability, not all interfaces will be available for all installations.
-If \fI-i\fP is not specified, SyncTERM will choose the "best" mode in the
+If \fI\-i\fP is not specified, SyncTERM will choose the "best" mode in the
 following order: SDL, X11, curses, ANSI. The SDL mode specifically can fail
 in ways that the automatic fallback can not properly detect (most notably with
 libGGI when it is enabled in SDL.) When this occurs, a specific mode will need
 to be forced.
 .LP
-When \fI-i\fP \fBis\fP specified, only the specified mode will be attempted. No
+When \fI\-i\fP \fBis\fP specified, only the specified mode will be attempted. No
 automatic fallback will be performed.
 .LP
 Further, some available modes (such as SDL windowed) can not be expressly selected.
@@ -55,17 +55,17 @@ special caveats listed in \fB\fITEXT MODE CAVEATS\fR
 Require SyncTERM to run in ANSI mode. This mode as well as the curses mode have
 special caveats (see \fBTEXT MODE CAVEATS\fP)
 .RE
-.IP \fB-l\fIlns\fR
+.IP \fB\-l\fIlns\fR
 Sets the number of screen lines to \fIlns\fR. Only specific values are allowed
 for \fIlns\fR and they are: 14, 21, 25, 28, 43, and 50. If any other value is
 chosen, a value of 50 is used.
-.IP \fB-t\fP
+.IP \fB\-t\fP
 Specifies the default scheme for \fIURL\fP to be telnet://
-.IP \fB-r\fP
+.IP \fB\-r\fP
 Specifies the default scheme for \fIURL\fP to be rlogin://
-.IP \fB-r\fP
+.IP \fB\-r\fP
 Specifies the default scheme for \fIURL\fP to be ssh://
-.IP \fB-s\fP
+.IP \fB\-s\fP
 Run in "safe mode" which disables the modification of local files such as the
 dialing list.
 .SH RUN-TIME LINKING
@@ -90,7 +90,7 @@ The escape character (ASCII 27) is used in curses and ANSI modes to begin a
 control sequence. As such, there is a delay to detect if the next character
 continues the escape sequence or is a base escape. Because of this, there will
 be a perceptible delay when the escape key is used. This delay can be adjusted
-using the \fI-e\fP parameter, but selecting the "correct" value is a dark art
+using the \fI\-e\fP parameter, but selecting the "correct" value is a dark art
 since any value is provably incorrect.
 .LP
 The curses and ANSI modes are not necessarily the correct number of lines for
@@ -106,16 +106,16 @@ The users SyncTERM configuration file
 .IP \fClibSDL.so\fR
 When this file exists in the library path, SyncTERM will support the use of SDL
 for input and output. This file is part of the Simple Directmedia Layer
-available from ``http://www.libsdl.org''. See \fBRUN-TIME LINKING\fP for
+available from ``http://www.libsdl.org''. See \fBRUN\-TIME LINKING\fP for
 details.
 .IP \fClibX11.so\fR
 When this file exists in the library path, SyncTERM will support the use of X11
-for input and output. See \fBRUN-TIME LINKING\fP for details.
+for input and output. See \fBRUN\-TIME LINKING\fP for details.
 .IP \fClibcl.so\fR
 When this file exists in the library path, SyncTERM will support the use of SSH
 connections. This file is part of Peter Gutmann's Cryptlib library available
 from ``http://www.cs.auckland.ac.nz/~pgut001/cryptlib/''. See
-\fBRUN-TIME LINKING\fP for details.
+\fBRUN\-TIME LINKING\fP for details.
 .SH AUTHOR
 Stephen Hurd <shurd@sasktel.net>
 .SH BUGS
