@@ -188,40 +188,20 @@ function loadfont()
 		}
 		font.close();
 
-		write_raw("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
-		if(console.telnet_mode & TELNET_MODE_OFF)
-			write_raw(fontdata);
-		else {
-			/* From here on, it's socket access only */	 
-			console.lock_input(true);	 
-			while(console.output_buffer_level)	 
-				mswait(1);	 
-
-			var oldblock=client.socket.nonblocking;	 
-			client.socket.nonblocking=false;
-
-			fontdata=fontdata.replace(/\xff/g, "\xff\xff");
-			while(fontdata.length) {	 
-				if(client.socket.poll(0,true)) {
-					if(client.socket.send(fontdata.substr(0,1024)))	 
-						fontdata=fontdata.substr(1024);	 
-				}	 
-			}
-			client.socket.nonblocking=oldblock;
-			console.lock_input(false);
-		}
+		console.write("\x1b[="+(firstslot+parseInt(i))+";"+fontsize+"{");
+		console.write(fontdata);
 		if(showprogress)
-			write_raw(".");
+			console.write(".");
 	}
 	if(showprogress)
-		write_raw("done.\r\n");
+		console.write("done.\r\n");
 	for (i in activate) {
 		if (activate[i] !== undefined) {
-			write_raw("\x1b[" + i +";"+(firstslot+activate[i])+" D");
+			console.write("\x1b[" + i +";"+(firstslot+activate[i])+" D");
 			if(i&2) /* Alternate font for Blink attribute */
-				write_raw("\x1b[?34h\x1b[?35h");
+				console.write("\x1b[?34h\x1b[?35h");
 			if(i&1) /* Alternate font for High-intensity attribute */
-				write_raw("\x1b[?31h");
+				console.write("\x1b[?31h");
 		}
 	}
 	console.ctrlkey_passthru=oldctrl;
