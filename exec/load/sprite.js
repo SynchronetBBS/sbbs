@@ -1218,9 +1218,16 @@ Sprite.Profile.prototype.putWeapon = function() {
 		default:
 			break;
 	}
-	if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > this.frame.parent.width 
-		|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > this.frame.parent.height)
+	if(	this.weaponCoordinates.x - this.frame.parent.x < 1
+		||
+		this.weaponCoordinates.x - this.frame.parent.x > this.frame.parent.width 
+		||
+		this.weaponCoordinates.y - this.frame.parent.y < 1
+		||
+		this.weaponCoordinates.y - this.frame.parent.y > this.frame.parent.height
+	) {
 		return false;
+	}
 	var w = new Sprite.Profile(
 		this.ini.weapon,
 		this.frame.parent,
@@ -1230,6 +1237,7 @@ Sprite.Profile.prototype.putWeapon = function() {
 	);
 	w.owner = this;
 	w.frame.open();
+	w.frame.top();
 }
 Sprite.Profile.prototype.getcmd = function(userInput) {
 	switch(userInput.toUpperCase()) {
@@ -1289,6 +1297,8 @@ Sprite.Profile.prototype.getcmd = function(userInput) {
 }
 Sprite.Profile.prototype.cycle = function() {
 	var ret = false;
+	if(!this.open)
+		return false;
 	if(this.ini.constantmotion > 0 && this.ini.speed > 0 && system.timer - this.lastMove > this.ini.speed)
 		this.move("forward");
 	if(this.inJump && system.timer - this.lastYMove > this.ini.speed) {
@@ -1304,6 +1314,9 @@ Sprite.Profile.prototype.cycle = function() {
 	}
 	if(this.ini.gravity > 0 && !this.inJump && system.timer - this.lastYMove > this.ini.speed) {
 		if(!Sprite.checkBelow(this)) {
+			this.inFall = true;
+			if(typeof this.positions["fall"] != "undefined")
+				this.changePosition("fall");
 			this.y = this.y + 1;
 			this.lastYMove = system.timer;
 		} else if(this.inFall) {
