@@ -646,7 +646,7 @@ var Level = function(l, n) {
 		frames.counters.remaining = new Frame(
 			frames.statusBar.x + 69,
 			frames.statusBar.y,
-			3,
+			5,
 			1,
 			COLOUR_STATUSBAR_BG|COLOUR_STATUSBAR_FG,
 			frames.statusBar
