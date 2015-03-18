@@ -676,7 +676,7 @@ var Level = function(l, n) {
 		frames.statusBar.putmsg("5) Climb:     ", COLOUR_CLIMBER|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("N)uke   ", COLOUR_NUKED|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("H)elp  ", WHITE|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg(" Remaining:       Time:\r\n", WHITE|COLOUR_STATUSBAR_BG);
+		frames.statusBar.putmsg("  Released:       Time:\r\n", WHITE|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("2) Block:     ", COLOUR_BLOCKER|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("4) Build:     ", COLOUR_BUILDER|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("6) Dig  :     ", COLOUR_DIGGER|COLOUR_STATUSBAR_BG);
@@ -781,7 +781,7 @@ var Level = function(l, n) {
 			Sprite.profiles[Sprite.profiles.length - 1].ini.skill = "lemon";
 			remaining--;
 			frames.counters.remaining.clear();
-			frames.counters.remaining.putmsg(remaining);
+			frames.counters.remaining.putmsg((level.lemons - remaining) + "/" + level.lemons);
 		}
 		frames.counters.remaining.putmsg(remaining);
 
