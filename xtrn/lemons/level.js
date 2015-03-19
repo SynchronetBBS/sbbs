@@ -99,10 +99,12 @@ var Level = function(l, n) {
 					if(sprite.ini.skill == "builder")
 						lemonize(sprite);
 				}
+				sprite.lastMove = system.timer;
 				break;
 
 			} else {
 				sprite.turnTo((sprite.bearing == "w") ? "e" : "w");
+				sprite.lastMove = system.timer;
 				var overlaps = Sprite.checkOverlap(sprite);
 				if(overlaps) {
 					for(var o = 0; o < overlaps.length; o++) {
