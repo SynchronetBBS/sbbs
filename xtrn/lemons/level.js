@@ -872,8 +872,6 @@ var Level = function(l, n) {
 				||
 				Sprite.profiles[s].y + Sprite.profiles[s].ini.height > frames.field.y + frames.field.height
 				||
-				Sprite.profiles[s].y + Sprite.profiles[s].ini.height <= frames.field.y
-				||
 				Sprite.profiles[s].x + Sprite.profiles[s].ini.width <= frames.field.x
 				||
 				Sprite.profiles[s].x >= frames.field.x + frames.field.width

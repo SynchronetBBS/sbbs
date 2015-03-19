@@ -111,6 +111,7 @@ var init = function() {
 		BG_BLACK|LIGHTGRAY
 	);
 	frame.open();
+	frame.checkbounds = false;
 
 	// We start off at the menu screen
 	state = STATE_MENU;
