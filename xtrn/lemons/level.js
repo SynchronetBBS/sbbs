@@ -205,6 +205,10 @@ var Level = function(l, n) {
 		) {
 			lemonize(sprite);
 			delete sprite.ini.climbStart;
+		} else {
+			sprite.ini.constantmotion = 1;
+			sprite.ini.gravity = 1;
+			delete sprite.ini.climbStart;
 		}
 
 	}
@@ -274,7 +278,7 @@ var Level = function(l, n) {
 		it loses its 'basher' skill.
 		It's too easy to just remove an entire block from the screen,
 		so we will produce a nice effect by dismantling the block by
-		one half-cell every ~ .25 seconds. */
+		one half-cell every ~ .5 seconds. */
 	var bashersGonnaBash = function(sprite) {
 
 		if(typeof sprite.ini.lastDig == "undefined")
