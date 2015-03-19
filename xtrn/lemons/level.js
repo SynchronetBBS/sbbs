@@ -48,6 +48,14 @@ var Level = function(l, n) {
 		sprite.ini.gravity = 1;
 		sprite.ini.speed = .25;
 		sprite.ini.skill = "lemon";
+		if(typeof sprite.ini.buildCount != "undefined")
+			delete sprite.ini.buildCount;
+		if(typeof sprite.ini.lastBuild != "undefined")
+			delete sprite.ini.lastBuild;
+		if(typeof sprite.ini.climbStart != "undefined")
+			delete sprite.ini.climbStart;
+		if(typeof sprite.ini.lastDig != "undefined")
+			delete sprite.ini.lastDig;
 	}
 
 	// Remove the lemon from the screen
@@ -168,7 +176,6 @@ var Level = function(l, n) {
 				beside[b].ini.type == "projectile"
 			) {
 				lemonize(sprite);
-				delete sprite.ini.climbStart;
 				return;
 			} else if(beside[b].ini.type == "lemon") {
 				sprite.turnTo((sprite.bearing == "w") ? "e" : "w");
@@ -206,7 +213,6 @@ var Level = function(l, n) {
 			sprite.ini.climbStart - sprite.y > 1
 		) {
 			lemonize(sprite);
-			delete sprite.ini.climbStart;
 		} else {
 			sprite.ini.constantmotion = 1;
 			sprite.ini.gravity = 1;
@@ -283,9 +289,7 @@ var Level = function(l, n) {
 		one half-cell every ~ .5 seconds. */
 	var bashersGonnaBash = function(sprite) {
 
-		if(typeof sprite.ini.lastDig == "undefined")
-			sprite.ini.lastDig = system.timer;
-		if(system.timer - sprite.ini.lastDig < .5)
+		if(typeof sprite.ini.lastDig != "undefined" && system.timer - sprite.ini.lastDig < .5)
 			return;
 
 		var beside = (sprite.bearing == "e") ? Sprite.checkRight(sprite) : Sprite.checkLeft(sprite);
@@ -344,7 +348,6 @@ var Level = function(l, n) {
 
 			beside[b].frame.invalidate();
 			sprite.ini.lastDig = system.timer;
-			sprite.lastMove = system.timer;
 
 			if(beside[b].frame.data[0][x].ch == ascii(220)) {
 				beside[b].frame.data[0][x].ch = " ";
@@ -393,9 +396,7 @@ var Level = function(l, n) {
 	//	Like bashersGonnaBash, but for digging downward.
 	var diggersGonnaDig = function(sprite) {
 
-		if(typeof sprite.ini.lastDig == "undefined")
-			sprite.ini.lastDig = system.timer;
-		if(system.timer - sprite.ini.lastDig < .5)
+		if(typeof sprite.ini.lastDig != "undefined" && system.timer - sprite.ini.lastDig < .5)
 			return;
 
 		var below = Sprite.checkBelow(sprite);
@@ -483,8 +484,6 @@ var Level = function(l, n) {
 
 		if(sprite.ini.buildCount == 4) {
 			lemonize(sprite);
-			delete sprite.ini.buildCount;
-			delete sprite.ini.lastBuild;
 			return;
 		}
 
@@ -504,8 +503,6 @@ var Level = function(l, n) {
 			block.remove();
 			Sprite.profiles.splice(block.index, 1);
 			lemonize(sprite);
-			delete sprite.ini.lastBuild;
-			delete sprite.ini.buildCount;
 			return;
 		}
 		block.frame.open();
@@ -956,6 +953,8 @@ var Level = function(l, n) {
 				Sprite.profiles[s].ini.skill != "builder"
 				&&
 				Sprite.profiles[s].ini.skill != "digger"
+				&&
+				typeof Sprite.profiles[s].ini.lastDig == "undefined"
 			) {
 				Sprite.profiles[s].changePosition(
 					(Sprite.profiles[s].position == "normal") ? "normal2" : "normal"
