@@ -36,3 +36,10 @@ const	COLOUR_LEMON = YELLOW,
 
 // The name of the JSON database.  You probably don't need to change this.
 const	DBNAME = "LEMONS";
+
+const	KEY_BASH = "A",
+		KEY_BLOCK = "S",
+		KEY_BOMB = "F",
+		KEY_BUILD = "V",
+		KEY_CLIMB = "C",
+		KEY_DIG = "D";
