@@ -20,7 +20,8 @@ var Level = function(l, n) {
 			'builder' : 0,
 			'climber' : 0,
 			'digger' : 0
-		};
+		},
+		nuked = false;
 
 	// The parent Game object will want to read this
 	this.score = 0;
@@ -154,6 +155,12 @@ var Level = function(l, n) {
 
 		if(system.timer - sprite.lastYMove < sprite.ini.speed)
 			return;
+
+		if(Sprite.checkAbove(sprite)) {
+			lemonize(sprite);
+			sprite.lastMove = system.timer;
+			return;
+		}
 
 		var beside = (sprite.bearing == "w") ? Sprite.checkLeft(sprite) : Sprite.checkRight(sprite);
 		if(!beside)
@@ -674,15 +681,15 @@ var Level = function(l, n) {
 		);		
 		
 		// Populate the status bar's static text fields
-		frames.statusBar.putmsg("1) Bash :     ", COLOUR_BASHER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg("3) Bomb :     ", COLOUR_BOMBER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg("5) Climb:     ", COLOUR_CLIMBER|COLOUR_STATUSBAR_BG);
+		frames.statusBar.putmsg(KEY_BASH + ") Bash :     ", COLOUR_BASHER|COLOUR_STATUSBAR_BG);
+		frames.statusBar.putmsg(KEY_BOMB + ") Bomb :     ", COLOUR_BOMBER|COLOUR_STATUSBAR_BG);
+		frames.statusBar.putmsg(KEY_CLIMB + ") Climb:     ", COLOUR_CLIMBER|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("N)uke   ", COLOUR_NUKED|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("H)elp  ", WHITE|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("  Released:       Time:\r\n", WHITE|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg("2) Block:     ", COLOUR_BLOCKER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg("4) Build:     ", COLOUR_BUILDER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg("6) Dig  :     ", COLOUR_DIGGER|COLOUR_STATUSBAR_BG);
+		frames.statusBar.putmsg(KEY_BLOCK + ") Block:     ", COLOUR_BLOCKER|COLOUR_STATUSBAR_BG);
+		frames.statusBar.putmsg(KEY_BUILD + ") Build:     ", COLOUR_BUILDER|COLOUR_STATUSBAR_BG);
+		frames.statusBar.putmsg(KEY_DIG + ") Dig  :     ", COLOUR_DIGGER|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("P)ause  ", WHITE|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("Q)uit  ", WHITE|COLOUR_STATUSBAR_BG);
 		frames.statusBar.putmsg("Lost/Saved: ", WHITE|COLOUR_STATUSBAR_BG);
@@ -785,6 +792,8 @@ var Level = function(l, n) {
 			remaining--;
 			frames.counters.remaining.clear();
 			frames.counters.remaining.putmsg((level.lemons - remaining) + "/" + level.lemons);
+			if(nuked)
+				nuke(Sprite.profiles[Sprite.profiles.length - 1]);
 		}
 		frames.counters.remaining.putmsg(remaining);
 
@@ -1058,24 +1067,48 @@ var Level = function(l, n) {
 				break;
 
 			// Cursor movement
+			case "8":
 			case KEY_UP:
 				if(cursor.y > frames.field.y)
 					cursor.moveTo(cursor.x, cursor.y - 1);
 				break;
 
+			case "2":
 			case KEY_DOWN:
 				if(cursor.y < frames.field.y + frames.field.height - 1)
 					cursor.moveTo(cursor.x, cursor.y + 1);
 				break;
 
+			case "4":
 			case KEY_LEFT:
 				if(cursor.x > frames.field.x)
 					cursor.moveTo(cursor.x - 1, cursor.y);
 				break;
 
+			case "6":
 			case KEY_RIGHT:
 				if(cursor.x < frames.field.x + frames.field.width - 1)
 					cursor.moveTo(cursor.x + 1, cursor. y);
+				break;
+
+			case "7":
+				if(cursor.y > frames.field.y && cursor.x > frames.field.x)
+					cursor.moveTo(cursor.x - 1, cursor.y - 1);
+				break;
+
+			case "9":
+				if(cursor.y > frames.field.y && cursor.x < frames.field.x + frames.field.width - 1)
+					cursor.moveTo(cursor.x + 1, cursor.y - 1);
+				break;
+
+			case "1":
+				if(cursor.y < frames.field.y + frames.field.height - 1 && cursor.x > frames.field.x)
+					cursor.moveTo(cursor.x - 1, cursor.y + 1);
+				break;
+
+			case "3":
+				if(cursor.y < frames.field.y + frames.field.height - 1 && cursor.x < frames.field.x + frames.field.width - 1)
+					cursor.moveTo(cursor.x + 1, cursor.y + 1);
 				break;
 
 			// Nuke the h'wales
@@ -1085,10 +1118,11 @@ var Level = function(l, n) {
 						continue;
 					nuke(Sprite.profiles[s]);
 				}
+				nuked = true;
 				break;
 
 			// Basher
-			case "1":
+			case KEY_BASH:
 				if(typeof cursor.ini.hoveringOver == "undefined")
 					break;
 				if(quotas.basher < 1)
@@ -1101,7 +1135,7 @@ var Level = function(l, n) {
 				break;
 
 			// Blocker
-			case "2":
+			case KEY_BLOCK:
 				if(typeof cursor.ini.hoveringOver == "undefined")
 					break;
 				if(quotas.blocker < 1)
@@ -1117,7 +1151,7 @@ var Level = function(l, n) {
 				break;
 
 			// Bomber
-			case "3":
+			case KEY_BOMB:
 				if(typeof cursor.ini.hoveringOver == "undefined")
 					break;
 				if(quotas.bomber < 1)
@@ -1130,7 +1164,7 @@ var Level = function(l, n) {
 				break;
 
 			// Builder
-			case "4":
+			case KEY_BUILD:
 				if(typeof cursor.ini.hoveringOver == "undefined")
 					break;
 				if(quotas.builder < 1)
@@ -1143,7 +1177,7 @@ var Level = function(l, n) {
 				break;
 
 			// Climber
-			case "5":
+			case KEY_CLIMB:
 				if(typeof cursor.ini.hoveringOver == "undefined")
 					break;
 				if(quotas.climber < 1)
@@ -1156,7 +1190,7 @@ var Level = function(l, n) {
 				break;
 
 			// Digger
-			case "6":
+			case KEY_DIG:
 				if(typeof cursor.ini.hoveringOver == "undefined")
 					break;
 				if(quotas.digger < 1)
@@ -1195,7 +1229,8 @@ var Level = function(l, n) {
 					events[e].interval,
 					events[e].repeat,
 					events[e].action,
-					events[e].arguments
+					events[e].arguments,
+					events[e].context
 				);
 			}
 		}
