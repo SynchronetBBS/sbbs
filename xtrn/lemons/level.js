@@ -387,7 +387,7 @@ var Level = function(l, n) {
 			sprite.move("forward");
 			if(	((sprite.bearing == "e" && !Sprite.checkRight(sprite))
 				||
-				(sprite.bearing == "w" && !Sprite.checkRight(sprite)))
+				(sprite.bearing == "w" && !Sprite.checkLeft(sprite)))
 				&&
 				!Sprite.checkOverlap(sprite)
 			) {
