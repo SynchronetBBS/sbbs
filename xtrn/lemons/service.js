@@ -11,10 +11,13 @@ var root = argv[0];
 
 load("sbbsdefs.js");
 load("json-client.js");
+load("event-timer.js");
 load(root + "defs.js");
 
 // We'll need a JSON client handle in various functions within this script
-var jsonClient;
+var jsonClient,
+	timer,
+	levelTime = 0;
 
 // This will be called when we receive an update to a valid location
 var updateScores = function(data) {
@@ -136,6 +139,24 @@ var processUpdate = function(update) {
 
 }
 
+/*	On startup, or if the local levels.json file has been updated recently,
+	overwrite level data in the DB from the local file. */
+var pushLevels = function() {
+
+	if(levelTime == file_date(root + "levels.json"))
+		return;
+	
+	levelTime = file_date(root + "levels.json");
+
+	var f = new File(root + "levels.json");
+	f.open("r");
+	var levels = JSON.parse(f.read());
+	f.close();
+
+	jsonClient.write(DBNAME, "LEVELS", levels, 2);
+
+}
+
 // Set things up
 var init = function() {
 
@@ -180,6 +201,12 @@ var init = function() {
 		);
 	}
 
+	// Overwrite levels in the DB with local data
+	pushLevels();
+	// And do so again if the local data is updated
+	timer = new Timer();
+	timer.addEvent(300000, true, pushLevels);
+
 	// Call processUpdate when an update is received
 	jsonClient.callback = processUpdate;
 
@@ -190,6 +217,7 @@ var main = function() {
 
 	while(!js.terminated) {
 		mswait(5);
+		timer.cycle();
 		jsonClient.cycle();
 	}
 
