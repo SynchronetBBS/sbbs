@@ -1,5 +1,5 @@
 // The Game object tracks a user's progress and score across multiple levels
-var Game = function() {
+var Game = function(host, port) {
 
 	// We want the user to start by choosing an initial level, if applicable.
 	var gameState = GAME_STATE_CHOOSELEVEL;
@@ -21,33 +21,24 @@ var Game = function() {
 		Timer events (if paused). */
 	var events = false;
 
-	// Load the JSON-DB server details if available
-	if(file_exists(js.exec_dir + "server.ini")) {
-		var f = new File(js.exec_dir + "server.ini");
-		f.open("r");
-		var ini = f.iniGetObject();
-		f.close();
-		ini.port = parseInt(ini.port);
-	// Or just set some default values
-	} else {
-		var ini = { 'host' : '127.0.0.1', 'port' : 10088 };
-	}
+	// Create a DBHelper object, which we'll use for a few things later
+	var dbHelper = new DBHelper(host, port);
 
-	// Create a ScoreBoard object, which we'll use for a few things later
-	var scoreBoard = new ScoreBoard(ini.host, ini.port);
-	var l = scoreBoard.getHighestLevel();
+	// Load the levels from the DB (or local file)
+	var levels = dbHelper.getLevels();
+
+	// Get this user's highest-achieved level
+	var l = dbHelper.getHighestLevel();
+
+	// This is unnecessary except in a very edge case
+	if(l >= levels.length)
+		l = levels.length - 1;
 
 	// This will be a LevelChooser if we're picking a level
 	var levelChooser = false;
 
 	// Make the paused/unpaused status of this Game publically accessible
 	this.paused = false;
-
-	// Load the levels JSON file and parse it into the 'levels' array
-	var f = new File(js.exec_dir + "levels.json");
-	f.open("r");
-	var levels = JSON.parse(f.read());
-	f.close();
 
 	// A custom prompt that works with this game's input & state model
 	var LevelChooser = function() {
@@ -322,8 +313,8 @@ var Game = function() {
 
 	// If the user is done with this gaming session, save their score
 	this.close = function() {
-		scoreBoard.addScore(stats.score, stats.level);
-		scoreBoard.close();
+		dbHelper.addScore(stats.score, stats.level);
+		dbHelper.close();
 	}
 
 }
