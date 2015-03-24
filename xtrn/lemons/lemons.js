@@ -134,6 +134,15 @@ var main = function() {
 		help = false,
 		scoreboard = false;
 
+	if(file_exists(js.exec_dir + "server.ini")) {
+		var f = new File(js.exec_dir + "server.ini");
+		f.open("r");
+		var serverIni = f.iniGetObject();
+		f.close();
+	} else {
+		var serverIni = { 'host' : "127.0.0.1", 'port' : 10088 };
+	}
+
 	while(!js.terminated) {
 
 		// Refresh the user's terminal and bury the (real) cursor if necessary
@@ -162,7 +171,7 @@ var main = function() {
 			case STATE_PLAY:
 				// Create a new Game if we're not already in one
 				if(!game)
-					game = new Game();
+					game = new Game(serverIni.host, serverIni.port);
 				// Pass user input to the game module
 				if(!game.getcmd(userInput)) {
 					// If Game.getcmd returns false, the user has hit 'Q'
@@ -221,16 +230,8 @@ var main = function() {
 			case STATE_SCORES:
 				// Bring up the scoreboard if it isn't showing already
 				if(!scoreboard) {
-					if(file_exists(js.exec_dir + "server.ini")) {
-						var f = new File(js.exec_dir + "server.ini");
-						f.open("r");
-						var ini = f.iniGetObject();
-						f.close();
-					} else {
-						var ini = { 'host' : "127.0.0.1", 'port' : 10088 };
-					}
-					scoreboard = new ScoreBoard(ini.host, ini.port);
-					scoreboard.open();
+					scoreboard = new DBHelper(serverIni.host, serverIni.port);
+					scoreboard.showScores();
 				// Remove the scoreboard when the user hits a key
 				} else if(userInput != "") {
 					scoreboard.close();
