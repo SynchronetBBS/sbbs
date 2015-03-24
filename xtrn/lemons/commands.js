@@ -16,9 +16,17 @@ this.QUERY = function(client, packet) {
 
 	var location = packet.location.split(".");
 
-	// It's okay for clients to write to *.LATEST
-	if(packet.oper == "WRITE" && location.length == 2 && location[1] == "LATEST")
+	// It's okay for clients to write to *.LATEST (except LEVELS)
+	if(	packet.oper == "WRITE"
+		&&
+		location.length == 2
+		&&
+		location[0] != "LEVELS"
+		&&
+		location[1] == "LATEST"
+	) {
 		return false; // Command not handled (the JSON service can continue processing this command)
+	}
 	
 	/*	Only sysops can use unapproved commands everywhere else.
 		service.js identifies as the host BBS' sysop. */
