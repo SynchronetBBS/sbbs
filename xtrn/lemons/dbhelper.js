@@ -1,5 +1,5 @@
-// An interface to the Lemons JSON DB.  Slightly more than a scoreboard.
-var ScoreBoard = function(host, port) {
+// An interface to the Lemons JSON DB.
+var DBHelper = function(host, port) {
 
 	var frames = {};
 	var jsonClient = new JSONClient(host, port);
@@ -8,30 +8,38 @@ var ScoreBoard = function(host, port) {
 		score in Lemons! */
 	this.addScore = function(score, level) {
 
-		if(!jsonClient.connected)
-			jsonClient.connect(host, port);
+		try {
+			if(!jsonClient.connected)
+				jsonClient.connect(host, port);
 
-		var entry = {
-			'player' : user.alias,
-			'system' : system.name,
-			'level' : level,
-			'score' : score
-		};
+			var entry = {
+				'player' : user.alias,
+				'system' : system.name,
+				'level' : level,
+				'score' : score
+			};
 
-		jsonClient.write(DBNAME, "SCORES.LATEST", entry, 2);
+			jsonClient.write(DBNAME, "SCORES.LATEST", entry, 2);
+		} catch(err) {
+			log(LOG_DEBUG, err);
+		}
 
 	}
 
 	// Returns the high scores array (20 most recent scores.)
 	this.getScores = function() {
 
-		if(!jsonClient.connected)
-			jsonClient.connect(host, port);
+		try {
+			if(!jsonClient.connected)
+				jsonClient.connect(host, port);
 
-		var scores = jsonClient.read(DBNAME, "SCORES.HIGH", 1);
+			var scores = jsonClient.read(DBNAME, "SCORES.HIGH", 1);
+		} catch(err) {
+			log(LOG_DEBUG, err);
+		}
 
-		if(!scores)
-			scores = [];
+		if(typeof scores == "undefined" || !scores)
+			var scores = [];
 
 		return scores;
 
@@ -42,27 +50,29 @@ var ScoreBoard = function(host, port) {
 		an empty database.)	*/
 	this.getHighestLevel = function() {
 
-		if(!jsonClient.connected)
-			jsonClient.connect(host, port);
+		try {
+			if(!jsonClient.connected)
+				jsonClient.connect(host, port);
 
-		var player = jsonClient.read(
-			DBNAME,
-			"PLAYERS." + base64_encode(user.alias + "@" + system.name),
-			1
-		);
+			var player = jsonClient.read(
+				DBNAME,
+				"PLAYERS." + base64_encode(user.alias + "@" + system.name),
+				1
+			);
 
-		if(!player)
+			if(!player)
+				return 0;
+
+			return player.LEVEL;
+		} catch(err) {
+			log(LOG_DEBUG, err);
 			return 0;
-
-		return player.LEVEL;
+		}
 
 	}
 
 	// Display the scoreboard.
-	this.open = function() {
-
-		if(!jsonClient.connected)
-			jsonClient.connect(host, port);
+	this.showScores = function() {
 
 		frames.scoreFrame = new Frame(
 			frame.x,
@@ -117,11 +127,39 @@ var ScoreBoard = function(host, port) {
 
 	}
 
+	/*	Fetch levels from the DB if possible, fall back to local file if not.
+		Update local file if level data read from DB. */
+	this.getLevels = function() {
+
+		var f = new File(js.exec_dir + "levels.json");
+
+		try {
+			var levels = jsonClient.read(DBNAME, "LEVELS", 1);
+			f.open("w");
+			f.write(JSON.stringify(levels));
+		} catch(err) {
+			f.open("r");
+			var levels = JSON.parse(f.read());
+		}
+
+		f.close();
+		return levels;
+
+	}
+
 	// Close the scoreboard if it's open, disconnect the JSON-DB client.
 	this.close = function() {
 		if(typeof frames.scoreFrame != "undefined")
 			frames.scoreFrame.delete();
 		jsonClient.disconnect();
+	}
+
+	this.cycle = function() {
+		try {
+			jsonClient.cycle();
+		} catch(err) {
+			log(LOG_DEBUG, err);
+		}
 	}
 
 }
