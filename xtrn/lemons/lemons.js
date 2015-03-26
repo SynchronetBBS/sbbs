@@ -12,7 +12,6 @@ load(js.exec_dir + "game.js");
 load(js.exec_dir + "level.js");
 load(js.exec_dir + "menu.js");
 load(js.exec_dir + "help.js");
-load(js.exec_dir + "scoreboard.js");
 load(js.exec_dir + "dbhelper.js");
 
 var	status,		// A place to store bbs.sys_status until exit
