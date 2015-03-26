@@ -61,7 +61,7 @@ function HTTPRequest(username,password)
 		this.referer=referer;
 		this.base=base;
 		this.url=new URL(url, this.base);
-		if(this.url.scheme!='http')
+		if(this.url.scheme!='http' && this.url.scheme!='https')
 			throw("Unknown scheme! '"+this.url.scheme+"'");
 		if(this.url.path=='')
 			this.url.path='/';
@@ -151,7 +151,7 @@ function HTTPRequest(username,password)
 		}
 		if(this.username && this.password) {
 			var auth = base64_encode(this.username + ":" + this.password);
-			this.request_headers.push("Authorization: Basic " + auth + "\r\n");
+			this.request_headers.push("Authorization: Basic " + auth);
 		}
 	}
 	
