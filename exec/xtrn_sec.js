@@ -1,7 +1,9 @@
 // xtrn_sec.js
 
 // Synchronet External Program Section
-// Menus displayed to users via Telnet/RLogin
+// Menus displayed to users via Terminal Server (Telnet/RLogin/SSH)
+
+// To jump straight to a specific xtrn section, pass the section code as an argument
 
 // $Id$
 
@@ -9,6 +11,19 @@ load("sbbsdefs.js");
 
 /* text.dat entries */
 load("text.js");
+
+/* See if an xtrn section code was passed as an argument */
+/* must parse argv before calling load() */
+var xsec=-1;
+{
+    var i,j;
+    for(i in argv) {
+        for(j in xtrn_area.sec_list) {
+            if(argv[i].toLowerCase()==xtrn_area.sec_list[j].code)
+                xsec=j;
+        }
+    }
+}
 
 if((options=load("modopts.js","xtrn_sec")) == null)
 	options = {multicolumn: true, sort: false};	// default values
@@ -23,50 +38,18 @@ function sort_by_name(a, b)
 	return 0;
 } 
 
-var i,j;
-while(bbs.online) {
+function external_program_menu(xsec)
+{
+    var i,j;
 
-	if(user.security.restrictions&UFLAG_X) {
-		write(bbs.text(R_ExternalPrograms));
-		break;
-	}
-
-	if(!xtrn_area.sec_list.length) {
-		write(bbs.text(NoXtrnPrograms));
-		break; 
-	}
-
-	var xsec=0;
-	var sec_list=xtrn_area.sec_list.slice();
-	if(sec_list.length > 1) {
-
-		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
-		bbs.node_action=NODE_XTRN;
-		bbs.node_sync();
-
-		if(file_exists(system.text_dir + "menu/xtrn_sec.asc")) {
-			bbs.menu("xtrn_sec");
-			xsec=console.getnum(sec_list.length);
-			if(xsec<=0)
-				break;
-			xsec--;
-		}
-		else {
-	
-			if(options.sort)
-				sec_list.sort(sort_by_name);
-			for(i in sec_list)
-				console.uselect(Number(i),"External Program Section"
-					,sec_list[i].name);
-			xsec=console.uselect(); 
-		}
-	}
-	if(xsec<0)
-		break;
-
-	xsec=sec_list[xsec].index;
 	while(bbs.online) {
-		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();
+
+	    if(user.security.restrictions&UFLAG_X) {
+		    write(bbs.text(R_ExternalPrograms));
+		    break;
+	    }
+
+		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();   /* prog_list is a possibly-sorted copy of xtrn_area.sec_list[x].prog_list */
 
 		if(!prog_list.length) {
 			write(bbs.text(NoXtrnPrograms));
@@ -137,6 +120,60 @@ while(bbs.online) {
 		if(prog_list[i].settings&XTRN_PAUSE)
 			bbs.line_counter=2;	/* force a pause before CLS */
 	}
-	if(xtrn_area.sec_list.length<2)
-		break; 
+}
+
+function external_section_menu()
+{
+    var i,j;
+
+    while(bbs.online) {
+
+	    if(user.security.restrictions&UFLAG_X) {
+		    write(bbs.text(R_ExternalPrograms));
+		    break;
+	    }
+
+	    if(!xtrn_area.sec_list.length) {
+		    write(bbs.text(NoXtrnPrograms));
+		    break; 
+	    }
+
+	    var xsec=0;
+	    var sec_list=xtrn_area.sec_list.slice();    /* sec_list is a possibly-sorted copy of xtrn_area.sect_list */
+
+		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
+		bbs.node_action=NODE_XTRN;
+		bbs.node_sync();
+
+		if(file_exists(system.text_dir + "menu/xtrn_sec.asc")) {
+			bbs.menu("xtrn_sec");
+			xsec=console.getnum(sec_list.length);
+			if(xsec<=0)
+				break;
+			xsec--;
+		}
+		else {
+	
+			if(options.sort)
+				sec_list.sort(sort_by_name);
+			for(i in sec_list)
+				console.uselect(Number(i),"External Program Section"
+					,sec_list[i].name);
+			xsec=console.uselect(); 
+		}
+	    if(xsec<0)
+		    break;
+
+        external_program_menu(sec_list[xsec].index);
+    }
+}
+
+/* main: */
+if(xsec >= 0)
+    external_program_menu(xsec);
+else {
+    if(xtrn_area.sec_list.length == 1)
+        external_program_menu(0);
+    else
+        external_section_menu();
 }
