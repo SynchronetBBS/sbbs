@@ -1391,11 +1391,11 @@ int main(int argc, char **argv)
 						case 'S':
 							switch(toupper(argv[i][3])) {
 								case 0:
-								case 'F':
-									ciolib_mode=CIOLIB_MODE_SDL_FULLSCREEN;
-									break;
 								case 'W':
 									ciolib_mode=CIOLIB_MODE_SDL;
+									break;
+								case 'F':
+									ciolib_mode=CIOLIB_MODE_SDL_FULLSCREEN;
 									break;
 							}
 							break;
