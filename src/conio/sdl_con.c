@@ -1726,6 +1726,8 @@ int sdl_video_event_thread(void *data)
 										sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
 									}
 								}
+								new_scaling = -1;
+								old_scaling = vstat.scaling;
 								setup_surfaces();
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);
