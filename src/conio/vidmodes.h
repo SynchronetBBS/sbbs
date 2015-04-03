@@ -61,6 +61,7 @@ struct  video_params {
 	int curs_end;
 	int charheight;
 	int charwidth;
+	int	vmultiplier;
 };
 
 struct video_stats {
@@ -85,6 +86,7 @@ struct video_stats {
 	int blink_altcharset;
 	int currattr;
 	int scaling;
+	int	vmultiplier;
 	struct dac_colors dac_colors[256];
 	unsigned char palette[16];
 	unsigned short *vmem;
