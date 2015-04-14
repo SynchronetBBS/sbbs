@@ -86,11 +86,8 @@ if(user.security.exemptions&UFLAG_H)
 
 // Logon screens
 
-// Print logon screens based on security level
-if(file_exists(system.text_dir + "menu/logon" + user.security.level + ".*"))
-	bbs.menu("logon" + user.security.level);
-
 // Print successively numbered logon screens (logon, logon1, logon2, etc.)
+var highest_printed_logon_screen=-1;
 for(var i=0;;i++) {
 	var fname="logon";
 	if(i)
@@ -101,7 +98,13 @@ for(var i=0;;i++) {
 		continue;
 	}
 	bbs.menu(fname);
+    highest_printed_logon_screen = i;
 }
+
+// Print logon screens based on security level
+if(user.security.level > highest_printed_logon_screen 
+    && file_exists(system.text_dir + "menu/logon" + user.security.level + ".*"))
+	bbs.menu("logon" + user.security.level);
 
 // Print one of text/menu/random*.*, picked at random
 // e.g. random1.asc, random2.asc, random3.asc, etc.
