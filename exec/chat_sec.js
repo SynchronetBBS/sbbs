@@ -10,12 +10,15 @@ load("nodedefs.js");
 // Over-ride these default values by creating/modifying the [chat_sec] section in your ctrl/modopts.ini file
 var irc_server = "irc.synchro.net 6667";
 var irc_channel = "#Synchronet"
+var irc_seclevel = 90;  // Minimum security level required to change the IRC server being connected to
 var options = load("modopts.js", "chat_sec");
 if (options) {
     if (options.irc_server)
         irc_server = options.irc_server;
     if (options.irc_channel)
         irc_channel = options.irc_channel;
+    if (options.irc_seclevel)
+        irc_seclevel = options.irc_seclevel;
 }
 var cmdkey;
 
@@ -68,7 +71,8 @@ while(1) {
 			break;
 		case 'R':
 			{
-				if(user.security.level >= 90 || user.security.exemptions&UFLAG_C) {
+                var server=irc_server;
+				if(user.security.level >= irc_seclevel || user.security.exemptions&UFLAG_C) {
 					write("\r\n\001n\001y\001hIRC Server: ");
 					server=console.getstr(irc_server, 40, K_EDIT|K_LINE|K_AUTODEL);
 					if(console.aborted)
@@ -77,7 +81,7 @@ while(1) {
 				write("\r\n\001n\001y\001hIRC Channel: ");
 				var channel=console.getstr(irc_channel, 40, K_EDIT|K_LINE|K_AUTODEL);
 				if(!console.aborted)
-					bbs.exec("?irc -a " + irc_server + " " + channel);
+					bbs.exec("?irc -a " + server + " " + channel);
 			}
 			break;
 		case 'J':
