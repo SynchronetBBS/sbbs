@@ -90,16 +90,18 @@ var prevdir;
 var hdr_font="<font color=black>";
 var dat_font="<font color=#112233>";
 
-if(!(user.security.restrictions&UFLAG_G) && system.matchuser("Guest")) { /* !Guest or Anonymous */
-    /* Logout button */
-    writeln("<table align=right>");
-    writeln("<form>");
-    writeln("<input type=button value=Logout onclick='location=\"ftp://" 
-        + format("%s/%s%s",system.host_name + port,html_index_file,time_stamp_only)
-        + "\";'>");
-    writeln("</form>");
-    writeln("</table>");
-    writeln("<br><br>");
+if(!(user.security.restrictions&UFLAG_G)) { /* !Guest or Anonymous */
+    if(system.matchuser("Guest")) {
+        /* Logout button */
+        writeln("<table align=right>");
+        writeln("<form>");
+        writeln("<input type=button value=Logout onclick='location=\"ftp://" 
+            + format("%s/%s%s",system.host_name + port,html_index_file,time_stamp_only)
+            + "\";'>");
+        writeln("</form>");
+        writeln("</table>");
+        writeln("<br><br>");
+    }
 
     /* User Info */
     writeln("<table border=0 nowrap align=left>");
