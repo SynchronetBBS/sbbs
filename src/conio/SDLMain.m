@@ -141,9 +141,9 @@ static void setApplicationMenu(void)
     [appleMenu addItem:[NSMenuItem separatorItem]];
 
     title = [@"Hide " stringByAppendingString:appName];
-    [appleMenu addItemWithTitle:title action:@selector(hide:) keyEquivalent:@"h"];
+    [appleMenu addItemWithTitle:title action:@selector(hide:) keyEquivalent:@""];
 
-    menuItem = (NSMenuItem *)[appleMenu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"];
+    menuItem = (NSMenuItem *)[appleMenu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@""];
     [menuItem setKeyEquivalentModifierMask:(NSAlternateKeyMask|NSCommandKeyMask)];
 
     [appleMenu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""];
@@ -177,7 +177,7 @@ static void setupWindowMenu(void)
     windowMenu = [[NSMenu alloc] initWithTitle:@"Window"];
     
     /* "Minimize" item */
-    menuItem = [[NSMenuItem alloc] initWithTitle:@"Minimize" action:@selector(performMiniaturize:) keyEquivalent:@"m"];
+    menuItem = [[NSMenuItem alloc] initWithTitle:@"Minimize" action:@selector(performMiniaturize:) keyEquivalent:@""];
     [windowMenu addItem:menuItem];
     [menuItem release];
     
