@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -236,6 +236,7 @@ typedef struct {
 	echolist_t *listcfg;			/* Each echolist configuration */
 	areasbbs_t *area;				/* Each area configuration */
 	BOOL		check_path;			/* Enable circular path detection */
+	BOOL		fwd_circular;		/* Allow the forwrarding of circular messages to links (defaults to true, only applicable if check_path is also true) */
 	BOOL		zone_blind;			/* Pretend zones don't matter when parsing and constructing PATH and SEEN-BY lines (per Wilfred van Velzen, 2:280/464) */
 	uint16_t	zone_blind_threshold;	/* Zones below this number (e.g. 4) will be treated as the same zone when zone_blind is enabled */
 	} config_t;

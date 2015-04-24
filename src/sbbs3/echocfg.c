@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -772,18 +772,47 @@ int main(int argc, char **argv)
 	uifc.helpbuf=
 	"`Secure Operation` tells SBBSecho to check the AREAS.BBS file to insure\r\n"
 	"    that the packet origin exists there as well as check the password of\r\n"
-	"    that node (if configured).\r\n\r\n"
+	"    that node (if configured).\r\n"
+	"\r\n"
 	"`Convert Existing Tear Lines` tells SBBSecho to convert any tear lines\r\n"
-	"    (`---`) existing in the message text to to `===`.\r\n\r\n"
-	"`Fuzzy Zone Operation` when set to yes if SBBSecho receives an inbound\r\n"
+	"    (`---`) existing in the message text to to `===`.\r\n"
+	"\r\n"
+	"`Fuzzy Zone Operation` when set to `Yes`, if SBBSecho receives an inbound\r\n"
 	"    netmail with no international zone information, it will compare the\r\n"
 	"    net/node of the destination to the net/node information in your AKAs\r\n"
-	"    and assume the zone of a matching AKA.\r\n\r\n"
+	"    and assume the zone of a matching AKA.\r\n"
+	"\r\n"
 	"`Store PATH/SEEN-BY/Unkown Kludge Lines in Message Base` allows you to\r\n"
 	"    determine whether or not SBBSecho will store this information from\r\n"
-	"    incoming messages in the Synchronet message base.\r\n\r\n"
-	"`Allow Nodes to Add Areas in the AREAS.BBS List` when set to `YES` allows\r\n"
-	"    uplinks to add areas listed in the AREAS.BBS file\r\n";
+	"    incoming messages in the Synchronet message base (for debugging).\r\n"
+	"\r\n"
+	"`Allow Nodes to Add Areas in the AREAS.BBS List` when set to `Yes` allows\r\n"
+	"    uplinks to add areas listed in the AREAS.BBS file\r\n"
+	"\r\n"
+	"`Strip Line Feeds From Outgoing Messages` when set to `Yes` instructs\r\n"
+	"    SBBSecho to remove any line-feed (ASCII 10) characters from the body\r\n"
+	"    text of messages being exported to FidoNet EchoMail.\r\n"
+	"\r\n"
+	"`Kill/Ignore Empty NetMail Messages` will instruct SBBSecho to simply\r\n"
+	"    discard (not import or export) NetMail messages without any body.\r\n"
+	"\r\n"
+	"`Circular Path Detection` when `Enabled` will cause SBBSecho, during\r\n"
+	"    EchoMail import, to check the PATH kludge lines for any of the\r\n"
+	"    system's AKAs and if found (indicating a message loop), not import\r\n"
+	"    the message.\r\n"
+	"\r\n"
+	"`Forward Circular Messages To Links` is only valid when `Circular Path\r\n"
+	"    Detection` is enabled. When set to `No`, SBBSecho will discard\r\n"
+	"    the circular/looped message and not forward to any linked nodes.\r\n"
+	"\r\n"
+	"`Bundle Attachments` may be either `Killed` (deleted) or `Truncated` (set\r\n"
+	"    to 0-bytes in length).\r\n"
+	"\r\n"
+	"`Zone Blind SEEN-BY and PATH Lines` when `Enabled` will cause SBBSecho\r\n"
+	"    to assume that node numbers are not duplicated across zones and\r\n"
+	"    that a net/node combination in either of these Kludge lines should\r\n"
+	"    be used to identify a specific node regardless of which zone that\r\n"
+	"    node is located (thus breaking the rules of FidoNet 3D addressing).\r\n";
 				j=0;
 				while(1) {
 					i=0;
@@ -807,6 +836,8 @@ int main(int argc, char **argv)
 						"Messages",misc&KILL_EMPTY_MAIL ? "Yes":"No");
 					sprintf(opt[i++],"%-50.50s%s","Circular Path Detection"
 						,cfg.check_path ? "Enabled" : "Disabled");
+					sprintf(opt[i++],"%-50.50s%s","Forward Circular Messages to Links"
+						,cfg.check_path ? (cfg.fwd_circular ? "Yes" : "No") : "N/A");
 					sprintf(opt[i++],"%-50.50s%s","Bundle Attachments"
 						,misc&TRUNC_BUNDLES ? "Truncate" : "Kill");
 					sprintf(opt[i++],"%-50.50s%s","Zone Blind SEEN-BY and PATH Lines"
@@ -847,12 +878,14 @@ int main(int argc, char **argv)
 							cfg.check_path=!cfg.check_path;
 							break;
 						case 10:
-							misc^=TRUNC_BUNDLES;
+							cfg.fwd_circular=!cfg.fwd_circular;
 							break;
 						case 11:
+							misc^=TRUNC_BUNDLES;
+							break;
+						case 12:
 							cfg.zone_blind=!cfg.zone_blind;
 							break;
-
 					} 
 				}
 				break;
@@ -1161,6 +1194,8 @@ int main(int argc, char **argv)
 				}
 				if(!cfg.check_path)
 					fprintf(stream,"NOPATHCHECK\n");
+				if(!cfg.fwd_circular)
+					fprintf(stream,"NOCIRCULARFWD\n");
 				if(cfg.zone_blind) {
 					fprintf(stream,"ZONE_BLIND");
 					if(cfg.zone_blind_threshold != 0xffff)

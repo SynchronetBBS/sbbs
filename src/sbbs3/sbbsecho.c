@@ -4756,7 +4756,7 @@ int main(int argc, char **argv)
 					continue; 
 				} 						/* On to the next message */
 
-
+				/* TODO: Should circular path detection occur before processing pass-through areas? */
 				if(cfg.check_path) {
 					for(j=0;j<scfg.total_faddrs;j++)
 						if(check_psb(&msg_path,scfg.faddr[j]))
@@ -4768,8 +4768,10 @@ int main(int argc, char **argv)
 						if(cfg.log&LOG_CIRCULAR)
 							logprintf("%s: Circular path detected for %s"
 								,areatagstr,smb_faddrtoa(&scfg.faddr[j],NULL));
-						strip_psb(fmsgbuf);
-						pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen,msg_path,0);
+						if(cfg.fwd_circular) {
+							strip_psb(fmsgbuf);
+							pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen,msg_path,0);
+						}
 						printf("\n");
 						continue; 
 					}
