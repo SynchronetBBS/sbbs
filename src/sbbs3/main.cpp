@@ -305,7 +305,7 @@ DLLEXPORT void DLLCALL sbbs_srand()
 	}
 	if(rd != sizeof(seed))
 #endif
-		seed = time32(NULL) ^ (DWORD)GetCurrentThreadId();
+		seed = time32(NULL) ^ (uintmax_t)GetCurrentThreadId();
 
  	srand(seed);
 	sbbs_random(10);	/* Throw away first number */
