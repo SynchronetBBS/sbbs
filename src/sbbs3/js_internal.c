@@ -223,6 +223,7 @@ static char* prop_desc[] = {
 	,"JS filename executed (with no path)"
 	,"directory of executed JS file"
 	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
+	,"global scope for this script"
 	,NULL
 };
 #endif
