@@ -1,0 +1,740 @@
+                    Digital Distortion Message Reader
+                          Version 1.00 Beta 75
+                        Release date: 2015-04-21
+
+                                  by
+
+                             Eric Oulashin
+                       Sysop of Digital Distortion
+               BBS internet address: digitaldistortionbbs.com
+                  Alternate address: digdist.bbsindex.com
+                     Email: eric.oulashin@gmail.com
+
+
+
+This file describes the Digital Distortion Message Lister.
+
+Contents
+========
+1. Disclaimer
+2. Introduction
+3. Installation & Setup
+4. Header ANSI/asc file
+5. Configuration file & color/text theme configuration file
+6. Drop file for replying to messages with Synchronet message editors
+
+
+1. Disclaimer
+=============
+I cannot guarantee that this script is 100% free of bugs.  However, I have
+tested it, and I used it often during development, so I have some confidence
+that there are no serious issues with it (at least, none thta I have seen).
+
+
+2. Introduction
+===============
+The Digital Distortion Message Reader is a modification for Synchronet, written
+in JavaScript, that provides an alternate message reading interface.  The
+intent iss to provide a very functional yet intuitive user interface.  For ANSI
+users, a reader interface is provided which allows scrolling the message up &
+down (with the up & down arrow keys, as well as the PageUp & PageDown keys),
+navigating through the messages in the message area (AKA sub-board) using the
+left & right arrow keys, replying to messages, and other common messagebase
+functionality.  A more traditional reader interface is also provided for
+non-ANSI terminals.  The Digital Distortion Message Reader can also list the
+messages in the user's current message area and allows forward & reverse
+navigation through the message list, using a lightbar or traditional user
+interface.  Message newscan and different types of message searching are also
+available.  This script requires Synchronet version 3.13 or newer.
+
+This reader effectively replaces the Digital Distortion Message Lister, which
+provided a traditional message reader interface but not the scrollable reader
+interface for ANSI users.  
+
+The following is a list of features:
+- Provides an enhanced, very functional yet intuitive user interface for
+  reading messages for ANSI users, including the ability to scroll the message,
+  navigate forward & back through the messages in the message area, reply to
+  messages, etc.
+- Can be used to read message sub-boards or personal email
+- Allows switching between the enhanced reader interface and the message list
+  to allow the user to browse messages & select another message to read
+- Message searching and scanning is supported: New-message scan, new-to-you
+  scan, all-to-you scan, keyword search (in the current sub-board), from name
+  search (in the current sub-board), to name search (in the current sub-board)
+- Allows custom message header ANSI/.asc files to be used in the enhanced
+  reader mode.  If there is no custom header file, a default header style will
+  be used.  For the enhanced reader mode, there can also be different custom
+  header files for various terminal widths.
+- In the traditional reader mode, uses the msghdr .ans/.asc file(s) in the
+  sbbs/text/menu directory, if it exists, to display message header
+  information.  If the msghdr file doesn't exist, the script will use a default
+  format for message header information.
+- The message list is also very functional yet intuitive - It displays a
+  formatted summary list of the messages in the user's current message area,
+  can be navigated forward & backward, and allows selection of a message to
+  read (and optionally, reply to), etc.
+- Provides a lightbar interface for the message list & area chooser (ANSI
+  required), as well as a traditional user interface, which prompts for input
+  after each screenful of message listings or message groups/areas
+- The message list supports listing messages in forward or reverse order.
+- Some types of message searching is supported: Text search, 'From' name,
+  'To' name, or messages specifically written to the user
+- Provides a message newscan option using the enhanced ANSI reader interface,
+  which allows the user to read unread messages in all message areas, from
+  first to last
+- Allows the user to delete and edit existing messages that they've written, if the
+  sub-board supports those operations.
+- The program settings, colors, and some text can be changed via configuration
+  files.  The configuration files may be placed in the same directory as the
+  .js script or in the sbbs/ctrl directory.
+
+If a message has been marked for deletion, it will appear in the message list
+with a blinking red asterisk (*) after the message number.
+
+When displaying a message to the user, this script will honor the attribute
+code toggles set up under Synchronet's configuration program (SCFG),
+under Message Options > Extra Attribute Codes.
+
+
+3. Installation & Setup
+=======================
+Digital Distortion Message Reader is comprised of the following files:
+1. DDMsgReader.js
+2. DDMsgReader.cfg
+3. DefaultTheme.cfg
+DDMsgReader.js is the script to run.  DDMsgReader.cfg is the configuration file
+which controls various options of the reader, and DefaultTheme.cfg is a theme
+configuration file, which contains settings for colors and text used in the
+reader.  The configuration files are plain text files, so they can be edited
+using any text editor.
+
+First, place the files together in any directory.  Then, modify your command
+shell to run DDMsgReader.js for any or all of the desired functionality
+(reading, searching, message scanning, etc).  The command-line parameters are
+described in the subsection "Command-line parameters".  Installing into a
+command shell is described in the subsection "Installing into a command shell".
+
+Background: Running JavaScript scripts in Synchronet
+----------------------------------------------------
+The general syntax for a command to run a JavaScript script in Synchronet is
+with a question mark before the .js file.  For example:
+?../xtrn/DDMsgReader/DDMsgReader.js
+
+In a Baja script, you can use the 'exec' command to run a JavaScript script, as
+in the following example:
+exec "?../xtrn/DDMsgReader/DDMsgReader.js"
+
+In a JavaScript script, you can use the bbs.exec() function to run a JavaScript
+script, as in the following example:
+bbs.exec("?../xtrn/DDMsgReader/DDMsgReader.js");
+
+Alternately, the reader can be installed as an external program (in SCFG in
+External Programs > Online Programs (Doors)).  See the following document for
+more information:
+http://wiki.synchro.net/howto:door:index?s[]=doors
+
+Command-line parameters
+-----------------------
+The Digital Distortion Message Reader supports command-line parameters to
+specify some behavior options. The command-line parameters are used in the
+command string after DDMsgReader.js.
+
+Most of the command-line arguments are in -arg=val format, where arg is the
+argument (parameter) name, and val is the value for that argument.  Some of
+the command-line parameters are simply in -arg format, to enable an option.
+For example, -search=new_msg_scan will start the reader to do a new message
+scan.  Another example is -personalEmail which lets the user read their
+personal email.
+
+The following are the command-line parameters supported by DDMsgReader.js:
+-search: A search type.  Available options:
+ keyword_search: Do a keyword search in message subject/body text (current message area)
+ from_name_search: 'From' name search (current message area)
+ to_name_search: 'To' name search (current message area)
+ to_user_search: To user search (current message area)
+ new_msg_scan: New message scan (prompt for current sub-board, current
+               group, or all)
+ new_msg_scan_all: New message scan (all sub-boards)
+ new_msg_scan_cur_grp: New message scan (current message group only)
+ new_msg_scan_cur_sub: New message scan (current sub-board only)
+ to_user_new_scan: Scan for new (unread) messages to the user (prompt
+                   for current sub-board, current group, or all)
+ to_user_new_scan_all: Scan for new (unread) messages to the user
+                       (all sub-boards)
+ to_user_new_scan_cur_grp: Scan for new (unread) messages to the user
+                           (current group)
+ to_user_new_scan_cur_sub: Scan for new (unread) messages to the user
+                           (current sub-board)
+ to_user_all_scan: Scan for all messages to the user (prompt for current
+                   sub-board, current group, or all)
+ prompt: Prompt the user for one of several search/scan options to
+         choose from
+Note that if the -personalEmail option is specified (to read personal email),
+the only valid search types are keyword_search and from_name_search.
+
+-startMode: Startup mode.   This overrides the startMode option in the
+           confiruation file.  Available options are read (or reader) for
+           reader mode and list (or lister) for message list mode.
+-configFilename: Specifies the name of the configuration file to use.  Defaults
+                 to DDMsgReader.cfg.
+-personalEmail: Read personal email to the user.  This is a true/false value.
+                It doesn't need to explicitly have a =true or =false afterward;
+                simply including -personalEmail will enable it.
+-personalEmailSent: Read personal email to the user.  This is a true/false
+                    value.  It doesn't need to explicitly have a =true or =false
+                    afterward; simply including -personalEmailSent will enable it.
+-chooseAreaFirst: Display the message area chooser before reading/listing
+                  messages.  This is a true/false value.  It doesn't need
+                  to explicitly have a =true or =false afterward; simply
+                  including -chooseAreaFirst will enable it.  If
+                  -personalEmail is specified, then this option won't have
+                  any effect.
+
+
+Synchronet command shell background
+-----------------------------------
+If you are already familiar with Synchronet's command shell concepts, you can
+skip to the subsection "Installing into a command shell" below.  If you are not
+yet familiar with how Synchronet's menus are controlled, the key is that
+Synchronet doesn't have a menu editor like some other BBS packages do.
+Instead, Synchronet uses a "command shell", which is a script that runs when a
+user logs in and controls the flow of activity as it responds to the user's
+commands.  Synchronet supports two languages for its scripts: Baja and
+JavaScript.  Baja is Synchronet's own scripting language; JavaScript is an
+industry standard scripting language that Synchronet has provided extensions
+for to allow scripting while also being able to take advantage of some of
+JavaScript's other features.  Baja scripts need to be compiled before running,
+whereas JavaScript scripts don't.  For more information on Synchronet command
+shells & scripting, see the following documentation:
+- Synchronet command shells:
+http://wiki.synchro.net/custom:command_shell
+- Synchronet modules:
+http://wiki.synchro.net/module:index?s[]=scripts
+- Baja language reference:
+http://www.synchro.net/docs/baja.html
+- Synchronet's JavaScript object reference (it's best to become familiar with
+  JavaScript before referring to this document):
+http://www.synchro.net/docs/jsobjs.html
+
+Installing into a command shell
+-------------------------------
+Examples for running the reader will assume that it's installed in the
+directory sbbs/xtrn/DDMsgReader.
+
+If you are unsure which command shell you are using, you are likely using
+Synchronet's "default" command shell, which is contained in the files
+default.src and default.bin in the synchronet/exec directory.  To modify the
+default command shell, you'll need to open default.src with a text editor.
+These are the key things to modify in default.src:
+- Search for msg_read and replace that with the following:
+  exec "?../xtrn/DDMsgReader/DDMsgReader.js -startMode=read"
+- Where msg_your_scan appears, run DDMsgReader.js with the following:
+  exec "?../xtrn/DDMsgReader/DDMsgReader.js -search=to_user_new_scan -startMode=read"
+- Where msg_your_scan_all appears, run DDMsgReader.js with the command-line
+  exec "?../xtrn/DDMsgReader/DDMsgReader.js -search=to_user_new_scan_all -startMode=read"
+
+If you are using a JavaScript command shell, the process would be similar.  You
+will need to determine where the current message operations are done in the
+shell and replace them with the appropriate commands for running
+DDMsgReader.js.
+
+The following are example command line strings for running the reader to
+perform some common message operations.  These command lines can be used with
+the exec command in Baja, bbs.exec() method in JavaScript, or as set up as an
+external door in SCFG.  This list is not complete but provides examples of some
+common message operations.
+
+- Read messages in the current sub-board:
+?../xtrn/DDMsgReader/DDMsgReader.js -startMode=read
+
+- List messages in the current sub-board:
+?../xtrn/DDMsgReader/DDMsgReader.js -startMode=list
+
+- New message scan:
+?../xtrn/DDMsgReader/DDMsgReader.js -startMode=read -search=new_msg_scan
+
+- New-to-user message scan (scan for new messages to the user):
+?../xtrn/DDMsgReader/DDMsgReader.js -startMode=read -search=to_user_new_scan
+
+- Scan for all messages to the user:
+?../xtrn/DDMsgReader/DDMsgReader.js -startMode=read -search=to_user_all_scan
+
+- Text (keyword) search in the current sub-board, and list the messages found:
+?../xtrn/DDMsgReader/DDMsgReader.js -search=keyword_search -startMode=list
+
+- 'From' name message search in the current sub-board, and list messages found:
+?../xtrn/DDMsgReader/DDMsgReader.js -search=from_name_search -startMode=list
+
+- 'To' name message search in the current sub-board, and list messages found:
+?../xtrn/DDMsgReader/DDMsgReader.js -search=to_name_search -startMode=list
+
+- Search for all messages to the logged-in user in the current sub-board, and
+  list the messages found:
+?../xtrn/DDMsgReader/DDMsgReader.js -search=to_user_search -startMode=list
+
+- Read personal email:
+?../xtrn/DDMsgReader/DDMsgReader.js -personalEmail -startMode=read
+
+- List personal email:
+?../xtrn/DDMsgReader/DDMsgReader.js -personalEmail -startMode=list
+
+- Read sent personal email:
+?../xtrn/DDMsgReader/DDMsgReader.js -personalEmailSent -startMode=read
+
+
+4. Header ANSI/asc file
+=======================
+Digital Distortion Message Reader supports its own message header ANSI/.asc
+file to be displayed above a message.  This is separate from Synchronet's
+msghdr file in the sbbs/text/menu directory.  Digital Distortion Message
+Reader's header file is read from the same directory as DDMsgReader.js and
+needs to have the filename enhMsgHeader and can be in .ans or .asc format.
+enhMsgHeader is short for "enhanced message header".  If an ANSI-format (.ans)
+version is found, it will be converted to a Synchronet .asc file using
+Synchronet's ans2asc tool before being displayed.  Also, you can create header
+files for multiple terminal widths: To do so, the header filename format is
+enhMsgHeader-width.  For example, to create a header for a 132-column terminal,
+the header filename would be enhMsgHeader-132.asc (or .ans).  Digital
+Distortion Message Reader will choose the one matching the user's terminal
+width, if one exists.  If no others are found, enhMsgHeader.asc (or .ans) will
+be used, if it exists.  If no enhMsgHdr file exists, Digital Distortion Message
+Reader will use a default header (which adjusts to any terminal width).
+
+Many of Synchronet's @-codes (message variables) related to message information
+are supported in the enhMsgHeader file.  For a list of Synchronet's @-codes,
+refer to the following web page:
+http://www.synchro.net/docs/customization.html#MessageVariables
+In addition, the @-codes can be displayed in fixed-width fields in the
+enhMsgHeader file, using # characters in the @-code.  For instance, to display
+a message's subject left-justified in a width of 30 characters, the @-code
+would look like this:
+@MSG_SUBJECT-L###############@
+
+There is also an additional @-code supported by Digital Distortion Message
+Reader, MSG_NUM_AND_TOTAL (and MSG_NUM_AND_TOTAL-L), which will display both
+the current message number and the total number of messages in the message
+area.  It can also be used in a fixed-width field.  For example, to display it
+left-justified in a width of 30 characters, the @-code would look like this:
+@MSG_NUM_AND_TOTAL-L#########@
+
+
+5. Configuration file & color/text theme configuration file
+===========================================================
+Digital Distortion Message Reader allows changing some settings, colors, and
+some of the text via configuration files.  The configuration files are plain
+text and can be edited with any text editor.  DDMsgReader.cfg is the main
+configuration file; colors and various text strings are specified in a separate
+file (such as DefaultTheme.cfg).  DefaultTheme.cfg contains the default colors
+and text string values.
+Each setting in the configuration files has the format setting=value, where
+"setting" is the name of the setting or color, and "value" is the corresponding
+value to use.  The colors specified in the theme configuration file are
+Synchronet color/attribute codes.
+
+Also, comments are allowed in the configuration file.  Commented lines begin
+with a semicolon (;).
+
+Main configuration file (DDMsgReader.cfg)
+-----------------------------------------
+Setting                               Description
+-------                               -----------
+interfaceStyle                        String: The user interface to use.  Valid values
+                                      are Traditional (traditional user interface
+                                      with user prompted for input at the end of each
+                                      screenful) and Lightbar (use the lightbar user
+                                      interface).
+
+reverseOrder                          true/false: Whether or not to display the list
+                                      in reverse order, or the string "ask" to ask the user
+                                      whether they want the list displayed in reverse.  If
+                                      the list is displayed in reverse, that has the effect
+                                      of listing in descending order by  date & time.
+
+readerInterfaceStyle                  The user interface style to use for the
+                                      message reader.  Valid values are
+                                      Scrollable and Traditional.  The
+                                      scrollable interface allows scrolling the
+                                      message up and down and is only available
+                                      for ANSI users.  If a user is not using
+                                      ANSI, the reader will use the traditional
+                                      user interface instead, regardless of
+                                      this setting.
+
+displayBoardInfoInHeader              true/false: Whether or not to display sub-board
+                                      information above the column headers when listing
+                                      the message information.  If this is set to true,
+                                      2 extra lines on the screen will be used at the top
+                                      to display message group and sub-board.
+
+promptToContinueListingMessages       true/false: Whether or not to prompt the
+                                      user to continue listing messages after
+                                      a message is read.
+
+promptConfirmReadMessage              true/false: Whether or not to prompt the
+                                      user to read a message when one is
+                                      selected.
+
+msgListDisplayTime                    Specifies the message date to display.
+                                      Valid values are imported and written.
+                                      imported: Display the message import dates
+                                      written: Display the message written dates
+
+msgAreaList_lastImportedMsg_time      In the message sub-board lists, the date
+                                      & time of the last message in the
+                                      sub-board.  This setting specifies
+                                      whether to use the imported time or the
+                                      written time.  Valid values are imported
+                                      and written.
+
+startMode                             Specifies whether to start in list mode
+                                      or reader mode.  Valid values are Reader
+                                      (or Read) and Lister (or List).  Note
+                                      that this setting can be overridden by
+                                      the -startMode command-line argument
+                                      (valid values are list and read).
+
+tabSpaces                             The number of spaces to use for tabs in
+                                      the message reader (tabs will be replaced
+                                      by this many spaces).
+
+themeFilename                         The name of the configuration file to
+                                      use for colors & string settings
+
+Theme configuration file
+------------------------
+The convention for the setting names in the theme configuration file is that
+setting names ending in 'Text' are for whole text strings, and the setting
+names that don't end in 'Text' are for colors.
+
+Setting                              Description
+-------                              -----------
+headerMsgGroupTextColor              Color for the header line in the message
+                                     list displaying the message group, for the
+                                     text "Current msg group:"
+
+headerMsgGroupNameColor              Color for the message list header line
+                                     displaying the message group
+
+headerSubBoardTextColor              Color for the message list header line
+                                     displaying the message sub-board, for the
+                                     text "Current msg sub-board:"
+
+headerMsgSubBoardNameColor           Color for the message list header line
+                                     displaying the message sub-board
+
+listColHeaderColor                   Color for the column names in the message
+                                     list
+
+msgListMsgNumColor                   Color for the message number (in the
+                                     message list)
+msgListFromColor                     Color for the sender name (in the message
+                                     list)
+msgListToColor                       Color for the destination name (in the
+                                     message list)
+msgListSubjectColor                  Color for the message subject (in the
+                                     message list)
+msgListDateColor                     Color for the message date (in the message
+                                     list)
+msgListTimeColor                     Color for the message time (in the message
+                                     list)
+
+msgListToUserMsgNumColor             Color for the message numer, for messages
+                                     to the user (in the message list)
+msgListToUserFromColor               Color for the sender name, for messages to
+                                     the user (in the message list)
+msgListToUserToColor                 Color for the destination name, for
+                                     messages to the user (in the message list)
+msgListToUserSubjectColor            Color for the message subject, for
+                                     messages to the user (in the message list)
+msgListToUserDateColor               Color for the message date, for messages
+                                     to the user (in the message list)
+msgListToUserTimeColor               Color for the message time, for messages
+                                     to the user (in the message list)
+
+msgListFromUserMsgNumColor           Color for the message number, for messages
+                                     from the user (in the message list)
+msgListFromUserFromColor             Color for the mender name, for messages
+                                     from the user (in the message list)
+msgListFromUserToColor               Color for the mestination name, for
+                                     messages from the user (in the message
+                                     list)
+msgListFromUserSubjectColor          Color for the message subject, for
+                                     messages from the user (in the message
+                                     list)
+msgListFromUserDateColor             Color for the message date, for messages
+                                     from the user (in the message list)
+msgListFromUserTimeColor             Color for the message time, for messages
+                                     from the user (in the message list)
+
+msgListHighlightBkgColor             Message list highlighting background color
+                                     (for lightbar mode)
+msgListMsgNumHighlightColor          Message list highlighted message number
+                                     color (for lightbar mode)
+msgListFromHighlightColor            Message list highlighted 'from' name color
+                                     (for lightbar mode)
+msgListToHighlightColor              Message list highlighted 'to' name color
+                                     (for lightbar mode)
+msgListSubjHighlightColor            Message list highlighted subject color
+                                     (for lightbar mode)
+msgListDateHighlightColor            Message list highlighted date color (for
+                                     lightbar mode)
+msgListTimeHighlightColor            Message list highlighted time color (for
+                                     lightbar mode)
+
+lightbarMsgListHelpLineBkgColor      Background color for the lightbar message
+                                     list help line
+lightbarMsgListHelpLineGeneralColor  Color for the general text in the lightbar
+                                     message list help line
+lightbarMsgListHelpLineHotkeyColor   Color for the hotkeys in the lightbar
+                                     message list help line
+lightbarMsgListHelpLineParenColor    Color for the ) characters in the lightbar
+                                     message list help line
+
+tradInterfaceContPromptMainColor     Color for the text displayed in the
+                                     'continue' prompt in the traditional user
+                                     interface in the message list
+
+tradInterfaceContPromptHotkeyColor   Color for the hotkeys displayed in the
+                                     'continue' prompt in the traditional user
+                                     interface in the message list
+
+tradInterfaceContPromptUserInputColor Color for the user input at screen pauses
+                                      in the traditional user interface for the
+                                      message list
+
+msgBodyColor                         Color for the message body when reading a
+                                     message
+
+readMsgConfirmColor                  Color for the text used to confirm whether
+                                     to read a message
+
+readMsgConfirmNumberColor            Color for the message number displayed
+                                     when asking the user if they really want
+                                     to read the message
+
+afterReadMsg_ListMorePromptColor     Color for the text used for asking the user
+                                     if they want to continue listing messages
+
+tradInterfaceHelpScreenColor         Color for the text used in the traditional
+                                     user interface message list help screen
+
+areaChooserMsgAreaNumColor            Color for the message area numbers when
+                                     choosing a different message area
+
+areaChooserMsgAreaDescColor          Color for the message area descriptions
+                                     when choosing a different message area
+  
+areaChooserMsgAreaNumItemsColor      Color for the number of items when
+                                     choosing a different message area
+
+areaChooserMsgAreaHeaderColor        Color for the message area header line
+                                     when choosing a different message area.
+                                     This is the line that shows the
+                                     message group and page number.
+
+areaChooserSubBoardHeaderColor       Color for the sub-board information line
+                                     when choosing a different message area
+
+areaChooserMsgAreaMarkColor           Color for the mark character showing the
+                                     current message area when choosing a
+                                     different message area
+
+areaChooserMsgAreaLatestDateColor    Color for the latest message date when
+                                     choosing a different message area
+
+areaChooserMsgAreaLatestTimeColor    Color for the latest message date when
+                                     choosing a different message area
+
+- Highlighted versions of the above message area list colors:
+areaChooserMsgAreaBkgHighlightColor
+areaChooserMsgAreaNumHighlightColor
+areaChooserMsgAreaDescHighlightColor
+areaChooserMsgAreaDateHighlightColor
+areaChooserMsgAreaTimeHighlightColor
+areaChooserMsgAreaNumItemsHighlightColor
+
+lightbarAreaChooserHelpLineBkgColor     Background color for the lightbar
+                                        message area chooser help line
+lightbarAreaChooserHelpLineGeneralColor Color for the general text in the
+                                        lightbar message area chooser help
+                                        line
+lightbarAreaChooserHelpLineHotkeyColor  Color for the hotkeys in the lightbar
+                                        message area chooser help line
+lightbarAreaChooserHelpLineParenColor   Color for the ) characters in the
+                                        lightbar message area chooser help line
+
+scrollbarBGColor                     Color for the scrollbar background in the
+                                     scrollable message reader interface
+
+scrollbarBGChar                      The character to use for the scrollbar
+                                     background characters in the scrollable
+                                     message reader interface
+
+scrollbarScrollBlockColor            Color for the moving scrollbar block in
+                                     the scrollable message reader interface
+
+scrollbarScrollBlockChar             The character to use for the moving
+                                     scrollbar block characters in the
+                                     scrollable message reader interface
+
+enhReaderPromptSepLineColor          Color for the line drawn in the 2nd to
+                                     last line of the message area in the
+                                     scrollable message reader interface
+                                     before a prompt is displayed on the next
+                                     line
+
+goToPrevMsgAreaPromptText            Text to use for prompting the user whether
+                                     or not to go to the previous message area
+                                     (without the ? on the end)
+
+goToNextMsgAreaPromptText            Text to use for prompting the user whether
+                                     or not to go to the next message area
+                                     (without the ? on the end)
+
+enhReaderHelpLineBkgColor            Color to use for the background of the
+                                     hotkey help line displayed at the bottom
+                                     of the scrollable message reader interface
+
+enhReaderHelpLineGeneralColor        Color to use for general text in the
+                                     hotkey help line displayed at the bottom
+                                     of the scrollable message reader interface
+
+enhReaderHelpLineHotkeyColor         Color to use for hotkeys in the hotkey
+                                     help line displayed at the bottom of the
+                                     scrollable message reader interface
+
+enhReaderHelpLineParenColor          Color to use for ) characters in the
+                                     hotkey help line displayed at the bottom
+                                     of the scrollable message reader interface
+
+newMsgScanText                       The first text displayed when doing a new
+                                     message scan, before the sub-board/group/
+                                     all prompt is displayed
+
+newToYouMsgScanText                  The first text displayed when doing a
+                                     new-to-you message scan, before the
+                                     sub-board/group/all prompt is displayed
+
+allToYouMsgScanText                  The first text displayed when doing a
+                                     all-messages-to-you message scan, before
+                                     the sub-board/group/all prompt is
+                                     displayed
+
+scanScopePromptText                  The text used for prompting to scan in the
+                                     sub-board, group, or all (or ENTER to
+                                     cancel)
+
+msgScanCompleteText                  Text to display when the message scan is
+                                     complete
+
+msgScanAbortedText                   Text to display when the message scan has
+                                     been aborted
+
+searchingSubBoardAbovePromptText     Text for "Searching message sub-board: .."
+                                     above the search text prompt (%s is
+                                     replaced with the sub-board name)
+
+searchingSubBoardText                For displaying the sub-board name when
+                                     doing a search.  %s will be replaced with
+                                     a sub-board name.
+
+noMessagesInSubBoardText             No messages in a sub-board (i.e., trying
+                                     to read a sub-board that has no messages).
+                                     %s will be replaced with a sub-board name.
+
+noSearchResultsInSubBoardText        For no search results found in a
+                                     sub-board.  %s will be replaced with a
+                                     sub-board name.
+
+readMsgNumPromptText                 Prompt text to input a number of a message
+                                     to read
+
+invalidMsgNumText                    Text to display for an invalid message
+                                     number.  %d will be replaced with the
+                                     message number.
+
+msgHasBeenDeletedText                Text to display when a message has been
+                                     deleted.  %d will be replaced with the
+                                     message number.
+
+noKludgeLinesForThisMsgText          Text to display when the user tries to
+                                     display kludge lines but there are no
+                                     kludge lines in the message
+
+searchingPersonalMailText            Text for "Seraching personal mail"
+
+searchTextPromptText                 Text for prompting for search text
+
+fromNamePromptText                   Text for prompting for a 'from' name
+
+toNamePromptText                     Text for prompting for a 'To' name
+
+abortedText                          Text for an aborted operation (i.e.,
+                                     "Aborted")
+
+loadingPersonalMailText              Text for the status message "Loading
+                                     personal mail..."  %s will be replaced
+                                     with "Personal mail".
+
+msgDelConfirmText                    Prompt text to confirm message deletion
+                                     (without the ? at the end).  %d will be
+                                     replaced with the message number.
+
+msgDeletedText                       Text for when a message has been marked
+                                     for deletion.  %d will be replaced with
+                                     the message number.
+
+cannotDeleteMsgText_notYoursNotASysop  Error text for cannot delete a message
+                                       because the message is not the user's
+                                       message or the user is not a sysop.  %d
+                                       will be replaced with the message
+                                       number.
+
+cannotDeleteMsgText_notLastPostedMsg   Error text for cannot delete a message
+                                       because it's not the user's last posted
+                                       message in a sub-board.  %d will be
+                                       replaced with the message number.
+
+msgEditConfirmText                   Prompt text to confirm message edit
+                                     (without the ? at the end).  %d will be
+                                     replaced with the message number.
+
+noPersonalEmailText                  The text to output when the user has no
+                                     personal email messages (i.e., "You have
+                                     no messages.")
+
+6. Drop file for replying to messages with Synchronet message editors
+=====================================================================
+When reading a message, the message lister will write a drop file in the node
+directory, called DDML_SyncSMBInfo.txt, which contains some information about
+the message being read, for use by Synchronet message editors.  This drop file
+is provided for Synchronet message editors to get information about the current
+message being read if needed.  In Synchronet's JavaScript object model, there
+are certain variables that are provided about the current message and sub-board
+being read that are normally updated by Synchronet's built-in message read
+prompt, but JavaScript scripts cannot modify those values.  Because of that,
+the solution was for the message lister to provide the message information in a
+drop file in the node directory just before allowing the user to reply to a
+message.  When the user is done replying to the message, DDML_SyncSMBInfo.txt
+will be deleted.
+DDML_SyncSMBInfo.txt contains the following information:
+Line 1: The highest message number in the sub-board.  Equivalent to
+        bbs.smb_last_msg in Synchronet's JavaScript object model.
+Line 2: The total number of messages in the sub-board.  Equivalent to
+        bbs.smb_total_msgs in Synchronet's JavaScript object model.
+Line 3: The (absolute) message number of the message being read.  Equivalent to
+        bbs.msg_number in Synchronet's JavaScript object model and the "header"
+        property of a message header.
+Line 4: The sub-board code (text).  Equivalent to bbs.smb_sub_code in
+        Synchronet's JavaScript object model.
+
+One message editor in particular, SlyEdit, needs to be able to determine which
+message is currently being read and replied to so that it can retrieve the
+message author's initials for use in quoting the messsage.  Normally, SlyEdit
+will get the message information from the aforementioned JavaScript variables
+provided by Synchronet, but if DDML_SyncSMBInfo.txt exists, SlyEdit will read
+the message information from that file instead.
+Note that if you have SlyEdit installed on your BBS, this version of Digital
+Distortion Message Reader (1.00) requires version 1.27 or newer of SlyEdit in
+order for SlyEdit to properly get the correct message from the message lister.
