@@ -183,6 +183,7 @@ function document_properties(name, obj)
 		if(typeof(obj[prop])=="object" 
 			&& prop!="socket" 
 			&& prop!="global"
+			&& prop!="scope"
             ) {
 			if(obj[prop].length!=undefined) {
 				if(typeof(obj[prop][0])=="object") {	// array ?
