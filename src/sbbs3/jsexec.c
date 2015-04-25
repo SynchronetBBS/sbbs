@@ -940,7 +940,7 @@ long js_exec(const char *fname, char** args)
 			,path
 			,diff);
 
-	js_PrepareToExecute(js_cx, js_glob, fname==NULL ? NULL : path, orig_cwd);
+	js_PrepareToExecute(js_cx, js_glob, fname==NULL ? NULL : path, orig_cwd, js_glob);
 	start=xp_timer();
 	if(debugger)
 		debug_prompt(js_cx, js_script);

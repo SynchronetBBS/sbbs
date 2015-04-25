@@ -719,9 +719,20 @@ js_exit(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	if(argc)
+	jsval val;
+
+	if(argc) {
+		if(JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val)) {
+			obj = JSVAL_TO_OBJECT(val);
+			if(JS_GetProperty(cx, obj, "scope", &val) && JSVAL_IS_OBJECT(val))
+				obj = JSVAL_TO_OBJECT(val);
+			else
+				obj = JS_THIS_OBJECT(cx, arglist);
+		}
+
 		JS_DefineProperty(cx, obj, "exit_code", argv[0]
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	}
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 

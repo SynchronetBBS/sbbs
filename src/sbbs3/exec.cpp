@@ -578,7 +578,7 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	JSObject*	js_scope=scope;
 	JSObject*	js_script=NULL;
 	jsval		rval;
-	int32		result=0;
+	int32_t		result=0;
 
 	if(js_cx==NULL) {
 		errormsg(WHERE,ERR_CHK,"JavaScript support",0);
@@ -665,7 +665,7 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 		JS_SetBranchCallback(js_cx, js_BranchCallback);
 #endif
 
-		js_PrepareToExecute(js_cx, js_glob, path, startup_dir);
+		js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
 	}
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 

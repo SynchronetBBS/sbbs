@@ -637,7 +637,7 @@ void msvc_invalid_parameter_handler(const wchar_t* expression,
 }
 #endif
 
-void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, const char* startup_dir)
+void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, const char* startup_dir, JSObject *scope)
 {
 	JSString*	str;
 	jsval		val;
@@ -667,7 +667,11 @@ void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filen
 		if((str=JS_NewStringCopyZ(cx, startup_dir)) != NULL)
 			JS_DefineProperty(cx, js, "startup_dir", STRING_TO_JSVAL(str)
 				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		JS_DefineProperty(cx, js, "scope", OBJECT_TO_JSVAL(scope)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
+	JS_DefineProperty(cx, scope, "exit_code", JSVAL_NULL
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_PERMANENT);
 #if defined(_MSC_VER)
 	_set_invalid_parameter_handler(msvc_invalid_parameter_handler);
 #endif

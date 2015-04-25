@@ -1891,7 +1891,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 			lprintf(LOG_DEBUG,"%04d %s Executing: %s"
 				,sock, log_prefix, cmdline);
 			if((js_script=JS_CompileFile(*js_cx, js_scope, path)) != NULL)
-				js_PrepareToExecute(*js_cx, js_scope, path, /* startup_dir: */NULL);
+				js_PrepareToExecute(*js_cx, js_scope, path, /* startup_dir: */NULL, js_scope);
 		}
 		if(js_script==NULL)
 			break;
@@ -1899,7 +1899,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		/* ToDo: Set operational callback */
 		success=JS_ExecuteScript(*js_cx, js_scope, js_script, &rval);
 
-		JS_GetProperty(*js_cx, *js_glob, "exit_code", &rval);
+		JS_GetProperty(*js_cx, js_scope, "exit_code", &rval);
 
 		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval))
 			JS_ValueToInt32(*js_cx,rval,result);
