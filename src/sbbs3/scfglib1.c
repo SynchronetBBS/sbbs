@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -303,9 +303,12 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_str(cfg->mods_dir,instream);
 	get_str(cfg->logs_dir,instream);
 	if(!cfg->logs_dir[0]) SAFECOPY(cfg->logs_dir,cfg->data_dir);
+	get_str(cfg->readmail_mod, instream);
+	get_str(cfg->scanposts_mod, instream);
+	get_str(cfg->scansubs_mod, instream);
 
 	get_int(c,instream);
-	for(i=0;i<158;i++)					/* unused - initialized to NULL */
+	for(i=0;i<62;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);
 	for(i=0;i<254;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);

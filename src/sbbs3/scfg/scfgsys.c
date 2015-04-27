@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1383,6 +1383,9 @@ while(1) {
 				sprintf(opt[i++],"%-16.16s%s","Logout",cfg.logout_mod);
 				sprintf(opt[i++],"%-16.16s%s","New User",cfg.newuser_mod);
 				sprintf(opt[i++],"%-16.16s%s","Expired User",cfg.expire_mod);
+				sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
+				sprintf(opt[i++],"%-16.16s%s","Scan Posts",cfg.scanposts_mod);
+				sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
 				opt[i][0]=0;
 				uifc.helpbuf=
 					"`Loadable Modules:`\n"
@@ -1390,7 +1393,7 @@ while(1) {
 					"Baja modules (`.bin` files) or JavaScript modules (`.js` files) can be\n"
 					"automatically loaded and executed during certain Terminal Server\n"
 					"operations. The name (root filename) of the module can be specified for\n"
-					"each of the available operations listed here:\n"
+					"each of the available operations listed below:\n"
 					"\n"
 					"`Login`        Required module for interactive terminal logins (answer)\n"
 					"`Logon`        Executed during terminal logon procedure\n"
@@ -1399,6 +1402,12 @@ while(1) {
 					"`Logout`       Executed during terminal logout procedure (offline)\n"
 					"`New User`     Executed at end of new terminal user creation process\n"
 					"`Expired User` Executed during daily event when user expires (offline)\n"
+					"\n"
+					"Full module command-lines may be used for the operations listed below:\n"
+					"\n"
+					"`Read Mail`    Executed when a user reads email/netmail\n"
+					"`Scan Posts`   Executed when a user reads or scans a message sub-board\n"
+					"`Scan Subs`    Executed when a user scans one or more sub-boards for msgs\n"
 					"\n"
 					"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
 					"in your `exec` or `mods` directories.\n"
@@ -1438,7 +1447,18 @@ while(1) {
 						uifc.input(WIN_MID|WIN_SAV,0,0,"Expired User Module"
 							,cfg.expire_mod,sizeof(cfg.expire_mod)-1,K_EDIT);
                         break;
-
+					case 7:
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Read Mail Command"
+							,cfg.readmail_mod,sizeof(cfg.readmail_mod)-1,K_EDIT);
+                        break;
+					case 8:
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Posts Command"
+							,cfg.scanposts_mod,sizeof(cfg.scanposts_mod)-1,K_EDIT);
+                        break;
+					case 9:
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Subs Command"
+							,cfg.scansubs_mod,sizeof(cfg.scansubs_mod)-1,K_EDIT);
+                        break;
 				} 
 			}
 			break;

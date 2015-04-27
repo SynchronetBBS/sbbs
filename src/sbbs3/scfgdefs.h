@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -576,6 +576,9 @@ typedef struct
 	char			logout_mod[LEN_MODNAME+1];			/* Logout module */
 	char			sync_mod[LEN_MODNAME+1];			/* Synchronization module */
 	char			expire_mod[LEN_MODNAME+1];			/* User expiration module */
+	char			readmail_mod[LEN_CMD+1];	/* Reading mail module */
+	char			scanposts_mod[LEN_CMD+1];	/* Scanning posts (in a single sub) module */
+	char			scansubs_mod[LEN_CMD+1];	/* Scanning sub-boards module */
 	char			scfg_cmd[LEN_CMD+1];	/* SCFG command line */
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uint16_t		sec_warn;				/* Seconds before inactivity warning */

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -46,6 +46,16 @@ void sbbs_t::scansubs(long mode)
 	char 	tmp[512];
 	uint	i=0,found=0;
 	ulong	subs_scanned=0;
+
+	if(cfg.scansubs_mod[0] && !scansubs_inside) {
+		char cmdline[256];
+
+		scansubs_inside = true;
+		safe_snprintf(cmdline, sizeof(cmdline), "%s 0 %ld", cfg.scansubs_mod, mode);
+		exec_bin(cmdline, &main_csi);
+		scansubs_inside = false;
+		return;
+	}
 
 	mnemonics(text[SubGroupOrAll]);
 	ch=(char)getkeys("SGA\r",0);
@@ -131,6 +141,16 @@ void sbbs_t::scanallsubs(long mode)
 	char 	tmp[512];
 	uint	i,j,found=0;
 	ulong	subs_scanned=0;
+
+	if(cfg.scansubs_mod[0] && !scansubs_inside) {
+		char cmdline[256];
+
+		scansubs_inside = true;
+		safe_snprintf(cmdline, sizeof(cmdline), "%s 1 %ld", cfg.scansubs_mod, mode);
+		exec_bin(cmdline, &main_csi);
+		scansubs_inside = false;
+		return;
+	}
 
 	if(/* action==NODE_MAIN && */ mode&(SCAN_FIND|SCAN_TOYOU)) {
 		if(text[DisplaySubjectsOnlyQ][0])

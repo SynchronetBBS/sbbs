@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -650,6 +650,7 @@ public:
 
 	/* readmail.cpp */
 	void	readmail(uint usernumber, int sent);
+	bool	readmail_inside;
 
 	/* bulkmail.cpp */
 	bool	bulkmail(uchar *ar);
@@ -746,6 +747,7 @@ public:
 
 	/* readmsgs.cpp */
 	int		scanposts(uint subnum, long mode, const char* find);	/* Scan sub-board */
+	bool	scanposts_inside;
 	long	listsub(uint subnum, long mode, long start, const char* search);
 	long	listmsgs(uint subnum, long mode, post_t* post, long start, long posts);
 	long	searchposts(uint subnum, post_t* post, long start, long msgs, const char* find);
@@ -927,6 +929,7 @@ public:
 
 	/* scansubs.cpp */
 	void	scansubs(long mode);
+	bool	scansubs_inside;
 	void	scanallsubs(long mode);
 	void	new_scan_cfg(ulong misc);
 	void	new_scan_ptr_cfg(void);

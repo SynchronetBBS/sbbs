@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -56,6 +56,16 @@ void sbbs_t::readmail(uint usernumber, int which)
 	file_t	fd;
 	mail_t	*mail;
 	smbmsg_t msg;
+
+	if(cfg.readmail_mod[0] && !readmail_inside) {
+		char cmdline[256];
+
+		readmail_inside = true;
+		safe_snprintf(cmdline, sizeof(cmdline), "%s %d %u", cfg.readmail_mod, which, usernumber);
+		exec_bin(cmdline, &main_csi);
+		readmail_inside = false;
+		return;
+	}
 
 	if(which==MAIL_SENT && useron.rest&FLAG('K')) {
 		bputs(text[R_ReadSentMail]);
