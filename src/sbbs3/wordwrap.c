@@ -388,6 +388,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 						}
 					}
 				}
+				icol=prefix_len+1;
 				/* Fall-through soft CRs for wrapping! */
 			default:
 				if (inbuf[i] != '\n') {
