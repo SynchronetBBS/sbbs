@@ -275,7 +275,7 @@ void DLLCALL makewave(double freq, unsigned char *wave, int samples, enum WAVE_S
 				wave[i]=128+((wave[i]-128)/((numcross-crossings)*(numcross-crossings)));
 			}
 			crossings=0;
-			for(i=samples; i>0; i--) {
+			for(i=samples-1; i>0; i--) {
 				if(((wave[i]<128 && wave[i-1]>=128) || (wave[i]>128 && wave[i-1]<=128)) && i>2) {
 					crossings++;
 					if(crossings>=numcross)
