@@ -250,22 +250,25 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
+						attr(cfg.color[clr_filelsthdrbox]);
 						bputs("º\r\nº ");
 						sprintf(hdr,text[BoxHdrDir],j+1,cfg.dir[dirnum]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
+						attr(cfg.color[clr_filelsthdrbox]);
 						bputs("º\r\nº ");
 						sprintf(hdr,text[BoxHdrFiles],l/F_IXBSIZE);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
+						attr(cfg.color[clr_filelsthdrbox]);
 						bputs("º\r\nÈÍ");
 						for(c=0;c<d;c++)
 							outchar('Í');
 						bputs("¼\r\n"); 
-					} 
-				} 
+					}
+				}
 			}
 			else {					/* short header */
 				if(tofile) {
