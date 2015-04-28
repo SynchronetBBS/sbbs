@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -69,9 +69,7 @@ uint sbbs_t::finduser(char *instr)
 		errormsg(WHERE,ERR_OPEN,str3,O_RDONLY);
 		return(0); 
 	}
-	SAFEPRINTF(ynq,"%.2s",text[YN]);
-	ynq[2]='Q';
-	ynq[3]=0;
+	SAFEPRINTF(ynq,"%.3s",text[YNQP]);
 	length=(long)filelength(file);
 	while(pass<3) {
 		fseek(stream,0L,SEEK_SET);	/* seek to beginning for each pass */
@@ -97,11 +95,11 @@ uint sbbs_t::finduser(char *instr)
 					fclose(stream);
 					return(0); 
 				}
-				if(c==text[YN][0]) {
+				if(c==text[YNQP][0]) {
 					fclose(stream);
 					return((l/(LEN_ALIAS+2))+1); 
 				}
-				if(c=='Q') {
+				if(c==text[YNQP][2]) {
 					fclose(stream);
 					return(0); 
 				} 

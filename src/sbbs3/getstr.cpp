@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -573,7 +573,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 /****************************************************************************/
 /* Hot keyed number input routine.                                          */
 /* Returns a valid number between 1 and max, 0 if no number entered, or -1  */
-/* if the user hit 'Q' or ctrl-c                                            */
+/* if the user hit the quit key (e.g. 'Q') or ctrl-c                        */
 /****************************************************************************/
 long sbbs_t::getnum(ulong max, ulong dflt)
 {
@@ -584,8 +584,8 @@ long sbbs_t::getnum(ulong max, ulong dflt)
 		ch=getkey(K_UPPER);
 		if(ch>0x7f)
 			continue;
-		if(ch=='Q') {
-			outchar('Q');
+		if(ch==text[YNQP][2]) {
+			outchar(text[YNQP][2]);
 			if(useron.misc&COLDKEYS)
 				ch=getkey(K_UPPER);
 			if(ch==BS || ch==DEL) {

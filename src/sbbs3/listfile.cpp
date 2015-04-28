@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -689,7 +689,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 				pause();
 			return(2); 
 		}
-		if(ch=='Q' || sys_status&SS_ABORT)
+		if(ch==text[YNQP][2] || sys_status&SS_ABORT)
 			return(-1);
 		if(ch=='S')
 			return(0);
@@ -1352,7 +1352,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			openfile(&f);
 			SYNC;
 			mnemonics(text[ProtocolBatchQuitOrNext]);
-			strcpy(str,"BQ\r");
+			sprintf(str,"B%c\r",text[YNQP][2]);
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0]
 					&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
@@ -1361,7 +1361,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				}
 	//		  ungetkey(useron.prot);
 			ch=(char)getkeys(str,0);
-			if(ch=='Q') {
+			if(ch==text[YNQP][2]) {
 				found=-1;
 				done=1; 
 			}

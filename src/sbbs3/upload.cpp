@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -470,7 +470,7 @@ bool sbbs_t::upload(uint dirnum)
 	} else {
 		xfer_prot_menu(XFER_UPLOAD);
 		SYNC;
-		strcpy(keys,"Q");
+		sprintf(keys,"%c",text[YNQP][2]);
 		if(dirnum==cfg.user_dir || !cfg.max_batup)  /* no batch user to user xfers */
 			mnemonics(text[ProtocolOrQuit]);
 		else {
@@ -483,7 +483,7 @@ bool sbbs_t::upload(uint dirnum)
 				strcat(keys,tmp); 
 			}
 		ch=(char)getkeys(keys,0);
-		if(ch=='Q')
+		if(ch==text[YNQP][2] || (sys_status&SS_ABORT))
 			return(false);
 		if(ch=='B') {
 			if(batup_total>=cfg.max_batup)
@@ -620,14 +620,14 @@ bool sbbs_t::recvfile(char *fname, char prot)
 	else {
 		xfer_prot_menu(XFER_UPLOAD);
 		mnemonics(text[ProtocolOrQuit]);
-		strcpy(keys,"Q");
+		sprintf(keys,"%c",text[YNQP][2]);
 		for(i=0;i<cfg.total_prots;i++)
 			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
 				sprintf(keys+strlen(keys),"%c",cfg.prot[i]->mnemonic);
 
 		ch=(char)getkeys(keys,0);
 
-		if(ch=='Q' || sys_status&SS_ABORT)
+		if(ch==text[YNQP][2] || sys_status&SS_ABORT)
 			return(false); 
 	}
 	for(i=0;i<cfg.total_prots;i++)

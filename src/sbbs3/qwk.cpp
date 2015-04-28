@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -419,13 +419,13 @@ void sbbs_t::qwk_sec()
 		action=NODE_TQWK;
 		ASYNC;
 		bputs(text[QWKPrompt]);
-		strcpy(str,"?UDCSPQ\r");
+		sprintf(str,"?UDCSP\r%c",text[YNQP][2]);
 		if(bi)
 			strcat(str,"B");
 		ch=(char)getkeys(str,0);
 		if(ch>' ')
 			logch(ch,0);
-		if(sys_status&SS_ABORT || ch=='Q' || ch==CR || !online)
+		if(sys_status&SS_ABORT || ch==text[YNQP][2] || ch==CR || !online)
 			break;
 		if(ch=='?') {
 			if((useron.misc&(WIP|RIP|HTML) || !(useron.misc&EXPERT))
@@ -569,14 +569,14 @@ void sbbs_t::qwk_sec()
 			bprintf(text[UploadingREP],cfg.sys_id);
 			xfer_prot_menu(XFER_BIDIR);
 			mnemonics(text[ProtocolOrQuit]);
-			strcpy(tmp2,"Q");
+			sprintf(tmp2,"%c",text[YNQP][2]);
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp); 
 				}
 			ch=(char)getkeys(tmp2,0);
-			if(ch=='Q' || sys_status&SS_ABORT || !online) {
+			if(ch==text[YNQP][2] || sys_status&SS_ABORT || !online) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];	/* re-load saved pointers */
 				last_ns_time=ns_time;
@@ -659,7 +659,7 @@ void sbbs_t::qwk_sec()
 			/***************/
 			xfer_prot_menu(XFER_DOWNLOAD);
 			mnemonics(text[ProtocolOrQuit]);
-			strcpy(tmp2,"Q");
+			sprintf(tmp2,"%c",text[YNQP][2]);
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
@@ -667,7 +667,7 @@ void sbbs_t::qwk_sec()
 				}
 			ungetkey(useron.prot);
 			ch=(char)getkeys(tmp2,0);
-			if(ch=='Q' || sys_status&SS_ABORT || !online) {
+			if(ch==text[YNQP][2] || sys_status&SS_ABORT || !online) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
 				last_ns_time=ns_time;
@@ -725,14 +725,14 @@ void sbbs_t::qwk_sec()
 			/******************/
 			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
-			strcpy(tmp2,"Q");
+			sprintf(tmp2,"%c",txt[YNQP][2]);
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp); 
 				}
 			ch=(char)getkeys(tmp2,0);
-			if(ch=='Q' || sys_status&SS_ABORT || !online)
+			if(ch==text[YNQP][2] || sys_status&SS_ABORT || !online)
 				continue;
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && cfg.prot[i]->mnemonic==ch

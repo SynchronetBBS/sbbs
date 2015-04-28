@@ -44,6 +44,7 @@ void sbbs_t::batchmenu()
 {
     char	str[129],tmp2[250],done=0,ch;
 	char 	tmp[512];
+	char	keys[32];
 	uint	i,n,xfrprot,xfrdir;
     ulong	totalcdt,totalsize,totaltime;
     time_t	start,end;
@@ -70,18 +71,19 @@ void sbbs_t::batchmenu()
 		}
 		ASYNC;
 		bputs(text[BatchMenuPrompt]);
-		ch=(char)getkeys("BCDLQRU?\r",0);
+		sprintf(keys,"BCDLRU?\r%c", text[YNQP][2]);
+		ch=(char)getkeys(keys,0);
 		if(ch>' ')
 			logch(ch,0);
+		if(ch==text[YNQP][2] || ch=='\r') {	/* Quit */
+			lncntr=0;
+			done=1;
+			break;
+		}
 		switch(ch) {
 			case '?':
 				if(useron.misc&(EXPERT|RIP|WIP|HTML))
 					menu("batchxfr");
-				break;
-			case CR:
-			case 'Q':
-				lncntr=0;
-				done=1;
 				break;
 			case 'B':   /* Bi-directional transfers */
 				if(useron.rest&FLAG('D')) {
@@ -120,7 +122,7 @@ void sbbs_t::batchmenu()
 				xfer_prot_menu(XFER_BIDIR);
 				SYNC;
 				mnemonics(text[ProtocolOrQuit]);
-				strcpy(tmp2,"Q");
+				sprintf(tmp2,"%c",text[YNQP][2]);
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
@@ -128,7 +130,7 @@ void sbbs_t::batchmenu()
 					}
 				ungetkey(useron.prot);
 				ch=(char)getkeys(tmp2,0);
-				if(ch=='Q')
+				if(ch==text[YNQP][2])
 					break;
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->bicmd[0] && cfg.prot[i]->mnemonic==ch
@@ -293,14 +295,14 @@ void sbbs_t::batchmenu()
 					break;
 				ASYNC;
 				mnemonics(text[ProtocolOrQuit]);
-				strcpy(str,"Q");
+				sprintf(str,"%c",text[YNQP][2]);
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->batulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 						strcat(str,tmp); 
 					}
 				ch=(char)getkeys(str,0);
-				if(ch=='Q')
+				if(ch==text[YNQP][2])
 					break;
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->batulcmd[0] && cfg.prot[i]->mnemonic==ch
@@ -381,7 +383,7 @@ BOOL sbbs_t::start_batch_download()
 	xfer_prot_menu(XFER_BATCH_DOWNLOAD);
 	ASYNC;
 	mnemonics(text[ProtocolOrQuit]);
-	strcpy(str,"Q");
+	sprintf(str,"%c",text[YNQP][2]);
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 			sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
@@ -389,7 +391,7 @@ BOOL sbbs_t::start_batch_download()
 		}
 	ungetkey(useron.prot);
 	ch=(char)getkeys(str,0);
-	if(ch=='Q' || sys_status&SS_ABORT)
+	if(ch==text[YNQP][2] || sys_status&SS_ABORT)
 		return(FALSE);
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && cfg.prot[i]->mnemonic==ch
