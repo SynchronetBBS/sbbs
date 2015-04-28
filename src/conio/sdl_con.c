@@ -1610,6 +1610,8 @@ int sdl_video_event_thread(void *data)
 							case SDL_USEREVENT_QUIT:
 								sdl_ufunc_retval=0;
 								sdl.SemPost(sdl_ufunc_ret);
+								if (upd_rects)
+									free(upd_rects);
 								return(0);
 							case SDL_USEREVENT_UPDATERECT:
 								{
@@ -1902,6 +1904,8 @@ int sdl_video_event_thread(void *data)
 			}
 		}
 	}
+	if (upd_rects)
+		free(upd_rects);
 	return(0);
 }
 
