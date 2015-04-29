@@ -1592,6 +1592,7 @@ int sdl_video_event_thread(void *data)
 							if(yuv.enabled) {
 								yuv.win_width=ev.resize.w;
 								yuv.win_height=ev.resize.h;
+								new_scaling = 2;
 							}
 							else
 								new_scaling = (int)(ev.resize.w/(vstat.charwidth*vstat.cols));
