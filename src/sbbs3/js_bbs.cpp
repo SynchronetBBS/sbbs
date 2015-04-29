@@ -188,6 +188,7 @@ enum {
 	,"remote connection type"
 	,"login name given during RLogin negotiation"
 	,"password specified during RLogin negotiation"
+	,"terminal specified during RLogin negotiation"
 	,"client name"
 
 	,"current alternate upload path number"
