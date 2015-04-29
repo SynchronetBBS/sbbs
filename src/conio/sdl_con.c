@@ -742,6 +742,22 @@ int sdl_init(int mode)
 }
 
 /* Called from main thread only */
+void sdl_setscaling(int new_value)
+{
+	if (yuv.enabled)
+		return;
+	bitmap_setscaling(new_value);
+}
+
+/* Called from main thread only */
+int sdl_getscaling(void)
+{
+	if (yuv.enabled)
+		return 1;
+	return bitmap_getscaling();
+}
+
+/* Called from main thread only */
 int sdl_kbhit(void)
 {
 	int ret;

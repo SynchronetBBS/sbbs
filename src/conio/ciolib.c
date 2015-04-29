@@ -156,8 +156,8 @@ int try_sdl_init(int mode)
 		cio_api.getcliptext=sdl_getcliptext;
 #endif
 		cio_api.get_window_info=sdl_get_window_info;
-		cio_api.setscaling=bitmap_setscaling;
-		cio_api.getscaling=bitmap_getscaling;
+		cio_api.setscaling=sdl_setscaling;
+		cio_api.getscaling=sdl_getscaling;
 		return(1);
 	}
 	return(0);

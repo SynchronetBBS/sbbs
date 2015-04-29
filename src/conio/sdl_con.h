@@ -13,6 +13,8 @@ int sdl_draw_char(unsigned short vch, int xpos, int ypos);
 int sdl_screen_redraw(void);
 
 /* High-level stuff */
+void sdl_setscaling(int new_value);
+int sdl_getscaling(void);
 int sdl_puttext(int sx, int sy, int ex, int ey, void *fill);
 int sdl_gettext(int sx, int sy, int ex, int ey, void *fill);
 int sdl_kbhit(void);
