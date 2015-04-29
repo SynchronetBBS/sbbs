@@ -1384,7 +1384,7 @@ while(1) {
 				sprintf(opt[i++],"%-16.16s%s","New User",cfg.newuser_mod);
 				sprintf(opt[i++],"%-16.16s%s","Expired User",cfg.expire_mod);
 				sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
-				sprintf(opt[i++],"%-16.16s%s","Scan Posts",cfg.scanposts_mod);
+				sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
 				sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
 				opt[i][0]=0;
 				uifc.helpbuf=
@@ -1406,7 +1406,7 @@ while(1) {
 					"Full module command-lines may be used for the operations listed below:\n"
 					"\n"
 					"`Read Mail`    Executed when a user reads email/netmail\n"
-					"`Scan Posts`   Executed when a user reads or scans a message sub-board\n"
+					"`Scan Msgs`    Executed when a user reads or scans a message sub-board\n"
 					"`Scan Subs`    Executed when a user scans one or more sub-boards for msgs\n"
 					"\n"
 					"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
@@ -1452,7 +1452,7 @@ while(1) {
 							,cfg.readmail_mod,sizeof(cfg.readmail_mod)-1,K_EDIT);
                         break;
 					case 8:
-						uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Posts Command"
+						uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Msgs Command"
 							,cfg.scanposts_mod,sizeof(cfg.scanposts_mod)-1,K_EDIT);
                         break;
 					case 9:
