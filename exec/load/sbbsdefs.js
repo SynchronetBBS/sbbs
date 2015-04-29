@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -573,7 +573,6 @@ var	SCAN_NEW		=(1<<1);	/* New scanning								*/
 var	SCAN_BACK		=(1<<2);	/* Scan the last message if no new			*/
 var	SCAN_TOYOU		=(1<<3);	/* Scan for messages to you 				*/
 var	SCAN_FIND		=(1<<4);	/* Scan for text in messages				*/
-var	SCAN_UNREAD		=(1<<5);	/* Find un-read messages to you 			*/
 					    		/********************************************/
 
 								/********************************************/
