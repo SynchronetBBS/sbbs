@@ -79,6 +79,7 @@ struct sdlfuncs {
 /* Defined in SDL_win32_main.c for Win32 */
 extern struct sdlfuncs	sdl;
 extern SDL_sem *sdl_exit_sem;
+extern int sdl_video_initialized;
 
 #ifdef __cplusplus
 extern "C" {
