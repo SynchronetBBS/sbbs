@@ -1676,7 +1676,7 @@ int sdl_video_event_thread(void *data)
 										break;
 									}
 									sdl.mutexP(newrect_mutex);
-									pthread_mutex_lock(&vstatlock);
+									// We can't lock vstatmutex here, it's already held.
 									for(y=0; y<rect->height; y++) {
 										offset=y*rect->width;
 										for(x=0; x<rect->width; x++) {
@@ -1709,7 +1709,6 @@ int sdl_video_event_thread(void *data)
 											rectsused=0;
 										}
 									}
-									pthread_mutex_unlock(&vstatlock);
 									sdl.mutexV(newrect_mutex);
 									sdl.mutexV(win_mutex);
 									free(rect->data);
