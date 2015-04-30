@@ -83,11 +83,11 @@ static void blinker_thread(void *data)
 				vstat.blink=TRUE;
 			count=0;
 		}
+		pthread_mutex_unlock(&vstatlock);
 		if(force_redraws)
 			update_rect(0,0,0,0,force_redraws--);
 		else
 			update_rect(0,0,0,0,FALSE);
-		pthread_mutex_unlock(&vstatlock);
 		callbacks.flush();
 	}
 }
@@ -210,14 +210,19 @@ void send_rectangle(int xoffset, int yoffset, int width, int height, int force)
 		if(!rect)
 			goto end;
 
+		pthread_mutex_lock(&vstatlock);
 		for(y=0; y<height; y++) {
 			inpixel=PIXEL_OFFSET(xoffset, yoffset+y);
 			for(x=0; x<width; x++)
 				rect[pixel++]=vstat.palette[screen[inpixel++]];
 		}
+		pthread_mutex_unlock(&vstatlock);
+		pthread_mutex_unlock(&screenlock);
 		callbacks.drawrect(xoffset,yoffset,width,height,rect);
+		return;
 	}
 end:
+	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&screenlock);
 }
 
@@ -745,7 +750,6 @@ error_return:
 	return(-1);
 }
 
-/* vstatlock is held */
 static void bitmap_draw_cursor(void)
 {
 	int x;
@@ -754,9 +758,11 @@ static void bitmap_draw_cursor(void)
 	int pixel;
 	int xoffset,yoffset;
 	int width;
+	int yo, xw, yw;
 
 	if(!bitmap_initialized)
 		return;
+	pthread_mutex_lock(&vstatlock);
 	if(vstat.curs_visible) {
 		if(vstat.blink || (!vstat.curs_blink)) {
 			if(vstat.curs_start<=vstat.curs_end) {
@@ -777,10 +783,16 @@ static void bitmap_draw_cursor(void)
 					}
 				}
 				pthread_mutex_unlock(&screenlock);
-				send_rectangle(xoffset, yoffset+vstat.curs_start, vstat.charwidth, vstat.curs_end-vstat.curs_start+1,FALSE);
+				yo = yoffset+vstat.curs_start;
+				xw = vstat.charwidth;
+				yw = vstat.curs_end-vstat.curs_start+1;
+				pthread_mutex_unlock(&vstatlock);
+				send_rectangle(xoffset, yo, xw, yw,FALSE);
+				return;
 			}
 		}
 	}
+	pthread_mutex_unlock(&vstatlock);
 }
 
 /* Called from main thread only */
@@ -800,7 +812,6 @@ void bitmap_gotoxy(int x, int y)
 	}
 }
 
-/* vstatlock is held */
 static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 {
 	int		fg;
@@ -817,14 +828,18 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	if(!bitmap_initialized)
 		return(-1);
 
-	if(!screen)
-		return(-1);
+	pthread_mutex_lock(&screenlock);
 
-	if(!vstat.vmem)
+	if(!screen) {
+		pthread_mutex_unlock(&screenlock);
 		return(-1);
+	}
 
-	if(!font)
+	pthread_mutex_lock(&vstatlock);
+	if(!vstat.vmem) {
+		pthread_mutex_unlock(&vstatlock);
 		return(-1);
+	}
 
 	sch=vstat.vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)];
 
@@ -851,7 +866,6 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 		fg &= 0x07;
 	fontoffset=(sch&0xff)*vstat.charheight;
 
-	pthread_mutex_lock(&screenlock);
 	for(y=0; y<vstat.charheight; y++) {
 		memset(&screen[PIXEL_OFFSET(xoffset, yoffset+y)],bg,vstat.charwidth);
 		for(x=0; x<vstat.charwidth; x++) {
@@ -860,12 +874,12 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 		}
 		fontoffset++;
 	}
+	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&screenlock);
 
 	return(0);
 }
 
-/* vstatlock is held */
 static int update_rect(int sx, int sy, int width, int height, int force)
 {
 	int x,y;
@@ -875,6 +889,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	int fullredraw=0;
 	static unsigned short *last_vmem=NULL;
 	static struct video_stats vs;
+	struct video_stats cvstat;
 	struct rectangle this_rect;
 	int this_rect_used=0;
 	struct rectangle last_rect;
@@ -895,6 +910,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	if(height<=0 || height>cio_textinfo.screenheight)
 		height=cio_textinfo.screenheight;
 
+	pthread_mutex_lock(&vstatlock);
 	if(vs.cols!=vstat.cols || vs.rows != vstat.rows || last_vmem==NULL) {
 		unsigned short *p;
 
@@ -919,38 +935,40 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 			|| vstat.curs_start!=vs.curs_start
 			|| vstat.curs_end!=vs.curs_end)
 		redraw_cursor=1;
+	cvstat = vstat;
+	pthread_mutex_unlock(&vstatlock);
 
 	for(y=0;y<height;y++) {
 		if(force 
-				|| (vstat.blink != vs.blink )
-				|| (redraw_cursor && (vs.curs_row==sy+y || vstat.curs_row==sy+y))
+				|| (cvstat.blink != vs.blink )
+				|| (redraw_cursor && (vs.curs_row==sy+y || cvstat.curs_row==sy+y))
 				|| damaged[sy+y-1]) {
 			damaged[sy+y-1]=0;
-			pos=(sy+y-1)*vstat.cols+(sx-1);
+			pos=(sy+y-1)*cvstat.cols+(sx-1);
 			for(x=0;x<width;x++) {
 				if(force
-						|| (last_vmem[pos] != vstat.vmem[pos]) 					/* Different char */
-						|| ((vstat.blink != vs.blink) && (vstat.vmem[pos]>>15) && (!vstat.no_blink)) 	/* Blinking char */
-						|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (vstat.curs_col==sx+x && vstat.curs_row==sy+y)))	/* Cursor */
+						|| (last_vmem[pos] != cvstat.vmem[pos]) 					/* Different char */
+						|| ((cvstat.blink != vs.blink) && (cvstat.vmem[pos]>>15) && (!cvstat.no_blink)) 	/* Blinking char */
+						|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (cvstat.curs_col==sx+x && cvstat.curs_row==sy+y)))	/* Cursor */
 						) {
-					last_vmem[pos] = vstat.vmem[pos];
+					last_vmem[pos] = cvstat.vmem[pos];
 					bitmap_draw_one_char(sx+x,sy+y);
 
-					if(!redraw_cursor && sx+x==vstat.curs_col && sy+y==vstat.curs_row)
+					if(!redraw_cursor && sx+x==cvstat.curs_col && sy+y==cvstat.curs_row)
 						redraw_cursor=1;
 
 					if(lastcharupdated) {
-						this_rect.width+=vstat.charwidth;
+						this_rect.width+=cvstat.charwidth;
 						lastcharupdated++;
 					}
 					else {
 						if(this_rect_used) {
 							send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
 						}
-						this_rect.x=(sx+x-1)*vstat.charwidth;
-						this_rect.y=(sy+y-1)*vstat.charheight;
-						this_rect.width=vstat.charwidth;
-						this_rect.height=vstat.charheight;
+						this_rect.x=(sx+x-1)*cvstat.charwidth;
+						this_rect.y=(sy+y-1)*cvstat.charheight;
+						this_rect.width=cvstat.charwidth;
+						this_rect.height=cvstat.charheight;
 						this_rect_used=1;
 						lastcharupdated++;
 					}
@@ -972,7 +990,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		/* If ALL chars in the line were used, add to last_rect */
 		if(lastcharupdated==width) {
 			if(last_rect_used) {
-				last_rect.height += vstat.charheight;
+				last_rect.height += cvstat.charheight;
 				this_rect_used=0;
 			}
 			else {
@@ -1001,9 +1019,9 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	if(last_rect_used)
 		send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
 
-	/* Did we redraw the cursor?  If so, update cursor info */
-	vs=vstat;
+	vs = cvstat;
 
+	/* Did we redraw the cursor?  If so, update cursor info */
 	if(redraw_cursor)
 		bitmap_draw_cursor();
 

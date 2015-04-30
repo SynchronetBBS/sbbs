@@ -1550,19 +1550,20 @@ int sdl_video_event_thread(void *data)
 
 		while(1) {
 			if(sdl.PollEvent(&ev)!=1) {
-				// TODO: Still accessing vstat without holding the lock...
-				if (new_scaling != -1 || vstat.scaling != old_scaling) {
-					if (new_scaling == -1)
-						new_scaling = vstat.scaling;
-					if (pthread_mutex_trylock(&vstatlock) == 0) {
+				if(pthread_mutex_trylock(&vstatlock)==0) {
+					if (new_scaling != -1 || vstat.scaling != old_scaling) {
+						if (new_scaling == -1)
+							new_scaling = vstat.scaling;
 						vstat.scaling=new_scaling;
 						new_scaling = -1;
 						if(vstat.scaling < 1)
 							vstat.scaling=1;
 						pthread_mutex_unlock(&vstatlock);
 						setup_surfaces();
+						pthread_mutex_lock(&vstatlock);
+						old_scaling = vstat.scaling;
 					}
-					old_scaling = vstat.scaling;
+					pthread_mutex_unlock(&vstatlock);
 				}
 				SLEEP(1);
 			}
@@ -1676,7 +1677,7 @@ int sdl_video_event_thread(void *data)
 										break;
 									}
 									sdl.mutexP(newrect_mutex);
-									// We can't lock vstatmutex here, it's already held.
+									pthread_mutex_lock(&vstatlock);
 									for(y=0; y<rect->height; y++) {
 										offset=y*rect->width;
 										for(x=0; x<rect->width; x++) {
@@ -1696,6 +1697,7 @@ int sdl_video_event_thread(void *data)
 											free(rect);
 											sdl.mutexV(newrect_mutex);
 											sdl.mutexV(win_mutex);
+											pthread_mutex_unlock(&vstatlock);
 											break;
 										}
 										upd_rects[rectsused].x=rect->x*vstat.scaling;
@@ -1709,6 +1711,7 @@ int sdl_video_event_thread(void *data)
 											rectsused=0;
 										}
 									}
+									pthread_mutex_unlock(&vstatlock);
 									sdl.mutexV(newrect_mutex);
 									sdl.mutexV(win_mutex);
 									free(rect->data);
