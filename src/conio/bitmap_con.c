@@ -129,10 +129,12 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	if(!bitmap_initialized)
 		return(-1);
 
+	pthread_mutex_lock(&screenlock);
 	pthread_mutex_lock(&vstatlock);
 
 	if(load_vmode(&vstat, mode)) {
 		pthread_mutex_unlock(&vstatlock);
+		pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
 
@@ -151,7 +153,6 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	for (i = 0; i < vstat.cols*vstat.rows; ++i)
 	    vstat.vmem[i] = 0x0700;
 
-	pthread_mutex_lock(&screenlock);
 	screenwidth=vstat.charwidth*vstat.cols;
 	if(width)
 		*width=screenwidth;
@@ -160,14 +161,14 @@ int bitmap_init_mode(int mode, int *width, int *height)
 		*height=screenheight;
 	newscreen=realloc(screen, screenwidth*screenheight);
 	if(!newscreen) {
-		pthread_mutex_unlock(&screenlock);
 		pthread_mutex_unlock(&vstatlock);
+		pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
 	screen=newscreen;
 	memset(screen,vstat.palette[0],screenwidth*screenheight);
-	pthread_mutex_unlock(&screenlock);
 	pthread_mutex_unlock(&vstatlock);
+	pthread_mutex_unlock(&screenlock);
 	for (i=0; i<sizeof(current_font)/sizeof(current_font[0]); i++)
 		current_font[i]=default_font;
 	bitmap_loadfont(NULL);
@@ -762,6 +763,7 @@ static void bitmap_draw_cursor(void)
 
 	if(!bitmap_initialized)
 		return;
+	pthread_mutex_lock(&screenlock);
 	pthread_mutex_lock(&vstatlock);
 	if(vstat.curs_visible) {
 		if(vstat.blink || (!vstat.curs_blink)) {
@@ -773,7 +775,6 @@ static void bitmap_draw_cursor(void)
 				attr=cio_textinfo.attribute&0x0f;
 				width=vstat.charwidth;
 	
-				pthread_mutex_lock(&screenlock);
 				for(y=vstat.curs_start; y<=vstat.curs_end; y++) {
 					if(xoffset < screenwidth && (yoffset+y) < screenheight) {
 						pixel=PIXEL_OFFSET(xoffset, yoffset+y);
@@ -782,17 +783,18 @@ static void bitmap_draw_cursor(void)
 						//memset(screen+pixel,attr,width);
 					}
 				}
-				pthread_mutex_unlock(&screenlock);
 				yo = yoffset+vstat.curs_start;
 				xw = vstat.charwidth;
 				yw = vstat.curs_end-vstat.curs_start+1;
 				pthread_mutex_unlock(&vstatlock);
+				pthread_mutex_unlock(&screenlock);
 				send_rectangle(xoffset, yo, xw, yw,FALSE);
 				return;
 			}
 		}
 	}
 	pthread_mutex_unlock(&vstatlock);
+	pthread_mutex_unlock(&screenlock);
 }
 
 /* Called from main thread only */
