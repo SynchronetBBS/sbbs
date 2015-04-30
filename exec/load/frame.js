@@ -506,17 +506,77 @@ Frame.prototype.cycle = function() {
 }
 Frame.prototype.load = function(filename,width,height) {
 	var f=new File(filename);
-	switch(file_getext(filename).substr(1).toUpperCase()) {
+	if (!f.open("rb", true))
+		return false;
+	var contents=f.read();
+	f.close();
+	var valid_sauce = false;
+	var ext = file_getext(filename).substr(1).toUpperCase();
+
+	if (contents.substr(-128, 7) == "SAUCE00") {
+		var sauceless_size = ascii(contents.substr(-35,1));
+		sauceless_size <<= 8;
+		sauceless_size |= ascii(contents.substr(-36,1));
+		sauceless_size <<= 8;
+		sauceless_size |= ascii(contents.substr(-35,1));
+		sauceless_size <<= 8;
+		sauceless_size |= ascii(contents.substr(-34,1));
+
+		var data_type = ascii(contents.substr(-33,1));
+		var file_type = ascii(contents.substr(-32,1));
+		var tinfo1 = ascii(contents.substr(-30,1));
+		tinfo1 <<= 8;
+		tinfo1 |= ascii(contents.substr(-31,1));
+		var tinfo2 = ascii(contents.substr(-28,1));
+		tinfo2 <<= 8;
+		tinfo2 |= ascii(contents.substr(-29,1));
+		switch(data_type) {
+			case 1:
+				switch(file_type) {
+					case 0:	// PLain ASCII
+						ext = "TXT";
+						if (tinfo1)
+							width = tinfo1;
+						if (tinfo2)
+							height = tinfo2;
+						break;
+					case 1: // ANSi
+						ext = "ANS";
+						if (tinfo1)
+							width = tinfo1;
+						if (tinfo2)
+							height = tinfo2;
+						break;
+					case 7: // Source
+						ext = "TXT";
+						break;
+				}
+				valid_sauce = true;
+				break;
+			case 5:
+				ext = 'BIN';
+				width = file_type * 2;
+				height = (sauceless_size / 2) / width;
+				valid_sauce = true;
+				break;
+		}
+		if (valid_sauce)
+			contents = contents.substr(0, sauceless_size);
+	}
+
+	switch(ext) {
 	case "ANS":
-		if(!(f.open("r",true,4096)))
-			return(false);
-		var lines=f.readAll(4096);
-		f.close();
-		
+		/*
+		 * TODO: This doesn't do exactly what reading a text file does
+		 * one Windows (nor on Linux), but it should be close to what
+		 * was meant, and should work given that it resets x every line.
+		 */
+		var lines=contents.split(/\r\n/);
+
 		var attr = this.attr;
 		var bg = BG_BLACK;
 		var fg = LIGHTGRAY;
-		
+
 		var i = 0;
 		var y = 0;
 		var saved = {};
@@ -729,30 +789,25 @@ Frame.prototype.load = function(filename,width,height) {
 	case "BIN":
 		if(width == undefined || height == undefined)
 			throw("unknown graphic dimensions");
-		if(!(f.open("rb",true,4096)))
-			return(false);
+		var offset = 0;
 		for(var y=0; y<height; y++) {
 			for(var x=0; x<width; x++) {
 				var c = new Char();
-				if(f.eof)
+				if(offset >= contents.length)
 					return(false);
-				c.ch = f.read(1);
-				if(f.eof)
+				c.ch = contents.substr(offset++, 1);
+				if(offset == contents.length)
 					return(false);
-				c.attr = f.readBin(1);
+				c.attr = ascii(contents.substr(offset++, 1));
 				c.id = this.id;
 				if(!this.__properties__.data[y])
 					this.__properties__.data[y]=[];
 				this.__properties__.data[y][x] = c;
 			}
 		}
-		f.close();
 		break;
 	case "TXT":
-		if(!(f.open("r",true,4096)))
-			return(false);
-		var lines=f.readAll(4096);
-		f.close();
+		var lines=contents.split(/\r\n/);
 		while(lines.length > 0)
 			this.putmsg(lines.shift() + "\r\n");
 		break;
@@ -1399,7 +1454,7 @@ Display.prototype.screenShot = function(file,append) {
 		f.open('wb',true,4096) ;
 	if(!f.is_open)
 		return false;
-		
+
 	for(var y = 0;y<this.height;y++) {
 		for(var x = 0;x<this.width;x++) {
 			var c = this.__getTopCanvas__(x,y);
