@@ -268,6 +268,10 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XCloseDisplay=xp_dlsym(dl,XCloseDisplay))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 	if((x11.XCreateSimpleWindow=xp_dlsym(dl,XCreateSimpleWindow))==NULL) {
 		xp_dlclose(dl);
 		return(-1);

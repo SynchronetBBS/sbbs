@@ -267,6 +267,7 @@ int bitmap_getvideoflags(void)
 {
 	int flags=0;
 
+	pthread_mutex_lock(&vstatlock);
 	if(vstat.bright_background)
 		flags |= CIOLIB_VIDEO_BGBRIGHT;
 	if(vstat.no_bright)
@@ -277,11 +278,13 @@ int bitmap_getvideoflags(void)
 		flags |= CIOLIB_VIDEO_NOBLINK;
 	if(vstat.blink_altcharset)
 		flags |= CIOLIB_VIDEO_BLINKALTCHARS;
+	pthread_mutex_unlock(&vstatlock);
 	return(flags);
 }
 
 void bitmap_setvideoflags(int flags)
 {
+	pthread_mutex_lock(&vstatlock);
 	if(flags & CIOLIB_VIDEO_BGBRIGHT)
 		vstat.bright_background=1;
 	else
@@ -306,6 +309,7 @@ void bitmap_setvideoflags(int flags)
 		vstat.blink_altcharset=1;
 	else
 		vstat.blink_altcharset=0;
+	pthread_mutex_unlock(&vstatlock);
 }
 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
@@ -601,13 +605,20 @@ int bitmap_getfont(void)
 
 void bitmap_setscaling(int new_value)
 {
+	pthread_mutex_lock(&vstatlock);
 	if(new_value > 0)
 		vstat.scaling = new_value;
+	pthread_mutex_unlock(&vstatlock);
 }
 
 int bitmap_getscaling(void)
 {
-	return vstat.scaling;
+	int ret;
+
+	pthread_mutex_lock(&vstatlock);
+	ret = vstat.scaling;
+	pthread_mutex_unlock(&vstatlock);
+	return ret;
 }
 
 /* Called from event thread only */

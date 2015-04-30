@@ -57,6 +57,7 @@ struct x11 {
 	Pixmap	(*XCreateBitmapFromData)	(Display*, Drawable, _Xconst char*, unsigned int, unsigned int);
 	Status	(*XAllocColor)	(Display*, Colormap, XColor*);
 	Display*(*XOpenDisplay)	(_Xconst char*);
+	int	(*XCloseDisplay)	(Display*);
 	Window	(*XCreateSimpleWindow)	(Display*, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
 	GC		(*XCreateGC)	(Display*, Drawable, unsigned long, XGCValues*);
 	int		(*XSelectInput)	(Display*, Window, long);
@@ -98,6 +99,8 @@ extern sem_t	pastebuf_set;
 extern sem_t	pastebuf_used;
 extern sem_t	init_complete;
 extern sem_t	mode_set;
+extern sem_t	event_thread_complete;
+extern int terminate;
 extern int x11_window_xpos;
 extern int x11_window_ypos;
 extern int x11_window_width;
