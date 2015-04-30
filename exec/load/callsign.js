@@ -160,6 +160,60 @@ var CallSign={
 			throw("No ACMA results");
 		},
 
+		Brazil:function(callsign) {
+			var req=new HTTPRequest().Post('http://sistemas.anatel.gov.br/easp/Novo/ConsultaIndicativo/Tela.asp', 'acao=e&pIndicativo='+callsign);
+			var ret = {callsign:callsign, country:'Brazil'};
+			var m;
+			var m2;
+			var i,j;
+
+			m = req.match(/<tr id="TRplus302 - Radioamador">([\x00-\uffff]*?)<\/tr>/g);
+			if (m.length == 0)
+				throw("No Brazil results");
+			for(i in m) {
+				m2 = m[i].match(/<td class="CampoCentro" width="\*%">\s?\r?\n\s*([\x00-\uffff]*?)\s*\r?\n/g);
+				for(j in m2) {
+					m2[j] = html_decode(m2[j]);
+					m2[j] = m2[j].replace(/\xff/,'');
+					m2[j] = m2[j].replace(/^<td.*?>\s*\r?\n?\s*(.*?)\s*\r?\n.*$/, "$1");
+				}
+				if (m2[1] == callsign) {
+					if (m2[7] != '') {
+						if (ret.name == undefined)
+							ret.name = m2[7];
+						else if (ret.name.search(m2[7])==-1)
+							ret.name += ', '+m2[7];
+					}
+					var qual = '';
+					if (m2[2] == '')
+						qual = m2[8];
+					else if (m2[8] == '')
+						qual = m2[2];
+					else
+						qual = m2[2]+' '+m2[8];
+					if (qual != '') {
+						if(ret.qualifications == undefined)
+							ret.qualifications = qual;
+						else if (ret.qualifications.search(qual)==-1)
+							ret.qualifications += ', ' + qual;
+					}
+					if (m2[3] != '') {
+						if(ret.city == undefined)
+							ret.city = m2[3];
+						else if (ret.city.search(m2[3])==-1)
+							ret.city += ", " + m2[3];
+					}
+					if (m2[4] != '') {
+						if(ret.provstate == undefined)
+							ret.provstate = m2[4];
+						else if (ret.provstate.search(m2[4])==-1)
+							ret.provstate = ret.provstate + ", " + m2[4];
+					}
+				}
+			}
+			return ret;
+		},
+
 		Hamcall:function(callsign) {
 			var req=new HTTPRequest();
 			var config = js.global.load("modopts.js","hamcall");
@@ -244,9 +298,15 @@ var CallSign={
 				}
 				catch(e) {}
 			}
-			if(country == 'Australia') {
+			else if(country == 'Australia') {
 				try {
 					matched=CallSign.Lookup.Australia(callsign);
+				}
+				catch(e) {}
+			}
+			else if(country == 'Brazil') {
+				try {
+					matched=CallSign.Lookup.Brazil(callsign);
 				}
 				catch(e) {}
 			}
