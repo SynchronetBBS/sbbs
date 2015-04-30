@@ -19,6 +19,7 @@ Contents
 1. Disclaimer
 2. Introduction
 3. Installation & Setup
+3a. Loadable Modules setup
 4. Header ANSI/asc file
 5. Configuration file & color/text theme configuration file
 6. Drop file for replying to messages with Synchronet message editors
@@ -173,6 +174,9 @@ The following are the command-line parameters supported by DDMsgReader.js:
 Note that if the -personalEmail option is specified (to read personal email),
 the only valid search types are keyword_search and from_name_search.
 
+-suppressSearchTypeText: Disable the search type text that would appear
+                         above searches or scans (such as "New To You
+                         Message Scan", etc.)
 -startMode: Startup mode.   This overrides the startMode option in the
            confiruation file.  Available options are read (or reader) for
            reader mode and list (or lister) for message list mode.
@@ -282,6 +286,34 @@ common message operations.
 - Read sent personal email:
 ?../xtrn/DDMsgReader/DDMsgReader.js -personalEmailSent -startMode=read
 
+
+3a. Loadable Modules setup
+==========================
+Synchronet 3.16 builds starting on April 27, 2015 have a few new options for
+'loadable modules' which can enable the use of a message reader script in
+places other than your command shell (for instance, reading personal email or
+doing a message newscan during the login process).  The loadable modules are
+configured in SCFG under System > Loadable Modules.  Digital Distortion Message
+Reader includes a few additional scripts that can be set up as loadable modules
+to allow using Digital Distortion Message Reader to be used for reading
+personal email or doing a message newscan during the login process, as well as
+text searching (which would be used from the stock Synchronet command shell).
+
+
+To enable Digital Distortion Message Reader for those scenarios, perform the
+following steps:
+1. Copy the .js scripts from the 'Loadable module scripts' directory to your
+   sbbs/mods directory
+2. Run SCFG (the Synchronet configuration program) and select System, then
+   Loadable Modules
+3. For the 'Read Mail' option, put in DDReadPersonalMail
+4. For the 'Scan Posts' option, put in DDScanPosts
+5. For the 'Scan Subs' option, put in DDScanSubs
+
+There are a few search modes that Synchronet provides that Digital Distortion
+Message Reader doesn't support yet (such as continuous newscan and browse new
+scan), and for those situations, the Loadable Modules script will fall back to
+the stock Synchronet behavior.
 
 4. Header ANSI/asc file
 =======================

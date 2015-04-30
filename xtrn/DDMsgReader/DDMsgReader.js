@@ -47,6 +47,9 @@
         Note that if the -personalEmail option is specified (to read personal
         email), the only valid search types are keyword_search and
         from_name_search.
+   -suppressSearchTypeText: Disable the search type text that would appear
+                            above searches or scans (such as "New To You
+                            Message Scan", etc.)
    -startMode: Startup mode.  Available options:
                list (or lister): Message list mode
                read (or reader): Message read mode
@@ -96,8 +99,8 @@ if (system.version_num < 31500)
 }
 
 // Constants
-var READER_VERSION = "1.0 Beta 75";
-var READER_DATE = "2015-04-21";
+var READER_VERSION = "1.0 Beta 76";
+var READER_DATE = "2015-04-29";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -409,9 +412,12 @@ if (doDDMR)
 			msgReader.SearchMessages("to_user_search");
 			break;
 		case SEARCH_MSG_NEWSCAN:
-			console.crlf();
-			console.print(msgReader.text.newMsgScanText);
-			console.crlf();
+			if (!gCmdLineArgVals.suppresssearchtypetext)
+			{
+				console.crlf();
+				console.print(msgReader.text.newMsgScanText);
+				console.crlf();
+			}
 			msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW);
 			break;
 		case SEARCH_MSG_NEWSCAN_CUR_SUB:
@@ -424,9 +430,12 @@ if (doDDMR)
 			msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "A");
 			break;
 		case SEARCH_TO_USER_NEW_SCAN:
-			console.crlf();
-			console.print(msgReader.text.newToYouMsgScanText);
-			console.crlf();
+			if (!gCmdLineArgVals.suppresssearchtypetext)
+			{
+				console.crlf();
+				console.print(msgReader.text.newToYouMsgScanText);
+				console.crlf();
+			}
 			msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD);
 			break;
 		case SEARCH_TO_USER_NEW_SCAN_CUR_SUB:
@@ -439,9 +448,12 @@ if (doDDMR)
 			msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "A");
 			break;
 		case SEARCH_ALL_TO_USER_SCAN:
-			console.crlf();
-			console.print(msgReader.text.allToYouMsgScanText);
-			console.crlf();
+			if (!gCmdLineArgVals.suppresssearchtypetext)
+			{
+				console.crlf();
+				console.print(msgReader.text.allToYouMsgScanText);
+				console.crlf();
+			}
 			msgReader.MessageAreaScan(SCAN_CFG_TOYOU, SCAN_TOYOU);
 			break;
 	}
@@ -595,7 +607,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.text.msgScanAbortedText = "\1n\1h\1cM\1n\1cessage scan \1h\1y\1iaborted\1n";
 	this.text.deleteMsgNumPromptText = "\1n\1cNumber of the message to be deleted (or \1hENTER\1n\1c to cancel)\1g\1h: \1c";
 	this.text.editMsgNumPromptText = "\1n\1cNumber of the message to be edited (or \1hENTER\1n\1c to cancel)\1g\1h: \1c";
-	this.text.searchingSubBoardAbovePromptText = "\1n\1cSearching message sub-board: \1b\1h%s";
+	this.text.searchingSubBoardAbovePromptText = "\1n\1cSearching (current sub-board: \1b\1h%s\1n\1c)";
 	this.text.searchingSubBoardText = "\1n\1cSearching \1h%s\1n\1c...";
 	this.text.noMessagesInSubBoardText = "\1n\1h\1bThere are no messages in the area \1w%s\1b.";
 	this.text.noSearchResultsInSubBoardText = "\1n\1h\1bNo messages were found in the area \1w%s\1b with the given search criteria.";
@@ -10688,29 +10700,29 @@ function subBoardCodeIsValid(pSubBoardCode)
 function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 {
 	var centerText = (typeof(pCenter) == "boolean" ? pCenter : false);
-   var textColor = (typeof(pTextColor) == "string" ? pTextColor : "\1n\1w");
-   var lineColor = (typeof(pLineColor) == "string" ? pLineColor : "\1n\1k\1h");
+	var textColor = (typeof(pTextColor) == "string" ? pTextColor : "\1n\1w");
+	var lineColor = (typeof(pLineColor) == "string" ? pLineColor : "\1n\1k\1h");
 
-   // Output the text and a solid line on the next line.
-   if (centerText)
-   {
-      console.center(textColor + pText);
-      var solidLine = "";
-      var textLength = console.strlen(pText);
-      for (var i = 0; i < textLength; ++i)
-         solidLine += "Ä";
-      console.center(lineColor + solidLine);
-   }
-   else
-   {
-      console.print(textColor + pText);
-      console.crlf();
-      console.print(lineColor);
-      var textLength = console.strlen(pText);
-      for (var i = 0; i < textLength; ++i)
-         console.print("Ä");
-      console.crlf();
-   }
+	// Output the text and a solid line on the next line.
+	if (centerText)
+	{
+		console.center(textColor + pText);
+		var solidLine = "";
+		var textLength = console.strlen(pText);
+		for (var i = 0; i < textLength; ++i)
+			solidLine += "Ä";
+		console.center(lineColor + solidLine);
+	}
+	else
+	{
+		console.print(textColor + pText);
+		console.crlf();
+		console.print(lineColor);
+		var textLength = console.strlen(pText);
+		for (var i = 0; i < textLength; ++i)
+			console.print("Ä");
+		console.crlf();
+	}
 }
 
 // Returns whether the Synchronet compile date is at least May 12, 2013.  That
@@ -12746,60 +12758,64 @@ function curMsgSubBoardIsLast(pGrpIdx, pSubIdx)
 //               on the formats of the arguments passed in.
 function parseArgs(pArgArr)
 {
-   var argVals = new Object();
-   // Set default values for parameters that are just true/false values
-   argVals.chooseareafirst = false;
-   argVals.personalemail = false;
-   argVals.personalemailsent = false;
-   argVals.verboselogging = false;
+	var argVals = new Object();
+	// Set default values for parameters that are just true/false values
+	argVals.chooseareafirst = false;
+	argVals.personalemail = false;
+	argVals.personalemailsent = false;
+	argVals.verboselogging = false;
+	argVals.suppresssearchtypetext = false;
 
-   // Sanity checking for pArgArr - Make sure it's an array
-   if ((typeof(pArgArr) != "object") || (typeof(pArgArr.length) != "number"))
-      return argVals;
+	// Sanity checking for pArgArr - Make sure it's an array
+	if ((typeof(pArgArr) != "object") || (typeof(pArgArr.length) != "number"))
+		return argVals;
 
-   // Go through pArgArr looking for strings in the format -arg=val and parse them
-   // into objects in the argVals array.
-   var equalsIdx = 0;
-   var argName = "";
-   var argVal = "";
-   var argValLower = ""; // For case-insensitive "true"/"false" matching
-   var argValIsTrue = false;
-   for (var i = 0; i < pArgArr.length; ++i)
-   {
-      // We're looking for strings that start with "-", except strings that are
-      // only "-".
-      if ((typeof(pArgArr[i]) != "string") || (pArgArr[i].length == 0) ||
-          (pArgArr[i].charAt(0) != "-") || (pArgArr[i] == "-"))
-      {
-         continue;
-      }
+	// Go through pArgArr looking for strings in the format -arg=val and parse them
+	// into objects in the argVals array.
+	var equalsIdx = 0;
+	var argName = "";
+	var argVal = "";
+	var argValLower = ""; // For case-insensitive "true"/"false" matching
+	var argValIsTrue = false;
+	for (var i = 0; i < pArgArr.length; ++i)
+	{
+		// We're looking for strings that start with "-", except strings that are
+		// only "-".
+		if ((typeof(pArgArr[i]) != "string") || (pArgArr[i].length == 0) ||
+		    (pArgArr[i].charAt(0) != "-") || (pArgArr[i] == "-"))
+		{
+			continue;
+		}
 
-      // Look for an = and if found, split the string on the =
-      equalsIdx = pArgArr[i].indexOf("=");
-      // If a = is found, then split on it and add the argument name & value
-      // to the array.  Otherwise (if the = is not found), then treat the
-      // argument as a boolean and set it to true (to enable an option).
-      if (equalsIdx > -1)
-      {
-         argName = pArgArr[i].substring(1, equalsIdx).toLowerCase();
-         argVal = pArgArr[i].substr(equalsIdx+1);
-         argValLower = argVal.toLowerCase();
-         // If the argument value is the word "true" or "false", then add it as a
-         // boolean.  Otherwise, add it as a string.
-         argValIsTrue = (argValLower == "true");
-         if (argValIsTrue || (argValLower == "false"))
-            argVals[argName] = argValIsTrue;
-         else
-            argVals[argName] = argVal;
-      }
-      else // An equals sign (=) was not found.  Add as a boolean set to true to enable the option.
-      {
+		// Look for an = and if found, split the string on the =
+		equalsIdx = pArgArr[i].indexOf("=");
+		// If a = is found, then split on it and add the argument name & value
+		// to the array.  Otherwise (if the = is not found), then treat the
+		// argument as a boolean and set it to true (to enable an option).
+		if (equalsIdx > -1)
+		{
+			argName = pArgArr[i].substring(1, equalsIdx).toLowerCase();
+			argVal = pArgArr[i].substr(equalsIdx+1);
+			argValLower = argVal.toLowerCase();
+			// If the argument value is the word "true" or "false", then add it as a
+			// boolean.  Otherwise, add it as a string.
+			argValIsTrue = (argValLower == "true");
+			if (argValIsTrue || (argValLower == "false"))
+				argVals[argName] = argValIsTrue;
+			else
+				argVals[argName] = argVal;
+		}
+		else // An equals sign (=) was not found.  Add as a boolean set to true to enable the option.
+		{
 			argName = pArgArr[i].substr(1).toLowerCase();
 			if ((argName == "chooseareafirst") || (argName == "personalemail") ||
-			    (argName == "personalemailsent") || (argName == "verboselogging"))
+			    (argName == "personalemailsent") || (argName == "verboselogging") ||
+			    (argName == "suppresssearchtypetext"))
+			{
 				argVals[argName] = true;
-      }
-   }
+			}
+		}
+	}
 
 	// Sanity checking
 	// If the arguments include personalEmail and personalEmail is enabled,
