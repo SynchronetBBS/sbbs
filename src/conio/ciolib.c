@@ -170,8 +170,10 @@ int try_sdl_init(int mode)
 int try_x_init(int mode)
 {
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
-	if (sdl_video_initialized)
+	if (sdl_video_initialized) {
 		sdl.QuitSubSystem(SDL_INIT_VIDEO);
+		sdl_video_initialized = FALSE;
+	}
 #endif
 
 	if(!x_init()) {
@@ -212,8 +214,10 @@ int try_x_init(int mode)
 int try_curses_init(int mode)
 {
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
-	if (sdl_video_initialized)
+	if (sdl_video_initialized) {
 		sdl.QuitSubSystem(SDL_INIT_VIDEO);
+		sdl_video_initialized = FALSE;
+	}
 #endif
 
 	if(curs_initciolib(mode)) {
@@ -245,8 +249,10 @@ int try_curses_init(int mode)
 int try_ansi_init(int mode)
 {
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
-	if (sdl_video_initialized)
+	if (sdl_video_initialized) {
 		sdl.QuitSubSystem(SDL_INIT_VIDEO);
+		sdl_video_initialized = FALSE;
+	}
 #endif
 
 	if(ansi_initciolib(mode)) {
@@ -274,8 +280,10 @@ int try_ansi_init(int mode)
 int try_conio_init(int mode)
 {
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
-	if (sdl_video_initialized)
+	if (sdl_video_initialized) {
 		sdl.QuitSubSystem(SDL_INIT_VIDEO);
+		sdl_video_initialized = FALSE;
+	}
 #endif
 
 	/* This should test for something or other */
