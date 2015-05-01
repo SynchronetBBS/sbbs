@@ -781,6 +781,10 @@ var any_state_command_handlers = {
 				line=client.socket.recvline(10240, 5);
 				if(line==null) {
 					elapsed += 5;
+					if (js.termianted) {
+						untagged("BYE server terminated.");
+						exit(0);
+					}
 					if(elapsed > 1800) {
 						untagged("BYE And I though *I* liked to idle!");
 						exit(0);
