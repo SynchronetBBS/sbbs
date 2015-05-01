@@ -25,8 +25,17 @@ if_equal
 else
 	print "nbh Yes 4w[No]"
 	end_if
-getkey
+int aborted
+copy aborted _sys_status
+and aborted SS_ABORT
+compare aborted SS_ABORT
+if_not_equal
+    getkey
+    end_if
 print "\b\b\b\b\b\b\b\b\b\1n\1h\1>"
+if_equal
+    return
+    end_if
 compare_key ^M
 if_true
 	ungetstr
