@@ -1612,6 +1612,8 @@ int main(int argc, char **argv)
 			last_bbs=strdup(bbs->name);
 		bbs=NULL;
 	}
+	if (last_bbs)
+		free(last_bbs);
 	// Save changed settings
 	if(getscaling() > 0 && getscaling() != settings.scaling_factor) {
 		char	inipath[MAX_PATH+1];

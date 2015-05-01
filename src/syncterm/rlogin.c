@@ -174,10 +174,14 @@ int rlogin_connect(struct bbslist *bbs)
 
 int rlogin_close(void)
 {
+	char garbage[1024];
+
 	conn_api.terminate=1;
 	closesocket(sock);
-	while(conn_api.input_thread_running || conn_api.output_thread_running)
+	while(conn_api.input_thread_running || conn_api.output_thread_running) {
+		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
+	}
 	destroy_conn_buf(&conn_inbuf);
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);

@@ -313,6 +313,7 @@ int serial_close(void)
 int modem_close(void)
 {
 	time_t start;
+	char garbage[1024];
 
 	conn_api.terminate=1;
 
@@ -333,8 +334,10 @@ int modem_close(void)
 	}
 
 CLOSEIT:
-	while(conn_api.input_thread_running || conn_api.output_thread_running)
+	while(conn_api.input_thread_running || conn_api.output_thread_running) {
+		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
+	}
 	comClose(com);
 
 	destroy_conn_buf(&conn_inbuf);
