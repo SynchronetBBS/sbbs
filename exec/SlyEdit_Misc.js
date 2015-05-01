@@ -3341,55 +3341,58 @@ function numObjProperties(pObject)
 // Return value: String - Blank on success, or message on failure.
 function postMsgToSubBoard(pSubBoardCode, pTo, pSubj, pMessage, pFromUserNum)
 {
-  // Return if the parameters are invalid.
-  if (typeof(pSubBoardCode) != "string")
-    return ("Sub-board code is not a string");
-  if (typeof(pTo) != "string")
-    return ("To name is not a string");
-  if (pTo.length == 0)
-    return ("The 'to' user name is blank");
-  if (typeof(pSubj) != "string")
-    return ("Subject is not a string");
-  if (pSubj.length == 0)
-    return ("The subject is blank");
-  if (typeof(pMessage) != "string")
-    return ("Message is not a string");
-  if (pMessage.length == 0)
-    return ("Not sending an empty message");
-  if (typeof(pFromUserNum) != "number")
-    return ("From user number is not a number");
-  if ((pFromUserNum <= 0) || (pFromUserNum > system.lastuser))
-    return ("Invalid user number");
+	// Return if the parameters are invalid.
+	if (typeof(pSubBoardCode) != "string")
+		return ("Sub-board code is not a string");
+	if (typeof(pTo) != "string")
+		return ("To name is not a string");
+	if (pTo.length == 0)
+		return ("The 'to' user name is blank");
+	if (typeof(pSubj) != "string")
+		return ("Subject is not a string");
+	if (pSubj.length == 0)
+		return ("The subject is blank");
+	if (typeof(pMessage) != "string")
+		return ("Message is not a string");
+	if (pMessage.length == 0)
+		return ("Not sending an empty message");
+	if (typeof(pFromUserNum) != "number")
+		return ("From user number is not a number");
+	if ((pFromUserNum <= 0) || (pFromUserNum > system.lastuser))
+		return ("Invalid user number");
 
-  // LOad the user record specified by pFromUserNum.  If it's a deleted user,
-  // then return an error.
-  var fromUser = new User(pFromUserNum);
-  if (fromUser.settings & USER_DELETED)
-    return ("The 'from' user is marked as deleted");
+	// LOad the user record specified by pFromUserNum.  If it's a deleted user,
+	// then return an error.
+	var fromUser = new User(pFromUserNum);
+	if (fromUser.settings & USER_DELETED)
+		return ("The 'from' user is marked as deleted");
 
-  var msgbase = new MsgBase(pSubBoardCode);
-  if ((msgbase.open != undefined) && !msgbase.open())
-  {
-    msgbase.close();
-    return ("Error opening the message area: " + msgbase.last_error);
-  }
+	// Open the sub-board so that the message can be posted there.
+	var msgbase = new MsgBase(pSubBoardCode);
+	if (!msgbase.open())
+		return ("Error opening the message area: " + msgbase.last_error);
 
-  // Create the message header, and send the message.
-  var header = new Object();
-  header.to = pTo;
-  header.from_net_type = NET_NONE;
-  header.to_net_type = NET_NONE;
-  header.from = fromUser.alias;
-  header.from_ext = fromUser.number;
-  header.from_net_addr = fromUser.netmail;
-  header.subject = pSubj;
-  var saveRetval = msgbase.save_msg(header, pMessage);
-  msgbase.close();
+	// Create the message header, and send the message.
+	var header = new Object();
+	header.to = pTo;
+	header.from_net_type = NET_NONE;
+	header.to_net_type = NET_NONE;
+	// For the 'From' name, use the user's real name if the sub-board is set
+	// up to post using real names; otherwise, use the user's alias.
+	if ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME)
+		header.from = fromUser.name;
+	else
+		header.from = fromUser.alias;
+	header.from_ext = fromUser.number;
+	header.from_net_addr = fromUser.netmail;
+	header.subject = pSubj;
+	var saveRetval = msgbase.save_msg(header, pMessage);
+	msgbase.close();
 
-  if (!saveRetval)
-    return ("Error saving the message: " + msgbase.last_error);
+	if (!saveRetval)
+		return ("Error saving the message: " + msgbase.last_error);
 
-  return "";
+	return "";
 }
 
 // Reads the current user's message signature file (if it exists)

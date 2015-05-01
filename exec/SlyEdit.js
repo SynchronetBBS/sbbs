@@ -36,8 +36,15 @@
  *                              Bug fixes in wrapTextLines() in SlyEdit_Misc:
  *                              No more extra blank lines added to quote lines,
  *                              and no more leading spaces added to quote lines.
- * 2015-11-16 Eric Oulashin     Version 1.43
+ * 2015-01-16 Eric Oulashin     Version 1.43
  *                              Releasing this version after several days of testing.
+ * 2015-04-30 Eric Oulashin     Version 1.44
+ *                              Bug fix: When cross-posting a message in other
+ *                              message areas, the message area settings are now
+ *                              checked to see whether the user's real name
+ *                              should be used for the 'From' name.  Previously,
+ *                              SlyEdit was always using the user's alias as
+ *                              the 'From' name when cross-posting.
  */
 
 /* Command-line arguments:
@@ -115,8 +122,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.43";
-const EDITOR_VER_DATE = "2015-01-16";
+const EDITOR_VERSION = "1.44";
+const EDITOR_VER_DATE = "2015-04-30";
 
 
 // Program variables
@@ -512,7 +519,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 
 // Clear the screen and display the end-of-program information (if the setting
 // is enabled).
-console.clear("n");
+console.clear("\1n");
 if (gConfigSettings.displayEndInfoScreen)
 {
    displayProgramExitInfo(false);
@@ -572,9 +579,9 @@ if ((exitCode == 0) && (gEditLines.length > 0))
         msgContents += msgSigInfo.sigContents + "\r\n";
     }
 
-    console.print("n");
+    console.print("\1n");
     console.crlf();
-    console.print("n" + gConfigSettings.genColors.msgWillBePostedHdr + "Your message will be posted into the following area(s):");
+    console.print("\1n" + gConfigSettings.genColors.msgWillBePostedHdr + "Your message will be posted into the following area(s):");
     console.crlf();
     // If the user is posting in the originally-chosen sub-board and other sub-boards,
     // then make a log in the BBS log that the user is posting a message (for
