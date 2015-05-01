@@ -518,18 +518,18 @@ Frame.prototype.load = function(filename,width,height) {
 		sauceless_size <<= 8;
 		sauceless_size |= ascii(contents.substr(-36,1));
 		sauceless_size <<= 8;
-		sauceless_size |= ascii(contents.substr(-35,1));
+		sauceless_size |= ascii(contents.substr(-37,1));
 		sauceless_size <<= 8;
-		sauceless_size |= ascii(contents.substr(-34,1));
+		sauceless_size |= ascii(contents.substr(-38,1));
 
-		var data_type = ascii(contents.substr(-33,1));
-		var file_type = ascii(contents.substr(-32,1));
-		var tinfo1 = ascii(contents.substr(-30,1));
+		var data_type = ascii(contents.substr(-34,1));
+		var file_type = ascii(contents.substr(-33,1));
+		var tinfo1 = ascii(contents.substr(-31,1));
 		tinfo1 <<= 8;
-		tinfo1 |= ascii(contents.substr(-31,1));
-		var tinfo2 = ascii(contents.substr(-28,1));
+		tinfo1 |= ascii(contents.substr(-32,1));
+		var tinfo2 = ascii(contents.substr(-29,1));
 		tinfo2 <<= 8;
-		tinfo2 |= ascii(contents.substr(-29,1));
+		tinfo2 |= ascii(contents.substr(-30,1));
 		switch(data_type) {
 			case 1:
 				switch(file_type) {
