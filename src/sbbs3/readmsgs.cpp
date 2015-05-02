@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -49,17 +49,13 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
 	smbmsg_t msg;
 	long listed=0;
 
-	msg.total_hfields=0;
 	for(;i<posts && !msgabort();i++) {
-		if(msg.total_hfields)
-			smb_freemsgmem(&msg);
-		msg.total_hfields=0;
+		if(mode&SCAN_NEW && post[i].idx.number<=subscan[subnum].ptr)
+			continue;
 		msg.idx.offset=post[i].idx.offset;
 		if(!loadmsg(&msg,post[i].idx.number))
 			break;
 		smb_unlockmsghdr(&smb,&msg);
-		if(mode&SCAN_NEW && msg.hdr.number<=subscan[subnum].ptr)
-			continue;
 		if(listed==0)
 			bputs(text[MailOnSystemLstHdr]);
 		if(msg.hdr.attr&MSG_DELETE)
