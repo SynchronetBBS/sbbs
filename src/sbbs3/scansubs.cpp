@@ -46,6 +46,7 @@ void sbbs_t::scansubs(long mode)
 	char 	tmp[512];
 	uint	i=0,found=0;
 	ulong	subs_scanned=0;
+	bool	subj_only=false;
 
 	if(cfg.scansubs_mod[0] && !scansubs_inside) {
 		char cmdline[256];
@@ -63,12 +64,16 @@ void sbbs_t::scansubs(long mode)
 		return;
 
 	if(ch!='A' && mode&(SCAN_FIND|SCAN_TOYOU)) {
-		if(text[DisplaySubjectsOnlyQ][0] && yesno(text[DisplaySubjectsOnlyQ])) i=1;
+		if(text[DisplaySubjectsOnlyQ][0])
+			subj_only = yesno(text[DisplaySubjectsOnlyQ]);
+		if((mode&SCAN_TOYOU) && !(mode&SCAN_UNREAD)
+			&& text[DisplayUnreadMessagesOnlyQ][0] && yesno(text[DisplayUnreadMessagesOnlyQ]))
+			mode|=SCAN_UNREAD;
 		if(mode&SCAN_FIND) {
 			bputs(text[SearchStringPrompt]);
 			if(!getstr(str,40,K_LINE|K_UPPER))
 				return;
-			if(i) { 			/* if titles only */
+			if(subj_only) {
 				if(ch=='S') {
 					found=listsub(usrsub[curgrp][cursub[curgrp]],SCAN_FIND,0,str);
 					subs_scanned++;
@@ -85,12 +90,12 @@ void sbbs_t::scansubs(long mode)
 				return; 
 			} 
 		}
-		else if(mode&SCAN_TOYOU && i) {
+		else if(mode&SCAN_TOYOU && subj_only) {
 			if(ch=='S')
-				found=listsub(usrsub[curgrp][cursub[curgrp]],SCAN_TOYOU,0,NULL);
+				found=listsub(usrsub[curgrp][cursub[curgrp]],mode,0,NULL);
 			else if(ch=='G')
 				for(i=0;i<usrsubs[curgrp] && !msgabort();i++)
-					found=listsub(usrsub[curgrp][i],SCAN_TOYOU,0,NULL);
+					found=listsub(usrsub[curgrp][i],mode,0,NULL);
 			if(!found)
 				CRLF;
 			return; 
@@ -141,6 +146,7 @@ void sbbs_t::scanallsubs(long mode)
 	char 	tmp[512];
 	uint	i,j,found=0;
 	ulong	subs_scanned=0;
+	bool	subj_only=false;
 
 	if(cfg.scansubs_mod[0] && !scansubs_inside) {
 		char cmdline[256];
@@ -152,16 +158,17 @@ void sbbs_t::scanallsubs(long mode)
 		return;
 	}
 
-	if(/* action==NODE_MAIN && */ mode&(SCAN_FIND|SCAN_TOYOU)) {
+	if(mode&(SCAN_FIND|SCAN_TOYOU)) {
 		if(text[DisplaySubjectsOnlyQ][0])
-			i=yesno(text[DisplaySubjectsOnlyQ]);
-		else
-			i=0;
+			subj_only=yesno(text[DisplaySubjectsOnlyQ]);
+		if((mode&SCAN_TOYOU) && !(mode&SCAN_UNREAD)
+			&& text[DisplayUnreadMessagesOnlyQ][0] && yesno(text[DisplayUnreadMessagesOnlyQ]))
+			mode|=SCAN_UNREAD;
 		if(mode&SCAN_FIND) {
 			bputs(text[SearchStringPrompt]);
 			if(!getstr(str,40,K_LINE|K_UPPER))
 				return;
-			if(i) { 			/* if titles only */
+			if(subj_only) { 			
 				for(i=0;i<usrgrps;i++) {
 					for(j=0;j<usrsubs[i] && !msgabort();j++) {
 						found=listsub(usrsub[i][j],SCAN_FIND,0,str);
@@ -178,10 +185,10 @@ void sbbs_t::scanallsubs(long mode)
 				return; 
 			}
 		}
-		else if(mode&SCAN_TOYOU && i) {
+		else if((mode&SCAN_TOYOU) && subj_only) {
 			for(i=0;i<usrgrps;i++) {
 				for(j=0;j<usrsubs[i] && !msgabort();j++) 
-					found=listsub(usrsub[i][j],SCAN_TOYOU,0,NULL);
+					found=listsub(usrsub[i][j],mode,0,NULL);
 				if(j<usrsubs[i])
 					break; 
 			}

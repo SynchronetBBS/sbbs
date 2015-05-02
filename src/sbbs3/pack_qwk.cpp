@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -485,12 +485,12 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				for(u=0;u<posts && !msgabort();u++) {
 					bprintf("\b\b\b\b\b%-5lu",u+1);
 
-					subscan[usrsub[i][j]].ptr=post[u].number;	/* set ptr */
-					subscan[usrsub[i][j]].last=post[u].number; /* set last read */
+					subscan[usrsub[i][j]].ptr=post[u].idx.number;	/* set ptr */
+					subscan[usrsub[i][j]].last=post[u].idx.number; /* set last read */
 
 					memset(&msg,0,sizeof(msg));
-					msg.idx=post[u];
-					if(!loadmsg(&msg,post[u].number))
+					msg.idx=post[u].idx;
+					if(!loadmsg(&msg,post[u].idx.number))
 						continue;
 
 					if(useron.rest&FLAG('Q')) {
