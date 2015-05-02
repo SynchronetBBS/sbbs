@@ -465,6 +465,8 @@ int main(int argc, char **argv)
 		printf("nopage      = page disable\n");
 		printf("noalerts    = activity alerts disable\n");
 		printf("status=#    = set status value\n");
+		printf("              %d = Waiting for connection\n", NODE_WFC);
+		printf("              %d = Offline\n", NODE_OFFLINE);
 		printf("useron=#    = set useron number\n");
 		printf("action=#    = set action value\n");
 		printf("errors=#    = set error counter\n");
