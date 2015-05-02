@@ -30,14 +30,12 @@ var subBoardNum = Number(argv[0]);
 var scanMode = Number(argv[1]);
 var searchText = argv[2];
 
-
 /*
 // Temporary - For debugging
-console.print("Sub-board #: " + subBoardNum + " (" + typeof(subBoardNum) + ")\r\n");
-console.print("Scan mode: " + scanMode  + " (" + typeof(scanMode) + ")\r\n");
-console.print("Search text:" + searchText + ": (" + typeof(searchText) + ")\r\n");
-
 console.print("DDScanPosts\r\n");
+console.print("Sub-board #: " + subBoardNum + " (" + typeof(subBoardNum) + ")\r\n");
+console.print("Search text:" + searchText + ": (" + typeof(searchText) + ")\r\n");
+console.print("Scan mode: " + scanMode  + " (" + typeof(scanMode) + ")\r\n");
 if (scanMode == SCAN_READ)
 	console.print("SCAN_READ\r\n");
 if ((scanMode & SCAN_CONST) == SCAN_CONST)
@@ -56,9 +54,10 @@ console.pause();
 // End Temporary
 */
 
+
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
-var msgReaderPath = "../xtrn/DDMsgReader";
+var msgReaderPath = "/BBS/sbbs/xtrn/DigDist/MsgReader";
 
 
 // The start of the command string to use with bbs.exec()

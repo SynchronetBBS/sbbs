@@ -30,7 +30,7 @@ var scanMode = Number(argv[1]);
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
-var msgReaderPath = "../xtrn/DDMsgReader";
+var msgReaderPath = "/BBS/sbbs/xtrn/DigDist/MsgReader";
 
 /*
 // Temporary - For debugging
@@ -54,13 +54,6 @@ if ((scanMode & SCAN_UNREAD) == SCAN_UNREAD)
 console.pause();
 // End Temporary
 */
-
-
-// My functionality:
-// TODO: Update this and make my reader integrate into this better.  I'd like
-// to add a command-line option to my reader to suppress the "Scan for new
-// messages to you", etc. text before the prompt.
-
 
 // The start of the command string to use with bbs.exec()
 var rdrCmdStrStart = "?" + msgReaderPath + "/DDMsgReader.js ";
