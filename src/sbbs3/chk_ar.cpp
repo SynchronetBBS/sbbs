@@ -742,7 +742,7 @@ uint sbbs_t::getusrsub(uint subnum)
 	ugrp = getusrgrp(subnum);
 	if(ugrp<=0)
 		return(0);
-	
+	ugrp--;
 	for(usub=0;usub<usrsubs[ugrp];usub++)
 		if(usrsub[ugrp][usub]==subnum)
 			break;
