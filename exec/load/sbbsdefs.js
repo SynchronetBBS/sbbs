@@ -565,14 +565,17 @@ var TELNET_MODE_OFF	=(1<<3);	/* Not a telnet connection					*/
 					    		/********************************************/
 
 					    		/********************************************/
-								/* Bits in mode of bbs.scan_posts()			*/
+								/* Bits in mode of bbs.scan_subs()			*/
+                                /*                 bbs.scan_msgs()			*/
+                                /*             and bbs.list_msgs()			*/
 					    		/********************************************/
-var SCAN_READ		=0;			/* Just normal read prompt					*/
+var SCAN_READ		=0;			/* Just normal read prompt (all messages)	*/
 var	SCAN_CONST		=(1<<0);	/* Continuous message scanning				*/
-var	SCAN_NEW		=(1<<1);	/* New scanning								*/
-var	SCAN_BACK		=(1<<2);	/* Scan the last message if no new			*/
-var	SCAN_TOYOU		=(1<<3);	/* Scan for messages to you 				*/
-var	SCAN_FIND		=(1<<4);	/* Scan for text in messages				*/
+var	SCAN_NEW		=(1<<1);	/* Display messages newer than pointer 	    */
+var	SCAN_BACK		=(1<<2);	/* Display most recent message if none new  */
+var	SCAN_TOYOU		=(1<<3);	/* Display messages to you only				*/
+var	SCAN_FIND		=(1<<4);	/* Find text in messages				    */
+var	SCAN_UNREAD		=(1<<5);	/* Display un-read messages to you only		*/
 					    		/********************************************/
 
 								/********************************************/
