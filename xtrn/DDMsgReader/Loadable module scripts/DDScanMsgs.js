@@ -1,4 +1,4 @@
-// This script is to be executed for the 'Scan Posts' loadable module, configured
+// This script is to be executed for the 'Scan Msgs' loadable module, configured
 // in SCFG in System > Loadable Modules.
 //
 // This module is used for:
@@ -66,7 +66,7 @@ var rdrCmdStrStart = "?" + msgReaderPath + "/DDMsgReader.js ";
 // No extra mode bits set, only read: Use Digital Distortion Message Reader
 // in read mode
 if (scanMode == SCAN_READ)
-	bbs.exec(rdrCmdStrStart + "-startMode=read");
+	bbs.exec(rdrCmdStrStart + "-subBoard=" + subBoardNum + " -startMode=read");
 // Some modes that the Digital Distortion Message Reader doesn't handle yet: Use
 // Synchronet's stock behavior.
 else if (((scanMode & SCAN_CONST) == SCAN_CONST) || ((scanMode & SCAN_BACK) == SCAN_BACK))
