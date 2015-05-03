@@ -99,7 +99,7 @@ if (system.version_num < 31500)
 }
 
 // Constants
-var READER_VERSION = "1.0 Beta 78";
+var READER_VERSION = "1.0 Beta 79";
 var READER_DATE = "2015-05-02";
 
 // Keyboard key codes for displaying on the screen
@@ -7808,12 +7808,20 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt)
 		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current message");
 	else if (this.CanDelete() || this.CanDeleteLastMsg())
 		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current message (if it's yours)");
+	// If not reading personal email or doing a search/scan, then include the
+	// text for the message threading keys.
 	if (!this.readingPersonalEmail && !this.SearchingAndResultObjsDefinedForCurSub())
 	{
+		// Thread ID keys: For Synchronet 3.16 and above, include the text "thread ID"
+		// in the help line, since Synchronet 3.16 has the thread_id field in the message
+		// headers.
+		var threadIDLine = "\1h\1c( \1n\1cor \1h)           \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
+		if (system.version_num >= 31600)
+			threadIDLine += " (thread ID)";
+		keyHelpLines.push(threadIDLine);
 		keyHelpLines.push("\1h\1c< \1n\1cor \1h>           \1g: \1n\1cGo to the previous\1g/\1cnext message by title (subject)");
 		keyHelpLines.push("\1h\1c{ \1n\1cor \1h}           \1g: \1n\1cGo to the previous\1g/\1cnext message by author");
 		keyHelpLines.push("\1h\1c[ \1n\1cor \1h]           \1g: \1n\1cGo to the previous\1g/\1cnext message by 'To user'");
-		keyHelpLines.push("\1h\1c( \1n\1cor \1h)           \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread (thread ID)");
 	}
 	keyHelpLines.push("\1h\1cF \1n\1cor \1hL           \1g: \1n\1cGo to the first\1g/\1clast message in the sub-board");
 	if (displayChgAreaOpt)
@@ -10320,6 +10328,45 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 	{
 		case THREAD_BY_ID:
 		default:
+			// The thread_id field was introduced in Synchronet 3.16.  So, if
+			// the Synchronet version is 3.16 or higher and the message header
+			// has a thread_id field, then look for the next message with the
+			// same thread ID.  If the Synchronet version is below 3.16 or there
+			// is no thread ID, then fall back to using the header's thread_next,
+			// if it exists.
+			if ((system.version_num >= 31600) && (typeof(pMsgHdr.thread_id) == "number"))
+			{
+				// Look for the next message with the same thread ID.
+				// Write "Searching.."  in case searching takes a while.
+				console.print("\1n");
+				if (pPositionCursorForStatus)
+				{
+					console.gotoxy(1, console.screen_rows);
+					console.cleartoeol();
+					console.gotoxy(this.msgAreaLeft, console.screen_rows);
+				}
+				console.print("\1h\1ySearching\1i...\1n");
+				// Look for the next message in the thread
+				var nextMsgOffset = -1;
+				var numOfMessages = this.NumMessages();
+				if (pMsgHdr.offset < numOfMessages - 1)
+				{
+					var nextMsgHdr;
+					for (var messageIdx = pMsgHdr.offset+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
+					{
+						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
+						if (((nextMsgHdr.attr & MSG_DELETE) == 0) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
+							nextMsgOffset = nextMsgHdr.offset;
+					}
+				}
+				if (nextMsgOffset > -1)
+					newMsgOffset = nextMsgOffset;
+			}
+			// Fall back to thread_next if the Synchronet version is below 3.16 or there is
+			// no thread_id field in the header
+			else if ((typeof(pMsgHdr.thread_next) == "number") && (pMsgHdr.thread_next > 0))
+				newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_next);
+			/*
 			// If thread_next is valid for the message header, then use it.
 			if ((typeof(pMsgHdr.thread_next) == "number") && (pMsgHdr.thread_next > 0))
 				newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_next);
@@ -10360,6 +10407,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 						newMsgOffset = nextMsgOffset;
 				}
 			}
+			*/
 			break;
 		case THREAD_BY_TITLE:
 		case THREAD_BY_AUTHOR:
@@ -10467,6 +10515,45 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 	{
 		case THREAD_BY_ID:
 		default:
+			// The thread_id field was introduced in Synchronet 3.16.  So, if
+			// the Synchronet version is 3.16 or higher and the message header
+			// has a thread_id field, then look for the previous message with the
+			// same thread ID.  If the Synchronet version is below 3.16 or there
+			// is no thread ID, then fall back to using the header's thread_next,
+			// if it exists.
+			if ((system.version_num >= 31600) && (typeof(pMsgHdr.thread_id) == "number"))
+			{
+				// Look for the previous message with the same thread ID.
+				// Write "Searching.." in case searching takes a while.
+				console.print("\1n");
+				if (pPositionCursorForStatus)
+				{
+					console.gotoxy(1, console.screen_rows);
+					console.cleartoeol();
+					console.gotoxy(this.msgAreaLeft, console.screen_rows);
+				}
+				console.print("\1h\1ySearching\1i...\1n");
+				// Look for the previous message in the thread
+				var nextMsgOffset = -1;
+				if (pMsgHdr.offset > 0)
+				{
+					var prevMsgHdr;
+					for (var messageIdx = pMsgHdr.offset-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
+					{
+						prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
+						if (((prevMsgHdr.attr & MSG_DELETE) == 0) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
+							nextMsgOffset = prevMsgHdr.offset;
+					}
+				}
+				if (nextMsgOffset > -1)
+					newMsgOffset = nextMsgOffset;
+			}
+			// Fall back to thread_next if the Synchronet version is below 3.16 or there is
+			// no thread_id field in the header
+			else if ((typeof(pMsgHdr.thread_back) == "number") && (pMsgHdr.thread_back > 0))
+				newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_back);
+
+			/*
 			// If thread_back is valid for the message header, then use that.
 			if ((typeof(pMsgHdr.thread_back) == "number") && (pMsgHdr.thread_back > 0))
 				newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_back);
@@ -10511,6 +10598,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 						newMsgOffset = nextMsgOffset;
 				}
 			}
+			*/
 			break;
 		case THREAD_BY_TITLE:
 		case THREAD_BY_AUTHOR:
