@@ -932,3 +932,5 @@
 	"\r\nCtrl-U  List Users Online"\
 	"\r\nCtrl-P  Send Private Message To or Chat With Another Node"\
 	"\r\nCtrl-T  Time Information\r\n\r\n"
+"Display Unread Messages Only"				766 DisplayUnreadMessagesOnlyQ
+"No messages found."					767 NoMessagesFound
