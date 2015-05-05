@@ -13,7 +13,7 @@ load("sbbsdefs.js");
 console.print("\1n");
 
 // Synchronet will pass at least 2 command-line arguments and sometimes 3:
-// 1. The sub-board number (numeric)
+// 1. The sub-board internal code
 // 2. The scan mode (numeric)
 // 3. Optional: Search text (if any)
 if (argc < 2)
@@ -26,14 +26,14 @@ if (argc < 2)
 	exit(1);
 }
 
-var subBoardNum = Number(argv[0]);
+var subBoardCode = argv[0];
 var scanMode = Number(argv[1]);
 var searchText = argv[2];
 
 /*
 // Temporary - For debugging
 console.print("DDScanPosts\r\n");
-console.print("Sub-board #: " + subBoardNum + " (" + typeof(subBoardNum) + ")\r\n");
+console.print("Sub-board code: " + subBoardCode + " (" + typeof(subBoardCode) + ")\r\n");
 console.print("Search text:" + searchText + ": (" + typeof(searchText) + ")\r\n");
 console.print("Scan mode: " + scanMode  + " (" + typeof(scanMode) + ")\r\n");
 if (scanMode == SCAN_READ)
@@ -57,7 +57,7 @@ console.pause();
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
-var msgReaderPath = "../xtrn/DDMsgReader";
+var msgReaderPath = "/BBS/sbbs/xtrn/DigDist/MsgReader";
 
 
 // The start of the command string to use with bbs.exec()
@@ -66,18 +66,10 @@ var rdrCmdStrStart = "?" + msgReaderPath + "/DDMsgReader.js ";
 // No extra mode bits set, only read: Use Digital Distortion Message Reader
 // in read mode
 if (scanMode == SCAN_READ)
-{
-	// The sub-board can be specified with the -subBoard option:
-	//bbs.exec(rdrCmdStrStart + "-subBoard=" + subBoardNum + " -startMode=read");
-	// Specifying the sub-board by number will cause the reader to look up the
-	// sub-board internal code by number.  That's a linear lookup, which can take
-	// some time if the BBS has many sub-boards.  RWthout the -subBoard option, the
-	// reader will start in the user's current sub-board:
-	bbs.exec(rdrCmdStrStart + "-startMode=read");
-}
+	bbs.exec(rdrCmdStrStart + "-subBoard=" + subBoardCode + " -startMode=read");
 // Some modes that the Digital Distortion Message Reader doesn't handle yet: Use
 // Synchronet's stock behavior.
 else if (((scanMode & SCAN_CONST) == SCAN_CONST) || ((scanMode & SCAN_BACK) == SCAN_BACK))
 	bbs.scan_subs(scanMode, scanAllSubs);
 else // Stock Synchronet behavior
-	bbs.scan_msgs(subBoardNum, scanMode, searchText);
+	bbs.scan_msgs(subBoardCode, scanMode, searchText);
