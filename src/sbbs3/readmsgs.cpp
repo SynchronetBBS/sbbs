@@ -377,17 +377,17 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 	post_t	*post;
 	smbmsg_t	msg;
 
+	cursubnum=subnum;	/* for ARS */
 	if(cfg.scanposts_mod[0] && !scanposts_inside) {
 		char cmdline[256];
 
 		scanposts_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s %u %u %s", cfg.scanposts_mod, subnum, mode, find);
+		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.scanposts_mod, cfg.sub[subnum]->code, mode, find);
 		i=exec_bin(cmdline, &main_csi);
 		scanposts_inside = false;
 		return i;
 	}
 	find_buf[0]=0;
-	cursubnum=subnum;	/* for ARS */
 	if(!chk_ar(cfg.sub[subnum]->read_ar,&useron,&client)) {
 		bprintf(text[CantReadSub]
 				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
