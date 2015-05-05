@@ -230,8 +230,8 @@ var privtable = {
 
 		/* pack army list */
 		for(k = 0; k < armies.length; k++) {
-			while(armies[k].nation == -1)
-				armies.splice(k, 1);
+			while(armies[k].nation !== undefined && armies[k].nation == -1)
+					armies.splice(k, 1);
 		}
 
 		/* create new armies */
