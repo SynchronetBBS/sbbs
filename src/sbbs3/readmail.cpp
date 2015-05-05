@@ -587,8 +587,10 @@ void sbbs_t::readmail(uint usernumber, int which)
 						break;
 				if(u<smb.msgs)
 					smb.curmsg=u;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				break;
 			case '<':   /* Search Title backward */
 				for(i=smb.curmsg-1;i>-1;i--)
@@ -596,8 +598,10 @@ void sbbs_t::readmail(uint usernumber, int which)
 						break;
 				if(i>-1)
 					smb.curmsg=i;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				break;
 			case '}':   /* Search Author forward */
 				strcpy(str,msg.from);
@@ -606,8 +610,10 @@ void sbbs_t::readmail(uint usernumber, int which)
 						break;
 				if(u<smb.msgs)
 					smb.curmsg=u;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				break;
 			case 'N':   /* Got to next un-read message */
 				for(u=smb.curmsg+1;u<smb.msgs;u++)
@@ -615,8 +621,10 @@ void sbbs_t::readmail(uint usernumber, int which)
 						break;
 				if(u<smb.msgs)
 					smb.curmsg=u;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				break;
 			case '{':   /* Search Author backward */
 				strcpy(str,msg.from);
@@ -628,6 +636,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 						}
 						if(u==0) {
 							domsg=0;
+							bputs(text[NoMessagesFound]);
 							break;
 						}
 					}
@@ -640,8 +649,10 @@ void sbbs_t::readmail(uint usernumber, int which)
 						break;
 				if(u<smb.msgs)
 					smb.curmsg=u;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				break;
 			case '[':   /* Search To User backward */
 				strcpy(str,msg.to);
@@ -653,6 +664,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 						}
 						if(u==0) {
 							domsg=0;
+							bputs(text[NoMessagesFound]);
 							break;
 						}
 					}

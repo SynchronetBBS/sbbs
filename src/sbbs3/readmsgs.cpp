@@ -718,7 +718,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			bprintf(text[UnvalidatedWarning],unvalidated+1);
 		bprintf(text[ReadingSub],ugrp,cfg.grp[cfg.sub[subnum]->grp]->sname
 			,usub,cfg.sub[subnum]->sname,smb.curmsg+1,smb.msgs);
-		sprintf(str,"ABCDEFILMNPQRTUY?<>[]{}-+.,");
+		sprintf(str,"ABCDEFILMNPQRTUY?<>[]{}-+()");
 		if(sub_op(subnum))
 			strcat(str,"O");
 		do_find=true;
@@ -1090,11 +1090,12 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					break; 
 				}
 				break;
-			case '.':   /* Thread forward */
+			case ')':   /* Thread forward */
 				l=msg.hdr.thread_first;
 				if(!l) l=msg.hdr.thread_next;
 				if(!l) {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
 					break; 
 				}
 				for(u=0;u<smb.msgs;u++)
@@ -1102,11 +1103,16 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						break;
 				if(u<smb.msgs)
 					smb.curmsg=u;
+				else {
+					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				do_find=false;
 				break;
-			case ',':   /* Thread backwards */
+			case '(':   /* Thread backwards */
 				if(!msg.hdr.thread_back) {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
 					break; 
 				}
 				for(u=0;u<smb.msgs;u++)
@@ -1114,6 +1120,10 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						break;
 				if(u<smb.msgs)
 					smb.curmsg=u;
+				else {
+					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				do_find=false;
 				break;
 			case '>':   /* Search Title forward */
@@ -1122,8 +1132,10 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						break;
 				if(u<smb.msgs)
 					smb.curmsg=u;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				do_find=false;
 				break;
 			case '<':   /* Search Title backward */
@@ -1132,8 +1144,10 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						break;
 				if(i>-1)
 					smb.curmsg=i;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				do_find=false;
 				break;
 			case '}':   /* Search Author forward */
@@ -1143,8 +1157,10 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						break;
 				if(u<smb.msgs)
 					smb.curmsg=u;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				do_find=false;
 				break;
 			case '{':   /* Search Author backward */
@@ -1154,8 +1170,10 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						break;
 				if(i>-1)
 					smb.curmsg=i;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				do_find=false;
 				break;
 			case ']':   /* Search To User forward */
@@ -1165,8 +1183,10 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						break;
 				if(u<smb.msgs)
 					smb.curmsg=u;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				do_find=false;
 				break;
 			case '[':   /* Search To User backward */
@@ -1176,8 +1196,10 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						break;
 				if(i>-1)
 					smb.curmsg=i;
-				else
+				else {
 					domsg=0;
+					bputs(text[NoMessagesFound]);
+				}
 				do_find=false;
 				break;
 			case 0: /* Carriage return - Next Message */
