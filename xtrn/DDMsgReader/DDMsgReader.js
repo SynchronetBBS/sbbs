@@ -57,16 +57,20 @@
                     Defaults to DDMsgReader.cfg.
    -personalEmail: Read personal email to the user.  This is a true/false value.
                    It doesn't need to explicitly have a =true or =false afterward;
-                   simply including -personalEmail will enable it.
+                   simply including -personalEmail will enable it.  If this is specified,
+				   the -chooseAreaFirst and -subBoard options will be ignored.
    -personalEmailSent: Read personal email to the user.  This is a true/false
                        value.  It doesn't need to explicitly have a =true or =false
                        afterward; simply including -personalEmailSent will enable it.
    -chooseAreaFirst: Display the message area chooser before reading/listing
                      messages.  This is a true/false value.  It doesn't need
                      to explicitly have a =true or =false afterward; simply
-                     including -chooseAreaFirst will enable it.  If
-                     -personalEmail is specified, then this option won't have
-                     any effect.
+                     including -chooseAreaFirst will enable it.  If -personalEmail
+					 or -subBoard is specified, then this option won't have any
+                     effect.
+	-subBoard: The sub-board (internal code or number) to read, other than the user's
+               current sub-board. If this is specified, the -chooseAreaFirst option
+			   will be ignored.
 	-verboseLogging: Enable logging to the system log & node log.  Currently, there
 	                 isn't much that will be logged, but more log messages could be
 					 added in the future.
@@ -99,8 +103,8 @@ if (system.version_num < 31500)
 }
 
 // Constants
-var READER_VERSION = "1.0 Beta 79";
-var READER_DATE = "2015-05-02";
+var READER_VERSION = "1.0 Beta 80";
+var READER_DATE = "2015-05-04";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -388,10 +392,24 @@ if (doDDMR)
 	// Create an instance of the DigDistMsgReader class and use it to read/list the
 	// messages in the user's current sub-board.  Pass the parsed command-line
 	// argument values object to its constructor.
-	var msgReader = new DigDistMsgReader(gListPersonalEmailCmdLineOpt ? "mail" : bbs.cursub_code, gCmdLineArgVals);
-	// If the option to choose a message area first was enabled on the command-line,
-	// then do it.
-	if (!gListPersonalEmailCmdLineOpt && gCmdLineArgVals.hasOwnProperty("chooseareafirst") && gCmdLineArgVals["chooseareafirst"])
+	var readerSubCode = (gListPersonalEmailCmdLineOpt ? "mail" : bbs.cursub_code);
+	// If the -subBoard option was specified and the "read personal email" option was
+	// not specified, then use the sub-board specified by the -subBoard command-line
+	// option.
+	if (gCmdLineArgVals.hasOwnProperty("subboard") && !gListPersonalEmailCmdLineOpt)
+	{
+		// If the specified sub-board option is all digits, then treat it as the
+		// sub-board number.  Otherwise, treat it as an internal sub-board code.
+		if (/^[0-9]+$/.test(gCmdLineArgVals["subboard"]))
+			readerSubCode = getSubBoardCodeFromNum(Number(gCmdLineArgVals["subboard"]));
+		else
+			readerSubCode = gCmdLineArgVals["subboard"];
+	}
+	var msgReader = new DigDistMsgReader(readerSubCode, gCmdLineArgVals);
+	// If the option to choose a message area first was enabled on the command-line
+	// (and neither the -subBoard nor the -personalEmail options were specified),
+	// then let the user choose a sub-board now.
+	if (gCmdLineArgVals.hasOwnProperty("chooseareafirst") && gCmdLineArgVals["chooseareafirst"] && !gCmdLineArgVals.hasOwnProperty("subboard") && !gListPersonalEmailCmdLineOpt)
 		msgReader.SelectMsgArea();
 	// Back up the user's current sub-board so that we can change back
 	// to it after searching is done, if a search is done.
@@ -572,9 +590,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// (will only be used for ANSI terminals).
 	this.scrollingReaderInterface = true;
 
-	// reverseOrder stores whether or not to arrange the message list descending
+	// reverseListOrder stores whether or not to arrange the message list descending
 	// by date.
-	this.reverseOrder = false;
+	this.reverseListOrder = false;
 
 	// displayBoardInfoInHeader specifies whether or not to display
 	// the message group and sub-board lines in the header at the
@@ -657,6 +675,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.WriteMsgListScreenTopHeader = DigDistMsgReader_WriteMsgListScreenTopHeader;
 	this.ReadMessage = DigDistMsgReader_ReadMessage;
 	this.ReadMessageEnhanced = DigDistMsgReader_ReadMessageEnhanced;
+	this.EnhReaderPrepLast2LinesForPrompt = DigDistMsgReader_EnhReaderPrepLast2LinesForPrompt;
 	this.LookForNextOrPriorNonDeletedMsg = DigDistMsgReader_LookForNextOrPriorNonDeletedMsg;
 	this.PrintMessageInfo = DigDistMsgReader_PrintMessageInfo;
 	this.ListScreenfulOfMessages = DigDistMsgReader_ListScreenfulOfMessages;
@@ -858,7 +877,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		enhMsgHdrFilename = enhMsgHdrFilenameBaseFullPath + ".asc";
 	else
 	{
-		// The extended reader header file doesn't exist, so provide some default
+		// The enhanced reader header file doesn't exist, so provide some default
 		// header lines.
 		enhHsgHdrFileExists = false;
 		// Group name: 20% of console width
@@ -1017,20 +1036,20 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// Some methods for choosing the message area
 	this.WriteChgMsgAreaKeysHelpLine = DigDistMsgReader_WriteLightbarChgMsgAreaKeysHelpLine;
-	this.WriteGrpListHdrLine = DigDistMsgReader_writeGrpListTopHdrLine;
-	this.WriteSubBrdListHdr1Line = DMsgAreaChooser_writeSubBrdListHdr1Line;
-	this.SelectMsgArea = DigDistMsgReader_selectMsgArea;
-	this.SelectMsgArea_Lightbar = DigDistMsgReader_selectMsgArea_Lightbar;
-	this.SelectSubBoard_Lightbar = DigDistMsgReader_selectSubBoard_Lightbar;
-	this.SelectMsgArea_Traditional = DigDistMsgReader_selectMsgArea_Traditional;
-	this.ListMsgGrps = DigDistMsgReader_listMsgGrps_Traditional;
-	this.ListSubBoardsInMsgGroup = DigDistMsgReader_listSubBoardsInMsgGroup_Traditional;
+	this.WriteGrpListHdrLine = DigDistMsgReader_WriteGrpListTopHdrLine;
+	this.WriteSubBrdListHdr1Line = DMsgAreaChooser_WriteSubBrdListHdr1Line;
+	this.SelectMsgArea = DigDistMsgReader_SelectMsgArea;
+	this.SelectMsgArea_Lightbar = DigDistMsgReader_SelectMsgArea_Lightbar;
+	this.SelectSubBoard_Lightbar = DigDistMsgReader_SelectSubBoard_Lightbar;
+	this.SelectMsgArea_Traditional = DigDistMsgReader_SelectMsgArea_Traditional;
+	this.ListMsgGrps = DigDistMsgReader_ListMsgGrps_Traditional;
+	this.ListSubBoardsInMsgGroup = DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional;
 	// Lightbar-specific methods
 	this.ListScreenfulOfMsgGrps = DigDistMsgReader_listScreenfulOfMsgGrps;
 	this.WriteMsgGroupLine = DigDistMsgReader_writeMsgGroupLine;
 	this.UpdateMsgAreaPageNumInHeader = DigDistMsgReader_updateMsgAreaPageNumInHeader;
-	this.ListScreenfulOfSubBrds = DigDistMsgReader_listScreenfulOfSubBrds;
-	this.WriteMsgSubBoardLine = DigDistMsgReader_writeMsgSubBrdLine;
+	this.ListScreenfulOfSubBrds = DigDistMsgReader_ListScreenfulOfSubBrds;
+	this.WriteMsgSubBoardLine = DigDistMsgReader_WriteMsgSubBrdLine;
 	// Choose Message Area help screen
 	this.ShowChooseMsgAreaHelpScreen = DigDistMsgReader_showChooseMsgAreaHelpScreen;
 	// Method to build the sub-board printf information for a message
@@ -2079,7 +2098,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 	if (previousSubBoardCode != this.subBoardCode)
 	{
 		if ((this.msgbase != null) && (this.msgbase.is_open))
-		this.msgbase.close();
+			this.msgbase.close();
 		this.msgbase = new MsgBase(this.subBoardCode);
 	}
 	else if (this.msgbase == null)
@@ -2409,11 +2428,11 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 			}
 			else
 			{
-				// If this.reverseOrder is the string "ASK", the user will be prompted
+				// If this.reverseListOrder is the string "ASK", the user will be prompted
 				// on the last line of the screen for whether they want to list the
 				// messages in reverse order.  So, erase the help line on the bottom of
 				// the screen.
-				if ((typeof(this.reverseOrder) == "string") && (this.reverseOrder.toUpperCase() == "ASK"))
+				if ((typeof(this.reverseListOrder) == "string") && (this.reverseListOrder.toUpperCase() == "ASK"))
 				{
 					if (this.scrollingReaderInterface && console.term_supports(USER_ANSI))
 					{
@@ -2523,12 +2542,12 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pReturnOnMsgSelect, pAllow
 	// messages.
 	this.SetMsgListPauseTextAndLightbarHelpLine();
 
-   // If this.reverseOrder is the string "ASK", prompt the user for whether
+   // If this.reverseListOrder is the string "ASK", prompt the user for whether
    // they want to list the messages in reverse order.
-   if ((typeof(this.reverseOrder) == "string") && (this.reverseOrder.toUpperCase() == "ASK"))
+   if ((typeof(this.reverseListOrder) == "string") && (this.reverseListOrder.toUpperCase() == "ASK"))
    {
       if (numMessages(bbs.cursub_code) > 0)
-         this.reverseOrder = !console.noyes("\1n\1cList in reverse (newest on top)");
+         this.reverseListOrder = !console.noyes("\1n\1cList in reverse (newest on top)");
    }
 
    // List the messages using the lightbar or traditional interface, depending on
@@ -2627,7 +2646,7 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 		console.gotoxy(curpos);
 		// Prompt the user whether or not to continue or to read a message
 		// (by message number).
-		if (this.reverseOrder)
+		if (this.reverseListOrder)
 			retvalObj = this.PromptContinueOrReadMsg((this.tradListTopMsgIdx == this.NumMessages()-1), lastScreen, pReturnOnMsgSelect, allowChgSubBoard);
 		else
 			retvalObj = this.PromptContinueOrReadMsg((this.tradListTopMsgIdx == 0), lastScreen, pReturnOnMsgSelect, allowChgSubBoard);
@@ -2646,7 +2665,7 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 			// this.tradListTopMsgIdx in order to do so.
 			if (retvalObj.userInput == "P")
 			{
-				if (this.reverseOrder)
+				if (this.reverseListOrder)
 				{
 					this.tradListTopMsgIdx += this.tradMsgListNumLines;
 					// If we go past the beginning, then we need to reset
@@ -2668,7 +2687,7 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 			// this.tradListTopMsgIdx appropriately.
 			else if (retvalObj.userInput == "N")
 			{
-				if (this.reverseOrder)
+				if (this.reverseListOrder)
 					this.tradListTopMsgIdx -= this.tradMsgListNumLines;
 				else
 					this.tradListTopMsgIdx += this.tradMsgListNumLines;
@@ -2676,7 +2695,7 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 			// First page
 			else if (retvalObj.userInput == "F")
 			{
-				if (this.reverseOrder)
+				if (this.reverseListOrder)
 					this.tradListTopMsgIdx = this.NumMessages() - 1;
 				else
 					this.tradListTopMsgIdx = 0;
@@ -2684,7 +2703,7 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 			// Last page
 			else if (retvalObj.userInput == "L")
 			{
-				if (this.reverseOrder)
+				if (this.reverseListOrder)
 				{
 					this.tradListTopMsgIdx = (this.NumMessages() % this.tradMsgListNumLines) - 1;
 					// If this.tradListTopMsgIdx is now invalid (below 0), then adjust it
@@ -2906,7 +2925,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 
 		// Calculate the message number (0-based) of the message
 		// appearing on the bottom of the screen.
-		if (this.reverseOrder)
+		if (this.reverseListOrder)
 		{
 			bottomMsgIndex = this.lightbarListTopMsgIdx - this.lightbarMsgListNumLines + 1;
 			if (bottomMsgIndex < 0)
@@ -2954,7 +2973,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 		else if (userInput == KEY_UP)
 		{
 			// Make sure this.lightbarListSelectedMsgIdx is within bounds before moving down.
-			if (this.reverseOrder)
+			if (this.reverseListOrder)
 			{
 				if (this.lightbarListSelectedMsgIdx >= this.NumMessages() - 1)
 					continue;
@@ -2968,7 +2987,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 			// Print the current message information with regular colors
 			this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
 
-			if (this.reverseOrder)
+			if (this.reverseListOrder)
 				++this.lightbarListSelectedMsgIdx;
 			else
 				--this.lightbarListSelectedMsgIdx;
@@ -2985,7 +3004,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 			{
 				// Go onto the previous page, with the cursor highlighting
 				// the last message on the page.
-				if (this.reverseOrder)
+				if (this.reverseListOrder)
 					this.lightbarListTopMsgIdx = this.lightbarListSelectedMsgIdx + this.lightbarMsgListNumLines - 1;
 				else
 					this.lightbarListTopMsgIdx = this.lightbarListSelectedMsgIdx - this.lightbarMsgListNumLines + 1;
@@ -3001,7 +3020,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 		else if (userInput == KEY_DOWN)
 		{
 			// Make sure this.lightbarListSelectedMsgIdx is within bounds before moving down.
-			if (this.reverseOrder)
+			if (this.reverseListOrder)
 			{
 				if (this.lightbarListSelectedMsgIdx <= 0)
 					continue;
@@ -3015,7 +3034,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 			// Print the current message information with regular colors
 			this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
 
-			if (this.reverseOrder)
+			if (this.reverseListOrder)
 				--this.lightbarListSelectedMsgIdx;
 			else
 				++this.lightbarListSelectedMsgIdx;
@@ -3057,7 +3076,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 			// Print the current message information with regular colors
 			this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
 			// Go to the first message of the current page
-			if (this.reverseOrder)
+			if (this.reverseListOrder)
 				this.lightbarListSelectedMsgIdx += (this.lightbarListCurPos.y - this.lightbarMsgListStartScreenRow);
 			else
 				this.lightbarListSelectedMsgIdx -= (this.lightbarListCurPos.y - this.lightbarMsgListStartScreenRow);
@@ -3074,7 +3093,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 			// Update the selected message #
 			this.lightbarListSelectedMsgIdx = bottomMsgIndex;
 			// Go to the last message of the current page
-			if (this.reverseOrder)
+			if (this.reverseListOrder)
 				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow + this.lightbarListTopMsgIdx - bottomMsgIndex;
 			else
 				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow + bottomMsgIndex - this.lightbarListTopMsgIdx;
@@ -3149,7 +3168,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 				// to the message, then we'll have to re-arrange the screen
 				// a bit to make way for the new message that will appear
 				// in the list.
-				if (this.reverseOrder && repliedToMessage)
+				if (this.reverseListOrder && repliedToMessage)
 				{
 					// Make way for the new message, which will appear at the
 					// top.
@@ -3177,7 +3196,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 			// Next page
 			if (!lastPage)
 			{
-				if (this.reverseOrder)
+				if (this.reverseListOrder)
 					this.lightbarListTopMsgIdx -= this.lightbarMsgListNumLines;
 				else
 					this.lightbarListTopMsgIdx += this.lightbarMsgListNumLines;
@@ -3207,14 +3226,14 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 		else if (userInput == KEY_PAGE_UP)
 		{
 			var canGoToPrevious = false;
-			if (this.reverseOrder)
+			if (this.reverseListOrder)
 				canGoToPrevious = (this.lightbarListTopMsgIdx < this.NumMessages() - 1);
 			else
 				canGoToPrevious = (this.lightbarListTopMsgIdx > 0);
 
 			if (canGoToPrevious > 0)
 			{
-				if (this.reverseOrder)
+				if (this.reverseListOrder)
 					this.lightbarListTopMsgIdx += this.lightbarMsgListNumLines;
 				else
 					this.lightbarListTopMsgIdx -= this.lightbarMsgListNumLines;
@@ -3230,14 +3249,14 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 		else if (userInput == "F")
 		{
 			var canGoToFirst = false;
-			if (this.reverseOrder)
+			if (this.reverseListOrder)
 				canGoToFirst = (this.lightbarListTopMsgIdx < this.NumMessages() - 1);
 			else
 				canGoToFirst = (this.lightbarListTopMsgIdx > 0);
 
 			if (canGoToFirst)
 			{
-				if (this.reverseOrder)
+				if (this.reverseListOrder)
 					this.lightbarListTopMsgIdx = this.NumMessages() - 1;
 				else
 					this.lightbarListTopMsgIdx = 0;
@@ -3256,7 +3275,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 			{
 				// Set the top message index.  If this.lightbarListTopMsgIdx is beyond the last
 				// message in the sub-board, then move back a full page of messages.
-				if (this.reverseOrder)
+				if (this.reverseListOrder)
 				{
 					this.lightbarListTopMsgIdx = (this.NumMessages() % this.lightbarMsgListNumLines) - 1;
 					// If this.lightbarListTopMsgIdx is now invalid (below 0), then adjust it
@@ -3862,10 +3881,13 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	enhReaderKeys.nextMsgByAuthor = "}";
 	enhReaderKeys.prevMsgByToUser = "[";
 	enhReaderKeys.nextMsgByToUser = "]";
-	enhReaderKeys.prevMsgByThreadID = "(";
-	enhReaderKeys.nextMsgByThreadID = ")";
+	enhReaderKeys.prevMsgByThreadID = ",";
+	enhReaderKeys.nextMsgByThreadID = ".";
+	enhReaderKeys.prevMsgByThreadID2 = "(";
+	enhReaderKeys.nextMsgByThreadID2 = ")";
 	enhReaderKeys.prevSubBoard = "-";
 	enhReaderKeys.nextSubBoard = "+";
+	enhReaderKeys.saveToBBSMachine = CTRL_S;
 
 	// This function converts a thread navigation key character to its
 	// corresponding thread type value
@@ -3887,7 +3909,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				threadType = THREAD_BY_TO_USER;
 				break;
 			case enhReaderKeys.prevMsgByThreadID:
+			case enhReaderKeys.prevMsgByThreadID2:
 			case enhReaderKeys.nextMsgByThreadID:
+			case enhReaderKeys.nextMsgByThreadID2:
 			default:
 				threadType = THREAD_BY_ID;
 				break;
@@ -3967,13 +3991,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					// no way to avoid that.  So, to optimize screen refreshing,
 					// the cursor is placed on the 2nd to the last row on the
 					// screen to prompt for confirmation.
-					var promptPos = { x: this.msgAreaLeft, y: console.screen_rows-1 };
-					// Write a line of characters above where the prompt will be placed,
-					// to help get the user's attention.
-					console.gotoxy(promptPos.x, promptPos.y-1);
-					console.print("\1n" + this.colors.enhReaderPromptSepLineColor);
-					for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-						console.print(HORIZONTAL_SINGLE);
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
 
 					// Prompt the user for confirmation to delete the message.
 					// Note: this.DeleteMessage() will check to see if the user
@@ -4018,20 +4036,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						// the last line on the screen because the yes/no prompt will
 						// output a carriage return and move everything on the screen
 						// up one line, which is not ideal in case the user says No.
-						var promptPos = { x: this.msgAreaLeft, y: this.msgAreaBottom };
-						// Write a line of characters above where the prompt will be placed,
-						// to help get the user's attention.
-						console.gotoxy(promptPos.x, promptPos.y-1);
-						console.print("\1n" + this.colors.enhReaderPromptSepLineColor);
-						for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-							console.print(HORIZONTAL_SINGLE);
-						// Clear the inside of the message area, so as not to overwrite
-						// the scrollbar character
-						console.print("\1n");
-						console.gotoxy(promptPos);
-						for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-							console.print(" ");
-						console.gotoxy(promptPos);
+						var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
 						// Let the user edit the message if they want to
 						var editReturnObj = this.EditExistingMsg(pOffset);
 						// If the user didn't confirm, then we only have to refresh the bottom
@@ -4207,21 +4212,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					// up one row, and there's no way to avoid that.  So, to optimize
 					// screen refreshing, the cursor is placed on the 2nd to the last
 					// row on the screen to prompt for the message number.
-					var promptPos = { x: this.msgAreaLeft, y: this.msgAreaBottom };
-					// Write a line of characters above where the prompt will be placed,
-					// to help get the user's attention.
-					console.gotoxy(promptPos.x, promptPos.y-1);
-					console.print("\1n" + this.colors.enhReaderPromptSepLineColor);
-					for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-						console.print(HORIZONTAL_SINGLE);
-					// Clear the inside of the message area, so as not to overwrite
-					// the scrollbar character
-					console.print("\1n");
-					console.gotoxy(promptPos);
-					for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-						console.print(" ");
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
 					// Prompt for the message number
-					console.gotoxy(promptPos);
 					var msgNumInput = this.PromptForMsgNum(promptPos, this.text.readMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
 					// Only allow reading the message if the message number is valid
 					// and it's not the same message number that was passed in.
@@ -4276,6 +4268,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				case enhReaderKeys.prevMsgByAuthor: // Previous message by author
 				case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
 				case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
+				case enhReaderKeys.prevMsgByThreadID2: // Previous message by thread ID
 					// Only allow this if we aren't doing a message search.
 					if (!this.SearchingAndResultObjsDefinedForCurSub())
 					{
@@ -4305,6 +4298,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				case enhReaderKeys.nextMsgByAuthor: // Next message by author
 				case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
 				case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
+				case enhReaderKeys.nextMsgByThreadID2: // Next message by thread ID
 					// Only allow this if we aren't doing a message search.
 					if (!this.SearchingAndResultObjsDefinedForCurSub())
 					{
@@ -4361,6 +4355,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						writeMessage = false; // No need to refresh the message
 					break;
 				case KEY_RIGHT: // Next message
+				case KEY_ENTER:
 					// Look for a later message that isn't marked for deletion.  Even
 					// if we don't find one, we'll still want to return from this
 					// function (with message index -1) so that this script can go
@@ -4510,6 +4505,19 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					else
 						writeMessage = false; // No need to refresh the message
 					break;
+				/*
+				case enhReaderKeys.saveToBBSMachine:
+					if (gIsSysop)
+					{
+						// TODO: I'd like to add this functionality at some point
+						// - Save the message to the BBS machine (prompt for the
+						// directory on the BBS machine)
+						//var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					}
+					else
+						writeMessage = false;
+					break;
+				*/
 				case "Q": // Quit
 					retObj.nextAction = ACTION_QUIT;
 					continueOn = false;
@@ -4768,6 +4776,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				case enhReaderKeys.prevMsgByAuthor: // Previous message by author
 				case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
 				case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
+				case enhReaderKeys.prevMsgByThreadID2: // Previous message by thread ID
 					// Only allow this if we aren't doing a message search.
 					if (!this.SearchingAndResultObjsDefinedForCurSub())
 					{
@@ -4792,6 +4801,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				case enhReaderKeys.nextMsgByAuthor: // Next message by author
 				case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
 				case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
+				case enhReaderKeys.nextMsgByThreadID2: // Next message by thread ID
 					// Only allow this if we aren't doing a message search.
 					if (!this.SearchingAndResultObjsDefinedForCurSub())
 					{
@@ -4841,7 +4851,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					}
 					break;
 				case KEY_RIGHT: // Next message
-					// TODO: Change the key for this?
+				case KEY_ENTER:
 					// Look for a later message that isn't marked for deletion.  Even
 					// if we don't find one, we'll still want to return from this
 					// function (with message index -1) so that this script can go
@@ -5008,6 +5018,32 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 
 	return retObj;
 } // DigDistMsgReader_ReadMessageEnhanced
+
+// For the DigDistMsgReader class: For the enhanced reader method - Prepares the
+// last 2 lines on the screen for propmting the user for something.
+//
+// Return value: An object containing x and y values representing the cursor
+//               position, ready to prompt the user.
+function DigDistMsgReader_EnhReaderPrepLast2LinesForPrompt()
+{
+	var promptPos = { x: this.msgAreaLeft, y: this.msgAreaBottom };
+	// Write a line of characters above where the prompt will be placed,
+	// to help get the user's attention.
+	console.gotoxy(promptPos.x, promptPos.y-1);
+	console.print("\1n" + this.colors.enhReaderPromptSepLineColor);
+	for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
+		console.print(HORIZONTAL_SINGLE);
+	// Clear the inside of the message area, so as not to overwrite
+	// the scrollbar character
+	console.print("\1n");
+	console.gotoxy(promptPos);
+	for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
+		console.print(" ");
+	// Position the cursor at the prompt location
+	console.gotoxy(promptPos);
+	
+	return promptPos;
+}
 
 // For the DigDistMsgReader class: For the enhanced reader method - Looks for a
 // later method that isn't marked for deletion.  If none is found, looks for a
@@ -5396,9 +5432,9 @@ function DigDistMsgReader_SetUpTraditionalMsgListVars()
 			lastReadMsgIdx = 0;
 	}
 	var pageNum = findPageNumOfItemNum(lastReadMsgIdx+1, this.tradMsgListNumLines, this.NumMessages(),
-									   this.reverseOrder);
+									   this.reverseListOrder);
 	this.CalcTraditionalMsgListTopIdx(pageNum);
-	if (!this.reverseOrder && (this.tradListTopMsgIdx > lastReadMsgIdx))
+	if (!this.reverseListOrder && (this.tradListTopMsgIdx > lastReadMsgIdx))
 		this.tradListTopMsgIdx -= this.tradMsgListNumLines;
 }
 
@@ -5418,10 +5454,10 @@ function DigDistMsgReader_SetUpLightbarMsgListVars()
 			lastReadMsgIdx = 0;
 	}
 	var pageNum = findPageNumOfItemNum(lastReadMsgIdx+1, this.lightbarMsgListNumLines, this.NumMessages(),
-	this.reverseOrder);
+	                                   this.reverseListOrder);
 	this.CalcLightbarMsgListTopIdx(pageNum);
 	var initialCursorRow = 0;
-	if (this.reverseOrder)
+	if (this.reverseListOrder)
 		initialCursorRow = this.lightbarMsgListStartScreenRow+(this.lightbarListTopMsgIdx-lastReadMsgIdx);
 	else
 	{
@@ -5496,7 +5532,7 @@ function DigDistMsgReader_ListScreenfulOfMessages(pTopIndex, pMaxLines)
 
 	var curpos = console.getxy();
 	var msgIndex = 0;
-	if (this.reverseOrder)
+	if (this.reverseListOrder)
 	{
       var endIndex = pTopIndex - pMaxLines + 1; // The index of the last message to display
       for (msgIndex = pTopIndex; (msgIndex >= 0) && (msgIndex >= endIndex); --msgIndex)
@@ -6293,9 +6329,9 @@ function DigDistMsgReader_ReadConfigFile()
 					this.scrollingReaderInterface = (valueUpper == "SCROLLABLE");
 				else if (settingUpper == "DISPLAYBOARDINFOINHEADER")
 					this.displayBoardInfoInHeader = (valueUpper == "TRUE");
-				// Note: this.reverseOrder can be true, false, or "ASK"
-				else if (settingUpper == "REVERSEORDER")
-					this.reverseOrder = (valueUpper == "ASK" ? "ASK" : (valueUpper == "TRUE"));
+				// Note: this.reverseListOrder can be true, false, or "ASK"
+				else if (settingUpper == "REVERSELISTORDER")
+					this.reverseListOrder = (valueUpper == "ASK" ? "ASK" : (valueUpper == "TRUE"));
 				else if (settingUpper == "PROMPTTOCONTINUELISTINGMESSAGES")
 					this.promptToContinueListingMessages = (valueUpper == "TRUE");
 				else if (settingUpper == "PROMPTCONFIRMREADMESSAGE")
@@ -6966,7 +7002,7 @@ function idxToAbsMsgNum(pMsgbase, pMsgIdx)
 // Return value: The message number entered by the user.  If the user didn't
 //               enter a message number, this will be 0.
 function DigDistMsgReader_PromptForMsgNum(pCurPos, pPromptText, pClearToEOLAfterPrompt,
-                                           pErrorPauseTimeMS, pRepeat)
+                                          pErrorPauseTimeMS, pRepeat)
 {
 	var curPosValid = ((pCurPos != null) && (typeof(pCurPos) == "object") &&
 	                   pCurPos.hasOwnProperty("x") && (typeof(pCurPos.x) == "number") &&
@@ -7067,108 +7103,108 @@ function DigDistMsgReader_PromptForMsgNum(pCurPos, pPromptText, pClearToEOLAfter
 // appropriate message header information.
 function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pDateTimeStr, pAllowCLS)
 {
-   var textLine = pTextLine;
-   // Message attribute strings
-   var allMsgAttrStr = makeAllMsgAttrStr(pMsgHdr);
-   var mainMsgAttrStr = makeMainMsgAttrStr(pMsgHdr.attr);
-   var auxMsgAttrStr = makeAuxMsgAttrStr(pMsgHdr.auxattr);
-   var netMsgAttrStr = makeNetMsgAttrStr(pMsgHdr.netattr);
-   // An array of @-code strings without the trailing @, to be used for constructing
-   // regular expressions to look for versions with justification & length specifiers.
-   // The order of the strings in this array matters.  For instance, @MSG_NUM_AND_TOTAL
-   // needs to come before @MSG_NUM so that it gets processed properly, since they
-   // both start out with the same text.
-   var atCodeStrBases = ["@MSG_FROM", "@MSG_FROM_EXT", "@MSG_TO", "@MSG_TO_NAME", "@MSG_TO_EXT",
-                         "@MSG_SUBJECT", "@MSG_DATE", "@MSG_ATTR", "@MSG_AUXATTR", "@MSG_NETATTR",
-                         "@MSG_ALLATTR", "@MSG_NUM_AND_TOTAL", "@MSG_NUM", "@MSG_ID",
-                         "@MSG_REPLY_ID", "@MSG_TIMEZONE", "@GRP", "@GRPL", "@SUB", "@SUBL"];
-   // For each @-code, look for a version with justification & length specified and
-   // replace accordingly.
-   for (var atCodeStrBaseIdx in atCodeStrBases)
-   {
-      var atCodeStrBase = atCodeStrBases[atCodeStrBaseIdx];
-      // Synchronet @-codes can specify justification with -L or -R and width using a series
-      // of non-numeric non-space characters (i.e., @MSG_SUBJECT-L#####@ or @MSG_SUBJECT-R######@).
-      // So look for these types of format specifiers for the message subject and if found,
-      // parse and replace appropriately.
-      var multipleCharLenRegex = new RegExp(atCodeStrBase + "-[LR][^0-9 ]+@", "gi");
-      var atCodeMatchArray = textLine.match(multipleCharLenRegex);
-      if ((atCodeMatchArray != null) && (atCodeMatchArray.length > 0))
-      {
-         for (var idx in atCodeMatchArray)
-         {
-            // In this case, the subject length is the length of the whole format specifier.
-            var substLen = atCodeMatchArray[idx].length;
-            textLine = this.ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen,
-                                            atCodeMatchArray[idx], pDateTimeStr, mainMsgAttrStr,
-                                            auxMsgAttrStr, netMsgAttrStr, allMsgAttrStr);
-         }
-      }
-      // Now, look for subject formatters with the length specified (i.e., @MSG_SUBJECT-L20@ or @MSG_SUBJECT-R20@)
-      var numericLenSearchRegex = new RegExp(atCodeStrBase + "-[LR][0-9]+@", "gi");
-      atCodeMatchArray = textLine.match(numericLenSearchRegex);
-      if ((atCodeMatchArray != null) && (atCodeMatchArray.length > 0))
-      {
-         for (var idx in atCodeMatchArray)
-         {
-            // Extract the length specified between the -L or -R and the final @.
-            var dashJustifyIndex = findDashJustifyIndex(atCodeMatchArray[idx]);
-            var substLen = atCodeMatchArray[idx].substring(dashJustifyIndex+2, atCodeMatchArray[idx].length-1);
-            textLine = this.ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen, atCodeMatchArray[idx],
-                                            pDateTimeStr, mainMsgAttrStr, auxMsgAttrStr, netMsgAttrStr,
-                                            allMsgAttrStr, dashJustifyIndex);
-         }
-      }
-   }
+	var textLine = pTextLine;
+	// Message attribute strings
+	var allMsgAttrStr = makeAllMsgAttrStr(pMsgHdr);
+	var mainMsgAttrStr = makeMainMsgAttrStr(pMsgHdr.attr);
+	var auxMsgAttrStr = makeAuxMsgAttrStr(pMsgHdr.auxattr);
+	var netMsgAttrStr = makeNetMsgAttrStr(pMsgHdr.netattr);
+	// An array of @-code strings without the trailing @, to be used for constructing
+	// regular expressions to look for versions with justification & length specifiers.
+	// The order of the strings in this array matters.  For instance, @MSG_NUM_AND_TOTAL
+	// needs to come before @MSG_NUM so that it gets processed properly, since they
+	// both start out with the same text.
+	var atCodeStrBases = ["@MSG_FROM", "@MSG_FROM_EXT", "@MSG_TO", "@MSG_TO_NAME", "@MSG_TO_EXT",
+	                      "@MSG_SUBJECT", "@MSG_DATE", "@MSG_ATTR", "@MSG_AUXATTR", "@MSG_NETATTR",
+	                      "@MSG_ALLATTR", "@MSG_NUM_AND_TOTAL", "@MSG_NUM", "@MSG_ID",
+	                      "@MSG_REPLY_ID", "@MSG_TIMEZONE", "@GRP", "@GRPL", "@SUB", "@SUBL"];
+	// For each @-code, look for a version with justification & length specified and
+	// replace accordingly.
+	for (var atCodeStrBaseIdx in atCodeStrBases)
+	{
+		var atCodeStrBase = atCodeStrBases[atCodeStrBaseIdx];
+		// Synchronet @-codes can specify justification with -L or -R and width using a series
+		// of non-numeric non-space characters (i.e., @MSG_SUBJECT-L#####@ or @MSG_SUBJECT-R######@).
+		// So look for these types of format specifiers for the message subject and if found,
+		// parse and replace appropriately.
+		var multipleCharLenRegex = new RegExp(atCodeStrBase + "-[LR][^0-9 ]+@", "gi");
+		var atCodeMatchArray = textLine.match(multipleCharLenRegex);
+		if ((atCodeMatchArray != null) && (atCodeMatchArray.length > 0))
+		{
+			for (var idx in atCodeMatchArray)
+			{
+				// In this case, the subject length is the length of the whole format specifier.
+				var substLen = atCodeMatchArray[idx].length;
+				textLine = this.ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen,
+				                                     atCodeMatchArray[idx], pDateTimeStr, mainMsgAttrStr,
+				                                     auxMsgAttrStr, netMsgAttrStr, allMsgAttrStr);
+			}
+		}
+		// Now, look for subject formatters with the length specified (i.e., @MSG_SUBJECT-L20@ or @MSG_SUBJECT-R20@)
+		var numericLenSearchRegex = new RegExp(atCodeStrBase + "-[LR][0-9]+@", "gi");
+		atCodeMatchArray = textLine.match(numericLenSearchRegex);
+		if ((atCodeMatchArray != null) && (atCodeMatchArray.length > 0))
+		{
+			for (var idx in atCodeMatchArray)
+			{
+				// Extract the length specified between the -L or -R and the final @.
+				var dashJustifyIndex = findDashJustifyIndex(atCodeMatchArray[idx]);
+				var substLen = atCodeMatchArray[idx].substring(dashJustifyIndex+2, atCodeMatchArray[idx].length-1);
+				textLine = this.ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen, atCodeMatchArray[idx],
+				                                     pDateTimeStr, mainMsgAttrStr, auxMsgAttrStr, netMsgAttrStr,
+				                                     allMsgAttrStr, dashJustifyIndex);
+			}
+		}
+	}
 
-   // In case there weren't any complex @-codes, do replacements for the basic
-   // @-codes.  Set the group & sub-board information as Personal Mail or the
-   // sub-board currently being read.
-   var grpIdx = -1;
-   var groupName = "";
-   var groupDesc = "";
-   var subName = "";
-   var subDesc = "";
-   if (this.readingPersonalEmail)
-   {
+	// In case there weren't any complex @-codes, do replacements for the basic
+	// @-codes.  Set the group & sub-board information as Personal Mail or the
+	// sub-board currently being read.
+	var grpIdx = -1;
+	var groupName = "";
+	var groupDesc = "";
+	var subName = "";
+	var subDesc = "";
+	if (this.readingPersonalEmail)
+	{
 		var subName = "Personal mail";
 		var subDesc = "Personal mail";
-   }
-   else
-   {
-		grpIdx = msg_area.sub[this.subBoardCode].grp_index;
-		groupName = msg_area.sub[bbs.cursub_code].grp_name;
-		groupDesc = msg_area.grp_list[grpIdx].description;
-		subName = msg_area.sub[bbs.cursub_code].name;
-		subDesc = msg_area.sub[bbs.cursub_code].description;
 	}
-   var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
-   var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
-                          .replace(/@MSG_FROM@/gi, pMsgHdr["from"])
-                          .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr["from_ext"]) == "string" ? pMsgHdr["from_ext"] : ""))
-                          .replace(/@MSG_TO@/gi, pMsgHdr["to"])
-                          .replace(/@MSG_TO_NAME@/gi, pMsgHdr["to"])
-                          .replace(/@MSG_TO_EXT@/gi, (typeof(pMsgHdr["to_ext"]) == "string" ? pMsgHdr["to_ext"] : ""))
-                          .replace(/@MSG_DATE@/gi, pDateTimeStr)
-                          .replace(/@MSG_ATTR@/gi, mainMsgAttrStr)
-                          .replace(/@MSG_ATTR@/gi, mainMsgAttrStr)
-                          .replace(/@MSG_AUXATTR@/gi, auxMsgAttrStr)
-                          .replace(/@MSG_NETATTR@/gi, netMsgAttrStr)
-                          .replace(/@MSG_ALLATTR@/gi, allMsgAttrStr)
-                          .replace(/@MSG_NUM_AND_TOTAL@/gi, messageNum.toString() + "/" + this.NumMessages())
-                          .replace(/@MSG_NUM@/gi, messageNum.toString())
-                          .replace(/@MSG_ID@/gi, (typeof(pMsgHdr["id"]) == "string" ? pMsgHdr["id"] : ""))
-                          .replace(/@MSG_REPLY_ID@/gi, (typeof(pMsgHdr["reply_id"]) == "string" ? pMsgHdr["reply_id"] : ""))
-                          .replace(/@MSG_FROM_NET@/gi, (typeof(pMsgHdr["from_net_addr"]) == "string" ? pMsgHdr["from_net_addr"] : ""))
-                          .replace(/@MSG_TO_NET@/gi, (typeof(pMsgHdr["to_net_addr"]) == "string" ? pMsgHdr["to_net_addr"] : ""))
-                          .replace(/@MSG_TIMEZONE@/gi, system.zonestr(pMsgHdr["when_written_zone"]))
-                          .replace(/@GRP@/gi, groupName)
-                          .replace(/@GRPL@/gi, groupDesc)
-                          .replace(/@SUB@/gi, subName)
-                          .replace(/@SUBL@/gi, subDesc);
-   if (!pAllowCLS)
-      newTxtLine = newTxtLine.replace(/@CLS@/gi, "");
-   return newTxtLine;
+	else
+	{
+		grpIdx = msg_area.sub[this.subBoardCode].grp_index;
+		groupName = msg_area.sub[this.subBoardCode].grp_name;
+		groupDesc = msg_area.grp_list[grpIdx].description;
+		subName = msg_area.sub[this.subBoardCode].name;
+		subDesc = msg_area.sub[this.subBoardCode].description;
+	}
+	var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
+	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
+	                         .replace(/@MSG_FROM@/gi, pMsgHdr["from"])
+	                         .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr["from_ext"]) == "string" ? pMsgHdr["from_ext"] : ""))
+	                         .replace(/@MSG_TO@/gi, pMsgHdr["to"])
+	                         .replace(/@MSG_TO_NAME@/gi, pMsgHdr["to"])
+	                         .replace(/@MSG_TO_EXT@/gi, (typeof(pMsgHdr["to_ext"]) == "string" ? pMsgHdr["to_ext"] : ""))
+	                         .replace(/@MSG_DATE@/gi, pDateTimeStr)
+	                         .replace(/@MSG_ATTR@/gi, mainMsgAttrStr)
+	                         .replace(/@MSG_ATTR@/gi, mainMsgAttrStr)
+	                         .replace(/@MSG_AUXATTR@/gi, auxMsgAttrStr)
+	                         .replace(/@MSG_NETATTR@/gi, netMsgAttrStr)
+	                         .replace(/@MSG_ALLATTR@/gi, allMsgAttrStr)
+	                         .replace(/@MSG_NUM_AND_TOTAL@/gi, messageNum.toString() + "/" + this.NumMessages())
+	                         .replace(/@MSG_NUM@/gi, messageNum.toString())
+	                         .replace(/@MSG_ID@/gi, (typeof(pMsgHdr["id"]) == "string" ? pMsgHdr["id"] : ""))
+	                         .replace(/@MSG_REPLY_ID@/gi, (typeof(pMsgHdr["reply_id"]) == "string" ? pMsgHdr["reply_id"] : ""))
+	                         .replace(/@MSG_FROM_NET@/gi, (typeof(pMsgHdr["from_net_addr"]) == "string" ? pMsgHdr["from_net_addr"] : ""))
+	                         .replace(/@MSG_TO_NET@/gi, (typeof(pMsgHdr["to_net_addr"]) == "string" ? pMsgHdr["to_net_addr"] : ""))
+	                         .replace(/@MSG_TIMEZONE@/gi, system.zonestr(pMsgHdr["when_written_zone"]))
+	                         .replace(/@GRP@/gi, groupName)
+	                         .replace(/@GRPL@/gi, groupDesc)
+	                         .replace(/@SUB@/gi, subName)
+	                         .replace(/@SUBL@/gi, subDesc);
+	if (!pAllowCLS)
+		newTxtLine = newTxtLine.replace(/@CLS@/gi, "");
+	return newTxtLine;
 }
 // For the DigDistMsgReader class: Helper for ParseMsgHdrLineAtCodes(): Replaces a
 // given @-code format string in a text line with the appropriate message header
@@ -7241,7 +7277,8 @@ function DigDistMsgReader_ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, pTextLin
 		if (this.readingPersonalEmail)
 			replacementTxt = "Personal mail".substr(0, pSpecifiedLen);
 		else
-			replacementTxt = msg_area.sub[bbs.cursub_code].grp_name.substr(0, pSpecifiedLen);
+			replacementTxt = msg_area.sub[this.subBoardCode].grp_name.substr(0, pSpecifiedLen);
+			
 	}
 	else if (pAtCodeStr.indexOf("@GRPL") > -1)
 	{
@@ -7258,14 +7295,15 @@ function DigDistMsgReader_ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, pTextLin
 		if (this.readingPersonalEmail)
 			replacementTxt = "Personal mail".substr(0, pSpecifiedLen);
 		else
-			replacementTxt = msg_area.sub[bbs.cursub_code].name.substr(0, pSpecifiedLen);
+
+			replacementTxt = msg_area.sub[this.subBoardCode].name.substr(0, pSpecifiedLen);
 	}
 	else if (pAtCodeStr.indexOf("@SUB") > -1)
 	{
 		if (this.readingPersonalEmail)
 			replacementTxt = "Personal mail".substr(0, pSpecifiedLen);
 		else
-			replacementTxt = msg_area.sub[bbs.cursub_code].description.substr(0, pSpecifiedLen);
+			replacementTxt = msg_area.sub[this.subBoardCode].description.substr(0, pSpecifiedLen);
 	}
 
 	// Do the text replacement (escape special characters in the @-code string so we can do a literal search)
@@ -7801,6 +7839,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt)
 	console.crlf();
 	var keyHelpLines = ["\1h\1cDown\1g/\1cup arrow    \1g: \1n\1cScroll down\1g/\1cup in the message",
 	                    "\1h\1cLeft\1g/\1cright arrow \1g: \1n\1cGo to the previous\1g/\1cnext message",
+						"\1h\1cEnter            \1g: \1n\1cGo to the next message",
 	                    "\1h\1cPageUp\1g/\1cPageDown  \1g: \1n\1cScroll up\1g/\1cdown a page in the message",
 	                    "\1h\1cHOME             \1g: \1n\1cGo to the top of the message",
 	                    "\1h\1cEND              \1g: \1n\1cGo to the bottom of the message"];
@@ -7815,7 +7854,8 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt)
 		// Thread ID keys: For Synchronet 3.16 and above, include the text "thread ID"
 		// in the help line, since Synchronet 3.16 has the thread_id field in the message
 		// headers.
-		var threadIDLine = "\1h\1c( \1n\1cor \1h)           \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
+		//var threadIDLine = "\1h\1c( \1n\1cor \1h)           \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
+		var threadIDLine = "\1h\1c, \1n\1cor \1h.    ( \1n\1cor \1h) \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
 		if (system.version_num >= 31600)
 			threadIDLine += " (thread ID)";
 		keyHelpLines.push(threadIDLine);
@@ -7876,16 +7916,16 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt)
 //                   supports ANSI.
 function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartScreenRow)
 {
-   if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
-      return;
-   if (this.enhMsgHeaderLines == null)
-      return;
-   if ((this.enhMsgHeaderLines.length == 0) || (this.enhMsgHeaderWidth == 0))
-      return;
+	if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
+		return;
+	if (this.enhMsgHeaderLines == null)
+		return;
+	if ((this.enhMsgHeaderLines.length == 0) || (this.enhMsgHeaderWidth == 0))
+		return;
 
-   // Create a formatted date & time string and a string describing the
-   // message attributes
-   var dateTimeStr = pMsgHdr["date"].replace(/ [-+][0-9]+$/, "");
+	// Create a formatted date & time string and a string describing the
+	// message attributes
+	var dateTimeStr = pMsgHdr["date"].replace(/ [-+][0-9]+$/, "");
 
 	// If the user's terminal supports ANSI, we can move the cursor and
 	// display the header where specified.
@@ -7895,7 +7935,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		// centered properly in case the user's terminal is more than 80 characters
 		// wide.
 		var screenX = Math.floor(console.screen_columns/2)
-						 - Math.floor(this.enhMsgHeaderWidth/2);
+		            - Math.floor(this.enhMsgHeaderWidth/2);
 		if (console.screen_columns > 80)
 			++screenX;
 		var screenY = (typeof(pStartScreenRow) == "number" ? pStartScreenRow : 1);
@@ -7903,7 +7943,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		{
 			console.gotoxy(screenX, screenY++);
 			console.putmsg(this.ParseMsgHdrLineAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
-			               pDisplayMsgNum, dateTimeStr, false));
+			pDisplayMsgNum, dateTimeStr, false));
 		}
 	}
 	else
@@ -8457,7 +8497,7 @@ function DigDistMsgReader_WriteLightbarChgMsgAreaKeysHelpLine()
 //             not passed, then it won't be used.
 //  pPageNum: The page number.  This is optional; if this is not passed,
 //            then it won't be used.
-function DigDistMsgReader_writeGrpListTopHdrLine(pNumPages, pPageNum)
+function DigDistMsgReader_WriteGrpListTopHdrLine(pNumPages, pPageNum)
 {
   var descStr = "Description";
   if ((typeof(pPageNum) == "number") && (typeof(pNumPages) == "number"))
@@ -8479,7 +8519,7 @@ function DigDistMsgReader_writeGrpListTopHdrLine(pNumPages, pPageNum)
 //             not passed, then it won't be used.
 //  pPageNum: The page number.  This is optional; if this is not passed,
 //            then it won't be used.
-function DMsgAreaChooser_writeSubBrdListHdr1Line(pGrpIndex, pNumPages, pPageNum)
+function DMsgAreaChooser_WriteSubBrdListHdr1Line(pGrpIndex, pNumPages, pPageNum)
 {
   var descFormatStr = "\1n" + this.colors.areaChooserSubBoardHeaderColor + "Sub-boards of \1h%-25s     \1n"
                      + this.colors.areaChooserSubBoardHeaderColor;
@@ -8496,7 +8536,7 @@ function DMsgAreaChooser_writeSubBrdListHdr1Line(pGrpIndex, pNumPages, pPageNum)
 // For the DigDistMsgReader class: Lets the user choose a message group and
 // sub-board via numeric input, using a lightbar interface (if enabled and
 // if the user's terminal uses ANSI) or a traditional user interface.
-function DigDistMsgReader_selectMsgArea()
+function DigDistMsgReader_SelectMsgArea()
 {
 	if (this.msgListUseLightbarListInterface && console.term_supports(USER_ANSI))
 		this.SelectMsgArea_Lightbar();
@@ -8506,351 +8546,360 @@ function DigDistMsgReader_selectMsgArea()
 
 // For the DigDistMsgReader class: Lets the user choose a message group and
 // sub-board via numeric input, using a lightbar user interface.
-function DigDistMsgReader_selectMsgArea_Lightbar()
+function DigDistMsgReader_SelectMsgArea_Lightbar()
 {
-   // If there are no message groups, then don't let the user
-   // choose one.
-   if (msg_area.grp_list.length == 0)
-   {
-      console.clear("\1n");
-      console.print("\1y\1hThere are no message groups.\r\n\1p");
-      return;
-   }
+	// If there are no message groups, then don't let the user
+	// choose one.
+	if (msg_area.grp_list.length == 0)
+	{
+		console.clear("\1n");
+		console.print("\1y\1hThere are no message groups.\r\n\1p");
+		return;
+	}
 
-   // Returns the index of the bottommost message group that can be displayed
-   // on the screen.
-   //
-   // Parameters:
-   //  pTopGrpIndex: The index of the topmost message group displayed on screen
-   //  pNumItemsPerPage: The number of items per page
-   function getBottommostGrpIndex(pTopGrpIndex, pNumItemsPerPage)
-   {
-      var bottomGrpIndex = pTopGrpIndex + pNumItemsPerPage - 1;
-      // If bottomGrpIndex is beyond the last index, then adjust it.
-      if (bottomGrpIndex >= msg_area.grp_list.length)
-         bottomGrpIndex = msg_area.grp_list.length - 1;
-      return bottomGrpIndex;
-   }
+	// Returns the index of the bottommost message group that can be displayed
+	// on the screen.
+	//
+	// Parameters:
+	//  pTopGrpIndex: The index of the topmost message group displayed on screen
+	//  pNumItemsPerPage: The number of items per page
+	function getBottommostGrpIndex(pTopGrpIndex, pNumItemsPerPage)
+	{
+		var bottomGrpIndex = pTopGrpIndex + pNumItemsPerPage - 1;
+		// If bottomGrpIndex is beyond the last index, then adjust it.
+		if (bottomGrpIndex >= msg_area.grp_list.length)
+			bottomGrpIndex = msg_area.grp_list.length - 1;
+		return bottomGrpIndex;
+	}
 
 
-   // Figure out the index of the user's currently-selected message group
-   var selectedGrpIndex = 0;
-   if ((bbs.curgrp != null) && (typeof(bbs.curgrp) == "number"))
-      selectedGrpIndex = bbs.curgrp;
+	// Figure out the index of the user's currently-selected message group
+	var selectedGrpIndex = msg_area.sub[this.subBoardCode].grp_index;
+	// Older code:
+	/*
+	var selectedGrpIndex = 0;
+	if ((bbs.curgrp != null) && (typeof(bbs.curgrp) == "number"))
+		selectedGrpIndex = bbs.curgrp;
+	*/
 
-   var listStartRow = 2;      // The row on the screen where the list will start
-   var listEndRow = console.screen_rows - 1; // Row on screen where list will end
-   var topMsgGrpIndex = 0;    // The index of the message group at the top of the list
+	var listStartRow = 2;      // The row on the screen where the list will start
+	var listEndRow = console.screen_rows - 1; // Row on screen where list will end
+	var topMsgGrpIndex = 0;    // The index of the message group at the top of the list
 
-   // Figure out the index of the last message group to appear on the screen.
-   var numItemsPerPage = listEndRow - listStartRow + 1;
-   var bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-   // Figure out how many pages are needed to list all the sub-boards.
-   var numPages = Math.ceil(msg_area.grp_list.length / numItemsPerPage);
-   // Figure out the top index for the last page.
-   var topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
+	// Figure out the index of the last message group to appear on the screen.
+	var numItemsPerPage = listEndRow - listStartRow + 1;
+	var bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+	// Figure out how many pages are needed to list all the sub-boards.
+	var numPages = Math.ceil(msg_area.grp_list.length / numItemsPerPage);
+	// Figure out the top index for the last page.
+	var topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
 
-   // If the highlighted row is beyond the current screen, then
-   // go to the appropriate page.
-   if (selectedGrpIndex > bottomMsgGrpIndex)
-   {
-      var nextPageTopIndex = 0;
-      while (selectedGrpIndex > bottomMsgGrpIndex)
-      {
-         nextPageTopIndex = topMsgGrpIndex + numItemsPerPage;
-         if (nextPageTopIndex < msg_area.grp_list.length)
-         {
-            // Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-            // refresh the list on the screen.
-            topMsgGrpIndex = nextPageTopIndex;
-            bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-         }
-         else
-            break;
-      }
+	// If the highlighted row is beyond the current screen, then
+	// go to the appropriate page.
+	if (selectedGrpIndex > bottomMsgGrpIndex)
+	{
+		var nextPageTopIndex = 0;
+		while (selectedGrpIndex > bottomMsgGrpIndex)
+		{
+			nextPageTopIndex = topMsgGrpIndex + numItemsPerPage;
+			if (nextPageTopIndex < msg_area.grp_list.length)
+			{
+				// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
+				// refresh the list on the screen.
+				topMsgGrpIndex = nextPageTopIndex;
+				bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+			}
+			else
+				break;
+		}
 
-      // If we didn't find the correct page for some reason, then set the
-      // variables to display page 1 and select the first message group.
-      var foundCorrectPage = ((topMsgGrpIndex < msg_area.grp_list.length) &&
-          (selectedGrpIndex >= topMsgGrpIndex) && (selectedGrpIndex <= bottomMsgGrpIndex));
-      if (!foundCorrectPage)
-      {
-         topMsgGrpIndex = 0;
-         bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-         selectedGrpIndex = 0;
-      }
-   }
+		// If we didn't find the correct page for some reason, then set the
+		// variables to display page 1 and select the first message group.
+		var foundCorrectPage = ((topMsgGrpIndex < msg_area.grp_list.length) &&
+		                        (selectedGrpIndex >= topMsgGrpIndex) && (selectedGrpIndex <= bottomMsgGrpIndex));
+		if (!foundCorrectPage)
+		{
+			topMsgGrpIndex = 0;
+			bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+			selectedGrpIndex = 0;
+		}
+	}
 
-   // Clear the screen, write the help line and group list header, and output
-   // a screenful of message groups.
-   console.clear("\1n");
-   this.WriteChgMsgAreaKeysHelpLine();
+	// Clear the screen, write the help line and group list header, and output
+	// a screenful of message groups.
+	console.clear("\1n");
+	this.WriteChgMsgAreaKeysHelpLine();
 
-   // Make a backup of the current message group & sub-board indexes so
-   // that later we can tell if the user chose something different.
-   var oldGrp = bbs.curgrp;
-   var oldSub = bbs.cursub;
+	// Make a backup of the current message group & sub-board indexes so
+	// that later we can tell if the user chose something different.
+	var oldGrp = msg_area.sub[this.subBoardCode].grp_index;
+	var oldSub = msg_area.sub[this.subBoardCode].index;
+	// Older:
+	/*
+	var oldGrp = bbs.curgrp;
+	var oldSub = bbs.cursub;
+	*/
 
-   // Input loop - Let the user choose a message group & sub-board
-   var curpos = new Object();
-   curpos.x = 1;
-   curpos.y = 1;
-   console.gotoxy(curpos);
-   var pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-   this.WriteGrpListHdrLine(numPages, pageNum);
-   this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow, false, false);
-   // Start of the input loop.
-   var highlightScrenRow = 0; // The row on the screen for the highlighted group
-   var userInput = "";        // Will store a keypress from the user
-   var retObj = null;        // To store the return value of choosing a sub-board
-   var continueChoosingMsgArea = true;
-   while (continueChoosingMsgArea)
-   {
-      // Highlight the currently-selected message group
-      highlightScrenRow = listStartRow + (selectedGrpIndex - topMsgGrpIndex);
-      curpos.y = highlightScrenRow;
-      if ((highlightScrenRow > 0) && (highlightScrenRow < console.screen_rows))
-      {
-         console.gotoxy(1, highlightScrenRow);
-         this.WriteMsgGroupLine(selectedGrpIndex, true);
-      }
+	// Input loop - Let the user choose a message group & sub-board
+	var curpos = new Object();
+	curpos.x = 1;
+	curpos.y = 1;
+	console.gotoxy(curpos);
+	var pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
+	this.WriteGrpListHdrLine(numPages, pageNum);
+	this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow, false, false);
+	// Start of the input loop.
+	var highlightScrenRow = 0; // The row on the screen for the highlighted group
+	var userInput = "";        // Will store a keypress from the user
+	var retObj = null;        // To store the return value of choosing a sub-board
+	var continueChoosingMsgArea = true;
+	while (continueChoosingMsgArea)
+	{
+		// Highlight the currently-selected message group
+		highlightScrenRow = listStartRow + (selectedGrpIndex - topMsgGrpIndex);
+		curpos.y = highlightScrenRow;
+		if ((highlightScrenRow > 0) && (highlightScrenRow < console.screen_rows))
+		{
+			console.gotoxy(1, highlightScrenRow);
+			this.WriteMsgGroupLine(selectedGrpIndex, true);
+		}
 
-      // Get a key from the user (upper-case) and take action based upon it.
-      userInput = console.getkey(K_UPPER | K_NOCRLF);
-      switch (userInput)
-      {
-         case KEY_UP: // Move up one message group in the list
-            if (selectedGrpIndex > 0)
-            {
-               // If the previous group index is on the previous page, then
-               // display the previous page.
-               var previousGrpIndex = selectedGrpIndex - 1;
-               if (previousGrpIndex < topMsgGrpIndex)
-               {
-                  // Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-                  // refresh the list on the screen.
-                  topMsgGrpIndex -= numItemsPerPage;
-                  bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-                  this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
-                                              listEndRow, false, true);
-               }
-               else
-               {
-                  // Display the current line un-highlighted.
-                  console.gotoxy(1, curpos.y);
-                  this.WriteMsgGroupLine(selectedGrpIndex, false);
-               }
-               selectedGrpIndex = previousGrpIndex;
-            }
-            break;
-         case KEY_DOWN: // Move down one message group in the list
-            if (selectedGrpIndex < msg_area.grp_list.length - 1)
-            {
-               // If the next group index is on the next page, then display
-               // the next page.
-               var nextGrpIndex = selectedGrpIndex + 1;
-               if (nextGrpIndex > bottomMsgGrpIndex)
-               {
-                  // Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-                  // refresh the list on the screen.
-                  topMsgGrpIndex += numItemsPerPage;
-                  bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-                  this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
-                                              listEndRow, false, true);
-               }
-               else
-               {
-                  // Display the current line un-highlighted.
-                  console.gotoxy(1, curpos.y);
-                  this.WriteMsgGroupLine(selectedGrpIndex, false);
-               }
-               selectedGrpIndex = nextGrpIndex;
-            }
-            break;
-         case KEY_HOME: // Go to the top message group on the screen
-            if (selectedGrpIndex > topMsgGrpIndex)
-            {
-               // Display the current line un-highlighted, then adjust
-               // selectedGrpIndex.
-               console.gotoxy(1, curpos.y);
-               this.WriteMsgGroupLine(selectedGrpIndex, false);
-               selectedGrpIndex = topMsgGrpIndex;
-               // Note: curpos.y is set at the start of the while loop.
-            }
-            break;
-         case KEY_END: // Go to the bottom message group on the screen
-            if (selectedGrpIndex < bottomMsgGrpIndex)
-            {
-               // Display the current line un-highlighted, then adjust
-               // selectedGrpIndex.
-               console.gotoxy(1, curpos.y);
-               this.WriteMsgGroupLine(selectedGrpIndex, false);
-               selectedGrpIndex = bottomMsgGrpIndex;
-               // Note: curpos.y is set at the start of the while loop.
-            }
-            break;
-         case KEY_ENTER: // Select the currently-highlighted message group
-            retObj = this.SelectSubBoard_Lightbar(selectedGrpIndex);
-            // If the user chose a sub-board, then set bbs.curgrp and
-            // bbs.cursub, and don't continue the input loop anymore.
-            if (retObj.subBoardChosen)
-            {
-               bbs.curgrp = selectedGrpIndex;
-               bbs.cursub = retObj.subBoardIndex;
-               continueChoosingMsgArea = false;
-            }
-            else
-            {
-               // A sub-board was not chosen, so we'll have to re-draw
-               // the header and list of message groups.
-               console.gotoxy(1, 1);
-               this.WriteGrpListHdrLine(numPages, pageNum);
-               this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
-                                            false, true);
-            }
-            break;
-         case 'N': // Go to the next page
-            var nextPageTopIndex = topMsgGrpIndex + numItemsPerPage;
-            if (nextPageTopIndex < msg_area.grp_list.length)
-            {
-               // Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-               // refresh the list on the screen.
-               topMsgGrpIndex = nextPageTopIndex;
-               pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-               bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-               this.UpdateMsgAreaPageNumInHeader(pageNum, numPages, true, false);
-               this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
-                                           listEndRow, false, true);
-               selectedGrpIndex = topMsgGrpIndex;
-            }
-            break;
-         case 'P': // Go to the previous page
-            var prevPageTopIndex = topMsgGrpIndex - numItemsPerPage;
-            if (prevPageTopIndex >= 0)
-            {
-               // Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
-               // refresh the list on the screen.
-               topMsgGrpIndex = prevPageTopIndex;
-               pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-               bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-               this.UpdateMsgAreaPageNumInHeader(pageNum, numPages, true, false);
-               this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
-                                           listEndRow, false, true);
-               selectedGrpIndex = topMsgGrpIndex;
-            }
-            break;
-         case 'F': // Go to the first page
-            if (topMsgGrpIndex > 0)
-            {
-               topMsgGrpIndex = 0;
-               pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-               bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-               this.UpdateMsgAreaPageNumInHeader(pageNum, numPages, true, false);
-               this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
-                                           false, true);
-               selectedGrpIndex = 0;
-            }
-            break;
-         case 'L': // Go to the last page
-            if (topMsgGrpIndex < topIndexForLastPage)
-            {
-               topMsgGrpIndex = topIndexForLastPage;
-               pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
-               bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
-               this.UpdateMsgAreaPageNumInHeader(pageNum, numPages, true, false);
-               this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
-                                           false, true);
-               selectedGrpIndex = topIndexForLastPage;
-            }
-            break;
-         case 'Q': // Quit
-            continueChoosingMsgArea = false;
-            break;
-         case '?': // Show help
-            this.ShowChooseMsgAreaHelpScreen(true, true);
-            console.pause();
-            // Refresh the screen
-            this.WriteChgMsgAreaKeysHelpLine();
-            console.gotoxy(1, 1);
-            this.WriteGrpListHdrLine(numPages, pageNum);
-            this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
-                                         false, true);
-            break;
-         default:
-            // If the user entered a numeric digit, then treat it as
-            // the start of the message group number.
-            if (userInput.match(/[0-9]/))
-            {
-               var originalCurpos = curpos;
+		// Get a key from the user (upper-case) and take action based upon it.
+		userInput = console.getkey(K_UPPER | K_NOCRLF);
+		switch (userInput)
+		{
+			case KEY_UP: // Move up one message group in the list
+				if (selectedGrpIndex > 0)
+				{
+					// If the previous group index is on the previous page, then
+					// display the previous page.
+					var previousGrpIndex = selectedGrpIndex - 1;
+					if (previousGrpIndex < topMsgGrpIndex)
+					{
+						// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
+						// refresh the list on the screen.
+						topMsgGrpIndex -= numItemsPerPage;
+						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+						this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
+						                            listEndRow, false, true);
+					}
+					else
+					{
+						// Display the current line un-highlighted.
+						console.gotoxy(1, curpos.y);
+						this.WriteMsgGroupLine(selectedGrpIndex, false);
+					}
+					selectedGrpIndex = previousGrpIndex;
+				}
+				break;
+			case KEY_DOWN: // Move down one message group in the list
+				if (selectedGrpIndex < msg_area.grp_list.length - 1)
+				{
+					// If the next group index is on the next page, then display
+					// the next page.
+					var nextGrpIndex = selectedGrpIndex + 1;
+					if (nextGrpIndex > bottomMsgGrpIndex)
+					{
+						// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
+						// refresh the list on the screen.
+						topMsgGrpIndex += numItemsPerPage;
+						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+						this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
+						                            listEndRow, false, true);
+					}
+					else
+					{
+						// Display the current line un-highlighted.
+						console.gotoxy(1, curpos.y);
+						this.WriteMsgGroupLine(selectedGrpIndex, false);
+					}
+					selectedGrpIndex = nextGrpIndex;
+				}
+				break;
+			case KEY_HOME: // Go to the top message group on the screen
+				if (selectedGrpIndex > topMsgGrpIndex)
+				{
+					// Display the current line un-highlighted, then adjust
+					// selectedGrpIndex.
+					console.gotoxy(1, curpos.y);
+					this.WriteMsgGroupLine(selectedGrpIndex, false);
+					selectedGrpIndex = topMsgGrpIndex;
+					// Note: curpos.y is set at the start of the while loop.
+				}
+				break;
+			case KEY_END: // Go to the bottom message group on the screen
+				if (selectedGrpIndex < bottomMsgGrpIndex)
+				{
+					// Display the current line un-highlighted, then adjust
+					// selectedGrpIndex.
+					console.gotoxy(1, curpos.y);
+					this.WriteMsgGroupLine(selectedGrpIndex, false);
+					selectedGrpIndex = bottomMsgGrpIndex;
+					// Note: curpos.y is set at the start of the while loop.
+				}
+				break;
+			case KEY_ENTER: // Select the currently-highlighted message group
+				retObj = this.SelectSubBoard_Lightbar(selectedGrpIndex);
+				// If the user chose a sub-board, then set bbs.curgrp and
+				// bbs.cursub, and don't continue the input loop anymore.
+				if (retObj.subBoardChosen)
+				{
+					bbs.curgrp = selectedGrpIndex;
+					bbs.cursub = retObj.subBoardIndex;
+					continueChoosingMsgArea = false;
+				}
+				else
+				{
+					// A sub-board was not chosen, so we'll have to re-draw
+					// the header and list of message groups.
+					console.gotoxy(1, 1);
+					this.WriteGrpListHdrLine(numPages, pageNum);
+					this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
+					                            false, true);
+				}
+				break;
+			case 'N': // Go to the next page
+				var nextPageTopIndex = topMsgGrpIndex + numItemsPerPage;
+				if (nextPageTopIndex < msg_area.grp_list.length)
+				{
+					// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
+					// refresh the list on the screen.
+					topMsgGrpIndex = nextPageTopIndex;
+					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
+					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+					this.UpdateMsgAreaPageNumInHeader(pageNum, numPages, true, false);
+					this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
+					                            listEndRow, false, true);
+					selectedGrpIndex = topMsgGrpIndex;
+				}
+				break;
+			case 'P': // Go to the previous page
+				var prevPageTopIndex = topMsgGrpIndex - numItemsPerPage;
+				if (prevPageTopIndex >= 0)
+				{
+					// Adjust topMsgGrpIndex and bottomMsgGrpIndex, and
+					// refresh the list on the screen.
+					topMsgGrpIndex = prevPageTopIndex;
+					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
+					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+					this.UpdateMsgAreaPageNumInHeader(pageNum, numPages, true, false);
+					this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
+					                            listEndRow, false, true);
+					selectedGrpIndex = topMsgGrpIndex;
+				}
+				break;
+			case 'F': // Go to the first page
+				if (topMsgGrpIndex > 0)
+				{
+					topMsgGrpIndex = 0;
+					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
+					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+					this.UpdateMsgAreaPageNumInHeader(pageNum, numPages, true, false);
+					this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
+					                            false, true);
+					selectedGrpIndex = 0;
+				}
+				break;
+			case 'L': // Go to the last page
+				if (topMsgGrpIndex < topIndexForLastPage)
+				{
+					topMsgGrpIndex = topIndexForLastPage;
+					pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
+					bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+					this.UpdateMsgAreaPageNumInHeader(pageNum, numPages, true, false);
+					this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
+					                            false, true);
+					selectedGrpIndex = topIndexForLastPage;
+				}
+				break;
+			case 'Q': // Quit
+				continueChoosingMsgArea = false;
+				break;
+			case '?': // Show help
+				this.ShowChooseMsgAreaHelpScreen(true, true);
+				console.pause();
+				// Refresh the screen
+				this.WriteChgMsgAreaKeysHelpLine();
+				console.gotoxy(1, 1);
+				this.WriteGrpListHdrLine(numPages, pageNum);
+				this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
+				                            false, true);
+				break;
+			default:
+				// If the user entered a numeric digit, then treat it as
+				// the start of the message group number.
+				if (userInput.match(/[0-9]/))
+				{
+					var originalCurpos = curpos;
 
-               // Put the user's input back in the input buffer to
-               // be used for getting the rest of the message number.
-               console.ungetstr(userInput);
-               // Move the cursor to the bottom of the screen and
-               // prompt the user for the message number.
-               console.gotoxy(1, console.screen_rows);
-               console.clearline("\1n");
-               console.print("\1cChoose group #: \1h");
-               userInput = console.getnum(msg_area.grp_list.length);
-               // If the user made a selection, then let them choose a
-               // sub-board from the group.
-               if (userInput > 0)
-               {
-                  var msgGroupIndex = userInput - 1;
-                  retObj = this.SelectSubBoard_Lightbar(msgGroupIndex);
-                  // If the user chose a sub-board, then set bbs.curgrp and
-                  // bbs.cursub, and don't continue the input loop anymore.
-                  if (retObj.subBoardChosen)
-                  {
-                     // Set the current group & sub-board
-                     bbs.curgrp = msgGroupIndex;
-                     bbs.cursub = retObj.subBoardIndex;
-                     continueChoosingMsgArea = false;
-                  }
-                  else
-                  {
-                     // A sub-board was not chosen, so we'll have to re-draw
-                     // the header and list of message groups.
-                     console.gotoxy(1, 1);
-                     this.WriteGrpListHdrLine(numPages, pageNum);
-                     this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
-                                                  false, true);
-                  }
-               }
-               else
-               {
-                  // The user didn't make a selection.  So, we need to refresh
-                  // the screen due to everything being moved up one line.
-                  this.WriteChgMsgAreaKeysHelpLine();
-                  console.gotoxy(1, 1);
-                  this.WriteGrpListHdrLine(numPages, pageNum);
-                  this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
-                                               false, true);
-               }
-            }
-            break;
-      }
-   }
+					// Put the user's input back in the input buffer to
+					// be used for getting the rest of the message number.
+					console.ungetstr(userInput);
+					// Move the cursor to the bottom of the screen and
+					// prompt the user for the message number.
+					console.gotoxy(1, console.screen_rows);
+					console.clearline("\1n");
+					console.print("\1cChoose group #: \1h");
+					userInput = console.getnum(msg_area.grp_list.length);
+					// If the user made a selection, then let them choose a
+					// sub-board from the group.
+					if (userInput > 0)
+					{
+						var msgGroupIndex = userInput - 1;
+						retObj = this.SelectSubBoard_Lightbar(msgGroupIndex);
+						// If the user chose a sub-board, then set bbs.curgrp and
+						// bbs.cursub, and don't continue the input loop anymore.
+						if (retObj.subBoardChosen)
+						{
+							// Set the current group & sub-board
+							bbs.curgrp = msgGroupIndex;
+							bbs.cursub = retObj.subBoardIndex;
+							continueChoosingMsgArea = false;
+						}
+						else
+						{
+							// A sub-board was not chosen, so we'll have to re-draw
+							// the header and list of message groups.
+							console.gotoxy(1, 1);
+							this.WriteGrpListHdrLine(numPages, pageNum);
+							this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
+							                            false, true);
+						}
+					}
+					else
+					{
+						// The user didn't make a selection.  So, we need to refresh
+						// the screen due to everything being moved up one line.
+						this.WriteChgMsgAreaKeysHelpLine();
+						console.gotoxy(1, 1);
+						this.WriteGrpListHdrLine(numPages, pageNum);
+						this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
+						                            false, true);
+					}
+				}
+				break;
+		}
+	}
 
-   // If the user chose a different message group & sub-board, then reset the
-   // lister index & cursor variables, as well as this.subBoardCode, etc.
-   if ((bbs.curgrp != oldGrp) || (bbs.cursub != oldSub))
-   {
-      this.tradListTopMsgIdx = -1;
-      this.lightbarListTopMsgIdx = -1;
-      this.lightbarListSelectedMsgIdx = -1;
-      this.lightbarListCurPos = null;
-      this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
-      // Re-create the msgbase object for the new sub-board.  Don't open it yet,
-      // as that is done in the read/list methods.
-      if (this.msgbase != null)
-      {
-         if (this.msgbase.is_open)
-            this.msgbase.close();
-         this.msgbase = null;
-      }
-      this.msgbase = new MsgBase(this.subBoardCode);
-   }
+	// If the user chose a different message group & sub-board, then reset the
+	// lister index & cursor variables, as well as this.subBoardCode, etc.
+	if ((bbs.curgrp != oldGrp) || (bbs.cursub != oldSub))
+	{
+		this.tradListTopMsgIdx = -1;
+		this.lightbarListTopMsgIdx = -1;
+		this.lightbarListSelectedMsgIdx = -1;
+		this.lightbarListCurPos = null;
+		this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
+		// Re-create the msgbase object for the new sub-board.  Don't open it yet,
+		// as that is done in the read/list methods.
+		if (this.msgbase != null)
+		{
+			if (this.msgbase.is_open)
+				this.msgbase.close();
+			this.msgbase = null;
+		}
+		this.msgbase = new MsgBase(this.subBoardCode);
+	}
 }
 
 // For the DigDistMsgReader class: Lets the user choose a sub-board within a
@@ -8867,7 +8916,7 @@ function DigDistMsgReader_selectMsgArea_Lightbar()
 //               subBoardChosen: Boolean - Whether or not a sub-board was chosen.
 //               subBoardIndex: Numeric - The sub-board that was chosen (if any).
 //                              Will be -1 if none chosen.
-function DigDistMsgReader_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
+function DigDistMsgReader_SelectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 {
    // Create the return object.
    var retObj = new Object();
@@ -8877,8 +8926,13 @@ function DigDistMsgReader_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
    var grpIndex = 0;
    if (typeof(pGrpIndex) == "number")
       grpIndex = pGrpIndex;
+   else
+      grpIndex = msg_area.sub[this.subBoardCode].grp_index;
+   // Older:
+   /*
    else if ((bbs.curgrp != null) && (typeof(bbs.curgrp) == "number"))
       grpIndex = bbs.curgrp;
+   */
    // Double-check grpIndex
    if (grpIndex < 0)
       grpIndex = 0;
@@ -8888,11 +8942,16 @@ function DigDistMsgReader_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
    var markIndex = 0;
    if ((pMarkIndex != null) && (typeof(pMarkIndex) == "number"))
       markIndex = pMarkIndex;
+   else
+      markIndex = msg_area.sub[this.subBoardCode].index;
+   // Older:
+   /*
    else if ((bbs.cursub != null) && (typeof(bbs.cursub) == "number") &&
              (bbs.curgrp == pGrpIndex))
    {
       markIndex = bbs.cursub;
    }
+   */
    // Double-check markIndex
    if (markIndex < 0)
       markIndex = 0;
@@ -8932,6 +8991,10 @@ function DigDistMsgReader_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 
    // Figure out the index of the user's currently-selected sub-board.
    var selectedSubIndex = 0;
+   if (msg_area.sub[this.subBoardCode].grp_index == pGrpIndex)
+      selectedSubIndex = msg_area.sub[this.subBoardCode].index;
+   /*
+   var selectedSubIndex = 0;
    if ((bbs.cursub != null) && (typeof(bbs.cursub) == "number"))
    {
       if ((bbs.curgrp != null) && (typeof(bbs.curgrp) == "number") &&
@@ -8940,6 +9003,7 @@ function DigDistMsgReader_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
          selectedSubIndex = bbs.cursub;
       }
    }
+   */
 
    var listStartRow = 3;      // The row on the screen where the list will start
    var listEndRow = console.screen_rows - 1; // Row on screen where list will end
@@ -9268,60 +9332,81 @@ function DigDistMsgReader_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 
 // For the DigDistMsgReader class: Lets the user choose a message group and
 // sub-board via numeric input, using a traditional user interface.
-function DigDistMsgReader_selectMsgArea_Traditional()
+function DigDistMsgReader_SelectMsgArea_Traditional()
 {
-   // If there are no message groups, then don't let the user
-   // choose one.
-   if (msg_area.grp_list.length == 0)
-   {
-      console.clear("\1n");
-      console.print("\1y\1hThere are no message groups.\r\n\1p");
-      return;
-   }
+	// If there are no message groups, then don't let the user
+	// choose one.
+	if (msg_area.grp_list.length == 0)
+	{
+		console.clear("\1n");
+		console.print("\1y\1hThere are no message groups.\r\n\1p");
+		return;
+	}
 
-   // Make a backup of the current message group & sub-board indexes so
-   // that later we can tell if the user chose something different.
-   var oldGrp = bbs.curgrp;
-   var oldSub = bbs.cursub;
+	// Make a backup of the current message group & sub-board indexes so
+	// that later we can tell if the user chose something different.
+	var oldGrp = msg_area.sub[this.subBoardCode].grp_index;
+	var oldSub = msg_area.sub[this.subBoardCode].index;
+	// Older:
+	/*
+	var oldGrp = bbs.curgrp;
+	var oldSub = bbs.cursub;
+	*/
 
-   // Show the message groups & sub-boards and let the user choose one.
-   var selectedGrp = 0;      // The user's selected message group
-   var selectedSubBoard = 0; // The user's selected sub-board
-   var continueChoosingMsgGroup = true;
-   while (continueChoosingMsgGroup)
-   {
-      // Clear the BBS command string to make sure there are no extra
-      // commands in there that could cause weird things to happen.
-      bbs.command_str = "";
+	// Show the message groups & sub-boards and let the user choose one.
+	var selectedGrp = 0;      // The user's selected message group
+	var selectedSubBoard = 0; // The user's selected sub-board
+	var continueChoosingMsgGroup = true;
+	while (continueChoosingMsgGroup)
+	{
+		// Clear the BBS command string to make sure there are no extra
+		// commands in there that could cause weird things to happen.
+		bbs.command_str = "";
 
-      console.clear("\1n");
-      this.ListMsgGrps();
-      console.crlf();
-      console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" +
-                    +(bbs.curgrp+1) + "\1n\1c]: \1h");
-      // Accept Q (quit) or a file library number
-      selectedGrp = console.getkeys("Q", msg_area.grp_list.length);
+		console.clear("\1n");
+		this.ListMsgGrps();
+		console.crlf();
+		console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" +
+		              +(msg_area.sub[this.subBoardCode].grp_index+1) + "\1n\1c]: \1h");
+		// Older:
+		/*
+		console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" +
+                      +(bbs.curgrp+1) + "\1n\1c]: \1h");
+		*/
+		// Accept Q (quit) or a file library number
+		selectedGrp = console.getkeys("Q", msg_area.grp_list.length);
 
-      // If the user just pressed enter (selectedGrp would be blank),
-      // default to the current group.
-      if (selectedGrp.toString() == "")
-         selectedGrp = bbs.curgrp + 1;
+		// If the user just pressed enter (selectedGrp would be blank),
+		// default to the current group.
+		if (selectedGrp.toString() == "")
+		selectedGrp = msg_area.sub[this.subBoardCode].grp_index + 1;
+		// Older:
+		/*
+		if (selectedGrp.toString() == "")
+			selectedGrp = bbs.curgrp + 1;
+		*/
 
-      if (selectedGrp.toString() == "Q")
-         continueChoosingMsgGroup = false;
-      else
-      {
-         // If the user specified a message group number, then
-         // set it and let the user choose a sub-board within
-         // the group.
-         if (selectedGrp > 0)
-         {
-            // Set the default sub-board #: The current sub-board, or if the
-            // user chose a different group, then this should be set
-            // to the first sub-board.
-            var defaultSubBoard = bbs.cursub + 1;
-            if (selectedGrp-1 != bbs.curgrp)
-               defaultSubBoard = 1;
+		if (selectedGrp.toString() == "Q")
+			continueChoosingMsgGroup = false;
+		else
+		{
+			// If the user specified a message group number, then
+			// set it and let the user choose a sub-board within
+			// the group.
+			if (selectedGrp > 0)
+			{
+				// Set the default sub-board #: The current sub-board, or if the
+				// user chose a different group, then this should be set
+				// to the first sub-board.
+				var defaultSubBoard = msg_area.sub[this.subBoardCode].index + 1;
+				if (selectedGrp-1 != msg_area.sub[this.subBoardCode].grp_index)
+					defaultSubBoard = 1;
+				// Older:
+				/*
+				var defaultSubBoard = bbs.cursub + 1;
+				if (selectedGrp-1 != bbs.curgrp)
+					defaultSubBoard = 1;
+				*/
 
 				var continueChoosingSubBoard = true;
 				while (continueChoosingSubBoard)
@@ -9330,7 +9415,7 @@ function DigDistMsgReader_selectMsgArea_Traditional()
 					this.ListSubBoardsInMsgGroup(selectedGrp-1, defaultSubBoard-1);
 					console.crlf();
 					console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" +
-									  defaultSubBoard + "\1n\1c]: \1h");
+					              defaultSubBoard + "\1n\1c]: \1h");
 					// Accept Q (quit) or a sub-board number
 					selectedSubBoard = console.getkeys("Q", msg_area.grp_list[selectedGrp - 1].sub_list.length);
 
@@ -9375,44 +9460,45 @@ function DigDistMsgReader_selectMsgArea_Traditional()
 						}
 					}
 				}
-         }
-      }
-   }
+			}
+		}
+	}
 
-   // If the user chose a different message group & sub-board, then reset the
-   // lister index & cursor variables, as well as this.subBoardCode, etc.
-   if ((bbs.curgrp != oldGrp) || (bbs.cursub != oldSub))
-   {
-      this.tradListTopMsgIdx = -1;
-      this.lightbarListTopMsgIdx = -1;
-      this.lightbarListSelectedMsgIdx = -1;
-      this.lightbarListCurPos = null;
-      this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
-      // Re-create the msgbase object for the new sub-board.  Don't open it yet,
-      // as that is done in the read/list methods.
-      if (this.msgbase != null)
-      {
-         if (this.msgbase.is_open)
-            this.msgbase.close();
-         this.msgbase = null;
-      }
-      this.msgbase = new MsgBase(this.subBoardCode);
-   }
+	// If the user chose a different message group & sub-board, then reset the
+	// lister index & cursor variables, as well as this.subBoardCode, etc.
+	//msg_area.sub[this.subBoardCode].grp_index
+	if ((bbs.curgrp != oldGrp) || (bbs.cursub != oldSub))
+	{
+		this.tradListTopMsgIdx = -1;
+		this.lightbarListTopMsgIdx = -1;
+		this.lightbarListSelectedMsgIdx = -1;
+		this.lightbarListCurPos = null;
+		this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
+		// Re-create the msgbase object for the new sub-board.  Don't open it yet,
+		// as that is done in the read/list methods.
+		if (this.msgbase != null)
+		{
+			if (this.msgbase.is_open)
+				this.msgbase.close();
+			this.msgbase = null;
+		}
+		this.msgbase = new MsgBase(this.subBoardCode);
+	}
 }
 
 // For the DigDistMsgReader class: Lists all message groups (for the traditional
 // user interface).
-function DigDistMsgReader_listMsgGrps_Traditional()
+function DigDistMsgReader_ListMsgGrps_Traditional()
 {
-   // Print the header
-   this.WriteGrpListHdrLine();
-   console.print("\1n");
-   // List the message groups
-   for (var i = 0; i < msg_area.grp_list.length; ++i)
-   {
-      console.crlf();
-      this.WriteMsgGroupLine(i, false);
-   }
+	// Print the header
+	this.WriteGrpListHdrLine();
+	console.print("\1n");
+	// List the message groups
+	for (var i = 0; i < msg_area.grp_list.length; ++i)
+	{
+		console.crlf();
+		this.WriteMsgGroupLine(i, false);
+	}
 }
 
 // For the DigDistMsgReader class: Lists the sub-boards in a message group,
@@ -9428,177 +9514,177 @@ function DigDistMsgReader_listMsgGrps_Traditional()
 //             "dateAsc": Sort by date, ascending
 //             "dateDesc": Sort by date, descending
 //             "description": Sort by description
-function DigDistMsgReader_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIndex, pSortType)
+function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIndex, pSortType)
 {
-   // Default to the current message group & sub-board if pGrpIndex
-   // and pMarkIndex aren't specified.
-   var grpIndex = bbs.curgrp;
-   if ((pGrpIndex != null) && (typeof(pGrpIndex) == "number"))
-      grpIndex = pGrpIndex;
-   var highlightIndex = bbs.cursub;
-   if ((pMarkIndex != null) && (typeof(pMarkIndex) == "number"))
-      highlightIndex = pMarkIndex;
+	// Default to the current message group & sub-board if pGrpIndex
+	// and pMarkIndex aren't specified.
+	var grpIndex = bbs.curgrp;
+	if ((pGrpIndex != null) && (typeof(pGrpIndex) == "number"))
+		grpIndex = pGrpIndex;
+	var highlightIndex = bbs.cursub;
+	if ((pMarkIndex != null) && (typeof(pMarkIndex) == "number"))
+		highlightIndex = pMarkIndex;
 
-   // Make sure grpIndex and highlightIndex are valid (they might not be for
-   // brand-new users).
-   if ((grpIndex == null) || (typeof(grpIndex) == "undefined"))
-      grpIndex = 0;
-   if ((highlightIndex == null) || (typeof(highlightIndex) == "undefined"))
-      highlightIndex = 0;
+	// Make sure grpIndex and highlightIndex are valid (they might not be for
+	// brand-new users).
+	if ((grpIndex == null) || (typeof(grpIndex) == "undefined"))
+		grpIndex = 0;
+	if ((highlightIndex == null) || (typeof(highlightIndex) == "undefined"))
+		highlightIndex = 0;
 
-   // Ensure that the sub-board printf information is created for
-   // this message group.
-   this.BuildSubBoardPrintfInfoForGrp(grpIndex);
+	// Ensure that the sub-board printf information is created for
+	// this message group.
+	this.BuildSubBoardPrintfInfoForGrp(grpIndex);
 
-   // Print the headers
-   this.WriteSubBrdListHdr1Line(grpIndex);
-   console.crlf();
-   printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
-   console.print("\1n");
+	// Print the headers
+	this.WriteSubBrdListHdr1Line(grpIndex);
+	console.crlf();
+	printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+	console.print("\1n");
 
-   // List each sub-board in the message group.
-   var subBoardArray = null;       // For sorting, if desired
-   var newestDate = new Object(); // For storing the date of the newest post in a sub-board
-   var msgBase = null;    // For opening the sub-boards with a MsgBase object
-   var msgHeader = null;  // For getting the date & time of the newest post in a sub-board
-   var subBoardNum = 0;   // 0-based sub-board number (because the array index is the number as a str)
-   // If a sort type is specified, then add the sub-board information to
-   // subBoardArray so that it can be sorted.
-   if ((typeof(pSortType) == "string") && (pSortType != "") && (pSortType != "none"))
-   {
-      subBoardArray = new Array();
-      var subBoardInfo = null;
-      for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
-      {
-         // Open the current sub-board with the msgBase object.
-         msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-         if (msgBase.open())
-         {
-            subBoardInfo = new MsgSubBoardInfo();
-            subBoardInfo.subBoardNum = +(arrSubBoardNum);
-            subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
-            subBoardInfo.numPosts = msgBase.total_msgs;
+	// List each sub-board in the message group.
+	var subBoardArray = null;       // For sorting, if desired
+	var newestDate = new Object(); // For storing the date of the newest post in a sub-board
+	var msgBase = null;    // For opening the sub-boards with a MsgBase object
+	var msgHeader = null;  // For getting the date & time of the newest post in a sub-board
+	var subBoardNum = 0;   // 0-based sub-board number (because the array index is the number as a str)
+	// If a sort type is specified, then add the sub-board information to
+	// subBoardArray so that it can be sorted.
+	if ((typeof(pSortType) == "string") && (pSortType != "") && (pSortType != "none"))
+	{
+		subBoardArray = new Array();
+		var subBoardInfo = null;
+		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
+		{
+			// Open the current sub-board with the msgBase object.
+			msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+			if (msgBase.open())
+			{
+				subBoardInfo = new MsgSubBoardInfo();
+				subBoardInfo.subBoardNum = +(arrSubBoardNum);
+				subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
+				subBoardInfo.numPosts = msgBase.total_msgs;
 
-            // Get the date & time when the last message was imported.
-            if (msgBase.total_msgs > 0)
-            {
-               msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-               if (this.msgAreaList_lastImportedMsg_showImportTime)
-                  subBoardInfo.newestPostDate = msgHeader.when_imported_time
-               else
-                  subBoardInfo.newestPostDate = msgHeader.when_written_time;
-            }
-         }
-         msgBase.close();
-         subBoardArray.push(subBoardInfo);
-      }
-      // Free some memory?
-      delete msgBase;
+				// Get the date & time when the last message was imported.
+				if (msgBase.total_msgs > 0)
+				{
+					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					if (this.msgAreaList_lastImportedMsg_showImportTime)
+						subBoardInfo.newestPostDate = msgHeader.when_imported_time
+					else
+						subBoardInfo.newestPostDate = msgHeader.when_written_time;
+				}
+			}
+			msgBase.close();
+			subBoardArray.push(subBoardInfo);
+		}
+		// Free some memory?
+		delete msgBase;
 
-      // Sort sub-board list.
-      if (pSortType == "dateAsc")
-      {
-         subBoardArray.sort(function(pA, pB)
-         {
-            // Return -1, 0, or 1, depending on whether pA's date comes
-            // before, is equal to, or comes after pB's date.
-            var returnValue = 0;
-            if (pA.newestPostDate < pB.newestPostDate)
-               returnValue = -1;
-            else if (pA.newestPostDate > pB.newestPostDate)
-               returnValue = 1;
-            return returnValue;
-         });
-      }
-      else if (pSortType == "dateDesc")
-      {
-         subBoardArray.sort(function(pA, pB)
-         {
-            // Return -1, 0, or 1, depending on whether pA's date comes
-            // after, is equal to, or comes before pB's date.
-            var returnValue = 0;
-            if (pA.newestPostDate > pB.newestPostDate)
-               returnValue = -1;
-            else if (pA.newestPostDate < pB.newestPostDate)
-               returnValue = 1;
-            return returnValue;
-         });
-      }
-      else if (pSortType == "description")
-      {
-         // Binary safe string comparison  
-         // 
-         // version: 909.322
-         // discuss at: http://phpjs.org/functions/strcmp    // +   original by: Waldo Malqui Silva
-         // +      input by: Steve Hilder
-         // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-         // +    revised by: gorthaur
-         // *     example 1: strcmp( 'waldo', 'owald' );    // *     returns 1: 1
-         // *     example 2: strcmp( 'owald', 'waldo' );
-         // *     returns 2: -1
-         subBoardArray.sort(function(pA, pB)
-         {
-            return ((pA.description == pB.description) ? 0 : ((pA.description > pB.description) ? 1 : -1));
-         });
-      }
+		// Possibly sort the sub-board list.
+		if (pSortType == "dateAsc")
+		{
+			subBoardArray.sort(function(pA, pB)
+			{
+				// Return -1, 0, or 1, depending on whether pA's date comes
+				// before, is equal to, or comes after pB's date.
+				var returnValue = 0;
+				if (pA.newestPostDate < pB.newestPostDate)
+					returnValue = -1;
+				else if (pA.newestPostDate > pB.newestPostDate)
+					returnValue = 1;
+				return returnValue;
+			});
+		}
+		else if (pSortType == "dateDesc")
+		{
+			subBoardArray.sort(function(pA, pB)
+			{
+				// Return -1, 0, or 1, depending on whether pA's date comes
+				// after, is equal to, or comes before pB's date.
+				var returnValue = 0;
+				if (pA.newestPostDate > pB.newestPostDate)
+					returnValue = -1;
+				else if (pA.newestPostDate < pB.newestPostDate)
+					returnValue = 1;
+				return returnValue;
+			});
+		}
+		else if (pSortType == "description")
+		{
+			// Binary safe string comparison  
+			// 
+			// version: 909.322
+			// discuss at: http://phpjs.org/functions/strcmp    // +   original by: Waldo Malqui Silva
+			// +      input by: Steve Hilder
+			// +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+			// +    revised by: gorthaur
+			// *     example 1: strcmp( 'waldo', 'owald' );    // *     returns 1: 1
+			// *     example 2: strcmp( 'owald', 'waldo' );
+			// *     returns 2: -1
+			subBoardArray.sort(function(pA, pB)
+			{
+				return ((pA.description == pB.description) ? 0 : ((pA.description > pB.description) ? 1 : -1));
+			});
+		}
 
-      // Display the sub-board list.
-      for (var i = 0; i < subBoardArray.length; ++i)
-      {
-         console.crlf();
-         console.print((subBoardArray[i].subBoardNum == highlightIndex) ? "\1n" +
-		               this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
-         printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
-                subBoardArray[i].description.substr(0, this.subBoardNameLen),
-                subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
-                strftime("%H:%M:%S", subBoardArray[i].newestPostDate));
-      }
-   }
-   // If no sort type is specified, then output the sub-board information in
-   // order of sub-board number.
-   else
-   {
-      for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
-      {
-         // Open the current sub-board with the msgBase object.
-         msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-         if (msgBase.open())
-         {
-            // Get the date & time when the last message was imported.
-            if (msgBase.total_msgs > 0)
-            {
-               msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-               // Construct the date & time strings of the latest post
-               if (this.msgAreaList_lastImportedMsg_showImportTime)
-               {
-                  newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-                  newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-               }
-               else
-               {
-                  newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-                  newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-               }
-            }
-            else
-               newestDate.date = newestDate.time = "";
-
-            // Print the sub-board information
-            subBoardNum = +(arrSubBoardNum);
-            console.crlf();
-            console.print((subBoardNum == highlightIndex) ? "\1n" +
+		// Display the sub-board list.
+		for (var i = 0; i < subBoardArray.length; ++i)
+		{
+			console.crlf();
+			console.print((subBoardArray[i].subBoardNum == highlightIndex) ? "\1n" +
 			              this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
-            printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-                   msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-                   msgBase.total_msgs, newestDate.date, newestDate.time);
-   
-            msgBase.close();
-         }
-   
-         // Free some memory?
-         delete msgBase;
-      }
-   }
+			printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
+			       subBoardArray[i].description.substr(0, this.subBoardNameLen),
+			       subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
+			       strftime("%H:%M:%S", subBoardArray[i].newestPostDate));
+		}
+	}
+	// If no sort type is specified, then output the sub-board information in
+	// order of sub-board number.
+	else
+	{
+		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
+		{
+			// Open the current sub-board with the msgBase object.
+			msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+			if (msgBase.open())
+			{
+				// Get the date & time when the last message was imported.
+				if (msgBase.total_msgs > 0)
+				{
+					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					// Construct the date & time strings of the latest post
+					if (this.msgAreaList_lastImportedMsg_showImportTime)
+					{
+						newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
+						newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
+					}
+					else
+					{
+						newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+						newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+					}
+				}
+				else
+				newestDate.date = newestDate.time = "";
+
+				// Print the sub-board information
+				subBoardNum = +(arrSubBoardNum);
+				console.crlf();
+				console.print((subBoardNum == highlightIndex) ? "\1n" +
+				              this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
+				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
+				       msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+				       msgBase.total_msgs, newestDate.date, newestDate.time);
+
+				msgBase.close();
+			}
+
+			// Free some memory?
+			delete msgBase;
+		}
+	}
 }
 
 //////////////////////////////////////////////
@@ -9619,64 +9705,61 @@ function DigDistMsgReader_listScreenfulOfMsgGrps(pStartIndex, pStartScreenRow,
                                                   pEndScreenRow, pClearScreenFirst,
                                                   pBlankToEndRow)
 {
-   // Check the parameters; If they're bad, then just return.
-   if ((typeof(pStartIndex) != "number") ||
-       (typeof(pStartScreenRow) != "number") ||
-       (typeof(pEndScreenRow) != "number"))
-   {
-      return;
-   }
-   if ((pStartIndex < 0) || (pStartIndex >= msg_area.grp_list.length))
-      return;
-   if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
-      return;
-   if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
-      return;
+	// Check the parameters; If they're bad, then just return.
+	if ((typeof(pStartIndex) != "number") ||
+	    (typeof(pStartScreenRow) != "number") ||
+	    (typeof(pEndScreenRow) != "number"))
+	{
+		return;
+	}
+	if ((pStartIndex < 0) || (pStartIndex >= msg_area.grp_list.length))
+		return;
+	if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
+		return;
+	if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
+		return;
 
-   // If pStartScreenRow is greather than pEndScreenRow, then swap them.
-   if (pStartScreenRow > pEndScreenRow)
-   {
-      var temp = pStartScreenRow;
-      pStartScreenRow = pEndScreenRow;
-      pEndScreenRow = temp;
-   }
+	// If pStartScreenRow is greather than pEndScreenRow, then swap them.
+	if (pStartScreenRow > pEndScreenRow)
+	{
+		var temp = pStartScreenRow;
+		pStartScreenRow = pEndScreenRow;
+		pEndScreenRow = temp;
+	}
 
-   // Calculate the ending index to use for the message groups array.
-   var endIndex = pStartIndex + (pEndScreenRow-pStartScreenRow);
-   if (endIndex >= msg_area.grp_list.length)
-      endIndex = msg_area.grp_list.length - 1;
-   var onePastEndIndex = endIndex + 1;
+	// Calculate the ending index to use for the message groups array.
+	var endIndex = pStartIndex + (pEndScreenRow-pStartScreenRow);
+	if (endIndex >= msg_area.grp_list.length)
+		endIndex = msg_area.grp_list.length - 1;
+	var onePastEndIndex = endIndex + 1;
 
-   // Check to make sure bbs.curgrp is valid (it might not be for brand-new users).
-   var curgrpValid = ((bbs.curgrp != null) && (typeof(bbs.curgrp) != "undefined"));
+	// Clear the screen, go to the specified screen row, and display the message
+	// group information.
+	if (pClearScreenFirst)
+		console.clear("\1n");
+	console.gotoxy(1, pStartScreenRow);
+	var grpIndex = pStartIndex;
+	for (; grpIndex < onePastEndIndex; ++grpIndex)
+	{
+		this.WriteMsgGroupLine(grpIndex, false);
+		if (grpIndex < endIndex)
+			console.crlf();
+	}
 
-   // Clear the screen, go to the specified screen row, and display the message
-   // group information.
-   if (pClearScreenFirst)
-      console.clear("\1n");
-   console.gotoxy(1, pStartScreenRow);
-   var grpIndex = pStartIndex;
-   for (; grpIndex < onePastEndIndex; ++grpIndex)
-   {
-      this.WriteMsgGroupLine(grpIndex, false);
-      if (grpIndex < endIndex)
-         console.crlf();
-   }
-
-   // If pBlankToEndRow is true and we're not at the end row yet, then
-   // write blank lines to the end row.
-   if (pBlankToEndRow)
-   {
-      var screenRow = pStartScreenRow + (endIndex - pStartIndex) + 1;
-      if (screenRow <= pEndScreenRow)
-      {
-         for (; screenRow <= pEndScreenRow; ++screenRow)
-         {
-            console.gotoxy(1, screenRow);
-            console.clearline("\1n");
-         }
-      }
-   }
+	// If pBlankToEndRow is true and we're not at the end row yet, then
+	// write blank lines to the end row.
+	if (pBlankToEndRow)
+	{
+		var screenRow = pStartScreenRow + (endIndex - pStartIndex) + 1;
+		if (screenRow <= pEndScreenRow)
+		{
+			for (; screenRow <= pEndScreenRow; ++screenRow)
+			{
+				console.gotoxy(1, screenRow);
+				console.clearline("\1n");
+			}
+		}
+	}
 }
 
 // For the DigDistMsgReader class - Writes a message group information line.
@@ -9686,20 +9769,20 @@ function DigDistMsgReader_listScreenfulOfMsgGrps(pStartIndex, pStartScreenRow,
 //  pHighlight: Boolean - Whether or not to write the line highlighted.
 function DigDistMsgReader_writeMsgGroupLine(pGrpIndex, pHighlight)
 {
-   // TODO: If pHighlight is true, that causes the screen to be cleared
-   // and the line is written on the first row of the console.
-   console.print("\1n");
-   // Write the highlight background color if pHighlight is true.
-   if (pHighlight)
-      console.print(this.colors.areaChooserMsgAreaBkgHighlightColor);
+	// TODO: If pHighlight is true, that causes the screen to be cleared
+	// and the line is written on the first row of the console.
+	console.print("\1n");
+	// Write the highlight background color if pHighlight is true.
+	if (pHighlight)
+	console.print(this.colors.areaChooserMsgAreaBkgHighlightColor);
 
-   // Write the message group information line
-   console.print(((typeof(bbs.curgrp) == "number") && (pGrpIndex == bbs.curgrp)) ? this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
-   printf((pHighlight ? this.msgGrpListHilightPrintfStr : this.msgGrpListPrintfStr),
-          +(pGrpIndex+1),
-          msg_area.grp_list[pGrpIndex].description.substr(0, this.msgGrpDescLen),
-          msg_area.grp_list[pGrpIndex].sub_list.length);
-   console.cleartoeol("\1n");
+	// Write the message group information line
+	console.print(((typeof(bbs.curgrp) == "number") && (pGrpIndex == msg_area.sub[this.subBoardCode].grp_index)) ? this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
+	printf((pHighlight ? this.msgGrpListHilightPrintfStr : this.msgGrpListPrintfStr),
+	       +(pGrpIndex+1),
+	       msg_area.grp_list[pGrpIndex].description.substr(0, this.msgGrpDescLen),
+	       msg_area.grp_list[pGrpIndex].sub_list.length);
+	console.cleartoeol("\1n");
 }
 
 //////////////////////////////////////////////////
@@ -9720,25 +9803,25 @@ function DigDistMsgReader_writeMsgGroupLine(pGrpIndex, pHighlight)
 //                  to the position where it was before this function was called
 function DigDistMsgReader_updateMsgAreaPageNumInHeader(pPageNum, pNumPages, pGroup, pRestoreCurPos)
 {
-  var originalCurPos = null;
-  if (pRestoreCurPos)
-    originalCurPos = console.getxy();
+	var originalCurPos = null;
+	if (pRestoreCurPos)
+		originalCurPos = console.getxy();
 
-  if (pGroup)
-  {
-    console.gotoxy(29, 1);
-    console.print("\1n" + this.colors.areaChooserMsgAreaHeaderColor + pPageNum + " of " +
-	              pNumPages + ")   ");
-  }
-  else
-  {
-    console.gotoxy(51, 1);
-    console.print("\1n" + this.colors.areaChooserSubBoardHeaderColor + pPageNum + " of " +
-	              pNumPages + ")   ");
-  }
+	if (pGroup)
+	{
+		console.gotoxy(29, 1);
+		console.print("\1n" + this.colors.areaChooserMsgAreaHeaderColor + pPageNum + " of " +
+		              pNumPages + ")   ");
+	}
+	else
+	{
+		console.gotoxy(51, 1);
+		console.print("\1n" + this.colors.areaChooserSubBoardHeaderColor + pPageNum + " of " +
+		              pNumPages + ")   ");
+	}
 
-  if (pRestoreCurPos)
-    console.gotoxy(originalCurPos);
+	if (pRestoreCurPos)
+		console.gotoxy(originalCurPos);
 }
 
 // Displays a screenful of message sub-boards, for the lightbar interface.
@@ -9752,72 +9835,72 @@ function DigDistMsgReader_updateMsgAreaPageNumInHeader(pPageNum, pNumPages, pGro
 //  pBlankToEndRow: Boolean - Whether or not to write blank lines to the end
 //                  screen row if there aren't enough message groups to fill
 //                  the screen.
-function DigDistMsgReader_listScreenfulOfSubBrds(pGrpIndex, pStartSubIndex,
+function DigDistMsgReader_ListScreenfulOfSubBrds(pGrpIndex, pStartSubIndex,
                                                   pStartScreenRow, pEndScreenRow,
                                                   pClearScreenFirst, pBlankToEndRow)
 {
-   // Check the parameters; If they're bad, then just return.
-   if ((typeof(pGrpIndex) != "number") ||
-       (typeof(pStartSubIndex) != "number") ||
-       (typeof(pStartScreenRow) != "number") ||
-       (typeof(pEndScreenRow) != "number"))
-   {
-      return;
-   }
-   if ((pGrpIndex < 0) || (pGrpIndex >= msg_area.grp_list.length))
-      return;
-   if ((pStartSubIndex < 0) ||
-       (pStartSubIndex >= msg_area.grp_list[pGrpIndex].sub_list.length))
-   {
-      return;
-   }
-   if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
-      return;
-   if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
-      return;
-   // If pStartScreenRow is greather than pEndScreenRow, then swap them.
-   if (pStartScreenRow > pEndScreenRow)
-   {
-      var temp = pStartScreenRow;
-      pStartScreenRow = pEndScreenRow;
-      pEndScreenRow = temp;
-   }
+	// Check the parameters; If they're bad, then just return.
+	if ((typeof(pGrpIndex) != "number") ||
+	    (typeof(pStartSubIndex) != "number") ||
+	    (typeof(pStartScreenRow) != "number") ||
+	    (typeof(pEndScreenRow) != "number"))
+	{
+		return;
+	}
+	if ((pGrpIndex < 0) || (pGrpIndex >= msg_area.grp_list.length))
+		return;
+	if ((pStartSubIndex < 0) ||
+	    (pStartSubIndex >= msg_area.grp_list[pGrpIndex].sub_list.length))
+	{
+		return;
+	}
+	if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
+		return;
+	if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
+		return;
+	// If pStartScreenRow is greather than pEndScreenRow, then swap them.
+	if (pStartScreenRow > pEndScreenRow)
+	{
+		var temp = pStartScreenRow;
+		pStartScreenRow = pEndScreenRow;
+		pEndScreenRow = temp;
+	}
 
-   // Calculate the ending index to use for the sub-board array.
-   var endIndex = pStartSubIndex + (pEndScreenRow-pStartScreenRow);
-   if (endIndex >= msg_area.grp_list[pGrpIndex].sub_list.length)
-      endIndex = msg_area.grp_list[pGrpIndex].sub_list.length - 1;
-   var onePastEndIndex = endIndex + 1;
+	// Calculate the ending index to use for the sub-board array.
+	var endIndex = pStartSubIndex + (pEndScreenRow-pStartScreenRow);
+	if (endIndex >= msg_area.grp_list[pGrpIndex].sub_list.length)
+		endIndex = msg_area.grp_list[pGrpIndex].sub_list.length - 1;
+	var onePastEndIndex = endIndex + 1;
 
-   // Clear the screen and go to the specified screen row.
-   if (pClearScreenFirst)
-      console.clear("\1n");
-   console.gotoxy(1, pStartScreenRow);
+	// Clear the screen and go to the specified screen row.
+	if (pClearScreenFirst)
+		console.clear("\1n");
+	console.gotoxy(1, pStartScreenRow);
 
-   // Start listing the sub-boards.
+	// Start listing the sub-boards.
 
-   var subIndex = pStartSubIndex;
-   for (; subIndex < onePastEndIndex; ++subIndex)
-   {
-      this.WriteMsgSubBoardLine(pGrpIndex, subIndex, false);
-      if (subIndex < endIndex)
-         console.crlf();
-   }
+	var subIndex = pStartSubIndex;
+	for (; subIndex < onePastEndIndex; ++subIndex)
+	{
+		this.WriteMsgSubBoardLine(pGrpIndex, subIndex, false);
+		if (subIndex < endIndex)
+			console.crlf();
+	}
 
-   // If pBlankToEndRow is true and we're not at the end row yet, then
-   // write blank lines to the end row.
-   if (pBlankToEndRow)
-   {
-      var screenRow = pStartScreenRow + (endIndex - pStartSubIndex) + 1;
-      if (screenRow <= pEndScreenRow)
-      {
-         for (; screenRow <= pEndScreenRow; ++screenRow)
-         {
-            console.gotoxy(1, screenRow);
-            console.clearline("\1n");
-         }
-      }
-   }
+	// If pBlankToEndRow is true and we're not at the end row yet, then
+	// write blank lines to the end row.
+	if (pBlankToEndRow)
+	{
+		var screenRow = pStartScreenRow + (endIndex - pStartSubIndex) + 1;
+		if (screenRow <= pEndScreenRow)
+		{
+			for (; screenRow <= pEndScreenRow; ++screenRow)
+			{
+				console.gotoxy(1, screenRow);
+				console.clearline("\1n");
+			}
+		}
+	}
 }
 
 // For the DigDistMsgReader class: Writes a message sub-board information line for
@@ -9827,54 +9910,54 @@ function DigDistMsgReader_listScreenfulOfSubBrds(pGrpIndex, pStartSubIndex,
 //  pGrpIndex: The index of the message group (assumed to be valid)
 //  pSubIndex: The index of the sub-board within the message group to write (assumed to be valid)
 //  pHighlight: Boolean - Whether or not to write the line highlighted.
-function DigDistMsgReader_writeMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
+function DigDistMsgReader_WriteMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 {
-   console.print("\1n");
-   // Write the highlight background color if pHighlight is true.
-   if (pHighlight)
-      console.print(this.colors.areaChooserMsgAreaBkgHighlightColor);
+	console.print("\1n");
+	// Write the highlight background color if pHighlight is true.
+	if (pHighlight)
+		console.print(this.colors.areaChooserMsgAreaBkgHighlightColor);
 
-   // Determine if pGrpIndex and pSubIndex specify the user's
-   // currently-selected group and sub-board.
-   var currentSub = false;
-   if ((typeof(bbs.curgrp) == "number") && (typeof(bbs.cursub) == "number"))
-      currentSub = ((pGrpIndex == bbs.curgrp) && (pSubIndex == bbs.cursub));
+	// Determine if pGrpIndex and pSubIndex specify the user's
+	// currently-selected group and sub-board.
+	var currentSub = false;
+	if ((typeof(bbs.curgrp) == "number") && (typeof(bbs.cursub) == "number"))
+		currentSub = ((pGrpIndex == msg_area.sub[this.subBoardCode].grp_index) && (pSubIndex == msg_area.sub[this.subBoardCode].index));
 
-   // Open the current sub-board with the msgBase object (so that we can get
-   // the date & time of the last imporeted message).
-   var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-   if (msgBase.open())
-   {
-      var newestDate = new Object(); // For storing the date of the newest post
-      // Get the date & time when the last message was imported.
-      if (msgBase.total_msgs > 0)
-      {
-         msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-         // Construct the date & time strings of the latest post
-         if (this.msgAreaList_lastImportedMsg_showImportTime)
-         {
-            newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-            newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-         }
-         else
-         {
-            newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-            newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-         }
-      }
-      else
-         newestDate.date = newestDate.time = "";
+	// Open the current sub-board with the msgBase object (so that we can get
+	// the date & time of the last imporeted message).
+	var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
+	if (msgBase.open())
+	{
+		var newestDate = new Object(); // For storing the date of the newest post
+		// Get the date & time when the last message was imported.
+		if (msgBase.total_msgs > 0)
+		{
+			msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+			// Construct the date & time strings of the latest post
+			if (this.msgAreaList_lastImportedMsg_showImportTime)
+			{
+				newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
+				newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
+			}
+			else
+			{
+				newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+				newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+			}
+		}
+		else
+			newestDate.date = newestDate.time = "";
 
-      // Print the sub-board information line.
-      console.print(currentSub ? this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
-      printf((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
-             +(pSubIndex+1),
-             msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
-             msgBase.total_msgs, newestDate.date, newestDate.time);
-      msgBase.close();
+		// Print the sub-board information line.
+		console.print(currentSub ? this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
+		printf((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
+		       +(pSubIndex+1),
+		msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
+		                                                                    msgBase.total_msgs, newestDate.date, newestDate.time);
+		msgBase.close();
 
-      delete msgBase;
-   }
+		delete msgBase;
+	}
 }
 
 ///////////////////////////////////////////////
@@ -10685,7 +10768,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 //  pPageNum: A page number (1-based)
 function DigDistMsgReader_CalcTraditionalMsgListTopIdx(pPageNum)
 {
-   if (this.reverseOrder)
+   if (this.reverseListOrder)
       this.tradListTopMsgIdx = this.NumMessages() - (this.tradMsgListNumLines * (pPageNum-1)) - 1;
    else
       this.tradListTopMsgIdx = (this.tradMsgListNumLines * (pPageNum-1));
@@ -10698,7 +10781,7 @@ function DigDistMsgReader_CalcTraditionalMsgListTopIdx(pPageNum)
 //  pPageNum: A page number (1-based)
 function DigDistMsgReader_CalcLightbarMsgListTopIdx(pPageNum)
 {
-   if (this.reverseOrder)
+   if (this.reverseListOrder)
       this.lightbarListTopMsgIdx = this.NumMessages() - (this.lightbarMsgListNumLines * (pPageNum-1)) - 1;
    else
       this.lightbarListTopMsgIdx = (this.lightbarMsgListNumLines * (pPageNum-1));
@@ -10717,7 +10800,7 @@ function DigDistMsgReader_CalcMsgListScreenIdxVarsFromMsgNum(pMsgNum)
    var numItemsPerPage = this.tradMsgListNumLines;
    if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
       numItemsPerPage = this.lightbarMsgListNumLines;
-   var newPageNum = findPageNumOfItemNum(pMsgNum, numItemsPerPage, this.NumMessages(), this.reverseOrder);
+   var newPageNum = findPageNumOfItemNum(pMsgNum, numItemsPerPage, this.NumMessages(), this.reverseListOrder);
    this.CalcTraditionalMsgListTopIdx(newPageNum);
    this.CalcLightbarMsgListTopIdx(newPageNum);
 	this.lightbarListSelectedMsgIdx = pMsgNum - 1;
@@ -13394,6 +13477,32 @@ function writeToSysAndNodeLog(pMessage)
 	var logMessage = "Digital Distortion Message Reader (" +  user.alias + "): " + pMessage;
 	log(LOG_INFO, logMessage);
 	bbs.log_str(logMessage);
+}
+
+// This function looks up and returns a sub-board code from the sub-board number.
+// If no matching sub-board is found, this will return an empty string.
+//
+// Parameters:
+//  pSubBoardNum: A sub-board number
+//
+// Return value: The sub-board code.  If no matching sub-board is found, an empty
+//               string will be returned.
+function getSubBoardCodeFromNum(pSubBoardNum)
+{
+	// Ensure we're using a numeric type for the sub-board number
+	// (in case pSubBoardNum is a string rather than a number)
+	var subNum = Number(pSubBoardNum);
+
+	var subBoardCode = "";
+	for (var subCode in msg_area.sub)
+	{
+		if (msg_area.sub[subCode].number == subNum)
+		{
+			subBoardCode = subCode;
+			break;
+		}
+	}
+	return subBoardCode;
 }
 
 /////////////////////////////////////////////////////////////////////////

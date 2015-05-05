@@ -1,6 +1,6 @@
                     Digital Distortion Message Reader
-                          Version 1.00 Beta 75
-                        Release date: 2015-04-21
+                          Version 1.00 Beta 80
+                        Release date: 2015-05-04
 
                                   by
 
@@ -19,7 +19,6 @@ Contents
 1. Disclaimer
 2. Introduction
 3. Installation & Setup
-3a. Loadable Modules setup
 4. Header ANSI/asc file
 5. Configuration file & color/text theme configuration file
 6. Drop file for replying to messages with Synchronet message editors
@@ -29,28 +28,38 @@ Contents
 =============
 I cannot guarantee that this script is 100% free of bugs.  However, I have
 tested it, and I used it often during development, so I have some confidence
-that there are no serious issues with it (at least, none thta I have seen).
+that there are no serious issues with it (at least, none that I have seen).
 
 
 2. Introduction
 ===============
-The Digital Distortion Message Reader is a modification for Synchronet, written
-in JavaScript, that provides an alternate message reading interface.  The
-intent iss to provide a very functional yet intuitive user interface.  For ANSI
-users, a reader interface is provided which allows scrolling the message up &
-down (with the up & down arrow keys, as well as the PageUp & PageDown keys),
-navigating through the messages in the message area (AKA sub-board) using the
-left & right arrow keys, replying to messages, and other common messagebase
-functionality.  A more traditional reader interface is also provided for
-non-ANSI terminals.  The Digital Distortion Message Reader can also list the
-messages in the user's current message area and allows forward & reverse
-navigation through the message list, using a lightbar or traditional user
-interface.  Message newscan and different types of message searching are also
-available.  This script requires Synchronet version 3.13 or newer.
+The Digital Distortion Message Reader is a script for Synchronet, written in
+JavaScript, that provides an alternate message reading interface.  The intent
+is to provide a very functional yet intuitive user interface for reading
+messages.  For ANSI users, a reader interface is provided which allows
+scrolling the message up & down (with the up & down arrow keys, as well as the
+PageUp & PageDown keys), navigating through the messages in the message area
+(AKA sub-board) using the left & right arrow keys, replying to messages, and
+other common messagebase functionality.  The Digital Distortion Message Reader
+can also list messages in the message area and allows forward & reverse
+navigation through the message list using a lightbar or traditional user
+interface.  A message area chooser feature is also included, allowing the user
+to change to a different message area to read/list messages.  Message newscan
+and various types of message searching are also available.  This script
+requires Synchronet version 3.15 or newer.
+
+If the user's terminal does not support ANSI, the reader will fall back to a
+more traditional user interface (which does not support scrolling).  The user
+interface style can also be toggled by the sysop in the configuration file
+in case the sysop wants the reader to use the traditional interface even for
+ANSI users.
 
 This reader effectively replaces the Digital Distortion Message Lister, which
 provided a traditional message reader interface but not the scrollable reader
-interface for ANSI users.  
+interface for ANSI users.
+
+Thanks goes to Accession (sysop of Access Denied) and Psi-Jack (sysop of
+Decker's Heaven) for testing the reader while it was in development.
 
 The following is a list of features:
 - Provides an enhanced, very functional yet intuitive user interface for
@@ -101,17 +110,69 @@ under Message Options > Extra Attribute Codes.
 3. Installation & Setup
 =======================
 Digital Distortion Message Reader is comprised of the following files:
-1. DDMsgReader.js
-2. DDMsgReader.cfg
-3. DefaultTheme.cfg
-DDMsgReader.js is the script to run.  DDMsgReader.cfg is the configuration file
-which controls various options of the reader, and DefaultTheme.cfg is a theme
-configuration file, which contains settings for colors and text used in the
-reader.  The configuration files are plain text files, so they can be edited
-using any text editor.
+1. DDMsgReader.js         The Digital Distortion Message Reader script
 
-First, place the files together in any directory.  Then, modify your command
-shell to run DDMsgReader.js for any or all of the desired functionality
+2. DDMsgReader.cfg        The reader configuration file
+
+3. DefaultTheme.cfg       The default theme file containing colors & some
+                          configurable text strings used in the reader
+
+4. DDReadPersonalMail.js  A script to be used for "Read mail" script in
+                          Synchronet's Loadable Module configuration
+
+5. DDScanMsgs.js          A script to be used for "Scan Msgs" script in
+                          Synchronet's Loadable Module configuration
+
+6. DDScanSubs.js          A script to be used for "Scan Subs" script in
+                          Synchronet's Loadable Module configuration
+
+The configuration files are plain text files, so they can be edited using any
+editor.
+
+The first 3 files can be placed in any directory; the next 3 should be copied
+to your sbbs/subs directory.
+
+Loadable Modules setup
+----------------------
+In Synchronet 3.16 builds starting on April 27, 2015, there are a few new
+options in the Loadable Lodules configuration in SCFG: "Read Mail", "Scan
+Msgs", and "Scan Subs".  These loadable modules options can enable the use of
+a message reader script for the various message reading, searching, and
+scanning options provided by Synchronet.  That is probably the easiest way to
+install the reader, since it only requires specifying a script in the Loadable
+Modules options and does not require modification of your command shell.
+Setting it up that way also has the advantage that the reader will be used for
+reading personal email and performing a message newscan during the login
+process.  If you have a recent build of Synchronet 3.16 (or newer), then your
+version of Synchronet will support this.  If you are using an older version of
+Synchronet, skip ahead to the "Command shell setup" subsection.
+
+To set up the reader with the Loadable Module scripts, do the following:
+1. Copy DDReadPersonalMail.js, DDScanMsgs.js, and DDScanSubs.js from the
+   "Loadable module scripts" directory to your sbbs/mods directory
+2. If you will be running the script from a directory other than
+   xtrn/DDMsgReader, edit DDReadPersonalMail.js, DDScanMsgs.js, DDScanSubs.js,
+   and change the path used to run DDMsgReader.js.  In DDReadPersonalMail.js,
+   you can simply edit the line containing bbs.exec.  In DDScanMsgs.js and
+   DDScanSubs.js, search for the text "SYSOPS:" (without the double-quotes).
+   One or two lines below that, there is a variable called msgReaderPath -
+   Change that so that it contains the path where you copied DDMsgReader.js.
+3. Run Synchronet's configuration program (scfg from the command prompt, or
+   from the GUI, select BBS > Configure).  In there, select System, then
+   Loadable Modules
+4. For the 'Read Mail' option, put in DDReadPersonalMail
+5. For the 'Scan Msgs' option, put in DDScanMsgs
+6. For the 'Scan Subs' option, put in DDScanSubs
+
+There are a few search modes that Synchronet provides that Digital Distortion
+Message Reader doesn't support yet (such as continuous newscan and browse new
+scan), and for those situations, the Loadable Modules scripts will fall back to
+the stock Synchronet behavior.
+
+Command shell setup
+-------------------
+Digital Distortion Message Reader can be set up by adding options to your
+command shell to run DDMsgReader.js for any or all of the desired functionality
 (reading, searching, message scanning, etc).  The command-line parameters are
 described in the subsection "Command-line parameters".  Installing into a
 command shell is described in the subsection "Installing into a command shell".
@@ -182,18 +243,25 @@ the only valid search types are keyword_search and from_name_search.
            reader mode and list (or lister) for message list mode.
 -configFilename: Specifies the name of the configuration file to use.  Defaults
                  to DDMsgReader.cfg.
+-subBoard: The sub-board (internal code or number) to read, other than the
+           user's current sub-board.  This is optional; if this is specified,
+           the sub-board specified by this option will be used instead of the
+           user's current sub-board.  If this option is specified, the
+           -chooseAreaFirst option will be ignored.
 -personalEmail: Read personal email to the user.  This is a true/false value.
                 It doesn't need to explicitly have a =true or =false afterward;
-                simply including -personalEmail will enable it.
+                simply including -personalEmail will enable it.  If this option
+                is specified, the -chooseAreaFirst and -subBoard options will
+                be ignored.
 -personalEmailSent: Read personal email to the user.  This is a true/false
                     value.  It doesn't need to explicitly have a =true or =false
                     afterward; simply including -personalEmailSent will enable it.
 -chooseAreaFirst: Display the message area chooser before reading/listing
                   messages.  This is a true/false value.  It doesn't need
                   to explicitly have a =true or =false afterward; simply
-                  including -chooseAreaFirst will enable it.  If
-                  -personalEmail is specified, then this option won't have
-                  any effect.
+                  including -chooseAreaFirst will enable it.  If -personalEmail
+					   or -subBoard is specified, then this option won't have any
+                  effect.
 
 
 Synchronet command shell background
@@ -287,34 +355,6 @@ common message operations.
 ?../xtrn/DDMsgReader/DDMsgReader.js -personalEmailSent -startMode=read
 
 
-3a. Loadable Modules setup
-==========================
-Synchronet 3.16 builds starting on April 27, 2015 have a few new options for
-'loadable modules' which can enable the use of a message reader script in
-places other than your command shell (for instance, reading personal email or
-doing a message newscan during the login process).  The loadable modules are
-configured in SCFG under System > Loadable Modules.  Digital Distortion Message
-Reader includes a few additional scripts that can be set up as loadable modules
-to allow using Digital Distortion Message Reader to be used for reading
-personal email or doing a message newscan during the login process, as well as
-text searching (which would be used from the stock Synchronet command shell).
-
-
-To enable Digital Distortion Message Reader for those scenarios, perform the
-following steps:
-1. Copy the .js scripts from the 'Loadable module scripts' directory to your
-   sbbs/mods directory
-2. Run SCFG (the Synchronet configuration program) and select System, then
-   Loadable Modules
-3. For the 'Read Mail' option, put in DDReadPersonalMail
-4. For the 'Scan Posts' option, put in DDScanPosts
-5. For the 'Scan Subs' option, put in DDScanSubs
-
-There are a few search modes that Synchronet provides that Digital Distortion
-Message Reader doesn't support yet (such as continuous newscan and browse new
-scan), and for those situations, the Loadable Modules script will fall back to
-the stock Synchronet behavior.
-
 4. Header ANSI/asc file
 =======================
 Digital Distortion Message Reader supports its own message header ANSI/.asc
@@ -377,7 +417,7 @@ interfaceStyle                        String: The user interface to use.  Valid 
                                       screenful) and Lightbar (use the lightbar user
                                       interface).
 
-reverseOrder                          true/false: Whether or not to display the list
+reverseListOrder                      true/false: Whether or not to display the list
                                       in reverse order, or the string "ask" to ask the user
                                       whether they want the list displayed in reverse.  If
                                       the list is displayed in reverse, that has the effect

@@ -57,7 +57,7 @@ console.pause();
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
-var msgReaderPath = "/BBS/sbbs/xtrn/DigDist/MsgReader";
+var msgReaderPath = "../xtrn/DDMsgReader";
 
 
 // The start of the command string to use with bbs.exec()
@@ -66,7 +66,15 @@ var rdrCmdStrStart = "?" + msgReaderPath + "/DDMsgReader.js ";
 // No extra mode bits set, only read: Use Digital Distortion Message Reader
 // in read mode
 if (scanMode == SCAN_READ)
-	bbs.exec(rdrCmdStrStart + "-subBoard=" + subBoardNum + " -startMode=read");
+{
+	// The sub-board can be specified with the -subBoard option:
+	//bbs.exec(rdrCmdStrStart + "-subBoard=" + subBoardNum + " -startMode=read");
+	// Specifying the sub-board by number will cause the reader to look up the
+	// sub-board internal code by number.  That's a linear lookup, which can take
+	// some time if the BBS has many sub-boards.  RWthout the -subBoard option, the
+	// reader will start in the user's current sub-board:
+	bbs.exec(rdrCmdStrStart + "-startMode=read");
+}
 // Some modes that the Digital Distortion Message Reader doesn't handle yet: Use
 // Synchronet's stock behavior.
 else if (((scanMode & SCAN_CONST) == SCAN_CONST) || ((scanMode & SCAN_BACK) == SCAN_BACK))

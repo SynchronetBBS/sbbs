@@ -30,7 +30,7 @@ var scanMode = Number(argv[1]);
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
-var msgReaderPath = "/BBS/sbbs/xtrn/DigDist/MsgReader";
+var msgReaderPath = "../xtrn/DDMsgReader";
 
 /*
 // Temporary - For debugging
@@ -73,7 +73,7 @@ else if ((scanMode & SCAN_NEW) == SCAN_NEW)
 	else // Prompt for sub-board, group, or all
 		bbs.exec(rdrCmdStrStart + "-search=new_msg_scan -suppressSearchTypeText");
 }
-else if ((scanMode & SCAN_TOYOU) == SCAN_TOYOU)
+else if (((scanMode & SCAN_TOYOU) == SCAN_TOYOU) || ((scanMode & SCAN_UNREAD) == SCAN_UNREAD))
 {
 	// Scan for messages posted to you/new messages posted to you
 	if (scanAllSubs)
@@ -82,8 +82,6 @@ else if ((scanMode & SCAN_TOYOU) == SCAN_TOYOU)
 		bbs.exec(rdrCmdStrStart + "-startMode=read -search=to_user_new_scan -suppressSearchTypeText");
 }
 else if ((scanMode & SCAN_FIND) == SCAN_FIND)
-{
 	bbs.exec(rdrCmdStrStart + "-search=keyword_search -startMode=list");
-}
 else // Stock Synchronet functionality
 	bbs.scan_subs(scanMode, scanAllSubs);
