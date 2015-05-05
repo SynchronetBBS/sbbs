@@ -57,7 +57,7 @@ console.pause();
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
-var msgReaderPath = "/BBS/sbbs/xtrn/DigDist/MsgReader";
+var msgReaderPath = "../xtrn/DDMsgReader";
 
 
 // The start of the command string to use with bbs.exec()
