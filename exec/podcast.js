@@ -175,7 +175,7 @@ for (i=hdrs.length - 1; i >= 0; i--) {
 	// TODO: category?
 	// TODO: HTML integration required here for <comments> tag.
 	item += '\t\t\t<enclosure url="'+encode_xml(m[2])+'" length="'+item_length+'" type="'+item_type+'" />\n';
-	item += '\t\t\t<guid>'+encode_xml(hdrs[i].id)+'</guid>\n';
+	item += '\t\t\t<guid isPermalink="false">'+encode_xml(hdrs[i].id)+'</guid>\n';
 	item += '\t\t\t<pubDate>'+encode_xml((new Date(hdrs[i].when_written_time * 1000)).toUTCString())+'</pubDate>\n';
 	// TODO: source?
 	item += '\t\t</item>\n';
