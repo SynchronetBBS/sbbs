@@ -1,14 +1,14 @@
-                    Digital Distortion Message Reader
-                          Version 1.00 Beta 80
-                        Release date: 2015-05-04
+                      Digital Distortion Message Reader
+                             Version 1.0 Beta 81
+                           Release date: 2015-05-05
 
-                                  by
+                                     by
 
-                             Eric Oulashin
-                       Sysop of Digital Distortion
-               BBS internet address: digitaldistortionbbs.com
-                  Alternate address: digdist.bbsindex.com
-                     Email: eric.oulashin@gmail.com
+                                Eric Oulashin
+                          Sysop of Digital Distortion
+                  BBS internet address: digitaldistortionbbs.com
+                     Alternate address: digdist.bbsindex.com
+                        Email: eric.oulashin@gmail.com
 
 
 
@@ -395,17 +395,30 @@ left-justified in a width of 30 characters, the @-code would look like this:
 ===========================================================
 Digital Distortion Message Reader allows changing some settings, colors, and
 some of the text via configuration files.  The configuration files are plain
-text and can be edited with any text editor.  DDMsgReader.cfg is the main
-configuration file; colors and various text strings are specified in a separate
-file (such as DefaultTheme.cfg).  DefaultTheme.cfg contains the default colors
-and text string values.
+text and can be edited with any text editor.  These are the configuration files
+used by Digital Distortion Message Reader:
+- DDMsgReader.cfg: The main configuration file
+- DefaultTheme.cfg: Defines colors & some text strings used in the reader.
+  The name of this file can be specified in DDMsgReader.cfg, so that alternate
+  "theme" configuration files can be used if desired.
+
 Each setting in the configuration files has the format setting=value, where
 "setting" is the name of the setting or color, and "value" is the corresponding
 value to use.  The colors specified in the theme configuration file are
-Synchronet color/attribute codes.
+Synchronet color/attribute codes.  Comments are allowed in the configuration
+files - Commented lines begin with a semicolon (;).
 
-Also, comments are allowed in the configuration file.  Commented lines begin
-with a semicolon (;).
+Digital Distortion Message Reader will look for the configuration files in the
+following directories, in the following order:
+1. sbbs/mods
+2. sbbs/ctrl
+3. The same directory as DDMsgReader.js
+If you customize your configuration files, you can copy them to your sbbs/mods
+or sbbs/ctrl directory so that they'll be more difficutl to accidentally
+override if you update your xtrn/DDMsgReader from the Synchronet CVS
+repository, where this reader's files are checked in.
+
+The configuration settings are described in the sections below:
 
 Main configuration file (DDMsgReader.cfg)
 -----------------------------------------

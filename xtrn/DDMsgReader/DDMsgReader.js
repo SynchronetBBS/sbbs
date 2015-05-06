@@ -103,8 +103,8 @@ if (system.version_num < 31500)
 }
 
 // Constants
-var READER_VERSION = "1.0 Beta 80";
-var READER_DATE = "2015-05-04";
+var READER_VERSION = "1.0 Beta 81";
+var READER_DATE = "2015-05-05";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -3881,10 +3881,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	enhReaderKeys.nextMsgByAuthor = "}";
 	enhReaderKeys.prevMsgByToUser = "[";
 	enhReaderKeys.nextMsgByToUser = "]";
-	enhReaderKeys.prevMsgByThreadID = ",";
-	enhReaderKeys.nextMsgByThreadID = ".";
-	enhReaderKeys.prevMsgByThreadID2 = "(";
-	enhReaderKeys.nextMsgByThreadID2 = ")";
+	enhReaderKeys.prevMsgByThreadID = "(";
+	enhReaderKeys.nextMsgByThreadID = ")";
 	enhReaderKeys.prevSubBoard = "-";
 	enhReaderKeys.nextSubBoard = "+";
 	enhReaderKeys.saveToBBSMachine = CTRL_S;
@@ -3909,9 +3907,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				threadType = THREAD_BY_TO_USER;
 				break;
 			case enhReaderKeys.prevMsgByThreadID:
-			case enhReaderKeys.prevMsgByThreadID2:
 			case enhReaderKeys.nextMsgByThreadID:
-			case enhReaderKeys.nextMsgByThreadID2:
 			default:
 				threadType = THREAD_BY_ID;
 				break;
@@ -4268,7 +4264,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				case enhReaderKeys.prevMsgByAuthor: // Previous message by author
 				case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
 				case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
-				case enhReaderKeys.prevMsgByThreadID2: // Previous message by thread ID
 					// Only allow this if we aren't doing a message search.
 					if (!this.SearchingAndResultObjsDefinedForCurSub())
 					{
@@ -4298,7 +4293,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				case enhReaderKeys.nextMsgByAuthor: // Next message by author
 				case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
 				case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
-				case enhReaderKeys.nextMsgByThreadID2: // Next message by thread ID
 					// Only allow this if we aren't doing a message search.
 					if (!this.SearchingAndResultObjsDefinedForCurSub())
 					{
@@ -4776,7 +4770,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				case enhReaderKeys.prevMsgByAuthor: // Previous message by author
 				case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
 				case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
-				case enhReaderKeys.prevMsgByThreadID2: // Previous message by thread ID
 					// Only allow this if we aren't doing a message search.
 					if (!this.SearchingAndResultObjsDefinedForCurSub())
 					{
@@ -4801,7 +4794,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 				case enhReaderKeys.nextMsgByAuthor: // Next message by author
 				case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
 				case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
-				case enhReaderKeys.nextMsgByThreadID2: // Next message by thread ID
 					// Only allow this if we aren't doing a message search.
 					if (!this.SearchingAndResultObjsDefinedForCurSub())
 					{
@@ -6271,10 +6263,11 @@ function DigDistMsgReader_ReadConfigFile()
 
 	var themeFilename = ""; // In case a theme filename is specified
 
-	// Open the main configuration file.  First look for it in the sbbs/ctrl
-	// directory, and if it doesn't exist there, assume it's in the same
-	// directory as this script.
-	var cfgFilename = system.ctrl_dir + this.cfgFilename;
+	// Open the main configuration file.  First look for it in the sbbs/mods
+	// directory, then sbbs/ctrl, then in the same directory as this script.
+	var cfgFilename = system.mods_dir + this.cfgFilename;
+	if (!file_exists(cfgFilename))
+		cfgFilename = system.ctrl_dir + this.cfgFilename;
 	if (!file_exists(cfgFilename))
 		cfgFilename = gStartupPath + this.cfgFilename;
 	var cfgFile = new File(cfgFilename);
@@ -6356,10 +6349,12 @@ function DigDistMsgReader_ReadConfigFile()
 				}
 				else if (settingUpper == "THEMEFILENAME")
 				{
-					// First look for it in the sbbs/ctrl directory, and if it
-					// doesn't exist there, assume it's in the same directory
-					// as this script.
-					themeFilename = system.ctrl_dir + value;
+					// First look for the theme config file in the sbbs/mods
+					// directory, then sbbs/ctrl, then the same directory as
+					// this script.
+					themeFilename = system.mods_dir + value;
+					if (!file_exists(themeFilename))
+						themeFilename = system.ctrl_dir + value;
 					if (!file_exists(themeFilename))
 						themeFilename = gStartupPath + value;
 				}
@@ -7854,8 +7849,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt)
 		// Thread ID keys: For Synchronet 3.16 and above, include the text "thread ID"
 		// in the help line, since Synchronet 3.16 has the thread_id field in the message
 		// headers.
-		//var threadIDLine = "\1h\1c( \1n\1cor \1h)           \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
-		var threadIDLine = "\1h\1c, \1n\1cor \1h.    ( \1n\1cor \1h) \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
+		var threadIDLine = "\1h\1c( \1n\1cor \1h)           \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
 		if (system.version_num >= 31600)
 			threadIDLine += " (thread ID)";
 		keyHelpLines.push(threadIDLine);
@@ -10449,48 +10443,6 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 			// no thread_id field in the header
 			else if ((typeof(pMsgHdr.thread_next) == "number") && (pMsgHdr.thread_next > 0))
 				newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_next);
-			/*
-			// If thread_next is valid for the message header, then use it.
-			if ((typeof(pMsgHdr.thread_next) == "number") && (pMsgHdr.thread_next > 0))
-				newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_next);
-			else
-			{
-				// Note (2014-10-11): Digital Man said thread_id was
-				// introduced in Synchronet version 3.16 and was still
-				// a work in progress and isn't 100% accurate for
-				// networked sub-boards.
-				if (typeof(pMsgHdr.thread_id) == "number")
-				{
-					// Look for the next message with the same thread ID.
-					// Note: I'm not sure when thread_id was introduced in
-					// Synchronet, so I'm not sure of the minimum version where
-					// this will work.
-					// Write "Searching.."  in case searching takes a while.
-					console.print("\1n");
-					if (pPositionCursorForStatus)
-					{
-						console.gotoxy(1, console.screen_rows);
-						console.cleartoeol();
-						console.gotoxy(this.msgAreaLeft, console.screen_rows);
-					}
-					console.print("\1h\1ySearching\1i...\1n");
-					// Look for the next message in the thread
-					var nextMsgOffset = -1;
-					var numOfMessages = this.NumMessages();
-					if (pMsgHdr.offset < numOfMessages - 1)
-					{
-						for (var messageIdx = pMsgHdr.offset+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
-						{
-							var nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-							if (((nextMsgHdr.attr & MSG_DELETE) == 0) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
-								nextMsgOffset = nextMsgHdr.offset;
-						}
-					}
-					if (nextMsgOffset > -1)
-						newMsgOffset = nextMsgOffset;
-				}
-			}
-			*/
 			break;
 		case THREAD_BY_TITLE:
 		case THREAD_BY_AUTHOR:
@@ -10566,6 +10518,21 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 					newMsgOffset = nextMsgOffset;
 			}
 			break;
+	}
+
+	// If no messages were found, then output a message to say so with a momentary pause.
+	if (newMsgOffset == -1)
+	{
+		if (pPositionCursorForStatus)
+		{
+			console.gotoxy(1, console.screen_rows);
+			console.cleartoeol();
+			console.gotoxy(this.msgAreaLeft, console.screen_rows);
+		}
+		else
+			console.crlf();
+		console.print("\1n\1h\1yNo messages found.\1n");
+		mswait(ERROR_PAUSE_WAIT_MS);
 	}
 
 	return newMsgOffset;
@@ -10756,6 +10723,21 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					newMsgOffset = nextMsgOffset;
 			}
 			break;
+	}
+
+	// If no messages were found, then output a message to say so with a momentary pause.
+	if (newMsgOffset == -1)
+	{
+		if (pPositionCursorForStatus)
+		{
+			console.gotoxy(1, console.screen_rows);
+			console.cleartoeol();
+			console.gotoxy(this.msgAreaLeft, console.screen_rows);
+		}
+		else
+			console.crlf();
+		console.print("\1n\1h\1yNo messages found.\1n");
+		mswait(ERROR_PAUSE_WAIT_MS);
 	}
 
 	return newMsgOffset;
