@@ -136,27 +136,26 @@ Loadable Modules setup
 ----------------------
 In Synchronet 3.16 builds starting on April 27, 2015, there are a few new
 options in the Loadable Lodules configuration in SCFG: "Read Mail", "Scan
-Msgs", and "Scan Subs".  These loadable modules options can enable the use of
-a message reader script for the various message reading, searching, and
-scanning options provided by Synchronet.  That is probably the easiest way to
-install the reader, since it only requires specifying a script in the Loadable
-Modules options and does not require modification of your command shell.
-Setting it up that way also has the advantage that the reader will be used for
-reading personal email and performing a message newscan during the login
-process.  If you have a recent build of Synchronet 3.16 (or newer), then your
-version of Synchronet will support this.  If you are using an older version of
-Synchronet, skip ahead to the "Command shell setup" subsection.
+Msgs", and "Scan Subs".  Functionality for these was updated on May 5, 2015.
+These loadable modules options can enable the use of a message reader script
+for the various message reading, searching, and scanning options provided by
+Synchronet.  That is probably the easiest way to install the reader, since it
+only requires specifying a script in the Loadable Modules options and does not
+require modification of your command shell.  Setting it up that way also has
+the advantage that the reader will be used for reading personal email and
+performing a message newscan during the login process.  If you have a recent
+build of Synchronet 3.16 (or newer), then your version of Synchronet will
+support this.  If you are using an older version of Synchronet, skip ahead to
+the "Command shell setup" subsection.
 
 To set up the reader with the Loadable Module scripts, do the following:
 1. Copy DDReadPersonalMail.js, DDScanMsgs.js, and DDScanSubs.js from the
    "Loadable module scripts" directory to your sbbs/mods directory
 2. If you will be running the script from a directory other than
-   xtrn/DDMsgReader, edit DDReadPersonalMail.js, DDScanMsgs.js, DDScanSubs.js,
-   and change the path used to run DDMsgReader.js.  In DDReadPersonalMail.js,
-   you can simply edit the line containing bbs.exec.  In DDScanMsgs.js and
-   DDScanSubs.js, search for the text "SYSOPS:" (without the double-quotes).
-   One or two lines below that, there is a variable called msgReaderPath -
-   Change that so that it contains the path where you copied DDMsgReader.js.
+   xtrn/DDMsgReader, edit the above scripts and search for the text "SYSOPS:"
+   (without the double-quotes).  One or two lines below that, there is a
+   variable called msgReaderPath - Change that so that it contains the path
+   where you copied DDMsgReader.js.
 3. Run Synchronet's configuration program (scfg from the command prompt, or
    from the GUI, select BBS > Configure).  In there, select System, then
    Loadable Modules
