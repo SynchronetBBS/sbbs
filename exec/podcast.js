@@ -22,7 +22,6 @@ var item_type;
 
 function encode_xml(str)
 {
-	str=str.replace(/&amp;/g, '&');
 	str=str.replace(/&/g, '&amp;');
 	str=str.replace(/</g, '&lt;');
 	str=str.replace(/>/g, '&gt;');
