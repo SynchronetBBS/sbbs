@@ -120,7 +120,9 @@ for (i = base.first_msg; i <= base.last_msg; i++) {
 }
 
 // TODO: iTunes tags?
-out.write('<?xml version="1.0"?>\n<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n\t<channel>\n');
+out.write('<?xml version="1.0"?>\n');
+out.write('<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">\n');
+out.write('\t<channel>\n');
 out.write('\t\t<title>'+encode_xml(opts.Title)+'</title>\n');
 out.write('\t\t<description>'+encode_xml(opts.Description)+'</description>\n');
 out.write('\t\t<link>'+encode_xml(opts.Link)+'</link>\n');
@@ -152,7 +154,7 @@ add_channel_opt_attribute('Rating');
 // TODO: textInput
 add_channel_opt_attribute('SkipHours');
 add_channel_opt_attribute('SkipDays');
-out.write('\t\t<atom:link href="'+opts.FeedURI+'" rel="self" type="application/rss+xml" />');
+out.write('\t\t<atom:link href="'+opts.FeedURI+'" rel="self" type="application/rss+xml" />\n');
 
 for (i=hdrs.length - 1; i >= 0; i--) {
 	body = base.get_msg_body(hdrs[i].number);
