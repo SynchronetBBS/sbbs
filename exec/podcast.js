@@ -115,6 +115,7 @@ for (i = base.first_msg; i <= base.last_msg; i++) {
 	hdrs.push(hdr);
 }
 
+// TODO: iTunes tags?
 out.write('<?xml version="1.0"?>\n<rss version="2.0">\n\t<channel>\n');
 out.write('\t\t<title>'+encode_xml(opts.Title)+'</title>\n');
 out.write('\t\t<description>'+encode_xml(opts.Description)+'</description>\n');
