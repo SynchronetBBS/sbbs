@@ -28,32 +28,11 @@ if (argc < 2)
 var scanAllSubs = (argv[0] == "1");
 var scanMode = Number(argv[1]);
 
+
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
 var msgReaderPath = "../xtrn/DDMsgReader";
 
-/*
-// Temporary - For debugging
-console.print("DDScanSubs\r\n");
-console.print("Scan all subs: " + scanAllSubs + "\r\n");
-console.print("Scan mode: " + scanMode + "\r\n");
-if (scanMode == SCAN_READ)
-	console.print("SCAN_READ\r\n");
-if ((scanMode & SCAN_CONST) == SCAN_CONST)
-	console.print("SCAN_CONST\r\n");
-if ((scanMode & SCAN_NEW) == SCAN_NEW)
-	console.print("SCAN_NEW\r\n");
-if ((scanMode & SCAN_BACK) == SCAN_BACK)
-	console.print("SCAN_BACK\r\n");
-if ((scanMode & SCAN_TOYOU) == SCAN_TOYOU)
-	console.print("SCAN_TOYOU\r\n");
-if ((scanMode & SCAN_FIND) == SCAN_FIND)
-	console.print("SCAN_FIND\r\n");
-if ((scanMode & SCAN_UNREAD) == SCAN_UNREAD)
-	console.print("SCAN_UNREAD\r\n");
-console.pause();
-// End Temporary
-*/
 
 // The start of the command string to use with bbs.exec()
 var rdrCmdStrStart = "?" + msgReaderPath + "/DDMsgReader.js ";

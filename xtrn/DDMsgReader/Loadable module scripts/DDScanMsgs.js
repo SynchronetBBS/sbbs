@@ -30,30 +30,6 @@ var subBoardCode = argv[0];
 var scanMode = Number(argv[1]);
 var searchText = argv[2];
 
-/*
-// Temporary - For debugging
-console.print("DDScanPosts\r\n");
-console.print("Sub-board code: " + subBoardCode + " (" + typeof(subBoardCode) + ")\r\n");
-console.print("Search text:" + searchText + ": (" + typeof(searchText) + ")\r\n");
-console.print("Scan mode: " + scanMode  + " (" + typeof(scanMode) + ")\r\n");
-if (scanMode == SCAN_READ)
-	console.print("SCAN_READ\r\n");
-if ((scanMode & SCAN_CONST) == SCAN_CONST)
-	console.print("SCAN_CONST\r\n");
-if ((scanMode & SCAN_NEW) == SCAN_NEW)
-	console.print("SCAN_NEW\r\n");
-if ((scanMode & SCAN_BACK) == SCAN_BACK)
-	console.print("SCAN_BACK\r\n");
-if ((scanMode & SCAN_TOYOU) == SCAN_TOYOU)
-	console.print("SCAN_TOYOU\r\n");
-if ((scanMode & SCAN_FIND) == SCAN_FIND)
-	console.print("SCAN_FIND\r\n");
-if ((scanMode & SCAN_UNREAD) == SCAN_UNREAD)
-	console.print("SCAN_UNREAD\r\n");
-console.pause();
-// End Temporary
-*/
-
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
