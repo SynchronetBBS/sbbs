@@ -1,3 +1,5 @@
+if (js.global.HTTP == undefined)
+	js.global.load("http.js");
 if (js.global.MSG_DELETE == undefined)
 	js.global.load("sbbsdefs.js");
 
@@ -45,8 +47,31 @@ function podcast_get_info(base, hdr)
 		return;
 	ret.title = hdr.subject;
 	ret.description = m[1];
-	ret.enclosure = m[2];
+	ret.enclosure = {};
+	ret.enclosure.url = m[2];
 	ret.guid = hdr.id;
 	ret.pubDate = (new Date(hdr.when_written_time * 1000)).toUTCString();
 	return ret;
+}
+
+function podcast_get_enclosure_info(enc)
+{
+	var http;
+	var hdrs;
+
+	if (enc == undefined)
+		return false;
+	if (enc.url == undefined)
+		return false;
+	http = new HTTPRequest();
+	hdrs = http.Head(enc.url);
+	if (hdrs == undefined)
+		return false;
+	if (hdrs['Content-Type'] == undefined || hdrs['Content-Length'] == undefined) {
+		log("HEAD request of "+enc.url+" did not return either Content-Type or Content-Length");
+		return false;
+	}
+	enc.length = hdrs['Content-Length'][0] + 0;
+	enc.type = hdrs['Content-Type'][0].replace(/^\s*(.*?)\s*/, "$1");
+	return true;
 }

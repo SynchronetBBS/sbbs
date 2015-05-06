@@ -1,24 +1,15 @@
-if (js.global.HTTP == undefined)
-	js.global.load("http.js");
 if (js.podcast_load_headers == undefined)
 	js.global.load("podcast_routines.js");
 
 var opts = load({}, "modopts.js", "Podcast");
 var base;
 var i;
-var hdr;
 var out;
 var hdrs;
 var img_title;
 var img_link;
 var item;
-var body;
-var link;
 var m;
-var http;
-var item_headers;
-var item_length;
-var item_type;
 var item_info;
 
 function encode_xml(str)
@@ -36,6 +27,30 @@ function add_channel_opt_attribute(name) {
 		var xml_name = name.substr(0,1).toLowercase()+name.substr(1);
 		out.write('\t\t<'+xml_name+'>'+encode_xml(opts[name])+'</'+xml_name+'>\n');
 	}
+}
+
+function create_item_xml(base, hdr) {
+	var info;
+	var item;
+
+	info=podcast_get_info(base, hdr);
+	if (info == undefined)
+		return;
+	if (!podcast_get_enclosure_info(info.enclosure))
+		return;
+	item = '\t\t<item>\n';
+	item += '\t\t\t<title>'+encode_xml(info.title)+'</title>\n';
+	item += '\t\t\t<link>'+encode_xml(opts.EpisodeLink+parseInt(i+1))+'</link>\n';
+	item += '\t\t\t<description>'+encode_xml(info.description)+'</description>\n';
+	// TODO: author?
+	// TODO: category?
+	item += '\t\t\t<comments>'+encode_xml(opts.EpisodeLink+parseInt(i+1))+'</comments>\n';
+	item += '\t\t\t<enclosure url="'+encode_xml(info.enclosure.url)+'" length="'+encode_xml(info.enclosure.length)+'" type="'+encode_xml(info.enclosure.type)+'" />\n';
+	item += '\t\t\t<guid isPermaLink="false">'+encode_xml(info.guid)+'</guid>\n';
+	item += '\t\t\t<pubDate>'+encode_xml(info.pubDate)+'</pubDate>\n';
+	// TODO: source?
+	item += '\t\t</item>\n';
+	return item;
 }
 
 if (opts == undefined) {
@@ -139,38 +154,15 @@ if (opts.ImageURL != undefined) {
 		out.write('\t\t\t<width>'+encode_xml(opts.ImageWidth)+'</width>\n');
 }
 add_channel_opt_attribute('Rating');
-// TODO: textInput
+// TODO: textInput?
 add_channel_opt_attribute('SkipHours');
 add_channel_opt_attribute('SkipDays');
 out.write('\t\t<atom:link href="'+opts.FeedURI+'" rel="self" type="application/rss+xml" />\n');
 
 for (i=hdrs.length - 1; i >= 0; i--) {
-	item_info=podcast_get_info(base, hdrs[i]);
-	if (item_info == undefined)
-		continue;
-	http = new HTTPRequest();
-	item_headers = http.Head(item_info.enclosure);
-	if (item_headers == undefined)
-		continue;
-	if (item_headers['Content-Type'] == undefined || item_headers['Content-Length'] == undefined) {
-		log("HEAD request of "+m[2]+" did not return either Content-Type or Content-Length");
-		continue;
-	}
-	item_length = item_headers['Content-Length'][0] + 0;
-	item_type = item_headers['Content-Type'][0].replace(/^\s*(.*?)\s*/, "$1");
-	item = '\t\t<item>\n';
-	item += '\t\t\t<title>'+encode_xml(item_info.title)+'</title>\n';
-	item += '\t\t\t<link>'+encode_xml(opts.EpisodeLink+parseInt(i+1))+'</link>\n';
-	item += '\t\t\t<description>'+encode_xml(item_info.description)+'</description>\n';
-	// TODO: author?
-	// TODO: category?
-	item += '\t\t\t<comments>'+encode_xml(opts.EpisodeLink+parseInt(i+1))+'</comments>\n';
-	item += '\t\t\t<enclosure url="'+encode_xml(item_info.enclosure)+'" length="'+item_length+'" type="'+item_type+'" />\n';
-	item += '\t\t\t<guid isPermaLink="false">'+encode_xml(item_info.guid)+'</guid>\n';
-	item += '\t\t\t<pubDate>'+encode_xml(item_info.pubDate)+'</pubDate>\n';
-	// TODO: source?
-	item += '\t\t</item>\n';
-	out.write(item);
+	item = create_item_xml(base, hdrs[i]);
+	if (item != undefined)
+		out.write(item);
 }
 
 out.write('\t</channel>\n');
