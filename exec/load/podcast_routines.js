@@ -3,12 +3,14 @@ if (js.global.MSG_DELETE == undefined)
 
 function podcast_load_headers(base, from, to)
 {
+	var all_hdrs;
 	var hdrs = [];
 	var i;
 	var hdr;
 
-	for (i = base.first_msg; i <= base.last_msg; i++) {
-		hdr = base.get_msg_header(i);
+	all_hdrs = base.get_all_msg_headers();
+	for (i in all_hdrs) {
+		hdr = all_hdrs[i];
 		if (hdr == null)
 			continue;
 		if (hdr.attr & MSG_DELETE)
