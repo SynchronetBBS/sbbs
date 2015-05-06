@@ -256,6 +256,8 @@ the only valid search types are keyword_search and from_name_search.
 -personalEmailSent: Read personal email to the user.  This is a true/false
                     value.  It doesn't need to explicitly have a =true or =false
                     afterward; simply including -personalEmailSent will enable it.
+-allPersonalEmail: Read all personal email (to/from all)
+-userNum: Specify a user number (for the personal email options)
 -chooseAreaFirst: Display the message area chooser before reading/listing
                   messages.  This is a true/false value.  It doesn't need
                   to explicitly have a =true or =false afterward; simply

@@ -62,6 +62,8 @@
    -personalEmailSent: Read personal email to the user.  This is a true/false
                        value.  It doesn't need to explicitly have a =true or =false
                        afterward; simply including -personalEmailSent will enable it.
+   -allPersonalEmail: Read all personal email (to/from all)
+   -userNum: Specify a user number (for the personal email options)
    -chooseAreaFirst: Display the message area chooser before reading/listing
                      messages.  This is a true/false value.  It doesn't need
                      to explicitly have a =true or =false afterward; simply
@@ -308,10 +310,13 @@ var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
 // Script execution code
 
 // Parse the command-line arguments
+
 var gCmdLineArgVals = parseArgs(argv);
+var gAllPersonalEmailOptSpecified = (gCmdLineArgVals.hasOwnProperty("allpersonalemail") && gCmdLineArgVals.allpersonalemail);
 // Check to see if the command-line argument for reading personal email is enabled
 var gListPersonalEmailCmdLineOpt = ((gCmdLineArgVals.hasOwnProperty("personalemail") && gCmdLineArgVals.personalemail) ||
-                                    (gCmdLineArgVals.hasOwnProperty("personalemailsent") && gCmdLineArgVals.personalemailsent));
+                                    (gCmdLineArgVals.hasOwnProperty("personalemailsent") && gCmdLineArgVals.personalemailsent) ||
+									gAllPersonalEmailOptSpecified);
 // If the command-line parameter "search" is specified as "prompt", then
 // prompt the user for the type of search to perform.
 var doDDMR = true; // If the user doesn't choose a search type, this will be set to false
@@ -12005,14 +12010,14 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 				{
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 						var msgText = strip_ctrl(pMsgBase.get_msg_body(true, pMsgHdr.offset));
-						return msgIsFromUser(pMsgHdr);
+						return gAllPersonalEmailOptSpecified || msgIsFromUser(pMsgHdr);
 					}
 				}
 				else
 				{
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 						var msgText = strip_ctrl(pMsgBase.get_msg_body(true, pMsgHdr.offset));
-						return msgIsToLoggedInUserNum(pMsgHdr);
+						return gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr);
 					}
 				}
 			}
@@ -12020,10 +12025,9 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 		case SEARCH_KEYWORD:
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				var msgText = strip_ctrl(pMsgBase.get_msg_body(true, pMsgHdr.offset));
-				//return ((pMsgHdr["subject"].toUpperCase().indexOf(pSearchStr) > -1) || (msgText.toUpperCase().indexOf(pSearchStr) > -1));
 				var keywordFound = ((pMsgHdr.subject.toUpperCase().indexOf(pSearchStr) > -1) || (msgText.toUpperCase().indexOf(pSearchStr) > -1));
 				if (pSubBoardCode == "mail")
-					return keywordFound && msgIsToLoggedInUserNum(pMsgHdr);
+					return keywordFound && msgIsToUserByNum(pMsgHdr);
 				else
 					return keywordFound;
 			}
@@ -12032,7 +12036,7 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				var fromNameFound = (pMsgHdr.from.toUpperCase() == pSearchStr.toUpperCase());
 				if (pSubBoardCode == "mail")
-					return fromNameFound && msgIsToLoggedInUserNum(pMsgHdr);
+					return fromNameFound && (gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr));
 				else
 					return fromNameFound;
 			}
@@ -12118,21 +12122,36 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 	return msgHeaders;
 }
 
-// Returns whether or not a message is to the logged-in user and is not deleted.
+// Returns whether or not a message is to the current user (either the current
+// logged-in user or the user specified by the userNum command-line argument)
+// and is not deleted.
 //
 // Parameters:
 //  pMsgHdr: A message header object
 //
-// Return value: Boolean - Whether or not the message is to the logged-in user
-//               and is not deleted.
-function msgIsToLoggedInUserNum(pMsgHdr)
+// Return value: Boolean - Whether or not the message is to the user and is not
+//               deleted.
+function msgIsToUserByNum(pMsgHdr)
 {
 	if (typeof(pMsgHdr) != "object")
 		return false;
-	return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.to_ext == user.number));
+	// Return false if  the message is marked as deleted
+	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+		return false;
+
+	var msgIsToUser = false;
+	// If an alternate user number was specified on the command line, then use that
+	// user information.  Otherwise, use the current logged-in user.
+	if (gCmdLineArgVals.hasOwnProperty("altUserNum"))
+		msgIsToUser = (pMsgHdr.to_ext == gCmdLineArgVals.altUserNum);
+	else
+		msgIsToUser = (pMsgHdr.to_ext == user.number);
+	return msgIsToUser;
 }
 
-// Returns whether or not a message is from the logged-in user and is not deleted.
+// Returns whether or not a message is from the current user (either the current
+// logged-in user or the user specified by the userNum command-line argument)
+// and is not deleted.
 //
 // Parameters:
 //  pMsgHdr: A message header object
@@ -12143,10 +12162,32 @@ function msgIsFromUser(pMsgHdr)
 {
 	if (typeof(pMsgHdr) != "object")
 		return false;
-	var isFromCurrentUser = false;
-	if (((pMsgHdr.attr & MSG_DELETE) == 0) && pMsgHdr.hasOwnProperty("from_ext"))
-		isFromCurrentUser = (pMsgHdr.from_ext == user.number);
-	return isFromCurrentUser;
+	// Return false if  the message is marked as deleted
+	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+		return false;
+
+	var isFromUser = false;
+
+	// If an alternate user number was specified on the command line, then use that
+	// user information.  Otherwise, use the current logged-in user.
+
+	if (pMsgHdr.hasOwnProperty("from_ext"))
+	{
+		if (gCmdLineArgVals.hasOwnProperty("altUserNum"))
+			isFromUser = (pMsgHdr.from_ext == gCmdLineArgVals.altUserNum);
+		else
+			isFromUser = (pMsgHdr.from_ext == user.number);
+	}
+	else
+	{
+		var hdrFromUpper = pMsgHdr.from.toUpperCase();
+		if (gCmdLineArgVals.hasOwnProperty("altUserName") && gCmdLineArgVals.hasOwnProperty("altUserAlias"))
+			isFromUser = ((hdrFromUpper == gCmdLineArgVals.altUserAlias.toUpperCase()) || (hdrFromUpper == gCmdLineArgVals.altUserName.toUpperCase()));
+		else
+			isFromUser = ((hdrFromUpper == user.alias.toUpperCase()) || (hdrFromUpper == user.name.toUpperCase()));
+	}
+
+	return isFromUser;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -13266,8 +13307,8 @@ function parseArgs(pArgArr)
 		{
 			argName = pArgArr[i].substr(1).toLowerCase();
 			if ((argName == "chooseareafirst") || (argName == "personalemail") ||
-			    (argName == "personalemailsent") || (argName == "verboselogging") ||
-			    (argName == "suppresssearchtypetext"))
+			    (argName == "personalemailsent") || (argName == "allpersonalemail") ||
+				(argName == "verboselogging") || (argName == "suppresssearchtypetext"))
 			{
 				argVals[argName] = true;
 			}
@@ -13288,6 +13329,31 @@ function parseArgs(pArgArr)
 			if ((searchValLower != "keyword_search") && (searchValLower != "from_name_search"))
 				delete argVals.search;
 		}
+	}
+	// If the arguments include userNum, make sure the value is all digits.  If so,
+	// add altUserNum to the arguments as a number type for user matching when looking
+	// for personal email to the user.
+	if (argVals.hasOwnProperty("usernum"))
+	{
+		if (/^[0-9]+$/.test(argVals.usernum))
+		{
+			var specifiedUserNum = Number(argVals.usernum);
+			// If the specified number is different than the current logged-in
+			// user, then load the other user account and read their name and
+			// alias and also store their user number in the arg vals as a
+			// number.
+			if (specifiedUserNum != user.number)
+			{
+				var theUser = new User(specifiedUserNum);
+				argVals.altUserNum = theUser.number;
+				argVals.altUserName = theUser.name;
+				argVals.altUserAlias = theUser.alias;
+			}
+			else
+				delete argVals.usernum;
+		}
+		else
+			delete argVals.usernum;
 	}
 
 	return argVals;
