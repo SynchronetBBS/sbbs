@@ -62,6 +62,11 @@ if (opts.Description == undefined) {
 	exit(1);
 }
 
+if (opts.FeedURI == undefined) {
+	log("FeedURI undefined in modopts.ini.");
+	exit(1);
+}
+
 if (opts.Link == undefined) {
 	log("Link undefined in modopts.ini.");
 	exit(1);
@@ -115,7 +120,7 @@ for (i = base.first_msg; i <= base.last_msg; i++) {
 }
 
 // TODO: iTunes tags?
-out.write('<?xml version="1.0"?>\n<rss version="2.0">\n\t<channel>\n');
+out.write('<?xml version="1.0"?>\n<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n\t<channel>\n');
 out.write('\t\t<title>'+encode_xml(opts.Title)+'</title>\n');
 out.write('\t\t<description>'+encode_xml(opts.Description)+'</description>\n');
 out.write('\t\t<link>'+encode_xml(opts.Link)+'</link>\n');
@@ -147,6 +152,7 @@ add_channel_opt_attribute('Rating');
 // TODO: textInput
 add_channel_opt_attribute('SkipHours');
 add_channel_opt_attribute('SkipDays');
+out.write('\t\t<atom:link href="'+opts.FeedURI+'" rel="self" type="application/rss+xml" />');
 
 for (i=hdrs.length - 1; i >= 0; i--) {
 	body = base.get_msg_body(hdrs[i].number);
@@ -175,7 +181,7 @@ for (i=hdrs.length - 1; i >= 0; i--) {
 	// TODO: category?
 	// TODO: HTML integration required here for <comments> tag.
 	item += '\t\t\t<enclosure url="'+encode_xml(m[2])+'" length="'+item_length+'" type="'+item_type+'" />\n';
-	item += '\t\t\t<guid isPermalink="false">'+encode_xml(hdrs[i].id)+'</guid>\n';
+	item += '\t\t\t<guid isPermaLink="false">'+encode_xml(hdrs[i].id)+'</guid>\n';
 	item += '\t\t\t<pubDate>'+encode_xml((new Date(hdrs[i].when_written_time * 1000)).toUTCString())+'</pubDate>\n';
 	// TODO: source?
 	item += '\t\t</item>\n';
