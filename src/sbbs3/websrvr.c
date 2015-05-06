@@ -3451,7 +3451,8 @@ static BOOL exec_cgi(http_session_t *session)
 					else  {
 						if(!no_chunked && session->http_ver>=HTTP_1_1) {
 							session->req.keep_alive=orig_keep;
-							set_chunked=TRUE;
+							if (session->req.method != HTTP_HEAD)
+								set_chunked=TRUE;
 						}
 						if(got_valid_headers)  {
 							session->req.dynamic=IS_CGI;
@@ -3825,7 +3826,8 @@ static BOOL exec_cgi(http_session_t *session)
 			session->req.dynamic=IS_CGI;
 			if(!no_chunked && session->http_ver>=HTTP_1_1) {
 				session->req.keep_alive=orig_keep;
-				set_chunked=TRUE;
+				if (session->req.method != HTTP_HEAD)
+					set_chunked=TRUE;
 			}
 			strListPush(&session->req.dynamic_heads,content_type);
 			send_headers(session,cgi_status,set_chunked);
