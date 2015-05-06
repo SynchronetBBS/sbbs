@@ -31,7 +31,9 @@ var webIni=(function() {
 		}
 	}
 	
-	var webIni = get_mod_options("ecweb");
+	var webIni = get_mod_options("ecweb:"+http_request.vhost);
+	if (webIni == null)
+		webIni = get_mod_options("ecweb");
 	if(webIni==null)
 		webIni={};
 	if(typeof webIni.WebDirectory == "undefined")
