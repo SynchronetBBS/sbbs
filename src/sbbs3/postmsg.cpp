@@ -179,7 +179,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			i=FIDO_NAME_LEN-1;
 		if(cfg.sub[subnum]->misc&(SUB_PNET|SUB_INET))
 			i=60;
-		getstr(touser,i,K_UPRLWR|K_LINE|K_EDIT|K_AUTODEL);
+		getstr(touser,i,K_LINE|K_EDIT|K_AUTODEL);
 		if(stricmp(touser,"ALL")
 		&& !(cfg.sub[subnum]->misc&(SUB_PNET|SUB_FIDO|SUB_QNET|SUB_INET|SUB_ANON))) {
 			if(cfg.sub[subnum]->misc&SUB_NAME) {
