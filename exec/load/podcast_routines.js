@@ -71,7 +71,7 @@ function podcast_get_enclosure_info(enc)
 		log("HEAD request of "+enc.url+" did not return either Content-Type or Content-Length");
 		return false;
 	}
-	enc.length = hdrs['Content-Length'][0] + 0;
+	enc.length = parseInt(hdrs['Content-Length'][0], 10);
 	enc.type = hdrs['Content-Type'][0].replace(/^\s*(.*?)\s*/, "$1");
 	return true;
 }
