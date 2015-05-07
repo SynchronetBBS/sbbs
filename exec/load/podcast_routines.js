@@ -9,6 +9,7 @@ function podcast_load_headers(base, from, to, all_hdrs)
 	var hdrs = [];
 	var i;
 	var hdr;
+	var unvalidated = false;
 
 	if (all_hdrs == undefined)
 		all_hdrs = base.get_all_msg_headers();
@@ -19,13 +20,23 @@ function podcast_load_headers(base, from, to, all_hdrs)
 	}
 	for (i in all_hdrs) {
 		hdr = all_hdrs[i];
-		if (hdr == null)
+		if (unvalidated) {
+			delete all_hdrs[i];
 			continue;
-		if (hdr.attr & MSG_DELETE)
+		}
+		if (hdr == null) {
+			delete all_hdrs[i];
 			continue;
+		}
+		if (hdr.attr & MSG_DELETE) {
+			delete all_hdrs[i];
+			continue;
+		}
 		if (hdr.attr & MSG_MODERATED) {
-			if (!(hdr.attr & MSG_VALIDATED))
-				break;
+			if (!(hdr.attr & MSG_VALIDATED)) {
+				unvalidated=true;
+				continue;
+			}
 		}
 		if (hdr.thread_back != 0)
 			continue;
