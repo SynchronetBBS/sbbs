@@ -3,14 +3,20 @@ if (js.global.HTTP == undefined)
 if (js.global.MSG_DELETE == undefined)
 	js.global.load("sbbsdefs.js");
 
-function podcast_load_headers(base, from, to)
+function podcast_load_headers(base, from, to, all_hdrs)
 {
-	var all_hdrs;
+	var all_msg_headers;
 	var hdrs = [];
 	var i;
 	var hdr;
 
-	all_hdrs = base.get_all_msg_headers();
+	if (all_hdrs == undefined)
+		all_hdrs = base.get_all_msg_headers();
+	else {
+		all_msg_headers = base.get_all_msg_headers();
+		for (i in all_msg_headers)
+			all_hdrs[i] = all_msg_headers[i];
+	}
 	for (i in all_hdrs) {
 		hdr = all_hdrs[i];
 		if (hdr == null)
