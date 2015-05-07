@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                             Version 1.0 Beta 81
-                           Release date: 2015-05-05
+                                 Version 1.0
+                           Release date: 2015-05-06
 
                                      by
 
@@ -19,8 +19,16 @@ Contents
 1. Disclaimer
 2. Introduction
 3. Installation & Setup
+   - Loadable Modules setup
+   - Command shell setup
+   - Background: Running JavaScript scripts in Synchronet
+   - Command-line parameters
+   - Synchronet command shell background
+   - Installing into a command shell
 4. Header ANSI/asc file
 5. Configuration file & color/text theme configuration file
+   - Main configuration file (DDMsgReader.cfg)
+   - Theme configuration file
 6. Drop file for replying to messages with Synchronet message editors
 
 
@@ -255,8 +263,6 @@ the only valid search types are keyword_search and from_name_search.
 -personalEmailSent: Read personal email to the user.  This is a true/false
                     value.  It doesn't need to explicitly have a =true or =false
                     afterward; simply including -personalEmailSent will enable it.
--allPersonalEmail: Read all personal email (to/from all)
--userNum: Specify a user number (for the personal email options)
 -chooseAreaFirst: Display the message area chooser before reading/listing
                   messages.  This is a true/false value.  It doesn't need
                   to explicitly have a =true or =false afterward; simply
@@ -264,6 +270,17 @@ the only valid search types are keyword_search and from_name_search.
 					   or -subBoard is specified, then this option won't have any
                   effect.
 
+The following parameters generally shouldn't be used unless you know what
+you're doing.  These were added for use by the Loadable Modules scripts, which
+Synchronet will load for various scenarios:
+
+-userNum: Specify a user number for reading personal email.  This parameter is
+          there because although usually the current user will be reading their
+          own personal mail, there are situations where a sysop can read other
+          users' personal mail.
+-allPersonalEmail: Read all personal email (to/from all).  There are instances
+                   where Synchronet supports this, but more than likely only
+                   for sysops.
 
 Synchronet command shell background
 -----------------------------------

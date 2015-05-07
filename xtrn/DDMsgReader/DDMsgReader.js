@@ -18,6 +18,9 @@
  *
  * Date       Author            Description
  * 2014-09-13 Eric Oulashin     Started (based on my message lister script)
+ * 2015-05-06 Eric Oulashin     Version 1.0
+ *                              Finally releasing it, as it seems fairly stable
+ *                              and has the basic features implemented.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -104,9 +107,9 @@ if (system.version_num < 31500)
 	exit();
 }
 
-// Constants
-var READER_VERSION = "1.0 Beta 81";
-var READER_DATE = "2015-05-05";
+// Reader version information
+var READER_VERSION = "1.00";
+var READER_DATE = "2015-05-06";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1439,7 +1442,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 				// was to go to the next message area, then don't continue the input
 				// loop, and also say that the user didn't stop reading.
 				else if (pReturnOnNextAreaNav &&
-				         ((otherRetObj.lastUserInput == KEY_RIGHT) || (otherRetObj.lastAction == ACTION_GO_NEXT_MSG_AREA)))
+				         ((otherRetObj.lastUserInput == KEY_RIGHT) || (otherRetObj.lastUserInput == KEY_ENTER) || (otherRetObj.lastAction == ACTION_GO_NEXT_MSG_AREA)))
 				{
 					retObj.stoppedReading = false;
 					continueOn = false;
