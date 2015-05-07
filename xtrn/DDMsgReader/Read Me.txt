@@ -73,34 +73,25 @@ The following is a list of features:
 - Provides an enhanced, very functional yet intuitive user interface for
   reading messages for ANSI users, including the ability to scroll the message,
   navigate forward & back through the messages in the message area, reply to
-  messages, etc.
+  messages, etc.  If the user's terminal does not support ANSI, the reader will
+  fall back to a more traditional user interface (which, for instance, does not
+  allow scrolling the message up & down).
 - Can be used to read message sub-boards or personal email
 - Allows switching between the enhanced reader interface and the message list
-  to allow the user to browse messages & select another message to read
-- Message searching and scanning is supported: New-message scan, new-to-you
-  scan, all-to-you scan, keyword search (in the current sub-board), from name
-  search (in the current sub-board), to name search (in the current sub-board)
-- Allows custom message header ANSI/.asc files to be used in the enhanced
-  reader mode.  If there is no custom header file, a default header style will
-  be used.  For the enhanced reader mode, there can also be different custom
-  header files for various terminal widths.
-- In the traditional reader mode, uses the msghdr .ans/.asc file(s) in the
-  sbbs/text/menu directory, if it exists, to display message header
-  information.  If the msghdr file doesn't exist, the script will use a default
-  format for message header information.
-- The message list is also very functional yet intuitive - It displays a
-  formatted summary list of the messages in the user's current message area,
-  can be navigated forward & backward, and allows selection of a message to
-  read (and optionally, reply to), etc.
-- Provides a lightbar interface for the message list & area chooser (ANSI
-  required), as well as a traditional user interface, which prompts for input
-  after each screenful of message listings or message groups/areas
-- The message list supports listing messages in forward or reverse order.
-- Some types of message searching is supported: Text search, 'From' name,
-  'To' name, or messages specifically written to the user
-- Provides a message newscan option using the enhanced ANSI reader interface,
-  which allows the user to read unread messages in all message areas, from
-  first to last
+  to allow the user to browse messages & select another message to read.  The
+  message list displays a formatted summary list of the messages in the user's
+  current message area and can be  navigated forward & backward, and allows
+  selection of a message to read (basically, switching into reader mode).  The
+  message list can be configured for a lightbar or traditional user interface
+  (the lightbar interface will only be available for ANSI users).
+- Message scanning and searching is supported: New-message scan, new-to-you
+  scan, all-to-you scan, keyword search, from name search, and to name search
+- Allows a custom message header ANSI/.asc file to be used in the reader mode.
+  If there is no custom header file, a default header style will be used.  For
+  There can also be different custom header files for various terminal widths.
+- Allows changing to a different message area from within the reader or message
+  list.  The area chooser will use a lightbar interface for ANSI users or a
+  traditional interface for users whose terminal doesn't support ANSI.
 - Allows the user to delete and edit existing messages that they've written, if the
   sub-board supports those operations.
 - The program settings, colors, and some text can be changed via configuration
@@ -137,8 +128,12 @@ Digital Distortion Message Reader is comprised of the following files:
 The configuration files are plain text files, so they can be edited using any
 editor.
 
-The first 3 files can be placed in any directory; the next 3 should be copied
-to your sbbs/subs directory.
+The first 3 files (DDMsgReader.js, DDMsgReader.cfg, and DefaultTheme) can be
+placed together in any directory; the next 3 (DDReadPersonalEmail.js,
+DDScanMsgs.js, and DDScanSubs.js) should be copied to your sbbs/subs directory.
+
+The examples in this document will assume the first 3 files are in the
+sbbs/xtrn/DDMsgReader directory.
 
 Loadable Modules setup
 ----------------------
