@@ -144,7 +144,7 @@ if (opts.TTL != undefined)
 	out.write('\t\t<ttl>'+encode_xml(opts.TTL)+'</ttl>\n');
 if (opts.ImageURL != undefined) {
 	img_title = opts.ImageTitle == undefined ? opts.Title : opts.ImageTitle;
-	img_link = opts.ImageLink == undefined ? opts.Link : opts.Link;
+	img_link = opts.ImageLink == undefined ? opts.Link : opts.ImageLink;
 	out.write('\t\t<image>\n');
 	out.write('\t\t\t<url>'+encode_xml(opts.ImageURL)+'</url>\n');
 	out.write('\t\t\t<title>'+encode_xml(img_title)+'</title>\n');
@@ -153,6 +153,7 @@ if (opts.ImageURL != undefined) {
 		out.write('\t\t\t<height>'+encode_xml(opts.ImageHeight)+'</height>\n');
 	if (opts.ImageWidth != undefined)
 		out.write('\t\t\t<width>'+encode_xml(opts.ImageWidth)+'</width>\n');
+	out.write('\t\t</image>\n');
 }
 add_channel_opt_attribute('Rating');
 // TODO: textInput?
