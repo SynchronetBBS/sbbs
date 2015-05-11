@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -64,6 +64,7 @@ DLLEXPORT BOOL			DLLCALL msgQueueFree(msg_queue_t*);
 
 DLLEXPORT long			DLLCALL msgQueueAttach(msg_queue_t*);
 DLLEXPORT long			DLLCALL msgQueueDetach(msg_queue_t*);
+DLLEXPORT BOOL			DLLCALL msgQueueOwner(msg_queue_t*);
 
 /* Get/Set queue private data */
 DLLEXPORT void*			DLLCALL msgQueueSetPrivateData(msg_queue_t*, void*);
