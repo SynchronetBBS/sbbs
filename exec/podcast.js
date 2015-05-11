@@ -14,7 +14,6 @@ var item_info;
 
 function encode_xml(str)
 {
-print("Encoding: '"+str+"'");
 	if (str==undefined)
 		return '';
 	str = str.toString();
