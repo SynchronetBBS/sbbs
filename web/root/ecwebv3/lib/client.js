@@ -331,9 +331,10 @@ var validateNewUserForm = function() {
 				sexCheck++;
 		}
 		if(theForm.elements[e].id == 'birthDate') {
-			if(theForm.elements[e].value.match(/\d\d-\d\d-\d\d/) == null) {
+			if(theForm.elements[e].value.match(/\d\d\/\d\d\/\d\d/) == null) {
 				theForm.elements[e].style.backgroundColor = '#FA5882';
-				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Invalid date (DD-MM-YY)';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = format('Invalid date (%s)'
+					,(system.settings&SYS_EURODATE) ? "DD/MM/YY" : "MM/DD/YY");
 				returnValue = false;
 			} else {
 				theForm.elements[e].style.backgroundColor = '#82FA58';

@@ -86,8 +86,8 @@ if(http_request.query.hasOwnProperty('font')) {
 	}
 
 	if(system.newuser_questions&UQ_BIRTH) {
-		if(!http_request.query.hasOwnProperty('birthDate') || http_request.query.birthDate.toString().match(/\d\d-\d\d-\d\d/) == null)
-			failString += '- Birth date not provided<br />';
+		if(!http_request.query.hasOwnProperty('birthDate') || http_request.query.birthDate.toString().match(/\d\d\/\d\d\/\d\d/) == null)
+			failString += '- Birthdate not provided<br />';
 		else
 			newUserObject.birthdate = http_request.query.birthDate.toString();
 	}
@@ -159,7 +159,7 @@ if(http_request.query.hasOwnProperty('font')) {
 	if(system.newuser_questions&UQ_SEX)
 		print("Sex: <input class='border font' type='radio' name='sex' id='sex' value='m' />M <input class='border font' type='radio' name='sex' id='sex' value='f' />F <span id='sexError'></span><br /><br />"); // lol
 	if(system.newuser_questions&UQ_BIRTH)
-		print("Birthdate DD-MM-YY:<br /><input class='border font' type='text' size='8' name='birthDate' id='birthDate' /> <span id='birthDateError'></span><br /><br />");
+		print(format("Birthdate (%s):<br /><input class='border font' type='text' size='8' name='birthDate' id='birthDate' /> <span id='birthDateError'></span><br /><br />", (system.settings&SYS_EURODATE) ? "DD/MM/YY" : "MM/DD/YY"));
 	if(system.newuser_questions&UQ_COMPANY)
 		print("Company:<br /><input class='border font' type='text' size='30' name='company' id='company' /> <span id='companyError'></span><br /><br />");
 	if(system.newuser_questions&UQ_NONETMAIL == 0)
