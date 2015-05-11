@@ -202,7 +202,8 @@ int main(int argc, char **argv)
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-	printf("\nTone Generation Utility  %s  Copyright 2003 Rob Swindell\n\n", revision);
+	printf("\nTone Generation Utility  %s  Copyright %s Rob Swindell\n\n"
+		,revision, __DATE__+7);
 
 	if(argc<2)
 		usage();
