@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -274,6 +274,7 @@ enum {
 	,QUEUE_PROP_DATA_WAITING
 	,QUEUE_PROP_READ_LEVEL
 	,QUEUE_PROP_WRITE_LEVEL
+	,QUEUE_PROP_OWNER
 };
 
 #ifdef BUILD_JSDOCS
@@ -282,6 +283,7 @@ static char* queue_prop_desc[] = {
 	,"<i>true</i> if data is waiting to be read from queue"
 	,"number of values in the read queue"
 	,"number of values in the write qeueue"
+	,"<i>true</i> if current thread is the owner/creator of the queue"
 	,NULL
 };
 #endif
@@ -319,6 +321,11 @@ static JSBool js_queue_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = INT_TO_JSVAL(msgQueueWriteLevel(q));
 			JS_RESUMEREQUEST(cx, rc);
 			break;
+		case QUEUE_PROP_OWNER:
+			rc=JS_SUSPENDREQUEST(cx);
+			*vp = BOOLEAN_TO_JSVAL(INT_TO_BOOL(msgQueueOwner(q)));
+			JS_RESUMEREQUEST(cx, rc);
+			break;
 	}
 	return(JS_TRUE);
 }
@@ -332,6 +339,7 @@ static jsSyncPropertySpec js_queue_properties[] = {
 	{	"data_waiting"		,QUEUE_PROP_DATA_WAITING,QUEUE_PROP_FLAGS,	312 },
 	{	"read_level"		,QUEUE_PROP_READ_LEVEL	,QUEUE_PROP_FLAGS,	312 },
 	{	"write_level"		,QUEUE_PROP_WRITE_LEVEL	,QUEUE_PROP_FLAGS,	312 },
+	{	"owner"				,QUEUE_PROP_OWNER		,QUEUE_PROP_FLAGS,	316 },
 	{0}
 };
 
