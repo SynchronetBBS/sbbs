@@ -14,6 +14,9 @@ var item_info;
 
 function encode_xml(str)
 {
+print("Encoding: '"+str+"'");
+	if (str==undefined)
+		return '';
 	str = str.toString();
 	str=str.replace(/&/g, '&amp;');
 	str=str.replace(/</g, '&lt;');
@@ -23,16 +26,18 @@ function encode_xml(str)
 	return str;
 }
 
-function add_channel_opt_attribute(name) {
-	if (opts[name] !== undefined) {
-		var xml_name = name.substr(0,1).toLowercase()+name.substr(1);
-		out.write('\t\t<'+xml_name+'>'+encode_xml(opts[name])+'</'+xml_name+'>\n');
-	}
-}
-
 function add_channel_opt_attribute_rename(name, newName) {
 	if (opts[name] !== undefined)
 		out.write('\t\t<'+newName+'>'+encode_xml(opts[name])+'</'+newName+'>\n');
+}
+
+function add_channel_opt_attribute(name) {
+	var xml_name = name.substr(0,1).toLowerCase()+name.substr(1);
+	add_channel_opt_attribute_rename(name, xml_name);
+}
+
+function add_channel_itunes_attribute(name) {
+	add_channel_opt_attribute_rename('IT'+name, 'itunes:'+name.substr(0,1).toLowerCase()+name.substr(1));
 }
 
 function create_item_xml(base, hdr) {
@@ -163,7 +168,39 @@ add_channel_opt_attribute('Rating');
 // TODO: textInput?
 add_channel_opt_attribute('SkipHours');
 add_channel_opt_attribute('SkipDays');
-add_channel_opt_attribute_rename('ITExplicit', 'itunes:explicit');
+add_channel_itunes_attribute('Author');
+add_channel_itunes_attribute('Block');
+if (opts.ITImageURL != undefined) {
+	out.write('\t\t<itunes:image href="'+encode_xml(opts.ITImageURL)+'">\n');
+}
+else if(opts.ImageURL != undefined) {
+	out.write('\t\t<itunes:image href="'+encode_xml(opts.ImageURL)+'">\n');
+}
+if (opts.ITCategory != undefined) {
+	if ((m = opts.ITCategory.match(/^\s*([^\/]+)\/(.+?)\s*$/)) != null) {
+		out.write('\t\t<itunes:category text="'+encode_xml(m[1])+'">\n');
+		out.write('\t\t\t<itunes:category text="'+encode_xml(m[2])+'" />\n');
+		out.write('\t\t</itunes:category>\n');
+	}
+	else {
+		out.write('\t\t<itunes:category text="'+encode_xml(opts.ITCategory)+'" />\n');
+	}
+}
+add_channel_itunes_attribute('Explicit');
+add_channel_itunes_attribute('Complete');
+add_channel_opt_attribute_rename('ITNewFeedURL', 'itunes:new-feed-url');
+if (opts.ITOwnerEmail != undefined) {
+	out.write('\t\t<itunes:owner>\n');
+	out.write('\t');
+	add_channel_opt_attribute_rename('ITOwnerEmail', 'itunes:email');
+	if (opts.ITOwnerName != undefined) {
+		out.write('\t');
+		add_channel_opt_attribute_rename('ITOwnerName', 'itunes:name');
+	}
+	out.write('\t\t</itunes:owner>\n');
+}
+add_channel_itunes_attribute('Subtitle');
+add_channel_itunes_attribute('Summary');
 out.write('\t\t<atom:link href="'+opts.FeedURI+'" rel="self" type="application/rss+xml" />\n');
 
 for (i=hdrs.length - 1; i >= 0; i--) {
