@@ -350,6 +350,9 @@ var initJSON = function() {
 		f.open("r");
 		var ini = f.iniGetObject("JSON");
 		f.close();
+		// services.ini normally uses "Port" rather than "port", but it's actually not case sensitive
+		if(ini.port == undefined && ini.Port != undefined)
+			ini.port = ini.Port;
 		var host = "localhost";
 		var port = (ini === null) ? 10088 : Number(ini.port);
 	}
