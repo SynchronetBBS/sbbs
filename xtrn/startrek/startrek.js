@@ -65,11 +65,18 @@ var init = function() {
 	fieldFrame.load(js.exec_dir + "starfield.bin", 80, 24);
 
 	timer = new Timer();
-	
-	var f = new File(js.exec_dir + "server.ini");
-	f.open("r");
-	serverIni = f.iniGetObject();
-	f.close();
+
+	if(file_exists(js.exec_dir + "server.ini")) {
+		var f = new File(js.exec_dir + "server.ini");
+		f.open("r");
+		serverIni = f.iniGetObject();
+		f.close();
+	} else {
+		serverIni = {
+			'host' : 'localhost',
+			'port' : 10088
+		};
+	}
 	
 	frame.open();	
 	statusFrame.top();
