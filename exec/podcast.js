@@ -30,6 +30,11 @@ function add_channel_opt_attribute(name) {
 	}
 }
 
+function add_channel_opt_attribute_rename(name, newName) {
+	if (opts[name] !== undefined)
+		out.write('\t\t<'+newName+'>'+encode_xml(opts[name])+'</'+newName+'>\n');
+}
+
 function create_item_xml(base, hdr) {
 	var info;
 	var item;
@@ -140,8 +145,7 @@ add_channel_opt_attribute('Category');
 out.write('\t\t<generator>Synchronet Podcast Script '+("$Revision$".split(' ')[1])+'</generator>\n');
 add_channel_opt_attribute('Docs');
 // TODO: cloud (fancy!)
-if (opts.TTL != undefined)
-	out.write('\t\t<ttl>'+encode_xml(opts.TTL)+'</ttl>\n');
+add_channel_opt_attribute_rename('TTL', 'ttl');
 if (opts.ImageURL != undefined) {
 	img_title = opts.ImageTitle == undefined ? opts.Title : opts.ImageTitle;
 	img_link = opts.ImageLink == undefined ? opts.Link : opts.ImageLink;
@@ -159,6 +163,7 @@ add_channel_opt_attribute('Rating');
 // TODO: textInput?
 add_channel_opt_attribute('SkipHours');
 add_channel_opt_attribute('SkipDays');
+add_channel_opt_attribute_rename('ITExplicit', 'itunes:explicit');
 out.write('\t\t<atom:link href="'+opts.FeedURI+'" rel="self" type="application/rss+xml" />\n');
 
 for (i=hdrs.length - 1; i >= 0; i--) {
