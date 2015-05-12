@@ -15,8 +15,6 @@ system.node_list[bbs.node_num-1].status = NODE_LOGON;
 
 var guest = system.matchuser("guest");
 
-//load("loadfont.js", "-P", system.data_dir + "VERT.FNT");
-
 for(var c=0; c<10; c++) {
 
 	// The "node sync" is required for sysop interruption/chat/etc.
