@@ -125,21 +125,27 @@ var init = function() {
 	for(var h = 0; h < historyFiles.length; h++)
 		historyFiles[h] = httpPath + "/" + file_getname(historyFiles[h]);
 	var months = jsonClient.read(dbName, "MONTHS", 1);
-	if(!months)
-		jsonClient.write(dbName, "MONTHS", historyFiles, 2);
+	if(!months) {
+		months = historyFiles;
+		jsonClient.write(dbName, "MONTHS", months, 2);
+	}
 	for(var h = 0; h < historyFiles.length; h++) {
 		if(months.indexOf(historyFiles[h]) < 0)
 			jsonClient.push(dbName, "MONTHS", historyFiles[h], 2);
 	}
 
 	users = jsonClient.read(dbName, "USERS", 1);
-	if(!users)
-		jsonClient.write(dbName, "USERS", [ usr.alias ], 2);
+	if(!users) {
+		users = [ usr.alias ];
+		jsonClient.write(dbName, "USERS", users, 2);
+	}
 	jsonClient.subscribe(dbName, "USERS");
 
 	systems = jsonClient.read(dbName, "SYSTEMS", 1);
-	if(!systems)
-		jsonClient.write(dbName, "SYSTEMS", [ system.name ], 2);
+	if(!systems) {
+		systems = [ system.name ];
+		jsonClient.write(dbName, "SYSTEMS", systems, 2);
+	}
 	jsonClient.subscribe(dbName, "SYSTEMS");
 
 	if(!jsonClient.read(dbName, "SEQUENCE.length", 1))
