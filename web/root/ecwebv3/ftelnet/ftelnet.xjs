@@ -1,6 +1,6 @@
 <?xjs
 	load('webInit.ssjs');
-	var f = new File(system.ctrl_dir + 'services.ini');
+	var f = new File(file_cfgname(system.ctrl_dir, 'services.ini'));
 	if(f.open("r")) {
 		var fspIni = f.iniGetObject('FlashPolicy');
 		var wssIni = f.iniGetObject('WebSocket');
@@ -19,7 +19,7 @@
 		var htmlterm = true;
 		var wssPort = wssIni.Port;
 	}
-	f = new File(system.ctrl_dir + 'sbbs.ini');
+	f = new File(file_cfgname(system.ctrl_dir, 'sbbs.ini'));
 	if(f.open("r")) {
 		var sbbsIni = f.iniGetObject("BBS");
 		f.close();

@@ -1,7 +1,7 @@
 load("file_size.js");
 
 // Load the icons definitions...
-icons=new File(system.ctrl_dir+"webicons.ini");
+icons=new File(file_cfgname(system.ctrl_dir,"webicons.ini"));
 if(icons.exists) {
 	icons.open("r",true);
 	allicons=icons.iniGetObject();
