@@ -46,7 +46,9 @@ ifdef bcc
  CCPRE	:=	bcc
  MKFLAGS	+=	bcc=1
 else
- CCPRE	:=	gcc
+ CC		?=	gcc
+ CCPRE	?= ${shell if [ `echo __clang__ | $(CC) -E - | grep -v '^\#'` != __clang__ ] ; then echo clang ; elif [ `echo __INTEL_COMPILER | $(CC) -E - | grep -v '^\#'` != __INTEL_COMPILER ] ; then echo icc ; else echo gcc ; fi}
+ CCPRE := $(lastword $(subst /, ,$(CCPRE)))
 endif
 
 INSTALL	?=	CLASSIC		# Can be CLASSIC or UNIX
