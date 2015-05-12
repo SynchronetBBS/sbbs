@@ -228,6 +228,9 @@ var cleanUp = function() {
 	jsonClient.disconnect();
 }
 
+if(system.lastuser < 1)
+	exit();
+
 // Try to do things, log an error if necessary
 try {
 	init();

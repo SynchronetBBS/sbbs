@@ -58,6 +58,9 @@ var cleanUp = function() {
 	jsonClient.disconnect();
 }
 
+if(system.lastuser < 1)
+	exit();
+
 try {
 	init();
 	main();
