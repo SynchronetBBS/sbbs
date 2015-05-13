@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -75,7 +75,7 @@ void sbbs_t::fileinfo(file_t* f)
 	bprintf(text[FiDateUled],timestr(f->dateuled));
 	bprintf(text[FiDateDled],f->datedled ? timestr(f->datedled) : "Never");
 	bprintf(text[FiTimesDled],f->timesdled);
-	if(f->size!=-1L)
+	if(f->size>0 && f->timetodl>0)
 		bprintf(text[FiTransferTime],sectostr(f->timetodl,tmp));
 	if(f->altpath) {
 		if(f->altpath<=cfg.altpaths) {
