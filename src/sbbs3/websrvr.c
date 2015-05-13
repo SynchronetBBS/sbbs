@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1795,7 +1795,8 @@ static named_string_t** read_ini_list(char* path, char* section, char* desc
 		if(i)
 			lprintf(LOG_DEBUG,"Read %u %s from %s section of %s"
 				,i,desc,section==NULL ? "root":section,path);
-	}
+	} else
+		lprintf(LOG_WARNING, "Error %d opening %s", errno, path);
 	return(list);
 }
 
