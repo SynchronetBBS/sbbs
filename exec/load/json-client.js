@@ -349,14 +349,14 @@ function JSONClient(serverAddr,serverPort) {
 	/* package a query and send through the socket */
 	this.send=function(packet) {
 		if(!this.socket.is_connected)
-			throw("socket disconnected");
+			throw("socket disconnected 1");
 		this.socket.sendJSON(packet);
 	}
 
 	/* receive a data packet */
 	this.receive=function() {
 		if(!this.socket.is_connected)
-			throw("socket disconnected");
+			return false; 	// Was throw("socket disconnected"); but this was filling up the error.log with every server recycle
 		if(!this.socket.data_waiting) 
 			return false;
 		var packet=this.socket.recvJSON();
