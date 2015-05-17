@@ -21,6 +21,11 @@
  * 2015-05-06 Eric Oulashin     Version 1.0
  *                              Finally releasing it, as it seems fairly stable
  *                              and has the basic features implemented.
+ * 2015-05-17 Eric Oulashin     Version 1.01
+ *                              Bug fix: Updated the setting of the enhanced reader
+ *                              header width to use the longest line in the header
+ *                              (rather than the length of only the first line) to
+ *                               ensure that the header displays correctly.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -108,8 +113,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.00";
-var READER_DATE = "2015-05-06";
+var READER_VERSION = "1.01";
+var READER_DATE = "2015-05-17";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1003,10 +1008,20 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 			}
 		}
 	}
-	// Save the enhanced reader header width
+	// Save the enhanced reader header width.  This will be the length of the longest
+	// line in the header.
 	this.enhMsgHeaderWidth = 0;
 	if (this.enhMsgHeaderLines.length > 0)
-		this.enhMsgHeaderWidth = console.strlen(this.enhMsgHeaderLines[0]);
+	{
+		var lineLen = 0;
+		for (var i = 0; i < this.enhMsgHeaderLines.length; ++i)
+		{
+			lineLen = console.strlen(this.enhMsgHeaderLines[i]);
+			if (lineLen > this.enhMsgHeaderWidth)
+				this.enhMsgHeaderWidth = lineLen;
+		}
+	}
+
 	// Message display area information
 	this.msgAreaTop = this.enhMsgHeaderLines.length + 1;
 	this.msgAreaBottom = console.screen_rows-1;  // The last line of the message area
