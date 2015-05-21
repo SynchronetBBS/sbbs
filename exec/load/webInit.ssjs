@@ -43,7 +43,7 @@ var webIni=(function() {
 	if(webIni.WebGuest==undefined)
 		webIni.WebGuest='Guest';
 	if(webIni.appendURL==undefined)
-		webIni.appendURL='/ecwebv3/';
+		webIni.appendURL='';
 	if(webIni.sessionTimeout==undefined)
 		webIni.sessionTimeout=43200;
 	if(webIni.captchaLength==undefined)
