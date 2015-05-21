@@ -12,7 +12,7 @@ print("This is a Server-Side Javascript page.  It's more cumbersome than an");
 print("XJS page, but can be useful in certain situations.<br /><br />");
 
 // SSJS example:
-if(user.alias == webIni.WebGuest)
+if(!user.number || user.alias == webIni.WebGuest)
 	print("You are not logged in.");
 else
-	print("You are logged in as " + user.alias);
+	print("You are logged in as " + user.alias + " #" + user.number);

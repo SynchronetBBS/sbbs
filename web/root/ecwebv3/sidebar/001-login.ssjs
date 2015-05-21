@@ -1,4 +1,4 @@
-if(user.alias.toUpperCase() != webIni.WebGuest.toUpperCase()) {
+if(user.number && user.alias.toUpperCase() != webIni.WebGuest.toUpperCase()) {
 	print("You are logged in as <b>" + user.alias + "</b><br />");
 	print(
 		format(
