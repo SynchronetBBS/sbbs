@@ -774,7 +774,8 @@ for(i in area) {
 		for(h in hfields)
 			parse_news_header(hdr,hfields[h]);	// from newsutil.js
 
-		if(hdr.extra_headers["nntp-posting-host"]!=undefined 
+		if(hdr.extra_headers!=undefined
+            && hdr.extra_headers["nntp-posting-host"]!=undefined 
 			&& (system.trashcan("ip", hdr.extra_headers["nntp-posting-host"]) 
 				|| system.trashcan("ip-silent", hdr.extra_headers["nntp-posting-host"]))) {
 			print("!Filtered IP address in NNTP-Posting-Host header field: " + hdr.extra_headers["nntp-posting-host"]);
