@@ -114,8 +114,8 @@ var cleanUp = function() {
 	jsonClient.disconnect();
 }
 
-if(system.lastuser < 1)
-	exit();
+while(system.lastuser < 1)
+	mswait(15000);
 
 try {
 	initJson();

@@ -100,6 +100,9 @@ var processUpdate = function(update) {
 
 var init = function() {
 
+	while(system.lastuser < 1)
+		mswait(15000);
+
 	timer = new Timer();
 
 	var f = new File(root + "service.ini");
@@ -175,9 +178,6 @@ var main = function() {
 var cleanUp = function() {
 	jsonClient.disconnect();
 }
-
-if(system.lastuser < 1)
-	exit();
 
 try {
 	init();

@@ -160,6 +160,9 @@ var pushLevels = function() {
 // Set things up
 var init = function() {
 
+	while(system.lastuser < 1)
+		mswait(15000);
+
 	// Load the server config if it exists, or fake it if not
 	if(file_exists(root + "server.ini")) {
 		var f = new File(root + "server.ini");
@@ -227,9 +230,6 @@ var main = function() {
 var cleanUp = function() {
 	jsonClient.disconnect();
 }
-
-if(system.lastuser < 1)
-	exit();
 
 // Try to do things, log an error if necessary
 try {
