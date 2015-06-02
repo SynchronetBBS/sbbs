@@ -4,7 +4,7 @@ print("<span class=title>New User Registration</span><br /><br />");
 
 if(http_request.query.hasOwnProperty('font')) {
 	captchaHelp(http_request.query.font);
-} else if(user.alias == webIni.WebGuest && http_request.query.hasOwnProperty('newuser')) {
+} else if((user.number==0 || user.alias == webIni.WebGuest) && http_request.query.hasOwnProperty('newuser')) {
 
 	var failString = '';
 	var newUserObject = {};
@@ -138,7 +138,7 @@ if(http_request.query.hasOwnProperty('font')) {
 		print("User account created.");
 	}
 
-} else if(user.alias == webIni.WebGuest) {
+} else if(user.number==0 || user.alias == webIni.WebGuest) {
 
 	print("<form name='newUser' id='newUser' action='./index.xjs?page=999-newUser.ssjs' method='post' onsubmit='return validateNewUserForm()'>");
 	print("<input class='border font' type='hidden' name='newuser' value='true' />");
