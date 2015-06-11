@@ -40,7 +40,7 @@ var searchText = argv[2];
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
-var msgReaderPath = "../xtrn/DigDist/MsgReader";
+var msgReaderPath = "../xtrn/DDMsgReader";
 
 
 // The start of the command string to use with bbs.exec()
