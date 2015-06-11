@@ -283,7 +283,7 @@ static void map_window()
 
     x11.XFree(sh);
 
-	send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
+	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,TRUE);
 
     return;
 }
@@ -327,7 +327,7 @@ static int init_mode(int mode)
     /* Resize window if necessary. */
 	if((!(bitmap_width == 0 && bitmap_height == 0)) && (oldwidth != bitmap_width || oldheight != bitmap_height))
 		resize_window();
-	send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
+	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,TRUE);
 
 	sem_post(&mode_set);
     return(0);
@@ -473,7 +473,7 @@ static void handle_resize_event(int width, int height)
 	}
 	else
 		pthread_mutex_unlock(&vstatlock);
-	send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
+	send_rectangle(&vstat, 0,0,bitmap_width,bitmap_height,TRUE);
 }
 
 static void expose_rect(int x, int y, int width, int height)
@@ -496,7 +496,7 @@ static void expose_rect(int x, int y, int width, int height)
 	ey=ey/(vstat.scaling*vstat.vmultiplier);
 	pthread_mutex_unlock(&vstatlock);
 
-	send_rectangle(sx, sy, ex-sx+1, ey-sy+1, TRUE);
+	send_rectangle(&vstat, sx, sy, ex-sx+1, ey-sy+1, TRUE);
 }
 
 static int x11_event(XEvent *ev)
