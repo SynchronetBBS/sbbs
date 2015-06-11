@@ -4,6 +4,13 @@
 // This module is used for:
 // - Simply reading a sub-board
 // - Find text in messages
+//
+// Date       Author            Description
+// 2015-05-06 Eric Oulashin     Version 1.0 - Initial release
+// 2015-06-10 Eric Oulashin     Version 1.02
+//                              Bug fix: Switched to bbs.scan_msgs() instead of
+//                              bbs.scan_subs() for all other scan modes besides
+//                              SCAN_READ.
 
 // For stock Synchronet functionality:
 //bbs.scan_msgs([sub-board=current] [,mode=SCAN_READ] [,string find])
@@ -18,7 +25,7 @@ console.print("\1n");
 // 3. Optional: Search text (if any)
 if (argc < 2)
 {
-	console.print("\1h\1yNot enough arguments were passed to the Scan Posts module!  Please inform the");
+	console.print("\1h\1yNot enough arguments were passed to the Scan Messages module!  Please inform the");
 	console.crlf();
 	console.print("sysop.\1n");
 	console.crlf();
@@ -33,7 +40,7 @@ var searchText = argv[2];
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
-var msgReaderPath = "../xtrn/DDMsgReader";
+var msgReaderPath = "../xtrn/DigDist/MsgReader";
 
 
 // The start of the command string to use with bbs.exec()
@@ -45,7 +52,5 @@ if (scanMode == SCAN_READ)
 	bbs.exec(rdrCmdStrStart + "-subBoard=" + subBoardCode + " -startMode=read");
 // Some modes that the Digital Distortion Message Reader doesn't handle yet: Use
 // Synchronet's stock behavior.
-else if (((scanMode & SCAN_CONST) == SCAN_CONST) || ((scanMode & SCAN_BACK) == SCAN_BACK))
-	bbs.scan_subs(scanMode, scanAllSubs);
-else // Stock Synchronet behavior
+else
 	bbs.scan_msgs(subBoardCode, scanMode, searchText);

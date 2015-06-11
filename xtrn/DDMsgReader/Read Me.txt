@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.01
-                           Release date: 2015-05-17
+                                 Version 1.02
+                           Release date: 2015-06-10
 
                                      by
 
@@ -130,7 +130,7 @@ editor.
 
 The first 3 files (DDMsgReader.js, DDMsgReader.cfg, and DefaultTheme) can be
 placed together in any directory; the next 3 (DDReadPersonalEmail.js,
-DDScanMsgs.js, and DDScanSubs.js) should be copied to your sbbs/subs directory.
+DDScanMsgs.js, and DDScanSubs.js) should be copied to your sbbs/mods directory.
 
 The examples in this document will assume the first 3 files are in the
 sbbs/xtrn/DDMsgReader directory.

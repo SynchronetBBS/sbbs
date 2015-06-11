@@ -25,7 +25,10 @@
  *                              Bug fix: Updated the setting of the enhanced reader
  *                              header width to use the longest line in the header
  *                              (rather than the length of only the first line) to
- *                               ensure that the header displays correctly.
+ *                              ensure that the header displays correctly.
+ * 2015-06-10 Eric Oulashin     Version 1.02
+ *                              Updated the version to reflect a bug fix in
+ *                              DDScanMsgs.js.  No change to the actual reader.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -113,8 +116,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.01";
-var READER_DATE = "2015-05-17";
+var READER_VERSION = "1.02";
+var READER_DATE = "2015-06-10";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
