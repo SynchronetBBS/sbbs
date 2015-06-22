@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -194,6 +194,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 	char	str[256],quote[128],c,*buf,*p,*tp
 				,useron_level;
 	char	msgtmp[MAX_PATH+1];
+	char	tagfile[MAX_PATH+1];
 	char 	tmp[512];
 	int		i,j,file,linesquoted=0;
 	long	length,qlen=0,qtime=0,ex_mode=0;
@@ -219,6 +220,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		mode|=WM_NOTOP;
 
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
+	SAFEPRINTF(tagfile,"%seditor.tag",cfg.temp_dir);
+	removecase(tagfile);
 
 	if(mode&WM_QUOTE && !(useron.rest&FLAG('J'))
 		&& ((mode&(WM_EMAIL|WM_NETMAIL) && cfg.sys_misc&SM_QUOTE_EM)
@@ -537,20 +540,36 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 	}
 	l=process_edited_text(buf,stream,mode,&lines,cfg.level_linespermsg[useron_level]);
 
-	/* Signature file */
-	if((subnum==INVALID_SUB && cfg.msg_misc&MM_EMAILSIG)
-		|| (subnum!=INVALID_SUB && !(cfg.sub[subnum]->misc&SUB_NOUSERSIG))) {
-		SAFEPRINTF2(str,"%suser/%04u.sig",cfg.data_dir,useron.number);
-		FILE* sig;
-		if(fexist(str) && (sig=fopen(str,"r"))!=NULL) {
-			while(!feof(sig)) {
-				if(!fgets(str,sizeof(str),sig))
-					break;
-				truncsp(str);
-				l+=fprintf(stream,"%s\r\n",str);
-				lines++;		/* line counter */
+	if(!(mode&WM_EXTDESC)) {
+		/* Signature file */
+		if((subnum==INVALID_SUB && cfg.msg_misc&MM_EMAILSIG)
+			|| (subnum!=INVALID_SUB && !(cfg.sub[subnum]->misc&SUB_NOUSERSIG))) {
+			SAFEPRINTF2(str,"%suser/%04u.sig",cfg.data_dir,useron.number);
+			FILE* sig;
+			if(fexist(str) && (sig=fopen(str,"r"))!=NULL) {
+				while(!feof(sig)) {
+					if(!fgets(str,sizeof(str),sig))
+						break;
+					truncsp(str);
+					l+=fprintf(stream,"%s\r\n",str);
+					lines++;		/* line counter */
+				}
+				fclose(sig);
 			}
-			fclose(sig);
+		}
+		if(fexistcase(tagfile)) {
+			FILE* tag;
+
+			if((tag=fopen(tagfile,"r")) != NULL) {
+				while(!feof(tag)) {
+					if(!fgets(str,sizeof(str),tag))
+						break;
+					truncsp(str);
+					l+=fprintf(stream,"%s\r\n",str);
+					lines++;		/* line counter */
+				}
+				fclose(tag);
+			}
 		}
 	}
 
