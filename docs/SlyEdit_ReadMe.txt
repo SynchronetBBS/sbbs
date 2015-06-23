@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.44
-                        Release date: 2015-04-30
+                              Version 1.45
+                        Release date: 2015-06-22
 
                                   by
 
@@ -797,3 +797,15 @@ located in any of the following directories, searched in the following order:
 - sbbs/mods
 - sbbs/ctrl
 - The same directory as SlyEdit's .js files
+
+Synchronet version 3.16 has the ability to place the tag line after the user's
+signature, so if you are running version 3.16 or newer of Synchronet, the tag
+line will be placed after the user's signature, if the user has a signature.
+With version 3.15 and earlier of Synchronet, the tag line will be place before
+the user's signature.
+Note that if you are using a beta build of Synchronet 3.16, you must be using
+a build of Synchronet from June 22, 2015 or newer for the tag line to be placed
+after a user's signature.  For beta builds of Synchronet 3.16 before June 22,
+2015, the tag line will not appear in the message.  Synchronet reads the tag
+line from editor.tag in the node's temp directory, and only builds after June
+22, 2015 read that file.
