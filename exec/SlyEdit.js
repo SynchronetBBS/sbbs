@@ -45,6 +45,12 @@
  *                              should be used for the 'From' name.  Previously,
  *                              SlyEdit was always using the user's alias as
  *                              the 'From' name when cross-posting.
+ * 2015-06-22 Eric Oulashin     Version 1.45
+ *                              Added support for writing a tagline to editor.tag
+ *                              in the node's temp directory, for Synchronet 3.16b.
+ *                              If editor.tag exists in the node's temp directory,
+ *                              Synchronet will append the tag line(s) from that
+ *                              file after the user's signature.
  */
 
 /* Command-line arguments:
@@ -122,8 +128,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.44";
-const EDITOR_VER_DATE = "2015-04-30";
+const EDITOR_VERSION = "1.45";
+const EDITOR_VER_DATE = "2015-06-22";
 
 
 // Program variables
@@ -1425,12 +1431,29 @@ function doEditLoop()
          var taglineRetObj = doTaglineSelection();
          if (taglineRetObj.taglineWasSelected && taglineRetObj.tagline.length > 0)
          {
-            // Append a blank line and then append the tagline to the message
-            gEditLines.push(new TextLine());
-            var newLine = new TextLine();
-            newLine.text = taglineRetObj.tagline;
-            gEditLines.push(newLine);
-            reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth);
+			// If the Synchronet version is at least 3.16, then write the tag line
+			// to editor.tag in the node's temp directory (Synchronet will read that
+			// and append its contents after the user's signature).  Otherwise (if
+			// the Synchronet version is below 3.16), then append the tagline to the
+			// message directly.
+			if (system.version_num >= 31600)
+			{
+				var taglineArray = new Array();
+				taglineArray.push(""); // Leave a blank line between the signature & tagline
+				taglineArray.push(taglineRetObj.tagline);
+				// The tag line could be wrapped to 79 characters, as follows:
+				//wrapTextLines(taglineArray, 0, taglineArray.length, 79);
+				writeTaglineToMsgTaglineFile(taglineArray);
+			}
+			else
+			{
+				// Append a blank line and then append the tagline to the message
+				gEditLines.push(new TextLine());
+				var newLine = new TextLine();
+				newLine.text = taglineRetObj.tagline;
+				gEditLines.push(newLine);
+				reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth);
+			}
          }
       }
    }
@@ -5801,6 +5824,53 @@ function setQuotePrefix()
       else // A space doesn't exist; use the first 2 letters
          gQuotePrefix += quotedName.substr(0, 2) + "> ";
    }
+}
+
+// Writes an array of strings to the message tagline file (editor.tag in the node's
+// temp directory).
+//
+// Parameters:
+//  pTaglines: An array of strings to write to the tagline file
+//
+// Return value: Boolean - Whether or not the tagline file was successfully written.
+//               If pTaglines is empty, this will return true, since the effect
+//               would be no tag line.  If pTaglines is not an array (object), then
+//               this function will return false.
+function writeTaglineToMsgTaglineFile(pTaglines)
+{
+	if (typeof(pTaglines) != "object")
+		return false;
+	if (pTaglines.length == 0)
+		return true;
+
+	var wroteTaglineFile = false;
+	var nodeTempDirWithoutTrailingSlash = backslash(system.node_dir) + "temp";
+	// If the node temp dir doesn't exist, then create it.
+	var tempDirExists = true;
+	if (!file_isdir(nodeTempDirWithoutTrailingSlash))
+	{
+		// If it's a regular file (not a directory), then delete it
+		// before trying to create it
+		var canCreateDir = true;
+		if (file_exists(nodeTempDirWithoutTrailingSlash))
+			canCreateDir = file_remove(nodeTempDirWithoutTrailingSlash);
+		tempDirExists = (canCreateDir ? mkdir(nodeTempDirWithoutTrailingSlash) : false);
+	}
+	if (tempDirExists)
+	{
+		var taglineFilename = backslash(nodeTempDirWithoutTrailingSlash) + "editor.tag";
+		if (file_exists(taglineFilename))
+			file_remove(taglineFilename);
+		var taglineFile = new File(taglineFilename);
+		if (taglineFile.open("w"))
+		{
+			for (var i = 0; i < pTaglines.length; ++i)
+				taglineFile.writeln(pTaglines[i]);
+			taglineFile.close();
+			wroteTaglineFile = true;
+		}
+	}
+	return wroteTaglineFile;
 }
 
 // Writes some text over the bottom help line, with a pause before erasing the
