@@ -20,7 +20,7 @@ Synchronet Oneliners<br><br>
 
 <?xjs
 
-for(var line = Math.max(0, lines.length - 10); line < lines.length; line++) {
+for(var line = 0; line < lines.length; line++) {
     var bg = (line %2 == 0) ? "#1C1C1C" : "#585858";
     var fg = (line %2 == 0) ? "#FFFFFF" : "#000000";
     write("<div style='width:100%;color:"+fg+";background-color:"+bg+";'>");
