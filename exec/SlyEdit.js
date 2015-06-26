@@ -51,6 +51,11 @@
  *                              If editor.tag exists in the node's temp directory,
  *                              Synchronet will append the tag line(s) from that
  *                              file after the user's signature.
+ * 2015-06-25 Eric Oulashin     Version 1.46
+ *                              If the user is editing their signature file, now
+ *                              SlyEdit won't ask the user if they want to add
+ *                              a tagline, even if their tagline setting is
+ *                              enabled.
  */
 
 /* Command-line arguments:
@@ -128,8 +133,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.45";
-const EDITOR_VER_DATE = "2015-06-22";
+const EDITOR_VERSION = "1.46";
+const EDITOR_VER_DATE = "2015-06-25";
 
 
 // Program variables
@@ -1421,41 +1426,43 @@ function doEditLoop()
       }
    }
 
-   // If the user has not aborted the message and taglines is enabled in their
-   // user settings, then prompt them for a tag line to be appended to the message.
-   if ((returnCode == 0) && gUserSettings.enableTaglines &&
-        txtFileContainsLines(gConfigSettings.tagLineFilename))
+   // If the user has not aborted the message, is not editing their signature, and
+   // taglines is enabled in their user settings, then prompt them for a tag line
+   // to be appended to the message.
+   var isEditingSignature = (gMsgSubj == format("%04d.sig", user.number));
+   if ((returnCode == 0) && !isEditingSignature && gUserSettings.enableTaglines &&
+       txtFileContainsLines(gConfigSettings.tagLineFilename))
    {
-      if (promptYesNo("Add a tagline", true, "Add tagline", true))
-      {
-         var taglineRetObj = doTaglineSelection();
-         if (taglineRetObj.taglineWasSelected && taglineRetObj.tagline.length > 0)
-         {
-			// If the Synchronet version is at least 3.16, then write the tag line
-			// to editor.tag in the node's temp directory (Synchronet will read that
-			// and append its contents after the user's signature).  Otherwise (if
-			// the Synchronet version is below 3.16), then append the tagline to the
-			// message directly.
-			if (system.version_num >= 31600)
+		if (promptYesNo("Add a tagline", true, "Add tagline", true))
+		{
+			var taglineRetObj = doTaglineSelection();
+			if (taglineRetObj.taglineWasSelected && taglineRetObj.tagline.length > 0)
 			{
-				var taglineArray = new Array();
-				taglineArray.push(""); // Leave a blank line between the signature & tagline
-				taglineArray.push(taglineRetObj.tagline);
-				// The tag line could be wrapped to 79 characters, as follows:
-				//wrapTextLines(taglineArray, 0, taglineArray.length, 79);
-				writeTaglineToMsgTaglineFile(taglineArray);
+				// If the Synchronet version is at least 3.16, then write the tag line
+				// to editor.tag in the node's temp directory (Synchronet will read that
+				// and append its contents after the user's signature).  Otherwise (if
+				// the Synchronet version is below 3.16), then append the tagline to the
+				// message directly.
+				if (system.version_num >= 31600)
+				{
+					var taglineArray = new Array();
+					taglineArray.push(""); // Leave a blank line between the signature & tagline
+					taglineArray.push(taglineRetObj.tagline);
+					// The tag line could be wrapped to 79 characters, as follows:
+					//wrapTextLines(taglineArray, 0, taglineArray.length, 79);
+					writeTaglineToMsgTaglineFile(taglineArray);
+				}
+				else
+				{
+					// Append a blank line and then append the tagline to the message
+					gEditLines.push(new TextLine());
+					var newLine = new TextLine();
+					newLine.text = taglineRetObj.tagline;
+					gEditLines.push(newLine);
+					reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth);
+				}
 			}
-			else
-			{
-				// Append a blank line and then append the tagline to the message
-				gEditLines.push(new TextLine());
-				var newLine = new TextLine();
-				newLine.text = taglineRetObj.tagline;
-				gEditLines.push(newLine);
-				reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth);
-			}
-         }
-      }
+		}
    }
 
    // If gEditLines has only 1 line in it and it's blank, then
