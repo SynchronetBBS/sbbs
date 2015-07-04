@@ -444,7 +444,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		if(editor!=NULL)
 			*editor=cfg.xedit[useron.xedit-1]->name;
 
-		editor_inf(useron.xedit,dest,title,mode,subnum);
+		editor_inf(useron.xedit,dest,title,mode,subnum,tagfile);
 		if(cfg.xedit[useron.xedit-1]->type) {
 			gettimeleft();
 			xtrndat(useron.alias,cfg.node_dir,cfg.xedit[useron.xedit-1]->type
@@ -591,24 +591,24 @@ void quotestr(char *str)
 /****************************************************************************/
 /****************************************************************************/
 void sbbs_t::editor_inf(int xeditnum, const char *dest, const char *title, long mode
-	,uint subnum)
+	,uint subnum, const char* tagfile)
 {
-	char str[MAX_PATH+1];
-	char tmp[32];
-	int file;
+	char	path[MAX_PATH+1];
+	char	fname[32];
+	FILE*	fp;
 
 	xeditnum--;
 
 	if(cfg.xedit[xeditnum]->misc&QUICKBBS) {
-		strcpy(tmp,"MSGINF");
+		strcpy(fname,"MSGINF");
 		if(cfg.xedit[xeditnum]->misc&XTRN_LWRCASE)
-			strlwr(tmp);
-		SAFEPRINTF2(str,"%s%s",cfg.node_dir,tmp);
-		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
+			strlwr(fname);
+		SAFEPRINTF2(path,"%s%s",cfg.node_dir,fname);
+		if((fp=fopen(path,"wb"))==NULL) {
+			errormsg(WHERE,ERR_OPEN,path,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
 		}
-		safe_snprintf(str,sizeof(str),"%s\r\n%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n"
+		fprintf(fp,"%s\r\n%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n"
 			,(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME) ? useron.name
 				: useron.alias
 				,dest,title,1
@@ -617,27 +617,29 @@ void sbbs_t::editor_inf(int xeditnum, const char *dest, const char *title, long 
 				:subnum==INVALID_SUB ? nulstr
 				:cfg.sub[subnum]->sname
 			,mode&WM_PRIVATE ? "YES":"NO");
-		write(file,str,strlen(str));
-		close(file); 
+		/* the 7th line (the tag-line file) is a Synchronet extension, for SlyEdit */
+		if((mode&WM_EXTDESC)==0 && tagfile!=NULL)
+			fprintf(fp,"%s", tagfile);
+		fprintf(fp,"\r\n");
+		fclose(fp);
 	}
 	else {
-		SAFEPRINTF(str,"%sRESULT.ED",cfg.node_dir);
-		removecase(str);
-		strcpy(tmp,"EDITOR.INF");
+		SAFEPRINTF(path,"%sRESULT.ED",cfg.node_dir);
+		removecase(path);
+		strcpy(fname,"EDITOR.INF");
 		if(cfg.xedit[xeditnum]->misc&XTRN_LWRCASE)
-			strlwr(tmp);
-		SAFEPRINTF2(str,"%s%s",cfg.node_dir,tmp);
-		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
+			strlwr(fname);
+		SAFEPRINTF2(path,"%s%s",cfg.node_dir,fname);
+		if((fp=fopen(path,"wb"))==NULL) {
+			errormsg(WHERE,ERR_OPEN,path,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
 		}
-		safe_snprintf(str,sizeof(str),"%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n%u\r\n"
+		fprintf(fp,"%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n%u\r\n"
 			,title,dest,useron.number
 			,(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME) ? useron.name
 			: useron.alias
 			,useron.name,useron.level);
-		write(file,str,strlen(str));
-		close(file); 
+		fclose(fp);
 	}
 }
 
@@ -1026,7 +1028,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 				fcopy(path, msgtmp);
 		}
 
-		editor_inf(useron.xedit,fname,nulstr,0,INVALID_SUB);
+		editor_inf(useron.xedit,fname,nulstr,0,INVALID_SUB,/* tagfile: */NULL);
 		if(cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
 			mode|=EX_NATIVE;
 		if(cfg.xedit[useron.xedit-1]->misc&XTRN_SH)
