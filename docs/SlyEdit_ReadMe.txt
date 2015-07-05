@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.46
-                        Release date: 2015-06-25
+                              Version 1.47
+                        Release date: 2015-07-05
 
                                   by
 
@@ -801,11 +801,14 @@ located in any of the following directories, searched in the following order:
 Synchronet version 3.16 has the ability to place the tag line after the user's
 signature, so if you are running version 3.16 or newer of Synchronet, the tag
 line will be placed after the user's signature, if the user has a signature.
-With version 3.15 and earlier of Synchronet, the tag line will be place before
-the user's signature.
-Note that if you are using a beta build of Synchronet 3.16, you must be using
-a build of Synchronet from June 22, 2015 or newer for the tag line to be placed
-after a user's signature.  For beta builds of Synchronet 3.16 before June 22,
-2015, the tag line will not appear in the message.  Synchronet reads the tag
-line from editor.tag in the node's temp directory, and only builds after June
-22, 2015 read that file.
+
+Specifically, Synchronet 3.16 starting with the beta build on July 5, 2015 will
+behave that way; with earlier versions of Synchronet, the tag line will be
+placed before the user's signature.  On June 22, 2015, Synchronet added support
+for a file called editor.tag (in each node directory's temp directory) which
+can contain an editor tagline, and on July 5, 2015, Synchronet included an
+update in which the full path & filename to the tagline file will be written
+to line 7 of the MSGINF drop file, which SlyEdit reads on startup.  If the
+MSGINF file includes the 7th line, then the tagline will appear after the
+user's signature (if they have one).  If the MSGINF file does not include the
+7th line, then the tagline will appear before the user's signature.
