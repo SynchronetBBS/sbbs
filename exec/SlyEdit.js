@@ -56,6 +56,18 @@
  *                              SlyEdit won't ask the user if they want to add
  *                              a tagline, even if their tagline setting is
  *                              enabled.
+ * 2015-07-05 Eric Oulashin     Version 1.47
+ *                              Updated to read the tagline filename from line 7
+ *                              of the MSGINF dropfile.  If that line in MSGINF
+ *                              is available (starting with Synchronet 3.16 beta
+ *                              builds on July 5, 2015), then the user's chosen
+ *                              tagline will be written to the tagline file, and
+ *                              Synchronet will read that and append the tagline
+ *                              after the user's signature. If the MSGINF file
+ *                              doesn't have the 7th line, then SlyEdit will write
+ *                              the user's chosen tagline to the end of the message
+ *                              (thus the tagline will appear before the user's
+ *                              signature).
  */
 
 /* Command-line arguments:
@@ -133,8 +145,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.46";
-const EDITOR_VER_DATE = "2015-06-25";
+const EDITOR_VERSION = "1.47";
+const EDITOR_VER_DATE = "2015-07-05";
 
 
 // Program variables
@@ -405,104 +417,113 @@ var gMsgSubj = "";
 var gFromName = user.alias;
 var gToName = gInputFilename;
 var gMsgArea = "";
+var gTaglineFile = "";
 var dropFileTime = -Infinity;
 var dropFileName = file_getcase(system.node_dir + "msginf");
 if (dropFileName != undefined)
 {
-   if (file_date(dropFileName) >= dropFileTime)
-   {
-      var dropFile = new File(dropFileName);
-      if (dropFile.exists && dropFile.open("r"))
-      {
-         dropFileTime = dropFile.date;
-         info = dropFile.readAll();
-         dropFile.close();
+	if (file_date(dropFileName) >= dropFileTime)
+	{
+		var dropFile = new File(dropFileName);
+		if (dropFile.exists && dropFile.open("r"))
+		{
+			dropFileTime = dropFile.date;
+			info = dropFile.readAll();
+			dropFile.close();
 
-         gFromName = info[0];
-         gToName = info[1];
-         gMsgSubj = info[2];
-         gMsgArea = info[4];
+			gFromName = info[0];
+			gToName = info[1];
+			gMsgSubj = info[2];
+			gMsgArea = info[4];
 
-         // Now that we know the name of the message area
-         // that the message is being posted in, call
-         // getCurMsgInfo() to set gMsgAreaInfo.
-         gMsgAreaInfo = getCurMsgInfo(gMsgArea);
-         setMsgAreaInfoObj = true;
-      }
-   }
-   file_remove(dropFileName);
+			// Now that we know the name of the message area
+			// that the message is being posted in, call
+			// getCurMsgInfo() to set gMsgAreaInfo.
+			gMsgAreaInfo = getCurMsgInfo(gMsgArea);
+			setMsgAreaInfoObj = true;
+
+			// If the msginf file has 7 lines, then the 7th line is the full
+			// path & filename of the tagline file, where we can write the
+			// user's chosen tag line (if the user has that option enabled)
+			// for the BBS software to read the tagline & insert it at the
+			// proper place in the message.
+			if (info.length >= 7)
+				gTaglineFile = info[6];
+		}
+	}
+	file_remove(dropFileName);
 }
 // If gMsgAreaInfo hasn't been set yet, then set it.
 if (!setMsgAreaInfoObj)
 {
-  gMsgAreaInfo = getCurMsgInfo(gMsgArea);
-  setMsgAreaInfoObj = true;
+	gMsgAreaInfo = getCurMsgInfo(gMsgArea);
+	setMsgAreaInfoObj = true;
 }
 // Set a variable to store whether or not cross-posting can be done.
 var gCanCrossPost = (gConfigSettings.allowCrossPosting && postingInMsgSubBoard(gMsgArea));
 // If the user is posting in a message sub-board, then add its information
 // to gCrossPostMsgSubs.
 if (postingInMsgSubBoard(gMsgArea))
-  gCrossPostMsgSubs.add(gMsgAreaInfo.subBoardCode);
+	gCrossPostMsgSubs.add(gMsgAreaInfo.subBoardCode);
 
 // Open the quote file / message file
 var inputFile = new File(gInputFilename);
 if (inputFile.open("r", false))
 {
-   // Read into the gQuoteLines or gEditLines array, depending on the value
-   // of gUseQuotes.  Use a buffer size that should be long enough.
-   if (gUseQuotes)
-   {
-      var textLine = null;  // Line of text read from the quotes file
-      while (!inputFile.eof)
-      {
-        textLine = inputFile.readln(2048);
-        // Only use textLine if it's actually a string.
-        if (typeof(textLine) == "string")
-        {
-           textLine = strip_ctrl(textLine);
-           // If the line has only whitespace and/or > characters,
-           // then make the line blank before putting it into
-           // gQuoteLines.
-           if (/^[\s>]+$/.test(textLine))
-              textLine = "";
-           gQuoteLines.push(textLine);
-        }
-     }
-   }
-   else
-   {
-      var textLine = null;
-      while (!inputFile.eof)
-      {
-         textLine = new TextLine();
-         textLine.text = inputFile.readln(2048);
-         if (typeof(textLine.text) == "string")
-            textLine.text = strip_ctrl(textLine.text);
-         else
-            textLine.text = "";
-         textLine.hardNewlineEnd = true;
-         // If there would still be room on the line for at least
-         // 1 more character, then add a space to the end of the
-         // line.
-         if (textLine.text.length < console.screen_columns-1)
-            textLine.text += " ";
-         gEditLines.push(textLine);
-      }
+	// Read into the gQuoteLines or gEditLines array, depending on the value
+	// of gUseQuotes.  Use a buffer size that should be long enough.
+	if (gUseQuotes)
+	{
+		var textLine = null;  // Line of text read from the quotes file
+		while (!inputFile.eof)
+		{
+			textLine = inputFile.readln(2048);
+			// Only use textLine if it's actually a string.
+			if (typeof(textLine) == "string")
+			{
+				textLine = strip_ctrl(textLine);
+				// If the line has only whitespace and/or > characters,
+				// then make the line blank before putting it into
+				// gQuoteLines.
+				if (/^[\s>]+$/.test(textLine))
+				textLine = "";
+				gQuoteLines.push(textLine);
+			}
+		}
+	}
+	else
+	{
+		var textLine = null;
+		while (!inputFile.eof)
+		{
+			textLine = new TextLine();
+			textLine.text = inputFile.readln(2048);
+			if (typeof(textLine.text) == "string")
+				textLine.text = strip_ctrl(textLine.text);
+			else
+				textLine.text = "";
+			textLine.hardNewlineEnd = true;
+			// If there would still be room on the line for at least
+			// 1 more character, then add a space to the end of the
+			// line.
+			if (textLine.text.length < console.screen_columns-1)
+			textLine.text += " ";
+			gEditLines.push(textLine);
+		}
 
-      // If the last edit line is undefined (which is possible after reading the end
-      // of the quotes file), then remove it from gEditLines.
-      if (gEditLines.length > 0)
-      {
-         if (gEditLines.length > 0)
-         {
-            var lastQuoteLineIndex = gEditLines.length - 1;
-            if (gEditLines[lastQuoteLineIndex].text == undefined)
-               gEditLines.splice(lastQuoteLineIndex, 1);
-         }
-      }
-   }
-   inputFile.close();
+		// If the last edit line is undefined (which is possible after reading the end
+		// of the quotes file), then remove it from gEditLines.
+		if (gEditLines.length > 0)
+		{
+			if (gEditLines.length > 0)
+			{
+				var lastQuoteLineIndex = gEditLines.length - 1;
+				if (gEditLines[lastQuoteLineIndex].text == undefined)
+					gEditLines.splice(lastQuoteLineIndex, 1);
+			}
+		}
+	}
+	inputFile.close();
 }
 
 // If the subject is blank, set it to something.
@@ -1438,20 +1459,12 @@ function doEditLoop()
 			var taglineRetObj = doTaglineSelection();
 			if (taglineRetObj.taglineWasSelected && taglineRetObj.tagline.length > 0)
 			{
-				// If the Synchronet version is at least 3.16, then write the tag line
-				// to editor.tag in the node's temp directory (Synchronet will read that
-				// and append its contents after the user's signature).  Otherwise (if
-				// the Synchronet version is below 3.16), then append the tagline to the
-				// message directly.
-				if (system.version_num >= 31600)
-				{
-					var taglineArray = new Array();
-					taglineArray.push(""); // Leave a blank line between the signature & tagline
-					taglineArray.push(taglineRetObj.tagline);
-					// The tag line could be wrapped to 79 characters, as follows:
-					//wrapTextLines(taglineArray, 0, taglineArray.length, 79);
-					writeTaglineToMsgTaglineFile(taglineArray);
-				}
+				// If the tagline filename was specified in the MSGINF drop file,
+				// then write the tag line to that file (Synchronet will read that
+				// and append its contents after the user's signature).  Otherwise,
+				// append the tagline to the message directly.
+				if (gTaglineFile.length > 0)
+					writeTaglineToMsgTaglineFile(taglineRetObj.tagline, gTaglineFile);
 				else
 				{
 					// Append a blank line and then append the tagline to the message
@@ -5837,45 +5850,43 @@ function setQuotePrefix()
 // temp directory).
 //
 // Parameters:
-//  pTaglines: An array of strings to write to the tagline file
+//  pTagline: The tagline to write to the file (a string)
+//  pTaglineFilename: The full path & filename of the tagline file
 //
 // Return value: Boolean - Whether or not the tagline file was successfully written.
-//               If pTaglines is empty, this will return true, since the effect
-//               would be no tag line.  If pTaglines is not an array (object), then
-//               this function will return false.
-function writeTaglineToMsgTaglineFile(pTaglines)
+//               If pTaglineFilename is empty or is not a string, or if pTagline is
+//               not a string, this will return false.  If pTagline is empty, then
+//               this will return true.
+function writeTaglineToMsgTaglineFile(pTagline, pTaglineFilename)
 {
-	if (typeof(pTaglines) != "object")
+	// Sanity checking
+	if ((typeof(pTagline) != "string") || (typeof(pTaglineFilename) != "string"))
 		return false;
-	if (pTaglines.length == 0)
+	if (pTaglineFilename.length == 0)
+		return false;
+	if (pTagline.length == 0)
 		return true;
 
 	var wroteTaglineFile = false;
-	var nodeTempDirWithoutTrailingSlash = backslash(system.node_dir) + "temp";
-	// If the node temp dir doesn't exist, then create it.
-	var tempDirExists = true;
-	if (!file_isdir(nodeTempDirWithoutTrailingSlash))
+	var taglineFile = new File(pTaglineFilename);
+	if (taglineFile.open("w"))
 	{
-		// If it's a regular file (not a directory), then delete it
-		// before trying to create it
-		var canCreateDir = true;
-		if (file_exists(nodeTempDirWithoutTrailingSlash))
-			canCreateDir = file_remove(nodeTempDirWithoutTrailingSlash);
-		tempDirExists = (canCreateDir ? mkdir(nodeTempDirWithoutTrailingSlash) : false);
-	}
-	if (tempDirExists)
-	{
-		var taglineFilename = backslash(nodeTempDirWithoutTrailingSlash) + "editor.tag";
-		if (file_exists(taglineFilename))
-			file_remove(taglineFilename);
-		var taglineFile = new File(taglineFilename);
-		if (taglineFile.open("w"))
-		{
-			for (var i = 0; i < pTaglines.length; ++i)
-				taglineFile.writeln(pTaglines[i]);
-			taglineFile.close();
-			wroteTaglineFile = true;
-		}
+		// If we wanted to wrap the tagline to 79 characters, it could be
+		// done as follows:
+		/*
+		var taglineArray = new Array();
+		taglineArray.push(""); // Leave a blank line between the signature & tagline
+		taglineArray.push(pTagline);
+		wrapTextLines(taglineArray, 0, taglineArray.length, 79);
+		// Write the tagline strings to the file
+		for (var i = 0; i < taglineArray.length; ++i)
+			taglineFile.writeln(taglineArray[i]);
+		*/
+		// Write the tagline to the file, with a blank line before it for spacing.
+		taglineFile.writeln("");
+		taglineFile.writeln(pTagline);
+		taglineFile.close();
+		wroteTaglineFile = true;
 	}
 	return wroteTaglineFile;
 }
