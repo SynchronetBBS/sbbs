@@ -68,6 +68,9 @@
  *                              the user's chosen tagline to the end of the message
  *                              (thus the tagline will appear before the user's
  *                              signature).
+ *                              Also, updated so that if the user is editing an
+ *                              existing message, SlyEdit won't prompt to add a
+ *                              tagline.
  */
 
 /* Command-line arguments:
@@ -1447,11 +1450,12 @@ function doEditLoop()
       }
    }
 
-   // If the user has not aborted the message, is not editing their signature, and
-   // taglines is enabled in their user settings, then prompt them for a tag line
-   // to be appended to the message.
+   // If the user has not aborted the message and taglines is enabled in their user settings
+   // and the user is not editing their signature & is not editing an existing message, then
+   // prompt the user for a tag line to be appended to the message.
    var isEditingSignature = (gMsgSubj == format("%04d.sig", user.number));
-   if ((returnCode == 0) && !isEditingSignature && gUserSettings.enableTaglines &&
+   var isEditingExistingMsg = !isEditingSignature && ((gMsgSubj == "MSGTMP") || (gMsgSubj == "DDMsgReader_message.txt") || (gMsgSubj == "DDMsgLister_message.txt"));
+   if ((returnCode == 0) && gUserSettings.enableTaglines && !isEditingSignature && !isEditingExistingMsg &&
        txtFileContainsLines(gConfigSettings.tagLineFilename))
    {
 		if (promptYesNo("Add a tagline", true, "Add tagline", true))
