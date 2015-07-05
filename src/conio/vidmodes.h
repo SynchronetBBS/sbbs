@@ -64,6 +64,11 @@ struct  video_params {
 	int	vmultiplier;
 };
 
+struct vstat_vmem {
+	unsigned refcount;
+	unsigned short *vmem;
+};
+
 struct video_stats {
 	int rows;
 	int cols;
@@ -89,7 +94,7 @@ struct video_stats {
 	int	vmultiplier;
 	struct dac_colors dac_colors[256];
 	unsigned char palette[16];
-	unsigned short *vmem;
+	struct vstat_vmem *vmem;
 };
 
 enum {
@@ -112,6 +117,8 @@ extern char vga_font_bitmap8[2048];
 extern "C" {
 #endif
 int find_vmode(int mode);
+struct vstat_vmem *get_vmem(struct video_stats *vs);
+void release_vmem(struct vstat_vmem *vm);
 int load_vmode(struct video_stats *vs, int mode);
 #ifdef __cplusplus
 }

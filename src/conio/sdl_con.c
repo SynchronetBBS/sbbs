@@ -892,6 +892,7 @@ void setup_surfaces(void)
 	int		flags=SDL_HWSURFACE|SDL_ANYFORMAT;
 	SDL_Surface	*tmp_rect;
 	SDL_Event	ev;
+	int charwidth, charheight, cols, scaling, rows, vmultiplier;
 
 	if(fullscreen)
 		flags |= SDL_FULLSCREEN;
@@ -900,14 +901,22 @@ void setup_surfaces(void)
 
 	sdl.mutexP(win_mutex);
 	pthread_mutex_lock(&vstatlock);
-	char_width=vstat.charwidth*vstat.cols*vstat.scaling;
-	char_height=vstat.charheight*vstat.rows*vstat.scaling*vstat.vmultiplier;
+	charwidth = vstat.charwidth;
+	charheight = vstat.charheight;
+	cols = vstat.cols;
+	scaling = vstat.scaling;
+	rows = vstat.rows;
+	vmultiplier = vstat.vmultiplier;
+	pthread_mutex_unlock(&vstatlock);
+	
+	char_width=charwidth*cols*scaling;
+	char_height=charheight*rows*scaling*vmultiplier;
 
 	if(yuv.enabled) {
 		if(!yuv.win_width)
-			yuv.win_width=vstat.charwidth*vstat.cols;
+			yuv.win_width=charwidth*cols;
 		if(!yuv.win_height)
-			yuv.win_height=vstat.charheight*vstat.rows;
+			yuv.win_height=charheight*rows;
 		if(fullscreen && yuv.screen_width && yuv.screen_height)
 			win=sdl.SetVideoMode(yuv.screen_width,yuv.screen_height,0,flags);
 		else
@@ -915,7 +924,6 @@ void setup_surfaces(void)
 	}
 	else
 		win=sdl.SetVideoMode(char_width,char_height,8,flags);
-	pthread_mutex_unlock(&vstatlock);
 
 #if !defined(NO_X) && defined(__unix__)
 	if(sdl_x11available && sdl_using_x11) {
@@ -1668,6 +1676,7 @@ int sdl_video_event_thread(void *data)
 									struct update_rect *rect=(struct update_rect *)ev.user.data1;
 									SDL_Rect r;
 									int x,y,offset;
+									int scaling, vmultiplier;
 
 									sdl.mutexP(win_mutex);
 									if(!win) {
@@ -1678,13 +1687,16 @@ int sdl_video_event_thread(void *data)
 									}
 									sdl.mutexP(newrect_mutex);
 									pthread_mutex_lock(&vstatlock);
+									scaling = vstat.scaling;
+									vmultiplier = vstat.vmultiplier;
+									pthread_mutex_unlock(&vstatlock);
 									for(y=0; y<rect->height; y++) {
 										offset=y*rect->width;
 										for(x=0; x<rect->width; x++) {
-											r.w=vstat.scaling;
-											r.h=vstat.scaling*vstat.vmultiplier;
-											r.x=(rect->x+x)*vstat.scaling;
-											r.y=(rect->y+y)*vstat.scaling*vstat.vmultiplier;
+											r.w=scaling;
+											r.h=scaling*vmultiplier;
+											r.x=(rect->x+x)*scaling;
+											r.y=(rect->y+y)*scaling*vmultiplier;
 											if(yuv.enabled)
 												yuv_fillrect(yuv.overlay, &r, rect->data[offset++]);
 											else
@@ -1700,10 +1712,10 @@ int sdl_video_event_thread(void *data)
 											pthread_mutex_unlock(&vstatlock);
 											break;
 										}
-										upd_rects[rectsused].x=rect->x*vstat.scaling;
-										upd_rects[rectsused].y=rect->y*vstat.scaling*vstat.vmultiplier;
-										upd_rects[rectsused].w=rect->width*vstat.scaling;
-										upd_rects[rectsused].h=rect->height*vstat.scaling*vstat.vmultiplier;
+										upd_rects[rectsused].x=rect->x*scaling;
+										upd_rects[rectsused].y=rect->y*scaling*vmultiplier;
+										upd_rects[rectsused].w=rect->width*scaling;
+										upd_rects[rectsused].h=rect->height*scaling*vmultiplier;
 										sdl.BlitSurface(new_rect, &(upd_rects[rectsused]), win, &(upd_rects[rectsused]));
 										rectsused++;
 										if(rectsused==rectspace) {
@@ -1711,7 +1723,6 @@ int sdl_video_event_thread(void *data)
 											rectsused=0;
 										}
 									}
-									pthread_mutex_unlock(&vstatlock);
 									sdl.mutexV(newrect_mutex);
 									sdl.mutexV(win_mutex);
 									free(rect->data);

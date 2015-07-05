@@ -158,18 +158,49 @@ int find_vmode(int mode)
 	return -1;
 }
 
+struct vstat_vmem *get_vmem(struct video_stats *vs)
+{
+	vs->vmem->refcount++;
+	return vs->vmem;
+}
+
+void release_vmem(struct vstat_vmem *vm)
+{
+	if (vm == NULL)
+		return;
+	vm->refcount--;
+	if (vm->refcount == 0) {
+		FREE_AND_NULL(vm->vmem);
+		FREE_AND_NULL(vm);
+	}
+}
+
+static struct vstat_vmem *new_vmem(int cols, int rows)
+{
+	struct vstat_vmem *ret = malloc(sizeof(struct vstat_vmem));
+
+	if (ret == NULL)
+		return ret;
+	ret->refcount = 1;
+	ret->vmem = (unsigned short *)malloc(cols*rows*sizeof(unsigned short));
+	if (ret->vmem == NULL) {
+		free(ret);
+		return NULL;
+	}
+	return ret;
+}
+
 int load_vmode(struct video_stats *vs, int mode)
 {
 	int i;
-	unsigned short *newvmem;
 
 	i=find_vmode(mode);
 	if(i==-1)
 		return(-1);
-	newvmem=(unsigned short *)realloc(vs->vmem, vparams[i].cols*vparams[i].rows*sizeof(unsigned short));
-	if(newvmem==NULL)
-		return(-1);
-	vs->vmem=newvmem;
+	release_vmem(vs->vmem);
+	vs->vmem=new_vmem(vparams[i].cols, vparams[i].rows);
+	if (vs->vmem == NULL)
+		return -1;
 	vs->rows=vparams[i].rows;
 	vs->cols=vparams[i].cols;
 	vs->curs_start=vparams[i].curs_start;
