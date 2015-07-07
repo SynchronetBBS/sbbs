@@ -773,7 +773,7 @@ error_return:
 	return(-1);
 }
 
-static void bitmap_draw_cursor(void)
+static void bitmap_draw_cursor(struct video_stats *vs)
 {
 	int x;
 	int y;
@@ -786,36 +786,33 @@ static void bitmap_draw_cursor(void)
 	if(!bitmap_initialized)
 		return;
 	pthread_mutex_lock(&screenlock);
-	pthread_mutex_lock(&vstatlock);
-	if(vstat.curs_visible) {
-		if(vstat.blink || (!vstat.curs_blink)) {
-			if(vstat.curs_start<=vstat.curs_end) {
-				xoffset=(vstat.curs_col-1)*vstat.charwidth;
-				yoffset=(vstat.curs_row-1)*vstat.charheight;
+	if(vs->curs_visible) {
+		if(vs->blink || (!vs->curs_blink)) {
+			if(vs->curs_start<=vs->curs_end) {
+				xoffset=(vs->curs_col-1)*vs->charwidth;
+				yoffset=(vs->curs_row-1)*vs->charheight;
 				if(xoffset < 0 || yoffset < 0)
 					return;
 				attr=cio_textinfo.attribute&0x0f;
-				width=vstat.charwidth;
+				width=vs->charwidth;
 	
-				for(y=vstat.curs_start; y<=vstat.curs_end; y++) {
+				for(y=vs->curs_start; y<=vs->curs_end; y++) {
 					if(xoffset < screenwidth && (yoffset+y) < screenheight) {
 						pixel=PIXEL_OFFSET(xoffset, yoffset+y);
-						for(x=0;x<vstat.charwidth;x++)
+						for(x=0;x<vs->charwidth;x++)
 							screen[pixel++]=attr;
 						//memset(screen+pixel,attr,width);
 					}
 				}
-				yo = yoffset+vstat.curs_start;
-				xw = vstat.charwidth;
-				yw = vstat.curs_end-vstat.curs_start+1;
-				pthread_mutex_unlock(&vstatlock);
+				yo = yoffset+vs->curs_start;
+				xw = vs->charwidth;
+				yw = vs->curs_end-vs->curs_start+1;
 				pthread_mutex_unlock(&screenlock);
-				send_rectangle(&vstat, xoffset, yo, xw, yw,FALSE);
+				send_rectangle(vs, xoffset, yo, xw, yw,FALSE);
 				return;
 			}
 		}
 	}
-	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&screenlock);
 }
 
@@ -1063,7 +1060,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 
 	/* Did we redraw the cursor?  If so, update cursor info */
 	if(redraw_cursor)
-		bitmap_draw_cursor();
+		bitmap_draw_cursor(&cvstat);
 
 	return(0);
 }
