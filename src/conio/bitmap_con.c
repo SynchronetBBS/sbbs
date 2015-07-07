@@ -149,8 +149,10 @@ int bitmap_init_mode(int mode, int *width, int *height)
 
 	pthread_mutex_lock(&screenlock);
 	pthread_mutex_lock(&vstatlock);
+	pthread_mutex_lock(&vmem_lock);
 
 	if(load_vmode(&vstat, mode)) {
+		pthread_mutex_unlock(&vmem_lock);
 		pthread_mutex_unlock(&vstatlock);
 		pthread_mutex_unlock(&screenlock);
 		return(-1);
@@ -160,7 +162,9 @@ int bitmap_init_mode(int mode, int *width, int *height)
 
 	newdamaged=(int *)malloc(sizeof(int)*vstat.rows);
 	if(newdamaged==NULL) {
+		pthread_mutex_unlock(&vmem_lock);
 		pthread_mutex_unlock(&vstatlock);
+		pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
 	if(damaged)
@@ -168,7 +172,6 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	damaged=newdamaged;
 
 	/* Initialize video memory with black background, white foreground */
-	pthread_mutex_lock(&vmem_lock);
 	for (i = 0; i < vstat.cols*vstat.rows; ++i)
 	    vstat.vmem->vmem[i] = 0x0700;
 	pthread_mutex_unlock(&vmem_lock);
@@ -919,6 +922,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	struct rectangle last_rect;
 	int last_rect_used=0;
 	struct vstat_vmem *vmem_ptr;
+	int *this_damaged=NULL;
 
 	if(!bitmap_initialized)
 		return(-1);
@@ -972,14 +976,20 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 	cvstat.vmem->refcount = 1;
 	cvstat.vmem->vmem = this_vmem;
 	memcpy(cvstat.vmem->vmem, vmem_ptr->vmem, vstat.cols*vstat.rows*sizeof(unsigned short));
+	this_damaged=(int *)malloc(sizeof(int)*cvstat.rows);
+	if (this_damaged==NULL) {
+		pthread_mutex_unlock(&vmem_lock);
+		return -1;
+	}
+	memcpy(this_damaged, damaged, sizeof(int)*cvstat.rows);
 	pthread_mutex_unlock(&vmem_lock);
 
 	for(y=0;y<height;y++) {
 		if(force 
 				|| (cvstat.blink != vs.blink )
 				|| (redraw_cursor && (vs.curs_row==sy+y || cvstat.curs_row==sy+y))
-				|| damaged[sy+y-1]) {
-			damaged[sy+y-1]=0;
+				|| this_damaged[sy+y-1]) {
+			this_damaged[sy+y-1]=0;
 			pos=(sy+y-1)*cvstat.cols+(sx-1);
 			for(x=0;x<width;x++) {
 				if(force
