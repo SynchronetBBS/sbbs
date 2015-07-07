@@ -785,7 +785,6 @@ static void bitmap_draw_cursor(struct video_stats *vs)
 
 	if(!bitmap_initialized)
 		return;
-	pthread_mutex_lock(&screenlock);
 	if(vs->curs_visible) {
 		if(vs->blink || (!vs->curs_blink)) {
 			if(vs->curs_start<=vs->curs_end) {
@@ -796,6 +795,7 @@ static void bitmap_draw_cursor(struct video_stats *vs)
 				attr=cio_textinfo.attribute&0x0f;
 				width=vs->charwidth;
 	
+				pthread_mutex_lock(&screenlock);
 				for(y=vs->curs_start; y<=vs->curs_end; y++) {
 					if(xoffset < screenwidth && (yoffset+y) < screenheight) {
 						pixel=PIXEL_OFFSET(xoffset, yoffset+y);
@@ -804,16 +804,15 @@ static void bitmap_draw_cursor(struct video_stats *vs)
 						//memset(screen+pixel,attr,width);
 					}
 				}
+				pthread_mutex_unlock(&screenlock);
 				yo = yoffset+vs->curs_start;
 				xw = vs->charwidth;
 				yw = vs->curs_end-vs->curs_start+1;
-				pthread_mutex_unlock(&screenlock);
 				send_rectangle(vs, xoffset, yo, xw, yw,FALSE);
 				return;
 			}
 		}
 	}
-	pthread_mutex_unlock(&screenlock);
 }
 
 /* Called from main thread only */
@@ -1011,13 +1010,13 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 					}
 				}
 				else {
-					if(this_rect_used) {
-						send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
-						this_rect_used=0;
-					}
 					if(last_rect_used) {
 						send_rectangle(&cvstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
 						last_rect_used=0;
+					}
+					if(this_rect_used) {
+						send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
+						this_rect_used=0;
 					}
 					lastcharupdated=0;
 				}
