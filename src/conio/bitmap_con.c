@@ -1051,10 +1051,10 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		lastcharupdated=0;
 	}
 
-	if(this_rect_used)
-		send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
 	if(last_rect_used)
 		send_rectangle(&cvstat, last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
+	if(this_rect_used)
+		send_rectangle(&cvstat, this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
 
 	vs = cvstat;
 
