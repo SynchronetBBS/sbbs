@@ -1375,53 +1375,60 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 				}
 
 				/*
-				 * Apparently, Win32 SDL doesn't interpret keypad with numlock...
-				 * So, do that here. *sigh*
-				 */
-
-				/*
 				 * If the keysym is a keypad one
 				 * AND numlock is locked
 				 * AND none of Control, Shift, ALT, or Meta are pressed
 				 */
-				if(keysym >= SDLK_KP0 && keysym <= SDLK_KP_EQUALS 
-						&& (mod & KMOD_NUM)
-						&& (!(mod & (KMOD_CTRL|KMOD_SHIFT|KMOD_ALT|KMOD_META) ))) {
-					switch(keysym) {
-						case SDLK_KP0:
-							return('0');
-						case SDLK_KP1:
-							return('1');
-						case SDLK_KP2:
-							return('2');
-						case SDLK_KP3:
-							return('3');
-						case SDLK_KP4:
-							return('4');
-						case SDLK_KP5:
-							return('5');
-						case SDLK_KP6:
-							return('6');
-						case SDLK_KP7:
-							return('7');
-						case SDLK_KP8:
-							return('8');
-						case SDLK_KP9:
-							return('9');
-						case SDLK_KP_PERIOD:
-							return('.');
-						case SDLK_KP_DIVIDE:
-							return('/');
-						case SDLK_KP_MULTIPLY:
-							return('*');
-						case SDLK_KP_MINUS:
-							return('-');
-						case SDLK_KP_PLUS:
-							return('+');
-						case SDLK_KP_ENTER:
-							return('\r');
-						case SDLK_KP_EQUALS:
-							return('=');
+				if(keysym >= SDLK_KP0 && keysym <= SDLK_KP_EQUALS && 
+						(!(mod & (KMOD_CTRL|KMOD_SHIFT|KMOD_ALT|KMOD_META) ))) {
+#if defined(_WIN32)
+					/*
+					 * Apparently, Win32 SDL doesn't interpret keypad with numlock...
+					 * and doesn't know the state of numlock either...
+					 * So, do that here. *sigh*
+					 */
+
+					mod &= ~KMOD_NUM;	// Ignore "current" mod state
+					if (GetKeyState(VK_NUMLOCK) & 1)
+						mod |= KMOD_NUM;
+#endif
+					if (mod & KMOD_NUM) {
+						switch(keysym) {
+							case SDLK_KP0:
+								return('0');
+							case SDLK_KP1:
+								return('1');
+							case SDLK_KP2:
+								return('2');
+							case SDLK_KP3:
+								return('3');
+							case SDLK_KP4:
+								return('4');
+							case SDLK_KP5:
+								return('5');
+							case SDLK_KP6:
+								return('6');
+							case SDLK_KP7:
+								return('7');
+							case SDLK_KP8:
+								return('8');
+							case SDLK_KP9:
+								return('9');
+							case SDLK_KP_PERIOD:
+								return('.');
+							case SDLK_KP_DIVIDE:
+								return('/');
+							case SDLK_KP_MULTIPLY:
+								return('*');
+							case SDLK_KP_MINUS:
+								return('-');
+							case SDLK_KP_PLUS:
+								return('+');
+							case SDLK_KP_ENTER:
+								return('\r');
+							case SDLK_KP_EQUALS:
+								return('=');
+						}
 					}
 				}
 
