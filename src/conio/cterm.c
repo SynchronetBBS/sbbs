@@ -2815,7 +2815,7 @@ int CIOLIBCALL cterm_openlog(struct cterminal *cterm, char *logfile, int logtype
 	if(!cterm->started)
 		cterm_start(cterm);
 
-	cterm->logfile=fopen(logfile, "a");
+	cterm->logfile=fopen(logfile, "ab");
 	if(cterm->logfile==NULL)
 		return(0);
 	cterm->log=logtype;
