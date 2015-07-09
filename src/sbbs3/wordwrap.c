@@ -376,14 +376,14 @@ fprintf(stderr, "CR\n");
 							continue;
 						}
 						else {		/* Not a hard CR... add space if needed */
-							if(ocol > 1 && (l<1 || !isspace((unsigned char)linebuf[l-1]))) {
+							if(ocol > prefix_len+1 && (l<1 || !isspace((unsigned char)linebuf[l-1]))) {
 								linebuf[l++]=' ';
 								ocol++;
 							}
 						}
 					}
 					else {			/* Not a hard CR... add space if needed */
-						if(ocol > 1 && (l<1 || !isspace((unsigned char)linebuf[l-1]))) {
+						if(ocol > prefix_len+1 && (l<1 || !isspace((unsigned char)linebuf[l-1]))) {
 							linebuf[l++]=' ';
 							ocol++;
 						}
