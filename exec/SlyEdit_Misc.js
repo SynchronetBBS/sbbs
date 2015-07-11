@@ -34,7 +34,7 @@
  *                              whole sections of quote lines that start with
  *                              several spaces.  Also made a similar update to
  *                              wrapQuoteLines_NoAuthorInitials().
- * 2015-11-11 Eric Oulashin     Bug fix in wrapTextLines(): After wrapping a line
+ * 2014-11-11 Eric Oulashin     Bug fix in wrapTextLines(): After wrapping a line
  *                              of text, there was a section of code that would
  *                              check to see if the next line is blank and add
  *                              another line if so, which was causing an extra
@@ -44,6 +44,15 @@
  *                              function where sometimes a leading space would
  *                              be added to wrapped text on a new line.  That
  *                              seems to be fixed as well.
+ * 2015-07-10 Eric Oulashin     Bug fix in wrapTextLines(): If the pLineWidth
+ *                              parameter is less than 0 or not a number, then
+ *                              the function will simply return, to avoid bad
+ *                              behavior.  I noticed what looked like an infinite
+ *                              loop if pLineWidth was negative.
+ *                              Bug fix in wrapQuoteLinesUsingAuthorInitials():
+ *                              When wrapping text lines, it will only call
+ *                              wrapTextLines() if the maximum line length is
+ *                              positive.
  */
 
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -2325,113 +2334,115 @@ function toggleAttr(pAttrType, pAttrs, pNewAttr)
 // Return value: The number of new lines added
 function wrapTextLines(pLineArr, pStartLineIndex, pEndIndex, pLineWidth, pIdxesRequiringNL)
 {
-  // Validate parameters
-  if (pLineArr == null)
-    return 0;
-  if ((pStartLineIndex == null) || (typeof(pStartLineIndex) != "number") || (pStartLineIndex < 0))
-    pStartLineIndex = 0;
-  if (pStartLineIndex >= pLineArr.length)
-    return pLineArr.length;
-  if ((typeof(pEndIndex) != "number") || (pEndIndex == null) || (pEndIndex > pLineArr.length))
-    pEndIndex = pLineArr.length;
+	// Validate parameters
+	if (pLineArr == null)
+		return 0;
+	if (typeof(pLineWidth) != "number")
+		return 0;
+	if (pLineWidth < 0)
+		return 0;
+	if ((pStartLineIndex == null) || (typeof(pStartLineIndex) != "number") || (pStartLineIndex < 0))
+		pStartLineIndex = 0;
+	if (pStartLineIndex >= pLineArr.length)
+		return pLineArr.length;
+	if ((typeof(pEndIndex) != "number") || (pEndIndex == null) || (pEndIndex > pLineArr.length))
+		pEndIndex = pLineArr.length;
 
-  // Determine whether pIdxesRequiringNL is an array (actually, the most we can
-  // do is check whether it's an object).
-  var pNewLineIndexesIsArray = (typeof(pIdxesRequiringNL) == "object");
-  if (pNewLineIndexesIsArray)
-    pIdxesRequiringNL.length = 0;
+	// Determine whether pIdxesRequiringNL is an array (actually, the most we can
+	// do is check whether it's an object).
+	var pNewLineIndexesIsArray = (typeof(pIdxesRequiringNL) == "object");
+	if (pNewLineIndexesIsArray)
+		pIdxesRequiringNL.length = 0;
 
-  // Wrap the text lines
-  var origNumLines = pLineArr.length; // So we can return the # of lines added
-  var trimLen = 0;   // The number of characters to trim from the end of a string
-  var trimIndex = 0; // The index of where to start trimming
-  for (var i = pStartLineIndex; i < pEndIndex; ++i)
-  {
-    // If the object in pLineArr is not a string for some reason, then skip it.
-    if (typeof(pLineArr[i]) != "string")
-      continue;
+	// Wrap the text lines
+	var origNumLines = pLineArr.length; // So we can return the # of lines added
+	var trimLen = 0;   // The number of characters to trim from the end of a string
+	var trimIndex = 0; // The index of where to start trimming
+	for (var i = pStartLineIndex; i < pEndIndex; ++i)
+	{
+		// If the object in pLineArr is not a string for some reason, then skip it.
+		if (typeof(pLineArr[i]) != "string")
+			continue;
 
-    if (pLineArr[i].length > pLineWidth)
-    {
-      trimLen = pLineArr[i].length - pLineWidth;
-      trimIndex = pLineArr[i].lastIndexOf(" ", pLineArr[i].length - trimLen);
-      if (trimIndex == -1)
-        trimIndex = pLineArr[i].length - trimLen;
-      // Trim the text, and remove leading spaces from it too.
-      trimmedText = pLineArr[i].substr(trimIndex).replace(/^ +/, "");
-      pLineArr[i] = pLineArr[i].substr(0, trimIndex);
-      if (i < pLineArr.length - 1)
-      {
-        // Append a space to the end of the trimmed text if it doesn't have one.
-        if ((trimmedText.length > 0) && (trimmedText.charAt(trimmedText.length-1) != " "))
-          trimmedText += " "
-        // 2015-01-11: The following commented-out code is older - It has a bug
-        // that would sometmies cause an extra empty line to be inserted.
-        /*
-        // If the next line is blank, then append another blank
-        // line there to preserve the message's formatting.
-        //if (pLineArr[i+1].length == 0)
-        if (false) // For testing, to see if the above check really isn't necessary
-        {
-          pLineArr.splice(i+1, 0, "");
-          // If the current line index is before the specified end index, then
-          // increment the end index since we've added a line in order to continue
-          // wrapping the lines.
-          if (i < pEndIndex-1)
-            ++pEndIndex;
+		if (pLineArr[i].length > pLineWidth)
+		{
+			trimLen = pLineArr[i].length - pLineWidth;
+			trimIndex = pLineArr[i].lastIndexOf(" ", pLineArr[i].length - trimLen);
+			if (trimIndex == -1)
+				trimIndex = pLineArr[i].length - trimLen;
+			// Trim the text, and remove leading spaces from it too.
+			trimmedText = pLineArr[i].substr(trimIndex).replace(/^ +/, "");
+			pLineArr[i] = pLineArr[i].substr(0, trimIndex);
+			if (i < pLineArr.length - 1)
+			{
+				// Append a space to the end of the trimmed text if it doesn't have one.
+				if ((trimmedText.length > 0) && (trimmedText.charAt(trimmedText.length-1) != " "))
+					trimmedText += " "
+				// 2015-01-11: The following commented-out code is older - It has a bug
+				// that would sometimes cause an extra empty line to be inserted.
+				/*
+				// If the next line is blank, then append another blank
+				// line there to preserve the message's formatting.
+				//if (pLineArr[i+1].length == 0)
+				if (false) // For testing, to see if the above check really isn't necessary
+				{
+					pLineArr.splice(i+1, 0, "");
+					// If the current line index is before the specified end index, then
+					// increment the end index since we've added a line in order to continue
+					// wrapping the lines.
+					if (i < pEndIndex-1)
+						++pEndIndex;
 
-          if (pNewLineIndexesIsArray)
-            pIdxesRequiringNL.push(i);
-        }
-        else
-        {
-          // Since the next line is not blank, then append a space
-          // to the end of the trimmed text if it doesn't have one.
-          if ((trimmedText.length > 0) && (trimmedText.charAt(trimmedText.length-1) != " "))
-            trimmedText += " "
-        }
-        */
-        // Prepend the trimmed text to the next line.  If the next line's index
-        // is within the paragraph we're wrapping, then go ahead and prepend the
-        // text to the next line.  Otherwise, add a new line to the array and
-        // add the text to the new line.
-        if (i+1 < pEndIndex)
-          pLineArr[i+1] = trimmedText + pLineArr[i+1];
-        else
-        {
-          // Add the trimmed text on a new line in the array.  Then, if the
-          // trimmed text's length is longer then the allowed line width, then
-          // we'll want to extend the end index so we can continue wrapping the
-          // lines in the current paragraph.  Otherwise, add the current line's
-          // index to the array of lines requiring a newline.
-          pLineArr.splice(i+1, 0, trimmedText);
-          if (trimmedText.length > pLineWidth)
-            ++pEndIndex;
-          else
-          {
-            if (pNewLineIndexesIsArray)
-              pIdxesRequiringNL.push(i);
-          }
-        }
-      }
-      else
-      {
-        // New on 2015-01-11
-        // Remove any leading spaces 
-        // End new on 2015-01-11
-        pLineArr.push(trimmedText);
-        // If the current line index is before the specified end index, then
-        // increment the end index since we've added a line in order to continue
-        // wrapping the lines.
-        if (i < pEndIndex-1)
-          ++pEndIndex;
+					if (pNewLineIndexesIsArray)
+						pIdxesRequiringNL.push(i);
+				}
+				else
+				{
+					// Since the next line is not blank, then append a space
+					// to the end of the trimmed text if it doesn't have one.
+					if ((trimmedText.length > 0) && (trimmedText.charAt(trimmedText.length-1) != " "))
+						trimmedText += " "
+				}
+				*/
+				// Prepend the trimmed text to the next line.  If the next line's index
+				// is within the paragraph we're wrapping, then go ahead and prepend the
+				// text to the next line.  Otherwise, add a new line to the array and
+				// add the text to the new line.
+				if (i+1 < pEndIndex)
+					pLineArr[i+1] = trimmedText + pLineArr[i+1];
+				else
+				{
+					// Add the trimmed text on a new line in the array.  Then, if the
+					// trimmed text's length is longer then the allowed line width, then
+					// we'll want to extend the end index so we can continue wrapping the
+					// lines in the current paragraph.  Otherwise, add the current line's
+					// index to the array of lines requiring a newline.
+					pLineArr.splice(i+1, 0, trimmedText);
+					if (trimmedText.length > pLineWidth)
+						++pEndIndex;
+					else
+					{
+						if (pNewLineIndexesIsArray)
+						pIdxesRequiringNL.push(i);
+					}
+				}
+			}
+			else
+			{
+				// Remove any leading spaces 
+				pLineArr.push(trimmedText);
+				// If the current line index is before the specified end index, then
+				// increment the end index since we've added a line in order to continue
+				// wrapping the lines.
+				if (i < pEndIndex-1)
+					++pEndIndex;
 
-        if (pNewLineIndexesIsArray)
-          pIdxesRequiringNL.push(i);
-      }
-    }
-  }
-  return(pLineArr.length - origNumLines);
+				if (pNewLineIndexesIsArray)
+					pIdxesRequiringNL.push(i);
+			}
+		}
+	}
+	return(pLineArr.length - origNumLines);
 }
 
 // Returns an object containing default quote string information.
@@ -2663,17 +2674,17 @@ function firstNonQuoteTxtIndex(pStr, pUseAuthorInitials, pIndentQuoteLinesWithIn
 //                                a space.
 function wrapQuoteLines(pUseAuthorInitials, pIndentQuoteLinesWithInitials)
 {
-  var useAuthorInitials = true;
-  var indentQuoteLinesWithInitials = false;
-  if (typeof(pUseAuthorInitials) != "undefined")
-    useAuthorInitials = pUseAuthorInitials;
-  if (typeof(pIndentQuoteLinesWithInitials) != "undefined")
-    indentQuoteLinesWithInitials = pIndentQuoteLinesWithInitials;
+	var useAuthorInitials = true;
+	var indentQuoteLinesWithInitials = false;
+	if (typeof(pUseAuthorInitials) != "undefined")
+		useAuthorInitials = pUseAuthorInitials;
+	if (typeof(pIndentQuoteLinesWithInitials) != "undefined")
+		indentQuoteLinesWithInitials = pIndentQuoteLinesWithInitials;
 
-  if (useAuthorInitials)
-    wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLinesWithInitials);
-  else
-    wrapQuoteLines_NoAuthorInitials();
+	if (useAuthorInitials)
+		wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLinesWithInitials);
+	else
+		wrapQuoteLines_NoAuthorInitials();
 }
 
 // For wrapping quote lines: This function checks if a string has only > characters
@@ -2700,243 +2711,254 @@ function normalizeGTChars(pStr)
 //  pIndentQuoteLines: Whether or not to indent the quote lines
 function wrapQuoteLinesUsingAuthorInitials(pIndentQuoteLines)
 {
-   if (gQuoteLines.length == 0)
-      return;
+	if (gQuoteLines.length == 0)
+		return;
 
-   // Steps for wrapping quote lines:
-   // 1. Get information for each line (quote level, beginning of line, etc.)
-   // 2. Based on the line info, find the different sections of the quote lines
-   // 3. Go through each section of the quote lines and quote appropriately
+	// Steps for wrapping quote lines:
+	// 1. Get information for each line (quote level, beginning of line, etc.)
+	// 2. Based on the line info, find the different sections of the quote lines
+	// 3. Go through each section of the quote lines and quote appropriately
 
-   // Note: gQuotePrefix is declared in SlyEdit.js.
-   // Make another copy of it without its leading space for searching the
-   // quote lines later.
-   var quotePrefixWithoutLeadingSpace = gQuotePrefix.replace(/^ /, "");
+	// Note: gQuotePrefix is declared in SlyEdit.js.
+	// Make another copy of it without its leading space for searching the
+	// quote lines later.
+	var quotePrefixWithoutLeadingSpace = gQuotePrefix.replace(/^ /, "");
 
-   // 1. Get information for each line (quote level, beginning of line, etc.)
-   var lineInfos = new Array();
-   for (var quoteLineIndex = 0; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
-      lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], true, pIndentQuoteLines));
+	// 1. Get information for each line (quote level, beginning of line, etc.)
+	var lineInfos = new Array();
+	//displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
+	for (var quoteLineIndex = 0; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
+		lineInfos.push(firstNonQuoteTxtIndex(gQuoteLines[quoteLineIndex], true, pIndentQuoteLines));
 
-   // 2. Based on the line info, find the different sections of the quote lines
-   var quoteSections = new Array();
-   var startArrIndex = 0;
-   var endArrIndex = -1;
-   var lastQuoteLevel = lineInfos[0].quoteLevel;
-   for (var quoteLineIndex = 1; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
-   {
-      endArrIndex = -1; // Resetting to help ensure that we get the last section sometimes
+	// 2. Based on the line info, find the different sections of the quote lines
+	var quoteSections = new Array();
+	var startArrIndex = 0;
+	var endArrIndex = -1;
+	var lastQuoteLevel = lineInfos[0].quoteLevel;
+	for (var quoteLineIndex = 1; quoteLineIndex < gQuoteLines.length; ++quoteLineIndex)
+	{
+		endArrIndex = -1; // Resetting to help ensure that we get the last section sometimes
 
-      if (gQuoteLines[quoteLineIndex].length == 0)
-         continue;
+		if (gQuoteLines[quoteLineIndex].length == 0)
+			continue;
 
-      // If this line has a different quote level than the previous line, then
-      // it marks a new section.
-      if (lineInfos[quoteLineIndex].quoteLevel != lastQuoteLevel)
-      {
-         endArrIndex = quoteLineIndex;
-         var sectionInfo = new Object();
-         sectionInfo.startArrIndex = startArrIndex;
-         sectionInfo.endArrIndex = endArrIndex;
-         sectionInfo.quoteLevel = lastQuoteLevel;
-         // If the end array index is for a blank quote line, then
-         // adjust it to the first non-blank quote line before it.
-         while ((sectionInfo.endArrIndex-1 >= 0) &&
-                (typeof(gQuoteLines[sectionInfo.endArrIndex-1]) == "string") &&
-                gQuoteLines[sectionInfo.endArrIndex-1].length == 0)
-         {
-            --sectionInfo.endArrIndex;
-         }
-         // If we moved sectionInfo.endArrIndex back too far, then increment it.
-         while (typeof(gQuoteLines[sectionInfo.endArrIndex]) != "string")
-            ++sectionInfo.endArrIndex;
+		// If this line has a different quote level than the previous line, then
+		// it marks a new section.
+		if (lineInfos[quoteLineIndex].quoteLevel != lastQuoteLevel)
+		{
+			endArrIndex = quoteLineIndex;
+			var sectionInfo = new Object();
+			sectionInfo.startArrIndex = startArrIndex;
+			sectionInfo.endArrIndex = endArrIndex;
+			sectionInfo.quoteLevel = lastQuoteLevel;
+			// If the end array index is for a blank quote line, then
+			// adjust it to the first non-blank quote line before it.
+			while ((sectionInfo.endArrIndex-1 >= 0) &&
+			       (typeof(gQuoteLines[sectionInfo.endArrIndex-1]) == "string") &&
+			       gQuoteLines[sectionInfo.endArrIndex-1].length == 0)
+			{
+				--sectionInfo.endArrIndex;
+			}
+			// If we moved sectionInfo.endArrIndex back too far, then increment it.
+			while (typeof(gQuoteLines[sectionInfo.endArrIndex]) != "string")
+				++sectionInfo.endArrIndex;
 
-         quoteSections.push(sectionInfo);
-         startArrIndex = quoteLineIndex;
-         lastQuoteLevel = lineInfos[quoteLineIndex].quoteLevel;
-      }
-      // For lines with a quote level of 0, if this line's indentation differs from
-      // the previous line's indentation, then that marks a new section.
-      else if ((lineInfos[quoteLineIndex].quoteLevel == 0) && (lastQuoteLevel == 0) &&
-                (lineInfos[quoteLineIndex].startIndex > lineInfos[quoteLineIndex-1].startIndex))
-      {
-         endArrIndex = quoteLineIndex; // One past the last index of the current paragraph
-         var sectionInfo = new Object();
-         sectionInfo.startArrIndex = startArrIndex;
-         sectionInfo.endArrIndex = endArrIndex;
-         sectionInfo.quoteLevel = 0;
-         // If the end array index is for a blank quote line, then
-         // adjust it to the first non-blank quote line before it.
-         while ((sectionInfo.endArrIndex-1 >= 0) &&
-                (typeof(gQuoteLines[sectionInfo.endArrIndex-1]) == "string") &&
-                gQuoteLines[sectionInfo.endArrIndex-1].length == 0)
-         {
-            --sectionInfo.endArrIndex;
-         }
-         // If we moved sectionInfo.endArrIndex back too far, then increment it.
-         while (typeof(gQuoteLines[sectionInfo.endArrIndex]) != "string")
-            ++sectionInfo.endArrIndex;
+			quoteSections.push(sectionInfo);
+			startArrIndex = quoteLineIndex;
+			lastQuoteLevel = lineInfos[quoteLineIndex].quoteLevel;
+		}
+		// For lines with a quote level of 0, if this line's indentation differs from
+		// the previous line's indentation, then that marks a new section.
+		else if ((lineInfos[quoteLineIndex].quoteLevel == 0) && (lastQuoteLevel == 0) &&
+		         (lineInfos[quoteLineIndex].startIndex > lineInfos[quoteLineIndex-1].startIndex))
+		{
+			endArrIndex = quoteLineIndex; // One past the last index of the current paragraph
+			var sectionInfo = new Object();
+			sectionInfo.startArrIndex = startArrIndex;
+			sectionInfo.endArrIndex = endArrIndex;
+			sectionInfo.quoteLevel = 0;
+			// If the end array index is for a blank quote line, then
+			// adjust it to the first non-blank quote line before it.
+			while ((sectionInfo.endArrIndex-1 >= 0) &&
+			       (typeof(gQuoteLines[sectionInfo.endArrIndex-1]) == "string") &&
+			gQuoteLines[sectionInfo.endArrIndex-1].length == 0)
+			{
+				--sectionInfo.endArrIndex;
+			}
+			// If we moved sectionInfo.endArrIndex back too far, then increment it.
+			while (typeof(gQuoteLines[sectionInfo.endArrIndex]) != "string")
+				++sectionInfo.endArrIndex;
 
-         quoteSections.push(sectionInfo);
-         startArrIndex = quoteLineIndex;
-      }
-   }
-   // If we only found one section or we're at the last section, then add it to
-   // quoteSections.
-   if ((endArrIndex == -1) || (endArrIndex == gQuoteLines.length-1))
-   {
-      var sectionInfo = new Object();
-      sectionInfo.startArrIndex = startArrIndex;
-      sectionInfo.endArrIndex = gQuoteLines.length;
-      sectionInfo.quoteLevel = lastQuoteLevel;
-      // If the end array index is for a blank quote line, then
-      // adjust it to the first non-blank quote line before it.
-      while ((sectionInfo.endArrIndex > 0) && (gQuoteLines[sectionInfo.endArrIndex-1].length == 0))
-         --sectionInfo.endArrIndex;
-      quoteSections.push(sectionInfo);
-   }
+			quoteSections.push(sectionInfo);
+			startArrIndex = quoteLineIndex;
+		}
+	}
+	// If we only found one section or we're at the last section, then add it to
+	// quoteSections.
+	if ((endArrIndex == -1) || (endArrIndex == gQuoteLines.length-1))
+	{
+		var sectionInfo = new Object();
+		sectionInfo.startArrIndex = startArrIndex;
+		sectionInfo.endArrIndex = gQuoteLines.length;
+		sectionInfo.quoteLevel = lastQuoteLevel;
+		// If the end array index is for a blank quote line, then
+		// adjust it to the first non-blank quote line before it.
+		while ((sectionInfo.endArrIndex > 0) && (gQuoteLines[sectionInfo.endArrIndex-1].length == 0))
+			--sectionInfo.endArrIndex;
+		quoteSections.push(sectionInfo);
+	}
 
-   // 3. Go through each section of the quote lines and wrap & quote appropriately
-   for (var sIndex = 0; sIndex < quoteSections.length; ++sIndex)
-   {
-      // If the section is not quoted text (in other words, it was written by
-      // author of the message), then remove leading whitespace from the text
-      // lines in this section to leave more room for wrapping and so that we
-      // don't end up with a section of quote lines that all start with several
-      // spaces.
-      if (quoteSections[sIndex].quoteLevel == 0)
-      {
-         for (var i = quoteSections[sIndex].startArrIndex; i < quoteSections[sIndex].endArrIndex; ++i)
-         {
-            gQuoteLines[i] = trimSpaces(gQuoteLines[i], true, true, false);
-            lineInfos[i].startIndex = 0;
-            lineInfos[i].begOfLine = "";
-         }
-      }
+	// 3. Go through each section of the quote lines and wrap & quote appropriately
+	// TODO: This loop seems to be looping forever for certain messages
+	for (var sIndex = 0; sIndex < quoteSections.length; ++sIndex)
+	{
+		// If the section is not quoted text (in other words, it was written by
+		// author of the message), then remove leading whitespace from the text
+		// lines in this section to leave more room for wrapping and so that we
+		// don't end up with a section of quote lines that all start with several
+		// spaces.
+		if (quoteSections[sIndex].quoteLevel == 0)
+		{
+			for (var i = quoteSections[sIndex].startArrIndex; i < quoteSections[sIndex].endArrIndex; ++i)
+			{
+				gQuoteLines[i] = trimSpaces(gQuoteLines[i], true, true, false);
+				lineInfos[i].startIndex = 0;
+				lineInfos[i].begOfLine = "";
+			}
+		}
 
-      // Remove the quote strings from the lines we're about to wrap
-      var maxBegOfLineLen = 0;
-      for (var i = quoteSections[sIndex].startArrIndex; i < quoteSections[sIndex].endArrIndex; ++i)
-      {
-         if (lineInfos[i] != null)
-         {
-            if (lineInfos[i].startIndex > -1)
-               gQuoteLines[i] = gQuoteLines[i].substr(lineInfos[i].startIndex);
-            else
-               gQuoteLines[i] = normalizeGTChars(gQuoteLines[i]);
-            // If the quote line now only consists of spaces after removing the quote
-            // characters, then make it blank.
-            if (/^ +$/.test(gQuoteLines[i]))
-               gQuoteLines[i] = "";
-            // Change multiple spaces to single spaces in the beginning-of-line
-            // string.  Also, if not prefixing quote lines w/ initials with a
-            // space, then also trim leading spaces.
-            if (pIndentQuoteLines)
-               lineInfos[i].begOfLine = trimSpaces(lineInfos[i].begOfLine, false, true, false);
-            else
-               lineInfos[i].begOfLine = trimSpaces(lineInfos[i].begOfLine, true, true, false);
+		// Remove the quote strings from the lines we're about to wrap
+		var maxBegOfLineLen = 0;
+		for (var i = quoteSections[sIndex].startArrIndex; i < quoteSections[sIndex].endArrIndex; ++i)
+		{
+			if (lineInfos[i] != null)
+			{
+				if (lineInfos[i].startIndex > -1)
+					gQuoteLines[i] = gQuoteLines[i].substr(lineInfos[i].startIndex);
+				else
+					gQuoteLines[i] = normalizeGTChars(gQuoteLines[i]);
 
-            // See if we need to update maxBegOfLineLen, and if so, do it.
-            if (lineInfos[i].begOfLine.length > maxBegOfLineLen)
-               maxBegOfLineLen = lineInfos[i].begOfLine.length;
-         }
-      }
-      // If maxBegOfLineLen is positive, then add 1 more to it because
-      // we'll be adding a > character to the quote lines to signify one
-      // more level of quoting.
-      if (maxBegOfLineLen > 0)
-         ++maxBegOfLineLen;
-      // Add gQuotePrefix's length to maxBegOfLineLen to account for that
-      // for wrapping the text. Note: In future versions, if we don't want
-      // to add the previous author's initials to all lines, then we might
-      // not automatically want to add this to every line.
-      maxBegOfLineLen += gQuotePrefix.length;
+				// If the quote line now only consists of spaces after removing the quote
+				// characters, then make it blank.
+				if (/^ +$/.test(gQuoteLines[i]))
+					gQuoteLines[i] = "";
+				// Change multiple spaces to single spaces in the beginning-of-line
+				// string.  Also, if not prefixing quote lines w/ initials with a
+				// space, then also trim leading spaces.
+				if (pIndentQuoteLines)
+					lineInfos[i].begOfLine = trimSpaces(lineInfos[i].begOfLine, false, true, false);
+				else
+					lineInfos[i].begOfLine = trimSpaces(lineInfos[i].begOfLine, true, true, false);
 
-      // Wrap the current section of quote lines
-      var idxesAddedNL = new Array();
-      var numLinesAdded = wrapTextLines(gQuoteLines, quoteSections[sIndex].startArrIndex,
-                                    quoteSections[sIndex].endArrIndex, 79 - maxBegOfLineLen,
-                                    idxesAddedNL);
-      // If quote lines were added as a result of wrapping, then determine the
-      // number of lines added and update the end index of this object in
-      // quoteSections and the start & end indexes of the subsequent objects in
-      // quoteSections.
-      if (numLinesAdded > 0)
-      {
-         // Splice new lineInfo objects into the lineInfos array at the end of this
-         // section for each new line added in this section.
-         for (var counter = 0; counter < numLinesAdded; ++counter)
-            lineInfos.splice(quoteSections[sIndex].endArrIndex, 0, getDefaultQuoteStrObj());
-         // Now we can update this section's end index.  Then, after each index that
-         // required a new line to be added, move the lineInfo information down one line.
-         quoteSections[sIndex].endArrIndex += numLinesAdded;
-         for (var NLArrIdx = 0; NLArrIdx < idxesAddedNL.length; ++NLArrIdx)
-         {
-            for (var lnInfoMoveIdx = quoteSections[sIndex].endArrIndex-1;
-                 lnInfoMoveIdx > idxesAddedNL[NLArrIdx]; --lnInfoMoveIdx)
-            {
-               lineInfos[lnInfoMoveIdx].copy(lineInfos[lnInfoMoveIdx-1]);
-            }
-         }
+				// See if we need to update maxBegOfLineLen, and if so, do it.
+				if (lineInfos[i].begOfLine.length > maxBegOfLineLen)
+					maxBegOfLineLen = lineInfos[i].begOfLine.length;
+			}
+		}
+		// If maxBegOfLineLen is positive, then add 1 more to it because
+		// we'll be adding a > character to the quote lines to signify one
+		// more level of quoting.
+		if (maxBegOfLineLen > 0)
+			++maxBegOfLineLen;
+		// Add gQuotePrefix's length to maxBegOfLineLen to account for that
+		// for wrapping the text. Note: In future versions, if we don't want
+		// to add the previous author's initials to all lines, then we might
+		// not automatically want to add this to every line.
+		maxBegOfLineLen += gQuotePrefix.length;
 
-         // Update the start & end indexes of the following sections.
-         for (var sIndex2 = sIndex+1; sIndex2 < quoteSections.length; ++sIndex2)
-         {
-            quoteSections[sIndex2].startArrIndex += numLinesAdded;
-            quoteSections[sIndex2].endArrIndex += numLinesAdded;
-         }
+		// Wrap the current section of quote lines
+		var maxLineWidth = 79 - maxBegOfLineLen;
+		if (maxLineWidth < 0)
+			maxLineWidth = 0;
+		var idxesAddedNL = new Array();
+		var numLinesAdded = 0;
+		if (maxLineWidth > 0)
+		{
+			numLinesAdded = wrapTextLines(gQuoteLines, quoteSections[sIndex].startArrIndex,
+			                              quoteSections[sIndex].endArrIndex, maxLineWidth,
+			                              idxesAddedNL);
+		}
 
-         // Go through this section's quote lines, and for each quote line that is
-         // non-blank and has a lineInfo object with a blank beginning-of-line text,
-         // set its beginning-of-line text to the first non-blank beginning-of-line
-         // text from a line preceding it.
-         for (var lnIdx = quoteSections[sIndex].startArrIndex+1; lnIdx < quoteSections[sIndex].endArrIndex; ++lnIdx)
-         {
-            if ((gQuoteLines[lnIdx].length > 0) && (lineInfos[lnIdx].begOfLine.length == 0))
-            {
-               var nonBlankIdx = lnIdx - 1;
-               while ((lineInfos[nonBlankIdx].begOfLine.length == 0) && (nonBlankIdx > quoteSections[sIndex].startArrIndex))
-                  --nonBlankIdx;
-               if (lineInfos[nonBlankIdx].begOfLine.length > 0)
-                  lineInfos[lnIdx].begOfLine = lineInfos[nonBlankIdx].begOfLine;
-            }
-         }
-      }
+		// If quote lines were added as a result of wrapping, then determine the
+		// number of lines added and update the end index of this object in
+		// quoteSections and the start & end indexes of the subsequent objects in
+		// quoteSections.
+		if (numLinesAdded > 0)
+		{
+			// Splice new lineInfo objects into the lineInfos array at the end of this
+			// section for each new line added in this section.
+			for (var counter = 0; counter < numLinesAdded; ++counter)
+				lineInfos.splice(quoteSections[sIndex].endArrIndex, 0, getDefaultQuoteStrObj());
+			// Now we can update this section's end index.  Then, after each index that
+			// required a new line to be added, move the lineInfo information down one line.
+			quoteSections[sIndex].endArrIndex += numLinesAdded;
+			for (var NLArrIdx = 0; NLArrIdx < idxesAddedNL.length; ++NLArrIdx)
+			{
+				for (var lnInfoMoveIdx = quoteSections[sIndex].endArrIndex-1;
+				     lnInfoMoveIdx > idxesAddedNL[NLArrIdx]; --lnInfoMoveIdx)
+				{
+					lineInfos[lnInfoMoveIdx].copy(lineInfos[lnInfoMoveIdx-1]);
+				}
+			}
 
-      // Go through this section's (now wrapped) quote lines and quote them
-      for (var quoteLnIdx = quoteSections[sIndex].startArrIndex; quoteLnIdx < quoteSections[sIndex].endArrIndex; ++quoteLnIdx)
-      {
-         if (lineInfos[quoteLnIdx] != null)
-         {
-            if (gQuoteLines[quoteLnIdx].length == 0)
-               continue;
+			// Update the start & end indexes of the following sections.
+			for (var sIndex2 = sIndex+1; sIndex2 < quoteSections.length; ++sIndex2)
+			{
+				quoteSections[sIndex2].startArrIndex += numLinesAdded;
+				quoteSections[sIndex2].endArrIndex += numLinesAdded;
+			}
 
-            // If the quote level in this section is positive and the beginning
-            // of the line has a non-zero length, then add a > at the end to
-            // signify that this line is being quoted again.
-            var begOfLineLen = lineInfos[quoteLnIdx].begOfLine.length;
-            if ((begOfLineLen > 0) && (quoteSections[sIndex].quoteLevel > 0))
-            {
-              if (lineInfos[quoteLnIdx].begOfLine.charAt(begOfLineLen-1) == " ")
-                lineInfos[quoteLnIdx].begOfLine = lineInfos[quoteLnIdx].begOfLine.substr(0, begOfLineLen-1) + "> ";
-              else
-                lineInfos[quoteLnIdx].begOfLine += ">";
-            }
-            // Re-assemble the quote line
-            gQuoteLines[quoteLnIdx] = lineInfos[quoteLnIdx].begOfLine + gQuoteLines[quoteLnIdx];
-            if (quoteSections[sIndex].quoteLevel == 0)
-               gQuoteLines[quoteLnIdx] = gQuotePrefix + gQuoteLines[quoteLnIdx];
-         }
-         else
-         {
-            // Old style: Put quote strings ("> ") back into the lines we just wrapped.
-            var quotePrefix = "";
-            for (var counter = 0; counter < lastQuoteLevel; ++counter)
-               quotePrefix += "> ";
-            gQuoteLines[quoteLnIdx] = quotePrefix + gQuoteLines[quoteLnIdx].replace(/^\s*>/, ">");
-         }
-      }
-   }
+			// Go through this section's quote lines, and for each quote line that is
+			// non-blank and has a lineInfo object with a blank beginning-of-line text,
+			// set its beginning-of-line text to the first non-blank beginning-of-line
+			// text from a line preceding it.
+			for (var lnIdx = quoteSections[sIndex].startArrIndex+1; lnIdx < quoteSections[sIndex].endArrIndex; ++lnIdx)
+			{
+				if ((gQuoteLines[lnIdx].length > 0) && (lineInfos[lnIdx].begOfLine.length == 0))
+				{
+					var nonBlankIdx = lnIdx - 1;
+					while ((lineInfos[nonBlankIdx].begOfLine.length == 0) && (nonBlankIdx > quoteSections[sIndex].startArrIndex))
+						--nonBlankIdx;
+					if (lineInfos[nonBlankIdx].begOfLine.length > 0)
+						lineInfos[lnIdx].begOfLine = lineInfos[nonBlankIdx].begOfLine;
+				}
+			}
+		}
+
+		// Go through this section's (now wrapped) quote lines and quote them
+		for (var quoteLnIdx = quoteSections[sIndex].startArrIndex; quoteLnIdx < quoteSections[sIndex].endArrIndex; ++quoteLnIdx)
+		{
+			if (lineInfos[quoteLnIdx] != null)
+			{
+				if (gQuoteLines[quoteLnIdx].length == 0)
+					continue;
+
+				// If the quote level in this section is positive and the beginning
+				// of the line has a non-zero length, then add a > at the end to
+				// signify that this line is being quoted again.
+				var begOfLineLen = lineInfos[quoteLnIdx].begOfLine.length;
+				if ((begOfLineLen > 0) && (quoteSections[sIndex].quoteLevel > 0))
+				{
+					if (lineInfos[quoteLnIdx].begOfLine.charAt(begOfLineLen-1) == " ")
+						lineInfos[quoteLnIdx].begOfLine = lineInfos[quoteLnIdx].begOfLine.substr(0, begOfLineLen-1) + "> ";
+					else
+						lineInfos[quoteLnIdx].begOfLine += ">";
+				}
+				// Re-assemble the quote line
+				gQuoteLines[quoteLnIdx] = lineInfos[quoteLnIdx].begOfLine + gQuoteLines[quoteLnIdx];
+				if (quoteSections[sIndex].quoteLevel == 0)
+					gQuoteLines[quoteLnIdx] = gQuotePrefix + gQuoteLines[quoteLnIdx];
+			}
+			else
+			{
+				// Old style: Put quote strings ("> ") back into the lines we just wrapped.
+				var quotePrefix = "";
+				for (var counter = 0; counter < lastQuoteLevel; ++counter)
+					quotePrefix += "> ";
+				gQuoteLines[quoteLnIdx] = quotePrefix + gQuoteLines[quoteLnIdx].replace(/^\s*>/, ">");
+			}
+		}
+	}
 }
 
 // Wraps the quote lines without using the originals author's initials

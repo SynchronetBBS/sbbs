@@ -71,6 +71,14 @@
  *                              Also, updated so that if the user is editing an
  *                              existing message, SlyEdit won't prompt to add a
  *                              tagline.
+ * 2015-07-09 Eric Oulashin     Version 1.48 beta
+ *                              Started working on this version to fix an issue
+ *                              where SlyEdit is freezing up when replying to
+ *                              certain emails & opening the quote window using
+ *                              author initials in quote lines.
+ * 2015-07-10 Eric Oulashin     Version 1.48
+ *                              Fixed the quote freezing bug and releasing this
+ *                              version.
  */
 
 /* Command-line arguments:
@@ -148,8 +156,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.47";
-const EDITOR_VER_DATE = "2015-07-05";
+const EDITOR_VERSION = "1.48";
+const EDITOR_VER_DATE = "2015-07-10";
 
 
 // Program variables
@@ -287,43 +295,43 @@ var fpDisplayTime = null;
 var fpDisplayTimeRemaining = null;
 if (EDITOR_STYLE == "DCT")
 {
-   load(gStartupPath + "SlyEdit_DCTStuff.js");
-   gEditTop = 6;
-   gQuoteWinTextColor = gConfigSettings.DCTColors.QuoteWinText;
-   gQuoteLineHighlightColor = gConfigSettings.DCTColors.QuoteLineHighlightColor;
-   gTextAttrs = gConfigSettings.DCTColors.TextEditColor;
-   gQuoteLineColor = gConfigSettings.DCTColors.QuoteLineColor;
+	load(gStartupPath + "SlyEdit_DCTStuff.js");
+	gEditTop = 6;
+	gQuoteWinTextColor = gConfigSettings.DCTColors.QuoteWinText;
+	gQuoteLineHighlightColor = gConfigSettings.DCTColors.QuoteLineHighlightColor;
+	gTextAttrs = gConfigSettings.DCTColors.TextEditColor;
+	gQuoteLineColor = gConfigSettings.DCTColors.QuoteLineColor;
 
-   // Function pointers for the DCTEdit-style screen update functions
-   fpDrawQuoteWindowTopBorder = DrawQuoteWindowTopBorder_DCTStyle;
-   fpDisplayTextAreaBottomBorder = DisplayTextAreaBottomBorder_DCTStyle;
-   fpDrawQuoteWindowBottomBorder = DrawQuoteWindowBottomBorder_DCTStyle;
-   fpRedrawScreen = redrawScreen_DCTStyle;
-   fpUpdateInsertModeOnScreen = updateInsertModeOnScreen_DCTStyle;
-   fpDisplayBottomHelpLine = DisplayBottomHelpLine_DCTStyle;
-   fpHandleESCMenu = handleDCTESCMenu;
-   fpDisplayTime = displayTime_DCTStyle;
-   fpDisplayTimeRemaining = displayTimeRemaining_DCTStyle;
+	// Function pointers for the DCTEdit-style screen update functions
+	fpDrawQuoteWindowTopBorder = DrawQuoteWindowTopBorder_DCTStyle;
+	fpDisplayTextAreaBottomBorder = DisplayTextAreaBottomBorder_DCTStyle;
+	fpDrawQuoteWindowBottomBorder = DrawQuoteWindowBottomBorder_DCTStyle;
+	fpRedrawScreen = redrawScreen_DCTStyle;
+	fpUpdateInsertModeOnScreen = updateInsertModeOnScreen_DCTStyle;
+	fpDisplayBottomHelpLine = DisplayBottomHelpLine_DCTStyle;
+	fpHandleESCMenu = handleDCTESCMenu;
+	fpDisplayTime = displayTime_DCTStyle;
+	fpDisplayTimeRemaining = displayTimeRemaining_DCTStyle;
 }
 else if (EDITOR_STYLE == "ICE")
 {
-   load(gStartupPath + "SlyEdit_IceStuff.js");
-   gEditTop = 5;
-   gQuoteWinTextColor = gConfigSettings.iceColors.QuoteWinText;
-   gQuoteLineHighlightColor = gConfigSettings.iceColors.QuoteLineHighlightColor;
-   gTextAttrs = gConfigSettings.iceColors.TextEditColor;
-   gQuoteLineColor = gConfigSettings.iceColors.QuoteLineColor;
+	load(gStartupPath + "SlyEdit_IceStuff.js");
+	gEditTop = 5;
+	gQuoteWinTextColor = gConfigSettings.iceColors.QuoteWinText;
+	gQuoteLineHighlightColor = gConfigSettings.iceColors.QuoteLineHighlightColor;
+	gTextAttrs = gConfigSettings.iceColors.TextEditColor;
+	gQuoteLineColor = gConfigSettings.iceColors.QuoteLineColor;
 
-   // Function pointers for the IceEdit-style screen update functions
-   fpDrawQuoteWindowTopBorder = DrawQuoteWindowTopBorder_IceStyle;
-   fpDisplayTextAreaBottomBorder = DisplayTextAreaBottomBorder_IceStyle;
-   fpDrawQuoteWindowBottomBorder = DrawQuoteWindowBottomBorder_IceStyle;
-   fpRedrawScreen = redrawScreen_IceStyle;
-   fpUpdateInsertModeOnScreen = updateInsertModeOnScreen_IceStyle;
-   fpDisplayBottomHelpLine = DisplayBottomHelpLine_IceStyle;
-   fpHandleESCMenu = handleIceESCMenu;
-   fpDisplayTime = displayTime_IceStyle;
-   fpDisplayTimeRemaining = displayTimeRemaining_IceStyle;
+	// Function pointers for the IceEdit-style screen update functions
+	fpDrawQuoteWindowTopBorder = DrawQuoteWindowTopBorder_IceStyle;
+	fpDisplayTextAreaBottomBorder = DisplayTextAreaBottomBorder_IceStyle;
+	fpDrawQuoteWindowBottomBorder = DrawQuoteWindowBottomBorder_IceStyle;
+	fpRedrawScreen = redrawScreen_IceStyle;
+	fpUpdateInsertModeOnScreen = updateInsertModeOnScreen_IceStyle;
+	fpDisplayBottomHelpLine = DisplayBottomHelpLine_IceStyle;
+	fpHandleESCMenu = handleIceESCMenu;
+	fpDisplayTime = displayTime_IceStyle;
+	fpDisplayTimeRemaining = displayTimeRemaining_IceStyle;
 }
 
 // Temporary (for testing): Make the edit area small
@@ -359,8 +367,8 @@ const gFormatStrWithAttr = "%s%-" + gEditWidth + "s";
 var gEditAreaBuffer = new Array();
 function clearEditAreaBuffer()
 {
-   for (var lineNum = gEditTop; lineNum <= gEditBottom; ++lineNum)
-      gEditAreaBuffer[lineNum] = "";
+	for (var lineNum = gEditTop; lineNum <= gEditBottom; ++lineNum)
+		gEditAreaBuffer[lineNum] = "";
 }
 clearEditAreaBuffer();
 // gTxtreplacements will be an associative array that stores words (in upper
@@ -375,29 +383,29 @@ var gUseQuotes = true;
 var gInputFilename = file_getcase(system.node_dir + "QUOTES.TXT");
 if (gInputFilename == undefined)
 {
-   gUseQuotes = false;
-   if ((argc > 0) && (gInputFilename == undefined))
-      gInputFilename = argv[0];
+	gUseQuotes = false;
+	if ((argc > 0) && (gInputFilename == undefined))
+		gInputFilename = argv[0];
 }
 else
 {
-   var all_files = directory(system.node_dir + "*");
-   var newest_filedate = -Infinity;
-   var newest_filename;
-   for (var file in all_files)
-   {
-      if (all_files[file].search(/quotes.txt$/i) != -1)
-      {
-         var this_date = file_date(all_files[file]);
-         if (this_date > newest_filedate)
-         {
-            newest_filename = all_files[file];
-            newest_filedate = this_date;
-         }
-      }
-   }
-   if (newest_filename != undefined)
-      gInputFilename = newest_filename;
+	var all_files = directory(system.node_dir + "*");
+	var newest_filedate = -Infinity;
+	var newest_filename;
+	for (var file in all_files)
+	{
+		if (all_files[file].search(/quotes.txt$/i) != -1)
+		{
+			var this_date = file_date(all_files[file]);
+			if (this_date > newest_filedate)
+			{
+				newest_filename = all_files[file];
+				newest_filedate = this_date;
+			}
+		}
+	}
+	if (newest_filename != undefined)
+		gInputFilename = newest_filename;
 }
 
 var gOldStatus = bbs.sys_status;
@@ -2422,359 +2430,364 @@ function enterKey_InsertOrAppendNewLine(pCurpos, pCurrentWordLength, pAppendLine
 //               currentWordLength: The length of the current word
 function doQuoteSelection(pCurpos, pCurrentWordLength)
 {
-   // Create the return object
-   var retObj = new Object();
-   retObj.x = pCurpos.x;
-   retObj.y = pCurpos.y;
-   retObj.timedOut = false;
-   retObj.currentWordLength = pCurrentWordLength;
+	// Create the return object
+	var retObj = new Object();
+	retObj.x = pCurpos.x;
+	retObj.y = pCurpos.y;
+	retObj.timedOut = false;
+	retObj.currentWordLength = pCurrentWordLength;
 
-   // Note: Quote lines are in the gQuoteLines array, where each element is
-   // a string.
+	// Note: Quote lines are in the gQuoteLines array, where each element is
+	// a string.
 
-   // If gQuoteLines is empty, then we have nothing to do, so just return.
-   if ((gQuoteLines.length == 0) || !gUseQuotes)
-      return retObj;
+	// If gQuoteLines is empty, then we have nothing to do, so just return.
+	if ((gQuoteLines.length == 0) || !gUseQuotes)
+		return retObj;
 
-   // The first time this function runs, save the user's settings for using initials
-   // in quote lines and whether or not to indent quote lines containing initials.
-   // These will be checked against the user's current settings to see if we need
-   // to wrap the quote lines again in case the user changed these settings.
-   if (typeof(doQuoteSelection.useQuoteLineInitials) == "undefined")
-      doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
-   if (typeof(doQuoteSelection.indentQuoteLinesWithInitials) == "undefined")
-      doQuoteSelection.indentQuoteLinesWithInitials = gUserSettings.indentQuoteLinesWithInitials;
+	// The first time this function runs, save the user's settings for using initials
+	// in quote lines and whether or not to indent quote lines containing initials.
+	// These will be checked against the user's current settings to see if we need
+	// to wrap the quote lines again in case the user changed these settings.
+	//displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
+	if (typeof(doQuoteSelection.useQuoteLineInitials) == "undefined")
+		doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
+	if (typeof(doQuoteSelection.indentQuoteLinesWithInitials) == "undefined")
+		doQuoteSelection.indentQuoteLinesWithInitials = gUserSettings.indentQuoteLinesWithInitials;
+	
+	// If the setting to re-wrap quote lines is enabled, then do it.
+	// We're re-wrapping the quote lines here in case the user changes their
+	// setting for prefixing quote lines with author initials.
+	// wrapQuoteLines() will also prefix the quote lines with author's
+	// initials if configured to do so.
+	// If not configured to re-wrap quote lines, then if configured to
+	// prefix quote lines with author's initials, then we need to
+	// prefix them here with gQuotePrefix.
+	if (gQuoteLines.length > 0)
+	{
+		// The first time this function runs, create a backup array of the original
+		// quote lines
+		if (typeof(doQuoteSelection.backupQuoteLines) == "undefined")
+		{
+			doQuoteSelection.backupQuoteLines = new Array();
+			for (var i = 0; i < gQuoteLines.length; ++i)
+				doQuoteSelection.backupQuoteLines.push(gQuoteLines[i]);
+		}
 
-   // If the setting to re-wrap quote lines is enabled, then do it.
-   // We're re-wrapping the quote lines here in case the user changes their
-   // setting for prefixing quote lines with author initials.
-   // wrapQuoteLines() will also prefix the quote lines with author's
-   // initials if configured to do so.
-   // If not configured to re-wrap quote lines, then if configured to
-   // prefix quote lines with author's initials, then we need to
-   // prefix them here with gQuotePrefix.
-   if (gQuoteLines.length > 0)
-   {
-      // The first time this function runs, create a backup array of the original
-      // quote lines
-      if (typeof(doQuoteSelection.backupQuoteLines) == "undefined")
-      {
-         doQuoteSelection.backupQuoteLines = new Array();
-         for (var i = 0; i < gQuoteLines.length; ++i)
-            doQuoteSelection.backupQuoteLines.push(gQuoteLines[i]);
-      }
+		// If this is the first time the user has opened the quote window or if the
+		// user has changed their settings for using author's initials in quote lines,
+		// then re-copy the original quote lines into gQuoteLines and re-wrap them.
+		if (!gUserHasOpenedQuoteWindow ||
+		    (doQuoteSelection.useQuoteLineInitials != gUserSettings.useQuoteLineInitials) ||
+		    (doQuoteSelection.indentQuoteLinesWithInitials != gUserSettings.indentQuoteLinesWithInitials))
+		{
+			doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
+			doQuoteSelection.indentQuoteLinesWithInitials = gUserSettings.indentQuoteLinesWithInitials;
 
-      // If this is the first time the user has opened the quote window or if the
-      // user has changed their settings for using author's initials in quote lines,
-      // then re-copy the original quote lines into gQuoteLines and re-wrap them.
-      if (!gUserHasOpenedQuoteWindow ||
-          (doQuoteSelection.useQuoteLineInitials != gUserSettings.useQuoteLineInitials) ||
-          (doQuoteSelection.indentQuoteLinesWithInitials != gUserSettings.indentQuoteLinesWithInitials))
-      {
-         doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
-         doQuoteSelection.indentQuoteLinesWithInitials = gUserSettings.indentQuoteLinesWithInitials;
+			// If the user has opened the quote window before, then empty gQuoteLines
+			// and re-copy the original quote lines back into it.
+			if (gUserHasOpenedQuoteWindow)
+			{
+				gQuoteLines.length = 0;
+				for (var i = 0; i < doQuoteSelection.backupQuoteLines.length; ++i)
+					gQuoteLines.push(doQuoteSelection.backupQuoteLines[i]);
+			}
 
-         // If the user has opened the quote window before, then empty gQuoteLines
-         // and re-copy the original quote lines back into it.
-         if (gUserHasOpenedQuoteWindow)
-         {
-            gQuoteLines.length = 0;
-            for (var i = 0; i < doQuoteSelection.backupQuoteLines.length; ++i)
-               gQuoteLines.push(doQuoteSelection.backupQuoteLines[i]);
-         }
+			// Reset the selected quote line index & top displayed quote line index
+			// back to 0 to ensure valid screen display & scrolling behavior
+			gQuoteLinesIndex = 0;
+			gQuoteLinesTopIndex = 0;
 
-         // Reset the selected quote line index & top displayed quote line index
-         // back to 0 to ensure valid screen display & scrolling behavior
-         gQuoteLinesIndex = 0;
-         gQuoteLinesTopIndex = 0;
+			// Update the quote line prefix text and wrap the quote lines
+			setQuotePrefix();
+			if (gConfigSettings.reWrapQuoteLines)
+			{
+				// TODO: This seem to never be finishing for certain messages - Entering
+				// an infinite loop?
+				wrapQuoteLines(gUserSettings.useQuoteLineInitials, gUserSettings.indentQuoteLinesWithInitials);
+			}
+			else if (gUserSettings.useQuoteLineInitials)
+			{
+				var maxQuoteLineWidth = gEditWidth - gQuotePrefix.length;
+				for (var i = 0; i < gQuoteLines.length; ++i)
+					gQuoteLines[i] = quote_msg(gQuoteLines[i], maxQuoteLineWidth, gQuotePrefix);
+			}
+		}
+	}
 
-         // Update the quote line prefix text and wrap the quote lines
-         setQuotePrefix();
-         if (gConfigSettings.reWrapQuoteLines)
-           wrapQuoteLines(gUserSettings.useQuoteLineInitials, gUserSettings.indentQuoteLinesWithInitials);
-         else if (gUserSettings.useQuoteLineInitials)
-         {
-           var maxQuoteLineWidth = gEditWidth - gQuotePrefix.length;
-           for (var i = 0; i < gQuoteLines.length; ++i)
-             gQuoteLines[i] = quote_msg(gQuoteLines[i], maxQuoteLineWidth, gQuotePrefix);
-         }
-      }
-   }
+	// Set up some variables
+	var curpos = new Object();
+	curpos.x = pCurpos.x;
+	curpos.y = pCurpos.y;
+	// Make the quote window's height about 42% of the edit area.
+	const quoteWinHeight = Math.floor(gEditHeight * 0.42) + 1;
+	// The first and last lines on the screen where quote lines are written
+	const quoteTopScreenRow = console.screen_rows - quoteWinHeight + 2;
+	const quoteBottomScreenRow = console.screen_rows - 2;
+	// Quote window parameters
+	const quoteWinTopScreenRow = quoteTopScreenRow-1;
+	const quoteWinWidth = gEditRight - gEditLeft + 1;
 
-   // Set up some variables
-   var curpos = new Object();
-   curpos.x = pCurpos.x;
-   curpos.y = pCurpos.y;
-   // Make the quote window's height about 42% of the edit area.
-   const quoteWinHeight = Math.floor(gEditHeight * 0.42) + 1;
-   // The first and last lines on the screen where quote lines are written
-   const quoteTopScreenRow = console.screen_rows - quoteWinHeight + 2;
-   const quoteBottomScreenRow = console.screen_rows - 2;
-   // Quote window parameters
-   const quoteWinTopScreenRow = quoteTopScreenRow-1;
-   const quoteWinWidth = gEditRight - gEditLeft + 1;
+	// For pageUp/pageDown functionality - Calculate the top quote line index
+	// for the last page.
+	var quoteWinInnerHeight = quoteBottomScreenRow - quoteTopScreenRow + 1; // # of quote lines in the quote window
+	var numPages = Math.ceil(gQuoteLines.length / quoteWinInnerHeight);
+	var topIndexForLastPage = (quoteWinInnerHeight * numPages) - quoteWinInnerHeight;
 
-   // For pageUp/pageDown functionality - Calculate the top quote line index
-   // for the last page.
-   var quoteWinInnerHeight = quoteBottomScreenRow - quoteTopScreenRow + 1; // # of quote lines in the quote window
-   var numPages = Math.ceil(gQuoteLines.length / quoteWinInnerHeight);
-   var topIndexForLastPage = (quoteWinInnerHeight * numPages) - quoteWinInnerHeight;
+	// Display the top border of the quote window.
+	fpDrawQuoteWindowTopBorder(quoteWinHeight, gEditLeft, gEditRight);
 
-   // Display the top border of the quote window.
-   fpDrawQuoteWindowTopBorder(quoteWinHeight, gEditLeft, gEditRight);
+	// Display the remainder of the quote window, with the quote lines in it.
+	displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true, gQuoteLinesIndex);
 
-   // Display the remainder of the quote window, with the quote lines in it.
-   displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true, gQuoteLinesIndex);
+	// Position the cursor at the currently-selected quote line.
+	var screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
+	console.gotoxy(gEditLeft, screenLine);
 
-   // Position the cursor at the currently-selected quote line.
-   var screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-   console.gotoxy(gEditLeft, screenLine);
+	// User input loop
+	var quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
+	retObj.timedOut = false;
+	var userInput = null;
+	var continueOn = true;
+	while (continueOn)
+	{
+		// Get a keypress from the user
+		userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN|K_NOECHO, gConfigSettings);
+		if (userInput == "")
+		{
+			// The input timeout was reached.  Abort.
+			retObj.timedOut = true;
+			continueOn = false;
+			break;
+		}
 
-   // User input loop
-   var quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-   retObj.timedOut = false;
-   var userInput = null;
-   var continueOn = true;
-   while (continueOn)
-   {
-      // Get a keypress from the user
-      userInput = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN|K_NOECHO, gConfigSettings);
-      if (userInput == "")
-      {
-         // The input timeout was reached.  Abort.
-         retObj.timedOut = true;
-         continueOn = false;
-         break;
-      }
+		// If we got here, that means the user input didn't time out.
+		switch (userInput)
+		{
+			case KEY_UP:
+				// Go up 1 quote line
+				if (gQuoteLinesIndex > 0)
+				{
+					// If the cursor is at the topmost position, then
+					// we need to scroll up 1 line in gQuoteLines.
+					if (screenLine == quoteTopScreenRow)
+					{
+						--gQuoteLinesIndex;
+						--gQuoteLinesTopIndex;
+						quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
+						// Redraw the quote lines in the quote window.
+						displayQuoteWindowLines(gQuoteLinesIndex, quoteWinHeight, quoteWinWidth,
+						                        true, gQuoteLinesIndex);
+						// Put the cursor back where it should be.
+						console.gotoxy(gEditLeft, screenLine);
+					}
+					// If the cursor is below the topmost position, then
+					// we can just go up 1 line.
+					else if (screenLine > quoteTopScreenRow)
+					{
+						// Write the current quote line using the normal color
+						// Note: This gets the quote line again using getQuoteTextLine()
+						// so that the color codes in the line will be correct.
+						quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
+						console.gotoxy(gEditLeft, screenLine);
+						printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
 
-      // If we got here, that means the user input didn't time out.
-      switch (userInput)
-      {
-         case KEY_UP:
-            // Go up 1 quote line
-            if (gQuoteLinesIndex > 0)
-            {
-               // If the cursor is at the topmost position, then
-               // we need to scroll up 1 line in gQuoteLines.
-               if (screenLine == quoteTopScreenRow)
-               {
-                  --gQuoteLinesIndex;
-                  --gQuoteLinesTopIndex;
-                  quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-                  // Redraw the quote lines in the quote window.
-                  displayQuoteWindowLines(gQuoteLinesIndex, quoteWinHeight, quoteWinWidth,
-                                          true, gQuoteLinesIndex);
-                  // Put the cursor back where it should be.
-                  console.gotoxy(gEditLeft, screenLine);
-               }
-               // If the cursor is below the topmost position, then
-               // we can just go up 1 line.
-               else if (screenLine > quoteTopScreenRow)
-               {
-                  // Write the current quote line using the normal color
-                  // Note: This gets the quote line again using getQuoteTextLine()
-                  // so that the color codes in the line will be correct.
-                  quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-                  console.gotoxy(gEditLeft, screenLine);
-                  printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
+						// Go up one line and display that quote line in the
+						// highlighted color.
+						--screenLine;
+						--gQuoteLinesIndex;
+						quoteLine = strip_ctrl(getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth));
+						console.gotoxy(gEditLeft, screenLine);
+						printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
 
-                  // Go up one line and display that quote line in the
-                  // highlighted color.
-                  --screenLine;
-                  --gQuoteLinesIndex;
-                  quoteLine = strip_ctrl(getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth));
-                  console.gotoxy(gEditLeft, screenLine);
-                  printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
+						// Make sure the cursor is where it should be.
+						console.gotoxy(gEditLeft, screenLine);
+					}
+				}
+				break;
+			case KEY_DOWN:
+				// Go down 1 line in the quote window.
+				var downRetObj = moveDownOneQuoteLine(gQuoteLinesIndex, screenLine,
+				quoteWinHeight, quoteWinWidth,
+				quoteBottomScreenRow);
+				gQuoteLinesIndex = downRetObj.quoteLinesIndex;
+				screenLine = downRetObj.screenLine;
+				quoteLine = downRetObj.quoteLine;
+				break;
+			case KEY_HOME: // Select the first quote line on the current page
+				if (gQuoteLinesIndex != gQuoteLinesTopIndex)
+				{
+					gQuoteLinesIndex = gQuoteLinesTopIndex;
+					// Write the current quote line with unhighlighted colors
+					console.gotoxy(gEditLeft, screenLine);
+					printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
+					// Calculate the new screen line and draw the new quote line with
+					// highlighted colors
+					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
+					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
+					console.gotoxy(gEditLeft, screenLine);
+					printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
+					console.gotoxy(gEditLeft, screenLine);
+				}
+				break;
+			case KEY_END: // Select the last quote line on the current page
+				var lastIndexForCurrentPage = gQuoteLinesTopIndex + quoteWinInnerHeight - 1;
+				if (gQuoteLinesIndex != lastIndexForCurrentPage)
+				{
+					gQuoteLinesIndex = lastIndexForCurrentPage;
+					// Write the current quote line with unhighlighted colors
+					console.gotoxy(gEditLeft, screenLine);
+					printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
+					// Calculate the new screen line and draw the new quote line with
+					// highlighted colors
+					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
+					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
+					console.gotoxy(gEditLeft, screenLine);
+					printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
+					console.gotoxy(gEditLeft, screenLine);
+				}
+				break;
+			case KEY_PAGE_UP: // Go up 1 page in the quote lines
+				// If the current top quote line index is greater than 0, then go to
+				// the previous page of quote lines and select the top index on that
+				// page as the current selected quote line.
+				if (gQuoteLinesTopIndex > 0)
+				{
+					gQuoteLinesTopIndex -= quoteWinInnerHeight;
+					if (gQuoteLinesTopIndex < 0)
+						gQuoteLinesTopIndex = 0;
+					gQuoteLinesIndex = gQuoteLinesTopIndex;
+					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
+					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
+					displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
+					                        gQuoteLinesIndex);
+				}
+				break;
+			case KEY_PAGE_DOWN: // Go down 1 page in the quote lines
+				// If the current top quote line index is below the top index for the
+				// last page, then go to the next page of quote lines and select the
+				// top index on that page as the current selected quote line.
+				if (gQuoteLinesTopIndex < topIndexForLastPage)
+				{
+					gQuoteLinesTopIndex += quoteWinInnerHeight;
+					if (gQuoteLinesTopIndex > topIndexForLastPage)
+						gQuoteLinesTopIndex = topIndexForLastPage;
+					gQuoteLinesIndex = gQuoteLinesTopIndex;
+					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
+					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
+					displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
+					                        gQuoteLinesIndex);
+				}
+				break;
+			case "F": // Go to the first page
+				if (gQuoteLinesTopIndex > 0)
+				{
+					gQuoteLinesTopIndex = 0;
+					gQuoteLinesIndex = gQuoteLinesTopIndex;
+					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
+					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
+					displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
+					                        gQuoteLinesIndex);
+				}
+				break;
+			case "L": // Go to the last page
+				if (gQuoteLinesTopIndex < topIndexForLastPage)
+				{
+					gQuoteLinesTopIndex = topIndexForLastPage;
+					gQuoteLinesIndex = gQuoteLinesTopIndex;
+					quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
+					screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
+					displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
+					                        gQuoteLinesIndex);
+				}
+				break;
+			case KEY_ENTER:
+				// numTimesToMoveDown specifies how many times to move the cursor
+				// down after inserting the quote line into the message.
+				var numTimesToMoveDown = 1;
 
-                  // Make sure the cursor is where it should be.
-                  console.gotoxy(gEditLeft, screenLine);
-               }
-            }
-            break;
-         case KEY_DOWN:
-            // Go down 1 line in the quote window.
-            var downRetObj = moveDownOneQuoteLine(gQuoteLinesIndex, screenLine,
-                                                  quoteWinHeight, quoteWinWidth,
-                                                  quoteBottomScreenRow);
-            gQuoteLinesIndex = downRetObj.quoteLinesIndex;
-            screenLine = downRetObj.screenLine;
-            quoteLine = downRetObj.quoteLine;
-            break;
-         case KEY_HOME: // Select the first quote line on the current page
-            if (gQuoteLinesIndex != gQuoteLinesTopIndex)
-            {
-               gQuoteLinesIndex = gQuoteLinesTopIndex;
-               // Write the current quote line with unhighlighted colors
-               console.gotoxy(gEditLeft, screenLine);
-               printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
-               // Calculate the new screen line and draw the new quote line with
-               // highlighted colors
-               screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-               quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-               console.gotoxy(gEditLeft, screenLine);
-               printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
-               console.gotoxy(gEditLeft, screenLine);
-            }
-            break;
-         case KEY_END: // Select the last quote line on the current page
-            var lastIndexForCurrentPage = gQuoteLinesTopIndex + quoteWinInnerHeight - 1;
-            if (gQuoteLinesIndex != lastIndexForCurrentPage)
-            {
-               gQuoteLinesIndex = lastIndexForCurrentPage;
-               // Write the current quote line with unhighlighted colors
-               console.gotoxy(gEditLeft, screenLine);
-               printf(gFormatStrWithAttr, gQuoteWinTextColor, quoteLine);
-               // Calculate the new screen line and draw the new quote line with
-               // highlighted colors
-               screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-               quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-               console.gotoxy(gEditLeft, screenLine);
-               printf(gFormatStrWithAttr, gQuoteLineHighlightColor, quoteLine);
-               console.gotoxy(gEditLeft, screenLine);
-            }
-            break;
-         case KEY_PAGE_UP: // Go up 1 page in the quote lines
-            // If the current top quote line index is greater than 0, then go to
-            // the previous page of quote lines and select the top index on that
-            // page as the current selected quote line.
-            if (gQuoteLinesTopIndex > 0)
-            {
-               gQuoteLinesTopIndex -= quoteWinInnerHeight;
-               if (gQuoteLinesTopIndex < 0)
-                  gQuoteLinesTopIndex = 0;
-               gQuoteLinesIndex = gQuoteLinesTopIndex;
-               quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-               screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-               displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
-                                       gQuoteLinesIndex);
-            }
-            break;
-         case KEY_PAGE_DOWN: // Go down 1 page in the quote lines
-            // If the current top quote line index is below the top index for the
-            // last page, then go to the next page of quote lines and select the
-            // top index on that page as the current selected quote line.
-            if (gQuoteLinesTopIndex < topIndexForLastPage)
-            {
-               gQuoteLinesTopIndex += quoteWinInnerHeight;
-               if (gQuoteLinesTopIndex > topIndexForLastPage)
-                  gQuoteLinesTopIndex = topIndexForLastPage;
-               gQuoteLinesIndex = gQuoteLinesTopIndex;
-               quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-               screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-               displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
-                                       gQuoteLinesIndex);
-            }
-            break;
-         case "F": // Go to the first page
-            if (gQuoteLinesTopIndex > 0)
-            {
-               gQuoteLinesTopIndex = 0;
-               gQuoteLinesIndex = gQuoteLinesTopIndex;
-               quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-               screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-               displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
-                                       gQuoteLinesIndex);
-            }
-            break;
-         case "L": // Go to the last page
-            if (gQuoteLinesTopIndex < topIndexForLastPage)
-            {
-               gQuoteLinesTopIndex = topIndexForLastPage;
-               gQuoteLinesIndex = gQuoteLinesTopIndex;
-               quoteLine = getQuoteTextLine(gQuoteLinesIndex, quoteWinWidth);
-               screenLine = quoteTopScreenRow + (gQuoteLinesIndex - gQuoteLinesTopIndex);
-               displayQuoteWindowLines(gQuoteLinesTopIndex, quoteWinHeight, quoteWinWidth, true,
-                                       gQuoteLinesIndex);
-            }
-            break;
-         case KEY_ENTER:
-            // numTimesToMoveDown specifies how many times to move the cursor
-            // down after inserting the quote line into the message.
-            var numTimesToMoveDown = 1;
+				// Insert the quote line into gEditLines after the current gEditLines index.
+				var insertedBelow = insertLineIntoMsg(gEditLinesIndex, quoteLine, true, true);
+				if (insertedBelow)
+				{
+					// The cursor will need to be moved down 1 more line.
+					// So, increment numTimesToMoveDown, and set curpos.x
+					// and gTextLineIndex to the beginning of the line.
+					++numTimesToMoveDown;
+					curpos.x = gEditLeft;
+					gTextLineIndex = 0;
+					retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
+				}
+				else
+				retObj.currentWordLength = 0;
 
-            // Insert the quote line into gEditLines after the current gEditLines index.
-            var insertedBelow = insertLineIntoMsg(gEditLinesIndex, quoteLine, true, true);
-            if (insertedBelow)
-            {
-               // The cursor will need to be moved down 1 more line.
-               // So, increment numTimesToMoveDown, and set curpos.x
-               // and gTextLineIndex to the beginning of the line.
-               ++numTimesToMoveDown;
-               curpos.x = gEditLeft;
-               gTextLineIndex = 0;
-               retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
-            }
-            else
-               retObj.currentWordLength = 0;
+				// Refresh the part of the message that needs to be refreshed on the
+				// screen (above the quote window).
+				if (curpos.y < quoteTopScreenRow-1)
+					displayEditLines(curpos.y, gEditLinesIndex, quoteTopScreenRow-2, false, true);
 
-            // Refresh the part of the message that needs to be refreshed on the
-            // screen (above the quote window).
-            if (curpos.y < quoteTopScreenRow-1)
-               displayEditLines(curpos.y, gEditLinesIndex, quoteTopScreenRow-2, false, true);
+				gEditLinesIndex += numTimesToMoveDown;
 
-            gEditLinesIndex += numTimesToMoveDown;
+				// Go down one line in the quote window.
+				var tempReturnObj = moveDownOneQuoteLine(gQuoteLinesIndex, screenLine,
+				                                         quoteWinHeight, quoteWinWidth,
+				                                         quoteBottomScreenRow);
+				gQuoteLinesIndex = tempReturnObj.quoteLinesIndex;
+				screenLine = tempReturnObj.screenLine;
+				quoteLine = tempReturnObj.quoteLine;
 
-            // Go down one line in the quote window.
-            var tempReturnObj = moveDownOneQuoteLine(gQuoteLinesIndex, screenLine,
-                                              quoteWinHeight, quoteWinWidth,
-                                              quoteBottomScreenRow);
-            gQuoteLinesIndex = tempReturnObj.quoteLinesIndex;
-            screenLine = tempReturnObj.screenLine;
-            quoteLine = tempReturnObj.quoteLine;
+				// Move the cursor down as specified by numTimesToMoveDown.  If
+				// the cursor is at the bottom of the edit area, then refresh
+				// the message on the screen, scrolled down by one line.
+				for (var i = 0; i < numTimesToMoveDown; ++i)
+				{
+					if (curpos.y == gEditBottom)
+					{
+						// Refresh the message on the screen, scrolled down by
+						// one line, but only if this is the last time we're
+						// doing this (for efficiency).
+						if (i == numTimesToMoveDown-1)
+						{
+							displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop),
+							quoteTopScreenRow-2, false, true);
+						}
+					}
+					else
+						++curpos.y;
+				}
+				break;
+				// ESC or CTRL-Q: Stop quoting
+			case KEY_ESC:
+			case CTRL_Q:
+				// Quit out of the input loop (get out of quote mode).
+				continueOn = false;
+				break;
+		}
+	}
 
-            // Move the cursor down as specified by numTimesToMoveDown.  If
-            // the cursor is at the bottom of the edit area, then refresh
-            // the message on the screen, scrolled down by one line.
-            for (var i = 0; i < numTimesToMoveDown; ++i)
-            {
-               if (curpos.y == gEditBottom)
-               {
-                  // Refresh the message on the screen, scrolled down by
-                  // one line, but only if this is the last time we're
-                  // doing this (for efficiency).
-                  if (i == numTimesToMoveDown-1)
-                  {
-                     displayEditLines(gEditTop, gEditLinesIndex-(gEditBottom-gEditTop),
-                                      quoteTopScreenRow-2, false, true);
-                  }
-               }
-               else
-                  ++curpos.y;
-            }
-            break;
-         // ESC or CTRL-Q: Stop quoting
-         case KEY_ESC:
-         case CTRL_Q:
-            // Quit out of the input loop (get out of quote mode).
-            continueOn = false;
-            break;
-      }
-   }
+	// We've exited quote mode.  Refresh the message text on the screen.  Note:
+	// This will refresh only the quote window portion of the screen if the
+	// cursor row is at or below the top of the quote window, and it will also
+	// refresh the screen if the cursor row is above the quote window.
+	displayEditLines(quoteWinTopScreenRow, gEditLinesIndex-(curpos.y-quoteWinTopScreenRow),
+	                 gEditBottom, true, true);
 
-   // We've exited quote mode.  Refresh the message text on the screen.  Note:
-   // This will refresh only the quote window portion of the screen if the
-   // cursor row is at or below the top of the quote window, and it will also
-   // refresh the screen if the cursor row is above the quote window.
-   displayEditLines(quoteWinTopScreenRow, gEditLinesIndex-(curpos.y-quoteWinTopScreenRow),
-                    gEditBottom, true, true);
+	// Draw the bottom edit border to erase the bottom border of the
+	// quote window.
+	fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
+	                              gInsertMode, gConfigSettings.allowColorSelection);
 
-   // Draw the bottom edit border to erase the bottom border of the
-   // quote window.
-   fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
-                                 gInsertMode, gConfigSettings.allowColorSelection);
+	// Make sure the color is correct for editing.
+	//console.print("n" + gTextAttrs);
+	console.print(chooseEditColor());
+	// Put the cursor where it should be.
+	console.gotoxy(curpos);
 
-   // Make sure the color is correct for editing.
-   //console.print("n" + gTextAttrs);
-   console.print(chooseEditColor());
-   // Put the cursor where it should be.
-   console.gotoxy(curpos);
+	gUserHasOpenedQuoteWindow = true;
 
-   gUserHasOpenedQuoteWindow = true;
-
-   // Set the settings in the return object, and return it.
-   retObj.x = curpos.x;
-   retObj.y = curpos.y;
-   return retObj;
+	// Set the settings in the return object, and return it.
+	retObj.x = curpos.x;
+	retObj.y = curpos.y;
+	return retObj;
 }
 
 // Helper for doQuoteSelection(): This function moves the quote selection
