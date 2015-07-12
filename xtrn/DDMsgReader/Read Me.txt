@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.02
-                           Release date: 2015-06-10
+                                 Version 1.03
+                           Release date: 2015-07-12
 
                                      by
 

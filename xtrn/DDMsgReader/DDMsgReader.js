@@ -29,6 +29,16 @@
  * 2015-06-10 Eric Oulashin     Version 1.02
  *                              Updated the version to reflect a bug fix in
  *                              DDScanMsgs.js.  No change to the actual reader.
+ * 2015-07-11 Eric Oulashin     Version 1.03 Beta
+ *                              Started looking into & fixing an issue in Linux
+ *                              where after replying to a message, the number of
+ *                              messages was not immediately refreshed, so for
+ *                              instance, replying to the last message in read
+ *                              mode, the reader would not be able to navigate
+ *                              to the next message without first going to the
+ *                              previous message.
+ * 2015-07-12 Eric Oulashin     Version 1.03
+ *                              Releasing this version after having done more testing.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -116,8 +126,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.02";
-var READER_DATE = "2015-06-10";
+var READER_VERSION = "1.03";
+var READER_DATE = "2015-07-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -3767,11 +3777,15 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pReturnOnMsgSele
 // Return value: And object with the following properties:
 //               offsetValid: Boolean - Whether or not the passed-in offset was valid
 //               userReplied: Boolean - Whether or not the user replied to the message.
+//               msgbaseReOpened: Boolean - Whether or not the messagebase is open after
+//                                the user replied to the message.  Will be true if
+//                                the user didn't reply to the message.
 function DigDistMsgReader_ReadMessage(pOffset)
 {
 	var retObj = new Object();
 	retObj.offsetValid = true;
 	retObj.userReplied = false;
+	retObj.msgbaseReOpened = true;
 
 	// Get the message header
 	var msgHeader = this.GetMsgHdrByMsgNum(pOffset+1);
@@ -3825,6 +3839,7 @@ function DigDistMsgReader_ReadMessage(pOffset)
 	{
 		var replyRetObj = this.ReplyToMsg(msgHeader, msgText, privateReply, pOffset);
 		retObj.userReplied = replyRetObj.postSucceeded;
+		retObj.msgbaseReOpened = replyRetObj.msgbaseReOpened;
 	}
 
 	return retObj;
@@ -4146,7 +4161,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					{
 						// Let the user reply to the message.
 						var replyRetObj = this.ReplyToMsg(msgHeader, msgInfo.msgText, privateReply, pOffset);
-						retObj.userReplied = replyRetObj.postSucceeded;
+						                                  retObj.userReplied = replyRetObj.postSucceeded;
 						//retObj.msgDeleted = replyRetObj.msgWasDeleted;
 						var msgWasDeleted = replyRetObj.msgWasDeleted;
 						//if (retObj.msgDeleted)
@@ -4170,18 +4185,34 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						}
 						else
 						{
-							// If the enhanced message header width is less than the console
-							// width, then clear the screen to remove anything left on the
-							// screen by the message editor.
-							if (this.enhMsgHeaderWidth < console.screen_columns)
-								console.clear("\1n");
-							// Display the message header and key help line again
-							this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-							// Display the scrollbar again to refresh it on the screen
-							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-							writeMessage = true; // We want to refresh the message on the screen
+							// If the messagebase object was successfully re-opened after
+							// posting the message, then refresh the screen.  Otherwise,
+							// we'll want to quit.
+							if (replyRetObj.msgbaseReOpened)
+							{
+								// If the enhanced message header width is less than the console
+								// width, then clear the screen to remove anything left on the
+								// screen by the message editor.
+								if (this.enhMsgHeaderWidth < console.screen_columns)
+									console.clear("\1n");
+								// Display the message header and key help line again
+								this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+								this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+								// Display the scrollbar again to refresh it on the screen
+								solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+								this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+								writeMessage = true; // We want to refresh the message on the screen
+							}
+							else
+							{
+								retObj.nextAction = ACTION_QUIT;
+								continueOn = false;
+								// Display an error
+								console.print("\1n");
+								console.crlf();
+								console.print("\1h\1yMessagebase error after replying.  Aborting.\1n");
+								mswait(ERROR_PAUSE_WAIT_MS);
+							}
 						}
 					}
 					break;
@@ -4715,6 +4746,21 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 								}
 								else
 									writeMessage = true; // We want to refresh the message on the screen
+							}
+						}
+						else
+						{
+							// If the messagebase object was not successfully re-opened
+							// after posting the message, then  we'll want to quit.
+							if (!replyRetObj.msgbaseReOpened)
+							{
+								retObj.nextAction = ACTION_QUIT;
+								continueOn = false;
+								// Display an error
+								console.print("\1n");
+								console.crlf();
+								console.print("\1h\1yMessagebase error after replying.  Aborting.\1n");
+								mswait(ERROR_PAUSE_WAIT_MS);
 							}
 						}
 					}
@@ -7521,11 +7567,15 @@ function DigDistMsgReader_EnhancedReaderChangeSubBoard(pNewSubBoardCode)
 //               postSucceeded: Boolean - Whether or not the message post succeeded
 //               msgWasDeleted: Boolean - Whether or not the message was deleted after
 //                              the user replied to it
+//               msgbaseReOpened: Boolean - Whether or not the messagebase object
+//                                was successfully closed & re-opened to refresh the
+//                                messagebase information after posting the message
 function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 {
 	var retObj = new Object();
 	retObj.postSucceeded = false;
 	retObj.msgWasDeleted = false;
+	retObj.msgbaseReOpened = true;
 
 	if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
 		return retObj;
@@ -7653,10 +7703,15 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		var numMessagesBefore = this.msgbase.total_msgs;
 
 		// Let the user post the message.  Then, delete the message base info
-		// file.
+		// file.  To be safe, and to ensure the messagebase object gets refreshed
+		// with the latest information, close the messagebase object before
+		// posting the message and re-open it afterward.  On Linux, the messagebase
+		// object doesn't seem to get refreshed with the number of messages in the
+		// sub-board, etc., but on Windows that doesn't seem to be an issue.
 		// If we are to send a private message, then let the user send the reply
 		// as a private email.  Otherwise, let the user post the reply as a public
 		// message.
+		this.msgbase.close();
 		if (replyPrivately)
 		{
 			var privReplRetObj = this.DoPrivateReply(pMsgHdr, pMsgIdx, replyMode);
@@ -7666,12 +7721,15 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		else // Not a private message - Post as a public message
 			retObj.postSucceeded = bbs.post_msg(this.subBoardCode, replyMode, pMsgHdr);
 		msgBaseInfoFile.remove();
+		retObj.msgbaseReOpened = this.msgbase.open();
 
 		// If the user replied to the message and a message search was done that
 		// would populate the search results, then search the last messages to
 		// include the user's reply in the message matches or other new messages
 		// that may have been posted that match the user's search.
-		if (retObj.postSucceeded && this.SearchTypePopulatesSearchResults() &&
+		// TODO: Make sure this works for a newscan & new-to-user scan
+		if (retObj.postSucceeded && retObj.msgbaseReOpened &&
+		    this.SearchTypePopulatesSearchResults() &&
 		    this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
 		    (this.msgbase.total_msgs > numMessagesBefore))
 		{
@@ -7963,7 +8021,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		{
 			console.gotoxy(screenX, screenY++);
 			console.putmsg(this.ParseMsgHdrLineAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
-			pDisplayMsgNum, dateTimeStr, false));
+			               pDisplayMsgNum, dateTimeStr, false));
 		}
 	}
 	else
