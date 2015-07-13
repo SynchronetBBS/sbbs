@@ -112,7 +112,7 @@ function str_cmds(str)
 			writeln("LIST <filename>");
 			writeln("\tDisplays a file.");
 		}
-		if(str=="LIST") {
+		if(word=="LIST") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
 				console.printfile(get_arg(str));
