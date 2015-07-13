@@ -51,6 +51,11 @@ enum prefix_pos {
 	PREFIX_FINISHED
 };
 
+/*
+ * Parses a prefix from the passed text, returns a struct containing
+ * an allocated bytes pointer and the number of columns the prefix
+ * takes up in the output.
+ */
 static struct prefix parse_prefix(const char *text)
 {
 	enum prefix_pos expect = PREFIX_START;
@@ -132,6 +137,9 @@ static struct prefix parse_prefix(const char *text)
 	return ret;
 }
 
+/*
+ * Appends to a malloc()ed buffer, realloc()ing if needed.
+ */
 static void outbuf_append(char **outbuf, char **outp, char *append, int len, int *outlen)
 {
 	char	*p;
@@ -160,11 +168,21 @@ static void outbuf_append(char **outbuf, char **outp, char *append, int len, int
 	return;
 }
 
+/*
+ * Holds the length of a "section"... either a word or whitespace.
+ * Length is in bytes and "len" (the number of columns)
+ */
 struct section_len {
 	int bytes;
 	int len;
 };
 
+/*
+ * Gets the length of a run of whitespace starting at the beginning
+ * of buf, which occurs in column col.
+ * 
+ * The column is needed for tab size calculations.
+ */
 static struct section_len get_ws_len(char *buf, int col)
 {
 	struct section_len ret = {0,0};
@@ -186,6 +204,15 @@ static struct section_len get_ws_len(char *buf, int col)
 	return ret;
 }
 
+/*
+ * Gets the length of a word, optionally limiting the max number
+ * of columns to consume to maxlen.
+ * 
+ * When maxlen < 0, returns the word length in cols and bytes.
+ * When maxlen >= 0, returns the number of cols and bytes up to
+ * maxlen cols (used to find the number of bytes to fill a specific
+ * number of columns).
+ */
 static struct section_len get_word_len(char *buf, int maxlen)
 {
 	struct section_len ret = {0,0};
@@ -216,15 +243,21 @@ static struct section_len get_word_len(char *buf, int maxlen)
 }
 
 /*
- * This unwraps a message into infinite line length with separate prefix.
+ * This structure holds a "paragraph" defined as everything from either
+ * the beginning of the message, or the previous hard CR to the next
+ * hard CR or end of message
  */
-
 struct paragraph {
 	struct prefix prefix;
 	char *text;
 	size_t alloc_size;
 };
 
+/*
+ * Free()s the allocations in an array of paragraphs.  If count is
+ * provided, that many paragraphs are freed.  If count == -1, frees
+ * up to the first paragraph with a NULL text member.
+ */
 static void free_paragraphs(struct paragraph *paragraph, int count)
 {
 	int i;
@@ -237,6 +270,9 @@ static void free_paragraphs(struct paragraph *paragraph, int count)
 	}
 }
 
+/*
+ * Appends bytes to a paragraph, realloc()ing space if needed.
+ */
 static BOOL paragraph_append(struct paragraph *paragraph, const char *bytes, size_t count)
 {
 	size_t len = strlen(paragraph->text);
@@ -254,6 +290,13 @@ static BOOL paragraph_append(struct paragraph *paragraph, const char *bytes, siz
 	return TRUE;
 }
 
+/*
+ * This unwraps a message into infinite line length paragraphs.
+ * Optionally, each with separate prefix.
+ * 
+ * The returned malloc()ed array will have the text member of the last
+ * paragraph set to NULL.
+ */
 static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes)
 {
 	unsigned inpos=0;
@@ -387,6 +430,12 @@ fail_return:
 	return NULL;
 }
 
+/*
+ * Wraps a set of infinite line length paragraphs to the specified length
+ * optionally prepending the prefixes.
+ * 
+ * Returns a malloc()ed string.
+ */
 static char *wrap_paragraphs(struct paragraph *paragraph, int outlen, BOOL handle_quotes)
 {
 	int outcol;
@@ -465,5 +514,6 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes);
 	outbuf = wrap_paragraphs(paragraphs, oldlen, handle_quotes);
 	free_paragraphs(paragraphs, -1);
+	free(paragraphs);
 	return outbuf;
 }
