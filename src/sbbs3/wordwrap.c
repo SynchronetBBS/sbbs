@@ -374,6 +374,11 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 					// First, check if we're at the end...
 					if (inbuf[inpos+1] == 0)
 						break;
+					// If the original line was overly long, it's hard.
+					if (incol > oldlen) {
+						paragraph_done = TRUE;
+						break;
+					}
 					// Now, if the prefix changes, it's hard.
 					new_prefix = parse_prefix(&inbuf[inpos+1]);
 					if (cmp_prefix(&new_prefix, &ret[paragraph].prefix) != 0) {
@@ -535,6 +540,12 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 	struct paragraph *paragraphs;
 
 	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes);
+
+#if 0
+	for(int i=0;paragraphs[i].text;i++)
+		fprintf(stderr, "PREFIX: '%s'\nTEXT: '%s'\n\n", paragraphs[i].prefix.bytes, paragraphs[i].text);
+#endif
+
 	outbuf = wrap_paragraphs(paragraphs, oldlen, handle_quotes);
 	free_paragraphs(paragraphs, -1);
 	free(paragraphs);
