@@ -376,7 +376,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 						break;
 					// Now, if the prefix changes, it's hard.
 					new_prefix = parse_prefix(&inbuf[inpos+1]);
-					if (cmp_prefix(&new_prefix, &ret[paragraph].prefix) != 0)
+					if (cmp_prefix(&new_prefix, &ret[paragraph].prefix) != 0) {
 						paragraph_done = TRUE;
 						FREE_AND_NULL(new_prefix.bytes);
 						break;
