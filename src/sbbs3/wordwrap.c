@@ -514,7 +514,7 @@ static char *wrap_paragraphs(struct paragraph *paragraph, int outlen, BOOL handl
 				word_len = get_word_len(inp+ws_len.bytes, -1);
 				// Do we need to chop a long word?
 				if (word_len.len > (outlen - prefix_cols))
-					word_len = get_word_len(inp + ws_len.bytes, outlen - outcol);
+					word_len = get_word_len(inp + ws_len.bytes, outlen - ws_len.bytes - outcol);
 				if (outcol + ws_len.len + word_len.len > outlen) {
 					inp += ws_len.bytes;
 					break;
