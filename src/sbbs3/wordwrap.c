@@ -76,9 +76,15 @@ static struct prefix parse_prefix(const char *text)
 				continue;
 			}
 		}
-		// If end of line or message, or obviously outside of prefixes, exit loop.
-		if (*pos == 0 || *pos == '\n' || *pos == '\r' || *pos == '\t')
-			break;
+		/*
+		 * If end of line or message, or obviously outside of prefixes, exit loop.
+		 * However, if we're in the "pad" section, don't abort since we have a 
+		 * legal prefix.
+		 */
+		if(expect != PREFIX_PAD) {
+			if (*pos == 0 || *pos == '\n' || *pos == '\r' || *pos == '\t')
+				break;
+		}
 		cols++;
 		switch(expect) {
 			// If there's no space before the quote mark, it's not a prefix.
@@ -109,9 +115,12 @@ static struct prefix parse_prefix(const char *text)
 				break;
 			// Must be a space after the '>'
 			case PREFIX_PAD:
-				if (*pos == ' ') {
+				if (*pos == ' ' || *pos == '\r' || *pos == '\n' || *pos == '\t') {
 					ret.cols = cols;
-					end = pos+1;
+					if (*pos == ' ')
+						end = pos+1;
+					else
+						end = pos;
 					if (*(pos+1) == ' ')
 						expect = PREFIX_START;
 					else
@@ -126,15 +135,27 @@ static struct prefix parse_prefix(const char *text)
 		}
 	}
 	if (end > text) {
-		ret.bytes = (char *)malloc((end-text)+1);
+		ret.bytes = (char *)malloc((end-text)+2);
 		memcpy(ret.bytes, text, (end-text));
-		ret.bytes[end-text] = 0;
+		if (ret.bytes[end-text-1] != ' ') {
+			ret.bytes[end-text] = ' ';
+			ret.bytes[end-text+1] = 0;
+		}
+		else
+			ret.bytes[end-text] = 0;
 	}
 	else {
 		ret.bytes = (char *)malloc(1);
 		ret.bytes[0] = 0;
 	}
 	return ret;
+}
+
+int cmp_prefix(struct prefix *p1, struct prefix *p2)
+{
+	if (p1->cols != p2->cols)
+		return p1->cols-p2->cols;
+	return strcmp(p1->bytes, p2->bytes);
 }
 
 /*
@@ -355,7 +376,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 						break;
 					// Now, if the prefix changes, it's hard.
 					new_prefix = parse_prefix(&inbuf[inpos+1]);
-					if (memcmp(&new_prefix, &ret[paragraph].prefix, sizeof(new_prefix)) == 0) {
+					if (cmp_prefix(&new_prefix, &ret[paragraph].prefix) != 0)
 						paragraph_done = TRUE;
 						FREE_AND_NULL(new_prefix.bytes);
 						break;
@@ -390,10 +411,12 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 						paragraph_done = TRUE;
 						break;
 					}
+					// Skip the new prefix...
+					inpos += strlen(new_prefix.bytes);
+					incol = new_prefix.cols;
 					FREE_AND_NULL(new_prefix.bytes);
 					if (!paragraph_append(&ret[paragraph], " ", 1))
 						goto fail_return;
-					incol = 0;
 					break;
 				case '\t':		// Tab... bah.
 					if (!paragraph_append(&ret[paragraph], inbuf+inpos, 1))
