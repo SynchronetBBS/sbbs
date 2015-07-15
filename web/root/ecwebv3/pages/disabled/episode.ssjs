@@ -38,6 +38,10 @@ if (index < 0 || index > hdrs.length) {
 	exit(1);
 }
 var item_info = podcast_get_info(base, hdrs[index]);
+if (item_info == undefined) {
+	print("Invalid episode!");
+	exit(1);
+}
 print('<h1>'+strftime("%B %e %Y", hdrs[index].when_written_time) + " " + item_info.title+'</h1>');
 print('<audio controls="controls"><source src="'+item_info.enclosure.url+'"></audio>');
 print('<p>'+item_info.description+'</p>');
