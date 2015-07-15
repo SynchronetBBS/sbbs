@@ -318,18 +318,19 @@ static BOOL paragraph_append(struct paragraph *paragraph, const char *bytes, siz
  * The returned malloc()ed array will have the text member of the last
  * paragraph set to NULL.
  */
-static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes)
+static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes, BOOL *has_crs)
 {
 	unsigned inpos=0;
 	struct prefix new_prefix;
 	int incol;
-	BOOL has_crs = FALSE;
 	int paragraph = 0;
 	struct paragraph *ret = NULL;
 	struct paragraph *newret = NULL;
 	BOOL paragraph_done;
 	int next_word_len;
 
+	if(has_crs)
+		*has_crs = FALSE;
 	while(inbuf[inpos]) {
 		incol = 0;
 		/* Start of a new paragraph (ie: after a hard CR) */
@@ -356,7 +357,8 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 		while(!paragraph_done) {
 			switch(inbuf[inpos]) {
 				case '\r':		// Strip CRs and add them in later.
-					has_crs = TRUE;
+					if (has_crs)
+						*has_crs = TRUE;
 					// Fall-through to strip
 				case '\b':		// Strip backspaces.
 				case '\x1f':	// Strip delete chars.
@@ -464,7 +466,7 @@ fail_return:
  * 
  * Returns a malloc()ed string.
  */
-static char *wrap_paragraphs(struct paragraph *paragraph, int outlen, BOOL handle_quotes)
+static char *wrap_paragraphs(struct paragraph *paragraph, int outlen, BOOL handle_quotes, BOOL has_crs)
 {
 	int outcol;
 	char *outbuf = NULL;
@@ -497,8 +499,12 @@ static char *wrap_paragraphs(struct paragraph *paragraph, int outlen, BOOL handl
 			}
 		}
 		inp = paragraph->text;
-		if (*inp == 0)
-			outbuf_append(&outbuf, &outp, "\r\n", 2, &outbuf_size);
+		if (*inp == 0) {
+			if (has_crs)
+				outbuf_append(&outbuf, &outp, "\r\n", 2, &outbuf_size);
+			else
+				outbuf_append(&outbuf, &outp, "\n", 1, &outbuf_size);
+		}
 		while (*inp) {
 			outcol = 0;
 			// First, add the prefix...
@@ -526,7 +532,10 @@ static char *wrap_paragraphs(struct paragraph *paragraph, int outlen, BOOL handl
 				inp += word_len.bytes;
 				outcol += word_len.len;
 			}
-			outbuf_append(&outbuf, &outp, "\r\n", 2, &outbuf_size);
+			if (has_crs)
+				outbuf_append(&outbuf, &outp, "\r\n", 2, &outbuf_size);
+			else
+				outbuf_append(&outbuf, &outp, "\n", 1, &outbuf_size);
 		}
 		paragraph++;
 	}
@@ -538,15 +547,16 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 {
 	char*		outbuf;
 	struct paragraph *paragraphs;
+	BOOL		has_crs;
 
-	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes);
+	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes, &has_crs);
 
 #if 0
 	for(int i=0;paragraphs[i].text;i++)
 		fprintf(stderr, "PREFIX: '%s'\nTEXT: '%s'\n\n", paragraphs[i].prefix.bytes, paragraphs[i].text);
 #endif
 
-	outbuf = wrap_paragraphs(paragraphs, len, handle_quotes);
+	outbuf = wrap_paragraphs(paragraphs, len, handle_quotes, has_crs);
 	free_paragraphs(paragraphs, -1);
 	free(paragraphs);
 	return outbuf;
