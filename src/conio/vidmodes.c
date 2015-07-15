@@ -2,6 +2,9 @@
 
 #include <stdlib.h>
 
+/* xpdev: */
+#include <gen_defs.h>	/* FREE_AND_NULL */
+
 #include "vidmodes.h"
 
 struct video_params vparams[49] = {
