@@ -546,7 +546,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 		fprintf(stderr, "PREFIX: '%s'\nTEXT: '%s'\n\n", paragraphs[i].prefix.bytes, paragraphs[i].text);
 #endif
 
-	outbuf = wrap_paragraphs(paragraphs, oldlen, handle_quotes);
+	outbuf = wrap_paragraphs(paragraphs, len, handle_quotes);
 	free_paragraphs(paragraphs, -1);
 	free(paragraphs);
 	return outbuf;
