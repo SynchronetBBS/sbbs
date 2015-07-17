@@ -48,6 +48,8 @@ SDL_mutex	*win_mutex;
 SDL_Surface	*sdl_icon=NULL;
 SDL_Surface	*new_rect=NULL;
 SDL_mutex	*newrect_mutex;
+SDL_mutex	*bitmap_init_mutex;
+static int bitmap_initialized = 0;
 
 /* *nix copy/paste stuff */
 SDL_sem	*sdl_pastebuf_set;
@@ -675,6 +677,9 @@ int sdl_init(int mode)
 	}
 
 	bitmap_init(sdl_drawrect, sdl_flush);
+	sdl.mutexP(bitmap_init_mutex);
+	bitmap_initialized=1;
+	sdl.mutexV(bitmap_init_mutex);
 
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
 		fullscreen=1;
@@ -1540,6 +1545,15 @@ int sdl_video_event_thread(void *data)
 	int			rectspace=0;
 	int			rectsused=0;
 
+	while(1) {
+		sdl.mutexP(bitmap_init_mutex);
+		if(bitmap_initialized) {
+			sdl.mutexV(bitmap_init_mutex);
+			break;
+		}
+		SLEEP(1);
+		sdl.mutexV(bitmap_init_mutex);
+	}
 	pthread_mutex_lock(&vstatlock);
 	old_scaling = vstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
@@ -1995,6 +2009,7 @@ int sdl_initciolib(int mode)
 	newrect_mutex=sdl.SDL_CreateMutex();
 	win_mutex=sdl.SDL_CreateMutex();
 	sdl_keylock=sdl.SDL_CreateMutex();
+	bitmap_init_mutex=sdl.SDL_CreateMutex();
 #if !defined(NO_X) && defined(__unix__)
 	sdl_pastebuf_set=sdl.SDL_CreateSemaphore(0);
 	sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
