@@ -1551,8 +1551,8 @@ int sdl_video_event_thread(void *data)
 			sdl.mutexV(bitmap_init_mutex);
 			break;
 		}
-		SLEEP(1);
 		sdl.mutexV(bitmap_init_mutex);
+		SLEEP(1);
 	}
 	pthread_mutex_lock(&vstatlock);
 	old_scaling = vstat.scaling;
