@@ -5050,7 +5050,7 @@ int main(int argc, char **argv)
 				continue;
 			}
 			printf("\n%s to %s ",getfname(path),smb_faddrtoa(&addr,NULL));
-			if(hdr.attr&MSG_SENT) {
+			if(hdr.attr&FIDO_SENT) {
 				printf("already sent\n");
 				fclose(fidomsg);
 				continue;
