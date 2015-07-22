@@ -5055,9 +5055,13 @@ int main(int argc, char **argv)
 				fclose(fidomsg);
 				continue;
 			}
-			hdr.attr|=FIDO_SENT;
-			fseek(fidomsg,offsetof(fmsghdr_t,attr),SEEK_SET);
-			fwrite(&hdr.attr,sizeof(hdr.attr),1,fidomsg);
+			if(!(misc&DELETE_NETMAIL)) {
+				hdr.attr|=FIDO_SENT;
+				rewind(fidomsg);
+				fseek(fidomsg,offsetof(fmsghdr_t,attr),SEEK_SET);
+				fwrite(&hdr.attr,sizeof(hdr.attr),1,fidomsg);
+				fseek(fidomsg,sizeof(fmsghdr_t),SEEK_SET);
+			}
 
 			if(cfg.log&LOG_PACKING)
 				logprintf("Packing %s (%s) attr=%04hX",path,smb_faddrtoa(&addr,NULL),hdr.attr);
