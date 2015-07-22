@@ -5050,6 +5050,15 @@ int main(int argc, char **argv)
 				continue;
 			}
 			printf("\n%s to %s ",getfname(path),smb_faddrtoa(&addr,NULL));
+			if(hdr.attr&MSG_SENT) {
+				printf("already sent\n");
+				fclose(fidomsg);
+				continue;
+			}
+			hdr.attr|=FIDO_SENT;
+			fseek(fidomsg,offsetof(fmsghdr_t,attr),SEEK_SET);
+			fwrite(&hdr.attr,sizeof(hdr.attr),1,fidomsg);
+
 			if(cfg.log&LOG_PACKING)
 				logprintf("Packing %s (%s) attr=%04hX",path,smb_faddrtoa(&addr,NULL),hdr.attr);
 			fmsgbuf=getfmsg(fidomsg,NULL);
