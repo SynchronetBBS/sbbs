@@ -19,6 +19,6 @@ for (i in hdrs) {
 	var item_info = podcast_get_info(base, hdrs[i]);
 	if (item_info == undefined)
 		continue;
-	print('<a href="index.xjs?page=episode.ssjs&episode='+parseInt(i+1)+'">'+strftime("%B %e %Y", hdrs[i].when_written_time) + " " + item_info.title+'</a><br>');
+	print('<a href="index.xjs?page=episode.ssjs&episode='+(parseInt(i)+1)+'">'+strftime("%B %e %Y", hdrs[i].when_written_time) + " " + item_info.title+'</a><br>');
 	print('<p>'+item_info.description+'</p>');
 }
