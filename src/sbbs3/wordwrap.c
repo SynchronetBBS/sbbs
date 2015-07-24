@@ -211,7 +211,7 @@ static struct section_len get_ws_len(char *buf, int col)
 	for(ret.bytes=0; ; ret.bytes++) {
 		if (!buf[ret.bytes])
 			break;
-		if (!isspace(buf[ret.bytes]))
+		if (!isspace((unsigned char)buf[ret.bytes]))
 			break;
 		if(buf[ret.bytes] == '\t') {
 			ret.len++;
