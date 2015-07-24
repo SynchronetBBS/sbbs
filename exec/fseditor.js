@@ -39,7 +39,7 @@ var stat_attr	= 0x1f;
 var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRL-K\1w for help          %s\1>\1n";
 var subj,to,from;
 
-function Line()
+function Line(copyfrom)
 {
 	var i;
 
@@ -55,6 +55,14 @@ function Line()
 	this.firstchar=0;
 	/* For selection */
 	this.selected=false;
+	if (copyfrom != undefined) {
+		this.text = copyfrom.text;
+		this.attr = copyfrom.attr;
+		this.hardcr = copyfrom.hardcr;
+		this.kludged = copyfrom.kludged;
+		this.firstchar = copyfrom.firstchar;
+		this.selected = copyfrom.selected;
+	}
 }
 
 /*
@@ -1314,7 +1322,7 @@ function quote_mode()
 			case '\x0d':	/* CR */
 				for(i=0; i<quote_line.length; i++) {
 					if(quote_line[i].selected) {
-						line.splice(ypos,0,quote_line[i]);
+						line.splice(ypos,0,new Line(quote_line[i]));
 						ypos++;
 						if(ypos-topline >= lines_on_screen)
 							topline++;
