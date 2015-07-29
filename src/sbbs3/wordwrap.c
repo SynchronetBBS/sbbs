@@ -155,7 +155,7 @@ int cmp_prefix(struct prefix *p1, struct prefix *p2)
 {
 	if (p1->cols != p2->cols)
 		return p1->cols-p2->cols;
-	return strcmp(p1->bytes, p2->bytes);
+	return strcmp(p1->bytes ? p1->bytes : "", p2->bytes ? p2->bytes : "");
 }
 
 /*
@@ -353,6 +353,8 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 			inpos += strlen(ret[paragraph].prefix.bytes);
 			incol = ret[paragraph].prefix.cols;
 		}
+		else
+			memset(&ret[paragraph].prefix, 0, sizeof(ret[paragraph].prefix));
 		paragraph_done = FALSE;
 		while(!paragraph_done) {
 			switch(inbuf[inpos]) {
@@ -382,7 +384,10 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 						break;
 					}
 					// Now, if the prefix changes, it's hard.
-					new_prefix = parse_prefix(&inbuf[inpos+1]);
+					if (handle_quotes)
+						new_prefix = parse_prefix(&inbuf[inpos+1]);
+					else
+						memset(&new_prefix, 0, sizeof(new_prefix));
 					if (cmp_prefix(&new_prefix, &ret[paragraph].prefix) != 0) {
 						paragraph_done = TRUE;
 						FREE_AND_NULL(new_prefix.bytes);
@@ -498,6 +503,8 @@ static char *wrap_paragraphs(struct paragraph *paragraph, int outlen, BOOL handl
 				prefix_bytes = strlen(prefix_copy);
 			}
 		}
+		else
+			prefix_cols = 0;
 		inp = paragraph->text;
 		if (*inp == 0) {
 			if (has_crs)
@@ -519,7 +526,7 @@ static char *wrap_paragraphs(struct paragraph *paragraph, int outlen, BOOL handl
 				ws_len = get_ws_len(inp, outcol);
 				word_len = get_word_len(inp+ws_len.bytes, -1);
 				// Do we need to chop a long word?
-				if (word_len.len > (outlen - prefix_cols))
+				if (word_len.len > (outlen - prefix_cols)))
 					word_len = get_word_len(inp + ws_len.bytes, outlen - ws_len.bytes - outcol);
 				if (outcol + ws_len.len + word_len.len > outlen) {
 					inp += ws_len.bytes;
