@@ -328,6 +328,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 	struct paragraph *newret = NULL;
 	BOOL paragraph_done;
 	int next_word_len;
+	size_t new_prefix_len;
 
 	if(has_crs)
 		*has_crs = FALSE;
@@ -384,17 +385,21 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 						break;
 					}
 					// Now, if the prefix changes, it's hard.
-					if (handle_quotes)
+					if (handle_quotes) {
 						new_prefix = parse_prefix(&inbuf[inpos+1]);
-					else
+						new_prefix_len = strlen(new_prefix.bytes);
+					}
+					else {
 						memset(&new_prefix, 0, sizeof(new_prefix));
+						new_prefix_len = 0;
+					}
 					if (cmp_prefix(&new_prefix, &ret[paragraph].prefix) != 0) {
 						paragraph_done = TRUE;
 						FREE_AND_NULL(new_prefix.bytes);
 						break;
 					}
 					// If the next line start with whitespace, it's hard
-					switch(inbuf[inpos+1+strlen(new_prefix.bytes)]) {
+					switch(inbuf[inpos+1+new_prefix_len]) {
 						case 0:
 						case ' ':
 						case '\t':
@@ -417,14 +422,14 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 					}
 
 					// If the first word on the next line would have fit here, it's hard
-					next_word_len = get_word_len(inbuf+inpos+1+strlen(new_prefix.bytes), -1).len;
+					next_word_len = get_word_len(inbuf+inpos+1+new_prefix_len, -1).len;
 					if ((incol + next_word_len + 1 - 1) < oldlen) {
 						FREE_AND_NULL(new_prefix.bytes);
 						paragraph_done = TRUE;
 						break;
 					}
 					// Skip the new prefix...
-					inpos += strlen(new_prefix.bytes);
+					inpos += new_prefix_len;
 					incol = new_prefix.cols;
 					FREE_AND_NULL(new_prefix.bytes);
 					if (!paragraph_append(&ret[paragraph], " ", 1))
