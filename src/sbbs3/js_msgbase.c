@@ -2100,6 +2100,15 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
+	// Find and use the global client object if possible...
+	if(client==NULL) {
+		if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "client", &val) && !JSVAL_NULL_OR_VOID(val)) {
+			objarg = JSVAL_TO_OBJECT(val);
+			if((cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0)
+				client=JS_GetPrivate(cx,objarg);
+		}
+	}
+
 	if(hdr==NULL)
 		return(JS_TRUE);
 	if(body==NULL)
@@ -2465,7 +2474,8 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"</table>"
 	"<br><i>New in v3.12:</i> "
 	"The optional <i>client</i> argument is an instance of the <i>Client</i> class to be used for the "
-	"security log header fields (e.g. sender IP address, hostname, protocol, and port). "
+	"security log header fields (e.g. sender IP address, hostname, protocol, and port).  As of version 3.16c, the "
+	"global client object will be used if this is omitted."
 	"<br><br><i>New in v3.12:</i> "
 	"The optional <i>rcpt_list</i> is an array of objects that specifies multiple recipients "
 	"for a single message (e.g. bulk e-mail). Each object in the array may include the following header properties "
