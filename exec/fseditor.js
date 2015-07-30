@@ -1061,10 +1061,7 @@ function make_strings(soft,embed_colour)
 				}
 				return('');
 			});
-			if(line[i].hardcr)
-				str+='\r\n';
-			else
-				str+=' \n';
+			str+='\r\n';
 			attrs+=attrs.substr(-1)+attrs.substr(-1);
 		}
 	}
