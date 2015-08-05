@@ -22,6 +22,9 @@ Windows console mode resize fixes
 SSH stability fixes
 Paginate help output
 Statically link Cryptlib
+Varous crashes at startup and during resize fixed
+Don't add "SyncTERM" to the end of the Windows Download path
+Fix NumLock behaviour on Windows
 
 Version 0.9.5
 -------------
