@@ -119,6 +119,10 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int 
 CIOLIBEXPORT void CIOLIBCALL ciolib_setscaling(int new_value);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
 
+#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+int sdl_video_initialized = 0;
+#endif
+
 #define CIOLIB_INIT()		{ if(initialized != 1) initciolib(CIOLIB_MODE_AUTO); }
 
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
