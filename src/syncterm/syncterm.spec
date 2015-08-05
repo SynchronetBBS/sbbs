@@ -1,10 +1,10 @@
 Summary: An ANSI-BBS terminal which supports telnet, rlogin, and SSH
 Name: SyncTERM
-Version: 1.0
+Version: 1.1b
 Release: 20071001
 Copyright: GPL
 Group: Applications/Communications
-Source: http://prdownloads.sourceforge.net/syncterm/syncterm-src-1.0.tgz
+Source: http://prdownloads.sourceforge.net/syncterm/syncterm-1.1/syncterm-src-1.1.tgz
 
 %description
 An ANSI-BBS terminal designed to connect to remote BBSs via telnet, rlogin, or
