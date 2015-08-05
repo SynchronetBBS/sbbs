@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "SyncTERM"
-#define MyAppVersion "1.00"
+#define MyAppVersion "1.0"
 #define MyAppPublisher "SyncTERM"
 #define MyAppURL "http://www.syncterm.net/"
 #define MyAppExeName "syncterm.exe"
@@ -82,6 +82,7 @@ Filename: "{userappdata}\{#MyAppName}\syncterm.ini"; Section: "Font:Swiss (8x16)
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\Get Synchronet BBS List"; Filename: "ftp"; Parameters: "-A ""-s:{app}\getlist.ftp"""; WorkingDir: "{commonappdata}\{#MyAppName}";  IconFilename: "{app}\{#MyAppExeName}"; Comment: "Get the latest Synchronet BBS List from Vertrauen";
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{group}\Check for updates"; Filename: "http://sourceforge.net/projects/syncterm/"; Comment: "Check for new SyncTERM versions";
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
