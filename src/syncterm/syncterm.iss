@@ -36,7 +36,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "e:\Users\Rob\Downloads\syncterm.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\bin\SDL.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "c:\bin\fonts\*"; DestDir: "{app}\fonts"; Flags: ignoreversion
-Source: "e:\src\syncterm\syncterm.ini"; DestDir: "{userappdata}\{#MyAppName}"; Flags: ignoreversion
+Source: "e:\src\syncterm\syncterm.ini"; DestDir: "{userappdata}\{#MyAppName}"; Flags: ignoreversion confirmoverwrite
 Source: "e:\src\syncterm\getlist.ftp"; DestDir: "{app}"; Flags: ignoreversion
 Source: "s:\xfer\sbbs\syncterm.lst"; DestDir: "{commonappdata}\{#MyAppName}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
