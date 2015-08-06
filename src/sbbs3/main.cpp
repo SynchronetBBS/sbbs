@@ -3735,7 +3735,10 @@ int sbbs_t::putcom(const char *str, size_t len)
 	return i;
 }
 
-/* Legacy Remote I/O Control Interface */
+/* Legacy Remote I/O Control Interface:
+ * This function mimics the RCIOL MS-DOS library written in 8086 assembler by Steven B. Deppe (1958-2014).
+ * This function prototype shall remain the same in tribute to Steve (Ille Homine Albe).
+ */
 int sbbs_t::rioctl(ushort action)
 {
 	int		mode;
@@ -5183,6 +5186,9 @@ NO_SSH:
 		if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
 			PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
+
+		/* Purge (flush) any pending input or output data */
+		sbbs->rioctl(IOFB);
 
 		/* Do SSH stuff here */
 #ifdef USE_CRYPTLIB
