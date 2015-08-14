@@ -63,7 +63,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 165
     Width = 624
-    Height = 152
+    Height = 151
     Align = alClient
     AutoSize = True
     Center = True
@@ -13541,7 +13541,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 165
     Width = 624
-    Height = 152
+    Height = 151
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
@@ -13550,7 +13550,7 @@ object MainForm: TMainForm
       Left = 235
       Top = 0
       Width = 2
-      Height = 152
+      Height = 151
       Cursor = crHSplit
       MinSize = 1
     end
@@ -13558,7 +13558,7 @@ object MainForm: TMainForm
       Left = 0
       Top = 0
       Width = 235
-      Height = 152
+      Height = 151
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -13569,7 +13569,7 @@ object MainForm: TMainForm
       Left = 237
       Top = 0
       Width = 387
-      Height = 152
+      Height = 151
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -13579,7 +13579,7 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 317
+    Top = 316
     Width = 624
     Height = 25
     Panels = <
@@ -14316,14 +14316,14 @@ object MainForm: TMainForm
         Hint = 'http://wiki.synchro.net/faq:'
         OnClick = WebPageMenuItemClick
       end
-      object HelpSysopMenuItem: TMenuItem
-        Caption = 'Sysop Manual (old)'
-        Hint = 'http://www.synchro.net/docs/sysop.html'
-        OnClick = WebPageMenuItemClick
-      end
       object HelpTechnicalSupportMenuItem: TMenuItem
         Caption = 'Technical Support'
         Hint = 'http://wiki.synchro.net/howto:support'
+        OnClick = WebPageMenuItemClick
+      end
+      object HelpDonateMenuItem: TMenuItem
+        Caption = 'Donate'
+        Hint = 'http://wiki.synchro.net/donate/'
         OnClick = WebPageMenuItemClick
       end
       object N7: TMenuItem
