@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html		    *
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1151,7 +1151,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
     if(TelnetStop->Enabled && !bbsServiceEnabled()) {
      	if(!terminating && TelnetForm->ProgressBar->Position
 	        && Application->MessageBox("Shut down the Terminal Server?"
-        	,"Terminal Server In Use", MB_OKCANCEL)!=IDOK)
+        	,"Synchronet Terminal Server In Use", MB_OKCANCEL)!=IDOK)
             return;
         TelnetStopExecute(Sender);
 	}
@@ -1159,7 +1159,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
     if(MailStop->Enabled && !mailServiceEnabled()) {
     	if(!terminating && MailForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Mail Server?"
-        	,"Mail Server In Use", MB_OKCANCEL)!=IDOK)
+        	,"Synchronet Mail Server In Use", MB_OKCANCEL)!=IDOK)
             return;
         MailStopExecute(Sender);
     }
@@ -1167,7 +1167,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
     if(FtpStop->Enabled && !ftpServiceEnabled()) {
     	if(!terminating && FtpForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the FTP Server?"
-	       	,"FTP Server In Use", MB_OKCANCEL)!=IDOK)
+	       	,"Synchronet FTP Server In Use", MB_OKCANCEL)!=IDOK)
             return;
         FtpStopExecute(Sender);
     }
@@ -1175,7 +1175,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
     if(WebStop->Enabled && !webServiceEnabled()) {
     	if(!terminating && WebForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Web Server?"
-	       	,"Web Server In Use", MB_OKCANCEL)!=IDOK)
+	       	,"Synchronet Web Server In Use", MB_OKCANCEL)!=IDOK)
             return;
         WebStopExecute(Sender);
     }
