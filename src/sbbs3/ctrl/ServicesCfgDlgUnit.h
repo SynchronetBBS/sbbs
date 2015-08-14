@@ -10,6 +10,10 @@
 #include <ComCtrls.hpp>
 #include <Dialogs.hpp>
 #include "MainFormUnit.h"
+#include <CheckLst.hpp>
+#include <Menus.hpp>
+#include <Grids.hpp>
+#include <ValEdit.hpp>
 //---------------------------------------------------------------------------
 class TServicesCfgDlg : public TForm
 {
@@ -34,13 +38,20 @@ __published:	// IDE-managed Components
     TButton *CancelButton;
     TButton *ApplyButton;
     TOpenDialog *OpenDialog;
-	TButton *ServicesIniButton;
-    void __fastcall ServicesCfgButtonClick(TObject *Sender);
+    TTabSheet *EnableTabSheet;
+    TCheckListBox *CheckListBox;
+    TValueListEditor *ValueListEditor;
     void __fastcall FormShow(TObject *Sender);
     void __fastcall OKButtonClick(TObject *Sender);
     void __fastcall AnswerSoundButtonClick(TObject *Sender);
     void __fastcall HangupSoundButtonClick(TObject *Sender);
+    void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
+    void __fastcall CheckListBoxClick(TObject *Sender);
+    void __fastcall ValueListEditorValidate(TObject *Sender, int ACol,
+          int ARow, const AnsiString KeyName, const AnsiString KeyValue);
 private:	// User declarations
+	char iniFilename[MAX_PATH+1];
+    str_list_t ini;
 public:		// User declarations
     __fastcall TServicesCfgDlg(TComponent* Owner);
 };

@@ -16,20 +16,13 @@ TServicesCfgDlg *ServicesCfgDlg;
 __fastcall TServicesCfgDlg::TServicesCfgDlg(TComponent* Owner)
     : TForm(Owner)
 {
-}
-//---------------------------------------------------------------------------
-void __fastcall TServicesCfgDlg::ServicesCfgButtonClick(TObject *Sender)
-{
-	char filename[MAX_PATH+1];
-
-    iniFileName(filename,sizeof(filename),MainForm->cfg.ctrl_dir,"services.ini");
-    MainForm->EditFile(filename,"Services Configuration");
+    ini = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TServicesCfgDlg::FormShow(TObject *Sender)
 {
     char str[128];
-    
+
     if(MainForm->services_startup.interface_addr==0)
         NetworkInterfaceEdit->Text="<ANY>";
     else {
@@ -48,8 +41,32 @@ void __fastcall TServicesCfgDlg::FormShow(TObject *Sender)
     HostnameCheckBox->Checked
         =!(MainForm->services_startup.options&BBS_OPT_NO_HOST_LOOKUP);
 
-    PageControl->ActivePage=GeneralTabSheet;
+    iniFileName(iniFilename,sizeof(iniFilename),MainForm->cfg.ctrl_dir,"services.ini");
+    /* Populate the Enables tab */
+    CheckListBox->Clear();
+    FILE* fp;
+    if((fp=iniOpenFile(iniFilename, /* Create: */false)) != NULL) {
+        ini=iniReadFile(fp);
+        iniCloseFile(fp);
+    }
+    str_list_t services = iniGetSectionList(ini, NULL);
+    CheckListBox->Items->BeginUpdate();
+    for(unsigned u=0; services!=NULL && services[u]!=NULL; u++) {
+        OutputDebugString(services[u]);
+        CheckListBox->Items->Append(services[u]);
+    }
+    CheckListBox->Items->EndUpdate();
 
+    for(unsigned u=0; u<CheckListBox->Items->Count; u++) {
+        str_list_t section = iniGetSection(ini, CheckListBox->Items->Strings[u].c_str());
+        CheckListBox->Checked[u]=iniGetBool(section, NULL, "Enabled", TRUE);
+        iniFreeStringList(section);
+    }
+    iniFreeStringList(services);
+    if(CheckListBox->Items->Count)
+        CheckListBox->ItemIndex=0;
+
+    PageControl->ActivePage=GeneralTabSheet;
 }
 //---------------------------------------------------------------------------
 void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
@@ -87,6 +104,12 @@ void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
     else
 	    MainForm->services_startup.options&=~BBS_OPT_NO_HOST_LOOKUP;
 
+    FILE* fp;
+    if((fp=iniOpenFile(iniFilename, /* Create: */true)) != NULL) {
+        iniWriteFile(fp, ini);
+        iniCloseFile(fp);
+    }
+
     MainForm->SaveSettings(Sender);
 
 }
@@ -112,3 +135,52 @@ void __fastcall TServicesCfgDlg::HangupSoundButtonClick(TObject *Sender)
 }
 
 //---------------------------------------------------------------------------
+void __fastcall TServicesCfgDlg::FormClose(TObject *Sender,
+      TCloseAction &Action)
+{
+    iniFreeStringList(ini);
+}
+//---------------------------------------------------------------------------
+
+
+void __fastcall TServicesCfgDlg::CheckListBoxClick(TObject *Sender)
+{
+    ValueListEditor->Strings->Clear();
+    ValueListEditor->Visible=true;
+    if(CheckListBox->ItemIndex < 0) {
+        ValueListEditor->Visible=false;
+        return;
+    }
+    if(iniGetBool(ini,CheckListBox->Items->Strings[CheckListBox->ItemIndex].c_str()
+        ,"Enabled", true) != CheckListBox->Checked[CheckListBox->ItemIndex])
+        iniSetBool(&ini
+            ,CheckListBox->Items->Strings[CheckListBox->ItemIndex].c_str()
+            ,"Enabled", CheckListBox->Checked[CheckListBox->ItemIndex]
+            ,/* style: */NULL);
+
+    char* service = strdup(CheckListBox->Items->Strings[CheckListBox->ItemIndex].c_str());
+    str_list_t section = iniGetSection(ini, service);
+    str_list_t keys = iniGetKeyList(section, NULL);
+    for(unsigned u=0; keys!=NULL && keys[u]!=NULL; u++) {
+        if(keys[u][0])
+            ValueListEditor->InsertRow(AnsiString(keys[u]),
+                AnsiString(iniGetString(section,NULL,keys[u],"error",NULL)), /* append: */true);
+    }
+    iniFreeStringList(keys);
+    iniFreeStringList(section);
+    free(service);
+}
+//---------------------------------------------------------------------------
+
+
+void __fastcall TServicesCfgDlg::ValueListEditorValidate(TObject *Sender,
+      int ACol, int ARow, const AnsiString KeyName,
+      const AnsiString KeyValue)
+{
+    if(CheckListBox->ItemIndex >= 0)
+        iniSetString(&ini
+            ,CheckListBox->Items->Strings[CheckListBox->ItemIndex].c_str()
+            ,KeyName.c_str(), KeyValue.c_str(), /* style: */NULL);
+}
+//---------------------------------------------------------------------------
+
