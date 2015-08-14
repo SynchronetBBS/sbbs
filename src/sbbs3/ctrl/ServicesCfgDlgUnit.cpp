@@ -6,6 +6,7 @@
 #include "MainFormUnit.h"
 #include "TextFileEditUnit.h"
 #include "ServicesCfgDlgUnit.h"
+#include "CodeInputFormUnit.h"
 #include <stdio.h>			// sprintf()
 #include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------------
@@ -52,7 +53,6 @@ void __fastcall TServicesCfgDlg::FormShow(TObject *Sender)
     str_list_t services = iniGetSectionList(ini, NULL);
     CheckListBox->Items->BeginUpdate();
     for(unsigned u=0; services!=NULL && services[u]!=NULL; u++) {
-        OutputDebugString(services[u]);
         CheckListBox->Items->Append(services[u]);
     }
     CheckListBox->Items->EndUpdate();
@@ -63,8 +63,19 @@ void __fastcall TServicesCfgDlg::FormShow(TObject *Sender)
         iniFreeStringList(section);
     }
     iniFreeStringList(services);
-    if(CheckListBox->Items->Count)
+    if(CheckListBox->Items->Count) {
         CheckListBox->ItemIndex=0;
+        CheckListBoxClick(Sender);
+    }
+
+    str_list_t keys = iniGetKeyList(ini, ROOT_SECTION);
+    for(unsigned u=0; keys!=NULL && keys[u]!=NULL; u++) {
+        if(keys[u][0])
+            GlobalValueListEditor->InsertRow(AnsiString(keys[u])
+                ,AnsiString(iniGetString(ini,ROOT_SECTION,keys[u],"error",NULL))
+                ,/* append: */true);
+    }
+    iniFreeStringList(keys);
 
     PageControl->ActivePage=GeneralTabSheet;
 }
@@ -181,6 +192,53 @@ void __fastcall TServicesCfgDlg::ValueListEditorValidate(TObject *Sender,
         iniSetString(&ini
             ,CheckListBox->Items->Strings[CheckListBox->ItemIndex].c_str()
             ,KeyName.c_str(), KeyValue.c_str(), /* style: */NULL);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TServicesCfgDlg::ServiceAddClick(TObject *Sender)
+{
+	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
+	CodeInputForm->Label->Caption="New Service Name";
+   	CodeInputForm->Edit->Visible=true;
+    if(CodeInputForm->ShowModal()==mrOk
+       	&& CodeInputForm->Edit->Text.Length()
+        && !iniSectionExists(ini,CodeInputForm->Edit->Text.c_str())
+        && iniAppendSection(&ini,CodeInputForm->Edit->Text.c_str(),/* style: */NULL)) {
+        CheckListBox->Items->Append(CodeInputForm->Edit->Text);
+        CheckListBox->ItemIndex = CheckListBox->Items->Count-1;
+        CheckListBoxClick(Sender);
+    }
+    delete CodeInputForm;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TServicesCfgDlg::ServiceRemoveClick(TObject *Sender)
+{
+    if(CheckListBox->ItemIndex >= 0
+        && iniRemoveSection(&ini,CheckListBox->Items->Strings[CheckListBox->ItemIndex].c_str())) {
+        CheckListBox->DeleteSelected();
+        CheckListBoxClick(Sender);
+    }        
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TServicesCfgDlg::CheckListBoxKeyDown(TObject *Sender,
+      WORD &Key, TShiftState Shift)
+{
+    if(Key==VK_INSERT)
+        ServiceAddClick(Sender);
+    else if(Key==VK_DELETE)
+        ServiceRemoveClick(Sender);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TServicesCfgDlg::GlobalValueListEditorValidate(
+      TObject *Sender, int ACol, int ARow, const AnsiString KeyName,
+      const AnsiString KeyValue)
+{
+    iniSetString(&ini
+        ,ROOT_SECTION
+        ,KeyName.c_str(), KeyValue.c_str(), /* style: */NULL);
 }
 //---------------------------------------------------------------------------
 

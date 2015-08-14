@@ -95,6 +95,22 @@ object ServicesCfgDlg: TServicesCfgDlg
         ShowHint = True
         TabOrder = 1
       end
+      object GlobalValueListEditor: TValueListEditor
+        Left = 8
+        Top = 88
+        Width = 250
+        Height = 75
+        Hint = 'Global settings for services'
+        KeyOptions = [keyEdit, keyAdd, keyDelete, keyUnique]
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goEditing, goThumbTracking]
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 3
+        OnValidate = GlobalValueListEditorValidate
+        ColWidths = (
+          99
+          145)
+      end
     end
     object SoundTabSheet: TTabSheet
       Caption = 'Sound'
@@ -165,9 +181,11 @@ object ServicesCfgDlg: TServicesCfgDlg
         Hint = 'Services and their enabled/disabled state'
         ItemHeight = 13
         ParentShowHint = False
+        PopupMenu = ServicesCfgPopupMenu
         ShowHint = True
         TabOrder = 0
         OnClick = CheckListBoxClick
+        OnKeyDown = CheckListBoxKeyDown
       end
       object ValueListEditor: TValueListEditor
         Left = 8
@@ -259,5 +277,19 @@ object ServicesCfgDlg: TServicesCfgDlg
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing, ofDontAddToRecent]
     Left = 104
     Top = 64
+  end
+  object ServicesCfgPopupMenu: TPopupMenu
+    Left = 176
+    Top = 48
+    object ServiceAdd: TMenuItem
+      Caption = 'Add'
+      Hint = 'Add a new service'
+      OnClick = ServiceAddClick
+    end
+    object ServiceRemove: TMenuItem
+      Caption = 'Remove'
+      Hint = 'Remove the selected service'
+      OnClick = ServiceRemoveClick
+    end
   end
 end

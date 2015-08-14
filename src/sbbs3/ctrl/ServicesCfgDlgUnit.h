@@ -41,6 +41,10 @@ __published:	// IDE-managed Components
     TTabSheet *EnableTabSheet;
     TCheckListBox *CheckListBox;
     TValueListEditor *ValueListEditor;
+    TPopupMenu *ServicesCfgPopupMenu;
+    TMenuItem *ServiceAdd;
+    TMenuItem *ServiceRemove;
+    TValueListEditor *GlobalValueListEditor;
     void __fastcall FormShow(TObject *Sender);
     void __fastcall OKButtonClick(TObject *Sender);
     void __fastcall AnswerSoundButtonClick(TObject *Sender);
@@ -49,6 +53,13 @@ __published:	// IDE-managed Components
     void __fastcall CheckListBoxClick(TObject *Sender);
     void __fastcall ValueListEditorValidate(TObject *Sender, int ACol,
           int ARow, const AnsiString KeyName, const AnsiString KeyValue);
+    void __fastcall ServiceAddClick(TObject *Sender);
+    void __fastcall ServiceRemoveClick(TObject *Sender);
+    void __fastcall CheckListBoxKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
+    void __fastcall GlobalValueListEditorValidate(TObject *Sender,
+          int ACol, int ARow, const AnsiString KeyName,
+          const AnsiString KeyValue);
 private:	// User declarations
 	char iniFilename[MAX_PATH+1];
     str_list_t ini;
