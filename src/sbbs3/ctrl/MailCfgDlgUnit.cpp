@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html		    *
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -461,7 +461,7 @@ void __fastcall TMailCfgDlg::DNSBLServersButtonClick(TObject *Sender)
     sprintf(filename,"%sdns_blacklist.cfg",MainForm->cfg.ctrl_dir);
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
 	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Services Configuration";
+    TextFileEditForm->Caption="DNS-Blacklist Services";
 	TextFileEditForm->ShowModal();
     delete TextFileEditForm;
 }
@@ -475,7 +475,7 @@ void __fastcall TMailCfgDlg::DNSBLExemptionsButtonClick(TObject *Sender)
     sprintf(filename,"%sdnsbl_exempt.cfg",MainForm->cfg.ctrl_dir);
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
 	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Services Configuration";
+    TextFileEditForm->Caption="DNS-Blacklist Exemptions";
 	TextFileEditForm->ShowModal();
     delete TextFileEditForm;
 }
