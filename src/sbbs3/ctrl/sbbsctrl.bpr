@@ -140,7 +140,7 @@ CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
 FileVersion=3.16.1.3
 InternalName=
-LegalCopyright=(C) 2014 Rob Swindell
+LegalCopyright=(C) 2015 Rob Swindell
 LegalTrademarks=
 OriginalFilename=sbbsctrl.exe
 ProductName=Synchronet BBS
@@ -148,7 +148,7 @@ ProductVersion=3.16b
 Comments=
 
 [Excluded Packages]
-c:\borland\cbuilder6\Bin\dclite60.bpl=Borland Integrated Translation Environment
+c:\program files (x86)\borland\cbuilder6\Bin\dclite60.bpl=Borland Integrated Translation Environment
 
 [HistoryLists\hlIncludePath]
 Count=29
