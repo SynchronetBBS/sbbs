@@ -80,6 +80,10 @@ function main()
 		log(LOG_INFO,"message size > max_size (" + max_size + ")");
 		return;
 	}
+	if(system.findstr(system.ctrl_dir + "dnsbl_exempt.cfg", reverse_path)) {
+		log("Sender exempt from SPAM checking: " + reverse_path);
+		return;
+	}
 	var msg=new SPAMC_Message(message_text_filename, address, tcp_port, user);
 	if(msg.error != undefined) {
 		log(LOG_ERR,"!ERROR "+msg.error);
