@@ -4142,6 +4142,9 @@ void node_thread(void* arg)
 	sbbs->putnodedat(sbbs->cfg.node_num,&node);
 
 	{
+		/* crash here on Aug-4-2015:
+		node_thread_running already destroyed
+		bbs_thread() timed out waiting for 1 node thread(s) to terminate */
 		int32_t remain = protected_uint32_adjust(&node_threads_running, -1);
 		lprintf(LOG_INFO,"Node %d thread terminated (%u node threads remain, %lu clients served)"
 			,sbbs->cfg.node_num, remain, served);
