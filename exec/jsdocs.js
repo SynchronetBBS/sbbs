@@ -11,14 +11,15 @@ const li_tag =	"<li onclick = 'this.className = (this.className == \"showList\")
 				"\tonselectstart = 'event.returnValue = false;'" +
 				">";
 
-min_ver=0;
-max_ver=999999;
-total_methods=0;
-total_properties=0;
-table_depth=0;
-object_depth=0;
+var min_ver=0;
+var max_ver=999999;
+var total_methods=0;
+var total_properties=0;
+var table_depth=0;
+var object_depth=0;
 
-body = "";
+var body = "";
+var f;
 
 function docwrite(str)
 {
@@ -54,6 +55,9 @@ function verstr(ver)
 
 function document_methods(name,obj)
 {
+	var method;
+	var func;
+
 	if(obj._method_list == undefined)
 		return;
 
@@ -159,9 +163,10 @@ function document_properties(name, obj)
 {
 	var prop_name;
 	var count=0;
+	var prop;
 	var prop_num;
-
-	prop_hdr=false;
+	var prop_hdr=false;
+	var p;
 
 	p=0;
 	for(prop in obj) {
@@ -214,6 +219,8 @@ function document_properties(name, obj)
 
 function document_object(name, obj, type)
 {
+	var i;
+
 	if(obj._ver > max_ver)
 		return;
 
@@ -299,13 +306,14 @@ if(js.global.MsgBase != undefined)		document_object("MsgBase"	,new MsgBase(msg_a
 if(js.global.File != undefined)			document_object("File"		,new File(system.devnull), "class");
 if(js.global.Queue != undefined)		document_object("Queue"		,new Queue(), "class");
 if(js.global.Socket != undefined) {
-	sock=new Socket();
+	var sock=new Socket();
 	sock.close();
 	if(js.global.client != undefined)
 		sock.descriptor=client.socket.descriptor;
 	if(sock != undefined)		document_object("Socket"	,sock, "class");
 }
 if(js.global.COM != undefined) {
+	var com;
 	if(system.platform=="Win32")
 		com=new COM('COM1');
 	else
@@ -314,7 +322,7 @@ if(js.global.COM != undefined) {
 	if(com != undefined)		document_object("COM"	,com, "class");
 }
 if(js.global.CryptContext != undefined) {
-	cc = new CryptContext(CryptContext.ALGO.AES);
+	var cc = new CryptContext(CryptContext.ALGO.AES);
 	if(cc != undefined)			document_object("CryptContext",cc, "class");
 }
 
