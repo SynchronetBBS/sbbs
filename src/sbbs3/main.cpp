@@ -3042,6 +3042,7 @@ sbbs_t::sbbs_t(ushort node_num, SOCKADDR_IN addr, const char* name, SOCKET sd,
 	sysvar_pi=0;
 
 	cursub=NULL;
+	cursubnum=INVALID_SUB;
 	usrgrp=NULL;
 	usrsubs=NULL;
 	usrsub=NULL;
@@ -3050,6 +3051,7 @@ sbbs_t::sbbs_t(ushort node_num, SOCKADDR_IN addr, const char* name, SOCKET sd,
 	subscan=NULL;
 
 	curdir=NULL;
+	curdirnum=INVALID_SUB;
 	usrlib=NULL;
 	usrdirs=NULL;
 	usrdir=NULL;
