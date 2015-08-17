@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -51,14 +51,14 @@ enum {
 
 #ifdef BUILD_JSDOCS
 	static char* client_prop_desc[] = {
-	 "client's IP address (in dotted-decimal format)"
+	"instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
+	,"client's IP address (in dotted-decimal format)"
 	,"client's host name (up to 64 characters)"
 	,"client's TCP or UDP port number"
 	,"date/time of initial connection (in time_t format)"
 	,"protocol description (e.g. 'Telnet', 'FTP', etc.)"
 	,"user's name/alias (if logged in)"
 	/* this next one must be last */
-	,"instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
 	,NULL
 	};
 #endif
