@@ -50,19 +50,19 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <a href=#system_properties>properties</a>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
-<a href="#system.node_list"><b>system.node_list</b></a> array
-<ul>
-<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
-	onselectstart = 'event.returnValue = false;'>
-<a href=#system.node_list_properties>properties</a>
-</ul>
-<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
-	onselectstart = 'event.returnValue = false;'>
 <a href="#system.stats"><b>system.stats</b></a> object
 <ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
 <a href=#system.stats_properties>properties</a>
+</ul>
+<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
+	onselectstart = 'event.returnValue = false;'>
+<a href="#system.node_list"><b>system.node_list</b></a> array
+<ul>
+<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
+	onselectstart = 'event.returnValue = false;'>
+<a href=#system.node_list_properties>properties</a>
 </ul>
 </ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
@@ -943,100 +943,55 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>uptime</b><td>number
 <td>N/A
 <td>time/date system was brought online (in time_t format)
-</table>
-<h2><a name=system.node_list>system.node_list array</a>
-<br><font size=-1>BBS node listing</font>
-<font size=-1> - introduced in v3.10</font>
-</h2>
-<table border=1 width=100%>
-<caption align=left><b><tt>system.node_list</tt>
-<a name=system.node_list_properties> properties</a>
-</b></caption>
-<tr bgcolor=gray>
-<th align=left width=100>
-<font color="white">Name</font>
-<th align=left width=100>
-<font color="white">Type</font>
-<th align=left width=50>
-<font color="white">Ver</font>
-<th align=left>
-<font color="white">Description</font>
-<tr valign=top><td><b>status</b><td>number
-<td>3.10
-<td>status (see <tt>nodedefs.js</tt> for valid values)
-<tr valign=top><td><b>errors</b><td>number
-<td>3.10
-<td>error counter
-<tr valign=top><td><b>action</b><td>number
-<td>3.10
-<td>current user action (see <tt>nodedefs.js</tt>)
-<tr valign=top><td><b>useron</b><td>number
-<td>3.10
-<td>current user number
-<tr valign=top><td><b>connection</b><td>number
-<td>3.10
-<td>connection speed (<tt>0xffff</tt> = Telnet or RLogin)
-<tr valign=top><td><b>misc</b><td>number
-<td>3.10
-<td>miscellaneous bitfield (see <tt>nodedefs.js</tt>)
-<tr valign=top><td><b>aux</b><td>number
-<td>3.10
-<td>auxillary value
-<tr valign=top><td><b>extaux</b><td>number
-<td>3.10
-<td>extended auxillary value
-<tr valign=top><td><b>dir</b><td>string
-<td>3.15
-<td>node directory
-</table>
 <tr valign=top><td><b>full_version</b><td>string
-<td>3.10
-<td>days between forced password changes
+<td>N/A
+<td>Synchronet full version information (e.g. '3.10k Beta Debug')
 <tr valign=top><td><b>compiled_when</b><td>string
-<td>3.10
-<td>days to preserve deleted user records
+<td>N/A
+<td>date and time compiled
 <tr valign=top><td><b>version</b><td>string
-<td>3.11
-<td>last user record number in user database (includes deleted and inactive user records)
+<td>N/A
+<td>Synchronet version number (e.g. '3.10')
 <tr valign=top><td><b>revision</b><td>string
-<td>3.10
-<td>name of last user to logoff
+<td>N/A
+<td>Synchronet revision letter (e.g. 'k')
 <tr valign=top><td><b>beta_version</b><td>string
-<td>3.10
-<td>amount of free disk space (in bytes)
+<td>N/A
+<td>Synchronet alpha/beta designation (e.g. ' beta')
 <tr valign=top><td><b>version_notice</b><td>string
-<td>3.10
-<td>amount of free disk space (in kilobytes)
+<td>N/A
+<td>Synchronet version notice (includes version and platform)
 <tr valign=top><td><b>version_num</b><td>number
-<td>3.10
-<td>total number of BBS nodes
+<td>N/A
+<td>Synchronet version number in decimal (e.g. 31301 for v3.13b)
 <tr valign=top><td><b>version_hex</b><td>number
-<td>3.10
-<td>last displayable node number
+<td>N/A
+<td>Synchronet version number in hexadecimal (e.g. 0x31301 for v3.13b)
 <tr valign=top><td><b>platform</b><td>string
-<td>3.10
-<td>new user password
+<td>N/A
+<td>platform description (e.g. 'Win32', 'Linux', 'FreeBSD')
 <tr valign=top><td><b>architecture</b><td>string
-<td>3.10
-<td>new user magic word
+<td>N/A
+<td>architecture description (e.g. 'i386', 'i686', 'x86_64')
 <tr valign=top><td><b>msgbase_lib</b><td>string
-<td>3.10
-<td>new user level
+<td>N/A
+<td>message base library version information
 <tr valign=top><td><b>compiled_with</b><td>string
-<td>3.10
-<td>new user flag set #1
+<td>N/A
+<td>compiler used to build Synchronet
 <tr valign=top><td><b>copyright</b><td>string
-<td>3.10
-<td>new user flag set #2
+<td>N/A
+<td>Synchronet copyright display
 <tr valign=top><td><b>js_version</b><td>string
-<td>3.10
-<td>new user flag set #3
+<td>N/A
+<td>JavaScript engine version information
 <tr valign=top><td><b>os_version</b><td>string
-<td>3.10
-<td>new user flag set #4
+<td>N/A
+<td>operating system version information
 <tr valign=top><td><b>fido_addr_list</b><td>object
-<td>3.10
-<td>new user restriction flags
+<td>N/A
+<td>array of FidoNet Technology Network (FTN) addresses associated with this system
+</table>
 <h2><a name=system.stats>system.stats object</a>
 <br><font size=-1>System statistics</font>
 <font size=-1> - introduced in v3.10</font>
@@ -1105,6 +1060,51 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>new_users_today</b><td>number
 <td>3.10
 <td>new users today
+</table>
+<h2><a name=system.node_list>system.node_list array</a>
+<br><font size=-1>BBS node listing</font>
+<font size=-1> - introduced in v3.10</font>
+</h2>
+<table border=1 width=100%>
+<caption align=left><b><tt>system.node_list</tt>
+<a name=system.node_list_properties> properties</a>
+</b></caption>
+<tr bgcolor=gray>
+<th align=left width=100>
+<font color="white">Name</font>
+<th align=left width=100>
+<font color="white">Type</font>
+<th align=left width=50>
+<font color="white">Ver</font>
+<th align=left>
+<font color="white">Description</font>
+<tr valign=top><td><b>status</b><td>number
+<td>3.10
+<td>status (see <tt>nodedefs.js</tt> for valid values)
+<tr valign=top><td><b>errors</b><td>number
+<td>3.10
+<td>error counter
+<tr valign=top><td><b>action</b><td>number
+<td>3.10
+<td>current user action (see <tt>nodedefs.js</tt>)
+<tr valign=top><td><b>useron</b><td>number
+<td>3.10
+<td>current user number
+<tr valign=top><td><b>connection</b><td>number
+<td>3.10
+<td>connection speed (<tt>0xffff</tt> = Telnet or RLogin)
+<tr valign=top><td><b>misc</b><td>number
+<td>3.10
+<td>miscellaneous bitfield (see <tt>nodedefs.js</tt>)
+<tr valign=top><td><b>aux</b><td>number
+<td>3.10
+<td>auxillary value
+<tr valign=top><td><b>extaux</b><td>number
+<td>3.10
+<td>extended auxillary value
+<tr valign=top><td><b>dir</b><td>string
+<td>3.15
+<td>node directory
 </table>
 <h2><a name=server>server object</a>
 <br><font size=-1>Server-specifc properties</font>
