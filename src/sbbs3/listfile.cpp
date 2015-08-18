@@ -433,6 +433,7 @@ bool sbbs_t::listfile(const char *fname, const char *buf, uint dirnum
     uchar	alt;
     int		i,j;
     ulong	cdt;
+	off_t	size;
 
 	if(buf[F_MISC]!=ETX && (buf[F_MISC]-' ')&FM_EXTDESC && useron.misc&EXTDESC) {
 		getextdesc(&cfg,dirnum,datoffset,ext);
@@ -460,36 +461,45 @@ bool sbbs_t::listfile(const char *fname, const char *buf, uint dirnum
 		attr(cfg.color[clr_filedesc]);
 		bprintf("%c",letter); 
 	}
-	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexistcase(path)) {
-		exist=0;
-		attr(cfg.color[clr_err]); 
+	getrec(buf,F_CDT,LEN_FCDT,str);
+	cdt=atol(str);
+	if(cfg.dir[dirnum]->misc&DIR_FCHK) {
+		if(!fexistcase(path)) {
+			exist=0;
+			attr(cfg.color[clr_err]); 
+		}
+		else if((cfg.dir[dirnum]->misc&DIR_FREE) && (size=flength(path)) >= 0)
+			cdt = size;
 	}
 	else
 		attr(cfg.color[clr_filecdt]);
-	getrec(buf,F_CDT,LEN_FCDT,str);
-	cdt=atol(str);
 	if(useron.misc&BATCHFLAG) {
-		if(!cdt) {
+		if(!cdt && !(cfg.dir[dirnum]->misc&DIR_FREE)) {
 			attr(curatr^(HIGH|BLINK));
 			bputs("  FREE"); 
 		}
-		else {
-			if(cdt<1024)    /* 1k is smallest size */
-				cdt=1024;
-			if(cdt>(99999*1024))
-				bprintf("%5luM",cdt/(1024*1024));
-			else
-				bprintf("%5luk",cdt/1024L); } 
+		else if(cdt>=(1024*1024*1024))
+			bprintf("%5.1fG",cdt/(1024.0*1024.0*1024.0));
+		else if(cdt>=(1024*1024))
+			bprintf("%5.1fM",cdt/(1024.0*1024.0));
+		else if(cdt>=1024)
+			bprintf("%5.1fK",cdt/1024.0); 
+		else
+			bprintf("%5luB", cdt);
 	}
 	else {
-		if(!cdt) {  /* FREE file */
+		if(!cdt && !(cfg.dir[dirnum]->misc&DIR_FREE)) {  /* FREE file */
 			attr(curatr^(HIGH|BLINK));
 			bputs("   FREE"); 
 		}
-		else if(cdt>9999999L)
-			bprintf("%6luk",cdt/1024L);
+		else if(cdt>=(1024*1024*1024))
+			bprintf("%6.1fG",cdt/(1024.0*1024.0*1024.0));
+		else if(cdt>=(1024*1024))
+			bprintf("%6.1fM",cdt/(1024.0*1024.0));
+		else if(cdt>=1024)
+			bprintf("%6.1fK",cdt/1024.0); 
 		else
-			bprintf("%7lu",cdt); 
+			bprintf("%6luB", cdt);
 	}
 	if(exist)
 		outchar(' ');
