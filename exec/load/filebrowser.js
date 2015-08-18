@@ -40,7 +40,10 @@
 
 	Properties:
 
-	- 'path' - The directory currently being browsed (read-only)
+	- 'path' 	-	The directory currently being browsed
+				-	You can set this value on the fly to cause the browser to
+					jump to another directory.  (The new path must be at or
+					under the 'top' directory.)
 
 	Events:
 
@@ -328,7 +331,17 @@ var FileBrowser = function(options) {
 	}
 
 	this.__defineGetter__("path", function() { return properties.path; });
-	this.__defineSetter__("path", function() {});
+	this.__defineSetter__(
+		"path", function(path) {
+			if(typeof path != "string")
+				throw "FileBrowser.path: Invalid or no path supplied.";
+			path = backslash(fullpath(path));
+			if(path.length < properties.top.length || path.substr(0, properties.top.length) != properties.top)
+				throw "FileBrowser.path: Path must not be outside of the top-level directory.";
+			properties.path = path;
+			self.refresh();
+		}
+	);
 
 	this.open = function() {
 		init();
