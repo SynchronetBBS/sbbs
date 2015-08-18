@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -56,6 +56,8 @@ typedef struct {
 	WORD	pasv_port_low;
 	WORD	pasv_port_high;
     DWORD	options;			/* See FTP_OPT definitions */
+	uint32_t	min_fsize;		/* Minimum file size accepted for upload */
+	uint32_t	max_fsize;		/* Maximum file size accepted for upload (0=unlimited) */
 
 	void*	cbdata;				/* Private data passed to callbacks */ 
 

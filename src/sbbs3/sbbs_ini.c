@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -383,6 +383,10 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"QwkTimeout",FTP_DEFAULT_QWK_TIMEOUT);		/* seconds */
 		ftp->sem_chk_freq
 			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+		ftp->min_fsize
+			=iniGetBytes(list,section,"MinFileSize",1,0);
+		ftp->max_fsize
+			=iniGetBytes(list,section,"MaxFileSize",1,0);
 
 		/* Passive transfer settings (for stupid firewalls/NATs) */
 		ftp->pasv_ip_addr
@@ -821,6 +825,10 @@ BOOL sbbs_write_ini(
 		if(!iniSetShortInt(lp,section,strMaxInactivity,ftp->max_inactivity,&style))
 			break;
 		if(!iniSetShortInt(lp,section,"QwkTimeout",ftp->qwk_timeout,&style))
+			break;
+		if(!iniSetBytes(lp,section,"MinFileSize",1,ftp->min_fsize,&style))
+			break;
+		if(!iniSetBytes(lp,section,"MaxFileSize",1,ftp->max_fsize,&style))
 			break;
 
 		/* Passive transfer settings */
