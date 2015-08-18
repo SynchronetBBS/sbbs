@@ -202,7 +202,7 @@ var GalleryChooser = function() {
 			function(item) {
 				item.colors = settings;
 				frames.tree.addItem(
-					format("%-35s  %s", item.name, item.description),
+					format("%-32s %s", item.name, item.description),
 					function() {
 						state.browser.close();
 						state.browser = load(root + item.module, JSON.stringify(item));
