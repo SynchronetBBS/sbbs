@@ -7,6 +7,7 @@ echicken -at- bbs.electronicchicken.com
 2) Installation
 3) Customization
 4) Configure a local art or text file archive
+	4.1) ZIP files
 5) Connect your BBS to some online ANSI & ASCII art archives
 6) Develop your own browser module (or, "Nobody will ever do this")
 
@@ -142,6 +143,31 @@ echicken -at- bbs.electronicchicken.com
 	Future updates to ANSIView may introduce other optional per-directory
 	settings to ansiview.ini, such as access requirements.  The ansiview.ini
 	files will be hidden from all directory listings.
+
+	4.1) ZIP files
+
+		When a user selects a .zip file from the list, ANSIView will check to
+		see if a subdirectory already exists for that filename (minus the .zip
+		extension.)  If a subdirectory is found, the file browser will jump to
+		that directory.  If no subdirectory is found, ANSIView will attempt to
+		extract the archive.  If extraction succeeds, ANSIView will bring the
+		browser to the new subdirectory.
+
+		This means that you can download a bunch of artpacks without having to
+		unzip all of them.  ANSIView will extract them only as needed, as your
+		users browse the archive.
+
+		In order for this to work, you must have a copy of (or a symlink to)
+		'unzip' in your BBS' exec/ directory.  (Most installations of SBBS on
+		Windows will already have this.  On UNIX/Linux, you probably already
+		have InfoZIP or compatible installed for use with Synchronet, so just
+		create a symlink to 'unzip' in your exec/ directory.)
+
+		Once extracted, .zip files are not deleted - however they will be
+		hidden from future directory listings.
+
+		If you would prefer that ANSIView not attempt to extract .zip files,
+		then add '*.zip' to the 'hide' list as described above.
 
 5) Connect your BBS to some online ANSI & ASCII art archives
 
