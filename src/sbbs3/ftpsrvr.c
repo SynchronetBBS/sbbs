@@ -1630,6 +1630,8 @@ static void receive_thread(void* arg)
 	if(xfer.filepos+total < startup->min_fsize) {
 		lprintf(LOG_WARNING,"%04d DATA received %lu bytes for %s, less than minimum required (%lu bytes)"
 			,xfer.ctrl_sock, xfer.filepos+total, xfer.filename, startup->min_fsize);
+		sockprintf(xfer.ctrl_sock,"550 File size less than minimum required (%lu bytes)"
+			,startup->min_fsize);
 		error=TRUE;
 	}
 	if(error) {
