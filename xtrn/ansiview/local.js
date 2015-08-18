@@ -5,14 +5,25 @@
 		if(files.length < 1)
 			return;
 
+		files = files.filter(
+			function(file) {
+				var ext = file_getext(file);
+				if(typeof ext != "undefined" && ext.toLowerCase() == ".zip" && file_isdir(file.replace(ext, "")))
+					return false;
+				return true;
+			}
+		);
+
 		var path = files[0].replace(file_getname(files[0]), "");
 
-		if(!file_exists(path + "ansiview.ini"))
-			return;
-		var f = new File(path + "ansiview.ini");
-		f.open("r");
-		this.descriptions = f.iniGetObject("descriptions");
-		f.close();
+		if(file_exists(path + "ansiview.ini")) {
+			var f = new File(path + "ansiview.ini");
+			f.open("r");
+			this.descriptions = f.iniGetObject("descriptions");
+			f.close();
+		}
+
+		return files;
 
 	}
 
@@ -30,6 +41,19 @@
 		);
 		return ret;
 
+	}
+
+	var onSelect = function(file) {
+		var ext = file_getext(file);
+		if(typeof ext != "undefined" && ext.toLowerCase() == ".zip") {
+			var destDir = file.replace(ext, "");
+			if(!file_isdir(destDir))
+				system.exec(system.exec_dir + "unzip -o -qq " + file + " -d " + destDir);
+			if(file_isdir(destDir))
+				this.path = destDir;
+		} else {
+			printFile(file);
+		}
 	}
 
 	var args = JSON.parse(argv[0]);
@@ -53,7 +77,7 @@
 	);
 	fileBrowser.on("load", onLoad);
 	fileBrowser.on("file", onFile);
-	fileBrowser.on("fileSelect", printFile);
+	fileBrowser.on("fileSelect", onSelect);
 
 	return fileBrowser;
 
