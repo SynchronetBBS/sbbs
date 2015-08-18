@@ -48,7 +48,7 @@
 		if(typeof ext != "undefined" && ext.toLowerCase() == ".zip") {
 			var destDir = file.replace(ext, "");
 			if(!file_isdir(destDir))
-				system.exec(system.exec_dir + "unzip -o -qq '" + file + "' -d '" + destDir + "'");
+				system.exec(system.exec_dir + 'unzip -o -qq "' + file + '" -d "' + destDir + '"');
 			if(file_isdir(destDir))
 				this.path = destDir;
 		} else {
