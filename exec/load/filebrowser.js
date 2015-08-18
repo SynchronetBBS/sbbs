@@ -51,7 +51,8 @@
 		read but before the file list has been displayed.  Its callback 
 		function will be given one argument, an array of strings of the
 		complete paths of all files and subdirectories within the current
-		directory.
+		directory.  It must return this array - or a modified version
+		thereof - once complete.
 
 	-	'file' is an event that fires once for each file in the list, just
 		prior to the file being displayed. Its callback function will receive
@@ -163,7 +164,9 @@ var FileBrowser = function(options) {
 	};
 
 	var callbacks = {
-		'load' : function(list) {},
+		'load' : function(list) {
+			return list;
+		},
 		'file' : function(str) {
 			if(file_isdir(str))
 				return "[" + file_getname(str) + "]";
@@ -229,7 +232,7 @@ var FileBrowser = function(options) {
 		);
 
 		// Would rather use GLOB_APPEND here, but it crashes my BBS. :|
-		files = [].concat(
+		var files = [].concat(
 			directory(
 				properties.path + "*",
 				GLOB_ONLYDIR|GLOB_PERIOD
@@ -244,7 +247,7 @@ var FileBrowser = function(options) {
 				}
 			)
 		);
-		callbacks.load.apply(self, [files]);
+		files = callbacks.load.apply(self, [files]);
 
 		files.forEach(
 			function(item) {
