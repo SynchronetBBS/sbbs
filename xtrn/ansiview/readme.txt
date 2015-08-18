@@ -1,34 +1,240 @@
-ansiview.js - An ANSI art browser for Synchronet BBS v3.15+
-by echicken -at- bbs.electronicchicken.com
+ANSIView
+Browse and view text files, ANSI & ASCII art on Synchronet BBS 3.15+
+echicken -at- bbs.electronicchicken.com
 
-You can add  ansiview.js  as an external program  via SCFG,  or simply launch it
-from a Javascript shell with bbs.exec("?/sbbs/xtrn/ansiview/ansiview.js"); (your
-path may vary.)
+0) Introduction
+1) Prerequisites
+2) Installation
+3) Customization
+4) Configure a local art or text file archive
+5) Connect your BBS to some online ANSI & ASCII art archives
+6) Develop your own browser module (or, "Nobody will ever do this")
 
-By default, ansiview.js looks in its own directory (eg. /sbbs/xtrn/ansiview) for
-a subdirectory called "library" (eg. /sbbs/xtrn/ansiview/library).   This is the
-root  directory  of  your  ANSI  library,  and  can  contain an  entire tree  of
-directories containing ANSI/ASCII files or ZIP artpacks. You can specify another
-location by  editing  the ansiRoot  variable at the top of  ansiview.js.   Other 
-configurable variables are  present there  that will let you disallow files with 
-certain names and extensions from being opened and to change the look and output
-speed of this script.
+0) Introduction
 
-ansiview.ans and  help.ans are the graphics  for the file browser screen and the 
-help screen, respectively.  You can modify or replace them as you like, but bear 
-in mind  that if  your new  design changes  the location  of the path bar or the 
-location and  dimensions of the file list,  you will need to edit ansiview.js to 
-work within the new boundaries that you've set.   I can make it easier to change
-the size and location of the path bar and file list if there's demand for it.
+	ANSIView is a browser and viewer for text files, ANSI and ASCII art.  You
+	can present your users with a library of content local to your BBS, and
+	also connect to multiple online archives.  ANSIView uses a lightbar user-
+	interface which has been described as "okay".
 
-If a ZIP archive is  selected in the file browser,  ansiview.js will check for a 
-directory  matching the archive's  filename  less the ".zip"  extension.   If no
-matching  directory is found,  the archive will be unzipped into a new directory
-named as described above.  In either case,  the file browser will then load that
-directory. This feature might make it easier to use ansiview.js with an existing 
-collection of ANSI art residing in your BBS' file libraries.
+	Users can turn screen pausing on and off for the duration of their
+	ANSIView session, and can adjust the output speed of the displayed files.
+	When SyncTERM is in use, its native output speed emulation will be
+	employed.  When non-SyncTERM clients are in use, an attempt will be made
+	to simulate the desired output speed using server-side techniques.
 
-If you need support, post a message addressed to me in DOVENet Synchronet Sysops
-or DOVENet Synchronet  Programming (Javascript),  look for me in  #synchronet on
-irc.bbs-scene.org / irc.synchro.net,  or send an email to the address at the top
-of this file.
+	ANSIView won't do much of anything until you configure it, so please read
+	through this document in order to learn how to make ANSIView do stuff.
+	Feel free to skip over section 6.
+
+	ANSIView comes without any warranty, but if it ruins your life I promise
+	to feel kinda bad about it.
+
+1) Prerequisites
+
+	ANSIView should work with Synchronet BBS 3.15+.
+
+	If you're fairly certain that your system is up-to-date, just move ahead
+	to the Installation section.  Bear in mind that at least one dependency,
+	exec/load/filebrowser.js, is newer than the release of Synchronet 3.16c.
+
+	Grab the latest copies of the following files from the Synchronet CVS:
+
+		exec/load/funclib.js
+		exec/load/frame.js
+		exec/load/tree.js
+		exec/load/scrollbar.js
+		exec/load/filebrowser.js
+		exec/load/http.js
+
+	You can find them via the CVS web interface here:
+
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/load/
+
+	Or just use your usual CVS update method, backing up first, etc.
+
+2) Installation
+
+	In SCFG (BBS -> Configure from the Synchronet Control Panel on Windows),
+	go to External Programs -> Online Programs (Doors), choose a section to
+	add this program to, and then create a new entry in that section with
+	the following details:
+
+		Name:						ANSIView
+		Internal Code:				ANSIVIEW
+		Start-up Directory:			../xtrn/ansiview
+		Command Line:				?ansiview.js
+		Multiple Concurrent Users:	Yes
+
+	All other settings can be left at their default values.
+
+3) Customization
+
+	Open the file 'xtrn/ansiview/settings.ini' with a text editor.  You'll see
+	that the root section has the following default values:
+
+		border = LIGHTBLUE,CYAN,LIGHTCYAN,WHITE
+		fg = WHITE
+		bg = BG_BLACK
+		lfg = WHITE
+		lbg = BG_CYAN
+		sfg = WHITE
+		sbg = BG_BLUE
+
+	The 'border' value can be a single color-name, or a comma-separated list
+	of color names.  You can find valid color names in exec/load/sbbsdefs.js.
+
+	The other values must be single color names, and they are as follows:
+
+		- 'fg' is the foreground color of a non-highlighted list item
+		- 'bg' is the background color of a non-highlighted list item
+		- 'lfg' is the foreground color of a highlighted list item
+		- 'lbg' is the background color of a highlighted list item
+		- 'sfg' is the foreground color of the path & status bars
+		- 'sbg' is the background color of the path & status bars
+
+	Any additional sections in 'settings.ini' will be treated as configuration
+	sections for local or online art archives.
+
+4) Configure a local art or text file archive
+
+	The following example section of 'xtrn/ansiview/settings.ini' is commented
+	out by default:
+
+		;[ANSI Gallery]
+		;description = A local archive of ANSI and ASCII artwork
+		;module = local.js
+		;path = /path/to/my/ansi/art/collection
+		;hide = *.exe,*.com
+
+	You can enable this section by removing the semicolons from the start of
+	each line.
+
+	To point this section at a local directory containing your archive of
+	art and/or text files, edit the 'path' value accordingly.
+
+	You can make copies of this section and point them at different directories
+	in order to list multiple distinct local libraries from ANSIView's main
+	menu.
+
+	Don't modify the 'module' line unless you know what you're doing.  The
+	'local.js' module invokes and configures a filesystem browser specifically
+	for use with ANSIView.
+
+	The 'hide' value is a comma-separated list of wildcard-patterns that will
+	be used to identify files that should be hidden from users. These patterns
+	are not case-sensitive.  The * and ? wildcards are supported.  You can add
+	as many patterns to the list as you like, but it's recommended that you
+	do not delete any of the default expressions.
+
+	Each directory and subdirectory within your local archive can contain an
+	'ansiview.ini' file.  This file can contain a 'descriptions' section
+	which maps the names of files in that directory to a description of the
+	file, like so:
+
+	[descriptions]
+	hugewang.ans = A large ANSI drawing of a Wang 2200 computer.
+	boobies = A directory full of pictures of blue-footed boobies.
+
+	The keys of the 'descriptions' section (ie. the filenames) must be in
+	lowercase.
+
+	Future updates to ANSIView may introduce other optional per-directory
+	settings to ansiview.ini, such as access requirements.  The ansiview.ini
+	files will be hidden from all directory listings.
+
+5) Connect your BBS to some online ANSI & ASCII art archives
+
+	The following two sections of 'xtrn/ansiview/settings.ini' are commented
+	out by default:
+
+		;[sixteencolors.net]
+		;description = An online ANSI and ASCII artwork archive
+		;module = sixteencolors.js
+		;cache = true
+		;cachettl = 86400
+
+		;[thescene.electronicchicken.com]
+		;description = An online ANSI and ASCII artwork archive
+		;module = thescene.js
+		;cache = true
+		;cachettl = 86400
+
+	You can enable access either or both of these online archives by
+	removing the semicolons from the beginning of each line of the
+	applicable section(s).
+
+	Please consider leaving the 'cache' value set to 'true' (without quotes),
+	as this will reduce the amount of traffic between your system and the
+	online archive.
+
+	If caching is enabled, each file that your user opens on the online
+	archive will be downloaded and saved to your local system, and it will
+	not be deleted unless you take steps to do so manually.  The caches are
+	stored in 'xtrn/ansiview/.cache/'.  If they start to consume too much
+	space, you can delete them without causing any problems.
+
+	The 'cachettl' value determines the time-to-live, in seconds, for cached
+	web API responses.  Data will be refreshed after this amount of time
+	passes.  (Note that this applies to things like file lists, and not to
+	files themselves.)  86400 seconds is 24 hours.
+
+	Some caching is done either way, but if 'cache' is set to false, the
+	cache will be cleared after your user logs off.
+
+6) Develop your own browser module
+	-or-
+6) Nobody will ever do this
+
+	Each non-root section of settings.ini describes a 'browser module'.  When
+	a user selects that module from ANSIView's main menu, the script pointed
+	at by the 'module' setting is loaded.  One argument is passed to that
+	script, which is a JSON string of the module's section of 'settings.ini',
+	with an additional property ('colors') comprised of the root section of
+	settings.ini.  (See 'local.js' for a basic example of handling this
+	argument.)
+
+	The loaded script must return an instance of an object that responds to
+	the following method calls:
+
+		- .open()
+			-	Open the browser and draw it in the user's terminal
+		- .cycle()
+			-	Perform any regular housekeeping tasks
+			-	This will be called every time through ANSIView's main loop
+		- .refresh()
+			-	Redraw the browser on the screen
+		- .getcmd(cmd)
+			-	Handle a string of input from the user (usually one character)
+		- .close()
+			-	Close the browser and remove it from the user's terminal
+
+	The following globals will be available to the module:
+
+		- root
+			-	The full path to ANSIView's startup directory
+		- browserFrame
+			-	An instance of Frame (exec/load/frame.js) which the browser
+				should use as a parent frame for any of its own frames.
+		- printFile(file)
+			-	A function that prints a file to the user's terminal, with
+				knowledge of ANSIView's current settings re: speed & pausing
+			-	'file' is the full path to the file to be displayed
+
+	For an example of returning an instance of an object from a load() call,
+	see local.js, or read up on self-executing anonymous functions in JS.
+
+	For consistency's sake, all browser modules should ideally use:
+
+		- Frame
+			- exec/load/frame.js
+		- Tree
+			- exec/load/tree.js
+		- ScrollBar
+			- exec/load/scrollbar.js
+
+	If the module uses a path/address bar, it should get its color settings
+	from JSON.parse(argv[0]).colors.sfg/sbg.
+
+	The module's file-list Tree should take its tree.colors.fg/bg/lfg/lbg
+	settings from JSON.parse(argv[0]).colors.fg/bg/lfg/lbg.
