@@ -90,6 +90,8 @@ Source: "stock\web\*";    DestDir: "{app}\web";   Flags: ignoreversion recursesu
 Source: "stock\web\root\error\*";    DestDir: "{app}\web\root\ecwebv3\error";   Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
 Source: "stock\web\root\icons\*";    DestDir: "{app}\web\root\ecwebv3\icons";   Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
 Source: "s:\sbbs\xtrn\sbl\*.exe";   DestDir: "{app}\xtrn\sbl"; Flags: ignoreversion
+Source: "c:\bin\zip.exe"; DestDir: "{app}\exec";  Flags: ignoreversion
+Source: "c:\bin\unzip.exe"; DestDir: "{app}\exec";  Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
