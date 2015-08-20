@@ -1203,7 +1203,7 @@ static void js_static_service_thread(void* arg)
 		sprintf(spath,"%s%s",scfg.exec_dir,fname);
 
 	do {
-		if((js_cx=js_initcx(js_runtime,0,&service_client,&js_glob))==NULL) {
+		if((js_cx=js_initcx(js_runtime,INVALID_SOCKET,&service_client,&js_glob))==NULL) {
 			lprintf(LOG_ERR,"!%s ERROR initializing JavaScript context"
 				,service->protocol);
 			break;
