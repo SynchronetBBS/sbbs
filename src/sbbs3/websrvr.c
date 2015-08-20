@@ -2777,13 +2777,13 @@ static int is_dynamic_req(http_session_t* session)
 
 static void remove_port_part(char *host)
 {
-	void *p;
+	char *p;
 
 	for(p=strchr(host, 0); p >= host; p--) {
 		if (!isdigit(*p))
 			return;
 		if (*p == ':') {
-			*p0;
+			*p = 0;
 			return;
 		}
 	}
