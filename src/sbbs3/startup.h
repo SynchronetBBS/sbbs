@@ -64,7 +64,9 @@ typedef struct {
 	char	temp_dir[INI_MAX_VALUE_LEN];
 	char	host_name[INI_MAX_VALUE_LEN];
 	ushort	sem_chk_freq;
-	ulong	interface_addr;
+	struct in_addr		outgoing4;
+	struct in6_addr	outgoing6;
+	str_list_t		interfaces;
 	int		log_level;
 	js_startup_t js;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
@@ -87,10 +89,12 @@ typedef struct {
 	WORD	outbuf_highwater_mark;	/* output block size control */
 	WORD	outbuf_drain_timeout;
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
-    uint32_t   telnet_interface;
+	struct in_addr outgoing4;
+	struct in6_addr	outgoing6;
+    str_list_t	telnet_interfaces;
     uint32_t	options;			/* See BBS_OPT definitions */
-    DWORD	rlogin_interface;
-	DWORD	ssh_interface;
+    str_list_t	rlogin_interfaces;
+    str_list_t	ssh_interfaces;
     RingBuf** node_spybuf;			/* Spy output buffer (each node)	*/
     RingBuf** node_inbuf;			/* User input buffer (each node)	*/
     sem_t**	node_spysem;			/* Spy output semaphore (each node)	*/
@@ -154,8 +158,9 @@ static struct init_field {
 	,OFFSET_AND_SIZE(bbs_startup_t,last_node)
 	,OFFSET_AND_SIZE(bbs_startup_t,telnet_port)
 	,OFFSET_AND_SIZE(bbs_startup_t,rlogin_port)
-	,OFFSET_AND_SIZE(bbs_startup_t,telnet_interface)
-	,OFFSET_AND_SIZE(bbs_startup_t,rlogin_interface)
+	,OFFSET_AND_SIZE(bbs_startup_t,telnet_interfaces)
+	,OFFSET_AND_SIZE(bbs_startup_t,rlogin_interfaces)
+	,OFFSET_AND_SIZE(bbs_startup_t,ssh_interfaces)
 	,OFFSET_AND_SIZE(bbs_startup_t,ctrl_dir)
 	,OFFSET_AND_SIZE(bbs_startup_t,temp_dir)
 	,{ 0,0 }	/* terminator */

@@ -3379,7 +3379,6 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 	struct		timeval tv = {0, 0};
 	jsuint		i;
     jsuint      limit;
-	SOCKET*		index;
 	jsval		val;
 	int			len=0;
 	jsrefcount	rc;
@@ -3405,9 +3404,6 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
     if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
 		return(JS_FALSE);
 
-	if((index=(SOCKET *)malloc(sizeof(SOCKET)*limit))==NULL)
-		return(JS_FALSE);
-
 	FD_ZERO(&socket_set);
 	if(poll_for_write)
 		wr_set=&socket_set;
@@ -3417,10 +3413,8 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
     for(i=0;i<limit;i++) {
         if(!JS_GetElement(cx, inarray, i, &val))
 			break;
-		sock=js_socket(cx,val);
-		index[i]=sock;
+		sock=js_socket_add(cx,val,&socket_set);
 		if(sock!=INVALID_SOCKET) {
-			FD_SET(sock,&socket_set);
 			if(sock>maxsock)
 				maxsock=sock;
 		}
@@ -3428,9 +3422,10 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(select(maxsock+1,rd_set,wr_set,NULL,&tv) >= 0) {
-
 		for(i=0;i<limit;i++) {
-			if(index[i]!=INVALID_SOCKET && FD_ISSET(index[i],&socket_set)) {
+        	if(!JS_GetElement(cx, inarray, i, &val))
+				break;
+			if(js_socket_isset(cx,val,&socket_set)) {
 				val=INT_TO_JSVAL(i);
 				JS_RESUMEREQUEST(cx, rc);
    				if(!JS_SetElement(cx, rarray, len++, &val)) {
@@ -3443,7 +3438,6 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(rarray));
 	}
-	free(index);
 	JS_RESUMEREQUEST(cx, rc);
 
     return(JS_TRUE);
@@ -3572,36 +3566,80 @@ js_strftime(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+/* TODO: IPv6 */
 static JSBool
 js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	struct in_addr addr;
 	JSString*	str;
-	char*		p;
+	char*		p=NULL;
 	jsrefcount	rc;
+	struct addrinfo	hints,*res,*cur;
+	char		ip_str[INET6_ADDRSTRLEN];
+	BOOL		want_array=FALSE;
+	JSObject	*rarray;
+	unsigned	alen=0;
+	uintN		argn;
+	jsval		val;
+	int			result;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
 	if(argc==0 || JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
-	HANDLE_PENDING(cx);
-	if(p==NULL) 
+	for(argn=0; argn < argc; argn++) {
+		if(JSVAL_IS_BOOLEAN(argv[argn]))
+			want_array = JSVAL_TO_BOOLEAN(argv[argn]);
+		else if(JSVAL_IS_STRING(argv[argn])) {
+			if(p)
+				free(p);
+			JSVALUE_TO_MSTRING(cx, argv[argn], p, NULL)
+			HANDLE_PENDING(cx);
+		}
+	}
+	if(p==NULL)
 		return(JS_TRUE);
 
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = AI_ADDRCONFIG;
+	hints.ai_socktype = SOCK_STREAM;
 	rc=JS_SUSPENDREQUEST(cx);
-	addr.s_addr=resolve_ip(p);
+	if((result=getaddrinfo(p, NULL, &hints, &res))!=0) {
+		lprintf(LOG_ERR, "!ERROR resolve_ip %s failed with error %d",p, result);
+		JS_RESUMEREQUEST(cx, rc);
+		free(p);
+		return JS_TRUE;
+	}
 	free(p);
-	JS_RESUMEREQUEST(cx, rc);
-	if(addr.s_addr==INADDR_NONE)
-		return(JS_TRUE);
-	
-	if((str=JS_NewStringCopyZ(cx, inet_ntoa(addr)))==NULL)
-		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
+	if(want_array) {
+		JS_RESUMEREQUEST(cx, rc);
+		if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
+			return(JS_FALSE);
+		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(rarray));
+		for(cur=res; cur; cur=cur->ai_next) {
+			inet_addrtop((void *)cur->ai_addr, ip_str, sizeof(ip_str));
+			if((str=JS_NewStringCopyZ(cx, ip_str))==NULL) {
+				freeaddrinfo(res);
+				return(JS_FALSE);
+			}
+			val = STRING_TO_JSVAL(str);
+			if(!JS_SetElement(cx, rarray, alen++, &val))
+				break;
+		}
+		freeaddrinfo(res);
+	}
+	else {
+		inet_addrtop((void *)res->ai_addr, ip_str, sizeof(ip_str));
+		freeaddrinfo(res);
+		JS_RESUMEREQUEST(cx, rc);
+
+		if((str=JS_NewStringCopyZ(cx, ip_str))==NULL)
+			return(JS_FALSE);
+
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
+	}
 	return(JS_TRUE);
 }
 
@@ -3610,10 +3648,10 @@ static JSBool
 js_resolve_host(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	struct in_addr addr;
-	HOSTENT*	h;
 	char*		p;
 	jsrefcount	rc;
+	struct addrinfo	hints,*res;
+	char		host_name[256];
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -3622,17 +3660,29 @@ js_resolve_host(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx);
-	if(p==NULL) 
+	if(p==NULL)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	addr.s_addr=inet_addr(p);
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = AI_NUMERICHOST;
+	if(getaddrinfo(p, NULL, NULL, &res)!=0) {
+		free(p);
+		JS_RESUMEREQUEST(cx, rc);
+		return(JS_TRUE);
+	}
 	free(p);
-	h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = NI_NAMEREQD;
+	if(getnameinfo(res->ai_addr, res->ai_addrlen, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD)!=0) {
+		JS_RESUMEREQUEST(cx, rc);
+		return(JS_TRUE);
+	}
 	JS_RESUMEREQUEST(cx, rc);
 
-	if(h!=NULL && h->h_name!=NULL)
-		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,h->h_name)));
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,host_name)));
+	freeaddrinfo(res);
 
 	return(JS_TRUE);
 
@@ -4000,8 +4050,9 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"gethostbyname",	js_resolve_ip,		1,	JSTYPE_ALIAS },
-	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("hostname")
-	,JSDOCSTR("resolve IP address of specified hostname (AKA gethostbyname)")
+	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("hostname [,array=<tt>false</tt>]")
+	,JSDOCSTR("resolve IP address of specified hostname (AKA gethostbyname).  If array is true (added in 3.17), will return "
+	"an array of all addresses rather than just the first one")
 	,311
 	},
 	{"gethostbyaddr",	js_resolve_host,	1,	JSTYPE_ALIAS },

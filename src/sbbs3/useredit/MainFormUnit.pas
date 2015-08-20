@@ -266,8 +266,8 @@ const					    { String lengths					   	    }
     LEN_TITLE		=70;	{ Message title							    }
     LEN_MAIN_CMD	=40;	{ Storage in user.dat for custom commands	}
     LEN_XFER_CMD	=40;
-    LEN_SCAN_CMD	=40;
-    LEN_MAIL_CMD	=40;
+    LEN_SCAN_CMD	=35;
+    LEN_IPADDR		=45;
     LEN_CID 		=25;	{ Caller ID (phone number) 				    }
     LEN_ARSTR		=40;	{ Max length of Access Requirement string	}
     LEN_CHATACTCMD	=9;	    { Chat action command				   	    }
@@ -335,8 +335,8 @@ const
     U_MAIN_CMD	=U_CMDSET+2+2; 	{ unused }
     U_XFER_CMD	=U_MAIN_CMD+LEN_MAIN_CMD; 		{ unused }
     U_SCAN_CMD	=U_XFER_CMD+LEN_XFER_CMD+2;  	{ unused }
-    U_MAIL_CMD	=U_SCAN_CMD+LEN_SCAN_CMD; 		{ unused }
-    U_FREECDT	=U_MAIL_CMD+LEN_MAIL_CMD+2;
+    U_IPADDR	=U_SCAN_CMD+LEN_SCAN_CMD; 		{ unused }
+    U_FREECDT	=U_IPADDR+LEN_IPADDR+2;
     U_FLAGS3	=U_FREECDT+10; 	{ Flag set #3 }
     U_FLAGS4	=U_FLAGS3+8;	{ Flag set #4 }
     U_XEDIT 	=U_FLAGS4+8; 	{ External editor (code)  }

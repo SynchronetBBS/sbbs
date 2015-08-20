@@ -845,9 +845,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     bbs_startup.last_node=4;
 	bbs_startup.options=BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE;
 	bbs_startup.telnet_port=IPPORT_TELNET;
-    bbs_startup.telnet_interface=INADDR_ANY;
     bbs_startup.rlogin_port=513;
-    bbs_startup.rlogin_interface=INADDR_ANY;
 	bbs_startup.lputs=lputs;
     bbs_startup.event_lputs=lputs;
     bbs_startup.errormsg=errormsg;
@@ -867,7 +865,6 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     mail_startup.smtp_port=IPPORT_SMTP;
     mail_startup.relay_port=IPPORT_SMTP;
     mail_startup.pop3_port=110;
-    mail_startup.interface_addr=INADDR_ANY;
 	mail_startup.lputs=lputs;
     mail_startup.errormsg=errormsg;
     mail_startup.status=mail_status;
@@ -890,7 +887,6 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     ftp_startup.size=sizeof(ftp_startup);
     ftp_startup.cbdata=&ftp_log_list;
     ftp_startup.port=IPPORT_FTP;
-    ftp_startup.interface_addr=INADDR_ANY;
 	ftp_startup.lputs=lputs;
     ftp_startup.errormsg=errormsg;
     ftp_startup.status=ftp_status;
@@ -927,7 +923,6 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
     services_startup.cbdata=&services_log_list;
-    services_startup.interface_addr=INADDR_ANY;
     services_startup.lputs=lputs;
     services_startup.errormsg=errormsg;
     services_startup.status=services_status;
@@ -2018,10 +2013,12 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("JS_YieldInterval"))
             global.js.yield_interval=Registry->ReadInteger("JS_YieldInterval");
 
+/*
         if(Registry->ValueExists("TelnetInterface"))
             bbs_startup.telnet_interface=Registry->ReadInteger("TelnetInterface");
         if(Registry->ValueExists("RLoginInterface"))
             bbs_startup.rlogin_interface=Registry->ReadInteger("RLoginInterface");
+*/
 
         if(Registry->ValueExists("TelnetPort"))
             bbs_startup.telnet_port=Registry->ReadInteger("TelnetPort");
@@ -2060,8 +2057,10 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("MailMaxInactivity"))
             mail_startup.max_inactivity=Registry->ReadInteger("MailMaxInactivity");
 
+/*
         if(Registry->ValueExists("MailInterface"))
             mail_startup.interface_addr=Registry->ReadInteger("MailInterface");
+*/
 
         if(Registry->ValueExists("MailMaxDeliveryAttempts"))
             mail_startup.max_delivery_attempts
@@ -2140,8 +2139,10 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("FtpQwkTimeout"))
             ftp_startup.qwk_timeout=Registry->ReadInteger("FtpQwkTimeout");
 
+/*
         if(Registry->ValueExists("FtpInterface"))
             ftp_startup.interface_addr=Registry->ReadInteger("FtpInterface");
+*/
 
         if(Registry->ValueExists("FtpPort"))
             ftp_startup.port=Registry->ReadInteger("FtpPort");
@@ -2173,9 +2174,11 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("FtpOptions"))
             ftp_startup.options=Registry->ReadInteger("FtpOptions");
 
+/*
         if(Registry->ValueExists("ServicesInterface"))
             services_startup.interface_addr
                 =Registry->ReadInteger("ServicesInterface");
+*/
 
         if(Registry->ValueExists("ServicesAnswerSound"))
             SAFECOPY(services_startup.answer_sound

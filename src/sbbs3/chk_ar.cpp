@@ -631,7 +631,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				if(client!=NULL)
 					p=client->addr;
 				else
-					p=user->note;
+					p=user->ipaddr;
 				if(!findstr_in_string(p,(char*)*ptrptr))
 					result=_not;
 				else

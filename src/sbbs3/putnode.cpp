@@ -69,7 +69,7 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 				,getage(&cfg,useron.birth)
 				,useron.sex
 				,useron.comp
-				,useron.note
+				,useron.ipaddr
 				,unixtodstr(&cfg,useron.firston,firston)
 				,node->aux&0xff
 				,node->connection

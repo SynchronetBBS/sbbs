@@ -1165,7 +1165,11 @@ static void show_usage(char *cmd)
 /****************************************************************************/
 /* Main Entry Point															*/
 /****************************************************************************/
+#ifdef BUILD_JSDOCS
+int CIOLIB_main(int argc, char** argv)
+#else
 int main(int argc, char** argv)
+#endif
 {
 	int		i;
 	int		n;
@@ -2063,16 +2067,19 @@ int main(int argc, char** argv)
 						struct tm			tm;
 						list_node_t*		node;
 						login_attempt_t*	login_attempt;
+						char				ip_addr[INET6_ADDRSTRLEN];
 
 					    listLock(&login_attempt_list);
 						count=0;
 						for(node=login_attempt_list.first; node!=NULL; node=node->next) {
 							login_attempt=node->data;
 							localtime32(&login_attempt->time,&tm);
+							if(inet_addrtop(&login_attempt->addr, ip_addr, sizeof(ip_addr))==NULL)
+								strcpy(ip_addr, "<invalid address>");
 							printf("%lu attempts (%lu duplicate) from %s, last via %s on %u/%u %02u:%02u:%02u (user: %s, password: %s)\n"
 								,login_attempt->count
 								,login_attempt->dupes
-								,inet_ntoa(login_attempt->addr)
+								,ip_addr
 								,login_attempt->prot
 								,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec
 								,login_attempt->user

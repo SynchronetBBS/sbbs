@@ -95,14 +95,14 @@ void sbbs_t::userlist(long mode)
 			}
 			sprintf(name,"%s #%d",user.alias,i);
 			sprintf(line[j],text[UserListFmt],name
-				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
+				,cfg.sys_misc&SM_LISTLOC ? user.location : user.ipaddr
 				,unixtodstr(&cfg,user.laston,tmp)
 				,user.modem); 
 		}
 		else {
 			sprintf(name,"%s #%u",user.alias,i);
 			bprintf(text[UserListFmt],name
-				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
+				,cfg.sys_misc&SM_LISTLOC ? user.location : user.ipaddr
 				,unixtodstr(&cfg,user.laston,tmp)
 				,user.modem); 
 		}

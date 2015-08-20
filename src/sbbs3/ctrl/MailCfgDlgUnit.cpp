@@ -75,14 +75,14 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
 {
     char str[128];
 
-    if(MainForm->mail_startup.interface_addr==0)
+    if(MainForm->mail_startup.outgoing4.s_addr==0)
         NetworkInterfaceEdit->Text="<ANY>";
     else {
         sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->mail_startup.interface_addr>>24)&0xff
-            ,(MainForm->mail_startup.interface_addr>>16)&0xff
-            ,(MainForm->mail_startup.interface_addr>>8)&0xff
-            ,MainForm->mail_startup.interface_addr&0xff
+            ,(MainForm->mail_startup.outgoing4.s_addr>>24)&0xff
+            ,(MainForm->mail_startup.outgoing4.s_addr>>16)&0xff
+            ,(MainForm->mail_startup.outgoing4.s_addr>>8)&0xff
+            ,MainForm->mail_startup.outgoing4.s_addr&0xff
         );
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
@@ -233,9 +233,9 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         while(*p && *p!='.') p++;
         if(*p=='.') p++;
         addr|=atoi(p);
-        MainForm->mail_startup.interface_addr=addr;
+        MainForm->mail_startup.outgoing4.s_addr=addr;
     } else
-        MainForm->mail_startup.interface_addr=0;
+        MainForm->mail_startup.outgoing4.s_addr=0;
 
 	MainForm->mail_startup.smtp_port=SMTPPortEdit->Text.ToIntDef(IPPORT_SMTP);
    	MainForm->mail_startup.submission_port=SubPortEdit->Text.ToIntDef(IPPORT_SUBMISSION);

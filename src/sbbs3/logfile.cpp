@@ -37,12 +37,13 @@
 
 #include "sbbs.h"
 
-extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, char* host, SOCKADDR_IN* addr)
+extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, char* host, union xp_sockaddr* addr)
 {
 	char	hdr[1024];
 	char	tstr[64];
 	char	fname[MAX_PATH+1];
 	int		file;
+	char	ip[INET6_ADDRSTRLEN];
 	time32_t now=time32(NULL);
 
 	sprintf(fname,"%shack.log",cfg->logs_dir);
@@ -50,13 +51,14 @@ extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text,
 	if((file=sopen(fname,O_CREAT|O_RDWR|O_BINARY|O_APPEND,SH_DENYWR,DEFFILEMODE))==-1)
 		return(FALSE);
 
+	inet_addrtop(addr, ip, sizeof(ip));
 	sprintf(hdr,"SUSPECTED %s HACK ATTEMPT for user '%s' on %.24s\r\nUsing port %u at %s [%s]\r\nDetails: "
 		,prot
 		,user
 		,timestr(cfg,now,tstr)
-		,addr->sin_port
+		,inet_addrport(addr)
 		,host
-		,inet_ntoa(addr->sin_addr)
+		,ip
 		);
 	write(file,hdr,strlen(hdr));
 	write(file,text,strlen(text));

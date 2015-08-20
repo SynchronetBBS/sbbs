@@ -58,14 +58,14 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
     char str[128];
     char** p;
 
-    if(MainForm->web_startup.interface_addr==0)
+    if(MainForm->web_startup.outgoing4.s_addr==0)
         NetworkInterfaceEdit->Text="<ANY>";
     else {
         sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->web_startup.interface_addr>>24)&0xff
-            ,(MainForm->web_startup.interface_addr>>16)&0xff
-            ,(MainForm->web_startup.interface_addr>>8)&0xff
-            ,MainForm->web_startup.interface_addr&0xff
+            ,(MainForm->web_startup.outgoing4.s_addr>>24)&0xff
+            ,(MainForm->web_startup.outgoing4.s_addr>>16)&0xff
+            ,(MainForm->web_startup.outgoing4.s_addr>>8)&0xff
+            ,MainForm->web_startup.outgoing4.s_addr&0xff
         );
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
@@ -140,10 +140,10 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
         while(*p && *p!='.') p++;
         if(*p=='.') p++;
         addr|=atoi(p);
-        MainForm->web_startup.interface_addr=addr;
+        MainForm->web_startup.outgoing4.s_addr=addr;
     } else
-        MainForm->web_startup.interface_addr=0;
-    MainForm->web_startup.max_clients=MaxClientsEdit->Text.ToIntDef(0);
+        MainForm->web_startup.outgoing4.s_addr=0;
+    MainForm->web_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
     MainForm->web_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(WEB_DEFAULT_MAX_INACTIVITY);
     MainForm->web_startup.port=PortEdit->Text.ToIntDef(IPPORT_HTTP);
     MainForm->WebAutoStart=AutoStartCheckBox->Checked;

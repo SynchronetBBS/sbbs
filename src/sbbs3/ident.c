@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "ident.h"
 
-BOOL identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
+BOOL identify(union xp_sockaddr *client_addr, u_short local_port, char* buf
 			   ,size_t maxlen, int timeout)
 {
 	char		req[128];
@@ -47,11 +47,13 @@ BOOL identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 	int			rd;
 	ulong		val;
 	SOCKET		sock=INVALID_SOCKET;
-	SOCKADDR_IN	addr;
+	union xp_sockaddr	addr;
 	struct timeval	tv;
 	fd_set			socket_set;
 	BOOL		success=FALSE;
 
+	if(client_addr->addr.sa_family != AF_INET && client_addr->addr.sa_family != AF_INET6)
+		return FALSE;
 	if(timeout<=0)
 		timeout=IDENT_DEFAULT_TIMEOUT;
 
@@ -64,10 +66,10 @@ BOOL identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 		val=1;
 		ioctlsocket(sock,FIONBIO,&val);	
 
-		addr=*client_addr;
-		addr.sin_port=htons(IPPORT_IDENT);
+		memcpy(&addr, client_addr, xp_sockaddr_len(client_addr));
+		inet_setaddrport(&addr, IPPORT_IDENT);
 
-		result=connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+		result=connect(sock, &addr.addr, xp_sockaddr_len(&addr));
 
 		if(result==SOCKET_ERROR
 			&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
@@ -99,7 +101,7 @@ BOOL identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 			break;
 		}
 
-		sprintf(req,"%u,%u\r\n", ntohs(client_addr->sin_port), local_port);
+		sprintf(req,"%u,%u\r\n", inet_addrport(client_addr), local_port);
 		if(sendsocket(sock,req,strlen(req))!=(int)strlen(req)) {
 			sprintf(buf,"ERROR %d sending request",ERROR_VALUE);
 			break;

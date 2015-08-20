@@ -1658,6 +1658,12 @@ int sbbs_t::exec(csi_t *csi)
 							,useron.phone);
 						csi->logic=LOGIC_TRUE;
 						break;
+					case USER_STRING_IPADDR:
+						sprintf(useron.ipaddr,"%.*s",LEN_IPADDR,csi->str);
+						putuserrec(&cfg,useron.number,U_IPADDR,LEN_IPADDR
+							,useron.phone);
+						csi->logic=LOGIC_TRUE;
+						break;
 					case USER_STRING_COMMENT:
 						sprintf(useron.comment,"%.*s",LEN_COMMENT,csi->str);
 						putuserrec(&cfg,useron.number,U_COMMENT,LEN_COMMENT

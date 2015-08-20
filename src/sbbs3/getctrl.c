@@ -20,7 +20,7 @@ char *get_ctrl_dir(char *path, size_t pathsz)
 	strncpy(path, PREFIX"/etc", pathsz);
 	if(pathsz > 0)
 		path[pathsz-1]=0;
-	iniFileName(ini_file, sizeof(ini_file)-1, PREFIX"/etc", sbbs.ini);
+	iniFileName(ini_file, sizeof(ini_file)-1, PREFIX"/etc", "sbbs.ini");
 	if(fexistcase(ini_file)) {
 		FILE*	fini;
 		char*	str;

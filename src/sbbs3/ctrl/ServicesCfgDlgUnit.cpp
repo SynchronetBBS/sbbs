@@ -23,15 +23,17 @@ __fastcall TServicesCfgDlg::TServicesCfgDlg(TComponent* Owner)
 void __fastcall TServicesCfgDlg::FormShow(TObject *Sender)
 {
     char str[128];
-
-    if(MainForm->services_startup.interface_addr==0)
+/*
+TODO: This is broken and stuff.
+*/
+    if(MainForm->services_startup.outgoing4.s_addr==0)
         NetworkInterfaceEdit->Text="<ANY>";
     else {
         sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->services_startup.interface_addr>>24)&0xff
-            ,(MainForm->services_startup.interface_addr>>16)&0xff
-            ,(MainForm->services_startup.interface_addr>>8)&0xff
-            ,MainForm->services_startup.interface_addr&0xff
+            ,(MainForm->services_startup.outgoing4.s_addr>>24)&0xff
+            ,(MainForm->services_startup.outgoing4.s_addr>>16)&0xff
+            ,(MainForm->services_startup.outgoing4.s_addr>>8)&0xff
+            ,MainForm->services_startup.outgoing4.s_addr&0xff
         );
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
@@ -99,9 +101,9 @@ void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
         while(*p && *p!='.') p++;
         if(*p=='.') p++;
         addr|=atoi(p);
-        MainForm->services_startup.interface_addr=addr;
+        MainForm->services_startup.outgoing4.s_addr=addr;
     } else
-        MainForm->services_startup.interface_addr=0;
+        MainForm->services_startup.outgoing4.s_addr=0;
     MainForm->ServicesAutoStart=AutoStartCheckBox->Checked;
 
 

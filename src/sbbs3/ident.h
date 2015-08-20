@@ -45,7 +45,7 @@
 extern "C" {   
 #endif   
 
-BOOL identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
+BOOL identify(union xp_sockaddr* client_addr, u_short local_port, char* buf
 			   ,size_t maxlen, int timeout /* in seconds */);
 
 #ifdef __cplusplus

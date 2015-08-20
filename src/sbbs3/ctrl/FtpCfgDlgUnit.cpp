@@ -55,25 +55,25 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
 {
     char str[128];
 
-    if(MainForm->ftp_startup.interface_addr==0)
+    if(MainForm->ftp_startup.outgoing4.s_addr==0)
         NetworkInterfaceEdit->Text="<ANY>";
     else {
         sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->ftp_startup.interface_addr>>24)&0xff
-            ,(MainForm->ftp_startup.interface_addr>>16)&0xff
-            ,(MainForm->ftp_startup.interface_addr>>8)&0xff
-            ,MainForm->ftp_startup.interface_addr&0xff
+            ,(MainForm->ftp_startup.outgoing4.s_addr>>24)&0xff
+            ,(MainForm->ftp_startup.outgoing4.s_addr>>16)&0xff
+            ,(MainForm->ftp_startup.outgoing4.s_addr>>8)&0xff
+            ,MainForm->ftp_startup.outgoing4.s_addr&0xff
         );
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
-    if(MainForm->ftp_startup.pasv_ip_addr==0)
+    if(MainForm->ftp_startup.pasv_ip_addr.s_addr==0)
         PasvIpAddrEdit->Text="<unspecified>";
     else {
         sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->ftp_startup.pasv_ip_addr>>24)&0xff
-            ,(MainForm->ftp_startup.pasv_ip_addr>>16)&0xff
-            ,(MainForm->ftp_startup.pasv_ip_addr>>8)&0xff
-            ,MainForm->ftp_startup.pasv_ip_addr&0xff
+            ,(MainForm->ftp_startup.pasv_ip_addr.s_addr>>24)&0xff
+            ,(MainForm->ftp_startup.pasv_ip_addr.s_addr>>16)&0xff
+            ,(MainForm->ftp_startup.pasv_ip_addr.s_addr>>8)&0xff
+            ,MainForm->ftp_startup.pasv_ip_addr.s_addr&0xff
         );
         PasvIpAddrEdit->Text=AnsiString(str);
     }
@@ -135,9 +135,9 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
         while(*p && *p!='.') p++;
         if(*p=='.') p++;
         addr|=atoi(p);
-        MainForm->ftp_startup.interface_addr=addr;
+        MainForm->ftp_startup.outgoing4.s_addr=addr;
     } else
-        MainForm->ftp_startup.interface_addr=0;
+        MainForm->ftp_startup.outgoing4.s_addr=0;
     SAFECOPY(str,PasvIpAddrEdit->Text.c_str());
     p=str;
     while(*p && *p<=' ') p++;
@@ -152,9 +152,9 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
         while(*p && *p!='.') p++;
         if(*p=='.') p++;
         addr|=atoi(p);
-        MainForm->ftp_startup.pasv_ip_addr=addr;
+        MainForm->ftp_startup.pasv_ip_addr.s_addr=addr;
     } else
-        MainForm->ftp_startup.pasv_ip_addr=0;
+        MainForm->ftp_startup.pasv_ip_addr.s_addr=0;
 
     MainForm->ftp_startup.max_clients=MaxClientsEdit->Text.ToIntDef(FTP_DEFAULT_MAX_CLIENTS);
     MainForm->ftp_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(FTP_DEFAULT_MAX_INACTIVITY);

@@ -42,7 +42,7 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, c
 {
 	char		cfgfile[MAX_PATH+1];
 	FILE*		fp;
-	int			type;
+	int			type=0;		// Assignment is to silence Valgrind
 	int			result=0;
 	str_list_t	list;
 	socklen_t	len;

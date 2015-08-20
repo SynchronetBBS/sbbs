@@ -78,7 +78,7 @@ void __fastcall TLoginAttemptsForm::FillListView(TObject *Sender)
         Item->Caption=AnsiString(attempt->count-attempt->dupes);
         Item->Data=(void*)attempt->time;
         Item->SubItems->Add(attempt->dupes);        
-        Item->SubItems->Add(inet_ntoa(attempt->addr));
+        Item->SubItems->Add("TODO: Add addresses");
         Item->SubItems->Add(attempt->prot);
         Item->SubItems->Add(attempt->user);
         Item->SubItems->Add(attempt->pass);

@@ -771,12 +771,13 @@ var LEN_FCDT			=9;		/* 9 digits for file credit values				*/
 var LEN_TITLE			=70;	/* Message title								*/
 var LEN_MAIN_CMD		=34;	/* Storage in user.dat for custom commands		*/
 var LEN_XFER_CMD		=40;													
-var LEN_SCAN_CMD		=40;													
-var LEN_MAIL_CMD		=40;													
-var LEN_CID 			=25;	/* Caller ID (phone number) 					*/
+var LEN_SCAN_CMD		=35;													
+var LEN_IPADDR			=45;													
+var LEN_CID 			=45;	/* Caller ID (phone number or IP address) 		*/
 var LEN_ARSTR			=40;	/* Max length of Access Requirement string		*/
 var LEN_CHATACTCMD		=9;		/* Chat action command							*/
-var LEN_CHATACTOUT		=65;	/* Chat action output string					*/								  /************************************************/
+var LEN_CHATACTOUT		=65;	/* Chat action output string					*/
+								/************************************************/
 						
 								
 /********************************************/
@@ -833,8 +834,8 @@ var U_CURXTRN		=U_CURSUB+16; 	/* Current xtrn (internal code) */
 var U_MAIN_CMD		=U_CURXTRN+8+2; /* unused */
 var U_XFER_CMD		=U_MAIN_CMD+LEN_MAIN_CMD; 		/* unused */
 var U_SCAN_CMD		=U_XFER_CMD+LEN_XFER_CMD+2;  	/* unused */
-var U_MAIL_CMD		=U_SCAN_CMD+LEN_SCAN_CMD; 		/* unused */
-var U_FREECDT		=U_MAIL_CMD+LEN_MAIL_CMD+2; 
+var U_IPADDR		=U_SCAN_CMD+LEN_SCAN_CMD; 		/* unused */
+var U_FREECDT		=U_IPADDR+LEN_IPADDR+2; 
 var U_FLAGS3		=U_FREECDT+10; 	/* Flag set #3 */
 var U_FLAGS4		=U_FLAGS3+8; 	/* Flag set #4 */
 var U_XEDIT 		=U_FLAGS4+8; 	/* External editor (code  */

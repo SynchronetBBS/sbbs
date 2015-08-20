@@ -152,7 +152,7 @@ void sbbs_t::badlogin(char* user, char* passwd)
 		::hacklog(&cfg, reason, user, passwd, client_name, &client_addr);
 	if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
 		filter_ip(&cfg, connection, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
-			,client_name, inet_ntoa(client_addr.sin_addr), user, /* fname: */NULL);
+			,client_name, client_ipaddr, user, /* fname: */NULL);
 
 	mswait(startup->login_attempt_delay);
 }

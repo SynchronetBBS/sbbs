@@ -52,7 +52,7 @@ bool sbbs_t::answer()
 	useron.number=0;
 	answertime=logontime=starttime=now=time(NULL);
 	/* Caller ID is IP address */
-	SAFECOPY(cid,inet_ntoa(client_addr.sin_addr));
+	SAFECOPY(cid,client_ipaddr);
 
 	memset(&tm,0,sizeof(tm));
     localtime_r(&now,&tm); 
@@ -349,7 +349,7 @@ bool sbbs_t::answer()
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)
 		&& (startup->options&BBS_OPT_AUTO_LOGON) && cid[0]) {
-		useron.number=userdatdupe(0, U_NOTE, LEN_NOTE, cid);
+		useron.number=userdatdupe(0, U_IPADDR, LEN_IPADDR, cid);
 		if(useron.number) {
 			getuserdat(&cfg, &useron);
 			if(!(useron.misc&AUTOLOGON) || !(useron.exempt&FLAG('V')))
@@ -436,8 +436,8 @@ bool sbbs_t::answer()
 
 	/* Save the IP to the user's note */
 	if(cid[0]) {
-		SAFECOPY(useron.note,cid);
-		putuserrec(&cfg,useron.number,U_NOTE,LEN_NOTE,useron.note);
+		SAFECOPY(useron.ipaddr,cid);
+		putuserrec(&cfg,useron.number,U_IPADDR,LEN_IPADDR,useron.ipaddr);
 	}
 
 	/* Save host name to the user's computer description */

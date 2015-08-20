@@ -53,6 +53,7 @@
 #include "telnet.h"
 #include "js_rtpool.h"
 #include "js_request.h"
+#include "multisock.h"
 
 /* Constants */
 
@@ -78,7 +79,7 @@
 
 static ftp_startup_t*	startup=NULL;
 static scfg_t	scfg;
-static SOCKET	server_socket=INVALID_SOCKET;
+static struct xpms_set *ftp_set = NULL;
 static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
 static volatile time_t	uptime=0;
@@ -106,7 +107,8 @@ char* genvpath(int lib, int dir, char* str);
 
 typedef struct {
 	SOCKET			socket;
-	SOCKADDR_IN		client_addr;
+	union xp_sockaddr	client_addr;
+	socklen_t		client_addr_len;
 } ftp_t;
 
 
@@ -220,18 +222,29 @@ static int32_t thread_down(void)
 	return count;
 }
 
-static SOCKET ftp_open_socket(int type)
+static void ftp_open_socket_cb(SOCKET sock, void *cbdata)
 {
-	SOCKET	sock;
 	char	error[256];
 
-	sock=socket(AF_INET, type, IPPROTO_IP);
-	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
+	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,TRUE);
-	if(sock!=INVALID_SOCKET) {
-		if(set_socket_options(&scfg, sock, "FTP", error, sizeof(error)))
-			lprintf(LOG_ERR,"%04d !ERROR %s",sock, error);
-	}
+	if(set_socket_options(&scfg, sock, "FTP", error, sizeof(error)))
+		lprintf(LOG_ERR,"%04d !ERROR %s",sock, error);
+}
+
+static void ftp_close_socket_cb(SOCKET sock, void *cbdata)
+{
+	if(startup!=NULL && startup->socket_open!=NULL)
+		startup->socket_open(startup->cbdata,FALSE);
+}
+
+static SOCKET ftp_open_socket(int domain, int type)
+{
+	SOCKET	sock;
+
+	sock=socket(domain, type, IPPROTO_IP);
+	if(sock != INVALID_SOCKET)
+		ftp_open_socket_cb(sock, NULL);
 	return(sock);
 }
 
@@ -1127,7 +1140,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 
 		i=select(socket+1,&socket_set,NULL,NULL,&tv);
 
-		if(server_socket==INVALID_SOCKET || terminate_server) {
+		if(ftp_set==NULL || terminate_server) {
 			sockprintf(socket,"421 Server downed, aborting.");
 			lprintf(LOG_WARNING,"%04d Server downed, aborting",socket);
 			return(0);
@@ -1171,7 +1184,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 
 void DLLCALL ftp_terminate(void)
 {
-   	lprintf(LOG_INFO,"%04d FTP Server terminate",server_socket);
+   	lprintf(LOG_INFO,"FTP Server terminate");
 	terminate_server=TRUE;
 }
 
@@ -1209,6 +1222,7 @@ static void send_thread(void* arg)
 	char		str[128];
 	char		tmp[128];
 	char		username[128];
+	char		host_ip[INET6_ADDRSTRLEN];
 	int			i;
 	int			rd;
 	int			wr;
@@ -1227,7 +1241,7 @@ static void send_thread(void* arg)
 	time_t		start;
 	time_t		last_report;
 	user_t		uploader;
-	SOCKADDR_IN	addr;
+	union xp_sockaddr	addr;
 	socklen_t	addr_len;
 	fd_set		socket_set;
 	struct timeval tv;
@@ -1287,7 +1301,7 @@ static void send_thread(void* arg)
 			error=TRUE;
 			break;
 		}
-		if(server_socket==INVALID_SOCKET || terminate_server) {
+		if(ftp_set==NULL || terminate_server) {
 			lprintf(LOG_WARNING,"%04d !DATA Transfer locally aborted",xfer.ctrl_sock);
 			sockprintf(xfer.ctrl_sock,"426 Transfer locally aborted.");
 			error=TRUE;
@@ -1422,8 +1436,9 @@ static void send_thread(void* arg)
 					if(!(scfg.dir[f.dir]->misc&DIR_QUIET)) {
 						addr_len = sizeof(addr);
 						if(uploader.level>=SYSOP_LEVEL
-							&& getpeername(xfer.ctrl_sock,(struct sockaddr *)&addr,&addr_len)==0)
-							SAFEPRINTF2(username,"%s [%s]",xfer.user->alias,inet_ntoa(addr.sin_addr));
+							&& getpeername(xfer.ctrl_sock,&addr.addr,&addr_len)==0
+							&& inet_addrtop(&addr, host_ip, sizeof(host_ip))!=NULL)
+							SAFEPRINTF2(username,"%s [%s]",xfer.user->alias,host_ip);
 						else
 							SAFECOPY(username,xfer.user->alias);
 						/* Inform uploader of downloaded file */
@@ -1447,7 +1462,7 @@ static void send_thread(void* arg)
 	}
 
 	fclose(fp);
-	if(server_socket!=INVALID_SOCKET && !terminate_server)
+	if(ftp_set!=NULL && !terminate_server)
 		*xfer.inprogress=FALSE;
 	if(xfer.tmpfile) {
 		if(!(startup->options&FTP_OPT_KEEP_TEMP_FILES))
@@ -1547,7 +1562,7 @@ static void receive_thread(void* arg)
 			error=TRUE;
 			break;
 		}
-		if(server_socket==INVALID_SOCKET || terminate_server) {
+		if(ftp_set==NULL || terminate_server) {
 			lprintf(LOG_WARNING,"%04d !DATA Transfer locally aborted",xfer.ctrl_sock);
 			/* Send NAK */
 			sockprintf(xfer.ctrl_sock,"426 Transfer locally aborted.");
@@ -1751,7 +1766,7 @@ static void receive_thread(void* arg)
 		sockprintf(xfer.ctrl_sock,"226 Upload complete (%lu cps).",cps);
 	}
 
-	if(server_socket!=INVALID_SOCKET && !terminate_server)
+	if(ftp_set!=NULL && !terminate_server)
 		*xfer.inprogress=FALSE;
 
 	thread_down();
@@ -1759,7 +1774,7 @@ static void receive_thread(void* arg)
 
 
 
-static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCKET* data_sock
+static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCKET* data_sock
 					,char* filename, long filepos, BOOL* inprogress, BOOL* aborted
 					,BOOL delfile, BOOL tmpfile
 					,time_t* lastactive
@@ -1774,11 +1789,12 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	int			result;
 	ulong		l;
 	socklen_t	addr_len;
-	SOCKADDR_IN	server_addr;
+	union xp_sockaddr	server_addr;
 	BOOL		reuseaddr;
 	xfer_t*		xfer;
 	struct timeval	tv;
 	fd_set			socket_set;
+	char		host_ip[INET6_ADDRSTRLEN];
 
 	if((*inprogress)==TRUE) {
 		lprintf(LOG_WARNING,"%04d !TRANSFER already in progress",ctrl_sock);
@@ -1792,9 +1808,10 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	if(*data_sock!=INVALID_SOCKET)
 		ftp_close_socket(data_sock,__LINE__);
 
+	inet_addrtop(addr, host_ip, sizeof(host_ip));
 	if(pasv_sock==INVALID_SOCKET) {	/* !PASV */
 
-		if((*data_sock=socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
+		if((*data_sock=socket(addr->addr.sa_family, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
 			lprintf(LOG_ERR,"%04d !DATA ERROR %d opening socket", ctrl_sock, ERROR_VALUE);
 			sockprintf(ctrl_sock,"425 Error %d opening socket",ERROR_VALUE);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
@@ -1811,16 +1828,19 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		reuseaddr=TRUE;
 		setsockopt(*data_sock,SOL_SOCKET,SO_REUSEADDR,(char*)&reuseaddr,sizeof(reuseaddr));
 
-		memset(&server_addr, 0, sizeof(server_addr));
+		addr_len = sizeof(server_addr);
+		if((result=getsockname(ctrl_sock, &server_addr.addr,&addr_len))!=0) {
+			lprintf(LOG_ERR,"%04d !ERROR %d (%d) getting address/port of command socket (%u)"
+				,ctrl_sock,result,ERROR_VALUE,pasv_sock);
+			return;
+		}
 
-		server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
-		server_addr.sin_family = AF_INET;
-		server_addr.sin_port   = htons((WORD)(startup->port-1));	/* 20? */
+		inet_setaddrport(&server_addr, inet_addrport(&server_addr)-1);	/* 20? */
 
-		result=bind(*data_sock, (struct sockaddr *) &server_addr,sizeof(server_addr));
+		result=bind(*data_sock, &server_addr.addr,addr_len);
 		if(result!=0) {
-			server_addr.sin_port = 0;	/* any user port */
-			result=bind(*data_sock, (struct sockaddr *) &server_addr,sizeof(server_addr));
+			inet_setaddrport(&server_addr, 0);	/* any user port */
+			result=bind(*data_sock, &server_addr.addr,addr_len);
 		}
 		if(result!=0) {
 			lprintf(LOG_ERR,"%04d !DATA ERROR %d (%d) binding socket %d"
@@ -1833,11 +1853,11 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			return;
 		}
 
-		result=connect(*data_sock, (struct sockaddr *)addr,sizeof(struct sockaddr));
+		result=connect(*data_sock, &addr->addr,xp_sockaddr_len(addr));
 		if(result!=0) {
 			lprintf(LOG_WARNING,"%04d !DATA ERROR %d (%d) connecting to client %s port %u on socket %d"
 					,ctrl_sock,result,ERROR_VALUE
-					,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port),*data_sock);
+					,host_ip,inet_addrport(addr),*data_sock);
 			sockprintf(ctrl_sock,"425 Error %d connecting to socket",ERROR_VALUE);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				ftp_remove(ctrl_sock, __LINE__, filename);
@@ -1847,18 +1867,18 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		}
 		if(startup->options&FTP_OPT_DEBUG_DATA)
 			lprintf(LOG_DEBUG,"%04d DATA socket %d connected to %s port %u"
-				,ctrl_sock,*data_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
+				,ctrl_sock,*data_sock,host_ip,inet_addrport(addr));
 
 	} else {	/* PASV */
 
 		if(startup->options&FTP_OPT_DEBUG_DATA) {
-			addr_len=sizeof(SOCKADDR_IN);
-			if((result=getsockname(pasv_sock, (struct sockaddr *)addr,&addr_len))!=0)
+			addr_len=sizeof(addr);
+			if((result=getsockname(pasv_sock, &addr->addr,&addr_len))!=0)
 				lprintf(LOG_ERR,"%04d !ERROR %d (%d) getting address/port of passive socket (%u)"
 					,ctrl_sock,result,ERROR_VALUE,pasv_sock);
 			else
 				lprintf(LOG_DEBUG,"%04d PASV DATA socket %d listening on %s port %u"
-					,ctrl_sock,pasv_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
+					,ctrl_sock,pasv_sock,host_ip,inet_addrport(addr));
 		}
 
 		/* Setup for select() */
@@ -1884,11 +1904,11 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			return;
 		}
 			
-		addr_len=sizeof(SOCKADDR_IN);
+		addr_len=sizeof(addr);
 #ifdef SOCKET_DEBUG_ACCEPT
 		socket_debug[ctrl_sock]|=SOCKET_DEBUG_ACCEPT;
 #endif
-		*data_sock=accept(pasv_sock,(struct sockaddr*)addr,&addr_len);
+		*data_sock=accept(pasv_sock,&addr->addr,&addr_len);
 #ifdef SOCKET_DEBUG_ACCEPT
 		socket_debug[ctrl_sock]&=~SOCKET_DEBUG_ACCEPT;
 #endif
@@ -1905,7 +1925,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			startup->socket_open(startup->cbdata,TRUE);
 		if(startup->options&FTP_OPT_DEBUG_DATA)
 			lprintf(LOG_DEBUG,"%04d PASV DATA socket %d connected to %s port %u"
-				,ctrl_sock,*data_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
+				,ctrl_sock,*data_sock,host_ip,inet_addrport(addr));
 	}
 
 	do {
@@ -2200,7 +2220,7 @@ void ftp_printfile(SOCKET sock, const char* name, unsigned code)
 	}
 }
 
-static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, SOCKADDR_IN* addr)
+static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, union xp_sockaddr* addr)
 {
 #ifdef _WIN32
 	if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
@@ -2214,17 +2234,20 @@ static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, SOCKADDR
 /* Consecutive failed login (possible password hack) attempt tracking		*/
 /****************************************************************************/
 
-static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passwd, char* host, SOCKADDR_IN* addr)
+static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passwd, char* host, union xp_sockaddr* addr)
 {
 	ulong count;
+	char	host_ip[INET6_ADDRSTRLEN];
 
 	if(addr!=NULL) {
 		count=loginFailure(startup->login_attempt_list, addr, "FTP", user, passwd);
 		if(startup->login_attempt_hack_threshold && count>=startup->login_attempt_hack_threshold)
 			ftp_hacklog("FTP LOGIN", user, passwd, host, addr);
-		if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
+		if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold) {
+			inet_addrtop(addr, host_ip, sizeof(host_ip));
 			filter_ip(&scfg, "FTP", "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
-				,host, inet_ntoa(addr->sin_addr), user, /* fname: */NULL);
+				,host, host_ip, user, /* fname: */NULL);
+		}
 		if(count > *login_attempts)
 			*login_attempts=count;
 	} else
@@ -2266,8 +2289,10 @@ static void ctrl_thread(void* arg)
 	char		aliasline[512];
 	char		desc[501]="";
 	char		sys_pass[128];
-	char*		host_name;
-	char		host_ip[64];
+	char		host_name[256];
+	char		host_ip[INET6_ADDRSTRLEN];
+	char		data_ip[INET6_ADDRSTRLEN];
+	uint16_t	data_port;
 	char		path[MAX_PATH+1];
 	char		local_dir[MAX_PATH+1];
 	char		ren_from[MAX_PATH+1]="";
@@ -2315,9 +2340,9 @@ static void ctrl_thread(void* arg)
 	SOCKET		pasv_sock=INVALID_SOCKET;
 	SOCKET		data_sock=INVALID_SOCKET;
 	HOSTENT*	host;
-	SOCKADDR_IN	addr;
-	SOCKADDR_IN	data_addr;
-	SOCKADDR_IN	pasv_addr;
+	union xp_sockaddr	addr;
+	union xp_sockaddr	data_addr;
+	union xp_sockaddr	pasv_addr;
 	ftp_t		ftp=*(ftp_t*)arg;
 	user_t		user;
 	time_t		t;
@@ -2347,10 +2372,9 @@ static void ctrl_thread(void* arg)
 	lastactive=time(NULL);
 
 	sock=ftp.socket;
-	data_addr=ftp.client_addr;
+	memcpy(&data_addr, &ftp.client_addr, ftp.client_addr_len);
 	/* Default data port is ctrl port-1 */
-	data_addr.sin_port=ntohs(data_addr.sin_port)-1;
-	data_addr.sin_port=htons(data_addr.sin_port);
+	data_port = inet_addrport(&data_addr)-1;
 	
 	lprintf(LOG_DEBUG,"%04d CTRL thread started", sock);
 
@@ -2378,21 +2402,17 @@ static void ctrl_thread(void* arg)
 
 	memset(&user,0,sizeof(user));
 
-	SAFECOPY(host_ip,inet_ntoa(ftp.client_addr.sin_addr));
+	inet_addrtop(&ftp.client_addr, host_ip, sizeof(host_ip));
 
 	lprintf(LOG_INFO,"%04d CTRL connection accepted from: %s port %u"
-		,sock, host_ip, ntohs(ftp.client_addr.sin_port));
+		,sock, host_ip, inet_addrport(&ftp.client_addr));
 
 	if(startup->options&FTP_OPT_NO_HOST_LOOKUP)
-		host=NULL;
-	else
-		host=gethostbyaddr ((char *)&ftp.client_addr.sin_addr
-			,sizeof(ftp.client_addr.sin_addr),AF_INET);
-
-	if(host!=NULL && host->h_name!=NULL)
-		host_name=host->h_name;
-	else
-		host_name="<no name>";
+		strcpy(host_name,"<no name>");
+	else {
+		if(getnameinfo(&ftp.client_addr.addr, sizeof(ftp.client_addr), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD)!=0)
+			strcpy(host_name,"<no name>");
+	}
 
 	if(!(startup->options&FTP_OPT_NO_HOST_LOOKUP))
 		lprintf(LOG_INFO,"%04d Hostname: %s", sock, host_name);
@@ -2415,7 +2435,7 @@ static void ctrl_thread(void* arg)
 
 	/* For PASV mode */
 	addr_len=sizeof(pasv_addr);
-	if((result=getsockname(sock, (struct sockaddr *)&pasv_addr,&addr_len))!=0) {
+	if((result=getsockname(sock, &pasv_addr.addr,&addr_len))!=0) {
 		lprintf(LOG_ERR,"%04d !ERROR %d (%d) getting address/port", sock, result, ERROR_VALUE);
 		sockprintf(sock,"425 Error %d getting address/port",ERROR_VALUE);
 		ftp_close_socket(&sock,__LINE__);
@@ -2431,7 +2451,7 @@ static void ctrl_thread(void* arg)
 	client.time=time32(NULL);
 	SAFECOPY(client.addr,host_ip);
 	SAFECOPY(client.host,host_name);
-	client.port=ntohs(ftp.client_addr.sin_port);
+	client.port=inet_addrport(&ftp.client_addr);
 	client.protocol="FTP";
 	client.user="<unknown>";
 	client_on(sock,&client,FALSE /* update */);
@@ -2439,7 +2459,7 @@ static void ctrl_thread(void* arg)
 	if(startup->login_attempt_throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &ftp.client_addr)) > 1) {
 		lprintf(LOG_DEBUG,"%04d Throttling suspicious connection from: %s (%u login attempts)"
-			,sock, inet_ntoa(ftp.client_addr.sin_addr), login_attempts);
+			,sock, host_ip, login_attempts);
 		mswait(login_attempts*startup->login_attempt_throttle);
 	}
 
@@ -2690,7 +2710,7 @@ static void ctrl_thread(void* arg)
 			user.ltoday++;
 			SAFECOPY(user.modem,"FTP");
 			SAFECOPY(user.comp,host_name);
-			SAFECOPY(user.note,host_ip);
+			SAFECOPY(user.ipaddr,host_ip);
 			user.logontime=logintime;
 			putuserdat(&scfg, &user);
 
@@ -2788,7 +2808,7 @@ static void ctrl_thread(void* arg)
 		}
 #endif
 
-		if(strnicmp(cmd, "PORT ",5)==0 || strnicmp(cmd, "EPRT ",5)==0) {
+		if(strnicmp(cmd, "PORT ",5)==0 || strnicmp(cmd, "EPRT ",5)==0 || strnicmp(cmd, "LPRT ",5)==0) {
 
 			if(pasv_sock!=INVALID_SOCKET) 
 				ftp_close_socket(&pasv_sock,__LINE__);
@@ -2797,47 +2817,154 @@ static void ctrl_thread(void* arg)
 			SKIP_WHITESPACE(p);
 			if(strnicmp(cmd, "PORT ",5)==0) {
 				sscanf(p,"%u,%u,%u,%u,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
-				data_addr.sin_addr.s_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
-				data_addr.sin_port=(u_short)((p1<<8)|p2);
-			} else { /* EPRT */
+				data_addr.in.sin_family=AF_INET;
+				data_addr.in.sin_addr.s_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
+				data_port = (p2<<8)|p1;
+			} else if(strnicmp(cmd, "EPRT ", 5)==0) { /* EPRT */
 				char	delim = *p;
 				int		prot;
+				char	addr_str[INET6_ADDRSTRLEN];
 
-				if(*p) p++;
+				memset(&data_addr, 0, sizeof(data_addr));
+				if(*p)
+					p++;
 				prot=strtol(p,NULL,/* base: */10);
-				if(prot!=1) {
-					lprintf(LOG_WARNING,"%04d UNSUPPORTED protocol: %d", sock, prot);
-					sockprintf(sock,"522 Network protocol not supported, use (1)");
+				switch(prot) {
+					case 1:
+						FIND_CHAR(p,delim);
+						if(*p)
+							p++;
+						data_addr.in.sin_addr.s_addr=inet_addr(p);
+						FIND_CHAR(p,delim);
+						if(*p)
+							p++;
+						data_port=atoi(p);
+						data_addr.in.sin_family=AF_INET;
+						break;
+					case 2:
+						FIND_CHAR(p,delim);
+						if(*p)
+							p++;
+						strncpy(addr_str, p, sizeof(addr_str));
+						addr_str[sizeof(addr_str)-1]=0;
+						tp=addr_str;
+						FIND_CHAR(tp, delim);
+						*tp=0;
+						if(inet_ptoaddr(addr_str, &data_addr, sizeof(data_addr))==NULL) {
+							lprintf(LOG_WARNING,"%04d Unable to parse IPv6 address %s",sock,addr_str);
+							sockprintf(sock,"522 Unable to parse IPv6 address (1)");
+							continue;
+						}
+						FIND_CHAR(p,delim);
+						if(*p)
+							p++;
+						data_port=atoi(p);
+						data_addr.in6.sin6_family=AF_INET6;
+						break;
+					default:
+						lprintf(LOG_WARNING,"%04d UNSUPPORTED protocol: %d", sock, prot);
+						sockprintf(sock,"522 Network protocol not supported, use (1)");
+						continue;
+				}
+			}
+			else {	/* LPRT */
+				if(sscanf(p,"%u,%u",&h1, &h2)!=2) {
+					lprintf(LOG_ERR, "Unable to parse LPRT %s", p);
+					sockprintf(sock, "521 Address family not supported");
 					continue;
 				}
-				FIND_CHAR(p,delim);
-				if(*p) p++;
-				data_addr.sin_addr.s_addr=inet_addr(p);
-				FIND_CHAR(p,delim);
-				if(*p) p++;
-				data_addr.sin_port=atoi(p);
+				FIND_CHAR(p,',');
+				if(*p)
+					p++;
+				FIND_CHAR(p,',');
+				if(*p)
+					p++;
+				switch(h1) {
+					case 4:	/* IPv4 */
+						if(h2 != 4) {
+							lprintf(LOG_ERR, "Unable to parse LPRT %s", p);
+							sockprintf(sock, "501 IPv4 Address is the wrong length");
+							continue;
+						}
+						for(h1 = 0; h1 < h2; h1++) {
+							((unsigned char *)(&data_addr.in.sin_addr))[h1]=atoi(p);
+							FIND_CHAR(p,',');
+							if(*p)
+								p++;
+						}
+						if(atoi(p)!=2) {
+							lprintf(LOG_ERR, "Unable to parse LPRT %s", p);
+							sockprintf(sock, "501 IPv4 Port is the wrong length");
+							continue;
+						}
+						FIND_CHAR(p,',');
+						if(*p)
+							p++;
+						for(h1 = 0; h1 < 2; h1++) {
+							((unsigned char *)(&data_port))[1-h1]=atoi(p);
+							FIND_CHAR(p,',');
+							if(*p)
+								p++;
+						}
+						data_addr.in.sin_family=AF_INET;
+						break;
+					case 6:	/* IPv6 */
+						if(h2 != 16) {
+							lprintf(LOG_ERR, "Unable to parse LPRT %s", p);
+							sockprintf(sock, "501 IPv6 Address is the wrong length");
+							continue;
+						}
+						for(h1 = 0; h1 < h2; h1++) {
+							((unsigned char *)(&data_addr.in6.sin6_addr))[h1]=atoi(p);
+							FIND_CHAR(p,',');
+							if(*p)
+								p++;
+						}
+						if(atoi(p)!=2) {
+							lprintf(LOG_ERR, "Unable to parse LPRT %s", p);
+							sockprintf(sock, "501 IPv6 Port is the wrong length");
+							continue;
+						}
+						FIND_CHAR(p,',');
+						if(*p)
+							p++;
+						for(h1 = 0; h1 < 2; h1++) {
+							((unsigned char *)(&data_port))[1-h1]=atoi(p);
+							FIND_CHAR(p,',');
+							if(*p)
+								p++;
+						}
+						data_addr.in6.sin6_family=AF_INET6;
+						break;
+					default:
+						lprintf(LOG_ERR, "Unable to parse LPRT %s", p);
+						sockprintf(sock, "521 Address family not supported");
+						continue;
+				}
 			}
-			if(data_addr.sin_port< IPPORT_RESERVED) {	
+
+			inet_addrtop(&data_addr, data_ip, sizeof(data_ip));
+			if(data_port< IPPORT_RESERVED) {
 				lprintf(LOG_WARNING,"%04d !SUSPECTED BOUNCE ATTACK ATTEMPT by %s to %s port %u"
 					,sock,user.alias
-					,inet_ntoa(data_addr.sin_addr),data_addr.sin_port);
+					,data_ip,data_port);
 				ftp_hacklog("FTP BOUNCE", user.alias, cmd, host_name, &ftp.client_addr);
 				sockprintf(sock,"504 Bad port number.");	
 				continue; /* As recommended by RFC2577 */
 			}
-			data_addr.sin_port=htons(data_addr.sin_port);
+			inet_setaddrport(&data_addr, data_port);
 			sockprintf(sock,"200 PORT Command successful.");
 			mode="active";
 			continue;
 		}
 
 		if(stricmp(cmd, "PASV")==0 || stricmp(cmd, "P@SW")==0	/* Kludge required for SMC Barricade V1.2 */
-			|| stricmp(cmd, "EPSV")==0) {	
+			|| stricmp(cmd, "EPSV")==0 || stricmp(cmd, "LPSV")==0) {	
 
 			if(pasv_sock!=INVALID_SOCKET) 
 				ftp_close_socket(&pasv_sock,__LINE__);
 
-			if((pasv_sock=ftp_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+			if((pasv_sock=ftp_open_socket(pasv_addr.addr.sa_family, SOCK_STREAM))==INVALID_SOCKET) {
 				lprintf(LOG_WARNING,"%04d !PASV ERROR %d opening socket", sock,ERROR_VALUE);
 				sockprintf(sock,"425 Error %d opening PASV data socket", ERROR_VALUE);
 				continue;
@@ -2860,9 +2987,9 @@ static void ctrl_thread(void* arg)
 					lprintf(LOG_DEBUG,"%04d PASV DATA trying to bind socket to port %u"
 						,sock,port);
 
-				pasv_addr.sin_port = htons(port);
+				inet_setaddrport(&pasv_addr, port);
 
-				if((result=bind(pasv_sock, (struct sockaddr *) &pasv_addr,sizeof(pasv_addr)))==0)
+				if((result=bind(pasv_sock, &pasv_addr.addr,xp_sockaddr_len(&pasv_addr)))==0)
 					break;
 				if(port==startup->pasv_port_high)
 					break;
@@ -2878,7 +3005,7 @@ static void ctrl_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d PASV DATA socket %d bound to port %u",sock,pasv_sock,port);
 
 			addr_len=sizeof(addr);
-			if((result=getsockname(pasv_sock, (struct sockaddr *)&addr,&addr_len))!=0) {
+			if((result=getsockname(pasv_sock, &addr.addr,&addr_len))!=0) {
 				lprintf(LOG_ERR,"%04d !PASV ERROR %d (%d) getting address/port"
 					,sock, result, ERROR_VALUE);
 				sockprintf(sock,"425 Error %d getting address/port",ERROR_VALUE);
@@ -2894,26 +3021,61 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 
-			/* Choose IP address to use in passive response */
-			ip_addr=0;
-			if(startup->options&FTP_OPT_LOOKUP_PASV_IP
-				&& (host=gethostbyname(startup->host_name))!=NULL) 
-				ip_addr=ntohl(*((ulong*)host->h_addr_list[0]));
-			if(ip_addr==0 && (ip_addr=startup->pasv_ip_addr)==0)
-				ip_addr=ntohl(pasv_addr.sin_addr.s_addr);
-
-			if(startup->options&FTP_OPT_DEBUG_DATA)
-				lprintf(LOG_INFO,"%04d PASV DATA IP address in response: %u.%u.%u.%u (subject to NAT)"
-					,sock
-					,(ip_addr>>24)&0xff
-					,(ip_addr>>16)&0xff
-					,(ip_addr>>8)&0xff
-					,ip_addr&0xff
-					);
-			port=ntohs(addr.sin_port);
+			port=inet_addrport(&addr);
 			if(stricmp(cmd, "EPSV")==0)
 				sockprintf(sock,"229 Entering Extended Passive Mode (|||%hu|)", port);
-			else
+			else if (stricmp(cmd,"LPSV")==0) {
+				switch(addr.addr.sa_family) {
+					case AF_INET:
+						sockprintf(sock, "228 Entering Long Passive Mode (4, 4, %d, %d, %d, %d, 2, %d, %d)"
+							,((unsigned char *)&(addr.in.sin_addr))[0]
+							,((unsigned char *)&(addr.in.sin_addr))[1]
+							,((unsigned char *)&(addr.in.sin_addr))[2]
+							,((unsigned char *)&(addr.in.sin_addr))[3]
+							,((unsigned char *)&(addr.in.sin_port))[0]
+							,((unsigned char *)&(addr.in.sin_port))[1]);
+						break;
+					case AF_INET6:
+						sockprintf(sock, "228 Entering Long Passive Mode (6, 16, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, 2, %d, %d)"
+							,((unsigned char *)&(addr.in6.sin6_addr))[0]
+							,((unsigned char *)&(addr.in6.sin6_addr))[1]
+							,((unsigned char *)&(addr.in6.sin6_addr))[2]
+							,((unsigned char *)&(addr.in6.sin6_addr))[3]
+							,((unsigned char *)&(addr.in6.sin6_addr))[4]
+							,((unsigned char *)&(addr.in6.sin6_addr))[5]
+							,((unsigned char *)&(addr.in6.sin6_addr))[6]
+							,((unsigned char *)&(addr.in6.sin6_addr))[7]
+							,((unsigned char *)&(addr.in6.sin6_addr))[8]
+							,((unsigned char *)&(addr.in6.sin6_addr))[9]
+							,((unsigned char *)&(addr.in6.sin6_addr))[10]
+							,((unsigned char *)&(addr.in6.sin6_addr))[11]
+							,((unsigned char *)&(addr.in6.sin6_addr))[12]
+							,((unsigned char *)&(addr.in6.sin6_addr))[13]
+							,((unsigned char *)&(addr.in6.sin6_addr))[14]
+							,((unsigned char *)&(addr.in6.sin6_addr))[15]
+							,((unsigned char *)&(addr.in6.sin6_port))[0]
+							,((unsigned char *)&(addr.in6.sin6_port))[1]);
+						break;
+				}
+			}
+			else {
+				/* Choose IP address to use in passive response */
+				ip_addr=0;
+				/* TODO: IPv6 this here lookup */
+				if(startup->options&FTP_OPT_LOOKUP_PASV_IP
+					&& (host=gethostbyname(startup->host_name))!=NULL) 
+					ip_addr=ntohl(*((ulong*)host->h_addr_list[0]));
+				if(ip_addr==0 && (ip_addr=startup->pasv_ip_addr.s_addr)==0)
+					ip_addr=ntohl(pasv_addr.in.sin_addr.s_addr);
+
+				if(startup->options&FTP_OPT_DEBUG_DATA)
+					lprintf(LOG_INFO,"%04d PASV DATA IP address in response: %u.%u.%u.%u (subject to NAT)"
+						,sock
+						,(ip_addr>>24)&0xff
+						,(ip_addr>>16)&0xff
+						,(ip_addr>>8)&0xff
+						,ip_addr&0xff
+						);
 				sockprintf(sock,"227 Entering Passive Mode (%u,%u,%u,%u,%hu,%hu)"
 					,(ip_addr>>24)&0xff
 					,(ip_addr>>16)&0xff
@@ -2922,6 +3084,7 @@ static void ctrl_thread(void* arg)
 					,(port>>8)&0xff
 					,port&0xff
 					);
+			}
 			mode="passive";
 			continue;
 		}
@@ -4422,7 +4585,7 @@ static void ctrl_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d Waiting for transfer to complete...",sock);
 		count=0;
 		while(transfer_inprogress==TRUE) {
-			if(server_socket==INVALID_SOCKET || terminate_server) {
+			if(ftp_set==NULL || terminate_server) {
 				mswait(2000);	/* allow xfer threads to terminate */
 				break;
 			}
@@ -4531,8 +4694,10 @@ static void cleanup(int code, int line)
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
-	if(server_socket!=INVALID_SOCKET)
-		ftp_close_socket(&server_socket,__LINE__);
+	if(ftp_set != NULL) {
+		xpms_destroy(ftp_set, ftp_close_socket_cb, NULL);
+		ftp_set = NULL;
+	}
 
 	update_clients();	/* active_clients is destroyed below */
 
@@ -4584,18 +4749,16 @@ void DLLCALL ftp_server(void* arg)
 	char			error[256];
 	char			compiler[32];
 	char			str[256];
-	SOCKADDR_IN		server_addr;
-	SOCKADDR_IN		client_addr;
+	union xp_sockaddr client_addr;
 	socklen_t		client_addr_len;
 	SOCKET			client_socket;
 	int				i;
-	int				result;
 	time_t			t;
 	time_t			start;
 	time_t			initialized=0;
-	fd_set			socket_set;
 	ftp_t*			ftp;
-	struct timeval	tv;
+	struct in_addr	iaddr;
+	char			client_ip[INET6_ADDRSTRLEN];
 
 	ftp_ver();
 
@@ -4644,7 +4807,8 @@ void DLLCALL ftp_server(void* arg)
 	js_server_props.version_detail=ftp_ver();
 	js_server_props.clients=&active_clients.value;
 	js_server_props.options=&startup->options;
-	js_server_props.interface_addr=&startup->interface_addr;
+	/* TODO: IPv6 */
+	js_server_props.interface_addr=&startup->outgoing4;
 #endif
 
 	uptime=0;
@@ -4759,48 +4923,21 @@ void DLLCALL ftp_server(void* arg)
 			dotname(scfg.lib[i]->sname,scfg.lib[i]->sname);
 		}
 		/* open a socket and wait for a client */
-
-		if((server_socket=ftp_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
-			lprintf(LOG_CRIT,"!ERROR %d opening socket", ERROR_VALUE);
-			cleanup(1,__LINE__);
-			break;
+		ftp_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
+		
+		if(ftp_set == NULL) {
+			lprintf(LOG_CRIT,"!ERROR %d creating FTP socket set", ERROR_VALUE);
+			cleanup(1, __LINE__);
+			return;
 		}
+		lprintf(LOG_DEBUG,"FTP Server socket set created");
 
-		lprintf(LOG_DEBUG,"%04d FTP Server socket opened",server_socket);
+		/*
+		 * Add interfaces
+		 */
+		xpms_add_list(ftp_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "FTP Server", ftp_open_socket_cb, startup->seteuid, NULL);
 
-		/*****************************/
-		/* Listen for incoming calls */
-		/*****************************/
-		memset(&server_addr, 0, sizeof(server_addr));
-
-		server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
-		server_addr.sin_family = AF_INET;
-		server_addr.sin_port   = htons(startup->port);
-
-		if(startup->port < IPPORT_RESERVED) {
-			if(startup->seteuid!=NULL)
-				startup->seteuid(FALSE);
-		}
-		result=retry_bind(server_socket, (struct sockaddr *) &server_addr,sizeof(server_addr)
-			,startup->bind_retry_count,startup->bind_retry_delay,"FTP Server",lprintf);
-		if(startup->port < IPPORT_RESERVED) {
-			if(startup->seteuid!=NULL)
-				startup->seteuid(TRUE);
-		}
-		if(result!=0) {
-			lprintf(LOG_CRIT,"%04d %s", server_socket, BIND_FAILURE_HELP);
-			cleanup(1,__LINE__);
-			break;
-		}
-
-		if((result=listen(server_socket, 1))!= 0) {
-			lprintf(LOG_CRIT,"%04d !ERROR %d (%d) listening on socket"
-				,server_socket, result, ERROR_VALUE);
-			cleanup(1,__LINE__);
-			break;
-		}
-
-		lprintf(LOG_INFO,"%04d FTP Server listening on port %u",server_socket,startup->port);
+		lprintf(LOG_INFO,"FTP Server listening");
 		status(STATUS_WFC);
 
 		/* Setup recycle/shutdown semaphore file lists */
@@ -4817,9 +4954,9 @@ void DLLCALL ftp_server(void* arg)
 		if(startup->started!=NULL)
     		startup->started(startup->cbdata);
 
-		lprintf(LOG_INFO,"%04d FTP Server thread started",server_socket);
+		lprintf(LOG_INFO,"FTP Server thread started");
 
-		while(server_socket!=INVALID_SOCKET && !terminate_server) {
+		while(ftp_set!=NULL && !terminate_server) {
 
 			if(protected_uint32_value(thread_count) <= 1) {
 				if(!(startup->options&FTP_OPT_NO_RECYCLE)) {
@@ -4842,53 +4979,22 @@ void DLLCALL ftp_server(void* arg)
 					break;
 				}
 			}
-			/* now wait for connection */
 
-			tv.tv_sec=startup->sem_chk_freq;
-			tv.tv_usec=0;
-
-			FD_ZERO(&socket_set);
-			FD_SET(server_socket,&socket_set);
-
-			if((i=select(server_socket+1,&socket_set,NULL,NULL,&tv))<1) {
-				if(i==0)
-					continue;
-				if(ERROR_VALUE==EINTR)
-					lprintf(LOG_DEBUG,"%04d FTP Server listening interrupted", server_socket);
-				else if(ERROR_VALUE == ENOTSOCK)
-            		lprintf(LOG_NOTICE,"%04d FTP Server socket closed", server_socket);
-				else
-					lprintf(LOG_WARNING,"%04d !ERROR %d selecting socket",server_socket, ERROR_VALUE);
-				continue;
-			}
-
-			if(server_socket==INVALID_SOCKET || terminate_server)	/* terminated */
+			if(ftp_set==NULL || terminate_server)	/* terminated */
 				break;
 
+			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
-			client_socket = accept(server_socket, (struct sockaddr *)&client_addr
-        		,&client_addr_len);
+			client_socket = xpms_accept(ftp_set, &client_addr, &client_addr_len, startup->sem_chk_freq*1000, NULL);
 
 			if(client_socket == INVALID_SOCKET)
-			{
-#if 0	/* is this necessary still? */
-				if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR || ERROR_VALUE == EINVAL) {
-            		lprintf(LOG_NOTICE,"0000 FTP socket closed while listening");
-					break;
-				}
-#endif
-				lprintf(LOG_WARNING,"%04d !ERROR %d accepting connection"
-					,server_socket, ERROR_VALUE);
-#ifdef _WIN32
-				if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
-					break;
-#endif
 				continue;
-			}
+
 			if(startup->socket_open!=NULL)
 				startup->socket_open(startup->cbdata,TRUE);
 
-			if(trashcan(&scfg,inet_ntoa(client_addr.sin_addr),"ip-silent")) {
+			inet_addrtop(&client_addr, client_ip, sizeof(client_ip));
+			if(trashcan(&scfg,client_ip,"ip-silent")) {
 				ftp_close_socket(&client_socket,__LINE__);
 				continue;
 			}
@@ -4912,7 +5018,8 @@ void DLLCALL ftp_server(void* arg)
 			}
 
 			ftp->socket=client_socket;
-			ftp->client_addr=client_addr;
+			memcpy(&ftp->client_addr, &client_addr, client_addr_len);
+			ftp->client_addr_len = client_addr_len;
 
 			protected_uint32_adjust(&thread_count,1);
 			_beginthread(ctrl_thread, 0, ftp);
@@ -4920,17 +5027,16 @@ void DLLCALL ftp_server(void* arg)
 		}
 
 #if 0 /* def _DEBUG */
-		lprintf(LOG_DEBUG,"0000 server_socket: %d",server_socket);
 		lprintf(LOG_DEBUG,"0000 terminate_server: %d",terminate_server);
 #endif
 		if(protected_uint32_value(active_clients)) {
-			lprintf(LOG_DEBUG,"%04d Waiting for %d active clients to disconnect..."
-				,server_socket, protected_uint32_value(active_clients));
+			lprintf(LOG_DEBUG,"Waiting for %d active clients to disconnect..."
+				, protected_uint32_value(active_clients));
 			start=time(NULL);
 			while(protected_uint32_value(active_clients)) {
 				if(time(NULL)-start>startup->max_inactivity) {
-					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for %d active clients"
-						,server_socket, protected_uint32_value(active_clients));
+					lprintf(LOG_WARNING,"!TIMEOUT waiting for %d active clients"
+						, protected_uint32_value(active_clients));
 					break;
 				}
 				mswait(100);

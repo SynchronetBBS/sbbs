@@ -43,17 +43,21 @@
 #include "semwrap.h"			/* sem_t */
 
 typedef struct {
-	DWORD	size;				/* sizeof(web_startup_t) */
-	WORD	port;
-	WORD	max_clients;
+	DWORD		size;				/* sizeof(web_startup_t) */
+	WORD		max_clients;
 #define WEB_DEFAULT_MAX_CLIENTS			0	/* 0=unlimited */
-	WORD	max_inactivity;
+	WORD		max_inactivity;
 #define WEB_DEFAULT_MAX_INACTIVITY		120	/* seconds */
-	WORD	max_cgi_inactivity;
+	WORD		max_cgi_inactivity;
 #define WEB_DEFAULT_MAX_CGI_INACTIVITY	120	/* seconds */
-	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
-    DWORD   interface_addr;
-    DWORD	options;
+	WORD		sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
+    DWORD		options;
+	WORD		port;
+	WORD		tls_port;
+	struct in_addr outgoing4;
+	struct in6_addr	outgoing6;
+    str_list_t	interfaces;
+    str_list_t	tls_interfaces;
 	
 	void*	cbdata;				/* Private data passed to callbacks */ 
 
@@ -114,7 +118,9 @@ typedef struct {
 /* startup options that requires re-initialization/recycle when changed */
 static struct init_field web_init_fields[] = { 
 	 OFFSET_AND_SIZE(web_startup_t,port)
-	,OFFSET_AND_SIZE(web_startup_t,interface_addr)
+	,OFFSET_AND_SIZE(web_startup_t,interfaces)
+	,OFFSET_AND_SIZE(web_startup_t,outgoing4)
+	,OFFSET_AND_SIZE(web_startup_t,outgoing6)
 	,OFFSET_AND_SIZE(web_startup_t,ctrl_dir)
 	,OFFSET_AND_SIZE(web_startup_t,root_dir)
 	,OFFSET_AND_SIZE(web_startup_t,error_dir)
@@ -159,7 +165,7 @@ static ini_bitdesc_t web_options[] = {
 #define WEB_DEFAULT_ROOT_DIR		"../web/root"
 #define WEB_DEFAULT_ERROR_DIR		"error"
 #define WEB_DEFAULT_CGI_DIR			"cgi-bin"
-#define WEB_DEFAULT_AUTH_LIST		"Basic,Digest"
+#define WEB_DEFAULT_AUTH_LIST		"Basic,Digest,TLS-PSK"
 #define WEB_DEFAULT_CGI_CONTENT		"text/plain"
 
 #ifdef DLLEXPORT

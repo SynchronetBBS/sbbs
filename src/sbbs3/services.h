@@ -43,7 +43,9 @@
 typedef struct {
 
 	DWORD	size;				/* sizeof(bbs_struct_t) */
-    DWORD   interface_addr;
+	struct in_addr outgoing4;
+	struct in6_addr	outgoing6;
+	str_list_t		interfaces;
     DWORD	options;			/* See BBS_OPT definitions */
 	WORD	sem_chk_freq;			/* semaphore file checking frequency (in seconds) */
 
@@ -92,7 +94,8 @@ typedef struct {
 #if 0
 /* startup options that requires re-initialization/recycle when changed */
 static struct init_field services_init_fields[] = { 
-	 OFFSET_AND_SIZE(services_startup_t,interface_addr)
+	 OFFSET_AND_SIZE(services_startup_t,outgoing4)
+	 OFFSET_AND_SIZE(services_startup_t,outgoing6)
 	,OFFSET_AND_SIZE(services_startup_t,ctrl_dir)
 	,{ 0,0 }	/* terminator */
 };
@@ -104,6 +107,7 @@ static struct init_field services_init_fields[] = {
 #define SERVICE_OPT_STATIC_LOOP (1<<2)	/* Loop static service until terminated */
 #define SERVICE_OPT_NATIVE		(1<<3)	/* non-JavaScript service */
 #define SERVICE_OPT_FULL_ACCEPT	(1<<4)	/* Accept/close connections when server is full */
+#define SERVICE_OPT_TLS			(1<<5)	/* Use TLS */
 
 /* services_startup_t.options bits that require re-init/recycle when changed */
 #define SERVICE_INIT_OPTS	(0)
@@ -120,6 +124,7 @@ static ini_bitdesc_t service_options[] = {
 	{ SERVICE_OPT_STATIC_LOOP		,"LOOP"					},
 	{ SERVICE_OPT_NATIVE			,"NATIVE"				},
 	{ SERVICE_OPT_FULL_ACCEPT		,"FULL_ACCEPT"			},
+	{ SERVICE_OPT_TLS				,"TLS"					},
 	/* terminator */				
 	{ 0 							,NULL					}
 };

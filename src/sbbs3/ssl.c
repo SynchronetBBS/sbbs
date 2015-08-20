@@ -25,7 +25,7 @@ static bool get_error_string(int status, CRYPT_SESSION sess, char *estr, char *f
 
 #define DO(x)	get_error_string(x, ssl_context, estr, __FILE__, __LINE__)
 
-CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char *estr)
+CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char *estr)
 {
 	CRYPT_KEYSET		ssl_keyset;
 	CRYPT_CONTEXT		ssl_context;

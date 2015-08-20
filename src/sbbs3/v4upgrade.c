@@ -136,11 +136,12 @@ BOOL upgrade_users(void)
 		}
 		/******************************************/
 		/* personal info */
-		len=sprintf(rec,"%s\t%s\t%s\t%s\t%s\t%s\t"
+		len=sprintf(rec,"%s\t%s\t%s\t%s\t%s\t%s\t%s\t"
 			,user.alias
 			,user.name
 			,user.handle
 			,user.note
+			,user.ipaddr
 			,user.comp
 			,user.comment
 			);

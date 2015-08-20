@@ -50,10 +50,10 @@
 /* Constants */
 /*************/
 
-#define VERSION 	"3.16"  /* Version: Major.minor  */
-#define REVISION	'd'     /* Revision: lowercase letter */
-#define VERSION_NUM	(31600	 + (tolower(REVISION)-'a'))
-#define VERSION_HEX	(0x31600 + (tolower(REVISION)-'a'))
+#define VERSION 	"3.17"  /* Version: Major.minor  */
+#define REVISION	'a'     /* Revision: lowercase letter */
+#define VERSION_NUM	(31700	 + (tolower(REVISION)-'a'))
+#define VERSION_HEX	(0x31700 + (tolower(REVISION)-'a'))
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version " VERSION
@@ -498,9 +498,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_TITLE		70	/* Message title								*/
 #define LEN_MAIN_CMD	34	/* Storage in user.dat for custom commands		*/
 #define LEN_XFER_CMD	40													
-#define LEN_SCAN_CMD	40													
-#define LEN_MAIL_CMD	40													
-#define LEN_CID 		25	/* Caller ID (phone number) 					*/
+#define LEN_SCAN_CMD	35													
+#define LEN_IPADDR	45													
+#define LEN_CID 		45	/* Caller ID (phone number) 					*/
 #define LEN_ARSTR		40	/* Max length of Access Requirement string		*/
 #define LEN_CHATACTCMD	 9	/* Chat action command							*/
 #define LEN_CHATACTOUT	65	/* Chat action output string					*/
@@ -566,8 +566,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_MAIN_CMD	U_CURXTRN+8+2 	/* unused */
 #define U_XFER_CMD	U_MAIN_CMD+LEN_MAIN_CMD 		/* unused */
 #define U_SCAN_CMD	U_XFER_CMD+LEN_XFER_CMD+2  	/* unused */
-#define U_MAIL_CMD	U_SCAN_CMD+LEN_SCAN_CMD 		/* unused */
-#define U_FREECDT	U_MAIL_CMD+LEN_MAIL_CMD+2 
+#define U_IPADDR	U_SCAN_CMD+LEN_SCAN_CMD 		/* unused */
+#define U_FREECDT	U_IPADDR+LEN_IPADDR+2 
 #define U_FLAGS3	U_FREECDT+10 	/* Flag set #3 */
 #define U_FLAGS4	U_FLAGS3+8 	/* Flag set #4 */
 #define U_XEDIT 	U_FLAGS4+8 	/* External editor (code  */
@@ -937,7 +937,8 @@ typedef struct {						/* Users information */
 			comment[LEN_COMMENT+1], 	/* Private comment about user */
 			cursub[LEN_EXTCODE+1],		/* Current sub-board internal code */
 			curdir[LEN_EXTCODE+1],		/* Current directory internal code */
-			curxtrn[9];					/* Current external program internal code */
+			curxtrn[9],					/* Current external program internal code */
+			ipaddr[LEN_IPADDR+1];		/* Last known IP address */
 
 	uchar	level,						/* Security level */
 			sex,						/* Sex - M or F */
