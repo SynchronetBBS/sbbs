@@ -2501,6 +2501,8 @@ js_getfname(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_getfext(JSContext *cx, uintN argc, jsval *arglist)
 {
+	/* This method now returns a blank string instead of <undefined> when the string has no file extension */
+	/* TODO: This needs to be fixed since it doesn't match the JSDOCS, nor previous version behavior (v3.15) */
 	return js_internal_charfunc(cx, argc, arglist, getfext, 0);
 }
 
