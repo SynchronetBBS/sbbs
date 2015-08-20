@@ -15,7 +15,7 @@ static bool get_error_string(int status, CRYPT_SESSION sess, char *estr, char *f
 		return true;
 
 	ret = cryptGetAttributeString(sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, tmpstr, &len);
-	estr[len]=0;
+	tmpstr[len]=0;
 	if (cryptStatusOK(ret) && len)
 		sprintf(estr, "cryptlib error %d at %s:%d (%s)", status, file, line, tmpstr);
 	else
