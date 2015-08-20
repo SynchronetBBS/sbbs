@@ -2779,7 +2779,7 @@ static void remove_port_part(char *host)
 {
 	char *p;
 
-	for(p=strrchr(host, 0)-1; p >= host; p--) {
+	for(p=strchr(host, 0)-1; p >= host; p--) {
 		if (!isdigit(*p))
 			return;
 		if (*p == ':') {
