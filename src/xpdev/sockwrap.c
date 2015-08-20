@@ -425,7 +425,12 @@ union xp_sockaddr* DLLCALL inet_ptoaddr(char *addr_str, union xp_sockaddr *addr,
         freeaddrinfo(res);
         return NULL;
     }
-    memcpy(&addr, &((struct sockaddr_in6 *)(cur->ai_addr))->sin6_addr, size);
+    if (size < sizeof(struct sockaddr_in6)) {
+        freeaddrinfo(res);
+        return NULL;
+	}
+	size = sizeof(struct sockaddr_in6);
+    memcpy(addr, ((struct sockaddr_in6 *)(cur->ai_addr)), size);
     freeaddrinfo(res);
     return addr;
 }
