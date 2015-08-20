@@ -2280,8 +2280,10 @@ static void ctrl_thread(void* arg)
 	char*		np;
 	char*		tp;
 	char*		dp;
+	char*		ap;
 	char*		filespec;
 	char*		mode="active";
+	char		old_char;
 	char		password[64];
 	char		fname[MAX_PATH+1];
 	char		qwkfile[MAX_PATH+1];
@@ -2834,9 +2836,13 @@ static void ctrl_thread(void* arg)
 						FIND_CHAR(p,delim);
 						if(*p)
 							p++;
-						data_addr.in.sin_addr.s_addr=inet_addr(p);
+						ap = p;
 						FIND_CHAR(p,delim);
-						if(*p)
+						old_char = *p;
+						*p = 0;
+						data_addr.in.sin_addr.s_addr=inet_addr(ap);
+						*p = old_char;
+						if (*p)
 							p++;
 						data_port=atoi(p);
 						data_addr.in.sin_family=AF_INET;
