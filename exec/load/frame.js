@@ -887,6 +887,9 @@ Frame.prototype.invalidate = function() {
 	this.__properties__.display.invalidate();
 	this.refresh();
 }
+Frame.prototype.dump = function() {
+	return this.__properties__.display.dump();
+}
 
 /* console method emulation */
 Frame.prototype.home = function() {
@@ -1475,6 +1478,21 @@ Display.prototype.screenShot = function(file,append) {
 }
 Display.prototype.invalidate = function() {
 	this.__properties__.buffer = {};
+}
+Display.prototype.dump = function() {
+	var arr = [];
+	for(var y = 0; y < this.height; y++) {
+		arr[y] = [];
+		for(var x = 0; x < this.width; x++) {
+			var c = this.__getTopCanvas__(x, y);
+			if(typeof c == "undefined")
+				continue;
+			var d = this.__getData__(c, x, y);
+			if(typeof d.ch != "undefined")
+				arr[y][x] = d;
+		}
+	}
+	return arr;
 }
 
 /* private functions */
