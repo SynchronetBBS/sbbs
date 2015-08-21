@@ -2437,7 +2437,7 @@ static JSBool
 js_internal_charfunc(JSContext *cx, uintN argc, jsval *arglist, char *(*func)(char *), unsigned extra_bytes)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		str, *rastr;
+	char		*str, *rastr, *funcret;
 	JSString*	js_str;
 	size_t		strlen;
 
@@ -2452,20 +2452,25 @@ js_internal_charfunc(JSContext *cx, uintN argc, jsval *arglist, char *(*func)(ch
 		return(JS_TRUE);
 	if(extra_bytes) {
 		rastr=realloc(str, strlen+extra_bytes+1 /* for terminator */);
-		if(rastr==NULL) {
-			free(str);
-			return JS_TRUE;
-		}
+		if(rastr==NULL)
+			goto error;
 		str=rastr;
 	}
 
-	js_str = JS_NewStringCopyZ(cx, func(str));
+	funcret = func(str);
+	if (funcret) {
+		js_str = JS_NewStringCopyZ(cx, funcret);
+		if (js_str == NULL)
+			goto error;
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	}
 	free(str);
-	if(js_str==NULL)
-		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
 	return(JS_TRUE);
+
+error:
+	free(str);
+	return JS_FALSE;
 }
 
 static JSBool
@@ -2501,8 +2506,6 @@ js_getfname(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_getfext(JSContext *cx, uintN argc, jsval *arglist)
 {
-	/* This method now returns a blank string instead of <undefined> when the string has no file extension */
-	/* TODO: This needs to be fixed since it doesn't match the JSDOCS, nor previous version behavior (v3.15) */
 	return js_internal_charfunc(cx, argc, arglist, getfext, 0);
 }
 
