@@ -492,6 +492,10 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+/*
+ * This macro is used to expose a function from the global
+ * client.socket object in the global namespace.
+ */
 #define SOCKET_WRAPPER(funcname) \
 static JSBool \
 js_##funcname (JSContext *cx, uintN argc, jsval *arglist) \
@@ -506,7 +510,6 @@ js_##funcname (JSContext *cx, uintN argc, jsval *arglist) \
 \
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE)); \
 \
-	/* Copy client socket stuff into the global context */ \
 	if (!JS_GetProperty(cx, obj, "client", &val) || val == JSVAL_VOID) \
 		return JS_FALSE; \
 	tmpobj=JSVAL_TO_OBJECT(val); \
