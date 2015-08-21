@@ -492,7 +492,44 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+#define SOCKET_WRAPPER(funcname) \
+static JSBool \
+js_##funcname (JSContext *cx, uintN argc, jsval *arglist) \
+{ \
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist); \
+	JSObject *tmpobj; \
+	jsval val; \
+	jsval rval; \
+	JSObject*	socket_obj; \
+	jsval *argv=JS_ARGV(cx, arglist); \
+	JSBool retval; \
+\
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE)); \
+\
+	/* Copy client socket stuff into the global context */ \
+	if (!JS_GetProperty(cx, obj, "client", &val) || val == JSVAL_VOID) \
+		return JS_FALSE; \
+	tmpobj=JSVAL_TO_OBJECT(val); \
+	if (!JS_GetProperty(cx, tmpobj, "socket", &val) || val == JSVAL_VOID) \
+		return JS_FALSE; \
+	socket_obj=JSVAL_TO_OBJECT(val); \
+	retval = JS_CallFunctionName(cx, socket_obj, #funcname, argc, argv, &rval); \
+	JS_SET_RVAL(cx, arglist, rval); \
+	return retval; \
+}
+
+SOCKET_WRAPPER(read)
+SOCKET_WRAPPER(readln)
+SOCKET_WRAPPER(write)
+SOCKET_WRAPPER(writeln)
+SOCKET_WRAPPER(print)
+
 static JSFunctionSpec js_global_functions[] = {
+	{"read",			js_read,			0},		/* Read from socket */
+	{"readln",			js_readln,			0},		/* Read line from socket */
+	{"write",			js_write,			1},		/* Write to socket */
+	{"writeln",			js_writeln,			0},		/* Write line to socket */
+	{"print",			js_print,			0},		/* Write line to socket */
 	{"log",				js_log,				0},		/* Log a string */
  	{"login",			js_login,			2},		/* Login specified username and password */
 	{"logout",			js_logout,			0},		/* Logout user */
@@ -704,10 +741,6 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 	JSObject*	server;
 	BOOL		success=FALSE;
 	BOOL		rooted=FALSE;
-	jsval		val;
-	JSObject*	obj;
-	JSObject*	socket_obj;
-	js_socket_private_t* p;
 
     if((js_cx = JS_NewContext(js_runtime, service_client->service->js.cx_stack))==NULL)
 		return(NULL);
@@ -735,35 +768,6 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		/* Client Object */
 		if(service_client->client!=NULL) {
 			if(js_CreateClientObject(js_cx, *glob, "client", service_client->client, sock)==NULL)
-				break;
-			/* Copy client socket stuff into the global context */
-			if (!JS_GetProperty(js_cx, *glob, "client", &val) || val == JSVAL_VOID)
-				break;
-			obj=JSVAL_TO_OBJECT(val);
-			if (!JS_GetProperty(js_cx, obj, "socket", &val) || val == JSVAL_VOID)
-				break;
-			socket_obj=JSVAL_TO_OBJECT(val);
-			if (service_client->service->options & SERVICE_OPT_TLS) {
-				p=(js_socket_private_t*)JS_GetPrivate(js_cx,socket_obj);
-				p->session=service_client->tls_sess;
-			}
-			if (!JS_GetProperty(js_cx, socket_obj, "read", &val) || val == JSVAL_VOID)
-				break;
-			if (!JS_DefineProperty(js_cx, *glob, "read", val, NULL, NULL, JSPROP_ENUMERATE))
-				break;
-			if (!JS_GetProperty(js_cx, socket_obj, "readln", &val) || val == JSVAL_VOID)
-				break;
-			if (!JS_DefineProperty(js_cx, *glob, "readln", val, NULL, NULL, JSPROP_ENUMERATE))
-				break;
-			if (!JS_GetProperty(js_cx, socket_obj, "write", &val) || val == JSVAL_VOID)
-				break;
-			if (!JS_DefineProperty(js_cx, *glob, "write", val, NULL, NULL, JSPROP_ENUMERATE))
-				break;
-			if (!JS_GetProperty(js_cx, socket_obj, "writeln", &val) || val == JSVAL_VOID)
-				break;
-			if (!JS_DefineProperty(js_cx, *glob, "writeln", val, NULL, NULL, JSPROP_ENUMERATE))
-				break;
-			if (!JS_DefineProperty(js_cx, *glob, "print", val, NULL, NULL, JSPROP_ENUMERATE))
 				break;
 		}
 
