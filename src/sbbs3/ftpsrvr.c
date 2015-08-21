@@ -2821,7 +2821,7 @@ static void ctrl_thread(void* arg)
 				sscanf(p,"%u,%u,%u,%u,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
 				data_addr.in.sin_family=AF_INET;
 				data_addr.in.sin_addr.s_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
-				data_port = (p2<<8)|p1;
+				data_port = (p1<<8)|p2;
 			} else if(strnicmp(cmd, "EPRT ", 5)==0) { /* EPRT */
 				char	delim = *p;
 				int		prot;
