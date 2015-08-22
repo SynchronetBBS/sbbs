@@ -135,7 +135,7 @@ DLLEXPORT BOOL	DLLCALL check_name(scfg_t* cfg, const char* name);
 
 /* Login attempt/hack tracking */
 typedef struct {
-	struct in6_addr addr;	/* host with consecutive failed login attmepts */
+	union xp_sockaddr addr;	/* host with consecutive failed login attmepts */
 	sa_family_t	family;
 	ulong		count;	/* number of consecutive failed login attempts */
 	ulong		dupes;	/* number of consecutive dupliate login attempts (same name and password) */
