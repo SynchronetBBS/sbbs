@@ -145,6 +145,13 @@ enum {
 	#define ulong   unsigned long
 #endif
 
+/* Printf format specifiers... */
+#if defined(_MSC_VER) || defined(__WATCOMC__) || defined(__BORLANDC__)
+#define XP_PRIsize_t					"I"
+#else
+#define XP_PRIsize_t					"z"
+#endif
+
 #if !defined(HAS_INTTYPES_H) && !defined(XPDEV_DONT_DEFINE_INTTYPES)
 
 #if !defined(HAS_STDINT_H)
@@ -162,12 +169,10 @@ typedef ulong   uint32_t;
 typedef signed __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 #define INTTYPES_H_64BIT_PREFIX         "I64"
-#define XP_PRIsize_t					"I"
 #else
 typedef signed long long int int64_t;
 typedef unsigned long long int uint64_t;
 #define INTTYPES_H_64BIT_PREFIX         "ll"
-#define XP_PRIsize_t					"z"
 #endif
 
 typedef uint64_t	uintmax_t;
