@@ -60,7 +60,7 @@ char *usage=
 "       ALLUSERS -L30 /FA   add 'A' to flag set #1 for all level 30+ users\n"
 "       ALLUSERS /F3-G      remove 'G' from flag set #3 for all users\n"
 "       ALLUSERS -F2B /E-P  remove 'P' exemption for all users with FLAG '2B'\n"
-"       ALLUSERS /R+W       add 'W' restriction for all users\n"
+"       ALLUSERS /R+W       add 'W' restriction for all users"
 ;
 
 /****************************************************************************/
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 	printf("\nALLUSERS v2.10 - Bulk User Editor for Synchronet User Database\n");
 
 	if(argc<2) {
-		printf(usage);
+		puts(usage);
 		exit(1); 
 	}
 	dir[0]=0;
@@ -201,7 +201,7 @@ int main(int argc, char **argv)
 							reqexempt|=FLAG(toupper(argv[i][j]));
 					break;
 				default:						/* Unrecognized include */
-					printf(usage);
+					puts(usage);
 					exit(1); 
 		}
 
@@ -383,7 +383,7 @@ int main(int argc, char **argv)
 					printf("\n");
 					break;
 				default:
-					printf(usage);
+					puts(usage);
 					exit(1); 
 		}
 		else {

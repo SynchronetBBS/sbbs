@@ -161,8 +161,7 @@ char *usage="\nusage: qwknodes [-opts] cmds"
 			"\n       a  =  append existing output files"
 			"\n       t  =  include tag lines in nodes.dat"
 			"\n       l  =  include local users in users.dat"
-			"\n       m# =  maximum message age set to # days"
-			"\n";
+			"\n       m# =  maximum message age set to # days";
 
 int main(int argc, char **argv)
 {
@@ -206,7 +205,7 @@ int main(int argc, char **argv)
 								while(isdigit(argv[i][j+1])) j++;
 								break;
 							default:
-								printf(usage);
+								puts(usage);
 								return(1); 
 					}
 					j--;
@@ -221,12 +220,12 @@ int main(int argc, char **argv)
 					cmd|=NODES;
 					break;
 				default:
-					printf(usage);
+					puts(usage);
 					return(1); 
 		}
 
 	if(!cmd) {
-		printf(usage);
+		puts(usage);
 		return(1); 
 	}
 

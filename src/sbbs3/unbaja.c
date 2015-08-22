@@ -1213,7 +1213,7 @@ char *decompile_ars(uchar *ars, int len)
 				
 				break;
 			default:
-				printf("Error decoding AR: %02Xh, offset: %u\n", *in, in-ars);
+				printf("Error decoding AR: %02Xh, offset: %ld\n", *in, (long)(in-ars));
 				return("Unknown ARS String");
 		}
 		switch(*in) {
@@ -1351,7 +1351,7 @@ void decompile(FILE *bin, FILE *srcfile)
 		}
 		src[0]=0;
 		if(labels[currpos])
-			sprintf(src,":label_%04x\n",currpos);
+			sprintf(src,":label_%04" XP_PRIsize_t "x\n",currpos);
 		switch(uch) {
 			case CS_USE_INT_VAR:
 				usevar=TRUE;
@@ -2363,7 +2363,7 @@ int main(int argc, char **argv)
 					fclose(cache);
 				}
 			}
-			printf("Will brute-force up to %d chars\n",brute_len);
+			printf("Will brute-force up to %" XP_PRIsize_t "d chars\n",brute_len);
 			continue;
 		}
 		bin=fopen(argv[f],"rb");

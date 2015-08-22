@@ -75,7 +75,7 @@ main(int argc, char **argv)
 	read(file, &t, 4L);
 	if (read(file, &stats, sizeof(stats_t)) != sizeof(stats_t)) {
 		close(file);
-		printf("Error reading %u bytes from %s\r\n", sizeof(stats_t), str);
+		printf("Error reading %" XP_PRIsize_t "u bytes from %s\r\n", sizeof(stats_t), str);
 		exit(1);
 	}
 	close(file);
@@ -111,73 +111,73 @@ main(int argc, char **argv)
 				t = dstrtounix(&cfg, str);
 			break;
 		case 'L':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.logons = atol(str);
 			break;
 		case 'O':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.ltoday = atol(str);
 			break;
 		case 'T':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.timeon = atol(str);
 			break;
 		case 'I':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.ttoday = atol(str);
 			break;
 		case 'U':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.uls = atol(str);
 			break;
 		case 'B':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.ulb = atol(str);
 			break;
 		case 'D':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.dls = atol(str);
 			break;
 		case 'W':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.dlb = atol(str);
 			break;
 		case 'P':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.ptoday = atol(str);
 			break;
 		case 'E':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.etoday = atol(str);
 			break;
 		case 'F':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.ftoday = atol(str);
 			break;
 		case 'N':
-			printf(nv);
+			fputs(nv,stdout);
 			fgets(str, sizeof(str), stdin);
 			if (isdigit(str[0]))
 				stats.nusers = atoi(str);
