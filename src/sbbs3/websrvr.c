@@ -615,7 +615,8 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 					status = cryptPushData(session->tls_sess, buf+sent, len-sent, &tls_sent);
 					if (status == CRYPT_ERROR_TIMEOUT) {
 						tls_sent = 0;
-						cryptPopData(session->tls_sess, "", 0, &status);
+						if(!cryptStatusOK(cryptPopData(session->tls_sess, "", 0, &status)))
+							lprintf(LOG_NOTICE,"%04d Cryptlib error popping data after timeout",session->socket);
 						status = CRYPT_OK;
 					}
 					if(!HANDLE_CRYPT_CALL(status, session)) {
@@ -1586,6 +1587,8 @@ static void calculate_digest(http_session_t * session, char *ha1, char *ha2, uns
 			case QOP_AUTH_INT:
 				MD5_digest(&ctx, "auth-int", 7);
 				break;
+			default:
+				break;
 		}
 		MD5_digest(&ctx, ":", 1);
 	}
@@ -1742,9 +1745,10 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	return(TRUE);
 }
 
-static void badlogin(SOCKET sock, const char* prot, const char* user, const char* passwd, const char* host, const SOCKADDR_IN* addr)
+static void badlogin(SOCKET sock, const char* prot, const char* user, const char* passwd, const char* host, union xp_sockaddr* addr)
 {
 	char reason[128];
+	char addrstr[INET6_ADDRSTRLEN];
 	ulong count;
 
 	SAFEPRINTF(reason,"%s LOGIN", prot);
@@ -1758,7 +1762,7 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 	}
 	if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
 		filter_ip(&scfg, prot, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
-			,host, inet_ntoa(addr->sin_addr), user, /* fname: */NULL);
+			,host, inet_addrtop(addr, addrstr, sizeof(addrstr)), user, /* fname: */NULL);
 	if(count>1)
 		mswait(startup->login_attempt_delay);
 }
@@ -1867,6 +1871,8 @@ static BOOL check_ars(http_session_t * session)
 			}
 			break;
 		}
+		default:
+			break;
 	}
 
 	if(i != session->last_user_num) {
@@ -1898,6 +1904,8 @@ static BOOL check_ars(http_session_t * session)
 				break;
 			case AUTHENTICATION_DIGEST:
 				add_env(session,"AUTH_TYPE","Digest");
+				break;
+			default:
 				break;
 		}
 		/* Should use real name if set to do so somewhere ToDo */
@@ -4918,7 +4926,7 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 	js_add_request_prop(session,"http_ver",http_vers[session->http_ver]);
 	js_add_request_prop(session,"remote_ip",session->host_ip);
 	js_add_request_prop(session,"remote_host",session->host_name);
-	if(session->req.query_str && session->req.query_str[0])  {
+	if(session->req.query_str[0])  {
 		js_add_request_prop(session,"query_string",session->req.query_str);
 		js_parse_query(session,session->req.query_str);
 	}
@@ -5323,9 +5331,11 @@ void http_session_thread(void* arg)
 	ulong			login_attempts=0;
 	BOOL			init_error;
 	int32_t			clients_remain;
+#if 0
 	int				i;
 	int				last;
 	user_t			user;
+#endif
 
 	SetThreadName("HTTP Session");
 	pthread_mutex_lock(&((http_session_t*)arg)->struct_filled);
@@ -5788,7 +5798,6 @@ void DLLCALL web_server(void* arg)
 	char*			p;
 	char			compiler[32];
 	http_session_t *	session=NULL;
-	struct in_addr	iaddr;
 	void			*acc_type;
 	char			ssl_estr[SSL_ESTR_LEN];
 
