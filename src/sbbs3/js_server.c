@@ -59,8 +59,7 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	switch(tiny) {
 		case SERVER_PROP_VER:
-			if(p->version!=NULL)
-				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,p->version));
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,p->version));
 			break;
 		case SERVER_PROP_VER_DETAIL:
 			if(p->version_detail!=NULL)
