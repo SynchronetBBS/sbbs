@@ -108,7 +108,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	if(v==NULL)
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-	else if(v->name!=NULL && v->name[0])
+	else if(v->name[0])
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,v->name)));
 	else
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
@@ -303,7 +303,7 @@ static JSBool js_queue_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	switch(tiny) {
 		case QUEUE_PROP_NAME:
-			if(q->name!=NULL && q->name[0])
+			if(q->name[0])
 				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,q->name));
 			break;
 		case QUEUE_PROP_DATA_WAITING:
