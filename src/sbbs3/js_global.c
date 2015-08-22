@@ -2497,16 +2497,26 @@ js_backslash(JSContext *cx, uintN argc, jsval *arglist)
 	return js_internal_charfunc(cx, argc, arglist, backslash, 1);
 }
 
+static char *nonconst_getfname(char *c)
+{
+	return(getfname(c));
+}
+
 static JSBool
 js_getfname(JSContext *cx, uintN argc, jsval *arglist)
 {
-	return js_internal_charfunc(cx, argc, arglist, getfname, 0);
+	return js_internal_charfunc(cx, argc, arglist, nonconst_getfname, 0);
+}
+
+static char *nonconst_getfext(char *c)
+{
+	return(getfext(c));
 }
 
 static JSBool
 js_getfext(JSContext *cx, uintN argc, jsval *arglist)
 {
-	return js_internal_charfunc(cx, argc, arglist, getfext, 0);
+	return js_internal_charfunc(cx, argc, arglist, nonconst_getfext, 0);
 }
 
 static JSBool
