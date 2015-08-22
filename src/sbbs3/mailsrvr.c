@@ -1926,7 +1926,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		JS_DefineProperty(*js_cx, js_scope, "argc", INT_TO_JSVAL(argc)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-		if(mailproc->eval!=NULL && *mailproc->eval!=0) {
+		if(*mailproc->eval!=0) {
 			lprintf(LOG_DEBUG,"%04d %s Evaluating: %s"
 				,sock, log_prefix, mailproc->eval);
 			js_script=JS_CompileScript(*js_cx, js_scope, mailproc->eval, strlen(mailproc->eval), NULL, 1);
@@ -1989,7 +1989,7 @@ static char* get_header_field(char* buf, char* name, size_t maxlen)
 	len = p-buf;
 	if(len >= maxlen)
 		len = maxlen-1;
-	sprintf(name,"%.*s",len,buf);
+	sprintf(name,"%.*s",(int)len,buf);
 	truncsp(name);
 
 	p++;	/* skip colon */
@@ -2154,7 +2154,7 @@ static void parse_mail_address(char* p
 	else
 		tp=p;
 	SKIP_WHITESPACE(tp);
-	sprintf(addr,"%.*s",addr_len,tp);
+	sprintf(addr,"%.*s",(int)addr_len,tp);
 	truncstr(addr,">( ");
 
 	SAFECOPY(tmp,p);
@@ -2172,7 +2172,7 @@ static void parse_mail_address(char* p
 	} else									/* name, then address in brackets */
 		tp=strchr(p,'<');
 	if(tp) *tp=0;
-	sprintf(name,"%.*s",name_len,p);
+	sprintf(name,"%.*s",(int)name_len,p);
 	truncsp(name);
 }
 
@@ -4300,11 +4300,11 @@ void get_dns_server(char* dns_server, size_t len)
 	str_list_t	list;
 	size_t		count;
 
-	sprintf(dns_server,"%.*s",len,startup->dns_server);
+	sprintf(dns_server,"%.*s",(int)len,startup->dns_server);
 	if(!isalnum(dns_server[0])) {
 		if((list=getNameServerList())!=NULL) {
 			if((count=strListCount(list))>0) {
-				sprintf(dns_server,"%.*s",len,list[xp_random(count)]);
+				sprintf(dns_server,"%.*s",(int)len,list[xp_random(count)]);
 				lprintf(LOG_DEBUG,"0000 SEND using auto-detected DNS server address: %s"
 					,dns_server);
 			}
@@ -4351,7 +4351,7 @@ static void sendmail_thread(void* arg)
 	BOOL		first_cycle=TRUE;
 	SOCKET		sock=INVALID_SOCKET;
 	SOCKADDR_IN	addr;
-	SOCKADDR_IN	server_addr;
+	union xp_sockaddr	server_addr;
 	char		server_ip[INET6_ADDRSTRLEN];
 	time_t		last_scan=0;
 	smb_t		smb;
@@ -4628,9 +4628,9 @@ static void sendmail_thread(void* arg)
 				}
 
 				memset(&server_addr,0,sizeof(server_addr));
-				server_addr.sin_addr.s_addr = ip_addr;
-				server_addr.sin_family = AF_INET;
-				server_addr.sin_port = htons(port);
+				server_addr.in.sin_addr.s_addr = ip_addr;
+				server_addr.in.sin_family = AF_INET;
+				server_addr.in.sin_port = htons(port);
 				inet_addrtop(&server_addr,server_ip,sizeof(server_ip));
 
 				if((node=listFindNode(&failed_server_list,&server_addr,sizeof(server_addr))) != NULL) {
@@ -5000,7 +5000,6 @@ void DLLCALL mail_server(void* arg)
 	smtp_t*			smtp;
 	FILE*			fp;
 	str_list_t		sec_list;
-	struct in_addr	iaddr;
 	void			*cbdata;
 
 	mail_ver();
