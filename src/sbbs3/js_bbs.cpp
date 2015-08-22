@@ -1462,9 +1462,9 @@ js_atcode(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 	else {
 		if(padded_left)
-			sprintf(str,"%-*.*s",disp_len,disp_len,cp);
+			sprintf(str,"%-*.*s",(int)disp_len,(int)disp_len,cp);
 		else if(padded_right)
-			sprintf(str,"%*.*s",disp_len,disp_len,cp);
+			sprintf(str,"%*.*s",(int)disp_len,(int)disp_len,cp);
 		else
 			SAFECOPY(str,cp);
 
