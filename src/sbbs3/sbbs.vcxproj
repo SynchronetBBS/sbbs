@@ -105,6 +105,7 @@
       </DataExecutionPrevention>
       <ImportLibrary>.\msvc.win32.dll.debug/sbbs.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -153,6 +154,7 @@
       </DataExecutionPrevention>
       <ImportLibrary>.\msvc.win32.dll.release/sbbs.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>

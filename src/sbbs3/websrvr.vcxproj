@@ -104,6 +104,7 @@
       </DataExecutionPrevention>
       <ImportLibrary>.\msvc.win32.dll.release/websrvr.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -152,6 +153,7 @@
       <ImportLibrary>.\msvc.win32.dll.debug/websrvr.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateMapFile>true</GenerateMapFile>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
