@@ -796,7 +796,7 @@ static const char* js_ext(const char* fname)
 
 void dbg_puts(const char *msg)
 {
-	fprintf(stderr, msg);
+	fputs(msg, stderr);
 }
 
 char *dbg_getline(void)
