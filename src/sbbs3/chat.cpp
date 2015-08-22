@@ -430,7 +430,7 @@ void sbbs_t::multinodechat(int channel)
 							? text[AnonUserChatHandle]
 							: useron.handle
 							,cfg.node_num,':',nulstr);
-						sprintf(tmp,"%*s",bstrlen(str),nulstr);
+						sprintf(tmp,"%*s",(int)bstrlen(str),nulstr);
 						strcat(pgraph,tmp); 
 					}
 					strcat(pgraph,line);
