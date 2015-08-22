@@ -218,7 +218,7 @@ void add_bruted(unsigned long name, char good, char *val, int save)
 
 int check_bruted(long name,unsigned char *val)
 {
-	int i;
+	size_t i;
 
 	for(i=0; i<bruted_len; i++) {
 		if(*(int32_t *)bruted[i]==name) {
@@ -231,7 +231,7 @@ int check_bruted(long name,unsigned char *val)
 
 char *find_bruted(long name)
 {
-	int i;
+	size_t i;
 
 	for(i=0; i<bruted_len; i++) {
 		if(*(int32_t *)bruted[i]==name && *(bruted[i]+4))
@@ -2355,7 +2355,7 @@ int main(int argc, char **argv)
 							if(good!=NULL) {
 								str=strtok(NULL,",");
 								if(str!=NULL) {
-									add_bruted(strtoul(crc,NULL,16),strtoul(good,NULL,10),str,0);
+									add_bruted(strtoul(crc,NULL,16),(char)strtoul(good,NULL,10),str,0);
 								}
 							}
 						}

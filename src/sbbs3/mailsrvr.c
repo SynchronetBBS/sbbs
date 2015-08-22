@@ -763,12 +763,12 @@ static void pop3_thread(void* arg)
 	int			rd;
 	BOOL		activity=TRUE;
 	BOOL		apop=FALSE;
-	long		l;
+	uint32_t	l;
 	ulong		lines;
 	ulong		lines_sent;
 	ulong		login_attempts;
 	uint32_t	msgs;
-	long		msgnum;
+	uint32_t	msgnum;
 	ulong		bytes;
 	SOCKET		socket;
 	smb_t		smb;
@@ -1072,9 +1072,9 @@ static void pop3_thread(void* arg)
 				p=buf+4;
 				SKIP_WHITESPACE(p);
 				if(isdigit((uchar)*p)) {
-					msgnum=atol(p);
+					msgnum=strtoul(p, NULL, 10);
 					if(msgnum<1 || msgnum>msgs) {
-						lprintf(LOG_NOTICE,"%04d !POP3 INVALID message #%ld"
+						lprintf(LOG_NOTICE,"%04d !POP3 INVALID message #%" PRIu32
 							,socket, msgnum);
 						sockprintf(socket,"-ERR no such message");
 						continue;
@@ -1108,9 +1108,9 @@ static void pop3_thread(void* arg)
 						continue;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
-						sockprintf(socket,"+OK %lu %lu",msgnum,smb_getmsgtxtlen(&msg));
+						sockprintf(socket,"+OK %" PRIu32 " %lu",msgnum,smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
-						sockprintf(socket,"+OK %lu %lu",msgnum,msg.hdr.number);
+						sockprintf(socket,"+OK %" PRIu32 " %lu",msgnum,msg.hdr.number);
 
 					smb_freemsgmem(&msg);
 					continue;
@@ -1157,7 +1157,7 @@ static void pop3_thread(void* arg)
 				lines=-1;
 				p=buf+4;
 				SKIP_WHITESPACE(p);
-				msgnum=atol(p);
+				msgnum=strtoul(p, NULL, 10);
 
 				if(!strnicmp(buf,"TOP ",4)) {
 					SKIP_DIGIT(p);
@@ -1165,7 +1165,7 @@ static void pop3_thread(void* arg)
 					lines=atol(p);
 				}
 				if(msgnum<1 || msgnum>msgs) {
-					lprintf(LOG_NOTICE,"%04d !POP3 %s ATTEMPTED to retrieve an INVALID message #%ld"
+					lprintf(LOG_NOTICE,"%04d !POP3 %s ATTEMPTED to retrieve an INVALID message #%" PRIu32
 						,socket, user.alias, msgnum);
 					sockprintf(socket,"-ERR no such message");
 					continue;
@@ -1257,10 +1257,10 @@ static void pop3_thread(void* arg)
 			if(!strnicmp(buf, "DELE ",5)) {
 				p=buf+5;
 				SKIP_WHITESPACE(p);
-				msgnum=atol(p);
+				msgnum=strtoul(p, NULL, 10);
 
 				if(msgnum<1 || msgnum>msgs) {
-					lprintf(LOG_NOTICE,"%04d !POP3 %s ATTEMPTED to delete an INVALID message #%ld"
+					lprintf(LOG_NOTICE,"%04d !POP3 %s ATTEMPTED to delete an INVALID message #%" PRIu32
 						,socket, user.alias, msgnum);
 					sockprintf(socket,"-ERR no such message");
 					continue;
@@ -5238,7 +5238,7 @@ void DLLCALL mail_server(void* arg)
 
 		while(!terminated && !terminate_server) {
 
-			if(protected_uint32_value(thread_count) <= 1+sendmail_running) {
+			if(protected_uint32_value(thread_count) <= (unsigned int)(1+(sendmail_running?1:0))) {
 				if(!(startup->options&MAIL_OPT_NO_RECYCLE)) {
 					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 						lprintf(LOG_INFO,"Recycle semaphore file (%s) detected",p);

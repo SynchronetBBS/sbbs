@@ -137,7 +137,7 @@ faddr_t atofaddr(char *instr)
  ******************************************************************************/
 int matchnode(faddr_t addr, int exact)
 {
-	int i;
+	uint i;
 
 	if(exact!=2) {
 		for(i=0;i<cfg.nodecfgs;i++) 				/* Look for exact match */
@@ -185,6 +185,7 @@ void read_echo_cfg()
 	char tmp[512],*p,*tp;
 	short attr=0;
 	int i,j,file;
+	uint u;
 	FILE *stream;
 	faddr_t addr,route_addr;
 
@@ -393,12 +394,12 @@ void read_echo_cfg()
 				continue;
 			*p=0;
 			p++;
-			for(i=0;i<cfg.arcdefs;i++)
-				if(!strnicmp(cfg.arcdef[i].name,str
-					,strlen(cfg.arcdef[i].name)))
+			for(u=0;u<cfg.arcdefs;u++)
+				if(!strnicmp(cfg.arcdef[u].name,str
+					,strlen(cfg.arcdef[u].name)))
 					break;
-			if(i==cfg.arcdefs)				/* i = number of arcdef til done */
-				i=0xffff;					/* Uncompressed type if not found */
+			if(u==cfg.arcdefs)				/* i = number of arcdef til done */
+				u=0xffff;					/* Uncompressed type if not found */
 			while(*p) {
 				SKIPCTRLSP(p);
 				if(!*p)
@@ -415,7 +416,7 @@ void read_echo_cfg()
 						bail(1); }
 					memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
 					cfg.nodecfg[j].faddr=addr; }
-				cfg.nodecfg[j].arctype=i; } }
+				cfg.nodecfg[j].arctype=u; } }
 
 		if(!stricmp(tmp,"PKTPWD")) {         /* Packet Password */
 			if(!*p)
@@ -626,19 +627,19 @@ void read_echo_cfg()
 				SKIPCODE(p); 	/* Find end of this flag */
 				*p=0;						/* and terminate it 	 */
 				++p;
-				for(j=0;j<cfg.listcfg[cfg.listcfgs-1].numflags;j++)
-					if(!strnicmp(cfg.listcfg[cfg.listcfgs-1].flag[j].flag,tp
-						,strlen(cfg.listcfg[cfg.listcfgs-1].flag[j].flag)))
+				for(u=0;u<cfg.listcfg[cfg.listcfgs-1].numflags;u++)
+					if(!strnicmp(cfg.listcfg[cfg.listcfgs-1].flag[u].flag,tp
+						,strlen(cfg.listcfg[cfg.listcfgs-1].flag[u].flag)))
 						break;
-				if(j==cfg.listcfg[cfg.listcfgs-1].numflags) {
+				if(u==cfg.listcfg[cfg.listcfgs-1].numflags) {
 					if((cfg.listcfg[cfg.listcfgs-1].flag=
 						(flag_t *)realloc(cfg.listcfg[cfg.listcfgs-1].flag
-						,sizeof(flag_t)*(j+1)))==NULL) {
+						,sizeof(flag_t)*(u+1)))==NULL) {
 						printf("\nError allocating memory for listcfg #%u "
-							"flag #%u.\n",cfg.listcfgs,j+1);
+							"flag #%u.\n",cfg.listcfgs,u+1);
 						bail(1); }
 					cfg.listcfg[cfg.listcfgs-1].numflags++;
-					SAFECOPY(cfg.listcfg[cfg.listcfgs-1].flag[j].flag,tp); }
+					SAFECOPY(cfg.listcfg[cfg.listcfgs-1].flag[u].flag,tp); }
 				SKIPCTRLSP(p); } }
 
 		/* Message disabled why?  ToDo */

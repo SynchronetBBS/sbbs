@@ -883,7 +883,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				domsg=0;
 				if((i64=get_start_msg(this,&smb))<0)
 					break;
-				i=i64;
+				i=(int)i64;
 				listmsgs(subnum,0,post,i,smb.msgs);
 				sys_status&=~SS_ABORT;
 				break;

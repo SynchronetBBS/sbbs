@@ -376,7 +376,8 @@ SOCKET DLLCALL js_socket_add(JSContext *cx, jsval val, fd_set *fds)
 	js_socket_private_t	*p;
 	JSClass*	cl;
 	SOCKET		sock=INVALID_SOCKET;
-	int32		i;
+	size_t		i;
+	int32_t		intval;
 
 	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
 		if(cl->flags&JSCLASS_HAS_PRIVATE) {
@@ -398,8 +399,8 @@ SOCKET DLLCALL js_socket_add(JSContext *cx, jsval val, fd_set *fds)
 			}
 		}
 	} else if(val!=JSVAL_VOID) {
-		if(JS_ValueToInt32(cx,val,&i)) {
-			sock = i;
+		if(JS_ValueToInt32(cx,val,&intval)) {
+			sock = intval;
 			FD_SET(sock, fds);
 		}
 	}
@@ -410,7 +411,8 @@ BOOL DLLCALL  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
 {
 	js_socket_private_t	*p;
 	JSClass*	cl;
-	int			i;
+	size_t		i;
+	int			intval;
 
 	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
 		if(cl->flags&JSCLASS_HAS_PRIVATE) {
@@ -430,8 +432,8 @@ BOOL DLLCALL  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
 			}
 		}
 	} else if(val!=JSVAL_VOID) {
-		if(JS_ValueToInt32(cx,val,&i)) {
-			if(FD_ISSET(i, fds))
+		if(JS_ValueToInt32(cx,val,&intval)) {
+			if(FD_ISSET(intval, fds))
 				return TRUE;
 		}
 	}
@@ -1543,7 +1545,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	int		result;
 	struct	timeval tv = {0, 0};
 	jsrefcount	rc;
-	int		i;
+	size_t	i;
 	SOCKET	high=0;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);

@@ -2713,7 +2713,7 @@ static void ctrl_thread(void* arg)
 			SAFECOPY(user.modem,"FTP");
 			SAFECOPY(user.comp,host_name);
 			SAFECOPY(user.ipaddr,host_ip);
-			user.logontime=logintime;
+			user.logontime=(time32_t)logintime;
 			putuserdat(&scfg, &user);
 
 			continue;

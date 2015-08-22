@@ -1691,7 +1691,8 @@ void DLLCALL services_thread(void* arg)
 	SOCKET			client_socket;
 	BYTE*			udp_buf = NULL;
 	int				udp_len;
-	int				i,j;
+	int				i;
+	size_t			j;
 	int				result;
 	int				optval;
 	ulong			total_running;
