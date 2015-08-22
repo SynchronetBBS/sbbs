@@ -162,10 +162,12 @@ typedef ulong   uint32_t;
 typedef signed __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 #define INTTYPES_H_64BIT_PREFIX         "I64"
+#define XP_PRIsize_t					"I"
 #else
 typedef signed long long int int64_t;
 typedef unsigned long long int uint64_t;
 #define INTTYPES_H_64BIT_PREFIX         "ll"
+#define XP_PRIsize_t					"z"
 #endif
 
 typedef uint64_t	uintmax_t;
