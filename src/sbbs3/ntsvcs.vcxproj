@@ -57,6 +57,12 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\msvc.win32.release\ntsvcs\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>sbbsNTsvcs</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>sbbsNTsvcs</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
       <TypeLibraryName>.\msvc.win32.exe.debug/ntsvcs.tlb</TypeLibraryName>
