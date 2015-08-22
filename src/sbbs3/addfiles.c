@@ -656,7 +656,6 @@ char *usage="\nusage: addfiles code [.alt_path] [-opts] +list "
 	"\nAuto-ADD:   use - in place of code for Auto-ADD of FILES.BBS"
 	"\n            use -filename to Auto-ADD a different filename"
 	"\n            use -l \"libname\" to only Auto-ADD files to a specific library"
-	"\n"
 	;
 
 /*********************/
@@ -686,7 +685,7 @@ int main(int argc, char **argv)
 		);
 
 	if(argc<2) {
-		printf(usage);
+		puts(usage);
 		return(1); 
 	}
 
@@ -714,7 +713,7 @@ int main(int argc, char **argv)
 
 	if(argv[1][0]=='*' || argv[1][0]=='-') {
 		if(argv[1][1]=='?') {
-			printf(usage);
+			puts(usage);
 			exit(0);
 		}
 		if(argv[1][1])
@@ -723,7 +722,7 @@ int main(int argc, char **argv)
 		i=0; 
 	} else {
 		if(!isalnum((uchar)argv[1][0]) && argc==2) {
-			printf(usage);
+			puts(usage);
 			return(1); 
 		}
 
@@ -771,7 +770,7 @@ int main(int argc, char **argv)
 					case 'L':
 						j++;
 						if(argv[j]==NULL) {
-							printf(usage);
+							puts(usage);
 							return(-1);
 						}
 						SAFECOPY(lib,argv[j]);
@@ -780,7 +779,7 @@ int main(int argc, char **argv)
 					case 'X':
 						j++;
 						if(argv[j]==NULL) {
-							printf(usage);
+							puts(usage);
 							return(-1);
 						}
 						SAFECOPY(f.uler,argv[j]);
@@ -811,7 +810,7 @@ int main(int argc, char **argv)
 						mode|=SEARCH_DIR;
 						break;
 					default:
-						printf(usage);
+						puts(usage);
 						return(1); 
 			} 
 		}
