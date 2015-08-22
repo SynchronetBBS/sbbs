@@ -41,6 +41,7 @@ void page_cfg()
 	char str[81],done=0;
 	int j,k;
 	uint i;
+	uint u;
 	static page_t savpage;
 
 while(1) {
@@ -87,8 +88,8 @@ while(1) {
             continue; 
 		}
 		if(cfg.total_pages)
-			for(j=cfg.total_pages;j>i;j--)
-				cfg.page[j]=cfg.page[j-1];
+			for(u=cfg.total_pages;u>i;u--)
+				cfg.page[u]=cfg.page[u-1];
 		if((cfg.page[i]=(page_t *)malloc(sizeof(page_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(page_t));
 			continue; 
@@ -203,7 +204,7 @@ void chan_cfg()
 	static int chan_dflt,chan_bar,opt_dflt;
 	char str[128],code[128],done=0;
 	int j,k;
-	uint i;
+	uint i,u;
 	static chan_t savchan;
 
 while(1) {
@@ -269,8 +270,8 @@ while(1) {
             continue; 
 		}
 		if(cfg.total_chans)
-			for(j=cfg.total_chans;j>i;j--)
-				cfg.chan[j]=cfg.chan[j-1];
+			for(u=cfg.total_chans;u>i;u--)
+				cfg.chan[u]=cfg.chan[u-1];
 		if((cfg.chan[i]=(chan_t *)malloc(sizeof(chan_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(chan_t));
 			continue; 
@@ -593,7 +594,7 @@ void guru_cfg()
 	static int guru_dflt,guru_bar,opt_dflt;
 	char str[128],code[128],done=0;
 	int j,k;
-	uint i;
+	uint i,u;
 	static guru_t savguru;
 
 while(1) {
@@ -657,8 +658,8 @@ while(1) {
             continue; 
 		}
 		if(cfg.total_gurus)
-			for(j=cfg.total_gurus;j>i;j--)
-				cfg.guru[j]=cfg.guru[j-1];
+			for(u=cfg.total_gurus;u>i;u--)
+				cfg.guru[u]=cfg.guru[u-1];
 		if((cfg.guru[i]=(guru_t *)malloc(sizeof(guru_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(guru_t));
 			continue; 
@@ -751,7 +752,7 @@ void actsets_cfg()
     static int actset_dflt,actset_bar,opt_dflt;
     char str[81];
     int j,k,done;
-    uint i;
+    uint i,u;
     static actset_t savactset;
 
 while(1) {
@@ -799,8 +800,8 @@ while(1) {
             continue; 
 		}
         if(cfg.total_actsets)
-            for(j=cfg.total_actsets;j>i;j--)
-                cfg.actset[j]=cfg.actset[j-1];
+            for(u=cfg.total_actsets;u>i;u--)
+                cfg.actset[u]=cfg.actset[u-1];
         if((cfg.actset[i]=(actset_t *)malloc(sizeof(actset_t)))==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(actset_t));
             continue; 

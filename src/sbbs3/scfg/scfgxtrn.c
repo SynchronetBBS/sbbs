@@ -1458,6 +1458,7 @@ void xedit_cfg()
 	char str[81],code[81],done=0;
 	int j,k;
 	uint i;
+	uint u;
 	static xedit_t savxedit;
 
 while(1) {
@@ -1520,8 +1521,8 @@ while(1) {
             continue; 
 		}
 		if(cfg.total_xedits)
-			for(j=cfg.total_xedits;j>i;j--)
-				cfg.xedit[j]=cfg.xedit[j-1];
+			for(u=cfg.total_xedits;u>i;u--)
+				cfg.xedit[u]=cfg.xedit[u-1];
 		if((cfg.xedit[i]=(xedit_t *)malloc(sizeof(xedit_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(xedit_t));
 			continue; 
@@ -1925,7 +1926,7 @@ int natvpgm_cfg()
 	static int dflt,bar;
 	char str[81];
 	int j;
-	uint i;
+	uint i,u;
 
 while(1) {
 	for(i=0;i<MAX_OPTS && i<cfg.total_natvpgms;i++)
@@ -1969,8 +1970,8 @@ while(1) {
             continue; 
 		}
 		if(cfg.total_natvpgms)
-			for(j=cfg.total_natvpgms;j>i;j--)
-				cfg.natvpgm[j]=cfg.natvpgm[j-1];
+			for(u=cfg.total_natvpgms;u>i;u--)
+				cfg.natvpgm[u]=cfg.natvpgm[u-1];
 		if((cfg.natvpgm[i]=(natvpgm_t *)malloc(sizeof(natvpgm_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(natvpgm_t));
 			continue; 
@@ -2010,6 +2011,7 @@ void xtrnsec_cfg()
 	char str[128],code[128],done=0;
 	int j,k;
 	uint i;
+	uint u;
 	static xtrnsec_t savxtrnsec;
 
 while(1) {
@@ -2074,8 +2076,8 @@ while(1) {
 			continue; 
 		}
 		if(cfg.total_xtrnsecs) {
-			for(j=cfg.total_xtrnsecs;j>i;j--)
-				cfg.xtrnsec[j]=cfg.xtrnsec[j-1];
+			for(u=cfg.total_xtrnsecs;u>i;u--)
+				cfg.xtrnsec[u]=cfg.xtrnsec[u-1];
 			for(j=0;j<cfg.total_xtrns;j++)
 				if(cfg.xtrn[j]->sec>=i)
 					cfg.xtrn[j]->sec++; 
@@ -2193,6 +2195,7 @@ void hotkey_cfg(void)
 	char str[81],done=0;
 	int j,k;
 	uint i;
+	uint u;
 	static hotkey_t savhotkey;
 
 while(1) {
@@ -2243,8 +2246,8 @@ while(1) {
             continue; 
 		}
 		if(cfg.total_hotkeys)
-			for(j=cfg.total_hotkeys;j>i;j--)
-				cfg.hotkey[j]=cfg.hotkey[j-1];
+			for(u=cfg.total_hotkeys;u>i;u--)
+				cfg.hotkey[u]=cfg.hotkey[u-1];
 		if((cfg.hotkey[i]=(hotkey_t *)malloc(sizeof(hotkey_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(hotkey_t));
 			continue; 

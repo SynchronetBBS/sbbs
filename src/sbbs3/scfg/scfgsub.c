@@ -42,7 +42,7 @@ void sub_cfg(uint grpnum)
 	char path[MAX_PATH+1];
 	char data_dir[MAX_PATH+1];
 	int j,m,n,ptridx,q,s;
-	uint i,subnum[MAX_OPTS+1];
+	uint i,u,subnum[MAX_OPTS+1];
 	static sub_t savsub;
 
 while(1) {
@@ -151,8 +151,8 @@ while(1) {
                 break; }
 
 		if(j) {
-			for(n=cfg.total_subs;n>subnum[i];n--)
-                cfg.sub[n]=cfg.sub[n-1];
+			for(u=cfg.total_subs;u>subnum[i];u--)
+                cfg.sub[u]=cfg.sub[u-1];
 			for(q=0;q<cfg.total_qhubs;q++)
 				for(s=0;s<cfg.qhub[q]->subs;s++)
 					if(cfg.qhub[q]->sub[s]>=subnum[i])

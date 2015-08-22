@@ -101,6 +101,7 @@ void xfer_cfg()
 	char tmp_code[32];
 	int file,j,k,q;
 	uint i;
+	uint u;
 	long ported,added;
 	static lib_t savlib;
 	dir_t tmpdir;
@@ -172,8 +173,8 @@ while(1) {
             continue; }
 
 		if(cfg.total_libs) {
-			for(j=cfg.total_libs;j>i;j--)
-                cfg.lib[j]=cfg.lib[j-1];
+			for(u=cfg.total_libs;u>i;j--)
+                cfg.lib[u]=cfg.lib[u-1];
 			for(j=0;j<cfg.total_dirs;j++)
 				if(cfg.dir[j]->lib>=i)
 					cfg.dir[j]->lib++; }
@@ -669,6 +670,7 @@ void dir_cfg(uint libnum)
 	char str[128],str2[128],code[128],path[MAX_PATH+1],done=0;
 	char data_dir[MAX_PATH+1];
 	int j,n;
+	uint u;
 	uint i,dirnum[MAX_OPTS+1];
 	static dir_t savdir;
 
@@ -765,8 +767,8 @@ while(1) {
             continue; }
 
 		if(j)
-			for(n=cfg.total_dirs;n>dirnum[i];n--)
-                cfg.dir[n]=cfg.dir[n-1];
+			for(u=cfg.total_dirs;u>dirnum[i];u--)
+                cfg.dir[u]=cfg.dir[u-1];
 		if((cfg.dir[dirnum[i]]=(dir_t *)malloc(sizeof(dir_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(dir_t));
 			continue; }
