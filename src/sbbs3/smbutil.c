@@ -678,7 +678,7 @@ void maint(void)
 	if((idx=(idxrec_t *)malloc(sizeof(idxrec_t)*smb.status.total_msgs))
 		==NULL) {
 		smb_unlocksmbhdr(&smb);
-		fprintf(errfp,"\n%s!Error allocating %u bytes of memory\n"
+		fprintf(errfp,"\n%s!Error allocating %" XP_PRIsize_t "u bytes of memory\n"
 			,beep,sizeof(idxrec_t)*smb.status.total_msgs);
 		return; 
 	}
