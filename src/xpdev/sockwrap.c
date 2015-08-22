@@ -438,7 +438,7 @@ union xp_sockaddr* DLLCALL inet_ptoaddr(char *addr_str, union xp_sockaddr *addr,
 const char* DLLCALL inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 {
 #ifdef _WIN32
-	if(getnameinfo(addr, xp_sockaddr_len(addr), dest, size, NULL, 0, NI_NUMERICHOST))
+	if(getnameinfo(&addr->addr, xp_sockaddr_len(addr), dest, size, NULL, 0, NI_NUMERICHOST))
 		strncpy(dest, "<Unable to convert address>", size);
 	return dest;
 #else

@@ -24,7 +24,7 @@ struct xpms_set* DLLCALL xpms_create(unsigned int retries, unsigned int wait_sec
 
 void DLLCALL xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *), void *cbdata)
 {
-	int		i;
+	size_t		i;
 
 	if(!xpms_set)
 		return;
@@ -237,7 +237,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 	socklen_t * addrlen, unsigned int timeout, void **cb_data)
 {
 	fd_set			read_fs;
-	int				i;
+	size_t			i;
 	struct timeval	tv;
 	struct timeval	*tvp;
 	SOCKET			max_sock=0;

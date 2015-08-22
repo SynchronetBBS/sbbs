@@ -1317,7 +1317,9 @@ int DLLCALL iniGetSocketOptions(str_list_t list, const char* section, SOCKET soc
 	int			type=0;	// Assignment is to silence Valgrind.
 	LINGER		linger;
 	socket_option_t* socket_options=getSocketOptionList();
+#ifdef IPPROTO_IPV6
 	union xp_sockaddr	addr;
+#endif
 
 	len=sizeof(type);
 	if((result=getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&type, &len)) != 0) {
