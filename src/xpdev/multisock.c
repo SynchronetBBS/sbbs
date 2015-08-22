@@ -209,7 +209,7 @@ BOOL DLLCALL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 			sscanf(p, "%hu", &port);
 		}
 		if(xpms_set->lprintf)
-			xpms_set->lprintf(LOG_INFO, "Adding %s listening socket on %s port %hu", prot, host, port);
+			xpms_set->lprintf(LOG_INFO, "Adding %s listening socket on %s port %hu", prot, host_str, port);
 		if(xpms_add(xpms_set, domain, type, protocol, host_str, port, prot, sock_init, bind_init, cbdata))
 			one_good=TRUE;
 		free(host);
