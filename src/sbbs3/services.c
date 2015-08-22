@@ -816,8 +816,8 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 				services_ver();
 			service_client->service->js_server_props.clients=
 				&service_client->service->clients;
-			service_client->service->js_server_props.interface_addr=
-				&service_client->service->interface_addr;
+			service_client->service->js_server_props.interfaces=
+				&service_client->service->interfaces;
 			service_client->service->js_server_props.options=
 				&service_client->service->options;
 		}
@@ -1521,8 +1521,6 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 		SAFECOPY(serv.protocol,iniGetString(list,sec_list[i],"Protocol",sec_list[i],prot));
 		serv.set = NULL;
 		serv.interfaces=iniGetStringList(list,sec_list[i],"Interface",",",default_interfaces);
-		serv.outgoing4.s_addr=iniGetIpAddress(list,sec_list[i],"OutgoingV4",startup->outgoing4.s_addr);
-		serv.outgoing6=iniGetIp6Address(list,sec_list[i],"OutgoingV6",startup->outgoing6);
 		serv.max_clients=iniGetInteger(list,sec_list[i],"MaxClients",max_clients);
 		serv.listen_backlog=iniGetInteger(list,sec_list[i],"ListenBacklog",listen_backlog);
 		serv.stack_size=(uint32_t)iniGetBytes(list,sec_list[i],"StackSize",1,stack_size);
@@ -1554,6 +1552,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, sec_list[i], &serv.js, &startup->js);
 
+		/* TODO: Fix this up for IPv6 stuff etc... this is going to be ugly! */
 		for(j=0;j<*services;j++)
 			if(service[j].interface_addr==serv.interface_addr && service[j].port==serv.port
 				&& (service[j].options&SERVICE_OPT_UDP)==(serv.options&SERVICE_OPT_UDP))
@@ -1829,8 +1828,6 @@ void DLLCALL services_thread(void* arg)
 		total_sockets=0;
 
 		for(i=0;i<(int)services && !startup->shutdown_now;i++) {
-			struct in_addr	iaddr;
-
 			if (service[i].options & SERVICE_OPT_TLS) {
 				if (tls_context == -1)
 					continue;

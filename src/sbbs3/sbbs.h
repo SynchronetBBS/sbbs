@@ -1135,7 +1135,7 @@ extern "C" {
 	typedef struct {
 		char		version[128];
 		const char*	version_detail;
-		uint32_t*	interface_addr;
+		str_list_t*	interfaces;
 		uint32_t*	options;
 		uint32_t*	clients;
 	} js_server_props_t;

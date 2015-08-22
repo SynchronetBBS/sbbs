@@ -4528,8 +4528,7 @@ void DLLCALL bbs_thread(void* arg)
 	js_server_props.version_detail=bbs_ver();
 	js_server_props.clients=&node_threads_running.value;
 	js_server_props.options=&startup->options;
-	/* TODO: IPv6 */
-	js_server_props.interface_addr=(uint32_t *)&startup->outgoing4.s_addr;
+	js_server_props.interfaces=&startup->telnet_interfaces;
 
 	uptime=0;
 	served=0;

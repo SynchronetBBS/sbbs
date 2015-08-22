@@ -5836,8 +5836,7 @@ void DLLCALL web_server(void* arg)
 	js_server_props.version_detail=web_ver();
 	js_server_props.clients=&active_clients.value;
 	js_server_props.options=&startup->options;
-	/* TODO IPv6 */
-	js_server_props.interface_addr=&startup->outgoing4;
+	js_server_props.interfaces=&startup->interfaces;
 
 	uptime=0;
 	served=0;

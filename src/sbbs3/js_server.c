@@ -41,7 +41,6 @@
 enum {
 	 SERVER_PROP_VER
 	,SERVER_PROP_VER_DETAIL
-	,SERVER_PROP_INTERFACE
 	,SERVER_PROP_OPTIONS
 	,SERVER_PROP_CLIENTS
 };
@@ -49,9 +48,7 @@ enum {
 static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
-	char*		ip;
     jsint       tiny;
-	struct in_addr in_addr;
 	js_server_props_t*	p;
 
 	if((p=(js_server_props_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -68,14 +65,6 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SERVER_PROP_VER_DETAIL:
 			if(p->version_detail!=NULL)
 				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,p->version_detail));
-			break;
-		case SERVER_PROP_INTERFACE:
-			if(p->interface_addr!=NULL) {
-				in_addr.s_addr=*(p->interface_addr);
-				in_addr.s_addr=htonl(in_addr.s_addr);
-				if((ip=inet_ntoa(in_addr))!=NULL)
-					*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,ip));
-			}
 			break;
 		case SERVER_PROP_OPTIONS:
 			if(p->options!=NULL)
@@ -122,7 +111,6 @@ static jsSyncPropertySpec js_server_properties[] = {
 
 	{	"version",					SERVER_PROP_VER,		PROP_FLAGS,			310 },
 	{	"version_detail",			SERVER_PROP_VER_DETAIL,	PROP_FLAGS,			310 },
-	{	"interface_ip_address",		SERVER_PROP_INTERFACE,	PROP_FLAGS,			311 },
 	{	"options",					SERVER_PROP_OPTIONS,	JSPROP_ENUMERATE,	311 },
 	{	"clients",					SERVER_PROP_CLIENTS,	PROP_FLAGS,			311 },
 	{0}
@@ -133,17 +121,38 @@ static char* server_prop_desc[] = {
 
 	 "server name and version number"
 	,"detailed version/build information"
-	,"IP address of bound network interface (<tt>0.0.0.0</tt> = <i>ANY</i>)"
 	,"bit-field of server-specific startup options"
 	,"number of active clients (if available)"
+	,"Array of IP addresses of bound network interface (<tt>0.0.0.0</tt> = <i>ANY</i>)"
 	,NULL
 };
 #endif
+
+static void remove_port_part(char *host)
+{
+	char *p=strchr(host, 0)-1;
+
+	if (!isdigit(*p))
+		return;
+	for(; p >= host; p--) {
+		if (*p == ':') {
+			*p = 0;
+			return;
+		}
+		if (!isdigit(*p))
+			return;
+	}
+}
 
 static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 	JSBool			ret;
+	jsval			val;
+	char			*str;
+	JSObject*		newobj;
+	uint			i;
+	js_server_props_t*	props;
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
@@ -153,6 +162,36 @@ static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 			HANDLE_PENDING(cx);
 		}
+	}
+
+	/* interface_ip_address property */
+	if(name==NULL || strcmp(name, "interface_ip_address")==0) {
+		if(name) free(name);
+
+		if((props=(js_server_props_t*)JS_GetPrivate(cx,obj))==NULL)
+			return(JS_FALSE);
+
+		if((newobj=JS_NewArrayObject(cx, 0, NULL))==NULL)
+			return(JS_FALSE);
+
+		if(!JS_SetParent(cx, newobj, obj))
+			return(JS_FALSE);
+
+		if(!JS_DefineProperty(cx, obj, "interface_ip_address", OBJECT_TO_JSVAL(newobj)
+				, NULL, NULL, JSPROP_ENUMERATE))
+			return(JS_FALSE);
+
+		for (i=0; (*props->interfaces)[i]; i++) {
+			str = strdup((*props->interfaces)[i]);
+			if (str == NULL)
+				return JS_FALSE;
+			remove_port_part(str);
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,str));
+			free(str);
+			JS_SetElement(cx, newobj, i, &val);
+		}
+		JS_DeepFreezeObject(cx, newobj);
+		if(name) return(JS_TRUE);
 	}
 
 	ret = js_SyncResolve(cx, obj, name, js_server_properties, NULL, NULL, 0);
