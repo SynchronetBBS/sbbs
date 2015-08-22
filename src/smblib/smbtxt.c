@@ -55,7 +55,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 
 	if((buf=(char*)malloc(sizeof(char)))==NULL) {
 		sprintf(smb->last_error
-			,"malloc failure of %u bytes for buffer"
+			,"malloc failure of %" XP_PRIsize_t "u bytes for buffer"
 			,sizeof(char));
 		return(NULL);
 	}
