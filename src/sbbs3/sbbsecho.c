@@ -584,7 +584,7 @@ void notify_list(void)
 {
 	FILE *	tmpf;
 	char	str[256];
-	uint	i,j,k;
+	uint	i,k;
 
 	for(k=0;k<cfg.nodecfgs;k++) {
 
@@ -3748,6 +3748,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 	int		i,j,k=0;
 	ulong	f,l,m,exp,exported=0;
 	uint32_t ptr,msgs,lastmsg,posts;
+	long	tmp_msgs;
 	float	export_time;
 	smbmsg_t msg;
 	smbmsg_t orig_msg;
@@ -3791,15 +3792,16 @@ void export_echomail(char *sub_code,faddr_t addr)
 		if(!addr.zone && !(misc&IGNORE_MSGPTRS))
 			ptr=read_export_ptr(i, tag);
 
-		msgs=getlastmsg(i,&lastmsg,0);
-		if(msgs<1 || (!addr.zone && !(misc&IGNORE_MSGPTRS) && ptr>=lastmsg)) {
+		tmp_msgs=getlastmsg(i,&lastmsg,0);
+		if(tmp_msgs<1 || (!addr.zone && !(misc&IGNORE_MSGPTRS) && ptr>=lastmsg)) {
 			lprintf(LOG_DEBUG,"No new messages.");
-			if(msgs>=0 && ptr>lastmsg && !addr.zone && !(misc&LEAVE_MSGPTRS)) {
+			if(tmp_msgs>=0 && ptr>lastmsg && !addr.zone && !(misc&LEAVE_MSGPTRS)) {
 				lprintf(LOG_DEBUG,"Fixing new-scan pointer (%u, lastmsg=%u).", ptr, lastmsg);
 				write_export_ptr(i, lastmsg, tag);
 			}
 			continue; 
 		}
+		msgs = tmp_msgs;
 
 		sprintf(smb[cur_smb].file,"%s%s"
 			,scfg.sub[i]->data_dir,scfg.sub[i]->code);
@@ -4144,7 +4146,7 @@ int main(int argc, char **argv)
 	"o: import all netmail regardless of destination address\n"
 	"s: import private echomail override (strip private status)\n"
 	"!: notify users of received echomail     @: prompt for key upon exiting (debug)\n"
-	"                                         W: prompt for key upon abnormal exit\n";
+	"                                         W: prompt for key upon abnormal exit";
 
 	if((email=(smb_t *)malloc(sizeof(smb_t)))==NULL) {
 		printf("ERROR allocating memory for email.\n");
@@ -4268,7 +4270,7 @@ int main(int argc, char **argv)
 					case 'Q':
 						bail(0);
 					default:
-						printf(usage);
+						puts(usage);
 						bail(0); 
 				}
 				j++; 
@@ -4796,7 +4798,7 @@ int main(int argc, char **argv)
 					if((j=smb_open(&smb[cur_smb]))!=SMB_SUCCESS) {
 						sprintf(str,"ERROR %d opening %s area #%d, sub #%d)"
 							,j,smb[cur_smb].file,i+1,cfg.area[i].sub+1);
-						printf(str);
+						fputs(str,stdout);
 						logprintf(str);
 						strip_psb(fmsgbuf);
 						pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen
@@ -4812,7 +4814,7 @@ int main(int argc, char **argv)
 								? SMB_HYPERALLOC:0;
 						if((j=smb_create(&smb[cur_smb]))!=SMB_SUCCESS) {
 							sprintf(str,"ERROR %d creating %s",j,smb[cur_smb].file);
-							printf(str);
+							fputs(str,stdout);
 							logprintf(str);
 							smb_close(&smb[cur_smb]);
 							strip_psb(fmsgbuf);
