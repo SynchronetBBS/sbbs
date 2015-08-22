@@ -56,8 +56,8 @@ typedef struct {
 	WORD		tls_port;
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
-    char	interfaces[INI_MAX_VALUE_LEN];
-    char	tls_interfaces[INI_MAX_VALUE_LEN];
+    str_list_t	interfaces;
+    str_list_t	tls_interfaces;
 	
 	void*	cbdata;				/* Private data passed to callbacks */ 
 

@@ -4696,7 +4696,7 @@ void DLLCALL bbs_thread(void* arg)
 	/*
 	 * Add interfaces
 	 */
-	xpms_add_chararray_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->telnet_interfaces, startup->telnet_port, "Telnet Server", sock_cb, startup->seteuid, &telnet_cb);
+	xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->telnet_interfaces, startup->telnet_port, "Telnet Server", sock_cb, startup->seteuid, &telnet_cb);
 
 	lprintf(LOG_INFO,"Telnet Server listening on port %u",startup->telnet_port);
 
@@ -4704,7 +4704,7 @@ void DLLCALL bbs_thread(void* arg)
 		/* open a socket and wait for a client */
 		rlogin_cb.protocol="rlogin";
 		rlogin_cb.startup=startup;
-		xpms_add_chararray_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->rlogin_interfaces, startup->rlogin_port, "RLogin Server", sock_cb, startup->seteuid, &rlogin_cb);
+		xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->rlogin_interfaces, startup->rlogin_port, "RLogin Server", sock_cb, startup->seteuid, &rlogin_cb);
 		lprintf(LOG_INFO,"RLogin Server listening on port %u",startup->rlogin_port);
 	}
 
@@ -4751,7 +4751,7 @@ void DLLCALL bbs_thread(void* arg)
 		/* open a socket and wait for a client */
 		ssh_cb.protocol="ssh";
 		ssh_cb.startup=startup;
-		xpms_add_chararray_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->ssh_interfaces, startup->ssh_port, "SSH Server", sock_cb, startup->seteuid, &ssh_cb);
+		xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->ssh_interfaces, startup->ssh_port, "SSH Server", sock_cb, startup->seteuid, &ssh_cb);
 		lprintf(LOG_INFO,"SSH Server listening on port %u",startup->ssh_port);
 	}
 NO_SSH:

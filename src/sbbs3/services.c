@@ -84,7 +84,7 @@ typedef struct {
 	/* These are sysop-configurable */
 	uint32_t		interface_addr;
 	uint16_t		port;
-	char		interfaces[INI_MAX_VALUE_LEN];
+	str_list_t		interfaces;
 	struct in_addr		outgoing4;
 	struct in6_addr	outgoing6;
 	char			protocol[34];
@@ -1511,7 +1511,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 
 	/* Enumerate and parse each service configuration */
 	sec_list = iniGetSectionList(list,"");
-	default_interfaces = strdup(startup->interfaces);
+	default_interfaces = strListCombine(startup->interfaces, NULL, 16384, ",");
     for(i=0; sec_list!=NULL && sec_list[i]!=NULL; i++) {
 		if(!iniGetBool(list,sec_list[i],"Enabled",TRUE)) {
 			lprintf(LOG_WARNING,"Ignoring disabled service: %s",sec_list[i]);
@@ -1520,7 +1520,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 		memset(&serv,0,sizeof(service_t));
 		SAFECOPY(serv.protocol,iniGetString(list,sec_list[i],"Protocol",sec_list[i],prot));
 		serv.set = NULL;
-		SAFECOPY(serv.interfaces,iniGetString(list,sec_list[i],"Interface",default_interfaces,host));
+		serv.interfaces=iniGetStringList(list,sec_list[i],"Interface",",",default_interfaces);
 		serv.outgoing4.s_addr=iniGetIpAddress(list,sec_list[i],"OutgoingV4",startup->outgoing4.s_addr);
 		serv.outgoing6=iniGetIp6Address(list,sec_list[i],"OutgoingV6",startup->outgoing6);
 		serv.max_clients=iniGetInteger(list,sec_list[i],"MaxClients",max_clients);
@@ -1853,7 +1853,7 @@ void DLLCALL services_thread(void* arg)
 				cleanup(1);
 				return;
 			}
-			xpms_add_chararray_list(service[i].set, PF_UNSPEC, (service[i].options&SERVICE_OPT_UDP) ? SOCK_DGRAM : SOCK_STREAM
+			xpms_add_list(service[i].set, PF_UNSPEC, (service[i].options&SERVICE_OPT_UDP) ? SOCK_DGRAM : SOCK_STREAM
 					, IPPROTO_IP, service[i].interfaces, service[i].port, service[i].protocol
 					, (service[i].options&SERVICE_OPT_UDP) ? service_udp_sock_cb : open_socket_cb, startup->seteuid, &service[i]);
 			total_sockets += service[i].set->sock_count;

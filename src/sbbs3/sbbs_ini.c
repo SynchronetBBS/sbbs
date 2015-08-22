@@ -214,8 +214,8 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
         SAFECOPY(global->host_name,value);
 
 	global->sem_chk_freq=iniGetShortInt(list,section,strSemFileCheckFrequency,0);
-	SAFECOPY(global->interfaces,
-			iniGetString(list,section,strInterfaces, "0.0.0.0,::", value));
+	iniFreeStringList(global->interfaces);
+	global->interfaces=iniGetStringList(list,section,strInterfaces, ",", "0.0.0.0,::");
 	global->outgoing4.s_addr=iniGetIpAddress(list,section,strOutgoing4,0);
 	global->outgoing6=iniGetIp6Address(list,section,strOutgoing6,wildcard6);
 	global->log_level=iniGetLogLevel(list,section,strLogLevel,DEFAULT_LOG_LEVEL);
@@ -261,6 +261,7 @@ void sbbs_read_ini(
 	str_list_t	list;
 	global_startup_t global_buf;
 	struct in6_addr	wildcard6 = {0};
+	char		*global_interfaces;
 
 	if(global==NULL) {
 		memset(&global_buf,0,sizeof(global_buf));
@@ -279,6 +280,8 @@ void sbbs_read_ini(
 		if(services!=NULL)	SAFECOPY(services->ctrl_dir,global->ctrl_dir);
 	}
 
+	global_interfaces = strListCombine(global->interfaces, NULL, 16384, ",");
+
 	/***********************************************************************/
 	section = "BBS";
 
@@ -294,18 +297,21 @@ void sbbs_read_ini(
 
 		bbs->telnet_port
 			=iniGetShortInt(list,section,"TelnetPort",IPPORT_TELNET);
-		SAFECOPY(bbs->telnet_interfaces,
-			iniGetString(list,section,"TelnetInterface",global->interfaces,value));
+		iniFreeStringList(bbs->telnet_interfaces);
+		bbs->telnet_interfaces
+			=iniGetStringList(list,section,"TelnetInterface",",",global_interfaces);
 
 		bbs->rlogin_port
 			=iniGetShortInt(list,section,"RLoginPort",513);
-		SAFECOPY(bbs->rlogin_interfaces,
-			iniGetString(list,section,"RLoginInterface",global->interfaces,value));
+		iniFreeStringList(bbs->rlogin_interfaces);
+		bbs->rlogin_interfaces
+			=iniGetStringList(list,section,"RLoginInterface",",",global_interfaces);
 
 		bbs->ssh_port
 			=iniGetShortInt(list,section,"SSHPort",22);
-		SAFECOPY(bbs->ssh_interfaces,
-			iniGetString(list,section,"SSHInterface",global->interfaces,value));
+		iniFreeStringList(bbs->ssh_interfaces);
+		bbs->ssh_interfaces
+			=iniGetStringList(list,section,"SSHInterface",",",global_interfaces);
 
 		bbs->first_node
 			=iniGetShortInt(list,section,"FirstNode",1);
@@ -389,8 +395,9 @@ void sbbs_read_ini(
 			=iniGetIp6Address(list,section,strOutgoing6,global->outgoing6);
 		ftp->port
 			=iniGetShortInt(list,section,strPort,IPPORT_FTP);
-		SAFECOPY(ftp->interfaces,
-			iniGetString(list,section,strInterfaces,global->interfaces,value));
+		iniFreeStringList(ftp->interfaces);
+		ftp->interfaces
+			=iniGetStringList(list,section,strInterfaces,",",global_interfaces);
 		ftp->max_clients
 			=iniGetShortInt(list,section,strMaxClients,FTP_DEFAULT_MAX_CLIENTS);
 		ftp->max_inactivity
@@ -460,8 +467,9 @@ void sbbs_read_ini(
 
 	if(mail!=NULL) {
 
-		SAFECOPY(mail->interfaces,
-			iniGetString(list,section,"SMTPInterface",global->interfaces,value));
+		iniFreeStringList(mail->interfaces);
+		mail->interfaces
+			=iniGetStringList(list,section,"SMTPInterface",",",global_interfaces);
 		mail->outgoing4.s_addr
 			=iniGetIpAddress(list,section,strOutgoing4,global->outgoing4.s_addr);
 		mail->outgoing6
@@ -470,8 +478,9 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"SMTPPort",IPPORT_SMTP);
 		mail->submission_port
 			=iniGetShortInt(list,section,"SubmissionPort",IPPORT_SUBMISSION);
-		SAFECOPY(mail->pop3_interfaces,
-			iniGetString(list,section,"POP3Interface",global->interfaces,value));
+		iniFreeStringList(mail->pop3_interfaces);
+		mail->pop3_interfaces
+			=iniGetStringList(list,section,"POP3Interface",",",global_interfaces);
 		mail->pop3_port
 			=iniGetShortInt(list,section,"POP3Port",IPPORT_POP3);
 		mail->relay_port
@@ -556,8 +565,9 @@ void sbbs_read_ini(
 
 	if(services!=NULL) {
 
-		SAFECOPY(services->interfaces,
-			iniGetString(list,section,strInterfaces,global->interfaces,value));
+		iniFreeStringList(services->interfaces);
+		services->interfaces
+			=iniGetStringList(list,section,strInterfaces,",",global_interfaces);
 		services->outgoing4.s_addr
 			=iniGetIpAddress(list,section,strOutgoing4,global->outgoing4.s_addr);
 		services->outgoing6
@@ -602,10 +612,12 @@ void sbbs_read_ini(
 
 	if(web!=NULL) {
 
-		SAFECOPY(web->interfaces,
-			iniGetString(list,section,strInterfaces,global->interfaces,value));
-		SAFECOPY(web->tls_interfaces,
-			iniGetString(list,section,"TLSInterface",global->interfaces,value));
+		iniFreeStringList(web->interfaces);
+		web->interfaces
+			=iniGetStringList(list,section,strInterfaces,",",global_interfaces);
+		iniFreeStringList(web->tls_interfaces);
+		web->tls_interfaces
+			=iniGetStringList(list,section,"TLSInterface",",",global_interfaces);
 		web->outgoing4.s_addr
 			=iniGetIpAddress(list,section,strOutgoing4,global->outgoing4.s_addr);
 		web->outgoing6
@@ -689,6 +701,7 @@ void sbbs_read_ini(
 		web->login_attempt_filter_threshold=iniGetInteger(list,section,strLoginAttemptFilterThreshold,global->login_attempt_filter_threshold);
 	}
 
+	free(global_interfaces);
 	iniFreeStringList(list);
 }
 
@@ -741,7 +754,7 @@ BOOL sbbs_write_ini(
 		iniSetShortInt(lp,section,strSemFileCheckFrequency,global->sem_chk_freq,&style);
 		iniSetIpAddress(lp,section,strOutgoing4,global->outgoing4.s_addr,&style);
 		iniSetIp6Address(lp,section,strOutgoing6,global->outgoing6,&style);
-		iniSetString(lp, section, strInterfaces, global->interfaces, &style);
+		iniSetStringList(lp, section, strInterfaces, ",", global->interfaces, &style);
 		iniSetLogLevel(lp,section,strLogLevel,global->log_level,&style);
 		iniSetInteger(lp,section,strBindRetryCount,global->bind_retry_count,&style);
 		iniSetInteger(lp,section,strBindRetryDelay,global->bind_retry_delay,&style);
@@ -763,24 +776,24 @@ BOOL sbbs_write_ini(
 		if(!iniSetBool(lp,section,strAutoStart,run_bbs,&style))
 			break;
 
-		if(strcmp(bbs->telnet_interfaces, global->interfaces)==0)
+		if(strListCmp(bbs->telnet_interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,"TelnetInterface");
-		else if(!iniSetString(lp,section,"TelnetInterface", bbs->telnet_interfaces, &style))
+		else if(!iniSetStringList(lp,section,"TelnetInterface", ",", bbs->telnet_interfaces, &style))
 			break;
 
 		if(!iniSetShortInt(lp,section,"TelnetPort",bbs->telnet_port,&style))
 			break;
 
-		if(strcmp(bbs->rlogin_interfaces, global->interfaces)==0)
+		if(strListCmp(bbs->rlogin_interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,"RLoginInterface");
-		else if(!iniSetString(lp,section,"RLoginInterface", bbs->rlogin_interfaces,&style))
+		else if(!iniSetStringList(lp,section,"RLoginInterface", ",", bbs->rlogin_interfaces,&style))
 			break;
 		if(!iniSetShortInt(lp,section,"RLoginPort",bbs->rlogin_port,&style))
 			break;
 
-		if(strcmp(bbs->ssh_interfaces, global->interfaces)==0)
+		if(strListCmp(bbs->ssh_interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,"SSHInterface");
-		else if(!iniSetString(lp,section,"SSHInterface", bbs->ssh_interfaces,&style))
+		else if(!iniSetStringList(lp,section,"SSHInterface", ",", bbs->ssh_interfaces,&style))
 			break;
 		if(!iniSetShortInt(lp,section,"SSHPort",bbs->ssh_port,&style))
 			break;
@@ -851,9 +864,9 @@ BOOL sbbs_write_ini(
 		if(!iniSetBool(lp,section,strAutoStart,run_ftp,&style))
 			break;
 
-		if(strcmp(ftp->interfaces, global->interfaces)==0)
+		if(strListCmp(ftp->interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,strInterfaces);
-		else if(!iniSetString(lp,section,strInterfaces,ftp->interfaces,&style))
+		else if(!iniSetStringList(lp,section,strInterfaces,",",ftp->interfaces,&style))
 			break;
 
 		if(ftp->outgoing4.s_addr == global->outgoing4.s_addr)
@@ -949,9 +962,9 @@ BOOL sbbs_write_ini(
 		if(!iniSetBool(lp,section,strAutoStart,run_mail,&style))
 			break;
 
-		if(strcmp(mail->interfaces, global->interfaces)==0)
+		if(strListCmp(mail->interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,strInterfaces);
-		else if(!iniSetString(lp,section,strInterfaces,mail->interfaces,&style))
+		else if(!iniSetStringList(lp,section,strInterfaces,",",mail->interfaces,&style))
 			break;
 
 		if(mail->outgoing4.s_addr == global->outgoing4.s_addr)
@@ -1063,9 +1076,9 @@ BOOL sbbs_write_ini(
 		if(!iniSetBool(lp,section,strAutoStart,run_services,&style))
 			break;
 
-		if(strcmp(services->interfaces, global->interfaces)==0)
+		if(strListCmp(services->interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,strInterfaces);
-		else if(!iniSetString(lp,section,strInterfaces,services->interfaces,&style))
+		else if(!iniSetStringList(lp,section,strInterfaces,",",services->interfaces,&style))
 			break;
 
 		if(services->outgoing4.s_addr == global->outgoing4.s_addr)
@@ -1129,14 +1142,14 @@ BOOL sbbs_write_ini(
 		if(!iniSetBool(lp,section,strAutoStart,run_web,&style))
 			break;
 
-		if(strcmp(web->interfaces, global->interfaces)==0)
+		if(strListCmp(web->interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,strInterfaces);
-		else if(!iniSetString(lp,section,strInterfaces,web->interfaces,&style))
+		else if(!iniSetStringList(lp,section,strInterfaces,",",web->interfaces,&style))
 			break;
 
-		if(strcmp(web->tls_interfaces, global->interfaces)==0)
+		if(strListCmp(web->tls_interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,"TLSInterface");
-		else if(!iniSetString(lp,section,"TLSInterface",web->tls_interfaces,&style))
+		else if(!iniSetStringList(lp,section,"TLSInterface",",",web->tls_interfaces,&style))
 			break;
 
 		if(web->outgoing4.s_addr == global->outgoing4.s_addr)
