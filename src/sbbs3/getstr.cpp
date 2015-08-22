@@ -516,12 +516,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					return(x); 
 				}
 				if(i<maxlen && ch>=' ') {
-					if(mode&K_UPRLWR)
+					if(mode&K_UPRLWR) {
 						if(!i || (i && (str1[i-1]==' ' || str1[i-1]=='-'
 							|| str1[i-1]=='.' || str1[i-1]=='_')))
 							ch=toupper(ch);
 						else
 							ch=tolower(ch);
+					}
 					if(console&CON_INSERT && i!=l) {
 						if(l<maxlen)    /* l<maxlen */
 							l++;
