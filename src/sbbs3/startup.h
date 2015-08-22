@@ -66,7 +66,7 @@ typedef struct {
 	ushort	sem_chk_freq;
 	struct in_addr		outgoing4;
 	struct in6_addr	outgoing6;
-	str_list_t		interfaces;
+	char		interfaces[INI_MAX_VALUE_LEN];
 	int		log_level;
 	js_startup_t js;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
@@ -91,10 +91,10 @@ typedef struct {
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
-    str_list_t	telnet_interfaces;
+    char	telnet_interfaces[INI_MAX_VALUE_LEN];
     uint32_t	options;			/* See BBS_OPT definitions */
-    str_list_t	rlogin_interfaces;
-    str_list_t	ssh_interfaces;
+    char	rlogin_interfaces[INI_MAX_VALUE_LEN];
+    char	ssh_interfaces[INI_MAX_VALUE_LEN];
     RingBuf** node_spybuf;			/* Spy output buffer (each node)	*/
     RingBuf** node_inbuf;			/* User input buffer (each node)	*/
     sem_t**	node_spysem;			/* Spy output semaphore (each node)	*/

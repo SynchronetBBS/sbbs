@@ -53,7 +53,7 @@ typedef struct {
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
-    str_list_t	interfaces;
+    char	interfaces[INI_MAX_VALUE_LEN];
 	struct in_addr pasv_ip_addr;
 	struct in6_addr	pasv_ip6_addr;
 	WORD	pasv_port_low;

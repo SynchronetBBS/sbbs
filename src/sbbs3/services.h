@@ -45,7 +45,7 @@ typedef struct {
 	DWORD	size;				/* sizeof(bbs_struct_t) */
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
-	str_list_t		interfaces;
+	char		interfaces[INI_MAX_VALUE_LEN];
     DWORD	options;			/* See BBS_OPT definitions */
 	WORD	sem_chk_freq;			/* semaphore file checking frequency (in seconds) */
 

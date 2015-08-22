@@ -63,8 +63,8 @@ typedef struct {
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
-    str_list_t   interfaces;
-    str_list_t   pop3_interfaces;
+    char   interfaces[INI_MAX_VALUE_LEN];
+    char   pop3_interfaces[INI_MAX_VALUE_LEN];
     DWORD	options;			/* See MAIL_OPT definitions */
     DWORD	max_msg_size;		/* Max msg size in bytes (0=unlimited) */
 #define MAIL_DEFAULT_MAX_MSG_SIZE			(20*1024*1024)	/* 20MB */
