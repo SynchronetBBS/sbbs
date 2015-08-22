@@ -2324,7 +2324,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 			/* Store node number */
 			/* We have to shift it to make it look like a pointer to JS. :-( */
-			if(!JS_SetPrivate(cx, nodeobj, (char*)((i+1)<<1)))
+			if(!JS_SetPrivate(cx, nodeobj, (char*)(((uintptr_t)i+1)<<1)))
 				return(JS_FALSE);
 
 	#ifdef BUILD_JSDOCS
