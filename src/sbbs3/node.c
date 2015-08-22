@@ -369,7 +369,7 @@ void printnodedat(int number, node_t node)
 					printf("performing sysop activities");
 					break;
 				default:
-					printf(itoa(node.action,tmp,10));
+					fputs(itoa(node.action,tmp,10),stdout);
 					break;  }
 			printf(" %s",node_connection_desc(node.connection,tmp));
 			if(node.action==NODE_DLNG) {
@@ -446,7 +446,7 @@ int main(int argc, char **argv)
 	printf("\nSynchronet Node Display/Control Utility v%s\n\n", revision);
 
 	if(sizeof(node_t)!=SIZEOF_NODE_T) {
-		printf("COMPILER ERROR: sizeof(node_t)=%u instead of %d\n"
+		printf("COMPILER ERROR: sizeof(node_t)=%" XP_PRIsize_t "u instead of %d\n"
 			,sizeof(node_t),SIZEOF_NODE_T);
 		return(-1);
 	}
