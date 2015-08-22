@@ -4763,7 +4763,6 @@ void DLLCALL ftp_server(void* arg)
 	time_t			start;
 	time_t			initialized=0;
 	ftp_t*			ftp;
-	struct in_addr	iaddr;
 	char			client_ip[INET6_ADDRSTRLEN];
 
 	ftp_ver();

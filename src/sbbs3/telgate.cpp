@@ -128,7 +128,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* client_user_name, cha
 		if(term_type!=NULL)
 			p+=sprintf(p,"%s",term_type);
 		else
-			p+=sprintf(p,"%s/%u",terminal, cur_rate);
+			p+=sprintf(p,"%s/%lu",terminal, cur_rate);
 		p++;	// Add NULL
 		l=p-(char*)buf;
 		sendsocket(remote_socket,(char*)buf,l);
