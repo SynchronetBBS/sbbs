@@ -48,7 +48,7 @@
 smb_t	smb;
 BOOL	renumber=FALSE;
 BOOL	smb_undelete=FALSE;
-char*	usage="usage: fixsmb [-renumber] [-undelete] <smb_file> [[smb_file] [...]]\n";
+char*	usage="usage: fixsmb [-renumber] [-undelete] <smb_file> [[smb_file] [...]]";
 
 int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
 {
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 	}
 
 	if(!strListCount(list)) {
-		printf(usage);
+		puts(usage);
 		exit(1); 
 	}
 
