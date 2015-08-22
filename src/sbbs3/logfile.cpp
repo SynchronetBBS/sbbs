@@ -37,7 +37,7 @@
 
 #include "sbbs.h"
 
-extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, char* host, union xp_sockaddr* addr)
+extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, const char* prot, const char* user, const char* text, const char* host, union xp_sockaddr* addr)
 {
 	char	hdr[1024];
 	char	tstr[64];
