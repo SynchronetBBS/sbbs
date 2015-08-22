@@ -56,7 +56,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 #endif
 
 	if(cfg->size!=sizeof(scfg_t)) {
-		sprintf(error,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%d)"
+		sprintf(error,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
 			,cfg->size,sizeof(scfg_t));
 		return(FALSE);
 	}
