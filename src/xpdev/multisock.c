@@ -189,8 +189,6 @@ BOOL DLLCALL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 		host=strdup(*iface);
 
 		host_str=host;
-		if(xpms_set->lprintf)
-			xpms_set->lprintf(LOG_INFO, "Adding %s listening socket on %s", prot, host);
 		p = strrchr(host, ':');
 		/*
 		 * If there isn't a [, and the first and last colons aren't the same
@@ -210,6 +208,8 @@ BOOL DLLCALL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 			*(p++)=0;
 			sscanf(p, "%hu", &port);
 		}
+		if(xpms_set->lprintf)
+			xpms_set->lprintf(LOG_INFO, "Adding %s listening socket on %s port %hu", prot, host, port);
 		if(xpms_add(xpms_set, domain, type, protocol, host_str, port, prot, sock_init, bind_init, cbdata))
 			one_good=TRUE;
 		free(host);
