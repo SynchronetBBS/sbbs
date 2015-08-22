@@ -242,6 +242,9 @@ else
 endif
 
 CCPRE := $(lastword $(subst /, ,$(CCPRE)))
+ifeq ($(CCPRE),clang)
+ CFLAGS += -Wno-invalid-source-encoding
+endif
 LIBODIR :=	$(CCPRE).$(machine).lib.$(BUILDPATH)
 OBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)
 MTOBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)-mt
