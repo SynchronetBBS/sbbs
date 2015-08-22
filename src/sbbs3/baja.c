@@ -3401,7 +3401,7 @@ char *usage=	"\n"
 				"       -o set output directory (e.g. -o/sbbs/exec)\n"
 				"       -i set include directory (e.g. -i/sbbs/exec)\n"
 				"       -q quiet mode (no banner)\n"
-				"       -p pause on error\n"
+				"       -p pause on error"
 				;
 
 int main(int argc, char **argv)
@@ -3443,16 +3443,16 @@ int main(int argc, char **argv)
 					break;
 				default:
 					printf(banner,PLATFORM_DESC,revision);
-					printf(usage);
+					puts(usage);
 					bail(1); }
 		else
-			sprintf(src,"%.*s",sizeof(src)-5,argv[i]);	/* leave room for '.src' to be appended */
+			sprintf(src,"%.*s",(int)(sizeof(src)-5),argv[i]);	/* leave room for '.src' to be appended */
 
 	if(show_banner)
 		printf(banner,PLATFORM_DESC,revision);
 
 	if(!src[0]) {
-		printf(usage);
+		puts(usage);
 		bail(1); 
 	}
 
