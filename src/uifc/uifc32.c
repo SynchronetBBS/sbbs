@@ -1994,7 +1994,8 @@ void getstrupd(int left, int top, int width, char *outstr, int cursoffset, int *
 
 	gotoxy(left,top);
 	if(mode&K_PASSWORD)
-		cprintf("%-*.*s",width,width,"********************************************************************************"+(80-strlen(outstr+*scrnoffset)));
+		// This typecast is to suppress a clang warning "adding 'unsigned long' to a string does not append to the string [-Wstring-plus-int]"
+		cprintf("%-*.*s",width,width,((char *)"********************************************************************************")+(80-strlen(outstr+*scrnoffset)));
 	else
 		cprintf("%-*.*s",width,width,outstr+*scrnoffset);
 	gotoxy(left+(cursoffset-*scrnoffset),top);
