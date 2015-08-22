@@ -59,8 +59,8 @@ typedef struct {
 	WORD	pasv_port_low;
 	WORD	pasv_port_high;
     DWORD	options;			/* See FTP_OPT definitions */
-	uint32_t	min_fsize;		/* Minimum file size accepted for upload */
-	uint32_t	max_fsize;		/* Maximum file size accepted for upload (0=unlimited) */
+	uint64_t	min_fsize;		/* Minimum file size accepted for upload */
+	uint64_t	max_fsize;		/* Maximum file size accepted for upload (0=unlimited) */
 
 	void*	cbdata;				/* Private data passed to callbacks */ 
 
