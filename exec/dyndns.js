@@ -40,9 +40,9 @@ for(i=1;i<argc;i++) {
 for(h in host_list) {
 	sock = new Socket();
 	if( (this.server != undefined) &&
-	    !sock.bind(0,server.interface_ip_address)) {
+	    !sock.bind(0,server.interface_ip_address[0])) {
 		printf("Error %lu binding socket to %s\r\n"
-			,sock.last_error,server.interface_ip_address);
+			,sock.last_error,server.interface_ip_address[0]);
 		continue;
 	}
 	if(!sock.connect(host_list[h],8467)) {
