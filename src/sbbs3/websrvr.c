@@ -567,8 +567,10 @@ static BOOL handle_crypt_call(int status, http_session_t *session, const char *f
 		}
 		sock = session->socket;
 	}
-	if (estr)
+	if (estr) {
 		lprintf(LOG_ERR, "%04d cryptlib error %d at %s:%d (%s)", sock, status, file, line, estr);
+		free(estr);
+	}
 	else
 		lprintf(LOG_ERR, "%04d cryptlib error %d at %s:%d", sock, status, file, line);
 	return FALSE;
