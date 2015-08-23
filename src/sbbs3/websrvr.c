@@ -549,18 +549,25 @@ static int writebuf(http_session_t	*session, const char *buf, size_t len)
 static BOOL handle_crypt_call(int status, http_session_t *session, const char *file, int line)
 {
 	int		len = 0;
-	char	estr[CRYPT_MAX_TEXTSIZE+1];
+	char	*estr = NULL;
 	int		sock = 0;
 
 	if (status == CRYPT_OK)
 		return TRUE;
 	if (session != NULL) {
-		if (session->is_tls)
-			cryptGetAttributeString(session->tls_sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, estr, &len);
+		if (session->is_tls) {
+			if (cryptStatusOK(cryptGetAttributeString(session->tls_sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &len))) {
+				estr = malloc(len + 1);
+				if (estr) {
+					cryptGetAttributeString(session->tls_sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, estr, &len)
+					estr[len+1] = 0;
+				}
+			}
+			
+		}
 		sock = session->socket;
 	}
-	estr[len]=0;
-	if (len)
+	if (estr)
 		lprintf(LOG_ERR, "%04d cryptlib error %d at %s:%d (%s)", sock, status, file, line, estr);
 	else
 		lprintf(LOG_ERR, "%04d cryptlib error %d at %s:%d", sock, status, file, line);
