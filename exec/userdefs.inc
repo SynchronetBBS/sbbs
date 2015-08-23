@@ -83,8 +83,8 @@
 !define U_MAIN_CMD	U_CMDSET+2+2	# unused
 !define U_XFER_CMD	U_MAIN_CMD+40	# unused
 !define U_SCAN_CMD	U_XFER_CMD+40+2 # unused
-!define U_MAIL_CMD	U_SCAN_CMD+40	# unused
-!define U_FREECDT	U_MAIL_CMD+40+2
+!define U_IPADDR	U_SCAN_CMD+35	# unused
+!define U_FREECDT	U_IPADDR+40+2
 !define U_FLAGS3	U_FREECDT+10	# Flag set #3
 !define U_FLAGS4	U_FLAGS3+8	# Flag set #4
 !define U_XEDIT 	U_FLAGS4+8	# External editor  code
@@ -159,5 +159,6 @@
 !define USER_STRING_MODEM	11
 !define USER_STRING_COMMENT	12
 !define USER_STRING_NETMAIL	13	# Requires v3 (03/02/00) or later
+!define USER_STRING_IPADDR	14	# Requires v3.17 or later
 
 # End of USERDEFS.INC
