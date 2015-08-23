@@ -40,10 +40,11 @@ static bool get_error_string(int status, CRYPT_SESSION sess, char *estr, char *f
 	if (cryptStatusOK(status))
 		return true;
 
-	ret = cryptGetAttributeString(sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, tmpstr, &len);
-	tmpstr[len]=0;
-	if (cryptStatusOK(ret) && len)
+	estr = get_crypt_error(sess);
+	if (estr) {
 		sprintf(estr, "cryptlib error %d at %s:%d (%s)", status, file, line, tmpstr);
+		free_crypt_attrstr(estr);
+	}
 	else
 		sprintf(estr, "cryptlib error %d at %s:%d", status, file, line);
 	return false;
