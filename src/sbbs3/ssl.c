@@ -33,20 +33,18 @@ char* DLLCALL get_crypt_error(CRYPT_SESSION sess)
 
 static bool get_error_string(int status, CRYPT_SESSION sess, char *estr, char *file, int line)
 {
-	int		ret;
-	int		len = 0;
-	char	tmpstr[CRYPT_MAX_TEXTSIZE+1];
+	char	*emsg;
 
 	if (cryptStatusOK(status))
 		return true;
 
-	estr = get_crypt_error(sess);
-	if (estr) {
-		sprintf(estr, "cryptlib error %d at %s:%d (%s)", status, file, line, tmpstr);
-		free_crypt_attrstr(estr);
+	emsg = get_crypt_error(sess);
+	if (emsg) {
+		safe_snprintf(estr, SSL_ESTR_LEN, "cryptlib error %d at %s:%d (%s)", status, file, line, emsg);
+		free_crypt_attrstr(emsg);
 	}
 	else
-		sprintf(estr, "cryptlib error %d at %s:%d", status, file, line);
+		safe_snprintf(estr, SSL_ESTR_LEN, "cryptlib error %d at %s:%d", status, file, line);
 	return false;
 }
 
