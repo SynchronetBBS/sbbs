@@ -5,7 +5,7 @@
 
 static scfg_t	scfg;
 
-void* DLLCALL free_crypt_attrstr(char *attr)
+void DLLCALL free_crypt_attrstr(char *attr)
 {
 	free(attr);
 }

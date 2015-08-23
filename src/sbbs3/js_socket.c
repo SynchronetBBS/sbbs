@@ -41,6 +41,7 @@
 #include "js_socket.h"
 #include "js_request.h"
 #include "multisock.h"
+#include "ssl.h"
 
 #ifdef JAVASCRIPT
 
@@ -106,16 +107,16 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 static void do_CryptFlush(const CRYPT_CONTEXT session)
 {
 	int ret=cryptFlushData(session);
-	int		len = 0;
-	char	estr[CRYPT_MAX_TEXTSIZE+1];
+	char	*estr;
 
 	ret = cryptFlushData(session);
 
 	if(ret!=CRYPT_OK) {
-		cryptGetAttributeString(session, CRYPT_ATTRIBUTE_ERRORMESSAGE, estr, &len);
-		estr[len]=0;
-		if (len)
+		estr = get_crypt_error(session);
+		if (estr) {
 			lprintf(LOG_ERR, "cryptFlushData() returned %d (%s)", ret, estr);
+			free_crypt_attrstr(estr);
+		}
 		else
 			lprintf(LOG_ERR, "cryptFlushData() returned %d", ret);
 	}

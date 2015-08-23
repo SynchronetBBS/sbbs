@@ -5335,6 +5335,7 @@ void http_session_thread(void* arg)
 	int				i;
 	int				last;
 	user_t			user;
+	char			*uname;
 #endif
 
 	SetThreadName("HTTP Session");
@@ -5479,8 +5480,10 @@ void http_session_thread(void* arg)
 	    memset(&(session.req), 0, sizeof(session.req));
 	    if (session.is_tls) {
 #if 0 // TLS-PSK is currently broken in cryptlib
-			if (cryptGetAttributeString(session.tls_sess, CRYPT_SESSINFO_USERNAME, session.req.auth.username, &i)==CRYPT_OK) {
-				session.req.auth.username[i]=0;
+			uname = get_crypt_attribute(session.tls_sess, CRYPT_SESSINFO_USERNAME);
+			if (uname) {
+				SAFECOPY(session.req.auth.username, uname);
+				free_crypt_attrstr(uname);
 				session.req.auth.type = AUTHENTICATION_TLS_PSK;
 			}
 #endif
