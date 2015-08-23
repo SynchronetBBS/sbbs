@@ -559,7 +559,7 @@ static BOOL handle_crypt_call(int status, http_session_t *session, const char *f
 			if (cryptStatusOK(cryptGetAttributeString(session->tls_sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &len))) {
 				estr = malloc(len + 1);
 				if (estr) {
-					cryptGetAttributeString(session->tls_sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, estr, &len)
+					cryptGetAttributeString(session->tls_sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, estr, &len);
 					estr[len+1] = 0;
 				}
 			}
@@ -5092,7 +5092,6 @@ FILE *open_post_file(http_session_t *session)
 
 int read_post_data(http_session_t * session)
 {
-	uint64_t	i=0;
 	size_t		s = 0;
 	FILE		*fp=NULL;
 
