@@ -50,7 +50,7 @@ function Message_DoCommand(command)
 						"          by %s [%s] (%s)\r\n" +
 						"          for %s; %s %s\r\n"
 						,client.host_name,this.hello_name,client.ip_address
-						,system.host_name,server.interface_ip_address
+						,system.host_name,client.socket.local_ip_address
 						,server.version
 						,"unknown"
 						,strftime("%a, %d %b %Y %H:%M:%S"),system.zonestr()
