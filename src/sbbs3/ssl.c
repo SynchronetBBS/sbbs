@@ -18,7 +18,7 @@ char* DLLCALL get_crypt_attribute(CRYPT_SESSION sess, C_IN CRYPT_ATTRIBUTE_TYPE 
 	if (cryptStatusOK(cryptGetAttributeString(sess, attr, NULL, &len))) {
 		estr = malloc(len + 1);
 		if (estr) {
-			cryptGetAttributeString(sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, estr, &len);
+			cryptGetAttributeString(sess, attr, estr, &len);
 			estr[len] = 0;
 			return estr;
 		}
