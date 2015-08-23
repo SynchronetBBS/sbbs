@@ -202,6 +202,7 @@ if (test28 != true) {
 	exit();
 }
 
+test27.debug=true;
 var test29 = test27.bind(1339);
 if (test29 != true) {
 	log(LOG_ERROR, "Couldn't bind to port 1337.");
@@ -220,11 +221,6 @@ if (test31 != 3) {
 var test32=[];
 var test32_count=128;
 var test32_script="dnshelper.js";
-/*
- * Yeah, this is what I was talking about.
- */
-//if(argc==0)
-//	test32_script="bench/dest6.js";
 for(test32_count=0; test32_count<128; test32_count++)
 	test32.push(load(true,test32_script,"127.0.0.1"))
 for(test32_count=0; test32_count<128; test32_count++) {
@@ -314,9 +310,10 @@ test37_xml_file.close();
 
 var test38_js = new File(system.temp_dir + "test38.js");
 test38_js.open("w+");
-test38_js.writeln('log("Testing log() in background script.");');
+test38_js.writeln('mswait(random(500)); log("Testing log() in background script.");');
 test38_js.close();
-var test38 = load(true, system.temp_dir + "test38.js");
+for(i=0; i<20; i++)
+	var test38 = load(true, system.temp_dir + "test38.js");
 file_remove(system.temp_dir + "test38.js");
 
 var test39_js = new File(system.temp_dir + "test39.js");
