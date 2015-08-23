@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "addfiles", "addfiles.vcxproj", "{1E6135A4-035D-4B39-B233-569A15ADE3A2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "allusers", "allusers.vcxproj", "{96218F3E-9E75-490E-B544-A2A5EA13239F}"
@@ -32,8 +34,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jsexec", "jsexec.vcxproj", "{ACFB0944-5DD4-4E24-87E3-1F1EF8B26A0A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mailsrvr", "mailsrvr.vcxproj", "{7299E3E7-DFEF-4970-A0BA-E53D3A45B82A}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "makehelp", "scfg\makehelp.vcxproj", "{F582BB30-E4B2-4303-9852-8279DAE7213E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "makeuser", "makeuser.vcxproj", "{A45D0DB7-24A7-4FA1-9BE9-E418EAB53C26}"
 EndProject
@@ -147,10 +147,6 @@ Global
 		{7299E3E7-DFEF-4970-A0BA-E53D3A45B82A}.Debug|Win32.Build.0 = Debug|Win32
 		{7299E3E7-DFEF-4970-A0BA-E53D3A45B82A}.Release|Win32.ActiveCfg = Release|Win32
 		{7299E3E7-DFEF-4970-A0BA-E53D3A45B82A}.Release|Win32.Build.0 = Release|Win32
-		{F582BB30-E4B2-4303-9852-8279DAE7213E}.Debug|Win32.ActiveCfg = Debug|Win32
-		{F582BB30-E4B2-4303-9852-8279DAE7213E}.Debug|Win32.Build.0 = Debug|Win32
-		{F582BB30-E4B2-4303-9852-8279DAE7213E}.Release|Win32.ActiveCfg = Release|Win32
-		{F582BB30-E4B2-4303-9852-8279DAE7213E}.Release|Win32.Build.0 = Release|Win32
 		{A45D0DB7-24A7-4FA1-9BE9-E418EAB53C26}.Debug|Win32.ActiveCfg = Debug|Win32
 		{A45D0DB7-24A7-4FA1-9BE9-E418EAB53C26}.Debug|Win32.Build.0 = Debug|Win32
 		{A45D0DB7-24A7-4FA1-9BE9-E418EAB53C26}.Release|Win32.ActiveCfg = Release|Win32
