@@ -8,7 +8,6 @@ function get_nicklocation(userhost,srvhost,nick)
 		var resp = '';
 		var m;
 
-		sock.bind(0,server.interface_ip_address);
 		if(sock.connect(userhost,"finger")) {
 			sock.send(nick+"\r\n");
 			while(sock.is_connected) {
