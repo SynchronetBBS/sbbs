@@ -5,6 +5,32 @@
 
 static scfg_t	scfg;
 
+void* DLLCALL free_crypt_attrstr(char *attr)
+{
+	free(attr);
+}
+
+char* DLLCALL get_crypt_attribute(CRYPT_SESSION sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
+{
+	int		len = 0;
+	char	*estr = NULL;
+
+	if (cryptStatusOK(cryptGetAttributeString(sess, attr, NULL, &len))) {
+		estr = malloc(len + 1);
+		if (estr) {
+			cryptGetAttributeString(sess, CRYPT_ATTRIBUTE_ERRORMESSAGE, estr, &len);
+			estr[len] = 0;
+			return estr;
+		}
+	}
+	return NULL;
+}
+
+char* DLLCALL get_crypt_error(CRYPT_SESSION sess)
+{
+	return get_crypt_attribute(sess, CRYPT_ATTRIBUTE_ERRORMESSAGE);
+}
+
 static bool get_error_string(int status, CRYPT_SESSION sess, char *estr, char *file, int line)
 {
 	int		ret;
