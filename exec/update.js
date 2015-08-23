@@ -30,8 +30,27 @@ function update_exec_dir()
 	return true;
 }
 
+function move_laston_address()
+{
+	var i;
+	var u;
+	var updated = 0;
+
+	for (i=1; i<system.lastuser; i++) {
+		u = new User(i);
+//		print("User: "+i+" Note: "+u.note+" IP: "+u.ip_address);
+		if (u.ip_address.length == 0 && u.note.length > 0) {
+			print("\nMoving IP from note to ip_address for "+u.alias+" (#"+i+")");
+			u.ip_address = u.note;
+			updated++;
+		}
+	}
+	return updated;
+}
+
 
 printf("Synchronet update.js revision %u\n", REVISION);
 printf("Updating exec directory: ");
 printf("%s\n", update_exec_dir() ? "Success" : "FAILURE");
-
+printf("Updating ip_address field: ");
+printf("%d records updated\n", move_laston_address());
