@@ -18,17 +18,24 @@ if(user.number && !(user.security.restrictions&UFLAG_G))
 var sender_host = sender_address.slice(sender_address.indexOf('@')+1);
 
 if((sender_host == system.host_name
-	|| system.findstr(system.ctrl_dir + "domains.cfg", sender_host))
-	&& client.ip_address!="127.0.0.1"
-	&& client.ip_address!=server.interface_ip_address
-	&& client.ip_address!=resolve_ip(sender_host)) {
-	var error_file = new File(processing_error_filename);
-	if(!error_file.open("w")) {
-		log(LOG_ERR,format("!ERROR %d opening processing error file: %s"
-			,error_file.error, processing_error_filename));
-	} else {
-		error_file.writeln("Mail deliveries from " + sender_host + " must use SMTP-AUTH");
-		log("sender_address = " + sender_address);
-		error_file.close();
+		|| system.findstr(system.ctrl_dir + "domains.cfg", sender_host))
+		&& client.ip_address!="127.0.0.1"
+		&& client.ip_address!=resolve_ip(sender_host)) {
+	var i;
+	var matched = false;
+	for (i in server.interface_ip_address) {
+		if (client.ip_address == server.interface_ip_address[i])
+			matched = true;
+	}
+	if (!matched) {
+		var error_file = new File(processing_error_filename);
+		if(!error_file.open("w")) {
+			log(LOG_ERR,format("!ERROR %d opening processing error file: %s"
+				,error_file.error, processing_error_filename));
+		} else {
+			error_file.writeln("Mail deliveries from " + sender_host + " must use SMTP-AUTH");
+			log("sender_address = " + sender_address);
+			error_file.close();
+		}
 	}
 }
