@@ -2610,13 +2610,12 @@ void event_thread(void* arg)
 			tmptime=sbbs->cfg.qhub[i]->last;
 			if(localtime_r(&tmptime,&tm)==NULL)
 				memset(&tm,0,sizeof(tm));
-			if((sbbs->cfg.qhub[i]->last==-1L					/* or frequency */
-				|| ((sbbs->cfg.qhub[i]->freq
-					&& (now-sbbs->cfg.qhub[i]->last)/60>=sbbs->cfg.qhub[i]->freq)
+			if(sbbs->cfg.qhub[i]->last==-1L					/* or frequency */
+				|| (((sbbs->cfg.qhub[i]->freq && (now-sbbs->cfg.qhub[i]->last)/60>=sbbs->cfg.qhub[i]->freq)
 					|| (sbbs->cfg.qhub[i]->time
 						&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.qhub[i]->time
 						&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
-						&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
+					&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
 				SAFEPRINTF2(str,"%sqnet/%s.now"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				if(fexistcase(str))
