@@ -1802,13 +1802,8 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 	int s_top=SCRN_TOP;
 	int s_left=SCRN_LEFT;
 	int s_right=SCRN_RIGHT;
-	int s_bottom=api->scrn_len-3;
 	int hbrdrsize=2;
-	int lbrdrwidth=1;
-	int rbrdrwidth=1;
-	int vbrdrsize=4;
 	int tbrdrwidth=1;
-	int bbrdrwidth=1;
 
 	reset_dynamic();
 
@@ -1816,15 +1811,10 @@ int uinput(int mode, int left, int top, char *inprompt, char *str,
 		s_top=1;
 		s_left=2;
 		s_right=api->scrn_width-3;  /* Leave space for the shadow */
-		s_bottom=api->scrn_len-1;   /* Leave one for the shadow */
 	}
 	if(mode&WIN_NOBRDR) {
 		hbrdrsize=0;
-		vbrdrsize=0;
-		lbrdrwidth=0;
-		rbrdrwidth=0;
 		tbrdrwidth=0;
-		bbrdrwidth=0;
 		height=1;
 	}
 
