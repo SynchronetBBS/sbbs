@@ -1164,7 +1164,6 @@ static void js_static_service_thread(void* arg)
 	char					fname[MAX_PATH+1];
 	service_t*				service;
 	service_client_t		service_client;
-	struct xpms_set			*set;
 	/* JavaScript-specific */
 	JSObject*				js_glob;
 	JSObject*				js_script;
@@ -1177,7 +1176,6 @@ static void js_static_service_thread(void* arg)
 	service=(service_t*)arg;
 
 	service->running=TRUE;
-	set = service->set;
 
 	lprintf(LOG_DEBUG,"%s static JavaScript service thread started", service->protocol);
 
