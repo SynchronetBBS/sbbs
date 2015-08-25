@@ -893,7 +893,6 @@ static int send_files(char** fname, uint fnames)
 {
 	char		path[MAX_PATH+1];
 	int			i;
-	uint		errors;
 	uint		fnum;
 	uint		cps;
 	glob_t		g;
@@ -958,7 +957,6 @@ static int send_files(char** fname, uint fnames)
 
 			fsize=filelength(fileno(fp));
 
-			errors=0;
 			startfile=time(NULL);
 
 			lprintf(LOG_INFO,"Sending %s (%"PRId64" KB) via %cMODEM"

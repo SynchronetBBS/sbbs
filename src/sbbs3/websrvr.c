@@ -2133,7 +2133,6 @@ static int recvbufsocket(http_session_t *session, char *buf, long count)
 {
 	int		rd=0;
 	int		i;
-	time_t	start;
 
 	if(count<1) {
 		errno=ERANGE;
@@ -2153,7 +2152,6 @@ static int recvbufsocket(http_session_t *session, char *buf, long count)
 		}
 
 		rd+=i;
-		start=time(NULL);
 	}
 
 	if(rd==count)  {

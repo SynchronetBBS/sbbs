@@ -3747,8 +3747,8 @@ void export_echomail(char *sub_code,faddr_t addr)
 	int		area;
 	int		i,j,k=0;
 	ulong	f,l,m,exp,exported=0;
-	uint32_t ptr,msgs,lastmsg,posts;
-	long	tmp_msgs;
+	uint32_t ptr,lastmsg,posts;
+	long	msgs;
 	float	export_time;
 	smbmsg_t msg;
 	smbmsg_t orig_msg;
@@ -3792,16 +3792,15 @@ void export_echomail(char *sub_code,faddr_t addr)
 		if(!addr.zone && !(misc&IGNORE_MSGPTRS))
 			ptr=read_export_ptr(i, tag);
 
-		tmp_msgs=getlastmsg(i,&lastmsg,0);
-		if(tmp_msgs<1 || (!addr.zone && !(misc&IGNORE_MSGPTRS) && ptr>=lastmsg)) {
+		msgs=getlastmsg(i,&lastmsg,0);
+		if(msgs<1 || (!addr.zone && !(misc&IGNORE_MSGPTRS) && ptr>=lastmsg)) {
 			lprintf(LOG_DEBUG,"No new messages.");
-			if(tmp_msgs>=0 && ptr>lastmsg && !addr.zone && !(misc&LEAVE_MSGPTRS)) {
+			if(msgs>=0 && ptr>lastmsg && !addr.zone && !(misc&LEAVE_MSGPTRS)) {
 				lprintf(LOG_DEBUG,"Fixing new-scan pointer (%u, lastmsg=%u).", ptr, lastmsg);
 				write_export_ptr(i, lastmsg, tag);
 			}
 			continue; 
 		}
-		msgs = tmp_msgs;
 
 		sprintf(smb[cur_smb].file,"%s%s"
 			,scfg.sub[i]->data_dir,scfg.sub[i]->code);
