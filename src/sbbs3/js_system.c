@@ -1969,7 +1969,7 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,sysobj))==NULL)
 		return(JS_FALSE);
 
-	node_num=(uint)JS_GetPrivate(cx,obj)>>1;
+	node_num=(uintptr_t)JS_GetPrivate(cx,obj)>>1;
 
 	rc=JS_SUSPENDREQUEST(cx);
 	memset(&node,0,sizeof(node));
@@ -2035,7 +2035,7 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,sysobj))==NULL)
 		return(JS_FALSE);
 
-	node_num=(uint)JS_GetPrivate(cx,obj)>>1;
+	node_num=(uintptr_t)JS_GetPrivate(cx,obj)>>1;
 
 	rc=JS_SUSPENDREQUEST(cx);
 	memset(&node,0,sizeof(node));
