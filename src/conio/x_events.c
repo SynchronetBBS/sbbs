@@ -676,11 +676,10 @@ static int x11_event(XEvent *ev)
 			{
 				static char buf[128];
 				KeySym ks;
-				int n;
 				int nlock = 0;
 				WORD scan = 0xffff;
 
-				n = x11.XLookupString((XKeyEvent *)ev, buf, sizeof(buf), &ks, 0);
+				x11.XLookupString((XKeyEvent *)ev, buf, sizeof(buf), &ks, 0);
 
 				switch (ks) {
 				
