@@ -5731,7 +5731,7 @@ void http_logging_thread(void* arg)
 			continue;
 		}
 		SAFECOPY(newfilename,base);
-		if(startup->options&WEB_OPT_VIRTUAL_HOSTS && ld->vhost!=NULL) {
+		if((startup->options&WEB_OPT_VIRTUAL_HOSTS) && ld->vhost!=NULL && getfname(ld->vhost)==ld->vhost) {
 			strcat(newfilename,ld->vhost);
 			if(ld->vhost[0])
 				strcat(newfilename,"-");
