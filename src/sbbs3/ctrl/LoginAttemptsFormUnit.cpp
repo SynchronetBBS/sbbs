@@ -77,8 +77,10 @@ void __fastcall TLoginAttemptsForm::FillListView(TObject *Sender)
         Item=ListView->Items->Add();
         Item->Caption=AnsiString(attempt->count-attempt->dupes);
         Item->Data=(void*)attempt->time;
-        Item->SubItems->Add(attempt->dupes);        
-        Item->SubItems->Add("TODO: Add addresses");
+        Item->SubItems->Add(attempt->dupes);
+		if(inet_addrtop(&attempt->addr, str, sizeof(str))==NULL)
+			strcpy(str, "<invalid address>");
+        Item->SubItems->Add(str);
         Item->SubItems->Add(attempt->prot);
         Item->SubItems->Add(attempt->user);
         Item->SubItems->Add(attempt->pass);
