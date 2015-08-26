@@ -77,7 +77,7 @@
 "\1n\r\n\1cþ \1h\1bReading All E-mail \1n\1cþ \1h\1b"\		064 ReadingAllMail
 	"(\1w%u \1bof \1w%u\1b): \1n" 
 "\1_\r\n\1g\1h      From                   "\              065 MailOnSystemLstHdr
-	"To                     Subject\r\n\1n"
+	"To                     A Subject\r\n\1n"
 "\1g\1h%4d:\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %.25s\r\n"     066 MailOnSystemLstFmt
 "\1-\r\n\1c%-15.15s \1y\1h%-44.44s "\                 067 NScanStatusFmt
 	"\1n\1cNew:\1h%5u \1n\1cof\1h %-u"
