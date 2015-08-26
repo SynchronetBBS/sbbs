@@ -162,7 +162,7 @@ var tls=false;
 area = new Array();
 
 if(this.server!=undefined)
-	interface_ip_address=server.interface_ip_address[0];
+	interface_ip_address=server.interface_ip_address;
 
 /******************************/
 /* Read/Parse the Config File */

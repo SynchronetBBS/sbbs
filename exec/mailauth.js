@@ -23,8 +23,8 @@ if((sender_host == system.host_name
 		&& client.ip_address!=resolve_ip(sender_host)) {
 	var i;
 	var matched = false;
-	for (i in server.interface_ip_address) {
-		if (client.ip_address == server.interface_ip_address[i])
+	for (i in server.interface_ip_addr_list) {
+		if (client.ip_address == server.interface_ip_addr_list[i])
 			matched = true;
 	}
 	if (!matched) {

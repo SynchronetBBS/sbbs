@@ -625,7 +625,7 @@ function connect_to_server(this_cline,the_port) {
 	else if (!the_port)
 		the_port = default_port; // try a safe default.
 	connect_sock = new Socket();
-	connect_sock.bind(0,server.interface_ip_address[0]);
+	connect_sock.bind(0,server.interface_ip_address);
 	connect_sock.connect(this_cline.host,the_port,ob_sock_timeout);
 
 	var sendts = true; /* Assume Bahamut */
@@ -851,7 +851,7 @@ function read_conf_config(fname) {
 function create_new_socket(port) {
 	log(LOG_DEBUG,"Creating new socket object on port " + port);
 	var newsock = new Socket();
-	if(!newsock.bind(port,server.interface_ip_address[0])) {
+	if(!newsock.bind(port,server.interface_ip_address)) {
 		log(LOG_ERR,"!Error " + newsock.error + " binding socket to TCP port "
 			+ port);
 		return 0;
