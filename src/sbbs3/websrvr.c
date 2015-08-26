@@ -2834,6 +2834,9 @@ static char *get_request(http_session_t * session, char *req_line)
 		/* Remove path if present (everything after the first /) */
 		strtok_r(session->req.host,"/",&last);
 
+		/* Lower-case the host */
+		strlwr(session->req.host);
+
 		/* Set vhost value to host value */
 		SAFECOPY(session->req.vhost,session->req.host);
 
@@ -2913,6 +2916,8 @@ static BOOL get_request_headers(http_session_t * session)
 			switch(i) {
 				case HEAD_HOST:
 					if(session->req.host[0]==0) {
+						/* Lower-case for normalization */
+						strlwr(value);
 						SAFECOPY(session->req.host,value);
 						SAFECOPY(session->req.vhost,value);
 						/* Remove port part of host (Win32 doesn't allow : in dir names) */
@@ -2927,10 +2932,16 @@ static BOOL get_request_headers(http_session_t * session)
 		}
 	}
 
-	if(!(session->req.vhost[0]))
+	if(!(session->req.vhost[0])) {
 		SAFECOPY(session->req.vhost, startup->host_name);
-	if(!(session->req.host[0]))
+		/* Lower-case for normalization */
+		strlwr(session->req.vhost);
+	}
+	if(!(session->req.host[0])) {
 		SAFECOPY(session->req.host, startup->host_name);
+		/* Lower-case for normalization */
+		strlwr(session->req.host);
+	}
 	return TRUE;
 }
 
@@ -2951,6 +2962,15 @@ static BOOL get_fullpath(http_session_t * session)
 		return(FALSE);
 
 	return(isabspath(session->req.physical_path));
+}
+
+static BOOL is_legal_hostname(const char *host)
+{
+	if (host[0] == '-' || host[0] == '.')
+		return FALSE;
+	if (strspn(host, "abcdefghijklmnopqrstuvwxyz0123456789-.") != strlen(host))
+		return FALSE;
+	return TRUE;
 }
 
 static BOOL get_req(http_session_t * session, char *request_line)
@@ -2991,8 +3011,17 @@ static BOOL get_req(http_session_t * session, char *request_line)
 			session->http_ver=get_version(p);
 			if(session->http_ver>=HTTP_1_1)
 				session->req.keep_alive=TRUE;
-			if(!is_redir)
+			if(!is_redir) {
 				get_request_headers(session);
+			}
+			if (!is_legal_hostname(session->req.host)) {
+				send_error(session,"400 Bad Request");
+				return FALSE;
+			}
+			if (!is_legal_hostname(session->req.vhost)) {
+				send_error(session,"400 Bad Request");
+				return FALSE;
+			}
 			if(!get_fullpath(session)) {
 				send_error(session,error_500);
 				return(FALSE);
@@ -5157,6 +5186,10 @@ int read_post_data(http_session_t * session)
 			/* Read more headers! */
 			if(!get_request_headers(session))
 				return(FALSE);
+			if (!is_legal_hostname(session->req.vhost)) {
+				send_error(session,"400 Bad Request");
+				return FALSE;
+			}
 			if(!parse_headers(session))
 				return(FALSE);
 		}
@@ -5731,7 +5764,7 @@ void http_logging_thread(void* arg)
 			continue;
 		}
 		SAFECOPY(newfilename,base);
-		if((startup->options&WEB_OPT_VIRTUAL_HOSTS) && ld->vhost!=NULL && getfname(ld->vhost)==ld->vhost) {
+		if((startup->options&WEB_OPT_VIRTUAL_HOSTS) && ld->vhost!=NULL) {
 			strcat(newfilename,ld->vhost);
 			if(ld->vhost[0])
 				strcat(newfilename,"-");
