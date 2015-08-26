@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -434,7 +434,7 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_PHONE,LEN_PHONE,user->phone);
 	putrec(userdat,U_BIRTH,LEN_BIRTH,user->birth);
 	putrec(userdat,U_MODEM,LEN_MODEM,user->modem);
-	putrec(userdat,U_IPADDR,LEN_IPADDR,user->modem);
+	putrec(userdat,U_IPADDR,LEN_IPADDR,user->ipaddr);
 	putrec(userdat,U_LASTON,8,ultoa((ulong)user->laston,str,16));
 	putrec(userdat,U_FIRSTON,8,ultoa((ulong)user->firston,str,16));
 	putrec(userdat,U_EXPIRE,8,ultoa((ulong)user->expire,str,16));
