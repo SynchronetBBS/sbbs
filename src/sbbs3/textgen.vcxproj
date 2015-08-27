@@ -93,6 +93,13 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>.\msvc.win32.exe.debug/textgen.bsc</OutputFile>
     </Bscmake>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>$(OutputPath)textgen</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -133,6 +140,13 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>.\msvc.win32.exe.release/textgen.bsc</OutputFile>
     </Bscmake>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>$(OutputPath)textgen</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="textgen.c">
