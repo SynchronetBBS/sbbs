@@ -408,7 +408,7 @@
 "\1_\1b\1h[\1cû\1b] \1yEnter your birthday (%s): \1w"          345 EnterYourBirthday
 "\1_\1b\1h[\1cû\1b] \1yEnter your city, state: \1w"            346 EnterYourCityState
 "\1_\1b\1h[\1cû\1b] \1yEnter your zip (or postal) code: \1w"   347 EnterYourZipCode
-"\1_\1y\1hEnter a description of your computer: \1w"        348 EnterYourComputer
+"\1_\1y\1hClient (Name or Address): \1w"                348 EnterYourComputer
 "Are you connecting from North America"                 349 CallingFromNorthAmericaQ
 "Is the above information correct"                      350 UserInfoCorrectQ
 "\1bUser #\1c%-4d      \1b: \1c%s\r\n"                      351 LiUserNumberName
@@ -446,7 +446,7 @@
 "\1_\r\n\1y\1hMagic word: \1w"                              374 MagicWordPrompt
 "\r\nSorry, that was not the magic word.\r\n"           375 FailedMagicWord
 "Sorry, the system is full."                            376 SystemFull
-"*NEW USER*  %-30.30s  Age/Sex/BD   : %-2d %c %s\r\n"\  377 NewUserFeedbackHdr
+"*NEW USER*  %-30.30s  Age/Sex/BDay : %-2d %c %s\r\n"\  377 NewUserFeedbackHdr
 "Real name : %-30.30s  Phone number : %s\r\n"\
 "Computer  : %-30.30s  Connection   : %s\r\n\r\n"
 "\7\r\n\1r\1h\1iYou must leave %s mail in order to be "\   378 NoFeedbackWarning
@@ -501,13 +501,13 @@
 	"\1h%-8.8s  %s\r\n"
 "\1n\1cReal Name : \1h%-30.30s  \1n\1cPhone number : "\      422 UeditRealNamePhone
 	"\1h%s\r\n"
-"\1n\1cAddress   : \1h%-30.30s  \1n\1cAge/Sex/BD   : "\      423 UeditAddressBirthday
+"\1n\1cAddress   : \1h%-30.30s  \1n\1cAge/Sex/BDay : "\      423 UeditAddressBirthday
 	"\1h%2d %c %s\r\n"
 "\1n\1cLocation  : \1h%-30.30s  \1n\1cZip Code     : "\      424 UeditLocationZipcode
 	"\1h%s\r\n"
 "\1n\1cNote      : \1h%-30.30s  \1n\1cHandle       : "\      425 UeditNoteHandle
 	"\1h%s\r\n"
-"\1n\1cComputer  : \1h%-30.30s  \1n\1cConnection   : "\      426 UeditComputerModem
+"\1n\1cClient    : \1h%-30.30s  \1n\1cProtocol     : "\      426 UeditComputerModem
 	"\1h%s\r\n"
 "\1n\1cComment %c : \1h%s\r\n"                             427 UeditCommentLine
 "\1n\1cFirst on  : \1h%-8.8s  \1n\1cExpire    : \1h%-8.8s  "\ 428 UserDates
@@ -534,7 +534,7 @@
 "\1n\1cFlags #1  : \1h%-26s   \1n\1cFlags #3  : \1h%s\r\n"\   439 UeditFlags
 	"\1n\1cFlags #2  : \1h%-26s   \1n\1cFlags #4  : \1h%s\r\n"
 "\1n\1cExemption : \1h%-26s   \1n\1cRestricts : \1h%s\r\n"    440 UeditExempts
-"\r\n\1_\1y\1hUser edit (\1w?\1y=Menu) "\                    441 UeditPrompt
+"\1_\1y\1hUser edit (\1w?\1y=Menu) "\                    441 UeditPrompt
 	"(\1w%u\1y of \1w%u\1y): \1n"
 "Restore User"                                          442 UeditRestoreQ
 "Activate User"                                         443 UeditActivateQ
@@ -934,3 +934,4 @@
 	"\r\nCtrl-T  Time Information\r\n\r\n"
 "Display Unread Messages Only"				766 DisplayUnreadMessagesOnlyQ
 "No messages found."					767 NoMessagesFound
+"\1n\1cIP Addr   : \1h%s\r\n"                              768 UserIpAddr
