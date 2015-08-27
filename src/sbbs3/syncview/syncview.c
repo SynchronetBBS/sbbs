@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 	char	buf[BUF_SIZE*2];	/* Room for lfexpand */
 	int		len;
 	int		speed=0;
-	char	*scrollbuf;
+	unsigned char	*scrollbuf;
 	char	*infile=NULL;
 	char	title[MAX_PATH+1];
 	int		expand=0;

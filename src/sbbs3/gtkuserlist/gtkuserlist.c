@@ -22,7 +22,6 @@ int main(int argc, char **argv)
 	GtkTreeIter		curr;
 	GtkCellRenderer *column;
 	GtkWindow*	xml;
-	GError* error = NULL;
 
     gtk_init(&argc, &argv);
 

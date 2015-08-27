@@ -569,7 +569,7 @@ while(1) {
 						memset(&tmpsub,0,sizeof(sub_t));
 						tmpsub.misc|=
 							(SUB_FIDO|SUB_NAME|SUB_TOUSER|SUB_QUOTE|SUB_HYPER);
-						if(k==1) {		/* AREAS.BBS Generic/*.MSG */
+						if(k==1) {		/* AREAS.BBS Generic/.MSG */
 							p=str;
 							SKIP_WHITESPACE(p);			/* Find path	*/
 							FIND_WHITESPACE(p);			/* Skip path	*/
