@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 	fputs(" * @format.tab-size 4		(Plain Text/Source Code File Header)			*\n",text_h);
 	fputs(" * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*\n",text_h);
 	fputs(" *																			*\n",text_h);
-	fputs(" * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*\n",text_h);
+	fputs(" * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*\n",text_h);
 	fputs(" *																			*\n",text_h);
 	fputs(" * This program is free software; you can redistribute it and/or			*\n",text_h);
 	fputs(" * modify it under the terms of the GNU General Public License				*\n",text_h);
