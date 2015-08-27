@@ -42,4 +42,4 @@ endif
 $(GTKMONITOR): $(OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(LDFLAGS) $(OBJS) -o $@ -lsbbs $(EXTRA_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
-	$(QUIET)cd $(EXEODIR) && ln -s ../gtkmonitor.glade .
+	$(QUIET)cd $(EXEODIR) && ln -fs ../gtkmonitor.glade .
