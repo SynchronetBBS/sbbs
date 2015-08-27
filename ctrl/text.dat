@@ -865,7 +865,7 @@
 ""                                                      717 NodeActionPrivateChat
 ""                                                      718 NodeActionPaging
 ""                                                      719 NodeActionRetrieving
-"YNQ*"                                                  720 YN /* (Yes/No/Quit/Password chars) */
+"YNQ*"                                                  720 YNQP /* (Yes/No/Quit/Password chars) */
 "View signature"                                        721 ViewSignatureQ
 "Delete signature"                                      722 DeleteSignatureQ
 "Create/Edit signature"                                 723 CreateEditSignatureQ
