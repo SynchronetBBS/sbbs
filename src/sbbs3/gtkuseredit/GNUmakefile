@@ -42,4 +42,4 @@ endif
 $(GTKUSEREDIT): $(OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(LDFLAGS) $(OBJS) -o $@ -lsbbs $(EXTRA_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
-	$(QUIET)cd $(EXEODIR) && ln -s ../gtkuseredit.glade .
+	$(QUIET)cd $(EXEODIR) && ln -fs ../gtkuseredit.glade .

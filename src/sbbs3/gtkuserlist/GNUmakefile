@@ -42,4 +42,4 @@ endif
 $(GTKUSERLIST): $(OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(LDFLAGS) $(OBJS) -o $@ $(EXTRA_LIBS) -lsbbs $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
-	$(QUIET)cd $(EXEODIR) && ln -s ../gtkuserlist.glade .
+	$(QUIET)cd $(EXEODIR) && ln -fs ../gtkuserlist.glade .
