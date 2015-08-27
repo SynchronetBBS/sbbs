@@ -29,4 +29,4 @@ EXTRA_LIBS += `pkg-config gtk+-2.0 --libs`
 $(GTKCHAT): $(OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(LDFLAGS) $(OBJS) -o $@ $(EXTRA_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
-	$(QUIET)cd $(EXEODIR) && ln -s ../gtk-chat.glade .
+	$(QUIET)cd $(EXEODIR) && ln -fs ../gtk-chat.glade .
