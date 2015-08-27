@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -52,7 +52,7 @@ bool sbbs_t::answer()
 
 	useron.number=0;
 	answertime=logontime=starttime=now=time(NULL);
-	/* Caller ID is IP address */
+	/* Caller ID string is client IP address, by default (may be overridden later) */
 	SAFECOPY(cid,client_ipaddr);
 
 	memset(&tm,0,sizeof(tm));
@@ -446,13 +446,13 @@ bool sbbs_t::answer()
 	if(!useron.number)
 		hangup();
 
-	/* Save the IP to the user's note */
+	/* Save the client IP or Caller-ID string to the user's record */
 	if(cid[0]) {
 		SAFECOPY(useron.ipaddr,cid);
 		putuserrec(&cfg,useron.number,U_IPADDR,LEN_IPADDR,useron.ipaddr);
 	}
 
-	/* Save host name to the user's computer description */
+	/* Save the client hostname to the user's record */
 	if(client_name[0]) {
 		SAFECOPY(useron.comp,client_name);
 		putuserrec(&cfg,useron.number,U_COMP,LEN_COMP,useron.comp);
