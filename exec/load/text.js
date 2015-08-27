@@ -776,3 +776,4 @@ var StartingNewUserRegistration=764;
 var GetStrMenu=765;
 var DisplayUnreadMessagesOnlyQ=766;
 var NoMessagesFound=767;
+var UserIpAddr=768;
