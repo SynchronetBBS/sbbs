@@ -12,8 +12,8 @@ get_from_remote(gpointer data)
 	int		ch;
 	gchar	*outstr;
 	gchar	instr[2];
-	int		inbytes;
-	int		outbytes;
+	gsize		inbytes;
+	gsize		outbytes;
 
 	instr[1]=0;
 	switch(chat_check_remote()) {
@@ -99,8 +99,8 @@ on_LocalText_key_press_event           (GtkWidget       *widget,
 {
 	gchar	*outstr;
 	gchar	instr[2];
-	int		inbytes;
-	int		outbytes;
+	gsize	inbytes;
+	gsize	outbytes;
 
 	if(event->keyval==GDK_BackSpace || event->keyval==GDK_Delete) {
 		GtkTextIter		start;

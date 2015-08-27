@@ -132,13 +132,15 @@ int chat_read_byte(void)
 			in=-1;
 			return(-1);
 		case 0:
-			if(lseek(in,0,SEEK_SET)==-1);	/* Wrapped */
+			if(lseek(in,0,SEEK_SET)==-1)	/* Wrapped */
 				return(-1);
 			switch(read(in,&ch,1)) {
 				case -1:
 					close(in);
 					in=-1;
 					return(-1);
+				case 0:
+					return 0;
 			}
 			/* Fall-through */
 		case 1:
