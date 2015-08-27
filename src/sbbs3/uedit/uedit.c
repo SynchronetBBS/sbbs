@@ -48,6 +48,8 @@
 #endif
 
 #include "ciolib.h"
+#include "curs_cio.h"
+#undef OK
 #include "sbbs.h"
 
 #include "genwrap.h"
