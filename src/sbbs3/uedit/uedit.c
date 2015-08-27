@@ -1739,7 +1739,6 @@ int finduser(scfg_t *cfg, user_t *user)
 int getuser(scfg_t *cfg, user_t *user, char* str)
 {
 	int i,j,last;
-	ushort un;
 	struct user_list **opt;
 	int done=0;
 
@@ -1894,10 +1893,10 @@ int main(int argc, char** argv)  {
 	char	revision[16];
 	char	str[256],ctrl_dir[41],*p;
 	char	title[256];
-	int		i,j,result;
+	int		i,j;
 	scfg_t	cfg;
 	int		done;
-	int		last, newlast;
+	int		last;
 	user_t	user;
 	int		edtuser=0;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
@@ -1938,21 +1937,20 @@ int main(int argc, char** argv)  {
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
 		printf("Reading %s\n",ini_file);
+		/* We call this function to set defaults, even if there's no .ini file */
+		sbbs_read_ini(fp,
+			NULL,		/* global_startup */
+			NULL, &bbs_startup,
+			NULL, NULL, /* ftp_startup */
+			NULL, NULL, /* web_startup */
+			NULL, NULL, /* mail_startup */
+			NULL, NULL  /* services_startup */
+			);
+
+		/* close .ini file here */
+		if(fp!=NULL)
+			fclose(fp);
 	}
-	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp,
-		NULL,		/* global_startup */
-		NULL, &bbs_startup,
-		NULL, NULL, /* ftp_startup */
-		NULL, NULL, /* web_startup */
-		NULL, NULL, /* mail_startup */
-		NULL, NULL  /* services_startup */
-		);
-
-	/* close .ini file here */
-	if(fp!=NULL)
-		fclose(fp);
-
 	chdir(bbs_startup.ctrl_dir);
 
 	/* Read .cfg files here */
