@@ -199,8 +199,8 @@ var DirFile = function(dir, filename) {
 		}
 		if(typeof ixb == "undefined")
 			throw "DirFile: No ixb record found.";
-		properties.uploadDate = ixb.uploadDate;
-		properties.downloadDate = ixb.downloadDate;
+		properties.uploadDate = Number(ixb.uploadDate);
+		properties.downloadDate = Number(ixb.downloadDate);
 		try {
 			var dat = readDat(dir, ixb.datOffset);
 		} catch(err) {
