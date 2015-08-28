@@ -854,11 +854,29 @@ cmdkey &
 		end_cmd
 
 	cmdkey B
+                crlf
 		toggle_user_misc UM_BATCHFLAG
+                compare_user_misc UM_BATCHFLAG
+                print "Batch flagging in file listings is now: \1h"
+                if_true
+                    print "ON"
+                else
+                    print "OFF"
+                    end_if
+                crlf
 		end_cmd
-
+    
 	cmdkey E
+                crlf
 		toggle_user_misc UM_EXTDESC
+                compare_user_misc UM_EXTDESC
+                print "Extended file description display is now: \1h"
+                if_true
+                    print "ON"
+                else
+                    print "OFF"
+                    end_if
+                crlf
                 end_cmd
 	end_cmd
 
