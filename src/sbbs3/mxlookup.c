@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -45,6 +45,7 @@
 #include "sockwrap.h"
 #include "gen_defs.h"
 #include "smbdefs.h"		/* _PACK */
+#include "mailsrvr.h"
 
 #if defined(_WIN32) || defined(__BORLANDC__)
 	#pragma pack(push,1)	/* Packet structures must be packed */
@@ -115,14 +116,6 @@ enum {
 
 #define DNS_IN			1			/* Internet Query Class */
 #define DNS_ALL			255			/* Query all records */
-
-#ifdef MX_LOOKUP_TEST
-	#define mail_open_socket(type,s)	socket(AF_INET, type, IPPROTO_IP)
-	#define mail_close_socket(sock)		closesocket(sock)
-#else
-	int mail_open_socket(int type, const char* section);
-	int mail_close_socket(SOCKET sock);
-#endif
 
 size_t dns_name(char* name, size_t* namelen, size_t maxlen, BYTE* srcbuf, char* p)
 {
@@ -197,13 +190,11 @@ int dns_getmx(char* name, char* mx, char* mx2
 	mx[0]=0;
 	mx2[0]=0;
 
-	if(use_tcp) 
-		sock = mail_open_socket(SOCK_STREAM,"dns");
-	else
-		sock = mail_open_socket(SOCK_DGRAM,"dns");
-
+	sock = socket(AF_INET, use_tcp ? SOCK_STREAM : SOCK_DGRAM, IPPROTO_IP);
 	if(sock == INVALID_SOCKET)
 		return(ERROR_VALUE);
+
+	mail_open_socket(sock, "dns");
 	
 	addr.sin_addr.s_addr = htonl(intf);
     addr.sin_family = AF_INET;

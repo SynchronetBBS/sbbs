@@ -241,6 +241,10 @@ extern "C" {
 DLLEXPORT void			DLLCALL mail_server(void* arg);
 DLLEXPORT void			DLLCALL mail_terminate(void);
 DLLEXPORT const	char*	DLLCALL mail_ver(void);
+
+/* for mxlookup.c: */
+void mail_open_socket(SOCKET sock, void* cb_protocol);
+int mail_close_socket(SOCKET sock);
 #ifdef __cplusplus
 }
 #endif
