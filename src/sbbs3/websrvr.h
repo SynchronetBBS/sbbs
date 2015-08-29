@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -43,17 +43,17 @@
 #include "semwrap.h"			/* sem_t */
 
 typedef struct {
-	DWORD		size;				/* sizeof(web_startup_t) */
-	WORD		max_clients;
+	size_t		size;				/* sizeof(web_startup_t) */
+	uint16_t	max_clients;
 #define WEB_DEFAULT_MAX_CLIENTS			0	/* 0=unlimited */
-	WORD		max_inactivity;
+	uint16_t	max_inactivity;
 #define WEB_DEFAULT_MAX_INACTIVITY		120	/* seconds */
-	WORD		max_cgi_inactivity;
+	uint16_t	max_cgi_inactivity;
 #define WEB_DEFAULT_MAX_CGI_INACTIVITY	120	/* seconds */
-	WORD		sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
-    DWORD		options;
-	WORD		port;
-	WORD		tls_port;
+	uint16_t	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
+    uint32_t	options;
+	uint16_t	port;
+	uint16_t	tls_port;
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
     str_list_t	interfaces;
@@ -99,17 +99,17 @@ typedef struct {
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 	char	default_cgi_content[128];
 	char	default_auth_list[128];
-	WORD	outbuf_highwater_mark;	/* output block size control */
-	WORD	outbuf_drain_timeout;
+	uint16_t	outbuf_highwater_mark;	/* output block size control */
+	uint16_t	outbuf_drain_timeout;
 
 	/* JavaScript operating parameters */
 	js_startup_t js;
 
 	/* Login Attempt parameters */
-	ulong	login_attempt_delay;
-	ulong	login_attempt_throttle;
-	ulong	login_attempt_hack_threshold;
-	ulong	login_attempt_filter_threshold;
+	uint32_t	login_attempt_delay;
+	uint32_t	login_attempt_throttle;
+	uint32_t	login_attempt_hack_threshold;
+	uint32_t	login_attempt_filter_threshold;
 	link_list_t* login_attempt_list;
 
 } web_startup_t;
@@ -136,6 +136,7 @@ static struct init_field web_init_fields[] = {
 #define WEB_OPT_VIRTUAL_HOSTS		(1<<4)	/* Use virutal host html subdirs	*/
 #define WEB_OPT_NO_CGI				(1<<5)	/* Disable CGI support				*/
 #define WEB_OPT_HTTP_LOGGING		(1<<6)	/* Create/write-to HttpLogFile		*/
+#define WEB_OPT_ALLOW_TLS			(1<<7)	/* Enable HTTPS						*/
 
 /* web_startup_t.options bits that require re-init/recycle when changed */
 #define WEB_INIT_OPTS	(WEB_OPT_HTTP_LOGGING)
@@ -149,6 +150,7 @@ static ini_bitdesc_t web_options[] = {
 	{ WEB_OPT_VIRTUAL_HOSTS			,"VIRTUAL_HOSTS"		},
 	{ WEB_OPT_NO_CGI				,"NO_CGI"				},
 	{ WEB_OPT_HTTP_LOGGING			,"HTTP_LOGGING"			},
+	{ WEB_OPT_ALLOW_TLS				,"ALLOW_TLS"			},
 
 	/* shared bits */
 	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
