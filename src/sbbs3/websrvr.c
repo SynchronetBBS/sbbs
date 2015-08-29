@@ -5975,10 +5975,12 @@ void DLLCALL web_server(void* arg)
 		lprintf(LOG_DEBUG,"Error directory: %s", error_dir);
 		lprintf(LOG_DEBUG,"CGI directory: %s", cgi_dir);
 
-		lprintf(LOG_DEBUG,"Loading/Creating TLS certificate");
-		tls_context = get_ssl_cert(&scfg, ssl_estr);
-		if (tls_context == -1)
-			lprintf(LOG_ERR, "Error creating TLS certificate: %s", ssl_estr);
+		if(startup->options&WEB_OPT_ALLOW_TLS) {
+			lprintf(LOG_DEBUG,"Loading/Creating TLS certificate");
+			tls_context = get_ssl_cert(&scfg, ssl_estr);
+			if (tls_context == -1)
+				lprintf(LOG_ERR, "Error creating TLS certificate: %s", ssl_estr);
+		}
 
 		iniFileName(mime_types_ini,sizeof(mime_types_ini),scfg.ctrl_dir,"mime_types.ini");
 		mime_types=read_ini_list(mime_types_ini,NULL /* root section */,"MIME types"
@@ -6021,7 +6023,7 @@ void DLLCALL web_server(void* arg)
 		 * Add interfaces
 		 */
 		xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "Web Server", open_socket, startup->seteuid, NULL);
-		if(startup->options&WEB_OPT_ALLOW_TLS) {
+		if(tls_context != -1 && startup->options&WEB_OPT_ALLOW_TLS) {
 			if(do_cryptInit())
 				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", open_socket, startup->seteuid, "TLS");
 		}
