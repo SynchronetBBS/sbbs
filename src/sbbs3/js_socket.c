@@ -114,11 +114,11 @@ static void do_CryptFlush(const CRYPT_CONTEXT session)
 	if(ret!=CRYPT_OK) {
 		estr = get_crypt_error(session);
 		if (estr) {
-			lprintf(LOG_ERR, "cryptFlushData() returned %d (%s)", ret, estr);
+			lprintf(LOG_WARNING, "cryptFlushData() returned %d (%s)", ret, estr);
 			free_crypt_attrstr(estr);
 		}
 		else
-			lprintf(LOG_ERR, "cryptFlushData() returned %d", ret);
+			lprintf(LOG_WARNING, "cryptFlushData() returned %d", ret);
 	}
 }
 
@@ -158,7 +158,7 @@ static ptrdiff_t js_socket_recv(js_socket_private_t *p, void *buf, size_t len, i
 			buf=((uint8_t *)buf) + copied;
 		}
 		else {
-			lprintf(LOG_ERR,"cryptPopData() returned %d", ret);
+			lprintf(LOG_WARNING,"cryptPopData() returned %d", ret);
 			if (total > 0)
 				return total;
 			do_js_close(p);
@@ -190,7 +190,7 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 			msg=((uint8_t *)msg) + copied;
 		}
 		else {
-			lprintf(LOG_ERR,"cryptPushData() returned %d", ret);
+			lprintf(LOG_WARNING,"cryptPushData() returned %d", ret);
 			if(flush) do_CryptFlush(p->session);
 			return total;
 		}
