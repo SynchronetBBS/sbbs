@@ -59,7 +59,7 @@ function podcast_get_info(base, hdr)
 	if (body == null)
 		return;
 	body = word_wrap(body, 65535, 79, false).replace(/\r/g, '');
-	m = body.match(/^[\r\n\s]*([\x00-\xff]+?)[\r\n\s]+(https?:\/\/[^\r\n\s]+)[\r\n\s]/);
+	m = body.match(/^[\r\n\s]*([\x00-\xff]+?)[\r\n\s]+(https?:\/\/[^\r\n\s]+\.mp3)[\r\n\s]/);
 	if (m==null)
 		return;
 	ret.title = hdr.subject;
