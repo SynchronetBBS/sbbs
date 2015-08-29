@@ -2138,6 +2138,8 @@ void output_thread(void* arg)
 				avail=mss;
            	buftop=RingBufRead(&sbbs->outbuf, buf, avail);
            	bufbot=0;
+			if (buftop == 0)
+				continue;
 		}
 
 		/* Check socket for writability (using select) */
