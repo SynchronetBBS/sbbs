@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -47,8 +47,9 @@ extern "C" {
 /* Return difference (in seconds) in time() result from standard (0 on success) */
 DLLEXPORT time_t		DLLCALL		checktime(void);
 
-/* Implementation of mktime() that handles common tm element conversions for you */
+/* Implementation of mktime()/timegm() that handles common tm element conversions for you */
 DLLEXPORT time_t		DLLCALL		sane_mktime(struct tm*);
+DLLEXPORT time_t		DLLCALL		sane_timegm(struct tm*);
 
 /* Legacy (32-bit time_t) versions of time() and mktime() */
 DLLEXPORT time32_t		DLLCALL		time32(time32_t* tp);
@@ -69,6 +70,11 @@ DLLEXPORT struct tm*	DLLCALL		localtime32(const time32_t* t, struct tm* tm);
 	DLLEXPORT char*	        DLLCALL		asctime_r(const struct tm *tm, char *buf);
 	DLLEXPORT char*			DLLCALL		strtok_r(char *str, const char *delim, char **last);
 
+#endif
+
+/* Microsoft's equivalent of GLIBC/BSD timegm() */
+#ifdef _MSC_VER
+	#define timegm _mkgmtime
 #endif
 
 /***********************************/

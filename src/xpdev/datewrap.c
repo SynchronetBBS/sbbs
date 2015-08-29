@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -62,6 +62,18 @@ time_t DLLCALL sane_mktime(struct tm* tm)
 	tm->tm_isdst=-1;	/* Auto-adjust for DST */
 
 	return mktime(tm);
+}
+
+/* Compensates for struct tm "weirdness" */
+time_t DLLCALL sane_timegm(struct tm* tm)
+{
+	if(tm->tm_year>=1900)
+		tm->tm_year-=1900;
+	if(tm->tm_mon)		/* Month is zero-based */
+		tm->tm_mon--;
+	tm->tm_isdst=0;		/* Don't adjust for DST */
+
+	return timegm(tm);
 }
 
 time32_t DLLCALL time32(time32_t* tp)
