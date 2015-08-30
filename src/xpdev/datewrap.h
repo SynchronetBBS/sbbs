@@ -83,6 +83,9 @@ DLLEXPORT struct tm*	DLLCALL		localtime32(const time32_t* t, struct tm* tm);
 
 #if defined(__BORLANDC__)
 
+/* Borland C++ doesn't come with a timegm() or mkgmtime() equivalent */
+#define timegm	mktime
+
 #include <dos.h>
 
 #else 
