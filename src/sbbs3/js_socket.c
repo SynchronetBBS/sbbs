@@ -2174,8 +2174,6 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 		len=sizeof(p->remote_addr);
 		if(getpeername(p->sock, &p->remote_addr.addr,&len)==0)
 			p->is_connected=TRUE;
-		else
-			lprintf(LOG_ERR, "Error %d calling getpeername()",errno);
 	}
 
 	if(!JS_SetPrivate(cx, obj, p)) {
