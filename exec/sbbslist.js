@@ -16,17 +16,10 @@ opts=load(new Object, "modopts.js", "sbbslist");
 if(this.opts && opts.sub)
     options.sub=opts.sub;
 
-var lib = {};
-load(lib, "sbbslist_lib.js");
+var lib = load(new Object, "sbbslist_lib.js");
 
-var sort_property = 'name';
-
-function compare(a, b)
-{
-	if(a[sort_property].toLowerCase()>b[sort_property].toLowerCase()) return 1; 
-	if(a[sort_property].toLowerCase()<b[sort_property].toLowerCase()) return -1;
-	return 0;
-}
+var capture = load(new Object, "termcapture_lib.js");
+capture.timeout=15;
 
 // This date format is required for backwards compatibility with SMB2SBL
 function date_to_str(date)
@@ -442,23 +435,27 @@ function read_dab_entry(f)
     var updated = f.readBin(4);
     if(updated)
         obj.entry.updated = { on: new Date(updated*1000) };
-    obj.first_online = new Date(f.readBin(4)*1000);
+    var first_online = f.readBin(4);
+    if(first_online)
+        obj.first_online = new Date(first_online*1000);
     obj.total.storage = f.readBin(4)*1024*1024;
     obj.total.msgs = f.readBin(4);
     obj.total.files = f.readBin(4);
     obj.imported = Boolean(f.readBin(4));
     for(i=0;i<sbl_defs.MAX_NUMBERS;i++) {
-        obj.service[i] = { address: truncsp(f.read(29)),  protocol: 'modem' };
+        var service = { address: truncsp(f.read(29)),  protocol: 'modem' };
         var location = truncsp(f.read(31));
         var min_rate = f.readBin(2)
         var port = f.readBin(2);
         if(min_rate==0xffff) {
-            obj.service[i].protocol = 'telnet';
-            obj.service[i].port = port;
+            service.protocol = 'telnet';
+            service.port = port;
         } else {
-            obj.service[i].min_rate = min_rate;
-            obj.service[i].max_rate = port;
+            service.min_rate = min_rate;
+            service.max_rate = port;
         }
+        if(obj.service.indexOf(service) < 0)
+            obj.service.push(service);
         if(obj.location==undefined || obj.location.length==0)
             obj.location=location;
     }
@@ -466,7 +463,10 @@ function read_dab_entry(f)
     var updated_by = truncsp(f.read(26));
     if(obj.entry.updated)
         obj.entry.updated.by = updated_by;
-    obj.entry.verified = { on: new Date(f.readBin(4)*1000), by: truncsp(f.read(26)) };
+    var verified_date = f.readBin(4);
+    var verified_by = f.read(26);
+    if(verified_date)
+        obj.entry.verified = { on: new Date(verified_date*1000), by: truncsp(verified_by) };
     obj.web_site = truncsp(f.read(61));
     var sysop_email = truncsp(f.read(61));
     if(obj.sysop.length)
@@ -506,15 +506,67 @@ function upgrade_list(sbl_dab)
     return list;
 }
 
-function main()
+function verify_terminal_service(service)
+{
+    print("Verifying terminal service: " + service.protocol);
+    capture.protocol = service.protocol.toLowerCase();
+    capture.address = service.address;
+    capture.port = service.port;
+
+    return capture.capture();
+}
+
+function base64_encode_array(array)
+{
+    var new_array = [];
+    var i;
+
+    for(i in array) {
+        var enc=base64_encode(array[i]);
+        new_array.push(enc);
+    }
+
+    return new_array;
+}
+
+function verify_bbs(bbs)
 {
     var i;
+    for(i in bbs.service) {
+        var protocol = bbs.service[i].protocol.toLowerCase();
+        if(protocol != "telnet" && protocol != "rlogin")
+            continue;
+        var result = verify_terminal_service(bbs.service[i]);
+        if(result != false) {
+            bbs.capture = base64_encode_array(result);
+            bbs.hello = base64_encode_array(capture.hello);
+            return true;
+        }
+    }
+    return false;
+}
+
+function verify_list(list)
+{
+    var i;
+
+    for(i in list) {
+        print(format("Verifying BBS %u of %u: %s", Number(i)+1, list.length, list[i].name));
+        verify_bbs(list[i]);
+    }
+}
+    
+function main()
+{
+    var i,j;
     var list;
     var import_now = false;
     var export_now = false;
     var show_now = false;
     var dump_now = false;
     var sort = false;
+    var syncterm = false;
+    var verify_now = false;
     var msgbase;
 
     print("Synchronet BBS List v4 Rev " + REVISION);
@@ -523,7 +575,7 @@ function main()
         switch(argv[i]) {
             case "upgrade":
                 upgrade_list(sbl_dir + "sbl.dab");
-                exit();
+                break;
             case "import":
                 import_now = true;
                 break;
@@ -535,13 +587,19 @@ function main()
             case "show":
                 show_now = true;
                 break;
+            case "syncterm":
+                syncterm = true;
+                break;
+            case "verify":
+                verify_now = true;
+                break;
             case "backup":
                 file_backup(lib.list_fname);
                 break;
             case "-sort":
                 sort = true;
                 if(i+1<argc)
-                    sort_property=argv[++i];
+                    lib.sort_property=argv[++i];
                 break;
         }
     }
@@ -566,8 +624,35 @@ function main()
     }
 
     if(sort) {
-        print("Sorting list by property: " + sort_property);
-        list.sort(compare);
+        print("Sorting list by property: " + lib.sort_property);
+        list.sort(lib.compare);
+    }
+
+    if(verify_now) {
+        verify_list(list);
+        lib.write_list(list);
+    }
+
+    if(syncterm) {
+        var f = new File("syncterm.lst");
+        if(!f.open("w")) {
+            log(LOG_ERR,"Error opening " + f.name);
+            exit();
+        }
+        for(i in list) {
+            for(j in list[i].service) {
+                if(!list[i].service[j].protocol)
+                    continue;
+                if(j > 0)
+                    f.writeln(format("[%-23.23s %6.6s]", list[i].name, list[i].service[j].protocol));
+                else
+                    f.writeln(format("[%s]", list[i].name));
+                f.writeln(format("ConnectionType=%s", list[i].service[j].protocol));
+                f.writeln(format("Address=%s", list[i].service[j].address));
+                f.writeln();
+            }
+        }
+        f.close();
     }
 
     if(show_now) {
