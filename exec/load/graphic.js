@@ -5,6 +5,8 @@
  * Allows a graphic to be stored in memory and portions of it redrawn on command
  */
 
+load("sbbsdefs.js");	// Needed for colors, e.g. BLACK
+
 function Graphic(w,h,attr,ch)
 {
 	if(ch==undefined)
@@ -410,6 +412,7 @@ function Graphic_parseANSI(lines)
 			/* parse a clear screen sequence */
 			var n = line.match(/^\x1b\[2J/);
 			if(n !== null) {
+				this.clear();
 				line = line.substr(n.shift().length);
 				continue;
 			}
