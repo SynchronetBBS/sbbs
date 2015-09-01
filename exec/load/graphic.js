@@ -5,6 +5,17 @@
  * Allows a graphic to be stored in memory and portions of it redrawn on command
  */
 
+/*
+ * Class that represents a drawable object.
+ * w = width (default of 80)
+ * h = height (default of 24)
+ * attr = default attribute (default of 7 ie: LIGHTGREY)
+ * ch = default character (default of space)
+ *
+ * Instance variable data contains an array of array of Graphics.Char objects
+ *
+ * Instance variables atcodes are slated for removal.
+ */
 function Graphic(w,h,attr,ch)
 {
 	if(ch==undefined)
@@ -24,12 +35,8 @@ function Graphic(w,h,attr,ch)
 	else
 		this.width=w;
 
-	this.scrollback=500;
-	this.loop=false;
 	this.atcodes=true;
-	this.length=0;
-	this.index=0;
-	
+
 	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {
 		for(var x=0; x<this.width; x++) {
@@ -41,9 +48,291 @@ function Graphic(w,h,attr,ch)
 	}
 }
 
+/*
+ * Load sbbsdefs.js into Graphic.defs
+ */
 Graphic.prototype.defs = {};
 load(Graphic.prototype.defs, "sbbsdefs.js");
 
+/*
+ * Load ansiterm_lib into Graphic.ansi
+ */
+Graphic.prototype.ansi = {};
+load(Graphic.prototype.ansi, "ansiterm_lib.js");
+
+/*
+ * The Char subclass which contains the attribute and character for a
+ * single cell.
+ */
+Graphic.prototype.Char = function(ch,attr)
+{
+	this.ch=ch;
+	this.attr=attr;
+};
+
+/*
+ * BIN property is the string representation of the graphic in a series of
+ * char/attr pairs.
+ */
+Object.defineProperty(Graphic.prototype, "BIN", {
+	get: function() {
+		var bin = '';
+
+		for (y=0; y<this.height; y++) {
+			for (x=0; x<this.width; x++) {
+				bin += this.data[x][y].ch;
+				bin += ascii(this.data[x][y].attr);
+			}
+		}
+		return bin;
+	},
+	set: function(bin) {
+		var x;
+		var y;
+		var pos = 0;
+		var blen = bin.length;
+
+		for (y=0; y<this.height; y++) {
+			for (x=0; x<this.width; x++) {
+				if (blen >= pos+2)
+					this.data[x][y] = new this.Char(bin.charAt(pos), bin.charCodeAt(pos+1));
+				else
+					return;
+				pos += 2;
+			}
+		}
+	}
+});
+
+/*
+ * ANSI property is the string representation of the graphic as ANSI
+ */
+Object.defineProperty(Graphic.prototype, "ANSI", {
+	get: function() {
+		var x;
+		var y;
+    	var lines=[];
+    	var curattr=7;
+		var ansi = '';
+		var char;
+
+		for(y=0; y<this.height; y++) {
+			for(x=0; x<this.width-1; x++) {
+				ansi += this.ansi.attr(this.data[x][y].attr, curattr);
+            	curattr = this.data[x][y].attr;
+            	char = this.data[x][y].ch;
+            	/* Don't put printable chars in the last column */
+            	if(char == ' ' || (x<this.width-1))
+                	ansi += char;
+        	}
+			ansi += '\r\n';
+    	}
+    	return ansi;
+	},
+	set: function(ans) {
+		var attr = this.attribute;
+		var saved = {};
+		var x = 0;
+		var y = 0;
+		var std_cmds = {
+			'm':function(params, obj) {
+				var bg = attr & obj.defs.BG_LIGHTGRAY;
+				var fg = attr & obj.defs.LIGHTGRAY;
+				var hi = attr & obj.defs.HIGH;
+				var bnk = attr & obj.defs.BLINK;
+
+				if (params[0] === undefined)
+					params[0] = 0;
+
+				while (params.length) {
+					switch (parseInt(params[0], 10)) {
+						case 0:
+							bg = obj.defs.BG_BLACK;
+							fg = obj.defs.LIGHTGRAY;
+							hi = 0;
+							bnk = 0;
+							break;
+						case 1:
+							hi = obj.defs.HIGH;
+							break;
+						case 40:
+							bg = obj.defs.BG_BLACK;
+							break;
+						case 41:
+							bg = obj.defs.BG_RED;
+							break;
+						case 42: 
+							bg = obj.defs.BG_GREEN;
+							break;
+						case 43:
+							bg = obj.defs.BG_BROWN;
+							break;
+						case 44:
+							bg = obj.defs.BG_BLUE;
+							break;
+						case 45:
+							bg = obj.defs.BG_MAGENTA;
+							break;
+						case 46:
+							bg = obj.defs.BG_CYAN;
+							break;
+						case 47:
+							bg = obj.defs.BG_LIGHTGRAY;
+							break;
+						case 30:
+							fg = obj.defs.BLACK;
+							break;
+						case 31:
+							fg = obj.defs.RED;
+							break;
+						case 32:
+							fg = obj.defs.GREEN;
+							break;
+						case 33:
+							fg = obj.defs.BROWN;
+							break;
+						case 34:
+							fg = obj.defs.BLUE;
+							break;
+						case 35:
+							fg = obj.defs.MAGENTA;
+							break;
+						case 36:
+							fg = obj.defs.CYAN;
+							break;
+						case 37:
+							fg = obj.defs.LIGHTGRAY;
+							break;
+					}
+					params.shift();
+				}
+				attr = bg + fg + hi + bnk;
+			},
+			'H':function(params) {
+				if (params[0] === undefined)
+					params[0] = 1;
+				if (params[1] === undefined)
+					params[1] = 1;
+
+				y = parseInt(params[0], 10) - 1;
+				x = parseInt(params[1], 10) - 1;
+			},
+			'A':function(params) {
+				if (params[0] == undefined)
+					params[0] = 1;
+	
+				y -= parseInt(params[0], 10);
+				if (y < 0)
+					y = 0;
+			},
+			'B':function(params) {
+				if (params[0] == undefined)
+					params[0] = 1;
+
+				y += parseInt(params[0], 10);
+			},
+			'C':function(params, obj) {
+				if (params[0] == undefined)
+					params[0] = 1;
+
+				x += parseInt(params[0], 10);
+				if (x >= obj.width)
+					x = obj.width - 1;
+			},
+			'D':function(params) {
+				if (params[0] == undefined)
+					params[0] = 1;
+
+				x -= parseInt(params[0], 10);
+				if (x < 0)
+					x = 0;
+			},
+			'J':function(params,obj) {
+				if (params[0] == undefined)
+					params[0] = 0;
+
+				if (parseInt(params[0], 10) == 2)
+					obj.clear();
+			},
+			's':function(params) {
+				saved={'x':x, 'y':y};
+			},
+			'u':function(params) {
+				x = saved.x;
+				y = saved.y;
+			}
+		};
+		std_cmds.f = std_cmds.H;
+		var line;
+		var m;
+		var paramstr;
+		var cmd;
+		var params;
+		var ch;
+
+		while(ans.length > 0) {	
+			x = 0;
+			/* parse 'ATCODES'?? 
+			ans = ans.replace(/@(.*)@/g,
+				function (str, code, offset, s) {
+					return bbs.atcode(code);
+				}
+			);
+			*/
+			while(ans.length > 0) {
+				m = ans.match(/^\x1b\[([\x30-\x3f]*)([\x20-\x2f]*[\x40-\x7e])/);
+				if (m !== null) {
+					paramstr = m[1];
+					cmd = m[2];
+					if (paramstr.search(/^[<=>?]/) != 0) {
+						params=paramstr.split(/;/);
+
+						if (std_cmds[cmd] !== undefined)
+							std_cmds[cmd](params,this);
+					}
+					ans = ans.substr(m[0].length);
+    	            continue;
+				}
+
+				/* set character and attribute */
+				ch = ans[0];
+				ans = ans.substr(1);
+
+ 	           /* Handle non-ANSI cursor positioning control characters */
+ 	           switch(ch) {
+ 	               case '\r':
+ 	                   x=0;
+ 	                   continue;
+ 	               case '\n':
+ 	                   y++;
+ 	                   continue;
+ 	               case '\t':
+ 	                   x += 8-(x%8);
+ 	                   continue;
+ 	               case '\b':
+ 	                   if(x) x--;
+ 	                   continue;
+ 	           }
+
+				/* validate position */
+				if(x>=this.width) {
+					x=0;
+					y++;
+				}
+
+				if(!this.data[x])
+					this.data[x]=[];
+				this.data[x][y]=new this.Char(ch,attr);
+				x++;
+			}
+			y++;
+		}
+	}
+});
+
+/*
+ * Resets the graphic to all this.ch/this.attr Chars
+ */
 Graphic.prototype.clear = function()
 {
 	this.data=new Array(this.width);
@@ -55,25 +344,15 @@ Graphic.prototype.clear = function()
 			this.data[x][y]=new this.Char(this.ch,this.attribute);
 		}
 	}
-	this.length=0;
-	this.index=0;
 };
 
-Graphic.prototype.Char = function(ch,attr)
-{
-	this.ch=ch;
-	this.attr=attr;
-};
-
-Graphic.prototype.gety = function()
-{
-	var y=this.length;
-	if(y>=this.height) {
-		y=this.height;
-	}
-	return y;
-};
-
+/*
+ * Draws the graphic using the console object optionally delaying between
+ * characters.
+ *
+ * TODO: Remove optional delay.  If the functionality is needed, maybe add
+ *       a callback.
+ */
 Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 {
 	var x;
@@ -107,8 +386,8 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 			// Do not draw to the bottom left corner of the screen-would scroll
 			if(xpos+x != console.screen_columns
 					|| ypos+y != console.screen_rows) {
-				console.attributes=this.data[x+xoff][this.index+y+yoff].attr;
-				var ch=this.data[x+xoff][this.index+y+yoff].ch;
+				console.attributes=this.data[x+xoff][y+yoff].attr;
+				var ch=this.data[x+xoff][y+yoff].ch;
 				if(ch == "\r" || ch == "\n" || !ch)
 					ch=this.ch;
 				console.write(ch);
@@ -120,11 +399,10 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 	return(true);
 };
 
-Graphic.prototype.drawslow = function(xpos,ypos,width,height,xoff,yoff)
-{
-	this.draw(xpos,ypos,width,height,xoff,yoff,5);
-};
-
+/*
+ * Does a random draw of the graphic...
+ * Maybe this should stay, maybe not.  TODO: Decide.
+ */
 Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 {
 	var x;
@@ -154,7 +432,7 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 	for(x=0;x<width;x++) {
 		placeholder[x]=new Array(height);
 		for(y=0;y<placeholder[x].length;y++) {
-			placeholder[x][y]={'x':xoff+x,'y':this.index+yoff+y};
+			placeholder[x][y]={'x':xoff+x,'y':yoff+y};
 		}
 	}
 	var count=0;
@@ -192,6 +470,10 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 	return(true);
 };
 
+/*
+ * Loads a ANS or BIN file.
+ * TODO: The ASC load is pretty much guaranteed to be broken.
+ */
 Graphic.prototype.load = function(filename)
 {
 	var file_type=file_getext(filename).substr(1);
@@ -204,22 +486,13 @@ Graphic.prototype.load = function(filename)
 	case "ANS":
 		if(!(f.open("rb",true)))
 			return(false);
-		this.parseANSI(f.read());
+		this.ANSI = f.read();
 		f.close();
 		break;
 	case "BIN":
 		if(!(f.open("rb",true)))
 			return(false);
-		for(var y=0; y<this.height; y++) {
-			for(var x=0; x<this.width; x++) {
-				if(f.eof)
-					return(false);
-				ch = f.read(1);
-				if(f.eof)
-					return(false);
-				this.data[x][y]=new this.Char(ch, f.readBin(1));
-			}
-		}
+		this.BIN = f.read();
 		f.close();
 		break;
 	case "ASC":
@@ -236,313 +509,79 @@ Graphic.prototype.load = function(filename)
 	return(true);
 };
 
+/*
+ * Parses an array of ANSI "lines".
+ * TODO: Kill this method.
+ */
 Graphic.prototype.parseANSI = function(lines) 
 {
 	if (typeof(lines) == 'string')
 		lines = lines.split(/\r\n/);
-	var attr = this.attribute;
-	var saved = {};
-	var x = 0;
-	var y = 0;
-	var std_cmds = {
-		'm':function(params, obj) {
-			var bg = attr & obj.defs.BG_LIGHTGRAY;
-			var fg = attr & obj.defs.LIGHTGRAY;
-			var hi = attr & obj.defs.HIGH;
-			var bnk = attr & obj.defs.BLINK;
-
-			if (params[0] === undefined)
-				params[0] = 0;
-
-			while (params.length) {
-				switch (parseInt(params[0], 10)) {
-					case 0:
-						bg = obj.defs.BG_BLACK;
-						fg = obj.defs.LIGHTGRAY;
-						hi = 0;
-						bnk = 0;
-						break;
-					case 1:
-						hi = obj.defs.HIGH;
-						break;
-					case 40:
-						bg = obj.defs.BG_BLACK;
-						break;
-					case 41:
-						bg = obj.defs.BG_RED;
-						break;
-					case 42: 
-						bg = obj.defs.BG_GREEN;
-						break;
-					case 43:
-						bg = obj.defs.BG_BROWN;
-						break;
-					case 44:
-						bg = obj.defs.BG_BLUE;
-						break;
-					case 45:
-						bg = obj.defs.BG_MAGENTA;
-						break;
-					case 46:
-						bg = obj.defs.BG_CYAN;
-						break;
-					case 47:
-						bg = obj.defs.BG_LIGHTGRAY;
-						break;
-					case 30:
-						fg = obj.defs.BLACK;
-						break;
-					case 31:
-						fg = obj.defs.RED;
-						break;
-					case 32:
-						fg = obj.defs.GREEN;
-						break;
-					case 33:
-						fg = obj.defs.BROWN;
-						break;
-					case 34:
-						fg = obj.defs.BLUE;
-						break;
-					case 35:
-						fg = obj.defs.MAGENTA;
-						break;
-					case 36:
-						fg = obj.defs.CYAN;
-						break;
-					case 37:
-						fg = obj.defs.LIGHTGRAY;
-						break;
-				}
-				params.shift();
-			}
-			attr = bg + fg + hi + bnk;
-		},
-		'H':function(params) {
-			if (params[0] === undefined)
-				params[0] = 1;
-			if (params[1] === undefined)
-				params[1] = 1;
-
-			y = parseInt(params[0], 10) - 1;
-			x = parseInt(params[1], 10) - 1;
-		},
-		'A':function(params) {
-			if (params[0] == undefined)
-				params[0] = 1;
-
-			y -= parseInt(params[0], 10);
-			if (y < 0)
-				y = 0;
-		},
-		'B':function(params) {
-			if (params[0] == undefined)
-				params[0] = 1;
-
-			y += parseInt(params[0], 10);
-		},
-		'C':function(params, obj) {
-			if (params[0] == undefined)
-				params[0] = 1;
-
-			x += parseInt(params[0], 10);
-			if (x >= obj.width)
-				x = obj.width - 1;
-		},
-		'D':function(params) {
-			if (params[0] == undefined)
-				params[0] = 1;
-
-			x -= parseInt(params[0], 10);
-			if (x < 0)
-				x = 0;
-		},
-		'J':function(params,obj) {
-			if (params[0] == undefined)
-				params[0] = 0;
-
-			if (parseInt(params[0], 10) == 2)
-				obj.clear();
-		},
-		's':function(params) {
-			saved={'x':x, 'y':y};
-		},
-		'u':function(params) {
-			x = saved.x;
-			y = saved.y;
-		}
-	};
-	std_cmds.f = std_cmds.H;
-	var line;
-	var m;
-	var paramstr;
-	var cmd;
-	var params;
-	var ch;
-	
-	while(lines.length > 0) {	
-		x = 0;
-		line = lines.shift();
-		/* parse 'ATCODES'?? 
-		line = line.replace(/@(.*)@/g,
-			function (str, code, offset, s) {
-				return bbs.atcode(code);
-			}
-		);
-		*/
-		while(line.length > 0) {
-			m = line.match(/^\x1b\[([\x30-\x3f]*)([\x20-\x2f]*[\x40-\x7e])/);
-			if (m !== null) {
-				paramstr = m[1];
-				cmd = m[2];
-				if (paramstr.search(/^[<=>?]/) != 0) {
-					params=paramstr.split(/;/);
-
-					if (std_cmds[cmd] !== undefined)
-						std_cmds[cmd](params,this);
-				}
-				line = line.substr(m[0].length);
-                continue;
-			}
-
-			/* set character and attribute */
-			ch = line[0];
-			line = line.substr(1);
-
-            /* Handle non-ANSI cursor positioning control characters */
-            switch(ch) {
-                case '\r':
-                    x=0;
-                    continue;
-                case '\n':
-                    y++;
-                    continue;
-                case '\t':
-                    x += 8-(x%8);
-                    continue;
-                case '\b':
-                    if(x) x--;
-                    continue;
-            }
-
-			/* validate position */
-			if(x>=this.width) {
-				x=0;
-				y++;
-			}
-			
-			if(!this.data[x])
-				this.data[x]=[];
-			this.data[x][y]=new this.Char(ch,attr);
-			x++;
-		}
-		y++;
-	}
+	this.ANSI = lines.join("\r\n");
 };
 
-Graphic.prototype.write = function(filename)
+/*
+ * Returns an array of lines representing the graphic.
+ * TODO: Kill this method.
+ */
+Graphic.prototype.toANSI = function()
+{
+	return(this.ANSI.split(/\r\n/));
+};
+
+/*
+ * The inverse of load()... saves a BIN representation to a file.
+ */
+Graphic.prototype.save = function(filename)
 {
 	var x;
 	var y;
 	var f=new File(filename);
 
-	if(!(f.open("wb",true,4096)))
+	if(!(f.open("wb",true)))
 		return(false);
-	for(y=0; y<this.height; y++) {
-		for(x=0; x<this.width; x++) {
-			f.write(this.data[x][y].ch);
-			f.writeBin(this.data[x][y].attr,1);
-		}
-	}
+	f.write(this.BIN);
 	f.close();
 	return(true);
 };
 
-Graphic.prototype.end = function()
+/*
+ * Moves the image in the graphic.
+ * Scrolling up by one is needed for the putmsg implementation.
+ *
+ * TODO: Doesn't belong here, but lbshell.js uses it.
+ */
+Graphic.prototype.scroll = function(count)
 {
-	var newindex=this.data[0].length-this.height;
-	if(newindex == this.index) return false;
-	this.index=newindex;
-	return true;
-};
+	var x;
+	var i;
 
-Graphic.prototype.pgup = function()
-{
-	this.index -= this.height;
-	if(this.index < 0) this.index = 0;
-};
-
-Graphic.prototype.pgdn = function()
-{
-	this.index += this.height;
-	if(this.index + this.height >= this.data[0].length) {	
-		this.index=this.data[0].length-this.height;
-	}
-};
-
-Graphic.prototype.home = function()
-{
-	if(this.index == 0) return false;
-	this.index=0;
-	return true;
-};
-
-Graphic.prototype.scroll = function(dir)
-{
-	switch(dir){
-	case 1:
-		if(this.index + this.height >= this.data[0].length) {
-			if(!this.loop) return false;
+	if (count === undefined)
+		count = 1;
+	if (count < 0)
+		return false;
+	for (x=0; x<this.width; x++) {
+		for (i=0; i<count; i++) {
+			this.data[x].shift();
+			this.data[x].push(new this.Char(this.ch, this.attribute));
 		}
-		this.index++;
-		break;
-	case -1:
-		if(this.index == 0) {
-			if(!this.loop) return false;
-			this.index=this.height-1;
-		}
-		this.index--;
-		break;
-	default:
-		var truncated=false;
-		for(var x=0; x<this.width; x++) {
-			this.data[x].push(new this.Char(this.ch,this.attribute));
-			if(this.data[x].length > this.scrollback) {
-				this.data[x].shift();
-				truncated=true;
-			}
-		}
-		this.index=this.data[0].length-this.height;
-		if(truncated) this.length--;
-		break;
 	}
 	return true;
 };
 
-Graphic.prototype.resize = function(w,h)
-{
-	this.data=new Array(w);
-	if(w) this.width=w;
-	if(h) this.height=h;
-	this.index=0;
-	this.length=0;
-	for(var y=0; y<this.height; y++) {
-		for(var x=0; x<this.width; x++) {
-			if(y==0) {
-				this.data[x]=new Array(this.height);
-			}
-			this.data[x][y]=new this.Char(this.ch,this.attribute);
-		}
-	}
-};
-
-/* Returns the number of times scrolled */
+/*
+ * Emulates console.putmsg() into a graphic object.
+ * Supports @-codes.
+ * Returns the number of times the graphic was scrolled.
+ *
+ * TODO: Doesn't belong here, but lbshell.js uses it.
+ */
 Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 {
 	var curattr=attr;
 	var ch;
 	var x=xpos?xpos-1:0;
-	var y=ypos?ypos-1:this.gety();
+	var y=ypos?ypos-1:0;
 	var p=0;
 	var scrolls=0;
 
@@ -583,8 +622,8 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 				ch=txt[p++].toUpperCase();
 				switch(ch) {
 					case '\1':	/* A "real" ^A code */
-						this.data[x][this.index + y].ch=ch;
-						this.data[x][this.index + y].attr=curattr;
+						this.data[x][y].ch=ch;
+						this.data[x][y].attr=curattr;
 						x++;
 						if(x>=this.width) {
 							x=0;
@@ -592,7 +631,6 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 							log("next char: [" + txt[p] + "]");
 							if(txt[p] == '\r') p++;
 							if(txt[p] == '\n') p++;
-							this.length++;
 						}
 						break;
 					case 'K':	/* Black */
@@ -665,7 +703,6 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 						break;
 					case ']':	/* LF */
 						y++;
-						this.length++;
 						break;
 					default:	/* Other stuff... specifically, check for right movement */
 						if(ch.charCodeAt(0)>127) {
@@ -681,78 +718,43 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 				x=0;
 				break;
 			case '\n':
-				this.length++;
 				y++;
 				break;
 			default:
-				this.data[x][this.index + y]=new this.Char(ch,curattr);
+				this.data[x][y]=new this.Char(ch,curattr);
 				x++;
 				if(x>=this.width) {
 					x=0;
 					y++;
 					if(txt[p] == '\r') p++;
 					if(txt[p] == '\n') p++;
-					this.length++;
 				}
 		}
 	}
 	return(scrolls);
 };
 
-Graphic.prototype.toANSI = function()
-{
-    var ansi=load({},"ansiterm_lib.js");
-	var x;
-	var y;
-    var lines=[];
-    var curattr=7;
-	var row;
-
-	for(y=0; y<this.height; y++) {
-        row="";
-		for(x=0; x<this.width-1; x++) {
-            row+=ansi.attr(this.data[x][y].attr, curattr);
-            curattr=this.data[x][y].attr;
-            var char = this.data[x][y].ch;
-            /* Don't put printable chars in the last column */
-            if(char == ' ' || (x<this.width-1))
-                row += char;
-        }
-        lines.push(row);
-    }
-    return lines;
-};
-
 /*
- * These should likely just be arguments to the load() function since the file
- * object can handle b64 encoding...
+ * Returns an array of base 64 encoded strings.
+ * Previously, each string was a row (or "line") in the graphic.
+ * Now, it's a set of 74-byte strings to avoid terminal padding on each
+ * line when the line length isn't a multiple of three.
+ *
+ * TODO: Delete
  */
 Graphic.prototype.base64_encode = function()
 {
-    var base64=[];
-
-    for(var y=0; y<this.height; y++) {
-        var row="";
-        for(var x=0; x<this.width; x++) {
-            row+=this.data[x][y].ch;
-            row+=ascii(this.data[x][y].attr);
-        }
-        base64.push(base64_encode(row));
-    }
-    return base64;
+	return base64_encode(this.BIN).match(/([\x00-\xff]{0,76})/g);
 };
 
+/*
+ * Like parseANSI() for b64 data
+ *
+ * TODO: Delete
+ */
 Graphic.prototype.base64_decode = function(rows)
 {
-    for(var y=0; y<this.height; y++) {
-        var row=base64_decode(rows[y]);
-        if(!row)
-            continue;
-        for(var x=0; x<this.width; x++) {
-            this.data[x][y].ch = row.charAt(x*2);
-            this.data[x][y].attr = ascii(row.charAt((x*2)+1));
-        }
-    }
+	this.BIN = base64_decode(rows.join("\r\n"));
 };
 
 /* Leave as last line for convenient load() usage: */
