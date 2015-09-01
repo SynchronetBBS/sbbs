@@ -212,7 +212,7 @@ function Graphic_load(filename)
 		if(!(f.open("r",true,4096)))
 			return(false);
 		var lines=f.readAll();
-		this.parseAnsi(lines);
+		this.parseANSI(lines);
 		f.close();
 		break;
 	case "BIN":
