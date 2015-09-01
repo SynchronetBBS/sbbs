@@ -982,6 +982,8 @@ public:
 #ifdef __cplusplus
 extern "C" {
 #endif
+	/* ansiterm.cpp */
+	DLLEXPORT char*		DLLCALL ansi_attr(int attr, int curattr, char* str, BOOL color);
 
 	/* main.cpp */
 	DLLEXPORT int		DLLCALL sbbs_random(int);

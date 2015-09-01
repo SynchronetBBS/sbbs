@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -98,14 +98,14 @@ const char *sbbs_t::ansi(int atr)
 }
 
 /* insure str is at least 14 bytes in size! */
-char* sbbs_t::ansi(int atr, int curatr, char* str)
+extern "C" char* ansi_attr(int atr, int curatr, char* str, BOOL color)
 {
-	if(!term_supports(COLOR)) {  /* eliminate colors if user doesn't have them */
+	if(!color) {  /* eliminate colors if terminal doesn't support them */
 		if(atr&LIGHTGRAY)       /* if any foreground bits set, set all */
 			atr|=LIGHTGRAY;
 		if(atr&BG_LIGHTGRAY)  /* if any background bits set, set all */
 			atr|=BG_LIGHTGRAY;
-		if(atr&LIGHTGRAY && atr&BG_LIGHTGRAY)
+		if((atr&LIGHTGRAY) && (atr&BG_LIGHTGRAY))
 			atr&=~LIGHTGRAY;    /* if background is solid, foreground is black */
 		if(!atr)
 			atr|=LIGHTGRAY;		/* don't allow black on black */
@@ -191,6 +191,11 @@ char* sbbs_t::ansi(int atr, int curatr, char* str)
 	else
 		str[strlen(str)-1]='m';
 	return str;
+}
+
+char* sbbs_t::ansi(int atr, int curatr, char* str)
+{
+	return ::ansi_attr(atr, curatr, str, term_supports(COLOR) ? TRUE:FALSE);
 }
 
 void sbbs_t::ansi_getlines()
