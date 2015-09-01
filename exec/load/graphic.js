@@ -247,7 +247,7 @@ function Graphic_load(filename)
 }
 function Graphic_parseANSI(lines) 
 {
-	var attr = this.attrtribute;
+	var attr = this.attribute;
 	var saved = {};
 	
 	var x = 0;
