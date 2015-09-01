@@ -271,7 +271,7 @@ function Graphic_parseANSI(lines)
 						bnk = 0;
 						break;
 					case 1:
-						i = HIGH;
+						hi = HIGH;
 						break;
 					case 40:
 						bg = BG_BLACK;
