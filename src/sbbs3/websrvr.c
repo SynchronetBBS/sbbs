@@ -2964,12 +2964,24 @@ static BOOL get_fullpath(http_session_t * session)
 	return(isabspath(session->req.physical_path));
 }
 
-static BOOL is_legal_hostname(const char *host)
+static BOOL is_legal_hostname(const char *host, BOOL strip_port)
 {
-	if (host[0] == '-' || host[0] == '.')
+	char * stripped = NULL;
+
+	if (strip_port) {
+		stripped = strdup(host);
+		remove_port_part(stripped);
+		host = stripped;
+	}
+	if (host[0] == '-' || host[0] == '.' || host[0] == 0) {
+		FREE_AND_NULL(stripped);
 		return FALSE;
-	if (strspn(host, "abcdefghijklmnopqrstuvwxyz0123456789-.") != strlen(host))
+	}
+	if (strspn(host, "abcdefghijklmnopqrstuvwxyz0123456789-.") != strlen(host)) {
+		FREE_AND_NULL(stripped);
 		return FALSE;
+	}
+	FREE_AND_NULL(stripped);
 	return TRUE;
 }
 
@@ -3014,11 +3026,11 @@ static BOOL get_req(http_session_t * session, char *request_line)
 			if(!is_redir) {
 				get_request_headers(session);
 			}
-			if (!is_legal_hostname(session->req.host)) {
+			if (!is_legal_hostname(session->req.host, TRUE)) {
 				send_error(session,"400 Bad Request");
 				return FALSE;
 			}
-			if (!is_legal_hostname(session->req.vhost)) {
+			if (!is_legal_hostname(session->req.vhost, FALSE)) {
 				send_error(session,"400 Bad Request");
 				return FALSE;
 			}
@@ -5186,7 +5198,7 @@ int read_post_data(http_session_t * session)
 			/* Read more headers! */
 			if(!get_request_headers(session))
 				return(FALSE);
-			if (!is_legal_hostname(session->req.vhost)) {
+			if (!is_legal_hostname(session->req.vhost, FALSE)) {
 				send_error(session,"400 Bad Request");
 				return FALSE;
 			}
