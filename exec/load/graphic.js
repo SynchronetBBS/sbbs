@@ -246,39 +246,30 @@ function Graphic_load(filename)
 function Graphic_parseANSI(lines) 
 {
 	var attr = this.attr;
-	var bg = 0;
-	var fg = 0;
-	var i = 0;
 	var saved = {};
-	
+	var x = 0;
 	var y = 0;
-	while(lines.length > 0) {	
-		var x = 0;
-		var line = lines.shift();
-		/* parse 'ATCODES'?? 
-		line = line.replace(/@(.*)@/g,
-			function (str, code, offset, s) {
-				return bbs.atcode(code);
-			}
-		);
-		*/
-		while(line.length > 0) {
-			/* parse an attribute sequence*/
-			var m = line.match(/^\x1b\[(\d*);?(\d*);?(\d*)m/);
-			if(m !== null) {
-				line = line.substr(m.shift().length);
-				if(m[0] == 0) {
-					bg = BG_BLACK;
-					fg = LIGHTGRAY;
-					i = 0;
-					m.shift();
-				}
-				if(m[0] == 1) {
-					i = HIGH;
-					m.shift();
-				}
-				if(m[0] >= 40) {
-					switch(Number(m.shift())) {
+	var std_cmds = {
+		'm':function(params) {
+			var bg = attr & BG_LIGHTGRAY;
+			var fg = attr & LIGHTGRAY;
+			var hi = attr & HIGH;
+			var bnk = attr & BLINK;
+
+			if (params[0] === undefined)
+				params[0] = 0;
+
+			while (params.length) {
+				switch (parseInt(params[0], 10)) {
+					case 0:
+						bg = BG_BLACK;
+						fg = LIGHTGRAY;
+						hi = 0;
+						bnk = 0;
+						break;
+					case 1:
+						i = HIGH;
+						break;
 					case 40:
 						bg = BG_BLACK;
 						break;
@@ -303,10 +294,6 @@ function Graphic_parseANSI(lines)
 					case 47:
 						bg = BG_LIGHTGRAY;
 						break;
-					}
-				}
-				if(m[0] >= 30) {
-					switch(Number(m.shift())) {
 					case 30:
 						fg = BLACK;
 						break;
@@ -331,120 +318,102 @@ function Graphic_parseANSI(lines)
 					case 37:
 						fg = LIGHTGRAY;
 						break;
-					}
 				}
-				attr = bg + fg + i;
-				continue;
+				params.shift();
 			}
-			
-			/* parse absolute character position */
-			var m = line.match(/^\x1b\[(\d*);?(\d*)[Hf]/);
-			if(m !== null) {
-				line = line.substr(m.shift().length);
-				
-				if(m.length==0) {
-					x=0;
-					y=0;
-				}
-				else {
-					if(m[0])
-						y = Number(m.shift())-1;
-					if(m[0])
-						x = Number(m.shift())-1;
-				}
-				continue;
-			}
-			
-			/* ignore a bullshit sequence */
-			var n = line.match(/^\x1b\[\?7h/);
-			if(n !== null) {
-				line = line.substr(n.shift().length);
-				continue;
-			}
-			
-			/* parse an up positional sequence */
-			var n = line.match(/^\x1b\[(\d*)A/);
-			if(n !== null) {
-				line = line.substr(n.shift().length);
-				var chars = n.shift();
-				if(chars < 1)
-					y-=1;
-				else
-					y-=Number(chars);
-				continue;
-			}
-			
-			/* parse a down positional sequence */
-			var n = line.match(/^\x1b\[(\d*)B/);
-			if(n !== null) {
-				line = line.substr(n.shift().length);
-				var chars = n.shift();
-				if(chars < 1)
-					y+=1;
-				else
-					y+=Number(chars);
-				continue;
-			}
-			
-			/* parse a forward positional sequence */
-			var n = line.match(/^\x1b\[(\d*)C/);
-			if(n !== null) {
-				line = line.substr(n.shift().length);
-				var chars = n.shift();
-				if(chars < 1)
-					x+=1;
-				else
-					x+=Number(chars);
-				continue;
-			}
-			
-			/* parse a backward positional sequence */
-			var n = line.match(/^\x1b\[(\d*)D/);
-			if(n !== null) {
-				line = line.substr(n.shift().length);
-				var chars = n.shift()
-				if(chars < 1)
-					x-=1;
-				else
-					x-=Number(chars);
-				continue;
-			}
-			
-			/* parse a clear screen sequence */
-			var n = line.match(/^\x1b\[2J/);
-			if(n !== null) {
-				this.clear();
-				line = line.substr(n.shift().length);
-				continue;
-			}
-			
-			/* parse save cursor sequence */
-			var n = line.match(/^\x1b\[s/);
-			if(n !== null) {
-				line = line.substr(n.shift().length);
-				saved.x = x;
-				saved.y = y;
-				continue;
-			}
+			attr = bg + fg + i;
+		},
+		'H':function(params) {
+			if (params[0] === undefined)
+				params[0] = 1;
+			if (params[1] === undefined)
+				params[1] = 1;
 
-			/* parse restore cursor sequence */
-			var n = line.match(/^\x1b\[u/);
-			if(n !== null) {
-				line = line.substr(n.shift().length);
-				x = saved.x;
-				y = saved.y;
-				continue;
+			y = parseInt(params[0], 10) - 1;
+			x = parseInt(params[1], 10) - 1;
+		},
+		'A':function(params) {
+			if (params[0] == undefined)
+				params[0] = 1;
+
+			y -= parseInt(params[0], 10);
+			if (y < 0)
+				y = 0;
+		},
+		'B':function(params) {
+			if (params[0] == undefined)
+				params[0] = 1;
+
+			y += parseInt(params[0], 10);
+		},
+		'C':function(params) {
+			if (params[0] == undefined)
+				params[0] = 1;
+
+			x += parseInt(params[0], 10);
+			if (x >= this.width)
+				x = this.width - 1;
+		},
+		'D':function(params) {
+			if (params[0] == undefined)
+				params[0] = 1;
+
+			x -= parseInt(params[0], 10);
+			if (x < 0)
+				x = 0;
+		},
+		'J':function(params) {
+			if (params[0] == undefined)
+				params[0] = 0;
+
+			if (parseInt(params[0], 10) == 2)
+				this.clear();
+		},
+		's':function(params) {
+			saved={'x':x, 'y':y};
+		},
+		'u':function(params) {
+			x = saved.x;
+			y = saved.y;
+		}
+	};
+	cmds.f = cmds.H;
+	var line;
+	var m;
+	var paramstr;
+	var cmd;
+	var params;
+	var ch;
+	
+	while(lines.length > 0) {	
+		x = 0;
+		line = lines.shift();
+		/* parse 'ATCODES'?? 
+		line = line.replace(/@(.*)@/g,
+			function (str, code, offset, s) {
+				return bbs.atcode(code);
+			}
+		);
+		*/
+		while(line.length > 0) {
+			m = line.match(/^\x1b\[([\x30-\x3f]*)([\x20-\x2f]*[\x40-\x7e])/);
+			if (m !== null) {
+				paramstr = m[1];
+				cmd = m[2];
+				if (paramstr.search(/^[<=>?]/) != 0) {
+					params=params.split(/;/);
+
+					if (std_cmds[cmd] !== undefined)
+						std_cmds[cmd](params);
+				}
+				line = line.substr(m[0].length);
 			}
 
 			/* set character and attribute */
-			var ch = line[0];
+			ch = line[0];
 			line = line.substr(1);
 			
 			/* validate position */
-			if(y<0) 
-				y=0; 
-			if(x<0)
-				x=0;
 			if(x>=this.width) {
 				x=0;
 				y++;
