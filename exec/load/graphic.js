@@ -38,29 +38,11 @@ function Graphic(w,h,attr,ch)
 			if(y==0) {
 				this.data[x]=new Array(this.height);
 			}
-			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
+			this.data[x][y]=new this.Char(this.ch,this.attribute);
 		}
 	}
-	this.clear=Graphic_clear;
-	this.gety=Graphic_gety;
-	this.home=Graphic_home;
-	this.end=Graphic_end;
-	this.pgup=Graphic_pgup;
-	this.pgdn=Graphic_pgdn;
-	this.draw=Graphic_draw;
-	this.drawfx=Graphic_drawfx;
-	this.drawslow=Graphic_drawslow;
-	this.load=Graphic_load;
-	this.write=Graphic_write;
-	this.scroll=Graphic_scroll;
-	this.putmsg=Graphic_putmsg;
-	this.resize=Graphic_resize;
-	this.parseANSI=Graphic_parseANSI;
-    this.toANSI=Graphic_toANSI;
-    this.base64_encode=Graphic_base64_encode;
-    this.base64_decode=Graphic_base64_decode;
 }
-function Graphic_clear()
+Graphic.prototype.clear = function()
 {
 	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {
@@ -68,18 +50,18 @@ function Graphic_clear()
 			if(y==0) {
 				this.data[x]=new Array(this.height);
 			}
-			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
+			this.data[x][y]=new this.Char(this.ch,this.attribute);
 		}
 	}
 	this.length=0;
 	this.index=0;
 }
-function Graphic_sector(ch,attr)
+Graphic.prototype.Char = function(ch,attr)
 {
 	this.ch=ch;
 	this.attribute=attr;
 }
-function Graphic_gety()
+Graphic.prototype.gety = function()
 {
 	var y=this.length;
 	if(y>=this.height) {
@@ -87,7 +69,7 @@ function Graphic_gety()
 	}
 	return y;
 }
-function Graphic_draw(xpos,ypos,width,height,xoff,yoff,delay)
+Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 {
 	var x;
 	var y;
@@ -132,11 +114,11 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff,delay)
 	}
 	return(true);
 }
-function Graphic_drawslow(xpos,ypos,width,height,xoff,yoff)
+Graphic.prototype.drawslow = function(xpos,ypos,width,height,xoff,yoff)
 {
 	this.draw(xpos,ypos,width,height,xoff,yoff,5);
 }
-function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
+Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 {
 	var x;
 	var y;
@@ -202,7 +184,7 @@ function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 	console.home();
 	return(true);
 }
-function Graphic_load(filename)
+Graphic.prototype.load = function(filename)
 {
 	var file_type=file_getext(filename).substr(1);
 	var f=new File(filename);
@@ -245,7 +227,7 @@ function Graphic_load(filename)
 	}
 	return(true);
 }
-function Graphic_parseANSI(lines) 
+Graphic.prototype.parseANSI = function(lines) 
 {
 	var attr = this.attribute;
 	var saved = {};
@@ -437,13 +419,13 @@ function Graphic_parseANSI(lines)
 			
 			if(!this.data[x])
 				this.data[x]=[];
-			this.data[x][y]=new Graphic_sector(ch,attr);
+			this.data[x][y]=new this.Char(ch,attr);
 			x++;
 		}
 		y++;
 	}
 }
-function Graphic_write(filename)
+Graphic.prototype.write = function(filename)
 {
 	var x;
 	var y;
@@ -460,32 +442,32 @@ function Graphic_write(filename)
 	f.close();
 	return(true);
 }
-function Graphic_end()
+Graphic.prototype.end = function()
 {
 	var newindex=this.data[0].length-this.height;
 	if(newindex == this.index) return false;
 	this.index=newindex;
 	return true;
 }
-function Graphic_pgup()
+Graphic.prototype.pgup = function()
 {
 	this.index -= this.height;
 	if(this.index < 0) this.index = 0;
 }
-function Graphic_pgdn()
+Graphic.prototype.pgdn = function()
 {
 	this.index += this.height;
 	if(this.index + this.height >= this.data[0].length) {	
 		this.index=this.data[0].length-this.height;
 	}
 }
-function Graphic_home()
+Graphic.prototype.home = function()
 {
 	if(this.index == 0) return false;
 	this.index=0;
 	return true;
 }
-function Graphic_scroll(dir)
+Graphic.prototype.scroll = function(dir)
 {
 	switch(dir){
 	case 1:
@@ -504,7 +486,7 @@ function Graphic_scroll(dir)
 	default:
 		var truncated=false;
 		for(var x=0; x<this.width; x++) {
-			this.data[x].push(new Graphic_sector(this.ch,this.attribute));
+			this.data[x].push(new this.Char(this.ch,this.attribute));
 			if(this.data[x].length > this.scrollback) {
 				this.data[x].shift();
 				truncated=true;
@@ -516,7 +498,7 @@ function Graphic_scroll(dir)
 	}
 	return true;
 }
-function Graphic_resize(w,h)
+Graphic.prototype.resize = function(w,h)
 {
 	this.data=new Array(w);
 	if(w) this.width=w;
@@ -528,12 +510,12 @@ function Graphic_resize(w,h)
 			if(y==0) {
 				this.data[x]=new Array(this.height);
 			}
-			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
+			this.data[x][y]=new this.Char(this.ch,this.attribute);
 		}
 	}
 }
 /* Returns the number of times scrolled */
-function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
+Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 {
 	var curattr=attr;
 	var ch;
@@ -681,7 +663,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				y++;
 				break;
 			default:
-				this.data[x][this.index + y]=new Graphic_sector(ch,curattr);
+				this.data[x][this.index + y]=new this.Char(ch,curattr);
 				x++;
 				if(x>=this.width) {
 					x=0;
@@ -695,7 +677,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 	return(scrolls);
 }
 
-function Graphic_toANSI()
+Graphic.prototype.toANSI = function()
 {
     var ansi=load(new Object,"ansiterm_lib.js");
 	var x;
@@ -718,7 +700,7 @@ function Graphic_toANSI()
     return lines;
 }
 
-function Graphic_base64_encode()
+Graphic.prototype.base64_encode = function()
 {
     var base64=[];
 
@@ -733,7 +715,7 @@ function Graphic_base64_encode()
     return base64;
 }
 
-function Graphic_base64_decode(rows)
+Graphic.prototype.base64_decode = function(rows)
 {
     for(var y=0; y<this.height; y++) {
         var row=base64_decode(rows[y]);
