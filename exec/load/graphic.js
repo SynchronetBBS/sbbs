@@ -402,6 +402,7 @@ Graphic.prototype.parseANSI = function(lines)
 						std_cmds[cmd](params,this);
 				}
 				line = line.substr(m[0].length);
+                continue;
 			}
 
 			/* set character and attribute */
@@ -418,6 +419,9 @@ Graphic.prototype.parseANSI = function(lines)
                     continue;
                 case '\t':
                     x += 8-(x%8);
+                    continue;
+                case '\b':
+                    if(x) x--;
                     continue;
             }
 
