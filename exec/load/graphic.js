@@ -62,7 +62,7 @@ Graphic.prototype.clear = function()
 Graphic.prototype.Char = function(ch,attr)
 {
 	this.ch=ch;
-	this.attribute=attr;
+	this.attr=attr;
 }
 
 Graphic.prototype.gety = function()
@@ -196,27 +196,27 @@ Graphic.prototype.load = function(filename)
 {
 	var file_type=file_getext(filename).substr(1);
 	var f=new File(filename);
+	var ch;
+	var attr;
 
 	switch(file_type.toUpperCase()) {
 	case "ANS":
-		if(!(f.open("r",true,4096)))
+		if(!(f.open("rb",true)))
 			return(false);
-		var lines=f.readAll();
-		this.parseANSI(lines);
+		this.parseANSI(f.read());
 		f.close();
 		break;
 	case "BIN":
-		if(!(f.open("rb",true,4096)))
+		if(!(f.open("rb",true)))
 			return(false);
 		for(var y=0; y<this.height; y++) {
 			for(var x=0; x<this.width; x++) {
-				this.data[x][y]=new Object;
 				if(f.eof)
 					return(false);
-				this.data[x][y].ch=f.read(1);
+				ch = f.read(1);
 				if(f.eof)
 					return(false);
-				this.data[x][y].attr=f.readBin(1);
+				this.data[x][y]=new this.Char(ch, f.readBin(1));
 			}
 		}
 		f.close();
@@ -238,9 +238,10 @@ Graphic.prototype.load = function(filename)
 
 Graphic.prototype.parseANSI = function(lines) 
 {
+	if (typeof(lines) == 'string')
+		lines = lines.split(/\r\n/);
 	var attr = this.attribute;
 	var saved = {};
-	
 	var x = 0;
 	var y = 0;
 	var std_cmds = {
@@ -696,7 +697,7 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 
 Graphic.prototype.toANSI = function()
 {
-    var ansi=load(new Object,"ansiterm_lib.js");
+    var ansi=load({},"ansiterm_lib.js");
 	var x;
 	var y;
     var lines=[];
@@ -717,6 +718,10 @@ Graphic.prototype.toANSI = function()
     return lines;
 }
 
+/*
+ * These should likely just be arguments to the load() function since the file
+ * object can handle b64 encoding...
+ */
 Graphic.prototype.base64_encode = function()
 {
     var base64=[];
