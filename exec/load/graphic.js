@@ -349,13 +349,13 @@ function Graphic_parseANSI(lines)
 
 			y += parseInt(params[0], 10);
 		},
-		'C':function(params) {
+		'C':function(params, obj) {
 			if (params[0] == undefined)
 				params[0] = 1;
 
 			x += parseInt(params[0], 10);
-			if (x >= this.width)
-				x = this.width - 1;
+			if (x >= obj.width)
+				x = obj.width - 1;
 		},
 		'D':function(params) {
 			if (params[0] == undefined)
@@ -365,12 +365,12 @@ function Graphic_parseANSI(lines)
 			if (x < 0)
 				x = 0;
 		},
-		'J':function(params) {
+		'J':function(params,obj) {
 			if (params[0] == undefined)
 				params[0] = 0;
 
 			if (parseInt(params[0], 10) == 2)
-				this.clear();
+				obj.clear();
 		},
 		's':function(params) {
 			saved={'x':x, 'y':y};
@@ -407,7 +407,7 @@ function Graphic_parseANSI(lines)
 					params=paramstr.split(/;/);
 
 					if (std_cmds[cmd] !== undefined)
-						std_cmds[cmd](params);
+						std_cmds[cmd](params,this);
 				}
 				line = line.substr(m[0].length);
 			}
