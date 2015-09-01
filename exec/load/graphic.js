@@ -5,7 +5,8 @@
  * Allows a graphic to be stored in memory and portions of it redrawn on command
  */
 
-load("sbbsdefs.js");	// Needed for colors, e.g. BLACK
+if(!js.global || js.global.BLACK==undefined)
+	load("sbbsdefs.js");	// Needed for colors, e.g. BLACK
 
 function Graphic(w,h,attr,ch)
 {
@@ -42,6 +43,7 @@ function Graphic(w,h,attr,ch)
 		}
 	}
 }
+
 Graphic.prototype.clear = function()
 {
 	this.data=new Array(this.width);
@@ -56,11 +58,13 @@ Graphic.prototype.clear = function()
 	this.length=0;
 	this.index=0;
 }
+
 Graphic.prototype.Char = function(ch,attr)
 {
 	this.ch=ch;
 	this.attribute=attr;
 }
+
 Graphic.prototype.gety = function()
 {
 	var y=this.length;
@@ -69,6 +73,7 @@ Graphic.prototype.gety = function()
 	}
 	return y;
 }
+
 Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 {
 	var x;
@@ -114,10 +119,12 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 	}
 	return(true);
 }
+
 Graphic.prototype.drawslow = function(xpos,ypos,width,height,xoff,yoff)
 {
 	this.draw(xpos,ypos,width,height,xoff,yoff,5);
 }
+
 Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 {
 	var x;
@@ -184,6 +191,7 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 	console.home();
 	return(true);
 }
+
 Graphic.prototype.load = function(filename)
 {
 	var file_type=file_getext(filename).substr(1);
@@ -227,6 +235,7 @@ Graphic.prototype.load = function(filename)
 	}
 	return(true);
 }
+
 Graphic.prototype.parseANSI = function(lines) 
 {
 	var attr = this.attribute;
@@ -425,6 +434,7 @@ Graphic.prototype.parseANSI = function(lines)
 		y++;
 	}
 }
+
 Graphic.prototype.write = function(filename)
 {
 	var x;
@@ -442,6 +452,7 @@ Graphic.prototype.write = function(filename)
 	f.close();
 	return(true);
 }
+
 Graphic.prototype.end = function()
 {
 	var newindex=this.data[0].length-this.height;
@@ -449,11 +460,13 @@ Graphic.prototype.end = function()
 	this.index=newindex;
 	return true;
 }
+
 Graphic.prototype.pgup = function()
 {
 	this.index -= this.height;
 	if(this.index < 0) this.index = 0;
 }
+
 Graphic.prototype.pgdn = function()
 {
 	this.index += this.height;
@@ -461,12 +474,14 @@ Graphic.prototype.pgdn = function()
 		this.index=this.data[0].length-this.height;
 	}
 }
+
 Graphic.prototype.home = function()
 {
 	if(this.index == 0) return false;
 	this.index=0;
 	return true;
 }
+
 Graphic.prototype.scroll = function(dir)
 {
 	switch(dir){
@@ -498,6 +513,7 @@ Graphic.prototype.scroll = function(dir)
 	}
 	return true;
 }
+
 Graphic.prototype.resize = function(w,h)
 {
 	this.data=new Array(w);
@@ -514,6 +530,7 @@ Graphic.prototype.resize = function(w,h)
 		}
 	}
 }
+
 /* Returns the number of times scrolled */
 Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 {
