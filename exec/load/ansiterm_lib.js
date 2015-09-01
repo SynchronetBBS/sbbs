@@ -93,9 +93,9 @@ function attr(atr, curatr, color)
 				break;
 		}
 	}
-	if(str.length == 2)	/* Convert <ESC>[ to blank */
+	if(str.length <= 2)	/* Convert <ESC>[ to blank */
 		return "";
-	return str + 'm';
+	return str.substring(0, str.length-1) + 'm';
 }
 
 /* Leave as last line for convenient load() usage: */
