@@ -5,9 +5,6 @@
  * Allows a graphic to be stored in memory and portions of it redrawn on command
  */
 
-if(!js.global || js.global.BLACK==undefined)
-	load("sbbsdefs.js");	// Needed for colors, e.g. BLACK
-
 function Graphic(w,h,attr,ch)
 {
 	if(ch==undefined)
@@ -44,6 +41,9 @@ function Graphic(w,h,attr,ch)
 	}
 }
 
+Graphic.prototype.defs = {};
+load(Graphic.prototype.defs, "sbbsdefs.js");
+
 Graphic.prototype.clear = function()
 {
 	this.data=new Array(this.width);
@@ -57,13 +57,13 @@ Graphic.prototype.clear = function()
 	}
 	this.length=0;
 	this.index=0;
-}
+};
 
 Graphic.prototype.Char = function(ch,attr)
 {
 	this.ch=ch;
 	this.attr=attr;
-}
+};
 
 Graphic.prototype.gety = function()
 {
@@ -72,7 +72,7 @@ Graphic.prototype.gety = function()
 		y=this.height;
 	}
 	return y;
-}
+};
 
 Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 {
@@ -95,7 +95,7 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 		delay=0;
 	if(xoff+width > this.width || yoff+height > this.height) {
 		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
-		return(false)
+		return(false);
 	}
 	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
 		alert("Attempt to draw outside of screen: " + (xpos+width-1) + "x" + (ypos+height-1));
@@ -118,12 +118,12 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 			mswait(delay);
 	}
 	return(true);
-}
+};
 
 Graphic.prototype.drawslow = function(xpos,ypos,width,height,xoff,yoff)
 {
 	this.draw(xpos,ypos,width,height,xoff,yoff,5);
-}
+};
 
 Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 {
@@ -144,16 +144,16 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 		yoff=0;
 	if(xoff+width > this.width || yoff+height > this.height) {
 		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
-		return(false)
+		return(false);
 	}
 	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
 		alert("Attempt to draw outside of screen");
 		return(false);
 	}
 	var placeholder=new Array(width);
-	for(var x=0;x<width;x++) {
+	for(x=0;x<width;x++) {
 		placeholder[x]=new Array(height);
-		for(var y=0;y<placeholder[x].length;y++) {
+		for(y=0;y<placeholder[x].length;y++) {
 			placeholder[x][y]={'x':xoff+x,'y':this.index+yoff+y};
 		}
 	}
@@ -190,7 +190,7 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 	}
 	console.home();
 	return(true);
-}
+};
 
 Graphic.prototype.load = function(filename)
 {
@@ -198,6 +198,7 @@ Graphic.prototype.load = function(filename)
 	var f=new File(filename);
 	var ch;
 	var attr;
+	var l;
 
 	switch(file_type.toUpperCase()) {
 	case "ANS":
@@ -226,15 +227,14 @@ Graphic.prototype.load = function(filename)
 			return(false);
 		var lines=f.readAll();
 		f.close();
-		for each(var l in lines)
+		for (l in lines)
 			this.putmsg(undefined,undefined,l,true);
 		break;
 	default:
 		throw("unsupported file type:" + filename);
-		break;
 	}
 	return(true);
-}
+};
 
 Graphic.prototype.parseANSI = function(lines) 
 {
@@ -245,11 +245,11 @@ Graphic.prototype.parseANSI = function(lines)
 	var x = 0;
 	var y = 0;
 	var std_cmds = {
-		'm':function(params) {
-			var bg = attr & BG_LIGHTGRAY;
-			var fg = attr & LIGHTGRAY;
-			var hi = attr & HIGH;
-			var bnk = attr & BLINK;
+		'm':function(params, obj) {
+			var bg = attr & obj.defs.BG_LIGHTGRAY;
+			var fg = attr & obj.defs.LIGHTGRAY;
+			var hi = attr & obj.defs.HIGH;
+			var bnk = attr & obj.defs.BLINK;
 
 			if (params[0] === undefined)
 				params[0] = 0;
@@ -257,61 +257,61 @@ Graphic.prototype.parseANSI = function(lines)
 			while (params.length) {
 				switch (parseInt(params[0], 10)) {
 					case 0:
-						bg = BG_BLACK;
-						fg = LIGHTGRAY;
+						bg = obj.defs.BG_BLACK;
+						fg = obj.defs.LIGHTGRAY;
 						hi = 0;
 						bnk = 0;
 						break;
 					case 1:
-						hi = HIGH;
+						hi = obj.defs.HIGH;
 						break;
 					case 40:
-						bg = BG_BLACK;
+						bg = obj.defs.BG_BLACK;
 						break;
 					case 41:
-						bg = BG_RED;
+						bg = obj.defs.BG_RED;
 						break;
 					case 42: 
-						bg = BG_GREEN;
+						bg = obj.defs.BG_GREEN;
 						break;
 					case 43:
-						bg = BG_BROWN;
+						bg = obj.defs.BG_BROWN;
 						break;
 					case 44:
-						bg = BG_BLUE;
+						bg = obj.defs.BG_BLUE;
 						break;
 					case 45:
-						bg = BG_MAGENTA;
+						bg = obj.defs.BG_MAGENTA;
 						break;
 					case 46:
-						bg = BG_CYAN;
+						bg = obj.defs.BG_CYAN;
 						break;
 					case 47:
-						bg = BG_LIGHTGRAY;
+						bg = obj.defs.BG_LIGHTGRAY;
 						break;
 					case 30:
-						fg = BLACK;
+						fg = obj.defs.BLACK;
 						break;
 					case 31:
-						fg = RED;
+						fg = obj.defs.RED;
 						break;
 					case 32:
-						fg = GREEN;
+						fg = obj.defs.GREEN;
 						break;
 					case 33:
-						fg = BROWN;
+						fg = obj.defs.BROWN;
 						break;
 					case 34:
-						fg = BLUE;
+						fg = obj.defs.BLUE;
 						break;
 					case 35:
-						fg = MAGENTA;
+						fg = obj.defs.MAGENTA;
 						break;
 					case 36:
-						fg = CYAN;
+						fg = obj.defs.CYAN;
 						break;
 					case 37:
-						fg = LIGHTGRAY;
+						fg = obj.defs.LIGHTGRAY;
 						break;
 				}
 				params.shift();
@@ -434,7 +434,7 @@ Graphic.prototype.parseANSI = function(lines)
 		}
 		y++;
 	}
-}
+};
 
 Graphic.prototype.write = function(filename)
 {
@@ -452,7 +452,7 @@ Graphic.prototype.write = function(filename)
 	}
 	f.close();
 	return(true);
-}
+};
 
 Graphic.prototype.end = function()
 {
@@ -460,13 +460,13 @@ Graphic.prototype.end = function()
 	if(newindex == this.index) return false;
 	this.index=newindex;
 	return true;
-}
+};
 
 Graphic.prototype.pgup = function()
 {
 	this.index -= this.height;
 	if(this.index < 0) this.index = 0;
-}
+};
 
 Graphic.prototype.pgdn = function()
 {
@@ -474,14 +474,14 @@ Graphic.prototype.pgdn = function()
 	if(this.index + this.height >= this.data[0].length) {	
 		this.index=this.data[0].length-this.height;
 	}
-}
+};
 
 Graphic.prototype.home = function()
 {
 	if(this.index == 0) return false;
 	this.index=0;
 	return true;
-}
+};
 
 Graphic.prototype.scroll = function(dir)
 {
@@ -513,7 +513,7 @@ Graphic.prototype.scroll = function(dir)
 		break;
 	}
 	return true;
-}
+};
 
 Graphic.prototype.resize = function(w,h)
 {
@@ -530,7 +530,7 @@ Graphic.prototype.resize = function(w,h)
 			this.data[x][y]=new this.Char(this.ch,this.attribute);
 		}
 	}
-}
+};
 
 /* Returns the number of times scrolled */
 Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
@@ -553,7 +553,7 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 			function (str, code, offset, s) {
 				return bbs.atcode(code);
 			}
-		)
+		);
 	}
 	
 	/* wrap text at graphic width */
@@ -595,55 +595,55 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 						curattr=(curattr)&0xf8;
 						break;
 					case 'R':	/* Red */
-						curattr=((curattr)&0xf8)|RED;
+						curattr=((curattr)&0xf8)|this.defs.RED;
 						break;
 					case 'G':	/* Green */
-						curattr=((curattr)&0xf8)|GREEN;
+						curattr=((curattr)&0xf8)|this.defs.GREEN;
 						break;
 					case 'Y':	/* Yellow */
-						curattr=((curattr)&0xf8)|BROWN;
+						curattr=((curattr)&0xf8)|this.defs.BROWN;
 						break;
 					case 'B':	/* Blue */
-						curattr=((curattr)&0xf8)|BLUE;
+						curattr=((curattr)&0xf8)|this.defs.BLUE;
 						break;
 					case 'M':	/* Magenta */
-						curattr=((curattr)&0xf8)|MAGENTA;
+						curattr=((curattr)&0xf8)|this.defs.MAGENTA;
 						break;
 					case 'C':	/* Cyan */
-						curattr=((curattr)&0xf8)|CYAN;
+						curattr=((curattr)&0xf8)|this.defs.CYAN;
 						break;
 					case 'W':	/* White */
-						curattr=((curattr)&0xf8)|LIGHTGRAY;
+						curattr=((curattr)&0xf8)|this.defs.LIGHTGRAY;
 						break;
 					case '0':	/* Black */
 						curattr=(curattr)&0x8f;
 						break;
 					case '1':	/* Red */
-						curattr=((curattr)&0x8f)|(RED<<4);
+						curattr=((curattr)&0x8f)|(this.defs.RED<<4);
 						break;
 					case '2':	/* Green */
-						curattr=((curattr)&0x8f)|(GREEN<<4);
+						curattr=((curattr)&0x8f)|(this.defs.GREEN<<4);
 						break;
 					case '3':	/* Yellow */
-						curattr=((curattr)&0x8f)|(BROWN<<4);
+						curattr=((curattr)&0x8f)|(this.defs.BROWN<<4);
 						break;
 					case '4':	/* Blue */
-						curattr=((curattr)&0x8f)|(BLUE<<4);
+						curattr=((curattr)&0x8f)|(this.defs.BLUE<<4);
 						break;
 					case '5':	/* Magenta */
-						curattr=((curattr)&0x8f)|(MAGENTA<<4);
+						curattr=((curattr)&0x8f)|(this.defs.MAGENTA<<4);
 						break;
 					case '6':	/* Cyan */
-						curattr=((curattr)&0x8f)|(CYAN<<4);
+						curattr=((curattr)&0x8f)|(this.defs.CYAN<<4);
 						break;
 					case '7':	/* White */
-						curattr=((curattr)&0x8f)|(LIGHTGRAY<<4);
+						curattr=((curattr)&0x8f)|(this.defs.LIGHTGRAY<<4);
 						break;
 					case 'H':	/* High Intensity */
-						curattr|=HIGH;
+						curattr|=this.defs.HIGH;
 						break;
 					case 'I':	/* Blink */
-						curattr|=BLINK;
+						curattr|=this.defs.BLINK;
 						break;
 					case 'N':	/* Normal (ToDo: Does this do ESC[0?) */
 						curattr=7;
@@ -693,7 +693,7 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 		}
 	}
 	return(scrolls);
-}
+};
 
 Graphic.prototype.toANSI = function()
 {
@@ -702,10 +702,11 @@ Graphic.prototype.toANSI = function()
 	var y;
     var lines=[];
     var curattr=7;
+	var row;
 
-	for(var y=0; y<this.height; y++) {
-        var row="";
-		for(var x=0; x<this.width-1; x++) {
+	for(y=0; y<this.height; y++) {
+        row="";
+		for(x=0; x<this.width-1; x++) {
             row+=ansi.attr(this.data[x][y].attr, curattr);
             curattr=this.data[x][y].attr;
             var char = this.data[x][y].ch;
@@ -716,7 +717,7 @@ Graphic.prototype.toANSI = function()
         lines.push(row);
     }
     return lines;
-}
+};
 
 /*
  * These should likely just be arguments to the load() function since the file
@@ -735,7 +736,7 @@ Graphic.prototype.base64_encode = function()
         base64.push(base64_encode(row));
     }
     return base64;
-}
+};
 
 Graphic.prototype.base64_decode = function(rows)
 {
@@ -748,7 +749,7 @@ Graphic.prototype.base64_decode = function(rows)
             this.data[x][y].attr = ascii(row.charAt((x*2)+1));
         }
     }
-}
+};
 
 /* Leave as last line for convenient load() usage: */
-this;
+Graphic;
