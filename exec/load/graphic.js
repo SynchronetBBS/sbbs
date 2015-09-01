@@ -57,6 +57,8 @@ function Graphic(w,h,attr,ch)
 	this.resize=Graphic_resize;
 	this.parseANSI=Graphic_parseANSI;
     this.toANSI=Graphic_toANSI;
+    this.base64_encode=Graphic_base64_encode;
+    this.base64_decode=Graphic_base64_decode;
 }
 function Graphic_clear()
 {
@@ -75,7 +77,7 @@ function Graphic_clear()
 function Graphic_sector(ch,attr)
 {
 	this.ch=ch;
-	this.attr=attr;
+	this.attribute=attr;
 }
 function Graphic_gety()
 {
@@ -245,8 +247,9 @@ function Graphic_load(filename)
 }
 function Graphic_parseANSI(lines) 
 {
-	var attr = this.attr;
+	var attr = this.attrtribute;
 	var saved = {};
+	
 	var x = 0;
 	var y = 0;
 	var std_cmds = {
@@ -412,7 +415,20 @@ function Graphic_parseANSI(lines)
 			/* set character and attribute */
 			ch = line[0];
 			line = line.substr(1);
-			
+
+            /* Handle non-ANSI cursor positioning control characters */
+            switch(ch) {
+                case '\r':
+                    x=0;
+                    continue;
+                case '\n':
+                    y++;
+                    continue;
+                case '\t':
+                    x += 8-(x%8);
+                    continue;
+            }
+
 			/* validate position */
 			if(x>=this.width) {
 				x=0;
@@ -694,10 +710,41 @@ function Graphic_toANSI()
             curattr=this.data[x][y].attr;
             var char = this.data[x][y].ch;
             /* Don't put printable chars in the last column */
-            if(/* char == ' ' || */(x<this.width-1))
+            if(char == ' ' || (x<this.width-1))
                 row += char;
         }
         lines.push(row);
     }
     return lines;
 }
+
+function Graphic_base64_encode()
+{
+    var base64=[];
+
+    for(var y=0; y<this.height; y++) {
+        var row="";
+        for(var x=0; x<this.width; x++) {
+            row+=this.data[x][y].ch;
+            row+=ascii(this.data[x][y].attr);
+        }
+        base64.push(base64_encode(row));
+    }
+    return base64;
+}
+
+function Graphic_base64_decode(rows)
+{
+    for(var y=0; y<this.height; y++) {
+        var row=base64_decode(rows[y]);
+        if(!row)
+            continue;
+        for(var x=0; x<this.width; x++) {
+            this.data[x][y].ch = row.charAt(x*2);
+            this.data[x][y].attr = ascii(row.charAt((x*2)+1));
+        }
+    }
+}
+
+/* Leave as last line for convenient load() usage: */
+this;
