@@ -141,7 +141,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 				var hi = attr & obj.defs.HIGH;
 				var bnk = attr & obj.defs.BLINK;
 
-				if (params[0] === undefined)
+				if (params[0] === undefined || params[0] === '')
 					params[0] = 0;
 
 				while (params.length) {
@@ -209,16 +209,16 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 				attr = bg + fg + hi + bnk;
 			},
 			'H':function(params) {
-				if (params[0] === undefined)
+				if (params[0] === undefined || params[0] === '')
 					params[0] = 1;
-				if (params[1] === undefined)
+				if (params[1] === undefined || params[1] === '')
 					params[1] = 1;
 
 				y = parseInt(params[0], 10) - 1;
 				x = parseInt(params[1], 10) - 1;
 			},
 			'A':function(params) {
-				if (params[0] == undefined)
+				if (params[0] === undefined || params[0] === '')
 					params[0] = 1;
 	
 				y -= parseInt(params[0], 10);
@@ -226,13 +226,13 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 					y = 0;
 			},
 			'B':function(params) {
-				if (params[0] == undefined)
+				if (params[0] === undefined || params[0] === '')
 					params[0] = 1;
 
 				y += parseInt(params[0], 10);
 			},
 			'C':function(params, obj) {
-				if (params[0] == undefined)
+				if (params[0] === undefined || params[0] === '')
 					params[0] = 1;
 
 				x += parseInt(params[0], 10);
@@ -240,7 +240,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 					x = obj.width - 1;
 			},
 			'D':function(params) {
-				if (params[0] == undefined)
+				if (params[0] === undefined || params[0] === '')
 					params[0] = 1;
 
 				x -= parseInt(params[0], 10);
@@ -248,7 +248,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 					x = 0;
 			},
 			'J':function(params,obj) {
-				if (params[0] == undefined)
+				if (params[0] === undefined || params[0] === '')
 					params[0] = 0;
 
 				if (parseInt(params[0], 10) == 2)
