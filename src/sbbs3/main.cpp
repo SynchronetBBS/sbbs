@@ -1186,6 +1186,7 @@ bool sbbs_t::js_init(ulong* stack_frame)
 
 #ifdef BUILD_JSDOCS
 		js_CreateUifcObject(js_cx, js_glob);
+		js_CreateConioObject(js_cx, js_glob);
 #endif
 
 		/* BBS Object */
