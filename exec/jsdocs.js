@@ -325,6 +325,10 @@ if(js.global.CryptContext != undefined) {
 	var cc = new CryptContext(CryptContext.ALGO.AES);
 	if(cc != undefined)			document_object("CryptContext",cc, "class");
 }
+if(js.global.conio != undefined) {
+	document_object("Conio",js.global.conio);
+}
+
 
 f.writeln("</ol>");
 
