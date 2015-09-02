@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -50,7 +50,7 @@ static void qwk_parse_header_list(smbmsg_t* msg, str_list_t* headers, bool parse
 	if((p=iniPopKey(headers,ROOT_SECTION,"WhenWritten",value))!=NULL) {
 		xpDateTime_t dt=isoDateTimeStr_parse(p);
 
-		msg->hdr.when_written.time=(uint32_t)xpDateTime_to_time(dt);
+		msg->hdr.when_written.time=(uint32_t)xpDateTime_to_localtime(dt);
 		msg->hdr.when_written.zone=dt.zone;
 		sscanf(p,"%*s %s",zone);
 		if(zone[0])

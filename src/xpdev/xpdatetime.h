@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -78,6 +78,7 @@ DLLEXPORT xpDateTime_t	DLLCALL xpDateTime_create(unsigned year, unsigned month, 
 								   ,xpTimeZone_t);
 DLLEXPORT xpDateTime_t	DLLCALL xpDateTime_now(void);
 DLLEXPORT time_t		DLLCALL xpDateTime_to_time(xpDateTime_t);
+DLLEXPORT time_t		DLLCALL xpDateTime_to_localtime(xpDateTime_t);
 DLLEXPORT xpDateTime_t	DLLCALL time_to_xpDateTime(time_t, xpTimeZone_t);
 DLLEXPORT xpDateTime_t	DLLCALL gmtime_to_xpDateTime(time_t);
 DLLEXPORT xpTimeZone_t	DLLCALL xpTimeZone_local(void);

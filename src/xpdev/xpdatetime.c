@@ -148,6 +148,13 @@ time_t DLLCALL xpDateTime_to_time(xpDateTime_t xpDateTime)
 	return INVALID_TIME;
 }
 
+/* This version ignores the timezone in xpDateTime and always uses mktime() */
+time_t DLLCALL xpDateTime_to_localtime(xpDateTime_t xpDateTime)
+{
+	xpDateTime.zone = xpTimeZone_LOCAL;
+	return xpDateTime_to_time(xpDateTime);
+}
+
 xpDateTime_t DLLCALL time_to_xpDateTime(time_t ti, xpTimeZone_t zone)
 {
 	xpDateTime_t	never;
