@@ -12,7 +12,7 @@
  * attr = default attribute (default of 7 ie: LIGHTGREY)
  * ch = default character (default of space)
  *
- * Instance variable data contains an array of array of Graphics.Char objects
+ * Instance variable data contains an array of array of Graphics.Cell objects
  *
  * Instance variables atcodes are slated for removal.
  */
@@ -43,7 +43,7 @@ function Graphic(w,h,attr,ch)
 			if(y==0) {
 				this.data[x]=new Array(this.height);
 			}
-			this.data[x][y]=new this.Char(this.ch,this.attribute);
+			this.data[x][y]=new this.Cell(this.ch,this.attribute);
 		}
 	}
 }
@@ -61,10 +61,10 @@ Graphic.prototype.ansi = {};
 load(Graphic.prototype.ansi, "ansiterm_lib.js");
 
 /*
- * The Char subclass which contains the attribute and character for a
+ * The Cell subclass which contains the attribute and character for a
  * single cell.
  */
-Graphic.prototype.Char = function(ch,attr)
+Graphic.prototype.Cell = function(ch,attr)
 {
 	this.ch=ch;
 	this.attr=attr;
@@ -97,7 +97,7 @@ Object.defineProperty(Graphic.prototype, "BIN", {
 		for (y=0; y<this.height; y++) {
 			for (x=0; x<this.width; x++) {
 				if (blen >= pos+2)
-					this.data[x][y] = new this.Char(bin.charAt(pos), bin.charCodeAt(pos+1));
+					this.data[x][y] = new this.Cell(bin.charAt(pos), bin.charCodeAt(pos+1));
 				else
 					return;
 				pos += 2;
@@ -315,7 +315,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 						x--;
             		break;
 				default:
-					this.data[x][y]=new this.Char(ch,attr);
+					this.data[x][y]=new this.Cell(ch,attr);
 					x++;
              }
 
@@ -333,7 +333,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 });
 
 /*
- * Resets the graphic to all this.ch/this.attr Chars
+ * Resets the graphic to all this.ch/this.attr Cells
  */
 Graphic.prototype.clear = function()
 {
@@ -343,7 +343,7 @@ Graphic.prototype.clear = function()
 			if(y==0) {
 				this.data[x]=new Array(this.height);
 			}
-			this.data[x][y]=new this.Char(this.ch,this.attribute);
+			this.data[x][y]=new this.Cell(this.ch,this.attribute);
 		}
 	}
 };
@@ -565,7 +565,7 @@ Graphic.prototype.scroll = function(count)
 	for (x=0; x<this.width; x++) {
 		for (i=0; i<count; i++) {
 			this.data[x].shift();
-			this.data[x].push(new this.Char(this.ch, this.attribute));
+			this.data[x].push(new this.Cell(this.ch, this.attribute));
 		}
 	}
 	return true;
@@ -723,7 +723,7 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 				y++;
 				break;
 			default:
-				this.data[x][y]=new this.Char(ch,curattr);
+				this.data[x][y]=new this.Cell(ch,curattr);
 				x++;
 				if(x>=this.width) {
 					x=0;
