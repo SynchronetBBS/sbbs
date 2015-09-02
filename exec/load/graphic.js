@@ -210,18 +210,23 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 				}
 				attr = bg + fg + hi + bnk;
 			},
-			'H':function(params) {
+			'H':function(params, obj) {
 				if (params[0] === undefined || params[0] === '')
 					params[0] = 1;
 				if (params[1] === undefined || params[1] === '')
 					params[1] = 1;
 
 				y = parseInt(params[0], 10) - 1;
-				x = parseInt(params[1], 10) - 1;
 				if (y < 0)
 					y = 0;
+				if (y >= obj.height)
+					y = obj.height-1;
+
+				x = parseInt(params[1], 10) - 1;
 				if (x < 0)
 					x = 0;
+				if (x >= obj.width)
+					x = obj.width-1;
 			},
 			'A':function(params) {
 				if (params[0] === undefined || params[0] === '')
@@ -231,11 +236,13 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 				if (y < 0)
 					y = 0;
 			},
-			'B':function(params) {
+			'B':function(params, obj) {
 				if (params[0] === undefined || params[0] === '')
 					params[0] = 1;
 
 				y += parseInt(params[0], 10);
+				if (y >= obj.height)
+					y = obj.height-1;
 			},
 			'C':function(params, obj) {
 				if (params[0] === undefined || params[0] === '')
@@ -276,7 +283,6 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 		var params;
 		var ch;
 
-		x = 0;
 		/* parse 'ATCODES'?? 
 		ans = ans.replace(/@(.*)@/g,
 			function (str, code, offset, s) {
@@ -303,7 +309,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 			ch = ans[0];
 			ans = ans.substr(1);
 
-	            /* Handle non-ANSI cursor positioning control characters */
+	        /* Handle non-ANSI cursor positioning control characters */
 			switch(ch) {
                 case '\r':
                     x=0;
@@ -324,6 +330,10 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
                     break;
             }
 			/* validate position/scroll */
+			if (x < 0)
+				x = 0;
+			if (y < 0)
+				y = 0;
 			if(x>=this.width) {
 				x=0;
 				y++;
