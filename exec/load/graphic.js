@@ -77,6 +77,8 @@ Graphic.prototype.Char = function(ch,attr)
 Object.defineProperty(Graphic.prototype, "BIN", {
 	get: function() {
 		var bin = '';
+		var x;
+		var y;
 
 		for (y=0; y<this.height; y++) {
 			for (x=0; x<this.width; x++) {
@@ -270,62 +272,62 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 		var params;
 		var ch;
 
-		while(ans.length > 0) {	
-			x = 0;
-			/* parse 'ATCODES'?? 
-			ans = ans.replace(/@(.*)@/g,
-				function (str, code, offset, s) {
-					return bbs.atcode(code);
-				}
-			);
-			*/
-			while(ans.length > 0) {
-				m = ans.match(/^\x1b\[([\x30-\x3f]*)([\x20-\x2f]*[\x40-\x7e])/);
-				if (m !== null) {
-					paramstr = m[1];
-					cmd = m[2];
-					if (paramstr.search(/^[<=>?]/) != 0) {
-						params=paramstr.split(/;/);
-
-						if (std_cmds[cmd] !== undefined)
-							std_cmds[cmd](params,this);
-					}
-					ans = ans.substr(m[0].length);
-    	            continue;
-				}
-
-				/* set character and attribute */
-				ch = ans[0];
-				ans = ans.substr(1);
-
- 	           /* Handle non-ANSI cursor positioning control characters */
- 	           switch(ch) {
- 	               case '\r':
- 	                   x=0;
- 	                   continue;
- 	               case '\n':
- 	                   y++;
- 	                   continue;
- 	               case '\t':
- 	                   x += 8-(x%8);
- 	                   continue;
- 	               case '\b':
- 	                   if(x) x--;
- 	                   continue;
- 	           }
-
-				/* validate position */
-				if(x>=this.width) {
-					x=0;
-					y++;
-				}
-
-				if(!this.data[x])
-					this.data[x]=[];
-				this.data[x][y]=new this.Char(ch,attr);
-				x++;
+		x = 0;
+		/* parse 'ATCODES'?? 
+		ans = ans.replace(/@(.*)@/g,
+			function (str, code, offset, s) {
+				return bbs.atcode(code);
 			}
-			y++;
+		);
+		*/
+		while(ans.length > 0) {
+			m = ans.match(/^\x1b\[([\x30-\x3f]*)([\x20-\x2f]*[\x40-\x7e])/);
+			if (m !== null) {
+				paramstr = m[1];
+				cmd = m[2];
+				if (paramstr.search(/^[<=>?]/) != 0) {
+					params=paramstr.split(/;/);
+
+					if (std_cmds[cmd] !== undefined)
+						std_cmds[cmd](params,this);
+				}
+				ans = ans.substr(m[0].length);
+   	            continue;
+			}
+
+			/* set character and attribute */
+			ch = ans[0];
+			ans = ans.substr(1);
+
+	            /* Handle non-ANSI cursor positioning control characters */
+			switch(ch) {
+                case '\r':
+                    x=0;
+                    break;
+                case '\n':
+                    y++;
+                    break;
+                case '\t':
+                    x += 8-(x%8);
+                    break;
+                case '\b':
+                    if(x)
+						x--;
+            		break;
+				default:
+					this.data[x][y]=new this.Char(ch,attr);
+					x++;
+             }
+
+			/* validate position/scroll */
+			if(x>=this.width) {
+				x=0;
+				y++;
+			}
+			while(y >= this.height) {
+				this.scroll();
+				y--;
+			}
 		}
 	}
 });
