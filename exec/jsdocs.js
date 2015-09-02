@@ -326,7 +326,7 @@ if(js.global.CryptContext != undefined) {
 	if(cc != undefined)			document_object("CryptContext",cc, "class");
 }
 if(js.global.conio != undefined) {
-	document_object("Conio",js.global.conio);
+	document_object("conio",js.global.conio);
 }
 
 
