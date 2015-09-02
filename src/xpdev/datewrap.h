@@ -73,7 +73,7 @@ DLLEXPORT struct tm*	DLLCALL		localtime32(const time32_t* t, struct tm* tm);
 #endif
 
 /* Microsoft's equivalent of GLIBC/BSD timegm() */
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
 	#define timegm _mkgmtime
 #endif
 
