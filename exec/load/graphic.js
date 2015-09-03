@@ -149,7 +149,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 				while (params.length) {
 					switch (parseInt(params[0], 10)) {
 						case 0:
-							bg = obj.defs.BG_BLACK;
+							bg = 0;
 							fg = obj.defs.LIGHTGRAY;
 							hi = 0;
 							bnk = 0;
@@ -158,7 +158,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 							hi = obj.defs.HIGH;
 							break;
 						case 40:
-							bg = obj.defs.BG_BLACK;
+							bg = 0;
 							break;
 						case 41:
 							bg = obj.defs.BG_RED;
