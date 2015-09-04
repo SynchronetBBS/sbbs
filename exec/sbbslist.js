@@ -11,15 +11,16 @@
 var REVISION = "$Revision$".split(' ')[1];
 var sbl_dir = "../xtrn/sbl/";
 
+load("portdefs.js");
 var options={sub:"syncdata"};
 opts=load(new Object, "modopts.js", "sbbslist");
 if(this.opts && opts.sub)
     options.sub=opts.sub;
 
 var lib = load(new Object, "sbbslist_lib.js");
-
+load("graphic.js");
 var capture = load(new Object, "termcapture_lib.js");
-capture.timeout=15;
+capture.timeout=5;
 
 // This date format is required for backwards compatibility with SMB2SBL
 function date_to_str(date)
@@ -229,18 +230,23 @@ function import_entry(bbs, text)
             case 'telnet':  /* SBL2SMB never actually generated this line though SMB2SBL supported it */
                 if(bbs.service.length)
                     number++;
-                bbs.service[number] = {address: match[2], protocol: 'telnet', port: 23};
+                bbs.service[number] = {address: match[2], protocol: 'telnet', port: standard_service_port["telnet"]};
                 break;
             case 'minrate':
                 var minrate = parseInt(match[2], 10);
                 if(minrate == 0xffff) {
-                    bbs.service[number].protocol = 'telnet';
-                    bbs.service[number].port = 23;
+					bbs.service[number].protocol = 'telnet';
+					var uri=bbs.service[number].address.match(/^(\S+)\:\/\/(\S+)/);
+					if(uri) {
+						bbs.service[number].protocol = uri[1];
+						bbs.service[number].address = uri[2];
+					}
+					bbs.service[number].port = standard_service_port(bbs.service[number].protocol.toLowerCase());
                 } else
                     bbs.service[number].minrate = minrate;
                 break;
             case 'maxrate':
-                if(bbs.service[number].protocol == 'telnet')
+                if(bbs.service[number].protocol != 'modem')
                     bbs.service[number].port = parseInt(match[2], 10);
                 else
                     bbs.service[number].maxrate = parseInt(match[2], 10);
@@ -448,9 +454,16 @@ function read_dab_entry(f)
         var min_rate = f.readBin(2)
         var port = f.readBin(2);
         if(min_rate==0xffff) {
-            service.protocol = 'telnet';
+			service.protocol = 'telnet';
+			var uri=service.address.match(/^(\S+)\:\/\/(\S+)/);
+			if(uri) {
+				service.protocol = uri[1];
+				service.address = uri[2];
+			}
             service.port = port;
         } else {
+			// Only the first 12 chars of the modem "address" (number) are valid
+			service.address = service.address.substr(0, 12);
             service.min_rate = min_rate;
             service.max_rate = port;
         }
@@ -472,7 +485,7 @@ function read_dab_entry(f)
     if(obj.sysop.length)
         obj.sysop[0].email = sysop_email;
     f.readBin(4);   // 'exported' not used, always zero 
-    obj.entry.verification = { count: f.readBin(4), attempts: f.readBin(4) };
+    obj.entry.autoverify = { successes: f.readBin(4), attempts: f.readBin(4) };
     f.read(310);    // unused padding
 
     return obj;
@@ -516,31 +529,79 @@ function verify_terminal_service(service)
     return capture.capture();
 }
 
-function base64_encode_array(array)
+function other_services(address)
 {
-    var new_array = [];
     var i;
+    var services=[
+        "ftp", 
+        "finger", 
+        "smtp", 
+        "submission", 
+        "users", 
+        "msp", 
+        "nntp", 
+        "gopher", 
+        "qotd", 
+        "pop3", 
+        "imap",
+    ];
+    var verified=[];
 
-    for(i in array) {
-        var enc=base64_encode(array[i]);
-        new_array.push(enc);
+    for(i in services) {
+        if(js.terminated)
+            break;
+        print(format("Verifying %-10s", services[i]) + " connection at " + address);
+        var socket = new Socket();
+        if(socket.connect(address, standard_service_port[services[i]]), /* timeout: */1) {
+            verified.push(services[i]);
+            socket.close();
+        }
     }
-
-    return new_array;
+    return verified;
 }
 
 function verify_bbs(bbs)
 {
     var i;
+    var error="N/A";
+
+    bbs.entry.autoverify.success=false;
     for(i in bbs.service) {
+        if(js.terminated)
+            break;
         var protocol = bbs.service[i].protocol.toLowerCase();
         if(protocol != "telnet" && protocol != "rlogin")
             continue;
+        bbs.entry.autoverify.attempts++;
         var result = verify_terminal_service(bbs.service[i]);
-        if(result != false) {
-            bbs.capture = base64_encode_array(result);
-            bbs.hello = base64_encode_array(capture.hello);
-            return true;
+        var failure = { 
+            on: new Date(),
+            result: capture.error, 
+            service: bbs.service[i],
+            ip_address: result.ip_address,
+        };
+        if(result == false) {
+            bbs.entry.autoverify.last_failure = failure;
+        } else {
+            if(result.hello.length && result.hello[0].indexOf("Synchronet BBS") == 0) {
+                bbs.entry.autoverify.success=true;
+                bbs.entry.autoverify.successes++;
+                bbs.entry.autoverify.last_success = {
+                    on: new Date(),
+                    result: result.hello[0],
+                    service: bbs.service[i],
+                    ip_address: result.ip_address,
+                    other_services: other_services(result.ip_address)
+                };
+                bbs.entry.verified = { by: js.exec_file + " " + REVISION, on: new Date() };
+                graphic = new Graphic();
+                graphic.ANSI = result.preview.join("\r\n");
+                bbs.preview = graphic.base64_encode();
+                return true;
+            }
+            log(LOG_DEBUG,"Non-Synchronet identification: " + result.hello[0]);
+            failure.result = "non-Synchronet";
+            bbs.entry.autoverify.last_failure = failure;
         }
     }
     return false;
@@ -550,9 +611,16 @@ function verify_list(list)
 {
     var i;
 
+    js.auto_terminate=false;
     for(i in list) {
-        print(format("Verifying BBS %u of %u: %s", Number(i)+1, list.length, list[i].name));
-        verify_bbs(list[i]);
+        var bbs=list[i];
+        printf("Verifying BBS %u of %u: %s\n", Number(i)+1, list.length, bbs.name);
+        if(verify_bbs(bbs))
+            print("Success: " + bbs.entry.autoverify.last_success.result);
+        else
+            print("Failure: " + bbs.entry.autoverify.last_failure.result);
+        if(js.terminated)
+            break;
     }
 }
     
@@ -560,13 +628,10 @@ function main()
 {
     var i,j;
     var list;
-    var import_now = false;
-    var export_now = false;
-    var show_now = false;
-    var dump_now = false;
+    var import_msgs = false;
+    var export_msgs = false;
     var sort = false;
-    var syncterm = false;
-    var verify_now = false;
+    var verbose = 0;
     var msgbase;
 
     print("Synchronet BBS List v4 Rev " + REVISION);
@@ -577,29 +642,18 @@ function main()
                 upgrade_list(sbl_dir + "sbl.dab");
                 break;
             case "import":
-                import_now = true;
+                import_msgs = true;
                 break;
             case "export":
-                export_now = true;               
-                break;
-            case "dump":
-                dump_now = true;
-            case "show":
-                show_now = true;
-                break;
-            case "syncterm":
-                syncterm = true;
-                break;
-            case "verify":
-                verify_now = true;
-                break;
-            case "backup":
-                file_backup(lib.list_fname);
+                export_msgs = true;               
                 break;
             case "-sort":
                 sort = true;
                 if(i+1<argc)
                     lib.sort_property=argv[++i];
+                break;
+            case "-v":
+                verbose++;
                 break;
         }
     }
@@ -609,16 +663,19 @@ function main()
     else
         list=lib.read_list();
 
-    if(import_now || export_now) {
+    if(argv.indexOf("-backup") >= 0)
+        file_backup(lib.list_fname);
+
+    if(import_msgs || export_msgs) {
         msgbase = new MsgBase(options.sub);
         print("Opening msgbase " + msgbase.file);
         if(!msgbase.open()) {
             alert("Error " + msgbase.error + " opening msgbase: " + msgbase.file);
             exit(-1);
         }
-        if(import_now)
+        if(import_msgs)
             import_from_msgbase(list, msgbase);
-        if(export_now)
+        if(export_msgs)
             export_to_msgbase(list, msgbase);
         msgbase.close();
     }
@@ -628,12 +685,12 @@ function main()
         list.sort(lib.compare);
     }
 
-    if(verify_now) {
+    if(argv.indexOf("verify") >= 0) {
         verify_list(list);
         lib.write_list(list);
     }
 
-    if(syncterm) {
+    if(argv.indexOf("syncterm") >= 0) {
         var f = new File("syncterm.lst");
         if(!f.open("w")) {
             log(LOG_ERR,"Error opening " + f.name);
@@ -653,13 +710,25 @@ function main()
             }
         }
         f.close();
+        print(list.length + " BBS entries exported to: " + f.name);
     }
 
-    if(show_now) {
+    if(argv.indexOf("html") >= 0) {
+        var f = new File("sbbslist.html");
+        if(!f.open("wb")) {
+            log(LOG_ERR,"Error opening " + f.name);
+            exit();
+        }
+        load(f, "sbbslist_html.js", lib, list);
+        f.close();
+        print(list.length + " BBS entries exported to: " + f.name);
+    }
+
+    if(argv.indexOf("show") >= 0) {
         for(i in list) {
-            if(dump_now) {
+            if(verbose) {
                 for(j in list[i])
-                    print(j + " : " + list[i][j]);
+                    print(j + " : " + JSON.stringify(list[i][j]));
                 continue;
             }
             printf("%-25s %-25s %-25s", list[i].name, list[i].entry.created.by, list[i].sysop[0] ? list[i].sysop[0].name: '');
