@@ -8,7 +8,7 @@
 // Duplicates port numbers for service name aliases are included
 // (e.g. both "nttp" and "news")
 
-var service_port = {
+standard_service_port = {
 	"systat":	11,
 	"users":	11,
 	"qotd":		17,
@@ -42,6 +42,3 @@ var service_port = {
 	"irc":		6667,
 	"http-alt":	8080,
 };
-
-/* Leave as last line for convenient load() usage: */
-this;
