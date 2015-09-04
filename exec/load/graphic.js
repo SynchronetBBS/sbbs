@@ -352,6 +352,17 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 });
 
 /*
+ * Returns an HTML encoding of the graphic data.
+ *
+ * TODO: get rid of the ANSI phase as unnecessary
+ */
+Object.defineProperty(Graphic.prototype, "HTML", {
+	get: function() {
+        return html_encode(this.ANSI, /* ex-ascii: */true, /* whitespace: */false, /* ansi: */true, /* Ctrl-A: */false);
+    }
+});
+
+/*
  * Resets the graphic to all this.ch/this.attr Cells
  */
 Graphic.prototype.clear = function()
@@ -528,26 +539,6 @@ Graphic.prototype.load = function(filename)
 		throw("unsupported file type:" + filename);
 	}
 	return(true);
-};
-
-/*
- * Parses an array of ANSI "lines".
- * TODO: Kill this method.
- */
-Graphic.prototype.parseANSI = function(lines) 
-{
-	if (typeof(lines) == 'string')
-		lines = lines.split(/\r\n/);
-	this.ANSI = lines.join("\r\n");
-};
-
-/*
- * Returns an array of lines representing the graphic.
- * TODO: Kill this method.
- */
-Graphic.prototype.toANSI = function()
-{
-	return(this.ANSI.split(/\r\n/));
 };
 
 /*
@@ -775,7 +766,7 @@ Graphic.prototype.base64_encode = function()
  */
 Graphic.prototype.base64_decode = function(rows)
 {
-	this.BIN = base64_decode(rows.join("\r\n"));
+	this.BIN = base64_decode(rows.join(""));
 };
 
 /* Leave as last line for convenient load() usage: */
