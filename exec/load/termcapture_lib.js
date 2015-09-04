@@ -11,6 +11,9 @@ var address = "localhost";
 var port = 23;
 var rows = 24;
 var timeout = 30;
+var max_lines = 512;
+var max_line_length = 256*1024;
+var error="";
 
 function capture()
 {
@@ -22,25 +25,25 @@ function capture()
     //        case "ssh":     port=22; break;
             case "rlogin":  port=513; break;
             default:
-                alert("Unknown protocol: " + protocol);
+                error = "Unsupported protocol: " + protocol;
                 return false;
         }
     }
 
     var socket=new Socket();
     if(!socket.connect(address, port)) {
-        alert("Error " + socket.error + " connecting to: " + address);
+        error = "No connect: " + socket.error;
         return false;
     }
     /* RLogin handshake: */
     if(protocol=="rlogin") {
         if(!socket.poll(timeout)) {
-            alert("Timeout wiating for initial byte from from rlogin server");
+            error = "RLogin Timeout";
             return false;
         }
         var byte=socket.recvBin(1);
         if(byte != 0) {
-            alert("Expected 0 from rlogin server, received: " + byte);
+            error = "Invalid RLogin handshake: " + byte;
             return false;
         }
         socket.sendBin(0, 3);
@@ -48,9 +51,14 @@ function capture()
     var lastbyte=0;
     var lines=[];
     var curline="";
-    delete this.hello;
+    var hello=[];
+    var start=time();
 
-    while(socket.is_connected) {
+    while(socket.is_connected && lines.length < this.max_lines && hello.length < this.max_lines && time()-start < timeout) {
+        if(js.terminated) {
+            error = "Terminated locally";
+            return false;
+        }
         if(!socket.poll(timeout))
             break;
         var byte = socket.recvBin(1);
@@ -59,14 +67,14 @@ function capture()
             var cmd  = socket.recvBin(1);
             log(LOG_DEBUG, "Telnet: " + telnet.cmdstr(cmd));
             switch(cmd) {
-                case telnet.WILL:
-                case telnet.WONT:
                 case telnet.DO:
                 case telnet.DONT:
                     var arg = socket.recvBin(1);
-                    socket.sendBin(telnet.IAC, 1);
-                    socket.sendBin(telnet.ack(cmd), 1);
-                    socket.sendBin(arg, 1);
+                    if(this.telnet_ack) {
+                        socket.sendBin(telnet.IAC, 1);
+                        socket.sendBin(telnet.ack(cmd), 1);
+                        socket.sendBin(arg, 1);
+                    }
                     break;
                 case telnet.SB:
                     while(socket.recvBin(1)!=telnet.SE)
@@ -91,22 +99,38 @@ function capture()
                 delete this.ansi;
             }
         } else if(byte==12) { /* FF */
-            if(!this.hello)
-                this.hello = lines.slice();
+            if(!hello.length)
+                hello = lines.slice();
             lines.length = 0;
             curline="";
         } else if(char=='\n') {
+            if(curline.length && curline.charAt(curline.length-1)=='\r')
+                curline = curline.substring(0,curline.length-1);
             lines.push(curline);
+            log(LOG_DEBUG, format("Captured %u lines (last: %u bytes)", lines.length, curline.length));
             curline="";
-        } else if(byte != ESC)
+        } else if(byte != ESC) {
             curline+=char;
+        }
+        if(curline.length >= this.max_line_length) {
+            log(LOG_DEBUG,"Stopping capture on line length of " + curline.length);
+            break; 
+        }
         lastbyte=byte;
     }
     if(curline.length)
         lines.push(curline);
-    if(!this.hello)
-        this.hello = lines.slice();
-    return lines;
+    if(!hello.length)
+        hello = lines.slice();
+
+    for(var i=0; i<hello.length;) {
+        if(hello[i].length == 0)
+            hello.splice(i,1);
+        else
+            i++;
+    }
+
+    return { preview: lines, hello: hello, ip_address: socket.remote_ip_address };
 }
 
 /* Leave as last line for convenient load() usage: */
