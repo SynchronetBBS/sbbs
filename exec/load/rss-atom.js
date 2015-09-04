@@ -104,6 +104,11 @@
 			there are multiple <link /> elements, their values are joined
 			into a single string.)
 
+		Item.enclosures (Array)
+
+			Array of { type : String, url : String, length : Number } objects
+			for any <enclosure> elements in the item.
+
 		Item.extra (Object)
 
 			If the item/entry contains additional elements not provided for
@@ -133,6 +138,7 @@ var Feed = function(url) {
 		this.body = "";
 		this.content = "";
 		this.link = "";
+		this.enclosures = [];
 		this.extra = {};
 
 		for each(var element in xmlObject) {
@@ -150,6 +156,8 @@ var Feed = function(url) {
 				this.link = element.text(); // To do: deal with multiple links
 			else if(element.name() == "encoded") // content:encoded
 				this.content = element;
+			else if(element.name() == "enclosure")
+				this.enclosures.push({'type':element.attribute('type'),'url':element.attribute("url"),'length':parseInt(element.attribute('length'))});
 			else
 				this.extra[element.name()] = element;
 
