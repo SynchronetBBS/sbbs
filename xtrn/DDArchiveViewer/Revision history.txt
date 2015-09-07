@@ -1,0 +1,15 @@
+Revision History for Digital Distortion Archive Viewer
+======================================================
+Version  Date         Description
+-------  ----         -----------
+1.03     2009-12-20   Updated DDArcViewer.js to be able to handle command-line
+                      parameters with spaces in them as single parameters,
+                      thanks to a function posted by Tracker1 of The Roughnecks
+                      BBS.
+1.02     2009-12-18   Updated to be able to handle file names/directory names
+                      with spaces in them.  This involves using a Baja script
+                      to write the filename to a temporary file, which is read
+                      by the JavaScript script.
+1.01     2009-12-16   Minor update to the documentation.
+1.00     2009-09-10   First general public release
+0.99     2009-09-02   Beta test, pre-general release verison.

@@ -1,0 +1,11 @@
+nhc   Digital Distortion Archive Viewer yvw1.03
+hy        For Synchronet 3.14 and higher
+k컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+ncThis is a script for Synchronet that lets the
+user list, view, & download files inside an
+archive, using a lightbar or traditional
+interface. The user can also navigate the
+file list forward & backward. Any number of
+file types can be configured via a
+configuration file.
+bhRelease date: 2009-12-20

@@ -1,0 +1,17 @@
+These are some important notes if you are upgrading from a previous
+version of Digital Distortion Archive Viewer:
+
+- If you are upgrading from version 1.02, you no longer need DDAVBaja.src
+and DDAVBaja.bin.  Make sure that in your Viewable Files configuration in
+SCFG, you are using DDArcViewer.js.
+
+- In SCFG, the argument passed to the archive viewer now should be %f
+(instead of %s as in previous versions).  To change this, run SCFG,
+select "File Options", then "Viewable Files".  For each file type where
+you're using Digital Distortion Archive Viewer, the command should be as
+follows (except that you should make sure the path to the script is
+correct for your system):
+?DDArcViewer.js %f
+
+The reason that %f is now used is that %f provides double-quotes around
+filenames in case the filenames contain spaces, whereas %s does not.
