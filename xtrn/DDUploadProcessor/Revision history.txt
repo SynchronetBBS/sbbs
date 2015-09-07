@@ -1,0 +1,5 @@
+Revision History for Digital Distortion Upload Processor
+========================================================
+Version  Date         Description
+-------  ----         -----------
+1.00     2009-12-29   First general public release

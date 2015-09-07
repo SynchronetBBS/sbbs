@@ -1,0 +1,9 @@
+nhc  Digital Distortion Upload Processor yvw1.00
+hy             For Synchronet 3.14+
+k컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+ncThis is an upload processor for Synchronet
+that allows for performing a virus scan on
+files inside of archives.  File extraction
+commands and the virus scan command are
+configurable.
+bhRelease date: 2009-12-29
