@@ -329,7 +329,7 @@ int get_flo_outbound(faddr_t dest, char* outbound, size_t maxlen)
 	if(dest.zone==sys_faddr.zone)		/* Default zone, use default outbound */
 		strncpy(outbound,cfg.outbound,maxlen);
 	else {								/* Inter-zone outbound is OUTBOUND.XXX */
-		safe_snprnitf(outbound,maxlen,"%.*s.%03x"
+		safe_snprintf(outbound,maxlen,"%.*s.%03x"
 			,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
 	}
 	if(dest.point) {					/* Point destination is OUTBOUND\*.PNT */
