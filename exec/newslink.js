@@ -159,6 +159,7 @@ var password;
 var interface_ip_address=0;
 var port_set=false;
 var tls=false;
+var no_path=false;
 area = new Array();
 
 if(this.server!=undefined)
@@ -222,6 +223,9 @@ while(!cfg_file.eof) {
 		case "no_xover":
 			use_xover=false;
 			break;
+        case "no_path":
+            no_path=true;
+            break;
 		case "slave":
 			slave=true;
 			break;
@@ -782,7 +786,7 @@ for(i in area) {
 			subpending--;
 			continue;
 		}
-			
+
         if(file!=undefined) {   
             if(file.is_open==true) { /* Incomplete attachment? */
 				print("!Incomplete attachment: " + file_getname(file.name));
@@ -855,6 +859,9 @@ for(i in area) {
 			subpending--;
 			continue;
 		}
+        if(no_path && hdr.path)
+            delete hdr.path;
+
 		if(hdr.gateway
 			&& hdr.gateway.indexOf(system.inetaddr)!=-1) {
 			subpending--;
