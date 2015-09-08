@@ -5060,10 +5060,10 @@ int main(int argc, char **argv)
 					SAFEPRINTF2(req,"%s%08x.req",outbound,addr.point);
 				else
 					SAFEPRINTF3(req,"%s%04x%04x.req",outbound,addr.net,addr.node);
-				if((fp=fopen(req,"w")) == NULL)
+				if((fp=fopen(req,"a")) == NULL)
 					lprintf(LOG_ERR,"ERROR %d creating/opening %s", errno, req);
 				else {
-					fprintf(fp,"%s",getfname(hdr.subj));
+					fprintf(fp,"%s\n",getfname(hdr.subj));
 					fclose(fp);
 					if(write_flofile(req, addr, /* bundle: */FALSE))
 						bail(1);
