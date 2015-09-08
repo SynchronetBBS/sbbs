@@ -323,6 +323,25 @@ faddr_t getsysfaddr(short zone)
 	return(sys_faddr);
 }
 
+int get_flo_outbound(faddr_t dest, char* outbound, size_t maxlen)
+{
+	char* last;
+	if(dest.zone==sys_faddr.zone)		/* Default zone, use default outbound */
+		strncpy(outbound,cfg.outbound,maxlen);
+	else {								/* Inter-zone outbound is OUTBOUND.XXX */
+		safe_snprnitf(outbound,maxlen,"%.*s.%03x"
+			,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
+	}
+	if(dest.point) {					/* Point destination is OUTBOUND\*.PNT */
+		char point[128];
+		SAFEPRINTF2(point,"%04x%04x.pnt"
+			,dest.net,dest.node);
+		strncat(outbound,point,maxlen); 
+	}
+	backslash(outbound);
+	return mkpath(outbound);
+}
+
 /******************************************************************************
  This function creates or appends on existing Binkley compatible .?LO file
  attach file.
@@ -347,24 +366,8 @@ int write_flofile(char *attachment, faddr_t dest, BOOL bundle)
 	else if(attr&ATTR_HOLD) ch='h';
 	else if(attr&ATTR_DIRECT) ch='d';
 	else ch='f';
-	if(dest.zone==sys_faddr.zone)		/* Default zone, use default outbound */
-		SAFECOPY(outbound,cfg.outbound);
-	else {								/* Inter-zone outbound is OUTBOUND.XXX */
-		SAFEPRINTF3(outbound,"%.*s.%03x"
-			,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
-		MKDIR(outbound);
-		backslash(outbound);
-	}
-	if(dest.point) {					/* Point destination is OUTBOUND\*.PNT */
-		sprintf(str,"%04x%04x.pnt"
-			,dest.net,dest.node);
-		strcat(outbound,str); 
-	}
-	if(outbound[strlen(outbound)-1]=='\\'
-		|| outbound[strlen(outbound)-1]=='/')
-		outbound[strlen(outbound)-1]=0;
-	MKDIR(outbound);
-	backslash(outbound);
+
+	get_flo_outbound(dest, outbound, sizeof(outbound)-2);
 	if(dest.point)
 		sprintf(fname,"%s%08x.%clo",outbound,dest.point,ch);
 	else
@@ -1691,7 +1694,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 ******************************************************************************/
 void pack_bundle(char *infile,faddr_t dest)
 {
-	char str[256],fname[256],outbound[128],day[3],*p;
+	char str[MAX_PATH+1],fname[MAX_PATH+1],outbound[MAX_PATH+1],day[3],*p;
 	int i,j,file,node;
 	time_t now;
 
@@ -1716,28 +1719,10 @@ void pack_bundle(char *infile,faddr_t dest)
 			if(cfg.log&LOG_ROUTING)
 				lprintf(LOG_NOTICE,"Routing %s to %s",infile,smb_faddrtoa(&dest,NULL));
 		}
-
-		if(dest.zone==sys_faddr.zone)	/* Default zone, use default outbound */
-			SAFECOPY(outbound,cfg.outbound);
-		else {							/* Inter-zone outbound is OUTBOUND.XXX */
-			SAFEPRINTF3(outbound,"%.*s.%03x"
-				,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
-			MKDIR(outbound);
-			backslash(outbound);
-		}
-		if(dest.point) {				/* Point destination is OUTBOUND\*.PNT */
-			sprintf(str,"%04x%04x.pnt"
-				,dest.net,dest.node);
-			strcat(outbound,str); 
-		}
-		}
+		get_flo_outbound(dest, outbound, sizeof(outbound));
+	}
 	else
 		strcpy(outbound,cfg.outbound);
-	if(outbound[strlen(outbound)-1]=='\\'
-		|| outbound[strlen(outbound)-1]=='/')
-		outbound[strlen(outbound)-1]=0;
-	MKDIR(outbound);
-	backslash(outbound);
 
 	if(node<cfg.nodecfgs)
 		if(cfg.nodecfg[node].arctype==0xffff) {    /* Uncompressed! */
@@ -5063,6 +5048,28 @@ int main(int argc, char **argv)
 				fwrite(&hdr.attr,sizeof(hdr.attr),1,fidomsg);
 				fseek(fidomsg,sizeof(fmsghdr_t),SEEK_SET);
 			}
+			if((misc&FLO_MAILER) && (hdr.attr&FIDO_FREQ)) {
+				char req[MAX_PATH+1];
+				FILE* fp;
+
+				printf("file request: %s\n", hdr.subj);
+				fclose(fidomsg);
+
+				get_flo_outbound(addr, outbound, sizeof(outbound));
+				if(addr.point)
+					SAFEPRINTF2(req,"%s%08x.req",outbound,addr.point);
+				else
+					SAFEPRINTF3(req,"%s%04x%04x.req",outbound,addr.net,addr.node);
+				if((fp=fopen(req,"w")) == NULL)
+					lprintf(LOG_ERR,"ERROR %d creating/opening %s", errno, req);
+				else {
+					fprintf(fp,"%s",getfname(hdr.subj));
+					fclose(fp);
+					if(write_flofile(req, addr, /* bundle: */FALSE))
+						bail(1);
+				}
+				continue;
+			}
 
 			if(cfg.log&LOG_PACKING)
 				logprintf("Packing %s (%s) attr=%04hX",path,smb_faddrtoa(&addr,NULL),hdr.attr);
@@ -5096,24 +5103,7 @@ int main(int argc, char **argv)
 				else if(attr&ATTR_HOLD) ch='h';
 				else if(attr&ATTR_DIRECT) ch='d';
 				else ch='o';
-				if(addr.zone==sys_faddr.zone) { /* Default zone, use default outbound */
-					SAFECOPY(outbound,cfg.outbound);
-				} else {						 /* Inter-zone outbound is OUTBOUND.XXX */
-					SAFEPRINTF3(outbound,"%.*s.%03x"
-						,(int)strlen(cfg.outbound)-1,cfg.outbound,addr.zone);
-					MKDIR(outbound);
-					backslash(outbound);
-				}
-				if(addr.point) {			/* Point destination is OUTBOUND.PNT */
-					sprintf(str,"%04x%04x.pnt"
-						,addr.net,addr.node);
-					strcat(outbound,str); 
-				}
-				if(outbound[strlen(outbound)-1]=='\\'
-					|| outbound[strlen(outbound)-1]=='/')
-					outbound[strlen(outbound)-1]=0;
-				MKDIR(outbound);
-				backslash(outbound);
+				get_flo_outbound(addr, outbound, sizeof(outbound));
 				if(addr.point)
 					SAFEPRINTF3(packet,"%s%08x.%cut",outbound,addr.point,ch);
 				else
