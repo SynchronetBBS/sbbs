@@ -1,15 +1,30 @@
 // fingerservice.js
 
 // Synchronet Service for the Finger protocol (RFC 1288)
+// and/or the Active Users protocol (RFC 866)
 
 // $Id$
 
-// Example configuration (in ctrl/services.ini)
+// Example configurations (in ctrl/services.ini)
 // [Finger]
 // Port=79
-// MaxClients=10
 // Options=NO_HOST_LOOKUP
 // Command=fingerservice.js
+
+// [Finger-UDP]
+// Port=79
+// Options=UDP | NO_HOST_LOOKUP
+// Command=fingerservice.js
+
+// [ActiveUser]
+// Port=11
+// Options=NO_HOST_LOOKUP
+// Command=fingerservice.js -u
+
+// [ActiveUser-UDP]
+// Port=11
+// Options=UDP | NO_HOST_LOOKUP
+// Command=fingerservice.js -u
 
 // Command-line options:
 
@@ -17,6 +32,7 @@
 //		information from the query results.
 // -a	report aliases only (no real names)
 // -ff	enable the findfile feature (requires a "guest" account)
+// -u   report users only (ignore any request), a.k.a. Active Users protocol
 
 // !WARNING!
 // Finger is an open protocol utilizing no forms of authorization
@@ -32,10 +48,12 @@ const REVISION = "$Revision$".split(' ')[1];
 var include_age_gender=true;
 var include_real_name=true;
 var findfile=true;
+var active_users=false;
 
 load("nodedefs.js");
 load("sockdefs.js");
 load("sbbsdefs.js");
+load("portdefs.js");
 
 for(i=0;i<argc;i++) {
 	switch(argv[i].toLowerCase()) {
@@ -48,6 +66,9 @@ for(i=0;i<argc;i++) {
 		case "-ff":	// enable findfile (requires "guest" account)
 			findfile=true;
 			break;
+        case "-u": // Active Users only
+            active_users=true;
+            break;
 	}
 }
 
@@ -117,26 +138,31 @@ function done()
 	exit();
 }
 
-// Get Finger Request (the main entry point) 
-if(datagram == undefined)	// TCP
-	request = client.socket.recvline(128 /*maxlen*/, 10 /*timeout*/);
-else						// UDP
-	request = datagram;
+var request="";
 
-if(request==null) {
-	log(LOG_WARNING,"!TIMEOUT waiting for request");
-	exit();
+if(!active_users) {
+
+    // Get Finger Request (the main entry point) 
+    if(datagram == undefined) 	// TCP
+        request = client.socket.recvline(128 /*maxlen*/, 10 /*timeout*/);
+    else						// UDP
+	    request = datagram;
+
+    if(request==null) {
+	    log(LOG_WARNING,"!TIMEOUT waiting for request");
+	    exit();
+    }
+
+    request = truncsp(request);
+
+    log(LOG_DEBUG,"client request: " + request);
+
+    if(request.substr(0,2).toUpperCase()=="/W")	// "higher level of verbosity"
+	    request=request.slice(2);				// ignored...
+
+    while(request.charAt(0)==' ')	// skip prepended spaces
+	    request=request.slice(1);
 }
-
-request = truncsp(request);
-
-log(LOG_DEBUG,"client request: " + request);
-
-if(request.substr(0,2).toUpperCase()=="/W")	// "higher level of verbosity"
-	request=request.slice(2);				// ignored...
-
-while(request.charAt(0)==' ')	// skip prepended spaces
-	request=request.slice(1);
 
 if(request=="") {	// no specific user requested, give list of active users
 	log("client requested active user list");
@@ -267,28 +293,16 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 			break;
 
 		case "services":	/* Services running on this host */
-			if(test_port(23))
-				writeln("Telnet");
-			if(test_port(513))
-				writeln("RLogin");
-			if(test_port(21))
-				writeln("FTP");
-			if(test_port(25))
-				writeln("SMTP");
-			if(test_port(110))
-				writeln("POP3");
-			if(test_port(119))
-				writeln("NNTP");
-			if(test_port(70))
-				writeln("Gopher");
-			if(test_port(80))
-				writeln("HTTP");
-			if(test_port(113))
-				writeln("IDENT");
-			if(test_port(6667))
-				writeln("IRC");
-            if(test_port(8080))
-                writeln("HTTP Proxy");
+            var ports = [];
+            for(i in standard_service_port) {
+                if(i == "finger")
+                    continue;
+                if(ports.indexOf(standard_service_port[i]) >= 0) // Already tested this port
+                    continue;
+                ports.push(standard_service_port[i]);
+			    if(test_port(standard_service_port[i]))
+				    writeln(i);
+            }
 			break;
 
 		default:
