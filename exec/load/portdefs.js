@@ -39,6 +39,8 @@ standard_service_port = {
 	"imaps":	993,
 	"ircs":		994,
 	"pop3s":	995,
+	"hotline":	5500,
 	"irc":		6667,
 	"http-alt":	8080,
+	"json":		10088,
 };
