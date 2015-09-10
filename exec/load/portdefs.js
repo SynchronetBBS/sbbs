@@ -23,6 +23,8 @@ standard_service_port = {
 	"finger":	79,
 	"http":		80,
 	"pop3":		110,
+    "auth":     113,
+    "ident":    113,
 	"nntp":		119,
 	"news":		119,
 	"imap":		143,
