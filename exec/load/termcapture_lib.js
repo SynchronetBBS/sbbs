@@ -52,15 +52,26 @@ function capture()
     var lines=[];
     var curline="";
     var hello=[];
+    var stopcause="Disconnected";
     var start=time();
 
-    while(socket.is_connected && lines.length < this.max_lines && hello.length < this.max_lines && time()-start < timeout) {
+    while(socket.is_connected) {
         if(js.terminated) {
             error = "Terminated locally";
             return false;
         }
-        if(!socket.poll(timeout))
+        if(lines.length >= this.max_lines) {
+            stopcause = "Max lines reached:" + this.max_lines;
             break;
+        }
+        if(time()-start >= timeout) {
+            stopcause = "Capture timeout reached: " + timeout + " seconds";
+            break;
+        }
+        if(!socket.poll(timeout)) {
+            stopcause = "Poll timeout reached: " + timeout + " seconds";
+            break;
+        }
         var byte = socket.recvBin(1);
         var char = ascii(byte);
         if(protocol=="telnet" && byte == telnet.IAC) {
@@ -114,6 +125,7 @@ function capture()
         }
         if(curline.length >= this.max_line_length) {
             log(LOG_DEBUG,"Stopping capture on line length of " + curline.length);
+            stopcause = "Max line length reached:" + this.max_line_length + " bytes";
             break; 
         }
         lastbyte=byte;
@@ -130,7 +142,7 @@ function capture()
             i++;
     }
 
-    return { preview: lines, hello: hello, ip_address: socket.remote_ip_address };
+    return { preview: lines, hello: hello, ip_address: socket.remote_ip_address, stopcause: stopcause };
 }
 
 /* Leave as last line for convenient load() usage: */
