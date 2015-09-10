@@ -30,10 +30,16 @@ writeln("<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>");
 writeln('<style media="screen" type="text/css">');
 writeln('body { font-family:arial, sans-serif; }');
 writeln('th { color:#FFFFFF; background-color:#000000;}');
-writeln('td { vertical-align:top; font-size:80%; }');
-writeln('tr { background-color:#eeeeee; }');
-writeln('pre { background-color:black; font-family:Courier,Prestige,monospace; font-size:5pt }');
+writeln('td { vertical-align:top; font-size:10pt; }');
+writeln('.row { background-color:#eeeeee; }');
+writeln('pre { cursor:zoom-in; color: #a8a8a8; background-color:black; font-family:Courier,Prestige,monospace; font-size:5pt }');
+writeln('.zoomedIn { font-size:large; cursor:zoom-out; }');
+writeln('.zoomedOut { font-size:5pt; z-index:1; cusor:zoom-in; }');
+writeln('.overlay { position:relative; left:0px; top:0px; width:100%; height;100%; z-index:100; background-color:rgba(0,0,0,0.5); }');
 writeln('</style>');
+writeln('<script>');
+writeln('function onClick(obj) { obj.className = (obj.className=="zoomedIn" ? "zoomedOut":"zoomedIn"); scrollBy(1000,0); }');
+writeln('</script>');
 writeln('<title>Synchronet BBS List</title>');
 writeln('</head>');
 
@@ -42,7 +48,7 @@ load("graphic.js");
 
 //writeln('<body><font face="Arial" size="-1">');
 
-list=list.filter(function(obj) { return obj.software.bbs.substr(0,10).toLowerCase() == "synchronet"; });
+list=list.filter(function(obj) { return obj.software && obj.software.bbs && obj.software.bbs.substr(0,10).toLowerCase() == "synchronet"; });
 
 
 writeln('<h1 style="text-align: center;"><i>' + 'Synchronet'.link('http://www.synchro.net') + ' BBS List</i></h1>');
@@ -105,7 +111,7 @@ function bbs_sysop(sysop)
     return(encode_text(sysop.name));
 }
 
-function bbs_preview(bbs)
+function bbs_preview(num, bbs)
 {
     /***
     var cap=[];
@@ -121,8 +127,18 @@ function bbs_preview(bbs)
 //    log(LOG_DEBUG,bbs.preview.join("\r\n"));
     var graphic=new Graphic();
     graphic.base64_decode(bbs.preview);
-    write('<pre>');
-    write(graphic.HTML.replace(/background-color: black;/g, ''));
+    write('<pre id="' + num + '" onclick="onClick(this)">'); // onmouseout="this.className=\'zoomOut\'">');
+	var html = graphic.HTML;
+	/* HTML Optimization: */
+	/* Remove black background color (black is the default */
+	html = html.replace(/background-color: black;/g, '');
+	/* Remove grey foreground color (grey is the default) */
+	html = html.replace(/\"color: #a8a8a8;/g, '"');
+	/* Remove empty style attributes */
+	html = html.replace(/\ style=\" \"/g, '');
+	/* Remoe empty span tags */
+	html = html.replace(/<span>([^<]*)<\/span>/g,'$1');
+	write(html);
     writeln('</pre>');
 }
 
@@ -133,36 +149,75 @@ function localDateStr(date)
 	return format("%u-%02u-%02u", date.getFullYear(), date.getMonth()+1, date.getDate());
 }
 
-function bbs_table_entry(bbs)
+function other_service(service, address)
+{
+    switch(service) {
+        case "ftp":
+        case "gopher":
+            return service.link(service + "://" + address);
+        case "nntp":
+            return service.link("news://" + address);
+    }
+    return service;
+}
+
+function bbs_table_entry(num, bbs)
 {
     var i;
 
+    writeln('<tr><td><table width=100%>');
     /* Name: */
-    writeln('<tr><td style="text-align:center;"><b>');
+    writeln('<tr class="row"><td style="text-align:center;"><b>');
     var uri = bbs.web_site;
-    if(uri.length) {
+    if(uri && uri.length) {
         if(uri.indexOf('://')<1)
             uri = "http://" + bbs.web_site;
         writeln(encode_text(bbs.name).link(encodeURI(uri)));
     } else
         writeln(encode_text(bbs.name));
     writeln('</b>');
+    writeln('<tr><td>' + encode_text(bbs.description.join("\r\n")));
+    writeln('</table>');
 
     /* Since: */
+    writeln('<td><table><tr class="row">');
     writeln('<td style="text-align:center;">');
     if(bbs.first_online)
         writeln(encode_text(bbs.first_online.substring(0,4)));
+    writeln('</table>');
 
     /* Operators: */
-    writeln('<td>');
-    for(i=0; i<bbs.sysop.length; i++)
-        writeln((i ? ', ':'') + bbs_sysop(bbs.sysop[i]));
-    writeln('<td>' + encode_text(bbs.location));
-    writeln('<td>');
-	writeln(bbs_service(bbs.service[0]));
+    writeln('<td><table width=100%>');
+    for(i in bbs.sysop)
+        writeln('<tr class="row"><td>' + bbs_sysop(bbs.sysop[i]));
+    if(!bbs.sysop.length)
+        writeln('<tr class="row"><td>');
+    writeln('</table>');
+
+    /* Location: */
+    writeln('<td><table width=100%>');
+    writeln('<tr class="row"><td>' + encode_text(bbs.location));
+    writeln('</table>');
+
+    /* Services */
+    writeln('<td><table width=100%>');
+    for(i=0; i<bbs.service.length; i++) {
+        if(i && JSON.stringify(bbs.service[i]).toLowerCase() == JSON.stringify(bbs.service[i-1]).toLowerCase())
+            continue;
+        writeln('<tr class="row"><td>' + bbs_service(bbs.service[i]));
+    }
+    writeln('</table>');
+
+    /* Networks */
+    writeln('<td><table width=100%>');
+    for(i in bbs.network)
+        writeln(format('<tr class="row"><td><div title="%s">', bbs.network[i].address) + encode_text(bbs.network[i].name) + '</div>');
+    if(!bbs.network.length)
+        writeln('<tr class="row"><td>');
+    writeln('</table>');
 
     /* Verification results */
-	writeln('<td>');
+    writeln('<td><table><tr class="row"><td>');
     if(bbs.entry.autoverify) {
         if(!bbs.entry.autoverify.success) {
             if(bbs.entry.autoverify.last_failure) {
@@ -171,28 +226,19 @@ function bbs_table_entry(bbs)
             } else
                 writeln("N/A");
         } else if(bbs.entry.autoverify.last_success) {
+            writeln(format("<div title='%s'>", bbs.entry.autoverify.last_success.ip_address));
             writeln(localDateStr(bbs.entry.autoverify.last_success.on));
             writeln(encode_text(bbs.entry.autoverify.last_success.result));
+            writeln("</div>");
         } else
             writeln("Success");
     } else
         writeln("No auto-verification possible");
 
-    writeln('<tr style="background-color:#ffffff;"><td>' + encode_text(bbs.description.join("\r\n")));
-    writeln('<td><td><td>');
-	var addl_services=[];
-    for(i=1; i<bbs.service.length; i++) {
-        if(i && JSON.stringify(bbs.service[i]).toLowerCase() == JSON.stringify(bbs.service[i-1]).toLowerCase())
-            continue;
-        addl_services.push(bbs.service[i]);
-    }
-    writeln('<td>'); // style="border-collapse: collapse;">');
-	if(addl_services.length) {
-        writeln('<table style="width:100%;">');
-        while(addl_services.length)
-            writeln('<tr><td style="font-size:100%;">' + bbs_service(addl_services.shift()));
-        writeln('</table>');
-    }
+//        writeln('<table style="width:100%;">');
+//        while(addl_services.length)
+//            writeln('<tr><td style="font-size:100%;">' + bbs_service(addl_services.shift()));
+//        writeln('</table>');
 
 
 //    if(bbs.service.length)
@@ -202,14 +248,26 @@ function bbs_table_entry(bbs)
 //    else
    
 	if(!bbs.entry.autoverify || !bbs.entry.autoverify.success) {
-        write('<td>');
+        write('<tr><td>');
 		if(bbs.entry.verified) 
 			writeln("Last verified on " + localDateStr(bbs.entry.verified.on) + " by " + encode_text(bbs.entry.verified.by));
 	}
-	else if(bbs.preview) {
-        write('<td>'); // style="text-align:left; border-collapse:collapse; border-style:none;">');
-        bbs_preview(bbs);
+	else {
+        if(bbs.preview) {
+            write('<tr><td>'); // style="border-style:outset;">');
+      //     	writeln('<div>'); // onclick="this.className=\'overlay\'">'); 
+			bbs_preview(num, bbs);
+	//		writeln('</div>');
+        }
+        if(bbs.entry.autoverify.last_success.other_services 
+            && bbs.entry.autoverify.last_success.other_services.tcp
+            && bbs.entry.autoverify.last_success.other_services.tcp.length) {
+            write('<tr><td>Also: ');
+            for(i in bbs.entry.autoverify.last_success.other_services.tcp)
+                writeln('[' + other_service(bbs.entry.autoverify.last_success.other_services.tcp[i], bbs.entry.autoverify.last_success.service.address) + ']');
+        }
     }
+    writeln('</table>');
 }
 
 /* GENERATE SUMMARY TABLE */
@@ -224,12 +282,13 @@ writeln('<th>Since</th>');
 writeln('<th>Operators</th>');
 writeln('<th>Location</th>');
 writeln('<th>Terminal Services</th>');
+writeln('<th>Networks</th>');
 writeln('<th style="width:1%;">Verification Results</th>');
 writeln('</thead>');
 writeln('<tbody>');
 var i;
 for(i in list)
-    bbs_table_entry(list[i]);
+    bbs_table_entry(i, list[i]);
 writeln('</tbody>');
 writeln('</table>');
 
