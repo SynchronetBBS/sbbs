@@ -11,6 +11,7 @@
 var REVISION = "$Revision$".split(' ')[1];
 var sbl_dir = "../xtrn/sbl/";
 
+load("sockdefs.js");
 load("portdefs.js");
 var options={sub:"syncdata"};
 opts=load(new Object, "modopts.js", "sbbslist");
@@ -20,7 +21,7 @@ if(this.opts && opts.sub)
 var lib = load(new Object, "sbbslist_lib.js");
 load("graphic.js");
 var capture = load(new Object, "termcapture_lib.js");
-capture.timeout=5;
+capture.timeout=15;
 
 // This date format is required for backwards compatibility with SMB2SBL
 function date_to_str(date)
@@ -40,7 +41,8 @@ function export_entry(bbs, msgbase)
 
     var body = "";      // This section for SMB2SBL compatibility
     body += "Name:          " + bbs.name + "\r\n";
-    body += "Birth:         " + date_to_str(new Date(bbs.first_online)) + "\r\n";
+	if(bbs.first_online)
+		body += "Birth:         " + date_to_str(new Date(bbs.first_online)) + "\r\n";
     if(bbs.software.bbs)
         body += "Software:      " + bbs.software.bbs + "\r\n";
     for(i in bbs.sysop) {
@@ -529,34 +531,71 @@ function verify_terminal_service(service)
     return capture.capture();
 }
 
-function other_services(address)
+// Perform a limited TCP port scan to test for common "other services" on standard ports
+// Results are used for instant message list and other stuff
+// Terminal services (e.g. telnet, rlogin, ssh) are purposely excluded
+function verify_services(address, timeout)
 {
     var i;
-    var services=[
+    var tcp_services=[
         "ftp", 
-        "finger", 
-        "smtp", 
-        "submission", 
-        "users", 
         "msp", 
         "nntp", 
-        "gopher", 
-        "qotd", 
-        "pop3", 
-        "imap",
+	"smtp",
+	"submission",
+	"pop3",
+	"imap",
     ];
-    var verified=[];
+    var udp_services=[
+        "finger",
+        "systat",
+    ];
 
-    for(i in services) {
+    var verified={ tcp: [], udp: []};
+
+    var udp_socket = new Socket(SOCK_DGRAM);
+
+    for(i in udp_services) {
+        var service = udp_services[i];
+        printf("Verifying %-10s UDP connection at %s\r\n", service, address);
+        if(!udp_socket.sendto("\r\n", address, standard_service_port[service]))
+            log(LOG_ERR,"FAILED Send to %s UDP service at %s", service, address);
+    }            
+
+    for(i in tcp_services) {
         if(js.terminated)
             break;
-        print(format("Verifying %-10s", services[i]) + " connection at " + address);
+        var service = tcp_services[i]
+        printf("Verifying %-10s TCP connection at %s ", service, address);
         var socket = new Socket();
-        if(socket.connect(address, standard_service_port[services[i]]), /* timeout: */1) {
-            verified.push(services[i]);
+        if(socket.connect(address, standard_service_port[service], timeout)) {
+            print("Succeeded");
+            verified.tcp.push(service);
             socket.close();
+        } else
+            print("Failed");
+    }
+    print("Waiting for UDP replies");
+    while(verified.udp.length < udp_services.length && udp_socket.poll(1)) {
+        if(js.terminated)
+            break;
+		var msg=udp_socket.recvfrom(32*1024);
+        if(msg==null)
+            log(LOG_ERR, "FAILED (UDP recv)");
+        else {
+            log(LOG_DEBUG, format("UDP message (%u bytes) from %s port %u", msg.data.length, msg.ip_address, msg.port));
+            if(msg.ip_address != address)
+                continue;
+            for(i in udp_services) {
+                var service = udp_services[i];
+                if(standard_service_port[service] == msg.port) {
+                    print("Valid UDP reply for " + service);
+                    verified.udp.push(service);
+                }
+            }
         }
     }
+    print(format("Successfully verified %u TCP services and %u UDP services", verified.tcp.length, verified.udp.length));
     return verified;
 }
 
@@ -565,6 +604,8 @@ function verify_bbs(bbs)
     var i;
     var error="N/A";
 
+	if(!bbs.entry.autoverify)
+		bbs.entry.autoverify = {attempts:0, successes:0};
     bbs.entry.autoverify.success=false;
     for(i in bbs.service) {
         if(js.terminated)
@@ -581,17 +622,20 @@ function verify_bbs(bbs)
             ip_address: result.ip_address,
         };
         if(result == false) {
+            print(capture.error);
             bbs.entry.autoverify.last_failure = failure;
         } else {
+            print(result.stopcause);
             if(result.hello.length && result.hello[0].indexOf("Synchronet BBS") == 0) {
                 bbs.entry.autoverify.success=true;
                 bbs.entry.autoverify.successes++;
                 bbs.entry.autoverify.last_success = {
                     on: new Date(),
                     result: result.hello[0],
+                    stopcause: result.stopcause,
                     service: bbs.service[i],
                     ip_address: result.ip_address,
-                    other_services: other_services(result.ip_address)
+                    other_services: verify_services(result.ip_address, 5)
                 };
                 bbs.entry.verified = { by: js.exec_file + " " + REVISION, on: new Date() };
                 graphic = new Graphic();
@@ -623,7 +667,14 @@ function verify_list(list)
             break;
     }
 }
-    
+
+function unique_strings(a, offset) {
+    var seen = {};
+    return a.filter(function(item) {
+        return seen.hasOwnProperty(item.substring(offset)) ? false : (seen[item.substring(offset)] = true);
+    });
+}
+
 function main()
 {
     var i,j;
@@ -639,7 +690,8 @@ function main()
     for(i in argv) {
         switch(argv[i]) {
             case "upgrade":
-                upgrade_list(sbl_dir + "sbl.dab");
+                list=upgrade_list(sbl_dir + "sbl.dab");
+                print(list.length + " BBS entries upgraded from " + sbl_dir + "sbl.dab");
                 break;
             case "import":
                 import_msgs = true;
@@ -663,7 +715,7 @@ function main()
     else
         list=lib.read_list();
 
-    if(argv.indexOf("-backup") >= 0)
+    if(argv.indexOf("backup") >= 0)
         file_backup(lib.list_fname);
 
     if(import_msgs || export_msgs) {
@@ -685,6 +737,39 @@ function main()
         list.sort(lib.compare);
     }
 
+    if(argv.indexOf("add") >= 0) {
+		if(lib.system_exists(list, system.name)) {
+			alert("System '" + system.name + "' already exists");
+			exit(-1);
+		}
+	    var bbs = lib.new_system(system.name, system.nodes, lib.system_stats());
+		bbs.sysop.push({ name: system.operator, email: 'sysop@'+system.inet_addr });
+		bbs.software = { bbs: "Synchronet " + system.version} ;
+		bbs.terminal.support.push("TTY", "ANSI");
+		while((str=prompt("Description"))) {
+			bbs.description.push(str);
+		}
+		bbs.service.push({ protocol: 'telnet', address: system.inet_addr, port: standard_service_port['telnet'] });
+		lib.add_system(list, bbs, system.operator);
+		lib.write_list(list);
+		print("System added successfully");
+    }
+
+	if(argv.indexOf("update") >= 0) {
+		var index = lib.system_index(list, system.name);
+		if(index < 0) {
+			alert("System '" + system.name + "' does not exist");
+			exit(-1);
+		}
+		var bbs=list[i];
+		bbs.software = { bbs: "Synchronet " + system.version} ;
+		bbs.total = lib.system_stats();
+		bbs.terminal.nodes = system.nodes;
+		lib.update_system(bbs, js.exec_file + " " + REVISION);
+		lib.write_list(list);
+		print("System updated successfully");
+	}
+    
     if(argv.indexOf("verify") >= 0) {
         verify_list(list);
         lib.write_list(list);
@@ -722,6 +807,31 @@ function main()
         load(f, "sbbslist_html.js", lib, list);
         f.close();
         print(list.length + " BBS entries exported to: " + f.name);
+    }
+
+    if(argv.indexOf("imsglist") >= 0) {
+        var ibbs = [];
+        for(i in list) {
+            var bbs = list[i];
+            if(!bbs.entry.autoverify.success)
+                continue;
+			if(!lib.imsg_capable_system(bbs))
+				continue;
+            ibbs.push(format("%-63s %s\t%s\t%s", 
+                bbs.entry.autoverify.last_success.service.address, 
+                bbs.entry.autoverify.last_success.ip_address,
+				bbs.entry.autoverify.last_success.other_services.udp.sort(),
+				bbs.entry.autoverify.last_success.other_services.tcp.sort()));
+        }
+        ibbs = unique_strings(ibbs, /* offset: */64);
+        var f = new File("sbbsimsg.lst");
+        if(!f.open("w")) {
+            log(LOG_ERR,"Error opening " + f.name);
+            exit();
+        }
+        f.writeAll(ibbs);
+        f.close();
+        print(ibbs.length + " BBS entries exported to: " + f.name);
     }
 
     if(argv.indexOf("show") >= 0) {
