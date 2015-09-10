@@ -24,16 +24,17 @@ function read_list()
         return null;
     }
 
-    var buf = f.readAll(8192).join(' ');
-    var list = [];
-    try {
-        list=JSON.parse(buf);
-    } catch(e) {
-        log(LOG_ERR, "SBBSLIST: JSON.parse exception: " + e);
-    }
-
+    var buf = f.read();
     f.close();
-
+	truncsp(buf);
+    var list = [];
+	if(buf.length) {
+		try {
+			list=JSON.parse(buf);
+		} catch(e) {
+			log(LOG_ERR, "SBBSLIST: JSON.parse exception: " + e);
+		}
+	}
     return list;
 }
 
@@ -67,6 +68,72 @@ function remove_dupes(list)
         }
 
     return new_list;
+}
+
+function imsg_capable_system(bbs)
+{
+	if(!bbs.entry.autoverify || !bbs.entry.autoverify.last_success)
+		return false;
+	var services = bbs.entry.autoverify.last_success.other_services;
+	if(services.udp.indexOf("finger")<0	&& services.udp.indexOf("systat")<0)
+		return false;
+	if(services.tcp.indexOf("msp")<0 && services.tcp.indexOf("smtp")<0 && services.tcp.indexOf("submission")<0)
+		return false;
+	return true;
+}
+
+function system_index(list, name)
+{
+    name = name.toLowerCase();
+    for(var i in list)
+        if(list[i].name.toLowerCase() == name)
+            return i;
+
+    return -1;
+}
+
+
+function system_exists(list, name)
+{
+    return system_index(list, name) >= 0;
+}
+
+function new_system(name, nodes, stats)
+{
+	return {
+		name: name, 
+		entry:{}, 
+		sysop:[], 
+		service:[], 
+		terminal:{ nodes: nodes, support: [] }, 
+		network:[], 
+		description:[], 
+		total: stats
+	};
+}
+
+function system_stats()
+{
+	return {
+		users: system.stats.total_users, 
+		subs: Object.keys(msg_area.sub).length, 
+		dirs: Object.keys(file_area.dir).length, 
+		xtrns: Object.keys(xtrn_area.prog).length, 
+		storage:disk_size(system.data_dir, 1024*1024)*1024*1024, 
+		msgs: system.stats.total_messages, 
+		files: system.stats.total_files
+	};
+}
+
+function add_system(list, bbs, by)
+{
+	bbs.entry.created = { by: by, on: new Date() };
+	list.push(bbs);
+}
+
+function update_system(bbs, by)
+{
+	bbs.entry.updated = { by: by, on: new Date() };
 }
 
 /* Leave as last line for convenient load() usage: */
