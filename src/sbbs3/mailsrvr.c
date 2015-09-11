@@ -4911,6 +4911,7 @@ static void cleanup(int code)
 		FREE_AND_NULL(mailproc_list);
 	}
 
+	/* Check a if(mail_set!=NULL) check be performed here? */
 	xpms_destroy(mail_set, mail_close_socket_cb, NULL);
 	mail_set=NULL;
 	terminated=TRUE;
@@ -5191,6 +5192,7 @@ void DLLCALL mail_server(void* arg)
 			cleanup(1);
 			return;
 		}
+		terminated=FALSE;
 		if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->smtp_port, "SMTP Server", mail_open_socket, startup->seteuid, "smtp"))
 			lprintf(LOG_INFO,"SMTP No extra interfaces listening");
 		lprintf(LOG_INFO,"SMTP Server listening");

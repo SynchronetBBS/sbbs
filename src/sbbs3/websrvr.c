@@ -5683,7 +5683,7 @@ static void cleanup(int code)
 		tls_context = -1;
 	}
 
-	if(!terminated) {
+	if(!terminated) {	/* Can this be changed to a if(ws_set!=NULL) check instead? */
 		xpms_destroy(ws_set, close_socket_cb, NULL);
 		ws_set=NULL;
 		terminated=TRUE;
@@ -6029,6 +6029,7 @@ void DLLCALL web_server(void* arg)
 			cleanup(1);
 			return;
 		}
+		terminated=FALSE;
 		lprintf(LOG_DEBUG,"Web Server socket set created");
 
 		/*
@@ -6069,6 +6070,7 @@ void DLLCALL web_server(void* arg)
     		startup->started(startup->cbdata);
 
 		lprintf(LOG_INFO,"Web Server thread started");
+		status("Listening");
 
 		while(!terminated && !terminate_server) {
 
