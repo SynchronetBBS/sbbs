@@ -1401,7 +1401,7 @@ static struct {
 	{ 8252	,NULL		}, /* double exclamation mark */
 	{ 182	,"para"		}, /* pilcrow sign */
 	{ 167	,"sect"		}, /* section sign */
-	{ 9604	,NULL		}, /* 0x2584 lower half block */
+	{ 9644	,NULL		}, /* 0x25AC black rectangle */
 	{ 8616	,NULL		}, /* up down arrow with base */
 	{ 8593	,"uarr"		}, /* upwards arrow */
 	{ 8595	,"darr"		}, /* downwards arrow */
