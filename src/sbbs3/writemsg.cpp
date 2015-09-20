@@ -392,6 +392,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 			free(buf);
 			return(false); 
 		}
+		if((mode&WM_FILE) && !checkfname(title)) {
+			free(buf);
+			bputs(text[BadFilename]);
+			return(false);
+		}
 		if(!(mode&(WM_EMAIL|WM_NETMAIL)) && cfg.sub[subnum]->misc&SUB_QNET
 			&& !SYSOP
 			&& (!stricmp(title,"DROP") || !stricmp(title,"ADD")
