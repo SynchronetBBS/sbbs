@@ -817,7 +817,7 @@ void sbbs_t::dirinfo(uint dirnum)
 /****************************************************************************/
 /* Searches the file <name>.can in the TEXT directory for matches			*/
 /* Returns TRUE if found in list, FALSE if not.								*/
-/* Displays bad<name>.can in text directory if found.						*/
+/* Displays bad<name>.msg in text directory if found.						*/
 /****************************************************************************/
 bool sbbs_t::trashcan(const char *insearchof, const char *name)
 {
