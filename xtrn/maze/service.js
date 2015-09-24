@@ -229,7 +229,7 @@ function init() {
 
 /* main loop */
 function main() {
-	while(!js.terminated && !parent_queue.poll()) {
+	while(client.socket.is_connected && !js.terminated && !parent_queue.poll()) {
 		if(client.socket.poll(.1))
 			client.cycle();
 		timer.cycle();
