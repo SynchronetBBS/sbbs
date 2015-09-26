@@ -78,7 +78,8 @@
 #define JAVASCRIPT_LOAD_PATH		"load"
 #define JAVASCRIPT_LOAD_PATH_LIST	"load_path_list"
 
-typedef struct {
+struct js_callback;
+typedef struct js_callback {
 	uint32_t		counter;
 	uint32_t		limit;
 	uint32_t		yield_interval;
@@ -86,6 +87,8 @@ typedef struct {
 	uint32_t		gc_attempts;
 	BOOL			auto_terminate;
 	volatile BOOL*	terminated;
+	BOOL			bg;
+	struct js_callback	*parent_cb;
 } js_callback_t;
 
 #define JSVAL_NULL_OR_VOID(val)		(JSVAL_IS_NULL(val) || JSVAL_IS_VOID(val))

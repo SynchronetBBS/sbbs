@@ -255,6 +255,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	jsval		val;
 	JSObject*	js_argv;
 	JSObject*	exec_obj;
+	JSObject*	js_internal;
 	JSContext*	exec_cx=cx;
 	JSBool		success;
 	JSBool		background=JS_FALSE;
@@ -291,6 +292,19 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		bg->cb.terminated=NULL;	/* could be bad pointer at any time */
 		bg->cb.counter=0;
 		bg->cb.gc_attempts=0;
+		bg->cb.bg = TRUE;
+
+		// Get the js.internal private data since it's the parents js_callback_t...
+		if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "js", &val) && !JSVAL_NULL_OR_VOID(val)) {
+			js_internal = JSVAL_TO_OBJECT(val);
+			bg->cb.parent_cb = (js_callback_t*)JS_GetPrivate(cx,js_internal);
+			if (bg->cb.parent_cb == NULL) {
+				lprintf(LOG_ERR, "!ERROR parent CB is NULL");
+			}
+		}
+		else {
+			lprintf(LOG_ERR, "!ERROR unabled to locate global js object");
+		}
 
 		if((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES, 1000, __FILE__, __LINE__))==NULL) {
 			free(bg);
