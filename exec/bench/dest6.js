@@ -371,7 +371,24 @@ if (test39.readValue() != "stop") {
 	exit();
 }
 
+var test_40_js = new File(system.temp_dir + "test_40.js");
+test_40_js.open("w+");
+test_40_js.writeln('js.auto_terminate=true; js.on_exit("log(\'Background autoterminate terminated\')"); while(1) { mswait(random(500)); } ; log("Infinite loop exited!");');
+test_40_js.close();
+for(i=0; i<20; i++)
+	var test_40 = load(true, system.temp_dir + "test_40.js");
+file_remove(system.temp_dir + "test_40.js");
+
+var test_41_js = new File(system.temp_dir + "test_41.js");
+test_41_js.open("w+");
+test_41_js.writeln('while(!js.terminated) { mswait(random(500)); } ; log("Background terminated was true!");');
+test_41_js.close();
+for(i=0; i<20; i++)
+	var test_41 = load(true, system.temp_dir + "test_41.js");
+file_remove(system.temp_dir + "test_41.js");
+js.terminated=true;
+mswait(3000);
+
 log("*** Everything appears to have passed. ***");
 
 exit();
-
