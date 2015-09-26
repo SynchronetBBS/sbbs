@@ -314,16 +314,33 @@ js_conio_init(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>0) {
 		JSVALUE_TO_STRBUF(cx, argv[0], mode, sizeof(mode), NULL);
-		if(!stricmp(mode,"STDIO"))
-			ciolib_mode=-1;
-		else if(!stricmp(mode,"AUTO"))
+		if(!stricmp(mode,"AUTO"))
 			ciolib_mode=CIOLIB_MODE_AUTO;
+		else if(!stricmp(mode,"STDIO"))
+			ciolib_mode=-1;
 		else if(!stricmp(mode,"X"))
 			ciolib_mode=CIOLIB_MODE_X;
 		else if(!stricmp(mode,"ANSI"))
 			ciolib_mode=CIOLIB_MODE_ANSI;
 		else if(!stricmp(mode,"CONIO"))
 			ciolib_mode=CIOLIB_MODE_CONIO;
+		else if(!stricmp(mode,"CONIO_FULLSCREEN"))
+			ciolib_mode=CIOLIB_MODE_CONIO_FULLSCREEN;
+		else if(!stricmp(mode,"CURSES"))
+			ciolib_mode=CIOLIB_MODE_CURSES;
+		else if(!stricmp(mode,"CURSES_IBM"))
+			ciolib_mode=CIOLIB_MODE_CURSES_IBM;
+		else if(!stricmp(mode,"SDL"))
+			ciolib_mode=CIOLIB_MODE_SDL;
+		else if(!stricmp(mode,"SDL_FULLSCREEN"))
+			ciolib_mode=CIOLIB_MODE_SDL_FULLSCREEN;
+		else if(!stricmp(mode,"SDL_YUV"))
+			ciolib_mode=CIOLIB_MODE_SDL_YUV;
+		else if(!stricmp(mode,"SDL_YUV_FULLSCREEN"))
+			ciolib_mode=CIOLIB_MODE_SDL_YUV_FULLSCREEN;
+		else
+			JS_ReportError(cx, "Unhandled ciolib mode \"%s\"", mode);
+			return JS_FALSE;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1005,120 +1022,145 @@ js_conio_ungetmouse(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_functions[] = {
 	{"init",			js_conio_init,			1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_BOOLEAN,JSDOCSTR("[mode]")
+		,JSDOCSTR("Initializes the conio library and creates a window if needed.  "
+				"Mode is a string with one of the following values:<br>"
+				"<table><tr><td>\"AUTO\" (default)</td><td>Automatically select the \"best\" output mode.</td></tr><tr><td>"
+				"<tr><td>\"ANSI\"</td><td>Use ANSI escape sequences directly</td></tr><tr><td>"
+				"<tr><td>\"STDIO\"</td><td>Use stdio, worst, but most compatible mode.</td></tr><tr><td>"
+				"<tr><td>\"X\"</td><td>Use X11 output *nix only)</td></tr><tr><td>"
+				"<tr><td>\"CONIO\"</td><td>Use the native conio library (Windows only)</td></tr><tr><td>"
+				"<tr><td>\"CONIO_FULLSCREEN\"</td><td>Use the native conio library and request full-screen (full-screen does not work on all versions of Windows) (Windows only)</td></tr><tr><td>"
+				"<tr><td>\"CURSES\"</td><td>Use the curses terminal library (*nix only)</td></tr><tr><td>"
+				"<tr><td>\"CURSES_IBM\"</td><td>Use the curses terminal library and write extended ASCII characters directly as-is, assuming the terminal is using CP437. (*nix only)</td></tr><tr><td>"
+				"<tr><td>\"SDL\"</td><td>Use the SDL library for output.</td></tr><tr><td>"
+				"<tr><td>\"SDL_FULLSCREEN\"</td><td>Use the SDL library for output (fullscreen).</td></tr><tr><td>"
+				"<tr><td>\"SDL_YUV\"</td><td>Use the SDL library for output using an overlay which allows hardware-based arbitrary scaling.</td></tr><tr><td>"
+				"<tr><td>\"SDL_YUV\"</td><td>Use the SDL library for output using an overlay which allows hardware-based arbitrary scaling (fullscreen).</td></tr><tr><td></table>"
+			),315
 	},
 	{"suspend",			js_conio_suspend,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("")
+		,JSDOCSTR("Suspends conio in CONIO or CURSES modes so the terminal can be used for other things."),315
 	},
 	{"clreol",			js_conio_clreol,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("")
+		,JSDOCSTR("Clear to end of line"),315
 	},
 	{"clrscr",			js_conio_clrscr,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("")
+		,JSDOCSTR("Clears the screen"),315
 	},
 	{"wscroll",			js_conio_wscroll,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("")
+		,JSDOCSTR("Scrolls the currently defined window up by one line."),315
 	},
 	{"delline",			js_conio_delline,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("")
+		,JSDOCSTR("Deletes the current line and moves lines below up by one line."),315
 	},
 	{"insline",			js_conio_insline,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("")
+		,JSDOCSTR("Inserts a new blank line on the current line and scrolls lines below down to make room."),315
 	},
 	{"normvideo",		js_conio_normvideo,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("")
+		,JSDOCSTR("Sets the current attribute to \"normal\" (light grey on black)"),315
 	},
 	{"getch",			js_conio_getch,			0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_NUMBER,JSDOCSTR("")
+		,JSDOCSTR("Waits for and returns a character from the user.  Extended keys are returned as two characters."),315
 	},
 	{"getche",			js_conio_getche,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_NUMBER,JSDOCSTR("")
+		,JSDOCSTR("Waits for a character from the user, then echos it.  Extended keys can not be returned and are lost."),315
 	},
 	{"beep",			js_conio_beep,			0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("")
+		,JSDOCSTR("Beeps."),315
 	},
 	{"getfont",			js_conio_getfont,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_NUMBER,JSDOCSTR("")
+		,JSDOCSTR("Returns the current font ID or -1 if fonts aren't supported."),315
 	},
 	{"hidemouse",		js_conio_hidemouse,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_NUMBER,JSDOCSTR("")
+		,JSDOCSTR("Hides the mouse cursor.  Returns -1 if it cannot be hidden."),315
 	},
 	{"showmouse",		js_conio_showmouse,		0
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_NUMBER,JSDOCSTR("")
+		,JSDOCSTR("Shows the mouse cursor.  Returns -1 if it cannot be shown."),315
 	},
 	{"setcursortype",	js_conio_setcursortype,	1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("type")
+		,JSDOCSTR("Sets the cursor type.  Legal values:<br>"
+			"<table><tr><td>0</td><td>No cursor</td></tr>"
+			"<tr><td>1</td><td>Solid cursor (fills whole cell)</td></tr>"
+			"<tr><td>2</td><td>Normal cursor</td></tr></table>"
+		),315
 	},
 	{"gotoxy",			js_conio_gotoxy,		2
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("x, y")
+		,JSDOCSTR("Moves the cursor to the given x/y position."),315
 	},
 	{"putch",			js_conio_putch,			1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_NUMBER,JSDOCSTR("charcode")
+		,JSDOCSTR("Puts the character with the specified ASCII character on the screen and advances the cursor.  Returns the character code passed in."),315
 	},
 	{"ungetch",			js_conio_ungetch,		1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_NUMBER,JSDOCSTR("charcode")
+		,JSDOCSTR("Pushes the specified charcode into the input buffer.  The next getch() call will get this character."),315
 	},
 	{"loadfont",		js_conio_loadfont,		1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("filename")
+		,JSDOCSTR("Loads the filename as the current font.  Returns -1 on failure."),315
 	},
 	{"settitle",		js_conio_settitle,		1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("title")
+		,JSDOCSTR("Sets the window title if possible."),315
 	},
 	{"setname",			js_conio_setname,		1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("name")
+		,JSDOCSTR("Sets the application name.  In some modes, this overwrites the window title."),315
 	},
 	{"cputs",			js_conio_cputs,			1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("string")
+		,JSDOCSTR("Outputs string to the console."),315
 	},
 	{"setfont",			js_conio_setfont,		2
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_NUMBER,JSDOCSTR("font [, force, fnum]")
+		,JSDOCSTR("Sets a current font to the specified font.  If force is set, will change video modes if the current one callot use the specified font.  fnum selects which current font to change:<br>"
+			"<table><tr><td>0</td><td>Default font</td></tr>"
+			"<tr><td>1</td><td>Main font</td></tr>"
+			"<tr><td>2</td><td>First alternate font</td></tr>"
+			"<tr><td>3</td><td>Second alternate font</td></tr>"
+			"<tr><td>4</td><td>Third alternate font</td></tr></table><br>"
+			"Returns -1 on failure"
+		),315
 	},
 	{"getpass",			js_conio_getpass,		1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_STRING,JSDOCSTR("prompt")
+		,JSDOCSTR("Prompts for a password, and waits for it to be entered.  Characters are not echoed to the screen."),315
 	},
 	{"window",			js_conio_window,		4
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("start_x, start_y, end_x, end_y")
+		,JSDOCSTR("Sets the current window."),315
 	},
 	{"cgets",			js_conio_cgets,			1
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("max_len")
+		,JSDOCSTR("Inputs a string, echoing as it's typed, with the specified max_len (up to 255)."),315
 	},
 	{"movetext",		js_conio_movetext,		6
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_VOID,JSDOCSTR("start_x, start_y, end_x, end_y, dest_x, dest_y")
+		,JSDOCSTR("Copies the specified screen contents to dest_x/dest_y."),315
 	},
 	{"puttext",			js_conio_puttext,		5
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_BOOLEAN,JSDOCSTR("start_x, start_y, end_x, end_y, bytes")
+		,JSDOCSTR("Puts the contents of the bytes array onto the screen filling the specified rectange.  The array is a sequences if integers between 0 and 255 specifying first the ascii character code, then the attribute for that character."),315
 	},
 	{"gettext",			js_conio_gettext,		4
-		,JSTYPE_VOID,JSDOCSTR("args")
-		,JSDOCSTR("desc"),315
+		,JSTYPE_ARRAY,JSDOCSTR("start_x, start_y, end_x, end_y")
+		,JSDOCSTR("Returns an array containing the characters and attributes for the specified rectangle."),315
 	},
 	{0}
 };
@@ -1164,6 +1206,36 @@ static JSClass js_conio_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
+#ifdef BUILD_JSDOCS
+static char* conio_prop_desc[] = {
+	"Allows windows to scroll",
+	"Enables direct video writes (does nothing)",
+	"Do not update the screen when characters are printed",
+	"Calling puttext() (and some other things implemended using it) can move the cursor position",
+	"The current video mode",
+	"",
+	"Delay in MS after getting an escape character before assuming it is not part of a sequence.  For curses and ANSI modes",
+	"Current text attribute",
+	"True if a keystroke is pending",
+	"Current x position on the screen",
+	"Current y position on the screen",
+	"Current text mode",
+	"Left column of current window",
+	"Top row of current window",
+	"Right column of current window",
+	"Bottom row of current window",
+	"Width of the screen",
+	"Height of the screen",
+	"Atrribute considered \"normal\"",
+	"Background colour",
+	"Foreground colour",
+	"Text in the clipboard",
+	"Current attribute is low intensity",
+	"Current attribute is high intensity",
+	NULL
+};
+#endif
+
 JSObject* js_CreateConioObject(JSContext* cx, JSObject* parent)
 {
 	JSObject*	obj;
@@ -1171,6 +1243,11 @@ JSObject* js_CreateConioObject(JSContext* cx, JSObject* parent)
 	if((obj = JS_DefineObject(cx, parent, "conio", &js_conio_class, NULL
 		,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 		return(NULL);
+
+#ifdef BUILD_JSDOCS
+	js_DescribeSyncObject(cx,obj,"CONIO Library Object",315);
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", conio_prop_desc, JSPROP_READONLY);
+#endif
 
 	return(obj);
 }
