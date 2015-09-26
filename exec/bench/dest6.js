@@ -371,21 +371,32 @@ if (test39.readValue() != "stop") {
 	exit();
 }
 
-var test_40_js = new File(system.temp_dir + "test_40.js");
-test_40_js.open("w+");
-test_40_js.writeln('js.auto_terminate=true; js.on_exit("log(\'Background autoterminate terminated\')"); while(1) { mswait(random(500)); } ; log("Infinite loop exited!");');
-test_40_js.close();
+/*
+ * These tests are for testing termination, so should be last.
+ */
+var test_997_js = new File(system.temp_dir + "test_997.js");
+test_997_js.open("w+");
+test_997_js.writeln('js.auto_terminate=false; js.on_exit("log(\'Background infinite loop exited\')"); while(1) { mswait(random(500)); } ; log("Background infinite loop exited!");');
+test_997_js.close();
 for(i=0; i<20; i++)
-	var test_40 = load(true, system.temp_dir + "test_40.js");
-file_remove(system.temp_dir + "test_40.js");
+	var test_997 = load(true, system.temp_dir + "test_997.js");
+file_remove(system.temp_dir + "test_997.js");
 
-var test_41_js = new File(system.temp_dir + "test_41.js");
-test_41_js.open("w+");
-test_41_js.writeln('while(!js.terminated) { mswait(random(500)); } ; log("Background terminated was true!");');
-test_41_js.close();
+var test_998_js = new File(system.temp_dir + "test_998.js");
+test_998_js.open("w+");
+test_998_js.writeln('js.auto_terminate=true; js.on_exit("log(\'Background autoterminate terminated\')"); while(1) { mswait(random(500)); } ; log("Infinite loop exited!");');
+test_998_js.close();
 for(i=0; i<20; i++)
-	var test_41 = load(true, system.temp_dir + "test_41.js");
-file_remove(system.temp_dir + "test_41.js");
+	var test_998 = load(true, system.temp_dir + "test_998.js");
+file_remove(system.temp_dir + "test_998.js");
+
+var test_999_js = new File(system.temp_dir + "test_999.js");
+test_999_js.open("w+");
+test_999_js.writeln('while(!js.terminated) { mswait(random(500)); } ; log("Background terminated was true!");');
+test_999_js.close();
+for(i=0; i<20; i++)
+	var test_999 = load(true, system.temp_dir + "test_999.js");
+file_remove(system.temp_dir + "test_999.js");
 js.terminated=true;
 mswait(3000);
 
