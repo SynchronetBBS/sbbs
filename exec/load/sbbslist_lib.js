@@ -8,11 +8,73 @@ var list_fname = system.data_dir + 'sbbslist.json';
 
 var sort_property = 'name';
 
+// These max lengths are derived from the bbs_t structure definition in xtrn/sbl/sbldefs.h:
+const max_len = {
+	name:				25,
+	location:			30,
+	sysop_name:			25,
+	service_address:	28,
+	bbs_softwarwe:		15,
+	since:				4,		/* just the year portion of the first_online date */
+	web_site:			60,
+	networks:			60,
+};
+
 function compare(a, b)
 {
-	if(a[sort_property].toLowerCase()>b[sort_property].toLowerCase()) return 1; 
-	if(a[sort_property].toLowerCase()<b[sort_property].toLowerCase()) return -1;
+	var val1="";
+	var val2="";
+
+	val1 = property_value(a, sort_property);
+	val2 = property_value(b, sort_property);
+
+	if(typeof(val1) == "string")
+		val1=val1.toLowerCase();
+	if(typeof(val2) == "string")
+		val2=val2.toLowerCase();
+
+	if(val1>val2) return 1;
+	if(val1<val2) return -1;
 	return 0;
+}
+
+/* Some properties are nested within arrays of objects, lets simplify those properties here */
+function property_value(bbs, property)
+{
+	var value="";
+
+	switch(property) {
+		case "service_address":
+			if(bbs.service && bbs.service.length)
+				value = bbs.service[0].address;
+			break;
+		case "sysop_name":
+			if(bbs.sysop && bbs.sysop.length)
+				value = bbs.sysop[0].name;
+			break;
+		case "since":
+			if(bbs.first_online)
+				value = bbs.first_online.substring(0,4);
+			break;
+		case "description":
+			value = bbs.description.join(" ");
+			break;
+		case "bbs_software":
+			if(bbs.software && bbs.software.bbs)
+				value = bbs.software.bbs;
+			break;
+		case "networks":
+			if(bbs.network && bbs.network.length) {
+				for(var i in bbs.network)
+					value += bbs.network[i];
+			}
+			break;
+		default:
+			if(bbs[property])
+				value = bbs[property];
+			break;
+	}
+	return value;
 }
 
 function read_list()
