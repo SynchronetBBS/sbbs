@@ -31,14 +31,24 @@ writeln('<style media="screen" type="text/css">');
 writeln('body { font-family:arial, sans-serif; }');
 writeln('th { color:#FFFFFF; background-color:#000000;}');
 writeln('td { vertical-align:top; font-size:10pt; }');
+writeln('table { width:100%; }');
+writeln('a:link { text-decoration:none; font-weight:bold; }');
+writeln('a:visited { text-decoration:none; }');
+writeln('a:hover { text-decoration:underline; }');
+writeln('a:active { text-decoration:underline; }');
 writeln('.row { background-color:#eeeeee; }');
+writeln('.bbsName { text-align:center; font-weight:bold; font-size:larger; }');
 writeln('pre { cursor:zoom-in; color: #a8a8a8; background-color:black; font-family:Courier,Prestige,monospace; font-size:5pt }');
 writeln('.zoomedIn { font-size:large; cursor:zoom-out; }');
-writeln('.zoomedOut { font-size:5pt; z-index:1; cusor:zoom-in; }');
-writeln('.overlay { position:relative; left:0px; top:0px; width:100%; height;100%; z-index:100; background-color:rgba(0,0,0,0.5); }');
+writeln('.zoomedOut { font-size:5pt; cusor:zoom-in; }');
+//writeln('.overlay { position:relative; left:0px; top:0px; width:100%; height;100%; background-color:rgba(0,0,0,0.5); }');
 writeln('</style>');
 writeln('<script>');
-writeln('function onClick(obj) { obj.className = (obj.className=="zoomedIn" ? "zoomedOut":"zoomedIn"); scrollBy(1000,0); }');
+writeln('function onClick(obj) {');
+	writeln('if(obj.className=="zoomedIn") obj.className="zoomedOut", obj.title="Click to Zoom-In";');
+	writeln('else obj.className="zoomedIn", obj.title="Click to Zoom-Out";');
+	writeln('scrollBy(1000,0);');
+writeln('}');
 writeln('</script>');
 writeln('<title>Synchronet BBS List</title>');
 writeln('</head>');
@@ -127,7 +137,7 @@ function bbs_preview(num, bbs)
 //    log(LOG_DEBUG,bbs.preview.join("\r\n"));
     var graphic=new Graphic();
     graphic.base64_decode(bbs.preview);
-    write('<pre id="' + num + '" onclick="onClick(this)">'); // onmouseout="this.className=\'zoomOut\'">');
+    write('<pre title="Click to Zoom-In" onclick="onClick(this)">'); // onmouseout="this.className=\'zoomOut\'">');
 	var html = graphic.HTML;
 	/* HTML Optimization: */
 	/* Remove black background color (black is the default */
@@ -165,9 +175,9 @@ function bbs_table_entry(num, bbs)
 {
     var i;
 
-    writeln('<tr><td><table width=100%>');
+    writeln('<tr><td><table>');
     /* Name: */
-    writeln('<tr class="row"><td style="text-align:center;"><b>');
+    writeln('<tr class="row"><td class="bbsName">');
     var uri = bbs.web_site;
     if(uri && uri.length) {
         if(uri.indexOf('://')<1)
@@ -180,14 +190,14 @@ function bbs_table_entry(num, bbs)
     writeln('</table>');
 
     /* Since: */
-    writeln('<td><table><tr class="row">');
+    writeln('<td ><table><tr class="row">');
     writeln('<td style="text-align:center;">');
     if(bbs.first_online)
         writeln(encode_text(bbs.first_online.substring(0,4)));
     writeln('</table>');
 
     /* Operators: */
-    writeln('<td><table width=100%>');
+    writeln('<td><table>');
     for(i in bbs.sysop)
         writeln('<tr class="row"><td>' + bbs_sysop(bbs.sysop[i]));
     if(!bbs.sysop.length)
@@ -195,12 +205,12 @@ function bbs_table_entry(num, bbs)
     writeln('</table>');
 
     /* Location: */
-    writeln('<td><table width=100%>');
+    writeln('<td><table>');
     writeln('<tr class="row"><td>' + encode_text(bbs.location));
     writeln('</table>');
 
     /* Services */
-    writeln('<td><table width=100%>');
+    writeln('<td><table>');
     for(i=0; i<bbs.service.length; i++) {
         if(i && JSON.stringify(bbs.service[i]).toLowerCase() == JSON.stringify(bbs.service[i-1]).toLowerCase())
             continue;
@@ -209,9 +219,16 @@ function bbs_table_entry(num, bbs)
     writeln('</table>');
 
     /* Networks */
-    writeln('<td><table width=100%>');
-    for(i in bbs.network)
-        writeln(format('<tr class="row"><td><div title="%s">', bbs.network[i].address) + encode_text(bbs.network[i].name) + '</div>');
+    writeln('<td><table>');
+    for(i in bbs.network) {
+        writeln('<tr class="row"><td>');
+		if(bbs.network[i].address && bbs.network[i].address.length)
+			writeln(format('<div title="%s address: %s">'
+				,encode_text(bbs.network[i].name), encode_text(bbs.network[i].address)));
+		else
+			writeln('<div>');
+		writeln(encode_text(bbs.network[i].name) + '</div>');
+	}
     if(!bbs.network.length)
         writeln('<tr class="row"><td>');
     writeln('</table>');
@@ -226,7 +243,7 @@ function bbs_table_entry(num, bbs)
             } else
                 writeln("N/A");
         } else if(bbs.entry.autoverify.last_success) {
-            writeln(format("<div title='%s'>", bbs.entry.autoverify.last_success.ip_address));
+            writeln(format("<div title='IP address: %s'>", bbs.entry.autoverify.last_success.ip_address));
             writeln(localDateStr(bbs.entry.autoverify.last_success.on));
             writeln(encode_text(bbs.entry.autoverify.last_success.result));
             writeln("</div>");
@@ -271,7 +288,7 @@ function bbs_table_entry(num, bbs)
 }
 
 /* GENERATE SUMMARY TABLE */
-writeln('<table style="width:100%;">');
+writeln('<table>');
 writeln('<caption>');
 writeln(format("List of Synchronet BBSes (%u systems) exported from ", list.length) + system.name.link("http://" + system.inet_addr) + " on " + Date());
 writeln('<p></caption>');
