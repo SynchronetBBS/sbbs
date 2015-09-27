@@ -9,8 +9,10 @@
 // sbbslist[.exe]   - Exports BBS entries to HTML and various plain-text formats (e.g. sbbs.lst, sbbsimsg.lst, syncterm.lst)
 
 var REVISION = "$Revision$".split(' ')[1];
+var version_notice = "Synchronet BBS List v4." + REVISION;
 var sbl_dir = "../xtrn/sbl/";
 
+load("sbbsdefs.js");
 load("sockdefs.js");
 load("portdefs.js");
 var options={sub:"syncdata"};
@@ -666,13 +668,238 @@ function verify_list(list)
         if(js.terminated)
             break;
     }
+
+	list.sort(verify_compare);
 }
 
-function unique_strings(a, offset) {
+function verify_compare(a, b)
+{
+	var diff;
+	
+	if(a.entry.verified && b.entry.verified)
+		diff = new Date(b.entry.verified.on.substr(0,10)).getTime() - new Date(a.entry.verified.on.substr(0,10)).getTime();
+
+	if(diff) return diff;
+
+	if(a.entry.autoverify && b.entry.autoverify) {
+		diff = b.entry.autoverify.successes - a.entry.autoverify.successes;
+
+		if(diff) return diff;
+
+		diff = a.entry.autoverify.attempts - b.entry.autoverify.attempts;
+	}
+
+	return diff;
+}
+
+function unique_strings(a, offset)
+{
     var seen = {};
     return a.filter(function(item) {
         return seen.hasOwnProperty(item.substring(offset)) ? false : (seen[item.substring(offset)] = true);
     });
+}
+
+function console_color(arg, selected)
+{
+	if(selected)
+		arg |= BG_BLUE;
+	if(js.global.console != undefined)
+		console.attributes = arg;
+}
+
+function list_bbs_entry(bbs, selected, prop1, prop2)
+{
+	var sysop="";
+	console_color(WHITE, selected);
+	printf("%-*s ", lib.max_len.name, bbs.name);
+	if(!js.global.console || console.screen_columns >= 80) {
+		if(prop1) {
+			var len = Math.max(prop1.length, lib.max_len[prop1]);
+			console_color(LIGHTMAGENTA, selected);
+			printf("%-*s", len, lib.property_value(bbs, prop1));
+		}
+		if(prop2 && lib.property_value(bbs, prop2)) {
+			console_color(YELLOW, selected);
+			printf("%*.*s"
+				,console.screen_columns - console.current_column -1
+				,console.screen_columns - console.current_column -1
+				,lib.property_value(bbs, prop2));
+		}
+	}
+}
+
+function browse(list)
+{
+	var top=0;
+	var current=0;
+	var pagesize=console.screen_rows-3;
+	var find;
+	var orglist=list.slice();
+	var prop1 = "sysop_name", prop2 = "service_address";
+
+	if(!js.global.console) {
+		alert("This feature requires the Synchronet terminal server (and console object)");
+		return false;
+	}
+	console.line_counter = 0;
+	console.clear(LIGHTGRAY);
+	while(!js.terminated) {
+		console.home();
+		console.attributes = BLACK | BG_LIGHTGRAY;
+		console.write(version_notice);
+		if(console.screen_columns >= 80)
+			console.write(format("%*s[%u BBS entries]", console.screen_columns-48, "", list.length));
+		console.cleartoeol();
+		console.crlf();
+		printf("%-*s ", lib.max_len.name, "name");
+		printf("%-*s", lib.max_len[prop1], prop1);
+		printf("%*s", console.screen_columns - console.current_column-1, prop2);
+		console.cleartoeol();
+		console.crlf();
+
+		log(LOG_DEBUG,"before current=" + current + " top=" + top + " pagesize=" + pagesize);
+		/* Bounds checking: */
+		if(current < 0) {
+			console.beep();
+			current = 0;
+		} else if(current >= list.length) {
+			console.beep();
+			current = list.length-1;
+		}
+		if(top > current)
+			top = current;
+		else if(top < 0)
+			top = 0;
+		if(top && top+pagesize > list.length)
+			top = list.length-pagesize;
+		if(top + pagesize  <= current)
+			top = (current+1) - pagesize;
+		log(LOG_DEBUG,"after current=" + current + " top=" + top + " pagesize=" + pagesize);
+		for(var i=top; i-top < pagesize; i++) {
+			console.line_counter = 0;
+			if(list[i]) {
+				list_bbs_entry(list[i], i==current, prop1, prop2);	
+				console.cleartoeol(i==current ? BG_BLUE : LIGHTGRAY);
+			} else
+				console.clearline(LIGHTGRAY);
+			console.crlf();
+		}
+
+		console.attributes=LIGHTGRAY;
+		console.mnemonics("~Up, ~Down, ~Next, ~Prev, ~Sort, ~Find, Format(~1-~9), ~Quit or [~View]: ");
+		var key = console.getkey(K_UPPER);
+		switch(key) {
+			case 'V':
+			case '\r':
+				view(list[current]);
+				continue;
+			case 'Q':
+				return;
+			case KEY_HOME:
+				current=top=0;
+				continue;
+			case KEY_END:
+				current=list.length-1;
+				continue;
+			case KEY_UP:
+			case 'U':
+				current--;
+				break;
+			case KEY_DOWN:
+			case 'D':
+				current++;
+				break;
+			case 'N':
+				current += pagesize;
+				top += pagesize;
+				break;
+			case 'P':
+				current -= pagesize;
+				top -= pagesize;
+				break;
+			case 'F':
+				list = orglist;
+				console.clearline();
+				console.print("\1n\1y\1hFind: ");
+				find=console.getstr(60,K_LINE|K_UPPER|K_NOCRLF);
+				console.clearline(LIGHTGRAY);
+				if(find && find.length) {
+					var new_list=[];
+					for(var i in list)
+						if(JSON.stringify(list[i]).toUpperCase().indexOf(find) >= 0)
+							new_list.push(list[i]);
+					list = new_list;
+				}
+				break;
+			case 'S':
+				console.clearline();
+				console.print("\1n\1y\1hSort: ");
+				console.mnemonics("~Name, ~Sysop, ~Address, ~Location, or [None]: ");
+				switch(console.getkey(K_UPPER)) {
+					case 'N':
+						lib.sort_property = "name";
+						list.sort(lib.compare);
+						break;
+					case 'S':
+						lib.sort_property = "sysop_name";
+						list.sort(lib.compare);
+						break;
+					case 'A':
+						lib.sort_property = "service_address";
+						list.sort(lib.compare);
+					default:
+						list = orglist;
+						break;
+				}
+				break;
+			case '1':
+				prop1="sysop_name";
+				prop2="service_address";
+				break;
+			case '2':
+				prop1="sysop_name";
+				prop2="location";
+				break;
+			case '3':
+				prop1="since";
+				prop2="description";
+				break;
+			case '4':
+				prop1="bbs_software";
+				prop2="web_site";
+				break;
+			case '5':
+				prop1=undefined;
+				prop2="networks";
+				break;
+		}
+	}
+}
+
+function view(bbs)
+{
+	console.line_counter = 0;
+	console.clear(LIGHTGRAY);
+	while(!js.terminated) {
+		console.home();
+		console.attributes = BLACK | BG_LIGHTGRAY;
+		console.write(version_notice);
+		console.cleartoeol();
+		console.crlf();
+
+		printf("\1n\1gBBS Name: \1h%s", bbs.name);
+		if(bbs.first_online)
+			printf("\1n\1g since \1h%s", bbs.first_online.substring(0,4));
+		console.crlf();
+
+		console.mnemonics("~Edit, ~Verify, ~Delete or ~Quit");
+		var key = console.getkey(K_UPPER);
+		switch(key) {
+			case 'Q':
+				return;
+		}
+	}
 }
 
 function main()
@@ -685,7 +912,7 @@ function main()
     var verbose = 0;
     var msgbase;
 
-    print("Synchronet BBS List v4 Rev " + REVISION);
+    print(version_notice);
 
     for(i in argv) {
         switch(argv[i]) {
@@ -843,12 +1070,23 @@ function main()
             }
             printf("%-25s %-25s %-25s", list[i].name, list[i].entry.created.by, list[i].sysop[0] ? list[i].sysop[0].name: '');
             if(list[i].entry.updated)
-                print(new Date(list[i].entry.updated.on).toISOString());
+                print(new Date(list[i].entry.updated.on.substr(0,10)).toISOString());
             else
                 print();
         }
         print(list.length + " BBS entries");
     }
+
+	if(argv.indexOf("list") >= 0) {
+		for(i in list) {
+			list_bbs_entry(list[i]);
+			writeln();
+		}
+	}
+
+	if(argv.indexOf("browse") >= 0) {
+		browse(list);
+	}
 }
 
 main();
