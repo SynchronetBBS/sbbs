@@ -988,16 +988,18 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
     JSString *	str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
-    char 		*prompt;
+    char*		prompt=NULL;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	JSVALUE_TO_MSTRING(cx, argv[0], prompt, NULL);
-	if(prompt==NULL)
-	    return(JS_FALSE);
+	if(argc) {
+		JSVALUE_TO_MSTRING(cx, argv[0], prompt, NULL);
+		if(prompt==NULL)
+			return(JS_FALSE);
+	}
 
 	if(argc>1) {
 		JSVALUE_TO_STRBUF(cx, argv[1], instr, sizeof(instr), NULL);
@@ -1005,8 +1007,10 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		instr[0]=0;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->bprintf("\1n\1y\1h%s\1w: ",prompt);
-	free(prompt);
+	if(prompt != NULL) {
+		sbbs->bprintf("\1n\1y\1h%s\1w: ",prompt);
+		free(prompt);
+	}
 
 	if(!sbbs->getstr(instr,sizeof(instr)-1,K_EDIT)) {
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
