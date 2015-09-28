@@ -1211,7 +1211,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 	}
 
 	if (j<0) {
-		strcmp(entry, "<error>");
+		strcpy(entry, "<error>");
 		j=strlen(entry);
 	}
 
