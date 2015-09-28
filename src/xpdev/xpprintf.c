@@ -48,17 +48,21 @@
 int asprintf(char **strptr, char *format, ...)
 {
 	va_list	va;
+	va_list	va2;
 	int		ret;
 
 	if (strptr == NULL)
 		return -1;
 	va_start(va, format);
+	va_copy(va2, va);
 	ret = _vscprintf(format, va);
 	*strptr = (char *)malloc(ret+1);
 	if (*strptr == NULL)
 		return -1;
-	ret = sprintf(*strptr, format, va);
+	ret = vsprintf(*strptr, format, va2);
 	va_end(va);
+	va_end(va2);
+	return ret;
 }
 #endif
 
