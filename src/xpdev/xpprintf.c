@@ -66,12 +66,6 @@ int asprintf(char **strptr, char *format, ...)
 }
 #endif
 
-/* MSVC Sucks - can't tell the required len of a *printf() */
-#define MAX_ARG_LEN		1024			/* MAX_ARG_LEN is the maximum length
-										 * possible as a result of a format
-										 * which is not %s
-										 */
-
 /* Maximum length of a format specifier including the % */
 #define MAX_FORMAT_LEN	256
 
@@ -329,7 +323,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 	unsigned long	offset2=0;
 	size_t			format_len;
 	size_t			this_format_len;
-	char			entry_buf[MAX_ARG_LEN];
+	char			int_buf[MAX_FORMAT_LEN];
 	char			*entry;
 	char			this_format[MAX_FORMAT_LEN];
 	char			*fmt;
@@ -388,7 +382,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 	 */
 	if(*p=='*') {		/* The argument is this width */
 		va_start(vars, type);
-		i=sprintf(entry_buf,"%d", va_arg(vars, int));
+		i=sprintf(int_buf,"%d", va_arg(vars, int));
 		va_end(vars);
 		if(i > 1) {
 			/*
@@ -406,11 +400,11 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 			 * is so it can be overwritten
 			 */
 			memmove(p+i, p+1, format-p+format_len);
-			memcpy(p, entry_buf, i);
+			memcpy(p, int_buf, i);
 			*(size_t *)(format+sizeof(size_t))+=i-1;
 		}
 		else
-			*p=entry_buf[0];
+			*p=int_buf[0];
 		p=format+offset;
 		*(size_t *)format=p-format;
 		return(format);
@@ -429,7 +423,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 		 */
 		if(*p=='*') {
 			va_start(vars, type);
-			i=sprintf(entry_buf,"%d", va_arg(vars, int));
+			i=sprintf(int_buf,"%d", va_arg(vars, int));
 			va_end(vars);
 			if(i > 1) {
 				/*
@@ -447,11 +441,11 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 				 * is so it can be overwritten
 				 */
 				memmove(p+i, p+1, format-p+format_len);
-				memcpy(p, entry_buf, i);
+				memcpy(p, int_buf, i);
 				*(size_t *)(format+sizeof(size_t))+=i-1;
 			}
 			else
-				*p=entry_buf[0];
+				*p=int_buf[0];
 			p=format+offset;
 			*(size_t *)format=p-format;
 			return(format);
@@ -1205,18 +1199,8 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 		case XP_PRINTF_TYPE_CHARP:
 			if(cp==NULL)
 				j=asprintf(&entry, this_format, "<null>");
-			else {
-				/*s=strlen(cp);
-				if(s<width)
-					s=width;
-				if(s<precision)
-					s=precision;
-				if(s>=MAX_ARG_LEN)
-					entry=(char *)alloca(s+1);
-				if(entry==NULL)
-					return(NULL);*/
+			else
 				j=asprintf(&entry, this_format, cp);
-			}
 			break;
 		case XP_PRINTF_TYPE_DOUBLE:
 			j=asprintf(&entry, this_format, d);
