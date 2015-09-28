@@ -1210,6 +1210,11 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 			break;
 	}
 
+	if (j<0) {
+		strcmp(entry, "<error>");
+		j=strlen(entry);
+	}
+
 	this_format_len=strlen(this_format);
 	if(j>=0) {
 		/*
