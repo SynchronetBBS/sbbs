@@ -1244,37 +1244,6 @@ ulong DLLCALL iniGetLongInt(str_list_t list, const char* section, const char* ke
 	return(parseLongInteger(vp));
 }
 
-static int64_t parseBytes(const char* value, ulong unit)
-{
-	char*	p=NULL;
-	double	bytes;
-
-	bytes=strtod(value,&p);
-	if(p!=NULL) {
-		switch(toupper(*p)) {
-			case 'E':
-				bytes*=1024;
-				/* fall-through */
-			case 'P':
-				bytes*=1024;
-				/* fall-through */
-			case 'T':
-				bytes*=1024;
-				/* fall-through */
-			case 'G':
-				bytes*=1024;
-				/* fall-through */
-			case 'M':
-				bytes*=1024;
-				/* fall-through */
-			case 'K':
-				bytes*=1024;
-				break;
-		}
-	}
-	return((int64_t)(unit>1 ? (bytes/unit):bytes));
-}
-
 int64_t DLLCALL iniReadBytes(FILE* fp, const char* section, const char* key, ulong unit, int64_t deflt)
 {
 	char*	value;
@@ -1286,7 +1255,7 @@ int64_t DLLCALL iniReadBytes(FILE* fp, const char* section, const char* key, ulo
 	if(*value==0)		/* blank value */
 		return(deflt);
 
-	return(parseBytes(value,unit));
+	return(parse_byte_count(value,unit));
 }
 
 int64_t DLLCALL iniGetBytes(str_list_t list, const char* section, const char* key, ulong unit, int64_t deflt)
@@ -1298,7 +1267,7 @@ int64_t DLLCALL iniGetBytes(str_list_t list, const char* section, const char* ke
 	if(vp==NULL || *vp==0)	/* blank value or missing key */
 		return(deflt);
 
-	return(parseBytes(vp,unit));
+	return(parse_byte_count(vp,unit));
 }
 
 #if !defined(NO_SOCKET_SUPPORT)

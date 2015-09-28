@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -366,6 +366,9 @@ DLLEXPORT char*		DLLCALL c_escape_char(char ch);
 DLLEXPORT char*		DLLCALL c_unescape_str(char* str);
 DLLEXPORT char		DLLCALL c_unescape_char_ptr(const char* str, char** endptr);
 DLLEXPORT char		DLLCALL c_unescape_char(char ch);
+
+/* Power-of-2 byte count string parser (e.g. "100K" returns 102400 if unit is 1) */
+DLLEXPORT int64_t	DLLCALL	parse_byte_count(const char*, ulong unit);
 
 /* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
 typedef		clock_t				msclock_t;
