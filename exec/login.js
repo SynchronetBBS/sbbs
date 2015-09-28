@@ -6,6 +6,7 @@
 
 load("sbbsdefs.js");
 
+var options;
 if((options=load("modopts.js","login")) == null)
 	options={email_passwords: true};
 

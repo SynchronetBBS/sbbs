@@ -7,6 +7,7 @@
 // @format.tab-size 8, @format.use-tabs true
 
 load("sbbsdefs.js");
+var options;
 options=load("modopts.js","newuser");
 
 qnet=false;
