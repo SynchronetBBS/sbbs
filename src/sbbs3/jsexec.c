@@ -314,13 +314,13 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		rc=JS_SUSPENDREQUEST(cx);
 		lprintf(level,"%s",logstr);
 		JS_RESUMEREQUEST(cx, rc);
+		FREE_AND_NULL(logstr);
 	}
 
-	if(logstr==NULL)
+	if(str==NULL)
 		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	else
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
-	free(logstr);
 
     return(JS_TRUE);
 }
@@ -397,13 +397,14 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
     for (i = 0; i < argc; i++) {
-		if((str=JS_ValueToString(cx, argv[0]))==NULL)
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
 		JSSTRING_TO_RASTRING(cx, str, line, &line_sz, NULL);
 		if(line==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
 		fprintf(confp,"%s",line);
+		FREE_AND_NULL(line);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
@@ -411,8 +412,6 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	else
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
-	if(line)
-		free(line);
     return(JS_TRUE);
 }
 
