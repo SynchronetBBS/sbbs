@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1111,7 +1111,7 @@ int main(int argc, char **argv, char** environ)
 					break;
 				case 'm':
 					if(*p==0) p=argv[++argn];
-					js_max_bytes=strtoul(p,NULL,0);
+					js_max_bytes=parse_byte_count(p, /* units: */1);
 					break;
 				case 'n':
 					statfp=nulfp;
@@ -1131,7 +1131,7 @@ int main(int argc, char **argv, char** environ)
 					break;
 				case 's':
 					if(*p==0) p=argv[++argn];
-					js_cx_stack=strtoul(p,NULL,0);
+					js_cx_stack=parse_byte_count(p, /* units: */1);
 					break;
 				case 't':
 					if(*p==0) p=argv[++argn];
