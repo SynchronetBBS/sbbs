@@ -79,6 +79,8 @@ DLLEXPORT char* DLLCALL xp_asprintf_end(char *format, size_t *endlen);
 DLLEXPORT char* DLLCALL xp_asprintf(const char *format, ...);
 DLLEXPORT char* DLLCALL xp_vasprintf(const char *format, va_list va);
 DLLEXPORT int DLLCALL xp_printf_get_type(const char *format);
+DLLEXPORT int DLLCALL vasprintf(char **strptr, char *format, va_list va);
+DLLEXPORT int DLLCALL asprintf(char **strptr, char *format, ...);
 #if defined(__cplusplus)
 }
 #endif
