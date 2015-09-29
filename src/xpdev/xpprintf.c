@@ -409,7 +409,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 			 * Move trailing end to make space... leaving the * where it
 			 * is so it can be overwritten
 			 */
-			memmove(p+i, p+1, format-p+format_len);
+			memmove(p+i, p+1, format-p+format_len-1);
 			memcpy(p, int_buf, i);
 			*(size_t *)(format+sizeof(size_t))+=i-1;
 		}
@@ -450,7 +450,7 @@ char* DLLCALL xp_asprintf_next(char *format, int type, ...)
 				 * Move trailing end to make space... leaving the * where it
 				 * is so it can be overwritten
 				 */
-				memmove(p+i, p+1, format-p+format_len);
+				memmove(p+i, p+1, format-p+format_len-1);
 				memcpy(p, int_buf, i);
 				*(size_t *)(format+sizeof(size_t))+=i-1;
 			}
