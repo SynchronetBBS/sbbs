@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#define _GNU_SOURCE	// asprintf() on Linux
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
