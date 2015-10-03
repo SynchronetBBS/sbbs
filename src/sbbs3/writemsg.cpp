@@ -51,7 +51,7 @@ char* sbbs_t::msg_tmp_fname(int xedit, char* path, size_t len)
 {
 	safe_snprintf(path, len, "%sINPUT.MSG", cfg.temp_dir);
 
-	if(xedit) {
+	if(xedit && chk_ar(cfg.xedit[xedit-1]->ar, &useron, &client)) {
 		if(cfg.xedit[xedit-1]->misc&QUICKBBS)
 			safe_snprintf(path, len, "%sMSGTMP", cfg.node_dir);	/* QuickBBS editors are dumb */
 		if(cfg.xedit[xedit-1]->misc&XTRN_LWRCASE)
@@ -66,7 +66,9 @@ char* sbbs_t::msg_tmp_fname(int xedit, char* path, size_t len)
 char* sbbs_t::quotes_fname(int xedit, char *path, size_t len)
 {
 	safe_snprintf(path, len, "%sQUOTES.TXT", cfg.node_dir);
-	if(xedit && cfg.xedit[xedit-1]->misc&XTRN_LWRCASE)
+	if(xedit 
+		&& chk_ar(cfg.xedit[xedit-1]->ar, &useron, &client) 
+		&& (cfg.xedit[xedit-1]->misc&XTRN_LWRCASE))
 		strlwr(getfname(path));
 	return path;
 }
@@ -79,8 +81,12 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 	char*	buf;
 	char*	wrapped=NULL;
 	FILE*	fp;
+	ushort useron_xedit = useron.xedit;
 
-	quotes_fname(useron.xedit,fname,sizeof(fname));
+	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
+		useron_xedit = 0;
+
+	quotes_fname(useron_xedit,fname,sizeof(fname));
 	removecase(fname);
 
 	if((fp=fopen(fname,"w"))==NULL) {
@@ -90,7 +96,7 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 
 	if((buf=smb_getmsgtxt(&smb,msg,tails)) != NULL) {
 		strip_invalid_attr(buf);
-		if(useron.xedit && (cfg.xedit[useron.xedit-1]->misc&QUOTEWRAP))
+		if(useron_xedit && (cfg.xedit[useron_xedit-1]->misc&QUOTEWRAP))
 			wrapped=::wordwrap(buf, cols-4, cols-1, /* handle_quotes: */TRUE);
 		if(wrapped!=NULL) {
 			fputs(wrapped,fp);
@@ -109,24 +115,28 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, long mode, unsigned* li
 {
 	unsigned i,l;
 	int	len=0;
+	ushort useron_xedit = useron.xedit;
+
+	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
+		useron_xedit = 0;
 
 	for(l=i=0;buf[l] && i<maxlines;l++) {
-		if((uchar)buf[l]==141 && useron.xedit
-    		&& cfg.xedit[useron.xedit-1]->misc&QUICKBBS) {
+		if((uchar)buf[l]==141 && useron_xedit
+    		&& cfg.xedit[useron_xedit-1]->misc&QUICKBBS) {
 			len+=fwrite(crlf,1,2,stream);
 			i++;
 			continue; 
 		}
 		/* Expand LF to CRLF? */
-		if(buf[l]==LF && (!l || buf[l-1]!=CR) && useron.xedit
-			&& cfg.xedit[useron.xedit-1]->misc&EXPANDLF) {
+		if(buf[l]==LF && (!l || buf[l-1]!=CR) && useron_xedit
+			&& cfg.xedit[useron_xedit-1]->misc&EXPANDLF) {
 			len+=fwrite(crlf,1,2,stream);
 			i++;
 			continue; 
 		}
 		/* Strip FidoNet Kludge Lines? */
-		if(buf[l]==CTRL_A && useron.xedit
-			&& cfg.xedit[useron.xedit-1]->misc&STRIPKLUDGE) {
+		if(buf[l]==CTRL_A && useron_xedit
+			&& cfg.xedit[useron_xedit-1]->misc&STRIPKLUDGE) {
 			while(buf[l] && buf[l]!=LF) 
 				l++;
 			if(buf[l]==0)
@@ -202,6 +212,10 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 	FILE*	stream;
 	FILE*	fp;
 	unsigned lines;
+	ushort useron_xedit = useron.xedit;
+
+	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
+		useron_xedit = 0;
 
 	useron_level=useron.level;
 
@@ -219,7 +233,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		(!(mode&(WM_EMAIL|WM_NETMAIL)) && cfg.sub[subnum]->misc&SUB_PNET))
 		mode|=WM_NOTOP;
 
-	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
+	msg_tmp_fname(useron_xedit, msgtmp, sizeof(msgtmp));
 	SAFEPRINTF(tagfile,"%seditor.tag",cfg.temp_dir);
 	removecase(tagfile);
 
@@ -230,8 +244,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 
 		/* Quote entire message to MSGTMP or INPUT.MSG */
 
-		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&QUOTEALL) {
-			quotes_fname(useron.xedit, str, sizeof(str));
+		if(useron_xedit && cfg.xedit[useron_xedit-1]->misc&QUOTEALL) {
+			quotes_fname(useron_xedit, str, sizeof(str));
 			if((stream=fnopen(NULL,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				free(buf);
@@ -259,11 +273,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 
 		/* Quote nothing to MSGTMP or INPUT.MSG automatically */
 
-		else if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&QUOTENONE)
+		else if(useron_xedit && cfg.xedit[useron_xedit-1]->misc&QUOTENONE)
 			;
 
 		else if(yesno(text[QuoteMessageQ])) {
-			quotes_fname(useron.xedit, str, sizeof(str));
+			quotes_fname(useron_xedit, str, sizeof(str));
 			if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				free(buf);
@@ -365,7 +379,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		} 
 	}
 	else {
-		quotes_fname(useron.xedit, str, sizeof(str));
+		quotes_fname(useron_xedit, str, sizeof(str));
 		removecase(str); 
 	}
 
@@ -444,26 +458,26 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 	}
 
 
-	else if(useron.xedit) {
+	else if(useron_xedit) {
 
 		if(editor!=NULL)
-			*editor=cfg.xedit[useron.xedit-1]->name;
+			*editor=cfg.xedit[useron_xedit-1]->name;
 
-		editor_inf(useron.xedit,dest,title,mode,subnum,tagfile);
-		if(cfg.xedit[useron.xedit-1]->type) {
+		editor_inf(useron_xedit,dest,title,mode,subnum,tagfile);
+		if(cfg.xedit[useron_xedit-1]->type) {
 			gettimeleft();
-			xtrndat(useron.alias,cfg.node_dir,cfg.xedit[useron.xedit-1]->type
- 			   ,timeleft,cfg.xedit[useron.xedit-1]->misc); 
+			xtrndat(useron.alias,cfg.node_dir,cfg.xedit[useron_xedit-1]->type
+ 			   ,timeleft,cfg.xedit[useron_xedit-1]->misc); 
 		}
 
-		if(cfg.xedit[useron.xedit-1]->misc&XTRN_STDIO) {
+		if(cfg.xedit[useron_xedit-1]->misc&XTRN_STDIO) {
 			ex_mode|=EX_STDIO;
-			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
+			if(cfg.xedit[useron_xedit-1]->misc&WWIVCOLOR)
 				ex_mode|=EX_WWIV; 
 		}
-		if(cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
+		if(cfg.xedit[useron_xedit-1]->misc&XTRN_NATIVE)
 			ex_mode|=EX_NATIVE;
-		if(cfg.xedit[useron.xedit-1]->misc&XTRN_SH)
+		if(cfg.xedit[useron_xedit-1]->misc&XTRN_SH)
 			ex_mode|=EX_SH;
 
 		if(!linesquoted)
@@ -475,7 +489,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 
 		CLS;
 		rioctl(IOCM|PAUSE|ABORT);
-		external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,msgtmp,nulstr,NULL),ex_mode,cfg.node_dir);
+		external(cmdstr(cfg.xedit[useron_xedit-1]->rcmd,msgtmp,nulstr,NULL),ex_mode,cfg.node_dir);
 		rioctl(IOSM|PAUSE|ABORT); 
 
 		checkline();
@@ -486,7 +500,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		}
 		SAFEPRINTF(str,"%sRESULT.ED",cfg.node_dir);
 		if(!(mode&(WM_EXTDESC|WM_FILE|WM_SUBJ_RO))
-			&& !(cfg.xedit[useron.xedit-1]->misc&QUICKBBS) 
+			&& !(cfg.xedit[useron_xedit-1]->misc&QUICKBBS) 
 			&& fexistcase(str)) {
 			if((fp=fopen(str,"r")) != NULL) {
 				fgets(str,sizeof(str),fp);
@@ -1014,38 +1028,42 @@ bool sbbs_t::editfile(char *fname, bool msg)
 	long length,maxlines,l,mode=0;
 	FILE*	stream;
 	unsigned lines;
+	ushort useron_xedit = useron.xedit;
+
+	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
+		useron_xedit = 0;
 
 	if(msg)
 		maxlines=cfg.level_linespermsg[useron.level];
 	else
 		maxlines=MAX_LINES;
-	quotes_fname(useron.xedit, path, sizeof(path));
+	quotes_fname(useron_xedit, path, sizeof(path));
 	removecase(path);
 
-	if(useron.xedit) {
+	if(useron_xedit) {
 
 		SAFECOPY(path,fname);
 
-		msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
+		msg_tmp_fname(useron_xedit, msgtmp, sizeof(msgtmp));
 		if(stricmp(msgtmp,path)) {
 			removecase(msgtmp);
 			if(fexistcase(path))
 				fcopy(path, msgtmp);
 		}
 
-		editor_inf(useron.xedit,fname,nulstr,0,INVALID_SUB,/* tagfile: */NULL);
-		if(cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
+		editor_inf(useron_xedit,fname,nulstr,0,INVALID_SUB,/* tagfile: */NULL);
+		if(cfg.xedit[useron_xedit-1]->misc&XTRN_NATIVE)
 			mode|=EX_NATIVE;
-		if(cfg.xedit[useron.xedit-1]->misc&XTRN_SH)
+		if(cfg.xedit[useron_xedit-1]->misc&XTRN_SH)
 			mode|=EX_SH;
-		if(cfg.xedit[useron.xedit-1]->misc&XTRN_STDIO) {
+		if(cfg.xedit[useron_xedit-1]->misc&XTRN_STDIO) {
 			mode|=EX_STDIO;
-			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
+			if(cfg.xedit[useron_xedit-1]->misc&WWIVCOLOR)
 				mode|=EX_WWIV; 
 		}
 		CLS;
 		rioctl(IOCM|PAUSE|ABORT);
-		if(external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,msgtmp,nulstr,NULL),mode,cfg.node_dir)!=0)
+		if(external(cmdstr(cfg.xedit[useron_xedit-1]->rcmd,msgtmp,nulstr,NULL),mode,cfg.node_dir)!=0)
 			return false;
 		l=process_edited_file(msgtmp, path, /* mode: */WM_EDIT, &lines,maxlines);
 		if(l>0) {
