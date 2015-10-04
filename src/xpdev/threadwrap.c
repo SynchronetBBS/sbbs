@@ -44,6 +44,7 @@
 	#define _WIN32_WINNT 0x0400	/* Needed for TryEnterCriticalSection */
 #endif
 
+#include "genwrap.h"	/* SLEEP() */
 #include "threadwrap.h"	/* DLLCALL */
 
 /****************************************************************************/
@@ -146,6 +147,7 @@ int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void))
 		case 2:	// Done.
 			return 0;
 	}
+	return EINVAL;
 }
 
 int DLLCALL pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
