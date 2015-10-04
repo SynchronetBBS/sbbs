@@ -76,7 +76,9 @@ static void internal_do_cryptInit(void)
 
 int DLLCALL do_cryptInit(void)
 {
-	pthread_once(&crypt_init_once, internal_do_cryptInit);
+	if(pthread_once(&crypt_init_once, internal_do_cryptInit) == 0)
+		return 1;
+	return 0;
 }
 
 #define DO(x)	get_error_string(x, ssl_context, estr, __FILE__, __LINE__)
