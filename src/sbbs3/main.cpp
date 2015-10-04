@@ -41,7 +41,7 @@
 #include "netwrap.h"
 #include "js_rtpool.h"
 #include "js_request.h"
-#include "js_socket.h"
+#include "ssl.h"
 #include <multisock.h>
 #include <limits.h>		// HOST_NAME_MAX
 

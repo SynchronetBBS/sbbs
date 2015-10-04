@@ -1,7 +1,10 @@
 #include <stdbool.h>
 #include <stdio.h>
+
+#include <threadwrap.h>
+
 #include "ssl.h"
-#include "js_socket.h"	// TODO... move this stuff in here?
+//#include "js_socket.h"	// TODO... move this stuff in here?
 
 static scfg_t	scfg;
 
@@ -48,6 +51,34 @@ static bool get_error_string(int status, CRYPT_SESSION sess, char estr[SSL_ESTR_
 	return false;
 }
 
+static pthread_once_t crypt_init_once = PTHREAD_ONCE_INIT;
+static pthread_mutex_t ssl_cert_mutex;
+
+static void do_cryptEnd(void)
+{
+	cryptEnd();
+}
+
+static void internal_do_cryptInit(void)
+{
+	int ret;
+
+	if((ret=cryptInit())==CRYPT_OK) {
+		cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
+		atexit(do_cryptEnd);
+	}
+	else {
+		lprintf(LOG_ERR,"cryptInit() returned %d", ret);
+	}
+	pthread_mutex_init(&ssl_cert_mutex, NULL);
+	return;
+}
+
+int DLLCALL do_cryptInit(void)
+{
+	pthread_once(&crypt_init_once, internal_do_cryptInit);
+}
+
 #define DO(x)	get_error_string(x, ssl_context, estr, __FILE__, __LINE__)
 
 CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
@@ -61,16 +92,20 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 
 	if(!do_cryptInit())
 		return -1;
+	pthread_mutex_lock(&ssl_cert_mutex);
 	memset(&ssl_context, 0, sizeof(ssl_context));
 	/* Get the certificate... first try loading it from a file... */
 	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,"ssl.cert");
 	if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_NONE))) {
-		if(!DO(cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass)))
+		if(!DO(cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
+			pthread_mutex_unlock(&ssl_cert_mutex);
 			return -1;
+		}
 	}
 	else {
 		/* Couldn't do that... create a new context and use the cert from there... */
 		if(!cryptStatusOK(i=cryptCreateContext(&ssl_context, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
+			pthread_mutex_unlock(&ssl_cert_mutex);
 			sprintf(estr, "cryptlib error %d creating SSL context",i);
 			return -1;
 		}
@@ -101,6 +136,7 @@ CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN])
 	}
 
 	cryptKeysetClose(ssl_keyset);
+	pthread_mutex_unlock(&ssl_cert_mutex);
 	return ssl_context;
 
 failure_return_3:
@@ -109,5 +145,6 @@ failure_return_2:
 	cryptKeysetClose(ssl_keyset);
 failure_return_1:
 	cryptDestroyContext(ssl_context);
+	pthread_mutex_unlock(&ssl_cert_mutex);
 	return -1;
 }

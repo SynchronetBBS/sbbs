@@ -5,7 +5,7 @@
 #include "sbbs.h"
 #include <cryptlib.h>
 #include "js_request.h"
-#include "js_socket.h"
+#include "ssl.h"
 
 struct private_data {
 	CRYPT_CONTEXT	ctx;

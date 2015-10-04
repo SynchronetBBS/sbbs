@@ -37,6 +37,7 @@ DLLEXPORT void DLLCALL free_crypt_attrstr(char *attr);
 DLLEXPORT char* DLLCALL get_crypt_attribute(CRYPT_SESSION sess, C_IN CRYPT_ATTRIBUTE_TYPE attr);
 DLLEXPORT char* DLLCALL get_crypt_error(CRYPT_SESSION sess);
 DLLEXPORT CRYPT_CONTEXT DLLCALL get_ssl_cert(scfg_t *cfg, char estr[SSL_ESTR_LEN]);
+DLLEXPORT int DLLCALL do_cryptInit(void);
 
 #if defined(__cplusplus)
 }

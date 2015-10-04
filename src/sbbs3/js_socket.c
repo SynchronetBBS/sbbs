@@ -45,14 +45,7 @@
 
 #ifdef JAVASCRIPT
 
-int cryptInitialized=0;
-
 static const char* getprivate_failure = "line %d %s JS_GetPrivate failed";
-
-static void do_cryptEnd(void)
-{
-	cryptEnd();
-}
 
 static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
 {
@@ -74,26 +67,6 @@ static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE a
 	if(ret != CRYPT_OK)
 		lprintf(LOG_ERR, "cryptSetAttribute(%d=%d) returned %d", attr, val, ret);
 	return ret;
-}
-
-int DLLCALL do_cryptInit(void)
-{
-	int ret;
-
-	if(!cryptInitialized) {
-		if((ret=cryptInit())==CRYPT_OK) {
-			cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
-			cryptInitialized=1;
-			atexit(do_cryptEnd);
-		}
-		else {
-			if (ret == -12)	// This is a bit of a hack...
-				cryptInitialized=1;
-			else
-				lprintf(LOG_ERR,"cryptInit() returned %d", ret);
-		}
-	}
-	return cryptInitialized;
 }
 
 static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len)

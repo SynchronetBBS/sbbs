@@ -26,10 +26,6 @@ typedef struct
 extern "C" {
 #endif
 
-extern int cryptInitialized;
-
-DLLEXPORT int DLLCALL do_cryptInit(void);
-
 #ifdef __cplusplus
 }
 #endif
