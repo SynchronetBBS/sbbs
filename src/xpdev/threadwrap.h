@@ -123,6 +123,14 @@ DLLEXPORT int DLLCALL pthread_mutex_destroy(pthread_mutex_t*);
 
 #define SetThreadName(c)
 
+// A structure in case we need to add an event or something...
+typedef struct {
+	uint32_t	state;
+} pthread_once_t;
+
+#define PTHREAD_ONCE_INIT	{0};
+DLLEXPORT int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void));
+
 #endif
 
 #if !defined(PTHREAD_MUTEX_INITIALIZER_NP)

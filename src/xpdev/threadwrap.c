@@ -126,6 +126,28 @@ pthread_mutex_t DLLCALL pthread_mutex_initializer_np(BOOL recursive)
 
 #if !defined(_POSIX_THREADS)
 
+int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void))
+{
+	if (oc == NULL || init == NULL)
+		return EINVAL;
+	switch(InterlockedCompareExchange(&(oc->state), 1, 0)) {
+		case 0:	// Never called
+			init();
+			InterlockedIncrement(&(oc->state));
+			return 0;
+		case 1:	// In init function
+			/* We may not need to use InterlockedCompareExchange() here,
+			 * but I hate marking things as volatile, and hate tight loops
+			 * testing things that aren't marked volatile.
+			 */
+			while(InterlockedCompareExchange(&(oc->state), 1, 0) != 2)
+				SLEEP(1);
+			return 0;
+		case 2:	// Done.
+			return 0;
+	}
+}
+
 int DLLCALL pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
 {
 	(void)attr;
