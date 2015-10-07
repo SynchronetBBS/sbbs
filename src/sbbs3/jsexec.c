@@ -1110,7 +1110,7 @@ int main(int argc, char **argv, char** environ)
 					break;
 				case 'm':
 					if(*p==0) p=argv[++argn];
-					js_max_bytes=parse_byte_count(p, /* units: */1);
+					js_max_bytes=(ulong)parse_byte_count(p, /* units: */1);
 					break;
 				case 'n':
 					statfp=nulfp;
@@ -1130,7 +1130,7 @@ int main(int argc, char **argv, char** environ)
 					break;
 				case 's':
 					if(*p==0) p=argv[++argn];
-					js_cx_stack=parse_byte_count(p, /* units: */1);
+					js_cx_stack=(ulong)parse_byte_count(p, /* units: */1);
 					break;
 				case 't':
 					if(*p==0) p=argv[++argn];
