@@ -1,0 +1,39 @@
+This file lists all of the changes made for each release of the Digital
+Distortion Message Reader.
+
+Revision History (change log)
+=============================
+Version  Date         Description
+-------  ----         -----------
+1.04     2015-10-10   - New feature: Users can now download attached files,
+                      whether uploaded to their mailbox in Synchronet or
+                      attached via internet email.
+                      - New feature: Sysops can save a message to the BBS
+                      machine (using the Ctrl-S key combo).
+                      - User experience improvements: Added a pause after
+                      saving a message so that the user can see Synchronet's
+                      message save screen before going back to the reader or
+                      message list.  Also, in the message list, PageDown now
+                      goes to the last message when on the last page, and
+                      similarly, PageUp goes to the first message when on the
+                      first page.
+                      - Updated the DDReadPersonalMail.js loadable module
+                      script to start reading personal email in lister mode
+                      by default, which is more in line with what Synchronet
+                      does by default.  That will let the user select a message
+                      to read first.
+1.03     2015-07-12   Bug fix: In Linux, when replying to the last message in
+                      a sub-board during a newscan or in read mode, it would
+                      not immediately refresh the messagebase information, so
+                      it would not see the new message posted.  This has been
+                      fixed by closing the messagebase while the user is
+                      posting a reply message and re-opening the messagebase
+                      when the user is done posting the reply.
+1.02     2015-06-10   Bug fix in DDScanMsgs.js: Switched to bbs.scan_msgs()
+                      instead of bbs.scan_subs() for all other scan modes
+                      besides SCAN_READ.  Updated the version number to
+                      reflect that; no change to the actual reader.
+1.01     2015-05-17   Bug fix: The enhanced reader header file is now correctly
+                      displayed even if the lengths of its lines are
+                      inconsistent.
+1.00     2015-05-06   Initial release

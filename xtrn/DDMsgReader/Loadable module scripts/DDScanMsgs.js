@@ -42,7 +42,6 @@ var searchText = argv[2];
 // Message Reader in a different path
 var msgReaderPath = "../xtrn/DDMsgReader";
 
-
 // The start of the command string to use with bbs.exec()
 var rdrCmdStrStart = "?" + msgReaderPath + "/DDMsgReader.js ";
 

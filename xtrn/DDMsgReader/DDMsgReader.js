@@ -39,6 +39,30 @@
  *                              previous message.
  * 2015-07-12 Eric Oulashin     Version 1.03
  *                              Releasing this version after having done more testing.
+ * 2015-07-19 Eric Oulashin     Version 1.04 Beta
+ *                              Updated to pause (wait for user keypress) after saving
+ *                              a reply message to allow the user to see Synchronet's
+ *                              success/fail message on saving a message.
+ * 2015-08-09 Eric Oulashin     Adding the ability for the sysop to save a message
+ *                              to a file on the BBS machine
+ * 2015-09-07 Eric Oulashin     Updated so that in lightbar mode, pressing PageDown
+ *                              on the last page will go to the last message, and
+ *                              pressing PageUp on the first page will go to the
+ *                              first message.  Also, in the enhanced reader mode,
+ *                              added a console pause after posting a message in
+ *                              the sub-board so that the user can see the info
+ *                              screen that Synchronet displays after saving a
+ *                              message.
+ * 2015-09-19 Eric Oulashin     Started working on adding the ability to download file
+ *                              attachments.  Started working on a new function,
+ *                              determineMsgAttachments(), which can parse message text
+ *                              to save any base64-encoded attachments that might be
+ *                              present, and also to check the message subject for a
+ *                              filename for a file uploaded to the user's inbox.
+ * 2015-10-10 Eric Oulashin     Version 1.04
+ *                              Releasing this version after development & testing,
+ *                              since attachment downloading and the other new features
+ *                              seem to be working fairly well.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -126,8 +150,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.03";
-var READER_DATE = "2015-07-12";
+var READER_VERSION = "1.04";
+var READER_DATE = "2015-10-10";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -327,6 +351,14 @@ gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
 
 
+// Temporary directory (in the logged-in user's node directory) to store
+// file attachments, etc.
+var gFileAttachDir = backslash(system.node_dir + "DDMsgReader_Attachments");
+// If the temporary attachments directory exists, then delete it (in case the last
+// user hung up while running this script, etc.)
+if (file_exists(gFileAttachDir))
+	deltree(gFileAttachDir);
+
 /////////////////////////////////////////////
 // Script execution code
 
@@ -515,6 +547,9 @@ if (doDDMR)
 		bbs.curgrp = originalMsgGrpIdx;
 		bbs.cursub = originalSubBoardIdx;
 	}
+
+	// Remove the temporary attachments directory if it exists
+	deltree(gFileAttachDir);
 
 	// Before this script finishes, make sure the terminal attributes are set back
 	// to normal (in case there are any attributes left on, such as background,
@@ -1097,6 +1132,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.CalcMsgListScreenIdxVarsFromMsgNum = DigDistMsgReader_CalcMsgListScreenIdxVarsFromMsgNum;
 	// A method for validating a user's choice of message area
 	this.ValidateMsgAreaChoice = DigDistMsgReader_ValidateMsgAreaChoice;
+	this.SaveMsgToFile = DigDistMsgReader_SaveMsgToFile;
 
 	// printf strings for message group/sub-board lists
 	// Message group information (printf strings)
@@ -1436,7 +1472,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		// (or the last message, if all messages have been read)
 		if (this.readingPersonalEmail)
 		{
-			selectedMessageOffset = this.GetLastReadMsgIdx(true);
+			selectedMessageOffset = this.GetLastReadMsgIdx(false); // Used to be true
 			if ((selectedMessageOffset > -1) && (selectedMessageOffset < this.NumMessages() - 1))
 				++selectedMessageOffset;
 		}
@@ -1739,7 +1775,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	// message base object will be used to open each sub-board to scan for & read
 	// unread messages.
 	if ((this.msgbase != null) && (this.msgbase.is_open))
-	this.msgbase.close();
+		this.msgbase.close();
 
 	// Perform the message scan
 	var continueNewScan = true;
@@ -3257,6 +3293,22 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 				this.lightbarListCurPos.x = 1;
 				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
 			}
+			else {
+				// The user is on the last page - Go to the last message on the page.
+				if (this.lightbarListSelectedMsgIdx != bottomMsgIndex)
+				{
+					// Print the current message information with regular colors
+					this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
+					// Update the selected message #
+					this.lightbarListSelectedMsgIdx = bottomMsgIndex;
+					this.lightbarListCurPos.x = 1;
+					if (this.reverseListOrder)
+						this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow + this.lightbarListTopMsgIdx - bottomMsgIndex;
+					else
+						this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow + bottomMsgIndex - this.lightbarListTopMsgIdx;
+					console.gotoxy(this.lightbarListCurPos);
+				}
+			}
 		}
 		// PageUp: Previous page
 		else if (userInput == KEY_PAGE_UP)
@@ -3267,7 +3319,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 			else
 				canGoToPrevious = (this.lightbarListTopMsgIdx > 0);
 
-			if (canGoToPrevious > 0)
+			if (canGoToPrevious)
 			{
 				if (this.reverseListOrder)
 					this.lightbarListTopMsgIdx += this.lightbarMsgListNumLines;
@@ -3279,6 +3331,24 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
 				this.lightbarListCurPos.x = 1;
 				this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
+			}
+			else
+			{
+				// The user is on the first page - Go to the first message on the page.
+				if (this.lightbarListSelectedMsgIdx != 0)
+				{
+					// Print the current message information with regular colors
+					this.PrintMessageInfo(msgHeader, false, this.lightbarListSelectedMsgIdx+1);
+					// Go to the first message of the current page
+					if (this.reverseListOrder)
+						this.lightbarListSelectedMsgIdx += (this.lightbarListCurPos.y - this.lightbarMsgListStartScreenRow);
+					else
+						this.lightbarListSelectedMsgIdx -= (this.lightbarListCurPos.y - this.lightbarMsgListStartScreenRow);
+					// Move the cursor to the first message line
+					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
+					this.lightbarListCurPos.x = 1;
+					this.lightbarListCurPos.y = this.lightbarMsgListStartScreenRow;
+				}
 			}
 		}
 		// F: First page
@@ -3926,6 +3996,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	enhReaderKeys.nextMsgByThreadID = ")";
 	enhReaderKeys.prevSubBoard = "-";
 	enhReaderKeys.nextSubBoard = "+";
+	enhReaderKeys.downloadAttachments = CTRL_D;
 	enhReaderKeys.saveToBBSMachine = CTRL_S;
 
 	// This function converts a thread navigation key character to its
@@ -3966,7 +4037,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		// Get the message text, interpret any @-codes in it, replace tabs with spaces
 		// to prevent weirdness when displaying the message lines, and word-wrap the
 		// text so that it looks good on the screen,
-		var msgInfo = this.GetMsgInfoForEnhancedReader(msgHeader);
+		var msgInfo = this.GetMsgInfoForEnhancedReader(msgHeader, true, true, true);
 
 		var topMsgLineIdxForLastPage = msgInfo.topMsgLineIdxForLastPage;
 		var msgFractionShown = msgInfo.msgFractionShown;
@@ -4038,7 +4109,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					// calling method will go to the next message/sub-board.
 					// Otherwise (if the message was not deleted), refresh the
 					// last 2 lines of the message on the screen.
-					var msgWasDeleted = this.DeleteMessage(pOffset, promptPos, true, this.msgAreaWidth);
+					var msgWasDeleted = this.DeleteMessage(pOffset, promptPos, true, this.msgAreaWidth,
+					                                       true, msgInfo.attachments);
 					if (msgWasDeleted)
 					{
 						var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
@@ -4136,7 +4208,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						writeMessage = false; // Don't write the current message again
 					break;
 				case "?": // Show the help screen
-					this.DisplayEnhancedReaderHelp(allowChgMsgArea);
+					this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgInfo.attachments.length > 0);
 					// If the enhanced message header width is less than the console
 					// width, then clear the screen to remove anything left on the
 					// screen from the help screen.
@@ -4229,6 +4301,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 								// the search results if it's a match..  but maybe
 								// not?
 							}
+							console.pause();
 						}
 
 						// Refresh things on the screen
@@ -4386,9 +4459,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
 						{
 							goToPrevMessage = this.EnhReaderPromptYesNo(this.text.goToPrevMsgAreaPromptText,
-							msgInfo.messageLines, topMsgLineIdx,
-							msgLineFormatStr, solidBlockStartRow,
-							numSolidScrollBlocks);
+							                                            msgInfo.messageLines, topMsgLineIdx,
+							                                            msgLineFormatStr, solidBlockStartRow,
+							                                            numSolidScrollBlocks);
 						}
 						else
 						{
@@ -4556,19 +4629,68 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					else
 						writeMessage = false; // No need to refresh the message
 					break;
-				/*
-				case enhReaderKeys.saveToBBSMachine:
-					if (gIsSysop)
+				case enhReaderKeys.downloadAttachments: // Download attachments
+					if (msgInfo.attachments.length > 0)
 					{
-						// TODO: I'd like to add this functionality at some point
-						// - Save the message to the BBS machine (prompt for the
-						// directory on the BBS machine)
-						//var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+						console.print("\1n");
+						console.gotoxy(1, console.screen_rows);
+						console.crlf();
+						console.print("\1c- Download Attached Files -\1n");
+						// Note: sendAttachedFiles() will output a CRLF at the beginning.
+						sendAttachedFiles(msgInfo.attachments);
+
+						// Refresh things on the screen
+						console.clear("\1n");
+						// Display the message header and key help line again
+						this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+						// Display the scrollbar again to refresh it on the screen
+						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+						writeMessage = true; // We want to refresh the message on the screen
 					}
 					else
 						writeMessage = false;
 					break;
-				*/
+				case enhReaderKeys.saveToBBSMachine:
+					// Save the message to the BBS machine - Only allow this
+					// if the user is a sysop.
+					if (gIsSysop)
+					{
+						// Prompt the user for a filename to save the message to the
+						// BBS machine
+						var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+						console.print("\1n\1cFilename:\1h");
+						var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+						var filename = console.getstr(inputLen, K_NOCRLF);
+						console.print("\1n");
+						if (filename.length > 0)
+						{
+							//var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, true, msgInfo.messageLines);
+							var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, true);
+							console.gotoxy(promptPos);
+							console.cleartoeol("\1n");
+							console.gotoxy(promptPos);
+							if (saveMsgRetObj.succeeded)
+								console.print("\1n\1cThe message has been saved.\1n");
+							else
+								console.print("\1n\1y\1hFailed: " + saveMsgRetObj.errorMsg + "\1n");
+							mswait(ERROR_PAUSE_WAIT_MS);
+						}
+						else
+						{
+							console.gotoxy(promptPos);
+							console.print("\1n\1y\1hMessage not exported\1n");
+							mswait(ERROR_PAUSE_WAIT_MS);
+						}
+						// Refresh the last 2 lines of the message on the screen to overwrite
+						// the file save prompt
+						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+						writeMessage = false; // Don't write the whole message again
+					}
+					else
+						writeMessage = false;
+					break;
 				case "Q": // Quit
 					retObj.nextAction = ACTION_QUIT;
 					continueOn = false;
@@ -4582,10 +4704,19 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	else
 	{
 		// Use the non-scrolling interface.
+		// Older:
+		/*
 		// Get the message body.  Make sure the text is word-wrapped so that it
 		// looks good when written to the screen.
 		var msgText = this.msgbase.get_msg_body(true, msgHeader.offset);
 		var msgTextWrapped = word_wrap(msgText, console.screen_columns-1);
+		*/
+		// Separate the message text from any attachments in the message.
+		//determineMsgAttachments(pMsgHdr, pMsgText, pGetB64Data)
+		var msgAndAttachmentInfo = determineMsgAttachments(msgHeader,
+		                                                   this.msgbase.get_msg_body(true, msgHeader.offset),
+		                                                   true);
+		var msgTextWrapped = word_wrap(msgAndAttachmentInfo.msgText, console.screen_columns-1);
 
 		// Generate the key help text
 		var keyHelpText = "\1n\1c\1h#\1n\1b, \1c\1hLeft\1n\1b, \1c\1hRight\1n\1b, ";
@@ -4648,6 +4779,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					// calling method will go to the next message/sub-board.
 					// Otherwise (if the message was not deleted), refresh the
 					// last 2 lines of the message on the screen.
+					// TODO: For the DeleteMessage() call, pass the array of file
+					// attachments for it to delete (i.e., msgInfo.attachments)
 					var msgWasDeleted = this.DeleteMessage(pOffset);
 					if (msgWasDeleted)
 					{
@@ -4703,7 +4836,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						console.crlf();
 						console.crlf();
 					}
-					this.DisplayEnhancedReaderHelp(allowChgMsgArea);
+					this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgAndAttachmentInfo.attachments.length > 0);
 					if (!console.term_supports(USER_ANSI))
 					{
 						console.crlf();
@@ -4712,7 +4845,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					break;
 				case "R": // Reply to the message
 				case "I": // Private reply
-					var privateReply = (retObj.lastKeypress == "I");
 					// If the user pressed P (private reply) while reading private
 					// mail, then do nothing (allow only the "R" key to reply).
 					// If not reading personal email, go ahead and let the user reply
@@ -4726,7 +4858,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					else
 					{
 						console.crlf();
-						var replyRetObj = this.ReplyToMsg(msgHeader, msgText, privateReply, pOffset);
+						var replyRetObj = this.ReplyToMsg(msgHeader, msgAndAttachmentInfo.msgText, privateReply, pOffset);
 						retObj.userReplied = replyRetObj.postSucceeded;
 						//retObj.msgDeleted = replyRetObj.msgWasDeleted;
 						var msgWasDeleted = replyRetObj.msgWasDeleted;
@@ -4738,7 +4870,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 							retObj.nextAction = msgSearchObj.nextAction;
 							if (msgSearchObj.promptGoToNextArea)
 							{
-								if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
+								if (console.yesno(this.text.goToNextMsgAreaPromptText))
 								{
 									// Let this method exit and let the caller go to the next sub-board
 									continueOn = false;
@@ -4776,6 +4908,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 							// the search results if it's a match..  but maybe
 							// not?
 						}
+
+						console.pause();
 
 						// We'll want to refresh the message & prompt text on the screen
 						writeMessage = true;
@@ -5049,6 +5183,55 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						writePromptText = false;
 					}
 					break;
+				case enhReaderKeys.downloadAttachments: // Download attachments
+					if (msgAndAttachmentInfo.attachments.length > 0)
+					{
+						console.print("\1n");
+						console.crlf();
+						console.print("\1c- Download Attached Files -\1n");
+						// Note: sendAttachedFiles() will output a CRLF at the beginning.
+						sendAttachedFiles(msgAndAttachmentInfo.attachments);
+
+						// Ensure the message is refreshed on the screen
+						writeMessage = true;
+						writePromptText = true;
+					}
+					else
+					{
+						writeMessage = false;
+						writePromptText = false;
+					}
+					break;
+				case enhReaderKeys.saveToBBSMachine:
+					// Save the message to the BBS machine - Only allow this
+					// if the user is a sysop.
+					if (gIsSysop)
+					{
+						console.crlf();
+						console.print("\1n\1cFilename:\1h");
+						var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+						var filename = console.getstr(inputLen, K_NOCRLF);
+						console.print("\1n");
+						console.crlf();
+						if (filename.length > 0)
+						{
+							var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, true);
+							if (saveMsgRetObj.succeeded)
+								console.print("\1n\1cThe message has been saved.\1n");
+							else
+								console.print("\1n\1y\1hFailed: " + saveMsgRetObj.errorMsg + "\1n");
+							mswait(ERROR_PAUSE_WAIT_MS);
+						}
+						else
+						{
+							console.print("\1n\1y\1hMessage not exported\1n");
+							mswait(ERROR_PAUSE_WAIT_MS);
+						}
+						writeMessage = true;
+					}
+					else
+						writeMessage = false;
+					break;
 				case "Q": // Quit
 					retObj.nextAction = ACTION_QUIT;
 					continueOn = false;
@@ -5069,14 +5252,14 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		msgHeader.attr |= MSG_READ;
 		this.msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
 		if (this.SearchTypePopulatesSearchResults())
-		this.RefreshSearchResultMsgHdr(pOffset, MSG_READ);
+			this.RefreshSearchResultMsgHdr(pOffset, MSG_READ);
 	}
 
 	// If not reading personal email, then update the scan & last read message pointers.
 	if (this.subBoardCode != "mail") // && !this.SearchTypePopulatesSearchResults()
 	{
 		if (msgHeader.number > msg_area.sub[this.subBoardCode].scan_ptr)
-		msg_area.sub[this.subBoardCode].scan_ptr = msgHeader.number;
+			msg_area.sub[this.subBoardCode].scan_ptr = msgHeader.number;
 		msg_area.sub[this.subBoardCode].last_read = msgHeader.number;
 	}
 
@@ -5506,16 +5689,26 @@ function DigDistMsgReader_SetUpTraditionalMsgListVars()
 // lightbar message list position, current messsage number, etc.
 function DigDistMsgReader_SetUpLightbarMsgListVars()
 {
-	// If a search is specified, then just start at the first message.
-	// If no search is specified, then get the index of the user's last read
-	// message.  Then, figure out which page it's on and set the lightbar list
-	// index & cursor position variables accordingly.
+	// If no search is specified or if reading personal email, then get the index
+	// of the user's last read message.  Then, figure out which page it's on and
+	// set the lightbar list index & cursor position variables accordingly.
 	var lastReadMsgIdx = 0;
-	if (!this.SearchingAndResultObjsDefinedForCurSub())
+	if (!this.SearchingAndResultObjsDefinedForCurSub() || this.readingPersonalEmail)
 	{
 		lastReadMsgIdx = this.GetLastReadMsgIdx();
 		if (lastReadMsgIdx == -1)
 			lastReadMsgIdx = 0;
+	}
+	else
+	{
+		// A search was specified.  If reading personal email, then set the
+		// message index to the last read message.
+		if (this.readingPersonalEmail)
+		{
+			lastReadMsgIdx = this.GetLastReadMsgIdx();
+			if (lastReadMsgIdx == -1)
+				lastReadMsgIdx = 0;
+		}
 	}
 	var pageNum = findPageNumOfItemNum(lastReadMsgIdx+1, this.lightbarMsgListNumLines, this.NumMessages(),
 	                                   this.reverseListOrder);
@@ -7254,7 +7447,6 @@ function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsg
 	                         .replace(/@MSG_TO_EXT@/gi, (typeof(pMsgHdr["to_ext"]) == "string" ? pMsgHdr["to_ext"] : ""))
 	                         .replace(/@MSG_DATE@/gi, pDateTimeStr)
 	                         .replace(/@MSG_ATTR@/gi, mainMsgAttrStr)
-	                         .replace(/@MSG_ATTR@/gi, mainMsgAttrStr)
 	                         .replace(/@MSG_AUXATTR@/gi, auxMsgAttrStr)
 	                         .replace(/@MSG_NETATTR@/gi, netMsgAttrStr)
 	                         .replace(/@MSG_ALLATTR@/gi, allMsgAttrStr)
@@ -7622,8 +7814,10 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		if (quoteFile.open("w"))
 		{
 			if (typeof(pMsgText) == "string")
-			//quoteFile.write(word_wrap(pMsgText, 80/*79*/));
-			quoteFile.write(pMsgText);
+			{
+				//quoteFile.write(word_wrap(pMsgText, 80/*79*/));
+				quoteFile.write(pMsgText);
+			}
 			else
 			{
 				var msgText = this.msgbase.get_msg_body(true, msgHeader.offset);
@@ -7718,8 +7912,12 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			retObj.postSucceeded = privReplRetObj.sendSucceeded;
 			retObj.msgWasDeleted = privReplRetObj.msgWasDeleted;
 		}
-		else // Not a private message - Post as a public message
+		else
+		{
+			// Not a private message - Post as a public message
 			retObj.postSucceeded = bbs.post_msg(this.subBoardCode, replyMode, pMsgHdr);
+			console.pause();
+		}
 		msgBaseInfoFile.remove();
 		retObj.msgbaseReOpened = this.msgbase.open();
 
@@ -7734,14 +7932,14 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		    (this.msgbase.total_msgs > numMessagesBefore))
 		{
 			if (!this.msgSearchHdrs.hasOwnProperty(this.subBoardCode))
-				msgSearchHdrs[this.subBoardCode] = searchMsgbase(this.subBoardCode, this.msgbase, this.searchType, this.searchString, this.readingPersonalEmailFromUser);
+				this.msgSearchHdrs[this.subBoardCode] = searchMsgbase(this.subBoardCode, this.msgbase, this.searchType, this.searchString, this.readingPersonalEmailFromUser);
 			else
 			{
 				var msgHeaders = searchMsgbase(this.subBoardCode, this.msgbase, this.searchType, this.searchString, this.readingPersonalEmailFromUser, numMessagesBefore, this.msgbase.total_msgs);
 				var msgNum = 0;
 				for (var i = 0; i < msgHeaders.indexed.length; ++i)
 				{
-					msgSearchHdrs[this.subBoardCode].indexed.push(msgHeaders.indexed[i]);
+					this.msgSearchHdrs[this.subBoardCode].indexed.push(msgHeaders.indexed[i]);
 					msgNum = msgHeaders.indexed[i].offset + 1;
 				}
 			}
@@ -7806,6 +8004,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 				replyMode |= WM_NETMAIL;
 				console.ungetstr(pMsgHdr.subject);
 				retObj.sendSucceeded = bbs.netmail(emailAddr, replyMode);
+				console.pause();
 			}
 			else
 			{
@@ -7832,16 +8031,11 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		{
 			// Output a newline to avoid ugly overwriting of text on the screen in
 			// case the sender wants to forward to netmail, then send email to the
-			// sender.  If the send failed, then output an error message.
+			// sender.  Note that if the send failed, that could be because the
+			// user aborted the message.
 			console.crlf();
 			retObj.sendSucceeded = bbs.email(userNumber, replyMode, "", pMsgHdr.subject);
-			if (!retObj.sendSucceeded)
-			{
-				retObj.sendSucceeded = false;
-				console.crlf();
-				console.print("\1n\1h\1yFailed to find local user number for \1w" + pMsgHdr.from);
-				console.crlf();
-			}
+			console.pause();
 		}
 	}
 
@@ -7867,12 +8061,15 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 // Parameters:
 //  pDisplayChgAreaOpt: Optional boolean - Whether or not to show the "change area" option.
 //                      Defaults to true.
-function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt)
+//  pDisplayDLAttachmentOpt: Optional boolean - Whether or not to display the "download attachments"
+//                           option.  Defaults to false.
+function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplayDLAttachmentOpt)
 {
 	if (console.term_supports(USER_ANSI))
 		console.clear("\1n");
 
 	var displayChgAreaOpt = (typeof(pDisplayChgAreaOpt) == "boolean" ? pDisplayChgAreaOpt : true);
+	var displayDLAttachmentsOpt = (typeof(pDisplayDLAttachmentOpt) == "boolean" ? pDisplayDLAttachmentOpt : false);
 
 	DisplayProgramInfo();
 	console.crlf();
@@ -7923,9 +8120,14 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt)
 	                    "\1h\1cHOME             \1g: \1n\1cGo to the top of the message",
 	                    "\1h\1cEND              \1g: \1n\1cGo to the bottom of the message"];
 	if (gIsSysop)
+	{
 		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current message");
+		keyHelpLines.push("\1h\1cCtrl-S           \1g: \1n\1cSave the message (to the BBS machine)");
+	}
 	else if (this.CanDelete() || this.CanDeleteLastMsg())
 		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current message (if it's yours)");
+	if (displayDLAttachmentsOpt)
+		keyHelpLines.push("\1h\1cCtrl-D           \1g: \1n\1cDownload attachments");
 	// If not reading personal email or doing a search/scan, then include the
 	// text for the message threading keys.
 	if (!this.readingPersonalEmail && !this.SearchingAndResultObjsDefinedForCurSub())
@@ -7934,8 +8136,10 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt)
 		// in the help line, since Synchronet 3.16 has the thread_id field in the message
 		// headers.
 		var threadIDLine = "\1h\1c( \1n\1cor \1h)           \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
+		/*
 		if (system.version_num >= 31600)
 			threadIDLine += " (thread ID)";
+		*/
 		keyHelpLines.push(threadIDLine);
 		keyHelpLines.push("\1h\1c< \1n\1cor \1h>           \1g: \1n\1cGo to the previous\1g/\1cnext message by title (subject)");
 		keyHelpLines.push("\1h\1c{ \1n\1cor \1h}           \1g: \1n\1cGo to the previous\1g/\1cnext message by author");
@@ -8267,7 +8471,7 @@ function DigDistMsgReader_MessageIsLastFromUser(pOffset)
 //  pTopLineIdx: The index of the line being displayed at the top of the message area
 //  pMsgLineFormatStr: Optional - The format string for message lines
 function DigDistMsgReader_DisplayEnhReaderError(pErrorMsg, pMessageLines, pTopLineIdx,
-                                                 pMsgLineFormatStr)
+                                                pMsgLineFormatStr)
 {
    var msgLineFormatStr = "";
    if (typeof(pMsgLineFormatStr) == "string")
@@ -8445,10 +8649,12 @@ function DigDistMsgReader_EnhReaderPromptYesNo(pQuestion, pMessageLines, pTopLin
 //  pPromptRowWidth: Optional - The width of the prompt row (if pProptLoc is valid)
 //  pConfirmDelete: Optional boolean - Whether or not to confirm deleting the
 //                  message.  Defaults to true.
+//  pAttachments: Optional - An array of file attachment information returned by
+//                determineMsgAttachments()
 //
 // Return value: Boolean - Whether or not the message was deleted
 function DigDistMsgReader_DeleteMessage(pOffset, pPromptLoc, pClearPromptRowAtFirstUse,
-                                        pPromptRowWidth, pConfirmDelete)
+                                        pPromptRowWidth, pConfirmDelete, pAttachments)
 {
 	// Sanity checking
 	if ((pOffset == null) || (typeof(pOffset) != "number"))
@@ -8523,6 +8729,19 @@ function DigDistMsgReader_DeleteMessage(pOffset, pPromptLoc, pClearPromptRowAtFi
 			msgWasDeleted = this.msgbase.remove_msg(true, msgHeader.offset);
 			if (msgWasDeleted)
 			{
+				// If there are attachments, then delete them.
+				if (Object.prototype.toString.call(pAttachments) === "[object Array]")
+				{
+					if (pAttachments.length > 0)
+					{
+						for (var attachIdx = 0; attachIdx < pAttachments.length; ++attachIdx)
+						{
+							if (file_exists(pAttachments[attachIdx].fullyPathedFilename))
+								file_remove(pAttachments[attachIdx].fullyPathedFilename);
+						}
+					}
+				}
+
 				// In case there are search results, refresh the header in the search
 				// results to enable the deleted attribute.
 				this.RefreshSearchResultMsgHdr(pOffset, MSG_DELETE);
@@ -10241,6 +10460,19 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr)
 //
 // Parameters:
 //  pMsgHdr: The message header
+//  pWordWrap: Boolean - Whether or not to word-wrap the message to fit into the
+//             display area.  This is optional and defaults to true.  This should
+//             be true for normal use; the only time this should be false is when
+//             saving the message to a file.
+//  pDetermineAttachments: Boolean - Whether or not to parse the message text to
+//                         get attachments from it.  This is optional and defaults
+//                         to true.  If false, then the message text will be left
+//                         intact with any base64-encoded attachments that may be
+//                         in the message text (for multi-part MIME messages).
+//  pGetB64Data: Boolean - Whether or not to get the Base64-encoded data for
+//               base64-encoded attachments (i.e., in multi-part MIME emails).
+//               This is optional and defaults to true.  This is only used when
+//               pDetermineAttachments is true.
 //
 // Return value: An object with the following properties:
 //               msgText: The unaltered message text
@@ -10251,11 +10483,29 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr)
 //               numSolidScrollBlocks: The number of solid scrollbar blocks
 //               numNonSolidScrollBlocks: The number of non-solid scrollbar blocks
 //               solidBlockStartRow: The starting row on the screen for the scrollbar blocks
-function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr)
+//               attachments: An array of the attached filenames (as strings)
+function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDetermineAttachments, pGetB64Data)
 {
 	var retObj = new Object();
 
-	retObj.msgText = this.msgbase.get_msg_body(true, pMsgHdr.offset);
+	var determineAttachments = true;
+	if (typeof(pDetermineAttachments) == "boolean")
+		determineAttachments = pDetermineAttachments;
+	var getB64Data = true;
+	if (typeof(pGetB64Data) == "boolean")
+		getB64Data = pGetB64Data;
+	if (determineAttachments)
+	{
+		var msgInfo = determineMsgAttachments(pMsgHdr, this.msgbase.get_msg_body(true, pMsgHdr.offset), getB64Data);
+		retObj.msgText = msgInfo.msgText;
+		retObj.attachments = msgInfo.attachments;
+	}
+	else
+	{
+		retObj.msgText = this.msgbase.get_msg_body(true, pMsgHdr.offset);
+		retObj.attachments = [];
+	}
+
 	// Note: Do not interpret @-codes, since there are many @-codes that do
 	// some action such as move the cursor, execute a script, etc..
 	/*
@@ -10277,33 +10527,44 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr)
 		msgTextAltered = wildcatAttrsToSyncAttrs(msgTextAltered);
 	// Convert ANSI codes to Synchronet codes
 	msgTextAltered = ANSIAttrsToSyncAttrs(msgTextAltered);
-	// Wrap the text to fit into the available message area.
-	// Note: In Synchronet 3.15 (and some beta builds of 3.16), there seemed to
-	// be a bug in the word_wrap() function where the word wrap length in Linux
-	// was one less than Windows, so if the BBS is running 3.15 or earlier of
-	// Synchronet, add 1 to the word wrap length if running in Linux.
-	var textWrapLen = this.msgAreaWidth;
-	if (system.version_num <= 31500)
-		textWrapLen = gRunningInWindows ? this.msgAreaWidth : this.msgAreaWidth + 1;
-	var msgTextWrapped = word_wrap(msgTextAltered, textWrapLen);
-	retObj.messageLines = lfexpand(msgTextWrapped).split("\r\n");
-	// Go through the message lines and trim them to ensure they'll easily fit
-	// in the message display area without having to trim them later.  (Note:
-	// this is okay to do since we're only using messageLines to display the
-	// message on the screen; messageLines isn't used for quoting/replying).
-	for (var msgLnIdx = 0; msgLnIdx < retObj.messageLines.length; ++msgLnIdx)
-		retObj.messageLines[msgLnIdx] = shortenStrWithAttrCodes(retObj.messageLines[msgLnIdx], this.msgAreaWidth);
-	// Set up some variables for displaying the message
-	retObj.topMsgLineIdxForLastPage = retObj.messageLines.length - this.msgAreaHeight;
-	if (retObj.topMsgLineIdxForLastPage < 0)
-		retObj.topMsgLineIdxForLastPage = 0;
-	// Variables for the scrollbar to show the fraction of the message shown
-	retObj.msgFractionShown = this.msgAreaHeight / retObj.messageLines.length;
-	if (retObj.msgFractionShown > 1)
-		retObj.msgFractionShown = 1.0;
-	retObj.numSolidScrollBlocks = Math.floor(this.msgAreaHeight * retObj.msgFractionShown);
-	if (retObj.numSolidScrollBlocks == 0)
-		retObj.numSolidScrollBlocks = 1;
+	var wordWrapTheMsgText = true;
+	if (typeof(pWordWrap) == "boolean")
+		wordWrapTheMsgText = pWordWrap;
+	if (wordWrapTheMsgText)
+	{
+		// Wrap the text to fit into the available message area.
+		// Note: In Synchronet 3.15 (and some beta builds of 3.16), there seemed to
+		// be a bug in the word_wrap() function where the word wrap length in Linux
+		// was one less than Windows, so if the BBS is running 3.15 or earlier of
+		// Synchronet, add 1 to the word wrap length if running in Linux.
+		var textWrapLen = this.msgAreaWidth;
+		if (system.version_num <= 31500)
+			textWrapLen = gRunningInWindows ? this.msgAreaWidth : this.msgAreaWidth + 1;
+		var msgTextWrapped = word_wrap(msgTextAltered, textWrapLen);
+		retObj.messageLines = lfexpand(msgTextWrapped).split("\r\n");
+		// Go through the message lines and trim them to ensure they'll easily fit
+		// in the message display area without having to trim them later.  (Note:
+		// this is okay to do since we're only using messageLines to display the
+		// message on the screen; messageLines isn't used for quoting/replying).
+		for (var msgLnIdx = 0; msgLnIdx < retObj.messageLines.length; ++msgLnIdx)
+			retObj.messageLines[msgLnIdx] = shortenStrWithAttrCodes(retObj.messageLines[msgLnIdx], this.msgAreaWidth);
+		// Set up some variables for displaying the message
+		retObj.topMsgLineIdxForLastPage = retObj.messageLines.length - this.msgAreaHeight;
+		if (retObj.topMsgLineIdxForLastPage < 0)
+			retObj.topMsgLineIdxForLastPage = 0;
+		// Variables for the scrollbar to show the fraction of the message shown
+		retObj.msgFractionShown = this.msgAreaHeight / retObj.messageLines.length;
+		if (retObj.msgFractionShown > 1)
+			retObj.msgFractionShown = 1.0;
+		retObj.numSolidScrollBlocks = Math.floor(this.msgAreaHeight * retObj.msgFractionShown);
+		if (retObj.numSolidScrollBlocks == 0)
+			retObj.numSolidScrollBlocks = 1;
+	}
+	else
+	{
+		retObj.messageLines = [];
+		retObj.messageLines.push(msgTextAltered);
+	}
 	retObj.numNonSolidScrollBlocks = this.msgAreaHeight - retObj.numSolidScrollBlocks;
 	retObj.solidBlockStartRow = this.msgAreaTop;
 
@@ -10967,6 +11228,161 @@ function DigDistMsgReader_ValidateMsgAreaChoice(pGrpIdx, pSubIdx, pCurPos)
 			}
 			msgBase.close();
 		}
+	}
+
+	return retObj;
+}
+
+// For the DigDistMsgReader class: Writes message lines to a file on the BBS
+// machine.
+//
+// Parameters:
+//  pMsgHdr: The header object for the message
+//  pFilename: The name of the file to write the message to
+//  pStripCtrl: Boolean - Whether or not to remove Synchronet control
+//              codes from the message lines
+//  pMsgLines: An array containing the message lines
+//  pAttachments: An array containing attachment information (as returned by determineMsgAttachments())
+//
+// Return value: An object containing the following properties:
+//               succeeded: Boolean - Whether or not the file was successfully written
+//               errorMsg: String - On failure, will contain the reason it failed
+function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename, pStripCtrl, pMsgLines, pAttachments)
+{
+	// Sanity checking
+	if (typeof(pFilename) != "string")
+		return({ succeeded: false, errorMsg: "Filename parameter not a string"});
+	if (pFilename.length == 0)
+		return({ succeeded: false, errorMsg: "Empty filename given"});
+
+	// If no message lines are passed in, then get the message lines now.
+	var msgLines = pMsgLines;
+	var attachments = pAttachments;
+	if ((pMsgLines == null) || (typeof(pMsgLines) != "object"))
+	{
+		if (typeof(pMsgHdr) == "object")
+		{
+			// Get the message text, interpret any @-codes in it, replace tabs with spaces
+			// to prevent weirdness when displaying the message lines, and word-wrap the
+			// text so that it looks good on the screen,
+			//GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDetermineAttachments, pGetB64Data)
+			//var msgInfo = this.GetMsgInfoForEnhancedReader(pMsgHdr, false, false, false);
+			var msgInfo = this.GetMsgInfoForEnhancedReader(pMsgHdr, true, true, true);
+			msgLines = msgInfo.messageLines;
+			if (msgInfo.hasOwnProperty("attachments"))
+				attachments = msgInfo.attachments;
+		}
+		else
+			return({ succeeded: false, errorMsg: "No message lines and null header object"});
+	}
+
+	var retObj = new Object();
+	retObj.succeeded = true;
+	retObj.errorMsg = "";
+
+	// If there are message attachments, then treat pFilename as a directory and
+	// create the directory for saving both the message text & attachments.
+	// Then, save the attachments to that directory.
+	var msgTextFilename = pFilename;
+	if ((attachments != null) && (attachments.length > 0))
+	{
+		if (file_isdir(pFilename))
+		{
+			if (file_exists(pFilename))
+				return({ succeeded: false, errorMsg: "Can't make directory: File with that name exists"});
+		}
+		else
+		{
+			if (!mkdir(pFilename))
+				return({ succeeded: false, errorMsg: "Failed to create directory"});
+		}
+
+		// The name of the file to save the message text will be called "messageText.txt"
+		// in the save directory.
+		var savePathWithTrailingSlash = backslash(pFilename);
+		msgTextFilename = savePathWithTrailingSlash + "messageText.txt";
+
+		// Save the attachments to the directory
+		var saveFileError = "";
+		for (var attachIdx = 0; (attachIdx < attachments.length) && (saveFileError.length == 0); ++attachIdx)
+		{
+			var destFilename = savePathWithTrailingSlash + attachments[attachIdx].filename;
+			// If the file info has base64 data, then decode & save it to the directory.
+			// Otherwise, the file was probably uploaded to the user's mailbox in Synchronet,
+			// so copy the file to the save directory.
+			if (attachments[attachIdx].hasOwnProperty("B64Data"))
+			{
+				var attachedFile = new File(destFilename);
+				if (attachedFile.open("wb"))
+				{
+					attachedFile.base64 = true;
+					if (!attachedFile.write(attachments[attachIdx].B64Data))
+						saveFileError = "\1n\1cFailed to save " + attachments[attachIdx].filename;
+					attachedFile.close();
+				}
+			}
+			else
+			{
+				// There is no base64 data for the file, so it's probably in the
+				// user's mailbox in Synchronet, so copy it to the save directory.
+				if (file_exists(attachments[attachIdx].fullyPathedFilename))
+				{
+					if (!file_copy(attachments[attachIdx].fullyPathedFilename, destFilename))
+						saveFileError = "Failed to copy " + attachments[attachIdx].filename;
+				}
+				else
+					saveFileError = "File " + attachments[attachIdx].fullyPathedAttachmentFilename + " doesn't exist";
+			}
+		}
+		if (saveFileError.length > 0)
+			return({ succeeded: false, errorMsg: saveFileError });
+	}
+
+	var messageSaveFile = new File(msgTextFilename);
+	if (messageSaveFile.open("w"))
+	{
+		// Write some header information to the file
+		if (typeof(pMsgHdr) == "object")
+		{
+			if (pMsgHdr.hasOwnProperty("from"))
+				messageSaveFile.writeln("From: " + pMsgHdr.from);
+			if (pMsgHdr.hasOwnProperty("to"))
+				messageSaveFile.writeln("  To: " + pMsgHdr.to);
+			if (pMsgHdr.hasOwnProperty("subject"))
+				messageSaveFile.writeln("Subj: " + pMsgHdr.subject);
+			/*
+			if (pMsgHdr.hasOwnProperty("when_written_time"))
+				messageSaveFile.writeln(strftime("Date: %Y-%m-%d %H:%M:%S", msgHeader.when_written_time));
+			*/
+			if (pMsgHdr.hasOwnProperty("date"))
+				messageSaveFile.writeln("Date: " + pMsgHdr.date);
+			if (pMsgHdr.hasOwnProperty("from_net_addr"))
+				messageSaveFile.writeln("From net address: " + pMsgHdr.from_net_addr);
+			if (pMsgHdr.hasOwnProperty("to_net_addr"))
+				messageSaveFile.writeln("To net address: " + pMsgHdr.to_net_addr);
+			if (pMsgHdr.hasOwnProperty("id"))
+				messageSaveFile.writeln("ID: " + pMsgHdr.id);
+			if (pMsgHdr.hasOwnProperty("reply_id"))
+				messageSaveFile.writeln("Reply ID: " + pMsgHdr.reply_id);
+			messageSaveFile.writeln("===============================");
+		}
+		// Write the message body to the file
+		if (pStripCtrl)
+		{
+			for (var msgLineIdx = 0; msgLineIdx < msgLines.length; ++msgLineIdx)
+				messageSaveFile.writeln(strip_ctrl(msgLines[msgLineIdx]));
+		}
+		else
+		{
+			for (var msgLineIdx = 0; msgLineIdx < msgLines.length; ++msgLineIdx)
+				messageSaveFile.writeln(msgLines[msgLineIdx]);
+		}
+		messageSaveFile.close();
+	}
+	else
+	{
+		retObj.succeeded = false;
+		retObj.errorMsg = "Unable to open the message file for writing";
 	}
 
 	return retObj;
@@ -12148,8 +12564,8 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 					if (gCmdLineArgVals.verboselogging)
 					{
 						writeToSysAndNodeLog("New-to-user scan for " +
-						                   subBoardGrpAndName(pSubCode) + " -- Scan pointer: " +
-						                   msg_area.sub[pSubCode].scan_ptr);
+						                     subBoardGrpAndName(pSubCode) + " -- Scan pointer: " +
+						                     msg_area.sub[pSubCode].scan_ptr);
 					}
 					//startMsgIndex = absMsgNumToIdx(pMsgbase, msg_area.sub[pSubCode].last_read);
 					startMsgIndex = absMsgNumToIdx(pMsgbase, msg_area.sub[pSubCode].scan_ptr);
@@ -12157,6 +12573,12 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 					{
 						msg_area.sub[pSubCode].scan_ptr = 0;
 						startMsgIndex = 0;
+					}
+					else
+					{
+						var startMsgHeader = pMsgbase.get_msg_header(true, startMsgIndex, true);
+						if ((startMsgHeader.attr & MSG_READ) == MSG_READ)
+							++startMsgIndex;
 					}
 				}
 				if (typeof(pEndIndex) != "number")
@@ -13630,6 +14052,528 @@ function getSubBoardCodeFromNum(pSubBoardNum)
 		}
 	}
 	return subBoardCode;
+}
+
+// Separates message text and any attachment data.
+//
+// Parameters:
+//  pMsgHdr: The message header object
+//  pMsgText: The text of a message
+//  pGetB64Data: Optional boolean - Whether or not to get the Base64-encoded
+//               data for base64-encoded attachments (i.e., in multi-part MIME
+//               emails).  Defaults to true.
+//
+// Return value: An object containing the following properties:
+//               msgText: The text of the message, without any of the
+//                        attachment base64-encoded data, etc.  If
+//                        the message doesn't have any attachments, then
+//                        this will likely be the same as pMsgText.
+//               attachments: An array of objects containing the following properties
+//                            for each attachment:
+//                            B64Data: Base64-encoded file data - Only for attachments
+//                                     that were attached as base64 in the message (i.e.,
+//                                     in a multi-part MIME message).  If the attachment
+//                                     was uploaded to the user's Synchronet mailbox,
+//                                     then the object won't have the B64Data property.
+//                            filename: The name of the attached file
+//                            fullyPathedFilename: The full path & filename of the
+//                                                 attached file saved on the BBS machine
+//               errorMsg: An error message if anything went wrong.  If
+//                         nothing went wrong, this will be an empty string.
+function determineMsgAttachments(pMsgHdr, pMsgText, pGetB64Data)
+{
+	var retObj = new Object();
+	retObj.msgText = "";
+	retObj.attachments = [];
+	retObj.errorMsg = "";
+
+	// Keep track of the user's inbox directory:  sbbs/data/file/<userNum>.in
+	var userInboxDir = backslash(backslash(system.data_dir + "file") + format("%04d.in", user.number));
+	// If the message subject is a filename that exists in the user's
+	// inbox directory, then add its filename to the list of attached
+	// filenames that will be returned
+	var fullyPathedAttachmentFilename = userInboxDir + pMsgHdr.subject;
+	if (file_exists(fullyPathedAttachmentFilename))
+	{
+		retObj.attachments.push({ filename: pMsgHdr.subject,
+		                          fullyPathedFilename: fullyPathedAttachmentFilename });
+	}
+
+	// The message to prepend onto the message text if the message has attachments
+	var msgHasAttachmentsTxt = "\1n\1g\1h- This message contains one or more attachments. Press CTRL-D to download.\1n\r\n"
+	                         + "\1n\1g\1h--------------------------------------------------------------------------\1n\r\n";
+
+	// Sanity checking
+	if (typeof(pMsgText) != "string")
+	{
+		// If there are any attachments, prepend the message text with a message
+		// saying that the message contains attachments.
+		if (retObj.attachments.length > 0)
+			retObj.msgText = msgHasAttachmentsTxt + retObj.msgText;
+		return retObj;
+	}
+
+	// If the message text doesn't include a line starting with -- and a
+	// line starting with "Content-type:", then then just return the
+	// the same text in retObj.
+	//var hasMultiParts = /--\S+\s*Content-Type:/.test(pMsgText);
+	//var hasMultiParts = ((dashDashIdx > -1) && (/Content-Type/.test(pMsgText)));
+	var dashDashIdx = pMsgText.indexOf("--");
+	var hasMultiParts = ((dashDashIdx > -1) && (pMsgText.indexOf("Content-Type", dashDashIdx+1) > dashDashIdx));
+	if (!hasMultiParts)
+	{
+		//retObj.msgText = pMsgText;
+		// If there are any attachments, prepend the message text with a message
+		// saying that the message contains attachments.
+		if (retObj.attachments.length > 0)
+			retObj.msgText = msgHasAttachmentsTxt + pMsgText;
+		else
+			retObj.msgText = pMsgText;
+		return retObj;
+	}
+
+	var getB64Data = true;
+	if (typeof(pGetB64Data) == "boolean")
+		getB64Data = pGetB64Data;
+
+	// Look in the message text for a line starting with -- followed by some characters,
+	// then whitespace
+	var sepMatches = /--\S+\s/.exec(pMsgText);
+	var msgSeparator = sepMatches[0];
+	// If the last character in msgSeparator is a whitepsace character, then
+	// remove it.
+	if (/\s/.test(msgSeparator.substr(msgSeparator.length-1, 1)))
+		msgSeparator = msgSeparator.substr(0, msgSeparator.length-1);
+	var contentType = ""; // The content type of the current section
+	var lastContentType = ""; // The content type of the last section
+	var contentEncodingType = "";
+	var sepIdx = 0;
+	var lastSepIdx = -1;
+	var lastContentTypeIdx = -1;
+	var lastContentEncodingTypeIdx = -1;
+	var startIdx = 0;
+	var gotMessageText = false; // In case the message has both text/plain & text/html
+	while ((sepIdx = pMsgText.indexOf(msgSeparator, startIdx)) >= 0)
+	{
+		var contentEncodingTypeIdx = -1;
+		// Look for a "Content-Type:" from the starting index
+		var contentTypeIdx = pMsgText.indexOf("Content-Type: ", startIdx+msgSeparator.length);
+		if (contentTypeIdx > -1)
+		{
+			// Extract the content-type string up to a newline or 15 characters
+			// if there's no newline
+			var newlineIdx = pMsgText.indexOf("\n", contentTypeIdx+14);
+			contentType = pMsgText.substring(contentTypeIdx+14, newlineIdx > -1 ? newlineIdx : contentTypeIdx+29);
+			// If the last character is whitespace (i.e., a newline), then remove it.
+			if (/\s/.test(contentType.substr(contentType.length-1, 1)))
+				contentType = contentType.substr(0, contentType.length-1);
+
+			// Update the start index for looking for the next message separator string
+			// - This should be after the "Content-type:" value.
+			startIdx = contentTypeIdx + contentType.length;
+		}
+		else
+		{
+			// No "Content-Type:" string was found
+			// Update the start index for looking for the next message separator string
+			startIdx = sepIdx + msgSeparator.length;
+		}
+
+		if ((lastSepIdx > -1) && (lastContentTypeIdx > -1))
+		{
+			// msgTextSearchStartIdx stores the index of where to start looking
+			// for the message text.  It could be lastContentTypeIdx, or it could
+			// be the content encoding type index if the "Content encoding type"
+			// text is found for the current message part.
+			var msgTextSearchStartIdx = lastContentTypeIdx;
+
+			// Look for "Content-Transfer-Encoding:" right after the content type
+			// and extract the content encoding type string
+			contentEncodingTypeIdx = pMsgText.indexOf("Content-Transfer-Encoding:", lastContentTypeIdx);
+			// If "Content-Transfer-Encoding:" wasn't found after the content type,
+			// then look just before the content type, but after the last separator
+			// string.
+			if (contentEncodingTypeIdx == -1)
+				contentEncodingTypeIdx = pMsgText.indexOf("Content-Transfer-Encoding:", lastSepIdx);
+			// If the next "Content-Encoding-Type" is after the current section,
+			// then this section doesn't have a content type, so blank it out.
+			if (contentEncodingTypeIdx > sepIdx)
+			{
+				contentEncodingTypeIdx = -1;
+				contentEncodingType = "";
+			}
+			else
+			{
+				msgTextSearchStartIdx = contentEncodingTypeIdx;
+				// Extract the content encoding type
+				var newlineIdx = pMsgText.indexOf("\n", contentEncodingTypeIdx+26);
+				contentEncodingType = pMsgText.substring(contentEncodingTypeIdx, newlineIdx);
+				// If the last character is whitespace (i.e., a newline), then remove it.
+				if (/\s/.test(contentEncodingType.substr(contentEncodingType.length-1, 1)))
+					contentEncodingType = contentEncodingType.substr(0, contentEncodingType.length-1);
+				// Update startIdx based on the length of the "content encoding type" string
+				startIdx += contentEncodingType.length;
+				// Now, store just the content type in contentEncodingType (i.e., "base64").
+				contentEncodingType = contentEncodingType.substr(27).toLowerCase();
+			}
+
+			// Look for the message text
+			var contentTypeSearchIdx = -1;
+			//if ((contentTypeSearchIdx = lastContentType.indexOf("text/plain")) > -1)
+			if ((contentTypeSearchIdx = lastContentType.indexOf("text/")) > -1)
+			{
+				if (!gotMessageText)
+				{
+					var newlineIdx = pMsgText.indexOf("\n", msgTextSearchStartIdx); // Used to be lastContentTypeIdx
+					if (newlineIdx > -1)
+						retObj.msgText = pMsgText.substring(newlineIdx+1, sepIdx);
+					else
+						retObj.msgText = pMsgText.substring(lastSepIdx, sepIdx);
+					gotMessageText = true;
+				}
+			}
+			else
+			{
+				// Look for a filename in the content-type specification
+				// If it doesn't contain the filename, then we'll have to look on the
+				// next line for the filename.
+				var attachmentFilename = "";
+				var matches = /name="(.*)"/.exec(lastContentType);
+				if (matches != null)
+				{
+					if (matches.length >= 2)
+						attachmentFilename = matches[1];
+				}
+				if (attachmentFilename.length == 0)
+				{
+					// Look for the filename on the next line
+					var newlineIdx = pMsgText.indexOf("\n", lastContentTypeIdx);
+					if (newlineIdx > -1)
+					{
+						// 1000 chars should be enough
+						var nextLine = pMsgText.substr(newlineIdx+1, 1000);
+						var matches = /name="(.*)"/.exec(nextLine);
+						if (matches != null)
+						{
+							if (matches.length >= 2)
+								attachmentFilename = matches[1];
+						}
+					}
+				}
+				// If we got a filename, then extract the base64-encoded file data.
+				if (attachmentFilename.length > 0)
+				{
+					var fileInfo = { filename: attachmentFilename,
+					                 fullyPathedFilename: gFileAttachDir + attachmentFilename };
+					// Only extract the base64-encoded data if getB64Data is true
+					// and the current section's encoding type was actually specified
+					// as base64.
+					if (getB64Data && (contentEncodingType == "base64"))
+					{
+						// There should be 2 newlines before the base64 data
+						// TODO: There's a bug here where sometimes it isn't getting
+						// the correct section for base64 data.  The code later that
+						// looks for an existing filename in the attachments is sort
+						// of a way around that though.
+						var lineSeparator = ascii(13) + ascii(10);
+						var twoNLIdx = pMsgText.indexOf(lineSeparator + lineSeparator, lastContentTypeIdx);
+						if (twoNLIdx > -1)
+						{
+							// Get the base64-encoded data for the current file from the message,
+							// and remove the newline & carriage return characters and whitespace
+							// from it.
+							fileInfo.B64Data = pMsgText.substring(twoNLIdx+2, sepIdx);
+							fileInfo.B64Data = fileInfo.B64Data.replace(new RegExp(ascii(13) + "|" + ascii(10), "g"), "").trim();
+
+							// Update the start index for looking for the next message separator
+							// string
+							startIdx = twoNLIdx;
+						}
+					}
+					// Add the file attachment information to the return object.
+					// If there is already an entry with the filename, then replace
+					// that one; otherwise, append it.
+					var fileExists = false;
+					for (var fileIdx = 0; (fileIdx < retObj.attachments.length) && !fileExists; ++fileIdx)
+					{
+						if (retObj.attachments[fileIdx].filename == fileInfo.filename)
+						{
+							fileExists = true;
+							if (getB64Data && fileInfo.hasOwnProperty("B64Data"))
+								retObj.attachments[fileIdx].B64Data = fileInfo.B64Data;
+						}
+					}
+					if (!fileExists)
+						retObj.attachments.push(fileInfo);
+				}
+			}
+		}
+
+		lastContentType = contentType;
+		lastSepIdx = sepIdx;
+		lastContentTypeIdx = contentTypeIdx;
+		lastContentEncodingTypeIdx = contentEncodingTypeIdx;
+
+		// The end of the message will have the message separator string with
+		// "--" appended to it.  If we've reached that point, then we know we
+		// can stop.
+		if (pMsgText.substr(sepIdx, msgSeparator.length+2) == msgSeparator + "--")
+			break;
+	}
+
+	// If there are any attachments, prepend the message text with a message
+	// saying that the message contains attachments.
+	if (retObj.attachments.length > 0)
+		retObj.msgText = msgHasAttachmentsTxt + retObj.msgText;
+
+	// If there are attachments and the message text is more than will fit on the
+	// screen (75% of the console height to account for the ), then append text at
+	// the end to say there are attachments.
+	var maxNumCharsOnScreen = 79 * Math.floor(console.screen_rows * 0.75);
+	if ((retObj.attachments.length > 0) && (retObj.msgText.length > maxNumCharsOnScreen))
+	{
+		retObj.msgText += "\1n\r\n\1g\1h--------------------------------------------------------------------------\1n\r\n";
+		retObj.msgText += "\1g\1h- This message contains one or more attachments. Press CTRL-D to download.\1n";
+	}
+
+	return retObj;
+}
+
+// Allows the user to download files that were attached to a message.  Takes an
+// array of file information given by determineMsgAttachments().
+//
+// Parameters:
+//  pAttachments: An array of file attachment information returned by
+//                determineMsgAttachments()
+//                            for each attachment:
+//                            B64Data: Base64-encoded file data - Only for attachments
+//                                     that were attached as base64 in the message (i.e.,
+//                                     in a multi-part MIME message).  If the attachment
+//                                     was uploaded to the user's Synchronet mailbox,
+//                                     then the object won't have the B64Data property.
+//                            filename: The name of the attached file
+//                            fullyPathedFilename: The full path & filename of the
+//                                                 attached file saved on the BBS machine
+function sendAttachedFiles(pAttachments)
+{
+	if (Object.prototype.toString.call(pAttachments) !== "[object Array]")
+		return;
+
+	// Synchronet doesn't allow batch downloading of files that aren't in the
+	// file database, so we have to send each one at a time. :(
+
+	// Get the file download confirmation text from text.dat
+	// 662: "\r\nDownload attached file: \1w%s\1b (%s bytes)"
+	var DLPromptTextOrig = bbs.text(DownloadAttachedFileQ);
+
+	var anyErrors = false;
+	// For each item in the array, allow the user to download the attachment.
+	var fileNum = 1;
+	pAttachments.forEach(function(fileInfo) {
+		console.print("\1n");
+		console.crlf();
+
+		// If the file doesn't exist and base64 data is available for the file,
+		// then save it to the temporary attachments directory.
+		// Note that we need to save the file first in order to get the file's size
+		// to display in the confirmation prompt to download the file.
+		// errorMsg will contain an error if something went wrong creating the
+		// temporary attachments directory, etc.
+		var errorMsg = "";
+		var savedFileToBBS = false; // If we base64-decoded the file, we'll want to delete it after it's sent.
+		if (!file_exists(fileInfo.fullyPathedFilename))
+		{
+			if (fileInfo.hasOwnProperty("B64Data"))
+			{
+				// If the temporary attachments directory doesn't exist,
+				// then create it.
+				var attachmentDirExists = true; // Will be false if it couldn't be created
+				if (!file_isdir(gFileAttachDir))
+				{
+					// If it's a file rather than a directory, then remove it
+					// before creating it as a directory.
+					if (file_exists(gFileAttachDir))
+						file_remove(gFileAttachDir);
+					attachmentDirExists = mkdir(gFileAttachDir);
+				}
+
+				// Write the file to the BBS machine
+				if (attachmentDirExists)
+				{
+					var attachedFile = new File(fileInfo.fullyPathedFilename);
+					if (attachedFile.open("wb"))
+					{
+						attachedFile.base64 = true;
+						if (!attachedFile.write(fileInfo.B64Data))
+							errorMsg = "\1h\1g* \1n\1cCan't send " + quoteStrWithSpaces(fileInfo.filename) + " - Failed to save it to the BBS!";
+						attachedFile.close();
+						// Saved the file to the temporary attachments directory (even if it failed
+						// to write, there's probably still an empty file there).
+						savedFileToBBS = true;
+					}
+					else
+						errorMsg = "\1h\1g* \1n\1cFailed to save " + quoteStrWithSpaces(fileInfo.filename) + "!";
+				}
+				else
+					errorMsg = "\1h\1g* \1n\1cFailed to create temporary directory on the BBS!";
+			}
+			else
+				errorMsg = "\1h\1g* \1n\1cCan't send " + quoteStrWithSpaces(fileInfo.filename) + " because it doesn't exist or wasn't encoded in a known format";
+		}
+		// If we can send the file, then prompt the user for confirmation, and if they
+		// answer yes, then send it.
+		// Note that we needed to save the file first in order to get the file's size
+		// to display in the confirmation prompt.
+		if (errorMsg.length == 0)
+		{
+			// Print the file number
+			console.print("\1n\1cFile \1g" + fileNum + "\1c of \1g" + pAttachments.length + "\1n");
+			console.crlf();
+			// Prompt the user to confirm whether they want to download the
+			// file.  If the user chooses yes, then send it.
+			var fileSize = Math.round(file_size(fileInfo.fullyPathedFilename));
+			var DLPromptText = format(DLPromptTextOrig, fileInfo.filename, fileSize);
+			if (console.yesno(DLPromptText))
+				bbs.send_file(fileInfo.fullyPathedFilename);
+
+			// If the file was base64-decoded and saved to the BBS machine (as opposed to
+			// being in the user's mailbox), then delete the file.
+			if (savedFileToBBS)
+				file_remove(fileInfo.fullyPathedFilename);
+		}
+		else
+		{
+			// There was an error creating the temporary attachment directory, etc., so
+			// display the error and pause to let the user read it.
+			//console.print(errorMsg);
+			//console.putmsg(word_wrap(errorMsg, console.screen_columns-1, errorMsg.length, false));
+			//console.crlf();
+			var errMsgLines = lfexpand(word_wrap(errorMsg, console.screen_columns-1, errorMsg.length, false)).split("\r\n");
+			console.print("\1n");
+			for (var errorIdx = 0; errorIdx < errMsgLines.length; ++errorIdx)
+			{
+				console.print(errMsgLines[errorIdx]);
+				console.crlf();
+			}
+			console.pause();
+		}
+
+		++fileNum;
+	});
+
+	// If the temporary attachments directory exists, then delete it.
+	if (file_exists(gFileAttachDir))
+		deltree(gFileAttachDir);
+}
+
+// This function recursively removes a directory and all of its contents.  Returns
+// whether or not the directory was removed.
+//
+// Parameters:
+//  pDir: The directory to remove (with trailing slash).
+//
+// Return value: Boolean - Whether or not the directory was removed.
+function deltree(pDir)
+{
+	if ((pDir == null) || (pDir == undefined))
+		return false;
+	if (typeof(pDir) != "string")
+		return false;
+	if (pDir.length == 0)
+		return false;
+	// Make sure pDir actually specifies a directory.
+	if (!file_isdir(pDir))
+		return false;
+	// Don't wipe out a root directory.
+	if ((pDir == "/") || (pDir == "\\") || (/:\\$/.test(pDir)) || (/:\/$/.test(pDir)) || (/:$/.test(pDir)))
+		return false;
+
+	// If we're on Windows, then use the "RD /S /Q" command to delete
+	// the directory.  Otherwise, assume *nix and use "rm -rf" to
+	// delete the directory.
+	if (deltree.inWindows == undefined)
+		deltree.inWindows = (/^WIN/.test(system.platform.toUpperCase()));
+	if (deltree.inWindows)
+		system.exec("RD " + withoutTrailingSlash(pDir) + " /s /q");
+	else
+		system.exec("rm -rf " + withoutTrailingSlash(pDir));
+	// The directory should be gone, so we should return true.  I'd like to verify that the
+	// directory really is gone, but file_exists() seems to return false for directories,
+	// even if the directory does exist.  So I test to make sure no files are seen in the dir.
+	return (directory(pDir + "*").length == 0);
+
+	/*
+	// Recursively deleting each file & dir using JavaScript:
+	var retval = true;
+
+	// Open the directory and delete each entry.
+	var files = directory(pDir + "*");
+	for (var i = 0; i < files.length; ++i)
+	{
+		// If the entry is a directory, then deltree it (Note: The entry
+		// should have a trailing slash).  Otherwise, delete the file.
+		// If the directory/file couldn't be removed, then break out
+		// of the loop.
+		if (file_isdir(files[i]))
+		{
+			retval = deltree(files[i]);
+			if (!retval)
+				break;
+		}
+		else
+		{
+			retval = file_remove(files[i]);
+			if (!retval)
+				break;
+		}
+	}
+
+	// Delete the directory specified by pDir.
+	if (retval)
+		retval = rmdir(pDir);
+
+	return retval;
+*/
+}
+
+// Removes a trailing (back)slash from a path.
+//
+// Parameters:
+//  pPath: A directory path
+//
+// Return value: The path without a trailing (back)slash.
+function withoutTrailingSlash(pPath)
+{
+	if ((pPath == null) || (pPath == undefined))
+		return "";
+
+	var retval = pPath;
+	if (retval.length > 0)
+	{
+		var lastIndex = retval.length - 1;
+		var lastChar = retval.charAt(lastIndex);
+		if ((lastChar == "\\") || (lastChar == "/"))
+			retval = retval.substr(0, lastIndex);
+	}
+	return retval;
+}
+
+// Adds double-quotes around a string if the string contains spaces.
+//
+// Parameters:
+//  pStr: A string to add double-quotes around if it has spaces
+//
+// Return value: The string with double-quotes if it contains spaces.  If the
+//               string doesn't contain spaces, then the same string will be
+//               returned.
+function quoteStrWithSpaces(pStr)
+{
+	if (typeof(pStr) != "string")
+		return "";
+	var strCopy = pStr;
+	if (pStr.indexOf(" ") > -1)
+		strCopy = "\"" + pStr + "\"";
+	return strCopy;
 }
 
 /////////////////////////////////////////////////////////////////////////

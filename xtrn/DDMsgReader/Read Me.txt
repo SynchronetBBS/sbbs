@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.03
-                           Release date: 2015-07-12
+                                 Version 1.04
+                           Release date: 2015-10-10
 
                                      by
 
@@ -66,8 +66,8 @@ This reader effectively replaces the Digital Distortion Message Lister, which
 provided a traditional message reader interface but not the scrollable reader
 interface for ANSI users.
 
-Thanks goes to Accession (sysop of Access Denied) and Psi-Jack (sysop of
-Decker's Heaven) for testing the reader while it was in development.
+Thanks goes to Accession/Access Denied (sysop of The Pharcyde) and Psi-Jack
+(sysop of Decker's Heaven) for testing the reader while it was in development.
 
 The following is a list of features:
 - Provides an enhanced, very functional yet intuitive user interface for
@@ -94,6 +94,9 @@ The following is a list of features:
   traditional interface for users whose terminal doesn't support ANSI.
 - Allows the user to delete and edit existing messages that they've written, if the
   sub-board supports those operations.
+- Allows the user to download file attachments, whether uploaded to their
+  mailbox on Synchronet or attached to internet emails
+- Allows sysops to save a message to the BBS machine for future reference
 - The program settings, colors, and some text can be changed via configuration
   files.  The configuration files may be placed in the same directory as the
   .js script or in the sbbs/ctrl directory.
@@ -129,7 +132,7 @@ The configuration files are plain text files, so they can be edited using any
 editor.
 
 The first 3 files (DDMsgReader.js, DDMsgReader.cfg, and DefaultTheme) can be
-placed together in any directory; the next 3 (DDReadPersonalEmail.js,
+placed together in any directory; the next 3 (DDReadPersonalMail.js,
 DDScanMsgs.js, and DDScanSubs.js) should be copied to your sbbs/mods directory.
 
 The examples in this document will assume the first 3 files are in the
@@ -170,6 +173,14 @@ There are a few search modes that Synchronet provides that Digital Distortion
 Message Reader doesn't support yet (such as continuous newscan and browse new
 scan), and for those situations, the Loadable Modules scripts will fall back to
 the stock Synchronet behavior.
+
+A note about DDReadPersonalMail.js:
+For reading personal email, DDReadPersonalMail.js contains a line that you
+can change to configure the reader to start up in list mode or reader mode.
+To change that, open DDReadPersonalMail.js using a text editor and search for
+the text "var readerStartmode" (without the quotes).  You can set the value
+to "read" to have the reader start in reader mode or "list" to start in list
+mode.
 
 Command shell setup
 -------------------
@@ -367,6 +378,28 @@ common message operations.
 - Read sent personal email:
 ?../xtrn/DDMsgReader/DDMsgReader.js -personalEmailSent -startMode=read
 
+
+Text customization using text.dat
+---------------------------------
+Digital Distortion Message Reader uses several lines of text from text.dat
+(included with Synchronet in the sbbs/ctrl directory):
+- Text # 10 (i.e., "E-mail (User name or number):"): Used when prompting the
+user to confirm an email address/user number when sending a private reply to a
+message
+- Text # 30 (i.e., "Aborted."): Used when saving a reaply message was aborted
+(i.e., because the user typed an empty email address)
+- Text # 54 (i.e., "Delete mail from %s"): Used to confirm whether the user
+wants to delete a personal email
+- Text # 563 (i.e., "[Hit a key] "): Used for the screen pause when displaying
+the help screen
+- Text # 662 (i.e., "Download attached file: xyz.txt (500 bytes)"): Used to
+confirm downloading an attached file
+
+the user chooses to downloaded attached files, the reader will prompt to
+confirm downloading of each file.  For the prompt text, the reader will use
+text number 662 from text.dat (in the sbbs/ctrl directory).  If you want to
+customize the text for that confirmation prompt, you would need to open
+text.dat and modify text number 662.
 
 4. Header ANSI/asc file
 =======================
