@@ -13,6 +13,8 @@ Use this software at your own risk.  It's still being developed, and hasn't been
 
 ###Quick start
 
+I haven't actually tried these instructions on a clean Synchronet BBS installation, but they should work.
+
 - Back up your Synchronet installation
 - Shut down your BBS
 - Clone [or download an archive of](https://github.com/echicken/synchronet-web-v4/archive/master.zip) this repository to a convenient location
@@ -66,6 +68,14 @@ Command=websocket-rlogin-service.js
 
 - Ensure that the *guest* user specified in the [web] section of *ctrl/modopts.ini* exists and has only the permissions that you want an unauthenticated visitor from the web to have.  This user probably shouldn't be able to post messages, and definitely shouldn't be able to post to networked message areas.
 - Look at those *xtrn_sections* in the [web] section of *ctrl/modopts.ini*.  They should be the *internal codes* of all External Programs sections that you want to make available to authenticated users via the web.  (You probably don't have an *erotic* External Programs area, but if you do ... that's cool.)
+
+###Customization
+
+- This web interface uses [Bootstrap 3.3.5](http://getbootstrap.com/).  It should be possible to use any compatible stylesheet.
+	- You can place your own CSS overrides in *web/root/css/style.css*
+	- You can load another stylesheet of your own choosing in the <head> section of *web/root/index.xjs* (load it after the others)
+- The sidebar module & page structure is *mostly* similar to the system used in ecWeb v3.  See [the old instructions](http://wiki.synchro.net/howto:ecweb#the_sidebar) for info on adding content.
+	- You can force a link to a page to be placed in the *More* menu by using an underscore as a separator in its filename rather than a hyphen
 
 ###Uninstall
 
