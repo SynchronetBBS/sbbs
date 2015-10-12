@@ -1,6 +1,16 @@
 # synchronet-web-v4
 A web interface for Synchronet BBS
 
+###Disclaimer
+
+Use this software at your own risk.  It's still being developed, and hasn't been thoroughly tested yet.
+
+###Requirements
+
+- This web interface has only been tested with Synchronet BBS 3.16c.  It will probably work with earlier and later versions.
+
+- The *Files* page of this web interface relies on a script which was introduced *after* the release of Synchronet BBS 3.16c.  You can grab a copy of *filedir.js* [here](http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/filedir.js?revision=1.2), and you should place it in your *exec/load/* directory.
+
 ###Quick start
 
 - Back up your Synchronet installation
@@ -30,7 +40,7 @@ A web interface for Synchronet BBS
 	; Limit the length of a telegram (in characters) that a web user can send
 	maximum_telegram_length = 800
 	; Which external program sections to list on the Games page (comma-separated)
-	xtrn_sections = games,coa,programs
+	xtrn_sections = games,puzzle,rpg,erotic
 	; Where (absolute or relative to 'exec') the 'lib' and 'root' directories live
 	web_directory = ../web
 	; Path to a .ans file to use as the ftelnet splash screen
@@ -50,3 +60,16 @@ Port=1513
 Options=NO_HOST_LOOKUP
 Command=websocket-rlogin-service.js
 ```
+- Tell your router and firewall to open and foreward ports *1123* and *1513* to your BBS
+
+###Configuration
+
+- Ensure that the *guest* user specified in the [web] section of *ctrl/modopts.ini* exists and has only the permissions that you want an unauthenticated visitor from the web to have.  This user probably shouldn't be able to post messages, and definitely shouldn't be able to post to networked message areas.
+- Look at those *xtrn_sections* in the [web] section of *ctrl/modopts.ini*.  They should be the *internal codes* of all External Programs sections that you want to make available to authenticated users via the web.  (You probably don't have an *erotic* External Programs area, but if you do ... that's cool.)
+
+###Uninstall
+
+- To stop using this web interface, you can just revert to your previous *web* directory at any time.
+- The [web] section added to *ctrl/modopts.ini* won't hurt anything if you leave it there, but you can delete it if you want
+- Revert your *ctrl/services.ini* file to the backup you made prior to installing this web interface
+- Undo any changes you made to your firewall & router during the *Quick Start*
