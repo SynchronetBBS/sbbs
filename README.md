@@ -3,7 +3,11 @@ A web interface for Synchronet BBS
 
 ###Disclaimer
 
-Use this software at your own risk.  It's still being developed, and hasn't been thoroughly tested yet.
+- Use this software at your own risk.  It's still being developed, and hasn't been thoroughly tested yet.
+
+- This readme kind of sucks.  I'll put a better one on the Synchronet Wiki once I'm ready to bring this over to the Synchronet CVS repository.
+	- Things may change quite a bit by the time I do bring this web interface over to the CVS, so try not to get too attached to any customizations that you make in the meantime.
+		- However, if you're an early adopter, I would appreciate your feedback.
 
 ###Requirements
 
