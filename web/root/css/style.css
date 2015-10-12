@@ -1,0 +1,64 @@
+a.list-group-item:hover {
+	background-color: #A9E2F3;
+}
+
+a.list-group-item.scanned:hover {
+}
+
+a.list-group-item.active {
+	background-color: #A9E2F3;
+}
+
+a.list-group-item.scanned:hover {
+}
+
+a.unread {
+	background: #FFFFFF;
+}
+
+a.read {
+	background: #E6E6E6;
+}
+
+blockquote {
+	font-size: 14px;
+	margin: 7px;
+	padding: 7px;
+	border-left: 5px solid #A4A4A4;
+}
+
+div.message {
+	margin: 1em 0 1em 1em;
+}
+
+input.dropdown {
+	clear: both;
+	margin: 0 0 1em 0;
+}
+
+li.list-group-item.mail:hover {
+	background-color: #A9E2F3;
+}
+
+span.message-header.unread {
+	background-color: #FCF8E3;
+}
+
+span.badge.scanned {
+	background-color: #2E9AFE;
+}
+
+span.badge.total {
+}
+
+.icon {
+	margin: 0 1em 1em 0;
+}
+
+.striped:nth-of-type(even) {
+	background: #F2F2F2;
+}
+
+.reply {
+	margin: 1em 0 1em 0;
+}

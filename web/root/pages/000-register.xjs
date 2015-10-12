@@ -1,0 +1,192 @@
+<!--HIDDEN-->
+
+<!--
+	Username/alias and password are always required. All other fields are set
+	as 'required' (or not) based on your New User Question Toggles as set in
+	the System Configuration section of scfg.  You can delete any fields of
+	this form that your system does not require.
+-->
+
+<?xjs
+	if(user.number > 0 && user.alias != settings.guest)
+		exit();
+
+	load("sbbsdefs.js");
+
+	var required = function(mask) {
+		return ((system.new_user_questions&mask) ? " required" : "");
+	}
+
+	var notRequired = function(mask) {
+		return ((system.new_user_questions&mask) ? "" : " required");
+	}
+
+	var iconRequired = function(mask) {
+		if(required(mask).length > 0)
+			write('<span title="Required" class="glyphicon glyphicon-asterisk"></span>');
+	}
+
+	var iconNotRequired = function(mask) {
+		if(notRequired(mask).length > 0)
+			write('<span title="Required" class="glyphicon glyphicon-asterisk"></span>');
+	}
+
+?>
+
+<script type="text/javascript" src="./js/validator.js"></script>
+
+<div class="well well-sm"><h3>Register</h3></div>
+
+<div id="errorbox" class="bg-danger" hidden></div>
+
+<div id="form-register-container">
+
+	<div style="margin-bottom:1em;">Fields marked with <span title="Required" class="glyphicon glyphicon-asterisk"></span> are required.  All others can be left blank if you wish.</div>
+
+	<form id="form-register" data-toggle="validator">
+
+		<div class="form-group">
+			<label for="alias">Username</label> <span title="Required" class="glyphicon glyphicon-asterisk"></span> 
+			<input type="text" data-minlength="1" maxlength="<?xjs write(LEN_ALIAS); ?>" class="form-control" id="alias" name="alias" placeholder="Username" required>
+			<span class="help-block">Maximum of <?xjs write(LEN_ALIAS); ?> characters</span>
+		</div>
+
+		<div class="form-group">
+			<label for="password1" class="control-label">Password</label> <span title="Required" class="glyphicon glyphicon-asterisk"></span> 
+			<input type="password" data-minlength="4" maxlength="8" class="form-control" id="password1" name="password1" placeholder="Password" required>
+			<span class="help-block">Minimum of <?xjs write(settings.minimum_password_length); ?>, maximum of <?xjs write(LEN_PASS); ?> characters</span>
+		</div>
+			<div class="form-group">
+			<label for="password2" class="control-label">Confirm Password</label> <span title="Required" class="glyphicon glyphicon-asterisk"></span> 
+			<input type="password" data-minlength="4" maxlength="8" class="form-control" id="password2" name="password2" placeholder="Confirm Password" data-match="#password1" required>
+		</div>
+
+		<div class="form-group">
+			<label for="netmail">Email address</label> <?xjs iconNotRequired(UQ_NONETMAIL); ?>
+			<input type="email" data-minlength="6" maxlength="<?xjs write(LEN_NETMAIL); ?>"class="form-control" id="netmail" name="netmail" placeholder="pat@m.f"<?xjs write(notRequired(UQ_NONETMAIL)); ?>>
+			<span class="help-block">Maximum of <?xjs write(LEN_NETMAIL); ?> characters</span>
+		</div>
+
+		<div class="form-group">
+			<label for="realname">Real Name</label> <?xjs iconRequired(UQ_REALNAME); ?>
+			<input type="text" data-minlength="1" maxlength="<?xjs write(LEN_NAME); ?>" class="form-control" id="realname" name="realname" placeholder="Pat Androgyne"<?xjs write(required(UQ_REALNAME)); ?>>
+			<span class="help-block">Maximum of <?xjs write(LEN_NAME); ?> characters</span>
+		</div>
+
+<!--	Not sure which User property this would be
+		<div class="form-group">
+			<label for="company">Organization</label> <?xjs //iconRequired(UQ_COMPANY); ?>
+			<input type="text" class="form-control" name="company" placeholder="Company name"<?xjs //write(required(UQ_COMPANY)); ?>>
+		</div> -->
+
+		<div class="form-group">
+			<label for="address">Street address</label> <?xjs iconRequired(UQ_ADDRESS); ?>
+			<input type="text" data-minlength="3" maxlength="<?xjs write(LEN_ADDRESS); ?>" class="form-control" id="address" name="address" placeholder="123 Any Street"<?xjs write(required(UQ_ADDRESS)); ?>>
+			<span class="help-block">Maximum of <?xjs write(LEN_ADDRESS); ?> characters</span>
+		</div>
+
+		<div class="form-group">
+			<label for="location">Location</label> <?xjs iconRequired(UQ_LOCATION); ?>
+			<input type="text" data-minlength="1" maxlength="<?xjs write(LEN_LOCATION); ?>" class="form-control" id="location" name="location" placeholder="City, State"<?xjs write(required(UQ_LOCATION)); ?>>
+			<span class="help-block">Maximum of <?xjs write(LEN_LOCATION); ?> characters</span>
+		</div>
+
+		<div class="form-group">
+			<label for="phone">Telephone number</label> <?xjs iconRequired(UQ_PHONE); ?>
+			<input type="text" data-minlength="3" maxlength="<?xjs write(LEN_PHONE); ?>" class="form-control" id="phone" name="phone" placeholder="800-555-5555"<?xjs write(required(UQ_PHONE)); ?>>
+			<span class="help-block">Maximum of <?xjs write(LEN_PHONE); ?> characters</span>
+		</div>
+
+		<div class="form-group">
+			<label for="birth">Birthdate</label> <?xjs iconRequired(UQ_BIRTH); ?>
+			<input type="text" data-minlength="<?xjs write(LEN_BIRTH); ?>" maxlength="<?xjs write(LEN_BIRTH); ?>" class="form-control" id="birth" name="birth" placeholder="<?xjs write(system.settings&SYS_EURODATE ? 'DD/MM/YY' : 'MM/DD/YY'); ?>" <?xjs write(required(UQ_BIRTH)); ?>>
+			<span class="help-block">Maximum of <?xjs write(LEN_BIRTH); ?> characters</span>
+		</div>
+
+		<div class="form-inline">
+			<?xjs iconRequired(UQ_SEX); ?> <label>Gender</label>&nbsp;
+			<div class="radio">
+				<label>
+					<input type="radio" id="gender-withheld" name="gender-withheld" checked> Withheld 
+				</label>
+			</div>
+			<div class="radio">
+				<label>
+					<input type="radio" id="gender-male" name="gender-male"> Male 
+				</label>
+			</div>
+			<div class="radio">
+				<label>
+					<input type="radio" id="gender-female" name="gender-female"> Female
+				</label>
+			</div>
+			<div class="radio">
+				<label>
+					<input type="radio" id="gender-other" name="gender-other"> Other 
+				</label>
+			</div>
+		</div>
+		<br>
+
+		<?xjs
+			if(system.newuser_password != "") {
+				writeln('<div class="form-group">');
+				writeln('<label for="newuser-password">Registration password</label>');
+				writeln('<input type="password" id="newuser-password" name="newuser-password" data-minlength="1" maxlength="8">');
+				writeln('</div>');
+			}
+		?>
+
+		<!-- Traps - leave these here. They will be hidden from users. -->
+		<input id="send-me-free-stuff" title="Don't fill this field" name="send-me-free-stuff" type="text">
+		<input id="subscribe-to-newsletter" title="Don't check this box" name="subscribe-to-newsletter" value="1" type="checkbox">
+
+		<div class="pull-right">
+			<button class="btn btn-primary" type="submit">
+				Register
+			</button>
+		</div>
+
+	</form>
+
+</div>
+
+<script type="text/javascript">
+
+var register = function() {
+	$.post(
+	 	"./api/register.ssjs",
+		$('#form-register').serialize()
+	).done(
+	 	function(data) {
+	 		if(data.errors.length > 0) {
+	 			$('#errorbox').html("");
+	 			data.errors.forEach(
+	 				function(err) {
+	 					$('#errorbox').append("<p>" + err + "</p>");
+	 				}
+	 			);
+	 			$('#errorbox').attr("hidden", false);
+	 		} else {
+	 			$('#errorbox').attr("hidden", true);
+	 			$('#form-register-container').html("Your account has been created.");
+	 		}
+	 	}
+	);
+}
+
+$('#form-register').validator().on(
+	'submit',
+	function(evt) {
+		if(evt.isDefaultPrevented())
+			return;
+		evt.preventDefault();
+		register();
+	}
+);
+
+// Traps
+$('#send-me-free-stuff').attr('hidden', true);
+$('#subscribe-to-newsletter').attr('hidden', true);
+
+</script>

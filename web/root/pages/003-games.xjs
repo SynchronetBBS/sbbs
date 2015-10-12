@@ -1,0 +1,58 @@
+<!--Games-->
+<?xjs 
+	if(typeof argv[0] != "boolean" || !argv[0])
+		exit();
+	load(settings.web_lib + "ftelnet.js");
+?>
+
+<script src="./ftelnet/ftelnet.min.js" id="fTelnetScript"></script>
+
+<a name="fTelnet"></a>
+<div id="fTelnetContainer" style="margin-bottom:1em;"></div>
+
+<script type="text/javascript">
+	fTelnet.Hostname = "<?xjs write(system.inet_addr); ?>";
+	fTelnet.Port = <?xjs write(webSocketRLogin.Port); ?>;
+	fTelnet.ConnectionType = "telnet";
+	fTelnet.SplashScreen = "<?xjs write(getSplash()); ?>";
+	fTelnet.StatusBarVisible = false;
+	fTelnet.VirtualKeyboardVisible = (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+	$(document).ready(fTelnet.Init());
+	var launchXtrn = function(code) {
+		$.getJSON(
+			'./api/system.ssjs?call=set-xtrn-intent&code=' + code,
+			function(data) {
+				fTelnet.Connect();
+			}
+		);
+	}
+</script>
+
+<div class="list-group">
+
+<?xjs
+
+	settings.xtrn_sections.forEach(
+		function(section) {
+			writeln('<div class="list-group-item">');
+			writeln('<h4>' + xtrn_area.sec[section].name + '</h4>');
+			writeln('<ul class="nav nav-pills">');
+			xtrn_area.sec_list[xtrn_area.sec[section].index].prog_list.forEach(
+				function(program) {
+					writeln(
+						'<li role="presentation">' +
+						'<a href="#fTelnet" onclick="launchXtrn(\'' + program.code + '\')">' +
+						program.name +
+						'</a>' +
+						'</li>'
+					);
+				}
+			);
+			writeln('</ul>');
+			writeln('</div>');
+		}
+	);
+
+?>
+
+</div>

@@ -1,0 +1,190 @@
+<!--User List-->
+<!--Slightly modified version of the ecWeb v3 userlist-->
+<?xjs
+	if(typeof argv[0] != "boolean" || !argv[0])
+		exit();
+
+	// Uncomment/comment properties below to enable/disable list columns
+	var columns = {
+//		number : { name : "#", type : "number" },
+		alias : { name : "Alias", type : "string" },
+//		name : { name : "Name", type : "string" },
+//		age : { name : "Age", type : "number" },
+//		gender : { name : "Sex", type : "string" },
+		location : { name : "Location", type : "string" },
+		laston_date : { name : "Last On", type : "date" },
+		connection : { name : "Via", type : "string" },
+//		firston_date : { name : "First On", type : "date" },
+//		total_logons : { name : "Calls", type : "number" },
+//		total_posts : { name : "Posts", type : "number" }
+	};
+
+	var pageSize = 500;
+
+	// Most people won't need to edit below this line
+	load("sbbsdefs.js");
+
+	if(	typeof http_request.query.offset == "undefined"
+		||
+		isNaN(parseInt(http_request.query.offset[0]))
+		||
+		http_request.query.offset[0] < 1
+	) {
+		var offset = 1;
+	} else {
+		var offset = parseInt(http_request.query.offset[0]);
+	}
+
+	var previousOffset = Math.max(1, offset - pageSize);
+	var nextOffset = Math.min(offset + pageSize, offset + (system.lastuser - offset));
+
+	var users = [];
+	var url = format(
+		"http://%s%s",
+		http_request.host,
+		http_request.request_string.split("&")[0]
+	);
+	
+	var sortUser = function(a, b, sortOrder, type) {
+		if(type == "string") {
+			a = a.toUpperCase();
+			b = b.toUpperCase();
+			ret =	(a < b)
+					?
+					((sortOrder == "ascending") ? 1 : -1)
+					:
+					(	(a > b)
+						?
+						((sortOrder == "ascending") ? -1 : 1)
+						:
+						0
+					);
+		} else if(type == "number" || type == "date") {
+			ret =	(a < b)
+					?
+					((sortOrder == "ascending") ? -1 : 1)
+					:
+					(	(a > b)
+						?
+						((sortOrder == "ascending") ? 1 : -1)
+						:
+						0
+					);
+		}
+		return ret;
+	}
+
+	var sortUsers = function(a, b) {
+		var ret = 0;
+		if(	typeof http_request.query.sortby != "undefined"
+			&&
+			typeof http_request.query.sortorder != "undefined"
+			&&
+			(	http_request.query.sortorder == "ascending"
+				||
+				http_request.query.sortorder == "descending"
+			)
+		) {
+			var sortBy = http_request.query.sortby.toString().toLowerCase();
+			var sortOrder = http_request.query.sortorder.toString().toLowerCase();
+			for(var c in columns) {
+				if(sortBy != c)
+					continue;
+				ret = sortUser(a[c], b[c], sortOrder, columns[c].type);
+				break;
+			}
+		}
+		return ret;
+	}
+	
+	var makeSortURLs = function(field, order) {
+		return format(
+			'<a class="icon" href="./?page=%s&sortby=%s&sortorder=ascending&offset=%s">'
+			+ '<span class="glyphicon glyphicon-arrow-up"></span>'
+			+ '</a>'
+			+ '<a class="icon" href="./?page=%s&sortby=%s&sortorder=descending&offset=%s">'
+			+ '<span class="glyphicon glyphicon-arrow-down"></span>'
+			+ '</a>',
+			http_request.query.page[0],
+			field,
+			offset,
+			http_request.query.page[0],
+			field,
+			offset
+		);
+	}
+	
+	var copyProperties = function(source, dest) {
+		for(var property in source) {
+			if(typeof source[property] == "string" || typeof source[property] == "number")
+				dest[property] = source[property];
+		}
+		return dest;
+	}
+
+	for(var u = offset;
+		u < ((system.lastuser - offset > pageSize) ? offset + pageSize : system.lastuser);
+		u++
+	) {
+		var usr1 = new User(u);
+		if(usr1.settings&USER_DELETED || usr1.compare_ars("REST Q"))
+			continue;
+		var usr2 = copyProperties(usr1, {});
+		usr2 = copyProperties(usr1.stats, usr2);	
+		users.push(usr2);
+	}
+	users.sort(sortUsers);
+?>
+
+<div class="well well-sm"><h3>User List</h3></div>
+<table class="table table-striped">
+	<thead>
+		<tr>
+<?xjs
+	for(var c in columns)
+		writeln(format("<th>%s %s</th>", columns[c].name, makeSortURLs(c)));
+?>
+		</tr>
+	</thead>
+	<tbody>
+<?xjs
+	for(var u = 0; u < users.length; u++) {
+		writeln('<tr>');
+		for(var c in columns) {
+			writeln(
+				'<td>' +
+				(columns[c].type == "date" ? system.timestr(users[u][c]) : users[u][c].toString()) +
+				'</td>'
+			);
+		}
+		writeln("</tr>");
+	}
+?>
+	</tbody>
+</table>
+
+<nav>
+	<ul class="pager">
+<?xjs
+	if(offset > 1) {
+		writeln(
+			format(
+				'<li><a href="./?page=%s&offset=%s">Previous</a></li>',
+				http_request.query.page[0],
+				previousOffset
+			)
+		);
+	}
+
+	if(system.lastuser - offset > pageSize) {
+		writeln(
+			format(
+				'<li><a href="./?page=%s&offset=%s">Next</a></li>',
+				http_request.query.page[0],
+				nextOffset
+			)
+		);
+	}
+?>
+	</ul>
+</nav>
