@@ -101,6 +101,12 @@ var prepareText = function(text) {
 		"..." : [
 			"&hellip;",
 			"&#8230;"
+		],
+		"\r\n" : [
+			"<br>",
+			"<br />",
+			"<p>",
+			"<p />"
 		]
 	};
 	text = html_decode(text);
