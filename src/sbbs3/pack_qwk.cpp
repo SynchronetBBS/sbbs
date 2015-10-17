@@ -446,7 +446,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				}
 
 				k=0;
-				if(useron.qwk&QWK_BYSELF)
+				if(useron.rest&FLAG('Q') ||  (useron.qwk&QWK_BYSELF))
 					k|=LP_BYSELF;
 				if(useron.rest&FLAG('Q') || !(subscan[usrsub[i][j]].cfg&SUB_CFG_YSCAN))
 					k|=LP_OTHERS;
