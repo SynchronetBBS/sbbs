@@ -8,37 +8,40 @@
 	Usage:
 
 		load('typeahead.js');
+		// All settings are optional
 		var options = {
-			// x-coordinate
-			'x' : 0,
-			// y-coordinate
-			'y' : 0,
-			// Length of input prompt
-			'len' : 60,
-			// Prompt (CTRL-A codes can be used)
+			// x-coordinate (Default: current x position of console cursor)
+			'x' : 1,
+			// y-coordinate (Default: current y position of console cursor)
+			'y' : 1,
+			// Length of input prompt (Default: terminal width - prompt length)
+			'len' : 64,
+			// Prompt text (CTRL-A color-codes can be used) (Default: none)
 			'prompt' : "Type something: ",
-			// Input box foreground color
+			// Input box foreground color (Default: LIGHTGRAY)
 			'fg' : LIGHTGRAY,
-			// Input box background color
+			// Input box background color (Default: BG_BLUE)
 			'bg' : BG_BLUE,
-			// Autocomplete suggestion foreground color
+			// Autocomplete suggestion foreground color (Default: LIGHTGRAY)
 			'sfg' : LIGHTGRAY,
-			// Autocomplete suggestion background color
+			// Autocomplete suggestion background color (Default: BG_BLUE)
 			'sbg' : BG_BLUE,
-			// Highlighted autocomplete suggestion foreground color
+			// Highlighted autocomplete suggestion foreground color (Default: WHITE)
 			'hsfg' : WHITE,
-			// Highlighted autocomplete suggestion background color
+			// Highlighted autocomplete suggestion background color (Default: BG_CYAN)
 			'hsbg' : BG_CYAN,
-			// Cursor character
+			// Cursor character (Default: ASCII 219 (full block))
 			'cursor' : ascii(219),
-			// Initial position of cursor within input string
+			// Initial position of cursor within input string (Default: 0)
 			'position' : 0,
-			// Default text of input string
+			// Default text of input string (Default: none)
 			'text' : "",
-			// An array of datasource functions (see below)
+			// An array of datasource functions (see below) (Default: none)
 			'datasources' : [ myDataSource ],
-			// Seconds of idle input to wait before calling datasources
-			'delay' : 1
+			// Seconds of idle input to wait before calling datasources (Default: 1)
+			'delay' : 1,
+			// Parent frame (Default: none)
+			'frame' : someFrameObjectIAlreadyCreated
 		};
 
 		var typeahead = new Typeahead(options);
@@ -47,9 +50,68 @@
 
 		A datasource function will be called with one argument: the current
 		string that is in the input box.  The datasource can examine that
-		string, then return an array of strings - these being its autocomplete
-		suggestions.  The datasource function must at minimum return an empty
-		array.
+		string, then return an array of autocomplete suggestions.  An
+		autocomplete suggestion may be either a String or an Object.  If it's
+		an Object, it must have a 'text' property, which is the text to be
+		displayed in the list (it can have whatever other properties you want
+		to pass along to your script after the user makes a selection.)
+
+
+	Methods:
+
+		Typeahead.getstr()
+
+			-	Blocking input method a la 'console.getstr()'
+			-	Returns a String or an Object after the user hits enter
+			-	If an item was selected, the return value will be one of the
+				values provided by your datasource(s), otherwise the return
+				value is whatever was in the input field
+			-	Automatically calls Typeahead.close() after enter is pressed,
+				and cleans up the display
+			-	If you're using this method, you don't need to use any of
+				Typeahead.inkey(), Typeahead.cycle(), Typeahead.updateCursor()
+				or Typeahead.close()
+			-	Use this method if your script doesn't need to do anything else
+				while it waits for input from the user
+
+		Typeahead.inkey(str)
+
+			-	*'Non-blocking' input method, where 'str' is a string of text
+				already taken from the user (ideally 1 character in length)
+			-	Returns Boolean true if the string was handled by Typeahead
+			-	Returns Boolean false if the string was not handled
+			-	Returns a String or an Object if the user hit enter
+				-	If no item was selected, the return value will be the
+					current text in the input field
+				-	If an item was selected, the return value will be either
+					a string or an object representing the selected item
+					(depending on what your datasource function(s) returned)
+			-	Use this method if you want to allow your script to do other
+				things while waiting for the user to press enter
+
+			*	Non-blocking is a bit of a stretch.  This doesn't block for
+				input from the user, but will block execution for as long as
+				each datasource lookup takes.
+
+		Typeahead.cycle()
+
+			-	Housekeeping function to be called during the same loop as
+				Typeahead.inkey() (see examples below)
+
+		Typeahead.updateCursor()
+
+			-	If you supplied a parent frame for your Typeahead object and
+				are cycling it / updating it at the same time that the user
+				is giving input, you may want to call this from within your
+				input loop just to keep the real cursor positioned at the same
+				location as Typeahead's fake one
+
+		Typeahead.close(cleanUp)
+
+			-	Closes your Typeahead
+			-	If 'cleanUp' is true, steps will be taken to tidy up the
+				user's terminal (probably only necessary if you didn't supply
+				a parent frame.)
 
 	Examples:
 
@@ -89,7 +151,7 @@
 
 		}
 
-		// An example that blocks for input from the user
+		// Typeahead.getstr() blocking input example (easy)
 
 		console.clear(LIGHTGRAY);
 
@@ -103,7 +165,8 @@
 		console.putmsg(str);
 		console.pause();
 
-		// Now a non-blocking example inside of a parent frame
+		// Typeahead.inkey(), Typeahead.cycle(), Typeahead.updateCursor()
+		// and Typeahead.close() non-blocking input example
 
 		console.clear(LIGHTGRAY);
 
@@ -298,7 +361,12 @@ var Typeahead = function(options) {
 		display.tree.addItem("");
 		suggestions.forEach(
 			function(suggestion) {
-				display.tree.addItem(suggestion);
+				if(typeof suggestion == "object" && typeof suggestion.text == "string") {
+					var item = display.tree.addItem(suggestion.text);
+					item.suggestion = suggestion;
+				} else if(typeof suggestion == "string") {
+					display.tree.addItem(suggestion);
+				}
 			}
 		);
 
@@ -373,12 +441,18 @@ var Typeahead = function(options) {
 				break;
 			case '\r':
 			case '\n':
-				if(typeof display.tree != "undefined" && display.tree.index > 0)
-					ret = display.tree.currentItem.text;
-				else
+				if(typeof display.tree != "undefined" && display.tree.index > 0) {
+					if(typeof display.tree.currentItem.suggestion == "undefined")
+						ret = display.tree.currentItem.text;
+					else
+						ret = display.tree.currentItem.suggestion;
+				} else {
 					ret = properties.text;
+				}
 				break;
 			default:
+				if(properties.text.length == properties.len)
+					break;
 				key = strip_ctrl(key);
 				if(properties.position != properties.text.length) {
 					properties.text = properties.text.split("");
@@ -402,7 +476,7 @@ var Typeahead = function(options) {
 
 	this.getstr = function() {
 		var ret;
-		while(typeof ret != "string") {
+		while(typeof ret != "string" && typeof ret != "object") {
 			ret = this.inkey(console.inkey(K_NONE, 5));
 			this.cycle();
 		}
