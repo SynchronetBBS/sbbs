@@ -40,6 +40,8 @@
 			'datasources' : [ myDataSource ],
 			// Seconds of idle input to wait before calling datasources (Default: 1)
 			'delay' : 1,
+			// Minimum length of input string before datasources are queried (Default: 1)
+			'minLength' : 1,
 			// Parent frame (Default: none)
 			'frame' : someFrameObjectIAlreadyCreated
 		};
@@ -230,6 +232,7 @@ var Typeahead = function(options) {
 		'text' : "",
 		'datasources' : [],
 		'delay' : 1,
+		'minLength' : 1,
 		'lastKey' : system.timer,
 		'suggested' : false,
 		'attr' : console.attributes
@@ -490,7 +493,7 @@ var Typeahead = function(options) {
 			display.tree = undefined;
 			display.treeFrame.invalidate();
 		} else if(
-			properties.text != "" &&
+			properties.text.length >= properties.minLength &&
 			properties.datasources.length > 0 &&
 			system.timer - properties.lastKey > properties.delay &&
 			!properties.suggested
