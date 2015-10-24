@@ -518,6 +518,7 @@ var Typeahead = function(options) {
 			console.attributes = properties.attr;
 			if(typeof display.tree != "undefined") {
 				for(var i = 0; i < display.tree.items.length; i++) {
+					console.line_counter = 0;
 					console.crlf();
 					console.clearline();
 				}
