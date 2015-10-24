@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -85,7 +85,8 @@ faddr_t atofaddr(char *instr)
 	cleanstr(str);
 	if(!stricmp(str,"ALL")) {
 		addr.zone=addr.net=addr.node=addr.point=0xffff;
-		return(addr); }
+		return(addr); 
+	}
 	addr.zone=addr.net=addr.node=addr.point=0;
 	if((p=strchr(str,':'))!=NULL) {
 		if(!strnicmp(str,"ALL:",4))
@@ -96,7 +97,8 @@ faddr_t atofaddr(char *instr)
 		if(!strnicmp(p,"ALL",3))
 			addr.net=0xffff;
 		else
-			addr.net=atoi(p); }
+			addr.net=atoi(p);
+	}
 	else {
 	#ifdef SCFG
 		if(total_faddrs)
@@ -104,7 +106,8 @@ faddr_t atofaddr(char *instr)
 		else
 	#endif
 			addr.zone=1;
-		addr.net=atoi(str); }
+		addr.net=atoi(str);
+	}
 	if(!addr.zone)              /* no such thing as zone 0 */
 		addr.zone=1;
 	if((p=strchr(str,'/'))!=NULL) {
@@ -112,7 +115,8 @@ faddr_t atofaddr(char *instr)
 		if(!strnicmp(p,"ALL",3))
 			addr.node=0xffff;
 		else
-			addr.node=atoi(p); }
+			addr.node=atoi(p);
+	}
 	else {
 		if(!addr.net) {
 	#ifdef SCFG
@@ -120,14 +124,17 @@ faddr_t atofaddr(char *instr)
 				addr.net=faddr[0].net;
 			else
 	#endif
-				addr.net=1; }
-		addr.node=atoi(str); }
+				addr.net=1;
+		}
+		addr.node=atoi(str);
+	}
 	if((p=strchr(str,'.'))!=NULL) {
 		p++;
 		if(!strnicmp(p,"ALL",3))
 			addr.point=0xffff;
 		else
-			addr.point=atoi(p); }
+			addr.point=atoi(p);
+	}
 	return(addr);
 }
 
@@ -144,7 +151,8 @@ int matchnode(faddr_t addr, int exact)
 			if(!memcmp(&cfg.nodecfg[i].faddr,&addr,sizeof(faddr_t)))
 				break;
 		if(exact || i<cfg.nodecfgs)
-			return(i); }
+			return(i);
+	}
 
 	for(i=0;i<cfg.nodecfgs;i++) 					/* Look for point match */
 		if(cfg.nodecfg[i].faddr.point==0xffff
@@ -195,7 +203,8 @@ void read_echo_cfg()
 	printf("\nReading %s\n",cfg.cfgfile);
 	if((stream=fnopen(&file,cfg.cfgfile,O_RDONLY))==NULL) {
 		printf("Unable to open %s for read.\n",cfg.cfgfile);
-		bail(1); }
+		bail(1);
+	}
 
 	cfg.maxpktsize=DFLT_PKT_SIZE;
 	cfg.maxbdlsize=DFLT_BDL_SIZE;
@@ -235,7 +244,8 @@ void read_echo_cfg()
 				,sizeof(arcdef_t)*(cfg.arcdefs+1)))==NULL) {
 				printf("\nError allocating %" XP_PRIsize_t "u bytes of memory for arcdef #%u.\n"
 					,sizeof(arcdef_t)*(cfg.arcdefs+1),cfg.arcdefs+1);
-				bail(1); }
+				bail(1);
+			}
 			SAFECOPY(cfg.arcdef[cfg.arcdefs].name,p);
 			tp=cfg.arcdef[cfg.arcdefs].name;
 			while(*tp && *tp>' ') tp++;
@@ -257,14 +267,18 @@ void read_echo_cfg()
 					SKIPCTRLSP(p);
 					SAFECOPY(cfg.arcdef[cfg.arcdefs].pack,p);
 					truncsp(cfg.arcdef[cfg.arcdefs].pack);
-					continue; }
+					continue;
+				}
 				if(!strnicmp(p,"UNPACK ",7)) {
 					p+=7;
 					SKIPCTRLSP(p);
 					SAFECOPY(cfg.arcdef[cfg.arcdefs].unpack,p);
-					truncsp(cfg.arcdef[cfg.arcdefs].unpack); } }
+					truncsp(cfg.arcdef[cfg.arcdefs].unpack);
+				}
+			}
 			++cfg.arcdefs;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"REGNUM"))
 			continue;
@@ -287,7 +301,8 @@ void read_echo_cfg()
 
 		if(!stricmp(tmp,"NOTIFY")) {
 			cfg.notify=atoi(cleanstr(p));
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"LOG")) {
 			cleanstr(p);
@@ -299,22 +314,27 @@ void read_echo_cfg()
 				cfg.log=0L;
 			else
 				cfg.log=strtol(cleanstr(p),0,16);
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"LOG_LEVEL")) {
 			cfg.log_level=atoi(cleanstr(p));
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"NOSWAP")) {
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"SECURE_ECHOMAIL")) {
 			misc|=SECURE;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"STRIP_LF")) {
 			misc|=STRIP_LF;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"CONVERT_TEAR")) {
 			misc|=CONVERT_TEAR;
@@ -323,66 +343,81 @@ void read_echo_cfg()
 
 		if(!stricmp(tmp,"STORE_SEENBY")) {
 			misc|=STORE_SEENBY;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"STORE_PATH")) {
 			misc|=STORE_PATH;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"STORE_KLUDGE")) {
 			misc|=STORE_KLUDGE;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"FUZZY_ZONE")) {
 			misc|=FUZZY_ZONE;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"TRUNC_BUNDLES")) {
 			misc|=TRUNC_BUNDLES;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"FLO_MAILER")) {
 			misc|=FLO_MAILER;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"ELIST_ONLY")) {
 			misc|=ELIST_ONLY;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"KILL_EMPTY")) {
 			misc|=KILL_EMPTY_MAIL;
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"AREAFILE")) {
 			SAFECOPY(cfg.areafile,cleanstr(p));
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"LOGFILE")) {
 			SAFECOPY(cfg.logfile,cleanstr(p));
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"INBOUND")) {            /* Inbound directory */
 			SAFECOPY(cfg.inbound,cleanstr(p));
 			backslash(cfg.inbound);
-		continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"SECURE_INBOUND")) {     /* Secure Inbound directory */
 			SAFECOPY(cfg.secure,cleanstr(p));
 			backslash(cfg.secure);
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"OUTBOUND")) {           /* Outbound directory */
 			SAFECOPY(cfg.outbound,cleanstr(p));
 			backslash(cfg.outbound);
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"ARCSIZE")) {            /* Maximum bundle size */
 			cfg.maxbdlsize=atol(p);
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"PKTSIZE")) {            /* Maximum packet size */
 			cfg.maxpktsize=atol(p);
-			continue; }
+			continue;
+		}
 
 		if(!stricmp(tmp,"USEPACKER")) {          /* Which packer to use */
 			if(!*p)
@@ -395,8 +430,7 @@ void read_echo_cfg()
 			*p=0;
 			p++;
 			for(u=0;u<cfg.arcdefs;u++)
-				if(!strnicmp(cfg.arcdef[u].name,str
-					,strlen(cfg.arcdef[u].name)))
+				if(!stricmp(cfg.arcdef[u].name,str))
 					break;
 			if(u==cfg.arcdefs)				/* i = number of arcdef til done */
 				u=0xffff;					/* Uncompressed type if not found */
@@ -413,10 +447,14 @@ void read_echo_cfg()
 						,sizeof(nodecfg_t)*(j+1)))==NULL) {
 						printf("\nError allocating memory for nodecfg #%u.\n"
 							,j+1);
-						bail(1); }
+						bail(1);
+					}
 					memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
-					cfg.nodecfg[j].faddr=addr; }
-				cfg.nodecfg[j].arctype=u; } }
+					cfg.nodecfg[j].faddr=addr;
+				}
+				cfg.nodecfg[j].arctype=u;
+			}
+		}
 
 		if(!stricmp(tmp,"PKTPWD")) {         /* Packet Password */
 			if(!*p)
@@ -431,10 +469,13 @@ void read_echo_cfg()
 					,sizeof(nodecfg_t)*(j+1)))==NULL) {
 					printf("\nError allocating memory for nodecfg #%u.\n"
 						,j+1);
-					bail(1); }
+					bail(1);
+				}
 				memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
-				cfg.nodecfg[j].faddr=addr; }
-			SAFECOPY(cfg.nodecfg[j].pktpwd,p); }
+				cfg.nodecfg[j].faddr=addr;
+			}
+			SAFECOPY(cfg.nodecfg[j].pktpwd,p);
+		}
 
 		if(!stricmp(tmp,"PKTTYPE")) {            /* Packet Type to Use */
 			if(!*p)
@@ -457,15 +498,19 @@ void read_echo_cfg()
 						,sizeof(nodecfg_t)*(j+1)))==NULL) {
 						printf("\nError allocating memory for nodecfg #%u.\n"
 							,j+1);
-						bail(1); }
+						bail(1);
+					}
 					memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
-					cfg.nodecfg[j].faddr=addr; }
+					cfg.nodecfg[j].faddr=addr;
+				}
 				if(!strcmp(str,"2+"))
 					cfg.nodecfg[j].pkt_type=PKT_TWO_PLUS;
 				else if(!strcmp(str,"2.2"))
 					cfg.nodecfg[j].pkt_type=PKT_TWO_TWO;
 				else if(!strcmp(str,"2"))
-					cfg.nodecfg[j].pkt_type=PKT_TWO; } }
+					cfg.nodecfg[j].pkt_type=PKT_TWO;
+			}
+		}
 
 		if(!stricmp(tmp,"SEND_NOTIFY")) {    /* Nodes to send notify lists to */
 			while(*p) {
@@ -481,10 +526,14 @@ void read_echo_cfg()
 						,sizeof(nodecfg_t)*(j+1)))==NULL) {
 						printf("\nError allocating memory for nodecfg #%u.\n"
 							,j+1);
-						bail(1); }
+						bail(1);
+					}
 					memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
-					cfg.nodecfg[j].faddr=addr; }
-				cfg.nodecfg[j].attr|=SEND_NOTIFY; } }
+					cfg.nodecfg[j].faddr=addr;
+				}
+				cfg.nodecfg[j].attr|=SEND_NOTIFY;
+			}
+		}
 
 		if(!stricmp(tmp,"PASSIVE")
 			|| !stricmp(tmp,"HOLD")
@@ -511,16 +560,21 @@ void read_echo_cfg()
 						,sizeof(nodecfg_t)*(j+1)))==NULL) {
 						printf("\nError allocating memory for nodecfg #%u.\n"
 							,j+1);
-						bail(1); }
+						bail(1);
+					}
 					memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
-					cfg.nodecfg[j].faddr=addr; }
-				cfg.nodecfg[j].attr|=attr; } }
+					cfg.nodecfg[j].faddr=addr;
+				}
+				cfg.nodecfg[j].attr|=attr;
+			}
+		}
 
 		if(!stricmp(tmp,"ROUTE_TO")) {
 			SKIPCTRLSP(p);
 			if(*p) {
 				route_addr=atofaddr(p);
-				SKIPCODE(p); }
+				SKIPCODE(p);
+			}
 			while(*p) {
 				SKIPCTRLSP(p);
 				if(!*p)
@@ -534,10 +588,14 @@ void read_echo_cfg()
 						,sizeof(nodecfg_t)*(j+1)))==NULL) {
 						printf("\nError allocating memory for nodecfg #%u.\n"
 							,j+1);
-						bail(1); }
+						bail(1);
+					}
 					memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
-					cfg.nodecfg[j].faddr=addr; }
-				cfg.nodecfg[j].route=route_addr; } }
+					cfg.nodecfg[j].faddr=addr;
+				}
+				cfg.nodecfg[j].route=route_addr;
+			}
+		}
 
 		if(!stricmp(tmp,"AREAFIX")) {            /* Areafix stuff here */
 			if(!*p)
@@ -550,9 +608,11 @@ void read_echo_cfg()
 					,sizeof(nodecfg_t)*(i+1)))==NULL) {
 					printf("\nError allocating memory for nodecfg #%u.\n"
 						,i+1);
-					bail(1); }
+					bail(1);
+				}
 				memset(&cfg.nodecfg[i],0,sizeof(nodecfg_t));
-				cfg.nodecfg[i].faddr=addr; }
+				cfg.nodecfg[i].faddr=addr;
+			}
 			cfg.nodecfg[i].flag=NULL;
 			SKIPCODE(p); 		/* Get to the end of the address */
 			SKIPCTRLSP(p);		/* Skip over whitespace chars */
@@ -570,8 +630,7 @@ void read_echo_cfg()
 				*p=0;						/* and terminate it 	 */
 				++p;
 				for(j=0;j<cfg.nodecfg[i].numflags;j++)
-					if(!strnicmp(cfg.nodecfg[i].flag[j].flag,tp
-						,strlen(cfg.nodecfg[i].flag[j].flag)))
+					if(!stricmp(cfg.nodecfg[i].flag[j].flag,tp))
 						break;
 				if(j==cfg.nodecfg[i].numflags) {
 					if((cfg.nodecfg[i].flag=
@@ -579,17 +638,22 @@ void read_echo_cfg()
 						,sizeof(flag_t)*(j+1)))==NULL) {
 						printf("\nError allocating memory for nodecfg #%u "
 							"flag #%u.\n",cfg.nodecfgs,j+1);
-						bail(1); }
+						bail(1);
+					}
 					cfg.nodecfg[i].numflags++;
-					SAFECOPY(cfg.nodecfg[i].flag[j].flag,tp); }
-				SKIPCTRLSP(p); } }
+					SAFECOPY(cfg.nodecfg[i].flag[j].flag,tp);
+				}
+				SKIPCTRLSP(p);
+			}
+		}
 
 		if(!stricmp(tmp,"ECHOLIST")) {           /* Echolists go here */
 			if((cfg.listcfg=(echolist_t *)realloc(cfg.listcfg
 				,sizeof(echolist_t)*(cfg.listcfgs+1)))==NULL) {
 				printf("\nError allocating memory for echolist cfg #%u.\n"
 					,cfg.listcfgs+1);
-				bail(1); }
+				bail(1);
+			}
 			memset(&cfg.listcfg[cfg.listcfgs],0,sizeof(echolist_t));
 			++cfg.listcfgs;
 			/* Need to forward requests? */
@@ -608,7 +672,9 @@ void read_echo_cfg()
 					*p=0;
 					++p;
 					SKIPCTRLSP(p);
-					SAFECOPY(cfg.listcfg[cfg.listcfgs-1].password,tp); } }
+					SAFECOPY(cfg.listcfg[cfg.listcfgs-1].password,tp);
+				}
+			}
 			else
 				cfg.listcfg[cfg.listcfgs-1].misc|=NOFWD;
 			if(!*p)
@@ -628,8 +694,7 @@ void read_echo_cfg()
 				*p=0;						/* and terminate it 	 */
 				++p;
 				for(u=0;u<cfg.listcfg[cfg.listcfgs-1].numflags;u++)
-					if(!strnicmp(cfg.listcfg[cfg.listcfgs-1].flag[u].flag,tp
-						,strlen(cfg.listcfg[cfg.listcfgs-1].flag[u].flag)))
+					if(!stricmp(cfg.listcfg[cfg.listcfgs-1].flag[u].flag,tp))
 						break;
 				if(u==cfg.listcfg[cfg.listcfgs-1].numflags) {
 					if((cfg.listcfg[cfg.listcfgs-1].flag=
@@ -637,10 +702,14 @@ void read_echo_cfg()
 						,sizeof(flag_t)*(u+1)))==NULL) {
 						printf("\nError allocating memory for listcfg #%u "
 							"flag #%u.\n",cfg.listcfgs,u+1);
-						bail(1); }
+						bail(1);
+					}
 					cfg.listcfg[cfg.listcfgs-1].numflags++;
-					SAFECOPY(cfg.listcfg[cfg.listcfgs-1].flag[u].flag,tp); }
-				SKIPCTRLSP(p); } }
+					SAFECOPY(cfg.listcfg[cfg.listcfgs-1].flag[u].flag,tp);
+				}
+				SKIPCTRLSP(p); 
+			} 
+		}
 
 		/* Message disabled why?  ToDo */
 		/* printf("Unrecognized line in SBBSECHO.CFG file.\n"); */
