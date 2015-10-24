@@ -465,6 +465,8 @@ var Typeahead = function(options) {
 					properties.text += key;
 				}
 				properties.position++;
+				if(typeof display.tree != "undefined")
+					display.tree.getcmd(KEY_HOME);
 				change = true;
 				break;
 		}
