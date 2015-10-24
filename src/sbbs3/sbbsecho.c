@@ -4397,12 +4397,6 @@ int main(int argc, char **argv)
 
 	printf("\n");
 
-	if(!cfg.areas) {
-		lprintf(LOG_ERR,"No areas defined in %s", cfg.areafile);
-		bail(1); 
-		return -1;
-	}
-
 	#if 0	/* AREAS.BBS DEBUG */
 		for(i=0;i<cfg.areas;i++) {
 			printf("%4u: %-8s"
