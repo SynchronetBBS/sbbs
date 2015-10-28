@@ -1249,6 +1249,91 @@ void sbbs_t::js_create_user_objects(void)
 	JS_ENDREQUEST(js_cx);
 }
 
+extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
+										,scfg_t* cfg				/* common */
+										,scfg_t* node_cfg			/* node-specific */
+										,jsSyncMethodSpec* methods	/* global */
+										,time_t uptime				/* system */
+										,char* host_name			/* system */
+										,char* socklib_desc			/* system */
+										,js_callback_t* cb			/* js */
+										,js_startup_t* js_startup	/* js */
+										,client_t* client			/* client */
+										,SOCKET client_socket		/* client */
+										,js_server_props_t* props	/* server */
+										,JSObject** glob
+										)
+{
+	BOOL	success=FALSE;
+
+	if(node_cfg==NULL)
+		node_cfg=cfg;
+
+	/* Global Object */
+	if(!js_CreateGlobalObject(js_cx, cfg, methods, js_startup, glob))
+		return(FALSE);
+
+	do {
+		/* System Object */
+		if(js_CreateSystemObject(js_cx, *glob, node_cfg, uptime, host_name, socklib_desc)==NULL)
+			break;
+
+		/* Internal JS Object */
+		if(cb!=NULL 
+			&& js_CreateInternalJsObject(js_cx, *glob, cb, js_startup)==NULL)
+			break;
+
+		/* Client Object */
+		if(client!=NULL 
+			&& js_CreateClientObject(js_cx, *glob, "client", client, client_socket)==NULL)
+			break;
+
+		/* Server */
+		if(props!=NULL
+			&& js_CreateServerObject(js_cx, *glob, props)==NULL)
+			break;
+
+		/* Socket Class */
+		if(js_CreateSocketClass(js_cx, *glob)==NULL)
+			break;
+
+		/* Queue Class */
+		if(js_CreateQueueClass(js_cx, *glob)==NULL)
+			break;
+
+		/* MsgBase Class */
+		if(js_CreateMsgBaseClass(js_cx, *glob, cfg)==NULL)
+			break;
+
+		/* File Class */
+		if(js_CreateFileClass(js_cx, *glob)==NULL)
+			break;
+
+		/* User class */
+		if(js_CreateUserClass(js_cx, *glob, cfg)==NULL) 
+			break;
+
+		/* COM Class */
+		if(js_CreateCOMClass(js_cx, *glob)==NULL)
+			break;
+
+		/* CryptContext Class */
+		if(js_CreateCryptContextClass(js_cx, *glob)==NULL)
+			break;
+
+		/* Area Objects */
+		if(!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */NULL, client, /* html_index_fname: */NULL, /* subscan: */NULL)) 
+			break;
+
+		success=TRUE;
+	} while(0);
+
+	if(!success)
+		JS_RemoveObjectRoot(js_cx, glob);
+
+	return(success);
+}
+
 #endif	/* JAVASCRIPT */
 
 static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,

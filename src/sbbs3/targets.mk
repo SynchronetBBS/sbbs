@@ -14,6 +14,7 @@ SERVICES	= $(LIBODIR)$(DIRSEP)$(LIBPREFIX)services$(SOFILE)
 SBBSCON		= $(EXEODIR)$(DIRSEP)sbbs$(EXEFILE)
 SBBSMONO	= $(EXEODIR)$(DIRSEP)sbbsmono$(EXEFILE)
 JSEXEC		= $(EXEODIR)$(DIRSEP)jsexec$(EXEFILE)
+JSDOOR		= $(EXEODIR)$(DIRSEP)jsdoor$(EXEFILE)
 NODE		= $(EXEODIR)$(DIRSEP)node$(EXEFILE)
 BAJA		= $(EXEODIR)$(DIRSEP)baja$(EXEFILE)
 UNBAJA		= $(EXEODIR)$(DIRSEP)unbaja$(EXEFILE)
@@ -50,7 +51,7 @@ all:	dlls utils console
 console:	$(JS_DEPS) xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
 		dlls \
-		$(SBBSCON) $(JSEXEC)
+		$(SBBSCON) $(JSEXEC) ${JSDOOR}
 
 utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
 		$(LIBODIR) $(OBJODIR) $(MTOBJODIR) $(EXEODIR) \
@@ -77,6 +78,7 @@ $(SERVICES):
 $(SBBSCON): $(XPDEV-MT_LIB) $(SMBLIB)
 $(SBBSMONO): $(XPDEV-MT_LIB) $(SMBLIB)
 $(JSEXEC): $(XPDEV-MT_LIB) $(SMBLIB)
+$(JSDOOR): $(XPDEV-MT_LIB)
 $(NODE): $(XPDEV_LIB)
 $(BAJA): $(XPDEV_LIB) $(SMBLIB)
 $(UNBAJA): $(XPDEV_LIB)

@@ -238,6 +238,43 @@ JSEXEC_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_conio$(OFILE)
 
+JSDOOR_OBJS = \
+			$(MTOBJODIR)$(DIRSEP)ars$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)base64$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)date_str$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)jsdoor$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)jsdebug$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_conio$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_request$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_socket$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)comio$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_client$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_cryptcon$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_global$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_rtpool$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_sprintf$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_file$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_internal$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_queue$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_server$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)sockopts$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)ssl$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)load_cfg$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)readtext$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)text_defaults$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)scfgsave$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)uucode$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)yenc$(OFILE)\
+
 SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)sexyz$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \

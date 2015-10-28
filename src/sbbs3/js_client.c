@@ -170,7 +170,7 @@ static JSClass js_client_class = {
 };
 
 JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
-										,char* name, client_t* client, SOCKET sock)
+										,const char* name, client_t* client, SOCKET sock)
 {
 	JSObject*	obj;
 
