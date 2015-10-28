@@ -83,10 +83,16 @@ BOOL		daemonize=FALSE;
 #endif
 char		orig_cwd[MAX_PATH+1];
 BOOL		debugger=FALSE;
+#ifndef PROG_NAME
+#define PROG_NAME "JSexec"
+#endif
+#ifndef PROG_NAME_LC
+#define PROG_NAME_LC "jsexec"
+#endif
 
 void banner(FILE* fp)
 {
-	fprintf(fp,"\nJSexec v%s%c-%s (rev %s)%s - "
+	fprintf(fp,"\n" PROG_NAME " v%s%c-%s (rev %s)%s - "
 		"Execute Synchronet JavaScript Module\n"
 		,VERSION,REVISION
 		,PLATFORM_DESC
@@ -106,9 +112,11 @@ void usage(FILE* fp)
 {
 	banner(fp);
 
-	fprintf(fp,"\nusage: jsexec [-opts] [path]module[.js] [args]\n"
+	fprintf(fp,"\nusage: " PROG_NAME_LC " [-opts] [path]module[.js] [args]\n"
 		"\navailable opts:\n\n"
+#ifndef JSDOOR
 		"\t-c<ctrl_dir>   specify path to Synchronet CTRL directory\n"
+#endif
 #if defined(__unix__)
 		"\t-d             run in background (daemonize)\n"
 #endif
@@ -883,7 +891,7 @@ long js_exec(const char *fname, char** args)
 		,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,revision))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	sprintf(rev_detail,"JSexec %s%s  "
+	sprintf(rev_detail,PROG_NAME " %s%s  "
 		"Compiled %s %s with %s"
 		,revision
 #ifdef _DEBUG
@@ -1016,7 +1024,9 @@ int parseLogLevel(const char* p)
 /*********************/
 int main(int argc, char **argv, char** environ)
 {
+#ifndef JSDOOR
 	char	error[512];
+#endif
 	char*	module=NULL;
 	char*	p;
 	char*	omode="w";
@@ -1053,6 +1063,11 @@ int main(int argc, char **argv, char** environ)
 
 	getcwd(orig_cwd, sizeof(orig_cwd));
 	backslash(orig_cwd);
+#ifdef JSDOOR
+ 	SAFECOPY(scfg.exec_dir, orig_cwd);
+ 	SAFECOPY(scfg.mods_dir, orig_cwd);
+ 	scfg.sys_misc = 0; /* SM_EURODATE and SM_MILITARY are used */
+#endif
 
 	for(argn=1;argn<argc && module==NULL;argn++) {
 		if(argv[argn][0]=='-') {
@@ -1061,10 +1076,12 @@ int main(int argc, char **argv, char** environ)
 				case 'a':
 					omode="a";
 					break;
+#ifndef JSDOOR
 				case 'c':
 					if(*p==0) p=argv[++argn];
 					SAFECOPY(scfg.ctrl_dir,p);
 					break;
+#endif
 #if defined(__unix__)
 				case 'd':
 					daemonize=TRUE;
@@ -1165,6 +1182,7 @@ int main(int argc, char **argv, char** environ)
 		module=argv[argn];
 	}
 
+#ifndef JSDOOR
 	if(scfg.ctrl_dir[0]==0) {
 		if((p=getenv("SBBSCTRL"))==NULL) {
 			fprintf(errfp,"\nSBBSCTRL environment variable not set and -c option not specified.\n");
@@ -1174,6 +1192,7 @@ int main(int argc, char **argv, char** environ)
 		}
 		SAFECOPY(scfg.ctrl_dir,p);
 	}	
+#endif
 
 	if(module==NULL && isatty(fileno(stdin))) {
 		fprintf(errfp,"\n!Module name not specified\n");
@@ -1183,6 +1202,9 @@ int main(int argc, char **argv, char** environ)
 
 	banner(statfp);
 
+#ifdef JSDOOR
+	SAFECOPY(scfg.temp_dir,"./temp");
+#else
 	if(chdir(scfg.ctrl_dir)!=0)
 		fprintf(errfp,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
@@ -1192,6 +1214,7 @@ int main(int argc, char **argv, char** environ)
 		return(do_bail(1));
 	}
 	SAFECOPY(scfg.temp_dir,"../temp");
+#endif
 	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 
 	if(host_name==NULL)
