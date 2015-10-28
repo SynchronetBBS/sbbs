@@ -69,7 +69,7 @@ mono:	xpdev-mt smblib \
 sexyz:	$(SEXYZ)
 
 .PHONY: jsdoor
-hsdoor: $(JSDOOR)
+jsdoor: $(JSDOOR)
 
 # Library dependencies
 $(SBBS): 
