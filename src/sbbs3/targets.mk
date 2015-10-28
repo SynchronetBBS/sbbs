@@ -51,7 +51,7 @@ all:	dlls utils console
 console:	$(JS_DEPS) xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
 		dlls \
-		$(SBBSCON) $(JSEXEC) ${JSDOOR}
+		$(SBBSCON) $(JSEXEC)
 
 utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
 		$(LIBODIR) $(OBJODIR) $(MTOBJODIR) $(EXEODIR) \
@@ -68,6 +68,8 @@ mono:	xpdev-mt smblib \
 .PHONY: sexyz
 sexyz:	$(SEXYZ)
 
+.PHONY: jsdoor
+hsdoor: $(JSDOOR)
 
 # Library dependencies
 $(SBBS): 
