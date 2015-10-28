@@ -14,9 +14,10 @@ capture.timeout = 15;
 
 var result=capture.capture();
 if(result==false) {
-    alert("Capture failure");
+    alert("Capture failure, error: " + capture.error);
     exit();
 }
+alert("Capture success, stopped due to: " + result.stopcause);
 print("hello: ");
 for(i in result.hello)
     print("'" + result.hello[i] + "'");
