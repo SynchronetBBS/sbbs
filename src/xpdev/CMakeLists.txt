@@ -182,8 +182,9 @@ set(INSTALL_HEADERS
 )
 if(NOT WIN32)
 	list(APPEND INSTALL_HEADERS xpevent.h)
-    list(APPEND INSTALL_HEADERS xpsem.h)
+	list(APPEND INSTALL_HEADERS xpsem.h)
 endif()
+target_include_directories(xpdev INTERFACE $<INSTALL_INTERFACE:include/xpdev>)
 
 export(PACKAGE XPDev)
 
