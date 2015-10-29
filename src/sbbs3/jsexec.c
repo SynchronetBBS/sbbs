@@ -887,7 +887,7 @@ long js_exec(const char *fname, char** args)
 	JS_DefineProperty(js_cx, js_glob, "argc", INT_TO_JSVAL(argc)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_DefineProperty(js_cx, js_glob, "jsexec_revision"
+	JS_DefineProperty(js_cx, js_glob, PROG_NAME_LC "_revision"
 		,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,revision))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
@@ -902,7 +902,7 @@ long js_exec(const char *fname, char** args)
 		,__DATE__, __TIME__, compiler
 		);
 
-	JS_DefineProperty(js_cx, js_glob, "jsexec_revision_detail"
+	JS_DefineProperty(js_cx, js_glob, PROG_NAME_LC "_revision_detail"
 		,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,rev_detail))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
