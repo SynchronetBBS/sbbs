@@ -268,7 +268,7 @@ ulong sbbs_t::gettimeleft(bool handle_out_of_time)
 				&& !(useron.exempt&FLAG('E'))) {
 												/* set to expired values */
 				bputs(text[AccountHasExpired]);
-				SAFEPRINTF(str,"%s Expired",useron.alias);
+				SAFEPRINTF2(str,"%s #%u Expired",useron.alias,useron.number);
 				logentry("!%",str);
 				if(cfg.level_misc[useron.level]&LEVEL_EXPTOVAL
 					&& cfg.level_expireto[useron.level]<10) {
