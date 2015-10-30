@@ -1765,11 +1765,41 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     return(JS_TRUE);
 }
 
+static JSBool
+js_alert(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	private_t*	p;
+	jsrefcount	rc;
+	char		*line;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if((p=(private_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	JSVALUE_TO_MSTRING(cx, argv[0], line, NULL);
+	if(line==NULL)
+	    return(JS_FALSE);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	lprintf(LOG_ERR,"%04d %s %s %s"
+		,p->sock, p->log_prefix, p->proc_name, line);
+	free(line);
+	JS_RESUMEREQUEST(cx, rc);
+
+	JS_SET_RVAL(cx, arglist, argv[0]);
+
+    return(JS_TRUE);
+}
+
+
 static JSFunctionSpec js_global_functions[] = {
 	{"write",			js_log,				0},
 	{"writeln",			js_log,				0},
 	{"print",			js_log,				0},
 	{"log",				js_log,				0},
+	{"alert",			js_alert,			1},
     {0}
 };
 
