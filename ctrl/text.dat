@@ -182,7 +182,7 @@
 "Feedback Today  : %s\r\n"                              153 StatsFeedbacksToday
 "\1_\r\n\1y\1hChange to (User Name or Number): \1n"         154 ChUserPrompt
 "PW: "                                                  155 ChUserPwPrompt
-"\r\nYou must include a comma between the city and state.\r\n"	156 CommaInLocationRequired
+"\r\nYou must include a comma in your location.\r\n"	156 CommaInLocationRequired
 "\r\nError log:\r\n"                                    157 ErrorLogHdr
 "Delete error log"                                      158 DeleteErrorLogQ
 "\r\n\1n\1r\1hDirectory does not exist: \1c%s\1n\r\n"   159 DirectoryDoesNotExist
@@ -406,7 +406,7 @@
 "\1_\1b\1h[\1cû\1b] \1yEnter your street address: \1w"         343 EnterYourAddress
 "\1_\1b\1h[\1cû\1b] \1yEnter your voice phone number: \1w"     344 EnterYourPhoneNumber
 "\1_\1b\1h[\1cû\1b] \1yEnter your birthday (%s): \1w"          345 EnterYourBirthday
-"\1_\1b\1h[\1cû\1b] \1yEnter your city, state: \1w"            346 EnterYourCityState
+"\1_\1b\1h[\1cû\1b] \1yEnter your location (e.g. city, state): \1w"            346 EnterYourCityState
 "\1_\1b\1h[\1cû\1b] \1yEnter your zip (or postal) code: \1w"   347 EnterYourZipCode
 "\1_\1y\1hClient (Name or Address): \1w"                348 EnterYourComputer
 "Are you connecting from North America"                 349 CallingFromNorthAmericaQ
