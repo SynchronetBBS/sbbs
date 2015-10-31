@@ -2732,7 +2732,7 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 {
 	char str[256],seenby[256];
 	short i,j,lastlen=0,net_exists=0;
-	faddr_t addr,sysaddr;
+	faddr_t addr,sysaddr,lasthop={0,0,0,0};
 	fpkdmsg_t pkdmsg;
 	time_t t;
 	size_t len;
@@ -2883,6 +2883,7 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 				strcpy(seenby," ");
 				if(foreign_zone(addr.zone, paths.addr[i].zone) || paths.addr[i].point)
 					continue;
+				lasthop=paths.addr[i];
 				if(paths.addr[i].net!=addr.net || !net_exists) {
 					net_exists=1;
 					addr.net=paths.addr[i].net;
@@ -2905,7 +2906,8 @@ void putfmsg(FILE *stream,char *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 
 			strcpy(seenby," ");         /* Add first address with same zone to PATH */
 			sysaddr=getsysfaddr(fmsghdr.destzone);
-			if(sysaddr.net!=0 && sysaddr.point==0) {
+			if(sysaddr.net!=0 && sysaddr.point==0 
+				&& (paths.addrs==0 || lasthop.net!=sysaddr.net || lasthop.node!=sysaddr.node)) {
 				if(sysaddr.net!=addr.net || !net_exists) {
 					net_exists=1;
 					addr.net=sysaddr.net;
@@ -4737,7 +4739,7 @@ int main(int argc, char **argv)
 				} 						/* On to the next message */
 
 				/* TODO: Should circular path detection occur before processing pass-through areas? */
-				if(cfg.check_path) {
+				if(cfg.check_path && msg_path.addrs > 1) {
 					for(j=0;j<scfg.total_faddrs;j++)
 						if(check_psb(&msg_path,scfg.faddr[j]))
 							break;
