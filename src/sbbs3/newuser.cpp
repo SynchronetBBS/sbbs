@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -306,22 +306,15 @@ BOOL sbbs_t::newuser()
 	SAFEPRINTF(str,"New user: %s",useron.alias);
 	logline("N",str);
 	if(!online) return(FALSE);
-	CLS;
 	SAFEPRINTF(str,"%ssbbs.msg",cfg.text_dir);
-	printfile(str,P_NOABORT);
-	if(lncntr)
-		pause();
-	CLS;
+	if(fexist(str))
+		printfile(str,P_NOABORT);
 	SAFEPRINTF(str,"%ssystem.msg",cfg.text_dir);
-	printfile(str,P_NOABORT);
-	if(lncntr)
-		pause();
-	CLS;
+	if(fexist(str))
+		printfile(str,P_NOABORT);
 	SAFEPRINTF(str,"%snewuser.msg",cfg.text_dir);
-	printfile(str,P_NOABORT);
-	if(lncntr)
-		pause();
-	CLS;
+	if(fexist(str))
+		printfile(str,P_NOABORT);
 	answertime=time(NULL);		/* could take 10 minutes to get this far */
 
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
@@ -439,8 +432,8 @@ BOOL sbbs_t::newuser()
 
 	if(useron.number!=1 && cfg.node_valuser) {
 		SAFEPRINTF(str,"%sfeedback.msg",cfg.text_dir);
-		CLS;
-		printfile(str,P_NOABORT);
+		if(fexist(str))
+			printfile(str,P_NOABORT);
 		safe_snprintf(str,sizeof(str),text[NewUserFeedbackHdr]
 			,nulstr,getage(&cfg,useron.birth),useron.sex,useron.birth
 			,useron.name,useron.phone,useron.comp,useron.modem);

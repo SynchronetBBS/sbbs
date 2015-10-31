@@ -1,4 +1,4 @@
-ncYour Internet e-mail address here on @BBS@ is:
+@CLS@ncYour Internet e-mail address here on @BBS@ is:
 <h@EMAILADDR@nc>
 
 If your sysop (@SYSOP@) has enabled the Synchronet mail (SMTP)

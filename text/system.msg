@@ -1,4 +1,4 @@
-nhwThis is y@BBS@w located in y@LOCATION@w
+@CLS@nhwThis is y@BBS@w located in y@LOCATION@w
 with your sysop, y@SYSOP@w here to serve you.
 
 y@HOSTNAME@w is running y@OS_VER@w
