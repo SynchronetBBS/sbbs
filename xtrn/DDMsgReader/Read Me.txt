@@ -12,7 +12,7 @@
 
 
 
-This file describes the Digital Distortion Message Lister.
+This file describes the Digital Distortion Message Reader.
 
 Contents
 ========
