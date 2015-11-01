@@ -63,6 +63,13 @@
  *                              Releasing this version after development & testing,
  *                              since attachment downloading and the other new features
  *                              seem to be working fairly well.
+ * 2015-10-25 Eric Oulashin     Version 1.05 Beta
+ *                              Started updating the reader to display more header &
+ *                              kludge lines.
+ * 2015-10-28 Eric Oulashin     Started working on updating the ANSIAttrsToSyncAttrs()
+ *                              function to use Synchronet's ans2asc tool to convert
+ *                              from ANSI to Synchronet codes, to get ANSI messsages
+ *                              to look better.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -150,8 +157,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.04";
-var READER_DATE = "2015-10-10";
+var READER_VERSION = "1.05 Beta";
+var READER_DATE = "2015-11-01";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2264,7 +2271,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 	// base is open so that the delete & edit keys can be added correctly).
 	this.SetEnhancedReaderHelpLine();
 
-	// Message reading time!
+	// Get the screen ready for reading messages - First, clear the screen.
 	console.clear("\1n");
 	// Display the help line at the bottom of the screen
 	if (this.scrollingReaderInterface && console.term_supports(USER_ANSI))
@@ -2286,9 +2293,14 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		readMsgRetObj = this.ReadMessageEnhanced(msgIndex, allowChgMsgArea);
 		retObj.lastUserInput = readMsgRetObj.lastKeypress;
 		retObj.lastAction = readMsgRetObj.nextAction;
+		// If we should refresh the enhanced reader help line on the screen (and
+		// the returned message offset is valid and the user's terminal supports ANSI),
+		// then refresh the help line.
+		if (readMsgRetObj.refreshEnhancedRdrHelpLine && readMsgRetObj.offsetValid && console.term_supports(USER_ANSI))
+			this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+		// If the returned message offset is invalid, then quit.
 		if (!readMsgRetObj.offsetValid)
 		{
-			// Invalid message offset, so quit
 			continueOn = false;
 			retObj.stoppedReading = true;
 			break;
@@ -2560,44 +2572,44 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 //                                  this will be -1.
 function DigDistMsgReader_ListMessages(pSubBoardCode, pReturnOnMsgSelect, pAllowChgSubBoard)
 {
-   var retObj = new Object();
-   retObj.lastUserInput = "";
-   retObj.selectedMsgOffset = -1;
+	var retObj = new Object();
+	retObj.lastUserInput = "";
+	retObj.selectedMsgOffset = -1;
 
-   // If the passed-in sub-board code was different than what was set in the object before,
-   // then open the new message sub-board.
-   var previousSubBoardCode = this.subBoardCode;
-   if (typeof(pSubBoardCode) == "string")
-   {
-      if (subBoardCodeIsValid(pSubBoardCode))
-         this.setSubBoardCode(pSubBoardCode);
-      else
-      {
-         console.print("\1n\1h\1yWarning: \1wThe Message Reader connot continue because an invalid");
-         console.crlf();
-         console.print("sub-board code was specified (" + pSubBoardCode + "). Please notify the sysop.");
-         console.crlf();
-         console.pause();
-         return retObj;
-      }
-   }
-   if (this.subBoardCode.length == 0)
-   {
-      console.print("\1n\1h\1yWarning: \1wThe Message Reader connot continue because no message\r\n");
-      console.print("sub-board was specified. Please notify the sysop.\r\n\1p");
-      return retObj;
-   }
-   if (previousSubBoardCode != this.subBoardCode)
-   {
-      this.msgbase = null;
-      this.msgbase = new MsgBase(this.subBoardCode);
-   }
+	// If the passed-in sub-board code was different than what was set in the object before,
+	// then open the new message sub-board.
+	var previousSubBoardCode = this.subBoardCode;
+	if (typeof(pSubBoardCode) == "string")
+	{
+		if (subBoardCodeIsValid(pSubBoardCode))
+			this.setSubBoardCode(pSubBoardCode);
+		else
+		{
+			console.print("\1n\1h\1yWarning: \1wThe Message Reader connot continue because an invalid");
+			console.crlf();
+			console.print("sub-board code was specified (" + pSubBoardCode + "). Please notify the sysop.");
+			console.crlf();
+			console.pause();
+			return retObj;
+		}
+	}
+	if (this.subBoardCode.length == 0)
+	{
+		console.print("\1n\1h\1yWarning: \1wThe Message Reader connot continue because no message\r\n");
+		console.print("sub-board was specified. Please notify the sysop.\r\n\1p");
+		return retObj;
+	}
+	if (previousSubBoardCode != this.subBoardCode)
+	{
+		this.msgbase = null;
+		this.msgbase = new MsgBase(this.subBoardCode);
+	}
 	var openSucceeded = true;
 	if (!this.msgbase.is_open)
-      openSucceeded = this.msgbase.open();
+		openSucceeded = this.msgbase.open();
 	if (openSucceeded)
 	{
-      // If there are no messages to display in the current sub-board, then let the
+		// If there are no messages to display in the current sub-board, then let the
 		// user know and exit.
 		if (this.NumMessages() == 0)
 		{
@@ -2607,24 +2619,24 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pReturnOnMsgSelect, pAllow
 			console.center("\1n\1h\1yThere are no messages to display.\r\n\1p");
 			return retObj;
 		}
-   }
+	}
 
-   // Construct the traditional UI pause text and the line of help text for lightbar
-   // mode.  This adds the delete and edit keys if the user is allowed to delete & edit
+	// Construct the traditional UI pause text and the line of help text for lightbar
+	// mode.  This adds the delete and edit keys if the user is allowed to delete & edit
 	// messages.
 	this.SetMsgListPauseTextAndLightbarHelpLine();
 
-   // If this.reverseListOrder is the string "ASK", prompt the user for whether
-   // they want to list the messages in reverse order.
-   if ((typeof(this.reverseListOrder) == "string") && (this.reverseListOrder.toUpperCase() == "ASK"))
-   {
-      if (numMessages(bbs.cursub_code) > 0)
-         this.reverseListOrder = !console.noyes("\1n\1cList in reverse (newest on top)");
-   }
+	// If this.reverseListOrder is the string "ASK", prompt the user for whether
+	// they want to list the messages in reverse order.
+	if ((typeof(this.reverseListOrder) == "string") && (this.reverseListOrder.toUpperCase() == "ASK"))
+	{
+		if (numMessages(bbs.cursub_code) > 0)
+			this.reverseListOrder = !console.noyes("\1n\1cList in reverse (newest on top)");
+	}
 
-   // List the messages using the lightbar or traditional interface, depending on
-   // what this.msgListUseLightbarListInterface is set to.  The lightbar interface requires ANSI.
-   if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
+	// List the messages using the lightbar or traditional interface, depending on
+	// what this.msgListUseLightbarListInterface is set to.  The lightbar interface requires ANSI.
+	if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
 		retObj = this.ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSubBoard);
 	else
 		retObj = this.ListMessages_Traditional(pReturnOnMsgSelect, pAllowChgSubBoard);
@@ -3938,6 +3950,10 @@ function DigDistMsgReader_ReadMessage(pOffset)
 //               nextAction: The next action for the caller to take.  This will be
 //                           one of the values specified by the ACTION_* constants.
 //                           This defaults to ACTION_NONE on error.
+//               refreshEnhancedRdrHelpLine: Boolean - Whether or not to refresh the
+//                                           enhanced reader help line on the screen
+//                                           (for instance, if switched to the traditional
+//                                            non-scrolling interface to read the message)
 function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 {
 	var retObj = new Object();
@@ -3947,6 +3963,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	retObj.lastKeypress = "";
 	retObj.newMsgOffset = -1;
 	retObj.nextAction = ACTION_NONE;
+	retObj.refreshEnhancedRdrHelpLine = false;
 
 	// Get the message header
 	var msgHeader = this.GetMsgHdrByIdx(pOffset);
@@ -4027,9 +4044,16 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		return threadType;
 	}
 
+	// Get the message text and see if it has any ANSI codes.  If it has ANSI codes,
+	// then don't use the scrolling interface so that the ANSI gets displayed properly.
+	var messageText = this.msgbase.get_msg_body(true, msgHeader.offset);
+	var useScrollingInterface = (this.scrollingReaderInterface && !textHasANSICodes(messageText));
+	// If we switch to the non-scrolling interface here, then the calling method should
+	// refresh the enhanced reader help line on the screen.
+	retObj.refreshEnhancedRdrHelpLine = (this.scrollingReaderInterface && !useScrollingInterface);
 	// Use the scrollable reader interface if the setting is enabled & the user's
 	// terminal supports ANSI.  Otherwise, use a more traditional user interface.
-	if (this.scrollingReaderInterface && console.term_supports(USER_ANSI))
+	if (useScrollingInterface && console.term_supports(USER_ANSI))
 	{
 		// Show the message header
 		this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
@@ -4037,7 +4061,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		// Get the message text, interpret any @-codes in it, replace tabs with spaces
 		// to prevent weirdness when displaying the message lines, and word-wrap the
 		// text so that it looks good on the screen,
-		var msgInfo = this.GetMsgInfoForEnhancedReader(msgHeader, true, true, true);
+		var msgInfo = this.GetMsgInfoForEnhancedReader(msgHeader, true, true, true, messageText);
 
 		var topMsgLineIdxForLastPage = msgInfo.topMsgLineIdxForLastPage;
 		var msgFractionShown = msgInfo.msgFractionShown;
@@ -4570,7 +4594,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 
 						// Get an array of the extended header info/kludge lines and then
 						// allow the user to scroll through them.
-						var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader);
+						var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == "K"));
 						if (extdHdrInfoLines.length > 0)
 						{
 							// Calculate information for the scrollbar for the kludge lines
@@ -4704,18 +4728,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	else
 	{
 		// Use the non-scrolling interface.
-		// Older:
-		/*
-		// Get the message body.  Make sure the text is word-wrapped so that it
-		// looks good when written to the screen.
-		var msgText = this.msgbase.get_msg_body(true, msgHeader.offset);
-		var msgTextWrapped = word_wrap(msgText, console.screen_columns-1);
-		*/
 		// Separate the message text from any attachments in the message.
-		//determineMsgAttachments(pMsgHdr, pMsgText, pGetB64Data)
-		var msgAndAttachmentInfo = determineMsgAttachments(msgHeader,
-		                                                   this.msgbase.get_msg_body(true, msgHeader.offset),
-		                                                   true);
+		var msgAndAttachmentInfo = determineMsgAttachments(msgHeader, messageText, true);
 		var msgTextWrapped = word_wrap(msgAndAttachmentInfo.msgText, console.screen_columns-1);
 
 		// Generate the key help text
@@ -5139,7 +5153,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						console.crlf();
 						// Get an array of the extended header info/kludge lines and then
 						// display them.
-						var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader);
+						var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == "K"));
 						if (extdHdrInfoLines.length > 0)
 						{
 							console.crlf();
@@ -7110,19 +7124,19 @@ function DigDistMsgReader_IsValidMessageNum(pMsgNum)
 //  pMsgIdx: The message index (0-based)
 function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx)
 {
-   var msgHdr = null;
-   if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
-       (this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
-   {
-      if ((pMsgIdx >= 0) && (pMsgIdx < this.msgSearchHdrs[this.subBoardCode].indexed.length))
-         msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIdx];
-   }
-   else
-   {
-      if ((pMsgIdx >= 0) && (pMsgIdx < this.msgbase.total_msgs))
-         msgHdr = this.msgbase.get_msg_header(true, pMsgIdx, true);
-   }
-   return msgHdr;
+	var msgHdr = null;
+	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
+	    (this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
+	{
+		if ((pMsgIdx >= 0) && (pMsgIdx < this.msgSearchHdrs[this.subBoardCode].indexed.length))
+			msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIdx];
+	}
+	else
+	{
+		if ((pMsgIdx >= 0) && (pMsgIdx < this.msgbase.total_msgs))
+			msgHdr = this.msgbase.get_msg_header(true, pMsgIdx, true);
+	}
+	return msgHdr;
 }
 
 // For the DigDistMsgReader class: Returns a message header by message number
@@ -8431,33 +8445,33 @@ function DigDistMsgReader_MessageIsDeleted(pOffset)
 //               sub-board from the current logged-in user.
 function DigDistMsgReader_MessageIsLastFromUser(pOffset)
 {
-   var msgIstLastFromUser = false;
-   if ((this.msgbase != null) && this.msgbase.is_open && (this.msgbase.cfg != null))
-   {
+	var msgIstLastFromUser = false;
+	if ((this.msgbase != null) && this.msgbase.is_open && (this.msgbase.cfg != null))
+	{
 		// TODO: Update to handle search results?
-      if ((pOffset >= 0) && (pOffset < this.msgbase.total_msgs))
-      {
-         // First, see if the message at pOffset was posted by the user.  If it
-         // is, then look for the last message posted by the logged-in user and
-         // if found, see if that message has the same offset as the offset
-         // passed in.
-         var msgHdr = this.msgbase.get_msg_header(true, pOffset, true);
-         if (userHandleAliasNameMatch(msgHdr["to"]))
-         {
-            var lastMsgOffsetFromUser = -1;
-            for (var msgOffset = this.msgbase.total_msgs-1; (msgOffset >= pOffset) && (lastMsgOffsetFromUser == -1); --msgOffset)
-            {
-               msgHdr = this.msgbase.get_msg_header(true, msgOffset, true);
-               if (userHandleAliasNameMatch(msgHdr["to"]))
-                  lastMsgOffsetFromUser = msgOffset;
-            }
-            // See if the passed-in offset is the last message we found from
-            // the logged-in user.
-            msgIstLastFromUser = (lastMsgOffsetFromUser == pOffset);
-         }
-      }
-   }
-   return msgIstLastFromUser;
+		if ((pOffset >= 0) && (pOffset < this.msgbase.total_msgs))
+		{
+			// First, see if the message at pOffset was posted by the user.  If it
+			// is, then look for the last message posted by the logged-in user and
+			// if found, see if that message has the same offset as the offset
+			// passed in.
+			var msgHdr = this.msgbase.get_msg_header(true, pOffset, true);
+			if (userHandleAliasNameMatch(msgHdr["to"]))
+			{
+				var lastMsgOffsetFromUser = -1;
+				for (var msgOffset = this.msgbase.total_msgs-1; (msgOffset >= pOffset) && (lastMsgOffsetFromUser == -1); --msgOffset)
+				{
+					msgHdr = this.msgbase.get_msg_header(true, msgOffset, true);
+					if (userHandleAliasNameMatch(msgHdr["to"]))
+						lastMsgOffsetFromUser = msgOffset;
+				}
+				// See if the passed-in offset is the last message we found from
+				// the logged-in user.
+				msgIstLastFromUser = (lastMsgOffsetFromUser == pOffset);
+			}
+		}
+	}
+	return msgIstLastFromUser;
 }
 
 // For the DigDistMsgReader class enhanced reader mode: Displays an error at the
@@ -10381,78 +10395,175 @@ function DigDistMsgReader_BuildSubBoardPrintfInfoForGrp(pGrpIndex)
 //
 // Parameters:
 //  pMsgHdr: A message header
+//  pKludgeOnly: Boolean - Whether or not to only get the kludge lines.  If false,
+//               then all header fields will be retrieved.
 //
 // Return value: An array of strings containing the extended message header information
-function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr)
+function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 {
-   // If pMsgHdr is not valid, then just return an empty array.
-   if (typeof(pMsgHdr) != "object")
-      return new Array();
+	// If pMsgHdr is not valid, then just return an empty array.
+	if (typeof(pMsgHdr) != "object")
+		return new Array();
 
-   // Kludge lines to display are MSGID, REPLY, CHRS, TZUTC, PID, TID,
-   // SEEN-BY, and PATH kludge
+	var msgHdrInfoLines = new Array();
+	var kludgeOnly = (typeof(pKludgeOnly) == "boolean" ? pKludgeOnly : false);
+	if (kludgeOnly)
+	{
+		// Kludge lines to display are MSGID, REPLY, CHRS, TZUTC, PID, TID,
+		// SEEN-BY, and PATH kludge
 
-   // TODO: See if Synchronet provides the TZUTC, SEEN-BY, or PATH kludge lines.
-   // It seems that Synchronet might not provide that information.
+		// TODO: See if Synchronet provides the TZUTC, SEEN-BY, or PATH kludge lines.
+		// It seems that Synchronet might not provide that information.
+		// TODO: Type 162 in the field_list array is seen-by, and type 163 is FTN path.
 
-   // FidoNet information available in Synchronet message
-   // headers:
-   // ftn_msgid	FidoNet FTS-9 Message-ID
-   // ftn_reply	FidoNet FTS-9 Reply-ID
-   // ftn_area	FidoNet FTS-4 echomail AREA tag
-   // ftn_flags	FidoNet FSC-53 FLAGS
-   // ftn_pid	FidoNet FSC-46 Program Identifier
-   // ftn_tid	FidoNet FSC-46 Tosser Identifier
+		// FidoNet information available in Synchronet message
+		// headers:
+		// ftn_msgid	FidoNet FTS-9 Message-ID
+		// ftn_reply	FidoNet FTS-9 Reply-ID
+		// ftn_area	FidoNet FTS-4 echomail AREA tag
+		// ftn_flags	FidoNet FSC-53 FLAGS
+		// ftn_pid	FidoNet FSC-46 Program Identifier
+		// ftn_tid	FidoNet FSC-46 Tosser Identifier
+		// X-FTN-AREA       AGN_BBS
+		// X-FTN-REPLY      46:1/127 47525e2e
+		// X-FTN-MSGID      46:1/143 562422ad
+		// X-FTN-Kludge     CHRS: UTF-8 2
+		// X-FTN-TID        hpt/lnx 1.9.0-cur 07-09-15
+		// X-FTN-SEEN-BY    1/100 143 102 104 107 108 109 111 113 2/101 3/101 1/115 116 121 123
+		// X-FTN-SEEN-BY    1/124 125 126 127 3/102 1/701 132 2/103 1/140 128 133 3/103 1/138 145
+		// X-FTN-SEEN-BY    1/139 141 142 135 147 148 2/104 1/149 151 152 153 155 150 156 248 159
+		// X-FTN-SEEN-BY    2/106 1/160 161 118 144 164 2/107 1/163 204 2/109 108 1/166 167 168 0
+		// X-FTN-PATH       1/143 100
 
-   // An array of objects containing the info lines to retrieve (if they
-   // exist in the message header) and their labels
-   var hdrInfoLineFields = new Array();
-   hdrInfoLineFields.push({ field: "ftn_msgid", label: "MSG ID:" });
-   hdrInfoLineFields.push({ field: "ftn_reply", label: "Reply ID:" });
-   hdrInfoLineFields.push({ field: "ftn_area", label: "Area tag:" });
-   hdrInfoLineFields.push({ field: "ftn_flags", label: "Flags:" });
-   hdrInfoLineFields.push({ field: "ftn_pid", label: "Program ID:" });
-   hdrInfoLineFields.push({ field: "ftn_tid", label: "Tosser ID:" });
+		// An array of objects containing the info lines to retrieve (if they
+		// exist in the message header) and their labels
+		var hdrInfoLineFields = new Array();
+		hdrInfoLineFields.push({ field: "ftn_msgid", label: "MSG ID:" });
+		hdrInfoLineFields.push({ field: "X-FTN-MSGID", label: "MSG ID:" });
+		hdrInfoLineFields.push({ field: "ftn_reply", label: "Reply ID:" });
+		hdrInfoLineFields.push({ field: "X-FTN-REPLY", label: "Reply ID:" });
+		hdrInfoLineFields.push({ field: "ftn_area", label: "Area tag:" });
+		hdrInfoLineFields.push({ field: "X-FTN-AREA", label: "Area tag:" });
+		hdrInfoLineFields.push({ field: "ftn_flags", label: "Flags:" });
+		hdrInfoLineFields.push({ field: "ftn_pid", label: "Program ID:" });
+		hdrInfoLineFields.push({ field: "ftn_tid", label: "Tosser ID:" });
+		hdrInfoLineFields.push({ field: "X-FTN-TID", label: "Tosser ID:" });
+		hdrInfoLineFields.push({ field: "X-FTN-Kludge", label: "Kludge:" });
+		hdrInfoLineFields.push({ field: "X-FTN-SEEN-BY", label: "Seen-By:" });
+		hdrInfoLineFields.push({ field: "X-FTN-PATH", label: "Path:" });
 
-   // Create an array with the information lines
-   var msgHdrInfoLines = new Array();
-   // Format the when-written date
-   if ((typeof(pMsgHdr.when_written_time) == "number") && (typeof(pMsgHdr.when_written_zone) == "number"))
-   {
-      msgHdrInfoLines.push("\1nMessage written date & time zone:");
-      var whenWrittenTimeDateStr = system.timestr(pMsgHdr.when_written_time) + " "
-                                  + system.zonestr(pMsgHdr.when_written_zone);
-      msgHdrInfoLines.push(whenWrittenTimeDateStr);
-      msgHdrInfoLines.push("");
-   }
-   // Fields specified by hdrInfoLineFields
-   for (var i = 0; i < hdrInfoLineFields.length; ++i)
-   {
-      if (typeof(pMsgHdr[hdrInfoLineFields[i].field]) == "string")
-      {
-         msgHdrInfoLines.push(hdrInfoLineFields[i].label);
-         var infoLineWrapped = word_wrap(pMsgHdr[hdrInfoLineFields[i].field], this.msgAreaWidth);
-         var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
-         for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
-         {
-            if (infoLineWrappedArray[lineIdx].length > 0)
-               msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
-         }
-         msgHdrInfoLines.push("");
-      }
-   }
+		// Format the when-written date
+		if ((typeof(pMsgHdr.when_written_time) == "number") && (typeof(pMsgHdr.when_written_zone) == "number"))
+		{
+			msgHdrInfoLines.push("\1nMessage written date & time zone:");
+			var whenWrittenTimeDateStr = system.timestr(pMsgHdr.when_written_time) + " "
+									   + system.zonestr(pMsgHdr.when_written_zone);
+			msgHdrInfoLines.push(whenWrittenTimeDateStr);
+			msgHdrInfoLines.push("");
+		}
+		// Fields specified by hdrInfoLineFields
+		for (var i = 0; i < hdrInfoLineFields.length; ++i)
+		{
+			if (pMsgHdr.hasOwnProperty(hdrInfoLineFields[i].field) && (typeof(pMsgHdr[hdrInfoLineFields[i].field]) == "string"))
+			{
+				msgHdrInfoLines.push(hdrInfoLineFields[i].label);
+				var infoLineWrapped = word_wrap(pMsgHdr[hdrInfoLineFields[i].field], this.msgAreaWidth);
+				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
+				for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
+				{
+					if (infoLineWrappedArray[lineIdx].length > 0)
+						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
+				}
+				msgHdrInfoLines.push("");
+			}
+		}
+		// If the header has a field_list array, then get the desired information from it.
+		// TODO: Should I include all field_list lines, or select ones for "kludge lines only"?
+		if (pMsgHdr.hasOwnProperty("field_list"))
+		{
+			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+			{
+				// TODO: Some field types can be in the array multiple times but only
+				// the last is valid.  For those, only get the last one:
+				//  32 (Reply To)
+				//  33 (Reply To agent)
+				//  34 (Reply To net type)
+				//  35 (Reply To net address)
+				//  36 (Reply To extended)
+				//  37 (Reply To position)
+				//  38 (Reply To Organization)
+				msgHdrInfoLines.push(msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type));
+				var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
+				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
+				for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
+				{
+					if (infoLineWrappedArray[lineIdx].length > 0)
+					{
+						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
+						msgHdrInfoLines.push("");
+					}
+				}
+			}
+		}
 
-   // If some info lines were added, then insert a header line & blank line to
-   // the beginning of the array, and remove the last empty line from the array.
-   if (msgHdrInfoLines.length > 0)
-   {
-      msgHdrInfoLines.splice(0, 0, "\1n\1c\1hMessage Information/Kludge Lines\1n");
-      msgHdrInfoLines.splice(1, 0, "\1n\1g\1h--------------------------------\1n");
-      if (msgHdrInfoLines[msgHdrInfoLines.length-1].length == 0)
-         msgHdrInfoLines.pop();
-   }
+		// If some info lines were added, then insert a header line & blank line to
+		// the beginning of the array, and remove the last empty line from the array.
+		if (msgHdrInfoLines.length > 0)
+		{
+			msgHdrInfoLines.splice(0, 0, "\1n\1c\1hMessage Information/Kludge Lines\1n");
+			msgHdrInfoLines.splice(1, 0, "\1n\1g\1h--------------------------------\1n");
+			if (msgHdrInfoLines[msgHdrInfoLines.length-1].length == 0)
+				msgHdrInfoLines.pop();
+		}
+	}
+	else
+	{
+		// Return all header fields
+		for (var prop in pMsgHdr)
+		{
+			if (prop == "field_list")
+			{
+				for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+				{
+					// TODO: Some field types can be in the array multiple times but only
+					// the last is valid.  For those, only get the last one:
+					//  32 (Reply To)
+					//  33 (Reply To agent)
+					//  34 (Reply To net type)
+					//  35 (Reply To net address)
+					//  36 (Reply To extended)
+					//  37 (Reply To position)
+					//  38 (Reply To Organization)
+					msgHdrInfoLines.push(msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type));
+					var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
+					var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
+					for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
+					{
+						if (infoLineWrappedArray[lineIdx].length > 0)
+						{
+							msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
+							msgHdrInfoLines.push("");
+						}
+					}
+				}
+			}
+			else
+			{
+				msgHdrInfoLines.push(prop + ":");
+				var infoLineWrapped = word_wrap(pMsgHdr[prop], this.msgAreaWidth);
+				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
+				for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
+				{
+					if (infoLineWrappedArray[lineIdx].length > 0)
+						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
+				}
+			}
+			msgHdrInfoLines.push("");
+		}
+		
+	}
 
-   return msgHdrInfoLines;
+	return msgHdrInfoLines;
 }
 
 // For the DigDistMsgReader class: Gets & prepares message information for
@@ -10473,6 +10584,8 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr)
 //               base64-encoded attachments (i.e., in multi-part MIME emails).
 //               This is optional and defaults to true.  This is only used when
 //               pDetermineAttachments is true.
+//  pMsgBody: Optional - A string containing the message body.  If this is not included
+//            or is not a string, then this method will retrieve the message body.
 //
 // Return value: An object with the following properties:
 //               msgText: The unaltered message text
@@ -10484,7 +10597,8 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr)
 //               numNonSolidScrollBlocks: The number of non-solid scrollbar blocks
 //               solidBlockStartRow: The starting row on the screen for the scrollbar blocks
 //               attachments: An array of the attached filenames (as strings)
-function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDetermineAttachments, pGetB64Data)
+function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDetermineAttachments,
+                                                      pGetB64Data, pMsgBody)
 {
 	var retObj = new Object();
 
@@ -10494,15 +10608,16 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	var getB64Data = true;
 	if (typeof(pGetB64Data) == "boolean")
 		getB64Data = pGetB64Data;
+	var msgBody = (typeof(pMsgBody) == "string" ? pMsgBody : this.msgbase.get_msg_body(true, pMsgHdr.offset));
 	if (determineAttachments)
 	{
-		var msgInfo = determineMsgAttachments(pMsgHdr, this.msgbase.get_msg_body(true, pMsgHdr.offset), getB64Data);
+		var msgInfo = determineMsgAttachments(pMsgHdr, msgBody, getB64Data);
 		retObj.msgText = msgInfo.msgText;
 		retObj.attachments = msgInfo.attachments;
 	}
 	else
 	{
-		retObj.msgText = this.msgbase.get_msg_body(true, pMsgHdr.offset);
+		retObj.msgText = msgBody;
 		retObj.attachments = [];
 	}
 
@@ -12711,7 +12826,7 @@ function WWIVAttrsToSyncAttrs(pText)
 		text = text.replace(/\x031/g, "\1n\1c\1h");     // Bright cyan
 		text = text.replace(/\x032/g, "\1n\1y\1h");     // Bright yellow
 		text = text.replace(/\x033/g, "\1n\1m");         // Magenta
-		text = text.replace(/\x034/g, "\1n\1h\1w\14"); // Bright white on blue
+		text = text.replace(/\x034/g, "\1n\1h\1w\1" + "4"); // Bright white on blue
 		text = text.replace(/\x035/g, "\1n\1g");         // Green
 		text = text.replace(/\x036/g, "\1h\1r\1i");     // Bright red, blinking
 		text = text.replace(/\x037/g, "\1n\1h\1b");     // Bright blue
@@ -12737,295 +12852,295 @@ function PCBoardAttrsToSyncAttrs(pText)
 	if (/@[xX][0-9A-Fa-f]{2}/.test(pText))
 	{
 		// Black background
-		var text = pText.replace(/@[xX]00/g, "\1n\1k\10"); // Black on black
-		text = text.replace(/@[xX]01/g, "\1n\1b\10"); // Blue on black
-		text = text.replace(/@[xX]02/g, "\1n\1g\10"); // Green on black
-		text = text.replace(/@[xX]03/g, "\1n\1c\10"); // Cyan on black
-		text = text.replace(/@[xX]04/g, "\1n\1r\10"); // Red on black
-		text = text.replace(/@[xX]05/g, "\1n\1m\10"); // Magenta on black
-		text = text.replace(/@[xX]06/g, "\1n\1y\10"); // Yellow/brown on black
-		text = text.replace(/@[xX]07/g, "\1n\1w\10"); // White on black
-		text = text.replace(/@[xX]08/g, "\1n\1w\10"); // White on black
-		text = text.replace(/@[xX]09/g, "\1n\1w\10"); // White on black
-		text = text.replace(/@[xX]08/g, "\1h\1k\10"); // Bright black on black
-		text = text.replace(/@[xX]09/g, "\1h\1b\10"); // Bright blue on black
-		text = text.replace(/@[xX]0[Aa]/g, "\1h\1g\10"); // Bright green on black
-		text = text.replace(/@[xX]0[Bb]/g, "\1h\1c\10"); // Bright cyan on black
-		text = text.replace(/@[xX]0[Cc]/g, "\1h\1r\10"); // Bright red on black
-		text = text.replace(/@[xX]0[Dd]/g, "\1h\1m\10"); // Bright magenta on black
-		text = text.replace(/@[xX]0[Ee]/g, "\1h\1y\10"); // Bright yellow on black
-		text = text.replace(/@[xX]0[Ff]/g, "\1h\1w\10"); // Bright white on black
+		var text = pText.replace(/@[xX]00/g, "\1n\1k\1" + "0"); // Black on black
+		text = text.replace(/@[xX]01/g, "\1n\1b\1" + "0"); // Blue on black
+		text = text.replace(/@[xX]02/g, "\1n\1g\1" + "0"); // Green on black
+		text = text.replace(/@[xX]03/g, "\1n\1c\1" + "0"); // Cyan on black
+		text = text.replace(/@[xX]04/g, "\1n\1r\1" + "0"); // Red on black
+		text = text.replace(/@[xX]05/g, "\1n\1m\1" + "0"); // Magenta on black
+		text = text.replace(/@[xX]06/g, "\1n\1y\1" + "0"); // Yellow/brown on black
+		text = text.replace(/@[xX]07/g, "\1n\1w\1" + "0"); // White on black
+		text = text.replace(/@[xX]08/g, "\1n\1w\1" + "0"); // White on black
+		text = text.replace(/@[xX]09/g, "\1n\1w\1" + "0"); // White on black
+		text = text.replace(/@[xX]08/g, "\1h\1k\1" + "0"); // Bright black on black
+		text = text.replace(/@[xX]09/g, "\1h\1b\1" + "0"); // Bright blue on black
+		text = text.replace(/@[xX]0[Aa]/g, "\1h\1g\1" + "0"); // Bright green on black
+		text = text.replace(/@[xX]0[Bb]/g, "\1h\1c\1" + "0"); // Bright cyan on black
+		text = text.replace(/@[xX]0[Cc]/g, "\1h\1r\1" + "0"); // Bright red on black
+		text = text.replace(/@[xX]0[Dd]/g, "\1h\1m\1" + "0"); // Bright magenta on black
+		text = text.replace(/@[xX]0[Ee]/g, "\1h\1y\1" + "0"); // Bright yellow on black
+		text = text.replace(/@[xX]0[Ff]/g, "\1h\1w\1" + "0"); // Bright white on black
 		// Blinking foreground
 
 		// Blue background
-		text = text.replace(/@[xX]10/g, "\1n\1k\14"); // Black on blue
-		text = text.replace(/@[xX]11/g, "\1n\1b\14"); // Blue on blue
-		text = text.replace(/@[xX]12/g, "\1n\1g\14"); // Green on blue
-		text = text.replace(/@[xX]13/g, "\1n\1c\14"); // Cyan on blue
-		text = text.replace(/@[xX]14/g, "\1n\1r\14"); // Red on blue
-		text = text.replace(/@[xX]15/g, "\1n\1m\14"); // Magenta on blue
-		text = text.replace(/@[xX]16/g, "\1n\1y\14"); // Yellow/brown on blue
-		text = text.replace(/@[xX]17/g, "\1n\1w\14"); // White on blue
-		text = text.replace(/@[xX]18/g, "\1h\1k\14"); // Bright black on blue
-		text = text.replace(/@[xX]19/g, "\1h\1b\14"); // Bright blue on blue
-		text = text.replace(/@[xX]1[Aa]/g, "\1h\1g\14"); // Bright green on blue
-		text = text.replace(/@[xX]1[Bb]/g, "\1h\1c\14"); // Bright cyan on blue
-		text = text.replace(/@[xX]1[Cc]/g, "\1h\1r\14"); // Bright red on blue
-		text = text.replace(/@[xX]1[Dd]/g, "\1h\1m\14"); // Bright magenta on blue
-		text = text.replace(/@[xX]1[Ee]/g, "\1h\1y\14"); // Bright yellow on blue
-		text = text.replace(/@[xX]1[Ff]/g, "\1h\1w\14"); // Bright white on blue
+		text = text.replace(/@[xX]10/g, "\1n\1k\1" + "4"); // Black on blue
+		text = text.replace(/@[xX]11/g, "\1n\1b\1" + "4"); // Blue on blue
+		text = text.replace(/@[xX]12/g, "\1n\1g\1" + "4"); // Green on blue
+		text = text.replace(/@[xX]13/g, "\1n\1c\1" + "4"); // Cyan on blue
+		text = text.replace(/@[xX]14/g, "\1n\1r\1" + "4"); // Red on blue
+		text = text.replace(/@[xX]15/g, "\1n\1m\1" + "4"); // Magenta on blue
+		text = text.replace(/@[xX]16/g, "\1n\1y\1" + "4"); // Yellow/brown on blue
+		text = text.replace(/@[xX]17/g, "\1n\1w\1" + "4"); // White on blue
+		text = text.replace(/@[xX]18/g, "\1h\1k\1" + "4"); // Bright black on blue
+		text = text.replace(/@[xX]19/g, "\1h\1b\1" + "4"); // Bright blue on blue
+		text = text.replace(/@[xX]1[Aa]/g, "\1h\1g\1" + "4"); // Bright green on blue
+		text = text.replace(/@[xX]1[Bb]/g, "\1h\1c\1" + "4"); // Bright cyan on blue
+		text = text.replace(/@[xX]1[Cc]/g, "\1h\1r\1" + "4"); // Bright red on blue
+		text = text.replace(/@[xX]1[Dd]/g, "\1h\1m\1" + "4"); // Bright magenta on blue
+		text = text.replace(/@[xX]1[Ee]/g, "\1h\1y\1" + "4"); // Bright yellow on blue
+		text = text.replace(/@[xX]1[Ff]/g, "\1h\1w\1" + "4"); // Bright white on blue
 
 		// Green background
-		text = text.replace(/@[xX]20/g, "\1n\1k\12"); // Black on green
-		text = text.replace(/@[xX]21/g, "\1n\1b\12"); // Blue on green
-		text = text.replace(/@[xX]22/g, "\1n\1g\12"); // Green on green
-		text = text.replace(/@[xX]23/g, "\1n\1c\12"); // Cyan on green
-		text = text.replace(/@[xX]24/g, "\1n\1r\12"); // Red on green
-		text = text.replace(/@[xX]25/g, "\1n\1m\12"); // Magenta on green
-		text = text.replace(/@[xX]26/g, "\1n\1y\12"); // Yellow/brown on green
-		text = text.replace(/@[xX]27/g, "\1n\1w\12"); // White on green
-		text = text.replace(/@[xX]28/g, "\1h\1k\12"); // Bright black on green
-		text = text.replace(/@[xX]29/g, "\1h\1b\12"); // Bright blue on green
-		text = text.replace(/@[xX]2[Aa]/g, "\1h\1g\12"); // Bright green on green
-		text = text.replace(/@[xX]2[Bb]/g, "\1h\1c\12"); // Bright cyan on green
-		text = text.replace(/@[xX]2[Cc]/g, "\1h\1r\12"); // Bright red on green
-		text = text.replace(/@[xX]2[Dd]/g, "\1h\1m\12"); // Bright magenta on green
-		text = text.replace(/@[xX]2[Ee]/g, "\1h\1y\12"); // Bright yellow on green
-		text = text.replace(/@[xX]2[Ff]/g, "\1h\1w\12"); // Bright white on green
+		text = text.replace(/@[xX]20/g, "\1n\1k\1" + "2"); // Black on green
+		text = text.replace(/@[xX]21/g, "\1n\1b\1" + "2"); // Blue on green
+		text = text.replace(/@[xX]22/g, "\1n\1g\1" + "2"); // Green on green
+		text = text.replace(/@[xX]23/g, "\1n\1c\1" + "2"); // Cyan on green
+		text = text.replace(/@[xX]24/g, "\1n\1r\1" + "2"); // Red on green
+		text = text.replace(/@[xX]25/g, "\1n\1m\1" + "2"); // Magenta on green
+		text = text.replace(/@[xX]26/g, "\1n\1y\1" + "2"); // Yellow/brown on green
+		text = text.replace(/@[xX]27/g, "\1n\1w\1" + "2"); // White on green
+		text = text.replace(/@[xX]28/g, "\1h\1k\1" + "2"); // Bright black on green
+		text = text.replace(/@[xX]29/g, "\1h\1b\1" + "2"); // Bright blue on green
+		text = text.replace(/@[xX]2[Aa]/g, "\1h\1g\1" + "2"); // Bright green on green
+		text = text.replace(/@[xX]2[Bb]/g, "\1h\1c\1" + "2"); // Bright cyan on green
+		text = text.replace(/@[xX]2[Cc]/g, "\1h\1r\1" + "2"); // Bright red on green
+		text = text.replace(/@[xX]2[Dd]/g, "\1h\1m\1" + "2"); // Bright magenta on green
+		text = text.replace(/@[xX]2[Ee]/g, "\1h\1y\1" + "2"); // Bright yellow on green
+		text = text.replace(/@[xX]2[Ff]/g, "\1h\1w\1" + "2"); // Bright white on green
 
 		// Cyan background
-		text = text.replace(/@[xX]30/g, "\1n\1k\16"); // Black on cyan
-		text = text.replace(/@[xX]31/g, "\1n\1b\16"); // Blue on cyan
-		text = text.replace(/@[xX]32/g, "\1n\1g\16"); // Green on cyan
-		text = text.replace(/@[xX]33/g, "\1n\1c\16"); // Cyan on cyan
-		text = text.replace(/@[xX]34/g, "\1n\1r\16"); // Red on cyan
-		text = text.replace(/@[xX]35/g, "\1n\1m\16"); // Magenta on cyan
-		text = text.replace(/@[xX]36/g, "\1n\1y\16"); // Yellow/brown on cyan
-		text = text.replace(/@[xX]37/g, "\1n\1w\16"); // White on cyan
-		text = text.replace(/@[xX]38/g, "\1h\1k\16"); // Bright black on cyan
-		text = text.replace(/@[xX]39/g, "\1h\1b\16"); // Bright blue on cyan
-		text = text.replace(/@[xX]3[Aa]/g, "\1h\1g\16"); // Bright green on cyan
-		text = text.replace(/@[xX]3[Bb]/g, "\1h\1c\16"); // Bright cyan on cyan
-		text = text.replace(/@[xX]3[Cc]/g, "\1h\1r\16"); // Bright red on cyan
-		text = text.replace(/@[xX]3[Dd]/g, "\1h\1m\16"); // Bright magenta on cyan
-		text = text.replace(/@[xX]3[Ee]/g, "\1h\1y\16"); // Bright yellow on cyan
-		text = text.replace(/@[xX]3[Ff]/g, "\1h\1w\16"); // Bright white on cyan
+		text = text.replace(/@[xX]30/g, "\1n\1k\1" + "6"); // Black on cyan
+		text = text.replace(/@[xX]31/g, "\1n\1b\1" + "6"); // Blue on cyan
+		text = text.replace(/@[xX]32/g, "\1n\1g\1" + "6"); // Green on cyan
+		text = text.replace(/@[xX]33/g, "\1n\1c\1" + "6"); // Cyan on cyan
+		text = text.replace(/@[xX]34/g, "\1n\1r\1" + "6"); // Red on cyan
+		text = text.replace(/@[xX]35/g, "\1n\1m\1" + "6"); // Magenta on cyan
+		text = text.replace(/@[xX]36/g, "\1n\1y\1" + "6"); // Yellow/brown on cyan
+		text = text.replace(/@[xX]37/g, "\1n\1w\1" + "6"); // White on cyan
+		text = text.replace(/@[xX]38/g, "\1h\1k\1" + "6"); // Bright black on cyan
+		text = text.replace(/@[xX]39/g, "\1h\1b\1" + "6"); // Bright blue on cyan
+		text = text.replace(/@[xX]3[Aa]/g, "\1h\1g\1" + "6"); // Bright green on cyan
+		text = text.replace(/@[xX]3[Bb]/g, "\1h\1c\1" + "6"); // Bright cyan on cyan
+		text = text.replace(/@[xX]3[Cc]/g, "\1h\1r\1" + "6"); // Bright red on cyan
+		text = text.replace(/@[xX]3[Dd]/g, "\1h\1m\1" + "6"); // Bright magenta on cyan
+		text = text.replace(/@[xX]3[Ee]/g, "\1h\1y\1" + "6"); // Bright yellow on cyan
+		text = text.replace(/@[xX]3[Ff]/g, "\1h\1w\1" + "6"); // Bright white on cyan
 
 		// Red background
-		text = text.replace(/@[xX]40/g, "\1n\1k\11"); // Black on red
-		text = text.replace(/@[xX]41/g, "\1n\1b\11"); // Blue on red
-		text = text.replace(/@[xX]42/g, "\1n\1g\11"); // Green on red
-		text = text.replace(/@[xX]43/g, "\1n\1c\11"); // Cyan on red
-		text = text.replace(/@[xX]44/g, "\1n\1r\11"); // Red on red
-		text = text.replace(/@[xX]45/g, "\1n\1m\11"); // Magenta on red
-		text = text.replace(/@[xX]46/g, "\1n\1y\11"); // Yellow/brown on red
-		text = text.replace(/@[xX]47/g, "\1n\1w\11"); // White on red
-		text = text.replace(/@[xX]48/g, "\1h\1k\11"); // Bright black on red
-		text = text.replace(/@[xX]49/g, "\1h\1b\11"); // Bright blue on red
-		text = text.replace(/@[xX]4[Aa]/g, "\1h\1g\11"); // Bright green on red
-		text = text.replace(/@[xX]4[Bb]/g, "\1h\1c\11"); // Bright cyan on red
-		text = text.replace(/@[xX]4[Cc]/g, "\1h\1r\11"); // Bright red on red
-		text = text.replace(/@[xX]4[Dd]/g, "\1h\1m\11"); // Bright magenta on red
-		text = text.replace(/@[xX]4[Ee]/g, "\1h\1y\11"); // Bright yellow on red
-		text = text.replace(/@[xX]4[Ff]/g, "\1h\1w\11"); // Bright white on red
+		text = text.replace(/@[xX]40/g, "\1n\1k\1" + "1"); // Black on red
+		text = text.replace(/@[xX]41/g, "\1n\1b\1" + "1"); // Blue on red
+		text = text.replace(/@[xX]42/g, "\1n\1g\1" + "1"); // Green on red
+		text = text.replace(/@[xX]43/g, "\1n\1c\1" + "1"); // Cyan on red
+		text = text.replace(/@[xX]44/g, "\1n\1r\1" + "1"); // Red on red
+		text = text.replace(/@[xX]45/g, "\1n\1m\1" + "1"); // Magenta on red
+		text = text.replace(/@[xX]46/g, "\1n\1y\1" + "1"); // Yellow/brown on red
+		text = text.replace(/@[xX]47/g, "\1n\1w\1" + "1"); // White on red
+		text = text.replace(/@[xX]48/g, "\1h\1k\1" + "1"); // Bright black on red
+		text = text.replace(/@[xX]49/g, "\1h\1b\1" + "1"); // Bright blue on red
+		text = text.replace(/@[xX]4[Aa]/g, "\1h\1g\1" + "1"); // Bright green on red
+		text = text.replace(/@[xX]4[Bb]/g, "\1h\1c\1" + "1"); // Bright cyan on red
+		text = text.replace(/@[xX]4[Cc]/g, "\1h\1r\1" + "1"); // Bright red on red
+		text = text.replace(/@[xX]4[Dd]/g, "\1h\1m\1" + "1"); // Bright magenta on red
+		text = text.replace(/@[xX]4[Ee]/g, "\1h\1y\1" + "1"); // Bright yellow on red
+		text = text.replace(/@[xX]4[Ff]/g, "\1h\1w\1" + "1"); // Bright white on red
 
 		// Magenta background
-		text = text.replace(/@[xX]50/g, "\1n\1k\15"); // Black on magenta
-		text = text.replace(/@[xX]51/g, "\1n\1b\15"); // Blue on magenta
-		text = text.replace(/@[xX]52/g, "\1n\1g\15"); // Green on magenta
-		text = text.replace(/@[xX]53/g, "\1n\1c\15"); // Cyan on magenta
-		text = text.replace(/@[xX]54/g, "\1n\1r\15"); // Red on magenta
-		text = text.replace(/@[xX]55/g, "\1n\1m\15"); // Magenta on magenta
-		text = text.replace(/@[xX]56/g, "\1n\1y\15"); // Yellow/brown on magenta
-		text = text.replace(/@[xX]57/g, "\1n\1w\15"); // White on magenta
-		text = text.replace(/@[xX]58/g, "\1h\1k\15"); // Bright black on magenta
-		text = text.replace(/@[xX]59/g, "\1h\1b\15"); // Bright blue on magenta
-		text = text.replace(/@[xX]5[Aa]/g, "\1h\1g\15"); // Bright green on magenta
-		text = text.replace(/@[xX]5[Bb]/g, "\1h\1c\15"); // Bright cyan on magenta
-		text = text.replace(/@[xX]5[Cc]/g, "\1h\1r\15"); // Bright red on magenta
-		text = text.replace(/@[xX]5[Dd]/g, "\1h\1m\15"); // Bright magenta on magenta
-		text = text.replace(/@[xX]5[Ee]/g, "\1h\1y\15"); // Bright yellow on magenta
-		text = text.replace(/@[xX]5[Ff]/g, "\1h\1w\15"); // Bright white on magenta
+		text = text.replace(/@[xX]50/g, "\1n\1k\1" + "5"); // Black on magenta
+		text = text.replace(/@[xX]51/g, "\1n\1b\1" + "5"); // Blue on magenta
+		text = text.replace(/@[xX]52/g, "\1n\1g\1" + "5"); // Green on magenta
+		text = text.replace(/@[xX]53/g, "\1n\1c\1" + "5"); // Cyan on magenta
+		text = text.replace(/@[xX]54/g, "\1n\1r\1" + "5"); // Red on magenta
+		text = text.replace(/@[xX]55/g, "\1n\1m\1" + "5"); // Magenta on magenta
+		text = text.replace(/@[xX]56/g, "\1n\1y\1" + "5"); // Yellow/brown on magenta
+		text = text.replace(/@[xX]57/g, "\1n\1w\1" + "5"); // White on magenta
+		text = text.replace(/@[xX]58/g, "\1h\1k\1" + "5"); // Bright black on magenta
+		text = text.replace(/@[xX]59/g, "\1h\1b\1" + "5"); // Bright blue on magenta
+		text = text.replace(/@[xX]5[Aa]/g, "\1h\1g\1" + "5"); // Bright green on magenta
+		text = text.replace(/@[xX]5[Bb]/g, "\1h\1c\1" + "5"); // Bright cyan on magenta
+		text = text.replace(/@[xX]5[Cc]/g, "\1h\1r\1" + "5"); // Bright red on magenta
+		text = text.replace(/@[xX]5[Dd]/g, "\1h\1m\1" + "5"); // Bright magenta on magenta
+		text = text.replace(/@[xX]5[Ee]/g, "\1h\1y\1" + "5"); // Bright yellow on magenta
+		text = text.replace(/@[xX]5[Ff]/g, "\1h\1w\1" + "5"); // Bright white on magenta
 
 		// Brown background
-		text = text.replace(/@[xX]60/g, "\1n\1k\13"); // Black on brown
-		text = text.replace(/@[xX]61/g, "\1n\1b\13"); // Blue on brown
-		text = text.replace(/@[xX]62/g, "\1n\1g\13"); // Green on brown
-		text = text.replace(/@[xX]63/g, "\1n\1c\13"); // Cyan on brown
-		text = text.replace(/@[xX]64/g, "\1n\1r\13"); // Red on brown
-		text = text.replace(/@[xX]65/g, "\1n\1m\13"); // Magenta on brown
-		text = text.replace(/@[xX]66/g, "\1n\1y\13"); // Yellow/brown on brown
-		text = text.replace(/@[xX]67/g, "\1n\1w\13"); // White on brown
-		text = text.replace(/@[xX]68/g, "\1h\1k\13"); // Bright black on brown
-		text = text.replace(/@[xX]69/g, "\1h\1b\13"); // Bright blue on brown
-		text = text.replace(/@[xX]6[Aa]/g, "\1h\1g\13"); // Bright breen on brown
-		text = text.replace(/@[xX]6[Bb]/g, "\1h\1c\13"); // Bright cyan on brown
-		text = text.replace(/@[xX]6[Cc]/g, "\1h\1r\13"); // Bright red on brown
-		text = text.replace(/@[xX]6[Dd]/g, "\1h\1m\13"); // Bright magenta on brown
-		text = text.replace(/@[xX]6[Ee]/g, "\1h\1y\13"); // Bright yellow on brown
-		text = text.replace(/@[xX]6[Ff]/g, "\1h\1w\13"); // Bright white on brown
+		text = text.replace(/@[xX]60/g, "\1n\1k\1" + "3"); // Black on brown
+		text = text.replace(/@[xX]61/g, "\1n\1b\1" + "3"); // Blue on brown
+		text = text.replace(/@[xX]62/g, "\1n\1g\1" + "3"); // Green on brown
+		text = text.replace(/@[xX]63/g, "\1n\1c\1" + "3"); // Cyan on brown
+		text = text.replace(/@[xX]64/g, "\1n\1r\1" + "3"); // Red on brown
+		text = text.replace(/@[xX]65/g, "\1n\1m\1" + "3"); // Magenta on brown
+		text = text.replace(/@[xX]66/g, "\1n\1y\1" + "3"); // Yellow/brown on brown
+		text = text.replace(/@[xX]67/g, "\1n\1w\1" + "3"); // White on brown
+		text = text.replace(/@[xX]68/g, "\1h\1k\1" + "3"); // Bright black on brown
+		text = text.replace(/@[xX]69/g, "\1h\1b\1" + "3"); // Bright blue on brown
+		text = text.replace(/@[xX]6[Aa]/g, "\1h\1g\1" + "3"); // Bright breen on brown
+		text = text.replace(/@[xX]6[Bb]/g, "\1h\1c\1" + "3"); // Bright cyan on brown
+		text = text.replace(/@[xX]6[Cc]/g, "\1h\1r\1" + "3"); // Bright red on brown
+		text = text.replace(/@[xX]6[Dd]/g, "\1h\1m\1" + "3"); // Bright magenta on brown
+		text = text.replace(/@[xX]6[Ee]/g, "\1h\1y\1" + "3"); // Bright yellow on brown
+		text = text.replace(/@[xX]6[Ff]/g, "\1h\1w\1" + "3"); // Bright white on brown
 
 		// White background
-		text = text.replace(/@[xX]70/g, "\1n\1k\17"); // Black on white
-		text = text.replace(/@[xX]71/g, "\1n\1b\17"); // Blue on white
-		text = text.replace(/@[xX]72/g, "\1n\1g\17"); // Green on white
-		text = text.replace(/@[xX]73/g, "\1n\1c\17"); // Cyan on white
-		text = text.replace(/@[xX]74/g, "\1n\1r\17"); // Red on white
-		text = text.replace(/@[xX]75/g, "\1n\1m\17"); // Magenta on white
-		text = text.replace(/@[xX]76/g, "\1n\1y\17"); // Yellow/brown on white
-		text = text.replace(/@[xX]77/g, "\1n\1w\17"); // White on white
-		text = text.replace(/@[xX]78/g, "\1h\1k\17"); // Bright black on white
-		text = text.replace(/@[xX]79/g, "\1h\1b\17"); // Bright blue on white
-		text = text.replace(/@[xX]7[Aa]/g, "\1h\1g\17"); // Bright green on white
-		text = text.replace(/@[xX]7[Bb]/g, "\1h\1c\17"); // Bright cyan on white
-		text = text.replace(/@[xX]7[Cc]/g, "\1h\1r\17"); // Bright red on white
-		text = text.replace(/@[xX]7[Dd]/g, "\1h\1m\17"); // Bright magenta on white
-		text = text.replace(/@[xX]7[Ee]/g, "\1h\1y\17"); // Bright yellow on white
-		text = text.replace(/@[xX]7[Ff]/g, "\1h\1w\17"); // Bright white on white
+		text = text.replace(/@[xX]70/g, "\1n\1k\1" + "7"); // Black on white
+		text = text.replace(/@[xX]71/g, "\1n\1b\1" + "7"); // Blue on white
+		text = text.replace(/@[xX]72/g, "\1n\1g\1" + "7"); // Green on white
+		text = text.replace(/@[xX]73/g, "\1n\1c\1" + "7"); // Cyan on white
+		text = text.replace(/@[xX]74/g, "\1n\1r\1" + "7"); // Red on white
+		text = text.replace(/@[xX]75/g, "\1n\1m\1" + "7"); // Magenta on white
+		text = text.replace(/@[xX]76/g, "\1n\1y\1" + "7"); // Yellow/brown on white
+		text = text.replace(/@[xX]77/g, "\1n\1w\1" + "7"); // White on white
+		text = text.replace(/@[xX]78/g, "\1h\1k\1" + "7"); // Bright black on white
+		text = text.replace(/@[xX]79/g, "\1h\1b\1" + "7"); // Bright blue on white
+		text = text.replace(/@[xX]7[Aa]/g, "\1h\1g\1" + "7"); // Bright green on white
+		text = text.replace(/@[xX]7[Bb]/g, "\1h\1c\1" + "7"); // Bright cyan on white
+		text = text.replace(/@[xX]7[Cc]/g, "\1h\1r\1" + "7"); // Bright red on white
+		text = text.replace(/@[xX]7[Dd]/g, "\1h\1m\1" + "7"); // Bright magenta on white
+		text = text.replace(/@[xX]7[Ee]/g, "\1h\1y\1" + "7"); // Bright yellow on white
+		text = text.replace(/@[xX]7[Ff]/g, "\1h\1w\1" + "7"); // Bright white on white
 
 		// Black background, blinking foreground
-		text = text.replace(/@[xX]80/g, "\1n\1k\10\1i"); // Blinking black on black
-		text = text.replace(/@[xX]81/g, "\1n\1b\10\1i"); // Blinking blue on black
-		text = text.replace(/@[xX]82/g, "\1n\1g\10\1i"); // Blinking green on black
-		text = text.replace(/@[xX]83/g, "\1n\1c\10\1i"); // Blinking cyan on black
-		text = text.replace(/@[xX]84/g, "\1n\1r\10\1i"); // Blinking red on black
-		text = text.replace(/@[xX]85/g, "\1n\1m\10\1i"); // Blinking magenta on black
-		text = text.replace(/@[xX]86/g, "\1n\1y\10\1i"); // Blinking yellow/brown on black
-		text = text.replace(/@[xX]87/g, "\1n\1w\10\1i"); // Blinking white on black
-		text = text.replace(/@[xX]88/g, "\1h\1k\10\1i"); // Blinking bright black on black
-		text = text.replace(/@[xX]89/g, "\1h\1b\10\1i"); // Blinking bright blue on black
-		text = text.replace(/@[xX]8[Aa]/g, "\1h\1g\10\1i"); // Blinking bright green on black
-		text = text.replace(/@[xX]8[Bb]/g, "\1h\1c\10\1i"); // Blinking bright cyan on black
-		text = text.replace(/@[xX]8[Cc]/g, "\1h\1r\10\1i"); // Blinking bright red on black
-		text = text.replace(/@[xX]8[Dd]/g, "\1h\1m\10\1i"); // Blinking bright magenta on black
-		text = text.replace(/@[xX]8[Ee]/g, "\1h\1y\10\1i"); // Blinking bright yellow on black
-		text = text.replace(/@[xX]8[Ff]/g, "\1h\1w\10\1i"); // Blinking bright white on black
+		text = text.replace(/@[xX]80/g, "\1n\1k\1" + "0\1i"); // Blinking black on black
+		text = text.replace(/@[xX]81/g, "\1n\1b\1" + "0\1i"); // Blinking blue on black
+		text = text.replace(/@[xX]82/g, "\1n\1g\1" + "0\1i"); // Blinking green on black
+		text = text.replace(/@[xX]83/g, "\1n\1c\1" + "0\1i"); // Blinking cyan on black
+		text = text.replace(/@[xX]84/g, "\1n\1r\1" + "0\1i"); // Blinking red on black
+		text = text.replace(/@[xX]85/g, "\1n\1m\1" + "0\1i"); // Blinking magenta on black
+		text = text.replace(/@[xX]86/g, "\1n\1y\1" + "0\1i"); // Blinking yellow/brown on black
+		text = text.replace(/@[xX]87/g, "\1n\1w\1" + "0\1i"); // Blinking white on black
+		text = text.replace(/@[xX]88/g, "\1h\1k\1" + "0\1i"); // Blinking bright black on black
+		text = text.replace(/@[xX]89/g, "\1h\1b\1" + "0\1i"); // Blinking bright blue on black
+		text = text.replace(/@[xX]8[Aa]/g, "\1h\1g\1" + "0\1i"); // Blinking bright green on black
+		text = text.replace(/@[xX]8[Bb]/g, "\1h\1c\1" + "0\1i"); // Blinking bright cyan on black
+		text = text.replace(/@[xX]8[Cc]/g, "\1h\1r\1" + "0\1i"); // Blinking bright red on black
+		text = text.replace(/@[xX]8[Dd]/g, "\1h\1m\1" + "0\1i"); // Blinking bright magenta on black
+		text = text.replace(/@[xX]8[Ee]/g, "\1h\1y\1" + "0\1i"); // Blinking bright yellow on black
+		text = text.replace(/@[xX]8[Ff]/g, "\1h\1w\1" + "0\1i"); // Blinking bright white on black
 
 		// Blue background, blinking foreground
-		text = text.replace(/@[xX]90/g, "\1n\1k\14\1i"); // Blinking black on blue
-		text = text.replace(/@[xX]91/g, "\1n\1b\14\1i"); // Blinking blue on blue
-		text = text.replace(/@[xX]92/g, "\1n\1g\14\1i"); // Blinking green on blue
-		text = text.replace(/@[xX]93/g, "\1n\1c\14\1i"); // Blinking cyan on blue
-		text = text.replace(/@[xX]94/g, "\1n\1r\14\1i"); // Blinking red on blue
-		text = text.replace(/@[xX]95/g, "\1n\1m\14\1i"); // Blinking magenta on blue
-		text = text.replace(/@[xX]96/g, "\1n\1y\14\1i"); // Blinking yellow/brown on blue
-		text = text.replace(/@[xX]97/g, "\1n\1w\14\1i"); // Blinking white on blue
-		text = text.replace(/@[xX]98/g, "\1h\1k\14\1i"); // Blinking bright black on blue
-		text = text.replace(/@[xX]99/g, "\1h\1b\14\1i"); // Blinking bright blue on blue
-		text = text.replace(/@[xX]9[Aa]/g, "\1h\1g\14\1i"); // Blinking bright green on blue
-		text = text.replace(/@[xX]9[Bb]/g, "\1h\1c\14\1i"); // Blinking bright cyan on blue
-		text = text.replace(/@[xX]9[Cc]/g, "\1h\1r\14\1i"); // Blinking bright red on blue
-		text = text.replace(/@[xX]9[Dd]/g, "\1h\1m\14\1i"); // Blinking bright magenta on blue
-		text = text.replace(/@[xX]9[Ee]/g, "\1h\1y\14\1i"); // Blinking bright yellow on blue
-		text = text.replace(/@[xX]9[Ff]/g, "\1h\1w\14\1i"); // Blinking bright white on blue
+		text = text.replace(/@[xX]90/g, "\1n\1k\1" + "4\1i"); // Blinking black on blue
+		text = text.replace(/@[xX]91/g, "\1n\1b\1" + "4\1i"); // Blinking blue on blue
+		text = text.replace(/@[xX]92/g, "\1n\1g\1" + "4\1i"); // Blinking green on blue
+		text = text.replace(/@[xX]93/g, "\1n\1c\1" + "4\1i"); // Blinking cyan on blue
+		text = text.replace(/@[xX]94/g, "\1n\1r\1" + "4\1i"); // Blinking red on blue
+		text = text.replace(/@[xX]95/g, "\1n\1m\1" + "4\1i"); // Blinking magenta on blue
+		text = text.replace(/@[xX]96/g, "\1n\1y\1" + "4\1i"); // Blinking yellow/brown on blue
+		text = text.replace(/@[xX]97/g, "\1n\1w\1" + "4\1i"); // Blinking white on blue
+		text = text.replace(/@[xX]98/g, "\1h\1k\1" + "4\1i"); // Blinking bright black on blue
+		text = text.replace(/@[xX]99/g, "\1h\1b\1" + "4\1i"); // Blinking bright blue on blue
+		text = text.replace(/@[xX]9[Aa]/g, "\1h\1g\1" + "4\1i"); // Blinking bright green on blue
+		text = text.replace(/@[xX]9[Bb]/g, "\1h\1c\1" + "4\1i"); // Blinking bright cyan on blue
+		text = text.replace(/@[xX]9[Cc]/g, "\1h\1r\1" + "4\1i"); // Blinking bright red on blue
+		text = text.replace(/@[xX]9[Dd]/g, "\1h\1m\1" + "4\1i"); // Blinking bright magenta on blue
+		text = text.replace(/@[xX]9[Ee]/g, "\1h\1y\1" + "4\1i"); // Blinking bright yellow on blue
+		text = text.replace(/@[xX]9[Ff]/g, "\1h\1w\1" + "4\1i"); // Blinking bright white on blue
 
 		// Green background, blinking foreground
-		text = text.replace(/@[xX][Aa]0/g, "\1n\1k\12\1i"); // Blinking black on green
-		text = text.replace(/@[xX][Aa]1/g, "\1n\1b\12\1i"); // Blinking blue on green
-		text = text.replace(/@[xX][Aa]2/g, "\1n\1g\12\1i"); // Blinking green on green
-		text = text.replace(/@[xX][Aa]3/g, "\1n\1c\12\1i"); // Blinking cyan on green
-		text = text.replace(/@[xX][Aa]4/g, "\1n\1r\12\1i"); // Blinking red on green
-		text = text.replace(/@[xX][Aa]5/g, "\1n\1m\12\1i"); // Blinking magenta on green
-		text = text.replace(/@[xX][Aa]6/g, "\1n\1y\12\1i"); // Blinking yellow/brown on green
-		text = text.replace(/@[xX][Aa]7/g, "\1n\1w\12\1i"); // Blinking white on green
-		text = text.replace(/@[xX][Aa]8/g, "\1h\1k\12\1i"); // Blinking bright black on green
-		text = text.replace(/@[xX][Aa]9/g, "\1h\1b\12\1i"); // Blinking bright blue on green
-		text = text.replace(/@[xX][Aa][Aa]/g, "\1h\1g\12\1i"); // Blinking bright green on green
-		text = text.replace(/@[xX][Aa][Bb]/g, "\1h\1c\12\1i"); // Blinking bright cyan on green
-		text = text.replace(/@[xX][Aa][Cc]/g, "\1h\1r\12\1i"); // Blinking bright red on green
-		text = text.replace(/@[xX][Aa][Dd]/g, "\1h\1m\12\1i"); // Blinking bright magenta on green
-		text = text.replace(/@[xX][Aa][Ee]/g, "\1h\1y\12\1i"); // Blinking bright yellow on green
-		text = text.replace(/@[xX][Aa][Ff]/g, "\1h\1w\12\1i"); // Blinking bright white on green
+		text = text.replace(/@[xX][Aa]0/g, "\1n\1k\1" + "2\1i"); // Blinking black on green
+		text = text.replace(/@[xX][Aa]1/g, "\1n\1b\1" + "2\1i"); // Blinking blue on green
+		text = text.replace(/@[xX][Aa]2/g, "\1n\1g\1" + "2\1i"); // Blinking green on green
+		text = text.replace(/@[xX][Aa]3/g, "\1n\1c\1" + "2\1i"); // Blinking cyan on green
+		text = text.replace(/@[xX][Aa]4/g, "\1n\1r\1" + "2\1i"); // Blinking red on green
+		text = text.replace(/@[xX][Aa]5/g, "\1n\1m\1" + "2\1i"); // Blinking magenta on green
+		text = text.replace(/@[xX][Aa]6/g, "\1n\1y\1" + "2\1i"); // Blinking yellow/brown on green
+		text = text.replace(/@[xX][Aa]7/g, "\1n\1w\1" + "2\1i"); // Blinking white on green
+		text = text.replace(/@[xX][Aa]8/g, "\1h\1k\1" + "2\1i"); // Blinking bright black on green
+		text = text.replace(/@[xX][Aa]9/g, "\1h\1b\1" + "2\1i"); // Blinking bright blue on green
+		text = text.replace(/@[xX][Aa][Aa]/g, "\1h\1g\1" + "2\1i"); // Blinking bright green on green
+		text = text.replace(/@[xX][Aa][Bb]/g, "\1h\1c\1" + "2\1i"); // Blinking bright cyan on green
+		text = text.replace(/@[xX][Aa][Cc]/g, "\1h\1r\1" + "2\1i"); // Blinking bright red on green
+		text = text.replace(/@[xX][Aa][Dd]/g, "\1h\1m\1" + "2\1i"); // Blinking bright magenta on green
+		text = text.replace(/@[xX][Aa][Ee]/g, "\1h\1y\1" + "2\1i"); // Blinking bright yellow on green
+		text = text.replace(/@[xX][Aa][Ff]/g, "\1h\1w\1" + "2\1i"); // Blinking bright white on green
 
 		// Cyan background, blinking foreground
-		text = text.replace(/@[xX][Bb]0/g, "\1n\1k\16\1i"); // Blinking black on cyan
-		text = text.replace(/@[xX][Bb]1/g, "\1n\1b\16\1i"); // Blinking blue on cyan
-		text = text.replace(/@[xX][Bb]2/g, "\1n\1g\16\1i"); // Blinking green on cyan
-		text = text.replace(/@[xX][Bb]3/g, "\1n\1c\16\1i"); // Blinking cyan on cyan
-		text = text.replace(/@[xX][Bb]4/g, "\1n\1r\16\1i"); // Blinking red on cyan
-		text = text.replace(/@[xX][Bb]5/g, "\1n\1m\16\1i"); // Blinking magenta on cyan
-		text = text.replace(/@[xX][Bb]6/g, "\1n\1y\16\1i"); // Blinking yellow/brown on cyan
-		text = text.replace(/@[xX][Bb]7/g, "\1n\1w\16\1i"); // Blinking white on cyan
-		text = text.replace(/@[xX][Bb]8/g, "\1h\1k\16\1i"); // Blinking bright black on cyan
-		text = text.replace(/@[xX][Bb]9/g, "\1h\1b\16\1i"); // Blinking bright blue on cyan
-		text = text.replace(/@[xX][Bb][Aa]/g, "\1h\1g\16\1i"); // Blinking bright green on cyan
-		text = text.replace(/@[xX][Bb][Bb]/g, "\1h\1c\16\1i"); // Blinking bright cyan on cyan
-		text = text.replace(/@[xX][Bb][Cc]/g, "\1h\1r\16\1i"); // Blinking bright red on cyan
-		text = text.replace(/@[xX][Bb][Dd]/g, "\1h\1m\16\1i"); // Blinking bright magenta on cyan
-		text = text.replace(/@[xX][Bb][Ee]/g, "\1h\1y\16\1i"); // Blinking bright yellow on cyan
-		text = text.replace(/@[xX][Bb][Ff]/g, "\1h\1w\16\1i"); // Blinking bright white on cyan
+		text = text.replace(/@[xX][Bb]0/g, "\1n\1k\1" + "6\1i"); // Blinking black on cyan
+		text = text.replace(/@[xX][Bb]1/g, "\1n\1b\1" + "6\1i"); // Blinking blue on cyan
+		text = text.replace(/@[xX][Bb]2/g, "\1n\1g\1" + "6\1i"); // Blinking green on cyan
+		text = text.replace(/@[xX][Bb]3/g, "\1n\1c\1" + "6\1i"); // Blinking cyan on cyan
+		text = text.replace(/@[xX][Bb]4/g, "\1n\1r\1" + "6\1i"); // Blinking red on cyan
+		text = text.replace(/@[xX][Bb]5/g, "\1n\1m\1" + "6\1i"); // Blinking magenta on cyan
+		text = text.replace(/@[xX][Bb]6/g, "\1n\1y\1" + "6\1i"); // Blinking yellow/brown on cyan
+		text = text.replace(/@[xX][Bb]7/g, "\1n\1w\1" + "6\1i"); // Blinking white on cyan
+		text = text.replace(/@[xX][Bb]8/g, "\1h\1k\1" + "6\1i"); // Blinking bright black on cyan
+		text = text.replace(/@[xX][Bb]9/g, "\1h\1b\1" + "6\1i"); // Blinking bright blue on cyan
+		text = text.replace(/@[xX][Bb][Aa]/g, "\1h\1g\1" + "6\1i"); // Blinking bright green on cyan
+		text = text.replace(/@[xX][Bb][Bb]/g, "\1h\1c\1" + "6\1i"); // Blinking bright cyan on cyan
+		text = text.replace(/@[xX][Bb][Cc]/g, "\1h\1r\1" + "6\1i"); // Blinking bright red on cyan
+		text = text.replace(/@[xX][Bb][Dd]/g, "\1h\1m\1" + "6\1i"); // Blinking bright magenta on cyan
+		text = text.replace(/@[xX][Bb][Ee]/g, "\1h\1y\1" + "6\1i"); // Blinking bright yellow on cyan
+		text = text.replace(/@[xX][Bb][Ff]/g, "\1h\1w\1" + "6\1i"); // Blinking bright white on cyan
 
 		// Red background, blinking foreground
-		text = text.replace(/@[xX][Cc]0/g, "\1n\1k\11\1i"); // Blinking black on red
-		text = text.replace(/@[xX][Cc]1/g, "\1n\1b\11\1i"); // Blinking blue on red
-		text = text.replace(/@[xX][Cc]2/g, "\1n\1g\11\1i"); // Blinking green on red
-		text = text.replace(/@[xX][Cc]3/g, "\1n\1c\11\1i"); // Blinking cyan on red
-		text = text.replace(/@[xX][Cc]4/g, "\1n\1r\11\1i"); // Blinking red on red
-		text = text.replace(/@[xX][Cc]5/g, "\1n\1m\11\1i"); // Blinking magenta on red
-		text = text.replace(/@[xX][Cc]6/g, "\1n\1y\11\1i"); // Blinking yellow/brown on red
-		text = text.replace(/@[xX][Cc]7/g, "\1n\1w\11\1i"); // Blinking white on red
-		text = text.replace(/@[xX][Cc]8/g, "\1h\1k\11\1i"); // Blinking bright black on red
-		text = text.replace(/@[xX][Cc]9/g, "\1h\1b\11\1i"); // Blinking bright blue on red
-		text = text.replace(/@[xX][Cc][Aa]/g, "\1h\1g\11\1i"); // Blinking bright green on red
-		text = text.replace(/@[xX][Cc][Bb]/g, "\1h\1c\11\1i"); // Blinking bright cyan on red
-		text = text.replace(/@[xX][Cc][Cc]/g, "\1h\1r\11\1i"); // Blinking bright red on red
-		text = text.replace(/@[xX][Cc][Dd]/g, "\1h\1m\11\1i"); // Blinking bright magenta on red
-		text = text.replace(/@[xX][Cc][Ee]/g, "\1h\1y\11\1i"); // Blinking bright yellow on red
-		text = text.replace(/@[xX][Cc][Ff]/g, "\1h\1w\11\1i"); // Blinking bright white on red1
+		text = text.replace(/@[xX][Cc]0/g, "\1n\1k\1" + "1\1i"); // Blinking black on red
+		text = text.replace(/@[xX][Cc]1/g, "\1n\1b\1" + "1\1i"); // Blinking blue on red
+		text = text.replace(/@[xX][Cc]2/g, "\1n\1g\1" + "1\1i"); // Blinking green on red
+		text = text.replace(/@[xX][Cc]3/g, "\1n\1c\1" + "1\1i"); // Blinking cyan on red
+		text = text.replace(/@[xX][Cc]4/g, "\1n\1r\1" + "1\1i"); // Blinking red on red
+		text = text.replace(/@[xX][Cc]5/g, "\1n\1m\1" + "1\1i"); // Blinking magenta on red
+		text = text.replace(/@[xX][Cc]6/g, "\1n\1y\1" + "1\1i"); // Blinking yellow/brown on red
+		text = text.replace(/@[xX][Cc]7/g, "\1n\1w\1" + "1\1i"); // Blinking white on red
+		text = text.replace(/@[xX][Cc]8/g, "\1h\1k\1" + "1\1i"); // Blinking bright black on red
+		text = text.replace(/@[xX][Cc]9/g, "\1h\1b\1" + "1\1i"); // Blinking bright blue on red
+		text = text.replace(/@[xX][Cc][Aa]/g, "\1h\1g\1" + "1\1i"); // Blinking bright green on red
+		text = text.replace(/@[xX][Cc][Bb]/g, "\1h\1c\1" + "1\1i"); // Blinking bright cyan on red
+		text = text.replace(/@[xX][Cc][Cc]/g, "\1h\1r\1" + "1\1i"); // Blinking bright red on red
+		text = text.replace(/@[xX][Cc][Dd]/g, "\1h\1m\1" + "1\1i"); // Blinking bright magenta on red
+		text = text.replace(/@[xX][Cc][Ee]/g, "\1h\1y\1" + "1\1i"); // Blinking bright yellow on red
+		text = text.replace(/@[xX][Cc][Ff]/g, "\1h\1w\1" + "1\1i"); // Blinking bright white on red
 
 		// Magenta background, blinking foreground
-		text = text.replace(/@[xX][Dd]0/g, "\1n\1k\15\1i"); // Blinking black on magenta
-		text = text.replace(/@[xX][Dd]1/g, "\1n\1b\15\1i"); // Blinking blue on magenta
-		text = text.replace(/@[xX][Dd]2/g, "\1n\1g\15\1i"); // Blinking green on magenta
-		text = text.replace(/@[xX][Dd]3/g, "\1n\1c\15\1i"); // Blinking cyan on magenta
-		text = text.replace(/@[xX][Dd]4/g, "\1n\1r\15\1i"); // Blinking red on magenta
-		text = text.replace(/@[xX][Dd]5/g, "\1n\1m\15\1i"); // Blinking magenta on magenta
-		text = text.replace(/@[xX][Dd]6/g, "\1n\1y\15\1i"); // Blinking yellow/brown on magenta
-		text = text.replace(/@[xX][Dd]7/g, "\1n\1w\15\1i"); // Blinking white on magenta
-		text = text.replace(/@[xX][Dd]8/g, "\1h\1k\15\1i"); // Blinking bright black on magenta
-		text = text.replace(/@[xX][Dd]9/g, "\1h\1b\15\1i"); // Blinking bright blue on magenta
-		text = text.replace(/@[xX][Dd][Aa]/g, "\1h\1g\15\1i"); // Blinking bright green on magenta
-		text = text.replace(/@[xX][Dd][Bb]/g, "\1h\1c\15\1i"); // Blinking bright cyan on magenta
-		text = text.replace(/@[xX][Dd][Cc]/g, "\1h\1r\15\1i"); // Blinking bright red on magenta
-		text = text.replace(/@[xX][Dd][Dd]/g, "\1h\1m\15\1i"); // Blinking bright magenta on magenta
-		text = text.replace(/@[xX][Dd][Ee]/g, "\1h\1y\15\1i"); // Blinking bright yellow on magenta
-		text = text.replace(/@[xX][Dd][Ff]/g, "\1h\1w\15\1i"); // Blinking bright white on magenta
+		text = text.replace(/@[xX][Dd]0/g, "\1n\1k\1" + "5\1i"); // Blinking black on magenta
+		text = text.replace(/@[xX][Dd]1/g, "\1n\1b\1" + "5\1i"); // Blinking blue on magenta
+		text = text.replace(/@[xX][Dd]2/g, "\1n\1g\1" + "5\1i"); // Blinking green on magenta
+		text = text.replace(/@[xX][Dd]3/g, "\1n\1c\1" + "5\1i"); // Blinking cyan on magenta
+		text = text.replace(/@[xX][Dd]4/g, "\1n\1r\1" + "5\1i"); // Blinking red on magenta
+		text = text.replace(/@[xX][Dd]5/g, "\1n\1m\1" + "5\1i"); // Blinking magenta on magenta
+		text = text.replace(/@[xX][Dd]6/g, "\1n\1y\1" + "5\1i"); // Blinking yellow/brown on magenta
+		text = text.replace(/@[xX][Dd]7/g, "\1n\1w\1" + "5\1i"); // Blinking white on magenta
+		text = text.replace(/@[xX][Dd]8/g, "\1h\1k\1" + "5\1i"); // Blinking bright black on magenta
+		text = text.replace(/@[xX][Dd]9/g, "\1h\1b\1" + "5\1i"); // Blinking bright blue on magenta
+		text = text.replace(/@[xX][Dd][Aa]/g, "\1h\1g\1" + "5\1i"); // Blinking bright green on magenta
+		text = text.replace(/@[xX][Dd][Bb]/g, "\1h\1c\1" + "5\1i"); // Blinking bright cyan on magenta
+		text = text.replace(/@[xX][Dd][Cc]/g, "\1h\1r\1" + "5\1i"); // Blinking bright red on magenta
+		text = text.replace(/@[xX][Dd][Dd]/g, "\1h\1m\1" + "5\1i"); // Blinking bright magenta on magenta
+		text = text.replace(/@[xX][Dd][Ee]/g, "\1h\1y\1" + "5\1i"); // Blinking bright yellow on magenta
+		text = text.replace(/@[xX][Dd][Ff]/g, "\1h\1w\1" + "5\1i"); // Blinking bright white on magenta
 
 		// Brown background, blinking foreground
-		text = text.replace(/@[xX][Ee]0/g, "\1n\1k\13\1i"); // Blinking black on brown
-		text = text.replace(/@[xX][Ee]1/g, "\1n\1b\13\1i"); // Blinking blue on brown
-		text = text.replace(/@[xX][Ee]2/g, "\1n\1g\13\1i"); // Blinking green on brown
-		text = text.replace(/@[xX][Ee]3/g, "\1n\1c\13\1i"); // Blinking cyan on brown
-		text = text.replace(/@[xX][Ee]4/g, "\1n\1r\13\1i"); // Blinking red on brown
-		text = text.replace(/@[xX][Ee]5/g, "\1n\1m\13\1i"); // Blinking magenta on brown
-		text = text.replace(/@[xX][Ee]6/g, "\1n\1y\13\1i"); // Blinking yellow/brown on brown
-		text = text.replace(/@[xX][Ee]7/g, "\1n\1w\13\1i"); // Blinking white on brown
-		text = text.replace(/@[xX][Ee]8/g, "\1h\1k\13\1i"); // Blinking bright black on brown
-		text = text.replace(/@[xX][Ee]9/g, "\1h\1b\13\1i"); // Blinking bright blue on brown
-		text = text.replace(/@[xX][Ee][Aa]/g, "\1h\1g\13\1i"); // Blinking bright green on brown
-		text = text.replace(/@[xX][Ee][Bb]/g, "\1h\1c\13\1i"); // Blinking bright cyan on brown
-		text = text.replace(/@[xX][Ee][Cc]/g, "\1h\1r\13\1i"); // Blinking bright red on brown
-		text = text.replace(/@[xX][Ee][Dd]/g, "\1h\1m\13\1i"); // Blinking bright magenta on brown
-		text = text.replace(/@[xX][Ee][Ee]/g, "\1h\1y\13\1i"); // Blinking bright yellow on brown
-		text = text.replace(/@[xX][Ee][Ff]/g, "\1h\1w\13\1i"); // Blinking bright white on brown
+		text = text.replace(/@[xX][Ee]0/g, "\1n\1k\1" + "3\1i"); // Blinking black on brown
+		text = text.replace(/@[xX][Ee]1/g, "\1n\1b\1" + "3\1i"); // Blinking blue on brown
+		text = text.replace(/@[xX][Ee]2/g, "\1n\1g\1" + "3\1i"); // Blinking green on brown
+		text = text.replace(/@[xX][Ee]3/g, "\1n\1c\1" + "3\1i"); // Blinking cyan on brown
+		text = text.replace(/@[xX][Ee]4/g, "\1n\1r\1" + "3\1i"); // Blinking red on brown
+		text = text.replace(/@[xX][Ee]5/g, "\1n\1m\1" + "3\1i"); // Blinking magenta on brown
+		text = text.replace(/@[xX][Ee]6/g, "\1n\1y\1" + "3\1i"); // Blinking yellow/brown on brown
+		text = text.replace(/@[xX][Ee]7/g, "\1n\1w\1" + "3\1i"); // Blinking white on brown
+		text = text.replace(/@[xX][Ee]8/g, "\1h\1k\1" + "3\1i"); // Blinking bright black on brown
+		text = text.replace(/@[xX][Ee]9/g, "\1h\1b\1" + "3\1i"); // Blinking bright blue on brown
+		text = text.replace(/@[xX][Ee][Aa]/g, "\1h\1g\1" + "3\1i"); // Blinking bright green on brown
+		text = text.replace(/@[xX][Ee][Bb]/g, "\1h\1c\1" + "3\1i"); // Blinking bright cyan on brown
+		text = text.replace(/@[xX][Ee][Cc]/g, "\1h\1r\1" + "3\1i"); // Blinking bright red on brown
+		text = text.replace(/@[xX][Ee][Dd]/g, "\1h\1m\1" + "3\1i"); // Blinking bright magenta on brown
+		text = text.replace(/@[xX][Ee][Ee]/g, "\1h\1y\1" + "3\1i"); // Blinking bright yellow on brown
+		text = text.replace(/@[xX][Ee][Ff]/g, "\1h\1w\1" + "3\1i"); // Blinking bright white on brown
 
 		// White background, blinking foreground
-		text = text.replace(/@[xX][Ff]0/g, "\1n\1k\17\1i"); // Blinking black on white
-		text = text.replace(/@[xX][Ff]1/g, "\1n\1b\17\1i"); // Blinking blue on white
-		text = text.replace(/@[xX][Ff]2/g, "\1n\1g\17\1i"); // Blinking green on white
-		text = text.replace(/@[xX][Ff]3/g, "\1n\1c\17\1i"); // Blinking cyan on white
-		text = text.replace(/@[xX][Ff]4/g, "\1n\1r\17\1i"); // Blinking red on white
-		text = text.replace(/@[xX][Ff]5/g, "\1n\1m\17\1i"); // Blinking magenta on white
-		text = text.replace(/@[xX][Ff]6/g, "\1n\1y\17\1i"); // Blinking yellow/brown on white
-		text = text.replace(/@[xX][Ff]7/g, "\1n\1w\17\1i"); // Blinking white on white
-		text = text.replace(/@[xX][Ff]8/g, "\1h\1k\17\1i"); // Blinking bright black on white
-		text = text.replace(/@[xX][Ff]9/g, "\1h\1b\17\1i"); // Blinking bright blue on white
-		text = text.replace(/@[xX][Ff][Aa]/g, "\1h\1g\17\1i"); // Blinking bright green on white
-		text = text.replace(/@[xX][Ff][Bb]/g, "\1h\1c\17\1i"); // Blinking bright cyan on white
-		text = text.replace(/@[xX][Ff][Cc]/g, "\1h\1r\17\1i"); // Blinking bright red on white
-		text = text.replace(/@[xX][Ff][Dd]/g, "\1h\1m\17\1i"); // Blinking bright magenta on white
-		text = text.replace(/@[xX][Ff][Ee]/g, "\1h\1y\17\1i"); // Blinking bright yellow on white
-		text = text.replace(/@[xX][Ff][Ff]/g, "\1h\1w\17\1i"); // Blinking bright white on white
+		text = text.replace(/@[xX][Ff]0/g, "\1n\1k\1" + "7\1i"); // Blinking black on white
+		text = text.replace(/@[xX][Ff]1/g, "\1n\1b\1" + "7\1i"); // Blinking blue on white
+		text = text.replace(/@[xX][Ff]2/g, "\1n\1g\1" + "7\1i"); // Blinking green on white
+		text = text.replace(/@[xX][Ff]3/g, "\1n\1c\1" + "7\1i"); // Blinking cyan on white
+		text = text.replace(/@[xX][Ff]4/g, "\1n\1r\1" + "7\1i"); // Blinking red on white
+		text = text.replace(/@[xX][Ff]5/g, "\1n\1m\1" + "7\1i"); // Blinking magenta on white
+		text = text.replace(/@[xX][Ff]6/g, "\1n\1y\1" + "7\1i"); // Blinking yellow/brown on white
+		text = text.replace(/@[xX][Ff]7/g, "\1n\1w\1" + "7\1i"); // Blinking white on white
+		text = text.replace(/@[xX][Ff]8/g, "\1h\1k\1" + "7\1i"); // Blinking bright black on white
+		text = text.replace(/@[xX][Ff]9/g, "\1h\1b\1" + "7\1i"); // Blinking bright blue on white
+		text = text.replace(/@[xX][Ff][Aa]/g, "\1h\1g\1" + "7\1i"); // Blinking bright green on white
+		text = text.replace(/@[xX][Ff][Bb]/g, "\1h\1c\1" + "7\1i"); // Blinking bright cyan on white
+		text = text.replace(/@[xX][Ff][Cc]/g, "\1h\1r\1" + "7\1i"); // Blinking bright red on white
+		text = text.replace(/@[xX][Ff][Dd]/g, "\1h\1m\1" + "7\1i"); // Blinking bright magenta on white
+		text = text.replace(/@[xX][Ff][Ee]/g, "\1h\1y\1" + "7\1i"); // Blinking bright yellow on white
+		text = text.replace(/@[xX][Ff][Ff]/g, "\1h\1w\1" + "7\1i"); // Blinking bright white on white
 
 		return text;
 	}
@@ -13047,295 +13162,295 @@ function wildcatAttrsToSyncAttrs(pText)
 	if (/@[0-9A-Fa-f]{2}@/.test(pText))
 	{
 		// Black background
-		var text = pText.replace(/@00@/g, "\1n\1k\10"); // Black on black
-		text = text.replace(/@01@/g, "\1n\1b\10"); // Blue on black
-		text = text.replace(/@02@/g, "\1n\1g\10"); // Green on black
-		text = text.replace(/@03@/g, "\1n\1c\10"); // Cyan on black
-		text = text.replace(/@04@/g, "\1n\1r\10"); // Red on black
-		text = text.replace(/@05@/g, "\1n\1m\10"); // Magenta on black
-		text = text.replace(/@06@/g, "\1n\1y\10"); // Yellow/brown on black
-		text = text.replace(/@07@/g, "\1n\1w\10"); // White on black
-		text = text.replace(/@08@/g, "\1n\1w\10"); // White on black
-		text = text.replace(/@09@/g, "\1n\1w\10"); // White on black
-		text = text.replace(/@08@/g, "\1h\1k\10"); // Bright black on black
-		text = text.replace(/@09@/g, "\1h\1b\10"); // Bright blue on black
-		text = text.replace(/@0[Aa]@/g, "\1h\1g\10"); // Bright green on black
-		text = text.replace(/@0[Bb]@/g, "\1h\1c\10"); // Bright cyan on black
-		text = text.replace(/@0[Cc]@/g, "\1h\1r\10"); // Bright red on black
-		text = text.replace(/@0[Dd]@/g, "\1h\1m\10"); // Bright magenta on black
-		text = text.replace(/@0[Ee]@/g, "\1h\1y\10"); // Bright yellow on black
-		text = text.replace(/@0[Ff]@/g, "\1h\1w\10"); // Bright white on black
+		var text = pText.replace(/@00@/g, "\1n\1k\1" + "0"); // Black on black
+		text = text.replace(/@01@/g, "\1n\1b\1" + "0"); // Blue on black
+		text = text.replace(/@02@/g, "\1n\1g\1" + "0"); // Green on black
+		text = text.replace(/@03@/g, "\1n\1c\1" + "0"); // Cyan on black
+		text = text.replace(/@04@/g, "\1n\1r\1" + "0"); // Red on black
+		text = text.replace(/@05@/g, "\1n\1m\1" + "0"); // Magenta on black
+		text = text.replace(/@06@/g, "\1n\1y\1" + "0"); // Yellow/brown on black
+		text = text.replace(/@07@/g, "\1n\1w\1" + "0"); // White on black
+		text = text.replace(/@08@/g, "\1n\1w\1" + "0"); // White on black
+		text = text.replace(/@09@/g, "\1n\1w\1" + "0"); // White on black
+		text = text.replace(/@08@/g, "\1h\1k\1" + "0"); // Bright black on black
+		text = text.replace(/@09@/g, "\1h\1b\1" + "0"); // Bright blue on black
+		text = text.replace(/@0[Aa]@/g, "\1h\1g\1" + "0"); // Bright green on black
+		text = text.replace(/@0[Bb]@/g, "\1h\1c\1" + "0"); // Bright cyan on black
+		text = text.replace(/@0[Cc]@/g, "\1h\1r\1" + "0"); // Bright red on black
+		text = text.replace(/@0[Dd]@/g, "\1h\1m\1" + "0"); // Bright magenta on black
+		text = text.replace(/@0[Ee]@/g, "\1h\1y\1" + "0"); // Bright yellow on black
+		text = text.replace(/@0[Ff]@/g, "\1h\1w\1" + "0"); // Bright white on black
 		// Blinking foreground
 
 		// Blue background
-		text = text.replace(/@10@/g, "\1n\1k\14"); // Black on blue
-		text = text.replace(/@11@/g, "\1n\1b\14"); // Blue on blue
-		text = text.replace(/@12@/g, "\1n\1g\14"); // Green on blue
-		text = text.replace(/@13@/g, "\1n\1c\14"); // Cyan on blue
-		text = text.replace(/@14@/g, "\1n\1r\14"); // Red on blue
-		text = text.replace(/@15@/g, "\1n\1m\14"); // Magenta on blue
-		text = text.replace(/@16@/g, "\1n\1y\14"); // Yellow/brown on blue
-		text = text.replace(/@17@/g, "\1n\1w\14"); // White on blue
-		text = text.replace(/@18@/g, "\1h\1k\14"); // Bright black on blue
-		text = text.replace(/@19@/g, "\1h\1b\14"); // Bright blue on blue
-		text = text.replace(/@1[Aa]@/g, "\1h\1g\14"); // Bright green on blue
-		text = text.replace(/@1[Bb]@/g, "\1h\1c\14"); // Bright cyan on blue
-		text = text.replace(/@1[Cc]@/g, "\1h\1r\14"); // Bright red on blue
-		text = text.replace(/@1[Dd]@/g, "\1h\1m\14"); // Bright magenta on blue
-		text = text.replace(/@1[Ee]@/g, "\1h\1y\14"); // Bright yellow on blue
-		text = text.replace(/@1[Ff]@/g, "\1h\1w\14"); // Bright white on blue
+		text = text.replace(/@10@/g, "\1n\1k\1" + "4"); // Black on blue
+		text = text.replace(/@11@/g, "\1n\1b\1" + "4"); // Blue on blue
+		text = text.replace(/@12@/g, "\1n\1g\1" + "4"); // Green on blue
+		text = text.replace(/@13@/g, "\1n\1c\1" + "4"); // Cyan on blue
+		text = text.replace(/@14@/g, "\1n\1r\1" + "4"); // Red on blue
+		text = text.replace(/@15@/g, "\1n\1m\1" + "4"); // Magenta on blue
+		text = text.replace(/@16@/g, "\1n\1y\1" + "4"); // Yellow/brown on blue
+		text = text.replace(/@17@/g, "\1n\1w\1" + "4"); // White on blue
+		text = text.replace(/@18@/g, "\1h\1k\1" + "4"); // Bright black on blue
+		text = text.replace(/@19@/g, "\1h\1b\1" + "4"); // Bright blue on blue
+		text = text.replace(/@1[Aa]@/g, "\1h\1g\1" + "4"); // Bright green on blue
+		text = text.replace(/@1[Bb]@/g, "\1h\1c\1" + "4"); // Bright cyan on blue
+		text = text.replace(/@1[Cc]@/g, "\1h\1r\1" + "4"); // Bright red on blue
+		text = text.replace(/@1[Dd]@/g, "\1h\1m\1" + "4"); // Bright magenta on blue
+		text = text.replace(/@1[Ee]@/g, "\1h\1y\1" + "4"); // Bright yellow on blue
+		text = text.replace(/@1[Ff]@/g, "\1h\1w\1" + "4"); // Bright white on blue
 
 		// Green background
-		text = text.replace(/@20@/g, "\1n\1k\12"); // Black on green
-		text = text.replace(/@21@/g, "\1n\1b\12"); // Blue on green
-		text = text.replace(/@22@/g, "\1n\1g\12"); // Green on green
-		text = text.replace(/@23@/g, "\1n\1c\12"); // Cyan on green
-		text = text.replace(/@24@/g, "\1n\1r\12"); // Red on green
-		text = text.replace(/@25@/g, "\1n\1m\12"); // Magenta on green
-		text = text.replace(/@26@/g, "\1n\1y\12"); // Yellow/brown on green
-		text = text.replace(/@27@/g, "\1n\1w\12"); // White on green
-		text = text.replace(/@28@/g, "\1h\1k\12"); // Bright black on green
-		text = text.replace(/@29@/g, "\1h\1b\12"); // Bright blue on green
-		text = text.replace(/@2[Aa]@/g, "\1h\1g\12"); // Bright green on green
-		text = text.replace(/@2[Bb]@/g, "\1h\1c\12"); // Bright cyan on green
-		text = text.replace(/@2[Cc]@/g, "\1h\1r\12"); // Bright red on green
-		text = text.replace(/@2[Dd]@/g, "\1h\1m\12"); // Bright magenta on green
-		text = text.replace(/@2[Ee]@/g, "\1h\1y\12"); // Bright yellow on green
-		text = text.replace(/@2[Ff]@/g, "\1h\1w\12"); // Bright white on green
+		text = text.replace(/@20@/g, "\1n\1k\1" + "2"); // Black on green
+		text = text.replace(/@21@/g, "\1n\1b\1" + "2"); // Blue on green
+		text = text.replace(/@22@/g, "\1n\1g\1" + "2"); // Green on green
+		text = text.replace(/@23@/g, "\1n\1c\1" + "2"); // Cyan on green
+		text = text.replace(/@24@/g, "\1n\1r\1" + "2"); // Red on green
+		text = text.replace(/@25@/g, "\1n\1m\1" + "2"); // Magenta on green
+		text = text.replace(/@26@/g, "\1n\1y\1" + "2"); // Yellow/brown on green
+		text = text.replace(/@27@/g, "\1n\1w\1" + "2"); // White on green
+		text = text.replace(/@28@/g, "\1h\1k\1" + "2"); // Bright black on green
+		text = text.replace(/@29@/g, "\1h\1b\1" + "2"); // Bright blue on green
+		text = text.replace(/@2[Aa]@/g, "\1h\1g\1" + "2"); // Bright green on green
+		text = text.replace(/@2[Bb]@/g, "\1h\1c\1" + "2"); // Bright cyan on green
+		text = text.replace(/@2[Cc]@/g, "\1h\1r\1" + "2"); // Bright red on green
+		text = text.replace(/@2[Dd]@/g, "\1h\1m\1" + "2"); // Bright magenta on green
+		text = text.replace(/@2[Ee]@/g, "\1h\1y\1" + "2"); // Bright yellow on green
+		text = text.replace(/@2[Ff]@/g, "\1h\1w\1" + "2"); // Bright white on green
 
 		// Cyan background
-		text = text.replace(/@30@/g, "\1n\1k\16"); // Black on cyan
-		text = text.replace(/@31@/g, "\1n\1b\16"); // Blue on cyan
-		text = text.replace(/@32@/g, "\1n\1g\16"); // Green on cyan
-		text = text.replace(/@33@/g, "\1n\1c\16"); // Cyan on cyan
-		text = text.replace(/@34@/g, "\1n\1r\16"); // Red on cyan
-		text = text.replace(/@35@/g, "\1n\1m\16"); // Magenta on cyan
-		text = text.replace(/@36@/g, "\1n\1y\16"); // Yellow/brown on cyan
-		text = text.replace(/@37@/g, "\1n\1w\16"); // White on cyan
-		text = text.replace(/@38@/g, "\1h\1k\16"); // Bright black on cyan
-		text = text.replace(/@39@/g, "\1h\1b\16"); // Bright blue on cyan
-		text = text.replace(/@3[Aa]@/g, "\1h\1g\16"); // Bright green on cyan
-		text = text.replace(/@3[Bb]@/g, "\1h\1c\16"); // Bright cyan on cyan
-		text = text.replace(/@3[Cc]@/g, "\1h\1r\16"); // Bright red on cyan
-		text = text.replace(/@3[Dd]@/g, "\1h\1m\16"); // Bright magenta on cyan
-		text = text.replace(/@3[Ee]@/g, "\1h\1y\16"); // Bright yellow on cyan
-		text = text.replace(/@3[Ff]@/g, "\1h\1w\16"); // Bright white on cyan
+		text = text.replace(/@30@/g, "\1n\1k\1" + "6"); // Black on cyan
+		text = text.replace(/@31@/g, "\1n\1b\1" + "6"); // Blue on cyan
+		text = text.replace(/@32@/g, "\1n\1g\1" + "6"); // Green on cyan
+		text = text.replace(/@33@/g, "\1n\1c\1" + "6"); // Cyan on cyan
+		text = text.replace(/@34@/g, "\1n\1r\1" + "6"); // Red on cyan
+		text = text.replace(/@35@/g, "\1n\1m\1" + "6"); // Magenta on cyan
+		text = text.replace(/@36@/g, "\1n\1y\1" + "6"); // Yellow/brown on cyan
+		text = text.replace(/@37@/g, "\1n\1w\1" + "6"); // White on cyan
+		text = text.replace(/@38@/g, "\1h\1k\1" + "6"); // Bright black on cyan
+		text = text.replace(/@39@/g, "\1h\1b\1" + "6"); // Bright blue on cyan
+		text = text.replace(/@3[Aa]@/g, "\1h\1g\1" + "6"); // Bright green on cyan
+		text = text.replace(/@3[Bb]@/g, "\1h\1c\1" + "6"); // Bright cyan on cyan
+		text = text.replace(/@3[Cc]@/g, "\1h\1r\1" + "6"); // Bright red on cyan
+		text = text.replace(/@3[Dd]@/g, "\1h\1m\1" + "6"); // Bright magenta on cyan
+		text = text.replace(/@3[Ee]@/g, "\1h\1y\1" + "6"); // Bright yellow on cyan
+		text = text.replace(/@3[Ff]@/g, "\1h\1w\1" + "6"); // Bright white on cyan
 
 		// Red background
-		text = text.replace(/@40@/g, "\1n\1k\11"); // Black on red
-		text = text.replace(/@41@/g, "\1n\1b\11"); // Blue on red
-		text = text.replace(/@42@/g, "\1n\1g\11"); // Green on red
-		text = text.replace(/@43@/g, "\1n\1c\11"); // Cyan on red
-		text = text.replace(/@44@/g, "\1n\1r\11"); // Red on red
-		text = text.replace(/@45@/g, "\1n\1m\11"); // Magenta on red
-		text = text.replace(/@46@/g, "\1n\1y\11"); // Yellow/brown on red
-		text = text.replace(/@47@/g, "\1n\1w\11"); // White on red
-		text = text.replace(/@48@/g, "\1h\1k\11"); // Bright black on red
-		text = text.replace(/@49@/g, "\1h\1b\11"); // Bright blue on red
-		text = text.replace(/@4[Aa]@/g, "\1h\1g\11"); // Bright green on red
-		text = text.replace(/@4[Bb]@/g, "\1h\1c\11"); // Bright cyan on red
-		text = text.replace(/@4[Cc]@/g, "\1h\1r\11"); // Bright red on red
-		text = text.replace(/@4[Dd]@/g, "\1h\1m\11"); // Bright magenta on red
-		text = text.replace(/@4[Ee]@/g, "\1h\1y\11"); // Bright yellow on red
-		text = text.replace(/@4[Ff]@/g, "\1h\1w\11"); // Bright white on red
+		text = text.replace(/@40@/g, "\1n\1k\1" + "1"); // Black on red
+		text = text.replace(/@41@/g, "\1n\1b\1" + "1"); // Blue on red
+		text = text.replace(/@42@/g, "\1n\1g\1" + "1"); // Green on red
+		text = text.replace(/@43@/g, "\1n\1c\1" + "1"); // Cyan on red
+		text = text.replace(/@44@/g, "\1n\1r\1" + "1"); // Red on red
+		text = text.replace(/@45@/g, "\1n\1m\1" + "1"); // Magenta on red
+		text = text.replace(/@46@/g, "\1n\1y\1" + "1"); // Yellow/brown on red
+		text = text.replace(/@47@/g, "\1n\1w\1" + "1"); // White on red
+		text = text.replace(/@48@/g, "\1h\1k\1" + "1"); // Bright black on red
+		text = text.replace(/@49@/g, "\1h\1b\1" + "1"); // Bright blue on red
+		text = text.replace(/@4[Aa]@/g, "\1h\1g\1" + "1"); // Bright green on red
+		text = text.replace(/@4[Bb]@/g, "\1h\1c\1" + "1"); // Bright cyan on red
+		text = text.replace(/@4[Cc]@/g, "\1h\1r\1" + "1"); // Bright red on red
+		text = text.replace(/@4[Dd]@/g, "\1h\1m\1" + "1"); // Bright magenta on red
+		text = text.replace(/@4[Ee]@/g, "\1h\1y\1" + "1"); // Bright yellow on red
+		text = text.replace(/@4[Ff]@/g, "\1h\1w\1" + "1"); // Bright white on red
 
 		// Magenta background
-		text = text.replace(/@50@/g, "\1n\1k\15"); // Black on magenta
-		text = text.replace(/@51@/g, "\1n\1b\15"); // Blue on magenta
-		text = text.replace(/@52@/g, "\1n\1g\15"); // Green on magenta
-		text = text.replace(/@53@/g, "\1n\1c\15"); // Cyan on magenta
-		text = text.replace(/@54@/g, "\1n\1r\15"); // Red on magenta
-		text = text.replace(/@55@/g, "\1n\1m\15"); // Magenta on magenta
-		text = text.replace(/@56@/g, "\1n\1y\15"); // Yellow/brown on magenta
-		text = text.replace(/@57@/g, "\1n\1w\15"); // White on magenta
-		text = text.replace(/@58@/g, "\1h\1k\15"); // Bright black on magenta
-		text = text.replace(/@59@/g, "\1h\1b\15"); // Bright blue on magenta
-		text = text.replace(/@5[Aa]@/g, "\1h\1g\15"); // Bright green on magenta
-		text = text.replace(/@5[Bb]@/g, "\1h\1c\15"); // Bright cyan on magenta
-		text = text.replace(/@5[Cc]@/g, "\1h\1r\15"); // Bright red on magenta
-		text = text.replace(/@5[Dd]@/g, "\1h\1m\15"); // Bright magenta on magenta
-		text = text.replace(/@5[Ee]@/g, "\1h\1y\15"); // Bright yellow on magenta
-		text = text.replace(/@5[Ff]@/g, "\1h\1w\15"); // Bright white on magenta
+		text = text.replace(/@50@/g, "\1n\1k\1" + "5"); // Black on magenta
+		text = text.replace(/@51@/g, "\1n\1b\1" + "5"); // Blue on magenta
+		text = text.replace(/@52@/g, "\1n\1g\1" + "5"); // Green on magenta
+		text = text.replace(/@53@/g, "\1n\1c\1" + "5"); // Cyan on magenta
+		text = text.replace(/@54@/g, "\1n\1r\1" + "5"); // Red on magenta
+		text = text.replace(/@55@/g, "\1n\1m\1" + "5"); // Magenta on magenta
+		text = text.replace(/@56@/g, "\1n\1y\1" + "5"); // Yellow/brown on magenta
+		text = text.replace(/@57@/g, "\1n\1w\1" + "5"); // White on magenta
+		text = text.replace(/@58@/g, "\1h\1k\1" + "5"); // Bright black on magenta
+		text = text.replace(/@59@/g, "\1h\1b\1" + "5"); // Bright blue on magenta
+		text = text.replace(/@5[Aa]@/g, "\1h\1g\1" + "5"); // Bright green on magenta
+		text = text.replace(/@5[Bb]@/g, "\1h\1c\1" + "5"); // Bright cyan on magenta
+		text = text.replace(/@5[Cc]@/g, "\1h\1r\1" + "5"); // Bright red on magenta
+		text = text.replace(/@5[Dd]@/g, "\1h\1m\1" + "5"); // Bright magenta on magenta
+		text = text.replace(/@5[Ee]@/g, "\1h\1y\1" + "5"); // Bright yellow on magenta
+		text = text.replace(/@5[Ff]@/g, "\1h\1w\1" + "5"); // Bright white on magenta
 
 		// Brown background
-		text = text.replace(/@60@/g, "\1n\1k\13"); // Black on brown
-		text = text.replace(/@61@/g, "\1n\1b\13"); // Blue on brown
-		text = text.replace(/@62@/g, "\1n\1g\13"); // Green on brown
-		text = text.replace(/@63@/g, "\1n\1c\13"); // Cyan on brown
-		text = text.replace(/@64@/g, "\1n\1r\13"); // Red on brown
-		text = text.replace(/@65@/g, "\1n\1m\13"); // Magenta on brown
-		text = text.replace(/@66@/g, "\1n\1y\13"); // Yellow/brown on brown
-		text = text.replace(/@67@/g, "\1n\1w\13"); // White on brown
-		text = text.replace(/@68@/g, "\1h\1k\13"); // Bright black on brown
-		text = text.replace(/@69@/g, "\1h\1b\13"); // Bright blue on brown
-		text = text.replace(/@6[Aa]@/g, "\1h\1g\13"); // Bright breen on brown
-		text = text.replace(/@6[Bb]@/g, "\1h\1c\13"); // Bright cyan on brown
-		text = text.replace(/@6[Cc]@/g, "\1h\1r\13"); // Bright red on brown
-		text = text.replace(/@6[Dd]@/g, "\1h\1m\13"); // Bright magenta on brown
-		text = text.replace(/@6[Ee]@/g, "\1h\1y\13"); // Bright yellow on brown
-		text = text.replace(/@6[Ff]@/g, "\1h\1w\13"); // Bright white on brown
+		text = text.replace(/@60@/g, "\1n\1k\1" + "3"); // Black on brown
+		text = text.replace(/@61@/g, "\1n\1b\1" + "3"); // Blue on brown
+		text = text.replace(/@62@/g, "\1n\1g\1" + "3"); // Green on brown
+		text = text.replace(/@63@/g, "\1n\1c\1" + "3"); // Cyan on brown
+		text = text.replace(/@64@/g, "\1n\1r\1" + "3"); // Red on brown
+		text = text.replace(/@65@/g, "\1n\1m\1" + "3"); // Magenta on brown
+		text = text.replace(/@66@/g, "\1n\1y\1" + "3"); // Yellow/brown on brown
+		text = text.replace(/@67@/g, "\1n\1w\1" + "3"); // White on brown
+		text = text.replace(/@68@/g, "\1h\1k\1" + "3"); // Bright black on brown
+		text = text.replace(/@69@/g, "\1h\1b\1" + "3"); // Bright blue on brown
+		text = text.replace(/@6[Aa]@/g, "\1h\1g\1" + "3"); // Bright breen on brown
+		text = text.replace(/@6[Bb]@/g, "\1h\1c\1" + "3"); // Bright cyan on brown
+		text = text.replace(/@6[Cc]@/g, "\1h\1r\1" + "3"); // Bright red on brown
+		text = text.replace(/@6[Dd]@/g, "\1h\1m\1" + "3"); // Bright magenta on brown
+		text = text.replace(/@6[Ee]@/g, "\1h\1y\1" + "3"); // Bright yellow on brown
+		text = text.replace(/@6[Ff]@/g, "\1h\1w\1" + "3"); // Bright white on brown
 
 		// White background
-		text = text.replace(/@70@/g, "\1n\1k\17"); // Black on white
-		text = text.replace(/@71@/g, "\1n\1b\17"); // Blue on white
-		text = text.replace(/@72@/g, "\1n\1g\17"); // Green on white
-		text = text.replace(/@73@/g, "\1n\1c\17"); // Cyan on white
-		text = text.replace(/@74@/g, "\1n\1r\17"); // Red on white
-		text = text.replace(/@75@/g, "\1n\1m\17"); // Magenta on white
-		text = text.replace(/@76@/g, "\1n\1y\17"); // Yellow/brown on white
-		text = text.replace(/@77@/g, "\1n\1w\17"); // White on white
-		text = text.replace(/@78@/g, "\1h\1k\17"); // Bright black on white
-		text = text.replace(/@79@/g, "\1h\1b\17"); // Bright blue on white
-		text = text.replace(/@7[Aa]@/g, "\1h\1g\17"); // Bright green on white
-		text = text.replace(/@7[Bb]@/g, "\1h\1c\17"); // Bright cyan on white
-		text = text.replace(/@7[Cc]@/g, "\1h\1r\17"); // Bright red on white
-		text = text.replace(/@7[Dd]@/g, "\1h\1m\17"); // Bright magenta on white
-		text = text.replace(/@7[Ee]@/g, "\1h\1y\17"); // Bright yellow on white
-		text = text.replace(/@7[Ff]@/g, "\1h\1w\17"); // Bright white on white
+		text = text.replace(/@70@/g, "\1n\1k\1" + "7"); // Black on white
+		text = text.replace(/@71@/g, "\1n\1b\1" + "7"); // Blue on white
+		text = text.replace(/@72@/g, "\1n\1g\1" + "7"); // Green on white
+		text = text.replace(/@73@/g, "\1n\1c\1" + "7"); // Cyan on white
+		text = text.replace(/@74@/g, "\1n\1r\1" + "7"); // Red on white
+		text = text.replace(/@75@/g, "\1n\1m\1" + "7"); // Magenta on white
+		text = text.replace(/@76@/g, "\1n\1y\1" + "7"); // Yellow/brown on white
+		text = text.replace(/@77@/g, "\1n\1w\1" + "7"); // White on white
+		text = text.replace(/@78@/g, "\1h\1k\1" + "7"); // Bright black on white
+		text = text.replace(/@79@/g, "\1h\1b\1" + "7"); // Bright blue on white
+		text = text.replace(/@7[Aa]@/g, "\1h\1g\1" + "7"); // Bright green on white
+		text = text.replace(/@7[Bb]@/g, "\1h\1c\1" + "7"); // Bright cyan on white
+		text = text.replace(/@7[Cc]@/g, "\1h\1r\1" + "7"); // Bright red on white
+		text = text.replace(/@7[Dd]@/g, "\1h\1m\1" + "7"); // Bright magenta on white
+		text = text.replace(/@7[Ee]@/g, "\1h\1y\1" + "7"); // Bright yellow on white
+		text = text.replace(/@7[Ff]@/g, "\1h\1w\1" + "7"); // Bright white on white
 
 		// Black background, blinking foreground
-		text = text.replace(/@80@/g, "\1n\1k\10\1i"); // Blinking black on black
-		text = text.replace(/@81@/g, "\1n\1b\10\1i"); // Blinking blue on black
-		text = text.replace(/@82@/g, "\1n\1g\10\1i"); // Blinking green on black
-		text = text.replace(/@83@/g, "\1n\1c\10\1i"); // Blinking cyan on black
-		text = text.replace(/@84@/g, "\1n\1r\10\1i"); // Blinking red on black
-		text = text.replace(/@85@/g, "\1n\1m\10\1i"); // Blinking magenta on black
-		text = text.replace(/@86@/g, "\1n\1y\10\1i"); // Blinking yellow/brown on black
-		text = text.replace(/@87@/g, "\1n\1w\10\1i"); // Blinking white on black
-		text = text.replace(/@88@/g, "\1h\1k\10\1i"); // Blinking bright black on black
-		text = text.replace(/@89@/g, "\1h\1b\10\1i"); // Blinking bright blue on black
-		text = text.replace(/@8[Aa]@/g, "\1h\1g\10\1i"); // Blinking bright green on black
-		text = text.replace(/@8[Bb]@/g, "\1h\1c\10\1i"); // Blinking bright cyan on black
-		text = text.replace(/@8[Cc]@/g, "\1h\1r\10\1i"); // Blinking bright red on black
-		text = text.replace(/@8[Dd]@/g, "\1h\1m\10\1i"); // Blinking bright magenta on black
-		text = text.replace(/@8[Ee]@/g, "\1h\1y\10\1i"); // Blinking bright yellow on black
-		text = text.replace(/@8[Ff]@/g, "\1h\1w\10\1i"); // Blinking bright white on black
+		text = text.replace(/@80@/g, "\1n\1k\1" + "0\1i"); // Blinking black on black
+		text = text.replace(/@81@/g, "\1n\1b\1" + "0\1i"); // Blinking blue on black
+		text = text.replace(/@82@/g, "\1n\1g\1" + "0\1i"); // Blinking green on black
+		text = text.replace(/@83@/g, "\1n\1c\1" + "0\1i"); // Blinking cyan on black
+		text = text.replace(/@84@/g, "\1n\1r\1" + "0\1i"); // Blinking red on black
+		text = text.replace(/@85@/g, "\1n\1m\1" + "0\1i"); // Blinking magenta on black
+		text = text.replace(/@86@/g, "\1n\1y\1" + "0\1i"); // Blinking yellow/brown on black
+		text = text.replace(/@87@/g, "\1n\1w\1" + "0\1i"); // Blinking white on black
+		text = text.replace(/@88@/g, "\1h\1k\1" + "0\1i"); // Blinking bright black on black
+		text = text.replace(/@89@/g, "\1h\1b\1" + "0\1i"); // Blinking bright blue on black
+		text = text.replace(/@8[Aa]@/g, "\1h\1g\1" + "0\1i"); // Blinking bright green on black
+		text = text.replace(/@8[Bb]@/g, "\1h\1c\1" + "0\1i"); // Blinking bright cyan on black
+		text = text.replace(/@8[Cc]@/g, "\1h\1r\1" + "0\1i"); // Blinking bright red on black
+		text = text.replace(/@8[Dd]@/g, "\1h\1m\1" + "0\1i"); // Blinking bright magenta on black
+		text = text.replace(/@8[Ee]@/g, "\1h\1y\1" + "0\1i"); // Blinking bright yellow on black
+		text = text.replace(/@8[Ff]@/g, "\1h\1w\1" + "0\1i"); // Blinking bright white on black
 
 		// Blue background, blinking foreground
-		text = text.replace(/@90@/g, "\1n\1k\14\1i"); // Blinking black on blue
-		text = text.replace(/@91@/g, "\1n\1b\14\1i"); // Blinking blue on blue
-		text = text.replace(/@92@/g, "\1n\1g\14\1i"); // Blinking green on blue
-		text = text.replace(/@93@/g, "\1n\1c\14\1i"); // Blinking cyan on blue
-		text = text.replace(/@94@/g, "\1n\1r\14\1i"); // Blinking red on blue
-		text = text.replace(/@95@/g, "\1n\1m\14\1i"); // Blinking magenta on blue
-		text = text.replace(/@96@/g, "\1n\1y\14\1i"); // Blinking yellow/brown on blue
-		text = text.replace(/@97@/g, "\1n\1w\14\1i"); // Blinking white on blue
-		text = text.replace(/@98@/g, "\1h\1k\14\1i"); // Blinking bright black on blue
-		text = text.replace(/@99@/g, "\1h\1b\14\1i"); // Blinking bright blue on blue
-		text = text.replace(/@9[Aa]@/g, "\1h\1g\14\1i"); // Blinking bright green on blue
-		text = text.replace(/@9[Bb]@/g, "\1h\1c\14\1i"); // Blinking bright cyan on blue
-		text = text.replace(/@9[Cc]@/g, "\1h\1r\14\1i"); // Blinking bright red on blue
-		text = text.replace(/@9[Dd]@/g, "\1h\1m\14\1i"); // Blinking bright magenta on blue
-		text = text.replace(/@9[Ee]@/g, "\1h\1y\14\1i"); // Blinking bright yellow on blue
-		text = text.replace(/@9[Ff]@/g, "\1h\1w\14\1i"); // Blinking bright white on blue
+		text = text.replace(/@90@/g, "\1n\1k\1" + "4\1i"); // Blinking black on blue
+		text = text.replace(/@91@/g, "\1n\1b\1" + "4\1i"); // Blinking blue on blue
+		text = text.replace(/@92@/g, "\1n\1g\1" + "4\1i"); // Blinking green on blue
+		text = text.replace(/@93@/g, "\1n\1c\1" + "4\1i"); // Blinking cyan on blue
+		text = text.replace(/@94@/g, "\1n\1r\1" + "4\1i"); // Blinking red on blue
+		text = text.replace(/@95@/g, "\1n\1m\1" + "4\1i"); // Blinking magenta on blue
+		text = text.replace(/@96@/g, "\1n\1y\1" + "4\1i"); // Blinking yellow/brown on blue
+		text = text.replace(/@97@/g, "\1n\1w\1" + "4\1i"); // Blinking white on blue
+		text = text.replace(/@98@/g, "\1h\1k\1" + "4\1i"); // Blinking bright black on blue
+		text = text.replace(/@99@/g, "\1h\1b\1" + "4\1i"); // Blinking bright blue on blue
+		text = text.replace(/@9[Aa]@/g, "\1h\1g\1" + "4\1i"); // Blinking bright green on blue
+		text = text.replace(/@9[Bb]@/g, "\1h\1c\1" + "4\1i"); // Blinking bright cyan on blue
+		text = text.replace(/@9[Cc]@/g, "\1h\1r\1" + "4\1i"); // Blinking bright red on blue
+		text = text.replace(/@9[Dd]@/g, "\1h\1m\1" + "4\1i"); // Blinking bright magenta on blue
+		text = text.replace(/@9[Ee]@/g, "\1h\1y\1" + "4\1i"); // Blinking bright yellow on blue
+		text = text.replace(/@9[Ff]@/g, "\1h\1w\1" + "4\1i"); // Blinking bright white on blue
 
 		// Green background, blinking foreground
-		text = text.replace(/@[Aa]0@/g, "\1n\1k\12\1i"); // Blinking black on green
-		text = text.replace(/@[Aa]1@/g, "\1n\1b\12\1i"); // Blinking blue on green
-		text = text.replace(/@[Aa]2@/g, "\1n\1g\12\1i"); // Blinking green on green
-		text = text.replace(/@[Aa]3@/g, "\1n\1c\12\1i"); // Blinking cyan on green
-		text = text.replace(/@[Aa]4@/g, "\1n\1r\12\1i"); // Blinking red on green
-		text = text.replace(/@[Aa]5@/g, "\1n\1m\12\1i"); // Blinking magenta on green
-		text = text.replace(/@[Aa]6@/g, "\1n\1y\12\1i"); // Blinking yellow/brown on green
-		text = text.replace(/@[Aa]7@/g, "\1n\1w\12\1i"); // Blinking white on green
-		text = text.replace(/@[Aa]8@/g, "\1h\1k\12\1i"); // Blinking bright black on green
-		text = text.replace(/@[Aa]9@/g, "\1h\1b\12\1i"); // Blinking bright blue on green
-		text = text.replace(/@[Aa][Aa]@/g, "\1h\1g\12\1i"); // Blinking bright green on green
-		text = text.replace(/@[Aa][Bb]@/g, "\1h\1c\12\1i"); // Blinking bright cyan on green
-		text = text.replace(/@[Aa][Cc]@/g, "\1h\1r\12\1i"); // Blinking bright red on green
-		text = text.replace(/@[Aa][Dd]@/g, "\1h\1m\12\1i"); // Blinking bright magenta on green
-		text = text.replace(/@[Aa][Ee]@/g, "\1h\1y\12\1i"); // Blinking bright yellow on green
-		text = text.replace(/@[Aa][Ff]@/g, "\1h\1w\12\1i"); // Blinking bright white on green
+		text = text.replace(/@[Aa]0@/g, "\1n\1k\1" + "2\1i"); // Blinking black on green
+		text = text.replace(/@[Aa]1@/g, "\1n\1b\1" + "2\1i"); // Blinking blue on green
+		text = text.replace(/@[Aa]2@/g, "\1n\1g\1" + "2\1i"); // Blinking green on green
+		text = text.replace(/@[Aa]3@/g, "\1n\1c\1" + "2\1i"); // Blinking cyan on green
+		text = text.replace(/@[Aa]4@/g, "\1n\1r\1" + "2\1i"); // Blinking red on green
+		text = text.replace(/@[Aa]5@/g, "\1n\1m\1" + "2\1i"); // Blinking magenta on green
+		text = text.replace(/@[Aa]6@/g, "\1n\1y\1" + "2\1i"); // Blinking yellow/brown on green
+		text = text.replace(/@[Aa]7@/g, "\1n\1w\1" + "2\1i"); // Blinking white on green
+		text = text.replace(/@[Aa]8@/g, "\1h\1k\1" + "2\1i"); // Blinking bright black on green
+		text = text.replace(/@[Aa]9@/g, "\1h\1b\1" + "2\1i"); // Blinking bright blue on green
+		text = text.replace(/@[Aa][Aa]@/g, "\1h\1g\1" + "2\1i"); // Blinking bright green on green
+		text = text.replace(/@[Aa][Bb]@/g, "\1h\1c\1" + "2\1i"); // Blinking bright cyan on green
+		text = text.replace(/@[Aa][Cc]@/g, "\1h\1r\1" + "2\1i"); // Blinking bright red on green
+		text = text.replace(/@[Aa][Dd]@/g, "\1h\1m\1" + "2\1i"); // Blinking bright magenta on green
+		text = text.replace(/@[Aa][Ee]@/g, "\1h\1y\1" + "2\1i"); // Blinking bright yellow on green
+		text = text.replace(/@[Aa][Ff]@/g, "\1h\1w\1" + "2\1i"); // Blinking bright white on green
 
 		// Cyan background, blinking foreground
-		text = text.replace(/@[Bb]0@/g, "\1n\1k\16\1i"); // Blinking black on cyan
-		text = text.replace(/@[Bb]1@/g, "\1n\1b\16\1i"); // Blinking blue on cyan
-		text = text.replace(/@[Bb]2@/g, "\1n\1g\16\1i"); // Blinking green on cyan
-		text = text.replace(/@[Bb]3@/g, "\1n\1c\16\1i"); // Blinking cyan on cyan
-		text = text.replace(/@[Bb]4@/g, "\1n\1r\16\1i"); // Blinking red on cyan
-		text = text.replace(/@[Bb]5@/g, "\1n\1m\16\1i"); // Blinking magenta on cyan
-		text = text.replace(/@[Bb]6@/g, "\1n\1y\16\1i"); // Blinking yellow/brown on cyan
-		text = text.replace(/@[Bb]7@/g, "\1n\1w\16\1i"); // Blinking white on cyan
-		text = text.replace(/@[Bb]8@/g, "\1h\1k\16\1i"); // Blinking bright black on cyan
-		text = text.replace(/@[Bb]9@/g, "\1h\1b\16\1i"); // Blinking bright blue on cyan
-		text = text.replace(/@[Bb][Aa]@/g, "\1h\1g\16\1i"); // Blinking bright green on cyan
-		text = text.replace(/@[Bb][Bb]@/g, "\1h\1c\16\1i"); // Blinking bright cyan on cyan
-		text = text.replace(/@[Bb][Cc]@/g, "\1h\1r\16\1i"); // Blinking bright red on cyan
-		text = text.replace(/@[Bb][Dd]@/g, "\1h\1m\16\1i"); // Blinking bright magenta on cyan
-		text = text.replace(/@[Bb][Ee]@/g, "\1h\1y\16\1i"); // Blinking bright yellow on cyan
-		text = text.replace(/@[Bb][Ff]@/g, "\1h\1w\16\1i"); // Blinking bright white on cyan
+		text = text.replace(/@[Bb]0@/g, "\1n\1k\1" + "6\1i"); // Blinking black on cyan
+		text = text.replace(/@[Bb]1@/g, "\1n\1b\1" + "6\1i"); // Blinking blue on cyan
+		text = text.replace(/@[Bb]2@/g, "\1n\1g\1" + "6\1i"); // Blinking green on cyan
+		text = text.replace(/@[Bb]3@/g, "\1n\1c\1" + "6\1i"); // Blinking cyan on cyan
+		text = text.replace(/@[Bb]4@/g, "\1n\1r\1" + "6\1i"); // Blinking red on cyan
+		text = text.replace(/@[Bb]5@/g, "\1n\1m\1" + "6\1i"); // Blinking magenta on cyan
+		text = text.replace(/@[Bb]6@/g, "\1n\1y\1" + "6\1i"); // Blinking yellow/brown on cyan
+		text = text.replace(/@[Bb]7@/g, "\1n\1w\1" + "6\1i"); // Blinking white on cyan
+		text = text.replace(/@[Bb]8@/g, "\1h\1k\1" + "6\1i"); // Blinking bright black on cyan
+		text = text.replace(/@[Bb]9@/g, "\1h\1b\1" + "6\1i"); // Blinking bright blue on cyan
+		text = text.replace(/@[Bb][Aa]@/g, "\1h\1g\1" + "6\1i"); // Blinking bright green on cyan
+		text = text.replace(/@[Bb][Bb]@/g, "\1h\1c\1" + "6\1i"); // Blinking bright cyan on cyan
+		text = text.replace(/@[Bb][Cc]@/g, "\1h\1r\1" + "6\1i"); // Blinking bright red on cyan
+		text = text.replace(/@[Bb][Dd]@/g, "\1h\1m\1" + "6\1i"); // Blinking bright magenta on cyan
+		text = text.replace(/@[Bb][Ee]@/g, "\1h\1y\1" + "6\1i"); // Blinking bright yellow on cyan
+		text = text.replace(/@[Bb][Ff]@/g, "\1h\1w\1" + "6\1i"); // Blinking bright white on cyan
 
 		// Red background, blinking foreground
-		text = text.replace(/@[Cc]0@/g, "\1n\1k\11\1i"); // Blinking black on red
-		text = text.replace(/@[Cc]1@/g, "\1n\1b\11\1i"); // Blinking blue on red
-		text = text.replace(/@[Cc]2@/g, "\1n\1g\11\1i"); // Blinking green on red
-		text = text.replace(/@[Cc]3@/g, "\1n\1c\11\1i"); // Blinking cyan on red
-		text = text.replace(/@[Cc]4@/g, "\1n\1r\11\1i"); // Blinking red on red
-		text = text.replace(/@[Cc]5@/g, "\1n\1m\11\1i"); // Blinking magenta on red
-		text = text.replace(/@[Cc]6@/g, "\1n\1y\11\1i"); // Blinking yellow/brown on red
-		text = text.replace(/@[Cc]7@/g, "\1n\1w\11\1i"); // Blinking white on red
-		text = text.replace(/@[Cc]8@/g, "\1h\1k\11\1i"); // Blinking bright black on red
-		text = text.replace(/@[Cc]9@/g, "\1h\1b\11\1i"); // Blinking bright blue on red
-		text = text.replace(/@[Cc][Aa]@/g, "\1h\1g\11\1i"); // Blinking bright green on red
-		text = text.replace(/@[Cc][Bb]@/g, "\1h\1c\11\1i"); // Blinking bright cyan on red
-		text = text.replace(/@[Cc][Cc]@/g, "\1h\1r\11\1i"); // Blinking bright red on red
-		text = text.replace(/@[Cc][Dd]@/g, "\1h\1m\11\1i"); // Blinking bright magenta on red
-		text = text.replace(/@[Cc][Ee]@/g, "\1h\1y\11\1i"); // Blinking bright yellow on red
-		text = text.replace(/@[Cc][Ff]@/g, "\1h\1w\11\1i"); // Blinking bright white on red1
+		text = text.replace(/@[Cc]0@/g, "\1n\1k\1" + "1\1i"); // Blinking black on red
+		text = text.replace(/@[Cc]1@/g, "\1n\1b\1" + "1\1i"); // Blinking blue on red
+		text = text.replace(/@[Cc]2@/g, "\1n\1g\1" + "1\1i"); // Blinking green on red
+		text = text.replace(/@[Cc]3@/g, "\1n\1c\1" + "1\1i"); // Blinking cyan on red
+		text = text.replace(/@[Cc]4@/g, "\1n\1r\1" + "1\1i"); // Blinking red on red
+		text = text.replace(/@[Cc]5@/g, "\1n\1m\1" + "1\1i"); // Blinking magenta on red
+		text = text.replace(/@[Cc]6@/g, "\1n\1y\1" + "1\1i"); // Blinking yellow/brown on red
+		text = text.replace(/@[Cc]7@/g, "\1n\1w\1" + "1\1i"); // Blinking white on red
+		text = text.replace(/@[Cc]8@/g, "\1h\1k\1" + "1\1i"); // Blinking bright black on red
+		text = text.replace(/@[Cc]9@/g, "\1h\1b\1" + "1\1i"); // Blinking bright blue on red
+		text = text.replace(/@[Cc][Aa]@/g, "\1h\1g\1" + "1\1i"); // Blinking bright green on red
+		text = text.replace(/@[Cc][Bb]@/g, "\1h\1c\1" + "1\1i"); // Blinking bright cyan on red
+		text = text.replace(/@[Cc][Cc]@/g, "\1h\1r\1" + "1\1i"); // Blinking bright red on red
+		text = text.replace(/@[Cc][Dd]@/g, "\1h\1m\1" + "1\1i"); // Blinking bright magenta on red
+		text = text.replace(/@[Cc][Ee]@/g, "\1h\1y\1" + "1\1i"); // Blinking bright yellow on red
+		text = text.replace(/@[Cc][Ff]@/g, "\1h\1w\1" + "1\1i"); // Blinking bright white on red
 
 		// Magenta background, blinking foreground
-		text = text.replace(/@[Dd]0@/g, "\1n\1k\15\1i"); // Blinking black on magenta
-		text = text.replace(/@[Dd]1@/g, "\1n\1b\15\1i"); // Blinking blue on magenta
-		text = text.replace(/@[Dd]2@/g, "\1n\1g\15\1i"); // Blinking green on magenta
-		text = text.replace(/@[Dd]3@/g, "\1n\1c\15\1i"); // Blinking cyan on magenta
-		text = text.replace(/@[Dd]4@/g, "\1n\1r\15\1i"); // Blinking red on magenta
-		text = text.replace(/@[Dd]5@/g, "\1n\1m\15\1i"); // Blinking magenta on magenta
-		text = text.replace(/@[Dd]6@/g, "\1n\1y\15\1i"); // Blinking yellow/brown on magenta
-		text = text.replace(/@[Dd]7@/g, "\1n\1w\15\1i"); // Blinking white on magenta
-		text = text.replace(/@[Dd]8@/g, "\1h\1k\15\1i"); // Blinking bright black on magenta
-		text = text.replace(/@[Dd]9@/g, "\1h\1b\15\1i"); // Blinking bright blue on magenta
-		text = text.replace(/@[Dd][Aa]@/g, "\1h\1g\15\1i"); // Blinking bright green on magenta
-		text = text.replace(/@[Dd][Bb]@/g, "\1h\1c\15\1i"); // Blinking bright cyan on magenta
-		text = text.replace(/@[Dd][Cc]@/g, "\1h\1r\15\1i"); // Blinking bright red on magenta
-		text = text.replace(/@[Dd][Dd]@/g, "\1h\1m\15\1i"); // Blinking bright magenta on magenta
-		text = text.replace(/@[Dd][Ee]@/g, "\1h\1y\15\1i"); // Blinking bright yellow on magenta
-		text = text.replace(/@[Dd][Ff]@/g, "\1h\1w\15\1i"); // Blinking bright white on magenta
+		text = text.replace(/@[Dd]0@/g, "\1n\1k\1" + "5\1i"); // Blinking black on magenta
+		text = text.replace(/@[Dd]1@/g, "\1n\1b\1" + "5\1i"); // Blinking blue on magenta
+		text = text.replace(/@[Dd]2@/g, "\1n\1g\1" + "5\1i"); // Blinking green on magenta
+		text = text.replace(/@[Dd]3@/g, "\1n\1c\1" + "5\1i"); // Blinking cyan on magenta
+		text = text.replace(/@[Dd]4@/g, "\1n\1r\1" + "5\1i"); // Blinking red on magenta
+		text = text.replace(/@[Dd]5@/g, "\1n\1m\1" + "5\1i"); // Blinking magenta on magenta
+		text = text.replace(/@[Dd]6@/g, "\1n\1y\1" + "5\1i"); // Blinking yellow/brown on magenta
+		text = text.replace(/@[Dd]7@/g, "\1n\1w\1" + "5\1i"); // Blinking white on magenta
+		text = text.replace(/@[Dd]8@/g, "\1h\1k\1" + "5\1i"); // Blinking bright black on magenta
+		text = text.replace(/@[Dd]9@/g, "\1h\1b\1" + "5\1i"); // Blinking bright blue on magenta
+		text = text.replace(/@[Dd][Aa]@/g, "\1h\1g\1" + "5\1i"); // Blinking bright green on magenta
+		text = text.replace(/@[Dd][Bb]@/g, "\1h\1c\1" + "5\1i"); // Blinking bright cyan on magenta
+		text = text.replace(/@[Dd][Cc]@/g, "\1h\1r\1" + "5\1i"); // Blinking bright red on magenta
+		text = text.replace(/@[Dd][Dd]@/g, "\1h\1m\1" + "5\1i"); // Blinking bright magenta on magenta
+		text = text.replace(/@[Dd][Ee]@/g, "\1h\1y\1" + "5\1i"); // Blinking bright yellow on magenta
+		text = text.replace(/@[Dd][Ff]@/g, "\1h\1w\1" + "5\1i"); // Blinking bright white on magenta
 
 		// Brown background, blinking foreground
-		text = text.replace(/@[Ee]0@/g, "\1n\1k\13\1i"); // Blinking black on brown
-		text = text.replace(/@[Ee]1@/g, "\1n\1b\13\1i"); // Blinking blue on brown
-		text = text.replace(/@[Ee]2@/g, "\1n\1g\13\1i"); // Blinking green on brown
-		text = text.replace(/@[Ee]3@/g, "\1n\1c\13\1i"); // Blinking cyan on brown
-		text = text.replace(/@[Ee]4@/g, "\1n\1r\13\1i"); // Blinking red on brown
-		text = text.replace(/@[Ee]5@/g, "\1n\1m\13\1i"); // Blinking magenta on brown
-		text = text.replace(/@[Ee]6@/g, "\1n\1y\13\1i"); // Blinking yellow/brown on brown
-		text = text.replace(/@[Ee]7@/g, "\1n\1w\13\1i"); // Blinking white on brown
-		text = text.replace(/@[Ee]8@/g, "\1h\1k\13\1i"); // Blinking bright black on brown
-		text = text.replace(/@[Ee]9@/g, "\1h\1b\13\1i"); // Blinking bright blue on brown
-		text = text.replace(/@[Ee][Aa]@/g, "\1h\1g\13\1i"); // Blinking bright green on brown
-		text = text.replace(/@[Ee][Bb]@/g, "\1h\1c\13\1i"); // Blinking bright cyan on brown
-		text = text.replace(/@[Ee][Cc]@/g, "\1h\1r\13\1i"); // Blinking bright red on brown
-		text = text.replace(/@[Ee][Dd]@/g, "\1h\1m\13\1i"); // Blinking bright magenta on brown
-		text = text.replace(/@[Ee][Ee]@/g, "\1h\1y\13\1i"); // Blinking bright yellow on brown
-		text = text.replace(/@[Ee][Ff]@/g, "\1h\1w\13\1i"); // Blinking bright white on brown
+		text = text.replace(/@[Ee]0@/g, "\1n\1k\1" + "3\1i"); // Blinking black on brown
+		text = text.replace(/@[Ee]1@/g, "\1n\1b\1" + "3\1i"); // Blinking blue on brown
+		text = text.replace(/@[Ee]2@/g, "\1n\1g\1" + "3\1i"); // Blinking green on brown
+		text = text.replace(/@[Ee]3@/g, "\1n\1c\1" + "3\1i"); // Blinking cyan on brown
+		text = text.replace(/@[Ee]4@/g, "\1n\1r\1" + "3\1i"); // Blinking red on brown
+		text = text.replace(/@[Ee]5@/g, "\1n\1m\1" + "3\1i"); // Blinking magenta on brown
+		text = text.replace(/@[Ee]6@/g, "\1n\1y\1" + "3\1i"); // Blinking yellow/brown on brown
+		text = text.replace(/@[Ee]7@/g, "\1n\1w\1" + "3\1i"); // Blinking white on brown
+		text = text.replace(/@[Ee]8@/g, "\1h\1k\1" + "3\1i"); // Blinking bright black on brown
+		text = text.replace(/@[Ee]9@/g, "\1h\1b\1" + "3\1i"); // Blinking bright blue on brown
+		text = text.replace(/@[Ee][Aa]@/g, "\1h\1g\1" + "3\1i"); // Blinking bright green on brown
+		text = text.replace(/@[Ee][Bb]@/g, "\1h\1c\1" + "3\1i"); // Blinking bright cyan on brown
+		text = text.replace(/@[Ee][Cc]@/g, "\1h\1r\1" + "3\1i"); // Blinking bright red on brown
+		text = text.replace(/@[Ee][Dd]@/g, "\1h\1m\1" + "3\1i"); // Blinking bright magenta on brown
+		text = text.replace(/@[Ee][Ee]@/g, "\1h\1y\1" + "3\1i"); // Blinking bright yellow on brown
+		text = text.replace(/@[Ee][Ff]@/g, "\1h\1w\1" + "3\1i"); // Blinking bright white on brown
 
 		// White background, blinking foreground
-		text = text.replace(/@[Ff]0@/g, "\1n\1k\17\1i"); // Blinking black on white
-		text = text.replace(/@[Ff]1@/g, "\1n\1b\17\1i"); // Blinking blue on white
-		text = text.replace(/@[Ff]2@/g, "\1n\1g\17\1i"); // Blinking green on white
-		text = text.replace(/@[Ff]3@/g, "\1n\1c\17\1i"); // Blinking cyan on white
-		text = text.replace(/@[Ff]4@/g, "\1n\1r\17\1i"); // Blinking red on white
-		text = text.replace(/@[Ff]5@/g, "\1n\1m\17\1i"); // Blinking magenta on white
-		text = text.replace(/@[Ff]6@/g, "\1n\1y\17\1i"); // Blinking yellow/brown on white
-		text = text.replace(/@[Ff]7@/g, "\1n\1w\17\1i"); // Blinking white on white
-		text = text.replace(/@[Ff]8@/g, "\1h\1k\17\1i"); // Blinking bright black on white
-		text = text.replace(/@[Ff]9@/g, "\1h\1b\17\1i"); // Blinking bright blue on white
-		text = text.replace(/@[Ff][Aa]@/g, "\1h\1g\17\1i"); // Blinking bright green on white
-		text = text.replace(/@[Ff][Bb]@/g, "\1h\1c\17\1i"); // Blinking bright cyan on white
-		text = text.replace(/@[Ff][Cc]@/g, "\1h\1r\17\1i"); // Blinking bright red on white
-		text = text.replace(/@[Ff][Dd]@/g, "\1h\1m\17\1i"); // Blinking bright magenta on white
-		text = text.replace(/@[Ff][Ee]@/g, "\1h\1y\17\1i"); // Blinking bright yellow on white
-		text = text.replace(/@[Ff][Ff]@/g, "\1h\1w\17\1i"); // Blinking bright white on white
+		text = text.replace(/@[Ff]0@/g, "\1n\1k\1" + "7\1i"); // Blinking black on white
+		text = text.replace(/@[Ff]1@/g, "\1n\1b\1" + "7\1i"); // Blinking blue on white
+		text = text.replace(/@[Ff]2@/g, "\1n\1g\1" + "7\1i"); // Blinking green on white
+		text = text.replace(/@[Ff]3@/g, "\1n\1c\1" + "7\1i"); // Blinking cyan on white
+		text = text.replace(/@[Ff]4@/g, "\1n\1r\1" + "7\1i"); // Blinking red on white
+		text = text.replace(/@[Ff]5@/g, "\1n\1m\1" + "7\1i"); // Blinking magenta on white
+		text = text.replace(/@[Ff]6@/g, "\1n\1y\1" + "7\1i"); // Blinking yellow/brown on white
+		text = text.replace(/@[Ff]7@/g, "\1n\1w\1" + "7\1i"); // Blinking white on white
+		text = text.replace(/@[Ff]8@/g, "\1h\1k\1" + "7\1i"); // Blinking bright black on white
+		text = text.replace(/@[Ff]9@/g, "\1h\1b\1" + "7\1i"); // Blinking bright blue on white
+		text = text.replace(/@[Ff][Aa]@/g, "\1h\1g\1" + "7\1i"); // Blinking bright green on white
+		text = text.replace(/@[Ff][Bb]@/g, "\1h\1c\1" + "7\1i"); // Blinking bright cyan on white
+		text = text.replace(/@[Ff][Cc]@/g, "\1h\1r\1" + "7\1i"); // Blinking bright red on white
+		text = text.replace(/@[Ff][Dd]@/g, "\1h\1m\1" + "7\1i"); // Blinking bright magenta on white
+		text = text.replace(/@[Ff][Ee]@/g, "\1h\1y\1" + "7\1i"); // Blinking bright yellow on white
+		text = text.replace(/@[Ff][Ff]@/g, "\1h\1w\1" + "7\1i"); // Blinking bright white on white
 
 		return text;
 	}
@@ -13359,164 +13474,164 @@ function celerityAttrsToSyncAttrs(pText)
 		// Using the \|S code (swap foreground & background)
 
 		// Blue background
-		var text = pText.replace(/\|b\|S\|k/g, "\1n\1k\14"); // Black on blue
-		text = text.replace(/\|b\|S\|b/g, "\1n\1b\14"); // Blue on blue
-		text = text.replace(/\|b\|S\|g/g, "\1n\1g\14"); // Green on blue
-		text = text.replace(/\|b\|S\|c/g, "\1n\1c\14"); // Cyan on blue
-		text = text.replace(/\|b\|S\|r/g, "\1n\1r\14"); // Red on blue
-		text = text.replace(/\|b\|S\|m/g, "\1n\1m\14"); // Magenta on blue
-		text = text.replace(/\|b\|S\|y/g, "\1n\1y\14"); // Yellow/brown on blue
-		text = text.replace(/\|b\|S\|w/g, "\1n\1w\14"); // White on blue
-		text = text.replace(/\|b\|S\|d/g, "\1h\1k\14"); // Bright black on blue
-		text = text.replace(/\|b\|S\|B/g, "\1h\1b\14"); // Bright blue on blue
-		text = text.replace(/\|b\|S\|G/g, "\1h\1g\14"); // Bright green on blue
-		text = text.replace(/\|b\|S\|C/g, "\1h\1c\14"); // Bright cyan on blue
-		text = text.replace(/\|b\|S\|R/g, "\1h\1r\14"); // Bright red on blue
-		text = text.replace(/\|b\|S\|M/g, "\1h\1m\14"); // Bright magenta on blue
-		text = text.replace(/\|b\|S\|Y/g, "\1h\1y\14"); // Yellow on blue
-		text = text.replace(/\|b\|S\|W/g, "\1h\1w\14"); // Bright white on blue
+		var text = pText.replace(/\|b\|S\|k/g, "\1n\1k\1" + "4"); // Black on blue
+		text = text.replace(/\|b\|S\|b/g, "\1n\1b\1" + "4"); // Blue on blue
+		text = text.replace(/\|b\|S\|g/g, "\1n\1g\1" + "4"); // Green on blue
+		text = text.replace(/\|b\|S\|c/g, "\1n\1c\1" + "4"); // Cyan on blue
+		text = text.replace(/\|b\|S\|r/g, "\1n\1r\1" + "4"); // Red on blue
+		text = text.replace(/\|b\|S\|m/g, "\1n\1m\1" + "4"); // Magenta on blue
+		text = text.replace(/\|b\|S\|y/g, "\1n\1y\1" + "4"); // Yellow/brown on blue
+		text = text.replace(/\|b\|S\|w/g, "\1n\1w\1" + "4"); // White on blue
+		text = text.replace(/\|b\|S\|d/g, "\1h\1k\1" + "4"); // Bright black on blue
+		text = text.replace(/\|b\|S\|B/g, "\1h\1b\1" + "4"); // Bright blue on blue
+		text = text.replace(/\|b\|S\|G/g, "\1h\1g\1" + "4"); // Bright green on blue
+		text = text.replace(/\|b\|S\|C/g, "\1h\1c\1" + "4"); // Bright cyan on blue
+		text = text.replace(/\|b\|S\|R/g, "\1h\1r\1" + "4"); // Bright red on blue
+		text = text.replace(/\|b\|S\|M/g, "\1h\1m\1" + "4"); // Bright magenta on blue
+		text = text.replace(/\|b\|S\|Y/g, "\1h\1y\1" + "4"); // Yellow on blue
+		text = text.replace(/\|b\|S\|W/g, "\1h\1w\1" + "4"); // Bright white on blue
 
 		// Green background
-		text = text.replace(/\|g\|S\|k/g, "\1n\1k\12"); // Black on green
-		text = text.replace(/\|g\|S\|b/g, "\1n\1b\12"); // Blue on green
-		text = text.replace(/\|g\|S\|g/g, "\1n\1g\12"); // Green on green
-		text = text.replace(/\|g\|S\|c/g, "\1n\1c\12"); // Cyan on green
-		text = text.replace(/\|g\|S\|r/g, "\1n\1r\12"); // Red on green
-		text = text.replace(/\|g\|S\|m/g, "\1n\1m\12"); // Magenta on green
-		text = text.replace(/\|g\|S\|y/g, "\1n\1y\12"); // Yellow/brown on green
-		text = text.replace(/\|g\|S\|w/g, "\1n\1w\12"); // White on green
-		text = text.replace(/\|g\|S\|d/g, "\1h\1k\12"); // Bright black on green
-		text = text.replace(/\|g\|S\|B/g, "\1h\1b\12"); // Bright blue on green
-		text = text.replace(/\|g\|S\|G/g, "\1h\1g\12"); // Bright green on green
-		text = text.replace(/\|g\|S\|C/g, "\1h\1c\12"); // Bright cyan on green
-		text = text.replace(/\|g\|S\|R/g, "\1h\1r\12"); // Bright red on green
-		text = text.replace(/\|g\|S\|M/g, "\1h\1m\12"); // Bright magenta on green
-		text = text.replace(/\|g\|S\|Y/g, "\1h\1y\12"); // Yellow on green
-		text = text.replace(/\|g\|S\|W/g, "\1h\1w\12"); // Bright white on green
+		text = text.replace(/\|g\|S\|k/g, "\1n\1k\1" + "2"); // Black on green
+		text = text.replace(/\|g\|S\|b/g, "\1n\1b\1" + "2"); // Blue on green
+		text = text.replace(/\|g\|S\|g/g, "\1n\1g\1" + "2"); // Green on green
+		text = text.replace(/\|g\|S\|c/g, "\1n\1c\1" + "2"); // Cyan on green
+		text = text.replace(/\|g\|S\|r/g, "\1n\1r\1" + "2"); // Red on green
+		text = text.replace(/\|g\|S\|m/g, "\1n\1m\1" + "2"); // Magenta on green
+		text = text.replace(/\|g\|S\|y/g, "\1n\1y\1" + "2"); // Yellow/brown on green
+		text = text.replace(/\|g\|S\|w/g, "\1n\1w\1" + "2"); // White on green
+		text = text.replace(/\|g\|S\|d/g, "\1h\1k\1" + "2"); // Bright black on green
+		text = text.replace(/\|g\|S\|B/g, "\1h\1b\1" + "2"); // Bright blue on green
+		text = text.replace(/\|g\|S\|G/g, "\1h\1g\1" + "2"); // Bright green on green
+		text = text.replace(/\|g\|S\|C/g, "\1h\1c\1" + "2"); // Bright cyan on green
+		text = text.replace(/\|g\|S\|R/g, "\1h\1r\1" + "2"); // Bright red on green
+		text = text.replace(/\|g\|S\|M/g, "\1h\1m\1" + "2"); // Bright magenta on green
+		text = text.replace(/\|g\|S\|Y/g, "\1h\1y\1" + "2"); // Yellow on green
+		text = text.replace(/\|g\|S\|W/g, "\1h\1w\1" + "2"); // Bright white on green
 
 		// Cyan background
-		text = text.replace(/\|c\|S\|k/g, "\1n\1k\16"); // Black on cyan
-		text = text.replace(/\|c\|S\|b/g, "\1n\1b\16"); // Blue on cyan
-		text = text.replace(/\|c\|S\|g/g, "\1n\1g\16"); // Green on cyan
-		text = text.replace(/\|c\|S\|c/g, "\1n\1c\16"); // Cyan on cyan
-		text = text.replace(/\|c\|S\|r/g, "\1n\1r\16"); // Red on cyan
-		text = text.replace(/\|c\|S\|m/g, "\1n\1m\16"); // Magenta on cyan
-		text = text.replace(/\|c\|S\|y/g, "\1n\1y\16"); // Yellow/brown on cyan
-		text = text.replace(/\|c\|S\|w/g, "\1n\1w\16"); // White on cyan
-		text = text.replace(/\|c\|S\|d/g, "\1h\1k\16"); // Bright black on cyan
-		text = text.replace(/\|c\|S\|B/g, "\1h\1b\16"); // Bright blue on cyan
-		text = text.replace(/\|c\|S\|G/g, "\1h\1g\16"); // Bright green on cyan
-		text = text.replace(/\|c\|S\|C/g, "\1h\1c\16"); // Bright cyan on cyan
-		text = text.replace(/\|c\|S\|R/g, "\1h\1r\16"); // Bright red on cyan
-		text = text.replace(/\|c\|S\|M/g, "\1h\1m\16"); // Bright magenta on cyan
-		text = text.replace(/\|c\|S\|Y/g, "\1h\1y\16"); // Yellow on cyan
-		text = text.replace(/\|c\|S\|W/g, "\1h\1w\16"); // Bright white on cyan
+		text = text.replace(/\|c\|S\|k/g, "\1n\1k\1" + "6"); // Black on cyan
+		text = text.replace(/\|c\|S\|b/g, "\1n\1b\1" + "6"); // Blue on cyan
+		text = text.replace(/\|c\|S\|g/g, "\1n\1g\1" + "6"); // Green on cyan
+		text = text.replace(/\|c\|S\|c/g, "\1n\1c\1" + "6"); // Cyan on cyan
+		text = text.replace(/\|c\|S\|r/g, "\1n\1r\1" + "6"); // Red on cyan
+		text = text.replace(/\|c\|S\|m/g, "\1n\1m\1" + "6"); // Magenta on cyan
+		text = text.replace(/\|c\|S\|y/g, "\1n\1y\1" + "6"); // Yellow/brown on cyan
+		text = text.replace(/\|c\|S\|w/g, "\1n\1w\1" + "6"); // White on cyan
+		text = text.replace(/\|c\|S\|d/g, "\1h\1k\1" + "6"); // Bright black on cyan
+		text = text.replace(/\|c\|S\|B/g, "\1h\1b\1" + "6"); // Bright blue on cyan
+		text = text.replace(/\|c\|S\|G/g, "\1h\1g\1" + "6"); // Bright green on cyan
+		text = text.replace(/\|c\|S\|C/g, "\1h\1c\1" + "6"); // Bright cyan on cyan
+		text = text.replace(/\|c\|S\|R/g, "\1h\1r\1" + "6"); // Bright red on cyan
+		text = text.replace(/\|c\|S\|M/g, "\1h\1m\1" + "6"); // Bright magenta on cyan
+		text = text.replace(/\|c\|S\|Y/g, "\1h\1y\1" + "6"); // Yellow on cyan
+		text = text.replace(/\|c\|S\|W/g, "\1h\1w\1" + "6"); // Bright white on cyan
 
 		// Red background
-		text = text.replace(/\|r\|S\|k/g, "\1n\1k\11"); // Black on red
-		text = text.replace(/\|r\|S\|b/g, "\1n\1b\11"); // Blue on red
-		text = text.replace(/\|r\|S\|g/g, "\1n\1g\11"); // Green on red
-		text = text.replace(/\|r\|S\|c/g, "\1n\1c\11"); // Cyan on red
-		text = text.replace(/\|r\|S\|r/g, "\1n\1r\11"); // Red on red
-		text = text.replace(/\|r\|S\|m/g, "\1n\1m\11"); // Magenta on red
-		text = text.replace(/\|r\|S\|y/g, "\1n\1y\11"); // Yellow/brown on red
-		text = text.replace(/\|r\|S\|w/g, "\1n\1w\11"); // White on red
-		text = text.replace(/\|r\|S\|d/g, "\1h\1k\11"); // Bright black on red
-		text = text.replace(/\|r\|S\|B/g, "\1h\1b\11"); // Bright blue on red
-		text = text.replace(/\|r\|S\|G/g, "\1h\1g\11"); // Bright green on red
-		text = text.replace(/\|r\|S\|C/g, "\1h\1c\11"); // Bright cyan on red
-		text = text.replace(/\|r\|S\|R/g, "\1h\1r\11"); // Bright red on red
-		text = text.replace(/\|r\|S\|M/g, "\1h\1m\11"); // Bright magenta on red
-		text = text.replace(/\|r\|S\|Y/g, "\1h\1y\11"); // Yellow on red
-		text = text.replace(/\|r\|S\|W/g, "\1h\1w\11"); // Bright white on red
+		text = text.replace(/\|r\|S\|k/g, "\1n\1k\1" + "1"); // Black on red
+		text = text.replace(/\|r\|S\|b/g, "\1n\1b\1" + "1"); // Blue on red
+		text = text.replace(/\|r\|S\|g/g, "\1n\1g\1" + "1"); // Green on red
+		text = text.replace(/\|r\|S\|c/g, "\1n\1c\1" + "1"); // Cyan on red
+		text = text.replace(/\|r\|S\|r/g, "\1n\1r\1" + "1"); // Red on red
+		text = text.replace(/\|r\|S\|m/g, "\1n\1m\1" + "1"); // Magenta on red
+		text = text.replace(/\|r\|S\|y/g, "\1n\1y\1" + "1"); // Yellow/brown on red
+		text = text.replace(/\|r\|S\|w/g, "\1n\1w\1" + "1"); // White on red
+		text = text.replace(/\|r\|S\|d/g, "\1h\1k\1" + "1"); // Bright black on red
+		text = text.replace(/\|r\|S\|B/g, "\1h\1b\1" + "1"); // Bright blue on red
+		text = text.replace(/\|r\|S\|G/g, "\1h\1g\1" + "1"); // Bright green on red
+		text = text.replace(/\|r\|S\|C/g, "\1h\1c\1" + "1"); // Bright cyan on red
+		text = text.replace(/\|r\|S\|R/g, "\1h\1r\1" + "1"); // Bright red on red
+		text = text.replace(/\|r\|S\|M/g, "\1h\1m\1" + "1"); // Bright magenta on red
+		text = text.replace(/\|r\|S\|Y/g, "\1h\1y\1" + "1"); // Yellow on red
+		text = text.replace(/\|r\|S\|W/g, "\1h\1w\1" + "1"); // Bright white on red
 
 		// Magenta background
-		text = text.replace(/\|m\|S\|k/g, "\1n\1k\15"); // Black on magenta
-		text = text.replace(/\|m\|S\|b/g, "\1n\1b\15"); // Blue on magenta
-		text = text.replace(/\|m\|S\|g/g, "\1n\1g\15"); // Green on magenta
-		text = text.replace(/\|m\|S\|c/g, "\1n\1c\15"); // Cyan on magenta
-		text = text.replace(/\|m\|S\|r/g, "\1n\1r\15"); // Red on magenta
-		text = text.replace(/\|m\|S\|m/g, "\1n\1m\15"); // Magenta on magenta
-		text = text.replace(/\|m\|S\|y/g, "\1n\1y\15"); // Yellow/brown on magenta
-		text = text.replace(/\|m\|S\|w/g, "\1n\1w\15"); // White on magenta
-		text = text.replace(/\|m\|S\|d/g, "\1h\1k\15"); // Bright black on magenta
-		text = text.replace(/\|m\|S\|B/g, "\1h\1b\15"); // Bright blue on magenta
-		text = text.replace(/\|m\|S\|G/g, "\1h\1g\15"); // Bright green on magenta
-		text = text.replace(/\|m\|S\|C/g, "\1h\1c\15"); // Bright cyan on magenta
-		text = text.replace(/\|m\|S\|R/g, "\1h\1r\15"); // Bright red on magenta
-		text = text.replace(/\|m\|S\|M/g, "\1h\1m\15"); // Bright magenta on magenta
-		text = text.replace(/\|m\|S\|Y/g, "\1h\1y\15"); // Yellow on magenta
-		text = text.replace(/\|m\|S\|W/g, "\1h\1w\15"); // Bright white on magenta
+		text = text.replace(/\|m\|S\|k/g, "\1n\1k\1" + "5"); // Black on magenta
+		text = text.replace(/\|m\|S\|b/g, "\1n\1b\1" + "5"); // Blue on magenta
+		text = text.replace(/\|m\|S\|g/g, "\1n\1g\1" + "5"); // Green on magenta
+		text = text.replace(/\|m\|S\|c/g, "\1n\1c\1" + "5"); // Cyan on magenta
+		text = text.replace(/\|m\|S\|r/g, "\1n\1r\1" + "5"); // Red on magenta
+		text = text.replace(/\|m\|S\|m/g, "\1n\1m\1" + "5"); // Magenta on magenta
+		text = text.replace(/\|m\|S\|y/g, "\1n\1y\1" + "5"); // Yellow/brown on magenta
+		text = text.replace(/\|m\|S\|w/g, "\1n\1w\1" + "5"); // White on magenta
+		text = text.replace(/\|m\|S\|d/g, "\1h\1k\1" + "5"); // Bright black on magenta
+		text = text.replace(/\|m\|S\|B/g, "\1h\1b\1" + "5"); // Bright blue on magenta
+		text = text.replace(/\|m\|S\|G/g, "\1h\1g\1" + "5"); // Bright green on magenta
+		text = text.replace(/\|m\|S\|C/g, "\1h\1c\1" + "5"); // Bright cyan on magenta
+		text = text.replace(/\|m\|S\|R/g, "\1h\1r\1" + "5"); // Bright red on magenta
+		text = text.replace(/\|m\|S\|M/g, "\1h\1m\1" + "5"); // Bright magenta on magenta
+		text = text.replace(/\|m\|S\|Y/g, "\1h\1y\1" + "5"); // Yellow on magenta
+		text = text.replace(/\|m\|S\|W/g, "\1h\1w\1" + "5"); // Bright white on magenta
 
 		// Brown background
-		text = text.replace(/\|y\|S\|k/g, "\1n\1k\13"); // Black on brown
-		text = text.replace(/\|y\|S\|b/g, "\1n\1b\13"); // Blue on brown
-		text = text.replace(/\|y\|S\|g/g, "\1n\1g\13"); // Green on brown
-		text = text.replace(/\|y\|S\|c/g, "\1n\1c\13"); // Cyan on brown
-		text = text.replace(/\|y\|S\|r/g, "\1n\1r\13"); // Red on brown
-		text = text.replace(/\|y\|S\|m/g, "\1n\1m\13"); // Magenta on brown
-		text = text.replace(/\|y\|S\|y/g, "\1n\1y\13"); // Yellow/brown on brown
-		text = text.replace(/\|y\|S\|w/g, "\1n\1w\13"); // White on brown
-		text = text.replace(/\|y\|S\|d/g, "\1h\1k\13"); // Bright black on brown
-		text = text.replace(/\|y\|S\|B/g, "\1h\1b\13"); // Bright blue on brown
-		text = text.replace(/\|y\|S\|G/g, "\1h\1g\13"); // Bright green on brown
-		text = text.replace(/\|y\|S\|C/g, "\1h\1c\13"); // Bright cyan on brown
-		text = text.replace(/\|y\|S\|R/g, "\1h\1r\13"); // Bright red on brown
-		text = text.replace(/\|y\|S\|M/g, "\1h\1m\13"); // Bright magenta on brown
-		text = text.replace(/\|y\|S\|Y/g, "\1h\1y\13"); // Yellow on brown
-		text = text.replace(/\|y\|S\|W/g, "\1h\1w\13"); // Bright white on brown
+		text = text.replace(/\|y\|S\|k/g, "\1n\1k\1" + "3"); // Black on brown
+		text = text.replace(/\|y\|S\|b/g, "\1n\1b\1" + "3"); // Blue on brown
+		text = text.replace(/\|y\|S\|g/g, "\1n\1g\1" + "3"); // Green on brown
+		text = text.replace(/\|y\|S\|c/g, "\1n\1c\1" + "3"); // Cyan on brown
+		text = text.replace(/\|y\|S\|r/g, "\1n\1r\1" + "3"); // Red on brown
+		text = text.replace(/\|y\|S\|m/g, "\1n\1m\1" + "3"); // Magenta on brown
+		text = text.replace(/\|y\|S\|y/g, "\1n\1y\1" + "3"); // Yellow/brown on brown
+		text = text.replace(/\|y\|S\|w/g, "\1n\1w\1" + "3"); // White on brown
+		text = text.replace(/\|y\|S\|d/g, "\1h\1k\1" + "3"); // Bright black on brown
+		text = text.replace(/\|y\|S\|B/g, "\1h\1b\1" + "3"); // Bright blue on brown
+		text = text.replace(/\|y\|S\|G/g, "\1h\1g\1" + "3"); // Bright green on brown
+		text = text.replace(/\|y\|S\|C/g, "\1h\1c\1" + "3"); // Bright cyan on brown
+		text = text.replace(/\|y\|S\|R/g, "\1h\1r\1" + "3"); // Bright red on brown
+		text = text.replace(/\|y\|S\|M/g, "\1h\1m\1" + "3"); // Bright magenta on brown
+		text = text.replace(/\|y\|S\|Y/g, "\1h\1y\1" + "3"); // Yellow on brown
+		text = text.replace(/\|y\|S\|W/g, "\1h\1w\1" + "3"); // Bright white on brown
 
 		// White background
-		text = text.replace(/\|w\|S\|k/g, "\1n\1k\17"); // Black on white
-		text = text.replace(/\|w\|S\|b/g, "\1n\1b\17"); // Blue on white
-		text = text.replace(/\|w\|S\|g/g, "\1n\1g\17"); // Green on white
-		text = text.replace(/\|w\|S\|c/g, "\1n\1c\17"); // Cyan on white
-		text = text.replace(/\|w\|S\|r/g, "\1n\1r\17"); // Red on white
-		text = text.replace(/\|w\|S\|m/g, "\1n\1m\17"); // Magenta on white
-		text = text.replace(/\|w\|S\|y/g, "\1n\1y\17"); // Yellow/brown on white
-		text = text.replace(/\|w\|S\|w/g, "\1n\1w\17"); // White on white
-		text = text.replace(/\|w\|S\|d/g, "\1h\1k\17"); // Bright black on white
-		text = text.replace(/\|w\|S\|B/g, "\1h\1b\17"); // Bright blue on white
-		text = text.replace(/\|w\|S\|G/g, "\1h\1g\17"); // Bright green on white
-		text = text.replace(/\|w\|S\|C/g, "\1h\1c\17"); // Bright cyan on white
-		text = text.replace(/\|w\|S\|R/g, "\1h\1r\17"); // Bright red on white
-		text = text.replace(/\|w\|S\|M/g, "\1h\1m\17"); // Bright magenta on white
-		text = text.replace(/\|w\|S\|Y/g, "\1h\1y\17"); // Yellow on white
-		text = text.replace(/\|w\|S\|W/g, "\1h\1w\17"); // Bright white on white
+		text = text.replace(/\|w\|S\|k/g, "\1n\1k\1" + "7"); // Black on white
+		text = text.replace(/\|w\|S\|b/g, "\1n\1b\1" + "7"); // Blue on white
+		text = text.replace(/\|w\|S\|g/g, "\1n\1g\1" + "7"); // Green on white
+		text = text.replace(/\|w\|S\|c/g, "\1n\1c\1" + "7"); // Cyan on white
+		text = text.replace(/\|w\|S\|r/g, "\1n\1r\1" + "7"); // Red on white
+		text = text.replace(/\|w\|S\|m/g, "\1n\1m\1" + "7"); // Magenta on white
+		text = text.replace(/\|w\|S\|y/g, "\1n\1y\1" + "7"); // Yellow/brown on white
+		text = text.replace(/\|w\|S\|w/g, "\1n\1w\1" + "7"); // White on white
+		text = text.replace(/\|w\|S\|d/g, "\1h\1k\1" + "7"); // Bright black on white
+		text = text.replace(/\|w\|S\|B/g, "\1h\1b\1" + "7"); // Bright blue on white
+		text = text.replace(/\|w\|S\|G/g, "\1h\1g\1" + "7"); // Bright green on white
+		text = text.replace(/\|w\|S\|C/g, "\1h\1c\1" + "7"); // Bright cyan on white
+		text = text.replace(/\|w\|S\|R/g, "\1h\1r\1" + "7"); // Bright red on white
+		text = text.replace(/\|w\|S\|M/g, "\1h\1m\1" + "7"); // Bright magenta on white
+		text = text.replace(/\|w\|S\|Y/g, "\1h\1y\1" + "7"); // Yellow on white
+		text = text.replace(/\|w\|S\|W/g, "\1h\1w\1" + "7"); // Bright white on white
 
 		// Colors on black background
-		text = text.replace(/\|k/g, "\1n\1k\10");  // Black on black
-		text = text.replace(/\|k\|S\|k/g, "\1n\1k\10"); // Black on black
-		text = text.replace(/\|b/g, "\1n\1b\10");       // Blue on black
-		text = text.replace(/\|k\|S\|b/g, "\1n\1b\10"); // Blue on black
-		text = text.replace(/\|g/g, "\1n\1g\10");       // Green on black
-		text = text.replace(/\|k\|S\|g/g, "\1n\1g\10"); // Green on black
-		text = text.replace(/\|c/g, "\1n\1c\10");       // Cyan on black
-		text = text.replace(/\|k\|S\|c/g, "\1n\1c\10"); // Cyan on black
-		text = text.replace(/\|r/g, "\1n\1r\10");       // Red on black
-		text = text.replace(/\|k\|S\|r/g, "\1n\1r\10"); // Red on black
-		text = text.replace(/\|m/g, "\1n\1m\10");       // Magenta on black
-		text = text.replace(/\|k\|S\|m/g, "\1n\1m\10"); // Magenta on black
-		text = text.replace(/\|y/g, "\1n\1y\10");       // Yellow/brown on black
-		text = text.replace(/\|k\|S\|y/g, "\1n\1y\10"); // Yellow/brown on black
-		text = text.replace(/\|w/g, "\1n\1w\10");       // White on black
-		text = text.replace(/\|k\|S\|w/g, "\1n\1w\10"); // White on black
-		text = text.replace(/\|d/g, "\1h\1k\10");       // Bright black on black
-		text = text.replace(/\|k\|S\|d/g, "\1h\1k\10"); // Bright black on black
-		text = text.replace(/\|B/g, "\1h\1b\10");       // Bright blue on black
-		text = text.replace(/\|k\|S\|B/g, "\1h\1b\10"); // Bright blue on black
-		text = text.replace(/\|G/g, "\1h\1g\10");       // Bright green on black
-		text = text.replace(/\|k\|S\|G/g, "\1h\1g\10"); // Bright green on black
-		text = text.replace(/\|C/g, "\1h\1c\10");       // Bright cyan on black
-		text = text.replace(/\|k\|S\|C/g, "\1h\1c\10"); // Bright cyan on black
-		text = text.replace(/\|R/g, "\1h\1r\10");       // Bright red on black
-		text = text.replace(/\|k\|S\|R/g, "\1h\1r\10"); // Bright red on black
-		text = text.replace(/\|M/g, "\1h\1m\10");       // Bright magenta on black
-		text = text.replace(/\|k\|S\|M/g, "\1h\1m\10"); // Bright magenta on black
-		text = text.replace(/\|Y/g, "\1h\1y\10");       // Yellow on black
-		text = text.replace(/\|k\|S\|Y/g, "\1h\1y\10"); // Yellow on black
-		text = text.replace(/\|W/g, "\1h\1w\10");       // Bright white on black
-		text = text.replace(/\|k\|S\|W/g, "\1h\1w\10"); // Bright white on black
+		text = text.replace(/\|k/g, "\1n\1k\1" + "0");  // Black on black
+		text = text.replace(/\|k\|S\|k/g, "\1n\1k\1" + "0"); // Black on black
+		text = text.replace(/\|b/g, "\1n\1b\1" + "0");       // Blue on black
+		text = text.replace(/\|k\|S\|b/g, "\1n\1b\1" + "0"); // Blue on black
+		text = text.replace(/\|g/g, "\1n\1g\1" + "0");       // Green on black
+		text = text.replace(/\|k\|S\|g/g, "\1n\1g\1" + "0"); // Green on black
+		text = text.replace(/\|c/g, "\1n\1c\1" + "0");       // Cyan on black
+		text = text.replace(/\|k\|S\|c/g, "\1n\1c\1" + "0"); // Cyan on black
+		text = text.replace(/\|r/g, "\1n\1r\1" + "0");       // Red on black
+		text = text.replace(/\|k\|S\|r/g, "\1n\1r\1" + "0"); // Red on black
+		text = text.replace(/\|m/g, "\1n\1m\1" + "0");       // Magenta on black
+		text = text.replace(/\|k\|S\|m/g, "\1n\1m\1" + "0"); // Magenta on black
+		text = text.replace(/\|y/g, "\1n\1y\1" + "0");       // Yellow/brown on black
+		text = text.replace(/\|k\|S\|y/g, "\1n\1y\1" + "0"); // Yellow/brown on black
+		text = text.replace(/\|w/g, "\1n\1w\1" + "0");       // White on black
+		text = text.replace(/\|k\|S\|w/g, "\1n\1w\1" + "0"); // White on black
+		text = text.replace(/\|d/g, "\1h\1k\1" + "0");       // Bright black on black
+		text = text.replace(/\|k\|S\|d/g, "\1h\1k\1" + "0"); // Bright black on black
+		text = text.replace(/\|B/g, "\1h\1b\1" + "0");       // Bright blue on black
+		text = text.replace(/\|k\|S\|B/g, "\1h\1b\1" + "0"); // Bright blue on black
+		text = text.replace(/\|G/g, "\1h\1g\1" + "0");       // Bright green on black
+		text = text.replace(/\|k\|S\|G/g, "\1h\1g\1" + "0"); // Bright green on black
+		text = text.replace(/\|C/g, "\1h\1c\1" + "0");       // Bright cyan on black
+		text = text.replace(/\|k\|S\|C/g, "\1h\1c\1" + "0"); // Bright cyan on black
+		text = text.replace(/\|R/g, "\1h\1r\1" + "0");       // Bright red on black
+		text = text.replace(/\|k\|S\|R/g, "\1h\1r\1" + "0"); // Bright red on black
+		text = text.replace(/\|M/g, "\1h\1m\1" + "0");       // Bright magenta on black
+		text = text.replace(/\|k\|S\|M/g, "\1h\1m\1" + "0"); // Bright magenta on black
+		text = text.replace(/\|Y/g, "\1h\1y\1" + "0");       // Yellow on black
+		text = text.replace(/\|k\|S\|Y/g, "\1h\1y\1" + "0"); // Yellow on black
+		text = text.replace(/\|W/g, "\1h\1w\1" + "0");       // Bright white on black
+		text = text.replace(/\|k\|S\|W/g, "\1h\1w\1" + "0"); // Bright white on black
 
 		return text;
 	}
@@ -13537,38 +13652,38 @@ function renegadeAttrsToSyncAttrs(pText)
 	// so we don't want to do all that work for nothing.. :)
 	if (/\|[0-3][0-9]/.test(pText))
 	{
-		var text = pText.replace(/\|00/g, "\1n\1k\10"); // Black on black
-		text = text.replace(/\|01/g, "\1n\1b\10"); // Blue on black
-		text = text.replace(/\|02/g, "\1n\1g\10"); // Green on black
-		text = text.replace(/\|03/g, "\1n\1c\10"); // Cyan on black
-		text = text.replace(/\|04/g, "\1n\1r\10"); // Red on black
-		text = text.replace(/\|05/g, "\1n\1m\10"); // Magenta on black
-		text = text.replace(/\|06/g, "\1n\1y\10"); // Yellow/brown on black
-		text = text.replace(/\|07/g, "\1n\1w\10"); // White on black
-		text = text.replace(/\|08/g, "\1n\1k\1h\10"); // Grey (bright black) on black
-		text = text.replace(/\|09/g, "\1n\1b\1h\10"); // Bright blue on black
-		text = text.replace(/\|10/g, "\1n\1g\1h\10"); // Bright green on black
-		text = text.replace(/\|11/g, "\1n\1c\1h\10"); // Bright cyan on black
-		text = text.replace(/\|12/g, "\1n\1r\1h\10"); // Bright red on black
-		text = text.replace(/\|13/g, "\1n\1m\1h\10"); // Bright magenta on black
-		text = text.replace(/\|14/g, "\1n\1y\1h\10"); // Bright yellow on black
-		text = text.replace(/\|15/g, "\1n\1w\1h\10"); // Bright white on black
-		text = text.replace(/\|16/g, "\1n\10\17"); // Black on white
-		text = text.replace(/\|17/g, "\1n\1w\14"); // White on blue
-		text = text.replace(/\|18/g, "\1n\17\12"); // White on green
-		text = text.replace(/\|19/g, "\1n\17\16"); // White on cyan
-		text = text.replace(/\|20/g, "\1n\17\11"); // White on red
-		text = text.replace(/\|21/g, "\1n\17\15"); // White on magenta
-		text = text.replace(/\|22/g, "\1n\17\13"); // White on yellow/brown
-		text = text.replace(/\|23/g, "\1n\17\17"); // White on white
-		text = text.replace(/\|24/g, "\1i\1w\10"); // Blinking white on black
-		text = text.replace(/\|25/g, "\1i\1w\14"); // Blinking white on blue
-		text = text.replace(/\|26/g, "\1i\1w\12"); // Blinking white on green
-		text = text.replace(/\|27/g, "\1i\1w\16"); // Blinking white on cyan
-		text = text.replace(/\|28/g, "\1i\1w\11"); // Blinking white on red
-		text = text.replace(/\|29/g, "\1i\1w\15"); // Blinking white on magenta
-		text = text.replace(/\|30/g, "\1i\1w\13"); // Blinking white on yellow/brown
-		text = text.replace(/\|31/g, "\1i\1w\17"); // Blinking white on white
+		var text = pText.replace(/\|00/g, "\1n\1k"); // Normal black
+		text = text.replace(/\|01/g, "\1n\1b"); // Normal blue
+		text = text.replace(/\|02/g, "\1n\1g"); // Normal green
+		text = text.replace(/\|03/g, "\1n\1c"); // Normal cyan
+		text = text.replace(/\|04/g, "\1n\1r"); // Normal red
+		text = text.replace(/\|05/g, "\1n\1m"); // Normal magenta
+		text = text.replace(/\|06/g, "\1n\1y"); // Normal brown
+		text = text.replace(/\|07/g, "\1n\1w"); // Normal white
+		text = text.replace(/\|08/g, "\1n\1k\1h"); // High intensity black
+		text = text.replace(/\|09/g, "\1n\1b\1h"); // High intensity blue
+		text = text.replace(/\|10/g, "\1n\1g\1h"); // High intensity green
+		text = text.replace(/\|11/g, "\1n\1c\1h"); // High intensity cyan
+		text = text.replace(/\|12/g, "\1n\1r\1h"); // High intensity red
+		text = text.replace(/\|13/g, "\1n\1m\1h"); // High intensity magenta
+		text = text.replace(/\|14/g, "\1n\1y\1h"); // Yellow (high intensity brown)
+		text = text.replace(/\|15/g, "\1n\1w\1h"); // High intensity white
+		text = text.replace(/\|16/g, "\1" + "0"); // Background black
+		text = text.replace(/\|17/g, "\1" + "4"); // Background blue
+		text = text.replace(/\|18/g, "\1" + "2"); // Background green
+		text = text.replace(/\|19/g, "\1" + "6"); // Background cyan
+		text = text.replace(/\|20/g, "\1" + "1"); // Background red
+		text = text.replace(/\|21/g, "\1" + "5"); // Background magenta
+		text = text.replace(/\|22/g, "\1" + "3"); // Background brown
+		text = text.replace(/\|23/g, "\1" + "7"); // Background white
+		text = text.replace(/\|24/g, "\1i\1w\1" + "0"); // Blinking white on black
+		text = text.replace(/\|25/g, "\1i\1w\1" + "4"); // Blinking white on blue
+		text = text.replace(/\|26/g, "\1i\1w\1" + "2"); // Blinking white on green
+		text = text.replace(/\|27/g, "\1i\1w\1" + "6"); // Blinking white on cyan
+		text = text.replace(/\|28/g, "\1i\1w\1" + "1"); // Blinking white on red
+		text = text.replace(/\|29/g, "\1i\1w\1" + "5"); // Blinking white on magenta
+		text = text.replace(/\|30/g, "\1i\1w\1" + "3"); // Blinking white on yellow/brown
+		text = text.replace(/\|31/g, "\1i\1w\1" + "7"); // Blinking white on white
 		return text;
 	}
 	else
@@ -13591,55 +13706,111 @@ function ANSIAttrsToSyncAttrs(pText)
 	// http://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 
 	// First, see if the text has any ANSI attribute codes at all.  We'll be
-	// performing a bunch of search & replace commands, o we don't want to do
-	// all that work for nothing.. :)
-	if (/\[[0-9]+[mM]/.test(pText) || /\[[0-9]+(;[0-9]+)+[mM]/.test(pText) ||
-	    /\[[0-9]+[aAbBcCdD]/.test(pText) || /\[[0-9]+;[0-9]+[hHfF]/.test(pText) ||
-	    /\[[sSuUkK]/.test(pText) || /\[2[jJ]/.test(pText))
+	// performing a bunch of search & replace commands, so we don't want to do
+	// all that work for nothing.
+	if (textHasANSICodes(pText))
 	{
-		// Attributes
-		var text = pText.replace(/\[0[mM]/g, "\1n"); // All attributes off
-		text = text.replace(/\[1[mM]/g, "\1h"); // Bold on (use high intensity)
-		text = text.replace(/\[5[mM]/g, "\1i"); // Blink on
-		// Foreground colors
-		text = text.replace(/\[30[mM]/g, "\1k"); // Black foreground
-		text = text.replace(/\[31[mM]/g, "\1r"); // Red foreground
-		text = text.replace(/\[32[mM]/g, "\1g"); // Green foreground
-		text = text.replace(/\[33[mM]/g, "\1y"); // Yellow foreground
-		text = text.replace(/\[34[mM]/g, "\1b"); // Blue foreground
-		text = text.replace(/\[35[mM]/g, "\1m"); // Magenta foreground
-		text = text.replace(/\[36[mM]/g, "\1c"); // Cyan foreground
-		text = text.replace(/\[37[mM]/g, "\1w"); // White foreground
-		// Background colors
-		text = text.replace(/\[40[mM]/g, "\10"); // Black background
-		text = text.replace(/\[41[mM]/g, "\11"); // Red background
-		text = text.replace(/\[42[mM]/g, "\12"); // Green background
-		text = text.replace(/\[43[mM]/g, "\13"); // Yellow background
-		text = text.replace(/\[44[mM]/g, "\14"); // Blue background
-		text = text.replace(/\[45[mM]/g, "\15"); // Magenta background
-		text = text.replace(/\[46[mM]/g, "\16"); // Cyan background
-		text = text.replace(/\[47[mM]/g, "\17"); // White background
+		var text = "";
+		var tempDirExists = true;
+		// Temporary (to get it to run the old way for now)
+		tempDirExists = false;
+		/*
+		var readerTmpDir = backslash(system.node_dir + "DDMsgReaderTemp");
+		if (!file_exists(readerTmpDir))
+			tempDirExists = mkdir(readerTmpDir);
+		*/
+		if (tempDirExists)
+		{
+			var wroteTempFile = true;
+			var tmpFileName = readerTmpDir + "tmpMessage.ans";
+			var msgTmpFile = new File(tmpFileName);
+			if (msgTmpFile.open("w"))
+			{
+				wroteTempFile = msgTmpFile.write(pText);
+				msgTmpFile.close();
+			}
+			// If the temp file was written, then convert it to Synchronet
+			// attributes using ans2asc.
+			if (wroteTempFile)
+			{
+				var convertedTempFileName = readerTmpDir + "tmpMessage.asc";
+				var cmdLine = system.exec_dir + "ans2asc \"" + tmpFileName + "\" \""
+				            + convertedTempFileName + "\"";
+				// Note: Both system.exec(cmdLine) and
+				// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+				// execute the command, but system.exec() seems noticeably faster.
+				system.exec(cmdLine);
+				var convertedTmpFile = new File(convertedTempFileName);
+				if (convertedTmpFile.open("r"))
+				{
+					text = convertedTmpFile.read();
+					convertedTmpFile.close();
+				}
+			}
+			// Temporary
+			console.print("\1nConverted ANSI to Sync attributes\r\n\1p");
+			// End Temporary
+			deltree(readerTmpDir);
+		}
+		else
+		{
+			// Attributes
+			var text = pText.replace(/\[0[mM]/g, "\1n"); // All attributes off
+			text = text.replace(/\[1[mM]/g, "\1h"); // Bold on (use high intensity)
+			text = text.replace(/\[5[mM]/g, "\1i"); // Blink on
+			// Foreground colors
+			text = text.replace(/\[30[mM]/g, "\1k"); // Black foreground
+			text = text.replace(/\[31[mM]/g, "\1r"); // Red foreground
+			text = text.replace(/\[32[mM]/g, "\1g"); // Green foreground
+			text = text.replace(/\[33[mM]/g, "\1y"); // Yellow foreground
+			text = text.replace(/\[34[mM]/g, "\1b"); // Blue foreground
+			text = text.replace(/\[35[mM]/g, "\1m"); // Magenta foreground
+			text = text.replace(/\[36[mM]/g, "\1c"); // Cyan foreground
+			text = text.replace(/\[37[mM]/g, "\1w"); // White foreground
+			// Background colors
+			text = text.replace(/\[40[mM]/g, "\1" + "0"); // Black background
+			text = text.replace(/\[41[mM]/g, "\1" + "1"); // Red background
+			text = text.replace(/\[42[mM]/g, "\1" + "2"); // Green background
+			text = text.replace(/\[43[mM]/g, "\1" + "3"); // Yellow background
+			text = text.replace(/\[44[mM]/g, "\1" + "4"); // Blue background
+			text = text.replace(/\[45[mM]/g, "\1" + "5"); // Magenta background
+			text = text.replace(/\[46[mM]/g, "\1" + "6"); // Cyan background
+			text = text.replace(/\[47[mM]/g, "\1" + "7"); // White background
 
-		// Convert ;-delimited modes (such as [Value;...;Valuem)
-		text = ANSIMultiConvertToSyncCodes(text);
+			// Convert ;-delimited modes (such as [Value;...;Valuem)
+			text = ANSIMultiConvertToSyncCodes(text);
 
-		// Remove ANSI codes that are not wanted (such as moving the cursor, etc.)
-		text = text.replace(/\[[0-9]+[aA]/g, ""); // Cursor up
-		text = text.replace(/\[[0-9]+[bB]/g, ""); // Cursor down
-		text = text.replace(/\[[0-9]+[cC]/g, ""); // Cursor forward
-		text = text.replace(/\[[0-9]+[dD]/g, ""); // Cursor backward
-		text = text.replace(/\[[0-9]+;[0-9]+[hH]/g, ""); // Cursor position
-		text = text.replace(/\[[0-9]+;[0-9]+[fF]/g, ""); // Cursor position
-		text = text.replace(/\[[sS]/g, ""); // Restore cursor position
-		text = text.replace(/\[2[jJ]/g, ""); // Erase display
-		text = text.replace(/\[[kK]/g, ""); // Erase line
-		text = text.replace(/\[=[0-9]+[hH]/g, ""); // Set various screen modes
-		text = text.replace(/\[=[0-9]+[lL]/g, ""); // Reset various screen modes
+			// Remove ANSI codes that are not wanted (such as moving the cursor, etc.)
+			text = text.replace(/\[[0-9]+[aA]/g, ""); // Cursor up
+			text = text.replace(/\[[0-9]+[bB]/g, ""); // Cursor down
+			text = text.replace(/\[[0-9]+[cC]/g, ""); // Cursor forward
+			text = text.replace(/\[[0-9]+[dD]/g, ""); // Cursor backward
+			text = text.replace(/\[[0-9]+;[0-9]+[hH]/g, ""); // Cursor position
+			text = text.replace(/\[[0-9]+;[0-9]+[fF]/g, ""); // Cursor position
+			text = text.replace(/\[[sS]/g, ""); // Restore cursor position
+			text = text.replace(/\[2[jJ]/g, ""); // Erase display
+			text = text.replace(/\[[kK]/g, ""); // Erase line
+			text = text.replace(/\[=[0-9]+[hH]/g, ""); // Set various screen modes
+			text = text.replace(/\[=[0-9]+[lL]/g, ""); // Reset various screen modes
+		}
 
 		return text;
 	}
 	else
 		return pText; // No ANSI codes found, so just return the text.
+}
+
+// Returns whether or not some text has any ANSI codes in it.
+//
+// Parameters:
+//  pText: The text to test
+//
+// Return value: Boolean - Whether or not the text has ANSI codes in it
+function textHasANSICodes(pText)
+{
+	return(/\[[0-9]+[mM]/.test(pText) || /\[[0-9]+(;[0-9]+)+[mM]/.test(pText) ||
+	       /\[[0-9]+[aAbBcCdD]/.test(pText) || /\[[0-9]+;[0-9]+[hHfF]/.test(pText) ||
+	       /\[[sSuUkK]/.test(pText) || /\[2[jJ]/.test(pText));
 }
 
 // Converts ANSI ;-delimited modes (such as [Value;...;Valuem) to Synchronet
@@ -13688,21 +13859,21 @@ function ANSIMultiConvertToSyncCodes(pText)
 			else if (codes[idx] == "37") // White foreground
 				syncCodes += "\1w";
 			else if (codes[idx] == "40") // Black background
-				syncCodes += "\10";
+				syncCodes += "\1" + "0";
 			else if (codes[idx] == "41") // Red background
-				syncCodes += "\11";
+				syncCodes += "\1" + "1";
 			else if (codes[idx] == "42") // Green background
-				syncCodes += "\12";
+				syncCodes += "\1" + "2";
 			else if (codes[idx] == "43") // Yellow background
-				syncCodes += "\13";
+				syncCodes += "\1" + "3";
 			else if (codes[idx] == "44") // Blue background
-				syncCodes += "\14";
+				syncCodes += "\1" + "4";
 			else if (codes[idx] == "45") // Magenta background
-				syncCodes += "\15";
+				syncCodes += "\1" + "5";
 			else if (codes[idx] == "46") // Cyan background
-				syncCodes += "\16";
+				syncCodes += "\1" + "6";
 			else if (codes[idx] == "47") // White background
-				syncCodes += "\17";
+				syncCodes += "\1" + "7";
 		}
 		updatedText = updatedText.replace(multiMatches[i], syncCodes);
 	}
@@ -14574,6 +14745,112 @@ function quoteStrWithSpaces(pStr)
 	if (pStr.indexOf(" ") > -1)
 		strCopy = "\"" + pStr + "\"";
 	return strCopy;
+}
+
+// Given a message header field list type number (i.e., the 'type' property for an
+// entry in the field_list array in a message header), this returns a text label
+// to be used for outputting the field.
+//
+// Parameters:
+//  pFieldListType: A field_list entry type (numeric)
+//  pIncludeTrailingColon: Optional boolean - Whether or not to include a trailing ":"
+//                         at the end of the returned string.  Defaults to true.
+//
+// Return value: A text label for the field (a string)
+function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
+{
+	// The page at this URL lists the header field types:
+	// http://synchro.net/docs/smb.html#Header Field Types:
+
+	var fieldTypeLabel = "";
+	switch (pFieldListType)
+	{
+		case 0: // Sender
+			fieldTypeLabel = "Sender";
+			break;
+		case 1: // Sender Agent
+			fieldTypeLabel = "Sender Agent";
+			break;
+		case 2: // Sender net type
+			fieldTypeLabel = "Sender Net Type";
+			break;
+		case 3: // Sender Net Address
+			fieldTypeLabel = "Sender Net Address";
+			break;
+		case 4: // Sender Agent Extension
+			fieldTypeLabel = "Sender Agent Extension";
+			break;
+		case 5: // Sending agent (Sender POS)
+			fieldTypeLabel = "Sender Agent";
+			break;
+		case 6: // Sender organization
+			fieldTypeLabel = "Sender Organization";
+			break;
+		case 16: // Author
+			fieldTypeLabel = "Author";
+			break;
+		case 17: // Author Agent
+			fieldTypeLabel = "Author Agent";
+			break;
+		case 18: // Author Net Type
+			fieldTypeLabel = "Author Net Type";
+			break;
+		case 19: // Author Net Address
+			fieldTypeLabel = "Author Net Address";
+			break;
+		case 20: // Author Extension
+			fieldTypeLabel = "Author Extension";
+			break;
+		case 21: // Author Agent (Author POS)
+			fieldTypeLabel = "Author Agent";
+			break;
+		case 22: // Author Organization
+			fieldTypeLabel = "Author Organization";
+			break;
+		case 32: // Reply To
+			fieldTypeLabel = "Reply To";
+			break;
+		case 33: // Reply To agent
+			fieldTypeLabel = "Reply To Agent";
+			break;
+		case 34: // Reply To net type
+			fieldTypeLabel = "Reply To net type";
+			break;
+		case 35: // Reply To net address
+			fieldTypeLabel = "Reply To net address";
+			break;
+		case 36: // Reply To extension
+			fieldTypeLabel = "Reply To (extended)";
+			break;
+		case 37: // reply To position
+			fieldTypeLabel = "Reply To position";
+			break;
+		case 38: // Reply To organization (0x26 hex)
+			fieldTypeLabel = "Reply To organization";
+			break;
+		case 48: // Recipient (0x30 hex)
+			fieldTypeLabel = "Recipient";
+			break;
+		case 162: // Seen-by
+			fieldTypeLabel = "Seen-by";
+			break;
+		case 163: // Path
+			fieldTypeLabel = "Path";
+			break;
+		case 176: // RFCC822 Header
+			fieldTypeLabel = "RFCC822 Header";
+			break;
+		// TODO: Try to figure out what other types there are
+		default:
+			fieldTypeLabel = pFieldListType.toString();
+			break;
+	}
+
+	var includeTrailingColon = (typeof(pIncludeTrailingColon) == "boolean" ? pIncludeTrailingColon : true);
+	if (includeTrailingColon)
+		fieldTypeLabel += ":";
+
+	return fieldTypeLabel;
 }
 
 /////////////////////////////////////////////////////////////////////////
