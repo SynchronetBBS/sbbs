@@ -3628,7 +3628,7 @@ static BOOL fastcgi_add_param(struct fastcgi_message **msg, size_t *end, size_t 
 		*msg = p;
 	}
 	if (namelen > 127) {
-		l = htonl(namelen);
+		l = htonl(namelen | 0x80000000);
 		memcpy((*msg)->body + *end, &l, 4);
 		*end += 4;
 	}
@@ -3636,7 +3636,7 @@ static BOOL fastcgi_add_param(struct fastcgi_message **msg, size_t *end, size_t 
 		(*msg)->body[(*end)++] = namelen;
 	}
 	if (vallen > 127) {
-		l = htonl(vallen);
+		l = htonl(vallen | 0x80000000);
 		memcpy((*msg)->body + *end, &l, 4);
 		*end += 4;
 	}
