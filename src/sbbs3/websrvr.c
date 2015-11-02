@@ -3889,13 +3889,21 @@ static int fastcgi_write_in(void *arg, char *buf, size_t bufsz)
 {
 	struct fastcgi_header head;
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
+	size_t pos;
+	size_t chunk_size;
 
 	fastcgi_init_header(&head, FCGI_STDIN);
-	head.len = htons(bufsz);
-	if (sendsocket(cd->sock, (void *)&head, sizeof(head)) != sizeof(head))
-		return -1;
-	if (sendsocket(cd->sock, buf, bufsz) != bufsz)
-		return -1;
+	for (pos = 0; pos < bufsz;) {
+		chunk_size = bufsz - pos;
+		if (chunk_size > UINT16_MAX)
+			chunk_size = UINT16_MAX;
+		head.len = htons(chunk_size);
+		if (sendsocket(cd->sock, (void *)&head, sizeof(head)) != sizeof(head))
+			return -1;
+		if (sendsocket(cd->sock, buf+pos, chunk_size) != chunk_size)
+			return -1;
+		pos += chunk_size;
+	}
 	return bufsz;
 }
 
@@ -4343,6 +4351,9 @@ static BOOL exec_fastcgi(http_session_t *session)
 	}
 
 	// TODO handle stdin...
+	memset(&cd, 0, sizeof(cd));
+	cd.sock = sock;
+	fastcgi_write_in(&cd, session->req.post_data, session->req.post_len);
 	msg->head.len = 0;
 	msg->head.type = FCGI_STDIN;
 	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header)) != sizeof(struct fastcgi_header)) {
@@ -4354,8 +4365,6 @@ static BOOL exec_fastcgi(http_session_t *session)
 	free(msg);
 
 	// Now handle stuff coming back from the FastCGI socket...
-	memset(&cd, 0, sizeof(cd));
-	cd.sock = sock;
 	int ret = do_cgi_stuff(session, &cgi, orig_keep);
 	FREE_AND_NULL(cd.body);
 	closesocket(sock);
@@ -5726,7 +5735,7 @@ int read_post_data(http_session_t * session)
 	size_t		s = 0;
 	FILE		*fp=NULL;
 
-	if(session->req.dynamic!=IS_CGI && session->req.dynamic!=IS_FASTCGI && (session->req.post_len || session->req.read_chunked))  {
+	if(session->req.dynamic!=IS_CGI && (session->req.post_len || session->req.read_chunked)) {
 		if(session->req.read_chunked) {
 			char *p;
 			size_t	ch_len=0;
