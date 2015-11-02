@@ -3666,7 +3666,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 		}
 		if (end > 32000) {
 			msg->head.len = LE_INT16(end);
-			if (sendsocket(sock, msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
+			if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 				lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 				free(msg);
 				return FALSE;
@@ -3676,7 +3676,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 	}
 	if (end) {
 		msg->head.len = LE_INT16(end);
-		if (sendsocket(sock, msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
+		if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 			lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 			free(msg);
 			return FALSE;
@@ -3684,7 +3684,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 		end = 0;
 	}
 	msg->head.len = LE_INT16(end);
-	if (sendsocket(sock, msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
+	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 		lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 		free(msg);
 		return FALSE;
@@ -3766,7 +3766,7 @@ static int fastcgi_read_wait_timeout(void *arg)
 		switch (select(cd->sock+1,&read_set,NULL,NULL,&tv))  {
 			case 1:
 				if (FD_ISSET(cd->sock,&read_set)) {
-					if (recv(cd->sock, &header, offsetof(struct fastcgi_header, len), 0) != offsetof(struct fastcgi_header, len)) {
+					if (recv(cd->sock, (void *)&header, offsetof(struct fastcgi_header, len), 0) != offsetof(struct fastcgi_header, len)) {
 						lprintf(LOG_ERR, "FastCGI failed to read header");
 						return ret;
 					}
@@ -3877,7 +3877,7 @@ static int fastcgi_write_in(void *arg, char *buf, size_t bufsz)
 
 	fastcgi_init_header(&head, FCGI_STDIN);
 	head.len = LE_INT16(bufsz);
-	if (sendsocket(cd->sock, &head, sizeof(head)) != sizeof(head))
+	if (sendsocket(cd->sock, (void *)&head, sizeof(head)) != sizeof(head))
 		return -1;
 	if (sendsocket(cd->sock, buf, bufsz) != bufsz)
 		return -1;
@@ -3970,11 +3970,13 @@ struct cgi_data {
 	HANDLE rdpipe;
 	HANDLE wrpipe;
 	HANDLE child;
+	http_session_t *session;
 };
 
 static int cgi_read_wait_timeout(void *arg)
 {
 	int ret = 0;
+	int rd;
 	struct cgi_data *cd = (struct cgi_data *)arg;
 
 	DWORD waiting;
@@ -3994,7 +3996,7 @@ static int cgi_read_wait_timeout(void *arg)
 		);
 		if(waiting)
 			ret |= CGI_OUTPUT_READY;
-		if(!session_check(session, &rd, NULL, /* timeout: */0))
+		if(!session_check(cd->session, &rd, NULL, /* timeout: */0))
 			ret |= CGI_INPUT_READY;
 		if (rd)
 			ret |= CGI_INPUT_READY;
@@ -4013,11 +4015,11 @@ static int cgi_read_out(void *arg, char *buf, size_t sz)
 
 	if(ReadFile(cd->rdpipe,buf,sz,&msglen,NULL)==FALSE) {
 		lprintf(LOG_ERR,"%04d !ERROR %d reading from pipe"
-			,session->socket,GetLastError());
+			,cd->session->socket,GetLastError());
 		return -1;
 	}
 
-	return read(cd->out_pipe,buf,sz);
+	return msglen;
 }
 
 static int cgi_read_err(void *arg, char *buf, size_t sz)
@@ -4309,7 +4311,7 @@ static BOOL exec_fastcgi(http_session_t *session)
 	br->role = LE_INT16(FCGI_RESPONDER);
 	br->flags = 0;
 	memset(br->reserved, 0, sizeof(br->reserved));
-	if (sendsocket(sock, msg, msglen) != msglen) {
+	if (sendsocket(sock, (void *)msg, msglen) != msglen) {
 		free(msg);
 		closesocket(sock);
 		lprintf(LOG_ERR, "%04d Failure to send to FastCGI socket!", session->socket);
@@ -4323,7 +4325,7 @@ static BOOL exec_fastcgi(http_session_t *session)
 
 	// TODO handle stdin...
 	msg->head.len = 0;
-	if (sendsocket(sock, msg, sizeof(struct fastcgi_header)) != sizeof(struct fastcgi_header)) {
+	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header)) != sizeof(struct fastcgi_header)) {
 		free(msg);
 		closesocket(sock);
 		lprintf(LOG_ERR, "%04d Failure to send stdin to FastCGI socket!", session->socket);
@@ -4547,33 +4549,23 @@ static BOOL exec_cgi(http_session_t *session)
 
 	/* These are (more or less) copied from the Unix version */
 	char*	p;
-	char	*last;
 	char	cmdline[MAX_PATH+256];
 	char	buf[4096];
-	int		i;
 	BOOL	orig_keep;
 	BOOL	done_parsing_headers=FALSE;
 	BOOL	got_valid_headers=FALSE;
-	char	cgi_status[MAX_REQUEST_LINE+1];
-	char	content_type[MAX_REQUEST_LINE+1];
-	char	header[MAX_REQUEST_LINE+1];
 	char	*directive=NULL;
 	char	*value=NULL;
-	time_t	start;
 	BOOL	no_chunked=FALSE;
 	int		set_chunked=FALSE;
 
 	/* Win32-specific */
 	char*	env_block;
 	char	startup_dir[MAX_PATH+1];
-	int		wr;
-	BOOL	rd;
 	HANDLE	rdpipe=INVALID_HANDLE_VALUE;
 	HANDLE	wrpipe=INVALID_HANDLE_VALUE;
 	HANDLE	rdoutpipe;
 	HANDLE	wrinpipe;
-	DWORD	waiting;
-	DWORD	msglen;
 	DWORD	retval;
 	BOOL	success;
 	BOOL	process_terminated=FALSE;
@@ -4660,6 +4652,7 @@ static BOOL exec_cgi(http_session_t *session)
 	cd.wrpipe = wrpipe;
 	cd.rdpipe = rdpipe;
 	cd.child = process_info.hProcess;
+	cd.session = session;
 
 	int ret = do_cgi_stuff(session, &cgi, orig_keep);
 	if (ret & CGI_STUFF_DONE_PARSING)
