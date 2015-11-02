@@ -3546,7 +3546,6 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 		lprintf(LOG_ERR, "%04d ERROR resolving FastCGI address %s port %s", client_sock, path, port);
 		return INVALID_SOCKET;
 	}
-	val=1;
 	for(cur=res,result=1; result && cur; cur=cur->ai_next) {
 		tv.tv_sec = 1;	/* TODO: Make configurable! */
 		tv.tv_usec = 0;
@@ -3554,15 +3553,19 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 		sock = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
 		if (sock == INVALID_SOCKET)
 			continue;
+		val=1;
 		ioctlsocket(sock,FIONBIO,&val);
 		result=connect(sock, cur->ai_addr, cur->ai_addrlen);
 
-		if(result==SOCKET_ERROR
-				&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
-			FD_ZERO(&socket_set);
-			FD_SET(sock,&socket_set);
-			if(select(sock+1,NULL,&socket_set,NULL,&tv)==1)
-				result=0;	/* success */
+		if (result==SOCKET_ERROR) {
+			if((ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
+				FD_ZERO(&socket_set);
+				FD_SET(sock,&socket_set);
+				if(select(sock+1,NULL,&socket_set,NULL,&tv)==1)
+					result=0;	/* success */
+			}
+			else
+				closesocket(sock);
 		}
 		if(result==0)
 			break;
@@ -3583,7 +3586,7 @@ static void fastcgi_init_header(struct fastcgi_header *head, uint8_t type)
 {
 	head->ver = FCGI_VERSION_1;
 	head->type = type;
-	head->id = LE_INT16(1);
+	head->id = htons(1);
 	head->len = 0;
 	head->padlen = 0;
 	head->reserved = 0;
@@ -3625,25 +3628,25 @@ static BOOL fastcgi_add_param(struct fastcgi_message **msg, size_t *end, size_t 
 		*msg = p;
 	}
 	if (namelen > 127) {
-		l = LE_INT32(namelen);
+		l = htonl(namelen);
 		memcpy((*msg)->body + *end, &l, 4);
 		*end += 4;
 	}
 	else {
-		(*msg)->body[*end++] = namelen;
+		(*msg)->body[(*end)++] = namelen;
 	}
 	if (vallen > 127) {
-		l = LE_INT32(vallen);
+		l = htonl(vallen);
 		memcpy((*msg)->body + *end, &l, 4);
 		*end += 4;
 	}
 	else {
-		(*msg)->body[*end++] = vallen;
+		(*msg)->body[(*end)++] = vallen;
 	}
 	memcpy((*msg)->body + *end, env, namelen);
 	*end += namelen;
 	memcpy((*msg)->body + *end, sep+1, vallen);
-	*end += namelen;
+	*end += vallen;
 
 	return TRUE;
 }
@@ -3665,7 +3668,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 			return FALSE;
 		}
 		if (end > 32000) {
-			msg->head.len = LE_INT16(end);
+			msg->head.len = htons(end);
 			if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 				lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 				free(msg);
@@ -3675,7 +3678,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 		}
 	}
 	if (end) {
-		msg->head.len = LE_INT16(end);
+		msg->head.len = htons(end);
 		if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 			lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 			free(msg);
@@ -3683,7 +3686,7 @@ static BOOL fastcgi_send_params(SOCKET sock, http_session_t *session)
 		}
 		end = 0;
 	}
-	msg->head.len = LE_INT16(end);
+	msg->head.len = htons(end);
 	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
 		lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
 		free(msg);
@@ -3712,19 +3715,18 @@ struct fastcgi_data {
 
 static struct fastcgi_body * fastcgi_read_body(SOCKET sock)
 {
+	char padding[255];
 	struct fastcgi_header header;
 	struct fastcgi_body *body;
-	char padding[255];
 
-	if (recv(sock
-			,((char *)(&header))+offsetof(struct fastcgi_header, len)
+	if (recv(sock, &header.len
 			,sizeof(header) - offsetof(struct fastcgi_header, len), 0)
 				!= sizeof(header) - offsetof(struct fastcgi_header, len)) {
 		lprintf(LOG_ERR, "Error reading FastCGI message header");
 		return NULL;
 	}
-	body = (struct fastcgi_body *)malloc(offsetof(struct fastcgi_body, data) + LE_INT16(header.len));
-	body->len = LE_INT16(header.len);
+	body = (struct fastcgi_body *)malloc(offsetof(struct fastcgi_body, data) + htons(header.len));
+	body->len = htons(header.len);
 	if (recv(sock, body->data, body->len, 0) != body->len) {
 		free(body);
 		lprintf(LOG_ERR, "Error reading FastCGI message");
@@ -3741,10 +3743,8 @@ static struct fastcgi_body * fastcgi_read_body(SOCKET sock)
 static int fastcgi_read_wait_timeout(void *arg)
 {
 	int ret = 0;
-	fd_set read_set;
+	BOOL rd;
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
-	struct fastcgi_header header;
-	struct timeval tv;
 	struct fastcgi_body *body;
 
 	switch (cd->header.type) {
@@ -3756,53 +3756,58 @@ static int fastcgi_read_wait_timeout(void *arg)
 			break;
 	}
 
-	tv.tv_sec=startup->max_cgi_inactivity;
-	tv.tv_usec=0;
-
-	FD_ZERO(&read_set);
-	FD_SET(cd->sock,&read_set);
-
-	while (ret == 0) {
-		switch (select(cd->sock+1,&read_set,NULL,NULL,&tv))  {
-			case 1:
-				if (FD_ISSET(cd->sock,&read_set)) {
-					if (recv(cd->sock, (void *)&header, offsetof(struct fastcgi_header, len), 0) != offsetof(struct fastcgi_header, len)) {
-						lprintf(LOG_ERR, "FastCGI failed to read header");
-						return ret;
-					}
-					if (header.ver != FCGI_VERSION_1) {
-						lprintf(LOG_ERR, "Unknown FastCGI version %d", header.ver);
-						return ret;
-					}
-					if (header.id != 1) {
-						lprintf(LOG_ERR, "Unknown FastCGI session ID %d", header.id);
-						return ret;
-					}
-					switch(LE_INT16(header.type)) {
-						case FCGI_STDOUT:
-							ret |= CGI_OUTPUT_READY;
-							break;
-						case FCGI_STDERR:
-							ret |= CGI_OUTPUT_READY;
-							break;
-						case FCGI_END_REQUEST:
-							ret |= CGI_PROCESS_TERMINATED;
-							// Fall-through
-						default:
-							// Read and discard the entire message...
-							body = fastcgi_read_body(cd->sock);
-							if (body == NULL)
-								return ret;
-							free(body);
-							ret |= CGI_PROCESS_TERMINATED;
-							break;
-					}
-				}
-			case 0:
-			case -1:
+	if (socket_check(cd->sock, &rd, NULL, startup->max_cgi_inactivity*1000)) {
+		if (rd) {
+			if (recv(cd->sock, (void *)&cd->header, offsetof(struct fastcgi_header, len), 0) != offsetof(struct fastcgi_header, len)) {
+				lprintf(LOG_ERR, "FastCGI failed to read header");
 				return ret;
+			}
+			if (cd->header.ver != FCGI_VERSION_1) {
+				lprintf(LOG_ERR, "Unknown FastCGI version %d", cd->header.ver);
+				return ret;
+			}
+			if (htons(cd->header.id) != 1) {
+				lprintf(LOG_ERR, "Unknown FastCGI session ID %d", htons(cd->header.id));
+				return ret;
+			}
+			lprintf(LOG_DEBUG, "Got FastCGI type %d", cd->header.type);
+			switch(cd->header.type) {
+				case FCGI_STDOUT:
+					ret |= CGI_OUTPUT_READY;
+					break;
+				case FCGI_STDERR:
+					ret |= CGI_OUTPUT_READY;
+					break;
+				case FCGI_END_REQUEST:
+					ret |= CGI_PROCESS_TERMINATED;
+					// Fall-through
+				case FCGI_BEGIN_REQUEST:
+				case FCGI_ABORT_REQUEST:
+				case FCGI_PARAMS:
+				case FCGI_STDIN:
+				case FCGI_DATA:
+				case FCGI_GET_VALUES:
+				case FCGI_GET_VALUES_RESULT:
+				case FCGI_UNKNOWN_TYPE:
+					// Read and discard the entire message...
+					body = fastcgi_read_body(cd->sock);
+					if (body == NULL)
+						return ret;
+					free(body);
+					break;
+				default:
+					lprintf(LOG_ERR, "Unhandled FastCGI message type %d", cd->header.type);
+					// Read and discard the entire message...
+					body = fastcgi_read_body(cd->sock);
+					if (body == NULL)
+						return ret;
+					free(body);
+					break;
+			}
 		}
 	}
+	else
+		ret |= CGI_PROCESS_TERMINATED;
 
 	return ret;
 }
@@ -3811,18 +3816,22 @@ static int fastcgi_read(void *arg, char *buf, size_t sz)
 {
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
 
-	if (cd->header.type == 0) {
+	if (cd->body == NULL) {
+		lprintf(LOG_DEBUG, "Reading new FastCGI body");
 		cd->body = fastcgi_read_body(cd->sock);
 		if (cd->body == NULL)
 			return -1;
+		lprintf(LOG_DEBUG, "FastCGI got %u bytes", cd->body->len);
 	}
 
 	if (sz > (cd->body->len - cd->used))
 		sz = cd->body->len - cd->used;
 
-	memcpy(buf, cd->body->data, sz);
+	memcpy(buf, cd->body->data + cd->used, sz);
+	lprintf(LOG_DEBUG, "FastCGI read consumed %u bytes (%u->%u of %u)", sz, cd->used, cd->used + sz, cd->body->len);
 	cd->used += sz;
 	if (cd->used >= cd->body->len) {
+		lprintf(LOG_DEBUG, "FastCGI free()ing old body");
 		FREE_AND_NULL(cd->body);
 		cd->header.type = 0;
 		cd->used = 0;
@@ -3842,27 +3851,33 @@ static int fastcgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, si
 
 	outpos = 0;
 
-	if (cd->header.type == 0) {
+	if (cd->body == NULL) {
+		lprintf(LOG_DEBUG, "Reading new FastCGI body");
 		cd->body = fastcgi_read_body(cd->sock);
 		if (cd->body == NULL)
 			return -1;
+		lprintf(LOG_DEBUG, "FastCGI got %u bytes", cd->body->len);
 	}
 
-	for (outpos = 0, inpos = cd->used; inpos < cd->body->len; inpos++) {
+	for (outpos = 0, inpos = cd->used; inpos < cd->body->len && outpos < bufsz; inpos++) {
 		if (cd->body->data[inpos] == '\n') {
 			inpos++;
 			break;
 		}
 		buf[outpos++] = cd->body->data[inpos];
 	}
-	if (outpos == 0)
-		return -1;
-	if (buf[outpos - 1] == '\r')
+	if (outpos > 0 && buf[outpos - 1] == '\r')
 		outpos--;
+	// Terminate... even if we need to truncate.
+	if (outpos >= bufsz)
+		outpos--;
+	buf[outpos] = 0;
 
+	lprintf(LOG_DEBUG, "FastCGI readln consumed %u bytes (%u->%u of %u) \"%.*s\"", inpos - cd->used, cd->used, inpos, cd->body->len, outpos, buf);
 	cd->used = inpos;
 
 	if (cd->used >= cd->body->len) {
+		lprintf(LOG_DEBUG, "FastCGI free()ing old body");
 		FREE_AND_NULL(cd->body);
 		cd->header.type = 0;
 		cd->used = 0;
@@ -3876,7 +3891,7 @@ static int fastcgi_write_in(void *arg, char *buf, size_t bufsz)
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
 
 	fastcgi_init_header(&head, FCGI_STDIN);
-	head.len = LE_INT16(bufsz);
+	head.len = htons(bufsz);
 	if (sendsocket(cd->sock, (void *)&head, sizeof(head)) != sizeof(head))
 		return -1;
 	if (sendsocket(cd->sock, buf, bufsz) != bufsz)
@@ -4123,14 +4138,14 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, BOOL orig_
 				else  {
 					/* This is the tricky part */
 					i=cgi->readln_out(cgi->arg, buf, sizeof(buf), fbuf, sizeof(fbuf));
-					if(i==-1)  {
+					if(i==-1) {
 						done_reading=TRUE;
 						ret |= CGI_STUFF_VALID_HEADERS;
 					}
 					else
 						start=time(NULL);
 
-					if(!(ret * CGI_STUFF_DONE_PARSING) && *buf)  {
+					if(!(ret & CGI_STUFF_DONE_PARSING) && *buf)  {
 						if(tmpbuf != NULL)
 							strListPush(&tmpbuf, fbuf);
 						SAFECOPY(header,buf);
@@ -4245,8 +4260,12 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, BOOL orig_
 					cgi->write_in(cgi->arg, buf, i);
 				}
 			}
-			if (ready & CGI_PROCESS_TERMINATED)
+			if (ready & CGI_PROCESS_TERMINATED) {
 				ret |= CGI_STUFF_PROCESS_EXITED;
+				done_wait = TRUE;
+			}
+			if(!done_wait)
+				done_wait = cgi->done_wait(cgi->arg);
 			if((!(ready & (CGI_OUTPUT_READY|CGI_ERROR_READY))) && done_wait)
 				done_reading=TRUE;
 		}
@@ -4306,9 +4325,9 @@ static BOOL exec_fastcgi(http_session_t *session)
 		return FALSE;
 	}
 	fastcgi_init_header(&msg->head, FCGI_BEGIN_REQUEST);
-	msg->head.len = LE_INT16(sizeof(struct fastcgi_begin_request));
+	msg->head.len = htons(sizeof(struct fastcgi_begin_request));
 	br = (struct fastcgi_begin_request *)&msg->body;
-	br->role = LE_INT16(FCGI_RESPONDER);
+	br->role = htons(FCGI_RESPONDER);
 	br->flags = 0;
 	memset(br->reserved, 0, sizeof(br->reserved));
 	if (sendsocket(sock, (void *)msg, msglen) != msglen) {
@@ -4325,6 +4344,7 @@ static BOOL exec_fastcgi(http_session_t *session)
 
 	// TODO handle stdin...
 	msg->head.len = 0;
+	msg->head.type = FCGI_STDIN;
 	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header)) != sizeof(struct fastcgi_header)) {
 		free(msg);
 		closesocket(sock);
