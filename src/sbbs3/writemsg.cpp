@@ -1227,7 +1227,7 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 		,useron.alias
 		,username(&cfg,usernumber,tmp)
 		,usernumber);
-	logline("E",str);
+	logline("E+",str);
 	msg->idx=idx;
 	msg->hdr=hdr;
 
