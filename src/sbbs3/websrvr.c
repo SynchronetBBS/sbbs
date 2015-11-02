@@ -3720,19 +3720,19 @@ static struct fastcgi_body * fastcgi_read_body(SOCKET sock)
 	struct fastcgi_body *body;
 
 	if (recv(sock, &header.len
-			,sizeof(header) - offsetof(struct fastcgi_header, len), 0)
+			,sizeof(header) - offsetof(struct fastcgi_header, len), MSG_WAITALL)
 				!= sizeof(header) - offsetof(struct fastcgi_header, len)) {
 		lprintf(LOG_ERR, "Error reading FastCGI message header");
 		return NULL;
 	}
 	body = (struct fastcgi_body *)malloc(offsetof(struct fastcgi_body, data) + htons(header.len));
 	body->len = htons(header.len);
-	if (recv(sock, body->data, body->len, 0) != body->len) {
+	if (recv(sock, body->data, body->len, MSG_WAITALL) != body->len) {
 		free(body);
 		lprintf(LOG_ERR, "Error reading FastCGI message");
 		return NULL;
 	}
-	if (recv(sock, padding, header.padlen, 0) != header.padlen) {
+	if (recv(sock, padding, header.padlen, MSG_WAITALL) != header.padlen) {
 		free(body);
 		lprintf(LOG_ERR, "Error reading FastCGI padding");
 		return NULL;
@@ -3758,7 +3758,7 @@ static int fastcgi_read_wait_timeout(void *arg)
 
 	if (socket_check(cd->sock, &rd, NULL, startup->max_cgi_inactivity*1000)) {
 		if (rd) {
-			if (recv(cd->sock, (void *)&cd->header, offsetof(struct fastcgi_header, len), 0) != offsetof(struct fastcgi_header, len)) {
+			if (recv(cd->sock, (void *)&cd->header, offsetof(struct fastcgi_header, len), MSG_WAITALL) != offsetof(struct fastcgi_header, len)) {
 				lprintf(LOG_ERR, "FastCGI failed to read header");
 				return ret;
 			}
