@@ -45,6 +45,10 @@
  *      This would allow people to run apache and Synchronet as the same site.
  * 
  * Add support for multipart/form-data
+ *
+ * Add support for UNIX-domain sockets for FastCGI
+ *
+ * Improved Win32 support for POST data... currently will read past Content-Length
  * 
  */
 
@@ -3224,6 +3228,7 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 	}
 	session->req.path_info_index=iniReadBool(file, section, "PathInfoIndex", FALSE);
 	if(iniReadString(file, section, "FastCGISocket", "", str)==str) {
+		FREE_AND_NULL(session->req.fastcgi_socket);
 		session->req.fastcgi_socket=strdup(str);
 		*recheck_dynamic=TRUE;
 	}
@@ -3247,6 +3252,7 @@ static BOOL check_request(http_session_t * session)
 	BOOL	recheck_dynamic=FALSE;
 	char	*spath, *sp, *nsp, *pspec;
 	size_t	len;
+	BOOL	old_path_info_index;
 
 	if(session->req.finished)
 		return(FALSE);
@@ -3301,6 +3307,7 @@ static BOOL check_request(http_session_t * session)
 			last_slash++;
 		strcpy(filename,last_slash);
 	}
+
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
 		session->req.keep_alive=FALSE;
 		send_error(session,__LINE__,"400 Bad Request");
@@ -3318,6 +3325,7 @@ static BOOL check_request(http_session_t * session)
 	p=last_slash;
 
 	while((last_slash=find_first_slash(p+1))!=NULL) {
+		old_path_info_index = session->req.path_info_index;
 		p=last_slash;
 		/* Terminate the path after the slash */
 		*(last_slash+1)=0;
@@ -3356,6 +3364,13 @@ static BOOL check_request(http_session_t * session)
 				specs=iniReadSectionList(file,NULL);
 				/* Read in globals */
 				read_webctrl_section(file, NULL, session, &recheck_dynamic);
+				/* Now, PathInfoIndex may have been set, so we need to re-expand the index so it will match here. */
+				if (old_path_info_index != session->req.path_info_index) {
+					if(check_extra_path(session)) {
+						// Now that we may have gotten a new filename, we need to use that to compare with.
+						strcpy(filename, getfname(session->req.physical_path));
+					}
+				}
 				/* Read in per-filespec */
 				while((spec=strListPop(&specs))!=NULL) {
 					len=strlen(spec);
@@ -4350,7 +4365,7 @@ static BOOL exec_fastcgi(http_session_t *session)
 		return FALSE;
 	}
 
-	// TODO handle stdin...
+	// TODO handle stdin better
 	memset(&cd, 0, sizeof(cd));
 	cd.sock = sock;
 	fastcgi_write_in(&cd, session->req.post_data, session->req.post_len);
