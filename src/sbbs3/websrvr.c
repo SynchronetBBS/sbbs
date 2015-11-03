@@ -3213,9 +3213,10 @@ static BOOL check_extra_path(http_session_t * session)
 	return(FALSE);
 }
 
-static BOOL exec_js_rewrite(http_session_t* session, char *name, char* script)  {
+static BOOL exec_js_webctrl(http_session_t* session, char *name, char* script, char *curdir, BOOL rewrite)  {
 	jsval		rval;
 	jsval		val;
+	JSString*	js_str;
 	BOOL		retval=TRUE;
 	char		redir_req[MAX_REQUEST_LINE+1];
 
@@ -3228,13 +3229,16 @@ static BOOL exec_js_rewrite(http_session_t* session, char *name, char* script)  
 	js_add_request_prop(session,"real_path",session->req.physical_path);
 	js_add_request_prop(session,"virtual_path",session->req.virtual_path);
 	js_add_request_prop(session,"ars",session->req.ars);
-	js_add_request_prop_writeable(session,"request_string",session->req.request_line);
+	if (rewrite)
+		js_add_request_prop_writeable(session,"request_string",session->req.request_line);
+	else
+		js_add_request_prop(session,"request_string",session->req.request_line);
 	js_add_request_prop(session,"host",session->req.host);
 	js_add_request_prop(session,"vhost",session->req.vhost);
 	js_add_request_prop(session,"http_ver",http_vers[session->http_ver]);
 	js_add_request_prop(session,"remote_ip",session->host_ip);
 	js_add_request_prop(session,"remote_host",session->host_name);
-	if(session->req.query_str[0])  {
+	if(session->req.query_str[0]) {
 		js_add_request_prop(session,"query_string",session->req.query_str);
 		js_parse_query(session,session->req.query_str);
 	}
@@ -3242,6 +3246,15 @@ static BOOL exec_js_rewrite(http_session_t* session, char *name, char* script)  
 		if(session->req.post_len <= MAX_POST_LEN) {
 			js_add_request_prop(session,"post_data",session->req.post_data);
 			js_parse_query(session,session->req.post_data);
+		}
+	}
+	JS_GetProperty(session->js_cx,session->js_glob,"js",&val);
+	if (JSVAL_IS_OBJECT(val)) {
+		if((js_str=JS_NewStringCopyZ(session->js_cx, curdir))!=NULL) {
+			JS_DefineProperty(session->js_cx, JSVAL_TO_OBJECT(val), "startup_dir", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE);
+			JS_DefineProperty(session->js_cx, JSVAL_TO_OBJECT(val), "exec_dir", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE);
 		}
 	}
 	parse_js_headers(session);
@@ -3264,7 +3277,7 @@ static BOOL exec_js_rewrite(http_session_t* session, char *name, char* script)  
 		JS_ReportPendingException(session->js_cx);
 		js_EvalOnExit(session->js_cx, session->js_glob, &session->js_callback);
 		JS_ReportPendingException(session->js_cx);
-		if (JSVAL_IS_BOOLEAN(rval) && JSVAL_TO_BOOLEAN(rval)) {
+		if (rewrite && JSVAL_IS_BOOLEAN(rval) && JSVAL_TO_BOOLEAN(rval)) {
 			session->req.send_location = MOVED_STAT;
 			JS_GetProperty(session->js_cx,session->js_request,"request_string",&val);
 			JSVALUE_TO_STRBUF(session->js_cx, val, redir_req, sizeof(redir_req), NULL);
@@ -3279,7 +3292,7 @@ static BOOL exec_js_rewrite(http_session_t* session, char *name, char* script)  
 	return(retval);
 }
 
-static void read_webctrl_section(FILE *file, char *section, http_session_t *session, BOOL *recheck_dynamic)
+static void read_webctrl_section(FILE *file, char *section, http_session_t *session, char *curdir, BOOL *recheck_dynamic)
 {
 	int i;
 	char str[MAX_PATH+1];
@@ -3321,10 +3334,13 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 		session->req.fastcgi_socket=strdup(str);
 		*recheck_dynamic=TRUE;
 	}
+	if(iniReadString(file, section, "JSPreExec", "", str)==str) {
+		exec_js_webctrl(session, "JSPreExec", str, curdir, TRUE);
+	}
 	values = iniReadNamedStringList(file, section);
 	for (i=0; values && values[i]; i++) {
 		if (strnicmp(values[i]->name, "Rewrite", 7)==0)
-			exec_js_rewrite(session, values[i]->name, values[i]->value);
+			exec_js_webctrl(session, values[i]->name, values[i]->value, curdir, TRUE);
 	}
 	iniFreeNamedStringList(values);
 }
@@ -3458,7 +3474,7 @@ static BOOL check_request(http_session_t * session)
 				/* FREE()d in this block */
 				specs=iniReadSectionList(file,NULL);
 				/* Read in globals */
-				read_webctrl_section(file, NULL, session, &recheck_dynamic);
+				read_webctrl_section(file, NULL, session, curdir, &recheck_dynamic);
 				/* Now, PathInfoIndex may have been set, so we need to re-expand the index so it will match here. */
 				if (old_path_info_index != session->req.path_info_index) {
 					if(check_extra_path(session)) {
@@ -3478,7 +3494,7 @@ static BOOL check_request(http_session_t * session)
 							*nsp=0;
 							nsp++;
 							if(wildmatch(sp, pspec, TRUE)) {
-								read_webctrl_section(file, spec, session, &recheck_dynamic);
+								read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
 							}
 							sp=nsp;
 						}
@@ -3486,7 +3502,7 @@ static BOOL check_request(http_session_t * session)
 						free(pspec);
 					}
 					else if(wildmatch(filename,spec,TRUE)) {
-						read_webctrl_section(file, spec, session, &recheck_dynamic);
+						read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
 					}
 					free(spec);
 				}
