@@ -3051,6 +3051,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 	}
 	else {
 		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",session->socket,request_line);
+		session->req.extra_path_info[0]=0;
 		SAFECOPY(req_line,request_line);
 		is_redir=1;
 	}
@@ -3328,7 +3329,8 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 		/* FREE()d in close_request() */
 		session->req.auth_list=strdup(str);
 	}
-	session->req.path_info_index=iniReadBool(file, section, "PathInfoIndex", FALSE);
+	if(session->req.path_info_index=iniReadBool(file, section, "PathInfoIndex", FALSE))
+		check_extra_path(session);
 	if(iniReadString(file, section, "FastCGISocket", "", str)==str) {
 		FREE_AND_NULL(session->req.fastcgi_socket);
 		session->req.fastcgi_socket=strdup(str);
@@ -3477,10 +3479,8 @@ static BOOL check_request(http_session_t * session)
 				read_webctrl_section(file, NULL, session, curdir, &recheck_dynamic);
 				/* Now, PathInfoIndex may have been set, so we need to re-expand the index so it will match here. */
 				if (old_path_info_index != session->req.path_info_index) {
-					if(check_extra_path(session)) {
-						// Now that we may have gotten a new filename, we need to use that to compare with.
-						strcpy(filename, getfname(session->req.physical_path));
-					}
+					// Now that we may have gotten a new filename, we need to use that to compare with.
+					strcpy(filename, getfname(session->req.physical_path));
 				}
 				/* Read in per-filespec */
 				while((spec=strListPop(&specs))!=NULL) {
