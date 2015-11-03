@@ -262,6 +262,7 @@ typedef struct  {
 	time_t			logon_time;
 	char			username[LEN_NAME+1];
 	int				last_js_user_num;
+	char			redir_req[MAX_REQUEST_LINE+1];
 
 	/* JavaScript parameters */
 	JSRuntime*		js_runtime;
@@ -399,6 +400,7 @@ static char	*days[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 static char	*months[]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 
 static void respond(http_session_t * session);
+static BOOL js_setup_cx(http_session_t* session);
 static BOOL js_setup(http_session_t* session);
 static char *find_last_slash(char *str);
 static BOOL check_extra_path(http_session_t * session);
@@ -2258,6 +2260,20 @@ static void js_add_cookieval(http_session_t * session, char *key, char *value)
 	JS_SetElement(session->js_cx, keyarray, alen, &val);
 }
 
+static void js_add_request_prop_writeable(http_session_t * session, char *key, char *value)
+{
+	JSString*	js_str;
+
+	if(session->js_cx==NULL || session->js_request==NULL)
+		return;
+	if(key==NULL || value==NULL)
+		return;
+	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
+		return;
+	JS_DefineProperty(session->js_cx, session->js_request, key, STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE);
+}
+
 static void js_add_request_prop(http_session_t * session, char *key, char *value)
 {
 	JSString*	js_str;
@@ -3197,9 +3213,80 @@ static BOOL check_extra_path(http_session_t * session)
 	return(FALSE);
 }
 
+static BOOL exec_js_rewrite(http_session_t* session, char* script)  {
+	jsval		rval;
+	jsval		val;
+	BOOL		retval=TRUE;
+	char		redir_req[MAX_REQUEST_LINE+1];
+
+	if(!js_setup_cx(session)) {
+		lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript support for rewrite", session->socket);
+		return FALSE;
+	}
+
+	JS_BEGINREQUEST(session->js_cx);
+	js_add_request_prop(session,"real_path",session->req.physical_path);
+	js_add_request_prop(session,"virtual_path",session->req.virtual_path);
+	js_add_request_prop(session,"ars",session->req.ars);
+	js_add_request_prop_writeable(session,"request_string",session->req.request_line);
+	js_add_request_prop(session,"host",session->req.host);
+	js_add_request_prop(session,"vhost",session->req.vhost);
+	js_add_request_prop(session,"http_ver",http_vers[session->http_ver]);
+	js_add_request_prop(session,"remote_ip",session->host_ip);
+	js_add_request_prop(session,"remote_host",session->host_name);
+	if(session->req.query_str[0])  {
+		js_add_request_prop(session,"query_string",session->req.query_str);
+		js_parse_query(session,session->req.query_str);
+	}
+	if(session->req.post_data && session->req.post_data[0]) {
+		if(session->req.post_len <= MAX_POST_LEN) {
+			js_add_request_prop(session,"post_data",session->req.post_data);
+			js_parse_query(session,session->req.post_data);
+		}
+	}
+	parse_js_headers(session);
+
+	do {
+		/* RUN SCRIPT */
+		JS_ClearPendingException(session->js_cx);
+
+		session->js_callback.counter=0;
+
+		lprintf(LOG_DEBUG,"%04d JavaScript: Compiling rewrite", session->socket);
+		if(!JS_EvaluateScript(session->js_cx, session->js_glob, script, strlen(script), "Redirection", 1, &rval)) {
+			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile rewrite (%s)"
+				,session->socket,script);
+			JS_ReportPendingException(session->js_cx);
+			JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
+			JS_ENDREQUEST(session->js_cx);
+			return(FALSE);
+		}
+		JS_ReportPendingException(session->js_cx);
+		js_EvalOnExit(session->js_cx, session->js_glob, &session->js_callback);
+		JS_ReportPendingException(session->js_cx);
+		if (JSVAL_IS_BOOLEAN(rval) && JSVAL_TO_BOOLEAN(rval)) {
+			session->req.send_location = MOVED_STAT;
+			JS_GetProperty(session->js_cx,session->js_request,"request_string",&val);
+			JSVALUE_TO_STRBUF(session->js_cx, val, redir_req, sizeof(redir_req), NULL);
+			safe_snprintf(session->redir_req,sizeof(session->redir_req),"%s %s%s%s",methods[session->req.method]
+				,redir_req,session->http_ver<HTTP_1_0?"":" ",http_vers[session->http_ver]);
+			lprintf(LOG_DEBUG, "%04d Rewrite returned TRUE (%s)", session->socket, session->redir_req);
+		}
+		else
+			lprintf(LOG_DEBUG, "%04d Rewrite returned FALSE", session->socket);
+		JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
+	} while(0);
+
+	JS_ENDREQUEST(session->js_cx);
+
+	return(retval);
+}
+
 static void read_webctrl_section(FILE *file, char *section, http_session_t *session, BOOL *recheck_dynamic)
 {
-	char	str[MAX_PATH+1];
+	int i;
+	char str[MAX_PATH+1];
+	named_string_t **values;
 
 	if(iniReadString(file, section, "AccessRequirements", session->req.ars,str)==str)
 		SAFECOPY(session->req.ars,str);
@@ -3237,6 +3324,12 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 		session->req.fastcgi_socket=strdup(str);
 		*recheck_dynamic=TRUE;
 	}
+	values = iniReadNamedStringList(file, section);
+	for (i=0; values && values[i]; i++) {
+		if (strnicmp(values[i]->name, "Rewrite", 7)==0)
+			exec_js_rewrite(session, values[i]->value);
+	}
+	iniFreeNamedStringList(values);
 }
 
 static BOOL check_request(http_session_t * session)
@@ -5440,7 +5533,7 @@ js_initcx(http_session_t *session)
 	return(js_cx);
 }
 
-static BOOL js_setup(http_session_t* session)
+static BOOL js_setup_cx(http_session_t* session)
 {
 	JSObject*	argv;
 
@@ -5473,17 +5566,25 @@ static BOOL js_setup(http_session_t* session)
 		JS_DefineProperty(session->js_cx, session->js_glob, "web_error_dir",
 			STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx, session->req.error_dir?session->req.error_dir:error_dir))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-
+		JS_ENDREQUEST(session->js_cx);
 	}
 	else
 		JS_BEGINREQUEST(session->js_cx);
-
+	
 	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing HttpRequest object",session->socket);
 	if(js_CreateHttpRequestObject(session->js_cx, session->js_glob, session)==NULL) {
 		lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript HttpRequest object",session->socket);
 		JS_ENDREQUEST(session->js_cx);
 		return(FALSE);
 	}
+
+	return TRUE;
+}
+
+static BOOL js_setup(http_session_t* session)
+{
+	if(!js_setup_cx(session))
+		return FALSE;
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing HttpReply object",session->socket);
 	if(js_CreateHttpReplyObject(session->js_cx, session->js_glob, session)==NULL) {
@@ -5493,7 +5594,6 @@ static BOOL js_setup(http_session_t* session)
 	}
 
 	JS_SetContextPrivate(session->js_cx, session);
-	JS_ENDREQUEST(session->js_cx);
 
 	return(TRUE);
 }
@@ -6005,7 +6105,6 @@ static int close_session_no_rb(http_session_t *session)
 void http_session_thread(void* arg)
 {
 	SOCKET			socket;
-	char			redir_req[MAX_REQUEST_LINE+1];
 	char			*redirp;
 	http_session_t	session;
 	int				loop_count;
@@ -6209,6 +6308,8 @@ void http_session_thread(void* arg)
 			}
 
 			if(get_req(&session,redirp)) {
+				if (redirp)
+					redirp[0]=0;
 				if(init_error) {
 					send_error(&session, __LINE__, error_500);
 				}
@@ -6220,10 +6321,12 @@ void http_session_thread(void* arg)
 								respond(&session);
 						}
 						else {
-							safe_snprintf(redir_req,sizeof(redir_req),"%s %s%s%s",methods[session.req.method]
-								,session.req.virtual_path,session.http_ver<HTTP_1_0?"":" ",http_vers[session.http_ver]);
-							lprintf(LOG_DEBUG,"%04d Internal Redirect to: %s",socket,redir_req);
-							redirp=redir_req;
+							if (!session.redir_req[0]) {
+								safe_snprintf(session.redir_req,sizeof(session.redir_req),"%s %s%s%s",methods[session.req.method]
+									,session.req.virtual_path,session.http_ver<HTTP_1_0?"":" ",http_vers[session.http_ver]);
+							}
+							lprintf(LOG_DEBUG,"%04d Internal Redirect to: %s",socket,session.redir_req);
+							redirp=session.redir_req;
 						}
 					}
 				}
