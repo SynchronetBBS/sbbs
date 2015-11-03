@@ -3329,7 +3329,7 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 		/* FREE()d in close_request() */
 		session->req.auth_list=strdup(str);
 	}
-	if(session->req.path_info_index=iniReadBool(file, section, "PathInfoIndex", FALSE))
+	if((session->req.path_info_index=iniReadBool(file, section, "PathInfoIndex", FALSE)))
 		check_extra_path(session);
 	if(iniReadString(file, section, "FastCGISocket", "", str)==str) {
 		FREE_AND_NULL(session->req.fastcgi_socket);
@@ -3896,7 +3896,6 @@ static int fastcgi_read_wait_timeout(void *arg)
 				lprintf(LOG_ERR, "Unknown FastCGI session ID %d", htons(cd->header.id));
 				return ret;
 			}
-			lprintf(LOG_DEBUG, "Got FastCGI type %d", cd->header.type);
 			switch(cd->header.type) {
 				case FCGI_STDOUT:
 					ret |= CGI_OUTPUT_READY;
@@ -3943,21 +3942,17 @@ static int fastcgi_read(void *arg, char *buf, size_t sz)
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
 
 	if (cd->body == NULL) {
-		lprintf(LOG_DEBUG, "Reading new FastCGI body");
 		cd->body = fastcgi_read_body(cd->sock);
 		if (cd->body == NULL)
 			return -1;
-		lprintf(LOG_DEBUG, "FastCGI got %u bytes", cd->body->len);
 	}
 
 	if (sz > (cd->body->len - cd->used))
 		sz = cd->body->len - cd->used;
 
 	memcpy(buf, cd->body->data + cd->used, sz);
-	lprintf(LOG_DEBUG, "FastCGI read consumed %u bytes (%u->%u of %u)", sz, cd->used, cd->used + sz, cd->body->len);
 	cd->used += sz;
 	if (cd->used >= cd->body->len) {
-		lprintf(LOG_DEBUG, "FastCGI free()ing old body");
 		FREE_AND_NULL(cd->body);
 		cd->header.type = 0;
 		cd->used = 0;
@@ -3978,11 +3973,9 @@ static int fastcgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, si
 	outpos = 0;
 
 	if (cd->body == NULL) {
-		lprintf(LOG_DEBUG, "Reading new FastCGI body");
 		cd->body = fastcgi_read_body(cd->sock);
 		if (cd->body == NULL)
 			return -1;
-		lprintf(LOG_DEBUG, "FastCGI got %u bytes", cd->body->len);
 	}
 
 	for (outpos = 0, inpos = cd->used; inpos < cd->body->len && outpos < bufsz; inpos++) {
@@ -3999,11 +3992,9 @@ static int fastcgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, si
 		outpos--;
 	buf[outpos] = 0;
 
-	lprintf(LOG_DEBUG, "FastCGI readln consumed %u bytes (%u->%u of %u) \"%.*s\"", inpos - cd->used, cd->used, inpos, cd->body->len, outpos, buf);
 	cd->used = inpos;
 
 	if (cd->used >= cd->body->len) {
-		lprintf(LOG_DEBUG, "FastCGI free()ing old body");
 		FREE_AND_NULL(cd->body);
 		cd->header.type = 0;
 		cd->used = 0;
