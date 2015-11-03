@@ -3213,14 +3213,14 @@ static BOOL check_extra_path(http_session_t * session)
 	return(FALSE);
 }
 
-static BOOL exec_js_rewrite(http_session_t* session, char* script)  {
+static BOOL exec_js_rewrite(http_session_t* session, char *name, char* script)  {
 	jsval		rval;
 	jsval		val;
 	BOOL		retval=TRUE;
 	char		redir_req[MAX_REQUEST_LINE+1];
 
 	if(!js_setup_cx(session)) {
-		lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript support for rewrite", session->socket);
+		lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript support for %s", session->socket, name);
 		return FALSE;
 	}
 
@@ -3252,10 +3252,10 @@ static BOOL exec_js_rewrite(http_session_t* session, char* script)  {
 
 		session->js_callback.counter=0;
 
-		lprintf(LOG_DEBUG,"%04d JavaScript: Compiling rewrite", session->socket);
-		if(!JS_EvaluateScript(session->js_cx, session->js_glob, script, strlen(script), "Redirection", 1, &rval)) {
-			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile rewrite (%s)"
-				,session->socket,script);
+		lprintf(LOG_DEBUG,"%04d JavaScript: Compiling %s", session->socket, name);
+		if(!JS_EvaluateScript(session->js_cx, session->js_glob, script, strlen(script), name, 1, &rval)) {
+			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile rewrite %s:%s"
+				,session->socket,name,script);
 			JS_ReportPendingException(session->js_cx);
 			JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
 			JS_ENDREQUEST(session->js_cx);
@@ -3270,10 +3270,7 @@ static BOOL exec_js_rewrite(http_session_t* session, char* script)  {
 			JSVALUE_TO_STRBUF(session->js_cx, val, redir_req, sizeof(redir_req), NULL);
 			safe_snprintf(session->redir_req,sizeof(session->redir_req),"%s %s%s%s",methods[session->req.method]
 				,redir_req,session->http_ver<HTTP_1_0?"":" ",http_vers[session->http_ver]);
-			lprintf(LOG_DEBUG, "%04d Rewrite returned TRUE (%s)", session->socket, session->redir_req);
 		}
-		else
-			lprintf(LOG_DEBUG, "%04d Rewrite returned FALSE", session->socket);
 		JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
 	} while(0);
 
@@ -3327,7 +3324,7 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 	values = iniReadNamedStringList(file, section);
 	for (i=0; values && values[i]; i++) {
 		if (strnicmp(values[i]->name, "Rewrite", 7)==0)
-			exec_js_rewrite(session, values[i]->value);
+			exec_js_rewrite(session, values[i]->name, values[i]->value);
 	}
 	iniFreeNamedStringList(values);
 }
@@ -5578,6 +5575,8 @@ static BOOL js_setup_cx(http_session_t* session)
 		return(FALSE);
 	}
 
+	JS_SetContextPrivate(session->js_cx, session);
+
 	return TRUE;
 }
 
@@ -5592,8 +5591,6 @@ static BOOL js_setup(http_session_t* session)
 		JS_ENDREQUEST(session->js_cx);
 		return(FALSE);
 	}
-
-	JS_SetContextPrivate(session->js_cx, session);
 
 	return(TRUE);
 }
