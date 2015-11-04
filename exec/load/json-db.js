@@ -44,9 +44,6 @@ function JSONdb (fileName, scope) {
     else 
 		this.file=undefined;
 	
-	/* scope property used in responses */
-	var scope=scope;
-	
     /* master database object */
 	this.masterData={
 		/* top-level data object */
