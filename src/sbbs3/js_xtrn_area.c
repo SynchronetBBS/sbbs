@@ -183,10 +183,14 @@ BOOL DLLCALL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* x
 }
 
 
-JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-										  ,user_t* user, client_t* client)
+struct js_xtrn_area_priv {
+	scfg_t		*cfg;
+	user_t		*user;
+	client_t	*client;
+};
+
+JSBool DLLCALL js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 {
-	JSObject*	areaobj;
 	JSObject*	allsec;
 	JSObject*	allprog;
 	JSObject*	secobj;
@@ -202,320 +206,393 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	jsuint		sec_index;
 	jsuint		prog_index;
 	uint		l,d;
+	char*		name=NULL;
+	struct js_xtrn_area_priv *p;
 
-	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,parent,"xtrn_area",&val) && val!=JSVAL_VOID)
-		areaobj = JSVAL_TO_OBJECT(val);
-	else
-		areaobj = JS_DefineObject(cx, parent, "xtrn_area", NULL
-									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+	if((p=(struct js_xtrn_area_priv*)JS_GetPrivate(cx,areaobj))==NULL)
+		return JS_FALSE;
 
-	if(areaobj==NULL)
-		return(NULL);
+	if(id != JSID_VOID && id != JSID_EMPTY) {
+		jsval idval;
+		
+		JS_IdToValue(cx, id, &idval);
+		if(JSVAL_IS_STRING(idval))
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+	}
 
+	if (name == NULL || strcmp(name, "sec")==0 || strcmp(name, "prog")==0 || strcmp(name, "sec_list")==0 || strcmp(name, "event")==0  || strcmp(name, "editor")==0) {
+		FREE_AND_NULL(name);
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,areaobj,"External Program Areas",310);
+		js_DescribeSyncObject(cx,areaobj,"External Program Areas",310);
 #endif
 
-	/* xtrn_area.sec[] */
-	if((allsec=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
-		return(NULL);
+		/* xtrn_area.sec[] */
+		if((allsec=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
+			return JS_FALSE;
 
-	val=OBJECT_TO_JSVAL(allsec);
-	if(!JS_SetProperty(cx, areaobj, "sec", &val))
-		return(NULL);
+		val=OBJECT_TO_JSVAL(allsec);
+		if(!JS_SetProperty(cx, areaobj, "sec", &val))
+			return JS_FALSE;
 
-	/* xtrn_area.prog[] */
-	if((allprog=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
-		return(NULL);
+		/* xtrn_area.prog[] */
+		if((allprog=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
+			return JS_FALSE;
 
-	val=OBJECT_TO_JSVAL(allprog);
-	if(!JS_SetProperty(cx, areaobj, "prog", &val))
-		return(NULL);
+		val=OBJECT_TO_JSVAL(allprog);
+		if(!JS_SetProperty(cx, areaobj, "prog", &val))
+			return JS_FALSE;
 
-	/* xtrn_area.sec_list[] */
-	if((sec_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
-		return(NULL);
+		/* xtrn_area.sec_list[] */
+		if((sec_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+			return JS_FALSE;
 
-	val=OBJECT_TO_JSVAL(sec_list);
-	if(!JS_SetProperty(cx, areaobj, "sec_list", &val)) 
-		return(NULL);
+		val=OBJECT_TO_JSVAL(sec_list);
+		if(!JS_SetProperty(cx, areaobj, "sec_list", &val)) 
+			return JS_FALSE;
 
-	for(l=0;l<cfg->total_xtrnsecs;l++) {
+		for(l=0;l<p->cfg->total_xtrnsecs;l++) {
 
-		if((secobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
-			return(NULL);
+			if((secobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+				return JS_FALSE;
 
-		sec_index=-1;
-		if(user==NULL || chk_ar(cfg,cfg->xtrnsec[l]->ar,user,client)) {
+			sec_index=-1;
+			if(p->user==NULL || chk_ar(p->cfg,p->cfg->xtrnsec[l]->ar,p->user,p->client)) {
 
-			if(!JS_GetArrayLength(cx, sec_list, &sec_index))
-				return(NULL);
+				if(!JS_GetArrayLength(cx, sec_list, &sec_index))
+					return JS_FALSE;
 
-			val=OBJECT_TO_JSVAL(secobj);
-			if(!JS_SetElement(cx, sec_list, sec_index, &val))
-				return(NULL);
-		}
-
-		/* Add as property (associative array element) */
-		if(!JS_DefineProperty(cx, allsec, cfg->xtrnsec[l]->code, val
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-			return(NULL);
-
-		val=INT_TO_JSVAL(sec_index);
-		if(!JS_SetProperty(cx, secobj, "index", &val))
-			return(NULL);
-
-		val=INT_TO_JSVAL(l);
-		if(!JS_SetProperty(cx, secobj, "number", &val))
-			return(NULL);
-
-		if((js_str=JS_NewStringCopyZ(cx, cfg->xtrnsec[l]->code))==NULL)
-			return(NULL);
-		val=STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(cx, secobj, "code", &val))
-			return(NULL);
-
-		if((js_str=JS_NewStringCopyZ(cx, cfg->xtrnsec[l]->name))==NULL)
-			return(NULL);
-		val=STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(cx, secobj, "name", &val))
-			return(NULL);
-
-		if((js_str=JS_NewStringCopyZ(cx, cfg->xtrnsec[l]->arstr))==NULL)
-			return(NULL);
-		val=STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(cx, secobj, "ars", &val))
-			return(NULL);
-
-		if(user==NULL || chk_ar(cfg,cfg->xtrnsec[l]->ar,user,client))
-			val=JSVAL_TRUE;
-		else
-			val=JSVAL_FALSE;
-		if(!JS_SetProperty(cx, secobj, "can_access", &val))
-			return(NULL);
-
-		/* prog_list[] */
-		if((prog_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
-			return(NULL);
-
-		val=OBJECT_TO_JSVAL(prog_list);
-		if(!JS_SetProperty(cx, secobj, "prog_list", &val)) 
-			return(NULL);
-
-#ifdef BUILD_JSDOCS
-		js_DescribeSyncObject(cx,secobj,"Online Program (door) Sections (current user has access to)",310);
-#endif
-
-		for(d=0;d<cfg->total_xtrns;d++) {
-			if(cfg->xtrn[d]->sec!=l)
-				continue;
-
-			if((progobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
-				return(NULL);
-
-			prog_index=-1;
-			if((user==NULL || chk_ar(cfg,cfg->xtrn[d]->ar,user,client))
-				&& !(cfg->xtrn[d]->event && cfg->xtrn[d]->misc&EVENTONLY)) {
-
-				if(!JS_GetArrayLength(cx, prog_list, &prog_index))
-					return(NULL);							
-
-				val=OBJECT_TO_JSVAL(progobj);
-				if(!JS_SetElement(cx, prog_list, prog_index, &val))
-					return(NULL);
+				val=OBJECT_TO_JSVAL(secobj);
+				if(!JS_SetElement(cx, sec_list, sec_index, &val))
+					return JS_FALSE;
 			}
 
 			/* Add as property (associative array element) */
-			if(!JS_DefineProperty(cx, allprog, cfg->xtrn[d]->code, val
+			if(!JS_DefineProperty(cx, allsec, p->cfg->xtrnsec[l]->code, val
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-				return(NULL);
-
-			val=INT_TO_JSVAL(prog_index);
-			if(!JS_SetProperty(cx, progobj, "index", &val))
-				return(NULL);
-
-			val=INT_TO_JSVAL(d);
-			if(!JS_SetProperty(cx, progobj, "number", &val))
-				return(NULL);
+				return JS_FALSE;
 
 			val=INT_TO_JSVAL(sec_index);
-			if(!JS_SetProperty(cx, progobj, "sec_index", &val))
-				return(NULL);
+			if(!JS_SetProperty(cx, secobj, "index", &val))
+				return JS_FALSE;
 
 			val=INT_TO_JSVAL(l);
-			if(!JS_SetProperty(cx, progobj, "sec_number", &val))
-				return(NULL);
+			if(!JS_SetProperty(cx, secobj, "number", &val))
+				return JS_FALSE;
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,cfg->xtrnsec[l]->code));
-			if(!JS_SetProperty(cx, progobj, "sec_code", &val))
-				return(NULL);
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->code))==NULL)
+				return JS_FALSE;
+			val=STRING_TO_JSVAL(js_str);
+			if(!JS_SetProperty(cx, secobj, "code", &val))
+				return JS_FALSE;
 
-			if(!js_CreateXtrnProgProperties(cx, progobj, cfg->xtrn[d]))
-				return(NULL);
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->name))==NULL)
+				return JS_FALSE;
+			val=STRING_TO_JSVAL(js_str);
+			if(!JS_SetProperty(cx, secobj, "name", &val))
+				return JS_FALSE;
 
-			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->ar,user,client))
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->arstr))==NULL)
+				return JS_FALSE;
+			val=STRING_TO_JSVAL(js_str);
+			if(!JS_SetProperty(cx, secobj, "ars", &val))
+				return JS_FALSE;
+
+			if(p->user==NULL || chk_ar(p->cfg,p->cfg->xtrnsec[l]->ar,p->user,p->client))
 				val=JSVAL_TRUE;
 			else
 				val=JSVAL_FALSE;
-			if(!JS_SetProperty(cx, progobj, "can_access", &val))
-				return(NULL);
+			if(!JS_SetProperty(cx, secobj, "can_access", &val))
+				return JS_FALSE;
 
-			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->run_ar,user,client))
-				val=JSVAL_TRUE;
-			else
-				val=JSVAL_FALSE;
-			if(!JS_SetProperty(cx, progobj, "can_run", &val))
-				return(NULL);
+			/* prog_list[] */
+			if((prog_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+				return JS_FALSE;
+
+			val=OBJECT_TO_JSVAL(prog_list);
+			if(!JS_SetProperty(cx, secobj, "prog_list", &val)) 
+				return JS_FALSE;
 
 #ifdef BUILD_JSDOCS
-			js_DescribeSyncObject(cx,progobj,"Online External Programs (doors) (current user has access to)",310);
+			js_DescribeSyncObject(cx,secobj,"Online Program (door) Sections (current user has access to)",310);
+#endif
+
+			for(d=0;d<p->cfg->total_xtrns;d++) {
+				if(p->cfg->xtrn[d]->sec!=l)
+					continue;
+
+				if((progobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+					return JS_FALSE;
+
+				prog_index=-1;
+				if((p->user==NULL || chk_ar(p->cfg,p->cfg->xtrn[d]->ar,p->user,p->client))
+					&& !(p->cfg->xtrn[d]->event && p->cfg->xtrn[d]->misc&EVENTONLY)) {
+
+					if(!JS_GetArrayLength(cx, prog_list, &prog_index))
+						return JS_FALSE;
+
+					val=OBJECT_TO_JSVAL(progobj);
+					if(!JS_SetElement(cx, prog_list, prog_index, &val))
+						return JS_FALSE;
+				}
+
+				/* Add as property (associative array element) */
+				if(!JS_DefineProperty(cx, allprog, p->cfg->xtrn[d]->code, val
+					,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+					return JS_FALSE;
+
+				val=INT_TO_JSVAL(prog_index);
+				if(!JS_SetProperty(cx, progobj, "index", &val))
+					return JS_FALSE;
+
+				val=INT_TO_JSVAL(d);
+				if(!JS_SetProperty(cx, progobj, "number", &val))
+					return JS_FALSE;
+
+				val=INT_TO_JSVAL(sec_index);
+				if(!JS_SetProperty(cx, progobj, "sec_index", &val))
+					return JS_FALSE;
+
+				val=INT_TO_JSVAL(l);
+				if(!JS_SetProperty(cx, progobj, "sec_number", &val))
+					return JS_FALSE;
+
+				val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,p->cfg->xtrnsec[l]->code));
+				if(!JS_SetProperty(cx, progobj, "sec_code", &val))
+					return JS_FALSE;
+
+				if(!js_CreateXtrnProgProperties(cx, progobj, p->cfg->xtrn[d]))
+					return JS_FALSE;
+
+				if(p->user==NULL || chk_ar(p->cfg,p->cfg->xtrn[d]->ar,p->user,p->client))
+					val=JSVAL_TRUE;
+				else
+					val=JSVAL_FALSE;
+				if(!JS_SetProperty(cx, progobj, "can_access", &val))
+					return JS_FALSE;
+
+				if(p->user==NULL || chk_ar(p->cfg,p->cfg->xtrn[d]->run_ar,p->user,p->client))
+					val=JSVAL_TRUE;
+				else
+					val=JSVAL_FALSE;
+				if(!JS_SetProperty(cx, progobj, "can_run", &val))
+					return JS_FALSE;
+
+#ifdef BUILD_JSDOCS
+				js_DescribeSyncObject(cx,progobj,"Online External Programs (doors) (current user has access to)",310);
+#endif
+			}
+
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, secobj, "_property_desc_list", xtrn_sec_prop_desc, JSPROP_READONLY);
+#endif
+
+		}
+
+#ifdef BUILD_JSDOCS
+
+		js_DescribeSyncObject(cx,allsec,"Associative array of all external program sections (use internal code as index)",312);
+		JS_DefineProperty(cx,allsec,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+
+		js_DescribeSyncObject(cx,allprog,"Associative array of all external programs (use internal code as index)",311);
+		JS_DefineProperty(cx,allprog,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+#endif
+
+		/* Create event property */
+		if((event_array=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
+			return JS_FALSE;
+
+		val=OBJECT_TO_JSVAL(event_array);
+		if(!JS_SetProperty(cx, areaobj, "event", &val))
+			return JS_FALSE;
+
+		for(l=0;l<p->cfg->total_events;l++) {
+
+			if((eventobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, event_array, p->cfg->event[l]->code, OBJECT_TO_JSVAL(eventobj)
+				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+				return JS_FALSE;
+
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->event[l]->cmd))==NULL)
+				return JS_FALSE;
+			if(!JS_DefineProperty(cx, eventobj, "cmd", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->event[l]->dir))==NULL)
+				return JS_FALSE;
+			if(!JS_DefineProperty(cx, eventobj, "startup_dir", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, eventobj, "node_num", INT_TO_JSVAL(p->cfg->event[l]->node)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, eventobj, "time", INT_TO_JSVAL(p->cfg->event[l]->time)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, eventobj, "freq", INT_TO_JSVAL(p->cfg->event[l]->freq)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, eventobj, "days", INT_TO_JSVAL(p->cfg->event[l]->days)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, eventobj, "mdays", INT_TO_JSVAL(p->cfg->event[l]->mdays)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, eventobj, "months", INT_TO_JSVAL(p->cfg->event[l]->months)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, eventobj, "last_run", INT_TO_JSVAL(p->cfg->event[l]->last)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, eventobj, "settings", INT_TO_JSVAL(p->cfg->event[l]->misc)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, eventobj, "_property_desc_list", event_prop_desc, JSPROP_READONLY);
 #endif
 		}
 
 #ifdef BUILD_JSDOCS
-		js_CreateArrayOfStrings(cx, secobj, "_property_desc_list", xtrn_sec_prop_desc, JSPROP_READONLY);
+		js_DescribeSyncObject(cx,event_array,"Associative array of all timed events (use internal code as index)",311);
+		JS_DefineProperty(cx,event_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 
+		/* Create editor property */
+		if((xedit_array=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
+			return JS_FALSE;
+
+		val=OBJECT_TO_JSVAL(xedit_array);
+		if(!JS_SetProperty(cx, areaobj, "editor", &val))
+			return JS_FALSE;
+
+		for(l=0;l<p->cfg->total_xedits;l++) {
+
+			if(p->user!=NULL && !chk_ar(p->cfg,p->cfg->xedit[l]->ar,p->user,p->client))
+				continue;
+
+			if((xeditobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, xedit_array, p->cfg->xedit[l]->code, OBJECT_TO_JSVAL(xeditobj)
+				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+				return JS_FALSE;
+
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->xedit[l]->name))==NULL)
+				return JS_FALSE;
+			if(!JS_DefineProperty(cx, xeditobj, "name", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->xedit[l]->rcmd))==NULL)
+				return JS_FALSE;
+			if(!JS_DefineProperty(cx, xeditobj, "cmd", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->xedit[l]->arstr))==NULL)
+				return JS_FALSE;
+			if(!JS_DefineProperty(cx, xeditobj, "ars", STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, xeditobj, "settings", INT_TO_JSVAL(p->cfg->xedit[l]->misc)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+			if(!JS_DefineProperty(cx, xeditobj, "type", INT_TO_JSVAL(p->cfg->xedit[l]->type)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+				return JS_FALSE;
+
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, xeditobj, "_property_desc_list", xedit_prop_desc, JSPROP_READONLY);
+#endif
+		}
+
+#ifdef BUILD_JSDOCS
+		js_DescribeSyncObject(cx,xedit_array,"Associative array of all external editors (use internal code as index)",311);
+		JS_DefineProperty(cx,xedit_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+#endif
+	}
+	if(name)
+		free(name);
+
+	return JS_TRUE;
+}
+
+static JSBool js_xtrn_area_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_xtrn_area_resolve(cx, obj, JSID_VOID));
+}
+
+static void 
+js_xtrn_area_finalize(JSContext *cx, JSObject *obj)
+{
+	struct js_xtrn_area_priv *p;
+
+	if((p=(struct js_xtrn_area_priv*)JS_GetPrivate(cx,obj))==NULL)
+		return;
+
+	free(p);
+	JS_SetPrivate(cx,obj,NULL);
+}
+
+
+static JSClass js_xtrn_area_class = {
+     "XtrnArea"				/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,JS_PropertyStub		/* getProperty	*/
+	,JS_StrictPropertyStub		/* setProperty	*/
+	,js_xtrn_area_enumerate	/* enumerate	*/
+	,js_xtrn_area_resolve	/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,js_xtrn_area_finalize	/* finalize		*/
+};
+
+JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+										  ,user_t* user, client_t* client)
+{
+	JSObject* obj;
+	struct js_xtrn_area_priv *p;
+
+	obj = JS_DefineObject(cx, parent, "xtrn_area", &js_xtrn_area_class, NULL
+		,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if(obj==NULL)
+		return(NULL);
+
+	p = (struct js_xtrn_area_priv *)malloc(sizeof(struct js_xtrn_area_priv));
+	if (p == NULL)
+		return NULL;
+
+	memset(p,0,sizeof(*p));
+	p->cfg = cfg;
+	p->user = user;
+	p->client = client;
+
+	if(!JS_SetPrivate(cx, obj, p)) {
+		free(p);
+		return(NULL);
 	}
 
 #ifdef BUILD_JSDOCS
-
-	js_DescribeSyncObject(cx,allsec,"Associative array of all external program sections (use internal code as index)",312);
-	JS_DefineProperty(cx,allsec,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
-
-	js_DescribeSyncObject(cx,allprog,"Associative array of all external programs (use internal code as index)",311);
-	JS_DefineProperty(cx,allprog,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+	// Ensure they're all created for JSDOCS
+	js_xtrn_area_enumerate(cx, obj);
 #endif
 
-	/* Create event property */
-	if((event_array=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
-		return(NULL);
-
-	val=OBJECT_TO_JSVAL(event_array);
-	if(!JS_SetProperty(cx, areaobj, "event", &val))
-		return(NULL);
-
-	for(l=0;l<cfg->total_events;l++) {
-
-		if((eventobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, event_array, cfg->event[l]->code, OBJECT_TO_JSVAL(eventobj)
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-			return(NULL);
-
-		if((js_str=JS_NewStringCopyZ(cx, cfg->event[l]->cmd))==NULL)
-			return(NULL);
-		if(!JS_DefineProperty(cx, eventobj, "cmd", STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if((js_str=JS_NewStringCopyZ(cx, cfg->event[l]->dir))==NULL)
-			return(NULL);
-		if(!JS_DefineProperty(cx, eventobj, "startup_dir", STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, eventobj, "node_num", INT_TO_JSVAL(cfg->event[l]->node)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, eventobj, "time", INT_TO_JSVAL(cfg->event[l]->time)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, eventobj, "freq", INT_TO_JSVAL(cfg->event[l]->freq)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, eventobj, "days", INT_TO_JSVAL(cfg->event[l]->days)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, eventobj, "mdays", INT_TO_JSVAL(cfg->event[l]->mdays)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, eventobj, "months", INT_TO_JSVAL(cfg->event[l]->months)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, eventobj, "last_run", INT_TO_JSVAL(cfg->event[l]->last)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, eventobj, "settings", INT_TO_JSVAL(cfg->event[l]->misc)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-#ifdef BUILD_JSDOCS
-		js_CreateArrayOfStrings(cx, eventobj, "_property_desc_list", event_prop_desc, JSPROP_READONLY);
-#endif
-	}
-
-#ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,event_array,"Associative array of all timed events (use internal code as index)",311);
-	JS_DefineProperty(cx,event_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
-#endif
-
-	/* Create editor property */
-	if((xedit_array=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
-		return(NULL);
-
-	val=OBJECT_TO_JSVAL(xedit_array);
-	if(!JS_SetProperty(cx, areaobj, "editor", &val))
-		return(NULL);
-
-	for(l=0;l<cfg->total_xedits;l++) {
-
-		if(user!=NULL && !chk_ar(cfg,cfg->xedit[l]->ar,user,client))
-			continue;
-
-		if((xeditobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, xedit_array, cfg->xedit[l]->code, OBJECT_TO_JSVAL(xeditobj)
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-			return(NULL);
-
-		if((js_str=JS_NewStringCopyZ(cx, cfg->xedit[l]->name))==NULL)
-			return(NULL);
-		if(!JS_DefineProperty(cx, xeditobj, "name", STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if((js_str=JS_NewStringCopyZ(cx, cfg->xedit[l]->rcmd))==NULL)
-			return(NULL);
-		if(!JS_DefineProperty(cx, xeditobj, "cmd", STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if((js_str=JS_NewStringCopyZ(cx, cfg->xedit[l]->arstr))==NULL)
-			return(NULL);
-		if(!JS_DefineProperty(cx, xeditobj, "ars", STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, xeditobj, "settings", INT_TO_JSVAL(cfg->xedit[l]->misc)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-		if(!JS_DefineProperty(cx, xeditobj, "type", INT_TO_JSVAL(cfg->xedit[l]->type)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-			return(NULL);
-
-#ifdef BUILD_JSDOCS
-		js_CreateArrayOfStrings(cx, xeditobj, "_property_desc_list", xedit_prop_desc, JSPROP_READONLY);
-#endif
-	}
-
-#ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,xedit_array,"Associative array of all external editors (use internal code as index)",311);
-	JS_DefineProperty(cx,xedit_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
-#endif
-
-	return(areaobj);
+	return(obj);
 }
 
 #endif	/* JAVSCRIPT */
