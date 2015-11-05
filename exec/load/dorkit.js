@@ -16,15 +16,15 @@ Attribute.prototype = {
 
 	get bg() {
 		return (this.value >> 4) & 0x07;
-	}
+	},
 	set bg(val) {
 		this.value &= 0x8f;
 		this.value |= ((val << 4) & 0x70);
-	}
+	},
 
 	get fg() {
 		return this.value & 0x0f;
-	}
+	},
 	set fg(val) {
 		this.value &= 0xf0;
 		this.value |= val & 0x0f;
@@ -62,7 +62,7 @@ var dk = {
 		 * returns false on error.
 		 * Not available without ANSI
 		 */
-		gotoxy:function(x,y)() {
+		gotoxy:function(x,y) {
 		},
 
 		/*
@@ -124,7 +124,7 @@ var dk = {
 		node:undefined,
 		dte:undefined,
 		error_correcting:true,
-		time:undefined,
+		time:undefined
 	},
 	user:{
 		full_name:undefined,
@@ -161,17 +161,17 @@ var dk = {
 		downloaded_today:undefined,
 		comment:undefined,
 		doors_opened:undefined,
-		messages_left:undefined,
+		messages_left:undefined
 	},
 	system:{
 		main_dir:undefined,
 		gen_dir:undefined,
 		sysop_name:undefined,
-		default_attr:undefined,
+		default_attr:undefined
 	},
 	misc:{
 		event_time:undefined,
-		record_locking:undefined,
+		record_locking:undefined
 	},
 
 	parse_dropfile:function(path) {
@@ -179,6 +179,6 @@ var dk = {
 
 		if (f.open("r")) {
 		
-
+		}
 	}
-}();
+};
