@@ -1,5 +1,8 @@
 function Attribute(value) {
-	this.value = value;
+	if (typeof(value) == 'object' && value.constructor === Attribute)
+		this.value = value.value;
+	else
+		this.value = value;
 }
 
 Attribute.prototype = {
@@ -41,7 +44,6 @@ var dk = {
 		local:true,				// True if writes should go to the local screen
 		remote:true,			// True if writes should go to the remote terminal
 		rows:24,				// Rows in users terminal
-		expert_mode:true,
 
 		/*
 		 * Clears the current screen to black and moves to location 1,1
@@ -150,7 +152,7 @@ var dk = {
 		downloads:undefined,
 		download_kb:undefined,
 		kb_downloaded_today:undefined,
-		max_download_bytes_per_day:undefined,
+		max_download_kb_per_day:undefined,
 		birthdate:undefined,
 		alias:undefined,
 		ansi_supported:undefined,
@@ -161,7 +163,8 @@ var dk = {
 		downloaded_today:undefined,
 		comment:undefined,
 		doors_opened:undefined,
-		messages_left:undefined
+		messages_left:undefined,
+		expert_mode:true
 	},
 	system:{
 		main_dir:undefined,
@@ -176,9 +179,89 @@ var dk = {
 
 	parse_dropfile:function(path) {
 		var f = new File(path);
+		var df;
 
-		if (f.open("r")) {
-		
+		if (!f.open("r"))
+			return false;
+
+		df = f.readAll();
+		if (f.length != 52)
+			return false;
+
+		this.connection.type = df[0];
+		this.connection.baud = parseInt(df[1], 10);
+		this.connection.parity = parseInt(df[2], 10);
+		this.connection.node = parseInt(df[3], 10);
+		this.connection.dtr = parseInt(df[4], 10);
+		if (df[5].toUpperCase() == 'N')
+			this.local = false;
+		// Some bools ignored here...
+		this.user.full_name = df[9];
+		this.user.location = df[10];
+		this.user.home_phone = df[11];
+		this.user.work_phone = df[12];
+		this.user.data_phone = df[12];
+		this.user.pass = df[13];
+		this.user.level = parseInt(df[14], 10);
+		this.user.times_on = parseInt(df[15], 10);
+		// TODO: Parse a date out of this.
+		this.user.last_called = df[16];
+		this.user.seconds_remaining = parseInt(df[17], 10);
+		this.user.minutes_remaining = parseInt(df[18], 10);
+		switch(df[19].toUpperCase()) {
+			case 'GR':
+				this.ansi = true;
+				this.codepage = 'cp437';
+				break;
+			case 'NG':
+				this.ansi = false;
+				this.codepage = 'cp437';
+				break;
+			default:	// ie: '7E'
+				this.ansi = false;
+				this.codepage = '7-bit';
+				break;
 		}
+		this.rows = parseInt(df[20], 10);
+		this.user.expert_mode = (df[21].toUpperCase === 'Y') ? true : false;
+		this.user.conference = df[22].split(/\s*,\s*/);
+		this.user.curr_conference = parseInt(df[23]);
+		// TODO: Parse a date out of this.
+		this.user.expires = df[24];
+		this.user.number = parseInt(df[25], 10);
+		this.user.default_protocol = df[26];
+		this.user.uploads = parseInt(df[27], 10);
+		this.user.downloads = parseInt(df[28], 10);
+		this.user.kb_downloaded_today = parseInt(df[29], 10);
+		this.user.max_download_kb_per_day = parseInt(df[30], 10);
+		// TODO: Parse a date out of this.
+		this.user.birthdate = df[31];
+		this.system.main_dir = df[32];
+		this.system.gen_dir = df[33];
+		this.system.sysop_name = df[34];
+		this.user.alias = df[35];
+		// TODO: Parse a timestamp thingie
+		this.misc.event_time = df[36];
+		this.connection.error_correcting = (df[37].toUpperCase === 'N') ? false : true;
+		if (this.ansi == true)
+			this.user.ansi_supported = true;
+		else
+			this.user.ansi_supported = (df[38].toUpperCase === 'Y') ? true : false;
+		this.misc.record_locking = (df[39].toUpperCase === 'N') ? false : true;
+		this.system.default_attr = new Attribute(parseInt(df[40], 10));
+		this.user.time_credits = parseInt(df[41], 10);
+		// TODO: Parse a date out of this.
+		this.user.last_new_file_scan_date = df[42];
+		// TODO: Parse a timestamp thingie
+		this.connection.time = df[43];
+		// TODO: Parse a timestamp thingie
+		this.user.last_call_time = df[44];
+		this.user.max_daily_files = parseInt(df[45], 10);
+		this.user.downloaded_today = parseInt(df[46], 10);
+		this.user.upload_kb = parseInt(df[47], 10);
+		this.user.download_kb = parseInt(df[48], 10);
+		this.user.comment = df[49];
+		this.user.doors_opened = parseInt(df[50], 10);
+		this.user.messages_left = parseInt(df[50], 10);
 	}
 };
