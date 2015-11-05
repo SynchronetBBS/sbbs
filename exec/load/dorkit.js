@@ -202,7 +202,7 @@ var dk = {
 		this.connection.dte = parseInt(df[4], 10);
 		if (df[5].toUpperCase() == 'N')
 			this.local = false;
-		// Some bools ignored here...
+		// TODO: Some bools ignored here...
 		this.user.full_name = df[9];
 		this.user.location = df[10];
 		this.user.home_phone = df[11];
@@ -272,6 +272,3 @@ var dk = {
 		this.user.messages_left = parseInt(df[50], 10);
 	}
 };
-
-dk.parse_dropfile('/synchronet/sbbs/node1/door.sys');
-print(dk.toSource());
