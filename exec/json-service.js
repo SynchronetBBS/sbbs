@@ -298,9 +298,9 @@ chat = new (function() {
 			return false;
 		}
 		var usr = new User(usernum);
-		var pass = md5_calc(usr.security.password,true);
+		var pass = md5_calc(usr.security.password.toUpperCase(),true);
 		
-		if(md5_calc(usr.security.password,true) != pw) {
+		if(md5_calc(usr.security.password.toUpperCase(),true) != pw) {
 			error(client,errors.INVALID_PASSWORD);
 			return false;
 		}
@@ -408,7 +408,7 @@ admin = new (function() {
 			return false;
 		}
 		var usr = new User(usernum);
-		if(md5_calc(usr.security.password,true) != pw) {
+		if(md5_calc(usr.security.password.toUpperCase(),true) != pw) {
 			error(client,errors.INVALID_PASSWORD);
 			return false;
 		}
