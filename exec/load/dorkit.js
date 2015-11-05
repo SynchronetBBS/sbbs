@@ -170,7 +170,14 @@ var dk = {
 		main_dir:undefined,
 		gen_dir:undefined,
 		sysop_name:undefined,
-		default_attr:undefined
+		default_attr:undefined,
+		mode:(js.global.bbs !== undefined
+				&& js.global.server !== undefined
+				&& js.global.client !== undefined
+				&& js.global.user !== undefined
+				&& js.global.console !== undefined) ? 'sbbs'
+				: (js.global.jsexec_revision !== undefined ? 'jsexec'
+					: (js.global.jsdoor_revision !== undefined ? 'jsdoor' : undefined))
 	},
 	misc:{
 		event_time:undefined,
@@ -185,14 +192,14 @@ var dk = {
 			return false;
 
 		df = f.readAll();
-		if (f.length != 52)
+		if (df.length != 52)
 			return false;
 
 		this.connection.type = df[0];
 		this.connection.baud = parseInt(df[1], 10);
 		this.connection.parity = parseInt(df[2], 10);
 		this.connection.node = parseInt(df[3], 10);
-		this.connection.dtr = parseInt(df[4], 10);
+		this.connection.dte = parseInt(df[4], 10);
 		if (df[5].toUpperCase() == 'N')
 			this.local = false;
 		// Some bools ignored here...
@@ -265,3 +272,6 @@ var dk = {
 		this.user.messages_left = parseInt(df[50], 10);
 	}
 };
+
+dk.parse_dropfile('/synchronet/sbbs/node1/door.sys');
+print(dk.toSource());
