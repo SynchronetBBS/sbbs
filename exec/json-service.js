@@ -626,7 +626,7 @@ engine = new (function() {
 error = function(client,err,value) {
 	var desc = format(err,value);
 	log(LOG_ERROR,format(
-		"Error: (%s) %s",
+		"JSON Service Error: (%s) %s",
 		client.descriptor,desc
 	));
 	client.sendJSON({
