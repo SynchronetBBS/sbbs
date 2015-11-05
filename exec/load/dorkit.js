@@ -36,9 +36,12 @@ var dk = {
 		x:1,					// Current column (1-based)
 		y:1,					// Current row (1-based)
 		attr:new Attribute(7),	// Current attribute
-		ansi:true,				// ANSI is supported
+		ansi:true,				// ANSI support is enabled
+		charset:'cp437',		// Supported character set
 		local:true,				// True if writes should go to the local screen
 		remote:true,			// True if writes should go to the remote terminal
+		rows:24,				// Rows in users terminal
+		expert_mode:true,
 
 		/*
 		 * Clears the current screen to black and moves to location 1,1
@@ -114,8 +117,62 @@ var dk = {
 		getbyte:function() {
 		},
 	},
-	user:{},
-	system:{},
+	connection:{
+		type:undefined,
+		baud:undefined,
+		parity:undefined,
+		node:undefined,
+		dte:undefined,
+		error_correcting:true,
+		time:undefined,
+	},
+	user:{
+		full_name:undefined,
+		location:undefined,
+		home_phone:undefined,
+		work_phone:undefined,
+		// Just a copy of work_phone when using door.sys
+		data_phone:undefined,
+		pass:undefined,
+		level:undefined,
+		times_on:undefined,
+		last_called:undefined,
+		// These need getter/setters
+		seconds_remaining:undefined,
+		minutes_remaining:undefined,
+		conference:[],
+		curr_conference:undefined,
+		expires:undefined,
+		number:undefined,
+		default_protocol:undefined,	// Default transfer protocol... X, Y, Z, etc.
+		uploads:undefined,
+		upload_kb:undefined,
+		downloads:undefined,
+		download_kb:undefined,
+		kb_downloaded_today:undefined,
+		max_download_bytes_per_day:undefined,
+		birthdate:undefined,
+		alias:undefined,
+		ansi_supported:undefined,
+		time_credits:undefined,
+		last_new_file_scan_date:undefined,
+		last_call_time:undefined,
+		max_daily_files:undefined,
+		downloaded_today:undefined,
+		comment:undefined,
+		doors_opened:undefined,
+		messages_left:undefined,
+	},
+	system:{
+		main_dir:undefined,
+		gen_dir:undefined,
+		sysop_name:undefined,
+		default_attr:undefined,
+	},
+	misc:{
+		event_time:undefined,
+		record_locking:undefined,
+	},
 
 	parse_dropfile:function(path) {
 		var f = new File(path);
