@@ -192,7 +192,7 @@ service = new (function() {
 			client.pingIn(packet);
 			break;
 		default:
-			error(client,errors.UNKNOWN_FUNCTION,packet.func);
+			error(client,"(service) " + errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		}
 	}
@@ -285,7 +285,7 @@ chat = new (function() {
 			this.db.query(client,packet);
 			break;
 		default:
-			error(client,errors.UNKNOWN_FUNCTION,packet.func);
+			error(client,"(chat) " + errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		}
 	}
@@ -294,14 +294,14 @@ chat = new (function() {
 		var pw = data.pw;
 		var usernum = system.matchuser(username);
 		if(usernum  == 0) {
-			error(client,errors.UNKNOWN_USER,username);
+			error(client,"(chat) " + errors.UNKNOWN_USER,username);
 			return false;
 		}
 		var usr = new User(usernum);
 		var pass = md5_calc(usr.security.password.toUpperCase(),true);
 		
 		if(md5_calc(usr.security.password.toUpperCase(),true) != pw) {
-			error(client,errors.INVALID_PASSWORD);
+			error(client,"(chat) " + errors.INVALID_PASSWORD);
 			return false;
 		}
 		this.authenticated[client.descriptor] = usr;
@@ -373,7 +373,7 @@ admin = new (function() {
 			this.time(client);
 			break;
 		default:
-			error(client,errors.UNKNOWN_FUNCTION,packet.func);
+			error(client,"(admin) " + errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		}
 	}
@@ -404,12 +404,12 @@ admin = new (function() {
 		var pw = data.pw;
 		var usernum = system.matchuser(username);
 		if(usernum  == 0) {
-			error(client,errors.UNKNOWN_USER,username);
+			error(client,"(admin) " + errors.UNKNOWN_USER,username);
 			return false;
 		}
 		var usr = new User(usernum);
 		if(md5_calc(usr.security.password.toUpperCase(),true) != pw) {
-			error(client,errors.INVALID_PASSWORD);
+			error(client,"(admin) " + errors.INVALID_PASSWORD);
 			return false;
 		}
 		this.authenticated[client.descriptor] = usr;
@@ -434,11 +434,11 @@ admin = new (function() {
 	}
 	this.verify = function(client,packet,level) {
 		if(!this.authenticated[client.id]) {
-			error(client,errors.IDENT_REQUIRED,packet.func);
+			error(client,"(admin) " + errors.IDENT_REQUIRED,packet.func);
 			return false;
 		}
 		else if(this.authenticated[client.id].security.level < level) {
-			error(client,errors.NOT_AUTHORIZED,packet.func);
+			error(client,"(admin) " + errors.NOT_AUTHORIZED,packet.func);
 			return false;
 		}
 		return true;
@@ -496,7 +496,7 @@ engine = new (function() {
 		switch(packet.func.toUpperCase()) {
 		case "QUERY":
 			if(!this.verify(client,packet,module)) {
-				error(client,errors.NOT_AUTHORIZED,packet.func);
+				error(client,"(" + module.name + ") " + errors.NOT_AUTHORIZED,packet.func);
 				break;
 			}
 			module.db.query(client,packet);
@@ -543,7 +543,7 @@ engine = new (function() {
 			module.db.settings.READ_ONLY = !module.db.settings.READ_ONLY;
 			break;
 		default:
-			error(client,errors.UNKNOWN_FUNCTION,packet.func);
+			error(client,"(" + module.name + ") " + errors.UNKNOWN_FUNCTION,packet.func);
 			break;
 		}
 		
@@ -557,7 +557,7 @@ engine = new (function() {
 		case "SLICE":
 			if(module.read > 0) {
 				if(!admin.verify(client,packet,module.read)) {
-					error(client,errors.NOT_AUTHORIZED,packet.oper);
+					error(client,"(" + module.name + ") " + errors.NOT_AUTHORIZED,packet.oper);
 					return false;
 				}
 			}
@@ -570,7 +570,7 @@ engine = new (function() {
 		case "DELETE":
 			if(module.write > 0) {
 				if(!admin.verify(client,packet,module.write)) {
-					error(client,errors.NOT_AUTHORIZED,packet.oper);
+					error(client,"(" + module.name + ") " + errors.NOT_AUTHORIZED,packet.oper);
 					return false;
 				}
 			}
@@ -604,7 +604,7 @@ engine = new (function() {
 				try {
 					this.queue = load(true,this.dir + "service.js",this.dir);
 				} catch(e) {
-					log(LOG_ERROR,"error loading module service: " + this.name);
+					log(LOG_ERROR,"(" + module.name + ") error loading module service");
 				}
 			}
 			/* load module command file */
@@ -612,7 +612,7 @@ engine = new (function() {
 				try {
 					load(this.commands,this.dir + "commands.js",this.dir);
 				} catch(e) {
-					log(LOG_ERROR,"error loading module commands: " + this.name);
+					log(LOG_ERROR,"(" + this.name + ") error loading module commands");
 				}
 			}
 		}
@@ -643,7 +643,6 @@ error = function(client,err,value) {
 
 /* confirmation to client */
 confirm = function(client,message) {
-	log(LOG_INFO,message);
 	client.sendJSON({
 		scope:undefined,
 		func:"OK",
