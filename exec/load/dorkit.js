@@ -192,6 +192,7 @@ var dk = {
 			return false;
 
 		df = f.readAll();
+		f.close();
 		if (df.length != 52)
 			return false;
 
