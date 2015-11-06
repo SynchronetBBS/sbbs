@@ -77,7 +77,7 @@ Command=websocket-rlogin-service.js
 
 - This web interface uses [Bootstrap 3.3.5](http://getbootstrap.com/).  It should be possible to use any compatible stylesheet.
 	- You can place your own CSS overrides in *web/root/css/style.css*
-	- You can load another stylesheet of your own choosing in the <head> section of *web/root/index.xjs* (load it after the others)
+	- You can load another stylesheet of your own choosing in the &lt;head&gt; section of *web/root/index.xjs* (load it after the others)
 - The sidebar module & page structure is *mostly* similar to the system used in ecWeb v3.  See [the old instructions](http://wiki.synchro.net/howto:ecweb#the_sidebar) for info on adding content.
 	- You can force a link to a page to be placed in the *More* menu by using an underscore as a separator in its filename rather than a hyphen
 
