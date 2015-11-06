@@ -66,7 +66,7 @@ Port=1513
 Options=NO_HOST_LOOKUP
 Command=websocket-rlogin-service.js
 ```
-- Tell your router and firewall to open and foreward ports *1123* and *1513* to your BBS
+- Tell your router and firewall to open and forward ports *1123* and *1513* to your BBS
 
 ###Configuration
 
