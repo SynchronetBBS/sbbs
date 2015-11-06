@@ -73,22 +73,17 @@ ifdef USE_SDL
      CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
     endif
    else
-	ifeq ($(shell sdl-config --cflags > /dev/null 2>&1 && echo YES),YES)
-     SDL_CONFIG := sdl-config
+    ifeq ($(shell sdl12-config --cflags > /dev/null 2>&1 && echo YES),YES)
+     SDL_CONFIG := sdl12-config
      WITH_SDL	:=	1
-	else
-     ifeq ($(shell sdl13-config --cflags > /dev/null 2>&1 && echo YES),YES)
-      SDL_CONFIG := sdl13-config
+    else
+	 ifeq ($(shell sdl-config --cflags > /dev/null 2>&1 && echo YES),YES)
+      SDL_CONFIG := sdl-config
       WITH_SDL	:=	1
-     else
-      ifeq ($(shell sdl12-config --cflags > /dev/null 2>&1 && echo YES),YES)
-       SDL_CONFIG := sdl12-config
+	 else
+      ifeq ($(shell sdl11-config --cflags > /dev/null 2>&1 && echo YES),YES)
+       SDL_CONFIG := sdl11-config
        WITH_SDL	:=	1
-      else
-       ifeq ($(shell sdl11-config --cflags > /dev/null 2>&1 && echo YES),YES)
-    	SDL_CONFIG := sdl11-config
-    	WITH_SDL	:=	1
-       endif
       endif
      endif
 	endif
