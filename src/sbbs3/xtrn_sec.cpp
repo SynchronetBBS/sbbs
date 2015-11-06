@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -585,12 +585,12 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 
 		sprintf(str,"%lu\n%c\n%s\n%u\n%s\n%u\n%c\n%u\n%u\n"
 			,rows								/* 21: User screen length */
-			,useron.misc&EXPERT ? 'Y':'N'       /* 22: Expert? (Y/N) */
+			,(useron.misc&EXPERT) ? 'Y':'N'     /* 22: Expert? (Y/N) */
 			,ltoaf(useron.flags1,tmp2)			/* 23: Registered conferences */
 			,0									/* 24: Conference came from */
 			,unixtodstr(&cfg,useron.expire,tmp)	/* 25: User expiration date */
 			,useron.number						/* 26: User number */
-			,'Y'                                /* 27: Default protocol */
+			,useron.prot                        /* 27: Default protocol */
 			,useron.uls 						/* 28: User total uploads */
 			,useron.dls);						/* 29: User total downloads */
 		lfexpand(str,misc);
@@ -616,7 +616,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,(useron.misc&(NO_EXASCII|ANSI|COLOR))==ANSI
 				? 'Y':'N'                       /* 39: ANSI supported but NG mode */
 			,'Y'                                /* 40: Use record locking */
-			,14 								/* 41: BBS default color */
+			,cfg.color[clr_external]			/* 41: BBS default color */
 			,useron.min 						/* 42: Time credits in minutes */
 			,tm.tm_mon+1						/* 43: File new-scan date */
 			,tm.tm_mday
