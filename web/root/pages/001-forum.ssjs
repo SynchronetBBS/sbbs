@@ -342,7 +342,7 @@ if(	typeof http_request.query.sub != "undefined"
 				group.index,
 				group.index,
 				group.description,
-				group.sub_list.length
+				group.sub_count
 			)
 		);
 	}
