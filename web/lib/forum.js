@@ -6,7 +6,15 @@ function listGroups () {
     var response = [];
     msg_area.grp_list.forEach(
         function (grp) {
-            if (grp.sub_list.length > 0) response.push(grp);
+            if (grp.sub_list.length < 1)
+                return;
+            response.push(
+                {   'index' : grp.index,
+                    'name' : grp.name,
+                    'description' : grp.description,
+                    'sub_count' : grp.sub_list.length
+                }
+            );
         }
     );
     return response;
