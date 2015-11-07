@@ -54,19 +54,6 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
             }
             break;
 
-        case 'get-thread-unread-count':
-            if (typeof http_request.query.sub !== 'undefined' &&
-                typeof http_request.query.thread !== 'undefined'
-            ) {
-                reply.sub = http_request.query.sub[0];
-                reply.thread = http_request.query.thread[0];
-                reply.unread = getUnreadInThread(
-                    http_request.query.sub[0],
-                    http_request.query.thread[0]
-                );
-            }
-            break;
-        
         case 'get-mail-unread-count':
             reply.count = getMailUnreadCount();
             break;
