@@ -49,7 +49,7 @@ var dk = {
 		CTRL_I:9,
 		TAB:9,
 		CTRL_J:10,
-		LS:10,
+		LF:10,
 		CTRL_K:11,
 		CTRL_L:12,
 		CLEAR:12,
