@@ -63,10 +63,7 @@ Attribute.prototype = {
 			return str;	// Unchanged
 
 		str = "\x1b[";
-		if (curatr === undefined) {
-			curatr = new Attribute(7);
-			str += '0;';
-		}
+
 		if(curatr === undefined || (!(this.bright) && curatr.bright)
 				|| (!(this.blink) && curatr.blink) || atr==LIGHTGRAY) {
 			str += "0;";
