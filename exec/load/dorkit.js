@@ -35,6 +35,41 @@ Attribute.prototype = {
 }
 
 var dk = {
+	keys={
+		CTRL_A:1,
+		CTRL_B:2,
+		CTRL_C:3,
+		CTRL_D:4,
+		CTRL_E:5,
+		CTRL_F:6,
+		CTRL_G:7,
+		BEEP:7,
+		CTRL_H:8,
+		BACKSPACE:8,
+		CTRL_I:9,
+		TAB:9,
+		CTRL_J:10,
+		LS:10,
+		CTRL_K:11,
+		CTRL_L:12,
+		CLEAR:12,
+		CTRL_M:13,
+		RETURN:13,
+		CTRL_N:14,
+		CTRL_O:15,
+		CTRL_P:16,
+		CTRL_Q:17,
+		CTRL_R:18,
+		CTRL_S:19,
+		PAUSE:19,
+		CTRL_T:20,
+		
+		ESCAPE:27,
+		SPACE:32,
+		
+	}
+
+
 	console:{
 		x:1,					// Current column (1-based)
 		y:1,					// Current row (1-based)
@@ -273,3 +308,17 @@ var dk = {
 		this.user.messages_left = parseInt(df[50], 10);
 	}
 };
+
+js.load_path_list.unshift(js.exec_dir+"/jsdoor");
+
+switch(dk.system.mode) {
+	case 'sbbs':
+		load("jsdoor_sbbs_console.js");
+		break;
+	case 'jsexec':
+		load("jsdoor_jsexec_console.js");
+		break;
+	case 'jsdoor':
+		load("jsdoor_console.js");
+		break;
+}
