@@ -1,4 +1,5 @@
 load('sbbsdefs.js');
+load('msgutils.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'mime-decode.js');
 
@@ -105,6 +106,12 @@ function getGroupUnreadCount (group) {
 }
 
 function getUnreadInThread (sub, thread) {
+    if (typeof thread === 'number') {
+        var threads = getMessageThreads(sub);
+        if(typeof threads.thread[thread] === 'undefined')
+            return 0;
+        thread = threads.thread[thread];
+    }
     var count = 0;
     thread.messages.forEach(
         function (header) {
