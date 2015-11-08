@@ -547,7 +547,9 @@ var dk = {
 		node:undefined,
 		dte:undefined,
 		error_correcting:true,
-		time:undefined
+		time:undefined,
+		socket:undefined,
+		telnet:false
 	},
 	user:{
 		full_name:undefined,
@@ -702,10 +704,37 @@ var dk = {
 		this.user.comment = df[49];
 		this.user.doors_opened = parseInt(df[50], 10);
 		this.user.messages_left = parseInt(df[50], 10);
+	},
+	parse_cmdline:function(argc, argv) {
+		var i;
+
+		for (i=0; i<argc; i++) {
+			switch(argv[i]) {
+				case '-t':
+				case '-telnet':
+					this.connection.telnet = true;
+					break;
+				case '-s':
+				case '-socket':
+					if (i+1 < argc)
+						this.connection.socket = argv[++i];
+					break;
+				case '-l':
+				case '-local':
+					this.console.local = true;
+					this.console.remote = false;
+					break;
+			}
+		}
+		if (this.connection.telnet === undefined)
+			this.connection.telnet = false;
 	}
 };
 
 load("local_console.js");
+dk.parse_cmdline(argc, argv);
+if (dk.connection.socket !== undefined)
+	dk.system.mode = 'socket';
 
 switch(dk.system.mode) {
 	case 'sbbs':
@@ -716,5 +745,8 @@ switch(dk.system.mode) {
 		break;
 	case 'jsdoor':
 		load("jsdoor_console.js");
+		break;
+	case 'socket':
+		load("socket_console.js", dk.connection.socket, dk.connection.telnet);
 		break;
 }
