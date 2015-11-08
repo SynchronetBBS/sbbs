@@ -6,141 +6,165 @@ load("attribute.js");
 load("graphic.js");
 
 var dk = {
-	key:{
-		CTRL_A:1,
-		CTRL_B:2,
-		CTRL_C:3,
-		CTRL_D:4,
-		CTRL_E:5,
-		CTRL_F:6,
-		CTRL_G:7,
-		BEEP:7,
-		CTRL_H:8,
-		BACKSPACE:8,
-		CTRL_I:9,
-		TAB:9,
-		CTRL_J:10,
-		LF:10,
-		CTRL_K:11,
-		CTRL_L:12,
-		CLEAR:12,
-		CTRL_M:13,
-		RETURN:13,
-		CTRL_N:14,
-		CTRL_O:15,
-		CTRL_P:16,
-		CTRL_Q:17,
-		CTRL_R:18,
-		CTRL_S:19,
-		PAUSE:19,
-		CTRL_T:20,
-		CTRL_U:21,
-		CTRL_V:22,
-		CTRL_W:23,
-		CTRL_X:24,
-		CTRL_Y:25,
-		CTRL_Z:26,
-		ESCAPE:27,
-		SPACE:32,
-		EXCLAIM:33,
-		QUOTEDBL:34,
-		HASH:35,
-		DOLLAR:36,
-		PERCENT:37,
-		AMPERSAND:38,
-		QUOTE:39,
-		LEFTPAREN:40,
-		RIGHTPAREN:41,
-		ASTERISK:42,
-		PLUS:43,
-		COMMA:44,
-		MINUS:45,
-		PERIOD:46,
-		SLASH:47,
-		0:48,
-		1:49,
-		2:50,
-		3:51,
-		4:52,
-		5:53,
-		6:54,
-		7:55,
-		8:56,
-		9:57,
-		COLON:58,
-		SEMICOLON:59,
-		LESS:60,
-		EQUALS:61,
-		GREATER:62,
-		QUESTION:63,
-		AT:64,
-		A:65,
-		B:66,
-		C:67,
-		D:68,
-		E:69,
-		F:70,
-		G:71,
-		H:72,
-		I:73,
-		J:74,
-		K:75,
-		L:76,
-		M:77,
-		N:78,
-		O:79,
-		P:80,
-		Q:81,
-		R:82,
-		S:83,
-		T:84,
-		U:85,
-		V:86,
-		W:87,
-		X:88,
-		Y:89,
-		Z:90,
-		LEFTBRACKET:91,
-		BACKSLASH:92,
-		RIGHTBRACKET:93,
-		CARET:94,
-		UNDERSCORE:95,
-		BACKQUOTE:96,
-		a:97,
-		b:98,
-		c:99,
-		d:100,
-		e:101,
-		f:102,
-		g:103,
-		h:104,
-		i:105,
-		j:106,
-		k:107,
-		l:108,
-		m:109,
-		n:110,
-		o:111,
-		p:112,
-		q:113,
-		r:114,
-		s:115,
-		t:116,
-		u:117,
-		v:118,
-		w:119,
-		x:120,
-		y:121,
-		z:122,
-		LEFTBRACE:123,
-		PIPE:124,
-		RIGHTBRACE:125,
-		TILDE:126,
-		DELETE:127,
-		/* End of ASCII */
-	},
-
 	console:{
+		key:{
+			CTRL_A:1,
+			CTRL_B:2,
+			CTRL_C:3,
+			CTRL_D:4,
+			CTRL_E:5,
+			CTRL_F:6,
+			CTRL_G:7,
+			BEEP:7,
+			CTRL_H:8,
+			BACKSPACE:8,
+			CTRL_I:9,
+			TAB:9,
+			CTRL_J:10,
+			LF:10,
+			CTRL_K:11,
+			CTRL_L:12,
+			CLEAR:12,
+			CTRL_M:13,
+			RETURN:13,
+			CTRL_N:14,
+			CTRL_O:15,
+			CTRL_P:16,
+			CTRL_Q:17,
+			CTRL_R:18,
+			CTRL_S:19,
+			PAUSE:19,
+			CTRL_T:20,
+			CTRL_U:21,
+			CTRL_V:22,
+			CTRL_W:23,
+			CTRL_X:24,
+			CTRL_Y:25,
+			CTRL_Z:26,
+			ESCAPE:27,
+			SPACE:32,
+			EXCLAIM:33,
+			QUOTEDBL:34,
+			HASH:35,
+			DOLLAR:36,
+			PERCENT:37,
+			AMPERSAND:38,
+			QUOTE:39,
+			LEFTPAREN:40,
+			RIGHTPAREN:41,
+			ASTERISK:42,
+			PLUS:43,
+			COMMA:44,
+			MINUS:45,
+			PERIOD:46,
+			SLASH:47,
+			0:48,
+			1:49,
+			2:50,
+			3:51,
+			4:52,
+			5:53,
+			6:54,
+			7:55,
+			8:56,
+			9:57,
+			COLON:58,
+			SEMICOLON:59,
+			LESS:60,
+			EQUALS:61,
+			GREATER:62,
+			QUESTION:63,
+			AT:64,
+			A:65,
+			B:66,
+			C:67,
+			D:68,
+			E:69,
+			F:70,
+			G:71,
+			H:72,
+			I:73,
+			J:74,
+			K:75,
+			L:76,
+			M:77,
+			N:78,
+			O:79,
+			P:80,
+			Q:81,
+			R:82,
+			S:83,
+			T:84,
+			U:85,
+			V:86,
+			W:87,
+			X:88,
+			Y:89,
+			Z:90,
+			LEFTBRACKET:91,
+			BACKSLASH:92,
+			RIGHTBRACKET:93,
+			CARET:94,
+			UNDERSCORE:95,
+			BACKQUOTE:96,
+			a:97,
+			b:98,
+			c:99,
+			d:100,
+			e:101,
+			f:102,
+			g:103,
+			h:104,
+			i:105,
+			j:106,
+			k:107,
+			l:108,
+			m:109,
+			n:110,
+			o:111,
+			p:112,
+			q:113,
+			r:114,
+			s:115,
+			t:116,
+			u:117,
+			v:118,
+			w:119,
+			x:120,
+			y:121,
+			z:122,
+			LEFTBRACE:123,
+			PIPE:124,
+			RIGHTBRACE:125,
+			TILDE:126,
+			DELETE:127,
+			/* End of ASCII */
+			
+			/* Start of extended characters */
+			KEY_UP:0x4800,
+			KEY_DOWN:0x5000,
+			KEY_RIGHT:0x4D00,
+			KEY_LEFT:0x4B00,
+			KEY_HOME:0x4700,
+			KEY_END:0x4F00,
+			KEY_F1:0x3B00,
+			KEY_F2:0x3C00,
+			KEY_F3:0x3D00,
+			KEY_F4:0x3E00,
+			KEY_F5:0x3F00,
+			KEY_F6:0x4000,
+			KEY_F7:0x4100,
+			KEY_F8:0x4200,
+			KEY_F9:0x4300,
+			KEY_F10:0x4400,
+			KEY_F11:0x8500,
+			KEY_F12:0x8600,
+			KEY_PGUP:0x4900,
+			KEY_PGDOWN:0x5100,
+			KEY_INS:0x5200,
+			KEY_DEL:0x5300
+		},
+
 		x:1,					// Current column (1-based)
 		y:1,					// Current row (1-based)
 		attr:new Attribute(7),	// Current attribute
@@ -150,6 +174,7 @@ var dk = {
 		remote:true,			// True if writes should go to the remote terminal
 		rows:undefined,			// Rows in users terminal
 		cols:undefined,			// Columns in users terminal
+		keybuf:'',
 
 		/*
 		 * Returns a string with ^A codes converted to ANSI or stripped
@@ -478,17 +503,41 @@ var dk = {
 		 * Returns undefined if there is no key pressed.
 		 */
 		getkey:function() {
+			var ret;
+
+			if (this.keybuf.length > 0) {
+				var ret = this.keybuf.substr(0,1);
+				this.keybuf = this.keybuf.substr(1);
+				return ret;
+			}
+			if (!this.waitkey(0))
+				return undefined;
 			var q = new Queue("dorkit_input");
-			// TODO: Parse ANSI here!
-			return q.read();
+			ret = q.read();
+			if (ret.length > 1)
+				ret=ret.replace(/\x00.*$/,'');
+			return ret;
 		},
 
 		/*
 		 * Returns a single byte... ANSI is not parsed.
 		 */
 		getbyte:function() {
+			if (this.keybuf.length > 0) {
+				var ret = this.keybuf.substr(0,1);
+				this.keybuf = this.keybuf.substr(1);
+				return ret;
+			}
+			if (!this.waitkey(0))
+				return undefined;
 			var q = new Queue("dorkit_input");
-			return q.read();
+			ret = q.read();
+			if (ret.length > 1) {
+				ret=this.key[ret.replace(/^.*\x00/,'')];
+				this.keybuf = ret.substr(1);
+				ret = ret.substr(0,1);
+			}
+			return ret;
 		},
 	},
 	connection:{
@@ -660,10 +709,10 @@ load("local_console.js");
 
 switch(dk.system.mode) {
 	case 'sbbs':
-		load("jsdoor_sbbs_console.js");
+		load("sbbs_console.js");
 		break;
 	case 'jsexec':
-		load("jsdoor_jsexec_console.js");
+		load("jsexec_console.js");
 		break;
 	case 'jsdoor':
 		load("jsdoor_console.js");
