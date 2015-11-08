@@ -5,7 +5,15 @@
 if (js.global.Graphic === undefined)
 	load("graphic.js");
 
-dk.local = {
-	graphic:new Graphic(dk.cols, dk.height, 7, ' ');
-	
+dk.console.local_io = {
+	graphic:new Graphic(dk.cols, dk.height, 7, ' '),
+
+	clear:function() {
+	},
+	cleareol:function() {
+	},
+	gotoxy:function(x,y) {
+	},
+	print:function(string) {
+	},
 };

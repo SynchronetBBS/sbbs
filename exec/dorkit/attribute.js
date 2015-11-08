@@ -1,5 +1,7 @@
 function Attribute(value) {
-	if (typeof(value) == 'object' && value.constructor === Attribute)
+	if (value === undefined)
+		this.value = 7;
+	else if (typeof(value) == 'object' && value.constructor === Attribute)
 		this.value = value.value;
 	else
 		this.value = value;
