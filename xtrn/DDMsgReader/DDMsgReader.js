@@ -70,6 +70,12 @@
  *                              function to use Synchronet's ans2asc tool to convert
  *                              from ANSI to Synchronet codes, to get ANSI messsages
  *                              to look better.
+ * 2015-11-07 Eric Oulashin     Expanded the list of @-codes interpreted for message
+ *                              headers.  Also, renamed that method to ParseMsgAtCodes().
+ *                              Updated the ReadMessageEnhanced method to interpret
+ *                              @-codes, but only when reading personal mail, to avoid
+ *                              weird behavior on message networks from malicious users
+ *                              on other BBSes.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -158,7 +164,7 @@ if (system.version_num < 31500)
 
 // Reader version information
 var READER_VERSION = "1.05 Beta";
-var READER_DATE = "2015-11-01";
+var READER_DATE = "2015-11-07";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -770,8 +776,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.HighestMessageNum = DigDistMsgReader_HighestMessageNum;
 	this.IsValidMessageNum = DigDistMsgReader_IsValidMessageNum;
 	this.PromptForMsgNum = DigDistMsgReader_PromptForMsgNum;
-	this.ParseMsgHdrLineAtCodes = DigDistMsgReader_ParseMsgHdrLineAtCodes;
-	this.ReplaceSubjFormatStr = DigDistMsgReader_ReplaceSubjFormatStr;
+	this.ParseMsgAtCodes = DigDistMsgReader_ParseMsgAtCodes;
+	this.ReplaceMsgAtCodeFormatStr = DigDistMsgReader_ReplaceMsgAtCodeFormatStr;
 	this.FindNextNonDeletedMsgIdx = DigDistMsgReader_FindNextNonDeletedMsgIdx;
 	this.ChangeSubBoard = DigDistMsgReader_ChangeSubBoard;
 	this.EnhancedReaderChangeSubBoard = DigDistMsgReader_EnhancedReaderChangeSubBoard;
@@ -4730,6 +4736,12 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		// Use the non-scrolling interface.
 		// Separate the message text from any attachments in the message.
 		var msgAndAttachmentInfo = determineMsgAttachments(msgHeader, messageText, true);
+		// Only interpret @-codes if the user is reading personal email.  There
+		// are many @-codes that do some action such as move the cursor, execute a
+		// script, etc., and I don't want users on message networks to do anything
+		// malicious to users on other BBSes.
+		if (this.readingPersonalEmail)
+			msgAndAttachmentInfo.msgText = replaceAtCodesInStr(msgAndAttachmentInfo.msgText); // Or this.ParseMsgAtCodes(msgAndAttachmentInfo.msgText, msgHeader) to replace only some @ codes
 		var msgTextWrapped = word_wrap(msgAndAttachmentInfo.msgText, console.screen_columns-1);
 
 		// Generate the key help text
@@ -7016,7 +7028,7 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
          // message read prompt, this script now has to parse & replace some of
          // the @-codes in the message header line, since Synchronet doesn't know
          // that the user is reading a message.
-         console.putmsg(this.ParseMsgHdrLineAtCodes(fileLine, pMsgHdr, null, dateTimeStr, true));
+         console.putmsg(this.ParseMsgAtCodes(fileLine, pMsgHdr, null, dateTimeStr, true));
          console.crlf();
       }
       msgHdrFile.close();
@@ -7369,15 +7381,17 @@ function DigDistMsgReader_PromptForMsgNum(pCurPos, pPromptText, pClearToEOLAfter
 //                  object (i.e., if doing a message search).  This parameter can
 //                  be null, in which case the number in the header object will be
 //                  used.
-//  pDateTimeStr: Formatted string containing the date & time
+//  pDateTimeStr: Optional formatted string containing the date & time.  If this is
+//                not provided, the current date & time will be used.
 //  pAllowCLS: Optional boolean - Whether or not to allow the @CLS@ code.
 //             Defaults to false.
 //
 // Return value: A string with the complex @-codes substituted in the line with the
 // appropriate message header information.
-function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pDateTimeStr, pAllowCLS)
+function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pDateTimeStr, pAllowCLS)
 {
 	var textLine = pTextLine;
+	var dateTimeStr = (typeof(pDateTimeStr) == "string" ? pDateTimeStr : strftime("%Y-%m-%d %H:%M:%S"));
 	// Message attribute strings
 	var allMsgAttrStr = makeAllMsgAttrStr(pMsgHdr);
 	var mainMsgAttrStr = makeMainMsgAttrStr(pMsgHdr.attr);
@@ -7391,7 +7405,9 @@ function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsg
 	var atCodeStrBases = ["@MSG_FROM", "@MSG_FROM_EXT", "@MSG_TO", "@MSG_TO_NAME", "@MSG_TO_EXT",
 	                      "@MSG_SUBJECT", "@MSG_DATE", "@MSG_ATTR", "@MSG_AUXATTR", "@MSG_NETATTR",
 	                      "@MSG_ALLATTR", "@MSG_NUM_AND_TOTAL", "@MSG_NUM", "@MSG_ID",
-	                      "@MSG_REPLY_ID", "@MSG_TIMEZONE", "@GRP", "@GRPL", "@SUB", "@SUBL"];
+	                      "@MSG_REPLY_ID", "@MSG_TIMEZONE", "@GRP", "@GRPL", "@SUB", "@SUBL",
+						  "@BBS", "@BOARDNAME", "@ALIAS", "@SYSOP", "@CONF", "@DATE", "@DIR", "@DIRL",
+						  "@USER", "@NAME"];
 	// For each @-code, look for a version with justification & length specified and
 	// replace accordingly.
 	for (var atCodeStrBaseIdx in atCodeStrBases)
@@ -7409,7 +7425,7 @@ function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsg
 			{
 				// In this case, the subject length is the length of the whole format specifier.
 				var substLen = atCodeMatchArray[idx].length;
-				textLine = this.ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen,
+				textLine = this.ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen,
 				                                     atCodeMatchArray[idx], pDateTimeStr, mainMsgAttrStr,
 				                                     auxMsgAttrStr, netMsgAttrStr, allMsgAttrStr);
 			}
@@ -7424,7 +7440,7 @@ function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsg
 				// Extract the length specified between the -L or -R and the final @.
 				var dashJustifyIndex = findDashJustifyIndex(atCodeMatchArray[idx]);
 				var substLen = atCodeMatchArray[idx].substring(dashJustifyIndex+2, atCodeMatchArray[idx].length-1);
-				textLine = this.ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen, atCodeMatchArray[idx],
+				textLine = this.ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen, atCodeMatchArray[idx],
 				                                     pDateTimeStr, mainMsgAttrStr, auxMsgAttrStr, netMsgAttrStr,
 				                                     allMsgAttrStr, dashJustifyIndex);
 			}
@@ -7439,6 +7455,9 @@ function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsg
 	var groupDesc = "";
 	var subName = "";
 	var subDesc = "";
+	var msgConf = "";
+	var fileDir = "";
+	var fileDirLong = "";
 	if (this.readingPersonalEmail)
 	{
 		var subName = "Personal mail";
@@ -7451,6 +7470,13 @@ function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsg
 		groupDesc = msg_area.grp_list[grpIdx].description;
 		subName = msg_area.sub[this.subBoardCode].name;
 		subDesc = msg_area.sub[this.subBoardCode].description;
+		msgConf = msg_area.grp_list[msg_area.sub[this.subBoardCode].grp_index].name + " "
+		        + msg_area.sub[this.subBoardCode].name;
+	}
+	if ((typeof(bbs.curlib) == "number") && (typeof(bbs.curdir) == "number"))
+	{
+		fileDir = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name;
+		fileDirLong = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].description;
 	}
 	var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
 	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
@@ -7474,14 +7500,25 @@ function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsg
 	                         .replace(/@GRP@/gi, groupName)
 	                         .replace(/@GRPL@/gi, groupDesc)
 	                         .replace(/@SUB@/gi, subName)
-	                         .replace(/@SUBL@/gi, subDesc);
+	                         .replace(/@SUBL@/gi, subDesc)
+							 .replace(/@CONF@/gi, msgConf)
+							 .replace(/@BBS@/gi, system.name)
+							 .replace(/@BOARDNAME@/gi, system.name)
+							 .replace(/@SYSOP@/gi, system.operator)
+							 .replace(/@DATE@/gi, system.datestr())
+							 .replace(/@LOCATION@/gi, system.location)
+							 .replace(/@DIR@/gi, fileDir)
+							 .replace(/@DIRL@/gi, fileDirLong)
+							 .replace(/@ALIAS@/gi, user.alias)
+							 .replace(/@NAME@/gi, (user.name.length > 0 ? user.name : user.alias))
+							 .replace(/@USER@/gi, user.alias);
 	if (!pAllowCLS)
 		newTxtLine = newTxtLine.replace(/@CLS@/gi, "");
 	return newTxtLine;
 }
-// For the DigDistMsgReader class: Helper for ParseMsgHdrLineAtCodes(): Replaces a
+// For the DigDistMsgReader class: Helper for ParseMsgAtCodes(): Replaces a
 // given @-code format string in a text line with the appropriate message header
-// info.
+// info or BBS system info.
 //
 // Parameters:
 //  pMsgHdr: The object containing the message header information
@@ -7498,7 +7535,7 @@ function DigDistMsgReader_ParseMsgHdrLineAtCodes(pTextLine, pMsgHdr, pDisplayMsg
 //  pMsgNetAttrStr: A string describing the network message attributes ('netattr' property of header)
 //  pMsgAllAttrStr: A string describing all message attributes
 //  pDashJustifyIdx: Optional - The index of the -L or -R in the @-code string
-function DigDistMsgReader_ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, pTextLine, pSpecifiedLen, pAtCodeStr, pDateTimeStr,
+function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTextLine, pSpecifiedLen, pAtCodeStr, pDateTimeStr,
                                   pMsgMainAttrStr, pMsgAuxAttrStr, pMsgNetAttrStr, pMsgAllAttrStr,
                                   pDashJustifyIdx)
 {
@@ -7571,20 +7608,53 @@ function DigDistMsgReader_ReplaceSubjFormatStr(pMsgHdr, pDisplayMsgNum, pTextLin
 
 			replacementTxt = msg_area.sub[this.subBoardCode].name.substr(0, pSpecifiedLen);
 	}
-	else if (pAtCodeStr.indexOf("@SUB") > -1)
+	else if (pAtCodeStr.indexOf("@SUBL") > -1)
 	{
 		if (this.readingPersonalEmail)
 			replacementTxt = "Personal mail".substr(0, pSpecifiedLen);
 		else
 			replacementTxt = msg_area.sub[this.subBoardCode].description.substr(0, pSpecifiedLen);
 	}
+	else if ((pAtCodeStr.indexOf("@BBS") > -1) || (pAtCodeStr.indexOf("@BOARDNAME") > -1))
+		replacementTxt = system.name.substr(0, pSpecifiedLen);
+	else if (pAtCodeStr.indexOf("@SYSOP") > -1)
+		replacementTxt = system.operator.substr(0, pSpecifiedLen);
+	else if (pAtCodeStr.indexOf("@CONF") > -1)
+	{
+		var msgConfDesc = msg_area.grp_list[msg_area.sub[this.subBoardCode].grp_index].name + " "
+		                + msg_area.sub[this.subBoardCode].name;
+		replacementTxt = msgConfDesc.substr(0, pSpecifiedLen);
+	}
+	else if (pAtCodeStr.indexOf("@DATE") > -1)
+		replacementTxt = system.datestr().substr(0, pSpecifiedLen);
+	else if (pAtCodeStr.indexOf("@DIR") > -1)
+	{
+		if ((typeof(bbs.curlib) == "number") && (typeof(bbs.curdir) == "number"))
+			replacementTxt = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.substr(0, pSpecifiedLen);
+		else
+			replacementTxt = "";
+	}
+	else if (pAtCodeStr.indexOf("@DIRL") > -1)
+	{
+		if ((typeof(bbs.curlib) == "number") && (typeof(bbs.curdir) == "number"))
+			replacementTxt = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].description.substr(0, pSpecifiedLen);
+		else
+			replacementTxt = "";
+	}
+	else if ((pAtCodeStr.indexOf("@ALIAS") > -1) || (pAtCodeStr.indexOf("@USER") > -1))
+		replacementTxt = user.alias.substr(0, pSpecifiedLen);
+	else if (pAtCodeStr.indexOf("@NAME") > -1) // User name or alias
+	{
+		var userNameOrAlias = (user.name.length > 0 ? user.name : user.alias);
+		replacementTxt = userNameOrAlias.substr(0, pSpecifiedLen);
+	}
 
 	// Do the text replacement (escape special characters in the @-code string so we can do a literal search)
 	var searchRegex = new RegExp(pAtCodeStr.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), "gi");
 	return pTextLine.replace(searchRegex, format(formatStr, replacementTxt));
 }
-// Helper for DigDistMsgReader_ParseMsgHdrLineAtCodes() and
-// DigDistMsgReader_ReplaceSubjFormatStr(): Returns the index of the -L or -R in
+// Helper for DigDistMsgReader_ParseMsgAtCodes() and
+// DigDistMsgReader_ReplaceMsgAtCodeFormatStr(): Returns the index of the -L or -R in
 // one of the @-code strings.
 //
 // Parameters:
@@ -8238,7 +8308,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
 		{
 			console.gotoxy(screenX, screenY++);
-			console.putmsg(this.ParseMsgHdrLineAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
+			console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
 			               pDisplayMsgNum, dateTimeStr, false));
 		}
 	}
@@ -8248,7 +8318,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		// lines.
 		for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
 		{
-			console.putmsg(this.ParseMsgHdrLineAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
+			console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
 			               pDisplayMsgNum, dateTimeStr, false));
 		}
 	}
@@ -10621,13 +10691,14 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		retObj.attachments = [];
 	}
 
-	// Note: Do not interpret @-codes, since there are many @-codes that do
-	// some action such as move the cursor, execute a script, etc..
-	/*
-	var msgTextAltered = replaceAtCodesInStr(retObj.msgText);
+	var msgTextAltered = retObj.msgText; // Will alter the message text, but not yet
+	// Only interpret @-codes if the user is reading personal email.  There
+	// are many @-codes that do some action such as move the cursor, execute a
+	// script, etc., and I don't want users on message networks to do anything
+	// malicious to users on other BBSes.
+	if (this.readingPersonalEmail)
+		msgTextAltered = replaceAtCodesInStr(msgTextAltered, pMsgHdr); // Or this.ParseMsgAtCodes(msgTextAltered, pMsgHdr) to replace only some @ codes
 	msgTextAltered = msgTextAltered.replace(/\t/g, this.tabReplacementText);
-	*/
-	var msgTextAltered = retObj.msgText.replace(/\t/g, this.tabReplacementText);
 	// Convert other BBS color codes to Synchronet attribute codes if the settings
 	// to do so are enabled.
 	if ((system.settings & SYS_RENEGADE) == SYS_RENEGADE)
