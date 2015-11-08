@@ -1,38 +1,9 @@
-function Attribute(value) {
-	if (typeof(value) == 'object' && value.constructor === Attribute)
-		this.value = value.value;
-	else
-		this.value = value;
-}
-
-Attribute.prototype = {
-	// TODO: High intensity background, not blink
-	get blink() {
-		return (this.value & 0x80) ? true : false;
-	},
-	set blink(val) {
-		if (val)
-			this.value |= 0x80;
-		else
-			this.value &= ~0x80;
-	},
-
-	get bg() {
-		return (this.value >> 4) & 0x07;
-	},
-	set bg(val) {
-		this.value &= 0x8f;
-		this.value |= ((val << 4) & 0x70);
-	},
-
-	get fg() {
-		return this.value & 0x0f;
-	},
-	set fg(val) {
-		this.value &= 0xf0;
-		this.value |= val & 0x0f;
-	}
-}
+js.load_path_list.unshift(js.exec_dir+"/dorkit/");
+if (js.global.system !== undefined)
+	js.load_path_list.unshift(system.exec_dir+"/dorkit/");
+log("Load path: "+js.load_path_list.join(", "));
+load("attribute.js");
+load("graphic.js");
 
 var dk = {
 	key:{
@@ -169,7 +140,6 @@ var dk = {
 		/* End of ASCII */
 	},
 
-
 	console:{
 		x:1,					// Current column (1-based)
 		y:1,					// Current row (1-based)
@@ -178,20 +148,266 @@ var dk = {
 		charset:'cp437',		// Supported character set
 		local:true,				// True if writes should go to the local screen
 		remote:true,			// True if writes should go to the remote terminal
-		rows:24,				// Rows in users terminal
+		rows:undefined,			// Rows in users terminal
+		cols:undefined,			// Columns in users terminal
+
+		/*
+		 * Returns a string with ^A codes converted to ANSI or stripped
+		 * as appropriate.
+		 */
+		parse_ctrla:function(txt, orig_attr) {
+			var ret='';
+			var i;
+			var curr_attr;
+			var next_attr;
+
+			if (orig_attr !== undefined)
+				curr_attr = new Attribute(orig_attr);
+			next_attr = new Attribute(curr_attr);
+
+			function attr_str() {
+				var ansi_str;
+
+				if (curr_attr === undefined || curr_attr.value != next_attr.value) {
+					ansi_str = next_attr.ansi(curr_attr);
+					curr_attr.value = next_attr.value;
+					return ansi_str;
+				}
+				return '';
+			}
+
+			for (i=0; i<txt.length; i++) {
+				if (txt.charCodeAt(i)==1) {
+					i++;
+					switch(txt.substr(i, 1)) {
+						case '\1':
+							ret += attr_str()+'\1';
+							break;
+						case 'K':
+							next_attr.fg = Attribute.BLACK;
+							break;
+						case 'R':
+							next_attr.fg = Attribute.RED;
+							break;
+						case 'G':
+							next_attr.fg = Attribute.GREEN;
+							break;
+						case 'Y':
+							next_attr.fg = Attribute.YELLOW;
+							break;
+						case 'B':
+							next_attr.fg = Attribute.BLUE;
+							break;
+						case 'M':
+							next_attr.fg = Attribute.MAGENTA;
+							break;
+						case 'C':
+							next_attr.fg = Attribute.CYAN;
+							break;
+						case 'W':
+							next_attr.fg = Attribute.WHITE;
+							break;
+						case '0':
+							next_attr.bg = Attribute.BLACK;
+							break;
+						case '1':
+							next_attr.bg = Attribute.RED;
+							break;
+						case '2':
+							next_attr.bg = Attribute.GREEN;
+							break;
+						case '3':
+							next_attr.bg = Attribute.YELLOW;
+							break;
+						case '4':
+							next_attr.bg = Attribute.BLUE;
+							break;
+						case '5':
+							next_attr.bg = Attribute.MAGENTA;
+							break;
+						case '6':
+							next_attr.bg = Attribute.CYAN;
+							break;
+						case '7':
+							next_attr.bg = Attribute.WHITE;
+							break;
+						case 'H':
+							next_attr.bright = true;
+							break;
+						case 'I':
+							next_attr.blink = true;
+							break;
+						case 'N':
+							next_attr.value = 7;
+							break;
+						case '-':
+							if (next_attr.blink || next_attr.bright || next_attr.bg !== Attribute.BLACK)
+								next_attr.value = 7;
+							break;
+						case '_':
+							if (next_attr.blink || next_attr.bg !== Attribute.BLACK)
+								next_attr.value = 7;
+							break;
+						default:
+							break;
+					}
+				}
+				else {
+					ret += attr_str()+txt.substr(i, 1);
+				}
+			}
+			return ret;
+
+			return txt.replace(/\1([\x00-\xff])/g, function(unused, code) {
+				switch(code) {
+					case '\1':
+						return '\1';
+					case 'K':
+						curr_attr.fg = Attribute.BLACK;
+						break;
+				}
+			});
+			/* ToDo: Expand \1D, \1T, \1<, \1Z */
+			/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
+			/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
+			while(p<txt.length) {
+				ch=txt[p++];
+				switch(ch) {
+					case '\1':		/* CTRL-A code */
+						ch=txt[p++].toUpperCase();
+						switch(ch) {
+							case '\1':	/* A "real" ^A code */
+								this.data[x][y].ch=ch;
+								this.data[x][y].attr=curattr;
+								x++;
+								if(x>=this.width) {
+									x=0;
+									y++;
+									log("next char: [" + txt[p] + "]");
+									if(txt[p] == '\r') p++;
+									if(txt[p] == '\n') p++;
+								}
+								break;
+							case 'K':	/* Black */
+								curattr=(curattr)&0xf8;
+								break;
+							case 'R':	/* Red */
+								curattr=((curattr)&0xf8)|this.defs.RED;
+								break;
+							case 'G':	/* Green */
+								curattr=((curattr)&0xf8)|this.defs.GREEN;
+								break;
+							case 'Y':	/* Yellow */
+								curattr=((curattr)&0xf8)|this.defs.BROWN;
+								break;
+							case 'B':	/* Blue */
+								curattr=((curattr)&0xf8)|this.defs.BLUE;
+								break;
+							case 'M':	/* Magenta */
+								curattr=((curattr)&0xf8)|this.defs.MAGENTA;
+								break;
+							case 'C':	/* Cyan */
+								curattr=((curattr)&0xf8)|this.defs.CYAN;
+								break;
+							case 'W':	/* White */
+								curattr=((curattr)&0xf8)|this.defs.LIGHTGRAY;
+								break;
+							case '0':	/* Black */
+								curattr=(curattr)&0x8f;
+								break;
+							case '1':	/* Red */
+								curattr=((curattr)&0x8f)|(this.defs.RED<<4);
+								break;
+							case '2':	/* Green */
+								curattr=((curattr)&0x8f)|(this.defs.GREEN<<4);
+								break;
+							case '3':	/* Yellow */
+								curattr=((curattr)&0x8f)|(this.defs.BROWN<<4);
+								break;
+							case '4':	/* Blue */
+								curattr=((curattr)&0x8f)|(this.defs.BLUE<<4);
+								break;
+							case '5':	/* Magenta */
+								curattr=((curattr)&0x8f)|(this.defs.MAGENTA<<4);
+								break;
+							case '6':	/* Cyan */
+								curattr=((curattr)&0x8f)|(this.defs.CYAN<<4);
+								break;
+							case '7':	/* White */
+								curattr=((curattr)&0x8f)|(this.defs.LIGHTGRAY<<4);
+								break;
+							case 'H':	/* High Intensity */
+								curattr|=this.defs.HIGH;
+								break;
+							case 'I':	/* Blink */
+								curattr|=this.defs.BLINK;
+								break;
+							case 'N':	/* Normal (ToDo: Does this do ESC[0?) */
+								curattr=7;
+								break;
+							case '-':	/* Normal if High, Blink, or BG */
+								if(curattr & 0xf8)
+									curattr=7;
+								break;
+							case '_':	/* Normal if blink/background */
+								if(curattr & 0xf0)
+									curattr=7;
+								break;
+							case '[':	/* CR */
+								x=0;
+								break;
+							case ']':	/* LF */
+								y++;
+								break;
+							default:	/* Other stuff... specifically, check for right movement */
+								if(ch.charCodeAt(0)>127) {
+									x+=ch.charCodeAt(0)-127;
+									if(x>=this.width)
+										x=this.width-1;
+								}
+						}
+						break;
+					case '\7':		/* Beep */
+						break;
+					case '\r':
+						x=0;
+						break;
+					case '\n':
+						y++;
+						break;
+					default:
+						this.data[x][y]=new this.Cell(ch,curattr);
+						x++;
+						if(x>=this.width) {
+							x=0;
+							y++;
+							if(txt[p] == '\r') p++;
+							if(txt[p] == '\n') p++;
+						}
+				}
+			}
+		},
 
 		/*
 		 * Clears the current screen to black and moves to location 1,1
 		 * sets the current attribute to 7
 		 */
 		clear:function() {
+			if (this.local)
+				this.local_io.clear();
+			if (this.remote)
+				this.remote_io.clear();
 		},
 
 		/*
 		 * Clears to end of line.
-		 * Not available witout ANSI (???)
+		 * Not available without ANSI (???)
 		 */
 		cleareol:function() {
+			if (this.local)
+				this.local_io.cleareol();
+			if (this.remote)
+				this.remote_io.cleareol();
 		},
 
 		/*
@@ -200,6 +416,10 @@ var dk = {
 		 * Not available without ANSI
 		 */
 		gotoxy:function(x,y) {
+			if (this.local)
+				this.local_io.gotoxy(x,y);
+			if (this.remote)
+				this.remote_io.gotoxy(x,y);
 		},
 
 		/*
@@ -210,27 +430,34 @@ var dk = {
 		},
 
 		/*
-		 * Writes a string with a "\r\n" appended.
-		 */
-		println:function(line) {
-		},
-
-		/*
 		 * Writes a string unmodified.
 		 */
 		print:function(string) {
+			if (this.local)
+				this.local_io.print(string);
+			if (this.remote)
+				this.remote_io.print(string);
 		},
 
 		/*
-		 * Writes a string after parsing ^A codes and appends a "\r\n".
+		 * Writes a string with a "\r\n" appended.
 		 */
-		aprintln:function(line) {
+		println:function(line) {
+			this.print(line+'\r\n');
 		},
 
 		/*
 		 * Writes a string after parsing ^A codes.
 		 */
 		aprint:function(string) {
+			this.println(this.parse_ctrla(line));
+		},
+
+		/*
+		 * Writes a string after parsing ^A codes and appends a "\r\n".
+		 */
+		aprintln:function(line) {
+			this.println(this.parse_ctrla(line));
 		},
 
 		/*
@@ -239,6 +466,11 @@ var dk = {
 		 * true when the entire ANSI sequence is available.
 		 */
 		waitkey:function(timeout) {
+			var q = new Queue("dorkit_input");
+			// TODO: Parse ANSI here!
+			if (q.poll(timeout) === false)
+				return false;
+			return true;
 		},
 
 		/*
@@ -246,12 +478,17 @@ var dk = {
 		 * Returns undefined if there is no key pressed.
 		 */
 		getkey:function() {
+			var q = new Queue("dorkit_input");
+			// TODO: Parse ANSI here!
+			return q.read();
 		},
 
 		/*
 		 * Returns a single byte... ANSI is not parsed.
 		 */
 		getbyte:function() {
+			var q = new Queue("dorkit_input");
+			return q.read();
 		},
 	},
 	connection:{
@@ -317,6 +554,16 @@ var dk = {
 	misc:{
 		event_time:undefined,
 		record_locking:undefined
+	},
+
+	detect_ansi:function() {
+		this.console.remote_io.print("\x1b[s" +	// Save cursor position.
+						"\x1b[255B" +	// Locate as far down as possible
+						"\x1b[255C" +	// Locate as far right as possible
+						"\b "+			// Print something (some terminals apparently need this)
+						"\x1b[6n" +		// Get cursor position
+						"\x1b[u"		// Restore cursor position
+		);
 	},
 
 	parse_dropfile:function(path) {
@@ -409,7 +656,7 @@ var dk = {
 	}
 };
 
-js.load_path_list.unshift(js.exec_dir+"/jsdoor/");
+load("local_console.js");
 
 switch(dk.system.mode) {
 	case 'sbbs':
