@@ -2036,28 +2036,91 @@ static BOOL js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type)
 
 /* Socket Constructor (creates socket descriptor) */
 
+JSObject* DLLCALL js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock)
+{
+	JSObject*	obj;
+	js_socket_private_t*	p;
+	int			type=SOCK_STREAM;
+	socklen_t	len;
+
+	obj=JS_NewObject(cx, &js_socket_class, NULL, NULL);
+
+	if(obj==NULL)
+		return(NULL);
+
+	len = sizeof(type);
+	getsockopt(sock,SOL_SOCKET,SO_TYPE,(void*)&type,&len);
+
+	if(!js_DefineSocketOptionsArray(cx, obj, type))
+		return(NULL);
+
+	if((p=(js_socket_private_t*)malloc(sizeof(js_socket_private_t)))==NULL)
+		return(NULL);
+	memset(p,0,sizeof(js_socket_private_t));
+
+	p->sock = sock;
+	p->external = TRUE;
+	p->network_byte_order = TRUE;
+	p->session=-1;
+
+	if (p->sock != INVALID_SOCKET) {
+		len=sizeof(p->remote_addr);
+		if(getpeername(p->sock, &p->remote_addr.addr,&len)==0)
+			p->is_connected=TRUE;
+	}
+
+	if(!JS_SetPrivate(cx, obj, p)) {
+		dbprintf(TRUE, p, "JS_SetPrivate failed");
+		return(NULL);
+	}
+
+	dbprintf(FALSE, p, "object created");
+
+	return(obj);
+}
+
 static JSBool
 js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
+	SOCKET sock;
 	JSObject *obj;
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32	type=SOCK_STREAM;	/* default = TCP */
 	uintN	i;
 	js_socket_private_t* p;
 	char*	protocol=NULL;
-
-	obj=JS_NewObject(cx, &js_socket_class, NULL, NULL);
-	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
+	BOOL	from_descriptor=FALSE;
 
 	for(i=0;i<argc;i++) {
-		if(JSVAL_IS_NUMBER(argv[i]))
-			JS_ValueToInt32(cx,argv[i],&type);
+		if(JSVAL_IS_NUMBER(argv[i])) {
+			if (from_descriptor) {
+#ifdef WIN32
+				JS_ValueToECMAUint32(cx,argv[i],&sock);
+#else
+				JS_ValueToInt32(cx,argv[i],&sock);
+#endif
+				obj = js_CreateSocketObjectWithoutParent(cx, sock);
+				if (obj == NULL) {
+					JS_ReportError(cx, "Failed to create external socket object");
+					return JS_FALSE;
+				}
+				JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
+				return JS_TRUE;
+			}
+			else
+				JS_ValueToInt32(cx,argv[i],&type);
+		}
+		else if(JSVAL_IS_BOOLEAN(argv[i]))
+			from_descriptor = TRUE;
 		else if(protocol==NULL) {
 			JSVALUE_TO_MSTRING(cx, argv[i], protocol, NULL);
 			HANDLE_PENDING(cx);
 		}
 	}
-		
+
+	obj=JS_NewObject(cx, &js_socket_class, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
+
 	if((p=(js_socket_private_t*)malloc(sizeof(js_socket_private_t)))==NULL) {
 		JS_ReportError(cx,"malloc failed");
 		if(protocol)
@@ -2091,7 +2154,10 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	js_DescribeSyncConstructor(cx,obj,"To create a new Socket object: "
 		"<tt>load('sockdefs.js'); var s = new Socket(<i>type</i>, <i>protocol</i>)</tt><br>"
 		"where <i>type</i> = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP<br>"
-		"and <i>protocol</i> (optional) = the name of the protocol or service the socket is to be used for"
+		"and <i>protocol</i> (optional) = the name of the protocol or service the socket is to be used for<br>"
+		"To create a socket from a socket descriptor: "
+		"<tt>var s = new Socket(true, <i>descriptor</i>)</tt><br>"
+		"where <i>descriptor</i> is the numerical value of an existing valid socket descriptor"
 		);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", socket_prop_desc, JSPROP_READONLY);
 #endif
@@ -2118,43 +2184,11 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOCKET sock)
 {
 	JSObject*	obj;
-	js_socket_private_t*	p;
-	int			type=SOCK_STREAM;
-	socklen_t	len;
 
-	obj = JS_DefineObject(cx, parent, name, &js_socket_class, NULL
-		,JSPROP_ENUMERATE|JSPROP_READONLY);
-
+	obj = js_CreateSocketObjectWithoutParent(cx, sock);
 	if(obj==NULL)
 		return(NULL);
-
-	len = sizeof(type);
-	getsockopt(sock,SOL_SOCKET,SO_TYPE,(void*)&type,&len);
-
-	if(!js_DefineSocketOptionsArray(cx, obj, type))
-		return(NULL);
-
-	if((p=(js_socket_private_t*)malloc(sizeof(js_socket_private_t)))==NULL)
-		return(NULL);
-	memset(p,0,sizeof(js_socket_private_t));
-
-	p->sock = sock;
-	p->external = TRUE;
-	p->network_byte_order = TRUE;
-	p->session=-1;
-
-	if (p->sock != INVALID_SOCKET) {
-		len=sizeof(p->remote_addr);
-		if(getpeername(p->sock, &p->remote_addr.addr,&len)==0)
-			p->is_connected=TRUE;
-	}
-
-	if(!JS_SetPrivate(cx, obj, p)) {
-		dbprintf(TRUE, p, "JS_SetPrivate failed");
-		return(NULL);
-	}
-
-	dbprintf(FALSE, p, "object created");
+	JS_DefineProperty(cx, parent, name, OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	return(obj);
 }
