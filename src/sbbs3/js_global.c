@@ -388,6 +388,14 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			}
 		}
 
+		// These js_Create*Object() functions use GetContextPrivate() for the sbbs_t.
+		JS_SetContextPrivate(bg->cx, JS_GetContextPrivate(bg->parent_cx));
+		if (JS_HasProperty(cx, obj, "bbs", &success) && success)
+			js_CreateBbsObject(bg->cx, bg->obj);
+		if (JS_HasProperty(cx, obj, "console", &success) && success)
+			js_CreateConsoleObject(bg->cx, bg->obj);
+		JS_SetContextPrivate(bg->cx, bg);
+
 		exec_cx = bg->cx;
 		exec_obj = bg->obj;
 		

@@ -79,7 +79,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	JSString*	js_str;
 	sbbs_t*		sbbs;
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, obj))==NULL)
 		return(JS_FALSE);
 
     JS_IdToValue(cx, id, &idval);
@@ -185,7 +185,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 	jsrefcount	rc;
 	char		*sval;
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, obj))==NULL)
 		return(JS_FALSE);
 
     JS_IdToValue(cx, id, &idval);
@@ -382,7 +382,7 @@ js_inkey(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -417,7 +417,7 @@ js_getkey(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -448,7 +448,7 @@ js_handle_ctrlkey(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(JSVAL_IS_INT(argv[0]))
@@ -485,7 +485,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	for(i=0;i<argc;i++) {
@@ -546,7 +546,7 @@ js_getnum(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
@@ -579,7 +579,7 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	for(i=0;i<argc;i++) {
@@ -634,7 +634,7 @@ js_gettemplate(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	for(i=0;i<argc;i++) {
@@ -685,7 +685,7 @@ js_ungetstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 	
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
@@ -715,7 +715,7 @@ js_yesno(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 	
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
@@ -742,7 +742,7 @@ js_noyes(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 	
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
@@ -769,7 +769,7 @@ js_mnemonics(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
@@ -819,7 +819,7 @@ js_clear(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -842,7 +842,7 @@ js_clearline(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -865,7 +865,7 @@ js_cleartoeol(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -890,7 +890,7 @@ js_crlf(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -915,7 +915,7 @@ js_pause(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -935,7 +935,7 @@ js_beep(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -962,7 +962,7 @@ js_print(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
     for (i = 0; i < argc; i++) {
@@ -1015,7 +1015,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
     for (i = 0; i < argc; i++) {
@@ -1038,7 +1038,7 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -1061,7 +1061,7 @@ js_putmsg(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
@@ -1095,7 +1095,7 @@ js_printfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
@@ -1131,7 +1131,7 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	for(i=0;i<argc;i++) {
@@ -1175,7 +1175,7 @@ js_editfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
@@ -1208,7 +1208,7 @@ js_uselect(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 	
 	if(!argc) {
@@ -1270,7 +1270,7 @@ js_center(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
@@ -1294,7 +1294,7 @@ js_saveline(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(sbbs->slcnt<SAVE_LINES) {
@@ -1315,7 +1315,7 @@ js_restoreline(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1339,7 +1339,7 @@ js_ansi(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -1371,7 +1371,7 @@ js_pushxy(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1388,7 +1388,7 @@ js_popxy(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1408,7 +1408,7 @@ js_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(JSVAL_IS_OBJECT(argv[0])) {
@@ -1442,7 +1442,7 @@ js_getxy(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, obj))==NULL)
  		return(JS_FALSE);
  
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1469,7 +1469,7 @@ js_cursor_home(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1488,7 +1488,7 @@ js_cursor_up(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -1511,7 +1511,7 @@ js_cursor_down(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -1534,7 +1534,7 @@ js_cursor_right(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -1557,7 +1557,7 @@ js_cursor_left(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -1578,7 +1578,7 @@ js_backspace(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1594,7 +1594,7 @@ js_clearkeybuf(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	sbbs->keybufbot=sbbs->keybuftop=0;
@@ -1610,7 +1610,7 @@ js_getlines(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1629,7 +1629,7 @@ js_lock_input(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc)
@@ -1658,7 +1658,7 @@ js_telnet_cmd(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(!JS_ValueToInt32(cx,argv[0],&cmd))
@@ -1685,7 +1685,7 @@ js_term_supports(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+	if((sbbs=(sbbs_t*)JS_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
 	if(argc) {
@@ -1944,7 +1944,7 @@ static JSBool js_console_enumerate(JSContext *cx, JSObject *obj)
 
 static JSClass js_console_class = {
      "Console"				/* name			*/
-    ,0						/* flags		*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
 	,js_console_get			/* getProperty	*/
@@ -1966,6 +1966,11 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 	if((obj=JS_DefineObject(cx, parent, "console", &js_console_class, NULL
 		,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 		return(NULL);
+
+	if (obj == NULL)
+		return NULL;
+
+	JS_SetPrivate(cx, obj, sbbs);
 
 	/* Create an array of pre-defined colors */
 
