@@ -323,7 +323,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		if(!js_CreateCommonObjects(bg->cx
 				,p->cfg			/* common config */
 				,NULL			/* node-specific config */
-				,NULL			/* additional global methods */
+				,p->methods		/* additional global methods */
 				,0				/* uptime */
 				,""				/* hostname */
 				,""				/* socklib_desc */
