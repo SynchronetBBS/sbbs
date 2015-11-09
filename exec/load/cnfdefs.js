@@ -8,17 +8,16 @@ constants are defined... if not, add them */
 
 var LEN_DIR = 		63;
 var LEN_CMD = 		63;
-var LEN_CODE = 		8;
 var LEN_ARSTR =		40;
-var LEN_CODE =		8		/* Maximum length of internal codes			*/
-var LEN_QWKID =		8		/* Maximum length of QWK-ID					*/
-var LEN_MODNAME = 	8		/* Maximum length of readable module name	*/
-var LEN_SIFNAME = 	8		/* Maximum length of SIF filename			*/
-var LEN_EXTCODE = 	LEN_CODE*2 /* Code prefix + suffix */
-var LEN_GSNAME =	15		/* Group/Lib short name						*/
-var LEN_GLNAME =	40		/* Group/Lib long name						*/
-var LEN_SSNAME =	25		/* Sub/Dir short name						*/
-var LEN_SLNAME =	40		/* Sub/Dir long name						*/
+var LEN_CODE =		8;		/* Maximum length of internal codes			*/
+var LEN_QWKID =		8;		/* Maximum length of QWK-ID					*/
+var LEN_MODNAME = 	8;		/* Maximum length of readable module name	*/
+var LEN_SIFNAME = 	8;		/* Maximum length of SIF filename			*/
+var LEN_EXTCODE = 	LEN_CODE*2; /* Code prefix + suffix */
+var LEN_GSNAME =	15;		/* Group/Lib short name						*/
+var LEN_GLNAME =	40;		/* Group/Lib long name						*/
+var LEN_SSNAME =	25;		/* Sub/Dir short name						*/
+var LEN_SLNAME =	40;		/* Sub/Dir long name						*/
 						
 var UINT16_T = 		2;
 var UINT32_T = 		4;
