@@ -1,5 +1,5 @@
 /* 	CNF file reader/writer - mcmlxxix - 2013
-	$id: $
+	$Id$
 */
 
 /* miscellaneous constants required for cnf parsing

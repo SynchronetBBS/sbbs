@@ -1,3 +1,7 @@
+/* CNF data structure definitions (see scfglib2.c) 
+	$Id$
+*/
+
 js.global.load(js.global,"cnfdefs.js");
 
 var CNF = new (function() {
@@ -94,12 +98,12 @@ var CNF = new (function() {
 		var records = getInt(file,UINT16_T);
 		
 		for(var i=0;i<records;i++) {
-			var data = {};
 			if(file.eof) 
 				break;
-			data.name = getStr(file,struct.name.bytes);
-			list[i].name = data;
-			list[i].misc = 0;
+			list[i] = {
+				name:etStr(file,struct.name.bytes),
+				misc:0
+			};
 		}
 		records = i;
 		for(var i=0;i<records;i++) {
@@ -153,7 +157,7 @@ var CNF = new (function() {
 		for(var i=0;i<records.length;i++) {
 			setStr(file,struct.name.bytes,records[i].name);
 		}
-		for(var i=0;i<records;i++) {
+		for(var i=0;i<records.length;i++) {
 			setInt(file,struct.misc.bytes,records[i].misc);
 		}
 	}
