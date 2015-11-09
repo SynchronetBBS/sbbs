@@ -98,7 +98,8 @@ var CNF = new (function() {
 			if(file.eof) 
 				break;
 			data.name = getStr(file,struct.name.bytes);
-			list[i] = data;
+			list[i].name = data;
+			list[i].misc = 0;
 		}
 		records = i;
 		for(var i=0;i<records;i++) {
