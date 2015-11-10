@@ -425,7 +425,7 @@ var dk = {
 			if (ret.length > 1) {
 				if (ret.substr(0, 9) === 'POSITION_') {
 					m = ret.match(/^POSITION_([0-9]+)_([0-9]+)/);
-					if (m == NULL)
+					if (m == null)
 						return undefined;
 					this.last_pos.x = parseInt(m[2], 10);
 					this.last_pos.y = parseInt(m[1], 10);
@@ -534,9 +534,15 @@ var dk = {
 						"\x1b[u"		// Restore cursor position
 		);
 		while(Date.now() - start < 500) {
-			if(waitkey(500))
-				if (getkey() == key.console.POSITION_REPORT)
+			if(this.console.waitkey(500)) {
+				if (this.console.getkey() == this.console.key.POSITION_REPORT) {
+					// TODO: Should we trust the drop file on number of rows?
+					this.console.cols = this.console.last_pos.x;
+					this.console.rows = this.console.last_pos.y;
+					this.console.ansi = true;
 					return true;
+				}
+			}
 		}
 		return false;
 	},
