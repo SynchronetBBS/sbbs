@@ -115,7 +115,9 @@ void usage(FILE* fp)
 
 	fprintf(fp,"\nusage: " PROG_NAME_LC " [-opts] [path]module[.js] [args]\n"
 		"\navailable opts:\n\n"
-#ifndef JSDOOR
+#ifdef JSDOOR
+		"\t-c<ctrl_dir>   specify path to CTRL directory\n"
+#else
 		"\t-c<ctrl_dir>   specify path to Synchronet CTRL directory\n"
 #endif
 #if defined(__unix__)
@@ -1090,8 +1092,18 @@ int main(int argc, char **argv, char** environ)
 	getcwd(orig_cwd, sizeof(orig_cwd));
 	backslash(orig_cwd);
 #ifdef JSDOOR
+ 	SAFECOPY(scfg.ctrl_dir, orig_cwd);
+	prep_dir("", scfg.ctrl_dir, sizeof(scfg.ctrl_dir));
  	SAFECOPY(scfg.exec_dir, orig_cwd);
+	prep_dir(scfg.ctrl_dir, scfg.exec_dir, sizeof(scfg.exec_dir));
  	SAFECOPY(scfg.mods_dir, orig_cwd);
+	prep_dir(scfg.ctrl_dir, scfg.mods_dir, sizeof(scfg.mods_dir));
+ 	SAFECOPY(scfg.data_dir, orig_cwd);
+	prep_dir(scfg.ctrl_dir, scfg.data_dir, sizeof(scfg.data_dir));
+ 	SAFECOPY(scfg.text_dir, orig_cwd);
+	prep_dir(scfg.ctrl_dir, scfg.text_dir, sizeof(scfg.text_dir));
+ 	SAFECOPY(scfg.logs_dir, orig_cwd);
+	prep_dir(scfg.ctrl_dir, scfg.text_dir, sizeof(scfg.text_dir));
  	scfg.sys_misc = 0; /* SM_EURODATE and SM_MILITARY are used */
 #endif
 
@@ -1102,12 +1114,10 @@ int main(int argc, char **argv, char** environ)
 				case 'a':
 					omode="a";
 					break;
-#ifndef JSDOOR
 				case 'c':
 					if(*p==0) p=argv[++argn];
 					SAFECOPY(scfg.ctrl_dir,p);
 					break;
-#endif
 #if defined(__unix__)
 				case 'd':
 					daemonize=TRUE;

@@ -69,6 +69,7 @@ char* socklib_version(char* str, char* winsock_ver)
 	return(str);
 }
 
+#ifndef JSDOOR
 void sbbs_t::ver()
 {
 	char str[128],compiler[32];
@@ -109,4 +110,4 @@ void sbbs_t::ver()
 
 	center(os_version(str));
 }
-
+#endif

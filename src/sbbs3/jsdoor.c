@@ -182,6 +182,16 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 	return(JS_TRUE);
 }
 
+// Needed for load()
+JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
+{
+	return NULL;
+}
+JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
+{
+	return NULL;
+}
+
 BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 										,scfg_t *unused1
 										,scfg_t *unused2
@@ -204,6 +214,10 @@ BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		return(FALSE);
 
 	do {
+		/* System Object */
+		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, host_name, socklib_desc)==NULL)
+			break;
+
 		/* Internal JS Object */
 		if(cb!=NULL 
 			&& js_CreateInternalJsObject(js_cx, *glob, cb, js_startup)==NULL)
@@ -253,3 +267,5 @@ BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 #define JSDOOR
 
 #include "jsexec.c"
+#include "js_system.c"
+#include "ver.cpp"
