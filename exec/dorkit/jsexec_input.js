@@ -7,15 +7,6 @@ var k;
 while(!js.terminated) {
 	if (parent_queue.poll(0))
 		break;
-	// Can't select() files on Win32.
-	if(system.platform == 'Win32') {
-		k = read(1);
-	}
-	else {
-		k = undefined;
-		if (socket_select([0], 0.1).length == 1)
-			k = read(1);
-	}
-	if (k != undefined && k.length)
-		ai.add(k);
+	k = read(1);
+	ai.add(k);
 }

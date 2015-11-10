@@ -71,4 +71,6 @@ while(!js.terminated) {
 		for(i=0; i<k.length; i++)
 			ai.add(k.substr(i,1));
 	}
+	else
+		ai.add('');
 }
