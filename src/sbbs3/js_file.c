@@ -52,6 +52,8 @@ typedef struct
 	char	name[MAX_PATH+1];
 	char	mode[4];
 	uchar	etx;
+	size_t	bufsize;
+	int		bufmode;
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
 	BOOL	rot13;
@@ -164,6 +166,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 				return(JS_FALSE);
 		}
 	}
+	p->bufsize = bufsize;
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(shareable)
@@ -185,15 +188,17 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	if(p->fp!=NULL) {
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		dbprintf(FALSE, p, "opened: %s",p->name);
-		if(!bufsize)
-			setvbuf(p->fp,NULL,_IONBF,0);	/* no buffering */
+		if(!bufsize) {
+			p->bufmode = _IONBF;
+		}
 		else {
 #ifdef _WIN32
 			if(bufsize < 2)
 				bufsize = 2;
 #endif
-			setvbuf(p->fp,NULL,_IOFBF,bufsize);
+			p->bufmode = _IOFBF;
 		}
+		setvbuf(p->fp,NULL,p->bufmode,p->bufsize);
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -2030,6 +2035,8 @@ enum {
 	,FILE_PROP_B64ENCODED
 	,FILE_PROP_ROT13
 	,FILE_PROP_NETWORK_ORDER
+	,FILE_PROP_BUFSIZE
+	,FILE_PROP_BUFMODE
 	/* dynamically calculated */
 	,FILE_PROP_CHKSUM
 	,FILE_PROP_CRC16
@@ -2043,6 +2050,7 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 {
 	jsval idval;
 	int32		i=0;
+	uint32_t	u=0;
     jsint       tiny;
 	private_t*	p;
 	jsrefcount	rc;
@@ -2114,6 +2122,30 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			if(!JS_ValueToInt32(cx,*vp,&i))
 				return(JS_FALSE);
 			p->etx = (uchar)i;
+			break;
+		case FILE_PROP_BUFSIZE:
+			if(!JS_ValueToECMAUint32(cx,*vp,&u))
+				return(JS_FALSE);
+			p->bufsize = u;
+			setvbuf(p->fp, NULL, p->bufmode, p->bufsize);
+			break;
+		case FILE_PROP_BUFMODE:
+			if(!JS_ValueToInt32(cx,*vp,&i))
+				return(JS_FALSE);
+			switch(i) {
+				case 0:
+					p->bufmode = _IONBF;
+					break;
+				case 1:
+					p->bufmode = _IOLBF;
+					break;
+				case 2:
+					p->bufmode = _IOFBF;
+					break;
+				default:
+					JS_ReportError(cx,"Invalid buffer mode",WHERE);
+					return JS_FALSE;
+			}
 			break;
 	}
 
@@ -2322,6 +2354,25 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(js_str!=NULL)
 				*vp = STRING_TO_JSVAL(js_str);
 			break;
+		case FILE_PROP_BUFSIZE:
+			*vp = UINT_TO_JSVAL(p->bufsize);
+			break;
+		case FILE_PROP_BUFMODE:
+			switch(p->bufmode) {
+				case _IONBF:
+					*vp = INT_TO_JSVAL(0);
+					break;
+				case _IOLBF:
+					*vp = INT_TO_JSVAL(1);
+					break;
+				case _IOFBF:
+					*vp = INT_TO_JSVAL(2);
+					break;
+				default:
+					JS_ReportError(cx,"Invalid buffer mode",WHERE);
+					return JS_FALSE;
+			}
+			break;
 	}
 
 	return(JS_TRUE);
@@ -2350,6 +2401,8 @@ static jsSyncPropertySpec js_file_properties[] = {
 	{	"uue"				,FILE_PROP_UUENCODED	,JSPROP_ENUMERATE,	311},
 	{	"yenc"				,FILE_PROP_YENCODED		,JSPROP_ENUMERATE,	311},
 	{	"base64"			,FILE_PROP_B64ENCODED	,JSPROP_ENUMERATE,	311},
+	{	"bufsize"			,FILE_PROP_BUFSIZE		,JSPROP_ENUMERATE,	317},
+	{	"bufmode"			,FILE_PROP_BUFMODE		,JSPROP_ENUMERATE,	317},
 	/* dynamically calculated */
 	{	"crc16"				,FILE_PROP_CRC16		,FILE_PROP_FLAGS,	311},
 	{	"crc32"				,FILE_PROP_CRC32		,FILE_PROP_FLAGS,	311},
@@ -2379,6 +2432,8 @@ static char* file_prop_desc[] = {
 	,"set to <i>true</i> to enable automatic Unix-to-Unix encode and decode on <tt>read</tt> and <tt>write</tt> calls"
 	,"set to <i>true</i> to enable automatic yEnc encode and decode on <tt>read</tt> and <tt>write</tt> calls"
 	,"set to <i>true</i> to enable automatic Base64 encode and decode on <tt>read</tt> and <tt>write</tt> calls"
+	,"size of file buffer"
+	,"file buffer mode.  0 means unbuffered, 1 means line buffered, and 2 means fully buffered"
 	,"calculated 16-bit CRC of file contents - <small>READ ONLY</small>"
 	,"calculated 32-bit CRC of file contents - <small>READ ONLY</small>"
 	,"calculated 32-bit checksum of file contents - <small>READ ONLY</small>"
