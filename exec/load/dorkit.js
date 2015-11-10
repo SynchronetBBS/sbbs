@@ -7,6 +7,7 @@ load("graphic.js");
 
 var dk = {
 	console:{
+		last_pos:{x:1, y:1},
 		key:{
 			CTRL_A:'\x01',
 			CTRL_B:'\x02',
@@ -67,7 +68,8 @@ var dk = {
 			KEY_PGUP:'KEY_PGUP',
 			KEY_PGDOWN:'KEY_PGDOWN',
 			KEY_INS:'KEY_INS',
-			KEY_DEL:'KEY_DEL'
+			KEY_DEL:'KEY_DEL',
+			POSITION_REPORT:'POSITION_REPORT'
 		},
 
 		x:1,					// Current column (1-based)
@@ -409,6 +411,7 @@ var dk = {
 		 */
 		getkey:function() {
 			var ret;
+			var m;
 
 			if (this.keybuf.length > 0) {
 				var ret = this.keybuf.substr(0,1);
@@ -419,8 +422,17 @@ var dk = {
 				return undefined;
 			var q = new Queue("dorkit_input");
 			ret = q.read();
-			if (ret.length > 1)
+			if (ret.length > 1) {
+				if (ret.substr(0, 9) === 'POSITION_') {
+					m = ret.match(/^POSITION_([0-9]+)_([0-9]+)/);
+					if (m == NULL)
+						return undefined;
+					this.last_pos.x = parseInt(m[2], 10);
+					this.last_pos.y = parseInt(m[1], 10);
+					ret = 'POSITION_REPORT';
+				}
 				ret=ret.replace(/\x00.*$/,'');
+			}
 			return ret;
 		},
 
@@ -513,6 +525,7 @@ var dk = {
 	},
 
 	detect_ansi:function() {
+		var start = Date.now();
 		this.console.remote_io.print("\x1b[s" +	// Save cursor position.
 						"\x1b[255B" +	// Locate as far down as possible
 						"\x1b[255C" +	// Locate as far right as possible
@@ -520,6 +533,12 @@ var dk = {
 						"\x1b[6n" +		// Get cursor position
 						"\x1b[u"		// Restore cursor position
 		);
+		while(Date.now() - start < 500) {
+			if(waitkey(500))
+				if (getkey() == key.console.POSITION_REPORT)
+					return true;
+		}
+		return false;
 	},
 
 	parse_dropfile:function(path) {

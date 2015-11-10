@@ -7,6 +7,7 @@ var ai={
 		var i;
 		var q;
 		var byte;
+		var m;
 
 		if (ch == '\x1b') {
 			if (this.ansi_started) {
@@ -156,12 +157,16 @@ var ai={
 					this.ansi_started = 0;
 					break;
 			}
+			m = this.charbuf.match(/^\x1b[([0-9]+);([0-9]+)R$/);
+			if (m !== null) {
+				q.write(format("POSITION_"+m[1]+"_"+m[2]+"\x00"+this.charbuf);
+			}
 			if (!this.ansi_started)
 				return;
 		}
 
 		// Timeout out waiting for escape sequence.
-		if (this.charbuf.length > 5 || this.ansi_started + 100 < Date.now()) {
+		if (this.charbuf.length > 10 || this.ansi_started + 100 < Date.now()) {
 			for(i=0; i<this.charbuf.length; i++) {
 				byte = this.charbuf.substr(i,1)
 				q.write(byte);
