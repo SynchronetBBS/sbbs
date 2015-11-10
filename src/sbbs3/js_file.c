@@ -1447,6 +1447,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	char*		cp;
 	char*		uubuf=NULL;
 	size_t		len;	/* string length */
+	int		decoded_len;
 	size_t		tlen;	/* total length to write (may be greater than len) */
 	int32		i;
 	JSString*	str;
@@ -1475,12 +1476,12 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	if((p->uuencoded || p->b64encoded || p->yencoded)
 		&& len && (uubuf=malloc(len))!=NULL) {
 		if(p->uuencoded)
-			len=uudecode(uubuf,len,cp,len);
+			decoded_len=uudecode(uubuf,len,cp,len);
 		else if(p->yencoded)
-			len=ydecode(uubuf,len,cp,len);
+			decoded_len=ydecode(uubuf,len,cp,len);
 		else
-			len=b64_decode(uubuf,len,cp,len);
-		if(len<0) {
+			decoded_len=b64_decode(uubuf,len,cp,len);
+		if(decoded_len<0) {
 			free(uubuf);
 			free(cp);
 			JS_RESUMEREQUEST(cx, rc);
@@ -1488,6 +1489,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		free(cp);
 		cp=uubuf;
+		len = decoded_len;
 	}
 
 	if(p->rot13)
