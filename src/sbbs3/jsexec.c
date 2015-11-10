@@ -42,6 +42,7 @@
 #ifdef __unix__
 #define _WITH_GETLINE
 #include <signal.h>
+#include <termios.h>
 #endif
 
 #include "sbbs.h"
@@ -273,6 +274,10 @@ static BOOL winsock_startup(void)
 
 #endif
 
+#ifdef __unix__
+struct termios orig_term;
+#endif
+
 static int do_bail(int code)
 {
 #if defined(_WINSOCKAPI_)
@@ -287,6 +292,10 @@ static int do_bail(int code)
 
 	if(code)
 		fprintf(statfp,"\nReturning error code: %d\n",code);
+#ifdef __unix__
+	if(isatty(fileno(stdin)))
+		tcsetattr(STDIN_FILENO, TCSANOW, &orig_term);
+#endif
 	return(code);
 }
 
@@ -1019,6 +1028,14 @@ int parseLogLevel(const char* p)
 	return DEFAULT_LOG_LEVEL;
 }
 
+#ifdef __unix__
+void raw_input(struct termios *t)
+{
+	t->c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+	t->c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+}
+#endif
+
 /*********************/
 /* Entry point (duh) */
 /*********************/
@@ -1038,14 +1055,23 @@ int main(int argc, char **argv, char** environ)
 
 	confp=stdout;
 	errfp=stderr;
+	if(isatty(fileno(stdin))) {
+#ifdef __unix__
+		struct termios term;
+
+		tcgetattr(fileno(stdin), &orig_term);
+		term = orig_term;
+		raw_input(&term);
+		tcsetattr(fileno(stdin), TCSANOW, &term);
+#endif
+		statfp=stderr;
+	}
+	else	/* if redirected, don't send status messages to stderr */
+		statfp=nulfp;
 	if((nulfp=fopen(_PATH_DEVNULL,"w+"))==NULL) {
 		perror(_PATH_DEVNULL);
 		return(do_bail(-1));
 	}
-	if(isatty(fileno(stderr)))
-		statfp=stderr;
-	else	/* if redirected, don't send status messages to stderr */
-		statfp=nulfp;
 
 	cb.limit=JAVASCRIPT_TIME_LIMIT;
 	cb.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
