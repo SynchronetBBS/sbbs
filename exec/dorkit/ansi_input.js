@@ -62,6 +62,7 @@ var ai={
 					case '\x1b[H':
 					case '\x1b[1~':
 					case '\x1b[L':
+					case '\x1b[w':
 					case '\x1b[OH':
 						q.write("KEY_HOME\x00"+this.charbuf);
 						this.ansi_started = 0;
@@ -75,28 +76,33 @@ var ai={
 						break;
 					case '\x1bP':
 					case '\x1bOP':
+					case '\x1b[11~':
 						q.write("KEY_F1\x00"+this.charbuf);
 						this.ansi_started = 0;
 						break;
 					case '\x1bQ':
 					case '\x1bOQ':
+					case '\x1b[12~':
 						q.write("KEY_F2\x00"+this.charbuf);
 						this.ansi_started = 0;
 						break;
 					case '\x1b?w':
 					case '\x1bOR':
 					case '\x1bOw':
+					case '\x1b[13~':
 						q.write("KEY_F3\x00"+this.charbuf);
 						this.ansi_started = 0;
 						break;
 					case '\x1b?x':
 					case '\x1bOS':
 					case '\x1bOx':
+					case '\x1b[14~':
 						q.write("KEY_F4\x00"+this.charbuf);
 						this.ansi_started = 0;
 						break;
 					case '\x1b?t':
 					case '\x1bOt':
+					case '\x1b[15~':
 						q.write("KEY_F5\x00"+this.charbuf);
 						this.ansi_started = 0;
 						break;
@@ -128,11 +134,11 @@ var ai={
 						q.write("KEY_F10\x00"+this.charbuf);
 						this.ansi_started = 0;
 						break;
-					case '\x1b[22~':
+					case '\x1b[23~':
 						q.write("KEY_F11\x00"+this.charbuf);
 						this.ansi_started = 0;
 						break;
-					case '\x1b[23~':
+					case '\x1b[24~':
 						q.write("KEY_F12\x00"+this.charbuf);
 						this.ansi_started = 0;
 						break;
