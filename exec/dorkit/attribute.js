@@ -1,7 +1,7 @@
 function Attribute(value) {
 	if (value === undefined)
 		this.value = 7;
-	else if (typeof(value) == 'object' && value.constructor === Attribute)
+	else if (typeof(value) == 'object' && value.value !== undefined && typeof(value.value) == 'number')
 		this.value = value.value;
 	else
 		this.value = value;
@@ -56,18 +56,18 @@ Attribute.prototype = {
 	},
 	set fg(val) {
 		this.value &= 0xf8;
-		this.value |= val & 0xf8;
+		this.value |= (val & 0x07);
 	},
 
 	ansi:function(curatr) {
 		var str="";
-		if(curatr !== undefined)
+		if(curatr !== undefined && curatr.value === this.value)
 			return str;	// Unchanged
 
 		str = "\x1b[";
 
 		if(curatr === undefined || (!(this.bright) && curatr.bright)
-				|| (!(this.blink) && curatr.blink) || atr==LIGHTGRAY) {
+				|| (!(this.blink) && curatr.blink) || this.value === 7) {
 			str += "0;";
 			if (curatr === undefined)
 				curatr = new Attribute(7);

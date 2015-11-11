@@ -1,7 +1,6 @@
 js.load_path_list.unshift(js.exec_dir+"/dorkit/");
 if (js.global.system !== undefined)
 	js.load_path_list.unshift(system.exec_dir+"/dorkit/");
-log("Load path: "+js.load_path_list.join(", "));
 load("attribute.js");
 load("graphic.js");
 
@@ -102,7 +101,10 @@ var dk = {
 
 				if (curr_attr === undefined || curr_attr.value != next_attr.value) {
 					ansi_str = next_attr.ansi(curr_attr);
-					curr_attr.value = next_attr.value;
+					if (curr_attr === undefined)
+						curr_attr = new Attribute(next_attr);
+					else
+						curr_attr.value = next_attr.value;
 					return ansi_str;
 				}
 				return '';
@@ -185,139 +187,10 @@ var dk = {
 					}
 				}
 				else {
-					ret += attr_str()+txt.substr(i, 1);
+					ret += attr_str() + txt.substr(i, 1);
 				}
 			}
-			return ret;
-
-			return txt.replace(/\1([\x00-\xff])/g, function(unused, code) {
-				switch(code) {
-					case '\1':
-						return '\1';
-					case 'K':
-						curr_attr.fg = Attribute.BLACK;
-						break;
-				}
-			});
-			/* ToDo: Expand \1D, \1T, \1<, \1Z */
-			/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
-			/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
-			while(p<txt.length) {
-				ch=txt[p++];
-				switch(ch) {
-					case '\1':		/* CTRL-A code */
-						ch=txt[p++].toUpperCase();
-						switch(ch) {
-							case '\1':	/* A "real" ^A code */
-								this.data[x][y].ch=ch;
-								this.data[x][y].attr=curattr;
-								x++;
-								if(x>=this.width) {
-									x=0;
-									y++;
-									log("next char: [" + txt[p] + "]");
-									if(txt[p] == '\r') p++;
-									if(txt[p] == '\n') p++;
-								}
-								break;
-							case 'K':	/* Black */
-								curattr=(curattr)&0xf8;
-								break;
-							case 'R':	/* Red */
-								curattr=((curattr)&0xf8)|this.defs.RED;
-								break;
-							case 'G':	/* Green */
-								curattr=((curattr)&0xf8)|this.defs.GREEN;
-								break;
-							case 'Y':	/* Yellow */
-								curattr=((curattr)&0xf8)|this.defs.BROWN;
-								break;
-							case 'B':	/* Blue */
-								curattr=((curattr)&0xf8)|this.defs.BLUE;
-								break;
-							case 'M':	/* Magenta */
-								curattr=((curattr)&0xf8)|this.defs.MAGENTA;
-								break;
-							case 'C':	/* Cyan */
-								curattr=((curattr)&0xf8)|this.defs.CYAN;
-								break;
-							case 'W':	/* White */
-								curattr=((curattr)&0xf8)|this.defs.LIGHTGRAY;
-								break;
-							case '0':	/* Black */
-								curattr=(curattr)&0x8f;
-								break;
-							case '1':	/* Red */
-								curattr=((curattr)&0x8f)|(this.defs.RED<<4);
-								break;
-							case '2':	/* Green */
-								curattr=((curattr)&0x8f)|(this.defs.GREEN<<4);
-								break;
-							case '3':	/* Yellow */
-								curattr=((curattr)&0x8f)|(this.defs.BROWN<<4);
-								break;
-							case '4':	/* Blue */
-								curattr=((curattr)&0x8f)|(this.defs.BLUE<<4);
-								break;
-							case '5':	/* Magenta */
-								curattr=((curattr)&0x8f)|(this.defs.MAGENTA<<4);
-								break;
-							case '6':	/* Cyan */
-								curattr=((curattr)&0x8f)|(this.defs.CYAN<<4);
-								break;
-							case '7':	/* White */
-								curattr=((curattr)&0x8f)|(this.defs.LIGHTGRAY<<4);
-								break;
-							case 'H':	/* High Intensity */
-								curattr|=this.defs.HIGH;
-								break;
-							case 'I':	/* Blink */
-								curattr|=this.defs.BLINK;
-								break;
-							case 'N':	/* Normal (ToDo: Does this do ESC[0?) */
-								curattr=7;
-								break;
-							case '-':	/* Normal if High, Blink, or BG */
-								if(curattr & 0xf8)
-									curattr=7;
-								break;
-							case '_':	/* Normal if blink/background */
-								if(curattr & 0xf0)
-									curattr=7;
-								break;
-							case '[':	/* CR */
-								x=0;
-								break;
-							case ']':	/* LF */
-								y++;
-								break;
-							default:	/* Other stuff... specifically, check for right movement */
-								if(ch.charCodeAt(0)>127) {
-									x+=ch.charCodeAt(0)-127;
-									if(x>=this.width)
-										x=this.width-1;
-								}
-						}
-						break;
-					case '\7':		/* Beep */
-						break;
-					case '\r':
-						x=0;
-						break;
-					case '\n':
-						y++;
-						break;
-					default:
-						this.data[x][y]=new this.Cell(ch,curattr);
-						x++;
-						if(x>=this.width) {
-							x=0;
-							y++;
-							if(txt[p] == '\r') p++;
-							if(txt[p] == '\n') p++;
-						}
-				}
-			}
+			return ret + attr_str();
 		},
 
 		/*
@@ -674,7 +547,7 @@ switch(dk.system.mode) {
 		load("jsexec_console.js");
 		break;
 	case 'jsdoor':
-		load("jsdoor_console.js");
+		load("jsexec_console.js");
 		break;
 	case 'socket':
 		load("socket_console.js", dk.connection.socket, dk.connection.telnet);
