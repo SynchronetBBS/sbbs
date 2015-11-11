@@ -236,8 +236,11 @@ var dk = {
 
 		/*
 		 * Writes a string unmodified.
+		 * TODO: This needs to parse ANSI and set attr...
 		 */
 		print:function(string) {
+			var m;
+
 			if (this.local)
 				this.local_io.print(string);
 			if (this.remote)
@@ -272,7 +275,6 @@ var dk = {
 		 */
 		waitkey:function(timeout) {
 			var q = new Queue("dorkit_input");
-			// TODO: Parse ANSI here!
 			if (q.poll(timeout) === false)
 				return false;
 			return true;
@@ -328,6 +330,49 @@ var dk = {
 				ret = ret.substr(0,1);
 			}
 			return ret;
+		},
+		getstr_defaults:{
+			password:false,		// Password field (echo password_char instead of string)
+			password_char:'*',	// Character to echo when entering passwords.
+			upper_case:false,	// Convert to upper-case during editing
+			integer:false,		// Input integer values only
+			decimal:false,		// Input decimal values only
+			ansi:false,			// Allows ANSI input
+			ctrl_a:false,		// Allows CTRL-A input
+			beep:false,			// Allows beep input (WTF?)
+			edit:'',			// Edit this value rather than a new input
+			crlf:true,			// Print CRLF after input
+			exascii:false,		// Allow extended ASCII (Higher than 127)
+			echo:true,			// Display input while typing
+			input_box:false,	// Draw an input "box" in a different background attr
+			select:true,		// Select all when editing... first character typed if not movement will erase
+			attr:undefined,		// Foreground attribute... used to draw the input box and for output... undefined means "use current"
+			sel_attr:undefined,	// Selected text attribute... used for edit value when select is true.  Undefined uses inverse (swaps fg and bg, leaving bright and blink unswapped)
+			len:80				// Max length and length of input box
+		},
+		getstr:function(in_opts) {
+			var i;
+			var opt={};
+			var str;
+			var orig_attr = new Attribute(this.attr);
+
+			// Set up option defaults
+			for (i in this.getstr_defaults) {
+				if (in_opts[i] !== undefined)
+					opt[i] = in_opts[i];
+				else
+					opt[i] = this.getstr_defaults[i];
+			}
+			if (opt.attr === undefined)
+				opt.attr=new Attribute(this.attr);
+			if (opt.sel_attr === undefined) {
+				opt.sel_attr=new Attribute(this.attr);
+				i = opt.sel_attr.fg;
+				opt.sel_attr.fg = opt.sel_attr.bg;
+				opt.sel_attr.bg = i;
+			}
+			str = opt.edit;
+			// Draw the input box...
 		},
 	},
 	connection:{
