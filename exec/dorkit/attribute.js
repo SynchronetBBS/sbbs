@@ -1,10 +1,28 @@
 function Attribute(value) {
 	if (value === undefined)
 		this.value = 7;
-	else if (typeof(value) == 'object' && value.value !== undefined && typeof(value.value) == 'number')
-		this.value = value.value;
-	else
+	else if (typeof(value) == 'object' && value.value !== undefined) {
+		if (typeof(value.value) == 'number')
+			this.value = value.value;
+		else {
+			try {
+				this.value=parseInt(value, 10);
+			}
+			catch(e) {
+				this.value = 7;
+			}
+		}
+	}
+	else if (typeof(value) == 'number')
 		this.value = value;
+	else {
+		try {
+			this.value=parseInt(value, 10);
+		}
+		catch(e) {
+			this.value = 7;
+		}
+	}
 }
 
 Attribute.BLACK = 0;
