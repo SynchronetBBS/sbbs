@@ -14,7 +14,6 @@
  *
  * Instance variable data contains an array of array of Graphics.Cell objects
  *
- * Instance variables atcodes are slated for removal.
  */
 
 if (js.global.Attribute === undefined)
@@ -37,8 +36,6 @@ function Graphic(w,h,attr,ch)
 		this.width=80;
 	else
 		this.width=w;
-
-	this.atcodes=true;
 
 	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {
@@ -345,6 +342,49 @@ Object.defineProperty(Graphic.prototype, "HTML", {
 });
 
 /*
+ * Gets a portion of the Graphic object as a new Graphic object
+ */
+Graphic.prototype.get = function(sx, sy, ex, ey)
+{
+	var ret;
+	var x;
+	var y;
+
+	if (sx < 0 || sy < 0 || sx >= this.width || sy > this.height
+			|| ex < 0 || ey < 0 || ex >= this.width || ey > this.height
+			|| ex < sx || ey < sy)
+		return undefined;
+
+	ret = new Graphic(ex-sx+1, ey-sy+1, this.attr, this.ch);
+	for (x=sx; x<=ex; x++) {
+		for (y=sy; y<=ey; y++) {
+			ret.data[x-sx][y-sy].ch = this.data[x][y].ch;
+			ret.data[x-sx][y-sy].attr = new Attribute(this.data[x][y].attr);
+		}
+	}
+	return ret;
+}
+
+/*
+ * Puts a graphic object into this one.
+ */
+Graphic.prototype.put = function(gr, x, y)
+{
+	var gx;
+	var gy;
+
+	if (x < 0 || y < 0 || x+gr.width > this.width || y+gr.height > this.height)
+		return false;
+
+	for (gx = 0; gx < gr.width; gx++) {
+		for (gy = 0; gy < gr.height; gy++) {
+			this.data[x+gx][y+gy].ch = gr.data[gx][gy].ch;
+			this.data[x+gx][y+gy].attr = new Attribute(gr.data[gx][gy].attr);
+		}
+	}
+}
+
+/*
  * Resets the graphic to all this.ch/this.attr Cells
  */
 Graphic.prototype.clear = function()
@@ -367,6 +407,7 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff)
 {
 	var x;
 	var y;
+	var ch;
 
 	if(xpos==undefined)
 		xpos=1;
@@ -384,21 +425,21 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff)
 		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
 		return(false);
 	}
-	if(xpos+width-1 > dk.cols || ypos+height-1 > dk.rows) {
+	if(xpos+width-1 > dk.console.cols || ypos+height-1 > dk.console.rows) {
 		alert("Attempt to draw outside of screen: " + (xpos+width-1) + "x" + (ypos+height-1));
 		return(false);
 	}
 	for(y=0;y<height; y++) {
-		dk.gotoxy(xpos,ypos+y);
+		dk.console.gotoxy(xpos,ypos+y);
 		for(x=0; x<width; x++) {
 			// Do not draw to the bottom left corner of the screen-would scroll
-			if(xpos+x != dk.cols
-					|| ypos+y != dk.rows) {
-				dk.attr=new Attribute(this.data[x+xoff][y+yoff].attr);
-				var ch=this.data[x+xoff][y+yoff].ch;
+			if(xpos+x != dk.console.cols
+					|| ypos+y != dk.console.rows) {
+				dk.console.attr = this.data[x+xoff][y+yoff].attr;
+				ch=this.data[x+xoff][y+yoff].ch;
 				if(ch == "\r" || ch == "\n" || !ch)
 					ch=this.ch;
-				dk.print(ch);
+				dk.console.print(ch);
 			}
 		}
 	}
