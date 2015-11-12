@@ -1,8 +1,7 @@
 js.load_path_list.unshift(js.exec_dir+"/dorkit/");
 if (js.global.system !== undefined)
 	js.load_path_list.unshift(system.exec_dir+"/dorkit/");
-load("attribute.js");
-load("graphic.js");
+load("screen.js");
 
 var dk = {
 	console:{
@@ -73,14 +72,25 @@ var dk = {
 
 		x:1,					// Current column (1-based)
 		y:1,					// Current row (1-based)
-		attr:new Attribute(7),	// Current attribute
+		_attr:new Attribute(7),
+		get attr() {
+			return this._attr;
+		},
+		set attr(val) {
+			var n = new Attribute(val);
+			this.print(n.ansi(this._attr));
+			this._attr = n;
+		},
 		ansi:true,				// ANSI support is enabled
 		charset:'cp437',		// Supported character set
 		local:true,				// True if writes should go to the local screen
 		remote:true,			// True if writes should go to the remote terminal
-		rows:undefined,			// Rows in users terminal
-		cols:undefined,			// Columns in users terminal
+		rows:24,				// Rows in users terminal
+		cols:80,				// Columns in users terminal
+
 		keybuf:'',
+		local_screen:new Screen(80, 24, 7, ' '),
+		remote_screen:new Screen(80, 24, 7, ' '),
 
 		/*
 		 * Returns a string with ^A codes converted to ANSI or stripped
@@ -198,6 +208,7 @@ var dk = {
 		 * sets the current attribute to 7
 		 */
 		clear:function() {
+			this.attr=7;
 			if (this.local)
 				this.local_io.clear();
 			if (this.remote)
@@ -232,19 +243,29 @@ var dk = {
 		 * or undefined on error (ie: invalid block specified).
 		 */
 		getblock:function(sx,sy,ex,ey) {
+			return this.remote_screen.graphic.get(sx,sy,ex,ey);
 		},
 
 		/*
 		 * Writes a string unmodified.
-		 * TODO: This needs to parse ANSI and set attr...
 		 */
 		print:function(string) {
 			var m;
 
-			if (this.local)
+			if (this.local) {
+				if (this.local_screen !== undefined) {
+					this.local_screen.print(string);
+					this._attr.value = this.local_screen.attr.value;
+				}
 				this.local_io.print(string);
-			if (this.remote)
+			}
+			if (this.remote) {
+				if (this.remote_screen !== undefined) {
+					this.remote_screen.print(string);
+					this.attr.value = this.remote_screen.attr.value;
+				}
 				this.remote_io.print(string);
+			}
 		},
 
 		/*
@@ -258,14 +279,14 @@ var dk = {
 		 * Writes a string after parsing ^A codes.
 		 */
 		aprint:function(string) {
-			this.println(this.parse_ctrla(line));
+			this.println(this.parse_ctrla(line, this.attr));
 		},
 
 		/*
 		 * Writes a string after parsing ^A codes and appends a "\r\n".
 		 */
 		aprintln:function(line) {
-			this.println(this.parse_ctrla(line));
+			this.println(this.parse_ctrla(line, this.attr));
 		},
 
 		/*
@@ -455,6 +476,10 @@ var dk = {
 			if(this.console.waitkey(500)) {
 				if (this.console.getkey() == this.console.key.POSITION_REPORT) {
 					// TODO: Should we trust the drop file on number of rows?
+					if (this.console.cols != this.console.last_pos.x || this.console.rows != this.console.last_pos.y) {
+						this.console.remote_screen = new Screen(this.console.last_pos.x, this.console.last_pos.y, 7, ' ');
+						this.console.local_screen = new Screen(this.console.last_pos.x, this.console.last_pos.y, 7, ' ');
+					}
 					this.console.cols = this.console.last_pos.x;
 					this.console.rows = this.console.last_pos.y;
 					this.console.ansi = true;
@@ -468,6 +493,7 @@ var dk = {
 	parse_dropfile:function(path) {
 		var f = new File(path);
 		var df;
+		var rows;
 
 		if (!f.open("r"))
 			return false;
@@ -511,7 +537,12 @@ var dk = {
 				this.codepage = '7-bit';
 				break;
 		}
-		this.rows = parseInt(df[20], 10);
+		rows = parseInt(df[20], 10);
+		if (rows != this.console.rows) {
+			this.console.remote_screen = new Screen(this.console.cols, rows, 7, ' ');
+			this.console.local_screen = new Screen(this.console.cols, rows, 7, ' ');
+		}
+		this.rows = rows;
 		this.user.expert_mode = (df[21].toUpperCase === 'Y') ? true : false;
 		this.user.conference = df[22].split(/\s*,\s*/);
 		this.user.curr_conference = parseInt(df[23]);
