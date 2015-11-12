@@ -359,7 +359,67 @@ Graphic.prototype.get = function(sx, sy, ex, ey)
 	for (x=sx; x<=ex; x++) {
 		for (y=sy; y<=ey; y++) {
 			ret.data[x-sx][y-sy].ch = this.data[x][y].ch;
-			ret.data[x-sx][y-sy].attr = new Attribute(this.data[x][y].attr);
+			ret.data[x-sx][y-sy].attr.value = this.data[x][y].attr.value;
+		}
+	}
+	return ret;
+}
+
+/*
+ * Moves a portion of the Graphic object to alother location in the same
+ * Graphic object.
+ */
+Graphic.prototype.copy = function(sx, sy, ex, ey, tx, ty)
+{
+	var ret;
+	var x;
+	var y;
+	var xdir;
+	var ydir;
+	var xstart;
+	var ystart;
+	var txstart;
+	var tystart;
+	var width;
+	var height;
+	var tmp;
+
+	if (sx < 0 || sy < 0 || sx >= this.width || sy > this.height
+			|| ex < 0 || ey < 0 || ex >= this.width || ey > this.height
+			|| ex < sx || ey < sy || tx < 0 || ty < 0 || tx + (ex - sx) >= this.width
+			|| ty + (ey - sy) >= this.height)
+		return undefined;
+
+	height = ey - sy + 1;
+	width = ex - sx + 1;
+
+	if (sx <= tx) {
+		xdir = -1;
+		xstart = ex;
+		txstart = tx+width-1;
+	}
+	else {
+		xdir = 1;
+		xstart = sx;
+		txstart = tx;
+	}
+	if (sy <= ty) {
+		ydir = -1;
+		ystart = ey;
+		tystart = ty+height-1;
+	}
+	else {
+		ydir = 1;
+		ystart = sy;
+		tystart = ty;
+	}
+
+	for (y=0; y < height; y += ydir) {
+		for (x=0; x < width; x++) {
+			this.data[txstart + (x*xdir)][tystart + (y*ydir)].ch
+					= this.data[xstart + (x*xdir)][ystart + (y*ydir)].ch;
+			this.data[txstart + (x*xdir)][tystart + (y*ydir)].attr.value
+					= this.data[xstart + (x*xdir)][ystart + (y*ydir)].ch;
 		}
 	}
 	return ret;
@@ -379,7 +439,7 @@ Graphic.prototype.put = function(gr, x, y)
 	for (gx = 0; gx < gr.width; gx++) {
 		for (gy = 0; gy < gr.height; gy++) {
 			this.data[x+gx][y+gy].ch = gr.data[gx][gy].ch;
-			this.data[x+gx][y+gy].attr = new Attribute(gr.data[gx][gy].attr);
+			this.data[x+gx][y+gy].attr.value = gr.data[gx][gy].attr.value;
 		}
 	}
 }
@@ -395,7 +455,8 @@ Graphic.prototype.clear = function()
 			if(y==0) {
 				this.data[x]=new Array(this.height);
 			}
-			this.data[x][y]=new this.Cell(this.ch,this.attribute);
+			this.data[x][y].ch = this.ch;
+			this.data[x][u].attr.value = this.attribute.value;
 		}
 	}
 };
