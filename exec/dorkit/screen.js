@@ -17,7 +17,7 @@ function Screen(w, h, attr, fill)
 	this.graphic = new Graphic(w, h, attr, fill);
 	this.escbuf = '';
 	this.pos = {x:0, y:0};
-	this.stored_pos = {x:0, y:0};
+	this.saved_pos = {x:0, y:0};
 	this.attr = new Attribute(7);
 }
 Screen.ANSIRe = /^(.*?)\x1b\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])([\x00-\xff]*)$/;
@@ -176,9 +176,9 @@ Screen.prototype.print=function(str) {
 			case 'H':	// Cursor position
 			case 'f':
 				param_defaults(p, [1,1]);
-				if (p[0] >= 0 && p[0] < this.graphic.height && p[1] >= 0 && p[1] <= this.graphic.width) {
-					this.pos.x = p[1];
-					this.pos.y = p[0];
+				if (p[0] >= 1 && p[0] < this.graphic.height && p[1] >= 1 && p[1] <= this.graphic.width) {
+					this.pos.x = p[1]-1;
+					this.pos.y = p[0]-1;
 				}
 				break;
 			case 'J':	// Erase in screen

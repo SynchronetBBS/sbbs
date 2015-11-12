@@ -471,9 +471,9 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff)
 	var ch;
 
 	if(xpos==undefined)
-		xpos=1;
+		xpos=0;
 	if(ypos==undefined)
-		ypos=1;
+		ypos=0;
 	if(width==undefined)
 		width=this.width;
 	if(height==undefined)

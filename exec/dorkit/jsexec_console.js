@@ -1,10 +1,10 @@
 /*
- * Clears the current screen to black and moves to location 1,1
+ * Clears the current screen and moves to location 1,1
  */
 
 dk.console.remote_io = {
 	clear:function() {
-		this.print("\x0c");
+		this.print("\x1b[2J\x1b[1;1H");
 	},
 
 	/*
