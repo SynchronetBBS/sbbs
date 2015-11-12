@@ -1,11 +1,9 @@
 /*
  * Clears the current screen to black and moves to location 1,1
- * sets the current attribute to 7
  */
 
 dk.console.remote_io = {
 	clear:function() {
-		this.attr.value=7;
 		this.print("\x0c");
 	},
 

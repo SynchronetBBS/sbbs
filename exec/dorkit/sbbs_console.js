@@ -4,12 +4,11 @@ console.ctrlkey_passthru=0x7fffffff;	// Disable all parsing.
 
 /*
  * Clears the current screen to black and moves to location 1,1
- * sets the current attribute to 7
  */
 
 dk.console.remote_io = {
 	clear:function() {
-		console.clear(7);
+		console.clear();
 	},
 
 	/*
