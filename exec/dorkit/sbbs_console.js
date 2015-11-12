@@ -27,7 +27,7 @@ dk.console.remote_io = {
 	 * Not available without ANSI
 	 */
 	gotoxy:function(x,y) {
-		console.gotoxy(x,y);
+		console.gotoxy(x+1,y+1);
 	},
 
 	/*

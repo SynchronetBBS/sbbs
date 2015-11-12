@@ -486,7 +486,7 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff)
 		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
 		return(false);
 	}
-	if(xpos+width-1 > dk.console.cols || ypos+height-1 > dk.console.rows) {
+	if(xpos+width > dk.console.cols || ypos+height > dk.console.rows) {
 		alert("Attempt to draw outside of screen: " + (xpos+width-1) + "x" + (ypos+height-1));
 		return(false);
 	}
