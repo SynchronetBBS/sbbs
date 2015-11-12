@@ -77,6 +77,7 @@ Attribute.prototype = {
 		this.value |= (val & 0x07);
 	},
 
+	_curatr:new Attribute(7),
 	ansi:function(curatr) {
 		var str="";
 		if(curatr !== undefined && curatr.value === this.value)
@@ -88,7 +89,7 @@ Attribute.prototype = {
 				|| (!(this.blink) && curatr.blink) || this.value === 7) {
 			str += "0;";
 			if (curatr === undefined)
-				curatr = new Attribute(7);
+				curatr = this.curatr;
 			curatr.value = 7;
 		}
 		if(this.blink) {                     /* special attributes */

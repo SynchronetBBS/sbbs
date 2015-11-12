@@ -73,13 +73,17 @@ var dk = {
 		x:1,					// Current column (1-based)
 		y:1,					// Current row (1-based)
 		_attr:new Attribute(7),
+		_new_attr:new Attribute(7),
 		get attr() {
 			return this._attr;
 		},
 		set attr(val) {
-			var n = new Attribute(val);
-			this.print(n.ansi(this._attr));
-			this._attr = n;
+			if (typeof(val)=='object')
+				this._new_attr.value = val.value;
+			else
+				this._new_attr.value = val;
+			this.print(this._new_attr.ansi(this._attr));
+			this._attr.value = this._new_attr.value;
 		},
 		ansi:true,				// ANSI support is enabled
 		charset:'cp437',		// Supported character set
@@ -91,28 +95,37 @@ var dk = {
 		keybuf:'',
 		local_screen:new Screen(80, 24, 7, ' '),
 		remote_screen:new Screen(80, 24, 7, ' '),
+		input_queue:new Queue("dorkit_input"),
 
 		/*
 		 * Returns a string with ^A codes converted to ANSI or stripped
 		 * as appropriate.
 		 */
+		_orig_attr:new Attribute(7),
+		_next_attr:new Attribute(7),
 		parse_ctrla:function(txt, orig_attr) {
 			var ret='';
 			var i;
 			var curr_attr;
-			var next_attr;
+			var next_attr = this._next_attr;
 
-			if (orig_attr !== undefined)
-				curr_attr = new Attribute(orig_attr);
-			next_attr = new Attribute(curr_attr);
+			if (orig_attr !== undefined) {
+				curr_attr = this._orig_attr;
+				curr_attr.value = orig_attr.value;
+				next_attr.value = curr_attr.value;
+			}
+			else
+				next_attr.value = 7;
 
 			function attr_str() {
 				var ansi_str;
 
 				if (curr_attr === undefined || curr_attr.value != next_attr.value) {
 					ansi_str = next_attr.ansi(curr_attr);
-					if (curr_attr === undefined)
-						curr_attr = new Attribute(next_attr);
+					if (curr_attr === undefined) {
+						curr_attr = this._orig_attr;
+						curr_attr.value = next_attr.value;
+					}
 					else
 						curr_attr.value = next_attr.value;
 					return ansi_str;
@@ -295,8 +308,7 @@ var dk = {
 		 * true when the entire ANSI sequence is available.
 		 */
 		waitkey:function(timeout) {
-			var q = new Queue("dorkit_input");
-			if (q.poll(timeout) === false)
+			if (this.input_queue.poll(timeout) === false)
 				return false;
 			return true;
 		},
@@ -316,8 +328,7 @@ var dk = {
 			}
 			if (!this.waitkey(0))
 				return undefined;
-			var q = new Queue("dorkit_input");
-			ret = q.read();
+			ret = this.input_queue.read();
 			if (ret.length > 1) {
 				if (ret.substr(0, 9) === 'POSITION_') {
 					m = ret.match(/^POSITION_([0-9]+)_([0-9]+)/);
@@ -343,8 +354,7 @@ var dk = {
 			}
 			if (!this.waitkey(0))
 				return undefined;
-			var q = new Queue("dorkit_input");
-			ret = q.read();
+			ret = this.input_queue.read();
 			if (ret.length > 1) {
 				ret=this.key[ret.replace(/^.*\x00/,'')];
 				this.keybuf = ret.substr(1);
@@ -449,7 +459,7 @@ var dk = {
 		main_dir:undefined,
 		gen_dir:undefined,
 		sysop_name:undefined,
-		default_attr:undefined,
+		default_attr:new Attribute(7),
 		mode:(js.global.bbs !== undefined
 				&& js.global.server !== undefined
 				&& js.global.client !== undefined
@@ -568,7 +578,7 @@ var dk = {
 		else
 			this.user.ansi_supported = (df[38].toUpperCase === 'Y') ? true : false;
 		this.misc.record_locking = (df[39].toUpperCase === 'N') ? false : true;
-		this.system.default_attr = new Attribute(parseInt(df[40], 10));
+		this.system.default_attr.value = parseInt(df[40], 10);
 		this.user.time_credits = parseInt(df[41], 10);
 		// TODO: Parse a date out of this.
 		this.user.last_new_file_scan_date = df[42];

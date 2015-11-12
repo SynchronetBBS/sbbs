@@ -20,6 +20,9 @@ function Screen(w, h, attr, fill)
 	this.stored_pos = {x:0, y:0};
 	this.attr = new Attribute(7);
 }
+Screen.ANSIRe = /^(.*?)\x1b\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])([\x00-\xff]*)$/;
+Screen.ANSIFragRe = /^(.*?)(\x1b(\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])?)?)$/;
+Screen.StripColonRe = /:[^;:]*/g;
 
 Screen.prototype.print=function(str) {
 	var m;
@@ -33,16 +36,18 @@ Screen.prototype.print=function(str) {
 	var i;
 	var tg;
 	var seq;
+	var x;
+	var y;
 
 	function writech(scr, ch) {
 		var i;
-		var gr;
 
 		function check_scrollup(scr) {
+			var i;
+
 			while (scr.pos.y >= scr.graphic.height) {
 				// Scroll up...
-				gr = scr.graphic.get(0,1,scr.graphic.width-1, scr.graphic.height-2);
-				scr.graphic.put(gr,0,0);
+				scr.graphic.copy(0,1,scr.graphic.width-1, scr.graphic.height-2, 0, 0);
 				for (i=0; i<scr.graphic.width; i++) {
 					scr.graphic.data[i][scr.graphic.height-1].ch = scr.graphic.ch;
 					scr.graphic.data[i][scr.graphic.height-1].attr = scr.attr.value;
@@ -73,7 +78,7 @@ Screen.prototype.print=function(str) {
 				scr.pos.y++;
 				check_scrollup(scr);
 				break;
-			case '\x0c':	// For feed (clear screen and home)
+			case '\x0c':	// Form feed (clear screen and home)
 				scr.graphic.clear();
 				scr.pos.x=0;
 				scr.pos.y=0;
@@ -83,7 +88,7 @@ Screen.prototype.print=function(str) {
 				break;
 			default:
 				scr.graphic.data[scr.pos.x][scr.pos.y].ch = ch;
-				scr.graphic.data[scr.pos.x][scr.pos.y].attr = new Attribute(scr.attr);
+				scr.graphic.data[scr.pos.x][scr.pos.y].attr.value = scr.attr.value;
 				scr.pos.x++;
 				if (scr.pos.x >= scr.graphic.width) {
 					scr.pos.x = 0;
@@ -113,7 +118,7 @@ Screen.prototype.print=function(str) {
 	str = this.escbuf + str;
 	this.escbuf = '';
 
-	while((m=str.match(/^(.*?)\x1b\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])([\x00-\xff]*)$/)) !== null) {
+	while((m=str.match(Screen.ANSIRe)) !== null) {
 		chars = m[1];
 		ext = m[2];
 		pb = m[3];
@@ -121,8 +126,6 @@ Screen.prototype.print=function(str) {
 		fb = m[5];
 		remain = m[6];
 		seq = ext + ib + fb;
-		var x;
-		var y;
 
 		str = remain;
 
@@ -131,7 +134,7 @@ Screen.prototype.print=function(str) {
 			writech(this, chars[i]);
 
 		// We don't support any : paramters... strip and ignore.
-		p = pb.replace(/:[^;:]*/g, '');
+		p = pb.replace(Screen.StripColonRe, '');
 		p = p.split(';');
 
 		switch(fb) {
@@ -139,10 +142,8 @@ Screen.prototype.print=function(str) {
 				param_defaults(p, [1]);
 				if (p[1] > this.graphic.width - this.pos.x)
 					p[1] = this.graphic.width - this.pos.x;
-				if (this.pos.x < this.graphic.width-1) {
-					tg = this.graphic.get(this.pos.x, this.pos.y, this.graphic.width-1 - p[1], this.pos.y);
-					tg = this.graphic.put(this.pos.x + p[1], this.pos.y, this.graphic.width - 1, this.pos.y);
-				}
+				if (this.pos.x < this.graphic.width-1)
+					this.graphic.copy(this.pos.x, this.pos.y, this.graphic.width-1 - p[1], this.pos.y, this.pos.x + p[1], this.pos.y);
 				for (x = 0; x<p[1]; x++) {
 					this.graphic.data[this.pos.x + x][this.pos.y].ch = this.graphic.ch;
 					this.graphic.data[this.pos.x + x][this.pos.y].attr = this.attr.value;
@@ -241,10 +242,8 @@ Screen.prototype.print=function(str) {
 				param_defaults(p, [1]);
 				if (p[1] > this.graphic.width - this.pos.x)
 					p[1] = this.graphic.width - this.pos.x;
-				if (this.pos.x < this.graphic.width-1) {
-					tg = this.graphic.get(this.pos.x + p[1], this.pos.y, this.graphic.width - 1, this.pos.y);
-					tg = this.graphic.put(this.pos.x, this.pos.y, (this.graphic.width - 1) - p[1], this.pos.y);
-				}
+				if (this.pos.x < this.graphic.width-1)
+					this.graphic.copy(this.pos.x + p[1], this.pos.y, this.graphic.width - 1, this.pos.y, this.pos.x, this.pos.y);
 				for (x = 0; x<p[1]; x++) {
 					this.graphic.data[(this.width - 1) - x][this.pos.y].ch = this.graphic.ch;
 					this.graphic.data[(this.width - 1) - x][this.pos.y].attr = this.attr.value;
@@ -358,7 +357,7 @@ Screen.prototype.print=function(str) {
 				log("Sent unsupported ANSI sequence '"+ext+pb+ib+fb+"' please let shurd@sasktel.net net know about this so it can be fixed.");
 		}
 	}
-	if ((m=str.match(/^(.*?)(\x1b(\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])?)?)$/)) !== null) {
+	if ((m=str.match(Screen.ANSIFragRe)) !== null) {
 		str = m[1];
 		this.escbuf = m[2];
 	}
