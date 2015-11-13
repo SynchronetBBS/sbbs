@@ -350,7 +350,7 @@ var dk = {
 		 * Writes a string after parsing ^A codes.
 		 */
 		aprint:function(string) {
-			this.println(this.parse_ctrla(line, this.attr));
+			this.print(this.parse_ctrla(string, this.attr));
 		},
 
 		/*
