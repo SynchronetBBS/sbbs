@@ -3,6 +3,50 @@ if (js.global.system !== undefined)
 	js.load_path_list.unshift(system.exec_dir+"/dorkit/");
 load("screen.js");
 
+// polyfill the String object with repeat method.
+// Swiped from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/repeat#Browser_compatibility
+if (!String.prototype.repeat) {
+  String.prototype.repeat = function(count) {
+    'use strict';
+    if (this == null) {
+      throw new TypeError('can\'t convert ' + this + ' to object');
+    }
+    var str = '' + this;
+    count = +count;
+    if (count != count) {
+      count = 0;
+    }
+    if (count < 0) {
+      throw new RangeError('repeat count must be non-negative');
+    }
+    if (count == Infinity) {
+      throw new RangeError('repeat count must be less than infinity');
+    }
+    count = Math.floor(count);
+    if (str.length == 0 || count == 0) {
+      return '';
+    }
+    // Ensuring count is a 31-bit integer allows us to heavily optimize the
+    // main part. But anyway, most current (August 2014) browsers can't handle
+    // strings 1 << 28 chars or longer, so:
+    if (str.length * count >= 1 << 28) {
+      throw new RangeError('repeat count must not overflow maximum string size');
+    }
+    var rpt = '';
+    for (;;) {
+      if ((count & 1) == 1) {
+        rpt += str;
+      }
+      count >>>= 1;
+      if (count == 0) {
+        break;
+      }
+      str += str;
+    }
+    return rpt;
+  }
+}
+
 var dk = {
 	console:{
 		last_pos:{x:1, y:1},
@@ -251,6 +295,20 @@ var dk = {
 				this.remote_io.gotoxy(x,y);
 		},
 
+		movex:function(pos) {
+			if (this.local)
+				this.local_io.movex(pos);
+			if (this.remote)
+				this.remote_io.movex(pos);
+		},
+
+		movey:function(pos) {
+			if (this.local)
+				this.local_io.movex(pos);
+			if (this.remote)
+				this.remote_io.movex(pos);
+		},
+
 		/*
 		 * Returns a Graphic object representing the specified block
 		 * or undefined on error (ie: invalid block specified).
@@ -363,29 +421,34 @@ var dk = {
 			return ret;
 		},
 		getstr_defaults:{
+			timeout:undefined,	// Timeout, undefined for "wait forever"
 			password:false,		// Password field (echo password_char instead of string)
 			password_char:'*',	// Character to echo when entering passwords.
 			upper_case:false,	// Convert to upper-case during editing
 			integer:false,		// Input integer values only
 			decimal:false,		// Input decimal values only
-			ansi:false,			// Allows ANSI input
-			ctrl_a:false,		// Allows CTRL-A input
-			beep:false,			// Allows beep input (WTF?)
 			edit:'',			// Edit this value rather than a new input
 			crlf:true,			// Print CRLF after input
 			exascii:false,		// Allow extended ASCII (Higher than 127)
-			echo:true,			// Display input while typing
 			input_box:false,	// Draw an input "box" in a different background attr
 			select:true,		// Select all when editing... first character typed if not movement will erase
 			attr:undefined,		// Foreground attribute... used to draw the input box and for output... undefined means "use current"
 			sel_attr:undefined,	// Selected text attribute... used for edit value when select is true.  Undefined uses inverse (swaps fg and bg, leaving bright and blink unswapped)
-			len:80				// Max length and length of input box
+			len:80,			// Max length and length of input box
 		},
 		getstr:function(in_opts) {
 			var i;
 			var opt={};
 			var str;
+			var newstr;
+			var key;
+			var pos=0;
+			var insmode=true;
 			var orig_attr = new Attribute(this.attr);
+			var dispstr;
+			var decimal_re;
+			if (in_opts===undefined)
+				in_opts={};
 
 			// Set up option defaults
 			for (i in this.getstr_defaults) {
@@ -394,6 +457,8 @@ var dk = {
 				else
 					opt[i] = this.getstr_defaults[i];
 			}
+			if (opt.decimal)
+				decimal_re = /^([0-9]+(\.[0-9]*)?)?$/;
 			if (opt.attr === undefined)
 				opt.attr=new Attribute(this.attr);
 			if (opt.sel_attr === undefined) {
@@ -403,7 +468,140 @@ var dk = {
 				opt.sel_attr.bg = i;
 			}
 			str = opt.edit;
+			if (opt.password)
+				dispstr = opt.password_char.repeat(str.length);
+			else
+				dispstr = str;
+			this.attr.value = opt.attr.value;
 			// Draw the input box...
+			if (opt.input_box) {
+				// TODO: Verify that it fits and do the "right" thing.
+				for (i=0; i<opt.len; i++)
+					this.print(' ');
+				this.movex(-(opt.len));
+			}
+			if (opt.select)
+				this.attr.value = opt.sel_attr.value;
+			this.print(dispstr);
+			if (opt.select) {
+				this.movex(-(str.length));
+				this.attr.value = opt.attr.value;
+			}
+			else
+				pos = str.length;
+			while(1) {
+				if (!this.waitkey(opt.timeout === undefined ? 1000 : opt.timeout)) {
+					if (opt.timeout !== undefined)
+						return str;
+				}
+				key = this.getkey();
+				switch(key) {
+					case 'KEY_HOME':
+						if (opt.select) {
+							opt.select = false;
+							this.movex(-pos);
+							this.print(dispstr);
+							this.movex(-str.length);
+							pos = 0;
+						}
+						this.movex(-pos);
+						pos=0;
+						break;
+					case 'KEY_END':
+						if (opt.select) {
+							opt.select = false;
+							this.movex(-pos);
+							this.print(dispstr);
+							this.pos = str.length;
+						}
+						this.movex(str.length - pos);
+						pos = str.length;
+						break;
+					case 'KEY_LEFT':
+						if (opt.select) {
+							opt.select = false;
+							this.movex(-pos);
+							this.print(dispstr);
+							this.movex(pos - str.length);
+						}
+						if (pos == 0)				// Already at start... ignoe TODO: Beep?
+							break;
+						pos--;
+						this.movex(-1);
+						break;
+					case 'KEY_RIGHT':
+						if (opt.select) {
+							opt.select = false;
+							this.movex(-pos);
+							this.print(dispstr);
+							this.movex(pos - str.length);
+						}
+						if (pos >= str.length)		// Already at end... ignore TODO: Beep?
+							break;
+						pos++;
+						this.movex(1);
+						break;
+					case '\x7f':
+					case '\b':
+						if (pos == 0)				// Already at start... ignoe TODO: Beep?
+							break;
+						str = str.substr(0, pos - 1) + str.substr(pos);
+						if (opt.password)
+							dispstr = opt.password_char.repeat(str.length);
+						else
+							dispstr = str;
+						pos--;
+						this.movex(-1);
+						this.print(dispstr.substr(pos)+' ');
+						this.movex(-1-(str.length - pos));
+						break;
+					case 'KEY_DEL':
+						if (pos >= str.length)		// Already at end... ignore TODO: Beep?
+							break;
+						str = str.substr(0, pos) + str.substr(pos+1);
+						if (opt.password)
+							dispstr = opt.password_char.repeat(str.length);
+						else
+							dispstr = str;
+						this.movex(-1);
+						this.print(dispstr.substr(pos)+' ');
+						this.movex(-1-(str.length - pos));
+						break;
+					case 'KEY_INS':
+						insmode = !insmode;
+						break;
+					case '\r':
+						if (opt.crlf)
+							this.println('');
+						return str;
+					case undefined:
+						break;
+					default:
+						if (key.length > 1)			// Unhandled extended key... ignore TODO: Beep?
+							break;
+						if (str.length >= opt.len)	// String already too log... ignore TODO: Beep?
+							break;
+						if (opt.integer && (key < '0' || key > '9'))	// Invalid integer... ignore TODO: Beep?
+							break;
+						if (opt.upper_case)
+							key = key.toUpperCase();
+						if ((!opt.exascii) && key.charCodeAt(0) > 127)	// Invalid EXASCII... ignore TODO: Beep?
+							break;
+						if (key.charCodeAt(0) < 32)	// Control char... ignore TODO: Beep?
+							break;
+						newstr = str.substr(0, pos) + key + str.substr(insmode ? pos : pos+1);
+						if (opt.decimal && newstr.search(decimal_re) === -1)
+							break;
+						str = newstr;
+						if (opt.password)
+							dispstr = opt.password_char.repeat(str.length);
+						else
+							dispstr = str;
+						this.print(dispstr.substr(pos));
+						pos++;
+						this.movex(-(str.length-pos));
+				}
+			}
 		},
 	},
 	connection:{

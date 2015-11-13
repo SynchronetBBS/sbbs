@@ -30,6 +30,20 @@ dk.console.remote_io = {
 		console.gotoxy(x+1,y+1);
 	},
 
+	movex(pos) {
+		if (pos > 0)
+			console.right(pos);
+		if (pos < 0)
+			console.left(0-pos);
+	},
+
+	movey(pos) {
+		if (pos > 0)
+			console.down(pos);
+		if (pos < 0)
+			console.up(0-pos);
+	},
+
 	/*
 	 * Writes a string unmodified.
 	 */

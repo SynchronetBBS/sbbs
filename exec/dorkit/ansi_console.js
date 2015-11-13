@@ -17,6 +17,28 @@ dk.console.remote_io = {
 			this.print('\x1b[K');
 	},
 
+	movex:function(pos) {
+		if (pos == 1)
+			return this.print("\x1b[C");
+		if (pos > 1)
+			return this.print("\x1b["+pos+"C");
+		if (pos == -1)
+			return this.print("\x1b[D");
+		if (pos < -1)
+			return this.print("\x1b["+(0-pos)+"D");
+	},
+
+	movey:function(pos) {
+		if (pos == 1)
+			return this.print("\x1b[B");
+		if (pos > 1)
+			return this.print("\x1b["+pos+"B");
+		if (pos == -1)
+			return this.print("\x1b[A");
+		if (pos < -1)
+			return this.print("\x1b["+(0-pos)+"A");
+	},
+
 	/*
 	 * Moves the cursor to the specified position.
 	 * returns false on error.

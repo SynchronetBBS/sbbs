@@ -14,6 +14,10 @@ dk.console.local_io = {
 	},
 	gotoxy:function(x,y) {
 	},
+	movex:function(pos) {
+	},
+	movey:function(pos) {
+	},
 	print:function(string) {
 	},
 };
