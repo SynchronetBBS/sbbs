@@ -116,18 +116,29 @@ var dk = {
 
 		x:1,					// Current column (1-based)
 		y:1,					// Current row (1-based)
-		_attr:new Attribute(7),
-		_new_attr:new Attribute(7),
+		_attr:{
+			__proto__:Attribute.prototype,
+			_value:7,
+			_new_attr:new Attribute(7),
+			get value() {
+				return this._value;
+			},
+			set value(val) {
+				if (val != this._new_attr.value) {
+					this._new_attr.value = val;
+					dk.console.print(this._new_attr.ansi(this));
+					this._value = val;
+				}
+			}
+		},
 		get attr() {
 			return this._attr;
 		},
 		set attr(val) {
 			if (typeof(val)=='object')
-				this._new_attr.value = val.value;
+				this._attr.value = val.value;
 			else
-				this._new_attr.value = val;
-			this.print(this._new_attr.ansi(this._attr));
-			this._attr.value = this._new_attr.value;
+				this._attr.value = val;
 		},
 		ansi:true,				// ANSI support is enabled
 		charset:'cp437',		// Supported character set
@@ -304,9 +315,9 @@ var dk = {
 
 		movey:function(pos) {
 			if (this.local)
-				this.local_io.movex(pos);
+				this.local_io.movey(pos);
 			if (this.remote)
-				this.remote_io.movex(pos);
+				this.remote_io.movey(pos);
 		},
 
 		/*
@@ -337,6 +348,9 @@ var dk = {
 				}
 				this.remote_io.print(string);
 			}
+		},
+		beep:function() {
+			this.print("\x07");
 		},
 
 		/*
@@ -579,7 +593,7 @@ var dk = {
 					default:
 						if (key.length > 1)			// Unhandled extended key... ignore TODO: Beep?
 							break;
-						if (str.length >= opt.len)	// String already too log... ignore TODO: Beep?
+						if (str.length >= opt.len)	// String already too long... ignore TODO: Beep?
 							break;
 						if (opt.integer && (key < '0' || key > '9'))	// Invalid integer... ignore TODO: Beep?
 							break;
