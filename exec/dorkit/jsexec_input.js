@@ -6,6 +6,6 @@ var k;
 while(!js.terminated) {
 	if (parent_queue.poll(0))
 		break;
-	k = read(1);
+	k = stdin.read(1);
 	ai.add(k);
 }
