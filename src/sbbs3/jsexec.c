@@ -802,6 +802,22 @@ static BOOL js_init(char** environ)
 		return(FALSE);
 	}
 
+	/* STDIO objects */
+	if(!js_CreateFileObject(js_cx, js_glob, "stdout", stdout)) {
+		JS_ENDREQUEST(js_cx);
+		return(FALSE);
+	}
+
+	if(!js_CreateFileObject(js_cx, js_glob, "stdin", stdin)) {
+		JS_ENDREQUEST(js_cx);
+		return(FALSE);
+	}
+
+	if(!js_CreateFileObject(js_cx, js_glob, "stderr", stderr)) {
+		JS_ENDREQUEST(js_cx);
+		return(FALSE);
+	}
+
 	return(TRUE);
 }
 
