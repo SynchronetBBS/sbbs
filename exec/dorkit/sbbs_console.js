@@ -69,6 +69,12 @@ dk.connection.telnet = client.protocol === 'Telnet';
 
 // From the console object
 dk.user.ansi_supported = (console.autoterm & USER_ANSI) == USER_ANSI;
+if (console.screen_rows != dk.console.rows || console.screen_columns != dk.console.cols) {
+	dk.console.rows = console.screen_rows;
+	dk.console.cols = console.screen_columns;
+	dk.console.remote_screen = new Screen(dk.console.cols, dk.console.rows, 7, ' ');
+	dk.console.local_screen = new Screen(dk.console.cols, dk.console.rows, 7, ' ');
+}
 
 // From the user object...
 dk.user.full_name = user.name;
@@ -111,3 +117,4 @@ dk.system.default_attr = undefined;
 // TODO: Next event time...
 dk.system.event_time = undefined;
 dk.system.record_locking = true;
+
