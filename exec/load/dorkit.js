@@ -825,6 +825,11 @@ var dk = {
 					this.console.local = true;
 					this.console.remote = false;
 					break;
+				case '-d':
+				case '-dropfile':
+					if (i+1 < argc)
+						this.parse_dropfile(argv[++i]);
+					break;
 			}
 		}
 		if (this.connection.telnet === undefined)
