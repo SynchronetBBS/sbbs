@@ -4695,7 +4695,7 @@ static void sendmail_thread(void* arg)
 					,sock
 					,inet_addrport(&server_addr)
 					,server,server_ip);
-				if((i=nonblocking_connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr), startup->connect_timeout))!=0) {
+				if((i=nonblocking_connect(sock, (struct sockaddr *)&server_addr, xp_sockaddr_len(&server_addr), startup->connect_timeout))!=0) {
 					lprintf(LOG_WARNING,"%04d !SEND ERROR %d connecting to SMTP server: %s"
 						,sock
 						,i, server);
