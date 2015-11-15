@@ -30,14 +30,14 @@ dk.console.remote_io = {
 		console.gotoxy(x+1,y+1);
 	},
 
-	movex(pos) {
+	movex:function(pos) {
 		if (pos > 0)
 			console.right(pos);
 		if (pos < 0)
 			console.left(0-pos);
 	},
 
-	movey(pos) {
+	movey:function(pos) {
 		if (pos > 0)
 			console.down(pos);
 		if (pos < 0)
@@ -54,3 +54,60 @@ dk.console.remote_io = {
 
 var input_queue = load(true, "sbbs_input.js");
 js.on_exit("input_queue.write(''); input_queue.poll(0x7fffffff);");
+
+// Get stuff that would come from the dropfile if there was one.
+// From the bbs object.
+dk.connection.node = bbs.node_num;
+dk.connection.time = strftime("%H:%M", bbs.logon_time);
+dk.user.seconds_remaining = bbs.time_left;
+dk.user.minutes_remaining = parseInt(bbs.time_left / 60, 10);
+
+// From the client object...
+dk.connection.type = client.protocol;
+dk.connection.socket = client.socket.descriptor;
+dk.connection.telnet = client.protocol === 'Telnet';
+
+// From the console object
+dk.user.ansi_supported = (console.autoterm & USER_ANSI) == USER_ANSI;
+
+// From the user object...
+dk.user.full_name = user.name;
+dk.user.location = user.location;
+dk.user.home_phone = user.phone;
+dk.user.pass = user.security.password;
+dk.user.level = user.security.level;
+dk.user.times_on = user.stats.total_logons;
+dk.user.last_called = strftime("%m/%d/%y", user.laston_date);
+dk.user.expires = strftime("%m/%d/%y", user.expiration_date);
+dk.user.number = user.number;
+dk.user.default_protocol = user.download_protocol;
+dk.user.uploads = user.stats.files_uploaded;
+dk.user.upload_kb = parseInt(user.stats.bytes_uploaded/1024, 10);
+dk.user.downloads = user.stats.files_downloaded;
+dk.user.download_kb = parseInt(user.stats.bytes_downloaded/1024, 10);
+
+// TODO: How do credits map to bytes?
+dk.user.max_download_kb_per_day = undefined;
+// TODO: Time credits
+dk.user.time_credits = undefined;
+
+// TODO: de-euroify if needed.
+dk.user.birthdate = user.birthdate;
+
+dk.user.alias = user.alias;
+dk.user.last_new_file_scan_date = strftime("%m/%d/%y", user.new_file_time);
+dk.user.last_call_time = strftime("%H:%M", user.laston_date);
+dk.user.comment = user.comment;
+dk.user.messages_left = user.stats.total_posts;
+dk.user.expert_mode = (user.settings & USER_EXPERT) == USER_EXPERT;
+
+// From the system object (TODO: These could also be populated in JSExec)
+dk.system.main_dir = system.node_dir;
+dk.system.gen_dir = system.data_dir;
+dk.system.sysop_name = system.operator;
+
+// TODO: cfg->color array not available.
+dk.system.default_attr = undefined;
+// TODO: Next event time...
+dk.system.event_time = undefined;
+dk.system.record_locking = true;
