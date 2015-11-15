@@ -2299,6 +2299,10 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 			outbuf[j++]=CTRL_U;
 			continue;
 		}
+		if(strcmp(token,"lrm")==0		/* left-to-right mark, not printable */
+			|| strcmp(token,"rlm")==0)	/* right-to-left mark, not printable */
+			continue;
+
 		/* Unknown character entity, leave intact */
 		j+=sprintf(outbuf+j,"&%s;",token);
 		
