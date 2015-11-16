@@ -833,21 +833,35 @@ var dk = {
 				case '-t':
 				case '-telnet':
 					this.connection.telnet = true;
+					argv.splice(i, 1);
+					argc--;
+					i--;
 					break;
 				case '-s':
 				case '-socket':
-					if (i+1 < argc)
-						this.connection.socket = argv[++i];
+					if (i+1 < argc) {
+						this.connection.socket = argv[i+1];
+						argv.splice(i, 2);
+						argc-=2;
+						i--;
+					}
 					break;
 				case '-l':
 				case '-local':
 					this.console.local = true;
 					this.console.remote = false;
+					argv.splice(i, 1);
+					argc--;
+					i--;
 					break;
 				case '-d':
 				case '-dropfile':
-					if (i+1 < argc)
-						this.parse_dropfile(argv[++i]);
+					if (i+1 < argc) {
+						this.parse_dropfile(argv[i+1]);
+						argv.splice(i, 2);
+						argc-=2;
+						i--;
+					}
 					break;
 			}
 		}
