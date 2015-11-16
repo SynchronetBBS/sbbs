@@ -1081,6 +1081,8 @@ int main(int argc, char **argv, char** environ)
 		term = orig_term;
 		raw_input(&term);
 		tcsetattr(fileno(stdin), TCSANOW, &term);
+#else
+		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
 #endif
 		statfp=stderr;
 	}
