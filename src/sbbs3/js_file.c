@@ -285,6 +285,61 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		buf;
+	int32		len;
+	JSString*	str;
+	private_t*	p;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&len))
+			return(JS_FALSE);
+	} else
+		len = 1;
+	if(len<0)
+		len=1;
+
+	if((buf=malloc(len))==NULL)
+		return(JS_TRUE);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	len = read(fileno(p->fp),buf,len);
+	if(len<0) 
+		len=0;
+
+	JS_RESUMEREQUEST(cx, rc);
+
+	str = JS_NewStringCopyN(cx, buf, len);
+	free(buf);
+
+	if(str==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
+
+	rc=JS_SUSPENDREQUEST(cx);
+	dbprintf(FALSE, p, "read %u raw bytes",len);
+	JS_RESUMEREQUEST(cx, rc);
+		
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_read(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
@@ -1440,6 +1495,50 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_raw_write(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		cp;
+	size_t		len;	/* string length */
+	JSString*	str;
+	private_t*	p;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+
+	if((str = JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	JSSTRING_TO_MSTRING(cx, str, cp, &len);
+	HANDLE_PENDING(cx);
+	if(cp==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	if(write(fileno(p->fp),cp,len)==(size_t)len) {
+		free(cp);
+		dbprintf(FALSE, p, "wrote %u raw bytes",len);
+		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+	} else {
+		free(cp);
+		dbprintf(TRUE, p, "raw write of %u bytes failed",len);
+	}
+
+	JS_RESUMEREQUEST(cx, rc);
+		
+	return(JS_TRUE);
+}
+
+static JSBool
 js_write(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
@@ -2486,6 +2585,12 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,JSDOCSTR("read all lines into an array of strings, <i>maxlen</i> defaults to 512 characters")
 	,310
 	},
+	{"raw_read",		js_raw_read,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<i>1</i>]")
+	,JSDOCSTR("read a string from underlying file descriptor. "
+				"Undefined results when mixed with any other read/write methods except raw_write, including indirect ones. "
+				"<i>maxlen</i> defaults to one")
+	,317
+	},
 	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text [,length=<i>text_length</i>]")
 	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process)")
 	,310
@@ -2503,6 +2608,11 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,JSDOCSTR("write an array of strings to file")
 	,310
 	},		
+	{"raw_write",		js_raw_write,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+	,JSDOCSTR("write a string to the underlying file descriptor. "
+				"Undefined results when mixed with any other read/write methods except raw_read, including indirect ones.")
+	,317
+	},
 	{"printf",			js_fprintf,			0,	JSTYPE_NUMBER,	JSDOCSTR("format [,args]")
 	,JSDOCSTR("write a formatted string to the file (ala fprintf) - "
 		"<small>CAUTION: for experienced C programmers ONLY</small>")
