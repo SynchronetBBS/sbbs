@@ -50,6 +50,3 @@ dk.console.remote_io = {
 	},
 
 };
-
-var input_queue = load(true, "jsexec_input.js");
-js.on_exit("input_queue.write(''); input_queue.poll(0x7fffffff);");
