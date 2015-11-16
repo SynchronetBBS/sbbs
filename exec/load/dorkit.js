@@ -483,6 +483,16 @@ var dk = {
 			if (in_opts===undefined)
 				in_opts={};
 
+			function do_select_erase(opt, obj) {
+				if (opt.select) {
+					opt.select = false;
+					obj.movex(-pos);
+					obj.print(' '.repeat(str.length));
+					obj.movex(-str.length);
+					str = '';
+				}
+			}
+
 			// Set up option defaults
 			for (i in this.getstr_defaults) {
 				if (in_opts[i] !== undefined)
@@ -576,6 +586,8 @@ var dk = {
 						break;
 					case '\x7f':
 					case '\b':
+						if (opt.select)
+							do_select_erase(opt, this);
 						if (pos == 0)				// Already at start... ignoe TODO: Beep?
 							break;
 						str = str.substr(0, pos - 1) + str.substr(pos);
@@ -589,6 +601,8 @@ var dk = {
 						this.movex(-1-(str.length - pos));
 						break;
 					case 'KEY_DEL':
+						if (opt.select)
+							do_select_erase(opt, this);
 						if (pos >= str.length)		// Already at end... ignore TODO: Beep?
 							break;
 						str = str.substr(0, pos) + str.substr(pos+1);
@@ -601,6 +615,13 @@ var dk = {
 						this.movex(-1-(str.length - pos));
 						break;
 					case 'KEY_INS':
+						if (opt.select) {
+							opt.select = false;
+							this.movex(-pos);
+							this.print(dispstr);
+							this.movex(-str.length);
+							this.movex(pos);
+						}
 						insmode = !insmode;
 						break;
 					case '\r':
@@ -622,6 +643,8 @@ var dk = {
 							break;
 						if (key.charCodeAt(0) < 32)	// Control char... ignore TODO: Beep?
 							break;
+						if (opt.select)
+							do_select_erase(opt, this);
 						newstr = str.substr(0, pos) + key + str.substr(insmode ? pos : pos+1);
 						if (opt.decimal && newstr.search(decimal_re) === -1)
 							break;
