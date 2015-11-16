@@ -200,6 +200,8 @@ var dk = {
 					break;
 			}
 		},
+		_orig_attr:new Attribute(7),
+		_next_attr:new Attribute(7),
 
 		get attr() {
 			return this._attr;
@@ -208,8 +210,10 @@ var dk = {
 			function handle_string(str, obj) {
 				var i;
 
+				obj._next_attr.value = 7;
 				for (i=0; i<val.length; i++)
-					obj.ctrla_attr(str[i], obj.attr);
+					obj.ctrla_attr(str[i], obj._next_attr);
+				obj.attr.value = obj._next_attr.value;
 			}
 
 			if (typeof(val)=='object') {
@@ -239,8 +243,6 @@ var dk = {
 		 * Returns a string with ^A codes converted to ANSI or stripped
 		 * as appropriate.
 		 */
-		_orig_attr:new Attribute(7),
-		_next_attr:new Attribute(7),
 		parse_ctrla:function(txt, orig_attr) {
 			var ret='';
 			var i;
