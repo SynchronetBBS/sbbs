@@ -131,12 +131,95 @@ var dk = {
 				}
 			}
 		},
+		ctrla_attr:function(code, attr) {
+			switch(code) {
+				case 'K':
+					attr.fg = Attribute.BLACK;
+					break;
+				case 'R':
+					attr.fg = Attribute.RED;
+					break;
+				case 'G':
+					attr.fg = Attribute.GREEN;
+					break;
+				case 'Y':
+					attr.fg = Attribute.YELLOW;
+					break;
+				case 'B':
+					attr.fg = Attribute.BLUE;
+					break;
+				case 'M':
+					attr.fg = Attribute.MAGENTA;
+					break;
+				case 'C':
+					attr.fg = Attribute.CYAN;
+					break;
+				case 'W':
+					attr.fg = Attribute.WHITE;
+					break;
+				case '0':
+					attr.bg = Attribute.BLACK;
+					break;
+				case '1':
+					attr.bg = Attribute.RED;
+					break;
+				case '2':
+					attr.bg = Attribute.GREEN;
+					break;
+				case '3':
+					attr.bg = Attribute.YELLOW;
+					break;
+				case '4':
+					attr.bg = Attribute.BLUE;
+					break;
+				case '5':
+					attr.bg = Attribute.MAGENTA;
+					break;
+				case '6':
+					attr.bg = Attribute.CYAN;
+					break;
+				case '7':
+					attr.bg = Attribute.WHITE;
+					break;
+				case 'H':
+					attr.bright = true;
+					break;
+				case 'I':
+					attr.blink = true;
+					break;
+				case 'N':
+					attr.value = 7;
+					break;
+				case '-':
+					if (attr.blink || attr.bright || attr.bg !== Attribute.BLACK)
+						attr.value = 7;
+					break;
+				case '_':
+					if (attr.blink || attr.bg !== Attribute.BLACK)
+						attr.value = 7;
+					break;
+			}
+		},
+
 		get attr() {
 			return this._attr;
 		},
 		set attr(val) {
-			if (typeof(val)=='object')
-				this._attr.value = val.value;
+			function handle_string(str, obj) {
+				var i;
+
+				for (i=0; i<val.length; i++)
+					obj.ctrla_attr(str[i], obj.attr);
+			}
+
+			if (typeof(val)=='object') {
+				if (val.constructor == String)
+					handle_string(val, this);
+				else
+					this._attr.value = val.value;
+			}
+			else if(typeof(val)=='string')
+				handle_string(val, this);
 			else
 				this._attr.value = val;
 		},
@@ -191,76 +274,12 @@ var dk = {
 			for (i=0; i<txt.length; i++) {
 				if (txt.charCodeAt(i)==1) {
 					i++;
-					switch(txt.substr(i, 1)) {
+					switch(txt[i]) {
 						case '\1':
 							ret += attr_str()+'\1';
 							break;
-						case 'K':
-							next_attr.fg = Attribute.BLACK;
-							break;
-						case 'R':
-							next_attr.fg = Attribute.RED;
-							break;
-						case 'G':
-							next_attr.fg = Attribute.GREEN;
-							break;
-						case 'Y':
-							next_attr.fg = Attribute.YELLOW;
-							break;
-						case 'B':
-							next_attr.fg = Attribute.BLUE;
-							break;
-						case 'M':
-							next_attr.fg = Attribute.MAGENTA;
-							break;
-						case 'C':
-							next_attr.fg = Attribute.CYAN;
-							break;
-						case 'W':
-							next_attr.fg = Attribute.WHITE;
-							break;
-						case '0':
-							next_attr.bg = Attribute.BLACK;
-							break;
-						case '1':
-							next_attr.bg = Attribute.RED;
-							break;
-						case '2':
-							next_attr.bg = Attribute.GREEN;
-							break;
-						case '3':
-							next_attr.bg = Attribute.YELLOW;
-							break;
-						case '4':
-							next_attr.bg = Attribute.BLUE;
-							break;
-						case '5':
-							next_attr.bg = Attribute.MAGENTA;
-							break;
-						case '6':
-							next_attr.bg = Attribute.CYAN;
-							break;
-						case '7':
-							next_attr.bg = Attribute.WHITE;
-							break;
-						case 'H':
-							next_attr.bright = true;
-							break;
-						case 'I':
-							next_attr.blink = true;
-							break;
-						case 'N':
-							next_attr.value = 7;
-							break;
-						case '-':
-							if (next_attr.blink || next_attr.bright || next_attr.bg !== Attribute.BLACK)
-								next_attr.value = 7;
-							break;
-						case '_':
-							if (next_attr.blink || next_attr.bg !== Attribute.BLACK)
-								next_attr.value = 7;
-							break;
 						default:
+							this.ctrla_attr(txt[i], next_attr);
 							break;
 					}
 				}
