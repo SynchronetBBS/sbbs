@@ -285,6 +285,73 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_raw_pollin(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	private_t*	p;
+	jsrefcount	rc;
+	int32		timeout = -1;
+#ifdef __unix__
+	fd_set		rd;
+	struct	timeval tv = {0, 0};
+#endif
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&timeout))
+			return(JS_FALSE);
+	}
+
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(FALSE));
+	rc=JS_SUSPENDREQUEST(cx);
+#ifdef __unix__
+	if (timeout >= 0) {
+		tv.tv_sec = timeout / 1000;
+		tv.tv_usec = (timeout%1000)*1000;
+	}
+	FD_ZERO(&rd);
+	FD_SET(fileno(p->fp), &rd);
+	if (select(fileno(p->fp)+1, &rd, NULL, NULL, timeout < 0 ? NULL : &tv) == 1)
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(TRUE));
+#else
+	while(timeout) {
+		if (isatty(fileno(p->fp))) {
+			if (kbhit()) {
+				JS_RESUMEREQUEST(cx, rc);
+				JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(TRUE));
+				rc=JS_SUSPENDREQUEST(cx);
+				break;
+			}
+			SLEEP(1);
+			if (timeout > 0)
+				timeout--;
+		}
+		else {
+			if (!eof(fileno(p->fp))) {
+				JS_RESUMEREQUEST(cx, rc);
+				JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(TRUE));
+				rc=JS_SUSPENDREQUEST(cx);
+				break;
+			}
+			SLEEP(1);
+			if (timeout > 0)
+				timeout--;
+		}
+	}
+#endif
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
+static JSBool
 js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
@@ -2589,6 +2656,11 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,JSDOCSTR("read a string from underlying file descriptor. "
 				"Undefined results when mixed with any other read/write methods except raw_write, including indirect ones. "
 				"<i>maxlen</i> defaults to one")
+	,317
+	},
+	{"raw_pollin",		js_raw_pollin,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[timeout]")
+	,JSDOCSTR("waits up to <i>timeout</i> milliseconds (or forever if timeout is not specified) for data to be available "
+			"via raw_read().")
 	,317
 	},
 	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text [,length=<i>text_length</i>]")
