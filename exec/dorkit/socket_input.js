@@ -1,5 +1,5 @@
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
-if (js.global.system !== undefined)
+if (typeof(system) !== 'undefined')
 	js.load_path_list.unshift(system.exec_dir+"dorkit/");
 load('ansi_input.js');
 var i;

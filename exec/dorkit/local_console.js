@@ -2,7 +2,7 @@
  * Implements the local console using conio
  */
 
-if (js.global.Graphic === undefined)
+if (typeof(Graphic) === 'undefined')
 	load("graphic.js");
 
 dk.console.local_io = {

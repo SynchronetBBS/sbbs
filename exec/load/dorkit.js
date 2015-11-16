@@ -1,6 +1,9 @@
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
-if (js.global.system !== undefined)
+js.on_exit("js.load_path_list.shift()");
+if (typeof(system) !== 'undefined') {
 	js.load_path_list.unshift(system.exec_dir+"dorkit/");
+	js.on_exit("js.load_path_list.shift()");
+}
 load("screen.js");
 
 // polyfill the String object with repeat method.
@@ -716,13 +719,13 @@ var dk = {
 		gen_dir:undefined,
 		sysop_name:undefined,
 		default_attr:new Attribute(7),
-		mode:(js.global.bbs !== undefined
-				&& js.global.server !== undefined
-				&& js.global.client !== undefined
-				&& js.global.user !== undefined
-				&& js.global.console !== undefined) ? 'sbbs'
-				: (js.global.jsexec_revision !== undefined ? 'jsexec'
-					: (js.global.jsdoor_revision !== undefined ? 'jsdoor' : undefined))
+		mode:(typeof(bbs) !== 'undefined'
+				&& typeof(server) !== 'undefined'
+				&& typeof(client) !== 'undefined'
+				&& typeof(user) !== 'undefined'
+				&& typeof(console) !== 'undefined') ? 'sbbs'
+				: (typeof(jsexec_revision) !== 'undefined' ? 'jsexec'
+					: (typeof(jsdoor_revision) !== 'undefined' ? 'jsdoor' : undefined))
 	},
 	misc:{
 		event_time:undefined,

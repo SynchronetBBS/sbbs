@@ -1,7 +1,7 @@
 load("sbbsdefs.js");
-js.global.dk_old_ctrlkey_passthru = console.ctrlkey_passthru;
-js.global.dk_old_pauseoff = bbs.sys_status & SS_PAUSEOFF;
-js.on_exit("console.ctrlkey_passthru=js.global.dk_old_ctrlkey_passthru;bbs.sys_status=(bbs.sys_status &~ SS_PAUSEOFF)|js.global.dk_old_pauseoff");
+dk_old_ctrlkey_passthru = console.ctrlkey_passthru;
+dk_old_pauseoff = bbs.sys_status & SS_PAUSEOFF;
+js.on_exit("console.ctrlkey_passthru=dk_old_ctrlkey_passthru;bbs.sys_status=(bbs.sys_status &~ SS_PAUSEOFF)|dk_old_pauseoff");
 console.ctrlkey_passthru=0x7fffffff;	// Disable all parsing.
 
 /*

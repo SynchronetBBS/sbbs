@@ -16,7 +16,7 @@
  *
  */
 
-if (js.global.Attribute === undefined)
+if (typeof(Attribute) === 'undefined')
 	load("attribute.js");
 
 function Graphic(w,h,attr,ch)
