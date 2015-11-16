@@ -1,8 +1,7 @@
 load("ansi_console.js");
 
 dk.console.remote_io.print = function(string) {
-	stdout.write(string);
-	stdout.flush();
+	stdout.raw_write(string);
 };
 
 var jsexec_input_queue = load(true, "jsexec_input.js");
