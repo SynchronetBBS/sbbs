@@ -608,6 +608,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(js_CreateQueueObject(cx, obj, NULL, bg->msg_queue)));
 		rc=JS_SUSPENDREQUEST(cx);
 		JS_RESUMEREQUEST(bg->cx, brc);
+		js_PrepareToExecute(bg->cx, bg->obj, path, NULL, bg->obj);
 		JS_ENDREQUEST(bg->cx);
 		JS_ClearContextThread(bg->cx);
 		bg->sem=&p->bg_sem;
