@@ -7,13 +7,9 @@ var k;
 while(!js.terminated) {
 	if (parent_queue.poll(0))
 		break;
-	if (system.platform == 'Win32')
+	if (stdin.raw_pollin(100))
 		k = stdin.raw_read(1);
-	else {
-		if (socket_select([stdin.descriptor], 0.1).length == 1)
-			k = stdin.raw_read(1);
-		else
-			k = undefined;
-	}
+	else
+		k = undefined;
 	ai.add(k);
 }
