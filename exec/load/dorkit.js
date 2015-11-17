@@ -493,6 +493,7 @@ var dk = {
 			len:80,			// Max length and length of input box
 			max:undefined,		// Max value for decimal and integer
 			min:undefined,		// Min value for decimal and integer
+			hotkeys:undefined	// Hotkeys... if a char in this string is typed as the first char, returns that char immediately.
 		},
 		getstr:function(in_opts) {
 			var i;
@@ -564,6 +565,8 @@ var dk = {
 						return str;
 				}
 				key = this.getkey();
+				if (opt.hotkeys !== undefined && str.length === 0 && opt.hotkeys.indexOf(key) !== -1)
+					return key;
 				switch(key) {
 					case 'KEY_HOME':
 						if (opt.select) {
