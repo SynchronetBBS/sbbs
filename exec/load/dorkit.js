@@ -568,8 +568,12 @@ var dk = {
 				}
 				key = this.getkey();
 				if (opt.hotkeys !== undefined && str.length === 0 && opt.hotkeys.indexOf(key) !== -1) {
-					if (ascii(key) >= 32)
-						this.print(key);
+					if (ascii(key) >= 32) {
+						if (opt.password)
+							this.print(opt.password_char);
+						else
+							this.print(key);
+					}
 					if (opt.crlf)
 						this.println('');
 					return key;
