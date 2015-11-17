@@ -88,8 +88,7 @@ Attribute.prototype = {
 		if(curatr === undefined || (!(this.bright) && curatr.bright)
 				|| (!(this.blink) && curatr.blink) || this.value === 7) {
 			str += "0;";
-			if (curatr === undefined)
-				curatr = this.curatr;
+			curatr = this._curatr;
 			curatr.value = 7;
 		}
 		if(this.blink) {                     /* special attributes */
