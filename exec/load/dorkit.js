@@ -1,3 +1,5 @@
+// TODO: Auto-pause stuff...
+
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 js.on_exit("js.load_path_list.shift()");
 if (typeof(system) !== 'undefined') {
@@ -565,8 +567,13 @@ var dk = {
 						return str;
 				}
 				key = this.getkey();
-				if (opt.hotkeys !== undefined && str.length === 0 && opt.hotkeys.indexOf(key) !== -1)
+				if (opt.hotkeys !== undefined && str.length === 0 && opt.hotkeys.indexOf(key) !== -1) {
+					if (ascii(key) >= 32)
+						this.print(key);
+					if (opt.crlf)
+						this.println('');
 					return key;
+				}
 				switch(key) {
 					case 'KEY_HOME':
 						if (opt.select) {
