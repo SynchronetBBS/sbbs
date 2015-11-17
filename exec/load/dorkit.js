@@ -114,7 +114,8 @@ var dk = {
 			KEY_PGDOWN:'KEY_PGDOWN',
 			KEY_INS:'KEY_INS',
 			KEY_DEL:'KEY_DEL',
-			POSITION_REPORT:'POSITION_REPORT'
+			POSITION_REPORT:'POSITION_REPORT',
+			UNKNOWN_ANSI:'UNKNOWN_ANSI'
 		},
 
 		x:1,					// Current column (1-based)
@@ -373,6 +374,12 @@ var dk = {
 				this.remote_io.print(string);
 			}
 		},
+		centre:function(str) {
+			var pos = (this.cols-str.length)/2;
+
+			this.movex(pos-this.remote_screen.pos.x);
+			this.print(str);
+		},
 		beep:function() {
 			this.print("\x07");
 		},
@@ -404,6 +411,8 @@ var dk = {
 		 * true when the entire ANSI sequence is available.
 		 */
 		waitkey:function(timeout) {
+			if (this.keybuf.length > 0)
+				return true;
 			if (this.input_queue.poll(timeout) === false)
 				return false;
 			return true;
@@ -418,7 +427,7 @@ var dk = {
 			var m;
 
 			if (this.keybuf.length > 0) {
-				var ret = this.keybuf.substr(0,1);
+				var ret = this.keybuf[0];
 				this.keybuf = this.keybuf.substr(1);
 				return ret;
 			}
@@ -438,13 +447,22 @@ var dk = {
 			}
 			return ret;
 		},
+		pause:function() {
+			var attr = this.attr.value;
+
+			this.attr='HR';
+			this.aprint("[Hit a key]");
+			this.attr.value = attr;
+			while(!this.waitkey(10000));
+			this.getkey();
+		},
 
 		/*
 		 * Returns a single byte... ANSI is not parsed.
 		 */
 		getbyte:function() {
 			if (this.keybuf.length > 0) {
-				var ret = this.keybuf.substr(0,1);
+				var ret = this.keybuf[0];
 				this.keybuf = this.keybuf.substr(1);
 				return ret;
 			}
@@ -452,9 +470,9 @@ var dk = {
 				return undefined;
 			ret = this.input_queue.read();
 			if (ret.length > 1) {
-				ret=this.key[ret.replace(/^.*\x00/,'')];
+				ret=ret.replace(/^.*\x00/,'');
 				this.keybuf = ret.substr(1);
-				ret = ret.substr(0,1);
+				ret = ret[0];
 			}
 			return ret;
 		},
@@ -911,6 +929,7 @@ var dk = {
 			this.connection.telnet = false;
 	}
 };
+dk.console.center = dk.console.centre;
 
 load("local_console.js");
 dk.parse_cmdline(argc, argv);
