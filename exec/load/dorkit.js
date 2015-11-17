@@ -473,6 +473,8 @@ var dk = {
 			attr:undefined,		// Foreground attribute... used to draw the input box and for output... undefined means "use current"
 			sel_attr:undefined,	// Selected text attribute... used for edit value when select is true.  Undefined uses inverse (swaps fg and bg, leaving bright and blink unswapped)
 			len:80,			// Max length and length of input box
+			max:undefined,		// Max value for decimal and integer
+			min:undefined,		// Min value for decimal and integer
 		},
 		getstr:function(in_opts) {
 			var i;
@@ -485,6 +487,7 @@ var dk = {
 			var orig_attr = new Attribute(this.attr);
 			var dispstr;
 			var decimal_re;
+			var val;
 			if (in_opts===undefined)
 				in_opts={};
 
@@ -630,12 +633,23 @@ var dk = {
 						insmode = !insmode;
 						break;
 					case '\r':
+						if (opt.integer || opt.decimal) {
+							if (opt.integer)
+								val = parseInt(str, 10);
+							else
+								val = parseFloat(str, 10);
+							if (opt.min !== undefined && opt.min > val)
+								break;
+							if (opt.max !== undefined && opt.max < val)
+								break;
+						}
 						if (opt.crlf)
 							this.println('');
 						return str;
 					case undefined:
 						break;
 					default:
+						// TODO: Better handling of numbers... leading zeros, negative values, etc.
 						if (key.length > 1)			// Unhandled extended key... ignore TODO: Beep?
 							break;
 						if (str.length >= opt.len)	// String already too long... ignore TODO: Beep?
