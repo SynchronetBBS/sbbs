@@ -4,6 +4,7 @@ var ai={
 	input_queue:new Queue("dorkit_input"),
 
 	// Called every 100ms *and* every char.
+	ANSIRe:/^\x1b\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])$/,
 	add:function(ch) {
 		var i;
 		var q;
@@ -173,8 +174,14 @@ var ai={
 			}
 		}
 
+		// Got valid, unknown sequence...
+		if (this.ansi_started && this.charbuf.search(this.ANSIRe)==0) {
+			this.input_queue.write("UNKNOWN_ANSI\x00"+this.charbuf);
+			this.ansi_started = 0;
+		}
+
 		// Timeout out waiting for escape sequence.
-		if (this.charbuf.length > 10 || (this.ansi_started && this.ansi_started + 100 < Date.now())) {
+		if (this.ansi_started && this.ansi_started + 100 < Date.now()) {
 			for(i=0; i<this.charbuf.length; i++) {
 				byte = this.charbuf.substr(i,1)
 				this.input_queue.write(byte);
