@@ -54,6 +54,8 @@ if (!String.prototype.repeat) {
 
 var dk = {
 	console:{
+		auto_pause:true,
+		_auto_pause:{lines_since:0},
 		last_pos:{x:1, y:1},
 		key:{
 			CTRL_A:'\x01',
@@ -303,6 +305,11 @@ var dk = {
 		 * sets the current attribute to 7
 		 */
 		clear:function() {
+			if (this.remote_screen !== undefined && this.auto_pause && (this.remote_screen.new_lines || this.remote_screen.touched)) {
+				this.auto_pause = false;
+				this.pause();
+				this.auto_pause = true;
+			}
 			this.attr=7;
 			if (this.local)
 				this.local_io.clear();
@@ -370,6 +377,11 @@ var dk = {
 			}
 			if (this.remote) {
 				if (this.remote_screen !== undefined) {
+					if (this.remote_screen.new_lines >= this.rows && this.auto_pause) {
+						this.auto_pause = false;
+						this.pause();
+						this.auto_pause = true;
+					}
 					this.remote_screen.print(string);
 					this.attr.value = this.remote_screen.attr.value;
 				}
@@ -457,6 +469,11 @@ var dk = {
 			this.attr.value = attr;
 			while(!this.waitkey(10000));
 			this.getkey();
+			this.print("\b".repeat(11)+" ".repeat(11)+"\b".repeat(11));
+			if (this.remote_screen !== undefined) {
+				this.remote_screen.new_lines = 0;
+				this.remote_screen.touched = false;
+			}
 		},
 
 		/*
@@ -561,12 +578,18 @@ var dk = {
 			}
 			else
 				pos = str.length;
+
+			if (this.auto_pause && this.remote_screen !== undefined)
+				this.remote_screen.new_lines = 0;
+
 			while(1) {
 				if (!this.waitkey(opt.timeout === undefined ? 1000 : opt.timeout)) {
 					if (opt.timeout !== undefined)
 						return str;
 				}
 				key = this.getkey();
+				if (key !== undefined && opt.upper_case)
+					key = key.toUpperCase();
 				if (opt.hotkeys !== undefined && str.length === 0 && opt.hotkeys.indexOf(key) !== -1) {
 					if (ascii(key) >= 32) {
 						if (opt.password)
@@ -688,8 +711,6 @@ var dk = {
 							break;
 						if (opt.integer && (key < '0' || key > '9'))	// Invalid integer... ignore TODO: Beep?
 							break;
-						if (opt.upper_case)
-							key = key.toUpperCase();
 						if ((!opt.exascii) && key.charCodeAt(0) > 127)	// Invalid EXASCII... ignore TODO: Beep?
 							break;
 						if (key.charCodeAt(0) < 32)	// Control char... ignore TODO: Beep?

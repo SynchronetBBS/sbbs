@@ -19,6 +19,8 @@ function Screen(w, h, attr, fill)
 	this.pos = {x:0, y:0};
 	this.saved_pos = {x:0, y:0};
 	this.attr = new Attribute(7);
+	this.new_lines = 0;
+	this.touched = false;
 }
 Screen.ANSIRe = /^(.*?)\x1b\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])([\x00-\xff]*)$/;
 Screen.ANSIFragRe = /^(.*?)(\x1b(\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])?)?)$/;
@@ -76,23 +78,27 @@ Screen.prototype.print=function(str) {
 				break;
 			case '\x0a':	// Linefeed
 				scr.pos.y++;
+				scr.new_lines++;
 				check_scrollup(scr);
 				break;
 			case '\x0c':	// Form feed (clear screen and home)
 				scr.graphic.clear();
 				scr.pos.x=0;
 				scr.pos.y=0;
+				scr.new_lines=0;
 				break;
 			case '\x0d':	// Carriage return
 				scr.pos.x = 0;
 				break;
 			default:
+				scr.touched=true;
 				scr.graphic.data[scr.pos.x][scr.pos.y].ch = ch;
 				scr.graphic.data[scr.pos.x][scr.pos.y].attr.value = scr.attr.value;
 				scr.pos.x++;
 				if (scr.pos.x >= scr.graphic.width) {
 					scr.pos.x = 0;
 					scr.pos.y++;
+					scr.new_lines++;
 					check_scrollup(scr);
 				}
 				break;
@@ -154,12 +160,16 @@ Screen.prototype.print=function(str) {
 				this.pos.y -= p[0];
 				if (this.pos.y < 0)
 					this.pos.y = 0;
+				if (this.touched)
+					this.new_lines = this.pos.y+1;
 				break;
 			case 'B':	// Cursor Down
 				param_defaults(p, [1]);
 				this.pos.y += p[0];
 				if (this.pos.y >= this.graphic.height)
 					this.pos.y = this.graphic.height-1;
+				if (this.touched)
+					this.new_lines = this.pos.y+1;
 				break;
 			case 'C':	// Cursor Right
 				param_defaults(p, [1]);
@@ -179,6 +189,8 @@ Screen.prototype.print=function(str) {
 				if (p[0] >= 1 && p[0] < this.graphic.height && p[1] >= 1 && p[1] <= this.graphic.width) {
 					this.pos.x = p[1]-1;
 					this.pos.y = p[0]-1;
+					if (this.touched)
+						this.new_lines = p[0];
 				}
 				break;
 			case 'J':	// Erase in screen
@@ -195,6 +207,7 @@ Screen.prototype.print=function(str) {
 								this.graphic.data[x][y].attr = this.attr.value;
 							}
 						}
+						this.touched = true;
 						break;
 					case 1:	// Erase to beginning of screen...
 						for (y = 0; y < this.pos.y; y++) {
@@ -207,13 +220,17 @@ Screen.prototype.print=function(str) {
 							this.graphic.data[x][this.pos.y].ch = this.graphic.ch;
 							this.graphic.data[x][this.pos.y].attr = this.attr.value;
 						}
+						this.touched = true;
 						break;
 					case 2:	// Erase entire screen (Most BBS terminals also move to 1/1)
 						this.graphic.clear();
+						this.new_lines = 0;
+						this.touched = false;
 						break;
 				}
 				break;
 			case 'K':	// Erase in line
+				scr.touched=true;
 				param_defaults(p, [0]);
 				switch(p[0]) {
 					case 0:	// Erase to eol
@@ -239,6 +256,7 @@ Screen.prototype.print=function(str) {
 				}
 				break;
 			case 'P':	// Delete character
+				scr.touched=true;
 				param_defaults(p, [1]);
 				if (p[1] > this.graphic.width - this.pos.x)
 					p[1] = this.graphic.width - this.pos.x;
@@ -250,6 +268,7 @@ Screen.prototype.print=function(str) {
 				}
 				break;
 			case 'X':	// Erase character
+				scr.touched=true;
 				param_defaults(p, [1]);
 				if (p[1] > this.graphic.width - this.pos.x)
 					p[1] = this.graphic.width - this.pos.x;
@@ -345,6 +364,8 @@ Screen.prototype.print=function(str) {
 			case 'u':
 				this.pos.x = this.saved_pos.x;
 				this.pos.y = this.saved_pos.y;
+				if (this.touched)
+					this.new_lines = this.pos.y;
 				break;
 			// Still TODO...
 			case 'n':	// Device status report... no action from this object.
