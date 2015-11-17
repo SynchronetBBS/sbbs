@@ -1,4 +1,6 @@
-load("sbbsdefs.js");
+// TODO: dk.system.name doesn't get populated...
+
+load("dorkit.js");
 load("lockfile.js");
 var game_dir='.';
 try { throw barfitty.barf(barf) } catch(e) { game_dir=e.fileName }
@@ -23,15 +25,14 @@ function check_syncterm_music()
 	var ver;
 
 	// Disable parsed input... we need to do ESC processing ourselves here.
-	var oldctrl=console.ctrlkey_passthru;
-	console.ctrlkey_passthru=-1;
-
-	write("\x1b[c");
+	dk.console.print("\x1b[c");
 	var response='';
 
 	while(1) {
-		var ch=console.inkey(0, 5000);
-		if(ch==="")
+		if (!dk.console.waitkey(5000))
+			break;
+		var ch=dk.console.getbyte();
+		if(ch === undefined || ch==="")
 			break;
 		response += ch;
 		if(ch != '\x1b' && ch != '[' && (ch < ' ' || ch > '/') && (ch<'0' || ch > '?'))
@@ -39,13 +40,9 @@ function check_syncterm_music()
 	}
 
 	if(response.substr(0,21) != "\x1b[=67;84;101;114;109;") {	// Not CTerm
-		bbs.mods.CTerm_Version='0';
-		console.ctrlkey_passthru=oldctrl;
 		return(0);
 	}
 	if(response.substr(-1) != "c") {	// Not a DA
-		bbs.mods.CTerm_Version='0';
-		console.ctrlkey_passthru=oldctrl;
 		return(0);
 	}
 	var version_str=response.substr(21);
@@ -53,7 +50,6 @@ function check_syncterm_music()
 	ver=version_str.split(/;/);
 	cterm_major=ver[0]|0;
 	cterm_minor=ver[1]|0;
-	console.ctrlkey_passthru=oldctrl;
 }
 
 function getkeys(str)
@@ -61,15 +57,20 @@ function getkeys(str)
 	var key;
 
 	while(1) {
-		key=console.getkey(K_UPPER|K_NOECHO);
+		while(!dk.console.waitkey(10000));
+		key=dk.console.getkey().toUpperCase();
 		if(str.indexOf(key)!=-1)
 			break;
 	}
+	if (dk.console.remote_screen !== undefined) {
+		dk.console.remote_screen.new_lines = 0;
+		dk.console.remote_screen.touched = false;
+	}
 	/* Don't echo control keys */
 	if(ascii(key)<32)
-		console.crlf();
+		dk.console.println('');
 	else
-		console.writeln(key);
+		dk.console.println(key);
 	return(key);
 }
 
@@ -83,7 +84,7 @@ function playmusic(str)
 			if(str.charAt(0)=='M')
 				str='|'+str.substr(1);
 		}
-		console.write("\x1b["+str+"\x0e");
+		dk.console.print("\x1b["+str+"\x0e");
 	}
 }
 
@@ -96,82 +97,82 @@ function proper(str)
 
 function show_intro()
 {
-	console.clear(CYAN);
-	console.crlf();
-	console.center("Welcome to Kannons and Katapults "+user.name+"!");
-	console.crlf();
-	console.center("Version "+version+" * KNK * Last Updated "+updated);
-	console.crlf();
-	console.center("ORIGINAL VERSION");
-	console.crlf();
-	console.center("Copyright (c) 1991,1992,1993,1994,1995 by Alan Davenport. All Rights Reserved.");
-	console.crlf();
-	console.center("by Alan Davenport");
-	console.crlf();
-	console.center("of Al's Cabin BBS");
-	console.crlf();
-	console.center("JavaScript Version");
-	console.crlf();
-	console.center("Copyright (c) 2009 by Stephen Hurd. All Rights Reserved.");
-	console.crlf();
-	console.center("Running on "+system.name+" courtesy of "+system.operator+".");
-	console.crlf();
+	dk.console.clear();
+	dk.console.attr = Attribute.CYAN;
+	dk.console.println("");
+	dk.console.center("Welcome to Kannons and Katapults "+dk.user.full_name+"!");
+	dk.console.println("");
+	dk.console.center("Version "+version+" * KNK * Last Updated "+updated);
+	dk.console.println("");
+	dk.console.center("ORIGINAL VERSION");
+	dk.console.println("");
+	dk.console.center("Copyright (c) 1991,1992,1993,1994,1995 by Alan Davenport. All Rights Reserved.");
+	dk.console.println("");
+	dk.console.center("by Alan Davenport");
+	dk.console.println("");
+	dk.console.center("of Al's Cabin BBS");
+	dk.console.println("");
+	dk.console.center("JavaScript Version");
+	dk.console.println("");
+	dk.console.center("Copyright (c) 2009 by Stephen Hurd. All Rights Reserved.");
+	dk.console.println("");
+	dk.console.center("Running on "+dk.system.name+" courtesy of "+dk.system.sysop_name+".");
+	dk.console.println("");
 	check_syncterm_music();
-	console.gotoxy(1,console.screen_rows);
-	console.pause();
+	dk.console.gotoxy(0,dk.console.rows-1);
+	dk.console.pause();
 
-	console.clear();
-	console.crlf();
-	console.crlf();
-	console.crlf();
-	console.crlf();	console.attributes=YELLOW;
-	console.writeln("The object of Kannons & Kataputs is to defeat King Computer. There are 3");
-	console.writeln("ways to do this. You may destroy his kastle, defeat his army or have him");
-	console.write(word_wrap("assassinated. If this sounds easy to you "+user.alias+", you should be warned that King Computer is no push over!",77).replace(/\n/g,"\r\n"));
-	console.crlf();
-	console.crlf(); console.attributes=WHITE;
-	console.writeln("Although it may seem that the game is rigged, the odds are exactly even.");
-	console.writeln("A LOT of work and thousands of games have gone into making King Computer");
-	console.writeln("as smart as possible. It's you against him. Play carefully!!");
-	console.crlf();
-	console.crlf(); console.attributes=LIGHTGREEN;
-	console.writeln("You each will recieve one point for every soldier killed, one point for every");
-	console.writeln("kastle point destroyed and 1,000 points for each guard passed by an assassin");
-	console.writeln("when successful. The loser loses their points. The scoreboard resets every");
-	console.writeln("month. Good Luck!");
-	console.crlf();
-	console.crlf();
-	console.crlf();
-	console.line_counter--;	// Allow to print on last line...
-	console.crlf();
-	console.print("\1h\1bPress [\1mP\1b] to Play KNK or [\1mQ\1b] to quit back to the BBS. -=> \1m");
+	dk.console.clear();
+	dk.console.println("");
+	dk.console.println("");
+	dk.console.println("");
+	dk.console.println("");	dk.console.attr="HY";
+	dk.console.println("The object of Kannons & Kataputs is to defeat King Computer. There are 3");
+	dk.console.println("ways to do this. You may destroy his kastle, defeat his army or have him");
+	dk.console.print(word_wrap("assassinated. If this sounds easy to you "+dk.user.alias+", you should be warned that King Computer is no push over!",77).replace(/\n/g,"\r\n"));
+	dk.console.println("");
+	dk.console.println(""); dk.console.attr="HW";
+	dk.console.println("Although it may seem that the game is rigged, the odds are exactly even.");
+	dk.console.println("A LOT of work and thousands of games have gone into making King Computer");
+	dk.console.println("as smart as possible. It's you against him. Play carefully!!");
+	dk.console.println("");
+	dk.console.println(""); dk.console.attr="HG";
+	dk.console.println("You each will recieve one point for every soldier killed, one point for every");
+	dk.console.println("kastle point destroyed and 1,000 points for each guard passed by an assassin");
+	dk.console.println("when successful. The loser loses their points. The scoreboard resets every");
+	dk.console.println("month. Good Luck!");
+	dk.console.println("");
+	dk.console.println("");
+	dk.console.println("");
+	dk.console.println("");
+	dk.console.aprint("\1h\1bPress [\1mP\1b] to Play KNK or [\1mQ\1b] to quit back to the BBS. -=> \1m");
 	if(getkeys("PQ")=='Q')
 		exit(0);
 
-	console.attributes=MAGENTA;
+	dk.console.attr='M';
 	playmusic("MFT64L64O5CDP32CDP32CDP16");
-	console.write("\x0f\b \b");
-	console.crlf();
-	console.attributes=GREEN;
-	console.writeln("If your terminal supports ANSI sound, you just heard some.");
-	console.writeln("If it doesnt, you just saw some wierd characters.");
-	console.crlf();
-	console.print("\1h\1gDo you want the ANSI sound effects? [Y/N] -=> \1n\1g");
+	dk.console.print("\x0f\b \b");
+	dk.console.println("");
+	dk.console.attr='G';
+	dk.console.println("If your terminal supports ANSI sound, you just heard some.");
+	dk.console.println("If it doesnt, you just saw some wierd characters.");
+	dk.console.println("");
+	dk.console.aprint("\1h\1gDo you want the ANSI sound effects? [Y/N] -=> \1n\1g");
 	if(getkeys("YN")!='Y')
 		music=false;
 	playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
 	while(1) {
-		console.crlf();
-		console.print("\1hArt thou a [K] King or a [Q] Queen? -=> \1n\1g");
+		dk.console.println("");
+		dk.console.aprint("\1hArt thou a [K] King or a [Q] Queen? -=> \1n\1g");
 		if(getkeys("KQ")=='Q')
 			title="Queen";
 		else
 			title="King";
-		console.crlf();
-		console.print("\1hWhat name shall you be known by sire? -=> \1n\1g");
-		name=console.getstr("", 35);
-		console.crlf();
-		console.print('\1h"'+title+' '+name+'" Is this OK? [y/N] -=> \1n\1g');
+		dk.console.println("");
+		dk.console.aprint("\1hWhat name shall you be known by sire? -=> \1n\1g");
+		name=dk.console.getstr({len:35});
+		dk.console.println("");
+		dk.console.aprint('\1h"'+title+' '+name+'" Is this OK? [y/N] -=> \1n\1g');
 		if(getkeys("YN\r\n")=='Y')
 			break;
 	}
@@ -261,136 +262,142 @@ function Player_produce()
 {
 	var tmp;
 
-	console.crlf();
-	console.attributes=WHITE;
-	console.center("* Monthly Update *");
-	console.crlf();
+	dk.console.println("");
+	dk.console.attr='HW';
+	dk.console.center("* Monthly Update *");
+	dk.console.println("");
 	if(this.isplayer)
-		console.attributes=GREEN;
+		dk.console.attr='G';
 	else
-		console.attributes=CYAN;
+		dk.console.attr='C';
 	tmp=(this.kastle/100)|0;
 	if(tmp > 0)
-		console.writeln("* "+tmp+" civilians have immigrated to "+this.refer_posessive+" kastle.");
+		dk.console.println("* "+tmp+" civilians have immigrated to "+this.refer_posessive+" kastle.");
 	this.civilians += tmp;
 	tmp=0;
 	if(this.civilians > 0)
-		console.writeln("* "+this.civilians+" gold was collected in taxes!");
+		dk.console.println("* "+this.civilians+" gold was collected in taxes!");
 	this.gold += this.civilians;
 	tmp += this.civilians;
 
 	if(this.soldiers) {
 		if(this.gold < this.soldiers) {
-			console.attributes |= HIGH;
-			console.writeln("* "+(this.soldiers-this.gold)+" of "+this.refer_posessive+" men defected from not being paid!!");
+			dk.console.attr.bright = true;;
+			dk.console.println("* "+(this.soldiers-this.gold)+" of "+this.refer_posessive+" men defected from not being paid!!");
 			this.soldiers=this.gold;
-			console.attributes &= ~HIGH;
+			dk.console.attr.bright = false;
 		}
 	}
 	if(this.soldiers) {
-		console.writeln("* "+this.soldiers+" gold was paid to "+this.refer_posessive+" soldiers.");
+		dk.console.println("* "+this.soldiers+" gold was paid to "+this.refer_posessive+" soldiers.");
 		this.gold -= this.soldiers;
 		tmp -= this.soldiers;
 	}
 	if(tmp > 0) {
-		console.writeln("* Treasury increased by "+tmp+" gold pieces!");
+		dk.console.println("* Treasury increased by "+tmp+" gold pieces!");
 	}
 	else {
 		if(tmp < 0)
-			console.writeln("* Treasury DECREASED by "+(0-tmp)+" gold pieces!");
+			dk.console.println("* Treasury DECREASED by "+(0-tmp)+" gold pieces!");
 	}
 
 	if(this.soldiers) {
 		var canfeed=(this.food/2)|0;
 		if(canfeed < this.soldiers) {
-			console.attributes |= HIGH;
-			console.writeln("* "+(this.soldiers-canfeed)+" of "+this.refer_posessive+" soldiers have starved to death!!");
+			dk.console.attr.bright = true;
+			dk.console.println("* "+(this.soldiers-canfeed)+" of "+this.refer_posessive+" soldiers have starved to death!!");
 			this.soldiers=canfeed;
-			console.attributes &= ~HIGH;
+			dk.console.attr.bright = false;
 		}
 	}
 	tmp=this.soldiers*2;
 	if(tmp > 0)
-		console.writeln("* "+tmp+" sacks of food were consumed by "+this.refer_posessive+" army.");
+		dk.console.println("* "+tmp+" sacks of food were consumed by "+this.refer_posessive+" army.");
 	this.food -= tmp;
 
 	if(this.civilians) {
 		if(this.food < this.civilians) {
-			console.attributes |= HIGH;
-			console.writeln("* "+(this.civilians-this.food)+" of "+this.refer_posessive+" citizens have starved to death!!");
+			dk.console.attr.bright = true;
+			dk.console.println("* "+(this.civilians-this.food)+" of "+this.refer_posessive+" citizens have starved to death!!");
 			this.civilians=this.food;
-			console.attributes &= ~HIGH;
+			dk.console.attr.bright = false;
 		}
 	}
 	if(this.civilians)
-		console.writeln("* "+this.civilians+" sacks of food were consumed by "+this.refer_posessive+" citizens.");
+		dk.console.println("* "+this.civilians+" sacks of food were consumed by "+this.refer_posessive+" citizens.");
 	this.food -= this.civilians;
-	console.crlf();
+	dk.console.println("");
 }
 
 function Player_powerbar()
 {
-	var lastattr=console.attributes;
+	var lastattr=dk.console.attr.value;
 	var pow=this.power;
 	var i;
 	var bars="\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe";
 
 	if(pow > 0) {
 		if(pow <= 10)
-			console.attributes=LIGHTRED|BLINK;
+			dk.console.attr = 'HIR';
 		else
-			console.attributes=LIGHTRED;
-		console.write(format("%.*s", pow>10?10:pow, bars));
+			dk.console.attr='HR';
+		dk.console.print(format("%.*s", pow>10?10:pow, bars));
 	}
 	if(pow > 10) {
-		console.attributes=YELLOW;
-		console.write(format("%.*s", pow>20?10:pow-10, bars));
+		dk.console.attr='HY';
+		dk.console.print(format("%.*s", pow>20?10:pow-10, bars));
 	}
 	if(pow > 20) {
-		console.attributes=LIGHTGREEN;
-		console.write(format("%.*s", pow-20, bars));
+		dk.console.attr='HG';
+		dk.console.print(format("%.*s", pow-20, bars));
 	}
 	for(i=pow; i<46; i++)
-		console.write(' ');
-	console.attributes=lastattr;
+		dk.console.print(' ');
+log("Restore attr...");
+log("Restore attr to "+lastattr);
+	dk.console.attr.value=lastattr;
+log("Restored attr...");
 }
 
 function Player_drawscreen(month)
 {
-	console.clear();
-	console.crlf();
+	dk.console.clear();
+	dk.console.println("");
 	if(this.isplayer) {
-		console.print("\1h\1w*  Your Turn  *            \1h\1r*  Month # "+month+"  *\r\n");
-		console.crlf();
-		console.attributes=GREEN;
+		dk.console.aprint("\1h\1w*  Your Turn  *            \1h\1r*  Month # "+month+"  *\r\n");
+		dk.console.println("");
+		dk.console.attr='G';
 	}
 	else {
 		var mstr=format("%-27s", "*  Month # "+month+"  *");
-		console.print("\1h\1r"+mstr+"\1w*  "+this.full_name+"'s Turn  *\r\n");
-		console.crlf();
-		console.attributes=CYAN;
+		dk.console.aprint("\1h\1r"+mstr+"\1w*  "+this.full_name+"'s Turn  *\r\n");
+		dk.console.println("");
+		dk.console.attr='C';
 	}
-	console.writeln("\xc9\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbb");
-	console.print("\xba  "+format("%-24s",player.full_name)+"\xba  "+format("%-24s",computer.full_name)+"\xba\r\n");
-	console.writeln("\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9");
-	console.print("\xba You: ");
+	dk.console.println("\xc9\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbb");
+	dk.console.print("\xba  "+format("%-24s",player.full_name)+"\xba  "+format("%-24s",computer.full_name)+"\xba\r\n");
+	dk.console.println("\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9");
+	dk.console.print("\xba You: ");
 	player.powerbar();
-	console.writeln(" \xba");
-	console.print("\xba Him: ");
+log("After powerbar, attr is "+dk.console.attr.value);
+	dk.console.println(" \xba");
+log("After println, attr is "+dk.console.attr.value);
+	dk.console.print("\xba Him: ");
+log("After him, attr is "+dk.console.attr.value);
 	computer.powerbar();
-	console.writeln(" \xba");
-	console.writeln("\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9");
-	console.writeln(format("\xba  Score..........: %-6d \xba  Score..........: %-6d \xba",player.score,computer.score));
-	console.writeln(format("\xba  Kastle Points..: %-6d \xba  Kastle Points..: %-6d \xba",player.kastle,computer.kastle));
-	console.writeln(format("\xba  Soldiers.......: %-6d \xba  Soldiers.......: %-6d \xba",player.soldiers,computer.soldiers));
-	console.writeln(format("\xba  Civilians......: %-6d \xba  Civilians......: %-6d \xba",player.civilians,computer.civilians));
-	console.writeln(format("\xba  Kannons........: %-6d \xba  Kannons........: %-6d \xba",player.kannons,computer.kannons));
-	console.writeln(format("\xba  Katapults......: %-6d \xba  Katapults......: %-6d \xba",player.katapults,computer.katapults));
-	console.writeln(format("\xba  Assassins......: %-6d \xba  Assassins......: %-6d \xba",player.assassins,computer.assassins));
-	console.writeln(format("\xba  Guards.........: %-6d \xba  Guards.........: %-6d \xba",player.guards,computer.guards));
-	console.writeln(format("\xba  Gold...........: %-6d \xba  Gold...........: %-6d \xba",player.gold,computer.gold));
-	console.writeln(format("\xba  Months of Food.: %-6s \xba  Months of Food.: %-6s \xba",player.mfoodstr,computer.mfoodstr));
-	console.writeln("\xc8\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc");
+	dk.console.println(" \xba");
+	dk.console.println("\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9");
+	dk.console.println(format("\xba  Score..........: %-6d \xba  Score..........: %-6d \xba",player.score,computer.score));
+	dk.console.println(format("\xba  Kastle Points..: %-6d \xba  Kastle Points..: %-6d \xba",player.kastle,computer.kastle));
+	dk.console.println(format("\xba  Soldiers.......: %-6d \xba  Soldiers.......: %-6d \xba",player.soldiers,computer.soldiers));
+	dk.console.println(format("\xba  Civilians......: %-6d \xba  Civilians......: %-6d \xba",player.civilians,computer.civilians));
+	dk.console.println(format("\xba  Kannons........: %-6d \xba  Kannons........: %-6d \xba",player.kannons,computer.kannons));
+	dk.console.println(format("\xba  Katapults......: %-6d \xba  Katapults......: %-6d \xba",player.katapults,computer.katapults));
+	dk.console.println(format("\xba  Assassins......: %-6d \xba  Assassins......: %-6d \xba",player.assassins,computer.assassins));
+	dk.console.println(format("\xba  Guards.........: %-6d \xba  Guards.........: %-6d \xba",player.guards,computer.guards));
+	dk.console.println(format("\xba  Gold...........: %-6d \xba  Gold...........: %-6d \xba",player.gold,computer.gold));
+	dk.console.println(format("\xba  Months of Food.: %-6s \xba  Months of Food.: %-6s \xba",player.mfoodstr,computer.mfoodstr));
+	dk.console.println("\xc8\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc");
 }
 
 function Player_assassinate(other)
@@ -400,49 +407,49 @@ function Player_assassinate(other)
 	var i;
 
 	this.assassins--;
-	console.crlf();
-	console.attributes=LIGHTGREEN;
-	console.writeln("Attempting infiltration!");
+	dk.console.println("");
+	dk.console.attr='HG';
+	dk.console.println("Attempting infiltration!");
 	playmusic("MFO1T32L8EL64DL8EL64DL8EL64DL8EP8");
-	console.crlf();
-	console.attributes=LIGHTRED;
-	console.writeln("He has to pass "+other.guards+" guards.");
+	dk.console.println("");
+	dk.console.attr='HR';
+	dk.console.println("He has to pass "+other.guards+" guards.");
 	while(other.guards && passed < other.guards) {
 		switch(random(5)) {
 			case 0: // Failed
-				console.attributes=LIGHTRED|BLINK;
-				console.writeln(this.refer_posessive+" assassin was killed!");
+				dk.console.attr="HIR";
+				dk.console.println(this.refer_posessive+" assassin was killed!");
 				playmusic("MFT32L2O1L8dL4C");
-				console.attributes=LIGHTRED;
+				dk.console.attr.blink = false;
 				return(false);
 			case 1:	// Killed
-				console.attributes=LIGHTRED|BLINK;
-				console.writeln("KILLED "+(++killed));
+				dk.console.attr="HIR"
+				dk.console.println("KILLED "+(++killed));
 				passed++;
 				other.guards--;
 				for(i=0; i<5; i++)
 					playmusic("MFO1T128L64CEB");
 				break;
 			default:
-				console.attributes=LIGHTRED;
-				console.writeln("Passed "+(++passed)+"!");
+				dk.console.attr="HR"
+				dk.console.println("Passed "+(++passed)+"!");
 				playmusic("MFO1T128L64CEB");
 		}
 	}
 	this.score += 1000*passed;
 	playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
 	if(this.isplayer) {
-		console.attributes=LIGHTGREEN;
-		console.writeln("Stealthily, quietly, "+this.posessive+" assassin creeps into the inner chambers of "+other.title);
-		console.writeln(other.name+" and pours a small vial of colorless fluid into a goblet which sits");
-		console.writeln("upon "+other.refer_posessive+" banquet table. During dinner, "+other.singular+" suddenly clutch"+other.conjugate2+" "+other.posessive);
-		console.writeln("throat and tumble"+other.conjugate+" backward off of "+other.posessive+" seat.");
+		dk.console.attr="HG"
+		dk.console.println("Stealthily, quietly, "+this.posessive+" assassin creeps into the inner chambers of "+other.title);
+		dk.console.println(other.name+" and pours a small vial of colorless fluid into a goblet which sits");
+		dk.console.println("upon "+other.refer_posessive+" banquet table. During dinner, "+other.singular+" suddenly clutch"+other.conjugate2+" "+other.posessive);
+		dk.console.println("throat and tumble"+other.conjugate+" backward off of "+other.posessive+" seat.");
 	}
 	else {
-		console.attributes=LIGHTRED;
-		console.writeln(proper(other.singular)+" wake"+other.conjugate+" up, for a second, and see"+other.conjugate+" "+this.refer_posessive+" assassin standing");
-		console.writeln("over "+other.singular+" with a grim smile. His hand thrusts his knife into "+other.refer_posessive+" heart.");
-		console.writeln(proper(this.singular)+" sink"+this.conjugate+" into the long and everlasting sleep.");
+		dk.console.attr="HR"
+		dk.console.println(proper(other.singular)+" wake"+other.conjugate+" up, for a second, and see"+other.conjugate+" "+this.refer_posessive+" assassin standing");
+		dk.console.println("over "+other.singular+" with a grim smile. His hand thrusts his knife into "+other.refer_posessive+" heart.");
+		dk.console.println(proper(this.singular)+" sink"+this.conjugate+" into the long and everlasting sleep.");
 	}
 	playmusic("MFT64L64O5CDP32CDP32CDP16");
 	return(this);
@@ -453,45 +460,45 @@ function Player_purchase(name, propname, cost)
 	var max;
 
 	max=(this.gold/cost)|0;
-	console.crlf();
-	console.attributes=YELLOW|BG_RED;
-	console.print("Press \1w[ENTER]\1y to abort.");
-	console.attributes=YELLOW;
-	console.crlf();
-	console.crlf();
+	dk.console.println("");
+	dk.console.attr="HY1";
+	dk.console.aprint("Press \1w[ENTER]\1y to abort.");
+	dk.console.attr="HY"
+	dk.console.println("");
+	dk.console.println("");
 	if(propname=="food") {
 		var i=this.civilians+this.soldiers*2;
-		console.attributes=RED;
-		console.writeln("You have "+this.food+" sacks of food.");
-		console.writeln("This is enough to feed your population for "+((this.mfood)|0)+" months.");
-		console.writeln("You have "+this.gold+" gold and can afford "+max+" sacks of food.");
-		console.writeln("This will increase your reserves of food by "+(i==0?0:((max/i)|0))+" months.");
-		console.writeln("You need "+i+" sacks of food per month to feed your population.");
-		console.attributes=LIGHTRED;
-		console.crlf();
-		console.write("Buy how many sacks? (M = MAX) -=> ");
-		console.attributes=RED;
+		dk.console.attr="R"
+		dk.console.println("You have "+this.food+" sacks of food.");
+		dk.console.println("This is enough to feed your population for "+((this.mfood)|0)+" months.");
+		dk.console.println("You have "+this.gold+" gold and can afford "+max+" sacks of food.");
+		dk.console.println("This will increase your reserves of food by "+(i==0?0:((max/i)|0))+" months.");
+		dk.console.println("You need "+i+" sacks of food per month to feed your population.");
+		dk.console.attr="HR"
+		dk.console.println("");
+		dk.console.print("Buy how many sacks? (M = MAX) -=> ");
+		dk.console.attr="R"
 	}
 	else {
-		console.attributes=LIGHTMAGENTA;
-		console.write("You can afford "+max+" "+name+".");
-		console.attributes=LIGHTCYAN;
-		console.write(" Buy how many? (M = MAX) -=> ");
-//		console.attributes=CYAN;
+		dk.console.attr="HM"
+		dk.console.print("You can afford "+max+" "+name+".");
+		dk.console.attr="HC"
+		dk.console.print(" Buy how many? (M = MAX) -=> ");
+//		dk.console.attr="C"
 	}
-	i=console.getkeys("M\r\n", max);
+	i=dk.console.getstr({hotkeys:"M\r\n", upper_case:true, max:max, min:1, integer:true});
 	if(i==='' || i=='\r' || i=='\n' || i==0)
 		return(false);
 	if(i=='M')
 		i=max;
 	i|=0;
-	console.attributes=CYAN;
-	console.crlf();
-	console.writeln("Loading your wagons sire. Thank you for your gold!");
+	dk.console.attr="C"
+	dk.console.println("");
+	dk.console.println("Loading your wagons sire. Thank you for your gold!");
 	this.loadwagons(propname,i);
-	console.crlf();
-	console.attributes=LIGHTBLUE;
-	console.writeln("* A real pleasure serving you sire! *");
+	dk.console.println("");
+	dk.console.attr="HB"
+	dk.console.println("* A real pleasure serving you sire! *");
 	return(i);
 }
 
@@ -503,30 +510,30 @@ function Player_soldierattack(other)
 	var orig_soldiers=this.soldiers;
 	var clashes=0;
 
-	console.crlf();
-	console.writeln("You have "+player.soldiers+" soldiers and "+computer.full_name+" has "+computer.soldiers+".");
-	console.crlf();
-	console.writeln("Forces engaging!");
+	dk.console.println("");
+	dk.console.println("You have "+player.soldiers+" soldiers and "+computer.full_name+" has "+computer.soldiers+".");
+	dk.console.println("");
+	dk.console.println("Forces engaging!");
 	playmusic("MFT32O3L16CL8FL16CL8FL64CP64CP64CP64L8F");
-	console.crlf();
-	console.attributes=LIGHTGREEN;
+	dk.console.println("");
+	dk.console.attr="HG"
 	for(i=0; i<orig_soldiers && other.soldiers > 0; i++) {
 		if(i%1000==0) {
 			switch(random(3)) {
 				case 0:
-					console.write(" * SMASH! *");
+					dk.console.print(" * SMASH! *");
 					break;
 				case 1:
-					console.write(" * CLASH! *");
+					dk.console.print(" * CLASH! *");
 					break;
 				case 2:
-					console.write(" * CRASH! *");
+					dk.console.print(" * CRASH! *");
 					break;
 			}
 			playmusic("MFO1T128L64CEB");
 			clashes++;
 			if(clashes%7==0)
-				console.crlf();
+				dk.console.println("");
 		}
 		switch(random(3)) {
 			case 0:
@@ -547,18 +554,18 @@ function Player_soldierattack(other)
 	}
 
 	if(clashes%7)
-		console.crlf();
-	console.crlf();
-	console.attributes=GREEN;
+		dk.console.println("");
+	dk.console.println("");
+	dk.console.attr="G"
 	if(this.isplayer) {
-		console.writeln("You lost "+this_lost+" men and have "+this.soldiers+" left!");
-		console.writeln(other.full_name+" lost "+oth_lost+" men and has "+other.soldiers+" left!");
+		dk.console.println("You lost "+this_lost+" men and have "+this.soldiers+" left!");
+		dk.console.println(other.full_name+" lost "+oth_lost+" men and has "+other.soldiers+" left!");
 	}
 	else {
-		console.writeln("You lost "+oth_lost+" men and have "+other.soldiers+" left!");
-		console.writeln(this.full_name+" lost "+this_lost+" men and has "+this.soldiers+" left!");
+		dk.console.println("You lost "+oth_lost+" men and have "+other.soldiers+" left!");
+		dk.console.println(this.full_name+" lost "+this_lost+" men and has "+this.soldiers+" left!");
 	}
-	console.crlf();
+	dk.console.println("");
 	return(this.checkresults(other));
 }
 
@@ -574,12 +581,11 @@ function Player_dodamage(other, damage, men)
 	var booms=0;
 
 	if(this.isplayer)
-		console.attributes=YELLOW;
+		dk.console.attr="HY"
 	else
-		console.attributes=LIGHTCYAN;
+		dk.console.attr="HC"
 
 	for(i=0; i<damage; i++) {
-		console.line_counter=0;
 		bad=random(7);	// Each damage does 0-7 points of "bad"
 		for(j=0; j<bad; j++) {
 			rnd=other.soldiers+other.kastle+other.guards+other.assassins+other.kannons+other.katapults+other.civilians;
@@ -672,16 +678,16 @@ function Player_dodamage(other, damage, men)
 		while(total_cost > 100000) {
 			switch(random(2)) {
 				case 0:
-					console.write("**BANG!** ");
+					dk.console.print("**BANG!** ");
 					break;
 				case 1:
-					console.write("**BOOM!** ");
+					dk.console.print("**BOOM!** ");
 					break;
 			}
 			playmusic("MFO1T128L64CEB");
 			booms++;
 			if(booms%7==0)
-				console.crlf();
+				dk.console.println("");
 			total_cost -= 100000;
 		}
 	}
@@ -689,80 +695,79 @@ function Player_dodamage(other, damage, men)
 	if(total_cost) {
 			switch(random(2)) {
 				case 0:
-					console.write("**BANG!** ");
+					dk.console.print("**BANG!** ");
 					break;
 				case 1:
-					console.write("**BOOM!** ");
+					dk.console.print("**BOOM!** ");
 					break;
 			}
 			playmusic("MFO1T128L64CEB");
 			booms++;
 			if(booms%7==0)
-				console.crlf();
+				dk.console.println("");
 	}
 	if(booms%7)
-		console.crlf();
-	console.line_counter=0;
+		dk.console.println("");
 
 	if(nodamage) {
 		if(this.isplayer)
-			console.attributes=YELLOW|BLINK;
+			dk.console.attr="HIY"
 		else
-			console.attributes=LIGHTCYAN|BLINK;
-		console.writeln("No damage!");
+			dk.console.attr="HIC"
+		dk.console.println("No damage!");
 		playmusic("MFT32L2O1L8dL4C");
 	}
 
-	console.crlf();
+	dk.console.println("");
 
 	if(loss.soldiers > 0) {
-		console.attributes=LIGHTRED;
-		console.writeln(proper(this.refer_singular+" killed "+loss.soldiers+" men!"));
+		dk.console.attr="HR"
+		dk.console.println(proper(this.refer_singular+" killed "+loss.soldiers+" men!"));
 	}
 	if(loss.kastle > 0) {
-		console.attributes=LIGHTGREEN;
-		console.writeln(proper(this.refer_singular+" destroyed "+loss.kastle+" kastle points!"));
+		dk.console.attr="HG"
+		dk.console.println(proper(this.refer_singular+" destroyed "+loss.kastle+" kastle points!"));
 	}
 	if(loss.guards > 0) {
-		console.attributes=YELLOW;
-		console.writeln(proper(this.refer_singular+" killed "+loss.guards+" guards!"));
+		dk.console.attr="HY"
+		dk.console.println(proper(this.refer_singular+" killed "+loss.guards+" guards!"));
 	}
 	if(loss.assassins > 0) {
-		console.attributes=LIGHTBLUE;
-		console.writeln(proper(this.refer_singular+" killed "+loss.assassins+" assassins!"));
+		dk.console.attr="HB"
+		dk.console.println(proper(this.refer_singular+" killed "+loss.assassins+" assassins!"));
 	}
 	if(loss.kannons > 0) {
-		console.attributes=LIGHTMAGENTA;
-		console.writeln(proper(this.refer_singular+" destroyed "+loss.kannons+" kannons!"));
+		dk.console.attr="HM"
+		dk.console.println(proper(this.refer_singular+" destroyed "+loss.kannons+" kannons!"));
 	}
 	if(loss.katapults > 0) {
-		console.attributes=LIGHTCYAN;
-		console.writeln(proper(this.refer_singular+" destroyed "+loss.katapults+" katapults!"));
+		dk.console.attr="HC"
+		dk.console.println(proper(this.refer_singular+" destroyed "+loss.katapults+" katapults!"));
 	}
 	if(loss.civilians > 0) {
-		console.attributes=WHITE;
-		console.writeln(proper(this.refer_singular+" killed "+loss.civilians+" civilians!"));
+		dk.console.attr="HW"
+		dk.console.println(proper(this.refer_singular+" killed "+loss.civilians+" civilians!"));
 	}
 
-	console.crlf();
+	dk.console.println("");
 	return(this.checkresults(other));
 }
 
 function Player_kannonattack(other, men)
 {
-	console.crlf();
-	console.attributes=BROWN;
+	dk.console.println("");
+	dk.console.attr="Y"
 	if(this.isplayer)
-		console.writeln("Firing Kannons!");
+		dk.console.println("Firing Kannons!");
 	else {
-		console.write("Firing kannons at your ");
+		dk.console.print("Firing kannons at your ");
 		if(men)
-			console.writeln("men!");
+			dk.console.println("men!");
 		else
-			console.writeln("kastle!");
+			dk.console.println("kastle!");
 	}
 	playmusic("MFO1L64T128BAAGGFFEEDDCP4");
-	console.crlf();
+	dk.console.println("");
 	return(this.dodamage(other, random(this.kannons+1), men));
 }
 
@@ -776,19 +781,19 @@ function Player_katapultattack(other, men)
 			damage += random(1500)+1;
 	}
 
-	console.crlf();
-	console.attributes=BROWN;
+	dk.console.println("");
+	dk.console.attr="Y"
 	if(this.isplayer)
-		console.writeln("Firing Katapult!");
+		dk.console.println("Firing Katapult!");
 	else {
-		console.write("Firing katapult at your ");
+		dk.console.print("Firing katapult at your ");
 		if(men)
-			console.writeln("men!");
+			dk.console.println("men!");
 		else
-			console.writeln("kastle!");
+			dk.console.println("kastle!");
 	}
 	playmusic("MFT76L64O2CDEFGABAGFEDCP4");
-	console.crlf();
+	dk.console.println("");
 	return(this.dodamage(other, damage, men));
 }
 
@@ -797,32 +802,32 @@ function show_scoreboard(thismonth)
 	var f=new File(game_dir+(thismonth?"knk-best.asc":"knk-last.asc"));
 
 	if(!file_exists(f.name)) {
-		console.crlf();
-		console.attributes=LIGHTGREEN;
-		console.writeln("* Scoreboard file not found *");
-		console.crlf();
+		dk.console.println("");
+		dk.console.attr="HG"
+		dk.console.println("* Scoreboard file not found *");
+		dk.console.println("");
 		return;
 	}
-	if(Lock(f.name, system.node_num, false, 0.5)==false) {
-		console.crlf();
-		console.attributes=LIGHTGREEN;
-		console.writeln("* Scoreboard file locked for write *");
-		console.crlf();
+	if(Lock(f.name, dk.connection.node, false, 0.5)==false) {
+		dk.console.println("");
+		dk.console.attr="HG"
+		dk.console.println("* Scoreboard file locked for write *");
+		dk.console.println("");
 		return;
 	}
 	if(!f.open("r", true)) {
 		Unlock(f.name);
-		console.crlf();
-		console.attributes=LIGHTGREEN;
-		console.writeln("* Scoreboard file can't be opened *");
-		console.crlf();
+		dk.console.println("");
+		dk.console.attr="HG"
+		dk.console.println("* Scoreboard file can't be opened *");
+		dk.console.println("");
 		return;
 	}
 	var lines=f.readAll();
 	f.close();
 	Unlock(f.name);
-	console.attributes=GREEN;
-	console.writeln(lines.join("\r\n"));
+	dk.console.attr="G"
+	dk.console.println(lines.join("\r\n"));
 }
 
 function Player_playermove(month, other)
@@ -830,86 +835,86 @@ function Player_playermove(month, other)
 	var loop;
 	var max;
 	var i;
-	var tl=bbs.time_left;
+	var tl=dk.user.seconds_remaining;
 
 	do {
-		console.print("\1n\1h\1cTime:\1g "+((tl/60)|0)+":"+format("%02d",tl%80)+"  \1y*  A,C,D,F,K,P,Q,R,S,T,Z,$ or ? for Help -=> \1n\1g");
+		dk.console.aprint("\1n\1h\1cTime:\1g "+((tl/60)|0)+":"+format("%02d",tl%80)+"  \1y*  A,C,D,F,K,P,Q,R,S,T,Z,$ or ? for Help -=> \1n\1g");
 		loop=false;
 		switch(getkeys("ACDFKPQRSTZ$?\r\n")) {
 			case '?':
-				console.crlf();
-				console.writeln("A - Send Assassin");
-				console.writeln("C - Toggle Color ON/OFF");
-				console.writeln("D - Draft Civilians");
-				console.writeln("F - Fire Kannon");
-				console.writeln("K - Fire Katapult");
-				console.writeln("P - Pass Your Turn");
-				console.writeln("Q - Quit (You Lose)");
-				console.writeln("R - Release Troops from Service");
-				console.writeln("S - Soldiers vs. Soldiers");
-				console.writeln("T - Visit Trading Post");
-				console.writeln("Z - Toggle Sound ON/OFF");
-				console.writeln("$ - Show Scoreboard");
-				console.writeln("[ENTER] - Redraw Main Screen");
-				console.crlf();
+				dk.console.println("");
+				dk.console.println("A - Send Assassin");
+				dk.console.println("C - Toggle Color ON/OFF");
+				dk.console.println("D - Draft Civilians");
+				dk.console.println("F - Fire Kannon");
+				dk.console.println("K - Fire Katapult");
+				dk.console.println("P - Pass Your Turn");
+				dk.console.println("Q - Quit (You Lose)");
+				dk.console.println("R - Release Troops from Service");
+				dk.console.println("S - Soldiers vs. Soldiers");
+				dk.console.println("T - Visit Trading Post");
+				dk.console.println("Z - Toggle Sound ON/OFF");
+				dk.console.println("$ - Show Scoreboard");
+				dk.console.println("[ENTER] - Redraw Main Screen");
+				dk.console.println("");
 				loop=true;
 				break;
 			case 'A':
 				if(this.assassins==0) {
-					console.crlf();
-					console.attributes=LIGHTGREEN|BLINK;
-					console.writeln("You don't have any assassins!");
-					console.crlf();
+					dk.console.println("");
+					dk.console.attr="HIG";
+					dk.console.println("You don't have any assassins!");
+					dk.console.println("");
 					loop=true;
 					break;
 				}
 				return(this.assassinate(other));
 			case 'C':
 				/* TODO: Disable colour */
-				console.crlf();
-				console.writeln("Toggle color not yet implemented!");
-				console.crlf();
+				dk.console.println("");
+				dk.console.println("Toggle color not yet implemented!");
+				dk.console.println("");
 				loop=true;
 				break;
 			case 'D':
-				console.crlf();
-				console.attributes=YELLOW|BG_RED;
-				console.print("Press \1w[ENTER]\1y to abort.");
-				console.attributes=GREEN;
-				console.crlf();
-				console.crlf();
-				console.writeln("You have "+this.civilians+" civilians and "+this.soldiers+" soldiers.");
-				console.write("Draft how many civilians into the army? [0 - "+this.civilians+"] -=> ");
-				var draft=console.getnum(this.civilians);
+				dk.console.println("");
+				dk.console.attr="HY1";
+				dk.console.aprint("Press \1w[ENTER]\1y to abort.");
+				dk.console.attr="G"
+				dk.console.println("");
+				dk.console.println("");
+				dk.console.println("You have "+this.civilians+" civilians and "+this.soldiers+" soldiers.");
+				dk.console.print("Draft how many civilians into the army? [0 - "+this.civilians+"] -=> ");
+				var draft=parseInt(dk.console.getstr({max:this.civilians}), 10);
 				if(draft<1)
 					loop=true;
 				else {
-					console.crlf();
+					dk.console.println("");
 					this.civilians -= draft;
 					this.soldiers += draft;
-					console.writeln("Done. You now have "+this.civilians+" civilians and "+this.soldiers+" soldiers");
+					dk.console.println("Done. You now have "+this.civilians+" civilians and "+this.soldiers+" soldiers");
 					for(i=0; i<2; i++)
 						playmusic("MFT64L64O5CDP32CDP32CDP16");
 					return(false);
 				}
-				console.crlf();
+				dk.console.println("");
 				break;
 			case 'F':
 				if(this.kannons==0) {
-					console.crlf();
-					console.attributes=LIGHTGREEN|BLINK;
-					console.writeln("You don't have any kannons!!");
-					console.crlf();
+					dk.console.println("");
+					dk.console.attr="HIG";
+					dk.console.println("You don't have any kannons!!");
+					dk.console.println("");
 					loop=true;
 					break;
 				}
-				console.crlf();
-				console.attributes=YELLOW|BG_RED;
-				console.print("Press \1w[ENTER]\1y to abort.");
-				console.attributes=GREEN;
-				console.crlf();
-				console.crlf();
-				console.write("Fire at the [M] Men or the [K] Kastle? [M/K] -=> ");
+				dk.console.println("");
+				dk.console.attr="HY1";
+				dk.console.aprint("Press \1w[ENTER]\1y to abort.");
+				dk.console.attr="G"
+				dk.console.println("");
+				dk.console.println("");
+				dk.console.print("Fire at the [M] Men or the [K] Kastle? [M/K] -=> ");
 				switch(getkeys("MK\r\n")) {
 					case '\r':
 					case '\n':
@@ -919,25 +924,25 @@ function Player_playermove(month, other)
 					case 'K':
 						return(this.kannonattack(other, false));
 				}
-				console.crlf();
+				dk.console.println("");
 				loop=true;
 				break;
 			case 'K':
 				if(this.katapults==0) {
-					console.crlf();
-					console.attributes=LIGHTGREEN|BLINK;
-					console.writeln("You don't have any katapults!!");
-					console.crlf();
+					dk.console.println("");
+					dk.console.attr="HIG";
+					dk.console.println("You don't have any katapults!!");
+					dk.console.println("");
 					loop=true;
 					break;
 				}
-				console.crlf();
-				console.attributes=YELLOW|BG_RED;
-				console.print("Press \1w[ENTER]\1y to abort.");
-				console.attributes=GREEN;
-				console.crlf();
-				console.crlf();
-				console.write("Fire at the [M] Men or the [K] Kastle? [M/K] -=> ");
+				dk.console.println("");
+				dk.console.attr="HY1";
+				dk.console.aprint("Press \1w[ENTER]\1y to abort.");
+				dk.console.attr="G"
+				dk.console.println("");
+				dk.console.println("");
+				dk.console.print("Fire at the [M] Men or the [K] Kastle? [M/K] -=> ");
 				switch(getkeys("MK\r\n")) {
 					case '\r':
 					case '\n':
@@ -947,70 +952,70 @@ function Player_playermove(month, other)
 					case 'K':
 						return(this.katapultattack(other, false));
 				}
-				console.crlf();
+				dk.console.println("");
 				loop=true;
 				break;
 			case 'P':
-				console.crlf();
-				console.writeln("You sit on your throne and ponder the war.");
-				console.crlf();
+				dk.console.println("");
+				dk.console.println("You sit on your throne and ponder the war.");
+				dk.console.println("");
 				return(false);
 			case 'Q':
-				console.crlf();
-				console.write("QUIT!? (You Lose) Are you SURE? -=> ");
+				dk.console.println("");
+				dk.console.print("QUIT!? (You Lose) Are you SURE? -=> ");
 				if(getkeys("YN\r\n")=='Y')
 					return(other);
-				console.crlf();
+				dk.console.println("");
 				loop=true;
 				break;
 			case 'R':
-				console.crlf();
-				console.attributes=YELLOW|BG_RED;
-				console.print("Press \1w[ENTER]\1y to abort.");
-				console.attributes=GREEN;
-				console.crlf();
-				console.crlf();
-				console.writeln("You have "+this.civilians+" civilians and "+this.soldiers+" soldiers.");
-				console.write("Send how many soldiers home? -=> ");
-				var draft=console.getnum(this.soldiers);
+				dk.console.println("");
+				dk.console.attr="HY1";
+				dk.console.aprint("Press \1w[ENTER]\1y to abort.");
+				dk.console.attr="G"
+				dk.console.println("");
+				dk.console.println("");
+				dk.console.println("You have "+this.civilians+" civilians and "+this.soldiers+" soldiers.");
+				dk.console.print("Send how many soldiers home? -=> ");
+				var draft=parseInt(dk.console.getstr({max:this.soldiers}), 10);
 				if(draft<1)
 					loop=true;
 				else {
-					console.crlf();
+					dk.console.println("");
 					this.civilians += draft;
 					this.soldiers -= draft;
-					console.writeln("Done. You now have "+this.civilians+" civilians and "+this.soldiers+" soldiers");
+					dk.console.println("Done. You now have "+this.civilians+" civilians and "+this.soldiers+" soldiers");
 					playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
 					return(false);
 				}
-				console.crlf();
+				dk.console.println("");
 				break;
 			case 'S':
 				return(this.soldierattack(other));
 				break;
 			case 'T':
-				console.crlf();
-				console.crlf();
-				console.attributes=LIGHTGREEN;
-				console.writeln(" * Welcome to the Trading Post sire! *");
+				dk.console.println("");
+				dk.console.println("");
+				dk.console.attr="HG"
+				dk.console.println(" * Welcome to the Trading Post sire! *");
 				loop=true;
 				while(loop) {
-					console.crlf();
-					console.attributes=BROWN;
-					console.writeln("[L] - Leave the Trading Post");
-					console.writeln("[B] - Buy Kannons @ 100 Gold Each");
-					console.writeln("[G] - Hire Guards @ 1000 Gold Each");
-					console.writeln("[A] - Hire Assasins @ 7500 Gold Each");
-					console.writeln("[K] - Buy Katapults @ 25000 Gold Each");
-					console.writeln("[F] - Buy Sacks of Food @ 5 Per Each Gold");
-					console.writeln("[R] - Raise Fortifications @ 10 Gold per Point");
-					console.crlf();
-					console.attributes=LIGHTGREEN;
-					console.write("Total Gold: "+this.gold+" -=> ");
-					console.attributes=GREEN;
+					dk.console.println("");
+					dk.console.attr="Y"
+					dk.console.println("[L] - Leave the Trading Post");
+					dk.console.println("[B] - Buy Kannons @ 100 Gold Each");
+					dk.console.println("[G] - Hire Guards @ 1000 Gold Each");
+					dk.console.println("[A] - Hire Assasins @ 7500 Gold Each");
+					dk.console.println("[K] - Buy Katapults @ 25000 Gold Each");
+					dk.console.println("[F] - Buy Sacks of Food @ 5 Per Each Gold");
+					dk.console.println("[R] - Raise Fortifications @ 10 Gold per Point");
+					dk.console.println("");
+					dk.console.attr="HG"
+					dk.console.print("Total Gold: "+this.gold+" -=> ");
+					dk.console.attr="G"
 					switch(getkeys("LBGAKFR")) {
 						case 'L':
-							console.crlf();
+							dk.console.println("");
 							loop=false;
 							break;
 						case 'B':
@@ -1042,17 +1047,17 @@ function Player_playermove(month, other)
 				loop=true;
 				break;
 			case 'Z':
-				console.crlf();
+				dk.console.println("");
 				music=!music;
-				console.writeln("Sounds "+(music?"ON":"OFF"));
-				console.crlf();
+				dk.console.println("Sounds "+(music?"ON":"OFF"));
+				dk.console.println("");
 				loop=true;
 				break;
 			case '$':
-				console.crlf();
-				console.attributes=LIGHTGREEN;
-				console.write("Show which [T] this months or [L] last months scoreboard? -=> ");
-				console.attributes=GREEN;
+				dk.console.println("");
+				dk.console.attr="HG"
+				dk.console.print("Show which [T] this months or [L] last months scoreboard? -=> ");
+				dk.console.attr="G"
 				if(getkeys("TL")=='L')
 					show_scoreboard(false);
 				else
@@ -1062,7 +1067,7 @@ function Player_playermove(month, other)
 			case '\r':
 			case '\n':
 				this.drawscreen(month);
-				console.crlf();
+				dk.console.println("");
 				loop=true;
 				break;
 		}
@@ -1079,12 +1084,10 @@ function Player_computermove(month, other)
 	var names=[];
 	var name;
 
-	console.print("\1n\1h\1c                      * \1h\1i\1rT\1gh\1yi\1bn\1mk\1ci\1wn\1yg\1c\1n\1h\1c *\1n\1c");
+	dk.console.aprint("\1n\1h\1c                      * \1h\1i\1rT\1gh\1yi\1bn\1mk\1ci\1wn\1yg\1c\1n\1h\1c *\1n\1c");
 	mswait(2000);
-	console.line_counter=0;
-	console.crlf();
-	console.crlf();
-	console.line_counter=0;
+	dk.console.println("");
+	dk.console.println("");
 
 	for(name in weight)
 		names.push(name);
@@ -1218,8 +1221,8 @@ function Player_computermove(month, other)
 						if(amount < 1000)
 							break;
 					}
-					console.writeln("Drafting "+amount+" civilians into the army.");
-					console.crlf();
+					dk.console.println("Drafting "+amount+" civilians into the army.");
+					dk.console.println("");
 					this.civilians -= amount;
 					this.soldiers += amount;
 					for(amount=0;amount<4;amount++)
@@ -1234,7 +1237,7 @@ function Player_computermove(month, other)
 					amount = (other.kastle*2)-this.kastle;
 				if(amount < 2000)
 					break;
-				console.writeln("Kastle reinforced by "+amount+" points!");
+				dk.console.println("Kastle reinforced by "+amount+" points!");
 				this.loadwagons('kastle',amount);
 				return(false);
 			case 'loss_guards':
@@ -1244,9 +1247,9 @@ function Player_computermove(month, other)
 					amount=(this.gold/1000)|0;
 				if(amount < 5)
 					break;
-				console.writeln("Hiring "+amount+" guards for "+amount*1000);
-				console.crlf();
-				console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+				dk.console.println("Hiring "+amount+" guards for "+amount*1000);
+				dk.console.println("");
+				dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
 				this.loadwagons('guards',amount);
 				return(false);
 			case 'loss_food':
@@ -1254,9 +1257,9 @@ function Player_computermove(month, other)
 				amount=this.gold*5;
 				if(amount < 100)
 					break;
-				console.writeln("Buying "+amount+" sacks of food for "+amount/5+" gold!");
-				console.crlf();
-				console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+				dk.console.println("Buying "+amount+" sacks of food for "+amount/5+" gold!");
+				dk.console.println("");
+				dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
 				this.loadwagons('food',amount);
 				return(false);
 			case 'win_soldiers':
@@ -1281,9 +1284,9 @@ function Player_computermove(month, other)
 					amount=(this.gold/7500)|0;
 				if(amount < 1)
 					break;
-				console.writeln("Hiring "+amount+" assassins for "+amount*7500+" gold!");
-				console.crlf();
-				console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+				dk.console.println("Hiring "+amount+" assassins for "+amount*7500+" gold!");
+				dk.console.println("");
+				dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
 				this.loadwagons('assassins',amount);
 				return(false);
 			case 'need_weapons':
@@ -1295,9 +1298,9 @@ function Player_computermove(month, other)
 						break;
 					if(amount < 20)
 						break;
-					console.writeln("Buying "+amount+" kannons for "+amount*100+" gold!");
-					console.crlf();
-					console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+					dk.console.println("Buying "+amount+" kannons for "+amount*100+" gold!");
+					dk.console.println("");
+					dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
 					this.loadwagons('kannons',amount);
 					return(false);
 				}
@@ -1309,9 +1312,9 @@ function Player_computermove(month, other)
 						break;
 					if(amount < 1)
 						break;
-					console.writeln("Buying "+amount+" katapults for "+amount*25000+" gold!");
-					console.crlf();
-					console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+					dk.console.println("Buying "+amount+" katapults for "+amount*25000+" gold!");
+					dk.console.println("");
+					dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
 					this.loadwagons('katapults',amount);
 					return(false);
 				}
@@ -1327,7 +1330,7 @@ function Player_computermove(month, other)
 					amount=this.soldiers / 2;
 				if(amount < 1)
 					break;
-				console.writeln("Retiring "+amount+" soldiers from service.");
+				dk.console.println("Retiring "+amount+" soldiers from service.");
 				this.soldiers -= amount;
 				this.civilians += amount;
 				playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
@@ -1335,8 +1338,8 @@ function Player_computermove(month, other)
 				
 		}
 	}
-	console.attributes=CYAN;
-	console.writeln("* King Computer calls an urgent counsel with his closest advisors! *");
+	dk.console.attr="C"
+	dk.console.println("* King Computer calls an urgent counsel with his closest advisors! *");
 	return(false);
 }
 
@@ -1346,37 +1349,37 @@ function Player_checkresults(other)
 
 	if(other.kastle==0) {
 		if(other.isplayer) {
-			console.attributes=LIGHTRED;
-			console.writeln(proper(other.singular)+" stare"+other.conjugate+" in dismay as "+other.posessive+" kastle shudders, and then disintegrates");
-			console.writeln("into a pile of rubble. "+proper(other.posessive)+" last vision is of a massive roof beam");
-			console.writeln("as it comes crashing down towards "+other.singular+".");
+			dk.console.attr="HR"
+			dk.console.println(proper(other.singular)+" stare"+other.conjugate+" in dismay as "+other.posessive+" kastle shudders, and then disintegrates");
+			dk.console.println("into a pile of rubble. "+proper(other.posessive)+" last vision is of a massive roof beam");
+			dk.console.println("as it comes crashing down towards "+other.singular+".");
 		}
 		else {
-			console.attributes=LIGHTGREEN;
+			dk.console.attr="HG"
 			playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
-			console.writeln("A great cloud of dust and debris flies into the air after "+this.posessive+" final volley.");
-			console.writeln(other.full_name+", outside in "+other.posessive+" gardens, stare"+other.conjugate+" in disbelief and horror as "+other.posessive);
-			console.writeln("kastle disintegrates into a jagged mound of wood and stone.");
+			dk.console.println("A great cloud of dust and debris flies into the air after "+this.posessive+" final volley.");
+			dk.console.println(other.full_name+", outside in "+other.posessive+" gardens, stare"+other.conjugate+" in disbelief and horror as "+other.posessive);
+			dk.console.println("kastle disintegrates into a jagged mound of wood and stone.");
 		}
 		return(this);
 	}
 	if(other.soldiers==0 && this.soldiers > 0) {
 		if(other.isplayer) {
-			console.attributes=LIGHTRED;
-			console.writeln("The last of "+other.posessive+" soldiers lay slain upon the once green fields of");
-			console.writeln(other.posessive+" kingdom. Vultures are already decending. "+proper(other.singular)+" comsume"+other.conjugate+" a chalice");
-			console.writeln("of poison laced wine as "+other.singular+" hear"+other.conjugate+" the guttural voices of "+this.full_name+"'s");
-			console.writeln("soldiers smashing their way through "+other.posessive+" kastle gates.");
+			dk.console.attr="HR"
+			dk.console.println("The last of "+other.posessive+" soldiers lay slain upon the once green fields of");
+			dk.console.println(other.posessive+" kingdom. Vultures are already decending. "+proper(other.singular)+" comsume"+other.conjugate+" a chalice");
+			dk.console.println("of poison laced wine as "+other.singular+" hear"+other.conjugate+" the guttural voices of "+this.full_name+"'s");
+			dk.console.println("soldiers smashing their way through "+other.posessive+" kastle gates.");
 			for(i=0; i<40; i++)
 				playmusic("MFO1T128L64CEB");
 			return(this);
 		}
 		else {
-			console.attributes=LIGHTGREEN;
+			dk.console.attr="HG"
 			playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
-			console.writeln(other.refer_posessive+" army lay in ruins upon the battle field. With noone left");
-			console.writeln("to defend "+other.posessive+" kingdom, "+other.singular+" mounts a swift steed and escape"+other.conjugate+" into the night.");
-			console.writeln(proper(this.singular)+" smile"+this.conjugate+" in grim satisfaction at the hard-won spoils of victory!");
+			dk.console.println(other.refer_posessive+" army lay in ruins upon the battle field. With noone left");
+			dk.console.println("to defend "+other.posessive+" kingdom, "+other.singular+" mounts a swift steed and escape"+other.conjugate+" into the night.");
+			dk.console.println(proper(this.singular)+" smile"+this.conjugate+" in grim satisfaction at the hard-won spoils of victory!");
 			for(i=0; i<10; i++)
 				playmusic("MFO1T128L64CEB");
 		}
@@ -1431,9 +1434,9 @@ function update_userfile(player, computer, won)
 	var nowmonth=['January','February','March','April','May','June','July','August','September','Optober','November','December'][now.getMonth()];
 	var all_ud=[];
 
-	if(!Lock(f.name, system.node_num, true, 1))
+	if(!Lock(f.name, dk.connection.node, true, 1))
 		return;
-	if(!Lock(game_dir+"knk-best.asc", system.node_num, true, 1)) {
+	if(!Lock(game_dir+"knk-best.asc", dk.connection.node, true, 1)) {
 		return;
 	}
 	if(f.open("r")) {
@@ -1444,7 +1447,7 @@ function update_userfile(player, computer, won)
 		var lastdate=new Date(lines[0]);
 		if(now.getMonth() != lastdate.getMonth() || now.getYear() != lastdate.getYear()) {
 			lines=[];
-			if(Lock(game_dir+"knk-last.asc", system.node_num, true, 1)) {
+			if(Lock(game_dir+"knk-last.asc", dk.connection.node, true, 1)) {
 				file_remove(game_dir+"knk-last.asc");
 				file_rename(game_dir+"knk-best.asc", game_dir+"knk-last.asc")
 				Unlock(game_dir+"knk-last.asc");
@@ -1456,7 +1459,7 @@ function update_userfile(player, computer, won)
 	computer_total+=computer.score;
 	for(line=2; line<lines.length; line+=4) {
 		var ud=new UserData(lines[line], lines[line+1], lines[line+2], lines[line+3]);
-		if(ud.alias==user.alias) {
+		if(ud.alias==dk.user.alias) {
 			if(won)
 				ud.wins++;
 			else
@@ -1469,7 +1472,7 @@ function update_userfile(player, computer, won)
 		all_ud.push(ud);
 	}
 	if(!updated)
-		all_ud.push(new UserData(user.alias, won?1:0, won?0:1, player.score));
+		all_ud.push(new UserData(dk.user.alias, won?1:0, won?0:1, player.score));
 	all_ud=all_ud.sort(function(a,b) {
 							return(b.score-a.score);
 						});
@@ -1544,7 +1547,7 @@ function read_dat()
 	dat_file.longestgame=new Object();
 	dat_file.lastgame=new Object();
 
-	if(Lock(f.name, system.node, true, 1)) {
+	if(Lock(f.name, dk.connection.node, true, 1)) {
 		if(f.open("r")) {
 			dat_file.shortestgame.months=(f.readln())|0;
 			dat_file.shortestgame.winner=f.readln();
@@ -1565,7 +1568,7 @@ function write_dat(dat_file)
 {
 	var f=new File(game_dir+"knk.dat");
 
-	if(Lock(f.name, system.node, true, 1)) {
+	if(Lock(f.name, dk.connection.node, true, 1)) {
 		if(f.open("w")) {
 			f.writeln(dat_file.shortestgame.months);
 			f.writeln(dat_file.shortestgame.winner);
@@ -1598,7 +1601,7 @@ function play_game()
 	turn_order=random(2)?([player,computer]):([computer,player]);
 	while(winner===false) {
 		turn_order[turn].drawscreen(month);
-		console.crlf();
+		dk.console.println("");
 		winner=turn_order[turn].move(month, turn_order[1-turn]);
 		if(winner===false) {
 			turn_order[turn].produce();
@@ -1618,77 +1621,77 @@ function play_game()
 	if(winner.isplayer) {
 		wins++;
 		loser=computer;
-		console.crlf();
-		console.attributes=LIGHTGREEN|BLINK;
-		console.writeln("Hail to the new "+winner.title+" of the empire!");
-		console.attributes=LIGHTGREEN;
+		dk.console.println("");
+		dk.console.attr="HIG";
+		dk.console.println("Hail to the new "+winner.title+" of the empire!");
+		dk.console.attr="HG"
 		playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
 	}
 	else {
 		losses++;
 		loser=player;
 	}
-	console.crlf();
-	if(console.line_counter > console.screen_rows/2)
-		console.pause();
+	dk.console.println("");
+	if(dk.console.remote_screen.pos.y > dk.console.rows/2)
+		dk.console.pause();
 	winner.drawscreen(month);
-	console.crlf();
-	console.attributes=WHITE;
+	dk.console.println("");
+	dk.console.attr="HW"
 	loser.score=0;
-	console.writeln(computer.full_name+" got "+computer.score+" points and you got "+player.score+" points for this game.");
-	console.writeln();
-	if(console.line_counter > console.screen_rows/2)
-		console.pause();
+	dk.console.println(computer.full_name+" got "+computer.score+" points and you got "+player.score+" points for this game.");
+	dk.console.println('');
+	if(dk.console.remote_screen.pos.y > dk.console.rows/2)
+		dk.console.pause();
 	update_userfile(player, computer, winner.isplayer);
 	show_scoreboard(true);
-	if(console.line_counter > console.screen_rows/2)
-		console.pause();
+	if(dk.console.remote_screen.pos.y > dk.console.rows/2)
+		dk.console.pause();
 	var dat_file=read_dat();
 	if(dat_file===undefined || dat_file.shortestgame === undefined || dat_file.shortestgame.months === undefined || dat_file.shortestgame.months >= month) {
-		console.attributes=YELLOW|BLINK;
-		console.writeln("This is the shortest game to date!!!!");
-		console.crlf();
+		dk.console.attr="HIY"
+		dk.console.println("This is the shortest game to date!!!!");
+		dk.console.println("");
 		dat_file.shortestgame=new Object();
 		dat_file.shortestgame.months=month;
 		dat_file.shortestgame.winner=winner.full_name;
 		dat_file.shortestgame.loser=loser.full_name;
 	}
 	if(dat_file===undefined || dat_file.longestgame === undefined || dat_file.longestgame.months === undefined || dat_file.longestgame.months <= month) {
-		console.attributes=YELLOW|BLINK;
-		console.writeln("This is the longest game to date!!!!");
-		console.crlf();
+		dk.console.attr="HIY"
+		dk.console.println("This is the longest game to date!!!!");
+		dk.console.println("");
 		dat_file.longestgame=new Object();
 		dat_file.longestgame.months=month;
 		dat_file.longestgame.winner=winner.full_name;
 		dat_file.longestgame.loser=loser.full_name;
 	}
-	console.attributes=WHITE;
+	dk.console.attr="HW"
 	if(dat_file.lastgame !== undefined && dat_file.lastgame.months !== undefined)
-		console.writeln("The last game lasted "+dat_file.lastgame.months+" months won by "+dat_file.lastgame.winner+" vs. "+dat_file.lastgame.loser+".");
+		dk.console.println("The last game lasted "+dat_file.lastgame.months+" months won by "+dat_file.lastgame.winner+" vs. "+dat_file.lastgame.loser+".");
 	dat_file.lastgame=new Object();
 	dat_file.lastgame.months=month;
 	dat_file.lastgame.winner=winner.full_name;
 	dat_file.lastgame.loser=loser.full_name;
 	write_dat(dat_file);
-	console.attributes=WHITE;
-	console.writeln("It took "+winner.refer_singular+" "+month+" to beat "+loser.refer_singular+" this game.");
-	console.crlf();
-	console.attributes=CYAN;
-	console.writeln("The longest game was "+dat_file.longestgame.months+" months won by "+dat_file.longestgame.winner+" vs. "+dat_file.longestgame.loser+".");
-	console.crlf();
-	console.attributes=CYAN;
-	console.writeln("The shortest game was "+dat_file.shortestgame.months+" months won by "+dat_file.shortestgame.winner+" vs. "+dat_file.shortestgame.loser+".");
-	console.crlf();
-	console.attributes=LIGHTMAGENTA;
-	console.writeln(proper(player.refer_singular)+" won "+wins+" games and "+computer.refer_singular+" won "+losses+" games this session.");
+	dk.console.attr="HW"
+	dk.console.println("It took "+winner.refer_singular+" "+month+" to beat "+loser.refer_singular+" this game.");
+	dk.console.println("");
+	dk.console.attr="C"
+	dk.console.println("The longest game was "+dat_file.longestgame.months+" months won by "+dat_file.longestgame.winner+" vs. "+dat_file.longestgame.loser+".");
+	dk.console.println("");
+	dk.console.attr="C"
+	dk.console.println("The shortest game was "+dat_file.shortestgame.months+" months won by "+dat_file.shortestgame.winner+" vs. "+dat_file.shortestgame.loser+".");
+	dk.console.println("");
+	dk.console.attr="HM"
+	dk.console.println(proper(player.refer_singular)+" won "+wins+" games and "+computer.refer_singular+" won "+losses+" games this session.");
 }
 
 function play_again()
 {
-	console.crlf();
-	console.attributes=YELLOW;
-	console.write("Play again? [Y/N] -=> ");
-	console.attributes=BROWN;
+	dk.console.println("");
+	dk.console.attr="HY"
+	dk.console.print("Play again? [Y/N] -=> ");
+	dk.console.attr="Y"
 	return(getkeys("YN")=='Y');
 }
 
