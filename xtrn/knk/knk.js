@@ -353,10 +353,7 @@ function Player_powerbar()
 	}
 	for(i=pow; i<46; i++)
 		dk.console.print(' ');
-log("Restore attr...");
-log("Restore attr to "+lastattr);
 	dk.console.attr.value=lastattr;
-log("Restored attr...");
 }
 
 function Player_drawscreen(month)
@@ -379,11 +376,8 @@ function Player_drawscreen(month)
 	dk.console.println("\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9");
 	dk.console.print("\xba You: ");
 	player.powerbar();
-log("After powerbar, attr is "+dk.console.attr.value);
 	dk.console.println(" \xba");
-log("After println, attr is "+dk.console.attr.value);
 	dk.console.print("\xba Him: ");
-log("After him, attr is "+dk.console.attr.value);
 	computer.powerbar();
 	dk.console.println(" \xba");
 	dk.console.println("\xcc\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcb\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xb9");
