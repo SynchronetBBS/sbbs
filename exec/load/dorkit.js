@@ -140,7 +140,7 @@ var dk = {
 			}
 		},
 		ctrla_attr:function(code, attr) {
-			switch(code) {
+			switch(code.toUpperCase()) {
 				case 'K':
 					attr.fg = Attribute.BLACK;
 					break;
@@ -305,7 +305,7 @@ var dk = {
 		 * sets the current attribute to 7
 		 */
 		clear:function() {
-			if (this.remote_screen !== undefined && this.auto_pause && (this.remote_screen.new_lines || this.remote_screen.touched)) {
+			if (this.remote_screen !== undefined && this.auto_pause && this.remote_screen.touched) {
 				this.auto_pause = false;
 				this.pause();
 				this.auto_pause = true;
