@@ -2310,6 +2310,11 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 			|| strcmp(token,"rlm")==0)	/* right-to-left mark, not printable */
 			continue;
 
+		if(strcmp(token,"hellip")==0) {	/* horizontal ellipsis  */
+			j+=sprintf(outbuf+j,"...");
+			continue;
+		}
+
 		/* Unknown character entity, leave intact */
 		j+=sprintf(outbuf+j,"&%s;",token);
 		
