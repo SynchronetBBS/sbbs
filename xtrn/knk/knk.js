@@ -1086,6 +1086,8 @@ function Player_computermove(month, other)
 
 	dk.console.aprint("\1n\1h\1c                      * \1h\1i\1rT\1gh\1yi\1bn\1mk\1ci\1wn\1yg\1c\1n\1h\1c *\1n\1c");
 	mswait(2000);
+	if (dk.console.remote_screen !== undefined)
+		dk.console.remote_screen.new_lines = 0;
 	dk.console.println("");
 	dk.console.println("");
 
