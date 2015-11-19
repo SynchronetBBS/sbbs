@@ -8,16 +8,27 @@
 /* Project : Unite!       File : zmodem general        Version : 1.02         */
 /*                                                                            */
 /* (C) Mattheij Computer Service 1994                                         */
-/*                                                                            */
-/* contact us through (in order of preference)                                */
-/*                                                                            */
-/*   email:          jacquesm@hacktic.nl                                      */
-/*   mail:           MCS                                                      */
-/*                   Prinses Beatrixlaan 535                                  */
-/*                   2284 AT  RIJSWIJK                                        */
-/*                   The Netherlands                                          */
-/*   voice phone:    31+070-3936926                                           */
-/******************************************************************************/
+/*
+ *	Date: Thu, 19 Nov 2015 10:10:02 +0100
+ *	From: Jacques Mattheij
+ *	Subject: Re: zmodem license
+ *	To: Stephen Hurd, Fernando Toledo
+ *	CC: Rob Swindell
+ *
+ *	Hello there to all of you,
+ *
+ *	So, this email will then signify as the transfer of any and all rights I
+ *	held up to this point with relation to the copyright of the zmodem
+ *	package as released by me many years ago and all associated files to
+ *	Stephen Hurd. Fernando Toledo and Rob Swindell are named as
+ *	witnesses to this transfer.
+ *
+ *	...
+ *
+ *	best regards,
+ *
+ *	Jacques Mattheij
+ ******************************************************************************/
 
 /*
  * zmodem primitives and other code common to zmtx and zmrx
