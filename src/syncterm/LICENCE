@@ -8,25 +8,41 @@ Some parts of this program are covered under other licences.
 The files in the comio, conio, smblib, uifc, and xpdev are covered under
 the LGPL.
 
-The files sbbs3/zmodem.h and sbbs3/zmodem.c are derived from the
-zmtx/zmrx package available at
-ftp://ftp.netsw.org/net/modem/protocols/zmodem/zmtx-zmrx/
+SSH support uses cryptlib available from here:
+https://www.cs.auckland.ac.nz/~pgut001/cryptlib/
 
-The licence contained in the archive is:
+This is distributed under the (GPL compatible) Sleepycat license:
+Copyright 1992-2010 Peter Gutmann. All rights reserved.
 
-MCS allows you to use and copy/modify this source under the following
-conditions:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-  - MCS or Jacques Mattheij shall not be liable for any damages arising
-    from the use of this code
-  - the archive must be distributed as a whole leaving version numbers intact.
-    please do not distribute modifications; mail them back to us for inclusion
-    in the next release which should follow each other fairly quickly in
-    the beginning
-  - you will not use this software for commercial purposes.
-    (commercial licenses are available contact us for info)
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
 
-As such, this program may not be redistributable.  YOU HAVE BEEN WARNED!
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
 
-If anyone can put me (shurd@sasktel.net) in contact with the authours,
-that would be greatly appreciated.
+3. Redistributions in any form must be accompanied by information on how to
+   obtain complete source code for the cryptlib software and any accompanying
+   software that uses the cryptlib software.  The source code must either be
+   included in the distribution or be available for no more than the cost of
+   distribution, and must be freely redistributable under reasonable
+   conditions.  For an executable file, complete source code means the source
+   code for all modules it contains or uses.  It does not include source code
+   for modules or files that typically accompany the major components of the
+   operating system on which the executable file runs.  Note that decoupling
+   the software from the user, for example by running in a SaaS configuration,
+   does not exempt you from these requirements.
+
+THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT, ARE DISCLAIMED.  IN NO
+EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+OF SUCH DAMAGE.
