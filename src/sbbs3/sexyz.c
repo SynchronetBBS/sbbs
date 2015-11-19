@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -37,7 +37,27 @@
 
 /* 
  * ZMODEM code based on zmtx/zmrx v1.02 (C) Mattheij Computer Service 1994
- * by Jacques Mattheij <jacquesm@hacktic.nl> 
+ * by Jacques Mattheij
+ *
+ *	Date: Thu, 19 Nov 2015 10:10:02 +0100
+ *	From: Jacques Mattheij
+ *	Subject: Re: zmodem license
+ *	To: Stephen Hurd, Fernando Toledo
+ *	CC: Rob Swindell
+ *
+ *	Hello there to all of you,
+ *
+ *	So, this email will then signify as the transfer of any and all rights I
+ *	held up to this point with relation to the copyright of the zmodem
+ *	package as released by me many years ago and all associated files to
+ *	Stephen Hurd. Fernando Toledo and Rob Swindell are named as
+ *	witnesses to this transfer.
+ *
+ *	...
+ *
+ *	best regards,
+ *
+ *	Jacques Mattheij
  */
 
 #include <time.h>
