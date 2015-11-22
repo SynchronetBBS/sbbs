@@ -182,7 +182,7 @@ function ConcensusObject(host, port, scope)
 		issue.start=time();
 		issue.title=title;
 		issue.answers=[];
-		issue.index=time()+'-'+rand(1000000);
+		issue.index=time()+'-'+random(1000000);
 		this.db.push(this.scope, 'issues', issue, LOCK_WRITE);
 		issues=this.db.read(this.scope, 'issues', LOCK_READ);
 		for(i=0; i<issues.length; i++) {
