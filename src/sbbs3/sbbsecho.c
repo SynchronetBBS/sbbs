@@ -3407,6 +3407,7 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, char* info)
 		printf("Empty NetMail");
 	else {
 		printf("Exporting: ");
+		MKDIR(scfg.netmail_dir);
 		for(i=1;i;i++) {
 			sprintf(path,"%s%u.msg",scfg.netmail_dir,i);
 			if(!fexistcase(path))
