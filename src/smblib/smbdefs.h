@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -366,7 +366,7 @@
 #define MSG_TYPENET 		(1<<14) 	/* Msg is direct network mail */
 
 
-enum {
+enum SMB_NET_TYPE {
      NET_NONE				/* Local message */
     ,NET_UNKNOWN			/* Unknown network type */
     ,NET_FIDO				/* FidoNet address, faddr_t format (4D) */
@@ -382,7 +382,7 @@ enum {
     ,NET_TYPES
 };
 
-enum {
+enum SMB_AGENT_TYPE {
      AGENT_PERSON
     ,AGENT_PROCESS			/* unknown process type */
 	,AGENT_SMBUTIL			/* imported via Synchronet SMBUTIL */
@@ -393,7 +393,7 @@ enum {
     ,AGENT_TYPES
 };
 
-enum {
+enum SMB_XLAT_TYPE {
      XLAT_NONE              /* No translation/End of translation list */
     ,XLAT_ENCRYPT           /* Encrypted data */
     ,XLAT_ESCAPED           /* 7-bit ASCII escaping for ctrl and 8-bit data */
@@ -462,7 +462,7 @@ typedef struct _PACK {		/* Index record */
 #define SMB_HASH_PROC_MASK		(SMB_HASH_STRIP_CTRL_A|SMB_HASH_STRIP_WSP|SMB_HASH_LOWERCASE)
 #define SMB_HASH_PROC_COMP_MASK	(SMB_HASH_STRIP_WSP|SMB_HASH_LOWERCASE)
 
-enum {
+enum SMB_HASH_SOURCE_TYPE {
 	 SMB_HASH_SOURCE_BODY
 	,SMB_HASH_SOURCE_MSG_ID
 	,SMB_HASH_SOURCE_FTN_ID
