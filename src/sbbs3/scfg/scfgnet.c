@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -266,8 +266,6 @@ while(1) {
 			sprintf(opt[i++],"%-27.27s%.40s"
 				,"Inbound File Directory",cfg.fidofile_dir);
 			sprintf(opt[i++],"%-27.27s%.40s"
-				,"EchoMail Base Directory",cfg.echomail_dir);
-			sprintf(opt[i++],"%-27.27s%.40s"
 				,"NetMail Directory",cfg.netmail_dir);
 			sprintf(opt[i++],"%-27.27s%s"
 				,"Allow Sending of NetMail"
@@ -454,45 +452,28 @@ while(1) {
 						"`Inbound File Directory:`\n"
 						"\n"
 						"This directory is where inbound files are placed. This directory is\n"
-						"only used when an incoming message has a file attached.\n"
+						"typically used for incoming bundles, packets, and attached files.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound Files"
 						,cfg.fidofile_dir,sizeof(cfg.fidofile_dir)-1,K_EDIT);
                     break;
 				case 6:
 					uifc.helpbuf=
-						"`EchoMail Base Directory:`\n"
-						"\n"
-						"This is an optional field used as a base directory for the location\n"
-						"of EchoMail messages for sub-boards that do not have a specified\n"
-						"`EchoMail Storage Directory`. If a sub-board does not have a specified\n"
-						"storage directory for EchoMail, its messages will be imported from and\n"
-						"exported to a sub-directory off of this base directory. The name of the\n"
-						"sub-directory is the same as the internal code for the sub-directory.\n"
-						"\n"
-						"If all EchoMail sub-boards have specified EchoMail storage directories,\n"
-						"this option is not used at all.\n"
-					;
-					uifc.input(WIN_MID|WIN_SAV,0,0,"EchoMail Base"
-						,cfg.echomail_dir,sizeof(cfg.echomail_dir)-1,K_EDIT);
-                    break;
-				case 7:
-					uifc.helpbuf=
 						"`NetMail Directory:`\n"
 						"\n"
-						"This is the directory where NetMail will be imported from and exported\n"
-						"to.\n"
+						"This is the directory where FidoNet NetMail will be imported from\n"
+						"and exported to (in FTS-1, *.MSG format).\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail"
 						,cfg.netmail_dir,sizeof(cfg.netmail_dir)-1,K_EDIT);
                     break;
-				case 8:
+				case 7:
 					i=0;
 					uifc.helpbuf=
 						"`Allow Users to Send NetMail:`\n"
 						"\n"
 						"If you are on a FidoNet style network and want your users to be allowed\n"
-						"to send NetMail, set this option to `Yes`.\n"
+						"to send FidoNet NetMail, set this option to `Yes`.\n"
 					;
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 						,"Allow Users to Send NetMail",uifcYesNoOpts);
@@ -505,7 +486,7 @@ while(1) {
 						cfg.netmail_misc&=~NMAIL_ALLOW; 
 					}
 					break;
-				case 9:
+				case 8:
 					i=0;
 					uifc.helpbuf=
 						"`Allow Users to Send NetMail File Attachments:`\n"
@@ -524,7 +505,7 @@ while(1) {
 						cfg.netmail_misc&=~NMAIL_FILE; 
 					}
                     break;
-				case 10:
+				case 9:
 					i=1;
 					uifc.helpbuf=
 						"`Use Aliases in NetMail:`\n"
@@ -545,7 +526,7 @@ while(1) {
 						cfg.netmail_misc&=~NMAIL_ALIAS; 
 					}
                     break;
-				case 11:
+				case 10:
 					i=1;
 					uifc.helpbuf=
 						"`NetMail Defaults to Crash Status:`\n"
@@ -564,7 +545,7 @@ while(1) {
 						cfg.netmail_misc&=~NMAIL_CRASH; 
 					}
                     break;
-				case 12:
+				case 11:
 					i=1;
 					uifc.helpbuf=
 						"`NetMail Defaults to Direct Status:`\n"
@@ -583,7 +564,7 @@ while(1) {
 						cfg.netmail_misc&=~NMAIL_DIRECT; 
 					}
                     break;
-				case 13:
+				case 12:
 					i=1;
 					uifc.helpbuf=
 						"`NetMail Defaults to Hold Status:`\n"
@@ -602,7 +583,7 @@ while(1) {
 						cfg.netmail_misc&=~NMAIL_HOLD; 
 					}
                     break;
-				case 14:
+				case 13:
 					i=0;
 					uifc.helpbuf=
 						"`Kill NetMail After it is Sent:`\n"
@@ -621,7 +602,7 @@ while(1) {
 						cfg.netmail_misc&=~NMAIL_KILL; 
 					}
                     break;
-				case 15:
+				case 14:
 					ultoa(cfg.netmail_cost,str,10);
 					uifc.helpbuf=
 						"`Cost in Credits to Send NetMail:`\n"
