@@ -608,7 +608,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->echomail_sem,stream);
 	backslash(cfg->netmail_dir);
 	put_str(cfg->netmail_dir,stream);
-	put_str(cfg->echomail_dir,stream);
+	put_str(cfg->echomail_dir,stream);	/* not used */
 	backslash(cfg->fidofile_dir);
 	put_str(cfg->fidofile_dir,stream);
 	put_int(cfg->netmail_misc,stream);
@@ -617,6 +617,8 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	n=0;
 	for(i=0;i<28;i++)
 		put_int(n,stream);
+	md(cfg->netmail_dir);
+	md(cfg->fidofile_dir);
 
 	/* QWKnet Config */
 
