@@ -150,15 +150,30 @@ static void remove_port_part(char *host)
 {
 	char *p=strchr(host, 0)-1;
 
-	if (!isdigit(*p))
-		return;
-	for(; p >= host; p--) {
-		if (*p == ':') {
-			*p = 0;
-			return;
+	if (isdigit(*p)) {
+		/*
+		 * If the first and last : are not the same, and it doesn't
+		 * start with '[', there's no port part.
+		 */
+		if (host[0] != '[') {
+			if (strchr(host, ':') != strrchr(host, ':'))
+				return;
 		}
-		if (!isdigit(*p))
-			return;
+		for(; p >= host; p--) {
+			if (*p == ':') {
+				*p = 0;
+				break;
+			}
+			if (!isdigit(*p))
+				break;
+		}
+	}
+	// Now, remove []s...
+	if (host[0] == '[') {
+		memmove(host, host+1, strlen(host));
+		p=strchr(host, ']');
+		if (p)
+			*p = 0;
 	}
 }
 
