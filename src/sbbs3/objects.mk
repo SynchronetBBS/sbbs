@@ -187,6 +187,7 @@ SBBSECHO_OBJS = \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)rechocfg$(OFILE) \
 			$(OBJODIR)$(DIRSEP)msg_id$(OFILE) \
+			$(OBJODIR)$(DIRSEP)getmail$(OFILE) \
 			$(SMB_OBJS)
 
 ECHOCFG_OBJS = \
