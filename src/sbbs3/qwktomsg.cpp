@@ -66,7 +66,7 @@ static void qwk_parse_header_list(smbmsg_t* msg, str_list_t* headers, bool parse
 	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=RECIPIENTNETADDR),value))!=NULL) {
 		if(parse_recipient_hfields) {
 			net_type=NET_UNKNOWN;
-			smb_hfield_add_netaddr(msg,hfield_type,p,&net_type);
+			smb_hfield_netaddr(msg,hfield_type,p,&net_type);
 			smb_hfield_bin(msg,RECIPIENTNETTYPE,net_type);
 		}
 	}
@@ -83,7 +83,7 @@ static void qwk_parse_header_list(smbmsg_t* msg, str_list_t* headers, bool parse
 		if(parse_sender_hfields) {
 			smb_hfield_str(msg,hfield_type,p);
 			net_type=NET_UNKNOWN;
-			smb_hfield_add_netaddr(msg,hfield_type,p,&net_type);
+			smb_hfield_netaddr(msg,hfield_type,p,&net_type);
 			smb_hfield_bin(msg,SENDERNETTYPE,net_type);
 		}
 	}
@@ -408,7 +408,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 		/* From network type & address: */
 		strupr(str);
 		net_type=NET_QWK;
-		smb_hfield_add_netaddr(msg, SENDERNETADDR, str, &net_type);
+		smb_hfield_netaddr(msg, SENDERNETADDR, str, &net_type);
 		smb_hfield_bin(msg,SENDERNETTYPE,net_type);
 
 	} else {
