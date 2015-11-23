@@ -17,6 +17,7 @@ else {
 	template.sub=msg_area.sub[sub];
 }
 
+var to = http_request.query.to[0];
 var hdrs = new Object;
 if(sub!='mail')  {
 	if(! msg_area.sub[sub].can_post)  {
@@ -24,13 +25,18 @@ if(sub!='mail')  {
 	}
 }
 else {
-	hdrs.to_net_type=netaddr_type(http_request.query.to);
+	hdrs.to_net_type=netaddr_type(to);
 	if(hdrs.to_net_type!=NET_NONE) {
 		if(user.security.restrictions&UFLAG_M)
 			error("You do not have permission to send netmail");
-		hdrs.to_net_addr=http_request.query.to;
+        var at = to.indexOf('@');
+        if(at > 0) {
+            hdrs.to_net_addr = to.slice(at + 1);
+            to = to.slice(0, at);
+        } else
+            hdrs.to_net_addr = to;
 	} else {
-		var usr=system.matchuser(http_request.query.to);
+		var usr=system.matchuser(to);
 		if(usr!=0)
 			hdrs.to_ext=usr;
 		else
@@ -44,7 +50,7 @@ body=word_wrap(body);
 
 hdrs.from=user.alias;
 hdrs.from_ext=user.number;
-hdrs.to=http_request.query.to;
+hdrs.to=to;
 hdrs.subject=http_request.query.subject;
 if(http_request.query.reply_to != undefined) {
 	hdrs.thread_orig=parseInt(http_request.query.reply_to);
