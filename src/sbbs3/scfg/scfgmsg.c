@@ -402,7 +402,6 @@ while(1) {
 				ported=0;
 				q=uifc.changes;
 				strcpy(opt[k++],"SUBS.TXT    (Synchronet)");
-				strcpy(opt[k++],"AREAS.BBS   (MSG)");
 				strcpy(opt[k++],"AREAS.BBS   (SBBSecho)");
 				strcpy(opt[k++],"FIDONET.NA  (Fido)");
 				opt[k][0]=0;
@@ -420,12 +419,10 @@ while(1) {
 				if(k==0)
 					sprintf(str,"%sSUBS.TXT",cfg.ctrl_dir);
 				else if(k==1)
-					sprintf(str,"AREAS.BBS");
-				else if(k==2)
 					sprintf(str,"%sAREAS.BBS",cfg.data_dir);
-				else if(k==3)
+				else if(k==2)
 					sprintf(str,"FIDONET.NA");
-				if(k && k<3)
+				if(k==1)
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Uplinks"
 						,str2,sizeof(str2)-1,0)<=0) {
 						uifc.changes=q;
@@ -462,16 +459,7 @@ while(1) {
 					if(cfg.sub[j]->grp!=i)
 						continue;
 					ported++;
-					if(k==1) {		/* AREAS.BBS *.MSG */
-						sprintf(str,"%s%s%s/"
-							,cfg.echomail_dir
-							,cfg.grp[cfg.sub[j]->grp]->code_prefix
-							,cfg.sub[j]->code_suffix);
-						fprintf(stream,"%-30s %-20s %s\r\n"
-							,str,stou(cfg.sub[j]->sname),str2);
-						continue; 
-					}
-					if(k==2) {		/* AREAS.BBS SBBSecho */
+					if(k==1) {		/* AREAS.BBS SBBSecho */
 						fprintf(stream,"%s%-30s %-20s %s\r\n"
 							,cfg.grp[cfg.sub[j]->grp]->code_prefix
 							,cfg.sub[j]->code_suffix
@@ -479,7 +467,7 @@ while(1) {
 							,str2);
 						continue; 
 					}
-					if(k==3) {		/* FIDONET.NA */
+					if(k==2) {		/* FIDONET.NA */
 						fprintf(stream,"%-20s %s\r\n"
 							,stou(cfg.sub[j]->sname),cfg.sub[j]->lname);
 						continue; 
