@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -193,7 +193,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 
 	if(cfg.sys_misc&SM_FWDTONET && user.misc&NETMAIL && user.netmail[0]) {
 		bprintf(text[UserNetMail],user.netmail);
-		smb_hfield_netaddr(&newmsg,RECIPIENTNETADDR,user.netmail,&nettype);
+		smb_hfield_add_netaddr(&newmsg,RECIPIENTNETADDR,user.netmail,&nettype);
 		smb_hfield_bin(&newmsg,RECIPIENTNETTYPE,nettype);
 	} else {
 		sprintf(str,"%u",usernum);
