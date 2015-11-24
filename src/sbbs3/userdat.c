@@ -2552,7 +2552,7 @@ BOOL DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* cli
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
 /* usernumber==0 for netmail												*/
 /****************************************************************************/
-BOOL DLLCALL can_user_send_mail(scfg_t* cfg, enum SMB_NET_TYPE net_type, uint usernumber, user_t* user, uint* reason)
+BOOL DLLCALL can_user_send_mail(scfg_t* cfg, enum smb_net_type net_type, uint usernumber, user_t* user, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=R_Email;
