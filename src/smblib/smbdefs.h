@@ -366,7 +366,7 @@
 #define MSG_TYPENET 		(1<<14) 	/* Msg is direct network mail */
 
 
-enum SMB_NET_TYPE {
+enum smb_net_type {
      NET_NONE				/* Local message */
     ,NET_UNKNOWN			/* Unknown network type */
     ,NET_FIDO				/* FidoNet address, faddr_t format (4D) */
@@ -375,14 +375,14 @@ enum SMB_NET_TYPE {
 	,NET_INTERNET			/* Internet e-mail, netnews, etc. */
 	,NET_WWIV				/* unused */
 	,NET_MHS				/* unused */
-	,NET_FIDO_ASCII			/* FidoNet address, ASCIIZ format (e.g. 5D) */
+	,NET_FIDO_ASCII			/* FidoNet address, ASCIIZ format (e.g. 5D) - unused and deprecated */
 
 /* Add new ones here */
 
     ,NET_TYPES
 };
 
-enum SMB_AGENT_TYPE {
+enum smb_agent_type {
      AGENT_PERSON
     ,AGENT_PROCESS			/* unknown process type */
 	,AGENT_SMBUTIL			/* imported via Synchronet SMBUTIL */
@@ -393,7 +393,7 @@ enum SMB_AGENT_TYPE {
     ,AGENT_TYPES
 };
 
-enum SMB_XLAT_TYPE {
+enum smb_xlat_type {
      XLAT_NONE              /* No translation/End of translation list */
     ,XLAT_ENCRYPT           /* Encrypted data */
     ,XLAT_ESCAPED           /* 7-bit ASCII escaping for ctrl and 8-bit data */
@@ -462,7 +462,7 @@ typedef struct _PACK {		/* Index record */
 #define SMB_HASH_PROC_MASK		(SMB_HASH_STRIP_CTRL_A|SMB_HASH_STRIP_WSP|SMB_HASH_LOWERCASE)
 #define SMB_HASH_PROC_COMP_MASK	(SMB_HASH_STRIP_WSP|SMB_HASH_LOWERCASE)
 
-enum SMB_HASH_SOURCE_TYPE {
+enum smb_hash_source_type {
 	 SMB_HASH_SOURCE_BODY
 	,SMB_HASH_SOURCE_MSG_ID
 	,SMB_HASH_SOURCE_FTN_ID
@@ -572,7 +572,7 @@ typedef struct _PACK {		/* FidoNet address (zone:net/node.point) */
 
 typedef struct {		/* Network (type and address) */
 
-    uint16_t	type;
+    uint16_t	type;	// One of enum smb_net_type
 	void*		addr;
 
 } net_t;
