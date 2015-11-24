@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -39,6 +39,8 @@
 #define _FIDODEFS_H_
 
 #include "gen_defs.h"
+
+#define FIDO_TLD		".fidonet"	/* Fake TLD for gating netmail through SMTP  */
 
 #define FIDO_NAME_LEN	36			/* Includes '\0' terminator				*/
 #define FIDO_SUBJ_LEN	72			/* Includes '\0' terminator				*/

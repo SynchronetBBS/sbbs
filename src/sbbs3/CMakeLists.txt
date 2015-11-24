@@ -217,7 +217,7 @@ add_library(ftpsrvr SHARED ftpsrvr.c nopen.c)
 require_libs(ftpsrvr xpdev smblib comio)
 target_link_libraries(ftpsrvr sbbs)
 
-add_library(mailsrvr SHARED mailsrvr.c mxlookup.c mime.c ars.c base64.c)
+add_library(mailsrvr SHARED mailsrvr.c mxlookup.c mime.c nopen.c ars.c base64.c)
 require_libs(mailsrvr xpdev smblib comio)
 target_link_libraries(mailsrvr sbbs)
 
