@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -330,7 +330,19 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 		}
 		write(fido,&hdr,sizeof(hdr));
 
+		SAFEPRINTF(str,"\1PID: %s\r", msg_program_id(tmp));
+		write(fido, str, strlen(str));
+
 		pt_zone_kludge(hdr,fido);
+		/* TZUTC (FSP-1001) */
+		int tzone=smb_tzutc(sys_timezone(&cfg));
+		char* minus="";
+		if(tzone<0) {
+			minus="-";
+			tzone=-tzone;
+		}
+		SAFEPRINTF3(str,"\1TZUTC: %s%02d%02u\r", minus, tzone/60, tzone%60);
+		write(fido, str, strlen(str));
 
 		if(cfg.netmail_misc&NMAIL_DIRECT) {
 			SAFECOPY(str,"\1FLAGS DIR\r\n");
