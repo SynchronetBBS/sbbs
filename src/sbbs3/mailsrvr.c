@@ -600,7 +600,24 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 
 	originator_info(socket, msg);
 
-    for(i=0;i<msg->total_hfields;i++) { 
+	/* Include all possible FidoNet header fields here */
+	for(i=0;i<msg->total_hfields;i++) {
+		switch(msg->hfield[i].type) {
+			case FIDOCTRL:
+			case FIDOAREA:	
+			case FIDOSEENBY:
+			case FIDOPATH:
+			case FIDOMSGID:
+			case FIDOREPLYID:
+			case FIDOPID:
+			case FIDOFLAGS:
+			case FIDOTID:
+				if(!sockprintf(socket, "%s: %s", smb_hfieldtype(msg->hfield[i].type), (char*)msg->hfield_dat[i]))
+					return(0);
+				break;
+		}
+	}
+	for(i=0;i<msg->total_hfields;i++) { 
 		if(msg->hfield[i].type==RFC822HEADER) { 
 			if(strnicmp((char*)msg->hfield_dat[i],"Content-Type:",13)==0)
 				content_type=msg->hfield_dat[i];
