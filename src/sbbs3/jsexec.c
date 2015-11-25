@@ -1078,6 +1078,10 @@ int main(int argc, char **argv, char** environ)
 
 	confp=stdout;
 	errfp=stderr;
+	if((nulfp=fopen(_PATH_DEVNULL,"w+"))==NULL) {
+		perror(_PATH_DEVNULL);
+		return(do_bail(-1));
+	}
 	if(isatty(fileno(stdin))) {
 #ifdef __unix__
 		struct termios term;
@@ -1093,10 +1097,6 @@ int main(int argc, char **argv, char** environ)
 	}
 	else	/* if redirected, don't send status messages to stderr */
 		statfp=nulfp;
-	if((nulfp=fopen(_PATH_DEVNULL,"w+"))==NULL) {
-		perror(_PATH_DEVNULL);
-		return(do_bail(-1));
-	}
 
 	cb.limit=JAVASCRIPT_TIME_LIMIT;
 	cb.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
