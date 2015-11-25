@@ -1049,8 +1049,13 @@ int parseLogLevel(const char* p)
 #ifdef __unix__
 void raw_input(struct termios *t)
 {
+#ifdef JSDOOR
 	t->c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
 	t->c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+#else
+	t->c_iflag &= ~(IMAXBEL|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+	t->c_lflag &= ~(ECHO|ECHONL|ICANON|IEXTEN);
+#endif
 }
 #endif
 
