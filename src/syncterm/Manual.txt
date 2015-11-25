@@ -170,7 +170,14 @@ be loaded from the BBS list, then modified per the command-line arguments.
 
                          The Dialing Directory
 
-This is the default startup screen of no BBS is specified on the command-line.
+This is the default startup screen if no BBS is specified on the command-line.
 This screen may be controlled via the mouse in all modes except ANSI.  Mouse
 controls are as follows:
 
+Right-click: Same as pressing ESC (ie: exit program).
+
+Left-click: Select an item.
+
+Left-Drag: Select and copy a region (the copy is made when the button is released).
+
+Middle-click: Paste from clipboard.
