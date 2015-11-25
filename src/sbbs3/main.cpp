@@ -4733,6 +4733,10 @@ void DLLCALL bbs_thread(void* arg)
 		lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
 	}
 
+	if(smb_tzutc(sys_timezone(&scfg)) != xpTimeZone_local()) { 
+		lprintf(LOG_WARNING,"Configured timezone (0x%04hX, UTC offset: %d) does not match local timezone offset: %d"
+			,scfg.sys_timezone, smb_tzutc(sys_timezone(&scfg)), xpTimeZone_local());
+	}
 	if(uptime==0)
 		uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
