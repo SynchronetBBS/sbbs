@@ -145,8 +145,10 @@ function IRC_quit(server,reason) {
 
 	/* wait up to 5 seconds for server to disconnect */
 	var start=time();
-	while(server.is_connected && time()-start<5)
-		while(my_server.poll(500) && (response=my_server.recvline()))
+	while(server.is_connected && time()-start<5) {
+		if (server.poll(500))
+			server.recvline();
+	}
 }
 
 // This will create a 'default mask' when given a complete user@host string.
