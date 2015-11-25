@@ -76,6 +76,9 @@
  *                              @-codes, but only when reading personal mail, to avoid
  *                              weird behavior on message networks from malicious users
  *                              on other BBSes.
+ * 2015-11-24 Eric Oulashin     Started working on using the Frame class (in frame.js)
+ *                              to display messages with ANSI codes using a scrollable
+ *                              user interface
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -163,8 +166,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05 Beta";
-var READER_DATE = "2015-11-07";
+var READER_VERSION = "1.05 Beta 5";
+var READER_DATE = "2015-11-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -288,7 +291,7 @@ const SEARCH_TO_USER_NEW_SCAN_CUR_GRP = 12;
 const SEARCH_TO_USER_NEW_SCAN_ALL = 13;
 const SEARCH_ALL_TO_USER_SCAN = 14;
 
-// Threading types
+// Message threading types
 const THREAD_BY_ID = 15;
 const THREAD_BY_TITLE = 16;
 const THREAD_BY_AUTHOR = 17;
@@ -363,7 +366,6 @@ gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 // Synchronet 3.16 builds in early 2015.
 var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
 
-
 // Temporary directory (in the logged-in user's node directory) to store
 // file attachments, etc.
 var gFileAttachDir = backslash(system.node_dir + "DDMsgReader_Attachments");
@@ -371,6 +373,16 @@ var gFileAttachDir = backslash(system.node_dir + "DDMsgReader_Attachments");
 // user hung up while running this script, etc.)
 if (file_exists(gFileAttachDir))
 	deltree(gFileAttachDir);
+
+// See if frame.js and scrollbar.js exist in sbbs/exec/load on the BBS machine.
+// If so, load them.  They will be used for displaying messages with ANSI content
+// with a scrollable user interface.
+var gFrameJSAvailable = file_exists(backslash(system.exec_dir) + "load/frame.js");
+if (gFrameJSAvailable)
+	load("frame.js");
+var gScrollbarJSAvailable = file_exists(backslash(system.exec_dir) + "load/scrollbar.js");
+if (gScrollbarJSAvailable)
+	load("scrollbar.js");
 
 /////////////////////////////////////////////
 // Script execution code
@@ -805,6 +817,12 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// multiple sub-boards so that the enhanced reader function can enable use of
 	// the > key to go to the next sub-board.
 	this.doingMultiSubBoardScan = false;
+
+	// An option for using the scrollable interface for messages with ANSI
+	// content - The sysop can set this to false if the sysop thinks the
+	// scrolling ANSI interface (using frame.js and scrollbar.js) doesn't
+	// look good enough
+	this.useScrollingInterfaceForANSIMessages = true;
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -4053,13 +4071,19 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// Get the message text and see if it has any ANSI codes.  If it has ANSI codes,
 	// then don't use the scrolling interface so that the ANSI gets displayed properly.
 	var messageText = this.msgbase.get_msg_body(true, msgHeader.offset);
-	var useScrollingInterface = (this.scrollingReaderInterface && !textHasANSICodes(messageText));
+	// If the message has ANSI content, then use the scrolling interface only
+	// if frame.js is available on the BBS machine and the option to use the
+	// scrolling interface for ANSI messages is enabled.
+	var msgHasANSICodes = textHasANSICodes(messageText);
+	var useScrollingInterface = this.scrollingReaderInterface && console.term_supports(USER_ANSI);
+	if (useScrollingInterface && msgHasANSICodes)
+		useScrollingInterface = gFrameJSAvailable && this.useScrollingInterfaceForANSIMessages;
 	// If we switch to the non-scrolling interface here, then the calling method should
 	// refresh the enhanced reader help line on the screen.
 	retObj.refreshEnhancedRdrHelpLine = (this.scrollingReaderInterface && !useScrollingInterface);
 	// Use the scrollable reader interface if the setting is enabled & the user's
 	// terminal supports ANSI.  Otherwise, use a more traditional user interface.
-	if (useScrollingInterface && console.term_supports(USER_ANSI))
+	if (useScrollingInterface)
 	{
 		// Show the message header
 		this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
@@ -4067,7 +4091,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		// Get the message text, interpret any @-codes in it, replace tabs with spaces
 		// to prevent weirdness when displaying the message lines, and word-wrap the
 		// text so that it looks good on the screen,
-		var msgInfo = this.GetMsgInfoForEnhancedReader(msgHeader, true, true, true, messageText);
+		var msgInfo = this.GetMsgInfoForEnhancedReader(msgHeader, true, true, true, messageText, msgHasANSICodes);
 
 		var topMsgLineIdxForLastPage = msgInfo.topMsgLineIdxForLastPage;
 		var msgFractionShown = msgInfo.msgFractionShown;
@@ -4104,17 +4128,30 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 			solidBlockLastStartRow = solidBlockStartRow;
 			console.gotoxy(1, console.screen_rows);
 		}
+		// User input loop
 		var continueOn = true;
 		while (continueOn)
 		{
 			// Display the message lines (depending on the value of writeMessage)
 			// and handle scroll keys via scrollTextLines().  Handle other keypresses
 			// here.
-			var scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
-			                                   this.colors["msgBodyColor"], writeMessage,
-			                                   this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
-			                                   msgAreaHeight, 1, console.screen_rows,
-			                                   msgScrollbarUpdateFn);
+			var scrollRetObj = null;
+			if (msgInfo.displayFrame != null)
+			{
+				msgInfo.displayFrame.draw();
+				scrollRetObj = scrollFrame(msgInfo.displayFrame, msgInfo.displayFrameScrollbar,
+				                           topMsgLineIdx, this.colors["msgBodyColor"],
+				                           writeMessage, 1, console.screen_rows,
+										   msgScrollbarUpdateFn);
+			}
+			else
+			{
+				scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
+				                               this.colors["msgBodyColor"], writeMessage,
+				                               this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
+				                               msgAreaHeight, 1, console.screen_rows,
+				                               msgScrollbarUpdateFn);
+			}
 			topMsgLineIdx = scrollRetObj.topLineIdx;
 			retObj.lastKeypress = scrollRetObj.lastKeypress;
 			switch (retObj.lastKeypress)
@@ -6611,6 +6648,8 @@ function DigDistMsgReader_ReadConfigFile()
 					this.msgListUseLightbarListInterface = (valueUpper == "LIGHTBAR");
 				else if (settingUpper == "READERINTERFACESTYLE")
 					this.scrollingReaderInterface = (valueUpper == "SCROLLABLE");
+				else if (settingUpper == "READERINTERFACESTYLEFORANSIMESSAGES")
+					this.useScrollingInterfaceForANSIMessages = (valueUpper == "SCROLLABLE");
 				else if (settingUpper == "DISPLAYBOARDINFOINHEADER")
 					this.displayBoardInfoInHeader = (valueUpper == "TRUE");
 				// Note: this.reverseListOrder can be true, false, or "ASK"
@@ -10656,6 +10695,8 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 //               pDetermineAttachments is true.
 //  pMsgBody: Optional - A string containing the message body.  If this is not included
 //            or is not a string, then this method will retrieve the message body.
+//  pMsgHasANSICodes: Optional boolean - If the caller already knows whether the
+//                    message text has ANSI codes, the caller can pass this parameter.
 //
 // Return value: An object with the following properties:
 //               msgText: The unaltered message text
@@ -10667,8 +10708,17 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 //               numNonSolidScrollBlocks: The number of non-solid scrollbar blocks
 //               solidBlockStartRow: The starting row on the screen for the scrollbar blocks
 //               attachments: An array of the attached filenames (as strings)
+//               displayFrame: A Frame object for displaying the message with
+//                             a scrollable interface.  Used when the message
+//                             contains ANSI, for instance.  If this object is
+//                             null, then the reader should use its own scrolling
+//                             interface.  Also, this will only be available if
+//                             the BBS machine has frame.js in sbbs/exec/load.
+//               displayFrameScrollbar: A ScrollBar object to work with displayFrame.
+//                                  If scrollbar.js is not available on the BBS machine,
+//                                  this will be null.
 function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDetermineAttachments,
-                                                      pGetB64Data, pMsgBody)
+                                                      pGetB64Data, pMsgBody, pMsgHasANSICodes)
 {
 	var retObj = new Object();
 
@@ -10711,8 +10761,66 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		msgTextAltered = PCBoardAttrsToSyncAttrs(msgTextAltered);
 	if ((system.settings & SYS_WILDCAT) == SYS_WILDCAT)
 		msgTextAltered = wildcatAttrsToSyncAttrs(msgTextAltered);
-	// Convert ANSI codes to Synchronet codes
-	msgTextAltered = ANSIAttrsToSyncAttrs(msgTextAltered);
+	// If the message contains ANSI codes, then if frame.js is available and
+	// the user's terminal support ANSI, set up a Frame object for reading the
+	// message with a scrollable interface.
+	retObj.displayFrame = null;
+	retObj.displayFrameScrollbar = null;
+	var msgHasANSICodes = (typeof(pMsgHasANSICodes) == "boolean" ? pMsgHasANSICodes : textHasANSICodes(retObj.msgText));
+	if (msgHasANSICodes)
+	{
+		if (gFrameJSAvailable && console.term_supports(USER_ANSI))
+		{
+			// Write the message to a file in a temporary directory,
+			// have the frame object read it, then delete the temporary
+			// directory.
+			var ANSITempDirExists = false;
+			var readerTmpOutputDir = backslash(system.node_dir + "DDMsgReaderANSIMsgTemp");
+			if (!file_exists(readerTmpOutputDir))
+				ANSITempDirExists = mkdir(readerTmpOutputDir);
+			if (ANSITempDirExists)
+			{
+				var tmpANSIFileName = backslash(readerTmpOutputDir) + "tmpMsg.ans";
+				var tmpANSIFile = new File(tmpANSIFileName);
+				if (tmpANSIFile.open("w"))
+				{
+					var tmpANSIFileWritten = tmpANSIFile.write(msgTextAltered);
+					tmpANSIFile.close();
+					// If the file was successfully written, then create the
+					// Frame object and have it read the file.
+					if (tmpANSIFileWritten)
+					{
+						// Create the Frame object and 
+						// TODO: Should this use 79 or 80 columns?
+						retObj.displayFrame = new Frame(1, // x: Horizontal coordinate of top left
+						                                this.enhMsgHeaderLines.length+1, // y: Vertical coordinate of top left
+						                                80, // Width
+						                                // Height: Allow for the message header
+						                                // and enhanced reader help line
+						                                console.screen_rows-this.enhMsgHeaderLines.length-1,
+						                                BG_BLACK);
+						retObj.displayFrame.v_scroll = true;
+						retObj.displayFrame.h_scroll = false;
+						retObj.displayFrame.scrollbars = true;
+						// Load the message file into the Frame object
+						retObj.displayFrame.load(tmpANSIFileName);
+						// If scrollbar.js is available, then set up a vertical
+						// scrollbar for the Frame object
+						if (gScrollbarJSAvailable)
+							retObj.displayFrameScrollbar = new ScrollBar(retObj.displayFrame, {bg: LIGHTGRAY, fg: WHITE, orientation: "vertical", autohide: false});
+					}
+				}
+				deltree(readerTmpOutputDir);
+			}
+		}
+		else
+		{
+			// frame.js is not available.  Just convert the ANSI to
+			// Synchronet attributes.  It might not look the best, but
+			// at least we can convert some of the ANSI codes.
+			msgTextAltered = ANSIAttrsToSyncAttrs(msgTextAltered);
+		}
+	}
 	var wordWrapTheMsgText = true;
 	if (typeof(pWordWrap) == "boolean")
 		wordWrapTheMsgText = pWordWrap;
@@ -12338,120 +12446,244 @@ function userHandleAliasNameMatch(pName)
 //               lastKeypress: The last key pressed by the user (a string)
 //               topLineIdx: The new top line index of the text lines, in case of scrolling
 function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTopLeftX, pTopLeftY,
-                          pWidth, pHeight, pPostWriteCurX, pPostWriteCurY, pScrollUpdateFn)
+                         pWidth, pHeight, pPostWriteCurX, pPostWriteCurY, pScrollUpdateFn)
 {
-   // Variables for the top line index for the last page, scrolling, etc.
-   var topLineIdxForLastPage = pTxtLines.length - pHeight;
-   if (topLineIdxForLastPage < 0)
-      topLineIdxForLastPage = 0;
-   var msgFractionShown = pHeight / pTxtLines.length;
-   if (msgFractionShown > 1)
-      msgFractionShown = 1.0;
-   var fractionToLastPage = 0;
-   var lastTxtRow = pTopLeftY + pHeight - 1;
-   var txtLineFormatStr = "%-" + pWidth + "s";
+	// Variables for the top line index for the last page, scrolling, etc.
+	var topLineIdxForLastPage = pTxtLines.length - pHeight;
+	if (topLineIdxForLastPage < 0)
+		topLineIdxForLastPage = 0;
+	var msgFractionShown = pHeight / pTxtLines.length;
+	if (msgFractionShown > 1)
+		msgFractionShown = 1.0;
+	var fractionToLastPage = 0;
+	var lastTxtRow = pTopLeftY + pHeight - 1;
+	var txtLineFormatStr = "%-" + pWidth + "s";
 
-   var retObj = new Object();
-   retObj.lastKeypress = "";
-   retObj.topLineIdx = pTopLineIdx;
+	var retObj = new Object();
+	retObj.lastKeypress = "";
+	retObj.topLineIdx = pTopLineIdx;
 
-   var writeTxtLines = pWriteTxtLines;
-   var continueOn = true;
-   while (continueOn)
-   {
-      // If we are to write the text lines, then write each of them and also
-      // clear out the rest of the row on the screen
-      if (writeTxtLines)
-      {
-         // If the scroll update function parameter is a function, then calculate
-         // the fraction to the last page and call the scroll update function.
-         if (typeof(pScrollUpdateFn) == "function")
-         {
-            if (topLineIdxForLastPage != 0)
-               fractionToLastPage = retObj.topLineIdx / topLineIdxForLastPage;
-            pScrollUpdateFn(fractionToLastPage);
-         }
-         var screenY = pTopLeftY;
-         for (var lineIdx = retObj.topLineIdx; (lineIdx < pTxtLines.length) && (screenY <= lastTxtRow); ++lineIdx)
-         {
-            console.gotoxy(pTopLeftX, screenY++);
-            // Print the text line, then clear the rest of the line
-            console.print(pTxtAttrib + pTxtLines[lineIdx]);
-            printf("\1n%" + +(pWidth - console.strlen(pTxtLines[lineIdx])) + "s", "");
-         }
-         // If there are still some lines left in the message reading area, then
-         // clear the lines.
-         console.print("\1n" + pTxtAttrib);
-         while (screenY <= lastTxtRow)
-         {
-            console.gotoxy(pTopLeftX, screenY++);
-            printf(txtLineFormatStr, "");
-         }
-      }
+	var writeTxtLines = pWriteTxtLines;
+	var continueOn = true;
+	while (continueOn)
+	{
+		// If we are to write the text lines, then write each of them and also
+		// clear out the rest of the row on the screen
+		if (writeTxtLines)
+		{
+			// If the scroll update function parameter is a function, then calculate
+			// the fraction to the last page and call the scroll update function.
+			if (typeof(pScrollUpdateFn) == "function")
+			{
+				if (topLineIdxForLastPage != 0)
+					fractionToLastPage = retObj.topLineIdx / topLineIdxForLastPage;
+				pScrollUpdateFn(fractionToLastPage);
+			}
+			var screenY = pTopLeftY;
+			for (var lineIdx = retObj.topLineIdx; (lineIdx < pTxtLines.length) && (screenY <= lastTxtRow); ++lineIdx)
+			{
+				console.gotoxy(pTopLeftX, screenY++);
+				// Print the text line, then clear the rest of the line
+				console.print(pTxtAttrib + pTxtLines[lineIdx]);
+				printf("\1n%" + +(pWidth - console.strlen(pTxtLines[lineIdx])) + "s", "");
+			}
+			// If there are still some lines left in the message reading area, then
+			// clear the lines.
+			console.print("\1n" + pTxtAttrib);
+			while (screenY <= lastTxtRow)
+			{
+				console.gotoxy(pTopLeftX, screenY++);
+				printf(txtLineFormatStr, "");
+			}
+		}
 
-      // Get a keypress from the user and take action based on it
-      console.gotoxy(pPostWriteCurX, pPostWriteCurY);
-      retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
-      switch (retObj.lastKeypress)
-      {
-         case KEY_UP:
-            if (retObj.topLineIdx > 0) {
-               --retObj.topLineIdx;
-               writeTxtLines = true;
-            }
-            else
-               writeTxtLines = false;
-            break;
-         case KEY_DOWN:
-            if (retObj.topLineIdx < topLineIdxForLastPage) {
-               ++retObj.topLineIdx;
-               writeTxtLines = true;
-            }
-            else
-               writeTxtLines = false;
-            break;
-         case KEY_PAGE_DOWN: // Next page
-            if (retObj.topLineIdx < topLineIdxForLastPage) {
-               retObj.topLineIdx += pHeight;
-               if (retObj.topLineIdx > topLineIdxForLastPage)
-                  retObj.topLineIdx = topLineIdxForLastPage;
-               writeTxtLines = true;
-            }
-            else
-               writeTxtLines = false;
-            break;
-         case KEY_PAGE_UP: // Previous page
-            if (retObj.topLineIdx > 0) {
-               retObj.topLineIdx -= pHeight;
-               if (retObj.topLineIdx < 0)
-                  retObj.topLineIdx = 0;
-               writeTxtLines = true;
-            }
-            else
-               writeTxtLines = false;
-            break;
-         case KEY_HOME: // First page
-            if (retObj.topLineIdx > 0) {
-               retObj.topLineIdx = 0;
-               writeTxtLines = true;
-            }
-            else
-               writeTxtLines = false;
-            break;
-         case KEY_END: // Last page
-            if (retObj.topLineIdx < topLineIdxForLastPage) {
-               retObj.topLineIdx = topLineIdxForLastPage;
-               writeTxtLines = true;
-            }
-            else
-               writeTxtLines = false;
-            break;
-         default:
-            continueOn = false;
-            break;
-      }
-   }
-   return retObj;
+		writeTxtLines = false;
+
+		// Get a keypress from the user and take action based on it
+		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
+		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
+		switch (retObj.lastKeypress)
+		{
+			case KEY_UP:
+				if (retObj.topLineIdx > 0)
+				{
+					--retObj.topLineIdx;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_DOWN:
+				if (retObj.topLineIdx < topLineIdxForLastPage)
+				{
+					++retObj.topLineIdx;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_PAGE_DOWN: // Next page
+				if (retObj.topLineIdx < topLineIdxForLastPage)
+				{
+					retObj.topLineIdx += pHeight;
+					if (retObj.topLineIdx > topLineIdxForLastPage)
+						retObj.topLineIdx = topLineIdxForLastPage;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_PAGE_UP: // Previous page
+				if (retObj.topLineIdx > 0)
+				{
+					retObj.topLineIdx -= pHeight;
+					if (retObj.topLineIdx < 0)
+						retObj.topLineIdx = 0;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_HOME: // First page
+				if (retObj.topLineIdx > 0)
+				{
+					retObj.topLineIdx = 0;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_END: // Last page
+				if (retObj.topLineIdx < topLineIdxForLastPage)
+				{
+					retObj.topLineIdx = topLineIdxForLastPage;
+					writeTxtLines = true;
+				}
+				break;
+			default:
+				continueOn = false;
+				break;
+		}
+	}
+	return retObj;
+}
+
+// Displays a Frame on the screen and allows scrolling through it with the up &
+// down arrow keys, PageUp, PageDown, HOME, and END.
+//
+// Parameters:
+//  pFrame: A Frame object to display & scroll through
+//  pScrollbar: A ScrollBar object associated with the Frame object
+//  pTopLineIdx: The index of the text line to display at the top
+//  pTxtAttrib: The attribute(s) to apply to the text lines
+//  pWriteTxtLines: Boolean - Whether or not to write the text lines (in addition
+//                  to doing the message loop).  If false, this will only do the
+//                  the message loop.  This parameter is intended as a screen
+//                  refresh optimization.
+//  pPostWriteCurX: The X location for the cursor after writing the message
+//                  lines
+//  pPostWriteCurY: The Y location for the cursor after writing the message
+//                  lines
+//  pScrollUpdateFn: A function that the caller can provide for updating the
+//                   scroll position.  This function has one parameter:
+//                   - fractionToLastPage: The fraction of the top index divided
+//                     by the top index for the last page (basically, the progress
+//                     to the last page).
+//
+// Return value: An object with the following properties:
+//               lastKeypress: The last key pressed by the user (a string)
+//               topLineIdx: The new top line index of the text lines, in case of scrolling
+function scrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pPostWriteCurX,
+                     pPostWriteCurY, pScrollUpdateFn)
+{
+	// Variables for the top line index for the last page, scrolling, etc.
+	var topLineIdxForLastPage = pFrame.data_height - pFrame.height;
+	if (topLineIdxForLastPage < 0)
+		topLineIdxForLastPage = 0;
+
+	var retObj = new Object();
+	retObj.lastKeypress = "";
+	retObj.topLineIdx = pTopLineIdx;
+
+	if (pTopLineIdx > 0)
+		pFrame.scrollTo(0, pTopLineIdx);
+
+	var writeTxtLines = pWriteTxtLines;
+	var cycleFrame = true;
+	var continueOn = true;
+	while (continueOn)
+	{
+		// If we are to write the text lines, then draw the frame.
+		// TODO: Do we really need this?  Will this be different from
+		// scrollTextLines()?
+		//if (writeTxtLines)
+		//	pFrame.draw();
+
+		if (cycleFrame)
+		{
+			if (pFrame.cycle() && (pScrollbar != null))
+				pScrollbar.cycle();
+		}
+
+		writeTxtLines = false;
+		cycleFrame = false;
+
+		// Get a keypress from the user and take action based on it
+		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
+		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
+		switch (retObj.lastKeypress)
+		{
+			case KEY_UP:
+				if (retObj.topLineIdx > 0)
+				{
+					pFrame.scroll(0, -1);
+					--retObj.topLineIdx;
+					cycleFrame = true;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_DOWN:
+				if (retObj.topLineIdx < topLineIdxForLastPage)
+				{
+					pFrame.scroll(0, 1);
+					cycleFrame = true;
+					++retObj.topLineIdx;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_PAGE_DOWN: // Next page
+				if (retObj.topLineIdx < topLineIdxForLastPage)
+				{
+					//pFrame.scroll(0, pFrame.height);
+					retObj.topLineIdx += pFrame.height;
+					if (retObj.topLineIdx > topLineIdxForLastPage)
+						retObj.topLineIdx = topLineIdxForLastPage;
+					pFrame.scrollTo(1, retObj.topLineIdx+1);
+					cycleFrame = true;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_PAGE_UP: // Previous page
+				if (retObj.topLineIdx > 0)
+				{
+					//pFrame.scroll(0, -(pFrame.height));
+					retObj.topLineIdx -= pFrame.height;
+					if (retObj.topLineIdx < 0)
+						retObj.topLineIdx = 0;
+					pFrame.scrollTo(1, retObj.topLineIdx+1);
+					cycleFrame = true;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_HOME: // First page
+				//pFrame.home();
+				pFrame.scrollTo(1, 1);
+				cycleFrame = true;
+				retObj.topLineIdx = 0;
+				break;
+			case KEY_END: // Last page
+				//pFrame.end();
+				pFrame.scrollTo(1, topLineIdxForLastPage+1);
+				cycleFrame = true;
+				retObj.topLineIdx = topLineIdxForLastPage;
+				break;
+			default:
+				continueOn = false;
+				break;
+		}
+	}
+
+	return retObj;
 }
 
 // Finds the (1-based) page number of an item by number (1-based).  If no page
