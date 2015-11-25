@@ -92,10 +92,17 @@ if(join) {
 		mylog(response);
 }
 
+var delay=0;
 if(msg)
-	send(msg);
-else while((msg=readln())!=undefined)	/* read from stdin */
-	send(msg);
+	send(msg, delay);
+else while((msg=readln())!=undefined) {	/* read from stdin */
+	if (send(msg, delay)) {
+		if(delay < 2000)
+			delay*=2;
+		if (delay == 0)
+			delay = 500;
+	}
+}
 
 while(my_server.poll(0) && (response=my_server.recvline()))
 	mylog(response);
@@ -104,20 +111,23 @@ IRC_quit(my_server);
 mylog("Exiting");
 exit();
 
-function send(msg)
+function send(msg, delay)
 {
 	if(msg==undefined || msg.search(/^[\r\n]*$/)!=-1) {
 		mylog("Not sending blank message");
-		return;
+		return false;
 	}
 	for(i in exclude)
 		if(msg.search(exclude[i])>=0)
-			return;
+			return false;
+	if (delay)
+		mswait(delay);	// Cyan: IRCd throttles clients that send text to the server too quickly
 	mylog("Sending: " + msg);
-	if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
+	if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n")) {
 		alert("send failure");
-	else
-		mswait(2000);	// Cyan: IRCd throttles clients that send text to the server too quickly
+		return false;
+	}
+	return true;
 }
 
 function expand_tabs(msg)
