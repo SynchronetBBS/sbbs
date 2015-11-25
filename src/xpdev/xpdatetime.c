@@ -84,6 +84,7 @@ xpDateTime_t DLLCALL xpDateTime_now(void)
 #endif
 }
 
+/* Return local timezone offset (in minutes) */
 xpTimeZone_t DLLCALL xpTimeZone_local(void)
 {
 #if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__DARWIN__)
