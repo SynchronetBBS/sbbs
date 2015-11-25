@@ -89,7 +89,7 @@ xpTimeZone_t DLLCALL xpTimeZone_local(void)
 {
 #if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__DARWIN__) || defined(__linux__)
 	struct tm tm;
-	time_t t;
+	time_t t=time(NULL);
 
 	localtime_r(&t, &tm);
 	return(tm.tm_gmtoff/60);
