@@ -166,7 +166,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05 Beta 5";
+var READER_VERSION = "1.05 Beta 6";
 var READER_DATE = "2015-11-25";
 
 // Keyboard key codes for displaying on the screen
@@ -12611,8 +12611,11 @@ function scrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 
 		if (cycleFrame)
 		{
-			if (pFrame.cycle() && (pScrollbar != null))
+			//if (pFrame.cycle() && (pScrollbar != null))
+			//	pScrollbar.cycle();
+			if (pScrollbar != null)
 				pScrollbar.cycle();
+			pFrame.cycle();
 		}
 
 		writeTxtLines = false;
