@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 									fputc('i',out);
 									break;
 								case 8: 				/* concealed */
-									fputc('e',out);
+									fputc('e',out);		/* Elite-text, long unsupported (but should be resurrected?) */
 									break;
 								case 30:
 									fputc('k',out);
