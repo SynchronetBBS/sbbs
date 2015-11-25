@@ -198,7 +198,7 @@ const char *hungupstr="\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
 /****************************************************************************/
 /* Convert C string to pascal string										*/
 /****************************************************************************/
-void str2pas(char *instr, char *outstr)
+void str2pas(const char *instr, char *outstr)
 {
 	int i;
 
@@ -294,7 +294,7 @@ static void lfexpand(char *str, ulong misc)
 /****************************************************************************/
 /* Creates various types of xtrn (Doors, Chains, etc.) data (drop) files.	*/
 /****************************************************************************/
-void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
+void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tleft
 					,ulong misc)
 {
 	char	str[1024],tmp2[128],c,*p;

@@ -228,12 +228,13 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	if(msgattr&MSG_ANONYMOUS)
 		bputs(text[PostingAnonymously]);
-
-	if(cfg.sub[subnum]->misc&SUB_NAME)
+	else if(cfg.sub[subnum]->misc&SUB_NAME)
 		bputs(text[UsingRealName]);
 
 	msg_tmp_fname(useron.xedit, str, sizeof(str));
-	if(!writemsg(str,top,title,wm_mode,subnum,touser,&editor)
+	if(!writemsg(str,top,title,wm_mode,subnum,touser
+		,/* from: */msgattr&MSG_ANONYMOUS ? text[Anonymous] : cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias
+		,&editor)
 		|| (length=(long)flength(str))<1) {	/* Bugfix Aug-20-2003: Reject negative length */
 		bputs(text[Aborted]);
 		return(false); 

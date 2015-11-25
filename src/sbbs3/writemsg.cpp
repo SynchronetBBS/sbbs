@@ -198,8 +198,8 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, long mode, un
 /* message and 'title' is the title (70chars max) for the message.          */
 /* 'dest' contains a text description of where the message is going.        */
 /****************************************************************************/
-bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode, uint subnum
-	,const char *dest, char** editor)
+bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode, uint subnum
+	,const char *to, const char* from, char** editor)
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
 				,useron_level;
@@ -401,20 +401,20 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		max_title_len=cols-column-1;
 		if(max_title_len > LEN_TITLE)
 			max_title_len = LEN_TITLE;
-		if(!getstr(title,max_title_len,mode&WM_FILE ? K_LINE : K_LINE|K_EDIT|K_AUTODEL)
+		if(!getstr(subj,max_title_len,mode&WM_FILE ? K_LINE : K_LINE|K_EDIT|K_AUTODEL)
 			&& useron_level && useron.logons) {
 			free(buf);
 			return(false); 
 		}
-		if((mode&WM_FILE) && !checkfname(title)) {
+		if((mode&WM_FILE) && !checkfname(subj)) {
 			free(buf);
 			bputs(text[BadFilename]);
 			return(false);
 		}
 		if(!(mode&(WM_EMAIL|WM_NETMAIL)) && cfg.sub[subnum]->misc&SUB_QNET
 			&& !SYSOP
-			&& (!stricmp(title,"DROP") || !stricmp(title,"ADD")
-			|| !strnicmp(dest,"SBBS",4))) {
+			&& (!stricmp(subj,"DROP") || !stricmp(subj,"ADD")
+			|| !strnicmp(to,"SBBS",4))) {
 			free(buf);   /* Users can't post DROP or ADD in QWK netted subs */
 			return(false); /* or messages to "SBBS" */
 		}
@@ -463,10 +463,10 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		if(editor!=NULL)
 			*editor=cfg.xedit[useron_xedit-1]->name;
 
-		editor_inf(useron_xedit,dest,title,mode,subnum,tagfile);
+		editor_inf(useron_xedit,to,from,subj,mode,subnum,tagfile);
 		if(cfg.xedit[useron_xedit-1]->type) {
 			gettimeleft();
-			xtrndat(useron.alias,cfg.node_dir,cfg.xedit[useron_xedit-1]->type
+			xtrndat(from,cfg.node_dir,cfg.xedit[useron_xedit-1]->type
  			   ,timeleft,cfg.xedit[useron_xedit-1]->misc); 
 		}
 
@@ -506,7 +506,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 				fgets(str,sizeof(str),fp);
 				fgets(str,sizeof(str),fp);
 				truncsp(str);
-				safe_snprintf(title,LEN_TITLE,"%s",str);
+				safe_snprintf(subj,LEN_TITLE,"%s",str);
 				fclose(fp);
 			}
 		}
@@ -544,7 +544,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 				// remove(msgtmp);
 			} 
 		}
-		if(!(msgeditor((char *)buf,mode&WM_NOTOP ? nulstr : top,title))) {
+		if(!(msgeditor((char *)buf,mode&WM_NOTOP ? nulstr : top, subj))) {
 			free(buf);	/* Assertion here Dec-17-2003, think I fixed in block above (rev 1.52) */
 			return(false); 
 		} 
@@ -609,7 +609,7 @@ void quotestr(char *str)
 
 /****************************************************************************/
 /****************************************************************************/
-void sbbs_t::editor_inf(int xeditnum, const char *dest, const char *title, long mode
+void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const char *subj, long mode
 	,uint subnum, const char* tagfile)
 {
 	char	path[MAX_PATH+1];
@@ -628,13 +628,11 @@ void sbbs_t::editor_inf(int xeditnum, const char *dest, const char *title, long 
 			return; 
 		}
 		fprintf(fp,"%s\r\n%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n"
-			,(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME) ? useron.name
-				: useron.alias
-				,dest,title,1
-				,mode&WM_NETMAIL ? "NetMail"
+			,from,to,subj,1
+			,mode&WM_NETMAIL ? "NetMail"
 				:mode&WM_EMAIL ? "Electronic Mail"
-				:subnum==INVALID_SUB ? nulstr
-				:cfg.sub[subnum]->sname
+					:subnum==INVALID_SUB ? nulstr
+						:cfg.sub[subnum]->sname
 			,mode&WM_PRIVATE ? "YES":"NO");
 		/* the 7th line (the tag-line file) is a Synchronet extension, for SlyEdit */
 		if((mode&WM_EXTDESC)==0 && tagfile!=NULL)
@@ -654,10 +652,12 @@ void sbbs_t::editor_inf(int xeditnum, const char *dest, const char *title, long 
 			return; 
 		}
 		fprintf(fp,"%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n%u\r\n"
-			,title,dest,useron.number
-			,(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME) ? useron.name
-			: useron.alias
-			,useron.name,useron.level);
+			,subj
+			,to
+			,useron.number
+			,from
+			,useron.name
+			,useron.level);
 		fclose(fp);
 	}
 }
@@ -1051,7 +1051,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 				fcopy(path, msgtmp);
 		}
 
-		editor_inf(useron_xedit,fname,nulstr,0,INVALID_SUB,/* tagfile: */NULL);
+		editor_inf(useron_xedit,/* to: */fname,/* from: */nulstr,/* subj: */nulstr,0,INVALID_SUB,/* tagfile: */NULL);
 		if(cfg.xedit[useron_xedit-1]->misc&XTRN_NATIVE)
 			mode|=EX_NATIVE;
 		if(cfg.xedit[useron_xedit-1]->misc&XTRN_SH)

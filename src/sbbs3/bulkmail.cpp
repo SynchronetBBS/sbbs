@@ -64,7 +64,9 @@ bool sbbs_t::bulkmail(uchar *ar)
 		msg.hdr.attr|=MSG_ANONYMOUS;
 
 	msg_tmp_fname(useron.xedit, msgpath, sizeof(msgpath));
-	if(!writemsg(msgpath,nulstr,title,WM_EMAIL,INVALID_SUB,"Bulk Mailing",&editor)) {
+	if(!writemsg(msgpath,nulstr,title,WM_EMAIL,INVALID_SUB,"Bulk Mailing"
+		,/* From: */msg.hdr.attr&MSG_ANONYMOUS ? text[Anonymous] : useron.alias
+		,&editor)) {
 		bputs(text[Aborted]);
 		return(false); 
 	}
