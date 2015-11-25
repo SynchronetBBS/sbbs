@@ -100,7 +100,7 @@ else while((msg=readln())!=undefined) {	/* read from stdin */
 		if(delay < 2000)
 			delay*=2;
 		if (delay == 0)
-			delay = 500;
+			delay = 1000;
 	}
 }
 
