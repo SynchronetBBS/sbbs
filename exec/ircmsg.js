@@ -96,11 +96,11 @@ var delay=0;
 if(msg)
 	send(msg, delay);
 else while((msg=readln())!=undefined) {	/* read from stdin */
+	var send_count = 0;
 	if (send(msg, delay)) {
-		if(delay < 2000)
-			delay*=2;
-		if (delay == 0)
-			delay = 1000;
+		send_count++;
+		if (send_count > 4)
+			delay = 2050;
 	}
 }
 
