@@ -812,6 +812,15 @@ enum {
 	,DisplayUnreadMessagesOnlyQ
 	,NoMessagesFound
 	,UserIpAddr
+	,Seconds
+	,Minutes
+	,Hours
+	,Days
+	,Months
+	,Years
+	,InThePast
+	,InTheFuture
+	,AgeOfPostedItem
 
 	,TOTAL_TEXT
 };

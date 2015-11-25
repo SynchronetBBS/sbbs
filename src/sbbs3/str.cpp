@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -857,6 +857,7 @@ void sbbs_t::sys_info()
 		bprintf(text[SiSysPsite],cfg.sys_psname,cfg.sys_psnum);
 	if(cfg.sys_location[0])
 		bprintf(text[SiSysLocation],cfg.sys_location);
+	bprintf(text[TiNow],timestr(now),smb_zonestr(sys_timezone(&cfg),NULL));
 	if(cfg.sys_op[0])
 		bprintf(text[SiSysop],cfg.sys_op);
 	bprintf(text[SiSysNodes],cfg.sys_nodes);
@@ -1226,4 +1227,39 @@ void sbbs_t::change_user(void)
 	else sys_status|=SS_TMPSYSOP;
 	sprintf(str,"Changed into %s #%u",useron.alias,useron.number);
 	logline("S+",str);
+}
+
+/* 't' value must be adjusted for timezone offset */
+char* sbbs_t::age_of_posted_item(char* buf, size_t max, time_t t)
+{
+	time_t	now = time(NULL) - (xpTimeZone_local()*60);
+	char*	past = text[InThePast];
+	char*	units = text[Years];
+	char	value[128];
+
+	double diff = difftime(now, t);
+	if(diff < 0) {
+		past = text[InTheFuture];
+		diff = -diff;
+	}
+
+	if(diff < 60) {
+		sprintf(value, "%.0f", diff);
+		units = text[Seconds];
+	} else if(diff < 60*60) {
+		sprintf(value, "%.0f", diff / 60.0);
+		units = text[Minutes];
+	} else if(diff < 60*60*24) {
+		sprintf(value, "%.1f", diff / (60.0 * 60.0));
+		units = text[Hours];
+	} else if(diff < 60*60*24*30) {
+		sprintf(value, "%.1f", diff / (60.0 * 60.0 * 24.0));
+		units = text[Days];
+	} else if(diff < 60*60*24*365) {
+		sprintf(value, "%.1f", diff / (60.0 * 60.0 * 24.0 * 30.0));
+		units = text[Months];
+	} else
+		sprintf(value, "%.1f", diff / (60.0 * 60.0 * 24.0 * 365.25));
+	safe_snprintf(buf, max, text[AgeOfPostedItem], value, units, past);
+	return buf;
 }

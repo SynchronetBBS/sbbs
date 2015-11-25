@@ -236,7 +236,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			attr(LIGHTGRAY);
 			now=time(NULL);
 			bprintf(text[TiLogon],timestr(logontime));
-			bprintf(text[TiNow],timestr(now));
+			bprintf(text[TiNow],timestr(now),smb_zonestr(sys_timezone(&cfg),NULL));
 			bprintf(text[TiTimeon]
 				,sectostr((uint)(now-logontime),tmp));
 			bprintf(text[TiTimeLeft]

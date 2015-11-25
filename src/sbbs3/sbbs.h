@@ -589,6 +589,7 @@ public:
 	/* str.cpp */
 	char*	timestr(time_t intime);
     char	timestr_output[60];
+	char*	age_of_posted_item(char* buf, size_t max, time_t);
 	void	userlist(long mode);
 	size_t	gettmplt(char *outstr, const char *tmplt, long mode);
 	void	sif(char *fname, char *answers, long len);	/* Synchronet Interface File */
