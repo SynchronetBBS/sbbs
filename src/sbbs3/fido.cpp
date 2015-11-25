@@ -336,7 +336,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 		pt_zone_kludge(hdr,fido);
 		/* TZUTC (FSP-1001) */
 		int tzone=smb_tzutc(sys_timezone(&cfg));
-		char* minus="";
+		const char* minus="";
 		if(tzone<0) {
 			minus="-";
 			tzone=-tzone;
