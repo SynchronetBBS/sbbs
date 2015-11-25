@@ -87,7 +87,7 @@ xpDateTime_t DLLCALL xpDateTime_now(void)
 /* Return local timezone offset (in minutes) */
 xpTimeZone_t DLLCALL xpTimeZone_local(void)
 {
-#if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__DARWIN__)
+#if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__DARWIN__) || defined(__linux__)
 	struct tm tm;
 	time_t t;
 
