@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -45,6 +45,9 @@ while(1) {
 	i=0;
 	sprintf(opt[i++],"%-33.33s%s","BBS Name",cfg.sys_name);
 	sprintf(opt[i++],"%-33.33s%s","Location",cfg.sys_location);
+	sprintf(opt[i++],"%-33.33s%s %s","Local Time Zone"
+		,smb_zonestr(cfg.sys_timezone,NULL)
+		,!OTHER_ZONE(cfg.sys_timezone) && cfg.sys_timezone&US_ZONE && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
 	sprintf(opt[i++],"%-33.33s%s","Operator",cfg.sys_op);
 	sprintf(opt[i++],"%-33.33s%s","Password","**********");
 
@@ -109,6 +112,251 @@ while(1) {
 			uifc.input(WIN_MID,0,0,"Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
             break;
 		case 2:
+			strcpy(opt[0],"Yes");
+			strcpy(opt[1],"No");
+			opt[2][0]=0;
+			i=0;
+			uifc.helpbuf=
+				"`United States Time Zone:`\n"
+				"\n"
+				"If your local time zone is the United States, select `Yes`.\n"
+			;
+
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+				,"United States Time Zone",opt);
+			if(i==-1)
+				break;
+			if(i==0) {
+				strcpy(opt[i++],"Atlantic");
+				strcpy(opt[i++],"Eastern");
+				strcpy(opt[i++],"Central");
+				strcpy(opt[i++],"Mountain");
+				strcpy(opt[i++],"Pacific");
+				strcpy(opt[i++],"Yukon");
+				strcpy(opt[i++],"Hawaii/Alaska");
+				strcpy(opt[i++],"Bering");
+				opt[i][0]=0;
+				i=0;
+				uifc.helpbuf=
+					"`U.S. Time Zone:`\n"
+					"\n"
+					"Choose the region which most closely reflects your local U.S. time zone.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"U.S. Time Zone",opt);
+				if(i==-1)
+					break;
+				uifc.changes=1;
+				switch(i) {
+					case 0:
+						cfg.sys_timezone=AST;
+						break;
+					case 1:
+						cfg.sys_timezone=EST;
+						break;
+					case 2:
+						cfg.sys_timezone=CST;
+                        break;
+					case 3:
+						cfg.sys_timezone=MST;
+                        break;
+					case 4:
+						cfg.sys_timezone=PST;
+                        break;
+					case 5:
+						cfg.sys_timezone=YST;
+                        break;
+					case 6:
+						cfg.sys_timezone=HST;
+                        break;
+					case 7:
+						cfg.sys_timezone=BST;
+						break; 
+				}
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				strcpy(opt[2],"Automatic");
+				opt[3][0]=0;
+				i=1;
+				uifc.helpbuf=
+					"`Daylight Saving Time (DST):`\n"
+					"\n"
+					"If your system is using a U.S. standard time zone, and you would like\n"
+					"to have the daylight saving time `flag` automatically toggled for you,\n"
+					"set this option to ~Automatic~ (recommended).\n"
+					"\n"			
+					"The ~DST~ `flag` is used for display purposes only (e.g. to display \"PDT\"\n"
+					"instead of \"PST\" and calculate the correct offset from UTC), it does not\n"
+					"actually change the time on your computer system(s) for you.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Daylight Saving Time (DST)",opt);
+				if(i==-1)
+                    break;
+				cfg.sys_misc&=~SM_AUTO_DST;
+				switch(i) {
+					case 0:
+						cfg.sys_timezone|=DAYLIGHT;
+						break;
+					case 1:
+						cfg.sys_timezone&=~DAYLIGHT;
+						break;
+					case 2:
+						cfg.sys_misc|=SM_AUTO_DST;
+						sys_timezone(&cfg);
+						break;
+				}
+				break; 
+			}
+			i=0;
+			strcpy(opt[i++],"Midway");
+			strcpy(opt[i++],"Vancouver");
+			strcpy(opt[i++],"Edmonton");
+			strcpy(opt[i++],"Winnipeg");
+			strcpy(opt[i++],"Bogota");
+			strcpy(opt[i++],"Caracas");
+			strcpy(opt[i++],"Rio de Janeiro");
+			strcpy(opt[i++],"Fernando de Noronha");
+			strcpy(opt[i++],"Azores");
+			strcpy(opt[i++],"London");
+			strcpy(opt[i++],"Berlin");
+			strcpy(opt[i++],"Athens");
+			strcpy(opt[i++],"Moscow");
+			strcpy(opt[i++],"Dubai");
+			strcpy(opt[i++],"Kabul");
+			strcpy(opt[i++],"Karachi");
+			strcpy(opt[i++],"Bombay");
+			strcpy(opt[i++],"Kathmandu");
+			strcpy(opt[i++],"Dhaka");
+			strcpy(opt[i++],"Bangkok");
+			strcpy(opt[i++],"Hong Kong");
+			strcpy(opt[i++],"Tokyo");
+			strcpy(opt[i++],"Sydney");
+			strcpy(opt[i++],"Noumea");
+			strcpy(opt[i++],"Wellington");
+			strcpy(opt[i++],"Other...");
+			opt[i][0]=0;
+			i=0;
+			uifc.helpbuf=
+				"`Non-U.S. Time Zone:`\n"
+				"\n"
+				"Choose the region which most closely reflects your local time zone.\n"
+				"\n"
+				"Choose `Other...` if a region representing your local time zone is\n"
+				"not listed (you will be able to set the UTC offset manually)."
+			;
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+				,"None-U.S. Time Zone",opt);
+			if(i==-1)
+				break;
+			uifc.changes=1;
+			switch(i) {
+				case 0:
+					cfg.sys_timezone=MID;
+					break;
+				case 1:
+					cfg.sys_timezone=VAN;
+					break;
+				case 2:
+					cfg.sys_timezone=EDM;
+					break;
+				case 3:
+					cfg.sys_timezone=WIN;
+					break;
+				case 4:
+					cfg.sys_timezone=BOG;
+					break;
+				case 5:
+					cfg.sys_timezone=CAR;
+					break;
+				case 6:
+					cfg.sys_timezone=RIO;
+					break;
+				case 7:
+					cfg.sys_timezone=FER;
+					break;
+				case 8:
+					cfg.sys_timezone=AZO;
+                    break;
+				case 9:
+					cfg.sys_timezone=LON;
+                    break;
+				case 10:
+					cfg.sys_timezone=BER;
+                    break;
+				case 11:
+					cfg.sys_timezone=ATH;
+                    break;
+				case 12:
+					cfg.sys_timezone=MOS;
+                    break;
+				case 13:
+					cfg.sys_timezone=DUB;
+                    break;
+				case 14:
+					cfg.sys_timezone=KAB;
+                    break;
+				case 15:
+					cfg.sys_timezone=KAR;
+                    break;
+				case 16:
+					cfg.sys_timezone=BOM;
+                    break;
+				case 17:
+					cfg.sys_timezone=KAT;
+                    break;
+				case 18:
+					cfg.sys_timezone=DHA;
+                    break;
+				case 19:
+					cfg.sys_timezone=BAN;
+                    break;
+				case 20:
+					cfg.sys_timezone=HON;
+                    break;
+				case 21:
+					cfg.sys_timezone=TOK;
+                    break;
+				case 22:
+					cfg.sys_timezone=SYD;
+                    break;
+				case 23:
+					cfg.sys_timezone=NOU;
+                    break;
+				case 24:
+					cfg.sys_timezone=WEL;
+                    break;
+				default:
+					if(cfg.sys_timezone>720 || cfg.sys_timezone<-720)
+						cfg.sys_timezone=0;
+					if(cfg.sys_timezone==0)
+						str[0]=0;
+					else
+						sprintf(str,"%02d:%02d"
+							,cfg.sys_timezone/60,cfg.sys_timezone<0
+							? (-cfg.sys_timezone)%60 : cfg.sys_timezone%60);
+					uifc.helpbuf=
+						"`Time Zone Offset:`\n"
+						"\n"
+						"Enter your local time zone offset from Universal Time (UTC/GMT)\n"
+						"in `HH:MM` format.\n"
+					;
+					uifc.input(WIN_MID|WIN_SAV,0,0
+						,"Time (HH:MM) East (+) or West (-) of Universal "
+							"Time"
+						,str,6,K_EDIT|K_UPPER);
+					cfg.sys_timezone=atoi(str)*60;
+					char *p=strchr(str,':');
+					if(p) {
+						if(cfg.sys_timezone<0)
+							cfg.sys_timezone-=atoi(p+1);
+						else
+							cfg.sys_timezone+=atoi(p+1); 
+					}
+                    break;
+					}
+            break;
+		case 3:
 			uifc.helpbuf=
 				"`System Operator:`\n"
 				"\n"
@@ -118,7 +366,7 @@ while(1) {
 			;
 			uifc.input(WIN_MID,0,0,"System Operator",cfg.sys_op,sizeof(cfg.sys_op)-1,K_EDIT);
 			break;
-		case 3:
+		case 4:
 			uifc.helpbuf=
 				"`System Password:`\n"
 				"\n"
@@ -129,7 +377,7 @@ while(1) {
 			;
 			uifc.input(WIN_MID,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
 			break;
-		case 4:
+		case 5:
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
@@ -180,7 +428,7 @@ while(1) {
 			}
 			
 			break;
-		case 5:
+		case 6:
 			sprintf(str,"%u",cfg.sys_deldays);
 			uifc.helpbuf=
 				"`Days Since Last Logon to Preserve Deleted Users:`\n"
@@ -194,7 +442,7 @@ while(1) {
 				,str,5,K_EDIT|K_NUMBER);
 			cfg.sys_deldays=atoi(str);
 			break;
-		case 6:
+		case 7:
 			sprintf(str,"%u",cfg.sys_autodel);
 			uifc.helpbuf=
 				"`Maximum Days of Inactivity Before Auto-Deletion:`\n"
@@ -210,7 +458,7 @@ while(1) {
 				,str,5,K_EDIT|K_NUMBER);
 			cfg.sys_autodel=atoi(str);
             break;
-		case 7:
+		case 8:
 			uifc.helpbuf=
 				"`New User Password:`\n"
 				"\n"
@@ -221,7 +469,7 @@ while(1) {
 			uifc.input(WIN_MID,0,0,"New User Password",cfg.new_pass,sizeof(cfg.new_pass)-1
 				,K_EDIT|K_UPPER);
 			break;
-		case 8:    /* Toggle Options */
+		case 9:    /* Toggle Options */
             done=0;
             while(!done) {
                 i=0;
@@ -243,8 +491,6 @@ while(1) {
                     ,cfg.sys_misc&SM_CLOSED ? "Yes" : "No");
                 sprintf(opt[i++],"%-33.33s%s","Use Location in User Lists"
 					,cfg.sys_misc&SM_LISTLOC ? "Yes" : "No");
-				sprintf(opt[i++],"%-33.33s%s","Automatic Daylight Savings Time"
-					,cfg.sys_misc&SM_AUTO_DST ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","Military (24 hour) Time Format"
 					,cfg.sys_misc&SM_MILITARY ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","European Date Format (DD/MM/YY)"
@@ -478,31 +724,6 @@ while(1) {
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-						i=cfg.sys_misc&SM_AUTO_DST ? 0:1;
-						uifc.helpbuf=
-							"`Automatic Daylight Savings Time:`\n"
-							"\n"
-							"If your system is using a U.S. standard timezone, and you would like\n"
-							"to have the daylight savings time `flag` automatically toggled for you,\n"
-							"set this option to ~Yes~.  This `flag` is used for display purposes only\n"
-							"(e.g. to display \"PDT\" instead of \"PST\"), it doesn't actually change the\n"
-							"time on your system(s) for you.\n"
-						;
-						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-							,"Automatically Toggle Daylight Savings Time Flag",opt);
-						if(!i && !(cfg.sys_misc&SM_AUTO_DST)) {
-							cfg.sys_misc|=SM_AUTO_DST;
-                            uifc.changes=1; 
-						}
-						else if(i==1 && cfg.sys_misc&SM_AUTO_DST) {
-							cfg.sys_misc&=~SM_AUTO_DST;
-                            uifc.changes=1; 
-						}
-                        break;
-					case 10:
-                        strcpy(opt[0],"Yes");
-                        strcpy(opt[1],"No");
-						opt[2][0]=0;
 						i=cfg.sys_misc&SM_MILITARY ? 0:1;
 						uifc.helpbuf=
 							"`Military:`\n"
@@ -521,7 +742,7 @@ while(1) {
                             uifc.changes=1; 
 						}
                         break;
-					case 11:
+					case 10:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -543,7 +764,7 @@ while(1) {
                             uifc.changes=1; 
 						}
                         break;
-					case 12:
+					case 11:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -565,7 +786,7 @@ while(1) {
                             uifc.changes=1; 
 						}
                         break;
-					case 13:
+					case 12:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -587,7 +808,7 @@ while(1) {
                             uifc.changes=1; 
 						}
                         break;
-					case 14:
+					case 13:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -612,7 +833,7 @@ while(1) {
 					} 
 				}
             break;
-		case 9:    /* New User Values */
+		case 10:    /* New User Values */
 			done=0;
 			while(!done) {
 				i=0;
@@ -1058,7 +1279,7 @@ while(1) {
 				} 
 			}
 			break;
-		case 10:	/* Advanced Options */
+		case 11:	/* Advanced Options */
 			done=0;
 			while(!done) {
 				i=0;
@@ -1371,7 +1592,7 @@ while(1) {
 					} 
 				}
 				break;
-		case 11: /* Loadable Modules */
+		case 12: /* Loadable Modules */
 			done=0;
 			k=0;
 			while(!done) {
@@ -1463,7 +1684,7 @@ while(1) {
 			}
 			break;
 
-		case 12: /* Security Levels */
+		case 13: /* Security Levels */
 			dflt=bar=0;
 			k=0;
 			while(1) {
@@ -1625,7 +1846,7 @@ while(1) {
 				} 
 			}
 			break;
-		case 13:	/* Expired Acccount Values */
+		case 14:	/* Expired Acccount Values */
 			dflt=0;
 			done=0;
 			while(!done) {
@@ -1745,7 +1966,7 @@ while(1) {
 					} 
 			}
 			break;
-		case 14:	/* Quick-Validation Values */
+		case 15:	/* Quick-Validation Values */
 			dflt=0;
 			k=0;
 			while(1) {

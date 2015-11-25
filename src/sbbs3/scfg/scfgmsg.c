@@ -748,7 +748,7 @@ while(1) {
 
 void msg_opts()
 {
-	char str[128],*p;
+	char str[128];
 	static int msg_dflt;
 	int i,j,n;
 
@@ -756,8 +756,6 @@ void msg_opts()
 		i=0;
 		sprintf(opt[i++],"%-33.33s%s"
 			,"BBS ID for QWK Packets",cfg.sys_id);
-		sprintf(opt[i++],"%-33.33s%s"
-			,"Local Time Zone",smb_zonestr(cfg.sys_timezone,NULL));
 		sprintf(opt[i++],"%-33.33s%u seconds"
 			,"Maximum Retry Time",cfg.smb_retry_time);
 		if(cfg.max_qwkmsgs)
@@ -850,206 +848,6 @@ void msg_opts()
 					uifc.msg("Invalid ID");
 				break;
 			case 1:
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
-				i=0;
-				uifc.helpbuf=
-					"`United States Time Zone:`\n"
-					"\n"
-					"If your local time zone is the United States, select `Yes`.\n"
-				;
-
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"United States Time Zone",opt);
-				if(i==-1)
-					break;
-				if(i==0) {
-					strcpy(opt[i++],"Atlantic");
-					strcpy(opt[i++],"Eastern");
-					strcpy(opt[i++],"Central");
-					strcpy(opt[i++],"Mountain");
-					strcpy(opt[i++],"Pacific");
-					strcpy(opt[i++],"Yukon");
-					strcpy(opt[i++],"Hawaii/Alaska");
-					strcpy(opt[i++],"Bering");
-					opt[i][0]=0;
-					i=0;
-					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-						,"Time Zone",opt);
-					if(i==-1)
-						break;
-					uifc.changes=1;
-					switch(i) {
-						case 0:
-							cfg.sys_timezone=AST;
-							break;
-						case 1:
-							cfg.sys_timezone=EST;
-							break;
-						case 2:
-							cfg.sys_timezone=CST;
-                            break;
-						case 3:
-							cfg.sys_timezone=MST;
-                            break;
-						case 4:
-							cfg.sys_timezone=PST;
-                            break;
-						case 5:
-							cfg.sys_timezone=YST;
-                            break;
-						case 6:
-							cfg.sys_timezone=HST;
-                            break;
-						case 7:
-							cfg.sys_timezone=BST;
-							break; 
-					}
-					strcpy(opt[0],"Yes");
-					strcpy(opt[1],"No");
-					opt[2][0]=0;
-					i=1;
-					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-						,"Daylight Savings",opt);
-					if(i==-1)
-                        break;
-					if(!i)
-						cfg.sys_timezone|=DAYLIGHT;
-					break; 
-				}
-				i=0;
-				strcpy(opt[i++],"Midway");
-				strcpy(opt[i++],"Vancouver");
-				strcpy(opt[i++],"Edmonton");
-				strcpy(opt[i++],"Winnipeg");
-				strcpy(opt[i++],"Bogota");
-				strcpy(opt[i++],"Caracas");
-				strcpy(opt[i++],"Rio de Janeiro");
-				strcpy(opt[i++],"Fernando de Noronha");
-				strcpy(opt[i++],"Azores");
-				strcpy(opt[i++],"London");
-				strcpy(opt[i++],"Berlin");
-				strcpy(opt[i++],"Athens");
-				strcpy(opt[i++],"Moscow");
-				strcpy(opt[i++],"Dubai");
-				strcpy(opt[i++],"Kabul");
-				strcpy(opt[i++],"Karachi");
-				strcpy(opt[i++],"Bombay");
-				strcpy(opt[i++],"Kathmandu");
-				strcpy(opt[i++],"Dhaka");
-				strcpy(opt[i++],"Bangkok");
-				strcpy(opt[i++],"Hong Kong");
-				strcpy(opt[i++],"Tokyo");
-				strcpy(opt[i++],"Sydney");
-				strcpy(opt[i++],"Noumea");
-				strcpy(opt[i++],"Wellington");
-				strcpy(opt[i++],"Other...");
-				opt[i][0]=0;
-				i=0;
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Time Zone",opt);
-				if(i==-1)
-					break;
-				uifc.changes=1;
-				switch(i) {
-					case 0:
-						cfg.sys_timezone=MID;
-						break;
-					case 1:
-						cfg.sys_timezone=VAN;
-						break;
-					case 2:
-						cfg.sys_timezone=EDM;
-						break;
-					case 3:
-						cfg.sys_timezone=WIN;
-						break;
-					case 4:
-						cfg.sys_timezone=BOG;
-						break;
-					case 5:
-						cfg.sys_timezone=CAR;
-						break;
-					case 6:
-						cfg.sys_timezone=RIO;
-						break;
-					case 7:
-						cfg.sys_timezone=FER;
-						break;
-					case 8:
-						cfg.sys_timezone=AZO;
-                        break;
-					case 9:
-						cfg.sys_timezone=LON;
-                        break;
-					case 10:
-						cfg.sys_timezone=BER;
-                        break;
-					case 11:
-						cfg.sys_timezone=ATH;
-                        break;
-					case 12:
-						cfg.sys_timezone=MOS;
-                        break;
-					case 13:
-						cfg.sys_timezone=DUB;
-                        break;
-					case 14:
-						cfg.sys_timezone=KAB;
-                        break;
-					case 15:
-						cfg.sys_timezone=KAR;
-                        break;
-					case 16:
-						cfg.sys_timezone=BOM;
-                        break;
-					case 17:
-						cfg.sys_timezone=KAT;
-                        break;
-					case 18:
-						cfg.sys_timezone=DHA;
-                        break;
-					case 19:
-						cfg.sys_timezone=BAN;
-                        break;
-					case 20:
-						cfg.sys_timezone=HON;
-                        break;
-					case 21:
-						cfg.sys_timezone=TOK;
-                        break;
-					case 22:
-						cfg.sys_timezone=SYD;
-                        break;
-					case 23:
-						cfg.sys_timezone=NOU;
-                        break;
-					case 24:
-						cfg.sys_timezone=WEL;
-                        break;
-					default:
-						if(cfg.sys_timezone>720 || cfg.sys_timezone<-720)
-							cfg.sys_timezone=0;
-						sprintf(str,"%02d:%02d"
-							,cfg.sys_timezone/60,cfg.sys_timezone<0
-							? (-cfg.sys_timezone)%60 : cfg.sys_timezone%60);
-						uifc.input(WIN_MID|WIN_SAV,0,0
-							,"Time (HH:MM) East (+) or West (-) of Universal "
-								"Time"
-							,str,6,K_EDIT|K_UPPER);
-						cfg.sys_timezone=atoi(str)*60;
-						p=strchr(str,':');
-						if(p) {
-							if(cfg.sys_timezone<0)
-								cfg.sys_timezone-=atoi(p+1);
-							else
-								cfg.sys_timezone+=atoi(p+1); 
-						}
-                        break;
-						}
-                break;
-			case 2:
 				uifc.helpbuf=
 					"`Maximum Message Base Retry Time:`\n"
 					"\n"
@@ -1063,7 +861,7 @@ void msg_opts()
 					,str,2,K_NUMBER|K_EDIT);
 				cfg.smb_retry_time=atoi(str);
 				break;
-			case 3:
+			case 2:
 				uifc.helpbuf=
 					"`Maximum Messages Per QWK Packet:`\n"
 					"\n"
@@ -1078,7 +876,7 @@ void msg_opts()
 					,str,6,K_NUMBER|K_EDIT);
 				cfg.max_qwkmsgs=atol(str);
                 break;
-			case 4:
+			case 3:
 				uifc.helpbuf=
 					"`Maximum Age of Messages Imported From QWK Packets:`\n"
 					"\n"
@@ -1093,7 +891,7 @@ void msg_opts()
 					,str,4,K_NUMBER|K_EDIT);
 				cfg.max_qwkmsgage=atoi(str);
                 break;
-			case 5:
+			case 4:
 				uifc.helpbuf=
 					"`Pre-pack QWK Requirements:`\n"
 					"\n"
@@ -1108,7 +906,7 @@ void msg_opts()
 				;
 				getar("Pre-pack QWK (Use with caution!)",cfg.preqwk_arstr);
 				break;
-			case 6:
+			case 5:
 				sprintf(str,"%u",cfg.mail_maxage);
                 uifc.helpbuf=
 	                "`Maximum Age of Mail:`\n"
@@ -1119,7 +917,7 @@ void msg_opts()
                     "(in days)",str,5,K_EDIT|K_NUMBER);
                 cfg.mail_maxage=atoi(str);
                 break;
-			case 7:
+			case 6:
 				strcpy(opt[0],"Daily");
 				strcpy(opt[1],"Immediately");
 				opt[2][0]=0;
@@ -1148,7 +946,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
                 break;
-			case 8:
+			case 7:
 				sprintf(str,"%"PRIu32,cfg.mail_maxcrcs);
                 uifc.helpbuf=
 	                "`Maximum Number of Mail CRCs:`\n"
@@ -1161,7 +959,7 @@ void msg_opts()
                     "CRCs",str,5,K_EDIT|K_NUMBER);
                 cfg.mail_maxcrcs=atol(str);
                 break;
-			case 9:
+			case 8:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1184,7 +982,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
 				break;
-			case 10:
+			case 9:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1207,7 +1005,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
 				break;
-			case 11:
+			case 10:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1230,7 +1028,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
 				break;
-			case 12:
+			case 11:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1254,7 +1052,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
                 break;
-			case 13:
+			case 12:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1277,7 +1075,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
                 break;
-			case 14:
+			case 13:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1300,7 +1098,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
                 break;
-			case 15:
+			case 14:
 				n=(cfg.sub[i]->misc&MM_EMAILSIG) ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -1325,7 +1123,7 @@ void msg_opts()
 					cfg.msg_misc&=~MM_EMAILSIG; 
 				}
                 break;
-			case 16:
+			case 15:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				strcpy(opt[2],"Sysops Only");
@@ -1364,7 +1162,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
                 break;
-			case 17:
+			case 16:
 				uifc.helpbuf=
 					"`Extra Attribute Codes...`\n"
 					"\n"
