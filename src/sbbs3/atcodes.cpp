@@ -91,7 +91,7 @@ int sbbs_t::show_atcode(const char *instr)
 	else if(padded_right)
 		bprintf("%*.*s",disp_len,disp_len,cp);
 	else if(centered) {
-		size_t vlen = strlen(cp);
+		int vlen = strlen(cp);
 		if(vlen < disp_len) {
 			int left = (disp_len - vlen) / 2;
 			bprintf("%*s%-*s", left, "", disp_len - left, cp);
