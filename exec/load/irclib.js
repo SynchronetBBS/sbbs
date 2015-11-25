@@ -141,7 +141,6 @@ function IRC_quit(server,reason) {
 		reason = IRCLIB_VERSION;
 
 	server.send("QUIT :" + reason + "\r\n");
-	server.is_writeable=false;
 
 	/* wait up to 5 seconds for server to disconnect */
 	var start=time();
