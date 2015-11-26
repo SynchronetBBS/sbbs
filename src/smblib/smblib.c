@@ -1780,7 +1780,7 @@ ulong SMBCALL smb_hdrblocks(ulong length)
 }
 
 /****************************************************************************/
-/* Returns difference from specified timezone and UTC/GMT					*/
+/* Returns difference from specified timezone and UTC/GMT (in minutes)		*/
 /****************************************************************************/
 int SMBCALL smb_tzutc(short zone)
 {
