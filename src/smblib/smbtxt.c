@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -152,6 +152,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 		*(buf+l)=0; 
 	}
 
+	if(mode&GETMSGTXT_PLAIN)
+		buf = smb_getplaintext(msg, buf);
 	return(buf);
 }
 
@@ -159,4 +161,58 @@ void SMBCALL smb_freemsgtxt(char* buf)
 {
 	if(buf!=NULL)
 		free(buf);
+}
+
+/* Get just the plain-text portion of a MIME-encoded message body */
+char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
+{
+	int		i;
+	char*	txt;
+	char*	p;
+	char*	content_type = NULL;
+	char	boundary[256];
+
+	for(i=0;i<msg->total_hfields;i++) { 
+		if(msg->hfield[i].type==RFC822HEADER) { 
+			if(strnicmp((char*)msg->hfield_dat[i],"Content-Type:",13)==0) {
+				content_type=msg->hfield_dat[i];
+				break;
+			}
+        }
+    }
+	if(content_type == NULL)	/* Not MIME-encoded */
+		return buf;
+	content_type += 13;
+	SKIP_WHITESPACE(content_type);
+	if(strstr(content_type, "multipart/alternative;") == content_type)
+		content_type += 22;
+	else if(strstr(content_type, "multipart/mixed;") == content_type)
+		content_type +=16;
+	else
+		return buf;
+	p = strstr(content_type, "boundary=\"");
+	if(p == NULL)
+		return buf;
+	SAFEPRINTF(boundary, "--%s", p + 10);
+	if((p = strchr(boundary,'"')) == NULL)
+		return buf;
+	*p = 0;
+	txt = buf;
+	while((p = strstr(txt, boundary)) != NULL) {
+		txt = p+strlen(boundary);
+		SKIP_WHITESPACE(txt);
+		if(strncmp(txt, "Content-Type: text/plain;", 25) 
+			&& strncmp(txt,"Content-Type: text/plain\r", 25))
+			continue;
+		p = strstr(txt, "\r\n\r\n");	/* End of header */
+		if(p==NULL)
+			continue;
+		txt = p;
+		SKIP_WHITESPACE(txt);
+		if((p = strstr(txt, boundary)) != NULL)
+			*p = 0;
+		memmove(buf, txt, strlen(txt)+1);
+		break;
+	}
+	return buf;
 }
