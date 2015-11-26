@@ -155,7 +155,10 @@ void sbbs_t::readmail(uint usernumber, int which)
 		}
 
 		ASYNC;
-		if(!(sys_status&SS_ABORT)) {
+		if(sys_status&SS_ABORT) {
+			domsg=0;
+			smb.curmsg=0;
+		} else {
 			bprintf(text[StartWithN],1L);
 			l=getnum(smb.msgs);
 			if(l>0)
