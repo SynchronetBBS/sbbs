@@ -649,6 +649,63 @@ int SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx)
 }
 
 /****************************************************************************/
+/* Finds index of last message imported at or after specified time			*/
+/****************************************************************************/
+int	SMBCALL	smb_getmsgidx_by_time(smb_t* smb, idxrec_t* idx, time_t t)
+{
+    int     i;
+	ulong	l,total,bot,top;
+
+	if(idx == NULL)
+		return SMB_FAILURE;
+
+	memset(idx, 0, sizeof(idxrec_t));
+
+	if(t <= 0)
+		return SMB_FAILURE;
+
+	total = filelength(fileno(smb->sid_fp))/sizeof(idxrec_t);
+
+	if(!total)	/* Empty base */
+		return SMB_ERR_NOT_FOUND; 
+
+	if((i=smb_locksmbhdr(smb)) != SMB_SUCCESS)
+		return i; 
+
+	if((i=smb_getlastidx(smb,idx)) != SMB_SUCCESS) {
+		smb_unlocksmbhdr(smb);
+		return i;
+	}
+
+	if((time_t)idx->time > t) {
+		bot=0;
+		top=total;
+		l=total/2; /* Start at middle index */
+		clearerr(smb->sid_fp);
+		while(1) {
+			fseek(smb->sid_fp,l*sizeof(idxrec_t),SEEK_SET);
+			if(!fread(idx,sizeof(idxrec_t),1,smb->sid_fp))
+				break;
+			if(bot==top-1)
+				break;
+			if((time_t)idx->time > t) {
+				top=l;
+				l=bot+((top-bot)/2);
+				continue; 
+			}
+			if((time_t)idx->time < t) {
+				bot=l;
+				l=top-((top-bot)/2);
+				continue; 
+			}
+			break; 
+		}
+	}
+	smb_unlocksmbhdr(smb);
+	return SMB_SUCCESS;
+}
+
+/****************************************************************************/
 /* Figures out the total length of the header record for 'msg'              */
 /* Returns length 															*/
 /****************************************************************************/
