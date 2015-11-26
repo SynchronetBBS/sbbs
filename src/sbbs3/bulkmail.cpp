@@ -48,6 +48,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 	int 		i,j,x;
 	long		msgs=0;
 	long		length;
+	long		wm_mode=WM_EMAIL;
 	FILE*		fp;
 	smb_t		smb;
 	smbmsg_t	msg;
@@ -60,12 +61,14 @@ bool sbbs_t::bulkmail(uchar *ar)
 	nodesync();
 
 	if(cfg.sys_misc&SM_ANON_EM && useron.exempt&FLAG('A')
-		&& !noyes(text[AnonymousQ]))
+		&& !noyes(text[AnonymousQ])) {
 		msg.hdr.attr|=MSG_ANONYMOUS;
+		wm_mode|=WM_ANON;
+	}
 
 	msg_tmp_fname(useron.xedit, msgpath, sizeof(msgpath));
-	if(!writemsg(msgpath,nulstr,title,WM_EMAIL,INVALID_SUB,"Bulk Mailing"
-		,/* From: */msg.hdr.attr&MSG_ANONYMOUS ? text[Anonymous] : useron.alias
+	if(!writemsg(msgpath,nulstr,title,wm_mode,INVALID_SUB,"Bulk Mailing"
+		,/* From: */useron.alias
 		,&editor)) {
 		bputs(text[Aborted]);
 		return(false); 

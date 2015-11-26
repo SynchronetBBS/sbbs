@@ -107,8 +107,10 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 	}
 
 	if(cfg.sys_misc&SM_ANON_EM && useron.exempt&FLAG('A')
-		&& !noyes(text[AnonymousQ]))
+		&& !noyes(text[AnonymousQ])) {
 		msgattr|=MSG_ANONYMOUS;
+		mode|=WM_ANON;
+	}
 
 	if(cfg.sys_misc&SM_DELREADM)
 		msgattr|=MSG_KILLREAD;

@@ -42,10 +42,23 @@ int sbbs_t::sub_op(uint subnum)
 	return(is_user_subop(&cfg, subnum, &useron, &client));
 }
 
+char sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg)
+{
+	if(msg->hdr.attr&MSG_DELETE)						return '-';
+	if((stricmp(msg->to,useron.alias)==0 || stricmp(msg->to,useron.name)==0)
+		&& !(msg->hdr.attr&MSG_READ))					return '!';
+	if(msg->hdr.attr&MSG_PERMANENT)						return 'p';
+	if(msg->hdr.attr&MSG_LOCKED)						return 'L';
+	if(msg->hdr.attr&MSG_KILLREAD)						return 'K';
+	if(msg->hdr.attr&MSG_NOREPLY)						return 'r';
+	if(msg->hdr.number > subscan[subnum].ptr)			return '*';
+	if(msg->hdr.attr&MSG_PRIVATE)						return 'P'; 
+	if(sub_op(subnum) && msg->hdr.attr&MSG_ANONYMOUS)	return 'A'; 
+	return ' ';
+}
 
 long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
 {
-	char ch;
 	smbmsg_t msg;
 	long listed=0;
 
@@ -58,20 +71,11 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
 		smb_unlockmsghdr(&smb,&msg);
 		if(listed==0)
 			bputs(text[MailOnSystemLstHdr]);
-		if(msg.hdr.attr&MSG_DELETE)
-			ch='-';
-		else if((!stricmp(msg.to,useron.alias) || !stricmp(msg.to,useron.name))
-			&& !(msg.hdr.attr&MSG_READ))
-			ch='!';
-		else if(msg.hdr.number>subscan[subnum].ptr)
-			ch='*';
-		else
-			ch=' ';
 		bprintf(text[SubMsgLstFmt],post[i].num
 			,msg.hdr.attr&MSG_ANONYMOUS && !sub_op(subnum)
 			? text[Anonymous] : msg.from
 			,msg.to
-			,ch
+			,msg_listing_flag(subnum, &msg)
 			,msg.subj);
 		smb_freemsgmem(&msg);
 		msg.total_hfields=0;
@@ -974,12 +978,12 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				break;
 			case 'Y':   /* Your messages */
 				domsg=0;
-				if(!showposts_toyou(post,0,smb.msgs))
+				if(!showposts_toyou(subnum, post,0,smb.msgs))
 					bputs(text[NoMessagesFound]);
 				break;
 			case 'U':   /* Your unread messages */
 				domsg=0;
-				if(!showposts_toyou(post,0,smb.msgs, SCAN_UNREAD))
+				if(!showposts_toyou(subnum, post,0,smb.msgs, SCAN_UNREAD))
 					bputs(text[NoMessagesFound]);
 				break;
 			case '-':
@@ -1295,7 +1299,7 @@ long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
 long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 	, const char *search)
 {
-	char*	buf,ch;
+	char*	buf;
 	char	subj[128];
 	long	l,found=0;
 	smbmsg_t msg;
@@ -1318,20 +1322,11 @@ long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 		if(strstr(buf,search) || strstr(subj,search)) {
 			if(!found)
 				CRLF;
-			if(msg.hdr.attr&MSG_DELETE)
-				ch='-';
-			else if((!stricmp(msg.to,useron.alias) || !stricmp(msg.to,useron.name))
-				&& !(msg.hdr.attr&MSG_READ))
-				ch='!';
-			else if(msg.hdr.number>subscan[subnum].ptr)
-				ch='*';
-			else
-				ch=' ';
 			bprintf(text[SubMsgLstFmt],l+1
 				,(msg.hdr.attr&MSG_ANONYMOUS) && !sub_op(subnum) ? text[Anonymous]
 				: msg.from
 				,msg.to
-				,ch
+				,msg_listing_flag(subnum, &msg)
 				,msg.subj);
 			found++; 
 		}
@@ -1346,7 +1341,7 @@ long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 /* Will search the messages pointed to by 'msg' for message to the user on  */
 /* Returns number of messages found.                                        */
 /****************************************************************************/
-long sbbs_t::showposts_toyou(post_t *post, ulong start, long posts, long mode)
+long sbbs_t::showposts_toyou(uint subnum, post_t *post, ulong start, long posts, long mode)
 {
 	char	str[128];
 	ushort	namecrc,aliascrc,sysop;
@@ -1386,7 +1381,7 @@ long sbbs_t::showposts_toyou(post_t *post, ulong start, long posts, long mode)
 				,(msg.hdr.attr&MSG_ANONYMOUS) && !SYSOP
 				? text[Anonymous] : msg.from
 				,msg.to
-				,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_READ ? ' ' : '*'
+				,msg_listing_flag(subnum, &msg)
 				,msg.subj); 
 		} 
 	}

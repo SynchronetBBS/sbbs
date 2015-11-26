@@ -1704,14 +1704,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 
 	sprintf(str,"%sINTRSBBS.DAT"
 			,cfg.xtrn[xtrnnum]->path[0] ? cfg.xtrn[xtrnnum]->path : cfg.node_dir);
-	if(fexistcase(str))
-		remove(str);
+	removecase(str);
 	sprintf(str,"%shangup.now",cfg.node_dir);
-	if(fexistcase(str))
-		remove(str);
+	removecase(str);
 	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
-	if(fexistcase(str))
-		remove(str);
+	removecase(str);
 
 	mode=0; 	
 	if(cfg.xtrn[xtrnnum]->misc&XTRN_SH)
@@ -1722,8 +1719,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		mode|=EX_CONIO;
 	mode|=(cfg.xtrn[xtrnnum]->misc&(XTRN_CHKTIME|XTRN_NATIVE|XTRN_NOECHO|WWIVCOLOR));
 	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) {		/* Delete MODUSER.DAT */
-		sprintf(str,"%sMODUSER.DAT",dropdir);       /* if for some weird  */
-		remove(str); 								/* reason it's there  */
+		SAFEPRINTF(str,"%sMODUSER.DAT",dropdir);	/* if for some weird  */
+		removecase(str);							/* reason it's there  */
 	}
 
 	start=time(NULL);
@@ -1753,7 +1750,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	if(fexistcase(str)) {
 		lprintf(LOG_NOTICE,"Node %d External program requested hangup (%s signaled)"
 			,cfg.node_num, str);
-		remove(str);
+		removecase(str);
 		hangup(); 
 	}
 	else if(!online) {

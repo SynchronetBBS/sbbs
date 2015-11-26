@@ -96,10 +96,8 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode)
 	action=NODE_SMAL;
 	nodesync();
 
-	sprintf(msgpath,"%snetmail.msg",cfg.node_dir);
-	if(!writemsg(msgpath,nulstr,title,mode,INVALID_SUB,into
-		,/* from: */cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name
-		,&editor)) {
+	SAFEPRINTF(msgpath,"%snetmail.msg",cfg.node_dir);
+	if(!writemsg(msgpath,nulstr,title,mode,INVALID_SUB,into,/* from: */your_addr,&editor)) {
 		bputs(text[Aborted]);
 		return(false); 
 	}
@@ -352,7 +350,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 	action=NODE_SMAL;
 	nodesync();
 
-	sprintf(msgpath,"%snetmail.msg",cfg.node_dir);
+	SAFEPRINTF(msgpath,"%snetmail.msg",cfg.node_dir);
 	if(!writemsg(msgpath,nulstr,title,mode|WM_QWKNET,INVALID_SUB,to,/* from: */useron.alias,&editor)) {
 		bputs(text[Aborted]);
 		return(false); 

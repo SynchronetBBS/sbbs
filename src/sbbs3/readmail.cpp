@@ -37,6 +37,20 @@
 
 #include "sbbs.h"
 
+static char mail_listing_flag(smbmsg_t* msg)
+{
+	if(msg->hdr.attr&MSG_DELETE)				return '-';
+	if(msg->hdr.attr&MSG_REPLIED)				return 'R';
+	if(msg->hdr.attr&MSG_READ)					return ' ';
+	if(msg->hdr.attr&MSG_PERMANENT)				return 'p';
+	if(msg->hdr.attr&MSG_LOCKED)				return 'L';
+	if(msg->hdr.attr&MSG_KILLREAD)				return 'K';
+	if(msg->hdr.attr&MSG_NOREPLY)				return '#';
+	if(msg->from_net.type || msg->to_net.type)	return 'N';
+	if(msg->hdr.attr&MSG_ANONYMOUS)				return 'A';
+	return '*';
+}
+
 /****************************************************************************/
 /* Reads mail waiting for usernumber.                                       */
 /****************************************************************************/
@@ -134,9 +148,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 				,which==MAIL_SENT ? msg.to
 				: (msg.hdr.attr&MSG_ANONYMOUS) && !SYSOP ? text[Anonymous]
 				: msg.from
-				,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_REPLIED ? 'R'
-					: msg.hdr.attr&MSG_READ ? ' '
-					: msg.from_net.type || msg.to_net.type ? 'N':'*'
+				,mail_listing_flag(&msg)
 				,msg.subj);
 			smb_freemsgmem(&msg);
 			msg.total_hfields=0; 
@@ -543,18 +555,14 @@ void sbbs_t::readmail(uint usernumber, int which)
 					if(which==MAIL_ALL)
 						bprintf(text[MailOnSystemLstFmt]
 							,u+1,msg.from,msg.to
-							,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_REPLIED ? 'R'
-								: msg.hdr.attr&MSG_READ ? ' '
-								: msg.from_net.type || msg.to_net.type ? 'N':'*'
+							,mail_listing_flag(&msg)
 							,msg.subj);
 					else
 						bprintf(text[MailWaitingLstFmt],u+1
 							,which==MAIL_SENT ? msg.to
 							: (msg.hdr.attr&MSG_ANONYMOUS) && !SYSOP
 							? text[Anonymous] : msg.from
-							,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_REPLIED ? 'R'
-								: msg.hdr.attr&MSG_READ ? ' '
-								: msg.from_net.type || msg.to_net.type ? 'N':'*'
+							,mail_listing_flag(&msg)
 							,msg.subj);
 					smb_freemsgmem(&msg);
 					msg.total_hfields=0; 
@@ -716,18 +724,14 @@ void sbbs_t::readmail(uint usernumber, int which)
 					if(which==MAIL_ALL)
 						bprintf(text[MailOnSystemLstFmt]
 							,u+1,msg.from,msg.to
-							,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_REPLIED ? 'R'
-								: msg.hdr.attr&MSG_READ ? ' ' 
-								: msg.from_net.type || msg.to_net.type ? 'N':'*'
+							,mail_listing_flag(&msg)
 							,msg.subj);
 					else
 						bprintf(text[MailWaitingLstFmt],u+1
 							,which==MAIL_SENT ? msg.to
 							: (msg.hdr.attr&MSG_ANONYMOUS) && !SYSOP
 							? text[Anonymous] : msg.from
-							,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_REPLIED ? 'R'
-								: msg.hdr.attr&MSG_READ ? ' '
-								: msg.from_net.type || msg.to_net.type ? 'N':'*'
+							,mail_listing_flag(&msg)
 							,msg.subj);
 					smb_freemsgmem(&msg);
 					msg.total_hfields=0; 

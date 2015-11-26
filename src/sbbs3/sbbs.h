@@ -754,8 +754,9 @@ public:
 	long	listsub(uint subnum, long mode, long start, const char* search);
 	long	listmsgs(uint subnum, long mode, post_t* post, long start, long posts);
 	long	searchposts(uint subnum, post_t* post, long start, long msgs, const char* find);
-	long	showposts_toyou(post_t* post, ulong start, long posts, long mode=0);
+	long	showposts_toyou(uint subnum, post_t* post, ulong start, long posts, long mode=0);
 	void	msghdr(smbmsg_t* msg);
+	char	msg_listing_flag(uint subnum, smbmsg_t*);
 
 	/* chat.cpp */
 	void	chatsection(void);

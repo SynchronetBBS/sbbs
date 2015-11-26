@@ -213,7 +213,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 	if(cfg.netmail_misc&NMAIL_KILL)  hdr.attr|=FIDO_KILLSENT;
 	if(mode&WM_FILE) hdr.attr|=FIDO_FILE;
 
-	sprintf(str,"%sNETMAIL.MSG", cfg.node_dir);
+	SAFEPRINTF(str,"%snetmail.msg", cfg.node_dir);
 	removecase(str);	/* Just incase it's already there */
 	// mode&=~WM_FILE;
 	if(!writemsg(str,nulstr,subj,WM_NETMAIL|mode,INVALID_SUB,into,hdr.from)) {
@@ -298,7 +298,8 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 
 	SAFECOPY(hdr.subj,p);
 
-	sprintf(str,"%sNETMAIL.MSG", cfg.node_dir);
+	SAFEPRINTF(str,"%snetmail.msg", cfg.node_dir);
+	fexistcase(str);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(false); 
