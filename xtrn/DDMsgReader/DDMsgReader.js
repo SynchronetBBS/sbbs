@@ -10837,7 +10837,7 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 						// If scrollbar.js is available, then set up a vertical
 						// scrollbar for the Frame object
 						if (gScrollbarJSAvailable)
-							retObj.displayFrameScrollbar = new ScrollBar(retObj.displayFrame, {bg: LIGHTGRAY, fg: WHITE, orientation: "vertical", autohide: false});
+							retObj.displayFrameScrollbar = new ScrollBar(retObj.displayFrame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
 					}
 				}
 				deltree(readerTmpOutputDir);
