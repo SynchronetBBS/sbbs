@@ -1829,9 +1829,11 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 	uintN		n;
 	smbmsg_t	msg;
 	smbmsg_t	*msgptr;
+	long		getmsgtxtmode = 0;
 	JSBool		by_offset=JS_FALSE;
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		tails=JS_TRUE;
+	JSBool		plain=JS_FALSE;
 	JSBool		rfc822=JS_FALSE;
 	JSBool		msg_specified=JS_FALSE;
 	JSBool		existing_msg=JS_FALSE;
@@ -1913,8 +1915,17 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
 		tails=JSVAL_TO_BOOLEAN(argv[n++]);
 
+	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
+		plain=JSVAL_TO_BOOLEAN(argv[n++]);
+
+	if(tails)
+		getmsgtxtmode |= GETMSGTXT_TAILS;
+
+	if(plain)
+		getmsgtxtmode |= GETMSGTXT_PLAIN;
+
 	rc=JS_SUSPENDREQUEST(cx);
-	buf = get_msg_text(p, msgptr, strip_ctrl_a, rfc822, tails ? GETMSGTXT_TAILS : 0, existing_msg);
+	buf = get_msg_text(p, msgptr, strip_ctrl_a, rfc822, getmsgtxtmode, existing_msg);
 	JS_RESUMEREQUEST(cx, rc);
 	if(buf==NULL)
 		return(JS_TRUE);
@@ -2385,10 +2396,10 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,310
 	},
 	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_id [, message_header] [,strip_ctrl_a=<tt>false</tt>] "
-		"[,rfc822_encoded=<tt>false</tt>] [,include_tails=<tt>true</tt>]")
+		"[,rfc822_encoded=<tt>false</tt>] [,include_tails=<tt>true</tt>] [,plain_text=<tt>false</tt>]")
 	,JSDOCSTR("returns the entire body text of a specific message as a single String, <i>null</i> on failure. "
 		"The default behavior is to leave Ctrl-A codes intact, perform no RFC-822 encoding, and to include tails (if any) in the "
-		"returned body text."
+		"returned body text. When <i>plain_text</i> is true, only the first plain-text portion of a multi-part MIME encoded message body is returned."
 	)
 	,310
 	},
