@@ -1100,10 +1100,6 @@ extern "C" {
 	/* data.cpp */
 	DLLEXPORT time_t	DLLCALL getnextevent(scfg_t* cfg, event_t* event);
 
-	/* data_ovl.cpp */
-	DLLEXPORT BOOL		DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan);
-	DLLEXPORT BOOL		DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan);
-
 	/* sockopt.c */
 	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section
 		,char* error, size_t errlen);

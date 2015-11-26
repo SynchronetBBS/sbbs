@@ -121,6 +121,12 @@ DLLEXPORT BOOL	DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, 
 DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* host
 								  ,const char* ip_addr, const char* username, const char* fname);
 
+/* New-message-scan pointer functions: */
+DLLEXPORT BOOL	DLLCALL getmsgptrs(scfg_t*, uint usernumber, subscan_t*);
+DLLEXPORT BOOL	DLLCALL putmsgptrs(scfg_t*, uint usernumber, subscan_t*);
+DLLEXPORT BOOL	DLLCALL initmsgptrs(scfg_t*, subscan_t*, unsigned days);
+
+
 /* New atomic numeric user field adjustment functions: */
 DLLEXPORT BOOL	DLLCALL user_posted_msg(scfg_t* cfg, user_t* user, int count);
 DLLEXPORT BOOL	DLLCALL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback);

@@ -2835,3 +2835,136 @@ ulong DLLCALL loginFailure(link_list_t* list, const union xp_sockaddr* addr, con
 
 	return count;
 }
+
+/****************************************************************************/
+/* Message-new-scan pointer functions (moved from data_ovl.cpp):			*/
+/****************************************************************************/
+BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
+{
+	char		path[MAX_PATH+1];
+	uint		i;
+	int 		file;
+	long		length;
+	FILE*		stream;
+
+	/* Initialize to configured defaults */
+	for(i=0;i<cfg->total_subs;i++) {
+		subscan[i].ptr=subscan[i].sav_ptr=0;
+		subscan[i].last=subscan[i].sav_last=0;
+		subscan[i].cfg=0xff;
+		if(!(cfg->sub[i]->misc&SUB_NSDEF))
+			subscan[i].cfg&=~SUB_CFG_NSCAN;
+		if(!(cfg->sub[i]->misc&SUB_SSDEF))
+			subscan[i].cfg&=~SUB_CFG_SSCAN;
+		subscan[i].sav_cfg=subscan[i].cfg; 
+	}
+
+	if(!usernumber)
+		return(FALSE);
+
+	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, usernumber);
+	if((stream=fnopen(&file,path,O_RDONLY))==NULL) {
+		if(fexist(path))
+			return(FALSE);	/* file exists, but couldn't be opened? */
+		return initmsgptrs(cfg, subscan, cfg->new_msgscan_init);
+	}
+
+	length=(long)filelength(file);
+	for(i=0;i<cfg->total_subs;i++) {
+		if(length>=(cfg->sub[i]->ptridx+1)*10L) {
+			fseek(stream,(long)cfg->sub[i]->ptridx*10L,SEEK_SET);
+			fread(&subscan[i].ptr,sizeof(subscan[i].ptr),1,stream);
+			fread(&subscan[i].last,sizeof(subscan[i].last),1,stream);
+			fread(&subscan[i].cfg,sizeof(subscan[i].cfg),1,stream);
+		}
+		subscan[i].sav_ptr=subscan[i].ptr;
+		subscan[i].sav_last=subscan[i].last;
+		subscan[i].sav_cfg=subscan[i].cfg; 
+	}
+	fclose(stream);
+	return(TRUE);
+}
+
+/****************************************************************************/
+/* Writes to DATA\USER\PTRS\xxxx.DAB the msgptr array for the current user	*/
+/* Called from functions main and newuser                                   */
+/****************************************************************************/
+BOOL DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
+{
+	char		path[MAX_PATH+1];
+	ushort		idx;
+	uint16_t	scancfg;
+	uint		i,j;
+	int 		file;
+	ulong		length;
+	uint32_t	l=0L;
+
+	if(!usernumber)
+		return(FALSE);
+	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, usernumber);
+	if((file=nopen(path,O_WRONLY|O_CREAT))==-1) {
+		return(FALSE); 
+	}
+	length=(ulong)filelength(file);
+	for(i=0;i<cfg->total_subs;i++) {
+		if(subscan[i].sav_ptr==subscan[i].ptr 
+			&& subscan[i].sav_last==subscan[i].last
+			&& length>=((cfg->sub[i]->ptridx+1)*10UL)
+			&& subscan[i].sav_cfg==subscan[i].cfg)
+			continue;
+		while(filelength(file)<(long)(cfg->sub[i]->ptridx)*10) {
+			lseek(file,0L,SEEK_END);
+			idx=(ushort)(tell(file)/10);
+			for(j=0;j<cfg->total_subs;j++)
+				if(cfg->sub[j]->ptridx==idx)
+					break;
+			write(file,&l,sizeof(l));
+			write(file,&l,sizeof(l));
+			scancfg=0xff;					
+			if(j<cfg->total_subs) {
+				if(!(cfg->sub[j]->misc&SUB_NSDEF))
+					scancfg&=~SUB_CFG_NSCAN;
+				if(!(cfg->sub[j]->misc&SUB_SSDEF))
+					scancfg&=~SUB_CFG_SSCAN; 
+			} else	/* default to scan OFF for unknown sub */
+				scancfg&=~(SUB_CFG_NSCAN|SUB_CFG_SSCAN);
+			write(file,&scancfg,sizeof(scancfg)); 
+		}
+		lseek(file,(long)((long)(cfg->sub[i]->ptridx)*10),SEEK_SET);
+		write(file,&(subscan[i].ptr),sizeof(subscan[i].ptr));
+		write(file,&(subscan[i].last),sizeof(subscan[i].last));
+		write(file,&(subscan[i].cfg),sizeof(subscan[i].cfg));
+	}
+	close(file);
+	if(!flength(path))			/* Don't leave 0 byte files */
+		remove(path);
+
+	return(TRUE);
+}
+
+/****************************************************************************/
+/* Initialize new-msg-scan pointers (e.g. for new users)					*/
+/* If 'days' is specified as 0, just set pointer to last message (faster)	*/
+/****************************************************************************/
+BOOL DLLCALL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days)
+{
+	uint		i;
+	smb_t		smb;
+	idxrec_t	idx;
+	time_t		t = time(NULL) - (days * 24 * 60 * 60);
+
+	for(i=0;i<cfg->total_subs;i++) {
+		ZERO_VAR(smb);
+		SAFEPRINTF2(smb.file,"%s%s",cfg->sub[i]->data_dir,cfg->sub[i]->code);
+		smb.retry_time=cfg->smb_retry_time;
+		smb.subnum=i;
+		if(smb_open(&smb) != SMB_SUCCESS)
+			continue;
+		if(days == 0)
+			subscan[i].sav_ptr = subscan[i].ptr = smb.status.last_msg;
+		else if(smb_getmsgidx_by_time(&smb, &idx, t) == SMB_SUCCESS)
+			subscan[i].sav_ptr = subscan[i].ptr = idx.number;
+		smb_close(&smb);
+	}
+	return TRUE;
+}

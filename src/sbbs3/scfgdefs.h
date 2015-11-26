@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -498,6 +498,7 @@ typedef struct
 	uint32_t		new_misc;			/* New User Miscellaneous Defaults */
 	uint16_t		new_expire; 		/* Expiration days for new user */
 	uchar			new_prot;			/* New User Default Download Protocol */
+	uint16_t		new_msgscan_init;	/* Uew User new-scan pointers initialized to msgs this old (in days) */
 	char 			val_level[10];		/* Validation User Main Level */
 	uint32_t		val_flags1[10]; 	/* Validation User Flags from set #1*/
 	uint32_t		val_flags2[10]; 	/* Validation User Flags from set #2*/

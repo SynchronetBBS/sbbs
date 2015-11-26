@@ -866,6 +866,7 @@ while(1) {
                 else
                     strcpy(str,"None");
 				sprintf(opt[i++],"%-27.27s%s","Download Protocol",str);
+				sprintf(opt[i++],"%-27.27s%hu","Days of New Messages", cfg.new_msgscan_init);
 				strcpy(opt[i++],"Default Toggles...");
 				strcpy(opt[i++],"Question Toggles...");
 				opt[i][0]=0;
@@ -1050,6 +1051,21 @@ while(1) {
                         break;
 					case 13:
 						uifc.helpbuf=
+							"`New User Days of New Messages:`\n"
+							"\n"
+							"This option allows you to set the number of days worth of messages\n"
+							"which will be included in the new user's first `new message scan`.\n"
+							"\n"
+							"The value `0` means there will be `no` new messages for the new user.\n"
+						;
+						sprintf(str,"%hu",cfg.new_msgscan_init);
+						uifc.input(WIN_SAV|WIN_MID,0,0
+							,"Days of New Messages for New User's first new message scan"
+							,str,4,K_EDIT|K_NUMBER);
+						cfg.new_msgscan_init=atoi(str);
+                        break;
+					case 14:
+						uifc.helpbuf=
 							"`New User Default Toggle Options:`\n"
 							"\n"
 							"This menu contains the default state of new user toggle options. All new\n"
@@ -1147,7 +1163,7 @@ while(1) {
 							} 
 						}
 						break;
-					case 14:
+					case 15:
 						uifc.helpbuf=
 							"`New User Question Toggle Options:`\n"
 							"\n"
