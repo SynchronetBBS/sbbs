@@ -166,8 +166,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05 Beta 6";
-var READER_DATE = "2015-11-25";
+var READER_VERSION = "1.05 Beta 7";
+var READER_DATE = "2015-11-26";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -10840,6 +10840,7 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 							retObj.displayFrameScrollbar = new ScrollBar(retObj.displayFrame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
 					}
 				}
+				// Cleanup: Remove the temporary directory
 				deltree(readerTmpOutputDir);
 			}
 		}
@@ -12649,8 +12650,12 @@ function scrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 
 		if (cycleFrame)
 		{
-			//if (pFrame.cycle() && (pScrollbar != null))
-			//	pScrollbar.cycle();
+			// Invalidate the frame to force it to redraw everything, as a
+			// workaround to clear the background before writing again
+			// TODO: I might want to remove this invalidate() later when
+			// Frame is fixed to redraw better on scrolling.
+			pFrame.invalidate();
+			// Cycle the scrollbar & frame to get them to scroll
 			if (pScrollbar != null)
 				pScrollbar.cycle();
 			pFrame.cycle();
