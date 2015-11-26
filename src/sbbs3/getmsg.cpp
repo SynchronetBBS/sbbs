@@ -177,7 +177,7 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 
 	show_msghdr(msg);
 
-	if((text=smb_getmsgtxt(&smb,msg,/* body and hfields: */0))!=NULL) {
+	if((text=smb_getmsgtxt(&smb,msg,(console&CON_RAW_IN) ? 0:GETMSGTXT_PLAIN)) != NULL) {
 		if(!(console&CON_RAW_IN))
 			mode|=P_WORDWRAP;
 		putmsg(text, mode);
