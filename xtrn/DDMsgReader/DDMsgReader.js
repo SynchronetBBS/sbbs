@@ -580,6 +580,8 @@ if (doDDMR)
 	// to normal (in case there are any attributes left on, such as background,
 	// blink, etc.)
 	console.print("\1n");
+	if (console.term_supports(USER_ANSI))
+		console.print("[0m");
 }
 
 // End of script execution.  Functions below:
@@ -10568,13 +10570,14 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 			var whenWrittenTimeDateStr = system.timestr(pMsgHdr.when_written_time) + " "
 									   + system.zonestr(pMsgHdr.when_written_zone);
 			msgHdrInfoLines.push(whenWrittenTimeDateStr);
-			msgHdrInfoLines.push("");
+			//msgHdrInfoLines.push("");
 		}
 		// Fields specified by hdrInfoLineFields
 		for (var i = 0; i < hdrInfoLineFields.length; ++i)
 		{
 			if (pMsgHdr.hasOwnProperty(hdrInfoLineFields[i].field) && (typeof(pMsgHdr[hdrInfoLineFields[i].field]) == "string"))
 			{
+				msgHdrInfoLines.push("");
 				msgHdrInfoLines.push(hdrInfoLineFields[i].label);
 				var infoLineWrapped = word_wrap(pMsgHdr[hdrInfoLineFields[i].field], this.msgAreaWidth);
 				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
@@ -10583,11 +10586,13 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 					if (infoLineWrappedArray[lineIdx].length > 0)
 						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
 				}
-				msgHdrInfoLines.push("");
+				//msgHdrInfoLines.push("");
 			}
 		}
 		// If the header has a field_list array, then get the desired information from it.
 		// TODO: Should I include all field_list lines, or select ones for "kludge lines only"?
+		var hdrFieldLabel = "";
+		var lastHdrFieldLabel = null;
 		if (pMsgHdr.hasOwnProperty("field_list"))
 		{
 			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
@@ -10601,17 +10606,22 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 				//  36 (Reply To extended)
 				//  37 (Reply To position)
 				//  38 (Reply To Organization)
-				msgHdrInfoLines.push(msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type));
+				hdrFieldLabel = msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type);
+				// If the header field label is different, then add it to the
+				// header info lines
+				if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
+				{
+					msgHdrInfoLines.push("");
+					msgHdrInfoLines.push(hdrFieldLabel);
+				}
 				var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
 				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
 				for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
 				{
 					if (infoLineWrappedArray[lineIdx].length > 0)
-					{
 						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
-						msgHdrInfoLines.push("");
-					}
 				}
+				lastHdrFieldLabel = hdrFieldLabel;
 			}
 		}
 
@@ -10628,10 +10638,13 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 	else
 	{
 		// Return all header fields
+		var propCounter = 1;
 		for (var prop in pMsgHdr)
 		{
 			if (prop == "field_list")
 			{
+				var hdrFieldLabel = "";
+				var lastHdrFieldLabel = null;
 				for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 				{
 					// TODO: Some field types can be in the array multiple times but only
@@ -10643,22 +10656,38 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 					//  36 (Reply To extended)
 					//  37 (Reply To position)
 					//  38 (Reply To Organization)
-					msgHdrInfoLines.push(msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type));
+					//msgHdrInfoLines.push(msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type));
+					hdrFieldLabel = msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type);
+					// If the header field label is different, then add it to the
+					// header info lines
+					if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
+					{
+						msgHdrInfoLines.push("");
+						msgHdrInfoLines.push(hdrFieldLabel);
+					}
 					var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
 					var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
 					for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
 					{
 						if (infoLineWrappedArray[lineIdx].length > 0)
-						{
 							msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
-							msgHdrInfoLines.push("");
-						}
 					}
+					lastHdrFieldLabel = hdrFieldLabel;
 				}
 			}
 			else
 			{
-				msgHdrInfoLines.push(prop + ":");
+				if (propCounter > 1)
+					msgHdrInfoLines.push("");
+				// Remove underscores from the property for the label
+				var propLabel = prop.replace(/_/g, " ");
+				// Apply good-looking capitalization to the property label
+				if ((propLabel == "id") || (propLabel == "ftn tid"))
+					msgHdrInfoLines.push(propLabel.toUpperCase() + ":");
+				else if (propLabel == "ftn_area")
+					msgHdrInfoLines.push("FTN_Area:");
+				else
+					msgHdrInfoLines.push(capitalizeFirstChar(propLabel) + ":");
 				var infoLineWrapped = word_wrap(pMsgHdr[prop], this.msgAreaWidth);
 				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
 				for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
@@ -10667,7 +10696,8 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
 				}
 			}
-			msgHdrInfoLines.push("");
+
+			++propCounter;
 		}
 		
 	}
@@ -12599,6 +12629,14 @@ function scrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 		pFrame.scrollTo(0, pTopLineIdx);
 
 	var writeTxtLines = pWriteTxtLines;
+	//console.print("\1n- writeTxtlines: " + writeTxtLines + "\r\n\1p"); // Temporary
+	if (writeTxtLines)
+	{
+		pFrame.invalidate(); // Force drawing on the next call to draw() or cycle()
+		pFrame.cycle();
+		//pFrame.draw();
+	}
+
 	var cycleFrame = true;
 	var continueOn = true;
 	while (continueOn)
@@ -15068,7 +15106,7 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 	// The page at this URL lists the header field types:
 	// http://synchro.net/docs/smb.html#Header Field Types:
 
-	var fieldTypeLabel = "";
+	var fieldTypeLabel = "Unknown (" + pFieldListType.toString() + ")";
 	switch (pFieldListType)
 	{
 		case 0: // Sender
@@ -15128,7 +15166,7 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		case 36: // Reply To extension
 			fieldTypeLabel = "Reply To (extended)";
 			break;
-		case 37: // reply To position
+		case 37: // Reply To position
 			fieldTypeLabel = "Reply To position";
 			break;
 		case 38: // Reply To organization (0x26 hex)
@@ -15146,9 +15184,23 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		case 176: // RFCC822 Header
 			fieldTypeLabel = "RFCC822 Header";
 			break;
-		// TODO: Try to figure out what other types there are
+		case 177: // RFC822 MSGID
+			fieldTypeLabel = "RFC822 MSGID";
+			break;
+		case 178: // RFC822 REPLYID
+			fieldTypeLabel = "RFC822 REPLYID";
+			break;
+		case 240: // UNKNOWN
+			fieldTypeLabel = "UNKNOWN";
+			break;
+		case 241: // UNKNOWNASCII
+			fieldTypeLabel = "UNKNOWN (ASCII)";
+			break;
+		case 255:
+			fieldTypeLabel = "UNUSED";
+			break;
 		default:
-			fieldTypeLabel = pFieldListType.toString();
+			fieldTypeLabel = "Unknown (" + pFieldListType.toString() + ")";
 			break;
 	}
 
@@ -15157,6 +15209,23 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		fieldTypeLabel += ":";
 
 	return fieldTypeLabel;
+}
+
+// Capitalizes the first character of a string.
+//
+// Parameters:
+//  pStr: The string to capitalize
+//
+// Return value: A version of the sting with the first character capitalized
+function capitalizeFirstChar(pStr)
+{
+	var retStr = "";
+	if (typeof(pStr) == "string")
+	{
+		if (pStr.length > 0)
+			retStr = pStr.charAt(0).toUpperCase() + pStr.slice(1);
+	}
+	return retStr;
 }
 
 /////////////////////////////////////////////////////////////////////////
