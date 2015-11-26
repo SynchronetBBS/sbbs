@@ -165,7 +165,7 @@
 	", ~All, or ~Quit: "
 "\1n\1g[\1h%d\1n\1g] %-40.40s  \1h\1c%s\r\n"                  137 SubPtrLstFmt
 "\r\nSet new-scan pointer for which, ~All, or ~Quit: "  138 WhichOrAll
-"\r\nRaw message input mode is now "                    139 RawMsgInputModeIsNow
+"\r\nRaw Input/Output Mode is now: \1h"                 139 RawMsgInputModeIsNow
 "OFF"                                                   140 OFF
 "ON"                                                    141 ON
 "\r\n\1n\1mPaging \1h%s #%u\1n\1m for private chat\r\n" 142 PagingUser
@@ -673,13 +673,13 @@
 "\1bTime Used       : \1c%s\r\n"                                554 TiTimeon
 "\1bTime Remaining  : \1c%s\r\n\r\n"                            555 TiTimeLeft
 "\r\n\r\n\1nCtrl-Key Commands (from most anywhere)\r\n"\ 556 ControlKeyMenu
-        "\r\nCtrl-K  This Menu"\
-	"\r\nCtrl-C  Abort Current Process"\
-	"\r\nCtrl-O  Toggle Pause Prompt Temporarily"\
-	"\r\nCtrl-Z  Toggle Raw Input Mode (e.g. for ASCII-uploading message text)"\
-	"\r\nCtrl-U  List Users Online"\
-	"\r\nCtrl-P  Send Private Message To or Chat with Another Node"\
-	"\r\nCtrl-T  Time Information\r\n\r\n"
+    "\r\n\1hCtrl-K  \1nThis Menu"\
+	"\r\n\1hCtrl-C  \1nAbort Current Process"\
+	"\r\n\1hCtrl-O  \1nToggle Pause Prompt Temporarily"\
+	"\r\n\1hCtrl-Z  \1nToggle Raw Input/Output Mode (e.g. for ASCII-uploading message text)"\
+	"\r\n\1hCtrl-U  \1nList Users Online"\
+	"\r\n\1hCtrl-P  \1nSend Private Message To or Chat with Another Node"\
+	"\r\n\1hCtrl-T  \1nTime Information\r\n\r\n"
 "\r\n\1nYou've taken too long to log on.\r\n"            557 TakenTooLongToLogon
 "\r\n\1nYou've been inactive too long.\r\n"              558 CallBackWhenYoureThere
 "@EXEC:yesnobar@"                                       559 YesNoQuestion
@@ -767,8 +767,8 @@
 "\1n\1gReceived \1n\1h%s\1n\1g from \1h%s\1n\1g via QWK.\r\n"    629 ReceivedFileViaQWK
 "\1r\1h\1i\rQWK packet message limit reached.\1n\1h\r\n"     630 QWKmsgLimitReached
 "\r\n\1nPrivate posts not allowed on this sub.\r\n"      631 PrivatePostsNotAllowed
-"\1_\1w\1hLoading message pointers..."                     632 LoadingMsgPtrs
-"\r                               \r"                   633 LoadedMsgPtrs
+"\1_\1w\1hLoading message pointers..\1i.\1n "            632 LoadingMsgPtrs
+"\r\1>"                                                 633 LoadedMsgPtrs
 "\r\nQuote original message"                            634 QuoteMessageQ
 "\r\n\1b\1hLine numbers (#,#), Range (#-#), \1w~L\1bist "\  635 QuoteLinesPrompt
 	"or [%s]: \1w"
@@ -778,8 +778,8 @@
 "\1h\1c%3u \1n\1c%-25.25s\1h%8u"                           639 ChatChanLstFmt
 "\r\nYou can't access that channel.\r\n"                640 CantAccessThatChannel
 "\r\nYou can't download from this directory.\r\n"       641 CantDownloadFromDir
-"\1_\1w\1hSearching for duplicates..."                     642 SearchingForDupes
-"\r\1n                                 \r"               643 SearchedForDupes
+"\1_\1w\1hSearching for duplicates..\1i.\1n "              642 SearchingForDupes
+"\r\1>"                                                    643 SearchedForDupes
 "\1n\1hYour account will expire in \1r\1i%d\1n\1h days.\r\n"  644 AccountWillExpireInNDays
 "\1n\1r\1h\1iYour account has expired!\1n\r\n"               645 AccountHasExpired
 "\r\nDownload files in batch queue now"                 646 DownloadBatchQ
@@ -911,36 +911,36 @@
 "\1n\1r\1iWARNING: You are reading messages past the last unvalidated message (%u)" 763 UnvalidatedWarning
 "\1n\1hStarting the new user registration process...\r\n" 764 StartingNewUserRegistration
 "\r\n\r\n\1nCtrl-Key Commands (during text string input)\r\n"\ 765 GetStrMenu
-        "\r\nCtrl-K  This Menu"\
-	"\r\nCtrl-C  Abort Current String Input"\
-        "\r\nCtrl-B  Move to Beginning of String"\
-        "\r\nCtrl-E  Move to End of String"\
-        "\r\nCtrl-F  Move Cursor Forward (to the right)"\
-        "\r\nCtrl-N  Move to Next Word in String"\
-        "\r\nCtrl-\\  Move to Previous Word in String"\
-        "\r\nCtrl-D  Delete Word to the Right"\
-        "\r\nCtrl-W  Delete Word to the Left"\
-        "\r\nCtrl-H  Delete Character to the Left"\
-        "\r\nCtrl-Y  Delete to End of String"\
-        "\r\nCtrl-X  Delete Entire String"\
-        "\r\nCtrl-L  Center String (and complete input)"\
-	"\r\nCtrl-Z  Undo (revert edited string)"\
-        "\r\nCtrl-V  Toggle Insert/Overwrite Mode"\
-        "\r\nCtrl-R  Redraw Line"\
-        "\r\nCtrl-A  Insert Attribute Code (if allowed)"\
-        "\r\nCtrl-G  Insert Beep (if allowed)"\
-	"\r\nCtrl-U  List Users Online"\
-	"\r\nCtrl-P  Send Private Message To or Chat With Another Node"\
-	"\r\nCtrl-T  Time Information\r\n\r\n"
+    "\r\n\1hCtrl-K  \1nThis Menu"\
+	"\r\n\1hCtrl-C  \1nAbort Current String Input"\
+    "\r\n\1hCtrl-B  \1nMove to Beginning of String"\
+    "\r\n\1hCtrl-E  \1nMove to End of String"\
+    "\r\n\1hCtrl-F  \1nMove Cursor Forward (to the right)"\
+    "\r\n\1hCtrl-N  \1nMove to Next Word in String"\
+    "\r\n\1hCtrl-\\  \1nMove to Previous Word in String"\
+    "\r\n\1hCtrl-D  \1nDelete Word to the Right"\
+    "\r\n\1hCtrl-W  \1nDelete Word to the Left"\
+    "\r\n\1hCtrl-H  \1nDelete Character to the Left"\
+    "\r\n\1hCtrl-Y  \1nDelete to End of String"\
+    "\r\n\1hCtrl-X  \1nDelete Entire String"\
+    "\r\n\1hCtrl-L  \1nCenter String (and complete input)"\
+	"\r\n\1hCtrl-Z  \1nUndo (revert edited string)"\
+    "\r\n\1hCtrl-V  \1nToggle Insert/Overwrite Mode"\
+    "\r\n\1hCtrl-R  \1nRedraw Line"\
+    "\r\n\1hCtrl-A  \1nInsert Attribute Code (if allowed)"\
+    "\r\n\1hCtrl-G  \1nInsert Beep (if allowed)"\
+	"\r\n\1hCtrl-U  \1nList Users Online"\
+	"\r\n\1hCtrl-P  \1nSend Private Message To or Chat With Another Node"\
+	"\r\n\1hCtrl-T  \1nTime Information\r\n\r\n"
 "Display Unread Messages Only"				766 DisplayUnreadMessagesOnlyQ
 "No messages found."					767 NoMessagesFound
 "\1n\1cIP Addr   : \1h%s\r\n"                              768 UserIpAddr
 "seconds"								769 Seconds
 "minutes"								770 Minutes
-"hours"								771 Hours
-"days"								772 Days
+"hours"								    771 Hours
+"days"								    772 Days
 "months"								773 Months
-"years"								774 Years
+"years"								    774 Years
 "ago"									775 InThePast
 "from now"								776 InTheFuture
 "%s %s %s"								777 AgeOfPostedItem
