@@ -277,7 +277,8 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 		cfg->new_prot=' ';
 	get_int(cfg->new_install,instream);
 	get_int(cfg->new_msgscan_init,instream);
-	for(i=0;i<6;i++)
+	get_int(cfg->guest_msgscan_init,instream);
+	for(i=0;i<5;i++)
 		get_int(n,instream);
 
 	/*************************/

@@ -352,8 +352,9 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->new_prot,stream);
 	put_int(cfg->new_install,stream);
 	put_int(cfg->new_msgscan_init, stream);
+	put_int(cfg->guest_msgscan_init, stream);
 	n=0;
-	for(i=0;i<6;i++)
+	for(i=0;i<5;i++)
 		put_int(n,stream);
 
 	put_int(cfg->expired_level,stream);

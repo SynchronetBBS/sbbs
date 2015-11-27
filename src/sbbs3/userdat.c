@@ -2837,7 +2837,8 @@ ulong DLLCALL loginFailure(link_list_t* list, const union xp_sockaddr* addr, con
 }
 
 /****************************************************************************/
-/* Message-new-scan pointer functions (moved from data_ovl.cpp):			*/
+/* Message-new-scan pointer/configuration functions							*/
+/* Pass usernumber value of 0 to indicate "Guest" login						*/
 /****************************************************************************/
 BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 {
@@ -2859,9 +2860,9 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 		subscan[i].sav_cfg=subscan[i].cfg; 
 	}
 
-	if(!usernumber)
-		return(FALSE);
-
+	if(usernumber == 0) /* guest */
+		return initmsgptrs(cfg, subscan, cfg->guest_msgscan_init);
+	
 	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, usernumber);
 	if((stream=fnopen(&file,path,O_RDONLY))==NULL) {
 		if(fexist(path))
@@ -2886,8 +2887,8 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 }
 
 /****************************************************************************/
-/* Writes to DATA\USER\PTRS\xxxx.DAB the msgptr array for the current user	*/
-/* Called from functions main and newuser                                   */
+/* Writes to data/user/ptrs/*.ixb the msgptr array for the current user		*/
+/* Pass usernumber value of 0 to indicate "Guest" login						*/
 /****************************************************************************/
 BOOL DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 {
@@ -2899,8 +2900,8 @@ BOOL DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 	ulong		length;
 	uint32_t	l=0L;
 
-	if(!usernumber)
-		return(FALSE);
+	if(usernumber == 0)	/* Guest */
+		return(TRUE);
 	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, usernumber);
 	if((file=nopen(path,O_WRONLY|O_CREAT))==-1) {
 		return(FALSE); 
@@ -2954,6 +2955,10 @@ BOOL DLLCALL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days)
 	time_t		t = time(NULL) - (days * 24 * 60 * 60);
 
 	for(i=0;i<cfg->total_subs;i++) {
+		if(days == 0) {
+			subscan[i].sav_ptr = subscan[i].ptr = ~0;
+			continue;
+		}
 		ZERO_VAR(smb);
 		SAFEPRINTF2(smb.file,"%s%s",cfg->sub[i]->data_dir,cfg->sub[i]->code);
 		smb.retry_time=cfg->smb_retry_time;
