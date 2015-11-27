@@ -803,6 +803,7 @@ void msg_opts()
 		sprintf(opt[i++],"%-33.33s%s","Users Can View Deleted Messages"
 			,cfg.sys_misc&SM_USRVDELM ? "Yes" : cfg.sys_misc&SM_SYSVDELM
 				? "Sysops Only":"No");
+		sprintf(opt[i++],"%-33.33s%hu","Days of New Messages for Guest", cfg.guest_msgscan_init);
 		strcpy(opt[i++],"Extra Attribute Codes...");
 		opt[i][0]=0;
 		uifc.helpbuf=
@@ -1163,6 +1164,21 @@ void msg_opts()
 				}
                 break;
 			case 16:
+				uifc.helpbuf=
+					"`Days of New Messages for Guest:`\n"
+					"\n"
+					"This option allows you to set the number of days worth of messages\n"
+					"which will be included in a Guest login's `new message scan`.\n"
+					"\n"
+					"The value `0` means there will be `no` new messages for the Guest account.\n"
+				;
+				sprintf(str,"%hu",cfg.guest_msgscan_init);
+				uifc.input(WIN_SAV|WIN_MID,0,0
+					,"Days of New Messages for Guest's new message scan"
+					,str,4,K_EDIT|K_NUMBER);
+				cfg.guest_msgscan_init=atoi(str);
+                break;
+			case 17:
 				uifc.helpbuf=
 					"`Extra Attribute Codes...`\n"
 					"\n"
