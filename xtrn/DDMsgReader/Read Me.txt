@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.04
-                           Release date: 2015-10-10
+                                 Version 1.05
+                           Release date: 2015-??-??
 
                                      by
 
@@ -492,6 +492,18 @@ readerInterfaceStyle                  The user interface style to use for the
                                       user interface instead, regardless of
                                       this setting.
 
+readerInterfaceStyleForANSIMessages   The user interface style to use for
+                                      reading messages with ANSI content.  Valid
+                                      values are Scrollable and Traditional.
+                                      The scrollable interface allows scrolling
+                                      the message up and down.  If false, the
+                                      reader will use a traditional (non-
+                                      scrolling) user interface to display
+                                      messages with ANSI content.  If a user is
+                                      not using ANSI, the reader will use the
+                                      traditional user interface instead,
+                                      regardless of this setting.
+
 displayBoardInfoInHeader              true/false: Whether or not to display sub-board
                                       information above the column headers when listing
                                       the message information.  If this is set to true,
@@ -834,6 +846,18 @@ msgEditConfirmText                   Prompt text to confirm message edit
 noPersonalEmailText                  The text to output when the user has no
                                      personal email messages (i.e., "You have
                                      no messages.")
+
+deleteMsgNumPromptText               The text to output when prompting for the
+                                     number of a message to delete
+
+editMsgNumPromptText                 The text to output when prompting for the
+                                     number of a message to edit
+
+hdrLineLabelColor                    The color to use for the header/kludge
+                                     line labels
+
+hdrLineValueColor                    The color to use for the header/kludge
+                                     line values
 
 6. Drop file for replying to messages with Synchronet message editors
 =====================================================================

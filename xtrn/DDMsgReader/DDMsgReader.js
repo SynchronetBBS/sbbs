@@ -166,8 +166,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05 Beta 7";
-var READER_DATE = "2015-11-26";
+var READER_VERSION = "1.05 Beta 9";
+var READER_DATE = "2015-11-28";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -6785,7 +6785,8 @@ function DigDistMsgReader_ReadConfigFile()
 					    (setting == "lightbarAreaChooserHelpLineParenColor") || (setting == "scrollbarBGColor") ||
 						(setting == "scrollbarScrollBlockColor") || (setting == "enhReaderPromptSepLineColor") ||
 						(setting == "enhReaderHelpLineBkgColor") || (setting == "enhReaderHelpLineGeneralColor") ||
-						(setting == "enhReaderHelpLineHotkeyColor") || (setting == "enhReaderHelpLineParenColor"))
+						(setting == "enhReaderHelpLineHotkeyColor") || (setting == "enhReaderHelpLineParenColor") ||
+						(setting == "hdrLineLabelColor") || (setting == "hdrLineValueColor"))
 					{
 						// Trim leading & trailing spaces from the value when
 						// setting a color.  Also, replace any instances of "\1"
@@ -10516,39 +10517,13 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 	if (typeof(pMsgHdr) != "object")
 		return new Array();
 
+
 	var msgHdrInfoLines = new Array();
+
+	var hdrInfoLineFields = new Array();
 	var kludgeOnly = (typeof(pKludgeOnly) == "boolean" ? pKludgeOnly : false);
 	if (kludgeOnly)
 	{
-		// Kludge lines to display are MSGID, REPLY, CHRS, TZUTC, PID, TID,
-		// SEEN-BY, and PATH kludge
-
-		// TODO: See if Synchronet provides the TZUTC, SEEN-BY, or PATH kludge lines.
-		// It seems that Synchronet might not provide that information.
-		// TODO: Type 162 in the field_list array is seen-by, and type 163 is FTN path.
-
-		// FidoNet information available in Synchronet message
-		// headers:
-		// ftn_msgid	FidoNet FTS-9 Message-ID
-		// ftn_reply	FidoNet FTS-9 Reply-ID
-		// ftn_area	FidoNet FTS-4 echomail AREA tag
-		// ftn_flags	FidoNet FSC-53 FLAGS
-		// ftn_pid	FidoNet FSC-46 Program Identifier
-		// ftn_tid	FidoNet FSC-46 Tosser Identifier
-		// X-FTN-AREA       AGN_BBS
-		// X-FTN-REPLY      46:1/127 47525e2e
-		// X-FTN-MSGID      46:1/143 562422ad
-		// X-FTN-Kludge     CHRS: UTF-8 2
-		// X-FTN-TID        hpt/lnx 1.9.0-cur 07-09-15
-		// X-FTN-SEEN-BY    1/100 143 102 104 107 108 109 111 113 2/101 3/101 1/115 116 121 123
-		// X-FTN-SEEN-BY    1/124 125 126 127 3/102 1/701 132 2/103 1/140 128 133 3/103 1/138 145
-		// X-FTN-SEEN-BY    1/139 141 142 135 147 148 2/104 1/149 151 152 153 155 150 156 248 159
-		// X-FTN-SEEN-BY    2/106 1/160 161 118 144 164 2/107 1/163 204 2/109 108 1/166 167 168 0
-		// X-FTN-PATH       1/143 100
-
-		// An array of objects containing the info lines to retrieve (if they
-		// exist in the message header) and their labels
-		var hdrInfoLineFields = new Array();
 		hdrInfoLineFields.push({ field: "ftn_msgid", label: "MSG ID:" });
 		hdrInfoLineFields.push({ field: "X-FTN-MSGID", label: "MSG ID:" });
 		hdrInfoLineFields.push({ field: "ftn_reply", label: "Reply ID:" });
@@ -10562,39 +10537,79 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 		hdrInfoLineFields.push({ field: "X-FTN-Kludge", label: "Kludge:" });
 		hdrInfoLineFields.push({ field: "X-FTN-SEEN-BY", label: "Seen-By:" });
 		hdrInfoLineFields.push({ field: "X-FTN-PATH", label: "Path:" });
+		hdrInfoLineFields.push({ field: "when_written_time", label: "When written time:" });
+		hdrInfoLineFields.push({ field: "when_imported_time", label: "When imported time:" });
+	}
 
-		// Format the when-written date
-		if ((typeof(pMsgHdr.when_written_time) == "number") && (typeof(pMsgHdr.when_written_zone) == "number"))
+	// This function returns the number of non-blank lines in a header info array.
+	//
+	// Return value: An object with the following properties:
+	//               numNonBlankLines: The number of non-blank lines in the array
+	//               firstNonBlankLineIdx: The index of the first non-blank line
+	//               lastNonBlankLineIdx: The index of the last non-blank line
+	function findHdrFieldDataArrayNonBlankLines(pHdrArray)
+	{
+		var retObj = new Object();
+		retObj.numNonBlankLines = 0;
+		retObj.firstNonBlankLineIdx = -1;
+		retObj.lastNonBlankLineIdx = -1;
+
+		for (var lineIdx = 0; lineIdx < pHdrArray.length; ++lineIdx)
 		{
-			msgHdrInfoLines.push("\1nMessage written date & time zone:");
-			var whenWrittenTimeDateStr = system.timestr(pMsgHdr.when_written_time) + " "
-									   + system.zonestr(pMsgHdr.when_written_zone);
-			msgHdrInfoLines.push(whenWrittenTimeDateStr);
-			//msgHdrInfoLines.push("");
-		}
-		// Fields specified by hdrInfoLineFields
-		for (var i = 0; i < hdrInfoLineFields.length; ++i)
-		{
-			if (pMsgHdr.hasOwnProperty(hdrInfoLineFields[i].field) && (typeof(pMsgHdr[hdrInfoLineFields[i].field]) == "string"))
+			if (pHdrArray[lineIdx].length > 0)
 			{
-				msgHdrInfoLines.push("");
-				msgHdrInfoLines.push(hdrInfoLineFields[i].label);
-				var infoLineWrapped = word_wrap(pMsgHdr[hdrInfoLineFields[i].field], this.msgAreaWidth);
-				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
-				for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
-				{
-					if (infoLineWrappedArray[lineIdx].length > 0)
-						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
-				}
-				//msgHdrInfoLines.push("");
+				++retObj.numNonBlankLines;
+				if (retObj.firstNonBlankLineIdx == -1)
+					retObj.firstNonBlankLineIdx = lineIdx;
+				retObj.lastNonBlankLineIdx = lineIdx;
 			}
 		}
-		// If the header has a field_list array, then get the desired information from it.
-		// TODO: Should I include all field_list lines, or select ones for "kludge lines only"?
-		var hdrFieldLabel = "";
-		var lastHdrFieldLabel = null;
-		if (pMsgHdr.hasOwnProperty("field_list"))
+
+		return retObj;
+	}
+
+	// Counts the number of elements in a header field_list array with the
+	// same type, starting at a given index.
+	//
+	// Parameters:
+	//  pFieldList: The field_list array in a message header
+	//  pStartIdx: The index of the starting element to start counting at
+	//
+	// Return value: The number of elements with the same type as the start index element
+	function fieldListCountSameTypes(pFieldList, pStartIdx)
+	{
+		if (typeof(pFieldList) == "undefined")
+			return 0;
+		if (typeof(pStartIdx) != "number")
+			return 0;
+		if ((pStartIdx < 0) || (pStartIdx >= pFieldList.length))
+			return 0;
+
+		var itemCount = 1;
+		for (var idx = pStartIdx+1; idx < pFieldList.length; ++idx)
 		{
+			if (pFieldList[idx].type == pFieldList[pStartIdx].type)
+				++itemCount;
+			else
+				break;
+		}
+		return itemCount;
+	}
+
+	// Get the header fields
+	var addTheField = true;
+	var customFieldLabel = "";
+	var propCounter = 1;
+	for (var prop in pMsgHdr)
+	{
+		addTheField = true;
+		customFieldLabel = "";
+
+		if (prop == "field_list")
+		{
+			var hdrFieldLabel = "";
+			var lastHdrFieldLabel = null;
+			var addBlankLineAfterIdx = -1;
 			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 			{
 				// TODO: Some field types can be in the array multiple times but only
@@ -10606,7 +10621,75 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 				//  36 (Reply To extended)
 				//  37 (Reply To position)
 				//  38 (Reply To Organization)
-				hdrFieldLabel = msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type);
+				hdrFieldLabel = this.colors.hdrLineLabelColor + msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type) + "\1n";
+				// New:
+				var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
+				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
+				var hdrArrayNonBlankLines = findHdrFieldDataArrayNonBlankLines(infoLineWrappedArray);
+				if (hdrArrayNonBlankLines.numNonBlankLines > 0)
+				{
+					if (hdrArrayNonBlankLines.numNonBlankLines == 1)
+					{
+						var addExtraBlankLineAtEnd = false;
+						var hdrItem = this.colors.hdrLineValueColor + infoLineWrappedArray[hdrArrayNonBlankLines.firstNonBlankLineIdx] + "\1n";
+						// If the header field label is different, then add it to the
+						// header info lines
+						if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
+						{
+							var numFieldItemsWithSameType = fieldListCountSameTypes(pMsgHdr.field_list, fieldI);
+							if (numFieldItemsWithSameType > 1)
+							{
+								msgHdrInfoLines.push("");
+								msgHdrInfoLines.push(hdrFieldLabel);
+								addExtraBlankLineAtEnd = true;
+								addBlankLineAfterIdx = fieldI + numFieldItemsWithSameType - 1;
+							}
+							else
+							{
+								hdrItem = hdrFieldLabel + " " + hdrItem;
+								numFieldItemsWithSameType = -1;
+							}
+						}
+						if (hdrItem.length < this.msgAreaWidth)
+							msgHdrInfoLines.push(hdrItem);
+						else
+						{
+							// If the header field label is different, then add a blank line
+							// to the header info lines
+							if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
+								msgHdrInfoLines.push("");
+							msgHdrInfoLines.push(hdrFieldLabel);
+							msgHdrInfoLines.push(infoLineWrappedArray[hdrArrayNonBlankLines.firstNonBlankLineIdx]);
+							if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
+								msgHdrInfoLines.push("");
+						}
+					}
+					else
+					{
+						// If the header field label is different, then add it to the
+						// header info lines
+						if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
+						{
+							msgHdrInfoLines.push("");
+							msgHdrInfoLines.push(hdrFieldLabel + "!");
+						}
+						var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
+						var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
+						for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
+						{
+							if (infoLineWrappedArray[lineIdx].length > 0)
+								msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
+						}
+						// If the header field label is different, then add a blank line to the
+						// header info lines
+						if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
+							msgHdrInfoLines.push("");
+					}
+					if (addBlankLineAfterIdx == fieldI)
+						msgHdrInfoLines.push("");
+				}
+				// Old:
+				/*
 				// If the header field label is different, then add it to the
 				// header info lines
 				if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
@@ -10621,85 +10704,130 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 					if (infoLineWrappedArray[lineIdx].length > 0)
 						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
 				}
+				*/
 				lastHdrFieldLabel = hdrFieldLabel;
 			}
 		}
+		else
+		{
+			// See if we should add this field
+			addTheField = true;
+			if (hdrInfoLineFields.length > 0)
+			{
+				addTheField = false;
+				for (var infoLineFieldIdx = 0; infoLineFieldIdx < hdrInfoLineFields.length; ++infoLineFieldIdx)
+				{
+					if (prop == hdrInfoLineFields[infoLineFieldIdx].field)
+					{
+						addTheField = true;
+						customFieldLabel = hdrInfoLineFields[infoLineFieldIdx].label;
+						break;
+					}
+				}
+			}
+			if (!addTheField)
+				continue;
 
-		// If some info lines were added, then insert a header line & blank line to
-		// the beginning of the array, and remove the last empty line from the array.
-		if (msgHdrInfoLines.length > 0)
+			var propLabel = "";
+			if (customFieldLabel.length > 0)
+				propLabel = this.colors.hdrLineLabelColor + customFieldLabel + "\1n";
+			else
+			{
+				// Remove underscores from the property for the label
+				propLabel = this.colors.hdrLineLabelColor + prop.replace(/_/g, " ");
+				// New:
+				// Apply good-looking capitalization to the property label
+				if ((propLabel == "id") || (propLabel == "ftn tid"))
+					propLabel = propLabel.toUpperCase() + ":\1n";
+				else if (propLabel == "ftn_area")
+					propLabel = "\1n\1cFTN_Area:\1n";
+				else
+					propLabel = this.colors.hdrLineLabelColor + capitalizeFirstChar(propLabel) + ":\1n";
+			}
+			var infoLineWrapped = word_wrap(pMsgHdr[prop], this.msgAreaWidth);
+			var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
+			var itemValue = "";
+			for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
+			{
+				if (infoLineWrappedArray[lineIdx].length > 0)
+				{
+					itemValue = this.colors.hdrLineValueColor + infoLineWrappedArray[lineIdx] + "\1n";
+					if (prop == "when_written_time")
+					{
+						itemValue = this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_written_time) + " "
+						          + system.zonestr(pMsgHdr.when_written_zone) + "\1n";
+					}
+					else if (prop == "when_imported_time")
+					{
+						itemValue = this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_imported_time) + " "
+						          + system.zonestr(pMsgHdr.when_imported_zone) + "\1n";
+					}
+
+					var hdrItem = propLabel + " " + itemValue;
+					if (hdrItem.length < this.msgAreaWidth)
+						msgHdrInfoLines.push(hdrItem);
+					else
+					{
+						// If this isn't the first header property, then add an empty
+						// line to the info lines array for spacing
+						if (propCounter > 1)
+							msgHdrInfoLines.push("");
+						msgHdrInfoLines.push(propLabel);
+						// In case the item value is too long to fit into the
+						// message reading area, split it and add all the split lines.
+						var itemValueWrapped = word_wrap(itemValue, this.msgAreaWidth);
+						var itemValueWrappedArray = lfexpand(itemValueWrapped).split("\r\n");
+						for (var lineIdx = 0; lineIdx < itemValueWrappedArray.length; ++lineIdx)
+						{
+							if (itemValueWrappedArray[lineIdx].length > 0)
+								msgHdrInfoLines.push(itemValueWrappedArray[lineIdx]);
+						}
+
+						// If this isn't the first header property, then add an empty
+						// line to the info lines array for spacing
+						if (propCounter > 1)
+							msgHdrInfoLines.push("");
+					}
+				}
+			}
+			// Old:
+			/*
+			// Apply good-looking capitalization to the property label
+			if ((propLabel == "id") || (propLabel == "ftn tid"))
+				msgHdrInfoLines.push(propLabel.toUpperCase() + ":");
+			else if (propLabel == "ftn_area")
+				msgHdrInfoLines.push("FTN_Area:");
+			else
+				msgHdrInfoLines.push(capitalizeFirstChar(propLabel) + ":");
+			var infoLineWrapped = word_wrap(pMsgHdr[prop], this.msgAreaWidth);
+			var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
+			for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
+			{
+				if (infoLineWrappedArray[lineIdx].length > 0)
+					msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
+			}
+			*/
+		}
+
+		++propCounter;
+	}
+
+	// If some info lines were added, then insert a header line & blank line to
+	// the beginning of the array, and remove the last empty line from the array.
+	if (msgHdrInfoLines.length > 0)
+	{
+		if (kludgeOnly)
 		{
 			msgHdrInfoLines.splice(0, 0, "\1n\1c\1hMessage Information/Kludge Lines\1n");
 			msgHdrInfoLines.splice(1, 0, "\1n\1g\1h--------------------------------\1n");
-			if (msgHdrInfoLines[msgHdrInfoLines.length-1].length == 0)
-				msgHdrInfoLines.pop();
 		}
-	}
-	else
-	{
-		// Return all header fields
-		var propCounter = 1;
-		for (var prop in pMsgHdr)
+		else
 		{
-			if (prop == "field_list")
-			{
-				var hdrFieldLabel = "";
-				var lastHdrFieldLabel = null;
-				for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
-				{
-					// TODO: Some field types can be in the array multiple times but only
-					// the last is valid.  For those, only get the last one:
-					//  32 (Reply To)
-					//  33 (Reply To agent)
-					//  34 (Reply To net type)
-					//  35 (Reply To net address)
-					//  36 (Reply To extended)
-					//  37 (Reply To position)
-					//  38 (Reply To Organization)
-					//msgHdrInfoLines.push(msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type));
-					hdrFieldLabel = msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type);
-					// If the header field label is different, then add it to the
-					// header info lines
-					if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
-					{
-						msgHdrInfoLines.push("");
-						msgHdrInfoLines.push(hdrFieldLabel);
-					}
-					var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
-					var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
-					for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
-					{
-						if (infoLineWrappedArray[lineIdx].length > 0)
-							msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
-					}
-					lastHdrFieldLabel = hdrFieldLabel;
-				}
-			}
-			else
-			{
-				if (propCounter > 1)
-					msgHdrInfoLines.push("");
-				// Remove underscores from the property for the label
-				var propLabel = prop.replace(/_/g, " ");
-				// Apply good-looking capitalization to the property label
-				if ((propLabel == "id") || (propLabel == "ftn tid"))
-					msgHdrInfoLines.push(propLabel.toUpperCase() + ":");
-				else if (propLabel == "ftn_area")
-					msgHdrInfoLines.push("FTN_Area:");
-				else
-					msgHdrInfoLines.push(capitalizeFirstChar(propLabel) + ":");
-				var infoLineWrapped = word_wrap(pMsgHdr[prop], this.msgAreaWidth);
-				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
-				for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
-				{
-					if (infoLineWrappedArray[lineIdx].length > 0)
-						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
-				}
-			}
-
-			++propCounter;
+			msgHdrInfoLines.splice(0, 0, "\1n\1c\1hMessage Headers\1n");
+			msgHdrInfoLines.splice(1, 0, "\1n\1g\1h---------------\1n");
 		}
-		
+		if (msgHdrInfoLines[msgHdrInfoLines.length-1].length == 0)
+			msgHdrInfoLines.pop();
 	}
 
 	return msgHdrInfoLines;
@@ -11839,6 +11967,10 @@ function getDefaultColors()
 	colorArray["enhReaderHelpLineGeneralColor"] = "\1b";
 	colorArray["enhReaderHelpLineHotkeyColor"] = "\1r";
 	colorArray["enhReaderHelpLineParenColor"] = "\1m";
+
+	// Message header line colors
+	colorArray["hdrLineLabelColor"] = "\1n\1c";
+	colorArray["hdrLineValueColor"] = "\1n\1g";
 
 	return colorArray;
 }

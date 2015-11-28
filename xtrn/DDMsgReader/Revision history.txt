@@ -5,6 +5,28 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.05     2015-??-??   - Improved displaying of messages with ANSI codes.  The
+                      reader now makes use of frame.js and scrollbar.js (in the
+                      sync/exec/load directory) to enable a scrollable user
+                      interface when displaying messages with ANSI content.
+                      There is also a new configuration option,
+                      readerInterfaceStyleForANSIMessages, which lets the sysop
+                      configure whether to use a scrollable or traditional user
+                      interface for ANSI messages.  The reason for that option
+                      is in case ANSI messages don't look good when using
+                      frame.js & scrollbar.js - When set to a traditional user
+                      interface for ANSI messages, the reader will use a
+                      non-scrolling user interface for displaying messages with
+                      ANSI codes, which simply sends the message to the client
+                      and lets the client display the ANSI content.
+                      - More kludge lines displayed (with the 'K' key), and
+                      all message header lines are now displayed (with the
+                      'H' key).  This is a sysop feature.
+                      - Color configuration options for the kludge/header line
+                      labels (hdrLineLabelColor) and kludge/header line values
+                      (hdrLineValueColor)
+                      - Bug fix related to interpreting colors from other BBS
+                      software (WWIV, PCBoard, Wildcat, Celerity, Renegade)
 1.04     2015-10-10   - New feature: Users can now download attached files,
                       whether uploaded to their mailbox in Synchronet or
                       attached via internet email.
