@@ -166,8 +166,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05 Beta 9";
-var READER_DATE = "2015-11-28";
+var READER_VERSION = "1.05 Beta 10";
+var READER_DATE = "2015-11-29";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -10621,7 +10621,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 				//  36 (Reply To extended)
 				//  37 (Reply To position)
 				//  38 (Reply To Organization)
-				hdrFieldLabel = this.colors.hdrLineLabelColor + msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type) + "\1n";
+				hdrFieldLabel = "\1n" + this.colors.hdrLineLabelColor + msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type) + "\1n";
 				// New:
 				var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
 				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
@@ -10631,7 +10631,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 					if (hdrArrayNonBlankLines.numNonBlankLines == 1)
 					{
 						var addExtraBlankLineAtEnd = false;
-						var hdrItem = this.colors.hdrLineValueColor + infoLineWrappedArray[hdrArrayNonBlankLines.firstNonBlankLineIdx] + "\1n";
+						var hdrItem = "\1n" + this.colors.hdrLineValueColor + infoLineWrappedArray[hdrArrayNonBlankLines.firstNonBlankLineIdx] + "\1n";
 						// If the header field label is different, then add it to the
 						// header info lines
 						if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
@@ -10730,19 +10730,19 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 
 			var propLabel = "";
 			if (customFieldLabel.length > 0)
-				propLabel = this.colors.hdrLineLabelColor + customFieldLabel + "\1n";
+				propLabel = "\1n" + this.colors.hdrLineLabelColor + customFieldLabel + "\1n";
 			else
 			{
 				// Remove underscores from the property for the label
-				propLabel = this.colors.hdrLineLabelColor + prop.replace(/_/g, " ");
+				propLabel = "\1n" + this.colors.hdrLineLabelColor + prop.replace(/_/g, " ");
 				// New:
 				// Apply good-looking capitalization to the property label
 				if ((propLabel == "id") || (propLabel == "ftn tid"))
-					propLabel = propLabel.toUpperCase() + ":\1n";
+					propLabel = "\1n" + this.colors.hdrLineLabelColor + propLabel.toUpperCase() + ":\1n";
 				else if (propLabel == "ftn_area")
-					propLabel = "\1n\1cFTN_Area:\1n";
+					propLabel = "\1n" + this.colors.hdrLineLabelColor + "FTN_Area:\1n";
 				else
-					propLabel = this.colors.hdrLineLabelColor + capitalizeFirstChar(propLabel) + ":\1n";
+					propLabel = "\1n" + this.colors.hdrLineLabelColor + capitalizeFirstChar(propLabel) + ":\1n";
 			}
 			var infoLineWrapped = word_wrap(pMsgHdr[prop], this.msgAreaWidth);
 			var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
@@ -10751,15 +10751,15 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 			{
 				if (infoLineWrappedArray[lineIdx].length > 0)
 				{
-					itemValue = this.colors.hdrLineValueColor + infoLineWrappedArray[lineIdx] + "\1n";
+					itemValue = "\1n" + this.colors.hdrLineValueColor + infoLineWrappedArray[lineIdx] + "\1n";
 					if (prop == "when_written_time")
 					{
-						itemValue = this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_written_time) + " "
+						itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_written_time) + " "
 						          + system.zonestr(pMsgHdr.when_written_zone) + "\1n";
 					}
 					else if (prop == "when_imported_time")
 					{
-						itemValue = this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_imported_time) + " "
+						itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_imported_time) + " "
 						          + system.zonestr(pMsgHdr.when_imported_zone) + "\1n";
 					}
 
