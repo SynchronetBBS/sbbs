@@ -14298,6 +14298,12 @@ object MainForm: TMainForm
         ImageIndex = 31
         OnClick = ViewLogClick
       end
+      object ViewGuruChatLogMenuItem: TMenuItem
+        Caption = 'Guru Chat Log...'
+        Hint = 'GURU.LOG'
+        ImageIndex = 33
+        OnClick = ViewLogClick
+      end
     end
     object HelpMenuItem: TMenuItem
       Caption = '&Help'
