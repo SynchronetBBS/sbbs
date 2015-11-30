@@ -46,7 +46,7 @@ object ServicesCfgDlg: TServicesCfgDlg
   PixelsPerInch = 96
   TextHeight = 13
   object PageControl: TPageControl
-    Left = 3
+    Left = 2
     Top = 3
     Width = 278
     Height = 199
@@ -62,6 +62,13 @@ object ServicesCfgDlg: TServicesCfgDlg
         Height = 20
         AutoSize = False
         Caption = 'Interface (IP)'
+      end
+      object GlobalSettingsLabel: TLabel
+        Left = 8
+        Top = 68
+        Width = 249
+        Height = 20
+        Caption = 'Global Service Settings (defaults)'
       end
       object AutoStartCheckBox: TCheckBox
         Left = 7
@@ -107,6 +114,41 @@ object ServicesCfgDlg: TServicesCfgDlg
         ShowHint = True
         TabOrder = 3
         OnValidate = GlobalValueListEditorValidate
+        ColWidths = (
+          99
+          145)
+      end
+    end
+    object ServicesTabSheet: TTabSheet
+      Caption = 'Services'
+      ImageIndex = 2
+      object CheckListBox: TCheckListBox
+        Left = 8
+        Top = 8
+        Width = 249
+        Height = 73
+        Hint = 'Services and their enabled/disabled state'
+        ItemHeight = 13
+        ParentShowHint = False
+        PopupMenu = ServicesCfgPopupMenu
+        ShowHint = True
+        TabOrder = 0
+        OnClick = CheckListBoxClick
+        OnKeyDown = CheckListBoxKeyDown
+      end
+      object ValueListEditor: TValueListEditor
+        Left = 8
+        Top = 88
+        Width = 250
+        Height = 75
+        Hint = 'Service settings'
+        KeyOptions = [keyEdit, keyAdd, keyDelete, keyUnique]
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goEditing, goThumbTracking]
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+        Visible = False
+        OnValidate = ValueListEditorValidate
         ColWidths = (
           99
           145)
@@ -168,41 +210,6 @@ object ServicesCfgDlg: TServicesCfgDlg
         Caption = '...'
         TabOrder = 3
         OnClick = HangupSoundButtonClick
-      end
-    end
-    object EnableTabSheet: TTabSheet
-      Caption = 'Services'
-      ImageIndex = 2
-      object CheckListBox: TCheckListBox
-        Left = 8
-        Top = 8
-        Width = 249
-        Height = 73
-        Hint = 'Services and their enabled/disabled state'
-        ItemHeight = 13
-        ParentShowHint = False
-        PopupMenu = ServicesCfgPopupMenu
-        ShowHint = True
-        TabOrder = 0
-        OnClick = CheckListBoxClick
-        OnKeyDown = CheckListBoxKeyDown
-      end
-      object ValueListEditor: TValueListEditor
-        Left = 8
-        Top = 88
-        Width = 250
-        Height = 75
-        Hint = 'Service settings'
-        KeyOptions = [keyEdit, keyAdd, keyDelete, keyUnique]
-        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goEditing, goThumbTracking]
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 1
-        Visible = False
-        OnValidate = ValueListEditorValidate
-        ColWidths = (
-          99
-          145)
       end
     end
   end
@@ -276,11 +283,11 @@ object ServicesCfgDlg: TServicesCfgDlg
     Filter = 'Wave Files|*.wav'
     Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing, ofDontAddToRecent]
     Left = 104
-    Top = 64
+    Top = 32
   end
   object ServicesCfgPopupMenu: TPopupMenu
-    Left = 176
-    Top = 48
+    Left = 136
+    Top = 56
     object ServiceAdd: TMenuItem
       Caption = 'Add'
       Hint = 'Add a new service'
