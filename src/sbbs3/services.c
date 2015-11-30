@@ -373,7 +373,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	/* ToDo Deuce: did you mean to do this *before* the above memset(0) ? */
 	if(client->user.number) {
 		if(client->subscan!=NULL)
-			putmsgptrs(&scfg, client->user.number, client->subscan);
+			putmsgptrs(&scfg, &client->user, client->subscan);
 	}
 
 	if(isdigit(*user))
@@ -428,7 +428,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			lprintf(LOG_CRIT,"!MALLOC FAILURE");
 	}
 	if(client->subscan!=NULL) {
-		getmsgptrs(&scfg,client->user.number,client->subscan);
+		getmsgptrs(&scfg,&client->user,client->subscan);
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -1133,7 +1133,7 @@ static void js_service_thread(void* arg)
 
 	if(service_client.user.number) {
 		if(service_client.subscan!=NULL)
-			putmsgptrs(&scfg, service_client.user.number, service_client.subscan);
+			putmsgptrs(&scfg, &service_client.user, service_client.subscan);
 		lprintf(LOG_INFO,"%04d %s Logging out %s"
 			,socket, service->protocol, service_client.user.alias);
 		logoutuserdat(&scfg,&service_client.user,time(NULL),service_client.logintime);

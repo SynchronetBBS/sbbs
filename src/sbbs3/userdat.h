@@ -122,8 +122,9 @@ DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t* cfg, const char* prot, const char* reas
 								  ,const char* ip_addr, const char* username, const char* fname);
 
 /* New-message-scan pointer functions: */
-DLLEXPORT BOOL	DLLCALL getmsgptrs(scfg_t*, uint usernumber, subscan_t*);
-DLLEXPORT BOOL	DLLCALL putmsgptrs(scfg_t*, uint usernumber, subscan_t*);
+DLLEXPORT BOOL	DLLCALL getmsgptrs(scfg_t*, user_t*, subscan_t*);
+DLLEXPORT BOOL	DLLCALL putmsgptrs(scfg_t*, user_t*, subscan_t*);
+DLLEXPORT BOOL	DLLCALL fixmsgptrs(scfg_t*, subscan_t*);
 DLLEXPORT BOOL	DLLCALL initmsgptrs(scfg_t*, subscan_t*, unsigned days);
 
 

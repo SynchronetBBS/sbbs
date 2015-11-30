@@ -821,6 +821,7 @@ enum {
 	,InThePast
 	,InTheFuture
 	,AgeOfPostedItem
+	,NodeStatusLogout
 
 	,TOTAL_TEXT
 };

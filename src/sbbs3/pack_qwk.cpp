@@ -425,11 +425,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				subs_scanned++;
 				msgs=getlastmsg(usrsub[i][j],&lastmsg,0);
 				if(!msgs || lastmsg<=subscan[usrsub[i][j]].ptr) { /* no msgs */
-					if(subscan[usrsub[i][j]].ptr>lastmsg)	{ /* corrupted ptr */
-						outchar('*');
-						subscan[usrsub[i][j]].ptr=lastmsg; /* so fix automatically */
+					if(subscan[usrsub[i][j]].ptr>lastmsg)	/* corrupted ptr */
+						subscan[usrsub[i][j]].ptr=lastmsg;	/* so fix automatically */
+					if(subscan[usrsub[i][j]].last>lastmsg)
 						subscan[usrsub[i][j]].last=lastmsg; 
-					}
 					bprintf(text[NScanStatusFmt]
 						,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
 						,cfg.sub[usrsub[i][j]]->lname,0L,msgs);

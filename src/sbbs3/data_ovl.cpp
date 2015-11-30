@@ -47,13 +47,13 @@ void sbbs_t::getmsgptrs()
 	if(!useron.number)
 		return;
 	bputs(text[LoadingMsgPtrs]);
-	::getmsgptrs(&cfg,(useron.rest&FLAG('G')) ? 0:useron.number,subscan);
+	::getmsgptrs(&cfg,&useron,subscan);
 	bputs(text[LoadedMsgPtrs]);
 }
 
 void sbbs_t::putmsgptrs()
 {
-	::putmsgptrs(&cfg,(useron.rest&FLAG('G')) ? 0:useron.number,subscan);
+	::putmsgptrs(&cfg,&useron,subscan);
 }
 
 /****************************************************************************/

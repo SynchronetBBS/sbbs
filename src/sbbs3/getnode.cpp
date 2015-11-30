@@ -447,6 +447,10 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			bputs(text[NodeStatusLogon]);
 			bputs(node_connection_desc(this, node->connection, tmp));
 			break;
+		case NODE_LOGOUT:
+			bprintf(text[NodeStatusLogout]
+				,(node->misc&NODE_ANON) && !SYSOP ? text[UNKNOWN_USER] : username(&cfg,node->useron,tmp));
+			break;
 		case NODE_EVENT_WAITING:
 			bputs(text[NodeStatusEventWaiting]);
 			break;

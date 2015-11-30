@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -45,7 +45,7 @@
 #include "smbdefs.h"	/* uchar, ushort, ulong and _PACK */
 #include "limits.h"
 
-enum {                              /* Node Status */
+enum node_status {                  /* Node Status */
      NODE_WFC                       /* Waiting for Call */
     ,NODE_LOGON                     /* at logon prompt */
     ,NODE_NEWUSER                   /* New user applying */
@@ -56,6 +56,7 @@ enum {                              /* Node Status */
     ,NODE_EVENT_WAITING             /* Waiting for all nodes to be inactive */
     ,NODE_EVENT_RUNNING             /* Running an external event */
     ,NODE_EVENT_LIMBO               /* Allowing another node to run an event */
+	,NODE_LOGOUT					/* Logging out */
     };
 
 #define NODE_INVALID_STATUS	0xff	/* Invalid status value */
@@ -76,7 +77,7 @@ enum {                              /* Node Status */
 #define NODE_EXT    (1<<12)         /* Extended info on node action */
 #define NODE_LCHAT	(1<<13)			/* Being pulled into local chat */
 
-enum {                              /* Node Action */
+enum node_action {                  /* Node Action */
      NODE_MAIN                      /* Main Prompt */
     ,NODE_RMSG                      /* Reading Messages */
     ,NODE_RMAL                      /* Reading Mail */
@@ -112,20 +113,20 @@ enum {                              /* Node Action */
 
 #define SIZEOF_NODE_T 15			/* Must == sizeof(node_t) */
 
-typedef struct _PACK {				/* Node information kept in node.dab */
-    uchar   status,                 /* Current Status of Node */
-            errors,                 /* Number of Critical Errors */
-            action;                 /* Action User is doing on Node */
-    uint16_t  useron,                 /* User on Node */
-            connection,             /* Connection rate of Node */
-#define NODE_CONNECTION_LOCAL		0
-#define NODE_CONNECTION_TELNET		USHRT_MAX	/* 0xffff */
-#define NODE_CONNECTION_RLOGIN		(USHRT_MAX-1)
-#define NODE_CONNECTION_SSH			(USHRT_MAX-2)
-            misc,                   /* Miscellaneous bits for node */
-            aux;                    /* Auxillary word for node */
-    uint32_t   extaux;                 /* Extended aux dword for node */
-            } node_t;
+typedef struct _PACK {					/* Node information kept in node.dab */
+	uchar		status,                 /* Current Status of Node (enum node_status) */
+				errors,                 /* Number of Critical Errors */
+				action;                 /* Action User is doing on Node (enum node_action) */
+    uint16_t	useron,                 /* User on Node */
+				connection,             /* Connection rate of Node */
+#define NODE_CONNECTION_LOCAL			0
+#define NODE_CONNECTION_TELNET			USHRT_MAX	/* 0xffff */
+#define NODE_CONNECTION_RLOGIN			(USHRT_MAX-1)
+#define NODE_CONNECTION_SSH				(USHRT_MAX-2)
+				misc,					/* Miscellaneous bits for node */
+				aux;					/* Auxillary word for node */
+    uint32_t   extaux;					/* Extended aux dword for node */
+	} node_t;
 
 #if defined(_WIN32) || defined(__BORLANDC__)
 #pragma pack(pop)		/* original packing */

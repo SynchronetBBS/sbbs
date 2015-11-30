@@ -43,6 +43,7 @@
 /****************************************************************************/
 void sbbs_t::logout()
 {
+	char	path[MAX_PATH+1];
 	char	str[256];
 	char 	tmp[512];
 	int 	i,j;
@@ -52,18 +53,23 @@ void sbbs_t::logout()
 
 	now=time(NULL);
 	if(localtime_r(&now,&tm)==NULL)
-		return;
+		errormsg(WHERE,ERR_CHK,"localtime",(ulong)now);
 
 	if(!useron.number) {				 /* Not logged in, so do nothing */
 		if(!online) {
-			sprintf(str,"%s  T:%3u sec\r\n"
+			SAFEPRINTF2(str,"%s  T:%3u sec\r\n"
 				,hhmmtostr(&cfg,&tm,tmp)
 				,(uint)(now-answertime));
 			logline("@-",str); 
 		}
 		return; 
 	}
-	strcpy(lastuseron,useron.alias);	/* for use with WFC status display */
+	lprintf(LOG_INFO, "Node %d %s logout initiated", cfg.node_num, useron.alias);
+	SAFECOPY(lastuseron,useron.alias);
+	if(!online && getnodedat(cfg.node_num, &node, /* lock: */true) == 0) {
+		node.status = NODE_LOGOUT;
+		putnodedat(cfg.node_num, &node);
+	}
 
 	if(useron.rest&FLAG('G')) {
 		putuserrec(&cfg,useron.number,U_NAME,LEN_NAME,nulstr);		
@@ -78,47 +84,28 @@ void sbbs_t::logout()
 				getnodedat(i,&node,0);
 				if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 					&& !(node.misc&NODE_AOFF) && node.useron!=useron.number) {
-					sprintf(str,text[NodeLoggedOff],cfg.node_num
+					SAFEPRINTF2(str,text[NodeLoggedOff],cfg.node_num
 						,thisnode.misc&NODE_ANON
 						? text[UNKNOWN_USER] : useron.alias);
-					putnmsg(&cfg,i,str); } 
+					putnmsg(&cfg,i,str); 
+				}
 			}
 
 	if(!online) {		/* NOT re-login */
-
-#if 0	/* too soon, handled in node_thread */
-		getnodedat(cfg.node_num,&thisnode,1);
-		thisnode.status=NODE_WFC;
-		thisnode.misc&=~(NODE_INTR|NODE_MSGW|NODE_NMSG
-			|NODE_UDAT|NODE_POFF|NODE_AOFF|NODE_EXT);
-		putnodedat(cfg.node_num,&thisnode);
-#endif
-
-#if 0	/* beep? */ 
-		if(sys_status&SS_SYSALERT) {
-			mswait(500);
-			offhook();
-			CLS;
-			lputs("\r\n\r\nAlerting Sysop...");
-			while(!lkbrd(1)) {
-				sbbs_beep(1000,200);
-				nosound();
-				mswait(200); 
-			}
-			lkbrd(0); 
-		}
-#endif
-		sys_status&=~SS_SYSALERT;
-		if(cfg.sys_logout[0])		/* execute system logout event */
+		if(cfg.sys_logout[0]) {		/* execute system logout event */
+			lprintf(LOG_DEBUG, "Node %d executing logout event", cfg.node_num);
 			external(cmdstr(cfg.sys_logout,nulstr,nulstr,NULL),EX_OUTL|EX_OFFLINE);
 		}
+	}
 
-	if(cfg.logout_mod[0])
+	if(cfg.logout_mod[0]) {
+		lprintf(LOG_DEBUG, "Node %d executing logout module", cfg.node_num);
 		exec_bin(cfg.logout_mod,&main_csi);
+	}
 	backout();
-	sprintf(str,"%smsgs/%4.4u.msg",cfg.data_dir,useron.number);
-	if(!flength(str))		/* remove any 0 byte message files */
-		remove(str);
+	SAFEPRINTF2(path,"%smsgs/%4.4u.msg",cfg.data_dir,useron.number);
+	if(fexistcase(path) && !flength(path))		/* remove any 0 byte message files */
+		remove(path);
 
 	delfiles(cfg.temp_dir,ALLFILES);
 	putmsgptrs();
@@ -139,7 +126,7 @@ void sbbs_t::logout()
 
 	if(useron.min && j>i) {
 		j-=i;                               /* j=time to deduct from min */
-		sprintf(str,"Minute Adjustment: %d",-j);
+		SAFEPRINTF(str,"Minute Adjustment: %d",-j);
 		logline(">>",str);
 		if(useron.min>(ulong)j)
 			useron.min-=j;
@@ -165,18 +152,20 @@ void sbbs_t::logout()
 	hhmmtostr(&cfg,&tm,str);
 	strcat(str,"  ");
 	if(sys_status&SS_USERON)
-		sprintf(tmp,"T:%3u   R:%3lu   P:%3lu   E:%3lu   F:%3lu   "
+		safe_snprintf(tmp,sizeof(tmp),"T:%3u   R:%3lu   P:%3lu   E:%3lu   F:%3lu   "
 			"U:%3luk %lu   D:%3luk %lu"
 			,(uint)(now-logontime)/60,posts_read,logon_posts
 			,logon_emails,logon_fbacks,logon_ulb/1024UL,logon_uls
 			,logon_dlb/1024UL,logon_dls);
 	else
-		sprintf(tmp,"T:%3u sec",(uint)(now-answertime));
+		SAFEPRINTF(tmp,"T:%3u sec",(uint)(now-answertime));
 	strcat(str,tmp);
 	strcat(str,"\r\n");
 	logline("@-",str);
 	sys_status&=~SS_USERON;
 	answertime=now; // Incase we're relogging on
+
+	lprintf(LOG_DEBUG, "Node %d %s logout completed", cfg.node_num, useron.alias);
 }
 
 /****************************************************************************/
@@ -184,30 +173,30 @@ void sbbs_t::logout()
 /****************************************************************************/
 void sbbs_t::backout()
 {
-	char str[256],code[128],*buf;
+	char path[MAX_PATH+1],code[128],*buf;
 	int i,file;
 	long length,l;
 	file_t f;
 
-	sprintf(str,"%sbackout.dab",cfg.node_dir);
-	if(flength(str)<1L) {
-		remove(str);
+	SAFEPRINTF(path,"%sbackout.dab",cfg.node_dir);
+	if(flength(path)<1L) {
+		remove(path);
 		return; 
 	}
-	if((file=nopen(str,O_RDONLY))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
+	if((file=nopen(path,O_RDONLY))==-1) {
+		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 		return; 
 	}
 	length=(long)filelength(file);
 	if((buf=(char *)malloc(length))==NULL) {
 		close(file);
-		errormsg(WHERE,ERR_ALLOC,str,length);
+		errormsg(WHERE,ERR_ALLOC,path,length);
 		return; 
 	}
 	if(read(file,buf,length)!=length) {
 		close(file);
 		free(buf);
-		errormsg(WHERE,ERR_READ,str,length);
+		errormsg(WHERE,ERR_READ,path,length);
 		return; 
 	}
 	close(file);
@@ -226,10 +215,11 @@ void sbbs_t::backout()
 				}
 				break;
 			default:
-				errormsg(WHERE,ERR_CHK,str,buf[l]); } 
+				errormsg(WHERE,ERR_CHK,path,buf[l]); 
+		} 
 	}
 	free(buf);
-	remove(str);	/* always remove the backout file */
+	remove(path);	/* always remove the backout file */
 }
 
 /****************************************************************************/
@@ -245,13 +235,13 @@ void sbbs_t::logofflist()
 		return;
 	if(localtime_r(&logontime,&tm)==NULL)
 		return;
-	sprintf(str,"%slogs/%2.2d%2.2d%2.2d.lol",cfg.logs_dir,tm.tm_mon+1,tm.tm_mday
+	SAFEPRINTF4(str,"%slogs/%2.2d%2.2d%2.2d.lol",cfg.logs_dir,tm.tm_mon+1,tm.tm_mday
 		,TM_YEAR(tm.tm_year));
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 		return; 
 	}
-	sprintf(str,"%-*.*s %-2d %-8.8s %2.2d:%2.2d %2.2d:%2.2d %3d%3ld%3ld%3ld%3ld"
+	safe_snprintf(str,sizeof(str),"%-*.*s %-2d %-8.8s %2.2d:%2.2d %2.2d:%2.2d %3d%3ld%3ld%3ld%3ld"
 		"%3ld%3ld\r\n",LEN_ALIAS,LEN_ALIAS,useron.alias,cfg.node_num,connection
 		,tm.tm_hour,tm.tm_min,tm_now.tm_hour,tm_now.tm_min
 		,(int)(now-logontime)/60,posts_read,logon_posts,logon_emails

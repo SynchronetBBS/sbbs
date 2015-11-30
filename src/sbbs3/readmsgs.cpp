@@ -413,7 +413,9 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 	}
 	if(mode&SCAN_NEW && subscan[subnum].ptr>=last && !(mode&SCAN_BACK)) {
 		if(subscan[subnum].ptr>last)
-			subscan[subnum].ptr=subscan[subnum].last=last;
+			subscan[subnum].ptr=last;
+		if(subscan[subnum].last>last)
+			subscan[subnum].last=last;
 		bprintf(text[NScanStatusFmt]
 			,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,0L,msgs);
 		return(0); 

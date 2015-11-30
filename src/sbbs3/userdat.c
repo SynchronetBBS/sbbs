@@ -845,29 +845,33 @@ char* DLLCALL nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen)
 		return(buf);
 	}
 
+	str[0]=0;
     switch(node->status) {
         case NODE_WFC:
-            strcpy(str,"Waiting for connection");
+            SAFECOPY(str,"Waiting for connection");
             break;
         case NODE_OFFLINE:
             strcpy(str,"Offline");
             break;
         case NODE_NETTING:	/* Obsolete */
-            strcpy(str,"Networking");
+            SAFECOPY(str,"Networking");
             break;
         case NODE_LOGON:
-            SAFEPRINTF(str,"At logon prompt %s"
+            SAFEPRINTF(str,"At login prompt %s"
 				,node_connection_desc(node->connection, tmp));
             break;
+		case NODE_LOGOUT:
+			SAFEPRINTF(str,"Logging out %s", username(cfg,node->useron,tmp));
+			break;
         case NODE_EVENT_WAITING:
-            strcpy(str,"Waiting for all nodes to become inactive");
+            SAFECOPY(str,"Waiting for all nodes to become inactive");
             break;
         case NODE_EVENT_LIMBO:
             SAFEPRINTF(str,"Waiting for node %d to finish external event"
                 ,node->aux);
             break;
         case NODE_EVENT_RUNNING:
-            strcpy(str,"Running external event");
+            SAFECOPY(str,"Running external event");
             break;
         case NODE_NEWUSER:
             SAFEPRINTF(str,"New user applying for access %s"
@@ -2838,9 +2842,8 @@ ulong DLLCALL loginFailure(link_list_t* list, const union xp_sockaddr* addr, con
 
 /****************************************************************************/
 /* Message-new-scan pointer/configuration functions							*/
-/* Pass usernumber value of 0 to indicate "Guest" login						*/
 /****************************************************************************/
-BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
+BOOL DLLCALL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 {
 	char		path[MAX_PATH+1];
 	uint		i;
@@ -2860,10 +2863,13 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 		subscan[i].sav_cfg=subscan[i].cfg; 
 	}
 
-	if(usernumber == 0) /* guest */
+	if(user->number == 0)
+		return 0;
+
+	if(user->rest&FLAG('G'))
 		return initmsgptrs(cfg, subscan, cfg->guest_msgscan_init);
 	
-	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, usernumber);
+	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, user->number);
 	if((stream=fnopen(&file,path,O_RDONLY))==NULL) {
 		if(fexist(path))
 			return(FALSE);	/* file exists, but couldn't be opened? */
@@ -2890,7 +2896,7 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 /* Writes to data/user/ptrs/*.ixb the msgptr array for the current user		*/
 /* Pass usernumber value of 0 to indicate "Guest" login						*/
 /****************************************************************************/
-BOOL DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
+BOOL DLLCALL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 {
 	char		path[MAX_PATH+1];
 	ushort		idx;
@@ -2900,12 +2906,13 @@ BOOL DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 	ulong		length;
 	uint32_t	l=0L;
 
-	if(usernumber == 0)	/* Guest */
+	if(user->number==0 || (user->rest&FLAG('G')))	/* Guest */
 		return(TRUE);
-	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, usernumber);
+	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, user->number);
 	if((file=nopen(path,O_WRONLY|O_CREAT))==-1) {
 		return(FALSE); 
 	}
+	fixmsgptrs(cfg, subscan);
 	length=(ulong)filelength(file);
 	for(i=0;i<cfg->total_subs;i++) {
 		if(subscan[i].sav_ptr==subscan[i].ptr 
@@ -2956,7 +2963,8 @@ BOOL DLLCALL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days)
 
 	for(i=0;i<cfg->total_subs;i++) {
 		if(days == 0) {
-			subscan[i].sav_ptr = subscan[i].ptr = ~0;
+			/* This value will be "fixed" (changed to the last msg) when saving */
+			subscan[i].ptr = ~0;
 			continue;
 		}
 		ZERO_VAR(smb);
@@ -2966,9 +2974,38 @@ BOOL DLLCALL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days)
 		if(smb_open(&smb) != SMB_SUCCESS)
 			continue;
 		if(days == 0)
-			subscan[i].sav_ptr = subscan[i].ptr = smb.status.last_msg;
+			subscan[i].ptr = smb.status.last_msg;
 		else if(smb_getmsgidx_by_time(&smb, &idx, t) == SMB_SUCCESS)
-			subscan[i].sav_ptr = subscan[i].ptr = idx.number;
+			subscan[i].ptr = idx.number;
+		smb_close(&smb);
+	}
+	return TRUE;
+}
+
+/****************************************************************************/
+/* Insure message new-scan pointers are within the range of the msgs in		*/
+/* the sub-board.															*/
+/****************************************************************************/
+BOOL DLLCALL fixmsgptrs(scfg_t* cfg, subscan_t* subscan)
+{
+	uint		i;
+	smb_t		smb;
+
+	for(i=0;i<cfg->total_subs;i++) {
+		if(subscan[i].ptr == 0)
+			continue;
+		if(subscan[i].sav_ptr == subscan[i].ptr)
+			continue;
+		ZERO_VAR(smb);
+		SAFEPRINTF2(smb.file,"%s%s",cfg->sub[i]->data_dir,cfg->sub[i]->code);
+		smb.retry_time=cfg->smb_retry_time;
+		smb.subnum=i;
+		if(smb_open(&smb) != SMB_SUCCESS)
+			continue;
+		if(subscan[i].ptr > smb.status.last_msg)
+			subscan[i].ptr = smb.status.last_msg;
+		if(subscan[i].last > smb.status.last_msg)
+			subscan[i].last = smb.status.last_msg;
 		smb_close(&smb);
 	}
 	return TRUE;
