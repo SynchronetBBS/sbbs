@@ -74,7 +74,7 @@ TODO: This is broken and stuff.
     for(unsigned u=0; keys!=NULL && keys[u]!=NULL; u++) {
         if(keys[u][0])
             GlobalValueListEditor->InsertRow(AnsiString(keys[u])
-                ,AnsiString(iniGetString(ini,ROOT_SECTION,keys[u],"error",NULL))
+                ,AnsiString(iniGetString(ini,ROOT_SECTION,keys[u],"",NULL))
                 ,/* append: */true);
     }
     iniFreeStringList(keys);
@@ -177,7 +177,7 @@ void __fastcall TServicesCfgDlg::CheckListBoxClick(TObject *Sender)
     for(unsigned u=0; keys!=NULL && keys[u]!=NULL; u++) {
         if(keys[u][0])
             ValueListEditor->InsertRow(AnsiString(keys[u]),
-                AnsiString(iniGetString(section,NULL,keys[u],"error",NULL)), /* append: */true);
+                AnsiString(iniGetString(section,NULL,keys[u],"",NULL)), /* append: */true);
     }
     iniFreeStringList(keys);
     iniFreeStringList(section);
@@ -243,4 +243,6 @@ void __fastcall TServicesCfgDlg::GlobalValueListEditorValidate(
         ,KeyName.c_str(), KeyValue.c_str(), /* style: */NULL);
 }
 //---------------------------------------------------------------------------
+
+
 
