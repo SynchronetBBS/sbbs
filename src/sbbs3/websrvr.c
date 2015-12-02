@@ -941,6 +941,7 @@ static int close_socket(SOCKET *sock)
 	BOOL	rd;
 
 	if(sock==NULL || *sock==INVALID_SOCKET)
+		return -1;
 
 	/* required to ensure all data is sent */
 	shutdown(*sock,SHUT_WR);
