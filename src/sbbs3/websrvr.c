@@ -407,6 +407,7 @@ static char *find_last_slash(char *str);
 static BOOL check_extra_path(http_session_t * session);
 static BOOL exec_ssjs(http_session_t* session, char* script);
 static BOOL ssjs_send_headers(http_session_t* session, int chunked);
+static int sess_recv(http_session_t *session, char *buf, size_t length, int flags);
 
 static time_t
 sub_mkgmt(struct tm *tm)
@@ -935,12 +936,22 @@ static void close_socket_cb(SOCKET sock, void *cbdata)
 static int close_socket(SOCKET *sock)
 {
 	int		result;
+	char	ch;
+	time_t	end = time(NULL) + startup->max_inactivity;
+	BOOL	rd;
 
 	if(sock==NULL || *sock==INVALID_SOCKET)
-		return(-1);
 
-	/* required to ensure all data is send when SO_LINGER is off (Not functional on Win32) */
-	shutdown(*sock,SHUT_RDWR);
+	/* required to ensure all data is sent */
+	shutdown(*sock,SHUT_WR);
+	while(socket_check(*sock, &rd, NULL, startup->max_inactivity*1000))  {
+		if (rd) {
+			if (recv(*sock,&ch,1,0) <= 0)
+				break;
+		}
+		if (time(NULL) >= end)
+			break;
+	}
 	result=closesocket(*sock);
 	*sock=INVALID_SOCKET;
 	if(startup!=NULL && startup->socket_open!=NULL) {
