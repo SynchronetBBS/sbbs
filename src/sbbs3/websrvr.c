@@ -6108,7 +6108,6 @@ void http_output_thread(void *arg)
 
 		pthread_mutex_lock(&session->outbuf_write);
         RingBufRead(obuf, (uchar*)bufdata, avail);
-		pthread_mutex_unlock(&session->outbuf_write);
 		if(chunked) {
 			bufdata+=avail;
 			*(bufdata++)='\r';
@@ -6118,6 +6117,7 @@ void http_output_thread(void *arg)
 
 		if(!failed)
 			sess_sendbuf(session, buf, len, &failed);
+		pthread_mutex_unlock(&session->outbuf_write);
     }
 	thread_down();
 	/* Ensure outbuf isn't currently being drained */
