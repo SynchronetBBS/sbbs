@@ -369,8 +369,10 @@ bool sbbs_t::answer()
 		}
 	}
 
-	if(!online) 
+	if(!online) {
+		useron.number=0;
 		return(false); 
+	}
 
 	if(stricmp(terminal,"sexpots")==0) {	/* dial-up connection (via SexPOTS) */
 		SAFEPRINTF2(str,"%s connection detected at %lu bps", terminal, cur_rate);
