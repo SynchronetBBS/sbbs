@@ -879,7 +879,6 @@ public:
 	bool	qwklogon;
 	ulong	qwkmail_last;
 	void	qwk_sec(void);
-	int		qwk_route(char *inaddr, char *fulladdr);
 	uint	total_qwknodes;
 	struct qwknode {
 		char	id[LEN_QWKID+1];
@@ -1107,6 +1106,9 @@ extern "C" {
 	/* xtrn.cpp */
 	DLLEXPORT char*		DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr
 									,const char* fpath, const char* fspec, char* cmd);
+
+	/* qwk.cpp */
+	DLLEXPORT int		qwk_route(scfg_t*, const char *inaddr, char *fulladdr, size_t maxlen);
 
 #ifdef JAVASCRIPT
 

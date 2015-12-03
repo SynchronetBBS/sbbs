@@ -81,9 +81,9 @@ bool route_circ(char *via, char *id)
 	return(false);
 }
 
-int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
+extern "C" int DLLCALL qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t maxlen)
 {
-	char node[10],str[256],*p;
+	char node[10],str[256],path[MAX_PATH+1],*p;
 	int file,i;
 	FILE *stream;
 
@@ -92,47 +92,47 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 	p=strrchr(str,'/');
 	if(p) p++;
 	else p=str;
-	sprintf(node,"%.8s",p);                 /* node = destination node */
+	SAFECOPY(node,p);                 /* node = destination node */
 	truncsp(node);
 
-	for(i=0;i<cfg.total_qhubs;i++)			/* Check if destination is our hub */
-		if(!stricmp(cfg.qhub[i]->id,node))
+	for(i=0;i<cfg->total_qhubs;i++)			/* Check if destination is our hub */
+		if(!stricmp(cfg->qhub[i]->id,node))
 			break;
-	if(i<cfg.total_qhubs) {
-		strcpy(fulladdr,node);
+	if(i<cfg->total_qhubs) {
+		strncpy(fulladdr,node,maxlen);
 		return(0); 
 	}
 
-	i=matchuser(&cfg,node,FALSE);			/* Check if destination is a node */
+	i=matchuser(cfg,node,FALSE);			/* Check if destination is a node */
 	if(i) {
-		getuserrec(&cfg,i,U_REST,8,str);
+		getuserrec(cfg,i,U_REST,8,str);
 		if(ahtoul(str)&FLAG('Q')) {
-			strcpy(fulladdr,node);
+			strncpy(fulladdr,node,maxlen);
 			return(i); 
 		}
 		
 	}
 
-	sprintf(node,"%.8s",inaddr);            /* node = next hop */
+	SAFECOPY(node,inaddr);            /* node = next hop */
 	p=strchr(node,'/');
 	if(p) *p=0;
 	truncsp(node);							
 
 	if(strchr(inaddr,'/')) {                /* Multiple hops */
 
-		for(i=0;i<cfg.total_qhubs;i++)			/* Check if next hop is our hub */
-			if(!stricmp(cfg.qhub[i]->id,node))
+		for(i=0;i<cfg->total_qhubs;i++)			/* Check if next hop is our hub */
+			if(!stricmp(cfg->qhub[i]->id,node))
 				break;
-		if(i<cfg.total_qhubs) {
-			strcpy(fulladdr,inaddr);
+		if(i<cfg->total_qhubs) {
+			strncpy(fulladdr,inaddr,maxlen);
 			return(0); 
 		}
 
-		i=matchuser(&cfg,node,FALSE);			/* Check if next hop is a node */
+		i=matchuser(cfg,node,FALSE);			/* Check if next hop is a node */
 		if(i) {
-			getuserrec(&cfg,i,U_REST,8,str);
+			getuserrec(cfg,i,U_REST,8,str);
 			if(ahtoul(str)&FLAG('Q')) {
-				strcpy(fulladdr,inaddr);
+				strncpy(fulladdr,inaddr,maxlen);
 				return(i); 
 			}
 		}
@@ -141,18 +141,18 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 	p=strchr(node,' ');
 	if(p) *p=0;
 
-	sprintf(str,"%sqnet/route.dat",cfg.data_dir);
-	if((stream=fnopen(&file,str,O_RDONLY))==NULL)
+	SAFEPRINTF(path,"%sqnet/route.dat",cfg->data_dir);
+	if((stream=fnopen(&file,path,O_RDONLY))==NULL)
 		return(0);
 
 	strcat(node,":");
 	fulladdr[0]=0;
 	while(!feof(stream)) {
-		if(!fgets(str,256,stream))
+		if(!fgets(str,sizeof(str),stream))
 			break;
 		if(!strnicmp(str+9,node,strlen(node))) {
 			truncsp(str);
-			sprintf(fulladdr,"%s/%s",str+9+strlen(node),inaddr);
+			safe_snprintf(fulladdr,maxlen,"%s/%s",str+9+strlen(node),inaddr);
 			break; 
 		}
 		
@@ -162,27 +162,26 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 	if(!fulladdr[0])			/* First hop not found in ROUTE.DAT */
 		return(0);
 
-	sprintf(node,"%.8s",fulladdr);
+	SAFECOPY(node, fulladdr);
 	p=strchr(node,'/');
 	if(p) *p=0;
 	truncsp(node);
 
-	for(i=0;i<cfg.total_qhubs;i++)				/* Check if first hop is our hub */
-		if(!stricmp(cfg.qhub[i]->id,node))
+	for(i=0;i<cfg->total_qhubs;i++)				/* Check if first hop is our hub */
+		if(!stricmp(cfg->qhub[i]->id,node))
 			break;
-	if(i<cfg.total_qhubs)
+	if(i<cfg->total_qhubs)
 		return(0);
 
-	i=matchuser(&cfg,node,FALSE);				/* Check if first hop is a node */
+	i=matchuser(cfg,node,FALSE);				/* Check if first hop is a node */
 	if(i) {
-		getuserrec(&cfg,i,U_REST,8,str);
+		getuserrec(cfg,i,U_REST,8,str);
 		if(ahtoul(str)&FLAG('Q'))
 			return(i); 
 	}
 	fulladdr[0]=0;
 	return(0);
 }
-
 
 /* Via is in format: NODE/NODE/... */
 void sbbs_t::update_qwkroute(char *via)
@@ -217,7 +216,7 @@ void sbbs_t::update_qwkroute(char *via)
 		sprintf(str,"%sqnet/route.dat",cfg.data_dir);
 		if((stream=fnopen(&file,str,O_RDONLY))!=NULL) {
 			while(!feof(stream)) {
-				if(!fgets(str,255,stream))
+				if(!fgets(str,sizeof(str),stream))
 					break;
 				truncsp(str);
 				t=dstrtounix(&cfg,str);

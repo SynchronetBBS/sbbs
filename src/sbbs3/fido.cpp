@@ -619,7 +619,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 		p++;
 		addr=p;
-		msg.idx.to=qwk_route(addr,fulladdr);
+		msg.idx.to=qwk_route(&cfg,addr,fulladdr, sizeof(fulladdr)-1);
 		if(!fulladdr[0]) {		/* Invalid address, so BOUNCE it */
 		/**
 			errormsg(WHERE,ERR_CHK,addr,0);

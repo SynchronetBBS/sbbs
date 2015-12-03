@@ -334,7 +334,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 	addr++;
 	strupr(addr);
 	truncsp(addr);
-	touser=qwk_route(addr,fulladdr);
+	touser=qwk_route(&cfg,addr,fulladdr,sizeof(fulladdr)-1);
 	if(!fulladdr[0]) {
 		bputs(text[InvalidNetMailAddr]);
 		return(false); 
