@@ -90,6 +90,7 @@ var deleteMessage = function(sub, id) {
 	$.getJSON(
 		'./api/forum.ssjs?call=delete-message&sub=' + sub + '&number=' + id,
 		function(data) {
+			console.log(data);
 			if(data.success) {
 				$('#li-' + id).remove();
 				insertParam("notice", "Message deleted.");
@@ -190,7 +191,7 @@ var getMailBody = function(id) {
 					'aria-label="Reply to this message" ' +
 					'title="Reply to this message" ' +
 					'name="reply-' + id + '" ' +
-					'onclick="addReply(\'mail\'),' + id + '">' +
+					'onclick="addReply(\'mail\',' + id + ')">' +
 					'<span class="glyphicon glyphicon-comment"></span>' +
 					'</button>' +
 					'<button class="btn btn-default icon" aria-label="Delete this message" ' +
