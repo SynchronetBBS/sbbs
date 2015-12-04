@@ -67,6 +67,8 @@ Options=NO_HOST_LOOKUP
 Command=websocket-rlogin-service.js
 ```
 - Tell your router and firewall to open and forward ports *1123* and *1513* to your BBS
+- If you were running ecWeb v3 and modified the *RootDirectory* value in the *[Web]* section of *ctrl/sbbs.ini* to point to *../web/root/ecwebv3*, change it back to *../web/root*.
+- Start your BBS back up again
 
 ###Configuration
 
