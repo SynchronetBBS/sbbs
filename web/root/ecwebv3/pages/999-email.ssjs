@@ -29,8 +29,8 @@ if(user.alias != webIni.WebGuest) {
 	print(
 		"loadThreads('http://"
 		+ http_request.host
-		+ ":"
-		+ webIni.HTTPPort
+//		+ ":"
+//		+ webIni.HTTPPort
 		+ webIni.appendURL
 		+ "/forum-async.ssjs', 'mail', "
 		+ ((http_request.query.hasOwnProperty('thread'))?false:true) + ");"
@@ -39,8 +39,8 @@ if(user.alias != webIni.WebGuest) {
 		print(
 			"loadThread('http://"
 			+ http_request.host
-			+ ":"
-			+ webIni.HTTPPort
+//			+ ":"
+//			+ webIni.HTTPPort
 			+ webIni.appendURL
 			+ "/forum-async.ssjs', 'mail', '"
 			+ http_request.query.thread
