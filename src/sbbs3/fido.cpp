@@ -446,6 +446,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 {
 	char	*qwkbuf,to[129],name[129],sender[129],senderaddr[129]
 			   ,str[256],*p,*cp,*addr,fulladdr[129],ch;
+	char*	sender_id = fromhub ? cfg.qhub[fromhub-1]->id : useron.alias;
 	char 	tmp[512];
 	int 	i,fido,inet=0,qnet=0;
 	ushort	net;
@@ -558,16 +559,12 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 				l+=strlen(str)+1;
 				cp=str;
 				while(*cp && *cp<=' ') cp++;
-				sprintf(senderaddr,"%s/%s"
-					,fromhub ? cfg.qhub[fromhub-1]->id : useron.alias,cp);
+				sprintf(senderaddr,"%s/%s",sender_id,cp);
 				strupr(senderaddr);
 				smb_hfield(&msg,SENDERNETADDR,strlen(senderaddr),senderaddr); 
 			}
 			else {
-				if(fromhub)
-					SAFECOPY(senderaddr, cfg.qhub[fromhub-1]->id);
-				else
-					SAFECOPY(senderaddr, useron.alias);
+				SAFECOPY(senderaddr, sender_id);
 				strupr(senderaddr);
 				smb_hfield(&msg,SENDERNETADDR,strlen(senderaddr),senderaddr); 
 			}
@@ -790,8 +787,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			useron.etoday++;
 			putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
-			sprintf(str,"%s sent %s NetMail to %s (%s) via QWK"
-				,useron.alias
+			safe_snprintf(str,sizeof(str), "%s (%s) sent %s NetMail to %s (%s) via QWK"
+				,sender, sender_id
 				,qnet ? "QWK":"Internet",name,qnet ? fulladdr : to);
 			logline("EN",str); 
 		}
@@ -814,7 +811,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	if(fromhub || useron.rest&FLAG('Q')) {
 		sprintf(str,"%.25s",block+46);              /* From */
 		truncsp(str);
-		sprintf(tmp,"@%s",fromhub ? cfg.qhub[fromhub-1]->id : useron.alias);
+		sprintf(tmp,"@%s",sender_id);
 		strupr(tmp);
 		strcat(str,tmp); 
 	}
@@ -973,7 +970,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
 	sprintf(str,"%s sent NetMail to %s @%s via QWK"
-		,useron.alias
+		,sender_id
 		,hdr.to,smb_faddrtoa(&fidoaddr,tmp));
 	logline("EN",str);
 }
