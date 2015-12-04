@@ -55,29 +55,6 @@ function listSubs (group) {
     return response;
 }
 
-function listThreads (sub) {
-    var response = [];
-    if (typeof msg_area.sub[sub] === 'undefined') return response;
-    try {
-        var threads = getMessageThreads(sub);
-        Object.keys(threads.thread).forEach(
-            function(thread) {
-                if (threads.thread[thread].messages.length < 1)
-                    return;
-                var ret = {
-                    header : threads.thread[thread].messages[0],
-                    messages : threads.thread[thread].messages.length,
-                    unread : getUnreadInThread(sub, threads.thread[thread])
-                };
-                response.push(ret);
-            }
-        )
-    } catch (err) {
-        log(err);
-    }
-    return response;
-}
-
 function getSubUnreadCount (sub) {
     var ret = {
         'scanned' : 0,
@@ -129,6 +106,12 @@ function getGroupUnreadCount (group) {
 }
 
 function getUnreadInThread (sub, thread) {
+    if (typeof thread === 'number') {
+        var threads = getMessageThreads(sub);
+        if(typeof threads.thread[thread] === 'undefined')
+            return 0;
+        thread = threads.thread[thread];
+    }
     var count = 0;
     thread.messages.forEach(
         function (header) {
@@ -395,9 +378,10 @@ function deleteMessage (sub, number) {
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return false;
     var header = msgBase.get_msg_header(number);
+	log(JSON.stringify(header));
     if (header === null) return false;
     if (sub === 'mail' &&
-        (header.to_ext === user.number || header.from_ext === user.number)
+        (header.to_ext == user.number || header.from_ext == user.number)
     ) {
         var ret = msgBase.remove_msg(number);
     } else if (sub !== 'mail' && msg_area.sub[sub].is_operator) {
