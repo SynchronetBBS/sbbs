@@ -8,7 +8,7 @@
  * @format.tab-size 4           (Plain Text/Source Code File Header)        *
  * @format.use-tabs true        (see http://www.synchro.net/ptsc_hdr.html)  *
  *                                                                          *
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html      *
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *                                                                          *
  * This library is free software; you can redistribute it and/or            *
  * modify it under the terms of the GNU Lesser General Public License       *
@@ -59,7 +59,7 @@
         #endif
 #endif
 
-
+#include <ctype.h>
 #include <sys/types.h>
 #ifdef HAS_INTTYPES_H
 #if defined __cplusplus
