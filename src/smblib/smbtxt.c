@@ -190,13 +190,15 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 		content_type +=16;
 	else
 		return buf;
-	p = strstr(content_type, "boundary=\"");
+	p = strstr(content_type, "boundary=");
 	if(p == NULL)
 		return buf;
-	SAFEPRINTF(boundary, "--%s", p + 10);
-	if((p = strchr(boundary,'"')) == NULL)
-		return buf;
-	*p = 0;
+	p += 9;
+	if(*p == '"')
+		p++;
+	SAFEPRINTF(boundary, "--%s", p);
+	if((p = strchr(boundary,'"')) != NULL)
+		*p = 0;
 	txt = buf;
 	while((p = strstr(txt, boundary)) != NULL) {
 		txt = p+strlen(boundary);
