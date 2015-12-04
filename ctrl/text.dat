@@ -584,7 +584,7 @@
 "\1n\1b[\1h\1wF\1n\1b] \1hAutomatic New File Scan       \1n\1b: \1c%s\r\n"   485 UserDefaultsANFS
 "\1n\1b[\1h\1wR\1n\1b] \1hRemember Current Sub-board    \1n\1b: \1c%s\r\n"   486 UserDefaultsRemember
 "\1n\1b[\1h\1wB\1n\1b] \1hBatch Download File Flagging  \1n\1b: \1c%s\r\n"   487 UserDefaultsBatFlag
-"\1n\1b[\1h\1wM\1n\1b] \1hForward E-mail to NetMail     \1n\1b: \1c%s\r\n"   488 UserDefaultsNetMail
+"\1n\1b[\1h\1wM\1n\1b] \1hForward E-mail to NetMail     \1n\1b: \1c%s \1b(\1c%.37s\1b)\r\n"   488 UserDefaultsNetMail
 "\1n\1b[\1h\1wK\1n\1b] \1hCommand Shell                 \1n\1b: \1c%s\r\n"   489 UserDefaultsCommandSet
 "\1n\1b[\1h\1wD\1n\1b] \1hDefault to Quiet Mode         \1n\1b: \1c%s\r\n"   490 UserDefaultsQuiet
 "\1n\1b[\1h\1wW\1n\1b] \1hChange Password or Signature\r\n"               491 UserDefaultsPassword
@@ -874,19 +874,19 @@
 "External Editor"                                       726 ExternalEditorHeading
 "Command Shell"                                         727 CommandShellHeading
 "Archive Type"                                          728 ArchiveTypeHeading
-"Validate message #%u '%s'"				729 ValidatePostQ
-"Waiting for connection"				730 NodeStatusWaitingForCall
-"At logon prompt"					731 NodeStatusLogon
-"New user applying for access"				732 NodeStatusNewUser
-"Offline"						733 NodeStatusOffline
-"Waiting for all nodes to become inactive"		734 NodeStatusEventWaiting
-"Running external event"				735 NodeStatusEventRunning
-"Waiting for node %u to finish external event"		736 NodeStatusEventLimbo
-" via telnet"						737 NodeConnectionTelnet
-" via rlogin"						738 NodeConnectionRLogin
-" via ssh"						739 NodeConnectionSSH
-" at %ubps"						740 NodeConnectionModem
-"\1h\1bQWK Settings for \1w%s #%u:\1n\r\n\r\n"		741 QWKSettingsHdr
+"Validate message #%u '%s'"				                729 ValidatePostQ
+"Waiting for connection"				                730 NodeStatusWaitingForCall
+"At login prompt"					                    731 NodeStatusLogon
+"New user applying for access"				            732 NodeStatusNewUser
+"Offline"						                        733 NodeStatusOffline
+"Waiting for all nodes to become inactive"		        734 NodeStatusEventWaiting
+"Running external event"				                735 NodeStatusEventRunning
+"Waiting for node %u to finish external event"		    736 NodeStatusEventLimbo
+" via telnet"						                    737 NodeConnectionTelnet
+" via rlogin"						                    738 NodeConnectionRLogin
+" via ssh"						                        739 NodeConnectionSSH
+" at %ubps"						                        740 NodeConnectionModem
+"\1h\1bQWK Settings for \1w%s #%u:\1n\r\n\r\n"		    741 QWKSettingsHdr
 "\1n\1b[\1h\1wA\1n\1b] \1hCtrl-A Color Codes           \1n\1b: \1c%s\r\n"	742 QWKSettingsCtrlA
 "\1n\1b[\1h\1wT\1n\1b] \1hArchive Type                 \1n\1b: \1c%s\r\n"	743 QWKSettingsArchive
 "\1n\1b[\1h\1wE\1n\1b] \1hInclude E-mail Messages      \1n\1b: \1c%s\r\n"	744 QWKSettingsEmail
@@ -944,3 +944,4 @@
 "ago"									775 InThePast
 "from now"								776 InTheFuture
 "%s %s %s"								777 AgeOfPostedItem
+"logging out \1h%s"		        		778 NodeStatusLogout
