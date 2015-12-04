@@ -265,7 +265,7 @@ static int lputs(int level, char *str)
     return(prompt_len);
 }
 
-static void errormsg(void* cbdata, int level, const char* fmt)
+static void errormsg(void* cbdata, int level, const char* msg)
 {
 	error_count++;
 }
