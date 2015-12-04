@@ -140,10 +140,10 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 		show_msgattr(msg->hdr.attr);
 
 	bprintf(text[MsgTo],msg->to);
-	if(msg->to_ext)
-		bprintf(text[MsgToExt],msg->to_ext);
 	if(msg->to_net.addr)
 		bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
+	if(msg->to_ext)
+		bprintf(text[MsgToExt],msg->to_ext);
 	if(!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP) {
 		bprintf(text[MsgFrom],msg->from);
 		if(msg->from_ext)
