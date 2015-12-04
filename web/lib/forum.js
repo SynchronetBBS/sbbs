@@ -220,12 +220,12 @@ function getMailBody (number) {
     if (!msgBase.open()) return ret;
     var header = msgBase.get_msg_header(number);
     if (header !== null &&
-        (   header.to_ext === user.number ||
-            header.from_ext === user.number
+        (   header.to_ext == user.number ||
+            header.from_ext == user.number
         )
     ) {
         var body = msgBase.get_msg_body(false, number, header);
-        if (header.to_ext === user.number && (header.attr^MSG_READ)) {
+        if (header.to_ext == user.number && (header.attr^MSG_READ)) {
             header.attr|=MSG_READ;
             msgBase.put_msg_header(false, number, header);
         }
