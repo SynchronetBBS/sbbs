@@ -7,7 +7,7 @@ f.close();
 
 var getSplash = function() {
 	var f = new File(settings.ftelnet_splash);
-	f.open("r");
+	f.open("rb");
 	var splash = base64_encode(f.read());
 	f.close();
 	return splash;
