@@ -192,7 +192,7 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 /****************************************************************************/
 /* Writes message header and text data to a text file						*/
 /****************************************************************************/
-void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
+void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, bool header, ulong mode)
 {
 	char	*buf;
 	char	tmp[128];
@@ -207,10 +207,10 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 		fprintf(out,"\r\n");
 		fprintf(out,"Subj : %s\r\n",msg->subj);
 		fprintf(out,"To   : %s",msg->to);
-		if(msg->to_ext)
-			fprintf(out," #%s",msg->to_ext);
 		if(msg->to_net.addr)
 			fprintf(out," (%s)",smb_netaddrstr(&msg->to_net,tmp));
+		if(msg->to_ext)
+			fprintf(out," #%s",msg->to_ext);
 		fprintf(out,"\r\nFrom : %s",msg->from);
 		if(msg->from_ext && !(msg->hdr.attr&MSG_ANONYMOUS))
 			fprintf(out," #%s",msg->from_ext);
@@ -222,7 +222,7 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 		fprintf(out,"\r\n\r\n"); 
 	}
 
-	buf=smb_getmsgtxt(&smb,msg,tails);
+	buf=smb_getmsgtxt(&smb,msg,mode);
 	if(buf!=NULL) {
 		strip_invalid_attr(buf);
 		fputs(buf,out);

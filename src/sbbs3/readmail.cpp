@@ -696,8 +696,8 @@ void sbbs_t::readmail(uint usernumber, int which)
 					break;
 	*/
 				bputs(text[FileToWriteTo]);
-				if(getstr(str,40,K_LINE))
-					msgtotxt(&msg,str,1,1);
+				if(getstr(str,50,K_LINE))
+					msgtotxt(&msg,str, /* header: */true, /* mode: */GETMSGTXT_ALL);
 				break;
 			case 'E':
 				editmsg(&msg,INVALID_SUB);

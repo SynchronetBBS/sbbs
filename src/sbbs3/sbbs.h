@@ -645,7 +645,7 @@ public:
 	void	show_msgattr(ushort attr);
 	void	show_msghdr(smbmsg_t* msg);
 	void	show_msg(smbmsg_t* msg, long mode);
-	void	msgtotxt(smbmsg_t* msg, char *str, int header, int tails);
+	void	msgtotxt(smbmsg_t* msg, char *str, bool header, ulong mode);
 	ulong	getlastmsg(uint subnum, uint32_t *ptr, time_t *t);
 	time_t	getmsgtime(uint subnum, ulong ptr);
 	ulong	getmsgnum(uint subnum, time_t t);

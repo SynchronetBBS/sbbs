@@ -1070,8 +1070,8 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 								break;
 	*/
 							bputs(text[FileToWriteTo]);
-							if(getstr(str,40,K_LINE))
-								msgtotxt(&msg,str,1,1);
+							if(getstr(str,50,K_LINE))
+								msgtotxt(&msg,str, /* header: */true, /* mode: */GETMSGTXT_ALL);
 							break;
 						case 'U':   /* User edit */
 							useredit(cfg.sub[subnum]->misc&SUB_NAME
