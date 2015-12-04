@@ -837,7 +837,8 @@ void sbbs_t::maindflts(user_t* user)
 			,user->misc&BATCHFLAG ? text[On] : text[Off]);
 		if(cfg.sys_misc&SM_FWDTONET)
 			bprintf(text[UserDefaultsNetMail]
-				,user->misc&NETMAIL ? text[On] : text[Off]);
+				,user->misc&NETMAIL ? text[On] : text[Off]
+				,user->netmail);
 		if(startup->options&BBS_OPT_AUTO_LOGON && user->exempt&FLAG('V'))
 			bprintf(text[UserDefaultsAutoLogon]
 			,user->misc&AUTOLOGON ? text[On] : text[Off]);
