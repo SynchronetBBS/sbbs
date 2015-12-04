@@ -68,6 +68,19 @@ Command=websocket-rlogin-service.js
 ```
 - Tell your router and firewall to open and forward ports *1123* and *1513* to your BBS
 - If you were running ecWeb v3 and modified the *RootDirectory* value in the *[Web]* section of *ctrl/sbbs.ini* to point to *../web/root/ecwebv3*, change it back to *../web/root*.
+
+- Open your *mods/logon.js* file *or, if it doesn't exist yet* copy your *exec/logon.js* file to *mods/logon.js* and then open it
+- Add the following block of code to the top of the file, under the line that says *load('sbbsdefs.js')*:
+```js
+if (bbs.connection.toUpperCase() == "RLOGIN" &&
+   typeof xtrn_area.prog[console.terminal] != "undefined"
+) {
+        bbs.exec_xtrn(console.terminal);
+        bbs.hangup();
+        exit();
+}
+```
+
 - Start your BBS back up again
 
 ###Configuration
