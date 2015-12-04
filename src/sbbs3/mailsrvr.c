@@ -152,9 +152,11 @@ static int lprintf(int level, const char *fmt, ...)
     va_end(argptr);
 
 	if(level <= LOG_ERR) {
-		errorlog(&scfg,startup==NULL ? NULL:startup->host_name,sbuf), stats.errors++;
+		char errmsg[sizeof(sbuf)+16];
+		SAFEPRINTF(errmsg, "mail %s", sbuf);
+		errorlog(&scfg,startup==NULL ? NULL:startup->host_name,errmsg), stats.errors++;
 		if(startup!=NULL && startup->errormsg!=NULL)
-			startup->errormsg(startup->cbdata,level,sbuf);
+			startup->errormsg(startup->cbdata,level,errmsg);
 	}
 
 	if(level <= LOG_CRIT)
