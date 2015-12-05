@@ -27,15 +27,16 @@ if(	(http_request.method == "GET" || http_request.method == "POST")
 			) {
 				var fileDir = new FileDir(file_area.dir[http_request.query.dir[0]]);
 				var file = null;
-				fileDir.files.forEach(
-					function(f) {
-						if(f.name.toLowerCase() != http_request.query.file[0].toLowerCase())
-							return;
-						file = f;
+				for (var f = 0; f < fileDir.files.length; f++) {
+					if (fileDir.files[f].name.toLowerCase() !==
+						http_request.query.file[0].toLowerCase()
+					) {
+						continue;
 					}
-				);
-				if(file === null)
+					file = fileDir.files[f];
 					break;
+				}
+				if (file === null) break;
 				client.socket.send('HTTP/1.0 Status: 200 OK\r\n');
 				client.socket.send('Content-Type: application/octet-stream\r\n');
 				client.socket.send('Content-Disposition: attachment; filename="' + file.name + '";\r\n');
