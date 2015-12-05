@@ -1,14 +1,16 @@
 //Files
 
-if(typeof argv[0] != "boolean" || !argv[0])
+if(typeof argv[0] !== 'boolean' || !argv[0])
 	exit();
 
-load(system.exec_dir + "../web/lib/init.js");
-load(settings.web_lib + "files.js");
+load(system.exec_dir + '../web/lib/init.js');
+load(settings.web_lib + 'files.js');
 
 //writeln('<script type="text/javascript" src="./js/files.js"></script>');
 
-if(typeof http_request.query.dir != "undefined") {
+if (typeof http_request.query.dir !== 'undefined' &&
+	typeof file_area.dir[http_request.query.dir[0]] !== 'undefined'
+) {
 	// File listing
 
 	writeln(
@@ -25,7 +27,7 @@ if(typeof http_request.query.dir != "undefined") {
 		'</ol>'
 	);
 
-	var writeFileDetails = function(file) {
+	function writeFileDetails(file) {
 		writeln(
 			format(
 				'<a href="./api/files.ssjs?call=download-file&amp;dir=%s&amp;file=%s" target="_blank" class="list-group-item striped">' +
@@ -50,7 +52,10 @@ if(typeof http_request.query.dir != "undefined") {
 	writeln('</div>');
 
 
-} else if(typeof http_request.query.library != "undefined") {
+} else if(
+	typeof http_request.query.library !== 'undefined' &&
+	typeof file_area.lib_list[http_request.query.library[0]] !== 'undefined'
+) {
 	// File directory listing
 
 	writeln(
@@ -64,7 +69,7 @@ if(typeof http_request.query.dir != "undefined") {
 		'</ol>'
 	);
 
-	var writeDirectory = function(dir) {
+	function writeDirectory(dir) {
 		writeln(
 			format(
 				'<a href="./?page=%s&amp;dir=%s" class="list-group-item striped">' +
@@ -95,7 +100,7 @@ if(typeof http_request.query.dir != "undefined") {
 		'</ol>'
 	);
 
-	var writeLibrary = function(library) {
+	function writeLibrary(library) {
 		writeln(
 			format(
 				'<a href="./?page=%s&amp;library=%s" class="list-group-item striped">' +
