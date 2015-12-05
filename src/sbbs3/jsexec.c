@@ -128,7 +128,11 @@ void usage(FILE* fp)
 		"\t-t<limit>      set time limit (default=%u, 0=unlimited)\n"
 		"\t-y<interval>   set yield interval (default=%u, 0=never)\n"
 		"\t-g<interval>   set garbage collection interval (default=%u, 0=never)\n"
+#ifdef JSDOOR
+		"\t-h[hostname]   use local or specified host name\n"
+#else
 		"\t-h[hostname]   use local or specified host name (instead of SCFG value)\n"
+#endif
 		"\t-u<mask>       set file creation permissions mask (in octal)\n"
 		"\t-L<level>      set log level (default=%u)\n"
 		"\t-E<level>      set error log level threshold (default=%u)\n"
@@ -204,11 +208,11 @@ int lprintf(int level, const char *fmt, ...)
 
 	if(level<=err_level) {
 		ret=fprintf(errfp,"%s\n",sbuf);
-		if(errfp!=stderr && confp!=stdout)
+		if(errfp!=stderr)
 			ret=fprintf(statfp,"%s\n",sbuf);
 	}
-	if(level>err_level || errfp!=stderr)
-		ret=fprintf(confp,"%s\n",sbuf);
+	if(level>err_level)
+		ret=fprintf(statfp,"%s\n",sbuf);
 
 	pthread_mutex_unlock(&output_mutex);
     return(ret);
@@ -1128,6 +1132,9 @@ int main(int argc, char **argv, char** environ)
  	SAFECOPY(scfg.logs_dir, orig_cwd);
 	prep_dir(scfg.ctrl_dir, scfg.text_dir, sizeof(scfg.text_dir));
  	scfg.sys_misc = 0; /* SM_EURODATE and SM_MILITARY are used */
+	gethostname(host_name=host_name_buf,sizeof(host_name_buf));
+	statfp = nulfp;
+	errfp = fopen("error.log", "a");
 #endif
 
 	for(argn=1;argn<argc && module==NULL;argn++) {
@@ -1155,6 +1162,8 @@ int main(int argc, char **argv, char** environ)
 					break;
 				case 'e':
 					if(*p==0) p=argv[++argn];
+					if (errfp != stderr)
+						fclose(errfp);
 					if((errfp=fopen(p,omode))==NULL) {
 						perror(p);
 						return(do_bail(1));
