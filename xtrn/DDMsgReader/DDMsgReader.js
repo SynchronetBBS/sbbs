@@ -166,8 +166,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05 Beta 10";
-var READER_DATE = "2015-11-29";
+var READER_VERSION = "1.05 Beta 11";
+var READER_DATE = "2015-12-05";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -10498,7 +10498,7 @@ function DigDistMsgReader_BuildSubBoardPrintfInfoForGrp(pGrpIndex)
    }
 }
 
-// Returns an arry of strings containing extended message header information,
+// Returns an array of strings containing extended message header information,
 // such as the kludge lines (for FidoNet-style networks), etc.
 // For each kludge line, there will be a label string for the info line, the
 // info line itself (wrapped to fit the message area width), then a blank
@@ -10754,14 +10754,18 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 					itemValue = "\1n" + this.colors.hdrLineValueColor + infoLineWrappedArray[lineIdx] + "\1n";
 					if (prop == "when_written_time")
 					{
+						//itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_written_time) + "\1n";
 						itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_written_time) + " "
 						          + system.zonestr(pMsgHdr.when_written_zone) + "\1n";
 					}
 					else if (prop == "when_imported_time")
 					{
+						//itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_imported_time) + "\1n";
 						itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_imported_time) + " "
 						          + system.zonestr(pMsgHdr.when_imported_zone) + "\1n";
 					}
+					else if ((prop == "when_imported_zone") || (prop == "when_written_zone"))
+						itemValue = "\1n" + this.colors.hdrLineValueColor + system.zonestr(pMsgHdr[prop]) + "\1n";
 
 					var hdrItem = propLabel + " " + itemValue;
 					if (hdrItem.length < this.msgAreaWidth)
@@ -12762,7 +12766,6 @@ function scrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 		pFrame.scrollTo(0, pTopLineIdx);
 
 	var writeTxtLines = pWriteTxtLines;
-	//console.print("\1n- writeTxtlines: " + writeTxtLines + "\r\n\1p"); // Temporary
 	if (writeTxtLines)
 	{
 		pFrame.invalidate(); // Force drawing on the next call to draw() or cycle()
@@ -14228,9 +14231,6 @@ function ANSIAttrsToSyncAttrs(pText)
 					convertedTmpFile.close();
 				}
 			}
-			// Temporary
-			console.print("\1nConverted ANSI to Sync attributes\r\n\1p");
-			// End Temporary
 			deltree(readerTmpDir);
 		}
 		else
