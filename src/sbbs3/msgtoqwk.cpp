@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -125,7 +125,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 
 		/* RECIPIENT */
 		fprintf(hdrs,"%s: %s\n",smb_hfieldtype(RECIPIENT),msg->to);
-		if(msg->to_net.type)
+		if(msg->to_net.type!=NET_NONE && subnum==INVALID_SUB)
 			fprintf(hdrs,"%s: %s\n",smb_hfieldtype(RECIPIENTNETADDR),smb_netaddrstr(&msg->to_net,tmp));
 
 		/* FidoNet */

@@ -145,7 +145,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		/*********************************/
 		n=(uint)block[123]|(((uint)block[124])<<8);  /* conference number */
 
-		qwk_new_msg(&msg,(char*)block,/* offset: */l,headers,/* parse_sender_hfields: */true);
+		qwk_new_msg(n, &msg,(char*)block,/* offset: */l,headers,/* parse_sender_hfields: */true);
 
 		if(cfg.max_qwkmsgage && msg.hdr.when_written.time < (uint32_t)now
 			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {

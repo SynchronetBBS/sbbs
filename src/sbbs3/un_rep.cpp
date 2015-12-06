@@ -208,7 +208,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 			blocks=1;
 			continue; 
 		}
-		qwk_new_msg(&msg, block, /* offset: */l, headers, /* parse_sender_hfields: */useron.rest&FLAG('Q') ? true:false);
+
+		long confnum = atol((char *)block+1);
+
+		qwk_new_msg(confnum, &msg, block, /* offset: */l, headers, /* parse_sender_hfields: */useron.rest&FLAG('Q') ? true:false);
 
 		if(cfg.max_qwkmsgage && msg.hdr.when_written.time < (uint32_t)now
 			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
@@ -244,7 +247,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			continue;
 		}
 
-		if(atoi(block+1)==0) {					/**********/
+		if(confnum==0) {						/**********/
 			if(useron.rest&FLAG('E')) {         /* E-mail */
 				bputs(text[R_Email]);			/**********/
 				continue; 
@@ -381,7 +384,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 				/**************************/
 		else {	/* message on a sub-board */
 				/**************************/
-			long confnum = atol((char *)block+1);
 			if((n=resolve_qwkconf(confnum))==INVALID_SUB) {
 				bprintf(text[QWKInvalidConferenceN],confnum);
 				SAFEPRINTF2(str,"%s: Invalid QWK conference number %ld",useron.alias,confnum);

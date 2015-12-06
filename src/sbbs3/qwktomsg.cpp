@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "qwk.h"
 
-static void qwk_parse_header_list(smbmsg_t* msg, str_list_t* headers, bool parse_sender_hfields, bool parse_recipient_hfields)
+static void qwk_parse_header_list(ulong confnum, smbmsg_t* msg, str_list_t* headers, bool parse_sender_hfields, bool parse_recipient_hfields)
 {
 	char*		p;
 	char		zone[32];
@@ -64,10 +64,10 @@ static void qwk_parse_header_list(smbmsg_t* msg, str_list_t* headers, bool parse
 
 	/* Recipient net address and type */
 	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=RECIPIENTNETADDR),value))!=NULL) {
-		if(parse_recipient_hfields) {
-			net_type=NET_UNKNOWN;
-			smb_hfield_netaddr(msg,hfield_type,p,&net_type);
-			smb_hfield_bin(msg,RECIPIENTNETTYPE,net_type);
+		if(confnum==0 && parse_recipient_hfields) {
+			net_type=smb_get_net_type_by_addr(p);
+			if(smb_hfield_netaddr(msg,hfield_type,p,&net_type) == SMB_SUCCESS)
+				smb_hfield_bin(msg,RECIPIENTNETTYPE,net_type);
 		}
 	}
 
@@ -81,10 +81,10 @@ static void qwk_parse_header_list(smbmsg_t* msg, str_list_t* headers, bool parse
 
 	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SENDERNETADDR),value))!=NULL) {
 		if(parse_sender_hfields) {
-			smb_hfield_str(msg,hfield_type,p);
-			net_type=NET_UNKNOWN;
-			smb_hfield_netaddr(msg,hfield_type,p,&net_type);
-			smb_hfield_bin(msg,SENDERNETTYPE,net_type);
+//			smb_hfield_str(msg,hfield_type,p);	this appears to be unnecessary
+			net_type=smb_get_net_type_by_addr(p);
+			if(smb_hfield_netaddr(msg,hfield_type,p,&net_type) == SMB_SUCCESS)
+				smb_hfield_bin(msg,SENDERNETTYPE,net_type);
 		}
 	}
 
@@ -151,7 +151,7 @@ static void qwk_parse_header_list(smbmsg_t* msg, str_list_t* headers, bool parse
 			smb_hfield_str(msg,RFC822HEADER,(*headers)[i]);
 }
 
-void sbbs_t::qwk_new_msg(smbmsg_t* msg, char* hdrblk, long offset, str_list_t all_headers, bool parse_sender_hfields)
+void sbbs_t::qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t all_headers, bool parse_sender_hfields)
 {
 	char str[128];
 	char to[128];
@@ -169,7 +169,7 @@ void sbbs_t::qwk_new_msg(smbmsg_t* msg, char* hdrblk, long offset, str_list_t al
 	truncsp(to);
 
 	if(msg_headers!=NULL)
-		qwk_parse_header_list(msg, &msg_headers, parse_sender_hfields, stricmp(to,"NETMAIL")!=0);
+		qwk_parse_header_list(confnum, msg, &msg_headers, parse_sender_hfields, stricmp(to,"NETMAIL")!=0);
 
 	/* Parse the QWK message header: */
 	if(msg->hdr.when_written.time==0) {
