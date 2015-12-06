@@ -166,7 +166,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05 Beta 11";
+var READER_VERSION = "1.05 Beta 12";
 var READER_DATE = "2015-12-05";
 
 // Keyboard key codes for displaying on the screen
@@ -10622,7 +10622,6 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 				//  37 (Reply To position)
 				//  38 (Reply To Organization)
 				hdrFieldLabel = "\1n" + this.colors.hdrLineLabelColor + msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type) + "\1n";
-				// New:
 				var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
 				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
 				var hdrArrayNonBlankLines = findHdrFieldDataArrayNonBlankLines(infoLineWrappedArray);
@@ -10650,7 +10649,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 								numFieldItemsWithSameType = -1;
 							}
 						}
-						if (hdrItem.length < this.msgAreaWidth)
+						if (strip_ctrl(hdrItem).length < this.msgAreaWidth)
 							msgHdrInfoLines.push(hdrItem);
 						else
 						{
@@ -10688,23 +10687,6 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 					if (addBlankLineAfterIdx == fieldI)
 						msgHdrInfoLines.push("");
 				}
-				// Old:
-				/*
-				// If the header field label is different, then add it to the
-				// header info lines
-				if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
-				{
-					msgHdrInfoLines.push("");
-					msgHdrInfoLines.push(hdrFieldLabel);
-				}
-				var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
-				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
-				for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
-				{
-					if (infoLineWrappedArray[lineIdx].length > 0)
-						msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
-				}
-				*/
 				lastHdrFieldLabel = hdrFieldLabel;
 			}
 		}
@@ -10734,15 +10716,22 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 			else
 			{
 				// Remove underscores from the property for the label
-				propLabel = "\1n" + this.colors.hdrLineLabelColor + prop.replace(/_/g, " ");
-				// New:
+				propLabel = prop.replace(/_/g, " ");
 				// Apply good-looking capitalization to the property label
 				if ((propLabel == "id") || (propLabel == "ftn tid"))
-					propLabel = "\1n" + this.colors.hdrLineLabelColor + propLabel.toUpperCase() + ":\1n";
-				else if (propLabel == "ftn_area")
-					propLabel = "\1n" + this.colors.hdrLineLabelColor + "FTN_Area:\1n";
+					propLabel = propLabel.toUpperCase();
+				else if (propLabel == "ftn area")
+					propLabel = "FTN Area";
+				else if (propLabel == "attr")
+					propLabel = "Attributes";
+				else if (propLabel == "auxattr")
+					propLabel = "Auxiliary attributes";
+				else if (propLabel == "netattr")
+					propLabel = "Network attributes";
 				else
-					propLabel = "\1n" + this.colors.hdrLineLabelColor + capitalizeFirstChar(propLabel) + ":\1n";
+					propLabel = capitalizeFirstChar(propLabel);
+				// Add the label color and trailing colon to the label text
+				propLabel = "\1n" + this.colors.hdrLineLabelColor + propLabel + ":\1n";
 			}
 			var infoLineWrapped = word_wrap(pMsgHdr[prop], this.msgAreaWidth);
 			var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
@@ -10751,24 +10740,26 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 			{
 				if (infoLineWrappedArray[lineIdx].length > 0)
 				{
-					itemValue = "\1n" + this.colors.hdrLineValueColor + infoLineWrappedArray[lineIdx] + "\1n";
-					if (prop == "when_written_time")
-					{
-						//itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_written_time) + "\1n";
-						itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_written_time) + " "
-						          + system.zonestr(pMsgHdr.when_written_zone) + "\1n";
-					}
-					else if (prop == "when_imported_time")
-					{
-						//itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_imported_time) + "\1n";
-						itemValue = "\1n" + this.colors.hdrLineValueColor + system.timestr(pMsgHdr.when_imported_time) + " "
-						          + system.zonestr(pMsgHdr.when_imported_zone) + "\1n";
-					}
+					// Set itemValue to the value that should be displayed
+					if (prop == "when_written_time") //itemValue = system.timestr(pMsgHdr.when_written_time);
+						itemValue = system.timestr(pMsgHdr.when_written_time) + " " + system.zonestr(pMsgHdr.when_written_zone);
+					else if (prop == "when_imported_time") //itemValue = system.timestr(pMsgHdr.when_imported_time);
+						itemValue = system.timestr(pMsgHdr.when_imported_time) + " " + system.zonestr(pMsgHdr.when_imported_zone);
 					else if ((prop == "when_imported_zone") || (prop == "when_written_zone"))
-						itemValue = "\1n" + this.colors.hdrLineValueColor + system.zonestr(pMsgHdr[prop]) + "\1n";
+						itemValue = system.zonestr(pMsgHdr[prop]);
+					else if (prop == "attr")
+						itemValue = makeMainMsgAttrStr(pMsgHdr[prop], "None");
+					else if (prop == "auxattr")
+						itemValue = makeAuxMsgAttrStr(pMsgHdr[prop], "None");
+					else if (prop == "netattr")
+						itemValue = makeNetMsgAttrStr(pMsgHdr[prop], "None");
+					else
+						itemValue = infoLineWrappedArray[lineIdx];
+					// Add the value color to the value text
+					itemValue = "\1n" + this.colors.hdrLineValueColor + itemValue + "\1n";
 
 					var hdrItem = propLabel + " " + itemValue;
-					if (hdrItem.length < this.msgAreaWidth)
+					if (strip_ctrl(hdrItem).length < this.msgAreaWidth)
 						msgHdrInfoLines.push(hdrItem);
 					else
 					{
@@ -10794,23 +10785,6 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 					}
 				}
 			}
-			// Old:
-			/*
-			// Apply good-looking capitalization to the property label
-			if ((propLabel == "id") || (propLabel == "ftn tid"))
-				msgHdrInfoLines.push(propLabel.toUpperCase() + ":");
-			else if (propLabel == "ftn_area")
-				msgHdrInfoLines.push("FTN_Area:");
-			else
-				msgHdrInfoLines.push(capitalizeFirstChar(propLabel) + ":");
-			var infoLineWrapped = word_wrap(pMsgHdr[prop], this.msgAreaWidth);
-			var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
-			for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
-			{
-				if (infoLineWrappedArray[lineIdx].length > 0)
-					msgHdrInfoLines.push(infoLineWrappedArray[lineIdx]);
-			}
-			*/
 		}
 
 		++propCounter;
@@ -11974,7 +11948,7 @@ function getDefaultColors()
 
 	// Message header line colors
 	colorArray["hdrLineLabelColor"] = "\1n\1c";
-	colorArray["hdrLineValueColor"] = "\1n\1g";
+	colorArray["hdrLineValueColor"] = "\1n\1b\1h";
 
 	return colorArray;
 }
@@ -14548,9 +14522,10 @@ function makeAllMsgAttrStr(pMsgHdr)
 // Parameters:
 //  pMainMsgAttrs: The bit field for the main message attributes
 //                 (normally, the 'attr' property of a header object)
+//  pIfEmptyString: Optional - A string to use if there are no attributes set
 //
 // Return value: A string describing the main message attributes
-function makeMainMsgAttrStr(pMainMsgAttrs)
+function makeMainMsgAttrStr(pMainMsgAttrs, pIfEmptyString)
 {
    var msgAttrStr = "";
    if (typeof(pMainMsgAttrs) == "number")
@@ -14565,6 +14540,8 @@ function makeMainMsgAttrStr(pMainMsgAttrs)
          }
       }
    }
+   if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
+	   msgAttrStr = pIfEmptyString;
    return msgAttrStr;
 }
 
@@ -14573,18 +14550,19 @@ function makeMainMsgAttrStr(pMainMsgAttrs)
 // strings.
 //
 // Parameters:
-//  pMainMsgAttrs: The bit field for the auxiliary message attributes
-//                 (normally, the 'auxattr' property of a header object)
+//  pAuxMsgAttrs: The bit field for the auxiliary message attributes
+//                (normally, the 'auxattr' property of a header object)
+//  pIfEmptyString: Optional - A string to use if there are no attributes set
 //
 // Return value: A string describing the auxiliary message attributes
-function makeAuxMsgAttrStr(pMainMsgAttrs)
+function makeAuxMsgAttrStr(pAuxMsgAttrs, pIfEmptyString)
 {
    var msgAttrStr = "";
-   if (typeof(pMainMsgAttrs) == "number")
+   if (typeof(pAuxMsgAttrs) == "number")
    {
       for (var prop in gAuxMsgAttrStrs)
       {
-         if ((pMainMsgAttrs & prop) == prop)
+         if ((pAuxMsgAttrs & prop) == prop)
          {
             if (msgAttrStr.length > 0)
                msgAttrStr += ", ";
@@ -14592,6 +14570,8 @@ function makeAuxMsgAttrStr(pMainMsgAttrs)
          }
       }
    }
+   if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
+	   msgAttrStr = pIfEmptyString;
    return msgAttrStr;
 }
 
@@ -14600,18 +14580,19 @@ function makeAuxMsgAttrStr(pMainMsgAttrs)
 // strings.
 //
 // Parameters:
-//  pMainMsgAttrs: The bit field for the network message attributes
-//                 (normally, the 'netattr' property of a header object)
+//  pNetMsgAttrs: The bit field for the network message attributes
+//                (normally, the 'netattr' property of a header object)
+//  pIfEmptyString: Optional - A string to use if there are no attributes set
 //
 // Return value: A string describing the network message attributes
-function makeNetMsgAttrStr(pMainMsgAttrs)
+function makeNetMsgAttrStr(pNetMsgAttrs, pIfEmptyString)
 {
    var msgAttrStr = "";
-   if (typeof(pMainMsgAttrs) == "number")
+   if (typeof(pNetMsgAttrs) == "number")
    {
       for (var prop in gNetMsgAttrStrs)
       {
-         if ((pMainMsgAttrs & prop) == prop)
+         if ((pNetMsgAttrs & prop) == prop)
          {
             if (msgAttrStr.length > 0)
                msgAttrStr += ", ";
@@ -14619,6 +14600,8 @@ function makeNetMsgAttrStr(pMainMsgAttrs)
          }
       }
    }
+   if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
+	   msgAttrStr = pIfEmptyString;
    return msgAttrStr;
 }
 
