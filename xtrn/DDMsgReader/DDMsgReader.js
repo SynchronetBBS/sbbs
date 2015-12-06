@@ -79,6 +79,9 @@
  * 2015-11-24 Eric Oulashin     Started working on using the Frame class (in frame.js)
  *                              to display messages with ANSI codes using a scrollable
  *                              user interface
+ * 2015-12-06 Eric Oulashin     Version 1.05
+ *                              Officially releasing this version, as it seems to be
+ *                              fairly stable after testing.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -166,8 +169,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05 Beta 13";
-var READER_DATE = "2015-12-05";
+var READER_VERSION = "1.05";
+var READER_DATE = "2015-12-06";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);

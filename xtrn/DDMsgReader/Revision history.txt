@@ -5,7 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.05     2015-??-??   - Improved displaying of messages with ANSI codes.  The
+1.05     2015-12-06   - Improved displaying of messages with ANSI codes.  The
                       reader now makes use of frame.js and scrollbar.js (in the
                       sync/exec/load directory) to enable a scrollable user
                       interface when displaying messages with ANSI content.
