@@ -166,7 +166,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05 Beta 12";
+var READER_VERSION = "1.05 Beta 13";
 var READER_DATE = "2015-12-05";
 
 // Keyboard key codes for displaying on the screen
@@ -10722,6 +10722,10 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 					propLabel = propLabel.toUpperCase();
 				else if (propLabel == "ftn area")
 					propLabel = "FTN Area";
+				else if (propLabel == "ftn pid")
+					propLabel = "Program ID";
+				else if (propLabel == "thread id")
+					propLabel = "Thread ID";
 				else if (propLabel == "attr")
 					propLabel = "Attributes";
 				else if (propLabel == "auxattr")
