@@ -125,14 +125,14 @@ SMBEXPORT int 		SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 		SMBCALL smb_unlockmsghdr(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 		SMBCALL smb_addcrc(smb_t* smb, uint32_t crc);
 
-SMBEXPORT int 		SMBCALL smb_hfield_add(smbmsg_t* msg, ushort type, size_t length, void* data, BOOL insert);
-SMBEXPORT int		SMBCALL smb_hfield_add_str(smbmsg_t* msg, ushort type, const char* str, BOOL insert);
-SMBEXPORT int		SMBCALL	smb_hfield_replace(smbmsg_t* msg, ushort type, size_t length, void* data);
-SMBEXPORT int		SMBCALL	smb_hfield_replace_str(smbmsg_t* msg, ushort type, const char* str);
-SMBEXPORT int		SMBCALL smb_hfield_append(smbmsg_t* msg, ushort type, size_t length, void* data);
-SMBEXPORT int		SMBCALL smb_hfield_append_str(smbmsg_t* msg, ushort type, const char* data);
+SMBEXPORT int 		SMBCALL smb_hfield_add(smbmsg_t* msg, uint16_t type, size_t length, void* data, BOOL insert);
+SMBEXPORT int		SMBCALL smb_hfield_add_str(smbmsg_t* msg, uint16_t type, const char* str, BOOL insert);
+SMBEXPORT int		SMBCALL	smb_hfield_replace(smbmsg_t* msg, uint16_t type, size_t length, void* data);
+SMBEXPORT int		SMBCALL	smb_hfield_replace_str(smbmsg_t* msg, uint16_t type, const char* str);
+SMBEXPORT int		SMBCALL smb_hfield_append(smbmsg_t* msg, uint16_t type, size_t length, void* data);
+SMBEXPORT int		SMBCALL smb_hfield_append_str(smbmsg_t* msg, uint16_t type, const char* data);
 SMBEXPORT int		SMBCALL smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat, BOOL insert);
-SMBEXPORT int		SMBCALL smb_hfield_add_netaddr(smbmsg_t* msg, ushort type, const char* str, ushort* nettype, BOOL insert);
+SMBEXPORT int		SMBCALL smb_hfield_add_netaddr(smbmsg_t* msg, uint16_t type, const char* str, uint16_t* nettype, BOOL insert);
 /* Convenience macro: */
 #define smb_hfield_bin(msg, type, data) smb_hfield_add(msg, type, sizeof(data), &(data), /* insert: */FALSE)
 /* Backward compatibility macros: */
@@ -140,8 +140,8 @@ SMBEXPORT int		SMBCALL smb_hfield_add_netaddr(smbmsg_t* msg, ushort type, const 
 #define smb_hfield_str(msg, type, str)	smb_hfield_add_str(msg, type, str, /* insert: */FALSE)
 #define smb_hfield_netaddr(msg, type, str, nettype) smb_hfield_add_netaddr(msg, type, str, nettype, /* insert: */FALSE)
 
-SMBEXPORT int 		SMBCALL smb_dfield(smbmsg_t* msg, ushort type, ulong length);
-SMBEXPORT void*		SMBCALL smb_get_hfield(smbmsg_t* msg, ushort type, hfield_t* hfield);
+SMBEXPORT int 		SMBCALL smb_dfield(smbmsg_t* msg, uint16_t type, ulong length);
+SMBEXPORT void*		SMBCALL smb_get_hfield(smbmsg_t* msg, uint16_t type, hfield_t* hfield);
 SMBEXPORT int 		SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage);
 SMBEXPORT int 		SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 		SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg);
@@ -151,7 +151,7 @@ SMBEXPORT void		SMBCALL smb_freemsghdrmem(smbmsg_t* msg);
 SMBEXPORT ulong		SMBCALL smb_hdrblocks(ulong length);
 SMBEXPORT ulong		SMBCALL smb_datblocks(ulong length);
 SMBEXPORT int		SMBCALL	smb_copymsgmem(smb_t* smb, smbmsg_t* destmsg, smbmsg_t* srcmsg);
-SMBEXPORT int		SMBCALL smb_tzutc(short timezone);
+SMBEXPORT int		SMBCALL smb_tzutc(int16_t timezone);
 SMBEXPORT int		SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum);
 SMBEXPORT int		SMBCALL smb_updatemsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT BOOL		SMBCALL smb_valid_hdr_offset(smb_t* smb, ulong offset);
@@ -215,18 +215,19 @@ SMBEXPORT int 		SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigne
 		smb_getmsghdr_by_hashstr(smb, msg, SMB_HASH_SOURCE_FTN_ID, SMB_HASH_MASK, id)
 
 /* smbstr.c */
-SMBEXPORT char*		SMBCALL smb_hfieldtype(ushort type);
-SMBEXPORT ushort	SMBCALL smb_hfieldtypelookup(const char*);
-SMBEXPORT char*		SMBCALL smb_dfieldtype(ushort type);
+SMBEXPORT char*		SMBCALL smb_hfieldtype(uint16_t type);
+SMBEXPORT uint16_t	SMBCALL smb_hfieldtypelookup(const char*);
+SMBEXPORT char*		SMBCALL smb_dfieldtype(uint16_t type);
 SMBEXPORT char*		SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* outstr);
 SMBEXPORT char*		SMBCALL smb_netaddr(net_t* net);
 SMBEXPORT char*		SMBCALL smb_netaddrstr(net_t* net, char* fidoaddr_buf);
-SMBEXPORT ushort	SMBCALL smb_netaddr_type(const char* str);
-SMBEXPORT char*		SMBCALL smb_zonestr(short zone, char* outstr);
+SMBEXPORT char*		SMBCALL	smb_nettype(enum smb_net_type);
+SMBEXPORT char*		SMBCALL smb_zonestr(int16_t zone, char* outstr);
 SMBEXPORT char*		SMBCALL smb_hashsource(smbmsg_t* msg, int source);
 SMBEXPORT char*		SMBCALL smb_hashsourcetype(uchar type);
 SMBEXPORT fidoaddr_t SMBCALL smb_atofaddr(const fidoaddr_t* sys_addr, const char *str);
-
+SMBEXPORT enum smb_net_type SMBCALL smb_netaddr_type(const char* addr);
+SMBEXPORT enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr);
 /* smbdump.c */
 SMBEXPORT void		SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg);
 

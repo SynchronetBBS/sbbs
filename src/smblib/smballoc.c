@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -246,7 +246,7 @@ int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int		i=SMB_SUCCESS;
 	BOOL	da_opened=FALSE;
-	ushort	x;
+	uint16_t	x;
 
 	if(smb->status.attr&SMB_HYPERALLOC)  /* Nothing to do */
 		return(SMB_SUCCESS);
@@ -300,7 +300,7 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int		i;
-	ushort	x;
+	uint16_t	x;
 
 	for(x=0;x<msg->hdr.total_dfields;x++) {
 		if((i=smb_freemsgdat(smb,msg->hdr.offset+msg->dfield[x].offset
