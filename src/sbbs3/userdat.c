@@ -193,34 +193,45 @@ BOOL DLLCALL del_lastuser(scfg_t* cfg)
 	return(TRUE);
 }
 
-
 /****************************************************************************/
-/* Fills the structure 'user' with info for user.number	from user.dat		*/
-/* Called from functions useredit, waitforcall and main_sec					*/
+/* Opens the user database returning the file descriptor or -1 on error		*/
 /****************************************************************************/
-int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
+int DLLCALL openuserdat(scfg_t* cfg)
 {
-	char userdat[U_LEN+1],str[U_LEN+1];
+	char path[MAX_PATH+1];
+
+	if(!VALID_CFG(cfg))
+		return(-1); 
+
+	SAFEPRINTF(path,"%suser/user.dat",cfg->data_dir);
+	return nopen(path,O_RDONLY|O_DENYNONE); 
+}
+
+/****************************************************************************/
+/* Locks and reads a single user record from an open user.dat file into a	*/
+/* buffer of U_LEN+1 in size.												*/
+/* Returns 0 on success.													*/
+/****************************************************************************/
+int DLLCALL readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int infile)
+{
 	int i,file;
-	unsigned user_number;
-
-	if(user==NULL)
-		return(-1);
-
-	user_number=user->number;
-	memset(user,0,sizeof(user_t));
 
 	if(!VALID_CFG(cfg) || user_number<1)
 		return(-1); 
 
-	SAFEPRINTF(userdat,"%suser/user.dat",cfg->data_dir);
-	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
-		return(errno); 
+	if(infile > 0)
+		file = infile;
+	else {
+		if((file = openuserdat(cfg)) < 0)
+			return file;
+	}
 
 	if(user_number > (unsigned)(filelength(file)/U_LEN)) {
-		close(file);
+		if(file != infile)
+			close(file);
 		return(-1);	/* no such user record */
 	}
+
 	lseek(file,(long)((long)(user_number-1)*U_LEN),SEEK_SET);
 	i=0;
 	while(i<LOOP_NODEDAB
@@ -229,21 +240,43 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 			mswait(100);
 		i++; 
 	}
-
 	if(i>=LOOP_NODEDAB) {
-		close(file);
+		if(file != infile)
+			close(file);
 		return(-2); 
 	}
 
 	if(read(file,userdat,U_LEN)!=U_LEN) {
 		unlock(file,(long)((long)(user_number-1)*U_LEN),U_LEN);
-		close(file);
+		if(file != infile)
+			close(file);
 		return(-3); 
 	}
-
 	unlock(file,(long)((long)(user_number-1)*U_LEN),U_LEN);
-	close(file);
+	if(file != infile)
+		close(file);
+	return 0;
+}
 
+/****************************************************************************/
+/* Fills the structure 'user' with info for user.number	from userdat		*/
+/* (a buffer representing a single user 'record' from the user.dat file		*/
+/****************************************************************************/
+int DLLCALL parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
+{
+	char str[U_LEN+1];
+	int i;
+	unsigned user_number;
+
+	if(user==NULL)
+		return(-1);
+
+	user_number=user->number;
+	memset(user,0,sizeof(user_t));
+
+	if(!VALID_CFG(cfg) || user_number < 1)
+		return(-1); 
+	
 	/* The user number needs to be set here
 	   before calling chk_ar() below for user-number comparisons in AR strings to function correctly */
 	user->number=user_number;	/* Signal of success */
@@ -352,7 +385,6 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	getrec(userdat,U_CHAT,8,str);
 	user->chat=ahtoul(str);
-
 	/* Reset daily stats if not already logged on today */
 	if(user->ltoday || user->etoday || user->ptoday || user->ttoday) {
 		time_t		now;
@@ -368,8 +400,32 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 				resetdailyuserdat(cfg,user,/* write: */FALSE);
 		}
 	}
-
 	return(0);
+}
+
+/****************************************************************************/
+/* Fills the structure 'user' with info for user.number	from user.dat file	*/
+/****************************************************************************/
+int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
+{
+	int		retval;
+	int		file;
+	char	userdat[U_LEN+1];
+
+	if(!VALID_CFG(cfg) || user==NULL || user->number < 1)
+		return(-1); 
+
+	if((file = openuserdat(cfg)) < 0)
+		return file;
+
+	memset(userdat, 0, sizeof(userdat));
+	if((retval = readuserdat(cfg, user->number, userdat, file)) != 0) {
+		close(file);
+		return retval;
+	}
+	retval = parseuserdat(cfg, userdat, user);
+	close(file);
+	return retval;
 }
 
 /****************************************************************************/
