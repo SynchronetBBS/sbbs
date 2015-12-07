@@ -323,9 +323,12 @@ function postMail (header, body) {
     var ret = false;
     if (user.number < 1 || user.alias === settings.guest) return ret;
     var na = netaddr_type(header.to);
-    if (na > 0) {
-        header.to_net_type = na;
-        header.to_net_addr = header.to;
+    header.to_net_type = na;
+    if (na > 0) header.to_net_addr = header.to;
+    if (na === NET_NONE) {
+        var un = system.matchuser(header.to);
+        if (un === 0) return false; // Should actually inform about this
+        header.to_ext = un;
     }
     var msgBase = new MsgBase('mail');
     if (msgBase.open()) {
