@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -55,7 +55,9 @@ __fastcall TUserListForm::TUserListForm(TComponent* Owner)
 void __fastcall TUserListForm::FormShow(TObject *Sender)
 {
     char    str[128];
+	char	data[U_LEN+1];
     int     i,last;
+	int		file;
     user_t  user;
     TListItem*  Item;
 
@@ -63,14 +65,20 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
     SortBackwards=false;
     Screen->Cursor=crAppStart;
 
+	if((file = openuserdat(&MainForm->cfg)) < 0) {
+		Screen->Cursor=crDefault;
+		return;
+	}
     last=lastuser(&MainForm->cfg);
     ListView->AllocBy=last;
 
     ListView->Items->BeginUpdate();
     for(i=0;i<last;i++) {
         user.number=i+1;
-        if(getuserdat(&MainForm->cfg,&user)!=0)
+        if(readuserdat(&MainForm->cfg, user.number, data, file)!=0)
             continue;
+		if(parseuserdat(&MainForm->cfg, data, &user)!=0)
+			continue;
         if(user.misc&DELETED)
             continue;
         Item=ListView->Items->Add();
@@ -96,6 +104,7 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
     }
     ListView->Items->EndUpdate();
     
+	close(file);
     Screen->Cursor=crDefault;
 }
 //---------------------------------------------------------------------------
