@@ -117,10 +117,21 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 	CRLF;
 
 	/* variable fields */
-	for(i=0;i<msg->total_hfields;i++)
-		bprintf("%-16.16s %s\r\n"
-			,smb_hfieldtype(msg->hfield[i].type)
-			,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length,str));
+	for(i=0;i<msg->total_hfields;i++) {
+		char *p;
+		bprintf("%-16.16s ",smb_hfieldtype(msg->hfield[i].type));
+		switch(msg->hfield[i].type) {
+			case SENDERNETTYPE:
+			case RECIPIENTNETTYPE:
+			case REPLYTONETTYPE:
+				p = smb_nettype((enum smb_net_type)*(uint16_t*)msg->hfield_dat[i]);
+				break;
+			default:
+				p = binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length,str);
+				break;
+		}
+		bprintf("%s\r\n", p);
+	}
 
 	/* fixed fields */
 	bprintf("%-16.16s %08lX %04hX %.24s %s\r\n","when_written"	
