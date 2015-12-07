@@ -109,9 +109,10 @@
 					</ul>
 					<ul class="nav navbar-nav navbar-right">
 					<?xjs
-					if(user.alias == settings.guest || user.number < 1) {
-						if(settings.user_registration)
+					if (user.alias === settings.guest || user.number < 1) {
+						if (settings.user_registration) {
 							writeln('<li><a href="./?page=000-register.xjs">Register</a></li>');
+						}
 						writeln(
 							'<li class="dropdown">' +
 							'<a	href="#" ' +
@@ -122,7 +123,7 @@
 								'aria-expanded="false">' +
 							'Log in<span class="caret"></span></a>' +
 							'<div id="login-form" class="dropdown-menu" style="padding:15px; padding-bottom: 0px;">' +
-							'<form>' +
+							'<form id="form-login">' +
 							'<label for="input-username" class="sr-only">Username</label>' +
 							'<input id="input-username" title="Username" type="text" class="dropdown form-control" placeholder="Username">' +
 							'<label for="input-password" class="sr-only">Password</label>' +
