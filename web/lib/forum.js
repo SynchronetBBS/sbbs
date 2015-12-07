@@ -295,9 +295,10 @@ function postNew (sub, to, subject, body) {
         return false;
     }
     var header = {
-        'to' : to,
-        'from' : user.alias,
-        'subject' : subject
+        to : to,
+        from : user.alias,
+        from_ext : user.number,
+        subject : subject
     };
     if (sub === 'mail') {
         return postMail(header, body);
