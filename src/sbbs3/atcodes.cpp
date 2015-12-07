@@ -939,8 +939,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 			return(nulstr);
 		return(current_msg->to_ext);
 	}
-	if(!strcmp(sp,"MSG_TO_NET") && current_msg!=NULL)
+	if(!strcmp(sp,"MSG_TO_NET") && current_msg!=NULL) {
+		if(current_msg->to_net.type==NET_NONE)
+			return nulstr;
 		return(smb_netaddrstr(&current_msg->to_net,str));
+	}
+	if(!strcmp(sp,"MSG_TO_NETTYPE") && current_msg!=NULL) {
+		if(current_msg->to_net.type==NET_NONE)
+			return nulstr;
+		return(smb_nettype((enum smb_net_type)current_msg->to_net.type));
+	}
 	if(!strcmp(sp,"MSG_FROM") && current_msg!=NULL) {
 		if(current_msg->from==NULL)
 			return(nulstr);
@@ -974,6 +982,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 			&& (!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP))
 			return(smb_netaddrstr(&current_msg->from_net,str));
 		return(nulstr);
+	}
+	if(!strcmp(sp,"MSG_FROM_NETTYPE") && current_msg!=NULL) {
+		if(current_msg->from_net.type==NET_NONE)
+			return nulstr;
+		return(smb_nettype((enum smb_net_type)current_msg->from_net.type));
 	}
 	if(!strcmp(sp,"MSG_SUBJECT") && current_msg!=NULL)
 		return(current_msg->subj==NULL ? nulstr : current_msg->subj);
