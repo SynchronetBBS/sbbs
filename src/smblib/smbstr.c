@@ -384,6 +384,6 @@ char* SMBCALL smb_nettype(enum smb_net_type type)
 		case NET_QWK:		return "QWKnet";
 		case NET_FIDO:		return "Fidonet";
 		case NET_INTERNET:	return "Internet";
+		default:			return "Unsupported net type";
 	}
-	return "Unsupported net type";
 }
