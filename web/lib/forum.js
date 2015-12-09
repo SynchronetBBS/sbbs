@@ -300,6 +300,7 @@ function postNew (sub, to, subject, body) {
         from_ext : user.number,
         subject : subject
     };
+    body = lfexpand(body);
     if (sub === 'mail') {
         return postMail(header, body);
     } else {
