@@ -231,7 +231,8 @@ function import_entry(bbs, text)
                 bbs.sysop[sysop] = { name: match[2] };
                 break;
             case 'e-mail':
-                bbs.sysop[0].email = match[2];
+                if(bbs.sysop.length)
+                    bbs.sysop[0].email = match[2];
                 break;
             case 'web-site':
                 bbs.web_site = match[2];
