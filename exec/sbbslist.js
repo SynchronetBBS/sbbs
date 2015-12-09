@@ -255,7 +255,7 @@ function import_entry(bbs, text)
 						bbs.service[number].protocol = uri[1];
 						bbs.service[number].address = uri[2];
 					}
-					bbs.service[number].port = standard_service_port(bbs.service[number].protocol.toLowerCase());
+					bbs.service[number].port = standard_service_port[bbs.service[number].protocol.toLowerCase()];
                 } else
                     bbs.service[number].minrate = minrate;
                 break;
