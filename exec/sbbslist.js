@@ -1128,7 +1128,9 @@ function main()
         }
     }
 
-    if(!file_exists(lib.list_fname))
+    if(!file_exists(lib.list_fname) && !file_exists(sbl_dir + "sbl.dab"))
+        list=[];
+    else if(!file_exists(lib.list_fname))
         list=upgrade_list(sbl_dir + "sbl.dab");
     else
         list=lib.read_list();
