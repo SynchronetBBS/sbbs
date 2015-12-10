@@ -428,6 +428,8 @@ size_t fwrite_crlf(char* buf, size_t len, FILE* fp)
 
 BOOL fidoctrl_line_exists(smbmsg_t* msg, const char* prefix)
 {
+	if(msg==NULL || prefix==NULL)
+		return FALSE;
 	for(int i=0; i<msg->total_hfields; i++) {
 		if(msg->hfield[i].type == FIDOCTRL
 			&& strncmp((char*)msg->hfield_dat[i], prefix, strlen(prefix)) == 0)
