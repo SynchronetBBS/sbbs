@@ -924,7 +924,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 			return(nulstr);
 		if(current_msg->to_ext!=NULL)
 			safe_snprintf(str,maxlen,"%s #%s",current_msg->to,current_msg->to_ext);
-		else if(current_msg->to_net.type!=NET_NONE) {
+		else if(current_msg->to_net.addr != NULL) {
 			char tmp[128];
 			safe_snprintf(str,maxlen,"%s (%s)",current_msg->to
 				,smb_netaddrstr(&current_msg->to_net,tmp));
@@ -940,7 +940,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(current_msg->to_ext);
 	}
 	if(!strcmp(sp,"MSG_TO_NET") && current_msg!=NULL) {
-		if(current_msg->to_net.type==NET_NONE)
+		if(current_msg->to_net.addr == NULL)
 			return nulstr;
 		return(smb_netaddrstr(&current_msg->to_net,str));
 	}
@@ -956,7 +956,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 			return(text[Anonymous]);
 		if(current_msg->from_ext!=NULL)
 			safe_snprintf(str,maxlen,"%s #%s",current_msg->from,current_msg->from_ext);
-		else if(current_msg->from_net.type!=NET_NONE) {
+		else if(current_msg->from_net.addr != NULL) {
 			char tmp[128];
 			safe_snprintf(str,maxlen,"%s (%s)",current_msg->from
 				,smb_netaddrstr(&current_msg->from_net,tmp));
@@ -978,7 +978,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(nulstr);
 	}
 	if(!strcmp(sp,"MSG_FROM_NET") && current_msg!=NULL) {
-		if(current_msg->from_net.type!=NET_NONE
+		if(current_msg->from_net.addr!=NULL
 			&& (!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP))
 			return(smb_netaddrstr(&current_msg->from_net,str));
 		return(nulstr);

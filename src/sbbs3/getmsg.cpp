@@ -140,7 +140,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 		show_msgattr(msg->hdr.attr);
 
 	bprintf(text[MsgTo],msg->to);
-	if(msg->to_net.type!=NET_NONE && msg->to_net.addr!=NULL)
+	if(msg->to_net.addr!=NULL)
 		bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
 	if(msg->to_ext)
 		bprintf(text[MsgToExt],msg->to_ext);
@@ -148,7 +148,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 		bprintf(text[MsgFrom],msg->from);
 		if(msg->from_ext)
 			bprintf(text[MsgFromExt],msg->from_ext);
-		if(msg->from_net.type!=NET_NONE && msg->from_net.addr!=NULL && strchr(msg->from,'@')==NULL)
+		if(msg->from_net.addr!=NULL && strchr(msg->from,'@')==NULL)
 			bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str)); 
 	}
 	bprintf(text[MsgDate]
