@@ -272,6 +272,7 @@ function postMessage (sub, header, body) {
         return ret;
     }
     try {
+        body = lfexpand(body);
         var msgBase = new MsgBase(sub);
         msgBase.open();
         ret = msgBase.save_msg(header, word_wrap(body));
@@ -300,7 +301,6 @@ function postNew (sub, to, subject, body) {
         from_ext : user.number,
         subject : subject
     };
-    body = lfexpand(body);
     if (sub === 'mail') {
         return postMail(header, body);
     } else {
@@ -333,7 +333,7 @@ function postMail (header, body) {
     }
     var msgBase = new MsgBase('mail');
     if (msgBase.open()) {
-        ret = msgBase.save_msg(header, word_wrap(body));
+        ret = msgBase.save_msg(header, lfexpand(body));
         msgBase.close();
     }
     return ret;
