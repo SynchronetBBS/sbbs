@@ -82,6 +82,10 @@
  * 2015-12-06 Eric Oulashin     Version 1.05
  *                              Officially releasing this version, as it seems to be
  *                              fairly stable after testing.
+ * 2015-12-10 Eric Oulashin     Version 1.06
+ *                              Bug fix: The scriptFilename command-line argument was
+ *                              not being referenced properly in the DigDistMsgReader
+ *                              constructor; that has been fixed.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -169,8 +173,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.05";
-var READER_DATE = "2015-12-06";
+var READER_VERSION = "1.06 Beta 1";
+var READER_DATE = "2015-12-10";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -834,7 +838,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// before reading the configuration file.
 	var scriptArgsIsValid = (typeof(pScriptArgs) == "object");
 	if (scriptArgsIsValid && pScriptArgs.hasOwnProperty("configfilename"))
-		this.cfgFilename = scriptArgVals["configfilename"];
+		this.cfgFilename = pScriptArgs["configfilename"];
 	// Read the settings from the config file
 	this.cfgFileSuccessfullyRead = false;
 	this.ReadConfigFile();
