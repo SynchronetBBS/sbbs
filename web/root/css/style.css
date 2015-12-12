@@ -1,26 +1,52 @@
+/* Alternating rows in lists of messages, Who's Online, etc. */
+.striped:nth-of-type(even), .table-striped > tbody > tr:nth-child(odd) > td, .table-striped > tbody > tr:nth-child(odd) > th {
+	background: #F2F2F2;
+}
+
+/* A link in a list when the mouse is hovering over it (mostly applies to the Forum) */
 a.list-group-item:hover, a.list-group-item:active, li.list-group-item.mail:hover {
 	background-color: #A9E2F3;
 }
 
+/* A link to a scanned sub in a list, should you wish to style it, I guess. */
 a.list-group-item.scanned:hover {
 }
 
-a.list-group-item.scanned:hover {
-}
-
+/* An unread mail message in the list view. */
 a.unread {
 	background: #FFFFFF;
 }
 
+/* A read mail message in the list view. */
 a.read {
 	background: #E6E6E6;
 }
 
+/* Unread-message indicator for scanned subs. */
+span.badge.scanned {
+	background-color: #2E9AFE;
+}
+
+/* Unread-message indicator for all subs. */
+span.badge.total {
+}
+
+/* Inline quoted text in a message. */
 blockquote {
 	font-size: 14px;
-	margin: 7px;
-	padding: 7px;
-	border-left: 5px solid #A4A4A4;
+	border-left : 5px solid #A4A4A4;
+}
+
+/* Unused? */
+span.message-header.unread {
+	background-color: #FCF8E3;
+}
+
+/*	You probably don't need to mess with rules below this line. */
+
+blockquote {
+	margin: .5em;
+	padding: .5em;
 }
 
 div.message {
@@ -32,23 +58,8 @@ input.dropdown {
 	margin: 0 0 1em 0;
 }
 
-span.message-header.unread {
-	background-color: #FCF8E3;
-}
-
-span.badge.scanned {
-	background-color: #2E9AFE;
-}
-
-span.badge.total {
-}
-
 .icon {
 	margin: 0 1em 1em 0;
-}
-
-.striped:nth-of-type(even), .table-striped > tbody > tr:nth-child(odd) > td, .table-striped > tbody > tr:nth-child(odd) > th {
-	background: #F2F2F2;
 }
 
 .reply {
