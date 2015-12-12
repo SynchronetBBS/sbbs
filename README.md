@@ -77,7 +77,7 @@ Command=websocket-rlogin-service.js
 rlogin_auto_xtrn = true
 ```
 
-- Your *logon.js* file should have a block of code near the top that looks like this, but if it doesn't you should add it in:
+	- Your *logon.js* file should have a block of code near the top that looks like this, but if it doesn't you should add it in:
 
 ```js
 var options = load("modopts.js", "logon");
