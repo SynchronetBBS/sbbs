@@ -1,12 +1,8 @@
-a.list-group-item:hover {
+a.list-group-item:hover, a.list-group-item:active, li.list-group-item.mail:hover {
 	background-color: #A9E2F3;
 }
 
 a.list-group-item.scanned:hover {
-}
-
-a.list-group-item.active {
-	background-color: #A9E2F3;
 }
 
 a.list-group-item.scanned:hover {
@@ -34,10 +30,6 @@ div.message {
 input.dropdown {
 	clear: both;
 	margin: 0 0 1em 0;
-}
-
-li.list-group-item.mail:hover {
-	background-color: #A9E2F3;
 }
 
 span.message-header.unread {
