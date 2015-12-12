@@ -1,15 +1,18 @@
 <?xjs
 	load('xjs.js');
-	load(system.exec_dir + "../web/lib/init.js");
-	load(settings.web_lib + "auth.js");
-	load(settings.web_lib + "pages.js");
-	load(settings.web_lib + "sidebar.js");
+	load(system.exec_dir + '../web/lib/init.js');
+	load(settings.web_lib + 'auth.js');
+	load(settings.web_lib + 'pages.js');
+	load(settings.web_lib + 'sidebar.js');
 
-	if(	typeof http_request.query.page == "undefined"
+	if (typeof http_request.query.page === 'undefined'
 		||
-		!file_exists(settings.web_root + "pages/" + file_getname(http_request.query.page[0]))
+		!file_exists(
+			settings.web_root + 'pages/' +
+			file_getname(http_request.query.page[0])
+		)
 	) {
-		var page = "000-home.xjs";
+		var page = '000-home.xjs';
 	} else {
 		var page = file_getname(http_request.query.page[0]);
 	}
@@ -66,11 +69,25 @@
 				<div id="navbar" class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
 						<?xjs 
-							getPages(true).forEach(
-								function(thePage) {
+							var pages = getPages();
+							var primary = [];
+							var secondary = [];
+							pages.forEach(
+								function (thePage) {
+									if (thePage.primary) {
+										primary.push(thePage);
+									} else {
+										secondary.push(thePage);
+									}
+								}
+							);
+							pages = [];
+							primary.forEach(
+								function (thePage) {
 									writeln(
 										'<li' +
-										(thePage.page == page ? ' class="active"' : "") + 
+										(thePage.page === page
+											? ' class="active"' : "") + 
 										'>' +
 										'<a href="./?page=' + thePage.page + '">' +
 										thePage.title +
@@ -78,8 +95,7 @@
 									);
 								}
 							);
-							var more = getPages(false);
-							if(more.length > 0) {
+							if (secondary.length > 0) {
 								writeln(
 									'<li class="dropdown">' +
 									'<a	href="#" ' +
@@ -91,11 +107,12 @@
 									'More<span class="caret"></span></a>' +
 									'<ul class="dropdown-menu">'
 								);
-								more.forEach(
-									function(thePage) {
+								secondary.forEach(
+									function (thePage) {
 										writeln(
 											'<li' +
-											(thePage.page == page ? ' class="active"' : "") + 
+											(thePage.page === page
+												? ' class="active"' : "") + 
 											'>' +
 											'<a href="./?page=' + thePage.page + '">' +
 											thePage.title +
@@ -174,8 +191,11 @@
 					<div class="row">
 					<?xjs 
 						var ini = getWebCtrl();
-						if((typeof ini == "boolean" && !ini) || webCtrlTest(ini, page))
+						if ((typeof ini == "boolean" && !ini) ||
+							webCtrlTest(ini, page)
+						) {
 							write(getPage(page));
+						}
 					?>
 					</div>
 				</div>
