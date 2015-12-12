@@ -1,19 +1,17 @@
-load("sbbsdefs.js");
-load("websocket-proxy.js");
+load('sbbsdefs.js');
+load('websocket-proxy.js');
 
-var err = function(msg) {
+function err(msg) {
 	log(LOG_DEBUG, msg);
 	client.socket.close();
 	exit();
 }
 
-var getSession = function(un) {
-	var fn = format("%suser/%04d.web", system.data_dir, un);
-	if(!file_exists(fn))
-		return false;
+function getSession(un) {
+	var fn = format('%suser/%04d.web', system.data_dir, un);
+	if (!file_exists(fn)) return false;
 	var f = new File(fn);
-	if(!f.open("r"))
-		return false;
+	if (!f.open('r')) return false;
 	var session = f.iniGetObject();
 	f.close();
 	return session;
@@ -27,62 +25,72 @@ try {
 
 	wss = new WebSocketProxy(client);
 
-	if(typeof wss.headers["Cookie"] == "undefined")
-		err("No cookie from WebSocket client.");
+	if (typeof wss.headers['Cookie'] === 'undefined') {
+		err('No cookie from WebSocket client.');
+	}
 
-	var cookie = wss.headers["Cookie"].split("=");
-	if(cookie[0] != "synchronet" || cookie.length < 2)
-		err("Invalid cookie from WebSocket client.");
+	var cookie = wss.headers['Cookie'].split('=');
+	if (cookie[0] !== "synchronet" || cookie.length < 2) {
+		err('Invalid cookie from WebSocket client.');
+	}
 
-	cookie = cookie[1].split(",");
+	cookie = cookie[1].split(',');
 	cookie[0] = parseInt(cookie[0]);
-	if(cookie.length < 2 || isNaN(cookie[0]) || cookie[0] < 1 || cookie[0] > system.lastuser)
-		err("Invalid cookie from WebSocket client.");
+	if (cookie.length < 2 ||
+		isNaN(cookie[0]) ||
+		cookie[0] < 1 ||
+		cookie[0] > system.lastuser
+	) {
+		err('Invalid cookie from WebSocket client.');
+	}
 
 	var usr = new User(cookie[0]);
 	var session = getSession(usr.number);
-	if(!session)
-		err("Unable to read web session file for user #" + usr.number);
-	if(cookie[1] != session.key)
-		err("Session key mismatch for user #" + usr.number);
-	if(typeof session.xtrn != "string" || typeof xtrn_area.prog[session.xtrn] == "undefined")
-		err("Invalid external program code.");
+	if (!session) {
+		err('Unable to read web session file for user #' + usr.number);
+	}
+	if (cookie[1] != session.key) {
+		err('Session key mismatch for user #' + usr.number);
+	}
+	if (typeof session.xtrn !== 'string' ||
+		typeof xtrn_area.prog[session.xtrn] === 'undefined'
+	) {
+		err('Invalid external program code.');
+	}
 
 	var f = new File(file_cfgname(system.ctrl_dir, 'sbbs.ini'));
-	if(!f.open("r"))
-		err("Unable to open sbbs.ini.");
-	var ini = f.iniGetObject("BBS");
+	if (!f.open('r')) err('Unable to open sbbs.ini.');
+	var ini = f.iniGetObject('BBS');
 	f.close();
 
 	rlogin = new RLogin(
-		{	'host' : system.inet_addr,
-			'port' : ini.RLoginPort,
-			'clientUsername' : usr.security.password,
-			'serverUsername' : usr.alias,
-			'terminalType' : session.xtrn,
-			'terminalSpeed' : 115200
+		{	host : system.inet_addr,
+			port : ini.RLoginPort,
+			clientUsername : usr.security.password,
+			serverUsername : usr.alias,
+			terminalType : 'xtrn=' + session.xtrn,
+			terminalSpeed : 115200
 		}
 	);
 	rlogin.connect();
-	log(LOG_DEBUG, usr.alias + " logged on via RLogin for " + session.xtrn);
+	log(LOG_DEBUG, usr.alias + ' logged on via RLogin for ' + session.xtrn);
 
-	while(client.socket.is_connected && rlogin.connected) {
+	while (client.socket.is_connected && rlogin.connected) {
 
 		wss.cycle();
 		rlogin.cycle();
 
 		var send = rlogin.receive();
-		if(send.length > 0)
-			wss.send(send);
+		if (send.length > 0) wss.send(send);
 
-		while(wss.data_waiting) {
+		while (wss.data_waiting) {
 			var data = wss.receiveArray();
 			rlogin.send(data);
 		}
 
 	}
 
-} catch(err) {
+} catch (err) {
 
 	log(err);
 
