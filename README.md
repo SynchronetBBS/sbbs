@@ -69,15 +69,27 @@ Command=websocket-rlogin-service.js
 - Tell your router and firewall to open and forward ports *1123* and *1513* to your BBS
 - If you were running ecWeb v3 and modified the *RootDirectory* value in the *[Web]* section of *ctrl/sbbs.ini* to point to *../web/root/ecwebv3*, change it back to *../web/root*.
 
-- Open your *mods/logon.js* file *or, if it doesn't exist yet* copy your *exec/logon.js* file to *mods/logon.js* and then open it
-- Add the following block of code to the top of the file, under the line that says *load('sbbsdefs.js')*:
+- Edit the *[logon]* section of your *ctrl/modopts.ini* file, and ensure that it has an *rlogin_auto_xtrn* key with a value of *true*
+	- NB: that's the *[logon]* section and not the *[login]* section
+
+```ini
+[logon]
+rlogin_auto_xtrn = true
+```
+
+- Your *logon.js* file should have a block of code near the top that looks like this, but if it doesn't you should add it in:
+
 ```js
-if (bbs.connection.toUpperCase() == "RLOGIN" &&
-   typeof xtrn_area.prog[console.terminal] != "undefined"
-) {
-        bbs.exec_xtrn(console.terminal);
-        bbs.hangup();
-        exit();
+var options = load("modopts.js", "logon");
+
+// Check if we're being asked to auto-run an external (web interface external programs section uses this)
+if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
+    var external_code = console.terminal.substring(5);
+    if (!bbs.exec_xtrn(external_code)) {
+        alert(log(LOG_ERR,"!ERROR Unable to launch external: '" + external_code + "'"));
+    }
+    bbs.hangup();
+	exit();
 }
 ```
 
