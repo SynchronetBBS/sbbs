@@ -5,6 +5,16 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.06     2015-12-??   - Updated so that a sub-board new-message-scan (with the
+                      -new_msg_scan_cur_sub command-line parameter) can make
+                      use of the -subBoard command-line option to scan a
+                      specific sub-board, which may be different than the
+                      user's current sub-board.
+                      - Bug fix: The configFilename command-line parameter was
+                      not being read correctly on startup; this has been fixed.
+                      - Bug fix: Doing a new-message-scan should now always
+                      display the correct sub-board @-code information in the
+                      header above the message.
 1.05     2015-12-06   - Improved displaying of messages with ANSI codes.  The
                       reader now makes use of frame.js and scrollbar.js (in the
                       sync/exec/load directory) to enable a scrollable user

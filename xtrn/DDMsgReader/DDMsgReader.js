@@ -82,10 +82,19 @@
  * 2015-12-06 Eric Oulashin     Version 1.05
  *                              Officially releasing this version, as it seems to be
  *                              fairly stable after testing.
- * 2015-12-10 Eric Oulashin     Version 1.06
+ * 2015-12-10 Eric Oulashin     Version 1.06 beta
  *                              Bug fix: The scriptFilename command-line argument was
  *                              not being referenced properly in the DigDistMsgReader
  *                              constructor; that has been fixed.
+ * 2015-12-11 Eric Oulashin     Updated DigDistMsgReader_MessageAreaScan() so that
+ *                              the current sub-board newscan functionality can make
+ *                              use of the -subBoard command-line option to scan a
+ *                              specific sub-board, which may be different than the
+ *                              user's current sub-board.
+ *                              Bug fix: Updated DigDistMsgReader_MessageAreaScan()
+ *                              to temporarily set bbs.curgrp and bbs.cursub so that
+ *                              all @-codes for the sub-boards will be displayed
+ *                              correctly by Synchronet.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -99,7 +108,11 @@
                           group, or all)
             new_msg_scan_all: New message scan (all sub-boards)
 			new_msg_scan_cur_grp: New message scan (current message group only)
-            new_msg_scan_cur_sub: New message scan (current sub-board only)
+            new_msg_scan_cur_sub: New message scan (current sub-board only).  This
+			                      can (optionally) be used with the -subBoard
+								  command-line parameter, which specifies an internal
+								  code for a sub-board, which may be different from
+								  the user's currently selected sub-board.
 			to_user_new_scan: Scan for new (unread) messages to the user (prompt
 			                  for current sub-board, current group, or all)
 			to_user_new_scan_all: Scan for new (unread) messages to the user
@@ -173,8 +186,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.06 Beta 1";
-var READER_DATE = "2015-12-10";
+var READER_VERSION = "1.06 Beta 2";
+var READER_DATE = "2015-12-11";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -404,7 +417,7 @@ var gListPersonalEmailCmdLineOpt = ((gCmdLineArgVals.hasOwnProperty("personalema
 									gAllPersonalEmailOptSpecified);
 // If the command-line parameter "search" is specified as "prompt", then
 // prompt the user for the type of search to perform.
-var doDDMR = true; // If the user doesn't choose a search type, this will be set to false
+var gDoDDMR = true; // If the user doesn't choose a search type, this will be set to false
 if (gCmdLineArgVals.hasOwnProperty("search") && (gCmdLineArgVals["search"].toLowerCase() == "prompt"))
 {
 	console.print("\1n");
@@ -469,7 +482,7 @@ if (gCmdLineArgVals.hasOwnProperty("search") && (gCmdLineArgVals["search"].toLow
 			break;
 		case "A": // Abort
 		default:
-			doDDMR = false;
+			gDoDDMR = false;
 			console.print("\1n\1h\1y\1iAborted\1n");
 			console.crlf();
 			console.pause();
@@ -477,7 +490,7 @@ if (gCmdLineArgVals.hasOwnProperty("search") && (gCmdLineArgVals["search"].toLow
 	}
 }
 
-if (doDDMR)
+if (gDoDDMR)
 {
 	// Create an instance of the DigDistMsgReader class and use it to read/list the
 	// messages in the user's current sub-board.  Pass the parsed command-line
@@ -646,12 +659,16 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.colors = getDefaultColors();
 	this.msgbase = null;    // Will be a MsgBase object.
 	this.readingPersonalEmailFromUser = false;
-	if ((typeof(pSubBoardCode) == "string") && subBoardCodeIsValid(pSubBoardCode))
+	if (typeof(pSubBoardCode) == "string")
 	{
-		this.setSubBoardCode(pSubBoardCode);
-		this.msgbase = new MsgBase(this.subBoardCode);
-		if (gCmdLineArgVals.hasOwnProperty("personalemailsent") && gCmdLineArgVals.personalemailsent)
-			this.readingPersonalEmailFromUser = true;
+		var subCodeLowerCase = pSubBoardCode.toLowerCase();
+		if (subBoardCodeIsValid(subCodeLowerCase))
+		{
+			this.setSubBoardCode(subCodeLowerCase);
+			this.msgbase = new MsgBase(this.subBoardCode);
+			if (gCmdLineArgVals.hasOwnProperty("personalemailsent") && gCmdLineArgVals.personalemailsent)
+				this.readingPersonalEmailFromUser = true;
+		}
 	}
 
 	// This property controls whether or not the user will be prompted to
@@ -1843,16 +1860,18 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 				// sub-board:
 				//user.compare_ars(msg_area.grp_list[grpIndex].sub_list[subIndex].ars)
 				// Now using the can_read property.
-				if (msg_area.grp_list[grpIndex].sub_list[subIndex].can_read &&
-				    ((msg_area.grp_list[grpIndex].sub_list[subIndex].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
+				this.setSubBoardCode(msg_area.grp_list[grpIndex].sub_list[subIndex].code); // Needs to be set before getting the last read/scan pointer index
+				if (msg_area.sub[this.subBoardCode].can_read &&
+				    ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
 				{
 					// Sub-board description: msg_area.grp_list[grpIndex].sub_list[subIndex].description
 					// Open the sub-board and check for unread messages.  If there are any, then let
 					// the user read the messages in the sub-board.
-					this.msgbase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[subIndex].code);
+					//this.msgbase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[subIndex].code);
+					this.msgbase = new MsgBase(this.subBoardCode);
 					if (this.msgbase.open())
 					{
-						this.setSubBoardCode(msg_area.grp_list[grpIndex].sub_list[subIndex].code); // Needs to be set before getting the last read/scan pointer index
+						//this.setSubBoardCode(msg_area.grp_list[grpIndex].sub_list[subIndex].code); // Needs to be set before getting the last read/scan pointer index
 
 						// If the current sub-board contains only deleted messages,
 						// then skip it.
@@ -1953,16 +1972,24 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 			// If the sub-board's access requirements allows the user to read it
 			// and it's enabled in the user's message scan configuration, then go
 			// ahead with this sub-board.
-			if (msg_area.grp_list[bbs.curgrp].sub_list[subIndex].can_read &&
-			    ((msg_area.grp_list[bbs.curgrp].sub_list[subIndex].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
-			{ 
+			this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code); // Needs to be set before the last read/scan pointer message
+			if (msg_area.sub[this.subBoardCode].can_read &&
+			    ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
+			{
 				// Sub-board description: msg_area.grp_list[bbs.curgrp].sub_list[subIndex].description
 				// Open the sub-board and check for unread messages.  If there are any, then let
 				// the user read the messages in the sub-board.
-				this.msgbase = new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code);
+				//this.msgbase = new MsgBase(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code);
+				this.msgbase = new MsgBase(this.subBoardCode);
 				if (this.msgbase.open())
 				{
-					this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code); // Needs to be set before the last read/scan pointer message
+					// Temporarily change the user's sub-board to the current
+					// sub-board so that certain @-codes (such as @GRP-L@, etc.)
+					// are displayed by Synchronet correctly.
+					bbs.curgrp = msg_area.sub[this.subBoardCode].grp_index;
+					bbs.cursub = msg_area.sub[this.subBoardCode].index;
+
+					//this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code); // Needs to be set before the last read/scan pointer message
 
 					// If the current sub-board contains only deleted messages,
 					// then skip it.
@@ -2049,16 +2076,30 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	else if (scanScopeChar == "S") // Current sub-board scan
 	{
 		this.doingMultiSubBoardScan = false;
+		// If the command-line arguments don't specify the sub-board code or
+		// the user is reading personal email, then set the object's sub-board
+		// code to the user's current sub-board code (bbs.cursub_code) to ensure
+		// that we open the correct messagebase and so that @-codes, etc. display
+		// for the correct sub-board.
+		if (!gCmdLineArgVals.hasOwnProperty("subboard") || gListPersonalEmailCmdLineOpt)
+			this.setSubBoardCode(bbs.cursub_code);
 		// Make sure the user has access permissions for the current sub-board and
 		// has it set up in their scan configuration before letting the user read
 		// it.
-		if (msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].can_read &&
-		    ((msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
+		if (msg_area.sub[this.subBoardCode].can_read &&
+		    ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
 		{
-			this.msgbase = new MsgBase(bbs.cursub_code);
+			this.msgbase = new MsgBase(this.subBoardCode);
+			//this.msgbase = new MsgBase(bbs.cursub_code);
 			if (this.msgbase.open())
 			{
-				this.setSubBoardCode(bbs.cursub_code); // Needs to be set before getting the last read/scan pointer message
+				// Temporarily change the user's sub-board to the current
+				// sub-board so that certain @-codes (such as @GRP-L@, etc.)
+				// are displayed by Synchronet correctly.
+				bbs.curgrp = msg_area.sub[this.subBoardCode].grp_index;
+				bbs.cursub = msg_area.sub[this.subBoardCode].index;
+
+				//this.setSubBoardCode(bbs.cursub_code); // Needs to be set before getting the last read/scan pointer message
 
 				// Only scan this sub-board if it contains messages that are not
 				// marked as deleted.

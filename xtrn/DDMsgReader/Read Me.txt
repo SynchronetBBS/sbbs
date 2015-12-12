@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.05
-                           Release date: 2015-12-06
+                                 Version 1.06
+                           Release date: 2015-12-??
 
                                      by
 
@@ -233,6 +233,10 @@ The following are the command-line parameters supported by DDMsgReader.js:
  new_msg_scan_all: New message scan (all sub-boards)
  new_msg_scan_cur_grp: New message scan (current message group only)
  new_msg_scan_cur_sub: New message scan (current sub-board only)
+                       This can (optionally) be used with the -subBoard
+								       command-line parameter, which specifies an internal
+								       code for a sub-board, which may be different from the
+								       user's currently selected sub-board.
  to_user_new_scan: Scan for new (unread) messages to the user (prompt
                    for current sub-board, current group, or all)
  to_user_new_scan_all: Scan for new (unread) messages to the user
