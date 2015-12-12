@@ -95,6 +95,9 @@
  *                              to temporarily set bbs.curgrp and bbs.cursub so that
  *                              all @-codes for the sub-boards will be displayed
  *                              correctly by Synchronet.
+ * 2015-12-12 Eric Oulashin     Added a new configuration options, pauseAfterNewMsgScan,
+ *                              which specifies whether or not to pause after doing
+ *                              a new message scan.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -186,8 +189,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.06 Beta 2";
-var READER_DATE = "2015-12-11";
+var READER_VERSION = "1.06 Beta 3";
+var READER_DATE = "2015-12-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -849,6 +852,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// scrolling ANSI interface (using frame.js and scrollbar.js) doesn't
 	// look good enough
 	this.useScrollingInterfaceForANSIMessages = true;
+
+	// Whether or not to pause (with a message) after doing a new message scan
+	this.pauseAfterNewMsgScan = true;
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -1880,6 +1886,11 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 						if (!nonDeletedMsgsExist)
 							continue;
 
+						// In the switch cases below, bbs.curgrp and bbs.cursub are
+						// temporarily changed the user's sub-board to the current
+						// sub-board so that certain @-codes (such as @GRP-L@, etc.)
+						// are displayed by Synchronet correctly.
+
 						// We might want the starting message index to be different
 						// depending on the scan mode.
 						switch (pScanMode)
@@ -1983,12 +1994,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 				this.msgbase = new MsgBase(this.subBoardCode);
 				if (this.msgbase.open())
 				{
-					// Temporarily change the user's sub-board to the current
-					// sub-board so that certain @-codes (such as @GRP-L@, etc.)
-					// are displayed by Synchronet correctly.
-					bbs.curgrp = msg_area.sub[this.subBoardCode].grp_index;
-					bbs.cursub = msg_area.sub[this.subBoardCode].index;
-
+					// The following line is now done before the 'if' statement above
 					//this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code); // Needs to be set before the last read/scan pointer message
 
 					// If the current sub-board contains only deleted messages,
@@ -1997,6 +2003,12 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 					var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
 					if (!nonDeletedMsgsExist)
 						continue;
+
+					// Temporarily change the user's sub-board to the current
+					// sub-board so that certain @-codes (such as @GRP-L@, etc.)
+					// are displayed by Synchronet correctly.
+					bbs.curgrp = msg_area.sub[this.subBoardCode].grp_index;
+					bbs.cursub = msg_area.sub[this.subBoardCode].index;
 
 					// We might want the starting message index to be different
 					// depending on the scan mode.
@@ -2008,7 +2020,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 							// a message within the number of messages in the sub-board.
 							if ((this.msgbase.total_msgs > 0) && ((scanPtrMsgIdx == -1) || (scanPtrMsgIdx < this.msgbase.total_msgs-1)))
 							{
-								bbs.cursub = subIndex;
+								//bbs.cursub = subIndex; // Now done a bit earlier
 								// Start at the first unread message.
 								var startMsgIdx = scanPtrMsgIdx + 1;
 								if (this.SearchingAndResultObjsDefinedForCurSub())
@@ -2028,7 +2040,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 							}
 							break;
 						case SCAN_TOYOU: // All messages to the user
-							bbs.cursub = subIndex;
+							//bbs.cursub = subIndex; // Now done a bit earlier
 							// Search for messages to the user in the current sub-board
 							// and let the user read the sub-board if messages are found.
 							// Don't allow the user to change to a different message
@@ -2046,7 +2058,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 							}
 							break;
 						case SCAN_UNREAD: // New (unread) messages to the user
-							bbs.cursub = subIndex;
+							//bbs.cursub = subIndex; // Now done a bit earlier
 							// Search for unread messages to the user in the current
 							// sub-board and let the user read the sub-board if messages
 							// are found.  Don't allow the user to change to a different
@@ -2173,13 +2185,16 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	this.msgbase = new MsgBase(this.subBoardCode);
 	this.doingMultiSubBoardScan = false;
 
-	console.crlf();
-	if (userAborted)
-		console.print("\1n" + this.text.msgScanAbortedText + "\1n");
-	else
-		console.print("\1n" + this.text.msgScanCompleteText + "\1n");
-	console.crlf();
-	console.pause();
+	if (this.pauseAfterNewMsgScan)
+	{
+		console.crlf();
+		if (userAborted)
+			console.print("\1n" + this.text.msgScanAbortedText + "\1n");
+		else
+			console.print("\1n" + this.text.msgScanCompleteText + "\1n");
+		console.crlf();
+		console.pause();
+	}
 }
 
 // For the DigDistMsgReader class: Performs the message reading activity.
@@ -6727,6 +6742,8 @@ function DigDistMsgReader_ReadConfigFile()
 					if (numSpaces > 0)
 						this.numTabSpaces = numSpaces;
 				}
+				else if (settingUpper == "PAUSEAFTERNEWMSGSCAN")
+					this.pauseAfterNewMsgScan = (valueUpper == "TRUE");
 				else if (settingUpper == "THEMEFILENAME")
 				{
 					// First look for the theme config file in the sbbs/mods

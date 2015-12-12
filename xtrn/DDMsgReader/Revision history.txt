@@ -6,10 +6,13 @@ Revision History (change log)
 Version  Date         Description
 -------  ----         -----------
 1.06     2015-12-??   - Updated so that a sub-board new-message-scan (with the
-                      -new_msg_scan_cur_sub command-line parameter) can make
+                      new_msg_scan_cur_sub command-line parameter) can make
                       use of the -subBoard command-line option to scan a
                       specific sub-board, which may be different than the
                       user's current sub-board.
+                      - Added a new configuration option, pauseAfterNewMsgScan,
+                      which specifies whether or not to pause (i.e., with a
+                      "finished" message) after doing a new message scan.
                       - Bug fix: The configFilename command-line parameter was
                       not being read correctly on startup; this has been fixed.
                       - Bug fix: Doing a new-message-scan should now always

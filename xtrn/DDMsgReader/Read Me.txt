@@ -545,6 +545,11 @@ tabSpaces                             The number of spaces to use for tabs in
                                       the message reader (tabs will be replaced
                                       by this many spaces).
 
+pauseAfterNewMsgScan                  Whether or not to pause (i.e., with a
+                                      "finished" message) after doing a new
+                                      message scan.  Valid values are true
+                                      and false.
+
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
 
