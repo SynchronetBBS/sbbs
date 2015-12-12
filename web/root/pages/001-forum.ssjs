@@ -276,7 +276,9 @@ if(	typeof http_request.query.sub != "undefined"
 			format(
 				'<a href="./?page=%s&amp;sub=%s" class="list-group-item striped%s">' +
 				'<h4><strong>%s</strong></h4>' +
-				'<span title="Unread messages" class="badge %s" id="badge-%s"></span>' +
+				'<span title="Unread messages" class="badge %s" id="badge-%s">' +
+				'<img src="./images/ajax-loader-small.gif">' +
+				'</span>' +
 				'<p>%s</p>' +
 				'</a>',
 				http_request.query.page[0],
@@ -332,8 +334,12 @@ if(	typeof http_request.query.sub != "undefined"
 			format(
 				'<a href="./?page=%s&amp;group=%s" class="list-group-item striped">' +
 				'<h3><strong>%s</strong></h3>' +
-				'<span title="Unread messages (other)" class="badge ignored" id="badge-ignored-%s"></span>' +
-				'<span title="Unread messages (scanned subs)" class="badge scanned" id="badge-scanned-%s"></span>' +
+				'<span title="Unread messages (other)" class="badge ignored" id="badge-ignored-%s">' +
+				'<img src="./images/ajax-loader-small.gif">' +
+				'</span>' +
+				'<span title="Unread messages (scanned subs)" class="badge scanned" id="badge-scanned-%s">' +
+				'<img src="./images/ajax-loader-small.gif">' +
+				'</span>' +
 				'<p>%s : %s sub-boards</p>' +
 				'</a>',
 				http_request.query.page[0],
