@@ -55,7 +55,7 @@ span.badge.total {
 	margin: 0 1em 1em 0;
 }
 
-.striped:nth-of-type(even) {
+.striped:nth-of-type(even), .table-striped > tbody > tr:nth-child(odd) > td, .table-striped > tbody > tr:nth-child(odd) > th {
 	background: #F2F2F2;
 }
 
