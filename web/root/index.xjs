@@ -28,7 +28,11 @@
 		<meta name="description" content="">
 		<meta name="author" content="">
 		<link rel="icon" href="./images/favicon.ico">
-		<title><?xjs write(system.name); ?></title>
+		<title>
+			<?xjs write(getPageTitle(settings.web_root + 'pages/' + page)); ?>
+			:
+			<?xjs write(system.name); ?>
+		</title>
 		<link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
 		<link href="./css/offcanvas.css" rel="stylesheet">
 		<link href="./css/style.css" rel="stylesheet">
