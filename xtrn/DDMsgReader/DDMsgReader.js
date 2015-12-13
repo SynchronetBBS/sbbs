@@ -98,6 +98,9 @@
  * 2015-12-12 Eric Oulashin     Added a new configuration options, pauseAfterNewMsgScan,
  *                              which specifies whether or not to pause after doing
  *                              a new message scan.
+ * 2015-12-13 Eric Oulashin     Version 1.06
+ *                              Releasing this version after testing showed it's
+ *                              working as expected
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -189,8 +192,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.06 Beta 3";
-var READER_DATE = "2015-12-12";
+var READER_VERSION = "1.06";
+var READER_DATE = "2015-12-13";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);

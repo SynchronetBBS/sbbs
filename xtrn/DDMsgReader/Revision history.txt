@@ -5,7 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.06     2015-12-??   - Updated so that a sub-board new-message-scan (with the
+1.06     2015-12-13   - Updated so that a sub-board new-message-scan (with the
                       new_msg_scan_cur_sub command-line parameter) can make
                       use of the -subBoard command-line option to scan a
                       specific sub-board, which may be different than the
