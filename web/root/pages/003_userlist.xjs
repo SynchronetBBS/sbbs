@@ -15,7 +15,7 @@
 		location : { name : 'Location', type : 'string' },
 		laston_date : { name : 'Last On', type : 'date' },
 		// connection : { name : "Via", type : "string" },
-		firston_date : { name : "First On", type : "date" },
+		// firston_date : { name : "First On", type : "date" },
 		// total_logons : { name : "Calls", type : "number" },
 		// total_posts : { name : "Posts", type : "number" }
 	};
@@ -27,7 +27,7 @@
 		isNaN(parseInt(http_request.query.offset[0])) ||
 		parseInt(http_request.query.offset[0]) < 1
 	) {
-		var offset = 1;
+		var offset = 0;
 	} else {
 		var offset = parseInt(http_request.query.offset[0]);
 	}
@@ -103,22 +103,20 @@
 
 	function makePagerURLs() {
 		var ret = { previous : '', next : '' };
-		var previousOffset = Math.max(1, offset - pageSize);
-		var nextOffset = Math.min(
-			offset + pageSize, offset + (system.lastuser - offset)
-		);
 		if (offset > 1) {
 			ret.previous = format(
 				'<li><a href="./?page=%s&offset=%s">Previous</a></li>',
 				http_request.query.page[0],
-				previousOffset
+				Math.max(0, offset - pageSize)
 			);
 		}
 		if (system.lastuser - offset > pageSize) {
 			ret.next = format(
 				'<li><a href="./?page=%s&offset=%s">Next</a></li>',
 				http_request.query.page[0],
-				nextOffset
+				Math.min(
+					offset + pageSize, offset + (system.lastuser - offset)
+				)
 			);
 		}
 		return ret;
@@ -143,7 +141,7 @@
 
 	function loadUsers(offset, pageSize) {
 		var users = [];
-		for (var u = 0; u < system.lastuser; u++) {
+		for (var u = 1; u < system.lastuser; u++) {
 			var usr = new User(u);
 			if (usr.settings&USER_DELETED ||
 				usr.compare_ars('REST Q') ||
