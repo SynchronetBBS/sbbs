@@ -19,7 +19,10 @@ function match_pw(node, pw)
 		}
 		if (n === 'ALL')
 			return false;
-		n = n.replace(/[0-9]+[^0-9](?:ALL|[0-9]+)?$/, 'ALL');
+		if (n.indexOf('ALL') !== -1)
+			n = n.replace(/[0-9]+[^0-9]ALL$/, 'ALL');
+		else
+			n = n.replace(/[0-9]+$/, 'ALL');
 	}
 	log(LOG_WARNING, "No PKTPWD found to match "+node+".");
 	return false;
