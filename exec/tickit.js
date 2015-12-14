@@ -229,7 +229,7 @@ function import_files()
 		f.write(files_bbs[i]);
 		f.close();
 
-		cmd = system.exec_dir+"addfiles "+i+" +"+f.name+" 12 23";
+		cmd = system.exec_dir+"addfiles "+i+" -zd +"+f.name+" 12 23";
 		log(LOG_DEBUG, "Executing: '"+cmd+"'.");
 		system.exec(cmd);
 	}
