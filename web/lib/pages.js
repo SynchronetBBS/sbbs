@@ -46,7 +46,10 @@ function getPages() {
 			if (file_isdir(item)) return;
 			var fn = file_getname(item);
 			var title = getPageTitle(item);
-			if (typeof title === 'undefined' || title.search(/^HIDDEN/) === 0) {
+			if (typeof title === 'undefined' ||
+				title.search(/^HIDDEN/) === 0 ||
+				fn.search(/\.xjs\.ssjs$/i) >= 0
+			) {
 				return;
 			}
 			pages.push(
@@ -63,29 +66,36 @@ function getPages() {
 
 function getPageTitle(file) {
 
+	var title;
+
 	var ext = file_getext(file).toUpperCase();
 
 	var f = new File(file);
-	f.open('r');
-	var i = f.readAll();
-	f.close();
 
-	if (ext == '.JS' || (ext == '.SSJS' && file.search(/\.xjs\.ssjs$/i)==-1)) {
-		var title = i[0].replace(/\/\//g, '');
-		return title;
-	}
-
-	if (ext === '.HTML' || ext === '.XJS') {
+	if (ext === '.JS' ||
+		(ext === '.SSJS' && file.search(/\.xjs\.ssjs$/i) === -1)
+	) {
+		f.open('r');
+		var i = f.readln();
+		f.close();
+		title = i.replace(/\/\//g, '');
+	} else if (ext === '.HTML' || ext === '.XJS') {
 		// Seek first comment line in an HTML document
-		for (var j = 0; j < i.length; j++) {
-			var k = i[j].match(/^\<\!\-\-.*\-\-\>$/);
-			if (k === null) continue;
-			var title = k[0].replace(/[\<\!\-+|\-+\>]/g, '');
-			return title;
+		f.open('r');
+		while (!f.eof) {
+			var i = f.readln();
+			var k = i.match(/^\<\!\-\-.*\-\-\>$/);
+			if (k !== null) {
+				title = k[0].replace(/[\<\!\-+|\-+\>]/g, '');
+				break;
+			}
 		}
+		f.close();
+	} else if (ext === '.TXT') {
+		title = file_getname(file);
 	}
 
-	if (ext == '.TXT') return file_getname(file);
+	return title;
 
 }
 
