@@ -32,7 +32,7 @@ function process_tic(tic)
 	var i;
 
 	if (announce[dir.code] === undefined) {
-		announce[dir.code] = 'Area : '+tic.area+' (Lib: '+dir.lib_name+' Dir: '+dir.name+')\r\n';
+		announce[dir.code] = 'Area : '+tic.area+' ('+dir.lib_name+' :: '+dir.name+')\r\n';
 		announce[dir.code] += '-------------------------------------------------------------------------------\r\n'
 		files_bbs[dir.code] = '';
 	}
