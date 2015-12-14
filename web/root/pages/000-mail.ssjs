@@ -1,4 +1,4 @@
-//HIDDEN
+//HIDDEN:Mail
 
 if(typeof argv[0] != "boolean" || !argv[0])
 	exit();
