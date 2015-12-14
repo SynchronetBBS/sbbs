@@ -1,16 +1,14 @@
 //Forum
+if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 
-if(typeof argv[0] != "boolean" || !argv[0])
-	exit();
-
-load("sbbsdefs.js");
-load("msgutils.js");
-load(system.exec_dir + "../web/lib/init.js");
-load(settings.web_lib + "forum.js");
+load('sbbsdefs.js');
+load('msgutils.js');
+load(system.exec_dir + '../web/lib/init.js');
+load(settings.web_lib + 'forum.js');
 
 writeln('<script type="text/javascript" src="./js/forum.js"></script>');
 
-if(typeof http_request.query.notice != "undefined") {
+if (typeof http_request.query.notice !== 'undefined') {
 	writeln(
 		'<div id="noticebox" class="alert alert-warning">' + 
 		http_request.query.notice[0] + '</div>' +
@@ -21,23 +19,20 @@ if(typeof http_request.query.notice != "undefined") {
 }
 
 
-if(	typeof http_request.query.sub != "undefined"
-	&&
-	typeof msg_area.sub[http_request.query.sub[0]] != "undefined"
-	&&
-	typeof http_request.query.thread != "undefined"
+if (typeof http_request.query.sub !== 'undefined' &&
+	typeof msg_area.sub[http_request.query.sub[0]] !== 'undefined' &&
+	typeof http_request.query.thread !== 'undefined'
 ) {
 
 	// Thread view
 	var msgBase = new MsgBase(http_request.query.sub[0]);
 
-	var firstUnreadLi = "";
+	var firstUnreadLi = '';
 
-	var writeMessage = function(header, index) {
+	function writeMessage(header, index) {
 
 		var body = msgBase.get_msg_body(header.number);
-		if(body === null)
-			return;
+		if (body === null) return;
 
 		writeln(
 			'<li class="list-group-item striped' +
@@ -46,20 +41,23 @@ if(	typeof http_request.query.sub != "undefined"
 		);
 
 		// Show subject if first message
-		if(index == 0)
+		if (index === 0) {
 			writeln('<h4><strong>' + header.subject + '</strong></h4>');
+		}
 
 		// Header
-		if(user.alias != settings.guest && header.number > msg_area.sub[http_request.query.sub[0]].scan_ptr) {
-			writeln('<span title="Unread" class="glyphicon glyphicon-star"></span>');
-			if(firstUnreadLi == "")
-				firstUnreadLi = "li-" + header.number;
+		if (user.alias != settings.guest &&
+			header.number > msg_area.sub[http_request.query.sub[0]].scan_ptr
+		) {
+			writeln(
+				'<span title="Unread" class="glyphicon glyphicon-star"></span>'
+			);
+			if (firstUnreadLi === '') firstUnreadLi = 'li-' + header.number;
 		}			
 		writeln(
 			'From <strong>' + header.from + "</strong>" +
-			(header.from_net_type == 0 ? " " : "@" +  header.from_net_addr + " ") +
-			'to <strong>' + header.to + '</strong> ' +
-			'on ' +
+			(header.from_net_type == 0 ? '' : ('@' +  header.from_net_addr)) +
+			' to <strong>' + header.to + '</strong> on ' +
 			(new Date(header.when_written_time * 1000)).toLocaleString()
 		);
 
@@ -72,7 +70,8 @@ if(	typeof http_request.query.sub != "undefined"
 		// Standard controls
 		writeln(
 			'<a class="btn btn-default icon" title="Jump to oldest message" ' +
-			'aria-label="Jump to oldest message" href="#' + header.ec_thread.messages[0].number + '">' +
+			'aria-label="Jump to oldest message" href="#' +
+			header.ec_thread.messages[0].number + '">' +
 			'<span class="glyphicon glyphicon-fast-backward"></span></a>' +
 
 			'<a class="btn btn-default icon" title="Direct link to this message" ' +
@@ -85,7 +84,9 @@ if(	typeof http_request.query.sub != "undefined"
 		);
 
 		// User can post
-		if(user.alias != settings.guest && msg_area.sub[msgBase.cfg.code].can_post) {
+		if (user.alias !== settings.guest &&
+			msg_area.sub[msgBase.cfg.code].can_post
+		) {
 			writeln(
 				'<button class="btn btn-default icon" ' +
 				'aria-label="Reply to this message" ' +
@@ -98,9 +99,14 @@ if(	typeof http_request.query.sub != "undefined"
 		}
 
 		// User is operator
-		if(user.alias != settings.guest && msg_area.sub[msgBase.cfg.code].is_operator) {
+		if (user.alias != settings.guest &&
+			msg_area.sub[msgBase.cfg.code].is_operator
+		) {
 			writeln(
-				'<button class="btn btn-default icon" aria-label="Delete this message" title="Delete this message" onclick="deleteMessage(\'' + msgBase.cfg.code + '\', ' + header.number + ')" href="#">' +
+				'<button class="btn btn-default icon" ' +
+				'aria-label="Delete this message" title="Delete this message" ' +
+				'onclick="deleteMessage(\'' + msgBase.cfg.code + '\', ' + header.number + ')" ' +
+				'href="#">' +
 				'<span class="glyphicon glyphicon-trash"></span>' +
 				'</button>'
 			);
@@ -144,7 +150,7 @@ if(	typeof http_request.query.sub != "undefined"
 		messages.forEach(writeMessage);
 		writeln('</ul>');
 		msgBase.close();
-		if(messages.length > 1 && firstUnreadLi != "") {
+		if (messages.length > 1 && firstUnreadLi !== '') {
 			writeln(
 				'<script type="text/javascript">' +
 				'$("#jump-unread").attr("href", "#' + firstUnreadLi + '");' +
@@ -153,24 +159,25 @@ if(	typeof http_request.query.sub != "undefined"
 			);
 		}
 		// Update scan pointer
-		if(messages[messages.length - 1].number > msg_area.sub[http_request.query.sub[0]].scan_ptr)
+		if (messages[messages.length - 1].number > msg_area.sub[http_request.query.sub[0]].scan_ptr) {
 			msg_area.sub[http_request.query.sub[0]].scan_ptr = messages[messages.length - 1].number;
-	} catch(err) {
+		}
+	} catch (err) {
 		log(err);
 	}
 
-} else if(		
-	typeof http_request.query.sub != "undefined"
-	&&
-	typeof msg_area.sub[http_request.query.sub[0]] != "undefined"
+} else if (
+	typeof http_request.query.sub !== 'undefined' &&
+	typeof msg_area.sub[http_request.query.sub[0]] !== 'undefined'
 ) {
 
 	// Thread list
-	var writeThread = function(thread) {
-		if(user.number > 0 && user.alias != settings.guest)
+	function writeThread(thread) {
+		if (user.number > 0 && user.alias != settings.guest) {
 			var unread = getUnreadInThread(http_request.query.sub[0], thread);
-		else
+		} else {
 			var unread = 0;
+		}
 		writeln(
 			format(
 				'<a href="./?page=%s&amp;sub=%s&amp;thread=%s" class="list-group-item striped">' +
@@ -215,7 +222,9 @@ if(	typeof http_request.query.sub != "undefined"
 		)
 	);
 
-	if(user.alias != settings.guest && msg_area.sub[http_request.query.sub[0]].can_post) {
+	if (user.alias !== settings.guest &&
+		msg_area.sub[http_request.query.sub[0]].can_post
+	) {
 		writeln(
 			'<button class="btn btn-default icon" ' +
 			'aria-label="Post a new message" title="Post a new message" ' +
@@ -225,7 +234,7 @@ if(	typeof http_request.query.sub != "undefined"
 		);
 	}
 
-	if(user.alias != settings.guest) {
+	if (user.alias !== settings.guest) {
 		writeln(
 			'<button id="scan-cfg-new" class="btn ' +
 			(!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY) && (msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW) ? "btn-primary" : "btn-default") +
@@ -260,18 +269,17 @@ if(	typeof http_request.query.sub != "undefined"
 		writeln('<div id="forum-list-container" class="list-group">');
 		threads.order.forEach(function(t){writeThread(threads.thread[t]);});
 		writeln('</div>');
-	} catch(err) {
+	} catch (err) {
 		log(err);
 	}
 
-} else if(
-	typeof http_request.query.group != "undefined"
-	&&
-	typeof msg_area.grp_list[http_request.query.group[0]] != "undefined"
+} else if (
+	typeof http_request.query.group !== 'undefined' &&
+	typeof msg_area.grp_list[http_request.query.group[0]] !== 'undefined'
 ) {
 
 	// Sub list
-	var writeSub = function(sub) {
+	function writeSub(sub) {
 		writeln(
 			format(
 				'<a href="./?page=%s&amp;sub=%s" class="list-group-item striped%s">' +
@@ -292,10 +300,10 @@ if(	typeof http_request.query.sub != "undefined"
 		);
 	}
 
-	var writeApiCall = function(subs) {
+	function writeApiCall(subs) {
 		writeln('<script type="text/javascript">');
 		var codes = [];
-		subs.forEach(function(sub) { codes.push(sub.code); });
+		subs.forEach(function (sub) { codes.push(sub.code); });
 		codes = codes.join('&sub=');
 		writeln('getSubUnreadCount("' + codes + '");');
 		writeln('setInterval(function(){getSubUnreadCount("' + codes + '");}, 60000);');
@@ -320,16 +328,17 @@ if(	typeof http_request.query.sub != "undefined"
 		writeln('<div id="forum-list-container" class="list-group">');
 		subs.forEach(writeSub);
 		writeln('</div>');
-		if(user.number > 0 && user.alias != settings.guest)
+		if (user.number > 0 && user.alias !== settings.guest) {
 			writeApiCall(subs);
-	} catch(err) {
+		}
+	} catch (err) {
 		log(err);
 	}
 
 } else {
 
 	// Group list
-	var writeGroup = function(group) {
+	function writeGroup(group) {
 		writeln(
 			format(
 				'<a href="./?page=%s&amp;group=%s" class="list-group-item striped">' +
@@ -353,7 +362,7 @@ if(	typeof http_request.query.sub != "undefined"
 		);
 	}
 
-	var writeApiCall = function(groups) {
+	function writeApiCall(groups) {
 		writeln('<script type="text/javascript">');
 		var indexes = [];
 		groups.forEach(function(group) { indexes.push(group.index); });
@@ -376,9 +385,10 @@ if(	typeof http_request.query.sub != "undefined"
 		writeln('<div id="forum-list-container" class="list-group">');
 		groups.forEach(writeGroup);
 		writeln('</div>');
-		if(user.number > 0 && user.alias != settings.guest)
+		if (user.number > 0 && user.alias !== settings.guest) {
 			writeApiCall(groups);
-	} catch(err) {
+		}
+	} catch (err) {
 		log(err);
 	}
 
