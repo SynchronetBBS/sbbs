@@ -6,6 +6,24 @@ var ecfg;
 var pktpass = {};
 var ticfiles;
 
+function match_pw(node, pw)
+{
+	var n = node;
+	while(n) {
+		if (pktpass[n] !== undefined) {
+			if (pw.toUpperCase() === pktpass[n])
+				return true;
+			log(LOG_WARNING, "Incorrect password "+pw+" (expected "+pktpass[n]+")");
+			return false;
+		}
+		if (n === 'ALL')
+			return false;
+		n = n.replace(/[0-9]+[^0-9](?:ALL|[0-9]+)?$/, 'ALL');
+	}
+	log(LOG_WARNING, "No PKTPWD found to match "+node+".");
+	return false;
+}
+
 function parse_ticfile(fname)
 {
 	var crc32;
@@ -83,15 +101,14 @@ function parse_ticfile(fname)
 			return false;
 		}
 		crc32 = crc32_calc(f.read());
-		f.rewind();
-		if (crc32 != f.crc32)
-			log (format("%x != %x", crc32, f.crc32));
 		f.close();
 		if (crc32 !== parseInt(tic.crc, 16)) {
 			log(LOG_WARNING, "File '"+f.name+"' CRC mismatch. File is "+format("%08x", crc32)+", expected "+tic.crc+".");
 			return false;
 		}
 	}
+	if (!match_pw(tic.from, tic.pw))
+		return false;
 
 	// TODO: Handle the thing.
 	// Create directory, add file... etc.
