@@ -25,11 +25,15 @@
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<meta name="description" content="">
-		<meta name="author" content="">
 		<link rel="icon" href="./images/favicon.ico">
 		<title>
-			<?xjs write(getPageTitle(settings.web_root + 'pages/' + page)); ?>
+			<?xjs 
+				write(
+					getPageTitle(
+						settings.web_root + 'pages/' + page
+					).replace(/^HIDDEN(\:)*/, '')
+				);
+			?>
 			:
 			<?xjs write(system.name); ?>
 		</title>
@@ -48,7 +52,9 @@
 			<div class="modal-dialog" role="document">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h4 class="modal-title" id="popUpModalTitle">Pop-Up Thingie</h4>
+						<h4 class="modal-title" id="popUpModalTitle">
+							Pop-Up Thingie
+						</h4>
 					</div>
 					<div class="modal-body" id="popUpModalBody"></div>
 					<div class="modal-footer">
@@ -132,7 +138,11 @@
 					<?xjs
 					if (user.alias === settings.guest || user.number < 1) {
 						if (settings.user_registration) {
-							writeln('<li><a href="./?page=000-register.xjs">Register</a></li>');
+							writeln(
+								'<li>' +
+								'<a href="./?page=000-register.xjs">Register</a>' +
+								'</li>'
+							);
 						}
 						writeln(
 							'<li class="dropdown">' +
@@ -192,7 +202,6 @@
 							<span class="glyphicon glyphicon-tasks"></span> Sidebar
 						</button>
 					</p>
-					<div class="row">
 					<?xjs 
 						var ini = getWebCtrl();
 						if ((typeof ini == "boolean" && !ini) ||
@@ -201,7 +210,6 @@
 							write(getPage(page));
 						}
 					?>
-					</div>
 				</div>
 
 				<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">

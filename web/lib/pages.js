@@ -108,7 +108,13 @@ function getPage(page) {
 
 	if (user.alias != settings.guest) {
 		var title = getPageTitle(page);
-		if (title != 'HIDDEN') setSessionValue(user.number, 'action', title);
+		if (title != 'HIDDEN') {
+			setSessionValue(
+				user.number,
+				'action',
+				title.replace(/^HIDDEN(\:)+/, '')
+			);
+		}
 	}
 
 	switch(ext) {
