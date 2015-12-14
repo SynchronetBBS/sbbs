@@ -264,14 +264,16 @@ function postMessage (sub, header, body) {
         header.to === '' ||
         typeof header.from !== 'string' ||
         typeof header.subject !== 'string' ||
-// This could be a reply to a message with no subject, apparently
-//      header.subject == '' ||
         typeof body !== 'string' ||
         body === ''
     ) {
         return ret;
     }
     try {
+        if (msg_area.sub[sub].settings&SUB_NAME) {
+            if (user.name === '') return ret;
+            header.from = user.name;
+        }
         body = lfexpand(body);
         var msgBase = new MsgBase(sub);
         msgBase.open();
@@ -279,6 +281,39 @@ function postMessage (sub, header, body) {
         msgBase.close();
     } catch (err) {
         log(err);
+    }
+    return ret;
+}
+
+// Post a message to the mail sub, if this user can do so
+// Called by postNew/postReply, not directly
+function postMail (header, body) {
+    // Lazy ARS checks; we could check the *type* of email being sent, I guess.
+    if (user.security.restrictions&UFLAG_E ||
+        user.security.restrictions&UFLAG_M
+    ) {
+        return false;
+    }
+    if (typeof header.to !== 'string' ||
+        typeof header.subject !== 'string' ||
+        typeof body !== 'string'
+    ) {
+        return false;
+    }
+    var ret = false;
+    if (user.number < 1 || user.alias === settings.guest) return ret;
+    var na = netaddr_type(header.to);
+    header.to_net_type = na;
+    if (na > 0) header.to_net_addr = header.to;
+    if (na === NET_NONE) {
+        var un = system.matchuser(header.to);
+        if (un === 0) return false; // Should actually inform about this
+        header.to_ext = un;
+    }
+    var msgBase = new MsgBase('mail');
+    if (msgBase.open()) {
+        ret = msgBase.save_msg(header, lfexpand(body));
+        msgBase.close();
     }
     return ret;
 }
@@ -306,37 +341,6 @@ function postNew (sub, to, subject, body) {
     } else {
         return postMessage(sub, header, body);
     }
-}
-
-// Post a message to the mail sub, if this user can do so
-// Called by postNew/postReply, not directly
-function postMail (header, body) {
-    // Lazy ARS checks; we could check the *type* of email being sent, I guess.
-    if (user.security.restrictions&UFLAG_E || user.security.restrictions&UFLAG_M) {
-        return false;
-    }
-    if (    typeof header.to !== 'string' ||
-            typeof header.subject !== 'string' ||
-            typeof body !== 'string'
-    ) {
-        return false;
-    }
-    var ret = false;
-    if (user.number < 1 || user.alias === settings.guest) return ret;
-    var na = netaddr_type(header.to);
-    header.to_net_type = na;
-    if (na > 0) header.to_net_addr = header.to;
-    if (na === NET_NONE) {
-        var un = system.matchuser(header.to);
-        if (un === 0) return false; // Should actually inform about this
-        header.to_ext = un;
-    }
-    var msgBase = new MsgBase('mail');
-    if (msgBase.open()) {
-        ret = msgBase.save_msg(header, lfexpand(body));
-        msgBase.close();
-    }
-    return ret;
 }
 
 // Add a new message to 'sub' in reply to parent message 'pid'
