@@ -2474,7 +2474,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					*vp=UINT_TO_JSVAL(c16);
 					break;
 				case FILE_PROP_CRC32:
-					*vp=UINT_TO_JSVAL(c32);
+					*vp=UINT_TO_JSVAL(~c32);
 					break;
 				case FILE_PROP_MD5_HEX:
 				case FILE_PROP_MD5_B64:
