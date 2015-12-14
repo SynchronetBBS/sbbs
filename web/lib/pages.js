@@ -67,11 +67,8 @@ function getPages() {
 function getPageTitle(file) {
 
 	var title;
-
 	var ext = file_getext(file).toUpperCase();
-
 	var f = new File(file);
-
 	if (ext === '.JS' ||
 		(ext === '.SSJS' && file.search(/\.xjs\.ssjs$/i) === -1)
 	) {
