@@ -12,8 +12,8 @@ function login(evt) {
 		{	'url' : './api/auth.ssjs',
 			'method' : 'POST',
 			'data' : {
-				'username' : $('#input-username').val(),
-				'password' : $('#input-password').val()
+				username : $('#input-username').val(),
+				password : $('#input-password').val()
 			}
 		}
 	).done(
