@@ -1,5 +1,5 @@
-load("sbbsdefs.js");
-load(system.exec_dir + "../web/lib/init.js");
+load('sbbsdefs.js');
+load(system.exec_dir + '../web/lib/init.js');
 
 function randomString(length) {
 	var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split("");
@@ -132,7 +132,7 @@ function authenticate(alias, password) {
 	if (usr.security.password.toUpperCase() !== password.toUpperCase()) {
 		return false;
 	}
-	login(usr.alias, usr.security.password.toUpperCase());
+	login(usr.alias, usr.security.password);
 	return usr;
 }
 

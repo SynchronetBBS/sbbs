@@ -1,7 +1,6 @@
-var getSidebarModules = function() {
-
+function getSidebarModules() {
 	var sidebarModules = [];
-	var d = directory(settings.web_root + "sidebar/*");
+	var d = directory(settings.web_root + 'sidebar/*');
 	d.forEach(
 		function(item) {
 			if(file_isdir(item))
@@ -12,40 +11,35 @@ var getSidebarModules = function() {
 		}
 	);
 	return sidebarModules;
-
 }
 
-var getSidebarModule = function(module) {
+function getSidebarModule(module) {
 
-	var ret = "";
-
-	if(!file_exists(module))
-		return ret;
-
+	var ret = '';
+	if (!file_exists(module)) return ret;
 	var ext = file_getext(module).toUpperCase();
 
-	switch(ext) {
-		case ".SSJS":
-			if(ext == ".SSJS" && module.search(/\.xjs\.ssjs$/i) >= 0)
-				break;
+	switch (ext) {
+		case '.SSJS':
+			if (ext === '.SSJS' && module.search(/\.xjs\.ssjs$/i) >= 0) break;
 			load(module, true);
 			break;
-		case ".XJS":
+		case '.XJS':
 			load(xjs_compile(module), true);
 			break;
-		case ".HTML":
+		case '.HTML':
 			var f = new File(module);
-			f.open("r");
-			if(f.is_open) {
+			f.open('r');
+			if (f.is_open) {
 				ret = f.read();
 				f.close();
 			}
 			break;
-		case ".TXT":
+		case '.TXT':
 			var f = new File(module);
 			f.open();
-			if(f.is_open) {
-				ret = "<pre>" + f.read() + "</pre>";
+			if (f.is_open) {
+				ret = '<pre>' + f.read() + '</pre>';
 				f.close();
 			}
 			break;
@@ -57,17 +51,15 @@ var getSidebarModule = function(module) {
 
 }
 
-var writeSidebarModules = function() {
+function writeSidebarModules() {
 	var modules = getSidebarModules();
 	write('<ul class="list-group">');
 	modules.forEach(
-		function(module) {
-			if(module.search(/\.xjs\.ssjs$/i) >= 0)
-				return;
+		function (module) {
+			if (module.search(/\.xjs\.ssjs$/i) >= 0) return;
 			write('<li class="list-group-item sidebar">');
 			var str = getSidebarModule(settings.web_root + "sidebar/" + module);
-			if(str != "")
-				write(str);
+			if (str !== '') write(str);
 			write('</li>');
 		}
 	);
