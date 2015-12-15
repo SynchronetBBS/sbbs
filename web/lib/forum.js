@@ -79,7 +79,7 @@ function getSubUnreadCount(sub) {
         }
         msgBase.close();
     } catch (err) {
-        log(err);
+        log(LOG_ERR, err);
     }
     return ret;
 }
