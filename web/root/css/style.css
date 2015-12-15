@@ -37,6 +37,11 @@ blockquote {
 	border-left : 5px solid #A4A4A4;
 }
 
+li.current {
+	border-left-color : #000000;
+	border-right-color : #000000;
+}
+
 /* Unused? */
 span.message-header.unread {
 	background-color: #FCF8E3;
