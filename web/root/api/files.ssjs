@@ -5,7 +5,7 @@ load('filedir.js');
 
 var reply = {};
 
-if ((http_request.method === "GET" || http_request.method === "POST") &&
+if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 	typeof http_request.query.call !== 'undefined' &&
 	user.number > 0	&&
 	user.alias !== settings.guest
