@@ -1,8 +1,10 @@
+load('sbbsdefs.js');
+
 function getWebCtrl() {
 	if (!file_exists(settings.web_root + 'pages/webctrl.ini')) return false;
 	var f = new File(settings.web_root + 'pages/webctrl.ini');
 	if (!f.open('r')) {
-		log('Unable to open pages/webctrl.ini');
+		log(LOG_ERR, 'Unable to open pages/webctrl.ini');
 		exit();
 	}
 	var ini = f.iniGetAllObjects();
@@ -14,8 +16,7 @@ function webCtrlTest(ini, filename) {
 	var ret = true;
 	for (var i = 0; i < ini.length; i++) {
 		if (!wildmatch(false, filename, ini[i].name)) continue;
-		if (typeof ini[i].AccessRequirements === 'undefined'
-			||
+		if (typeof ini[i].AccessRequirements === 'undefined' ||
 			user.compare_ars(ini[i].AccessRequirements)
 		) {
 			continue;
