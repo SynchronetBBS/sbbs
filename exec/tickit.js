@@ -2,14 +2,13 @@ load("sbbsdefs.js");
 
 var inb=[];
 var pktpass = {};
-var announce={};
 var files_bbs={};
 var map;
-var settings;
 
 function match_pw(node, pw)
 {
 	var n = node;
+
 	while(n) {
 		if (pktpass[n] !== undefined) {
 			if (pw.toUpperCase() === pktpass[n])
@@ -34,25 +33,16 @@ function process_tic(tic)
 	var ld;
 	var i;
 
-	if (announce[dir.code] === undefined) {
-		announce[dir.code] = 'Area : '+tic.area+' ('+dir.lib_name+' :: '+dir.name+')\r\n';
-		announce[dir.code] += '-------------------------------------------------------------------------------\r\n'
+	if (files_bbs[dir.code] === undefined)
 		files_bbs[dir.code] = '';
-	}
-	announce[dir.code] += format("%-11s %10s ", tic.file, tic.size);
 	files_bbs[dir.code] += format("%-11s %10s ", tic.file, tic.size);
-	if (tic.ldesc === undefined || tic.ldesc.length <= tic.desc) {
-		announce[dir.code] += tic.desc + "\r\n";
+	if (tic.ldesc === undefined || tic.ldesc.length <= tic.desc)
 		files_bbs[dir.code] += tic.desc + "\r\n";
-	}
 	else {
 		ld = tic.ldesc.split(/\r?\n/);
 		for (i=0; i<ld.length; i++) {
-			if (i) {
-				announce[dir.code] += "                        ";
+			if (i)
 				files_bbs[dir.code] += "                        ";
-			}
-			announce[dir.code] += ld[i]+"\r\n";
 			files_bbs[dir.code] += ld[i]+"\r\n";
 		}
 	}
@@ -86,7 +76,7 @@ function parse_ticfile(fname)
 			val = m[2];
 
 			switch(key) {
-				// Singlt value, single line...
+				// Single value, single line...
 				case 'area':
 				case 'areadesc':
 				case 'origin':
@@ -204,11 +194,6 @@ function parse_tcfg()
 		log(LOG_ERROR, "Unable to open '"+tcfg.name+"'");
 		return false;
 	}
-	settings = tcfg.iniGetObject();
-	if (settings.Announce == undefined || msg_area.sub[settings.Announce.toLowerCase()] === undefined) {
-		log(LOG_ERROR, "Invalid announce sub '"+settings.Announce+"' fix the Announce line in "+tcfg.name);
-		return false;
-	}
 	map = tcfg.iniGetObject('Map');
 	return true;
 }
@@ -238,32 +223,6 @@ function import_files()
 	}
 }
 
-function post_announce()
-{
-	var hdr={};
-	var msg='';
-	var i;
-	var b = new MsgBase(settings.Announce);
-
-	if (!b.open()) {
-		log(LOG_ERROR, "Unable to open message base '"+settings.Announce+"'.");
-		return false;
-	}
-	hdr.to = settings.To;
-	hdr.from = settings.From;
-	hdr.subject = settings.Subject;
-	hdr.from_agent = AGENT_PROCESS;
-	for (i in announce)
-		msg += announce[i]+"\r\n";
-	if (!b.save_msg(hdr, msg)) {
-		log(LOG_ERROR, "Unable to post announce message.");
-		b.close();
-		return false;
-	}
-	b.close();
-	return true;
-}
-
 function main() {
 	var i, j;
 	var ticfiles;
@@ -289,10 +248,8 @@ function main() {
 			}
 		}
 	}
-	if (processed) {
+	if (processed)
 		import_files();
-		post_announce();
-	}
 }
 
 main();
