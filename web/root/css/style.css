@@ -37,6 +37,7 @@ blockquote {
 	border-left : 5px solid #A4A4A4;
 }
 
+/* The 'current' message being viewed in a thread. */
 li.current {
 	border-left-color : #000000;
 	border-right-color : #000000;
