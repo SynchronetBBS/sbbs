@@ -1,18 +1,16 @@
 //HIDDEN:Mail
 
-if(typeof argv[0] != "boolean" || !argv[0])
-	exit();
+if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 
-if(user.number == 0 || user.alias == settings.guest)
-	exit();
+if (user.number === 0 || user.alias === settings.guest) exit();
 
-load("sbbsdefs.js");
-load(system.exec_dir + "../web/lib/init.js");
-load(settings.web_lib + "forum.js");
+load('sbbsdefs.js');
+load(system.exec_dir + '../web/lib/init.js');
+load(settings.web_lib + 'forum.js');
 
 writeln('<script type="text/javascript" src="./js/forum.js"></script>');
 
-if(typeof http_request.query.notice != "undefined") {
+if (typeof http_request.query.notice !== 'undefined') {
 	writeln(
 		'<div id="noticebox" class="alert alert-warning">' + 
 		http_request.query.notice[0] + '</div>' +
@@ -22,10 +20,8 @@ if(typeof http_request.query.notice != "undefined") {
 	);
 }
 
-if(	user.alias != settings.guest
-	&&
-	!(user.security.restrictions&UFLAG_E)
-	&&
+if (user.alias != settings.guest &&
+	!(user.security.restrictions&UFLAG_E) &&
 	!(user.security.restrictions&UFLAG_M)
 ) {
 	writeln(
@@ -48,21 +44,29 @@ writeln(
 		'<a href="./?page=%s&amp;sent=1">Sent</a>' +
 		'</li>' +
 		'</ul><br>',
-		(typeof http_request.query.sent == "undefined" || http_request.query.sent[0] == "0" ? "active" : ""),
+		(	typeof http_request.query.sent === 'undefined' ||
+			http_request.query.sent[0] == '0'
+			? 'active'
+			: ''
+		),
 		http_request.query.page[0],
-		(typeof http_request.query.sent != "undefined" && http_request.query.sent[0] == "1" ? "active" : ""),
+		(	typeof http_request.query.sent !== 'undefined' &&
+			http_request.query.sent[0] == '1'
+			? 'active'
+			: ''
+		),
 		http_request.query.page[0]
 	)
 );
 
 writeln('<ul id="forum-list-container" class="list-group">');
 
-var writeMessage = function(header) {
+function writeMessage(header) {
 	writeln(
 		format(
-			'<li id="li-' + header.number + '" class="list-group-item mail striped %s">',
-			(header.attr&MSG_READ ? "read" : "unread"),
-			header.number
+			'<li id="li-%s" class="list-group-item mail striped %s">',
+			header.number,
+			(header.attr&MSG_READ ? 'read' : 'unread')
 		)
 	);
 	writeln(
@@ -72,8 +76,16 @@ var writeMessage = function(header) {
 			'<p>Subject: <strong>%s</strong></p></div>' +
 			'<div class="message" id="message-%s" hidden></div>',
 			header.number,
-			(typeof http_request.query.sent == "undefined" || http_request.query.sent[0] == "0" ? "From" : "To"),
-			(typeof http_request.query.sent == "undefined" || http_request.query.sent[0] == "0" ? header.from : header.to),
+			(	typeof http_request.query.sent === 'undefined' ||
+				http_request.query.sent[0] == '0'
+				? 'From'
+				: 'To'
+			),
+			(	typeof http_request.query.sent === 'undefined' ||
+				http_request.query.sent[0] == '0'
+				? header.from
+				: header.to
+			),
 			(new Date(header.when_written_time * 1000)).toLocaleString(),
 			header.subject,
 			header.number
@@ -83,7 +95,11 @@ var writeMessage = function(header) {
 }
 
 getMailHeaders(
-	(typeof http_request.query.sent == "undefined" || http_request.query.sent[0] == "0" ? false : true)
+	(	typeof http_request.query.sent === 'undefined' ||
+		http_request.query.sent[0] == '0'
+		? false
+		: true
+	)
 ).forEach(writeMessage);
 
 writeln('</ul>');

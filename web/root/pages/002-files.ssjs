@@ -1,7 +1,6 @@
 //Files
 
-if(typeof argv[0] !== 'boolean' || !argv[0])
-	exit();
+if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'files.js');
@@ -19,10 +18,13 @@ if (typeof http_request.query.dir !== 'undefined' &&
 		'<a href="./?page=' + http_request.query.page[0] + '">Files</a>' +
 		'</li>' +
 		'<li>' +
-		'<a href="./?page=' + http_request.query.page[0] + '&amp;library=' + file_area.dir[http_request.query.dir[0]].lib_index + '">' + file_area.dir[http_request.query.dir[0]].lib_name + '</a>' +
+		'<a href="./?page=' + http_request.query.page[0] + '&amp;library=' +
+		file_area.dir[http_request.query.dir[0]].lib_index + '">' +
+		file_area.dir[http_request.query.dir[0]].lib_name + '</a>' +
 		'</li>' +
 		'<li>' +
-		'<a href="./?page=' + http_request.query.page[0] + '&amp;dir=' + http_request.query.dir[0] + '">' + http_request.query.dir[0] + '</a>' +
+		'<a href="./?page=' + http_request.query.page[0] + '&amp;dir=' + 
+		http_request.query.dir[0] + '">' + http_request.query.dir[0] + '</a>' +
 		'</li>' +
 		'</ol>'
 	);
@@ -30,7 +32,8 @@ if (typeof http_request.query.dir !== 'undefined' &&
 	function writeFileDetails(file) {
 		writeln(
 			format(
-				'<a href="./api/files.ssjs?call=download-file&amp;dir=%s&amp;file=%s" target="_blank" class="list-group-item striped">' +
+				'<a href="./api/files.ssjs?call=download-file&amp;dir=%s&amp;file=%s" ' +
+				'target="_blank" class="list-group-item striped">' +
 				'<strong>%s</strong> (%s)' +
 				'<p><em>Uploaded %s</em></p>' +
 				'<p>%s</p>' +
@@ -42,7 +45,10 @@ if (typeof http_request.query.dir !== 'undefined' &&
 				file.size,
 				system.timestr(file.uploadDate),
 				file.description,
-				(file.extendedDescription == "" ? "" : ("<p>" + file.extendedDescription + "</p>"))
+				(	file.extendedDescription == ''
+					? ''
+					: ('<p>' + file.extendedDescription + '</p>')
+				)
 			)
 		);
 	}
@@ -64,7 +70,9 @@ if (typeof http_request.query.dir !== 'undefined' &&
 		'<a href="./?page=' + http_request.query.page[0] + '">Files</a>' +
 		'</li>' +
 		'<li>' +
-		'<a href="./?page=' + http_request.query.page[0] + '&amp;library=' + http_request.query.library[0] + '">' + file_area.lib_list[http_request.query.library[0]].name + '</a>' +
+		'<a href="./?page=' + http_request.query.page[0] + '&amp;library=' +
+		http_request.query.library[0] + '">' +
+		file_area.lib_list[http_request.query.library[0]].name + '</a>' +
 		'</li>' +
 		'</ol>'
 	);

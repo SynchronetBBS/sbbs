@@ -1,24 +1,29 @@
 <!--Home-->
 <?xjs 
-	if(typeof argv[0] != "boolean" || !argv[0])
-		exit();
-	load(settings.web_lib + "ftelnet.js");
+	if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
+	load(settings.web_lib + 'ftelnet.js');
 ?>
 
 <script src="./ftelnet/ftelnet.min.js" id="fTelnetScript"></script>
 <div id="fTelnetContainer" style="margin-bottom:1em;"></div>
 <div class="row">
 	<div class="center-block" style="width:200px;margin-bottom:1em;">
-		<button id="ftelnet-connect" class="btn btn-primary">Connect via Telnet</button>
+		<button id="ftelnet-connect" class="btn btn-primary">
+			Connect via Telnet
+		</button>
 	</div>
 </div>
 <script type="text/javascript">
-	fTelnet.Hostname = "<?xjs write(system.inet_addr); ?>";
+	fTelnet.Hostname = '<?xjs write(system.inet_addr); ?>';
 	fTelnet.Port = <?xjs write((webSocket === null) ? 1123 : webSocket.Port); ?>;
-	fTelnet.ConnectionType = "telnet";
-	fTelnet.SplashScreen = "<?xjs write(getSplash()); ?>";
+	fTelnet.ConnectionType = 'telnet';
+	fTelnet.SplashScreen = '<?xjs write(getSplash()); ?>';
 	fTelnet.StatusBarVisible = false;
-	fTelnet.VirtualKeyboardVisible = (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+	fTelnet.VirtualKeyboardVisible = (
+		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+			navigator.userAgent
+		)
+	);
 	fTelnet.Init();
-	$('#ftelnet-connect').click(function() { fTelnet.Connect(); });
+	$('#ftelnet-connect').click(function () { fTelnet.Connect(); });
 </script>
