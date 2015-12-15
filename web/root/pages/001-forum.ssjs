@@ -27,7 +27,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	// Thread view
 	var msgBase = new MsgBase(http_request.query.sub[0]);
 
-	var firstUnreadLi = '';
+	var firstUnread = '';
 
 	function writeMessage(header, index) {
 
@@ -52,7 +52,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			writeln(
 				'<span title="Unread" class="glyphicon glyphicon-star"></span>'
 			);
-			if (firstUnreadLi === '') firstUnreadLi = 'li-' + header.number;
+			if (firstUnread === '') firstUnread += header.number;
 		}			
 		writeln(
 			'From <strong>' + header.from + "</strong>" +
@@ -183,10 +183,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		messages.forEach(writeMessage);
 		writeln('</ul>');
 		msgBase.close();
-		if (messages.length > 1 && firstUnreadLi !== '') {
+		if (messages.length > 1 && firstUnread !== '') {
 			writeln(
 				'<script type="text/javascript">' +
-				'$("#jump-unread").attr("href", "#' + firstUnreadLi + '");' +
+				'$("#jump-unread").attr("href", "#' + firstUnread + '");' +
 				'$("#jump-unread-container").attr("hidden", false);' +
 				'</script>'
 			);
