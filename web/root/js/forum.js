@@ -118,15 +118,9 @@ function addNew(sub) {
 		}
 	);
 	window.location.hash = '#newmessage';
-	$('#newmessage-body').focus(
-		function () {
-			$(window).off('keydown');
-		}
-	);
-	$('#newmessage-body').blur(
-		function () {
-			window.location.hash = '';
-			threadNav();
+	$('#newmessage-body').keydown(
+		function (evt) {
+			evt.stopImmediatePropagation();
 		}
 	);
 }
@@ -150,12 +144,11 @@ function addReply(sub, id) {
 			);
 		}
 	);
-	$('#replytext-' + id).focus(
-		function () {
-			$(window).off('keydown');
+	$('#replytext-' + id).keydown(
+		function (evt) {
+			evt.stopImmediatePropagation();
 		}
 	);
-	$('#replytext-' + id).blur(threadNav);
 }
 
 // 'sub' can be a single sub code, or a string of <sub1>&sub=<sub2>&sub=<sub3>...
