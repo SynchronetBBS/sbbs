@@ -54,3 +54,7 @@ if (typeof settings.xtrn_sections === 'string') {
 		}
 	);
 }
+
+if (typeof settings.max_messages !== 'number' || settings.max_messages < 0) {
+	settings.max_messages = 0;
+} 

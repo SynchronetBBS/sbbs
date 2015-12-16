@@ -2,7 +2,6 @@
 if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 
 load('sbbsdefs.js');
-load('msgutils.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'forum.js');
 
@@ -29,7 +28,9 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	var firstUnread = '';
 
-	function writeMessage(header, index) {
+	function writeMessage(thread, keys, key, index) {
+
+		var header = thread.messages[key];
 
 		var body = msgBase.get_msg_body(header.number);
 		if (body === null) return;
@@ -42,7 +43,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 		// Show subject if first message
 		if (index === 0) {
-			writeln('<h4><strong>' + header.subject + '</strong></h4>');
+			writeln('<h4><strong>' + thread.subject + '</strong></h4>');
 		}
 
 		// Header
@@ -69,21 +70,21 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 		var prev = (
 			index === 0
-			? header.ec_thread.messages[0].number
-			: header.ec_thread.messages[index - 1].number
+			? thread.messages[thread.__first].number
+			: thread.messages[keys[index - 1]].number
 		);
 
 		var next = (
-			index === header.ec_thread.messages.length - 1
-			? header.ec_thread.messages[header.ec_thread.messages.length - 1].number
-			: header.ec_thread.messages[index + 1].number
+			key === thread.__last
+			? thread.messages[thread.__last].number
+			: thread.messages[keys[index + 1]].number
 		);
 
 		// Standard controls
 		writeln(
 			'<a class="btn btn-default icon" title="Jump to oldest message" ' +
 			'aria-label="Jump to oldest message" href="#' +
-			header.ec_thread.messages[0].number + '">' +
+			thread.messages[thread.__first].number + '">' +
 			'<span class="glyphicon glyphicon-fast-backward"></span></a>' +
 
 			'<a class="btn btn-default icon" title="Jump to previous message" '+
@@ -105,9 +106,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			'<a class="btn btn-default icon" ' +
 			'aria-label="Jump to newest message" ' +
 			'title="Jump to newest message" href="#' + 
-			header.ec_thread.messages[
-				header.ec_thread.messages.length - 1
-			].number + 
+			thread.messages[thread.__last].number + 
 			'"><span class="glyphicon glyphicon-fast-forward"></span></a>'
 		);
 
@@ -174,16 +173,24 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	try {
 		msgBase.open();
-		var messages = getMessageThreads(
-			http_request.query.sub[0]
+		var thread = getMessageThreads(
+			http_request.query.sub[0],
+			settings.max_messages
 		).thread[
 			http_request.query.thread[0]
-		].messages;
+		];
+		var keys = Object.keys(thread.messages);
+		thread.__first = keys[0];
+		thread.__last = keys[keys.length - 1];
 		writeln('<ul id="forum-list-container" class="list-group">');
-		messages.forEach(writeMessage);
+		keys.forEach(
+			function (key, index) {
+				writeMessage(thread, keys, key, index);
+			}
+		);
 		writeln('</ul>');
 		msgBase.close();
-		if (messages.length > 1 && firstUnread !== '') {
+		if (keys.length > 1 && firstUnread !== '') {
 			writeln(
 				'<script type="text/javascript">' +
 				'$("#jump-unread").attr("href", "#' + firstUnread + '");' +
@@ -192,11 +199,11 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			);
 		}
 		// Update scan pointer
-		if (messages[messages.length - 1].number >
+		if (thread.messages[thread.__last].number >
 			msg_area.sub[http_request.query.sub[0]].scan_ptr
 		) {
 			msg_area.sub[http_request.query.sub[0]].scan_ptr =
-			messages[messages.length - 1].number;
+			thread.messages[thread.__last].number;
 		}
 	} catch (err) {
 		log(err);
@@ -216,6 +223,9 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		} else {
 			var unread = 0;
 		}
+		var keys = Object.keys(thread.messages);
+		var first = keys[0];
+		var last = keys[keys.length - 1];
 		writeln(
 			format(
 				'<a href="./?page=%s&amp;sub=%s&amp;thread=%s" ' +
@@ -228,27 +238,22 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				'</a>',
 				http_request.query.page[0],
 				http_request.query.sub[0],
-				(	thread.messages[0].thread_id == 0
-					? thread.messages[0].number
-					: thread.messages[0].thread_id
-				),
-				thread.messages[0].subject,
-				thread.messages[0].from,
+				thread.id,
+				thread.subject,
+				thread.messages[first].from,
 				(new Date(
-						thread.messages[0].when_written_time * 1000
+						thread.messages[first].when_written_time * 1000
 					)
 				).toLocaleString(),
 				(	msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW
 					? ' scanned'
 					: ''
 				),
-				thread.messages[0].number,
+				thread.messages[first].number,
 				(unread == 0 ? "" : unread),
-				thread.messages[thread.messages.length - 1].from,
+				thread.messages[last].from,
 				(new Date(
-					thread.messages[
-						thread.messages.length - 1
-					].when_written_time * 1000
+					thread.messages[last].when_written_time * 1000
 				)).toLocaleString()
 			)
 		);
@@ -328,7 +333,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	}
 
 	try {
-		var threads = getMessageThreads(http_request.query.sub[0]);
+		var threads = getMessageThreads(
+			http_request.query.sub[0],
+			settings.max_messages
+		);
 		writeln('<div id="forum-list-container" class="list-group">');
 		threads.order.forEach(function(t){writeThread(threads.thread[t]);});
 		writeln('</div>');
