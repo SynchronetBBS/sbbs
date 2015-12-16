@@ -69,7 +69,7 @@ function newUser() {
 		reply.errors.push('Failed to create user record.');
 		return;
 	}
-	log('User #' + usr.number + ' registered via HTTP.');
+	log(LOG_INFO, 'User #' + usr.number + ' registered via HTTP.');
 	usr.security.password = prepUser.password;
 	for (var property in prepUser) {
 		if (property === 'alias' || property === 'password') continue;
@@ -86,7 +86,8 @@ if ((	paramExists('send-me-free-stuff') &&
 		http_request.query['subscribe-to-newsletter'][0] !== ''
 	)
 ) {
-	log('Hidden registration form input element filled.  ' +
+	log(LOG_WARNING,
+		'Hidden registration form input element filled.  ' +
 		'Likely a bot.  Cancelling user registration.'
 	);
 	exit();

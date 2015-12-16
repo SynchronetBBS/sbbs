@@ -1,9 +1,10 @@
+load('sbbsdefs.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'auth.js');
 load(settings.web_lib + 'mime-decode.js');
 
 function barfOut(err) {
-	log(err);
+	log(LOG_WARNING, err);
 	exit();
 }
 
