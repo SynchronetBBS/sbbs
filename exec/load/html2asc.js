@@ -1,6 +1,6 @@
 function html2asc(buf, mono, footnotes)
 {
-	var NORMAL			="\1N\1H";
+	var NORMAL			="\1N";
 	var HEADING1		="\1H\1Y";
 	var HEADING2		="\1H\1C";
 	var HEADING3		="\1H\1M";
