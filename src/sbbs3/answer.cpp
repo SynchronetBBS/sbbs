@@ -64,7 +64,7 @@ bool sbbs_t::answer()
         ,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900,cfg.node_num);
 	logline("@ ",str);
 
-	safe_snprintf(str,sizeof(str),"%s  %s [%s]", connection, client_name, cid);
+	safe_snprintf(str,sizeof(str),"%s  %s [%s]", connection, client_name, client_ipaddr);
 	logline("@+:",str);
 
 	if(client_ident[0]) {
@@ -360,8 +360,8 @@ bool sbbs_t::answer()
 
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)
-		&& (startup->options&BBS_OPT_AUTO_LOGON) && cid[0]) {
-		useron.number=userdatdupe(0, U_IPADDR, LEN_IPADDR, cid);
+		&& (startup->options&BBS_OPT_AUTO_LOGON) && client_ipaddr[0]) {
+		useron.number=userdatdupe(0, U_IPADDR, LEN_IPADDR, client_ipaddr);
 		if(useron.number) {
 			getuserdat(&cfg, &useron);
 			if(!(useron.misc&AUTOLOGON) || !(useron.exempt&FLAG('V')))
@@ -406,6 +406,7 @@ bool sbbs_t::answer()
 
 	useron.misc&=~TERM_FLAGS;
 	useron.misc|=autoterm;
+	SAFECOPY(client_ipaddr, cid);	/* Over-ride IP address with Caller-ID info */
 	SAFECOPY(useron.comp,client_name);
 
 	if(!useron.number && rlogin_name[0]!=0 && !(cfg.sys_misc&SM_CLOSED) && !matchuser(&cfg, rlogin_name, /* Sysop alias: */FALSE)) {
@@ -444,21 +445,8 @@ bool sbbs_t::answer()
 		if(logon()==false)
 			return(false);
 
-
 	if(!useron.number)
 		hangup();
-
-	/* Save the client IP or Caller-ID string to the user's record */
-	if(cid[0]) {
-		SAFECOPY(useron.ipaddr,cid);
-		putuserrec(&cfg,useron.number,U_IPADDR,LEN_IPADDR,useron.ipaddr);
-	}
-
-	/* Save the client hostname to the user's record */
-	if(client_name[0]) {
-		SAFECOPY(useron.comp,client_name);
-		putuserrec(&cfg,useron.number,U_COMP,LEN_COMP,useron.comp);
-	}
 
 	if(!online) 
 		return(false); 

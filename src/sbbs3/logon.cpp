@@ -389,6 +389,8 @@ bool sbbs_t::logon()
 		return(false); 
 	}
 	SAFECOPY(useron.modem,connection);
+	SAFECOPY(useron.ipaddr, client_ipaddr);
+	SAFECOPY(useron.comp, client_name);
 	useron.logons++;
 	putuserdat(&cfg,&useron);
 	getmsgptrs();
