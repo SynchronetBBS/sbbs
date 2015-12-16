@@ -118,6 +118,17 @@ function addNew(sub) {
 		}
 	);
 	window.location.hash = '#newmessage';
+	$('#newmessage-body').focus(
+		function () {
+			$(window).off('keydown');
+		}
+	);
+	$('#newmessage-body').blur(
+		function () {
+			window.location.hash = '';
+			threadNav();
+		}
+	);
 }
 
 // Add a reply input form to the page for message with number 'id' in sub 'sub'
@@ -139,6 +150,12 @@ function addReply(sub, id) {
 			);
 		}
 	);
+	$('#replytext-' + id).focus(
+		function () {
+			$(window).off('keydown');
+		}
+	);
+	$('#replytext-' + id).blur(threadNav);
 }
 
 // 'sub' can be a single sub code, or a string of <sub1>&sub=<sub2>&sub=<sub3>...
@@ -239,4 +256,50 @@ function setScanCfg(sub, cfg) {
 			);
 		}
 	);
+}
+
+function threadNav() {
+
+	if (window.location.hash === '') {
+		$($('#forum-list-container').children('.list-group-item')[0]).addClass(
+			'current'
+		);
+	} else if ($('#li-' + window.location.hash.substr(1)).length > 0) {
+		$('#li-' + window.location.hash.substr(1)).addClass('current');
+	}
+
+	$(window).keydown(
+		function (evt) {
+			var cid = $(
+				$('#forum-list-container').children('.current')[0]
+			).attr(
+				'id'
+			).substr(3);
+			switch (evt.keyCode) {
+				case 37:
+					// Left
+					window.location.hash = $('#pm-' + cid).attr('href');
+					break;
+				case 39:
+					// Right
+					window.location.hash = $('#nm-' + cid).attr('href');
+					break;
+				default:
+					break;
+			}
+		}
+	);
+
+	$(window).on(
+		'hashchange',
+		function () {
+			$('#forum-list-container').children('.current').removeClass(
+				'current'
+			);
+			var id = window.location.hash.substr(1);
+			if ($('#li-' + id).length < 1) return;
+			$('#li-' + id).addClass('current');
+		}
+	);
+
 }
