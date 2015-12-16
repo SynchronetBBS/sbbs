@@ -17,8 +17,9 @@ function getSession(un) {
 	return session;
 }
 
-// Obfuscated lazy port of an unfinished node.js rlogin client I made quite some time ago.
-// It does what it needs to do.  Unless it doesn't - in which case, replace it with something better.
+// Obfuscated lazy port of an unfinished rlogin client I made quite some time
+// ago. It does what it needs to do.  Unless it doesn't - in which case,
+// replace it with something better.
 var RLogin=function(e){var n=this;const t=24,i=13,s=17,o=19,c=10;var r=[],p=[],u={connected:!1,cooked:!0,suspendInput:!1,suspendOutput:!1,watchForClientEscape:!0,clientHasEscaped:!1},d={rows:24,columns:80,pixelsX:640,pixelsY:480,clientEscape:"~"},f={DOT:n.disconnect,EOT:n.disconnect,SUB:function(){u.suspendInput=u.suspendInput?!1:!0,u.suspendOutput=u.suspendInput},EOM:function(){u.suspendInput=u.suspendInput?!1:!0,u.suspendOutput=!1}};this.__defineGetter__("connected",function(){return u.connected}),this.__defineSetter__("connected",function(e){"boolean"!=typeof e||e||n.disconnect()}),this.__defineGetter__("rows",function(){return d.rows}),this.__defineSetter__("rows",function(e){if(!("number"==typeof e&&e>0))throw"RLogin: Invalid 'rows' setting "+e;d.rows=e}),this.__defineGetter__("columns",function(){return d.columns}),this.__defineSetter__("columns",function(e){if(!("number"==typeof e&&e>0))throw"RLogin: Invalid 'columns' setting "+e;d.columns=e}),this.__defineGetter__("pixelsX",function(){return d.pixelsX}),this.__defineSetter__("pixelsX",function(e){if(!("number"==typeof e&&e>0))throw"RLogin: Invalid 'pixelsX' setting "+e;d.pixelsX=e}),this.__defineGetter__("pixelsY",function(){return d.pixelsY}),this.__defineSetter__("pixelsY",function(e){if(!("number"==typeof e&&e>0))throw"RLogin: Invalid 'pixelsY' setting "+e;d.pixelsY=e}),this.__defineGetter__("clientEscape",function(){return d.clientEscape}),this.__defineSetter__("clientEscape",function(e){if("string"!=typeof e||1!=e.length)throw"RLogin: Invalid 'clientEscape' setting "+e;d.clientEscape=e});var a=new Socket,l=function(){if(!(a.nread<1)){for(var e=[];a.nread>0;)e.push(a.recvBin(1));if(!u.connected)if(0==e[0]){if(u.connected=!0,!(e.length>1))return;e=e.slice(1)}else n.disconnect();u.suspendOutput||(r=r.concat(e))}};this.send=function(e){if(!u.connected)throw"RLogin.send: not connected.";if(u.suspendInput)throw"RLogin.send: input has been suspended.";"string"==typeof e&&(e=e.split("").map(function(e){return ascii(e)}));for(var n=[],r=0;r<e.length;r++)u.watchForClientEscape&&e[r]==d.clientEscape.charCodeAt(0)?(u.watchForClientEscape=!1,u.clientHasEscaped=!0):u.clientHasEscaped?(u.clientHasEscaped=!1,"undefined"!=typeof f[e[r]]&&f[e[r]]()):!u.cooked||e[r]!=s&&e[r]!=o?((r>0&&e[r-1]==i&&e[r]==c||e[r]==t)&&(u.watchForClientEscape=!0),n.push(e[r])):u.suspendOutput==(e[r]==o);p=p.concat(n)},this.receive=function(){return r.splice(0,r.length)},this.addClientEscape=function(e,n){if("string"!=typeof e&&"number"!=typeof e||"string"==typeof e&&e.length>1||"function"!=typeof n)throw"RLogin.addClientEscape: invalid arguments.";f[e.charCodeAt(0)]=n},this.connect=function(){if("number"!=typeof e.port||"string"!=typeof e.host)throw"RLogin: invalid host or port argument.";if("string"!=typeof e.clientUsername)throw"RLogin: invalid clientUsername argument.";if("string"!=typeof e.serverUsername)throw"RLogin: invalid serverUsername argument.";if("string"!=typeof e.terminalType)throw"RLogin: invalid terminalType argument.";if("number"!=typeof e.terminalSpeed)throw"RLogin: invalid terminalSpeed argument.";if(!a.connect(e.host,e.port))throw"RLogin: Unable to connect to server.";for(a.sendBin(0,1),a.send(e.clientUsername),a.sendBin(0,1),a.send(e.serverUsername),a.sendBin(0,1),a.send(e.terminalType+"/"+e.terminalSpeed),a.sendBin(0,1);a.is_connected&&a.nread<1;)mswait(5);l()},this.cycle=function(){if(l(),!(u.suspendInput||p.length<1))for(;p.length>0;)a.sendBin(p.shift(),1)},this.disconnect=function(){a.close(),u.connected=!1}};
 
 try {
@@ -29,8 +30,9 @@ try {
 		err('No cookie from WebSocket client.');
 	}
 
+	// Should probably search for the right cookie instead of assuming
 	var cookie = wss.headers['Cookie'].split('=');
-	if (cookie[0] !== "synchronet" || cookie.length < 2) {
+	if (cookie[0] !== 'synchronet' || cookie.length < 2) {
 		err('Invalid cookie from WebSocket client.');
 	}
 
