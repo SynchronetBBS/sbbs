@@ -117,7 +117,9 @@ function destroySession(cookies) {
 			break;
 
 		} catch (err) {
-			log('Error destroying session: ' + err + ', cookie: ' + cookies[c]);
+			log(LOG_DEBUG,
+				'Error destroying session: ' + err + ', cookie: ' + cookies[c]
+			);
 		}
 
 	}

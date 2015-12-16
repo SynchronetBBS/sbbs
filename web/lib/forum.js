@@ -3,17 +3,16 @@ load('msgutils.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'mime-decode.js');
 
-function listGroups () {
+function listGroups() {
     var response = [];
     msg_area.grp_list.forEach(
         function (grp) {
-            if (grp.sub_list.length < 1)
-                return;
+            if (grp.sub_list.length < 1) return;
             response.push(
-                {   'index' : grp.index,
-                    'name' : grp.name,
-                    'description' : grp.description,
-                    'sub_count' : grp.sub_list.length
+                {   index : grp.index,
+                    name : grp.name,
+                    description : grp.description,
+                    sub_count : grp.sub_list.length
                 }
             );
         }
@@ -22,32 +21,32 @@ function listGroups () {
 }
 
 // Returns an array of objects of "useful" information about subs
-function listSubs (group) {
+function listSubs(group) {
     var response = [];
     msg_area.grp_list[group].sub_list.forEach(
         function (sub) {
             response.push(
-                {   'index' : sub.index,
-                    'code' : sub.code,
-                    'grp_index' : sub.grp_index,
-                    'grp_name' : sub.grp_name,
-                    'name' : sub.name,
-                    'description' : sub.description,
-                    'qwk_name' : sub.qwk_name,
-                    'qwk_conf' : sub.qwk_conf,
-                    'qwk_tagline' : sub.qwknet_tagline,
-                    'newsgroup' : sub.newsgroup,
-                    'ars' : sub.ars,
-                    'read_ars' : sub.read_ars,
-                    'can_read' : sub.can_read,
-                    'post_ars' : sub.post_ars,
-                    'can_post' : sub.can_post,
-                    'operator_ars' : sub.operator_ars,
-                    'is_operator' : sub.is_operator,
-                    'moderated_ars' : sub.moderated_ars,
-                    'is_moderated' : sub.is_moderated,
-                    'scan_ptr' : sub.scan_ptr,
-                    'scan_cfg' : sub.scan_cfg
+                {   index : sub.index,
+                    code : sub.code,
+                    grp_index : sub.grp_index,
+                    grp_name : sub.grp_name,
+                    name : sub.name,
+                    description : sub.description,
+                    qwk_name : sub.qwk_name,
+                    qwk_conf : sub.qwk_conf,
+                    qwk_tagline : sub.qwknet_tagline,
+                    newsgroup : sub.newsgroup,
+                    ars : sub.ars,
+                    read_ars : sub.read_ars,
+                    can_read : sub.can_read,
+                    post_ars : sub.post_ars,
+                    can_post : sub.can_post,
+                    operator_ars : sub.operator_ars,
+                    is_operator : sub.is_operator,
+                    moderated_ars : sub.moderated_ars,
+                    is_moderated : sub.is_moderated,
+                    scan_ptr : sub.scan_ptr,
+                    scan_cfg : sub.scan_cfg
                 }
             );
         }
@@ -55,10 +54,10 @@ function listSubs (group) {
     return response;
 }
 
-function getSubUnreadCount (sub) {
+function getSubUnreadCount(sub) {
     var ret = {
-        'scanned' : 0,
-        'total' : 0
+        scanned : 0,
+        total : 0
     };
     if (typeof msg_area.sub[sub] === 'undefined') return ret;
     try {
@@ -67,16 +66,12 @@ function getSubUnreadCount (sub) {
         for (var m = msg_area.sub[sub].scan_ptr; m < msgBase.last_msg; m++) {
             var i = msgBase.get_msg_index(m);
             if (i === null || i.attr&MSG_DELETE || i.attr&MSG_NODISP) continue;
-            if ((   (msg_area.sub[sub].scan_cfg&SCAN_CFG_YONLY)
-                    &&
-                    i.to === crc16_calc(user.alias.toLowerCase())
-                    ||
-                    i.to === crc16_calc(user.name.toLowerCase())
-                    ||
+            if ((   msg_area.sub[sub].scan_cfg&SCAN_CFG_YONLY &&
+                    i.to === crc16_calc(user.alias.toLowerCase()) ||
+                    i.to === crc16_calc(user.name.toLowerCase()) ||
                     (sub === 'mail' && i.to === crc16_calc(user.number))
-                )
-                ||
-                (msg_area.sub[sub].scan_cfg&SCAN_CFG_NEW)
+                ) ||
+                msg_area.sub[sub].scan_cfg&SCAN_CFG_NEW
             ) {
                 ret.scanned++;
             }
@@ -84,15 +79,15 @@ function getSubUnreadCount (sub) {
         }
         msgBase.close();
     } catch (err) {
-        log(err);
+        log(LOG_ERR, err);
     }
     return ret;
 }
 
-function getGroupUnreadCount (group) {
+function getGroupUnreadCount(group) {
     var ret = {
-        'scanned' : 0,
-        'total' : 0
+        scanned : 0,
+        total : 0
     };
     if (typeof msg_area.grp_list[group] === 'undefined') return count;
     msg_area.grp_list[group].sub_list.forEach(
@@ -105,11 +100,10 @@ function getGroupUnreadCount (group) {
     return ret;
 }
 
-function getUnreadInThread (sub, thread) {
+function getUnreadInThread(sub, thread) {
     if (typeof thread === 'number') {
         var threads = getMessageThreads(sub);
-        if(typeof threads.thread[thread] === 'undefined')
-            return 0;
+        if (typeof threads.thread[thread] === 'undefined') return 0;
         thread = threads.thread[thread];
     }
     var count = 0;
@@ -121,7 +115,7 @@ function getUnreadInThread (sub, thread) {
     return count;
 }
 
-function getMailUnreadCount () {
+function getMailUnreadCount() {
     var count = 0;
     var msgBase = new MsgBase('mail');
     msgBase.open();
@@ -137,7 +131,7 @@ function getMailUnreadCount () {
     return count;
 }
 
-function getMailHeaders (sent, ascending) {
+function getMailHeaders(sent, ascending) {
     if (typeof sent !== 'undefined' &&
         sent &&
         user.security.restrictions&UFLAG_K
@@ -167,12 +161,12 @@ function getMailHeaders (sent, ascending) {
     return headers;
 }
 
-function mimeDecode (header, body, code) {
+function mimeDecode(header, body, code) {
     var ret = {
-        'type' : "",
-        'body' : [],
-        'inlines' : [],
-        'attachments' : []
+        type : '',
+        body : [],
+        inlines : [],
+        attachments : []
     };
     var msg = mime_decode(header, body, code);
     if (typeof msg.inlines !== 'undefined') {
@@ -204,13 +198,13 @@ function mimeDecode (header, body, code) {
     return ret;
 }
 
-function getMailBody (number) {
+function getMailBody(number) {
 
     var ret = {
-        'type' : '',
-        'body' : '',
-        'inlines' : [],
-        'attachments' : []
+        type : '',
+        body : '',
+        inlines : [],
+        attachments : []
     };
 
     number = Number(number);
@@ -243,9 +237,9 @@ function getMailBody (number) {
 }
 
 // Returns the user's signature, or an empty String
-function getSignature () {
+function getSignature() {
     var fn = format('%s/user/%04d.sig', system.data_dir, user.number);
-    if (!file_exists(fn)) return "";
+    if (!file_exists(fn)) return '';
     var f = new File(fn);
     f.open('r');
     var signature = f.read();
@@ -255,7 +249,7 @@ function getSignature () {
 
 // Post a messge to 'sub'
 // Called by postNew/postReply, not directly
-function postMessage (sub, header, body) {
+function postMessage(sub, header, body) {
     var ret = false;
     if (user.alias === settings.guest ||
         typeof msg_area.sub[sub] === 'undefined' ||
@@ -287,7 +281,7 @@ function postMessage (sub, header, body) {
 
 // Post a message to the mail sub, if this user can do so
 // Called by postNew/postReply, not directly
-function postMail (header, body) {
+function postMail(header, body) {
     // Lazy ARS checks; we could check the *type* of email being sent, I guess.
     if (user.security.restrictions&UFLAG_E ||
         user.security.restrictions&UFLAG_M
@@ -319,7 +313,7 @@ function postMail (header, body) {
 }
 
 // Post a new (non-reply) message to 'sub'
-function postNew (sub, to, subject, body) {
+function postNew(sub, to, subject, body) {
     if (typeof sub !== 'string' ||
         typeof to !== 'string' ||
         to === '' ||
@@ -344,7 +338,7 @@ function postNew (sub, to, subject, body) {
 }
 
 // Add a new message to 'sub' in reply to parent message 'pid'
-function postReply (sub, body, pid) {
+function postReply(sub, body, pid) {
     var ret = false;
     if (    typeof sub !== 'string' ||
             typeof body !== 'string' ||
@@ -379,7 +373,7 @@ function postReply (sub, body, pid) {
 // Delete a message if
 // - This is the mail sub, and the message was sent by or to this user
 // - This is another sub on which the user is an operator
-function deleteMessage (sub, number) {
+function deleteMessage(sub, number) {
     number = parseInt(number);
     if (typeof msg_area.sub[sub] === 'undefined' && sub !== 'mail') {
         return false;
@@ -403,7 +397,7 @@ function deleteMessage (sub, number) {
 }
 
 // Deuce's URL-ifier
-function linkify (body) {
+function linkify(body) {
     urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
     body = body.replace(
         urlRE, 
@@ -420,7 +414,7 @@ function linkify (body) {
 }
 
 // Somewhat modified version of Deuce's "magical quoting stuff" from v3
-function quotify (body) {
+function quotify(body) {
 
     var blockquote_start = '<blockquote>';
     var blockquote_end = '</blockquote>';
@@ -507,7 +501,7 @@ function quotify (body) {
 }
 
 // Format message body for the web
-function formatMessage (body, ansi) {
+function formatMessage(body, ansi) {
 
     // Workaround for html_encode(body, true, false, false, false);
     // which causes a crash if body is empty
@@ -564,7 +558,7 @@ function formatMessage (body, ansi) {
 
 }
 
-function setScanCfg (sub, cfg) {
+function setScanCfg(sub, cfg) {
 
     var opts = [
         0,

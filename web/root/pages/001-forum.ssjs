@@ -27,7 +27,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	// Thread view
 	var msgBase = new MsgBase(http_request.query.sub[0]);
 
-	var firstUnreadLi = '';
+	var firstUnread = '';
 
 	function writeMessage(header, index) {
 
@@ -35,9 +35,9 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		if (body === null) return;
 
 		writeln(
+			'<a id="' + header.number + '"></a>' +
 			'<li class="list-group-item striped' +
-			'" id="li-' + header.number + '">' +
-			'<a id="' + header.number + '"></a>'
+			'" id="li-' + header.number + '">'
 		);
 
 		// Show subject if first message
@@ -52,7 +52,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			writeln(
 				'<span title="Unread" class="glyphicon glyphicon-star"></span>'
 			);
-			if (firstUnreadLi === '') firstUnreadLi = 'li-' + header.number;
+			if (firstUnread === '') firstUnread += header.number;
 		}			
 		writeln(
 			'From <strong>' + header.from + "</strong>" +
@@ -67,6 +67,18 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			formatMessage(body) + '</div>'
 		);
 
+		var prev = (
+			index === 0
+			? header.ec_thread.messages[0].number
+			: header.ec_thread.messages[index - 1].number
+		);
+
+		var next = (
+			index === header.ec_thread.messages.length - 1
+			? header.ec_thread.messages[header.ec_thread.messages.length - 1].number
+			: header.ec_thread.messages[index + 1].number
+		);
+
 		// Standard controls
 		writeln(
 			'<a class="btn btn-default icon" title="Jump to oldest message" ' +
@@ -74,12 +86,28 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			header.ec_thread.messages[0].number + '">' +
 			'<span class="glyphicon glyphicon-fast-backward"></span></a>' +
 
-			'<a class="btn btn-default icon" title="Direct link to this message" ' +
-			'aria-label="Direct link to this message" href="#' + header.number + '">' +
+			'<a class="btn btn-default icon" title="Jump to previous message" '+
+			'aria-label="Jump to previous message" href="#' + prev + '" ' +
+			'id="pm-' + header.number + '">' +
+			'<span class="glyphicon glyphicon-step-backward"></span></a>' +
+
+			'<a class="btn btn-default icon" ' +
+			'title="Direct link to this message" ' +
+			'aria-label="Direct link to this message" ' +
+			'href="#' + header.number + '">' +
 			'<span class="glyphicon glyphicon-link"></span></a>' +
+
+			'<a class="btn btn-default icon" title="Jump to next message" ' +
+			'aria-label="Jump to next message" href="#' + next + '" ' +
+			'id="nm-' + header.number + '">' +
+			'<span class="glyphicon glyphicon-step-forward"></span></a>' +
 			
-			'<a class="btn btn-default icon" aria-label="Jump to newest message" title="Jump to newest message" href="#' + 
-			header.ec_thread.messages[header.ec_thread.messages.length - 1].number + 
+			'<a class="btn btn-default icon" ' +
+			'aria-label="Jump to newest message" ' +
+			'title="Jump to newest message" href="#' + 
+			header.ec_thread.messages[
+				header.ec_thread.messages.length - 1
+			].number + 
 			'"><span class="glyphicon glyphicon-fast-forward"></span></a>'
 		);
 
@@ -92,7 +120,9 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				'aria-label="Reply to this message" ' +
 				'title="Reply to this message" ' +
 				'name="reply-' + header.number + '" ' +
-				'onclick="addReply(\'' + msgBase.cfg.code + '\',' + header.number + ')">' +
+				'onclick="addReply(\'' +
+					msgBase.cfg.code + '\',' + header.number +
+				')">' +
 				'<span class="glyphicon glyphicon-comment"></span>' +
 				'</button>'
 			);
@@ -104,8 +134,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		) {
 			writeln(
 				'<button class="btn btn-default icon" ' +
-				'aria-label="Delete this message" title="Delete this message" ' +
-				'onclick="deleteMessage(\'' + msgBase.cfg.code + '\', ' + header.number + ')" ' +
+				'aria-label="Delete this message" title="Delete this message" '+
+				'onclick="deleteMessage(\'' +
+					msgBase.cfg.code + '\', ' + header.number +
+				')" ' +
 				'href="#">' +
 				'<span class="glyphicon glyphicon-trash"></span>' +
 				'</button>'
@@ -134,7 +166,8 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	);
 	writeln(
 		'<div id="jump-unread-container" style="margin-bottom:1em;" hidden>' +
-		'<a class="btn btn-default" id="jump-unread" title="Jump to first unread message" href="#">' +
+		'<a class="btn btn-default" id="jump-unread" ' +
+		'title="Jump to first unread message" href="#">' +
 		'<span class="glyphicon glyphicon-star"></span>' +
 		'</a></div>'
 	);
@@ -150,21 +183,26 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		messages.forEach(writeMessage);
 		writeln('</ul>');
 		msgBase.close();
-		if (messages.length > 1 && firstUnreadLi !== '') {
+		if (messages.length > 1 && firstUnread !== '') {
 			writeln(
 				'<script type="text/javascript">' +
-				'$("#jump-unread").attr("href", "#' + firstUnreadLi + '");' +
+				'$("#jump-unread").attr("href", "#' + firstUnread + '");' +
 				'$("#jump-unread-container").attr("hidden", false);' +
 				'</script>'
 			);
 		}
 		// Update scan pointer
-		if (messages[messages.length - 1].number > msg_area.sub[http_request.query.sub[0]].scan_ptr) {
-			msg_area.sub[http_request.query.sub[0]].scan_ptr = messages[messages.length - 1].number;
+		if (messages[messages.length - 1].number >
+			msg_area.sub[http_request.query.sub[0]].scan_ptr
+		) {
+			msg_area.sub[http_request.query.sub[0]].scan_ptr =
+			messages[messages.length - 1].number;
 		}
 	} catch (err) {
 		log(err);
 	}
+
+	writeln('<script type="text/javascript">threadNav();</script>');
 
 } else if (
 	typeof http_request.query.sub !== 'undefined' &&
@@ -180,19 +218,30 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		}
 		writeln(
 			format(
-				'<a href="./?page=%s&amp;sub=%s&amp;thread=%s" class="list-group-item striped">' +
+				'<a href="./?page=%s&amp;sub=%s&amp;thread=%s" ' +
+				'class="list-group-item striped">' +
 				'<strong>%s</strong>' +
 				'<p>By <strong>%s</strong> on %s</p>' +
-				'<span title="Unread messages" class="badge%s" id="badge-%s">%s</span>' +
+				'<span title="Unread messages" class="badge%s" ' +
+				'id="badge-%s">%s</span>' +
 				'<p>Latest reply by <strong>%s</strong> on %s</p>' +
 				'</a>',
 				http_request.query.page[0],
 				http_request.query.sub[0],
-				(thread.messages[0].thread_id == 0 ? thread.messages[0].number : thread.messages[0].thread_id),
+				(	thread.messages[0].thread_id == 0
+					? thread.messages[0].number
+					: thread.messages[0].thread_id
+				),
 				thread.messages[0].subject,
 				thread.messages[0].from,
-				(new Date(thread.messages[0].when_written_time * 1000)).toLocaleString(),
-				((msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW) ? " scanned" : ""),
+				(new Date(
+						thread.messages[0].when_written_time * 1000
+					)
+				).toLocaleString(),
+				(	msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW
+					? ' scanned'
+					: ''
+				),
 				thread.messages[0].number,
 				(unread == 0 ? "" : unread),
 				thread.messages[thread.messages.length - 1].from,
@@ -237,8 +286,13 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	if (user.alias !== settings.guest) {
 		writeln(
 			'<button id="scan-cfg-new" class="btn ' +
-			(!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY) && (msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW) ? "btn-primary" : "btn-default") +
-			' icon" aria-label="Scan for new messages" title="Scan for new messages" ' +
+			(	!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY) &&
+				(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW)
+				? 'btn-primary'
+				: 'btn-default'
+			) +
+			' icon" aria-label="Scan for new messages" ' +
+			'title="Scan for new messages" ' +
 			'onclick="setScanCfg(\'' + http_request.query.sub[0] + '\',1)"' +
 			'>' +
 			'<span class="glyphicon glyphicon-ok-sign"></span>' +
@@ -246,8 +300,12 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		);
 		writeln(
 			'<button id="scan-cfg-youonly" class="btn ' +
-			((msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY) ? "btn-primary" : "btn-default") +
-			' icon" aria-label="Scan for new messages to you only" title="Scan for new messages to you only" ' +
+			(	msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY
+				? 'btn-primary'
+				: 'btn-default'
+			) +
+			' icon" aria-label="Scan for new messages to you only" ' +
+			'title="Scan for new messages to you only" ' +
 			'onclick="setScanCfg(\'' + http_request.query.sub[0] + '\',2)"' +
 			'>' +
 			'<span class="glyphicon glyphicon-user"></span>' +
@@ -255,8 +313,13 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		);
 		writeln(
 			'<button id="scan-cfg-off" class="btn ' +
-			(!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW) && !(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY) ? "btn-primary" : "btn-default") +
-			' icon" aria-label="Do not scan this sub" title="Do not scan this sub" ' +
+			(	!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW) &&
+				!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY)
+				? 'btn-primary'
+				: 'btn-default'
+			) +
+			' icon" aria-label="Do not scan this sub" ' +
+			'title="Do not scan this sub" ' +
 			'onclick="setScanCfg(\'' + http_request.query.sub[0] + '\',0)"' +
 			'>' +
 			'<span class="glyphicon glyphicon-ban-circle"></span>' +
@@ -282,18 +345,24 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	function writeSub(sub) {
 		writeln(
 			format(
-				'<a href="./?page=%s&amp;sub=%s" class="list-group-item striped%s">' +
+				'<a href="./?page=%s&amp;sub=%s" ' +
+				'class="list-group-item striped%s">' +
 				'<h4><strong>%s</strong></h4>' +
-				'<span title="Unread messages" class="badge %s" id="badge-%s">' +
-				//'<img src="./images/ajax-loader-small.gif">' +
+				'<span title="Unread messages" class="badge %s" id="badge-%s">'+
 				'</span>' +
 				'<p>%s</p>' +
 				'</a>',
 				http_request.query.page[0],
 				sub.code,
-				((sub.scan_cfg&SCAN_CFG_NEW) || (sub.scan_cfg&SCAN_CFG_YONLY) ? " scanned" : ""),
+				(	sub.scan_cfg&SCAN_CFG_NEW || sub.scan_cfg&SCAN_CFG_YONLY
+					? ' scanned'
+					: ''
+				),
 				sub.name,
-				((sub.scan_cfg&SCAN_CFG_NEW) || (sub.scan_cfg&SCAN_CFG_YONLY) ? "scanned" : "total"),
+				(	sub.scan_cfg&SCAN_CFG_NEW || sub.scan_cfg&SCAN_CFG_YONLY
+					? 'scanned'
+					: 'total'
+				),
 				sub.code,
 				sub.description
 			)
@@ -306,7 +375,12 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		subs.forEach(function (sub) { codes.push(sub.code); });
 		codes = codes.join('&sub=');
 		writeln('getSubUnreadCount("' + codes + '");');
-		writeln('setInterval(function(){getSubUnreadCount("' + codes + '");}, 60000);');
+		writeln(
+			'setInterval(' +
+				'function(){getSubUnreadCount("' + codes + '");},' +
+				'60000' +
+			');'
+		);
 		writeln('</script>');
 	}
 
@@ -341,13 +415,14 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	function writeGroup(group) {
 		writeln(
 			format(
-				'<a href="./?page=%s&amp;group=%s" class="list-group-item striped">' +
+				'<a href="./?page=%s&amp;group=%s" ' +
+				'class="list-group-item striped">' +
 				'<h3><strong>%s</strong></h3>' +
-				'<span title="Unread messages (other)" class="badge ignored" id="badge-ignored-%s">' +
-				//'<img src="./images/ajax-loader-small.gif">' +
+				'<span title="Unread messages (other)" ' +
+				'class="badge ignored" id="badge-ignored-%s">' +
 				'</span>' +
-				'<span title="Unread messages (scanned subs)" class="badge scanned" id="badge-scanned-%s">' +
-				//'<img src="./images/ajax-loader-small.gif">' +
+				'<span title="Unread messages (scanned subs)" ' +
+				'class="badge scanned" id="badge-scanned-%s">' +
 				'</span>' +
 				'<p>%s : %s sub-boards</p>' +
 				'</a>',
@@ -368,7 +443,12 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		groups.forEach(function(group) { indexes.push(group.index); });
 		indexes = indexes.join('&group=');
 		writeln('getGroupUnreadCount("' + indexes + '");');
-		writeln('setInterval(function(){getGroupUnreadCount("' + indexes + '");},60000);');
+		writeln(
+			'setInterval(' +
+				'function(){getGroupUnreadCount("' + indexes + '");},' +
+				'60000' +
+			');'
+		);
 		writeln('</script>');
 	}
 	

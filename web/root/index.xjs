@@ -1,4 +1,5 @@
 <?xjs
+
 	load('xjs.js');
 	load(system.exec_dir + '../web/lib/init.js');
 	load(settings.web_lib + 'auth.js');
@@ -16,6 +17,141 @@
 	} else {
 		var page = file_getname(http_request.query.page[0]);
 	}
+
+	function writeTitle() {
+		writeln(
+			getPageTitle(
+				settings.web_root + 'pages/' + page
+			).replace(/^HIDDEN(\:)*/, '')
+		);
+	}
+
+	function writeNavBar() {
+		var pages = getPages();
+		var primary = [];
+		var secondary = [];
+		pages.forEach(
+			function (thePage) {
+				if (thePage.primary) {
+					primary.push(thePage);
+				} else {
+					secondary.push(thePage);
+				}
+			}
+		);
+		primary.forEach(
+			function (p) {
+				writeln(
+					'<li' + (p.page === page ? ' class="active"' : '') + '>' +
+					'<a href="./?page=' + p.page + '">' + p.title +	'</a></li>'
+				);
+			}
+		);
+		if (secondary.length > 0) {
+			writeln(
+				'<li class="dropdown">' +
+				'<a	href="#" ' +
+					'class="dropdown-toggle" ' +
+					'data-toggle="dropdown" ' +
+					'role="button" aria-haspopup="true" ' +
+					'aria-expanded="false">' +
+					'More<span class="caret"></span>' +
+				'</a>' +
+				'<ul class="dropdown-menu">'
+			);
+			secondary.forEach(
+				function (p) {
+					writeln(
+						'<li' +	(p.page === page ? ' class="active"' : '') + '>' +
+						'<a href="./?page=' + p.page + '">' +
+							p.title +
+						'</a>' +
+						'</li>'
+					);
+				}
+			);
+			writeln('</ul></li>');
+		}
+	}
+
+	function writeAuthMenu() {
+		if (user.alias === settings.guest || user.number < 1) {
+			if (settings.user_registration) {
+				writeln(
+					'<li><a href="./?page=000-register.xjs">Register</a></li>'
+				);
+			}
+			writeln(
+				'<li class="dropdown">' +
+				'<a	href="#" ' +
+					'class="dropdown-toggle" ' +
+					'data-toggle="dropdown" ' +
+					'role="button" ' +
+					'aria-haspopup="true" ' +
+					'aria-expanded="false">' +
+				'Log in<span class="caret"></span></a>' +
+				'<div id="login-form" ' +
+					'class="dropdown-menu" ' +
+					'style="padding:15px; padding-bottom: 0px;"' +
+				'>' +
+				'<form id="form-login">' +
+				'<label for="input-username" class="sr-only">Username</label>' +
+				'<input id="input-username" ' +
+					'title="Username" ' +
+					'type="text" ' +
+					'class="dropdown form-control" ' +
+					'placeholder="Username"' +
+				'>' +
+				'<label for="input-password" class="sr-only">Password</label>' +
+				'<input id="input-password" ' +
+					'title="Password" ' +
+					'type="password" ' +
+					'class="dropdown form-control" ' +
+					'placeholder="Password"' +
+				'>' +
+				'<input id="button-login" ' +
+					'class="dropdown btn btn-primary" ' +
+					'type="submit" ' +
+					'value="Log in"' +
+					'>' +
+				'</form>' +
+				'</div>' +
+				'</li>'
+			);
+		} else {
+			writeln(
+				'<li class="dropdown">' +
+				'<a	href="#" ' +
+					'class="dropdown-toggle" ' +
+					'data-toggle="dropdown" ' +
+					'role="button" ' +
+					'aria-haspopup="true" ' +
+					'aria-expanded="false">' +
+					user.alias + 
+					' <span class="badge scanned" title="Unread mail" ' +
+					'id="badge-unread-mail"></span>' +
+					' <span class="caret"></span>' +
+				'</a>' +
+				'<ul class="dropdown-menu">' +
+				'<li><a href="./?page=000-mail.ssjs">Mail ' +
+				'<span class="badge scanned" ' +
+					'title="Unread mail" ' +
+					'id="badge-unread-mail-inner">' +
+				'</span>' +
+				'</a></li>' +
+				'<li><a id="button-logout" href="#">Log out</a></li>' +
+				'</ul>'
+			);
+		}
+	}
+
+	function writePage() {
+		var ini = getWebCtrl();
+		if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
+			write(getPage(page));
+		}
+	}
+
 ?>
 
 
@@ -26,17 +162,7 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="icon" href="./images/favicon.ico">
-		<title>
-			<?xjs 
-				write(
-					getPageTitle(
-						settings.web_root + 'pages/' + page
-					).replace(/^HIDDEN(\:)*/, '')
-				);
-			?>
-			:
-			<?xjs write(system.name); ?>
-		</title>
+		<title><?xjs writeTitle(); ?> :	<?xjs write(system.name); ?></title>
 		<link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
 		<link href="./css/offcanvas.css" rel="stylesheet">
 		<link href="./css/style.css" rel="stylesheet">
@@ -77,116 +203,9 @@
 					<a class="navbar-brand" href="./"><?xjs write(system.name); ?></a>
 				</div>
 				<div id="navbar" class="collapse navbar-collapse">
-					<ul class="nav navbar-nav">
-						<?xjs 
-							var pages = getPages();
-							var primary = [];
-							var secondary = [];
-							pages.forEach(
-								function (thePage) {
-									if (thePage.primary) {
-										primary.push(thePage);
-									} else {
-										secondary.push(thePage);
-									}
-								}
-							);
-							pages = [];
-							primary.forEach(
-								function (thePage) {
-									writeln(
-										'<li' +
-										(thePage.page === page
-											? ' class="active"' : "") + 
-										'>' +
-										'<a href="./?page=' + thePage.page + '">' +
-										thePage.title +
-										'</a></li>'
-									);
-								}
-							);
-							if (secondary.length > 0) {
-								writeln(
-									'<li class="dropdown">' +
-									'<a	href="#" ' +
-										'class="dropdown-toggle" ' +
-										'data-toggle="dropdown" ' +
-										'role="button" ' +
-										'aria-haspopup="true" ' +
-										'aria-expanded="false">' +
-									'More<span class="caret"></span></a>' +
-									'<ul class="dropdown-menu">'
-								);
-								secondary.forEach(
-									function (thePage) {
-										writeln(
-											'<li' +
-											(thePage.page === page
-												? ' class="active"' : "") + 
-											'>' +
-											'<a href="./?page=' + thePage.page + '">' +
-											thePage.title +
-											'</a></li>'
-										);
-									}
-								);
-								writeln('</ul></li>');
-							}
-						?>
-					</ul>
+					<ul class="nav navbar-nav"><?xjs writeNavBar(); ?></ul>
 					<ul class="nav navbar-nav navbar-right">
-					<?xjs
-					if (user.alias === settings.guest || user.number < 1) {
-						if (settings.user_registration) {
-							writeln(
-								'<li>' +
-								'<a href="./?page=000-register.xjs">Register</a>' +
-								'</li>'
-							);
-						}
-						writeln(
-							'<li class="dropdown">' +
-							'<a	href="#" ' +
-								'class="dropdown-toggle" ' +
-								'data-toggle="dropdown" ' +
-								'role="button" ' +
-								'aria-haspopup="true" ' +
-								'aria-expanded="false">' +
-							'Log in<span class="caret"></span></a>' +
-							'<div id="login-form" class="dropdown-menu" style="padding:15px; padding-bottom: 0px;">' +
-							'<form id="form-login">' +
-							'<label for="input-username" class="sr-only">Username</label>' +
-							'<input id="input-username" title="Username" type="text" class="dropdown form-control" placeholder="Username">' +
-							'<label for="input-password" class="sr-only">Password</label>' +
-							'<input id="input-password" title="Password" type="password" class="dropdown form-control" placeholder="Password">' +
-							'<input id="button-login" class="dropdown btn btn-primary" type="submit" value="Log in">' +
-							'</form>' +
-							'</div>' +
-							'</li>'
-						);
-					} else {
-						writeln(
-							'<li class="dropdown">' +
-							'<a	href="#" ' +
-								'class="dropdown-toggle" ' +
-								'data-toggle="dropdown" ' +
-								'role="button" ' +
-								'aria-haspopup="true" ' +
-								'aria-expanded="false">' +
-								user.alias + 
-								' <span class="badge scanned" title="Unread mail" ' +
-								'id="badge-unread-mail"></span>' +
-								' <span class="caret"></span>' +
-							'</a>' +
-							'<ul class="dropdown-menu">' +
-							'<li><a href="./?page=000-mail.ssjs">Mail ' +
-							'<span class="badge scanned" title="Unread mail" id="badge-unread-mail-inner"></span>' +
-							'</a></li>' +
-							'<li><a id="button-logout" href="#">Log out</a></li>' +
-							'</ul>'
-						);
-					}
-					?>
+						<?xjs writeAuthMenu(); ?>
 					</ul>
 				</div>
 		  </div>
@@ -202,14 +221,7 @@
 							<span class="glyphicon glyphicon-tasks"></span> Sidebar
 						</button>
 					</p>
-					<?xjs 
-						var ini = getWebCtrl();
-						if ((typeof ini == "boolean" && !ini) ||
-							webCtrlTest(ini, page)
-						) {
-							write(getPage(page));
-						}
-					?>
+					<?xjs writePage(); ?>
 				</div>
 
 				<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">

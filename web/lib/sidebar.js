@@ -2,9 +2,8 @@ function getSidebarModules() {
 	var sidebarModules = [];
 	var d = directory(settings.web_root + 'sidebar/*');
 	d.forEach(
-		function(item) {
-			if(file_isdir(item))
-				return;
+		function (item) {
+			if (file_isdir(item)) return;
 			var fn = file_getname(item);
 			// Check webctrl.ini
 			sidebarModules.push(fn);
