@@ -51,6 +51,9 @@ I haven't actually tried these instructions on a clean Synchronet BBS installati
 	web_directory = ../web
 	; Path to a .ans file to use as the ftelnet splash screen
 	ftelnet_splash = ../text/synch.ans
+	; Only load this many messages from each sub (default: 0 for all)
+	; (If you get 'Out of memory' errors when viewing subs, tweak this setting)
+	max_messages = 0
 ```
 - Add the following section to your *ctrl/services.ini* file if it isn't there already:
 ```ini
