@@ -879,7 +879,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				mode&=~SCAN_FIND;	/* turn off find mode */
 				if((i64=get_start_msg(this,&smb))<0)
 					break;
-				i=64;
+				i=(int)i64;
 				bputs(text[SearchStringPrompt]);
 				if(!getstr(find_buf,40,K_LINE|K_UPPER|K_EDIT|K_AUTODEL))
 					break;
