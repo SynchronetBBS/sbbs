@@ -206,7 +206,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			thread.messages[thread.__last].number;
 		}
 	} catch (err) {
-		log(err);
+		log(LOG_WARNING, err);
 	}
 
 	writeln('<script type="text/javascript">threadNav();</script>');
@@ -341,7 +341,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		threads.order.forEach(function(t){writeThread(threads.thread[t]);});
 		writeln('</div>');
 	} catch (err) {
-		log(err);
+		log(LOG_WARNING, err);
 	}
 
 } else if (
@@ -414,7 +414,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			writeApiCall(subs);
 		}
 	} catch (err) {
-		log(err);
+		log(LOG_WARNING, err);
 	}
 
 } else {
@@ -477,7 +477,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			writeApiCall(groups);
 		}
 	} catch (err) {
-		log(err);
+		log(LOG_WARNING, err);
 	}
 
 }
