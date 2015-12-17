@@ -23,6 +23,8 @@ function match_pw(node, pw)
 		else
 			n = n.replace(/[0-9]+$/, 'ALL');
 	}
+	if (pw === '' || pw === undefined)
+		return true;
 	log(LOG_WARNING, "No PKTPWD found to match "+node+".");
 	return false;
 }
