@@ -121,7 +121,7 @@ function getMailUnreadCount() {
     for (var m = msgBase.first_msg; m <= msgBase.last_msg; m++) {
         var index = msgBase.get_msg_header(m);
         if (index === null) continue;
-        if (index.to_ext !== user.number) continue;
+        if (index.to_ext != user.number) continue;
         if (index.attr&MSG_READ) continue;
         if (index.attr&MSG_DELETE) continue;
         count++;
