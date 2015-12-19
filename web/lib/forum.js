@@ -295,9 +295,8 @@ function postMail(header, body) {
     }
     var ret = false;
     if (user.number < 1 || user.alias === settings.guest) return ret;
-    var na = netaddr_type(header.to);
+    var na = netaddr_type(header.to_net_addr);
     header.to_net_type = na;
-    if (na > 0) header.to_net_addr = header.to;
     if (na === NET_NONE) {
         var un = system.matchuser(header.to);
         if (un === 0) return false; // Should actually inform about this
@@ -330,6 +329,7 @@ function postNew(sub, to, subject, body) {
         subject : subject
     };
     if (sub === 'mail') {
+        header.to_net_addr = header.to;
         return postMail(header, body);
     } else {
         return postMessage(sub, header, body);
