@@ -4,30 +4,34 @@ var show = 5;
 var lines = [];
 
 try {
-    load(system.exec_dir + "../xtrn/oneliners/lib.js");
-    var settings = initSettings(system.exec_dir + "../xtrn/oneliners/");
-    var oneliners = new Oneliners(settings.server, settings.port);
-    var count = oneliners.count;
-    lines = (count < show) ? oneliners.read(0) : oneliners.read(count - show - 1, count);
-    oneliners.close();
+	load(system.exec_dir + "../xtrn/oneliners/lib.js");
+	var settings = initSettings(system.exec_dir + "../xtrn/oneliners/");
+	var oneliners = new Oneliners(settings.server, settings.port);
+	var count = oneliners.count;
+	lines = (count < show) ? oneliners.read(0) : oneliners.read(count - show - 1, count);
+	oneliners.close();
 } catch(err) {
-    log(LOG_ERR, err);
+	log(LOG_ERR, err);
 }
 
 ?>
 
-Synchronet Oneliners<br><br>
+<h4>Synchronet Oneliners</h4>
+
+<ul class="list-group">
 
 <?xjs
-
-for(var line = 0; line < lines.length; line++) {
-    var bg = (line %2 == 0) ? "#1C1C1C" : "#585858";
-    var fg = (line %2 == 0) ? "#FFFFFF" : "#000000";
-    write("<div style='width:100%;color:"+fg+";background-color:"+bg+";'>");
-    write(lines[line].alias + "@" + lines[line].qwkid + "<br>");
-    write(system.timestr(lines[line].time) + "<br>");
-    write(lines[line].oneliner.replace(/\|\d\d|\1\w/g, "") + "<br>");
-    write("</div>");
-}
-
+lines.forEach(
+	function(line) {
+		writeln(
+			'<li class="list-group-item striped">' +
+			'<strong>' + line.alias + '@' + line.qwkid + '</strong><br>' +
+			'<em>' + (new Date(line.time * 1000)).toLocaleString() + '</em><br>' +
+			line.oneliner.replace(/\|\d\d|\1\w/g, "") +
+			'</li>'
+		);
+	}
+);
 ?>
+
+</ul>
