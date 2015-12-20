@@ -101,7 +101,7 @@ var CNF = new (function() {
 			if(file.eof) 
 				break;
 			list[i] = {
-				name:etStr(file,struct.name.bytes),
+				name:getStr(file,struct.name.bytes),
 				misc:0
 			};
 		}
