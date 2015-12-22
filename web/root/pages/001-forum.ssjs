@@ -20,7 +20,8 @@ if (typeof http_request.query.notice !== 'undefined') {
 
 if (typeof http_request.query.sub !== 'undefined' &&
 	typeof msg_area.sub[http_request.query.sub[0]] !== 'undefined' &&
-	typeof http_request.query.thread !== 'undefined'
+	typeof http_request.query.thread !== 'undefined' &&
+	msg_area.sub[http_request.query.sub[0]].can_read
 ) {
 
 	// Thread view
@@ -213,7 +214,8 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 } else if (
 	typeof http_request.query.sub !== 'undefined' &&
-	typeof msg_area.sub[http_request.query.sub[0]] !== 'undefined'
+	typeof msg_area.sub[http_request.query.sub[0]] !== 'undefined' &&
+	msg_area.sub[http_request.query.sub[0]].can_read
 ) {
 
 	// Thread list
