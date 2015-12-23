@@ -195,7 +195,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.07 Beta 2";
+var READER_VERSION = "1.07 Beta 3";
 var READER_DATE = "2015-12-23";
 
 // Keyboard key codes for displaying on the screen
@@ -3871,8 +3871,9 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 				for (messageIndex = this.lightbarListTopMsgIdx; messageIndex < messageIndexEnd; ++messageIndex)
 				{
 					// Skip the current selected message because that one's checkmark
-					// will be refreshed
-					if (messageIndex != this.lightbarListSelectedMsgIdx)
+					// will be refreshed.  Also skip this one if the message has been
+					// marked as deleted already.
+					if (!this.MessageIsDeleted(messageIndex) && (messageIndex != this.lightbarListSelectedMsgIdx))
 					{
 						console.gotoxy(this.MSGNUM_LEN+1, currentRow);
 						console.print("\1n");
@@ -12499,7 +12500,9 @@ function DigDistMsgReader_DeleteSelectedMessages()
 		msgBase = new MsgBase(subBoardCode);
 		if (msgBase.open())
 		{
-			if ((subBoardCode == "mail") || ((msgBase.cfg.settings & SUB_DEL) == SUB_DEL))
+			// Allow the user to delete the messages if they're the sysop, they're
+			// reading their personal mail, or the sub-board allows deleting messages.
+			if (gIsSysop || (subBoardCode == "mail") || ((msgBase.cfg.settings & SUB_DEL) == SUB_DEL))
 			{
 				for (var msgIdx in this.selectedMessages[subBoardCode])
 				{
