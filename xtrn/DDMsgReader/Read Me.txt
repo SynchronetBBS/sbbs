@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.06
-                           Release date: 2015-12-13
+                                 Version 1.07
+                           Release date: 2015-12-??
 
                                      by
 
@@ -833,9 +833,16 @@ msgDelConfirmText                    Prompt text to confirm message deletion
                                      (without the ? at the end).  %d will be
                                      replaced with the message number.
 
+delSelectedMsgsConfirmText           Prompt text to confirm deletion of
+                                     selected messages (i..e, for batch message
+                                     deletion), without the ? at the end.
+
 msgDeletedText                       Text for when a message has been marked
                                      for deletion.  %d will be replaced with
                                      the message number.
+
+selectedMsgsDeletedText              Text for when selected messages have been
+                                     marked for deletion
 
 cannotDeleteMsgText_notYoursNotASysop  Error text for cannot delete a message
                                        because the message is not the user's
@@ -867,6 +874,10 @@ hdrLineLabelColor                    The color to use for the header/kludge
 
 hdrLineValueColor                    The color to use for the header/kludge
                                      line values
+
+selectedMsgMarkColor                 The color to use for the checkmark for
+                                     selected messages (used in the message
+                                     list)
 
 6. Drop file for replying to messages with Synchronet message editors
 =====================================================================

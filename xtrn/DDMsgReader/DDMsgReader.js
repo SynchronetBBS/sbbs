@@ -101,6 +101,9 @@
  * 2015-12-13 Eric Oulashin     Version 1.06
  *                              Releasing this version after testing showed it's
  *                              working as expected
+ * 2015-12-19 Eric Oulashin     Version 1.07 Beta
+ *                              Started working on a way of tagging message (i.e., to
+ *                              do a batch delete).
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -192,8 +195,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.06";
-var READER_DATE = "2015-12-13";
+var READER_VERSION = "1.07 Beta 2";
+var READER_DATE = "2015-12-23";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -685,6 +688,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// String lengths for the columns to write
 	// Fixed field widths: Message number, date, and time
+	// TODO: It might be good to figure out the longest message number for a
+	// sub-board and set the message number length dynamically.  It would have
+	// to change whenever the user changes to a different sub-board, and the
+	// message list format string would have to change too.
 	this.MSGNUM_LEN = 4;
 	this.DATE_LEN = 10; // i.e., YYYY-MM-DD
 	this.TIME_LEN = 8;  // i.e., HH:MM:SS
@@ -765,9 +772,12 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.text.abortedText = "\1n\1y\1h\1iAborted\1n";
 	this.text.loadingPersonalMailText = "\1n\1cLoading %s...";
 	this.text.msgDelConfirmText = "\1n\1h\1yDelete\1n\1c message #\1h%d\1n\1c: Are you sure";
+	this.text.delSelectedMsgsConfirmText = "\1n\1h\1yDelete selected messages: Are you sure";
 	this.text.msgDeletedText = "\1n\1cMessage #\1h%d\1n\1c has been marked for deletion.";
+	this.text.selectedMsgsDeletedText = "\1n\1cSelected messages have been marked for deletion.";
 	this.text.cannotDeleteMsgText_notYoursNotASysop = "\1n\1h\1wCannot delete message #\1y%d \1wbecause it's not yours or you're not a sysop.";
 	this.text.cannotDeleteMsgText_notLastPostedMsg = "\1n\1h\1g* \1yCannot delete message #%d. You can only delete your last message in this area.\1n";
+	this.text.cannotDeleteAllSelectedMsgsText = "\1n\1y\1h* Cannot delete all selected messages";
 	this.text.msgEditConfirmText = "\1n\1cEdit message #\1h%d\1n\1c: Are you sure";
 	this.text.noPersonalEmailText = "\1n\1cYou have no messages.";
 
@@ -817,6 +827,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.AbsMsgNumToIdx = DigDistMsgReader_AbsMsgNumToIdx;
 	this.IdxToAbsMsgNum = DigDistMsgReader_IdxToAbsMsgNum;
 	this.NumMessages = DigDistMsgReader_NumMessages;
+	this.NonDeletedMessagesExist = DigDistMsgReader_NonDeletedMessagesExist;
 	this.HighestMessageNum = DigDistMsgReader_HighestMessageNum;
 	this.IsValidMessageNum = DigDistMsgReader_IsValidMessageNum;
 	this.PromptForMsgNum = DigDistMsgReader_PromptForMsgNum;
@@ -835,7 +846,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.MessageIsLastFromUser = DigDistMsgReader_MessageIsLastFromUser;
 	this.DisplayEnhReaderError = DigDistMsgReader_DisplayEnhReaderError;
 	this.EnhReaderPromptYesNo = DigDistMsgReader_EnhReaderPromptYesNo;
-	this.DeleteMessage = DigDistMsgReader_DeleteMessage;
+	this.PromptAndDeleteMessage = DigDistMsgReader_PromptAndDeleteMessage;
+	this.PromptAndDeleteSelectedMessages = DigDistMsgReader_PromptAndDeleteSelectedMessages;
 	this.GetExtdMsgHdrInfo = DigDistMsgReader_GetExtdMsgHdrInfo;
 	this.GetMsgInfoForEnhancedReader = DigDistMsgReader_GetMsgInfoForEnhancedReader;
 	this.GetLastReadMsgIdx = DigDistMsgReader_GetLastReadMsgIdx;
@@ -844,6 +856,12 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.RemoveFromSearchResults = DigDistMsgReader_RemoveFromSearchResults;
 	this.FindThreadNextOffset = DigDistMsgReader_FindThreadNextOffset;
 	this.FindThreadPrevOffset = DigDistMsgReader_FindThreadPrevOffset;
+	this.SaveMsgToFile = DigDistMsgReader_SaveMsgToFile;
+	this.ToggleSelectedMessage = DigDistMsgReader_ToggleSelectedMessage;
+	this.MessageIsSelected = DigDistMsgReader_MessageIsSelected;
+	this.AllSelectedMessagesCanBeDeleted = DigDistMsgReader_AllSelectedMessagesCanBeDeleted;
+	this.DeleteSelectedMessages = DigDistMsgReader_DeleteSelectedMessages;
+	this.NumSelectedMessages = DigDistMsgReader_NumSelectedMessages;
 
 	// These two variables keep track of whether we're doing a message scan that spans
 	// multiple sub-boards so that the enhanced reader function can enable use of
@@ -1198,7 +1216,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.CalcMsgListScreenIdxVarsFromMsgNum = DigDistMsgReader_CalcMsgListScreenIdxVarsFromMsgNum;
 	// A method for validating a user's choice of message area
 	this.ValidateMsgAreaChoice = DigDistMsgReader_ValidateMsgAreaChoice;
-	this.SaveMsgToFile = DigDistMsgReader_SaveMsgToFile;
 
 	// printf strings for message group/sub-board lists
 	// Message group information (printf strings)
@@ -1284,6 +1301,12 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// The selected message cursor position for the lightbar message list (initially
 	// null, will be set in the lightbar list message)
 	this.lightbarListCurPos = null;
+
+	// selectedMessages will be an object (indexed by sub-board internal code)
+	// containing objects that contain message indexes (as properties) for the
+	// sub-boards.  Messages can be selected by the user for doing things such
+	// as a batch delete, etc.
+	this.selectedMessages = new Object();
 }
 
 // For the DigDistMsgReader class: Sets the subBoardCode property and also
@@ -1304,33 +1327,36 @@ function DigDistMsgReader_SetSubBoardCode(pSubCode)
 //  pMsgIndex: The index (0-based) of the message header
 //  pAttrib: Optional - An attribute to apply.  If this is is not specified,
 //           then the message header will be retrieved from the message base.
-function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib)
+// pSubBoardCode: Optional - An internal sub-board code.  If not specified, then
+//                this method will default to this.subBoardCode.
+function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoardCode)
 {
-   if (typeof(pMsgIndex) != "number")
-      return;
+	if (typeof(pMsgIndex) != "number")
+		return;
 
-   if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode))
-   {
+	var subCode = (typeof(pSubBoardCode) == "string" ? pSubBoardCode : this.subBoardCode);
+	if (this.msgSearchHdrs.hasOwnProperty(subCode))
+	{
 		var msgNum = pMsgIndex + 1;
-      if (typeof(pAttrib) != "undefined")
-      {
-         if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
-         {
-            this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr | pAttrib;
-            var msgOffsetFromHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].offset;
-            this.msgbase.put_msg_header(true, msgOffsetFromHdr, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex]);
-         }
-      }
-      else
-      {
-         var msgHeader = this.GetMsgHdrByIdx(pMsgIndex);
-         if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
-         {
-            this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex] = msgHeader;
-            this.msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
-         }
-      }
-   }
+		if (typeof(pAttrib) != "undefined")
+		{
+			if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
+			{
+				this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr | pAttrib;
+				var msgOffsetFromHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].offset;
+				this.msgbase.put_msg_header(true, msgOffsetFromHdr, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex]);
+			}
+		}
+		else
+		{
+			var msgHeader = this.GetMsgHdrByIdx(pMsgIndex);
+			if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
+			{
+				this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex] = msgHeader;
+				this.msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
+			}
+		}
+	}
 }
 
 // For the DigDistMsgReader class: Inputs search text from the user, then reads/lists
@@ -2905,7 +2931,7 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 					// DeleteMessage() method, which will prompt the user for
 					// confirmation and delete the message if confirmed.
 					if (msgNum > 0)
-						this.DeleteMessage(msgNum-1);
+						this.PromptAndDeleteMessage(msgNum-1);
 
 					// Refresh the top header on the screen for continuing to list
 					// messages.
@@ -2973,6 +2999,82 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 						console.clear("\1n");
 						this.WriteMsgListScreenTopHeader();
 					}
+				}
+			}
+			// S: Select message(s)
+			else if (retvalObj.userInput == "S")
+			{
+				// Input the message number list from the user
+				console.print("\1n\1cNumber(s) of message(s) to select, (\1hA\1n\1c=All, \1hN\1n\1c=None, \1hENTER\1n\1c=cancel)\1g\1h: \1c");
+				var userNumberList = console.getstr(128, K_UPPER);
+				// If the user entered A or N, then select/un-select all messages.
+				// Otherwise, select only the messages that the user entered.
+				if ((userNumberList == "A") || (userNumberList == "N"))
+				{
+					var messageSelectToggle = (userNumberList == "A");
+					var totalNumMessages = this.NumMessages();
+					for (var msgIdx = 0; msgIdx < totalNumMessages; ++msgIdx)
+						this.ToggleSelectedMessage(this.subBoardCode, msgIdx, messageSelectToggle);
+				}
+				else
+				{
+					if (userNumberList.length > 0)
+					{
+						var numArray = parseNumberList(userNumberList);
+						for (var numIdx = 0; numIdx < numArray.length; ++numIdx)
+							this.ToggleSelectedMessage(this.subBoardCode, numArray[numIdx]-1);
+					}
+				}
+				// Refresh the top header on the screen for continuing to list
+				// messages.
+				console.clear("\1n");
+				this.WriteMsgListScreenTopHeader();
+			}
+			// Ctrl-D: Batch delete (for selected messages)
+			else if (retvalObj.userInput == CTRL_D)
+			{
+				console.print("\1n");
+				console.crlf();
+				if (this.NumSelectedMessages() > 0)
+				{
+					// The PromptAndDeleteSelectedMessages() method will prompt the user for confirmation
+					// to delete the message and then delete it if confirmed.
+					this.PromptAndDeleteSelectedMessages();
+
+					// In case all messages were deleted, if that's the case, show
+					// an appropriate message and don't continue listing messages.
+					//if (this.NumMessages(true) == 0)
+					if (!this.NonDeletedMessagesExist())
+					{
+						continueOn = false;
+						// Note: The following doesn't seem to be necessary, since
+						// the ReadOrListSubBoard() method will show a message saying
+						// there are no messages to read and then will quit out.
+						
+						//this.msgbase.close();
+						//this.msgbase = null;
+						//console.clear("\1n");
+						//console.center("\1n\1h\1yThere are no messages to display.");
+						//console.crlf();
+						//console.pause();
+						
+					}
+					else
+					{
+						// There are still messages to list, so refresh the top
+						// header on the screen for continuing to list messages.
+						console.clear("\1n");
+						this.WriteMsgListScreenTopHeader();
+					}
+				}
+				else
+				{
+					// There are no selected messages
+					console.print("\1n\1h\1yThere are no selected messages.");
+					mswait(ERROR_PAUSE_WAIT_MS);
+					// Refresh the top header on the screen for continuing to list messages.
+					console.clear("\1n");
+					this.WriteMsgListScreenTopHeader();
 				}
 			}
 			else
@@ -3597,17 +3699,39 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 				console.print("\1n");
 				console.clearline();
 
-				// The DeleteMessage() methdo will prompt the user for confirmation
+				// The PromptAndDeleteMessage() method will prompt the user for confirmation
 				// to delete the message and then delete it if confirmed.
-				this.DeleteMessage(this.lightbarListSelectedMsgIdx, { x: 1, y: console.screen_rows});
-
-				// Refresh the screen
-				console.clear("\1n");
-				this.WriteMsgListScreenTopHeader();
-				DisplayHelpLine(this.msgListLightbarModeHelpLine);
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-				console.gotoxy(originalCurpos); // Put the cursor back where it should be
+				this.PromptAndDeleteMessage(this.lightbarListSelectedMsgIdx, { x: 1, y: console.screen_rows});
+				
+				// In case all messages were deleted, if that's the case, show
+				// an appropriate message and don't continue listing messages.
+				//if (this.NumMessages(true) == 0)
+				if (!this.NonDeletedMessagesExist())
+				{
+					continueOn = false;
+					// Note: The following doesn't seem to be necessary, since
+					// the ReadOrListSubBoard() method will show a message saying
+					// there are no messages to read and then will quit out.
+					/*
+					this.msgbase.close();
+					this.msgbase = null;
+					console.clear("\1n");
+					console.center("\1n\1h\1yThere are no messages to display.");
+					console.crlf();
+					console.pause();
+					*/
+				}
+				else
+				{
+					// There are still some messages to show, so refresh the screen.
+					// Refresh the screen
+					console.clear("\1n");
+					this.WriteMsgListScreenTopHeader();
+					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
+					lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
+					console.gotoxy(originalCurpos); // Put the cursor back where it should be
+				}
 			}
 		}
 		// E: Edit a message
@@ -3715,6 +3839,110 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 				}
 			}
 		}
+		// Spacebar: Select a message for batch operations (such as batch
+		// delete, etc.)
+		else if (userInput == " ")
+			this.ToggleSelectedMessage(this.subBoardCode, this.lightbarListSelectedMsgIdx);
+		// Ctrl-A: Select/de-select all messages
+		else if (userInput == CTRL_A)
+		{
+			var originalCurpos = console.getxy();
+			console.gotoxy(1, console.screen_rows);
+			console.print("\1n");
+			console.clearline();
+			console.gotoxy(1, console.screen_rows);
+
+			// Prompt the user to select All, None (un-select all), or Cancel
+			console.print("\1n\1gSelect \1c(\1hA\1n\1c)\1gll, \1c(\1hN\1n\1c)\1gone, or \1c(\1hC\1n\1c)\1gancel: \1h\1g");
+			var userChoice = getAllowedKeyWithMode("ANC", K_UPPER | K_NOCRLF);
+			if ((userChoice == "A") || (userChoice == "N"))
+			{
+				// Toggle all the messages
+				var messageSelectToggle = (userChoice == "A");
+				var totalNumMessages = this.NumMessages();
+				var messageIndex = 0;
+				for (messageIndex = 0; messageIndex < totalNumMessages; ++messageIndex)
+					this.ToggleSelectedMessage(this.subBoardCode, messageIndex, messageSelectToggle);
+				// Refresh the selected message checkmarks on the screen - Add the
+				// checkmarks for messages that are selected, and write a blank space
+				// (no checkmark) for messages that are not selected.
+				var currentRow = this.lightbarMsgListStartScreenRow;
+				var messageIndexEnd = this.lightbarListTopMsgIdx + this.lightbarMsgListNumLines;
+				for (messageIndex = this.lightbarListTopMsgIdx; messageIndex < messageIndexEnd; ++messageIndex)
+				{
+					// Skip the current selected message because that one's checkmark
+					// will be refreshed
+					if (messageIndex != this.lightbarListSelectedMsgIdx)
+					{
+						console.gotoxy(this.MSGNUM_LEN+1, currentRow);
+						console.print("\1n");
+						if (this.MessageIsSelected(this.subBoardCode, messageIndex))
+							console.print(this.colors.selectedMsgMarkColor + CHECK_CHAR + "\1n");
+						else
+							console.print(" \1n");
+					}
+					++currentRow;
+				}
+			}
+
+			// Refresh the help line and move the cursor back to its original position
+			console.gotoxy(1, console.screen_rows);
+			DisplayHelpLine(this.msgListLightbarModeHelpLine);
+			console.gotoxy(originalCurpos);
+		}
+		// Ctrl-D: Batch delete (for selected messages)
+		else if (userInput == CTRL_D)
+		{
+			var originalCurpos = console.getxy();
+			if (this.NumSelectedMessages() > 0)
+			{
+				console.gotoxy(1, console.screen_rows);
+				console.print("\1n");
+				console.clearline();
+
+				// The PromptAndDeleteSelectedMessages() method will prompt the user for confirmation
+				// to delete the message and then delete it if confirmed.
+				this.PromptAndDeleteSelectedMessages({ x: 1, y: console.screen_rows});
+
+				// In case all messages were deleted, if that's the case, show
+				// an appropriate message and don't continue listing messages.
+				//if (this.NumMessages(true) == 0)
+				if (!this.NonDeletedMessagesExist())
+				{
+					continueOn = false;
+					// Note: The following doesn't seem to be necessary, since
+					// the ReadOrListSubBoard() method will show a message saying
+					// there are no messages to read and then will quit out.
+					/*
+					this.msgbase.close();
+					this.msgbase = null;
+					console.clear("\1n");
+					console.center("\1n\1h\1yThere are no messages to display.");
+					console.crlf();
+					console.pause();
+					*/
+				}
+				else
+				{
+					// There are still messages to list, so refresh the screen.
+					console.clear("\1n");
+					this.WriteMsgListScreenTopHeader();
+					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
+					lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
+					console.gotoxy(originalCurpos); // Put the cursor back where it should be
+				}
+			}
+			else
+			{
+				// There are no selected messages
+				writeWithPause(1, console.screen_rows, "\1n\1h\1yThere are no selected messages.",
+				               ERROR_PAUSE_WAIT_MS, "\1n", true);
+				// Refresh the help line and move the cursor back to its original position
+				DisplayHelpLine(this.msgListLightbarModeHelpLine);
+				console.gotoxy(originalCurpos);
+			}
+		}
 	}
 
 	return retObj;
@@ -3724,8 +3952,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 //
 // Parameters:
 //  pMsgHeader: The message header object, returned by MsgBase.get_msg_header().
-//  pHighlight: Optional boolean - Whether or not to highlight the line or
-//              use the standard colors.
+//  pHighlight: Optional boolean - Whether or not to highlight the line (true) or
+//              use the standard colors (false).
 //  pMsgNum: Optional - A number to use for the message instead of the number/offset
 //           in the message header
 function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
@@ -3737,27 +3965,34 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 		return;
 
 	var highlight = false;
-	if (typeof(pHighlight) != "undefined")
+	if (typeof(pHighlight) == "boolean")
 		highlight = pHighlight;
 
-   // Determine if the message has been deleted.
-   var msgDeleted = ((pMsgHeader.attr & MSG_DELETE) == MSG_DELETE);
+	// Get the message's import date & time as strings.  If
+	// this.msgList_displayMessageDateImported is true, use the message import date.
+	// Otherwise, use the message written date.
+	var sDate;
+	var sTime;
+	if (this.msgList_displayMessageDateImported)
+	{
+		sDate = strftime("%Y-%m-%d", pMsgHeader.when_imported_time);
+		sTime = strftime("%H:%M:%S", pMsgHeader.when_imported_time);
+	}
+	else
+	{
+		sDate = strftime("%Y-%m-%d", pMsgHeader.when_written_time);
+		sTime = strftime("%H:%M:%S", pMsgHeader.when_written_time);
+	}
 
-   // Get the message's import date & time as strings.  If
-   // this.msgList_displayMessageDateImported is true, use the message import date.
-   // Otherwise, use the message written date.
-   var sDate;
-   var sTime;
-   if (this.msgList_displayMessageDateImported)
-   {
-      sDate = strftime("%Y-%m-%d", pMsgHeader.when_imported_time);
-      sTime = strftime("%H:%M:%S", pMsgHeader.when_imported_time);
-   }
-   else
-   {
-      sDate = strftime("%Y-%m-%d", pMsgHeader.when_written_time);
-      sTime = strftime("%H:%M:%S", pMsgHeader.when_written_time);
-   }
+	var msgNum = (typeof(pMsgNum) == "number" ? pMsgNum : pMsgHeader.offset+1);
+
+	// Determine if the message has been deleted.
+	var msgDeleted = ((pMsgHeader.attr & MSG_DELETE) == MSG_DELETE);
+
+	// msgIndicatorChar will contain (possibly) a character to display after
+	// the message number to indicate whether it has been deleted, selected,
+	// etc.  If not, then it will just be a space.
+	var msgIndicatorChar = " ";
 
 	// Write the message header information.
 	// Note: The message header has the following fields:
@@ -3768,36 +4003,42 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 	// 'subject': The message subject (string)
 	// 'date': The date - Full text (string)
 	// To access one of these, use brackets; i.e., msgHeader['to']
-	var msgNum = (typeof(pMsgNum) == "number" ? pMsgNum : pMsgHeader.offset+1);
 	if (highlight)
 	{
+		if (msgDeleted)
+			msgIndicatorChar = "\1n\1r\1h\1i" + this.colors.msgListHighlightBkgColor + "*\1n";
+		else if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
+			msgIndicatorChar = "\1n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + CHECK_CHAR + "\1n";
 		printf(this.sMsgInfoFormatHighlightStr,
-			   msgNum,
-			   (msgDeleted ? "\1r\1i*\1n\1h" + this.colors["msgListHighlightBkgColor"] : " "),
-			   pMsgHeader.from.substr(0, this.FROM_LEN),
-			   pMsgHeader.to.substr(0, this.TO_LEN),
-			   pMsgHeader.subject.substr(0, this.SUBJ_LEN),
-			   sDate, sTime);
+		       msgNum,
+		       msgIndicatorChar,
+		       pMsgHeader.from.substr(0, this.FROM_LEN),
+		       pMsgHeader.to.substr(0, this.TO_LEN),
+		       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+		       sDate, sTime);
 	}
 	else
 	{
+		if (msgDeleted)
+			msgIndicatorChar = "\1n\1r\1h\1i*\1n";
+		else if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
+			msgIndicatorChar = "\1n" +  this.colors.selectedMsgMarkColor + CHECK_CHAR + "\1n";
+
 		// Determine whether to use the normal, "to-user", or "from-user" format string.
 		// The differences are the colors.  Then, output the message information line.
 		var toNameUpper = pMsgHeader.to.toUpperCase();
 		var msgToUser = ((toNameUpper == user.alias.toUpperCase()) || (toNameUpper == user.name.toUpperCase()) || (toNameUpper == user.handle.toUpperCase()));
 		var fromNameUpper = pMsgHeader.from.toUpperCase();
 		var msgIsFromUser = ((fromNameUpper == user.alias.toUpperCase()) || (fromNameUpper == user.name.toUpperCase()) || (fromNameUpper == user.handle.toUpperCase()));
-		printf((msgToUser ? this.sMsgInfoToUserFormatStr :
-		        (msgIsFromUser ? this.sMsgInfoFromUserFormatStr :
-		        this.sMsgInfoFormatStr)),
-			   msgNum,
-			   (msgDeleted ? "\1r\1i*\1n" : " "),
-			   pMsgHeader.from.substr(0, this.FROM_LEN),
-			   pMsgHeader.to.substr(0, this.TO_LEN),
-			   pMsgHeader.subject.substr(0, this.SUBJ_LEN),
-			   sDate, sTime);
+		printf((msgToUser ? this.sMsgInfoToUserFormatStr : (msgIsFromUser ? this.sMsgInfoFromUserFormatStr : this.sMsgInfoFormatStr)),
+		       msgNum,
+		       msgIndicatorChar,
+		       pMsgHeader.from.substr(0, this.FROM_LEN),
+		       pMsgHeader.to.substr(0, this.TO_LEN),
+		       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+		       sDate, sTime);
 	}
-	console.cleartoeol("\1"); // To clear away any extra text that may have been entered by the user
+	console.cleartoeol("\1n"); // To clear away any extra text that may have been entered by the user
 }
 // For the traditional interface of DigDistMsgListerClass: Prompts the user to
 // continue or read a message (by number).
@@ -3833,7 +4074,7 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pReturnOnMsgSele
 	// depending whether we're at the beginning, in the middle, or at
 	// the end of the message list.
 	var userInput = "";
-	var allowedKeys = "?G"; // ? = help, G = Go to message #
+	var allowedKeys = "?GS"; // ? = help, G = Go to message #, S = Select message(s), Ctrl-D: Batch delete
 	if (allowChgSubBoard)
 		allowedKeys += "C"; // Change to another message area
 	if (this.CanDelete() || this.CanDeleteLastMsg())
@@ -3868,9 +4109,15 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pReturnOnMsgSele
 		console.print(this.sContinuePrompt);
 		allowedKeys += "FLNPQ";
 	}
-	// Get the user's input.  Allow the keys in allowedKeys or a number from 1
+	// Get the user's input.  Allow CTRL-D (batch delete) without echoing it.
+	// If the user didn't press CTRL-L, allow the keys in allowedKeys or a number from 1
 	// to the highest message number.
-	userInput = console.getkeys(allowedKeys, this.HighestMessageNum()).toString();
+	userInput = console.getkey(K_NOECHO);
+	if (userInput != CTRL_D)
+	{
+		console.ungetstr(userInput);
+		userInput = console.getkeys(allowedKeys, this.HighestMessageNum()).toString();
+	}
 	if (userInput == "Q")
 		continueOn = false;
 
@@ -4105,8 +4352,11 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	enhReaderKeys.nextMsgByThreadID = ")";
 	enhReaderKeys.prevSubBoard = "-";
 	enhReaderKeys.nextSubBoard = "+";
-	enhReaderKeys.downloadAttachments = CTRL_D;
+	enhReaderKeys.downloadAttachments = CTRL_A;
 	enhReaderKeys.saveToBBSMachine = CTRL_S;
+	enhReaderKeys.deleteMessage = KEY_DEL;
+	enhReaderKeys.selectMessage = " ";
+	enhReaderKeys.batchDelete = CTRL_D;
 
 	// This function converts a thread navigation key character to its
 	// corresponding thread type value
@@ -4224,7 +4474,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 			retObj.lastKeypress = scrollRetObj.lastKeypress;
 			switch (retObj.lastKeypress)
 			{
-				case KEY_DEL: // Delete message
+				case enhReaderKeys.deleteMessage: // Delete message
 					var originalCurpos = console.getxy();
 					// The 2nd to last row of the screen is where the user will
 					// be prompted for confirmation to delete the message.
@@ -4237,15 +4487,15 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
 
 					// Prompt the user for confirmation to delete the message.
-					// Note: this.DeleteMessage() will check to see if the user
+					// Note: this.PromptAndDeleteMessage() will check to see if the user
 					// is a sysop or the message was posted by the user.
 					// If the message was deleted, then exit this read method
 					// and return KEY_RIGHT as the last keypress so that the
 					// calling method will go to the next message/sub-board.
 					// Otherwise (if the message was not deleted), refresh the
 					// last 2 lines of the message on the screen.
-					var msgWasDeleted = this.DeleteMessage(pOffset, promptPos, true, this.msgAreaWidth,
-					                                       true, msgInfo.attachments);
+					var msgWasDeleted = this.PromptAndDeleteMessage(pOffset, promptPos, true, this.msgAreaWidth,
+					                                                true, msgInfo.attachments);
 					if (msgWasDeleted)
 					{
 						var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
@@ -4271,6 +4521,30 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						console.gotoxy(originalCurpos);
 						writeMessage = false;
 					}
+					break;
+				case enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
+					var originalCurpos = console.getxy();
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					if (this.EnhReaderPromptYesNo("Select this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks, true))
+						this.ToggleSelectedMessage(this.subBoardCode, pOffset, true);
+					else
+						this.ToggleSelectedMessage(this.subBoardCode, pOffset, false);
+					writeMessage = false; // No need to refresh the message
+					break;
+				case enhReaderKeys.batchDelete:
+					// TODO: Write this
+					// Prompt the user for confirmation, and use
+					// this.DeleteSelectedMessages() to mark the selected messages
+					// as deleted.
+					// Returns an object with the following properties:
+					//  deletedAll: Boolean - Whether or not all messages were successfully marked
+					//              for deletion
+					//  failureList: An object containing indexes of messages that failed to get
+					//               marked for deletion, indexed by internal sub-board code, then
+					//               containing messages indexes as properties.  Reasons for failing
+					//               to mark messages deleted can include the user not having permission
+					//               to delete in a sub-board, failure to open the sub-board, etc.
+					writeMessage = false; // No need to refresh the message
 					break;
 				case "E": // Edit the messaage
 					if (this.CanEdit())
@@ -4900,10 +5174,10 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 			retObj.lastKeypress = getKeyWithESCChars(K_UPPER/*|K_NOCRLF|K_NOECHO|K_NOSPIN*/);
 			switch (retObj.lastKeypress)
 			{
-				case KEY_DEL: // Delete message
+				case enhReaderKeys.deleteMessage: // Delete message
 					console.crlf();
 					// Prompt the user for confirmation to delete the message.
-					// Note: this.DeleteMessage() will check to see if the user
+					// Note: this.PromptAndDeleteMessage() will check to see if the user
 					// is a sysop or the message was posted by the user.
 					// If the message was deleted, then exit this read method
 					// and return KEY_RIGHT as the last keypress so that the
@@ -4912,7 +5186,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					// last 2 lines of the message on the screen.
 					// TODO: For the DeleteMessage() call, pass the array of file
 					// attachments for it to delete (i.e., msgInfo.attachments)
-					var msgWasDeleted = this.DeleteMessage(pOffset);
+					var msgWasDeleted = this.PromptAndDeleteMessage(pOffset);
 					if (msgWasDeleted)
 					{
 						var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
@@ -4931,6 +5205,26 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 								writeMessage = false; // No need to refresh the message
 						}
 					}
+					break;
+				case enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
+					console.crlf();
+					var selectMessage = !console.noyes("Select this message");
+					this.ToggleSelectedMessage(this.subBoardCode, pOffset, selectMessage);
+					break;
+				case enhReaderKeys.batchDelete:
+					// TODO: Write this
+					// Prompt the user for confirmation, and use
+					// this.DeleteSelectedMessages() to mark the selected messages
+					// as deleted.
+					// Returns an object with the following properties:
+					//  deletedAll: Boolean - Whether or not all messages were successfully marked
+					//              for deletion
+					//  failureList: An object containing indexes of messages that failed to get
+					//               marked for deletion, indexed by internal sub-board code, then
+					//               containing messages indexes as properties.  Reasons for failing
+					//               to mark messages deleted can include the user not having permission
+					//               to delete in a sub-board, failure to open the sub-board, etc.
+					writeMessage = false; // No need to refresh the message
 					break;
 				case "E": // Edit the message
 					if (this.CanEdit())
@@ -5916,72 +6210,72 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 //               screen is the last message in the sub-board.
 function DigDistMsgReader_ListScreenfulOfMessages(pTopIndex, pMaxLines)
 {
-   var atLastPage = false;
+	var atLastPage = false;
 
 	var curpos = console.getxy();
 	var msgIndex = 0;
 	if (this.reverseListOrder)
 	{
-      var endIndex = pTopIndex - pMaxLines + 1; // The index of the last message to display
-      for (msgIndex = pTopIndex; (msgIndex >= 0) && (msgIndex >= endIndex); --msgIndex)
-      {
-         // The following line which sets console.line_counter to 0 is a
-         // kludge to disable Synchronet's automatic pausing after a
-         // screenful of text, so that this script can have more control
-         // over screen pausing.
-         console.line_counter = 0;
+		var endIndex = pTopIndex - pMaxLines + 1; // The index of the last message to display
+		for (msgIndex = pTopIndex; (msgIndex >= 0) && (msgIndex >= endIndex); --msgIndex)
+		{
+			// The following line which sets console.line_counter to 0 is a
+			// kludge to disable Synchronet's automatic pausing after a
+			// screenful of text, so that this script can have more control
+			// over screen pausing.
+			console.line_counter = 0;
 
-         // Get the message header (it will be a MsgHeader object) and
-         // display it.
-         msgHeader = this.GetMsgHdrByIdx(msgIndex);
-         if (msgHeader == null)
-            continue;
+			// Get the message header (it will be a MsgHeader object) and
+			// display it.
+			msgHeader = this.GetMsgHdrByIdx(msgIndex);
+			if (msgHeader == null)
+				continue;
 
-         // Display the message info
-         this.PrintMessageInfo(msgHeader, false, msgIndex+1);
-         if (console.term_supports(USER_ANSI))
-         {
+			// Display the message info
+			this.PrintMessageInfo(msgHeader, false, msgIndex+1);
+			if (console.term_supports(USER_ANSI))
+			{
 				++curpos.y;
 				console.gotoxy(curpos);
 			}
 			else
 				console.crlf();
-      }
+		}
 
-      atLastPage = (msgIndex < 0);
+		atLastPage = (msgIndex < 0);
 	}
 	else
 	{
-      var endIndex = pTopIndex + pMaxLines; // One past the last message index to display
-      for (msgIndex = pTopIndex; (msgIndex < this.NumMessages()) && (msgIndex < endIndex); ++msgIndex)
-      {
-         // The following line which sets console.line_counter to 0 is a
-         // kludge to disable Synchronet's automatic pausing after a
-         // screenful of text, so that this script can have more control
-         // over screen pausing.
-         console.line_counter = 0;
+		var endIndex = pTopIndex + pMaxLines; // One past the last message index to display
+		for (msgIndex = pTopIndex; (msgIndex < this.NumMessages()) && (msgIndex < endIndex); ++msgIndex)
+		{
+			// The following line which sets console.line_counter to 0 is a
+			// kludge to disable Synchronet's automatic pausing after a
+			// screenful of text, so that this script can have more control
+			// over screen pausing.
+			console.line_counter = 0;
 
-         // Get the message header (it will be a MsgHeader object) and
-         // display it.
-         msgHeader = this.GetMsgHdrByIdx(msgIndex);
-         if (msgHeader == null)
-            continue;
+			// Get the message header (it will be a MsgHeader object) and
+			// display it.
+			msgHeader = this.GetMsgHdrByIdx(msgIndex);
+			if (msgHeader == null)
+				continue;
 
-         // Display the message info
-         this.PrintMessageInfo(msgHeader, false, msgIndex+1);
-         if (console.term_supports(USER_ANSI))
-         {
+			// Display the message info
+			this.PrintMessageInfo(msgHeader, false, msgIndex+1);
+			if (console.term_supports(USER_ANSI))
+			{
 				++curpos.y;
 				console.gotoxy(curpos);
 			}
 			else
 				console.crlf();
-      }
+		}
 
-      atLastPage = (msgIndex == this.NumMessages());
-   }
+		atLastPage = (msgIndex == this.NumMessages());
+	}
 
-   return atLastPage;
+	return atLastPage;
 }
 // For the DigDistMsgReader Class: Displays the help screen for the message list.
 //
@@ -6078,6 +6372,15 @@ function DigDistMsgReader_DisplayTraditionalMsgListHelp(pDisplayHeader, pChgSubB
 		console.print("\1n\1h\1cE" + this.colors["tradInterfaceHelpScreenColor"] + ": Edit an existing message\r\n");
 	if (pChgSubBoardAllowed)
 		console.print("\1n\1h\1cC" + this.colors["tradInterfaceHelpScreenColor"] + ": Change to another message sub-board\r\n");
+	console.print("\1n\1h\1cS" + this.colors["tradInterfaceHelpScreenColor"] + ": Select messages (for batch delete, etc.)\r\n");
+	console.print("\1n" + this.colors["tradInterfaceHelpScreenColor"] + "  A message number or multiple numbers can be entered separated by commas or\r\n");
+	console.print("\1n" + this.colors["tradInterfaceHelpScreenColor"] + "  spaces.  Additionally, a range of numbers (separated by a dash) can be used.\r\n");
+	console.print("\1n" + this.colors["tradInterfaceHelpScreenColor"] + "  Examples:\r\n");
+	console.print("\1n" + this.colors["tradInterfaceHelpScreenColor"] + "  125\r\n");
+	console.print("\1n" + this.colors["tradInterfaceHelpScreenColor"] + "  1,2,3\r\n");
+	console.print("\1n" + this.colors["tradInterfaceHelpScreenColor"] + "  1 2 3\r\n");
+	console.print("\1n" + this.colors["tradInterfaceHelpScreenColor"] + "  1,2,10-20\r\n");
+	console.print("\1n\1h\1cCTRL-D" + this.colors["tradInterfaceHelpScreenColor"] + ": Batch delete selected messages\r\n");
 	console.print("\1n\1h\1cQ" + this.colors["tradInterfaceHelpScreenColor"] + ": Quit\r\n");
 	console.print("\1n\1h\1c?" + this.colors["tradInterfaceHelpScreenColor"] + ": Show this help screen\r\n\r\n");
 
@@ -6160,6 +6463,9 @@ function DigDistMsgReader_DisplayLightbarMsgListHelp(pDisplayHeader, pChgSubBoar
 		console.print("\1n\1h\1cE" + this.colors["tradInterfaceHelpScreenColor"] + ": Edit the selected message\r\n");
 	if (pChgSubBoardAllowed)
 		console.print("\1n\1h\1cC" + this.colors["tradInterfaceHelpScreenColor"] + ": Change to another message sub-board\r\n");
+	console.print("\1n\1h\1cSpacebar" + this.colors["tradInterfaceHelpScreenColor"] + ": Select message (for batch delete, etc.)\r\n");
+	console.print("\1n\1h\1cCTRL-A" + this.colors["tradInterfaceHelpScreenColor"] + ": Select/de-select all messages\r\n");
+	console.print("\1n\1h\1cCTRL-D" + this.colors["tradInterfaceHelpScreenColor"] + ": Batch delete selected messages\r\n");
 	console.print("\1n\1h\1cQ" + this.colors["tradInterfaceHelpScreenColor"] + ": Quit\r\n");
 	console.print("\1n\1h\1c?" + this.colors["tradInterfaceHelpScreenColor"] + ": Show this help screen\r\n");
 
@@ -6217,9 +6523,12 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 			this.sStartContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"]
 			                          + "E\1n\1c)" + this.colors["tradInterfaceContPromptMainColor"] + "dit, ";
 		}
+		this.sStartContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"] + "S\1n\1c)"
+		                     + this.colors["tradInterfaceContPromptMainColor"]
+		                     + "el, ";
 		this.sStartContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"] + "Q\1n\1c)"
 		                          + this.colors["tradInterfaceContPromptMainColor"]
-		                          + "uit, msg " + this.colors["tradInterfaceContPromptHotkeyColor"] + "#" +
+		                          + "uit, msg" + this.colors["tradInterfaceContPromptHotkeyColor"] + "#" +
 		                          this.colors["tradInterfaceContPromptMainColor"] + ", " + this.colors["tradInterfaceContPromptHotkeyColor"]
 		                          + "?" + this.colors["tradInterfaceContPromptMainColor"] + ": "
 		                          		+ this.colors["tradInterfaceContPromptUserInputColor"];
@@ -6244,9 +6553,12 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 			this.sContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"]
 			                     + "E\1n\1c)" + this.colors["tradInterfaceContPromptMainColor"] + "dit, ";
 		}
+		this.sContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"] + "S\1n\1c)"
+		                     + this.colors["tradInterfaceContPromptMainColor"]
+		                     + "el, ";
 		this.sContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"] + "Q\1n\1c)"
 		                     + this.colors["tradInterfaceContPromptMainColor"]
-		                     + "uit, msg " + this.colors["tradInterfaceContPromptHotkeyColor"] + "#"
+		                     + "uit, msg" + this.colors["tradInterfaceContPromptHotkeyColor"] + "#"
 		                     + this.colors["tradInterfaceContPromptMainColor"] + ", " + this.colors["tradInterfaceContPromptHotkeyColor"]
 		                     + "?" + this.colors["tradInterfaceContPromptMainColor"] + ": "
 		                     + this.colors["tradInterfaceContPromptUserInputColor"];
@@ -6267,9 +6579,12 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 			this.sEndContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"]
 			                        + "E\1n\1c)" + this.colors["tradInterfaceContPromptMainColor"] + "dit, ";
 		}
+		this.sEndContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"] + "S\1n\1c)"
+		                        + this.colors["tradInterfaceContPromptMainColor"]
+		                        + "el, ";
 		this.sEndContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"] + "Q\1n\1c)"
 		                        + this.colors["tradInterfaceContPromptMainColor"]
-		                        + "uit, msg " + this.colors["tradInterfaceContPromptHotkeyColor"] + "#"
+		                        + "uit, msg" + this.colors["tradInterfaceContPromptHotkeyColor"] + "#"
 		                        + this.colors["tradInterfaceContPromptMainColor"] + ", " + this.colors["tradInterfaceContPromptHotkeyColor"]
 		                        + "?" + this.colors["tradInterfaceContPromptMainColor"] + ": "
 		                        + this.colors["tradInterfaceContPromptUserInputColor"];
@@ -6286,9 +6601,12 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 			this.msgListOnlyOnePageContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"]
 			                                + "E\1n\1c)" + this.colors["tradInterfaceContPromptMainColor"] + "dit, ";
 		}
+		this.msgListOnlyOnePageContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"] + "S\1n\1c)"
+		                     + this.colors["tradInterfaceContPromptMainColor"]
+		                     + "el, ";
 		this.msgListOnlyOnePageContinuePrompt += "\1n\1c(" + this.colors["tradInterfaceContPromptHotkeyColor"] + "Q\1n\1c)"
 		                                + this.colors["tradInterfaceContPromptMainColor"]
-		                                + "uit, msg " + this.colors["tradInterfaceContPromptHotkeyColor"] + "#"
+		                                + "uit, msg" + this.colors["tradInterfaceContPromptHotkeyColor"] + "#"
 		                                + this.colors["tradInterfaceContPromptMainColor"] + ", " + this.colors["tradInterfaceContPromptHotkeyColor"]
 		                                + "?" + this.colors["tradInterfaceContPromptMainColor"] + ": "
 		                                + this.colors["tradInterfaceContPromptUserInputColor"];
@@ -6854,7 +7172,8 @@ function DigDistMsgReader_ReadConfigFile()
 						(setting == "scrollbarScrollBlockColor") || (setting == "enhReaderPromptSepLineColor") ||
 						(setting == "enhReaderHelpLineBkgColor") || (setting == "enhReaderHelpLineGeneralColor") ||
 						(setting == "enhReaderHelpLineHotkeyColor") || (setting == "enhReaderHelpLineParenColor") ||
-						(setting == "hdrLineLabelColor") || (setting == "hdrLineValueColor"))
+						(setting == "hdrLineLabelColor") || (setting == "hdrLineValueColor") ||
+						(setting == "selectedMsgMarkColor"))
 					{
 						// Trim leading & trailing spaces from the value when
 						// setting a color.  Also, replace any instances of "\1"
@@ -7187,18 +7506,75 @@ function DigDistMsgReader_GetMsgHdrFilenameFull()
   return msgHdrFilename;
 }
 
-// For the DigDistMsgReader class:  Returns the number of messages in the current
+// For the DigDistMsgReader class: Returns the number of messages in the current
 // sub-board.  This will be either the number of headers in this.msgSearchHdrs
 // for the current sub-board (if non-empty and a search type specified) or
 // this.msgbase.total_msgs.
-function DigDistMsgReader_NumMessages()
+//
+// Parameters:
+//  pCheckDeletedAttributes: Optional boolean - Whether or not to check the
+//                           'deleted' attributes of the messages and not
+//                           count deleted messages.  Defaults to false.
+//
+// Return value: The number of messages
+function DigDistMsgReader_NumMessages(pCheckDeletedAttributes)
 {
-   var numMsgs = 0;
+	var checkDeletedAttributes = (typeof(pCheckDeletedAttributes) == "boolean" ? pCheckDeletedAttributes : false);
+
+	var numMsgs = 0;
 	if (this.SearchingAndResultObjsDefinedForCurSub())
 		numMsgs = this.msgSearchHdrs[this.subBoardCode].indexed.length;
 	else if ((this.msgbase != null) && this.msgbase.is_open)
 		numMsgs = this.msgbase.total_msgs;
-   return numMsgs;
+
+	// If the caller wants to check the deleted attributes, then do so.
+	if ((numMsgs > 0) && checkDeletedAttributes)
+	{
+		var msgHdr;
+		var originalNumMsgs = numMsgs;
+		for (var msgIdx = 0; msgIdx < originalNumMsgs; ++msgIdx)
+		{
+			msgHdr = this.GetMsgHdrByIdx(msgIdx);
+			if ((msgHdr.attr & MSG_DELETE) == MSG_DELETE)
+			{
+				--numMsgs;
+				if (numMsgs < 0)
+				{
+					numMsgs = 0;
+					break;
+				}
+			}
+		}
+	}
+
+	return numMsgs;
+}
+
+// For the DigDistMsgReader class: Returns whether there are any non-deleted
+// messages in the current sub-board.
+//
+// Return value: Boolean - Whether or not there are any non-deleted messages
+//               in the current sub-board.
+function DigDistMsgReader_NonDeletedMessagesExist()
+{
+	var messagesExist = false;
+
+	var numMsgs = this.NumMessages();
+	if (numMsgs > 0)
+	{
+		var msgHdr;
+		for (var msgIdx = 0; (msgIdx < numMsgs) && !messagesExist; ++msgIdx)
+		{
+			msgHdr = this.GetMsgHdrByIdx(msgIdx);
+			if ((msgHdr.attr & MSG_DELETE) == 0)
+			{
+				messagesExist = true;
+				break;
+			}
+		}
+	}
+
+	return messagesExist;
 }
 
 // For the DigDistMsgReader class: Returns the highest message number (1-based), either from this.msgSearchHdrs
@@ -7798,42 +8174,42 @@ function findDashJustifyIndex(pAtCodeStr)
 //               as deleted, or -1 if none is found.
 function DigDistMsgReader_FindNextNonDeletedMsgIdx(pOffset, pForward)
 {
-   // Sanity checking for the parameters & other things
-   if ((typeof(pOffset) != "number") || (this.msgbase == null))
-      return -1;
-   if (!this.msgbase.is_open)
-      return -1;
-   var searchForward = (typeof(pForward) == "boolean" ? pForward : true);
+	// Sanity checking for the parameters & other things
+	if ((typeof(pOffset) != "number") || (this.msgbase == null))
+		return -1;
+	if (!this.msgbase.is_open)
+		return -1;
+	var searchForward = (typeof(pForward) == "boolean" ? pForward : true);
 
-   var newMsgIdx = -1;
-   if (searchForward)
-   {
-      // Search forward for a message that isn't marked for deletion.
-      var numOfMessages = this.NumMessages();
-      if (pOffset < numOfMessages - 1)
-      {
-         for (var messageIdx = pOffset+1; (messageIdx < numOfMessages) && (newMsgIdx == -1); ++messageIdx)
-         {
-            var nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-            if ((nextMsgHdr != null) && ((nextMsgHdr.attr & MSG_DELETE) == 0))
-               newMsgIdx = messageIdx;
-         }
-      }
-   }
-   else
-   {
-      // Search backward for a message that isn't marked for deletion.
-      if (pOffset > 0)
-      {
-         for (var messageIdx = pOffset-1; (messageIdx >= 0) && (newMsgIdx == -1); --messageIdx)
-         {
-            var prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-            if ((prevMsgHdr != null) && ((prevMsgHdr.attr & MSG_DELETE) == 0))
-               newMsgIdx = messageIdx;
-         }
-      }
-   }
-   return newMsgIdx;
+	var newMsgIdx = -1;
+	if (searchForward)
+	{
+		// Search forward for a message that isn't marked for deletion.
+		var numOfMessages = this.NumMessages();
+		if (pOffset < numOfMessages - 1)
+		{
+			for (var messageIdx = pOffset+1; (messageIdx < numOfMessages) && (newMsgIdx == -1); ++messageIdx)
+			{
+				var nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
+				if ((nextMsgHdr != null) && ((nextMsgHdr.attr & MSG_DELETE) == 0))
+					newMsgIdx = messageIdx;
+			}
+		}
+	}
+	else
+	{
+		// Search backward for a message that isn't marked for deletion.
+		if (pOffset > 0)
+		{
+			for (var messageIdx = pOffset-1; (messageIdx >= 0) && (newMsgIdx == -1); --messageIdx)
+			{
+				var prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
+				if ((prevMsgHdr != null) && ((prevMsgHdr.attr & MSG_DELETE) == 0))
+					newMsgIdx = messageIdx;
+			}
+		}
+	}
+	return newMsgIdx;
 }
 
 // For the DigDistMsgReader class: Sets up the message base object for a new
@@ -8244,7 +8620,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		// refresh the header in the search results, if there are any search
 		// results.
 		if (!console.noyes(bbs.text(DeleteMailQ).replace("%s", pMsgHdr.from)))
-			retObj.msgWasDeleted = this.DeleteMessage(pMsgIdx, null, null, null, false);
+			retObj.msgWasDeleted = this.PromptAndDeleteMessage(pMsgIdx, null, null, null, false);
 	}
 
 	return retObj;
@@ -8321,7 +8697,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	else if (this.CanDelete() || this.CanDeleteLastMsg())
 		keyHelpLines.push("\1h\1cDEL              \1g: \1n\1cDelete the current message (if it's yours)");
 	if (displayDLAttachmentsOpt)
-		keyHelpLines.push("\1h\1cCtrl-D           \1g: \1n\1cDownload attachments");
+		keyHelpLines.push("\1h\1cCtrl-A           \1g: \1n\1cDownload attachments");
 	// If not reading personal email or doing a search/scan, then include the
 	// text for the message threading keys.
 	if (!this.readingPersonalEmail && !this.SearchingAndResultObjsDefinedForCurSub())
@@ -8362,6 +8738,8 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 		keyHelpLines.push("\1h\1cP                \1g: \1n\1cPost a message on the sub-board");
 	}
 	keyHelpLines.push("\1h\1cNumber           \1g: \1n\1cGo to a specific message by number");
+	keyHelpLines.push("\1h\1cSpacebar         \1g: \1n\1cSelect message (for batch delete, etc.)");
+	keyHelpLines.push("                   \1n\1cFor batch delete, open the message list and use CTRL-D.");
 	keyHelpLines.push("\1h\1cQ                \1g: \1n\1cQuit back to the BBS");
 	for (var idx = 0; idx < keyHelpLines.length; ++idx)
 	{
@@ -8743,88 +9121,94 @@ function DigDistMsgReader_DisplayEnhReaderError(pErrorMsg, pMessageLines, pTopLi
 //  pNumSolidScrollBlocks: The number of solid scroll blocks (purely for the kludge of
 //                         updating the last scrollbar block on the screen because the
 //                         yes/no function erases it)
+//  pNoYes: Optional boolean - Whether the default response should be No instead of
+//          Yes.  Defaults to false (for a default Yes response).
 //
 // Return value: Boolean - True if the user selected yes, or false if the user selected no.
 //               If the question string passed in is 0-length or not a valid string, the
 //               return value will be true.
 function DigDistMsgReader_EnhReaderPromptYesNo(pQuestion, pMessageLines, pTopLineIdx,
                                                 pMsgLineFormatStr, pSolidScrollBlockStartRow,
-                                                pNumSolidScrollBlocks)
+                                                pNumSolidScrollBlocks, pDefaultNo)
 {
-   var msgLineFormatStr = "";
-   if (typeof(pMsgLineFormatStr) == "string")
-      msgLineFormatStr = pMsgLineFormatStr;
-   else
-      msgLineFormatStr = "%-" + +(this.msgAreaWidth) + "s";
+	var msgLineFormatStr = "";
+	if (typeof(pMsgLineFormatStr) == "string")
+		msgLineFormatStr = pMsgLineFormatStr;
+	else
+		msgLineFormatStr = "%-" + +(this.msgAreaWidth) + "s";
 
-   var originalCurpos = console.getxy();
-   // Move the cursor to the 2nd to last row of the screen and
-   // show the error.  Ideally, I'd like
-   // to put the cursor on the last row of the screen for this, but
-   // console.getnum() lets the enter key shift everything on screen
-   // up one row, and there's no way to avoid that.  So, to optimize
-   // screen refreshing, the cursor is placed on the 2nd to the last
-   // row on the screen to prompt for the message number.
-   var promptPos = { x: this.msgAreaLeft, y: console.screen_rows-1 };
-   // Write a line of characters above where the prompt will be placed,
-   // to help get the user's attention.
-   console.gotoxy(promptPos.x, promptPos.y-1);
-   console.print("\1n" + this.colors.enhReaderPromptSepLineColor);
-   for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-      console.print(HORIZONTAL_SINGLE);
-   // Clear the inside of the message area, so as not to overwrite
-   // the scrollbar character
-   console.print("\1n");
-   console.gotoxy(promptPos);
-   for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-      console.print(" ");
-   // Prompt the question if a valid question string was passed in
-   var yesNoResponse = true;
-   if ((typeof(pQuestion) == "string") && (console.strlen(pQuestion) > 0))
-   {
-      console.gotoxy(this.msgAreaLeft, console.screen_rows-1);
-      yesNoResponse = console.yesno(pQuestion);
-      // Kludge: Update the last scroll block on the screen, since the yes/no
-      // prompt erases it.
-      //var scrollBlockChar = "\1n\1h\1k" + BLOCK1; // Dim scroll block
-	  // Dim scroll block
-	  var scrollBlockChar = this.colors.scrollbarBGColor + this.text.scrollbarBGChar;
-      if ((pSolidScrollBlockStartRow >= console.screen_rows-1) ||
-           (pSolidScrollBlockStartRow + pNumSolidScrollBlocks - 1 >= console.screen_rows-1))
-      {
-         //scrollBlockChar = "\1n\1h\1w" + BLOCK2; // Bright, solid scroll block
-		 // Bright, solid scroll block
-		 scrollBlockChar = this.colors.scrollbarScrollBlockColor + this.text.scrollbarScrollBlockChar;
-      }
-      console.gotoxy(console.screen_columns, console.screen_rows-1);
-      console.print(scrollBlockChar);
-   }
-   // Figure out the indexes of the message for the last lines of
-   // the message and update that line on the screen.
-   // If the index is valid, then output that message line; otherwise,
-   // output a blank line.
-   --promptPos.y;
-   var msgLine = null;
-   var msgLineIndex = pTopLineIdx + this.msgAreaHeight - 2;
-   for (; msgLineIndex <= pTopLineIdx + this.msgAreaHeight - 1; ++msgLineIndex)
-   {
-      console.gotoxy(promptPos);
-      console.print("\1n" + this.colors["msgBodyColor"]);
-      if ((msgLineIndex >= 0) && (msgLineIndex < pMessageLines.length))
-      {
-         console.print(pMessageLines[msgLineIndex]); // Already shortened to fit
-         console.print("\1n" + this.colors["msgBodyColor"]); // In case colors changed
-         // Clear the rest of the line
-         printf("%" + +(this.msgAreaWidth-console.strlen(pMessageLines[msgLineIndex])) + "s", "");
-      }
-      else
-         printf(msgLineFormatStr, "");
-      ++promptPos.y;
-   }
-   // Move the cursor back to its original position
-   console.gotoxy(originalCurpos);
+	var originalCurpos = console.getxy();
+	// Move the cursor to the 2nd to last row of the screen and
+	// show the error.  Ideally, I'd like
+	// to put the cursor on the last row of the screen for this, but
+	// console.getnum() lets the enter key shift everything on screen
+	// up one row, and there's no way to avoid that.  So, to optimize
+	// screen refreshing, the cursor is placed on the 2nd to the last
+	// row on the screen to prompt for the message number.
+	var promptPos = { x: this.msgAreaLeft, y: console.screen_rows-1 };
+	// Write a line of characters above where the prompt will be placed,
+	// to help get the user's attention.
+	console.gotoxy(promptPos.x, promptPos.y-1);
+	console.print("\1n" + this.colors.enhReaderPromptSepLineColor);
+	for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
+	console.print(HORIZONTAL_SINGLE);
+	// Clear the inside of the message area, so as not to overwrite
+	// the scrollbar character
+	console.print("\1n");
+	console.gotoxy(promptPos);
+	for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
+	console.print(" ");
+	// Prompt the question if a valid question string was passed in
+	var yesNoResponse = true;
+	if ((typeof(pQuestion) == "string") && (console.strlen(pQuestion) > 0))
+	{
+		console.gotoxy(this.msgAreaLeft, console.screen_rows-1);
+		var defaultResponseNo = (typeof(pDefaultNo) == "boolean" ? pDefaultNo : false);
+		if (defaultResponseNo)
+			yesNoResponse = !console.noyes(pQuestion);
+		else
+			yesNoResponse = console.yesno(pQuestion);
+		// Kludge: Update the last scroll block on the screen, since the yes/no
+		// prompt erases it.
+		//var scrollBlockChar = "\1n\1h\1k" + BLOCK1; // Dim scroll block
+		// Dim scroll block
+		var scrollBlockChar = this.colors.scrollbarBGColor + this.text.scrollbarBGChar;
+		if ((pSolidScrollBlockStartRow >= console.screen_rows-1) ||
+		    (pSolidScrollBlockStartRow + pNumSolidScrollBlocks - 1 >= console.screen_rows-1))
+		{
+			//scrollBlockChar = "\1n\1h\1w" + BLOCK2; // Bright, solid scroll block
+			// Bright, solid scroll block
+			scrollBlockChar = this.colors.scrollbarScrollBlockColor + this.text.scrollbarScrollBlockChar;
+		}
+		console.gotoxy(console.screen_columns, console.screen_rows-1);
+		console.print(scrollBlockChar);
+	}
+	// Figure out the indexes of the message for the last lines of
+	// the message and update that line on the screen.
+	// If the index is valid, then output that message line; otherwise,
+	// output a blank line.
+	--promptPos.y;
+	var msgLine = null;
+	var msgLineIndex = pTopLineIdx + this.msgAreaHeight - 2;
+	for (; msgLineIndex <= pTopLineIdx + this.msgAreaHeight - 1; ++msgLineIndex)
+	{
+		console.gotoxy(promptPos);
+		console.print("\1n" + this.colors["msgBodyColor"]);
+		if ((msgLineIndex >= 0) && (msgLineIndex < pMessageLines.length))
+		{
+			console.print(pMessageLines[msgLineIndex]); // Already shortened to fit
+			console.print("\1n" + this.colors["msgBodyColor"]); // In case colors changed
+			// Clear the rest of the line
+			printf("%" + +(this.msgAreaWidth-console.strlen(pMessageLines[msgLineIndex])) + "s", "");
+		}
+		else
+			printf(msgLineFormatStr, "");
+		++promptPos.y;
+	}
+	// Move the cursor back to its original position
+	console.gotoxy(originalCurpos);
 
-   return yesNoResponse;
+	return yesNoResponse;
 }
 
 // For the DigDistMsgReader class: Allows the user to delete a message.  Checks
@@ -8847,8 +9231,8 @@ function DigDistMsgReader_EnhReaderPromptYesNo(pQuestion, pMessageLines, pTopLin
 //                determineMsgAttachments()
 //
 // Return value: Boolean - Whether or not the message was deleted
-function DigDistMsgReader_DeleteMessage(pOffset, pPromptLoc, pClearPromptRowAtFirstUse,
-                                        pPromptRowWidth, pConfirmDelete, pAttachments)
+function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearPromptRowAtFirstUse,
+                                                 pPromptRowWidth, pConfirmDelete, pAttachments)
 {
 	// Sanity checking
 	if ((pOffset == null) || (typeof(pOffset) != "number"))
@@ -8967,6 +9351,111 @@ function DigDistMsgReader_DeleteMessage(pOffset, pPromptLoc, pClearPromptRowAtFi
 		}
 	}
 	return msgWasDeleted;
+}
+
+// For the DigDistMsgReader class: Allows the user to batch delete selected messages.
+// Prompts the user for confirmation to delete the selected messages.
+//
+// Parameters:
+//  pPromptLoc: Optional - An object containing x and y properties for the location
+//              on the console of the prompt/error messages
+//  pClearPromptRowAtFirstUse: Optional - A boolean to specify whether or not to
+//                             clear the remainder of the prompt row the first
+//                             time text is written in that row.
+//  pPromptRowWidth: Optional - The width of the prompt row (if pProptLoc is valid)
+//  pConfirmDelete: Optional boolean - Whether or not to confirm deleting the
+//                  message.  Defaults to true.
+//
+// Return value: Boolean - Whether or not all messages were deleted
+function DigDistMsgReader_PromptAndDeleteSelectedMessages(pPromptLoc, pClearPromptRowAtFirstUse,
+                                                          pPromptRowWidth, pConfirmDelete)
+{
+	var promptLocValid = ((pPromptLoc != null) && (typeof(pPromptLoc) == "object") &&
+	                      (typeof(pPromptLoc.x) == "number") && (typeof(pPromptLoc.y) == "number"));
+
+	var allMsgsWereDeleted = false;
+
+	// If the user is allowed to delete all selected messages, then go ahead
+	// and let the user do it.
+	if (this.AllSelectedMessagesCanBeDeleted())
+	{
+		// Determine whether or not to delete the message.  First, if we are to
+		// have the user confirm whether to delete the message, then ask the
+		// user to confirm first.  If we're not to have the user confirm, then
+		// go ahead and delete the message.
+		var deleteMsgs = true; // True in case of not confirming deletion
+		var confirmDeleteMsgs = (typeof(pConfirmDelete) == "boolean" ? pConfirmDelete : true);
+		if (confirmDeleteMsgs)
+		{
+			if (promptLocValid)
+			{
+				// If the caller wants to clear the remainder of the row where the prompt
+				// text will be, then do it.
+				if (pClearPromptRowAtFirstUse)
+				{
+					// Adding 5 to the prompt text to account for the ? and "[X] " that
+					// will be added when console.noyes() is called
+					var promptTxtLen = console.strlen(this.text.delSelectedMsgsConfirmText) + 5;
+					var numCharsRemaining = 0;
+					if (typeof(pPromptRowWidth) == "number")
+						numCharsRemaining = pPromptRowWidth - promptTxtLen;
+					else
+						numCharsRemaining = console.screen_columns - pPromptLoc.x - promptTxtLen;
+					console.print("\1n");
+					console.gotoxy(pPromptLoc.x+promptTxtLen, pPromptLoc.y);
+					for (var i = 0; i < numCharsRemaining; ++i)
+						console.print(" ");
+				}
+				// Move the cursor to the prompt location
+				console.gotoxy(pPromptLoc);
+			}
+			deleteMsgs = !console.noyes(this.text.delSelectedMsgsConfirmText);
+		}
+		// If we are to delete the messages, then delete it.
+		if (deleteMsgs)
+		{
+			var deleteRetObj = this.DeleteSelectedMessages();
+			allMsgsWereDeleted = deleteRetObj.deletedAll;
+			// If all selected messages were successfully deleted, then output
+			// a success message.  Otherwise, output an error.
+			var statusMsg = "";
+			if (deleteRetObj.deletedAll)
+				statusMsg = "\1n\1cAll selected messages were deleted.";
+			else
+				statusMsg = "\1n\1h\1y* Failure to delete all selected messages";
+			if (promptLocValid)
+			{
+				console.gotoxy(pPromptLoc);
+				console.print("\1n");
+				console.cleartoeol();
+			}
+			else
+				console.crlf();
+			console.print(statusMsg);
+			if (promptLocValid)
+				console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, ERROR_PAUSE_WAIT_MS);
+			else
+			{
+				console.crlf();
+				console.pause();
+			}
+		}
+	}
+	else
+	{
+		// The user is not allowed to delete all selected messages
+		if (promptLocValid)
+			console.gotoxy(pPromptLoc);
+		console.print(this.text.cannotDeleteAllSelectedMsgsText);
+		if (promptLocValid)
+			console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, ERROR_PAUSE_WAIT_MS);
+		else
+		{
+			console.crlf();
+			console.pause();
+		}
+	}
+	return allMsgsWereDeleted;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -11891,6 +12380,213 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename, pStripCtrl, pMsgLine
 	return retObj;
 }
 
+// For the DigDistMsgReader class: Toggles whether a message has been 'selected'
+// (i.e., for things like batch delete, etc.)
+//
+// Parameters:
+//  pSubCode: The internal sub-board code of the message sub-board where the
+//            message resides
+//  pMsgIdx: The index of the message to toggle
+//  pSelected: Optional boolean to explictly specify whether the message should
+//             be selected.  If this is not provided (or is null), then this
+//             message will simply toggle the selection state of the message.
+function DigDistMsgReader_ToggleSelectedMessage(pSubCode, pMsgIdx, pSelected)
+{
+	// Sanity checking
+	if (typeof(pSubCode) != "string") return;
+	if (typeof(pMsgIdx) != "number") return;
+
+	// If the 'selected message' object doesn't have the sub code index,
+	// then add it.
+	if (!this.selectedMessages.hasOwnProperty(pSubCode))
+		this.selectedMessages[pSubCode] = new Object();
+
+	// If pSelected is a boolean, then it specifies the specific selection
+	// state of the message (true = selected, false = not selected).
+	if (typeof(pSelected) == "boolean")
+	{
+		if (pSelected)
+		{
+			if (!this.selectedMessages[pSubCode].hasOwnProperty(pMsgIdx))
+				this.selectedMessages[pSubCode][pMsgIdx] = true;
+		}
+		else
+		{
+			if (this.selectedMessages[pSubCode].hasOwnProperty(pMsgIdx))
+				delete this.selectedMessages[pSubCode][pMsgIdx];
+		}
+	}
+	else
+	{
+		// pSelected is not a boolean, so simply toggle the selection state of
+		// the message.
+		// If the object for the given sub-board code contains the message
+		// index, then remove it.  Otherwise, add it.
+		if (this.selectedMessages[pSubCode].hasOwnProperty(pMsgIdx))
+			delete this.selectedMessages[pSubCode][pMsgIdx];
+		else
+			this.selectedMessages[pSubCode][pMsgIdx] = true;
+	}
+}
+
+// For the DigDistMsgReader class: Returns whether a message (by sub-board code & index)
+// is selected (i.e., for batch delete, etc.).
+//
+// Parameters:
+//  pSubCode: The internal sub-board code of the message sub-board where the
+//            message resides
+//  pMsgIdx: The index of the message to toggle
+//
+// Return value: Boolean - Whether or not the given message has been selected
+function DigDistMsgReader_MessageIsSelected(pSubCode, pMsgIdx)
+{
+	return (this.selectedMessages.hasOwnProperty(pSubCode) && this.selectedMessages[pSubCode].hasOwnProperty(pMsgIdx));
+}
+
+// For the DigDistMsgReader class: Checks to see if all selected messages can
+// be deleted (i.e., whether the user has permission to delete all of them).
+function DigDistMsgReader_AllSelectedMessagesCanBeDeleted()
+{
+	// If the user has sysop access, then they should be able to delete messages.
+	if (gIsSysop)
+		return true;
+
+	var userCanDeleteAllSelectedMessages = true;
+
+	var msgBase = null;
+	for (var subBoardCode in this.selectedMessages)
+	{
+		// If the current sub-board is personal mail, then the user can delete
+		// those messages.  Otherwise, check the sub-board configuration to see
+		// if the user can delete messages in the sub-board.
+		if (subBoardCode != "mail")
+		{
+			msgBase = new MsgBase(subBoardCode);
+			if (msgBase.open())
+			{
+				userCanDeleteAllSelectedMessages = userCanDeleteAllSelectedMessages && ((msgBase.cfg.settings & SUB_DEL) == SUB_DEL);
+				msgBase.close();
+			}
+		}
+		if (!userCanDeleteAllSelectedMessages)
+			break;
+	}
+	
+	return userCanDeleteAllSelectedMessages;
+}
+
+// For the DigDistMsgReader class: Marks the 'selected messages' (in
+// this.selecteMessages) as deleted.  Returns an object with the following
+// properties:
+//  deletedAll: Boolean - Whether or not all messages were successfully marked
+//              for deletion
+//  failureList: An object containing indexes of messages that failed to get
+//               marked for deletion, indexed by internal sub-board code, then
+//               containing messages indexes as properties.  Reasons for failing
+//               to mark messages deleted can include the user not having permission
+//               to delete in a sub-board, failure to open the sub-board, etc.
+function DigDistMsgReader_DeleteSelectedMessages()
+{
+	var retObj = new Object();
+	retObj.deletedAll = true;
+	retObj.failureList = new Object();
+
+	var msgBase = null;
+	var msgHdr = null;
+	var msgWasDeleted = false;
+	for (var subBoardCode in this.selectedMessages)
+	{
+		msgBase = new MsgBase(subBoardCode);
+		if (msgBase.open())
+		{
+			if ((subBoardCode == "mail") || ((msgBase.cfg.settings & SUB_DEL) == SUB_DEL))
+			{
+				for (var msgIdx in this.selectedMessages[subBoardCode])
+				{
+					// It seems that msgIdx is a string, so make sure we have a
+					// numeric version.
+					var msgIdxNumber = +msgIdx;
+					// If doing a search (this.msgSearchHdrs has the sub-board code),
+					// then get the message header by index from there.  Otherwise,
+					// use the message base object to get the message by index.
+					if (this.msgSearchHdrs.hasOwnProperty(subBoardCode) &&
+					    (this.msgSearchHdrs[subBoardCode].indexed.length > 0))
+					{
+						if ((msgIdxNumber >= 0) && (msgIdxNumber < this.msgSearchHdrs[subBoardCode].indexed.length))
+							msgHdr = this.msgSearchHdrs[subBoardCode].indexed[msgIdxNumber];
+					}
+					else
+					{
+						if ((msgIdxNumber >= 0) && (msgIdxNumber < msgBase.total_msgs))
+							msgHdr = msgBase.get_msg_header(true, msgIdxNumber, true);
+					}
+					// If we got the message header, then mark it for deletion.
+					// If the message header wasn't marked as deleted, then add
+					// the message index to the return object.
+					if (msgHdr != null)
+						msgWasDeleted = msgBase.remove_msg(true, msgHdr.offset);
+					else
+						msgWasDeleted = false;
+					if (msgWasDeleted)
+					{
+						// Refresh the message header in the search results (if it
+						// exists there) and remove the message index from the
+						// selectedMessages object
+						this.RefreshSearchResultMsgHdr(msgIdxNumber, MSG_DELETE, subBoardCode);
+						delete this.selectedMessages[subBoardCode][msgIdx];
+					}
+					else
+					{
+						retObj.deletedAll = false;
+						if (!retObj.failureList.hasOwnProperty(subBoardCode))
+							retObj.failureList[subBoardCode] = new Object();
+						retObj.failureList[subBoardCode].push(msgIdxNumber);
+					}
+				}
+				// If the sub-board index array no longer has any properties (i.e.,
+				// all messages in the sub-board were marked as deleted), then remove
+				// the sub-board property from this.selectedMessages
+				if (Object.keys(this.selectedMessages[subBoardCode]).length == 0)
+					delete this.selectedMessages[subBoardCode];
+			}
+			else
+			{
+				// The user doesn't have permission to delete messages
+				// in this sub-board.
+				// Create an entry in retObj.failureList indexed by the
+				// sub-board code to indicate failure to delete all
+				// messages in the sub-board.
+				retObj.deletedAll = false;
+				retObj.failureList[subBoardCode] = new Object();
+			}
+
+			msgBase.close();
+		}
+		else
+		{
+			// Failure to open the sub-board.
+			// Create an entry in retObj.failureList indexed by the
+			// sub-board code to indicate failure to delete all messages
+			// in the sub-board.
+			retObj.deletedAll = false;
+			retObj.failureList[subBoardCode] = new Object();
+		}
+	}
+
+	return retObj;
+}
+
+// For the DigDistMsgReader class: Returns the number of selected messages
+function DigDistMsgReader_NumSelectedMessages()
+{
+	var numSelectedMsgs = 0;
+
+	for (var subBoardCode in this.selectedMessages)
+		numSelectedMsgs += Object.keys(this.selectedMessages[subBoardCode]).length;
+
+	return numSelectedMsgs;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////
 // Helper functions
 
@@ -12021,6 +12717,9 @@ function getDefaultColors()
 	// Message header line colors
 	colorArray["hdrLineLabelColor"] = "\1n\1c";
 	colorArray["hdrLineValueColor"] = "\1n\1b\1h";
+
+	// Selected message marker color
+	colorArray["selectedMsgMarkColor"] = "\1n\1w\1h";
 
 	return colorArray;
 }
@@ -14807,7 +15506,7 @@ function determineMsgAttachments(pMsgHdr, pMsgText, pGetB64Data)
 	}
 
 	// The message to prepend onto the message text if the message has attachments
-	var msgHasAttachmentsTxt = "\1n\1g\1h- This message contains one or more attachments. Press CTRL-D to download.\1n\r\n"
+	var msgHasAttachmentsTxt = "\1n\1g\1h- This message contains one or more attachments. Press CTRL-A to download.\1n\r\n"
 	                         + "\1n\1g\1h--------------------------------------------------------------------------\1n\r\n";
 
 	// Sanity checking
@@ -15040,7 +15739,7 @@ function determineMsgAttachments(pMsgHdr, pMsgText, pGetB64Data)
 	if ((retObj.attachments.length > 0) && (retObj.msgText.length > maxNumCharsOnScreen))
 	{
 		retObj.msgText += "\1n\r\n\1g\1h--------------------------------------------------------------------------\1n\r\n";
-		retObj.msgText += "\1g\1h- This message contains one or more attachments. Press CTRL-D to download.\1n";
+		retObj.msgText += "\1g\1h- This message contains one or more attachments. Press CTRL-A to download.\1n";
 	}
 
 	return retObj;
@@ -15420,8 +16119,109 @@ function capitalizeFirstChar(pStr)
 	return retStr;
 }
 
+// Parses a list of numbers (separated by commas or spaces), which may contain
+// ranges separated by dashes.  Returns an array of the individual numbers.
+//
+// Parameters:
+//  pList: A comma-separated list of numbers, some which may contain
+//         2 numbers separated by a dash denoting a range of numbers.
+//
+// Return value: An array of the individual numbers from the list
+function parseNumberList(pList)
+{
+	if (typeof(pList) != "string")
+		return [];
+
+	var numberList = [];
+
+	// Split pList on commas or spaces
+	var commaOrSpaceSepArray = pList.split(/[\s,]+/);
+	if (commaOrSpaceSepArray.length > 0)
+	{
+		// Go through the comma-separated array - If the element is a
+		// single number, then append it to the number list to be returned.
+		// If there is a range (2 numbers separated by a dash), then
+		// append each number in the range individually to the array to be
+		// returned.
+		for (var i = 0; i < commaOrSpaceSepArray.length; ++i)
+		{
+			// If it's a single number, append it to numberList.
+			if (/^[0-9]+$/.test(commaOrSpaceSepArray[i]))
+				numberList.push(+commaOrSpaceSepArray[i]);
+			// If there are 2 numbers separated by a dash, then split it on the
+			// dash and generate the intermediate numbers.
+			else if (/^[0-9]+-[0-9]+$/.test(commaOrSpaceSepArray[i]))
+			{
+				var twoNumbers = commaOrSpaceSepArray[i].split("-");
+				if (twoNumbers.length == 2)
+				{
+					var num1 = +twoNumbers[0];
+					var num2 = +twoNumbers[1];
+					// If the 1st number is bigger than the 2nd, then swap them.
+					if (num1 > num2)
+					{
+						var temp = num1;
+						num1 = num2;
+						num2 = temp;
+					}
+					// Append each individual number in the range to numberList.
+					for (var number = num1; number <= num2; ++number)
+						numberList.push(number);
+				}
+			}
+		}
+	}
+
+	return numberList;
+}
+
+// Inputs a single keypress from the user from a list of valid keys, allowing
+// input modes (see K_* in sbbsdefs.js for mode bits).  This is similar to
+// console.getkeys(), except that this allows mode bits (such as K_NOCRLF, etc.).
+//
+// Parameters:
+//  pAllowedKeys: A list of allowed keys (string)
+//  pMode: Mode bits (see K_* in sbbsdefs.js)
+//
+// Return value: The user's inputted keypress
+function getAllowedKeyWithMode(pAllowedKeys, pMode)
+{
+	var userInput = "";
+
+	var keypress = "";
+	var i = 0;
+	var matchedKeypress = false;
+	while (!matchedKeypress)
+	{
+		keypress = console.getkey(K_NOECHO|pMode);
+		// Check to see if the keypress is one of the allowed keys
+		for (i = 0; i < pAllowedKeys.length; ++i)
+		{
+			if (keypress == pAllowedKeys[i])
+				userInput = keypress;
+			else if (keypress.toUpperCase() == pAllowedKeys[i])
+				userInput = keypress.toUpperCase();
+			else if (keypress.toLowerCase() == pAllowedKeys[i])
+				userInput = keypress.toLowerCase();
+			if (userInput.length > 0)
+			{
+				matchedKeypress = true;
+				// If K_NOECHO is not in pMode, then output the user's keypress
+				if ((pMode & K_NOECHO) == 0)
+					console.print(userInput);
+				// If K_NOCRLF is not in pMode, then output a CRLF
+				if ((pMode & K_NOCRLF) == 0)
+					console.crlf();
+				break;
+			}
+		}
+	}
+
+	return userInput;
+}
+
 /////////////////////////////////////////////////////////////////////////
-// Debug helper function
+// Debug helper & error output function
 
 // Writes some text on the screen at a given location with a given pause.
 //

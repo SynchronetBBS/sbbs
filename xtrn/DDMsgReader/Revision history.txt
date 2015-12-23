@@ -5,6 +5,15 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.07     2015-12-??   - Added the ability to select multiple messages (for
+                      actions such as batch delete), and added the ability to
+                      delete multiple selected messages.
+                      - Added the following configurable items in the theme
+                      file:
+                      delSelectedMsgsConfirmText
+                      selectedMsgsDeletedText
+                      cannotDeleteAllSelectedMsgsText
+                      selectedMsgMarkColor
 1.06     2015-12-13   - Updated so that a sub-board new-message-scan (with the
                       new_msg_scan_cur_sub command-line parameter) can make
                       use of the -subBoard command-line option to scan a
