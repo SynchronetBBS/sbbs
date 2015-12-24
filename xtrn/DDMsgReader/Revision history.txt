@@ -5,9 +5,26 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.07     2015-12-??   - Added the ability to select multiple messages (for
+1.07     2015-12-24   - Added the ability to select multiple messages (for
                       actions such as batch delete), and added the ability to
-                      delete multiple selected messages.
+                      delete multiple selected messages.  Batch deleting is
+                      only allowed when the user has permission to delete
+                      messages (such as their own personal email).  Messages
+                      can be selected in the following ways:
+                        o Lightbar message list: The spacebar selects an
+                          individual message.  CTRL-A lets the user select or
+                          un-select all messages.
+                        o Traditional message list: The S key lets the user
+                          select or un-select messages, by typing message
+                          numbers, A to select all, or N to select none
+                          (un-select all).  The list of message numbers is
+                          comma-separated or space-separated, allowing
+                          for number ranges such as 120-130 for instance.
+                        o Reader interface: The spacebar selects the message.
+                      To delete the selected messages, the user must be in the
+                      message list; the CTRL-D key combo is used for batch
+                      delete, and it will prompt the user for confirmation
+                      before deleting the messages.
                       - Added the following configurable items in the theme
                       file:
                       delSelectedMsgsConfirmText

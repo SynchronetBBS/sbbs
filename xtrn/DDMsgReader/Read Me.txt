@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
                                  Version 1.07
-                           Release date: 2015-12-??
+                           Release date: 2015-12-24
 
                                      by
 
@@ -41,20 +41,20 @@ that there are no serious issues with it (at least, none that I have seen).
 
 2. Introduction
 ===============
-The Digital Distortion Message Reader is a script for Synchronet, written in
-JavaScript, that provides an alternate message reading interface.  The intent
-is to provide a very functional yet intuitive user interface for reading
-messages.  For ANSI users, a reader interface is provided which allows
-scrolling the message up & down (with the up & down arrow keys, as well as the
-PageUp & PageDown keys), navigating through the messages in the message area
-(AKA sub-board) using the left & right arrow keys, replying to messages, and
-other common messagebase functionality.  The Digital Distortion Message Reader
-can also list messages in the message area and allows forward & reverse
-navigation through the message list using a lightbar or traditional user
-interface.  A message area chooser feature is also included, allowing the user
-to change to a different message area to read/list messages.  Message newscan
-and various types of message searching are also available.  This script
-requires Synchronet version 3.15 or newer.
+Digital Distortion Message Reader is a script for Synchronet that provides an
+alternate message reading interface.  The intent is to provide a very
+functional yet intuitive user interface for reading messages.  For ANSI users,
+a reader interface is provided which allows scrolling the message up & down
+(with the up & down arrow keys, as well as the PageUp & PageDown keys),
+navigating through the messages in the message area (AKA sub-board) using the
+left & right arrow keys, replying to messages, and other common messagebase
+functionality.  The Digital Distortion Message Reader can also list messages
+in the message area and allows forward & reverse navigation through the message
+list using a lightbar or traditional user interface.  A message area chooser
+feature is also included, allowing the user to change to a different message
+area to read/list messages.  Message newscan and various types of message
+searching are also available.  This script requires Synchronet version 3.15
+or newer.  Also, it is written in JavaScript, hence the .js filename extension.
 
 If the user's terminal does not support ANSI, the reader will fall back to a
 more traditional user interface (which does not support scrolling).  The user
@@ -97,6 +97,23 @@ The following is a list of features:
 - Allows the user to download file attachments, whether uploaded to their
   mailbox on Synchronet or attached to internet emails
 - Allows sysops to save a message to the BBS machine for future reference
+- Allows the ability to batch-delete multiple messages.  This is most useful,
+  for instance, if a user gets many spam emails in their personal inbox.  Batch
+  deleting is only allowed when the user has permission to delete messages
+  (such as their own personal email).  To batch-delete messages, the user can
+  select multiple messages (from the message list) and then press CTRL-D (from
+  the message list) to delete them.  Messages can be selected in the following
+  ways:
+  o Lightbar message list: The spacebar selects an individual message.  CTRL-A
+    lets the user select or un-select all messages.
+  o Traditional message list: The S key lets the user select or un-select
+    messages, by typing message numbers, A to select all, or N to select none
+    (un-select all).  The list of message numbers is comma-separated or
+    space-separated, allowing for number ranges such as 120-130 for instance.
+  o Reader interface: The spacebar selects the message.
+To delete the selected messages, the user must be in the message list; the
+CTRL-D key combo is used for batch delete, and it will prompt the user for
+confirmation before deleting the messages.
 - The program settings, colors, and some text can be changed via configuration
   files.  The configuration files may be placed in the same directory as the
   .js script or in the sbbs/ctrl directory.
@@ -107,6 +124,22 @@ with a blinking red asterisk (*) after the message number.
 When displaying a message to the user, this script will honor the attribute
 code toggles set up under Synchronet's configuration program (SCFG),
 under Message Options > Extra Attribute Codes.
+
+If a message contains ANSI codes and the scrollable reader interface is being
+used, Digital Distortion Message Reader will try to use frame.js and
+scrollbar.js if those are available on your BBS filesystem.  The reason is that
+frame.js is able to parse and display ANSI in a scrollable interface very well.
+If frame.js and scrollbar.js are not available on your BBS system, the reader
+will still display the message, but it might look garbled if it has ANSI codes.
+So for best results when reading ANSI messages,ensure that you have the latest
+frame.js and scrollbar.js in your sbbs/exec/load directory.  frame.js and
+scrollbar.js are included in Synchronet 3.16, and I believe in earlier versions
+too.  As of this writing, the latest versions of those files can be found in
+Synchronet's CVS repository at the following URLs:
+frame.js:
+http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/load/frame.js?view=log
+scrollbar.js:
+http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/load/scrollbar.js?view=log
 
 
 3. Installation & Setup

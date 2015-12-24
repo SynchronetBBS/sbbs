@@ -104,6 +104,9 @@
  * 2015-12-19 Eric Oulashin     Version 1.07 Beta
  *                              Started working on a way of tagging message (i.e., to
  *                              do a batch delete).
+ * 2015-12-24 Eric Oulashin     Version 1.07
+ *                              Releasing this version, as it seems to be working as
+ *                              it should after testing & development.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -195,8 +198,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.07 Beta 3";
-var READER_DATE = "2015-12-23";
+var READER_VERSION = "1.07";
+var READER_DATE = "2015-12-24";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4533,7 +4536,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					writeMessage = false; // No need to refresh the message
 					break;
 				case enhReaderKeys.batchDelete:
-					// TODO: Write this
+					// TODO: Write this?  Not sure yet if it makes much sense to
+					// have batch delete in the reader interface.
 					// Prompt the user for confirmation, and use
 					// this.DeleteSelectedMessages() to mark the selected messages
 					// as deleted.
@@ -5213,7 +5217,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 					this.ToggleSelectedMessage(this.subBoardCode, pOffset, selectMessage);
 					break;
 				case enhReaderKeys.batchDelete:
-					// TODO: Write this
+					// TODO: Write this?  Not sure yet if it makes much sense to
+					// have batch delete in the reader interface.
 					// Prompt the user for confirmation, and use
 					// this.DeleteSelectedMessages() to mark the selected messages
 					// as deleted.
