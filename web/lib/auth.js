@@ -152,9 +152,9 @@ if (typeof http_request.query.username !== 'undefined' &&
 // If they have a cookie
 } else if(
 	typeof http_request.cookie.synchronet != 'undefined' &&
-	http_request.cookie.synchronet.some(
-		Function('e', 'return(e.search(/^\\d+,\\w+$/) != -1)')
-	)
+	http_request.cookie.synchronet.some(function(e){
+		return(e.search(/^\\d+,\\w+$/) != -1);
+	})
 ) {
 	// Verify & update their session, or log them out if requested
 	if (typeof http_request.query.logout === 'undefined') {
