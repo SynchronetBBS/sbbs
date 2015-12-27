@@ -353,12 +353,19 @@ function postReply(sub, body, pid) {
         if (pHeader === null) return ret;
         var header = {
             'to' : pHeader.from,
-            'to_net_addr' : pHeader.from_net_addr,
             'from' : user.alias,
             'subject' : pHeader.subject,
+            'thread_id' : (
+                typeof pHeader.thread_id === 'undefined'
+                ? pHeader.number
+                : pHeader.thread_id
+            ),
             'thread_back' : pHeader.number
         };
         if (sub === 'mail') {
+            if (typeof pHeader.from_net_addr !== 'undefined') {
+                header.to_net_addr = pHeader.from_net_addr;
+            }
             ret = postMail(header, body);
         } else {
             ret = postMessage(sub, header, body);
