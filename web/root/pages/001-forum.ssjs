@@ -58,7 +58,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		}			
 		writeln(
 			'From <strong>' + header.from + "</strong>" +
-			(header.from_net_type == 0 ? '' : ('@' +  header.from_net_addr)) +
+			(	typeof header.from_net_addr === 'undefined'
+				? ''
+				: ('@' +  header.from_net_addr)
+			) +
 			' to <strong>' + header.to + '</strong> on ' +
 			(new Date(header.when_written_time * 1000)).toLocaleString()
 		);
