@@ -14,7 +14,7 @@ var CNF = new (function() {
 
 	/* read a string from a cnf file (optional string length record) */
 	function getStr(file,bytes,length) {
-		if(length == true) {
+		if(typeof length !== 'undefined' && length) {
 			var i = file.readBin(length);
 			var s = file.read(bytes);
 			return s.substr(0,i);
