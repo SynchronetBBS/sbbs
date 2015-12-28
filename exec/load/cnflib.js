@@ -31,8 +31,8 @@ var CNF = new (function() {
 	}
 
 	/* write a null-padded string to a cnf file (optional string length record) */
-	function setStr(file,bytes,length,str) {
-		if(length == true) {
+	function setStr(file,bytes,str,length) {
+		if(typeof length !== 'undefined' && length) {
 			setInt(file,length,str.length);
 		}
 		file.write(str,bytes);
@@ -135,7 +135,7 @@ var CNF = new (function() {
 					setInt(file,struct[p].bytes,record[p]);
 					break;
 				case "str":
-					setStr(file,struct[p].bytes,struct[p].length,record[p]);
+					setStr(file,struct[p].bytes,record[p],struct[p].length);
 					break;
 				case "obj":
 					writeRecord(file,struct[p].bytes,record[p]);
