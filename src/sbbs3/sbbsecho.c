@@ -400,6 +400,8 @@ int write_flofile(char *attachment, faddr_t dest, BOOL bundle)
 	}
 	fprintf(stream,"%s\n",searchstr);
 	fclose(stream);
+	lprintf(LOG_DEBUG, "Attachment %s for %s added to BSO/FLO file: %s"
+		,attachment, smb_faddrtoa(&dest,NULL), fname);
 	return(0);
 }
 
@@ -567,7 +569,8 @@ int create_netmail(char *to, smbmsg_t* msg, char *subject, char *body, faddr_t d
 		fwrite_crlf(body,strlen(body)+1,fp);	/* Write additional NULL */
 	else
 		fwrite("\0",1,1,fp);               /* Write NULL */
-	printf("Created %s\n", fname);
+	lprintf(LOG_DEBUG, "Created NetMail (%s)%s from: %s, to: %s@%s, subject: %s"
+		,fname, file_attached ? " with attachment" : "", from, to, smb_faddrtoa(&dest, NULL), subject);
 	return fclose(fp);
 }
 
@@ -5240,7 +5243,7 @@ int main(int argc, char **argv)
 				SAFECOPY(packet,pktname(/* Temp? */ FALSE));
 			}
 
-			lprintf(LOG_DEBUG,"NetMail packet: %s", packet);
+			lprintf(LOG_DEBUG,"Creating NetMail packet for %s: %s", smb_faddrtoa(&addr,NULL), packet);
 			now=time(NULL);
 			tm=localtime(&now);
 			if((stream=fnopen(&file,packet,O_RDWR|O_CREAT))==NULL) {
