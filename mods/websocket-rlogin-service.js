@@ -426,9 +426,9 @@ try {
 
 	}
 
-} catch (err) {
+} catch (er) {
 
-	log(LOG_ERR, err);
+	log(LOG_ERR, er);
 
 } finally {
 	rlogin.disconnect();
