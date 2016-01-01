@@ -68,7 +68,13 @@ smb_t *smb,*email;
 long misc=(IMPORT_PACKETS|IMPORT_NETMAIL|IMPORT_ECHOMAIL|EXPORT_ECHOMAIL
 			|DELETE_NETMAIL|DELETE_PACKETS);
 BOOL export_netmail_option=TRUE;
-ulong netmail=0;	/* statistic */
+/* statistics */
+ulong netmail=0;	/* imported */
+ulong echomail=0;	/* imported */
+ulong exported_netmail=0;
+ulong exported_echomail=0;
+ulong packed_netmail=0;
+
 char tmp[256],pkt_type=0;
 int secure,cur_smb=0;
 FILE *fidologfile=NULL;
@@ -94,18 +100,12 @@ const char* sbbsecho_pid(void)
 	return str;
 }
 
-#if !defined(_WIN32)
-#define delfile(x) remove(x)
-#else
-int delfile(char *filename)
+void delfile(const char *filename, int line)
 {
-	int i=0;
-
-	while(remove(filename) && i++<120)	/* Wait up to 60 seconds to delete file */
-		Sleep(500); 					/* for Win95 bug fix */
-	return(i);
+	if(remove(filename) != 0)
+		lprintf(LOG_ERR, "ERROR %u (%s) line %u removing file %s"
+			,errno, strerror(errno), line, filename);
 }
-#endif
 
 #if defined(__unix__)	/* borrowed from MSVC */
 unsigned _rotr (
@@ -171,10 +171,9 @@ void logprintf(char *str, ...)
 	strip_ctrl(buf, buf);
 	now=time(NULL);
 	gm=localtime(&now);
-	fprintf(fidologfile,"%02u/%02u/%02u %02u:%02u:%02u %s\n"
-		,(scfg.sys_misc&SM_EURODATE) ? gm->tm_mday : gm->tm_mon+1
-		,(scfg.sys_misc&SM_EURODATE) ? gm->tm_mon+1 : gm->tm_mday
-		,TM_YEAR(gm->tm_year),gm->tm_hour,gm->tm_min,gm->tm_sec
+	fprintf(fidologfile,"%u-%02u-%02u %02u:%02u:%02u %s\n"
+		,1900+gm->tm_year, gm->tm_mon+1, gm->tm_mday
+		,gm->tm_hour, gm->tm_min, gm->tm_sec
 		,buf);
 }
 
@@ -400,8 +399,9 @@ int write_flofile(char *attachment, faddr_t dest, BOOL bundle)
 	}
 	fprintf(stream,"%s\n",searchstr);
 	fclose(stream);
-	lprintf(LOG_DEBUG, "Attachment %s for %s added to BSO/FLO file: %s"
-		,attachment, smb_faddrtoa(&dest,NULL), fname);
+	if(cfg.log&LOG_BSO_FLO)
+		lprintf(LOG_INFO, "File (%s) for %s added to BSO/FLO file: %s"
+			,attachment, smb_faddrtoa(&dest,NULL), fname);
 	return(0);
 }
 
@@ -569,8 +569,9 @@ int create_netmail(char *to, smbmsg_t* msg, char *subject, char *body, faddr_t d
 		fwrite_crlf(body,strlen(body)+1,fp);	/* Write additional NULL */
 	else
 		fwrite("\0",1,1,fp);               /* Write NULL */
-	lprintf(LOG_DEBUG, "Created NetMail (%s)%s from: %s, to: %s@%s, subject: %s"
-		,fname, file_attached ? " with attachment" : "", from, to, smb_faddrtoa(&dest, NULL), subject);
+	if(cfg.log&LOG_NETMAIL)
+		lprintf(LOG_INFO, "Created NetMail (%s)%s from: %s, to: %s (%s), subject: %s"
+			,fname, file_attached ? " with attachment" : "", from, to, smb_faddrtoa(&dest, NULL), subject);
 	return fclose(fp);
 }
 
@@ -1080,9 +1081,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, faddr_t addr, char* t
 		file_to_netmail(nmfile,"Area Change Request",addr,to);
 	fclose(nmfile);
 	fclose(afileout);
-	if(delfile(cfg.areafile))					/* Delete AREAS.BBS */
-		lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,cfg.areafile
-			,strerror(errno));
+	delfile(cfg.areafile, __LINE__);					/* Delete AREAS.BBS */
 	if(rename(outname,cfg.areafile))		   /* Rename new AREAS.BBS file */
 		lprintf(LOG_ERR,"ERROR line %d renaming %s to %s",__LINE__,outname,cfg.areafile);
 	free(outname);
@@ -1235,9 +1234,7 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 
 	fclose(cfgfile);
 	fclose(outfile);
-	if(delfile(cfg.cfgfile))
-		lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,cfg.cfgfile
-			,strerror(errno));
+	delfile(cfg.cfgfile, __LINE__);
 	if(rename(outname,cfg.cfgfile))
 		lprintf(LOG_ERR,"ERROR line %d renaming %s to %s",__LINE__,outname,cfg.cfgfile);
 	free(outname);
@@ -1567,20 +1564,24 @@ int unpack(char *infile)
  defined in the CFG file) and compress 'srcfile' into 'destfile' using the
  appropriate archive program.
 ******************************************************************************/
-void pack(char *srcfile,char *destfile,faddr_t dest)
+int pack(char *srcfile,char *destfile,faddr_t dest)
 {
-	int i,j;
+	int i,retval;
 	uint use=0;
 
 	i=matchnode(dest,0);
 	if(i<cfg.nodecfgs)
 		use=cfg.nodecfg[i].arctype;
-
-	j=execute(mycmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile));
-	if(j) {
+	
+	if(cfg.log&LOG_PACKING)
+		lprintf(LOG_DEBUG,"Packing packet (%s) into bundle (%s) for %s using %s"
+			,srcfile, destfile, smb_faddrtoa(&dest, NULL), cfg.arcdef[use].name);
+	retval=execute(mycmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile));
+	if(retval) {
 		lprintf(LOG_ERR,"ERROR %d (%d) line %d executing %s"
-			,j,errno,__LINE__,mycmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile)); 
+			,retval,errno,__LINE__,mycmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile)); 
 	}
+	return retval;
 }
 
 /* Reads a single FTS-1 stored message header from the specified file stream and terminates C-strings */
@@ -1707,7 +1708,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 		}
 		fclose(stream);
 		if(!error)			/* remove bundles.sbe if no error occurred */		
-			delfile(fname);	/* used to truncate here, August-20-2002 */
+			delfile(fname, __LINE__);	/* used to truncate here, August-20-2002 */
 		if(num_mfncrc)
 			free(mfncrc);
 		return(0); 
@@ -1756,6 +1757,7 @@ void pack_bundle(char *infile,faddr_t dest)
 	if(rename(infile,str))				   /* Change .PK_ file to .PKT file */
 		lprintf(LOG_ERR,"ERROR line %d renaming %s to %s",__LINE__,infile,str);
 	infile[strlen(infile)-1]='t';
+	lprintf(LOG_INFO,"Sending packet (%s) to %s", infile, smb_faddrtoa(&dest,NULL));
 	time(&now);
 	sprintf(day,"%-.2s",ctime(&now));
 	strupr(day);
@@ -1763,7 +1765,7 @@ void pack_bundle(char *infile,faddr_t dest)
 		if(node<cfg.nodecfgs && !(cfg.nodecfg[node].attr&ATTR_DIRECT) && cfg.nodecfg[node].route.zone) {
 			dest=cfg.nodecfg[node].route;
 			if(cfg.log&LOG_ROUTING)
-				lprintf(LOG_NOTICE,"Routing %s to %s",infile,smb_faddrtoa(&dest,NULL));
+				lprintf(LOG_NOTICE,"Routing packet (%s) to %s",infile,smb_faddrtoa(&dest,NULL));
 		}
 		get_flo_outbound(dest, outbound, sizeof(outbound));
 	}
@@ -1795,9 +1797,7 @@ void pack_bundle(char *infile,faddr_t dest)
 			/* Feb-10-2003: Don't overwrite or delete 0-byte file less than 24hrs old */
 			if((time(NULL)-fdate(str))<24L*60L*60L)
 				continue;	
-			if(delfile(str))
-				lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,str
-					,strerror(errno));
+			delfile(str, __LINE__);
 		}
 		if(fexistcase(str)) {
 			if(i!='Z' && flength(str)>=cfg.maxbdlsize)
@@ -1810,12 +1810,12 @@ void pack_bundle(char *infile,faddr_t dest)
 			if(!attachment(p,dest,ATTACHMENT_CHECK))
 				attachment(p,dest,ATTACHMENT_ADD);
 			pack(infile,str,dest);
-			if(delfile(infile))
-				lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,infile
-					,strerror(errno));
+			delfile(infile, __LINE__);
 			return; 
 		}
 		else {
+			if(pack(infile,str,dest) != 0)
+				bail(1);
 			if(misc&FLO_MAILER)
 				j=write_flofile(str,dest,TRUE /* bundle */);
 			else {
@@ -1824,10 +1824,7 @@ void pack_bundle(char *infile,faddr_t dest)
 			}
 			if(j)
 				bail(1);
-			pack(infile,str,dest);
-			if(delfile(infile))
-				lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,infile
-					,strerror(errno));
+			delfile(infile, __LINE__);
 			return; 
 		} 
 	}
@@ -1909,7 +1906,7 @@ BOOL unpack_bundle(void)
 		if(gi<g.gl_pathc) {
 			SAFECOPY(fname,g.gl_pathv[gi]);
 			gi++;
-			lprintf(LOG_DEBUG,"Unpacking bundle: %s",fname);
+			lprintf(LOG_INFO,"Unpacking bundle: %s",fname);
 			if(unpack(fname)) {	/* failure */
 				lprintf(LOG_ERR,"!Unpack failure");
 				if(fdate(fname)+(48L*60L*60L)<time(NULL)) {	
@@ -1920,17 +1917,14 @@ BOOL unpack_bundle(void)
 					if(fexistcase(str))
 						str[strlen(str)-2]='-';
 					if(fexistcase(str))
-						delfile(str);
+						delfile(str, __LINE__);
 					if(rename(fname,str))
 						lprintf(LOG_ERR,"ERROR line %d renaming %s to %s"
 							,__LINE__,fname,str); 
 				}
 				continue;
 			}
-			lprintf(LOG_DEBUG,"Deleting bundle: %s", fname);
-			if(delfile(fname))	/* successful, so delete bundle */
-				lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,fname
-					,strerror(errno));
+			delfile(fname, __LINE__);	/* successful, so delete bundle */
 			return(TRUE); 
 		} 
 	}
@@ -2003,10 +1997,8 @@ int mv(char *src, char *dest, BOOL copy)
 	}
 	fclose(inp);
 	fclose(outp);
-	if(!copy && delfile(src)) {
-		lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,src,strerror(errno));
-		return(-1); 
-	}
+	if(!copy)
+		delfile(src, __LINE__);
 	return(0);
 }
 
@@ -2095,6 +2087,11 @@ ulong loadmsgs(post_t** post, ulong ptr)
 
 void bail(int code)
 {
+	if(code || netmail || exported_netmail || packed_netmail || echomail || exported_echomail)
+		lprintf(LOG_INFO
+			,"SBBSecho exiting with error level %d, "
+			"NetMail(%u imported, %u exported, %u packed), EchoMail(%u imported, %u exported)"
+			,code, netmail, exported_netmail, packed_netmail, echomail, exported_echomail);
 	if((code && pause_on_abend) || pause_on_exit) {
 		fprintf(stderr,"\nHit any key...");
 		getch();
@@ -3216,9 +3213,7 @@ void attach_bundles(void)
 			lprintf(LOG_ERR,"ERROR line %d invalid length of %lu bytes for %s"
 				,__LINE__,filelength(fmsg),packet);
 			fclose(fidomsg);
-			if(delfile(packet))
-				lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,packet
-					,strerror(errno));
+			delfile(packet, __LINE__);
 			continue; 
 		}
 		if(fread(&pkthdr,sizeof(pkthdr_t),1,fidomsg)!=1) {
@@ -3241,7 +3236,6 @@ void attach_bundles(void)
 				pkt_faddr.point=two_plus->destpoint;
 			else if(pkthdr.baud==2) 				/* Type 2.2 Packet Header */
 				pkt_faddr.point=pkthdr.month; 
-			lprintf(LOG_INFO,"Sending to %s",smb_faddrtoa(&pkt_faddr,NULL));
 			pack_bundle(packet,pkt_faddr); 
 		} else
 			lprintf(LOG_WARNING,"Outbound Packet (%s) possibly still in use (invalid terminator: %02X%02X)"
@@ -3425,6 +3419,9 @@ void pkt_to_pkt(char *fbuf,areasbbs_t area,faddr_t faddr
 					two_plus->destpoint=area.uplink[j].point;
 				}
 			}
+			lprintf(LOG_DEBUG, "Adding message from %s (%u:%u/%u.%u) in area %s to packet for %s: %s"
+				,fmsghdr.from, fmsghdr.origzone, fmsghdr.orignet, fmsghdr.orignode, fmsghdr.origpoint
+				,area.name, smb_faddrtoa(&area.uplink[j], NULL), outpkt[i].filename);
 			fwrite(&pkthdr,sizeof(pkthdr_t),1,outpkt[totalpkts].stream);
 			putfmsg(outpkt[totalpkts].stream,fbuf,fmsghdr,area,seenbys,paths);
 			memcpy(&outpkt[totalpkts].uplink,&area.uplink[j]
@@ -3588,9 +3585,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 		if(path[0]) {
 			if(misc&DELETE_NETMAIL) {
 				fclose(fidomsg);
-				if(delfile(path))
-					lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,path
-						,strerror(errno)); 
+				delfile(path, __LINE__);
 			}
 			else {
 				hdr.attr|=FIDO_RECV;
@@ -3802,7 +3797,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 	memset(&hdr,0,sizeof(hdr));
 	start_tick=0;
 
-	lprintf(LOG_DEBUG,"\nScanning for Outbound EchoMail...");
+	printf("\nScanning for Outbound EchoMail...");
 
 	for(area=0; area<cfg.areas; area++) {
 		const char* tag=cfg.area[area].name;
@@ -3819,7 +3814,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 		}
 		if(sub_code[0] && stricmp(sub_code,scfg.sub[i]->code))
 			continue;
-		lprintf(LOG_DEBUG,"\nScanning %-*.*s -> %s"
+		printf("\nScanning %-*.*s -> %s\n"
 			,LEN_EXTCODE,LEN_EXTCODE,scfg.sub[i]->code
 			,tag);
 		ptr=0;
@@ -3828,7 +3823,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 		msgs=getlastmsg(i,&lastmsg,0);
 		if(msgs<1 || (!addr.zone && !(misc&IGNORE_MSGPTRS) && ptr>=lastmsg)) {
-			lprintf(LOG_DEBUG,"No new messages.");
+			printf("No new messages.");
 			if(msgs>=0 && ptr>lastmsg && !addr.zone && !(misc&LEAVE_MSGPTRS)) {
 				lprintf(LOG_DEBUG,"Fixing new-scan pointer (%u, lastmsg=%u).", ptr, lastmsg);
 				write_export_ptr(i, lastmsg, tag);
@@ -3859,8 +3854,8 @@ void export_echomail(char *sub_code,faddr_t addr)
 		start_tick=msclock();
 
 		for(m=exp=0;m<posts;m++) {
-			printf("\r%8s %5lu of %-5"PRIu32"  "
-				,scfg.sub[i]->code,m+1,posts);
+			printf("\r%*s %5lu of %-5"PRIu32"  "
+				,LEN_EXTCODE,scfg.sub[i]->code,m+1,posts);
 			memset(&msg,0,sizeof(msg));
 			msg.idx=post[m].idx;
 			if((k=smb_lockmsghdr(&smb[cur_smb],&msg))!=SMB_SUCCESS) {
@@ -3937,6 +3932,8 @@ void export_echomail(char *sub_code,faddr_t addr)
 				smb_freemsgmem(&msg);
 				continue; 
 			}
+			lprintf(LOG_DEBUG,"Exporting %s message #%u from %s to %s in area: %s"
+				,scfg.sub[i]->code, msg.hdr.number, msg.from, msg.to, tag);
 			fmsgbuflen=strlen((char *)buf)+4096; /* over alloc for kludge lines */
 			fmsgbuf=malloc(fmsgbuflen);
 			if(!fmsgbuf) {
@@ -4084,7 +4081,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 	if(start_tick)	/* Last possible increment of export_ticks */
 		export_ticks+=msclock()-start_tick;
 
-	pkt_to_pkt(buf,fakearea,pkt_faddr,hdr,msg_seen,msg_path,1);
+	pkt_to_pkt(NULL,fakearea,pkt_faddr,hdr,msg_seen,msg_path, /* bundlize: */1);
 
 	if(!addr.zone && cfg.log&LOG_AREA_TOTALS && exported)
 		for(i=0;i<cfg.areas;i++)
@@ -4095,11 +4092,12 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 	export_time=((float)export_ticks)/(float)MSCLOCKS_PER_SEC;
 	if(cfg.log&LOG_TOTALS && exported && export_time) {
-		lprintf(LOG_INFO,"Exported: %5lu msgs in %.1f sec (%.1f/min %.1f/sec)"
+		lprintf(LOG_INFO,"Exported: %5lu msgs total in %.1f sec (%.1f/min %.1f/sec)"
 			,exported,export_time
 			,export_time/60.0 ? (float)exported/(export_time/60.0) :(float)exported
 			,(float)exported/export_time);
 	}
+	exported_echomail += exported;
 }
 
 /* New Feature (as of Nov-22-2015):
@@ -4110,8 +4108,9 @@ int export_netmail(void)
 	int			i;
 	char*		txt;
 	smbmsg_t	msg;
+	ulong		exported = 0;
 
-	lprintf(LOG_DEBUG,"Exporting Outbound NetMail from %smail",scfg.data_dir);
+	printf("\nExporting Outbound NetMail from %smail to %s*.msg ...\n", scfg.data_dir, scfg.netmail_dir);
 
 	if(email->shd_fp==NULL) {
 		sprintf(email->file,"%smail",scfg.data_dir);
@@ -4143,7 +4142,7 @@ int export_netmail(void)
 		if(msg.to_ext != 0 || msg.to_net.type != NET_FIDO)
 			continue;
 
-		printf("\nMsg #%u from %s to %s "
+		printf("NetMail msg #%u from %s to %s "
 			,msg.hdr.number, msg.from, smb_faddrtoa(msg.to_net.addr,NULL));
 		if(msg.hdr.netattr&MSG_SENT) {
 			printf("already sent\n");
@@ -4175,8 +4174,14 @@ int export_netmail(void)
 				lprintf(LOG_ERR,"!ERROR %d updating msg header for mail msg #%u"
 					, email->last_error, msg.hdr.number);
 		}
+		exported++;
 	}
 	smb_freemsgmem(&msg);
+	if(cfg.log&LOG_NETMAIL)
+		lprintf(exported ? LOG_INFO : LOG_DEBUG
+			,"Exported NetMail (%u messages) from %smail to %s*.msg"
+			,exported, scfg.data_dir, scfg.netmail_dir);
+	exported_netmail += exported;
 	return smb_unlocksmbhdr(email);
 }
 
@@ -4213,12 +4218,13 @@ int main(int argc, char **argv)
 			,*p,*tp
 			,areatagstr[128],outbound[128]
 			,password[16];
+	char	cmdline[256];
 	char	*fmsgbuf=NULL;
 	ushort	attr;
 	int 	i,j,k,file,fmsg,node;
 	BOOL	grunged;
 	uint	subnum[MAX_OPEN_SMBS]={INVALID_SUB};
-	ulong	echomail=0,m/* f, */,areatag;
+	ulong	m/* f, */,areatag;
 	time_t	now;
 	time_t	ftime;
 	float	import_time;
@@ -4236,13 +4242,13 @@ int main(int argc, char **argv)
 	addrlist_t msg_seen,msg_path;
 	areasbbs_t fakearea,curarea;
 	char *usage="\n"
-	"usage: sbbsecho [cfg_file] [-switches] [sub_code] [address]\n"
+	"usage: sbbsecho [cfg_file] [-options] [sub_code] [address]\n"
 	"\n"
 	"where: cfg_file is the filename of config file (default is ctrl/sbbsecho.cfg)\n"
 	"       sub_code is the internal code for a sub-board (default is ALL subs)\n"
 	"       address is the link to export for (default is ALL links)\n"
 	"\n"
-	"valid switches:\n"
+	"valid options:\n"
 	"\n"
 	"p: do not import packets                 x: do not delete packets after import\n"
 	"n: do not import netmail                 d: do not delete netmail after import\n"
@@ -4296,7 +4302,9 @@ int main(int argc, char **argv)
 
 	sub_code[0]=0;
 
+	cmdline[0]=0;
 	for(i=1;i<argc;i++) {
+		sprintf(cmdline+strlen(cmdline), "%s ", argv[i]);
 		if(argv[i][0]=='-'
 #if !defined(__unix__)
 			|| argv[i][0]=='/'
@@ -4384,6 +4392,7 @@ int main(int argc, char **argv)
 					case 'Q':
 						bail(0);
 					default:
+						fprintf(stderr, "Unsupported option: %c\n", argv[i][j]);
 						puts(usage);
 						bail(0); 
 				}
@@ -4445,6 +4454,9 @@ int main(int argc, char **argv)
 			bail(1); 
 			return -1;
 		}
+
+	truncsp(cmdline);
+	lprintf(LOG_DEBUG,"%s invoked with options (%s) and log flags: %08lX", sbbsecho_pid(), cmdline, cfg.log);
 
 	/******* READ IN AREAS.BBS FILE *********/
 
@@ -4539,13 +4551,13 @@ int main(int argc, char **argv)
 	#endif
 
 	if(misc&GEN_NOTIFY_LIST) {
-		lprintf(LOG_DEBUG,"\nGenerating Notify Lists...");
+		lprintf(LOG_DEBUG,"Generating Notify Lists...");
 		notify_list(); 
 	}
 
 	/* Find any packets that have been left behind in the OUTBOUND directory */
 	now=time(NULL);
-	lprintf(LOG_DEBUG,"\nScanning for Stray Outbound Packets...");
+	printf("\nScanning for Stray Outbound Packets...\n");
 	sprintf(path,"%s*.pk_",cfg.outbound);
 	glob(path,0,NULL,&g);
 	for(f=0;f<g.gl_pathc && !kbhit();f++) {
@@ -4566,9 +4578,7 @@ int main(int argc, char **argv)
 			lprintf(LOG_ERR,"ERROR line %d invalid length of %lu bytes for %s"
 				,__LINE__,filelength(fmsg),packet);
 			fclose(fidomsg);
-			if(delfile(packet))
-				lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,packet
-					,strerror(errno));
+			delfile(packet, __LINE__);
 			continue; 
 		}
 		if(fread(&pkthdr,sizeof(pkthdr_t),1,fidomsg)!=1) {
@@ -4598,7 +4608,6 @@ int main(int argc, char **argv)
 				pkt_faddr.point=two_plus->destpoint;
 			else if(pkthdr.baud==2) 				/* Type 2.2 Packet Header */
 				pkt_faddr.point=pkthdr.month; 
-			lprintf(LOG_DEBUG,"Sending to %s",smb_faddrtoa(&pkt_faddr,NULL));
 			pack_bundle(packet,pkt_faddr); 
 		}
 		else {
@@ -4611,13 +4620,12 @@ int main(int argc, char **argv)
 
 	if(misc&IMPORT_PACKETS) {
 
-		lprintf(LOG_DEBUG,"\nScanning for Inbound Packets...");
+		printf("\nScanning for Inbound Packets...\n");
 
 		/* We want to loop while there are bundles waiting for us, but first we want */
 		/* to take care of any packets that may already be hanging around for some	 */
 		/* reason or another (thus the do/while loop) */
 
-		echomail=0;
 		for(secure=0;secure<2;secure++) {
 			if(secure && !cfg.secure[0])
 				break;
@@ -4997,9 +5005,7 @@ int main(int argc, char **argv)
 			fclose(fidomsg);
 
 			if(misc&DELETE_PACKETS)
-				if(delfile(packet))
-					lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,packet
-						,strerror(errno)); 
+				delfile(packet, __LINE__);
 		}
 		globfree(&g);
 
@@ -5029,8 +5035,8 @@ int main(int argc, char **argv)
 		if(cfg.log&LOG_AREA_TOTALS) {
 			for(i=0;i<cfg.areas;i++) {
 				if(cfg.area[i].imported)
-					lprintf(LOG_INFO,"Imported: %5u msgs %8s <- %s"
-						,cfg.area[i].imported,scfg.sub[cfg.area[i].sub]->code
+					lprintf(LOG_INFO,"Imported: %5u msgs %*s <- %s"
+						,cfg.area[i].imported,LEN_EXTCODE,scfg.sub[cfg.area[i].sub]->code
 						,cfg.area[i].name); 
 			}
 			for(i=0;i<cfg.areas;i++) {
@@ -5046,8 +5052,8 @@ int main(int argc, char **argv)
 		}
 
 		import_time=((float)import_ticks)/(float)MSCLOCKS_PER_SEC;
-		if(cfg.log&LOG_TOTALS && import_time && echomail) {
-			lprintf(LOG_INFO,"Imported: %5lu msgs in %.1f sec (%.1f/min %.1f/sec)"
+		if((cfg.log&LOG_TOTALS) && import_time && echomail) {
+			lprintf(LOG_INFO,"Imported: %5lu msgs total in %.1f sec (%.1f/min %.1f/sec)"
 				,echomail,import_time
 				,import_time/60.0 ? (float)echomail/(import_time/60.0) :(float)echomail
 				,(float)echomail/import_time);
@@ -5057,7 +5063,7 @@ int main(int argc, char **argv)
 
 		if(misc&IMPORT_NETMAIL) {
 
-		lprintf(LOG_DEBUG,"\nScanning for Inbound NetMail Messages...");
+		printf("\nScanning for Inbound NetMail Messages...\n");
 
 #ifdef __unix__
 		sprintf(str,"%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
@@ -5091,9 +5097,7 @@ int main(int argc, char **argv)
 			if(i==0) {
 				if(misc&DELETE_NETMAIL) {
 					fclose(fidomsg);
-					if(delfile(path))
-						lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,path
-							,strerror(errno)); 
+					delfile(path, __LINE__);
 				}
 				else {
 					hdr.attr|=FIDO_RECV;
@@ -5122,7 +5126,7 @@ int main(int argc, char **argv)
 		memset(&msg_path,0,sizeof(addrlist_t));
 		memset(&fakearea,0,sizeof(areasbbs_t));
 
-		lprintf(LOG_DEBUG,"\nPacking Outbound NetMail from %s",scfg.netmail_dir);
+		printf("\nPacking Outbound NetMail from %s ...\n",scfg.netmail_dir);
 
 #ifdef __unix__
 		sprintf(str,"%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
@@ -5199,7 +5203,9 @@ int main(int argc, char **argv)
 			}
 
 			if(cfg.log&LOG_PACKING)
-				logprintf("Packing %s (%s) attr=%04hX",path,smb_faddrtoa(&addr,NULL),hdr.attr);
+				lprintf(LOG_INFO, "Packing NetMail (%s) from %s (%u:%u/%u.%u) to %s (%s), attr: %04hX, subject: %s"
+					,path,hdr.from,hdr.origzone,hdr.orignet,hdr.orignode,hdr.origpoint
+					,hdr.to,smb_faddrtoa(&addr,NULL),hdr.attr,hdr.subj);
 			fmsgbuf=getfmsg(fidomsg,NULL);
 			if(!fmsgbuf) {
 				lprintf(LOG_ERR,"ERROR line %d allocating memory for NetMail fmsgbuf"
@@ -5215,7 +5221,7 @@ int main(int argc, char **argv)
 				&& !(hdr.attr&(FIDO_CRASH|FIDO_HOLD))) {
 				addr=cfg.nodecfg[node].route;		/* Routed */
 				if(cfg.log&LOG_ROUTING)
-					logprintf("Routing %s to %s",path,smb_faddrtoa(&addr,NULL));
+					lprintf(LOG_INFO, "Routing NetMail (%s) to %s",path,smb_faddrtoa(&addr,NULL));
 				node=matchnode(addr,0); 
 			}
 			if(node<cfg.nodecfgs)
@@ -5305,17 +5311,16 @@ int main(int argc, char **argv)
 			/* Delete source netmail if specified */
 			/**************************************/
 			if(misc&DELETE_NETMAIL)
-				if(delfile(path))
-					lprintf(LOG_ERR,"ERROR line %d removing %s %s",__LINE__,path
-						,strerror(errno));
-			printf("\n"); 
+				delfile(path, __LINE__);
+			printf("\n");
+			packed_netmail++;
 		}
 		globfree(&g);
 	}
 
 	if(misc&UPDATE_MSGPTRS) {
 
-		lprintf(LOG_DEBUG,"\nUpdating Message Pointers to Last Posted Message...");
+		lprintf(LOG_DEBUG,"Updating Message Pointers to Last Posted Message...");
 
 		for(j=0; j<cfg.areas; j++) {
 			uint32_t lastmsg;
