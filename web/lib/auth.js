@@ -73,6 +73,7 @@ function validateSession(cookies) {
 
 		authenticate(usr.alias, usr.security.password);
 		setCookie(usr, session.key);
+		setSessionValue(usr.number, 'ip_address', client.ip_address);
 		break;
 
 	}
@@ -151,7 +152,7 @@ if (typeof http_request.query.username !== 'undefined' &&
 	if (usr instanceof User) setCookie(usr, randomString(512));
 // If they have a cookie
 } else if(
-	typeof http_request.cookie.synchronet != 'undefined' &&
+	typeof http_request.cookie.synchronet !== 'undefined' &&
 	http_request.cookie.synchronet.some(
 		function (e) {
 		 	return(e.search(/^\d+,\w+$/) != -1);
