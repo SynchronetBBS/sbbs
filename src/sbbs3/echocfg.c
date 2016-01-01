@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -208,10 +208,12 @@ int main(int argc, char **argv)
 			p=getenv("SBBSNODE");
 			if(!p) {
 				printf("usage: echocfg [cfg_file]\n");
-				exit(1); }
+				exit(1); 
+			}
 			strcpy(str,p);
 			backslash(str);
-			strcat(str,"../ctrl/sbbsecho.cfg"); }
+			strcat(str,"../ctrl/sbbsecho.cfg"); 
+		}
 		else {
 			strcpy(str,p);
 			backslash(str);
@@ -349,37 +351,44 @@ int main(int argc, char **argv)
 						if((cfg.nodecfg=(nodecfg_t *)realloc(cfg.nodecfg
 							,sizeof(nodecfg_t)*(cfg.nodecfgs+1)))==NULL) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); }
+							exit(1); 
+						}
 						for(j=cfg.nodecfgs;j>i;j--)
 							memcpy(&cfg.nodecfg[j],&cfg.nodecfg[j-1]
 								,sizeof(nodecfg_t));
 						cfg.nodecfgs++;
 						memset(&cfg.nodecfg[i],0,sizeof(nodecfg_t));
 						cfg.nodecfg[i].faddr=atofaddr(str);
-						continue; }
+						continue; 
+					}
 
 					if((i&MSK_ON)==MSK_DEL) {
 						i&=MSK_OFF;
 						cfg.nodecfgs--;
 						if(cfg.nodecfgs<=0) {
 							cfg.nodecfgs=0;
-							continue; }
+							continue; 
+						}
 						for(u=i;u<cfg.nodecfgs;u++)
 							memcpy(&cfg.nodecfg[u],&cfg.nodecfg[u+1]
 								,sizeof(nodecfg_t));
 						if((cfg.nodecfg=(nodecfg_t *)realloc(cfg.nodecfg
 							,sizeof(nodecfg_t)*(cfg.nodecfgs)))==NULL) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); }
-						continue; }
+							exit(1); 
+						}
+						continue; 
+					}
 					if((i&MSK_ON)==MSK_GET) {
 						i&=MSK_OFF;
 						memcpy(&savnodecfg,&cfg.nodecfg[i],sizeof(nodecfg_t));
-						continue; }
+						continue; 
+					}
 					if((i&MSK_ON)==MSK_PUT) {
 						i&=MSK_OFF;
 						memcpy(&cfg.nodecfg[i],&savnodecfg,sizeof(nodecfg_t));
-						continue; }
+						continue; 
+					}
 					while(1) {
 	uifc.helpbuf=
 	"~ Node Options ~\r\n\r\n"
@@ -400,7 +409,8 @@ int main(int argc, char **argv)
 						str[0]=0;
 						for(k=0;k<cfg.nodecfg[i].numflags;k++) {
 							strcat(str,cfg.nodecfg[i].flag[k].flag);
-							strcat(str," "); }
+							strcat(str," "); 
+						}
 						sprintf(opt[j++],"%-20.20s %s","Areafix Flags",str);
 						sprintf(opt[j++],"%-20.20s %s","Status"
 							,cfg.nodecfg[i].attr&ATTR_CRASH ? "Crash"
@@ -442,7 +452,7 @@ int main(int argc, char **argv)
 								opt[u][0]=0;
 								if(cfg.nodecfg[i].arctype<u)
 									u=cfg.nodecfg[i].arctype;
-								k=uifc.list(WIN_RHT|WIN_SAV,0,0,0,&u,0
+								k=uifc.list(WIN_RHT|WIN_SAV,0,0,0,(int *)&u,0
 									,"Archive Type",opt);
 								if(k==-1)
 									break;
@@ -512,7 +522,8 @@ int main(int argc, char **argv)
 											,sizeof(flag_t)*
 											(cfg.nodecfg[i].numflags+1)))==NULL) {
 											printf("\nMemory Allocation Error\n");
-											exit(1); }
+											exit(1); 
+										}
 										for(j=cfg.nodecfg[i].numflags;j>i;j--)
 											memcpy(&cfg.nodecfg[i].flag[j]
 												,&cfg.nodecfg[i].flag[j-1]
@@ -521,14 +532,16 @@ int main(int argc, char **argv)
 										memset(&cfg.nodecfg[i].flag[k].flag
 											,0,sizeof(flag_t));
 										strcpy(cfg.nodecfg[i].flag[k].flag,str);
-										continue; }
+										continue; 
+									}
 
 									if((k&MSK_ON)==MSK_DEL) {
 										k&=MSK_OFF;
 										cfg.nodecfg[i].numflags--;
 										if(cfg.nodecfg[i].numflags<=0) {
 											cfg.nodecfg[i].numflags=0;
-											continue; }
+											continue; 
+										}
 										for(j=k;j<cfg.nodecfg[i].numflags;j++)
 											strcpy(cfg.nodecfg[i].flag[j].flag
 												,cfg.nodecfg[i].flag[j+1].flag);
@@ -537,22 +550,27 @@ int main(int argc, char **argv)
 											,sizeof(flag_t)*
 											(cfg.nodecfg[i].numflags)))==NULL) {
 											printf("\nMemory Allocation Error\n");
-											exit(1); }
-										continue; }
+											exit(1); 
+										}
+										continue; 
+									}
 									strcpy(str,cfg.nodecfg[i].flag[k].flag);
 									uifc.input(WIN_MID|WIN_SAV,0,0,"Areafix Flag"
 										,str,4,K_EDIT|K_UPPER);
 									strcpy(cfg.nodecfg[i].flag[k].flag,str);
-									continue; }
+									continue; 
+								}
 								break;
 							case 6:
 								if(cfg.nodecfg[i].attr&ATTR_CRASH) {
 									cfg.nodecfg[i].attr^=ATTR_CRASH;
 									cfg.nodecfg[i].attr|=ATTR_HOLD;
-									break; }
+									break; 
+								}
 								if(cfg.nodecfg[i].attr&ATTR_HOLD) {
 									cfg.nodecfg[i].attr^=ATTR_HOLD;
-									break; }
+									break; 
+								}
 								cfg.nodecfg[i].attr|=ATTR_CRASH;
 								break;
 							case 7:
@@ -582,14 +600,12 @@ int main(int argc, char **argv)
 									else
 										cfg.nodecfg[i].route.zone=0;
 								break;
-								} } }
+						} 
+					} 
+				}
 				break;
 
 			case 5:
-	uifc.helpbuf=
-	"~ Paths... ~\r\n\r\n"
-	"From this menu you can configure the paths that SBBSecho will use\r\n"
-	"when importing and exporting.\r\n";
 				j=0;
 				while(1) {
 					i=0;
@@ -606,6 +622,10 @@ int main(int argc, char **argv)
 						,cfg.logfile[0] ? cfg.logfile
 						: "SCFG->data/sbbsecho.log");
 					opt[i][0]=0;
+					uifc.helpbuf=
+						"~ Paths... ~\r\n\r\n"
+						"From this menu you can configure the paths that SBBSecho will use\r\n"
+						"when importing and exporting.\r\n";
 					j=uifc.list(WIN_MID|WIN_ACT,0,0,60,&j,0
 						,"Paths and Filenames",opt);
 					if(j==-1)
@@ -654,10 +674,14 @@ int main(int argc, char **argv)
 	uifc.helpbuf=
 	"~ Log File ~\r\n\r\n"
 	"This is the complete path (drive, directory, and filename) of the\r\n"
-	"file SBBSecho will use to log information each time it is run.";
+	"file SBBSecho will use to log information each time it is run\r\n"
+	"(default is `sbbsecho.log`)."
+	;
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Logfile",cfg.logfile
-								,50,K_EDIT);
-							break; } }
+								,sizeof(cfg.logfile)-1,K_EDIT);
+							break; 
+					} 
+				}
 				break;
 			case 6:
 	uifc.helpbuf=
@@ -674,8 +698,8 @@ int main(int argc, char **argv)
 	"~ Log Options ~\r\n"
 	"\r\n"
 	"Each loggable item can be toggled off or on from this menu. You must run\r\n"
-	"`SBBSecho` with the `/L` command line option for any of these items to be\r\n"
-	"logged.";
+	"`SBBSecho` with the `-L` command line option for any of these items to be\r\n"
+	"logged (to `sbbsecho.log`, by default).";
 				j=0;
 				while(1) {
 					i=0;
@@ -684,21 +708,25 @@ int main(int argc, char **argv)
 					strcpy(opt[i++],"DEFAULT");
 					sprintf(opt[i++],"%-35.35s%-3.3s","Ignored NetMail Messages"
 						,cfg.log&LOG_IGNORED ? "Yes":"No");
-					sprintf(opt[i++],"%-35.35s%-3.3s","NetMail for Unknown Users"
+					sprintf(opt[i++],"%-35.35s%-3.3s","Inbound NetMail for Unknown Users"
 						,cfg.log&LOG_UNKNOWN ? "Yes":"No");
-					sprintf(opt[i++],"%-35.35s%-3.3s","Areafix NetMail Messages"
+					sprintf(opt[i++],"%-35.35s%-3.3s","Inbound Areafix NetMail Messages"
 						,cfg.log&LOG_AREAFIX ? "Yes":"No");
 					sprintf(opt[i++],"%-35.35s%-3.3s","Imported NetMail Messages"
 						,cfg.log&LOG_IMPORTED ? "Yes":"No");
-					sprintf(opt[i++],"%-35.35s%-3.3s","Packing Out-bound NetMail"
+					sprintf(opt[i++],"%-35.35s%-3.3s","Packing Outbound NetMail"
 						,cfg.log&LOG_PACKING ? "Yes":"No");
-					sprintf(opt[i++],"%-35.35s%-3.3s","Routing Out-bound NetMail"
+					sprintf(opt[i++],"%-35.35s%-3.3s","Routing Outbound NetMail"
 						,cfg.log&LOG_ROUTING ? "Yes":"No");
-					sprintf(opt[i++],"%-35.35s%-3.3s","In-bound Packet Information"
+					sprintf(opt[i++],"%-35.35s%-3.3s","Creating Outbound NetMail"
+						,cfg.log&LOG_NETMAIL ? "Yes":"No");
+					sprintf(opt[i++],"%-35.35s%-3.3s","Binkley FLO File Operations"
+						,cfg.log&LOG_BSO_FLO ? "Yes":"No");
+					sprintf(opt[i++],"%-35.35s%-3.3s","Inbound Packet Information"
 						,cfg.log&LOG_PACKETS ? "Yes":"No");
-					sprintf(opt[i++],"%-35.35s%-3.3s","In-bound Security Violations"
+					sprintf(opt[i++],"%-35.35s%-3.3s","Inbound Security Violations"
 						,cfg.log&LOG_SECURE ? "Yes":"No");
-					sprintf(opt[i++],"%-35.35s%-3.3s","In-bound Grunged Messages"
+					sprintf(opt[i++],"%-35.35s%-3.3s","Inbound Grunged Messages"
 						,cfg.log&LOG_GRUNGED ? "Yes":"No");
 					sprintf(opt[i++],"%-35.35s%-3.3s","Disallowed Private EchoMail"
 						,cfg.log&LOG_PRIVATE ? "Yes":"No");
@@ -743,29 +771,37 @@ int main(int argc, char **argv)
 							cfg.log^=LOG_ROUTING;
 							break;
 						case 9:
-							cfg.log^=LOG_PACKETS;
+							cfg.log^=LOG_NETMAIL;
 							break;
 						case 10:
-							cfg.log^=LOG_SECURE;
+							cfg.log^=LOG_BSO_FLO;
 							break;
 						case 11:
-							cfg.log^=LOG_GRUNGED;
+							cfg.log^=LOG_PACKETS;
 							break;
 						case 12:
-							cfg.log^=LOG_PRIVATE;
+							cfg.log^=LOG_SECURE;
 							break;
 						case 13:
-							cfg.log^=LOG_CIRCULAR;
+							cfg.log^=LOG_GRUNGED;
 							break;
 						case 14:
-							cfg.log^=LOG_DUPES;
+							cfg.log^=LOG_PRIVATE;
 							break;
 						case 15:
-							cfg.log^=LOG_AREA_TOTALS;
+							cfg.log^=LOG_CIRCULAR;
 							break;
 						case 16:
+							cfg.log^=LOG_DUPES;
+							break;
+						case 17:
+							cfg.log^=LOG_AREA_TOTALS;
+							break;
+						case 18:
 							cfg.log^=LOG_TOTALS;
-							break; } }
+							break; 
+					} 
+				}
 				break;
 
 
@@ -917,7 +953,8 @@ int main(int argc, char **argv)
 						if((cfg.arcdef=(arcdef_t *)realloc(cfg.arcdef
 							,sizeof(arcdef_t)*(cfg.arcdefs+1)))==NULL) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); }
+							exit(1); 
+						}
 						for(j=cfg.arcdefs;j>i;j--)
 							memcpy(&cfg.arcdef[j],&cfg.arcdef[j-1]
 								,sizeof(arcdef_t));
@@ -926,30 +963,36 @@ int main(int argc, char **argv)
 						cfg.arcdefs++;
 						memset(&cfg.arcdef[i],0,sizeof(arcdef_t));
 						strcpy(cfg.arcdef[i].name,str);
-						continue; }
+						continue; 
+					}
 
 					if((i&MSK_ON)==MSK_DEL) {
 						i&=MSK_OFF;
 						cfg.arcdefs--;
 						if(cfg.arcdefs<=0) {
 							cfg.arcdefs=0;
-							continue; }
+							continue; 
+						}
 						for(u=i;u<cfg.arcdefs;u++)
 							memcpy(&cfg.arcdef[u],&cfg.arcdef[u+1]
 								,sizeof(arcdef_t));
 						if((cfg.arcdef=(arcdef_t *)realloc(cfg.arcdef
 							,sizeof(arcdef_t)*(cfg.arcdefs)))==NULL) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); }
-						continue; }
+							exit(1); 
+						}
+						continue; 
+					}
 					if((i&MSK_ON)==MSK_GET) {
 						i&=MSK_OFF;
 						memcpy(&savarcdef,&cfg.arcdef[i],sizeof(arcdef_t));
-						continue; }
+						continue; 
+					}
 					if((i&MSK_ON)==MSK_PUT) {
 						i&=MSK_OFF;
 						memcpy(&cfg.arcdef[i],&savarcdef,sizeof(arcdef_t));
-						continue; }
+						continue; 
+					}
 					while(1) {
 						j=0;
 						sprintf(opt[j++],"%-20.20s %s","Packer Name"
@@ -995,7 +1038,9 @@ int main(int argc, char **argv)
 									,"Unpack Command Line",cfg.arcdef[i].unpack,50
 									,K_EDIT);
 								break;
-								} } }
+						} 
+					} 
+				}
 				break;
 			case 10:
 	uifc.helpbuf=
@@ -1025,37 +1070,44 @@ int main(int argc, char **argv)
 						if((cfg.listcfg=(echolist_t *)realloc(cfg.listcfg
 							,sizeof(echolist_t)*(cfg.listcfgs+1)))==NULL) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); }
+							exit(1); 
+						}
 						for(j=cfg.listcfgs;j>i;j--)
 							memcpy(&cfg.listcfg[j],&cfg.listcfg[j-1]
 								,sizeof(echolist_t));
 						cfg.listcfgs++;
 						memset(&cfg.listcfg[i],0,sizeof(echolist_t));
 						strcpy(cfg.listcfg[i].listpath,str);
-						continue; }
+						continue; 
+					}
 
 					if((i&MSK_ON)==MSK_DEL) {
 						i&=MSK_OFF;
 						cfg.listcfgs--;
 						if(cfg.listcfgs<=0) {
 							cfg.listcfgs=0;
-							continue; }
+							continue; 
+						}
 						for(u=i;u<cfg.listcfgs;u++)
 							memcpy(&cfg.listcfg[u],&cfg.listcfg[u+1]
 								,sizeof(echolist_t));
 						if((cfg.listcfg=(echolist_t *)realloc(cfg.listcfg
 							,sizeof(echolist_t)*(cfg.listcfgs)))==NULL) {
 							printf("\nMemory Allocation Error\n");
-							exit(1); }
-						continue; }
+							exit(1); 
+						}
+						continue; 
+					}
 					if((i&MSK_ON)==MSK_GET) {
 						i&=MSK_OFF;
 						memcpy(&savlistcfg,&cfg.listcfg[i],sizeof(echolist_t));
-						continue; }
+						continue; 
+					}
 					if((i&MSK_ON)==MSK_PUT) {
 						i&=MSK_OFF;
 						memcpy(&cfg.listcfg[i],&savlistcfg,sizeof(echolist_t));
-						continue; }
+						continue; 
+					}
 					while(1) {
 						j=0;
 						sprintf(opt[j++],"%-20.20s %.19s","Echo List Path/Name"
@@ -1071,7 +1123,8 @@ int main(int argc, char **argv)
 						str[0]=0;
 						for(u=0;u<cfg.listcfg[i].numflags;u++) {
 							strcat(str,cfg.listcfg[i].flag[u].flag);
-							strcat(str," "); }
+							strcat(str," "); 
+						}
 						sprintf(opt[j++],"%-20.20s %s","Echo List Flags",str);
 						opt[j][0]=0;
 						k=uifc.list(WIN_MID|WIN_ACT,0,0,60,&nodeop,0,"Echo List",opt);
@@ -1136,7 +1189,8 @@ int main(int argc, char **argv)
 											,sizeof(flag_t)*
 											(cfg.listcfg[i].numflags+1)))==NULL) {
 											printf("\nMemory Allocation Error\n");
-											exit(1); }
+											exit(1); 
+										}
 										for(j=cfg.listcfg[i].numflags;j>x;j--)
 											memcpy(&cfg.listcfg[i].flag[j]
 												,&cfg.listcfg[i].flag[j-1]
@@ -1145,14 +1199,16 @@ int main(int argc, char **argv)
 										memset(&cfg.listcfg[i].flag[x].flag
 											,0,sizeof(flag_t));
 										strcpy(cfg.listcfg[i].flag[x].flag,str);
-										continue; }
+										continue; 
+									}
 
 									if((x&MSK_ON)==MSK_DEL) {
 										x&=MSK_OFF;
 										cfg.listcfg[i].numflags--;
 										if(cfg.listcfg[i].numflags<=0) {
 											cfg.listcfg[i].numflags=0;
-											continue; }
+											continue; 
+										}
 										for(u=x;u<cfg.listcfg[i].numflags;u++)
 											strcpy(cfg.listcfg[i].flag[u].flag
 												,cfg.listcfg[i].flag[u+1].flag);
@@ -1161,8 +1217,10 @@ int main(int argc, char **argv)
 											,sizeof(flag_t)*
 											(cfg.listcfg[i].numflags)))==NULL) {
 											printf("\nMemory Allocation Error\n");
-											exit(1); }
-										continue; }
+											exit(1); 
+										}
+										continue; 
+									}
 									strcpy(str,cfg.listcfg[i].flag[x].flag);
 	uifc.helpbuf=
 	"~ Echo List Flag ~\r\n\r\n"
@@ -1171,9 +1229,12 @@ int main(int argc, char **argv)
 										uifc.input(WIN_MID|WIN_SAV,0,0,"Echo List Flag"
 											,str,4,K_EDIT|K_UPPER);
 										strcpy(cfg.listcfg[i].flag[x].flag,str);
-										continue; }
+										continue; 
+								}
 								break;
-								} } }
+						} 
+					} 
+				}
 				break;
 
 			case -1:
@@ -1239,7 +1300,8 @@ int main(int argc, char **argv)
 					else if(cfg.log==0L)
 						fprintf(stream,"LOG NONE\n");
 					else
-						fprintf(stream,"LOG %08lX\n",cfg.log); }
+						fprintf(stream,"LOG %08lX\n",cfg.log); 
+				}
 				fprintf(stream,"LOG_LEVEL %lu\n",cfg.log_level);
 				if(cfg.inbound[0])
 					fprintf(stream,"INBOUND %s\n",cfg.inbound);
@@ -1255,31 +1317,36 @@ int main(int argc, char **argv)
 					if(cfg.nodecfg[u].attr&SEND_NOTIFY) {
 						if(!j) fprintf(stream,"SEND_NOTIFY");
 						fprintf(stream," %s",wcfaddrtoa(&cfg.nodecfg[u].faddr));
-						j++; }
+						j++; 
+					}
 				if(j) fprintf(stream,"\n");
 				for(u=j=0;u<cfg.nodecfgs;u++)
 					if(cfg.nodecfg[u].attr&ATTR_HOLD) {
 						if(!j) fprintf(stream,"HOLD");
 						fprintf(stream," %s",wcfaddrtoa(&cfg.nodecfg[u].faddr));
-						j++; }
+						j++; 
+					}
 				if(j) fprintf(stream,"\n");
 				for(u=j=0;u<cfg.nodecfgs;u++)
 					if(cfg.nodecfg[u].attr&ATTR_DIRECT) {
 						if(!j) fprintf(stream,"DIRECT");
 						fprintf(stream," %s",wcfaddrtoa(&cfg.nodecfg[u].faddr));
-						j++; }
+						j++; 
+					}
 				if(j) fprintf(stream,"\n");
 				for(u=j=0;u<cfg.nodecfgs;u++)
 					if(cfg.nodecfg[u].attr&ATTR_CRASH) {
 						if(!j) fprintf(stream,"CRASH");
 						fprintf(stream," %s",wcfaddrtoa(&cfg.nodecfg[u].faddr));
-						j++; }
+						j++; 
+					}
 				if(j) fprintf(stream,"\n");
 				for(u=j=0;u<cfg.nodecfgs;u++)
 					if(cfg.nodecfg[u].attr&ATTR_PASSIVE) {
 						if(!j) fprintf(stream,"PASSIVE");
 						fprintf(stream," %s",wcfaddrtoa(&cfg.nodecfg[u].faddr));
-						j++; }
+						j++; 
+					}
 				if(j) fprintf(stream,"\n");
 
 				for(u=0;u<cfg.nodecfgs;u++)
@@ -1309,16 +1376,19 @@ int main(int argc, char **argv)
 								fprintf(stream,"%-10s %s","USEPACKER"
 									,cfg.arcdef[u].name);
 							k++;
-							fprintf(stream," %s",wcfaddrtoa(&cfg.nodecfg[u2].faddr)); }
+							fprintf(stream," %s",wcfaddrtoa(&cfg.nodecfg[u2].faddr)); 
+						}
 					if(k)
-						fprintf(stream,"\n"); }
+						fprintf(stream,"\n"); 
+				}
 
 				for(u=j=0;u<cfg.nodecfgs;u++)
 					if(cfg.nodecfg[u].arctype==0xffff) {
 						if(!j)
 							fprintf(stream,"%-10s %s","USEPACKER","NONE");
 						j++;
-						fprintf(stream," %s",wcfaddrtoa(&cfg.nodecfg[u].faddr)); }
+						fprintf(stream," %s",wcfaddrtoa(&cfg.nodecfg[u].faddr)); 
+					}
 				if(j)
 					fprintf(stream,"\n");
 
@@ -1335,7 +1405,8 @@ int main(int argc, char **argv)
 					fprintf(stream," %s",cfg.listcfg[u].listpath);
 					for(u2=0;u2<cfg.listcfg[u].numflags;u2++)
 						fprintf(stream," %s",cfg.listcfg[u].flag[u2].flag);
-					fprintf(stream,"\n"); }
+					fprintf(stream,"\n"); 
+				}
 
 				for(u=0;u<cfg.nodecfgs;u++)
 					if(cfg.nodecfg[u].password[0]) {
@@ -1344,7 +1415,8 @@ int main(int argc, char **argv)
 							,cfg.nodecfg[u].password);
 						for(u2=0;u2<cfg.nodecfg[u].numflags;u2++)
 							fprintf(stream," %s",cfg.nodecfg[u].flag[u2].flag);
-						fprintf(stream,"\n"); }
+						fprintf(stream,"\n"); 
+					}
 
 				for(u=0;u<cfg.nodecfgs;u++)
 					if(cfg.nodecfg[u].route.zone) {
@@ -1357,8 +1429,10 @@ int main(int argc, char **argv)
 								,sizeof(faddr_t))) {
 								fprintf(stream," %s"
 									,wcfaddrtoa(&cfg.nodecfg[u2].faddr));
-								cfg.nodecfg[u2].route.zone=0; }
-						fprintf(stream,"\n"); }
+								cfg.nodecfg[u2].route.zone=0; 
+							}
+						fprintf(stream,"\n"); 
+					}
 
 				fclose(stream);
 				uifc.bail();
