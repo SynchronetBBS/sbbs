@@ -26,7 +26,7 @@ var xsec=-1;
 }
 
 var options;
-if((options=load("modopts.js","xtrn_sec")) == null)
+if((options=load({}, "modopts.js","xtrn_sec")) == null)
 	options = {multicolumn: true, sort: false};	// default values
 
 if(options.multicolumn == undefined)
@@ -83,7 +83,7 @@ function external_program_menu(xsec)
 			else
 				n=prog_list.length;
 
-			for(i=0;i<n;i++) {
+			for(i=0;i<n && !console.aborted;i++) {
 				printf(bbs.text(XtrnProgLstFmt),i+1
 					,prog_list[i].name
 					,prog_list[i].cost);
