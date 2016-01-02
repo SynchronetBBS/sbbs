@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -65,13 +65,13 @@ DLLEXPORT void DLLCALL		strListFreeStrings(str_list_t);
 DLLEXPORT char* DLLCALL		strListAppend(str_list_t*, const char* str, size_t index);
 
 /* Append a string list onto another string list */
-DLLEXPORT size_t DLLCALL		strListAppendList(str_list_t*, const str_list_t append_list);
+DLLEXPORT size_t DLLCALL	strListAppendList(str_list_t*, const str_list_t append_list);
 
 /* Inserts a string into the list at a specific index */
 DLLEXPORT char* DLLCALL		strListInsert(str_list_t*, const char* str, size_t index);
 
 /* Insert a string list into another string list */
-DLLEXPORT size_t DLLCALL		strListInsertList(str_list_t*, const str_list_t append_list, size_t index);
+DLLEXPORT size_t DLLCALL	strListInsertList(str_list_t*, const str_list_t append_list, size_t index);
 
 /* Remove a string at a specific index */
 DLLEXPORT char* DLLCALL		strListRemove(str_list_t*, size_t index);
@@ -105,10 +105,12 @@ DLLEXPORT size_t DLLCALL		strListMerge(str_list_t*, str_list_t append_list);
 DLLEXPORT char* DLLCALL		strListCombine(str_list_t, char* buf, size_t maxlen, const char* delimit);
 
 /* Count the number of strings in the list and returns the count */
-DLLEXPORT size_t DLLCALL		strListCount(const str_list_t);
+DLLEXPORT size_t DLLCALL	strListCount(const str_list_t);
 
 /* Returns the index of the specified str (by ptr compare) or -1 if not found */
-DLLEXPORT int DLLCALL			strListIndexOf(const str_list_t, const char* str);
+DLLEXPORT int DLLCALL		strListIndexOf(const str_list_t, const char* str);
+/* Returns the index of the specified str (by string compare) or -1 if not found */
+DLLEXPORT int DLLCALL		strListFind(const str_list_t, const char* str, BOOL case_sensitive);
 
 /* Sort the strings in the string list */
 DLLEXPORT void DLLCALL		strListSortAlpha(str_list_t);
@@ -123,7 +125,7 @@ DLLEXPORT void DLLCALL		strListSortAlphaCaseReverse(str_list_t);
 DLLEXPORT char* DLLCALL		strListCreateBlock(str_list_t);
 DLLEXPORT char* DLLCALL		strListCopyBlock(char* block);
 DLLEXPORT char* DLLCALL		strListAppendBlock(char* block, str_list_t);
-DLLEXPORT size_t DLLCALL		strListBlockLength(char* block);
+DLLEXPORT size_t DLLCALL	strListBlockLength(char* block);
 DLLEXPORT void DLLCALL		strListFreeBlock(char*);
 
 /* Duplicates a list */
