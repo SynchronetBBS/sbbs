@@ -89,6 +89,8 @@ char		compiler[32];
 BOOL pause_on_exit=FALSE;
 BOOL pause_on_abend=FALSE;
 
+str_list_t	locked_bso_nodes;
+
 /* FTN-compliant "Program Identifier"/PID (also used as a "Tosser Identifier"/TID) */
 const char* sbbsecho_pid(void)
 {
@@ -170,11 +172,15 @@ void logprintf(char *str, ...)
 		,buf);
 }
 
-void delfile(const char *filename, int line)
+BOOL delfile(const char *filename, int line)
 {
-	if(remove(filename) != 0)
+	lprintf(LOG_DEBUG, "Deleting %s", filename);
+	if(remove(filename) != 0) {
 		lprintf(LOG_ERR, "ERROR %u (%s) line %u removing file %s"
 			,errno, strerror(errno), line, filename);
+		return FALSE;
+	}
+	return TRUE;
 }
 
 /*****************************************************************************/
@@ -352,6 +358,32 @@ int get_flo_outbound(faddr_t dest, char* outbound, size_t maxlen)
 	return mkpath(outbound);
 }
 
+BOOL bso_lock_node(faddr_t dest)
+{
+	char outbound[MAX_PATH+1];
+	char fname[MAX_PATH+1];
+
+	if(!(misc&FLO_MAILER))
+		return TRUE;
+
+	get_flo_outbound(dest, outbound, sizeof(outbound)-2);
+
+	if(dest.point)
+		SAFEPRINTF2(fname,"%s%08x.bsy",outbound,dest.point);
+	else
+		SAFEPRINTF3(fname,"%s%04x%04x.bsy",outbound,dest.net,dest.node);
+
+	if(strListFind(locked_bso_nodes, fname, /* case_sensitive: */TRUE) >= 0)
+		return TRUE;
+	if(!fmutex(fname, sbbsecho_pid(), 12*60*60)) {
+		lprintf(LOG_NOTICE, "Node (%s) externally locked via: %s", smb_faddrtoa(&dest, NULL), fname);
+		return FALSE;
+	}
+	strListPush(&locked_bso_nodes, fname);
+	lprintf(LOG_DEBUG, "Node (%s) successfully locked via: %s", smb_faddrtoa(&dest, NULL), fname);
+	return TRUE;
+}
+
 /******************************************************************************
  This function creates or appends on existing Binkley compatible .?LO file
  attach file.
@@ -377,10 +409,14 @@ int write_flofile(char *attachment, faddr_t dest, BOOL bundle)
 	else ch='f';
 
 	get_flo_outbound(dest, outbound, sizeof(outbound)-2);
+
+	if(!bso_lock_node(dest))
+		return 1;
+
 	if(dest.point)
-		sprintf(fname,"%s%08x.%clo",outbound,dest.point,ch);
+		SAFEPRINTF3(fname,"%s%08x.%clo",outbound,dest.point,ch);
 	else
-		sprintf(fname,"%s%04x%04x.%clo",outbound,dest.net,dest.node,ch);
+		SAFEPRINTF4(fname,"%s%04x%04x.%clo",outbound,dest.net,dest.node,ch);
 	if(bundle && (misc&TRUNC_BUNDLES))
 		ch='#';
 	else
@@ -388,7 +424,7 @@ int write_flofile(char *attachment, faddr_t dest, BOOL bundle)
 	if(*attachment == '^')	/* work-around for BRE/FE inter-BBS attachment bug */
 		attachment++;
 	fexistcase(attachment);	/* just in-case it's the wrong case for a Unix file system */
-	sprintf(searchstr,"%c%s",ch,attachment);
+	SAFEPRINTF2(searchstr,"%c%s",ch,attachment);
 	if(findstr(searchstr,fname))	/* file already in FLO file */
 		return(0);
 	if((stream=fopen(fname,"a"))==NULL) {
@@ -568,8 +604,9 @@ int create_netmail(char *to, smbmsg_t* msg, char *subject, char *body, faddr_t d
 	else
 		fwrite("\0",1,1,fp);               /* Write NULL */
 	if(cfg.log&LOG_NETMAIL)
-		lprintf(LOG_INFO, "Created NetMail (%s)%s from: %s, to: %s (%s), subject: %s"
-			,fname, file_attached ? " with attachment" : "", from, to, smb_faddrtoa(&dest, NULL), subject);
+		lprintf(LOG_INFO, "Created NetMail (%s)%s from %s (%s) to %s (%s), attr: %04hX, subject: %s"
+			,fname, file_attached ? " with attachment" : ""
+			,from, smb_faddrtoa(&faddr, tmp), to, smb_faddrtoa(&dest, NULL), hdr.attr, subject);
 	return fclose(fp);
 }
 
@@ -1295,7 +1332,7 @@ void command(char* instr, faddr_t addr, char* to)
 			if(!stricmp(p,cfg.arcdef[i].name))
 				break;
 		if(!stricmp(p,"NONE"))
-			i=0xffff;
+			i=SBBSECHO_ARCTYPE_NONE;
 		if(i==cfg.arcdefs) {
 			if((tmpf=tmpfile())==NULL) {
 				lprintf(LOG_ERR,"ERROR line %d opening tmpfile()",__LINE__);
@@ -1749,6 +1786,9 @@ void pack_bundle(char *infile,faddr_t dest)
 		return;
 	}
 
+	if(!bso_lock_node(dest))
+		bail(1);
+
 	node=matchnode(dest,0);
 	strcpy(str,infile);
 	str[strlen(str)-1]='t';
@@ -1771,7 +1811,7 @@ void pack_bundle(char *infile,faddr_t dest)
 		strcpy(outbound,cfg.outbound);
 
 	if(node<cfg.nodecfgs)
-		if(cfg.nodecfg[node].arctype==0xffff) {    /* Uncompressed! */
+		if(cfg.nodecfg[node].arctype==SBBSECHO_ARCTYPE_NONE) {    /* Uncompressed! */
 			if(misc&FLO_MAILER)
 				i=write_flofile(infile,dest,TRUE /* bundle */);
 			else
@@ -1944,6 +1984,7 @@ int mv(char *src, char *dest, BOOL copy)
 
 	if(!strcmp(src,dest))	/* source and destination are the same! */
 		return(0);
+	lprintf(LOG_DEBUG, "%s file from %s to %s", copy ? "Copying":"Moving", src, dest);
 	if(!fexistcase(src)) {
 		lprintf(LOG_WARNING,"MV ERROR: Source doesn't exist '%s",src);
 		return(-1); 
@@ -2085,6 +2126,11 @@ ulong loadmsgs(post_t** post, ulong ptr)
 
 void bail(int code)
 {
+	size_t		u;
+
+	for(u=0; locked_bso_nodes[u]!=NULL; u++)
+		delfile(locked_bso_nodes[u], __LINE__);
+
 	if(code || netmail || exported_netmail || packed_netmail || echomail || exported_echomail)
 		lprintf(LOG_INFO
 			,"SBBSecho exiting with error level %d, "
@@ -4175,10 +4221,6 @@ int export_netmail(void)
 		exported++;
 	}
 	smb_freemsgmem(&msg);
-	if(cfg.log&LOG_NETMAIL)
-		lprintf(exported ? LOG_INFO : LOG_DEBUG
-			,"Exported NetMail (%u messages) from %smail to %s*.msg"
-			,exported, scfg.data_dir, scfg.netmail_dir);
 	exported_netmail += exported;
 	return smb_unlocksmbhdr(email);
 }
@@ -4202,6 +4244,29 @@ char* freadstr(FILE* fp, char* str, size_t maxlen)
 	str[maxlen-1]=0;	/* Force terminator */
 
 	return(str);
+}
+
+BOOL netmail_sent(const char* fname)
+{
+	FILE*		fp;
+	fmsghdr_t	hdr;
+
+	if(misc&DELETE_NETMAIL)
+		return delfile(fname, __LINE__);
+	if((fp=fopen(fname, "r+b")) == NULL) {
+		lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), fname);
+		return FALSE;
+	}
+	if(!fread_fmsghdr(&hdr,fp)) {
+		fclose(fp);
+		lprintf(LOG_ERR, "ERROR line %u reading header from %s", __LINE__, fname);
+		return FALSE;
+	}
+	hdr.attr|=FIDO_SENT;
+	rewind(fp);
+	fwrite(&hdr, sizeof(hdr), 1, fp);
+	fclose(fp);
+	return TRUE;
 }
 
 /***********************************/
@@ -4262,6 +4327,8 @@ int main(int argc, char **argv)
 	"s: import private echomail override (strip private status)\n"
 	"!: notify users of received echomail     @: prompt for key upon exiting (debug)\n"
 	"c: do not export netmail (to *.msg)      W: prompt for key upon abnormal exit";
+
+	locked_bso_nodes = strListInit();
 
 	if((email=(smb_t *)malloc(sizeof(smb_t)))==NULL) {
 		printf("ERROR allocating memory for email.\n");
@@ -4562,7 +4629,7 @@ int main(int argc, char **argv)
 
 		SAFECOPY(packet,(char*)g.gl_pathv[f]);
 
-		lprintf(LOG_DEBUG,"%21s: %s ","Outbound Packet",packet);
+		printf("%21s: %s ","Outbound Packet",packet);
 		if((fmsg=sopen(packet,O_RDWR|O_BINARY,SH_DENYRW))==-1) {
 			lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,packet);
 			continue; 
@@ -5133,6 +5200,7 @@ int main(int argc, char **argv)
 #endif
 		glob(str,0,NULL,&g);
 		for(f=0;f<g.gl_pathc && !kbhit();f++) {
+			fidoaddr_t srcaddr;
 
 			SAFECOPY(path,g.gl_pathv[f]);
 
@@ -5153,10 +5221,14 @@ int main(int argc, char **argv)
 			hdr.destzone=hdr.origzone=sys_faddr.zone;
 			hdr.destpoint=hdr.origpoint=0;
 			getzpt(fidomsg,&hdr);				/* use kludge if found */
-			addr.zone=hdr.destzone;
-			addr.net=hdr.destnet;
-			addr.node=hdr.destnode;
-			addr.point=hdr.destpoint;
+			addr.zone		= hdr.destzone;
+			addr.net		= hdr.destnet;
+			addr.node		= hdr.destnode;
+			addr.point		= hdr.destpoint;
+			srcaddr.zone	= hdr.origzone;
+			srcaddr.net		= hdr.orignet;
+			srcaddr.node	= hdr.orignode;
+			srcaddr.point	= hdr.origpoint;
 			for(i=0;i<scfg.total_faddrs;i++)
 				if(!memcmp(&addr,&scfg.faddr[i],sizeof(faddr_t)))
 					break;
@@ -5170,20 +5242,15 @@ int main(int argc, char **argv)
 				fclose(fidomsg);
 				continue;
 			}
-			if(!(misc&DELETE_NETMAIL)) {
-				hdr.attr|=FIDO_SENT;
-				rewind(fidomsg);
-				fseek(fidomsg,offsetof(fmsghdr_t,attr),SEEK_SET);
-				fwrite(&hdr.attr,sizeof(hdr.attr),1,fidomsg);
-				fseek(fidomsg,sizeof(fmsghdr_t),SEEK_SET);
-			}
 			if((misc&FLO_MAILER) && (hdr.attr&FIDO_FREQ)) {
 				char req[MAX_PATH+1];
 				FILE* fp;
 
-				printf("file request: %s\n", hdr.subj);
 				fclose(fidomsg);
-
+				lprintf(LOG_INFO, "BSO file request from %s (%s) to %s (%s): %s"
+					,hdr.from, smb_faddrtoa(&srcaddr, tmp), hdr.to, smb_faddrtoa(&addr, NULL), hdr.subj);
+				if(!bso_lock_node(addr))
+					continue;
 				get_flo_outbound(addr, outbound, sizeof(outbound));
 				if(addr.point)
 					SAFEPRINTF2(req,"%s%08x.req",outbound,addr.point);
@@ -5196,22 +5263,22 @@ int main(int argc, char **argv)
 					fclose(fp);
 					if(write_flofile(req, addr, /* bundle: */FALSE))
 						bail(1);
+					netmail_sent(path);
 				}
 				continue;
 			}
 
 			if(cfg.log&LOG_PACKING)
-				lprintf(LOG_INFO, "Packing NetMail (%s) from %s (%u:%u/%u.%u) to %s (%s), attr: %04hX, subject: %s"
-					,path,hdr.from,hdr.origzone,hdr.orignet,hdr.orignode,hdr.origpoint
-					,hdr.to,smb_faddrtoa(&addr,NULL),hdr.attr,hdr.subj);
+				lprintf(LOG_INFO, "Packing NetMail (%s) from %s (%s) to %s (%s), attr: %04hX, subject: %s"
+					,path, hdr.from, smb_faddrtoa(&srcaddr,tmp), hdr.to, smb_faddrtoa(&addr,NULL), hdr.attr, hdr.subj);
 			fmsgbuf=getfmsg(fidomsg,NULL);
+			fclose(fidomsg);
 			if(!fmsgbuf) {
 				lprintf(LOG_ERR,"ERROR line %d allocating memory for NetMail fmsgbuf"
 					,__LINE__);
 				bail(1); 
 				return -1;
 			}
-			fclose(fidomsg);
 
 			attr=0;
 			node=matchnode(addr,0);
@@ -5222,6 +5289,9 @@ int main(int argc, char **argv)
 					lprintf(LOG_INFO, "Routing NetMail (%s) to %s",path,smb_faddrtoa(&addr,NULL));
 				node=matchnode(addr,0); 
 			}
+			if(!bso_lock_node(addr))
+				continue;
+
 			if(node<cfg.nodecfgs)
 				attr=cfg.nodecfg[node].attr;
 
@@ -5308,8 +5378,7 @@ int main(int argc, char **argv)
 			/**************************************/
 			/* Delete source netmail if specified */
 			/**************************************/
-			if(misc&DELETE_NETMAIL)
-				delfile(path, __LINE__);
+			netmail_sent(path);
 			printf("\n");
 			packed_netmail++;
 		}

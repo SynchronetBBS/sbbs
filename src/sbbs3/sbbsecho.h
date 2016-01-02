@@ -38,7 +38,7 @@
 /* Portions written by Allen Christiansen 1994-1996 						*/
 
 #define SBBSECHO_VERSION_MAJOR		2
-#define SBBSECHO_VERSION_MINOR		31
+#define SBBSECHO_VERSION_MINOR		32
 
 #define SBBSECHO_PRODUCT_CODE		0x12FF	/* from http://ftsc.org/docs/ftscprod.013 */
 
@@ -110,56 +110,56 @@
 
 #define NOFWD			(1<<0)			/* Do not forward requests */
 
-typedef struct {                        /* Fidonet Packet Header */
-    short orignode,                     /* Origination Node of Packet */
-          destnode,                     /* Destination Node of Packet */
-          year,                         /* Year of Packet Creation e.g. 1995 */
-          month,                        /* Month of Packet Creation 0-11 */
-          day,                          /* Day of Packet Creation 1-31 */
-          hour,                         /* Hour of Packet Creation 0-23 */
-          min,                          /* Minute of Packet Creation 0-59 */
-          sec,                          /* Second of Packet Creation 0-59 */
-          baud,                         /* Max Baud Rate of Orig & Dest */
-          pkttype,                      /* Packet Type (-1 is obsolete) */
-          orignet,                      /* Origination Net of Packet */
-          destnet;                      /* Destination Net of Packet */
-    uchar prodcode,                     /* Product Code (00h is Fido) */
-          sernum,                       /* Binary Serial Number or NULL */
-          password[8];                  /* Session Password or NULL */
-    short origzone,                     /* Origination Zone of Packet or NULL */
-          destzone;                     /* Destination Zone of Packet or NULL */
-    uchar empty[20];                    /* Fill Characters */
+typedef struct {							/* Fidonet Packet Header */
+    int16_t	orignode,						/* Origination Node of Packet */
+			destnode,						/* Destination Node of Packet */
+			year,							/* Year of Packet Creation e.g. 1995 */
+			month,							/* Month of Packet Creation 0-11 */
+			day,							/* Day of Packet Creation 1-31 */
+			hour,							/* Hour of Packet Creation 0-23 */
+			min,							/* Minute of Packet Creation 0-59 */
+			sec,							/* Second of Packet Creation 0-59 */
+			baud,							/* Max Baud Rate of Orig & Dest */
+			pkttype,						/* Packet Type (-1 is obsolete) */
+			orignet,						/* Origination Net of Packet */
+			destnet;						/* Destination Net of Packet */
+    uint8_t	prodcode,						/* Product Code (00h is Fido) */
+			sernum,							/* Binary Serial Number or NULL */
+			password[8];					/* Session Password or NULL */
+    int16_t	origzone,						/* Origination Zone of Packet or NULL */
+			destzone;						/* Destination Zone of Packet or NULL */
+    uint8_t	empty[20];						/* Fill Characters */
 	} pkthdr_t;
 
-typedef struct {						/* Type 2+ Packet Header Info */
-	short auxnet,						/* Orig Net if Origin is a Point */
-		  cwcopy;						/* Must be Equal to cword */
-	uchar prodcode, 					/* Product Code */
-		  revision; 					/* Revision */
-	short cword,						/* Compatibility Word */
-		  origzone, 					/* Zone of Packet Sender or NULL */
-		  destzone, 					/* Zone of Packet Receiver or NULL */
-		  origpoint,					/* Origination Point of Packet */
-		  destpoint;					/* Destination Point of Packet */
-	uchar empty[4];
+typedef struct {							/* Type 2+ Packet Header Info */
+	int16_t	auxnet,							/* Orig Net if Origin is a Point */
+			cwcopy;							/* Must be Equal to cword */
+	uint8_t	prodcode, 						/* Product Code */
+			revision; 						/* Revision */
+	int16_t	cword,							/* Compatibility Word */
+			origzone, 						/* Zone of Packet Sender or NULL */
+			destzone, 						/* Zone of Packet Receiver or NULL */
+			origpoint,						/* Origination Point of Packet */
+			destpoint;						/* Destination Point of Packet */
+	uint8_t	empty[4];
 	} two_plus_t;
 
-typedef struct {						/* Type 2.2 Packet Header Info */
-	char origdomn[8],					/* Origination Domain */
-		  destdomn[8];					/* Destination Domain */
-	uchar	  empty[4]; 					/* Product Specific Data */
+typedef struct {							/* Type 2.2 Packet Header Info */
+	char	origdomn[8],					/* Origination Domain */
+			destdomn[8];					/* Destination Domain */
+	uint8_t	empty[4]; 						/* Product Specific Data */
 	} two_two_t;
 
 typedef struct {
-    uint  sub;                  /* Set to INVALID_SUB if pass-thru */
-	ulong tag;					/* CRC-32 of tag name */
-    char *name;                 /* Area tag name */
-    uint  uplinks;              /* Total number of uplinks for this echo */
-	uint  imported; 			/* Total messages imported this run */
-	uint  exported; 			/* Total messages exported this run */
-	uint  circular; 			/* Total circular paths detected */
-	uint  dupes;				/* Total duplicate messages detected */
-    faddr_t *uplink;            /* Each uplink */
+    uint		sub;						/* Set to INVALID_SUB if pass-thru */
+	uint32_t	tag;						/* CRC-32 of tag name */
+    char*		name;						/* Area tag name */
+    uint		uplinks;					/* Total number of uplinks for this echo */
+	uint		imported; 					/* Total messages imported this run */
+	uint		exported; 					/* Total messages exported this run */
+	uint		circular; 					/* Total circular paths detected */
+	uint		dupes;						/* Total duplicate messages detected */
+    faddr_t*	uplink;						/* Each uplink */
     } areasbbs_t;
 
 typedef struct {
@@ -173,8 +173,8 @@ typedef struct {
     } outpkt_t;
 
 typedef struct {
-	uint addrs; 				/* Total number of uplinks */
-	faddr_t *addr;				/* Each uplink */
+	uint		addrs; 			/* Total number of uplinks */
+	faddr_t *	addr;			/* Each uplink */
 	} addrlist_t;
 
 typedef struct {
@@ -186,28 +186,29 @@ typedef struct {
 	} arcdef_t;
 
 typedef struct {
-	faddr_t 	faddr				/* Fido address of this node */
-			   ,route;				/* Address to route FLO stuff through */
-	ushort		arctype 			/* De/archiver to use for this node */
-			   ,numflags			/* Number of flags defined for this node */
-			   ,pkt_type;			/* Packet type to use for outgoing PKTs */
-									/* Packet types for nodecfg_t.pkt_type value ONLY: */
-#define PKT_TWO_PLUS	0			/* Type 2+ Packet Header				*/
-#define PKT_TWO_TWO 	1			/* Type 2.2 Packet Header				*/
-#define PKT_TWO 		2			/* Old Type Packet Header				*/
+	faddr_t 	faddr			/* Fido address of this node */
+			   ,route;			/* Address to route FLO stuff through */
+#define SBBSECHO_ARCTYPE_NONE	0xffff
+	uint16_t	arctype 		/* De/archiver to use for this node */
+			   ,numflags		/* Number of flags defined for this node */
+			   ,pkt_type;		/* Packet type to use for outgoing PKTs */
+								/* Packet types for nodecfg_t.pkt_type value ONLY: */
+#define PKT_TWO_PLUS	0		/* Type 2+ Packet Header				*/
+#define PKT_TWO_TWO 	1		/* Type 2.2 Packet Header				*/
+#define PKT_TWO 		2		/* Old Type Packet Header				*/
 
-	ushort		attr;				/* Message bits to set for this node */
-	char		password[26];		/* Areafix password for this node */
-	char		pktpwd[9];			/* Packet password for this node */
-	flag_t		*flag;				/* Areafix flags for this node */
+	int16_t	attr;				/* Message bits to set for this node */
+	char		password[26];	/* Areafix password for this node */
+	char		pktpwd[9];		/* Packet password for this node */
+	flag_t		*flag;			/* Areafix flags for this node */
 	} nodecfg_t;
 
 typedef struct {
-	char		listpath[129];		/* Path to this echolist */
-	uint		numflags,misc;		/* Number of flags for this echolist */
-	flag_t		*flag;				/* Flags to access this echolist */
-	faddr_t 	forward;			/* Where to forward requests */
-	char		password[72];		/* Password to use for forwarding req's */
+	char		listpath[129];	/* Path to this echolist */
+	uint		numflags,misc;	/* Number of flags for this echolist */
+	flag_t		*flag;			/* Flags to access this echolist */
+	faddr_t 	forward;		/* Where to forward requests */
+	char		password[72];	/* Password to use for forwarding req's */
 	} echolist_t;
 
 typedef struct {
