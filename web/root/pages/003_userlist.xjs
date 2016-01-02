@@ -141,7 +141,7 @@
 
 	function loadUsers(offset, pageSize) {
 		var users = [];
-		for (var u = 1; u < system.lastuser; u++) {
+		for (var u = 1; u <= system.lastuser; u++) {
 			var usr = new User(u);
 			if (usr.settings&USER_DELETED ||
 				usr.compare_ars('REST Q') ||
