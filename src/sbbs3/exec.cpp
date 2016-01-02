@@ -669,6 +669,7 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 		js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
 	}
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
+	sys_status &=~ SS_ABORT;
 
 	if(scope==NULL) {
 		JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
@@ -781,6 +782,7 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 	freevars(&bin);
 	free(bin.cs);
 	csi->logic=bin.logic;
+	sys_status &=~ SS_ABORT;
 	return(bin.retval);
 }
 
