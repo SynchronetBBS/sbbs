@@ -22,6 +22,7 @@
 
 	// Most people won't need to edit below this line
 	load('sbbsdefs.js');
+	load('js-date-format.js');
 
 	if (typeof http_request.query.offset === 'undefined' ||
 		isNaN(parseInt(http_request.query.offset[0])) ||
@@ -141,7 +142,7 @@
 
 	function loadUsers(offset, pageSize) {
 		var users = [];
-		for (var u = 1; u < system.lastuser; u++) {
+		for (var u = 1; u <= system.lastuser; u++) {
 			var usr = new User(u);
 			if (usr.settings&USER_DELETED ||
 				usr.compare_ars('REST Q') ||
@@ -166,13 +167,26 @@
 		for (var u = 0; u < users.length; u++) {
 			writeln('<tr>');
 			for (var c in columns) {
-				writeln(
-					'<td>' +
-					(	columns[c].type === 'date'
-						? system.timestr(users[u][c])
-						: users[u][c].toString()
-					) +	'</td>'
-				);
+				var cellString = '';
+				if ( columns[c].type === 'date' ) {
+					// Generate JS dates
+					var theDate = new Date( users[u][c] * 1000);
+					var todayDate = new Date();
+					// Find how many days between last login date and today.
+					var diff = (Math.abs(theDate.getTime() - todayDate.getTime()) ) / (1000 * 60 * 60 * 24);
+					// If the date is within the last week, print just the day of the week
+					if (diff < 8) {
+						cellString = theDate.getDayName();
+					}
+					// Otherwise, print a date
+					else {
+						cellString = theDate.format('MMM D, YYYY');
+					}
+				}
+				else {
+					cellString = users[u][c].toString();
+				}
+				writeln( '<td>' + cellString + '</td>' );
 			}
 			writeln('</tr>');
 		}
