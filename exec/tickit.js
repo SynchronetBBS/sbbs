@@ -17,7 +17,7 @@ function match_pw(node, pw)
 			return false;
 		}
 		if (n === 'ALL')
-			return false;
+			break;
 		if (n.indexOf('ALL') !== -1)
 			n = n.replace(/[0-9]+[^0-9]ALL$/, 'ALL');
 		else
