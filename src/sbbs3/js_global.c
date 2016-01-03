@@ -758,9 +758,9 @@ js_exit(JSContext *cx, uintN argc, jsval *arglist)
 			else
 				obj = JS_THIS_OBJECT(cx, arglist);
 		}
-
-		JS_DefineProperty(cx, obj, "exit_code", argv[0]
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(JSVAL_IS_NUMBER(argv[0]))
+			JS_DefineProperty(cx, obj, "exit_code", argv[0]
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -3813,7 +3813,44 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
 	return(JS_TRUE);
 }
-	
+#if 0
+static JSBool
+js_qwknet_route(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *	obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *		argv=JS_ARGV(cx, arglist);
+	char		path[MAX_PATH+1];
+	char*		str;
+	JSString*	js_str;
+	jsrefcount	rc;
+	global_private_t* p;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+	if((p=(global_private_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
+		return(JS_FALSE);
+
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx);
+	if(str==NULL)
+		return(JS_TRUE);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	qwk_route(&p->cfg, str, path, sizeof(path));
+	free(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	if((js_str = JS_NewStringCopyZ(cx, path))==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return(JS_TRUE);
+}
+#endif
+
 static jsSyncMethodSpec js_global_functions[] = {
 	{"exit",			js_exit,			0,	JSTYPE_VOID,	"[exit_code]"
 	,JSDOCSTR("stop script execution, "
