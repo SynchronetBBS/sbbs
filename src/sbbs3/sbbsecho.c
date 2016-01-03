@@ -474,6 +474,46 @@ BOOL fidoctrl_line_exists(smbmsg_t* msg, const char* prefix)
 	return FALSE;
 }
 
+fidoaddr_t fmsghdr_srcaddr(fmsghdr_t* hdr)
+{
+	fidoaddr_t addr;
+
+	addr.zone	= hdr->origzone;
+	addr.net	= hdr->orignet;
+	addr.node	= hdr->orignode;
+	addr.point	= hdr->origpoint;
+
+	return addr;
+}
+
+const char* fmsghdr_srcaddr_str(fmsghdr_t* hdr)
+{
+	static char buf[64];
+	fidoaddr_t addr = fmsghdr_srcaddr(hdr);
+
+	return smb_faddrtoa(&addr, buf);
+}
+
+fidoaddr_t fmsghdr_destaddr(fmsghdr_t* hdr)
+{
+	fidoaddr_t addr;
+
+	addr.zone	= hdr->destzone;
+	addr.net	= hdr->destnet;
+	addr.node	= hdr->destnode;
+	addr.point	= hdr->destpoint;
+
+	return addr;
+}
+
+const char* fmsghdr_destaddr_str(fmsghdr_t* hdr)
+{
+	static char buf[64];
+	fidoaddr_t addr = fmsghdr_destaddr(hdr);
+
+	return smb_faddrtoa(&addr, buf);
+}
+
 /******************************************************************************
  This function will create a netmail message (.MSG format).
  If file is non-zero, will set file attachment bit (for bundles).
@@ -3377,6 +3417,9 @@ void pkt_to_pkt(char *fbuf,areasbbs_t area,faddr_t faddr
 					fmsghdr.destnode=area.uplink[j].node;
 					fmsghdr.destnet=area.uplink[j].net;
 					fmsghdr.destzone=area.uplink[j].zone;
+					lprintf(LOG_DEBUG, "Adding %s message from %s (%s) to packet for %s: %s"
+						,area.name, fmsghdr.from, fmsghdr_srcaddr_str(&fmsghdr)
+						,smb_faddrtoa(&area.uplink[j], NULL), outpkt[i].filename);
 					putfmsg(outpkt[i].stream,fbuf,fmsghdr,area,seenbys,paths); 
 				}
 				else {
@@ -3463,9 +3506,9 @@ void pkt_to_pkt(char *fbuf,areasbbs_t area,faddr_t faddr
 					two_plus->destpoint=area.uplink[j].point;
 				}
 			}
-			lprintf(LOG_DEBUG, "Adding message from %s (%u:%u/%u.%u) in area %s to packet for %s: %s"
-				,fmsghdr.from, fmsghdr.origzone, fmsghdr.orignet, fmsghdr.orignode, fmsghdr.origpoint
-				,area.name, smb_faddrtoa(&area.uplink[j], NULL), outpkt[i].filename);
+			lprintf(LOG_DEBUG, "Adding %s message from %s (%s) to new packet for %s: %s"
+				,area.name, fmsghdr.from, fmsghdr_srcaddr_str(&fmsghdr)
+				,smb_faddrtoa(&area.uplink[j], NULL), outpkt[i].filename);
 			fwrite(&pkthdr,sizeof(pkthdr_t),1,outpkt[totalpkts].stream);
 			putfmsg(outpkt[totalpkts].stream,fbuf,fmsghdr,area,seenbys,paths);
 			memcpy(&outpkt[totalpkts].uplink,&area.uplink[j]
@@ -5200,8 +5243,6 @@ int main(int argc, char **argv)
 #endif
 		glob(str,0,NULL,&g);
 		for(f=0;f<g.gl_pathc && !kbhit();f++) {
-			fidoaddr_t srcaddr;
-
 			SAFECOPY(path,g.gl_pathv[f]);
 
 			if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
@@ -5225,10 +5266,6 @@ int main(int argc, char **argv)
 			addr.net		= hdr.destnet;
 			addr.node		= hdr.destnode;
 			addr.point		= hdr.destpoint;
-			srcaddr.zone	= hdr.origzone;
-			srcaddr.net		= hdr.orignet;
-			srcaddr.node	= hdr.orignode;
-			srcaddr.point	= hdr.origpoint;
 			for(i=0;i<scfg.total_faddrs;i++)
 				if(!memcmp(&addr,&scfg.faddr[i],sizeof(faddr_t)))
 					break;
@@ -5248,7 +5285,7 @@ int main(int argc, char **argv)
 
 				fclose(fidomsg);
 				lprintf(LOG_INFO, "BSO file request from %s (%s) to %s (%s): %s"
-					,hdr.from, smb_faddrtoa(&srcaddr, tmp), hdr.to, smb_faddrtoa(&addr, NULL), hdr.subj);
+					,hdr.from, fmsghdr_srcaddr_str(&hdr), hdr.to, smb_faddrtoa(&addr, NULL), hdr.subj);
 				if(!bso_lock_node(addr))
 					continue;
 				get_flo_outbound(addr, outbound, sizeof(outbound));
@@ -5270,7 +5307,7 @@ int main(int argc, char **argv)
 
 			if(cfg.log&LOG_PACKING)
 				lprintf(LOG_INFO, "Packing NetMail (%s) from %s (%s) to %s (%s), attr: %04hX, subject: %s"
-					,path, hdr.from, smb_faddrtoa(&srcaddr,tmp), hdr.to, smb_faddrtoa(&addr,NULL), hdr.attr, hdr.subj);
+					,path, hdr.from, fmsghdr_srcaddr_str(&hdr), hdr.to, smb_faddrtoa(&addr,NULL), hdr.attr, hdr.subj);
 			fmsgbuf=getfmsg(fidomsg,NULL);
 			fclose(fidomsg);
 			if(!fmsgbuf) {
@@ -5317,7 +5354,6 @@ int main(int argc, char **argv)
 				SAFECOPY(packet,pktname(/* Temp? */ FALSE));
 			}
 
-			lprintf(LOG_DEBUG,"Creating NetMail packet for %s: %s", smb_faddrtoa(&addr,NULL), packet);
 			now=time(NULL);
 			tm=localtime(&now);
 			if((stream=fnopen(&file,packet,O_RDWR|O_CREAT))==NULL) {
@@ -5325,8 +5361,9 @@ int main(int argc, char **argv)
 				bail(1); 
 				return -1;
 			}
-
+			const char* newpkt="";
 			if(filelength(file) < sizeof(pkthdr_t)) {
+				newpkt="new ";
 				chsize(file,0);
 				rewind(stream);
 				memset(&pkthdr,0,sizeof(pkthdr));
@@ -5368,6 +5405,9 @@ int main(int argc, char **argv)
 			} else
 				fseek(stream,find_packet_terminator(stream),SEEK_SET);
 
+			lprintf(LOG_DEBUG, "Adding NetMail (%s) to %spacket for %s: %s"
+				,path
+				,newpkt, smb_faddrtoa(&addr, NULL), packet);
 			putfmsg(stream,fmsgbuf,hdr,fakearea,msg_seen,msg_path);
 
 			/* Write packet terminator */
