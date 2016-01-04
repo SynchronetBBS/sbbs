@@ -186,7 +186,7 @@ function str_cmds(str)
 		}
 		if(word=="NEXEC") {
 			if(bbs.check_syspass()) {
-				str=str.substr(4);
+				str=str.substr(5);
 				bbs.exec(get_arg(str),EX_OUTR|EX_INR|EX_NATIVE);
 			}
 			return;
