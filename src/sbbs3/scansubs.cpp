@@ -138,7 +138,7 @@ void sbbs_t::scansubs(long mode)
 }
 
 /****************************************************************************/
-/* Performs a new message scan all all sub-boards							*/
+/* Performs a new message scan of all sub-boards							*/
 /****************************************************************************/
 void sbbs_t::scanallsubs(long mode)
 {
