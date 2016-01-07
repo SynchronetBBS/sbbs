@@ -1407,7 +1407,7 @@ function show_filemenu()
 			case 'V':
 				var typemenu=new Lightbar;
 				var width=32;
-				typemenu.xpos=filemenu.xpos+full_width;
+				typemenu.xpos=filemenu.xpos+filemenu.full_width;
 				typemenu.ypos=filemenu.current+1;
 				typemenu.lpadding="\xb3";
 				typemenu.rpadding="\xb3";
@@ -1538,7 +1538,7 @@ function show_filemenu()
 					var width=28;
 					if(user.settings&USER_EXTDESC)
 						width++;
-					typemenu.xpos=filemenu.xpos+full_width;
+					typemenu.xpos=filemenu.xpos+filemenu.full_width;
 					typemenu.ypos=filemenu.current+1;
 					typemenu.lpadding="\xb3";
 					typemenu.rpadding="\xb3";
