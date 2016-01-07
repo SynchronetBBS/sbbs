@@ -1750,7 +1750,7 @@ function show_messagemenu()
 						case 'A':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
-							bbs.scan_subs(SCAN_NEW,/* All? */ true);
+							bbs.scan_subs(SCAN_NEW|SCAN_MSGSONLY,/* All? */ true);
 							draw_main(true);
 							messagemenu.draw();
 							break;
