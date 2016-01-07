@@ -220,15 +220,17 @@ function format_opt(str, width, expand)
 	return(opt);
 }
 
+function ShellLB() {}
+ShellLB.prototype = new Lightbar;
 // Extend the Lightbar prototype...
-Lightbar.prototype.erase=function() {
+ShellLB.prototype.erase=function() {
 	cleararea(this.xpos,this.ypos,this.items[0].text.length,this.items.length,true);
 };
-Lightbar.prototype.lpadding="\xb3";
-Lightbar.prototype.rpadding="\xb3";
-Lightbar.prototype.timeout=100;
-Lightbar.prototype.callback = message_callback;
-Lightbar.prototype.hotkeys = KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+ShellLB.prototype.lpadding="\xb3";
+ShellLB.prototype.rpadding="\xb3";
+ShellLB.prototype.timeout=100;
+ShellLB.prototype.callback = message_callback;
+ShellLB.prototype.hotkeys = KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 
 function Mainbar()
 {
@@ -249,7 +251,7 @@ function Mainbar()
 	this.lpadding="";
 	this.rpadding="";
 }
-Mainbar.prototype=Lightbar.prototype;
+Mainbar.prototype=ShellLB.prototype;
 
 function top_bar(width)
 {
@@ -346,7 +348,7 @@ function Filemenu()
 	);
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
-Filemenu.prototype=Lightbar.prototype;
+Filemenu.prototype=ShellLB.prototype;
 
 function Filedirmenu(x, y, changenewscan)
 {
@@ -367,7 +369,7 @@ function Filedirmenu(x, y, changenewscan)
 		this.add("Change New Scan |Date","N",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
-Filedirmenu.prototype=Lightbar.prototype;
+Filedirmenu.prototype=ShellLB.prototype;
 
 function Fileinfo()
 {
@@ -381,7 +383,7 @@ function Fileinfo()
 	this.add("|Your File Transfer Statistics","Y",32);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 }
-Fileinfo.prototype=Lightbar.prototype;
+Fileinfo.prototype=ShellLB.prototype;
 
 function Settingsmenu()
 {
@@ -395,7 +397,7 @@ function Settingsmenu()
 	this.add("Minute |Bank","B",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
-Settingsmenu.prototype=Lightbar.prototype;
+Settingsmenu.prototype=ShellLB.prototype;
 
 function Emailmenu()
 {
@@ -410,7 +412,7 @@ function Emailmenu()
 	this.add("Read Sent |Messages","M",width,undefined,undefined,user.compare_ars("REST K"));
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
-Emailmenu.prototype=Lightbar.prototype;
+Emailmenu.prototype=ShellLB.prototype;
 
 function Messagemenu()
 {
@@ -444,7 +446,7 @@ function Messagemenu()
 	this.add("|View Information on Sub","V",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
-Messagemenu.prototype=Lightbar.prototype;
+Messagemenu.prototype=ShellLB.prototype;
 
 function Chatmenu()
 {
@@ -464,7 +466,7 @@ function Chatmenu()
 	this.add(format_opt("|Settings",width,true),"S",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
-Chatmenu.prototype=Lightbar.prototype;
+Chatmenu.prototype=ShellLB.prototype;
 
 // Generate menus of available xtrn sections.
 function Xtrnsecs()
@@ -488,7 +490,7 @@ function Xtrnsecs()
 		this.add("< |"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
 	this.add("\xc0"+bars80.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
 }
-Xtrnsecs.prototype=Lightbar.prototype;
+Xtrnsecs.prototype=ShellLB.prototype;
 
 function Xtrnsec(sec)
 {
@@ -515,7 +517,7 @@ function Xtrnsec(sec)
 		this.add("|"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
 	this.add("\xc0"+bars80.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
 }
-Xtrnsec.prototype=Lightbar.prototype;
+Xtrnsec.prototype=ShellLB.prototype;
 
 function Infomenu()
 {
@@ -531,7 +533,7 @@ function Infomenu()
 	this.add("|Text Files","T",25);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 }
-Infomenu.prototype=Lightbar.prototype;
+Infomenu.prototype=ShellLB.prototype;
 
 function Userlists()
 {
@@ -544,7 +546,7 @@ function Userlists()
 	this.add("|All","A",12);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 }
-Userlists.prototype=Lightbar.prototype;
+Userlists.prototype=ShellLB.prototype;
 
 var mainbar=new Mainbar;
 
@@ -1193,7 +1195,7 @@ function show_filemenu()
 				}
 				break;
 			case 'D':
-				var typemenu=new Lightbar;
+				var typemenu=new ShellLB;
 				typemenu.xpos=filemenu.xpos+filemenu.full_width;
 				typemenu.ypos=filemenu.current+1;
 				typemenu.add(top_bar(17),undefined,undefined,"","");
@@ -1248,7 +1250,7 @@ function show_filemenu()
 				}
 				break;
 			case 'U':
-				var typemenu=new Lightbar;
+				var typemenu=new ShellLB;
 				var width=19;
 				typemenu.xpos=filemenu.xpos+filemenu.full_width;
 				typemenu.ypos=filemenu.current+1;
@@ -1356,7 +1358,7 @@ function show_filemenu()
 				draw_main(true);
 				break;
 			case 'V':
-				var typemenu=new Lightbar;
+				var typemenu=new ShellLB;
 				var width=32;
 				typemenu.xpos=filemenu.xpos+filemenu.full_width;
 				typemenu.ypos=filemenu.current+1;
@@ -1480,7 +1482,7 @@ function show_filemenu()
 			case 'S':
 				var cur=1;
 				while(bbs.online) {
-					var typemenu=new Lightbar;
+					var typemenu=new ShellLB;
 					var width=28;
 					if(user.settings&USER_EXTDESC)
 						width++;
@@ -1661,7 +1663,7 @@ function show_messagemenu()
 				draw_main(true);
 				break;
 			case 'N':
-				var typemenu=new Lightbar;
+				var typemenu=new ShellLB;
 				var width=29;
 				if(width<8+msg_area.grp_list[bbs.curgrp].name.length)
 					width=8+msg_area.grp_list[bbs.curgrp].name.length;
@@ -1746,7 +1748,7 @@ function show_messagemenu()
 				}
 				break;
 			case 'Y':
-				var typemenu=new Lightbar;
+				var typemenu=new ShellLB;
 				var width=30;
 				if(width<8+msg_area.grp_list[bbs.curgrp].name.length)
 					width=8+msg_area.grp_list[bbs.curgrp].name.length;
@@ -1817,7 +1819,7 @@ function show_messagemenu()
 				}
 				break;
 			case 'T':
-				var typemenu=new Lightbar;
+				var typemenu=new ShellLB;
 				var width=17;
 				if(width<8+msg_area.grp_list[bbs.curgrp].name.length)
 					width=8+msg_area.grp_list[bbs.curgrp].name.length;
@@ -1982,7 +1984,7 @@ function show_emailmenu()
 				main_right();
 				return;
 			case 'S':
-				var typemenu=new Lightbar;
+				var typemenu=new ShellLB;
 				var width=30;
 				typemenu.xpos=emailmenu.xpos+emailmenu.items[0].text.length;
 				typemenu.ypos=emailmenu.current+1;
@@ -2190,7 +2192,7 @@ function show_chatmenu()
 				break;
 			case 'S':
 				while(bbs.online) {
-					var typemenu=new Lightbar;
+					var typemenu=new ShellLB;
 					var width=24;
 					if(user.chat_settings&CHAT_SPLITP)
 						width++;
