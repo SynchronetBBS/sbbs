@@ -961,7 +961,7 @@ function show_filemenu()
 							bbs.menu("dirs"+(bbs.curlib+1));
 						else {
 							console.line_counter=0;
-							 console.erase();
+							 console.clear();
 							 console.putmsg(format(bbs.text(DirLstHdr), file_area.lib_list[j].description),P_SAVEATR);
 							 for(i=0; i<file_area.lib_list[j].dir_list.length; i++) {
 								if(i==bbs.curdir)
