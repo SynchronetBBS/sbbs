@@ -52,38 +52,33 @@ if(this.SYS_CLOSED==undefined)
  */
 function Lightbar(items)
 {
-	this.fg=7;
-	this.bg=1;
-	this.xpos=1;
-	this.ypos=1;
-	this.direction=0;
-	this.hfg=1;
-	this.hbg=7;
-	this.dfg=8;
-	this.dbg=1;
-	this.kfg=15;
-	this.khfg=15;
-	this.current=0;
-	this.align=0;
-	this.force_width=-1;
-	this.getval=Lightbar_getval;
-	this.draw=Lightbar_draw;
-	this.clear=Lightbar_clearitems;
-	this.add=Lightbar_additem;
-	this.failsafe_getval=Lightbar_failsafe_getval;
-	this.lpadding=null;
-	this.rpadding=null;
-	this.hblanks=2;
-	this.hotkeys='';
-	this.callback=undefined;
-	this.timeout=0;
 	if(items==undefined)
 		this.items=new Array();
 	else
 		this.items=items;
 }
+Lightbar.prototype.fg=7;
+Lightbar.prototype.bg=1;
+Lightbar.prototype.xpos=1;
+Lightbar.prototype.ypos=1;
+Lightbar.prototype.direction=0;
+Lightbar.prototype.hfg=1;
+Lightbar.prototype.hbg=7;
+Lightbar.prototype.dfg=8;
+Lightbar.prototype.dbg=1;
+Lightbar.prototype.kfg=15;
+Lightbar.prototype.khfg=15;
+Lightbar.prototype.current=0;
+Lightbar.prototype.align=0;
+Lightbar.prototype.force_width=-1;
+Lightbar.prototype.lpadding=null;
+Lightbar.prototype.rpadding=null;
+Lightbar.prototype.hblanks=2;
+Lightbar.prototype.hotkeys='';
+Lightbar.prototype.callback=undefined;
+Lightbar.prototype.timeout=0;
 
-function Lightbar_additem(txt, retval, width, lpadding, rpadding, disabled, nodraw)
+Lightbar.prototype.add = function(txt, retval, width, lpadding, rpadding, disabled, nodraw)
 {
 	var item=new Object;
 
@@ -105,14 +100,14 @@ function Lightbar_additem(txt, retval, width, lpadding, rpadding, disabled, nodr
 	if(nodraw!=undefined)
 		item.nodraw=nodraw;
 	this.items.push(item);
-}
+};
 
-function Lightbar_clearitems()
+Lightbar.prototype.clear = function()
 {
 	this.items=new Array();
-}
+};
 
-function Lightbar_failsafe_getval()
+Lightbar.prototype.failsafe_getval = function()
 {
 	var retval;
 	for(i=0; i<this.items.length; i++) {
@@ -132,12 +127,12 @@ function Lightbar_failsafe_getval()
 	this.nodraw=false;
 
 	return(retval);
-}
+};
 
 /*
  * Super-Overlord Lightbar method... draws and returns selected value.
  */
-function Lightbar_getval(current,key)
+Lightbar.prototype.getval = function(current,key)
 {
 	var loop=true;
 	if(key) loop=false;
@@ -256,9 +251,9 @@ function Lightbar_getval(current,key)
 			key=undefined;
 		} 
 	}
-}
+};
 
-function Lightbar_draw(current)
+Lightbar.prototype.draw = function(current)
 {
 	var attr=this.bg<<4|this.fg;
 	var cattr=this.hbg<<4|this.hfg;
@@ -505,4 +500,6 @@ function Lightbar_draw(current)
 	
 	// Move cursor to the current selection
 	console.gotoxy(cursx,cursy);
-}
+};
+
+Lightbar;
