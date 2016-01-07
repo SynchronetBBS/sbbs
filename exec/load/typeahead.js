@@ -235,7 +235,8 @@ var Typeahead = function (options) {
         'minLength' : 1,
         'lastKey' : system.timer,
         'suggested' : false,
-        'attr' : console.attributes
+        'attr' : console.attributes,
+        'focus' : true
     };
 
     var display = {
@@ -463,6 +464,9 @@ var Typeahead = function (options) {
                     }
                 } else {
                     ret = properties.text;
+                    properties.text = '';
+                    properties.position = 0;
+                    change = true;
                 }
                 break;
             default:
@@ -502,6 +506,7 @@ var Typeahead = function (options) {
     }
 
     this.cycle = function () {
+        if (!properties.focus) return;
         if (properties.text === '' && typeof display.tree !== 'undefined') {
             display.tree.close();
             display.tree = undefined;
@@ -514,8 +519,15 @@ var Typeahead = function (options) {
         ) {
             suggest();
         }
-        display.cursor.moveTo(display.inputFrame.x + properties.position, display.inputFrame.y);
-        display.cursor[time() % 2 === 0 ? 'top' : 'bottom']();
+        display.cursor.moveTo(
+            display.inputFrame.x + properties.position,
+            display.inputFrame.y
+        );
+        if (system.timer - properties.lastKey <= .5) {
+            display.cursor.top();
+        } else {
+            display.cursor[time() % 2 === 0 ? 'top' : 'bottom']();
+        }
         if (typeof display.parentFrame === 'undefined'
             && display.frame.cycle()
         ) {
@@ -524,7 +536,10 @@ var Typeahead = function (options) {
     }
 
     this.updateCursor = function () {
-        console.gotoxy(display.inputFrame.x + properties.position, display.inputFrame.y);
+        console.gotoxy(
+            display.inputFrame.x + properties.position,
+            display.inputFrame.y
+        );
     }
 
     this.close = function (cleanup) {
@@ -543,6 +558,20 @@ var Typeahead = function (options) {
         }
         display.frame.delete();
     }
+
+    this.__defineGetter__('focus', function () { return properties.focus; });
+    this.__defineSetter__(
+        'focus',
+        function (bool) {
+            if (typeof bool !== 'boolean') return;
+            properties.focus = bool;
+            if (!bool) {
+                display.cursor.bottom();
+            } else {
+                display.cursor.top();
+            }
+        }
+    );
 
     init();
 
