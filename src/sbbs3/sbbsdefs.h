@@ -815,7 +815,9 @@ enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
 #define SCAN_TOYOU	(1<<3)		/* Scan for messages to you 				*/
 #define SCAN_FIND	(1<<4)		/* Scan for text in messages				*/
 #define SCAN_UNREAD	(1<<5)		/* Display un-read messages only			*/
-								
+#define SCAN_MSGSONLY	(1<<6)	/* Do not do a new file scan even if the    
+								 * user enabled Automatic New File Scan		*/
+
 								/* Bits in misc of chan_t					*/
 #define CHAN_PW 	(1<<0)		/* Can be password protected				*/
 #define CHAN_GURU	(1<<1)		/* Guru joins empty channel 				*/

@@ -576,6 +576,8 @@ var	SCAN_BACK		=(1<<2);	/* Display most recent message if none new  */
 var	SCAN_TOYOU		=(1<<3);	/* Display messages to you only				*/
 var	SCAN_FIND		=(1<<4);	/* Find text in messages				    */
 var	SCAN_UNREAD		=(1<<5);	/* Display un-read messages to you only		*/
+var SCAN_MSGSONLY	=(1<<6);	/* Do not do a new file scan even if the    */
+								/* user enabled Automatic New File Scan		*/
 					    		/********************************************/
 
 								/********************************************/
