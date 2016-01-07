@@ -11,7 +11,7 @@ if(this.SYS_CLOSED==undefined)
  * Lightbar object
  * Properties:
  *  xpos: Horizontal position of lightbar menu (1-based)
- *  xpos: Vertical position of lightbar menu (1-based)
+ *  ypos: Vertical position of lightbar menu (1-based)
  *  items: an array of objects each having the following properties:
  *         text - The displayed text.  A | prefixes a hotkey
  *         retval - The value to return if this is selected
