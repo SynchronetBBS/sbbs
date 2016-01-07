@@ -220,111 +220,36 @@ function format_opt(str, width, expand)
 	return(opt);
 }
 
-function Mainbar() {}
-Mainbar.prototype=new Lightbar;
-Mainbar.prototype.items = [
-	{text:"|File",		retval:"F",	disabled:user.compare_ars("REST T")},
-	{text:"|Messages",	retval:"M"},
-	{text:"|Email",		retval:"E",	diabled:user.compare_ars("REST SE")},
-	{text:"|Chat",		retval:"C",	disabled:user.compare_ars("REST C")},
-	{text:"|Settings",	retval:"S"},
-	{text:"E|xternals",	retval:"x",	disabled:user.compare_ars("REST X")},
-	{text:"|View",		retval:"V"},
-	{text:"|Goodbye",	retval:"G"},
-	{text:"Commands",	retval:";"}
-];
-Mainbar.prototype.direction = 1;
-Mainbar.prototype.xpos = 2;
-Mainbar.prototype.ypos = 1;
-Mainbar.prototype.hotkeys = KEY_DOWN+";"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-Mainbar.prototype.timeout = 100;
-Mainbar.prototype.callback = message_callback;
-
-function Filemenu() {}
-Filemenu.prototype=new Lightbar;
-Filemenu.prototype.erase = function() {
-	cleararea(this.xpos,this.ypos,this.full_width,this.items.length,true);
+// Extend the Lightbar prototype...
+Lightbar.prototype.erase=function() {
+	cleararea(this.xpos,this.ypos,this.items[0].text.length,this.items.length,true);
 };
-Filemenu.prototype.xpos = 1;
-Filemenu.prototype.ypos = 2;
-Filemenu.prototype.lpadding = "\xb3";
-Filemenu.prototype.rpadding = "\xb3";
-Filemenu.prototype.hotkeys = KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-Filemenu.prototype.timeout = 100;
-Filemenu.prototype.callback = message_callback;
-Filemenu.prototype.force_width = (function(){
-	// Width of longest line with no dynamic variables
-	var width=0;
-	var scantime=system.datestr(bbs.new_file_time);
-	// Expand for scan time line.
-	if(width < 27+scantime.length)
-		width=27+scantime.length;
-	if(width < 11+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length)
-		width=11+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length;
-	return width;
-}());
-Filemenu.prototype.full_width = Filemenu.prototype.force_width + 2;
-Filemenu.prototype.items = [
-	{
-		text:bars80.substr(0, Filemenu.prototype.force_width),
-		lpadding:"\xda",
-		rpadding:"\xbf"
-	},
-	{
-		text:format_opt("|Change Directory",Filemenu.prototype.force_width,false),
-		retval:"C"
-	},
-	{
-		text:format_opt("|List Dir ("+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name+")",Filemenu.prototype.force_width,false),
-		retval:"L"
-	},
-	{
-		text:format_opt("Search for |Filenames",Filemenu.prototype.force_width,true),
-		retval:"F"
-	},
-	{
-		text:format_opt("Search for |Text in Descriptions",Filemenu.prototype.force_width,true),
-		retval:"T"
-	},
-	{
-		text:format_opt("|Download file(s)",Filemenu.prototype.force_width,true),
-		retval:"D",
-		disabled:user.compare_ars("REST D") || (!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_download)
-	},
-	{
-		text:format_opt("|Upload file(s)",Filemenu.prototype.force_width,true),
-		retval:"U",
-		disabled:user.compare_ars("REST U")
-                        || ((!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload)
-                        && file_area.upload_dir==undefined)
-	},
-	{
-		text:format_opt("|Remove/Edit Files",Filemenu.prototype.force_width,false),
-		retval:"R"
-	},
-	{
-		text:format_opt("View/Edit |Batch Queue",Filemenu.prototype.force_width,false),
-		retval:"B",
-		disabled:(user.compare_ars("REST U AND REST D"))
-                        || (bbs.batch_upload_total <= 0
-                                && bbs.batch_dnload_total <= 0
-                                && file_area.upload_dir==undefined
-                        )
-	},
-	{
-		text:format_opt("|View",Filemenu.prototype.force_width,true),
-		retval:"V"
-	},
-	{
-		text:format_opt("|Settings",Filemenu.prototype.force_width,true),
-		retval:"S"
-	},
-	{
-		text:bars80.substr(0, Filemenu.prototype.force_width),
-		lpadding:"\xc0",
-		rpadding:"\xd9"
-	}
-];
+Lightbar.prototype.lpadding="\xb3";
+Lightbar.prototype.rpadding="\xb3";
+Lightbar.prototype.timeout=100;
+Lightbar.prototype.callback = message_callback;
+Lightbar.prototype.hotkeys = KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+
+function Mainbar()
+{
+	this.items=new Array();
+	this.direction=1;
+	this.xpos=2;
+	this.ypos=1;
+	this.hotkeys=KEY_DOWN+";"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+	this.add("|File","F",undefined,undefined,undefined,user.compare_ars("REST T"));
+	this.add("|Messages","M");
+	this.add("|Email","E",undefined,undefined,undefined,user.compare_ars("REST SE"));
+	this.add("|Chat","C",undefined,undefined,undefined,user.compare_ars("REST C"));
+	this.add("|Settings","S");
+	this.add("E|xternals","x",undefined,undefined,undefined,user.compare_ars("REST X"));
+	this.add("|View","V");
+	this.add("|Goodbye","G");
+	this.add("Commands",";");
+	this.lpadding="";
+	this.rpadding="";
+}
+Mainbar.prototype=Lightbar.prototype;
 
 function top_bar(width)
 {
@@ -335,6 +260,93 @@ function bottom_bar(width)
 {
 	return("\xc0"+bars80.substr(0,width)+"\xd9");
 }
+
+function format_opt(str, width, expand)
+{
+	var opt=str;
+	if(expand) {
+		var cleaned=opt;
+		cleaned=cleaned.replace(/\|/g,'');
+		opt+=spaces80.substr(0,width-cleaned.length-2);
+		opt+=' >';
+	}
+	return(opt);
+}
+
+function Filemenu()
+{
+	this.items=new Array();
+	// Width of longest line with no dynamic variables
+	var width=0;
+	var scantime=system.datestr(bbs.new_file_time);
+	// Expand for scan time line.
+	if(width < 27+scantime.length)
+		width=27+scantime.length;
+	if(width < 11+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length)
+		width=11+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length;
+	this.xpos=1;
+	this.ypos=2;
+	this.full_width = width+2;
+	this.add(top_bar(width),undefined,undefined,"","");
+	this.add(
+		 format_opt("|Change Directory",width,false)
+		,"C",width
+	);
+	this.add(
+		 format_opt("|List Dir ("+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name+")",width,false)
+		,"L",width
+	);
+	this.add(
+		 format_opt("Scan for |New Files since "+scantime,width,true)
+		,"N",width
+	);
+	this.add(
+		 format_opt("Search for |Filenames",width,true)
+		,"F",width
+	);
+	this.add(
+		 format_opt("Search for |Text in Descriptions",width,true)
+		,"T",width
+	);
+	this.add(
+		 format_opt("|Download file(s)",width,true)
+		,"D",width,undefined,undefined
+		,user.compare_ars("REST D")
+			|| (!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_download)
+	);
+	this.add(
+		 format_opt("|Upload file(s)",width,true)
+		,"U",width,undefined,undefined
+		,user.compare_ars("REST U")
+			|| ((!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload)
+			&& file_area.upload_dir==undefined)
+	);
+	this.add(
+		 format_opt("|Remove/Edit Files",width,false)
+		,"R",width
+	);
+	this.add(
+		 format_opt("View/Edit |Batch Queue",width,false)
+		,"B",width,undefined,undefined
+		// Disabled if you can't upload or download.
+		// Disabled if no upload dir and no batch queue
+		,(user.compare_ars("REST U AND REST D"))
+			|| (bbs.batch_upload_total <= 0  
+				&& bbs.batch_dnload_total <= 0 
+				&& file_area.upload_dir==undefined
+			)
+	);
+	this.add(
+		 format_opt("|View",width,true)
+		,"V",width
+	);
+	this.add(
+		 format_opt("|Settings",width,true)
+		,"S",width
+	);
+	this.add(bottom_bar(width),undefined,undefined,"","");
+}
+Filemenu.prototype=Lightbar.prototype;
 
 function Filedirmenu(x, y, changenewscan)
 {
@@ -347,9 +359,6 @@ function Filedirmenu(x, y, changenewscan)
 		width=12+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length;
 	this.xpos=x;
 	this.ypos=y;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 	this.add(top_bar(width),undefined,undefined,"","");
 	this.add("|All File Areas","A",width);
 	this.add("|Library ("+file_area.lib_list[bbs.curlib].name+")","L",width);
@@ -357,8 +366,6 @@ function Filedirmenu(x, y, changenewscan)
 	if(changenewscan)
 		this.add("Change New Scan |Date","N",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Filedirmenu.prototype=Lightbar.prototype;
 
@@ -367,17 +374,12 @@ function Fileinfo()
 	this.items=new Array();
 	this.xpos=22;
 	this.ypos=4;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	this.add("File |Transfer Policy","T",32);
 	this.add("Information on |Directory","D",32);
 	this.add("|Users With Access to Dir","U",32);
 	this.add("|Your File Transfer Statistics","Y",32);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Fileinfo.prototype=Lightbar.prototype;
 
@@ -388,15 +390,10 @@ function Settingsmenu()
 	this.items=new Array();
 	this.xpos=30;
 	this.ypos=2;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 	this.add(top_bar(width),undefined,undefined,"","");
 	this.add("|User Configuration","U",width);
 	this.add("Minute |Bank","B",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Settingsmenu.prototype=Lightbar.prototype;
 
@@ -407,16 +404,11 @@ function Emailmenu()
 	this.items=new Array();
 	this.xpos=17;
 	this.ypos=2;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 	this.add(top_bar(width),undefined,undefined,"","");
 	this.add(format_opt("|Send Mail",width,true),"S",width);
 	this.add("|Read Inbox","R",width);
 	this.add("Read Sent |Messages","M",width,undefined,undefined,user.compare_ars("REST K"));
 	this.add(bottom_bar(width),undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Emailmenu.prototype=Lightbar.prototype;
 
@@ -428,10 +420,7 @@ function Messagemenu()
 		width=8+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length
 	this.items=new Array();
 	this.xpos=7;
-		this.ypos=2;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+	this.ypos=2;
 	this.add(top_bar(width),undefined,undefined,"","");
 	this.add("|Change Sub","C",width);
 	this.add("|Read "+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name,"R",width);
@@ -454,8 +443,6 @@ function Messagemenu()
 	this.add("|QWK Packet Transfer Menu","Q",width);
 	this.add("|View Information on Sub","V",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Messagemenu.prototype=Lightbar.prototype;
 
@@ -466,9 +453,6 @@ function Chatmenu()
 	this.items=new Array();
 	this.xpos=24;
 	this.ypos=2;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 	this.add(top_bar(width),undefined,undefined,"","");
 	this.add("|Multinode Chat","M",width);
 	this.add("|Private Node to Node Chat","P",width);
@@ -479,8 +463,6 @@ function Chatmenu()
 	this.add("InterBBS |Instant Messages","I",width);
 	this.add(format_opt("|Settings",width,true),"S",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Chatmenu.prototype=Lightbar.prototype;
 
@@ -492,9 +474,6 @@ function Xtrnsecs()
 	this.items=new Array();
 	this.xpos=40;
 	this.ypos=2;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 	var xtrnsecwidth=0;
 	var j;
 	for(j=0; j<xtrn_area.sec_list.length && j<console.screen_rows-2; j++) {
@@ -508,8 +487,6 @@ function Xtrnsecs()
 	for(j=0; j<xtrn_area.sec_list.length; j++)
 		this.add("< |"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
 	this.add("\xc0"+bars80.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Xtrnsecs.prototype=Lightbar.prototype;
 
@@ -520,7 +497,6 @@ function Xtrnsec(sec)
 	var j=0;
 
 	xtrnsecprogwidth=0;
-	this.hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 	// Figure out the correct width
 	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length; j++) {
 		if(xtrn_area.sec_list[sec].prog_list[j].name.length > xtrnsecprogwidth)
@@ -534,14 +510,10 @@ function Xtrnsec(sec)
 	else
 		this.ypos=console.screen_rows-j-1;
 	this.xpos=40-xtrnsecprogwidth-2;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
 	this.add("\xda"+bars80.substr(0,xtrnsecprogwidth)+"\xbf",undefined,undefined,"","");
 	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j<console.screen_rows-3; j++)
 		this.add("|"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
 	this.add("\xc0"+bars80.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Xtrnsec.prototype=Lightbar.prototype;
 
@@ -550,9 +522,6 @@ function Infomenu()
 	this.items=new Array();
 	this.xpos=51;
 	this.ypos=2;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	this.add("System |Information","I",25);
 	this.add("Synchronet |Version Info","V",25);
@@ -561,8 +530,6 @@ function Infomenu()
 	this.add("< |User Lists","U",25);
 	this.add("|Text Files","T",25);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Infomenu.prototype=Lightbar.prototype;
 
@@ -571,16 +538,11 @@ function Userlists()
 	this.items=new Array();
 	this.xpos=37;
 	this.ypos=6;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 	this.add("|Logons Today","L",12);
 	this.add("|Sub-Board","S",12);
 	this.add("|All","A",12);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-	this.timeout=100;
-	this.callback=message_callback;
 }
 Userlists.prototype=Lightbar.prototype;
 
@@ -689,15 +651,14 @@ while(bbs.online) {
 				while(bbs.online) {
 					x_prog=this_xtrnsec.getval();
 					if(x_prog==KEY_LEFT) {
-						cleararea(this_xtrnsec.xpos,this_xtrnsec.ypos,this_xtrnsec.items[0].text.length,this_xtrnsec.items.length,true);
-						cleararea(xtrnsec.xpos,xtrnsec.ypos,xtrnsec.items[0].text.length,xtrnsec.items.length,true);
+						this_xtrnsec.erase();
+						xtrnsec.erase();
 						main_left();
 						done=1;
 						break;
 					}
 					if(x_prog==KEY_RIGHT || x_prog=='\b' || x_prog=='\x7f' || x_prog=='\x1b') {
-						/* We *cannot* clear to eol since we're to the left of the parent. */
-						cleararea(this_xtrnsec.xpos,this_xtrnsec.ypos,this_xtrnsec.items[0].text.length,this_xtrnsec.items.length,true);
+						this_xtrnsec.erase();
 						break;
 					}
 					if(x_prog==ctrl('O')
@@ -728,7 +689,7 @@ while(bbs.online) {
 				menus_displayed.pop();
 			}
 			menus_displayed.pop();
-			cleararea(xtrnsec.xpos,xtrnsec.ypos,xtrnsec.items[0].text.length,xtrnsec.items.length,true);
+			xtrnsec.erase();
 			break;
 		case 'V':
 			var infomenu=new Infomenu;
@@ -788,14 +749,14 @@ while(bbs.online) {
 									handle_a_ctrlkey(key);
 									break;
 								case KEY_LEFT:
-									cleararea(userlists.xpos,userlists.ypos,userlists.items[0].text.length,userlists.items.length,false);
+									userlists.erase();
 									main_left();
 									break infoloop;
 								case KEY_RIGHT:
 								case '\b':
 								case '\x7f':
 								case '\x1b':
-									cleararea(userlists.xpos,userlists.ypos,userlists.items[0].text.length,userlists.items.length,false);
+									userlists.erase();
 									break userlistloop;
 								case 'L':
 									clear_screen();
@@ -838,7 +799,7 @@ while(bbs.online) {
 				}
 			}
 			menus_displayed.pop();
-			cleararea(infomenu.xpos,infomenu.ypos,infomenu.items[0].text.length,infomenu.items.length,true);
+			infomenu.erase();
 			break;
 		case 'G':       // Goodbye
 			if(!extra_select) {
@@ -1000,7 +961,7 @@ function show_filemenu()
 							bbs.menu("dirs"+(bbs.curlib+1));
 						else {
 							console.line_counter=0;
-							 console.clear();
+							 console.erase();
 							 console.putmsg(format(bbs.text(DirLstHdr), file_area.lib_list[j].description),P_SAVEATR);
 							 for(i=0; i<file_area.lib_list[j].dir_list.length; i++) {
 								if(i==bbs.curdir)
@@ -1088,14 +1049,14 @@ function show_filemenu()
 							filemenu.draw();
 							break;
 						case KEY_RIGHT:
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							filemenu.erase();
 							main_right();
 							menus_displayed.pop();
 							menus_displayed.pop();
 							return;
 						default:	// Anything else will escape.
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							filemenu.nodraw=true;
 							menus_displayed.pop();
 							break file;
@@ -1152,13 +1113,13 @@ function show_filemenu()
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							menus_displayed.pop();
 							menus_displayed.pop();
 							main_right();
 							return;
 						default:	// Anything else will escape.
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							filemenu.nodraw=true;
 							menus_displayed.pop();
 							break file;
@@ -1218,13 +1179,13 @@ function show_filemenu()
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							menus_displayed.pop();
 							menus_displayed.pop();
 							main_right();
 							return;
 						default:	// Anything else will escape.
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							filemenu.nodraw=true;
 							menus_displayed.pop();
 							break file;
@@ -1235,16 +1196,11 @@ function show_filemenu()
 				var typemenu=new Lightbar;
 				typemenu.xpos=filemenu.xpos+filemenu.full_width;
 				typemenu.ypos=filemenu.current+1;
-				typemenu.lpadding="\xb3";
-				typemenu.rpadding="\xb3";
-				typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 				typemenu.add(top_bar(17),undefined,undefined,"","");
 				typemenu.add('|Batch','B',17,undefined,undefined,bbs.batch_dnload_total<=0);
 				typemenu.add('By |Name/File spec','N',17);
 				typemenu.add('From |User','U',17);
 				typemenu.add(bottom_bar(17),undefined,undefined,"","");
-				typemenu.timeout=100;
-				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
 				while(bbs.online) {
 					ret=typemenu.getval();
@@ -1278,13 +1234,13 @@ function show_filemenu()
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							menus_displayed.pop();
 							menus_displayed.pop();
 							main_right();
 							return;
 						default:
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							filemenu.nodraw=true;
 							menus_displayed.pop();
 							break file;
@@ -1296,9 +1252,6 @@ function show_filemenu()
 				var width=19;
 				typemenu.xpos=filemenu.xpos+filemenu.full_width;
 				typemenu.ypos=filemenu.current+1;
-				typemenu.lpadding="\xb3";
-				typemenu.rpadding="\xb3";
-				typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 				if(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload || file_area.upload_dir==undefined) {
 					if(width<9+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length)
 						width=9+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length;
@@ -1313,8 +1266,6 @@ function show_filemenu()
 				typemenu.add('To |Sysop Only','S',width,undefined,undefined,file_area.sysop_dir==undefined);
 				typemenu.add('To Specific |User(s)','U',width,undefined,undefined,file_area.user_dir==undefined);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
-				typemenu.timeout=100;
-				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
 				while(bbs.online) {
 					ret=typemenu.getval();
@@ -1351,13 +1302,13 @@ function show_filemenu()
 							filemenu.draw();
 						case KEY_RIGHT:
 							filemenu.erase();
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							menus_displayed.pop();
 							menus_displayed.pop();
 							main_right();
 							return;
 						default:
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							filemenu.nodraw=true;
 							menus_displayed.pop();
 							break file;
@@ -1409,9 +1360,6 @@ function show_filemenu()
 				var width=32;
 				typemenu.xpos=filemenu.xpos+filemenu.full_width;
 				typemenu.ypos=filemenu.current+1;
-				typemenu.lpadding="\xb3";
-				typemenu.rpadding="\xb3";
-				typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 				typemenu.add(top_bar(width),undefined,undefined,"","");
 				typemenu.add('File |Contents','C',width);
 				typemenu.add('File |Information','I',width);
@@ -1420,8 +1368,6 @@ function show_filemenu()
 				typemenu.add('|Users with Access to Dir','U',width);
 				typemenu.add('Your File Transfer |Statistics','S',width);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
-				typemenu.timeout=100;
-				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
 				while(bbs.online) {
 					ret=typemenu.getval();
@@ -1518,13 +1464,13 @@ function show_filemenu()
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							menus_displayed.pop();
 							menus_displayed.pop();
 							main_right();
 							return;
 						default:
-							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							typemenu.erase();
 							menus_displayed.pop();
 							filemenu.nodraw=true;
 							break file;
@@ -1540,16 +1486,11 @@ function show_filemenu()
 						width++;
 					typemenu.xpos=filemenu.xpos+filemenu.full_width;
 					typemenu.ypos=filemenu.current+1;
-					typemenu.lpadding="\xb3";
-					typemenu.rpadding="\xb3";
-					typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 					typemenu.add(top_bar(width),undefined,undefined,"","");
-					typemenu.add('Set Batch Flagging '+(user.settings&USER_BATCHFLAG?'Off':'On'),'B',width);
-					typemenu.add('Set Extended Descriptions '+(user.settings&USER_EXTDESC?'Off':'On'),'S',width);
+					typemenu.add('Set |Batch Flagging '+(user.settings&USER_BATCHFLAG?'Off':'On'),'B',width);
+					typemenu.add('|Set Extended Descriptions '+(user.settings&USER_EXTDESC?'Off':'On'),'S',width);
 					typemenu.add(bottom_bar(width),undefined,undefined,"","");
 					typemenu.current=cur;
-					typemenu.timeout=100;
-					typemenu.callback=message_callback;
 					menus_displayed.push(typemenu);
 					ret=typemenu.getval();
 					switch(ret) {
@@ -1728,9 +1669,6 @@ function show_messagemenu()
 					width=6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length;
 				typemenu.xpos=messagemenu.xpos+messagemenu.items[0].text.length;
 				typemenu.ypos=messagemenu.current+1;
-				typemenu.lpadding="\xb3";
-				typemenu.rpadding="\xb3";
-				typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 				typemenu.add(top_bar(width),undefined,undefined,"","");
 				typemenu.add('|All Message Areas','A',width);
 				typemenu.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',width);
@@ -1739,8 +1677,6 @@ function show_messagemenu()
 				typemenu.add('Change New Scan |Pointers','P',width);
 				typemenu.add('|Reset New Scan Pointers','R',width);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
-				typemenu.timeout=100;
-				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
 				while(bbs.online) {
 					ret=typemenu.getval();
@@ -1818,17 +1754,12 @@ function show_messagemenu()
 					width=6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length;
 				typemenu.xpos=messagemenu.xpos+messagemenu.items[0].text.length;
 				typemenu.ypos=messagemenu.current+1;
-				typemenu.lpadding="\xb3";
-				typemenu.rpadding="\xb3";
-				typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 				typemenu.add(top_bar(width),undefined,undefined,"","");
 				typemenu.add('|All Message Areas','A',width);
 				typemenu.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',width);
 				typemenu.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',width);
 				typemenu.add('Change Your Scan |Configuration','C',width);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
-				typemenu.timeout=100;
-				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
 				while(bbs.online) {
 					ret=typemenu.getval();
@@ -1894,16 +1825,11 @@ function show_messagemenu()
 					width=6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length;
 				typemenu.xpos=messagemenu.xpos+messagemenu.items[0].text.length;
 				typemenu.ypos=messagemenu.current+1;
-				typemenu.lpadding="\xb3";
-				typemenu.rpadding="\xb3";
-				typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 				typemenu.add(top_bar(width),undefined,undefined,"","");
 				typemenu.add('|All Message Areas','A',width);
 				typemenu.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',width);
 				typemenu.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',width);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
-				typemenu.timeout=100;
-				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
 				while(bbs.online) {
 					var subonly;
@@ -2060,9 +1986,6 @@ function show_emailmenu()
 				var width=30;
 				typemenu.xpos=emailmenu.xpos+emailmenu.items[0].text.length;
 				typemenu.ypos=emailmenu.current+1;
-				typemenu.lpadding="\xb3";
-				typemenu.rpadding="\xb3";
-				typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 				typemenu.add(top_bar(width),undefined,undefined,"","");
 				typemenu.add('To |Sysop','S',width,undefined,undefined,user.compare_ars("REST S"));
 				typemenu.add('To |Local User','L',width,undefined,undefined,user.compare_ars("REST E"));
@@ -2070,8 +1993,6 @@ function show_emailmenu()
 				typemenu.add('To |Remote User','R',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
 				typemenu.add('To Remote User with A|ttachment','T',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
-				typemenu.timeout=100;
-				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
 				while(bbs.online) {
 					ret=typemenu.getval();
@@ -2275,16 +2196,11 @@ function show_chatmenu()
 						width++;
 					typemenu.xpos=chatmenu.xpos+chatmenu.items[0].text.length;
 					typemenu.ypos=chatmenu.current+1;
-					typemenu.lpadding="\xb3";
-					typemenu.rpadding="\xb3";
-					typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 					typemenu.add(top_bar(width),undefined,undefined,"","");
 					typemenu.add("Set |Split Screen Chat "+(user.chat_settings&CHAT_SPLITP?"Off":"On"),'S',width);
 					typemenu.add("Set A|vailability "+(user.chat_settings&CHAT_NOPAGE?"On":"Off"),'V',width);
 					typemenu.add("Set Activity |Alerts "+(user.chat_settings&CHAT_NOACT?"On":"Off"),'A',width);
 					typemenu.add(bottom_bar(width),undefined,undefined,"","");
-					typemenu.timeout=100;
-					typemenu.callback=message_callback;
 					menus_displayed.push(typemenu);
 					ret=typemenu.getval();
 					switch(ret) {
@@ -2360,19 +2276,19 @@ function show_settingsmenu()
 				draw_main(true);
 				break;
 			case KEY_RIGHT:
-				cleararea(settingsmenu.xpos,settingsmenu.ypos,settingsmenu.items[0].text.length,settingsmenu.items.length,true);
+				settingsmenu.erase();
 				main_right();
 				menus_displayed.pop();
 				return;
 			case KEY_LEFT:
-				cleararea(settingsmenu.xpos,settingsmenu.ypos,settingsmenu.items[0].text.length,settingsmenu.items.length,true);
+				settingsmenu.erase();
 				main_left();
 				menus_displayed.pop();
 				return;
 			case '\b':
 			case '\x7f':
 			case '\x1b':
-				cleararea(settingsmenu.xpos,settingsmenu.ypos,settingsmenu.items[0].text.length,settingsmenu.items.length,true);
+				settingsmenu.erase();
 				menus_displayed.pop();
 				return;
 		}
