@@ -75,6 +75,27 @@ function process_tic(tic)
 			log(LOG_ERROR, "Having both Dir and Path set not currently supported!");
 			return false;
 		}
+	}
+	else {
+		if (path === undefined) {
+			log(LOG_ERROR, "Unable to find path for area '"+tic.area+"'!");
+			return false;
+		}
+		if (!file_isdir(path)) {
+			log(LOG_ERROR, "Path '"+path+"' does not exist!");
+			return false;
+		}
+	}
+
+	log(LOG_DEBUG, "Moving file from "+tic.full_path+" to "+path+".");
+	if (file_rename(tic.full_path, path+tic.file))
+		tic.full_path = path+tic.file;
+	else {
+		log(LOG_ERROR, "Cannot move '"+tic.full_path+"' to '"+path+tic.file+"'!");
+		return false;
+	}
+
+	if (dir !== undefined) {
 		if (files_bbs[dir] === undefined)
 			files_bbs[dir] = '';
 
@@ -90,20 +111,9 @@ function process_tic(tic)
 			}
 		}
 	}
-	else {
-		if (path === undefined) {
-			log(LOG_ERROR, "Unable to find path for area '"+tic.area+"'!");
-			return false;
-		}
-		if (!file_isdir(path)) {
-			log(LOG_ERROR, "Path '"+path+"' does not exist!");
-			return false;
-		}
-	}
-	log(LOG_DEBUG, "Moving file from "+tic.full_path+" to "+path+".");
-	file_rename(tic.full_path, path+tic.file);
 	log(LOG_DEBUG, "Deleting TIC file '"+tic.tic_filename+"'.");
 	file_remove(tic.tic_filename);
+
 	return true;
 }
 
