@@ -1,118 +1,9 @@
 load("sbbsdefs.js");
+load("tickit_objs.js");
 
-var inb=[];
-var pktpass = {};
+var sbbsecho = new SBBSEchoCfg();
+var tickit = new TickITCfg();
 var files_bbs={};
-var outbound;
-var gcfg;
-var acfg={};
-var is_flo=false;
-const cset='0123456789abcdefghijklmnopqrstuvwxyz0123456789-_';
-
-function basefn_to_num(num)
-{
-	var base = cset.length;
-	var part;
-	var ret=0;
-	var i;
-
-	for (i=0; i<num.length; i++) {
-		ret *= base;
-		ret += cset.indexOf(num[i]);
-	}
-	return ret;
-	
-}
-
-function num_to_basefn(num)
-{
-	var base = cset.length;
-	var part;
-	var ret='';
-
-	while(num) {
-		part = num % base;
-		ret = cset.charAt(part) + ret;
-		num = parseInt((num/base), 10);
-	}
-	return ret;
-}
-
-/*
- * Returns a filename in the format "ti_XXXXX.tic" where
- * XXXXX is replaced by an incrementing base-48 number.
- * This provides 254,803,967 unique filenames.
- */
-function get_next_tic_filename()
-{
-	var f;
-	var val;
-	var ret;
-
-	// Get previous value or -1 if there is no previous value.
-	f = new File(system.data_dir+'tickit.seq');
-
-	if (f.open("r+b")) {
-		val = f.readBin();
-	}
-	else {
-		if (!f.open("web+")) {
-			log(LOG_ERROR, "Unable to open file "+f.name+"!");
-			return undefined;
-		}
-		val = -1;
-	}
-
-	// Increment by 1...
-	val++;
-
-	// Check for wrap...
-	if (val > basefn_to_num('_____'))
-		val = 0;
-
-	// Write back new value.
-	f.truncate();
-	f.writeBin(val);
-	f.close();
-
-	// Left-pad to five digits.
-	ret = ('00000'+num_to_basefn(val)).substr(-5);
-
-	// Add pre/suf-fix
-	return 'ti_'+ret+'.tic';
-}
-
-function get_pw(node)
-{
-	var n = node;
-
-	while(n) {
-		if (pktpass[n] !== undefined)
-			return pktpass[n];
-		if (n === 'ALL')
-			break;
-		if (n.indexOf('ALL') !== -1)
-			n = n.replace(/[0-9]+[^0-9]ALL$/, 'ALL');
-		else
-			n = n.replace(/[0-9]+$/, 'ALL');
-	}
-	return undefined;
-}
-
-function match_pw(node, pw)
-{
-	var pktpw = get_pw(node);
-
-	if (pktpw === undefined || pktpw == '') {
-		if (pw === '' || pw === undefined)
-			return true;
-	}
-	if (pw.toUpperCase() === pktpw.toUpperCase())
-		return true;
-
-	log(LOG_WARNING, "Incorrect password "+pw+" (expected "+pktpw+")");
-	return false;
-}
 
 function process_tic(tic)
 {
@@ -122,12 +13,12 @@ function process_tic(tic)
 	var i;
 	var cfg;
 
-	if (gcfg.path !== undefined)
-		path = backslash(gcfg.path);
-	if (gcfg.dir !== undefined)
-		dir = gcfg.dir.toLowerCase();
+	if (tickit.gcfg.path !== undefined)
+		path = backslash(tickit.gcfg.path);
+	if (tickit.gcfg.dir !== undefined)
+		dir = tickit.gcfg.dir.toLowerCase();
 
-	cfg = acfg[tic.area.toLowerCase()];
+	cfg = tickit.acfg[tic.area.toLowerCase()];
 	if (cfg !== undefined) {
 		if (cfg.path !== undefined) {
 			path = backslash(cfg.path);
@@ -193,7 +84,7 @@ function process_tic(tic)
 	return true;
 }
 
-function add_links(seenbys, list)
+function add_links(seenbys, links, list)
 {
 	var l;
 	var i;
@@ -276,11 +167,11 @@ function forward_tic(tic)
 		seenbys[tic.seenby[i]]='';
 
 	// Calculate links
-	if (gcfg.links !== undefined)
-		add_links(seenbys, gcfg.links);
-	cfg = acfg[tic.area.toLowerCase()];
+	if (tickit.gcfg.links !== undefined)
+		add_links(seenbys, links, tickit.gcfg.links);
+	cfg = tickit.acfg[tic.area.toLowerCase()];
 	if (cfg !== undefined && cfg.links !== undefined)
-		add_links(seenbys, cfg.links);
+		add_links(seenbys, links, cfg.links);
 
 	// Add links to seenbys
 	for (i in links)
@@ -288,12 +179,12 @@ function forward_tic(tic)
 
 	// Now, start generating the TIC/FLO files...
 	for (link in links) {
-		if (!is_flo) {
+		if (!sbbsecho.is_flo) {
 			log(LOG_ERROR, "TickIT doesn't support non-FLO mailers.");
 			return false;
 		}
 
-		pw = get_pw(link);
+		pw = sbbsecho.get_pw(link);
 		if (pw===undefined)
 			pw = '';
 
@@ -307,14 +198,14 @@ function forward_tic(tic)
 			continue;
 		}
 
-		outb = outbound.replace(/[\\\/]+$/g, '');;
+		outb = sbbsecho.outbound.replace(/[\\\/]+$/g, '');
 		if (addr.zone !== defzone)
 			outb += format(".%03x", addr.zone);
 		outb = file_getcase(outb);
 		backslash(outb);
 
 		// Create TIC file first...
-		tf = new File(outb+get_next_tic_filename());
+		tf = new File(outb+tickit.get_next_tic_filename());
 		if(!tf.open("wb")) {
 			log(LOG_ERROR, "Unable to create TIC file for "+link+".  He will not get file '"+tic.file+"'!");
 			continue;
@@ -328,7 +219,7 @@ function forward_tic(tic)
 			tf.write('Path '+tic.path[i]+'\r\n');
 		for (i=0; i<tic.seenby.length; i++)
 			tf.write('Path '+tic.seenby[i]+'\r\n');
-		tf.close;
+		tf.close();
 
 		// Create bsy file...
 		flobase = outb+format("%04x%04x", addr.net, addr.node);
@@ -351,7 +242,7 @@ function forward_tic(tic)
 		ff.writeln('^'+tf.name);
 		ff.close();
 		bf.close();
-		bg.remove();
+		bf.remove();
 	}
 
 	return true;
@@ -375,7 +266,7 @@ function parse_ticfile(fname)
 		log(LOG_ERROR, "Unable to open '"+f.name+"'");
 		return false;
 	}
-	while (line = f.readln(65535)) {
+	while ((line = f.readln(65535)) != undefined) {
 		m = line.match(/^\s*([^\s]+)\s+(.*)$/);
 		if (m !== null) {
 			key = m[1].toLowerCase();
@@ -423,15 +314,15 @@ function parse_ticfile(fname)
 					tic[key] = val;
 					break;
 
-				case 'filename':
+				case 'fullname':
 					outtic.push(line);
-					tic[lfile] = val;
+					tic.lfile = val;
 					break;
 
 				// Multi-line values
 				case 'ldesc':
 					outtic.push(line);
-					tic[key] += val+"\r\n"
+					tic[key] += val+"\r\n";
 					break;
 
 				default:
@@ -471,81 +362,12 @@ function parse_ticfile(fname)
 			return false;
 		}
 	}
-	if (!match_pw(tic.from, tic.pw))
+	if (!sbbsecho.match_pw(tic.from, tic.pw))
 		return false;
 
 	tic[' forward'] = outtic;
 
 	return tic;
-}
-
-function parse_ecfg()
-{
-	var ecfg = new File(system.ctrl_dir+'sbbsecho.cfg');
-	var line;
-	var m;
-
-	if (!ecfg.open("r")) {
-		log(LOG_ERROR, "Unable to open '"+ecfg.name+"'");
-		return false;
-	}
-	while (line=ecfg.readln(65535)) {
-		m = line.match(/^\s*(?:secure_)?inbound\s+(.*)$/i);
-		if (m !== null) {
-			inb.push(backslash(m[1]));
-		}
-		m = line.match(/^\s*pktpwd\s+(.*?)\s+(.*)\s*$/i);
-		if (m !== null) {
-			pktpass[m[1].toUpperCase()] = m[2].toUpperCase();
-		}
-		m = line.match(/^\s*outbound\s+(.*?)\s*$/i);
-		if (m !== null) {
-			outbound = m[1];
-		}
-		m = line.match(/^\s*flo_mailer\s*$/i);
-		if (m !== null) {
-			is_flo = true;
-		}
-	}
-	ecfg.close();
-	return true;
-}
-
-function lcprops(obj)
-{
-	var i;
-
-	for (i in obj) {
-		if (i.toLowerCase() !== i) {
-			if (obj[i.toLowerCase()] === undefined)
-				obj[i.toLowerCase()] = obj[i];
-			if (typeof(obj[i]) == 'Object')
-				lcprops(obj[i]);
-		}
-	}
-}
-
-function parse_tcfg()
-{
-	var tcfg = new File(system.ctrl_dir+'tickit.ini');
-	var sects;
-	var i;
-
-	if (!tcfg.open("r")) {
-		log(LOG_ERROR, "Unable to open '"+tcfg.name+"'");
-		tcfg.close();
-		return false;
-	}
-	gcfg = tcfg.iniGetObject();
-	lcprops(gcfg);
-	sects = tcfg.iniGetSections();
-	for (i=0; i<sects.length; i++) {
-		acfg[sects[i].toLowerCase()] = tcfg.iniGetObject(sects[i]);
-		lcprops(acfg[sects[i].toLowerCase()]);
-	}
-	tcfg.close();
-
-	return true;
 }
 
 function import_files()
@@ -579,16 +401,11 @@ function main() {
 	var tic;
 	var processed = 0;
 
-	if (!parse_ecfg())
-		return false;
-	if (!parse_tcfg())
-		return false;
-
-	for (i=0; i<inb.length; i++) {
+	for (i=0; i<sbbsecho.inb.length; i++) {
 		if (system.platform === 'Win32')
-			ticfiles = directory(inb[i]+'/*.tic');
+			ticfiles = directory(sbbsecho.inb[i]+'/*.tic');
 		else
-			ticfiles = directory(inb[i]+'/*.[Tt][Ii][Cc]');
+			ticfiles = directory(sbbsecho.inb[i]+'/*.[Tt][Ii][Cc]');
 
 		for (j=0; j<ticfiles.length; j++) {
 			tic = parse_ticfile(ticfiles[j]);
