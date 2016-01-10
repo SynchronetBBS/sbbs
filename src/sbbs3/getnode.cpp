@@ -60,9 +60,11 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	if(node!=&thisnode)
 		memset(node,0,sizeof(node_t));
 	sprintf(str,"%snode.dab",cfg.ctrl_dir);
+	pthread_mutex_lock(&nodefile_mutex);
 	if(nodefile==-1) {
 		if((nodefile=nopen(str,O_RDWR|O_DENYNONE))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE);
+			pthread_mutex_unlock(&nodefile_mutex);
 			return(errno); 
 		}
 	}
@@ -94,8 +96,10 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 		if(nodefile!=-1)
 			close(nodefile);
 		nodefile=-1;
+		pthread_mutex_unlock(&nodefile_mutex);
 		return(-2);
 	}
+	pthread_mutex_unlock(&nodefile_mutex);
 	if(count>(LOOP_NODEDAB/2)) {
 		sprintf(str,"NODE.DAB (node %d) COLLISION - Count: %d"
 			,number+1, count);

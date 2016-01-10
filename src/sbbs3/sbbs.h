@@ -398,6 +398,7 @@ public:
 			*logfile_fp;
 
 	int 	nodefile;		/* File handle for node.dab */
+	pthread_mutex_t	nodefile_mutex;
 	int		node_ext;		/* File handle for node.exb */
 	int 	inputfile;		/* File handle to use for input */
 
