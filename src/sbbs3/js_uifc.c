@@ -44,6 +44,164 @@
 #include "ciolib.h"
 #include "js_request.h"
 
+struct list_ctx_private {
+	int	cur;
+	int bar;
+	int left;
+	int top;
+	int width;
+};
+
+enum {
+	 PROP_CUR
+	,PROP_BAR
+	,PROP_LEFT
+	,PROP_TOP
+	,PROP_WIDTH
+};
+
+static JSBool js_list_ctx_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+{
+	jsval idval;
+    jsint		tiny;
+	struct list_ctx_private*	p;
+
+	if((p=(struct list_ctx_private*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
+
+	switch(tiny) {
+		case PROP_CUR:
+			*vp=INT_TO_JSVAL(p->cur);
+			break;
+		case PROP_BAR:
+			*vp=INT_TO_JSVAL(p->bar);
+			break;
+		case PROP_LEFT:
+			*vp=INT_TO_JSVAL(p->left);
+			break;
+		case PROP_TOP:
+			*vp=INT_TO_JSVAL(p->top);
+			break;
+		case PROP_WIDTH:
+			*vp=INT_TO_JSVAL(p->width);
+			break;
+	}
+	return JS_TRUE;
+}
+
+static JSBool js_list_ctx_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+{
+	jsval idval;
+    jsint		tiny;
+	int32		i=0;
+	struct list_ctx_private*	p;
+
+	if((p=(struct list_ctx_private*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
+
+	if(!JS_ValueToInt32(cx, *vp, &i))
+		return JS_FALSE;
+
+	switch(tiny) {
+		case PROP_CUR:
+			p->cur=i;
+			break;
+		case PROP_BAR:
+			p->bar=i;
+			break;
+		case PROP_LEFT:
+			p->left=i;
+			break;
+		case PROP_TOP:
+			p->top=i;
+			break;
+		case PROP_WIDTH:
+			p->width=i;
+			break;
+	}
+	return JS_TRUE;
+}
+
+#ifdef BUILD_JSDOCS
+static char* uifc_list_ctx_prop_desc[] = {
+	 "Currently selected item"
+	,"0-based Line number in the currently displayed set that is highlighted"
+	,"left column"
+	,"top line"
+	,"forced width"
+	,NULL
+};
+#endif
+
+/* Destructor */
+
+static void 
+js_list_ctx_finalize(JSContext *cx, JSObject *obj)
+{
+	struct list_ctx_private*	p;
+
+	if((p=(struct list_ctx_private*)JS_GetPrivate(cx,obj))==NULL)
+		return;
+
+	free(p);
+	JS_SetPrivate(cx,obj,NULL);
+}
+
+static JSClass js_uifc_list_ctx_class = {
+     "CTX"					/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_list_ctx_get		/* getProperty	*/
+	,js_list_ctx_set		/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,js_list_ctx_finalize	/* finalize		*/
+};
+
+static jsSyncPropertySpec js_uifc_list_class_properties[] = {
+/*       name               ,tinyid                 ,flags,             ver */
+
+    {   "cur"             ,PROP_CUR 				,JSPROP_ENUMERATE,  317 },
+    {   "bar"  		      ,PROP_BAR    				,JSPROP_ENUMERATE,  317 },
+    {0}
+};
+
+/* Constructor */
+static JSBool js_list_ctx_constructor(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
+	struct list_ctx_private*	p;
+	
+	obj = JS_NewObject(cx, &js_uifc_list_ctx_class, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
+	if ((p = (struct list_ctx_private *)calloc(1, sizeof(struct list_ctx_private)))==NULL) {
+		JS_ReportError(cx, "calloc failed");
+		return JS_FALSE;
+	}
+	if(!JS_SetPrivate(cx, obj, p)) {
+		JS_ReportError(cx, "JS_SetPrivate failed");
+		return JS_FALSE;
+	}
+
+	js_SyncResolve(cx, obj, NULL, js_uifc_list_class_properties, NULL, NULL, 0);
+
+#ifdef BUILD_JSDOCS
+	js_DescribeSyncObject(cx, obj, "Class used to retain UIFC list menu context", 317);
+	js_DescribeSyncConstructor(cx, obj, "To create a new UIFCListContext object: <tt>var ctx = new UIFCListContext();</tt>");
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", uifc_list_ctx_prop_desc, JSPROP_READONLY);
+#endif
+
+	return JS_TRUE;
+}
+
 /* Properties */
 enum {
 	 PROP_INITIALIZED	/* read-only */
@@ -505,7 +663,9 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 	int32		top=0;
 	int32		width=0;
 	int32		dflt=0;
+	int32		*dptr = &dflt;
 	int32		bar=0;
+	int32		*bptr = &bar;
 	int32		mode=0;
 	JSObject*	objarg;
 	uifcapi_t*	uifc;
@@ -517,6 +677,7 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 	char		*opt=NULL;
 	size_t		opt_sz=0;
 	jsrefcount	rc;
+	struct list_ctx_private *p;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -526,27 +687,12 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
 		&& !JS_ValueToInt32(cx,argv[argn++],&mode))
 		return(JS_FALSE);
-	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
-		&& !JS_ValueToInt32(cx,argv[argn++],&left))
-		return(JS_FALSE);
-	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
-		&& !JS_ValueToInt32(cx,argv[argn++],&top))
-		return(JS_FALSE);
-	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
-		&& !JS_ValueToInt32(cx,argv[argn++],&width))
-		return(JS_FALSE);
-	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
-		&& !JS_ValueToInt32(cx,argv[argn++],&dflt))
-		return(JS_FALSE);
-	if(argn<argc && JSVAL_IS_NUMBER(argv[argn]) 
-		&& !JS_ValueToInt32(cx,argv[argn++],&bar))
-		return(JS_FALSE);
 	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
 		JSVALUE_TO_MSTRING(cx, argv[argn], title, NULL);
 		argn++;
 		HANDLE_PENDING(cx);
 	}
-	if(argn<argc && JSVAL_IS_OBJECT(argv[argn])) {
+	while(argn<argc && JSVAL_IS_OBJECT(argv[argn])) {
 		if((objarg = JSVAL_TO_OBJECT(argv[argn++]))==NULL)
 			return(JS_FALSE);
 		if(JS_IsArrayObject(cx, objarg)) {
@@ -566,10 +712,20 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 			if(opt)
 				free(opt);
 		}
+		else if(JS_GetClass(cx, objarg) == &js_uifc_list_ctx_class) {
+			p = JS_GetPrivate(cx, objarg);
+			if (p != NULL) {
+				dptr = &(p->cur);
+				bptr = &(p->bar);
+				left = p->left;
+				top = p->top;
+				width = p->width;
+			}
+		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-    JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(uifc->list(mode,left,top,width,(int*)&dflt,(int*)&bar,title,opts)));
+    JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(uifc->list(mode,left,top,width,(int*)dptr,(int*)bptr,title,opts)));
 	strListFree(&opts);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
@@ -606,12 +762,15 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("popup (or down) a message")
 	,314
 	},
-	{"input",			js_uifc_input,		0,	JSTYPE_STRING,	JSDOCSTR("[...]")
+	{"input",			js_uifc_input,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode] [number left] [number top] [string default] [number maxlen] [number kmode]")
 	,JSDOCSTR("prompt for a string input")
 	,314
 	},
-	{"list",			js_uifc_list,		0,	JSTYPE_STRING,	JSDOCSTR("[...]")
-	,JSDOCSTR("select from a list of options")
+	{"list",			js_uifc_list,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode] [string title] [string array options] [uifc.list.CTX object]")
+	,JSDOCSTR("select from a list of options.<br>"
+		"The context object can be created using new uifc.list.CTX() and if the same object is passed, allows WIN_SAV to work correctly.<br>"
+		"The context object has the following properties:<br>cur, bar, top, left, width"
+	)
 	,314
 	},
 	{0}
@@ -621,10 +780,12 @@ static JSBool js_uifc_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
 	char*			name=NULL;
 	JSBool			ret;
+	jsval			objval;
+	JSObject*		tobj;
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
-		
+
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
@@ -633,6 +794,13 @@ static JSBool js_uifc_resolve(JSContext *cx, JSObject *obj, jsid id)
 	}
 
 	ret=js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0);
+	if (name == NULL || strcmp(name, "list") == 0) {
+		if(JS_GetProperty(cx, obj, "list", &objval)) {
+			tobj = JSVAL_TO_OBJECT(objval);
+			if (tobj)
+				JS_InitClass(cx, tobj, NULL, &js_uifc_list_ctx_class, js_list_ctx_constructor, 0, NULL, NULL, NULL, NULL);
+		}
+	}
 	if(name)
 		free(name);
 	return ret;
