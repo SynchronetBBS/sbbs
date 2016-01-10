@@ -456,7 +456,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				p=sbbs->cfg.sub[sbbs->smb.subnum]->code;
 			break;
 		case BBS_PROP_SMB_SUB_NUM:
-			if(sbbs->smb.subnum!=INVALID_SUB && sbbs->smb.subnum<sbbs->cfg.total_subs) {
+			if(sbbs->usrsubs && sbbs->smb.subnum!=INVALID_SUB && sbbs->smb.subnum<sbbs->cfg.total_subs) {
 				uint ugrp;
 				for(ugrp=0;ugrp<sbbs->usrgrps;ugrp++)
 					if(sbbs->usrgrp[ugrp]==sbbs->cfg.sub[sbbs->smb.subnum]->grp)
