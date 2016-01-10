@@ -1074,8 +1074,9 @@ Frame.prototype.putmsg = function(str,attr) {
 			case 'I':	/* Blink */
 				this.__properties__.curr_attr|=BLINK;
 				break;
-			case 'N':	/* Normal (ToDo: Does this do ESC[0?) */
-				this.__properties__.curr_attr=this.attr;
+			case 'N': 	/* Normal */
+				this.__properties__.curr_attr&=~HIGH;
+				this.__properties__.curr_attr&=~BLINK;
 				break;
 			case '-':	/* Normal if High, Blink, or BG */
 				if(this.__properties__.curr_attr & 0xf8)
