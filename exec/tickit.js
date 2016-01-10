@@ -1,3 +1,27 @@
+/*
+ * An intentionally simple TIC handler for Synchronet.
+ *
+ * How to set up... add a timed event:
+ * Internal Code                   TICKIT    
+ * Start-up Directory                        
+ * Command Line                    ?tickit.js
+ * Enabled                         Yes       
+ * Execution Node                  1         
+ * Execution Months                Any       
+ * Execution Days of Month         Any       
+ * Execution Days of Week          None      
+ * Execution Time                  00:00     
+ * Requires Exclusive Execution    No        
+ * Force Users Off-line For Event  No        
+ * Native Executable               No        
+ * Use Shell to Execute            No        
+ * Background Execution            No        
+ * Always Run After Init/Re-init   Yes
+ *
+ * And set up a semaphore in your mailer... for binkd:
+ * flag /sbbs/data/tickit.now *.tic *.TIC
+ */
+
 load("sbbsdefs.js");
 load("tickit_objs.js");
 
