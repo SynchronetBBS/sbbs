@@ -163,13 +163,15 @@ function edit_area(obj, name)
 function edit_areas()
 {
 	var areas;
+	var areas_list;
 	var area = 0;
 	var tmp;
 	var ctx = new uifc.list.CTX();
 
 	while(area >= 0) {
 		areas = Object.keys(tickit.acfg).sort();
-		area = uifc.list(WIN_SAV|WIN_BOT|WIN_ACT|WIN_DEL|WIN_INS|WIN_DELACT|WIN_XTR, "Select Area", areas, ctx);
+		areas_list = areas.map(function(v){return v.toUpperCase();});
+		area = uifc.list(WIN_SAV|WIN_BOT|WIN_ACT|WIN_DEL|WIN_INS|WIN_DELACT|WIN_XTR, "Select Area", areas_list, ctx);
 		if (area == -1) {
 			break;
 		}
@@ -227,10 +229,20 @@ function main()
 				break;
 			case 2:
 				edit_areas();
-				uifc.bail();
 				break;
 			case -1:
-				// TODO: Save changes?
+				switch(uifc.list(WIN_MID, "Write INI", ["Yes", "No"])) {
+					case 0:
+						tickit.save();
+						uifc.bail();
+						break;
+					case 1:
+						uifc.bail();
+						break;
+					default:
+						cmd = 0;
+						break;
+				}
 				break;
 			default:
 				uifc.msg("Unhandled Return: "+cmd);
