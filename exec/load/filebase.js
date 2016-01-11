@@ -3,7 +3,27 @@
  * in the specified directory.
  * 
  * Similar to filedir.js.
+ * 
+ * Each element in the array is an object with the following properties:
+ * 
+ * base:       Base filename.
+ * ext:        Filename extension.
+ * datoffset:  Offset in .dat file of file data.
+ * uldate:     Date uploaded
+ * dldate:     Date downloaded(?)
+ * credits:    Number of credits(?)
+ * desc:       Short description (58 chars max)
+ * uploader:   Name of user that uploaded the file.
+ * downloaded: Number of times the file has been downloaded.
+ * opencount:  I have no idea what this is.
+ * misc:       Misc flags... see FM_* below.
+ * anonymous:  Anonymous upload
+ * altpath:    Index into the internal array of alt paths (not visible to JavaScript)
+ * extdesc:    May be undefined... extended description.
  */
+
+var FM_EXTDESC = 1;
+var FM_ANON = (1<<1);
 
 function FileBase(dir) {
 	var f = new File(format("%s%s.ixb", file_area.dir[dir].data_dir, dir));
@@ -12,7 +32,7 @@ function FileBase(dir) {
 	var record = null;
 	var ret = [];
 
-	function FileEntry(idx) {
+	function FileEntry() {
 		var byte;
 
 		function getrec(file, len) {
@@ -47,13 +67,17 @@ function FileBase(dir) {
 			this.misc = ascii(this.misc)-32;
 		else
 			this.misc = 0;
+		if (this.misc & FM_ANON)
+			this.anonymous = true;
+		else
+			this.anonymous = false;
 		this.altpath = parseInt(getrec(dat, 2), 16);
 
 		// Read from the EXB file
-		this.extdesc = '';
-		if (exb.is_open) {
-			if (exb.length > idx*512) {
-				exb.position = idx * 512;
+		var exbpos = (dat.position / 118) * 512;
+		if (exb.is_open && (this.misc & FM_EXTDESC)) {
+			if (exb.length > exbpos) {
+				exb.position = exbpos;
 				this.extdesc = exb.read(512).replace(/\x00.*$/, '');
 			}
 		}
