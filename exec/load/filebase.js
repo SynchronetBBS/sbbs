@@ -83,8 +83,14 @@ function FileBase(dir) {
 				this.extdesc = exb.read(512).replace(/\x00.*$/, '');
 			}
 		}
-		if (file_exists(file_area.dir[dir].path+this.name))
-			this.path = fullpath(file_area.dir[dir].path+this.name);
+		if (this.altpath > 0 && file_area.alt_paths !== undefined) {
+			if (file_exists(file_area.alt_paths[this.altpath-1]+this.name))
+				this.path = fullpath(file_area.alt_paths[this.altpath-1]+this.name);
+		}
+		else {
+			if (file_exists(file_area.dir[dir].path+this.name))
+				this.path = fullpath(file_area.dir[dir].path+this.name);
+		}
 	};
 	FileEntry.prototype = {
 		get name() {
