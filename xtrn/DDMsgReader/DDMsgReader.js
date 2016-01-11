@@ -107,6 +107,11 @@
  * 2015-12-24 Eric Oulashin     Version 1.07
  *                              Releasing this version, as it seems to be working as
  *                              it should after testing & development.
+ * 2016-01-10 Eric Oulashin     Version 1.08
+ *                              Bug fix: When scanning message sub-boards, it wasn't
+ *                              always closing the sub-board when there were no new
+ *                              messages, resulting in further sub-boards failing to
+ *                              open after a while.  That has been fixed.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -198,8 +203,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.07";
-var READER_DATE = "2015-12-24";
+var READER_VERSION = "1.08";
+var READER_DATE = "2016-01-10";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1916,7 +1921,11 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 						var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
 						var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
 						if (!nonDeletedMsgsExist)
+						{
+							if (this.msgbase != null)
+								this.msgbase.close();
 							continue;
+						}
 
 						// In the switch cases below, bbs.curgrp and bbs.cursub are
 						// temporarily changed the user's sub-board to the current
@@ -2034,7 +2043,11 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 					var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
 					var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
 					if (!nonDeletedMsgsExist)
+					{
+						if (this.msgbase != null)
+							this.msgbase.close();
 						continue;
+					}
 
 					// Temporarily change the user's sub-board to the current
 					// sub-board so that certain @-codes (such as @GRP-L@, etc.)
@@ -4915,6 +4928,11 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 							writeMessage = false;
 						else
 						{
+							// TODO: Prompt the user if they want to post in the sub-board
+							// (to mimic the Synchronet stock behavior).
+
+							// Prompt the user whether they want to go to the next message area
+							// TODO: Add an option to toggle this behavior
 							if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
 							{
 								// Let this method exit and let the caller go to the next sub-board
