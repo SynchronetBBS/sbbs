@@ -20,6 +20,8 @@
  * anonymous:  Anonymous upload
  * altpath:    Index into the internal array of alt paths (not visible to JavaScript)
  * extdesc:    May be undefined... extended description.
+ * path:       Full path to file.  Undefined if the file doesn't exist or
+ *             is in an alt path (since they're not visible to JS).
  */
 
 var FM_EXTDESC = 1;
@@ -81,6 +83,8 @@ function FileBase(dir) {
 				this.extdesc = exb.read(512).replace(/\x00.*$/, '');
 			}
 		}
+		if (file_exists(file_area.dir[dir].path+this.name))
+			this.path = fullpath(file_area.dir[dir].path+this.name);
 	};
 	FileEntry.prototype = {
 		get name() {
