@@ -294,9 +294,9 @@ DLLEXPORT int DLLCALL	get_errno(void);
 								tv.tv_sec=(sleep_msecs/1000); tv.tv_usec=((sleep_msecs%1000)*1000); \
 								pth_nap(tv); })
 	#else
-		#define SLEEP(x)		({	int sleep_msecs=x; struct timeval tv; \
-								tv.tv_sec=(sleep_msecs/1000); tv.tv_usec=((sleep_msecs%1000)*1000); \
-								select(0,NULL,NULL,NULL,&tv); })
+		#define SLEEP(x)		({	int sleep_msecs=x; struct timespec ts={0}; \
+								ts.tv_sec=(sleep_msecs/1000); ts.tv_nsec=((sleep_msecs%1000)*1000000); \
+								nanosleep(&ts, NULL); })
 	#endif
 
 	#define YIELD()			SLEEP(1)
