@@ -149,6 +149,7 @@ function parse_addr(addr)
 	if (m !== null)
 		ret.domain = m[1];
 
+	return ret;
 }
 
 function get_zone(addr)
@@ -231,8 +232,8 @@ function forward_tic(tic)
 		outb = sbbsecho.outbound.replace(/[\\\/]+$/g, '');
 		if (addr.zone !== defzone)
 			outb += format(".%03x", addr.zone);
-		outb = file_getcase(outb);
-		backslash(outb);
+		outb = fullpath(outb);
+		outb = backslash(outb);
 
 		// Create TIC file first...
 		tf = new File(outb+tickit.get_next_tic_filename());
