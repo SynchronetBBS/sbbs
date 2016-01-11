@@ -124,10 +124,10 @@ function add_links(seenbys, links, list)
 	}
 }
 
-function parse_addr(addr)
+function parse_addr(addr, dz)
 {
 	var m;
-	var ret={};
+	var ret={zone:dz, net:0, node:0, point:0};
 
 	m = addr.match(/^([0-9]+):/);
 	if (m !== null)
@@ -220,7 +220,7 @@ function forward_tic(tic)
 			pw = '';
 
 		// Figure out the outbound dir...
-		addr = parse_addr(link);
+		addr = parse_addr(link, defzone);
 		if (addr.zone === undefined)
 			addr.zone = defzone;
 
@@ -234,6 +234,14 @@ function forward_tic(tic)
 			outb += format(".%03x", addr.zone);
 		outb = fullpath(outb);
 		outb = backslash(outb);
+		if (addr.point > 0) {
+			outb += format("%04x%04x.pnt", addr.net, addr.node);
+			outb = backslash(outb);
+		}
+		if (!mkpath(outb)) {
+			log(LOG_ERROR, "Unable to create outbound director '"+outb+"' for link "+link);
+			continue;
+		}
 
 		// Create TIC file first...
 		tf = new File(outb+tickit.get_next_tic_filename());
@@ -253,7 +261,10 @@ function forward_tic(tic)
 		tf.close();
 
 		// Create bsy file...
-		flobase = outb+format("%04x%04x", addr.net, addr.node);
+		if (addr.point > 0)
+			flobase = outb+format("%08x", addr.point);
+		else
+			flobase = outb+format("%04x%04x", addr.net, addr.node);
 		bf = new File(flobase+'.bsy');
 		while (!bf.open('web+')) {
 			// TODO: This waits forever...
