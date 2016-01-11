@@ -72,21 +72,21 @@ function TickITCfg() {
 	function lcprops(obj)
 	{
 		var i;
+		var keys = Object.keys(obj);
 
-		for (i in obj) {
-			if (i.toLowerCase() !== i) {
-				if (obj[i.toLowerCase()] === undefined)
-					obj[i.toLowerCase()] = obj[i];
-				if (typeof(obj[i]) == 'Object')
-					lcprops(obj[i]);
+		for (i=0; i<keys.length; i++) {
+			if (keys[i].toLowerCase() !== keys[i]) {
+				if (obj[keys[i].toLowerCase()] === undefined)
+					obj[keys[i].toLowerCase()] = obj[keys[i]];
+				delete obj[keys[i]];
+				if (typeof(obj[keys[i].toLowerCase()]) == 'Object')
+					lcprops(obj[keys[i].toLowerCase()]);
 			}
 		}
 	}
 
-	if (!tcfg.open("r")) {
-		tcfg.close();
+	if (!tcfg.open("r"))
 		throw("Unable to open '"+tcfg.name+"'");
-	}
 	this.gcfg = tcfg.iniGetObject();
 	lcprops(this.gcfg);
 	sects = tcfg.iniGetSections();
@@ -166,3 +166,42 @@ TickITCfg.prototype.get_next_tic_filename = function()
 	// Add pre/suf-fix
 	return 'ti_'+ret+'.tic';
 };
+TickITCfg.prototype.save = function()
+{
+	var tcfg = new File(system.ctrl_dir+'tickit.ini');
+	var sects;
+	var i;
+	var j;
+
+	function writesect(section, obj) {
+		if (obj.links === undefined)
+			tcfg.iniRemoveKey(section, 'Links');
+		else
+			tcfg.iniSetValue(section, 'Links', obj.links);
+
+		if (obj.dir === undefined)
+			tcfg.iniRemoveKey(section, 'Dir');
+		else
+			tcfg.iniSetValue(section, 'Dir', obj.dir);
+
+		if (obj.path === undefined)
+			tcfg.iniRemoveKey(section, 'Path');
+		else
+			tcfg.iniSetValue(section, 'Path', obj.path);
+	}
+
+	if (!tcfg.open(tcfg.exists ? 'r+':'w+'))
+		throw("Unable to open '"+tcfg.name+"'");
+
+	writesect(null, this.gcfg);
+	sects = tcfg.iniGetSections().map(function(v){return v.toLowerCase();});
+	for (i in this.acfg) {
+		writesect(i.toUpperCase(), this.acfg[i]);
+		while ((j=sects.indexOf(i.toLowerCase())) >= 0) {
+			sects.splice(j, 1);
+		}
+	}
+	for (i=0; i<sects.length; i++)
+		tcfg.iniRemoveSection(sects[i]);
+	tcfg.close();
+}
