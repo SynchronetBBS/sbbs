@@ -248,7 +248,7 @@ function forward_tic(tic)
 		for (i=0; i<tic.path.length; i++)
 			tf.write('Path '+tic.path[i]+'\r\n');
 		for (i=0; i<tic.seenby.length; i++)
-			tf.write('Path '+tic.seenby[i]+'\r\n');
+			tf.write('Seenby '+tic.seenby[i]+'\r\n');
 		tf.close();
 
 		// Create bsy file...
