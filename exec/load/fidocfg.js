@@ -258,3 +258,50 @@ function FREQITCfg()
 	}
 	f.close();
 }
+FREQITCfg.prototype.save = function()
+{
+	var fcfg = new File(system.ctrl_dir+'freqit.ini');
+	var sects;
+	var i;
+	var j;
+
+	function writesect(section, obj) {
+		if (obj.dir === undefined)
+			fcfg.iniRemoveKey(section, 'Dir');
+		else
+			fcfg.iniSetValue(section, 'Dir', obj.dir);
+
+		if (obj.secure === undefined)
+			fcfg.iniRemoveKey(section, 'Secure');
+		else
+			fcfg.iniSetValue(section, 'Secure', obj.secure ? 'Yes' : 'No');
+
+		if (obj.match === undefined)
+			fcfg.iniRemoveKey(section, 'Match');
+		else
+			fcfg.iniSetValue(section, 'Match', obj.match);
+	}
+
+	if (!fcfg.open(fcfg.exists ? 'r+':'w+'))
+		throw("Unable to open '"+fcfg.name+"'");
+
+	if (this.dirs.length > 0)
+		fcfg.iniSetValue(null, 'Dirs', this.dirs.join(','));
+	else
+		fcfg.iniRemoveKey(section, 'Dirs');
+	if (this.securedirs.length > 0)
+		fcfg.iniSetValue(null, 'SecureDirs', this.securedirs.join(','));
+	else
+		fcfg.iniRemoveKey(section, 'SecureDirs');
+	fcfg.iniSetValue(null, 'MaxFiles', this.maxfiles.toString());
+
+	sects = fcfg.iniGetSections().map(function(v){return v.toLowerCase();});
+	for (i in this.magic) {
+		writesect(i, this.magic[i]);
+		while ((j=sects.indexOf(i.toLowerCase())) >= 0)
+			sects.splice(j, 1);
+	}
+	for (i=0; i<sects.length; i++)
+		fcfg.iniRemoveSection(sects[i]);
+	fcfg.close();
+}
