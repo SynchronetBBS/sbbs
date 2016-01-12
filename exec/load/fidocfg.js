@@ -210,6 +210,9 @@ function FREQITCfg()
 {
 	var f=new File(system.ctrl_dir+'freqit.ini');
 	var val;
+	var i;
+	var key;
+	var sects;
 
 	if (!f.open('r')) {
 		log(LOG_ERROR, "Unable to open '"+f.name+"'");
@@ -226,15 +229,15 @@ function FREQITCfg()
 	if (val != undefined)
 			this.securedirs = val.toLowerCase().split(/,/);
 	this.maxfiles=f.iniGetValue(null, 'MaxFiles', 10);
-	f.iniGetSections().forEach(function(key) {
+	sects = f.iniGetSections();
+	for (i=0; i<sects.length; i++) {
+		key = sects[i];
 		var dir = f.iniGetValue(key, 'Dir');
 
 		if (dir == undefined) {
 			log(LOG_ERROR, "Magic value '"+key+"' without a dir configured");
 			return;
 		}
-		if (this.magic === undefined)
-			this.magic = {};
 		this.magic[key] = {};
 		this.magic[key].dir=dir;
 		this.magic[key].match=f.iniGetValue(key, 'Match', '*');
@@ -252,6 +255,6 @@ function FREQITCfg()
 				}
 				this.magic[key].secure = false;
 		}
-	});
+	}
 	f.close();
 }
