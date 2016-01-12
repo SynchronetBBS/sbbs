@@ -1,6 +1,6 @@
 load("sbbsdefs.js");
 load("uifcdefs.js");
-load("tickit_objs.js");
+load("fidocfg.js");
 load("filebase.js");
 
 // Backward compatability hack.

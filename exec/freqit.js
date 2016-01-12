@@ -6,8 +6,7 @@
  */
 
 load("filebase.js");
-var cfg = new FREQITCfg();
-
+load("fidocfg.js");
 function FREQITCfg()
 {
 	var f=new File(system.ctrl_dir+'freqit.ini');
@@ -57,6 +56,8 @@ function FREQITCfg()
 	});
 	f.close();
 }
+
+var cfg = new FREQITCfg();
 
 function parse_srif(fname)
 {

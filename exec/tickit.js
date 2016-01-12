@@ -24,7 +24,7 @@
  */
 
 load("sbbsdefs.js");
-load("tickit_objs.js");
+load("fidocfg.js");
 
 var sbbsecho = new SBBSEchoCfg();
 var tickit = new TickITCfg();
