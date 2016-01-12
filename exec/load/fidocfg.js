@@ -205,3 +205,53 @@ TickITCfg.prototype.save = function()
 		tcfg.iniRemoveSection(sects[i]);
 	tcfg.close();
 }
+
+function FREQITCfg()
+{
+	var f=new File(system.ctrl_dir+'freqit.ini');
+	var val;
+
+	if (!f.open('r')) {
+		log(LOG_ERROR, "Unable to open '"+f.name+"'");
+		return;
+	}
+	// TODO: Support requiring passwords for specific files/dirs
+	this.dirs = [];
+	this.securedirs = [];
+	this.magic = {};
+	val = f.iniGetValue(null, 'Dirs');
+	if (val != undefined)
+		this.dirs = val.toLowerCase().split(/,/);
+	val = f.iniGetValue(null, 'SecureDirs');
+	if (val != undefined)
+			this.securedirs = val.toLowerCase().split(/,/);
+	this.maxfiles=f.iniGetValue(null, 'MaxFiles', 10);
+	f.iniGetSections().forEach(function(key) {
+		var dir = f.iniGetValue(key, 'Dir');
+
+		if (dir == undefined) {
+			log(LOG_ERROR, "Magic value '"+key+"' without a dir configured");
+			return;
+		}
+		if (this.magic === undefined)
+			this.magic = {};
+		this.magic[key] = {};
+		this.magic[key].dir=dir;
+		this.magic[key].match=f.iniGetValue(key, 'Match', '*');
+		this.magic[key].secure=f.iniGetValue(key, 'Secure', 'No');
+		switch(this.magic[key].secure.toUpperCase()) {
+			case 'TRUE':
+			case 'YES':
+			case 'ON':
+				this.magic[key].secure = true;
+				break;
+			default:
+				if (parseInt(this.magic[key].secure, 10)) {
+					this.magic[key].secure = true;
+					break;
+				}
+				this.magic[key].secure = false;
+		}
+	});
+	f.close();
+}
