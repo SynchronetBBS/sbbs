@@ -4,20 +4,27 @@ load("sockdefs.js");
  * A binkp implementation...
  * 
  * Create a new instance with New passing a path to place received files
- * in to the constructor (defaults to system.tem_dir).
+ * in to the constructor (defaults to system.temp_dir).
  * 
  * Next, adjust defaults as needed...
- * default_zone - if no zone is specified, use this one for all addresses.
- * debug		- If set, logs all sent/received frames via log(LOG_DEBUG)
- * skipfiles	- Do not accept any incoming files until after the first EOB from the remote.
- * 				  intended for FREQ sessions.
- * require_md5	- Require that the remote support MD5
- * timeout		- Max timeout
- * rx_callback	- Function that is called with a single filename argument
- *                when a file is received successfully.
- *                Intended for REQ/TIC processing.  This callback can call
- * 				  the addFile(filename) method (may not work unless
- * 				  ver1_1 is true)
+ * default_zone    - if no zone is specified, use this one for all addresses.
+ * debug		   - If set, logs all sent/received frames via log(LOG_DEBUG)
+ * skipfiles	   - Do not accept any incoming files until after the first EOB from the remote.
+ * 				     intended for FREQ sessions.
+ * require_md5	   - Require that the remote support MD5
+ * timeout		   - Max timeout
+ * addr_list       - list of addresses handled by this system.  Defaults to system.fido_addr_list
+ * system_name	   - BBS name to send to remote defaults to system.name
+ * system_operator - SysOp name to send to remote defaults to system.operator
+ * system_location - System location to send to remote defaults to system.location
+ * rx_callback	   - Function that is called with a single filename argument
+ *                   when a file is received successfully.
+ *                   Intended for REQ/TIC processing.  This callback can call
+ * 				     the addFile(filename) method (may not work unless
+ * 				     ver1_1 is true)
+ * auth_callback   - Function that is called with a list of addresses and a list of
+ *                   passwords (two arguments) which returns true if the session is secure
+ *                   or false if it is not.
  * 
  * Now add any files you wish to send using the addFile(filename) method
  * 
@@ -30,13 +37,14 @@ load("sockdefs.js");
  * transfer.
  */
 
-function BinkP(inbound, rx_callback)
+function BinkP(inbound, rx_callback, auth_callback)
 {
 	var addr;
 
 	if (inbound === undefined)
 		inbound = system.temp_dir;
 	this.rx_callback = rx_callback;
+	this.auth_callback = auth_callback;
 	this.default_zone = 1;
 	addr = this.parse_addr(system.fido_addr_list[0]);
 	if (addr.zone !== undefined)
@@ -54,6 +62,11 @@ function BinkP(inbound, rx_callback)
 	this.require_md5 = true;
 	this.inbound = backslash(inbound);
 	this.timeout = 120;
+	this.addr_list = [];
+	this.system_name = system.name;
+	this.system_operator = system.operator;
+	this.system_location = system.location;
+	system.fido_addr_list.forEach(function(addr, this){this.addr_list.push(addr);});
 
 	this.sent_files = [];
 	this.failed_sent_files = [];
@@ -217,14 +230,14 @@ BinkP.prototype.session = function(addr, password, port)
 	}
 
 	this.authenticated = undefined;
-	this.sendCmd(this.command.M_NUL, "SYS "+system.name);
-	this.sendCmd(this.command.M_NUL, "ZYZ "+system.operator);
-	this.sendCmd(this.command.M_NUL, "LOC "+system.location);
+	this.sendCmd(this.command.M_NUL, "SYS "+system_name);
+	this.sendCmd(this.command.M_NUL, "ZYZ "+system_operator);
+	this.sendCmd(this.command.M_NUL, "LOC "+system_location);
 	this.sendCmd(this.command.M_NUL, "NDL 115200,TCP,BINKP");
 	this.sendCmd(this.command.M_NUL, "TIME "+system.timestr());
 	this.sendCmd(this.command.M_NUL, "VER JSBinkP/0.0.0/"+system.platform+" binkp/1.1");
-	for (i=0; i<system.fido_addr_list.length; i++)
-		this.sendCmd(this.command.M_ADR, system.fido_addr_list[i]);
+	for (i=0; i<this.addr_list.length; i++)
+		this.sendCmd(this.command.M_ADR, this.addr_list[i]);
 
 	while(!js.terminated && this.remote_addrs === undefined) {
 		pkt = this.recvFrame(this.timeout);
