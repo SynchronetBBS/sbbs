@@ -21,15 +21,12 @@ load("sockdefs.js");
  *                   when a file is received successfully.
  *                   Intended for REQ/TIC processing.  This callback can call
  * 				     the addFile(filename) method (may not work unless
- * 				     ver1_1 is true)
- * auth_callback   - Function that is called with a list of addresses and a list of
- *                   passwords (two arguments) which returns true if the session is secure
- *                   or false if it is not.  This callback cand also safely call
- *					 addFile(filename) to add files for the authenticated addresses
+ *					 ver1_1 is true)
+ * name_ver        - Name and version of program in "name/ver.ver.ver" format
  * 
  * Now add any files you wish to send using the addFile(filename) method
  * 
- * Finally, call the session() method.
+ * Finally, call the connect() or accept() method
  * This method will return true if all files were transferred with no errors.
  * 
  * After return, the sent_files and received_files arrays will contain
@@ -38,14 +35,20 @@ load("sockdefs.js");
  * transfer.
  */
 
-function BinkP(inbound, rx_callback, auth_callback)
+function BinkP(name_ver, inbound, rx_callback)
 {
 	var addr;
 
+	if (name_ver === undefined)
+		name_ver = 'JSBinkP/'+("$Revision$".split(' ')[1]);
+	this.name_ver = name_ver;
+
 	if (inbound === undefined)
 		inbound = system.temp_dir;
+	this.inbound = backslash(inbound);
+
 	this.rx_callback = rx_callback;
-	this.auth_callback = auth_callback;
+
 	this.default_zone = 1;
 	addr = this.parse_addr(system.fido_addr_list[0]);
 	if (addr.zone !== undefined)
@@ -61,7 +64,6 @@ function BinkP(inbound, rx_callback, auth_callback)
 	this.sent_nr = false;
 	this.ver1_1 = false;
 	this.require_md5 = true;
-	this.inbound = backslash(inbound);
 	this.timeout = 120;
 	this.addr_list = [];
 	this.system_name = system.name;
@@ -168,7 +170,7 @@ BinkP.prototype.ack_file = function()
 		this.receiving_len = undefined;
 		this.receiving_date = undefined;
 	}
-}
+};
 BinkP.prototype.getCRAM = function(algo, key)
 {
 	var tmp;
@@ -199,16 +201,19 @@ BinkP.prototype.getCRAM = function(algo, key)
 		tmp += '\x00';
 	tmp = md5_calc(str_xor(tmp, 0x5c) + binary_md5(str_xor(tmp, 0x36) + this.cram.challenge), true);
 	return 'CRAM-'+algo+'-'+tmp;
-}
-BinkP.prototype.session = function(addr, password, port)
+};
+BinkP.prototype.parseArgs = function(data)
 {
+	var ret = data.split(/ /);
 	var i;
+
+	for (i=0; i<ret.length; i++)
+		ret[i] = this.unescapeFileName(ret[i]);
+	return ret;
+};
+BinkP.prototype.connect = function(addr, password, port)
+{
 	var pkt;
-	var m;
-	var tmp;
-	var ver;
-	var args;
-	var size;
 
 	if (addr === undefined)
 		throw("No address specified!");
@@ -236,7 +241,7 @@ BinkP.prototype.session = function(addr, password, port)
 	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
 	this.sendCmd(this.command.M_NUL, "NDL 115200,TCP,BINKP");
 	this.sendCmd(this.command.M_NUL, "TIME "+new Date().toString());
-	this.sendCmd(this.command.M_NUL, "VER JSBinkP/0.0.0/"+system.platform+" binkp/1.1");
+	this.sendCmd(this.command.M_NUL, "VER "+this.name_ver+system.platform+" binkp/1.1");
 	this.sendCmd(this.command.M_ADR, this.addr_list.join(' '));
 
 	while(!js.terminated && this.remote_addrs === undefined) {
@@ -263,15 +268,87 @@ BinkP.prototype.session = function(addr, password, port)
 			return false;
 	}
 
-	function parse_args(that, data)
-	{
-		var ret = data.split(/ /);
-		var i;
-
-		for (i=0; i<ret.length; i++)
-			ret[i] = that.unescapeFileName(ret[i]);
-		return ret;
+	if (js.terminated) {
+		this.close();
+		return false;
 	}
+	return this.session();
+};
+/*
+ * sock can be either a lisening socket or a connected socket.
+ *
+ * auth_cb(addrs, passwds, challenge) is called to accept and add files
+ * if it returns true, the session is considered secure.  auth_cb()
+ * is explicitly allowed to change the inbound property and call
+ * this.sendCmd(this.command.M_ERR, "Error String");
+ *
+ * It is up to the auth_cb() callback to enforce the require_md5 property.
+ */
+BinkP.prototype.accept = function(sock, auth_cb)
+{
+	var challenge='';
+	var i;
+
+	if (sock === undefined || auth_cb === undefined)
+		return false;
+
+	if (this.sock !== undefined)
+		this.close();
+
+	if (sock.is_connected)
+		this.sock = sock;
+	else
+		this.sock = sock.accept();
+
+	if (this.sock == undefined || !this.sock.is_connected)
+		return false;
+
+	for (i=0; i<128; i++)
+		challenge += random(16).toString(16);
+
+	this.authenticated = undefined;
+	this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge);
+	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
+	this.sendCmd(this.command.M_NUL, "ZYZ "+this.system_operator);
+	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
+	this.sendCmd(this.command.M_NUL, "NDL 115200,TCP,BINKP");
+	this.sendCmd(this.command.M_NUL, "TIME "+new Date().toString());
+	this.sendCmd(this.command.M_NUL, "VER JSBinkP/0.0.0/"+system.platform+" binkp/1.1");
+	this.sendCmd(this.command.M_ADR, this.addr_list.join(' '));
+
+	while(!js.terminated && this.authenticated === undefined) {
+		pkt = this.recvFrame(this.timeout);
+		if (pkt === undefined)
+			return false;
+		if (pkt !== null && pkt !== this.partialFrame) {
+			if (pkt.is_cmd) {
+				switch(pkt.command) {
+					case this.command.M_PWD:
+						if (auth_cb(this.remote_addrs, this.parseArgs(pkt.data), challenge))
+							this.authenticated = 'secure';
+						else
+							this.authenticated = 'non-secure';
+						this.sendCmd(this.command.M_OK, this.authenticated)
+				}
+			}
+		}
+	}
+
+	if (js.terminated) {
+		this.close();
+		return false;
+	}
+	return this.session();
+};
+BinkP.prototype.session = function()
+{
+	var i;
+	var pkt;
+	var m;
+	var tmp;
+	var ver;
+	var args;
+	var size;
 
 	// Session set up, we're good to go!
 	outer:
@@ -288,7 +365,7 @@ BinkP.prototype.session = function(addr, password, port)
 						break;
 					case this.command.M_FILE:
 						this.ack_file();
-						args = parse_args(this, pkt.data);
+						args = this.parseArgs(pkt.data);
 						if (args.length < 4) {
 							log(LOG_ERROR, "Invalid M_FILE command args: '"+pkt.data+"'");
 							this.sendCmd(this.command.M_ERR, "Invalid M_FILE command args: '"+pkt.data+"'");
@@ -334,7 +411,7 @@ BinkP.prototype.session = function(addr, password, port)
 							break outer;
 						break;
 					case this.command.M_GOT:
-						args = parse_args(this, pkt.data);
+						args = this.parseArgs(pkt.data);
 						for (i=0; i<this.pending_ack.length; i++) {
 							if (file_getname(this.pending_ack[i]) == args[0]) {
 								this.sent_files.push(this.pending_ack[i]);
@@ -344,7 +421,7 @@ BinkP.prototype.session = function(addr, password, port)
 						}
 						break;
 					case this.command.M_GET:
-						args = parse_args(this, pkt.data);
+						args = this.parseArgs(pkt.data);
 						// If we already sent this file, ignore the command...
 						for (i=0; i<this.sent_files; i++) {
 							if (file_getname(this.sent_files[i]) === args[0])
@@ -374,7 +451,7 @@ BinkP.prototype.session = function(addr, password, port)
 						}
 						break;
 					case this.command.M_SKIP:
-						args = parse_args(this, pkt.data);
+						args = this.parseArgs(pkt.data);
 						for (i=0; i<this.pending_ack.length; i++) {
 							if (file_getname(this.pending_ack[i]) == args[0]) {
 								this.pending_ack.splice(i, 1);
