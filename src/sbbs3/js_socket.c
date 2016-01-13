@@ -950,6 +950,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		buf;
 	int32		len=512;
+	int32		timeout=120;
 	JSString*	str;
 	jsrefcount	rc;
 	js_socket_private_t*	p;
@@ -961,8 +962,13 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	if(argc && argv[0]!=JSVAL_VOID)
+	if(argc && argv[0]!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,argv[0],&len);
+
+		if(argc > 1 && argv[1]!=JSVAL_VOID) {
+			JS_ValueToInt32(cx,argv[0],&timeout);
+		}
+	}
 
 	if((buf=(char*)malloc(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
@@ -970,7 +976,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	len = js_socket_recv(p,buf,len,0,120);
+	len = js_socket_recv(p,buf,len,0,timeout);
 	JS_RESUMEREQUEST(cx, rc);
 	if(len<0) {
 		p->last_error=ERROR_VALUE;
@@ -1921,7 +1927,7 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	,311
 	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
-	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>]")
+	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>, [timeout_sec=<tt>120</tt>]]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters (AKA read)")
 	,310
 	},
