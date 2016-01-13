@@ -91,7 +91,7 @@ function FileBase(dir) {
 			if (file_exists(file_area.dir[dir].path+this.name))
 				this.path = fullpath(file_area.dir[dir].path+this.name);
 		}
-	};
+	}
 	FileEntry.prototype = {
 		get name() {
 			return this.base+'.'+this.ext;
