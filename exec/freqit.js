@@ -46,6 +46,12 @@ function add_file(filename, resp)
 	added[filename]='';
 }
 
+/*
+ * TODO: built-in magic names... FILES and NEW
+ * FILES lists all FREQable files and
+ * NEW lists ones newer than 10 days.
+ */
+
 function handle_magic(magic, resp, protected, pw)
 {
 	var file=undefined;
