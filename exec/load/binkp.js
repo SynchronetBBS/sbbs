@@ -66,7 +66,7 @@ function BinkP(inbound, rx_callback, auth_callback)
 	this.system_name = system.name;
 	this.system_operator = system.operator;
 	this.system_location = system.location;
-	system.fido_addr_list.forEach(function(addr, this){this.addr_list.push(addr);});
+	system.fido_addr_list.forEach(function(addr){this.addr_list.push(addr);}, this);
 
 	this.sent_files = [];
 	this.failed_sent_files = [];
@@ -230,14 +230,13 @@ BinkP.prototype.session = function(addr, password, port)
 	}
 
 	this.authenticated = undefined;
-	this.sendCmd(this.command.M_NUL, "SYS "+system_name);
-	this.sendCmd(this.command.M_NUL, "ZYZ "+system_operator);
-	this.sendCmd(this.command.M_NUL, "LOC "+system_location);
+	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
+	this.sendCmd(this.command.M_NUL, "ZYZ "+this.system_operator);
+	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
 	this.sendCmd(this.command.M_NUL, "NDL 115200,TCP,BINKP");
-	this.sendCmd(this.command.M_NUL, "TIME "+system.timestr());
+	this.sendCmd(this.command.M_NUL, "TIME "+new Date().toString());
 	this.sendCmd(this.command.M_NUL, "VER JSBinkP/0.0.0/"+system.platform+" binkp/1.1");
-	for (i=0; i<this.addr_list.length; i++)
-		this.sendCmd(this.command.M_ADR, this.addr_list[i]);
+	this.sendCmd(this.command.M_ADR, this.addr_list.join(' '));
 
 	while(!js.terminated && this.remote_addrs === undefined) {
 		pkt = this.recvFrame(this.timeout);
