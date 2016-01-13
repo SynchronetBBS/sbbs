@@ -764,7 +764,7 @@ js_finalize(JSContext *cx, JSObject *obj)
 }
 
 static jsSyncMethodSpec js_functions[] = {
-	{"init",            js_uifc_init,       1,	JSTYPE_BOOLEAN,	JSDOCSTR("string title")
+	{"init",            js_uifc_init,       1,	JSTYPE_BOOLEAN,	JSDOCSTR("string title, [number mode]")
 	,JSDOCSTR("initialize")
 	,314
 	},		
