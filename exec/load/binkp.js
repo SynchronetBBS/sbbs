@@ -1,16 +1,17 @@
 load("sockdefs.js");
 
-function BinkP()
+function BinkP(inbound)
 {
 	var addr;
 
+	if (inbound === undefined)
+		inbound = system.temp_dir;
 	this.default_zone = 1;
 	addr = this.parse_addr(system.fido_addr_list[0]);
 	if (addr.zone !== undefined)
 		this.default_zone = addr.zone;
-	// TODO: Reset the eop counts when appropriate.
-	this.senteob = 0;
-	this.goteob = 0;
+	this.senteob = false;
+	this.goteob = false;
 	this.pending_ack = [];
 	this.pending_get = [];
 	this.tx_queue=[];
@@ -20,11 +21,23 @@ function BinkP()
 	this.sent_nr = false;
 	this.ver1_1 = false;
 	this.require_md5 = true;
+	this.inbound = backslash(inbound);
+	this.timeout = 120;
+
+	this.sent_files = [];
+	this.failed_sent_files = [];
+
+	this.received_files = [];
+	this.failed_received_files = [];
 }
 BinkP.prototype.Frame = function() {};
 BinkP.prototype.escapeFileName = function(name)
 {
-	return name.replace(/[^A-Za-z0-9!"#$%&'\(\)*+,\-.\/:;<=>?@\[\]\^_`{|}~]/g, function(match) { return '\\x'+ascii(match); });
+	return name.replace(/[^A-Za-z0-9!"#$%&'\(\)*+,\-.\/:;<=>?@\[\]\^_`{|}~]/g, function(match) { return format('\\x%02x', ascii(match)); });
+};
+BinkP.prototype.unescapeFileName = function(name)
+{
+	return name.replace(/\\x?([0-9a-fA-F]{2})/g, function(match, val) { return ascii(parseInt(val, 16)); });
 };
 BinkP.prototype.command = {
 	M_NUL:0,
@@ -89,6 +102,25 @@ BinkP.prototype.faddr_to_inetaddr = function(addr)
 	ret += format("f%d.n%d.z%d.binkp.net", addr.node, addr.net, addr.zone);
 	return ret;
 };
+BinkP.prototype.ack_file = function()
+{
+	if (this.receiving !== undefined) {
+		this.receiving.close();
+		if (this.receiving.position >= this.receiving_len) {
+			this.receiving.date = this.receiving_date;
+			if (this.received_files.indexOf(this.receiving.name) == -1) {
+				this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date);
+				this.received_files.push(this.receiving.name);
+			}
+		}
+		else {
+			this.failed_received_files.push(this.receiving.name);
+		}
+		this.receiving = undefined;
+		this.receiving_len = undefined;
+		this.receiving_date = undefined;
+	}
+}
 BinkP.prototype.session = function(addr, password, port)
 {
 	var i;
@@ -96,6 +128,8 @@ BinkP.prototype.session = function(addr, password, port)
 	var m;
 	var tmp;
 	var ver;
+	var args;
+	var size;
 
 	if (addr === undefined)
 		throw("No address specified!");
@@ -123,12 +157,12 @@ BinkP.prototype.session = function(addr, password, port)
 	this.sendCmd(this.command.M_NUL, "LOC "+system.location);
 	this.sendCmd(this.command.M_NUL, "NDL 115200,TCP,BINKP");
 	this.sendCmd(this.command.M_NUL, "TIME "+system.timestr());
-	this.sendCmd(this.command.M_NUL, "VER JSBinkP/0.0.0/"+system.platform+" binkp/1.0");
+	this.sendCmd(this.command.M_NUL, "VER JSBinkP/0.0.0/"+system.platform+" binkp/1.1");
 	for (i=0; i<system.fido_addr_list.length; i++)
 		this.sendCmd(this.command.M_ADR, system.fido_addr_list[i]);
 
 	while(!js.terminated && this.remote_addrs === undefined) {
-		pkt = this.recvFrame();
+		pkt = this.recvFrame(this.timeout);
 		if (pkt === undefined)
 			return false;
 	}
@@ -166,16 +200,187 @@ BinkP.prototype.session = function(addr, password, port)
 		}
 	}
 
-	while(this.authenticated === undefined) {
-		pkt = this.recvFrame();
+	while((!js.terminated) && this.authenticated === undefined) {
+		pkt = this.recvFrame(this.timeout);
 		if (pkt === undefined)
 			return false;
 	}
 
-	// Session set up, we're good to go!
-	
+	function parse_args(that, data)
+	{
+		var ret = data.split(/ /);
+		var i;
 
-	if (js.termianted) {
+		for (i=0; i<ret.length; i++)
+			ret[i] = that.unescapeFileName(ret[i]);
+		return ret;
+	}
+
+	// Session set up, we're good to go!
+	outer:
+	while(!js.terminated && this.sock !== undefined) {
+		pkt = this.recvFrame(this.senteob ? this.timeout : 0);
+		if (pkt !== undefined && pkt !== this.partialFrame && pkt !== null) {
+			if (pkt.is_cmd) {
+				cmd_switch:
+				switch(pkt.command) {
+					case this.command.M_NUL:
+						// Ignore
+						break;
+					case this.command.M_FILE:
+						this.ack_file();
+						args = parse_args(this, pkt.data);
+						if (args.length < 4) {
+							log(LOG_ERROR, "Invalid M_FILE command args: '"+pkt.data+"'");
+							this.sendCmd(this.command.M_ERR, "Invalid M_FILE command args: '"+pkt.data+"'");
+						}
+						if (this.ver1_1)
+							this.senteob = false;
+						if (this.skipfiles) {
+							this.sendCmd(this.command.M_SKIP, args[0], args[1], args[2]);
+							break;
+						}
+						tmp = new File(this.inbound + file_getname(args[0]));
+						size = file_size(tmp.name);
+						if (size == -1)
+							size = 0;
+						if (parseInt(args[3], 10) < 0) {
+							// Non-reliable mode...
+							if (this.nonreliable) {
+								this.sendCmd(this.command.M_GET, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]+' '+size);
+							}
+							else {
+								log(LOG_ERR, "M_FILE Offset of -1 in reliable mode!");
+								this.sendCmd(this.command.M_ERR, "M_FILE Offset of -1 in reliable mode!");
+							}
+						}
+						else {
+							if (parseInt(args[3], 10) > size) {
+								log(LOG_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
+								this.sendCmd(this.command.M_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
+							}
+							if (!tmp.open(tmp.exists ? "r+b" : "wb")) {
+								log(LOG_ERROR, "Unable to open file "+tmp.name);
+								this.sendCmd(this.command.M_SKIP, args[0], args[1], args[2]);
+								break;
+							}
+							this.receiving = tmp;
+							this.receiving_len = parseInt(args[1], 10);
+							this.receiving_date = parseInt(args[2], 10);
+						}
+						break;
+					case this.command.M_EOB:
+						this.ack_file();
+						if (this.senteob)
+							break outer;
+						break;
+					case this.command.M_GOT:
+						args = parse_args(this, pkt.data);
+						for (i=0; i<this.pending_ack.length; i++) {
+							if (file_getname(this.pending_ack[i]) == args[0]) {
+								this.pending_ack.splice(i, 1);
+								i--;
+							}
+						}
+						break;
+					case this.command.M_GET:
+						args = parse_args(this, pkt.data);
+						// If we already sent this file, ignore the command...
+						for (i=0; i<this.sent_files; i++) {
+							if (file_getname(this.sent_files[i]) === args[0])
+								break cmd_switch;
+						}
+						// Now look for it in failed...
+						for (i=0; i<this.failed_sent_files.length; i++) {
+							if (file_getname(this.failed_sent_files[i]) === args[0]) {
+								// Validate the size, date, and offset...
+								if (file_size(this.failed_sent_files[i]) != parseInt(args[1], 10) || file_date(this.failed_sent_files[i]) != parseInt(args[2], 10) || file_size(this.failed_sent_files[i]) < parseInt(args[3], 10))
+									break;
+								// Re-add it
+								this.addFile(this.failed_sent_files[i]);
+								// And remove from failed list
+								this.failed_sent_files.splice(i, 1);
+								break;
+							}
+						}
+						// Now, simply adjust the position in a pending file
+						for (i=0; i<this.tx_queue.length; i++) {
+							if (file_getname(this.tx_queue[i].name) === args[0]) {
+								// Validate the size, date, and offset...
+								if (this.tx_queue[i].length != parseInt(args[1], 10) || this.tx_queue[i].date != parseInt(args[2], 10) || this.tx_queue[i].length < parseInt(args[3], 10))
+									break;
+								this.tx_queue[i].position = parseInt(args[3], 10);
+							}
+						}
+						break;
+					case this.command.M_SKIP:
+						args = parse_args(this, pkt.data);
+						for (i=0; i<this.pending_ack.length; i++) {
+							if (file_getname(this.pending_ack[i]) == args[0]) {
+								this.pending_ack.splice(i, 1);
+								i--;
+							}
+						}
+						if (file_getname(this.sending) === args[0]) {
+							this.sending.close();
+							this.failed_sent_files.push(this.sending.name);
+							this.sending = undefined;
+						}
+						break;
+					default:
+						if (pkt.command < this.command_name.length)
+							tmp = this.command_name[pkt.command];
+						else
+							tmp = 'Unknown Command '+pkt.command;
+						log(LOG_ERROR, "Unhandled "+tmp+" command from remote. Aborting session.");
+						this.sendCmd(this.command.M_ERR, "Unhandled command.");
+				}
+			}
+			else {
+				// DATA packet...
+				if (this.receiving === undefined) {
+					log(LOG_ERROR, "Data packet outside of file!");
+					this.sendCmd(this.command.M_ERR, "Data packet outside of file!");
+				}
+				else {
+					this.receiving.write(pkt.data);
+					// We need to ACK here...
+					if (this.receiving.position >= this.receiving_len) {
+						this.receiving.date = this.receiving_date;
+						if (this.received_files.indexOf(this.receiving.name) == -1) {
+							this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date);
+							this.received_files.push(this.receiving.name);
+						}
+					}
+				}
+			}
+		}
+		if (this.sending === undefined && !this.senteob) {
+			this.sending = this.tx_queue.shift();
+			if (this.sending === undefined) {
+				this.sendCmd(this.command.M_EOB);
+			}
+			else {
+				this.pending_ack.push(file_getname(this.sending.name));
+				if (this.nonreliable)
+					this.sendCmd(this.command.M_FILE, file_getname(this.sending.name)+' '+this.sending.length+' '+this.sending.date+' -1');
+				else
+					this.sendCmd(this.command.M_FILE, file_getname(this.sending.name)+' '+this.sending.length+' '+this.sending.date+' '+this.sending.position);
+				if (this.ver1_1)
+					this.goteob = false;
+			}
+		}
+		if (this.sending !== undefined) {
+			this.sendData(this.sending.read(32767));
+			if (this.eof || this.sending.position >= this.sending.length) {
+				this.sending.close();
+				this.sent_files.push(this.sending.name);
+				this.sending = undefined;
+			}
+		}
+	}
+
+	if (js.terminated) {
 		this.close();
 		return false;
 	}
@@ -183,8 +388,15 @@ BinkP.prototype.session = function(addr, password, port)
 };
 BinkP.prototype.close = function()
 {
-	// TODO: Make sure it's two EOBs on each side for v1.1
+	var i;
+
 	// Send an ERR and close.
+	this.ack_file();
+	// Any still pending have failed.
+	for (i=0; i<this.pending_ack.length; i++)
+		this.failed_sent_files.push(this.pending_ack[i]);
+	for (i=0; i<this.tx_queue.length; i++)
+		this.failed_sent_files.push(this.tx_queue[i].name);
 	if ((!this.goteob) || this.tx_queue.length || this.pending_ack.length || this.pending_get.length) {
 		this.sendCmd(this.command.M_ERR, "Forced Shutdown");
 	}
@@ -213,12 +425,13 @@ BinkP.prototype.sendCmd = function(cmd, data)
 	}
 	var len = data.length+1;
 	len |= 0x8000;
+	// TODO: Check return values
 	this.sock.sendBin(len, 2);
 	this.sock.sendBin(cmd, 1);
 	this.sock.send(data);
 	switch(cmd) {
 		case this.command.M_EOB:
-			this.senteob++;
+			this.senteob=true;
 			break;
 		case this.command.M_ERR:
 		case this.command.M_BSY:
@@ -240,12 +453,13 @@ BinkP.prototype.sendData = function(data)
 	var len = data.length;
 	if (this.debug)
 		log(LOG_DEBUG, "Sending "+data.length+" bytes of data");
+	// TODO: Check return values
 	this.sock.sendBin(len, 2);
 	this.sock.send(data);
 };
-BinkP.prototype.recvFrame = function()
+BinkP.prototype.recvFrame = function(timeout)
 {
-	var ret = new this.Frame();
+	var ret;
 	var type;
 	var i;
 	var args;
@@ -253,126 +467,126 @@ BinkP.prototype.recvFrame = function()
 	var tmp;
 	var ver;
 
-	ret.length = this.sock.recvBin(2);
-	ret.is_cmd = (ret.length & 0x8000) ? true : false;
-	ret.length &= 0x7fff;
-	if (ret.length == 0)
+	if (timeout === undefined)
+		timeout = 0;
+
+	if (this.partialFrame === undefined) {
+		ret = new this.Frame();
+		if (!this.sock.poll(timeout))
+			return null;
+		ret.length = this.sock.recvBin(2);
+		ret.is_cmd = (ret.length & 0x8000) ? true : false;
+		ret.length &= 0x7fff;
 		ret.data = '';
+	}
 	else
-		ret.data = this.sock.recv(ret.length);
-	if (ret.is_cmd) {
-		ret.command = ret.data.charCodeAt(0);
-		ret.data = ret.data.substr(1);
+		ret = this.partialFrame;
+
+	// TODO: Do a timeout recv() using select() for older versions...
+	//       Not sure how to tell if recv timeout is supported or
+	//       not though.
+	//       We also need to check the socket status.
+	ret.data += this.sock.recv(ret.length - ret.data.length, timeout);
+
+	if (ret.data.length < ret.length) {
+		this.partialFrame = ret;
 	}
-	if (this.debug) {
+	else {
+		this.partialFrame = undefined;
 		if (ret.is_cmd) {
-			if (ret.command < this.command_name.length)
-				type = this.command_name[ret.command];
-			else
-				type = 'Unknown Command '+ret.command;
-			log(LOG_DEBUG, "Got "+type+" command args: "+ret.data);
+			ret.command = ret.data.charCodeAt(0);
+			ret.data = ret.data.substr(1);
 		}
-		else
-			log(LOG_DEBUG, "Got data frame length "+ret.length);
-	}
-	if (ret.is_cmd) {
-		switch(ret.command) {
-			case this.command.M_ERR:
-				log(LOG_ERROR, "BinkP got fatal error from remote: '"+ret.data+"'.");
-				this.sock.close();
-				this.socket = undefined;
-				return undefined;
-			case this.command.M_BSY:
-				log(LOG_WARNING, "BinkP got non-fatal error from remote: '"+ret.data+"'.");
-				this.sock.close();
-				this.socket = undefined;
-				return undefined;
-			case this.command.M_EOB:
-				this.goteob++;
-				break;
-			case this.command.M_ADR:
-				if (this.remote_addrs !== undefined) {
-					this.sendCmd(this.command.M_ERR, "Address already recieved.");
-					return undefined;
-				}
+		if (this.debug) {
+			if (ret.is_cmd) {
+				if (ret.command < this.command_name.length)
+					type = this.command_name[ret.command];
 				else
-					this.remote_addrs = ret.data.split(/ /);
-				break;
-			case this.command.M_OK:
-				if (this.authenticated !== undefined) {
-					this.sendCmd(this.command.M_ERR, "Authentication already complete.");
+					type = 'Unknown Command '+ret.command;
+				log(LOG_DEBUG, "Got "+type+" command args: "+ret.data);
+			}
+			else
+				log(LOG_DEBUG, "Got data frame length "+ret.length);
+		}
+		if (ret.is_cmd) {
+			switch(ret.command) {
+				case this.command.M_ERR:
+					log(LOG_ERROR, "BinkP got fatal error from remote: '"+ret.data+"'.");
+					this.sock.close();
+					this.socket = undefined;
 					return undefined;
-				}
-				else
-					this.authenticated = ret.data;
-				break;
-			case this.command.M_NUL:
-				args = ret.data.split(/ /);
-				switch(args[0]) {
-					case 'OPT':
-						for (i=1; i<args.length; i++) {
-							if (args[i].substr(0,9) === 'CRAM-MD5-') {
-								this.cram = {algo:'MD5', challenge:args[i].substr(9).replace(/[0-9a-fA-F]{2}/g,
-									function(m){return ascii(parseInt(m, 16));})
-								};
-							}
-							else {
-								switch(args[i]) {
-									case 'NR':
-										if (!this.sent_nr)
-											this.sendCmd(this.command.M_NUL, "NR");
-										this.non_reliable = true;
-										break;
+				case this.command.M_BSY:
+					log(LOG_WARNING, "BinkP got non-fatal error from remote: '"+ret.data+"'.");
+					this.sock.close();
+					this.socket = undefined;
+					return undefined;
+				case this.command.M_EOB:
+					this.goteob = true;
+					break;
+				case this.command.M_ADR:
+					if (this.remote_addrs !== undefined) {
+						this.sendCmd(this.command.M_ERR, "Address already received.");
+						return undefined;
+					}
+					else
+						this.remote_addrs = ret.data.split(/ /);
+					break;
+				case this.command.M_OK:
+					if (this.authenticated !== undefined) {
+						this.sendCmd(this.command.M_ERR, "Authentication already complete.");
+						return undefined;
+					}
+					else
+						this.authenticated = ret.data;
+					break;
+				case this.command.M_NUL:
+					args = ret.data.split(/ /);
+					switch(args[0]) {
+						case 'OPT':
+							for (i=1; i<args.length; i++) {
+								if (args[i].substr(0,9) === 'CRAM-MD5-') {
+									this.cram = {algo:'MD5', challenge:args[i].substr(9).replace(/[0-9a-fA-F]{2}/g,
+										function(m){return ascii(parseInt(m, 16));})
+									};
 								}
-							}
-						}
-						break;
-					case 'VER':
-						tmp = ret.data.split(/ /);
-						if (tmp.length >= 3) {
-							if (tmp[2].substr(0, 6) === 'binkp/') {
-								ver = tmp[2].substr(6).split(/\./);
-								if (ver.length >= 2) {
-									tmp = parseInt(ver[0], 10);
-									switch(tmp) {
-										case NaN:
-											break;
-										case 1:
-											if (parseInt(ver[1], 10) > 0)
-												this.ver1_1 = true;
-											break;
-										default:
-											if (tmp > 1)
-												this.ver1_1 = true;
+								else {
+									switch(args[i]) {
+										case 'NR':
+											if (!this.sent_nr)
+												this.sendCmd(this.command.M_NUL, "NR");
+											this.non_reliable = true;
 											break;
 									}
 								}
 							}
-						}
-				}
-		}
-	}
-	return ret;
-};
-BinkP.prototype.skipFiles = function()
-{
-	var pkt;
-
-	while(!(js.terminated || this.goteob)) {
-		pkt = this.recvFrame();
-		if (pkt === undefined)
-			return false;
-		if (pkt.is_cmd) {
-			if (pkt.command == this.command.M_EOB)
-				return true;
-			if (pkt.command == this.command.M_FILE || pkt.command == this.command.M_GET) {
-				this.sendCmd(this.command.M_SKIP, pkt.data.replace(/ [0-9]+$/,''));
+							break;
+						case 'VER':
+							tmp = ret.data.split(/ /);
+							if (tmp.length >= 3) {
+								if (tmp[2].substr(0, 6) === 'binkp/') {
+									ver = tmp[2].substr(6).split(/\./);
+									if (ver.length >= 2) {
+										tmp = parseInt(ver[0], 10);
+										switch(tmp) {
+											case NaN:
+												break;
+											case 1:
+												if (parseInt(ver[1], 10) > 0)
+													this.ver1_1 = true;
+												break;
+											default:
+												if (tmp > 1)
+													this.ver1_1 = true;
+												break;
+										}
+									}
+								}
+							}
+					}
 			}
 		}
 	}
-	if (js.terminated)
-		this.close();
-	return true;
+	return ret;
 };
 BinkP.prototype.addFile = function(name)
 {
