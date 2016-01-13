@@ -109,8 +109,8 @@ BinkP.prototype.ack_file = function()
 		if (this.receiving.position >= this.receiving_len) {
 			this.receiving.date = this.receiving_date;
 			if (this.received_files.indexOf(this.receiving.name) == -1) {
-				this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date);
-				this.received_files.push(this.receiving.name);
+				if (this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date))
+					this.received_files.push(this.receiving.name);
 			}
 		}
 		else {
@@ -278,6 +278,7 @@ BinkP.prototype.session = function(addr, password, port)
 						args = parse_args(this, pkt.data);
 						for (i=0; i<this.pending_ack.length; i++) {
 							if (file_getname(this.pending_ack[i]) == args[0]) {
+								this.sent_files.push(this.pending_ack[i]);
 								this.pending_ack.splice(i, 1);
 								i--;
 							}
@@ -348,8 +349,8 @@ BinkP.prototype.session = function(addr, password, port)
 					if (this.receiving.position >= this.receiving_len) {
 						this.receiving.date = this.receiving_date;
 						if (this.received_files.indexOf(this.receiving.name) == -1) {
-							this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date);
-							this.received_files.push(this.receiving.name);
+							if (this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date))
+								this.received_files.push(this.receiving.name);
 						}
 					}
 				}
@@ -374,7 +375,6 @@ BinkP.prototype.session = function(addr, password, port)
 			this.sendData(this.sending.read(32767));
 			if (this.eof || this.sending.position >= this.sending.length) {
 				this.sending.close();
-				this.sent_files.push(this.sending.name);
 				this.sending = undefined;
 			}
 		}
@@ -425,10 +425,12 @@ BinkP.prototype.sendCmd = function(cmd, data)
 	}
 	var len = data.length+1;
 	len |= 0x8000;
-	// TODO: Check return values
-	this.sock.sendBin(len, 2);
-	this.sock.sendBin(cmd, 1);
-	this.sock.send(data);
+	if (!this.sock.sendBin(len, 2))
+		return false;
+	if (!this.sock.sendBin(cmd, 1))
+		return false;
+	if (!this.sock.send(data))
+		return false;
 	switch(cmd) {
 		case this.command.M_EOB:
 			this.senteob=true;
@@ -453,9 +455,11 @@ BinkP.prototype.sendData = function(data)
 	var len = data.length;
 	if (this.debug)
 		log(LOG_DEBUG, "Sending "+data.length+" bytes of data");
-	// TODO: Check return values
-	this.sock.sendBin(len, 2);
-	this.sock.send(data);
+	if (!this.sock.sendBin(len, 2))
+		return false;
+	if (!this.sock.send(data))
+		return false;
+	return true;
 };
 BinkP.prototype.recvFrame = function(timeout)
 {
@@ -466,6 +470,7 @@ BinkP.prototype.recvFrame = function(timeout)
 	var options;
 	var tmp;
 	var ver;
+	var avail;
 
 	if (timeout === undefined)
 		timeout = 0;
@@ -482,11 +487,19 @@ BinkP.prototype.recvFrame = function(timeout)
 	else
 		ret = this.partialFrame;
 
-	// TODO: Do a timeout recv() using select() for older versions...
-	//       Not sure how to tell if recv timeout is supported or
-	//       not though.
-	//       We also need to check the socket status.
-	ret.data += this.sock.recv(ret.length - ret.data.length, timeout);
+	if (this.sock.poll(timeout)) {
+		avail = this.sock.nread;
+		if (avail == 0) {
+			if (this.sock.is_connected)
+				log(LOG_ERROR, "Poll returned true, but no data available on connected socket!");
+			this.sock.close();
+			this.sock = undefined;
+			return undefined;
+		}
+		if (avail > (ret.length - ret.data.length))
+			avail = ret.length - ret.data.length;
+		ret.data += this.sock.recv(avail);
+	}
 
 	if (ret.data.length < ret.length) {
 		this.partialFrame = ret;
