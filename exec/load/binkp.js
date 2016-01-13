@@ -9,13 +9,23 @@ function BinkP()
 	if (addr.zone !== undefined)
 		this.default_zone = addr.zone;
 	this.sock  = undefined;
-	this.senteob = false;
-	this.goteob = false;
-	this.pending_ack = {};
-	this.pending_get = {};
+	this.senteob = 0;
+	this.goteob = 0;
+	this.pending_ack = [];
+	this.pending_get = [];
+	this.tx_queue=[];
 	this.debug = false
+	this.skipfiles = false;
+	this.remote_addrs = [];
+	this.cram = undefined;
+	this.nonreliable = false;
+	this.ver1_1 = false;
 }
 BinkP.prototype.Frame = function() {}
+BinkP.prototype.escapeFileName = function(name)
+{
+	return name.replace(/[^A-Za-z0-9!"#$%&'\(\)*+,\-.\/:;<=>?@[\]\^_`{|}~]/g, function(match) { return '\\x'+ascii(match); });
+}
 BinkP.prototype.command = {
 	M_NUL:0,
 	M_ADR:1,
@@ -79,10 +89,12 @@ BinkP.prototype.faddr_to_inetaddr = function(addr)
 	ret += format("f%d.n%d.z%d.binkp.net", addr.node, addr.net, addr.zone);
 	return ret;
 }
-BinkP.prototype.connect = function(addr, password, port)
+BinkP.prototype.session = function(addr, password, port)
 {
 	var i;
 	var pkt;
+	var m;
+	var tmp;
 
 	if (addr === undefined)
 		throw("No password specified!");
@@ -102,6 +114,7 @@ BinkP.prototype.connect = function(addr, password, port)
 	if(!this.sock.connect(this.faddr_to_inetaddr(addr), port))
 		return false;
 
+	this.authenticated = undefined;
 	this.sendCmd(this.command.M_NUL, "SYS "+system.name);
 	this.sendCmd(this.command.M_NUL, "ZYZ "+system.operator);
 	this.sendCmd(this.command.M_NUL, "LOC "+system.location);
@@ -110,14 +123,75 @@ BinkP.prototype.connect = function(addr, password, port)
 	this.sendCmd(this.command.M_NUL, "VER JSBinkP/0.0.0/"+system.platform+" binkp/1.0");
 	for (i=0; i<system.fido_addr_list.length; i++)
 		this.sendCmd(this.command.M_ADR, system.fido_addr_list[i]);
-	this.sendCmd(this.command.M_PWD, password);
+
+	// CRAM-XXX
 	while(!js.terminated) {
 		pkt = this.recvFrame();
 		if (pkt === undefined)
 			return false;
 		if (pkt.is_cmd) {
-			if (pkt.command == this.command.M_OK)
+			if (pkt.command == this.command.M_ADR) {
+				this.remote_addrs = pkt.data.split(/ +/);
 				break;
+			}
+			if (pkt.command == this.command.M_OK) {
+				this.authenticated = pkt.data;
+				break;
+			}
+			if (pkt.command == this.command.M_NUL) {
+				if (pkt.data.substr(0,4) === 'OPT ') {
+					/*
+					 * TODO: Currently, we only support MD5... the crypt
+					 * context stuff allows for more, but we won't
+					 * bother with that yet.
+					 */
+					m = pkt.data.match(/CRAM-MD5-([0-9a-fA-F]+)( .*)?$/);
+					if (m !== null) {
+						this.cram = {algo:'MD5', challenge:m[1].replace(/[0-9a-fA-F]{2}/g,function(m){return ascii(parseInt(m, 16))})};
+					}
+				}
+			}
+		}
+	}
+
+	function binary_md5(key)
+	{
+		return md5_calc(key, true).replace(/[0-9a-fA-F]{2}/g,function(m){return ascii(parseInt(m, 16))});
+	}
+	function str_xor(str1, val)
+	{
+		var i;
+		var ret='';
+
+		for (i=0; i<str1.length; i++) {
+			ret += ascii(str1.charCodeAt(i) ^ val);
+		}
+		return ret;
+	}
+
+	if (this.authenticated === undefined) {
+		if (this.cram === undefined || this.cram.algo !== 'MD5')
+			this.sendCmd(this.command.M_PWD, password);
+		else {
+			tmp = password;
+			if (tmp.length > 64)
+				tmp = binary_md5(tmp);
+			while(tmp.length < 64)
+				tmp += '\x00';
+			tmp = md5_calc(str_xor(tmp, 0x5c) + binary_md5(str_xor(tmp, 0x36) + this.cram.challenge), true);
+			this.sendCmd(this.command.M_PWD, 'CRAM-MD5-'+tmp);
+		}
+	}
+
+	while(!js.terminated) {
+		pkt = this.recvFrame();
+		if (pkt === undefined)
+			return false;
+		if (pkt.is_cmd) {
+			if (pkt.command == this.command.M_OK) {
+				this.authenticated = pkt.data;
+				break;
+			}
 		}
 	}
 	if (js.termianted) {
@@ -129,7 +203,7 @@ BinkP.prototype.connect = function(addr, password, port)
 BinkP.prototype.close = function()
 {
 	// Send an ERR and close.
-	if ((!this.goteob) || Object.keys(this.pending_ack).length || Object.keys(this.pending_get).length) {
+	if ((!this.goteob) || this.tx_queue.length || this.pending_ack.length || this.pending_get.length) {
 		this.sendCmd(this.command.M_ERR, "Forced Shutdown");
 	}
 	else {
@@ -137,6 +211,9 @@ BinkP.prototype.close = function()
 			this.sendCmd(this.command.M_EOB, "");
 		}
 	}
+	this.tx_queue.forEach(function(file) {
+		file.close();
+	});
 }
 BinkP.prototype.sendCmd = function(cmd, data)
 {
@@ -236,4 +313,12 @@ BinkP.prototype.skipFiles = function()
 	if (js.terminated)
 		this.close();
 	return true;
+}
+BinkP.prototype.addFile = function(name)
+{
+	var file = new File(name);
+
+	if (!file.open("rb", true))
+		return false;
+	this.tx_queue.push(file);
 }
