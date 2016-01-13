@@ -288,6 +288,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 {
 	var challenge='';
 	var i;
+	var pkt;
 
 	if (sock === undefined || auth_cb === undefined)
 		return false;
@@ -328,7 +329,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 							this.authenticated = 'secure';
 						else
 							this.authenticated = 'non-secure';
-						this.sendCmd(this.command.M_OK, this.authenticated)
+						this.sendCmd(this.command.M_OK, this.authenticated);
 				}
 			}
 		}
