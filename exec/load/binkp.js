@@ -24,7 +24,8 @@ load("sockdefs.js");
  * 				     ver1_1 is true)
  * auth_callback   - Function that is called with a list of addresses and a list of
  *                   passwords (two arguments) which returns true if the session is secure
- *                   or false if it is not.
+ *                   or false if it is not.  This callback cand also safely call
+ *					 addFile(filename) to add files for the authenticated addresses
  * 
  * Now add any files you wish to send using the addFile(filename) method
  * 
