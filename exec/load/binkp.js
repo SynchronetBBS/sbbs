@@ -155,6 +155,37 @@ BinkP.prototype.ack_file = function()
 		this.receiving_date = undefined;
 	}
 }
+BinkP.prototype.getCRAM = function(algo, key)
+{
+	var tmp;
+
+	if (algo !== 'MD5')
+		return undefined;
+
+	function binary_md5(key)
+	{
+		return md5_calc(key, true).replace(/[0-9a-fA-F]{2}/g,function(m){return ascii(parseInt(m, 16));});
+	}
+
+	function str_xor(str1, val)
+	{
+		var i;
+		var ret='';
+
+		for (i=0; i<str1.length; i++) {
+			ret += ascii(str1.charCodeAt(i) ^ val);
+		}
+		return ret;
+	}
+
+	tmp = key;
+	if (tmp.length > 64)
+		tmp = binary_md5(tmp);
+	while(tmp.length < 64)
+		tmp += '\x00';
+	tmp = md5_calc(str_xor(tmp, 0x5c) + binary_md5(str_xor(tmp, 0x36) + this.cram.challenge), true);
+	return 'CRAM-'+algo+'-'+tmp;
+}
 BinkP.prototype.session = function(addr, password, port)
 {
 	var i;
@@ -201,21 +232,6 @@ BinkP.prototype.session = function(addr, password, port)
 			return false;
 	}
 
-	function binary_md5(key)
-	{
-		return md5_calc(key, true).replace(/[0-9a-fA-F]{2}/g,function(m){return ascii(parseInt(m, 16));});
-	}
-	function str_xor(str1, val)
-	{
-		var i;
-		var ret='';
-
-		for (i=0; i<str1.length; i++) {
-			ret += ascii(str1.charCodeAt(i) ^ val);
-		}
-		return ret;
-	}
-
 	if (this.authenticated === undefined) {
 		if (this.cram === undefined || this.cram.algo !== 'MD5') {
 			if (this.require_md5)
@@ -224,13 +240,7 @@ BinkP.prototype.session = function(addr, password, port)
 				this.sendCmd(this.command.M_PWD, password);
 		}
 		else {
-			tmp = password;
-			if (tmp.length > 64)
-				tmp = binary_md5(tmp);
-			while(tmp.length < 64)
-				tmp += '\x00';
-			tmp = md5_calc(str_xor(tmp, 0x5c) + binary_md5(str_xor(tmp, 0x36) + this.cram.challenge), true);
-			this.sendCmd(this.command.M_PWD, 'CRAM-MD5-'+tmp);
+			this.sendCmd(this.command.M_PWD, this.getCRAM(this.cram.algo, password));
 		}
 	}
 
