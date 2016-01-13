@@ -1,11 +1,42 @@
 load("sockdefs.js");
 
-function BinkP(inbound)
+/*
+ * A binkp implementation...
+ * 
+ * Create a new instance with New passing a path to place received files
+ * in to the constructor (defaults to system.tem_dir).
+ * 
+ * Next, adjust defaults as needed...
+ * default_zone - if no zone is specified, use this one for all addresses.
+ * debug		- If set, logs all sent/received frames via log(LOG_DEBUG)
+ * skipfiles	- Do not accept any incoming files until after the first EOB from the remote.
+ * 				  intended for FREQ sessions.
+ * require_md5	- Require that the remote support MD5
+ * timeout		- Max timeout
+ * rx_callback	- Function that is called with a single filename argument
+ *                when a file is received successfully.
+ *                Intended for REQ/TIC processing.  This callback can call
+ * 				  the addFile(filename) method (may not work unless
+ * 				  ver1_1 is true)
+ * 
+ * Now add any files you wish to send using the addFile(filename) method
+ * 
+ * Finally, call the session() method.
+ * This method will return true if all files were transferred with no errors.
+ * 
+ * After return, the sent_files and received_files arrays will contain
+ * lists of successfully transferred files.  The failed_sent_files and
+ * failed_received_files arrays will contain files that failed to
+ * transfer.
+ */
+
+function BinkP(inbound, rx_callback)
 {
 	var addr;
 
 	if (inbound === undefined)
 		inbound = system.temp_dir;
+	this.rx_callback = rx_callback;
 	this.default_zone = 1;
 	addr = this.parse_addr(system.fido_addr_list[0]);
 	if (addr.zone !== undefined)
@@ -108,9 +139,12 @@ BinkP.prototype.ack_file = function()
 		this.receiving.close();
 		if (this.receiving.position >= this.receiving_len) {
 			this.receiving.date = this.receiving_date;
+			if (this.rx_callback !== undefined)
+				this.rx_callback(this.receiving.name);
 			if (this.received_files.indexOf(this.receiving.name) == -1) {
-				if (this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date))
+				if (this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date)) {
 					this.received_files.push(this.receiving.name);
+				}
 			}
 		}
 		else {
@@ -219,7 +253,9 @@ BinkP.prototype.session = function(addr, password, port)
 	// Session set up, we're good to go!
 	outer:
 	while(!js.terminated && this.sock !== undefined) {
-		pkt = this.recvFrame(this.senteob ? this.timeout : 0);
+		// We want to wait if we have no more files to send or if we're
+		// skipping files.
+		pkt = this.recvFrame((this.senteob || this.skipfiles) ? this.timeout : 0);
 		if (pkt !== undefined && pkt !== this.partialFrame && pkt !== null) {
 			if (pkt.is_cmd) {
 				cmd_switch:
@@ -356,7 +392,16 @@ BinkP.prototype.session = function(addr, password, port)
 				}
 			}
 		}
-		if (this.sending === undefined && !this.senteob) {
+		/*
+		 * Don't send another file if:
+		 * 1) We've sent all our files (this.senteob) 
+		 * -OR-
+		 * 2) We're skipping files from the remote.
+		 * 
+		 * This is to prevent us sending a REQ that gets added before
+		 * we've skipped all the files the remote has to offer.
+		 */
+		if (this.sending === undefined && !(this.senteob || this.skipfiles)) {
 			this.sending = this.tx_queue.shift();
 			if (this.sending === undefined) {
 				this.sendCmd(this.command.M_EOB);
@@ -380,10 +425,10 @@ BinkP.prototype.session = function(addr, password, port)
 		}
 	}
 
-	if (js.terminated) {
-		this.close();
+	this.close();
+
+	if (js.terminated)
 		return false;
-	}
 	return true;
 };
 BinkP.prototype.close = function()
@@ -402,7 +447,7 @@ BinkP.prototype.close = function()
 	}
 	else {
 		if (!this.senteob) {
-			this.sendCmd(this.command.M_EOB, "");
+			this.sendCmd(this.command.M_EOB);
 		}
 	}
 	this.tx_queue.forEach(function(file) {
@@ -535,6 +580,7 @@ BinkP.prototype.recvFrame = function(timeout)
 					return undefined;
 				case this.command.M_EOB:
 					this.goteob = true;
+					this.skipfiles = false;
 					break;
 				case this.command.M_ADR:
 					if (this.remote_addrs !== undefined) {
