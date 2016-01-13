@@ -52,8 +52,6 @@ function handle_magic(magic, resp, protected, pw)
 
 	if (magic.secure && !protected)
 		return;
-	if (scan_magic(cfg.dirs))
-		return;
 	if (dircache[magic.dir] === undefined)
 		dircache[magic.dir] = FileBase(magic.dir);
 	dircache[magic.dir].forEach(function(fent) {
