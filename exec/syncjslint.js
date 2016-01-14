@@ -5281,8 +5281,9 @@ function SYNCJSLINT(argc, argv)
 				tmp=all_lines[i];
 				tmp=tmp.replace(/\/\*.*?\*\//g,'');
 				tmp=tmp.replace(/\/\/.*^/,'');
-				if((m=tmp.match(/^\s*load\([^"']*['"](.*)['"]\)/))!==null) {
-					offset+=LOADFILE(lines,index,pos+offset+i,m[1],paths,options);
+				if((m=tmp.match(/^\s*load\([^"']*(['"])(.*?[^\\])\1.*?\)/))!==null) {
+print(m.toSource());
+					offset+=LOADFILE(lines,index,pos+offset+i,m[2],paths,options);
 				}
 	
 			}
