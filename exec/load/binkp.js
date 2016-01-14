@@ -86,7 +86,14 @@ function BinkP(name_ver, inbound, rx_callback)
 BinkP.prototype.Frame = function() {};
 BinkP.prototype.default_want = function(fobj, fsize, fdate, offset)
 {
-	// Accept everything.
+	// Reject duplicate filenames... a more robust callback would rename them.
+	// Or process the old ones first.
+	if (this.received_files.indexOf(fobj.name) != -1)
+		return this.file.REJECT;
+	// Skip existing files.
+	if (file_exists(fobj.name))
+		return this.file.SKIP;
+	// Accept everything else
 	return this.file.ACCEPT;
 };
 BinkP.prototype.escapeFileName = function(name)
@@ -163,23 +170,23 @@ BinkP.prototype.faddr_to_inetaddr = function(addr)
 BinkP.prototype.ack_file = function()
 {
 	if (this.receiving !== undefined) {
-		this.receiving.close();
 		if (this.receiving.position >= this.receiving_len) {
+			this.receiving.truncate(this.receiving_len);
+			this.receiving.close();
 			this.receiving.date = this.receiving_date;
 			if (this.rx_callback !== undefined)
 				this.rx_callback(this.receiving.name);
-			if (this.received_files.indexOf(this.receiving.name) == -1) {
-				if (this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date)) {
-					this.received_files.push(this.receiving.name);
-				}
-			}
+			if (this.sendCmd(this.command.M_GOT, this.escapeFileName(this.receiving_name)+' '+this.receiving.length+' '+this.receiving.date))
+				this.received_files.push(this.receiving.name);
 		}
 		else {
+			this.receiving.close();
 			this.failed_received_files.push(this.receiving.name);
 		}
 		this.receiving = undefined;
 		this.receiving_len = undefined;
 		this.receiving_date = undefined;
+		this.receiving_name = undefined;
 	}
 };
 BinkP.prototype.getCRAM = function(algo, key)
@@ -334,16 +341,13 @@ BinkP.prototype.accept = function(sock, auth_cb)
 			return false;
 		if (pkt !== null && pkt !== this.partialFrame) {
 			if (pkt.is_cmd) {
-				switch(pkt.command) {
-					case this.command.M_PWD:
-						if (auth_cb(this.remote_addrs, this.parseArgs(pkt.data), challenge))
-							this.authenticated = 'secure';
-						else
-							this.authenticated = 'non-secure';
-						this.sendCmd(this.command.M_OK, this.authenticated);
-						break;
-					default:
-						break;
+				if (pkt.command === this.command.M_PWD) {
+					if (auth_cb(this.remote_addrs, this.parseArgs(pkt.data), challenge))
+						this.authenticated = 'secure';
+					else
+						this.authenticated = 'non-secure';
+					this.sendCmd(this.command.M_OK, this.authenticated);
+					break;
 				}
 			}
 		}
@@ -366,6 +370,7 @@ BinkP.prototype.session = function()
 	var pkt;
 	var m;
 	var tmp;
+	var tmp2;
 	var ver;
 	var args;
 	var size;
@@ -386,14 +391,13 @@ BinkP.prototype.session = function()
 						// Ignore
 						break;
 					case this.command.M_FILE:
+						this.senteob = false;
 						this.ack_file();
 						args = this.parseArgs(pkt.data);
 						if (args.length < 4) {
 							log(LOG_ERROR, "Invalid M_FILE command args: '"+pkt.data+"'");
 							this.sendCmd(this.command.M_ERR, "Invalid M_FILE command args: '"+pkt.data+"'");
 						}
-						if (this.ver1_1)
-							this.senteob = false;
 						tmp = new File(this.inbound + file_getname(args[0]));
 						switch (this.want_callback(tmp, parseInt(args[1], 10), parseInt(args[2], 10), parseInt(args[3], 10))) {
 							case this.file.SKIP:
@@ -423,10 +427,11 @@ BinkP.prototype.session = function()
 									}
 									if (!tmp.open(tmp.exists ? "r+b" : "wb")) {
 										log(LOG_ERROR, "Unable to open file "+tmp.name);
-										this.sendCmd(this.command.M_SKIP, args[0]+' '+args[1]+' '+args[2]);
+										this.sendCmd(this.command.M_SKIP, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]);
 										break;
 									}
 									this.receiving = tmp;
+									this.receiving_name = args[0];
 									this.receiving_len = parseInt(args[1], 10);
 									this.receiving_date = parseInt(args[2], 10);
 								}
@@ -513,13 +518,7 @@ BinkP.prototype.session = function()
 				else {
 					this.receiving.write(pkt.data);
 					// We need to ACK here...
-					if (this.receiving.position >= this.receiving_len) {
-						this.receiving.date = this.receiving_date;
-						if (this.received_files.indexOf(this.receiving.name) == -1) {
-							if (this.sendCmd(this.command.M_GOT, file_getname(this.receiving.name)+' '+this.receiving.position+' '+this.receiving.date))
-								this.received_files.push(this.receiving.name);
-						}
-					}
+					this.ack_file();
 				}
 			}
 		}
@@ -531,9 +530,9 @@ BinkP.prototype.session = function()
 			else {
 				this.pending_ack.push(file_getname(this.sending.name));
 				if (this.nonreliable)
-					this.sendCmd(this.command.M_FILE, file_getname(this.sending.name)+' '+this.sending.length+' '+this.sending.date+' -1');
+					this.sendCmd(this.command.M_FILE, this.escapeFileName(file_getname(this.sending.name))+' '+this.sending.length+' '+this.sending.date+' -1');
 				else
-					this.sendCmd(this.command.M_FILE, file_getname(this.sending.name)+' '+this.sending.length+' '+this.sending.date+' '+this.sending.position);
+					this.sendCmd(this.command.M_FILE, this.escapeFileName(file_getname(this.sending.name))+' '+this.sending.length+' '+this.sending.date+' '+this.sending.position);
 				if (this.ver1_1)
 					this.goteob = false;
 			}
@@ -585,6 +584,8 @@ BinkP.prototype.sendCmd = function(cmd, data)
 	var type;
 	var tmp;
 
+	if (this.sock === undefined)
+		return false;
 	if (data === undefined)
 		data = '';
 	if (this.debug) {
@@ -624,6 +625,9 @@ BinkP.prototype.sendCmd = function(cmd, data)
 BinkP.prototype.sendData = function(data)
 {
 	var len = data.length;
+
+	if (this.sock === undefined)
+		return false;
 	if (this.debug)
 		log(LOG_DEBUG, "Sending "+data.length+" bytes of data");
 	if (!this.sock.sendBin(len, 2))
@@ -642,6 +646,11 @@ BinkP.prototype.recvFrame = function(timeout)
 	var tmp;
 	var ver;
 	var avail;
+
+	if (this.sock === undefined) {
+		this.partialFrame = undefined;
+		return undefined;
+	}
 
 	if (timeout === undefined)
 		timeout = 0;
@@ -734,12 +743,11 @@ BinkP.prototype.recvFrame = function(timeout)
 									};
 								}
 								else {
-									switch(args[i]) {
-										case 'NR':
-											if (!this.sent_nr)
-												this.sendCmd(this.command.M_NUL, "NR");
-											this.non_reliable = true;
-											break;
+									if (args[i] === 'NR') {
+										if (!this.sent_nr)
+											this.sendCmd(this.command.M_NUL, "NR");
+										this.non_reliable = true;
+										break;
 									}
 								}
 							}
