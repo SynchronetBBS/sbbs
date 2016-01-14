@@ -183,7 +183,9 @@ SOFTWARE.
     list_named_queues,flags_str,
     argc,argv,errno,errnostr,socket_errno,
     global,js,system,server,client,user,bbs,console,msg_area,
-    file_area,xtrn_area,MsgBase,File,Queue,Socket,User,COM,CryptContext
+    file_area,xtrn_area,MsgBase,File,Queue,Socket,User,COM,CryptContext,
+	LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_ERROR, LOG_WARNING, LOG_NOTICE,
+	LOG_INFO, LOG_DEBUG
 
     paranoidbrace, multiload, noradix, noescapement, poorrelations,
     noliteral, noextracomma
@@ -735,7 +737,18 @@ var JSLINT = function () {
 			Socket		: true,
 			User		: true,
 			COM			: true,
-			CryptContext: true
+			CryptContext: true,
+
+			LOG_EMERG	: true,
+			LOG_ALERT	: true,
+			LOG_CRIT	: true,
+			LOG_ERR		: true,
+			LOG_ERROR	: true,
+			LOG_WARNING	: true,
+			LOG_NOTICE	: true,
+			LOG_INFO	: true,
+			LOG_DEBUG	: true
+
 		},
 
         scope,      // The current scope
