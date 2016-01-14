@@ -369,6 +369,7 @@ BinkP.prototype.session = function()
 	var ver;
 	var args;
 	var size;
+	var last = Date.now();
 
 	// Session set up, we're good to go!
 	outer:
@@ -377,6 +378,7 @@ BinkP.prototype.session = function()
 		// skipping files.
 		pkt = this.recvFrame(this.senteob ? this.timeout : 0);
 		if (pkt !== undefined && pkt !== this.partialFrame && pkt !== null) {
+			last = Date.now();
 			if (pkt.is_cmd) {
 				cmd_switch:
 				switch(pkt.command) {
@@ -537,12 +539,16 @@ BinkP.prototype.session = function()
 			}
 		}
 		if (this.sending !== undefined) {
-			this.sendData(this.sending.read(32767));
+			if(this.sendData(this.sending.read(32767)))
+				last = Date.now();
 			if (this.eof || this.sending.position >= this.sending.length) {
 				this.sending.close();
 				this.sending = undefined;
 			}
 		}
+
+		if ((last + this.timeout)*1000 < Date.now())
+			this.sendCmd(this.command.M_ERR, "Timeout exceeded!");
 	}
 
 	this.close();
