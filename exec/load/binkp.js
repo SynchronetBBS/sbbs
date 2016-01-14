@@ -412,7 +412,7 @@ BinkP.prototype.session = function()
 									size = 0;
 								if (parseInt(args[3], 10) < 0) {
 									// Non-reliable mode...
-									if (this.nonreliable) {
+									if (this.nonreliable || this.ver1_1) {
 										this.sendCmd(this.command.M_GET, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]+' '+size);
 									}
 									else {
