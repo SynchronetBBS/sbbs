@@ -36,7 +36,7 @@ var FIDO = {
 			zone = parseInt(orig_zone, 10);
 		else
 			zone = -1;
-		// TODO: Use the system default zone in system.fido_net_addrs[0]?
+		// TODO: Use the system default zone in system.fido_addr_list[0]?
 		if (orig_point !== undefined)
 			point = parseInt(orig_point, 10);
 		else
@@ -159,7 +159,7 @@ Object.defineProperties(FIDO.Addr.prototype, {
 		get: function() {
 			var ret = '';
 
-			// TODO: Use default zone from system.fido_net_addrs[0]?
+			// TODO: Use default zone from system.fido_addr_list[0]?
 			if (this.zone === undefined)
 				throw('zone is undefined');
 
