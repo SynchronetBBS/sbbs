@@ -1,3 +1,5 @@
+const RFC822HEADER = 0xb0;  // from smbdefs.h
+
 MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 {
 	var content_type;

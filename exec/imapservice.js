@@ -8,8 +8,6 @@
  * $Id$
  */
 
-const RFC822HEADER = 0xb0;  // from smbdefs.h
-
 load("sbbsdefs.js");
 load("822header.js");
 load("mime.js");
