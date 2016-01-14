@@ -5298,7 +5298,7 @@ function SYNCJSLINT(argc, argv)
 	var paths=[backslash(system.exec_dir),backslash(backslash(system.exec_dir)+'load')];
 	var all_lines;
 	var index;
-	var options={cap:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true,multiload:true,noradix:true,noescapement:true,poorrelations:true,noliteral:true,noextracomma:true};
+	var options={cap:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true,multiload:true,noradix:true,noescapement:true,poorrelations:true,noliteral:true,noextracomma:true,forin:true};
 	var myResult;
 	var tmpVar1;
 	var tmpVar2;
