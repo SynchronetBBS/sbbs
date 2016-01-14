@@ -57,7 +57,7 @@ function FileBase(dir) {
 		this.credits = parseInt(getrec(dat, 9), 10);
 		this.desc = getrec(dat, 58);
 		dat.readBin(2);	// Should be \r\n
-		this.uploader = getrec(dat, LEN_ALIAS);
+		this.uploader = getrec(dat, 25);
 		dat.read(5);	// Padding?
 		dat.readBin(2);	// Should be \r\n
 		this.downloaded = parseInt(getrec(dat, 5), 10);
