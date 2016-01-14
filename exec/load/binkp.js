@@ -1,4 +1,5 @@
 load("sockdefs.js");
+load("fido.js");
 
 /*
  * A binkp implementation...
@@ -8,6 +9,7 @@ load("sockdefs.js");
  * 
  * Next, adjust defaults as needed...
  * default_zone    - if no zone is specified, use this one for all addresses.
+ * default_domain  - if no domain is specified, use this one for all addresses.
  * debug		   - If set, logs all sent/received frames via log(LOG_DEBUG)
  * require_md5	   - Require that the remote support MD5
  * timeout		   - Max timeout
@@ -56,9 +58,8 @@ function BinkP(name_ver, inbound, rx_callback)
 	this.rx_callback = rx_callback;
 
 	this.default_zone = 1;
-	addr = this.parse_addr(system.fido_addr_list[0]);
-	if (addr.zone !== undefined)
-		this.default_zone = addr.zone;
+	addr = FIDO.parse_addr(system.fido_addr_list[0], this.default_zone);
+	this.default_zone = addr.zone;
 	this.senteob = false;
 	this.goteob = false;
 	this.pending_ack = [];
@@ -74,7 +75,7 @@ function BinkP(name_ver, inbound, rx_callback)
 	this.system_name = system.name;
 	this.system_operator = system.operator;
 	this.system_location = system.location;
-	system.fido_addr_list.forEach(function(addr){this.addr_list.push(addr);}, this);
+	system.fido_addr_list.forEach(function(faddr){this.addr_list.push(faddr);}, this);
 	this.want_callback = this.default_want;
 
 	this.sent_files = [];
@@ -130,43 +131,6 @@ BinkP.prototype.command_name = [
 	"M_GET",
 	"M_SKIP"
 ];
-BinkP.prototype.parse_addr = function(addr)
-{
-	var m;
-	var ret={};
-
-	m = addr.match(/^([0-9]+):/);
-	if (m !== null)
-		ret.zone = parseInt(m[1], 10);
-	else
-		ret.zone = this.default_zone;
-
-	m = addr.match(/([0-9]+)\//);
-	if (m !== null)
-		ret.net = parseInt(m[1], 10);
-
-	m = addr.match(/\/([0-9]+)/);
-	if (m !== null)
-		ret.node = parseInt(m[1], 10);
-
-	m = addr.match(/\.([0-9]+)/);
-	if (m !== null)
-		ret.point = parseInt(m[1], 10);
-
-	m = addr.match(/@.+$/);
-	if (m !== null)
-		ret.domain = m[1];
-
-	return ret;
-};
-BinkP.prototype.faddr_to_inetaddr = function(addr)
-{
-	var ret = '';
-	if (addr.point !== undefined && addr.point !== 0)
-		ret += format("p%d", addr.point);
-	ret += format("f%d.n%d.z%d.binkp.net", addr.node, addr.net, addr.zone);
-	return ret;
-};
 BinkP.prototype.ack_file = function()
 {
 	if (this.receiving !== undefined) {
@@ -235,9 +199,7 @@ BinkP.prototype.connect = function(addr, password, port)
 
 	if (addr === undefined)
 		throw("No address specified!");
-	addr = this.parse_addr(addr);
-	if (addr.net === undefined || addr.node == undefined)
-		return false;
+	addr = FIDO.parse_addr(addr, this.default_zone, this.default_domain);
 
 	if (password === undefined)
 		password = '-';
@@ -248,7 +210,7 @@ BinkP.prototype.connect = function(addr, password, port)
 	if (this.sock === undefined)
 		this.sock = new Socket(SOCK_STREAM, "binkp");
 
-	if(!this.sock.connect(this.faddr_to_inetaddr(addr), port)) {
+	if(!this.sock.connect(addr.inet_host, port)) {
 		this.sock = undefined;
 		return false;
 	}
