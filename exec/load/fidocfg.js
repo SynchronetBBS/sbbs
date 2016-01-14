@@ -204,7 +204,7 @@ TickITCfg.prototype.save = function()
 	for (i=0; i<sects.length; i++)
 		tcfg.iniRemoveSection(sects[i]);
 	tcfg.close();
-}
+};
 
 function FREQITCfg()
 {
@@ -288,11 +288,11 @@ FREQITCfg.prototype.save = function()
 	if (this.dirs.length > 0)
 		fcfg.iniSetValue(null, 'Dirs', this.dirs.join(','));
 	else
-		fcfg.iniRemoveKey(section, 'Dirs');
+		fcfg.iniRemoveKey(null, 'Dirs');
 	if (this.securedirs.length > 0)
 		fcfg.iniSetValue(null, 'SecureDirs', this.securedirs.join(','));
 	else
-		fcfg.iniRemoveKey(section, 'SecureDirs');
+		fcfg.iniRemoveKey(null, 'SecureDirs');
 	fcfg.iniSetValue(null, 'MaxFiles', this.maxfiles.toString());
 
 	sects = fcfg.iniGetSections().map(function(v){return v.toLowerCase();});
@@ -304,4 +304,4 @@ FREQITCfg.prototype.save = function()
 	for (i=0; i<sects.length; i++)
 		fcfg.iniRemoveSection(sects[i]);
 	fcfg.close();
-}
+};
