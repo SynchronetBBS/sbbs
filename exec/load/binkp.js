@@ -9,14 +9,20 @@ load("sockdefs.js");
  * Next, adjust defaults as needed...
  * default_zone    - if no zone is specified, use this one for all addresses.
  * debug		   - If set, logs all sent/received frames via log(LOG_DEBUG)
- * skipfiles	   - Do not accept any incoming files until after the first EOB from the remote.
- * 				     intended for FREQ sessions.
  * require_md5	   - Require that the remote support MD5
  * timeout		   - Max timeout
  * addr_list       - list of addresses handled by this system.  Defaults to system.fido_addr_list
  * system_name	   - BBS name to send to remote defaults to system.name
  * system_operator - SysOp name to send to remote defaults to system.operator
  * system_location - System location to send to remote defaults to system.location
+ * want_callback   - Callback when a file is offered... can rename file, skip file,
+ *                   or ACK file without receiving it.
+ *                   Parameters: File object, file size, file date, offset
+ *                   Return values: this.file.SKIP   - Skips the file, will be retransmitted later.
+ *									this.file.ACCEPT - open()s the file and receives it.
+ *									this.file.REJECT - Refuses to take the file... will not be retransmitted later.
+ *                   Default value is this.default_want() which accepts all offered
+ *					 files.
  * rx_callback	   - Function that is called with a single filename argument
  *                   when a file is received successfully.
  *                   Intended for REQ/TIC processing.  This callback can call
@@ -59,7 +65,6 @@ function BinkP(name_ver, inbound, rx_callback)
 	this.pending_get = [];
 	this.tx_queue=[];
 	this.debug = false;
-	this.skipfiles = false;
 	this.nonreliable = false;
 	this.sent_nr = false;
 	this.ver1_1 = false;
@@ -70,6 +75,7 @@ function BinkP(name_ver, inbound, rx_callback)
 	this.system_operator = system.operator;
 	this.system_location = system.location;
 	system.fido_addr_list.forEach(function(addr){this.addr_list.push(addr);}, this);
+	this.want_callback = this.default_want;
 
 	this.sent_files = [];
 	this.failed_sent_files = [];
@@ -78,6 +84,11 @@ function BinkP(name_ver, inbound, rx_callback)
 	this.failed_received_files = [];
 }
 BinkP.prototype.Frame = function() {};
+BinkP.prototype.default_want = function(fobj, fsize, fdate, offset)
+{
+	// Accept everything.
+	return this.file.ACCEPT;
+};
 BinkP.prototype.escapeFileName = function(name)
 {
 	return name.replace(/[^A-Za-z0-9!"#$%&'\(\)*+,\-.\/:;<=>?@\[\]\^_`{|}~]/g, function(match) { return format('\\x%02x', ascii(match)); });
@@ -330,6 +341,9 @@ BinkP.prototype.accept = function(sock, auth_cb)
 						else
 							this.authenticated = 'non-secure';
 						this.sendCmd(this.command.M_OK, this.authenticated);
+						break;
+					default:
+						break;
 				}
 			}
 		}
@@ -340,6 +354,11 @@ BinkP.prototype.accept = function(sock, auth_cb)
 		return false;
 	}
 	return this.session();
+};
+BinkP.prototype.file = {
+	SKIP:0,
+	ACCEPT:1,
+	REJECT:2
 };
 BinkP.prototype.session = function()
 {
@@ -356,7 +375,7 @@ BinkP.prototype.session = function()
 	while(!js.terminated && this.sock !== undefined) {
 		// We want to wait if we have no more files to send or if we're
 		// skipping files.
-		pkt = this.recvFrame((this.senteob || this.skipfiles) ? this.timeout : 0);
+		pkt = this.recvFrame(this.senteob ? this.timeout : 0);
 		if (pkt !== undefined && pkt !== this.partialFrame && pkt !== null) {
 			if (pkt.is_cmd) {
 				cmd_switch:
@@ -373,37 +392,46 @@ BinkP.prototype.session = function()
 						}
 						if (this.ver1_1)
 							this.senteob = false;
-						if (this.skipfiles) {
-							this.sendCmd(this.command.M_SKIP, args[0], args[1], args[2]);
-							break;
-						}
 						tmp = new File(this.inbound + file_getname(args[0]));
-						size = file_size(tmp.name);
-						if (size == -1)
-							size = 0;
-						if (parseInt(args[3], 10) < 0) {
-							// Non-reliable mode...
-							if (this.nonreliable) {
-								this.sendCmd(this.command.M_GET, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]+' '+size);
-							}
-							else {
-								log(LOG_ERR, "M_FILE Offset of -1 in reliable mode!");
-								this.sendCmd(this.command.M_ERR, "M_FILE Offset of -1 in reliable mode!");
-							}
-						}
-						else {
-							if (parseInt(args[3], 10) > size) {
-								log(LOG_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
-								this.sendCmd(this.command.M_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
-							}
-							if (!tmp.open(tmp.exists ? "r+b" : "wb")) {
-								log(LOG_ERROR, "Unable to open file "+tmp.name);
-								this.sendCmd(this.command.M_SKIP, args[0], args[1], args[2]);
+						switch (this.want_callback(tmp, parseInt(args[1], 10), parseInt(args[2], 10), parseInt(args[3], 10))) {
+							case this.file.SKIP:
+								this.sendCmd(this.command.M_SKIP, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]);
 								break;
-							}
-							this.receiving = tmp;
-							this.receiving_len = parseInt(args[1], 10);
-							this.receiving_date = parseInt(args[2], 10);
+							case this.file.REJECT:
+								this.m
+								break;
+							case this.file.ACCEPT:
+								size = file_size(tmp.name);
+								if (size == -1)
+									size = 0;
+								if (parseInt(args[3], 10) < 0) {
+									// Non-reliable mode...
+									if (this.nonreliable) {
+										this.sendCmd(this.command.M_GET, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]+' '+size);
+									}
+									else {
+										log(LOG_ERR, "M_FILE Offset of -1 in reliable mode!");
+										this.sendCmd(this.command.M_ERR, "M_FILE Offset of -1 in reliable mode!");
+									}
+								}
+								else {
+									if (parseInt(args[3], 10) > size) {
+										log(LOG_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
+										this.sendCmd(this.command.M_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
+									}
+									if (!tmp.open(tmp.exists ? "r+b" : "wb")) {
+										log(LOG_ERROR, "Unable to open file "+tmp.name);
+										this.sendCmd(this.command.M_SKIP, args[0]+' '+args[1]+' '+args[2]);
+										break;
+									}
+									this.receiving = tmp;
+									this.receiving_len = parseInt(args[1], 10);
+									this.receiving_date = parseInt(args[2], 10);
+								}
+								break;
+							default:
+								log(LOG_ERR, "Invalid return value from want_callback!");
+								this.sendCmd(this.command.M_ERR, "Implementation bug at my end, sorry.");
 						}
 						break;
 					case this.command.M_EOB:
@@ -477,8 +505,8 @@ BinkP.prototype.session = function()
 			else {
 				// DATA packet...
 				if (this.receiving === undefined) {
-					log(LOG_ERROR, "Data packet outside of file!");
-					this.sendCmd(this.command.M_ERR, "Data packet outside of file!");
+					if (this.debug)
+						log(LOG_DEBUG, "Data packet outside of file!");
 				}
 				else {
 					this.receiving.write(pkt.data);
@@ -493,16 +521,7 @@ BinkP.prototype.session = function()
 				}
 			}
 		}
-		/*
-		 * Don't send another file if:
-		 * 1) We've sent all our files (this.senteob) 
-		 * -OR-
-		 * 2) We're skipping files from the remote.
-		 * 
-		 * This is to prevent us sending a REQ that gets added before
-		 * we've skipped all the files the remote has to offer.
-		 */
-		if (this.sending === undefined && !(this.senteob || this.skipfiles)) {
+		if (this.sending === undefined && !this.senteob)) {
 			this.sending = this.tx_queue.shift();
 			if (this.sending === undefined) {
 				this.sendCmd(this.command.M_EOB);
@@ -681,7 +700,6 @@ BinkP.prototype.recvFrame = function(timeout)
 					return undefined;
 				case this.command.M_EOB:
 					this.goteob = true;
-					this.skipfiles = false;
 					break;
 				case this.command.M_ADR:
 					if (this.remote_addrs !== undefined) {
