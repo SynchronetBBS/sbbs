@@ -139,7 +139,7 @@ BinkP.prototype.ack_file = function()
 			this.receiving.close();
 			this.receiving.date = this.receiving_date;
 			if (this.rx_callback !== undefined)
-				this.rx_callback(this.receiving.name);
+				this.rx_callback(this.receiving.name, this);
 			if (this.sendCmd(this.command.M_GOT, this.escapeFileName(this.receiving_name)+' '+this.receiving.length+' '+this.receiving.date))
 				this.received_files.push(this.receiving.name);
 		}
@@ -194,7 +194,7 @@ BinkP.prototype.parseArgs = function(data)
 	return ret;
 };
 /*
- * auth_cb(response) is called to add files the response parameter is the
+ * auth_cb(response, this) is called to add files the response parameter is the
  * parameter string send with the M_OK message... hopefully either "secure"
  * or "non-secure"
  */
@@ -253,7 +253,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 			return false;
 	}
 
-	auth_cb(this.authenticated);
+	auth_cb(this.authenticated, this);
 
 	if (js.terminated) {
 		this.close();
@@ -264,8 +264,8 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 /*
  * sock can be either a lisening socket or a connected socket.
  *
- * auth_cb(addrs, passwds, challenge) is called to accept and add files
- * if it returns true, the session is considered secure.  auth_cb()
+ * auth_cb(addrs, passwds, challenge, this) is called to accept and add
+ * files if it returns true, the session is considered secure.  auth_cb()
  * is explicitly allowed to change the inbound property and call
  * this.sendCmd(this.command.M_ERR, "Error String");
  *
@@ -311,7 +311,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 		if (pkt !== null && pkt !== this.partialFrame) {
 			if (pkt.is_cmd) {
 				if (pkt.command === this.command.M_PWD) {
-					if (auth_cb(this.remote_addrs, this.parseArgs(pkt.data), challenge))
+					if (auth_cb(this.remote_addrs, this.parseArgs(pkt.data), challenge, this))
 						this.authenticated = 'secure';
 					else
 						this.authenticated = 'non-secure';
@@ -368,7 +368,7 @@ BinkP.prototype.session = function()
 							this.sendCmd(this.command.M_ERR, "Invalid M_FILE command args: '"+pkt.data+"'");
 						}
 						tmp = new File(this.inbound + file_getname(args[0]));
-						switch (this.want_callback(tmp, parseInt(args[1], 10), parseInt(args[2], 10), parseInt(args[3], 10))) {
+						switch (this.want_callback(tmp, parseInt(args[1], 10), parseInt(args[2], 10), parseInt(args[3], 10), this)) {
 							case this.file.SKIP:
 								this.sendCmd(this.command.M_SKIP, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]);
 								break;
