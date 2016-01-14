@@ -239,7 +239,7 @@ function forward_tic(tic)
 			outb = backslash(outb);
 		}
 		if (!mkpath(outb)) {
-			log(LOG_ERROR, "Unable to create outbound director '"+outb+"' for link "+link);
+			log(LOG_ERROR, "Unable to create outbound directory '"+outb+"' for link "+link);
 			continue;
 		}
 
