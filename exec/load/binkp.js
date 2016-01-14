@@ -193,7 +193,12 @@ BinkP.prototype.parseArgs = function(data)
 		ret[i] = this.unescapeFileName(ret[i]);
 	return ret;
 };
-BinkP.prototype.connect = function(addr, password, port)
+/*
+ * auth_cb(response) is called to add files the response parameter is the
+ * parameter string send with the M_OK message... hopefully either "secure"
+ * or "non-secure"
+ */
+BinkP.prototype.connect = function(addr, password, auth_cb, port)
 {
 	var pkt;
 
@@ -247,6 +252,8 @@ BinkP.prototype.connect = function(addr, password, port)
 		if (pkt === undefined)
 			return false;
 	}
+
+	auth_cb(this.authenticated);
 
 	if (js.terminated) {
 		this.close();
