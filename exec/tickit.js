@@ -186,7 +186,7 @@ function forward_tic(tic)
 	}
 
 	// Add us to the path...
-	tic.path.push(system.system.fido_addr_list[0]);
+	tic.path.push(system.fido_addr_list[0]);
 
 	// Populate seenbys from TIC file
 	for (i=0; i<tic.seenby.length; i++)
