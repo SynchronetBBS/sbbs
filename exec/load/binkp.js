@@ -647,6 +647,12 @@ BinkP.prototype.recvFrame = function(timeout)
 	var ver;
 	var avail;
 
+	// Avoid warning from syncjslint by putting this in a closure.
+	function hex2ascii(hex)
+	{
+		return ascii(parseInt(hex, 16));
+	}
+
 	if (this.sock === undefined) {
 		this.partialFrame = undefined;
 		return undefined;
@@ -738,9 +744,7 @@ BinkP.prototype.recvFrame = function(timeout)
 						case 'OPT':
 							for (i=1; i<args.length; i++) {
 								if (args[i].substr(0,9) === 'CRAM-MD5-') {
-									this.cram = {algo:'MD5', challenge:args[i].substr(9).replace(/[0-9a-fA-F]{2}/g,
-										function(m){return ascii(parseInt(m, 16));})
-									};
+									this.cram = {algo:'MD5', challenge:args[i].substr(9).replace(/[0-9a-fA-F]{2}/g, hex2ascii)};
 								}
 								else {
 									if (args[i] === 'NR') {
