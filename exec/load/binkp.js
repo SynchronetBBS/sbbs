@@ -209,7 +209,6 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 
 	if (password === undefined)
 		password = '-';
-
 	if (port === undefined)
 		port = 24554;
 
@@ -254,7 +253,8 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 			return false;
 	}
 
-	auth_cb(this.authenticated, this);
+	if (auth_cb !== undefined)
+		auth_cb(this.authenticated, this);
 
 	if (js.terminated) {
 		this.close();
@@ -702,7 +702,11 @@ BinkP.prototype.recvFrame = function(timeout)
 					else {
 						this.remote_addrs = [];
 						ret.data.split(/ /).forEach(function(addr) {
-							this.remote_addrs.push(FIDO.parse_addr(addr, this.default_zone));
+							try {
+								this.remote_addrs.push(FIDO.parse_addr(addr, this.default_zone));
+							}
+							catch (e) {
+							}
 						}, this);
 					}
 					break;
