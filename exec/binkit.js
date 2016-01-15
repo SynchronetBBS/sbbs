@@ -10,7 +10,7 @@
  * 2) Will not check in a zone-specified directory for the default
  *    zone.  That is, if the default zone is zone 1, and the outbound
  *    is "/path/to/outbound", it will not correctly handle the case
- *    where there is a "/path/to/outboud.001" directory.  The
+ *    where there is a "/path/to/outbound.001" directory.  The
  *    behaviour in this case is undefined and likely to be bad.
  * 
  * See FTS-5005 for details.
@@ -23,7 +23,7 @@ function lock_flow(file, csy)
 {
 	var ret = {
 		bsy:new File(file.replace(/\.*?$/, '.bsy')),
-		cst:new File(file.replace(/\.*?$/, '.csy'))
+		csy:new File(file.replace(/\.*?$/, '.csy'))
 	};
 
 	// Takes ownership of a lockfile if it's more than six hours old.
@@ -166,7 +166,7 @@ function run_one_outbound_dir(dir, scfg)
 	function check_held(addr)
 	{
 		var until;
-		var f = new File(scfg.outboud.replace(/[\/\\]$/,'')+addr.flo_outbound(myaddr.zone)+'.hld');
+		var f = new File(scfg.outbound.replace(/[\/\\]$/,'')+addr.flo_outbound(myaddr.zone)+'.hld');
 
 		if (!f.exists)
 			return false;
@@ -208,8 +208,8 @@ function run_one_outbound_dir(dir, scfg)
 				ext = file_getext(flow_files[i]);
 
 				// Ensure this is the "right" outbound (file case, etc)
-				if (flow_files[i] !== scfg.outboud.replace(/[\\\/]$/,'')+addr.flo_outbound+ext) {
-					log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' (skipped)");
+				if (flow_files[i] !== scfg.outbound.replace(/[\\\/]$/,'')+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
+					log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' expected '"+scfg.outbound.replace(/[\\\/]$/,'')+addr.flo_outbound(myaddr.zone)+ext.substr(1)+"' (skipped)");
 					continue;
 				}
 
@@ -222,7 +222,7 @@ function run_one_outbound_dir(dir, scfg)
 					case '.i':
 						break;
 					case '.f':
-						if (wildcard === '*.?lf')
+						if (wildcard === '*.?lo')
 							break;
 						continue;
 					case '.o':
