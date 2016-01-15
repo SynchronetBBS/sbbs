@@ -305,3 +305,39 @@ FREQITCfg.prototype.save = function()
 		fcfg.iniRemoveSection(sects[i]);
 	fcfg.close();
 };
+
+function BinkITCfg()
+{
+	var f=new File(system.ctrl_dir+'binkit.ini');
+	var sects;
+
+	this.node = {};
+	if (!f.open('r')) {
+		log(LOG_ERROR, "Unable to open '"+f.name+"'");
+	}
+	else {
+		sects = f.iniGetSections();
+		sects.forEach(function(section) {
+			var sec = section.toLowerCase();
+
+			this.node[sec] = {};
+			this.node[sec].pass = f.iniGetValue(section, 'Password', '-');
+			this.node[sec].nomd5 = f.iniGetValue(section, 'AllowPlainPassword');
+			this.node[sec].port = f.iniGetValue(section, 'Port');
+			if (this.node[sec].nomd5 == undefined)
+				this.node[sec].nomd5 = false;
+			else {
+				switch(this.node[sec].nomd5.toUpperCase()) {
+					case 'YES':
+					case 'TRUE':
+					case 'ON':
+						this.node[sec].nomd5 = true;
+						break;
+					default:
+						this.node[sec].nomd5 = false;
+						break;
+				}
+			}
+		}, this);
+	}
+}
