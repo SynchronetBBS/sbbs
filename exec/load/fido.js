@@ -42,7 +42,7 @@ var FIDO = {
 		else
 			point = 0;
 		if (orig_domain !== undefined)
-			domain = orig_domain.toString();
+			domain = orig_domain.toString().toLowerCase();
 		else
 			domain = '';
 
@@ -220,7 +220,7 @@ FIDO.Addr.prototype.flo_outbound = function(default_zone, default_domain)
 	// backslash() doesn't work on an empty string
 	var ret = '_';
 
-	if (this.zone !== undefined && (this.domain !== default_domain || this.zone !== default_zone))
+	if (this.zone !== undefined && (this.domain !== default_domain.toLowerCase() || this.zone !== default_zone))
 		ret += format(".%03x", this.zone);
 	ret = backslash(ret);
 	if (this.point !== undefined)
