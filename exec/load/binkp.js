@@ -759,7 +759,7 @@ BinkP.prototype.recvFrame = function(timeout)
 };
 BinkP.prototype.addFile = function(path, sendas)
 {
-	var file = new File(name);
+	var file = new File(path);
 
 	if (sendas === undefined)
 		sendas = file_getname(path);
