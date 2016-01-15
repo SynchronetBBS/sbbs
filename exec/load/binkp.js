@@ -463,7 +463,7 @@ BinkP.prototype.session = function()
 								i--;
 							}
 						}
-						if (file_getname(this.sending.sendas) === args[0]) {
+						if (this.sending.sendas === args[0]) {
 							this.sending.file.close();
 							this.failed_sent_files.push(this.sending.file.name);
 							this.sending = undefined;
