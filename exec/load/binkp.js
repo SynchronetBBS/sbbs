@@ -75,7 +75,7 @@ function BinkP(name_ver, inbound, rx_callback)
 	this.system_name = system.name;
 	this.system_operator = system.operator;
 	this.system_location = system.location;
-	system.fido_addr_list.forEach(function(faddr){this.addr_list.push(faddr);}, this);
+	system.fido_addr_list.forEach(function(faddr){this.addr_list.push(FIDO.parse_addr(faddr, this.default_zone));}, this);
 	this.want_callback = this.default_want;
 
 	this.sent_files = [];
@@ -418,8 +418,8 @@ BinkP.prototype.session = function()
 					case this.command.M_GOT:
 						args = this.parseArgs(pkt.data);
 						for (i=0; i<this.pending_ack.length; i++) {
-							if (file_getname(this.pending_ack[i]) == args[0]) {
-								this.sent_files.push(this.pending_ack[i]);
+							if (this.pending_ack[i].sendas == args[0]) {
+								this.sent_files.push(this.pending_ack[i].file.name);
 								this.pending_ack.splice(i, 1);
 								i--;
 							}
@@ -447,25 +447,25 @@ BinkP.prototype.session = function()
 						}
 						// Now, simply adjust the position in a pending file
 						for (i=0; i<this.tx_queue.length; i++) {
-							if (file_getname(this.tx_queue[i].name) === args[0]) {
+							if (file_getname(this.tx_queue[i].file.name) === args[0]) {
 								// Validate the size, date, and offset...
-								if (this.tx_queue[i].length != parseInt(args[1], 10) || this.tx_queue[i].date != parseInt(args[2], 10) || this.tx_queue[i].length < parseInt(args[3], 10))
+								if (this.tx_queue[i].file.length != parseInt(args[1], 10) || this.tx_queue[i].file.date != parseInt(args[2], 10) || this.tx_queue[i].file.length < parseInt(args[3], 10))
 									break;
-								this.tx_queue[i].position = parseInt(args[3], 10);
+								this.tx_queue[i].file.position = parseInt(args[3], 10);
 							}
 						}
 						break;
 					case this.command.M_SKIP:
 						args = this.parseArgs(pkt.data);
 						for (i=0; i<this.pending_ack.length; i++) {
-							if (file_getname(this.pending_ack[i]) == args[0]) {
+							if (this.pending_ack[i].sendas == args[0]) {
 								this.pending_ack.splice(i, 1);
 								i--;
 							}
 						}
-						if (file_getname(this.sending) === args[0]) {
-							this.sending.close();
-							this.failed_sent_files.push(this.sending.name);
+						if (file_getname(this.sending.sendas) === args[0]) {
+							this.sending.file.close();
+							this.failed_sent_files.push(this.sending.file.name);
 							this.sending = undefined;
 						}
 						break;
@@ -497,20 +497,20 @@ BinkP.prototype.session = function()
 				this.sendCmd(this.command.M_EOB);
 			}
 			else {
-				this.pending_ack.push(file_getname(this.sending.name));
+				this.pending_ack.push(this.sending);
 				if (this.nonreliable)
-					this.sendCmd(this.command.M_FILE, this.escapeFileName(file_getname(this.sending.name))+' '+this.sending.length+' '+this.sending.date+' -1');
+					this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' -1');
 				else
-					this.sendCmd(this.command.M_FILE, this.escapeFileName(file_getname(this.sending.name))+' '+this.sending.length+' '+this.sending.date+' '+this.sending.position);
+					this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' '+this.sending.file.position);
 				if (this.ver1_1)
 					this.goteob = false;
 			}
 		}
 		if (this.sending !== undefined) {
-			if(this.sendData(this.sending.read(32767)))
+			if(this.sendData(this.sending.file.read(32767)))
 				last = Date.now();
-			if (this.eof || this.sending.position >= this.sending.length) {
-				this.sending.close();
+			if (this.eof || this.sending.file.position >= this.sending.file.length) {
+				this.sending.file.close();
 				this.sending = undefined;
 			}
 		}
@@ -533,9 +533,9 @@ BinkP.prototype.close = function()
 	this.ack_file();
 	// Any still pending have failed.
 	for (i=0; i<this.pending_ack.length; i++)
-		this.failed_sent_files.push(this.pending_ack[i]);
+		this.failed_sent_files.push(this.pending_ack[i].file.name);
 	for (i=0; i<this.tx_queue.length; i++)
-		this.failed_sent_files.push(this.tx_queue[i].name);
+		this.failed_sent_files.push(this.tx_queue[i].file.name);
 	if ((!this.goteob) || this.tx_queue.length || this.pending_ack.length || this.pending_get.length) {
 		this.sendCmd(this.command.M_ERR, "Forced Shutdown");
 	}
@@ -545,7 +545,7 @@ BinkP.prototype.close = function()
 		}
 	}
 	this.tx_queue.forEach(function(file) {
-		file.close();
+		file.file.close();
 	});
 };
 BinkP.prototype.sendCmd = function(cmd, data)
@@ -696,8 +696,12 @@ BinkP.prototype.recvFrame = function(timeout)
 						this.sendCmd(this.command.M_ERR, "Address already received.");
 						return undefined;
 					}
-					else
-						this.remote_addrs = ret.data.split(/ /);
+					else {
+						this.remote_addrs = [];
+						ret.data.split(/ /).forEach(function(addr) {
+							this.remote_addrs.push(FIDO.parse_addr(addr, this.default_zone));
+						}, this);
+					}
 					break;
 				case this.command.M_OK:
 					if (this.authenticated !== undefined) {
@@ -753,13 +757,15 @@ BinkP.prototype.recvFrame = function(timeout)
 	}
 	return ret;
 };
-BinkP.prototype.addFile = function(name)
+BinkP.prototype.addFile = function(path, sendas)
 {
 	var file = new File(name);
 
+	if (sendas === undefined)
+		sendas = file_getname(path);
 	if (!file.open("rb", true))
 		return false;
 	if (this.ver1_1)
 		this.senteob = false;
-	this.tx_queue.push(file);
+	this.tx_queue.push({file:file, sendas:sendas});
 };
