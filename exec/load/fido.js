@@ -21,6 +21,8 @@
  * 		I could have done a magic constructor that accepts this, but then
  * 		Magic would be involved and I don't really like magic.
  * 		
+ * FIDO.parse_flo_file_path(path, default_zone, domain)
+ * 		Parses a flo filename and path into the returned FIDO.Addr object.
  */
 
 var FIDO = {
