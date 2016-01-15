@@ -140,6 +140,47 @@ var FIDO = {
 			domain = default_domain;
 		return new FIDO.Addr(m[2], m[3], zone, m[4], domain);
 	},
+	parse_flo_file_path:function(path, default_zone, domain)
+	{
+		var m;
+		var zone;
+		var point;
+		var ext;
+
+		if (default_zone === undefined)
+			throw("Defualt zone unspecified");
+		m = path.match(/(?:\.([0-9a-f]{3,4})[\/\\])?([0-9a-f]{4})([0-9a-f]{4})\.(...)(?:[\/\\]([0-9a-f]{8})\.(...))?$/i);
+		if (m === null)
+			throw("Invalid flo file path");
+		ext = m[4];
+		if (m[5] != null) {
+			if (m[4].toUpperCase() !== 'PNT')
+				throw("Invalid flo file path");
+			ext = m[6];
+		}
+		switch(ext.toLowerCase()) {
+			case 'ilo':
+			case 'clo':
+			case 'dlo':
+			case 'hlo':
+			case 'flo':
+			case 'iut':
+			case 'cut':
+			case 'dut':
+			case 'hut':
+			case 'out':
+				break;
+			default:
+				throw("Invalid flo file path");
+		}
+		zone = m[1];
+		if (zone == null)
+			zone = default_zone;
+		point = m[5];
+		if(point == null)
+			point = 0;
+		return new FIDO.Addr(parseInt(m[2], 16), parseInt(m[3], 16), parseInt(zone, 16), parseInt(point, 16), domain);
+	}
 };
 Object.defineProperties(FIDO.Addr.prototype, {
 	'str': {
