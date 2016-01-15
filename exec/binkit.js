@@ -195,7 +195,7 @@ function callout_auth_cb(mode, bp)
 	 */
 	var addrs = [];
 
-	if (bp.cb_data.binkitpw === undefined)
+	if (bp.cb_data.binkitpw === undefined || bp.cb_data.binkitpw === '-')
 		addrs.push(bp.binkit_to_addr);
 	else {
 		bp.remote_addrs.forEach(function(addr) {

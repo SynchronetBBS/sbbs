@@ -321,7 +321,7 @@ function BinkITCfg()
 			var sec = section.toLowerCase();
 
 			this.node[sec] = {};
-			this.node[sec].pass = f.iniGetValue(section, 'Password', '-');
+			this.node[sec].pass = f.iniGetValue(section, 'Password');
 			this.node[sec].nomd5 = f.iniGetValue(section, 'AllowPlainPassword');
 			this.node[sec].port = f.iniGetValue(section, 'Port');
 			if (this.node[sec].nomd5 == undefined)
