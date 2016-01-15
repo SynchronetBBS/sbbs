@@ -14,7 +14,11 @@
  * 		inet_host	- Internet hostname at the binkp.net domain
  * 		str			- Address as a string in the most possible dimensions
  * 		toString()	- Overrides the default... same as str
- * 
+ * 		flo_outbound(default_zone, default_domain)
+ * 					- Generates the flo outbound path and filename from
+ * 					  the end of the base outbound directory to the
+ * 					  dot before the extension... generates something like:
+ * 					  "/00670011." or ".001/00670011.pnt/00000001."
  * FIDO.parse_addr(string, default_zone, default_domain)
  * 		Parses an address string filling in the default zone and domain
  * 		if necessary and returns a FIDO.Addr object.
