@@ -393,7 +393,7 @@ function Unregistered_Welcome() {
 		+ "CHANTYPES=#& CHANLIMIT=#:" + max_user_chans + " PREFIX=(ov)@+ "
 		+ "STATUSMSG=@+ :are available on this server.");
 	this.numeric("005", "CASEMAPPING=ascii SILENCE=" + max_silence + " "
-		+ "ELIST=cmntu CHANMODES=b,k,l,imnpst "
+		+ "ELIST=cmnt CHANMODES=b,k,l,imnpst "
 		+ "MAXLIST=b:" + max_bans + " "
 		+ "TARGMAX=JOIN:,KICK:,KILL:,NOTICE:,PART:,PRIVMSG:,WHOIS:,WHOWAS: "
 		+ ":are available on this server.");
