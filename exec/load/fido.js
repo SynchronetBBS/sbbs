@@ -129,7 +129,7 @@ var FIDO = {
 		var zone;
 		var domain;
 
-		m = addr.match(/^(?:([0-9]+):)?([0-9]+)\/([0-9]+)(?:\.([0-9]+))?(@.*)?$/);
+		m = addr.toString().match(/^(?:([0-9]+):)?([0-9]+)\/([0-9]+)(?:\.([0-9]+))?(?:@(.*))?$/);
 		if (m===null)
 			throw('invalid address '+addr);
 		zone = m[1];
@@ -220,7 +220,7 @@ FIDO.Addr.prototype.flo_outbound = function(default_zone, default_domain)
 	// backslash() doesn't work on an empty string
 	var ret = '_';
 
-	if (this.zone !== undefined && (this.domain !== default_domain.toLowerCase() || this.zone !== default_zone))
+	if (this.zone !== undefined && (( default_domain !== undefined && this.domain !== default_domain.toLowerCase()) || this.zone !== default_zone))
 		ret += format(".%03x", this.zone);
 	ret = backslash(ret);
 	if (this.point !== undefined)
