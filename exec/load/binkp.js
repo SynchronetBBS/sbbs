@@ -766,9 +766,13 @@ BinkP.prototype.addFile = function(path, sendas)
 
 	if (sendas === undefined)
 		sendas = file_getname(path);
-	if (!file.open("rb", true))
+	if (!file.open("rb", true)) {
+		log(LOG_WARNING, "Unable to open '"+file.name+"'.  Not sending.");
 		return false;
+	}
 	if (this.ver1_1)
 		this.senteob = false;
+	if (this.debug)
+		log(LOG_DEBUG, "Adding '"+path+"' as '"+sendas+"'");
 	this.tx_queue.push({file:file, sendas:sendas});
 };
