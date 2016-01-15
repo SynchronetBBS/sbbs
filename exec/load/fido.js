@@ -174,3 +174,16 @@ FIDO.Addr.prototype.toString = function()
 {
 	return this.str;
 };
+FIDO.Addr.prototype.flo_outbound = function(default_zone)
+{
+	// backslash() doesn't work on an empty string
+	var ret = '_';
+
+	if (this.zone !== undefined && this.zone !== default_zone)
+		ret += format(".%03x", this.zone);
+	ret = backslash(ret);
+	if (this.point !== undefined)
+		ret += backslash(format("%08x.pnt", this.point));
+	ret += format("%04x%04x.", this.net, this.node);
+	return ret.substr(1);
+};
