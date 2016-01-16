@@ -112,6 +112,11 @@
  *                              always closing the sub-board when there were no new
  *                              messages, resulting in further sub-boards failing to
  *                              open after a while.  That has been fixed.
+ * 2016-01-15 Eric Oulashin     Version 1.09
+ *                              Updated DigDistMsgReader_DisplayEnhancedMsgHdr() to
+ *                              not center the enhanced reader header lines horizontally.
+ *                              Now, it displays it in column 1.  This was done to fix
+ *                              a display issue in some terminal software.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -203,8 +208,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.08";
-var READER_DATE = "2016-01-10";
+var READER_VERSION = "1.09";
+var READER_DATE = "2016-01-15";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -8809,13 +8814,8 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	// display the header where specified.
 	if (console.term_supports(USER_ANSI))
 	{
-		// Display the message header information.  Make sure the header lines are
-		// centered properly in case the user's terminal is more than 80 characters
-		// wide.
-		var screenX = Math.floor(console.screen_columns/2)
-		            - Math.floor(this.enhMsgHeaderWidth/2);
-		if (console.screen_columns > 80)
-			++screenX;
+		// Display the header starting on the first column and the given screen row.
+		var screenX = 1;
 		var screenY = (typeof(pStartScreenRow) == "number" ? pStartScreenRow : 1);
 		for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
 		{
@@ -8823,6 +8823,17 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 			console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
 			               pDisplayMsgNum, dateTimeStr, false));
 		}
+		// Older - Used to center the header lines, but I'm not sure this is necessary,
+		// and it might even make the header off by one, which could be bad.
+		// Display the message header information.  Make sure the header lines are
+		// centered properly in case the user's terminal is more than 80 characters
+		// wide.
+		/*
+		var screenX = Math.floor(console.screen_columns/2)
+		            - Math.floor(this.enhMsgHeaderWidth/2);
+		if (console.screen_columns > 80)
+			++screenX;
+		*/
 	}
 	else
 	{

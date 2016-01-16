@@ -5,6 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.09     2016-01-15   Updated to not center the message header lines
+                      horizontally.  Now, it will display the header lines
+                      starting on column 1.  This was done to fix a display
+                      issue in some terminal software.
+1.08     2016-01-10   Bug fix: When scanning message sub-boards, it wasn't
+                      always closing the sub-board when there were no new
+                      messages, resulting in further sub-boards failing to open
+                      after a while.  That has been fixed.
 1.07     2015-12-24   - Added the ability to select multiple messages (for
                       actions such as batch delete), and added the ability to
                       delete multiple selected messages.  Batch deleting is
