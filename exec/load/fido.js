@@ -237,8 +237,8 @@ FIDO.Addr.prototype.flo_outbound = function(default_zone, default_domain)
 	 */
 
 	if (this.zone !== undefined) {
-		if (default_zone !== undefined && this.zone !== default_zone) ||
-				(this.domain !== undefined && default_domain !== undefined && this.domain !== default_domain.toLowerCase())
+		if ((default_zone !== undefined && this.zone !== default_zone) ||
+				(this.domain !== undefined && default_domain !== undefined && this.domain !== default_domain.toLowerCase()))
 			ret += format(".%03x", this.zone);
 	}
 	ret = backslash(ret);
