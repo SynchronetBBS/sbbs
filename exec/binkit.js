@@ -91,6 +91,13 @@ function unlock_flow(locks)
 	}
 }
 
+
+function outbound_root(outbound)
+{
+	// Strip trailing backslash...
+	return outbound.replace(/[\\\/]$/, '');
+}
+
 /*
  * Given a list of addresses to rescan, calls
  * bp.addFile() for any pending file transfers.
@@ -106,7 +113,7 @@ function add_outbound_files(addrs, bp)
 	addrs.forEach(function(addr) {
 		log(LOG_DEBUG, "Adding outbound files for "+addr);
 		// Find all possible flow files for the remote.
-		var allfiles = directory(bp.cb_data.binkit_scfg.outbound.replace(/[\\\/]$/)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
+		var allfiles = directory(outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
 		// Parse flow files and call addFile() tracking what to do on success.
 		allfiles.forEach(function(file) {
 			var flo;
@@ -218,6 +225,7 @@ function callout_tx_callback(fname, bp)
 {
 	var j;
 
+	// Remove flow files that have been completly processed.
 	Object.keys(bp.bp.cb_data.binkit_flow_contents).forEach(function(flo) {
 		if (file_exists(flo)) {
 			while ((j = bp.cb_data.binkit_flow_contents[flo].indexOf(fname)) !== -1)
@@ -240,6 +248,20 @@ function callout_want_callback(fobj, fsize, fdate, offset, bp)
 	 * Likely we'll want magical handling for control files (*.TIC,
 	 * *.REQ, and *.PKT, Bundle Files, and the default handling for the
 	 * rest.
+	 * 
+	 * We should lower-case incoming filenames here too...
+	 *
+	 * Also, for partial files, we can cancel the remote and do an M_GET resume.
+	 *
+	 * Ok, so put active transfers into a temp directory somewhere with some way
+	 * of tying it back to a set of address (we don't actually know which address it
+	 * comes from, just a list of addresses it may come from) and store enough
+	 * info to resume it.  This means the partially transferred file and some sort
+	 * of bookkeeping info file need to be tied together somewhere... maybe resume
+	 * support is simply "too hard" to bother with?
+	 *
+	 * Once the file is completely received, move it to the final resting place
+	 * (in rx_callback) and do any required processing then.
 	 */
 
 	// Reject duplicate filenames... a more robust callback would rename them.
@@ -256,6 +278,7 @@ function callout_want_callback(fobj, fsize, fdate, offset, bp)
 function callout_done(bp)
 {
 	var f;
+	var lines;
 
 	bp.sent_files.forEach(function(file) {
 		if (bp.cb_data.binkit_file_actions[file] !== undefined) {
@@ -276,7 +299,42 @@ function callout_done(bp)
 		}
 	});
 
-	// TODO: update incomplete flow files...
+	Object.keys(bp.cb_data.binkit_flow_contents).forEach(function(key) {
+		if (bp.cb_data.binkit_flow_contents[key].length > 0) {
+			// We have some unsent files in here... re-write the flo file...
+			f = new File(key);
+			if (!f.open("r+")) {
+				log(LOG_ERROR, "Unable to update flow file '"+key+"'.");
+				return;
+			}
+			lines = f.readAll(2048);
+			f.truncate(0);
+			lines.forEach(function(line) {
+				switch(line[0]) {
+					case '#':
+					case '^':
+					case '-':
+					case '@':
+						if (bp.cb_data.binkit_flow_contents[key].indexOf(line.substr(1)) == -1)
+							f.writeln('~'+line.substr(1));
+						else
+							f.writeln(line);
+						break;
+					// Already skipped...
+					case '~':
+					case '!':
+						f.writeln(line);
+						break;
+					default:
+						if (bp.cb_data.binkit_flow_contents[key].indexOf(line) == -1)
+							f.writeln('~'+line);
+						else
+							f.writeln(line);
+						break;
+				}
+			});
+		}
+	});
 }
 
 function callout(addr, scfg)
@@ -285,6 +343,7 @@ function callout(addr, scfg)
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, callout_rx_callback, callout_tx_callback);
 	var port;
 	var f;
+	var success = false;
 
 	log(LOG_INFO, "Callout to "+addr+" started.");
 	bp.cb_data = {
@@ -306,14 +365,14 @@ function callout(addr, scfg)
 	bp.want_callback = callout_want_callback;
 
 	// We won't add files until the auth finishes...
-	bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port);
+	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port);
 
 	callout_done(bp);
 
-	// TODO: Some real .try information...
-	f = new File(bp.cb_data.binkit_scfg.outbound.replace(/[\\\/]$/)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'.try');
+	f = new File(outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'try');
 	if (f.open("w")) {
-		f.writeln("Callout complete.");
+		f.writeln(success ? ('Success S/R: '+bp.sent_files.length+'/'+bp.received_files.length) :
+			('Error S/R: '+bp.sent_files.length+'/'+bp.received_files.length+' Failed S/R: '+bp.failed_sent_files.length+'/'+bp.failed_received_files.length));
 		f.close();
 	}
 	else {
@@ -324,10 +383,6 @@ function callout(addr, scfg)
 function run_one_outbound_dir(dir, scfg)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
-	var flow_files;
-	var lock_files;
-	var ext;
-	var i;
 	var ran = {};
 
 	log(LOG_DEBUG, "Running outbound dir "+dir);
@@ -335,11 +390,11 @@ function run_one_outbound_dir(dir, scfg)
 	function check_held(addr)
 	{
 		var until;
-		var f = new File(scfg.outbound.replace(/[\/\\]$/,'')+addr.flo_outbound(myaddr.zone)+'.hld');
+		var f = new File(outbound_root(scfg.outbound)+addr.flo_outbound(myaddr.zone)+'.hld');
 
 		if (!f.exists)
 			return false;
-		if (!f.open("rb")) {
+		if (!f.open("r")) {
 			log(LOG_ERROR, "Unable to open hold file '"+f.name+"'");
 			return true;
 		}
@@ -362,6 +417,10 @@ function run_one_outbound_dir(dir, scfg)
 	function check_flavour(wildcard, typename)
 	{
 		var addr;
+		var flow_files;
+		var lock_files;
+		var ext;
+		var i;
 
 		while (!js.terminated) {
 			flow_files = directory(dir+wildcard);
@@ -381,14 +440,14 @@ function run_one_outbound_dir(dir, scfg)
 				ext = file_getext(flow_files[i]);
 
 				// Ensure this is the "right" outbound (file case, etc)
-				if (flow_files[i] !== scfg.outbound.replace(/[\\\/]$/,'')+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
-					log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' expected '"+scfg.outbound.replace(/[\\\/]$/,'')+addr.flo_outbound(myaddr.zone)+ext.substr(1)+"' (skipped)");
+				if (flow_files[i] !== outbound_root(scfg.outbound)+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
+					log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' expected '"+outbound_root(scfg.outbound)+addr.flo_outbound(myaddr.zone)+ext.substr(1)+"' (skipped)");
 					continue;
 				}
 
 				switch(ext.substr(0, 2)) {
 					case '.h':
-						log(LOG_DEBUG, "Skipping hold flavourd flow file '"+flow_files[i]+"'.");
+						log(LOG_DEBUG, "Skipping hold flavoured flow file '"+flow_files[i]+"'.");
 						continue;
 					case '.c':
 					case '.d':
@@ -433,7 +492,7 @@ function run_one_outbound_dir(dir, scfg)
 	check_flavour('*.?ut', "netmail");
 	log(LOG_DEBUG, "Done checking netmail in "+dir+", checking file references.");
 
-	// Now check for pending pending file reference
+	// Now check for pending file reference
 	check_flavour('*.?lo', "file reference");
 	log(LOG_DEBUG, "Done checking file references in "+dir+", checking file references.");
 }
@@ -455,7 +514,7 @@ function run_outbound()
 	outbound_dirs = [];
 	if (file_isdir(scfg.outbound))
 		outbound_dirs.push(scfg.outbound);
-	tmp = directory(scfg.outbound.replace(/[\\\/]$/,'')+'.*', 0);
+	tmp = directory(outbound_root(scfg.outbound)+'.*', 0);
 	tmp.forEach(function(dir) {
 		var pnts;
 
