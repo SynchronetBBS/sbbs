@@ -22,8 +22,8 @@ load("fidocfg.js");
 function lock_flow(file, csy)
 {
 	var ret = {
-		bsy:new File(file.replace(/\.*?$/, '.bsy')),
-		csy:new File(file.replace(/\.*?$/, '.csy'))
+		bsy:new File(file.replace(/\..*?$/, '.bsy')),
+		csy:new File(file.replace(/\..*?$/, '.csy'))
 	};
 
 	// Takes ownership of a lockfile if it's more than six hours old.
@@ -363,6 +363,10 @@ function callout(addr, scfg)
 	bp.default_zone = myaddr.zone;
 	bp.default_domain = myaddr.domain;
 	bp.want_callback = callout_want_callback;
+
+	// We can't use the defaults since the defaults are only 4D addresses.
+	bp.addr_list = [];
+	system.fido_addr_list.forEach(function(faddr){bp.addr_list.push(FIDO.parse_addr(faddr, this.default_zone, 'fidonet'));}, this);
 
 	// We won't add files until the auth finishes...
 	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port);
