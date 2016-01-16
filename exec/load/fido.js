@@ -226,8 +226,21 @@ FIDO.Addr.prototype.flo_outbound = function(default_zone, default_domain)
 	// backslash() doesn't work on an empty string
 	var ret = '_';
 
-	if (this.zone !== undefined && (( default_domain !== undefined && this.domain !== default_domain.toLowerCase()) || this.zone !== default_zone))
-		ret += format(".%03x", this.zone);
+	/*
+	 * We need the zone suffix if:
+	 * 1) This is not in the default zone.
+	 * -OR-
+	 * 2) This is not in the default domain.
+	 *
+	 * If default_* is undefined, assume we are in the default.
+	 * Of course, if we don't have a zone, we surely can't put it in.
+	 */
+
+	if (this.zone !== undefined) {
+		if (default_zone !== undefined && this.zone !== default_zone) ||
+				(this.domain !== undefined && default_domain !== undefined && this.domain !== default_domain.toLowerCase())
+			ret += format(".%03x", this.zone);
+	}
 	ret = backslash(ret);
 	if (this.point !== undefined)
 		ret += backslash(format("%08x.pnt", this.point));
