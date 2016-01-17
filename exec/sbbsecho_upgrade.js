@@ -63,7 +63,7 @@ for(line_num in cfg) {
 				nodelist[word[1]] = newnode();
 			nodelist[word[1]][key] = word[2];
 			break;
-		case "sendnotify":
+		case "send_notify":
 		case "passive":
 		case "hold":
 		case "crash":
@@ -92,7 +92,6 @@ for(line_num in cfg) {
 			break;
 		case "end":
 		case "regnum":
-		case "nocircularfwd":
 		case "store_seenby":
 		case "store_path":
 		case "store_kludge":
@@ -137,7 +136,8 @@ for(var i in bool_opts)
 	file.writeln(bool_opts[i] + " = true");
 file.writeln("notify_user = " + parseInt(value_opts["notify"])), delete value_opts["notify"];
 file.writeln("zone_blind = " + Boolean(value_opts["zone_blind"]));
-file.writeln("zone_blind_threshold = " + parseInt(value_opts["zone_blind"])), delete value_opts["zone_blind"];
+if(parseInt(value_opts["zone_blind"]))
+	file.writeln("zone_blind_threshold = " + parseInt(value_opts["zone_blind"])), delete value_opts["zone_blind"];
 for(var i in value_opts)
 	file.writeln(i + " = " + value_opts[i]);
 
@@ -168,20 +168,20 @@ for(var i in packer) {
 }
 for(var i in echolist) {
 	var elist = echolist[i];
-	var hub;
+	var hub = { addr: '', pwd: '' };
 	var forward;
 	if(elist[0].toUpperCase()=="FORWARD") {
 		elist.shift();
 		hub = { addr: elist.shift(), pwd: elist.shift() };
 		forward = true;
 	} else if(elist[0].toUpperCase()=="HUB")
-		hub = { addr: elist.shift() };
+		hub = { addr: elist.shift(), pwd: '' };
 
 	file.writeln();
 	file.writeln("[echolist:" + elist.shift() + "]");
 	file.writeln("\tflags = " + elist.join(","));
-	file.writeln("\thub = " + (hub.addr || ""));
-	file.writeln("\tpwd = " + (hub.pwd || ""));
+	file.writeln("\thub = " + hub.addr);
+	file.writeln("\tpwd = " + hub.pwd);
 	file.writeln("\tfwd = " + Boolean(forward));
 }
 
