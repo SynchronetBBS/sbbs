@@ -231,6 +231,28 @@ int64_t DLLCALL parse_byte_count(const char* str, ulong unit)
 	return((int64_t)(unit>1 ? (bytes/unit):bytes));
 }
 
+/* Parse a duration string, default unit is in seconds */
+/* (Y)ears, (W)eeks, (D)ays, (H)ours, and (M)inutes */
+/* suffixes/multipliers are supported.
+/* Return value is in seconds */
+double DLLCALL parse_duration(const char* str)
+{
+	char*	p=NULL;
+	double	t;
+
+	t=strtod(str,&p);
+	if(p!=NULL) {
+		switch(toupper(*p)) {
+			case 'Y':	t*=365.0*24.0*60.0*60.0; break;
+			case 'W':	t*=  7.0*24.0*60.0*60.0; break;
+			case 'D':	t*=		 24.0*60.0*60.0; break;
+			case 'H':	t*=			  60.0*60.0; break;
+			case 'M':	t*=				   60.0; break;
+		}
+	}
+	return t;
+}
+
 /****************************************************************************/
 /* Convert ASCIIZ string to upper case										*/
 /****************************************************************************/

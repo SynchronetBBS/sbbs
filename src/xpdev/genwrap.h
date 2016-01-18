@@ -369,6 +369,7 @@ DLLEXPORT char		DLLCALL c_unescape_char(char ch);
 
 /* Power-of-2 byte count string parser (e.g. "100K" returns 102400 if unit is 1) */
 DLLEXPORT int64_t	DLLCALL	parse_byte_count(const char*, ulong unit);
+DLLEXPORT double	DLLCALL parse_duration(const char*);
 
 /* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
 typedef		clock_t				msclock_t;
