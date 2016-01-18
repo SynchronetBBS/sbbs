@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -94,6 +94,8 @@ DLLEXPORT ulong DLLCALL		iniReadLongInt(FILE*, const char* section, const char* 
 					,ulong deflt);
 DLLEXPORT int64_t DLLCALL		iniReadBytes(FILE*, const char* section, const char* key
 					,ulong unit, int64_t deflt);
+DLLEXPORT double DLLCALL		iniReadDuration(FILE*, const char* section, const char* key
+					,double deflt);
 DLLEXPORT double DLLCALL		iniReadFloat(FILE*, const char* section, const char* key
 					,double deflt);
 DLLEXPORT BOOL DLLCALL		iniReadBool(FILE*, const char* section, const char* key
@@ -146,9 +148,11 @@ DLLEXPORT ushort DLLCALL		iniGetShortInt(str_list_t, const char* section, const 
 					,ushort deflt);
 DLLEXPORT ulong DLLCALL		iniGetLongInt(str_list_t, const char* section, const char* key
 					,ulong deflt);
-DLLEXPORT int64_t DLLCALL		iniGetBytes(str_list_t, const char* section, const char* key
+DLLEXPORT int64_t DLLCALL	iniGetBytes(str_list_t, const char* section, const char* key
 					,ulong unit, int64_t deflt);
-DLLEXPORT double DLLCALL		iniGetFloat(str_list_t, const char* section, const char* key
+DLLEXPORT double DLLCALL	iniGetDuration(str_list_t, const char* section, const char* key
+					,double deflt);
+DLLEXPORT double DLLCALL	iniGetFloat(str_list_t, const char* section, const char* key
 					,double deflt);
 DLLEXPORT BOOL DLLCALL		iniGetBool(str_list_t, const char* section, const char* key
 					,BOOL deflt);
@@ -195,6 +199,8 @@ DLLEXPORT char* DLLCALL		iniSetShortInt(str_list_t*, const char* section, const 
 DLLEXPORT char* DLLCALL		iniSetLongInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
 DLLEXPORT char* DLLCALL		iniSetBytes(str_list_t*, const char* section, const char* key, ulong unit, int64_t value
+					,ini_style_t*);
+DLLEXPORT char* DLLCALL		iniSetDuration(str_list_t*, const char* section, const char* key, double value
 					,ini_style_t*);
 DLLEXPORT char* DLLCALL		iniSetHexInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
