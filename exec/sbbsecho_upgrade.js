@@ -42,7 +42,7 @@ for(line_num in cfg) {
 					value_opts[key] = word[1];
 					break;
 				case 1:
-					bool_opts.push(key);
+					bool_opts[key] = true;
 					break;
 				default:
 					alert("Unrecognized cfg line: " + line);
@@ -103,7 +103,7 @@ for(line_num in cfg) {
 
 if (debug) {
 	for(var i in bool_opts)
-		print("bool " + bool_opts[i]);
+		print("bool " + i);
 
 	for(var i in value_opts)
 		print("value " + i + " = " + value_opts[i]);
@@ -133,14 +133,17 @@ if(!file.open("w")) {
 file.writeln("check_path = " + !Boolean(bool_opts["nopathcheck"])), delete bool_opts["nopathcheck"];
 file.writeln("fwd_circular = " + !Boolean(bool_opts["nocircularfwd"])), delete bool_opts["nocircularfwd"];
 file.writeln("kill_empty_netmail = " + Boolean(bool_opts["kill_empty"])), delete bool_opts["kill_empty"];
+file.writeln("add_from_echolists_only = " + Boolean(bool_opts["elist_only"])), delete bool_opts["elist_only"];
 for(var i in bool_opts)
-	file.writeln(bool_opts[i] + " = true");
+	if(i) file.writeln(i + " = true");
+file.writeln();
 file.writeln("notify_user = " + parseInt(value_opts["notify"])), delete value_opts["notify"];
 file.writeln("zone_blind = " + Boolean(value_opts["zone_blind"]));
 if(parseInt(value_opts["zone_blind"]))
 	file.writeln("zone_blind_threshold = " + parseInt(value_opts["zone_blind"])), delete value_opts["zone_blind"];
+file.writeln("log = 0x" + value_opts["log"]), delete value_opts["log"];
 for(var i in value_opts)
-	file.writeln(i + " = " + value_opts[i]);
+	if(i) file.writeln(i + " = " + value_opts[i]);
 
 for(var i in nodelist) {
 	file.writeln();
