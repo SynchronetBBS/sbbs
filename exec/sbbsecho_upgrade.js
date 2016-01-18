@@ -9,7 +9,7 @@ var debug =  false;
 
 function newnode()
 {
-	return { echolists: [] };
+	return { keys: [] };
 }
 
 var cfgfile = system.ctrl_dir + "sbbsecho.cfg";
@@ -78,7 +78,7 @@ for(line_num in cfg) {
 			if(!nodelist[word[1]])
 				nodelist[word[1]] = newnode();
 			nodelist[word[1]].areafix_pwd = word[2];
-			nodelist[word[1]].echolists = word.slice(3);
+			nodelist[word[1]].keys = word.slice(3);
 			break;
 		case "echolist":
 			echolist.push(word.slice(1));
@@ -132,6 +132,7 @@ if(!file.open("w")) {
 
 file.writeln("check_path = " + !Boolean(bool_opts["nopathcheck"])), delete bool_opts["nopathcheck"];
 file.writeln("fwd_circular = " + !Boolean(bool_opts["nocircularfwd"])), delete bool_opts["nocircularfwd"];
+file.writeln("kill_empty_netmail = " + Boolean(bool_opts["kill_empty"])), delete bool_opts["kill_empty"];
 for(var i in bool_opts)
 	file.writeln(bool_opts[i] + " = true");
 file.writeln("notify_user = " + parseInt(value_opts["notify"])), delete value_opts["notify"];
@@ -156,7 +157,7 @@ for(var i in nodelist) {
 	file.writeln("\tdirect = " + Boolean(nodelist[i].direct));
 	file.writeln("\tstatus = " + (nodelist[i].crash ? "crash" : nodelist[i].hold ? "hold" : "normal"));
 	file.writeln("\tpacker = " + (nodelist[i].usepacker || "none"));
-	file.writeln("\techolists = " + nodelist[i].echolists.join(","));
+	file.writeln("\tkeys = " + nodelist[i].keys.join(","));
 }
 for(var i in packer) {
 	file.writeln();
@@ -179,7 +180,7 @@ for(var i in echolist) {
 
 	file.writeln();
 	file.writeln("[echolist:" + elist.shift() + "]");
-	file.writeln("\tflags = " + elist.join(","));
+	file.writeln("\tkeys = " + elist.join(","));
 	file.writeln("\thub = " + hub.addr);
 	file.writeln("\tpwd = " + hub.pwd);
 	file.writeln("\tfwd = " + Boolean(forward));
