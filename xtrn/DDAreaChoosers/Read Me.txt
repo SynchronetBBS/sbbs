@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.08
-                        Release date: 2015-04-19
+                              Version 1.09
+                        Release date: 2016-01-17
 
                                   by
 
@@ -38,7 +38,13 @@ Synchronet sysops might find them useful.
 ===============
 The Digital Distortion message & file area chooser scripts provide a lightbar
 or traditional user interface to let the user choose their message and file
-area.  Also, the colors are customizable.  Additionally, the message area
+area.  The colors are customizable via a configuration file.
+
+By default, the scripts will let the user choose both the message group and
+sub-board, and file library and directory - There is also a command-line
+parameter that will only allow the user to choose a message sub-board within
+their current message group, or file directory only within their current file
+library, if desired.    Additionally, the message area
 chooser will show the date & time of the latest post for each of the
 sub-boards.
 
@@ -91,10 +97,9 @@ The process is similar for the file area chooser - Search for file_select_area
 and replace that with the following:
 exec "?DDFileAreaChooser.js"
 
-
-If you are using the JavaScript command shell classic_shell.js, do the
-following for message area selection (some knowledge of the JavaScript language
-will be helpful):
+For example: If you are using the JavaScript command shell classic_shell.js, do
+the following for message area selection (some knowledge of the JavaScript
+language will be helpful):
 - Search for the text "case 'J':" (without the double-quotes)
 - Comment out the text from the next line until (and not including) the next
   case statement
@@ -104,6 +109,25 @@ break;
 
 In classic_shell.js, the process will be similar for file area selection.
 
+Command-line parameters
+-----------------------
+The first command-line parameter specifies whether or not to allow the user to
+choose a message group (for the message area chooser) or file library (for the
+file area chooser).  These parameters are true by default.  If you want to
+allow the user to choose a message sub-board only within their current message
+group, or file directory only within their current file library, add the word
+"false" (without the double-quotes) as a command-line parameter after the .js
+script filename.  For example:
+For JavaScript:
+bbs.exec("?DDMsgAreaChooser.js false");
+bbs.exec("?DDFileAreaChooser.js false");
+For Baja:
+exec "?DDMsgAreaChooser.js false"
+exec "?DDFileAreaChooser.js false"
+
+The second command-line parameter specifies whether or not to execute the
+script - This is for use when loading the script with the load() function
+instead of bbs.exec() in JavaScript.  See the next section for more details.
 
 
 Advanced installation notes (optional)
@@ -113,7 +137,7 @@ that you can customize the settings & colors within your script if you like.
 To do this, follow these steps:
  1. Include the following line in your JavaScript script (preferably near the
     top):
- load("DDMsgAreaChooser.js", false);
+ load("DDMsgAreaChooser.js", true, false);
  2. Where you want to have area choosing functionality, instantiate the object
     and call its SelectMsgArea() function (for the message area chooser) or its
     SelectFileArea() function (for the file area chooser).  An example:
@@ -394,6 +418,10 @@ ListDirsInFileLib(pLibIndex,          Lists the directories in the user's
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.09     2016-01-17   Added a command-line parameter to let the user choose a
+                      message sub-board only within their current message
+                      group, or file directory only within their current file
+                      library.
 1.08     2015-04-19   Added customizable color settings for the key help text
                       line displayed at the bottom of the screen in lightbar
                       mode.  Also, updated to allow the PageUp and PageDown

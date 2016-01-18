@@ -47,10 +47,18 @@
  *                                  at the bottom of the screen.  Also, added the
  *									ability to use the PageUp & PageDown keys instead
  *                                  of P and N in the lightbar lists.
+ * 2016-01-17 Eric Oulashin 1.09    Updated to allow choosing only the directory within
+ *                                  the user's current file library.  The first command-
+ *                                  line argument now specifies whether or not to
+ *                                  allow choosing the library, and it defaults
+ *                                  to true.
  */
 
 /* Command-line arguments:
-   1 (argv[0]): Boolean - Whether or not to run the area chooser (if false,
+   1 (argv[0]): Boolean - Whether or not to choose a file library first (default).  If
+                false, the user will only be able to choose a different directory within
+				their current file library.
+   2 (argv[1]): Boolean - Whether or not to run the area chooser (if false,
                 then this file will just provide the DDFileAreaChooser class).
 */
 
@@ -72,8 +80,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.08";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2015-04-19";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.09";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-01-17";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
@@ -89,18 +97,29 @@ var KEY_PAGE_DOWN = "\1PgDn";
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
 
-// Determine whether or not to execute the message listing code, based
-// on the first program argument (a boolean).
+// 1st command-line argument: Whether or not to choose a file library first (if
+// false, then only choose a directory within the user's current library).  This
+// can be true or false.
+var chooseFileLib = true;
+if (typeof(argv[0]) == "boolean")
+	chooseFileLib = argv[0];
+else if (typeof(argv[0]) == "string")
+	chooseFileLib = (argv[0].toLowerCase() == "true");
+
+// 2nd command-line argument: Determine whether or not to execute the message listing
+// code (true/false)
 var executeThisScript = true;
-if (typeof(argv[0]) != "undefined")
-	executeThisScript = argv[0];
+if (typeof(argv[1]) == "boolean")
+	executeThisScript = argv[1];
+else if (typeof(argv[1]) == "string")
+	executeThisScript = (argv[1].toLowerCase() == "true");
 
 // If executeThisScript is true, then create a DDFileAreaChooser object and use
 // it to let the user choose a message area.
 if (executeThisScript)
 {
 	var fileAreaChooser = new DDFileAreaChooser();
-	fileAreaChooser.SelectFileArea();
+	fileAreaChooser.SelectFileArea(chooseFileLib);
 }
 
 // End of script execution
@@ -252,57 +271,75 @@ function DDFileAreaChooser()
 }
 
 // For the DDFileAreaChooser class: Lets the user choose a file area.
-function DDFileAreaChooser_selectFileArea()
+//
+// Parameters:
+//  pChooseLib: Boolean - Whether or not to choose the file library.  If false,
+//              then this will allow choosing a directory within the user's
+//              current file library.  This is optional; defaults to true.
+function DDFileAreaChooser_selectFileArea(pChooseLib)
 {
-   if (this.useLightbarInterface && console.term_supports(USER_ANSI))
-		this.SelectFileArea_Lightbar();
+	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+		this.SelectFileArea_Lightbar(pChooseLib);
 	else
-		this.SelectFileArea_Traditional();
+		this.SelectFileArea_Traditional(pChooseLib);
 }
 
 // For the DDFileAreaChooser class: Traditional user interface for
 // letting the user choose a file area
-function DDFileAreaChooser_selectFileArea_Traditional()
+//
+// Parameters:
+//  pChooseLib: Boolean - Whether or not to choose the file library.  If false,
+//              then this will allow choosing a directory within the user's
+//              current file library.  This is optional; defaults to true.
+function DDFileAreaChooser_selectFileArea_Traditional(pChooseLib)
 {
-   // If there are no file libraries, then don't let the user
-   // choose one.
-   if (file_area.lib_list.length == 0)
-   {
-      console.clear("\1n");
-      console.print("\1y\1hThere are no file libraries.\r\n\1p");
-      return;
-   }
+	// If there are no file libraries, then don't let the user
+	// choose one.
+	if (file_area.lib_list.length == 0)
+	{
+		console.clear("\1n");
+		console.print("\1y\1hThere are no file libraries.\r\n\1p");
+		return;
+	}
 
-   // Show the file libraries & directories and let the user choose one.
-   var selectedLib = 0; // The user's selected file library
-   var selectedDir = 0; // The user's selected file directory
-   var continueChooseFileLib = true;
-   while (continueChooseFileLib)
-   {
-      // Clear the BBS command string to make sure there are no extra
-      // commands in there that could cause weird things to happen.
-      bbs.command_str = "";
+	var chooseLib = (typeof(pChooseLib) == "boolean" ? pChooseLib : true);
+	if (chooseLib)
+	{
+		// Show the file libraries & directories and let the user choose one.
+		var selectedLib = 0; // The user's selected file library
+		var selectedDir = 0; // The user's selected file directory
+		var continueChooseFileLib = true;
+		while (continueChooseFileLib)
+		{
+			// Clear the BBS command string to make sure there are no extra
+			// commands in there that could cause weird things to happen.
+			bbs.command_str = "";
 
-      console.clear("\1n");
-      this.ListFileLibs();
-      console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + +(bbs.curlib+1) +
-                    "\1n\1c]:\1h ");
-      // Accept Q (quit) or a file library number
-      selectedLib = console.getkeys("Q", file_area.lib_list.length);
+			console.clear("\1n");
+			this.ListFileLibs();
+			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + +(bbs.curlib+1) + "\1n\1c]:\1h ");
+			// Accept Q (quit) or a file library number
+			selectedLib = console.getkeys("Q", file_area.lib_list.length);
 
-      // If the user just pressed enter (selectedLib would be blank),
-      // default to the current library.
-      if (selectedLib.toString() == "")
-         selectedLib = bbs.curlib + 1;
+			// If the user just pressed enter (selectedLib would be blank),
+			// default to the current library.
+			if (selectedLib.toString() == "")
+				selectedLib = bbs.curlib + 1;
 
-      // If the user chose to quit, then set continueChooseFileLib to
-      // false so we'll exit the loop.  Otherwise, let the user chose
-      // a dir within the library.
-      if (selectedLib.toString() == "Q")
-         continueChooseFileLib = false;
-      else
-         continueChooseFileLib = !this.SelectDirWithinFileLib_Traditional(selectedLib, selectedDir);
-   }
+			// If the user chose to quit, then set continueChooseFileLib to
+			// false so we'll exit the loop.  Otherwise, let the user chose
+			// a dir within the library.
+			if (selectedLib.toString() == "Q")
+				continueChooseFileLib = false;
+			else
+				continueChooseFileLib = !this.SelectDirWithinFileLib_Traditional(selectedLib, selectedDir);
+		}
+	}
+	else
+	{
+		// Don't choose a library, just a directory within the user's current library.
+		this.SelectDirWithinFileLib_Traditional(bbs.curlib+1, bbs.curdir+1);
+	}
 }
 
 // For the DDFileAreaChooser class: Lets the user select a file area (directory)
@@ -396,48 +433,48 @@ function DDFileAreaChooser_listFileLibs_Traditional()
 //              to the current directory.
 function DDFileAreaChooser_listDirsInFileLib_Traditional(pLibIndex, pMarkIndex)
 {
-   // set libIndex, the library index
-   var libIndex = bbs.curlib;
-   if (typeof(pLibIndex) == "number")
-      libIndex = pLibIndex;
+	// set libIndex, the library index
+	var libIndex = bbs.curlib;
+	if (typeof(pLibIndex) == "number")
+		libIndex = pLibIndex;
 
-   // Set markIndex, the index of the item to highlight
-   var markIndex = bbs.curdir;
-   if (typeof(pMarkIndex) == "number")
-      markIndex = pMarkIndex;
+	// Set markIndex, the index of the item to highlight
+	var markIndex = bbs.curdir;
+	if (typeof(pMarkIndex) == "number")
+		markIndex = pMarkIndex;
 
-   // Make sure markIndex is valid (it might not be for brand-new users).
-   if ((markIndex == null) || (typeof(markIndex) == "undefined"))
-      markIndex = 0;
+	// Make sure markIndex is valid (it might not be for brand-new users).
+	if ((markIndex == null) || (typeof(markIndex) == "undefined"))
+		markIndex = 0;
 
-   // See if bbs.curlib and bbs.curdir are valid, since we'll be testing with
-   // them.
-   var curDirLibValid = ((typeof(bbs.curlib) == "number") && (typeof(bbs.curdir) == "number"));
+	// See if bbs.curlib and bbs.curdir are valid, since we'll be testing with
+	// them.
+	var curDirLibValid = ((typeof(bbs.curlib) == "number") && (typeof(bbs.curdir) == "number"));
 
-   // Ensure that the file directory printf information is created for
-   // this file library.
-   this.BuildFileDirPrintfInfoForLib(libIndex);
+	// Ensure that the file directory printf information is created for
+	// this file library.
+	this.BuildFileDirPrintfInfoForLib(libIndex);
 
-   // Print the header lines
-   console.print(this.colors.fileAreaHdr + "Directories of \1h" +
-                 file_area.lib_list[libIndex].description);
-   console.crlf();
-   printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
-   console.crlf();
-   console.print("\1n");
-   // Print the file directories
-   var isSelectedDir = false;
-   for (var i = 0; i < file_area.lib_list[libIndex].dir_list.length; ++i)
-   {
-      // See if this is the currently-selected directory.
-      if (curDirLibValid)
-         isSelectedDir = ((libIndex == bbs.curlib) && (i == markIndex));
-      console.print(isSelectedDir ? this.colors.areaMark + "*" : " ");
-      printf(this.fileDirListPrintfInfo[libIndex].printfStr, +(i+1),
-             file_area.lib_list[libIndex].dir_list[i].description.substr(0, this.descFieldLen),
-             this.fileDirListPrintfInfo[libIndex].fileCounts[i]);
-      console.crlf();
-   }
+	// Print the header lines
+	console.print(this.colors.fileAreaHdr + "Directories of \1h" +
+	              file_area.lib_list[libIndex].description);
+	console.crlf();
+	printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
+	console.crlf();
+	console.print("\1n");
+	// Print the file directories
+	var isSelectedDir = false;
+	for (var i = 0; i < file_area.lib_list[libIndex].dir_list.length; ++i)
+	{
+		// See if this is the currently-selected directory.
+		if (curDirLibValid)
+			isSelectedDir = ((libIndex == bbs.curlib) && (i == markIndex));
+		console.print(isSelectedDir ? this.colors.areaMark + "*" : " ");
+		printf(this.fileDirListPrintfInfo[libIndex].printfStr, +(i+1),
+		file_area.lib_list[libIndex].dir_list[i].description.substr(0, this.descFieldLen),
+		this.fileDirListPrintfInfo[libIndex].fileCounts[i]);
+		console.crlf();
+	}
 }
 
 // For the DDFileAreaChooser class: Outputs the header line to appear above
@@ -450,15 +487,15 @@ function DDFileAreaChooser_listDirsInFileLib_Traditional(pLibIndex, pMarkIndex)
 //            then it won't be used.
 function DDFileAreaChooser_writeLibListTopHdrLine(pNumPages, pPageNum)
 {
-  var descStr = "Description";
-  if ((typeof(pPageNum) == "number") && (typeof(pNumPages) == "number"))
-    descStr += "    (Page " + pPageNum + " of " + pNumPages + ")";
-  else if ((typeof(pPageNum) == "number") && (typeof(pNumPages) != "number"))
-    descStr += "    (Page " + pPageNum + ")";
-  else if ((typeof(pPageNum) != "number") && (typeof(pNumPages) == "number"))
-    descStr += "    (" + pNumPages + (pNumPages == 1 ? " page)" : " pages)");
-  printf(this.fileLibListHdrPrintfStr, "Lib #", descStr, "# Dirs");
-  console.cleartoeol("\1n");
+	var descStr = "Description";
+	if ((typeof(pPageNum) == "number") && (typeof(pNumPages) == "number"))
+		descStr += "    (Page " + pPageNum + " of " + pNumPages + ")";
+	else if ((typeof(pPageNum) == "number") && (typeof(pNumPages) != "number"))
+		descStr += "    (Page " + pPageNum + ")";
+	else if ((typeof(pPageNum) != "number") && (typeof(pNumPages) == "number"))
+		descStr += "    (" + pNumPages + (pNumPages == 1 ? " page)" : " pages)");
+	printf(this.fileLibListHdrPrintfStr, "Lib #", descStr, "# Dirs");
+	console.cleartoeol("\1n");
 }
 
 // For the DDFileAreaChooser class: Outputs the first header line to appear
@@ -489,331 +526,338 @@ function DDFileAreaChooser_writeDirListHdr1Line(pLibIndex, pNumPages, pPageNum)
 
 // For the DDFileAreaChooser class: Lightbar interface for letting the user
 // choose a file library and group
-function DDFileAreaChooser_selectFileArea_Lightbar()
+//
+// Parameters:
+//  pChooseLib: Boolean - Whether or not to choose the file library.  If false,
+//              then this will allow choosing a directory within the user's
+//              current file library.  This is optional; defaults to true.
+function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 {
-   // If there are file libraries, then don't let the user
-   // choose one.
-   if (file_area.lib_list.length == 0)
-   {
-      console.clear("\1n");
-      console.print("\1y\1hThere are no file libraries.\r\n\1p");
-      return;
-   }
+	// If there are file libraries, then don't let the user
+	// choose one.
+	if (file_area.lib_list.length == 0)
+	{
+		console.clear("\1n");
+		console.print("\1y\1hThere are no file libraries.\r\n\1p");
+		return;
+	}
 
-   // Returns the index of the bottommost file library that can be displayed
-   // on the screen.
-   //
-   // Parameters:
-   //  pTopLibIndex: The index of the topmost file library displayed on screen
-   //  pNumItemsPerPage: The number of items per page
-   function getBottommostLibIndex(pTopLibIndex, pNumItemsPerPage)
-   {
-      var bottomLibIndex = pTopLibIndex + pNumItemsPerPage - 1;
-      // If bottomLibIndex is beyond the last index, then adjust it.
-      if (bottomLibIndex >= file_area.lib_list.length)
-         bottomLibIndex = file_area.lib_list.length - 1;
-      return bottomLibIndex;
-   }
+	var chooseLib = (typeof(pChooseLib) == "boolean" ? pChooseLib : true);
+	if (chooseLib)
+	{
+		// Returns the index of the bottommost file library that can be displayed
+		// on the screen.
+		//
+		// Parameters:
+		//  pTopLibIndex: The index of the topmost file library displayed on screen
+		//  pNumItemsPerPage: The number of items per page
+		function getBottommostLibIndex(pTopLibIndex, pNumItemsPerPage)
+		{
+			var bottomLibIndex = pTopLibIndex + pNumItemsPerPage - 1;
+			// If bottomLibIndex is beyond the last index, then adjust it.
+			if (bottomLibIndex >= file_area.lib_list.length)
+				bottomLibIndex = file_area.lib_list.length - 1;
+			return bottomLibIndex;
+		}
 
 
-   // Figure out the index of the user's currently-selected file library
-   var selectedLibIndex = 0;
-   if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number"))
-      selectedLibIndex = bbs.curlib;
+		// Figure out the index of the user's currently-selected file library
+		var selectedLibIndex = 0;
+		if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number"))
+			selectedLibIndex = bbs.curlib;
 
-   var listStartRow = 2;      // The row on the screen where the list will start
-   var listEndRow = console.screen_rows - 1; // Row on screen where list will end
-   var topFileLibIndex = 0;    // The index of the message group at the top of the list
+		var listStartRow = 2;      // The row on the screen where the list will start
+		var listEndRow = console.screen_rows - 1; // Row on screen where list will end
+		var topFileLibIndex = 0;    // The index of the message group at the top of the list
 
-   // Figure out the index of the last message group to appear on the screen.
-   var numItemsPerPage = listEndRow - listStartRow + 1;
-   var bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
-   // Figure out how many pages are needed to list all the file areas.
-   var numPages = Math.ceil(file_area.lib_list.length / numItemsPerPage);
-   var pageNum = 1;
-   // Figure out the top index for the last page.
-   var topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
+		// Figure out the index of the last message group to appear on the screen.
+		var numItemsPerPage = listEndRow - listStartRow + 1;
+		var bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
+		// Figure out how many pages are needed to list all the file areas.
+		var numPages = Math.ceil(file_area.lib_list.length / numItemsPerPage);
+		var pageNum = 1;
+		// Figure out the top index for the last page.
+		var topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
 
-   // If the highlighted row is beyond the current screen, then
-   // go to the appropriate page.
-   if (selectedLibIndex > bottomFileLibIndex)
-   {
-      var nextPageTopIndex = 0;
-      while (selectedLibIndex > bottomFileLibIndex)
-      {
-         nextPageTopIndex = topFileLibIndex + numItemsPerPage;
-         if (nextPageTopIndex < file_area.lib_list.length)
-         {
-            // Adjust topFileLibIndex and bottomFileLibIndex, and
-            // refresh the list on the screen.
-            topFileLibIndex = nextPageTopIndex;
-            pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
-            bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
-         }
-         else
-            break;
-      }
+		// If the highlighted row is beyond the current screen, then
+		// go to the appropriate page.
+		if (selectedLibIndex > bottomFileLibIndex)
+		{
+			var nextPageTopIndex = 0;
+			while (selectedLibIndex > bottomFileLibIndex)
+			{
+				nextPageTopIndex = topFileLibIndex + numItemsPerPage;
+				if (nextPageTopIndex < file_area.lib_list.length)
+				{
+					// Adjust topFileLibIndex and bottomFileLibIndex, and
+					// refresh the list on the screen.
+					topFileLibIndex = nextPageTopIndex;
+					pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
+					bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
+				}
+				else
+					break;
+			}
 
-      // If we didn't find the correct page for some reason, then set the
-      // variables to display page 1 and select the first message group.
-      var foundCorrectPage = ((topFileLibIndex < file_area.lib_list.length) &&
-          (selectedLibIndex >= topFileLibIndex) && (selectedLibIndex <= bottomFileLibIndex));
-      if (!foundCorrectPage)
-      {
-         topFileLibIndex = 0;
-         pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
-         bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
-         selectedLibIndex = 0;
-      }
-   }
+			// If we didn't find the correct page for some reason, then set the
+			// variables to display page 1 and select the first message group.
+			var foundCorrectPage = ((topFileLibIndex < file_area.lib_list.length) &&
+			(selectedLibIndex >= topFileLibIndex) && (selectedLibIndex <= bottomFileLibIndex));
+			if (!foundCorrectPage)
+			{
+				topFileLibIndex = 0;
+				pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
+				bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
+				selectedLibIndex = 0;
+			}
+		}
 
-   // Clear the screen, write the help line and group list header, and output
-   // a screenful of message groups.
-   console.clear("\1n");
-   this.WriteKeyHelpLine();
+		// Clear the screen, write the help line and group list header, and output
+		// a screenful of message groups.
+		console.clear("\1n");
+		this.WriteKeyHelpLine();
 
-   var curpos = new Object();
-   curpos.x = 1;
-   curpos.y = 1;
-   console.gotoxy(curpos);
-   this.WriteLibListHdrLine(numPages, pageNum);
-   this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false,
-                                false);
-   // Start of the input loop.
-   var highlightScrenRow = 0; // The row on the screen for the highlighted group
-   var userInput = "";        // Will store a keypress from the user
-   var retObj = null;        // To store the return value of choosing a file area
-   var continueChoosingFileArea = true;
-   while (continueChoosingFileArea)
-   {
-      // Highlight the currently-selected message group
-      highlightScrenRow = listStartRow + (selectedLibIndex - topFileLibIndex);
-      curpos.y = highlightScrenRow;
-      if ((highlightScrenRow > 0) && (highlightScrenRow < console.screen_rows))
-      {
-         console.gotoxy(1, highlightScrenRow);
-         this.WriteFileLibLine(selectedLibIndex, true);
-      }
+		var curpos = new Object();
+		curpos.x = 1;
+		curpos.y = 1;
+		console.gotoxy(curpos);
+		this.WriteLibListHdrLine(numPages, pageNum);
+		this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, false);
+		// Start of the input loop.
+		var highlightScrenRow = 0; // The row on the screen for the highlighted group
+		var userInput = "";        // Will store a keypress from the user
+		var retObj = null;        // To store the return value of choosing a file area
+		var continueChoosingFileArea = true;
+		while (continueChoosingFileArea)
+		{
+			// Highlight the currently-selected message group
+			highlightScrenRow = listStartRow + (selectedLibIndex - topFileLibIndex);
+			curpos.y = highlightScrenRow;
+			if ((highlightScrenRow > 0) && (highlightScrenRow < console.screen_rows))
+			{
+				console.gotoxy(1, highlightScrenRow);
+				this.WriteFileLibLine(selectedLibIndex, true);
+			}
 
-      // Get a key from the user (upper-case) and take action based upon it.
-	  userInput = getKeyWithESCChars(K_UPPER | K_NOCRLF);
-      switch (userInput)
-      {
-         case KEY_UP: // Move up one message group in the list
-            if (selectedLibIndex > 0)
-            {
-               // If the previous group index is on the previous page, then
-               // display the previous page.
-               var previousGrpIndex = selectedLibIndex - 1;
-               if (previousGrpIndex < topFileLibIndex)
-               {
-                  // Adjust topFileLibIndex and bottomFileLibIndex, and
-                  // refresh the list on the screen.
-                  topFileLibIndex -= numItemsPerPage;
-                  pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
-                  bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
-                  this.updatePageNumInHeader(pageNum, numPages, true, false);
-                  this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow,
-                                               listEndRow, false, true);
-               }
-               else
-               {
-                  // Display the current line un-highlighted.
-                  console.gotoxy(1, curpos.y);
-                  this.WriteFileLibLine(selectedLibIndex, false);
-               }
-               selectedLibIndex = previousGrpIndex;
-            }
-            break;
-         case KEY_DOWN: // Move down one message group in the list
-            if (selectedLibIndex < file_area.lib_list.length - 1)
-            {
-               // If the next group index is on the next page, then display
-               // the next page.
-               var nextGrpIndex = selectedLibIndex + 1;
-               if (nextGrpIndex > bottomFileLibIndex)
-               {
-                  // Adjust topFileLibIndex and bottomFileLibIndex, and
-                  // refresh the list on the screen.
-                  topFileLibIndex += numItemsPerPage;
-                  pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
-                  bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
-                  this.updatePageNumInHeader(pageNum, numPages, true, false);
-                  this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow,
-                                               listEndRow, false, true);
-               }
-               else
-               {
-                  // Display the current line un-highlighted.
-                  console.gotoxy(1, curpos.y);
-                  this.WriteFileLibLine(selectedLibIndex, false);
-               }
-               selectedLibIndex = nextGrpIndex;
-            }
-            break;
-         case KEY_HOME: // Go to the top message group on the screen
-            if (selectedLibIndex > topFileLibIndex)
-            {
-               // Display the current line un-highlighted, then adjust
-               // selectedLibIndex.
-               console.gotoxy(1, curpos.y);
-               this.WriteFileLibLine(selectedLibIndex, false);
-               selectedLibIndex = topFileLibIndex;
-               // Note: curpos.y is set at the start of the while loop.
-            }
-            break;
-         case KEY_END: // Go to the bottom message group on the screen
-            if (selectedLibIndex < bottomFileLibIndex)
-            {
-               // Display the current line un-highlighted, then adjust
-               // selectedLibIndex.
-               console.gotoxy(1, curpos.y);
-               this.WriteFileLibLine(selectedLibIndex, false);
-               selectedLibIndex = bottomFileLibIndex;
-               // Note: curpos.y is set at the start of the while loop.
-            }
-            break;
-         case KEY_ENTER: // Select the currently-highlighted message group
-            retObj = this.SelectDirWithinFileLib_Lightbar(selectedLibIndex);
-            // If the user chose an area, then set bbs.curlib and
-            // bbs.curdir, and don't continue the input loop anymore.
-            if (retObj.fileDirChosen)
-            {
-               bbs.curlib = selectedLibIndex;
-               bbs.curdir = retObj.fileLibIndex;
-               continueChoosingFileArea = false;
-            }
-            else
-            {
-               // An area was not chosen, so we'll have to re-draw
-               // the header and list of message groups.
-               console.gotoxy(1, 1);
-               this.WriteLibListHdrLine(numPages, pageNum);
-               this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow,
-                                            false, true);
-            }
-            break;
-         case KEY_PAGE_DOWN: // Go to the next page
-            var nextPageTopIndex = topFileLibIndex + numItemsPerPage;
-            if (nextPageTopIndex < file_area.lib_list.length)
-            {
-               // Adjust topFileLibIndex and bottomFileLibIndex, and
-               // refresh the list on the screen.
-               topFileLibIndex = nextPageTopIndex;
-               pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
-               bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, true, false);
-               this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedLibIndex = topFileLibIndex;
-            }
-            break;
-         case KEY_PAGE_UP: // Go to the previous page
-            var prevPageTopIndex = topFileLibIndex - numItemsPerPage;
-            if (prevPageTopIndex >= 0)
-            {
-               // Adjust topFileLibIndex and bottomFileLibIndex, and
-               // refresh the list on the screen.
-               topFileLibIndex = prevPageTopIndex;
-               pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
-               bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, true, false);
-               this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedLibIndex = topFileLibIndex;
-            }
-            break;
-         case 'F': // Go to the first page
-            if (topFileLibIndex > 0)
-            {
-               topFileLibIndex = 0;
-               pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
-               bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, true, false);
-               this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow,
-                                            false, true);
-               selectedLibIndex = 0;
-            }
-            break;
-         case 'L': // Go to the last page
-            if (topFileLibIndex < topIndexForLastPage)
-            {
-               topFileLibIndex = topIndexForLastPage;
-               pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
-               bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, true, false);
-               this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow,
-                                            false, true);
-               selectedLibIndex = topIndexForLastPage;
-            }
-            break;
-         case 'Q': // Quit
-            continueChoosingFileArea = false;
-            break;
-         case '?': // Show help
-            this.ShowHelpScreen(true, true);
-            console.pause();
-            // Refresh the screen
-            this.WriteKeyHelpLine();
-            console.gotoxy(1, 1);
-            this.WriteLibListHdrLine(numPages, pageNum);
-            this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow,
-                                         false, true);
-            break;
-         default:
-            // If the user entered a numeric digit, then treat it as
-            // the start of the message group number.
-            if (userInput.match(/[0-9]/))
-            {
-               var originalCurpos = curpos;
+			// Get a key from the user (upper-case) and take action based upon it.
+			userInput = getKeyWithESCChars(K_UPPER | K_NOCRLF);
+			switch (userInput)
+			{
+				case KEY_UP: // Move up one message group in the list
+					if (selectedLibIndex > 0)
+					{
+						// If the previous group index is on the previous page, then
+						// display the previous page.
+						var previousGrpIndex = selectedLibIndex - 1;
+						if (previousGrpIndex < topFileLibIndex)
+						{
+							// Adjust topFileLibIndex and bottomFileLibIndex, and
+							// refresh the list on the screen.
+							topFileLibIndex -= numItemsPerPage;
+							pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
+							bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
+							this.updatePageNumInHeader(pageNum, numPages, true, false);
+							this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+						}
+						else
+						{
+							// Display the current line un-highlighted.
+							console.gotoxy(1, curpos.y);
+							this.WriteFileLibLine(selectedLibIndex, false);
+						}
+						selectedLibIndex = previousGrpIndex;
+					}
+					break;
+				case KEY_DOWN: // Move down one message group in the list
+					if (selectedLibIndex < file_area.lib_list.length - 1)
+					{
+						// If the next group index is on the next page, then display
+						// the next page.
+						var nextGrpIndex = selectedLibIndex + 1;
+						if (nextGrpIndex > bottomFileLibIndex)
+						{
+							// Adjust topFileLibIndex and bottomFileLibIndex, and
+							// refresh the list on the screen.
+							topFileLibIndex += numItemsPerPage;
+							pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
+							bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
+							this.updatePageNumInHeader(pageNum, numPages, true, false);
+							this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+						}
+						else
+						{
+							// Display the current line un-highlighted.
+							console.gotoxy(1, curpos.y);
+							this.WriteFileLibLine(selectedLibIndex, false);
+						}
+						selectedLibIndex = nextGrpIndex;
+					}
+					break;
+				case KEY_HOME: // Go to the top message group on the screen
+					if (selectedLibIndex > topFileLibIndex)
+					{
+						// Display the current line un-highlighted, then adjust
+						// selectedLibIndex.
+						console.gotoxy(1, curpos.y);
+						this.WriteFileLibLine(selectedLibIndex, false);
+						selectedLibIndex = topFileLibIndex;
+						// Note: curpos.y is set at the start of the while loop.
+					}
+					break;
+				case KEY_END: // Go to the bottom message group on the screen
+					if (selectedLibIndex < bottomFileLibIndex)
+					{
+						// Display the current line un-highlighted, then adjust
+						// selectedLibIndex.
+						console.gotoxy(1, curpos.y);
+						this.WriteFileLibLine(selectedLibIndex, false);
+						selectedLibIndex = bottomFileLibIndex;
+						// Note: curpos.y is set at the start of the while loop.
+					}
+					break;
+				case KEY_ENTER: // Select the currently-highlighted message group
+					retObj = this.SelectDirWithinFileLib_Lightbar(selectedLibIndex);
+					// If the user chose an area, then set bbs.curlib and
+					// bbs.curdir, and don't continue the input loop anymore.
+					if (retObj.fileDirChosen)
+					{
+						bbs.curlib = selectedLibIndex;
+						bbs.curdir = retObj.fileLibIndex;
+						continueChoosingFileArea = false;
+					}
+					else
+					{
+						// An area was not chosen, so we'll have to re-draw
+						// the header and list of message groups.
+						console.gotoxy(1, 1);
+						this.WriteLibListHdrLine(numPages, pageNum);
+						this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+					}
+					break;
+				case KEY_PAGE_DOWN: // Go to the next page
+					var nextPageTopIndex = topFileLibIndex + numItemsPerPage;
+					if (nextPageTopIndex < file_area.lib_list.length)
+					{
+						// Adjust topFileLibIndex and bottomFileLibIndex, and
+						// refresh the list on the screen.
+						topFileLibIndex = nextPageTopIndex;
+						pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
+						bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum, numPages, true, false);
+						this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+						selectedLibIndex = topFileLibIndex;
+					}
+					break;
+				case KEY_PAGE_UP: // Go to the previous page
+					var prevPageTopIndex = topFileLibIndex - numItemsPerPage;
+					if (prevPageTopIndex >= 0)
+					{
+						// Adjust topFileLibIndex and bottomFileLibIndex, and
+						// refresh the list on the screen.
+						topFileLibIndex = prevPageTopIndex;
+						pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
+						bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum, numPages, true, false);
+						this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+						selectedLibIndex = topFileLibIndex;
+					}
+					break;
+				case 'F': // Go to the first page
+					if (topFileLibIndex > 0)
+					{
+						topFileLibIndex = 0;
+						pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
+						bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum, numPages, true, false);
+						this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+						selectedLibIndex = 0;
+					}
+					break;
+				case 'L': // Go to the last page
+					if (topFileLibIndex < topIndexForLastPage)
+					{
+						topFileLibIndex = topIndexForLastPage;
+						pageNum = calcPageNum(topFileLibIndex, numItemsPerPage);
+						bottomFileLibIndex = getBottommostLibIndex(topFileLibIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum, numPages, true, false);
+						this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+						selectedLibIndex = topIndexForLastPage;
+					}
+					break;
+				case 'Q': // Quit
+					continueChoosingFileArea = false;
+					break;
+				case '?': // Show help
+					this.ShowHelpScreen(true, true);
+					console.pause();
+					// Refresh the screen
+					this.WriteKeyHelpLine();
+					console.gotoxy(1, 1);
+					this.WriteLibListHdrLine(numPages, pageNum);
+					this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+					break;
+				default:
+					// If the user entered a numeric digit, then treat it as
+					// the start of the message group number.
+					if (userInput.match(/[0-9]/))
+					{
+						var originalCurpos = curpos;
 
-               // Put the user's input back in the input buffer to
-               // be used for getting the rest of the message number.
-               console.ungetstr(userInput);
-               // Move the cursor to the bottom of the screen and
-               // prompt the user for the message number.
-               console.gotoxy(1, console.screen_rows);
-               console.clearline("\1n");
-               console.print("\1cChoose library #: \1h");
-               userInput = console.getnum(file_area.lib_list.length);
-               // If the user made a selection, then let them choose a
-               // directory from the file library.
-               if (userInput > 0)
-               {
-                  var selectedLibIndex = userInput - 1;
-                  var retObj = this.SelectDirWithinFileLib_Lightbar(selectedLibIndex);
-                  // If the user chose a sub-board, then set bbs.curlib and
-                  // bbs.curdir, and don't continue the input loop anymore.
-                  if (retObj.fileDirChosen)
-                  {
-                     bbs.curlib = selectedLibIndex;
-                     bbs.curdir = retObj.fileLibIndex;
-                     continueChoosingFileArea = false;
-                  }
-                  else
-                  {
-                     // A sub-board was not chosen, so we'll have to re-draw
-                     // the header and list of message groups.
-                     console.gotoxy(1, 1);
-                     this.WriteLibListHdrLine(numPages, pageNum);
-                     this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow,
-                                                  false, true);
-                  }
-               }
-               else
-               {
-                  // The user didn't make a selection.  So, we need to refresh
-                  // the screen due to everything being moved up one line.
-                  this.WriteKeyHelpLine();
-                  console.gotoxy(1, 1);
-                  this.WriteLibListHdrLine(numPages, pageNum);
-                  this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow,
-                                               false, true);
-               }
-            }
-            break;
-      }
-   }
+						// Put the user's input back in the input buffer to
+						// be used for getting the rest of the message number.
+						console.ungetstr(userInput);
+						// Move the cursor to the bottom of the screen and
+						// prompt the user for the message number.
+						console.gotoxy(1, console.screen_rows);
+						console.clearline("\1n");
+						console.print("\1cChoose library #: \1h");
+						userInput = console.getnum(file_area.lib_list.length);
+						// If the user made a selection, then let them choose a
+						// directory from the file library.
+						if (userInput > 0)
+						{
+							var selectedLibIndex = userInput - 1;
+							var retObj = this.SelectDirWithinFileLib_Lightbar(selectedLibIndex);
+							// If the user chose a sub-board, then set bbs.curlib and
+							// bbs.curdir, and don't continue the input loop anymore.
+							if (retObj.fileDirChosen)
+							{
+								bbs.curlib = selectedLibIndex;
+								bbs.curdir = retObj.fileLibIndex;
+								continueChoosingFileArea = false;
+							}
+							else
+							{
+								// A sub-board was not chosen, so we'll have to re-draw
+								// the header and list of message groups.
+								console.gotoxy(1, 1);
+								this.WriteLibListHdrLine(numPages, pageNum);
+								this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+							}
+						}
+						else
+						{
+							// The user didn't make a selection.  So, we need to refresh
+							// the screen due to everything being moved up one line.
+							this.WriteKeyHelpLine();
+							console.gotoxy(1, 1);
+							this.WriteLibListHdrLine(numPages, pageNum);
+							this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
+						}
+					}
+					break;
+			}
+		}
+	}
+	else
+	{
+		// Don't choose a library, just let the user choose a directory within
+		// their current library.
+		retObj = this.SelectDirWithinFileLib_Lightbar(selectedLibIndex);
+		// If the user chose an area, then set bbs.curdir
+		if (retObj.fileDirChosen)
+			bbs.curdir = retObj.fileLibIndex;
+	}
 }
 
 // For the DDFileAreaChooser class: Lightbar interface for letting the user
