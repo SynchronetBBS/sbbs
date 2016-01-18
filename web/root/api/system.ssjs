@@ -16,11 +16,16 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 			reply = system.node_list.map(
 				function (node) {
 					if (node.status === 3) var usr = new User(node.useron);
-					return ({
-						status : NodeStatus[node.status],
-						action : NodeAction[node.action],
-						user : (typeof usr === 'undefined' ? '' : usr.alias)
-					});
+					return (
+						{	status : format(
+								NodeStatus[node.status], node.aux, node.extaux
+							),
+							action : format(
+								NodeAction[node.action], node.aux, node.extaux
+							),
+							user : (typeof usr === 'undefined' ? '' : usr.alias)
+						}
+					);
 				}
 			);
 			var usr = new User(1);
