@@ -154,7 +154,7 @@ var FIDO = {
 		var ext;
 
 		if (default_zone === undefined)
-			throw("Defualt zone unspecified");
+			throw("Default zone unspecified");
 		m = path.match(/(?:\.([0-9a-f]{3,4})[\/\\])?([0-9a-f]{4})([0-9a-f]{4})\.(...)(?:[\/\\]([0-9a-f]{8})\.(...))?$/i);
 		if (m === null)
 			throw("Invalid flo file path");
