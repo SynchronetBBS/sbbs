@@ -314,6 +314,13 @@ BinkP.prototype.accept = function(sock, auth_cb)
 	for (i=0; i<128; i++)
 		challenge += random(16).toString(16);
 
+	// Avoid warning from syncjslint by putting this in a closure.
+	function hex2ascii(hex)
+	{
+		return ascii(parseInt(hex, 16));
+	}
+
+	this.cram = {algo:'MD5', challenge:challenge.replace(/[0-9a-fA-F]{2}/g, hex2ascii)};
 	this.authenticated = undefined;
 	this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge);
 	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
