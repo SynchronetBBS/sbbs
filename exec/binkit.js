@@ -12,12 +12,28 @@
  *    is "/path/to/outbound", it will not correctly handle the case
  *    where there is a "/path/to/outbound.001" directory.
  * 3) The domain is always 'fidonet'
+ * 4) Flow files are processed in alphabetical order, not the reccomended
+ *    order from FTS-5005.
  * 
  * See FTS-5005 for details.
  */
 
 load("binkp.js");
 load("fidocfg.js");
+load("freqit_common.js");
+
+FREQIT.add_file = function(filename, bp, cfg)
+{
+	if (filename === undefined)
+		return;
+	if (FREQIT.files >= cfg.maxfiles)
+		return;
+	if (FREQIT.added[filename] !== undefined)
+		return;
+	bp.addFile(filename);
+	FREQIT.files++;
+	FREQIT.added[filename]='';
+};
 
 function lock_flow(file, csy)
 {
@@ -124,11 +140,11 @@ function add_outbound_files(addrs, bp)
 			var fname;
 
 			switch(file_getext(file).toLowerCase()) {
-				case '.flo':
-				case '.ilo':
-				case '.hlo':
 				case '.clo':
 				case '.dlo':
+				case '.flo':
+				case '.hlo':
+				case '.ilo':
 					flo = new File(file);
 					if (!flo.open("r")) {
 						log(LOG_ERROR, "Unable to open FLO file '"+flo.name+"'.");
@@ -165,11 +181,11 @@ function add_outbound_files(addrs, bp)
 					}
 					flo.close();
 					break;
-				case '.out':
-				case '.iut':
-				case '.hut':
 				case '.cut':
 				case '.dut':
+				case '.hut':
+				case '.iut':
+				case '.out':
 					fname = '';
 					for (i=0; i<8; i++)
 						fname += fnchars[random(fnchars.length)];
@@ -177,11 +193,11 @@ function add_outbound_files(addrs, bp)
 					if (bp.addFile(file, fname))
 						bp.cb_data.binkit_file_actions[flo.name] = 'DELETE';
 					break;
-				case '.rep':
+				case '.req':
 					fname = '';
 					for (i=0; i<8; i++)
 						fname += fnchars[random(fnchars.length)];
-					fname += '.rep';
+					fname += '.req';
 					if (bp.addFile(file, fname))
 						bp.cb_data.binkit_file_actions[flo.name] = 'DELETE';
 					break;
@@ -207,7 +223,7 @@ function callout_auth_cb(mode, bp)
 	else {
 		bp.remote_addrs.forEach(function(addr) {
 			if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
-				if (bp.cb_data.binkitcfg.node[addr].pw === bp.cb_data.binkitpw)
+				if (bp.cb_data.binkitcfg.node[addr].pass === bp.cb_data.binkitpw)
 					addrs.push(addr);
 			}
 			else
@@ -215,13 +231,13 @@ function callout_auth_cb(mode, bp)
 		});
 	}
 
-	add_outbound_files(addrs);
+	add_outbound_files(addrs, bp);
 }
 
 /*
  * Delete completed flo files.
  */
-function callout_tx_callback(fname, bp)
+function tx_callback(fname, bp)
 {
 	var j;
 
@@ -236,9 +252,67 @@ function callout_tx_callback(fname, bp)
 	});
 }
 
-function callout_rx_callback(fname, bp)
+function handle_freq(reqfname, bp)
 {
-	// TODO: Handle received files.
+	var req=new File(reqfname);
+	var m;
+	var fname;
+	var pw;
+	var cfg = new FREQITCfg();
+
+	if (!req.open("r"))
+		return;
+	FREQIT.reset();
+
+	next_file:
+	while((fname=req.readln())) {
+		if ((m=fname.match(/^(.*) !(.*?)$/))!==null) {
+			pw=m[2];
+			fname=m[1];
+		}
+		// First, check for magic!
+		for (m in cfg.magic) {
+			if (m == fname.toLowerCase()) {
+				FREQIT.handle_magic(cfg.magic[m], bp, bp.authenticated === 'secure', pw, cfg);
+				continue next_file;
+			}
+		}
+
+		// Now, check for the file...
+		FREQIT.handle_regular(fname, bp, bp.authenticated === 'secure', pw, cfg);
+	}
+}
+
+function rx_callback(fname, bp)
+{
+	var semname;
+
+	if (fname.search(/\.(?:pkt|su.|mo.|tu.|we.|th.|fr.|sa.)$/i) !== -1) {
+		semname = system.data_dir + 'fidoin.now';
+		if (bp.binkit_create_semaphores.indexOf(semname) == -1)
+			bp.binkit_create_semaphores.push(semname);
+	}
+	else if (fname.search(/\.tic$/i) !== -1) {
+		semname = system.data_dir + 'tickit.now';
+		if (bp.binkit_create_semaphores.indexOf(semname) == -1)
+			bp.binkit_create_semaphores.push(semname);
+	}
+
+	if (fname.search(/\.req$/i) !== -1) {
+		handle_freq(fname, bp);
+		file_remove(fname);
+	}
+	else {
+		if (bp.authenticated === 'secure') {
+			if (!file_rename(fname, bp.binkit_scfg.secure_inbound+file_getname(fname)))
+				return false;
+		}
+		else {
+			if (!file_rename(fname, bp.binkit_scfg.inbound+file_getname(fname)))
+				return false;
+		}
+	}
+	return true;
 }
 
 function callout_want_callback(fobj, fsize, fdate, offset, bp)
@@ -275,10 +349,11 @@ function callout_want_callback(fobj, fsize, fdate, offset, bp)
 	return this.file.ACCEPT;
 }
 
-function callout_done(bp)
+function callout_done(bp, semaphores)
 {
 	var f;
 	var lines;
+	var semname;
 
 	bp.sent_files.forEach(function(file) {
 		if (bp.cb_data.binkit_file_actions[file] !== undefined) {
@@ -337,10 +412,10 @@ function callout_done(bp)
 	});
 }
 
-function callout(addr, scfg)
+function callout(addr, scfg, semaphores)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
-	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, callout_rx_callback, callout_tx_callback);
+	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
 	var port;
 	var f;
 	var success = false;
@@ -352,6 +427,7 @@ function callout(addr, scfg)
 		binkit_scfg:scfg,
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
+		binkit_create_semaphores:semaphores
 	};
 	if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
 		bp.cb_data.binkitpw = bp.cb_data.binkitcfg.node[addr].pass;
@@ -371,7 +447,7 @@ function callout(addr, scfg)
 	// We won't add files until the auth finishes...
 	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port);
 
-	callout_done(bp);
+	callout_done(bp, semaphores);
 
 	f = new File(outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'try');
 	if (f.open("w")) {
@@ -384,7 +460,7 @@ function callout(addr, scfg)
 	}
 }
 
-function run_one_outbound_dir(dir, scfg)
+function run_one_outbound_dir(dir, scfg, semaphores)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var ran = {};
@@ -481,7 +557,7 @@ function run_one_outbound_dir(dir, scfg)
 			if (i<flow_files.length) {
 				log(LOG_DEBUG, "Attempting callout for file "+flow_files[i]);
 				// Use a try/catch to ensure we clean up the lock files.
-				callout(addr, scfg);
+				callout(addr, scfg, semaphores);
 				ran[addr] = true;
 				unlock_flow(lock_files);
 			}
@@ -507,6 +583,7 @@ function run_outbound()
 	var outbound_base;
 	var outbound_dirs=[];
 	var tmp;
+	var semaphores = [];
 
 	log(LOG_INFO, "Running outbound");
 	scfg = new SBBSEchoCfg();
@@ -542,6 +619,93 @@ function run_outbound()
 	outbound_dirs.forEach(function(dir) {
 		run_one_outbound_dir(dir, scfg);
 	});
+
+	semaphores.forEach(function(semname) {
+		file_touch(semname);
+	});
 }
 
-run_outbound();
+function inbound_auth_cb(pwd, bp)
+{
+	/*
+	 * Loop through remote addresses, building a list of the ones with
+	 * the same password that we can send mail for.
+	 */
+	var addrs = [];
+
+	bp.remote_addrs.forEach(function(addr) {
+		var cpw;
+		if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
+			cpw = bp.cb_data.binkitcfg.node[addr].pass;
+			if (cpw === undefined)
+				cpw = '-';
+			if (pwd[0].substr(0, 9) === 'CRAM-MD5-') {
+				if (bp.getCRAM('MD5', cpw) === pwd[0])
+					addrs.push(addr);
+			}
+			else {
+				// TODO: Deal with arrays of passwords?
+				if (bp.cb_data.binkitcfg.node[addr].nomd5 === false && bp.cb_data.binkitcfg.node[addr].pass === pwd[0])
+					addrs.push(addr);
+			}
+		}
+		else
+			log(LOG_DEBUG, "Unconfigured address "+addr);
+	});
+	bp.remote_addrs = addrs;
+
+	add_outbound_files(addrs, bp);
+	return addrs.length > 0;
+}
+
+function run_inbound(sock)
+{
+	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
+	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
+	var port;
+	var f;
+	var success = false;
+	var semaphores = [];
+
+	log(LOG_INFO, "Got inbound call from "+sock.remote_ip_addr+":"+sock.remote_port);
+	bp.cb_data = {
+		binkitcfg:new BinkITCfg(),
+		binkit_scfg:new SBBSEchoCfg(),
+		binkit_file_actions:{},
+		binkit_flow_contents:{},
+		binkit_create_semaphores:semaphores
+	};
+
+	// TODO Global setting?
+	//bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
+	// TODO: Force debug mode for now...
+	bp.debug = true;
+	bp.default_zone = myaddr.zone;
+	bp.default_domain = myaddr.domain;
+	bp.want_callback = callout_want_callback;
+
+	// We can't use the defaults since the defaults are only 4D addresses.
+	bp.addr_list = [];
+	system.fido_addr_list.forEach(function(faddr){bp.addr_list.push(FIDO.parse_addr(faddr, this.default_zone, 'fidonet'));}, this);
+
+	// We won't add files until the auth finishes...
+	success = bp.accept(sock, inbound_auth_cb);
+
+	callout_done(bp, semaphores);
+
+	semaphores.forEach(function(semname) {
+		file_touch(semname);
+	});
+}
+
+var sock;
+try {
+	sock = client.socket;
+}
+catch(e) {}
+
+// If we're running as a service, call run_inbound().
+if (sock !== undefined)
+	run_inbound(sock);
+else
+	run_outbound();
