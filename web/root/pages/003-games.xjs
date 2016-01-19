@@ -1,6 +1,6 @@
 <!--Games-->
 <?xjs 
-	if (typeof argv[0] != "boolean" || !argv[0]) exit();
+	if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 	load(settings.web_lib + 'ftelnet.js');
 ?>
 
@@ -24,7 +24,7 @@
 	function launchXtrn(code) {
 		$.getJSON(
 			'./api/system.ssjs?call=set-xtrn-intent&code=' + code,
-			function (data) {
+			function(data) {
 				fTelnet.Connect();
 			}
 		);
@@ -37,6 +37,7 @@
 
 	settings.xtrn_sections.forEach(
 		function (section) {
+			if (typeof xtrn_area.sec[section] === 'undefined') return;
 			writeln('<div class="list-group-item">');
 			writeln('<h4>' + xtrn_area.sec[section].name + '</h4>');
 			writeln('<ul class="nav nav-pills">');
@@ -45,9 +46,7 @@
 					writeln(
 						'<li role="presentation">' +
 						'<a href="#fTelnet" onclick="launchXtrn(\'' +
-							program.code + '\')">' +
-						program.name +
-						'</a>' +
+							program.code + '\')">' + program.name + '</a>' +
 						'</li>'
 					);
 				}
