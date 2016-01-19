@@ -13,9 +13,11 @@ function SBBSEchoCfg ()
 		throw("Unable to open '"+ecfg.name+"'");
 
 	while ((line=ecfg.readln(65535)) != undefined) {
-		m = line.match(/^\s*(?:secure_)?inbound\s+(.*)$/i);
-		if (m !== null)
-			this.inb.push(backslash(m[1]));
+		m = line.match(/^\s*(secure_|)inbound\s+(.*)$/i);
+		if (m !== null) {
+			this.inb.push(backslash(m[2]));
+			this[m[1].toLowerCase()+'inbound'] = m[2];
+		}
 
 		m = line.match(/^\s*pktpwd\s+(.*?)\s+(.*)\s*$/i);
 		if (m !== null)
