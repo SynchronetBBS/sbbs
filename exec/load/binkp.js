@@ -238,6 +238,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 
 	if(!this.sock.connect(addr.inet_host, port)) {
 		this.sock = undefined;
+		log(LOG_INFO, "Connection to "+addr.inet_host+":"+port+" failed.");
 		return false;
 	}
 
@@ -447,7 +448,7 @@ BinkP.prototype.session = function()
 					case this.command.M_GOT:
 						args = this.parseArgs(pkt.data);
 						for (i=0; i<this.pending_ack.length; i++) {
-							if (this.pending_ack[i].sendas == args[0]) {
+							if (this.pending_ack[i].sendas === args[0]) {
 								this.sent_files.push(this.pending_ack[i].file.name);
 								if (this.tx_callback !== undefined)
 									this.tx_callback(this.pending_ack[i], this);
@@ -597,11 +598,8 @@ BinkP.prototype.sendCmd = function(cmd, data)
 	}
 	var len = data.length+1;
 	len |= 0x8000;
-	if (!this.sock.sendBin(len, 2))
-		return false;
-	if (!this.sock.sendBin(cmd, 1))
-		return false;
-	if (!this.sock.send(data))
+	// We'll send it all in one go to avoid sending small packets...
+	if (!this.sock.send(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + ascii(cmd) + data))
 		return false;
 	switch(cmd) {
 		case this.command.M_EOB:
@@ -630,9 +628,8 @@ BinkP.prototype.sendData = function(data)
 		return false;
 	if (this.debug)
 		log(LOG_DEBUG, "Sending "+data.length+" bytes of data");
-	if (!this.sock.sendBin(len, 2))
-		return false;
-	if (!this.sock.send(data))
+	// We'll send it all in one go to avoid sending small packets...
+	if (!this.sock.send(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + data))
 		return false;
 	return true;
 };
@@ -667,7 +664,7 @@ BinkP.prototype.recvFrame = function(timeout)
 		switch(this.sock.poll(timeout)) {
 			case 0:	// Timeout
 				if (timeout) {
-					log(LOG_ERROR, "Timed out receiving packet!");
+					log(LOG_ERROR, "Timed out receiving packet header!");
 					this.sock.close();
 					this.sock = undefined;
 					return undefined;
@@ -705,7 +702,7 @@ BinkP.prototype.recvFrame = function(timeout)
 			break;
 		case 0:
 			if (timeout) {
-				log(LOG_ERROR, "Timed out receiving packet!");
+				log(LOG_ERROR, "Timed out receiving packet data!");
 				this.sock.close();
 				this.sock = undefined;
 				return undefined;
@@ -840,4 +837,5 @@ BinkP.prototype.addFile = function(path, sendas)
 	if (this.debug)
 		log(LOG_DEBUG, "Adding '"+path+"' as '"+sendas+"'");
 	this.tx_queue.push({file:file, sendas:sendas});
+	return true;
 };
