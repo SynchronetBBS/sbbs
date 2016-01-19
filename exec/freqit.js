@@ -5,10 +5,21 @@
  * exec "/sbbs/exec/jsexec freqit *S" *.req *.REQ
  */
 
-load("filebase.js");
 load("fidocfg.js");
+load("freqit_common.js");
 
-var cfg = new FREQITCfg();
+FREQIT.add_file = function(filename, resp, cfg)
+{
+	if (filename === undefined)
+		return;
+	if (FREQIT.files >= cfg.maxfiles)
+		return;
+	if (FREQIT.added[filename] !== undefined)
+		return;
+	resp.writeln('+'+filename);
+	FREQIT.files++;
+	FREQIT.added[filename]='';
+};
 
 function parse_srif(fname)
 {
@@ -21,77 +32,12 @@ function parse_srif(fname)
 		log(LOG_ERROR, "Unable to find SRIF file '"+f.name+"'");
 		return undefined;
 	}
-	while(l = f.readln(65535)) {
+	while((l = f.readln(65535))) {
 		if ((m=l.match(/^\s*([^ ]+)\s+(.*)$/)) !== null)
 			srif[m[1].toLowerCase()] = m[2];
 	}
 	f.close();
 	return srif;
-}
-
-var dircache={};
-var added={};
-var files=0;
-
-function add_file(filename, resp)
-{
-	if (filename === undefined)
-		return;
-	if (files >= cfg.maxfiles)
-		return;
-	if (added[filename] !== undefined)
-		return;
-	resp.writeln('+'+filename);
-	files++;
-	added[filename]='';
-}
-
-/*
- * TODO: built-in magic names... FILES and NEW
- * FILES lists all FREQable files and
- * NEW lists ones newer than 10 days.
- */
-
-function handle_magic(magic, resp, protected, pw)
-{
-	var file=undefined;
-
-	if (magic.secure && !protected)
-		return;
-	if (dircache[magic.dir] === undefined)
-		dircache[magic.dir] = FileBase(magic.dir);
-	dircache[magic.dir].forEach(function(fent) {
-		if (wildmatch(fent.name, magic.match, true)) {
-			if (file === undefined || fent.uldate > file.uldate)
-				file = fent;
-		}
-	});
-	if (file !== undefined) {
-		add_file(file.path, resp);
-		return 1;
-	}
-	return 0;
-}
-
-function handle_regular(match, resp, protected, pw)
-{
-	var file=undefined;
-	var count=0;
-
-	function handle_list(list) {
-		list.forEach(function(dir) {
-			if (dircache[dir] === undefined)
-				dircache[dir] = FileBase(dir);
-			dircache[dir].forEach(function(fent) {
-				if (wildmatch(fent.name, match, true))
-					add_file(fent.path, resp);
-			});
-		});
-	}
-
-	if (protected)
-		handle_list(cfg.securedirs);
-	handle_list(cfg.dirs);
 }
 
 function handle_srif(srif)
@@ -101,6 +47,7 @@ function handle_srif(srif)
 	var m;
 	var fname;
 	var pw;
+	var cfg = new FREQITCfg();
 
 	if (!req.open("r"))
 		return;
@@ -109,7 +56,7 @@ function handle_srif(srif)
 	resp.position = resp.length;
 
 	next_file:
-	while(fname=req.readln()) {
+	while((fname=req.readln())) {
 		if ((m=fname.match(/^(.*) !(.*?)$/))!==null) {
 			pw=m[2];
 			fname=m[1];
@@ -117,13 +64,13 @@ function handle_srif(srif)
 		// First, check for magic!
 		for (m in cfg.magic) {
 			if (m == fname.toLowerCase()) {
-				handle_magic(cfg.magic[m], resp, srif.remotestatus.toLowerCase() === 'protected', pw);
+				FREQIT.handle_magic(cfg.magic[m], resp, srif.remotestatus.toLowerCase() === 'protected', pw, cfg);
 				continue next_file;
 			}
 		}
 
 		// Now, check for the file...
-		handle_regular(fname, resp, srif.remotestatus.toLowerCase() === 'protected', pw);
+		FREQIT.handle_regular(fname, resp, srif.remotestatus.toLowerCase() === 'protected', pw, cfg);
 	}
 }
 
