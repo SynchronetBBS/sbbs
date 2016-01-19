@@ -35,6 +35,13 @@ FREQIT.add_file = function(filename, bp, cfg)
 	FREQIT.added[filename]='';
 };
 
+/*
+ * TODO: We need to lock all remote addresses after validating them in
+ * the auth callback!
+ * 
+ * We also need to unlock them when we're done... this will mean using
+ * an array of locked flows or something like that.
+ */
 function lock_flow(file, csy)
 {
 	var ret = {
@@ -201,6 +208,10 @@ function add_outbound_files(addrs, bp)
 					if (bp.addFile(file, fname))
 						bp.cb_data.binkit_file_actions[flo.name] = 'DELETE';
 					break;
+				case '.bsy':
+				case '.csy':
+				case '.try':
+					break;
 				default:
 					log(LOG_WARNING, "Unsupported flow file type '"+file+"'.");
 					break;
@@ -219,7 +230,7 @@ function callout_auth_cb(mode, bp)
 	var addrs = [];
 
 	if (bp.cb_data.binkitpw === undefined || bp.cb_data.binkitpw === '-')
-		addrs.push(bp.binkit_to_addr);
+		addrs.push(bp.cb_data.binkit_to_addr);
 	else {
 		bp.remote_addrs.forEach(function(addr) {
 			if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
@@ -242,7 +253,7 @@ function tx_callback(fname, bp)
 	var j;
 
 	// Remove flow files that have been completly processed.
-	Object.keys(bp.bp.cb_data.binkit_flow_contents).forEach(function(flo) {
+	Object.keys(bp.cb_data.binkit_flow_contents).forEach(function(flo) {
 		if (file_exists(flo)) {
 			while ((j = bp.cb_data.binkit_flow_contents[flo].indexOf(fname)) !== -1)
 				bp.cb_data.binkit_flow_contents[flo].splice(j, 1);
@@ -289,13 +300,13 @@ function rx_callback(fname, bp)
 
 	if (fname.search(/\.(?:pkt|su.|mo.|tu.|we.|th.|fr.|sa.)$/i) !== -1) {
 		semname = system.data_dir + 'fidoin.now';
-		if (bp.binkit_create_semaphores.indexOf(semname) == -1)
-			bp.binkit_create_semaphores.push(semname);
+		if (bp.cb_data.binkit_create_semaphores.indexOf(semname) == -1)
+			bp.cb_data.binkit_create_semaphores.push(semname);
 	}
 	else if (fname.search(/\.tic$/i) !== -1) {
 		semname = system.data_dir + 'tickit.now';
-		if (bp.binkit_create_semaphores.indexOf(semname) == -1)
-			bp.binkit_create_semaphores.push(semname);
+		if (bp.cb_data.binkit_create_semaphores.indexOf(semname) == -1)
+			bp.cb_data.binkit_create_semaphores.push(semname);
 	}
 
 	if (fname.search(/\.req$/i) !== -1) {
@@ -304,11 +315,13 @@ function rx_callback(fname, bp)
 	}
 	else {
 		if (bp.authenticated === 'secure') {
-			if (!file_rename(fname, bp.binkit_scfg.secure_inbound+file_getname(fname)))
+			log(LOG_DEBUG, "Moving '"+fname+"' to '"+bp.cb_data.binkit_scfg.secure_inbound+file_getname(fname)+"'.");
+			if (!file_rename(fname, bp.cb_data.binkit_scfg.secure_inbound+file_getname(fname)))
 				return false;
 		}
 		else {
-			if (!file_rename(fname, bp.binkit_scfg.inbound+file_getname(fname)))
+			log(LOG_DEBUG, "Moving '"+fname+"' to '"+bp.cb_data.binkit_scfg.inbound+file_getname(fname)+"'.");
+			if (!file_rename(fname, bp.cb_data.binkit_scfg.inbound+file_getname(fname)))
 				return false;
 		}
 	}
