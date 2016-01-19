@@ -92,11 +92,13 @@ function FileBase(dir) {
 				this.path = fullpath(file_area.dir[dir].path+this.name);
 		}
 	}
-	FileEntry.prototype = {
-		get name() {
+
+	Object.defineProperty(FileEntry.prototype, "name", {
+		enumerable: true,
+		get: function() {
 			return this.base+'.'+this.ext;
 		}
-	};
+	});
 
 	if(!f.exists)
 		return ret;
