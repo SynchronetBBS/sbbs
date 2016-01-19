@@ -141,7 +141,13 @@ file.writeln("notify_user = " + parseInt(value_opts["notify"])), delete value_op
 file.writeln("zone_blind = " + Boolean(value_opts["zone_blind"]));
 if(parseInt(value_opts["zone_blind"]))
 	file.writeln("zone_blind_threshold = " + parseInt(value_opts["zone_blind"])), delete value_opts["zone_blind"];
-file.writeln("log = 0x" + value_opts["log"]), delete value_opts["log"];
+if(value_opts["log"] && value_opts["log"].charAt(0) == '0')
+	file.writeln("log = 0x" + value_opts["log"]), delete value_opts["log"];
+if(!value_opts["inbound"] && value_opts["outbound"]) {
+	var inbound = value_opts["outbound"].replace("out","in");
+	alert("Setting inbound dir to best guess (no longer using SCFG setting): " + inbound);
+	file.writeln("inbound = " + inbound);
+}
 for(var i in value_opts)
 	if(i) file.writeln(i + " = " + value_opts[i]);
 
