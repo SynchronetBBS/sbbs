@@ -154,7 +154,7 @@ BinkP.prototype.ack_file = function()
 				}
 			}
 			else {
-				if (this.sendCmd(this.command.M_SKIP, this.escapeFileName(this.receiving_name)+' '+this.receiving_length+' '+this.receiving_date)) {
+				if (this.sendCmd(this.command.M_SKIP, this.escapeFileName(this.receiving_name)+' '+this.receiving_len+' '+this.receiving_date)) {
 					this.failed_received_files.push(this.receiving.name);
 					log(LOG_WARNING, "Callback returned false for '"+this.receiving.name+"'.");
 				}
