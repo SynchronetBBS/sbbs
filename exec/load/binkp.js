@@ -135,16 +135,18 @@ BinkP.prototype.command_name = [
 BinkP.prototype.ack_file = function()
 {
 	var cb_success = true;
+	var gotlen;
 
 	if (this.receiving !== undefined) {
 		if (this.receiving.position >= this.receiving_len) {
 			this.receiving.truncate(this.receiving_len);
+			gotlen = this.receiving.position;
 			this.receiving.close();
 			this.receiving.date = this.receiving_date;
 			if (this.rx_callback !== undefined)
 				cb_success = this.rx_callback(this.receiving.name, this);
 			if (cb_success) {
-				if (this.sendCmd(this.command.M_GOT, this.escapeFileName(this.receiving_name)+' '+this.receiving.length+' '+this.receiving.date))
+				if (this.sendCmd(this.command.M_GOT, this.escapeFileName(this.receiving_name)+' '+gotlen+' '+this.receiving_date))
 					this.received_files.push(this.receiving.name);
 				else {
 					this.failed_received_files.push(this.receiving.name);
@@ -152,7 +154,7 @@ BinkP.prototype.ack_file = function()
 				}
 			}
 			else {
-				if (this.sendCmd(this.command.M_SKIP, this.escapeFileName(this.receiving_name)+' '+this.receiving.length+' '+this.receiving.date)) {
+				if (this.sendCmd(this.command.M_SKIP, this.escapeFileName(this.receiving_name)+' '+this.receiving_length+' '+this.receiving_date)) {
 					this.failed_received_files.push(this.receiving.name);
 					log(LOG_WARNING, "Callback returned false for '"+this.receiving.name+"'.");
 				}
@@ -439,7 +441,7 @@ BinkP.prototype.session = function()
 						break;
 					case this.command.M_EOB:
 						this.ack_file();
-						if (this.senteob)
+						if (this.senteob && this.pending_ack.length === 0)
 							break outer;
 						break;
 					case this.command.M_GOT:
@@ -492,7 +494,7 @@ BinkP.prototype.session = function()
 								i--;
 							}
 						}
-						if (this.sending.sendas === args[0]) {
+						if (this.sending !== undefined && this.sending.sendas === args[0]) {
 							this.sending.file.close();
 							this.failed_sent_files.push(this.sending.file.name);
 							this.sending = undefined;
@@ -566,9 +568,8 @@ BinkP.prototype.close = function()
 		this.failed_sent_files.push(this.pending_ack[i].file.name);
 	for (i=0; i<this.tx_queue.length; i++)
 		this.failed_sent_files.push(this.tx_queue[i].file.name);
-	if ((!this.goteob) || this.tx_queue.length || this.pending_ack.length || this.pending_get.length) {
+	if ((!this.goteob) || this.tx_queue.length || this.pending_ack.length || this.pending_get.length)
 		this.sendCmd(this.command.M_ERR, "Forced Shutdown");
-	}
 	else {
 		if (!this.senteob) {
 			this.sendCmd(this.command.M_EOB);
@@ -663,8 +664,23 @@ BinkP.prototype.recvFrame = function(timeout)
 
 	if (this.partialFrame === undefined) {
 		ret = new this.Frame();
-		if (!this.sock.poll(timeout))
-			return null;
+		switch(this.sock.poll(timeout)) {
+			case 0:	// Timeout
+				if (timeout) {
+					log(LOG_ERROR, "Timed out receiving packet!");
+					this.sock.close();
+					this.sock = undefined;
+					return undefined;
+				}
+				return null;
+			default:
+				log(LOG_ERROR, "Error select()ing socket.");
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			case 1:
+				break;
+		}
 		ret.length = this.sock.recvBin(2);
 		ret.is_cmd = (ret.length & 0x8000) ? true : false;
 		ret.length &= 0x7fff;
@@ -673,31 +689,37 @@ BinkP.prototype.recvFrame = function(timeout)
 	else
 		ret = this.partialFrame;
 
-	if (this.sock.poll(timeout)) {
-		avail = this.sock.nread;
-		if (avail == 0) {
-			if (this.sock.is_connected)
-				log(LOG_ERROR, "Poll returned true, but no data available on connected socket!");
+	switch(this.sock.poll(timeout)) {
+		case 1:
+			avail = this.sock.nread;
+			if (avail == 0) {
+				if (this.sock.is_connected)
+					log(LOG_ERROR, "Poll returned data available, but no data available on connected socket!");
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
+			if (avail > (ret.length - ret.data.length))
+				avail = ret.length - ret.data.length;
+			ret.data += this.sock.recv(avail);
+			break;
+		case 0:
+			if (timeout) {
+				log(LOG_ERROR, "Timed out receiving packet!");
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
+			break;
+		default:
+			log(LOG_ERROR, "Error select()ing socket.");
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
-		}
-		if (avail > (ret.length - ret.data.length))
-			avail = ret.length - ret.data.length;
-		ret.data += this.sock.recv(avail);
-	}
-	else {
-		if (timeout) {
-			log(LOG_ERROR, "Timed out receiving packet!");
-			this.sock.close();
-			this.sock = undefined;
-			return undefined;
-		}
 	}
 
-	if (ret.data.length < ret.length) {
+	if (ret.data.length < ret.length)
 		this.partialFrame = ret;
-	}
 	else {
 		this.partialFrame = undefined;
 		if (ret.is_cmd) {
