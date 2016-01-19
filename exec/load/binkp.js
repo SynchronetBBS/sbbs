@@ -134,17 +134,36 @@ BinkP.prototype.command_name = [
 ];
 BinkP.prototype.ack_file = function()
 {
+	var cb_success = true;
+
 	if (this.receiving !== undefined) {
 		if (this.receiving.position >= this.receiving_len) {
 			this.receiving.truncate(this.receiving_len);
 			this.receiving.close();
 			this.receiving.date = this.receiving_date;
 			if (this.rx_callback !== undefined)
-				this.rx_callback(this.receiving.name, this);
-			if (this.sendCmd(this.command.M_GOT, this.escapeFileName(this.receiving_name)+' '+this.receiving.length+' '+this.receiving.date))
-				this.received_files.push(this.receiving.name);
+				cb_success = this.rx_callback(this.receiving.name, this);
+			if (cb_success) {
+				if (this.sendCmd(this.command.M_GOT, this.escapeFileName(this.receiving_name)+' '+this.receiving.length+' '+this.receiving.date))
+					this.received_files.push(this.receiving.name);
+				else {
+					this.failed_received_files.push(this.receiving.name);
+					log(LOG_WARNING, "Could not send M_GOT for '"+this.receiving.name+"'.");
+				}
+			}
+			else {
+				if (this.sendCmd(this.command.M_SKIP, this.escapeFileName(this.receiving_name)+' '+this.receiving.length+' '+this.receiving.date)) {
+					this.failed_received_files.push(this.receiving.name);
+					log(LOG_WARNING, "Callback returned false for '"+this.receiving.name+"'.");
+				}
+				else {
+					this.failed_received_files.push(this.receiving.name);
+					log(LOG_WARNING, "Could not send M_SKIP for '"+this.receiving.name+"'.");
+				}
+			}
 		}
 		else {
+			log(LOG_WARNING, "Failed to receive the whole file '"+this.receiving.name+"'.");
 			this.receiving.close();
 			this.failed_received_files.push(this.receiving.name);
 		}
@@ -265,7 +284,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 /*
  * sock can be either a lisening socket or a connected socket.
  *
- * auth_cb(addrs, passwds, challenge, this) is called to accept and add
+ * auth_cb(passwds, this) is called to accept and add
  * files if it returns true, the session is considered secure.  auth_cb()
  * is explicitly allowed to change the inbound property and call
  * this.sendCmd(this.command.M_ERR, "Error String");
@@ -302,7 +321,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
 	this.sendCmd(this.command.M_NUL, "NDL 115200,TCP,BINKP");
 	this.sendCmd(this.command.M_NUL, "TIME "+new Date().toString());
-	this.sendCmd(this.command.M_NUL, "VER JSBinkP/0.0.0/"+system.platform+" binkp/1.1");
+	this.sendCmd(this.command.M_NUL, "VER "+this.name_ver+",JSBinkP/"+("$Revision$".split(' ')[1])+'/'+system.platform+" binkp/1.1");
 	this.sendCmd(this.command.M_ADR, this.addr_list.join(' '));
 
 	while(!js.terminated && this.authenticated === undefined) {
@@ -312,7 +331,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 		if (pkt !== null && pkt !== this.partialFrame) {
 			if (pkt.is_cmd) {
 				if (pkt.command === this.command.M_PWD) {
-					if (auth_cb(this.remote_addrs, this.parseArgs(pkt.data), challenge, this))
+					if (auth_cb(this.parseArgs(pkt.data), this))
 						this.authenticated = 'secure';
 					else
 						this.authenticated = 'non-secure';
@@ -490,7 +509,8 @@ BinkP.prototype.session = function()
 				else {
 					this.receiving.write(pkt.data);
 					// We need to ACK here...
-					this.ack_file();
+					if (this.receiving.position >= this.receiving_len)
+						this.ack_file();
 				}
 			}
 		}
@@ -657,6 +677,14 @@ BinkP.prototype.recvFrame = function(timeout)
 		if (avail > (ret.length - ret.data.length))
 			avail = ret.length - ret.data.length;
 		ret.data += this.sock.recv(avail);
+	}
+	else {
+		if (timeout) {
+			log(LOG_ERROR, "Timed out receiving packet!");
+			this.sock.close();
+			this.sock = undefined;
+			return undefined;
+		}
 	}
 
 	if (ret.data.length < ret.length) {
