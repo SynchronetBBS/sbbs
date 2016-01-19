@@ -645,6 +645,7 @@ BinkP.prototype.recvFrame = function(timeout)
 	var tmp;
 	var ver;
 	var avail;
+	var nullpos;
 
 	// Avoid warning from syncjslint by putting this in a closure.
 	function hex2ascii(hex)
@@ -715,6 +716,9 @@ BinkP.prototype.recvFrame = function(timeout)
 				log(LOG_DEBUG, "Got data frame length "+ret.length);
 		}
 		if (ret.is_cmd) {
+			nullpos = ret.data.indexOf(ascii(0));
+			if (nullpos > -1)
+				ret.data = ret.data.substr(0, nullpos);
 			switch(ret.command) {
 				case this.command.M_ERR:
 					log(LOG_ERROR, "BinkP got fatal error from remote: '"+ret.data+"'.");
