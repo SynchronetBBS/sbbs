@@ -37,7 +37,6 @@
 
 	settings.xtrn_sections.forEach(
 		function (section) {
-			if (typeof xtrn_area.sec[section] === 'undefined') return;
 			writeln('<div class="list-group-item">');
 			writeln('<h4>' + xtrn_area.sec[section].name + '</h4>');
 			writeln('<ul class="nav nav-pills">');
