@@ -198,7 +198,7 @@ function add_outbound_files(addrs, bp)
 						fname += fnchars[random(fnchars.length)];
 					fname += '.pkt';
 					if (bp.addFile(file, fname))
-						bp.cb_data.binkit_file_actions[flo.name] = 'DELETE';
+						bp.cb_data.binkit_file_actions[file] = 'DELETE';
 					break;
 				case '.req':
 					fname = '';
@@ -206,7 +206,7 @@ function add_outbound_files(addrs, bp)
 						fname += fnchars[random(fnchars.length)];
 					fname += '.req';
 					if (bp.addFile(file, fname))
-						bp.cb_data.binkit_file_actions[flo.name] = 'DELETE';
+						bp.cb_data.binkit_file_actions[file] = 'DELETE';
 					break;
 				case '.bsy':
 				case '.csy':
@@ -630,7 +630,7 @@ function run_outbound()
 			log(LOG_WARNING, "Unhandled outbound '"+dir+"'.");
 	});
 	outbound_dirs.forEach(function(dir) {
-		run_one_outbound_dir(dir, scfg);
+		run_one_outbound_dir(dir, scfg, semaphores);
 	});
 
 	semaphores.forEach(function(semname) {
