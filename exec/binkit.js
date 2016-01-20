@@ -454,6 +454,7 @@ function callout(addr, scfg, semaphores)
 		bp.cb_data.binkitpw = bp.cb_data.binkitcfg.node[addr].pass;
 		port = bp.cb_data.binkitcfg.node[addr].port;
 		bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
+		bp.require_crypt = !(bp.cb_data.binkitcfg.node[addr].nocrypt);
 	}
 	// TODO: Force debug mode for now...
 	bp.debug = true;
@@ -654,6 +655,17 @@ function inbound_auth_cb(pwd, bp)
 	 */
 	var addrs = [];
 	var ret = '-';
+	var nocrypt;
+
+	function check_nocrypt(node) {
+		if (bp.cb_data.binkitcfg.node[addr].nocrypt) {
+			if (nocrypt === undefined)
+				nocrypt = true;
+		}
+		else {
+				nocrypt = false;
+		}
+	}
 
 	bp.remote_addrs.forEach(function(addr) {
 		var cpw;
@@ -664,6 +676,7 @@ function inbound_auth_cb(pwd, bp)
 			if (pwd[0].substr(0, 9) === 'CRAM-MD5-') {
 				if (bp.getCRAM('MD5', cpw) === pwd[0]) {
 					addrs.push(addr);
+					check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 					ret = cpw;
 				}
 			}
@@ -671,6 +684,7 @@ function inbound_auth_cb(pwd, bp)
 				// TODO: Deal with arrays of passwords?
 				if (bp.cb_data.binkitcfg.node[addr].nomd5 === false && bp.cb_data.binkitcfg.node[addr].pass === pwd[0]) {
 					addrs.push(addr);
+					check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
 					ret = cpw;
 				}
 			}
@@ -678,7 +692,20 @@ function inbound_auth_cb(pwd, bp)
 		else
 			log(LOG_DEBUG, "Unconfigured address "+addr);
 	});
-	bp.remote_addrs = addrs;
+	if (addrs.length === 0) {
+		// If we have NONE of their nodes configured, we can send them files for ALL of them.
+		addrs = bp.remote_addrs;
+		// And allow unencrypted sessions.
+		nocrypt = true;
+	}
+	else {
+		// If we have SOME of their nodes configured, only send them files for authenticated ones.
+		bp.remote_addrs = addrs;
+		// Require encryption unless all configured nodes say otherwise.
+		if (nocrypt === undefined)
+			nocrypt = false;
+	}
+	bp.require_crypt = !nocrypt;
 
 	add_outbound_files(addrs, bp);
 	return ret;
