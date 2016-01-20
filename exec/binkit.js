@@ -653,6 +653,7 @@ function inbound_auth_cb(pwd, bp)
 	 * the same password that we can send mail for.
 	 */
 	var addrs = [];
+	var ret = '-';
 
 	bp.remote_addrs.forEach(function(addr) {
 		var cpw;
@@ -661,13 +662,17 @@ function inbound_auth_cb(pwd, bp)
 			if (cpw === undefined)
 				cpw = '-';
 			if (pwd[0].substr(0, 9) === 'CRAM-MD5-') {
-				if (bp.getCRAM('MD5', cpw) === pwd[0])
+				if (bp.getCRAM('MD5', cpw) === pwd[0]) {
 					addrs.push(addr);
+					ret = cpw;
+				}
 			}
 			else {
 				// TODO: Deal with arrays of passwords?
-				if (bp.cb_data.binkitcfg.node[addr].nomd5 === false && bp.cb_data.binkitcfg.node[addr].pass === pwd[0])
+				if (bp.cb_data.binkitcfg.node[addr].nomd5 === false && bp.cb_data.binkitcfg.node[addr].pass === pwd[0]) {
 					addrs.push(addr);
+					ret = cpw;
+				}
 			}
 		}
 		else
@@ -676,7 +681,7 @@ function inbound_auth_cb(pwd, bp)
 	bp.remote_addrs = addrs;
 
 	add_outbound_files(addrs, bp);
-	return addrs.length > 0;
+	return ret;
 }
 
 function run_inbound(sock)
