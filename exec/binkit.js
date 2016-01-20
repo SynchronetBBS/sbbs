@@ -348,6 +348,7 @@ function rename_or_move(src, dst)
 	}
 	df.close();
 	sf.close();
+	df.date = sf.date;
 	sf.remove();
 	return true;
 }
