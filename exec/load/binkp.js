@@ -462,6 +462,8 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
  * is explicitly allowed to change the inbound property and call
  * this.sendCmd(this.command.M_ERR, "Error String");
  *
+ * It may also set/clear the require_crypt property.
+ *
  * It is up to the auth_cb() callback to enforce the require_md5 property.
  */
 BinkP.prototype.accept = function(sock, auth_cb)
