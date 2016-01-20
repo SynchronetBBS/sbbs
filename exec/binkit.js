@@ -680,7 +680,7 @@ function run_inbound(sock)
 	var success = false;
 	var semaphores = [];
 
-	log(LOG_INFO, "Got inbound call from "+sock.remote_ip_addr+":"+sock.remote_port);
+	log(LOG_INFO, "Got inbound call from "+sock.remote_ip_address+":"+sock.remote_port);
 	bp.cb_data = {
 		binkitcfg:new BinkITCfg(),
 		binkit_scfg:new SBBSEchoCfg(),
@@ -718,7 +718,7 @@ try {
 catch(e) {}
 
 // If we're running as a service, call run_inbound().
-if (sock !== undefined)
+if (sock !== undefined && sock.descriptor !== -1)
 	run_inbound(sock);
 else
 	run_outbound();
