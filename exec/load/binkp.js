@@ -390,7 +390,6 @@ BinkP.prototype.session = function()
 						// Ignore
 						break;
 					case this.command.M_FILE:
-						this.senteob = false;
 						this.ack_file();
 						args = this.parseArgs(pkt.data);
 						if (args.length < 4) {
@@ -442,6 +441,8 @@ BinkP.prototype.session = function()
 						break;
 					case this.command.M_EOB:
 						this.ack_file();
+						if (this.ver1_1)
+							this.senteob = false;
 						if (this.senteob && this.pending_ack.length === 0)
 							break outer;
 						break;
