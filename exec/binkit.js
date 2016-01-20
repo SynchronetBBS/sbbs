@@ -335,12 +335,12 @@ function rx_callback(fname, bp)
 	}
 	else {
 		if (bp.authenticated === 'secure') {
-			log(LOG_DEBUG, "Moving '"+fname+"' to '"+bp.cb_data.binkit_scfg.secure_inbound+file_getname(fname)+"'.");
+			log(LOG_INFO, "Moving '"+fname+"' to '"+bp.cb_data.binkit_scfg.secure_inbound+file_getname(fname)+"'.");
 			if (!file_rename(fname, bp.cb_data.binkit_scfg.secure_inbound+file_getname(fname)))
 				return false;
 		}
 		else {
-			log(LOG_DEBUG, "Moving '"+fname+"' to '"+bp.cb_data.binkit_scfg.inbound+file_getname(fname)+"'.");
+			log(LOG_INFO, "Moving '"+fname+"' to '"+bp.cb_data.binkit_scfg.inbound+file_getname(fname)+"'.");
 			if (!file_rename(fname, bp.cb_data.binkit_scfg.inbound+file_getname(fname)))
 				return false;
 		}
@@ -599,7 +599,7 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 				}
 			}
 			if (i<flow_files.length) {
-				log(LOG_DEBUG, "Attempting callout for file "+flow_files[i]);
+				log(LOG_INFO, "Attempting callout for file "+flow_files[i]);
 				locks.push(lock_files);
 				// Use a try/catch to ensure we clean up the lock files.
 				callout(addr, scfg, semaphores, locks);
@@ -683,7 +683,7 @@ function inbound_auth_cb(pwd, bp)
 	var nocrypt;
 
 	function check_nocrypt(node) {
-		if (bp.cb_data.binkitcfg.node[addr].nocrypt) {
+		if (node) {
 			if (nocrypt === undefined)
 				nocrypt = true;
 		}
