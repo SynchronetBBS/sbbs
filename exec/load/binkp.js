@@ -73,6 +73,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.sent_nr = false;
 	this.ver1_1 = false;
 	this.require_md5 = true;
+	this.require_crypt = true;
 	this.timeout = 120;
 	this.addr_list = [];
 	this.system_name = system.name;
@@ -408,8 +409,12 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 		if (this.cram === undefined || this.cram.algo !== 'MD5') {
 			if (this.require_md5)
 				this.sendCmd(this.command.M_ERR, "MD5 Required");
-			else
-				this.sendCmd(this.command.M_PWD, password);
+			else {
+				if (this.will_crypt)
+					this.sendCmd(this.command.M_ERR, "Encryption requires CRAM-MD5 auth");
+				else
+					this.sendCmd(this.command.M_PWD, password);
+			}
 		}
 		else {
 			this.sendCmd(this.command.M_PWD, this.getCRAM(this.cram.algo, password));
@@ -426,13 +431,21 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 		auth_cb(this.authenticated, this);
 
 	if (this.will_crypt) {
-		log(LOG_INFO, "Initializing crypt keys.");
-		this.out_keys = [0, 0, 0];
-		this.in_keys = [0, 0, 0];
-    	this.crypt.init_keys(this.out_keys, password);
-		this.crypt.init_keys(this.in_keys,  "-");
-		for (i=0; i<password.length; i++)
-			this.crypt.update_keys(this.in_keys, password[i]);
+		if (this.cram === undefined || this.cram.algo !== 'MD5')
+			this.sendCmd(this.command.M_ERR, "Encryption requires CRAM-MD5 auth");
+		else {
+			log(LOG_INFO, "Initializing crypt keys.");
+			this.out_keys = [0, 0, 0];
+			this.in_keys = [0, 0, 0];
+    		this.crypt.init_keys(this.out_keys, password);
+			this.crypt.init_keys(this.in_keys,  "-");
+			for (i=0; i<password.length; i++)
+				this.crypt.update_keys(this.in_keys, password[i]);
+		}
+	}
+	else {
+		if (this.require_crypt)
+			this.sendCmd(this.command.M_ERR, "Encryption required");
 	}
 
 	if (js.terminated) {
@@ -457,6 +470,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 	var i;
 	var pkt;
 	var pwd;
+	var args;
 
 	this.outgoing = false;
 	this.will_crypt = false;
@@ -503,7 +517,12 @@ BinkP.prototype.accept = function(sock, auth_cb)
 		if (pkt !== null && pkt !== this.partialFrame) {
 			if (pkt.is_cmd) {
 				if (pkt.command === this.command.M_PWD) {
-					pwd = auth_cb(this.parseArgs(pkt.data), this);
+					args = this.parseArgs(pkt.data);
+					if (this.will_crypt) {
+						if (args[0].substr(0, 9) !== 'CRAM-MD5-')
+							this.sendCmd(this.command.M_ERR, "Encryption requires CRAM-MD5 auth");
+					}
+					pwd = auth_cb(args, this);
 					if (pwd === undefined)
 						pwd = '-';
 					if (pwd === '-')
@@ -525,6 +544,10 @@ BinkP.prototype.accept = function(sock, auth_cb)
 		this.crypt.init_keys(this.out_keys,  "-");
 		for (i=0; i<pwd.length; i++)
 			this.crypt.update_keys(this.out_keys, pwd[i]);
+	}
+	else {
+		if (this.require_crypt)
+			this.sendCmd(this.command.M_ERR, "Encryption required");
 	}
 
 	if (js.terminated) {
