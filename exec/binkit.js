@@ -423,6 +423,14 @@ function callout_done(bp, semaphores)
 			});
 		}
 	});
+
+	// Remove flow files that have been completly processed.
+	Object.keys(bp.cb_data.binkit_flow_contents).forEach(function(flo) {
+		if (file_exists(flo)) {
+			if (bp.cb_data.binkit_flow_contents[flo].length == 0)
+				file_remove(flo);
+		}
+	});
 }
 
 function callout(addr, scfg, semaphores)
