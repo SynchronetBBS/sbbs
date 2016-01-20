@@ -595,7 +595,7 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 
 	// Now check for pending file reference
 	check_flavour('*.?lo', "file reference");
-	log(LOG_DEBUG, "Done checking file references in "+dir+", checking file references.");
+	log(LOG_DEBUG, "Done checking file references in "+dir+".");
 }
 
 function run_outbound()
