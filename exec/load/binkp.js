@@ -521,10 +521,10 @@ BinkP.prototype.accept = function(sock, auth_cb)
 		log(LOG_INFO, "Initializing crypt keys.");
 		this.out_keys = [0, 0, 0];
 		this.in_keys = [0, 0, 0];
-    	this.crypt.init_keys(this.in_keys, password);
+    	this.crypt.init_keys(this.in_keys, pwd);
 		this.crypt.init_keys(this.out_keys,  "-");
-		for (i=0; i<password.length; i++)
-			this.crypt.update_keys(this.out_keys, password[i]);
+		for (i=0; i<pwd.length; i++)
+			this.crypt.update_keys(this.out_keys, pwd[i]);
 	}
 
 	if (js.terminated) {
