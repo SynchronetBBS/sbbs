@@ -35,13 +35,6 @@ FREQIT.add_file = function(filename, bp, cfg)
 	FREQIT.added[filename]='';
 };
 
-/*
- * TODO: We need to lock all remote addresses after validating them in
- * the auth callback!
- * 
- * We also need to unlock them when we're done... this will mean using
- * an array of locked flows or something like that.
- */
 function lock_flow(file, csy)
 {
 	var ret = {
@@ -83,15 +76,19 @@ function lock_flow(file, csy)
 		return true;
 	}
 
+	log(LOG_DEBUG, "Locking "+ret.bsy.name);
 	if (!ret.bsy.open("web")) {
-		if (!take_lockfile(ret.bsy))
+		if (!take_lockfile(ret.bsy)) {
+			log(LOG_DEBUG, "Lock on "+ret.bsy.name+" failed.");
 			return undefined;
+		}
 	}
 	if (csy) {
 		if (!ret.csy.open("web")) {
 			if (!take_lockfile(ret.csy)) {
 				ret.bsy.close();
 				ret.bsy.remove();
+				log(LOG_DEBUG, "Lock on "+ret.bsy.name+" failed on csy file.");
 				return undefined;
 			}
 		}
@@ -99,11 +96,13 @@ function lock_flow(file, csy)
 	ret.bsy.writeln("BinkIT");
 	if (csy)
 		ret.csy.writeln("BinkIT");
+	log(LOG_DEBUG, "Lock successful.");
 	return ret;
 }
 
 function unlock_flow(locks)
 {
+	log(LOG_DEBUG, "Unlocking "+locks.bsy.name+".");
 	if (locks.csy !== undefined) {
 		locks.csy.close();
 		locks.csy.remove();
@@ -131,92 +130,113 @@ function outbound_root(outbound)
  * 		 so if we do integrate freqit.js, we should be fine to ignore
  * 		 the spec on this point.
  */
-function add_outbound_files(addrs, bp)
+function add_outbound_files(addrs, bp, is_callout)
 {
+	function has_lock(addr) {
+		var bsy = outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'bsy';
+		var i;
+
+		for (i=0; i<bp.cb_data.binkit_locks.length; i++) {
+			if (bp.cb_data.binkit_locks[i].bsy.name === bsy)
+				return true;
+		}
+		return false;
+	}
+
 	addrs.forEach(function(addr) {
+		var lock_files;
+
 		log(LOG_DEBUG, "Adding outbound files for "+addr);
 		// Find all possible flow files for the remote.
 		var allfiles = directory(outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
 		// Parse flow files and call addFile() tracking what to do on success.
-		allfiles.forEach(function(file) {
-			var flo;
-			var line;
-			var action;
-			var i;
-			var fnchars = '0123456789abcdefghijklmnopqrstuvwxyz';
-			var fname;
-
-			switch(file_getext(file).toLowerCase()) {
-				case '.clo':
-				case '.dlo':
-				case '.flo':
-				case '.hlo':
-				case '.ilo':
-					flo = new File(file);
-					if (!flo.open("r")) {
-						log(LOG_ERROR, "Unable to open FLO file '"+flo.name+"'.");
-						break;
-					}
-					if (bp.cb_data.binkit_flow_contents[flo.name] === undefined)
-						bp.cb_data.binkit_flow_contents[flo.name] = [];
-					while((line = flo.readln(2048))) {
-						switch(line.charAt(0)) {
-							case '#':
-								if (bp.addFile(line.substr(1)))
-									bp.cb_data.binkit_file_actions[flo.name] = 'TRUNCATE';
-								bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
-								break;
-							case '^':
-							case '-':
-								if (bp.addFile(line.substr(1)))
-									bp.cb_data.binkit_file_actions[flo.name] = 'DELETE';
-								bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
-								break;
-							case '~':
-							case '!':
-								break;
-							case '@':
-								line = line.substr(1);
-								if (bp.addFile(line))
-									bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
-								break;
-							default:
-								if (bp.addFile(line))
-									bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
-								break;
-						}
-					}
-					flo.close();
-					break;
-				case '.cut':
-				case '.dut':
-				case '.hut':
-				case '.iut':
-				case '.out':
-					fname = '';
-					for (i=0; i<8; i++)
-						fname += fnchars[random(fnchars.length)];
-					fname += '.pkt';
-					if (bp.addFile(file, fname))
-						bp.cb_data.binkit_file_actions[file] = 'DELETE';
-					break;
-				case '.req':
-					fname = '';
-					for (i=0; i<8; i++)
-						fname += fnchars[random(fnchars.length)];
-					fname += '.req';
-					if (bp.addFile(file, fname))
-						bp.cb_data.binkit_file_actions[file] = 'DELETE';
-					break;
-				case '.bsy':
-				case '.csy':
-				case '.try':
-					break;
-				default:
-					log(LOG_WARNING, "Unsupported flow file type '"+file+"'.");
-					break;
+		if (allfiles.length > 0) {
+			if (!has_lock(addr)) {
+				lock_files = lock_flow(outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain), is_callout);
+				if (lock_files === undefined)
+					return;
+				bp.cb_data.binkit_locks.push(lock_files);
 			}
-		});
+			allfiles.forEach(function(file) {
+				var flo;
+				var line;
+				var action;
+				var i;
+				var fnchars = '0123456789abcdefghijklmnopqrstuvwxyz';
+				var fname;
+
+				switch(file_getext(file).toLowerCase()) {
+					case '.clo':
+					case '.dlo':
+					case '.flo':
+					case '.hlo':
+					case '.ilo':
+						flo = new File(file);
+						if (!flo.open("r")) {
+							log(LOG_ERROR, "Unable to open FLO file '"+flo.name+"'.");
+							break;
+						}
+						if (bp.cb_data.binkit_flow_contents[flo.name] === undefined)
+							bp.cb_data.binkit_flow_contents[flo.name] = [];
+						while((line = flo.readln(2048))) {
+							switch(line.charAt(0)) {
+								case '#':
+									if (bp.addFile(line.substr(1)))
+										bp.cb_data.binkit_file_actions[flo.name] = 'TRUNCATE';
+									bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
+									break;
+								case '^':
+								case '-':
+									if (bp.addFile(line.substr(1)))
+										bp.cb_data.binkit_file_actions[flo.name] = 'DELETE';
+									bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
+									break;
+								case '~':
+								case '!':
+									break;
+								case '@':
+									line = line.substr(1);
+									if (bp.addFile(line))
+										bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
+									break;
+								default:
+									if (bp.addFile(line))
+										bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
+									break;
+							}
+						}
+						flo.close();
+						break;
+					case '.cut':
+					case '.dut':
+					case '.hut':
+					case '.iut':
+					case '.out':
+						fname = '';
+						for (i=0; i<8; i++)
+							fname += fnchars[random(fnchars.length)];
+						fname += '.pkt';
+						if (bp.addFile(file, fname))
+							bp.cb_data.binkit_file_actions[file] = 'DELETE';
+						break;
+					case '.req':
+						fname = '';
+						for (i=0; i<8; i++)
+							fname += fnchars[random(fnchars.length)];
+						fname += '.req';
+						if (bp.addFile(file, fname))
+							bp.cb_data.binkit_file_actions[file] = 'DELETE';
+						break;
+					case '.bsy':
+					case '.csy':
+					case '.try':
+						break;
+					default:
+						log(LOG_WARNING, "Unsupported flow file type '"+file+"'.");
+						break;
+				}
+			});
+		}
 	});
 }
 
@@ -242,7 +262,7 @@ function callout_auth_cb(mode, bp)
 		});
 	}
 
-	add_outbound_files(addrs, bp);
+	add_outbound_files(addrs, bp, true);
 }
 
 /*
@@ -433,7 +453,7 @@ function callout_done(bp, semaphores)
 	});
 }
 
-function callout(addr, scfg, semaphores)
+function callout(addr, scfg, semaphores, locks)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
@@ -448,7 +468,8 @@ function callout(addr, scfg, semaphores)
 		binkit_scfg:scfg,
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
-		binkit_create_semaphores:semaphores
+		binkit_create_semaphores:semaphores,
+		binkit_locks:locks
 	};
 	if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
 		bp.cb_data.binkitpw = bp.cb_data.binkitcfg.node[addr].pass;
@@ -486,6 +507,7 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var ran = {};
+	var locks = [];
 
 	log(LOG_DEBUG, "Running outbound dir "+dir);
 
@@ -578,10 +600,13 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 			}
 			if (i<flow_files.length) {
 				log(LOG_DEBUG, "Attempting callout for file "+flow_files[i]);
+				locks.push(lock_files);
 				// Use a try/catch to ensure we clean up the lock files.
-				callout(addr, scfg, semaphores);
+				callout(addr, scfg, semaphores, locks);
 				ran[addr] = true;
-				unlock_flow(lock_files);
+				locks.forEach(function(lock) {
+					unlock_flow(lock);
+				});
 			}
 			else {
 				log(LOG_DEBUG, "No "+typename+" typed flow files to be processed.");
@@ -707,7 +732,7 @@ function inbound_auth_cb(pwd, bp)
 	}
 	bp.require_crypt = !nocrypt;
 
-	add_outbound_files(addrs, bp);
+	add_outbound_files(addrs, bp, false);
 	return ret;
 }
 
@@ -719,6 +744,7 @@ function run_inbound(sock)
 	var f;
 	var success = false;
 	var semaphores = [];
+	var locks = [];
 
 	log(LOG_INFO, "Got inbound call from "+sock.remote_ip_address+":"+sock.remote_port);
 	bp.cb_data = {
@@ -726,11 +752,10 @@ function run_inbound(sock)
 		binkit_scfg:new SBBSEchoCfg(),
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
-		binkit_create_semaphores:semaphores
+		binkit_create_semaphores:semaphores,
+		binkit_locks:locks
 	};
 
-	// TODO Global setting?
-	//bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
 	// TODO: Force debug mode for now...
 	bp.debug = true;
 	bp.default_zone = myaddr.zone;
@@ -745,6 +770,10 @@ function run_inbound(sock)
 	success = bp.accept(sock, inbound_auth_cb);
 
 	callout_done(bp, semaphores);
+
+	locks.forEach(function(lock) {
+		unlock_flow(lock);
+	});
 
 	semaphores.forEach(function(semname) {
 		file_touch(semname);

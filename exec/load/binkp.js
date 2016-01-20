@@ -2,8 +2,6 @@ load("sockdefs.js");
 load("fido.js");
 
 /*
- * TODO: Add a configuation to force encryption.
- *
  * A binkp implementation...
  * 
  * Create a new instance with New passing a path to place received files
