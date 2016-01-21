@@ -1041,6 +1041,8 @@ static void js_service_thread(void* arg)
 			return;
 		}
 	}
+	else
+		service_client.tls_sess = -1;
 
 #if 0	/* Need to export from SBBS.DLL */
 	identity=NULL;
