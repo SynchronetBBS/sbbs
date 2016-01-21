@@ -470,7 +470,7 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 	for(tres=res; tres->ai_next; tres=tres->ai_next) {
-		if(bind(p->sock, res->ai_addr, res->ai_addrlen)!=0) {
+		if(bind(p->sock, tres->ai_addr, tres->ai_addrlen)!=0) {
 			if (tres->ai_next == NULL) {
 				p->last_error=ERROR_VALUE;
 				dbprintf(TRUE, p, "bind failed with error %d",ERROR_VALUE);
@@ -479,6 +479,8 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 				return(JS_TRUE);
 			}
 		}
+		else
+			break;
 	}
 	freeaddrinfo(res);
 
