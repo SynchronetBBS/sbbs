@@ -203,6 +203,7 @@ BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 										,js_startup_t* js_startup	/* js */
 										,client_t* client			/* client */
 										,SOCKET client_socket		/* client */
+										,CRYPT_CONTEXT session		/* client */
 										,js_server_props_t* props	/* server */
 										,JSObject** glob
 										)
@@ -225,7 +226,7 @@ BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 
 		/* Client Object */
 		if(client!=NULL 
-			&& js_CreateClientObject(js_cx, *glob, "client", client, client_socket)==NULL)
+			&& js_CreateClientObject(js_cx, *glob, "client", client, client_socket, session)==NULL)
 			break;
 
 		/* Server */

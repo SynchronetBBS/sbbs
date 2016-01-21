@@ -170,7 +170,7 @@ static JSClass js_client_class = {
 };
 
 JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
-										,const char* name, client_t* client, SOCKET sock)
+										,const char* name, client_t* client, SOCKET sock, CRYPT_CONTEXT session)
 {
 	JSObject*	obj;
 
@@ -182,7 +182,7 @@ JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
 
 	JS_SetPrivate(cx, obj, client);	/* Store a pointer to client_t */
 
-	js_CreateSocketObject(cx, obj, "socket", sock);
+	js_CreateSocketObject(cx, obj, "socket", sock, session);
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Represents a TCP/IP client session",310);

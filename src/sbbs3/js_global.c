@@ -331,6 +331,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 				,p->startup		/* js */
 				,NULL			/* client */
 				,INVALID_SOCKET	/* client_socket */
+				,-1				/* client TLS session */
 				,NULL			/* server props */
 				,&bg->obj
 				)) {

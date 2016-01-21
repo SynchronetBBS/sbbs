@@ -1923,9 +1923,9 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 			/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
 			if(!js_CreateCommonObjects(*js_cx, &scfg, &scfg, NULL
 						,uptime, startup->host_name, SOCKLIB_DESC	/* system */
-						,&js_callback									/* js */
+						,&js_callback								/* js */
 						,&startup->js
-						,client, sock								/* client */
+						,client, sock, -1							/* client */
 						,&js_server_props							/* server */
 						,js_glob
 				))

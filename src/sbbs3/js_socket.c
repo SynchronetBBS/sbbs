@@ -562,7 +562,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	if((sockobj=js_CreateSocketObject(cx, obj, "new_socket", new_socket))==NULL) {
+	if((sockobj=js_CreateSocketObject(cx, obj, "new_socket", new_socket, -1))==NULL) {
 		closesocket(new_socket);
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx,"Error creating new socket object");
@@ -2044,7 +2044,7 @@ static BOOL js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type)
 
 /* Socket Constructor (creates socket descriptor) */
 
-JSObject* DLLCALL js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock)
+JSObject* DLLCALL js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock, CRYPT_CONTEXT session)
 {
 	JSObject*	obj;
 	js_socket_private_t*	p;
@@ -2069,7 +2069,7 @@ JSObject* DLLCALL js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock)
 	p->sock = sock;
 	p->external = TRUE;
 	p->network_byte_order = TRUE;
-	p->session=-1;
+	p->session=session;
 
 	if (p->sock != INVALID_SOCKET) {
 		len=sizeof(p->remote_addr);
@@ -2107,7 +2107,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #else
 				JS_ValueToInt32(cx,argv[i],&sock);
 #endif
-				obj = js_CreateSocketObjectWithoutParent(cx, sock);
+				obj = js_CreateSocketObjectWithoutParent(cx, sock, -1);
 				if (obj == NULL) {
 					JS_ReportError(cx, "Failed to create external socket object");
 					return JS_FALSE;
@@ -2189,11 +2189,11 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 	return(sockobj);
 }
 
-JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOCKET sock)
+JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOCKET sock, CRYPT_CONTEXT session)
 {
 	JSObject*	obj;
 
-	obj = js_CreateSocketObjectWithoutParent(cx, sock);
+	obj = js_CreateSocketObjectWithoutParent(cx, sock, session);
 	if(obj==NULL)
 		return(NULL);
 	JS_DefineProperty(cx, parent, name, OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);

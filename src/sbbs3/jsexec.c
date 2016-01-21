@@ -782,7 +782,7 @@ static BOOL js_init(char** environ)
 	if(!js_CreateCommonObjects(js_cx, &scfg, NULL, js_global_functions
 		,time(NULL), host_name, SOCKLIB_DESC	/* system */
 		,&cb,&startup						/* js */
-		,NULL,INVALID_SOCKET					/* client */
+		,NULL,INVALID_SOCKET,-1					/* client */
 		,NULL									/* server */
 		,&js_glob
 		)) {

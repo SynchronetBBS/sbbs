@@ -5523,9 +5523,6 @@ static JSContext*
 js_initcx(http_session_t *session)
 {
 	JSContext*	js_cx;
-	jsval		val;
-	JSObject*	obj;
-	js_socket_private_t* p;
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)"
 		,session->socket,startup->js.cx_stack);
@@ -5550,6 +5547,7 @@ js_initcx(http_session_t *session)
 									,&startup->js				/* js */
 									,&session->client			/* client */
 									,session->socket			/* client */
+									,session->tls_sess			/* client */
 									,&js_server_props			/* server */
 									,&session->js_glob
 		)
@@ -5558,14 +5556,6 @@ js_initcx(http_session_t *session)
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
 		return(NULL);
-	}
-	if (session->is_tls) {
-		JS_GetProperty(js_cx, session->js_glob, "client", &val);
-		obj=JSVAL_TO_OBJECT(val);
-		JS_GetProperty(js_cx, obj, "socket", &val);
-		obj=JSVAL_TO_OBJECT(val);
-		p=(js_socket_private_t*)JS_GetPrivate(js_cx,obj);
-		p->session=session->tls_sess;
 	}
 
 	return(js_cx);

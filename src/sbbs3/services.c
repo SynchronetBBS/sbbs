@@ -772,7 +772,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 		/* Client Object */
 		if(service_client->client!=NULL) {
-			if(js_CreateClientObject(js_cx, *glob, "client", service_client->client, sock)==NULL)
+			if(js_CreateClientObject(js_cx, *glob, "client", service_client->client, sock, service_client->tls_sess)==NULL)
 				break;
 		}
 

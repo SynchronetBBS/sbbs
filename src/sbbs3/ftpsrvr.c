@@ -2688,7 +2688,7 @@ static void ctrl_thread(void* arg)
 				if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number, &client)==NULL) 
 					lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user object",sock);
 
-				if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) 
+				if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock, -1)==NULL) 
 					lprintf(LOG_ERR,"%04d !JavaScript ERROR creating client object",sock);
 
 				if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user
@@ -4058,7 +4058,7 @@ static void ctrl_thread(void* arg)
 						if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", &user, &client, /* global_user: */TRUE)==NULL) 
 							lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user object",sock);
 
-						if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) 
+						if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock, -1)==NULL) 
 							lprintf(LOG_ERR,"%04d !JavaScript ERROR creating client object",sock);
 
 						if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user, &client
