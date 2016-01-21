@@ -469,7 +469,7 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(TRUE, p, "getaddrinfo failed with error %d",ret);
 		return(JS_TRUE);
 	}
-	for(tres=res; tres->ai_next; tres=tres->ai_next) {
+	for(tres=res; tres; tres=tres->ai_next) {
 		if(bind(p->sock, tres->ai_addr, tres->ai_addrlen)!=0) {
 			if (tres->ai_next == NULL) {
 				p->last_error=ERROR_VALUE;
