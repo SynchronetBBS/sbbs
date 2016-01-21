@@ -2827,6 +2827,7 @@ void seektonull(FILE *stream)
 char *pktname(BOOL temp)
 {
 	static char str[128];
+	static char tmp[128];
 	int i;
     time_t now;
     struct tm *tm;
@@ -2835,10 +2836,12 @@ char *pktname(BOOL temp)
 	for(i=0;i>=0;i++) {
 		now++;
 		tm=localtime(&now);
-		sprintf(str,"%s%02u%02u%02u%02u.%s",cfg.outbound,tm->tm_mday,tm->tm_hour
-			,tm->tm_min,tm->tm_sec,temp ? "pk_" : "pkt");
-		if(!fexist(str))				/* Add 1 second if name exists */
-			return(str); 
+		sprintf(str,"%s%02u%02u%02u%02u.pkt",cfg.outbound,tm->tm_mday,tm->tm_hour
+			,tm->tm_min,tm->tm_sec);
+		sprintf(tmp,"%s%02u%02u%02u%02u.pk_",cfg.outbound,tm->tm_mday,tm->tm_hour
+			,tm->tm_min,tm->tm_sec);
+		if(!fexist(str) && !fexist(tmp))				/* Add 1 second if name exists */
+			return(temp ? tmp : str); 
 	}
 	return(NULL);	/* This should never happen */
 }
