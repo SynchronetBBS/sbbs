@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -873,7 +873,7 @@ ulong DLLCALL getdisksize(const char* path, ulong unit)
 }
 
 /****************************************************************************/
-/* Resolves //, /./, and /../ in a path. Should work indetically to Windows */
+/* Resolves //, /./, and /../ in a path. Should work identically to Windows */
 /****************************************************************************/
 #if defined(__unix__)
 char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
