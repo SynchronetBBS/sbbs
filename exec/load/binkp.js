@@ -864,7 +864,7 @@ BinkP.prototype.recvFrame = function(timeout)
 		switch(this.sock.poll(timeout)) {
 			case 0:	// Timeout
 				if (timeout) {
-					log(LOG_ERROR, "Timed out receiving packet header!");
+					log(LOG_WARNING, "Timed out receiving packet header!");
 					this.sock.close();
 					this.sock = undefined;
 					return undefined;
@@ -882,7 +882,7 @@ BinkP.prototype.recvFrame = function(timeout)
 		switch(this.sock.poll(timeout)) {
 			case 0:	// Timeout
 				if (timeout) {
-					log(LOG_ERROR, "Timed out receiving second byte of packet header!");
+					log(LOG_WARNING, "Timed out receiving second byte of packet header!");
 					this.sock.close();
 					this.sock = undefined;
 					return undefined;
