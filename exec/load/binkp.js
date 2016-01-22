@@ -375,6 +375,8 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 
 	if (password === undefined)
 		password = '-';
+	if (password === '-')
+		this.require_md5 = false;
 	if (port === undefined)
 		port = 24554;
 
@@ -388,7 +390,8 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 	}
 
 	this.authenticated = undefined;
-	this.sendCmd(this.command.M_NUL, "OPT CRYPT");
+	if (password !== '-')
+		this.sendCmd(this.command.M_NUL, "OPT CRYPT");
 	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
 	this.sendCmd(this.command.M_NUL, "ZYZ "+this.system_operator);
 	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
