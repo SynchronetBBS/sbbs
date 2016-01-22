@@ -38,8 +38,8 @@ FREQIT.add_file = function(filename, bp, cfg)
 function lock_flow(file, csy)
 {
 	var ret = {
-		bsy:new File(file.replace(/\..*?$/, '.bsy')),
-		csy:new File(file.replace(/\..*?$/, '.csy'))
+		bsy:new File(file.replace(/\.[^\.]*?$/, '.bsy')),
+		csy:new File(file.replace(/\.[^\.]**?$/, '.csy'))
 	};
 
 	// Takes ownership of a lockfile if it's more than six hours old.
