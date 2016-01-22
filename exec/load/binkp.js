@@ -879,6 +879,12 @@ BinkP.prototype.recvFrame = function(timeout)
 				break;
 		}
 		buf = this.sock.recv(1);
+		if (buf.length !== 1) {
+			log(LOG_INFO, "Remote disconnected");
+			this.sock.close();
+			this.sock = undefined;
+			return undefined;
+		}
 		switch(this.sock.poll(timeout)) {
 			case 0:	// Timeout
 				if (timeout) {
@@ -897,13 +903,13 @@ BinkP.prototype.recvFrame = function(timeout)
 				break;
 		}
 		buf += this.sock.recv(1);
-		buf = this.recv_buf(buf);
 		if (buf.length !== 2) {
-			log(LOG_ERROR, "Timed out receiving second byte of packet header!");
+			log(LOG_ERROR, "Remote disconnected before sending second byte of packet header!");
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
 		}
+		buf = this.recv_buf(buf);
 		ret.length = (ascii(buf[0]) << 8) | ascii(buf[1]);
 		ret.is_cmd = (ret.length & 0x8000) ? true : false;
 		ret.length &= 0x7fff;
