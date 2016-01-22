@@ -26,7 +26,7 @@ if(options && options.ask_qnet) {
 	if(options.qnet_name==undefined)
 		options.qnet_name="DOVE-Net";
 	if(!console.noyes(format("\r\nIs this account to be used for QWK Networking (%s)\1b", options.qnet_name))
-		&& !console.noyes("\r\n\1bARE YOU \1wPOSITIVE\1n\1h\1b (If you're unsure, press '\1wN1b')"))
+		&& !console.noyes("\r\n\1bARE YOU \1wPOSITIVE\1n\1h\1b (If you're unsure, press '\1wN\1b')"))
 		qnet=true;
 }
 
