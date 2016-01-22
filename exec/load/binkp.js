@@ -882,7 +882,7 @@ BinkP.prototype.recvFrame = function(timeout)
 				break;
 		}
 		buf = this.sock.recv(1);
-		if (buf.length !== 1) {
+		if (buf === null || buf.length !== 1) {
 			log(LOG_INFO, "Remote disconnected");
 			this.sock.close();
 			this.sock = undefined;
