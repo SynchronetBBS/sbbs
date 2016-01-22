@@ -450,7 +450,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 		}
 	}
 	else {
-		if (this.require_crypt)
+		if (this.require_crypt && !this.wont_crypt)
 			this.sendCmd(this.command.M_ERR, "Encryption required");
 	}
 
@@ -509,7 +509,7 @@ BinkP.prototype.accept = function(sock, auth_cb)
 
 	this.cram = {algo:'MD5', challenge:challenge.replace(/[0-9a-fA-F]{2}/g, hex2ascii)};
 	this.authenticated = undefined;
-	this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+" CRYPT");
+	this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+(this.wont_crypt?"":" CRYPT"));
 	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
 	this.sendCmd(this.command.M_NUL, "ZYZ "+this.system_operator);
 	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
