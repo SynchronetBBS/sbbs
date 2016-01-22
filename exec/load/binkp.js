@@ -79,6 +79,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.system_location = system.location;
 	system.fido_addr_list.forEach(function(faddr){this.addr_list.push(FIDO.parse_addr(faddr, this.default_zone));}, this);
 	this.want_callback = this.default_want;
+	this.wont_crypt = false;
 	this.will_crypt = false;
 	this.in_keys = undefined;
 	this.out_keys = undefined;
@@ -392,6 +393,8 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 	this.authenticated = undefined;
 	if (password !== '-')
 		this.sendCmd(this.command.M_NUL, "OPT CRYPT");
+	else
+		this.wont_crypt = true;
 	this.sendCmd(this.command.M_NUL, "SYS "+this.system_name);
 	this.sendCmd(this.command.M_NUL, "ZYZ "+this.system_operator);
 	this.sendCmd(this.command.M_NUL, "LOC "+this.system_location);
@@ -1027,8 +1030,10 @@ BinkP.prototype.recvFrame = function(timeout)
 											this.non_reliable = true;
 											break;
 										case 'CRYPT':
-											this.will_crypt = true;
-											log(LOG_INFO, "Will encrypt session.");
+											if (!this.wont_crypt) {
+												this.will_crypt = true;
+												log(LOG_INFO, "Will encrypt session.");
+											}
 											break;
 									}
 								}
