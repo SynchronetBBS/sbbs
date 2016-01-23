@@ -220,7 +220,9 @@ function format_opt(str, width, expand)
 	return(opt);
 }
 
-function ShellLB() {}
+function ShellLB() {
+	Lightbar.call(this);
+}
 ShellLB.prototype = new Lightbar;
 // Extend the Lightbar prototype...
 ShellLB.prototype.erase=function() {
