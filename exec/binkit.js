@@ -116,10 +116,11 @@ function unlock_flow(locks)
  * TODO: Read the ftn_domains.ini and get the outbound from there,
  * falling back to the sbbsecho one.
  */
-function outbound_root(outbound)
+function outbound_root(addr, scfg, ftnd)
 {
-	// Strip trailing backslash...
-	return outbound.replace(/[\\\/]$/, '');
+	if (ftnd.outboundMap[addr.domain] === undefined)
+		return scfg.outbound.replace(/[\\\/]$/, '');
+	return ftnd.outboundMap[addr.domain];
 }
 
 /*
@@ -135,7 +136,7 @@ function outbound_root(outbound)
 function add_outbound_files(addrs, bp, is_callout)
 {
 	function has_lock(addr) {
-		var bsy = outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'bsy';
+		var bsy = outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'bsy';
 		var i;
 
 		for (i=0; i<bp.cb_data.binkit_locks.length; i++) {
@@ -150,11 +151,11 @@ function add_outbound_files(addrs, bp, is_callout)
 
 		log(LOG_DEBUG, "Adding outbound files for "+addr);
 		// Find all possible flow files for the remote.
-		var allfiles = directory(outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
+		var allfiles = directory(outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
 		// Parse flow files and call addFile() tracking what to do on success.
 		if (allfiles.length > 0) {
 			if (!has_lock(addr)) {
-				lock_files = lock_flow(outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain), is_callout);
+				lock_files = lock_flow(outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain), is_callout);
 				if (lock_files === undefined)
 					return;
 				bp.cb_data.binkit_locks.push(lock_files);
@@ -506,7 +507,7 @@ function callout_done(bp, semaphores)
 	});
 }
 
-function callout(addr, scfg, semaphores, locks)
+function callout(addr, scfg, ftnd, semaphores, locks)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1);
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
@@ -519,6 +520,7 @@ function callout(addr, scfg, semaphores, locks)
 		binkitcfg:new BinkITCfg(),
 		binkit_to_addr:addr,
 		binkit_scfg:scfg,
+		binkit_ftnd:scfg,
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
 		binkit_create_semaphores:semaphores,
@@ -590,7 +592,7 @@ function callout(addr, scfg, semaphores, locks)
 
 	callout_done(bp, semaphores);
 
-	f = new File(outbound_root(bp.cb_data.binkit_scfg.outbound)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'try');
+	f = new File(outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'try');
 	if (f.open("w")) {
 		f.writeln(success ? ('Success S/R: '+bp.sent_files.length+'/'+bp.received_files.length) :
 			('Error S/R: '+bp.sent_files.length+'/'+bp.received_files.length+' Failed S/R: '+bp.failed_sent_files.length+'/'+bp.failed_received_files.length));
@@ -601,7 +603,7 @@ function callout(addr, scfg, semaphores, locks)
 	}
 }
 
-function run_one_outbound_dir(dir, scfg, semaphores)
+function run_one_outbound_dir(dir, scfg, ftnd, semaphores)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1);
 	var ran = {};
@@ -612,7 +614,7 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 	function check_held(addr)
 	{
 		var until;
-		var f = new File(outbound_root(scfg.outbound)+addr.flo_outbound(myaddr.zone)+'.hld');
+		var f = new File(outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone)+'.hld');
 
 		if (!f.exists)
 			return false;
@@ -662,8 +664,8 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 				ext = file_getext(flow_files[i]);
 
 				// Ensure this is the "right" outbound (file case, etc)
-				if (flow_files[i] !== outbound_root(scfg.outbound)+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
-					log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' expected '"+outbound_root(scfg.outbound)+addr.flo_outbound(myaddr.zone)+ext.substr(1)+"' (skipped)");
+				if (flow_files[i] !== outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
+					log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' expected '"+outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone)+ext.substr(1)+"' (skipped)");
 					continue;
 				}
 
@@ -700,7 +702,7 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 				log(LOG_INFO, "Attempting callout for file "+flow_files[i]);
 				locks.push(lock_files);
 				// Use a try/catch to ensure we clean up the lock files.
-				callout(addr, scfg, semaphores, locks);
+				callout(addr, scfg, ftnd, semaphores, locks);
 				ran[addr] = true;
 				locks.forEach(unlock_flow);
 			}
@@ -723,44 +725,59 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 function run_outbound()
 {
 	var scfg;
+	var ftnd;
 	var outbound_base;
 	var outbound_dirs=[];
-	var tmp;
+	var outbound_roots=[];
 	var semaphores = [];
 
 	log(LOG_INFO, "Running outbound");
 	scfg = new SBBSEchoCfg();
+	ftnd = new FTNDomains();
 
 	if (!scfg.is_flo) {
 		log(LOG_ERROR, "sbbsecho not configured for FLO-style mailers.");
 		return false;
 	}
-	outbound_dirs = [];
-	if (file_isdir(scfg.outbound))
-		outbound_dirs.push(scfg.outbound);
-	tmp = directory(outbound_root(scfg.outbound)+'.*', 0);
-	tmp.forEach(function(dir) {
-		var pnts;
+	outbound_roots.push(scfg.outbound.replace(/[\\\/]$/, ''));
+	Object.keys(ftnd.outboundMap).forEach(function(key) {
+		outbound_roots.push(ftnd.outboundMap[key]);
+	});
+	outbound_roots.forEach(function(oroot) {
+		var dirs;
 
-		if (file_getext(dir).search(/^\.[0-9a-f]+$/) == 0) {
-			if (file_isdir(dir)) {
-				outbound_dirs.push(backslash(dir));
-				pnts = directory(backslash(dir)+'.pnt', false);
-				pnts.forEach(function(pdir) {
-					if (pdir.search(/[\\\/][0-9a-z]{8}.pnt$/) >= 0 && file_isdir(pdir))
-						outbound_dirs.push(backslash(pdir));
-					else
-						log(LOG_WARNING, "Unhandled/Unexpected point path '"+pdir+"'.");
-				});
+		function addDir(dir) {
+			var bdir = backslash(dir);
+			if (outbound_dirs.indexOf(bdir) == -1)
+				outbound_dirs.push(bdir);
+		}
+
+		if (file_isdir(oroot))
+			addDir(oroot);
+		dirs = directory(oroot+'.*', 0);
+		dirs.forEach(function(dir) {
+			var pnts;
+
+			if (file_getext(dir).search(/^\.[0-9a-f]+$/) == 0) {
+				if (file_isdir(dir)) {
+					addDir(dir);
+					pnts = directory(backslash(dir)+'.pnt', false);
+					pnts.forEach(function(pdir) {
+						if (pdir.search(/[\\\/][0-9a-z]{8}.pnt$/) >= 0 && file_isdir(pdir))
+							addDir(pdir);
+						else
+							log(LOG_WARNING, "Unhandled/Unexpected point path '"+pdir+"'.");
+					});
+				}
+				else
+					log(LOG_WARNING, "Unexpected file in outbound '"+dir+"'.");
 			}
 			else
-				log(LOG_WARNING, "Unexpected file in outbound '"+dir+"'.");
-		}
-		else
-			log(LOG_WARNING, "Unhandled outbound '"+dir+"'.");
+				log(LOG_WARNING, "Unhandled outbound '"+dir+"'.");
+		});
 	});
 	outbound_dirs.forEach(function(dir) {
-		run_one_outbound_dir(dir, scfg, semaphores);
+		run_one_outbound_dir(dir, scfg, ftnd, semaphores);
 	});
 
 	semaphores.forEach(function(semname) {
@@ -846,6 +863,7 @@ function run_inbound(sock)
 	bp.cb_data = {
 		binkitcfg:new BinkITCfg(),
 		binkit_scfg:new SBBSEchoCfg(),
+		binkit_ftnd:new FTNDomains(),
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
 		binkit_create_semaphores:semaphores,
