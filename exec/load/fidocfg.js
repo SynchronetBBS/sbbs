@@ -7,7 +7,7 @@ function SBBSEchoCfg ()
 	this.inb = [];
 	this.pktpass = {};
 	this.is_flo = false;
-	this.outboud = undefined;
+	this.outbound = undefined;
 
 	if (!ecfg.open("r"))
 		throw("Unable to open '"+ecfg.name+"'");
@@ -356,5 +356,55 @@ function BinkITCfg()
 				}
 			}
 		}, this);
+	}
+}
+
+function FTNDomains()
+{
+	var f = new File(system.ctrl_dir+'ftn_domains.ini');
+	var used_zones = {};
+	var ecfg = new SBBSEchoCfg();
+
+	if (f.open("r")) {
+		this.domainMap = {};
+		this.domainDNSMap = {};
+		var domains = f.iniGetSections().forEach(function(domain) {
+			var d = domain.toLowerCase().substr(0,8);
+			var zones = f.iniGetValue(domain, 'Zones', '');
+			if (zones != undefined) {
+				zones.split(/\s*,\s*/).forEach(function(zone) {
+					var z = parseInt(zone, 10);
+
+					if (isNaN(z))
+						return;
+					// Not a 1:1 mapping... delete from domainMap
+					if (used_zones[z] !== undefined)
+						delete this.domainMap[z];
+					else {
+						used_zones[z]=1;
+						this.domainMap[parseInt(zone, 10)] = d;
+					}
+				}, this);
+			}
+			this.domainDNSMap[d] = f.iniGetValue(domain, 'DNSSuffix', 'example.com');
+			this[d].outbound = f.iniGetValue(domain, 'OutboundRoot', ecfg.outbound);
+		}, this);
+		f.close();
+	}
+	else {
+		this.fidonet = {
+			outboundRoot:ecfg.outbound
+		};
+		this.domainMap={
+			1:'fidonet',
+			2:'fidonet',
+			3:'fidonet',
+			4:'fidonet',
+			5:'fidonet',
+			6:'fidonet'
+		};
+		this.domainDNSMap={
+			'fidonet':'binkp.net'
+		};
 	}
 }
