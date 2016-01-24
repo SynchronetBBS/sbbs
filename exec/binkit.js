@@ -112,10 +112,6 @@ function unlock_flow(locks)
 	}
 }
 
-/*
- * TODO: Read the ftn_domains.ini and get the outbound from there,
- * falling back to the sbbsecho one.
- */
 function outbound_root(addr, scfg, ftnd)
 {
 	if (ftnd.outboundMap[addr.domain] === undefined)
