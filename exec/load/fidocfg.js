@@ -328,6 +328,7 @@ function BinkITCfg()
 			this.node[sec].nomd5 = f.iniGetValue(section, 'AllowPlainPassword');
 			this.node[sec].norypt = f.iniGetValue(section, 'AllowUnencrypted');
 			this.node[sec].port = f.iniGetValue(section, 'Port');
+			this.node[sec].src = f.iniGetValue(section, 'SourceAddress');
 			if (this.node[sec].nomd5 == undefined)
 				this.node[sec].nomd5 = false;
 			else {
