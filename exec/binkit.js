@@ -112,7 +112,10 @@ function unlock_flow(locks)
 	}
 }
 
-
+/*
+ * TODO: Read the ftn_domains.ini and get the outbound from there,
+ * falling back to the sbbsecho one.
+ */
 function outbound_root(outbound)
 {
 	// Strip trailing backslash...
@@ -533,9 +536,54 @@ function callout(addr, scfg, semaphores, locks)
 	bp.default_domain = myaddr.domain;
 	bp.want_callback = callout_want_callback;
 
-	// We can't use the defaults since the defaults are only 4D addresses.
+	/*
+	 * We can't use the defaults since the defaults are only 4D addresses,
+	 * and the address we're calling from needs to be first...
+	 */
 	bp.addr_list = [];
-	system.fido_addr_list.forEach(function(faddr){bp.addr_list.push(FIDO.parse_addr(faddr, this.default_zone));}, this);
+	system.fido_addr_list.forEach(function(faddr){
+		bp.addr_list.push(FIDO.parse_addr(faddr, this.default_zone));
+	}, this);
+	/*
+	 * TODO: Do we need a "SourceAddr" property in the config so we can
+	 * ensure we use the password from the right callout address?
+	 */
+	// Sort by "distance" from callout address.
+	bp.addr_list.sort(function(addr1, addr2) {
+		var dist1;
+		var dist2;
+
+		if (addr1.domain !== addr2.domain) {
+			if (addr1.domain === addr.domain)
+				return -1;
+			if (addr2.domain === addr2.domain)
+				return 1;
+			if (addr1.domain < addr2.domain)
+				return -1;
+			return 1;
+		}
+		if (addr1.zone !== addr2.zone) {
+			dist1 = Math.abs(addr1.zone - addr.zone);
+			dist2 = Math.abs(addr2.zone - addr.zone);
+			return dist1-dist2;
+		}
+		if (addr1.net !== addr2.net) {
+			dist1 = Math.abs(addr1.net - addr.net);
+			dist2 = Math.abs(addr2.net - addr.net);
+			return dist1-dist2;
+		}
+		if (addr1.node !== addr2.node) {
+			dist1 = Math.abs(addr1.node - addr.node);
+			dist2 = Math.abs(addr2.node - addr.node);
+			return dist1-dist2;
+		}
+		if (addr1.point !== addr2.point) {
+			dist1 = Math.abs(addr1.point - addr.point);
+			dist2 = Math.abs(addr2.point - addr.point);
+			return dist1-dist2;
+		}
+		return 0;
+	});
 
 	// We won't add files until the auth finishes...
 	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port);
@@ -654,9 +702,7 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 				// Use a try/catch to ensure we clean up the lock files.
 				callout(addr, scfg, semaphores, locks);
 				ran[addr] = true;
-				locks.forEach(function(lock) {
-					unlock_flow(lock);
-				});
+				locks.forEach(unlock_flow);
 			}
 			else {
 				log(LOG_DEBUG, "No "+typename+" typed flow files to be processed.");
