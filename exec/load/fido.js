@@ -262,7 +262,7 @@ Object.defineProperties(FIDO.Addr.prototype, {
 
 			if (this.point !== undefined)
 				ret += format("p%d", this.point);
-			ret += format("f%d.n%d.z%d.%s", this.node, this.net, this.zone, this.domainDNSMap[this.domain] === undefined ? '.example.com' : this.domainDNSMap[this.domain]);
+			ret += format("f%d.n%d.z%d.%s", this.node, this.net, this.zone, FIDO.domainDNSMap[this.domain] === undefined ? '.example.com' : FIDO.domainDNSMap[this.domain]);
 			return ret;
 		}
 	}
