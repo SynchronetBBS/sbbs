@@ -48,7 +48,7 @@ var FIDO = {
 		else
 			point = 0;
 		if (orig_domain !== undefined)
-			domain = orig_domain.toString().toLowerCase();
+			domain = orig_domain.toString().toLowerCase().substr(0, 8);
 		else
 			domain = '';
 
@@ -122,7 +122,7 @@ var FIDO = {
 					if (val == undefined)
 						domain = '';
 					else
-						domain = val.toString();
+						domain = val.toString().toLowerCase().substr(0, 8);
 					if (typeof domain !== 'string')
 						throw('domain is not a string');
 				}
