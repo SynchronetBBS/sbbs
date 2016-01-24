@@ -238,6 +238,7 @@ function FREQITCfg()
 
 		if (dir == undefined) {
 			log(LOG_ERROR, "Magic value '"+key+"' without a dir configured");
+			f.close();
 			return;
 		}
 		this.magic[key] = {};
@@ -356,6 +357,7 @@ function BinkITCfg()
 				}
 			}
 		}, this);
+		f.close();
 	}
 }
 
@@ -368,6 +370,7 @@ function FTNDomains()
 	if (f.open("r")) {
 		this.domainMap = {};
 		this.domainDNSMap = {};
+		this.outboundMap = {};
 		var domains = f.iniGetSections().forEach(function(domain) {
 			var d = domain.toLowerCase().substr(0,8);
 			var zones = f.iniGetValue(domain, 'Zones', '');
@@ -387,13 +390,13 @@ function FTNDomains()
 				}, this);
 			}
 			this.domainDNSMap[d] = f.iniGetValue(domain, 'DNSSuffix', 'example.com');
-			this[d].outboundRoot = f.iniGetValue(domain, 'OutboundRoot', ecfg.outbound.replace(/[\\\/]$/, ''));
+			this.outboundMap[d] = f.iniGetValue(domain, 'OutboundRoot', ecfg.outbound.replace(/[\\\/]$/, '')).replace(/[\\\/]$/, '');
 		}, this);
 		f.close();
 	}
 	else {
-		this.fidonet = {
-			outboundRoot:ecfg.outbound
+		this.outboundMap = {
+			'fidonet':ecfg.outbound.replace(/[\\\/]$/, '')
 		};
 		this.domainMap={
 			1:'fidonet',
