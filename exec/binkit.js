@@ -520,7 +520,7 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 		binkitcfg:new BinkITCfg(),
 		binkit_to_addr:addr,
 		binkit_scfg:scfg,
-		binkit_ftnd:scfg,
+		binkit_ftnd:ftnd,
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
 		binkit_create_semaphores:semaphores,
