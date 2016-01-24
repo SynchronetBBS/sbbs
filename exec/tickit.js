@@ -98,7 +98,7 @@ function process_tic(tic)
 			ld = tic.ldesc.split(/\r?\n/);
 			for (i=0; i<ld.length; i++) {
 				if (i)
-					files_bbs[dir] += "                        ";
+					files_bbs[dir] += " ".repeat(23);
 				files_bbs[dir] += ld[i]+"\r\n";
 			}
 		}
