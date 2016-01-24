@@ -394,6 +394,14 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 	if (password !== '-')
 		this.sendCmd(this.command.M_NUL, "OPT CRYPT");
 	else {
+		/*
+		 * TODO: This is to work around an apparent incompatability with
+		 * Radius.  I thought this worked with binkd, but it would need
+		 * to be tested again.
+		 * 
+		 * Not super-important since using encrpytion without a password
+		 * is about as "secure" as rot13.
+		 */
 		this.wont_crypt = true;
 		this.require_crypt = false;
 	}
