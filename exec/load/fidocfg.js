@@ -387,7 +387,7 @@ function FTNDomains()
 				}, this);
 			}
 			this.domainDNSMap[d] = f.iniGetValue(domain, 'DNSSuffix', 'example.com');
-			this[d].outbound = f.iniGetValue(domain, 'OutboundRoot', ecfg.outbound);
+			this[d].outboundRoot = f.iniGetValue(domain, 'OutboundRoot', ecfg.outbound.replace(/[\\\/]$/, ''));
 		}, this);
 		f.close();
 	}

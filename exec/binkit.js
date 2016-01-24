@@ -11,8 +11,7 @@
  *    zone.  That is, if the default zone is zone 1, and the outbound
  *    is "/path/to/outbound", it will not correctly handle the case
  *    where there is a "/path/to/outbound.001" directory.
- * 3) The domain is always 'fidonet'
- * 4) Flow files are processed in alphabetical order, not the reccomended
+ * 3) Flow files are processed in alphabetical order, not the reccomended
  *    order from FTS-5005.
  * 
  * See FTS-5005 for details.
@@ -506,7 +505,7 @@ function callout_done(bp, semaphores)
 
 function callout(addr, scfg, semaphores, locks)
 {
-	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
+	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1);
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
 	var port;
 	var f;
@@ -536,7 +535,7 @@ function callout(addr, scfg, semaphores, locks)
 
 	// We can't use the defaults since the defaults are only 4D addresses.
 	bp.addr_list = [];
-	system.fido_addr_list.forEach(function(faddr){bp.addr_list.push(FIDO.parse_addr(faddr, this.default_zone, 'fidonet'));}, this);
+	system.fido_addr_list.forEach(function(faddr){bp.addr_list.push(FIDO.parse_addr(faddr, this.default_zone));}, this);
 
 	// We won't add files until the auth finishes...
 	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port);
@@ -556,7 +555,7 @@ function callout(addr, scfg, semaphores, locks)
 
 function run_one_outbound_dir(dir, scfg, semaphores)
 {
-	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
+	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1);
 	var ran = {};
 	var locks = [];
 
@@ -604,7 +603,7 @@ function run_one_outbound_dir(dir, scfg, semaphores)
 			flow_file_loop:
 			for (i=0; i<flow_files.length; i++) {
 				try {
-					addr = FIDO.parse_flo_file_path(flow_files[i], myaddr.zone, 'fidonet');
+					addr = FIDO.parse_flo_file_path(flow_files[i], myaddr.zone);
 				}
 				catch(addr_e) {
 					log(LOG_WARNING, addr_e+" when checking '"+flow_files[i]+"' (default zone: "+myaddr.zone+")");
@@ -789,7 +788,7 @@ function inbound_auth_cb(pwd, bp)
 
 function run_inbound(sock)
 {
-	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
+	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1);
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
 	var port;
 	var f;
@@ -815,7 +814,7 @@ function run_inbound(sock)
 
 	// We can't use the defaults since the defaults are only 4D addresses.
 	bp.addr_list = [];
-	system.fido_addr_list.forEach(function(faddr){bp.addr_list.push(FIDO.parse_addr(faddr, this.default_zone, 'fidonet'));}, this);
+	system.fido_addr_list.forEach(function(faddr){bp.addr_list.push(FIDO.parse_addr(faddr, this.default_zone));}, this);
 
 	// We won't add files until the auth finishes...
 	success = bp.accept(sock, inbound_auth_cb);
