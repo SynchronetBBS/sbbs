@@ -505,11 +505,12 @@ function callout_done(bp, semaphores)
 
 function callout(addr, scfg, ftnd, semaphores, locks)
 {
-	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1);
+	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
 	var port;
 	var f;
 	var success = false;
+	var src_addr;
 
 	log(LOG_INFO, "Callout to "+addr+" started.");
 	bp.cb_data = {
@@ -543,41 +544,50 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 		bp.addr_list.push(FIDO.parse_addr(faddr, this.default_zone));
 	}, this);
 	/*
-	 * TODO: Do we need a "SourceAddr" property in the config so we can
-	 * ensure we use the password from the right callout address?
+	 * Set src_addr to the node we want first in our list.  If
+	 * SourceAddress is set for this node, use that.  Otherwise, use the
+	 * address we are contacting.
 	 */
-	// Sort by "distance" from callout address.
+	if (bp.cb_data.binkitcfg.node[addr].src !== undefined)
+		src_addr = FIDO.parse_addr(bp.cb_data.binkitcfg.node[addr].src, 1);
+	else
+		src_addr = addr;
+	// Sort by "distance" from src_addr address.
 	bp.addr_list.sort(function(addr1, addr2) {
 		var dist1;
 		var dist2;
 
+		if (addr1.str === src_addr.str)
+			return -1;
+		if (addr2.str === src_addr.str)
+			return 1;
 		if (addr1.domain !== addr2.domain) {
-			if (addr1.domain === addr.domain)
+			if (addr1.domain === src_addr.domain)
 				return -1;
-			if (addr2.domain === addr2.domain)
+			if (addr2.domain === src_addr.domain)
 				return 1;
 			if (addr1.domain < addr2.domain)
 				return -1;
 			return 1;
 		}
 		if (addr1.zone !== addr2.zone) {
-			dist1 = Math.abs(addr1.zone - addr.zone);
-			dist2 = Math.abs(addr2.zone - addr.zone);
+			dist1 = Math.abs(addr1.zone - src_addr.zone);
+			dist2 = Math.abs(addr2.zone - src_addr.zone);
 			return dist1-dist2;
 		}
 		if (addr1.net !== addr2.net) {
-			dist1 = Math.abs(addr1.net - addr.net);
-			dist2 = Math.abs(addr2.net - addr.net);
+			dist1 = Math.abs(addr1.net - src_addr.net);
+			dist2 = Math.abs(addr2.net - src_addr.net);
 			return dist1-dist2;
 		}
 		if (addr1.node !== addr2.node) {
-			dist1 = Math.abs(addr1.node - addr.node);
-			dist2 = Math.abs(addr2.node - addr.node);
+			dist1 = Math.abs(addr1.node - src_addr.node);
+			dist2 = Math.abs(addr2.node - src_addr.node);
 			return dist1-dist2;
 		}
 		if (addr1.point !== addr2.point) {
-			dist1 = Math.abs(addr1.point - addr.point);
-			dist2 = Math.abs(addr2.point - addr.point);
+			dist1 = Math.abs(addr1.point - src_addr.point);
+			dist2 = Math.abs(addr2.point - src_addr.point);
 			return dist1-dist2;
 		}
 		return 0;
@@ -601,7 +611,7 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 
 function run_one_outbound_dir(dir, scfg, ftnd, semaphores)
 {
-	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1);
+	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var ran = {};
 	var locks = [];
 
@@ -847,7 +857,7 @@ function inbound_auth_cb(pwd, bp)
 
 function run_inbound(sock)
 {
-	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1);
+	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
 	var port;
 	var f;
