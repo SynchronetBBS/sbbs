@@ -319,6 +319,7 @@ function BinkITCfg()
 		log(LOG_ERROR, "Unable to open '"+f.name+"'");
 	}
 	else {
+		this.caps = f.iniGetValue(null, 'Capabilities');
 		sects = f.iniGetSections();
 		sects.forEach(function(section) {
 			var sec = section.toLowerCase();

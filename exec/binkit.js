@@ -534,6 +534,8 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 	bp.default_zone = myaddr.zone;
 	bp.default_domain = myaddr.domain;
 	bp.want_callback = callout_want_callback;
+	if (bp.cb_data.binkitcfg.caps !== undefined)
+		bp.capabilities = bp.cb_data.binkitcfg.caps;
 
 	/*
 	 * We can't use the defaults since the defaults are only 4D addresses,
@@ -881,6 +883,8 @@ function run_inbound(sock)
 	bp.default_zone = myaddr.zone;
 	bp.default_domain = myaddr.domain;
 	bp.want_callback = callout_want_callback;
+	if (bp.cb_data.binkitcfg.caps !== undefined)
+		bp.capabilities = bp.cb_data.binkitcfg.caps;
 
 	// We can't use the defaults since the defaults are only 4D addresses.
 	bp.addr_list = [];
