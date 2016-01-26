@@ -34,11 +34,10 @@ FREQIT.add_file = function(filename, bp, cfg)
 	FREQIT.added[filename]='';
 };
 
-function lock_flow(file, csy)
+function lock_flow(file)
 {
 	var ret = {
 		bsy:new File(file.replace(/\.[^\.]*?$/, '.bsy')),
-		csy:new File(file.replace(/\.[^\.]*?$/, '.csy'))
 	};
 
 	// Takes ownership of a lockfile if it's more than six hours old.
@@ -82,19 +81,7 @@ function lock_flow(file, csy)
 			return undefined;
 		}
 	}
-	if (csy) {
-		if (!ret.csy.open("web")) {
-			if (!take_lockfile(ret.csy)) {
-				ret.bsy.close();
-				ret.bsy.remove();
-				log(LOG_DEBUG, "Lock on "+ret.bsy.name+" failed on csy file.");
-				return undefined;
-			}
-		}
-	}
 	ret.bsy.writeln("BinkIT");
-	if (csy)
-		ret.csy.writeln("BinkIT");
 	log(LOG_DEBUG, "Lock successful.");
 	return ret;
 }
@@ -102,10 +89,6 @@ function lock_flow(file, csy)
 function unlock_flow(locks)
 {
 	log(LOG_DEBUG, "Unlocking "+locks.bsy.name+".");
-	if (locks.csy !== undefined) {
-		locks.csy.close();
-		locks.csy.remove();
-	}
 	if (locks.bsy !== undefined) {
 		locks.bsy.close();
 		locks.bsy.remove();
@@ -129,7 +112,7 @@ function outbound_root(addr, scfg, ftnd)
  * 		 so if we do integrate freqit.js, we should be fine to ignore
  * 		 the spec on this point.
  */
-function add_outbound_files(addrs, bp, is_callout)
+function add_outbound_files(addrs, bp)
 {
 	function has_lock(addr) {
 		var bsy = outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'bsy';
@@ -151,7 +134,7 @@ function add_outbound_files(addrs, bp, is_callout)
 		// Parse flow files and call addFile() tracking what to do on success.
 		if (allfiles.length > 0) {
 			if (!has_lock(addr)) {
-				lock_files = lock_flow(outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain), is_callout);
+				lock_files = lock_flow(outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain));
 				if (lock_files === undefined)
 					return;
 				bp.cb_data.binkit_locks.push(lock_files);
@@ -227,8 +210,6 @@ function add_outbound_files(addrs, bp, is_callout)
 							bp.cb_data.binkit_file_actions[file] = 'DELETE';
 						break;
 					case '.bsy':
-					case '.csy':
-					case '.try':
 						break;
 					default:
 						log(LOG_WARNING, "Unsupported flow file type '"+file+"'.");
@@ -261,7 +242,7 @@ function callout_auth_cb(mode, bp)
 		});
 	}
 
-	add_outbound_files(addrs, bp, true);
+	add_outbound_files(addrs, bp);
 }
 
 /*
@@ -599,16 +580,6 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port);
 
 	callout_done(bp, semaphores);
-
-	f = new File(outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'try');
-	if (f.open("w")) {
-		f.writeln(success ? ('Success S/R: '+bp.sent_files.length+'/'+bp.received_files.length) :
-			('Error S/R: '+bp.sent_files.length+'/'+bp.received_files.length+' Failed S/R: '+bp.failed_sent_files.length+'/'+bp.failed_received_files.length));
-		f.close();
-	}
-	else {
-		log(LOG_ERROR, "Unable to create .try file '"+f.name+"'.");
-	}
 }
 
 function run_one_outbound_dir(dir, scfg, ftnd, semaphores)
@@ -698,7 +669,7 @@ function run_one_outbound_dir(dir, scfg, ftnd, semaphores)
 						continue;
 				}
 
-				if ((lock_files = lock_flow(flow_files[i], true))!==undefined) {
+				if ((lock_files = lock_flow(flow_files[i]))!==undefined) {
 					if (check_held(addr)) {
 						unlock_flow(lock_files);
 						continue;
@@ -853,7 +824,7 @@ function inbound_auth_cb(pwd, bp)
 	}
 	bp.require_crypt = !nocrypt;
 
-	add_outbound_files(addrs, bp, false);
+	add_outbound_files(addrs, bp);
 	return ret;
 }
 
