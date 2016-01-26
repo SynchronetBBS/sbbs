@@ -352,6 +352,7 @@ int get_flo_outbound(faddr_t dest, char* outbound, size_t maxlen)
 		char point[128];
 		SAFEPRINTF2(point,"%04x%04x.pnt"
 			,dest.net,dest.node);
+		backslash(outbound);
 		strncat(outbound,point,maxlen); 
 	}
 	backslash(outbound);
@@ -1832,8 +1833,10 @@ void pack_bundle(char *infile,faddr_t dest)
 	node=matchnode(dest,0);
 	strcpy(str,infile);
 	str[strlen(str)-1]='t';
-	if(rename(infile,str))				   /* Change .PK_ file to .PKT file */
+	if(rename(infile,str)) { 			   /* Change .PK_ file to .PKT file */
 		lprintf(LOG_ERR,"ERROR line %d renaming %s to %s",__LINE__,infile,str);
+		return;
+	}
 	infile[strlen(infile)-1]='t';
 	lprintf(LOG_INFO,"Sending packet (%s) to %s", infile, smb_faddrtoa(&dest,NULL));
 	time(&now);
