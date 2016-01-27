@@ -245,6 +245,7 @@ DLLEXPORT char* DLLCALL		iniPopKey(str_list_t*, const char* section, const char*
 DLLEXPORT BOOL DLLCALL		iniRemoveKey(str_list_t*, const char* section, const char* key);
 DLLEXPORT BOOL DLLCALL		iniRemoveValue(str_list_t*, const char* section, const char* key);
 DLLEXPORT BOOL DLLCALL		iniRemoveSection(str_list_t*, const char* section);
+DLLEXPORT BOOL DLLCALL		iniRemoveSections(str_list_t*, const char* prefex);
 DLLEXPORT BOOL DLLCALL		iniRenameSection(str_list_t*, const char* section, const char* newname);
 
 /*

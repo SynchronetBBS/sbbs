@@ -393,6 +393,20 @@ BOOL DLLCALL iniRemoveSection(str_list_t* list, const char* section)
 	return(TRUE);
 }
 
+BOOL DLLCALL iniRemoveSections(str_list_t* list, const char* prefix)
+{
+	str_list_t sections = iniGetSectionList(*list, prefix);
+	const char* section;
+
+	while((section = strListPop(&sections)) != NULL)
+		if(!iniRemoveSection(list, section))
+			return(FALSE);
+
+	strListFree(&sections);
+
+	return(TRUE);
+}
+
 BOOL DLLCALL iniRenameSection(str_list_t* list, const char* section, const char* newname)
 {
 	char	str[INI_MAX_LINE_LEN];
