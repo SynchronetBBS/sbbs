@@ -755,7 +755,7 @@ function run_outbound()
 		});
 	});
 	outbound_dirs.forEach(function(dir) {
-		run_one_outbound_dir(fullpath(dir), scfg, ftnd, semaphores);
+		run_one_outbound_dir(dir, scfg, ftnd, semaphores);
 	});
 
 	semaphores.forEach(function(semname) {
