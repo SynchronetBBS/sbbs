@@ -71,7 +71,7 @@ if (!String.prototype.repeat) {
     // Could we try:
     // return Array(count + 1).join(this);
     return rpt;
-  }
+  };
 }
 
 function process_tic(tic)
@@ -135,14 +135,14 @@ function process_tic(tic)
 		if (files_bbs[dir] === undefined)
 			files_bbs[dir] = '';
 
-		files_bbs[dir] += format("%-11s %10s ", tic.file, tic.size);
+		files_bbs[dir] += format("%-12s %10s ", tic.file, tic.size);
 		if (tic.ldesc === undefined || tic.ldesc.length <= tic.desc)
 			files_bbs[dir] += tic.desc + "\r\n";
 		else {
 			ld = tic.ldesc.split(/\r?\n/);
 			for (i=0; i<ld.length; i++) {
 				if (i)
-					files_bbs[dir] += " ".repeat(23);
+					files_bbs[dir] += " ".repeat(24);
 				files_bbs[dir] += ld[i]+"\r\n";
 			}
 		}
@@ -475,7 +475,7 @@ function import_files()
 		f.write(files_bbs[i]);
 		f.close();
 
-		cmd = system.exec_dir+"addfiles "+i+" -zd +"+f.name+" 23 12";
+		cmd = system.exec_dir+"addfiles "+i+" -zd +"+f.name+" 24 13";
 		log(LOG_DEBUG, "Executing: '"+cmd+"'.");
 		system.exec(cmd);
 	}
