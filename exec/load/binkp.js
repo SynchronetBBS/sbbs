@@ -675,7 +675,7 @@ BinkP.prototype.session = function()
 							if (this.pending_ack[i].sendas === args[0]) {
 								this.sent_files.push(this.pending_ack[i].file.name);
 								if (this.tx_callback !== undefined)
-									this.tx_callback(this.pending_ack[i].name, this);
+									this.tx_callback(this.pending_ack[i].file.name, this);
 								this.pending_ack.splice(i, 1);
 								i--;
 							}
