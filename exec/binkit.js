@@ -164,26 +164,25 @@ function add_outbound_files(addrs, bp)
 							switch(line.charAt(0)) {
 								case '#':
 									if (bp.addFile(line.substr(1)))
-										bp.cb_data.binkit_file_actions[flo.name] = 'TRUNCATE';
+										bp.cb_data.binkit_file_actions[line.substr(1)] = 'TRUNCATE';
 									bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
 									break;
 								case '^':
 								case '-':
 									if (bp.addFile(line.substr(1)))
-										bp.cb_data.binkit_file_actions[flo.name] = 'DELETE';
+										bp.cb_data.binkit_file_actions[line.substr(1)] = 'DELETE';
 									bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
 									break;
 								case '~':
 								case '!':
 									break;
 								case '@':
-									line = line.substr(1);
-									if (bp.addFile(line))
-										bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
+									bp.addFile(line.substr(1));
+									bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
 									break;
 								default:
-									if (bp.addFile(line))
-										bp.cb_data.binkit_flow_contents[flo.name].push(line.substr(1));
+									bp.addFile(line);
+									bp.cb_data.binkit_flow_contents[flo.name].push(line);
 									break;
 							}
 						}
@@ -531,7 +530,7 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 	 * SourceAddress is set for this node, use that.  Otherwise, use the
 	 * address we are contacting.
 	 */
-	if (bp.cb_data.binkitcfg.node[addr].src !== undefined)
+	if (bp.cb_data.binkitcfg.node[addr] !== undefined && bp.cb_data.binkitcfg.node[addr].src !== undefined)
 		src_addr = FIDO.parse_addr(bp.cb_data.binkitcfg.node[addr].src, 1);
 	else
 		src_addr = addr;
@@ -756,7 +755,7 @@ function run_outbound()
 		});
 	});
 	outbound_dirs.forEach(function(dir) {
-		run_one_outbound_dir(dir, scfg, ftnd, semaphores);
+		run_one_outbound_dir(fullpath(dir), scfg, ftnd, semaphores);
 	});
 
 	semaphores.forEach(function(semname) {

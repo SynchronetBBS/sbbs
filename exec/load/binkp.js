@@ -25,11 +25,13 @@ load("fido.js");
  *									this.file.REJECT - Refuses to take the file... will not be retransmitted later.
  *                   Default value is this.default_want() which accepts all offered
  *					 files.
- * rx_callback	   - Function that is called with a single filename argument
- *                   when a file is received successfully.
+ * rx_callback	   - Function that is called with two arguments, the filename
+ * 					 and the BinkP object when a file is received successfully.
  *                   Intended for REQ/TIC processing.  This callback can call
  * 				     the addFile(filename) method (may not work unless
  *					 ver1_1 is true)
+ * tx_callback	   - Function that is called with two arguments, the filename
+ * 					 and the BinkP object when a file is sent successfully.
  * name_ver        - Name and version of program in "name/ver.ver.ver" format
  * 
  * Now add any files you wish to send using the addFile(filename) method
@@ -62,7 +64,9 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	addr = FIDO.parse_addr(system.fido_addr_list[0], this.default_zone);
 	this.default_zone = addr.zone;
 	this.senteob = false;
+	this.sentempty = true;
 	this.goteob = false;
+	this.gotempty = true;
 	this.pending_ack = [];
 	this.pending_get = [];
 	this.tx_queue=[];
@@ -77,7 +81,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.system_name = system.name;
 	this.system_operator = system.operator;
 	this.system_location = system.location;
-	system.fido_addr_list.forEach(function(faddr){this.addr_list.push(FIDO.parse_addr(faddr, this.default_zone));}, this);
+	system.fido_addr_list.forEach(function(faddr){this.addr_list.push(FIDO.parse_addr(faddr, this.default_zone, 'fidonet'));}, this);
 	this.want_callback = this.default_want;
 	this.wont_crypt = false;
 	this.will_crypt = false;
@@ -605,6 +609,7 @@ BinkP.prototype.session = function()
 						// Ignore
 						break;
 					case this.command.M_FILE:
+						this.gotempty = false;
 						this.ack_file();
 						args = this.parseArgs(pkt.data);
 						if (args.length < 4) {
@@ -656,10 +661,14 @@ BinkP.prototype.session = function()
 						break;
 					case this.command.M_EOB:
 						this.ack_file();
-						if (this.ver1_1)
-							this.senteob = false;
+						if (this.ver1_1) {
+log("Sent empty: "+this.sentempty+", Got: "+this.gotempty);
+							if (!(this.sentempty && this.gotempty))
+								this.senteob = false;
+						}
 						if (this.senteob && this.pending_ack.length === 0)
 							break outer;
+						this.gotempty = true;
 						break;
 					case this.command.M_GOT:
 						args = this.parseArgs(pkt.data);
@@ -667,7 +676,7 @@ BinkP.prototype.session = function()
 							if (this.pending_ack[i].sendas === args[0]) {
 								this.sent_files.push(this.pending_ack[i].file.name);
 								if (this.tx_callback !== undefined)
-									this.tx_callback(this.pending_ack[i], this);
+									this.tx_callback(this.pending_ack[i].name, this);
 								this.pending_ack.splice(i, 1);
 								i--;
 							}
@@ -746,6 +755,7 @@ BinkP.prototype.session = function()
 				this.sendCmd(this.command.M_EOB);
 			}
 			else {
+				this.sentempty = false;
 				this.pending_ack.push(this.sending);
 				if (this.nonreliable)
 					this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' -1');
