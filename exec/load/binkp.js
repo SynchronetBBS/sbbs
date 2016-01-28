@@ -662,7 +662,6 @@ BinkP.prototype.session = function()
 					case this.command.M_EOB:
 						this.ack_file();
 						if (this.ver1_1) {
-log("Sent empty: "+this.sentempty+", Got: "+this.gotempty);
 							if (!(this.sentempty && this.gotempty))
 								this.senteob = false;
 						}
