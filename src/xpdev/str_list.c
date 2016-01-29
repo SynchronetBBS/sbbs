@@ -343,7 +343,6 @@ char* DLLCALL strListCombine(str_list_t list, char* buf, size_t maxlen, const ch
 	if(maxlen<1)
 		return(NULL);
 
-	memset(buf, 0, maxlen);
 	if(list==NULL)
 		return buf;
 
@@ -351,6 +350,7 @@ char* DLLCALL strListCombine(str_list_t list, char* buf, size_t maxlen, const ch
 		if((buf=(char*)malloc(maxlen))==NULL)
 			return(NULL);
 
+	memset(buf, 0, maxlen);
 	*buf=0;
 	end=buf+maxlen;
 	for(i=0, ptr=buf; list[i]!=NULL && buf<end; i++)
