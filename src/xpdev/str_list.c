@@ -343,15 +343,14 @@ char* DLLCALL strListCombine(str_list_t list, char* buf, size_t maxlen, const ch
 	if(maxlen<1)
 		return(NULL);
 
-	if(list==NULL)
-		return buf;
-
 	if(buf==NULL)
 		if((buf=(char*)malloc(maxlen))==NULL)
 			return(NULL);
 
 	memset(buf, 0, maxlen);
-	*buf=0;
+	if(list==NULL)
+		return buf;
+
 	end=buf+maxlen;
 	for(i=0, ptr=buf; list[i]!=NULL && buf<end; i++)
 		ptr += safe_snprintf(ptr, end-ptr, "%s%s", i ? delimit:"", list[i]);
