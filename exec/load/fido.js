@@ -29,9 +29,9 @@
  * 		Parses a flo filename and path into the returned FIDO.Addr object.
  * 
  * FIDO.parse_nodelist(path, warn)
- * 		Parses a nodelist and returns an object with an entries array in
- * 		it containing all the nodelist entries.  If warn is true, will
- * 		warn on "illegal" values.
+ * 		Parses a nodelist and returns an object with an entries object in
+ * 		it containing all the nodelist entries (3D address is the key).
+ * 		If warn is true, will warn on "illegal" values (per FTS-0005).
  */
 
 var FIDO = {
