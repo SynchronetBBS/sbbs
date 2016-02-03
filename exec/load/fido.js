@@ -286,7 +286,7 @@ var FIDO = {
 		var flags;
 		var flag;
 		var value;
-		ret.entries = [];
+		ret.entries = {};
 
 		while ((line = f.readln(2048))) {
 			lineno++;
@@ -384,7 +384,7 @@ var FIDO = {
 					value = true;
 				entry.flags[flag] = value;
 			}
-			ret.entries.push(entry);
+			ret.entries[entry.addr] = entry;
 		}
 		return ret;
 	}
