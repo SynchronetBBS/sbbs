@@ -1024,7 +1024,7 @@ int main(int argc, char** argv)  {
 			                "`------------`\n\n"
 							"`Run SCFG              : `Run the Synchronet Configuration Utility.\n"
 							"`Run User Editor       : `Call up the User Editor.\n"
-							"`Run SynchTERM         : `Run SyncTERM for RLogin.  SyncTERM must be\n"
+							"`Run SyncTERM          : `Run SyncTERM for RLogin.  SyncTERM must be\n"
 							"                        in the exec directory.\n"
 							"`View logs             : `View the various system logs.\n"
 							"`Force QWK Net callout : `Force a callout to QWK Net Hub.  Select which\n"
