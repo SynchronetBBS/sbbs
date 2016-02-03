@@ -337,7 +337,7 @@ var FIDO = {
 						log(LOG_WARNING, "Unhandled nodelist Keyword line "+lineno+" of '"+f.name+"'");
 					continue;
 			}
-			entry = new Node(node, hub);
+			entry = new FIDO.Node(node, hub);
 			switch(fields[0]) {
 				case 'Pvt':
 					entry.private = true;
