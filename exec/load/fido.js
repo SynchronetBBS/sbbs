@@ -197,8 +197,8 @@ var FIDO = {
 		point = m[5];
 		if(point == null)
 			point = 0;
-		if (this.domainMap[parseInt(zone)] !== undefined)
-			domain = this.domainMap[parseInt(zone, 10)];
+		if (this.domainMap[parseInt(zone, 16)] !== undefined)
+			domain = this.domainMap[parseInt(zone, 16)];
 		return new FIDO.Addr(parseInt(m[2], 16), parseInt(m[3], 16), parseInt(zone, 16), parseInt(point, 16), domain);
 	},
 	domainMap:{
