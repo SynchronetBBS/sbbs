@@ -387,6 +387,43 @@ var FIDO = {
 			ret.entries[entry.addr] = entry;
 		}
 		return ret;
+	},
+	Packet:function(init)
+	{
+		var type = FIDO.Packet.type.TWO;
+
+		if (init === undefined)
+			init = FIDO.Packet.type.TWO_PLUS;
+
+		if (init === undefined)
+			init = FIDO.Packet.type.TWO_PLUS;
+		if (typeof init === 'number') {
+			type = init;
+			this.header = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+
+						'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+
+						'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+
+						'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00';
+			this.setBin(18, 2, 2);
+			switch (type) {
+				case FIDO.Packet.type.TWO_PLUS:
+					this.setBin(44, 2, 1);
+					this.setBin(40, 2, 0x0100);
+					break;
+				case FIDO.Packet.type.TWO_TWO:
+					this.setBin(16, 2, 2);
+					break;
+			}
+		}
+		else {
+			this.header = init.substr(0, 58);
+			if (this.baud === 2)
+				this.type = FIDO.Packet.type.TWO_TWO;
+			else {
+				if ((this.getBin(44, 1) & 0x7f) == (this.getBin(41, 1)) &&
+						this.getBin(45, 1) == this.getBin(40, 1))
+					this.type = FIDO.Packet.type.TWO_PLUS;
+			}
+		}
 	}
 };
 Object.defineProperties(FIDO.Addr.prototype, {
@@ -418,6 +455,11 @@ Object.defineProperties(FIDO.Addr.prototype, {
 		}
 	}
 });
+FIDO.Addr.prototype.type = {
+	TWO:0,		// FTS-0001
+	TWO_PLUS:1,	// FSC-0039, FSC-0048
+	TWO_TWO:2,	// FSC-0045
+};
 FIDO.Addr.prototype.toString = function()
 {
 	return this.str;
@@ -496,5 +538,359 @@ Object.defineProperties(FIDO.Node.prototype, {
 		}
 	}
 });
+FIDO.Packet.prototype.setStr = function(offset, len, val) {
+	var str = val;
+	while (str.length < len)
+		str += '\x00';
+	this.header = this.header.substr(0, offset)+str+this.header.substr(offset+len);
+};
+FIDO.Packet.prototype.getStr = function(offset, len) {
+	var ret = this.header.substr(offset, len);
+	var term = ret.indexOf('\x00');
+	return ret.substr(0, term);
+};
+FIDO.Packet.prototype.setBin = function(offset, len, val) {
+	var i;
+	var str = '';
 
+	if (typeof(val) !== 'number')
+		throw('Invalid setBin value type');
+	for (i=0; i<len; i++) {
+		str += ascii(val & 0xff);
+		val >>= 8;
+	}
+	this.header = this.header.substr(0, offset)+str+this.header.substr(offset+len);
+};
+FIDO.Packet.prototype.getBin = function(offset, len) {
+	var ret = 0;
+	var i;
+
+	for (i=0; i<len; i++)
+		ret |= (ascii(this.header[offset+i]) << i);
+	return ret;
+};
+Object.defineProperties(FIDO.Packet.prototype, {
+	'origNode': {
+		get: function() { return this.getBin(0, 2); },
+		set: function(val) { return this.setBin(0, 2, val); }
+	},
+	'destNode': {
+		get: function() { return this.getBin(2, 2); },
+		set: function(val) { return this.setBin(2, 2, val); }
+	},
+	'year': {
+		get: function() {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return undefined;
+			return this.getBin(4, 2);
+		},
+		set: function(val) {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return;
+			return this.setBin(4, 2, val);
+		}
+	},
+	'month': {
+		get: function() {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return undefined;
+			return this.getBin(6, 2);
+		},
+		set: function(val) {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return;
+			return this.setBin(6, 2, val);
+		}
+	},
+	'day': {
+		get: function() {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return undefined;
+			return this.getBin(8, 2);
+		},
+		set: function(val) {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return;
+			return this.setBin(8, 2, val);
+		}
+	},
+	'hour': {
+		get: function() {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return undefined;
+			return this.getBin(10, 2);
+		},
+		set: function(val) {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return;
+			return this.setBin(10, 2, val);
+		}
+	},
+	'minute': {
+		get: function() {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return undefined;
+			return this.getBin(12, 2);
+		},
+		set: function(val) {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return;
+			return this.setBin(12, 2, val);
+		}
+	},
+	'second': {
+		get: function() {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return undefined;
+			return this.getBin(14, 2);
+		},
+		set: function(val) {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return;
+			return this.setBin(14, 2, val);
+		}
+	},
+	'baud': {
+		get: function() {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return undefined;
+			return this.getBin(16, 2);
+		},
+		set: function(val) {
+			if (this.type === FIDO.Packet.type.TWO_TWO)
+				return;
+			return this.setBin(16, 2, val);
+		}
+	},
+	'pktVer': {
+		get: function() { return this.getBin(18, 2); },
+		set: function(val) { return this.setBin(18, 2, val); }
+	},
+	'origNet': {
+		get: function() { return this.getBin(20, 2); },
+		set: function(val) { return this.setBin(20, 2, val); }
+	},
+	'destNet': {
+		get: function() { return this.getBin(22, 2); },
+		set: function(val) { return this.setBin(22, 2, val); }
+	},
+	'prodCode': {
+		get: function() {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO:
+				case FIDO.Packet.type.TWO_TWO:
+					return this.getBin(24, 1);
+				case FIDO.Packet.type.TWO_PLUS:
+					return this.getBin(24, 1) | (this.getBin(42, 1) << 8);
+			}
+		},
+		set: function(val) {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO:
+				case FIDO.Packet.type.TWO_TWO:
+					this.setBin(24, 1, val);
+					break;
+				case FIDO.Packet.type.TWO_PLUS:
+					this.setBin(24, 1, val & 0xff);
+					this.setBin(42, 1, val >> 8);
+					break;
+			}
+		},
+	},
+	'serialNo': {
+		get: function() { return this.getBin(25, 2); },
+		set: function(val) { return this.setBin(25, 2, val); }
+	},
+	'prodRevision': {
+		get: function() { return this.getBin(25, 2); },
+		set: function(val) { return this.setBin(25, 2, val); }
+	},
+	'prodMinorVersion': {
+		get: function() {
+			if (this.type === FIDO.Packet.type.TWO_PLUS)
+				return this.getBin(43, 1);
+			return undefined;
+		},
+		set: function(val) {
+			if (this.type === FIDO.Packet.type.TWO_PLUS)
+				this.setBin(43, 1, val);
+		}
+	},
+	'password': {
+		get: function() { return this.getStr(26, 8); },
+		set: function(val) { return this.setStr(26, 8, val); }
+	},
+	'origZone': {
+		get: function() {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO:
+				case FIDO.Packet.type.TWO_TWO:
+					return this.getBin(34, 2);
+				case FIDO.Packet.type.TWO_PLUS:
+					var zone = this.getBin(46, 2);
+					if (zone == 0) {
+						zone = this.getBin(34, 2);
+						this.setBin(46, 2, zone);
+					}
+					return zone;
+			}
+		},
+		set: function(val) {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO:
+				case FIDO.Packet.type.TWO_TWO:
+					this.setBin(34, 2, val);
+					break;
+				case FIDO.Packet.type.TWO_PLUS:
+					this.setBin(34, 2, val);
+					this.setBin(46, 2, val);
+					break;
+			}
+		},
+	},
+	'destZone': {
+		get: function() {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO:
+				case FIDO.Packet.type.TWO_TWO:
+					return this.getBin(36, 2);
+				case FIDO.Packet.type.TWO_PLUS:
+					var zone = this.getBin(48, 2);
+					if (zone == 0) {
+						zone = this.getBin(36, 2);
+						this.setBin(48, 2, zone);
+					}
+					return zone;
+			}
+		},
+		set: function(val) {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO:
+				case FIDO.Packet.type.TWO_TWO:
+					this.setBin(36, 2, val);
+					break;
+				case FIDO.Packet.type.TWO_PLUS:
+					this.setBin(36, 2, val);
+					this.setBin(48, 2, val);
+					break;
+			}
+		}
+	},
+	'origPoint': {
+		get: function() {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_TWO:
+					return this.getBin(4, 2);
+				case FIDO.Packet.type.TWO_PLUS:
+					return this.getBin(50, 2);
+			}
+			return undefined;
+		},
+		set: function(val) {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_TWO:
+					this.setBin(4, 2, val);
+					break;
+				case FIDO.Packet.type.TWO_PLUS:
+					this.setBin(50, 2, val);
+					break;
+			}
+		}
+	},
+	'destPoint': {
+		get: function() {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_TWO:
+					return this.getBin(6, 2);
+				case FIDO.Packet.type.TWO_PLUS:
+					return this.getBin(52, 2);
+			}
+			return undefined;
+		},
+		set: function(val) {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_TWO:
+					this.setBin(6, 2, val);
+					break;
+				case FIDO.Packet.type.TWO_PLUS:
+					this.setBin(52, 2, val);
+					break;
+			}
+		}
+	},
+	'origDomain': {
+		get: function() {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_TWO:
+					return this.getStr(38, 8);
+			}
+			return undefined;
+		},
+		set: function(val) {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_TWO:
+					this.setStr(38, 8, val);
+			}
+		}
+	},
+	'destDomain': {
+		get: function() {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_TWO:
+					return this.getStr(46, 8);
+			}
+			return undefined;
+		},
+		set: function(val) {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_TWO:
+					this.setStr(46, 8, val);
+			}
+		}
+	},
+	'prodData': {
+		get: function() {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_PLUS:
+				case FIDO.Packet.type.TWO_TWO:
+					return this.getBin(54, 4);
+			}
+			return undefined;
+		},
+		set: function(val) {
+			switch (this.type) {
+				case FIDO.Packet.type.TWO_TWO:
+				case FIDO.Packet.type.TWO_PLUS:
+					this.setBin(54, 2, val);
+					break;
+			}
+		}
+	},
+	'origAddr': {
+		get: function() {
+			return new FIDO.Addr(this.origNet, this.origNode, this.origZone, this.origPoint, this.origDomain);
+		},
+		set: function(val) {
+			var addr = new FIDO.Addr(val);
+			this.origNet = addr.net;
+			this.origNode = addr.node;
+			this.origZone = addr.zone;
+			this.origPoint = addr.point;
+			this.origDomain = addr.domain;
+		}
+	},
+	'destAddr': {
+		get: function() {
+			return new FIDO.Addr(this.destNet, this.destNode, this.destZone, this.destPoint, this.destDomain);
+		},
+		set: function(val) {
+			var addr = new FIDO.Addr(val);
+			this.destNet = addr.net;
+			this.destNode = addr.node;
+			this.destZone = addr.zone;
+			this.destPoint = addr.point;
+			this.destDomain = addr.domain;
+		}
+	},
+});
 FIDO.ReadDomainMap();
