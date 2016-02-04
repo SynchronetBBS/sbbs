@@ -366,7 +366,7 @@ BinkP.prototype.parseArgs = function(data)
  * parameter string send with the M_OK message... hopefully either "secure"
  * or "non-secure"
  */
-BinkP.prototype.connect = function(addr, password, auth_cb, port)
+BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 {
 	var pkt;
 	var i;
@@ -385,13 +385,15 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port)
 		this.require_md5 = false;
 	if (port === undefined)
 		port = 24554;
+	if (inet_host === undefined)
+		inet_host = addr.inet_host;
 
 	if (this.sock === undefined)
 		this.sock = new Socket(SOCK_STREAM, "binkp");
 
-	if(!this.sock.connect(addr.inet_host, port)) {
+	if(!this.sock.connect(inet_host, port)) {
 		this.sock = undefined;
-		log(LOG_INFO, "Connection to "+addr.inet_host+":"+port+" failed.");
+		log(LOG_INFO, "Connection to "+inet_host+":"+port+" failed.");
 		return false;
 	}
 

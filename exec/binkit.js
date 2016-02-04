@@ -488,6 +488,7 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
 	var port;
+	var host;
 	var f;
 	var success = false;
 	var src_addr;
@@ -506,6 +507,7 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 	if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
 		bp.cb_data.binkitpw = bp.cb_data.binkitcfg.node[addr].pass;
 		port = bp.cb_data.binkitcfg.node[addr].port;
+		host = bp.cb_data.binkitcfg.node[addr].host;
 		bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
 		bp.require_crypt = !(bp.cb_data.binkitcfg.node[addr].nocrypt);
 	}
@@ -576,7 +578,7 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 	});
 
 	// We won't add files until the auth finishes...
-	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port);
+	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port, host);
 
 	callout_done(bp, semaphores);
 }
