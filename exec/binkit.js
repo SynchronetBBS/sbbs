@@ -738,6 +738,8 @@ function run_outbound()
 		dirs.forEach(function(dir) {
 			var pnts;
 
+			if (dir.indexOf('.') === -1)
+				return;
 			if (file_getext(dir).search(/^\.[0-9a-f]+$/) == 0) {
 				if (file_isdir(dir)) {
 					addDir(dir);
