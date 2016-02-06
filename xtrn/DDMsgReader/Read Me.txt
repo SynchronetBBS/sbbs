@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.09
-                           Release date: 2016-01-15
+                                 Version 1.10
+                           Release date: 2016-??-??
 
                                      by
 
@@ -583,6 +583,31 @@ pauseAfterNewMsgScan                  Whether or not to pause (i.e., with a
                                       message scan.  Valid values are true
                                       and false.
 
+postOnSubBoardInsteadOfGoToNext       Whether or not to ask the user whether to
+                                      post on the sub-board in reader mode after
+                                      reading the last message instead of
+                                      prompting to go to the next sub-board.
+                                      This is like the stock Synchronet
+                                      behavior. Valid values are true and
+                                      false.  This defaults to false.
+
+areaChooserHdrFilenameBase            The filename to use (without the
+                                      extension) for a header to display above
+                                      the message area chooser list.  For
+                                      example, if areaChgHeader is specified,
+                                      then the reader will look for
+                                      areaChgHeader.ans if it exists, and if
+                                      not, the reader will look for
+                                      areaChgHeader.asc.  Additionally, you
+                                      can have multiple header files for
+                                      different terminal widths; fpr example,
+                                      areaChgHeader-80.ans for an 80-column
+                                      terminal, areaChgHeader-140.ans for a
+                                      140-column terminal, etc.
+
+areaChooserHdrMaxLines                The maximum number of lines to use from
+                                      the message area chooser header file.
+
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
 
@@ -792,6 +817,13 @@ enhReaderHelpLineHotkeyColor         Color to use for hotkeys in the hotkey
 enhReaderHelpLineParenColor          Color to use for ) characters in the
                                      hotkey help line displayed at the bottom
                                      of the scrollable message reader interface
+
+postOnSubBoard                       The text to use for asking the user whether
+                                     they want to post on a sub-board (for
+                                     instance, after reading the last message).
+                                     The two %s will be replaced with the
+                                     message group name and sub-board
+                                     description, respectively.
 
 newMsgScanText                       The first text displayed when doing a new
                                      message scan, before the sub-board/group/

@@ -5,6 +5,30 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.10     2016-??-??   Added a new configuration option,
+                      postOnSubBoardInsteadOfGoToNext, that affects what happens
+                      after the user reads the last message on a sub-board: If
+                      this is set to true, then the reader will prompt the user
+                      if they want to post on the sub-board, then exit (this
+                      is the stock Synchronet behavior).  If this is set to
+                      false, then the reader will prompt the user whether to go
+                      to the next sub-board after reading the last message on a
+                      sub-board.  Also, added the postOnSubBoard text
+                      configuration parameter for the theme filename, which
+                      specifies the text to use for prompting the user if they
+                      want to post on the sub-board after reading the last
+                      message.
+                      Added new configuration options areaChooserHdrFilenameBase
+                      and areaChooserHdrMaxLines.  These options specify the
+                      filename base for a header file to use for the message
+                      area chooser list and the maximum number of lines to use
+                      from the area chooser header file.  The filaname is
+                      without the extension - The reader will first look for an
+                      .ans version, then an .asc version.  Additionally,
+                      multiple header files can be used for different terminal
+                      widths - For example, chooserMsgHdr-80.ans for an
+                      80-column terminal, choosrMsgHdr-140.ans for a 140-column
+                      terminal, etc.
 1.09     2016-01-15   Updated to not center the message header lines
                       horizontally.  Now, it will display the header lines
                       starting on column 1.  This was done to fix a display
