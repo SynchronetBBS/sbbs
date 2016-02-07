@@ -583,13 +583,14 @@ pauseAfterNewMsgScan                  Whether or not to pause (i.e., with a
                                       message scan.  Valid values are true
                                       and false.
 
-postOnSubBoardInsteadOfGoToNext       Whether or not to ask the user whether to
-                                      post on the sub-board in reader mode after
-                                      reading the last message instead of
-                                      prompting to go to the next sub-board.
-                                      This is like the stock Synchronet
-                                      behavior. Valid values are true and
-                                      false.  This defaults to false.
+readingPostOnSubBoardInsteadOfGoToNext  For reading messages (not for a newscan,
+                                      etc.): Whether or not to ask the user
+                                      whether to post on the sub-board in reader
+                                      mode after reading the last message
+                                      instead of prompting to go to the next
+                                      sub-board.  This is like the stock
+                                      Synchronet behavior. Valid values are true
+                                      and false.  This defaults to false.
 
 areaChooserHdrFilenameBase            The filename to use (without the
                                       extension) for a header to display above

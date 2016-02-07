@@ -214,7 +214,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.10 Beta";
+var READER_VERSION = "1.10 Beta 2";
 var READER_DATE = "2016-02-06";
 
 // Keyboard key codes for displaying on the screen
@@ -677,6 +677,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	//  SEARCH_TO_USER_NEW_SCAN_ALL: New (unread) messages to the current user (all sub-board)
 	//  SEARCH_ALL_TO_USER_SCAN: All messages to the current user
 	this.searchType = SEARCH_NONE;
+	this.doingMsgScan = false; // Set to true in MessageAreaScan()
 
 	this.subBoardCode = bbs.cursub_code; // The message sub-board code
 	this.readingPersonalEmail = false;
@@ -700,15 +701,16 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	}
 
 	// This property controls whether or not the user will be prompted to
-	// continue listing messages after selecting a message to read.
+	// continue listing messages after selecting a message to read.  Only for
+	// regular reading, not for newscans etc.
 	this.promptToContinueListingMessages = false;
 	// Whether or not to prompt the user to confirm to read a message
 	this.promptToReadMessage = false;
-	// For enhanced reader mode: Whether or not to ask the user whether to post
-	// on the sub-board in reader mode after reading the last message instead of
-	// prompting to go to the next sub-board.  This is like the stock Synchronet
-	// behavior.
-	this.postOnSubBoardInsteadOfGoToNext = false;
+	// For enhanced reader mode (reading only, not for newscan, etc.): Whether or
+	// not to ask the user whether to post on the sub-board in reader mode after
+	// reading the last message instead of prompting to go to the next sub-board.
+	// This is like the stock Synchronet behavior.
+	this.readingPostOnSubBoardInsteadOfGoToNext = false;
 
 	// String lengths for the columns to write
 	// Fixed field widths: Message number, date, and time
@@ -1488,71 +1490,71 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoar
 //                 for personal email.
 function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode)
 {
-   // Convert the search mode string to an integer representing the search
-   // mode.  If we get back -1, that means the search mode string was invalid.
-   // If that's the case, simply list messages.  Otherwise, do the search.
-   this.searchType = searchTypeStrToVal(pSearchModeStr);
-   if (this.searchType == SEARCH_NONE) // No search; search mode string was invalid
-   {
-      // Clear the search information and read/list messages.
-      this.ClearSearchData();
-      this.ReadOrListSubBoard(pSubBoardCode);
-   }
-   else
-   {
-      // The search mode string was valid, so go ahead and search.
-      console.print("\1n");
-      console.crlf();
-      var subCode = (typeof(pSubBoardCode) == "string" ? pSubBoardCode : this.subBoardCode);
-      if (subCode == "mail")
+	// Convert the search mode string to an integer representing the search
+	// mode.  If we get back -1, that means the search mode string was invalid.
+	// If that's the case, simply list messages.  Otherwise, do the search.
+	this.searchType = searchTypeStrToVal(pSearchModeStr);
+	if (this.searchType == SEARCH_NONE) // No search; search mode string was invalid
+	{
+		// Clear the search information and read/list messages.
+		this.ClearSearchData();
+		this.ReadOrListSubBoard(pSubBoardCode);
+	}
+	else
+	{
+		// The search mode string was valid, so go ahead and search.
+		console.print("\1n");
+		console.crlf();
+		var subCode = (typeof(pSubBoardCode) == "string" ? pSubBoardCode : this.subBoardCode);
+		if (subCode == "mail")
 			console.print("\1n" + this.text.searchingPersonalMailText);
-      else
+		else
 			console.print("\1n" + this.text.searchingSubBoardAbovePromptText.replace("%s", subBoardGrpAndName(bbs.cursub_code)) + "\1n");
-      console.crlf();
-      // Output the prompt text to the user (for modes where a prompt is needed)
-      switch (this.searchType)
-      {
-         case SEARCH_KEYWORD:
-            console.print("\1n" + this.text.searchTextPromptText);
-            break;
-         case SEARCH_FROM_NAME:
-            console.print("\1n" + this.text.fromNamePromptText);
-            break;
-         case SEARCH_TO_NAME_CUR_MSG_AREA:
-            console.print("\1n" + this.text.toNamePromptText);
-            break;
-         case SEARCH_TO_USER_CUR_MSG_AREA:
-            // Note: No prompt needed for this - Will search for the user's name/handle
-            console.line_counter = 0; // To prevent a pause before the message list comes up
-            break;
-         default:
-				break;
-      }
-      //var promptUserForText = this.SearchTypePopulatesSearchResults();
-      var promptUserForText = this.SearchTypeRequiresSearchText();
-      // Get the search text from the user
-      if (promptUserForText)
-         this.searchString = console.getstr(512, K_UPPER);
-      // If the user was prompted for search text but no search text was entered,
-      // then show an abort message and don't do anything.  Otherwise, go ahead
-      // and list/read messages.
-      if (promptUserForText && (this.searchString.length == 0))
-      {
-         this.ClearSearchData();
-         console.print("\1n" + this.text.abortedText);
-         console.crlf();
-         console.pause();
-         return;
-      }
-      else
-      {
+		console.crlf();
+		// Output the prompt text to the user (for modes where a prompt is needed)
+		switch (this.searchType)
+		{
+		case SEARCH_KEYWORD:
+			console.print("\1n" + this.text.searchTextPromptText);
+			break;
+		case SEARCH_FROM_NAME:
+			console.print("\1n" + this.text.fromNamePromptText);
+			break;
+		case SEARCH_TO_NAME_CUR_MSG_AREA:
+			console.print("\1n" + this.text.toNamePromptText);
+			break;
+		case SEARCH_TO_USER_CUR_MSG_AREA:
+			// Note: No prompt needed for this - Will search for the user's name/handle
+			console.line_counter = 0; // To prevent a pause before the message list comes up
+			break;
+		default:
+			break;
+		}
+		//var promptUserForText = this.SearchTypePopulatesSearchResults();
+		var promptUserForText = this.SearchTypeRequiresSearchText();
+		// Get the search text from the user
+		if (promptUserForText)
+			this.searchString = console.getstr(512, K_UPPER);
+		// If the user was prompted for search text but no search text was entered,
+		// then show an abort message and don't do anything.  Otherwise, go ahead
+		// and list/read messages.
+		if (promptUserForText && (this.searchString.length == 0))
+		{
+			this.ClearSearchData();
+			console.print("\1n" + this.text.abortedText);
+			console.crlf();
+			console.pause();
+			return;
+		}
+		else
+		{
 			// List/read messages
-         this.ReadOrListSubBoard(pSubBoardCode);
-         // Clear the search data so that subsequent listing or reading sessions
-         // don't repeat the same search
-         this.ClearSearchData();
-      }
-   }
+			this.ReadOrListSubBoard(pSubBoardCode);
+			// Clear the search data so that subsequent listing or reading sessions
+			// don't repeat the same search
+			this.ClearSearchData();
+		}
+	}
 }
 
 // This function clears the search data from the object.
@@ -1985,6 +1987,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		this.msgbase.close();
 
 	// Perform the message scan
+	this.doingMsgScan = true;
 	var continueNewScan = true;
 	var userAborted = false;
 	if (scanScopeChar == "A") // All sub-board scan
@@ -2336,6 +2339,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		this.msgbase.close();
 	this.msgbase = new MsgBase(this.subBoardCode);
 	this.doingMultiSubBoardScan = false;
+	this.doingMsgScan = false;
 
 	if (this.pauseAfterNewMsgScan)
 	{
@@ -5036,8 +5040,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						else
 						{
 							// If configured to allow the user to post in the sub-board
-							// instead of go on to the next message area, then do so.
-							if (this.postOnSubBoardInsteadOfGoToNext)
+							// instead of going to the next message area and we're not
+							// scanning, then do so.
+							if (this.readingPostOnSubBoardInsteadOfGoToNext && !this.doingMsgScan)
 							{
 								console.print("\1n");
 								console.crlf();
@@ -5635,8 +5640,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 						console.print("\1n");
 						console.crlf();
 						// If configured to allow the user to post in the sub-board
-						// instead of go on to the next message area, then do so.
-						if (this.postOnSubBoardInsteadOfGoToNext)
+						// instead of going to the next message area and we're not
+						// scanning, then do so.
+						if (this.readingPostOnSubBoardInsteadOfGoToNext && !this.doingMsgScan)
 						{
 							// Ask the user if they want to post on the sub-board.
 							// If they say yes, then do so before exiting.
@@ -7223,8 +7229,8 @@ function DigDistMsgReader_ReadConfigFile()
 				}
 				else if (settingUpper == "PAUSEAFTERNEWMSGSCAN")
 					this.pauseAfterNewMsgScan = (valueUpper == "TRUE");
-				else if (settingUpper == "POSTONSUBBOARDINSTEADOFGOTONEXT")
-					this.postOnSubBoardInsteadOfGoToNext = (valueUpper == "TRUE");
+				else if (settingUpper == "READINGPOSTONSUBBOARDINSTEADOFGOTONEXT")
+					this.readingPostOnSubBoardInsteadOfGoToNext = (valueUpper == "TRUE");
 				else if (settingUpper == "AREACHOOSERHDRFILENAMEBASE")
 					this.areaChooserHdrFilenameBase = value;
 				else if (settingUpper == "AREACHOOSERHDRMAXLINES")

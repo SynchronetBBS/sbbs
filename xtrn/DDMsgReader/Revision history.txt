@@ -6,8 +6,9 @@ Revision History (change log)
 Version  Date         Description
 -------  ----         -----------
 1.10     2016-??-??   Added a new configuration option,
-                      postOnSubBoardInsteadOfGoToNext, that affects what happens
-                      after the user reads the last message on a sub-board: If
+                      readingPostOnSubBoardInsteadOfGoToNext, that affects what
+                      happens after the user reads the last message on a
+                      sub-board (for normal reading, not for newscans etc.): If
                       this is set to true, then the reader will prompt the user
                       if they want to post on the sub-board, then exit (this
                       is the stock Synchronet behavior).  If this is set to
