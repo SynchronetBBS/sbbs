@@ -214,7 +214,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.10 Beta 3";
+var READER_VERSION = "1.10 Beta 4";
 var READER_DATE = "2016-02-07";
 
 // Keyboard key codes for displaying on the screen
@@ -9723,7 +9723,8 @@ function DigDistMsgReader_SelectMsgArea_Lightbar()
 		}
 
 		// Get a key from the user (upper-case) and take action based upon it.
-		userInput = console.getkey(K_UPPER | K_NOCRLF);
+		//userInput = console.getkey(K_UPPER | K_NOCRLF);
+		userInput = getKeyWithESCChars(K_UPPER | K_NOCRLF);
 		switch (userInput)
 		{
 			case KEY_UP: // Move up one message group in the list
@@ -9816,6 +9817,7 @@ function DigDistMsgReader_SelectMsgArea_Lightbar()
 					                            false, true);
 				}
 				break;
+			case KEY_PAGE_DOWN: // Go to the next page
 			case 'N': // Go to the next page
 				var nextPageTopIndex = topMsgGrpIndex + numItemsPerPage;
 				if (nextPageTopIndex < msg_area.grp_list.length)
@@ -9831,6 +9833,7 @@ function DigDistMsgReader_SelectMsgArea_Lightbar()
 					selectedGrpIndex = topMsgGrpIndex;
 				}
 				break;
+			case KEY_PAGE_UP: // Go to the previous page
 			case 'P': // Go to the previous page
 				var prevPageTopIndex = topMsgGrpIndex - numItemsPerPage;
 				if (prevPageTopIndex >= 0)
@@ -9878,7 +9881,8 @@ function DigDistMsgReader_SelectMsgArea_Lightbar()
 				console.pause();
 				// Refresh the screen
 				this.WriteChgMsgAreaKeysHelpLine();
-				console.gotoxy(1, 1);
+				this.DisplayAreaChgHdr(1);
+				console.gotoxy(1, 1+this.areaChangeHdrLines.length);
 				this.WriteGrpListHdrLine(numPages, pageNum);
 				this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow,
 				                            false, true);
@@ -10300,11 +10304,14 @@ function DigDistMsgReader_SelectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 				this.ShowChooseMsgAreaHelpScreen(true, true);
 				console.pause();
 				// Refresh the screen
-				console.gotoxy(1, 1);
+				this.DisplayAreaChgHdr(1);
+				//if (this.areaChangeHdrLines.length > 0)
+				//	console.crlf();
+				console.gotoxy(1, 1+this.areaChangeHdrLines.length);
 				this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
 				console.cleartoeol("\1n");
 				this.WriteChgMsgAreaKeysHelpLine();
-				console.gotoxy(1, 2);
+				console.gotoxy(1, 2+this.areaChangeHdrLines.length);
 				printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
 				this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
 				break;
