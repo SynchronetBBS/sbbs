@@ -214,8 +214,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.10 Beta 2";
-var READER_DATE = "2016-02-06";
+var READER_VERSION = "1.10 Beta 3";
+var READER_DATE = "2016-02-07";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1037,27 +1037,11 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// name will start with 'enhMsgHeader', and there can be multiple versions for
 	// different terminal widths (i.e., msgHeader_80.ans for an 80-column console
 	// and msgHeader_132 for a 132-column console).
-	this.enhMsgHeaderLines = new Array();
-	var enhHsgHdrFileExists = true;
-	var enhMsgHdrFilenameBase = "enhMsgHeader";
-	var enhMsgHdrFilenameBaseFullPath = gStartupPath + enhMsgHdrFilenameBase;
-	// See if there is a header file that is made for the user's terminal
-	// width (msgHeader-<width>.ans/asc).  If not, then just go with
-	// msgHeader.ans/asc.
-	var enhMsgHdrFilename = "";
-	if (file_exists(enhMsgHdrFilenameBaseFullPath + "-" + console.screen_columns + ".ans"))
-		enhMsgHdrFilename = enhMsgHdrFilenameBaseFullPath + "-" + console.screen_columns + ".ans";
-	else if (file_exists(enhMsgHdrFilenameBaseFullPath + "-" + console.screen_columns + ".asc"))
-		enhMsgHdrFilename = enhMsgHdrFilenameBaseFullPath + "-" + console.screen_columns + ".asc";
-	else if (file_exists(enhMsgHdrFilenameBaseFullPath + ".ans"))
-		enhMsgHdrFilename = enhMsgHdrFilenameBaseFullPath + ".ans";
-	else if (file_exists(enhMsgHdrFilenameBaseFullPath + ".asc"))
-		enhMsgHdrFilename = enhMsgHdrFilenameBaseFullPath + ".asc";
-	else
+	this.enhMsgHeaderLines = loadTextFileIntoArray("enhMsgHeader", 10);
+	// If the header file didn't exist, then populate the enhanced reader header
+	// array with default lines.
+	if (this.enhMsgHeaderLines.length == 0)
 	{
-		// The enhanced reader header file doesn't exist, so provide some default
-		// header lines.
-		enhHsgHdrFileExists = false;
 		// Group name: 20% of console width
 		// Sub-board name: 34% of console width
 		var msgGrpNameLen = Math.floor(console.screen_columns * 0.2);
@@ -1121,63 +1105,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		hdrLine7 += "\1c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h"
 		         + HORIZONTAL_SINGLE + BOTTOM_T_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine7);
-	}
-	if (enhHsgHdrFileExists)
-	{
-		// If the header file is ANSI, then convert it to Synchronet attribute
-		// codes and read that file instead.  This is done so that this script can
-		// accurately get the file line lengths using console.strlen().
-		var syncConvertedHdrFilename = enhMsgHdrFilenameBaseFullPath + "_converted.asc";
-		if (!file_exists(syncConvertedHdrFilename))
-		{
-			var dotIdx = enhMsgHdrFilename.lastIndexOf(".");
-			if (dotIdx > -1)
-			{
-				// If header file is ANSI, then convert it to Synchronet attribute
-				// format and save it as an .asc file.  Otherwise, just use the
-				// header file without conversion since it's already ASCII or
-				// Synchronet attribute code format.
-				var isANSI = (enhMsgHdrFilename.substr(dotIdx+1).toUpperCase() == "ANS");
-				if (isANSI)
-				{
-					var filenameBase = enhMsgHdrFilename.substr(0, dotIdx);
-					var cmdLine = system.exec_dir + "ans2asc \"" + enhMsgHdrFilename + "\" \""
-					            + syncConvertedHdrFilename + "\"";
-					// Note: Both system.exec(cmdLine) and
-					// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
-					// execute the command, but system.exec() seems noticeably faster.
-					system.exec(cmdLine);
-				}
-				else
-					syncConvertedHdrFilename = enhMsgHdrFilename;
-			}
-		}
-		// Read the header file into this.enhMsgHeaderLines
-		var hdrFile = new File(syncConvertedHdrFilename);
-		if (hdrFile.open("r"))
-		{
-			var fileLine = null;
-			while (!hdrFile.eof)
-			{
-				// Read the next line from the header file.
-				fileLine = hdrFile.readln(2048);
-				// fileLine should be a string, but I've seen some cases
-				// where it isn't, so check its type.
-				if (typeof(fileLine) != "string")
-					continue;
-
-				// Make sure the line isn't longer than the user's terminal
-				//if (fileLine.length > console.screen_columns)
-				//   fileLine = fileLine.substr(0, console.screen_columns);
-				this.enhMsgHeaderLines.push(fileLine);
-
-				// If the header now has the maximum number of lines, then
-				// stop reading the header file.
-				if (this.enhMsgHeaderLines.length == 10)
-					break;
-			}
-			hdrFile.close();
-		}
 	}
 	// Save the enhanced reader header width.  This will be the length of the longest
 	// line in the header.
@@ -1349,81 +1276,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// areaChangeHdrLines is an array of text lines to use as a header to display
 	// above the message area changer lists.
-	this.areaChangeHdrLines = new Array();
-	// See if there is a header file that is made for the user's terminal
-	// width (areaChgHeader-<width>.ans/asc).  If not, then just go with
-	// msgHeader.ans/asc.
-	var areaChgHdrFileExists = true;
-	var areaChgHdrFilenameBaseFullPath = gStartupPath + this.areaChooserHdrFilenameBase;
-	var areaChgHdrFilename = "";
-	if (file_exists(areaChgHdrFilenameBaseFullPath + "-" + console.screen_columns + ".ans"))
-		areaChgHdrFilename = areaChgHdrFilenameBaseFullPath + "-" + console.screen_columns + ".ans";
-	else if (file_exists(areaChgHdrFilenameBaseFullPath + "-" + console.screen_columns + ".asc"))
-		areaChgHdrFilename = areaChgHdrFilenameBaseFullPath + "-" + console.screen_columns + ".asc";
-	else if (file_exists(areaChgHdrFilenameBaseFullPath + ".ans"))
-		areaChgHdrFilename = areaChgHdrFilenameBaseFullPath + ".ans";
-	else if (file_exists(areaChgHdrFilenameBaseFullPath + ".asc"))
-		areaChgHdrFilename = areaChgHdrFilenameBaseFullPath + ".asc";
-	else
-		areaChgHdrFileExists = false;
-	if (areaChgHdrFileExists)
-	{
-		// If the header file is ANSI, then convert it to Synchronet attribute
-		// codes and read that file instead.  This is done so that this script can
-		// accurately get the file line lengths using console.strlen().
-		var syncConvertedHdrFilename = areaChgHdrFilenameBaseFullPath + "_converted.asc";
-		if (!file_exists(syncConvertedHdrFilename))
-		{
-			var dotIdx = areaChgHdrFilename.lastIndexOf(".");
-			if (dotIdx > -1)
-			{
-				// If header file is ANSI, then convert it to Synchronet attribute
-				// format and save it as an .asc file.  Otherwise, just use the
-				// header file without conversion since it's already ASCII or
-				// Synchronet attribute code format.
-				var isANSI = (areaChgHdrFilename.substr(dotIdx+1).toUpperCase() == "ANS");
-				if (isANSI)
-				{
-					var filenameBase = areaChgHdrFilename.substr(0, dotIdx);
-					var cmdLine = system.exec_dir + "ans2asc \"" + areaChgHdrFilename + "\" \""
-					            + syncConvertedHdrFilename + "\"";
-					// Note: Both system.exec(cmdLine) and
-					// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
-					// execute the command, but system.exec() seems noticeably faster.
-					system.exec(cmdLine);
-				}
-				else
-					syncConvertedHdrFilename = areaChgHdrFilename;
-			}
-		}
-		// Read the header file into this.enhMsgHeaderLines
-		var hdrFile = new File(syncConvertedHdrFilename);
-		if (hdrFile.open("r"))
-		{
-			var fileLine = null;
-			//while (!hdrFile.eof && (this.areaChangeHdrLines.length <= this.areaChooserHdrMaxLines))
-			while (!hdrFile.eof)
-			{
-				// Read the next line from the header file.
-				fileLine = hdrFile.readln(2048);
-				// fileLine should be a string, but I've seen some cases
-				// where it isn't, so check its type.
-				if (typeof(fileLine) != "string")
-					continue;
-
-				// Make sure the line isn't longer than the user's terminal
-				//if (fileLine.length > console.screen_columns)
-				//   fileLine = fileLine.substr(0, console.screen_columns);
-				this.areaChangeHdrLines.push(fileLine);
-
-				// If the header array now has the maximum number of lines, then
-				// stop reading the header file.
-				if (this.areaChangeHdrLines.length == this.areaChooserHdrMaxLines)
-					break;
-			}
-			hdrFile.close();
-		}
-	}
+	this.areaChangeHdrLines = loadTextFileIntoArray(this.areaChooserHdrFilenameBase, this.areaChooserHdrMaxLines);
 }
 
 // For the DigDistMsgReader class: Sets the subBoardCode property and also
@@ -16448,6 +16301,99 @@ function getAllowedKeyWithMode(pAllowedKeys, pMode)
 	}
 
 	return userInput;
+}
+
+// Loads a text file (an .ans or .asc) into an array.  This will first look for
+// an .ans version, and if exists, convert to Synchronet colors before loading
+// it.  If an .ans doesn't exist, this will look for an .asc version.
+//
+// Parameters:
+//  pFilenameBase: The filename without the extension
+//  pMaxNumLines: Optional - The maximum number of lines to load from the text file
+//
+// Return value: An array containing the lines from the text file
+function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
+{
+	if (typeof(pFilenameBase) != "string")
+		return new Array();
+
+	var maxNumLines = (typeof(pMaxNumLines) == "number" ? pMaxNumLines : -1);
+
+	var txtFileLines = new Array();
+	// See if there is a header file that is made for the user's terminal
+	// width (areaChgHeader-<width>.ans/asc).  If not, then just go with
+	// msgHeader.ans/asc.
+	var txtFileExists = true;
+	var txtFilenameFullPath = gStartupPath + pFilenameBase;
+	var txtFileFilename = "";
+	if (file_exists(txtFilenameFullPath + "-" + console.screen_columns + ".ans"))
+		txtFileFilename = txtFilenameFullPath + "-" + console.screen_columns + ".ans";
+	else if (file_exists(txtFilenameFullPath + "-" + console.screen_columns + ".asc"))
+		txtFileFilename = txtFilenameFullPath + "-" + console.screen_columns + ".asc";
+	else if (file_exists(txtFilenameFullPath + ".ans"))
+		txtFileFilename = txtFilenameFullPath + ".ans";
+	else if (file_exists(txtFilenameFullPath + ".asc"))
+		txtFileFilename = txtFilenameFullPath + ".asc";
+	else
+		txtFileExists = false;
+	if (txtFileExists)
+	{
+		// If the header file is ANSI, then convert it to Synchronet attribute
+		// codes and read that file instead.  This is done so that this script can
+		// accurately get the file line lengths using console.strlen().
+		var syncConvertedHdrFilename = txtFilenameFullPath + "_converted.asc";
+		if (!file_exists(syncConvertedHdrFilename))
+		{
+			var dotIdx = txtFileFilename.lastIndexOf(".");
+			if (dotIdx > -1)
+			{
+				// If header file is ANSI, then convert it to Synchronet attribute
+				// format and save it as an .asc file.  Otherwise, just use the
+				// header file without conversion since it's already ASCII or
+				// Synchronet attribute code format.
+				var isANSI = (txtFileFilename.substr(dotIdx+1).toUpperCase() == "ANS");
+				if (isANSI)
+				{
+					var filenameBase = txtFileFilename.substr(0, dotIdx);
+					var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
+					            + syncConvertedHdrFilename + "\"";
+					// Note: Both system.exec(cmdLine) and
+					// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+					// execute the command, but system.exec() seems noticeably faster.
+					system.exec(cmdLine);
+				}
+				else
+					syncConvertedHdrFilename = txtFileFilename;
+			}
+		}
+		// Read the header file into txtFileLines
+		var hdrFile = new File(syncConvertedHdrFilename);
+		if (hdrFile.open("r"))
+		{
+			var fileLine = null;
+			while (!hdrFile.eof)
+			{
+				// Read the next line from the header file.
+				fileLine = hdrFile.readln(2048);
+				// fileLine should be a string, but I've seen some cases
+				// where it isn't, so check its type.
+				if (typeof(fileLine) != "string")
+					continue;
+
+				// Make sure the line isn't longer than the user's terminal
+				//if (fileLine.length > console.screen_columns)
+				//   fileLine = fileLine.substr(0, console.screen_columns);
+				txtFileLines.push(fileLine);
+
+				// If the header array now has the maximum number of lines, then
+				// stop reading the header file.
+				if (txtFileLines.length == maxNumLines)
+					break;
+			}
+			hdrFile.close();
+		}
+	}
+	return txtFileLines;
 }
 
 /////////////////////////////////////////////////////////////////////////
