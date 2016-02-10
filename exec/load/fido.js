@@ -388,9 +388,36 @@ var FIDO = {
 		}
 		return ret;
 	},
+	PackedMessage:function(packet, offset)
+	{
+		this.packet = packet;
+		this.offset = offset;
+
+		this.topt = packet.packet_txt.search(/\r\n*\x01TOPT:/);
+		if (this.topt > this.offset+this.length)
+			this.topt = -1;
+
+		this.fmpt = packet.packet_txt.search(/\r\n*\x01FMPT:/);
+		if (this.fmpt > this.offset+this.length)
+			this.fmpt = -1;
+
+		this.intl = packet.packet_txt.search(/\r\n*\x01INTL:/);
+		if (this.intl > this.offset+this.length)
+			this.intl = -1;
+
+		this.domain = packet.packet_txt.search(/\r\n*\x01DOMAIN /);
+		if (this.domain > this.offset+this.length)
+			this.domain = -1;
+
+		this.fromUserOffset = this.offset + 34 + this.packet.getStr(this.offset+34, 36).length + 1;
+		this.subjectOffset = this.fromUserOffset + this.packet.getStr(this.fromUserOffset, 36).length + 1;
+		this.textOffset = this.subjectOffset + this.packet.getStr(this.subjectOffset, 36).length + 1;
+		this.length = packet.packet_txt.indexOf('\x00', this.textOffset) - offset;
+	},
 	Packet:function(init)
 	{
-		var type = FIDO.Packet.type.TWO;
+		this.type = FIDO.Packet.type.TWO;
+		this.messages = [];
 
 		if (init === undefined)
 			init = FIDO.Packet.type.TWO_PLUS;
@@ -398,13 +425,13 @@ var FIDO = {
 		if (init === undefined)
 			init = FIDO.Packet.type.TWO_PLUS;
 		if (typeof init === 'number') {
-			type = init;
-			this.header = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+
+			this.type = init;
+			this.packet_txt = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+
 						'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+
 						'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+
-						'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00';
+						'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00';
 			this.setBin(18, 2, 2);
-			switch (type) {
+			switch (this.type) {
 				case FIDO.Packet.type.TWO_PLUS:
 					this.setBin(44, 2, 1);
 					this.setBin(40, 2, 0x0100);
@@ -415,7 +442,7 @@ var FIDO = {
 			}
 		}
 		else {
-			this.header = init.substr(0, 58);
+			this.packet_txt = init;
 			if (this.baud === 2)
 				this.type = FIDO.Packet.type.TWO_TWO;
 			else {
@@ -423,8 +450,19 @@ var FIDO = {
 						this.getBin(45, 1) == this.getBin(40, 1))
 					this.type = FIDO.Packet.type.TWO_PLUS;
 			}
+			for (var offset = 58; ascii(this.packet_txt[offset]) !== 0; offset += this.messages[this.messages.length-1].length + 1) {
+				this.messages.push(new FIDO.PackedMessage(this, offset));
+			}
 		}
 	}
+	/*
+	 * Suggested kludge lines:
+	 * INTL: (FTS-0001)
+	 * TOPT: (FTS-0001)
+	 * FMPT: (FTS-0001)
+	 * TZUTC: (FTS-4008)
+	 * PID: (FTS-
+	 */
 };
 Object.defineProperties(FIDO.Addr.prototype, {
 	'str': {
@@ -455,7 +493,7 @@ Object.defineProperties(FIDO.Addr.prototype, {
 		}
 	}
 });
-FIDO.Addr.prototype.type = {
+FIDO.Packet.type = {
 	TWO:0,		// FTS-0001
 	TWO_PLUS:1,	// FSC-0039, FSC-0048
 	TWO_TWO:2,	// FSC-0045
@@ -542,10 +580,10 @@ FIDO.Packet.prototype.setStr = function(offset, len, val) {
 	var str = val;
 	while (str.length < len)
 		str += '\x00';
-	this.header = this.header.substr(0, offset)+str+this.header.substr(offset+len);
+	this.packet_txt = this.packet_txt.substr(0, offset)+str+this.packet_txt.substr(offset+len);
 };
 FIDO.Packet.prototype.getStr = function(offset, len) {
-	var ret = this.header.substr(offset, len);
+	var ret = this.packet_txt.substr(offset, len);
 	var term = ret.indexOf('\x00');
 	return ret.substr(0, term);
 };
@@ -559,15 +597,27 @@ FIDO.Packet.prototype.setBin = function(offset, len, val) {
 		str += ascii(val & 0xff);
 		val >>= 8;
 	}
-	this.header = this.header.substr(0, offset)+str+this.header.substr(offset+len);
+	this.packet_txt = this.packet_txt.substr(0, offset)+str+this.packet_txt.substr(offset+len);
 };
 FIDO.Packet.prototype.getBin = function(offset, len) {
 	var ret = 0;
 	var i;
 
 	for (i=0; i<len; i++)
-		ret |= (ascii(this.header[offset+i]) << i);
+		ret |= (ascii(this.packet_txt[offset+i]) << (i*8));
 	return ret;
+};
+FIDO.Packet.prototype.adjust_offsets = function(offset, adjust) {
+	var i;
+
+	for (i=0; i<this.messages.length; i++) {
+		if (this.messages[i].offset >= offset) {
+			this.messages[i].offset += offset;
+			this.messages[i].fromUserOffset += adjust;
+			this.messages[i].subjectOffset += adjust;
+			this.messages[i].textOffset += adjust;
+		}
+	}
 };
 Object.defineProperties(FIDO.Packet.prototype, {
 	'origNode': {
@@ -820,32 +870,24 @@ Object.defineProperties(FIDO.Packet.prototype, {
 	},
 	'origDomain': {
 		get: function() {
-			switch (this.type) {
-				case FIDO.Packet.type.TWO_TWO:
-					return this.getStr(38, 8);
-			}
+			if (this.type == FIDO.Packet.type.TWO_TWO)
+				return this.getStr(38, 8);
 			return undefined;
 		},
 		set: function(val) {
-			switch (this.type) {
-				case FIDO.Packet.type.TWO_TWO:
-					this.setStr(38, 8, val);
-			}
+			if (this.type == FIDO.Packet.type.TWO_TWO)
+				this.setStr(38, 8, val);
 		}
 	},
 	'destDomain': {
 		get: function() {
-			switch (this.type) {
-				case FIDO.Packet.type.TWO_TWO:
+			if (this.type == FIDO.Packet.type.TWO_TWO)
 					return this.getStr(46, 8);
-			}
 			return undefined;
 		},
 		set: function(val) {
-			switch (this.type) {
-				case FIDO.Packet.type.TWO_TWO:
-					this.setStr(46, 8, val);
-			}
+			if (this.type == FIDO.Packet.type.TWO_TWO)
+				this.setStr(46, 8, val);
 		}
 	},
 	'prodData': {
@@ -893,4 +935,81 @@ Object.defineProperties(FIDO.Packet.prototype, {
 		}
 	},
 });
+Object.defineProperties(FIDO.PackedMessage.prototype, {
+	'origNode': {
+		get: function() { return this.packet.getBin(this.offset+2, 2); },
+		set: function(val) { return this.packet.setBin(this.offset+2, 2, val); }
+	},
+	'destNode': {
+		get: function() { return this.packet.getBin(this.offset+4, 2); },
+		set: function(val) { return this.packet.setBin(this.offset+4, 2, val); }
+	},
+	'origNet': {
+		get: function() { return this.packet.getBin(this.offset+6, 2); },
+		set: function(val) { return this.packet.setBin(this.offset+6, 2, val); }
+	},
+	'destNet': {
+		get: function() { return this.packet.getBin(this.offset+8, 2); },
+		set: function(val) { return this.packet.setBin(this.offset+8, 2, val); }
+	},
+	'Attribute': {
+		get: function() { return this.packet.getBin(this.offset+10, 2); },
+		set: function(val) { return this.packet.setBin(this.offset+10, 2, val); }
+	},
+	'cost': {
+		get: function() { return this.packet.getBin(this.offset+12, 2); },
+		set: function(val) { return this.packet.setBin(this.offset+12, 2, val); }
+	},
+	'DateTime': {
+		get: function() { return this.packet.getStr(this.offset+14, 20); },
+		set: function(val) { return this.packet.setStr(this.offset+14, 20, val); }
+	},
+	'toUserName': {
+		get: function() { return this.packet.getStr(this.offset+34, 36); },
+		set: function(val) {
+			var adjust = val.length - this.toUserName.length;
+
+			this.packet.packet_txt = this.packet.packet_txt.substr(0, this.offset+34)+val+'\x00'+this.packet.packet_txt.substr(this.fromUserOffset);
+			this.length += adjust;
+			this.fromUserOffset += adjust;
+			this.subjectOffset += adjust;
+			this.testOffset += adjust;
+			this.packet.adjust_offsets(this.offset+this.length, adjust);
+		}
+	},
+	'fromUserName': {
+		get: function() { return this.packet.getStr(this.fromUserOffset, 36); },
+		set: function(val) {
+			var adjust = val.length - this.fromUserName.length;
+
+			this.packet.packet_txt = this.packet.packet_txt.substr(0, this.fromUserOffset)+val+'\x00'+this.packet.packet_txt.substr(this.subjectOffset);
+			this.length += adjust;
+			this.subjectOffset += adjust;
+			this.testOffset += adjust;
+			this.packet.adjust_offsets(this.offset+this.length, adjust);
+		}
+	},
+	'subject': {
+		get: function() { return this.packet.getStr(this.subjectOffset, 72); },
+		set: function(val) {
+			var adjust = val.length - this.subject.length;
+
+			this.packet.packet_txt = this.packet.packet_txt.substr(0, this.subjectOffset)+val+'\x00'+this.packet.packet_txt.substr(this.textOffset);
+			this.length += adjust;
+			this.testOffset += adjust;
+			this.packet.adjust_offsets(this.offset+this.length, adjust);
+		}
+	},
+	'text': {
+		get: function() { return this.packet.packet_txt.substr(this.textOffset, this.length-(this.textOffset-this.offset)); },
+		set: function(val) {
+			var adjust = val.length - this.subject.length;
+
+			this.packet.packet_txt = this.packet.packet_txt.substr(0, this.textOffset)+val+'\x00'+this.packet.packet_txt.substr(this.offset+this.length);
+			this.length += adjust;
+			this.packet.adjust_offsets(this.offset+this.length, adjust);
+		}
+	}
+});
+
 FIDO.ReadDomainMap();
