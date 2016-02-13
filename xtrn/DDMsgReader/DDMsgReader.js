@@ -214,8 +214,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.10 Beta 4";
-var READER_DATE = "2016-02-07";
+var READER_VERSION = "1.10 Beta 5";
+var READER_DATE = "2016-02-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -16345,25 +16345,19 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 		txtFileExists = false;
 	if (txtFileExists)
 	{
-		// If the header file is ANSI, then convert it to Synchronet attribute
-		// codes and read that file instead.  This is done so that this script can
-		// accurately get the file line lengths using console.strlen().
-		var syncConvertedHdrFilename = txtFilenameFullPath + "_converted.asc";
-		if (!file_exists(syncConvertedHdrFilename))
+		var syncConvertedHdrFilename = txtFileFilename;
+		// If the user's console doesn't support ANSI and the header file is ANSI,
+		// then convert it to Synchronet attribute codes and read that file instead.
+		if (!console.term_supports(USER_ANSI) && (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS"))
 		{
-			var dotIdx = txtFileFilename.lastIndexOf(".");
-			if (dotIdx > -1)
+			syncConvertedHdrFilename = txtFilenameFullPath + "_converted.asc";
+			if (!file_exists(syncConvertedHdrFilename))
 			{
-				// If header file is ANSI, then convert it to Synchronet attribute
-				// format and save it as an .asc file.  Otherwise, just use the
-				// header file without conversion since it's already ASCII or
-				// Synchronet attribute code format.
-				var isANSI = (txtFileFilename.substr(dotIdx+1).toUpperCase() == "ANS");
-				if (isANSI)
+				if (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS")
 				{
 					var filenameBase = txtFileFilename.substr(0, dotIdx);
 					var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
-					            + syncConvertedHdrFilename + "\"";
+								+ syncConvertedHdrFilename + "\"";
 					// Note: Both system.exec(cmdLine) and
 					// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
 					// execute the command, but system.exec() seems noticeably faster.
@@ -16373,6 +16367,27 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 					syncConvertedHdrFilename = txtFileFilename;
 			}
 		}
+		/*
+		// If the header file is ANSI, then convert it to Synchronet attribute
+		// codes and read that file instead.  This is done so that this script can
+		// accurately get the file line lengths using console.strlen().
+		var syncConvertedHdrFilename = txtFilenameFullPath + "_converted.asc";
+		if (!file_exists(syncConvertedHdrFilename))
+		{
+			if (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS")
+			{
+				var filenameBase = txtFileFilename.substr(0, dotIdx);
+				var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
+				            + syncConvertedHdrFilename + "\"";
+				// Note: Both system.exec(cmdLine) and
+				// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+				// execute the command, but system.exec() seems noticeably faster.
+				system.exec(cmdLine);
+			}
+			else
+				syncConvertedHdrFilename = txtFileFilename;
+		}
+		*/
 		// Read the header file into txtFileLines
 		var hdrFile = new File(syncConvertedHdrFilename);
 		if (hdrFile.open("r"))
@@ -16401,6 +16416,22 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 		}
 	}
 	return txtFileLines;
+}
+
+// Returns the portion (if any) of a string after the period.
+//
+// Parameters:
+//  pStr: The string to extract from
+//
+// Return value: The portion of the string after the dot, if there is one.  If
+//               not, then an empty string will be returned.
+function getStrAfterPeriod(pStr)
+{
+	var strAfterPeriod = "";
+	var dotIdx = pStr.lastIndexOf(".");
+	if (dotIdx > -1)
+		strAfterPeriod = pStr.substr(dotIdx+1);
+	return strAfterPeriod;
 }
 
 /////////////////////////////////////////////////////////////////////////
