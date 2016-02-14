@@ -8863,15 +8863,45 @@ function DigDistMsgReader_DisplayAreaChgHdr(pStartScreenRow)
 	// we can move the cursor and display the header where specified.
 	if (console.term_supports(USER_ANSI) && (typeof(pStartScreenRow) == "number"))
 	{
-		// Display the header starting on the first column and the given screen row.
-		var screenX = 1;
-		var screenY = pStartScreenRow;
-		for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+		// Note: When using a Frame object, some ANSIs didn't look right.
+		if (false)
+		//if (gFrameJSAvailable)
 		{
-			console.gotoxy(screenX, screenY++);
-			//console.print(this.areaChangeHdrLines[hdrFileIdx]);
-			console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
-			console.cleartoeol("\1n");
+			// TODO: Refactor this code?  Might be good to not have to re-create the
+			// frame object every time.
+			var txtFileFilename = gStartupPath + this.areaChooserHdrFilenameBase;
+			if (file_exists(txtFileFilename + "-" + console.screen_columns + ".ans"))
+				txtFileFilename = txtFileFilename + "-" + console.screen_columns + ".ans";
+			else if (file_exists(txtFileFilename + "-" + console.screen_columns + ".asc"))
+				txtFileFilename = txtFileFilename + "-" + console.screen_columns + ".asc";
+			else if (file_exists(txtFileFilename + ".ans"))
+				txtFileFilename = txtFileFilename + ".ans";
+			else if (file_exists(txtFileFilename + ".asc"))
+				txtFileFilename = txtFileFilename + ".asc";
+			var displayFrame = new Frame(1, // x: Horizontal coordinate of top left
+			                             pStartScreenRow, // y: Vertical coordinate of top left
+			                             console.screen_columns, // Width
+			                             this.areaChooserHdrMaxLines, // Height
+			                             BG_BLACK);
+			displayFrame.v_scroll = false;
+			displayFrame.h_scroll = false;
+			displayFrame.scrollbars = false;
+			// Load the message file into the Frame object and draw the frame
+			displayFrame.load(txtFileFilename);
+			displayFrame.draw();
+		}
+		else
+		{
+			// Display the header starting on the first column and the given screen row.
+			var screenX = 1;
+			var screenY = pStartScreenRow;
+			for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+			{
+				console.gotoxy(screenX, screenY++);
+				console.print(this.areaChangeHdrLines[hdrFileIdx]);
+				//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
+				//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+			}
 		}
 	}
 	else
@@ -8880,9 +8910,9 @@ function DigDistMsgReader_DisplayAreaChgHdr(pStartScreenRow)
 		// number - So just output the header lines.
 		for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
 		{
-			//console.print(this.areaChangeHdrLines[hdrFileIdx]);
-			console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
-			console.cleartoeol("\1n");
+			console.print(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
 			console.crlf();
 		}
 	}
