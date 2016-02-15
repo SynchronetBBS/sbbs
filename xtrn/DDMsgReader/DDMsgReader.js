@@ -3961,8 +3961,19 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 	}
 	else
 	{
-		sDate = strftime("%Y-%m-%d", pMsgHeader.when_written_time);
-		sTime = strftime("%H:%M:%S", pMsgHeader.when_written_time);
+		//sDate = strftime("%Y-%m-%d", pMsgHeader.when_written_time);
+		//sTime = strftime("%H:%M:%S", pMsgHeader.when_written_time);
+		var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(pMsgHeader);
+		if (msgWrittenLocalTime != -1)
+		{
+			sDate = strftime("%Y-%m-%d", msgWrittenLocalTime);
+			sTime = strftime("%H:%M:%S", msgWrittenLocalTime);
+		}
+		else
+		{
+			sDate = strftime("%Y-%m-%d", pMsgHeader.when_written_time);
+			sTime = strftime("%H:%M:%S", pMsgHeader.when_written_time);
+		}
 	}
 
 	var msgNum = (typeof(pMsgNum) == "number" ? pMsgNum : pMsgHeader.offset+1);
@@ -10686,7 +10697,14 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 					if (this.msgAreaList_lastImportedMsg_showImportTime)
 						subBoardInfo.newestPostDate = msgHeader.when_imported_time
 					else
-						subBoardInfo.newestPostDate = msgHeader.when_written_time;
+					{
+						//subBoardInfo.newestPostDate = msgHeader.when_written_time;
+						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+						if (msgWrittenLocalTime != -1)
+							subBoardInfo.newestPostDate = msgWrittenTimeToLocalBBSTime(msgHeader);
+						else
+							subBoardInfo.newestPostDate = msgHeader.when_written_time;
+					}
 				}
 			}
 			msgBase.close();
@@ -10776,8 +10794,19 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 					}
 					else
 					{
-						newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-						newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+						//newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+						//newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+						if (msgWrittenLocalTime != -1)
+						{
+							newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalTime);
+							newestDate.time = strftime("%H:%M:%S", msgWrittenLocalTime);
+						}
+						else
+						{
+							newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+							newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+						}
 					}
 				}
 				else
@@ -11055,8 +11084,19 @@ function DigDistMsgReader_WriteMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 			}
 			else
 			{
-				newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-				newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+				//newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+				//newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+				var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+				if (msgWrittenLocalTime != -1)
+				{
+					newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalTime);
+					newestDate.time = strftime("%H:%M:%S", msgWrittenLocalTime);
+				}
+				else
+				{
+					newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+					newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+				}
 			}
 		}
 		else
@@ -16478,6 +16518,26 @@ function getStrAfterPeriod(pStr)
 	if (dotIdx > -1)
 		strAfterPeriod = pStr.substr(dotIdx+1);
 	return strAfterPeriod;
+}
+
+// Adjusts a message's when-written time to the BBS's local time.
+//
+// Parameters:
+//  pMsgHdr: A message header object
+//
+// Return value: The message's when_written_time adjusted to the BBS's local time.
+//               If the message header doesn't have a when_written_time or
+//               when_written_zone property, then this function will return -1.
+function msgWrittenTimeToLocalBBSTime(pMsgHdr)
+{
+	if (!pMsgHdr.hasOwnProperty("when_written_time") || !pMsgHdr.hasOwnProperty("when_written_zone"))
+		return -1;
+
+	var timeZoneDiffMinutes = msgHeader.when_imported_zone_offset - msgHeader.when_written_zone_offset;
+	//var timeZoneDiffMinutes = pMsgHdr.when_written_zone - system.timezone;
+	var timeZoneDiffSeconds = timeZoneDiffMinutes * 60;
+	var msgWrittenTimeAdjusted = pMsgHdr.when_written_time + timeZoneDiffSeconds;
+	return msgWrittenTimeAdjusted;
 }
 
 /////////////////////////////////////////////////////////////////////////
