@@ -1,186 +1,388 @@
-load("sbbsdefs.js");
-load("frame.js");
-load("tree.js");
-load("scrollbar.js");
-load("funclib.js");
+load('sbbsdefs.js');
+load('frame.js');
+load('tree.js');
+load('scrollbar.js');
+load('funclib.js');
 
 js.branch_limit = 0;
+js.time_limit = 0;
 
-var frame,
-	titleFrame,
-	listFrame,
-	footerFrame,
-	tree,
-	ini,
-	msgBase,
-	treeScroll;
+var settings, frame, tree, treeScroll, viewer;
 
-/*	drawFrameBorder(frame, color, gradient)
-	Draws a border of color 'color' around Frame object 'frame'
-	If 'gradient' is true, 'color' must be an array of colors to draw in order
-	See sbbsdefs.js for valid colors	*/
-var drawFrameBorder = function(frame, color) {
+Frame.prototype.drawBorder = function(color, title) {
+	this.pushxy();
 	var theColor = color;
-	if(color instanceof Array)
-		var sectionLength = Math.round(frame.width / color.length);
-	for(var y = 1; y <= frame.height; y++) {
-		for(var x = 1; x <= frame.width; x++) {
-			if(x > 1 && x < frame.width && y > 1 && y < frame.height)
-				continue;
-			var msg = false;
-			frame.gotoxy(x, y);
-			if(y == 1 && x == 1)
+	if (Array.isArray(color)) {
+		var sectionLength = Math.round(this.width / color.length);
+	}
+	for (var y = 1; y <= this.height; y++) {
+		for (var x = 1; x <= this.width; x++) {
+			if (x > 1 && x < this.width && y > 1 && y < this.height) continue;
+			var msg;
+			this.gotoxy(x, y);
+			if (y === 1 && x === 1) {
 				msg = ascii(218);
-			else if(y == 1 && x == frame.width)
+			} else if (y === 1 && x === this.width) {
 				msg = ascii(191);
-			else if(y == frame.height && x == 1)
+			} else if (y === this.height && x === 1) {
 				msg = ascii(192);
-			else if(y == frame.height && x == frame.width)
+			} else if (y === this.height && x === this.width) {
 				msg = ascii(217);
-			else if(x == 1 || x == frame.width)
+			} else if (x === 1 || x === this.width) {
 				msg = ascii(179);
-			else
+			} else {
 				msg = ascii(196);
-			if(color instanceof Array) {
-				if(x == 1)
-					theColor = color[0];
-				else if(x % sectionLength == 0 && x < frame.width)
-					theColor = color[x / sectionLength];
-				else if(x == frame.width)
-					theColor = color[color.length - 1];
 			}
-			frame.putmsg(msg, theColor);
+			if (Array.isArray(color)) {
+				if (x === 1) {
+					theColor = color[0];
+				} else if (x % sectionLength === 0 && x < this.width) {
+					theColor = color[x / sectionLength];
+				} else if (x === this.width) {
+					theColor = color[color.length - 1];
+				}
+			}
+			this.putmsg(msg, theColor);
 		}
 	}
+	if (typeof title === 'object') {
+		this.gotoxy(title.x, title.y);
+		this.attr = title.attr;
+		this.putmsg(ascii(180) + title.text + ascii(195));
+	}
+	this.popxy();
 }
 
-var showMsg = function(msg) {
-	try {
-		var readerFrame = new Frame(2, 5, console.screen_columns - 2, console.screen_rows - 8, BG_BLACK|WHITE, frame);
-		readerFrame.open();
+var Viewer = function (item) {
+
+	var frames = {
+		top : null,
+		title : null,
+		content : null
+	};
+
+	frames.top = new Frame(
+		frame.x,
+		frame.y + 3,
+		frame.width,
+		frame.height - 6,
+		WHITE,
+		frame
+	);
+	frames.top.drawBorder(settings.colors.border);
+
+	frames.title = new Frame(
+		frames.top.x + 1,
+		frames.top.y + 1,
+		frames.top.width - 2,
+		1,
+		settings.colors.title,
+		frames.top
+	);
+
+	frames.content = new Frame(
+		frames.top.x + 1,
+		frames.title.y + frames.title.height + 1,
+		frames.top.width - 2,
+		frames.top.height - frames.title.height - 3,
+		settings.colors.text,
+		frames.top
+	);
+
+	if (typeof item === 'number') {
+
+		var msgBase = new MsgBase(settings.messageBase);
 		msgBase.open();
-		var h = msgBase.get_msg_header(msg);
-		var b = msgBase.get_msg_body(msg);
+		var header = msgBase.get_msg_header(item);
+		var body = msgBase.get_msg_body(item);
 		msgBase.close();
-		readerFrame.putmsg(
+
+		frames.title.putmsg(
 			format(
-				"%-52s%s\r\n\r\n",
-				h.subject.substr(0, console.screen_columns - 30),
+				'%-' + (frame.width - 29) + 's%s',
+				header.subject.substr(0, frame.width - 30),
+				system.timestr(header.when_written_time)
+			),
+			settings.colors.title
+		);
+		frames.content.putmsg(word_wrap(body, frames.content.width));
+
+	} else {
+
+		frames.title.putmsg(
+			format(
+				'%-' + (frame.width - 29) + 's%s',
+				item.substr(0, frame.width - 30),
+				system.timestr(file_date(settings.files[item]))
+			),
+			settings.colors.title
+		);
+
+		frames.content.x = frames.top.x;
+		frames.content.width = frames.top.width;
+
+		try {
+			frames.content.load(settings.files[item]);
+		} catch (err) {
+			log(LOG_ERR, err);
+		}
+
+		frames.content.width = frames.top.width - 2;
+		frames.content.x = frames.top.x + 1;
+
+	}
+
+	frames.content.scrollTo(0, 0);
+	frames.content.h_scroll = true;
+
+	var scrollbar = new ScrollBar(frames.content);
+	frames.top.open();
+
+	this.getcmd = function (cmd) {
+
+		var ret = true;
+		switch (cmd.toUpperCase()) {
+			case '\x1B':
+			case 'Q':
+				ret = false;
+				frames.top.close();
+				break;
+			case KEY_UP:
+				if (frames.content.data_height > frames.content.height &&
+					frames.content.offset.y >= 1
+				) {
+					frames.content.scroll(0, -1);
+				}
+				break;
+			case KEY_DOWN:
+				if (frames.content.data_height > frames.content.height &&
+					frames.content.data_height - frames.content.offset.y >
+						frames.content.height
+				) {
+					frames.content.scroll(0, 1);
+				}
+				break;
+			case KEY_LEFT:
+				if (frames.content.data_width > frames.content.width &&
+					frames.content.offset.x >= 1
+				) {
+					frames.content.scroll(-1, 0);
+				}
+				break;
+			case KEY_RIGHT:
+				if (frames.content.data_width > frames.content.width &&
+					frames.content.data_width - frames.content.offset.x >
+						frames.content.width
+				) {
+					frames.content.scroll(1, 0);
+				}
+				break;
+			default:
+				break;
+		}
+
+		return ret;
+
+	}
+
+	this.cycle = function () {
+		scrollbar.cycle();
+	}
+
+}
+
+function loadSettings() {
+
+	var f = new File(js.exec_dir + 'bullshit.ini');
+	if (!f.open('r')) throw 'Failed to open bullshit.ini.';
+	var settings = f.iniGetObject();
+	settings.colors = f.iniGetObject('colors');
+	settings.files = f.iniGetObject('files');
+	f.close();
+
+	Object.keys(settings.colors).forEach(
+		function (k) {
+			settings.colors[k] = settings.colors[k].toUpperCase().split(',');
+			if (settings.colors[k].length > 1) {
+				settings.colors[k].forEach(
+					function (e, i, a) { a[i] = getColor(e); }
+				);
+			} else {
+				settings.colors[k] = getColor(settings.colors[k][0]);
+			}
+		}
+	);
+
+	return settings;
+
+}
+
+function loadList() {
+
+	Object.keys(settings.files).forEach(
+		function (key) {
+			if (!file_exists(settings.files[key])) return;
+			tree.addItem(
+				format (
+					'%-' + (frame.width - 29) + 's%s',
+					key, system.timestr(file_date(settings.files[key]))
+				),
+				key
+			);
+		}
+	);
+
+	var msgBase = new MsgBase(settings.messageBase);
+	msgBase.open();
+	var shown = 0;
+	for (var m = msgBase.last_msg; m >= msgBase.first_msg; m = m - 1) {
+		try {
+			var h = msgBase.get_msg_header(m);
+		} catch (err) {
+			continue;
+		}
+		if (h === null) continue;
+		tree.addItem(
+			format(
+				'%-' + (frame.width - 29) + 's%s',
+				h.subject.substr(0, frame.width - 30),
 				system.timestr(h.when_written_time)
 			),
-			getColor(ini.titleColor)
+			m
 		);
-		readerFrame.putmsg(word_wrap(b, console.screen_columns - 2), getColor(ini.textColor));
-		readerFrame.scrollTo(0, 0);
-		var scroller = new ScrollBar(readerFrame, { autohide : true });
-		scroller.open();
-		scroller.cycle();
-	} catch(err) {
-		log(LOG_ERR, err);
-		return false;
+		shown++;
+		if (settings.maxMessages > 0 && shown >= settings.maxMessages) break;
 	}
-	while(!js.terminated) {
-		if(frame.cycle()) {
-			scroller.cycle();
-			console.gotoxy(console.screen_columns, console.screen_rows);
-		}
-		var userInput = console.inkey(K_NONE, 5);
-		if(userInput.toUpperCase() == "Q" || ascii(userInput) == 27)
-			break;
-		else if(userInput == KEY_UP && readerFrame.data_height > readerFrame.height)
-			readerFrame.scroll(0, -1);
-		else if(userInput == KEY_DOWN && readerFrame.data_height > readerFrame.height)
-			readerFrame.scroll(0, 1);
-	}
-	readerFrame.close();
-	readerFrame.delete();
-	return true;
+	msgBase.close();
+
+	tree.open();
+
 }
 
-var init = function() {
-	try {
-		var f = new File(js.exec_dir + "bullshit.ini");
-		f.open("r");
-		ini = f.iniGetObject();
-		f.close();
-		ini.borderColor = ini.borderColor.toUpperCase().split(",");
-		if(ini.borderColor.length > 1) {
-			for(var b = 0; b < ini.borderColor.length; b++)
-				ini.borderColor[b] = getColor(ini.borderColor[b]);
+function initDisplay() {
+
+	frame = new Frame(
+		1,
+		1,
+		console.screen_columns,
+		console.screen_rows,
+		WHITE
+	);
+
+	var titleFrame = new Frame(
+		frame.x,
+		frame.y,
+		frame.width,
+		3,
+		WHITE,
+		frame
+	);
+
+	var footerFrame = new Frame(
+		frame.x,
+		frame.y + frame.height - 3,
+		frame.width,
+		3,
+		WHITE,
+		frame
+	);
+
+	var treeFrame = new Frame(
+		frame.x,
+		titleFrame.y + titleFrame.height,
+		frame.width,
+		frame.height - titleFrame.height - footerFrame.height,
+		WHITE,
+		frame
+	);
+
+	var treeSubFrame = new Frame(
+		treeFrame.x + 1,
+		treeFrame.y + 2,
+		treeFrame.width - 2,
+		treeFrame.height - 3,
+		WHITE,
+		treeFrame
+	);
+
+	titleFrame.drawBorder(settings.colors.border);
+	treeFrame.drawBorder(settings.colors.border);
+	footerFrame.drawBorder(settings.colors.border);
+
+	titleFrame.gotoxy(3, 2);
+	titleFrame.putmsg('Bulletins', settings.colors.title);
+	titleFrame.gotoxy(frame.width - 25, 2);
+	titleFrame.putmsg('bullshit v3 by echicken', settings.colors.heading);
+
+	treeFrame.gotoxy(3, 2);
+	treeFrame.putmsg('Title', settings.colors.heading);
+	treeFrame.gotoxy(treeFrame.x + treeFrame.width - 27, 2);
+	treeFrame.putmsg('Date', settings.colors.heading);
+
+	footerFrame.gotoxy(3, 2);
+	footerFrame.putmsg(
+		'Q to quit, Up/Down arrows to scroll', settings.colors.footer
+	);
+
+	tree = new Tree(treeSubFrame);
+	tree.colors.lfg = settings.colors.lightbarForeground;
+	tree.colors.lbg = settings.colors.lightbarBackground;
+	tree.colors.fg = settings.colors.listForeground;
+
+	treeScroll = new ScrollBar(tree);
+
+	frame.open();
+
+}
+
+function init() {
+	settings = loadSettings();
+	initDisplay();
+	loadList();
+}
+
+function main() {
+
+	while (!js.terminated) {
+
+		var userInput = console.inkey(K_NONE, 5);
+
+		if (typeof viewer !== 'undefined') {
+
+			var ret = viewer.getcmd(userInput);
+			viewer.cycle();
+			if (!ret) viewer = undefined;
+
 		} else {
-			ini.borderColor = getColor(ini.borderColor[0]);
-		}
-		ini.lightbarForeground = getColor(ini.lightbarForeground);
-		ini.lightbarBackground = getColor(ini.lightbarBackground);
-	
-		frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK|WHITE);
-		titleFrame = new Frame(1, 1, console.screen_columns, 3, BG_BLACK|WHITE, frame);
-		listFrame = new Frame(1, 4, console.screen_columns, console.screen_rows - 6, BG_BLACK|WHITE, frame);
-		listTreeFrame = new Frame(2, 6, console.screen_columns - 2, console.screen_rows - 9, BG_BLACK|WHITE, listFrame);
-		footerFrame = new Frame(1, console.screen_rows - 2, console.screen_columns, 3, BG_BLACK|WHITE, frame);
-		drawFrameBorder(titleFrame, ini.borderColor);
-		drawFrameBorder(listFrame, ini.borderColor);
-		drawFrameBorder(footerFrame, ini.borderColor);
-		tree = new Tree(listTreeFrame);
-		tree.colors.lfg = ini.lightbarForeground;
-		tree.colors.lbg = ini.lightbarBackground;
 
-		var titleLen = console.screen_columns - 29;
-		msgBase = new MsgBase(ini.messageBase);
-		msgBase.open();
-		for(var m = msgBase.last_msg; m >= msgBase.first_msg; m = m - 1) {
-			try {
-				var h = msgBase.get_msg_header(m);
-				if(h === null)
-					throw "Header is null";
-				tree.addItem(
-					format(
-						"%-" + titleLen + "s%s",
-						h.subject.substr(0, console.screen_columns - 29),
-						system.timestr(h.when_written_time)
-					),
-					showMsg,
-					m
-				);
-			} catch(err) {
-				continue;
+			if (userInput.toUpperCase() === 'Q' || userInput == '\x1B') {
+				break;
+			} else {
+				var ret = tree.getcmd(userInput);
+				treeScroll.cycle();
+				if (typeof ret === 'number' || typeof ret === 'string') {
+					viewer = new Viewer(ret);
+				}
 			}
+
 		}
-		msgBase.close();
 
-		titleFrame.gotoxy(3, 2);
-		titleFrame.putmsg("Bulletins", getColor(ini.titleColor));
-		titleFrame.gotoxy(console.screen_columns - 25, 2);
-		titleFrame.putmsg("bullshit v2 by echicken", DARKGRAY);
-		listFrame.gotoxy(3, 2);
-		listFrame.putmsg(format("%-" + titleLen + "s%s", "Title", "Date"), getColor(ini.headingColor));
-		footerFrame.gotoxy(3, 2);
-		footerFrame.putmsg("[ESC] or Q to quit, Up/Down arrows to scroll", getColor(ini.footerColor));
-		treeScroll = new ScrollBar(tree);
-		frame.open();
-		tree.open();
-	} catch(err) {
-		log(LOG_ERR, err);
-		return false;	
-	}
-	return true;
-}
-
-var main = function() {
-	while(!js.terminated) {
-		var userInput = console.inkey(K_NONE, 5);
-		if(userInput.toUpperCase() == "Q" || ascii(userInput) == 27)
-			break;
-		tree.getcmd(userInput);
-		if(frame.cycle()) {
-			treeScroll.cycle();
+		if (frame.cycle()) {
 			console.gotoxy(console.screen_columns, console.screen_rows);
 		}
+
 	}
+
 }
 
-if(init()) {
-	main();
+function cleanUp() {
 	frame.close();
 }
-exit();
+
+try {
+	init();
+	main();
+	cleanUp();
+} catch (err) {
+	log(LOG_ERR, err);
+}
