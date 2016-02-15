@@ -52,6 +52,7 @@
  *                                  to true.
  * 2016-02-12 Eric Oulashin 1.10Beta Started working on adding the ability to display
  *                                  a header ANSI/ASCII file above the list.
+ * 2016-02-15 Eric Oulashin 1.10    Releasing this version
 */
 
 /* Command-line arguments:
@@ -80,7 +81,7 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.10 Beta 3";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.10";
 var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-02-15";
 
 // Keyboard input key codes

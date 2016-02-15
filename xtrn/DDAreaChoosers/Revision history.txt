@@ -5,12 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.10     2016-??-??   Added the ability to display a custom header file above
+1.10     2016-02-15   Added the ability to display a custom header file above
                       the area lists in the area choosers.  Added the
                       configuration options areaChooserHdrFilenameBase and
                       areaChooserHdrMaxLines to specify the filename (without
                       the extension) and maximum number of lines from the header
-                      file to use.
+                      file to use.  Also, when showing the message written
+                      dates, the dates of all messages will be adjusted to the
+                      BBS's local time zone for consistency.
 1.09     2016-01-17   Added a command-line parameter to let the user choose a
                       message sub-board only within their current message
                       group, or file directory only within their current file

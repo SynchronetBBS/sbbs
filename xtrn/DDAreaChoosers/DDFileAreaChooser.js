@@ -52,6 +52,9 @@
  *                                  line argument now specifies whether or not to
  *                                  allow choosing the library, and it defaults
  *                                  to true.
+ * 2016-02-14 Eric Oulashin 1.10Beta Started updating to allow a header ANSI/ASC
+ *                                  to be displayed above the area list
+ * 2016-02-15 Eric Oulashin 1.10    Releasing this version
  */
 
 /* Command-line arguments:
@@ -80,8 +83,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.10 Beta 1";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-02-14";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.10";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-02-15";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
