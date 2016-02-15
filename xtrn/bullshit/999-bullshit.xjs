@@ -1,0 +1,13 @@
+<!--Bulletins-->
+
+<?xjs
+	load('../xtrn/bullshit/bullshit.ssjs');
+?>
+
+<div class="well well-sm">
+	<h4>Bulletins</h4>
+</div>
+
+<?xjs 
+	bullshit('bullshit', 5);
+?>
