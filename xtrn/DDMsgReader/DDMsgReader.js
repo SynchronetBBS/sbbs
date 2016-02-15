@@ -214,8 +214,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.10 Beta 5";
-var READER_DATE = "2016-02-12";
+var READER_VERSION = "1.10 Beta 6";
+var READER_DATE = "2016-02-14";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -8852,7 +8852,10 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 //  pStartScreenRow: The row on the screen at which to start displaying the
 //                   header information.  Will be used if the user's terminal
 //                   supports ANSI.
-function DigDistMsgReader_DisplayAreaChgHdr(pStartScreenRow)
+//  pClearRowsFirst: Optional boolean - Whether or not to clear the rows first.
+//                   Defaults to true.  Only valid if the user's terminal supports
+//                   ANSI.
+function DigDistMsgReader_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 {
 	if (this.areaChangeHdrLines == null)
 		return;
@@ -8892,9 +8895,22 @@ function DigDistMsgReader_DisplayAreaChgHdr(pStartScreenRow)
 		}
 		else
 		{
-			// Display the header starting on the first column and the given screen row.
+			// If specified to clear the rows first, then do so.
 			var screenX = 1;
 			var screenY = pStartScreenRow;
+			var clearRowsFirst = (typeof(pClearRowsFirst) == "boolean" ? pClearRowsFirst : true);
+			if (clearRowsFirst)
+			{
+				console.print("\1n");
+				for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+				{
+					console.gotoxy(screenX, screenY++);
+					console.cleartoeol();
+				}
+			}
+			// Display the header starting on the first column and the given screen row.
+			screenX = 1;
+			screenY = pStartScreenRow;
 			for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
 			{
 				console.gotoxy(screenX, screenY++);
