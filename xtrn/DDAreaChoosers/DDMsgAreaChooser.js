@@ -80,8 +80,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.10 Beta 2";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-02-14";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.10 Beta 3";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-02-15";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
@@ -1231,173 +1231,188 @@ function DDMsgAreaChooser_listMsgGrps_Traditional()
 //             "description": Sort by description
 function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIndex, pSortType)
 {
-   // Default to the current message group & sub-board if pGrpIndex
-   // and pMarkIndex aren't specified.
-   var grpIndex = bbs.curgrp;
-   if ((pGrpIndex != null) && (typeof(pGrpIndex) == "number"))
-      grpIndex = pGrpIndex;
-   var highlightIndex = bbs.cursub;
-   if ((pMarkIndex != null) && (typeof(pMarkIndex) == "number"))
-      highlightIndex = pMarkIndex;
+	// Default to the current message group & sub-board if pGrpIndex
+	// and pMarkIndex aren't specified.
+	var grpIndex = bbs.curgrp;
+	if ((pGrpIndex != null) && (typeof(pGrpIndex) == "number"))
+		grpIndex = pGrpIndex;
+	var highlightIndex = bbs.cursub;
+	if ((pMarkIndex != null) && (typeof(pMarkIndex) == "number"))
+		highlightIndex = pMarkIndex;
 
-   // Make sure grpIndex and highlightIndex are valid (they might not be for
-   // brand-new users).
-   if ((grpIndex == null) || (typeof(grpIndex) == "undefined"))
-      grpIndex = 0;
-   if ((highlightIndex == null) || (typeof(highlightIndex) == "undefined"))
-      highlightIndex = 0;
+	// Make sure grpIndex and highlightIndex are valid (they might not be for
+	// brand-new users).
+	if ((grpIndex == null) || (typeof(grpIndex) == "undefined"))
+		grpIndex = 0;
+	if ((highlightIndex == null) || (typeof(highlightIndex) == "undefined"))
+		highlightIndex = 0;
 
-   // Ensure that the sub-board printf information is created for
-   // this message group.
-   this.BuildSubBoardPrintfInfoForGrp(grpIndex);
+	// Ensure that the sub-board printf information is created for
+	// this message group.
+	this.BuildSubBoardPrintfInfoForGrp(grpIndex);
 
-   // Print the headers
-   this.WriteSubBrdListHdr1Line(grpIndex);
-   console.crlf();
-   printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
-   console.print("\1n");
+	// Print the headers
+	this.WriteSubBrdListHdr1Line(grpIndex);
+	console.crlf();
+	printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+	console.print("\1n");
 
-   // List each sub-board in the message group.
-   var subBoardArray = null;       // For sorting, if desired
-   var newestDate = new Object(); // For storing the date of the newest post in a sub-board
-   var msgBase = null;    // For opening the sub-boards with a MsgBase object
-   var msgHeader = null;  // For getting the date & time of the newest post in a sub-board
-   var subBoardNum = 0;   // 0-based sub-board number (because the array index is the number as a str)
-   // If a sort type is specified, then add the sub-board information to
-   // subBoardArray so that it can be sorted.
-   if ((typeof(pSortType) == "string") && (pSortType != "") && (pSortType != "none"))
-   {
-      subBoardArray = new Array();
-      var subBoardInfo = null;
-      for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
-      {
-         // Open the current sub-board with the msgBase object.
-         msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-         if (msgBase.open())
-         {
-            subBoardInfo = new MsgSubBoardInfo();
-            subBoardInfo.subBoardNum = +(arrSubBoardNum);
-            subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
-            subBoardInfo.numPosts = msgBase.total_msgs;
+	// List each sub-board in the message group.
+	var subBoardArray = null;       // For sorting, if desired
+	var newestDate = new Object(); // For storing the date of the newest post in a sub-board
+	var msgBase = null;    // For opening the sub-boards with a MsgBase object
+	var msgHeader = null;  // For getting the date & time of the newest post in a sub-board
+	var subBoardNum = 0;   // 0-based sub-board number (because the array index is the number as a str)
+	// If a sort type is specified, then add the sub-board information to
+	// subBoardArray so that it can be sorted.
+	if ((typeof(pSortType) == "string") && (pSortType != "") && (pSortType != "none"))
+	{
+		subBoardArray = new Array();
+		var subBoardInfo = null;
+		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
+		{
+			// Open the current sub-board with the msgBase object.
+			msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+			if (msgBase.open())
+			{
+				subBoardInfo = new MsgSubBoardInfo();
+				subBoardInfo.subBoardNum = +(arrSubBoardNum);
+				subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
+				subBoardInfo.numPosts = msgBase.total_msgs;
 
-            // Get the date & time when the last message was imported.
-            if (msgBase.total_msgs > 0)
-            {
-               msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-               if (this.showImportDates)
-                  subBoardInfo.newestPostDate = msgHeader.when_imported_time
-               else
-                  subBoardInfo.newestPostDate = msgHeader.when_written_time;
-            }
-         }
-         msgBase.close();
-         subBoardArray.push(subBoardInfo);
-      }
-      // Free some memory?
-      delete msgBase;
+				// Get the date & time when the last message was imported.
+				if (msgBase.total_msgs > 0)
+				{
+					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					if (this.showImportDates)
+						subBoardInfo.newestPostDate = msgHeader.when_imported_time
+					else
+					{
+						var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+						if (msgWrittenLocalBBSTime != -1)
+							subBoardInfo.newestPostDate = msgWrittenLocalBBSTime;
+						else
+							subBoardInfo.newestPostDate = msgHeader.when_written_time;
+					}
+				}
+			}
+			msgBase.close();
+			subBoardArray.push(subBoardInfo);
+		}
+		// Free some memory?
+		delete msgBase;
 
-      // Sort sub-board list.
-      if (pSortType == "dateAsc")
-      {
-         subBoardArray.sort(function(pA, pB)
-         {
-            // Return -1, 0, or 1, depending on whether pA's date comes
-            // before, is equal to, or comes after pB's date.
-            var returnValue = 0;
-            if (pA.newestPostDate < pB.newestPostDate)
-               returnValue = -1;
-            else if (pA.newestPostDate > pB.newestPostDate)
-               returnValue = 1;
-            return returnValue;
-         });
-      }
-      else if (pSortType == "dateDesc")
-      {
-         subBoardArray.sort(function(pA, pB)
-         {
-            // Return -1, 0, or 1, depending on whether pA's date comes
-            // after, is equal to, or comes before pB's date.
-            var returnValue = 0;
-            if (pA.newestPostDate > pB.newestPostDate)
-               returnValue = -1;
-            else if (pA.newestPostDate < pB.newestPostDate)
-               returnValue = 1;
-            return returnValue;
-         });
-      }
-      else if (pSortType == "description")
-      {
-         // Binary safe string comparison  
-         // 
-         // version: 909.322
-         // discuss at: http://phpjs.org/functions/strcmp    // +   original by: Waldo Malqui Silva
-         // +      input by: Steve Hilder
-         // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-         // +    revised by: gorthaur
-         // *     example 1: strcmp( 'waldo', 'owald' );    // *     returns 1: 1
-         // *     example 2: strcmp( 'owald', 'waldo' );
-         // *     returns 2: -1
-         subBoardArray.sort(function(pA, pB)
-         {
-            return ((pA.description == pB.description) ? 0 : ((pA.description > pB.description) ? 1 : -1));
-         });
-      }
+		// Sort sub-board list.
+		if (pSortType == "dateAsc")
+		{
+			subBoardArray.sort(function(pA, pB)
+			{
+				// Return -1, 0, or 1, depending on whether pA's date comes
+				// before, is equal to, or comes after pB's date.
+				var returnValue = 0;
+				if (pA.newestPostDate < pB.newestPostDate)
+					returnValue = -1;
+				else if (pA.newestPostDate > pB.newestPostDate)
+					returnValue = 1;
+				return returnValue;
+			});
+		}
+		else if (pSortType == "dateDesc")
+		{
+			subBoardArray.sort(function(pA, pB)
+			{
+				// Return -1, 0, or 1, depending on whether pA's date comes
+				// after, is equal to, or comes before pB's date.
+				var returnValue = 0;
+				if (pA.newestPostDate > pB.newestPostDate)
+					returnValue = -1;
+				else if (pA.newestPostDate < pB.newestPostDate)
+					returnValue = 1;
+				return returnValue;
+			});
+		}
+		else if (pSortType == "description")
+		{
+			// Binary safe string comparison  
+			// 
+			// version: 909.322
+			// discuss at: http://phpjs.org/functions/strcmp    // +   original by: Waldo Malqui Silva
+			// +      input by: Steve Hilder
+			// +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+			// +    revised by: gorthaur
+			// *     example 1: strcmp( 'waldo', 'owald' );    // *     returns 1: 1
+			// *     example 2: strcmp( 'owald', 'waldo' );
+			// *     returns 2: -1
+			subBoardArray.sort(function(pA, pB)
+			{
+				return ((pA.description == pB.description) ? 0 : ((pA.description > pB.description) ? 1 : -1));
+			});
+		}
 
-      // Display the sub-board list.
-      for (var i = 0; i < subBoardArray.length; ++i)
-      {
-         console.crlf();
-         console.print((subBoardArray[i].subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
-         printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
-                subBoardArray[i].description.substr(0, this.subBoardNameLen),
-                subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
-                strftime("%H:%M:%S", subBoardArray[i].newestPostDate));
-      }
-   }
-   // If no sort type is specified, then output the sub-board information in
-   // order of sub-board number.
-   else
-   {
-      for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
-      {
-         // Open the current sub-board with the msgBase object.
-         msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-         if (msgBase.open())
-         {
-            // Get the date & time when the last message was imported.
-            if (msgBase.total_msgs > 0)
-            {
-               msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-               // Construct the date & time strings of the latest post
-               if (this.showImportDates)
-               {
-                  newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-                  newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-               }
-               else
-               {
-                  newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-                  newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-               }
-            }
-            else
-               newestDate.date = newestDate.time = "";
+		// Display the sub-board list.
+		for (var i = 0; i < subBoardArray.length; ++i)
+		{
+			console.crlf();
+			console.print((subBoardArray[i].subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
+			printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
+			subBoardArray[i].description.substr(0, this.subBoardNameLen),
+			subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
+			strftime("%H:%M:%S", subBoardArray[i].newestPostDate));
+		}
+	}
+	// If no sort type is specified, then output the sub-board information in
+	// order of sub-board number.
+	else
+	{
+		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
+		{
+			// Open the current sub-board with the msgBase object.
+			msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+			if (msgBase.open())
+			{
+				// Get the date & time when the last message was imported.
+				if (msgBase.total_msgs > 0)
+				{
+					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					// Construct the date & time strings of the latest post
+					if (this.showImportDates)
+					{
+						newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
+						newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
+					}
+					else
+					{
+						var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+						if (msgWrittenLocalBBSTime != -1)
+						{
+							newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalBBSTime);
+							newestDate.time = strftime("%H:%M:%S", msgWrittenLocalBBSTime);
+						}
+						else
+						{
+							newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+							newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+						}
+					}
+				}
+				else
+				newestDate.date = newestDate.time = "";
 
-            // Print the sub-board information
-            subBoardNum = +(arrSubBoardNum);
-            console.crlf();
-            console.print((subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
-            printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-                   msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-                   msgBase.total_msgs, newestDate.date, newestDate.time);
-   
-            msgBase.close();
-         }
-   
-         // Free some memory?
-         delete msgBase;
-      }
-   }
+				// Print the sub-board information
+				subBoardNum = +(arrSubBoardNum);
+				console.crlf();
+				console.print((subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
+				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
+				msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+				msgBase.total_msgs, newestDate.date, newestDate.time);
+
+				msgBase.close();
+			}
+
+			// Free some memory?
+			delete msgBase;
+		}
+	}
 }
 
 //////////////////////////////////////////////
@@ -1623,53 +1638,62 @@ function DDMsgAreaChooser_listScreenfulOfSubBrds(pGrpIndex, pStartSubIndex,
 //  pHighlight: Boolean - Whether or not to write the line highlighted.
 function DDMsgAreaChooser_writeMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 {
-   console.print("\1n");
-   // Write the highlight background color if pHighlight is true.
-   if (pHighlight)
-      console.print(this.colors.bkgHighlight);
+	console.print("\1n");
+	// Write the highlight background color if pHighlight is true.
+	if (pHighlight)
+		console.print(this.colors.bkgHighlight);
 
-   // Determine if pGrpIndex and pSubIndex specify the user's
-   // currently-selected group and sub-board.
-   var currentSub = false;
-   if ((typeof(bbs.curgrp) == "number") && (typeof(bbs.cursub) == "number"))
-      currentSub = ((pGrpIndex == bbs.curgrp) && (pSubIndex == bbs.cursub));
+	// Determine if pGrpIndex and pSubIndex specify the user's
+	// currently-selected group and sub-board.
+	var currentSub = false;
+	if ((typeof(bbs.curgrp) == "number") && (typeof(bbs.cursub) == "number"))
+		currentSub = ((pGrpIndex == bbs.curgrp) && (pSubIndex == bbs.cursub));
 
-   // Open the current sub-board with the msgBase object (so that we can get
-   // the date & time of the last imporeted message).
-   var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-   if (msgBase.open())
-   {
-      var newestDate = new Object(); // For storing the date of the newest post
-      // Get the date & time when the last message was imported.
-      if (msgBase.total_msgs > 0)
-      {
-         msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-         // Construct the date & time strings of the latest post
-         if (this.showImportDates)
-         {
-            newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-            newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-         }
-         else
-         {
-            newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-            newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-         }
-      }
-      else
-         newestDate.date = newestDate.time = "";
+	// Open the current sub-board with the msgBase object (so that we can get
+	// the date & time of the last imporeted message).
+	var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
+	if (msgBase.open())
+	{
+		var newestDate = new Object(); // For storing the date of the newest post
+		// Get the date & time when the last message was imported.
+		if (msgBase.total_msgs > 0)
+		{
+			msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+			// Construct the date & time strings of the latest post
+			if (this.showImportDates)
+			{
+				newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
+				newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
+			}
+			else
+			{
+				var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+				if (msgWrittenLocalBBSTime != -1)
+				{
+					newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalBBSTime);
+					newestDate.time = strftime("%H:%M:%S", msgWrittenLocalBBSTime);
+				}
+				else
+				{
+					newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+					newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+				}
+			}
+		}
+		else
+			newestDate.date = newestDate.time = "";
 
-      // Print the sub-board information line.
-      console.print(currentSub ? this.colors.areaMark + "*" : " ");
-      printf((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
-             +(pSubIndex+1),
-             msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
-             msgBase.total_msgs, newestDate.date, newestDate.time);
-      msgBase.close();
+		// Print the sub-board information line.
+		console.print(currentSub ? this.colors.areaMark + "*" : " ");
+		printf((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
+		       +(pSubIndex+1),
+		msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
+		msgBase.total_msgs, newestDate.date, newestDate.time);
+		msgBase.close();
 
-      // Free some memory?
-      delete msgBase;
-   }
+		// Free some memory?
+		delete msgBase;
+	}
 }
 
 ///////////////////////////////////////////////
@@ -2199,4 +2223,24 @@ function getStrAfterPeriod(pStr)
 	if (dotIdx > -1)
 		strAfterPeriod = pStr.substr(dotIdx+1);
 	return strAfterPeriod;
+}
+
+// Adjusts a message's when-written time to the BBS's local time.
+//
+// Parameters:
+//  pMsgHdr: A message header object
+//
+// Return value: The message's when_written_time adjusted to the BBS's local time.
+//               If the message header doesn't have a when_written_time or
+//               when_written_zone property, then this function will return -1.
+function msgWrittenTimeToLocalBBSTime(pMsgHdr)
+{
+	if (!pMsgHdr.hasOwnProperty("when_written_time") || !pMsgHdr.hasOwnProperty("when_written_zone_offset") || !pMsgHdr.hasOwnProperty("when_imported_zone_offset"))
+		return -1;
+
+	var timeZoneDiffMinutes = pMsgHdr.when_imported_zone_offset - pMsgHdr.when_written_zone_offset;
+	//var timeZoneDiffMinutes = pMsgHdr.when_written_zone - system.timezone;
+	var timeZoneDiffSeconds = timeZoneDiffMinutes * 60;
+	var msgWrittenTimeAdjusted = pMsgHdr.when_written_time + timeZoneDiffSeconds;
+	return msgWrittenTimeAdjusted;
 }
