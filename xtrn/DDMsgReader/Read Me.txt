@@ -559,13 +559,20 @@ msgListDisplayTime                    Specifies the message date to display.
                                       Valid values are imported and written.
                                       imported: Display the message import dates
                                       written: Display the message written dates
+                                      When using the message written dates, the
+                                      message written dates will be adjusted to
+                                      the BBS's local time zone so that they are
+                                      all consistent.
 
 msgAreaList_lastImportedMsg_time      In the message sub-board lists, the date
                                       & time of the last message in the
                                       sub-board.  This setting specifies
                                       whether to use the imported time or the
                                       written time.  Valid values are imported
-                                      and written.
+                                      and written.  When using the message
+                                      written dates, the message written dates
+                                      will be adjusted to the BBS's local time
+                                      zone so that they are all consistent.
 
 startMode                             Specifies whether to start in list mode
                                       or reader mode.  Valid values are Reader

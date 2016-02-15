@@ -30,6 +30,10 @@ Version  Date         Description
                       widths - For example, chooserMsgHdr-80.ans for an
                       80-column terminal, choosrMsgHdr-140.ans for a 140-column
                       terminal, etc.
+                      Updated so that when using the message written dates
+                      (instead of the imported dates) in the message list & area
+                      chooser, it will adjust the message written dates to the
+                      BBS's local time zone so that they are all consistent.
 1.09     2016-01-15   Updated to not center the message header lines
                       horizontally.  Now, it will display the header lines
                       starting on column 1.  This was done to fix a display
