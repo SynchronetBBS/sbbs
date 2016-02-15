@@ -214,8 +214,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.10 Beta 6";
-var READER_DATE = "2016-02-14";
+var READER_VERSION = "1.10 Beta 7";
+var READER_DATE = "2016-02-15";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1092,10 +1092,15 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		this.enhMsgHeaderLines.push(hdrLine5);
 		var hdrLine6 = "\1n\1c" + VERTICAL_SINGLE + "\1h\1k" + BLOCK1 + BLOCK2 + BLOCK3
 		             + "\1gD\1n\1gate\1h\1c: \1b@MSG_DATE-L";
-		numChars = console.screen_columns - 23;
+		//numChars = console.screen_columns - 23;
+		numChars = console.screen_columns - 67;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine6 += "#";
-		hdrLine6 += "@\1n\1c" + VERTICAL_SINGLE;
+		//hdrLine6 += "@\1n\1c" + VERTICAL_SINGLE;
+		hdrLine6 += "@ @MSG_TIMEZONE@\1n";
+		for (var i = 0; i < 40; ++i)
+			hdrLine6 += " ";
+		hdrLine6 += "\1n\1c" + VERTICAL_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine6);
 		var hdrLine7 = "\1n\1h\1c" + BOTTOM_T_SINGLE + HORIZONTAL_SINGLE + "\1n\1c"
 		             + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h\1k";
@@ -7496,7 +7501,7 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
          // message read prompt, this script now has to parse & replace some of
          // the @-codes in the message header line, since Synchronet doesn't know
          // that the user is reading a message.
-         console.putmsg(this.ParseMsgAtCodes(fileLine, pMsgHdr, null, dateTimeStr, true));
+         console.putmsg(this.ParseMsgAtCodes(fileLine, pMsgHdr, null, dateTimeStr, false, true));
          console.crlf();
       }
       msgHdrFile.close();
@@ -7908,15 +7913,27 @@ function DigDistMsgReader_PromptForMsgNum(pCurPos, pPromptText, pClearToEOLAfter
 //                  used.
 //  pDateTimeStr: Optional formatted string containing the date & time.  If this is
 //                not provided, the current date & time will be used.
+//  pBBSLocalTimeZone: Optional boolean - Whether or not pDateTimeStr is in the BBS's
+//                     local time zone.  Defaults to false.
 //  pAllowCLS: Optional boolean - Whether or not to allow the @CLS@ code.
 //             Defaults to false.
 //
 // Return value: A string with the complex @-codes substituted in the line with the
 // appropriate message header information.
-function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pDateTimeStr, pAllowCLS)
+function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pDateTimeStr,
+                                          pBBSLocalTimeZone, pAllowCLS)
 {
 	var textLine = pTextLine;
-	var dateTimeStr = (typeof(pDateTimeStr) == "string" ? pDateTimeStr : strftime("%Y-%m-%d %H:%M:%S"));
+	var dateTimeStr = "";
+	var useBBSLocalTimeZone = false;
+	if (typeof(pDateTimeStr) == "string")
+	{
+		dateTimeStr = pDateTimeStr;
+		if (typeof(pBBSLocalTimeZone) == "boolean")
+			useBBSLocalTimeZone = pBBSLocalTimeZone;
+	}
+	else
+		dateTimeStr = strftime("%Y-%m-%d %H:%M:%S", pMsgHdr.when_written_date);
 	// Message attribute strings
 	var allMsgAttrStr = makeAllMsgAttrStr(pMsgHdr);
 	var mainMsgAttrStr = makeMainMsgAttrStr(pMsgHdr.attr);
@@ -7951,8 +7968,8 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 				// In this case, the subject length is the length of the whole format specifier.
 				var substLen = atCodeMatchArray[idx].length;
 				textLine = this.ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen,
-				                                     atCodeMatchArray[idx], pDateTimeStr, mainMsgAttrStr,
-				                                     auxMsgAttrStr, netMsgAttrStr, allMsgAttrStr);
+				                                     atCodeMatchArray[idx], pDateTimeStr, useBBSLocalTimeZone,
+				                                     mainMsgAttrStr, auxMsgAttrStr, netMsgAttrStr, allMsgAttrStr);
 			}
 		}
 		// Now, look for subject formatters with the length specified (i.e., @MSG_SUBJECT-L20@ or @MSG_SUBJECT-R20@)
@@ -7966,8 +7983,8 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 				var dashJustifyIndex = findDashJustifyIndex(atCodeMatchArray[idx]);
 				var substLen = atCodeMatchArray[idx].substring(dashJustifyIndex+2, atCodeMatchArray[idx].length-1);
 				textLine = this.ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, textLine, substLen, atCodeMatchArray[idx],
-				                                     pDateTimeStr, mainMsgAttrStr, auxMsgAttrStr, netMsgAttrStr,
-				                                     allMsgAttrStr, dashJustifyIndex);
+				                                     pDateTimeStr, useBBSLocalTimeZone, mainMsgAttrStr, mainMsgAttrStr,
+				                                     auxMsgAttrStr, netMsgAttrStr, allMsgAttrStr, dashJustifyIndex);
 			}
 		}
 	}
@@ -8021,7 +8038,7 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	                         .replace(/@MSG_REPLY_ID@/gi, (typeof(pMsgHdr["reply_id"]) == "string" ? pMsgHdr["reply_id"] : ""))
 	                         .replace(/@MSG_FROM_NET@/gi, (typeof(pMsgHdr["from_net_addr"]) == "string" ? pMsgHdr["from_net_addr"] : ""))
 	                         .replace(/@MSG_TO_NET@/gi, (typeof(pMsgHdr["to_net_addr"]) == "string" ? pMsgHdr["to_net_addr"] : ""))
-	                         .replace(/@MSG_TIMEZONE@/gi, system.zonestr(pMsgHdr["when_written_zone"]))
+	                         .replace(/@MSG_TIMEZONE@/gi, (useBBSLocalTimeZone ? system.zonestr(system.timezone) : system.zonestr(pMsgHdr["when_written_zone"])))
 	                         .replace(/@GRP@/gi, groupName)
 	                         .replace(/@GRPL@/gi, groupDesc)
 	                         .replace(/@SUB@/gi, subName)
@@ -8055,14 +8072,15 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 //  pSpecifiedLen: The length extracted from the @-code format string
 //  pAtCodeStr: The @-code format string, which will be replaced with the actual message info
 //  pDateTimeStr: Formatted string containing the date & time
+//  pUseBBSLocalTimeZone: Boolean - Whether or not pDateTimeStr is in the BBS's local time zone.
 //  pMsgMainAttrStr: A string describing the main message attributes ('attr' property of header)
 //  pMsgAuxAttrStr: A string describing the auxiliary message attributes ('auxattr' property of header)
 //  pMsgNetAttrStr: A string describing the network message attributes ('netattr' property of header)
 //  pMsgAllAttrStr: A string describing all message attributes
 //  pDashJustifyIdx: Optional - The index of the -L or -R in the @-code string
-function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTextLine, pSpecifiedLen, pAtCodeStr, pDateTimeStr,
-                                  pMsgMainAttrStr, pMsgAuxAttrStr, pMsgNetAttrStr, pMsgAllAttrStr,
-                                  pDashJustifyIdx)
+function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTextLine, pSpecifiedLen,
+                                  pAtCodeStr, pDateTimeStr, pUseBBSLocalTimeZone, pMsgMainAttrStr, pMsgAuxAttrStr,
+								  pMsgNetAttrStr, pMsgAllAttrStr, pDashJustifyIdx)
 {
 	if (typeof(pDashJustifyIdx) != "number")
 		pDashJustifyIdx = findDashJustifyIndex(pAtCodeStr);
@@ -8106,7 +8124,12 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 	else if (pAtCodeStr.indexOf("@MSG_REPLY_ID") > -1)
 		replacementTxt = (typeof pMsgHdr["reply_id"] === "undefined" ? "" : pMsgHdr["reply_id"].substr(0, pSpecifiedLen));
 	else if (pAtCodeStr.indexOf("@MSG_TIMEZONE") > -1)
-		replacementTxt = system.zonestr(pMsgHdr["when_written_zone"]).substr(0, pSpecifiedLen);
+	{
+		if (pUseBBSLocalTimeZone)
+			replacementTxt = system.zonestr(system.timezone).substr(0, pSpecifiedLen);
+		else
+			replacementTxt = system.zonestr(pMsgHdr["when_written_zone"]).substr(0, pSpecifiedLen);
+	}
 	else if (pAtCodeStr.indexOf("@GRP") > -1)
 	{
 		if (this.readingPersonalEmail)
@@ -8816,9 +8839,18 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	if ((this.enhMsgHeaderLines.length == 0) || (this.enhMsgHeaderWidth == 0))
 		return;
 
-	// Create a formatted date & time string and a string describing the
-	// message attributes
-	var dateTimeStr = pMsgHdr["date"].replace(/ [-+][0-9]+$/, "");
+	// Create a formatted date & time string.  Adjust the message's time to
+	// the BBS local time zone if possible.
+	var dateTimeStr = "";
+	var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(pMsgHdr);
+	var useBBSLocalTimeZone = false;
+	if (msgWrittenLocalTime != -1)
+	{
+		dateTimeStr = strftime("%a, %d %b %Y %H:%M:%S", msgWrittenLocalTime);
+		useBBSLocalTimeZone = true;
+	}
+	else
+		dateTimeStr = pMsgHdr["date"].replace(/ [-+][0-9]+$/, "");
 
 	// If the user's terminal supports ANSI, we can move the cursor and
 	// display the header where specified.
@@ -8831,7 +8863,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		{
 			console.gotoxy(screenX, screenY++);
 			console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
-			               pDisplayMsgNum, dateTimeStr, false));
+			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false));
 		}
 		// Older - Used to center the header lines, but I'm not sure this is necessary,
 		// and it might even make the header off by one, which could be bad.
@@ -8852,7 +8884,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
 		{
 			console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
-			               pDisplayMsgNum, dateTimeStr, false));
+			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false));
 		}
 	}
 }
@@ -16530,10 +16562,10 @@ function getStrAfterPeriod(pStr)
 //               when_written_zone property, then this function will return -1.
 function msgWrittenTimeToLocalBBSTime(pMsgHdr)
 {
-	if (!pMsgHdr.hasOwnProperty("when_written_time") || !pMsgHdr.hasOwnProperty("when_written_zone"))
+	if (!pMsgHdr.hasOwnProperty("when_written_time") || !pMsgHdr.hasOwnProperty("when_written_zone_offset") || !pMsgHdr.hasOwnProperty("when_imported_zone_offset"))
 		return -1;
 
-	var timeZoneDiffMinutes = msgHeader.when_imported_zone_offset - msgHeader.when_written_zone_offset;
+	var timeZoneDiffMinutes = pMsgHdr.when_imported_zone_offset - pMsgHdr.when_written_zone_offset;
 	//var timeZoneDiffMinutes = pMsgHdr.when_written_zone - system.timezone;
 	var timeZoneDiffSeconds = timeZoneDiffMinutes * 60;
 	var msgWrittenTimeAdjusted = pMsgHdr.when_written_time + timeZoneDiffSeconds;
