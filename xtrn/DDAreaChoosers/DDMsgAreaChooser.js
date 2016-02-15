@@ -50,6 +50,8 @@
  *                                  line argument now specifies whether or not to
  *                                  allow choosing the message group, and it defaults
  *                                  to true.
+ * 2016-02-12 Eric Oulashin 1.10Beta Started working on adding the ability to display
+ *                                  a header ANSI/ASCII file above the list.
 */
 
 /* Command-line arguments:
@@ -78,8 +80,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.09";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-01-17";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.10 Beta 2";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-02-14";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
@@ -93,6 +95,14 @@ var KEY_PAGE_DOWN = "\1PgDn";
 // Key codes for display
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
+
+// Determine the script's startup directory.
+// This code is a trick that was created by Deuce, suggested by Rob Swindell
+// as a way to detect which directory the script was executed in.  I've
+// shortened the code a little.
+var gStartupPath = '.';
+try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
+gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 
 // 1st command-line argument: Whether or not to choose a message group first (if
 // false, then only choose a sub-board within the user's current group).  This
@@ -175,6 +185,10 @@ function DDMsgAreaChooser()
 	this.msgGrpDescLen = console.screen_columns - this.areaNumLen -
 	this.numItemsLen - 5;
 
+	// Filename base of a header to display above the area list
+	this.areaChooserHdrFilenameBase = "msgAreaChgHeader";
+	this.areaChooserHdrMaxLines = 5;
+
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDMsgAreaChooser_ReadConfigFile;
 	this.WriteKeyHelpLine = DDMsgAreaChooser_writeKeyHelpLine;
@@ -198,6 +212,7 @@ function DDMsgAreaChooser()
 	// Function to build the sub-board printf information for a message
 	// group
 	this.BuildSubBoardPrintfInfoForGrp = DDMsgAreaChooser_buildSubBoardPrintfInfoForGrp;
+	this.DisplayAreaChgHdr = DDMsgAreaChooser_DisplayAreaChgHdr;
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
@@ -287,6 +302,10 @@ function DDMsgAreaChooser()
 	// on the fly the first time the user lists sub-boards for a message
 	// group.
 	this.subBoardListPrintfInfo = new Array();
+
+	// areaChangeHdrLines is an array of text lines to use as a header to display
+	// above the message area changer lists.
+	this.areaChangeHdrLines = loadTextFileIntoArray(this.areaChooserHdrFilenameBase, this.areaChooserHdrMaxLines);
 }
 
 // For the DDMsgAreaChooser class: Writes the line of key help at the bottom
@@ -399,7 +418,7 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 		if ((bbs.curgrp != null) && (typeof(bbs.curgrp) == "number"))
 			selectedGrpIndex = bbs.curgrp;
 
-		var listStartRow = 2;      // The row on the screen where the list will start
+		var listStartRow = 2 + this.areaChangeHdrLines.length; // The row on the screen where the list will start
 		var listEndRow = console.screen_rows - 1; // Row on screen where list will end
 		var topMsgGrpIndex = 0;    // The index of the message group at the top of the list
 
@@ -442,14 +461,15 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 			}
 		}
 
-		// Clear the screen, write the help line and group list header, and output
+		// Clear the screen, write the header, help line, and group list header, and output
 		// a screenful of message groups.
 		console.clear("\1n");
+		this.DisplayAreaChgHdr(1);
 		this.WriteKeyHelpLine();
 
 		var curpos = new Object();
 		curpos.x = 1;
-		curpos.y = 1;
+		curpos.y = 1 + this.areaChangeHdrLines.length;
 		console.gotoxy(curpos);
 		var pageNum = calcPageNum(topMsgGrpIndex, numItemsPerPage);
 		this.WriteGrpListHdrLine(numPages, pageNum);
@@ -557,7 +577,8 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 				{
 					// A sub-board was not chosen, so we'll have to re-draw
 					// the header and list of message groups.
-					console.gotoxy(1, 1);
+					this.DisplayAreaChgHdr(1);
+					console.gotoxy(1, 1+this.areaChangeHdrLines.length);
 					this.WriteGrpListHdrLine(numPages, pageNum);
 					this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow, false, true);
 				}
@@ -620,7 +641,8 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 				console.pause();
 				// Refresh the screen
 				this.WriteKeyHelpLine();
-				console.gotoxy(1, 1);
+				this.DisplayAreaChgHdr(1);
+				console.gotoxy(1, 1+this.areaChangeHdrLines.length);
 				this.WriteGrpListHdrLine(numPages, pageNum);
 				this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow, false, true);
 				break;
@@ -775,7 +797,7 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
       }
    }
 
-   var listStartRow = 3;      // The row on the screen where the list will start
+   var listStartRow = 3+this.areaChangeHdrLines.length; // The row on the screen where the list will start
    var listEndRow = console.screen_rows - 1; // Row on screen where list will end
    var topSubIndex = 0;      // The index of the message group at the top of the list
    // Figure out the index of the last message group to appear on the screen.
@@ -818,16 +840,19 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
       }
    }
 
-   // Clear the screen, write the help line and group list header, and output
+   // Clear the screen, write the header, help line, and group list header, and output
    // a screenful of message groups.
    console.clear("\1n");
+   this.DisplayAreaChgHdr(1); // Don't need to since it should already be drawn
+   if (this.areaChangeHdrLines.length > 0)
+	   console.crlf();
    var pageNum = calcPageNum(topSubIndex, numItemsPerPage);
    this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
    this.WriteKeyHelpLine();
 
    var curpos = new Object();
    curpos.x = 1;
-   curpos.y = 2;
+   curpos.y = 2+this.areaChangeHdrLines.length;
    console.gotoxy(curpos);
    printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
    this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow,
@@ -991,11 +1016,12 @@ function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
             this.ShowHelpScreen(true, true);
             console.pause();
             // Refresh the screen
-            console.gotoxy(1, 1);
+			this.DisplayAreaChgHdr(1);
+            console.gotoxy(1, 1+this.areaChangeHdrLines.length);
             this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
             console.cleartoeol("\1n");
             this.WriteKeyHelpLine();
-            console.gotoxy(1, 2);
+            console.gotoxy(1, 2+this.areaChangeHdrLines.length);
             printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts",
                    "Latest date & time");
             this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow,
@@ -1080,6 +1106,9 @@ function DDMsgAreaChooser_selectMsgArea_Traditional(pChooseGroup)
 			bbs.command_str = "";
 
 			console.clear("\1n");
+			this.DisplayAreaChgHdr(1);
+			if (this.areaChangeHdrLines.length > 0)
+				console.crlf();
 			this.ListMsgGrps();
 			console.crlf();
 			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + +(bbs.curgrp+1) + "\1n\1c]: \1h");
@@ -1149,6 +1178,9 @@ function DDMsgAreaChooser_selectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardId
 	retObj.subBoardChosen = false;
 	retObj.subBoardIndex = -1;
 
+	this.DisplayAreaChgHdr(1);
+	if (this.areaChangeHdrLines.length > 0)
+		console.crlf();
 	this.ListSubBoardsInMsgGroup(pGrpIdx, pDefaultSubBoardIdx);
 	console.crlf();
 	console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + +(pDefaultSubBoardIdx+1) + "\1n\1c]: \1h");
@@ -1491,12 +1523,12 @@ function DDMsgAreaChooser_updatePageNumInHeader(pPageNum, pNumPages, pGroup, pRe
 
   if (pGroup)
   {
-    console.gotoxy(29, 1);
+    console.gotoxy(29, 1+this.areaChangeHdrLines.length);
     console.print("\1n" + this.colors.header + pPageNum + " of " + pNumPages + ")   ");
   }
   else
   {
-    console.gotoxy(51, 1);
+    console.gotoxy(51, 1+this.areaChangeHdrLines.length);
     console.print("\1n" + this.colors.subBoardHeader + pPageNum + " of " + pNumPages + ")   ");
   }
 
@@ -1647,84 +1679,92 @@ function DDMsgAreaChooser_writeMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 // For the DDMsgAreaChooser class: Reads the configuration file.
 function DDMsgAreaChooser_ReadConfigFile()
 {
-   // Determine the script's startup directory.
-   // This code is a trick that was created by Deuce, suggested by Rob Swindell
-   // as a way to detect which directory the script was executed in.  I've
-   // shortened the code a little.
-   var startup_path = '.';
-   try { throw dig.dist(dist); } catch(e) { startup_path = e.fileName; }
-   startup_path = backslash(startup_path.replace(/[\/\\][^\/\\]*$/,''));
+	// Determine the script's startup directory.
+	// This code is a trick that was created by Deuce, suggested by Rob Swindell
+	// as a way to detect which directory the script was executed in.  I've
+	// shortened the code a little.
+	var startup_path = '.';
+	try { throw dig.dist(dist); } catch(e) { startup_path = e.fileName; }
+	startup_path = backslash(startup_path.replace(/[\/\\][^\/\\]*$/,''));
 
-   // Open the configuration file
-   var cfgFile = new File(startup_path + "DDMsgAreaChooser.cfg");
-   if (cfgFile.open("r"))
-   {
-      var settingsMode = "behavior";
-      var fileLine = null;     // A line read from the file
-      var equalsPos = 0;       // Position of a = in the line
-      var commentPos = 0;      // Position of the start of a comment
-      var setting = null;      // A setting name (string)
-      var settingUpper = null; // Upper-case setting name
-      var value = null;        // A value for a setting (string)
-      while (!cfgFile.eof)
-      {
-         // Read the next line from the config file.
-         fileLine = cfgFile.readln(2048);
+	// Open the configuration file
+	var cfgFile = new File(startup_path + "DDMsgAreaChooser.cfg");
+	if (cfgFile.open("r"))
+	{
+		var settingsMode = "behavior";
+		var fileLine = null;     // A line read from the file
+		var equalsPos = 0;       // Position of a = in the line
+		var commentPos = 0;      // Position of the start of a comment
+		var setting = null;      // A setting name (string)
+		var settingUpper = null; // Upper-case setting name
+		var value = null;        // A value for a setting (string)
+		while (!cfgFile.eof)
+		{
+			// Read the next line from the config file.
+			fileLine = cfgFile.readln(2048);
 
-         // fileLine should be a string, but I've seen some cases
-         // where it isn't, so check its type.
-         if (typeof(fileLine) != "string")
-            continue;
+			// fileLine should be a string, but I've seen some cases
+			// where it isn't, so check its type.
+			if (typeof(fileLine) != "string")
+				continue;
 
-         // If the line starts with with a semicolon (the comment
-         // character) or is blank, then skip it.
-         if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-            continue;
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
 
-         // If in the "behavior" section, then set the behavior-related variables.
-         if (fileLine.toUpperCase() == "[BEHAVIOR]")
-         {
-            settingsMode = "behavior";
-            continue;
-         }
-         else if (fileLine.toUpperCase() == "[COLORS]")
-         {
-            settingsMode = "colors";
-            continue;
-         }
+			// If in the "behavior" section, then set the behavior-related variables.
+			if (fileLine.toUpperCase() == "[BEHAVIOR]")
+			{
+				settingsMode = "behavior";
+				continue;
+			}
+			else if (fileLine.toUpperCase() == "[COLORS]")
+			{
+				settingsMode = "colors";
+				continue;
+			}
 
-         // If the line has a semicolon anywhere in it, then remove
-         // everything from the semicolon onward.
-         commentPos = fileLine.indexOf(";");
-         if (commentPos > -1)
-            fileLine = fileLine.substr(0, commentPos);
+			// If the line has a semicolon anywhere in it, then remove
+			// everything from the semicolon onward.
+			commentPos = fileLine.indexOf(";");
+			if (commentPos > -1)
+				fileLine = fileLine.substr(0, commentPos);
 
-         // Look for an equals sign, and if found, separate the line
-         // into the setting name (before the =) and the value (after the
-         // equals sign).
-         equalsPos = fileLine.indexOf("=");
-         if (equalsPos > 0)
-         {
-            // Read the setting & value, and trim leading & trailing spaces.
-            setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-            settingUpper = setting.toUpperCase();
-            value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+			// Look for an equals sign, and if found, separate the line
+			// into the setting name (before the =) and the value (after the
+			// equals sign).
+			equalsPos = fileLine.indexOf("=");
+			if (equalsPos > 0)
+			{
+				// Read the setting & value, and trim leading & trailing spaces.
+				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+				settingUpper = setting.toUpperCase();
+				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
 
-            if (settingsMode == "behavior")
-            {
-               // Set the appropriate value in the settings object.
-               if (settingUpper == "USELIGHTBARINTERFACE")
-                  this.useLightbarInterface = (value.toUpperCase() == "TRUE");
-               else if (settingUpper == "SHOWIMPORTDATES")
-                  this.showImportDates = (value.toUpperCase() == "TRUE");
-            }
-            else if (settingsMode == "colors")
-               this.colors[setting] = value;
-         }
-      }
-   
-      cfgFile.close();
-   }
+				if (settingsMode == "behavior")
+				{
+					// Set the appropriate value in the settings object.
+					if (settingUpper == "USELIGHTBARINTERFACE")
+						this.useLightbarInterface = (value.toUpperCase() == "TRUE");
+					else if (settingUpper == "SHOWIMPORTDATES")
+						this.showImportDates = (value.toUpperCase() == "TRUE");
+					else if (settingUpper == "AREACHOOSERHDRFILENAMEBASE")
+						this.areaChooserHdrFilenameBase = value;
+					else if (settingUpper == "AREACHOOSERHDRMAXLINES")
+					{
+						var maxNumLines = +value;
+						if (maxNumLines > 0)
+							this.areaChooserHdrMaxLines = maxNumLines;
+					}
+				}
+				else if (settingsMode == "colors")
+					this.colors[setting] = value;
+			}
+		}
+
+		cfgFile.close();
+	}
 }
 
 // For the DDMsgAreaChooser class: Shows the help screen
@@ -1785,10 +1825,10 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	console.crlf();
 }
 
-// Builds sub-board printf format information for a message group.
-// The widths of the description & # messages columns are calculated
-// based on the greatest number of messages in a sub-board for the
-// message group.
+// For the DDMsgAreaChooser class: Builds sub-board printf format information
+// for a message group.  The widths of the description & # messages columns
+// are calculated based on the greatest number of messages in a sub-board for
+// the message group.
 //
 // Parameters:
 //  pGrpIndex: The index of the message group
@@ -1835,6 +1875,64 @@ function DDMsgAreaChooser_buildSubBoardPrintfInfoForGrp(pGrpIndex)
                               + this.colors.bkgHighlight
                               + this.colors.timeHighlight + "%" + this.timeLen + "s\1n";
    }
+}
+
+// For the DDMsgAreaChooser class: Displays the area chooser header
+//
+// Parameters:
+//  pStartScreenRow: The row on the screen at which to start displaying the
+//                   header information.  Will be used if the user's terminal
+//                   supports ANSI.
+//  pClearRowsFirst: Optional boolean - Whether or not to clear the rows first.
+//                   Defaults to true.  Only valid if the user's terminal supports
+//                   ANSI.
+function DDMsgAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
+{
+	if (this.areaChangeHdrLines == null)
+		return;
+	if (this.areaChangeHdrLines.length == 0)
+		return;
+
+	// If the user's terminal supports ANSI and pStartScreenRow is a number, then
+	// we can move the cursor and display the header where specified.
+	if (console.term_supports(USER_ANSI) && (typeof(pStartScreenRow) == "number"))
+	{
+		// If specified to clear the rows first, then do so.
+		var screenX = 1;
+		var screenY = pStartScreenRow;
+		var clearRowsFirst = (typeof(pClearRowsFirst) == "boolean" ? pClearRowsFirst : true);
+		if (clearRowsFirst)
+		{
+			console.print("\1n");
+			for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+			{
+				console.gotoxy(screenX, screenY++);
+				console.cleartoeol();
+			}
+		}
+		// Display the header starting on the first column and the given screen row.
+		screenX = 1;
+		screenY = pStartScreenRow;
+		for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+		{
+			console.gotoxy(screenX, screenY++);
+			console.print(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+		}
+	}
+	else
+	{
+		// The user's terminal doesn't support ANSI or pStartScreenRow is not a
+		// number - So just output the header lines.
+		for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+		{
+			console.print(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+			console.crlf();
+		}
+	}
 }
 
 // Removes multiple, leading, and/or trailing spaces.
@@ -1932,45 +2030,173 @@ function getGreatestNumMsgs(pGrpIndex)
 // Return value: The user's keypress
 function getKeyWithESCChars(pGetKeyMode)
 {
-   var getKeyMode = K_NONE;
-   if (typeof(pGetKeyMode) == "number")
-      getKeyMode = pGetKeyMode;
+	var getKeyMode = K_NONE;
+	if (typeof(pGetKeyMode) == "number")
+		getKeyMode = pGetKeyMode;
 
-   var userInput = console.getkey(getKeyMode);
-   if (userInput == KEY_ESC) {
-      switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-         case '[':
-            switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-               case 'V':
-                  userInput = KEY_PAGE_UP;
-                  break;
-               case 'U':
-                  userInput = KEY_PAGE_DOWN;
-                  break;
-           }
-           break;
-         case 'O':
-           switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-              case 'P':
-                 userInput = "\1F1";
-                 break;
-              case 'Q':
-                 userInput = "\1F2";
-                 break;
-              case 'R':
-                 userInput = "\1F3";
-                 break;
-              case 'S':
-                 userInput = "\1F4";
-                 break;
-              case 't':
-                 userInput = "\1F5";
-                 break;
-           }
-         default:
-           break;
-      }
-   }
+	var userInput = console.getkey(getKeyMode);
+	if (userInput == KEY_ESC)
+	{
+		switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
+		{
+			case '[':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
+				{
+					case 'V':
+						userInput = KEY_PAGE_UP;
+						break;
+					case 'U':
+						userInput = KEY_PAGE_DOWN;
+						break;
+				}
+				break;
+			case 'O':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
+				{
+					case 'P':
+						userInput = "\1F1";
+						break;
+					case 'Q':
+						userInput = "\1F2";
+						break;
+					case 'R':
+						userInput = "\1F3";
+						break;
+					case 'S':
+						userInput = "\1F4";
+						break;
+					case 't':
+						userInput = "\1F5";
+						break;
+				}
+			default:
+				break;
+		}
+	}
 
-   return userInput;
+	return userInput;
+}
+
+// Loads a text file (an .ans or .asc) into an array.  This will first look for
+// an .ans version, and if exists, convert to Synchronet colors before loading
+// it.  If an .ans doesn't exist, this will look for an .asc version.
+//
+// Parameters:
+//  pFilenameBase: The filename without the extension
+//  pMaxNumLines: Optional - The maximum number of lines to load from the text file
+//
+// Return value: An array containing the lines from the text file
+function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
+{
+	if (typeof(pFilenameBase) != "string")
+		return new Array();
+
+	var maxNumLines = (typeof(pMaxNumLines) == "number" ? pMaxNumLines : -1);
+
+	var txtFileLines = new Array();
+	// See if there is a header file that is made for the user's terminal
+	// width (areaChgHeader-<width>.ans/asc).  If not, then just go with
+	// msgHeader.ans/asc.
+	var txtFileExists = true;
+	var txtFilenameFullPath = gStartupPath + pFilenameBase;
+	var txtFileFilename = "";
+	if (file_exists(txtFilenameFullPath + "-" + console.screen_columns + ".ans"))
+		txtFileFilename = txtFilenameFullPath + "-" + console.screen_columns + ".ans";
+	else if (file_exists(txtFilenameFullPath + "-" + console.screen_columns + ".asc"))
+		txtFileFilename = txtFilenameFullPath + "-" + console.screen_columns + ".asc";
+	else if (file_exists(txtFilenameFullPath + ".ans"))
+		txtFileFilename = txtFilenameFullPath + ".ans";
+	else if (file_exists(txtFilenameFullPath + ".asc"))
+		txtFileFilename = txtFilenameFullPath + ".asc";
+	else
+		txtFileExists = false;
+	if (txtFileExists)
+	{
+		var syncConvertedHdrFilename = txtFileFilename;
+		// If the user's console doesn't support ANSI and the header file is ANSI,
+		// then convert it to Synchronet attribute codes and read that file instead.
+		if (!console.term_supports(USER_ANSI) && (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS"))
+		{
+			syncConvertedHdrFilename = txtFilenameFullPath + "_converted.asc";
+			if (!file_exists(syncConvertedHdrFilename))
+			{
+				if (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS")
+				{
+					var filenameBase = txtFileFilename.substr(0, dotIdx);
+					var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
+								+ syncConvertedHdrFilename + "\"";
+					// Note: Both system.exec(cmdLine) and
+					// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+					// execute the command, but system.exec() seems noticeably faster.
+					system.exec(cmdLine);
+				}
+				else
+					syncConvertedHdrFilename = txtFileFilename;
+			}
+		}
+		/*
+		// If the header file is ANSI, then convert it to Synchronet attribute
+		// codes and read that file instead.  This is done so that this script can
+		// accurately get the file line lengths using console.strlen().
+		var syncConvertedHdrFilename = txtFilenameFullPath + "_converted.asc";
+		if (!file_exists(syncConvertedHdrFilename))
+		{
+			if (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS")
+			{
+				var filenameBase = txtFileFilename.substr(0, dotIdx);
+				var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
+				            + syncConvertedHdrFilename + "\"";
+				// Note: Both system.exec(cmdLine) and
+				// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+				// execute the command, but system.exec() seems noticeably faster.
+				system.exec(cmdLine);
+			}
+			else
+				syncConvertedHdrFilename = txtFileFilename;
+		}
+		*/
+		// Read the header file into txtFileLines
+		var hdrFile = new File(syncConvertedHdrFilename);
+		if (hdrFile.open("r"))
+		{
+			var fileLine = null;
+			while (!hdrFile.eof)
+			{
+				// Read the next line from the header file.
+				fileLine = hdrFile.readln(2048);
+				// fileLine should be a string, but I've seen some cases
+				// where it isn't, so check its type.
+				if (typeof(fileLine) != "string")
+					continue;
+
+				// Make sure the line isn't longer than the user's terminal
+				//if (fileLine.length > console.screen_columns)
+				//   fileLine = fileLine.substr(0, console.screen_columns);
+				txtFileLines.push(fileLine);
+
+				// If the header array now has the maximum number of lines, then
+				// stop reading the header file.
+				if (txtFileLines.length == maxNumLines)
+					break;
+			}
+			hdrFile.close();
+		}
+	}
+	return txtFileLines;
+}
+
+// Returns the portion (if any) of a string after the period.
+//
+// Parameters:
+//  pStr: The string to extract from
+//
+// Return value: The portion of the string after the dot, if there is one.  If
+//               not, then an empty string will be returned.
+function getStrAfterPeriod(pStr)
+{
+	var strAfterPeriod = "";
+	var dotIdx = pStr.lastIndexOf(".");
+	if (dotIdx > -1)
+		strAfterPeriod = pStr.substr(dotIdx+1);
+	return strAfterPeriod;
 }

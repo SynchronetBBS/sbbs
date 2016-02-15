@@ -1,0 +1,59 @@
+This file lists all of the changes made for each release of the Digital
+Distortion Area Choosers.
+
+Revision History (change log)
+=============================
+Version  Date         Description
+-------  ----         -----------
+1.10     2016-??-??   Added the ability to display a custom header file above
+                      the area lists in the area choosers.  Added the
+                      configuration options areaChooserHdrFilenameBase and
+                      areaChooserHdrMaxLines to specify the filename (without
+                      the extension) and maximum number of lines from the header
+                      file to use.
+1.09     2016-01-17   Added a command-line parameter to let the user choose a
+                      message sub-board only within their current message
+                      group, or file directory only within their current file
+                      library.
+1.08     2015-04-19   Added customizable color settings for the key help text
+                      line displayed at the bottom of the screen in lightbar
+                      mode.  Also, updated to allow the PageUp and PageDown
+                      keys to be used instead of the P and N keys to go to the
+                      previous & next pages in lightbar mode.
+1.07     2014-12-22   Message area chooser:
+                      Bug fix: Made this.colors.subBoardHeader apply to the
+                      whole line rather than just the page number.
+                      Bug fix: The initial display of the page number is now
+                      correct (previously, it would start out saying page 1,
+                      even if on another page).
+                      Documentation & example configuration files:
+                      Added the color options subBoardHeader (for the message
+                      area chooser) and fileAreaHdr (for the file area chooser)
+                      to the documentation and example configuration files.
+1.06     2014-09-14   Bug fix: Updated the lightbar highlight format string to
+                      include a normal attribute at the end to avoid the
+                      highlight color to be used when clearing the screen,
+                      etc.  Bug reported by Psi-Jack.
+1.05     2013-05-10   Bug fix in the file area chooser: When listing
+                      directories in a file group, it would sometimes
+                      crash due to an incorrect array index used, and
+                      the array was not set up.  Those have been fixed.
+1.04     2013-05-04   Updated to properly format message sub-boards and
+                      file directories with more than 9999 entries.  The
+                      formatting is now dynamically adjusted depending
+                      on the greatest number of entries in a sub-board
+                      for a message group or file directory in a file
+                      library (the descriptions will shrink as the
+                      text length of the greatest number of entries
+                      increases).
+1.03     2012-11-30   Bug fix: After leaving the help screen from the
+                      sub-board/directory list, the top line is now
+                      correctly written with the page information as "Page
+                      # of #".
+1.02     2012-10-06   For the lightbar interface, the current page number is
+                      now displayed at the top of the screen (along with the
+                      total number of pages) and is updated when going to a
+                      new page.
+1.01     2011-04-22   Fixed the wording when choosing a message sub-board and
+                      file library.
+1.00     2010-03-13   First public release

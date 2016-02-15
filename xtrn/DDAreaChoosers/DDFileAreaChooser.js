@@ -80,8 +80,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.09";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-01-17";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.10 Beta 1";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-02-14";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
@@ -96,6 +96,14 @@ var KEY_PAGE_DOWN = "\1PgDn";
 // Key codes for display
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
+
+// Determine the script's startup directory.
+// This code is a trick that was created by Deuce, suggested by Rob Swindell
+// as a way to detect which directory the script was executed in.  I've
+// shortened the code a little.
+var gStartupPath = '.';
+try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
+gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 
 // 1st command-line argument: Whether or not to choose a file library first (if
 // false, then only choose a directory within the user's current library).  This
@@ -161,6 +169,10 @@ function DDFileAreaChooser()
 	this.areaNumLen = 4;
 	this.descFieldLen = 67; // Description field length
 
+	// Filename base of a header to display above the area list
+	this.areaChooserHdrFilenameBase = "fileAreaChgHeader";
+	this.areaChooserHdrMaxLines = 5;
+
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDFileAreaChooser_ReadConfigFile;
 	this.SelectFileArea = DDFileAreaChooser_selectFileArea;
@@ -183,9 +195,10 @@ function DDFileAreaChooser()
 	this.ShowHelpScreen = DDFileAreaChooser_showHelpScreen;
 	// Misc. functions
 	this.NumFilesInDir = DDFileAreaChooser_NumFilesInDir;
-
 	// Function to build the directory printf information for a file lib
 	this.BuildFileDirPrintfInfoForLib = DDFileAreaChooser_buildFileDirPrintfInfoForLib;
+	// Function to display the header above the area list
+	this.DisplayAreaChgHdr = DDFileAreaChooser_DisplayAreaChgHdr;
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
@@ -268,6 +281,10 @@ function DDFileAreaChooser()
 	// created on the fly the first time the user lists directories for
 	// a file library.
 	this.fileDirListPrintfInfo = new Array();
+
+	// areaChangeHdrLines is an array of text lines to use as a header to display
+	// above the message area changer lists.
+	this.areaChangeHdrLines = loadTextFileIntoArray(this.areaChooserHdrFilenameBase, this.areaChooserHdrMaxLines);
 }
 
 // For the DDFileAreaChooser class: Lets the user choose a file area.
@@ -316,6 +333,9 @@ function DDFileAreaChooser_selectFileArea_Traditional(pChooseLib)
 			bbs.command_str = "";
 
 			console.clear("\1n");
+			this.DisplayAreaChgHdr(1);
+			if (this.areaChangeHdrLines.length > 0)
+				console.crlf();
 			this.ListFileLibs();
 			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + +(bbs.curlib+1) + "\1n\1c]:\1h ");
 			// Accept Q (quit) or a file library number
@@ -352,47 +372,50 @@ function DDFileAreaChooser_selectFileArea_Traditional(pChooseLib)
 // Return value: Boolean - Whether or not the user chose a file area.
 function DDFileAreaChooser_selectDirWithinFileLib_Traditional(pLibNumber, pSelectedDir)
 {
-   var userChoseAnArea = false;
+	var userChoseAnArea = false;
 
-   // If the file library number is valid, then
-   // set it and let the user choose a file directory
-   // within the library.
-   if (pLibNumber > 0)
-   {
-      // Ensure that the file directory printf information is created for
-      // this file library.
-      this.BuildFileDirPrintfInfoForLib(pLibNumber-1);
+	// If the file library number is valid, then
+	// set it and let the user choose a file directory
+	// within the library.
+	if (pLibNumber > 0)
+	{
+		// Ensure that the file directory printf information is created for
+		// this file library.
+		this.BuildFileDirPrintfInfoForLib(pLibNumber-1);
 
-      // Set the default directory #: The current directory, or if the
-      // user chose a different file library, then this should be set
-      // to the first directory.
-      var defaultDir = bbs.curdir + 1;
-      if (pLibNumber-1 != bbs.curlib)
-         defaultDir = 1;
+		// Set the default directory #: The current directory, or if the
+		// user chose a different file library, then this should be set
+		// to the first directory.
+		var defaultDir = bbs.curdir + 1;
+		if (pLibNumber-1 != bbs.curlib)
+			defaultDir = 1;
 
-      console.clear("\1n");
-      this.ListDirsInFileLib(pLibNumber - 1, defaultDir - 1);
-      console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + defaultDir +
-                    "\1n\1c]: \1h");
-      // Accept Q (quit) or a file directory number
-      var selectedDir = console.getkeys("Q", file_area.lib_list[pLibNumber - 1].dir_list.length);
+		console.clear("\1n");
+		this.DisplayAreaChgHdr(1);
+		if (this.areaChangeHdrLines.length > 0)
+			console.crlf();
+		this.ListDirsInFileLib(pLibNumber - 1, defaultDir - 1);
+		console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, or [\1h" + defaultDir +
+		              "\1n\1c]: \1h");
+		// Accept Q (quit) or a file directory number
+		var selectedDir = console.getkeys("Q", file_area.lib_list[pLibNumber - 1].dir_list.length);
 
-      // If the user just pressed enter (selectedDir would be blank),
-      // default the selected directory.
-      if (selectedDir.toString() == "")
-         selectedDir = defaultDir;
+		// If the user just pressed enter (selectedDir would be blank),
+		// default the selected directory.
+		if (selectedDir.toString() == "")
+			selectedDir = defaultDir;
 
-      // If the user chose a directory, then set bbs.curlib &
-      // bbs.curdir and quit the file library loop.
-      if ((pLibNumber.toString() != "Q") && (selectedDir > 0))
-      {
-         bbs.curlib = pLibNumber - 1;
-         bbs.curdir = selectedDir - 1;
-         userChoseAnArea = true;
-      }
-   }
+		// If the user chose a directory, then set bbs.curlib &
+		// bbs.curdir and quit the file library loop.
+		if ((pLibNumber.toString() != "Q") && (selectedDir > 0))
+		{
+			bbs.curlib = pLibNumber - 1;
+			bbs.curdir = selectedDir - 1;
+			userChoseAnArea = true;
+		}
+	}
 
-   return userChoseAnArea;
+	return userChoseAnArea;
 }
 
 // For the DDFileAreaChooser class: Traditional user interface for listing
@@ -566,7 +589,7 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 		if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number"))
 			selectedLibIndex = bbs.curlib;
 
-		var listStartRow = 2;      // The row on the screen where the list will start
+		var listStartRow = 2+this.areaChangeHdrLines.length; // The row on the screen where the list will start
 		var listEndRow = console.screen_rows - 1; // Row on screen where list will end
 		var topFileLibIndex = 0;    // The index of the message group at the top of the list
 
@@ -612,14 +635,15 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 			}
 		}
 
-		// Clear the screen, write the help line and group list header, and output
+		// Clear the screen, write the header, help line, and group list header, and output
 		// a screenful of message groups.
 		console.clear("\1n");
+		this.DisplayAreaChgHdr(1);
 		this.WriteKeyHelpLine();
 
 		var curpos = new Object();
 		curpos.x = 1;
-		curpos.y = 1;
+		curpos.y = 1+this.areaChangeHdrLines.length;
 		console.gotoxy(curpos);
 		this.WriteLibListHdrLine(numPages, pageNum);
 		this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, false);
@@ -729,7 +753,7 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 					{
 						// An area was not chosen, so we'll have to re-draw
 						// the header and list of message groups.
-						console.gotoxy(1, 1);
+						console.gotoxy(1, 1+this.areaChangeHdrLines.length);
 						this.WriteLibListHdrLine(numPages, pageNum);
 						this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
 					}
@@ -784,6 +808,7 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 						selectedLibIndex = topIndexForLastPage;
 					}
 					break;
+				case KEY_ESC: // Quit
 				case 'Q': // Quit
 					continueChoosingFileArea = false;
 					break;
@@ -791,8 +816,9 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 					this.ShowHelpScreen(true, true);
 					console.pause();
 					// Refresh the screen
+					this.DisplayAreaChgHdr(1);
 					this.WriteKeyHelpLine();
-					console.gotoxy(1, 1);
+					console.gotoxy(1, 1+this.areaChangeHdrLines.length);
 					this.WriteLibListHdrLine(numPages, pageNum);
 					this.ListScreenfulOfFileLibs(topFileLibIndex, listStartRow, listEndRow, false, true);
 					break;
@@ -876,347 +902,348 @@ function DDFileAreaChooser_selectFileArea_Lightbar(pChooseLib)
 //                             Will be -1 if none chosen.
 function DDFileAreaChooser_selectDirWithinFileLib_Lightbar(pLibIndex, pHighlightIndex)
 {
-   // Create the return object.
-   var retObj = new Object();
-   retObj.fileDirChosen = false;
-   retObj.fileLibIndex = -1;
+	// Create the return object.
+	var retObj = new Object();
+	retObj.fileDirChosen = false;
+	retObj.fileLibIndex = -1;
 
-   var libIndex = 0;
-   if (typeof(pLibIndex) == "number")
-      libIndex = pLibIndex;
-   else if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number"))
-      libIndex = bbs.curlib;
-   // Double-check libIndex
-   if (libIndex < 0)
-      libIndex = 0;
-   else if (libIndex >= file_area.lib_list.length)
-      libIndex = file_area.lib_list.length - 1;
+	var libIndex = 0;
+	if (typeof(pLibIndex) == "number")
+		libIndex = pLibIndex;
+	else if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number"))
+		libIndex = bbs.curlib;
+	// Double-check libIndex
+	if (libIndex < 0)
+		libIndex = 0;
+	else if (libIndex >= file_area.lib_list.length)
+		libIndex = file_area.lib_list.length - 1;
 
-   var highlightIndex = 0;
-   if ((pHighlightIndex != null) && (typeof(pHighlightIndex) == "number"))
-      highlightIndex = pHighlightIndex;
-   else if ((bbs.curdir != null) && (typeof(bbs.curdir) == "number") &&
-             (bbs.curlib == pLibIndex))
-   {
-      highlightIndex = bbs.curdir;
-   }
-   // Double-check highlightIndex
-   if (highlightIndex < 0)
-      highlightIndex = 0;
-   else if (highlightIndex >= file_area.lib_list[libIndex].dir_list.length)
-      highlightIndex = file_area.lib_list[libIndex].dir_list.length - 1;
+	var highlightIndex = 0;
+	if ((pHighlightIndex != null) && (typeof(pHighlightIndex) == "number"))
+		highlightIndex = pHighlightIndex;
+	else if ((bbs.curdir != null) && (typeof(bbs.curdir) == "number") &&
+			(bbs.curlib == pLibIndex))
+	{
+		highlightIndex = bbs.curdir;
+	}
+	// Double-check highlightIndex
+	if (highlightIndex < 0)
+		highlightIndex = 0;
+	else if (highlightIndex >= file_area.lib_list[libIndex].dir_list.length)
+		highlightIndex = file_area.lib_list[libIndex].dir_list.length - 1;
 
-   // If there are no sub-boards in the given message group, then show
-   // an error and return.
-   if (file_area.lib_list[libIndex].dir_list.length == 0)
-   {
-      console.clear("\1n");
-      console.print("\1y\1hThere are no directories in the chosen library.\r\n\1p");
-      return retObj;
-   }
-   
-   // Ensure that the file directory printf information is created for
-   // this file library.
-   this.BuildFileDirPrintfInfoForLib(libIndex);
+	// If there are no sub-boards in the given message group, then show
+	// an error and return.
+	if (file_area.lib_list[libIndex].dir_list.length == 0)
+	{
+		console.clear("\1n");
+		console.print("\1y\1hThere are no directories in the chosen library.\r\n\1p");
+		return retObj;
+	}
 
-   // Returns the index of the bottommost directory that can be displayed on
-   // the screen.
-   //
-   // Parameters:
-   //  pTopDirIndex: The index of the topmost directory displayed on screen
-   //  pNumItemsPerPage: The number of items per page
-   function getBottommostDirIndex(pTopDirIndex, pNumItemsPerPage)
-   {
-      var bottomDirIndex = pTopDirIndex + pNumItemsPerPage - 1;
-      // If bottomDirIndex is beyond the last index, then adjust it.
-      if (bottomDirIndex >= file_area.lib_list[libIndex].dir_list.length)
-         bottomDirIndex = file_area.lib_list[libIndex].dir_list.length - 1;
-      return bottomDirIndex;
-   }
+	// Ensure that the file directory printf information is created for
+	// this file library.
+	this.BuildFileDirPrintfInfoForLib(libIndex);
+
+	// Returns the index of the bottommost directory that can be displayed on
+	// the screen.
+	//
+	// Parameters:
+	//  pTopDirIndex: The index of the topmost directory displayed on screen
+	//  pNumItemsPerPage: The number of items per page
+	function getBottommostDirIndex(pTopDirIndex, pNumItemsPerPage)
+	{
+		var bottomDirIndex = pTopDirIndex + pNumItemsPerPage - 1;
+		// If bottomDirIndex is beyond the last index, then adjust it.
+		if (bottomDirIndex >= file_area.lib_list[libIndex].dir_list.length)
+			bottomDirIndex = file_area.lib_list[libIndex].dir_list.length - 1;
+		return bottomDirIndex;
+	}
 
 
-   // Figure out the index of the user's currently-selected sub-board.
-   var selectedDirIndex = 0;
-   if ((bbs.curdir != null) && (typeof(bbs.curdir) == "number"))
-   {
-      if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number") &&
-          (bbs.curlib == pLibIndex))
-      {
-         selectedDirIndex = bbs.curdir;
-      }
-   }
+	// Figure out the index of the user's currently-selected sub-board.
+	var selectedDirIndex = 0;
+	if ((bbs.curdir != null) && (typeof(bbs.curdir) == "number"))
+	{
+		if ((bbs.curlib != null) && (typeof(bbs.curlib) == "number") && (bbs.curlib == pLibIndex))
+			selectedDirIndex = bbs.curdir;
+	}
 
-   var listStartRow = 3;      // The row on the screen where the list will start
-   var listEndRow = console.screen_rows - 1; // Row on screen where list will end
-   var topDirIndex = 0;      // The index of the message group at the top of the list
-   // Figure out the index of the last message group to appear on the screen.
-   var numItemsPerPage = listEndRow - listStartRow + 1;
-   var bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
-   // Figure out how many pages are needed to list all the sub-boards.
-   var numPages = Math.ceil(file_area.lib_list[libIndex].dir_list.length / numItemsPerPage);
-   var pageNum = calcPageNum(topDirIndex, numItemsPerPage);
-   // Figure out the top index for the last page.
-   var topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
+	var listStartRow = 3+this.areaChangeHdrLines.length;      // The row on the screen where the list will start
+	var listEndRow = console.screen_rows - 1; // Row on screen where list will end
+	var topDirIndex = 0;      // The index of the message group at the top of the list
+	// Figure out the index of the last message group to appear on the screen.
+	var numItemsPerPage = listEndRow - listStartRow + 1;
+	var bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
+	// Figure out how many pages are needed to list all the sub-boards.
+	var numPages = Math.ceil(file_area.lib_list[libIndex].dir_list.length / numItemsPerPage);
+	var pageNum = calcPageNum(topDirIndex, numItemsPerPage);
+	// Figure out the top index for the last page.
+	var topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
 
-   // If the highlighted row is beyond the current screen, then
-   // go to the appropriate page.
-   if (selectedDirIndex > bottomDirIndex)
-   {
-      var nextPageTopIndex = 0;
-      while (selectedDirIndex > bottomDirIndex)
-      {
-         nextPageTopIndex = topDirIndex + numItemsPerPage;
-         if (nextPageTopIndex < file_area.lib_list[libIndex].dir_list.length)
-         {
-            // Adjust topDirIndex and bottomDirIndex, and
-            // refresh the list on the screen.
-            topDirIndex = nextPageTopIndex;
-            pageNum = calcPageNum(topDirIndex, numItemsPerPage);
-            bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
-         }
-         else
-            break;
-      }
+	// If the highlighted row is beyond the current screen, then
+	// go to the appropriate page.
+	if (selectedDirIndex > bottomDirIndex)
+	{
+		var nextPageTopIndex = 0;
+		while (selectedDirIndex > bottomDirIndex)
+		{
+			nextPageTopIndex = topDirIndex + numItemsPerPage;
+			if (nextPageTopIndex < file_area.lib_list[libIndex].dir_list.length)
+			{
+				// Adjust topDirIndex and bottomDirIndex, and
+				// refresh the list on the screen.
+				topDirIndex = nextPageTopIndex;
+				pageNum = calcPageNum(topDirIndex, numItemsPerPage);
+				bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
+			}
+			else
+				break;
+		}
 
-      // If we didn't find the correct page for some reason, then set the
-      // variables to display page 1 and select the first message group.
-      var foundCorrectPage =
-          ((topDirIndex < file_area.lib_list[libIndex].dir_list.length) &&
-           (selectedDirIndex >= topDirIndex) && (selectedDirIndex <= bottomDirIndex));
-      if (!foundCorrectPage)
-      {
-         topDirIndex = 0;
-         pageNum = calcPageNum(topDirIndex, numItemsPerPage);
-         bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
-         selectedDirIndex = 0;
-      }
-   }
+		// If we didn't find the correct page for some reason, then set the
+		// variables to display page 1 and select the first message group.
+		var foundCorrectPage = ((topDirIndex < file_area.lib_list[libIndex].dir_list.length) &&
+		                        (selectedDirIndex >= topDirIndex) && (selectedDirIndex <= bottomDirIndex));
+		if (!foundCorrectPage)
+		{
+			topDirIndex = 0;
+			pageNum = calcPageNum(topDirIndex, numItemsPerPage);
+			bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
+			selectedDirIndex = 0;
+		}
+	}
 
-   // Clear the screen, write the help line and group list header, and output
-   // a screenful of message groups.
-   console.clear("\1n");
-   this.WriteDirListHdr1Line(libIndex, numPages, pageNum);
-   this.WriteKeyHelpLine();
+	// Clear the screen, write the header, help line, and group list header, and output
+	// a screenful of message groups.
+	console.clear("\1n");
+	this.DisplayAreaChgHdr(1);
+	if (this.areaChangeHdrLines.length > 0)
+		console.crlf();
+	this.WriteDirListHdr1Line(libIndex, numPages, pageNum);
+	this.WriteKeyHelpLine();
 
-   var curpos = new Object();
-   curpos.x = 1;
-   curpos.y = 2;
-   console.gotoxy(curpos);
-   printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
-   this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow, listEndRow,
-                               false, false);
-   // Start of the input loop.
-   var highlightScrenRow = 0; // The row on the screen for the highlighted group
-   var userInput = "";        // Will store a keypress from the user
-   var continueChoosingFileDir = true;
-   while (continueChoosingFileDir)
-   {
-      // Highlight the currently-selected message group
-      highlightScrenRow = listStartRow + (selectedDirIndex - topDirIndex);
-      curpos.y = highlightScrenRow;
-      if ((highlightScrenRow > 0) && (highlightScrenRow < console.screen_rows))
-      {
-         console.gotoxy(1, highlightScrenRow);
-         this.WriteFileLibDirLine(libIndex, selectedDirIndex, true);
-      }
+	var curpos = new Object();
+	curpos.x = 1;
+	curpos.y = 2+this.areaChangeHdrLines.length;
+	console.gotoxy(curpos);
+	printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
+	       this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow, listEndRow,
+	       false, false);
+	// Start of the input loop.
+	var highlightScrenRow = 0; // The row on the screen for the highlighted group
+	var userInput = "";        // Will store a keypress from the user
+	var continueChoosingFileDir = true;
+	while (continueChoosingFileDir)
+	{
+		// Highlight the currently-selected message group
+		highlightScrenRow = listStartRow + (selectedDirIndex - topDirIndex);
+		curpos.y = highlightScrenRow;
+		if ((highlightScrenRow > 0) && (highlightScrenRow < console.screen_rows))
+		{
+			console.gotoxy(1, highlightScrenRow);
+			this.WriteFileLibDirLine(libIndex, selectedDirIndex, true);
+		}
 
-      // Get a key from the user (upper-case) and take action based upon it.
-      userInput = getKeyWithESCChars(K_UPPER | K_NOCRLF);
-      switch (userInput)
-      {
-         case KEY_UP: // Move up one message group in the list
-            if (selectedDirIndex > 0)
-            {
-               // If the previous group index is on the previous page, then
-               // display the previous page.
-               var previousSubIndex = selectedDirIndex - 1;
-               if (previousSubIndex < topDirIndex)
-               {
-                  // Adjust topDirIndex and bottomDirIndex, and
-                  // refresh the list on the screen.
-                  topDirIndex -= numItemsPerPage;
-                  pageNum = calcPageNum(topDirIndex, numItemsPerPage);
-                  bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
-                  this.updatePageNumInHeader(pageNum, numPages, false, false);
-                  this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
-                                              listEndRow, false, true);
-               }
-               else
-               {
-                  // Display the current line un-highlighted.
-                  console.gotoxy(1, curpos.y);
-                  this.WriteFileLibDirLine(libIndex, selectedDirIndex, false);
-               }
-               selectedDirIndex = previousSubIndex;
-            }
-            break;
-         case KEY_DOWN: // Move down one message group in the list
-            if (selectedDirIndex < file_area.lib_list[libIndex].dir_list.length - 1)
-            {
-               // If the next group index is on the next page, then display
-               // the next page.
-               var nextGrpIndex = selectedDirIndex + 1;
-               if (nextGrpIndex > bottomDirIndex)
-               {
-                  // Adjust topDirIndex and bottomDirIndex, and
-                  // refresh the list on the screen.
-                  topDirIndex += numItemsPerPage;
-                  pageNum = calcPageNum(topDirIndex, numItemsPerPage);
-                  bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
-                  this.updatePageNumInHeader(pageNum, numPages, false, false);
-                  this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
-                                              listEndRow, false, true);
-               }
-               else
-               {
-                  // Display the current line un-highlighted.
-                  console.gotoxy(1, curpos.y);
-                  this.WriteFileLibDirLine(libIndex, selectedDirIndex, false);
-               }
-               selectedDirIndex = nextGrpIndex;
-            }
-            break;
-         case KEY_HOME: // Go to the top message group on the screen
-            if (selectedDirIndex > topDirIndex)
-            {
-               // Display the current line un-highlighted, then adjust
-               // selectedDirIndex.
-               console.gotoxy(1, curpos.y);
-               this.WriteFileLibDirLine(libIndex, selectedDirIndex, false);
-               selectedDirIndex = topDirIndex;
-               // Note: curpos.y is set at the start of the while loop.
-            }
-            break;
-         case KEY_END: // Go to the bottom message group on the screen
-            if (selectedDirIndex < bottomDirIndex)
-            {
-               // Display the current line un-highlighted, then adjust
-               // selectedDirIndex.
-               console.gotoxy(1, curpos.y);
-               this.WriteFileLibDirLine(libIndex, selectedDirIndex, false);
-               selectedDirIndex = bottomDirIndex;
-               // Note: curpos.y is set at the start of the while loop.
-            }
-            break;
-         case KEY_ENTER: // Select the currently-highlighted sub-board; and we're done.
-            continueChoosingFileDir = false;
-            retObj.fileDirChosen = true;
-            retObj.fileLibIndex = selectedDirIndex;
-            break;
-         case KEY_PAGE_DOWN: // Go to the next page
-            var nextPageTopIndex = topDirIndex + numItemsPerPage;
-            if (nextPageTopIndex < file_area.lib_list[libIndex].dir_list.length)
-            {
-               // Adjust topDirIndex and bottomDirIndex, and
-               // refresh the list on the screen.
-               topDirIndex = nextPageTopIndex;
-               pageNum = calcPageNum(topDirIndex, numItemsPerPage);
-               bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, false, false);
-               this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedDirIndex = topDirIndex;
-            }
-            break;
-         case KEY_PAGE_UP: // Go to the previous page
-            var prevPageTopIndex = topDirIndex - numItemsPerPage;
-            if (prevPageTopIndex >= 0)
-            {
-               // Adjust topDirIndex and bottomDirIndex, and
-               // refresh the list on the screen.
-               topDirIndex = prevPageTopIndex;
-               pageNum = calcPageNum(topDirIndex, numItemsPerPage);
-               bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, false, false);
-               this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedDirIndex = topDirIndex;
-            }
-            break;
-         case 'F': // Go to the first page
-            if (topDirIndex > 0)
-            {
-               topDirIndex = 0;
-               pageNum = calcPageNum(topDirIndex, numItemsPerPage);
-               bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, false, false);
-               this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedDirIndex = 0;
-            }
-            break;
-         case 'L': // Go to the last page
-            if (topDirIndex < topIndexForLastPage)
-            {
-               topDirIndex = topIndexForLastPage;
-               pageNum = calcPageNum(topDirIndex, numItemsPerPage);
-               bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, false, false);
-               this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedDirIndex = topIndexForLastPage;
-            }
-            break;
-         case 'Q': // Quit
-            continueChoosingFileDir = false;
-            break;
-         case '?': // Show help
-            this.ShowHelpScreen(true, true);
-            console.pause();
-            // Refresh the screen
-            console.gotoxy(1, 1);
-            this.WriteDirListHdr1Line(libIndex, numPages, pageNum);
-            console.cleartoeol("\1n");
-            this.WriteKeyHelpLine();
-            console.gotoxy(1, 2);
-            printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
-            this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
-                                      listEndRow, false, true);
-            break;
-         default:
-            // If the user entered a numeric digit, then treat it as
-            // the start of the message group number.
-            if (userInput.match(/[0-9]/))
-            {
-               var originalCurpos = curpos;
+		// Get a key from the user (upper-case) and take action based upon it.
+		userInput = getKeyWithESCChars(K_UPPER | K_NOCRLF);
+		switch (userInput)
+		{
+			case KEY_UP: // Move up one message group in the list
+				if (selectedDirIndex > 0)
+				{
+					// If the previous group index is on the previous page, then
+					// display the previous page.
+					var previousSubIndex = selectedDirIndex - 1;
+					if (previousSubIndex < topDirIndex)
+					{
+						// Adjust topDirIndex and bottomDirIndex, and
+						// refresh the list on the screen.
+						topDirIndex -= numItemsPerPage;
+						pageNum = calcPageNum(topDirIndex, numItemsPerPage);
+						bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum, numPages, false, false);
+						this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
+						                         listEndRow, false, true);
+					}
+					else
+					{
+						// Display the current line un-highlighted.
+						console.gotoxy(1, curpos.y);
+						this.WriteFileLibDirLine(libIndex, selectedDirIndex, false);
+					}
+					selectedDirIndex = previousSubIndex;
+				}
+				break;
+			case KEY_DOWN: // Move down one message group in the list
+				if (selectedDirIndex < file_area.lib_list[libIndex].dir_list.length - 1)
+				{
+					// If the next group index is on the next page, then display
+					// the next page.
+					var nextGrpIndex = selectedDirIndex + 1;
+					if (nextGrpIndex > bottomDirIndex)
+					{
+						// Adjust topDirIndex and bottomDirIndex, and
+						// refresh the list on the screen.
+						topDirIndex += numItemsPerPage;
+						pageNum = calcPageNum(topDirIndex, numItemsPerPage);
+						bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum, numPages, false, false);
+						this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
+						                         listEndRow, false, true);
+					}
+					else
+					{
+						// Display the current line un-highlighted.
+						console.gotoxy(1, curpos.y);
+						this.WriteFileLibDirLine(libIndex, selectedDirIndex, false);
+					}
+					selectedDirIndex = nextGrpIndex;
+				}
+				break;
+			case KEY_HOME: // Go to the top message group on the screen
+				if (selectedDirIndex > topDirIndex)
+				{
+					// Display the current line un-highlighted, then adjust
+					// selectedDirIndex.
+					console.gotoxy(1, curpos.y);
+					this.WriteFileLibDirLine(libIndex, selectedDirIndex, false);
+					selectedDirIndex = topDirIndex;
+					// Note: curpos.y is set at the start of the while loop.
+				}
+				break;
+			case KEY_END: // Go to the bottom message group on the screen
+				if (selectedDirIndex < bottomDirIndex)
+				{
+					// Display the current line un-highlighted, then adjust
+					// selectedDirIndex.
+					console.gotoxy(1, curpos.y);
+					this.WriteFileLibDirLine(libIndex, selectedDirIndex, false);
+					selectedDirIndex = bottomDirIndex;
+					// Note: curpos.y is set at the start of the while loop.
+				}
+				break;
+			case KEY_ENTER: // Select the currently-highlighted sub-board; and we're done.
+				continueChoosingFileDir = false;
+				retObj.fileDirChosen = true;
+				retObj.fileLibIndex = selectedDirIndex;
+				break;
+			case KEY_PAGE_DOWN: // Go to the next page
+				var nextPageTopIndex = topDirIndex + numItemsPerPage;
+				if (nextPageTopIndex < file_area.lib_list[libIndex].dir_list.length)
+				{
+					// Adjust topDirIndex and bottomDirIndex, and
+					// refresh the list on the screen.
+					topDirIndex = nextPageTopIndex;
+					pageNum = calcPageNum(topDirIndex, numItemsPerPage);
+					bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
+					this.updatePageNumInHeader(pageNum, numPages, false, false);
+					this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
+					                         listEndRow, false, true);
+					selectedDirIndex = topDirIndex;
+				}
+				break;
+			case KEY_PAGE_UP: // Go to the previous page
+				var prevPageTopIndex = topDirIndex - numItemsPerPage;
+				if (prevPageTopIndex >= 0)
+				{
+					// Adjust topDirIndex and bottomDirIndex, and
+					// refresh the list on the screen.
+					topDirIndex = prevPageTopIndex;
+					pageNum = calcPageNum(topDirIndex, numItemsPerPage);
+					bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
+					this.updatePageNumInHeader(pageNum, numPages, false, false);
+					this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
+					                         listEndRow, false, true);
+					selectedDirIndex = topDirIndex;
+				}
+				break;
+			case 'F': // Go to the first page
+				if (topDirIndex > 0)
+				{
+					topDirIndex = 0;
+					pageNum = calcPageNum(topDirIndex, numItemsPerPage);
+					bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
+					this.updatePageNumInHeader(pageNum, numPages, false, false);
+					this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
+					                         listEndRow, false, true);
+					selectedDirIndex = 0;
+				}
+				break;
+			case 'L': // Go to the last page
+				if (topDirIndex < topIndexForLastPage)
+				{
+					topDirIndex = topIndexForLastPage;
+					pageNum = calcPageNum(topDirIndex, numItemsPerPage);
+					bottomDirIndex = getBottommostDirIndex(topDirIndex, numItemsPerPage);
+					this.updatePageNumInHeader(pageNum, numPages, false, false);
+					this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
+					                         listEndRow, false, true);
+					selectedDirIndex = topIndexForLastPage;
+				}
+				break;
+			case KEY_ESC: // Quit
+			case 'Q': // Quit
+				continueChoosingFileDir = false;
+				break;
+			case '?': // Show help
+				this.ShowHelpScreen(true, true);
+				console.pause();
+				// Refresh the screen
+				this.DisplayAreaChgHdr(1);
+				console.gotoxy(1, 1+this.areaChangeHdrLines.length);
+				this.WriteDirListHdr1Line(libIndex, numPages, pageNum);
+				console.cleartoeol("\1n");
+				this.WriteKeyHelpLine();
+				console.gotoxy(1, 2+this.areaChangeHdrLines.length);
+				printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
+				this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
+				listEndRow, false, true);
+				break;
+			default:
+				// If the user entered a numeric digit, then treat it as
+				// the start of the message group number.
+				if (userInput.match(/[0-9]/))
+				{
+					var originalCurpos = curpos;
 
-               // Put the user's input back in the input buffer to
-               // be used for getting the rest of the message number.
-               console.ungetstr(userInput);
-               // Move the cursor to the bottom of the screen and
-               // prompt the user for the message number.
-               console.gotoxy(1, console.screen_rows);
-               console.clearline("\1n");
-               console.print("\1cDir #: \1h");
-               userInput = console.getnum(file_area.lib_list[libIndex].dir_list.length);
-               // If the user made a selection, then set it in the
-               // return object and don't continue the input loop.
-               if (userInput > 0)
-               {
-                  continueChoosingFileDir = false;
-                  retObj.fileDirChosen = true;
-                  retObj.fileLibIndex = userInput - 1;
-               }
-               else
-               {
-                  // The user didn't enter a selection.  Now we need to
-                  // re-draw the screen due to everything being moved
-                  // up one line.
-                  console.gotoxy(1, 1);
-                  this.WriteDirListHdr1Line(libIndex, numPages, pageNum);
-                  console.cleartoeol("\1n");
-                  this.WriteKeyHelpLine();
-                  console.gotoxy(1, 2);
-                  printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
-                  this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
-                                            listEndRow, false, true);
-               }
-            }
-            break;
-      }
-   }
+					// Put the user's input back in the input buffer to
+					// be used for getting the rest of the message number.
+					console.ungetstr(userInput);
+					// Move the cursor to the bottom of the screen and
+					// prompt the user for the message number.
+					console.gotoxy(1, console.screen_rows);
+					console.clearline("\1n");
+					console.print("\1cDir #: \1h");
+					userInput = console.getnum(file_area.lib_list[libIndex].dir_list.length);
+					// If the user made a selection, then set it in the
+					// return object and don't continue the input loop.
+					if (userInput > 0)
+					{
+						continueChoosingFileDir = false;
+						retObj.fileDirChosen = true;
+						retObj.fileLibIndex = userInput - 1;
+					}
+					else
+					{
+						// The user didn't enter a selection.  Now we need to
+						// re-draw the screen due to everything being moved
+						// up one line.
+						console.gotoxy(1, 1);
+						this.WriteDirListHdr1Line(libIndex, numPages, pageNum);
+						console.cleartoeol("\1n");
+						this.WriteKeyHelpLine();
+						console.gotoxy(1, 2);
+						printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
+						this.ListScreenfulOfDirs(libIndex, topDirIndex, listStartRow,
+						                         listEndRow, false, true);
+					}
+				}
+				break;
+		}
+	}
 
-   return retObj;
+	return retObj;
 }
 
 // Displays a screenful of file libraries (for the lightbar interface).
@@ -1363,12 +1390,12 @@ function DDFileAreaChooser_updatePageNumInHeader(pPageNum, pNumPages, pFileLib, 
 
   if (pFileLib)
   {
-    console.gotoxy(30, 1);
+    console.gotoxy(30, 1+this.areaChangeHdrLines.length);
     console.print("\1n" + this.colors.header + pPageNum + " of " + pNumPages + ")   ");
   }
   else
   {
-    console.gotoxy(67, 1);
+    console.gotoxy(67, 1+this.areaChangeHdrLines.length);
     console.print("\1n" + this.colors.fileAreaHdr + pPageNum + " of " + pNumPages + ")   ");
   }
 
@@ -1464,82 +1491,82 @@ function DDFileAreaChooser_writeKeyHelpLine()
 // For the DDFileAreaChooser class: Reads the configuration file.
 function DDFileAreaChooser_ReadConfigFile()
 {
-   // Determine the script's startup directory.
-   // This code is a trick that was created by Deuce, suggested by Rob Swindell
-   // as a way to detect which directory the script was executed in.  I've
-   // shortened the code a little.
-   var startup_path = '.';
-   try { throw dig.dist(dist); } catch(e) { startup_path = e.fileName; }
-   startup_path = backslash(startup_path.replace(/[\/\\][^\/\\]*$/,''));
+	// Open the configuration file
+	var cfgFile = new File(gStartupPath + "DDFileAreaChooser.cfg");
+	if (cfgFile.open("r"))
+	{
+		var settingsMode = "behavior";
+		var fileLine = null;     // A line read from the file
+		var equalsPos = 0;       // Position of a = in the line
+		var commentPos = 0;      // Position of the start of a comment
+		var setting = null;      // A setting name (string)
+		var settingUpper = null; // Upper-case setting name
+		var value = null;        // A value for a setting (string)
+		while (!cfgFile.eof)
+		{
+			// Read the next line from the config file.
+			fileLine = cfgFile.readln(2048);
 
-   // Open the configuration file
-   var cfgFile = new File(startup_path + "DDFileAreaChooser.cfg");
-   if (cfgFile.open("r"))
-   {
-      var settingsMode = "behavior";
-      var fileLine = null;     // A line read from the file
-      var equalsPos = 0;       // Position of a = in the line
-      var commentPos = 0;      // Position of the start of a comment
-      var setting = null;      // A setting name (string)
-      var settingUpper = null; // Upper-case setting name
-      var value = null;        // A value for a setting (string)
-      while (!cfgFile.eof)
-      {
-         // Read the next line from the config file.
-         fileLine = cfgFile.readln(2048);
+			// fileLine should be a string, but I've seen some cases
+			// where it isn't, so check its type.
+			if (typeof(fileLine) != "string")
+				continue;
 
-         // fileLine should be a string, but I've seen some cases
-         // where it isn't, so check its type.
-         if (typeof(fileLine) != "string")
-            continue;
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
 
-         // If the line starts with with a semicolon (the comment
-         // character) or is blank, then skip it.
-         if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-            continue;
+			// If in the "behavior" section, then set the behavior-related variables.
+			if (fileLine.toUpperCase() == "[BEHAVIOR]")
+			{
+				settingsMode = "behavior";
+				continue;
+			}
+			else if (fileLine.toUpperCase() == "[COLORS]")
+			{
+				settingsMode = "colors";
+				continue;
+			}
 
-         // If in the "behavior" section, then set the behavior-related variables.
-         if (fileLine.toUpperCase() == "[BEHAVIOR]")
-         {
-            settingsMode = "behavior";
-            continue;
-         }
-         else if (fileLine.toUpperCase() == "[COLORS]")
-         {
-            settingsMode = "colors";
-            continue;
-         }
+			// If the line has a semicolon anywhere in it, then remove
+			// everything from the semicolon onward.
+			commentPos = fileLine.indexOf(";");
+			if (commentPos > -1)
+				fileLine = fileLine.substr(0, commentPos);
 
-         // If the line has a semicolon anywhere in it, then remove
-         // everything from the semicolon onward.
-         commentPos = fileLine.indexOf(";");
-         if (commentPos > -1)
-            fileLine = fileLine.substr(0, commentPos);
+			// Look for an equals sign, and if found, separate the line
+			// into the setting name (before the =) and the value (after the
+			// equals sign).
+			equalsPos = fileLine.indexOf("=");
+			if (equalsPos > 0)
+			{
+				// Read the setting & value, and trim leading & trailing spaces.
+				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
+				settingUpper = setting.toUpperCase();
+				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
 
-         // Look for an equals sign, and if found, separate the line
-         // into the setting name (before the =) and the value (after the
-         // equals sign).
-         equalsPos = fileLine.indexOf("=");
-         if (equalsPos > 0)
-         {
-            // Read the setting & value, and trim leading & trailing spaces.
-            setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-            settingUpper = setting.toUpperCase();
-            value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
+				if (settingsMode == "behavior")
+				{
+					// Set the appropriate value in the settings object.
+					if (settingUpper == "USELIGHTBARINTERFACE")
+						this.useLightbarInterface = (value.toUpperCase() == "TRUE");
+					else if (settingUpper == "AREACHOOSERHDRFILENAMEBASE")
+						this.areaChooserHdrFilenameBase = value;
+					else if (settingUpper == "AREACHOOSERHDRMAXLINES")
+					{
+						var maxNumLines = +value;
+						if (maxNumLines > 0)
+							this.areaChooserHdrMaxLines = maxNumLines;
+					}
+				}
+				else if (settingsMode == "colors")
+					this.colors[setting] = value;
+			}
+		}
 
-            if (settingsMode == "behavior")
-            {
-               // Set the appropriate value in the settings object.
-               if (settingUpper == "USELIGHTBARINTERFACE")
-                  this.useLightbarInterface = (value.toUpperCase() == "TRUE");
-            }
-            else if (settingsMode == "colors")
-               this.colors[setting] = value;
-         }
-      }
-   
-      cfgFile.close();
-   }
+		cfgFile.close();
+	}
 }
 
 // Misc. functions
@@ -1684,6 +1711,64 @@ function DDFileAreaChooser_buildFileDirPrintfInfoForLib(pLibIndex)
   }
 }
 
+// For the DDFileAreaChooser class: Displays the area chooser header
+//
+// Parameters:
+//  pStartScreenRow: The row on the screen at which to start displaying the
+//                   header information.  Will be used if the user's terminal
+//                   supports ANSI.
+//  pClearRowsFirst: Optional boolean - Whether or not to clear the rows first.
+//                   Defaults to true.  Only valid if the user's terminal supports
+//                   ANSI.
+function DDFileAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
+{
+	if (this.areaChangeHdrLines == null)
+		return;
+	if (this.areaChangeHdrLines.length == 0)
+		return;
+
+	// If the user's terminal supports ANSI and pStartScreenRow is a number, then
+	// we can move the cursor and display the header where specified.
+	if (console.term_supports(USER_ANSI) && (typeof(pStartScreenRow) == "number"))
+	{
+		// If specified to clear the rows first, then do so.
+		var screenX = 1;
+		var screenY = pStartScreenRow;
+		var clearRowsFirst = (typeof(pClearRowsFirst) == "boolean" ? pClearRowsFirst : true);
+		if (clearRowsFirst)
+		{
+			console.print("\1n");
+			for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+			{
+				console.gotoxy(screenX, screenY++);
+				console.cleartoeol();
+			}
+		}
+		// Display the header starting on the first column and the given screen row.
+		screenX = 1;
+		screenY = pStartScreenRow;
+		for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+		{
+			console.gotoxy(screenX, screenY++);
+			console.print(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+		}
+	}
+	else
+	{
+		// The user's terminal doesn't support ANSI or pStartScreenRow is not a
+		// number - So just output the header lines.
+		for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
+		{
+			console.print(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
+			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+			console.crlf();
+		}
+	}
+}
+
 // Removes multiple, leading, and/or trailing spaces
 // The search & replace regular expressions used in this
 // function came from the following URL:
@@ -1823,4 +1908,128 @@ function getKeyWithESCChars(pGetKeyMode)
    }
 
    return userInput;
+}
+
+// Loads a text file (an .ans or .asc) into an array.  This will first look for
+// an .ans version, and if exists, convert to Synchronet colors before loading
+// it.  If an .ans doesn't exist, this will look for an .asc version.
+//
+// Parameters:
+//  pFilenameBase: The filename without the extension
+//  pMaxNumLines: Optional - The maximum number of lines to load from the text file
+//
+// Return value: An array containing the lines from the text file
+function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
+{
+	if (typeof(pFilenameBase) != "string")
+		return new Array();
+
+	var maxNumLines = (typeof(pMaxNumLines) == "number" ? pMaxNumLines : -1);
+
+	var txtFileLines = new Array();
+	// See if there is a header file that is made for the user's terminal
+	// width (areaChgHeader-<width>.ans/asc).  If not, then just go with
+	// msgHeader.ans/asc.
+	var txtFileExists = true;
+	var txtFilenameFullPath = gStartupPath + pFilenameBase;
+	var txtFileFilename = "";
+	if (file_exists(txtFilenameFullPath + "-" + console.screen_columns + ".ans"))
+		txtFileFilename = txtFilenameFullPath + "-" + console.screen_columns + ".ans";
+	else if (file_exists(txtFilenameFullPath + "-" + console.screen_columns + ".asc"))
+		txtFileFilename = txtFilenameFullPath + "-" + console.screen_columns + ".asc";
+	else if (file_exists(txtFilenameFullPath + ".ans"))
+		txtFileFilename = txtFilenameFullPath + ".ans";
+	else if (file_exists(txtFilenameFullPath + ".asc"))
+		txtFileFilename = txtFilenameFullPath + ".asc";
+	else
+		txtFileExists = false;
+	if (txtFileExists)
+	{
+		var syncConvertedHdrFilename = txtFileFilename;
+		// If the user's console doesn't support ANSI and the header file is ANSI,
+		// then convert it to Synchronet attribute codes and read that file instead.
+		if (!console.term_supports(USER_ANSI) && (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS"))
+		{
+			syncConvertedHdrFilename = txtFilenameFullPath + "_converted.asc";
+			if (!file_exists(syncConvertedHdrFilename))
+			{
+				if (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS")
+				{
+					var filenameBase = txtFileFilename.substr(0, dotIdx);
+					var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
+								+ syncConvertedHdrFilename + "\"";
+					// Note: Both system.exec(cmdLine) and
+					// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+					// execute the command, but system.exec() seems noticeably faster.
+					system.exec(cmdLine);
+				}
+				else
+					syncConvertedHdrFilename = txtFileFilename;
+			}
+		}
+		/*
+		// If the header file is ANSI, then convert it to Synchronet attribute
+		// codes and read that file instead.  This is done so that this script can
+		// accurately get the file line lengths using console.strlen().
+		var syncConvertedHdrFilename = txtFilenameFullPath + "_converted.asc";
+		if (!file_exists(syncConvertedHdrFilename))
+		{
+			if (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS")
+			{
+				var filenameBase = txtFileFilename.substr(0, dotIdx);
+				var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
+				            + syncConvertedHdrFilename + "\"";
+				// Note: Both system.exec(cmdLine) and
+				// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+				// execute the command, but system.exec() seems noticeably faster.
+				system.exec(cmdLine);
+			}
+			else
+				syncConvertedHdrFilename = txtFileFilename;
+		}
+		*/
+		// Read the header file into txtFileLines
+		var hdrFile = new File(syncConvertedHdrFilename);
+		if (hdrFile.open("r"))
+		{
+			var fileLine = null;
+			while (!hdrFile.eof)
+			{
+				// Read the next line from the header file.
+				fileLine = hdrFile.readln(2048);
+				// fileLine should be a string, but I've seen some cases
+				// where it isn't, so check its type.
+				if (typeof(fileLine) != "string")
+					continue;
+
+				// Make sure the line isn't longer than the user's terminal
+				//if (fileLine.length > console.screen_columns)
+				//   fileLine = fileLine.substr(0, console.screen_columns);
+				txtFileLines.push(fileLine);
+
+				// If the header array now has the maximum number of lines, then
+				// stop reading the header file.
+				if (txtFileLines.length == maxNumLines)
+					break;
+			}
+			hdrFile.close();
+		}
+	}
+	return txtFileLines;
+}
+
+// Returns the portion (if any) of a string after the period.
+//
+// Parameters:
+//  pStr: The string to extract from
+//
+// Return value: The portion of the string after the dot, if there is one.  If
+//               not, then an empty string will be returned.
+function getStrAfterPeriod(pStr)
+{
+	var strAfterPeriod = "";
+	var dotIdx = pStr.lastIndexOf(".");
+	if (dotIdx > -1)
+		strAfterPeriod = pStr.substr(dotIdx+1);
+	return strAfterPeriod;
 }
