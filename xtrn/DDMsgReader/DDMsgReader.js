@@ -214,8 +214,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.10 Beta 7";
-var READER_DATE = "2016-02-15";
+var READER_VERSION = "1.10 Beta 8";
+var READER_DATE = "2016-02-16";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -9828,6 +9828,7 @@ function DigDistMsgReader_SelectMsgArea_Lightbar()
 						// refresh the list on the screen.
 						topMsgGrpIndex -= numItemsPerPage;
 						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+						this.UpdateMsgAreaPageNumInHeader(pageNum, numPages, true, false);
 						this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
 						                            listEndRow, false, true);
 					}
@@ -9852,6 +9853,7 @@ function DigDistMsgReader_SelectMsgArea_Lightbar()
 						// refresh the list on the screen.
 						topMsgGrpIndex += numItemsPerPage;
 						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+						this.UpdateMsgAreaPageNumInHeader(pageNum+1, numPages, true, false);
 						this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
 						                            listEndRow, false, true);
 					}
