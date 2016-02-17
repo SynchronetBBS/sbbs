@@ -1393,7 +1393,7 @@ function DDFileAreaChooser_updatePageNumInHeader(pPageNum, pNumPages, pFileLib, 
 
   if (pFileLib)
   {
-    console.gotoxy(30, 1+this.areaChangeHdrLines.length);
+    console.gotoxy(29, 1+this.areaChangeHdrLines.length);
     console.print("\1n" + this.colors.header + pPageNum + " of " + pNumPages + ")   ");
   }
   else

@@ -507,6 +507,7 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 						// refresh the list on the screen.
 						topMsgGrpIndex -= numItemsPerPage;
 						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum, numPages, true, false);
 						this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow, listEndRow, false, true);
 					}
 					else
@@ -530,6 +531,7 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 						// refresh the list on the screen.
 						topMsgGrpIndex += numItemsPerPage;
 						bottomMsgGrpIndex = getBottommostGrpIndex(topMsgGrpIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum+1, numPages, true, false);
 						this.ListScreenfulOfMsgGrps(topMsgGrpIndex, listStartRow,
 													listEndRow, false, true);
 					}
