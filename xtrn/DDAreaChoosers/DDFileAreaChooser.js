@@ -55,6 +55,9 @@
  * 2016-02-14 Eric Oulashin 1.10Beta Started updating to allow a header ANSI/ASC
  *                                  to be displayed above the area list
  * 2016-02-15 Eric Oulashin 1.10    Releasing this version
+ * 2016-02-19 Eric Oulashin 1.11    Bug fix: The page number wasn't being updated
+ *                                  properly when changing pages in the file
+ *                                  libraries
  */
 
 /* Command-line arguments:
@@ -83,8 +86,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.10";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-02-15";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.11";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-02-19";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
