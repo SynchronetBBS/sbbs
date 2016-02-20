@@ -57,7 +57,7 @@ var Round = function(frame, r, game) {
 
 			case STATE_ROUND_CLUE:
 				var ret = clue.getcmd(cmd);
-				if (typeof ret === 'string') {
+				if (typeof ret === 'string' && ret !== '') {
 					state = STATE_ROUND_ANSWER;
 					clue.close();
 					database.submitAnswer(
