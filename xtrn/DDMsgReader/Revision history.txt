@@ -5,7 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.10     2016-??-??   Added a new configuration option,
+1.10     2016-02-19   Added a new configuration option,
                       readingPostOnSubBoardInsteadOfGoToNext, that affects what
                       happens after the user reads the last message on a
                       sub-board (for normal reading, not for newscans etc.): If

@@ -123,6 +123,8 @@
  *                              in a sub-board rather than going to the next sub-board.
  * 2016-02-06 Eric Oulashin     Started working on the ability to display a custom header
  *                              above the message area chooser lists.
+ * 2016-02-19 Eric Oulashin     Version 1.10
+ *                              Releasing this version.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -214,8 +216,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.10 Beta 8";
-var READER_DATE = "2016-02-16";
+var READER_VERSION = "1.10";
+var READER_DATE = "2016-02-19";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
