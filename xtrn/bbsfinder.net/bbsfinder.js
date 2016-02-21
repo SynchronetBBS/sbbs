@@ -6,33 +6,31 @@ load('event-timer.js');
 load('http.js');
 
 var delay = 240000;
-var opts;
 
-function init() {
+function loadSettings() {
 	
 	var f = new File(system.ctrl_dir + 'modopts.ini');
 	f.open('r');
 	if (!f.is_open) {
-		log(LOG_INFO,
-			'Unable to open ' + system.ctrl_dir + 'modopts.ini for reading.'
-		);
-		return false;
+		throw 'Unable to open ' + system.ctrl_dir + 'modopts.ini for reading.'
 	}
 	opts = f.iniGetObject('bbsfinder');
 	f.close();
 
 	if (!opts.hasOwnProperty('username') || !opts.hasOwnProperty('password')) {
-		log(LOG_INFO,
-			'BBSfinder account info could not be read from modopts.ini.'
-		);
-		return false;
+		throw 'BBSfinder account info could not be read from modopts.ini.'
 	}
-	return true;
+
+	opts.username = encodeURIComponent(opts.username);
+	opts.password = encodeURIComponent(opts.password);
+
+	return opts;
 
 }
 
 function update() {
 	try {
+		var opts = loadSettings();
 		var ret = (new HTTPRequest()).Get(
 			format(
 				'http://www.bbsfinder.net/update.asp?un=%s&pw=%s',
@@ -41,21 +39,17 @@ function update() {
 		);
 	} catch (e) {
 		log(LOG_INFO, 'BBSfinder HTTP error: ' + e);
-		return false;
 	}
 	if(ret == 0) {
 		log(LOG_INFO, 'BBSfinder update succeded.');
-		return true;
 	} else {
 		log(LOG_INFO, 'BBSfinder update failed.');
 		log(LOG_DEBUG, ret);
-		return false;
 	}
 }
 
-if (!init()) exit();
-	
-var r = update();
+update();
+
 if (argc > 0 && argv[0] === '-l') {
 	var timer = new Timer();
 	timer.addEvent(delay, true, update);
