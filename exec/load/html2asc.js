@@ -7,9 +7,9 @@ function html2asc(buf, mono, footnotes)
 	var HEADING4		="\1H\1G";
 	var HEADING5		="\1H\1B";
 	var HEADING6		="\1H\1R";
-	var BOLD			="\1H\1C\x014";
-	var ITALIC			="\1H\1G\x012";
-	var UNDERLINE		="\1H\1W\x016";
+	var BOLD			="\1N\1H";
+	var ITALIC			="\1N\1C";
+	var UNDERLINE		="\1N\1B";
 	var STRIKE_THROUGH	="\1N\1K\x017";
 	var LIST_ITEM 		="\1N\r\n    \1H\1Wo \1G";
 	var links			=[];
