@@ -133,19 +133,27 @@ if(!file.open("w")) {
 }
 
 file.writeln("; Converted from " + cfgfile + " using " + js.exec_file + " " + REVISION);
-file.writeln("check_path = " + !Boolean(bool_opts["nopathcheck"])), delete bool_opts["nopathcheck"];
-file.writeln("fwd_circular = " + !Boolean(bool_opts["nocircularfwd"])), delete bool_opts["nocircularfwd"];
-file.writeln("kill_empty_netmail = " + Boolean(bool_opts["kill_empty"])), delete bool_opts["kill_empty"];
-file.writeln("add_from_echolists_only = " + Boolean(bool_opts["elist_only"])), delete bool_opts["elist_only"];
+file.writeln("CheckPathsForDupes = " + !Boolean(bool_opts["nopathcheck"])), delete bool_opts["nopathcheck"];
+delete bool_opts["nocircularfwd"];
+file.writeln("KillEmptyNetmail = " + Boolean(bool_opts["kill_empty"])), delete bool_opts["kill_empty"];
+file.writeln("AreaAddFromEcholistsOnly = " + Boolean(bool_opts["elist_only"])), delete bool_opts["elist_only"];
+file.writeln("SecureEchomail = " + Boolean(bool_opts["secure_echomail"])), delete bool_opts["secure_echomail"];
+file.writeln("BinkleyStyleOutbound = " + Boolean(bool_opts["flo_mailer"])), delete bool_opts["flo_mailer"];
+file.writeln("TruncateBundles = " + Boolean(bool_opts["trunc_bundles"])), delete bool_opts["trunc_bundles"];
+file.writeln("FuzzyNetmailZones = " + Boolean(bool_opts["fuzzy_zone"])), delete bool_opts["fuzzy_zone"];
+file.writeln("StripLineFeeds = " + Boolean(bool_opts["strip_lf"])), delete bool_opts["strip_lf"];
+file.writeln("ConvertTearLines = " + Boolean(bool_opts["convert_tear"])), delete bool_opts["convert_tear"];
 for(var i in bool_opts)
 	if(i) file.writeln(i + " = true");
 file.writeln();
-file.writeln("notify_user = " + parseInt(value_opts["notify"])), delete value_opts["notify"];
-file.writeln("zone_blind = " + Boolean(value_opts["zone_blind"]));
+delete value_opts["notify"];
+if(value_opts["sysop_alias"])
+	file.writeln("SysopAliasList = " + value_opts["sysop_alias"]), delete value_opts["sysop_alias"];
+file.writeln("ZoneBlind = " + Boolean(value_opts["zone_blind"]));
 if(parseInt(value_opts["zone_blind"]))
-	file.writeln("zone_blind_threshold = " + parseInt(value_opts["zone_blind"])), delete value_opts["zone_blind"];
-if(value_opts["log"] && value_opts["log"].charAt(0) == '0')
-	file.writeln("log = 0x" + value_opts["log"]), delete value_opts["log"];
+	file.writeln("ZoneBlindThreshold = " + parseInt(value_opts["zone_blind"])), delete value_opts["zone_blind"];
+if(value_opts["log"])
+	delete value_opts["log"];
 if(value_opts["log_level"])
 	file.writeln("LogLevel = " + value_opts["log_level"]), delete value_opts["log_level"];
 if(!value_opts["inbound"] && value_opts["outbound"]) {
@@ -153,33 +161,38 @@ if(!value_opts["inbound"] && value_opts["outbound"]) {
 	alert("Setting inbound dir to best guess (no longer using SCFG setting): " + inbound);
 	file.writeln("inbound = " + inbound);
 }
+if(value_opts["secure_inbound"])
+	file.writeln("SecureInbound = " + value_opts["secure_inbound"]), delete value_opts["secure_inbound"];
+if(value_opts["arcsize"])
+	file.writeln("BundleSize = " + value_opts["arcsize"]), delete value_opts["arcsize"];
+if(value_opts["pktsize"])
+	file.writeln("PacketSize = " + value_opts["pktsize"]), delete value_opts["pktsize"];
+
 for(var i in value_opts)
 	if(i) file.writeln(i + " = " + value_opts[i]);
 
 for(var i in nodelist) {
 	file.writeln();
 	file.writeln("[node:" + i + "]");
-	file.writeln("\tcomment = ");
+	file.writeln("\tComment = ");
 	if(nodelist[i].pkttype)
-		file.writeln("\tpacket_type = " + nodelist[i].pkttype);
-	file.writeln("\tpacket_pwd = " + (nodelist[i].pktpwd || ""));
-	file.writeln("\tareafix_pwd = " + (nodelist[i].areafix_pwd || ""));
-	file.writeln("\tinbox = ");
-	file.writeln("\toutbox = ");
-	file.writeln("\tnotify = " + Boolean(nodelist[i].send_notify));
-	file.writeln("\tpassive = " + Boolean(nodelist[i].passive));
-	file.writeln("\tdirect = " + Boolean(nodelist[i].direct));
-	file.writeln("\tstatus = " + (nodelist[i].crash ? "crash" : nodelist[i].hold ? "hold" : "normal"));
-	file.writeln("\tpacker = " + (nodelist[i].usepacker || "none"));
-	file.writeln("\tkeys = " + nodelist[i].keys.join(","));
+		file.writeln("\tPacketType = " + nodelist[i].pkttype);
+	file.writeln("\tPacketPwd = " + (nodelist[i].pktpwd || ""));
+	file.writeln("\tAreafixPwd = " + (nodelist[i].areafix_pwd || ""));
+	file.writeln("\tNotify = " + Boolean(nodelist[i].send_notify));
+	file.writeln("\tPassive = " + Boolean(nodelist[i].passive));
+	file.writeln("\tDirect = " + Boolean(nodelist[i].direct));
+	file.writeln("\tStatus = " + (nodelist[i].crash ? "crash" : nodelist[i].hold ? "hold" : "normal"));
+	file.writeln("\tPacker = " + (nodelist[i].usepacker || "none"));
+	file.writeln("\tKeys = " + nodelist[i].keys.join(","));
 }
 for(var i in packer) {
 	file.writeln();
 	file.writeln("[packer:" + packer[i].name + "]");
-	file.writeln("\tsig_offset = " + packer[i].offset);
-	file.writeln("\tsig = " + packer[i].sig);
-	file.writeln("\tpack = " + packer[i].pack);
-	file.writeln("\tunpack = " + packer[i].unpack);
+	file.writeln("\tSigOffset = " + packer[i].offset);
+	file.writeln("\tSig = " + packer[i].sig);
+	file.writeln("\tPack = " + packer[i].pack);
+	file.writeln("\tUnpack = " + packer[i].unpack);
 }
 for(var i in echolist) {
 	var elist = echolist[i];
@@ -194,10 +207,10 @@ for(var i in echolist) {
 
 	file.writeln();
 	file.writeln("[echolist:" + elist.shift() + "]");
-	file.writeln("\tkeys = " + elist.join(","));
-	file.writeln("\thub = " + hub.addr);
-	file.writeln("\tpwd = " + hub.pwd);
-	file.writeln("\tfwd = " + Boolean(forward));
+	file.writeln("\tKeys = " + elist.join(","));
+	file.writeln("\tHub = " + hub.addr);
+	file.writeln("\tPwd = " + hub.pwd);
+	file.writeln("\tFwd = " + Boolean(forward));
 }
 
 file.close();
