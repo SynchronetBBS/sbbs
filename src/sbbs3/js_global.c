@@ -2316,6 +2316,21 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 			continue;
 		}
 
+		if(strcmp(token,"lsquo")==0 || strcmp(token,"rsquo")==0) {
+			outbuf[j++]='\'';	/* single quotation mark */
+			continue;
+		}
+
+		if(strcmp(token,"ldquo")==0 || strcmp(token,"rdquo")==0) {
+			outbuf[j++]='"';	/* double quotation mark */
+			continue;
+		}
+
+		if(strcmp(token,"ndash")==0 || strcmp(token,"mdash")==0) {
+			outbuf[j++]='-';	/* dash */
+			continue;
+		}
+
 		/* Unknown character entity, leave intact */
 		j+=sprintf(outbuf+j,"&%s;",token);
 		
