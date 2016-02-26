@@ -60,7 +60,7 @@ I haven't actually tried these instructions on a clean Synchronet BBS installati
 [WebSocket]
 Port=1123
 Options=NO_HOST_LOOKUP
-Command=websocketservice.js
+Command=websocket-telnet-service.js
 ```
 - Add the following section to your *ctrl/services.ini* file:
 ```ini
