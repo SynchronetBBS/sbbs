@@ -327,7 +327,8 @@ function BinkITCfg()
 			this.node[sec] = {};
 			this.node[sec].pass = f.iniGetValue(section, 'Password');
 			this.node[sec].nomd5 = f.iniGetValue(section, 'AllowPlainPassword');
-			this.node[sec].norypt = f.iniGetValue(section, 'AllowUnencrypted');
+			this.node[sec].nocrypt = f.iniGetValue(section, 'AllowUnencrypted');
+			this.node[sec].poll = f.iniGetValue(section, 'Poll');
 			this.node[sec].port = f.iniGetValue(section, 'Port');
 			this.node[sec].src = f.iniGetValue(section, 'SourceAddress');
 			this.node[sec].host = f.iniGetValue(section, 'Host');
@@ -356,6 +357,20 @@ function BinkITCfg()
 						break;
 					default:
 						this.node[sec].nocrypt = false;
+						break;
+				}
+			}
+			if (this.node[sec].poll == undefined)
+				this.node[sec].poll = false;
+			else {
+				switch(this.node[sec].poll.toUpperCase()) {
+					case 'YES':
+					case 'TRUE':
+					case 'ON':
+						this.node[sec].poll = true;
+						break;
+					default:
+						this.node[sec].poll = false;
 						break;
 				}
 			}

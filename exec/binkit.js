@@ -483,7 +483,7 @@ function callout_done(bp, semaphores)
 	});
 }
 
-function callout(addr, scfg, ftnd, semaphores, locks)
+function callout(addr, scfg, ftnd, semaphores, locks, bicfg)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
@@ -494,8 +494,10 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 	var src_addr;
 
 	log(LOG_INFO, "Callout to "+addr+" started.");
+	if (bicfg === undefined)
+		bicfg = new BinkITCfg();
 	bp.cb_data = {
-		binkitcfg:new BinkITCfg(),
+		binkitcfg:bicfg,
 		binkit_to_addr:addr,
 		binkit_scfg:scfg,
 		binkit_ftnd:ftnd,
@@ -583,40 +585,39 @@ function callout(addr, scfg, ftnd, semaphores, locks)
 	callout_done(bp, semaphores);
 }
 
-function run_one_outbound_dir(dir, scfg, ftnd, semaphores)
+function check_held(addr, scfg, ftnd, myaddr)
+{
+	var until;
+	var f = new File(outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone)+'.hld');
+
+	if (!f.exists)
+		return false;
+	if (!f.open("r")) {
+		log(LOG_ERROR, "Unable to open hold file '"+f.name+"'");
+		return true;
+	}
+	until = f.readln();
+	if (until.search(/^[0-9]+$/) !== 0) {
+		log(LOG_WARNING, "First line of '"+f.name+"' invalid ("+until+").  Should be a positive integer.");
+		return false;
+	}
+	f.close();
+	until = parseInt(until, 10);
+	if (until < time()) {
+		f.remove();
+		log(LOG_INFO, "Removed stale ("+system.timestr(until)+") hold file '"+f.name+"'.");
+		return false;
+	}
+	log(LOG_INFO, addr+" held until "+system.timestr(until)+".");
+	return true;
+}
+
+function run_one_outbound_dir(dir, scfg, ftnd, semaphores, ran)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
-	var ran = {};
 	var locks = [];
 
 	log(LOG_DEBUG, "Running outbound dir "+dir);
-
-	function check_held(addr)
-	{
-		var until;
-		var f = new File(outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone)+'.hld');
-
-		if (!f.exists)
-			return false;
-		if (!f.open("r")) {
-			log(LOG_ERROR, "Unable to open hold file '"+f.name+"'");
-			return true;
-		}
-		until = f.readln();
-		if (until.search(/^[0-9]+$/) !== 0) {
-			log(LOG_WARNING, "First line of '"+f.name+"' invalid ("+until+").  Should be a positive integer.");
-			return false;
-		}
-		f.close();
-		until = parseInt(until, 10);
-		if (until < time()) {
-			f.remove();
-			log(LOG_INFO, "Removed stale ("+system.timestr(until)+") hold file '"+f.name+"'.");
-			return false;
-		}
-		log(LOG_INFO, addr+" held until "+system.timestr(until)+".");
-		return true;
-	}
 
 	function check_flavour(wildcard, typename)
 	{
@@ -671,7 +672,7 @@ function run_one_outbound_dir(dir, scfg, ftnd, semaphores)
 				}
 
 				if ((lock_files = lock_flow(flow_files[i]))!==undefined) {
-					if (check_held(addr)) {
+					if (check_held(addr, scfg, ftnd, myaddr)) {
 						unlock_flow(lock_files);
 						continue;
 					}
@@ -702,11 +703,10 @@ function run_one_outbound_dir(dir, scfg, ftnd, semaphores)
 	log(LOG_DEBUG, "Done checking file references in "+dir+".");
 }
 
-function run_outbound()
+function run_outbound(ran)
 {
 	var scfg;
 	var ftnd;
-	var outbound_base;
 	var outbound_dirs=[];
 	var outbound_roots=[];
 	var semaphores = [];
@@ -759,7 +759,7 @@ function run_outbound()
 		});
 	});
 	outbound_dirs.forEach(function(dir) {
-		run_one_outbound_dir(dir, scfg, ftnd, semaphores);
+		run_one_outbound_dir(dir, scfg, ftnd, semaphores, ran);
 	});
 
 	semaphores.forEach(function(semname) {
@@ -878,14 +878,99 @@ function run_inbound(sock)
 	});
 }
 
+function poll_node(addr_str, scfg, ftnd, bicfg, myaddr)
+{
+	var semaphores = [];
+	var lock_files;
+	var locks = [];
+
+	if (scfg === undefined)
+		scfg = new SBBSEchoCfg();
+
+	if (ftnd === undefined)
+		ftnd = new FTNDomains();
+
+	if (myaddr === undefined)
+		myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
+
+	var addr = FIDO.parse_addr(addr_str, 1, 'fidonet');
+
+	if ((lock_files = lock_flow(outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone))) !== undefined) {
+		if (check_held(addr, scfg, ftnd, myaddr)) {
+			unlock_flow(lock_files);
+			return;
+		}
+	}
+	log(LOG_INFO, "Attempting poll for node "+addr);
+	locks.push(lock_files);
+	// Use a try/catch to ensure we clean up the lock files.
+	callout(addr, scfg, ftnd, semaphores, locks, bicfg);
+	locks.forEach(unlock_flow);
+}
+
+function run_polls(ran)
+{
+	var scfg;
+	var ftnd;
+	var bicfg;
+	var semaphores = [];
+	var myaddr;
+	var locks = [];
+
+	scfg = new SBBSEchoCfg();
+	ftnd = new FTNDomains();
+	bicfg = new BinkITCfg();
+	myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
+
+	bicfg.node.forEach(function(addr_str) {
+		var addr = FIDO.parse_addr(addr_str, 1, 'fidonet');
+
+		if (ran[addr] !== undefined)
+			return;
+		poll_node(addr_str, scfg, ftnd, bicfg, myaddr);
+		ran[addr] = true;
+	});
+}
+
 var sock;
 try {
 	sock = client.socket;
 }
 catch(e) {}
+var ran = {};
+var i;
+var addr;
 
 // If we're running as a service, call run_inbound().
 if (sock !== undefined && sock.descriptor !== -1)
 	run_inbound(sock);
-else
-	run_outbound();
+else {
+	if (argv.indexOf('-l') !== -1) {
+		for (i=0; i<argv.length; i++) {
+			if (argv[i] === '-l') {
+				i++;
+				if (argv[i] === undefined) {
+					log(LOG_ERROR, 'No link specified with -l');
+					continue;
+				}
+				try {
+					FIDO.parse_addr(argv[i]);
+				}
+				catch(e_addr) {
+					log(LOG_ERROR, "Error parsing address '"+argv[i]+"'.");
+					continue;
+				}
+				poll_node(argv[i]);
+			}
+		}
+	}
+	else {
+		if (argv.indexOf('-P') !== -1)
+			run_polls(ran);
+		else {
+			run_outbound(ran);
+			if (argv.indexOf('-p') !== -1)
+				run_polls(ran);
+		}
+	}
+}
