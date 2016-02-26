@@ -895,7 +895,9 @@ function poll_node(addr_str, scfg, ftnd, bicfg, myaddr)
 
 	var addr = FIDO.parse_addr(addr_str, 1, 'fidonet');
 
-	if ((lock_files = lock_flow(outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone))) !== undefined) {
+	if ((lock_files = lock_flow(outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone))) === undefined)
+		return;
+	else {
 		if (check_held(addr, scfg, ftnd, myaddr)) {
 			unlock_flow(lock_files);
 			return;
