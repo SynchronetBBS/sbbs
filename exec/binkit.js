@@ -922,7 +922,10 @@ function run_polls(ran)
 	bicfg = new BinkITCfg();
 	myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 
-	bicfg.node.forEach(function(addr_str) {
+	Object.keys(bicfg.node).forEach(function(addr_str) {
+		if (!bicfg.node[addr_str].poll)
+			return;
+
 		var addr = FIDO.parse_addr(addr_str, 1, 'fidonet');
 
 		if (ran[addr] !== undefined)
