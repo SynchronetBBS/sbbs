@@ -322,7 +322,7 @@ function BinkITCfg()
 		this.caps = f.iniGetValue(null, 'Capabilities');
 		sects = f.iniGetSections();
 		sects.forEach(function(section) {
-			var sec = section.toLowerCase();
+			var sec = new FIDO.parse_addr(section.toLowerCase(), 1, 'fidonet');
 
 			this.node[sec] = {};
 			this.node[sec].pass = f.iniGetValue(section, 'Password');
