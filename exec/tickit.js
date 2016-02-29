@@ -24,6 +24,7 @@
  */
 
 load("sbbsdefs.js");
+load("fido.js");
 load("fidocfg.js");
 
 var sbbsecho = new SBBSEchoCfg();
@@ -72,6 +73,48 @@ if (!String.prototype.repeat) {
     // return Array(count + 1).join(this);
     return rpt;
   };
+}
+
+/*
+ * TODO: Copied from binkit.js
+ */
+function rename_or_move(src, dst)
+{
+	var sf;
+	var df;
+	var buf;
+	var remain;
+
+	if (file_rename(src, dst))
+		return true;
+	sf = new File(src);
+	if (!sf.open("rb"))
+		return false;
+	df = new File(dst);
+	if (!df.open("web")) {
+		sf.close();
+		return false;
+	}
+	while (!sf.eof) {
+		// Read 2MB at a time...
+		remain = sf.length - sf.position;
+		if (remain === 0)
+			break;
+		if (remain > 0x200000)
+			remain = 0x200000;
+		buf = sf.read(remain);
+		if (!df.write(buf)) {
+			df.close();
+			df.remove();
+			sf.close();
+			return false;
+		}
+	}
+	df.close();
+	sf.close();
+	df.date = sf.date;
+	sf.remove();
+	return true;
 }
 
 function process_tic(tic)
@@ -123,12 +166,28 @@ function process_tic(tic)
 		}
 	}
 
+	function do_move(path, tic) {
+		if (rename_or_move(tic.full_path, path+tic.file))
+			tic.full_path = path+tic.file;
+		else {
+			log(LOG_ERROR, "Cannot move '"+tic.full_path+"' to '"+path+tic.file+"'!");
+			return false;
+		}
+		return true;
+	}
+
 	log(LOG_DEBUG, "Moving file from "+tic.full_path+" to "+path+".");
-	if (file_rename(tic.full_path, path+tic.file))
-		tic.full_path = path+tic.file;
+	if (file_exists(path+tic.file)) {
+		if (tic.file !== tic.replaces)
+			log(LOG_ERROR, "'"+tic.full_path+"' already exists in '"+path+"' and TIC does not have Replaces line.");
+		else {
+			if (!do_move(path, tic))
+				return false;
+		}
+	}
 	else {
-		log(LOG_ERROR, "Cannot move '"+tic.full_path+"' to '"+path+tic.file+"'!");
-		return false;
+		if (!do_move(path, tic))
+			return false;
 	}
 
 	if (dir !== undefined) {
