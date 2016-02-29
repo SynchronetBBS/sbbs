@@ -185,7 +185,7 @@ SOFTWARE.
     global,js,system,server,client,user,bbs,console,msg_area,
     file_area,xtrn_area,MsgBase,File,Queue,Socket,User,COM,CryptContext,
 	LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_ERROR, LOG_WARNING, LOG_NOTICE,
-	LOG_INFO, LOG_DEBUG, fullpath
+	LOG_INFO, LOG_DEBUG, fullpath, mkpath
 
     paranoidbrace, multiload, noradix, noescapement, poorrelations,
     noliteral, noextracomma
@@ -714,6 +714,7 @@ var JSLINT = function () {
 			flags_str	: true,
 			login		: true,
 			fullpath	: true,
+			mkpath		: true,
 
 			argc		: true,
 			argv		: true,
