@@ -178,8 +178,10 @@ function process_tic(tic)
 
 	log(LOG_DEBUG, "Moving file from "+tic.full_path+" to "+path+".");
 	if (file_exists(path+tic.file)) {
-		if (tic.file !== tic.replaces)
+		if (tic.file !== tic.replaces) {
 			log(LOG_ERROR, "'"+tic.full_path+"' already exists in '"+path+"' and TIC does not have Replaces line.");
+			return false;
+		}
 		else {
 			if (!do_move(path, tic))
 				return false;
