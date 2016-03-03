@@ -1049,7 +1049,7 @@ BinkP.prototype.recvFrame = function(timeout)
 										case 'NR':
 											if (!this.sent_nr)
 												this.sendCmd(this.command.M_NUL, "NR");
-											this.non_reliable = true;
+											this.nonreliable = true;
 											break;
 										case 'CRYPT':
 											if (!this.wont_crypt) {
