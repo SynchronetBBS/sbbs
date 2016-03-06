@@ -636,8 +636,8 @@ BinkP.prototype.session = function()
 										this.sendCmd(this.command.M_GET, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]+' '+size);
 									}
 									else {
-										log(LOG_ERR, "M_FILE Offset of -1 in reliable mode!");
-										this.sendCmd(this.command.M_ERR, "M_FILE Offset of -1 in reliable mode!");
+										log(LOG_WARNING, "M_FILE Offset of -1 in reliable mode (bug in remote)!");
+										this.sendCmd(this.command.M_GET, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]+' '+size);
 									}
 								}
 								else {
