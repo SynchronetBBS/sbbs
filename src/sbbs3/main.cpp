@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2991,7 +2991,7 @@ void event_thread(void* arg)
 							,ex_mode
 							,sbbs->cfg.event[i]->dir);
 						if(!(ex_mode&EX_BG))
-							eprintf(LOG_INFO,"Timed event: %s returned %d",strupr(str), result);
+							eprintf(result ? LOG_ERR : LOG_INFO,"Timed event: %s returned %d",strupr(str), result);
 					}
 					sbbs->cfg.event[i]->last=time32(NULL);
 					SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
@@ -4821,13 +4821,17 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->options&BBS_OPT_ALLOW_SSH) {
 		CRYPT_KEYSET	ssh_keyset;
 
-		if(!do_cryptInit())
+		if(!do_cryptInit()) {
+			lprintf(LOG_ERR, "SSH cryptInit failure");
 			goto NO_SSH;
+		}
 		/* Get the private key... first try loading it from a file... */
 		SAFEPRINTF2(str,"%s%s",scfg.ctrl_dir,"cryptlib.key");
 		if(cryptStatusOK(cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_NONE))) {
-			if(!cryptStatusOK(cryptGetPrivateKey(ssh_keyset, &ssh_context, CRYPT_KEYID_NAME, "ssh_server", scfg.sys_pass)))
+			if(!cryptStatusOK(cryptGetPrivateKey(ssh_keyset, &ssh_context, CRYPT_KEYID_NAME, "ssh_server", scfg.sys_pass))) {
+				lprintf(LOG_ERR, "SSH cryptGetPrivateKey failure");
 				goto NO_SSH;
+			}
 		}
 		else {
 			/* Couldn't do that... create a new context and use the key from there... */
