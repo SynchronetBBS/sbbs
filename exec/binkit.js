@@ -360,17 +360,17 @@ function rx_callback(fname, bp)
 			if (secure_inbound === undefined)
 				log(LOG_ERROR, "No secure inbound configured in sbbsecho!  Leaving secure file as '"+fname+"'.");
 			else {
-				log(LOG_INFO, "Moving '"+fname+"' to '"+bp.cb_data.binkit_scfg.secure_inbound+file_getname(fname)+"'.");
-				if (!rename_or_move(fname, bp.cb_data.binkit_scfg.secure_inbound+file_getname(fname)))
+				log(LOG_INFO, "Moving '"+fname+"' to '"+secure_inbound+file_getname(fname)+"'.");
+				if (!rename_or_move(fname, secure_inbound+file_getname(fname)))
 					return false;
 			}
 		}
 		else {
-			if (secure_inbound === undefined)
+			if (inbound === undefined)
 				log(LOG_ERROR, "No inbound configured in sbbsecho!  Leaving inseucre file as '"+fname+"'.");
 			else {
-				log(LOG_INFO, "Moving '"+fname+"' to '"+bp.cb_data.binkit_scfg.inbound+file_getname(fname)+"'.");
-				if (!rename_or_move(fname, bp.cb_data.binkit_scfg.inbound+file_getname(fname)))
+				log(LOG_INFO, "Moving '"+fname+"' to '"+inbound+file_getname(fname)+"'.");
+				if (!rename_or_move(fname, inbound+file_getname(fname)))
 					return false;
 			}
 		}
