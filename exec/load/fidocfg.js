@@ -56,6 +56,7 @@ SBBSEchoCfg.prototype.match_pw = function(node, pw)
 	if (pktpw === undefined || pktpw == '') {
 		if (pw === '' || pw === undefined)
 			return true;
+		return false;
 	}
 	if (pw.toUpperCase() === pktpw.toUpperCase())
 		return true;
