@@ -125,6 +125,13 @@
  *                              above the message area chooser lists.
  * 2016-02-19 Eric Oulashin     Version 1.10
  *                              Releasing this version.
+ * 2016-02-22 Eric Oulashin     Version 1.11 beta 1
+ *                              Refactoring: Removed the old-style message read function
+ *                              and updated to support only the enhanced read function,
+ *                              since for all practical purposes, I don't see a reason to
+ *                              have the old-style message read function anymore.
+ * 2016-03-19 Eric Oulashin     Started working on updating bbs.posts_read when
+ *                              a user reads a message.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -216,8 +223,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.10";
-var READER_DATE = "2016-02-19";
+var READER_VERSION = "1.11 beta 1";
+var READER_DATE = "2016-03-19";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -830,7 +837,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.MessageAreaScan = DigDistMsgReader_MessageAreaScan;
 	this.PromptContinueOrReadMsg = DigDistMsgReader_PromptContinueOrReadMsg;
 	this.WriteMsgListScreenTopHeader = DigDistMsgReader_WriteMsgListScreenTopHeader;
-	this.ReadMessage = DigDistMsgReader_ReadMessage;
 	this.ReadMessageEnhanced = DigDistMsgReader_ReadMessageEnhanced;
 	this.EnhReaderPrepLast2LinesForPrompt = DigDistMsgReader_EnhReaderPrepLast2LinesForPrompt;
 	this.LookForNextOrPriorNonDeletedMsg = DigDistMsgReader_LookForNextOrPriorNonDeletedMsg;
@@ -1587,9 +1593,8 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 				// Note: Doing the message list is also handled in this.ReadMessages().
 				// This code is here in case the reader is configured to start up
 				// in list mode first.
-				// Call the ListMessages method - Don't change the sub-board, and
-				// have it return if the user chooses a message to read.
-				otherRetObj = this.ListMessages(null, true, pAllowChgArea);
+				// List messages
+				otherRetObj = this.ListMessages(null, pAllowChgArea);
 				// If the user wants to quit, set continueOn to false to get out
 				// of the loop.  Otherwise, set the selected message offset to
 				// what the user chose from the list.
@@ -2630,9 +2635,8 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 					}
 				}
 
-				// Call the ListMessages method - Don't change the sub-board, and
-				// have it return if the user chooses a message to read.
-				var listRetObj = this.ListMessages(null, true, pAllowChgArea);
+				// List messages
+				var listRetObj = this.ListMessages(null, pAllowChgArea);
 				// If the user wants to quit, then stop the input loop.
 				if (listRetObj.lastUserInput == "Q")
 				{
@@ -2665,9 +2669,6 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 // Paramters:
 //  pSubBoardCode: Optional - The internal sub-board code, or "mail"
 //                 for personal email.
-//  pReturnOnMsgSelect: Optional - A boolean to specify whether or not to
-//                      return when a message is selected to read.  Defaults
-//                      to false.
 //  pAllowChgSubBoard: Optional - A boolean to specify whether or not to allow
 //                     changing to another sub-board.  Defaults to true.
 // Return value: An object containing the following properties:
@@ -2675,7 +2676,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 //               selectedMsgOffset: The index of the message selected to read,
 //                                  if one was selected.  If none was selected,
 //                                  this will be -1.
-function DigDistMsgReader_ListMessages(pSubBoardCode, pReturnOnMsgSelect, pAllowChgSubBoard)
+function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 {
 	var retObj = new Object();
 	retObj.lastUserInput = "";
@@ -2742,9 +2743,9 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pReturnOnMsgSelect, pAllow
 	// List the messages using the lightbar or traditional interface, depending on
 	// what this.msgListUseLightbarListInterface is set to.  The lightbar interface requires ANSI.
 	if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
-		retObj = this.ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSubBoard);
+		retObj = this.ListMessages_Lightbar(pAllowChgSubBoard);
 	else
-		retObj = this.ListMessages_Traditional(pReturnOnMsgSelect, pAllowChgSubBoard);
+		retObj = this.ListMessages_Traditional(pAllowChgSubBoard);
 	return retObj;
 }
 // For the DigDistMsgReader class: Performs the message listing, given a
@@ -2753,8 +2754,6 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pReturnOnMsgSelect, pAllow
 // Note: This function requires this.msgbase to be valid and open.
 //
 // Parameters:
-//  pReturnOnMsgSelect: Optional - A boolean to specify whether or not
-//                      to return when a message is selected to read.
 //  pAllowChgSubBoard: Optional - A boolean to specify whether or not to allow
 //                     changing to another sub-board.  Defaults to true.
 //
@@ -2763,7 +2762,7 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pReturnOnMsgSelect, pAllow
 //               selectedMsgOffset: The index of the message selected to read,
 //                                  if one was selected.  If none was selected,
 //                                  this will be -1.
-function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChgSubBoard)
+function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 {
 	var retObj = new Object();
 	retObj.lastUserInput = "";
@@ -2836,9 +2835,9 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 		// Prompt the user whether or not to continue or to read a message
 		// (by message number).
 		if (this.reverseListOrder)
-			retvalObj = this.PromptContinueOrReadMsg((this.tradListTopMsgIdx == this.NumMessages()-1), lastScreen, pReturnOnMsgSelect, allowChgSubBoard);
+			retvalObj = this.PromptContinueOrReadMsg((this.tradListTopMsgIdx == this.NumMessages()-1), lastScreen, allowChgSubBoard);
 		else
-			retvalObj = this.PromptContinueOrReadMsg((this.tradListTopMsgIdx == 0), lastScreen, pReturnOnMsgSelect, allowChgSubBoard);
+			retvalObj = this.PromptContinueOrReadMsg((this.tradListTopMsgIdx == 0), lastScreen, allowChgSubBoard);
 		retObj.lastUserInput = retvalObj.userInput;
 		retObj.selectedMsgOffset = retvalObj.selectedMsgOffset;
 
@@ -3066,34 +3065,11 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 			}
 			else
 			{
-				// If pReturnOnMsgSelect is true and the user selected a message to
-				// read, then exit out of this input loop so we can return from
-				// this method - The calling method will call the enhanced reader
-				// method.
-				if (pReturnOnMsgSelect && (retObj.selectedMsgOffset >= 0))
+				// If a message has been selected, exit out of this input loop
+				// so we can return from this method - The calling method will
+				// call the enhanced reader method.
+				if (retObj.selectedMsgOffset >= 0)
 					continueOn = false;
-			}
-
-			if (!pReturnOnMsgSelect)
-			{
-				// If the user chose to read a message or denied confirmation, then:
-				// - Re-draw the column headers at the top of the screen.
-				// - Subtract this.tradMsgListNumLines from msgNum so that this script displays
-				//   the same page where the user left off.
-				if (this.readAMessage || this.deniedReadingMessage)
-				{
-					if (canDoHighASCIIAndANSI()) // Could also be console.term_supports(USER_ANSI)
-						this.WriteMsgListScreenTopHeader();
-				}
-				this.readAMessage = false;
-				this.deniedReadingMessage = false;
-
-				// If the user's terminal doesn't support ANSI, then adjust
-				// this.tradMsgListNumLines to 1 less than the number of screen rows, because
-				// after the first page, we no longer need to display the message
-				// list header line.
-				if (!canDoHighASCIIAndANSI()) // Could also be !console.term_supports(USER_ANSI)
-					this.tradMsgListNumLines = console.screen_rows - 1;
 			}
 		}
 	}
@@ -3106,8 +3082,6 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 // open.
 //
 // Parameters:
-//  pReturnOnMsgSelect: Optional - A boolean to specify whether or not
-//                      to return when a message is selected to read.
 //  pAllowChgSubBoard: Optional - A boolean to specify whether or not to allow
 //                     changing to another sub-board.  Defaults to true.
 //
@@ -3116,7 +3090,7 @@ function DigDistMsgReader_ListMessages_Traditional(pReturnOnMsgSelect, pAllowChg
 //               selectedMsgOffset: The index of the message selected to read,
 //                                  if one was selected.  If none was selected,
 //                                  this will be -1.
-function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSubBoard)
+function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 {
 	var retObj = new Object();
 	retObj.lastUserInput = "";
@@ -3397,19 +3371,10 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 					retObj.selectedMsgOffset = this.lightbarListSelectedMsgIdx;
 				else
 					retObj.selectedMsgOffset = msgHeader.offset;
-				if (pReturnOnMsgSelect)
-					return retObj;
-				else
-				{
-					this.readAMessage = true;
-					console.clear("\1n");
-					var readRetObj = null;
-					if (this.SearchingAndResultObjsDefinedForCurSub())
-						readRetObj = this.ReadMessage(this.lightbarListSelectedMsgIdx);
-					else
-						readRetObj = this.ReadMessage(msgHeader.offset);
-					repliedToMessage = readRetObj.userReplied;
-				}
+				// Return from here so that the calling function can switch into
+				// reader mode.
+				continueOn = false;
+				return retObj;
 			}
 			else
 				this.deniedReadingMessage = true;
@@ -3638,18 +3603,10 @@ function DigDistMsgReader_ListMessages_Lightbar(pReturnOnMsgSelect, pAllowChgSub
 				{
 					// Update the message list screen variables
 					this.CalcMsgListScreenIdxVarsFromMsgNum(+userInput);
-					// Let the user read the message
 					retObj.selectedMsgOffset = userInput - 1;
-					if (pReturnOnMsgSelect)
-						return retObj;
-					else
-					{
-						this.readAMessage = true;
-						if (this.SearchingAndResultObjsDefinedForCurSub())
-							this.ReadMessage(this.lightbarListSelectedMsgIdx);
-						else
-							this.ReadMessage(userInput-1);
-					}
+					// Return from here so that the calling function can switch
+					// into reader mode.
+					return retObj;
 				}
 				else
 					this.deniedReadingMessage = true;
@@ -4045,8 +4002,6 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 // Parameters:
 //  pStart: Whether or not we're on the first page (true or false)
 //  pEnd: Whether or not we're at the last page (true or false)
-//  pReturnOnMsgSelect: Optional - A boolean to specify whether or not
-//                      to return when a message is selected to read.
 //  pAllowChgSubBoard: Optional - A boolean to specify whether or not to allow
 //                     changing to another sub-board.  Defaults to true.
 //
@@ -4057,7 +4012,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 //               selectedMsgOffset: The offset of the message selected to read,
 //                                  if one was selected.  If a message was not
 //                                  selected, this will be -1.
-function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pReturnOnMsgSelect, pAllowChgSubBoard)
+function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoard)
 {
 	// Create the return object and set some initial default values
 	var retObj = new Object();
@@ -4143,20 +4098,12 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pReturnOnMsgSele
 			{
 				// Update the message list screen variables
 				this.CalcMsgListScreenIdxVarsFromMsgNum(+userInput);
-				// Let the user read the message
-				if (pReturnOnMsgSelect)
-				{
-					// Fill a return object with the required values, and return it.
-					retObj.continueOn = continueOn;
-					retObj.userInput = userInput;
-					retObj.selectedMsgOffset = userInput-1;
-					return retObj;
-				}
-				else
-				{
-					this.readAMessage = true;
-					this.ReadMessage(userInput-1);
-				}
+				// Return from here so that the calling function can switch
+				// into reader mode.
+				retObj.continueOn = continueOn;
+				retObj.userInput = userInput;
+				retObj.selectedMsgOffset = userInput-1;
+				return retObj;
 			}
 			else
 				this.deniedReadingMessage = true;
@@ -4188,87 +4135,10 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pReturnOnMsgSele
 	return retObj;
 }
 // For the DigDistMsgReader Class: Given a message number of a message in the
-// current message area, shows the message to the user and allows the user to
-// respond.
-//
-// Parameters:
-//  pOffset: The offset of the message to be read
-//
-// Return value: And object with the following properties:
-//               offsetValid: Boolean - Whether or not the passed-in offset was valid
-//               userReplied: Boolean - Whether or not the user replied to the message.
-//               msgbaseReOpened: Boolean - Whether or not the messagebase is open after
-//                                the user replied to the message.  Will be true if
-//                                the user didn't reply to the message.
-function DigDistMsgReader_ReadMessage(pOffset)
-{
-	var retObj = new Object();
-	retObj.offsetValid = true;
-	retObj.userReplied = false;
-	retObj.msgbaseReOpened = true;
-
-	// Get the message header
-	var msgHeader = this.GetMsgHdrByMsgNum(pOffset+1);
-	if (msgHeader == null)
-	{
-		console.print("\1n" + this.text.invalidMsgNumText.replace("%d", +(pOffset+1)) + "\1n");
-		console.inkey(K_NONE, ERROR_PAUSE_WAIT_MS);
-		retObj.offsetValid = false;
-		return retObj;
-	}
-
-	// Show the message header.
-	this.DisplaySyncMsgHeader(msgHeader);
-
-	// Show the message body.  Make sure the text is word-wrapped
-	// so that it looks good.
-	var msgText = this.msgbase.get_msg_body(true, msgHeader.offset);
-	var msgTextWrapped = word_wrap(msgText, console.screen_columns-1);
-	console.print("\1n" + this.colors["msgBodyColor"]);
-	console.putmsg(msgTextWrapped, P_NOATCODES);
-
-	// Hack: If the "from" name in the header is blank (as it might be sometimes), then
-	// set it to "All".  This prevents Synchronet from crashing, and it will also default
-	// the "to" name in the user's reply to "All".
-	if (msgHeader["from"] == "")
-		msgHeader["from"] = "All";
-
-	// Mark the message as read, if it was written to the current
-	// user.
-	var msgToUpper = msgHeader["to"].toUpperCase();
-	if ((msgToUpper == user.alias.toUpperCase()) || (msgToUpper == user.name.toUpperCase()))
-	{
-		msgHeader.attr = (msgHeader.attr | MSG_READ);
-		var wroteHeader = this.msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
-	}
-
-	// If not reading personal email, then update the scan & last read message pointers.
-	if (this.subBoardCode != "mail") // && !this.SearchTypePopulatesSearchResults()
-	{
-		if (msgHeader.number > msg_area.sub[this.subBoardCode].scan_ptr)
-			msg_area.sub[this.subBoardCode].scan_ptr = msgHeader.number;
-		msg_area.sub[this.subBoardCode].last_read = msgHeader.number;
-	}
-
-	// Allow the user to reply to the message, either publicly or privately.
-	console.print("\1n\1cEnd of message. \1hR\1b)\1n\1ceply\1h\1b, " +
-	              "\1cP\1b)\1n\1crivate reply\1h\1b, \1cENTER\1b/\1cN\1b)\1n\1co reply\1h\1g: \1n\1c");
-	var userKey = console.getkeys("RPN").toString();
-	var privateReply = (userKey == "P");
-	if ((userKey == "R") || privateReply)
-	{
-		var replyRetObj = this.ReplyToMsg(msgHeader, msgText, privateReply, pOffset);
-		retObj.userReplied = replyRetObj.postSucceeded;
-		retObj.msgbaseReOpened = replyRetObj.msgbaseReOpened;
-	}
-
-	return retObj;
-}
-// For the DigDistMsgReader Class: Given a message number of a message in the
-// current message area, shows the message to the user and allows the user to
-// respond.  This is an enhanced version that allows scrolling up & down the
-// message with the up & down arrow keys, and the left & right arrow keys will
-// return from the function to allow calling code to navigate back & forth
+// current message area, lets the user read a message and allows the user to
+// respond, etc.  This is an enhanced version that allows scrolling up & down
+// the message with the up & down arrow keys, and the left & right arrow keys
+// will return from the function to allow calling code to navigate back & forth
 // through the message sub-board.
 //
 // Parameters:
@@ -4398,6 +4268,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// If we switch to the non-scrolling interface here, then the calling method should
 	// refresh the enhanced reader help line on the screen.
 	retObj.refreshEnhancedRdrHelpLine = (this.scrollingReaderInterface && !useScrollingInterface);
+	// If the current message is new to the user, update the number of posts read this session.
+	if (pOffset > this.GetScanPtrMsgIdx())
+		++bbs.posts_read;
 	// Use the scrollable reader interface if the setting is enabled & the user's
 	// terminal supports ANSI.  Otherwise, use a more traditional user interface.
 	if (useScrollingInterface)
