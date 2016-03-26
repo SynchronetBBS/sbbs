@@ -130,8 +130,9 @@
  *                              and updated to support only the enhanced read function,
  *                              since for all practical purposes, I don't see a reason to
  *                              have the old-style message read function anymore.
- * 2016-03-19 Eric Oulashin     Started working on updating bbs.posts_read when
- *                              a user reads a message.
+ * 2016-03-19 Eric Oulashin     Now updates bbs.posts_read when a user reads a message.
+ * 2016-03-25 Eric Oulashin     Version 1.11
+ *                              Releasing this version
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -223,8 +224,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.11 beta 1";
-var READER_DATE = "2016-03-19";
+var READER_VERSION = "1.11";
+var READER_DATE = "2016-03-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);

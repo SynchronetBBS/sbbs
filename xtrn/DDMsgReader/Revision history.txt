@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.11     2016-03-25   The reader now updates the number of new posts read by
+                      the user during the session.  This is represented by
+                      bbs.posts_read in JavaScript.  Also, did some internal
+                      refactoring of the code, removing some old code leftover
+                      from my message lister that is no longer needed in this
+                      reader.  DDMsgReader.js is a bit smaller due to the
+                      refactor.
 1.10     2016-02-19   Added a new configuration option,
                       readingPostOnSubBoardInsteadOfGoToNext, that affects what
                       happens after the user reads the last message on a
