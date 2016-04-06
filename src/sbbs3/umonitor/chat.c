@@ -269,7 +269,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 		close(out);
 	togglechat(cfg,nodenum,node,FALSE);
 	puttext(1,1,ti.screenwidth,ti.screenheight,buf);
-	window(ti.winleft,ti.wintop,ti.winright,ti.wintop);
+	window(ti.winleft,ti.wintop,ti.winright,ti.winbottom);
 	gotoxy(ti.curx,ti.cury);
 	textattr(ti.attribute);
 	return(0);
