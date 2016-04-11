@@ -185,12 +185,12 @@ for(var i in nodelist) {
 	file.writeln("\tPassive = " + Boolean(nodelist[i].passive));
 	file.writeln("\tDirect = " + Boolean(nodelist[i].direct));
 	file.writeln("\tStatus = " + (nodelist[i].crash ? "crash" : nodelist[i].hold ? "hold" : "normal"));
-	file.writeln("\tPacker = " + (nodelist[i].usepacker || "none"));
+	file.writeln("\tArchive = " + (nodelist[i].usepacker || "none"));
 	file.writeln("\tKeys = " + nodelist[i].keys.join(","));
 }
 for(var i in packer) {
 	file.writeln();
-	file.writeln("[packer:" + packer[i].name + "]");
+	file.writeln("[archive:" + packer[i].name + "]");
 	file.writeln("\tSigOffset = " + packer[i].offset);
 	file.writeln("\tSig = " + packer[i].sig);
 	file.writeln("\tPack = " + packer[i].pack);
