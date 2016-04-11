@@ -169,8 +169,8 @@ typedef struct {
 	ulong		max_echomail_age;
 } sbbsecho_cfg_t;
 
-char* pktTypeStringList[];
-char* mailStatusStringList[];
+char* pktTypeStringList[4];
+char* mailStatusStringList[4];
 
 /***********************/
 /* Function prototypes */

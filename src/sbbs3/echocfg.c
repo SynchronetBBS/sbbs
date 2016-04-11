@@ -491,7 +491,7 @@ int main(int argc, char **argv)
 							case 1:
 	uifc.helpbuf=
 	"~ Comment ~\r\n\r\n"
-	"This is an optional comment for the node (e.g. the sysop's name).\r\n";
+	"This is an optional comment for the node (e.g. the sysop's name).\r\n"
 	"This is used for informational purposes only.\r\n";
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Comment"

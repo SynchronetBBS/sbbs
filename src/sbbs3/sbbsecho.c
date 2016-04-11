@@ -376,7 +376,6 @@ bool bso_lock_node(fidoaddr_t dest)
 
 const char* bso_flo_filename(fidoaddr_t dest)
 {
-	ushort attr=0;
 	nodecfg_t* nodecfg;
 	char ch='f';
 	const char* outbound;
@@ -599,15 +598,15 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 	hdr->type2.sernum	= SBBSECHO_VERSION_MAJOR;
 
 	if(nodecfg != NULL && nodecfg->pktpwd[0] != 0)
-		strncpy(hdr->type2.password, nodecfg->pktpwd, sizeof(hdr->type2.password));
+		strncpy((char*)hdr->type2.password, nodecfg->pktpwd, sizeof(hdr->type2.password));
 
 	if(pkt_type == PKT_TYPE_2_0)
 		return true;
 
 	if(pkt_type == PKT_TYPE_2_2) {
 		hdr->type2_2.subversion = 2;	/* 2.2 */
-		strncpy(hdr->type2_2.origdomn,"fidonet",sizeof(hdr->type2_2.origdomn));
-		strncpy(hdr->type2_2.destdomn,"fidonet",sizeof(hdr->type2_2.destdomn));
+		strncpy((char*)hdr->type2_2.origdomn,"fidonet",sizeof(hdr->type2_2.origdomn));
+		strncpy((char*)hdr->type2_2.destdomn,"fidonet",sizeof(hdr->type2_2.destdomn));
 		return true;
 	}
 	
@@ -706,6 +705,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		switch(nodecfg->status) {
 			case MAIL_STATUS_HOLD:	hdr.attr|=FIDO_HOLD;	break;
 			case MAIL_STATUS_CRASH:	hdr.attr|=FIDO_CRASH;	break;
+			case MAIL_STATUS_NORMAL:						break;
 		}
 		direct = nodecfg->direct;
 	}
@@ -4155,7 +4155,6 @@ void pack_netmail(void)
 	const char*	outbound;
 	char*	fmsgbuf=NULL;
 	char	ch;
-	ushort	attr;
 	int		i;
 	int		file;
 	int		fmsg;
@@ -4260,7 +4259,6 @@ void pack_netmail(void)
 			return;
 		}
 
-		attr=0;
 		nodecfg=findnodecfg(&cfg, addr, 0);
 		if(nodecfg!=NULL && nodecfg->route.zone	&& nodecfg->status==MAIL_STATUS_NORMAL) {
 			addr=nodecfg->route;		/* Routed */
@@ -4509,7 +4507,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 		}
 
 		nodecfg_t* nodecfg = findnodecfg(&cfg, pkt_orig, 1);
-		SAFECOPY(password,pkthdr.type2.password);
+		SAFECOPY(password,(char*)pkthdr.type2.password);
 		if(nodecfg !=NULL && stricmp(password,nodecfg->pktpwd)) {
 			lprintf(LOG_WARNING,"Packet %s from %s - "
 				"Incorrect password ('%s' instead of '%s')"
