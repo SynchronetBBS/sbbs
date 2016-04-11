@@ -24,6 +24,8 @@ if(!file.open("r")) {
 	exit();
 }
 var cfg = file.readAll(4096);
+file.close();
+
 var line_num;
 var bool_opts = [];
 var value_opts = [];
@@ -215,3 +217,8 @@ for(var i in echolist) {
 
 file.close();
 print(cfgfile + " successfully converted to " + inifile);
+var oldcfg = cfgfile + ".old";
+if(file_rename(cfgfile,oldcfg))
+	print(cfgfile + " renamed to " + oldcfg);
+else
+	alert("Error renaming " + cfgfile + " to " + oldcfg);
