@@ -46,6 +46,7 @@
 #define FIDO_SUBJ_LEN	72			/* Includes '\0' terminator				*/
 #define FIDO_TIME_LEN	20			/* Includes '\0' terminator				*/
 #define FIDO_PASS_LEN	8			/* Does NOT include '\0' terminator		*/
+#define FIDO_AREATAG_LEN	35		/* Echo "areatag" (NOT including '\0')	*/
 
 									/* Attribute bits for fmsghdr_t.attr	*/
 #define FIDO_PRIVATE	(1<<0)		/* Private message						*/
