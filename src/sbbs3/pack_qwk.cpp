@@ -105,6 +105,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		mode|=QM_VIA;
 	if(useron.qwk&QWK_MSGID)
 		mode|=QM_MSGID;
+	if(useron.qwk&QWK_EXT)
+		mode|=QM_EXT;
 
 	(*msgcnt)=0L;
 	if(/* !prepack && */ !(useron.qwk&QWK_NOCTRL)) {
