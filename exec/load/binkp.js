@@ -595,13 +595,19 @@ BinkP.prototype.session = function()
 	var args;
 	var size;
 	var last = Date.now();
+	var cur_timeout;
 
 	// Session set up, we're good to go!
 	outer:
 	while(!js.terminated && this.sock !== undefined) {
 		// We want to wait if we have no more files to send or if we're
 		// skipping files.
-		pkt = this.recvFrame(this.senteob ? this.timeout : 0);
+		cur_timeout = 0;
+		if (this.senteob)
+			cur_timeout = this.timeout;
+		if (this.sending !== undefined && this.sending.waitingForGet !== undefined && this.sending.waitingForGet)
+			cur_timeout = this.timeout;
+		pkt = this.recvFrame(cur_timeout);
 		if (pkt !== undefined && pkt !== this.partialFrame && pkt !== null) {
 			last = Date.now();
 			if (pkt.is_cmd) {
@@ -690,14 +696,22 @@ BinkP.prototype.session = function()
 							if (file_getname(this.sent_files[i]) === args[0])
 								break cmd_switch;
 						}
+						// Is this the current "sending" file?
+						if (this.sending === args[0]) {
+							// Stop waiting for a M_GET
+							this.sending.waitingForGet = false;
+							// Now, simply adjust the position in the sending file
+							this.sending.file.position = parseInt(args[3], 10);
+							break;
+						}
 						// Now look for it in failed...
 						for (i=0; i<this.failed_sent_files.length; i++) {
-							if (file_getname(this.failed_sent_files[i]) === args[0]) {
+							if (file_getname(this.failed_sent_files[i].sendas) === args[0]) {
 								// Validate the size, date, and offset...
-								if (file_size(this.failed_sent_files[i]) != parseInt(args[1], 10) || file_date(this.failed_sent_files[i]) != parseInt(args[2], 10) || file_size(this.failed_sent_files[i]) < parseInt(args[3], 10))
+								if (file_size(this.failed_sent_files[i].path) != parseInt(args[1], 10) || file_date(this.failed_sent_files[i].path) != parseInt(args[2], 10) || file_size(this.failed_sent_files[i].path) < parseInt(args[3], 10))
 									break;
 								// Re-add it
-								this.addFile(this.failed_sent_files[i]);
+								this.addFile(this.failed_sent_files[i].path, this.failed_sent_files[i].sendas, false);
 								// And remove from failed list
 								this.failed_sent_files.splice(i, 1);
 								break;
@@ -723,7 +737,7 @@ BinkP.prototype.session = function()
 						}
 						if (this.sending !== undefined && this.sending.sendas === args[0]) {
 							this.sending.file.close();
-							this.failed_sent_files.push(this.sending.file.name);
+							this.failed_sent_files.push({path:this.sending.file.name, sendas:this.sending.sendas});
 							this.sending = undefined;
 						}
 						break;
@@ -758,8 +772,10 @@ BinkP.prototype.session = function()
 			else {
 				this.sentempty = false;
 				this.pending_ack.push(this.sending);
-				if (this.nonreliable)
+				if (this.nonreliable && (this.sending.waitingForGet === undefined || this.sending.waitingForGet)) {
 					this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' -1');
+					this.sending.waitingForGet = true;
+				}
 				else
 					this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' '+this.sending.file.position);
 				if (this.ver1_1)
@@ -767,11 +783,13 @@ BinkP.prototype.session = function()
 			}
 		}
 		if (this.sending !== undefined) {
-			if(this.sendData(this.sending.file.read(32767)))
-				last = Date.now();
-			if (this.eof || this.sending.file.position >= this.sending.file.length) {
-				this.sending.file.close();
-				this.sending = undefined;
+			if (this.sending.waitingForGet !== undefined && !this.sending.waitingForGet) {
+				if(this.sendData(this.sending.file.read(32767)))
+					last = Date.now();
+				if (this.eof || this.sending.file.position >= this.sending.file.length) {
+					this.sending.file.close();
+					this.sending = undefined;
+				}
 			}
 		}
 
@@ -793,9 +811,9 @@ BinkP.prototype.close = function()
 	this.ack_file();
 	// Any still pending have failed.
 	for (i=0; i<this.pending_ack.length; i++)
-		this.failed_sent_files.push(this.pending_ack[i].file.name);
+		this.failed_sent_files.push({path:this.pending_ack[i].file.name, sendas:this.pending_ack[i].sendas});
 	for (i=0; i<this.tx_queue.length; i++)
-		this.failed_sent_files.push(this.tx_queue[i].file.name);
+		this.failed_sent_files.push({path:this.tx_queue[i].file.name, sendas:this.tx_queue[i].sendas});
 	if ((!this.goteob) || this.tx_queue.length || this.pending_ack.length || this.pending_get.length)
 		this.sendCmd(this.command.M_ERR, "Forced Shutdown");
 	else {
@@ -1089,12 +1107,14 @@ BinkP.prototype.recvFrame = function(timeout)
 	}
 	return ret;
 };
-BinkP.prototype.addFile = function(path, sendas)
+BinkP.prototype.addFile = function(path, sendas, waitget)
 {
 	var file = new File(path);
 
 	if (sendas === undefined)
 		sendas = file_getname(path);
+	if (waitget === undefined)
+		waitget = true;
 	if (!file.open("rb", true)) {
 		log(LOG_WARNING, "Unable to open '"+file.name+"'.  Not sending.");
 		return false;
@@ -1103,6 +1123,6 @@ BinkP.prototype.addFile = function(path, sendas)
 		this.senteob = false;
 	if (this.debug)
 		log(LOG_DEBUG, "Adding '"+path+"' as '"+sendas+"'");
-	this.tx_queue.push({file:file, sendas:sendas});
+	this.tx_queue.push({file:file, sendas:sendas, waitingForGet:waitget});
 	return true;
 };
