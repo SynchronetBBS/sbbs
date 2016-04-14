@@ -702,6 +702,8 @@ BinkP.prototype.session = function()
 							this.sending.waitingForGet = false;
 							// Now, simply adjust the position in the sending file
 							this.sending.file.position = parseInt(args[3], 10);
+							// And send the new M_FILE
+							this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' '+this.sending.file.position);
 							break;
 						}
 						// Now look for it in failed...
