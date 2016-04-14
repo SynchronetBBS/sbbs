@@ -204,8 +204,10 @@ for(var i in echolist) {
 		elist.shift();
 		hub = { addr: elist.shift(), pwd: elist.shift() };
 		forward = true;
-	} else if(elist[0].toUpperCase()=="HUB")
+	} else if(elist[0].toUpperCase()=="HUB") {
+		elist.shift();
 		hub = { addr: elist.shift(), pwd: '' };
+	}
 
 	file.writeln();
 	file.writeln("[echolist:" + elist.shift() + "]");
