@@ -5089,7 +5089,7 @@ int main(int argc, char **argv)
 			cfg.area[cfg.areas].link[cfg.area[cfg.areas].links] = link;
 			if(findnodecfg(&cfg, link, /* exact: */true) == NULL)
 				lprintf(LOG_WARNING, "Configuration for %s-linked-node (%s) not found in %s"
-					,cfg.area[cfg.areas].name, p, cfg.cfgfile);
+					,cfg.area[cfg.areas].name, faddrtoa(&link), cfg.cfgfile);
 			else
 				cfg.area[cfg.areas].links++; 
 			FIND_WHITESPACE(p);	/* Skip address */
