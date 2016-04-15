@@ -269,7 +269,8 @@ char* SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* str)
 /****************************************************************************/
 fidoaddr_t SMBCALL smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 {
-	char *p;
+	char*		p;
+	const char*	terminator;
 	fidoaddr_t addr;
 	fidoaddr_t tmp_addr={1,1,1,0};	/* Default system address: 1:1/1.0 */
 
@@ -277,7 +278,9 @@ fidoaddr_t SMBCALL smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 		sys_addr=&tmp_addr;
 
 	ZERO_VAR(addr);
-	if((p=strchr(str,':'))!=NULL) {
+	terminator = str;
+	FIND_WHITESPACE(terminator);
+	if((p=strchr(str,':'))!=NULL && p < terminator) {
 		addr.zone=atoi(str);
 		addr.net=atoi(p+1); 
 	} else {
@@ -286,14 +289,14 @@ fidoaddr_t SMBCALL smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 	}
 	if(addr.zone==0)              /* no such thing as zone 0 */
 		addr.zone=1;
-	if((p=strchr(str,'/'))!=NULL)
+	if((p=strchr(str,'/'))!=NULL && p < terminator)
 		addr.node=atoi(p+1);
 	else {
 		if(addr.zone==sys_addr->zone)
 			addr.net=sys_addr->net;
 		addr.node=atoi(str); 
 	}
-	if((p=strchr(str,'.'))!=NULL)
+	if((p=strchr(str,'.'))!=NULL && p < terminator)
 		addr.point=atoi(p+1);
 	return(addr);
 }
