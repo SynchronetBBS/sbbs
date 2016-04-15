@@ -1524,8 +1524,32 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						}
 						break;
 					case CIO_KEY_F(1):	/* F1 - Help */
+					{
+						uint8_t* save = malloc(width*height*2);
+						if(save != NULL) {
+							gettext(s_left+left,s_top+top,s_left
+								+left+width-1,s_top+top+height-1,save);
+							uint8_t* copy = malloc(width*height*2);
+							if(copy != NULL) {
+								memcpy(copy, save, width*height*2);
+								for(i=1;i<(width*height*2);i+=2)
+									copy[i]=lclr|(cclr<<4);
+								j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
+								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
+									copy[i]=hclr|(cclr<<4);
+								puttext(s_left+left,s_top+top,s_left
+									+left+width-1,s_top+top+height-1,copy);
+								free(copy);
+							}
+						}
 						api->showhelp();
+						if(save != NULL) {
+							puttext(s_left+left,s_top+top,s_left
+								+left+width-1,s_top+top+height-1,save);
+							free(save);
+						}
 						break;
+					}
 					case CIO_KEY_F(2):	/* F2 - Edit */
 						if(mode&WIN_XTR && (*cur)==opts-1)	/* can't edit */
 							break;							/* extra line */
