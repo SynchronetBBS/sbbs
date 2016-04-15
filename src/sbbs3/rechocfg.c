@@ -61,7 +61,9 @@ faddr_t atofaddr(const char *instr)
     faddr_t addr;
 
 	SAFECOPY(str, instr);
-	truncsp(str);
+	p=str;
+	FIND_WHITESPACE(p);
+	*p=0;
 	if(!stricmp(str,"ALL")) {
 		addr.zone=addr.net=addr.node=addr.point=0xffff;
 		return(addr); 
