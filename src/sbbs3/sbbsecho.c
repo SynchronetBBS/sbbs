@@ -5077,6 +5077,10 @@ int main(int argc, char **argv)
 		SKIP_WHITESPACE(p);		/* Skip white space */
 
 		while(*p && *p!=';') {
+			if(!isdigit(*p)) {
+				lprintf(LOG_WARNING, "Invalid Area File line, expected link address(es) after echo-tag: '%s'", str);
+				break;
+			}
 			if((cfg.area[cfg.areas].link=(fidoaddr_t *)
 				realloc(cfg.area[cfg.areas].link
 				,sizeof(fidoaddr_t)*(cfg.area[cfg.areas].links+1)))==NULL) {
