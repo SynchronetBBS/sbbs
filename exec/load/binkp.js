@@ -778,8 +778,10 @@ BinkP.prototype.session = function()
 					this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' -1');
 					this.sending.waitingForGet = true;
 				}
-				else
+				else {
 					this.sendCmd(this.command.M_FILE, this.escapeFileName(this.sending.sendas)+' '+this.sending.file.length+' '+this.sending.file.date+' '+this.sending.file.position);
+					this.sending.waitingForGet = false;
+				}
 				if (this.ver1_1)
 					this.goteob = false;
 			}
