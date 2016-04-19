@@ -448,6 +448,10 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		iniSetBool(&ini		,section,	"Notify"		,node->send_notify	,&style);
 		iniSetStringList(&ini,section,	"Keys", ","		,node->keys			,&style);
 		iniSetEnum(&ini		,section,	"Status"		,mailStatusStringList, node->status, &style);
+		if(node->route.zone)
+			iniSetString(&ini,section,	"Route"			,faddrtoa(&node->route), &style);
+		else
+			iniRemoveKey(&ini,section,	"Route");
 	}
 
 	/**************/
