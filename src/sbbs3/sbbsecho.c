@@ -1438,7 +1438,7 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 		return; 
 	}
 
-	if((p=strstr(instr,"FROM"))!=NULL);
+	//if((p=strstr(instr,"FROM"))!=NULL);
 
 	if((p=strstr(instr,"+ALL"))!=NULL) {
 		str_list_t add_area=strListInit();
