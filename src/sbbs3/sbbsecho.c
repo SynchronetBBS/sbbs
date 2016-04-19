@@ -4944,6 +4944,7 @@ int main(int argc, char **argv)
 	}
 	SAFECOPY(scfg.ctrl_dir,p);
 
+	backslash(scfg.ctrl_dir);
 	SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
 	if(!fmutex(path, program_id(), cfg.bsy_timeout)) {
 		lprintf(LOG_WARNING, "Mutex file exists (%s): SBBSecho appears to be already running", path);
@@ -5090,7 +5091,7 @@ int main(int argc, char **argv)
 			}
 			fidoaddr_t link = atofaddr(p);
 			cfg.area[cfg.areas].link[cfg.area[cfg.areas].links] = link;
-			if(findnodecfg(&cfg, link, /* exact: */true) == NULL)
+			if(findnodecfg(&cfg, link, /* exact: */false) == NULL)
 				lprintf(LOG_WARNING, "Configuration for %s-linked-node (%s) not found in %s"
 					,cfg.area[cfg.areas].name, faddrtoa(&link), cfg.cfgfile);
 			else
