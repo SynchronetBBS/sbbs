@@ -187,6 +187,8 @@ for(var i in nodelist) {
 	file.writeln("\tStatus = " + (nodelist[i].crash ? "crash" : nodelist[i].hold ? "hold" : "normal"));
 	file.writeln("\tArchive = " + (nodelist[i].usepacker || "none"));
 	file.writeln("\tKeys = " + nodelist[i].keys.join(","));
+	if(nodelist[i].route_to)
+		file.writeln("\tRoute = " + nodelist[i].route_to);
 }
 for(var i in packer) {
 	file.writeln();
