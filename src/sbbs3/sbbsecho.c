@@ -46,7 +46,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <malloc.h>
 
 #include "conwrap.h"		/* getch() */
 #include "sbbs.h"			/* load_cfg() */
