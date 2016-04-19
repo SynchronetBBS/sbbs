@@ -9,27 +9,39 @@ function SBBSEchoCfg ()
 	this.is_flo = false;
 	this.outbound = undefined;
 
-	if (!ecfg.open("r"))
-		throw("Unable to open '"+ecfg.name+"'");
+	if (!ecfg.open("r")) {
+		ecfg = new File(system.ctrl_dir+'sbbsecho.ini');
+		if (!ecfg.open("r"))
+			throw("Unable to open '"+ecfg.name+"'");
 
-	while ((line=ecfg.readln(65535)) != undefined) {
-		m = line.match(/^\s*(secure_|)inbound\s+(.*)$/i);
-		if (m !== null) {
-			this.inb.push(backslash(m[2]));
-			this[m[1].toLowerCase()+'inbound'] = m[2];
+		this.inbound = ecfg.iniGetValue(null, "Inbound", "../fido/nonsecure");
+		this.secure_inbound = ecfg.iniGetValue(null, "SecureInbound", "../fido/inbound");
+		this.outbound = ecfg.iniGetValue(null, "Outbound", "../fido/outbound");
+		this.is_flo = ecfg.iniGetValue(null, "BinkleyStyleOutbound", false);
+		ecfg.iniGetSections('node:').forEach(function(section) {
+			this.pktpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'PacketPwd', '');
+		}, this);
+	}
+	else {
+		while ((line=ecfg.readln(65535)) != undefined) {
+			m = line.match(/^\s*(secure_|)inbound\s+(.*)$/i);
+			if (m !== null) {
+				this.inb.push(backslash(m[2]));
+				this[m[1].toLowerCase()+'inbound'] = m[2];
+			}
+
+			m = line.match(/^\s*pktpwd\s+(.*?)\s+(.*)\s*$/i);
+			if (m !== null)
+				this.pktpass[m[1].toUpperCase()] = m[2].toUpperCase();
+
+			m = line.match(/^\s*outbound\s+(.*?)\s*$/i);
+			if (m !== null)
+				this.outbound = m[1];
+
+			m = line.match(/^\s*flo_mailer\s*$/i);
+			if (m !== null)
+				this.is_flo = true;
 		}
-
-		m = line.match(/^\s*pktpwd\s+(.*?)\s+(.*)\s*$/i);
-		if (m !== null)
-			this.pktpass[m[1].toUpperCase()] = m[2].toUpperCase();
-
-		m = line.match(/^\s*outbound\s+(.*?)\s*$/i);
-		if (m !== null)
-			this.outbound = m[1];
-
-		m = line.match(/^\s*flo_mailer\s*$/i);
-		if (m !== null)
-			this.is_flo = true;
 	}
 	ecfg.close();
 }
