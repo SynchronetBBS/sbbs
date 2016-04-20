@@ -620,7 +620,6 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	for(i=0;i<28;i++)
 		put_int(n,stream);
 	md(cfg->netmail_dir);
-	md(cfg->fidofile_dir);
 
 	/* QWKnet Config */
 
