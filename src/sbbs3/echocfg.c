@@ -180,6 +180,24 @@ int main(int argc, char **argv)
 	}
 	SAFECOPY(cfg.cfgfile,str);
 
+	p=getenv("SBBSCTRL");
+	if(!p) {
+		p=getenv("SBBSNODE");
+		if(!p) {
+			printf("usage: echocfg [cfg_file]\n");
+			exit(1); 
+		}
+		strcpy(str,p);
+		backslash(str);
+		strcat(str,"../ctrl/ftn_domains.ini"); 
+	}
+	else {
+		strcpy(str,p);
+		backslash(str);
+		strcat(str,"ftn_domains.ini"); 
+	} 
+	SAFECOPY(cfg.ftndomainsfile,str);
+
 	if(!sbbsecho_read_ini(&cfg)) {
 		fprintf(stderr, "ERROR %d (%s) reading %s\n", errno, strerror(errno), cfg.cfgfile);
 		exit(1);

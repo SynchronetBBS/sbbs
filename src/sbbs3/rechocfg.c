@@ -218,6 +218,7 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->delete_netmail			= true;
 	cfg->echomail_notify		= true;
 	cfg->kill_empty_netmail		= true;
+	cfg->use_ftn_domains		= false;
 }
 
 char* pktTypeStringList[] = {"2+", "2.2", "2", NULL};
@@ -252,6 +253,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->bsy_timeout			= (ulong)iniGetDuration(ini, ROOT_SECTION, "BsyTimeout", cfg->bsy_timeout);
 	cfg->bso_lock_attempts		= iniGetLongInt(ini, ROOT_SECTION, "BsoLockAttempts", cfg->bso_lock_attempts);
 	cfg->bso_lock_delay			= (ulong)iniGetDuration(ini, ROOT_SECTION, "BsoLockDelay", cfg->bso_lock_delay);
+	cfg->use_ftn_domains		= iniGetBool(ini, ROOT_SECTION, "UseFTNDomains", cfg->use_ftn_domains);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -362,6 +364,35 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		cfg->maxbdlsize=DFLT_BDL_SIZE;
 
 	strListFree(&ini);
+
+	if(cfg->use_ftn_domains) {
+		if((fp=iniOpenFile(cfg->ftndomainsfile, /* create: */false))==NULL)
+			return false;
+		ini = iniReadFile(fp);
+		iniCloseFile(fp);
+		str_list_t domains = iniGetSectionList(ini, NULL);
+		const char* domain;
+		while((domain = strListPop(&domains)) != NULL) {
+			str_list_t zones = iniGetStringList(ini, domain, "Zones", ",", NULL);
+			const char* zone;
+			while((zone = strListPop(&zones)) != NULL) {
+				char path[MAX_PATH+1];
+				struct zone_mapping *mapping = (struct zone_mapping *)malloc(sizeof(struct zone_mapping));
+
+				if (mapping == NULL) {
+					strListFree(&zones);
+					strListFree(&domains);
+					return false;
+				}
+				mapping->zone = strtol(zone, NULL, 10);
+				mapping->domain = strdup(domain);
+				mapping->root = strdup(iniGetString(ini, domain, "OutboundRoot", cfg->outbound, path));
+				mapping->next = cfg->zone_map;
+				cfg->zone_map = mapping;
+			}
+		}
+	}
+
 	return true;
 }
 
@@ -413,6 +444,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailDestAddr"	,cfg->ignore_netmail_dest_addr	,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailRecvAttr"	,cfg->ignore_netmail_recv_attr	,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailLocalAttr"	,cfg->ignore_netmail_local_attr	,NULL);
+	iniSetBool(&ini,		ROOT_SECTION, "UseFTNDomains"			,cfg->use_ftn_domains			,NULL);
 
 	style.key_prefix = "\t";
 

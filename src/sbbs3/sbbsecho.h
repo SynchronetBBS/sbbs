@@ -121,6 +121,13 @@ typedef struct {
 	char		filename[MAX_PATH+1];	/* The full path to the attached file */
 } attach_t;
 
+struct zone_mapping {
+	uint16_t	zone;
+	const char*	root;
+	const char* domain;
+	struct zone_mapping *next;
+};
+
 typedef struct {
 	char		inbound[MAX_PATH+1]; 	/* Inbound directory */
 	char		secure_inbound[MAX_PATH+1];		/* Secure Inbound directory */
@@ -128,6 +135,7 @@ typedef struct {
 	char		areafile[MAX_PATH+1];	/* AREAS.BBS path/filename */
 	char		logfile[MAX_PATH+1];	/* LOG path/filename */
 	char		cfgfile[MAX_PATH+1];	/* Configuration path/filename */
+	char		ftndomainsfile[MAX_PATH+1];	/* ftn_domains.ini path/filename */
 	char		temp_dir[MAX_PATH+1];	/* Temporary file directory */
 	str_list_t	sysop_alias_list;		/* List of sysop aliases */
 	ulong		maxpktsize				/* Maximum size for packets */
@@ -162,11 +170,13 @@ typedef struct {
 	bool		ignore_netmail_dest_addr;
 	bool		ignore_netmail_recv_attr;
 	bool		ignore_netmail_local_attr;
+	bool		use_ftn_domains;
 	ulong		bsy_timeout;
 	ulong		bso_lock_attempts;
 	ulong		bso_lock_delay;			/* in seconds */
 	ulong		max_netmail_age;
 	ulong		max_echomail_age;
+	struct zone_mapping *zone_map;	// 
 } sbbsecho_cfg_t;
 
 char* pktTypeStringList[4];
