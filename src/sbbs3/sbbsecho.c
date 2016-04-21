@@ -2520,7 +2520,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		&& (now - msg.hdr.when_written.time) > max_msg_age) {
 		lprintf(LOG_INFO, "Filtering message from %s due to age: %1.1f days"
 			,fmsghdr.from
-			,(now - msg.hdr.when_written.time) / 24.0*60.0*60.0);
+			,(now - msg.hdr.when_written.time) / (24.0*60.0*60.0));
 		return 4;
 	}
 
