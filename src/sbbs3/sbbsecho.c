@@ -5015,11 +5015,12 @@ int main(int argc, char **argv)
 	if(!cfg.cfgfile[0])
 		SAFEPRINTF(cfg.cfgfile,"%ssbbsecho.ini",scfg.ctrl_dir);
 
-	if(!cfg.ftndomainsfile[0])
-		SAFEPRINTF(cfg.ftndomainsfile,"%sftn_domains.ini",scfg.ctrl_dir);
-
 	if(!sbbsecho_read_ini(&cfg)) {
 		fprintf(stderr, "ERROR %d (%s) reading %s\n", errno, strerror(errno), cfg.cfgfile);
+		bail(1);
+	}
+	if(!sbbsecho_read_ftn_domains(&cfg, scfg.ctrl_dir)) {
+		fprintf(stderr, "ERROR %d (%s) reading %sftn_domains.ini\n", errno, strerror(errno), scfg.ctrl_dir);
 		bail(1);
 	}
 

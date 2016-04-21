@@ -365,19 +365,31 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 
 	strListFree(&ini);
 
+	return true;
+}
+
+bool sbbsecho_read_ftn_domains(sbbsecho_cfg_t* cfg, const char * ctrl_dir)
+{
+	FILE*		fp;
+	str_list_t	ini;
+	char		path[MAX_PATH+1];
+	str_list_t	domains;
+	const char *	domain;
+	str_list_t	zones;
+	const char *	zone;
+	struct zone_mapping * mapping;
+
 	if(cfg->use_ftn_domains) {
-		if((fp=iniOpenFile(cfg->ftndomainsfile, /* create: */false))==NULL)
+		SAFEPRINTF(path, "%sftn_domains.ini", ctrl_dir);
+		if((fp=iniOpenFile(path, /* create: */false))==NULL)
 			return false;
 		ini = iniReadFile(fp);
 		iniCloseFile(fp);
-		str_list_t domains = iniGetSectionList(ini, NULL);
-		const char* domain;
+		domains = iniGetSectionList(ini, NULL);
 		while((domain = strListPop(&domains)) != NULL) {
-			str_list_t zones = iniGetStringList(ini, domain, "Zones", ",", NULL);
-			const char* zone;
+			zones = iniGetStringList(ini, domain, "Zones", ",", NULL);
 			while((zone = strListPop(&zones)) != NULL) {
-				char path[MAX_PATH+1];
-				struct zone_mapping *mapping = (struct zone_mapping *)malloc(sizeof(struct zone_mapping));
+				mapping = (struct zone_mapping *)malloc(sizeof(struct zone_mapping));
 
 				if (mapping == NULL) {
 					strListFree(&zones);
@@ -390,9 +402,11 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 				mapping->next = cfg->zone_map;
 				cfg->zone_map = mapping;
 			}
+			strListFree(&zones);
 		}
+		strListFree(&domains);
 	}
-
+	strListFree(&ini);
 	return true;
 }
 
