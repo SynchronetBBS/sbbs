@@ -5294,6 +5294,10 @@ int main(int argc, char **argv)
 	free(smb);
 	free(email);
 
+	if(cfg.outgoing_sem[0]) {
+		if (exported_netmail || exported_echomail || packed_netmail)
+			ftouch(cfg.outgoing_sem);
+	}
 	bail(0);
 	return(0);
 }

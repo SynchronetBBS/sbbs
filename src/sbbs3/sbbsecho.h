@@ -136,6 +136,7 @@ typedef struct {
 	char		logfile[MAX_PATH+1];	/* LOG path/filename */
 	char		cfgfile[MAX_PATH+1];	/* Configuration path/filename */
 	char		temp_dir[MAX_PATH+1];	/* Temporary file directory */
+	char		outgoing_sem[MAX_PATH+1];	/* Semaphore file to creat when there's outgoing data */
 	str_list_t	sysop_alias_list;		/* List of sysop aliases */
 	ulong		maxpktsize				/* Maximum size for packets */
 			   ,maxbdlsize;				/* Maximum size for bundles */

@@ -247,6 +247,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	SAFECOPY(cfg->areafile		, iniGetString(ini, ROOT_SECTION, "AreaFile",		"../data/areas.bbs", value));
 	SAFECOPY(cfg->logfile		, iniGetString(ini, ROOT_SECTION, "LogFile",		"../data/sbbsecho.log", value));
 	SAFECOPY(cfg->temp_dir		, iniGetString(ini, ROOT_SECTION, "TempDirectory",	"../temp/sbbsecho", value));
+	SAFECOPY(cfg->outgoing_sem	, iniGetString(ini, ROOT_SECTION, "OutgoingSemaphore",	"", value));
 	cfg->log_level				= iniGetLogLevel(ini, ROOT_SECTION, "LogLevel", cfg->log_level);
 	cfg->strip_lf				= iniGetBool(ini, ROOT_SECTION, "StripLineFeeds", cfg->strip_lf);
 	cfg->flo_mailer				= iniGetBool(ini, ROOT_SECTION, "BinkleyStyleOutbound", cfg->flo_mailer);
