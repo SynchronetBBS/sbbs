@@ -123,8 +123,8 @@ typedef struct {
 
 struct zone_mapping {
 	uint16_t	zone;
-	const char*	root;
-	const char* domain;
+	char *		root;
+	char *		domain;
 	struct zone_mapping *next;
 };
 

@@ -378,6 +378,17 @@ bool sbbsecho_read_ftn_domains(sbbsecho_cfg_t* cfg, const char * ctrl_dir)
 	str_list_t	zones;
 	const char *	zone;
 	struct zone_mapping * mapping;
+	struct zone_mapping * old_mapping;
+
+	// First, free any old mappings...
+	for (mapping = cfg->zone_map; mapping;) {
+		FREE_AND_NULL(mapping->domain);
+		FREE_AND_NULL(mapping->root);
+		old_mapping = mapping;
+		mapping = old_mapping->next;
+		FREE_AND_NULL(old_mapping);
+	}
+	cfg->zone_map = NULL;
 
 	if(cfg->use_ftn_domains) {
 		SAFEPRINTF(path, "%sftn_domains.ini", ctrl_dir);
