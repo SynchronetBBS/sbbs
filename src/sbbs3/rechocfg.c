@@ -408,7 +408,7 @@ bool sbbsecho_read_ftn_domains(sbbsecho_cfg_t* cfg, const char * ctrl_dir)
 					strListFree(&domains);
 					return false;
 				}
-				mapping->zone = strtol(zone, NULL, 10);
+				mapping->zone = (uint16_t)strtol(zone, NULL, 10);
 				mapping->domain = strdup(domain);
 				mapping->root = strdup(iniGetString(ini, domain, "OutboundRoot", cfg->outbound, path));
 				mapping->next = cfg->zone_map;
@@ -470,6 +470,8 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailDestAddr"	,cfg->ignore_netmail_dest_addr	,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailRecvAttr"	,cfg->ignore_netmail_recv_attr	,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailLocalAttr"	,cfg->ignore_netmail_local_attr	,NULL);
+	iniSetString(&ini,		ROOT_SECTION, "DefaultRecipient"		,cfg->default_recipient			,NULL);
+
 	iniSetBool(&ini,		ROOT_SECTION, "UseFTNDomains"			,cfg->use_ftn_domains			,NULL);
 
 	style.key_prefix = "\t";
