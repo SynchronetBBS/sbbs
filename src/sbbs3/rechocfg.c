@@ -417,8 +417,8 @@ bool sbbsecho_read_ftn_domains(sbbsecho_cfg_t* cfg, const char * ctrl_dir)
 			strListFree(&zones);
 		}
 		strListFree(&domains);
+		strListFree(&ini);
 	}
-	strListFree(&ini);
 	return true;
 }
 
