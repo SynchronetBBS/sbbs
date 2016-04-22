@@ -9,7 +9,7 @@
 var LockedFiles={};
 js.on_exit("UnlockAll()");
 
-load('require.js', 'sbbsdefs.js', 'LOG_ERR');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'sbbsdefs.js', 'LOG_ERR');
 
 function Lock(filename, lockid, forwrite, timeout)
 {

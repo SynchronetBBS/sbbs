@@ -1,8 +1,8 @@
 // $Id$
 
-load('require.js', 'sockdefs.js', 'SOCK_STREAM');
-load('require.js', 'mailutil.js', 'mail_get_name');
-load('require.js', 'sbbsdefs.js', 'NET_INTERNET');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'sockdefs.js', 'SOCK_STREAM');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'mailutil.js', 'mail_get_name');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'sbbsdefs.js', 'NET_INTERNET');
 
 const PR_SUCCESS=0;
 const PR_SENDING_DATA=1;

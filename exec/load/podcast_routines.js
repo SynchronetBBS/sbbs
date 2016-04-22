@@ -1,5 +1,5 @@
-load('require.js', 'http.js', 'HTTP');
-load('require.js', 'sbbsdefs.js', 'MSG_DELETE');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'http.js', 'HTTP');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'sbbsdefs.js', 'MSG_DELETE');
 
 function podcast_load_headers(base, from, to, all_hdrs)
 {

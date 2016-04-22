@@ -4,8 +4,8 @@
  * standing aside.
  * Issues expire after 15 days.
  */
-load('require.js', "sbbsdefs.js", 'USER_DELETED');
-load('require.js', "json-client.js", 'JSONClient');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, "sbbsdefs.js", 'USER_DELETED');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, "json-client.js", 'JSONClient');
 var LOCK_READ = 1
 var LOCK_WRITE = 2
 var LOCK_UNLOCK = -1

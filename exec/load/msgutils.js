@@ -1,6 +1,6 @@
 // $Id$
 
-load('require.js', 'sbbsdefs.js', 'HIGH');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'sbbsdefs.js', 'HIGH');
 
 function attr_to_ansi(atr, curatr)
 {

@@ -1,4 +1,4 @@
-load('require.js', "http.js", 'HTTPRequest');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, "http.js", 'HTTPRequest');
 
 var CallSign={
 	Lookup:{

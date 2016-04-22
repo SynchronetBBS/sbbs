@@ -2,7 +2,7 @@
 
 // $Id$
 
-load('require.js', "sbbsdefs.js", 'K_UPPER');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, "sbbsdefs.js", 'K_UPPER');
 
 function getkeye()
 {

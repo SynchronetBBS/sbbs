@@ -1,5 +1,5 @@
-load('require.js', 'sockdefs.js', 'SOCK_STREAM');
-load('require.js', 'fido.js', 'FIDO');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'sockdefs.js', 'SOCK_STREAM');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'fido.js', 'FIDO');
 
 /*
  * A binkp implementation...

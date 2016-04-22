@@ -1,7 +1,7 @@
 /* $Id$ */
 
-load('require.js', 'sockdefs.js', 'SOCK_STREAM');
-load('require.js', 'url.js', 'URL');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'sockdefs.js', 'SOCK_STREAM');
+load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'url.js', 'URL');
 
 /*
  * TODO Stuff:
