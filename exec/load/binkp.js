@@ -1,5 +1,5 @@
 load('require.js', 'sockdefs.js', 'SOCK_STREAM');
-load('require.js', 'fidocfg.js', 'SBBSEchoCfg');
+load('require.js', 'fido.js', 'FIDO');
 
 /*
  * A binkp implementation...
