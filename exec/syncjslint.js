@@ -5245,13 +5245,13 @@ var JSLINT = function () {
 function SYNCJSLINT(argc, argv)
 {
 	var already_loaded={};
-	function LOADFILE(lines, index, pos, fname, paths, options)
+	function LOADFILE(lines, index, pos, fname, paths, options, require)
 	{
 		var i;
 		var tmp;
 		var offset=0;
 
-		if(options.multiload) {
+		if(require || options.multiload) {
 			if(already_loaded[fname] !== undefined) {
 				writeln("Skipping "+fname);
 				return(0);
@@ -5283,8 +5283,11 @@ function SYNCJSLINT(argc, argv)
 				tmp=all_lines[i];
 				tmp=tmp.replace(/\/\*.*?\*\//g,'');
 				tmp=tmp.replace(/\/\/.*^/,'');
-				if((m=tmp.match(/^\s*load\([^"']*(['"])(.*?[^\\])\1.*?\)/))!==null) {
-					offset+=LOADFILE(lines,index,pos+offset+i,m[2],paths,options);
+				if((m=tmp.match(/^\s*load\([^"']*(['"])require.js\1[^"']*(['"])(.*?[^\\])\2.*?\)/))!==null) {
+					offset+=LOADFILE(lines,index,pos+offset+i,m[3],paths,options,true);
+				}
+				else if((m=tmp.match(/^\s*load\([^"']*(['"])(.*?[^\\])\1.*?\)/))!==null) {
+					offset+=LOADFILE(lines,index,pos+offset+i,m[2],paths,options,false);
 				}
 	
 			}
@@ -5300,7 +5303,7 @@ function SYNCJSLINT(argc, argv)
 	var paths=[backslash(system.exec_dir),backslash(backslash(system.exec_dir)+'load')];
 	var all_lines;
 	var index;
-	var options={cap:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true,multiload:true,noradix:true,noescapement:true,poorrelations:true,noliteral:true,noextracomma:true,forin:true};
+	var options={cap:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true,multiload:false,noradix:true,noescapement:true,poorrelations:true,noliteral:true,noextracomma:true,forin:true};
 	var myResult;
 	var tmpVar1;
 	var tmpVar2;
