@@ -1,11 +1,8 @@
 // $Id$
 
-if(!js.global || js.global.SOCK_STREAM==undefined)
-	load("sockdefs.js");
-if(!js.global || js.global.mail_get_name==undefined)
-	load("mailutil.js");
-if(!js.global || js.global.NET_INTERNET==undefined)
-	load("sbbsdefs.js");
+load('require.js', 'sockdefs.js', 'SOCK_STREAM');
+load('require.js', 'mailutil.js', 'mail_get_name');
+load('require.js', 'sbbsdefs.js', 'NET_INTERNET');
 
 const PR_SUCCESS=0;
 const PR_SENDING_DATA=1;

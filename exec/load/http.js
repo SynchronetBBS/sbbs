@@ -1,9 +1,7 @@
 /* $Id$ */
 
-if(!js.global || js.global.SOCK_STREAM==undefined)
-	load('sockdefs.js');
-if(!js.global || js.global.URL==undefined)
-	load("url.js");
+load('require.js', 'sockdefs.js', 'SOCK_STREAM');
+load('require.js', 'url.js', 'URL');
 
 /*
  * TODO Stuff:

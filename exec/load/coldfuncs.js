@@ -2,8 +2,7 @@
 
 // $Id$
 
-if(!js.global || js.global.SYS_CLOSED==undefined)
-	load("sbbsdefs.js");
+load('require.js', "sbbsdefs.js", 'SYS_CLOSED');
 var coldfuncs_last_hotkey='';
 
 function get_next_key()

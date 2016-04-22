@@ -4,8 +4,7 @@
  */
 
 /* ToDo: Support multiple columns */
-if(this.SYS_CLOSED==undefined)
-	load("sbbsdefs.js");
+load('require.js', "sbbsdefs.js", 'SYS_CLOSED');
 
 /*
  * Lightbar object

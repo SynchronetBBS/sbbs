@@ -2,7 +2,7 @@
 
 // Converts a ^A/@-code text to HTML for htmlterm usage.
 
-load("graphic.js");
+load('require.js', "graphic.js", 'Graphic');
 
 function asc2htmlterm(buf, dospin, partial, mode)
 {

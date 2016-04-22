@@ -1,5 +1,4 @@
-if(!js.global || js.global.HTTPRequest==undefined)
-	js.global.load("http.js");
+load('require.js', "http.js", 'HTTPRequest');
 
 var CallSign={
 	Lookup:{

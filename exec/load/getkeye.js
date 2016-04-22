@@ -2,8 +2,7 @@
 
 // $Id$
 
-if(!js.global || js.global.K_UPPER==undefined)
-	load("sbbsdefs.js");
+load('require.js', "sbbsdefs.js", 'K_UPPER');
 
 function getkeye()
 {

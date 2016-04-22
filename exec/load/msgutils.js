@@ -1,7 +1,6 @@
 // $Id$
 
-if(!js.global || js.global.HIGH==undefined)
-	load("sbbsdefs.js");
+load('require.js', 'sbbsdefs.js', 'HIGH');
 
 function attr_to_ansi(atr, curatr)
 {

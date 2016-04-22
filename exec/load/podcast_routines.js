@@ -1,7 +1,5 @@
-if (js.global.HTTP == undefined)
-	js.global.load("http.js");
-if (js.global.MSG_DELETE == undefined)
-	js.global.load("sbbsdefs.js");
+load('require.js', 'http.js', 'HTTP');
+load('require.js', 'sbbsdefs.js', 'MSG_DELETE');
 
 function podcast_load_headers(base, from, to, all_hdrs)
 {

@@ -1,4 +1,4 @@
-load("unicode_cp437.js");
+load('require.js', "unicode_cp437.js", 'unicode_cp437');
 
 function utf8_cp437(uni)
 {
