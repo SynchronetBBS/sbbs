@@ -5248,8 +5248,9 @@ function SYNCJSLINT(argc, argv)
 	function LOADFILE(lines, index, pos, fname, paths, options, require)
 	{
 		var i;
-		var tmp;
+		var tmp, tmp2;
 		var offset=0;
+		var multiline_comment = false;
 
 		if(require || options.multiload) {
 			if(already_loaded[fname] !== undefined) {
@@ -5281,8 +5282,21 @@ function SYNCJSLINT(argc, argv)
 	
 				/* TODO: smart string parsing... */
 				tmp=all_lines[i];
+				if (multiline_comment) {
+					if ((tmp2 = tmp.replace(/^.*?\/\*/,'')) != tmp) {
+						tmp = tmp2;
+						multiline_comment = false;
+					}
+					else {
+						tmp = '';
+					}
+				}
 				tmp=tmp.replace(/\/\*.*?\*\//g,'');
 				tmp=tmp.replace(/\/\/.*^/,'');
+				if ((tmp2 = tmp.replace(/\/\*.*$/, '')) != tmp) {
+					tmp = tmp2;
+					multiline_comment = true;
+				}
 				if((m=tmp.match(/^\s*load\([^"']*(['"])require.js\1[^"']*(['"])(.*?[^\\])\2.*?\)/))!==null) {
 					offset+=LOADFILE(lines,index,pos+offset+i,m[3],paths,options,true);
 				}
