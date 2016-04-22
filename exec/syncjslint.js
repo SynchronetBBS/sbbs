@@ -5283,7 +5283,7 @@ function SYNCJSLINT(argc, argv)
 				/* TODO: smart string parsing... */
 				tmp=all_lines[i];
 				if (multiline_comment) {
-					if ((tmp2 = tmp.replace(/^.*?\/\*/,'')) != tmp) {
+					if ((tmp2 = tmp.replace(/^.*?\*\//,'')) != tmp) {
 						tmp = tmp2;
 						multiline_comment = false;
 					}
