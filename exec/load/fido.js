@@ -1,3 +1,5 @@
+load('require.js', 'fido_syscfg.js', 'FTNDomains');
+
 /*
  * Public stuff:
  * new FIDO.Addr(net, node, zone, point, domain)
@@ -35,6 +37,7 @@
  */
 
 var FIDO = {
+	FTNDomains:new FTNDomains(),
 	Addr:function(orig_net, orig_node, orig_zone, orig_point, orig_domain)
 	{
 		var net = parseInt(orig_net, 10);
@@ -148,8 +151,8 @@ var FIDO = {
 		if (zone == undefined)
 			zone = default_zone;
 		if (domain == undefined) {
-			if (this.domainMap[parseInt(zone)] !== undefined)
-				domain = this.domainMap[parseInt(zone)];
+			if (this.FTNDomains.domainMap[parseInt(zone)] !== undefined)
+				domain = this.FTNDomains.domainMap[parseInt(zone)];
 			else
 				domain = default_domain;
 		}
@@ -197,50 +200,9 @@ var FIDO = {
 		point = m[5];
 		if(point == null)
 			point = 0;
-		if (this.domainMap[parseInt(zone, 16)] !== undefined)
-			domain = this.domainMap[parseInt(zone, 16)];
+		if (this.FTNDomains.domainMap[parseInt(zone, 16)] !== undefined)
+			domain = this.FTNDomains.domainMap[parseInt(zone, 16)];
 		return new FIDO.Addr(parseInt(m[2], 16), parseInt(m[3], 16), parseInt(zone, 16), parseInt(point, 16), domain);
-	},
-	domainMap:{
-		1:'fidonet',
-		2:'fidonet',
-		3:'fidonet',
-		4:'fidonet',
-		5:'fidonet',
-		6:'fidonet',
-	},
-	domainDNSMap:{
-		'fidonet':'binkp.net'
-	},
-	ReadDomainMap:function() {
-		var f = new File(system.ctrl_dir+'ftn_domains.ini');
-		var used_zones = {};
-
-		if (f.open("r")) {
-			this.domainMap = {};
-			this.domainDNSMap = {};
-			var domains = f.iniGetSections().forEach(function(domain) {
-				var d = domain.toLowerCase();
-				var zones = f.iniGetValue(domain, 'Zones', '');
-				if (zones != undefined) {
-					zones.split(/\s*,\s*/).forEach(function(zone) {
-						var z = parseInt(zone, 10);
-	
-						if (isNaN(z))
-							return;
-						// Not a 1:1 mapping... delete from domainMap
-						if (used_zones[z] !== undefined)
-							delete this.domainMap[z];
-						else {
-							used_zones[z]=1;
-							this.domainMap[parseInt(zone, 10)] = d;
-						}
-					}, this);
-				}
-				this.domainDNSMap[d] = f.iniGetValue(domain, 'DNSSuffix', 'example.com');
-			}, this);
-			f.close();
-		}
 	},
 	Node:function(addr, hub) {
 		this.addr = addr.str;
@@ -1011,5 +973,3 @@ Object.defineProperties(FIDO.PackedMessage.prototype, {
 		}
 	}
 });
-
-FIDO.ReadDomainMap();
