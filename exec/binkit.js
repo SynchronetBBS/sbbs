@@ -17,9 +17,10 @@
  * See FTS-5005 for details.
  */
 
-load("binkp.js");
-load("fidocfg.js");
-load("freqit_common.js");
+load('fido.js');
+load('fidocfg.js');
+load('binkp.js');
+load('freqit_common.js');
 
 FREQIT.add_file = function(filename, bp, cfg)
 {
