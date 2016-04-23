@@ -254,6 +254,9 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	global_private_t*	p;
 	jsval		val;
 	JSObject*	js_argv;
+	jsval		old_js_argv = JSVAL_VOID;
+	jsval		old_js_argc = JSVAL_VOID;
+	BOOL		restore_args = FALSE;
 	JSObject*	exec_obj;
 	JSObject*	js_internal;
 	JSContext*	exec_cx=cx;
@@ -448,6 +451,13 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			rc=JS_SUSPENDREQUEST(cx);
 			JS_RESUMEREQUEST(bg->cx, brc);
 		}
+		else {
+			JS_GetProperty(exec_cx, exec_obj, "argv", &old_js_argv);
+			JS_AddValueRoot(exec_cx, &old_js_argv);
+			JS_GetProperty(exec_cx, exec_obj, "argc", &old_js_argc);
+			JS_AddValueRoot(exec_cx, &old_js_argc);
+			restore_args = TRUE;
+		}
 
 		if((js_argv=JS_NewArrayObject(exec_cx, 0, NULL)) == NULL) {
 			if(background) {
@@ -598,6 +608,19 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			free(bg);
 			JS_RESUMEREQUEST(cx, rc);
 		}
+		// Restore args
+		if (restore_args) {
+			if (old_js_argv == JSVAL_VOID) {
+				JS_DeleteProperty(exec_cx, exec_obj, "argv");
+				JS_DeleteProperty(exec_cx, exec_obj, "argc");
+			}
+			else {
+				JS_DefineProperty(exec_cx, exec_obj, "argv", old_js_argv
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+				JS_DefineProperty(exec_cx, exec_obj, "argc", old_js_argc
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			}
+		}
 		return(JS_FALSE);
 	}
 
@@ -624,6 +647,18 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 		success = JS_ExecuteScript(exec_cx, exec_obj, script, &rval);
 		JS_SET_RVAL(cx, arglist, rval);
+		if (restore_args) {
+			if (old_js_argv == JSVAL_VOID) {
+				JS_DeleteProperty(exec_cx, exec_obj, "argv");
+				JS_DeleteProperty(exec_cx, exec_obj, "argc");
+			}
+			else {
+				JS_DefineProperty(exec_cx, exec_obj, "argv", old_js_argv
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+				JS_DefineProperty(exec_cx, exec_obj, "argc", old_js_argc
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			}
+		}
 	}
 
     return(success);
