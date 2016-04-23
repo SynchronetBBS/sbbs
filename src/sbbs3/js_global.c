@@ -621,6 +621,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 			}
 		}
+		JS_RemoveValueRoot(exec_cx, &old_js_argv);
+		JS_RemoveValueRoot(exec_cx, &old_js_argc);
 		return(JS_FALSE);
 	}
 
@@ -658,6 +660,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 				JS_DefineProperty(exec_cx, exec_obj, "argc", old_js_argc
 					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 			}
+			JS_RemoveValueRoot(exec_cx, &old_js_argv);
+			JS_RemoveValueRoot(exec_cx, &old_js_argc);
 		}
 	}
 

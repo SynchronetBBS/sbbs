@@ -674,6 +674,8 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 				JS_DefineProperty(js_cx, scope, "argc", old_js_argc
 					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 			}
+			JS_RemoveValueRoot(js_cx, &old_js_argv);
+			JS_RemoveValueRoot(js_cx, &old_js_argc);
 		}
 		return -1;
 	}
@@ -717,6 +719,8 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 			JS_DefineProperty(js_cx, scope, "argc", old_js_argc
 				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 		}
+		JS_RemoveValueRoot(js_cx, &old_js_argv);
+		JS_RemoveValueRoot(js_cx, &old_js_argc);
 	}
 
 	JS_GC(js_cx);
