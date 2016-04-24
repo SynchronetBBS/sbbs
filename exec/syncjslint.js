@@ -5297,7 +5297,10 @@ function SYNCJSLINT(argc, argv)
 					tmp = tmp2;
 					multiline_comment = true;
 				}
-				if((m=tmp.match(/^\s*load\([^"']*(['"])require.js\1[^"']*(['"])(.*?[^\\])\2.*?\)/))!==null) {
+				if((m=tmp.match(/^\s*require\([^"']*(['"])(.*?[^\\])\1.*?\)/))!==null) {
+					offset+=LOADFILE(lines,index,pos+offset+i,m[2],paths,options,true);
+				}
+				else if((m=tmp.match(/^\s*load\([^"']*(['"])require.js\1[^"']*,.*?,(['"])(.*?[^\\])\2.*?\)/))!==null) {
 					offset+=LOADFILE(lines,index,pos+offset+i,m[3],paths,options,true);
 				}
 				else if((m=tmp.match(/^\s*load\([^"']*(['"])(.*?[^\\])\1.*?\)/))!==null) {
