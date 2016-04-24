@@ -6,7 +6,7 @@ if (typeof(system) !== 'undefined') {
 	js.load_path_list.unshift(system.exec_dir+"dorkit/");
 	js.on_exit("js.load_path_list.shift()");
 }
-load('require.js', typeof(argv)=='undefined'?'undefined':argv, "screen.js", 'Screen');
+require("screen.js", 'Screen');
 
 // polyfill the String object with repeat method.
 // Swiped from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/repeat#Browser_compatibility

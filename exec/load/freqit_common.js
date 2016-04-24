@@ -4,7 +4,7 @@
  * NEW lists ones newer than 10 days.
  */
 
-load('require.js', typeof(argv)=='undefined'?'undefined':argv, "filebase.js", 'FileBase');
+require("filebase.js", 'FileBase');
 
 var FREQIT = {
 	dircache:{},

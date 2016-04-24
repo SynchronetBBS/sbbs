@@ -1,4 +1,4 @@
-load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'fido.js', 'FIDO');
+require('fido.js', 'FIDO');
 
 /*
  * TickIT configuration object

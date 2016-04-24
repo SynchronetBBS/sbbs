@@ -2,7 +2,7 @@
 
 // $Id$
 
-load('require.js', typeof(argv)=='undefined'?'undefined':argv, "sbbsdefs.js", 'SYS_CLOSED');
+require("sbbsdefs.js", 'SYS_CLOSED');
 var coldfuncs_last_hotkey='';
 
 function get_next_key()

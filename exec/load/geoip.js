@@ -1,6 +1,6 @@
 // $Id$
 
-load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'http.js', 'HTTPRequest');
+require('http.js', 'HTTPRequest');
 
 var geoipAPIKey='a1ddc4963461ca20bffd54bb926ce74dc1ecbb8a421122cdc3cdfef616f5aad1';	// Enter your API info here!
 

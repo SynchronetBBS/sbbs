@@ -1,4 +1,4 @@
-load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'fido_syscfg.js', 'FTNDomains');
+require('fido_syscfg.js', 'FTNDomains');
 
 /*
  * Public stuff:
