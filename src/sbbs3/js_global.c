@@ -4277,8 +4277,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
 		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
 		"and a list of arguments to pass to the module (as <i>argv</i>) "
-		"IF AND ONLY IF the property named <i>proname</i> is not defined in "
-		"the target scope (a defined smybol with a value of undefined will not "
+		"IF AND ONLY IF the property named <i>propname</i> is not defined in "
+		"the target scope (a defined symbol with a value of undefined will not "
 		"cause the script to be loaded). "
 		"Returns the result (last executed statement) of the executed script "
 		"or null if the script is not executed. ")
