@@ -668,6 +668,59 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
     return(success);
 }
 
+/*
+ * This is hacky, but a but less hacky than using a magic '2'
+ * It does assume the args are always last though (which seems reasonable
+ * since it's variable length)
+ */
+#define JS_ARGS_OFFSET	((unsigned)(JS_ARGV(0, (jsval *)NULL))/sizeof(jsval *))
+
+static JSBool
+js_require(JSContext *cx, uintN argc, jsval *arglist)
+{
+	uintN argn = 0;
+	JSObject*	exec_obj;
+	JSObject*	tmp_obj;
+    char*		property;
+    JSBool		found = JS_FALSE;
+	jsval *argv=JS_ARGV(cx, arglist);
+
+	exec_obj=JS_GetScopeChain(cx);
+	if(JSVAL_IS_BOOLEAN(argv[argn])) {
+		JS_ReportError(cx,"cannot require() background processes");
+		return(JS_FALSE);
+	}
+
+	if(JSVAL_IS_OBJECT(argv[argn])) {
+		tmp_obj=JSVAL_TO_OBJECT(argv[argn++]);
+		if(!JS_ObjectIsFunction(cx,tmp_obj))	/* Scope specified */
+			exec_obj=tmp_obj;
+	}
+
+	// Skip filename
+	argn++;
+
+	if(argn==argc) {
+		JS_ReportError(cx,"no symbol name specified");
+		return(JS_FALSE);
+	}
+	JSVALUE_TO_MSTRING(cx, argv[argn], property, NULL);
+
+	// TODO: Does this support sub-objects?
+	if (JS_HasProperty(cx, exec_obj, property, &found) && found) {
+		JS_SET_RVAL(cx, arglist,JSVAL_VOID);
+		free(property);
+		return JS_TRUE;
+	}
+	free(property);
+
+	// Remove symbol name from args
+	if (argc > argn+1)
+		memmove(&arglist[argn+JS_ARGS_OFFSET], &arglist[argn+JS_ARGS_OFFSET+1], sizeof(arglist[0]) * (argc - argn - 1));
+
+	return js_load(cx, argc-1, arglist);
+}
+
 static JSBool
 js_format(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -4219,6 +4272,18 @@ static jsSyncMethodSpec js_global_functions[] = {
 	"(returns number OR string) - (added in v3.13)")
 	,313
 	},
+	{"require",         js_require,         1,	JSTYPE_UNDEF
+	,JSDOCSTR("[<i>object</i> scope,] <i>string</i> filename, propname [,args]")
+	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
+		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
+		"and a list of arguments to pass to the module (as <i>argv</i>) "
+		"IF AND ONLY IF the property named <i>proname</i> is not defined in "
+		"the target scope (a defined smybol with a value of undefined will not "
+		"cause the script to be loaded). "
+		"Returns the result (last executed statement) of the executed script "
+		"or null if the script is not executed. ")
+	,317
+	},		
 	{0}
 };
 
