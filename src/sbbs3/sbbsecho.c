@@ -3305,21 +3305,27 @@ typedef struct {
 
 link_list_t outpkt_list;
 
-void move_echomail_packets(void)
+void finalize_outpkt(outpkt_t* pkt)
 {
 	char str[128];
+
+	lprintf(LOG_DEBUG, "Finalizing outbound packet from %s to %s: %s"
+		,smb_faddrtoa(&pkt->orig, str), smb_faddrtoa(&pkt->dest, NULL), pkt->filename);
+	terminate_packet(pkt->fp);
+	fclose(pkt->fp);
+	pkt->fp = NULL;
+}
+
+void move_echomail_packets(void)
+{
 	outpkt_t* pkt;
 
 	while((pkt = listPopNode(&outpkt_list)) != NULL) {
 		printf("%21s: %s ","Outbound Packet", pkt->filename);
 
-		if(pkt->fp != NULL) {
-			lprintf(LOG_DEBUG, "Finalizing outbound packet from %s to %s: %s"
-				,smb_faddrtoa(&pkt->orig, str), smb_faddrtoa(&pkt->dest, NULL), pkt->filename);
-			terminate_packet(pkt->fp);
-			fclose(pkt->fp);
-			pkt->fp = NULL;
-		}
+		if(pkt->fp != NULL)
+			finalize_outpkt(pkt);
+
 		pack_bundle(pkt->filename, pkt->orig, pkt->dest);
 
 		free(pkt->filename);
@@ -3341,8 +3347,10 @@ outpkt_t* get_outpkt(fidoaddr_t orig, fidoaddr_t dest, nodecfg_t* nodecfg)
 			continue;
 		if(pkt->fp == NULL)
 			continue;
-		if(ftell(pkt->fp) >= cfg.maxpktsize)
+		if(ftell(pkt->fp) >= cfg.maxpktsize) {
+			finalize_outpkt(pkt);
 			continue;
+		}
 		lprintf(LOG_DEBUG, "Appending outbound packet from %s to %s: %s"
 			,smb_faddrtoa(&orig, str), smb_faddrtoa(&dest, NULL), pkt->filename);
 		return pkt;
