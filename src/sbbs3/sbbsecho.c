@@ -961,8 +961,10 @@ void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 								for(y=0;y<cfg.areas;y++)
 									if(!stricmp(cfg.area[y].name,p))
 										break;
-								if(y>=cfg.areas || !area_is_linked(y,&addr))
-									strListPush(&area_list, p); 
+								if(y>=cfg.areas || !area_is_linked(y,&addr)) {
+									if(strListFind(area_list, p, /* case_sensitive */false) < 0)
+										strListPush(&area_list, p);
+								}
 							}
 							fclose(fp);
 							match=1;
