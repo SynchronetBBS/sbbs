@@ -57,8 +57,8 @@ msg_queue_t* DLLCALL msgQueueInit(msg_queue_t* q, long flags)
 	q->owner_thread_id = pthread_self();
 
 	if(q->flags&MSG_QUEUE_BIDIR)
-		listInit(&q->in,LINK_LIST_SEMAPHORE);
-	listInit(&q->out,LINK_LIST_SEMAPHORE);
+		listInit(&q->in,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
+	listInit(&q->out,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
 
 	return(q);
 }
