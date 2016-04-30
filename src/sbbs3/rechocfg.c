@@ -271,7 +271,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	SAFECOPY(cfg->areamgr,		  iniGetString(ini, ROOT_SECTION, "AreaManager", "SYSOP", value));
 
 	/* NetMail options: */
-	SAFECOPY(cfg->default_recipient, iniGetString(ini, ROOT_SECTION, "DefaultRecipient", "SYSOP", value));
+	SAFECOPY(cfg->default_recipient, iniGetString(ini, ROOT_SECTION, "DefaultRecipient", "", value));
 	cfg->sysop_alias_list			= iniGetStringList(ini, ROOT_SECTION, "SysopAliasList", ",", "SYSOP");
 	cfg->fuzzy_zone					= iniGetBool(ini, ROOT_SECTION, "FuzzyNetmailZones", cfg->fuzzy_zone);
 	cfg->ignore_netmail_dest_addr	= iniGetBool(ini, ROOT_SECTION, "IgnoreNetmailDestAddr", cfg->ignore_netmail_dest_addr);
