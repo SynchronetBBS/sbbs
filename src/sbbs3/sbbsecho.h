@@ -157,6 +157,7 @@ typedef struct {
 	bool		zone_blind;				/* Pretend zones don't matter when parsing and constructing PATH and SEEN-BY lines (per Wilfred van Velzen, 2:280/464) */
 	uint16_t	zone_blind_threshold;	/* Zones below this number (e.g. 4) will be treated as the same zone when zone_blind is enabled */
 	bool		secure_echomail;
+	bool		strict_packet_passwords;	/* Packet passwords must always match the configured linked-node */
 	bool		strip_lf;
 	bool		convert_tear;
 	bool		fuzzy_zone;

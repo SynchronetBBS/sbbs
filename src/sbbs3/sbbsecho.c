@@ -905,7 +905,8 @@ enum arealist_type {
 void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 {
 	char str[256],title[128],match,*p,*tp;
-	int i,j,k,x,y;
+	unsigned k,x,y;
+	unsigned u;
 	str_list_t	area_list;
 
 	if(type == AREALIST_ALL)
@@ -921,28 +922,28 @@ void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 	}
 
 	/* Include relevant areas from the area file (e.g. areas.bbs): */
-	for(i=0;i<cfg.areas;i++) {
-		if((type == AREALIST_CONNECTED || cfg.add_from_echolists_only) && !area_is_linked(i,&addr))
+	for(u=0;u<cfg.areas;u++) {
+		if((type == AREALIST_CONNECTED || cfg.add_from_echolists_only) && !area_is_linked(u,&addr))
 			continue;
-		if(type == AREALIST_UNLINKED && area_is_linked(i,&addr))
+		if(type == AREALIST_UNLINKED && area_is_linked(u,&addr))
 			continue;
-		strListPush(&area_list, cfg.area[i].name); 
+		strListPush(&area_list, cfg.area[u].name); 
 	} 
 
 	if(type != AREALIST_CONNECTED) {
 		nodecfg_t* nodecfg=findnodecfg(&cfg, addr,0);
 		if(nodecfg != NULL) {
-			for(j=0;j<cfg.listcfgs;j++) {
+			for(u=0;u<cfg.listcfgs;u++) {
 				match=0;
-				for(k=0; cfg.listcfg[j].keys[k]; k++) {
+				for(k=0; cfg.listcfg[u].keys[k]; k++) {
 					if(match) break;
 					for(x=0; nodecfg->keys[x]; x++) {
-						if(!stricmp(cfg.listcfg[j].keys[k]
+						if(!stricmp(cfg.listcfg[u].keys[k]
 							,nodecfg->keys[x])) {
 							FILE* fp;
-							if((fp=fopen(cfg.listcfg[j].listpath,"r"))==NULL) {
+							if((fp=fopen(cfg.listcfg[u].listpath,"r"))==NULL) {
 								lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s"
-									,errno,strerror(errno),__LINE__,cfg.listcfg[j].listpath);
+									,errno,strerror(errno),__LINE__,cfg.listcfg[u].listpath);
 								match=1;
 								break; 
 							}
@@ -996,20 +997,21 @@ int check_elists(const char *areatag, fidoaddr_t addr)
 {
 	FILE *stream;
 	char str[1025],quit=0,*p,*tp;
-	int j,k,x,match=0;
+	unsigned k,x,match=0;
+	unsigned u;
 
 	nodecfg_t* nodecfg=findnodecfg(&cfg, addr,0);
 	if(nodecfg!=NULL) {
-		for(j=0;j<cfg.listcfgs;j++) {
+		for(u=0;u<cfg.listcfgs;u++) {
 			quit=0;
-			for(k=0; cfg.listcfg[j].keys[k]; k++) {
+			for(k=0; cfg.listcfg[u].keys[k]; k++) {
 				if(quit) break;
 				for(x=0; nodecfg->keys[x] ;x++)
-					if(!stricmp(cfg.listcfg[j].keys[k]
+					if(!stricmp(cfg.listcfg[u].keys[k]
 						,nodecfg->keys[x])) {
-						if((stream=fopen(cfg.listcfg[j].listpath,"r"))==NULL) {
+						if((stream=fopen(cfg.listcfg[u].listpath,"r"))==NULL) {
 							lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s"
-								,errno,strerror(errno),__LINE__,cfg.listcfg[j].listpath);
+								,errno,strerror(errno),__LINE__,cfg.listcfg[u].listpath);
 							quit=1;
 							break; 
 						}
@@ -1048,7 +1050,8 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 	char str[1024],fields[1024],field1[256],field2[256],field3[256]
 		,outpath[MAX_PATH+1]
 		,*outname,*p,*tp,nomatch=0,match=0;
-	int i,j,k,x,y;
+	unsigned j,k,x,y;
+	unsigned u;
 	ulong tagcrc;
 
 	SAFECOPY(outpath,cfg.areafile);
@@ -1102,16 +1105,16 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 			field3[0]=0;
 		if(strListCount(del_area)) { 				/* Check for areas to remove */
 			lprintf(LOG_DEBUG,"Removing areas for %s from %s", smb_faddrtoa(&addr,NULL), cfg.areafile);
-			for(i=0;del_area[i]!=NULL;i++) {
-				if(!stricmp(del_area[i],field2) ||
+			for(u=0;del_area[u]!=NULL;u++) {
+				if(!stricmp(del_area[u],field2) ||
 					!stricmp(del_area[0],"-ALL"))     /* Match Found */
 					break; 
 			}
-			if(del_area[i]!=NULL) {
-				for(i=0;i<cfg.areas;i++) {
-					if(!stricmp(field2,cfg.area[i].name)) {
+			if(del_area[u]!=NULL) {
+				for(u=0;u<cfg.areas;u++) {
+					if(!stricmp(field2,cfg.area[u].name)) {
 						lprintf(LOG_DEBUG,"Unlinking area (%s) for %s in %s", field2, smb_faddrtoa(&addr,NULL), cfg.areafile);
-						if(!area_is_linked(i,&addr)) {
+						if(!area_is_linked(u,&addr)) {
 							fprintf(afileout,"%s\n",fields);
 							/* bugfix here Mar-25-2004 (wasn't breaking for "-ALL") */
 							if(stricmp(del_area[0],"-ALL"))
@@ -1121,30 +1124,30 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 
 						/* Added 12/4/95 to remove link from connected link */
 
-						for(k=j;k<cfg.area[i].links-1;k++)
-							memcpy(&cfg.area[i].link[k],&cfg.area[i].link[k+1]
+						for(k=u;k<cfg.area[u].links-1;k++)
+							memcpy(&cfg.area[u].link[k],&cfg.area[u].link[k+1]
 								,sizeof(fidoaddr_t));
-						--cfg.area[i].links;
-						if(cfg.area[i].links==0) {
-							FREE_AND_NULL(cfg.area[i].link);
+						--cfg.area[u].links;
+						if(cfg.area[u].links==0) {
+							FREE_AND_NULL(cfg.area[u].link);
 						} else {
-							if((cfg.area[i].link=(fidoaddr_t *)
-								realloc(cfg.area[i].link,sizeof(fidoaddr_t)
-								*(cfg.area[i].links)))==NULL) {
+							if((cfg.area[u].link=(fidoaddr_t *)
+								realloc(cfg.area[u].link,sizeof(fidoaddr_t)
+								*(cfg.area[u].links)))==NULL) {
 								lprintf(LOG_ERR,"ERROR line %d allocating memory for area "
-									"#%u links.",__LINE__,i+1);
+									"#%u links.",__LINE__,u+1);
 								bail(1); 
 								return;
 							}
 						}
 
 						fprintf(afileout,"%-16s%-23s ",field1,field2);
-						for(j=0;j<cfg.area[i].links;j++) {
-							if(!memcmp(&cfg.area[i].link[j],&addr
+						for(j=0;j<cfg.area[u].links;j++) {
+							if(!memcmp(&cfg.area[u].link[u],&addr
 								,sizeof(fidoaddr_t)))
 								continue;
 							fprintf(afileout,"%s "
-								,smb_faddrtoa(&cfg.area[i].link[j],NULL)); 
+								,smb_faddrtoa(&cfg.area[u].link[u],NULL)); 
 						}
 						if(field3[0])
 							fprintf(afileout,"%s",field3);
@@ -1153,24 +1156,24 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 						break; 
 					} 
 				}
-				if(i==cfg.areas)			/* Something screwy going on */
+				if(u==cfg.areas)			/* Something screwy going on */
 					fprintf(afileout,"%s\n",fields);
 				continue; 
 			} 				/* Area match so continue on */
 		}
 		if(strListCount(add_area)) { 				/* Check for areas to add */
 			lprintf(LOG_DEBUG,"Adding areas for %s to %s", smb_faddrtoa(&addr,NULL), cfg.areafile);
-			for(i=0;add_area[i]!=NULL;i++)
-				if(!stricmp(add_area[i],field2) ||
+			for(u=0;add_area[u]!=NULL;u++)
+				if(!stricmp(add_area[u],field2) ||
 					!stricmp(add_area[0],"+ALL"))      /* Match Found */
 					break;
-			if(add_area[i]!=NULL) {
-				if(stricmp(add_area[i],"+ALL"))
-					add_area[i][0]=0;  /* So we can check other lists */
-				for(i=0;i<cfg.areas;i++) {
-					if(!stricmp(field2,cfg.area[i].name)) {
+			if(add_area[u]!=NULL) {
+				if(stricmp(add_area[u],"+ALL"))
+					add_area[u][0]=0;  /* So we can check other lists */
+				for(u=0;u<cfg.areas;u++) {
+					if(!stricmp(field2,cfg.area[u].name)) {
 						lprintf(LOG_DEBUG,"Linking area (%s) for %s in %s", field2, smb_faddrtoa(&addr,NULL), cfg.areafile);
-						if(area_is_linked(i,&addr)) {
+						if(area_is_linked(u,&addr)) {
 							fprintf(afileout,"%s\n",fields);
 							fprintf(nmfile,"%s already connected.\r\n",field2);
 							break; 
@@ -1182,21 +1185,21 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 
 						/* Added 12/4/95 to add link to connected links */
 
-						++cfg.area[i].links;
-						if((cfg.area[i].link=(fidoaddr_t *)
-							realloc(cfg.area[i].link,sizeof(fidoaddr_t)
-							*(cfg.area[i].links)))==NULL) {
+						++cfg.area[u].links;
+						if((cfg.area[u].link=(fidoaddr_t *)
+							realloc(cfg.area[u].link,sizeof(fidoaddr_t)
+							*(cfg.area[u].links)))==NULL) {
 							lprintf(LOG_ERR,"ERROR line %d allocating memory for area "
-								"#%u links.",__LINE__,i+1);
+								"#%u links.",__LINE__,u+1);
 							bail(1); 
 							return;
 						}
-						memcpy(&cfg.area[i].link[cfg.area[i].links-1],&addr,sizeof(fidoaddr_t));
+						memcpy(&cfg.area[u].link[cfg.area[u].links-1],&addr,sizeof(fidoaddr_t));
 
 						fprintf(afileout,"%-16s%-23s ",field1,field2);
-						for(j=0;j<cfg.area[i].links;j++)
+						for(j=0;j<cfg.area[u].links;j++)
 							fprintf(afileout,"%s "
-								,smb_faddrtoa(&cfg.area[i].link[j],NULL));
+								,smb_faddrtoa(&cfg.area[u].link[u],NULL));
 						if(field3[0])
 							fprintf(afileout,"%s",field3);
 						fprintf(afileout,"\n");
@@ -1204,7 +1207,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 						break; 
 					} 
 				}
-				if(i==cfg.areas)			/* Something screwy going on */
+				if(u==cfg.areas)			/* Something screwy going on */
 					fprintf(afileout,"%s\n",fields);
 				continue;  					/* Area match so continue on */
 			}
@@ -1288,9 +1291,9 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		} 
 	}
 	if(strListCount(add_area) && stricmp(add_area[0],"+ALL")) {
-		for(i=0;add_area[i]!=NULL;i++)
-			if(add_area[i][0])
-				fprintf(nmfile,"%s not found.\r\n",add_area[i]); 
+		for(u=0;add_area[u]!=NULL;u++)
+			if(add_area[u][0])
+				fprintf(nmfile,"%s not found.\r\n",add_area[u]); 
 	}
 	if(!ftell(nmfile))
 		create_netmail(to,/* msg: */NULL,"Area Change Request","No changes made.",addr,/* attachment: */false);
@@ -1339,8 +1342,9 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 {
 	FILE *stream,*tmpf;
 	char str[MAX_PATH+1],temp[256],*buf,*p;
-	int  file,i;
+	int  file;
 	long l;
+	unsigned u;
 
 	nodecfg_t* nodecfg=findnodecfg(&cfg, addr,0);
 	if(nodecfg == NULL)
@@ -1388,23 +1392,23 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 		if(!stricmp(p,"NONE"))
 			nodecfg->archive = SBBSECHO_ARCHIVE_NONE;
 		else {
-			for(i=0;i<cfg.arcdefs;i++)
-				if(!stricmp(p,cfg.arcdef[i].name))
+			for(u=0;u<cfg.arcdefs;u++)
+				if(!stricmp(p,cfg.arcdef[u].name))
 					break;
-			if(i==cfg.arcdefs) {
+			if(u==cfg.arcdefs) {
 				if((tmpf=tmpfile())==NULL) {
 					lprintf(LOG_ERR,"ERROR line %d opening tmpfile()",__LINE__);
 					return; 
 				}
 				fprintf(tmpf,"Compression type unavailable.\r\n\r\n"
 					"Available types are:\r\n");
-				for(i=0;i<cfg.arcdefs;i++)
-					fprintf(tmpf,"                     %s\r\n",cfg.arcdef[i].name);
+				for(u=0;u<cfg.arcdefs;u++)
+					fprintf(tmpf,"                     %s\r\n",cfg.arcdef[u].name);
 				file_to_netmail(tmpf,"Compression Type Change",addr,to);
 				fclose(tmpf);
 				return; 
 			}
-			nodecfg->archive = &cfg.arcdef[i];
+			nodecfg->archive = &cfg.arcdef[u];
 		}
 		alter_config(addr,"archive",p);
 		SAFEPRINTF(str, "Compression type changed to %s.", p);
@@ -1536,9 +1540,9 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 			,smb_faddrtoa(&addr,NULL));
 		lprintf(LOG_DEBUG,"areafix debug, nodes=%u",cfg.nodecfgs);
 		{
-			int j;
-			for(j=0;j<cfg.nodecfgs;j++)
-				lprintf(LOG_DEBUG,smb_faddrtoa(&cfg.nodecfg[j].addr,NULL));
+			unsigned u;
+			for(u=0;u<cfg.nodecfgs;u++)
+				lprintf(LOG_DEBUG,smb_faddrtoa(&cfg.nodecfg[u].addr,NULL));
 		}
 		return(body); 
 	}
@@ -1611,36 +1615,37 @@ int unpack(const char *infile, const char* outdir)
 {
 	FILE *stream;
 	char str[256],tmp[128];
-	int i,j,ch,file;
+	int ch,file;
+	unsigned u,j;
 
 	if((stream=fnopen(&file,infile,O_RDONLY))==NULL) {
 		lprintf(LOG_ERR,"ERROR %u (%s) opening archive: %s",errno,strerror(errno),infile);
 		bail(1); 
 		return -1;
 	}
-	for(i=0;i<cfg.arcdefs;i++) {
+	for(u=0;u<cfg.arcdefs;u++) {
 		str[0]=0;
-		fseek(stream,cfg.arcdef[i].byteloc,SEEK_SET);
-		for(j=0;j<strlen(cfg.arcdef[i].hexid)/2;j++) {
+		fseek(stream,cfg.arcdef[u].byteloc,SEEK_SET);
+		for(j=0;j<strlen(cfg.arcdef[u].hexid)/2;j++) {
 			ch=fgetc(stream);
 			if(ch==EOF) {
-				i=cfg.arcdefs;
+				u=cfg.arcdefs;
 				break; 
 			}
 			sprintf(tmp,"%02X",ch);
 			strcat(str,tmp); 
 		}
-		if(!stricmp(str,cfg.arcdef[i].hexid))
+		if(!stricmp(str,cfg.arcdef[u].hexid))
 			break; 
 	}
 	fclose(stream);
 
-	if(i==cfg.arcdefs) {
+	if(u==cfg.arcdefs) {
 		lprintf(LOG_ERR, "ERROR determining type of archive: %s", infile);
 		return(1); 
 	}
 
-	return execute(mycmdstr(&scfg,cfg.arcdef[i].unpack,infile, outdir));
+	return execute(mycmdstr(&scfg,cfg.arcdef[u].unpack,infile, outdir));
 }
 
 /******************************************************************************
@@ -1905,7 +1910,7 @@ bool pack_bundle(const char *tmp_pkt, fidoaddr_t orig, fidoaddr_t dest)
 			delfile(bundle, __LINE__);
 		}
 		if(fexistcase(bundle)) {
-			if(i!='Z' && flength(bundle)>=cfg.maxbdlsize) {
+			if(i!='Z' && flength(bundle)>=(off_t)cfg.maxbdlsize) {
 				attachment(bundle,dest,ATTACHMENT_ADD);
 				continue;
 			}
@@ -2518,7 +2523,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	msg.hdr.when_imported.time=now;
 	msg.hdr.when_imported.zone=sys_timezone(&scfg);
 	msg.hdr.when_written.time=fmsgtime(fmsghdr.time);
-	if(max_msg_age && msg.hdr.when_written.time < now
+	if(max_msg_age && (time32_t)msg.hdr.when_written.time < now
 		&& (now - msg.hdr.when_written.time) > max_msg_age) {
 		lprintf(LOG_INFO, "Filtering message from %s due to age: %1.1f days"
 			,fmsghdr.from
@@ -2893,7 +2898,8 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t fmsghdr, area_t area
 	,addrlist_t seenbys, addrlist_t paths)
 {
 	char str[256],seenby[256];
-	short i,j,lastlen=0,net_exists=0;
+	int lastlen=0,net_exists=0;
+	unsigned u,j;
 	fidoaddr_t addr,sysaddr,lasthop={0,0,0,0};
 	fpkdmsg_t pkdmsg;
 	time_t t;
@@ -2950,55 +2956,55 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t fmsghdr, area_t area
 			fprintf(stream,"SEEN-BY: %d/%d\r",fmsghdr.destnet,fmsghdr.destnode);
 		else {
 			fprintf(stream,"SEEN-BY:");
-			for(i=0;i<seenbys.addrs;i++) {			  /* Put back original SEEN-BYs */
+			for(u=0;u<seenbys.addrs;u++) {			  /* Put back original SEEN-BYs */
 				strcpy(seenby," ");
-				if(foreign_zone(addr.zone, seenbys.addr[i].zone))
+				if(foreign_zone(addr.zone, seenbys.addr[u].zone))
 					continue;
-				if(seenbys.addr[i].net!=addr.net || !net_exists) {
+				if(seenbys.addr[u].net!=addr.net || !net_exists) {
 					net_exists=1;
-					addr.net=seenbys.addr[i].net;
+					addr.net=seenbys.addr[u].net;
 					sprintf(str,"%d/",addr.net);
 					strcat(seenby,str); 
 				}
-				sprintf(str,"%d",seenbys.addr[i].node);
+				sprintf(str,"%d",seenbys.addr[u].node);
 				strcat(seenby,str);
 				if(lastlen+strlen(seenby)<80) {
 					fwrite(seenby,strlen(seenby),1,stream);
 					lastlen+=strlen(seenby); 
 				}
 				else {
-					--i;
+					--u;
 					lastlen=9; /* +strlen(seenby); */
 					net_exists=0;
 					fprintf(stream,"\rSEEN-BY:"); 
 				} 
 			}
 
-			for(i=0;i<area.links;i++) {			/* Add all links to SEEN-BYs */
-				nodecfg_t* nodecfg=findnodecfg(&cfg, area.link[i],0);
+			for(u=0;u<area.links;u++) {			/* Add all links to SEEN-BYs */
+				nodecfg_t* nodecfg=findnodecfg(&cfg, area.link[u],0);
 				if(nodecfg!=NULL && nodecfg->passive)
 					continue;
 				strcpy(seenby," ");
-				if(foreign_zone(addr.zone, area.link[i].zone) || area.link[i].point)
+				if(foreign_zone(addr.zone, area.link[u].zone) || area.link[u].point)
 					continue;
 				for(j=0;j<seenbys.addrs;j++)
-					if(!memcmp(&area.link[i],&seenbys.addr[j],sizeof(fidoaddr_t)))
+					if(!memcmp(&area.link[u],&seenbys.addr[j],sizeof(fidoaddr_t)))
 						break;
 				if(j==seenbys.addrs) {
-					if(area.link[i].net!=addr.net || !net_exists) {
+					if(area.link[u].net!=addr.net || !net_exists) {
 						net_exists=1;
-						addr.net=area.link[i].net;
+						addr.net=area.link[u].net;
 						sprintf(str,"%d/",addr.net);
 						strcat(seenby,str); 
 					}
-					sprintf(str,"%d",area.link[i].node);
+					sprintf(str,"%d",area.link[u].node);
 					strcat(seenby,str);
 					if(lastlen+strlen(seenby)<80) {
 						fwrite(seenby,strlen(seenby),1,stream);
 						lastlen+=strlen(seenby); 
 					}
 					else {
-						--i;
+						--u;
 						lastlen=9; /* +strlen(seenby); */
 						net_exists=0;
 						fprintf(stream,"\rSEEN-BY:"); 
@@ -3006,28 +3012,28 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t fmsghdr, area_t area
 				} 
 			}
 
-			for(i=0;i<scfg.total_faddrs;i++) {				/* Add AKAs to SEEN-BYs */
+			for(u=0;u<scfg.total_faddrs;u++) {				/* Add AKAs to SEEN-BYs */
 				strcpy(seenby," ");
-				if(foreign_zone(addr.zone, scfg.faddr[i].zone) || scfg.faddr[i].point)
+				if(foreign_zone(addr.zone, scfg.faddr[u].zone) || scfg.faddr[u].point)
 					continue;
 				for(j=0;j<seenbys.addrs;j++)
-					if(!memcmp(&scfg.faddr[i],&seenbys.addr[j],sizeof(fidoaddr_t)))
+					if(!memcmp(&scfg.faddr[u],&seenbys.addr[j],sizeof(fidoaddr_t)))
 						break;
 				if(j==seenbys.addrs) {
-					if(scfg.faddr[i].net!=addr.net || !net_exists) {
+					if(scfg.faddr[u].net!=addr.net || !net_exists) {
 						net_exists=1;
-						addr.net=scfg.faddr[i].net;
+						addr.net=scfg.faddr[u].net;
 						sprintf(str,"%d/",addr.net);
 						strcat(seenby,str); 
 					}
-					sprintf(str,"%d",scfg.faddr[i].node);
+					sprintf(str,"%d",scfg.faddr[u].node);
 					strcat(seenby,str);
 					if(lastlen+strlen(seenby)<80) {
 						fwrite(seenby,strlen(seenby),1,stream);
 						lastlen+=strlen(seenby); 
 					}
 					else {
-						--i;
+						--u;
 						lastlen=9; /* +strlen(seenby); */
 						net_exists=0;
 						fprintf(stream,"\rSEEN-BY:"); 
@@ -3039,27 +3045,27 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t fmsghdr, area_t area
 			net_exists=0;
 			fprintf(stream,"\r\1PATH:");
 			addr=getsysfaddr(fmsghdr.destzone);
-			for(i=0;i<paths.addrs;i++) {			  /* Put back the original PATH */
-				if(paths.addr[i].net == 0)
+			for(u=0;u<paths.addrs;u++) {			  /* Put back the original PATH */
+				if(paths.addr[u].net == 0)
 					continue;	// Invalid node number/address, don't include "0/0" in PATH
 				strcpy(seenby," ");
-				if(foreign_zone(addr.zone, paths.addr[i].zone) || paths.addr[i].point)
+				if(foreign_zone(addr.zone, paths.addr[u].zone) || paths.addr[u].point)
 					continue;
-				lasthop=paths.addr[i];
-				if(paths.addr[i].net!=addr.net || !net_exists) {
+				lasthop=paths.addr[u];
+				if(paths.addr[u].net!=addr.net || !net_exists) {
 					net_exists=1;
-					addr.net=paths.addr[i].net;
+					addr.net=paths.addr[u].net;
 					sprintf(str,"%d/",addr.net);
 					strcat(seenby,str); 
 				}
-				sprintf(str,"%d",paths.addr[i].node);
+				sprintf(str,"%d",paths.addr[u].node);
 				strcat(seenby,str);
 				if(lastlen+strlen(seenby)<80) {
 					fwrite(seenby,strlen(seenby),1,stream);
 					lastlen+=strlen(seenby); 
 				}
 				else {
-					--i;
+					--u;
 					lastlen=7; /* +strlen(seenby); */
 					net_exists=0;
 					fprintf(stream,"\r\1PATH:"); 
@@ -3262,16 +3268,16 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 ******************************************************************************/
 bool check_psb(const addrlist_t* addrlist, fidoaddr_t compaddr)
 {
-	int i;
+	unsigned u;
 
-	for(i=0;i<addrlist->addrs;i++) {
-		if(foreign_zone(compaddr.zone, addrlist->addr[i].zone))
+	for(u=0;u<addrlist->addrs;u++) {
+		if(foreign_zone(compaddr.zone, addrlist->addr[u].zone))
 			continue;
-		if(compaddr.net != addrlist->addr[i].net)
+		if(compaddr.net != addrlist->addr[u].net)
 			continue;
-		if(compaddr.node != addrlist->addr[i].node)
+		if(compaddr.node != addrlist->addr[u].node)
 			continue;
-		if(compaddr.point != addrlist->addr[i].point)
+		if(compaddr.point != addrlist->addr[u].point)
 			continue;
 		return(true); /* match found */
 	}
@@ -3347,7 +3353,7 @@ outpkt_t* get_outpkt(fidoaddr_t orig, fidoaddr_t dest, nodecfg_t* nodecfg)
 			continue;
 		if(pkt->fp == NULL)
 			continue;
-		if(ftell(pkt->fp) >= cfg.maxpktsize) {
+		if(ftell(pkt->fp) >= (long)cfg.maxpktsize) {
 			finalize_outpkt(pkt);
 			continue;
 		}
@@ -3387,29 +3393,29 @@ outpkt_t* get_outpkt(fidoaddr_t orig, fidoaddr_t dest, nodecfg_t* nodecfg)
 void pkt_to_pkt(const char *fbuf, area_t area, const fidoaddr_t* faddr
 	,fmsghdr_t fmsghdr, addrlist_t seenbys, addrlist_t paths)
 {
-	int j;
+	unsigned u;
 	fidoaddr_t sysaddr;
 
-	for(j=0; j<area.links; j++) {
-		if(faddr != NULL && memcmp(faddr,&area.link[j], sizeof(fidoaddr_t)) != 0)
+	for(u=0; u<area.links; u++) {
+		if(faddr != NULL && memcmp(faddr,&area.link[u], sizeof(fidoaddr_t)) != 0)
 			continue;
-		if(check_psb(&seenbys, area.link[j]))
+		if(check_psb(&seenbys, area.link[u]))
 			continue;
-		nodecfg_t* nodecfg = findnodecfg(&cfg, area.link[j],0);
+		nodecfg_t* nodecfg = findnodecfg(&cfg, area.link[u],0);
 		if(nodecfg != NULL && nodecfg->passive)
 			continue;
-		sysaddr = getsysfaddr(area.link[j].zone);
-		printf("%s ",smb_faddrtoa(&area.link[j],NULL));
-		outpkt_t* pkt = get_outpkt(sysaddr, area.link[j], nodecfg);
+		sysaddr = getsysfaddr(area.link[u].zone);
+		printf("%s ",smb_faddrtoa(&area.link[u],NULL));
+		outpkt_t* pkt = get_outpkt(sysaddr, area.link[u], nodecfg);
 		if(pkt == NULL) {
-			lprintf(LOG_ERR, "ERROR Creating/opening outbound packet for %s", smb_faddrtoa(&area.link[j], NULL));
+			lprintf(LOG_ERR, "ERROR Creating/opening outbound packet for %s", smb_faddrtoa(&area.link[u], NULL));
 			bail(1);
 		}
-		fmsghdr.destnode	= area.link[j].node;
-		fmsghdr.destnet		= area.link[j].net;
-		fmsghdr.destzone	= area.link[j].zone;
+		fmsghdr.destnode	= area.link[u].node;
+		fmsghdr.destnet		= area.link[u].net;
+		fmsghdr.destzone	= area.link[u].zone;
 		lprintf(LOG_DEBUG, "Adding %s message from %s (%s) to packet for %s: %s"
-			,area.name, fmsghdr.from, fmsghdr_srcaddr_str(&fmsghdr), smb_faddrtoa(&area.link[j], NULL), pkt->filename);
+			,area.name, fmsghdr.from, fmsghdr_srcaddr_str(&fmsghdr), smb_faddrtoa(&area.link[u], NULL), pkt->filename);
 		putfmsg(pkt->fp, fbuf, fmsghdr, area, seenbys, paths); 
 	}
 }
@@ -3751,7 +3757,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 	char*	fmsgbuf=NULL;
 	ulong	fmsgbuflen;
 	int		tzone;
-	int		area;
+	unsigned area;
 	int		i,j,k=0;
 	ulong	f,l,m,exp,exported=0;
 	uint32_t ptr,lastmsg,posts;
@@ -4547,7 +4553,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 		nodecfg_t* nodecfg = findnodecfg(&cfg, pkt_orig, 1);
 		SAFECOPY(password,(char*)pkthdr.type2.password);
-		if(nodecfg !=NULL && stricmp(password,nodecfg->pktpwd)) {
+		if(nodecfg !=NULL && (cfg.strict_packet_passwords || nodecfg->pktpwd[0]) 
+			&& stricmp(password,nodecfg->pktpwd)) {
 			lprintf(LOG_WARNING,"Packet %s from %s - "
 				"Incorrect password ('%s' instead of '%s')"
 				,packet,smb_faddrtoa(&pkt_orig,NULL)

@@ -202,23 +202,24 @@ nodecfg_t* findnodecfg(sbbsecho_cfg_t* cfg, faddr_t addr, int exact)
 
 void get_default_echocfg(sbbsecho_cfg_t* cfg)
 {
-	cfg->maxpktsize				= DFLT_PKT_SIZE;
-	cfg->maxbdlsize				= DFLT_BDL_SIZE;
-	cfg->badecho				= -1;
-	cfg->log_level				= LOG_INFO;
-	cfg->check_path				= true;
-	cfg->zone_blind				= false;
-	cfg->zone_blind_threshold	= 0xffff;
-	cfg->sysop_alias_list		= strListSplitCopy(NULL, "SYSOP", ",");
-	cfg->max_echomail_age		= 60*24*60*60;
-	cfg->bsy_timeout			= 12*60*60;
-	cfg->bso_lock_attempts		= 60;
-	cfg->bso_lock_delay			= 10;
-	cfg->delete_packets			= true;
-	cfg->delete_netmail			= true;
-	cfg->echomail_notify		= true;
-	cfg->kill_empty_netmail		= true;
-	cfg->use_ftn_domains		= false;
+	cfg->maxpktsize					= DFLT_PKT_SIZE;
+	cfg->maxbdlsize					= DFLT_BDL_SIZE;
+	cfg->badecho					= -1;
+	cfg->log_level					= LOG_INFO;
+	cfg->check_path					= true;
+	cfg->zone_blind					= false;
+	cfg->zone_blind_threshold		= 0xffff;
+	cfg->sysop_alias_list			= strListSplitCopy(NULL, "SYSOP", ",");
+	cfg->max_echomail_age			= 60*24*60*60;
+	cfg->bsy_timeout				= 12*60*60;
+	cfg->bso_lock_attempts			= 60;
+	cfg->bso_lock_delay				= 10;
+	cfg->delete_packets				= true;
+	cfg->delete_netmail				= true;
+	cfg->echomail_notify			= true;
+	cfg->kill_empty_netmail			= true;
+	cfg->use_ftn_domains			= false;
+	cfg->strict_packet_passwords	= true;
 }
 
 char* pktTypeStringList[] = {"2+", "2.2", "2", NULL};
@@ -255,6 +256,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->bso_lock_attempts		= iniGetLongInt(ini, ROOT_SECTION, "BsoLockAttempts", cfg->bso_lock_attempts);
 	cfg->bso_lock_delay			= (ulong)iniGetDuration(ini, ROOT_SECTION, "BsoLockDelay", cfg->bso_lock_delay);
 	cfg->use_ftn_domains		= iniGetBool(ini, ROOT_SECTION, "UseFTNDomains", cfg->use_ftn_domains);
+	cfg->strict_packet_passwords= iniGetBool(ini, ROOT_SECTION, "StrictPacketPasswords", cfg->strict_packet_passwords);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -453,6 +455,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetShortInt(&ini,	ROOT_SECTION, "ZoneBlindThreshold"		,cfg->zone_blind_threshold		,NULL);
 	iniSetLogLevel(&ini,	ROOT_SECTION, "LogLevel"				,cfg->log_level					,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "CheckPathsForDupes"		,cfg->check_path				,NULL);
+	iniSetBool(&ini,		ROOT_SECTION, "StrictPacketPasswords"	,cfg->strict_packet_passwords	,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "SecureEchomail"			,cfg->secure_echomail			,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "EchomailNotify"			,cfg->echomail_notify			,NULL);
 	iniSetBool(&ini,		ROOT_SECTION, "StripLineFeeds"			,cfg->strip_lf					,NULL);
