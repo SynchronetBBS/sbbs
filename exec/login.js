@@ -9,6 +9,8 @@ load("sbbsdefs.js");
 var options;
 if((options=load("modopts.js","login")) == null)
 	options={email_passwords: true};
+if(!options.login_prompts)
+	options.login_prompts = 10;
 
 // The following 2 lines are only required for "Re-login" capability
 bbs.logout();
@@ -16,7 +18,7 @@ system.node_list[bbs.node_num-1].status = NODE_LOGON;
 
 var guest = system.matchuser("guest");
 
-for(var c=0; c<10; c++) {
+for(var c=0; c < options.login_prompts; c++) {
 
 	// The "node sync" is required for sysop interruption/chat/etc.
 	bbs.nodesync();
