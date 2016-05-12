@@ -243,6 +243,7 @@ function IRC_Unregistered_Commands(cmdline) {
 			if (this_nline.flags&NLINE_IS_DREAMFORGE)
 				new_server.type = DREAMFORGE;
 			new_server.finalize_server_connect("TS",this.sendps);
+			this.replaced_with = new_server;
 			break;
 		case "USER":
 			if (this.uprefix)
@@ -408,6 +409,7 @@ function Unregistered_Welcome() {
 	server_bcast_to_servers(nickstr + "+ " + this.uprefix + " " + this.hostname + " " + servername + " 0 " + ip_to_int(new_user.ip) + " :" + this.realname,BAHAMUT);
 	server_bcast_to_servers(nickstr + this.uprefix + " " + this.hostname + " " + servername + " 0 " + " :" + this.realname,DREAMFORGE);
 	// we're no longer unregistered.
+	this.replaced_with = new_user;
 	delete Unregistered[this.id];
 	delete this;
 }

@@ -261,13 +261,11 @@ function User_Work(cmdline) {
 	   don't bother processing anything else the user sends until at least
 	   2 seconds from now. */
 	if ( (time() - this.idletime) <= 2) {
-		this.throttle_count++;
-		if (this.throttle_count >= 5) {
-			this.recvq.add(cmdline);
-			this.throttle_count = 0;
-			this.idletime = time();
+		if (this.throttle_count >= 4) {
+			this.recvq.prepend(cmdline);
 			return 0;
 		}
+		this.throttle_count++;
 	} else {
 		this.throttle_count = 0;
 	}

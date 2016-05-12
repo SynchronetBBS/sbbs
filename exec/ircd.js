@@ -265,14 +265,9 @@ while (!js.terminated) {
 						conn.quit("Connection reset by peer.");
 						continue;
 					}
-					var incoming_cmd = conn.socket.recvline(4096,0);
+					var incoming_cmd = conn.socket.recv(65536,0);
 					if (incoming_cmd) {
-						if (conn.recvq.bytes) {
-							conn.recvq.add(incoming_cmd);
-						} else {
-							Global_CommandLine = incoming_cmd;
-							conn.work(incoming_cmd);
-						}
+						conn.recvq.recv(incoming_cmd);
 					}
 				}
 			}
@@ -910,7 +905,7 @@ function IRCClient_RMChan(rmchan_obj) {
 
 //////////////////// Output Helper Functions ////////////////////
 function rawout(str) {
-	var sendsock;
+	var sendconn;
 	var str_end;
 	var str_beg;
 
@@ -918,31 +913,30 @@ function rawout(str) {
 		log(format("[RAW->%s]: %s",this.nick,str));
 
 	if (this.local) {
-		sendsock = this.socket;
+		sendconn = this;
 	} else if (!this.local) {
 		if ((str[0] == ":") && str[0].match(["!"])) {
 			str_end = str.slice(str.indexOf(" ")+1);
 			str_beg = str.slice(0,str.indexOf("!"));
 			str = str_beg + " " + str_end;
 		}
-		sendsock = Servers[this.parent.toLowerCase()].socket;
+		sendconn = Servers[this.parent.toLowerCase()];
 	} else {
-		log(LOG_ERR,"!ERROR: No socket to send to?");
+		log(LOG_ERR,"!ERROR: No connection to send to?");
 		return 0;
 	}
 
-	if (this.sendq.bytes || !sendsock.send(str + "\r\n"))
-		this.sendq.add(str);
+	sendconn.sendq.add(str);
 }
 
 function originatorout(str,origin) {
 	var send_data;
-	var sendsock;
+	var sendconn;
 
 	if (debug)
 		log(format("[%s->%s]: %s",origin.nick,this.nick,str));
 
-	sendsock = this.socket;
+	sendconn = this;
 	if(this.local && !this.server) {
 		if (origin.server)
 			send_data = ":" + origin.nick + " " + str;
@@ -951,48 +945,60 @@ function originatorout(str,origin) {
 	} else if (this.server) {
 		send_data = ":" + origin.nick + " " + str;
 	} else if (!this.local) {
-		sendsock = Servers[this.parent.toLowerCase()].socket;
+		sendconn = Servers[this.parent.toLowerCase()];
 		send_data = ":" + origin.nick + " " + str;
 	} else {
-		log(LOG_ERR,"!ERROR: No socket to send to?");
+		log(LOG_ERR,"!ERROR: No connection to send to?");
 		return 0;
 	}
 
-	if (this.sendq.bytes || !sendsock.send(send_data + "\r\n"))
-		this.sendq.add(send_data);
+	sendconn.sendq.add(send_data);
 }
 
 function ircout(str) {
 	var send_data;
-	var sendsock;
+	var sendconn;
 
 	if (debug)
 		log(format("[%s->%s]: %s",servername,this.nick,str));
 
 	if(this.local) {
-		sendsock = this.socket;
+		sendconn = this;
 	} else if (this.parent) {
-		sendsock = Servers[this.parent.toLowerCase()].socket;
+		sendconn = Servers[this.parent.toLowerCase()];
 	} else {
 		log(LOG_ERR,"!ERROR: No socket to send to?");
 		return 0;
 	}
 
 	send_data = ":" + servername + " " + str;
-	if (this.sendq.bytes || !sendsock.send(send_data + "\r\n"))
-		this.sendq.add(send_data);
+	sendconn.sendq.add(send_data);
+}
+
+function Queue_Recv(str) {
+	var pos;
+	var cmd;
+
+	this._recv_bytes += str;
+	while ((pos = this._recv_bytes.search('\n')) != -1) {
+		cmd = this._recv_bytes.substr(0, pos);
+		this._recv_bytes = this._recv_bytes.substr(pos+1);
+		if (cmd[cmd.length-1] == '\r')
+			cmd = cmd.substr(0, cmd.length - 1);
+		this.add(cmd);
+	}
+}
+
+function Queue_Prepend(str) {
+	this.queue.unshift(str);
 }
 
 function Queue_Add(str) {
-	this.bytes += str.length;
 	this.queue.push(str);
 }
 
 function Queue_Del() {
-	var str = this.queue[0];
-	this.bytes -= str.length;
-	this.queue.shift();
-	return str;
+	return this.queue.shift();
 }
 
 function IRCClient_server_notice(str) {
@@ -2871,16 +2877,22 @@ function IRCClient_check_timeout() {
 }
 
 function IRCClient_check_queues() {
-	if (this.sendq.bytes && this.socket.poll(0,true /*write?*/)>=1) {
-		this.socket.send(this.sendq.queue[0] + "\r\n");
-		this.sendq.bytes -= this.sendq.queue[0].length;
-		this.sendq.queue.shift();
+	var oldnb;
+	var cmd;
+
+	if (this.sendq.queue.length && this.socket.poll(0,true /*write?*/)>=1) {
+		oldnb = this.socket.nonblocking;
+		this.socket.nonblocking = false;
+		this.socket.send(this.sendq.queue.join("\r\n")+"\r\n");
+		this.sendq.queue=[];
+		this.socket.nonblocking = oldnb;
 	}
-	if (this.recvq.bytes && ((time() - this.idletime) >= 2) ) {
-		var cmd = this.recvq.del();
+	while (this.recvq.queue.length) {
+		cmd = this.recvq.del();
 		Global_CommandLine = cmd;
-		this.throttle_count = 0;
 		this.work(cmd);
+		if (this.replaced_with !== undefined)
+			this.replaced_with.check_queues();
 	}
 }
 
@@ -2996,9 +3008,11 @@ function SJOIN_Nick(nick,isop,isvoice) {
 // Track IRC socket queues
 function IRC_Queue() {
 	this.queue = new Array;
-	this.bytes = 0;
+	this._recv_bytes = '';
 	this.add = Queue_Add;
 	this.del = Queue_Del;
+	this.prepend = Queue_Prepend;
+	this.recv = Queue_Recv;
 }
 
 /* /STATS M, for profiling. */
