@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.12     2016-05-11   - Updated the way the pause prompt is shown in the help
+                      screen, in case the sysop has configured an external
+                      module (Baja/JS) to run for a pause prompt.
+                      - Potential bug fix: When translating a message number to
+                      a message index, added a check to ensure the value is
+                      a number, to (hopefully) avoid a potential crash.
 1.11     2016-03-25   The reader now updates the number of new posts read by
                       the user during the session.  This is represented by
                       bbs.posts_read in JavaScript.  Also, did some internal

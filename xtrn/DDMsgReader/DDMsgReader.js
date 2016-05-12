@@ -133,6 +133,17 @@
  * 2016-03-19 Eric Oulashin     Now updates bbs.posts_read when a user reads a message.
  * 2016-03-25 Eric Oulashin     Version 1.11
  *                              Releasing this version
+ * 2016-04-23 Eric Oulashin     Version 1.12 Beta
+ *                              Updated the way the pause prompt is shown in the
+ *                              help screen, in case the sysop has configured an
+ *                              external module (Baja/JS) to run for a pause prompt.
+ *                              A check was added to absMsgNumToIdx() to check
+ *                              to ensure pMsgNum is a number.  If the user's
+ *                              scan pointer is not valid (i.e., perhaps the
+ *                              first time the user does a newscan), the reader
+ *                              was crashing due to pMsgNum being invalid.
+ * 2016-05-11 Eric Oulashin     Version 1.12
+ *                              Releasing the non-beta version of 1.12
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -224,8 +235,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.11";
-var READER_DATE = "2016-03-25";
+var READER_VERSION = "1.12";
+var READER_DATE = "2016-05-11";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1291,6 +1302,14 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// areaChangeHdrLines is an array of text lines to use as a header to display
 	// above the message area changer lists.
 	this.areaChangeHdrLines = loadTextFileIntoArray(this.areaChooserHdrFilenameBase, this.areaChooserHdrMaxLines);
+
+	// pausePromptText is the text that will be used for some of the pause
+	// prompts.  It's loaded from text.dat, but in case that text contains
+	// "@EXEC:" (to execute a script), this script will default to a "press
+	// a key" message.
+	this.pausePromptText = bbs.text(Pause);
+	if (this.pausePromptText.toUpperCase().indexOf("@EXEC:") > -1)
+		this.pausePromptText = "\1n\1c[ Press a key ] ";
 }
 
 // For the DigDistMsgReader class: Sets the subBoardCode property and also
@@ -7640,6 +7659,27 @@ function absMsgNumToIdx(pMsgbase, pMsgNum)
 	if (!pMsgbase.is_open)
 		return -1;
 
+	// TODO: But report:
+	// New Message Scan
+	// Sub-board, Group, or All (ENTER to cancel): A
+	// !JavaScript  ../xtrn/DDMsgReader/DDMsgReader.js line 7643: Error: can't convert pMsgNum to an integer
+	/*
+	pMsgNum: 1 (type: number)
+	pMsgNum: 1228 (type: number)
+	pMsgNum: 77 (type: number)
+	pMsgNum: 70 (type: number)
+	pMsgNum: 341 (type: number)
+	pMsgNum: 141 (type: number)
+	pMsgNum: 12 (type: number)
+	pMsgNum: 49 (type: number)
+	pMsgNum: 216 (type: number)
+	pMsgNum: 5 (type: number)
+	pMsgNum: 3010278451 (type: number) <--- wtf? LOL!!!!
+	!JavaScript  ../xtrn/DDMsgReader/DDMsgReader.js line 7646: Error: can't convert pMsgNum to an integer
+	*/
+	if (typeof(pMsgNum) != "number")
+		return -1;
+
 	var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, true);
 	if ((msgHdr == null) && gCmdLineArgVals.verboselogging)
 	{
@@ -8691,8 +8731,11 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	// key from the user.  Calling getKeyWithESCChars() to input a key from the
 	// user to allow for multi-key sequence inputs like PageUp, PageDown, F1,
 	// etc. without printing extra characters on the screen.
-	console.print("\1n" + bbs.text(Pause)); // The "Press a key" text in text.dat
-	getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO);
+	//console.print("\1n" + this.pausePromptText);
+	//getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO);
+	// I'm not sure the above is needed anymore.  Should be able to use
+	// console.pause(), which easily supports custom pause scripts being loaded.
+	console.pause();
 }
 
 // For the DigDistMsgReader class: Displays the enhanced reader mode message
@@ -13363,30 +13406,48 @@ function replaceAtCodesInStr(pStr)
 // Parameters:
 //  pStr: The string to shorten
 //  pNewLength: The new (shorter) length of the string
+//  pFromLeft: Optional boolean - Whether to start from the left (default) or
+//             from the right.  Defaults to true.
 //
 // Return value: The shortened version of the string
-function shortenStrWithAttrCodes(pStr, pNewLength)
+function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 {
-   if (typeof(pStr) != "string")
-      return "";
-   if (typeof(pNewLength) != "number")
-      return pStr;
-   if (pNewLength >= console.strlen(pStr))
-      return pStr;
+	if (typeof(pStr) != "string")
+		return "";
+	if (typeof(pNewLength) != "number")
+		return pStr;
+	if (pNewLength >= console.strlen(pStr))
+		return pStr;
 
-   var strCopy = "";
-   var tmpStr = "";
-   var strIdx = 0;
-   var lengthGood = true;
-   while (lengthGood && (strIdx < pStr.length))
-   {
-      tmpStr = strCopy + pStr.charAt(strIdx++);
-      if (console.strlen(tmpStr) <= pNewLength)
-         strCopy = tmpStr;
-      else
-         lengthGood = false;
-   }
-   return strCopy;
+	var fromLeft = (typeof(pFromLeft) == "boolean" ? pFromLeft : true);
+	var strCopy = "";
+	var tmpStr = "";
+	var strIdx = 0;
+	var lengthGood = true;
+	if (fromLeft)
+	{
+		while (lengthGood && (strIdx < pStr.length))
+		{
+			tmpStr = strCopy + pStr.charAt(strIdx++);
+			if (console.strlen(tmpStr) <= pNewLength)
+				strCopy = tmpStr;
+			else
+				lengthGood = false;
+		}
+	}
+	else
+	{
+		strIdx = pStr.length - 1;
+		while (lengthGood && (strIdx >= 0))
+		{
+			tmpStr = pStr.charAt(strIdx--) + strCopy;
+			if (console.strlen(tmpStr) <= pNewLength)
+				strCopy = tmpStr;
+			else
+				lengthGood = false;
+		}
+	}
+	return strCopy;
 }
 
 // Returns whether a given name matches the logged-in user's handle, alias, or
