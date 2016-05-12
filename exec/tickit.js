@@ -24,8 +24,8 @@
  */
 
 load("sbbsdefs.js");
-load("fido.js");
 load("fidocfg.js");
+load("fido.js");
 
 var sbbsecho = new SBBSEchoCfg();
 var tickit = new TickITCfg();
