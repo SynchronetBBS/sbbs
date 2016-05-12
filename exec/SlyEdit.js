@@ -16,7 +16,7 @@
  * 2014-11-01 Eric Oulashin     Version 1.41 Beta
  *                              Added support for PageUp & PageDown keys for
  *                              message & quote line scrolling
- * 2014-11-08 Eric OUlashin     Started working on improved paragraph detection
+ * 2014-11-08 Eric Oulashin     Started working on improved paragraph detection
  *                              for paragraphs where the first line is indented
  *                              when wrapping non-quoted text in reply messages
  * 2014-11-09 Eric Oulashin     Bug fix in doQuoteSelection(): Reset gQuoteLinesIndex
@@ -79,6 +79,11 @@
  * 2015-07-10 Eric Oulashin     Version 1.48
  *                              Fixed the quote freezing bug and releasing this
  *                              version.
+ * 2016-05-11 Eric Oulashin     Version 1.49
+ *                              Bug fix: Updated displayCommandList() to use
+ *                              console.pause() instead of a custom pause routine
+ *                              so that Synchronet can use a custom pause script
+ *                              if one is configured in text.dat.
  */
 
 /* Command-line arguments:
@@ -156,8 +161,8 @@ if (!console.term_supports(USER_ANSI))
 }
 
 // Constants
-const EDITOR_VERSION = "1.48";
-const EDITOR_VER_DATE = "2015-07-10";
+const EDITOR_VERSION = "1.49";
+const EDITOR_VER_DATE = "2016-05-11";
 
 
 // Program variables

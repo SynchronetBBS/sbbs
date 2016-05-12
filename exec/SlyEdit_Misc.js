@@ -53,7 +53,14 @@
  *                              When wrapping text lines, it will only call
  *                              wrapTextLines() if the maximum line length is
  *                              positive.
+ * 2016-04-23 Eric Oulashin     Updated to load text.js for text.dat definitions.
+ * 2016-04-23 Eric Oulashin     Updated displayCommandList() to use console.pause()
+ *                              instead of a custom pause routine so that
+ *                              Synchronet can use a custom pause script if one
+ *                              is configured in text.dat.
  */
+ 
+ load("text.js");
 
 // Note: These variables are declared with "var" instead of "const" to avoid
 // multiple declaration errors when this file is loaded more than once.
@@ -1285,77 +1292,83 @@ function displayHelpHeader()
 function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop,
                              pTxtReplacments, pUserSettings)
 {
-   if (pClear)
-      console.clear("n");
-   if (pDisplayHeader)
-   {
-      displayHelpHeader();
-      console.crlf();
-   }
+	if (pClear)
+		console.clear("n");
+	if (pDisplayHeader)
+	{
+		displayHelpHeader();
+		console.crlf();
+	}
 
-   var isSysop = (pIsSysop != null ? pIsSysop : user.compare_ars("SYSOP"));
+	var isSysop = (pIsSysop != null ? pIsSysop : user.compare_ars("SYSOP"));
 
-   // This function displays a key and its description with formatting & colors.
-   //
-   // Parameters:
-   //  pKey: The key description
-   //  pDesc: The description of the key's function
-   //  pCR: Whether or not to display a carriage return (boolean).  Optional;
-   //       if not specified, this function won't display a CR.
-   function displayCmdKeyFormatted(pKey, pDesc, pCR)
-   {
-      printf("ch%-13sg: nc%s", pKey, pDesc);
-      if (pCR)
-         console.crlf();
-   }
-   // This function does the same, but outputs 2 on the same line.
-   function displayCmdKeyFormattedDouble(pKey, pDesc, pKey2, pDesc2, pCR)
-   {
-      var sepChar1 = ":";
-      var sepChar2 = ":";
-      if ((pKey.length == 0) && (pDesc.length == 0))
-         sepChar1 = " ";
-      if ((pKey2.length == 0) && (pDesc2.length == 0))
-         sepChar2 = " ";
-      printf("ch%-13sg" + sepChar1 + " nc%-28s kh" + VERTICAL_SINGLE +
-             " ch%-8sg" + sepChar2 + " nc%s", pKey, pDesc, pKey2, pDesc2);
-      if (pCR)
-         console.crlf();
-   }
+	// This function displays a key and its description with formatting & colors.
+	//
+	// Parameters:
+	//  pKey: The key description
+	//  pDesc: The description of the key's function
+	//  pCR: Whether or not to display a carriage return (boolean).  Optional;
+	//       if not specified, this function won't display a CR.
+	function displayCmdKeyFormatted(pKey, pDesc, pCR)
+	{
+		printf("ch%-13sg: nc%s", pKey, pDesc);
+		if (pCR)
+			console.crlf();
+	}
+	// This function does the same, but outputs 2 on the same line.
+	function displayCmdKeyFormattedDouble(pKey, pDesc, pKey2, pDesc2, pCR)
+	{
+		var sepChar1 = ":";
+		var sepChar2 = ":";
+		if ((pKey.length == 0) && (pDesc.length == 0))
+			sepChar1 = " ";
+		if ((pKey2.length == 0) && (pDesc2.length == 0))
+			sepChar2 = " ";
+		printf("ch%-13sg" + sepChar1 + " nc%-28s kh" + VERTICAL_SINGLE +
+		       " ch%-8sg" + sepChar2 + " nc%s", pKey, pDesc, pKey2, pDesc2);
+		if (pCR)
+			console.crlf();
+	}
 
-   // Help keys and slash commands
-   printf("ng%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
-   printf("kh%-44s  %-33s\r\n", "컴컴컴컴�", "컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴");
-   displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
-   displayCmdKeyFormattedDouble("Ctrl-P", "Command key help", "/S", "Save", true);
-   displayCmdKeyFormattedDouble("Ctrl-R", "Program information", "/Q", "Quote message", true);
-   if (pTxtReplacments)
-      displayCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements", true);
-   if (pUserSettings)
-      displayCmdKeyFormattedDouble("", "", "/U", "Your settings", true);
-   if (pCanCrossPost)
-      displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
-   printf(" ch%-7sg  nc%s", "", "", "/?", "Show help");
-   console.crlf();
-   // Command/edit keys
-   console.print("ngCommand/edit keys\r\nkh컴컴컴컴컴컴컴컴�\r\n");
-   displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
-   displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
-   displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-N", "Find text", true);
-   displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
-                                "Ctrl-D", "Delete line", true);
-   if (pCanCrossPost)
-      displayCmdKeyFormattedDouble("ESC", "Command menu", "Ctrl-C", "Cross-post selection", true);
-   else
-      displayCmdKeyFormatted("ESC", "Command menu", true);
-   if (isSysop)
-      displayCmdKeyFormattedDouble("Ctrl-O", "Import a file", "Ctrl-X", "Export to file", true);
+	// Help keys and slash commands
+	printf("ng%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
+	printf("kh%-44s  %-33s\r\n", "컴컴컴컴�", "컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴");
+	displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
+	displayCmdKeyFormattedDouble("Ctrl-P", "Command key help", "/S", "Save", true);
+	displayCmdKeyFormattedDouble("Ctrl-R", "Program information", "/Q", "Quote message", true);
+	if (pTxtReplacments)
+		displayCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements", true);
+	if (pUserSettings)
+		displayCmdKeyFormattedDouble("", "", "/U", "Your settings", true);
+	if (pCanCrossPost)
+		displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
+	printf(" ch%-7sg  nc%s", "", "", "/?", "Show help");
+	console.crlf();
+	// Command/edit keys
+	console.print("ngCommand/edit keys\r\nkh컴컴컴컴컴컴컴컴�\r\n");
+	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
+	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
+	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-N", "Find text", true);
+	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
+	                             "Ctrl-D", "Delete line", true);
+	if (pCanCrossPost)
+		displayCmdKeyFormattedDouble("ESC", "Command menu", "Ctrl-C", "Cross-post selection", true);
+	else
+		displayCmdKeyFormatted("ESC", "Command menu", true);
+	if (isSysop)
+		displayCmdKeyFormattedDouble("Ctrl-O", "Import a file", "Ctrl-X", "Export to file", true);
 
-   if (pUserSettings)
-      displayCmdKeyFormatted("Ctrl-U", "Your settings", true);
+	if (pUserSettings)
+		displayCmdKeyFormatted("Ctrl-U", "Your settings", true);
 
-   if (pPause)
-      consolePauseWithESCChars(isSysop);
+	if (pPause)
+	{
+		// TODO: I doubt this needs consolePauseWithESCChars() anymore..
+		// Should be able to use console.pause(), which easily supports
+		// custom pause scripts being loaded.
+		//consolePauseWithESCChars();
+		console.pause();
+	}
 }
 
 // Displays the general help screen.
@@ -4167,8 +4180,13 @@ function shuffleArray(pArray)
 //  pCfgObj: Optional - The configuration object, which specifies the input timeout.
 function consolePauseWithESCChars(pCfgObj)
 {
-   console.print("\1n" + bbs.text(563)); // 563 is the "Press a key" text in text.dat
-   getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO, pCfgObj);
+	// Get the pause prompt text from text.dat.  In case that text contains
+	// "@EXEC:" (to execute a script), default to a "press a key" message.
+	var pausePromptText = bbs.text(Pause); // 563: The "Press a key" text in text.dat
+	if (pausePromptText.toUpperCase().indexOf("@EXEC:") > -1)
+		pausePromptText = "\1n\1c[ Press a key ] ";
+	console.print("\1n" + pausePromptText);
+	getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO, pCfgObj);
 }
 
 // Inputs a keypress from the user and handles some ESC-based
