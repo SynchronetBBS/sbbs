@@ -75,6 +75,22 @@ function HTTPRequest(username,password)
 	this.SendRequest=function() {
 		var i;
 
+		function do_send(sock, str) {
+			var sent = 0;
+			var ret;
+
+			while (sent < str.length) {
+				sock.poll(60, true);
+				ret = sock.send(str);
+				if (ret === 0 || ret === null || ret === false)
+					return false;
+				if (ret === true)
+					return true;
+				sent += ret;
+			}
+			return true;
+		}
+
 		if((this.sock=new Socket(SOCK_STREAM))==null)
 			throw("Unable to create socket");
 		if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443))) {
@@ -83,16 +99,16 @@ function HTTPRequest(username,password)
 		}
 		if(this.url.scheme=='https')
 			this.sock.ssl_session=true;
-		if(!this.sock.send(this.request+"\r\n"))
+		if(!do_send(this.sock, this.request+"\r\n"))
 			throw("Unable to send request: " + this.request);
 		for(i in this.request_headers) {
-			if(!this.sock.send(this.request_headers[i]+"\r\n"))
+			if(!do_send(this.sock, this.request_headers[i]+"\r\n"))
 				throw("Unable to send headers");
 		}
-		if(!this.sock.send("\r\n"))
+		if(!do_send(this.sock, "\r\n"))
 			throw("Unable to terminate headers");
 		if(this.body != undefined) {
-			if(!this.sock.send(this.body))
+			if(!do_send(this.sock, this.body))
 				throw("Unable to send body");
 		}
 	};
