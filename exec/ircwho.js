@@ -84,7 +84,7 @@ if(!sent_heads && this.http_request!=undefined)
 
 function send(msg)
 {
-	if(!my_server.send(msg+"\r\n"))
+	if(my_server.send(msg+"\r\n") != msg.length + 2)
 		alert("send failure");
 }
 
