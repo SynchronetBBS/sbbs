@@ -682,6 +682,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	str;
 	js_socket_private_t*	p;
 	jsrefcount	rc;
+	int		ret;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -699,9 +700,10 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(js_socket_sendsocket(p,cp,len,TRUE)==len) {
-		dbprintf(FALSE, p, "sent %u bytes",len);
-		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+	ret = js_socket_sendsocket(p,cp,len,TRUE);
+	if(ret >= 0) {
+		dbprintf(FALSE, p, "sent %d of %u bytes",ret,len);
+		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ret));
 	} else {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %u bytes failed",len);
@@ -1906,8 +1908,9 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	,310
 	},
 	{"write",		js_send,		1,	JSTYPE_ALIAS },
-	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("data")
-	,JSDOCSTR("send a string (AKA write)")
+	{"send",		js_send,		1,	JSTYPE_NUMBER,	JSDOCSTR("data")
+	,JSDOCSTR("send a string (AKA write).  Returns the number of bytes sent or null if an error occured.  "
+	"Versions before 3.17 returned a bool true if all bytes were sent and false otherwise.")
 	,310
 	},
 	{"writeln",		js_sendline,		1,	JSTYPE_ALIAS },
