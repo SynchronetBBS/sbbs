@@ -246,7 +246,6 @@ static void dbprintf(BOOL error, js_socket_private_t* p, char* fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-	
 	lprintf(LOG_DEBUG,"%04d Socket %s%s",p->sock,error ? "ERROR: ":"",sbuf);
 }
 
@@ -453,7 +452,7 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc)
 		port = js_port(cx,argv[0],p->type);
-	if(argc > 1) {
+	if(argc > 1 && argv[1] != JSVAL_VOID) {
 		JSVALUE_TO_ASTRING(cx, argv[1], cstr, INET6_ADDRSTRLEN, NULL);
 	}
 
@@ -466,7 +465,8 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	if((ret=getaddrinfo(cstr, portstr, &hints, &res)) != 0) {
 		JS_RESUMEREQUEST(cx,rc);
-		dbprintf(TRUE, p, "getaddrinfo failed with error %d",ret);
+		dbprintf(TRUE, p, "getaddrinfo (%s %s) failed with error %d", cstr, portstr, ret);
+		p->last_error=ERROR_VALUE;
 		return(JS_TRUE);
 	}
 	for(tres=res; tres; tres=tres->ai_next) {
