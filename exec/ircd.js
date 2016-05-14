@@ -140,6 +140,12 @@ network_debug = false;
 
 last_recvq_check = 0;
 
+/*
+ * A tri-state variable indicating if socket.send is "old" (ie: returns bool)
+ * or "new" (ie: returns count of bytes sent).
+ */
+var new_socket_send;
+
 // Parse command-line arguments.
 config_filename="";
 var cmdline_port;
@@ -265,10 +271,7 @@ while (!js.terminated) {
 						conn.quit("Connection reset by peer.");
 						continue;
 					}
-					var incoming_cmd = conn.socket.recv(65536,0);
-					if (incoming_cmd) {
-						conn.recvq.recv(incoming_cmd);
-					}
+					conn.recvq.recv(conn.socket);
 				}
 			}
 		} catch(e) {
@@ -975,17 +978,56 @@ function ircout(str) {
 	sendconn.sendq.add(send_data);
 }
 
-function Queue_Recv(str) {
+function Queue_Recv(sock) {
 	var pos;
 	var cmd;
+	var str;
 
-	this._recv_bytes += str;
-	while ((pos = this._recv_bytes.search('\n')) != -1) {
-		cmd = this._recv_bytes.substr(0, pos);
-		this._recv_bytes = this._recv_bytes.substr(pos+1);
-		if (cmd[cmd.length-1] == '\r')
-			cmd = cmd.substr(0, cmd.length - 1);
-		this.add(cmd);
+	str = sock.recv(65536,0);
+	if (str !== null && str.length > 0) {
+		this._recv_bytes += str;
+		while ((pos = this._recv_bytes.search('\n')) != -1) {
+			cmd = this._recv_bytes.substr(0, pos);
+			this._recv_bytes = this._recv_bytes.substr(pos+1);
+			if (cmd[cmd.length-1] == '\r')
+				cmd = cmd.substr(0, cmd.length - 1);
+			this.add(cmd);
+		}
+	}
+}
+
+function Queue_Send(sock) {
+	var sent;
+	var oldnb;
+
+	if (this.queue.length) {
+		this._send_bytes += this.queue.join('\r\n')+'\r\n';
+		this.queue = [];
+	}
+	if (this._send_bytes.length) {
+		if (new_socket_send === undefined || new_socket_send === false) {
+			oldnb = sock.nonblocking;
+			sock.nonblocking = false;
+		}
+		sent = sock.send(this._send_bytes);
+		if (new_socket_send === undefined) {
+			if (sent === true)
+				new_socket_send = false;
+			else if (sent === false)
+				new_socket_send = false;
+			else {
+				new_socket_send = true;
+				sock.nonblocking = oldnb;
+			}
+		}
+		if (new_socket_send === false) {
+			sock.nonblocking = oldnb;
+			this._send_bytes = '';
+		}
+		if (new_socket_send === true) {
+			if (sent > 0)
+				this._send_bytes = this._send_bytes.substr(sent);
+		}
 	}
 }
 
@@ -2877,16 +2919,9 @@ function IRCClient_check_timeout() {
 }
 
 function IRCClient_check_queues() {
-	var oldnb;
 	var cmd;
 
-	if (this.sendq.queue.length && this.socket.poll(0,true /*write?*/)>=1) {
-		oldnb = this.socket.nonblocking;
-		this.socket.nonblocking = false;
-		this.socket.send(this.sendq.queue.join("\r\n")+"\r\n");
-		this.sendq.queue=[];
-		this.socket.nonblocking = oldnb;
-	}
+	this.sendq.send(this.socket);
 	while (this.recvq.queue.length) {
 		cmd = this.recvq.del();
 		Global_CommandLine = cmd;
@@ -3009,10 +3044,12 @@ function SJOIN_Nick(nick,isop,isvoice) {
 function IRC_Queue() {
 	this.queue = new Array;
 	this._recv_bytes = '';
+	this._send_bytes = '';
 	this.add = Queue_Add;
 	this.del = Queue_Del;
 	this.prepend = Queue_Prepend;
 	this.recv = Queue_Recv;
+	this.send = Queue_Send;
 }
 
 /* /STATS M, for profiling. */
