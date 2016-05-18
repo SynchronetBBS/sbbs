@@ -2243,9 +2243,9 @@ static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passw
 
 	if(addr!=NULL) {
 		count=loginFailure(startup->login_attempt_list, addr, "FTP", user, passwd);
-		if(startup->login_attempt_hack_threshold && count>=startup->login_attempt_hack_threshold)
+		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold)
 			ftp_hacklog("FTP LOGIN", user, passwd, host, addr);
-		if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold) {
+		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 			inet_addrtop(addr, host_ip, sizeof(host_ip));
 			filter_ip(&scfg, "FTP", "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
 				,host, host_ip, user, /* fname: */NULL);
@@ -2255,7 +2255,7 @@ static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passw
 	} else
 		(*login_attempts)++;
 
-	mswait(startup->login_attempt_delay);	/* As recommended by RFC2577 */
+	mswait(startup->login_attempt.delay);	/* As recommended by RFC2577 */
 
 	if((*login_attempts)>=3) {
 		sockprintf(sock,"421 Too many failed login attempts.");
@@ -2421,8 +2421,9 @@ static void ctrl_thread(void* arg)
 	if(!(startup->options&FTP_OPT_NO_HOST_LOOKUP))
 		lprintf(LOG_INFO,"%04d Hostname: %s", sock, host_name);
 
-	if(trashcan(&scfg,host_ip,"ip")) {
-		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", sock, host_ip);
+	ulong banned = loginBanned(&scfg, startup->login_attempt_list, &ftp.client_addr,  startup->login_attempt);
+	if((banned && lprintf(LOG_NOTICE, "%04d %s is TEMPORARILY BANNED (%lu more seconds)", socket, host_ip, banned))
+		|| (trashcan(&scfg,host_ip,"ip") && lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", sock, host_ip))) {
 		sockprintf(sock,"550 Access denied.");
 		ftp_close_socket(&sock,__LINE__);
 		thread_down();
@@ -2460,11 +2461,11 @@ static void ctrl_thread(void* arg)
 	client.user="<unknown>";
 	client_on(sock,&client,FALSE /* update */);
 
-	if(startup->login_attempt_throttle
+	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &ftp.client_addr)) > 1) {
 		lprintf(LOG_DEBUG,"%04d Throttling suspicious connection from: %s (%u login attempts)"
 			,sock, host_ip, login_attempts);
-		mswait(login_attempts*startup->login_attempt_throttle);
+		mswait(login_attempts*startup->login_attempt.throttle);
 	}
 
 	sockprintf(sock,"220-%s (%s)",scfg.sys_name, startup->host_name);

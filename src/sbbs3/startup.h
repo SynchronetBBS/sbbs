@@ -58,6 +58,16 @@ typedef struct {
 	char	load_path[INI_MAX_VALUE_LEN];	/* additional (comma-separated) directories to search for load()ed scripts */
 } js_startup_t;
 
+/* Login Attempt parameters */
+struct login_attempt_settings {
+	ulong	delay;				/* in milliseconds */
+	ulong	throttle;			/* in milliseconds */
+	ulong	hack_threshold;
+	ulong	tempban_threshold;
+	ulong	tempban_duration;	/* in seconds */
+	ulong	filter_threshold;
+};
+
 typedef struct {
 
 	char	ctrl_dir[INI_MAX_VALUE_LEN];
@@ -71,10 +81,7 @@ typedef struct {
 	js_startup_t js;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
-	ulong	login_attempt_delay;
-	ulong	login_attempt_throttle;
-	ulong	login_attempt_hack_threshold;
-	ulong	login_attempt_filter_threshold;
+	struct login_attempt_settings login_attempt;
 
 } global_startup_t;
 
@@ -137,11 +144,7 @@ typedef struct {
 	/* JavaScript operating parameters */
 	js_startup_t js;
 
-	/* Login Attempt parameters */
-	ulong	login_attempt_delay;
-	ulong	login_attempt_throttle;
-	ulong	login_attempt_hack_threshold;
-	ulong	login_attempt_filter_threshold;
+	struct login_attempt_settings login_attempt;
 	link_list_t* login_attempt_list;
 
 } bbs_startup_t;

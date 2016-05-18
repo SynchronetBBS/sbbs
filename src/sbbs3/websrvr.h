@@ -106,10 +106,7 @@ typedef struct {
 	js_startup_t js;
 
 	/* Login Attempt parameters */
-	uint32_t	login_attempt_delay;
-	uint32_t	login_attempt_throttle;
-	uint32_t	login_attempt_hack_threshold;
-	uint32_t	login_attempt_filter_threshold;
+	struct login_attempt_settings login_attempt;
 	link_list_t* login_attempt_list;
 
 } web_startup_t;

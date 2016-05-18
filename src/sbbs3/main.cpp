@@ -4146,11 +4146,11 @@ void node_thread(void* arg)
 	}
 #endif
 
-	if(startup->login_attempt_throttle
+	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &sbbs->client_addr)) > 1) {
 		lprintf(LOG_DEBUG,"Node %d Throttling suspicious connection from: %s (%u login attempts)"
 			,sbbs->cfg.node_num, sbbs->client_ipaddr, login_attempts);
-		mswait(login_attempts*startup->login_attempt_throttle);
+		mswait(login_attempts*startup->login_attempt.throttle);
 	}
 
 	if(sbbs->answer()) {
@@ -5121,6 +5121,16 @@ NO_SSH:
 #endif
 			, host_ip, inet_addrport(&client_addr));
 
+		ulong banned = loginBanned(&scfg, startup->login_attempt_list, &client_addr,  startup->login_attempt);
+		if((banned && lprintf(LOG_NOTICE, "%04d %s is TEMPORARILY BANNED (%lu more seconds)", client_socket, host_ip, banned))
+			|| (sbbs->trashcan(host_ip,"ip") && lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", client_socket, host_ip))) {
+			SSH_END();
+			close_socket(client_socket);
+			SAFEPRINTF(logstr, "Blocked IP: %s",host_ip);
+			sbbs->syslog("@!",logstr);
+			continue;
+		}
+
 #ifdef _WIN32
 		if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
 			PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
@@ -5201,16 +5211,6 @@ NO_SSH:
 #endif
    		sbbs->client_socket=client_socket;	// required for output to the user
         sbbs->online=ON_REMOTE;
-
-		if(sbbs->trashcan(host_ip,"ip")) {
-			SSH_END();
-			close_socket(client_socket);
-			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s"
-				,client_socket, host_ip);
-			SAFEPRINTF(logstr, "Blocked IP: %s",host_ip);
-			sbbs->syslog("@!",logstr);
-			continue;
-		}
 
 		if(rlogin)
 			sbbs->outcom(0); /* acknowledge RLogin per RFC 1282 */

@@ -1780,18 +1780,18 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 
 	SAFEPRINTF(reason,"%s LOGIN", prot);
 	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
-	if(startup->login_attempt_hack_threshold && count>=startup->login_attempt_hack_threshold) {
+	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, reason, user, passwd, host, addr);
 #ifdef _WIN32
 		if(startup->hack_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
 			PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 	}
-	if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
+	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold)
 		filter_ip(&scfg, prot, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
 			,host, inet_addrtop(addr, addrstr, sizeof(addrstr)), user, /* fname: */NULL);
 	if(count>1)
-		mswait(startup->login_attempt_delay);
+		mswait(startup->login_attempt.delay);
 }
 
 static BOOL check_ars(http_session_t * session)
@@ -6246,9 +6246,11 @@ void http_session_thread(void* arg)
 		}
 	}
 
+	ulong banned = loginBanned(&scfg, startup->login_attempt_list, &session.addr,  startup->login_attempt);
+
 	/* host_ip wasn't defined in http_session_thread */
-	if(trashcan(&scfg,session.host_ip,"ip")) {
-		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", session.socket, session.host_ip);
+	if((banned && lprintf(LOG_NOTICE, "%04d %s is TEMPORARILY BANNED (%lu more seconds)", socket, session.host_ip, banned))
+		|| (trashcan(&scfg,session.host_ip,"ip") && lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", session.socket, session.host_ip))) {
 		close_session_socket(&session);
 		sem_wait(&session.output_thread_terminated);
 		sem_destroy(&session.output_thread_terminated);
@@ -6270,11 +6272,11 @@ void http_session_thread(void* arg)
 	session.client.size=sizeof(session.client);
 	client_on(session.socket, &session.client, /* update existing client record? */FALSE);
 
-	if(startup->login_attempt_throttle
+	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &session.addr)) > 1) {
 		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%u login attempts)"
 			,socket, session.client.protocol, session.host_ip, login_attempts);
-		mswait(login_attempts*startup->login_attempt_throttle);
+		mswait(login_attempts*startup->login_attempt.throttle);
 	}
 
 	session.last_user_num=-1;
