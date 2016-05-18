@@ -975,7 +975,7 @@ BOOL DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	sprintf(str,"%schat.cnf",cfg->ctrl_dir);
+	SAFEPRINTF(str,"%schat.cnf",cfg->ctrl_dir);
 	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
