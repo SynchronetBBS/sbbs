@@ -193,12 +193,16 @@ void sbbs_t::menu(const char *code)
 	if(menu_file[0])
 		strcpy(path,menu_file);
 	else {
-		sprintf(str,"%smenu/",cfg.text_dir);
-		if(menu_dir[0]) {
-			strcat(str,menu_dir);
-			strcat(str,"/"); 
+		if(isfullpath(code))
+			SAFECOPY(str, code);
+		else {
+			sprintf(str,"%smenu/",cfg.text_dir);
+			if(menu_dir[0]) {
+				strcat(str,menu_dir);
+				strcat(str,"/"); 
+			}
+			strcat(str,code);
 		}
-		strcat(str,code);
 		strcat(str,".");
 		sprintf(path,"%s%s",str,term_supports(WIP) ? "wip": term_supports(RIP) ? "rip" : "html");
 		if(!(term_supports()&(RIP|WIP|HTML)) || !fexistcase(path)) {
