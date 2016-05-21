@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * CopyrightRob Swindell - http://www.synchro.net/copyright.html			*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -480,4 +480,19 @@ void DLLCALL inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
 			addr->in6.sin6_port = htons(port);
 			break;
 	}
+}
+
+/* Return TRUE if the 2 addresses are the same host (type and address) */
+BOOL DLLCALL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
+{
+	if(addr1->addr.sa_family != addr2->addr.sa_family)
+		return FALSE;
+
+	switch(addr1->addr.sa_family) {
+		case AF_INET:
+			return memcmp(&addr1->in.sin_addr, &addr2->in.sin_addr, sizeof(addr1->in.sin_addr)) == 0;
+		case AF_INET6:
+			return memcmp(&addr1->in6.sin6_addr, &addr2->in6.sin6_addr, sizeof(addr1->in6.sin6_addr)) == 0;
+	}
+	return FALSE;
 }
