@@ -21,7 +21,7 @@ object EventsForm: TEventsForm
     Left = 0
     Top = 0
     Width = 543
-    Height = 353
+    Height = 352
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -30,6 +30,7 @@ object EventsForm: TEventsForm
     Font.Style = []
     HideScrollBars = False
     ParentFont = False
+    PopupMenu = MainForm.LogPopupMenu
     ReadOnly = True
     ScrollBars = ssBoth
     TabOrder = 0

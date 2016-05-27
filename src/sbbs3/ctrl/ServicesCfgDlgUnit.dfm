@@ -61,13 +61,13 @@ object ServicesCfgDlg: TServicesCfgDlg
         Width = 78
         Height = 20
         AutoSize = False
-        Caption = 'Interface (IP)'
+        Caption = 'Interfaces (IPs)'
       end
       object GlobalSettingsLabel: TLabel
         Left = 8
         Top = 68
-        Width = 249
-        Height = 20
+        Width = 156
+        Height = 13
         Caption = 'Global Service Settings (defaults)'
       end
       object AutoStartCheckBox: TCheckBox
@@ -86,7 +86,9 @@ object ServicesCfgDlg: TServicesCfgDlg
         Top = 34
         Width = 156
         Height = 21
-        Hint = 'Your network adapter'#39's static IP address or blank for <ANY>'
+        Hint = 
+          'Comma-separated list of IP addresses to accept incoming connecti' +
+          'ons'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2

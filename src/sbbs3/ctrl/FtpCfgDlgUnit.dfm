@@ -1,75 +1,75 @@
 object FtpCfgDlg: TFtpCfgDlg
-  Left = 779
-  Top = 375
+  Left = 837
+  Top = 423
   BorderStyle = bsDialog
   Caption = 'FTP Server Configuration'
-  ClientHeight = 302
-  ClientWidth = 352
+  ClientHeight = 245
+  ClientWidth = 286
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
   Position = poScreenCenter
   OnShow = FormShow
   DesignSize = (
-    352
-    302)
-  PixelsPerInch = 120
-  TextHeight = 16
+    286
+    245)
+  PixelsPerInch = 96
+  TextHeight = 13
   object PageControl: TPageControl
-    Left = 4
-    Top = 4
-    Width = 342
-    Height = 245
-    ActivePage = PasvTabSheet
-    TabIndex = 1
+    Left = 3
+    Top = 3
+    Width = 278
+    Height = 199
+    ActivePage = GeneralTabSheet
+    TabIndex = 0
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
       object MaxClientesLabel: TLabel
-        Left = 9
-        Top = 106
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 86
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'Max Clients'
       end
       object MaxInactivityLabel: TLabel
-        Left = 9
-        Top = 138
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 112
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'Max Inactivity'
       end
       object PortLabel: TLabel
-        Left = 9
-        Top = 74
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 60
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'Control Port'
       end
       object InterfaceLabel: TLabel
-        Left = 9
-        Top = 42
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 34
+        Width = 78
+        Height = 20
         AutoSize = False
-        Caption = 'Interface (IP)'
+        Caption = 'Interfaces (IPs)'
       end
       object QwkTimeoutLabel: TLabel
-        Left = 9
-        Top = 170
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 138
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'QWK Timeout'
       end
       object AutoStartCheckBox: TCheckBox
-        Left = 9
-        Top = 12
-        Width = 144
-        Height = 25
+        Left = 7
+        Top = 10
+        Width = 117
+        Height = 20
         Hint = 'Automatically start FTP server'
         Caption = 'Auto Startup'
         ParentShowHint = False
@@ -77,9 +77,9 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 0
       end
       object MaxClientsEdit: TEdit
-        Left = 105
-        Top = 106
-        Width = 48
+        Left = 85
+        Top = 86
+        Width = 39
         Height = 21
         Hint = 'Maximum number of simultaneous clients (default=10)'
         ParentShowHint = False
@@ -87,9 +87,9 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 4
       end
       object MaxInactivityEdit: TEdit
-        Left = 105
-        Top = 138
-        Width = 48
+        Left = 85
+        Top = 112
+        Width = 39
         Height = 21
         Hint = 
           'Maximum number of seconds of inactivity before disconnect (defau' +
@@ -99,9 +99,9 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 5
       end
       object PortEdit: TEdit
-        Left = 105
-        Top = 74
-        Width = 48
+        Left = 85
+        Top = 60
+        Width = 39
         Height = 21
         Hint = 'TCP port to use for FTP control connections (default=21)'
         ParentShowHint = False
@@ -109,20 +109,22 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 3
       end
       object NetworkInterfaceEdit: TEdit
-        Left = 105
-        Top = 42
-        Width = 192
+        Left = 85
+        Top = 34
+        Width = 156
         Height = 21
-        Hint = 'Your network adapter'#39's static IP address or blank for <ANY>'
+        Hint = 
+          'Comma-separated list of IP addresses to accept incoming connecti' +
+          'ons'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
       end
       object AllowQWKCheckBox: TCheckBox
-        Left = 182
-        Top = 74
-        Width = 147
-        Height = 24
+        Left = 148
+        Top = 60
+        Width = 119
+        Height = 20
         Hint = 'Allow QWK packet transfers'
         Caption = 'QWK Packets'
         ParentShowHint = False
@@ -130,10 +132,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 7
       end
       object LocalFileSysCheckBox: TCheckBox
-        Left = 182
-        Top = 106
-        Width = 147
-        Height = 24
+        Left = 148
+        Top = 86
+        Width = 119
+        Height = 20
         Hint = 
           'Allow sysop access to local file system (requires sysop password' +
           ')'
@@ -143,10 +145,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 8
       end
       object HostnameCheckBox: TCheckBox
-        Left = 182
-        Top = 12
-        Width = 147
-        Height = 25
+        Left = 148
+        Top = 10
+        Width = 119
+        Height = 20
         Hint = 'Automatically lookup client'#39's hostnames via DNS'
         Caption = 'Hostname Lookup'
         ParentShowHint = False
@@ -154,10 +156,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 1
       end
       object DirFilesCheckBox: TCheckBox
-        Left = 182
-        Top = 135
-        Width = 154
-        Height = 25
+        Left = 148
+        Top = 110
+        Width = 125
+        Height = 20
         Hint = 'Allow users access to files in directory, but not in database'
         Caption = 'Directory File Access'
         ParentShowHint = False
@@ -165,9 +167,9 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 9
       end
       object QwkTimeoutEdit: TEdit
-        Left = 105
-        Top = 170
-        Width = 48
+        Left = 85
+        Top = 138
+        Width = 39
         Height = 21
         Hint = 'Maximum number of seconds before QWK packet creation timeout'
         ParentShowHint = False
@@ -179,45 +181,45 @@ object FtpCfgDlg: TFtpCfgDlg
       Caption = 'Passive'
       ImageIndex = 4
       object PasvIpLabel: TLabel
-        Left = 9
-        Top = 12
-        Width = 96
-        Height = 25
+        Left = 7
+        Top = 10
+        Width = 78
+        Height = 20
         AutoSize = False
-        Caption = 'IP Address'
+        Caption = 'IPv4 Address'
       end
       object PasvPortLabel: TLabel
-        Left = 9
-        Top = 44
-        Width = 96
-        Height = 25
+        Left = 7
+        Top = 36
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'Port Range'
       end
       object PasvPortThroughLabel: TLabel
-        Left = 153
-        Top = 44
-        Width = 16
-        Height = 25
+        Left = 124
+        Top = 36
+        Width = 13
+        Height = 20
         Alignment = taCenter
         AutoSize = False
         Caption = '-'
       end
-      object PasvIpAddrEdit: TEdit
-        Left = 105
-        Top = 12
-        Width = 113
-        Height = 24
+      object PasvIPv4AddrEdit: TEdit
+        Left = 85
+        Top = 10
+        Width = 92
+        Height = 21
         Hint = 'Your static public IP address or blank for <unspecified>'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
       end
       object PasvPortLowEdit: TEdit
-        Left = 105
-        Top = 44
-        Width = 48
-        Height = 24
+        Left = 85
+        Top = 36
+        Width = 39
+        Height = 21
         Hint = 
           'Lowest TCP port to use for passive FTP data connections (default' +
           '=1024)'
@@ -226,10 +228,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 2
       end
       object PasvPortHighEdit: TEdit
-        Left = 169
-        Top = 44
-        Width = 48
-        Height = 24
+        Left = 137
+        Top = 36
+        Width = 39
+        Height = 21
         Hint = 
           'Highest TCP port to use for passive FTP data connections (defaul' +
           't=65535)'
@@ -238,10 +240,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 3
       end
       object PasvIpLookupCheckBox: TCheckBox
-        Left = 226
-        Top = 10
-        Width = 90
-        Height = 21
+        Left = 184
+        Top = 8
+        Width = 73
+        Height = 17
         Hint = 'Get passive IP address from public hostname (dynamic IP)'
         Caption = 'Lookup'
         ParentShowHint = False
@@ -254,18 +256,18 @@ object FtpCfgDlg: TFtpCfgDlg
       Caption = 'Index'
       ImageIndex = 3
       object HtmlJavaScriptLabel: TLabel
-        Left = 9
-        Top = 76
-        Width = 80
-        Height = 25
+        Left = 7
+        Top = 62
+        Width = 65
+        Height = 20
         AutoSize = False
         Caption = 'JavaScript'
       end
       object AutoIndexCheckBox: TCheckBox
-        Left = 9
-        Top = 12
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 10
+        Width = 78
+        Height = 19
         Hint = 'Automatically generate index files for file descriptions'
         Caption = 'ASCII'
         ParentShowHint = False
@@ -274,9 +276,9 @@ object FtpCfgDlg: TFtpCfgDlg
         OnClick = AutoIndexCheckBoxClick
       end
       object IndexFileNameEdit: TEdit
-        Left = 105
-        Top = 12
-        Width = 192
+        Left = 85
+        Top = 10
+        Width = 156
         Height = 21
         Hint = 'Name of ASCII index file (default=00index)'
         ParentShowHint = False
@@ -284,10 +286,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 1
       end
       object HtmlIndexCheckBox: TCheckBox
-        Left = 9
-        Top = 44
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 36
+        Width = 78
+        Height = 19
         Hint = 'Automatically generate HTML index files for file descriptions'
         Caption = 'HTML'
         ParentShowHint = False
@@ -296,9 +298,9 @@ object FtpCfgDlg: TFtpCfgDlg
         OnClick = HtmlIndexCheckBoxClick
       end
       object HtmlFileNameEdit: TEdit
-        Left = 105
-        Top = 44
-        Width = 192
+        Left = 85
+        Top = 36
+        Width = 156
         Height = 21
         Hint = 'Name of HTML index file (default=00index.html)'
         ParentShowHint = False
@@ -306,9 +308,9 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 3
       end
       object HtmlJavaScriptEdit: TEdit
-        Left = 105
-        Top = 76
-        Width = 192
+        Left = 85
+        Top = 62
+        Width = 156
         Height = 21
         Hint = 'JavaScript filename to execute to generate HTML index file'
         ParentShowHint = False
@@ -320,10 +322,10 @@ object FtpCfgDlg: TFtpCfgDlg
       Caption = 'Log'
       ImageIndex = 1
       object DebugTxCheckBox: TCheckBox
-        Left = 9
-        Top = 42
-        Width = 192
-        Height = 24
+        Left = 7
+        Top = 34
+        Width = 156
+        Height = 20
         Hint = 'Log (debug) transmitted FTP responses'
         Caption = 'Transmitted Responses'
         ParentShowHint = False
@@ -331,10 +333,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 1
       end
       object CmdLogCheckBox: TCheckBox
-        Left = 9
-        Top = 12
-        Width = 192
-        Height = 24
+        Left = 7
+        Top = 10
+        Width = 156
+        Height = 19
         Hint = 'Log (debug) all received FTP commands'
         Caption = 'Received Commands'
         ParentShowHint = False
@@ -342,10 +344,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 0
       end
       object DebugDataCheckBox: TCheckBox
-        Left = 9
-        Top = 73
-        Width = 192
-        Height = 23
+        Left = 7
+        Top = 59
+        Width = 156
+        Height = 19
         Hint = 'Log (debug) data channel operations'
         Caption = 'Data Channel Activity'
         ParentShowHint = False
@@ -353,10 +355,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 2
       end
       object LogFileCheckBox: TCheckBox
-        Left = 9
-        Top = 102
-        Width = 144
-        Height = 25
+        Left = 7
+        Top = 83
+        Width = 117
+        Height = 20
         Hint = 'Save log entries to a file (in your DATA directory)'
         Caption = 'Log to Disk'
         ParentShowHint = False
@@ -368,33 +370,33 @@ object FtpCfgDlg: TFtpCfgDlg
       Caption = 'Sound'
       ImageIndex = 2
       object AnswerSoundLabel: TLabel
-        Left = 9
-        Top = 12
-        Width = 80
-        Height = 25
+        Left = 7
+        Top = 10
+        Width = 65
+        Height = 20
         AutoSize = False
         Caption = 'Connect'
       end
       object HangupSoundLabel: TLabel
-        Left = 9
-        Top = 44
-        Width = 80
-        Height = 25
+        Left = 7
+        Top = 36
+        Width = 65
+        Height = 20
         AutoSize = False
         Caption = 'Disconnect'
       end
       object HackAttemptSoundLabel: TLabel
-        Left = 9
-        Top = 76
-        Width = 80
-        Height = 25
+        Left = 7
+        Top = 62
+        Width = 65
+        Height = 20
         AutoSize = False
         Caption = 'Hack Attempt'
       end
       object AnswerSoundEdit: TEdit
-        Left = 105
-        Top = 12
-        Width = 192
+        Left = 85
+        Top = 10
+        Width = 156
         Height = 24
         Hint = 'Sound file to play when users connect'
         ParentShowHint = False
@@ -402,18 +404,18 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 0
       end
       object AnswerSoundButton: TButton
-        Left = 304
-        Top = 12
-        Width = 25
-        Height = 26
+        Left = 247
+        Top = 10
+        Width = 20
+        Height = 21
         Caption = '...'
         TabOrder = 1
         OnClick = AnswerSoundButtonClick
       end
       object HangupSoundEdit: TEdit
-        Left = 105
-        Top = 44
-        Width = 192
+        Left = 85
+        Top = 36
+        Width = 156
         Height = 24
         Hint = 'Sound file to play when users disconnect'
         ParentShowHint = False
@@ -421,18 +423,18 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 2
       end
       object HangupSoundButton: TButton
-        Left = 304
-        Top = 44
-        Width = 25
-        Height = 26
+        Left = 247
+        Top = 36
+        Width = 20
+        Height = 21
         Caption = '...'
         TabOrder = 3
         OnClick = HangupSoundButtonClick
       end
       object HackAttemptSoundEdit: TEdit
-        Left = 105
-        Top = 76
-        Width = 192
+        Left = 85
+        Top = 62
+        Width = 156
         Height = 24
         Hint = 'Sound file to play when hack attempts are detected'
         ParentShowHint = False
@@ -440,10 +442,10 @@ object FtpCfgDlg: TFtpCfgDlg
         TabOrder = 4
       end
       object HackAttemptSoundButton: TButton
-        Left = 304
-        Top = 76
-        Width = 25
-        Height = 26
+        Left = 247
+        Top = 62
+        Width = 20
+        Height = 21
         Caption = '...'
         TabOrder = 5
         OnClick = HackAttemptSoundButtonClick
@@ -451,10 +453,10 @@ object FtpCfgDlg: TFtpCfgDlg
     end
   end
   object OKBtn: TButton
-    Left = 25
-    Top = 260
-    Width = 93
-    Height = 30
+    Left = 20
+    Top = 211
+    Width = 76
+    Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'OK'
     Default = True
@@ -463,10 +465,10 @@ object FtpCfgDlg: TFtpCfgDlg
     OnClick = OKBtnClick
   end
   object CancelBtn: TButton
-    Left = 128
-    Top = 260
-    Width = 92
-    Height = 30
+    Left = 104
+    Top = 211
+    Width = 75
+    Height = 25
     Anchors = [akLeft, akBottom]
     Cancel = True
     Caption = 'Cancel'
@@ -474,10 +476,10 @@ object FtpCfgDlg: TFtpCfgDlg
     TabOrder = 2
   end
   object ApplyBtn: TButton
-    Left = 233
-    Top = 260
-    Width = 93
-    Height = 30
+    Left = 189
+    Top = 211
+    Width = 76
+    Height = 25
     Anchors = [akLeft, akBottom]
     Cancel = True
     Caption = 'Apply'

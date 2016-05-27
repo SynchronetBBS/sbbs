@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html		    *
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -55,18 +55,12 @@ __fastcall TWebCfgDlg::TWebCfgDlg(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
 {
-    char str[128];
-    char** p;
+    char str[256];
 
-    if(MainForm->web_startup.outgoing4.s_addr==0)
+    if(MainForm->web_startup.interfaces==NULL)
         NetworkInterfaceEdit->Text="<ANY>";
     else {
-        sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->web_startup.outgoing4.s_addr>>24)&0xff
-            ,(MainForm->web_startup.outgoing4.s_addr>>16)&0xff
-            ,(MainForm->web_startup.outgoing4.s_addr>>8)&0xff
-            ,MainForm->web_startup.outgoing4.s_addr&0xff
-        );
+        strListCombine(MainForm->web_startup.interfaces, str, sizeof(str)-1, ",");
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
     if(MainForm->web_startup.max_clients==0)
@@ -86,19 +80,11 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
     CGIContentEdit->Text=AnsiString(MainForm->web_startup.default_cgi_content);
     CGIMaxInactivityEdit->Text=AnsiString((int)MainForm->web_startup.max_cgi_inactivity);
 
-    IndexFileEdit->Text.SetLength(0);
-    for(p=MainForm->web_startup.index_file_name;*p;p++) {
-        if(p!=MainForm->web_startup.index_file_name)
-            IndexFileEdit->Text=IndexFileEdit->Text+",";
-        IndexFileEdit->Text=IndexFileEdit->Text+AnsiString(*p);
-    }
+    strListCombine(MainForm->web_startup.index_file_name, str, sizeof(str)-1, ",");
+    IndexFileEdit->Text=AnsiString(str);
 
-    CGIExtEdit->Text.SetLength(0);
-    for(p=MainForm->web_startup.cgi_ext;*p;p++) {
-        if(p!=MainForm->web_startup.cgi_ext)
-            CGIExtEdit->Text=CGIExtEdit->Text+",";
-        CGIExtEdit->Text=CGIExtEdit->Text+AnsiString(*p);
-    }
+    strListCombine(MainForm->web_startup.cgi_ext, str, sizeof(str)-1, ",");
+    CGIExtEdit->Text=AnsiString(str);
 
     CGICheckBox->Checked=!(MainForm->web_startup.options&WEB_OPT_NO_CGI);
 
@@ -123,26 +109,8 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
 {
-    char    str[128],*p;
-    DWORD   addr;
-
-    SAFECOPY(str,NetworkInterfaceEdit->Text.c_str());
-    p=str;
-    while(*p && *p<=' ') p++;
-    if(*p && isdigit(*p)) {
-        addr=atoi(p)<<24;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<16;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<8;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p);
-        MainForm->web_startup.outgoing4.s_addr=addr;
-    } else
-        MainForm->web_startup.outgoing4.s_addr=0;
+    iniFreeStringList(MainForm->web_startup.interfaces);
+    MainForm->web_startup.interfaces = strListSplitCopy(NULL, NetworkInterfaceEdit->Text.c_str(), ",");
     MainForm->web_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
     MainForm->web_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(WEB_DEFAULT_MAX_INACTIVITY);
     MainForm->web_startup.port=PortEdit->Text.ToIntDef(IPPORT_HTTP);

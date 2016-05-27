@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html		    *
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -53,21 +53,16 @@ __fastcall TFtpCfgDlg::TFtpCfgDlg(TComponent* AOwner)
 //---------------------------------------------------------------------
 void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
 {
-    char str[128];
+    char str[256];
 
-    if(MainForm->ftp_startup.outgoing4.s_addr==0)
+    if(MainForm->ftp_startup.interfaces==NULL)
         NetworkInterfaceEdit->Text="<ANY>";
     else {
-        sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->ftp_startup.outgoing4.s_addr>>24)&0xff
-            ,(MainForm->ftp_startup.outgoing4.s_addr>>16)&0xff
-            ,(MainForm->ftp_startup.outgoing4.s_addr>>8)&0xff
-            ,MainForm->ftp_startup.outgoing4.s_addr&0xff
-        );
+        strListCombine(MainForm->ftp_startup.interfaces, str, sizeof(str)-1, ",");
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
     if(MainForm->ftp_startup.pasv_ip_addr.s_addr==0)
-        PasvIpAddrEdit->Text="<unspecified>";
+        PasvIPv4AddrEdit->Text="<unspecified>";
     else {
         sprintf(str,"%d.%d.%d.%d"
             ,(MainForm->ftp_startup.pasv_ip_addr.s_addr>>24)&0xff
@@ -75,7 +70,7 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
             ,(MainForm->ftp_startup.pasv_ip_addr.s_addr>>8)&0xff
             ,MainForm->ftp_startup.pasv_ip_addr.s_addr&0xff
         );
-        PasvIpAddrEdit->Text=AnsiString(str);
+        PasvIPv4AddrEdit->Text=AnsiString(str);
     }
 
     MaxClientsEdit->Text=AnsiString((int)MainForm->ftp_startup.max_clients);
@@ -121,24 +116,10 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     char    str[128],*p;
     DWORD   addr;
 
-    SAFECOPY(str,NetworkInterfaceEdit->Text.c_str());
-    p=str;
-    while(*p && *p<=' ') p++;
-    if(*p && isdigit(*p)) {
-        addr=atoi(p)<<24;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<16;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<8;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p);
-        MainForm->ftp_startup.outgoing4.s_addr=addr;
-    } else
-        MainForm->ftp_startup.outgoing4.s_addr=0;
-    SAFECOPY(str,PasvIpAddrEdit->Text.c_str());
+    iniFreeStringList(MainForm->ftp_startup.interfaces);
+    MainForm->ftp_startup.interfaces = strListSplitCopy(NULL, NetworkInterfaceEdit->Text.c_str(), ",");
+
+    SAFECOPY(str,PasvIPv4AddrEdit->Text.c_str());
     p=str;
     while(*p && *p<=' ') p++;
     if(*p && isdigit(*p)) {
@@ -280,7 +261,7 @@ void __fastcall TFtpCfgDlg::HtmlIndexCheckBoxClick(TObject *Sender)
 
 void __fastcall TFtpCfgDlg::PasvIpLookupCheckBoxClick(TObject *Sender)
 {
-    PasvIpAddrEdit->Enabled = !PasvIpLookupCheckBox->Checked;
+    PasvIPv4AddrEdit->Enabled = !PasvIpLookupCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
 

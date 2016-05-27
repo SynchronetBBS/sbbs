@@ -98,7 +98,7 @@ __published:
     TButton *HackAttemptSoundButton;
     TTabSheet *PasvTabSheet;
     TLabel *PasvIpLabel;
-    TEdit *PasvIpAddrEdit;
+    TEdit *PasvIPv4AddrEdit;
     TLabel *PasvPortLabel;
     TEdit *PasvPortLowEdit;
     TEdit *PasvPortHighEdit;

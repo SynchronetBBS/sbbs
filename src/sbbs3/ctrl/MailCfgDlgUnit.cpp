@@ -73,17 +73,12 @@ void __fastcall TMailCfgDlg::OutboundSoundButtonClick(TObject *Sender)
 
 void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
 {
-    char str[128];
+    char str[256];
 
-    if(MainForm->mail_startup.outgoing4.s_addr==0)
+    if(MainForm->mail_startup.interfaces==NULL)
         NetworkInterfaceEdit->Text="<ANY>";
     else {
-        sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->mail_startup.outgoing4.s_addr>>24)&0xff
-            ,(MainForm->mail_startup.outgoing4.s_addr>>16)&0xff
-            ,(MainForm->mail_startup.outgoing4.s_addr>>8)&0xff
-            ,MainForm->mail_startup.outgoing4.s_addr&0xff
-        );
+        strListCombine(MainForm->mail_startup.interfaces, str, sizeof(str)-1, ",");
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
     MaxClientsEdit->Text=AnsiString(MainForm->mail_startup.max_clients);
@@ -216,26 +211,8 @@ static void setBit(unsigned long* l, long bit, bool yes)
 //---------------------------------------------------------------------------
 void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
 {
-    char    str[128],*p;
-    DWORD   addr;
-
-    SAFECOPY(str,NetworkInterfaceEdit->Text.c_str());
-    p=str;
-    while(*p && *p<=' ') p++;
-    if(*p && isdigit(*p)) {
-        addr=atoi(p)<<24;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<16;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<8;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p);
-        MainForm->mail_startup.outgoing4.s_addr=addr;
-    } else
-        MainForm->mail_startup.outgoing4.s_addr=0;
+    iniFreeStringList(MainForm->mail_startup.interfaces);
+    MainForm->mail_startup.interfaces = strListSplitCopy(NULL, NetworkInterfaceEdit->Text.c_str(), ",");
 
 	MainForm->mail_startup.smtp_port=SMTPPortEdit->Text.ToIntDef(IPPORT_SMTP);
    	MainForm->mail_startup.submission_port=SubPortEdit->Text.ToIntDef(IPPORT_SUBMISSION);

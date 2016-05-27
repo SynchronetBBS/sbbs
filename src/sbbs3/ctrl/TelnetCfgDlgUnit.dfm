@@ -17,8 +17,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 3
     Width = 278
     Height = 186
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = TelnetTabSheet
+    TabIndex = 1
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -156,7 +156,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Width = 78
         Height = 21
         AutoSize = False
-        Caption = 'Interface (IP)'
+        Caption = 'Interfaces (IPs)'
       end
       object TelnetPortLabel: TLabel
         Left = 7
@@ -181,10 +181,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Left = 85
         Top = 36
         Width = 156
-        Height = 24
+        Height = 21
         Hint = 
-          'Enter your Network adapter'#39's static IP address here or blank for' +
-          ' <ANY>'
+          'Comma-separated list of IP addresses to accept incoming connecti' +
+          'ons'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
@@ -193,7 +193,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Left = 85
         Top = 10
         Width = 39
-        Height = 24
+        Height = 21
         Hint = 'TCP port for incoming connections (default=23)'
         ParentShowHint = False
         ShowHint = True
@@ -241,13 +241,13 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Width = 78
         Height = 21
         AutoSize = False
-        Caption = 'Interface (IP)'
+        Caption = 'Interfaces (IPs)'
       end
       object RLoginPortEdit: TEdit
         Left = 85
         Top = 10
         Width = 39
-        Height = 24
+        Height = 21
         Hint = 'TCP port for incoming connections (default=513)'
         ParentShowHint = False
         ShowHint = True
@@ -257,10 +257,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Left = 85
         Top = 36
         Width = 156
-        Height = 24
+        Height = 21
         Hint = 
-          'Enter your Network adapter'#39's static IP address here or blank for' +
-          ' <ANY>'
+          'Comma-separated list of IP addresses to accept incoming connecti' +
+          'ons'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
@@ -309,13 +309,13 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Width = 78
         Height = 21
         AutoSize = False
-        Caption = 'Interface (IP)'
+        Caption = 'Interfaces (IPs)'
       end
       object SshPortEdit: TEdit
         Left = 85
         Top = 10
         Width = 39
-        Height = 24
+        Height = 21
         Hint = 'TCP port for incoming connections (default=22)'
         ParentShowHint = False
         ShowHint = True
@@ -337,10 +337,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Left = 85
         Top = 36
         Width = 156
-        Height = 24
+        Height = 21
         Hint = 
-          'Enter your Network adapter'#39's static IP address here or blank for' +
-          ' <ANY>'
+          'Comma-separated list of IP addresses to accept incoming connecti' +
+          'ons'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2

@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 290
-  Top = 545
+  Left = 594
+  Top = 347
   Width = 640
   Height = 400
   Caption = 'Synchronet Control Panel'
@@ -17261,6 +17261,18 @@ object MainForm: TMainForm
     end
     object ClearErrorCounter: TMenuItem
       Action = ClearErrors
+    end
+  end
+  object LogPopupMenu: TPopupMenu
+    Left = 336
+    Top = 40
+    object LogPopupCopy: TMenuItem
+      Caption = '&Copy Selected'
+      OnClick = LogPopupCopyClick
+    end
+    object LogPopupCopyAll: TMenuItem
+      Caption = 'Copy &All'
+      OnClick = LogPopupCopyAllClick
     end
   end
 end

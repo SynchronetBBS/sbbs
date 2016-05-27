@@ -3,12 +3,12 @@ object WebCfgDlg: TWebCfgDlg
   Top = 403
   BorderStyle = bsDialog
   Caption = 'Web Server Configuration'
-  ClientHeight = 302
-  ClientWidth = 352
+  ClientHeight = 245
+  ClientWidth = 286
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -13
+  Font.Height = -10
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
@@ -16,57 +16,57 @@ object WebCfgDlg: TWebCfgDlg
   ShowHint = True
   OnShow = FormShow
   DesignSize = (
-    352
-    302)
-  PixelsPerInch = 120
-  TextHeight = 16
+    286
+    245)
+  PixelsPerInch = 96
+  TextHeight = 13
   object PageControl: TPageControl
-    Left = 4
-    Top = 4
-    Width = 342
-    Height = 245
-    ActivePage = HttpTabSheet
-    TabIndex = 1
+    Left = 3
+    Top = 3
+    Width = 278
+    Height = 199
+    ActivePage = GeneralTabSheet
+    TabIndex = 0
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
       object MaxClientesLabel: TLabel
-        Left = 9
-        Top = 108
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 88
+        Width = 78
+        Height = 19
         AutoSize = False
         Caption = 'Max Clients'
       end
       object MaxInactivityLabel: TLabel
-        Left = 9
-        Top = 140
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 114
+        Width = 78
+        Height = 19
         AutoSize = False
         Caption = 'Max Inactivity'
       end
       object PortLabel: TLabel
-        Left = 9
-        Top = 76
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 62
+        Width = 78
+        Height = 19
         AutoSize = False
         Caption = 'Listening Port'
       end
       object InterfaceLabel: TLabel
-        Left = 9
-        Top = 44
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 36
+        Width = 78
+        Height = 19
         AutoSize = False
-        Caption = 'Interface (IP)'
+        Caption = 'Interfaces (IPs)'
       end
       object AutoStartCheckBox: TCheckBox
-        Left = 9
-        Top = 12
-        Width = 144
-        Height = 25
+        Left = 7
+        Top = 10
+        Width = 117
+        Height = 20
         Hint = 'Automatically start Web server'
         Caption = 'Auto Startup'
         ParentShowHint = False
@@ -74,20 +74,20 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 0
       end
       object MaxClientsEdit: TEdit
-        Left = 105
-        Top = 108
-        Width = 48
-        Height = 24
+        Left = 85
+        Top = 88
+        Width = 39
+        Height = 21
         Hint = 'Maximum number of simultaneous clients (0=unlimited)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
       end
       object MaxInactivityEdit: TEdit
-        Left = 105
-        Top = 140
-        Width = 48
-        Height = 24
+        Left = 85
+        Top = 114
+        Width = 39
+        Height = 21
         Hint = 
           'Maximum number of seconds of inactivity before disconnect (defau' +
           'lt=120)'
@@ -96,30 +96,32 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 5
       end
       object PortEdit: TEdit
-        Left = 105
-        Top = 76
-        Width = 48
-        Height = 24
+        Left = 85
+        Top = 62
+        Width = 39
+        Height = 21
         Hint = 'TCP port to use for HTTP connections (default=80)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
       end
       object NetworkInterfaceEdit: TEdit
-        Left = 105
-        Top = 44
-        Width = 192
-        Height = 24
-        Hint = 'Your network adapter'#39's static IP address or blank for <ANY>'
+        Left = 85
+        Top = 36
+        Width = 156
+        Height = 21
+        Hint = 
+          'Comma-separated list of IP addresses to accept incoming connecti' +
+          'ons'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
       end
       object HostnameCheckBox: TCheckBox
-        Left = 182
-        Top = 12
-        Width = 147
-        Height = 25
+        Left = 148
+        Top = 10
+        Width = 119
+        Height = 20
         Hint = 'Automatically lookup client'#39's hostnames via DNS'
         Caption = 'Hostname Lookup'
         ParentShowHint = False
@@ -131,51 +133,51 @@ object WebCfgDlg: TWebCfgDlg
       Caption = 'HTTP'
       ImageIndex = 3
       object HtmlDirLabel: TLabel
-        Left = 9
-        Top = 12
-        Width = 96
-        Height = 25
+        Left = 7
+        Top = 10
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'HTML Root'
       end
       object ErrorSubDirLabel: TLabel
-        Left = 9
-        Top = 44
-        Width = 96
-        Height = 25
+        Left = 7
+        Top = 36
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'Error SubDir'
       end
       object ServerSideJsExtLabel: TLabel
-        Left = 9
-        Top = 140
-        Width = 176
-        Height = 25
+        Left = 7
+        Top = 114
+        Width = 143
+        Height = 20
         AutoSize = False
         Caption = 'Server-Side JS File Extension'
       end
       object EmbeddedJsExtLabel: TLabel
-        Left = 9
-        Top = 108
-        Width = 176
-        Height = 25
+        Left = 7
+        Top = 88
+        Width = 143
+        Height = 20
         AutoSize = False
         Caption = 'Embedded JS File Extension'
         Enabled = False
         Visible = False
       end
       object IndexLabel: TLabel
-        Left = 9
-        Top = 76
-        Width = 96
-        Height = 25
+        Left = 7
+        Top = 62
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'Index Files'
       end
       object HtmlRootEdit: TEdit
-        Left = 105
-        Top = 12
-        Width = 192
+        Left = 85
+        Top = 10
+        Width = 156
         Height = 24
         Hint = 'Root directory for HTML files (off of CTRL directory)'
         ParentShowHint = False
@@ -183,9 +185,9 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 0
       end
       object ErrorSubDirEdit: TEdit
-        Left = 105
-        Top = 44
-        Width = 192
+        Left = 85
+        Top = 36
+        Width = 156
         Height = 24
         Hint = 'Error sub-directory (off of HTML root)'
         ParentShowHint = False
@@ -193,9 +195,9 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 1
       end
       object ServerSideJsExtEdit: TEdit
-        Left = 192
-        Top = 140
-        Width = 105
+        Left = 156
+        Top = 114
+        Width = 85
         Height = 24
         Hint = 
           'File extension that denotes server-side JavaScript files (e.g. "' +
@@ -205,9 +207,9 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 3
       end
       object EmbeddedJsExtEdit: TEdit
-        Left = 192
-        Top = 108
-        Width = 105
+        Left = 156
+        Top = 88
+        Width = 85
         Height = 24
         Hint = 
           'File extension that denotes embedded JavaScript files (e.g. ".bb' +
@@ -219,10 +221,10 @@ object WebCfgDlg: TWebCfgDlg
         Visible = False
       end
       object VirtualHostsCheckBox: TCheckBox
-        Left = 9
-        Top = 172
-        Width = 104
-        Height = 24
+        Left = 7
+        Top = 140
+        Width = 85
+        Height = 19
         Hint = 'Support virtual host directories off the HTML root directory'
         Caption = 'Virtual Hosts'
         ParentShowHint = False
@@ -230,9 +232,9 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 5
       end
       object IndexFileEdit: TEdit
-        Left = 104
-        Top = 76
-        Width = 193
+        Left = 85
+        Top = 62
+        Width = 156
         Height = 24
         Hint = 
           'List of filenames that will be automatically sent to client (e.g' +
@@ -244,41 +246,41 @@ object WebCfgDlg: TWebCfgDlg
       Caption = 'CGI'
       ImageIndex = 4
       object CGIDirLabel: TLabel
-        Left = 9
-        Top = 44
-        Width = 96
-        Height = 25
+        Left = 7
+        Top = 36
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'SubDirectory'
       end
       object CGIExtLabel: TLabel
-        Left = 9
-        Top = 76
-        Width = 96
-        Height = 25
+        Left = 7
+        Top = 62
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'File Extensions'
       end
       object CGIMaxInactivityLabel: TLabel
-        Left = 9
-        Top = 140
-        Width = 96
-        Height = 24
+        Left = 7
+        Top = 114
+        Width = 78
+        Height = 19
         AutoSize = False
         Caption = 'Max Inactivity'
       end
       object CGIContentLabel: TLabel
-        Left = 9
-        Top = 108
-        Width = 96
-        Height = 25
+        Left = 7
+        Top = 88
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'Content-Type'
       end
       object CGIDirEdit: TEdit
-        Left = 105
-        Top = 44
-        Width = 192
+        Left = 85
+        Top = 36
+        Width = 156
         Height = 24
         Hint = 'CGI sub-directory (off of HTML root)'
         ParentShowHint = False
@@ -286,10 +288,10 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 1
       end
       object CGICheckBox: TCheckBox
-        Left = 9
-        Top = 12
-        Width = 280
-        Height = 25
+        Left = 7
+        Top = 10
+        Width = 228
+        Height = 20
         Hint = 'CGI support is enabled when checked'
         Caption = 'Enabled'
         ParentShowHint = False
@@ -298,9 +300,9 @@ object WebCfgDlg: TWebCfgDlg
         OnClick = CGICheckBoxClick
       end
       object CGIExtEdit: TEdit
-        Left = 105
-        Top = 76
-        Width = 192
+        Left = 85
+        Top = 62
+        Width = 156
         Height = 24
         Hint = 'File extensions that denote CGI executable files'
         ParentShowHint = False
@@ -308,9 +310,9 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 2
       end
       object CGIMaxInactivityEdit: TEdit
-        Left = 105
-        Top = 140
-        Width = 48
+        Left = 85
+        Top = 114
+        Width = 39
         Height = 24
         Hint = 
           'Maximum number of seconds of inactivity before disconnect (defau' +
@@ -320,9 +322,9 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 4
       end
       object CGIContentEdit: TEdit
-        Left = 105
-        Top = 108
-        Width = 192
+        Left = 85
+        Top = 88
+        Width = 156
         Height = 24
         Hint = 'Default Content-Type for CGI output'
         ParentShowHint = False
@@ -330,19 +332,19 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 3
       end
       object CGIEnvButton: TButton
-        Left = 8
-        Top = 176
-        Width = 145
-        Height = 25
+        Left = 7
+        Top = 143
+        Width = 117
+        Height = 20
         Caption = 'Environment Vars'
         TabOrder = 5
         OnClick = CGIEnvButtonClick
       end
       object WebHandlersButton: TButton
-        Left = 160
-        Top = 176
-        Width = 137
-        Height = 25
+        Left = 130
+        Top = 143
+        Width = 111
+        Height = 20
         Caption = 'Content Handlers'
         TabOrder = 6
         OnClick = WebHandlersButtonClick
@@ -352,18 +354,18 @@ object WebCfgDlg: TWebCfgDlg
       Caption = 'Log'
       ImageIndex = 1
       object LogBaseLabel: TLabel
-        Left = 9
-        Top = 108
-        Width = 96
-        Height = 25
+        Left = 7
+        Top = 88
+        Width = 78
+        Height = 20
         AutoSize = False
         Caption = 'Base Filename'
       end
       object DebugTxCheckBox: TCheckBox
-        Left = 9
-        Top = 42
-        Width = 192
-        Height = 24
+        Left = 7
+        Top = 34
+        Width = 156
+        Height = 20
         Hint = 'Log (debug) transmitted HTTP responses'
         Caption = 'Transmitted Responses'
         ParentShowHint = False
@@ -371,10 +373,10 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 1
       end
       object DebugRxCheckBox: TCheckBox
-        Left = 9
-        Top = 12
-        Width = 192
-        Height = 24
+        Left = 7
+        Top = 10
+        Width = 156
+        Height = 19
         Hint = 'Log (debug) all received HTTP requests'
         Caption = 'Received Requests'
         ParentShowHint = False
@@ -382,10 +384,10 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 0
       end
       object AccessLogCheckBox: TCheckBox
-        Left = 9
-        Top = 73
-        Width = 192
-        Height = 23
+        Left = 7
+        Top = 59
+        Width = 156
+        Height = 19
         Hint = 'Create HTTP access log files'
         Caption = 'Create Access Log Files'
         ParentShowHint = False
@@ -394,9 +396,9 @@ object WebCfgDlg: TWebCfgDlg
         OnClick = AccessLogCheckBoxClick
       end
       object LogBaseNameEdit: TEdit
-        Left = 105
-        Top = 108
-        Width = 192
+        Left = 85
+        Top = 88
+        Width = 156
         Height = 24
         Hint = 'Base directory and filename for HTTP access log files'
         ParentShowHint = False
@@ -408,33 +410,33 @@ object WebCfgDlg: TWebCfgDlg
       Caption = 'Sound'
       ImageIndex = 2
       object AnswerSoundLabel: TLabel
-        Left = 9
-        Top = 12
-        Width = 80
-        Height = 25
+        Left = 7
+        Top = 10
+        Width = 65
+        Height = 20
         AutoSize = False
         Caption = 'Connect'
       end
       object HangupSoundLabel: TLabel
-        Left = 9
-        Top = 44
-        Width = 80
-        Height = 25
+        Left = 7
+        Top = 36
+        Width = 65
+        Height = 20
         AutoSize = False
         Caption = 'Disconnect'
       end
       object HackAttemptSoundLabel: TLabel
-        Left = 9
-        Top = 76
-        Width = 80
-        Height = 25
+        Left = 7
+        Top = 62
+        Width = 65
+        Height = 20
         AutoSize = False
         Caption = 'Hack Attempt'
       end
       object AnswerSoundEdit: TEdit
-        Left = 105
-        Top = 12
-        Width = 192
+        Left = 85
+        Top = 10
+        Width = 156
         Height = 24
         Hint = 'Sound file to play when users connect'
         ParentShowHint = False
@@ -442,18 +444,18 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 0
       end
       object AnswerSoundButton: TButton
-        Left = 304
-        Top = 12
-        Width = 25
-        Height = 26
+        Left = 247
+        Top = 10
+        Width = 20
+        Height = 21
         Caption = '...'
         TabOrder = 1
         OnClick = AnswerSoundButtonClick
       end
       object HangupSoundEdit: TEdit
-        Left = 105
-        Top = 44
-        Width = 192
+        Left = 85
+        Top = 36
+        Width = 156
         Height = 24
         Hint = 'Sound file to play when users disconnect'
         ParentShowHint = False
@@ -461,18 +463,18 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 2
       end
       object HangupSoundButton: TButton
-        Left = 304
-        Top = 44
-        Width = 25
-        Height = 26
+        Left = 247
+        Top = 36
+        Width = 20
+        Height = 21
         Caption = '...'
         TabOrder = 3
         OnClick = HangupSoundButtonClick
       end
       object HackAttemptSoundEdit: TEdit
-        Left = 105
-        Top = 76
-        Width = 192
+        Left = 85
+        Top = 62
+        Width = 156
         Height = 24
         Hint = 'Sound file to play when hack attempts are detected'
         ParentShowHint = False
@@ -480,10 +482,10 @@ object WebCfgDlg: TWebCfgDlg
         TabOrder = 4
       end
       object HackAttemptSoundButton: TButton
-        Left = 304
-        Top = 76
-        Width = 25
-        Height = 26
+        Left = 247
+        Top = 62
+        Width = 20
+        Height = 21
         Caption = '...'
         TabOrder = 5
         OnClick = HackAttemptSoundButtonClick
@@ -491,10 +493,10 @@ object WebCfgDlg: TWebCfgDlg
     end
   end
   object OKBtn: TButton
-    Left = 25
-    Top = 260
-    Width = 93
-    Height = 30
+    Left = 20
+    Top = 211
+    Width = 76
+    Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'OK'
     Default = True
@@ -503,10 +505,10 @@ object WebCfgDlg: TWebCfgDlg
     OnClick = OKBtnClick
   end
   object CancelBtn: TButton
-    Left = 128
-    Top = 260
-    Width = 92
-    Height = 30
+    Left = 104
+    Top = 211
+    Width = 75
+    Height = 25
     Anchors = [akLeft, akBottom]
     Cancel = True
     Caption = 'Cancel'
@@ -514,10 +516,10 @@ object WebCfgDlg: TWebCfgDlg
     TabOrder = 2
   end
   object ApplyBtn: TButton
-    Left = 233
-    Top = 260
-    Width = 93
-    Height = 30
+    Left = 189
+    Top = 211
+    Width = 76
+    Height = 25
     Anchors = [akLeft, akBottom]
     Cancel = True
     Caption = 'Apply'

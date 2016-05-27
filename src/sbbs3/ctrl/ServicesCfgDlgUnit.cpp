@@ -22,19 +22,12 @@ __fastcall TServicesCfgDlg::TServicesCfgDlg(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TServicesCfgDlg::FormShow(TObject *Sender)
 {
-    char str[128];
-/*
-TODO: This is broken and stuff.
-*/
-    if(MainForm->services_startup.outgoing4.s_addr==0)
+    char str[256];
+
+    if(MainForm->services_startup.interfaces==NULL)
         NetworkInterfaceEdit->Text="<ANY>";
     else {
-        sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->services_startup.outgoing4.s_addr>>24)&0xff
-            ,(MainForm->services_startup.outgoing4.s_addr>>16)&0xff
-            ,(MainForm->services_startup.outgoing4.s_addr>>8)&0xff
-            ,MainForm->services_startup.outgoing4.s_addr&0xff
-        );
+        strListCombine(MainForm->services_startup.interfaces, str, sizeof(str)-1, ",");
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
     AutoStartCheckBox->Checked=MainForm->ServicesAutoStart;
@@ -84,28 +77,10 @@ TODO: This is broken and stuff.
 //---------------------------------------------------------------------------
 void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
 {
-    char    str[128],*p;
-    DWORD   addr;
+    iniFreeStringList(MainForm->services_startup.interfaces);
+    MainForm->services_startup.interfaces = strListSplitCopy(NULL, NetworkInterfaceEdit->Text.c_str(), ",");
 
-    SAFECOPY(str,NetworkInterfaceEdit->Text.c_str());
-    p=str;
-    while(*p && *p<=' ') p++;
-    if(*p && isdigit(*p)) {
-        addr=atoi(p)<<24;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<16;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<8;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p);
-        MainForm->services_startup.outgoing4.s_addr=addr;
-    } else
-        MainForm->services_startup.outgoing4.s_addr=0;
     MainForm->ServicesAutoStart=AutoStartCheckBox->Checked;
-
 
     SAFECOPY(MainForm->services_startup.answer_sound
         ,AnswerSoundEdit->Text.c_str());

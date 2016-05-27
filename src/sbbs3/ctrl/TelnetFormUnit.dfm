@@ -150,7 +150,7 @@ object TelnetForm: TTelnetForm
     Left = 0
     Top = 25
     Width = 575
-    Height = 151
+    Height = 150
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -159,6 +159,7 @@ object TelnetForm: TTelnetForm
     Font.Style = []
     HideScrollBars = False
     ParentFont = False
+    PopupMenu = MainForm.LogPopupMenu
     ReadOnly = True
     ScrollBars = ssBoth
     TabOrder = 1
