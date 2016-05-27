@@ -57,6 +57,10 @@ for(var c=0; c < options.login_prompts; c++) {
 		bbs.logon();
 		exit();
 	}
+	if(system.trashcan("name", str)) {
+		alert(log(LOG_NOTICE, "!Failed login with blocked user name: " + str));
+		break;
+	}
 	console.clearkeybuffer();	// Clear pending input (e.g. mistyped system password)
 	bbs.rlogin_name='';		// Clear user/login name (if supplied via protocol)
 	if(options && options.email_passwords) {
