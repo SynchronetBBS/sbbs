@@ -2896,6 +2896,7 @@ ulong DLLCALL loginFailure(link_list_t* list, const union xp_sockaddr* addr, con
 	return count;
 }
 
+#if !defined(NO_SOCKET_SUPPORT)
 ulong DLLCALL loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock
 	,struct login_attempt_settings settings, login_attempt_t* details)
 {
@@ -2936,6 +2937,7 @@ ulong DLLCALL loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock
 	}
 	return 0;
 }
+#endif
 
 /****************************************************************************/
 /* Message-new-scan pointer/configuration functions							*/
