@@ -1061,6 +1061,7 @@ extern "C" {
 	DLLEXPORT time32_t	DLLCALL dstrtounix(scfg_t*, const char *str);
 	DLLEXPORT char *	DLLCALL unixtodstr(scfg_t*, time32_t, char *str);
 	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);
+	DLLEXPORT char *	DLLCALL seconds_to_str(uint, char*);
 	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
 	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time32_t intime, char* str);
 	DLLEXPORT when_t	DLLCALL rfc822date(char* p);

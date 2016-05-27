@@ -825,6 +825,7 @@ static void pop3_thread(void* arg)
 	client_t	client;
 	mail_t*		mail;
 	pop3_t		pop3=*(pop3_t*)arg;
+	login_attempt_t attempted;
 
 	SetThreadName("POP3");
 	thread_up(TRUE /* setuid */);
@@ -853,9 +854,15 @@ static void pop3_thread(void* arg)
 	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP) && (startup->options&MAIL_OPT_DEBUG_POP3))
 		lprintf(LOG_INFO,"%04d POP3 Hostname: %s", socket, host_name);
 
-	ulong banned = loginBanned(&scfg, startup->login_attempt_list, &pop3.client_addr,  startup->login_attempt);
-	if((banned && lprintf(LOG_NOTICE, "%04d %s is TEMPORARILY BANNED (%lu more seconds)", socket, host_ip, banned))
-		|| (trashcan(&scfg,host_ip,"ip") && lprintf(LOG_NOTICE,"%04d !POP3 CLIENT IP ADDRESS BLOCKED: %s",socket, host_ip))) {
+	ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket,  startup->login_attempt, &attempted);
+	if(banned || trashcan(&scfg,host_ip,"ip")) {
+		if(banned) {
+			char ban_duration[128];
+			lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
+				,socket, host_ip, attempted.count, attempted.user, seconds_to_str(banned, ban_duration));
+		}
+		else
+			lprintf(LOG_NOTICE,"%04d !POP3 CLIENT IP ADDRESS BLOCKED: %s",socket, host_ip);
 		sockprintf(socket,"-ERR Access denied.");
 		mail_close_socket(socket);
 		thread_down();
@@ -2465,6 +2472,7 @@ static void smtp_thread(void* arg)
 	JSObject*	js_glob=NULL;
 	int32		js_result;
 	struct mailproc*	mailproc;
+	login_attempt_t attempted;
 
 	enum {
 			 SMTP_STATE_INITIAL
@@ -2556,9 +2564,11 @@ static void smtp_thread(void* arg)
 		/* local connection */
 		dnsbl_result.s_addr=0;
 	} else {
-		ulong banned = loginBanned(&scfg, startup->login_attempt_list, &smtp.client_addr,  startup->login_attempt);
+		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket,  startup->login_attempt, &attempted);
 		if(banned) {
-			lprintf(LOG_NOTICE, "%04d %s is TEMPORARILY BANNED (%lu more seconds)", socket, host_ip, banned);
+			char ban_duration[128];
+			lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
+				,socket, host_ip, attempted.count, attempted.user, seconds_to_str(banned, ban_duration));
 			mail_close_socket(socket);
 			thread_down();
 			protected_uint32_adjust(&active_clients, -1);

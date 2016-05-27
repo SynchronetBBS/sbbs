@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -135,6 +135,15 @@ char* DLLCALL sectostr(uint sec,char *str)
 	sec2=sec-((min+(hour*60))*60);
 	sprintf(str,"%2.2d:%2.2d:%2.2d",hour,min,sec2);
 	return(str);
+}
+
+/* Returns a shortened version of "HH:MM:SS" formatted seconds value */
+char* DLLCALL seconds_to_str(uint seconds, char* str)
+{
+	char* p = sectostr(seconds, str);
+	while(*p=='0' || *p==':')
+		p++;
+	return p;
 }
 
 /****************************************************************************/

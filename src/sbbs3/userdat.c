@@ -2896,23 +2896,44 @@ ulong DLLCALL loginFailure(link_list_t* list, const union xp_sockaddr* addr, con
 	return count;
 }
 
-ulong DLLCALL loginBanned(scfg_t* cfg, link_list_t* list, const union xp_sockaddr* addr, struct login_attempt_settings settings)
+ulong DLLCALL loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock
+	,struct login_attempt_settings settings, login_attempt_t* details)
 {
 	list_node_t*		node;
 	login_attempt_t*	attempt;
 	BOOL				result = FALSE;
-	long				diff;
 	time32_t			now = time32(NULL);
+	union xp_sockaddr	client_addr;
+	union xp_sockaddr	server_addr;
+	socklen_t			addr_len;
+
+	if(list==NULL)
+		return 0;
+
+	addr_len=sizeof(server_addr);
+	if((result=getsockname(sock, &server_addr.addr, &addr_len)) != 0)
+		return 0;
+
+	addr_len=sizeof(client_addr);
+	if((result=getpeername(sock, &client_addr.addr, &addr_len)) != 0)
+		return 0;
+
+	/* Don't ban connections from the server back to itself */
+	if(inet_addrmatch(&server_addr, &client_addr))
+		return 0;
 
 	listLock(list);
-	node = login_attempted(list, addr);
+	node = login_attempted(list, &client_addr);
 	listUnlock(list);
 	if(node == NULL)
 		return 0;
 	attempt = node->data;
 	if(((settings.tempban_threshold && (attempt->count - attempt->dupes) >= settings.tempban_threshold)
-		|| trashcan(cfg, attempt->user, "name")) && now < (attempt->time + settings.tempban_duration))
+		|| trashcan(cfg, attempt->user, "name")) && now < (time32_t)(attempt->time + settings.tempban_duration)) {
+		if(details != NULL)
+			*details = *attempt;
 		return settings.tempban_duration - (now - attempt->time);
+	}
 	return 0;
 }
 

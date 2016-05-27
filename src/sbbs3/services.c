@@ -2104,10 +2104,16 @@ void DLLCALL services_thread(void* arg)
 						continue;
 					}
 
-					ulong banned = loginBanned(&scfg, startup->login_attempt_list, &client_addr,  startup->login_attempt);
-					if((banned && lprintf(LOG_NOTICE, "%04d %s is TEMPORARILY BANNED (%lu more seconds)", socket, host_ip, banned))
-						|| (trashcan(&scfg,host_ip,"ip") && lprintf(LOG_NOTICE,"%04d !%s CLIENT BLOCKED in ip.can: %s"
-							,client_socket, service[i].protocol, host_ip))) {
+					login_attempt_t attempted;
+					ulong banned = loginBanned(&scfg, startup->login_attempt_list, client_socket,  startup->login_attempt, &attempted);
+					if(banned || trashcan(&scfg,host_ip,"ip")) {
+						if(banned) {
+							char ban_duration[128];
+							lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
+								,client_socket, host_ip, attempted.count, attempted.user, seconds_to_str(banned, ban_duration));
+						} else
+							lprintf(LOG_NOTICE,"%04d !%s CLIENT BLOCKED in ip.can: %s"
+								,client_socket, service[i].protocol, host_ip);
 						FREE_AND_NULL(udp_buf);
 						mswait(3000);
 						close_socket(client_socket);

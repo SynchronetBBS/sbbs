@@ -160,7 +160,7 @@ DLLEXPORT long				DLLCALL	loginAttemptListClear(link_list_t*);
 DLLEXPORT long				DLLCALL loginAttempts(link_list_t*, const union xp_sockaddr*);
 DLLEXPORT void				DLLCALL	loginSuccess(link_list_t*, const union xp_sockaddr*);
 DLLEXPORT ulong				DLLCALL loginFailure(link_list_t*, const union xp_sockaddr*, const char* prot, const char* user, const char* pass);
-DLLEXPORT ulong				DLLCALL loginBanned(scfg_t*, link_list_t*, const union xp_sockaddr*, struct login_attempt_settings);
+DLLEXPORT ulong				DLLCALL loginBanned(scfg_t*, link_list_t*, SOCKET, struct login_attempt_settings, login_attempt_t*);
 
 #ifdef __cplusplus
 }
