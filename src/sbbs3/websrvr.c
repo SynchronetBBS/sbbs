@@ -4492,7 +4492,7 @@ static BOOL exec_fastcgi(http_session_t *session)
 	if (sendsocket(sock, (void *)msg, msglen) != msglen) {
 		free(msg);
 		closesocket(sock);
-		lprintf(LOG_ERR, "%04d Failure to send to FastCGI socket!", session->socket);
+		lprintf(LOG_WARNING, "%04d Failure to send to FastCGI socket!", session->socket);
 		return FALSE;
 	}
 	if (!fastcgi_send_params(sock, session)) {
@@ -4510,7 +4510,7 @@ static BOOL exec_fastcgi(http_session_t *session)
 	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header)) != sizeof(struct fastcgi_header)) {
 		free(msg);
 		closesocket(sock);
-		lprintf(LOG_ERR, "%04d Failure to send stdin to FastCGI socket!", session->socket);
+		lprintf(LOG_WARNING, "%04d Failure to send stdin to FastCGI socket!", session->socket);
 		return FALSE;
 	}
 	free(msg);

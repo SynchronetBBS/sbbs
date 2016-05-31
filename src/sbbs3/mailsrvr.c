@@ -1277,7 +1277,7 @@ static void pop3_thread(void* arg)
 				lines_sent=sockmsgtxt(socket,&msg,msgtxt,lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
 				if(lines!=-1 && lines_sent<lines)	/* could send *more* lines */
-					lprintf(LOG_ERR,"%04d !POP3 ERROR sending message text (sent %ld of %ld lines)"
+					lprintf(LOG_WARNING,"%04d !POP3 ERROR sending message text (sent %ld of %ld lines)"
 						,socket,lines_sent,lines);
 				else {
 					lprintf(LOG_DEBUG,"%04d POP3 message transfer complete (%lu lines)"
