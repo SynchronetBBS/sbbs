@@ -171,13 +171,15 @@ int lprintf(int level, char *fmt, ...)
 	    time_t now = time(NULL);
 		struct tm *tm;
 		struct tm tmbuf = {0};
+		char timestamp[128];
 		strip_ctrl(sbuf, sbuf);
 		if((tm = localtime(&now)) == NULL)
 			tm = &tmbuf;
-		fprintf(fidologfile,"%u-%02u-%02u %02u:%02u:%02u %s\n"
-			,1900+tm->tm_year, tm->tm_mon+1, tm->tm_mday
-			,tm->tm_hour, tm->tm_min, tm->tm_sec
-			,sbuf);
+		if(strftime(timestamp, sizeof(timestamp), cfg.logtime, tm) <= 0)
+			snprintf(timestamp, sizeof(timestamp)-1, "%u-%02u-%02u %02u:%02u:%02u"
+				,1900+tm->tm_year, tm->tm_mon+1, tm->tm_mday
+				,tm->tm_hour, tm->tm_min, tm->tm_sec);
+		fprintf(fidologfile, "%s %s\n", timestamp, sbuf);
 		fflush(fidologfile);
 	}
 	return(chcount);
