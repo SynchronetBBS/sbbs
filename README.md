@@ -13,7 +13,7 @@ A web interface for Synchronet BBS
 
 - This web interface has only been tested with Synchronet BBS 3.16c.  It will probably work with earlier and later versions.
 
-- The *Files* page of this web interface relies on a script which was introduced *after* the release of Synchronet BBS 3.16c.  You can grab a copy of *filedir.js* [here](http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/filedir.js?revision=1.2), and you should place it in your *exec/load/* directory.
+- The *Files* page of this web interface relies on a script which was introduced *after* the release of Synchronet BBS 3.16c.  You can grab a copy of *filebase.js* [here](http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/filebase.js?revision=1.7), and you should place it in your *exec/load/* directory.
 
 ###Quick start
 
