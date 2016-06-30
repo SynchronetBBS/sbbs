@@ -1054,7 +1054,17 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		,*outname,*p,*tp,nomatch=0,match=0;
 	unsigned j,k,x,y;
 	unsigned u;
+	size_t add_count;
+	size_t del_count;
 	ulong tagcrc;
+
+	if((add_count = strListCount(add_area)) !=0 )
+		lprintf(LOG_DEBUG,"Adding %u areas for %s to %s"
+			,add_count, smb_faddrtoa(&addr,NULL), cfg.areafile);
+
+	if((del_count = strListCount(del_area)) != 0)
+		lprintf(LOG_DEBUG,"Removing %u areas for %s from %s"
+			,del_count, smb_faddrtoa(&addr,NULL), cfg.areafile);
 
 	SAFECOPY(outpath,cfg.areafile);
 	*getfname(outpath)=0;
@@ -1105,8 +1115,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		}
 		else
 			field3[0]=0;
-		if(strListCount(del_area)) { 				/* Check for areas to remove */
-			lprintf(LOG_DEBUG,"Removing areas for %s from %s", smb_faddrtoa(&addr,NULL), cfg.areafile);
+		if(del_count) { 				/* Check for areas to remove */
 			for(u=0;del_area[u]!=NULL;u++) {
 				if(!stricmp(del_area[u],field2) ||
 					!stricmp(del_area[0],"-ALL"))     /* Match Found */
@@ -1143,13 +1152,13 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 							}
 						}
 
-						fprintf(afileout,"%-16s%-23s ",field1,field2);
+						fprintf(afileout,"%-16s %-23s ",field1,field2);
 						for(j=0;j<cfg.area[u].links;j++) {
-							if(!memcmp(&cfg.area[u].link[u],&addr
+							if(!memcmp(&cfg.area[u].link[j],&addr
 								,sizeof(fidoaddr_t)))
 								continue;
 							fprintf(afileout,"%s "
-								,smb_faddrtoa(&cfg.area[u].link[u],NULL)); 
+								,smb_faddrtoa(&cfg.area[u].link[j],NULL)); 
 						}
 						if(field3[0])
 							fprintf(afileout,"%s",field3);
@@ -1163,8 +1172,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 				continue; 
 			} 				/* Area match so continue on */
 		}
-		if(strListCount(add_area)) { 				/* Check for areas to add */
-			lprintf(LOG_DEBUG,"Adding areas for %s to %s", smb_faddrtoa(&addr,NULL), cfg.areafile);
+		if(add_count) { 				/* Check for areas to add */
 			for(u=0;add_area[u]!=NULL;u++)
 				if(!stricmp(add_area[u],field2) ||
 					!stricmp(add_area[0],"+ALL"))      /* Match Found */
@@ -1198,10 +1206,10 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 						}
 						memcpy(&cfg.area[u].link[cfg.area[u].links-1],&addr,sizeof(fidoaddr_t));
 
-						fprintf(afileout,"%-16s%-23s ",field1,field2);
+						fprintf(afileout,"%-16s %-23s ",field1,field2);
 						for(j=0;j<cfg.area[u].links;j++)
 							fprintf(afileout,"%s "
-								,smb_faddrtoa(&cfg.area[u].link[u],NULL));
+								,smb_faddrtoa(&cfg.area[u].link[j],NULL));
 						if(field3[0])
 							fprintf(afileout,"%s",field3);
 						fprintf(afileout,"\n");
@@ -1266,7 +1274,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 										!stricmp(add_area[0],"+ALL"))
 										break;
 								if(add_area[y]!=NULL) {
-									fprintf(afileout,"%-16s%-23s","P",str);
+									fprintf(afileout,"%-16s %-23s","P",str);
 									if(cfg.listcfg[j].hub.zone)
 										fprintf(afileout," %s"
 											,smb_faddrtoa(&cfg.listcfg[j].hub,NULL));
