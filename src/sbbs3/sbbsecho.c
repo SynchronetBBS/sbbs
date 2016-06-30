@@ -1152,7 +1152,9 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 							}
 						}
 
-						fprintf(afileout,"%-16s %-23s ",field1,field2);
+						fprintf(afileout,"%-*s %-*s "
+							,LEN_EXTCODE, field1
+							,FIDO_AREATAG_LEN, field2);
 						for(j=0;j<cfg.area[u].links;j++) {
 							if(!memcmp(&cfg.area[u].link[j],&addr
 								,sizeof(fidoaddr_t)))
@@ -1206,7 +1208,9 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 						}
 						memcpy(&cfg.area[u].link[cfg.area[u].links-1],&addr,sizeof(fidoaddr_t));
 
-						fprintf(afileout,"%-16s %-23s ",field1,field2);
+						fprintf(afileout,"%-*s %-*s "
+							,LEN_EXTCODE, field1
+							,FIDO_AREATAG_LEN, field2);
 						for(j=0;j<cfg.area[u].links;j++)
 							fprintf(afileout,"%s "
 								,smb_faddrtoa(&cfg.area[u].link[j],NULL));
@@ -1274,7 +1278,9 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 										!stricmp(add_area[0],"+ALL"))
 										break;
 								if(add_area[y]!=NULL) {
-									fprintf(afileout,"%-16s %-23s","P",str);
+									fprintf(afileout,"%-*s %-*s"
+										,LEN_EXTCODE, "P"
+										,FIDO_AREATAG_LEN, str);
 									if(cfg.listcfg[j].hub.zone)
 										fprintf(afileout," %s"
 											,smb_faddrtoa(&cfg.listcfg[j].hub,NULL));
