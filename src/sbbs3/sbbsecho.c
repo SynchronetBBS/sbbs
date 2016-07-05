@@ -4419,7 +4419,7 @@ void find_stray_packets(void)
 
 		printf("%21s: %s ","Stray Outbound Packet", packet);
 
-		if((fp=fopen(path,"rb"))==NULL) {
+		if((fp=fopen(packet,"rb"))==NULL) {
 			lprintf(LOG_ERR,"ERROR %u (%s) opening stray packet: %s"
 				,errno, strerror(errno), packet);
 			continue; 
