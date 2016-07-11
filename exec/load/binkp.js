@@ -848,7 +848,7 @@ BinkP.prototype.sendCmd = function(cmd, data)
 	var len = data.length+1;
 	len |= 0x8000;
 	// We'll send it all in one go to avoid sending small packets...
-	var sstr = this.send_buf(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + ascii(cmd) + data;
+	var sstr = this.send_buf(ascii((len & 0xff00)>>8) + ascii(len & 0xff) + ascii(cmd) + data);
 	if (this.sock.send(sstr) !== sstr.length))
 		return false;
 	switch(cmd) {
