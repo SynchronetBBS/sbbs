@@ -254,7 +254,7 @@ char* DLLCALL byte_count_to_str(int64_t bytes, char* str, size_t size)
 
 /* Parse a duration string, default unit is in seconds */
 /* (Y)ears, (W)eeks, (D)ays, (H)ours, and (M)inutes */
-/* suffixes/multipliers are supported.
+/* suffixes/multipliers are supported. */
 /* Return value is in seconds */
 double DLLCALL parse_duration(const char* str)
 {
