@@ -503,8 +503,14 @@ function parse_ticfile(fname)
 			return false;
 		}
 	}
-	if (!sbbsecho.match_pw(tic.from, tic.pw))
-		return false;
+
+	if (tickit.gcfg.ignorepassword === undefined ||
+	    tickit.gcfg.ignorepassword.toLowerCase() == 'no' ||
+	    tickit.gcfg.ignorepassword.toLowerCase() == 'off' ||
+	    tickit.gcfg.ignorepassword.toLowerCase() == 'false')
+		if (!sbbsecho.match_pw(tic.from, tic.pw))
+			return false;
+	}
 
 	tic[' forward'] = outtic;
 
