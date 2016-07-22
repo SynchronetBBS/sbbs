@@ -93,6 +93,10 @@ SBBSEchoCfg.prototype.match_pw = function(node, pw)
 			return true;
 		return false;
 	}
+	if (pw === undefined || pw === '') {
+		log(LOG_WARNING, "Packet password ("+pktpwd+") configured, but TIC has no password");
+		return false;
+	}
 	if (pw.toUpperCase() === pktpw.toUpperCase())
 		return true;
 
