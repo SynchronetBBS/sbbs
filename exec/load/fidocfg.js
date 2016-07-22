@@ -61,8 +61,8 @@ function TickITCfg() {
 		lcprops(this.acfg[sects[i].toLowerCase()]);
 	}
 	tcfg.close();
-	this.gcfg.ignorepassword = get_bool(this.ignorepassword);
-	this.gcfg.secureonly = get_bool(this.secureonly);
+	this.gcfg.ignorepassword = get_bool(this.gcfg.ignorepassword);
+	this.gcfg.secureonly = get_bool(this.gcfg.secureonly);
 }
 TickITCfg.prototype.cset = '0123456789abcdefghijklmnopqrstuvwxyz-_';
 TickITCfg.prototype.basefn_to_num = function(num)
