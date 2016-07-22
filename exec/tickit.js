@@ -504,10 +504,7 @@ function parse_ticfile(fname)
 		}
 	}
 
-	if (tickit.gcfg.ignorepassword === undefined ||
-	    tickit.gcfg.ignorepassword.toLowerCase() == 'no' ||
-	    tickit.gcfg.ignorepassword.toLowerCase() == 'off' ||
-	    tickit.gcfg.ignorepassword.toLowerCase() == 'false')
+	if (!tickit.gcfg.ignorepassword) {
 		if (!sbbsecho.match_pw(tic.from, tic.pw))
 			return false;
 	}
@@ -549,6 +546,10 @@ function main() {
 	var processed = 0;
 
 	for (i=0; i<sbbsecho.inb.length; i++) {
+		if (tickit.gcfg.secureonly) {
+			if (sbbsecho.inb[i] != sbbsecho.secure_inbound)
+				continue;
+		}
 		if (system.platform === 'Win32')
 			ticfiles = directory(sbbsecho.inb[i]+'/*.tic');
 		else

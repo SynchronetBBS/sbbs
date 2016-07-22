@@ -23,6 +23,18 @@ function TickITCfg() {
 	var sects;
 	var i;
 
+	function get_bool(val) {
+		if (val === undefined)
+			return false;
+		switch(val.toUpperCase()) {
+		case 'YES':
+		case 'TRUE':
+		case 'ON':
+			return true;
+		}
+		return false;
+	}
+
 	function lcprops(obj)
 	{
 		var i;
@@ -49,6 +61,8 @@ function TickITCfg() {
 		lcprops(this.acfg[sects[i].toLowerCase()]);
 	}
 	tcfg.close();
+	this.gcfg.ignorepassword = get_bool(this.ignorepassword);
+	this.gcfg.secureonly = get_bool(this.secureonly);
 }
 TickITCfg.prototype.cset = '0123456789abcdefghijklmnopqrstuvwxyz-_';
 TickITCfg.prototype.basefn_to_num = function(num)
