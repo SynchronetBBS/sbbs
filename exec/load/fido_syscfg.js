@@ -91,6 +91,7 @@ SBBSEchoCfg.prototype.match_pw = function(node, pw)
 	if (pktpw === undefined || pktpw == '') {
 		if (pw === '' || pw === undefined)
 			return true;
+		log(LOG_WARNING, "Packet password is empty, but TIC has a password");
 		return false;
 	}
 	if (pw === undefined || pw === '') {
