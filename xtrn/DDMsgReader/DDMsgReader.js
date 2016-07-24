@@ -144,6 +144,9 @@
  *                              was crashing due to pMsgNum being invalid.
  * 2016-05-11 Eric Oulashin     Version 1.12
  *                              Releasing the non-beta version of 1.12
+ * 2016-07-23 Eric Oulashin     Version 1.13 Beta
+ *                              Bug fix: Message number error when a new user
+ *                              starts reading messages.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -235,8 +238,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.12";
-var READER_DATE = "2016-05-11";
+var READER_VERSION = "1.13 Beta 1";
+var READER_DATE = "2016-07-23";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -7659,27 +7662,12 @@ function absMsgNumToIdx(pMsgbase, pMsgNum)
 	if (!pMsgbase.is_open)
 		return -1;
 
-	// TODO: But report:
-	// New Message Scan
-	// Sub-board, Group, or All (ENTER to cancel): A
-	// !JavaScript  ../xtrn/DDMsgReader/DDMsgReader.js line 7643: Error: can't convert pMsgNum to an integer
-	/*
-	pMsgNum: 1 (type: number)
-	pMsgNum: 1228 (type: number)
-	pMsgNum: 77 (type: number)
-	pMsgNum: 70 (type: number)
-	pMsgNum: 341 (type: number)
-	pMsgNum: 141 (type: number)
-	pMsgNum: 12 (type: number)
-	pMsgNum: 49 (type: number)
-	pMsgNum: 216 (type: number)
-	pMsgNum: 5 (type: number)
-	pMsgNum: 3010278451 (type: number) <--- wtf? LOL!!!!
-	!JavaScript  ../xtrn/DDMsgReader/DDMsgReader.js line 7646: Error: can't convert pMsgNum to an integer
-	*/
 	if (typeof(pMsgNum) != "number")
 		return -1;
 
+	// If pMsgNum is a certain special value, that could be because the user hasn't readhasn't read messages yet, so just return -1.
+	if (pMsgNum == 4294967295)
+		return -1;
 	var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, true);
 	if ((msgHdr == null) && gCmdLineArgVals.verboselogging)
 	{
@@ -11785,7 +11773,12 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	if ((this.msgbase == null) || (!this.msgbase.is_open))
 		return 0;
 
-	var msgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].scan_ptr);
+	// If the user's scan pointer is a crazy value, that could be because
+	// the user hasn't read messages in the sub-board yet.  In that case,
+	// just use 0.  Otherwise, get the user's scan pointer message index.
+	var msgIdx = 0;
+	if (msg_area.sub[this.subBoardCode].scan_ptr != 4294967295) // Crazy value the first time a user reads messages
+		msgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].scan_ptr);
 	// Sanity checking for msgIdx
 	if ((msgIdx < 0) || (msgIdx >= this.msgbase.total_msgs))
 	{
