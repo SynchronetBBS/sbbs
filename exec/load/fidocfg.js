@@ -6,7 +6,22 @@ require('fido.js', 'FIDO');
  * TickITCfg Properties:
  * gcfg{}		global config all keys converted to lower-case
  * acfg{}{}		per-address config objects all keys converted to lower-case
- * 				Each object supports 'Links', 'Dir', and 'Path' properties.
+ * 				Each object supports 'Links', 'Dir', 'Path', and 'Handler'
+ * 				properties.
+ * 
+ * A handler is a load() path to a script which must define a
+ * Handle_TIC(tic, obj) method.  This method takes two arguments, the
+ * tic object and the "this" context of the caller.  If Handle_TIC()
+ * returns true, it is assumed to have performed all processing necessary,
+ * so normal processing does not occur.  The tic.full_path property *MUST*
+ * be updated to point to where an unmodified copy of the file can be
+ * found to transferring to downlinks.  If no such copy can be kept, the
+ * tic.seenby array can be stuffed with the contents of obj.tickit.gcfg.links
+ * and obj.tickit.acfg[tic.area.toLowerCase()].links (if any) to prevent
+ * sending to any of the configured links.  Failing to do this will result
+ * in TIC files without the corresponding attachment being send to downlinks.
+ * Further, the load file must not have a null last statement.
+ * 
  * cset			character set used in base-X file naming
  * 
  * TickITCfg Methods:
@@ -22,6 +37,7 @@ function TickITCfg() {
 	var tcfg = new File(system.ctrl_dir+'tickit.ini');
 	var sects;
 	var i;
+	var tmp;
 
 	function get_bool(val) {
 		if (val === undefined)
@@ -55,10 +71,22 @@ function TickITCfg() {
 		throw("Unable to open '"+tcfg.name+"'");
 	this.gcfg = tcfg.iniGetObject();
 	lcprops(this.gcfg);
+	if (this.gcfg.handler !== undefined) {
+		tmp = this.gcfg.handler;
+		this.gcfg.handler = {};
+		if (require(this.gcfg.handler, tmp, "Handle_TIC") == null)
+			delete this.gcfg.handler;
+	}
 	sects = tcfg.iniGetSections();
 	for (i=0; i<sects.length; i++) {
 		this.acfg[sects[i].toLowerCase()] = tcfg.iniGetObject(sects[i]);
 		lcprops(this.acfg[sects[i].toLowerCase()]);
+		if (this.acfg[sects[i].toLowerCase()].handler !== undefined) {
+			tmp = this.acfg[sects[i].toLowerCase()].handler;
+			this.acfg[sects[i].toLowerCase()].handler = {};
+			if (require(this.acfg[sects[i].toLowerCase()].handler, tmp, "Handle_TIC") == null)
+				delete this.acfg[sects[i].toLowerCase()].handler;
+		}
 	}
 	tcfg.close();
 	this.gcfg.ignorepassword = get_bool(this.gcfg.ignorepassword);

@@ -124,11 +124,14 @@ function process_tic(tic)
 	var ld;
 	var i,j;
 	var cfg;
+	var handler;
 
 	if (tickit.gcfg.path !== undefined)
 		path = backslash(tickit.gcfg.path);
 	if (tickit.gcfg.dir !== undefined)
 		dir = tickit.gcfg.dir.toLowerCase();
+	if (tickit.gcfg.handler !== undefined)
+		handler = tickit.gcfg.handler;
 
 	cfg = tickit.acfg[tic.area.toLowerCase()];
 	if (cfg !== undefined) {
@@ -141,6 +144,13 @@ function process_tic(tic)
 			if (cfg.path === undefined)
 				path = undefined;
 		}
+		if (cfg.handler !== undefined)
+			handler = cfg.handler;
+	}
+
+	if (handler !== undefined) {
+		if (handler.Handle_TIC(tic, this);
+			return true;
 	}
 
 	if (dir !== undefined) {
@@ -177,9 +187,10 @@ function process_tic(tic)
 	}
 
 	log(LOG_DEBUG, "Moving file from "+tic.full_path+" to "+path+".");
+	// TODO: optionally delete replaced files even if it's not an overwrite
 	if (file_exists(path+tic.file)) {
-		if (tic.file !== tic.replaces) {
-			log(LOG_ERROR, "'"+tic.full_path+"' already exists in '"+path+"' and TIC does not have Replaces line.");
+		if (tic.replaces === undefined || !wildmatch(tic.file, tic.replaces)) {
+			log(LOG_ERROR, "'"+tic.full_path+"' already exists in '"+path+"' and TIC does not have matching Replaces line.");
 			return false;
 		}
 		else {
