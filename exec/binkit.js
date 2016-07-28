@@ -96,11 +96,11 @@ function unlock_flow(locks)
 	}
 }
 
-function outbound_root(addr, scfg, ftnd)
+function outbound_root(addr, scfg)
 {
-	if (ftnd.outboundMap[addr.domain] === undefined)
+	if (FIDO.FTNDomains.outboundMap[addr.domain] === undefined)
 		return scfg.outbound.replace(/[\\\/]$/, '');
-	return ftnd.outboundMap[addr.domain];
+	return FIDO.FTNDomains.outboundMap[addr.domain];
 }
 
 /*
@@ -116,7 +116,7 @@ function outbound_root(addr, scfg, ftnd)
 function add_outbound_files(addrs, bp)
 {
 	function has_lock(addr) {
-		var bsy = outbound_root(addr, bp.cb_data.binkit_scfg, FIDO.FTNDomains)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'bsy';
+		var bsy = outbound_root(addr, bp.cb_data.binkit_scfg)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'bsy';
 		var i;
 
 		for (i=0; i<bp.cb_data.binkit_locks.length; i++) {
@@ -131,11 +131,11 @@ function add_outbound_files(addrs, bp)
 
 		log(LOG_DEBUG, "Adding outbound files for "+addr);
 		// Find all possible flow files for the remote.
-		var allfiles = directory(outbound_root(addr, bp.cb_data.binkit_scfg, FIDO.FTNDomains)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
+		var allfiles = directory(outbound_root(addr, bp.cb_data.binkit_scfg)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
 		// Parse flow files and call addFile() tracking what to do on success.
 		if (allfiles.length > 0) {
 			if (!has_lock(addr)) {
-				lock_files = lock_flow(outbound_root(addr, bp.cb_data.binkit_scfg, FIDO.FTNDomains)+addr.flo_outbound(bp.default_zone, bp.default_domain));
+				lock_files = lock_flow(outbound_root(addr, bp.cb_data.binkit_scfg)+addr.flo_outbound(bp.default_zone, bp.default_domain));
 				if (lock_files === undefined)
 					return;
 				bp.cb_data.binkit_locks.push(lock_files);
@@ -484,7 +484,7 @@ function callout_done(bp, semaphores)
 	});
 }
 
-function callout(addr, scfg, ftnd, semaphores, locks, bicfg)
+function callout(addr, scfg, semaphores, locks, bicfg)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var bp = new BinkP('BinkIT/'+("$Revision$".split(' ')[1]), undefined, rx_callback, tx_callback);
@@ -585,10 +585,10 @@ function callout(addr, scfg, ftnd, semaphores, locks, bicfg)
 	callout_done(bp, semaphores);
 }
 
-function check_held(addr, scfg, ftnd, myaddr)
+function check_held(addr, scfg, myaddr)
 {
 	var until;
-	var f = new File(outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone)+'.hld');
+	var f = new File(outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone)+'.hld');
 
 	if (!f.exists)
 		return false;
@@ -612,7 +612,7 @@ function check_held(addr, scfg, ftnd, myaddr)
 	return true;
 }
 
-function run_one_outbound_dir(dir, scfg, ftnd, semaphores, ran)
+function run_one_outbound_dir(dir, scfg, semaphores, ran)
 {
 	var myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 	var locks = [];
@@ -645,8 +645,8 @@ function run_one_outbound_dir(dir, scfg, ftnd, semaphores, ran)
 				ext = file_getext(flow_files[i]);
 
 				// Ensure this is the "right" outbound (file case, etc)
-				if (flow_files[i] !== outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
-					log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' expected '"+outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone)+ext.substr(1)+"' (skipped)");
+				if (flow_files[i] !== outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone)+ext.substr(1)) {
+					log(LOG_WARNING, "Unexpected file path '"+flow_files[i]+"' expected '"+outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone)+ext.substr(1)+"' (skipped)");
 					continue;
 				}
 
@@ -672,7 +672,7 @@ function run_one_outbound_dir(dir, scfg, ftnd, semaphores, ran)
 				}
 
 				if ((lock_files = lock_flow(flow_files[i]))!==undefined) {
-					if (check_held(addr, scfg, ftnd, myaddr)) {
+					if (check_held(addr, scfg, myaddr)) {
 						unlock_flow(lock_files);
 						continue;
 					}
@@ -683,7 +683,7 @@ function run_one_outbound_dir(dir, scfg, ftnd, semaphores, ran)
 				log(LOG_INFO, "Attempting callout for file "+flow_files[i]);
 				locks.push(lock_files);
 				// Use a try/catch to ensure we clean up the lock files.
-				callout(addr, scfg, ftnd, semaphores, locks);
+				callout(addr, scfg, semaphores, locks);
 				ran[addr] = true;
 				locks.forEach(unlock_flow);
 			}
@@ -706,7 +706,6 @@ function run_one_outbound_dir(dir, scfg, ftnd, semaphores, ran)
 function run_outbound(ran)
 {
 	var scfg;
-	var ftnd;
 	var outbound_dirs=[];
 	var outbound_roots=[];
 	var semaphores = [];
@@ -758,7 +757,7 @@ function run_outbound(ran)
 		});
 	});
 	outbound_dirs.forEach(function(dir) {
-		run_one_outbound_dir(dir, scfg, FIDO.FTNDomains, semaphores, ran);
+		run_one_outbound_dir(dir, scfg, semaphores, ran);
 	});
 
 	semaphores.forEach(function(semname) {
@@ -876,7 +875,7 @@ function run_inbound(sock)
 	});
 }
 
-function poll_node(addr_str, scfg, ftnd, bicfg, myaddr)
+function poll_node(addr_str, scfg, bicfg, myaddr)
 {
 	var semaphores = [];
 	var lock_files;
@@ -885,18 +884,15 @@ function poll_node(addr_str, scfg, ftnd, bicfg, myaddr)
 	if (scfg === undefined)
 		scfg = new SBBSEchoCfg();
 
-	if (ftnd === undefined)
-		ftnd = new FTNDomains();
-
 	if (myaddr === undefined)
 		myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 
 	var addr = FIDO.parse_addr(addr_str, 1, 'fidonet');
 
-	if ((lock_files = lock_flow(outbound_root(addr, scfg, ftnd)+addr.flo_outbound(myaddr.zone))) === undefined)
+	if ((lock_files = lock_flow(outbound_root(addr, scfg)+addr.flo_outbound(myaddr.zone))) === undefined)
 		return;
 	else {
-		if (check_held(addr, scfg, ftnd, myaddr)) {
+		if (check_held(addr, scfg, myaddr)) {
 			unlock_flow(lock_files);
 			return;
 		}
@@ -904,21 +900,19 @@ function poll_node(addr_str, scfg, ftnd, bicfg, myaddr)
 	log(LOG_INFO, "Attempting poll for node "+addr);
 	locks.push(lock_files);
 	// Use a try/catch to ensure we clean up the lock files.
-	callout(addr, scfg, ftnd, semaphores, locks, bicfg);
+	callout(addr, scfg, semaphores, locks, bicfg);
 	locks.forEach(unlock_flow);
 }
 
 function run_polls(ran)
 {
 	var scfg;
-	var ftnd;
 	var bicfg;
 	var semaphores = [];
 	var myaddr;
 	var locks = [];
 
 	scfg = new SBBSEchoCfg();
-	ftnd = new FTNDomains();
 	bicfg = new BinkITCfg();
 	myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 
@@ -930,7 +924,7 @@ function run_polls(ran)
 
 		if (ran[addr] !== undefined)
 			return;
-		poll_node(addr_str, scfg, ftnd, bicfg, myaddr);
+		poll_node(addr_str, scfg, bicfg, myaddr);
 		ran[addr] = true;
 	});
 }
