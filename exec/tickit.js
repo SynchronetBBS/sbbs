@@ -149,7 +149,7 @@ function process_tic(tic)
 	}
 
 	if (handler !== undefined) {
-		if (handler.Handle_TIC(tic, this));
+		if (handler.Handle_TIC(tic, this))
 			return true;
 	}
 
