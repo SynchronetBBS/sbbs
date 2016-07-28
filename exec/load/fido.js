@@ -153,8 +153,8 @@ var FIDO = {
 		if (zone == undefined)
 			zone = default_zone;
 		if (domain == undefined) {
-			if (this.FTNDomains.domainMap[parseInt(zone)] !== undefined)
-				domain = this.FTNDomains.domainMap[parseInt(zone)];
+			if (FIDO.FTNDomains.domainMap[parseInt(zone)] !== undefined)
+				domain = FIDO.FTNDomains.domainMap[parseInt(zone)];
 			else
 				domain = default_domain;
 		}
@@ -202,8 +202,8 @@ var FIDO = {
 		point = m[5];
 		if(point == null)
 			point = 0;
-		if (this.FTNDomains.domainMap[parseInt(zone, 16)] !== undefined)
-			domain = this.FTNDomains.domainMap[parseInt(zone, 16)];
+		if (FIDO.FTNDomains.domainMap[parseInt(zone, 16)] !== undefined)
+			domain = FIDO.FTNDomains.domainMap[parseInt(zone, 16)];
 		return new FIDO.Addr(parseInt(m[2], 16), parseInt(m[3], 16), parseInt(zone, 16), parseInt(point, 16), domain);
 	},
 	Node:function(addr, hub) {
