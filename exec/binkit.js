@@ -116,7 +116,7 @@ function outbound_root(addr, scfg, ftnd)
 function add_outbound_files(addrs, bp)
 {
 	function has_lock(addr) {
-		var bsy = outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'bsy';
+		var bsy = outbound_root(addr, bp.cb_data.binkit_scfg, FIDO.FTNDomains)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'bsy';
 		var i;
 
 		for (i=0; i<bp.cb_data.binkit_locks.length; i++) {
@@ -131,11 +131,11 @@ function add_outbound_files(addrs, bp)
 
 		log(LOG_DEBUG, "Adding outbound files for "+addr);
 		// Find all possible flow files for the remote.
-		var allfiles = directory(outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
+		var allfiles = directory(outbound_root(addr, bp.cb_data.binkit_scfg, FIDO.FTNDomains)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
 		// Parse flow files and call addFile() tracking what to do on success.
 		if (allfiles.length > 0) {
 			if (!has_lock(addr)) {
-				lock_files = lock_flow(outbound_root(addr, bp.cb_data.binkit_scfg, bp.cb_data.binkit_ftnd)+addr.flo_outbound(bp.default_zone, bp.default_domain));
+				lock_files = lock_flow(outbound_root(addr, bp.cb_data.binkit_scfg, FIDO.FTNDomains)+addr.flo_outbound(bp.default_zone, bp.default_domain));
 				if (lock_files === undefined)
 					return;
 				bp.cb_data.binkit_locks.push(lock_files);
@@ -501,7 +501,6 @@ function callout(addr, scfg, ftnd, semaphores, locks, bicfg)
 		binkitcfg:bicfg,
 		binkit_to_addr:addr,
 		binkit_scfg:scfg,
-		binkit_ftnd:ftnd,
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
 		binkit_create_semaphores:semaphores,
@@ -714,15 +713,14 @@ function run_outbound(ran)
 
 	log(LOG_INFO, "Running outbound");
 	scfg = new SBBSEchoCfg();
-	ftnd = new FTNDomains();
 
 	if (!scfg.is_flo) {
 		log(LOG_ERROR, "sbbsecho not configured for FLO-style mailers.");
 		return false;
 	}
 	outbound_roots.push(scfg.outbound.replace(/[\\\/]$/, ''));
-	Object.keys(ftnd.outboundMap).forEach(function(key) {
-		outbound_roots.push(ftnd.outboundMap[key]);
+	Object.keys(FIDO.FTNDomains.outboundMap).forEach(function(key) {
+		outbound_roots.push(FIDO.FTNDomains.outboundMap[key]);
 	});
 	outbound_roots.forEach(function(oroot) {
 		var dirs;
@@ -760,7 +758,7 @@ function run_outbound(ran)
 		});
 	});
 	outbound_dirs.forEach(function(dir) {
-		run_one_outbound_dir(dir, scfg, ftnd, semaphores, ran);
+		run_one_outbound_dir(dir, scfg, FIDO.FTNDomains, semaphores, ran);
 	});
 
 	semaphores.forEach(function(semname) {
@@ -846,7 +844,6 @@ function run_inbound(sock)
 	bp.cb_data = {
 		binkitcfg:new BinkITCfg(),
 		binkit_scfg:new SBBSEchoCfg(),
-		binkit_ftnd:new FTNDomains(),
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
 		binkit_create_semaphores:semaphores,

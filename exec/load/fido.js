@@ -13,7 +13,8 @@ require('fido_syscfg.js', 'FTNDomains');
  * 		These are type and value checked when assigned and throw an
  * 		exception when illegal.
  * 
- * 		inet_host	- Internet hostname at the binkp.net domain
+ * 		inet_host	- Internet hostname at the binkp.net domain or listed
+ * 					  in nodelist.
  * 		str			- Address as a string in the most possible dimensions
  * 		toString()	- Overrides the default... same as str
  * 		flo_outbound(default_zone, default_domain)
@@ -30,9 +31,10 @@ require('fido_syscfg.js', 'FTNDomains');
  * FIDO.parse_flo_file_path(path, default_zone, domain)
  * 		Parses a flo filename and path into the returned FIDO.Addr object.
  * 
- * FIDO.parse_nodelist(path, warn)
+ * FIDO.parse_nodelist(path, warn[, domain])
  * 		Parses a nodelist and returns an object with an entries object in
- * 		it containing all the nodelist entries (3D address is the key).
+ * 		it containing all the nodelist entries (4D address is the key
+ * 		unless domain is specified in which case 5D address is the key).
  * 		If warn is true, will warn on "illegal" values (per FTS-0005).
  */
 
@@ -209,13 +211,15 @@ var FIDO = {
 		this.hub = hub.str;
 		this.private = this.hold = this.down = false;
 	},
-	parse_nodelist:function(filename, warn)
+	parse_nodelist:function(filename, warn, domain)
 	{
 		var f = new File(filename);
 		var ret = {};
 
 		if (warn === undefined)
 			warn = false;
+		if (domain === undefined)
+			domain = '';
 
 		if (!f.open("r"))
 			throw("Unable to open '"+f.name+"'.");
@@ -248,6 +252,7 @@ var FIDO = {
 		var flags;
 		var flag;
 		var value;
+		node.domain = domain;
 		ret.entries = {};
 
 		while ((line = f.readln(2048))) {
@@ -448,12 +453,41 @@ Object.defineProperties(FIDO.Addr.prototype, {
 			if (this.zone === undefined)
 				throw('zone is undefined');
 
+			// TODO: These don't need to be loaded into different objects since we're doing 5D
+			if (FIDO.FTNDomains.nodeListFN[this.domain] !== undefined && file_exists(FIDO.FTNDomains.nodeListFN[this.domain])) {
+				if (FIDO.FTNDomains.nodeList[this.domain] === undefined)
+					FIDO.FTNDomains.nodeList[this.domain] = FIDO.parse_nodelist(FIDO.FTNDomains.nodeListFN[this.domain], false, this.domain);
+				if (FIDO.FTNDomains.nodeList[this.str] !== undefined) {
+					// TODO: Maybe support non-IBN stuff as well...
+					ret = FIDO.FTNDomains.nodeList[this.str].binkp_host;
+					if (ret !== undefined)
+						return ret;
+				}
+			}
+
 			if (this.point !== undefined)
 				ret += format("p%d", this.point);
 			ret += format("f%d.n%d.z%d.%s", this.node, this.net, this.zone, FIDO.FTNDomains.domainDNSMap[this.domain] === undefined ? '.example.com' : FIDO.FTNDomains.domainDNSMap[this.domain]);
 			return ret;
 		}
-	}
+	},
+	'binkp_port': {
+		get: function() {
+			// TODO: Use default zone from system.fido_addr_list[0]?
+			if (this.zone === undefined)
+				throw('zone is undefined');
+
+			// TODO: These don't need to be loaded into different objects since we're doing 5D
+			if (FIDO.FTNDomains.nodeListFN[this.domain] !== undefined && file_exists(FIDO.FTNDomains.nodeListFN[this.domain])) {
+				if (FIDO.FTNDomains.nodeList[this.domain] === undefined)
+					FIDO.FTNDomains.nodeList[this.domain] = FIDO.parse_nodelist(FIDO.FTNDomains.nodeListFN[this.domain], false, this.domain);
+				if (FIDO.FTNDomains.nodeList[this.str] !== undefined)
+					return FIDO.FTNDomains.nodeList[this.str].binkp_port;
+			}
+
+			return 24554;
+		}
+	},
 });
 FIDO.Packet.type = {
 	TWO:0,		// FTS-0001
@@ -503,7 +537,7 @@ Object.defineProperties(FIDO.Node.prototype, {
 				if (this.flags.IBN.search(/^[0-9]+$/) == -1) {
 					if (this.flags.IBN.indexOf(':' !== -1))
 						return this.flags.IBN.replace(/:.*$/,'');
-					return this.flags.IBN;
+					return this.flags.IBN.replace(/\.$/,'');
 				}
 			}
 			for (i in iflags) {
@@ -515,7 +549,7 @@ Object.defineProperties(FIDO.Node.prototype, {
 					continue;
 				if (this.flags[iflags[i]].indexOf(':') !== -1)
 					return this.flags[iflags[i]].replace(/:.*$/,'');
-				return this.flags[iflags[i]];
+				return this.flags[iflags[i]].replace(/\.$/,'');
 			}
 			if (this.name.indexOf('.') !== -1)
 				return this.name.replace(/ /, '_');

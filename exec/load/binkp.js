@@ -384,7 +384,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	if (password === '-')
 		this.require_md5 = false;
 	if (port === undefined)
-		port = 24554;
+		port = addr.binkp_port;
 	if (inet_host === undefined)
 		inet_host = addr.inet_host;
 

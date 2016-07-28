@@ -115,6 +115,8 @@ function FTNDomains()
 		this.domainMap = {};
 		this.domainDNSMap = {};
 		this.outboundMap = {};
+		this.nodeListFN = {};
+		this.nodeList = {};
 		var domains = f.iniGetSections().forEach(function(domain) {
 			var d = domain.toLowerCase().substr(0,8);
 			var zones = f.iniGetValue(domain, 'Zones', '');
@@ -134,6 +136,7 @@ function FTNDomains()
 				}, this);
 			}
 			this.domainDNSMap[d] = f.iniGetValue(domain, 'DNSSuffix', 'example.com');
+			this.nodeListFN[d] = f.iniGetValue(domain, 'NodeList', undefined);
 			this.outboundMap[d] = f.iniGetValue(domain, 'OutboundRoot', ecfg.outbound.replace(/[\\\/]$/, '')).replace(/[\\\/]$/, '');
 		}, this);
 		f.close();
