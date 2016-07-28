@@ -548,8 +548,14 @@ BinkP.prototype.accept = function(sock, auth_cb)
 					pwd = auth_cb(args, this);
 					if (pwd === undefined)
 						pwd = '-';
-					if (pwd === '-')
+					if (pwd === '-') {
 						this.authenticated = 'non-secure';
+						/*
+						 * It appears the binkd won't encrypt unless there's
+						 * a password, even if they requested CRYPT mode.
+						 */
+						this.will_crypt = false;
+					}
 					else
 						this.authenticated = 'secure';
 					this.sendCmd(this.command.M_OK, this.authenticated);
