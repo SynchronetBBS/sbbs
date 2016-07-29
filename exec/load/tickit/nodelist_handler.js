@@ -48,13 +48,11 @@ function Handle_TIC(tic, ctx, arg)
 		return false;
 	}
 
-	if (cfg.match === undefined) {
+	if (cfg.match === undefined)
 		cfg.match = '*.*';
-	}
 
-	if (cfg.nlmatch === undefined) {
+	if (cfg.nlmatch === undefined)
 		cfg.nlmatch = '*.*';
-	}
 
 	if (!wildmatch(tic.file, cfg.match)) {
 		log(LOG_DEBUG, "TIC file "+tic.file+" doesn't match '"+cfg.match+"'");
