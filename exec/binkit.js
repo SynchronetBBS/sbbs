@@ -406,9 +406,14 @@ function callout_want_callback(fobj, fsize, fdate, offset, bp)
 	// Or process the old ones first.
 	if (this.received_files.indexOf(fobj.name) != -1)
 		return this.file.REJECT;
-	// Skip existing files.
-	if (file_exists(fobj.name))
+	// Reject or skip existing files.
+	if (file_exists(fobj.name)) {
+		// If the size and date are the same, reject it.
+		if (fsize == file_size(fobj.name) && fdate == file_date(fobj.name))
+			return this.file.REJECT;
+		// Otherwise, skip it.
 		return this.file.SKIP;
+	}
 	// Accept everything else
 	return this.file.ACCEPT;
 }
