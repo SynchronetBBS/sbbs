@@ -455,8 +455,12 @@ Object.defineProperties(FIDO.Addr.prototype, {
 
 			// TODO: These don't need to be loaded into different objects since we're doing 5D
 			if (FIDO.FTNDomains.nodeListFN[this.domain] !== undefined && file_exists(FIDO.FTNDomains.nodeListFN[this.domain])) {
-				if (FIDO.FTNDomains.nodeList[this.domain] === undefined)
-					FIDO.FTNDomains.nodeList[this.domain] = FIDO.parse_nodelist(FIDO.FTNDomains.nodeListFN[this.domain], false, this.domain);
+				if (FIDO.FTNDomains.nodeList[this.domain] === undefined) {
+					try {
+						FIDO.FTNDomains.nodeList[this.domain] = FIDO.parse_nodelist(FIDO.FTNDomains.nodeListFN[this.domain], false, this.domain);
+					}
+					catch (e) {}
+				}
 				if (FIDO.FTNDomains.nodeList[this.domain].entries[this.str] !== undefined) {
 					// TODO: Maybe support non-IBN stuff as well...
 					ret = FIDO.FTNDomains.nodeList[this.domain].entries[this.str].binkp_host;
