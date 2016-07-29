@@ -25,8 +25,10 @@ function SBBSEchoCfg ()
 
 	this.inb = [];
 	this.pktpass = {};
+	this.packer = {};
 	this.is_flo = false;
 	this.outbound = undefined;
+	var packer = undefined;
 
 	if (!ecfg.open("r")) {
 		ecfg = new File(system.ctrl_dir+'sbbsecho.ini');
@@ -44,26 +46,51 @@ function SBBSEchoCfg ()
 		ecfg.iniGetSections('node:').forEach(function(section) {
 			this.pktpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'PacketPwd', '');
 		}, this);
+		ecfg.iniGetSections('archive:').forEach(function(packer) {
+			this.packer[packer] = {};
+			this.packer[packer].offset = ecfg.iniGetValue(packer, 'SigOffset', 0);
+			this.packer[packer].sig = ecfg.iniGetValue(packer, 'Sig', '');
+			this.packer[packer].pack = ecfg.iniGetValue(packer, 'Pack', '');
+			this.packer[packer].unpack = ecfg.iniGetValue(packer, 'Unpack', '');
+		}, this);
 	}
 	else {
 		while ((line=ecfg.readln(65535)) != undefined) {
-			m = line.match(/^\s*(secure_|)inbound\s+(.*)$/i);
-			if (m !== null) {
-				this.inb.push(backslash(m[2]));
-				this[m[1].toLowerCase()+'inbound'] = m[2];
+			if (packer) {
+				if (line.match(/^\s*PACK\s+(.*)$/i))
+					this.packer[packer].pack = m[1];
+				if (line.match(/^\s*UNPACK\s+(.*)$/i))
+					this.packer[packer].unpack = m[1];
+				if (line.search(/^\s*END\s*$/i) != -1)
+					packer = undefined;
 			}
+			else {
+				m = line.match(/^\s*(secure_|)inbound\s+(.*)$/i);
+				if (m !== null) {
+					this.inb.push(backslash(m[2]));
+					this[m[1].toLowerCase()+'inbound'] = m[2];
+				}
 
-			m = line.match(/^\s*pktpwd\s+(.*?)\s+(.*)\s*$/i);
-			if (m !== null)
-				this.pktpass[m[1].toUpperCase()] = m[2].toUpperCase();
+				m = line.match(/^\s*pktpwd\s+(.*?)\s+(.*)\s*$/i);
+				if (m !== null)
+					this.pktpass[m[1].toUpperCase()] = m[2].toUpperCase();
 
-			m = line.match(/^\s*outbound\s+(.*?)\s*$/i);
-			if (m !== null)
-				this.outbound = m[1];
+				m = line.match(/^\s*outbound\s+(.*?)\s*$/i);
+				if (m !== null)
+					this.outbound = m[1];
 
-			m = line.match(/^\s*flo_mailer\s*$/i);
-			if (m !== null)
-				this.is_flo = true;
+				m = line.match(/^\s*flo_mailer\s*$/i);
+				if (m !== null)
+					this.is_flo = true;
+
+				m = line.match(/\s*packer\*s+([^\s]+)\s+([0-9]+)\s+([0-9a-f]+)\s*$/i);
+				if (m !== null) {
+					packer = m[1];
+					this.packer[packer] = {};
+					this.packer[packer].offset = parseInt(m[2]);
+					this.packer[packer].sig = m[3].toUpperCase();
+				}
+			}
 		}
 	}
 	ecfg.close();
