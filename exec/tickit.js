@@ -125,13 +125,16 @@ function process_tic(tic)
 	var i,j;
 	var cfg;
 	var handler;
+	var handler_arg;
 
 	if (tickit.gcfg.path !== undefined)
 		path = backslash(tickit.gcfg.path);
 	if (tickit.gcfg.dir !== undefined)
 		dir = tickit.gcfg.dir.toLowerCase();
-	if (tickit.gcfg.handler !== undefined)
+	if (tickit.gcfg.handler !== undefined) {
 		handler = tickit.gcfg.handler;
+		handler_arg = tickit.gcfg.handlerarg;
+	}
 
 	cfg = tickit.acfg[tic.area.toLowerCase()];
 	if (cfg !== undefined) {
@@ -144,13 +147,21 @@ function process_tic(tic)
 			if (cfg.path === undefined)
 				path = undefined;
 		}
-		if (cfg.handler !== undefined)
+		if (cfg.handler !== undefined) {
 			handler = cfg.handler;
+			handler_arg = cfg.handlerarg;
+		}
 	}
 
 	if (handler !== undefined) {
-		if (handler.Handle_TIC(tic, this))
-			return true;
+		try {
+			if (handler.Handle_TIC(tic, this, handler_arg))
+				return true;
+		}
+		catch (e) {
+			log(LOG_ERROR, "TICK Handler threw an exception: "+e);
+		}
+		return false;
 	}
 
 	if (dir !== undefined) {
