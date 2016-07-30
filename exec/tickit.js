@@ -161,7 +161,6 @@ function process_tic(tic)
 		catch (e) {
 			log(LOG_ERROR, "TICK Handler threw an exception: "+e);
 		}
-		return false;
 	}
 
 	if (dir !== undefined) {
