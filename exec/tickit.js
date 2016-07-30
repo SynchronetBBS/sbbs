@@ -487,6 +487,8 @@ function parse_ticfile(fname)
 				case 'desc':
 				case 'ldesc':
 					outtic.push(line);
+					if (tic[key] === undefined)
+						tick[key] = '';
 					tic[key] += val+"\r\n";
 					break;
 
