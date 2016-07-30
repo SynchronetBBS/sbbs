@@ -56,10 +56,10 @@ function SBBSEchoCfg ()
 	}
 	else {
 		while ((line=ecfg.readln(65535)) != undefined) {
-			if (packer) {
-				if (line.match(/^\s*PACK\s+(.*)$/i))
+			if (packer !== undefined) {
+				if ((m = line.match(/^\s*PACK\s+(.*)$/i)) !== null)
 					this.packer[packer].pack = m[1];
-				if (line.match(/^\s*UNPACK\s+(.*)$/i))
+				if ((m = line.match(/^\s*UNPACK\s+(.*)$/i)) !== null)
 					this.packer[packer].unpack = m[1];
 				if (line.search(/^\s*END\s*$/i) != -1)
 					packer = undefined;
@@ -83,7 +83,7 @@ function SBBSEchoCfg ()
 				if (m !== null)
 					this.is_flo = true;
 
-				m = line.match(/\s*packer\*s+([^\s]+)\s+([0-9]+)\s+([0-9a-f]+)\s*$/i);
+				m = line.match(/^\s*packer\s+([^\s]+)\s+([0-9]+)\s+([0-9a-f]+)\s*$/i);
 				if (m !== null) {
 					packer = m[1];
 					this.packer[packer] = {};
