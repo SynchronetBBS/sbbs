@@ -69,8 +69,8 @@ function Handle_TIC(tic, ctx, arg)
 		var sig = '';
 
 		f.position = ctx.sbbsecho.packer[key].offset;
-		for (i=0; i<ctx.sbbsecho.packer[key].sig.length; i++) {
-			sig += format("%02X", f.readBin(2));
+		for (i=0; i<ctx.sbbsecho.packer[key].sig.length; i+=2) {
+			sig += format("%02X", f.readBin(1));
 			if (f.eof)
 				break;
 		}
@@ -120,8 +120,11 @@ function Handle_TIC(tic, ctx, arg)
 		return false;
 	}
 
+	log(LOG_DEBUG, "Copying "+fl[0]+" to "+ctx.FIDO.FTNDomains.nodeListFN[cfg.domain]+" from "+tic.file);
 	file_copy(fl[0], ctx.FIDO.FTNDomains.nodeListFN[cfg.domain]);
 
 	// Return false so it is still moved into the appropriate dir
 	return false;
 }
+
+0;
