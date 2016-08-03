@@ -944,4 +944,4 @@
 "ago"									775 InThePast
 "from now"								776 InTheFuture
 "%s %s %s"								777 AgeOfPostedItem
-"logging out \1h%s"		        		778 NodeStatusLogout
+"Logging out \1h%s"		        		778 NodeStatusLogout
