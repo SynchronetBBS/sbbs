@@ -4495,6 +4495,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 	char*	p;
 	int		i,j;
 	int		fmsg;
+	int		result;
 	FILE*	fidomsg;
 	size_t	f;
 	uint16_t	terminator;
@@ -4756,9 +4757,9 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				sprintf(smb[cur_smb].file,"%s%s",scfg.sub[cfg.area[i].sub]->data_dir
 					,scfg.sub[cfg.area[i].sub]->code);
 				smb[cur_smb].retry_time=scfg.smb_retry_time;
-				if((j=smb_open(&smb[cur_smb]))!=SMB_SUCCESS) {
+				if((result=smb_open(&smb[cur_smb]))!=SMB_SUCCESS) {
 					sprintf(str,"ERROR %d opening %s area #%d, sub #%d)"
-						,j,smb[cur_smb].file,i+1,cfg.area[i].sub+1);
+						,result,smb[cur_smb].file,i+1,cfg.area[i].sub+1);
 					fputs(str,stdout);
 					lprintf(LOG_ERR, "%s", str);
 					strip_psb(fmsgbuf);
@@ -4772,8 +4773,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					smb[cur_smb].status.max_age=scfg.sub[cfg.area[i].sub]->maxage;
 					smb[cur_smb].status.attr=scfg.sub[cfg.area[i].sub]->misc&SUB_HYPER
 							? SMB_HYPERALLOC:0;
-					if((j=smb_create(&smb[cur_smb]))!=SMB_SUCCESS) {
-						sprintf(str,"ERROR %d creating %s",j,smb[cur_smb].file);
+					if((result=smb_create(&smb[cur_smb]))!=SMB_SUCCESS) {
+						sprintf(str,"ERROR %d creating %s",result,smb[cur_smb].file);
 						fputs(str,stdout);
 						lprintf(LOG_ERR, "%s", str);
 						smb_close(&smb[cur_smb]);
@@ -4802,19 +4803,19 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			/**********************/
 			/* Importing EchoMail */
 			/**********************/
-			j=fmsgtosmsg(fmsgbuf,hdr,0,cfg.area[i].sub);
+			result=fmsgtosmsg(fmsgbuf,hdr,0,cfg.area[i].sub);
 
-			if(j==SMB_DUPE_MSG) {
+			if(result==SMB_DUPE_MSG) {
 				lprintf(LOG_NOTICE, "%s Duplicate message from %s (%s) to %s, subject: %s"
 					,areatag, hdr.from, fmsghdr_srcaddr_str(&hdr), hdr.to, hdr.subj);
 				cfg.area[i].dupes++; 
 			}
-			else {	   /* Not a dupe */
+			else if(result==SMB_SUCCESS || cfg.relay_filtered_msgs) {	   /* Not a dupe */
 				strip_psb(fmsgbuf);
 				pkt_to_pkt(fmsgbuf,curarea,NULL,hdr,msg_seen,msg_path); 
 			}
 
-			if(j==0) {		/* Successful import */
+			if(result==SMB_SUCCESS) {		/* Successful import */
 				user_t user;
 				if(i!=cfg.badecho && cfg.echomail_notify && (user.number=matchname(hdr.to))!=0
 					&& getuserdat(&scfg, &user)==0
