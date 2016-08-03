@@ -847,6 +847,16 @@ bool area_is_linked(unsigned area_num, const fidoaddr_t* addr)
 	return false;
 }
 
+uint find_linked_echo(const char* echotag, fidoaddr_t addr)
+{
+	unsigned i;
+	for(i=0; i<cfg.areas; i++)
+		if(stricmp(cfg.area[i].name, echotag) == 0 && area_is_linked(i, &addr))
+			return cfg.area[i].sub;
+
+	return INVALID_SUB;
+}
+
 /******************************************************************************
  This function sends a notify list to applicable nodes, this list includes the
  settings configured for the node, as well as a list of areas the node is
@@ -1056,7 +1066,6 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 	unsigned u;
 	size_t add_count;
 	size_t del_count;
-	ulong tagcrc;
 
 	if((add_count = strListCount(add_area)) !=0 )
 		lprintf(LOG_DEBUG,"Adding %u areas for %s to %s"
@@ -1265,9 +1274,8 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 								*tp=0;
 								if(add_area[0]!=NULL && stricmp(add_area[0],"+ALL")==0) {
 									SAFECOPY(tmp,p);
-									tagcrc=crc32(strupr(tmp),0);
 									for(y=0;y<cfg.areas;y++)
-										if(tagcrc==cfg.area[y].tag)
+										if(stricmp(p, cfg.area[y].name) == 0)
 											break;
 									if(y<cfg.areas)
 										continue; 
@@ -1354,10 +1362,10 @@ bool alter_config(fidoaddr_t addr, const char* key, const char* value)
 /******************************************************************************
  Used by AREAFIX to process any '%' commands that come in via netmail
 ******************************************************************************/
-void command(char* instr, fidoaddr_t addr, const char* to)
+void areafix_command(char* instr, fidoaddr_t addr, const char* to)
 {
 	FILE *stream,*tmpf;
-	char str[MAX_PATH+1],temp[256],*buf,*p;
+	char str[MAX_PATH+1],*buf;
 	int  file;
 	long l;
 	unsigned u;
@@ -1365,9 +1373,9 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 	nodecfg_t* nodecfg=findnodecfg(&cfg, addr,0);
 	if(nodecfg == NULL)
 		return;
-	strupr(instr);
-	if((p=strstr(instr,"HELP"))!=NULL) {
-		sprintf(str,"%sAREAMGR.HLP",scfg.exec_dir);
+
+	if(stricmp(instr, "HELP") == 0) {
+		SAFEPRINTF(str,"%sAREAMGR.HLP",scfg.exec_dir);
 		if(!fexistcase(str))
 			return;
 		if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
@@ -1387,29 +1395,29 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 		return; 
 	}
 
-	if((p=strstr(instr,"LIST"))!=NULL) {
+	if(stricmp(instr, "LIST") == 0) {
 		netmail_arealist(AREALIST_ALL,addr,to);
 		return; 
 	}
 
-	if((p=strstr(instr,"QUERY"))!=NULL) {
+	if(stricmp(instr, "QUERY") == 0) {
 		netmail_arealist(AREALIST_CONNECTED,addr,to);
 		return; 
 	}
 
-	if((p=strstr(instr,"UNLINKED"))!=NULL) {
+	if(stricmp(instr, "UNLINKED") == 0) {
 		netmail_arealist(AREALIST_UNLINKED,addr,to);
 		return; 
 	}
 
-	if((p=strstr(instr,"COMPRESSION"))!=NULL) {
-		FIND_WHITESPACE(p);
+	if(strnicmp(instr, "COMPRESSION ", 12) == 0) {
+		char* p = instr + 12;
 		SKIP_WHITESPACE(p);
 		if(!stricmp(p,"NONE"))
 			nodecfg->archive = SBBSECHO_ARCHIVE_NONE;
 		else {
 			for(u=0;u<cfg.arcdefs;u++)
-				if(!stricmp(p,cfg.arcdef[u].name))
+				if(stricmp(p,cfg.arcdef[u].name) == 0)
 					break;
 			if(u==cfg.arcdefs) {
 				if((tmpf=tmpfile())==NULL) {
@@ -1432,23 +1440,21 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 		return; 
 	}
 
-	if((p=strstr(instr,"PASSWORD"))!=NULL) {
-		FIND_WHITESPACE(p);
+	if(strnicmp(instr, "PASSWORD ", 9) == 0) {
+		char password[FIDO_SUBJ_LEN];	/* Areafix password for this node */
+		char* p = instr + 9;
 		SKIP_WHITESPACE(p);
-		sprintf(temp,"%-.25s",p);
-		p=temp;
-		FIND_WHITESPACE(p);
-		*p=0;
-		if(!stricmp(temp,nodecfg->password)) {
-			sprintf(str,"Your password was already set to %s."
+		SAFECOPY(password, p);
+		if(!stricmp(password, nodecfg->password)) {
+			sprintf(str,"Your password was already set to '%s'."
 				,nodecfg->password);
 			create_netmail(to,/* msg: */NULL,"Password Change Request",str,addr,/* attachment: */false);
 			return; 
 		}
-		if(alter_config(addr,"areafix_pwd", temp)) {
-			SAFEPRINTF2(str,"Your password has been changed from %s to %.25s."
-				,nodecfg->password,temp);
-			SAFECOPY(nodecfg->password,temp);
+		if(alter_config(addr,"areafix_pwd", password)) {
+			SAFEPRINTF2(str,"Your password has been changed from '%s' to '%s'."
+				,nodecfg->password,password);
+			SAFECOPY(nodecfg->password, password);
 		} else {
 			SAFECOPY(str,"Error changing password");
 		}
@@ -1456,15 +1462,30 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 		return; 
 	}
 
-	if((p=strstr(instr,"RESCAN"))!=NULL) {
-		export_echomail("", nodecfg, true);
-		create_netmail(to,/* msg: */NULL,"Rescan Areas"
+	if(stricmp(instr, "RESCAN") == 0) {
+		export_echomail(NULL, nodecfg, true);
+		create_netmail(to,/* msg: */NULL, "Rescan Areas"
 			,"All connected areas carried by your hub have been rescanned."
 			,addr,/* attachment: */false);
 		return; 
 	}
 
-	if((p=strstr(instr,"ACTIVE"))!=NULL) {
+	if(strnicmp(instr, "RESCAN ", 7) == 0) {
+		char* p = instr + 7;
+		SKIP_WHITESPACE(p);
+		int subnum = find_linked_echo(p, addr);
+		if(subnum == INVALID_SUB)
+			SAFEPRINTF(str, "Echo-tag '%s' not linked or not found.", p);
+		else {
+			export_echomail(scfg.sub[subnum]->code, nodecfg, true);
+			SAFEPRINTF(str, "Connected area '%s' has been rescanned.", p);
+		}
+		create_netmail(to,/* msg: */NULL, "Rescan Area"
+			,str, addr, /* attachment: */false);
+		return; 
+	}
+
+	if(stricmp(instr, "ACTIVE") == 0) {
 		if(!nodecfg->passive) {
 			create_netmail(to,/* msg: */NULL,"Reconnect Disconnected Areas"
 				,"Your areas are already connected.",addr,/* attachment: */false);
@@ -1477,7 +1498,7 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 		return; 
 	}
 
-	if((p=strstr(instr,"PASSIVE"))!=NULL) {
+	if(stricmp(instr, "PASSIVE") == 0) {
 		if(nodecfg->passive) {
 			create_netmail(to,/* msg: */NULL,"Temporarily Disconnect Areas"
 				,"Your areas are already temporarily disconnected.",addr,/* attachment: */false);
@@ -1490,9 +1511,7 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 		return; 
 	}
 
-	//if((p=strstr(instr,"FROM"))!=NULL);
-
-	if((p=strstr(instr,"+ALL"))!=NULL) {
+	if(stricmp(instr, "+ALL") == 0) {
 		str_list_t add_area=strListInit();
 		strListPush(&add_area, instr);
 		alter_areas(add_area,NULL,addr,to);
@@ -1500,7 +1519,7 @@ void command(char* instr, fidoaddr_t addr, const char* to)
 		return; 
 	}
 
-	if((p=strstr(instr,"-ALL"))!=NULL) {
+	if(stricmp(instr, "-ALL") == 0) {
 		str_list_t del_area=strListInit();
 		strListPush(&del_area, instr);
 		alter_areas(NULL,del_area,addr,to);
@@ -1600,7 +1619,7 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 				strListPush(&del_area, str);
 				break;
 			case '%':                       /* Process Command */
-				command(str,addr,to);
+				areafix_command(str,addr,to);
 				percent++;
 				break; 
 		}
@@ -3807,7 +3826,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			if(!area_is_linked(area,&nodecfg->addr))
 				continue; 
 		}
-		if(sub_code[0] && stricmp(sub_code,scfg.sub[i]->code))
+		if(sub_code!=NULL && *sub_code && stricmp(sub_code,scfg.sub[i]->code))
 			continue;
 		printf("\rScanning %-*.*s -> %-*s "
 			,LEN_EXTCODE,LEN_EXTCODE,scfg.sub[i]->code
@@ -4850,8 +4869,8 @@ int main(int argc, char **argv)
 {
 	FILE*	fidomsg;
 	char	str[1025],path[MAX_PATH+1]
-			,sub_code[LEN_EXTCODE+1]
 			,*p,*tp;
+	char*	sub_code = NULL;
 	char	cmdline[256];
 	int 	i,j,fmsg;
 	size_t	f;
@@ -4910,8 +4929,6 @@ int main(int argc, char **argv)
 		,PLATFORM_DESC
 		,revision
 		);
-
-	sub_code[0]=0;
 
 	cmdline[0]=0;
 	for(i=1;i<argc;i++) {
@@ -4993,7 +5010,7 @@ int main(int argc, char **argv)
 			else if(isdigit((uchar)argv[i][0]))
 				nodeaddr = atofaddr(argv[i]);
 			else
-				SAFECOPY(sub_code,argv[i]); 
+				sub_code = argv[i]; 
 		}  
 	}
 
@@ -5139,7 +5156,6 @@ int main(int argc, char **argv)
 			bail(1); 
 			return -1;
 		}
-		cfg.area[cfg.areas].tag=crc32(tmp,0);
 
 		FIND_WHITESPACE(p);		/* Skip tag */
 		SKIP_WHITESPACE(p);		/* Skip white space */

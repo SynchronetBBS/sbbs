@@ -67,7 +67,6 @@ enum pkt_type {
 
 typedef struct {
     uint		sub;						/* Set to INVALID_SUB if pass-thru */
-	uint32_t	tag;						/* CRC-32 of tag name */
     char*		name;						/* Area tag name */
 	uint		imported; 					/* Total messages imported this run */
 	uint		exported; 					/* Total messages exported this run */
