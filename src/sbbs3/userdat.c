@@ -219,7 +219,7 @@ int DLLCALL readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int in
 	if(!VALID_CFG(cfg) || user_number<1)
 		return(-1); 
 
-	if(infile > 0)
+	if(infile >= 0)
 		file = infile;
 	else {
 		if((file = openuserdat(cfg)) < 0)
