@@ -350,7 +350,9 @@ int get_outbound(fidoaddr_t dest, char* outbound, size_t maxlen, bool fileboxes)
 		strncpy(outbound, nodecfg->outbox, maxlen);
 	else if(cfg.flo_mailer) {
 		if(dest.zone != sys_faddr.zone)	{ /* Inter-zone outbound is "OUTBOUND.ZZZ/" */
-			*lastchar(outbound) = 0;
+			char* p = lastchar(outbound);
+			if(IS_PATH_DELIM(*p))
+				*p = 0;
 			safe_snprintf(outbound+strlen(outbound), maxlen,".%03x", dest.zone);
 		}
 		if(dest.point != 0) {			/* Point destination is "OUTBOUND[.ZZZ]/NNNNnnnn.pnt/" */
@@ -359,8 +361,9 @@ int get_outbound(fidoaddr_t dest, char* outbound, size_t maxlen, bool fileboxes)
 		}
 	}
 	backslash(outbound);
-	if(!isdir(outbound))
-		lprintf(LOG_DEBUG, "Creating outbound directory for %s: %s", smb_faddrtoa(&dest, NULL), outbound);
+	if(isdir(outbound))
+		return 0;
+	lprintf(LOG_DEBUG, "Creating outbound directory for %s: %s", smb_faddrtoa(&dest, NULL), outbound);
 	return mkpath(outbound);
 }
 
