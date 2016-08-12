@@ -28,3 +28,31 @@ function mail_get_address(strIn) {
 	if (strIn.match(reEmail2)) return strIn.replace(reEmail2,"$1");
 	return null;
 }
+
+function fidoaddr_to_emailaddr(name, addr, tld)
+{
+	var ftn;
+
+	// Change "Joe Ray Schmoe" to "Joe.Ray.Schmoe"
+	name = name.replace(/\ /g, '.');
+
+	// If no top-level-domain specified, use "fidonet" by default
+	if(!tld) tld = "fidonet";
+
+	// FTN domain specified?
+	ftn = addr.match(/@([\w]+)$/);
+	if(ftn)
+		tld = ftn[1];
+
+	// Look for 4D addr
+	ftn = addr.match(/^([0-9]+)\:([0-9]+)\/([0-9]+)\.([0-9]+)/);
+	if(ftn)
+		return format("%s@p%u.f%u.n%u.z%u.%s", name, ftn[4], ftn[3], ftn[2], ftn[1], tld);
+
+	// Look for 3D addr
+	ftn = addr.match(/^([0-9]+)\:([0-9]+)\/([0-9]+)/);
+	if(ftn)
+		return format("%s@f%u.n%u.z%u.%s", name, ftn[3], ftn[2], ftn[1], tld);
+
+	return addr;
+}
