@@ -329,8 +329,6 @@ for(var l in list_array) {
 		log(LOG_INFO,format("%s Sending message #%lu from %s to %lu recipients: %s"
 			,list.name.toUpperCase(), ptr, hdr.from, rcpt_list.length, hdr.subject));
 
-		if(hdr.from_net_type == NET_FIDO)
-			hdr.from_net_addr = fidoaddr_to_emailaddr(hdr.from, hdr.from_net_addr);
 		hdr.replyto_net_type = NET_INTERNET;
 		hdr.replyto_net_addr = list.address;
 		hdr.from_agent = AGENT_PROCESS;
