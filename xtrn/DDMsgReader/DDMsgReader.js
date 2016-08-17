@@ -160,6 +160,9 @@
  *                              message header later.
  *                              Releasing this verison now that I've fixed the
  *                              2 issues I wanted to fix.
+ * 2016-08-17 Eric Oulashin     Version 1.14
+ *                              Bug fix: Version 1.13 was failing to reply to
+ *                              private emails
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -251,8 +254,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.13";
-var READER_DATE = "2016-08-16";
+var READER_VERSION = "1.14";
+var READER_DATE = "2016-08-17";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -8577,6 +8580,14 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 	var retObj = new Object();
 	retObj.sendSucceeded = true;
 	retObj.msgWasDeleted = false;
+	
+	// Get the message header with fields expanded so we can get the most info possible.
+	var msgHdr = this.GetMsgHdrByAbsoluteNum(pMsgHdr.number, true);
+	if (msgHdr == null)
+	{
+		retObj.sendSucceeded = false;
+		return retObj;
+	}
 
 	// Set up the initial reply mode bits
 	var replyMode = WM_NONE;
@@ -8585,20 +8596,20 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 
 	// If the message is not local, the send the reply as a network message.
 	// Otherwise, send the reply as a local email.
-	if (pMsgHdr.from_net_type != NET_NONE)
+	if (msgHdr.from_net_type != NET_NONE)
 	{
-		if ((typeof(pMsgHdr.from_net_addr) == "string") &&
-		    (pMsgHdr.from_net_addr.length > 0))
+		if ((typeof(msgHdr.from_net_addr) == "string") &&
+		    (msgHdr.from_net_addr.length > 0))
 		{
 			// Build the email address to reply to.  If the original message is
 			// internet email, then simply use the from_net_addr field from the
 			// message header.  Otherwise (i.e., on a networked sub-board), use
 			// username@from_net_addr.
 			var emailAddr = "";
-			if (pMsgHdr.from_net_type == NET_INTERNET)
-				emailAddr = pMsgHdr.from_net_addr;
+			if (msgHdr.from_net_type == NET_INTERNET)
+				emailAddr = msgHdr.from_net_addr;
 			else
-				emailAddr = pMsgHdr.from + "@" + pMsgHdr.from_net_addr;
+				emailAddr = msgHdr.from + "@" + msgHdr.from_net_addr;
 			// Prompt the user to verify the receiver's email address
 			console.putmsg(bbs.text(Email), P_SAVEATR);
 			console.ungetstr(emailAddr);
@@ -8606,7 +8617,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			if ((typeof(emailAddr) == "string") && (emailAddr.length > 0))
 			{
 				replyMode |= WM_NETMAIL;
-				console.ungetstr(pMsgHdr.subject);
+				console.ungetstr(msgHdr.subject);
 				retObj.sendSucceeded = bbs.netmail(emailAddr, replyMode);
 				console.pause();
 			}
@@ -8630,7 +8641,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		// Replying to a local user
 		replyMode |= WM_EMAIL;
 		// Look up the user number of the "from" user name in the message header
-		var userNumber = system.matchuser(pMsgHdr.from);
+		var userNumber = system.matchuser(msgHdr.from);
 		if (userNumber != 0)
 		{
 			// Output a newline to avoid ugly overwriting of text on the screen in
@@ -8638,7 +8649,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			// sender.  Note that if the send failed, that could be because the
 			// user aborted the message.
 			console.crlf();
-			retObj.sendSucceeded = bbs.email(userNumber, replyMode, "", pMsgHdr.subject);
+			retObj.sendSucceeded = bbs.email(userNumber, replyMode, "", msgHdr.subject);
 			console.pause();
 		}
 	}
@@ -8653,7 +8664,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		// Note: If the message was deleted, the DeleteMessage() method will
 		// refresh the header in the search results, if there are any search
 		// results.
-		if (!console.noyes(bbs.text(DeleteMailQ).replace("%s", pMsgHdr.from)))
+		if (!console.noyes(bbs.text(DeleteMailQ).replace("%s", msgHdr.from)))
 			retObj.msgWasDeleted = this.PromptAndDeleteMessage(pMsgIdx, null, null, null, false);
 	}
 

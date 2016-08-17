@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.14     2016-08-17   Bug fix: Version 1.13 was failing to reply to
+                      private emails
 1.13     2016-08-16   - Bug fix: Message number error when a new user starts
                       reading messages.
                       - Bug fix: Now, it should always successfully save a
