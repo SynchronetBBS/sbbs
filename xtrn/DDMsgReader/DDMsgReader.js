@@ -147,6 +147,19 @@
  * 2016-07-23 Eric Oulashin     Version 1.13 Beta
  *                              Bug fix: Message number error when a new user
  *                              starts reading messages.
+ * 2016-08-06 Eric Oulashin     Continued working on the new-user reading
+ *                              issue based on information from Digital Man
+ *                              about the special value 4294967295 of the
+ *                              scan pointer.
+ * 2016-08-16 Eric Oulashin     Version 1.13
+ *                              Fixed the bug where it wasn't successfully
+ *                              saving message headers after setting the READ
+ *                              attribute.  When getting a message header, the
+ *                              parameter to expand headers in get_msg_header()
+ *                              must be false in order to successfully save a
+ *                              message header later.
+ *                              Releasing this verison now that I've fixed the
+ *                              2 issues I wanted to fix.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -238,8 +251,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.13 Beta 1";
-var READER_DATE = "2016-07-23";
+var READER_VERSION = "1.13";
+var READER_DATE = "2016-08-16";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4196,8 +4209,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	retObj.nextAction = ACTION_NONE;
 	retObj.refreshEnhancedRdrHelpLine = false;
 
-	// Get the message header
-	var msgHeader = this.GetMsgHdrByIdx(pOffset);
+	// Get the message header.  Don't expand fields since we may need to save
+	// the header later with the MSG_READ attribute.
+	var msgHeader = this.GetMsgHdrByIdx(pOffset, false);
 	if (msgHeader == null)
 	{
 		console.print("\1n" + this.text.invalidMsgNumText.replace("%d", +(pOffset+1)) + "\1n");
@@ -5606,9 +5620,40 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	if (userNameHandleAliasMatch(msgHeader.to))
 	{
 		msgHeader.attr |= MSG_READ;
-		this.msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
-		if (this.SearchTypePopulatesSearchResults())
+		//var successfullySavedMsgHdr = this.msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
+		var successfullySavedMsgHdr = this.msgbase.put_msg_header(false, msgHeader.number, msgHeader);
+		//var successfullySavedMsgHdr = this.msgbase.put_msg_header(msgHeader.number, msgHeader);
+		if (this.SearchTypePopulatesSearchResults() && successfullySavedMsgHdr)
 			this.RefreshSearchResultMsgHdr(pOffset, MSG_READ);
+
+		// If failed to save the header, then write some error messages in the system & node log.
+		if (!successfullySavedMsgHdr)
+		{
+			writeToSysAndNodeLog("Failed to save message header with the READ attribute set!", LOG_ERR);
+			writeToSysAndNodeLog(getMsgAreaDescStr(this.msgbase), LOG_ERR);
+			writeToSysAndNodeLog(format("Message offset: %d, number: %d", msgHeader.offset, msgHeader.number), LOG_ERR);
+			writeToSysAndNodeLog("Status: " + this.msgbase.status, LOG_ERR);
+			writeToSysAndNodeLog("Error: " + this.msgbase.error, LOG_ERR);
+			/*
+			// For sysops, output a debug message
+			if (gIsSysop)
+			{
+				console.print("\1n");
+				console.crlf();
+				console.print("* Failed to save msg header the with 'read' attribute set!");
+				console.crlf();
+				console.print("Status: " + this.msgbase.status);
+				console.crlf();
+				console.print("Error: " + this.msgbase.error);
+				console.crlf();
+				console.crlf();
+				//console.print("put_msg_header params: false, " + msgHeader.number + ", header:\r\n");
+				//console.print("put_msg_header params: true, " + msgHeader.offset + ", header:\r\n");
+				//console.print("put_msg_header params: " + msgHeader.number + ", header:\r\n");
+				printMsgHdr(msgHeader);
+			}
+			*/
+		}
 	}
 
 	// If not reading personal email, then update the scan & last read message pointers.
@@ -6094,32 +6139,32 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 	if (this.displayBoardInfoInHeader && canDoHighASCIIAndANSI()) // console.term_supports(USER_ANSI)
 	{
 		var curpos = console.getxy();
-      // Figure out the message group name
+		// Figure out the message group name
 		var msgGroupName = "";
 		// For the message group name, we can also use this.msgbase.cfg.grp_name in
 		// Synchronet 3.12 and higher.
 		if (this.msgbase.cfg != null)
-         msgGroupName = msg_area.grp_list[this.msgbase.cfg.grp_number].description;
-      else
-         msgGroupName = "Unspecified";
-      // Figure out the sub-board name
-      var subBoardName = "";
-      if (this.msgbase.cfg != null)
-         subBoardName = this.msgbase.cfg.description;
-      else if ((this.msgbase.subnum == -1) || (this.msgbase.subnum == 65535))
-         subBoardName = "Electronic Mail";
-      else
-         subBoardName = "Unspecified";
+			msgGroupName = msg_area.grp_list[this.msgbase.cfg.grp_number].description;
+		else
+			msgGroupName = "Unspecified";
+		// Figure out the sub-board name
+		var subBoardName = "";
+		if (this.msgbase.cfg != null)
+			subBoardName = this.msgbase.cfg.description;
+		else if ((this.msgbase.subnum == -1) || (this.msgbase.subnum == 65535))
+			subBoardName = "Electronic Mail";
+		else
+			subBoardName = "Unspecified";
 
-      // Display the message group name
-      console.print(this.colors["msgListHeaderMsgGroupTextColor"] + "Msg group: " +
-                    this.colors["msgListHeaderMsgGroupNameColor"] + msgGroupName);
+		// Display the message group name
+		console.print(this.colors["msgListHeaderMsgGroupTextColor"] + "Msg group: " +
+		this.colors["msgListHeaderMsgGroupNameColor"] + msgGroupName);
 		console.cleartoeol(); // Fill to the end of the line with the current colors
 		// Display the sub-board name on the next line
 		++curpos.y;
 		console.gotoxy(curpos);
 		console.print(this.colors["msgListHeaderSubBoardTextColor"] + "Sub-board: " +
-                    this.colors["msgListHeaderMsgSubBoardName"] + subBoardName);
+		this.colors["msgListHeaderMsgSubBoardName"] + subBoardName);
 		console.cleartoeol(); // Fill to the end of the line with the current colors
 		++curpos.y;
 		console.gotoxy(curpos);
@@ -7562,7 +7607,8 @@ function DigDistMsgReader_IsValidMessageNum(pMsgNum)
 //
 // Parameters:
 //  pMsgIdx: The message index (0-based)
-function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx)
+//  pExpandFields: Whether or not to expand fields.  Defaults to false.
+function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields)
 {
 	var msgHdr = null;
 	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
@@ -7574,7 +7620,10 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx)
 	else
 	{
 		if ((pMsgIdx >= 0) && (pMsgIdx < this.msgbase.total_msgs))
-			msgHdr = this.msgbase.get_msg_header(true, pMsgIdx, true);
+		{
+			var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
+			msgHdr = this.msgbase.get_msg_header(true, pMsgIdx, expandFields);
+		}
 	}
 	return msgHdr;
 }
@@ -7585,23 +7634,27 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx)
 //
 // Parameters:
 //  pMsgNum: The message number (1-based)
+//  pExpandFields: Whether or not to expand fields.  Defaults to false.
 //
 // Return value: The message header for the message number, or null on error
-function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum)
+function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum, pExpandFields)
 {
-   var msgHdr = null;
-   if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
-       (this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
-   {
+	var msgHdr = null;
+	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
+			(this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
+	{
 		if ((pMsgNum > 0) && (pMsgNum <= this.msgSearchHdrs[this.subBoardCode].indexed.length))
-         msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgNum-1];
-   }
-   else
-   {
-      if ((pMsgNum > 0) && (pMsgNum <= this.msgbase.total_msgs))
-         msgHdr = this.msgbase.get_msg_header(true, pMsgNum-1, true);
-   }
-   return msgHdr;
+		msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgNum-1];
+	}
+	else
+	{
+		if ((pMsgNum > 0) && (pMsgNum <= this.msgbase.total_msgs))
+		{
+			var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
+			msgHdr = this.msgbase.get_msg_header(true, pMsgNum-1, expandFields);
+		}
+	}
+	return msgHdr;
 }
 
 // For the DigDistMsgReader class: Returns a message header by absolute message
@@ -7609,18 +7662,22 @@ function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum)
 //
 // Parameters:
 //  pMsgNum: The absolute message number
+//  pExpandFields: Whether or not to expand fields.  Defaults to false.
 //
 // Return value: The message header for the message number, or null on error
-function DigDistMsgReader_GetMsgHdrByAbsoluteNum(pMsgNum)
+function DigDistMsgReader_GetMsgHdrByAbsoluteNum(pMsgNum, pExpandFields)
 {
-   var msgHdr = null;
-   if (this.msgbase == null)
-      msgHdr = null;
-   else if (!this.msgbase.is_open)
-      msgHdr = null;
-   else
-      msgHdr = this.msgbase.get_msg_header(false, pMsgNum, true);
-   return msgHdr;
+	var msgHdr = null;
+	if (this.msgbase == null)
+		msgHdr = null;
+	else if (!this.msgbase.is_open)
+		msgHdr = null;
+	else
+	{
+		var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
+		msgHdr = this.msgbase.get_msg_header(false, pMsgNum, expandFields);
+	}
+	return msgHdr;
 }
 
 // For the DigDistMsgReader class: Takes an absolute message number and returns
@@ -7664,17 +7721,28 @@ function absMsgNumToIdx(pMsgbase, pMsgNum)
 
 	if (typeof(pMsgNum) != "number")
 		return -1;
-
-	// If pMsgNum is a certain special value, that could be because the user hasn't readhasn't read messages yet, so just return -1.
+	
+	var messageIdx = 0;
+	// If pMsgNum is 4294967295 (0xffffffff, or ~0), that is a special value
+	// for the user's scan_ptr meaning it should point to the latest message
+	// in the messagebase.
 	if (pMsgNum == 4294967295)
-		return -1;
-	var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, true);
-	if ((msgHdr == null) && gCmdLineArgVals.verboselogging)
 	{
-		writeToSysAndNodeLog("Message area " + pMsgbase.cfg.code + ": Tried to get message header for absolute message number " +
-		                     pMsgNum + " but got a null header object.");
+		//console.print("Here!\r\n\1p"); // Temporary
+		messageIdx = pMsgbase.total_msgs - 1; // Or this.NumMessages() - 1 but can't because this isn't a class member function
 	}
-	return (msgHdr != null ? msgHdr.offset : -1);
+	else
+	{
+		var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, false);
+		if ((msgHdr == null) && gCmdLineArgVals.verboselogging)
+		{
+			writeToSysAndNodeLog("Message area " + pMsgbase.cfg.code + ": Tried to get message header for absolute message number " +
+			                     pMsgNum + " but got a null header object.");
+		}
+		messageIdx = (msgHdr != null ? msgHdr.offset : -1);
+	}
+	//return (msgHdr != null ? msgHdr.offset : -1);
+	return messageIdx;
 }
 
 // Takes a message index and returns the message's absolute message number.
@@ -7691,7 +7759,7 @@ function idxToAbsMsgNum(pMsgbase, pMsgIdx)
 	if (!pMsgbase.is_open)
 		return -1;
 
-	var msgHdr = pMsgbase.get_msg_header(true, pMsgIdx, true);
+	var msgHdr = pMsgbase.get_msg_header(true, pMsgIdx, false);
 	if ((msgHdr == null) && gCmdLineArgVals.verboselogging)
 	{
 		writeToSysAndNodeLog("Tried to get message header for message offset " +
@@ -9085,13 +9153,13 @@ function DigDistMsgReader_MessageIsLastFromUser(pOffset)
 			// is, then look for the last message posted by the logged-in user and
 			// if found, see if that message has the same offset as the offset
 			// passed in.
-			var msgHdr = this.msgbase.get_msg_header(true, pOffset, true);
+			var msgHdr = this.msgbase.get_msg_header(true, pOffset, false);
 			if (userHandleAliasNameMatch(msgHdr["to"]))
 			{
 				var lastMsgOffsetFromUser = -1;
 				for (var msgOffset = this.msgbase.total_msgs-1; (msgOffset >= pOffset) && (lastMsgOffsetFromUser == -1); --msgOffset)
 				{
-					msgHdr = this.msgbase.get_msg_header(true, msgOffset, true);
+					msgHdr = this.msgbase.get_msg_header(true, msgOffset, false);
 					if (userHandleAliasNameMatch(msgHdr["to"]))
 						lastMsgOffsetFromUser = msgOffset;
 				}
@@ -10634,7 +10702,7 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				// Get the date & time when the last message was imported.
 				if (msgBase.total_msgs > 0)
 				{
-					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, false);
 					if (this.msgAreaList_lastImportedMsg_showImportTime)
 						subBoardInfo.newestPostDate = msgHeader.when_imported_time
 					else
@@ -10726,7 +10794,7 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				// Get the date & time when the last message was imported.
 				if (msgBase.total_msgs > 0)
 				{
-					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, false);
 					// Construct the date & time strings of the latest post
 					if (this.msgAreaList_lastImportedMsg_showImportTime)
 					{
@@ -11016,7 +11084,7 @@ function DigDistMsgReader_WriteMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 		// Get the date & time when the last message was imported.
 		if (msgBase.total_msgs > 0)
 		{
-			msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+			msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, false);
 			// Construct the date & time strings of the latest post
 			if (this.msgAreaList_lastImportedMsg_showImportTime)
 			{
@@ -11189,6 +11257,10 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 	if (typeof(pMsgHdr) != "object")
 		return new Array();
 
+	// Get the message header with fields expanded so we can get the most info possible.
+	var msgHdr = this.GetMsgHdrByAbsoluteNum(pMsgHdr.number, true);
+	if (msgHdr == null)
+		return new Array();
 
 	var msgHdrInfoLines = new Array();
 
@@ -11272,7 +11344,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 	var addTheField = true;
 	var customFieldLabel = "";
 	var propCounter = 1;
-	for (var prop in pMsgHdr)
+	for (var prop in msgHdr)
 	{
 		addTheField = true;
 		customFieldLabel = "";
@@ -11282,7 +11354,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 			var hdrFieldLabel = "";
 			var lastHdrFieldLabel = null;
 			var addBlankLineAfterIdx = -1;
-			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+			for (var fieldI = 0; fieldI < msgHdr.field_list.length; ++fieldI)
 			{
 				// TODO: Some field types can be in the array multiple times but only
 				// the last is valid.  For those, only get the last one:
@@ -11293,8 +11365,8 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 				//  36 (Reply To extended)
 				//  37 (Reply To position)
 				//  38 (Reply To Organization)
-				hdrFieldLabel = "\1n" + this.colors.hdrLineLabelColor + msgHdrFieldListTypeToLabel(pMsgHdr.field_list[fieldI].type) + "\1n";
-				var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
+				hdrFieldLabel = "\1n" + this.colors.hdrLineLabelColor + msgHdrFieldListTypeToLabel(msgHdr.field_list[fieldI].type) + "\1n";
+				var infoLineWrapped = msgHdr.field_list[fieldI].data;
 				var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
 				var hdrArrayNonBlankLines = findHdrFieldDataArrayNonBlankLines(infoLineWrappedArray);
 				if (hdrArrayNonBlankLines.numNonBlankLines > 0)
@@ -11307,7 +11379,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 						// header info lines
 						if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
 						{
-							var numFieldItemsWithSameType = fieldListCountSameTypes(pMsgHdr.field_list, fieldI);
+							var numFieldItemsWithSameType = fieldListCountSameTypes(msgHdr.field_list, fieldI);
 							if (numFieldItemsWithSameType > 1)
 							{
 								msgHdrInfoLines.push("");
@@ -11344,7 +11416,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 							msgHdrInfoLines.push("");
 							msgHdrInfoLines.push(hdrFieldLabel + "!");
 						}
-						var infoLineWrapped = pMsgHdr.field_list[fieldI].data;
+						var infoLineWrapped = msgHdr.field_list[fieldI].data;
 						var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
 						for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
 						{
@@ -11409,7 +11481,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 				// Add the label color and trailing colon to the label text
 				propLabel = "\1n" + this.colors.hdrLineLabelColor + propLabel + ":\1n";
 			}
-			var infoLineWrapped = word_wrap(pMsgHdr[prop], this.msgAreaWidth);
+			var infoLineWrapped = word_wrap(msgHdr[prop], this.msgAreaWidth);
 			var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
 			var itemValue = "";
 			for (var lineIdx = 0; lineIdx < infoLineWrappedArray.length; ++lineIdx)
@@ -11417,18 +11489,18 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 				if (infoLineWrappedArray[lineIdx].length > 0)
 				{
 					// Set itemValue to the value that should be displayed
-					if (prop == "when_written_time") //itemValue = system.timestr(pMsgHdr.when_written_time);
-						itemValue = system.timestr(pMsgHdr.when_written_time) + " " + system.zonestr(pMsgHdr.when_written_zone);
-					else if (prop == "when_imported_time") //itemValue = system.timestr(pMsgHdr.when_imported_time);
-						itemValue = system.timestr(pMsgHdr.when_imported_time) + " " + system.zonestr(pMsgHdr.when_imported_zone);
+					if (prop == "when_written_time") //itemValue = system.timestr(msgHdr.when_written_time);
+						itemValue = system.timestr(msgHdr.when_written_time) + " " + system.zonestr(msgHdr.when_written_zone);
+					else if (prop == "when_imported_time") //itemValue = system.timestr(msgHdr.when_imported_time);
+						itemValue = system.timestr(msgHdr.when_imported_time) + " " + system.zonestr(msgHdr.when_imported_zone);
 					else if ((prop == "when_imported_zone") || (prop == "when_written_zone"))
-						itemValue = system.zonestr(pMsgHdr[prop]);
+						itemValue = system.zonestr(msgHdr[prop]);
 					else if (prop == "attr")
-						itemValue = makeMainMsgAttrStr(pMsgHdr[prop], "None");
+						itemValue = makeMainMsgAttrStr(msgHdr[prop], "None");
 					else if (prop == "auxattr")
-						itemValue = makeAuxMsgAttrStr(pMsgHdr[prop], "None");
+						itemValue = makeAuxMsgAttrStr(msgHdr[prop], "None");
 					else if (prop == "netattr")
-						itemValue = makeNetMsgAttrStr(pMsgHdr[prop], "None");
+						itemValue = makeNetMsgAttrStr(msgHdr[prop], "None");
 					else
 						itemValue = infoLineWrappedArray[lineIdx];
 					// Add the value color to the value text
@@ -11777,8 +11849,8 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	// the user hasn't read messages in the sub-board yet.  In that case,
 	// just use 0.  Otherwise, get the user's scan pointer message index.
 	var msgIdx = 0;
-	if (msg_area.sub[this.subBoardCode].scan_ptr != 4294967295) // Crazy value the first time a user reads messages
-		msgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].scan_ptr);
+	//if (msg_area.sub[this.subBoardCode].scan_ptr != 4294967295) // Crazy value the first time a user reads messages
+	msgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].scan_ptr);
 	// Sanity checking for msgIdx
 	if ((msgIdx < 0) || (msgIdx >= this.msgbase.total_msgs))
 	{
@@ -12640,7 +12712,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 					else
 					{
 						if ((msgIdxNumber >= 0) && (msgIdxNumber < msgBase.total_msgs))
-							msgHdr = msgBase.get_msg_header(true, msgIdxNumber, true);
+							msgHdr = msgBase.get_msg_header(true, msgIdxNumber, false);
 					}
 					// If we got the message header, then mark it for deletion.
 					// If the message header wasn't marked as deleted, then add
@@ -14060,7 +14132,8 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 					}
 					else
 					{
-						var startMsgHeader = pMsgbase.get_msg_header(true, startMsgIndex, true);
+						// If this message has been read, then start at the next message.
+						var startMsgHeader = pMsgbase.get_msg_header(true, startMsgIndex, false);
 						if ((startMsgHeader.attr & MSG_READ) == MSG_READ)
 							++startMsgIndex;
 					}
@@ -14083,7 +14156,7 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 				// Note: This assumes pSubBoardCode is not "mail" (personal mail).
 				// Get the offset of the last read message and compare it with the
 				// offset of the given message header
-				var lastReadMsgHdr = pMsgBase.get_msg_header(false, msg_area.sub[pSubBoardCode].last_read, true);
+				var lastReadMsgHdr = pMsgBase.get_msg_header(false, msg_area.sub[pSubBoardCode].last_read, false);
 				var lastReadMsgOffset = (lastReadMsgHdr != null ? lastReadMsgHdr.offset : 0);
 				return (pMsgHdr.offset > lastReadMsgOffset);
 			}
@@ -14094,7 +14167,7 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 	{
 		for (var msgIdx = startMsgIndex; msgIdx < endMsgIndex; ++msgIdx)
 		{
-			var msgHeader = pMsgbase.get_msg_header(true, msgIdx, true);
+			var msgHeader = pMsgbase.get_msg_header(true, msgIdx, false);
 			// I've seen situations where the message header object is null for
 			// some reason, so check that before running the search function.
 			if (msgHeader != null)
@@ -15561,16 +15634,17 @@ function userNameHandleAliasMatch(pStr)
 // node log.  This will prepend the text "Digital Distortion Message Reader ("
 // + user.alias + "): " to the log message.
 // 
-//
 // Parameters:
 //  pMessage: The message to log
-function writeToSysAndNodeLog(pMessage)
+//  pLogLevel: The log level.  Optional - Defaults to LOG_INFO.
+function writeToSysAndNodeLog(pMessage, pLogLevel)
 {
 	if (typeof(pMessage) != "string")
 		return;
 
 	var logMessage = "Digital Distortion Message Reader (" +  user.alias + "): " + pMessage;
-	log(LOG_INFO, logMessage);
+	var logLevel = (typeof(pLogLevel) == "number" ? pLogLevel : LOG_INFO);
+	log(logLevel, logMessage);
 	bbs.log_str(logMessage);
 }
 
@@ -16504,8 +16578,64 @@ function msgWrittenTimeToLocalBBSTime(pMsgHdr)
 	return msgWrittenTimeAdjusted;
 }
 
+// Returns a string containing the message group & sub-board numbers and
+// descriptions.
+//
+// Parameters:
+//  pMsgbase: A MsgBase object
+//
+// Return value: A string containing the message group & sub-board numbers and
+// descriptions
+function getMsgAreaDescStr(pMsgbase)
+{
+	if (typeof(pMsgbase) != "object")
+		return "";
+	if (!pMsgbase.is_open)
+		return "";
+
+	var descStr = "";
+	if (pMsgbase.cfg != null)
+	{
+		descStr = format("Group/sub-board num: %d, %d; %s - %s", pMsgbase.cfg.grp_number,
+		                 pMsgbase.subnum, msg_area.grp_list[pMsgbase.cfg.grp_number].description,
+		                 pMsgbase.cfg.description);
+	}
+	else
+	{
+		if ((pMsgbase.subnum == -1) || (pMsgbase.subnum == 65535))
+			descStr = "Electronic Mail";
+		else
+			descStr = "Unspecified";
+	}
+	return descStr;
+}
+
 /////////////////////////////////////////////////////////////////////////
-// Debug helper & error output function
+// Debug helper & error output functions
+
+// Prints information from a message header on the screen, for debugging purpurposes.
+//
+// Parameters:
+//  pMsgHdr: A message header object
+function printMsgHdr(pMsgHdr)
+{
+	for (var prop in pMsgHdr)
+	{
+		if ((prop == "field_list") && (typeof(pMsgHdr[prop]) == "object"))
+		{
+			console.print(prop + ":\r\n");
+			for (var objI = 0; objI < pMsgHdr[prop].length; ++objI)
+			{
+				console.print(" " + objI + ":\r\n");
+				for (var innerProp in pMsgHdr[prop][objI])
+					console.print("  " + innerProp + ": " + pMsgHdr[prop][objI][innerProp] + "\r\n");
+			}
+		}
+		else
+			console.print(prop + ": " + pMsgHdr[prop] + "\r\n");
+	}
+	console.pause();
+}
 
 // Writes some text on the screen at a given location with a given pause.
 //

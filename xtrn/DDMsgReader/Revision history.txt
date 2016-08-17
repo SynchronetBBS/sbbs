@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.13     2016-08-16   - Bug fix: Message number error when a new user starts
+                      reading messages.
+                      - Bug fix: Now, it should always successfully save a
+                      message header with the READ attribute when the user
+                      it was addressed to has read the message.  This should
+                      fix an issue where the same message would keep coming
+                      up in a newscan, etc.
 1.12     2016-05-11   - Updated the way the pause prompt is shown in the help
                       screen, in case the sysop has configured an external
                       module (Baja/JS) to run for a pause prompt.
