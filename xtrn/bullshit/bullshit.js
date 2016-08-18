@@ -232,28 +232,33 @@ function loadList() {
 		}
 	);
 
-	var msgBase = new MsgBase(settings.messageBase);
-	msgBase.open();
-	var shown = 0;
-	for (var m = msgBase.last_msg; m >= msgBase.first_msg; m = m - 1) {
-		try {
-			var h = msgBase.get_msg_header(m);
-		} catch (err) {
-			continue;
+
+	if (typeof settings.messageBase === 'string') {
+		var msgBase = new MsgBase(settings.messageBase);
+		msgBase.open();
+		var shown = 0;
+		for (var m = msgBase.last_msg; m >= msgBase.first_msg; m = m - 1) {
+			try {
+				var h = msgBase.get_msg_header(m);
+			} catch (err) {
+				continue;
+			}
+			if (h === null) continue;
+			tree.addItem(
+				format(
+					'%-' + (frame.width - 29) + 's%s',
+					h.subject.substr(0, frame.width - 30),
+					system.timestr(h.when_written_time)
+				),
+				m
+			);
+			shown++;
+			if (settings.maxMessages > 0 && shown >= settings.maxMessages) {
+				break;
+			}
 		}
-		if (h === null) continue;
-		tree.addItem(
-			format(
-				'%-' + (frame.width - 29) + 's%s',
-				h.subject.substr(0, frame.width - 30),
-				system.timestr(h.when_written_time)
-			),
-			m
-		);
-		shown++;
-		if (settings.maxMessages > 0 && shown >= settings.maxMessages) break;
+		msgBase.close();
 	}
-	msgBase.close();
 
 	tree.open();
 
