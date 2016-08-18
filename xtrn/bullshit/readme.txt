@@ -23,6 +23,9 @@ Contents
 
 	2.1) Create a message area
 
+		This step is recommended, but optional.  You can skip this part if you
+		don't want Bullshit to pull bulletins out of a message base.
+
 		Launch SCFG (BBS->Configure in the Synchronet Control Panel on Windows.)
 
 		In 'Message Areas', select your local message group, and create a new
@@ -78,6 +81,8 @@ Contents
 			message sub-board that Bullshit should load.
 		-	The 'maxMessages' setting specifies how many of the most recent
 			messages in this area should be listed. (Use 0 for no limit.)
+		-	If you don't want to load bulletins from a message base, simply
+			delete the 'messageBase' setting from 'bullshit.ini'.
 
 
 	In the 'colors' section:
