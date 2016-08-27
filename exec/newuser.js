@@ -15,6 +15,9 @@ qnet=false;
 if(options && (bbs.sys_status&SS_RLOGIN))
 	options.ask_qnet=false;
 
+if(options && options.qwk_settings)
+	user.qwk_settings = eval(options.qwk_settings);
+
 console.clear();
 
 if(!user.address.length && user.number>1) {
