@@ -163,6 +163,24 @@
  * 2016-08-17 Eric Oulashin     Version 1.14
  *                              Bug fix: Version 1.13 was failing to reply to
  *                              private emails
+ * 2016-08-17 Eric Oulashin     Version 1.15 Beta 1
+ *                              Updated DigDistMsgReader_ParseMsgAtCodes() to
+ *                              check whether the file libs array and file dir
+ *                              array is an object before accessing them, to
+ *                              prevent crashing if they're unavailable to the
+ *                              current user (i.e., if the sysop makes their
+ *                              current file directory for sysops only).
+ *                              Also, started working on the ability for the
+ *                              sysop to edit the user who wrote the message
+ *                              (using the U key) while reading a message.
+ * 2016-08-18 Eric Oulashin     Version 1.15 Beta 2
+ *                              Refactored the ReadMessageEnhanced() method
+ *                              into 2 additional methods to handle the scrollable
+ *                              & traditional user interfaces.
+ * 2016-08-27 Eric Oulashin     Version 1.15 Beta
+ *                              Bug fix: Replying to a message privately was broken
+ *                              due to the previous bug fix related to saving a
+ *                              message with the READ attribute.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -254,8 +272,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.14";
-var READER_DATE = "2016-08-17";
+var READER_VERSION = "1.15 Beta 3";
+var READER_DATE = "2016-08-27";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -869,6 +887,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.PromptContinueOrReadMsg = DigDistMsgReader_PromptContinueOrReadMsg;
 	this.WriteMsgListScreenTopHeader = DigDistMsgReader_WriteMsgListScreenTopHeader;
 	this.ReadMessageEnhanced = DigDistMsgReader_ReadMessageEnhanced;
+	this.ReadMessageEnhanced_Scrollable = DigDistMsgReader_ReadMessageEnhanced_Scrollable;
+	this.ReadMessageEnhanced_Traditional = DigDistMsgReader_ReadMessageEnhanced_Traditional;
 	this.EnhReaderPrepLast2LinesForPrompt = DigDistMsgReader_EnhReaderPrepLast2LinesForPrompt;
 	this.LookForNextOrPriorNonDeletedMsg = DigDistMsgReader_LookForNextOrPriorNonDeletedMsg;
 	this.PrintMessageInfo = DigDistMsgReader_PrintMessageInfo;
@@ -4267,34 +4287,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	enhReaderKeys.selectMessage = " ";
 	enhReaderKeys.batchDelete = CTRL_D;
 
-	// This function converts a thread navigation key character to its
-	// corresponding thread type value
-	function keypressToThreadType(pKeypress)
-	{
-		var threadType = THREAD_BY_ID;
-		switch (pKeypress)
-		{
-			case enhReaderKeys.prevMsgByTitle:
-			case enhReaderKeys.nextMsgByTitle:
-				threadType = THREAD_BY_TITLE;
-				break;
-			case enhReaderKeys.prevMsgByAuthor:
-			case enhReaderKeys.nextMsgByAuthor:
-				threadType = THREAD_BY_AUTHOR;
-				break;
-			case enhReaderKeys.prevMsgByToUser:
-			case enhReaderKeys.nextMsgByToUser:
-				threadType = THREAD_BY_TO_USER;
-				break;
-			case enhReaderKeys.prevMsgByThreadID:
-			case enhReaderKeys.nextMsgByThreadID:
-			default:
-				threadType = THREAD_BY_ID;
-				break;
-		}
-		return threadType;
-	}
-
 	// Get the message text and see if it has any ANSI codes.  If it has ANSI codes,
 	// then don't use the scrolling interface so that the ANSI gets displayed properly.
 	var messageText = this.msgbase.get_msg_body(true, msgHeader.offset);
@@ -4314,1309 +4306,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// Use the scrollable reader interface if the setting is enabled & the user's
 	// terminal supports ANSI.  Otherwise, use a more traditional user interface.
 	if (useScrollingInterface)
-	{
-		// Show the message header
-		this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-
-		// Get the message text, interpret any @-codes in it, replace tabs with spaces
-		// to prevent weirdness when displaying the message lines, and word-wrap the
-		// text so that it looks good on the screen,
-		var msgInfo = this.GetMsgInfoForEnhancedReader(msgHeader, true, true, true, messageText, msgHasANSICodes);
-
-		var topMsgLineIdxForLastPage = msgInfo.topMsgLineIdxForLastPage;
-		var msgFractionShown = msgInfo.msgFractionShown;
-		var numSolidScrollBlocks = msgInfo.numSolidScrollBlocks;
-		var numNonSolidScrollBlocks = msgInfo.numNonSolidScrollBlocks;
-		var solidBlockStartRow = msgInfo.solidBlockStartRow;
-		var solidBlockLastStartRow = solidBlockStartRow;
-		var topMsgLineIdx = 0;
-		var fractionToLastPage = 0;
-		if (topMsgLineIdxForLastPage != 0)
-			fractionToLastPage = topMsgLineIdx / topMsgLineIdxForLastPage;
-
-		// Draw an initial scrollbar on the rightmost column of the message area
-		// showing the fraction of the message shown and what part of the message
-		// is currently being shown.  The scrollbar will be updated minimally in
-		// the input loop to minimize screen redraws.
-		this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-
-		// Input loop (for scrolling the message up & down)
-		var msgLineFormatStr = "%-" + this.msgAreaWidth + "s";
-		var writeMessage = true;
-		// msgAreaHeight, msgReaderObj, and scrollbarUpdateFunction are for use
-		// with scrollTextLines().
-		var msgAreaHeight = this.msgAreaBottom - this.msgAreaTop + 1;
-		var msgReaderObj = this;
-		function msgScrollbarUpdateFn(pFractionToLastPage)
-		{
-			// Update the scrollbar position for the message, depending on the
-			// value of pFractionToLastMessage.
-			fractionToLastPage = pFractionToLastPage;
-			solidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidScrollBlocks * pFractionToLastPage);
-			if (solidBlockStartRow != solidBlockLastStartRow)
-				msgReaderObj.UpdateEnhancedReaderScollbar(solidBlockStartRow, solidBlockLastStartRow, numSolidScrollBlocks);
-			solidBlockLastStartRow = solidBlockStartRow;
-			console.gotoxy(1, console.screen_rows);
-		}
-		// User input loop
-		var continueOn = true;
-		while (continueOn)
-		{
-			// Display the message lines (depending on the value of writeMessage)
-			// and handle scroll keys via scrollTextLines().  Handle other keypresses
-			// here.
-			var scrollRetObj = null;
-			if (msgInfo.displayFrame != null)
-			{
-				msgInfo.displayFrame.draw();
-				scrollRetObj = scrollFrame(msgInfo.displayFrame, msgInfo.displayFrameScrollbar,
-				                           topMsgLineIdx, this.colors["msgBodyColor"],
-				                           writeMessage, 1, console.screen_rows,
-										   msgScrollbarUpdateFn);
-			}
-			else
-			{
-				scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
-				                               this.colors["msgBodyColor"], writeMessage,
-				                               this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
-				                               msgAreaHeight, 1, console.screen_rows,
-				                               msgScrollbarUpdateFn);
-			}
-			topMsgLineIdx = scrollRetObj.topLineIdx;
-			retObj.lastKeypress = scrollRetObj.lastKeypress;
-			switch (retObj.lastKeypress)
-			{
-				case enhReaderKeys.deleteMessage: // Delete message
-					var originalCurpos = console.getxy();
-					// The 2nd to last row of the screen is where the user will
-					// be prompted for confirmation to delete the message.
-					// Ideally, I'd like to put the cursor on the last row of
-					// the screen for this, but console.noyes() lets the enter
-					// key shift everything on screen up one row, and there's
-					// no way to avoid that.  So, to optimize screen refreshing,
-					// the cursor is placed on the 2nd to the last row on the
-					// screen to prompt for confirmation.
-					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
-
-					// Prompt the user for confirmation to delete the message.
-					// Note: this.PromptAndDeleteMessage() will check to see if the user
-					// is a sysop or the message was posted by the user.
-					// If the message was deleted, then exit this read method
-					// and return KEY_RIGHT as the last keypress so that the
-					// calling method will go to the next message/sub-board.
-					// Otherwise (if the message was not deleted), refresh the
-					// last 2 lines of the message on the screen.
-					var msgWasDeleted = this.PromptAndDeleteMessage(pOffset, promptPos, true, this.msgAreaWidth,
-					                                                true, msgInfo.attachments);
-					if (msgWasDeleted)
-					{
-						var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
-						continueOn = msgSearchObj.continueInputLoop;
-						retObj.newMsgOffset = msgSearchObj.newMsgOffset;
-						retObj.nextAction = msgSearchObj.nextAction;
-						if (msgSearchObj.promptGoToNextArea)
-						{
-							if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
-							{
-								// Let this method exit and let the caller go to the next sub-board
-								continueOn = false;
-								retObj.nextAction = ACTION_GO_NEXT_MSG;
-							}
-							else
-								writeMessage = false; // No need to refresh the message
-						}
-					}
-					else
-					{
-						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-						// Move the cursor back to its original position
-						console.gotoxy(originalCurpos);
-						writeMessage = false;
-					}
-					break;
-				case enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
-					var originalCurpos = console.getxy();
-					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
-					if (this.EnhReaderPromptYesNo("Select this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks, true))
-						this.ToggleSelectedMessage(this.subBoardCode, pOffset, true);
-					else
-						this.ToggleSelectedMessage(this.subBoardCode, pOffset, false);
-					writeMessage = false; // No need to refresh the message
-					break;
-				case enhReaderKeys.batchDelete:
-					// TODO: Write this?  Not sure yet if it makes much sense to
-					// have batch delete in the reader interface.
-					// Prompt the user for confirmation, and use
-					// this.DeleteSelectedMessages() to mark the selected messages
-					// as deleted.
-					// Returns an object with the following properties:
-					//  deletedAll: Boolean - Whether or not all messages were successfully marked
-					//              for deletion
-					//  failureList: An object containing indexes of messages that failed to get
-					//               marked for deletion, indexed by internal sub-board code, then
-					//               containing messages indexes as properties.  Reasons for failing
-					//               to mark messages deleted can include the user not having permission
-					//               to delete in a sub-board, failure to open the sub-board, etc.
-					writeMessage = false; // No need to refresh the message
-					break;
-				case "E": // Edit the messaage
-					if (this.CanEdit())
-					{
-						// Move the cursor to the last line in the message area so
-						// the edit confirmation prompt will appear there.  Not using
-						// the last line on the screen because the yes/no prompt will
-						// output a carriage return and move everything on the screen
-						// up one line, which is not ideal in case the user says No.
-						var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
-						// Let the user edit the message if they want to
-						var editReturnObj = this.EditExistingMsg(pOffset);
-						// If the user didn't confirm, then we only have to refresh the bottom
-						// help line.  Otherwise, we need to refresh everything on the screen.
-						if (!editReturnObj.userConfirmed)
-						{
-							// For some reason, the yes/no prompt erases the last character
-							// of the scrollbar - So, figure out which block was there and
-							// refresh it.
-							//var scrollBarBlock = "\1n\1h\1k" + BLOCK1; // Dim block
-							// Dim block
-							var scrollBarBlock = this.colors.scrollbarBGColor + this.text.scrollbarBGChar;
-							if (solidBlockStartRow + numSolidScrollBlocks - 1 == this.msgAreaBottom)
-							{
-								//scrollBarBlock = "\1w" + BLOCK2; // Bright block
-								// Bright block
-								scrollBarBlock = this.colors.scrollbarScrollBlockColor + this.text.scrollbarScrollBlockChar;
-							}
-							console.gotoxy(this.msgAreaRight+1, this.msgAreaBottom);
-							console.print(scrollBarBlock);
-							// Refresh the last 2 message lines on the screen, then display
-							// the key help line
-							this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-							writeMessage = false;
-						}
-						else
-						{
-							// If the message was edited, then refresh the text lines
-							// array and update the other message-related variables.
-							if (editReturnObj.msgEdited && (editReturnObj.newMsgIdx > -1))
-							{
-								// When the message is edited, the old message will be
-								// deleted and the edited message will be posted as a new
-								// message.  So we should return to the caller and have it
-								// go directly to that new message.
-								this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-								continueOn = false;
-								retObj.newMsgOffset = editReturnObj.newMsgIdx;
-							}
-							else
-							{
-								// The message was not edited.  Refresh everything on the screen.
-								// If the enhanced message header width is less than the console
-								// width, then clear the screen to remove anything that might be
-								// left on the screen by the message editor.
-								if (this.enhMsgHeaderWidth < console.screen_columns)
-									console.clear("\1n");
-								// Display the message header and key help line
-								this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-								this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-								// Display the scrollbar again, and ensure it's in the correct position
-								solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-								this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-								writeMessage = true; // We want to refresh the message on the screen
-							}
-						}
-					}
-					else
-						writeMessage = false; // Don't write the current message again
-					break;
-				case "?": // Show the help screen
-					this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgInfo.attachments.length > 0);
-					// If the enhanced message header width is less than the console
-					// width, then clear the screen to remove anything left on the
-					// screen from the help screen.
-					if (this.enhMsgHeaderWidth < console.screen_columns)
-						console.clear("\1n");
-					// Display the message header and key help line
-					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-					// Display the scrollbar again, and ensure it's in the correct position
-					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-					writeMessage = true; // We want to refresh the message on the screen
-					break;
-				case "R": // Reply to the message
-				case "I": // Private message reply
-					// If the user pressed P (private reply) while reading private
-					// mail, then do nothing (allow only the "R" key to reply).
-					var privateReply = (retObj.lastKeypress == "I");
-					if (privateReply && this.readingPersonalEmail)
-						writeMessage = false; // Don't re-write the current message again
-					else
-					{
-						// Let the user reply to the message.
-						var replyRetObj = this.ReplyToMsg(msgHeader, msgInfo.msgText, privateReply, pOffset);
-						                                  retObj.userReplied = replyRetObj.postSucceeded;
-						//retObj.msgDeleted = replyRetObj.msgWasDeleted;
-						var msgWasDeleted = replyRetObj.msgWasDeleted;
-						//if (retObj.msgDeleted)
-						if (msgWasDeleted)
-						{
-							var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
-							continueOn = msgSearchObj.continueInputLoop;
-							retObj.newMsgOffset = msgSearchObj.newMsgOffset;
-							retObj.nextAction = msgSearchObj.nextAction;
-							if (msgSearchObj.promptGoToNextArea)
-							{
-								if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
-								{
-									// Let this method exit and let the caller go to the next sub-board
-									continueOn = false;
-									retObj.nextAction = ACTION_GO_NEXT_MSG;
-								}
-								else
-									writeMessage = true; // We want to refresh the message on the screen
-							}
-						}
-						else
-						{
-							// If the messagebase object was successfully re-opened after
-							// posting the message, then refresh the screen.  Otherwise,
-							// we'll want to quit.
-							if (replyRetObj.msgbaseReOpened)
-							{
-								// If the enhanced message header width is less than the console
-								// width, then clear the screen to remove anything left on the
-								// screen by the message editor.
-								if (this.enhMsgHeaderWidth < console.screen_columns)
-									console.clear("\1n");
-								// Display the message header and key help line again
-								this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-								this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-								// Display the scrollbar again to refresh it on the screen
-								solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-								this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-								writeMessage = true; // We want to refresh the message on the screen
-							}
-							else
-							{
-								retObj.nextAction = ACTION_QUIT;
-								continueOn = false;
-								// Display an error
-								console.print("\1n");
-								console.crlf();
-								console.print("\1h\1yMessagebase error after replying.  Aborting.\1n");
-								mswait(ERROR_PAUSE_WAIT_MS);
-							}
-						}
-					}
-					break;
-				case "P": // Post a message
-					if (!this.readingPersonalEmail)
-					{
-						// Let the user post a message.
-						if (bbs.post_msg(this.subBoardCode))
-						{
-							if (searchTypePopulatesSearchResults(this.searchType))
-							{
-								// TODO: If the user is doing a search, it might be
-								// useful to search their new message and add it to
-								// the search results if it's a match..  but maybe
-								// not?
-							}
-							console.pause();
-						}
-
-						// Refresh things on the screen
-						// Display the message header and key help line again
-						this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-						// Display the scrollbar again to refresh it on the screen
-						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-						writeMessage = true; // We want to refresh the message on the screen
-					}
-					else
-						writeMessage = false; // Don't re-write the current message again
-					break;
-				// Numeric digit: The start of a number of a message to read
-				case "0":
-				case "1":
-				case "2":
-				case "3":
-				case "4":
-				case "5":
-				case "6":
-				case "7":
-				case "8":
-				case "9":
-					var originalCurpos = console.getxy();
-					// Put the user's input back in the input buffer to
-					// be used for getting the rest of the message number.
-					console.ungetstr(retObj.lastKeypress);
-					// Move the cursor to the 2nd to last row of the screen and
-					// prompt the user for the message number.  Ideally, I'd like
-					// to put the cursor on the last row of the screen for this, but
-					// console.getnum() lets the enter key shift everything on screen
-					// up one row, and there's no way to avoid that.  So, to optimize
-					// screen refreshing, the cursor is placed on the 2nd to the last
-					// row on the screen to prompt for the message number.
-					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
-					// Prompt for the message number
-					var msgNumInput = this.PromptForMsgNum(promptPos, this.text.readMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
-					// Only allow reading the message if the message number is valid
-					// and it's not the same message number that was passed in.
-					if ((msgNumInput > 0) && (msgNumInput-1 != pOffset))
-					{
-						// If the message is marked as deleted, then output an error
-						if (this.MessageIsDeleted(msgNumInput-1))
-						{
-							writeWithPause(this.msgAreaLeft, console.screen_rows-1,
-							               "\1n" + this.text.msgHasBeenDeletedText.replace("%d", msgNumInput) + "\1n",
-							               ERROR_PAUSE_WAIT_MS, "\1n", true);
-						}
-						else
-						{
-							// Confirm with the user whether to read the message
-							var readMsg = true;
-							if (this.promptToReadMessage)
-							{
-								var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
-														+ "Read message "
-														+ this.colors["readMsgConfirmNumberColor"]
-														+ msgNumInput + this.colors["readMsgConfirmColor"]
-														+ ": Are you sure";
-								console.gotoxy(promptPos);
-								console.print("\1n");
-								readMsg = console.yesno(sReadMsgConfirmText);
-							}
-							if (readMsg)
-							{
-								continueOn = false;
-								retObj.newMsgOffset = msgNumInput - 1;
-								retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
-							}
-							else
-								writeMessage = false; // Don't re-write the current message again
-						}
-					}
-					else // Message number invalid or the same as what was passed in
-						writeMessage = false; // Don't re-write the current message again
-
-					// If the user chose to continue reading messages, then refresh
-					// the last 2 message lines in the last part of the message area
-					// and then put the cursor back to its original position.
-					if (continueOn)
-					{
-						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-						// Move the cursor back to its original position
-						console.gotoxy(originalCurpos);
-					}
-					break;
-				case enhReaderKeys.prevMsgByTitle: // Previous message by title
-				case enhReaderKeys.prevMsgByAuthor: // Previous message by author
-				case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
-				case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
-					// Only allow this if we aren't doing a message search.
-					if (!this.SearchingAndResultObjsDefinedForCurSub())
-					{
-						var threadPrevMsgOffset = this.FindThreadPrevOffset(msgHeader,
-						                                                    keypressToThreadType(retObj.lastKeypress),
-																			true);
-						if (threadPrevMsgOffset > -1)
-						{
-							retObj.newMsgOffset = threadPrevMsgOffset;
-							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
-							continueOn = false;
-						}
-						else
-						{
-							// Refresh the help line at the bottom of the screen
-							//this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-							writeMessage = false; // Don't re-write the current message again
-						}
-						// Make sure the help line on the bottom of the screen is
-						// drawn.
-						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-					}
-					else
-						writeMessage = false; // Don't re-write the current message again
-					break;
-				case enhReaderKeys.nextMsgByTitle: // Next message by title (subject)
-				case enhReaderKeys.nextMsgByAuthor: // Next message by author
-				case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
-				case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
-					// Only allow this if we aren't doing a message search.
-					if (!this.SearchingAndResultObjsDefinedForCurSub())
-					{
-						var threadPrevMsgOffset = this.FindThreadNextOffset(msgHeader,
-						                                                    keypressToThreadType(retObj.lastKeypress),
-																			true);
-						if (threadPrevMsgOffset > -1)
-						{
-							retObj.newMsgOffset = threadPrevMsgOffset;
-							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
-							continueOn = false;
-						}
-						else
-							writeMessage = false; // Don't re-write the current message again
-						// Make sure the help line on the bottom of the screen is
-						// drawn.
-						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-					}
-					else
-						writeMessage = false; // Don't re-write the current message again
-					break;
-				case KEY_LEFT: // Previous message
-					// Look for a prior message that isn't marked for deletion.  Even
-					// if we don't find one, we'll still want to return from this
-					// function (with message index -1) so that this script can go
-					// onto the previous message sub-board/group.
-					retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, false);
-					// As a screen redraw optimization: Only return if there is a valid new
-					// message offset or the user is allowed to change to a different sub-board.
-					// Otherwise, don't return, and don't refresh the message on the screen.
-					var goToPrevMessage = false;
-					if ((retObj.newMsgOffset > -1) || allowChgMsgArea)
-					{
-						if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
-						{
-							goToPrevMessage = this.EnhReaderPromptYesNo(this.text.goToPrevMsgAreaPromptText,
-							                                            msgInfo.messageLines, topMsgLineIdx,
-							                                            msgLineFormatStr, solidBlockStartRow,
-							                                            numSolidScrollBlocks);
-						}
-						else
-						{
-							// We're not at the beginning of the sub-board, so it's okay to exit this
-							// method and go to the previous message.
-							goToPrevMessage = true;
-						}
-					}
-					if (goToPrevMessage)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_PREVIOUS_MSG;
-					}
-					else
-						writeMessage = false; // No need to refresh the message
-					break;
-				case KEY_RIGHT: // Next message
-				case KEY_ENTER:
-					// Look for a later message that isn't marked for deletion.  Even
-					// if we don't find one, we'll still want to return from this
-					// function (with message index -1) so that this script can go
-					// onto the next message sub-board/group.
-					retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
-					// Note: Unlike the left arrow key, we want to exit this method when
-					// navigating to the next message, regardless of whether or not the
-					// user is allowed to change to a different sub-board, so that processes
-					// that require continuation (such as new message scan) can continue.
-					// Still, if there are no more readable messages in the current sub-board
-					// (and thus the user would go onto the next message area), prompt the
-					// user whether they want to continue onto the next message area.
-					if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
-					{
-						// For personal mail, don't do anything, and don't refresh the
-						// message.  In a sub-board, ask the user if they want to go
-						// to the next one.
-						if (this.readingPersonalEmail)
-							writeMessage = false;
-						else
-						{
-							// If configured to allow the user to post in the sub-board
-							// instead of going to the next message area and we're not
-							// scanning, then do so.
-							if (this.readingPostOnSubBoardInsteadOfGoToNext && !this.doingMsgScan)
-							{
-								console.print("\1n");
-								console.crlf();
-								// Ask the user if they want to post on the sub-board.
-								// If they say yes, then do so before exiting.
-								if (!console.noyes(format(this.text.postOnSubBoard, this.msgbase.cfg.grp_name, this.msgbase.cfg.description)))
-									bbs.post_msg(this.subBoardCode);
-								continueOn = false;
-								retObj.nextAction = ACTION_QUIT;
-							}
-							else
-							{
-								// Prompt the user whether they want to go to the next message area
-								if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
-								{
-									// Let this method exit and let the caller go to the next sub-board
-									continueOn = false;
-									retObj.nextAction = ACTION_GO_NEXT_MSG;
-								}
-								else
-									writeMessage = false; // No need to refresh the message
-							}
-						}
-					}
-					else
-					{
-						// We're not at the end of the sub-board, so it's okay to exit this
-						// method and go to the next message.
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_NEXT_MSG;
-					}
-					break;
-					// First & last message: Quit out of this input loop and let the
-					// calling function, this.ReadMessages(), handle the action.
-				case "F": // First message
-					// Only leave this function if we aren't already on the first message.
-					if (pOffset > 0)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_FIRST_MSG;
-					}
-					else
-						writeMessage = false; // Don't re-write the current message again
-					break;
-				case "L": // Last message
-					// Only leave this function if we aren't already on the last message.
-					if (pOffset < this.NumMessages() - 1)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_LAST_MSG;
-					}
-					else
-						writeMessage = false; // Don't re-write the current message again
-					break;
-				case enhReaderKeys.prevSubBoard: // Go to the previous message area
-					if (allowChgMsgArea)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_PREV_MSG_AREA;
-					}
-					else
-						writeMessage = false; // Don't re-write the current message again
-					break;
-				case enhReaderKeys.nextSubBoard: // Go to the next message area
-					if (allowChgMsgArea || this.doingMultiSubBoardScan)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
-					}
-					else
-						writeMessage = false; // Don't re-write the current message again
-					break;
-					// H and K: Display the extended message header info/kludge lines
-					// (for the sysop)
-				case "H":
-				case "K":
-					if (gIsSysop)
-					{
-						// Save the original cursor position
-						var originalCurPos = console.getxy();
-
-						// Get an array of the extended header info/kludge lines and then
-						// allow the user to scroll through them.
-						var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == "K"));
-						if (extdHdrInfoLines.length > 0)
-						{
-							// Calculate information for the scrollbar for the kludge lines
-							var infoFractionShown = this.msgAreaHeight / extdHdrInfoLines.length;
-							if (infoFractionShown > 1)
-								infoFractionShown = 1.0;
-							var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
-							if (numInfoSolidScrollBlocks == 0)
-								numInfoSolidScrollBlocks = 1;
-							var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
-							var lastInfoSolidBlockStartRow = this.msgAreaTop;
-							// Define a scrollbar update function for the header info/kludge lines
-							function msgInfoScrollbarUpdateFn(pFractionToLastPage)
-							{
-								var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidInfoScrollBlocks * pFractionToLastPage);
-								if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
-									msgReaderObj.UpdateEnhancedReaderScollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
-								lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
-								console.gotoxy(1, console.screen_rows);
-							}
-							// Display the kludge lines and let the user scroll through them
-							this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
-							scrollTextLines(extdHdrInfoLines, 0, this.colors["msgBodyColor"], true,
-							this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
-							msgAreaHeight, 1, console.screen_rows,
-							msgInfoScrollbarUpdateFn);
-							// Display the scrollbar for the message to refresh it on the screen
-							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-							writeMessage = true; // We want to refresh the message on the screen
-						}
-						else
-						{
-							// There are no kludge lines for this message
-							this.DisplayEnhReaderError(this.text.noKludgeLinesForThisMsgText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-							console.gotoxy(originalCurPos);
-							writeMessage = false;
-						}
-					}
-					else // The user is not a sysop
-						writeMessage = false;
-					break;
-					// Message list, change message area: Quit out of this input loop
-					// and let the calling function, this.ReadMessages(), handle the
-					// action.
-				case "M": // Message list
-					retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
-					continueOn = false;
-					break;
-				case "C": // Change message area, if allowed
-					if (allowChgMsgArea)
-					{
-						retObj.nextAction = ACTION_CHG_MSG_AREA;
-						continueOn = false;
-					}
-					else
-						writeMessage = false; // No need to refresh the message
-					break;
-				case enhReaderKeys.downloadAttachments: // Download attachments
-					if (msgInfo.attachments.length > 0)
-					{
-						console.print("\1n");
-						console.gotoxy(1, console.screen_rows);
-						console.crlf();
-						console.print("\1c- Download Attached Files -\1n");
-						// Note: sendAttachedFiles() will output a CRLF at the beginning.
-						sendAttachedFiles(msgInfo.attachments);
-
-						// Refresh things on the screen
-						console.clear("\1n");
-						// Display the message header and key help line again
-						this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-						// Display the scrollbar again to refresh it on the screen
-						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-						writeMessage = true; // We want to refresh the message on the screen
-					}
-					else
-						writeMessage = false;
-					break;
-				case enhReaderKeys.saveToBBSMachine:
-					// Save the message to the BBS machine - Only allow this
-					// if the user is a sysop.
-					if (gIsSysop)
-					{
-						// Prompt the user for a filename to save the message to the
-						// BBS machine
-						var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
-						console.print("\1n\1cFilename:\1h");
-						var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
-						var filename = console.getstr(inputLen, K_NOCRLF);
-						console.print("\1n");
-						if (filename.length > 0)
-						{
-							//var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, true, msgInfo.messageLines);
-							var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, true);
-							console.gotoxy(promptPos);
-							console.cleartoeol("\1n");
-							console.gotoxy(promptPos);
-							if (saveMsgRetObj.succeeded)
-								console.print("\1n\1cThe message has been saved.\1n");
-							else
-								console.print("\1n\1y\1hFailed: " + saveMsgRetObj.errorMsg + "\1n");
-							mswait(ERROR_PAUSE_WAIT_MS);
-						}
-						else
-						{
-							console.gotoxy(promptPos);
-							console.print("\1n\1y\1hMessage not exported\1n");
-							mswait(ERROR_PAUSE_WAIT_MS);
-						}
-						// Refresh the last 2 lines of the message on the screen to overwrite
-						// the file save prompt
-						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-						writeMessage = false; // Don't write the whole message again
-					}
-					else
-						writeMessage = false;
-					break;
-				case "Q": // Quit
-					retObj.nextAction = ACTION_QUIT;
-					continueOn = false;
-					break;
-				default:
-					writeMessage = false;
-					break;
-			}
-		}
-	}
+		retObj = this.ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, enhReaderKeys, messageText, msgHasANSICodes, pOffset);
 	else
-	{
-		// Use the non-scrolling interface.
-		// Separate the message text from any attachments in the message.
-		var msgAndAttachmentInfo = determineMsgAttachments(msgHeader, messageText, true);
-		// Only interpret @-codes if the user is reading personal email.  There
-		// are many @-codes that do some action such as move the cursor, execute a
-		// script, etc., and I don't want users on message networks to do anything
-		// malicious to users on other BBSes.
-		if (this.readingPersonalEmail)
-			msgAndAttachmentInfo.msgText = replaceAtCodesInStr(msgAndAttachmentInfo.msgText); // Or this.ParseMsgAtCodes(msgAndAttachmentInfo.msgText, msgHeader) to replace only some @ codes
-		var msgTextWrapped = word_wrap(msgAndAttachmentInfo.msgText, console.screen_columns-1);
-
-		// Generate the key help text
-		var keyHelpText = "\1n\1c\1h#\1n\1b, \1c\1hLeft\1n\1b, \1c\1hRight\1n\1b, ";
-		if (this.CanDelete() || this.CanDeleteLastMsg())
-			keyHelpText += "\1c\1hDEL\1b, ";
-		if (this.CanEdit())
-			keyHelpText += "\1c\1hE\1y)\1n\1cdit\1b, ";
-		keyHelpText += "\1c\1hF\1y)\1n\1cirst\1b, \1c\1hL\1y)\1n\1cast\1b, \1c\1hR\1y)\1n\1ceply\1b, ";
-		// If the user is allowed to change to a different message area, then
-		// include that option.
-		if (allowChgMsgArea)
-		{
-			// If there's room for the private reply option, then include that
-			// before the change area option.
-			if (console.screen_columns >= 89)
-				keyHelpText += "\1c\1hP\1y)\1n\1crivate reply\1b, ";
-			keyHelpText += "\1c\1hC\1y)\1n\1chg area\1b, ";
-		}
-		else
-		{
-			// The user isn't allowed to change to a different message area.
-			// Go ahead and include the private reply option.
-			keyHelpText += "\1c\1hP\1y)\1n\1crivate reply\1b, ";
-		}
-		keyHelpText += "\1c\1hQ\1y)\1n\1cuit\1b, \1c\1h?\1g: \1c";
-
-		// User input loop
-		var writeMessage = true;
-		var writePromptText = true;
-		var continueOn = true;
-		while (continueOn)
-		{
-			if (writeMessage)
-			{
-				if (console.term_supports(USER_ANSI))
-					console.clear("\1n");
-				// Write the message header & message body to the screen
-				this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-				console.print("\1n" + this.colors["msgBodyColor"]);
-				console.putmsg(msgTextWrapped, P_NOATCODES);
-			}
-			// Write the prompt text
-			if (writePromptText)
-				console.print(keyHelpText);
-			// Default the writing of the message & input prompt to true for the
-			// next iteration.
-			writeMessage = true;
-			writePromptText = true;
-			// Input a key from the user and take action based on the keypress.
-			retObj.lastKeypress = getKeyWithESCChars(K_UPPER/*|K_NOCRLF|K_NOECHO|K_NOSPIN*/);
-			switch (retObj.lastKeypress)
-			{
-				case enhReaderKeys.deleteMessage: // Delete message
-					console.crlf();
-					// Prompt the user for confirmation to delete the message.
-					// Note: this.PromptAndDeleteMessage() will check to see if the user
-					// is a sysop or the message was posted by the user.
-					// If the message was deleted, then exit this read method
-					// and return KEY_RIGHT as the last keypress so that the
-					// calling method will go to the next message/sub-board.
-					// Otherwise (if the message was not deleted), refresh the
-					// last 2 lines of the message on the screen.
-					// TODO: For the DeleteMessage() call, pass the array of file
-					// attachments for it to delete (i.e., msgInfo.attachments)
-					var msgWasDeleted = this.PromptAndDeleteMessage(pOffset);
-					if (msgWasDeleted)
-					{
-						var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
-						continueOn = msgSearchObj.continueInputLoop;
-						retObj.newMsgOffset = msgSearchObj.newMsgOffset;
-						retObj.nextAction = msgSearchObj.nextAction;
-						if (msgSearchObj.promptGoToNextArea)
-						{
-							if (console.yesno(this.text.goToNextMsgAreaPromptText))
-							{
-								// Let this method exit and let the caller go to the next sub-board
-								continueOn = false;
-								retObj.nextAction = ACTION_GO_NEXT_MSG;
-							}
-							else
-								writeMessage = false; // No need to refresh the message
-						}
-					}
-					break;
-				case enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
-					console.crlf();
-					var selectMessage = !console.noyes("Select this message");
-					this.ToggleSelectedMessage(this.subBoardCode, pOffset, selectMessage);
-					break;
-				case enhReaderKeys.batchDelete:
-					// TODO: Write this?  Not sure yet if it makes much sense to
-					// have batch delete in the reader interface.
-					// Prompt the user for confirmation, and use
-					// this.DeleteSelectedMessages() to mark the selected messages
-					// as deleted.
-					// Returns an object with the following properties:
-					//  deletedAll: Boolean - Whether or not all messages were successfully marked
-					//              for deletion
-					//  failureList: An object containing indexes of messages that failed to get
-					//               marked for deletion, indexed by internal sub-board code, then
-					//               containing messages indexes as properties.  Reasons for failing
-					//               to mark messages deleted can include the user not having permission
-					//               to delete in a sub-board, failure to open the sub-board, etc.
-					writeMessage = false; // No need to refresh the message
-					break;
-				case "E": // Edit the message
-					if (this.CanEdit())
-					{
-						console.crlf();
-						// Let the user edit the message if they want to
-						var editReturnObj = this.EditExistingMsg(pOffset);
-						// If the user confirmed editing the message, then see if the
-						// message was edited and refresh the screen accordingly.
-						if (editReturnObj.userConfirmed)
-						{
-							// If the message was edited, then refresh the text lines
-							// array and update the other message-related variables.
-							if (editReturnObj.msgEdited && (editReturnObj.newMsgIdx > -1))
-							{
-								// When the message is edited, the old message will be
-								// deleted and the edited message will be posted as a new
-								// message.  So we should return to the caller and have it
-								// go directly to that new message.
-								continueOn = false;
-								retObj.newMsgOffset = editReturnObj.newMsgIdx;
-							}
-						}
-					}
-					else
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-				case "?": // Show help
-					if (!console.term_supports(USER_ANSI))
-					{
-						console.crlf();
-						console.crlf();
-					}
-					this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgAndAttachmentInfo.attachments.length > 0);
-					if (!console.term_supports(USER_ANSI))
-					{
-						console.crlf();
-						console.crlf();
-					}
-					break;
-				case "R": // Reply to the message
-				case "I": // Private reply
-					// If the user pressed P (private reply) while reading private
-					// mail, then do nothing (allow only the "R" key to reply).
-					// If not reading personal email, go ahead and let the user reply
-					// with either the "P" or "R" keypress.
-					var privateReply = (retObj.lastKeypress == "I");
-					if (privateReply && this.readingPersonalEmail)
-					{
-						writeMessage = false; // Don't re-write the current message again
-						writePromptText = false; // Don't write the prompt text again
-					}
-					else
-					{
-						console.crlf();
-						var replyRetObj = this.ReplyToMsg(msgHeader, msgAndAttachmentInfo.msgText, privateReply, pOffset);
-						retObj.userReplied = replyRetObj.postSucceeded;
-						//retObj.msgDeleted = replyRetObj.msgWasDeleted;
-						var msgWasDeleted = replyRetObj.msgWasDeleted;
-						if (msgWasDeleted)
-						{
-							var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
-							continueOn = msgSearchObj.continueInputLoop;
-							retObj.newMsgOffset = msgSearchObj.newMsgOffset;
-							retObj.nextAction = msgSearchObj.nextAction;
-							if (msgSearchObj.promptGoToNextArea)
-							{
-								if (console.yesno(this.text.goToNextMsgAreaPromptText))
-								{
-									// Let this method exit and let the caller go to the next sub-board
-									continueOn = false;
-									retObj.nextAction = ACTION_GO_NEXT_MSG;
-								}
-								else
-									writeMessage = true; // We want to refresh the message on the screen
-							}
-						}
-						else
-						{
-							// If the messagebase object was not successfully re-opened
-							// after posting the message, then  we'll want to quit.
-							if (!replyRetObj.msgbaseReOpened)
-							{
-								retObj.nextAction = ACTION_QUIT;
-								continueOn = false;
-								// Display an error
-								console.print("\1n");
-								console.crlf();
-								console.print("\1h\1yMessagebase error after replying.  Aborting.\1n");
-								mswait(ERROR_PAUSE_WAIT_MS);
-							}
-						}
-					}
-					break;
-				case "P": // Post a message
-					if (!this.readingPersonalEmail)
-					{
-						// Let the user post a message.
-						if (bbs.post_msg(this.subBoardCode))
-						{
-							// TODO: If the user is doing a search, it might be
-							// useful to search their new message and add it to
-							// the search results if it's a match..  but maybe
-							// not?
-						}
-
-						console.pause();
-
-						// We'll want to refresh the message & prompt text on the screen
-						writeMessage = true;
-						writePromptText = true;
-					}
-					else
-					{
-						// Don't write the current message or prompt text in the next iteration
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-				// Numeric digit: The start of a number of a message to read
-				case "0":
-				case "1":
-				case "2":
-				case "3":
-				case "4":
-				case "5":
-				case "6":
-				case "7":
-				case "8":
-				case "9":
-					console.crlf();
-					// Put the user's input back in the input buffer to
-					// be used for getting the rest of the message number.
-					console.ungetstr(retObj.lastKeypress);
-					// Prompt for the message number
-					var msgNumInput = this.PromptForMsgNum(null, this.text.readMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
-					// Only allow reading the message if the message number is valid
-					// and it's not the same message number that was passed in.
-					if ((msgNumInput > 0) && (msgNumInput-1 != pOffset))
-					{
-						// If the message is marked as deleted, then output an error
-						if (this.MessageIsDeleted(msgNumInput-1))
-						{
-							console.crlf();
-							console.print("\1n" + this.text.msgHasBeenDeletedText.replace("%d", msgNumInput) + "\1n");
-							console.crlf();
-							console.pause();
-						}
-						else
-						{
-							// Confirm with the user whether to read the message
-							var readMsg = true;
-							if (this.promptToReadMessage)
-							{
-								readMsg = console.yesno("\1n" + this.colors["readMsgConfirmColor"]
-								                        + "Read message "
-								                        + this.colors["readMsgConfirmNumberColor"]
-								                        + msgNumInput + this.colors["readMsgConfirmColor"]
-								                        + ": Are you sure");
-							}
-							if (readMsg)
-							{
-								continueOn = false;
-								retObj.newMsgOffset = msgNumInput - 1;
-								retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
-							}
-						}
-					}
-					break;
-				case enhReaderKeys.prevMsgByTitle: // Previous message by title
-				case enhReaderKeys.prevMsgByAuthor: // Previous message by author
-				case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
-				case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
-					// Only allow this if we aren't doing a message search.
-					if (!this.SearchingAndResultObjsDefinedForCurSub())
-					{
-						console.crlf(); // For the "Searching..." text
-						var threadPrevMsgOffset = this.FindThreadPrevOffset(msgHeader,
-						                                                    keypressToThreadType(retObj.lastKeypress),
-																			false);
-						if (threadPrevMsgOffset > -1)
-						{
-							retObj.newMsgOffset = threadPrevMsgOffset;
-							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
-							continueOn = false;
-						}
-					}
-					else
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-				case enhReaderKeys.nextMsgByTitle: // Next message by title (subject)
-				case enhReaderKeys.nextMsgByAuthor: // Next message by author
-				case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
-				case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
-					// Only allow this if we aren't doing a message search.
-					if (!this.SearchingAndResultObjsDefinedForCurSub())
-					{
-						console.crlf(); // For the "Searching..." text
-						var threadNextMsgOffset = this.FindThreadNextOffset(msgHeader,
-						                                                    keypressToThreadType(retObj.lastKeypress),
-																			false);
-						if (threadNextMsgOffset > -1)
-						{
-							retObj.newMsgOffset = threadNextMsgOffset;
-							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
-							continueOn = false;
-						}
-					}
-					else
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-				case KEY_LEFT: // Previous message
-					// TODO: Change the key for this?
-					// Look for a prior message that isn't marked for deletion.  Even
-					// if we don't find one, we'll still want to return from this
-					// function (with message index -1) so that this script can go
-					// onto the previous message sub-board/group.
-					retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, false);
-					var goToPrevMessage = false;
-					if ((retObj.newMsgOffset > -1) || allowChgMsgArea)
-					{
-						if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
-						{
-							console.crlf();
-							goToPrevMessage = console.yesno(this.text.goToPrevMsgAreaPromptText);
-						}
-						else
-						{
-							// We're not at the beginning of the sub-board, so it's okay to exit this
-							// method and go to the previous message.
-							goToPrevMessage = true;
-						}
-					}
-					if (goToPrevMessage)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_PREVIOUS_MSG;
-					}
-					break;
-				case KEY_RIGHT: // Next message
-				case KEY_ENTER:
-					// Look for a later message that isn't marked for deletion.  Even
-					// if we don't find one, we'll still want to return from this
-					// function (with message index -1) so that this script can go
-					// onto the next message sub-board/group.
-					retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
-					// Note: Unlike the left arrow key, we want to exit this method when
-					// navigating to the next message, regardless of whether or not the
-					// user is allowed to change to a different sub-board, so that processes
-					// that require continuation (such as new message scan) can continue.
-					// Still, if there are no more readable messages in the current sub-board
-					// (and thus the user would go onto the next message area), prompt the
-					// user whether they want to continue onto the next message area.
-					if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
-					{
-						console.print("\1n");
-						console.crlf();
-						// If configured to allow the user to post in the sub-board
-						// instead of going to the next message area and we're not
-						// scanning, then do so.
-						if (this.readingPostOnSubBoardInsteadOfGoToNext && !this.doingMsgScan)
-						{
-							// Ask the user if they want to post on the sub-board.
-							// If they say yes, then do so before exiting.
-							if (!console.noyes(format(this.text.postOnSubBoard, this.msgbase.cfg.grp_name, this.msgbase.cfg.description)))
-								bbs.post_msg(this.subBoardCode);
-							continueOn = false;
-							retObj.nextAction = ACTION_QUIT;
-						}
-						else
-						{
-							if (console.yesno(this.text.goToNextMsgAreaPromptText))
-							{
-								// Let this method exit and let the caller go to the next sub-board
-								continueOn = false;
-								retObj.nextAction = ACTION_GO_NEXT_MSG;
-							}
-						}
-					}
-					else
-					{
-						// We're not at the end of the sub-board, so it's okay to exit this
-						// method and go to the next message.
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_NEXT_MSG;
-					}
-					break;
-				case "F": // First message
-					// Only leave this function if we aren't already on the first message.
-					if (pOffset > 0)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_FIRST_MSG;
-					}
-					else
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-				case "L": // Last message
-					// Only leave this function if we aren't already on the last message.
-					if (pOffset < this.NumMessages() - 1)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_LAST_MSG;
-					}
-					else
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-				case "-": // Go to the previous message area
-					if (allowChgMsgArea)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_PREV_MSG_AREA;
-					}
-					else
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-				case "+": // Go to the next message area
-					if (allowChgMsgArea || this.doingMultiSubBoardScan)
-					{
-						continueOn = false;
-						retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
-					}
-					else
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-					// H and K: Display the extended message header info/kludge lines
-					// (for the sysop)
-				case "H":
-				case "K":
-					if (gIsSysop)
-					{
-						console.crlf();
-						// Get an array of the extended header info/kludge lines and then
-						// display them.
-						var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == "K"));
-						if (extdHdrInfoLines.length > 0)
-						{
-							console.crlf();
-							for (var infoIter = 0; infoIter < extdHdrInfoLines.length; ++infoIter)
-							{
-								console.print(extdHdrInfoLines[infoIter]);
-								console.crlf();
-							}
-							console.pause();
-						}
-						else
-						{
-							// There are no kludge lines for this message
-							console.print(this.text.noKludgeLinesForThisMsgText);
-							console.crlf();
-							console.pause();
-						}
-					}
-					else // The user is not a sysop
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-					// Message list, change message area: Quit out of this input loop
-					// and let the calling function, this.ReadMessages(), handle the
-					// action.
-				case "M": // Message list
-					retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
-					continueOn = false;
-					break;
-				case "C": // Change message area, if allowed
-					if (allowChgMsgArea)
-					{
-						retObj.nextAction = ACTION_CHG_MSG_AREA;
-						continueOn = false;
-					}
-					else
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-				case enhReaderKeys.downloadAttachments: // Download attachments
-					if (msgAndAttachmentInfo.attachments.length > 0)
-					{
-						console.print("\1n");
-						console.crlf();
-						console.print("\1c- Download Attached Files -\1n");
-						// Note: sendAttachedFiles() will output a CRLF at the beginning.
-						sendAttachedFiles(msgAndAttachmentInfo.attachments);
-
-						// Ensure the message is refreshed on the screen
-						writeMessage = true;
-						writePromptText = true;
-					}
-					else
-					{
-						writeMessage = false;
-						writePromptText = false;
-					}
-					break;
-				case enhReaderKeys.saveToBBSMachine:
-					// Save the message to the BBS machine - Only allow this
-					// if the user is a sysop.
-					if (gIsSysop)
-					{
-						console.crlf();
-						console.print("\1n\1cFilename:\1h");
-						var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
-						var filename = console.getstr(inputLen, K_NOCRLF);
-						console.print("\1n");
-						console.crlf();
-						if (filename.length > 0)
-						{
-							var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, true);
-							if (saveMsgRetObj.succeeded)
-								console.print("\1n\1cThe message has been saved.\1n");
-							else
-								console.print("\1n\1y\1hFailed: " + saveMsgRetObj.errorMsg + "\1n");
-							mswait(ERROR_PAUSE_WAIT_MS);
-						}
-						else
-						{
-							console.print("\1n\1y\1hMessage not exported\1n");
-							mswait(ERROR_PAUSE_WAIT_MS);
-						}
-						writeMessage = true;
-					}
-					else
-						writeMessage = false;
-					break;
-				case "Q": // Quit
-					retObj.nextAction = ACTION_QUIT;
-					continueOn = false;
-					break;
-				default:
-					// No need to do anything
-					writeMessage = false;
-					writePromptText = false;
-					break;
-			}
-		}
-	}
+		retObj = this.ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, enhReaderKeys, messageText, msgHasANSICodes, pOffset);
 
 	// Mark the message as read if it was written to the current user or if
 	// the user is reading personal email.
@@ -5668,7 +4360,1419 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	}
 
 	return retObj;
-} // DigDistMsgReader_ReadMessageEnhanced
+}
+// Helper method for ReadMessageEnhanced() - Does the scrollable reader interface
+function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, enhReaderKeys, messageText, msgHasANSICodes, pOffset)
+{
+	var retObj = new Object();
+	retObj.offsetValid = true;
+	retObj.msgDeleted = false;
+	retObj.userReplied = false;
+	retObj.lastKeypress = "";
+	retObj.newMsgOffset = -1;
+	retObj.nextAction = ACTION_NONE;
+	retObj.refreshEnhancedRdrHelpLine = false;
+	
+	// Show the message header
+	this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+
+	// Get the message text, interpret any @-codes in it, replace tabs with spaces
+	// to prevent weirdness when displaying the message lines, and word-wrap the
+	// text so that it looks good on the screen,
+	var msgInfo = this.GetMsgInfoForEnhancedReader(msgHeader, true, true, true, messageText, msgHasANSICodes);
+
+	var topMsgLineIdxForLastPage = msgInfo.topMsgLineIdxForLastPage;
+	var msgFractionShown = msgInfo.msgFractionShown;
+	var numSolidScrollBlocks = msgInfo.numSolidScrollBlocks;
+	var numNonSolidScrollBlocks = msgInfo.numNonSolidScrollBlocks;
+	var solidBlockStartRow = msgInfo.solidBlockStartRow;
+	var solidBlockLastStartRow = solidBlockStartRow;
+	var topMsgLineIdx = 0;
+	var fractionToLastPage = 0;
+	if (topMsgLineIdxForLastPage != 0)
+		fractionToLastPage = topMsgLineIdx / topMsgLineIdxForLastPage;
+
+	// Draw an initial scrollbar on the rightmost column of the message area
+	// showing the fraction of the message shown and what part of the message
+	// is currently being shown.  The scrollbar will be updated minimally in
+	// the input loop to minimize screen redraws.
+	this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+
+	// Input loop (for scrolling the message up & down)
+	var msgLineFormatStr = "%-" + this.msgAreaWidth + "s";
+	var writeMessage = true;
+	// msgAreaHeight, msgReaderObj, and scrollbarUpdateFunction are for use
+	// with scrollTextLines().
+	var msgAreaHeight = this.msgAreaBottom - this.msgAreaTop + 1;
+	var msgReaderObj = this;
+	function msgScrollbarUpdateFn(pFractionToLastPage)
+	{
+		// Update the scrollbar position for the message, depending on the
+		// value of pFractionToLastMessage.
+		fractionToLastPage = pFractionToLastPage;
+		solidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidScrollBlocks * pFractionToLastPage);
+		if (solidBlockStartRow != solidBlockLastStartRow)
+			msgReaderObj.UpdateEnhancedReaderScollbar(solidBlockStartRow, solidBlockLastStartRow, numSolidScrollBlocks);
+		solidBlockLastStartRow = solidBlockStartRow;
+		console.gotoxy(1, console.screen_rows);
+	}
+	// User input loop
+	var continueOn = true;
+	while (continueOn)
+	{
+		// Display the message lines (depending on the value of writeMessage)
+		// and handle scroll keys via scrollTextLines().  Handle other keypresses
+		// here.
+		var scrollRetObj = null;
+		if (msgInfo.displayFrame != null)
+		{
+			msgInfo.displayFrame.draw();
+			scrollRetObj = scrollFrame(msgInfo.displayFrame, msgInfo.displayFrameScrollbar,
+									   topMsgLineIdx, this.colors["msgBodyColor"],
+									   writeMessage, 1, console.screen_rows,
+									   msgScrollbarUpdateFn);
+		}
+		else
+		{
+			scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
+										   this.colors["msgBodyColor"], writeMessage,
+										   this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
+										   msgAreaHeight, 1, console.screen_rows,
+										   msgScrollbarUpdateFn);
+		}
+		topMsgLineIdx = scrollRetObj.topLineIdx;
+		retObj.lastKeypress = scrollRetObj.lastKeypress;
+		switch (retObj.lastKeypress)
+		{
+			case enhReaderKeys.deleteMessage: // Delete message
+				var originalCurpos = console.getxy();
+				// The 2nd to last row of the screen is where the user will
+				// be prompted for confirmation to delete the message.
+				// Ideally, I'd like to put the cursor on the last row of
+				// the screen for this, but console.noyes() lets the enter
+				// key shift everything on screen up one row, and there's
+				// no way to avoid that.  So, to optimize screen refreshing,
+				// the cursor is placed on the 2nd to the last row on the
+				// screen to prompt for confirmation.
+				var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+
+				// Prompt the user for confirmation to delete the message.
+				// Note: this.PromptAndDeleteMessage() will check to see if the user
+				// is a sysop or the message was posted by the user.
+				// If the message was deleted, then exit this read method
+				// and return KEY_RIGHT as the last keypress so that the
+				// calling method will go to the next message/sub-board.
+				// Otherwise (if the message was not deleted), refresh the
+				// last 2 lines of the message on the screen.
+				var msgWasDeleted = this.PromptAndDeleteMessage(pOffset, promptPos, true, this.msgAreaWidth,
+																true, msgInfo.attachments);
+				if (msgWasDeleted)
+				{
+					var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
+					continueOn = msgSearchObj.continueInputLoop;
+					retObj.newMsgOffset = msgSearchObj.newMsgOffset;
+					retObj.nextAction = msgSearchObj.nextAction;
+					if (msgSearchObj.promptGoToNextArea)
+					{
+						if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
+						{
+							// Let this method exit and let the caller go to the next sub-board
+							continueOn = false;
+							retObj.nextAction = ACTION_GO_NEXT_MSG;
+						}
+						else
+							writeMessage = false; // No need to refresh the message
+					}
+				}
+				else
+				{
+					this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					// Move the cursor back to its original position
+					console.gotoxy(originalCurpos);
+					writeMessage = false;
+				}
+				break;
+			case enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
+				var originalCurpos = console.getxy();
+				var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+				if (this.EnhReaderPromptYesNo("Select this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks, true))
+					this.ToggleSelectedMessage(this.subBoardCode, pOffset, true);
+				else
+					this.ToggleSelectedMessage(this.subBoardCode, pOffset, false);
+				writeMessage = false; // No need to refresh the message
+				break;
+			case enhReaderKeys.batchDelete:
+				// TODO: Write this?  Not sure yet if it makes much sense to
+				// have batch delete in the reader interface.
+				// Prompt the user for confirmation, and use
+				// this.DeleteSelectedMessages() to mark the selected messages
+				// as deleted.
+				// Returns an object with the following properties:
+				//  deletedAll: Boolean - Whether or not all messages were successfully marked
+				//              for deletion
+				//  failureList: An object containing indexes of messages that failed to get
+				//               marked for deletion, indexed by internal sub-board code, then
+				//               containing messages indexes as properties.  Reasons for failing
+				//               to mark messages deleted can include the user not having permission
+				//               to delete in a sub-board, failure to open the sub-board, etc.
+				writeMessage = false; // No need to refresh the message
+				break;
+			case "E": // Edit the messaage
+				if (this.CanEdit())
+				{
+					// Move the cursor to the last line in the message area so
+					// the edit confirmation prompt will appear there.  Not using
+					// the last line on the screen because the yes/no prompt will
+					// output a carriage return and move everything on the screen
+					// up one line, which is not ideal in case the user says No.
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					// Let the user edit the message if they want to
+					var editReturnObj = this.EditExistingMsg(pOffset);
+					// If the user didn't confirm, then we only have to refresh the bottom
+					// help line.  Otherwise, we need to refresh everything on the screen.
+					if (!editReturnObj.userConfirmed)
+					{
+						// For some reason, the yes/no prompt erases the last character
+						// of the scrollbar - So, figure out which block was there and
+						// refresh it.
+						//var scrollBarBlock = "\1n\1h\1k" + BLOCK1; // Dim block
+						// Dim block
+						var scrollBarBlock = this.colors.scrollbarBGColor + this.text.scrollbarBGChar;
+						if (solidBlockStartRow + numSolidScrollBlocks - 1 == this.msgAreaBottom)
+						{
+							//scrollBarBlock = "\1w" + BLOCK2; // Bright block
+							// Bright block
+							scrollBarBlock = this.colors.scrollbarScrollBlockColor + this.text.scrollbarScrollBlockChar;
+						}
+						console.gotoxy(this.msgAreaRight+1, this.msgAreaBottom);
+						console.print(scrollBarBlock);
+						// Refresh the last 2 message lines on the screen, then display
+						// the key help line
+						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+						writeMessage = false;
+					}
+					else
+					{
+						// If the message was edited, then refresh the text lines
+						// array and update the other message-related variables.
+						if (editReturnObj.msgEdited && (editReturnObj.newMsgIdx > -1))
+						{
+							// When the message is edited, the old message will be
+							// deleted and the edited message will be posted as a new
+							// message.  So we should return to the caller and have it
+							// go directly to that new message.
+							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+							continueOn = false;
+							retObj.newMsgOffset = editReturnObj.newMsgIdx;
+						}
+						else
+						{
+							// The message was not edited.  Refresh everything on the screen.
+							// If the enhanced message header width is less than the console
+							// width, then clear the screen to remove anything that might be
+							// left on the screen by the message editor.
+							if (this.enhMsgHeaderWidth < console.screen_columns)
+								console.clear("\1n");
+							// Display the message header and key help line
+							this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+							// Display the scrollbar again, and ensure it's in the correct position
+							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+							writeMessage = true; // We want to refresh the message on the screen
+						}
+					}
+				}
+				else
+					writeMessage = false; // Don't write the current message again
+				break;
+			case "?": // Show the help screen
+				this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgInfo.attachments.length > 0);
+				// If the enhanced message header width is less than the console
+				// width, then clear the screen to remove anything left on the
+				// screen from the help screen.
+				if (this.enhMsgHeaderWidth < console.screen_columns)
+					console.clear("\1n");
+				// Display the message header and key help line
+				this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+				this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+				// Display the scrollbar again, and ensure it's in the correct position
+				solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+				this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+				writeMessage = true; // We want to refresh the message on the screen
+				break;
+			case "R": // Reply to the message
+			case "I": // Private message reply
+				// If the user pressed P (private reply) while reading private
+				// mail, then do nothing (allow only the "R" key to reply).
+				var privateReply = (retObj.lastKeypress == "I");
+				if (privateReply && this.readingPersonalEmail)
+					writeMessage = false; // Don't re-write the current message again
+				else
+				{
+					// Get the message header with fields expanded so we can get the most info possible.
+					//var extdMsgHdr = this.GetMsgHdrByAbsoluteNum(msgHeader.number, true);
+					var extdMsgHdr = this.msgbase.get_msg_header(false, msgHeader.number, true);
+					// Let the user reply to the message.
+					var replyRetObj = this.ReplyToMsg(extdMsgHdr, msgInfo.msgText, privateReply, pOffset);
+													  retObj.userReplied = replyRetObj.postSucceeded;
+					//retObj.msgDeleted = replyRetObj.msgWasDeleted;
+					var msgWasDeleted = replyRetObj.msgWasDeleted;
+					//if (retObj.msgDeleted)
+					if (msgWasDeleted)
+					{
+						var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
+						continueOn = msgSearchObj.continueInputLoop;
+						retObj.newMsgOffset = msgSearchObj.newMsgOffset;
+						retObj.nextAction = msgSearchObj.nextAction;
+						if (msgSearchObj.promptGoToNextArea)
+						{
+							if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
+							{
+								// Let this method exit and let the caller go to the next sub-board
+								continueOn = false;
+								retObj.nextAction = ACTION_GO_NEXT_MSG;
+							}
+							else
+								writeMessage = true; // We want to refresh the message on the screen
+						}
+					}
+					else
+					{
+						// If the messagebase object was successfully re-opened after
+						// posting the message, then refresh the screen.  Otherwise,
+						// we'll want to quit.
+						if (replyRetObj.msgbaseReOpened)
+						{
+							// If the enhanced message header width is less than the console
+							// width, then clear the screen to remove anything left on the
+							// screen by the message editor.
+							if (this.enhMsgHeaderWidth < console.screen_columns)
+								console.clear("\1n");
+							// Display the message header and key help line again
+							this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+							// Display the scrollbar again to refresh it on the screen
+							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+							writeMessage = true; // We want to refresh the message on the screen
+						}
+						else
+						{
+							retObj.nextAction = ACTION_QUIT;
+							continueOn = false;
+							// Display an error
+							console.print("\1n");
+							console.crlf();
+							console.print("\1h\1yMessagebase error after replying.  Aborting.\1n");
+							mswait(ERROR_PAUSE_WAIT_MS);
+						}
+					}
+				}
+				break;
+			case "P": // Post a message
+				if (!this.readingPersonalEmail)
+				{
+					// Let the user post a message.
+					if (bbs.post_msg(this.subBoardCode))
+					{
+						if (searchTypePopulatesSearchResults(this.searchType))
+						{
+							// TODO: If the user is doing a search, it might be
+							// useful to search their new message and add it to
+							// the search results if it's a match..  but maybe
+							// not?
+						}
+						console.pause();
+					}
+
+					// Refresh things on the screen
+					// Display the message header and key help line again
+					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					// Display the scrollbar again to refresh it on the screen
+					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					writeMessage = true; // We want to refresh the message on the screen
+				}
+				else
+					writeMessage = false; // Don't re-write the current message again
+				break;
+			// Numeric digit: The start of a number of a message to read
+			case "0":
+			case "1":
+			case "2":
+			case "3":
+			case "4":
+			case "5":
+			case "6":
+			case "7":
+			case "8":
+			case "9":
+				var originalCurpos = console.getxy();
+				// Put the user's input back in the input buffer to
+				// be used for getting the rest of the message number.
+				console.ungetstr(retObj.lastKeypress);
+				// Move the cursor to the 2nd to last row of the screen and
+				// prompt the user for the message number.  Ideally, I'd like
+				// to put the cursor on the last row of the screen for this, but
+				// console.getnum() lets the enter key shift everything on screen
+				// up one row, and there's no way to avoid that.  So, to optimize
+				// screen refreshing, the cursor is placed on the 2nd to the last
+				// row on the screen to prompt for the message number.
+				var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+				// Prompt for the message number
+				var msgNumInput = this.PromptForMsgNum(promptPos, this.text.readMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
+				// Only allow reading the message if the message number is valid
+				// and it's not the same message number that was passed in.
+				if ((msgNumInput > 0) && (msgNumInput-1 != pOffset))
+				{
+					// If the message is marked as deleted, then output an error
+					if (this.MessageIsDeleted(msgNumInput-1))
+					{
+						writeWithPause(this.msgAreaLeft, console.screen_rows-1,
+									   "\1n" + this.text.msgHasBeenDeletedText.replace("%d", msgNumInput) + "\1n",
+									   ERROR_PAUSE_WAIT_MS, "\1n", true);
+					}
+					else
+					{
+						// Confirm with the user whether to read the message
+						var readMsg = true;
+						if (this.promptToReadMessage)
+						{
+							var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
+													+ "Read message "
+													+ this.colors["readMsgConfirmNumberColor"]
+													+ msgNumInput + this.colors["readMsgConfirmColor"]
+													+ ": Are you sure";
+							console.gotoxy(promptPos);
+							console.print("\1n");
+							readMsg = console.yesno(sReadMsgConfirmText);
+						}
+						if (readMsg)
+						{
+							continueOn = false;
+							retObj.newMsgOffset = msgNumInput - 1;
+							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						}
+						else
+							writeMessage = false; // Don't re-write the current message again
+					}
+				}
+				else // Message number invalid or the same as what was passed in
+					writeMessage = false; // Don't re-write the current message again
+
+				// If the user chose to continue reading messages, then refresh
+				// the last 2 message lines in the last part of the message area
+				// and then put the cursor back to its original position.
+				if (continueOn)
+				{
+					this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					// Move the cursor back to its original position
+					console.gotoxy(originalCurpos);
+				}
+				break;
+			case enhReaderKeys.prevMsgByTitle: // Previous message by title
+			case enhReaderKeys.prevMsgByAuthor: // Previous message by author
+			case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
+			case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
+				// Only allow this if we aren't doing a message search.
+				if (!this.SearchingAndResultObjsDefinedForCurSub())
+				{
+					var threadPrevMsgOffset = this.FindThreadPrevOffset(msgHeader,
+					                                                    keypressToThreadType(retObj.lastKeypress, enhReaderKeys),
+					                                                    true);
+					if (threadPrevMsgOffset > -1)
+					{
+						retObj.newMsgOffset = threadPrevMsgOffset;
+						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						continueOn = false;
+					}
+					else
+					{
+						// Refresh the help line at the bottom of the screen
+						//this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+						writeMessage = false; // Don't re-write the current message again
+					}
+					// Make sure the help line on the bottom of the screen is
+					// drawn.
+					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+				}
+				else
+					writeMessage = false; // Don't re-write the current message again
+				break;
+			case enhReaderKeys.nextMsgByTitle: // Next message by title (subject)
+			case enhReaderKeys.nextMsgByAuthor: // Next message by author
+			case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
+			case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
+				// Only allow this if we aren't doing a message search.
+				if (!this.SearchingAndResultObjsDefinedForCurSub())
+				{
+					var threadPrevMsgOffset = this.FindThreadNextOffset(msgHeader,
+																		keypressToThreadType(retObj.lastKeypress, enhReaderKeys),
+																		true);
+					if (threadPrevMsgOffset > -1)
+					{
+						retObj.newMsgOffset = threadPrevMsgOffset;
+						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						continueOn = false;
+					}
+					else
+						writeMessage = false; // Don't re-write the current message again
+					// Make sure the help line on the bottom of the screen is
+					// drawn.
+					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+				}
+				else
+					writeMessage = false; // Don't re-write the current message again
+				break;
+			case KEY_LEFT: // Previous message
+				// Look for a prior message that isn't marked for deletion.  Even
+				// if we don't find one, we'll still want to return from this
+				// function (with message index -1) so that this script can go
+				// onto the previous message sub-board/group.
+				retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, false);
+				// As a screen redraw optimization: Only return if there is a valid new
+				// message offset or the user is allowed to change to a different sub-board.
+				// Otherwise, don't return, and don't refresh the message on the screen.
+				var goToPrevMessage = false;
+				if ((retObj.newMsgOffset > -1) || allowChgMsgArea)
+				{
+					if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
+					{
+						goToPrevMessage = this.EnhReaderPromptYesNo(this.text.goToPrevMsgAreaPromptText,
+																	msgInfo.messageLines, topMsgLineIdx,
+																	msgLineFormatStr, solidBlockStartRow,
+																	numSolidScrollBlocks);
+					}
+					else
+					{
+						// We're not at the beginning of the sub-board, so it's okay to exit this
+						// method and go to the previous message.
+						goToPrevMessage = true;
+					}
+				}
+				if (goToPrevMessage)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_PREVIOUS_MSG;
+				}
+				else
+					writeMessage = false; // No need to refresh the message
+				break;
+			case KEY_RIGHT: // Next message
+			case KEY_ENTER:
+				// Look for a later message that isn't marked for deletion.  Even
+				// if we don't find one, we'll still want to return from this
+				// function (with message index -1) so that this script can go
+				// onto the next message sub-board/group.
+				retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
+				// Note: Unlike the left arrow key, we want to exit this method when
+				// navigating to the next message, regardless of whether or not the
+				// user is allowed to change to a different sub-board, so that processes
+				// that require continuation (such as new message scan) can continue.
+				// Still, if there are no more readable messages in the current sub-board
+				// (and thus the user would go onto the next message area), prompt the
+				// user whether they want to continue onto the next message area.
+				if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
+				{
+					// For personal mail, don't do anything, and don't refresh the
+					// message.  In a sub-board, ask the user if they want to go
+					// to the next one.
+					if (this.readingPersonalEmail)
+						writeMessage = false;
+					else
+					{
+						// If configured to allow the user to post in the sub-board
+						// instead of going to the next message area and we're not
+						// scanning, then do so.
+						if (this.readingPostOnSubBoardInsteadOfGoToNext && !this.doingMsgScan)
+						{
+							console.print("\1n");
+							console.crlf();
+							// Ask the user if they want to post on the sub-board.
+							// If they say yes, then do so before exiting.
+							if (!console.noyes(format(this.text.postOnSubBoard, this.msgbase.cfg.grp_name, this.msgbase.cfg.description)))
+								bbs.post_msg(this.subBoardCode);
+							continueOn = false;
+							retObj.nextAction = ACTION_QUIT;
+						}
+						else
+						{
+							// Prompt the user whether they want to go to the next message area
+							if (this.EnhReaderPromptYesNo(this.text.goToNextMsgAreaPromptText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks))
+							{
+								// Let this method exit and let the caller go to the next sub-board
+								continueOn = false;
+								retObj.nextAction = ACTION_GO_NEXT_MSG;
+							}
+							else
+								writeMessage = false; // No need to refresh the message
+						}
+					}
+				}
+				else
+				{
+					// We're not at the end of the sub-board, so it's okay to exit this
+					// method and go to the next message.
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_NEXT_MSG;
+				}
+				break;
+				// First & last message: Quit out of this input loop and let the
+				// calling function, this.ReadMessages(), handle the action.
+			case "F": // First message
+				// Only leave this function if we aren't already on the first message.
+				if (pOffset > 0)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_FIRST_MSG;
+				}
+				else
+					writeMessage = false; // Don't re-write the current message again
+				break;
+			case "L": // Last message
+				// Only leave this function if we aren't already on the last message.
+				if (pOffset < this.NumMessages() - 1)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_LAST_MSG;
+				}
+				else
+					writeMessage = false; // Don't re-write the current message again
+				break;
+			case enhReaderKeys.prevSubBoard: // Go to the previous message area
+				if (allowChgMsgArea)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_PREV_MSG_AREA;
+				}
+				else
+					writeMessage = false; // Don't re-write the current message again
+				break;
+			case enhReaderKeys.nextSubBoard: // Go to the next message area
+				if (allowChgMsgArea || this.doingMultiSubBoardScan)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
+				}
+				else
+					writeMessage = false; // Don't re-write the current message again
+				break;
+				// H and K: Display the extended message header info/kludge lines
+				// (for the sysop)
+			case "H":
+			case "K":
+				if (gIsSysop)
+				{
+					// Save the original cursor position
+					var originalCurPos = console.getxy();
+
+					// Get an array of the extended header info/kludge lines and then
+					// allow the user to scroll through them.
+					var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == "K"));
+					if (extdHdrInfoLines.length > 0)
+					{
+						// Calculate information for the scrollbar for the kludge lines
+						var infoFractionShown = this.msgAreaHeight / extdHdrInfoLines.length;
+						if (infoFractionShown > 1)
+							infoFractionShown = 1.0;
+						var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
+						if (numInfoSolidScrollBlocks == 0)
+							numInfoSolidScrollBlocks = 1;
+						var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
+						var lastInfoSolidBlockStartRow = this.msgAreaTop;
+						// Define a scrollbar update function for the header info/kludge lines
+						function msgInfoScrollbarUpdateFn(pFractionToLastPage)
+						{
+							var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidInfoScrollBlocks * pFractionToLastPage);
+							if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
+								msgReaderObj.UpdateEnhancedReaderScollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
+							lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
+							console.gotoxy(1, console.screen_rows);
+						}
+						// Display the kludge lines and let the user scroll through them
+						this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
+						scrollTextLines(extdHdrInfoLines, 0, this.colors["msgBodyColor"], true,
+						this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
+						msgAreaHeight, 1, console.screen_rows,
+						msgInfoScrollbarUpdateFn);
+						// Display the scrollbar for the message to refresh it on the screen
+						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+						writeMessage = true; // We want to refresh the message on the screen
+					}
+					else
+					{
+						// There are no kludge lines for this message
+						this.DisplayEnhReaderError(this.text.noKludgeLinesForThisMsgText, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+						console.gotoxy(originalCurPos);
+						writeMessage = false;
+					}
+				}
+				else // The user is not a sysop
+					writeMessage = false;
+				break;
+				// Message list, change message area: Quit out of this input loop
+				// and let the calling function, this.ReadMessages(), handle the
+				// action.
+			case "M": // Message list
+				retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
+				continueOn = false;
+				break;
+			case "C": // Change message area, if allowed
+				if (allowChgMsgArea)
+				{
+					retObj.nextAction = ACTION_CHG_MSG_AREA;
+					continueOn = false;
+				}
+				else
+					writeMessage = false; // No need to refresh the message
+				break;
+			case enhReaderKeys.downloadAttachments: // Download attachments
+				if (msgInfo.attachments.length > 0)
+				{
+					console.print("\1n");
+					console.gotoxy(1, console.screen_rows);
+					console.crlf();
+					console.print("\1c- Download Attached Files -\1n");
+					// Note: sendAttachedFiles() will output a CRLF at the beginning.
+					sendAttachedFiles(msgInfo.attachments);
+
+					// Refresh things on the screen
+					console.clear("\1n");
+					// Display the message header and key help line again
+					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					// Display the scrollbar again to refresh it on the screen
+					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					writeMessage = true; // We want to refresh the message on the screen
+				}
+				else
+					writeMessage = false;
+				break;
+			case enhReaderKeys.saveToBBSMachine:
+				// Save the message to the BBS machine - Only allow this
+				// if the user is a sysop.
+				if (gIsSysop)
+				{
+					// Prompt the user for a filename to save the message to the
+					// BBS machine
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					console.print("\1n\1cFilename:\1h");
+					var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+					var filename = console.getstr(inputLen, K_NOCRLF);
+					console.print("\1n");
+					if (filename.length > 0)
+					{
+						//var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, true, msgInfo.messageLines);
+						var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, true);
+						console.gotoxy(promptPos);
+						console.cleartoeol("\1n");
+						console.gotoxy(promptPos);
+						if (saveMsgRetObj.succeeded)
+							console.print("\1n\1cThe message has been saved.\1n");
+						else
+							console.print("\1n\1y\1hFailed: " + saveMsgRetObj.errorMsg + "\1n");
+						mswait(ERROR_PAUSE_WAIT_MS);
+					}
+					else
+					{
+						console.gotoxy(promptPos);
+						console.print("\1n\1y\1hMessage not exported\1n");
+						mswait(ERROR_PAUSE_WAIT_MS);
+					}
+					// Refresh the last 2 lines of the message on the screen to overwrite
+					// the file save prompt
+					this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					writeMessage = false; // Don't write the whole message again
+				}
+				else
+					writeMessage = false;
+				break;
+			case "U": // Edit the user who wrote the message
+				if (gIsSysop)
+				{
+					console.print("\1n");
+					console.crlf();
+					console.print("- Edit user " + msgHeader.from);
+					console.crlf();
+					var editObj = editUser(msgHeader.from);
+					if (editObj.errorMsg.length != 0)
+					{
+						console.print("\1n");
+						console.crlf();
+						console.print("\1y\1h" + editObj.errorMsg + "\1n");
+						console.crlf();
+						console.pause();
+					}
+
+					// Refresh things on the screen
+					console.clear("\1n");
+					// Display the message header and key help line again
+					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					// Display the scrollbar again to refresh it on the screen
+					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					writeMessage = true; // We want to refresh the message on the screen
+				}
+				else // The user is not a sysop
+					writeMessage = false;
+				break;
+			case "Q": // Quit
+				retObj.nextAction = ACTION_QUIT;
+				continueOn = false;
+				break;
+			default:
+				writeMessage = false;
+				break;
+		}
+	}
+
+	return retObj;
+}
+// Helper method for ReadMessageEnhanced() - Does the traditional (non-scrollable) reader interface
+function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, enhReaderKeys, messageText, msgHasANSICodes, pOffset)
+{
+	var retObj = new Object();
+	retObj.offsetValid = true;
+	retObj.msgDeleted = false;
+	retObj.userReplied = false;
+	retObj.lastKeypress = "";
+	retObj.newMsgOffset = -1;
+	retObj.nextAction = ACTION_NONE;
+	retObj.refreshEnhancedRdrHelpLine = false;
+	
+	// Separate the message text from any attachments in the message.
+	var msgAndAttachmentInfo = determineMsgAttachments(msgHeader, messageText, true);
+	// Only interpret @-codes if the user is reading personal email.  There
+	// are many @-codes that do some action such as move the cursor, execute a
+	// script, etc., and I don't want users on message networks to do anything
+	// malicious to users on other BBSes.
+	if (this.readingPersonalEmail)
+		msgAndAttachmentInfo.msgText = replaceAtCodesInStr(msgAndAttachmentInfo.msgText); // Or this.ParseMsgAtCodes(msgAndAttachmentInfo.msgText, msgHeader) to replace only some @ codes
+	var msgTextWrapped = word_wrap(msgAndAttachmentInfo.msgText, console.screen_columns-1);
+
+	// Generate the key help text
+	var keyHelpText = "\1n\1c\1h#\1n\1b, \1c\1hLeft\1n\1b, \1c\1hRight\1n\1b, ";
+	if (this.CanDelete() || this.CanDeleteLastMsg())
+		keyHelpText += "\1c\1hDEL\1b, ";
+	if (this.CanEdit())
+		keyHelpText += "\1c\1hE\1y)\1n\1cdit\1b, ";
+	keyHelpText += "\1c\1hF\1y)\1n\1cirst\1b, \1c\1hL\1y)\1n\1cast\1b, \1c\1hR\1y)\1n\1ceply\1b, ";
+	// If the user is allowed to change to a different message area, then
+	// include that option.
+	if (allowChgMsgArea)
+	{
+		// If there's room for the private reply option, then include that
+		// before the change area option.
+		if (console.screen_columns >= 89)
+			keyHelpText += "\1c\1hP\1y)\1n\1crivate reply\1b, ";
+		keyHelpText += "\1c\1hC\1y)\1n\1chg area\1b, ";
+	}
+	else
+	{
+		// The user isn't allowed to change to a different message area.
+		// Go ahead and include the private reply option.
+		keyHelpText += "\1c\1hP\1y)\1n\1crivate reply\1b, ";
+	}
+	keyHelpText += "\1c\1hQ\1y)\1n\1cuit\1b, \1c\1h?\1g: \1c";
+
+	// User input loop
+	var writeMessage = true;
+	var writePromptText = true;
+	var continueOn = true;
+	while (continueOn)
+	{
+		if (writeMessage)
+		{
+			if (console.term_supports(USER_ANSI))
+				console.clear("\1n");
+			// Write the message header & message body to the screen
+			this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+			console.print("\1n" + this.colors["msgBodyColor"]);
+			console.putmsg(msgTextWrapped, P_NOATCODES);
+		}
+		// Write the prompt text
+		if (writePromptText)
+			console.print(keyHelpText);
+		// Default the writing of the message & input prompt to true for the
+		// next iteration.
+		writeMessage = true;
+		writePromptText = true;
+		// Input a key from the user and take action based on the keypress.
+		//retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
+		retObj.lastKeypress = getKeyWithESCChars(K_UPPER);
+		switch (retObj.lastKeypress)
+		{
+			case enhReaderKeys.deleteMessage: // Delete message
+				console.crlf();
+				// Prompt the user for confirmation to delete the message.
+				// Note: this.PromptAndDeleteMessage() will check to see if the user
+				// is a sysop or the message was posted by the user.
+				// If the message was deleted, then exit this read method
+				// and return KEY_RIGHT as the last keypress so that the
+				// calling method will go to the next message/sub-board.
+				// Otherwise (if the message was not deleted), refresh the
+				// last 2 lines of the message on the screen.
+				// TODO: For the DeleteMessage() call, pass the array of file
+				// attachments for it to delete (i.e., msgInfo.attachments)
+				var msgWasDeleted = this.PromptAndDeleteMessage(pOffset);
+				if (msgWasDeleted)
+				{
+					var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
+					continueOn = msgSearchObj.continueInputLoop;
+					retObj.newMsgOffset = msgSearchObj.newMsgOffset;
+					retObj.nextAction = msgSearchObj.nextAction;
+					if (msgSearchObj.promptGoToNextArea)
+					{
+						if (console.yesno(this.text.goToNextMsgAreaPromptText))
+						{
+							// Let this method exit and let the caller go to the next sub-board
+							continueOn = false;
+							retObj.nextAction = ACTION_GO_NEXT_MSG;
+						}
+						else
+							writeMessage = false; // No need to refresh the message
+					}
+				}
+				break;
+			case enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
+				console.crlf();
+				var selectMessage = !console.noyes("Select this message");
+				this.ToggleSelectedMessage(this.subBoardCode, pOffset, selectMessage);
+				break;
+			case enhReaderKeys.batchDelete:
+				// TODO: Write this?  Not sure yet if it makes much sense to
+				// have batch delete in the reader interface.
+				// Prompt the user for confirmation, and use
+				// this.DeleteSelectedMessages() to mark the selected messages
+				// as deleted.
+				// Returns an object with the following properties:
+				//  deletedAll: Boolean - Whether or not all messages were successfully marked
+				//              for deletion
+				//  failureList: An object containing indexes of messages that failed to get
+				//               marked for deletion, indexed by internal sub-board code, then
+				//               containing messages indexes as properties.  Reasons for failing
+				//               to mark messages deleted can include the user not having permission
+				//               to delete in a sub-board, failure to open the sub-board, etc.
+				writeMessage = false; // No need to refresh the message
+				break;
+			case "E": // Edit the message
+				if (this.CanEdit())
+				{
+					console.crlf();
+					// Let the user edit the message if they want to
+					var editReturnObj = this.EditExistingMsg(pOffset);
+					// If the user confirmed editing the message, then see if the
+					// message was edited and refresh the screen accordingly.
+					if (editReturnObj.userConfirmed)
+					{
+						// If the message was edited, then refresh the text lines
+						// array and update the other message-related variables.
+						if (editReturnObj.msgEdited && (editReturnObj.newMsgIdx > -1))
+						{
+							// When the message is edited, the old message will be
+							// deleted and the edited message will be posted as a new
+							// message.  So we should return to the caller and have it
+							// go directly to that new message.
+							continueOn = false;
+							retObj.newMsgOffset = editReturnObj.newMsgIdx;
+						}
+					}
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+			case "?": // Show help
+				if (!console.term_supports(USER_ANSI))
+				{
+					console.crlf();
+					console.crlf();
+				}
+				this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgAndAttachmentInfo.attachments.length > 0);
+				if (!console.term_supports(USER_ANSI))
+				{
+					console.crlf();
+					console.crlf();
+				}
+				break;
+			case "R": // Reply to the message
+			case "I": // Private reply
+				// If the user pressed P (private reply) while reading private
+				// mail, then do nothing (allow only the "R" key to reply).
+				// If not reading personal email, go ahead and let the user reply
+				// with either the "P" or "R" keypress.
+				var privateReply = (retObj.lastKeypress == "I");
+				if (privateReply && this.readingPersonalEmail)
+				{
+					writeMessage = false; // Don't re-write the current message again
+					writePromptText = false; // Don't write the prompt text again
+				}
+				else
+				{
+					console.crlf();
+					// Get the message header with fields expanded so we can get the most info possible.
+					//var extdMsgHdr = this.GetMsgHdrByAbsoluteNum(msgHeader.number, true);
+					var extdMsgHdr = this.msgbase.get_msg_header(false, msgHeader.number, true);
+					// Let the user reply to the message
+					var replyRetObj = this.ReplyToMsg(extdMsgHdr, msgAndAttachmentInfo.msgText, privateReply, pOffset);
+					retObj.userReplied = replyRetObj.postSucceeded;
+					//retObj.msgDeleted = replyRetObj.msgWasDeleted;
+					var msgWasDeleted = replyRetObj.msgWasDeleted;
+					if (msgWasDeleted)
+					{
+						var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
+						continueOn = msgSearchObj.continueInputLoop;
+						retObj.newMsgOffset = msgSearchObj.newMsgOffset;
+						retObj.nextAction = msgSearchObj.nextAction;
+						if (msgSearchObj.promptGoToNextArea)
+						{
+							if (console.yesno(this.text.goToNextMsgAreaPromptText))
+							{
+								// Let this method exit and let the caller go to the next sub-board
+								continueOn = false;
+								retObj.nextAction = ACTION_GO_NEXT_MSG;
+							}
+							else
+								writeMessage = true; // We want to refresh the message on the screen
+						}
+					}
+					else
+					{
+						// If the messagebase object was not successfully re-opened
+						// after posting the message, then  we'll want to quit.
+						if (!replyRetObj.msgbaseReOpened)
+						{
+							retObj.nextAction = ACTION_QUIT;
+							continueOn = false;
+							// Display an error
+							console.print("\1n");
+							console.crlf();
+							console.print("\1h\1yMessagebase error after replying.  Aborting.\1n");
+							mswait(ERROR_PAUSE_WAIT_MS);
+						}
+					}
+				}
+				break;
+			case "P": // Post a message
+				if (!this.readingPersonalEmail)
+				{
+					// Let the user post a message.
+					if (bbs.post_msg(this.subBoardCode))
+					{
+						// TODO: If the user is doing a search, it might be
+						// useful to search their new message and add it to
+						// the search results if it's a match..  but maybe
+						// not?
+					}
+
+					console.pause();
+
+					// We'll want to refresh the message & prompt text on the screen
+					writeMessage = true;
+					writePromptText = true;
+				}
+				else
+				{
+					// Don't write the current message or prompt text in the next iteration
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+			// Numeric digit: The start of a number of a message to read
+			case "0":
+			case "1":
+			case "2":
+			case "3":
+			case "4":
+			case "5":
+			case "6":
+			case "7":
+			case "8":
+			case "9":
+				console.crlf();
+				// Put the user's input back in the input buffer to
+				// be used for getting the rest of the message number.
+				console.ungetstr(retObj.lastKeypress);
+				// Prompt for the message number
+				var msgNumInput = this.PromptForMsgNum(null, this.text.readMsgNumPromptText, false, ERROR_PAUSE_WAIT_MS, false);
+				// Only allow reading the message if the message number is valid
+				// and it's not the same message number that was passed in.
+				if ((msgNumInput > 0) && (msgNumInput-1 != pOffset))
+				{
+					// If the message is marked as deleted, then output an error
+					if (this.MessageIsDeleted(msgNumInput-1))
+					{
+						console.crlf();
+						console.print("\1n" + this.text.msgHasBeenDeletedText.replace("%d", msgNumInput) + "\1n");
+						console.crlf();
+						console.pause();
+					}
+					else
+					{
+						// Confirm with the user whether to read the message
+						var readMsg = true;
+						if (this.promptToReadMessage)
+						{
+							readMsg = console.yesno("\1n" + this.colors["readMsgConfirmColor"]
+													+ "Read message "
+													+ this.colors["readMsgConfirmNumberColor"]
+													+ msgNumInput + this.colors["readMsgConfirmColor"]
+													+ ": Are you sure");
+						}
+						if (readMsg)
+						{
+							continueOn = false;
+							retObj.newMsgOffset = msgNumInput - 1;
+							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						}
+					}
+				}
+				break;
+			case enhReaderKeys.prevMsgByTitle: // Previous message by title
+			case enhReaderKeys.prevMsgByAuthor: // Previous message by author
+			case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
+			case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
+				// Only allow this if we aren't doing a message search.
+				if (!this.SearchingAndResultObjsDefinedForCurSub())
+				{
+					console.crlf(); // For the "Searching..." text
+					var threadPrevMsgOffset = this.FindThreadPrevOffset(msgHeader,
+																		keypressToThreadType(retObj.lastKeypress, enhReaderKeys),
+																		false);
+					if (threadPrevMsgOffset > -1)
+					{
+						retObj.newMsgOffset = threadPrevMsgOffset;
+						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						continueOn = false;
+					}
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+			case enhReaderKeys.nextMsgByTitle: // Next message by title (subject)
+			case enhReaderKeys.nextMsgByAuthor: // Next message by author
+			case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
+			case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
+				// Only allow this if we aren't doing a message search.
+				if (!this.SearchingAndResultObjsDefinedForCurSub())
+				{
+					console.crlf(); // For the "Searching..." text
+					var threadNextMsgOffset = this.FindThreadNextOffset(msgHeader,
+																		keypressToThreadType(retObj.lastKeypress, enhReaderKeys),
+																		false);
+					if (threadNextMsgOffset > -1)
+					{
+						retObj.newMsgOffset = threadNextMsgOffset;
+						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						continueOn = false;
+					}
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+			case KEY_LEFT: // Previous message
+				// TODO: Change the key for this?
+				// Look for a prior message that isn't marked for deletion.  Even
+				// if we don't find one, we'll still want to return from this
+				// function (with message index -1) so that this script can go
+				// onto the previous message sub-board/group.
+				retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, false);
+				var goToPrevMessage = false;
+				if ((retObj.newMsgOffset > -1) || allowChgMsgArea)
+				{
+					if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
+					{
+						console.crlf();
+						goToPrevMessage = console.yesno(this.text.goToPrevMsgAreaPromptText);
+					}
+					else
+					{
+						// We're not at the beginning of the sub-board, so it's okay to exit this
+						// method and go to the previous message.
+						goToPrevMessage = true;
+					}
+				}
+				if (goToPrevMessage)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_PREVIOUS_MSG;
+				}
+				break;
+			case KEY_RIGHT: // Next message
+			case KEY_ENTER:
+				// Look for a later message that isn't marked for deletion.  Even
+				// if we don't find one, we'll still want to return from this
+				// function (with message index -1) so that this script can go
+				// onto the next message sub-board/group.
+				retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
+				// Note: Unlike the left arrow key, we want to exit this method when
+				// navigating to the next message, regardless of whether or not the
+				// user is allowed to change to a different sub-board, so that processes
+				// that require continuation (such as new message scan) can continue.
+				// Still, if there are no more readable messages in the current sub-board
+				// (and thus the user would go onto the next message area), prompt the
+				// user whether they want to continue onto the next message area.
+				if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
+				{
+					console.print("\1n");
+					console.crlf();
+					// If configured to allow the user to post in the sub-board
+					// instead of going to the next message area and we're not
+					// scanning, then do so.
+					if (this.readingPostOnSubBoardInsteadOfGoToNext && !this.doingMsgScan)
+					{
+						// Ask the user if they want to post on the sub-board.
+						// If they say yes, then do so before exiting.
+						if (!console.noyes(format(this.text.postOnSubBoard, this.msgbase.cfg.grp_name, this.msgbase.cfg.description)))
+							bbs.post_msg(this.subBoardCode);
+						continueOn = false;
+						retObj.nextAction = ACTION_QUIT;
+					}
+					else
+					{
+						if (console.yesno(this.text.goToNextMsgAreaPromptText))
+						{
+							// Let this method exit and let the caller go to the next sub-board
+							continueOn = false;
+							retObj.nextAction = ACTION_GO_NEXT_MSG;
+						}
+					}
+				}
+				else
+				{
+					// We're not at the end of the sub-board, so it's okay to exit this
+					// method and go to the next message.
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_NEXT_MSG;
+				}
+				break;
+			case "F": // First message
+				// Only leave this function if we aren't already on the first message.
+				if (pOffset > 0)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_FIRST_MSG;
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+			case "L": // Last message
+				// Only leave this function if we aren't already on the last message.
+				if (pOffset < this.NumMessages() - 1)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_LAST_MSG;
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+			case "-": // Go to the previous message area
+				if (allowChgMsgArea)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_PREV_MSG_AREA;
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+			case "+": // Go to the next message area
+				if (allowChgMsgArea || this.doingMultiSubBoardScan)
+				{
+					continueOn = false;
+					retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+				// H and K: Display the extended message header info/kludge lines
+				// (for the sysop)
+			case "H":
+			case "K":
+				if (gIsSysop)
+				{
+					console.crlf();
+					// Get an array of the extended header info/kludge lines and then
+					// display them.
+					var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == "K"));
+					if (extdHdrInfoLines.length > 0)
+					{
+						console.crlf();
+						for (var infoIter = 0; infoIter < extdHdrInfoLines.length; ++infoIter)
+						{
+							console.print(extdHdrInfoLines[infoIter]);
+							console.crlf();
+						}
+						console.pause();
+					}
+					else
+					{
+						// There are no kludge lines for this message
+						console.print(this.text.noKludgeLinesForThisMsgText);
+						console.crlf();
+						console.pause();
+					}
+				}
+				else // The user is not a sysop
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+				// Message list, change message area: Quit out of this input loop
+				// and let the calling function, this.ReadMessages(), handle the
+				// action.
+			case "M": // Message list
+				retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
+				continueOn = false;
+				break;
+			case "C": // Change message area, if allowed
+				if (allowChgMsgArea)
+				{
+					retObj.nextAction = ACTION_CHG_MSG_AREA;
+					continueOn = false;
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+			case enhReaderKeys.downloadAttachments: // Download attachments
+				if (msgAndAttachmentInfo.attachments.length > 0)
+				{
+					console.print("\1n");
+					console.crlf();
+					console.print("\1c- Download Attached Files -\1n");
+					// Note: sendAttachedFiles() will output a CRLF at the beginning.
+					sendAttachedFiles(msgAndAttachmentInfo.attachments);
+
+					// Ensure the message is refreshed on the screen
+					writeMessage = true;
+					writePromptText = true;
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
+			case enhReaderKeys.saveToBBSMachine:
+				// Save the message to the BBS machine - Only allow this
+				// if the user is a sysop.
+				if (gIsSysop)
+				{
+					console.crlf();
+					console.print("\1n\1cFilename:\1h");
+					var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+					var filename = console.getstr(inputLen, K_NOCRLF);
+					console.print("\1n");
+					console.crlf();
+					if (filename.length > 0)
+					{
+						var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, true);
+						if (saveMsgRetObj.succeeded)
+							console.print("\1n\1cThe message has been saved.\1n");
+						else
+							console.print("\1n\1y\1hFailed: " + saveMsgRetObj.errorMsg + "\1n");
+						mswait(ERROR_PAUSE_WAIT_MS);
+					}
+					else
+					{
+						console.print("\1n\1y\1hMessage not exported\1n");
+						mswait(ERROR_PAUSE_WAIT_MS);
+					}
+					writeMessage = true;
+				}
+				else
+					writeMessage = false;
+				break;
+			case "U": // Edit the user who wrote the message
+				if (gIsSysop)
+				{
+					console.print("\1n");
+					console.crlf();
+					console.print("- Edit user " + msgHeader.from);
+					console.crlf();
+					var editObj = editUser(msgHeader.from);
+					if (editObj.errorMsg.length != 0)
+					{
+						console.print("\1n");
+						console.crlf();
+						console.print("\1y\1h" + editObj.errorMsg + "\1n");
+						console.crlf();
+						console.pause();
+					}
+				}
+				writeMessage = true;
+				break;
+			case "Q": // Quit
+				retObj.nextAction = ACTION_QUIT;
+				continueOn = false;
+				break;
+			default:
+				// No need to do anything
+				writeMessage = false;
+				writePromptText = false;
+				break;
+		}
+	}
+
+	return retObj;
+}
+
+// For the ReadMessageEnhanced methods: This function converts a thread navigation
+// key character to its corresponding thread type value
+function keypressToThreadType(pKeypress, pEnhReaderKeys)
+{
+	var threadType = THREAD_BY_ID;
+	switch (pKeypress)
+	{
+		case pEnhReaderKeys.prevMsgByTitle:
+		case pEnhReaderKeys.nextMsgByTitle:
+			threadType = THREAD_BY_TITLE;
+			break;
+		case pEnhReaderKeys.prevMsgByAuthor:
+		case pEnhReaderKeys.nextMsgByAuthor:
+			threadType = THREAD_BY_AUTHOR;
+			break;
+		case pEnhReaderKeys.prevMsgByToUser:
+		case pEnhReaderKeys.nextMsgByToUser:
+			threadType = THREAD_BY_TO_USER;
+			break;
+		case pEnhReaderKeys.prevMsgByThreadID:
+		case pEnhReaderKeys.nextMsgByThreadID:
+		default:
+			threadType = THREAD_BY_ID;
+			break;
+	}
+	return threadType;
+}
 
 // For the DigDistMsgReader class: For the enhanced reader method - Prepares the
 // last 2 lines on the screen for propmting the user for something.
@@ -7992,8 +8096,11 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	}
 	if ((typeof(bbs.curlib) == "number") && (typeof(bbs.curdir) == "number"))
 	{
-		fileDir = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name;
-		fileDirLong = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].description;
+		if ((typeof(file_area.lib_list[bbs.curlib]) == "object") && (typeof(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir]) == "object"))
+		{
+			fileDir = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name;
+			fileDirLong = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].description;
+		}
 	}
 	var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
 	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
@@ -8353,7 +8460,8 @@ function DigDistMsgReader_EnhancedReaderChangeSubBoard(pNewSubBoardCode)
 // For the DigDistMsgReader class: Allows the user to reply to a message
 //
 // Parameters:
-//  pMsgHdr: The header of the message to reply to
+//  pMsgHdr: The header of the message to reply to.  This needs to be a header with
+//           fields expanded.
 //  pMsgText: The text (body) of the message
 //  pPrivate: Optional - Boolean to specify whether not this should be a private
 //            reply using the user's QWK or FIDO, etc. address.  Defaults to
@@ -8512,7 +8620,12 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		// If we are to send a private message, then let the user send the reply
 		// as a private email.  Otherwise, let the user post the reply as a public
 		// message.
-		this.msgbase.close();
+		// 2016-08-26: Updated to not close the messagebase because a private
+		// reply on a networked sub-board needs to be able to get a message
+		// header with fields expanded.
+		// TODO: Update ReadMessageEnhanced() to get an expanded header to
+		// pass to this method instead?
+		//this.msgbase.close();
 		if (replyPrivately)
 		{
 			var privReplRetObj = this.DoPrivateReply(pMsgHdr, pMsgIdx, replyMode);
@@ -8526,6 +8639,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			console.pause();
 		}
 		msgBaseInfoFile.remove();
+		this.msgbase.close();
 		retObj.msgbaseReOpened = this.msgbase.open();
 
 		// If the user replied to the message and a message search was done that
@@ -8564,7 +8678,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 // and returns a boolean for whether or not it succeeded in sending the reply.
 //
 // Parameters:
-//  pMsgHdr: A message header object
+//  pMsgHdr: A message header object.  This needs to be a header with expanded fields.
 //  pMsgIdx: The message index (if there are search results, this might be
 //           different than the message offset in the messagebase).  This
 //           is intended for use in deleting a private email after reading it.
@@ -8581,9 +8695,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 	retObj.sendSucceeded = true;
 	retObj.msgWasDeleted = false;
 	
-	// Get the message header with fields expanded so we can get the most info possible.
-	var msgHdr = this.GetMsgHdrByAbsoluteNum(pMsgHdr.number, true);
-	if (msgHdr == null)
+	if (pMsgHdr == null)
 	{
 		retObj.sendSucceeded = false;
 		return retObj;
@@ -8596,20 +8708,19 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 
 	// If the message is not local, the send the reply as a network message.
 	// Otherwise, send the reply as a local email.
-	if (msgHdr.from_net_type != NET_NONE)
+	if (pMsgHdr.from_net_type != NET_NONE)
 	{
-		if ((typeof(msgHdr.from_net_addr) == "string") &&
-		    (msgHdr.from_net_addr.length > 0))
+		if ((typeof(pMsgHdr.from_net_addr) == "string") && (pMsgHdr.from_net_addr.length > 0))
 		{
 			// Build the email address to reply to.  If the original message is
 			// internet email, then simply use the from_net_addr field from the
 			// message header.  Otherwise (i.e., on a networked sub-board), use
 			// username@from_net_addr.
 			var emailAddr = "";
-			if (msgHdr.from_net_type == NET_INTERNET)
-				emailAddr = msgHdr.from_net_addr;
+			if (pMsgHdr.from_net_type == NET_INTERNET)
+				emailAddr = pMsgHdr.from_net_addr;
 			else
-				emailAddr = msgHdr.from + "@" + msgHdr.from_net_addr;
+				emailAddr = pMsgHdr.from + "@" + pMsgHdr.from_net_addr;
 			// Prompt the user to verify the receiver's email address
 			console.putmsg(bbs.text(Email), P_SAVEATR);
 			console.ungetstr(emailAddr);
@@ -8617,7 +8728,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			if ((typeof(emailAddr) == "string") && (emailAddr.length > 0))
 			{
 				replyMode |= WM_NETMAIL;
-				console.ungetstr(msgHdr.subject);
+				console.ungetstr(pMsgHdr.subject);
 				retObj.sendSucceeded = bbs.netmail(emailAddr, replyMode);
 				console.pause();
 			}
@@ -8641,7 +8752,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		// Replying to a local user
 		replyMode |= WM_EMAIL;
 		// Look up the user number of the "from" user name in the message header
-		var userNumber = system.matchuser(msgHdr.from);
+		var userNumber = system.matchuser(pMsgHdr.from);
 		if (userNumber != 0)
 		{
 			// Output a newline to avoid ugly overwriting of text on the screen in
@@ -8649,7 +8760,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			// sender.  Note that if the send failed, that could be because the
 			// user aborted the message.
 			console.crlf();
-			retObj.sendSucceeded = bbs.email(userNumber, replyMode, "", msgHdr.subject);
+			retObj.sendSucceeded = bbs.email(userNumber, replyMode, "", pMsgHdr.subject);
 			console.pause();
 		}
 	}
@@ -8664,7 +8775,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		// Note: If the message was deleted, the DeleteMessage() method will
 		// refresh the header in the search results, if there are any search
 		// results.
-		if (!console.noyes(bbs.text(DeleteMailQ).replace("%s", msgHdr.from)))
+		if (!console.noyes(bbs.text(DeleteMailQ).replace("%s", pMsgHdr.from)))
 			retObj.msgWasDeleted = this.PromptAndDeleteMessage(pMsgIdx, null, null, null, false);
 	}
 
@@ -8772,7 +8883,10 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	else if (this.doingMultiSubBoardScan)
 		keyHelpLines.push("\1h\1c+                \1g: \1n\1cGo to the next message sub-board");
 	if (gIsSysop)
+	{
 		keyHelpLines.push("\1h\1cE                \1g: \1n\1cEdit the current message");
+		keyHelpLines.push("\1h\1cU                \1g: \1n\1cEdit the user who wrote the message");
+	}
 	keyHelpLines.push("\1h\1cM                \1g: \1n\1cList messages in the current sub-board");
 	if (gIsSysop)
 		keyHelpLines.push("\1h\1cH \1n\1cor \1hK           \1g: \1n\1cDisplay extended header info\1g/\1ckludge lines for the message");
@@ -16619,6 +16733,41 @@ function getMsgAreaDescStr(pMsgbase)
 			descStr = "Unspecified";
 	}
 	return descStr;
+}
+
+// Lets the sysop edit a user.
+//
+// Parameters:
+//  pUsername: The name of the user to edit
+//
+// Return value: A function containing the following properties:
+//               errorMsg: An error message on failure, or a blank string on success
+function editUser(pUsername)
+{
+	var retObj = new Object();
+	retObj.errorMsg = "";
+
+	if (typeof(pUsername) != "string")
+	{
+		retObj.errorMsg = "Given username is not a string";
+		return retObj;
+	}
+
+	// If the logged-in user is not a sysop, then just return.
+	if (!gIsSysop)
+	{
+		retObj.errorMsg = "Only a sysop can edit a user";
+		return retObj;
+	}
+
+	// If the user exists, then let the sysop edit the user.
+	var userNum = system.matchuser(pUsername);
+	if (userNum != 0)
+		bbs.exec("*str_cmds uedit " + userNum);
+	else
+		retObj.errorMsg = "User \"" + pUsername + "\" not found";
+	
+	return retObj;
 }
 
 /////////////////////////////////////////////////////////////////////////
