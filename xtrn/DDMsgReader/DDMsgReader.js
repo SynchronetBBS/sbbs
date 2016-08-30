@@ -163,6 +163,7 @@
  * 2016-08-17 Eric Oulashin     Version 1.14
  *                              Bug fix: Version 1.13 was failing to reply to
  *                              private emails
+ * 2014-09-13 to 2016-08-07     Removed previous comments
  * 2016-08-17 Eric Oulashin     Version 1.15 Beta 1
  *                              Updated DigDistMsgReader_ParseMsgAtCodes() to
  *                              check whether the file libs array and file dir
@@ -181,6 +182,10 @@
  *                              Bug fix: Replying to a message privately was broken
  *                              due to the previous bug fix related to saving a
  *                              message with the READ attribute.
+ * 2016-08-29 Eric Oulashin     Version 1.15
+ *                              Refactored enhReaderKeys into the object itself
+ *                              (this.enhReaderKeys).
+ *                              Officially releasing this version, as it seems stable
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -251,7 +256,6 @@
 //   CTRL hotkeys):
 //   - Forward the current message (to username, user #, internet email address,
 //     FTN email address, QWK email address, etc.)
-//   - Save the message to the BBS computer (sysop only)
 
 load("sbbsdefs.js");
 load("text.js"); // Text string definitions (referencing text.dat)
@@ -272,8 +276,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.15 Beta 3";
-var READER_DATE = "2016-08-27";
+var READER_VERSION = "1.15";
+var READER_DATE = "2016-08-29";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -968,6 +972,26 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// area chooser header lines to display
 	this.areaChooserHdrFilenameBase = "areaChgHeader";
 	this.areaChooserHdrMaxLines = 5;
+	
+	// Some key bindings for enhanced reader mode
+	this.enhReaderKeys = new Object();
+	this.enhReaderKeys.reply = "R";
+	this.enhReaderKeys.privateReply = "I";
+	this.enhReaderKeys.prevMsgByTitle = "<";
+	this.enhReaderKeys.nextMsgByTitle = ">";
+	this.enhReaderKeys.prevMsgByAuthor = "{";
+	this.enhReaderKeys.nextMsgByAuthor = "}";
+	this.enhReaderKeys.prevMsgByToUser = "[";
+	this.enhReaderKeys.nextMsgByToUser = "]";
+	this.enhReaderKeys.prevMsgByThreadID = "(";
+	this.enhReaderKeys.nextMsgByThreadID = ")";
+	this.enhReaderKeys.prevSubBoard = "-";
+	this.enhReaderKeys.nextSubBoard = "+";
+	this.enhReaderKeys.downloadAttachments = CTRL_A;
+	this.enhReaderKeys.saveToBBSMachine = CTRL_S;
+	this.enhReaderKeys.deleteMessage = KEY_DEL;
+	this.enhReaderKeys.selectMessage = " ";
+	this.enhReaderKeys.batchDelete = CTRL_D;
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -4269,24 +4293,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	if (msgHeader.from.length == 0)
 		msgHeader.from = "All";
 
-	// Some key bindings
-	var enhReaderKeys = new Object();
-	enhReaderKeys.prevMsgByTitle = "<";
-	enhReaderKeys.nextMsgByTitle = ">";
-	enhReaderKeys.prevMsgByAuthor = "{";
-	enhReaderKeys.nextMsgByAuthor = "}";
-	enhReaderKeys.prevMsgByToUser = "[";
-	enhReaderKeys.nextMsgByToUser = "]";
-	enhReaderKeys.prevMsgByThreadID = "(";
-	enhReaderKeys.nextMsgByThreadID = ")";
-	enhReaderKeys.prevSubBoard = "-";
-	enhReaderKeys.nextSubBoard = "+";
-	enhReaderKeys.downloadAttachments = CTRL_A;
-	enhReaderKeys.saveToBBSMachine = CTRL_S;
-	enhReaderKeys.deleteMessage = KEY_DEL;
-	enhReaderKeys.selectMessage = " ";
-	enhReaderKeys.batchDelete = CTRL_D;
-
 	// Get the message text and see if it has any ANSI codes.  If it has ANSI codes,
 	// then don't use the scrolling interface so that the ANSI gets displayed properly.
 	var messageText = this.msgbase.get_msg_body(true, msgHeader.offset);
@@ -4306,9 +4312,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// Use the scrollable reader interface if the setting is enabled & the user's
 	// terminal supports ANSI.  Otherwise, use a more traditional user interface.
 	if (useScrollingInterface)
-		retObj = this.ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, enhReaderKeys, messageText, msgHasANSICodes, pOffset);
+		retObj = this.ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, messageText, msgHasANSICodes, pOffset);
 	else
-		retObj = this.ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, enhReaderKeys, messageText, msgHasANSICodes, pOffset);
+		retObj = this.ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, messageText, msgHasANSICodes, pOffset);
 
 	// Mark the message as read if it was written to the current user or if
 	// the user is reading personal email.
@@ -4362,7 +4368,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	return retObj;
 }
 // Helper method for ReadMessageEnhanced() - Does the scrollable reader interface
-function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, enhReaderKeys, messageText, msgHasANSICodes, pOffset)
+function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, messageText, msgHasANSICodes, pOffset)
 {
 	var retObj = new Object();
 	retObj.offsetValid = true;
@@ -4444,7 +4450,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		retObj.lastKeypress = scrollRetObj.lastKeypress;
 		switch (retObj.lastKeypress)
 		{
-			case enhReaderKeys.deleteMessage: // Delete message
+			case this.enhReaderKeys.deleteMessage: // Delete message
 				var originalCurpos = console.getxy();
 				// The 2nd to last row of the screen is where the user will
 				// be prompted for confirmation to delete the message.
@@ -4492,7 +4498,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					writeMessage = false;
 				}
 				break;
-			case enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
+			case this.enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
 				var originalCurpos = console.getxy();
 				var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
 				if (this.EnhReaderPromptYesNo("Select this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks, true))
@@ -4501,7 +4507,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					this.ToggleSelectedMessage(this.subBoardCode, pOffset, false);
 				writeMessage = false; // No need to refresh the message
 				break;
-			case enhReaderKeys.batchDelete:
+			case this.enhReaderKeys.batchDelete:
 				// TODO: Write this?  Not sure yet if it makes much sense to
 				// have batch delete in the reader interface.
 				// Prompt the user for confirmation, and use
@@ -4602,11 +4608,11 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 				writeMessage = true; // We want to refresh the message on the screen
 				break;
-			case "R": // Reply to the message
-			case "I": // Private message reply
-				// If the user pressed P (private reply) while reading private
-				// mail, then do nothing (allow only the "R" key to reply).
-				var privateReply = (retObj.lastKeypress == "I");
+			case this.enhReaderKeys.reply: // Reply to the message
+			case this.enhReaderKeys.privateReply: // Private message reply
+				// If the user pressed the private reply key while reading private
+				// mail, then do nothing (allow only the regular reply key to reply).
+				var privateReply = (retObj.lastKeypress == this.enhReaderKeys.privateReply);
 				if (privateReply && this.readingPersonalEmail)
 					writeMessage = false; // Don't re-write the current message again
 				else
@@ -4773,15 +4779,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					console.gotoxy(originalCurpos);
 				}
 				break;
-			case enhReaderKeys.prevMsgByTitle: // Previous message by title
-			case enhReaderKeys.prevMsgByAuthor: // Previous message by author
-			case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
-			case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
+			case this.enhReaderKeys.prevMsgByTitle: // Previous message by title
+			case this.enhReaderKeys.prevMsgByAuthor: // Previous message by author
+			case this.enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
+			case this.enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
 				// Only allow this if we aren't doing a message search.
 				if (!this.SearchingAndResultObjsDefinedForCurSub())
 				{
 					var threadPrevMsgOffset = this.FindThreadPrevOffset(msgHeader,
-					                                                    keypressToThreadType(retObj.lastKeypress, enhReaderKeys),
+					                                                    keypressToThreadType(retObj.lastKeypress, this.enhReaderKeys),
 					                                                    true);
 					if (threadPrevMsgOffset > -1)
 					{
@@ -4802,15 +4808,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false; // Don't re-write the current message again
 				break;
-			case enhReaderKeys.nextMsgByTitle: // Next message by title (subject)
-			case enhReaderKeys.nextMsgByAuthor: // Next message by author
-			case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
-			case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
+			case this.enhReaderKeys.nextMsgByTitle: // Next message by title (subject)
+			case this.enhReaderKeys.nextMsgByAuthor: // Next message by author
+			case this.enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
+			case this.enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
 				// Only allow this if we aren't doing a message search.
 				if (!this.SearchingAndResultObjsDefinedForCurSub())
 				{
 					var threadPrevMsgOffset = this.FindThreadNextOffset(msgHeader,
-																		keypressToThreadType(retObj.lastKeypress, enhReaderKeys),
+																		keypressToThreadType(retObj.lastKeypress, this.enhReaderKeys),
 																		true);
 					if (threadPrevMsgOffset > -1)
 					{
@@ -4942,7 +4948,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false; // Don't re-write the current message again
 				break;
-			case enhReaderKeys.prevSubBoard: // Go to the previous message area
+			case this.enhReaderKeys.prevSubBoard: // Go to the previous message area
 				if (allowChgMsgArea)
 				{
 					continueOn = false;
@@ -4951,7 +4957,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false; // Don't re-write the current message again
 				break;
-			case enhReaderKeys.nextSubBoard: // Go to the next message area
+			case this.enhReaderKeys.nextSubBoard: // Go to the next message area
 				if (allowChgMsgArea || this.doingMultiSubBoardScan)
 				{
 					continueOn = false;
@@ -5030,7 +5036,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false; // No need to refresh the message
 				break;
-			case enhReaderKeys.downloadAttachments: // Download attachments
+			case this.enhReaderKeys.downloadAttachments: // Download attachments
 				if (msgInfo.attachments.length > 0)
 				{
 					console.print("\1n");
@@ -5053,7 +5059,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false;
 				break;
-			case enhReaderKeys.saveToBBSMachine:
+			case this.enhReaderKeys.saveToBBSMachine:
 				// Save the message to the BBS machine - Only allow this
 				// if the user is a sysop.
 				if (gIsSysop)
@@ -5135,7 +5141,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	return retObj;
 }
 // Helper method for ReadMessageEnhanced() - Does the traditional (non-scrollable) reader interface
-function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, enhReaderKeys, messageText, msgHasANSICodes, pOffset)
+function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, messageText, msgHasANSICodes, pOffset)
 {
 	var retObj = new Object();
 	retObj.offsetValid = true;
@@ -5208,7 +5214,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 		retObj.lastKeypress = getKeyWithESCChars(K_UPPER);
 		switch (retObj.lastKeypress)
 		{
-			case enhReaderKeys.deleteMessage: // Delete message
+			case this.enhReaderKeys.deleteMessage: // Delete message
 				console.crlf();
 				// Prompt the user for confirmation to delete the message.
 				// Note: this.PromptAndDeleteMessage() will check to see if the user
@@ -5240,12 +5246,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					}
 				}
 				break;
-			case enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
+			case this.enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
 				console.crlf();
 				var selectMessage = !console.noyes("Select this message");
 				this.ToggleSelectedMessage(this.subBoardCode, pOffset, selectMessage);
 				break;
-			case enhReaderKeys.batchDelete:
+			case this.enhReaderKeys.batchDelete:
 				// TODO: Write this?  Not sure yet if it makes much sense to
 				// have batch delete in the reader interface.
 				// Prompt the user for confirmation, and use
@@ -5303,13 +5309,13 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					console.crlf();
 				}
 				break;
-			case "R": // Reply to the message
-			case "I": // Private reply
-				// If the user pressed P (private reply) while reading private
-				// mail, then do nothing (allow only the "R" key to reply).
+			case this.enhReaderKeys.reply: // Reply to the message
+			case this.enhReaderKeys.privateReply: // Private reply
+				// If the user pressed the private reply key while reading private
+				// mail, then do nothing (allow only the regular reply key to reply).
 				// If not reading personal email, go ahead and let the user reply
-				// with either the "P" or "R" keypress.
-				var privateReply = (retObj.lastKeypress == "I");
+				// with either the reply or private reply keypress.
+				var privateReply = (retObj.lastKeypress == this.enhReaderKeys.privateReply);
 				if (privateReply && this.readingPersonalEmail)
 				{
 					writeMessage = false; // Don't re-write the current message again
@@ -5436,16 +5442,16 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					}
 				}
 				break;
-			case enhReaderKeys.prevMsgByTitle: // Previous message by title
-			case enhReaderKeys.prevMsgByAuthor: // Previous message by author
-			case enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
-			case enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
+			case this.enhReaderKeys.prevMsgByTitle: // Previous message by title
+			case this.enhReaderKeys.prevMsgByAuthor: // Previous message by author
+			case this.enhReaderKeys.prevMsgByToUser: // Previous message by 'to user'
+			case this.enhReaderKeys.prevMsgByThreadID: // Previous message by thread ID
 				// Only allow this if we aren't doing a message search.
 				if (!this.SearchingAndResultObjsDefinedForCurSub())
 				{
 					console.crlf(); // For the "Searching..." text
 					var threadPrevMsgOffset = this.FindThreadPrevOffset(msgHeader,
-																		keypressToThreadType(retObj.lastKeypress, enhReaderKeys),
+																		keypressToThreadType(retObj.lastKeypress, this.enhReaderKeys),
 																		false);
 					if (threadPrevMsgOffset > -1)
 					{
@@ -5460,16 +5466,16 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writePromptText = false;
 				}
 				break;
-			case enhReaderKeys.nextMsgByTitle: // Next message by title (subject)
-			case enhReaderKeys.nextMsgByAuthor: // Next message by author
-			case enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
-			case enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
+			case this.enhReaderKeys.nextMsgByTitle: // Next message by title (subject)
+			case this.enhReaderKeys.nextMsgByAuthor: // Next message by author
+			case this.enhReaderKeys.nextMsgByToUser: // Next message by 'to user'
+			case this.enhReaderKeys.nextMsgByThreadID: // Next message by thread ID
 				// Only allow this if we aren't doing a message search.
 				if (!this.SearchingAndResultObjsDefinedForCurSub())
 				{
 					console.crlf(); // For the "Searching..." text
 					var threadNextMsgOffset = this.FindThreadNextOffset(msgHeader,
-																		keypressToThreadType(retObj.lastKeypress, enhReaderKeys),
+																		keypressToThreadType(retObj.lastKeypress, this.enhReaderKeys),
 																		false);
 					if (threadNextMsgOffset > -1)
 					{
@@ -5663,7 +5669,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writePromptText = false;
 				}
 				break;
-			case enhReaderKeys.downloadAttachments: // Download attachments
+			case this.enhReaderKeys.downloadAttachments: // Download attachments
 				if (msgAndAttachmentInfo.attachments.length > 0)
 				{
 					console.print("\1n");
@@ -5682,7 +5688,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writePromptText = false;
 				}
 				break;
-			case enhReaderKeys.saveToBBSMachine:
+			case this.enhReaderKeys.saveToBBSMachine:
 				// Save the message to the BBS machine - Only allow this
 				// if the user is a sysop.
 				if (gIsSysop)
@@ -8623,9 +8629,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		// 2016-08-26: Updated to not close the messagebase because a private
 		// reply on a networked sub-board needs to be able to get a message
 		// header with fields expanded.
-		// TODO: Update ReadMessageEnhanced() to get an expanded header to
-		// pass to this method instead?
-		//this.msgbase.close();
+		this.msgbase.close();
 		if (replyPrivately)
 		{
 			var privReplRetObj = this.DoPrivateReply(pMsgHdr, pMsgIdx, replyMode);
@@ -8639,7 +8643,6 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			console.pause();
 		}
 		msgBaseInfoFile.remove();
-		this.msgbase.close();
 		retObj.msgbaseReOpened = this.msgbase.open();
 
 		// If the user replied to the message and a message search was done that

@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.14
-                           Release date: 2016-08-17
+                                 Version 1.15
+                           Release date: 2016-08-29
 
                                      by
 
@@ -97,6 +97,11 @@ The following is a list of features:
 - Allows the user to download file attachments, whether uploaded to their
   mailbox on Synchronet or attached to internet emails
 - Allows sysops to save a message to the BBS machine for future reference
+- Allows sysops to edit the user account of the message author, if the user's
+  account exists on the BBS.  This is done with the U key while reading a
+  message.  This can be useful for BBSes that require new users to send a
+  message to the sysop when they sign up, in case the sysop needs to edit their
+  account.
 - Allows the ability to batch-delete multiple messages.  This is most useful,
   for instance, if a user gets many spam emails in their personal inbox.  Batch
   deleting is only allowed when the user has permission to delete messages

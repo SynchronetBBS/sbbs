@@ -5,6 +5,16 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.15     2016-08-29   - New user edit feature for sysops only: While reading
+                      a message, the U key will edit the user account of the
+                      author of the message (only if it's a local user account
+                      on the BBS)
+                      - Bug fix: Private reply on a networked sub-board
+                      was no longer working (different from the bug fixed
+                      in 1.14)
+                      - Implemented a check to (hopefully) prevent a crash
+                      related to parsing and replacing @-codes related to
+                      file areas
 1.14     2016-08-17   Bug fix: Version 1.13 was failing to reply to
                       private emails
 1.13     2016-08-16   - Bug fix: Message number error when a new user starts
