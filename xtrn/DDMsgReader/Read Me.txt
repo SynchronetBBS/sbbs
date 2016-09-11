@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.15
-                           Release date: 2016-08-29
+                                 Version 1.16
+                           Release date: 2016-09-11
 
                                      by
 
@@ -96,6 +96,11 @@ The following is a list of features:
   sub-board supports those operations.
 - Allows the user to download file attachments, whether uploaded to their
   mailbox on Synchronet or attached to internet emails
+- Allows the user to forward a message to an email address or another user
+  (using the O key).  This can be useful, for instance, if the user wants to
+  send a message in a public sub-board to their personal email for future
+  reference or send a message from a public sub-board to another user to
+  discuss the topic privately.
 - Allows sysops to save a message to the BBS machine for future reference
 - Allows sysops to edit the user account of the message author, if the user's
   account exists on the BBS.  This is done with the U key while reading a

@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.16     2016-09-11   Added a new feature that allows users to forward a
+                      message to an email address or to another user on the
+                      BBS (using the O key).  This can be useful, for
+                      instance, if the user wants to send a message in a
+                      public sub-board to their personal email for future
+                      reference or send a message from a public sub-board to
+                      another user to discuss the topic privately.
 1.15     2016-08-29   - New user edit feature for sysops only: While reading
                       a message, the U key will edit the user account of the
                       author of the message (only if it's a local user account

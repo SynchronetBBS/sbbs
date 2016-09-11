@@ -186,6 +186,12 @@
  *                              Refactored enhReaderKeys into the object itself
  *                              (this.enhReaderKeys).
  *                              Officially releasing this version, as it seems stable
+ * 2016-09-05 Eric Oulashin     Version 1.16 Beta 1
+ *                              Refactor: Added lots more keys to this.enhReaderKeys.
+ *                              Started working on a way to forward a message to
+ *                              an email address, etc.
+ * 2016-09-11 Eric Oulashin     Version 1.16
+ *                              Message forwarding complete.  Releasing this version.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -276,8 +282,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.15";
-var READER_DATE = "2016-08-29";
+var READER_VERSION = "1.16";
+var READER_DATE = "2016-09-11";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -459,7 +465,7 @@ gNetMsgAttrStrs[MSG_TYPELOCAL] = "ForLocal";
 gNetMsgAttrStrs[MSG_TYPEECHO] = "ForEcho";
 gNetMsgAttrStrs[MSG_TYPENET] = "ForNetmail";
 
-
+var gEmailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 
 // Determine the script's startup directory.
@@ -953,6 +959,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.AllSelectedMessagesCanBeDeleted = DigDistMsgReader_AllSelectedMessagesCanBeDeleted;
 	this.DeleteSelectedMessages = DigDistMsgReader_DeleteSelectedMessages;
 	this.NumSelectedMessages = DigDistMsgReader_NumSelectedMessages;
+	this.ForwardMessage = DigDistMsgReader_ForwardMessage;
 
 	// These two variables keep track of whether we're doing a message scan that spans
 	// multiple sub-boards so that the enhanced reader function can enable use of
@@ -977,6 +984,19 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.enhReaderKeys = new Object();
 	this.enhReaderKeys.reply = "R";
 	this.enhReaderKeys.privateReply = "I";
+	this.enhReaderKeys.editMsg = "E";
+	this.enhReaderKeys.showHelp = "?";
+	this.enhReaderKeys.postMsg = "P";
+	this.enhReaderKeys.nextMsg = KEY_RIGHT;
+	this.enhReaderKeys.previousMsg = KEY_LEFT;
+	this.enhReaderKeys.firstMsg = "F";
+	this.enhReaderKeys.lastMsg = "L";
+	this.enhReaderKeys.showKludgeLines = "K";
+	this.enhReaderKeys.showHdrInfo = "H";
+	this.enhReaderKeys.showMsgList = "M";
+	this.enhReaderKeys.chgMsgArea = "C";
+	this.enhReaderKeys.userEdit = "U";
+	this.enhReaderKeys.quit = "Q";
 	this.enhReaderKeys.prevMsgByTitle = "<";
 	this.enhReaderKeys.nextMsgByTitle = ">";
 	this.enhReaderKeys.prevMsgByAuthor = "{";
@@ -992,6 +1012,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.enhReaderKeys.deleteMessage = KEY_DEL;
 	this.enhReaderKeys.selectMessage = " ";
 	this.enhReaderKeys.batchDelete = CTRL_D;
+	this.enhReaderKeys.forwardMsg = "O";
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -4523,7 +4544,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				//               to delete in a sub-board, failure to open the sub-board, etc.
 				writeMessage = false; // No need to refresh the message
 				break;
-			case "E": // Edit the messaage
+			case this.enhReaderKeys.editMsg: // Edit the messaage
 				if (this.CanEdit())
 				{
 					// Move the cursor to the last line in the message area so
@@ -4593,7 +4614,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false; // Don't write the current message again
 				break;
-			case "?": // Show the help screen
+			case this.enhReaderKeys.showHelp: // Show the help screen
 				this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgInfo.attachments.length > 0);
 				// If the enhanced message header width is less than the console
 				// width, then clear the screen to remove anything left on the
@@ -4677,7 +4698,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					}
 				}
 				break;
-			case "P": // Post a message
+			case this.enhReaderKeys.postMsg: // Post a message
 				if (!this.readingPersonalEmail)
 				{
 					// Let the user post a message.
@@ -4833,7 +4854,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false; // Don't re-write the current message again
 				break;
-			case KEY_LEFT: // Previous message
+			case this.enhReaderKeys.previousMsg: // Previous message
 				// Look for a prior message that isn't marked for deletion.  Even
 				// if we don't find one, we'll still want to return from this
 				// function (with message index -1) so that this script can go
@@ -4867,7 +4888,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false; // No need to refresh the message
 				break;
-			case KEY_RIGHT: // Next message
+			case this.enhReaderKeys.nextMsg: // Next message
 			case KEY_ENTER:
 				// Look for a later message that isn't marked for deletion.  Even
 				// if we don't find one, we'll still want to return from this
@@ -4928,7 +4949,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				break;
 				// First & last message: Quit out of this input loop and let the
 				// calling function, this.ReadMessages(), handle the action.
-			case "F": // First message
+			case this.enhReaderKeys.firstMsg: // First message
 				// Only leave this function if we aren't already on the first message.
 				if (pOffset > 0)
 				{
@@ -4938,7 +4959,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false; // Don't re-write the current message again
 				break;
-			case "L": // Last message
+			case this.enhReaderKeys.lastMsg: // Last message
 				// Only leave this function if we aren't already on the last message.
 				if (pOffset < this.NumMessages() - 1)
 				{
@@ -4968,8 +4989,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				break;
 				// H and K: Display the extended message header info/kludge lines
 				// (for the sysop)
-			case "H":
-			case "K":
+			case this.enhReaderKeys.showHdrInfo:
+			case this.enhReaderKeys.showKludgeLines:
 				if (gIsSysop)
 				{
 					// Save the original cursor position
@@ -4977,7 +4998,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 
 					// Get an array of the extended header info/kludge lines and then
 					// allow the user to scroll through them.
-					var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == "K"));
+					var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == this.enhReaderKeys.showKludgeLines));
 					if (extdHdrInfoLines.length > 0)
 					{
 						// Calculate information for the scrollbar for the kludge lines
@@ -5023,11 +5044,11 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				// Message list, change message area: Quit out of this input loop
 				// and let the calling function, this.ReadMessages(), handle the
 				// action.
-			case "M": // Message list
+			case this.enhReaderKeys.showMsgList: // Message list
 				retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
 				continueOn = false;
 				break;
-			case "C": // Change message area, if allowed
+			case this.enhReaderKeys.chgMsgArea: // Change message area, if allowed
 				if (allowChgMsgArea)
 				{
 					retObj.nextAction = ACTION_CHG_MSG_AREA;
@@ -5098,7 +5119,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false;
 				break;
-			case "U": // Edit the user who wrote the message
+			case this.enhReaderKeys.userEdit: // Edit the user who wrote the message
 				if (gIsSysop)
 				{
 					console.print("\1n");
@@ -5128,7 +5149,30 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else // The user is not a sysop
 					writeMessage = false;
 				break;
-			case "Q": // Quit
+			case this.enhReaderKeys.forwardMsg: // Forward the message
+				console.print("\1n");
+				console.crlf();
+				console.print("\1c- Forward message\1n");
+				console.crlf();
+				var retStr = this.ForwardMessage(msgHeader, messageText);
+				if (retStr.length > 0)
+				{
+					console.print("\1n\1h\1y* " + retStr + "\1n");
+					console.crlf();
+					console.pause();
+				}
+
+				// Refresh things on the screen
+				console.clear("\1n");
+				// Display the message header and key help line again
+				this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+				this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+				// Display the scrollbar again to refresh it on the screen
+				solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+				this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+				writeMessage = true; // We want to refresh the message on the screen
+				break;
+			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
 				break;
@@ -5267,7 +5311,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				//               to delete in a sub-board, failure to open the sub-board, etc.
 				writeMessage = false; // No need to refresh the message
 				break;
-			case "E": // Edit the message
+			case this.enhReaderKeys.editMsg: // Edit the message
 				if (this.CanEdit())
 				{
 					console.crlf();
@@ -5296,7 +5340,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writePromptText = false;
 				}
 				break;
-			case "?": // Show help
+			case this.enhReaderKeys.showHelp: // Show help
 				if (!console.term_supports(USER_ANSI))
 				{
 					console.crlf();
@@ -5367,7 +5411,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					}
 				}
 				break;
-			case "P": // Post a message
+			case this.enhReaderKeys.postMsg: // Post a message
 				if (!this.readingPersonalEmail)
 				{
 					// Let the user post a message.
@@ -5490,7 +5534,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writePromptText = false;
 				}
 				break;
-			case KEY_LEFT: // Previous message
+			case this.enhReaderKeys.previousMsg: // Previous message
 				// TODO: Change the key for this?
 				// Look for a prior message that isn't marked for deletion.  Even
 				// if we don't find one, we'll still want to return from this
@@ -5518,7 +5562,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					retObj.nextAction = ACTION_GO_PREVIOUS_MSG;
 				}
 				break;
-			case KEY_RIGHT: // Next message
+			case this.enhReaderKeys.nextMsg: // Next message
 			case KEY_ENTER:
 				// Look for a later message that isn't marked for deletion.  Even
 				// if we don't find one, we'll still want to return from this
@@ -5566,7 +5610,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					retObj.nextAction = ACTION_GO_NEXT_MSG;
 				}
 				break;
-			case "F": // First message
+			case this.enhReaderKeys.firstMsg: // First message
 				// Only leave this function if we aren't already on the first message.
 				if (pOffset > 0)
 				{
@@ -5579,7 +5623,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writePromptText = false;
 				}
 				break;
-			case "L": // Last message
+			case this.enhReaderKeys.lastMsg: // Last message
 				// Only leave this function if we aren't already on the last message.
 				if (pOffset < this.NumMessages() - 1)
 				{
@@ -5616,16 +5660,16 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writePromptText = false;
 				}
 				break;
-				// H and K: Display the extended message header info/kludge lines
-				// (for the sysop)
-			case "H":
-			case "K":
+			// H and K: Display the extended message header info/kludge lines
+			// (for the sysop)
+			case this.enhReaderKeys.showHdrInfo:
+			case this.enhReaderKeys.showKludgeLines:
 				if (gIsSysop)
 				{
 					console.crlf();
 					// Get an array of the extended header info/kludge lines and then
 					// display them.
-					var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == "K"));
+					var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == this.enhReaderKeys.showKludgeLines));
 					if (extdHdrInfoLines.length > 0)
 					{
 						console.crlf();
@@ -5653,11 +5697,11 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				// Message list, change message area: Quit out of this input loop
 				// and let the calling function, this.ReadMessages(), handle the
 				// action.
-			case "M": // Message list
+			case this.enhReaderKeys.showMsgList: // Message list
 				retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
 				continueOn = false;
 				break;
-			case "C": // Change message area, if allowed
+			case this.enhReaderKeys.chgMsgArea: // Change message area, if allowed
 				if (allowChgMsgArea)
 				{
 					retObj.nextAction = ACTION_CHG_MSG_AREA;
@@ -5718,7 +5762,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				else
 					writeMessage = false;
 				break;
-			case "U": // Edit the user who wrote the message
+			case this.enhReaderKeys.userEdit: // Edit the user who wrote the message
 				if (gIsSysop)
 				{
 					console.print("\1n");
@@ -5737,7 +5781,21 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				}
 				writeMessage = true;
 				break;
-			case "Q": // Quit
+			case this.enhReaderKeys.forwardMsg: // Forward the message
+				console.print("\1n");
+				console.crlf();
+				console.print("\1c- Forward message\1n");
+				console.crlf();
+				var retStr = this.ForwardMessage(msgHeader, messageText);
+				if (retStr.length > 0)
+				{
+					console.print("\1n\1h\1y* " + retStr + "\1n");
+					console.crlf();
+					console.pause();
+				}
+				writeMessage = true;
+				break;
+			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
 				break;
@@ -8864,45 +8922,46 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 		// Thread ID keys: For Synchronet 3.16 and above, include the text "thread ID"
 		// in the help line, since Synchronet 3.16 has the thread_id field in the message
 		// headers.
-		var threadIDLine = "\1h\1c( \1n\1cor \1h)           \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
+		var threadIDLine = "\1h\1c" + this.enhReaderKeys.prevMsgByThreadID + " \1n\1cor \1h" + this.enhReaderKeys.nextMsgByThreadID + "           \1g: \1n\1cGo to the previous\1g/\1cnext message in the thread";
 		/*
 		if (system.version_num >= 31600)
 			threadIDLine += " (thread ID)";
 		*/
 		keyHelpLines.push(threadIDLine);
-		keyHelpLines.push("\1h\1c< \1n\1cor \1h>           \1g: \1n\1cGo to the previous\1g/\1cnext message by title (subject)");
-		keyHelpLines.push("\1h\1c{ \1n\1cor \1h}           \1g: \1n\1cGo to the previous\1g/\1cnext message by author");
-		keyHelpLines.push("\1h\1c[ \1n\1cor \1h]           \1g: \1n\1cGo to the previous\1g/\1cnext message by 'To user'");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.prevMsgByTitle + " \1n\1cor \1h" + this.enhReaderKeys.nextMsgByTitle + "           \1g: \1n\1cGo to the previous\1g/\1cnext message by title (subject)");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.prevMsgByAuthor + " \1n\1cor \1h" + this.enhReaderKeys.nextMsgByAuthor + "           \1g: \1n\1cGo to the previous\1g/\1cnext message by author");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.prevMsgByToUser + " \1n\1cor \1h" + this.enhReaderKeys.nextMsgByToUser + "           \1g: \1n\1cGo to the previous\1g/\1cnext message by 'To user'");
 	}
-	keyHelpLines.push("\1h\1cF \1n\1cor \1hL           \1g: \1n\1cGo to the first\1g/\1clast message in the sub-board");
+	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.firstMsg + " \1n\1cor \1h" + this.enhReaderKeys.lastMsg + "           \1g: \1n\1cGo to the first\1g/\1clast message in the sub-board");
 	if (displayChgAreaOpt)
 	{
 		if (this.doingMultiSubBoardScan)
-			keyHelpLines.push("\1h\1c+                \1g: \1n\1cGo to the next message sub-board");
+			keyHelpLines.push("\1h\1c" + this.enhReaderKeys.nextSubBoard + "                \1g: \1n\1cGo to the next message sub-board");
 		else
-			keyHelpLines.push("\1h\1c-\1n\1c or \1h+           \1g: \1n\1cGo to the previous\1g/\1cnext message sub-board");
-		keyHelpLines.push("\1h\1cC                \1g: \1n\1cChange to a different message sub-board");
+			keyHelpLines.push("\1h\1c" + this.enhReaderKeys.prevSubBoard + "\1n\1c or \1h" + this.enhReaderKeys.nextSubBoard + "           \1g: \1n\1cGo to the previous\1g/\1cnext message sub-board");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.chgMsgArea + "                \1g: \1n\1cChange to a different message sub-board");
 	}
 	else if (this.doingMultiSubBoardScan)
-		keyHelpLines.push("\1h\1c+                \1g: \1n\1cGo to the next message sub-board");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.nextSubBoard + "                \1g: \1n\1cGo to the next message sub-board");
 	if (gIsSysop)
 	{
-		keyHelpLines.push("\1h\1cE                \1g: \1n\1cEdit the current message");
-		keyHelpLines.push("\1h\1cU                \1g: \1n\1cEdit the user who wrote the message");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.editMsg + "                \1g: \1n\1cEdit the current message");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.userEdit + "                \1g: \1n\1cEdit the user who wrote the message");
 	}
-	keyHelpLines.push("\1h\1cM                \1g: \1n\1cList messages in the current sub-board");
+	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.showMsgList + "                \1g: \1n\1cList messages in the current sub-board");
 	if (gIsSysop)
-		keyHelpLines.push("\1h\1cH \1n\1cor \1hK           \1g: \1n\1cDisplay extended header info\1g/\1ckludge lines for the message");
-	keyHelpLines.push("\1h\1cR                \1g: \1n\1cReply to the current message");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.showHdrInfo + " \1n\1cor \1h" + this.enhReaderKeys.showKludgeLines + "           \1g: \1n\1cDisplay extended header info\1g/\1ckludge lines for the message");
+	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.reply + "                \1g: \1n\1cReply to the current message");
 	if (!this.readingPersonalEmail)
 	{
-		keyHelpLines.push("\1h\1cI                \1g: \1n\1cPrivately reply to the current message (via email/NetMail)");
-		keyHelpLines.push("\1h\1cP                \1g: \1n\1cPost a message on the sub-board");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.privateReply + "                \1g: \1n\1cPrivately reply to the current message (via email/NetMail)");
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.postMsg + "                \1g: \1n\1cPost a message on the sub-board");
 	}
 	keyHelpLines.push("\1h\1cNumber           \1g: \1n\1cGo to a specific message by number");
 	keyHelpLines.push("\1h\1cSpacebar         \1g: \1n\1cSelect message (for batch delete, etc.)");
 	keyHelpLines.push("                   \1n\1cFor batch delete, open the message list and use CTRL-D.");
-	keyHelpLines.push("\1h\1cQ                \1g: \1n\1cQuit back to the BBS");
+	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.forwardMsg + "                \1g: \1n\1cForward the message to user/email");
+	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.quit + "                \1g: \1n\1cQuit back to the BBS");
 	for (var idx = 0; idx < keyHelpLines.length; ++idx)
 	{
 		console.print("\1n" + keyHelpLines[idx]);
@@ -12907,6 +12966,178 @@ function DigDistMsgReader_NumSelectedMessages()
 		numSelectedMsgs += Object.keys(this.selectedMessages[subBoardCode]).length;
 
 	return numSelectedMsgs;
+}
+
+// Allows the user to forward a message to an email address or
+// another user.  This function is interactive with the user.
+//
+// Parameters:
+//  pMsgHeader: The header of the message being forwarded
+//  pMsgBody: The body text of the message
+//
+// Return value: A blank string on success or a string containing a
+//               message upon failure.
+function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
+{
+	if (typeof(pMsgHdr) != "object")
+		return "Invalid message header given";
+
+	var retStr = "";
+	
+	console.print("\1n");
+	console.crlf();
+	console.print("\1cUser name/number/email address\1h:\1n");
+	console.crlf();
+	var msgDest = console.getstr(console.screen_columns - 1, K_LINE);
+	console.print("\1n");
+	console.crlf();
+	if (msgDest.length > 0)
+	{
+		var tmpMsgbase = new MsgBase("mail");
+		if (tmpMsgbase.open())
+		{
+			// If the given message body is not a string, then get the
+			// message body from the messagebase.
+			//var messageText = this.msgbase.get_msg_body(true, msgHeader.offset);
+			if (typeof(pMsgBody) != "string")
+				pMsgBody = this.msgbase.get_msg_body(true, pMsgHdr.offset);
+			// Prepend some lines to the message body to describe where
+			// the message came from originally.
+			var newMsgBody = "This is a forwarded message from " + system.name + "\n";
+			newMsgBody += "Forwarded by: " + user.alias;
+			if (user.alias != user.name)
+				newMsgBody += " (" + user.name + ")";
+			newMsgBody += "\n";
+			if (this.subBoardCode == "mail")
+				newMsgBody += "From " + user.name + "'s personal email\n";
+			else
+			{
+				newMsgBody += "From sub-board: "
+				           + msg_area.grp_list[msg_area.sub[this.subBoardCode].grp_index].description
+				           + ", " + msg_area.sub[this.subBoardCode].description + "\n";
+			}
+			newMsgBody += "From: " + pMsgHdr.from + "\n";
+			newMsgBody += "To: " + pMsgHdr.to + "\n";
+			newMsgBody += "Subject: " + pMsgHdr.subject + "\n";
+			newMsgBody += "==================================\n\n";
+			newMsgBody += pMsgBody;
+
+			// Create part of a header object which will be used when saving/sending
+			// the message.  The destination ("to" informatoin) will be filled in
+			// according to the destination type.
+			var destMsgHdr = { to_net_type: NET_NONE, from: user.name,
+							   replyto: user.name, subject: "Fwd: " + pMsgHdr.subject };
+			if (user.netmail.length > 0)
+				destMsgHdr.replyto_net_addr = user.netmail;
+			else
+				destMsgHdr.replyto_net_addr = user.email;
+			//destMsgHdr.when_written_time = 
+			//destMsgHdr.when_written_zone = system.timezone;
+			//destMsgHdr.when_written_zone_offset = 
+
+			var confirmedForwardMsg = true;
+
+			// If the user entered an email address, then forward the message
+			// via Internet email.
+			if (gEmailRegex.test(msgDest))
+			{
+				confirmedForwardMsg = console.yesno("Forward via email to " + msgDest);
+				if (confirmedForwardMsg)
+				{
+					console.print("\1n\1cForwarding via email to " + msgDest + "\1n");
+					console.crlf();
+					destMsgHdr.to = msgDest;
+					destMsgHdr.to_net_addr = msgDest;
+					destMsgHdr.to_net_type = NET_INTERNET;
+				}
+			}
+			else
+			{
+				// See if what the user entered is a user number/name/alias
+				var userNum = 0;
+				if (/^[0-9]+$/.test(msgDest))
+				{
+					userNum = +msgDest;
+					// Determine if the user entered a valid user number
+					var lastUserNum = (system.lastuser == undefined ? system.stats.total_users : system.lastuser + 1);
+					if ((userNum < 1) || (userNum >= lastUserNum))
+					{
+						userNum = 0;
+						console.print("\1h\1y* Invalid user number (" + msgDest + ")\1n");
+						console.crlf();
+					}
+				}
+				else // Try to get a user number assuming msgDest is a username/alias
+					userNum = system.matchuser(msgDest, true);
+				// If we have a valid user number, then we can forward the message.
+				if (userNum > 0)
+				{
+					var destUser = new User(userNum);
+					confirmedForwardMsg = console.yesno("Forward to " + destUser.alias + " (user " + destUser.number + ")");
+					if (confirmedForwardMsg)
+					{
+						destMsgHdr.to = destUser.alias;
+						// If the destination user has an Internet email address,
+						// ask the user if they want to send to the destination
+						// user's Internet email address
+						var sendToNetEmail = false;
+						if (destUser.netmail.length > 0)
+						{
+							sendToNetEmail = !console.noyes("Send to the user's Internet email (" + destUser.netmail + ")");
+							if (sendToNetEmail)
+							{
+								console.print("\1n\1cForwarding to " + destUser.netmail + "\1n");
+								console.crlf();
+								destMsgHdr.to = destUser.name;
+								destMsgHdr.to_net_addr = destUser.netmail;
+								destMsgHdr.to_net_type = NET_INTERNET;
+							}
+						}
+						if (!sendToNetEmail)
+						{
+							console.print("\1n\1cForwarding to " + destUser.alias + "\1n");
+							console.crlf();
+							destMsgHdr.to_ext = destUser.number;
+						}
+					}
+				}
+				else
+				{
+					confirmedForwardMsg = false;
+					console.print("\1h\1y* Unknown destination\1n");
+					console.crlf();
+				}
+			}
+			var savedMsg = true;
+			if (confirmedForwardMsg)
+				savedMsg = tmpMsgbase.save_msg(destMsgHdr, newMsgBody);
+			else
+			{
+				console.print("\1n\1cCanceled\1n");
+				console.crlf();
+			}
+			tmpMsgbase.close();
+
+			if (!savedMsg)
+			{
+				console.print("\1h\1y* Failed to send the message!\1n");
+				console.crlf();
+			}
+
+			// Pause for user input so the user can see the messages written
+			console.pause();
+		}
+		else
+			retStr = "Failed to open email messagebase";
+	}
+	else
+	{
+		console.print("\1n\1cCanceled\1n");
+		console.crlf();
+		console.pause();
+	}
+
+	return retStr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
