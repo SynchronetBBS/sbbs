@@ -99,10 +99,11 @@ RecordFile.prototype.New = function()
 {
 	var i;
 
+	var ret = new RecordFileRecord(this, this.length);
+
 	for(i=0; i<this.fields.length; i++)
 		ret[this.fields[i].prop]=eval(this.fields[i].def.toSource());
 
-	var ret=new RecordFileRecord(this, this.length);
 	ret.Put();
 	return(ret);
 }
