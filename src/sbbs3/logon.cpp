@@ -71,8 +71,10 @@ bool sbbs_t::logon()
 
 	if(useron.rest&FLAG('Q'))
 		qwklogon=1;
-	if(SYSOP && !(cfg.sys_misc&SM_R_SYSOP))
+	if(SYSOP && !(cfg.sys_misc&SM_R_SYSOP)) {
+		hangup();
 		return(false);
+	}
 
 	if(useron.rest&FLAG('G')) {     /* Guest account */
 		useron.misc=(cfg.new_misc&(~ASK_NSCAN));
@@ -103,6 +105,7 @@ bool sbbs_t::logon()
 		sprintf(str,"(%04u)  %-25s  Insufficient node access"
 			,useron.number,useron.alias);
 		logline(LOG_NOTICE,"+!",str);
+		hangup();
 		return(false); 
 	}
 
@@ -114,6 +117,7 @@ bool sbbs_t::logon()
 			sprintf(str,"(%04u)  %-25s  Locked node logon attempt"
 				,useron.number,useron.alias);
 			logline(LOG_NOTICE,"+!",str);
+			hangup();
 			return(false); 
 		}
 		if(yesno(text[RemoveNodeLockQ])) {
