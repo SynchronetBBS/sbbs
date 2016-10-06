@@ -451,6 +451,22 @@ static void dirtyuserdat(scfg_t* cfg, uint usernumber)
 }
 
 /****************************************************************************/
+/****************************************************************************/
+int DLLCALL is_user_online(scfg_t* cfg, uint usernumber)
+{
+	int i;
+	node_t	node;
+
+	for(i=1; i<=cfg->sys_nodes; i++) {
+		getnodedat(cfg, i, &node, 0);
+		if((node.status==NODE_INUSE || node.status==NODE_QUIET
+			|| node.status==NODE_LOGON) && node.useron==usernumber)
+			return i; 
+	}
+	return 0;
+}
+
+/****************************************************************************/
 /* Writes into user.number's slot in user.dat data in structure 'user'      */
 /* Called from functions newuser, useredit and main                         */
 /****************************************************************************/

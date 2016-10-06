@@ -96,6 +96,7 @@ DLLEXPORT int	DLLCALL getnodedat(scfg_t*, uint number, node_t *node, int* file);
 DLLEXPORT int	DLLCALL putnodedat(scfg_t*, uint number, node_t *node, int file);
 DLLEXPORT char* DLLCALL nodestatus(scfg_t*, node_t* node, char* buf, size_t buflen);
 DLLEXPORT void	DLLCALL printnodedat(scfg_t*, uint number, node_t* node);
+DLLEXPORT int	DLLCALL is_user_online(scfg_t*, uint usernumber);
 DLLEXPORT void	DLLCALL packchatpass(char *pass, node_t* node);
 DLLEXPORT char* DLLCALL unpackchatpass(char *pass, node_t* node);
 DLLEXPORT char* DLLCALL getsmsg(scfg_t*, int usernumber);
