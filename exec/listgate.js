@@ -82,6 +82,9 @@ for(i in area) {
 	sub = area[i].sub;
 
 	from = area[i].from;
+	
+	if(!from)
+		from = sub;
 
 	if(from.indexOf('@')<0)	// automaticalliy append system's e-mail host/domain name
 		from+=('@'+system.inet_addr);
