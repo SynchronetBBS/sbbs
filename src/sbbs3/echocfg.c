@@ -137,7 +137,7 @@ int main(int argc, char **argv)
                     break;
                 default:
 					USAGE:
-                    printf("\nusage: echocfg [ctrl_dir] [options]"
+                    printf("\nusage: echocfg [path/to/sbbsecho.ini] [options]"
                         "\n\noptions:\n\n"
                         "-c  =  force color mode\r\n"
 						"-m  =  force monochrome mode\r\n"
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 		if(!p) {
 			p=getenv("SBBSNODE");
 			if(!p) {
-				printf("usage: echocfg [cfg_file]\n");
+				goto USAGE;
 				exit(1); 
 			}
 			strcpy(str,p);
