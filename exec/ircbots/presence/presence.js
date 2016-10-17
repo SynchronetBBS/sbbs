@@ -19,7 +19,8 @@
 		notify_logoff = true
 		notify_xtrn = true
 
-	-	Alter the notify_logon, notify_logoff, notify_xtrn settings as desired
+	-	Alter the 'channels', 'global', 'notify_logon', 'notify_logoff', and
+		'notify_xtrn' settings as desired
 
 */
 
