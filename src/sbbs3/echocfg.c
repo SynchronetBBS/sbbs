@@ -670,7 +670,7 @@ int main(int argc, char **argv)
 				j=0;
 				while(1) {
 					i=0;
-					snprintf(opt[i++],MAX_OPLN-1,"%-30.30s %s","Insecure Inbound Directory"
+					snprintf(opt[i++],MAX_OPLN-1,"%-30.30s %s","Non-secure Inbound Directory"
 						,cfg.inbound);
 					snprintf(opt[i++],MAX_OPLN-1,"%-30.30s %s","Secure Inbound Directory"
 						,cfg.secure_inbound[0] ? cfg.secure_inbound : "<None>");
@@ -693,11 +693,12 @@ int main(int argc, char **argv)
 					switch(j) {
 						case 0:
 	uifc.helpbuf=
-	"~ Insecure Inbound Directory ~\r\n\r\n"
+	"~ Non-secure Inbound Directory ~\r\n\r\n"
 	"This is the complete path (drive and directory) where your FTN\r\n"
-	"mailer stores, and where SBBSecho will look for, incoming message\r\n"
-	"bundles and packets.";
-							uifc.input(WIN_MID|WIN_SAV,0,0,"Insecure Inbound Directory"
+	"mailer stores, and where SBBSecho will look for, incoming files\r\n"
+	"(potentially including message bundles and packets) from unauthenticated\r\n"
+	"(non-secure) mailer sessions.";
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Non-secure Inbound Directory"
 								,cfg.inbound,sizeof(cfg.inbound)-1
 								,K_EDIT);
 							break;
