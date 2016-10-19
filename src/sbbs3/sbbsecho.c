@@ -5257,19 +5257,19 @@ int main(int argc, char **argv)
 		for(i=0; i<cfg.nodecfgs && !terminated; i++) {
 			if(cfg.nodecfg[i].inbox[0] == 0)
 				continue;
-			printf("Scanning %s\n", cfg.nodecfg[i].inbox);
+			printf("Scanning %s inbox: %s\n", faddrtoa(&cfg.nodecfg[i].addr), cfg.nodecfg[i].inbox);
 			do {
 				import_packets(cfg.nodecfg[i].inbox, &cfg.nodecfg[i], /* secure: */true);
 			} while(unpack_bundle(cfg.nodecfg[i].inbox));
 		}
 		if(cfg.secure_inbound[0] && !terminated) {
-			printf("Scanning %s\n", cfg.secure_inbound);
+			printf("Scanning secure inbound: %s\n", cfg.secure_inbound);
 			do { 
 				import_packets(cfg.secure_inbound, NULL, /* secure: */true);
 			} while(unpack_bundle(cfg.secure_inbound));
 		}
 		if(cfg.inbound[0] && !terminated) {
-			printf("Scanning %s\n", cfg.inbound);
+			printf("Scanning non-secure inbound: %s\n", cfg.inbound);
 			do {
 				import_packets(cfg.inbound, NULL, /* secure: */false);
 			} while(unpack_bundle(cfg.inbound));
