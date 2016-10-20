@@ -188,10 +188,10 @@ if(msgbase.open()) {
 		writeln('\t\t\t\t<description>' + encode(body.slice(0,channel.maxdesclength)) + '</description>');
 
         if(this.login==undefined)  // v3.12a 
-            writeln('\t\t\t\t<link>' + link_root + '&amp;item=' + hdr.number + '</link>');
+            writeln('\t\t\t\t<link>' + link_root + (defaults.useentities ? '&amp;' : '&') + 'item=' + hdr.number + '</link>');
         else    // v3.12b
             writeln('\t\t\t\t<link>' + 'http://' + http_request.header.host + '/msgs/msg.ssjs?msg_sub=' + 
-                    channel.sub + '&amp;message=' + hdr.number + '</link>');
+                    channel.sub + (defaults.useentities ? '&amp;' : '&') + 'message=' + hdr.number + '</link>');
 		writeln('\t\t\t</item>');
 		msgs++;
 		if(msgs>=channel.maxmessages)
