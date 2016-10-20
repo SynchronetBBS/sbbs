@@ -97,7 +97,6 @@ function main() {
 		database.cycle();
 
 		var cmd = console.inkey(K_NONE, 5);
-		if (cmd === '/') break;
 
 		switch (state) {
 
