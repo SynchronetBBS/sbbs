@@ -2911,7 +2911,9 @@ ulong DLLCALL loginFailure(link_list_t* list, const union xp_sockaddr* addr, con
 	attempt->time=time32(NULL);
 	memcpy(&attempt->addr, addr, sizeof(*addr));
 	SAFECOPY(attempt->user, user);
-	SAFECOPY(attempt->pass, pass);
+	memset(attempt->pass, 0, sizeof(attempt->pass));
+	if(pass != NULL)
+		SAFECOPY(attempt->pass, pass);
 	attempt->count++;
 	count = attempt->count - attempt->dupes;
 	if(node==NULL)
