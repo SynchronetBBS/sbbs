@@ -1,5 +1,3 @@
-/* scfglib1.c */
-
 /* Synchronet configuration library routines */
 
 /* $Id$ */
@@ -846,4 +844,19 @@ void make_data_dirs(scfg_t* cfg)
 		md(str);
 	}
 #endif
+}
+
+int smb_storage_mode(scfg_t* cfg, smb_t* smb)
+{
+	if(smb->subnum == INVALID_SUB)
+		return (cfg->sys_misc&SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
+	if(smb->subnum >= cfg->total_subs)
+		return -1;
+	if(cfg->sub[smb->subnum]->misc&SUB_HYPER) {
+		smb->status.attr |= SMB_HYPERALLOC;
+		return SMB_HYPERALLOC;
+	}
+	if(cfg->sub[smb->subnum]->misc&SUB_FAST)
+		return SMB_FASTALLOC;
+	return SMB_SELFPACK;
 }

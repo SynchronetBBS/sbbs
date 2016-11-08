@@ -1,5 +1,3 @@
-/* scfglib.h */
-
 /* Synchronet configuration library routine prototypes */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -87,6 +85,8 @@ void	free_chat_cfg(scfg_t* cfg);
 long	aftol(char *str);              /* Converts flag string to long */
 char*	ltoaf(long l, char *str);     /* Converts long to flag string */
 uchar	attrstr(char *str);		/* Convert ATTR string into attribute int */
+
+int		smb_storage_mode(scfg_t*, smb_t*);
 
 #ifdef __cplusplus
 }
