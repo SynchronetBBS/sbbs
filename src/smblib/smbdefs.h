@@ -1,5 +1,3 @@
-/* smbdefs.h */
-
 /* Synchronet message base constant and structure definitions */
 
 /* $Id$ */
@@ -338,6 +336,8 @@
 #define MSG_VALIDATED		(1<<8)
 #define MSG_REPLIED			(1<<9)		/* User replied to this message */
 #define MSG_NOREPLY			(1<<10)		/* No replies (or bounces) should be sent to the sender */
+#define MSG_UPVOTE			(1<<11)		/* This message is an upvote */
+#define MSG_DOWNVOTE		(1<<12)		/* This message is a downvote */
 
 										/* Auxillary header attributes */
 #define MSG_FILEREQUEST 	(1<<0)		/* File request */
@@ -438,9 +438,17 @@ typedef struct _PACK {		/* Time with time-zone */
 
 typedef struct _PACK {		/* Index record */
 
-	uint16_t	to; 			/* 16-bit CRC of recipient name (lower case) */
-	uint16_t	from;			/* 16-bit CRC of sender name (lower case) */
-	uint16_t	subj;			/* 16-bit CRC of subject (lower case, w/o RE:) */
+	union {
+		struct {
+			uint16_t	to; 		/* 16-bit CRC of recipient name (lower case) or user # */
+			uint16_t	from;		/* 16-bit CRC of sender name (lower case) or user # */
+			uint16_t	subj;		/* 16-bit CRC of subject (lower case, w/o RE:) */
+		};
+		struct {
+			uint16_t	vote;		/* vote value */
+			uint32_t	msgnum;		/* number of message this vote is in response to */
+		};
+	};
 	uint16_t	attr;			/* attributes (read, permanent, etc.) */
 	uint32_t	offset; 		/* offset into header file */
 	uint32_t	number; 		/* number of message (1 based) */
@@ -515,14 +523,20 @@ typedef struct _PACK {		/* Message base status header */
 
 } smbstatus_t;
 
+enum smb_msg_type {
+     SMB_MSG_TYPE_NORMAL		/* Classic message (for reading) */
+	,SMB_MSG_TYPE_POLL			/* A poll question  */
+	,SMB_MSG_TYPE_VOTE			/* Voter response to poll or normal message */
+};
+
 typedef struct _PACK {		/* Message header */
 
 	/* 00 */ uchar		id[LEN_HEADER_ID];	/* SHD<^Z> */
-    /* 04 */ uint16_t	type;				/* Message type (normally 0) */
+    /* 04 */ uint16_t	type;				/* Message type (enum smb_msg_type) */
     /* 06 */ uint16_t	version;			/* Version of type (initially 100h for 1.00) */
     /* 08 */ uint16_t	length;				/* Total length of fixed record + all fields */
 	/* 0a */ uint16_t	attr;				/* Attributes (bit field) (duped in SID) */
-	/* 0c */ uint32_t	auxattr;			/* Auxillary attributes (bit field) */
+	/* 0c */ uint32_t	auxattr;			/* Auxiliary attributes (bit field) */
     /* 10 */ uint32_t	netattr;			/* Network attributes */
 	/* 14 */ when_t		when_written;		/* Date/time/zone message was written */
 	/* 1a */ when_t		when_imported;		/* Date/time/zone message was imported */
@@ -531,7 +545,7 @@ typedef struct _PACK {		/* Message header */
     /* 28 */ uint32_t	thread_next;		/* Next message in thread */
     /* 2c */ uint32_t	thread_first;		/* First reply to this message */
 	/* 30 */ uint16_t	delivery_attempts;	/* Delivery attempt counter */
-	/* 32 */ uchar		reserved[2];		/* Reserved for future use */
+	/* 32 */ int16_t	vote;				/* Vote value (response to poll) */
 	/* 34 */ uint32_t	thread_id;			/* Number of original message in thread (or 0 if unknown) */
 	/* 38 */ uint32_t	times_downloaded;	/* Total number of times downloaded (moved Mar-6-2012) */
 	/* 3c */ uint32_t	last_downloaded;	/* Date/time of last download (moved Mar-6-2012) */
@@ -624,6 +638,8 @@ typedef struct {				/* Message */
 	uint32_t	priority;		/* Message priority (0 is lowest) */
 	uint32_t	cost;			/* Cost to download/read */
 	uint32_t	flags;			/* Various smblib run-time flags (see MSG_FLAG_*) */
+	uint32_t	upvotes;		/* Vote tally for this message */
+	uint32_t	downvotes;		/* Vote tally for this message */
 
 } smbmsg_t;
 

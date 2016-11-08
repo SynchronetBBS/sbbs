@@ -1,5 +1,3 @@
-/* atcodes.cpp */
-
 /* Synchronet "@code" functions */
 
 /* $Id$ */
@@ -1051,6 +1049,18 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(current_msg->reply_id==NULL ? nulstr : current_msg->reply_id);
 	if(!strcmp(sp,"MSG_NUM") && current_msg!=NULL) {
 		safe_snprintf(str,maxlen,"%lu",current_msg->hdr.number);
+		return(str);
+	}
+	if(!strcmp(sp,"MSG_SCORE") && current_msg!=NULL) {
+		safe_snprintf(str, maxlen, "%ld", current_msg->upvotes - current_msg->downvotes);
+		return(str);
+	}
+	if(!strcmp(sp,"MSG_UPVOTES") && current_msg!=NULL) {
+		safe_snprintf(str, maxlen, "%lu", current_msg->upvotes);
+		return(str);
+	}
+	if(!strcmp(sp,"MSG_DOWNVOTES") && current_msg!=NULL) {
+		safe_snprintf(str, maxlen, "%lu", current_msg->downvotes);
 		return(str);
 	}
 

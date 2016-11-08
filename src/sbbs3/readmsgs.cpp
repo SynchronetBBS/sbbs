@@ -229,15 +229,12 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 	rewind(smb.sid_fp);
 
 	alloc_len=sizeof(post_t)*total;
-	#ifdef __OS2__
-		while(alloc_len%4096)
-			alloc_len++;
-	#endif
 	if((post=(post_t *)malloc(alloc_len))==NULL) {	/* alloc for max */
 		smb_unlocksmbhdr(&smb);
 		errormsg(WHERE,ERR_ALLOC,smb.file,sizeof(post_t *)*cfg.sub[subnum]->maxmsgs);
 		return(NULL); 
 	}
+	memset(post, 0, alloc_len);
 
 	if(unvalidated_num)
 		*unvalidated_num=ULONG_MAX;
@@ -266,6 +263,20 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED)) {
 			if(mode&LP_REP || !sub_op(subnum))
 				break;
+		}
+
+		if(idx.attr&(MSG_UPVOTE|MSG_DOWNVOTE)) {
+			ulong u;
+			for(u = 0; u < l; u++)
+				if(post[u].idx.number == idx.msgnum)
+					break;
+			if(u < l) {
+				if(idx.attr&MSG_UPVOTE)
+					post[u].upvotes++;
+				else
+					post[u].downvotes++;
+			}
+			continue;
 		}
 
 		if(idx.attr&MSG_PRIVATE && !(mode&LP_PRIVATE)
@@ -643,6 +654,8 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			if(!reads && mode)
 				CRLF;
 
+			msg.upvotes = post[smb.curmsg].upvotes;
+			msg.downvotes = post[smb.curmsg].downvotes;
 			show_msg(&msg
 				,msg.from_ext && !strcmp(msg.from_ext,"1") && !msg.from_net.type
 					? 0:P_NOATCODES);
@@ -737,7 +750,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			bprintf(text[UnvalidatedWarning],unvalidated+1);
 		bprintf(text[ReadingSub],ugrp,cfg.grp[cfg.sub[subnum]->grp]->sname
 			,usub,cfg.sub[subnum]->sname,smb.curmsg+1,smb.msgs);
-		sprintf(str,"ABCDEFILMNPQRTUY?<>[]{}-+()");
+		sprintf(str,"ABCDEFILMNPQRTUVY?<>[]{}-+()");
 		if(sub_op(subnum))
 			strcat(str,"O");
 		do_find=true;
@@ -999,6 +1012,33 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				if(!showposts_toyou(subnum, post,0,smb.msgs, SCAN_UNREAD))
 					bputs(text[NoMessagesFound]);
 				break;
+			case 'V':	/* Vote in reply to message */
+			{
+				smbmsg_t vote;
+
+				if(smb_voted_already(&smb, msg.hdr.number
+					,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL)) {
+					bputs(text[No]);
+					break;
+				}
+				ZERO_VAR(vote);
+				vote.hdr.attr = MSG_UPVOTE;
+				vote.hdr.thread_back = msg.hdr.number;
+				vote.hdr.when_written.time = msg.hdr.when_imported.time = time32(NULL);
+				vote.hdr.when_written.zone = msg.hdr.when_imported.zone = sys_timezone(&cfg);
+
+				smb_hfield_str(&vote, SENDER, cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias);
+
+				sprintf(str, "%u", useron.number);
+				smb_hfield_str(&vote, SENDEREXT, str);
+
+				/* Security logging */
+				msg_client_hfields(&vote, &client);
+				smb_hfield_str(&vote, SENDERSERVER, startup->host_name);
+
+				smb_addvote(&smb, &vote, smb_storage_mode(&cfg, &smb));
+				break;
+			}
 			case '-':
 				if(smb.curmsg>0) smb.curmsg--;
 				do_find=false;
