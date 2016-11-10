@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -76,9 +76,6 @@ uifc.helpbuf=
 		return; }
 
 	if((i&MSK_ON)==MSK_DEL) {
-		strcpy(opt[0],"Yes");
-		strcpy(opt[1],"No");
-		opt[2][0]=0;
 		sprintf(str,"Delete Node %d",cfg.sys_nodes);
 		i=1;
 uifc.helpbuf=
@@ -87,17 +84,16 @@ uifc.helpbuf=
 	"If you are positive you want to delete this node, select Yes. Otherwise,\n"
 	"select No or hit  ESC .\n"
 ;
-		i=uifc.list(WIN_MID,0,0,0,&i,0,str,opt);
+		i=uifc.list(WIN_MID,0,0,0,&i,0,str,uifcYesNoOpts);
 		if(!i) {
 			--cfg.sys_nodes;
-/*			free(cfg.node_path[cfg.sys_nodes]); */
 			cfg.new_install=new_install;
 			write_main_cfg(&cfg,backup_level);
             refresh_cfg(&cfg);
         }
 		continue; }
 	if((i&MSK_ON)==MSK_INS) {
-		strcpy(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
+		SAFECOPY(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
 		i=cfg.sys_nodes+1;
 		uifc.pop("Reading NODE.CNF...");
 		read_node_cfg(&cfg,error);
@@ -121,10 +117,8 @@ uifc.helpbuf=
 		if(j<2)
 			continue;
 		truncsp(str);
-		strcpy(cfg.node_path[i-1],str);
-		if(str[strlen(str)-1]=='\\' || str[strlen(str)-1]=='/')
-			str[strlen(str)-1]=0;
-		MKDIR(str);
+		SAFECOPY(cfg.node_path[i-1],str);
+		md(str);
 		cfg.node_num=++cfg.sys_nodes;
 		SAFEPRINTF(cfg.node_name,"Node %u",cfg.node_num);
 		SAFECOPY(cfg.node_phone,"N/A");
@@ -139,7 +133,7 @@ uifc.helpbuf=
 		if(savnode)
 			free_node_cfg(&cfg);
 		i&=MSK_OFF;
-		strcpy(cfg.node_dir,cfg.node_path[i]);
+		SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 		uifc.pop("Reading NODE.CNF...");
 		read_node_cfg(&cfg,error);
 		uifc.pop(0);
@@ -147,7 +141,7 @@ uifc.helpbuf=
 		continue; }
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
-		strcpy(cfg.node_dir,cfg.node_path[i]);
+		SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 		cfg.node_num=i+1;
 		write_node_cfg(&cfg,backup_level);
         refresh_cfg(&cfg);
@@ -158,7 +152,7 @@ uifc.helpbuf=
 	if(savnode) {
 		free_node_cfg(&cfg);
 		savnode=0; }
-	strcpy(cfg.node_dir,cfg.node_path[i]);
+	SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 	prep_dir(cfg.ctrl_dir, cfg.node_dir, sizeof(cfg.node_dir));
 
 	uifc.pop("Reading NODE.CNF...");
@@ -222,10 +216,6 @@ uifc.helpbuf=
 			done=0;
 			while(!done) {
 				i=0;
-#if 0	/* no longer used */
-				sprintf(opt[i++],"%-27.27s%s","Low Priority String Input"
-					,cfg.node_misc&NM_LOWPRIO ? "Yes":"No");
-#endif
 				sprintf(opt[i++],"%-27.27s%s","Allow Login by User Number"
 					,cfg.node_misc&NM_NO_NUM ? "No":"Yes");
 				sprintf(opt[i++],"%-27.27s%s","Allow Login by Real Name"
@@ -253,38 +243,8 @@ uifc.helpbuf=
 					case -1:
 						done=1;
 						break;
-#if 0 /* no longer used */
-					case 0:
-						i=cfg.node_misc&NM_LOWPRIO ? 0:1;
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
-						uifc.helpbuf=
-							"Low Priority String Input:\n"
-							"\n"
-							"Normally, Synchronet will not give up time slices (under a multitasker)\n"
-							"when users are prompted for a string of characters. This is considered\n"
-							"a high priority task.\n"
-							"\n"
-							"Setting this option to Yes will force Synchronet to give up time slices\n"
-							"during string input, possibly causing jerky keyboard input from the\n"
-							"user, but improving aggregate system performance under multitaskers.\n"
-						;
-						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-							,"Low Priority String Input",opt);
-						if(i==0 && !(cfg.node_misc&NM_LOWPRIO)) {
-							cfg.node_misc|=NM_LOWPRIO;
-							uifc.changes=1; }
-						else if(i==1 && (cfg.node_misc&NM_LOWPRIO)) {
-							cfg.node_misc&=~NM_LOWPRIO;
-							uifc.changes=1; }
-                        break;
-#endif
 					case 0:
 						i=cfg.node_misc&NM_NO_NUM ? 1:0;
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
 						uifc.helpbuf=
 							"Allow Login by User Number:\n"
 							"\n"
@@ -292,7 +252,7 @@ uifc.helpbuf=
 							"set this option to Yes.\n"
 						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-							,"Allow Login by User Number",opt);
+							,"Allow Login by User Number",uifcYesNoOpts);
 						if(i==0 && cfg.node_misc&NM_NO_NUM) {
 							cfg.node_misc&=~NM_NO_NUM;
 							uifc.changes=1; }
@@ -302,9 +262,6 @@ uifc.helpbuf=
                         break;
 					case 1:
 						i=cfg.node_misc&NM_LOGON_R ? 0:1;
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
 						uifc.helpbuf=
 							"Allow Login by Real Name:\n"
 							"\n"
@@ -312,7 +269,7 @@ uifc.helpbuf=
 							"their alias, set this option to Yes.\n"
 						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-							,"Allow Login by Real Name",opt);
+							,"Allow Login by Real Name",uifcYesNoOpts);
 						if(i==0 && !(cfg.node_misc&NM_LOGON_R)) {
 							cfg.node_misc|=NM_LOGON_R;
 							uifc.changes=1; }
@@ -322,9 +279,6 @@ uifc.helpbuf=
                         break;
 					case 2:
 						i=cfg.node_misc&NM_LOGON_P ? 0:1;
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
 						uifc.helpbuf=
 							"Always Prompt for Password:\n"
 							"\n"
@@ -332,7 +286,7 @@ uifc.helpbuf=
 							"prompt for a password, set this option to Yes.\n"
 						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-							,"Always Prompt for Password",opt);
+							,"Always Prompt for Password",uifcYesNoOpts);
 						if(i==0 && !(cfg.node_misc&NM_LOGON_P)) {
 							cfg.node_misc|=NM_LOGON_P;
 							uifc.changes=1; }
@@ -342,9 +296,6 @@ uifc.helpbuf=
                         break;
 					case 3:
 						i=cfg.node_misc&NM_7BITONLY ? 0:1;
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
 						uifc.helpbuf=
 							"Allow 8-bit Remote Input During Login:\n"
 							"\n"
@@ -353,7 +304,7 @@ uifc.helpbuf=
 							"to send IBM extended ASCII characters during the login sequence.\n"
 						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-							,"Allow 8-bit Remote Input During Login",opt);
+							,"Allow 8-bit Remote Input During Login",uifcYesNoOpts);
 						if(i==1 && !(cfg.node_misc&NM_7BITONLY)) {
 							cfg.node_misc|=NM_7BITONLY;
 							uifc.changes=1; }
@@ -363,9 +314,6 @@ uifc.helpbuf=
                         break;
 					case 4:
 						i=cfg.node_misc&NM_NOPAUSESPIN ? 1:0;
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
 						uifc.helpbuf=
 							"Spinning Pause Prompt:\n"
 							"\n"
@@ -373,7 +321,7 @@ uifc.helpbuf=
 							"this option to Yes.\n"
 						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-							,"Spinning Cursor at Pause Prompt",opt);
+							,"Spinning Cursor at Pause Prompt",uifcYesNoOpts);
 						if(i==0 && cfg.node_misc&NM_NOPAUSESPIN) {
 							cfg.node_misc&=~NM_NOPAUSESPIN;
 							uifc.changes=1; }
@@ -383,9 +331,6 @@ uifc.helpbuf=
                         break;
 					case 5:
 						i=cfg.node_misc&NM_CLOSENODEDAB ? 1:0;
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
 						uifc.helpbuf=
 							"Keep Node File Open:\n"
 							"\n"
@@ -395,7 +340,7 @@ uifc.helpbuf=
 							"option to No.\n"
 						;
 						i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-							,"Keep Node File Open",opt);
+							,"Keep Node File Open",uifcYesNoOpts);
 						if(i==0 && cfg.node_misc&NM_CLOSENODEDAB) {
 							cfg.node_misc&=~NM_CLOSENODEDAB;
 							uifc.changes=1; }
