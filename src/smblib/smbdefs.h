@@ -338,8 +338,11 @@
 #define MSG_NOREPLY			(1<<10)		/* No replies (or bounces) should be sent to the sender */
 #define MSG_UPVOTE			(1<<11)		/* This message is an upvote */
 #define MSG_DOWNVOTE		(1<<12)		/* This message is a downvote */
+#define MSG_POLL			(1<<13)		/* This message is a poll */
 
-										/* Auxillary header attributes */
+#define MSG_VOTE			(MSG_UPVOTE|MSG_DOWNVOTE)	/* this message is a poll-vote */
+
+										/* Auxiliary header attributes */
 #define MSG_FILEREQUEST 	(1<<0)		/* File request */
 #define MSG_FILEATTACH		(1<<1)		/* File(s) attached to Msg */
 #define MSG_TRUNCFILE		(1<<2)		/* Truncate file(s) when sent */
@@ -446,7 +449,7 @@ typedef struct _PACK {		/* Index record */
 		};
 		struct {
 			uint16_t	vote;		/* vote value */
-			uint32_t	msgnum;		/* number of message this vote is in response to */
+			uint32_t	remsg;		/* number of message this vote is in response to */
 		};
 	};
 	uint16_t	attr;			/* attributes (read, permanent, etc.) */
@@ -584,10 +587,12 @@ typedef struct _PACK {		/* FidoNet address (zone:net/node.point) */
 #pragma pack(pop)		/* original packing */
 #endif
 
+typedef uint16_t smb_net_type_t;
+
 typedef struct {		/* Network (type and address) */
 
-    uint16_t	type;	// One of enum smb_net_type
-	void*		addr;
+    smb_net_type_t	type;	// One of enum smb_net_type
+	void*			addr;
 
 } net_t;
 

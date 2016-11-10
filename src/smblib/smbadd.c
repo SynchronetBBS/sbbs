@@ -328,11 +328,8 @@ int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 		return SMB_ERR_NOT_OPEN;
 	}
 
-	if(filelength(fileno(smb->shd_fp)) < 1) {	 /* Create it if it doesn't exist */
-		/* smb->status.max_crcs, max_msgs, max_age, and attr should be pre-initialized */
-		if((retval=smb_create(smb))!=SMB_SUCCESS) 
-			return retval;
-	}
+	if(filelength(fileno(smb->shd_fp)) < 1)
+		return SMB_ERR_NOT_FOUND;
 
 	if(!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
