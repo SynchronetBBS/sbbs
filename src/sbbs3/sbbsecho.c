@@ -939,7 +939,7 @@ enum arealist_type {
 void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 {
 	char str[256],title[128],match,*p,*tp;
-	unsigned k,x,y;
+	unsigned k,x;
 	unsigned u;
 	str_list_t	area_list;
 
@@ -2226,6 +2226,9 @@ ulong loadmsgs(post_t** post, ulong ptr)
 			break;
 
 		if(idx.number==0)	/* invalid message number, ignore */
+			continue;
+
+		if(idx.attr&(MSG_VOTE|MSG_POLL))
 			continue;
 
 		if(idx.number<=ptr || (idx.attr&MSG_DELETE))
@@ -3935,6 +3938,9 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 				smb_freemsgmem(&msg);
 				continue; 
 			}
+
+			if(msg.hdr.type != SMB_MSG_TYPE_NORMAL)
+				continue;
 
 			memset(&hdr,0,sizeof(fmsghdr_t));	 /* Zero the header */
 			hdr.origzone=scfg.sub[i]->faddr.zone;
