@@ -1,5 +1,3 @@
-/* qwk.cpp */
-
 /* Synchronet QWK packet-related functions */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -378,7 +376,6 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 		if(msgs)
 			free(mail); 
 	}
-
 }
 
 /****************************************************************************/
@@ -469,6 +466,8 @@ void sbbs_t::qwk_sec()
 					,useron.qwk&QWK_NOINDEX ? text[No]:text[Yes]);
 				bprintf(text[QWKSettingsControl]
 					,useron.qwk&QWK_NOCTRL ? text[No]:text[Yes]);
+				bprintf(text[QWKSettingsVoting]
+					,useron.qwk&QWK_VOTING ? text[Yes]:text[No]);
 				bprintf(text[QWKSettingsHeaders]
 					,useron.qwk&QWK_HEADERS ? text[Yes]:text[No]);
 				bprintf(text[QWKSettingsBySelf]
@@ -482,7 +481,7 @@ void sbbs_t::qwk_sec()
 				bprintf(text[QWKSettingsExtended]
 					,useron.qwk&QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[QWKSettingsWhich]);
-				ch=(char)getkeys("AEDFHIOQTYMNCXZV",0);
+				ch=(char)getkeys("AEDFHIOPQTYMNCXZV",0);
 				if(sys_status&SS_ABORT || !ch || ch=='Q' || !online)
 					break;
 				switch(ch) {
@@ -537,6 +536,9 @@ void sbbs_t::qwk_sec()
 						useron.qwk^=QWK_TZ;
 						break;
 					case 'V':
+						useron.qwk^=QWK_VOTING;
+						break;
+					case 'P':
 						useron.qwk^=QWK_VIA;
 						break;
 					case 'M':
@@ -1000,3 +1002,64 @@ int sbbs_t::set_qwk_flag(ulong flag)
 	return putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
 }
 
+bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type)
+{
+	FILE *fp;
+	str_list_t ini;
+	str_list_t votes;
+
+	if((fp=fopen(fname,"r")) == NULL) {
+		errormsg(WHERE, ERR_OPEN, fname, 0);
+		return false;
+	}
+	ini = iniReadFile(fp);
+	fclose(fp);
+	if((votes = iniGetSectionList(ini, "vote:")) != NULL) {
+		smb_t smb;
+		unsigned u;
+
+		ZERO_VAR(smb);
+		smb.subnum = INVALID_SUB;
+
+		for(u = 0; votes[u] != NULL; u++) {
+			smbmsg_t msg;
+
+			ZERO_VAR(msg);
+			smb_hfield_str(&msg, RFC822MSGID, votes[u] + 5);
+			smb_hfield_str(&msg, RFC822REPLYID, iniGetString(ini, votes[u], smb_hfieldtype(RFC822REPLYID), NULL, NULL));
+			smb_hfield_str(&msg, SENDER, iniGetString(ini, votes[u], smb_hfieldtype(SENDER), NULL, NULL)); 
+			if(iniGetBool(ini, votes[u], "upvote", FALSE))
+				msg.hdr.attr = MSG_UPVOTE;
+			else if(iniGetBool(ini, votes[u], "downvote", FALSE))
+				msg.hdr.attr = MSG_DOWNVOTE;
+			else {
+				msg.hdr.attr = MSG_VOTE;
+				msg.hdr.vote = iniGetShortInt(ini, votes[u], "vote", 0);
+			}
+			if(net_type != NET_NONE)
+				smb_hfield_netaddr(&msg
+					,SENDERNETADDR, iniGetString(ini,votes[u], smb_hfieldtype(SENDERNETTYPE), NULL, NULL), &net_type);
+			uint subnum = resolve_qwkconf(iniGetInteger(ini, votes[u], "Conference", 0));
+			if(subnum == INVALID_SUB)
+				continue;
+			if(cfg.sub[subnum]->misc&SUB_NOVOTING)
+				continue;
+			if(subnum != smb.subnum) {
+				if(smb.subnum != INVALID_SUB) {
+					smb_close(&smb);
+					smb.subnum = INVALID_SUB;
+				}
+				if(smb_open(&smb) != SMB_SUCCESS)
+					continue;
+				smb.subnum = subnum;
+			}
+			/* ToDo: prevent duplicate votes here */
+			smb_addvote(&smb, &msg, smb_storage_mode(&cfg, &smb));
+		}
+		if(smb.subnum != INVALID_SUB)
+			smb_close(&smb);
+		iniFreeStringList(votes);
+	}
+	iniFreeStringList(ini);
+	return true;
+}

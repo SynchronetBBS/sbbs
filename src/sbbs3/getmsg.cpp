@@ -1,5 +1,3 @@
-/* getmsg.cpp */
-
 /* Synchronet message retrieval functions */
 
 /* $Id$ */
@@ -105,7 +103,7 @@ void sbbs_t::show_msgattr(ushort attr)
 		,attr&MSG_VALIDATED ? "Validated  " :nulstr
 		,attr&MSG_REPLIED	? "Replied  "	:nulstr
 		,attr&MSG_NOREPLY	? "NoReply  "	:nulstr
-		,nulstr
+		,attr&MSG_POLL	    ? "Poll  "		:nulstr
 		,nulstr
 		,nulstr
 		,nulstr
@@ -138,7 +136,6 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	bprintf(text[MsgSubj],msg->subj);
 	if(msg->hdr.attr)
 		show_msgattr(msg->hdr.attr);
-
 	bprintf(text[MsgTo],msg->to);
 	if(msg->to_net.addr!=NULL)
 		bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
@@ -151,6 +148,8 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 		if(msg->from_net.addr!=NULL && strchr(msg->from,'@')==NULL)
 			bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str)); 
 	}
+	if(msg->upvotes || msg->downvotes)
+		bprintf(text[MsgVotes], msg->upvotes, msg->downvotes);
 	bprintf(text[MsgDate]
 		,timestr(msg->hdr.when_written.time)
 		,smb_zonestr(msg->hdr.when_written.zone,NULL)

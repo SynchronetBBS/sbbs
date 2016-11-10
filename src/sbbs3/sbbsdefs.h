@@ -224,6 +224,7 @@ typedef struct js_callback {
 									/* (bits 8-15 default to off)				*/
 
 									/* Bit values for sub[x].misc */
+#define SUB_NOVOTING	(1L<<0)		/* No voting allowed in this sub-board */
 #define SUB_QNET		(1L<<3) 	/* Sub-board is netted via QWK network */
 #define SUB_PNET		(1L<<4) 	/* Sub-board is netted via PostLink */
 #define SUB_FIDO		(1L<<5) 	/* Sub-board is netted via FidoNet */
@@ -242,9 +243,9 @@ typedef struct js_callback {
 #define SUB_NSDEF		(1L<<18)	/* New-Scan on by default */
 #define SUB_INET		(1L<<19)	/* Sub-board is netted via Internet */
 #define SUB_FAST		(1L<<20)	/* Fast storage mode */
-#define SUB_KILL		(1L<<21)	/* Kill read messages automatically */
-#define SUB_KILLP		(1L<<22)	/* Kill read pvt messages automatically */
-#define SUB_SYSPERM		(1L<<23)	/* Sysop messages are permament */
+#define SUB_KILL		(1L<<21)	/* Kill read messages automatically (NOT IMPLEMENTED) */
+#define SUB_KILLP		(1L<<22)	/* Kill read pvt messages automatically (NOT IMPLEMENTED) */
+#define SUB_SYSPERM		(1L<<23)	/* Sysop messages are permanent */
 #define SUB_GATE		(1L<<24)	/* Gateway between Network types */
 #define SUB_LZH 		(1L<<25)	/* Use LZH compression for msgs */
 #define SUB_SSDEF		(1L<<26)	/* Default ON for Scan for Your msgs */
@@ -255,7 +256,7 @@ typedef struct js_callback {
 #define SUB_HDRMOD		(1L<<31)	/* Modified sub-board header info (SCFG) */
 
                                     /* Bit values for dir[x].misc */
-#define DIR_FCHK	(1<<0) 			/* Check for file existance */
+#define DIR_FCHK	(1<<0) 			/* Check for file existence */
 #define DIR_RATE	(1<<1) 			/* Force uploads to be rated G,R, or X */
 #define DIR_MULT	(1<<2) 			/* Ask for multi-disk numbering */
 #define DIR_DUPES	(1<<3) 			/* Search this dir for upload dupes */
@@ -424,6 +425,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QWK_EXT		(1L<<13)		/* QWK Extended (QWKE) format			*/
 #define QWK_MSGID	(1L<<14)		/* Include "@MSGID" in msgs				*/
 #define QWK_HEADERS	(1L<<16)		/* Include HEADERS.DAT file				*/
+#define QWK_VOTING	(1L<<17)		/* Include POLLS.DAT and VOTES.DAT		*/
 
 #define QWK_DEFAULT	(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL)
 																			
@@ -736,6 +738,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LP_UNREAD	(1<<2)		/* Un-read messages only					*/
 #define LP_PRIVATE	(1<<3)		/* Include all private messages 			*/
 #define LP_REP		(1<<4)		/* Packing REP packet						*/
+#define LP_POLLS	(1<<5)		/* Include polls							*/
+#define LP_VOTES	(1<<6)		/* Include votes							*/
 								
 								/* Bits in the mode of loadmail()			*/
 #define LM_UNREAD	(1<<0)		/* Include un-read mail only				*/

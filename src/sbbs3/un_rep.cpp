@@ -1,5 +1,3 @@
-/* un_rep.cpp */
-
 /* Synchronet QWK replay (REP) packet unpacking routine */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2014 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -160,8 +158,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 	fread(block,QWK_BLOCK_LEN,1,rep);
 	if(strnicmp((char *)block,cfg.sys_id,strlen(cfg.sys_id))) {
-		if(headers!=NULL)
-			iniFreeStringList(headers);
+		iniFreeStringList(headers);
 		fclose(rep);
 		bputs(text[QWKReplyNotReceived]);
 		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
@@ -540,6 +537,17 @@ bool sbbs_t::unpack_rep(char* repfile)
 	update_qwkroute(NULL);			/* Write ROUTE.DAT */
 
 	iniFreeStringList(headers);
+
+	SAFEPRINTF(fname, "%sVOTING.DAT", cfg.temp_dir);
+	if(fexistcase(fname)) {
+		if(useron.rest&FLAG('V'))
+			bputs(text[R_Voting]);
+		else {
+			set_qwk_flag(QWK_VOTING);
+			qwk_voting(fname, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE);
+		}
+		remove(fname);
+	}
 
 	strListFree(&ip_can);
 	strListFree(&host_can);

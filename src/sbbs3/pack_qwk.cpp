@@ -63,6 +63,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	glob_t	g;
 	FILE	*stream,*qwk,*personal,*ndx;
 	FILE*	hdrs=NULL;
+	FILE*	voting=NULL;
 	DIR*	dir;
 	DIRENT*	dirent;
 	struct	tm tm;
@@ -294,6 +295,16 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			return(false); 
 		}
 	}
+	if(useron.qwk&QWK_VOTING) {
+		SAFEPRINTF(str,"%sVOTING.DAT",cfg.temp_dir);
+		if((voting=fopen(str,"a"))==NULL) {
+			fclose(qwk);
+			if(hdrs!=NULL)
+				fclose(hdrs);
+			errormsg(WHERE,ERR_OPEN,str,0);
+			return(false); 
+		}
+	}
 	l=(long)filelength(fileno(qwk));
 	if(l<1) {
 		fprintf(qwk,"%-128.128s","Produced by " VERSION_NOTICE "  " COPYRIGHT_NOTICE);
@@ -320,6 +331,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			fclose(qwk);
 			if(hdrs!=NULL)
 				fclose(hdrs);
+			if(voting!=NULL)
+				fclose(voting);
 			errormsg(WHERE,ERR_OPEN,str,0);
 			return(false); 
 		}
@@ -335,6 +348,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			fclose(qwk);
 			if(hdrs!=NULL)
 				fclose(hdrs);
+			if(voting!=NULL)
+				fclose(voting);
 			if(personal)
 				fclose(personal);
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
@@ -355,6 +370,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					fclose(qwk);
 					if(hdrs!=NULL)
 						fclose(hdrs);
+					if(voting!=NULL)
+						fclose(voting);
 					if(personal)
 						fclose(personal);
 					smb_close(&smb);
@@ -393,7 +410,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				size=msgtoqwk(&msg,qwk,mode,INVALID_SUB,0,hdrs);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_freemsgmem(&msg);
-				if(ndx) {
+				if(ndx && size) {
 					msgndx++;
 					f=ltomsbin(msgndx); 	/* Record number */
 					ch=0;					/* Sub number, not used */
@@ -457,6 +474,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					k|=LP_BYSELF;
 				if(useron.rest&FLAG('Q') || !(subscan[usrsub[i][j]].cfg&SUB_CFG_YSCAN))
 					k|=LP_OTHERS;
+				if(useron.qwk&QWK_VOTING)
+					k|=LP_POLLS|LP_VOTES;
 				post=loadposts(&posts,usrsub[i][j],subscan[usrsub[i][j]].ptr,k,NULL);
 
 				bprintf(text[NScanStatusFmt]
@@ -478,6 +497,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 						fclose(qwk);
 						if(hdrs!=NULL)
 							fclose(hdrs);
+						if(voting!=NULL)
+							fclose(voting);
 						if(personal)
 							fclose(personal);
 						smb_close(&smb);
@@ -521,10 +542,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					else
 						mode&=~(QM_TAGLINE|QM_TO_QNET);
 
-					size=msgtoqwk(&msg,qwk,mode,usrsub[i][j],conf,hdrs);
+					size=msgtoqwk(&msg,qwk,mode,usrsub[i][j],conf,hdrs,voting);
 					smb_unlockmsghdr(&smb,&msg);
 
-					if(ndx) {
+					if(ndx && size) {
 						msgndx++;
 						f=ltomsbin(msgndx); 	/* Record number */
 						ch=0;					/* Sub number, not used */
@@ -540,8 +561,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					}
 
 					smb_freemsgmem(&msg);
-					(*msgcnt)++;
-					submsgs++;
+					if(size) {
+						(*msgcnt)++;
+						submsgs++;
+					}
 					if(cfg.max_qwkmsgs
 						&& !(useron.exempt&FLAG('O')) && (*msgcnt)>=cfg.max_qwkmsgs) {
 						bputs(text[QWKmsgLimitReached]);
@@ -597,6 +620,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	fclose(qwk);			/* close MESSAGE.DAT */
 	if(hdrs!=NULL)
 		fclose(hdrs);		/* close HEADERS.DAT */
+	if(voting!=NULL)
+		fclose(voting);
 	if(personal) {
 		fclose(personal);		 /* close PERSONAL.NDX */
 		SAFEPRINTF(str,"%sPERSONAL.NDX",cfg.temp_dir);

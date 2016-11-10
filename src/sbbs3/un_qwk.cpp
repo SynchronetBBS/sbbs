@@ -1,5 +1,3 @@
-/* un_qwk.cpp */
-
 /* Synchronet QWK unpacking routine */
 
 /* $Id$ */
@@ -331,6 +329,12 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	fclose(qwk);
 
 	iniFreeStringList(headers);
+
+	SAFEPRINTF(fname, "%sVOTING.DAT", cfg.temp_dir);
+	if(fexistcase(fname)) {
+		qwk_voting(fname, NET_QWK);
+		remove(fname);
+	}
 
 	strListFree(&ip_can);
 	strListFree(&host_can);

@@ -822,6 +822,13 @@ enum {
 	,InTheFuture
 	,AgeOfPostedItem
 	,NodeStatusLogout
+	,VotingNotAllowed
+	,VotedAlready
+	,QWKSettingsVoting
+	,VoteMsgUpDownOrQuit
+	,MsgVotes
+	,MsgVoteNotice
+	,R_Voting
 
 	,TOTAL_TEXT
 };

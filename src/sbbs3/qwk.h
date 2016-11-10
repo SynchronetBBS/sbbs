@@ -1,5 +1,3 @@
-/* qwk.h */
-
 /* Synchronet QWK-related structures, constants, and prototypes */ 
 
 /* $Id$ */

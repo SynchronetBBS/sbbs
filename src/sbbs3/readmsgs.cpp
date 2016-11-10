@@ -1,5 +1,3 @@
-/* readmsgs.cpp */
-
 /* Synchronet public message reading function */
 
 /* $Id$ */
@@ -265,18 +263,27 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 				break;
 		}
 
-		if(idx.attr&(MSG_UPVOTE|MSG_DOWNVOTE)) {
+		if(idx.attr&MSG_VOTE) {
 			ulong u;
 			for(u = 0; u < l; u++)
-				if(post[u].idx.number == idx.msgnum)
+				if(post[u].idx.number == idx.remsg)
 					break;
 			if(u < l) {
-				if(idx.attr&MSG_UPVOTE)
+				switch(idx.attr&MSG_VOTE) {
+				case MSG_UPVOTE:
 					post[u].upvotes++;
-				else
+					break;
+				case MSG_DOWNVOTE:
 					post[u].downvotes++;
+					break;
+				}
 			}
-			continue;
+			if(!(mode&LP_VOTES))
+				continue;
+		}
+		if(idx.attr&MSG_POLL) {
+			if(!(mode&LP_POLLS))
+				continue;
 		}
 
 		if(idx.attr&MSG_PRIVATE && !(mode&LP_PRIVATE)
@@ -1016,19 +1023,36 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			{
 				smbmsg_t vote;
 
-				if(smb_voted_already(&smb, msg.hdr.number
-					,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL)) {
-					bputs(text[No]);
+				if(cfg.sub[subnum]->misc&SUB_NOVOTING) {
+					bputs(text[VotingNotAllowed]);
+					domsg = false;
 					break;
 				}
+				if(smb_voted_already(&smb, msg.hdr.number
+					,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL)) {
+					bputs(text[VotedAlready]);
+					domsg = false;
+					break;
+				}
+				if(useron.rest&FLAG('V')) {
+					bputs(text[R_Voting]);
+					domsg = false;
+					break;
+				}
+				mnemonics(text[VoteMsgUpDownOrQuit]);
+				long cmd = getkeys("UDQ", 0);
+				if(cmd != 'U' && cmd != 'D')
+					break;
 				ZERO_VAR(vote);
-				vote.hdr.attr = MSG_UPVOTE;
+				vote.hdr.attr = (cmd == 'U' ? MSG_UPVOTE : MSG_DOWNVOTE);
 				vote.hdr.thread_back = msg.hdr.number;
-				vote.hdr.when_written.time = msg.hdr.when_imported.time = time32(NULL);
-				vote.hdr.when_written.zone = msg.hdr.when_imported.zone = sys_timezone(&cfg);
+				vote.hdr.when_written.time = vote.hdr.when_imported.time = time32(NULL);
+				vote.hdr.when_written.zone = vote.hdr.when_imported.zone = sys_timezone(&cfg);
 
-				smb_hfield_str(&vote, SENDER, cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias);
-
+				smb_hfield_str(&vote, SENDER, (cfg.sub[subnum]->misc&SUB_NAME) ? useron.name : useron.alias);
+				if(msg.id != NULL)
+					smb_hfield_str(&vote, RFC822REPLYID, msg.id);
+				
 				sprintf(str, "%u", useron.number);
 				smb_hfield_str(&vote, SENDEREXT, str);
 
