@@ -10,6 +10,7 @@ ifdef DEBUG
 else
  JS_CONFIGURE_ARGS += --enable-optimize=-O3
 endif
+JS_CONFIGURE_ENV += 'CXXFLAGS=-std=gnu++98'
 ifeq ($(shell perl -e 'print "$(machine)"=~/\.arm/?"YES":"NO"'),YES)
  ifeq ($(shell perl -e 'print "$(machine)"=~/\.armv[1-6]/?"YES":"NO"'),YES)
   JS_CONFIGURE_ARGS += --with-cpu-arch=armv5te
