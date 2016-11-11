@@ -442,12 +442,12 @@ typedef struct _PACK {		/* Time with time-zone */
 typedef struct _PACK {		/* Index record */
 
 	union {
-		struct {
+		struct _PACK {
 			uint16_t	to; 		/* 16-bit CRC of recipient name (lower case) or user # */
 			uint16_t	from;		/* 16-bit CRC of sender name (lower case) or user # */
 			uint16_t	subj;		/* 16-bit CRC of subject (lower case, w/o RE:) */
 		};
-		struct {
+		struct _PACK {
 			uint16_t	vote;		/* vote value */
 			uint32_t	remsg;		/* number of message this vote is in response to */
 		};
