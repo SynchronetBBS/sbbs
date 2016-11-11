@@ -10,7 +10,7 @@ ifdef DEBUG
 else
  JS_CONFIGURE_ARGS += --enable-optimize=-O3
 endif
-JS_CONFIGURE_ENV += 'CXXFLAGS=-std=gnu++98'
+CXXFLAGS = -std=gnu++98
 ifeq ($(shell perl -e 'print "$(machine)"=~/\.arm/?"YES":"NO"'),YES)
  ifeq ($(shell perl -e 'print "$(machine)"=~/\.armv[1-6]/?"YES":"NO"'),YES)
   JS_CONFIGURE_ARGS += --with-cpu-arch=armv5te
@@ -18,15 +18,16 @@ ifeq ($(shell perl -e 'print "$(machine)"=~/\.arm/?"YES":"NO"'),YES)
  ifeq ($(shell perl -e 'print `gcc -v 2>&1`=~/--with-fpu=vfp/?"YES":"NO"'),YES)
   ifeq ($(shell perl -e 'print `gcc -v 2>&1`=~/--with-float=hard/?"YES":"NO"'),YES)
    JS_CONFIGURE_ENV += 'CFLAGS=-mfpu=vfp -mfloat-abi=hard'
-   JS_CONFIGURE_ENV += 'CXXFLAGS=-mfpu=vfp -mfloat-abi=hard'
+   CXXFLAGS += -mfpu=vfp -mfloat-abi=hard
    JS_CONFIGURE_ENV += 'ASFLAGS=-mfpu=vfp -mfloat-abi=hard'
   else
    JS_CONFIGURE_ENV += 'CFLAGS=-msoft-float'
-   JS_CONFIGURE_ENV += 'CXXFLAGS=-msoft-float'
+   CXXFLAGS += -msoft-float
    JS_CONFIGURE_ENV += 'ASFLAGS=-msoft-float'
   endif
  endif
 endif
+JS_CONFIGURE_ENV += 'CXXFLAGS=$(CXXFLAGS)'
 
 .PHONY: cryptlib libmozjs
 cryptlib: $(CRYPTLIB_BUILD)
