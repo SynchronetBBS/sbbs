@@ -1,5 +1,3 @@
-/* smbutil.c */
-
 /* Synchronet message base (SMB) utility */
 
 /* $Id$ */
@@ -532,10 +530,15 @@ void dumpindex(ulong start, ulong count)
 	while(l<count) {
 		if(!fread(&idx,1,sizeof(idx),smb.sid_fp))
 			break;
-
-		printf("%4"PRIu32" %04hX %04hX %04Xh %04Xh %06X %s\n"
-			,idx.number,idx.from,idx.to,idx.subj,idx.attr
-			,idx.offset,my_timestr(idx.time));
+		printf("%10"PRIu32"  ", idx.number);
+		if(idx.attr&MSG_VOTE)
+			printf("V  %04hX  %-10"PRIu32
+				,idx.vote,idx.remsg,idx.attr
+				,idx.offset,my_timestr(idx.time));
+		else
+			printf("M  %04hX  %04hX  %04X"
+				,idx.from, idx.to, idx.subj);
+		printf("  %04X  %06X  %s\n", idx.attr, idx.offset, my_timestr(idx.time));
 		l++; 
 	}
 }
