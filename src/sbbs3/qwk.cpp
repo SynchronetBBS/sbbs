@@ -1038,7 +1038,7 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type)
 			}
 			if(net_type != NET_NONE)
 				smb_hfield_netaddr(&msg
-					,SENDERNETADDR, iniGetString(ini,votes[u], smb_hfieldtype(SENDERNETTYPE), NULL, NULL), &net_type);
+					,SENDERNETADDR, iniGetString(ini,votes[u], smb_hfieldtype(SENDERNETADDR), NULL, NULL), &net_type);
 			uint subnum = resolve_qwkconf(iniGetInteger(ini, votes[u], "Conference", 0));
 			if(subnum == INVALID_SUB)
 				continue;
