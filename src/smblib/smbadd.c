@@ -331,18 +331,10 @@ int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 	if(filelength(fileno(smb->shd_fp)) < 1)
 		return SMB_ERR_NOT_FOUND;
 
-	if(!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
-		return SMB_ERR_LOCK;
-
-	msg->hdr.total_dfields = 0;
-
-	if((retval=smb_getstatus(smb)) != SMB_SUCCESS) {
-		smb_unlocksmbhdr(smb);
-		return retval;
-	}
+	if(!(msg->hdr.attr&MSG_VOTE))
+		return SMB_ERR_HDR_ATTR;
 
 	msg->hdr.type = SMB_MSG_TYPE_VOTE;
-	msg->hdr.number = smb->status.last_msg+1;
 
 	if(msg->hdr.when_imported.time == 0) {
 		msg->hdr.when_imported.time = (uint32_t)time(NULL);
@@ -363,10 +355,7 @@ int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 			msg->hdr.thread_back = remsg.idx.number;	/* needed for threading backward */
 	}
 
-	retval = smb_addmsghdr(smb, msg, storage); /* calls smb_unlocksmbhdr() */
-
-	if(smb->locked)
-		smb_unlocksmbhdr(smb);
+	retval = smb_addmsghdr(smb, msg, storage);
 
 	return retval;
 }
