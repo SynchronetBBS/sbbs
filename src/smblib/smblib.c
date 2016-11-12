@@ -1940,6 +1940,7 @@ int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 			return(retval);
 
 		remsg->hdr.thread_first=newmsgnum;
+		remsg->hdr.attr |= MSG_REPLIED;
 		retval=smb_putmsghdr(smb,remsg);
 		smb_unlockmsghdr(smb,remsg);
 		return(retval);
@@ -1949,7 +1950,7 @@ int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 	memset(&nextmsg,0,sizeof(nextmsg));
 	nextmsgnum=remsg->hdr.thread_first;	/* start with first reply */
 
-	while(1) {
+	while(nextmsgnum > nextmsg.hdr.number) {
 		nextmsg.idx.offset=0;
 		nextmsg.hdr.number=nextmsgnum;
 		if(smb_getmsgidx(smb, &nextmsg)!=SMB_SUCCESS) /* invalid thread origin */
