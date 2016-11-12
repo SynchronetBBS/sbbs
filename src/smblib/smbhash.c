@@ -1,5 +1,3 @@
-/* smbhash.c */
-
 /* Synchronet message base (SMB) hash-related functions */
 
 /* $Id$ */
@@ -130,8 +128,10 @@ int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes, BOOL skip_marked)
 	size_t	h;
 
 	COUNT_LIST_ITEMS(hashes, h);
-	if(!h)	/* nothing to add */
+	if(!h) { /* nothing to add */
+		smb_close_hash(smb);
 		return(SMB_SUCCESS);
+	}
 
 	if((retval=smb_open_hash(smb))!=SMB_SUCCESS)
 		return(retval);
@@ -303,7 +303,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 	hash_t		found;
 	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
 
-	if(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))
+	if(smb->status.attr&(SMB_EMAIL|SMB_NOHASH) || (msg->hdr.attr&MSG_VOTE))
 		return(SMB_SUCCESS);
 
 	hashes=smb_msghashes(msg,text,SMB_HASH_SOURCE_DUPE);
