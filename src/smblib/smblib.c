@@ -1246,7 +1246,9 @@ int	SMBCALL smb_hfield_add_netaddr(smbmsg_t* msg, uint16_t type, const char* add
 	fidoaddr_t	sys_addr = {0,0,0,0};	/* replace unspecified fields with 0 (don't assume 1:1/1) */
 	fidoaddr_t	fidoaddr;
 	uint16_t	tmp_net_type=NET_UNKNOWN;
-	
+
+	if(addr == NULL)
+		return SMB_ERR_HDR_FIELD;
 	SKIP_WHITESPACE(addr);
 	if(net_type==NULL)
 		net_type=&tmp_net_type;
