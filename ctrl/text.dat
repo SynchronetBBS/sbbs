@@ -947,8 +947,9 @@
 "Logging out \1h%s"		        		778 NodeStatusLogout
 "\r\n\1h\1rI'm sorry, voting is not allowed here.\r\n" 779 VotingNotAllowed
 "\r\n\1h\1rI'm sorry, you've already voted on this.\r\n" 780 VotedAlready
-"\1n\1b[\1h\1wV\1n\1b] \1hInclude VOTING.DAT File      \1n\1b: \1c%s\r\n"	781 QWKSettingsVoting
-"\r\nVote for message: ~Up, ~Down, or ~Quit: "               782 VoteMsgUpDownOrQuit
-"\r\n³ \1bMsg \1n\1b: \1h\1cVoted Up %u times and Down %u times"          783 MsgVotes
-"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1c%s\1n\1m-voted your message: \1n\1h%s\r\n" 784 MsgVoteNotice
-"\r\n\1h\1rI'm sorry, you're not allowed to vote.\r\n" 785 R_Voting
+"\r\n\1h\1rI'm sorry, you're not allowed to vote.\r\n" 781 R_Voting
+"\1n\1b[\1h\1wV\1n\1b] \1hInclude VOTING.DAT File      \1n\1b: \1c%s\r\n"	782 QWKSettingsVoting
+"\r\nVote for message: ~Up, ~Down, or ~Quit: "               732 VoteMsgUpDownOrQuit
+"\r\n³ \1bMsg \1n\1b: \1h\1cVoted Up %u times and Down %u times"          784 MsgVotes
+"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1cUp\1n\1m-voted your message: \1n\1h%s\r\n" 785 MsgUpVoteNotice
+"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1rDown\1n\1m-voted your message: \1n\1h%s\r\n" 786 MsgDownVoteNotice
