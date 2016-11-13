@@ -289,23 +289,24 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(recipient && !parse_recipient_object(cx,p,hdr,msg))
 		goto err;
 
-	/* Required Header Fields */
-	if(JS_GetProperty(cx, hdr, "subject", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx);
-		if(cp==NULL) {
-			JS_ReportError(cx, "Invalid \"subject\" string in header object");
+	if(msg->hdr.type != SMB_MSG_TYPE_VOTE) {
+		/* Required Header Fields */
+		if(JS_GetProperty(cx, hdr, "subject", &val) && !JSVAL_NULL_OR_VOID(val)) {
+			JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+			HANDLE_PENDING(cx);
+			if(cp==NULL) {
+				JS_ReportError(cx, "Invalid \"subject\" string in header object");
+				goto err;
+			}
+		} else
+			cp=strdup("");
+
+		if((p->status=smb_hfield_str(msg, SUBJECT, cp))!=SMB_SUCCESS) {
+			JS_ReportError(cx, "Error %d adding SUBJECT field to message header", p->status);
 			goto err;
 		}
-	} else
-		cp=strdup("");
-
-	if((p->status=smb_hfield_str(msg, SUBJECT, cp))!=SMB_SUCCESS) {
-		JS_ReportError(cx, "Error %d adding SUBJECT field to message header", p->status);
-		goto err;
+		msg->idx.subj=smb_subject_crc(cp);
 	}
-	msg->idx.subj=smb_subject_crc(cp);
-
 	if(JS_GetProperty(cx, hdr, "from", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
 		HANDLE_PENDING(cx);
@@ -321,7 +322,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		JS_ReportError(cx, "Error %d adding SENDER field to message header", p->status);
 		goto err;
 	}
-	if(!(p->smb.status.attr&SMB_EMAIL)) {
+	if(!(p->smb.status.attr&SMB_EMAIL) && msg->hdr.type != SMB_MSG_TYPE_VOTE) {
 		SAFECOPY(from,cp);
 		strlwr(from);
 		msg->idx.from=crc16(from,0);
@@ -736,6 +737,13 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			goto err;
 		msg->hdr.attr=(ushort)i32;
 		msg->idx.attr=msg->hdr.attr;
+	}
+	if(JS_GetProperty(cx, hdr, "vote", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		if(!JS_ValueToInt32(cx,val,&i32))
+			goto err;
+		msg->hdr.vote=(ushort)i32;
+		if(msg->hdr.type == SMB_MSG_TYPE_VOTE)
+			msg->idx.vote=msg->hdr.vote;
 	}
 	if(JS_GetProperty(cx, hdr, "auxattr", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToInt32(cx,val,&i32))
@@ -2245,7 +2253,76 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	return(ret);
 }
 
-/* MsgBase Object Properites */
+static JSBool
+js_vote_msg(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject*	obj=JS_THIS_OBJECT(cx, arglist);
+	jsval*		argv=JS_ARGV(cx, arglist);
+	uintN		n;
+	JSObject*	hdr=NULL;
+	JSObject*	objarg;
+	smbmsg_t	msg;
+	private_t*	p;
+	JSBool		ret=JS_TRUE;
+	jsrefcount	rc;
+	scfg_t*		scfg;
+
+	scfg=JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc<1)
+		return JS_TRUE;
+	
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return JS_FALSE;
+	}
+
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		if(!js_open(cx, 0, arglist))
+			return JS_FALSE;
+		if(JS_RVAL(cx, arglist) == JSVAL_FALSE)
+			return JS_TRUE;
+	}
+
+	memset(&msg,0,sizeof(msg));
+	msg.hdr.type = SMB_MSG_TYPE_VOTE;
+
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
+			objarg = JSVAL_TO_OBJECT(argv[n]);
+			if(hdr==NULL) {
+				hdr = objarg;
+				continue;
+			}
+		}
+	}
+
+	if(hdr==NULL)
+		return JS_TRUE;
+
+	if(parse_header_object(cx, p, hdr, &msg, FALSE)) {
+
+		rc=JS_SUSPENDREQUEST(cx);
+		if((p->status=votemsg(scfg, &(p->smb), &msg, NULL))==SMB_SUCCESS) {
+			JS_RESUMEREQUEST(cx, rc);
+			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+		}
+		else
+			JS_RESUMEREQUEST(cx, rc);
+	} else {
+		ret=JS_FALSE;
+		SAFECOPY(p->smb.last_error,"Header parsing failure (required field missing?)");
+	}
+
+	smb_freemsgmem(&msg);
+
+	return(ret);
+}
+
+
+/* MsgBase Object Properties */
 enum {
 	 SMB_PROP_LAST_ERROR
 	,SMB_PROP_FILE		
@@ -2443,7 +2520,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,316
 	},
 	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] number, object header")
-	,JSDOCSTR("write a message header")
+	,JSDOCSTR("modify an existing message header")
 	,310
 	},
 	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_id [, message_header] [,strip_ctrl_a=<tt>false</tt>] "
@@ -2555,6 +2632,21 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	)
 	,312
 	},
+	{"vote_msg",		js_vote_msg,		1, JSTYPE_BOOLEAN,	JSDOCSTR("object header")
+	,JSDOCSTR("create a new vote in message base, the <i>header</i> object should contain the following properties:<br>"
+	"<table>"
+	"<tr><td align=top><tt>from</tt><td>Sender's name <i>(required)</i>"
+	"<tr><td align=top><tt>from_ext</tt><td>Sender's user number (if applicable)"
+	"<tr><td align=top><tt>from_net_type</tt><td>Sender's network type (default: 0 for local)"
+	"<tr><td align=top><tt>from_net_addr</tt><td>Sender's network address"
+	"<tr><td align=top><tt>reply_id</tt><td>The Reply-ID of the message being voted on (or specify thread_back)"
+	"<tr><td align=top><tt>thread_back</tt><td>Message number of the message being voted on"
+	"<tr><td align=top><tt>attr</tt><td>Should be either MSG_UPVOTE, MSG_DOWNVOTE, or MSG_VOTE (if answer to poll)"
+	"</table>"
+	)
+	,317
+	},
+
 	{0}
 };
 
