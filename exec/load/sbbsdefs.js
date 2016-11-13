@@ -1,5 +1,3 @@
-/* sbbsdefs.js */
-
 /* Synchronet Object Model constants definitions - (mostly bit-fields) */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -60,7 +58,7 @@ var   SYS_REQ_PW	=(1<<13);	/* Require passwords locally				*/
 var   SYS_L_SYSOP	=(1<<14);	/* Allow local sysop logon/commands 		*/
 var   SYS_R_SYSOP	=(1<<15);	/* Allow remote sysop logon/commands		*/
 var   SYS_QUOTE_EM	=(1<<16);	/* Allow quoting of e-mail					*/
-var   SYS_EURODATE	=(1<<17);	/* Europian date format (DD/MM/YY)			*/
+var   SYS_EURODATE	=(1<<17);	/* European date format (DD/MM/YY)			*/
 var   SYS_MILITARY	=(1<<18);	/* Military time format 					*/
 var   SYS_TIMEBANK	=(1<<19);	/* Allow time bank functions				*/
 var   SYS_FILE_EM	=(1<<20);	/* Allow file attachments in E-mail 		*/
@@ -110,7 +108,6 @@ var   SS_RLOGIN		=(1<<26);	/* Current login via BSD RLogin				*/
 var   SS_FILEXFER	=(1<<27);	/* File transfer in progress, halt spy		*/
 var   SS_SSH		=(1<<28);	/* Current login via Secure Shell (SSH)     */
 var   SS_MOFF		=(1<<29);	/* Disable node/time messages				*/
-
 					    		/********************************************/
 
 						    	/********************************************/
@@ -253,6 +250,8 @@ var   QWK_VIA 		=(1<<11);	/* Include @VIA (path) in msgs				*/
 var   QWK_NOCTRL	=(1<<12);	/* No extraneous control files				*/
 var   QWK_EXT		=(1<<13);	/* QWK Extended (QWKE) format				*/
 var   QWK_MSGID		=(1<<14);	/* Include @MSGID and @REPLY in msgs		*/
+var   QWK_HEADERS	=(1<<16);	/* Include HEADERS.DAT file					*/
+var   QWK_VOTING	=(1<<17);	/* Include VOTING.DAT						*/
 					    		/********************************************/
 
 					    		/********************************************/
@@ -403,6 +402,7 @@ var   NMAIL_DIRECT	=(1<<6);	/* Default netmail to direct				*/
     							/********************************************/
 							    /* Bit values for sub[x].settings			*/
 							    /********************************************/
+var   SUB_NOVOTING	=(1<<0);	/* No voting allowed in this sub-board		*/
 var   SUB_QNET		=(1<<3);	/* Sub-board is netted via QWK network		*/
 var   SUB_PNET		=(1<<4);	/* Sub-board is netted via PostLink			*/
 var   SUB_FIDO		=(1<<5);	/* Sub-board is netted via FidoNet			*/
@@ -423,7 +423,7 @@ var   SUB_INET		=(1<<19);	/* Sub-board is netted via Internet			*/
 var   SUB_FAST		=(1<<20);	/* Fast storage mode						*/
 var   SUB_KILL		=(1<<21);	/* Kill read messages automatically			*/
 var   SUB_KILLP		=(1<<22);	/* Kill read pvt messages automatically		*/
-var   SUB_SYSPERM	=(1<<23);	/* Sysop messages are permament				*/
+var   SUB_SYSPERM	=(1<<23);	/* Sysop messages are permanent				*/
 var   SUB_GATE		=(1<<24);	/* Gateway between Network types			*/
 var   SUB_LZH 		=(1<<25);	/* Use LZH compression for msgs				*/
 var   SUB_SSDEF		=(1<<26);	/* Default ON for Scan for Your msgs		*/
@@ -436,7 +436,7 @@ var   SUB_NOUSERSIG	=(1<<30);	/* Suppress user signatures					*/
     							/********************************************/
                                 /* Bit values for dir[x].settings			*/
 							    /********************************************/
-var   DIR_FCHK		=(1<<0);	/* Check for file existance					*/
+var   DIR_FCHK		=(1<<0);	/* Check for file existence					*/
 var   DIR_RATE		=(1<<1);	/* Force uploads to be rated G,R, or X		*/
 var   DIR_MULT		=(1<<2);	/* Ask for multi-disk numbering				*/
 var   DIR_DUPES		=(1<<3);	/* Search this dir for upload dupes			*/
@@ -648,8 +648,13 @@ var MSG_MODERATED		=(1<<7);
 var MSG_VALIDATED		=(1<<8);
 var MSG_REPLIED			=(1<<9);	// User replied to this message
 var MSG_NOREPLY			=(1<<10);	// No replies (or bounces) should be sent to the sender
+var MSG_UPVOTE			=(1<<11);	// This message is an upvote
+var MSG_DOWNVOTE		=(1<<12);	// This message is a downvote */
+var MSG_POLL			=(1<<13);	// This message is a poll
 
-								/* Auxillary header attributes */
+var MSG_VOTE			=(MSG_UPVOTE|MSG_DOWNVOTE);	/* This message is a poll-vote */
+
+								/* Auxiliary header attributes */
 var MSG_FILEREQUEST 	=(1<<0);// File request
 var MSG_FILEATTACH		=(1<<1);// File(s) attached to Msg
 var MSG_TRUNCFILE		=(1<<2);// Truncate file(s) when sent
