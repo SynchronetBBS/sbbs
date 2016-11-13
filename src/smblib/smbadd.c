@@ -321,7 +321,6 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 {
 	int			retval;
-	smbmsg_t	remsg;
 
 	if(!SMB_IS_OPEN(smb)) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "msgbase not open");
@@ -334,26 +333,17 @@ int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 	if(!(msg->hdr.attr&MSG_VOTE))
 		return SMB_ERR_HDR_ATTR;
 
+	if(msg->hdr.thread_back == 0)
+		return SMB_ERR_HDR_FIELD;
+
 	msg->hdr.type = SMB_MSG_TYPE_VOTE;
 
 	if(msg->hdr.when_imported.time == 0) {
 		msg->hdr.when_imported.time = (uint32_t)time(NULL);
-		msg->hdr.when_imported.zone = 0;	/* how do we detect system TZ? */
+		msg->hdr.when_imported.zone = 0;
 	}
 	if(msg->hdr.when_written.time == 0)	/* Uninitialized */
 		msg->hdr.when_written = msg->hdr.when_imported;
-
-	/* Look-up thread_back if RFC822 Reply-ID was specified */
-	if(msg->hdr.thread_back == 0 && msg->reply_id != NULL) {
-		if(smb_getmsgidx_by_msgid(smb, &remsg, msg->reply_id) == SMB_SUCCESS)
-			msg->hdr.thread_back = remsg.idx.number;	/* needed for threading backward */
-	}
-
-	/* Look-up thread_back if FTN REPLY was specified */
-	if(msg->hdr.thread_back == 0 && msg->ftn_reply != NULL) {
-		if(smb_getmsgidx_by_ftnid(smb, &remsg, msg->ftn_reply) == SMB_SUCCESS)
-			msg->hdr.thread_back = remsg.idx.number;	/* needed for threading backward */
-	}
 
 	retval = smb_addmsghdr(smb, msg, storage);
 
