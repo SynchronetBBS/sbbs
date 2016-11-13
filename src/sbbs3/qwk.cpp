@@ -1054,7 +1054,7 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type)
 				smb.subnum = subnum;
 			}
 			int i;
-			if((i=votemsg(&cfg, &smb, &msg, text[MsgVoteNotice])) != SMB_SUCCESS)
+			if((i=votemsg(&cfg, &smb, &msg, text[msg.hdr.attr == MSG_UPVOTE ? MsgUpVoteNotice:MsgDownVoteNotice])) != SMB_SUCCESS)
 				errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 		}
 		if(smb.subnum != INVALID_SUB)

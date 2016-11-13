@@ -824,11 +824,12 @@ enum {
 	,NodeStatusLogout
 	,VotingNotAllowed
 	,VotedAlready
+	,R_Voting
 	,QWKSettingsVoting
 	,VoteMsgUpDownOrQuit
 	,MsgVotes
-	,MsgVoteNotice
-	,R_Voting
+	,MsgUpVoteNotice
+	,MsgDownVoteNotice
 
 	,TOTAL_TEXT
 };

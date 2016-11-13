@@ -40,7 +40,7 @@ int sbbs_t::sub_op(uint subnum)
 	return(is_user_subop(&cfg, subnum, &useron, &client));
 }
 
-char sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg)
+char sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
 {
 	if(msg->hdr.attr&MSG_DELETE)						return '-';
 	if((stricmp(msg->to,useron.alias)==0 || stricmp(msg->to,useron.name)==0)
@@ -48,10 +48,13 @@ char sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg)
 	if(msg->hdr.attr&MSG_PERMANENT)						return 'p';
 	if(msg->hdr.attr&MSG_LOCKED)						return 'L';
 	if(msg->hdr.attr&MSG_KILLREAD)						return 'K';
-	if(msg->hdr.attr&MSG_NOREPLY)						return 'r';
+	if(msg->hdr.attr&MSG_NOREPLY)						return '#';
 	if(msg->hdr.number > subscan[subnum].ptr)			return '*';
 	if(msg->hdr.attr&MSG_PRIVATE)						return 'P'; 
-	if(sub_op(subnum) && msg->hdr.attr&MSG_ANONYMOUS)	return 'A'; 
+	if(post->upvotes > post->downvotes)					return 'V';
+	if(post->upvotes || post->downvotes)				return 'v';
+	if(msg->hdr.attr&MSG_REPLIED)						return 'R';
+	if(sub_op(subnum) && msg->hdr.attr&MSG_ANONYMOUS)	return 'A';
 	return ' ';
 }
 
@@ -73,7 +76,7 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
 			,msg.hdr.attr&MSG_ANONYMOUS && !sub_op(subnum)
 			? text[Anonymous] : msg.from
 			,msg.to
-			,msg_listing_flag(subnum, &msg)
+			,msg_listing_flag(subnum, &msg, &post[i])
 			,msg.subj);
 		smb_freemsgmem(&msg);
 		msg.total_hfields=0;
@@ -1060,7 +1063,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				msg_client_hfields(&vote, &client);
 				smb_hfield_str(&vote, SENDERSERVER, startup->host_name);
 
-				if((i=votemsg(&cfg, &smb, &vote, text[MsgVoteNotice])) != SMB_SUCCESS)
+				if((i=votemsg(&cfg, &smb, &vote, text[vote.hdr.attr&MSG_UPVOTE ? MsgUpVoteNotice : MsgDownVoteNotice])) != SMB_SUCCESS)
 					errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 
 				break;
@@ -1405,7 +1408,7 @@ long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 				,(msg.hdr.attr&MSG_ANONYMOUS) && !sub_op(subnum) ? text[Anonymous]
 				: msg.from
 				,msg.to
-				,msg_listing_flag(subnum, &msg)
+				,msg_listing_flag(subnum, &msg, &post[l])
 				,msg.subj);
 			found++; 
 		}
@@ -1460,7 +1463,7 @@ long sbbs_t::showposts_toyou(uint subnum, post_t *post, ulong start, long posts,
 				,(msg.hdr.attr&MSG_ANONYMOUS) && !SYSOP
 				? text[Anonymous] : msg.from
 				,msg.to
-				,msg_listing_flag(subnum, &msg)
+				,msg_listing_flag(subnum, &msg, &post[l])
 				,msg.subj); 
 		} 
 	}
