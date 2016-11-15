@@ -50,7 +50,8 @@ char sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
 	if(msg->hdr.attr&MSG_KILLREAD)						return 'K';
 	if(msg->hdr.attr&MSG_NOREPLY)						return '#';
 	if(msg->hdr.number > subscan[subnum].ptr)			return '*';
-	if(msg->hdr.attr&MSG_PRIVATE)						return 'P'; 
+	if(msg->hdr.attr&MSG_PRIVATE)						return 'P';
+	if(msg->hdr.attr&MSG_POLL)							return '?'; 
 	if(post->upvotes > post->downvotes)					return 'V';
 	if(post->upvotes || post->downvotes)				return 'v';
 	if(msg->hdr.attr&MSG_REPLIED)						return 'R';
@@ -279,6 +280,11 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 				case MSG_DOWNVOTE:
 					post[u].downvotes++;
 					break;
+				default:
+					for(int b=0; b < 16; b++) {
+						if(idx.vote&(1<<b))
+							post[u].votes[b]++;
+					}
 				}
 			}
 			if(!(mode&LP_VOTES))
@@ -471,6 +477,8 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		lp=LP_BYSELF|LP_OTHERS;
 	if(mode&SCAN_TOYOU && mode&SCAN_UNREAD)
 		lp|=LP_UNREAD;
+	if(!(cfg.sub[subnum]->misc&SUB_NOVOTING))
+		lp|=LP_POLLS;
 	post=loadposts(&smb.msgs,subnum,0,lp,&unvalidated);
 	if(mode&SCAN_NEW) { 		  /* Scanning for new messages */
 		for(smb.curmsg=0;smb.curmsg<smb.msgs;smb.curmsg++)
@@ -666,9 +674,11 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 
 			msg.upvotes = post[smb.curmsg].upvotes;
 			msg.downvotes = post[smb.curmsg].downvotes;
+			msg.total_votes = total_votes(&post[smb.curmsg]);
 			show_msg(&msg
 				,msg.from_ext && !strcmp(msg.from_ext,"1") && !msg.from_net.type
-					? 0:P_NOATCODES);
+					? 0:P_NOATCODES
+				,&post[smb.curmsg]);
 
 			reads++;	/* number of messages actually read during this sub-scan */
 
@@ -1042,12 +1052,28 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					domsg = false;
 					break;
 				}
-				mnemonics(text[VoteMsgUpDownOrQuit]);
-				long cmd = getkeys("UDQ", 0);
-				if(cmd != 'U' && cmd != 'D')
-					break;
 				ZERO_VAR(vote);
-				vote.hdr.attr = (cmd == 'U' ? MSG_UPVOTE : MSG_DOWNVOTE);
+				if(msg.hdr.attr&MSG_POLL) {
+					unsigned answers=0;
+					for(i=0; i<msg.total_hfields; i++) {
+						if(msg.hfield[i].type != SMB_POLL_ANSWER)
+							continue;
+						uselect(1, answers++, msg.subj, (char*)msg.hfield_dat[i], NULL);
+					}
+					i = uselect(0, 0, NULL, NULL, NULL);
+					if(i < 0) {
+						domsg = false;
+						break;
+					}
+					vote.hdr.vote = (1<<i);
+					vote.hdr.attr = MSG_VOTE;
+				} else {
+					mnemonics(text[VoteMsgUpDownOrQuit]);
+					long cmd = getkeys("UDQ", 0);
+					if(cmd != 'U' && cmd != 'D')
+						break;
+					vote.hdr.attr = (cmd == 'U' ? MSG_UPVOTE : MSG_DOWNVOTE);
+				}
 				vote.hdr.thread_back = msg.hdr.number;
 				vote.hdr.when_written.time = vote.hdr.when_imported.time = time32(NULL);
 				vote.hdr.when_written.zone = vote.hdr.when_imported.zone = sys_timezone(&cfg);

@@ -187,6 +187,7 @@ SMBEXPORT BOOL		SMBCALL	smb_voted_already(smb_t*, uint32_t msgnum, const char* n
 SMBEXPORT int		SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
 						,uint16_t xlat, const uchar* body, const uchar* tail);
 SMBEXPORT int		SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage);
+SMBEXPORT int		SMBCALL smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage);
 
 /* smballoc.c */
 SMBEXPORT long		SMBCALL smb_allochdr(smb_t* smb, ulong length);

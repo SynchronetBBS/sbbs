@@ -2311,15 +2311,15 @@ js_vote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 	scfg_t*		scfg;
 
-	scfg=JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if(argc<1)
+	if(argc < 1)
 		return JS_TRUE;
 	
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)JS_GetPrivate(cx, obj)) == NULL) {
+		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
 	}
 
@@ -2330,39 +2330,107 @@ js_vote_msg(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_TRUE;
 	}
 
-	memset(&msg,0,sizeof(msg));
+	memset(&msg, 0, sizeof(msg));
 	msg.hdr.type = SMB_MSG_TYPE_VOTE;
 
-	for(n=0;n<argc;n++) {
+	for(n=0; n<argc; n++) {
 		if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
 			objarg = JSVAL_TO_OBJECT(argv[n]);
-			if(hdr==NULL) {
+			if(hdr == NULL) {
 				hdr = objarg;
 				continue;
 			}
 		}
 	}
 
-	if(hdr==NULL)
+	if(hdr == NULL)
 		return JS_TRUE;
 
 	if(parse_header_object(cx, p, hdr, &msg, FALSE)) {
 
-		rc=JS_SUSPENDREQUEST(cx);
-		if((p->status=votemsg(scfg, &(p->smb), &msg, NULL))==SMB_SUCCESS) {
+		rc = JS_SUSPENDREQUEST(cx);
+		if((p->status=votemsg(scfg, &(p->smb), &msg, NULL)) == SMB_SUCCESS) {
 			JS_RESUMEREQUEST(cx, rc);
 			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		}
 		else
 			JS_RESUMEREQUEST(cx, rc);
 	} else {
-		ret=JS_FALSE;
+		ret = JS_FALSE;
 		SAFECOPY(p->smb.last_error,"Header parsing failure (required field missing?)");
 	}
 
 	smb_freemsgmem(&msg);
 
-	return(ret);
+	return ret;
+}
+
+static JSBool
+js_add_poll(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject*	obj=JS_THIS_OBJECT(cx, arglist);
+	jsval*		argv=JS_ARGV(cx, arglist);
+	uintN		n;
+	JSObject*	hdr=NULL;
+	JSObject*	objarg;
+	smbmsg_t	msg;
+	private_t*	p;
+	JSBool		ret=JS_TRUE;
+	jsrefcount	rc;
+	scfg_t*		scfg;
+
+	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc < 1)
+		return JS_TRUE;
+	
+	if((p=(private_t*)JS_GetPrivate(cx,obj)) == NULL) {
+		JS_ReportError(cx, getprivate_failure, WHERE);
+		return JS_FALSE;
+	}
+
+	if(!SMB_IS_OPEN(&(p->smb))) {
+		if(!js_open(cx, 0, arglist))
+			return JS_FALSE;
+		if(JS_RVAL(cx, arglist) == JSVAL_FALSE)
+			return JS_TRUE;
+	}
+
+	memset(&msg, 0, sizeof(msg));
+	msg.hdr.type = SMB_MSG_TYPE_POLL;
+
+	for(n=0; n<argc; n++) {
+		if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
+			objarg = JSVAL_TO_OBJECT(argv[n]);
+			if(hdr == NULL) {
+				hdr = objarg;
+				continue;
+			}
+		}
+	}
+
+	if(hdr == NULL)
+		return JS_TRUE;
+
+	if(parse_header_object(cx, p, hdr, &msg, FALSE)) {
+
+		rc=JS_SUSPENDREQUEST(cx);
+		if((p->status=smb_addpoll(&(p->smb), &msg, smb_storage_mode(scfg, &(p->smb)))) == SMB_SUCCESS) {
+			JS_RESUMEREQUEST(cx, rc);
+			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+		}
+		else
+			JS_RESUMEREQUEST(cx, rc);
+	} else {
+		ret = JS_FALSE;
+		SAFECOPY(p->smb.last_error,"Header parsing failure (required field missing?)");
+	}
+
+	smb_freemsgmem(&msg);
+
+	return ret;
 }
 
 
@@ -2562,7 +2630,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	{"get_all_msg_headers", js_get_all_msg_headers, 1, JSTYPE_ARRAY, JSDOCSTR("[include_votes=<tt>false</tt>]")
 	,JSDOCSTR("returns an object of all message headers indexed by message number.<br>"
 	"Message headers returned by this function include 2 additional properties: <tt>upvotes</tt> and <tt>downvotes</tt>.<br>"
-	"Vote messages are exluded by default.")
+	"Vote messages are excluded by default.")
 	,316
 	},
 	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] number, object header")
@@ -2688,6 +2756,18 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>reply_id</tt><td>The Reply-ID of the message being voted on (or specify thread_back)"
 	"<tr><td align=top><tt>thread_back</tt><td>Message number of the message being voted on"
 	"<tr><td align=top><tt>attr</tt><td>Should be either MSG_UPVOTE, MSG_DOWNVOTE, or MSG_VOTE (if answer to poll)"
+	"</table>"
+	)
+	,317
+	},
+	{"add_poll",		js_add_poll,		1, JSTYPE_BOOLEAN,	JSDOCSTR("object header")
+	,JSDOCSTR("create a new poll in message base, the <i>header</i> object should contain the following properties:<br>"
+	"<table>"
+	"<tr><td align=top><tt>subject</tt><td>Polling question <i>(required)</i>"
+	"<tr><td align=top><tt>from</tt><td>Sender's name <i>(required)</i>"
+	"<tr><td align=top><tt>from_ext</tt><td>Sender's user number (if applicable)"
+	"<tr><td align=top><tt>from_net_type</tt><td>Sender's network type (default: 0 for local)"
+	"<tr><td align=top><tt>from_net_addr</tt><td>Sender's network address"
 	"</table>"
 	)
 	,317

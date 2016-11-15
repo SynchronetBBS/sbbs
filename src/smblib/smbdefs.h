@@ -279,6 +279,8 @@
 
 #define SMTPSYSMSG			0xd8		/* for delivery failure notification */
 
+#define SMB_POLL_ANSWER		0xe0		/* the subject is the question */
+
 #define UNKNOWN 			0xf1
 #define UNKNOWNASCII		0xf2
 #define UNUSED				0xff
@@ -315,6 +317,8 @@
 #define MSG_POLL			(1<<13)		/* This message is a poll */
 
 #define MSG_VOTE			(MSG_UPVOTE|MSG_DOWNVOTE)	/* this message is a poll-vote */
+
+#define MSG_POLL_MAX_ANSWERS	16
 
 										/* Auxiliary header attributes */
 #define MSG_FILEREQUEST 	(1<<0)		/* File request */
@@ -619,6 +623,7 @@ typedef struct {				/* Message */
 	uint32_t	flags;			/* Various smblib run-time flags (see MSG_FLAG_*) */
 	uint32_t	upvotes;		/* Vote tally for this message */
 	uint32_t	downvotes;		/* Vote tally for this message */
+	uint32_t	total_votes;	/* Total votes for this message or poll */
 
 } smbmsg_t;
 

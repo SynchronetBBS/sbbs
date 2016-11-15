@@ -999,8 +999,13 @@ typedef struct {						/* File (transfers) Data */
 typedef struct {
 	idxrec_t	idx;					/* defined in smbdefs.h */
 	uint32_t	num;					/* 1-based offset */
-	uint32_t	upvotes;
-	uint32_t	downvotes;
+	union {
+		struct {
+			uint32_t	upvotes;
+			uint32_t	downvotes;
+		};
+		uint32_t	votes[MSG_POLL_MAX_ANSWERS];
+	};
 } post_t;
 typedef idxrec_t mail_t;				/* defined in smbdefs.h */
 typedef fidoaddr_t faddr_t;				/* defined in smbdefs.h */

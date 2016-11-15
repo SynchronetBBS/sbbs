@@ -136,11 +136,13 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	bprintf(text[MsgSubj],msg->subj);
 	if(msg->hdr.attr)
 		show_msgattr(msg->hdr.attr);
-	bprintf(text[MsgTo],msg->to);
-	if(msg->to_net.addr!=NULL)
-		bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
-	if(msg->to_ext)
-		bprintf(text[MsgToExt],msg->to_ext);
+	if(msg->to && *msg->to) {
+		bprintf(text[MsgTo],msg->to);
+		if(msg->to_net.addr!=NULL)
+			bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
+		if(msg->to_ext)
+			bprintf(text[MsgToExt],msg->to_ext);
+	}
 	if(!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP) {
 		bprintf(text[MsgFrom],msg->from);
 		if(msg->from_ext)
@@ -167,15 +169,46 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	CRLF;
 }
 
+ulong sbbs_t::total_votes(post_t* post)
+{
+	ulong total = 0;
+	for(int i = 0; i < MSG_POLL_MAX_ANSWERS; i++)
+		total += post->votes[i];
+	return total;
+}
+
 /****************************************************************************/
 /* Displays message header and text (if not deleted)                        */
 /****************************************************************************/
-void sbbs_t::show_msg(smbmsg_t* msg, long mode)
+void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 {
 	char*	text;
 
 	show_msghdr(msg);
 
+	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL) {
+		char* answer;
+		int longest_answer = 0;
+		for(int i = 0; i < msg->total_hfields; i++) {
+			if(msg->hfield[i].type != SMB_POLL_ANSWER)
+				continue;
+			answer = (char*)msg->hfield_dat[i];
+			int len = strlen(answer);
+			if(len > longest_answer)
+				longest_answer = len;
+		}
+		unsigned answers = 0;
+		for(int i = 0; i < msg->total_hfields; i++) {
+			if(msg->hfield[i].type != SMB_POLL_ANSWER)
+				continue;
+			answer = (char*)msg->hfield_dat[i];
+			ulong total = total_votes(post);
+			bprintf("%2u: %-*s [%-4u %3g%%]\r\n", answers+1, longest_answer, answer, post->votes[answers]
+				,total ? ((float)post->votes[answers] / total)*100.0 : 0.0);
+			answers++;
+		}
+		return;
+	}
 	if((text=smb_getmsgtxt(&smb,msg,(console&CON_RAW_IN) ? 0:GETMSGTXT_PLAIN)) != NULL) {
 		if(!(console&CON_RAW_IN))
 			mode|=P_WORDWRAP;

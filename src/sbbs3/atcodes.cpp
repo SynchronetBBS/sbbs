@@ -1063,6 +1063,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		safe_snprintf(str, maxlen, "%lu", current_msg->downvotes);
 		return(str);
 	}
+	if(!strcmp(sp,"MSG_TOTAL_VOTES") && current_msg!=NULL) {
+		safe_snprintf(str, maxlen, "%lu", current_msg->total_votes);
+		return(str);
+	}
 
 	if(!strcmp(sp,"SMB_AREA")) {
 		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
