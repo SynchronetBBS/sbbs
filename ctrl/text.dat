@@ -1,7 +1,7 @@
 "\1n\1h\1cÚÄÄÄÄÄÄ\1nÄÄÄÄÄÄ\1h\1kÄÄÄÄÄÄÄ\1n\1cÄÄÄÄÄúúúú\r\n"\	001 MsgSubj 
-	"\1h³ \1bSubj\1n\1b: \1h\1c%.70s\r\n"
-"³ \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s\r\n"        002 MsgAttr
-"³ \1bTo  \1n\1b: \1h\1c%.70s"                               003 MsgTo
+	"\1h³ \1bSubj\1n\1b: \1h\1c%.70s"
+"\r\n³ \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s"           002 MsgAttr
+"\r\n³ \1bTo  \1n\1b: \1h\1c%.70s"                              003 MsgTo
 " #%s"                                                  004 MsgToExt
 " (%.40s)"                                              005 MsgToNet
 "\r\n\1w³ \1bFrom\1n\1b: \1h\1c%.70s"                         006 MsgFrom
@@ -945,11 +945,11 @@
 "from now"								776 InTheFuture
 "%s %s %s"								777 AgeOfPostedItem
 "Logging out \1h%s"		        		778 NodeStatusLogout
-"\r\n\1h\1rI'm sorry, voting is not allowed here.\r\n" 779 VotingNotAllowed
-"\r\n\1h\1rI'm sorry, you've already voted on this.\r\n" 780 VotedAlready
-"\r\n\1h\1rI'm sorry, you're not allowed to vote.\r\n" 781 R_Voting
+"\r\n\1h\1rSorry, voting is not allowed here.\r\n" 779 VotingNotAllowed
+"\r\n\1h\1rSorry, you've already voted on this.\r\n" 780 VotedAlready
+"\r\n\1h\1rSorry, you're not allowed to vote.\r\n" 781 R_Voting
 "\1n\1b[\1h\1wV\1n\1b] \1hInclude VOTING.DAT File      \1n\1b: \1c%s\r\n"	782 QWKSettingsVoting
-"\r\nVote for message: ~Up, ~Down, or ~Quit: "               732 VoteMsgUpDownOrQuit
+"\r\nVote for message: ~Up, ~Down, or ~Quit: "               783 VoteMsgUpDownOrQuit
 "\r\n³ \1bMsg \1n\1b: \1h\1cVoted Up %u times and Down %u times"          784 MsgVotes
 "\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1cUp\1n\1m-voted your message: \1n\1h%s\r\n" 785 MsgUpVoteNotice
 "\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1rDown\1n\1m-voted your message: \1n\1h%s\r\n" 786 MsgDownVoteNotice
