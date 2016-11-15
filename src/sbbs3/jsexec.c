@@ -1095,7 +1095,8 @@ int main(int argc, char **argv, char** environ)
 		raw_input(&term);
 		tcsetattr(fileno(stdin), TCSANOW, &term);
 #else
-		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
+	//	This completely disabled console input on Windows:
+	//	SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
 #endif
 		statfp=stderr;
 	}
