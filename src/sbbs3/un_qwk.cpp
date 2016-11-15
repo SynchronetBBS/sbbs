@@ -332,7 +332,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 	SAFEPRINTF(fname, "%sVOTING.DAT", cfg.temp_dir);
 	if(fexistcase(fname)) {
-		qwk_voting(fname, NET_QWK);
+		qwk_voting(fname, NET_QWK, cfg.qhub[hubnum]->id);
 		remove(fname);
 	}
 

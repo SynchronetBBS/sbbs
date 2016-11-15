@@ -1002,7 +1002,7 @@ int sbbs_t::set_qwk_flag(ulong flag)
 	return putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
 }
 
-bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type)
+bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* qnet_id)
 {
 	FILE *fp;
 	str_list_t ini;
@@ -1036,9 +1036,12 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type)
 				msg.hdr.attr = MSG_VOTE;
 				msg.hdr.vote = iniGetShortInt(ini, votes[u], "vote", 0);
 			}
-			if(net_type != NET_NONE)
-				smb_hfield_netaddr(&msg
-					,SENDERNETADDR, iniGetString(ini,votes[u], smb_hfieldtype(SENDERNETADDR), NULL, NULL), &net_type);
+			if(net_type != NET_NONE) {
+				char* netaddr = iniGetString(ini,votes[u], smb_hfieldtype(SENDERNETADDR), NULL, NULL);
+				if(netaddr == NULL)
+					netaddr = qnet_id;
+				smb_hfield_netaddr(&msg, SENDERNETADDR, netaddr, &net_type);
+			}
 			uint subnum = resolve_qwkconf(iniGetInteger(ini, votes[u], "Conference", 0));
 			if(subnum == INVALID_SUB)
 				continue;
@@ -1049,9 +1052,8 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type)
 					smb_close(&smb);
 					smb.subnum = INVALID_SUB;
 				}
-				if(smb_open(&smb) != SMB_SUCCESS)
+				if(smb_open_sub(&cfg, &smb, subnum) != SMB_SUCCESS)
 					continue;
-				smb.subnum = subnum;
 			}
 			int i;
 			if((i=votemsg(&cfg, &smb, &msg, text[msg.hdr.attr == MSG_UPVOTE ? MsgUpVoteNotice:MsgDownVoteNotice])) != SMB_SUCCESS)

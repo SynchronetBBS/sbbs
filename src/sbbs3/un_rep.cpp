@@ -544,7 +544,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			bputs(text[R_Voting]);
 		else {
 			set_qwk_flag(QWK_VOTING);
-			qwk_voting(fname, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE);
+			qwk_voting(fname, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias);
 		}
 		remove(fname);
 	}

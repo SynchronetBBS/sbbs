@@ -643,11 +643,12 @@ public:
 	int		loadmsg(smbmsg_t *msg, ulong number);
 	void	show_msgattr(ushort attr);
 	void	show_msghdr(smbmsg_t* msg);
-	void	show_msg(smbmsg_t* msg, long mode);
+	void	show_msg(smbmsg_t* msg, long mode, post_t* post = NULL);
 	void	msgtotxt(smbmsg_t* msg, char *str, bool header, ulong mode);
 	ulong	getlastmsg(uint subnum, uint32_t *ptr, time_t *t);
 	time_t	getmsgtime(uint subnum, ulong ptr);
 	ulong	getmsgnum(uint subnum, time_t t);
+	ulong	total_votes(post_t* post);
 
 	/* readmail.cpp */
 	void	readmail(uint usernumber, int sent);
@@ -889,7 +890,7 @@ public:
 	void	qwksetptr(uint subnum, char *buf, int reset);
 	void	qwkcfgline(char *buf,uint subnum);
 	int		set_qwk_flag(ulong flag);
-	bool	qwk_voting(const char* fname, smb_net_type_t);
+	bool	qwk_voting(const char* fname, smb_net_type_t, const char* qnet_id);
 
 	/* pack_qwk.cpp */
 	bool	pack_qwk(char *packet, ulong *msgcnt, bool prepack);
