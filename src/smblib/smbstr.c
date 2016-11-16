@@ -1,5 +1,3 @@
-/* smbstr.c */
-
 /* Synchronet message base (SMB) library routines returning strings */
 
 /* $Id$ */
@@ -110,6 +108,8 @@ char* SMBCALL smb_hfieldtype(uint16_t type)
 		case SMTPRECEIVED:		return("Received");				/* RFC-compliant */
 
 		case SMTPSYSMSG:		return("SMTPSysMsg");
+
+		case SMB_POLL_ANSWER:	return("PollAnswer");
 
 		case UNKNOWN:			return("UNKNOWN");
 		case UNKNOWNASCII:		return("UNKNOWNASCII");
