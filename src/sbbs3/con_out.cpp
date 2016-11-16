@@ -1,5 +1,3 @@
-/* con_out.cpp */
-
 /* Synchronet console output routines */
 
 /* $Id$ */
@@ -631,7 +629,7 @@ int sbbs_t::backfill(const char* str, float pct)
 
 	len = strlen(str);
 	for(int i=0; i<len; i++) {
-		if(((float)i / len)*100.0 <= pct)
+		if(((float)(i+1) / len)*100.0 <= pct)
 			atr = cfg.color[clr_backfill];
 		else
 			atr = cfg.color[clr_unfill];
