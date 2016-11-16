@@ -289,7 +289,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(recipient && !parse_recipient_object(cx,p,hdr,msg))
 		goto err;
 
-	if(msg->hdr.type != SMB_MSG_TYPE_VOTE) {
+	if(msg->hdr.type != SMB_MSG_TYPE_BALLOT) {
 		/* Required Header Fields */
 		if(JS_GetProperty(cx, hdr, "subject", &val) && !JSVAL_NULL_OR_VOID(val)) {
 			JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
@@ -322,7 +322,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		JS_ReportError(cx, "Error %d adding SENDER field to message header", p->status);
 		goto err;
 	}
-	if(!(p->smb.status.attr&SMB_EMAIL) && msg->hdr.type != SMB_MSG_TYPE_VOTE) {
+	if(!(p->smb.status.attr&SMB_EMAIL) && msg->hdr.type != SMB_MSG_TYPE_BALLOT) {
 		SAFECOPY(from,cp);
 		strlwr(from);
 		msg->idx.from=crc16(from,0);
@@ -738,12 +738,12 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		msg->hdr.attr=(ushort)i32;
 		msg->idx.attr=msg->hdr.attr;
 	}
-	if(JS_GetProperty(cx, hdr, "vote", &val) && !JSVAL_NULL_OR_VOID(val)) {
+	if(JS_GetProperty(cx, hdr, "votes", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToInt32(cx,val,&i32))
 			goto err;
-		msg->hdr.vote=(ushort)i32;
-		if(msg->hdr.type == SMB_MSG_TYPE_VOTE)
-			msg->idx.vote=msg->hdr.vote;
+		msg->hdr.votes=(ushort)i32;
+		if(msg->hdr.type == SMB_MSG_TYPE_BALLOT)
+			msg->idx.votes=msg->hdr.votes;
 	}
 	if(JS_GetProperty(cx, hdr, "auxattr", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToInt32(cx,val,&i32))
@@ -957,8 +957,8 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	if(msg.idx.attr&MSG_VOTE) {
-		val=UINT_TO_JSVAL(msg.idx.vote);
-		JS_DefineProperty(cx, idxobj, "vote"	,val
+		val=UINT_TO_JSVAL(msg.idx.votes);
+		JS_DefineProperty(cx, idxobj, "votes"	,val
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 		val=UINT_TO_JSVAL(msg.idx.remsg);
@@ -1620,6 +1620,11 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 				case MSG_DOWNVOTE:
 					post[u].downvotes++;
 					break;
+				default:
+					for(int b=0; b < 16; b++) {
+						if(msg.idx.votes&(1<<b))
+							post[u].votes[b]++;
+					}
 				}
 			}
 		}
@@ -1662,10 +1667,13 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_TRUE;
 		}
 
-		JS_DefineProperty(cx, hdrobj, "upvotes", UINT_TO_JSVAL(post[off].upvotes)
-			,NULL,NULL,JSPROP_ENUMERATE);
-		JS_DefineProperty(cx, hdrobj, "downvotes", UINT_TO_JSVAL(post[off].downvotes)
-			,NULL,NULL,JSPROP_ENUMERATE);
+		if(post[off].upvotes)
+			JS_DefineProperty(cx, hdrobj, "upvotes", UINT_TO_JSVAL(post[off].upvotes)
+				,NULL,NULL,JSPROP_ENUMERATE);
+		if(post[off].downvotes)
+			JS_DefineProperty(cx, hdrobj, "downvotes", UINT_TO_JSVAL(post[off].downvotes)
+				,NULL,NULL,JSPROP_ENUMERATE);
+		/* ToDo: Handle votes[] array conversion to property/object/array */
 
 		if(!JS_SetPrivate(cx, hdrobj, p)) {
 			JS_ReportError(cx,"JS_SetPrivate failed");
@@ -2331,7 +2339,7 @@ js_vote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	memset(&msg, 0, sizeof(msg));
-	msg.hdr.type = SMB_MSG_TYPE_VOTE;
+	msg.hdr.type = SMB_MSG_TYPE_BALLOT;
 
 	for(n=0; n<argc; n++) {
 		if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
@@ -2415,6 +2423,13 @@ js_add_poll(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	if(parse_header_object(cx, p, hdr, &msg, FALSE)) {
+
+		if(msg.hdr.when_imported.time == 0) {
+			msg.hdr.when_imported.time = time32(NULL);
+			msg.hdr.when_imported.zone = sys_timezone(scfg);
+		}
+		if(msg.hdr.when_written.time == 0)
+			msg.hdr.when_written = msg.hdr.when_imported;
 
 		rc=JS_SUSPENDREQUEST(cx);
 		if((p->status=smb_addpoll(&(p->smb), &msg, smb_storage_mode(scfg, &(p->smb)))) == SMB_SUCCESS) {
