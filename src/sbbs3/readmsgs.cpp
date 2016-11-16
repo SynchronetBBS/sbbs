@@ -282,7 +282,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 					break;
 				default:
 					for(int b=0; b < 16; b++) {
-						if(idx.vote&(1<<b))
+						if(idx.votes&(1<<b))
 							post[u].votes[b]++;
 					}
 				}
@@ -1035,18 +1035,21 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			case 'V':	/* Vote in reply to message */
 			{
 				smbmsg_t vote;
+				const char* notice=NULL;
 
 				if(cfg.sub[subnum]->misc&SUB_NOVOTING) {
 					bputs(text[VotingNotAllowed]);
 					domsg = false;
 					break;
 				}
+
 				if(smb_voted_already(&smb, msg.hdr.number
 					,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL)) {
 					bputs(text[VotedAlready]);
 					domsg = false;
 					break;
 				}
+
 				if(useron.rest&FLAG('V')) {
 					bputs(text[R_Voting]);
 					domsg = false;
@@ -1065,18 +1068,18 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						domsg = false;
 						break;
 					}
-					vote.hdr.vote = (1<<i);
+					vote.hdr.votes = (1<<i);
 					vote.hdr.attr = MSG_VOTE;
+					notice = text[PollVoteNotice];
 				} else {
 					mnemonics(text[VoteMsgUpDownOrQuit]);
 					long cmd = getkeys("UDQ", 0);
 					if(cmd != 'U' && cmd != 'D')
 						break;
 					vote.hdr.attr = (cmd == 'U' ? MSG_UPVOTE : MSG_DOWNVOTE);
+					notice = text[vote.hdr.attr&MSG_UPVOTE ? MsgUpVoteNotice : MsgDownVoteNotice];
 				}
 				vote.hdr.thread_back = msg.hdr.number;
-				vote.hdr.when_written.time = vote.hdr.when_imported.time = time32(NULL);
-				vote.hdr.when_written.zone = vote.hdr.when_imported.zone = sys_timezone(&cfg);
 
 				smb_hfield_str(&vote, SENDER, (cfg.sub[subnum]->misc&SUB_NAME) ? useron.name : useron.alias);
 				if(msg.id != NULL)
@@ -1089,7 +1092,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				msg_client_hfields(&vote, &client);
 				smb_hfield_str(&vote, SENDERSERVER, startup->host_name);
 
-				if((i=votemsg(&cfg, &smb, &vote, text[vote.hdr.attr&MSG_UPVOTE ? MsgUpVoteNotice : MsgDownVoteNotice])) != SMB_SUCCESS)
+				if((i=votemsg(&cfg, &smb, &vote, notice)) != SMB_SUCCESS)
 					errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 
 				break;

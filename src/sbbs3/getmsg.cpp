@@ -150,7 +150,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 		if(msg->from_net.addr!=NULL && strchr(msg->from,'@')==NULL)
 			bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str)); 
 	}
-	if(msg->upvotes || msg->downvotes)
+	if(!(msg->hdr.attr&MSG_POLL) && (msg->upvotes || msg->downvotes))
 		bprintf(text[MsgVotes], msg->upvotes, msg->downvotes);
 	bprintf(text[MsgDate]
 		,timestr(msg->hdr.when_written.time)
@@ -182,13 +182,16 @@ ulong sbbs_t::total_votes(post_t* post)
 /****************************************************************************/
 void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 {
-	char*	text;
+	char*	txt;
 
 	show_msghdr(msg);
 
 	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL) {
 		char* answer;
 		int longest_answer = 0;
+		uint16_t votes = smb_voted_already(&smb, msg->hdr.number
+							,cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
+
 		for(int i = 0; i < msg->total_hfields; i++) {
 			if(msg->hfield[i].type != SMB_POLL_ANSWER)
 				continue;
@@ -203,21 +206,32 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 				continue;
 			answer = (char*)msg->hfield_dat[i];
 			ulong total = total_votes(post);
-			bprintf("%2u: %-*s [%-4u %3g%%]\r\n", answers+1, longest_answer, answer, post->votes[answers]
-				,total ? ((float)post->votes[answers] / total)*100.0 : 0.0);
+			float pct = total ? ((float)post->votes[answers] / total)*100.0F : 0.0F;
+			char str[128];
+			int width = longest_answer;
+			if(width < cols/3) width = cols/3;
+			else if(width > cols-20)
+				width = cols-20;
+			bprintf(text[PollAnswerNumber], answers+1);
+			safe_snprintf(str, sizeof(str), text[PollAnswerFmt]
+				,width, width, answer, post->votes[answers], pct);
+			backfill(str, pct);
+			if(votes&(1<<answers))
+				bputs(text[PollAnswerChecked]);
+			CRLF;
 			answers++;
 		}
 		return;
 	}
-	if((text=smb_getmsgtxt(&smb,msg,(console&CON_RAW_IN) ? 0:GETMSGTXT_PLAIN)) != NULL) {
+	if((txt=smb_getmsgtxt(&smb,msg,(console&CON_RAW_IN) ? 0:GETMSGTXT_PLAIN)) != NULL) {
 		if(!(console&CON_RAW_IN))
 			mode|=P_WORDWRAP;
-		putmsg(text, mode);
-		smb_freemsgtxt(text);
+		putmsg(txt, mode);
+		smb_freemsgtxt(txt);
 	}
-	if((text=smb_getmsgtxt(&smb,msg,GETMSGTXT_TAIL_ONLY))!=NULL) {
-		putmsg(text, mode&(~P_WORDWRAP));
-		smb_freemsgtxt(text);
+	if((txt=smb_getmsgtxt(&smb,msg,GETMSGTXT_TAIL_ONLY))!=NULL) {
+		putmsg(txt, mode&(~P_WORDWRAP));
+		smb_freemsgtxt(txt);
 	}
 }
 

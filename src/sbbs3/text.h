@@ -830,6 +830,10 @@ enum {
 	,MsgVotes
 	,MsgUpVoteNotice
 	,MsgDownVoteNotice
+	,PollVoteNotice
+	,PollAnswerNumber
+	,PollAnswerFmt
+	,PollAnswerChecked
 
 	,TOTAL_TEXT
 };
