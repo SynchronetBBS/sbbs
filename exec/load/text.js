@@ -795,3 +795,7 @@ var VoteMsgUpDownOrQuit=783;
 var MsgVotes=784;
 var MsgUpVoteNotice=785;
 var MsgDownVoteNotice=786;
+var PollVoteNotice=787;
+var PollAnswerNumber=788;
+var PollAnswerFmt=789;
+var PollAnswerChecked=790;

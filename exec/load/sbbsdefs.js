@@ -636,6 +636,12 @@ var LOG_INFO        =6;			/* informational                            */
 var LOG_DEBUG       =7;			/* debug-level messages                     */   
                                 /********************************************/ 
 }
+
+								/* Message Types */
+var MSG_TYPE_NORMAL		= 0;	/* Classic message (for reading) */
+var MSG_TYPE_POLL		= 1;	/* A poll question  */
+var MSG_TYPE_BALLOT		= 2;	/* Voter response to poll or normal message */
+
 									/* Message attributes */
 var MSG_PRIVATE 		=(1<<0);
 var MSG_READ			=(1<<1);
