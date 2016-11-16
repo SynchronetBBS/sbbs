@@ -74,13 +74,13 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			writeln(
 				'<div class="col-sm-4">' +
 					'<div class="pull-right">' +
-					'<button id="uv-' + header.number + '" class="btn-uv btn btn-default icon"' + (user.alias == settings.guest ? 'disabled' : '') + '>' +
+					'<button id="uv-' + header.number + '" class="btn-uv btn btn-default icon"' + (user.alias == settings.guest || user.security.restrictions&UFLAG_V ? 'disabled' : '') + '>' +
 						'<span title="Upvotes" class="glyphicon glyphicon-arrow-up">' +
 						'</span>' +
 						'<span id="uv-count-' + header.number + '" title="Upvotes">' +
 						header.upvotes + '</span>' +
 					'</button>' +
-					'<button id="dv-' + header.number + '" class="btn-dv btn btn-default icon"' + (user.alias == settings.guest ? 'disabled' : '') + '>' +
+					'<button id="dv-' + header.number + '" class="btn-dv btn btn-default icon"' + (user.alias == settings.guest || user.security.restrictions&UFLAG_V ? 'disabled' : '') + '>' +
 						'<span title="Downvotes" class="glyphicon glyphicon-arrow-down">' +
 						'</span>' +
 						'<span id="dv-count-' + header.number + '" title="Downvotes">' +
