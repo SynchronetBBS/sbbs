@@ -5,21 +5,15 @@ A web interface for Synchronet BBS
 
 - Use this software at your own risk.  It's still being developed, and hasn't been thoroughly tested yet.
 
-- This readme kind of sucks.  I'll put a better one on the Synchronet Wiki once I'm ready to bring this over to the Synchronet CVS repository.
-	- Things may change quite a bit by the time I do bring this web interface over to the CVS, so try not to get too attached to any customizations that you make in the meantime.
-		- However, if you're an early adopter, I would appreciate your feedback.
-
 ###Requirements
 
-- This web interface has only been tested with Synchronet BBS 3.16c.  It will probably work with earlier and later versions.
+- This web interface has been tested with Synchronet BBS 3.16c and 3.17.  It will probably work with earlier and later versions.
 
 - The *Files* page of this web interface relies on a script which was introduced *after* the release of Synchronet BBS 3.16c.  You can grab a copy of *filebase.js* [here](http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/filebase.js?revision=1.7), and you should place it in your *exec/load/* directory.
 
 ###Quick start
 
-I haven't actually tried these instructions on a clean Synchronet BBS installation, but they should work.
-
-- Back up your Synchronet installation
+- Back up your Synchronet installation (particularly 'ctrl' and 'web')
 - Shut down your BBS
 - Clone [or download an archive of](https://github.com/echicken/synchronet-web-v4/archive/master.zip) this repository to a convenient location
 	- Copy the contents of the downloaded *mods* directory into your local *mods* directory
@@ -54,10 +48,12 @@ I haven't actually tried these instructions on a clean Synchronet BBS installati
 	; Only load this many messages from each sub (default: 0 for all)
 	; (If you get 'Out of memory' errors when viewing subs, tweak this setting)
 	max_messages = 0
+	; Display upvote/downvote buttons in message threads (3.17)
+	vote_buttons = true
 ```
-- Add the following section to your *ctrl/services.ini* file if it isn't there already:
+- Add the following section to your *ctrl/services.ini* file:
 ```ini
-[WebSocket]
+[WebSocketTelnet]
 Port=1123
 Options=NO_HOST_LOOKUP
 Command=websocket-telnet-service.js
@@ -117,3 +113,22 @@ if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (co
 - The [web] section added to *ctrl/modopts.ini* won't hurt anything if you leave it there, but you can delete it if you want
 - Revert your *ctrl/services.ini* file to the backup you made prior to installing this web interface
 - Undo any changes you made to your firewall & router during the *Quick Start*
+
+###Support
+
+####Via GitHub
+
+- Please browse the existing [issues](https://github.com/echicken/synchronet-web-v4/issues) for this project, including those marked as closed.  You may find that your question has already been asked (and hopefully answered).
+- Open a new [issue](https://github.com/echicken/synchronet-web-v4/issues) here on GitHub
+
+####On DOVE-Net
+
+- Post a message to *echicken* in [Synchronet Sysops](https://bbs.electronicchicken.com/?page=001-forum.ssjs&sub=sync_sys).  I read this sub regularly and will respond to you there.
+
+####On IRC
+
+- You can find me in #synchronet on irc.synchro.net.  I may be AFK, but ask your question and idle for a while; I'll respond eventually.
+
+####Email
+
+- Please don't.  Public support discussions are better for everyone, especially those searching the web for answers in the future.
