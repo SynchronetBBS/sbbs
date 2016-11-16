@@ -48,6 +48,9 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		}
 
 		// Header
+		writeln('<div class="row">');
+
+		writeln('<div class="col-sm-8">');
 		if (user.alias != settings.guest &&
 			header.number > msg_area.sub[http_request.query.sub[0]].scan_ptr
 		) {
@@ -65,6 +68,28 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			' to <strong>' + header.to + '</strong> on ' +
 			(new Date(header.when_written_time * 1000)).toLocaleString()
 		);
+		writeln('</div>');
+		
+		writeln(
+			'<div class="col-sm-4">' +
+				'<div class="pull-right">' +
+				'<button id="uv-' + header.number + '" class="btn-uv btn btn-default icon">' +
+					'<span title="Upvotes" class="glyphicon glyphicon-arrow-up">' +
+					'</span>' +
+					'<span id="uv-count-' + header.number + '" title="Upvotes">' +
+					header.upvotes + '</span>' +
+				'</button>' +
+				'<button id="dv-' + header.number + '" class="btn-dv btn btn-default icon">' +
+					'<span title="Downvotes" class="glyphicon glyphicon-arrow-down">' +
+					'</span>' +
+					'<span id="dv-count-' + header.number + '" title="Downvotes">' +
+					header.downvotes + '</span>' +
+				'</button>' +
+				'</div>' +
+			'</div>'
+		);
+		
+		writeln('</div>'); // message header
 
 		// Body
 		writeln(
@@ -213,7 +238,12 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		log(LOG_WARNING, err);
 	}
 
-	writeln('<script type="text/javascript">threadNav();</script>');
+	writeln(
+		'<script type="text/javascript">' +
+		'threadNav();' +
+		'enableVoteButtonHandlers("' + http_request.query.sub[0] + '");' +
+		'</script>'
+	);
 
 } else if (
 	typeof http_request.query.sub !== 'undefined' &&
