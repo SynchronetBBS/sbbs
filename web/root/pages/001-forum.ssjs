@@ -241,7 +241,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	}
 
 	writeln('<script type="text/javascript">threadNav();');
-	if (user.alias != settings.guest) {
+	if (user.alias != settings.guest || user.security.restrictions&UFLAG_V) {
 		writeln('enableVoteButtonHandlers("'+http_request.query.sub[0]+'");');
 	}
 	writeln('</script>');
