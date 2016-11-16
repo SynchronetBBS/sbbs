@@ -332,6 +332,8 @@ enum {
 	,clr_chatremote
 	,clr_multichat
 	,clr_external
+	,clr_backfill
+	,clr_unfill
 	,MIN_COLORS 
 };
 
