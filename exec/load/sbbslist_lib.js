@@ -294,7 +294,7 @@ function read_list()
     log(LOG_INFO, "Opening list file: " + f.name);
     if(!f.open("r")) {
         log(LOG_ERR, "SBBSLIST: Error " + f.error + " opening " + f.name);
-        return null;
+        return [];
     }
 
     var buf = f.read();
