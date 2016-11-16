@@ -555,6 +555,13 @@ extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const cha
 
 	ZERO_VAR(remsg);
 
+	if(msg->hdr.when_imported.time == 0) {
+		msg->hdr.when_imported.time = time32(NULL);
+		msg->hdr.when_imported.zone = sys_timezone(cfg);
+	}
+	if(msg->hdr.when_written.time == 0)	/* Uninitialized */
+		msg->hdr.when_written = msg->hdr.when_imported;
+
 	/* Look-up thread_back if RFC822 Reply-ID was specified */
 	if(msg->hdr.thread_back == 0 && msg->reply_id != NULL) {
 		if(smb_getmsgidx_by_msgid(smb, &remsg, msg->reply_id) == SMB_SUCCESS)
