@@ -674,6 +674,7 @@ public:
 	void	cursor_left(int count=1);
 	void	cursor_right(int count=1);
 	long	term_supports(long cmp_flags=0);
+	int		backfill(const char* str, float pct);
 
 	/* getstr.cpp */
 	size_t	getstr_offset;
