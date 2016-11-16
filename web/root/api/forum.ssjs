@@ -125,6 +125,22 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 reply.success = false;
             }
             break;
+
+        case 'vote':
+            if (typeof http_request.query.sub !== 'undefined' &&
+                typeof http_request.query.id !== 'undefined' &&
+                typeof http_request.query.up !== 'undefined' &&
+                !(user.security.restrictions&UFLAG_V)
+            ) {
+                reply.success = voteMessage(
+                    http_request.query.sub[0],
+                    http_request.query.id[0],
+                    http_request.query.up[0]
+                );
+            } else {
+                reply.success = false;
+            }
+            break;
         
         default:
             break;
