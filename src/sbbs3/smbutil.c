@@ -532,12 +532,10 @@ void dumpindex(ulong start, ulong count)
 			break;
 		printf("%10"PRIu32"  ", idx.number);
 		if(idx.attr&MSG_VOTE)
-			printf("V  %04hX  %-10"PRIu32
-				,idx.votes,idx.remsg,idx.attr
-				,idx.offset,my_timestr(idx.time));
+			printf("V  %04hX  %-10"PRIu32, idx.votes,idx.remsg);
 		else
-			printf("M  %04hX  %04hX  %04X"
-				,idx.from, idx.to, idx.subj);
+			printf("%c  %04hX  %04hX  %04X"
+				,idx.attr&MSG_POLL ? 'P':'M', idx.from, idx.to, idx.subj);
 		printf("  %04X  %06X  %s\n", idx.attr, idx.offset, my_timestr(idx.time));
 		l++; 
 	}
