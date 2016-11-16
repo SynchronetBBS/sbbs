@@ -1006,7 +1006,8 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* 
 {
 	FILE *fp;
 	str_list_t ini;
-	str_list_t votes;
+	str_list_t poll_list;
+	str_list_t ballot_list;
 
 	if((fp=fopen(fname,"r")) == NULL) {
 		errormsg(WHERE, ERR_OPEN, fname, 0);
@@ -1014,35 +1015,30 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* 
 	}
 	ini = iniReadFile(fp);
 	fclose(fp);
-	if((votes = iniGetSectionList(ini, "vote:")) != NULL) {
+
+	if((poll_list = iniGetSectionList(ini, "poll:")) != NULL) {
 		smb_t smb;
 		unsigned u;
 
 		ZERO_VAR(smb);
 		smb.subnum = INVALID_SUB;
 
-		for(u = 0; votes[u] != NULL; u++) {
+		for(u = 0; poll_list[u] != NULL; u++) {
 			smbmsg_t msg;
+			const char* notice = NULL;
 
 			ZERO_VAR(msg);
-			smb_hfield_str(&msg, RFC822MSGID, votes[u] + 5);
-			smb_hfield_str(&msg, RFC822REPLYID, iniGetString(ini, votes[u], smb_hfieldtype(RFC822REPLYID), NULL, NULL));
-			smb_hfield_str(&msg, SENDER, iniGetString(ini, votes[u], smb_hfieldtype(SENDER), NULL, NULL)); 
-			if(iniGetBool(ini, votes[u], "upvote", FALSE))
-				msg.hdr.attr = MSG_UPVOTE;
-			else if(iniGetBool(ini, votes[u], "downvote", FALSE))
-				msg.hdr.attr = MSG_DOWNVOTE;
-			else {
-				msg.hdr.attr = MSG_VOTE;
-				msg.hdr.vote = iniGetShortInt(ini, votes[u], "vote", 0);
-			}
+			smb_hfield_str(&msg, RFC822MSGID, poll_list[u] + 5);
+			smb_hfield_str(&msg, SENDER, iniGetString(ini, poll_list[u], smb_hfieldtype(SENDER), NULL, NULL)); 
+			msg.hdr.votes = iniGetShortInt(ini, poll_list[u], "votes", 0);
 			if(net_type != NET_NONE) {
-				const char* netaddr = iniGetString(ini,votes[u], smb_hfieldtype(SENDERNETADDR), NULL, NULL);
+				const char* netaddr = iniGetString(ini,poll_list[u], smb_hfieldtype(SENDERNETADDR), NULL, NULL);
 				if(netaddr == NULL)
 					netaddr = qnet_id;
 				smb_hfield_netaddr(&msg, SENDERNETADDR, netaddr, &net_type);
+				smb_hfield(&msg, SENDERNETTYPE, sizeof(net_type), &net_type);
 			}
-			uint subnum = resolve_qwkconf(iniGetInteger(ini, votes[u], "Conference", 0));
+			uint subnum = resolve_qwkconf(iniGetInteger(ini, poll_list[u], "Conference", 0));
 			if(subnum == INVALID_SUB)
 				continue;
 			if(cfg.sub[subnum]->misc&SUB_NOVOTING)
@@ -1056,12 +1052,69 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* 
 					continue;
 			}
 			int i;
-			if((i=votemsg(&cfg, &smb, &msg, text[msg.hdr.attr == MSG_UPVOTE ? MsgUpVoteNotice:MsgDownVoteNotice])) != SMB_SUCCESS)
+			if((i=smb_addpoll(&smb, &msg, smb_storage_mode(&cfg, &smb))) != SMB_SUCCESS)
 				errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 		}
 		if(smb.subnum != INVALID_SUB)
 			smb_close(&smb);
-		iniFreeStringList(votes);
+		iniFreeStringList(poll_list);
+	}
+
+	if((ballot_list = iniGetSectionList(ini, "vote:")) != NULL) {
+		smb_t smb;
+		unsigned u;
+
+		ZERO_VAR(smb);
+		smb.subnum = INVALID_SUB;
+
+		for(u = 0; ballot_list[u] != NULL; u++) {
+			smbmsg_t msg;
+			const char* notice = NULL;
+
+			ZERO_VAR(msg);
+			smb_hfield_str(&msg, RFC822MSGID, ballot_list[u] + 5);
+			smb_hfield_str(&msg, RFC822REPLYID, iniGetString(ini, ballot_list[u], smb_hfieldtype(RFC822REPLYID), NULL, NULL));
+			smb_hfield_str(&msg, SENDER, iniGetString(ini, ballot_list[u], smb_hfieldtype(SENDER), NULL, NULL)); 
+			if(iniGetBool(ini, ballot_list[u], "upvote", FALSE)) {
+				msg.hdr.attr = MSG_UPVOTE;
+				notice = text[MsgUpVoteNotice];
+			}
+			else if(iniGetBool(ini, ballot_list[u], "downvote", FALSE)) {
+				msg.hdr.attr = MSG_DOWNVOTE;
+				notice = text[MsgDownVoteNotice];
+			}
+			else {
+				msg.hdr.attr = MSG_VOTE;
+				msg.hdr.votes = iniGetShortInt(ini, ballot_list[u], "votes", 0);
+				notice = text[PollVoteNotice];
+			}
+			if(net_type != NET_NONE) {
+				const char* netaddr = iniGetString(ini,ballot_list[u], smb_hfieldtype(SENDERNETADDR), NULL, NULL);
+				if(netaddr == NULL)
+					netaddr = qnet_id;
+				smb_hfield_netaddr(&msg, SENDERNETADDR, netaddr, &net_type);
+				smb_hfield(&msg, SENDERNETTYPE, sizeof(net_type), &net_type);
+			}
+			uint subnum = resolve_qwkconf(iniGetInteger(ini, ballot_list[u], "Conference", 0));
+			if(subnum == INVALID_SUB)
+				continue;
+			if(cfg.sub[subnum]->misc&SUB_NOVOTING)
+				continue;
+			if(subnum != smb.subnum) {
+				if(smb.subnum != INVALID_SUB) {
+					smb_close(&smb);
+					smb.subnum = INVALID_SUB;
+				}
+				if(smb_open_sub(&cfg, &smb, subnum) != SMB_SUCCESS)
+					continue;
+			}
+			int i;
+			if((i=votemsg(&cfg, &smb, &msg, notice)) != SMB_SUCCESS)
+				errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
+		}
+		if(smb.subnum != INVALID_SUB)
+			smb_close(&smb);
+		iniFreeStringList(ballot_list);
 	}
 	iniFreeStringList(ini);
 	return true;
