@@ -45,4 +45,5 @@ standard_service_port = {
 	"irc":		6667,
 	"http-alt":	8080,
 	"json":		10088,
+	"binkp":	24554,
 };
