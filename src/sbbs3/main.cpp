@@ -1,5 +1,3 @@
-/* main.cpp */
-
 /* Synchronet terminal server thread and related functions */
 
 /* $Id$ */
@@ -2544,12 +2542,13 @@ void event_thread(void* arg)
 				&& (fexistcase(semfile) || (now-lastprepack)/60>(60*24))) {
 				j=lastuser(&sbbs->cfg);
 				eprintf(LOG_INFO,"Pre-packing QWK Message packets...");
+				int userfile = openuserdat(&sbbs->cfg, /* for_modify: */FALSE);
 				for(i=1;i<=j;i++) {
 
 					SAFEPRINTF2(str,"%5u of %-5u",i,j);
 					//status(str);
 					sbbs->useron.number=i;
-					getuserdat(&sbbs->cfg,&sbbs->useron);
+					fgetuserdat(&sbbs->cfg,&sbbs->useron, userfile);
 
 					if(sbbs->useron.number
 						&& !(sbbs->useron.misc&(DELETED|INACTIVE))	 /* Pre-QWK */
@@ -2578,6 +2577,7 @@ void event_thread(void* arg)
 						sbbs->online=FALSE;
 					} 
 				}
+				close(userfile);
 				lastprepack=(time32_t)now;
 				SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
@@ -4350,14 +4350,14 @@ void sbbs_t::daily_maint(void)
 
 	lputs(LOG_INFO,status("Checking for inactive/expired user records..."));
 	lastusernum=lastuser(&sbbs->cfg);
+	int userfile=openuserdat(&sbbs->cfg, /* for_modify: */FALSE);
 	for(usernum=1;usernum<=lastusernum;usernum++) {
-
 		SAFEPRINTF2(str,"%5u of %-5u",usernum,lastusernum);
 		status(str);
-		user.number=usernum;
-		if((i=getuserdat(&sbbs->cfg,&user))!=0) {
+		user.number = usernum;
+		if((i=fgetuserdat(&sbbs->cfg, &user, userfile)) != 0) {
 			SAFEPRINTF(str,"user record %u",usernum);
-			sbbs->errormsg(WHERE,ERR_READ,str,i);
+			sbbs->errormsg(WHERE, ERR_READ, str, i);
 			continue;
 		}
 
@@ -4440,6 +4440,7 @@ void sbbs_t::daily_maint(void)
 			putuserrec(&sbbs->cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16)); 
 		}
 	}
+	close(userfile);
 
 	lputs(LOG_INFO,status("Purging deleted/expired e-mail"));
 	SAFEPRINTF(sbbs->smb.file,"%smail",sbbs->cfg.data_dir);

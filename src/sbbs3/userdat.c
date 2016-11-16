@@ -1,5 +1,3 @@
-/* userdat.c */
-
 /* Synchronet user data-related routines (exported) */
 
 /* $Id$ */
@@ -135,8 +133,7 @@ uint DLLCALL total_users(scfg_t* cfg)
 	if(!VALID_CFG(cfg))
 		return(0);
 
-	SAFEPRINTF(str,"%suser/user.dat", cfg->data_dir);
-	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1)
+	if((file=openuserdat(cfg, /* for_modify: */FALSE)) < 0)
 		return(0);
 	length=(long)filelength(file);
 	for(l=0;l<length;l+=U_LEN) {
@@ -171,19 +168,17 @@ uint DLLCALL lastuser(scfg_t* cfg)
 }
 
 /****************************************************************************/
-/* Deletes last user record in user.dat										*/
+/* Deletes (completely removes) last user record in user.dat				*/
 /****************************************************************************/
 BOOL DLLCALL del_lastuser(scfg_t* cfg)
 {
-	char	str[256];
 	int		file;
 	long	length;
 
 	if(!VALID_CFG(cfg))
 		return(FALSE);
 
-	SAFEPRINTF(str,"%suser/user.dat", cfg->data_dir);
-	if((file=nopen(str,O_RDWR|O_DENYNONE))==-1)
+	if((file=openuserdat(cfg, /* for_modify: */TRUE)) < 0)
 		return(FALSE);
 	length=(long)filelength(file);
 	if(length<U_LEN) {
@@ -198,7 +193,7 @@ BOOL DLLCALL del_lastuser(scfg_t* cfg)
 /****************************************************************************/
 /* Opens the user database returning the file descriptor or -1 on error		*/
 /****************************************************************************/
-int DLLCALL openuserdat(scfg_t* cfg)
+int DLLCALL openuserdat(scfg_t* cfg, BOOL for_modify)
 {
 	char path[MAX_PATH+1];
 
@@ -206,7 +201,7 @@ int DLLCALL openuserdat(scfg_t* cfg)
 		return(-1); 
 
 	SAFEPRINTF(path,"%suser/user.dat",cfg->data_dir);
-	return nopen(path,O_RDONLY|O_DENYNONE); 
+	return nopen(path, for_modify ? (O_RDWR|O_CREAT|O_DENYNONE) : (O_RDONLY|O_DENYNONE)); 
 }
 
 /****************************************************************************/
@@ -224,7 +219,7 @@ int DLLCALL readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, int in
 	if(infile >= 0)
 		file = infile;
 	else {
-		if((file = openuserdat(cfg)) < 0)
+		if((file = openuserdat(cfg, /* for_modify: */FALSE)) < 0)
 			return file;
 	}
 
@@ -417,7 +412,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	if(!VALID_CFG(cfg) || user==NULL || user->number < 1)
 		return(-1); 
 
-	if((file = openuserdat(cfg)) < 0)
+	if((file = openuserdat(cfg, /* for_modify: */FALSE)) < 0)
 		return file;
 
 	memset(userdat, 0, sizeof(userdat));
@@ -428,6 +423,18 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	retval = parseuserdat(cfg, userdat, user);
 	close(file);
 	return retval;
+}
+
+/* Fast getuserdat() (leaves user.dat file open) */
+int DLLCALL fgetuserdat(scfg_t* cfg, user_t *user, int file)
+{
+	int		retval;
+	char	userdat[U_LEN+1];
+
+	memset(userdat, 0, sizeof(userdat));
+	if((retval = readuserdat(cfg, user->number, userdat, file)) != 0)
+		return retval;
+	return parseuserdat(cfg, userdat, user);
 }
 
 /****************************************************************************/
@@ -580,10 +587,8 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_UNUSED,U_LEN-(U_UNUSED)-2,crlf);
 	putrec(userdat,U_UNUSED+(U_LEN-(U_UNUSED)-2),2,crlf);
 
-	SAFEPRINTF(str,"%suser/user.dat", cfg->data_dir);
-	if((file=nopen(str,O_RDWR|O_CREAT|O_DENYNONE))==-1) {
+	if((file=openuserdat(cfg, /* for_modify: */TRUE)) < 0)
 		return(errno);
-	}
 
 	if(filelength(file)<((long)user->number-1)*U_LEN) {
 		close(file);

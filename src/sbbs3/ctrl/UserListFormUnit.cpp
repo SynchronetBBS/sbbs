@@ -55,7 +55,6 @@ __fastcall TUserListForm::TUserListForm(TComponent* Owner)
 void __fastcall TUserListForm::FormShow(TObject *Sender)
 {
     char    str[128];
-	char	data[U_LEN+1];
     int     i,last;
 	int		file;
     user_t  user;
@@ -65,7 +64,7 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
     SortBackwards=false;
     Screen->Cursor=crAppStart;
 
-	if((file = openuserdat(&MainForm->cfg)) < 0) {
+	if((file = openuserdat(&MainForm->cfg, /* for modify: */FALSE)) < 0) {
 		Screen->Cursor=crDefault;
 		return;
 	}
@@ -75,9 +74,7 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
     ListView->Items->BeginUpdate();
     for(i=0;i<last;i++) {
         user.number=i+1;
-        if(readuserdat(&MainForm->cfg, user.number, data, file)!=0)
-            continue;
-		if(parseuserdat(&MainForm->cfg, data, &user)!=0)
+		if(fgetuserdat(&MainForm->cfg, &user, file)!=0)
 			continue;
         if(user.misc&DELETED)
             continue;
