@@ -135,7 +135,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			msg.idx=mail[u];
 			if(msg.idx.number>qwkmail_last)
 				qwkmail_last=msg.idx.number;
-			if(!loadmsg(&msg,mail[u].number))
+			if(loadmsg(&msg,mail[u].number) < 1)
 				continue;
 
 			SAFEPRINTF(str,"%s/",cfg.qhub[hubnum]->id);
@@ -200,7 +200,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 
 			memset(&msg,0,sizeof(msg));
 			msg.idx=post[u].idx;
-			if(!loadmsg(&msg,post[u].idx.number))
+			if(loadmsg(&msg,post[u].idx.number) < 1)
 				continue;
 
 			if(msg.from_net.type && msg.from_net.type!=NET_QWK &&
@@ -317,7 +317,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 				continue;
 			memset(&msg,0,sizeof(msg));
 			/* !IMPORTANT: search by number (do not initialize msg.idx.offset) */
-			if(!loadmsg(&msg,mail[u].number))
+			if(loadmsg(&msg,mail[u].number) < 1)
 				continue;
 
 			SAFEPRINTF(str,"%s/",cfg.qhub[hubnum]->id);

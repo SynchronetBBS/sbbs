@@ -1,5 +1,3 @@
-/* pack_qwk.cpp */
-
 /* Synchronet pack QWK packet routine */
 
 /* $Id$ */
@@ -396,7 +394,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				msg.idx=mail[u];
 				if(msg.idx.number>qwkmail_last)
 					qwkmail_last=msg.idx.number;
-				if(!loadmsg(&msg,mail[u].number))
+				if(loadmsg(&msg,mail[u].number) < 1)
 					continue;
 
 				if(msg.hdr.auxattr&MSG_FILEATTACH && useron.qwk&QWK_ATTACH) {
@@ -518,7 +516,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 					memset(&msg,0,sizeof(msg));
 					msg.idx=post[u].idx;
-					if(!loadmsg(&msg,post[u].idx.number))
+					if(loadmsg(&msg,post[u].idx.number) < 1)
 						continue;
 
 					if(useron.rest&FLAG('Q')) {

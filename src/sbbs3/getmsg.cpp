@@ -42,7 +42,7 @@
 /****************************************************************************/
 /* Loads an SMB message from the open msg base the fastest way possible 	*/
 /* first by offset, and if that's the wrong message, then by number.        */
-/* Returns 1 if the message was loaded and left locked, otherwise			*/
+/* Returns >=0 if the message was loaded and left locked, otherwise < 0.	*/
 /* !WARNING!: If you're going to write the msg index back to disk, you must */
 /* Call this function with a msg->idx.offset of 0 (so msg->offset will be	*/
 /* initialized correctly)													*/
@@ -54,15 +54,15 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 
 	if(msg->idx.offset) {				/* Load by offset if specified */
 
-		if((i=smb_lockmsghdr(&smb,msg))!=0) {
+		if((i=smb_lockmsghdr(&smb,msg)) != SMB_SUCCESS) {
 			errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-			return(0); 
+			return i; 
 		}
 
 		i=smb_getmsghdr(&smb,msg);
 		if(i==SMB_SUCCESS) {
 			if(msg->hdr.number==number)
-				return(1);
+				return msg->total_hfields;
 			/* Wrong offset  */
 			smb_freemsgmem(msg);
 		}
@@ -72,19 +72,19 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 
 	msg->hdr.number=number;
 	if((i=smb_getmsgidx(&smb,msg))!=SMB_SUCCESS)				 /* Message is deleted */
-		return(0);
+		return i;
 	if((i=smb_lockmsghdr(&smb,msg))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-		return(0); 
+		return i;
 	}
 	if((i=smb_getmsghdr(&smb,msg))!=SMB_SUCCESS) {
 		SAFEPRINTF4(str,"(%06"PRIX32") #%"PRIu32"/%lu %s",msg->idx.offset,msg->idx.number
 			,number,smb.file);
 		smb_unlockmsghdr(&smb,msg);
 		errormsg(WHERE,ERR_READ,str,i,smb.last_error);
-		return(0); 
+		return i;
 	}
-	return(msg->total_hfields);
+	return msg->total_hfields;
 }
 
 
@@ -192,6 +192,15 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 		uint16_t votes = smb_voted_already(&smb, msg->hdr.number
 							,cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
 
+		int comments=0;
+		for(int i = 0; i < msg->total_hfields; i++)
+			if(msg->hfield[i].type == SMB_COMMENT) {
+				bprintf("%s\r\n", (char*)msg->hfield_dat[i]);
+				comments++;
+			}
+		if(comments)
+			CRLF;
+
 		for(int i = 0; i < msg->total_hfields; i++) {
 			if(msg->hfield[i].type != SMB_POLL_ANSWER)
 				continue;
@@ -213,11 +222,16 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 			else if(width > cols-20)
 				width = cols-20;
 			bprintf(text[PollAnswerNumber], answers+1);
-			safe_snprintf(str, sizeof(str), text[PollAnswerFmt]
-				,width, width, answer, post->votes[answers], pct);
-			backfill(str, pct);
-			if(votes&(1<<answers))
-				bputs(text[PollAnswerChecked]);
+			if(votes || sub_op(smb.subnum)) {
+				safe_snprintf(str, sizeof(str), text[PollAnswerFmt]
+					,width, width, answer, post->votes[answers], pct);
+				backfill(str, pct);
+				if(votes&(1<<answers))
+					bputs(text[PollAnswerChecked]);
+			} else {
+				attr(cfg.color[clr_unfill]);
+				bputs(answer);
+			}
 			CRLF;
 			answers++;
 		}

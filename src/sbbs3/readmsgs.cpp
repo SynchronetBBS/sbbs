@@ -68,7 +68,7 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
 		if(mode&SCAN_NEW && post[i].idx.number<=subscan[subnum].ptr)
 			continue;
 		msg.idx.offset=post[i].idx.offset;
-		if(!loadmsg(&msg,post[i].idx.number))
+		if(loadmsg(&msg,post[i].idx.number) < 0)
 			break;
 		smb_unlockmsghdr(&smb,&msg);
 		if(listed==0)
@@ -617,7 +617,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			smb_freemsgmem(&msg);
 		msg.total_hfields=0;
 
-		if(!loadmsg(&msg,post[smb.curmsg].idx.number)) {
+		if(loadmsg(&msg,post[smb.curmsg].idx.number) < 0) {
 			if(mismatches>5) {	/* We can't do this too many times in a row */
 				errormsg(WHERE,ERR_CHK,smb.file,post[smb.curmsg].idx.number);
 				break; 
@@ -692,7 +692,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				msg.total_hfields=0;
 				msg.idx.offset=0;
 				if(!smb_locksmbhdr(&smb)) { 			  /* Lock the entire base */
-					if(loadmsg(&msg,msg.idx.number)) {
+					if(loadmsg(&msg,msg.idx.number) >= 0) {
 						msg.hdr.attr|=MSG_READ;
 						msg.idx.attr=msg.hdr.attr;
 						if((i=smb_putmsg(&smb,&msg))!=0)
@@ -730,7 +730,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					msg.total_hfields=0;
 					msg.idx.offset=0;
 					if(!smb_locksmbhdr(&smb)) { 			  /* Lock the entire base */
-						if(loadmsg(&msg,msg.idx.number)) {
+						if(loadmsg(&msg,msg.idx.number) >= 0) {
 							msg.hdr.attr=msg.idx.attr=msg_attr;
 							if((i=smb_putmsg(&smb,&msg))!=0)
 								errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
@@ -857,7 +857,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				msg.total_hfields=0;
 				msg.idx.offset=0;
 				if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
-					if(loadmsg(&msg,msg.idx.number)) {
+					if(loadmsg(&msg,msg.idx.number) >=0 ) {
 						msg.idx.attr^=MSG_DELETE;
 						msg.hdr.attr=msg.idx.attr;
 						if((i=smb_putmsg(&smb,&msg))!=0)
@@ -1106,7 +1106,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					if(!(useron.misc&EXPERT))
 						menu("sysmscan");
 					bputs(text[OperatorPrompt]);
-					strcpy(str,"?CEHMQUV");
+					strcpy(str,"?ACEHMQUV");
 					if(SYSOP)
 						strcat(str,"SP");
 					switch(getkeys(str,0)) {
@@ -1114,6 +1114,15 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							if(useron.misc&EXPERT)
 								menu("sysmscan");
 							continue;
+						case 'A':	/* Add comment */
+							bputs(text[UeditComment]);
+							if(!getstr(str, LEN_TITLE, K_LINE))
+								break;
+							smb_hfield_str(&msg, SMB_COMMENT, str);
+							msg.idx.offset=0;
+							if((i=smb_updatemsg(&smb, &msg)) != SMB_SUCCESS)
+								errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
+							break;
 						case 'P':   /* Purge user */
 							if(noyes(text[AreYouSureQ]))
 								break;
@@ -1130,7 +1139,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							msg.total_hfields=0;
 							msg.idx.offset=0;
 							if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
-								if(loadmsg(&msg,msg.idx.number)) {
+								if(loadmsg(&msg,msg.idx.number) >= 0) {
 									msg.hdr.attr=msg.idx.attr=i;
 									if((i=smb_putmsg(&smb,&msg))!=0)
 										errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
@@ -1155,7 +1164,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							msg.total_hfields=0;
 							msg.idx.offset=0;
 							if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
-								if(!loadmsg(&msg,msg.idx.number)) {
+								if(loadmsg(&msg,msg.idx.number) < 0) {
 									errormsg(WHERE,ERR_READ,smb.file,msg.idx.number);
 									break; 
 								}
@@ -1193,7 +1202,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							msg.total_hfields=0;
 							msg.idx.offset=0;
 							if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
-								if(loadmsg(&msg,msg.idx.number)) {
+								if(loadmsg(&msg,msg.idx.number) >= 0) {
 									msg.idx.attr|=MSG_VALIDATED;
 									msg.hdr.attr=msg.idx.attr;
 									if((i=smb_putmsg(&smb,&msg))!=0)
@@ -1418,7 +1427,7 @@ long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 	msg.total_hfields=0;
 	for(l=start;l<posts && !msgabort();l++) {
 		msg.idx.offset=post[l].idx.offset;
-		if(!loadmsg(&msg,post[l].idx.number))
+		if(loadmsg(&msg,post[l].idx.number) < 0)
 			continue;
 		smb_unlockmsghdr(&smb,&msg);
 		buf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL);
@@ -1480,7 +1489,7 @@ long sbbs_t::showposts_toyou(uint subnum, post_t *post, ulong start, long posts,
 			smb_freemsgmem(&msg);
 		msg.total_hfields=0;
 		msg.idx.offset=post[l].idx.offset;
-		if(!loadmsg(&msg,post[l].idx.number))
+		if(loadmsg(&msg,post[l].idx.number) < 0)
 			continue;
 		smb_unlockmsghdr(&smb,&msg);
 		if((useron.number==1 && !stricmp(msg.to,"sysop") && !msg.from_net.type)

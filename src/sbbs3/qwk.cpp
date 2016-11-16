@@ -347,7 +347,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 				continue;
 			memset(&msg,0,sizeof(msg));
 			/* !IMPORTANT: search by number (do not initialize msg.idx.offset) */
-			if(!loadmsg(&msg,mail[u].number))
+			if(loadmsg(&msg,mail[u].number) < 1)
 				continue;
 			if(!(msg.hdr.attr&MSG_READ)) {
 				if(thisnode.status==NODE_INUSE)
@@ -1025,18 +1025,33 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* 
 
 		for(u = 0; poll_list[u] != NULL; u++) {
 			smbmsg_t msg;
-			const char* notice = NULL;
 
 			ZERO_VAR(msg);
 			smb_hfield_str(&msg, RFC822MSGID, poll_list[u] + 5);
 			smb_hfield_str(&msg, SENDER, iniGetString(ini, poll_list[u], smb_hfieldtype(SENDER), NULL, NULL)); 
 			msg.hdr.votes = iniGetShortInt(ini, poll_list[u], "votes", 0);
 			if(net_type != NET_NONE) {
-				const char* netaddr = iniGetString(ini,poll_list[u], smb_hfieldtype(SENDERNETADDR), NULL, NULL);
+				const char* netaddr = iniGetString(ini, poll_list[u], smb_hfieldtype(SENDERNETADDR), NULL, NULL);
 				if(netaddr == NULL)
 					netaddr = qnet_id;
 				smb_hfield_netaddr(&msg, SENDERNETADDR, netaddr, &net_type);
 				smb_hfield(&msg, SENDERNETTYPE, sizeof(net_type), &net_type);
+			}
+			for(int i=0;;i++) {
+				char str[128];
+				SAFEPRINTF2(str, "%s%u", smb_hfieldtype(SMB_COMMENT), i);
+				const char* comment = iniGetString(ini, poll_list[u], str, NULL, NULL);
+				if(comment == NULL)
+					break;
+				smb_hfield_str(&msg, SMB_COMMENT, comment);
+			}
+			for(int i=0;;i++) {
+				char str[128];
+				SAFEPRINTF2(str, "%s%u", smb_hfieldtype(SMB_POLL_ANSWER), i);
+				const char* answer = iniGetString(ini, poll_list[u], str, NULL, NULL);
+				if(answer == NULL)
+					break;
+				smb_hfield_str(&msg, SMB_POLL_ANSWER, answer);
 			}
 			uint subnum = resolve_qwkconf(iniGetInteger(ini, poll_list[u], "Conference", 0));
 			if(subnum == INVALID_SUB)
