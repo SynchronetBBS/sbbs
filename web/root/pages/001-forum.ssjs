@@ -70,24 +70,26 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		);
 		writeln('</div>');
 		
-		writeln(
-			'<div class="col-sm-4">' +
-				'<div class="pull-right">' +
-				'<button id="uv-' + header.number + '" class="btn-uv btn btn-default icon">' +
-					'<span title="Upvotes" class="glyphicon glyphicon-arrow-up">' +
-					'</span>' +
-					'<span id="uv-count-' + header.number + '" title="Upvotes">' +
-					header.upvotes + '</span>' +
-				'</button>' +
-				'<button id="dv-' + header.number + '" class="btn-dv btn btn-default icon">' +
-					'<span title="Downvotes" class="glyphicon glyphicon-arrow-down">' +
-					'</span>' +
-					'<span id="dv-count-' + header.number + '" title="Downvotes">' +
-					header.downvotes + '</span>' +
-				'</button>' +
-				'</div>' +
-			'</div>'
-		);
+		if (user.alias != settings.guest) {
+			writeln(
+				'<div class="col-sm-4">' +
+					'<div class="pull-right">' +
+					'<button id="uv-' + header.number + '" class="btn-uv btn btn-default icon">' +
+						'<span title="Upvotes" class="glyphicon glyphicon-arrow-up">' +
+						'</span>' +
+						'<span id="uv-count-' + header.number + '" title="Upvotes">' +
+						header.upvotes + '</span>' +
+					'</button>' +
+					'<button id="dv-' + header.number + '" class="btn-dv btn btn-default icon">' +
+						'<span title="Downvotes" class="glyphicon glyphicon-arrow-down">' +
+						'</span>' +
+						'<span id="dv-count-' + header.number + '" title="Downvotes">' +
+						header.downvotes + '</span>' +
+					'</button>' +
+					'</div>' +
+				'</div>'
+			);
+		}
 		
 		writeln('</div>'); // message header
 
