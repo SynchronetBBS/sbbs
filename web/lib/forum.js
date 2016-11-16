@@ -62,7 +62,7 @@ function getSubUnreadCount(sub) {
     try {
         var msgBase = new MsgBase(sub);
         msgBase.open();
-        for (var m = msg_area.sub[sub].scan_ptr; m < msgBase.last_msg; m++) {
+        for (var m = msg_area.sub[sub].scan_ptr + 1; m < msgBase.last_msg; m++) {
             var i = msgBase.get_msg_index(m);
             if (i === null || i.attr&MSG_DELETE || i.attr&MSG_NODISP) continue;
             if ((   msg_area.sub[sub].scan_cfg&SCAN_CFG_YONLY &&
@@ -402,6 +402,30 @@ function deleteMessage(sub, number) {
     return ret;
 }
 
+function voteMessage(sub, number, up) {
+    if (typeof msg_area.sub[sub] === 'undefined' && sub !== 'mail') {
+        return false;
+    }
+    number = parseInt(number);
+    if (isNaN(number)) return false;
+    up = parseInt(up);
+    if (isNaN(up) || up < 0 || up > 1) return false;
+    var msgBase = new MsgBase(sub);
+    if (!msgBase.open()) return false;
+    var header = msgBase.get_msg_header(number);
+    if (header === null) return false;
+    var vh = {
+        'from' : user.alias,
+        'from_ext' : user.number,
+        'from_net_type' : NET_NONE,
+        'thread_back' : header.number,
+        'attr' : up ? MSG_UPVOTE : MSG_DOWNVOTE
+    };
+    var ret = msgBase.vote_msg(vh);
+    msgBase.close();
+    return ret;
+}
+
 // Deuce's URL-ifier
 function linkify(body) {
     urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
@@ -597,7 +621,9 @@ var getMessageThreads = function(sub, max) {
             from : header.from,
             from_net_addr : header.from_net_addr,
             to : header.to,
-            when_written_time : header.when_written_time
+            when_written_time : header.when_written_time,
+            upvotes : header.upvotes || 0,
+            downvotes : header.downvotes || 0
         };
     }
 
