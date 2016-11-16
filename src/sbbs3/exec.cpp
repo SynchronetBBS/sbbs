@@ -819,7 +819,7 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 	freevars(&bin);
 	free(bin.cs);
 	csi->logic=bin.logic;
-	sys_status &=~ SS_ABORT;
+//	sys_status &=~ SS_ABORT;
 	return(bin.retval);
 }
 
