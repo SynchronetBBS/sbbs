@@ -430,7 +430,7 @@ int main(int argc, char **argv)
 							"index import date/time\n");
 					timeerr++; 
 				}
-				if(msg.hdr.type != SMB_MSG_TYPE_VOTE
+				if(msg.hdr.type != SMB_MSG_TYPE_BALLOT
 					&& msg.idx.subj!=smb_subject_crc(msg.subj)) {
 					fprintf(stderr,"%sSubject CRC mismatch\n",beep);
 					msgerr=TRUE;
@@ -452,7 +452,7 @@ int main(int argc, char **argv)
 					fromcrc++; 
 				}
 				if(!(smb.status.attr&SMB_EMAIL) 
-					&& msg.hdr.type != SMB_MSG_TYPE_VOTE
+					&& msg.hdr.type != SMB_MSG_TYPE_BALLOT
 					&& msg.idx.from!=smb_name_crc(msg.from)) {
 					fprintf(stderr,"%sFrom CRC mismatch\n",beep);
 					msgerr=TRUE;
@@ -474,7 +474,7 @@ int main(int argc, char **argv)
 					tocrc++; 
 				}
 				if(!(smb.status.attr&SMB_EMAIL) 
-					&& msg.hdr.type != SMB_MSG_TYPE_VOTE
+					&& msg.hdr.type != SMB_MSG_TYPE_BALLOT
 					&& msg.to_ext==NULL && msg.idx.to!=smb_name_crc(msg.to)) {
 					fprintf(stderr,"%sTo CRC mismatch\n",beep);
 					msgerr=TRUE;
