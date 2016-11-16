@@ -69,25 +69,27 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			(new Date(header.when_written_time * 1000)).toLocaleString()
 		);
 		writeln('</div>');
-		
-		writeln(
-			'<div class="col-sm-4">' +
-				'<div class="pull-right">' +
-				'<button id="uv-' + header.number + '" class="btn-uv btn btn-default icon"' + (user.alias == settings.guest ? 'disabled' : '') + '>' +
-					'<span title="Upvotes" class="glyphicon glyphicon-arrow-up">' +
-					'</span>' +
-					'<span id="uv-count-' + header.number + '" title="Upvotes">' +
-					header.upvotes + '</span>' +
-				'</button>' +
-				'<button id="dv-' + header.number + '" class="btn-dv btn btn-default icon"' + (user.alias == settings.guest ? 'disabled' : '') + '>' +
-					'<span title="Downvotes" class="glyphicon glyphicon-arrow-down">' +
-					'</span>' +
-					'<span id="dv-count-' + header.number + '" title="Downvotes">' +
-					header.downvotes + '</span>' +
-				'</button>' +
-				'</div>' +
-			'</div>'
-		);
+
+		if (typeof settings.vote_buttons === 'undefined' || settings.vote_buttons) {		
+			writeln(
+				'<div class="col-sm-4">' +
+					'<div class="pull-right">' +
+					'<button id="uv-' + header.number + '" class="btn-uv btn btn-default icon"' + (user.alias == settings.guest ? 'disabled' : '') + '>' +
+						'<span title="Upvotes" class="glyphicon glyphicon-arrow-up">' +
+						'</span>' +
+						'<span id="uv-count-' + header.number + '" title="Upvotes">' +
+						header.upvotes + '</span>' +
+					'</button>' +
+					'<button id="dv-' + header.number + '" class="btn-dv btn btn-default icon"' + (user.alias == settings.guest ? 'disabled' : '') + '>' +
+						'<span title="Downvotes" class="glyphicon glyphicon-arrow-down">' +
+						'</span>' +
+						'<span id="dv-count-' + header.number + '" title="Downvotes">' +
+						header.downvotes + '</span>' +
+					'</button>' +
+					'</div>' +
+				'</div>'
+			);
+		}
 		
 		writeln('</div>'); // message header
 
