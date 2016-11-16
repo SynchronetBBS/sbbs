@@ -296,3 +296,31 @@ function threadNav() {
 	);
 
 }
+
+function vote(sub, id) {
+	id = id.split('-');
+	if (id.length !== 2 ||
+		(id[0] !== 'uv' && id[0] !== 'dv') ||
+		isNaN(parseInt(id[1]))
+	) {
+		return;
+	}
+	$.getJSON(
+		'./api/forum.ssjs?call=vote&sub=' + sub + '&id=' + id[1] + '&up=' + (id[0] === 'uv' ? 1 : 0),
+		function (data) {
+			if (!data.success) return;
+			$('#' + id[0] + '-' + id[1]).addClass(
+				id[0] === 'uv' ? 'btn-uv-voted' : 'btn-dv-voted'
+			);
+			$('#' + id[0] + '-' + id[1]).attr('disabled', true);
+			$('#' + id[0] + '-' + id[1]).blur();
+			var count = parseInt($('#' + id[0] + '-count-' + id[1]).text()) + 1;
+			$('#' + id[0] + '-count-' + id[1]).text(count);
+		}
+	);
+}
+
+function enableVoteButtonHandlers(sub) {
+	$('.btn-uv').click(function () { vote(sub, this.id); });
+	$('.btn-dv').click(function () { vote(sub, this.id); });
+}
