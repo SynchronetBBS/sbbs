@@ -329,7 +329,9 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 			,MIN_COLORS);
 		return(FALSE);
 	}
-	memset(cfg->color,LIGHTGRAY|HIGH,MIN_COLORS);	
+	/* Setup default colors here: */
+	memset(cfg->color,LIGHTGRAY|HIGH,MIN_COLORS);
+	cfg->color[clr_backfill] = WHITE|BG_MAGENTA;
 	for(cfg->total_colors=0;!feof(instream) && !ferror(instream);cfg->total_colors++) {
 		if(readline(&offset,str,4,instream)==NULL)
 			break;
