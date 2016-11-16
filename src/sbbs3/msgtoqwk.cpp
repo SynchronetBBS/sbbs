@@ -58,19 +58,26 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 
 	get_msgid(&cfg, subnum, msg, msgid, sizeof(msgid));
 
-	if(msg->hdr.attr&(MSG_VOTE|MSG_POLL)) {
+	if(msg->hdr.type == SMB_MSG_TYPE_POLL || msg->hdr.type == SMB_MSG_TYPE_BALLOT) {
 		if(voting == NULL)
 			return 0;
-		if(msg->hdr.attr&MSG_VOTE) {
+		if(msg->hdr.type == SMB_MSG_TYPE_BALLOT) {
 			fprintf(voting, "[vote:%s]\n", msgid);
 			if((p = msg->reply_id) != NULL)
 				fprintf(voting, "%s: %s\n", smb_hfieldtype(RFC822REPLYID), p);
 			if((msg->hdr.attr&MSG_VOTE) == MSG_VOTE)
-				fprintf(voting, "Vote = %hd\n", msg->hdr.vote);
+				fprintf(voting, "Votes = 0x%hx\n", msg->hdr.votes);
 			else
 				fprintf(voting, "%sVote = true\n", msg->hdr.attr&MSG_UPVOTE ? "Up" : "Down");
 		} else {
 			fprintf(voting, "[poll:%s]\n", msgid);
+			if(msg->hdr.votes)
+				fprintf(voting, "MaxVotes = %hd\n", msg->hdr.votes);
+			unsigned answers = 0;
+			for(i=0; i < msg->total_hfields; i++) {
+				if(msg->hfield[i].type == SMB_POLL_ANSWER)
+					fprintf(voting, "Answer%u = %s\n", answers++, (char*)msg->hfield_dat[i]);
+			}
 		}
 		if(msg->subj && *msg->subj)
 			fprintf(voting, "%s: %s\n",smb_hfieldtype(SUBJECT), msg->subj);
