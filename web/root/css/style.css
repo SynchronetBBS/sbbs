@@ -71,3 +71,23 @@ input.dropdown {
 .reply {
 	margin: 1em 0 1em 0;
 }
+
+/* Upvote button */
+.btn-uv {
+
+}
+
+/* Downvote button */
+.btn-dv {
+
+}
+
+/* Upvote button (user has already upvoted) */
+.btn-uv-voted, .btn-uv-voted:hover {
+	color : orange;
+}
+
+/* Downvote button (user has already downvoted) */
+.btn-dv-voted, .btn-dv-voted:hover {
+	color : blue;
+}
