@@ -339,7 +339,7 @@ int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 	if(msg->hdr.thread_back == 0)
 		return SMB_ERR_HDR_FIELD;
 
-	msg->hdr.type = SMB_MSG_TYPE_VOTE;
+	msg->hdr.type = SMB_MSG_TYPE_BALLOT;
 
 	if(msg->hdr.when_imported.time == 0) {
 		msg->hdr.when_imported.time = (uint32_t)time(NULL);

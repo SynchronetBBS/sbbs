@@ -426,7 +426,7 @@ typedef struct _PACK {		/* Index record */
 			uint16_t	subj;		/* 16-bit CRC of subject (lower case, w/o RE:) */
 		};
 		struct _PACK {
-			uint16_t	vote;		/* vote value */
+			uint16_t	votes;		/* votes value */
 			uint32_t	remsg;		/* number of message this vote is in response to */
 		};
 	};
@@ -507,7 +507,7 @@ typedef struct _PACK {		/* Message base status header */
 enum smb_msg_type {
      SMB_MSG_TYPE_NORMAL		/* Classic message (for reading) */
 	,SMB_MSG_TYPE_POLL			/* A poll question  */
-	,SMB_MSG_TYPE_VOTE			/* Voter response to poll or normal message */
+	,SMB_MSG_TYPE_BALLOT		/* Voter response to poll or normal message */
 };
 
 typedef struct _PACK {		/* Message header */
@@ -526,7 +526,7 @@ typedef struct _PACK {		/* Message header */
     /* 28 */ uint32_t	thread_next;		/* Next message in thread */
     /* 2c */ uint32_t	thread_first;		/* First reply to this message */
 	/* 30 */ uint16_t	delivery_attempts;	/* Delivery attempt counter */
-	/* 32 */ int16_t	vote;				/* Vote value (response to poll) */
+	/* 32 */ int16_t	votes;				/* Votes value (response to poll) or maximum votes per ballot (poll) */
 	/* 34 */ uint32_t	thread_id;			/* Number of original message in thread (or 0 if unknown) */
 	/* 38 */ uint32_t	times_downloaded;	/* Total number of times downloaded (moved Mar-6-2012) */
 	/* 3c */ uint32_t	last_downloaded;	/* Date/time of last download (moved Mar-6-2012) */
