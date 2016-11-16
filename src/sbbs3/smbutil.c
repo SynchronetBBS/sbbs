@@ -533,7 +533,7 @@ void dumpindex(ulong start, ulong count)
 		printf("%10"PRIu32"  ", idx.number);
 		if(idx.attr&MSG_VOTE)
 			printf("V  %04hX  %-10"PRIu32
-				,idx.vote,idx.remsg,idx.attr
+				,idx.votes,idx.remsg,idx.attr
 				,idx.offset,my_timestr(idx.time));
 		else
 			printf("M  %04hX  %04hX  %04X"
