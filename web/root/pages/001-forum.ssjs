@@ -265,16 +265,20 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(
 			format(
 				'<a href="./?page=%s&amp;sub=%s&amp;thread=%s" ' +
-				'class="list-group-item striped">' +
+				'class="list-group-item striped">',
+				http_request.query.page[0],
+				http_request.query.sub[0],
+				thread.id
+			)
+		);
+		writeln('<div class="row"><div class="col-sm-8">');
+		writeln(
+			format(
 				'<strong>%s</strong>' +
 				'<p>By <strong>%s</strong> on %s</p>' +
 				'<span title="Unread messages" class="badge%s" ' +
 				'id="badge-%s">%s</span>' +
-				'<p>Latest reply by <strong>%s</strong> on %s</p>' +
-				'</a>',
-				http_request.query.page[0],
-				http_request.query.sub[0],
-				thread.id,
+				'<p>Latest reply by <strong>%s</strong> on %s</p>',
 				thread.subject,
 				thread.messages[first].from,
 				(new Date(
@@ -293,6 +297,24 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				)).toLocaleString()
 			)
 		);
+		writeln('</div>');
+		if (settings.vote_buttons) {
+			writeln(
+				'<div class="col-sm-4"><div class="pull-right">' +
+				'<div title="Upvotes - Parent (Thread Total)" class="btn icon">' +
+				'<span class="glyphicon glyphicon-arrow-up">' +
+				'</span>' +
+				thread.messages[first].upvotes + ' (' + thread.votes.up + ')' +
+				'</div>' +
+				'<div title="Downvotes - Parent (Thread Total)" class="btn icon">' +
+				'<span class="glyphicon glyphicon-arrow-down">' +
+				'</span>' +
+				thread.messages[first].downvotes + ' (' + thread.votes.down + ')' +
+				'</div>' +
+				'</div></div>'
+			);
+		}
+		writeln('</div></a>');
 	}
 
 	writeln(
