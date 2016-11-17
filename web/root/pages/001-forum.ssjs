@@ -293,12 +293,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			)
 		);
 		writeln('</div>');
-		writeln(
-			'<div class="col-sm-4">' +
-			'<div class="pull-right" style="text-align:right;">'
-		);
 		if (settings.vote_buttons) {
 			writeln(
+				'<div class="col-sm-3">' +
+				'<div class="pull-right">' +
 				'<div title="Upvotes - Parent (Thread Total)" class="btn icon">' +
 				'<span class="glyphicon glyphicon-arrow-up">' +
 				'</span>' +
@@ -308,14 +306,17 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				'<span class="glyphicon glyphicon-arrow-down">' +
 				'</span>' +
 				thread.messages[first].downvotes + ' (' + thread.votes.down + ')' +
+				'</div>' +
+				'</div>' +
 				'</div>'
 			);
 		}
 		writeln(
 			format(
+				'<div class="col-sm-1">' +
 				'<div class="btn icon">' +
 				'<span title="Unread messages" class="badge%s" id="badge-%s">' +
-				'%s</span></div>',
+				'%s</span></div></div>',
 				(	msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW
 					? ' scanned' : ''
 				),
@@ -323,7 +324,6 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				(unread == 0 ? '' : unread)
 			)
 		);
-		writeln('</div></div>');
 		writeln('</div></a>');
 	}
 
