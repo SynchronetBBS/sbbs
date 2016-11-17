@@ -31,7 +31,7 @@ A web interface for Synchronet BBS
 	guest = Guest
 	; Login sessions expire after this many seconds of inactivity
 	timeout = 43200
-	; Users disappear from the "Who's online" list after this many seconds
+	; Web-based users disappear from the "Who's online" list after this many seconds
 	inactivity = 900
 	; Allow new users to register via the web interface
 	user_registration = true
