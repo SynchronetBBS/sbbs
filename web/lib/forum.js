@@ -625,6 +625,8 @@ var getMessageThreads = function(sub, max) {
             upvotes : header.upvotes || 0,
             downvotes : header.downvotes || 0
         };
+        threads.thread[thread_id].votes.up += (header.upvotes || 0);
+        threads.thread[thread_id].votes.down += (header.downvotes || 0);
     }
 
     function getSomeMessageHeaders(msgBase, start, count) {
@@ -690,7 +692,11 @@ var getMessageThreads = function(sub, max) {
                         id : headers[h].thread_id,
                         newest : 0,
                         subject : headers[h].subject,
-                        messages : {}
+                        messages : {},
+                        votes : {
+                            up : 0,
+                            down : 0
+                        }
                     };
                     addToThread(headers[h].thread_id, headers[h], subject);
                 }
@@ -734,7 +740,11 @@ var getMessageThreads = function(sub, max) {
                     id : headers[h].number,
                     newest : 0,
                     subject : headers[h].subject,
-                    messages : {}
+                    messages : {},
+                    votes : {
+                        up : 0,
+                        down : 0
+                    }
                 };
                 addToThread(headers[h].number, headers[h], subject);
 
