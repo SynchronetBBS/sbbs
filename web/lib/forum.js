@@ -724,7 +724,11 @@ var getMessageThreads = function(sub, max) {
                             id : headers[h].thread_back,
                             newest : 0,
                             subject : headers[h].subject,
-                            messages : {}
+                            messages : {},
+                            votes : {
+                                up : 0,
+                                down : 0
+                            }
                         };
                         addToThread(
                             headers[h].thread_back,
