@@ -240,7 +240,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		log(LOG_WARNING, err);
 	}
 
-	writeln('<script type="text/javascript">threadNav();');
+	writeln('<script type="text/javascript">');
+	if (settings.keyboard_navigation) {
+		writeln('threadNav();');
+	}
 	if (user.alias != settings.guest || user.security.restrictions&UFLAG_V) {
 		writeln('enableVoteButtonHandlers("'+http_request.query.sub[0]+'");');
 	}

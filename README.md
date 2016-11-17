@@ -48,6 +48,8 @@ A web interface for Synchronet BBS
 	; Only load this many messages from each sub (default: 0 for all)
 	; (If you get 'Out of memory' errors when viewing subs, tweak this setting)
 	max_messages = 0
+	; Enable or disable keyboard navigation in message threads
+	keyboard_navigation = false
 	; Display upvote/downvote buttons in message threads (3.17)
 	vote_buttons = true
 ```
