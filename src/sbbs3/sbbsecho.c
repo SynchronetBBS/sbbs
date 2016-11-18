@@ -5057,13 +5057,6 @@ int main(int argc, char **argv)
 	SAFECOPY(scfg.ctrl_dir,p);
 
 	backslash(scfg.ctrl_dir);
-	SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
-	if(!fmutex(path, program_id(), cfg.bsy_timeout)) {
-		lprintf(LOG_WARNING, "Mutex file exists (%s): SBBSecho appears to be already running", path);
-		bail(1);
-	}
-	mtxfile_locked = true;
-	atexit(cleanup);
 
 	/* Install Ctrl-C/Break signal handler here */
 #if defined(_WIN32)
@@ -5133,6 +5126,14 @@ int main(int argc, char **argv)
 
 	truncsp(cmdline);
 	lprintf(LOG_DEBUG,"%s invoked with options: %s", sbbsecho_pid(), cmdline);
+
+	SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
+	if(!fmutex(path, program_id(), cfg.bsy_timeout)) {
+		lprintf(LOG_WARNING, "Mutex file exists (%s): SBBSecho appears to be already running", path);
+		bail(1);
+	}
+	mtxfile_locked = true;
+	atexit(cleanup);
 
 	/******* READ IN AREAS.BBS FILE *********/
 
