@@ -1,6 +1,6 @@
 "\1n\1h\1cÚÄÄÄÄÄÄ\1nÄÄÄÄÄÄ\1h\1kÄÄÄÄÄÄÄ\1n\1cÄÄÄÄÄúúúú\r\n"\	001 MsgSubj 
 	"\1h³ \1bSubj\1n\1b: \1h\1c%.70s"
-"\r\n³ \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s"           002 MsgAttr
+"\r\n³ \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s%s"         002 MsgAttr
 "\r\n³ \1bTo  \1n\1b: \1h\1c%.70s"                              003 MsgTo
 " #%s"                                                  004 MsgToExt
 " (%.40s)"                                              005 MsgToNet
