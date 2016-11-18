@@ -88,8 +88,11 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 }
 
 
-void sbbs_t::show_msgattr(ushort attr)
+void sbbs_t::show_msgattr(smbmsg_t* msg)
 {
+	uint16_t attr = msg->hdr.attr;
+	uint16_t poll = attr&MSG_POLL_VOTE_MASK;
+	uint32_t auxattr = msg->hdr.auxattr;
 
 	bprintf(text[MsgAttr]
 		,attr&MSG_PRIVATE	? "Private  "   :nulstr
@@ -103,7 +106,8 @@ void sbbs_t::show_msgattr(ushort attr)
 		,attr&MSG_VALIDATED ? "Validated  " :nulstr
 		,attr&MSG_REPLIED	? "Replied  "	:nulstr
 		,attr&MSG_NOREPLY	? "NoReply  "	:nulstr
-		,attr&MSG_POLL	    ? "Poll  "		:nulstr
+		,poll == MSG_POLL	? "Poll  "		:nulstr
+		,poll == MSG_POLL && auxattr&POLL_CLOSED ? "(Closed)  "	:nulstr
 		,nulstr
 		,nulstr
 		,nulstr
@@ -135,7 +139,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 
 	bprintf(text[MsgSubj],msg->subj);
 	if(msg->hdr.attr)
-		show_msgattr(msg->hdr.attr);
+		show_msgattr(msg);
 	if(msg->to && *msg->to) {
 		bprintf(text[MsgTo],msg->to);
 		if(msg->to_net.addr!=NULL)
@@ -186,7 +190,7 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 
 	show_msghdr(msg);
 
-	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL) {
+	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && smb.subnum < cfg.total_subs) {
 		char* answer;
 		int longest_answer = 0;
 		uint16_t votes = smb_voted_already(&smb, msg->hdr.number
@@ -222,7 +226,16 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 			else if(width > cols-20)
 				width = cols-20;
 			bprintf(text[PollAnswerNumber], answers+1);
-			if(votes || sub_op(smb.subnum)) {
+			bool results_visible = false;
+			if((msg->hdr.auxattr&POLL_RESULTS_MASK) == POLL_RESULTS_OPEN)
+				results_visible = true;
+			else if(smb_msg_is_from(msg, cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL))
+				results_visible = true;
+			else if((msg->hdr.auxattr&POLL_RESULTS_MASK) == POLL_RESULTS_CLOSED)
+				results_visible = (msg->hdr.auxattr&POLL_CLOSED) ? true : false;
+			else if((msg->hdr.auxattr&POLL_RESULTS_MASK) != POLL_RESULTS_SECRET)
+				results_visible = votes ? true : false;
+			if(results_visible) {
 				safe_snprintf(str, sizeof(str), text[PollAnswerFmt]
 					,width, width, answer, post->votes[answers], pct);
 				backfill(str, pct);
@@ -235,6 +248,8 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 			CRLF;
 			answers++;
 		}
+		if(!votes && !(useron.misc&EXPERT) && !(msg->hdr.auxattr&POLL_CLOSED) && !(useron.rest&FLAG('V')))
+			mnemonics("\r\nTo vote in this poll, hit ~V now.\r\n");
 		return;
 	}
 	if((txt=smb_getmsgtxt(&smb,msg,(console&CON_RAW_IN) ? 0:GETMSGTXT_PLAIN)) != NULL) {

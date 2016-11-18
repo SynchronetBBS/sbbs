@@ -575,7 +575,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 				done=1;
 				break;
 			case 'C':   /* Change attributes of last piece */
-				i=chmsgattr(msg.hdr.attr);
+				i=chmsgattr(msg);
 				if(msg.hdr.attr==i)
 					break;
 				if(msg.total_hfields)

@@ -110,9 +110,9 @@ static void qwk_parse_header_list(ulong confnum, smbmsg_t* msg, str_list_t* head
 		if(parse_sender_hfields)
 			smb_hfield_str(msg,hfield_type,p);
 	}
-	while((p=iniPopKey(headers,ROOT_SECTION,"Organization",value))!=NULL) {
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SENDERORG),value))!=NULL) {
 		if(parse_sender_hfields)
-			smb_hfield_str(msg,SENDERORG,p);
+			smb_hfield_str(msg,hfield_type,p);
 	}
 
 	/* FidoNet header fields */

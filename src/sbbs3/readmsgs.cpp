@@ -40,7 +40,7 @@ int sbbs_t::sub_op(uint subnum)
 	return(is_user_subop(&cfg, subnum, &useron, &client));
 }
 
-char sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
+uchar sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
 {
 	if(msg->hdr.attr&MSG_DELETE)						return '-';
 	if((stricmp(msg->to,useron.alias)==0 || stricmp(msg->to,useron.name)==0)
@@ -52,7 +52,7 @@ char sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
 	if(msg->hdr.number > subscan[subnum].ptr)			return '*';
 	if(msg->hdr.attr&MSG_PRIVATE)						return 'P';
 	if(msg->hdr.attr&MSG_POLL)							return '?'; 
-	if(post->upvotes > post->downvotes)					return 'V';
+	if(post->upvotes > post->downvotes)					return 251;
 	if(post->upvotes || post->downvotes)				return 'v';
 	if(msg->hdr.attr&MSG_REPLIED)						return 'R';
 	if(sub_op(subnum) && msg->hdr.attr&MSG_ANONYMOUS)	return 'A';
@@ -266,8 +266,12 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 			if(mode&LP_REP || !sub_op(subnum))
 				break;
 		}
-
-		if(idx.attr&MSG_VOTE) {
+		
+		switch(idx.attr&MSG_POLL_VOTE_MASK) {
+		case MSG_VOTE:
+		case MSG_UPVOTE:
+		case MSG_DOWNVOTE:
+		{
 			ulong u;
 			for(u = 0; u < l; u++)
 				if(post[u].idx.number == idx.remsg)
@@ -289,10 +293,16 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 			}
 			if(!(mode&LP_VOTES))
 				continue;
+			break;
 		}
-		if(idx.attr&MSG_POLL) {
+		case MSG_POLL:
 			if(!(mode&LP_POLLS))
 				continue;
+			break;
+		case MSG_POLL_CLOSURE:
+			if(!(mode&LP_VOTES))
+				continue;
+			break;
 		}
 
 		if(idx.attr&MSG_PRIVATE && !(mode&LP_PRIVATE)
@@ -824,6 +834,18 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				else done=1;
 				break;
 			case 'D':       /* Delete message on sub-board */
+				if(!(msg.hdr.attr&MSG_DELETE) && msg.hdr.type == SMB_MSG_TYPE_POLL 
+					&& smb_msg_is_from(&msg, cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL)
+					&& !(msg.hdr.auxattr&POLL_CLOSED)) {
+					if(noyes("Close Poll")) {
+						domsg=false;
+						break;
+					}
+					i=closepoll(&cfg, &smb, msg.hdr.number, cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias);
+					if(i != SMB_SUCCESS)
+						errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
+					break;
+				}
 				domsg=0;
 				if(!sub_op(subnum)) {
 					if(!(cfg.sub[subnum]->misc&SUB_DEL)) {
@@ -1055,8 +1077,15 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					domsg = false;
 					break;
 				}
+
+				if(msg.hdr.auxattr&POLL_CLOSED) {
+					bputs(text[CantReplyToMsg]);
+					domsg = false;
+					break; 
+				}
+
 				ZERO_VAR(vote);
-				if(msg.hdr.attr&MSG_POLL) {
+				if(msg.hdr.type == SMB_MSG_TYPE_POLL) {
 					unsigned answers=0;
 					for(i=0; i<msg.total_hfields; i++) {
 						if(msg.hfield[i].type != SMB_POLL_ANSWER)
@@ -1131,7 +1160,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 								: matchuser(&cfg,msg.from,FALSE));
 							break;
 						case 'C':   /* Change message attributes */
-							i=chmsgattr(msg.hdr.attr);
+							i=chmsgattr(msg);
 							if(msg.hdr.attr==i)
 								break;
 							if(msg.total_hfields)

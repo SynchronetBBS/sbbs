@@ -2228,7 +2228,7 @@ ulong loadmsgs(post_t** post, ulong ptr)
 		if(idx.number==0)	/* invalid message number, ignore */
 			continue;
 
-		if(idx.attr&(MSG_VOTE|MSG_POLL))
+		if(idx.attr&MSG_POLL_VOTE_MASK)
 			continue;
 
 		if(idx.number<=ptr || (idx.attr&MSG_DELETE))

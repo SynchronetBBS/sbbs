@@ -996,18 +996,23 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 	if(!strcmp(sp,"MSG_TIMEZONE") && current_msg!=NULL)
 		return(smb_zonestr(current_msg->hdr.when_written.zone,NULL));
 	if(!strcmp(sp,"MSG_ATTR") && current_msg!=NULL) {
-		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s%s%s%s%s"
-			,current_msg->hdr.attr&MSG_PRIVATE		? "Private  "   :nulstr
-			,current_msg->hdr.attr&MSG_READ			? "Read  "      :nulstr
-			,current_msg->hdr.attr&MSG_DELETE		? "Deleted  "   :nulstr
-			,current_msg->hdr.attr&MSG_KILLREAD		? "Kill  "      :nulstr
-			,current_msg->hdr.attr&MSG_ANONYMOUS	? "Anonymous  " :nulstr
-			,current_msg->hdr.attr&MSG_LOCKED		? "Locked  "    :nulstr
-			,current_msg->hdr.attr&MSG_PERMANENT	? "Permanent  " :nulstr
-			,current_msg->hdr.attr&MSG_MODERATED	? "Moderated  " :nulstr
-			,current_msg->hdr.attr&MSG_VALIDATED	? "Validated  " :nulstr
-			,current_msg->hdr.attr&MSG_REPLIED		? "Replied  "	:nulstr
-			,current_msg->hdr.attr&MSG_NOREPLY		? "NoReply  "	:nulstr
+		uint16_t attr = current_msg->hdr.attr;
+		uint16_t poll = attr&MSG_POLL_VOTE_MASK;
+		uint32_t auxattr = current_msg->hdr.auxattr;
+		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s%s%s%s%s%s%s"
+			,attr&MSG_PRIVATE						? "Private  "   :nulstr
+			,attr&MSG_READ							? "Read  "      :nulstr
+			,attr&MSG_DELETE						? "Deleted  "   :nulstr
+			,attr&MSG_KILLREAD						? "Kill  "      :nulstr
+			,attr&MSG_ANONYMOUS						? "Anonymous  " :nulstr
+			,attr&MSG_LOCKED						? "Locked  "    :nulstr
+			,attr&MSG_PERMANENT						? "Permanent  " :nulstr
+			,attr&MSG_MODERATED						? "Moderated  " :nulstr
+			,attr&MSG_VALIDATED						? "Validated  " :nulstr
+			,attr&MSG_REPLIED						? "Replied  "	:nulstr
+			,attr&MSG_NOREPLY						? "NoReply  "	:nulstr
+			,poll == MSG_POLL						? "Poll  "		:nulstr
+			,poll == MSG_POLL && auxattr&POLL_CLOSED	? "(Closed)  "	:nulstr
 			);
 		return(str);
 	}

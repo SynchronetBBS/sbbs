@@ -1,5 +1,3 @@
-/* writemsg.cpp */
-
 /* Synchronet message creation routines */
 
 /* $Id$ */
@@ -1537,13 +1535,14 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	return(true);
 }
 
-ushort sbbs_t::chmsgattr(ushort attr)
+ushort sbbs_t::chmsgattr(smbmsg_t msg)
 {
 	int ch;
+	uint16_t attr = msg.hdr.attr;
 
 	while(online && !(sys_status&SS_ABORT)) {
 		CRLF;
-		show_msgattr(attr);
+		show_msgattr(&msg);
 		menu("msgattr");
 		ch=getkey(K_UPPER);
 		if(ch)
@@ -1575,6 +1574,9 @@ ushort sbbs_t::chmsgattr(ushort attr)
 				break;
 			case 'L':
 				attr^=MSG_LOCKED;
+				break;
+			case 'C':
+				attr^=MSG_NOREPLY;
 				break;
 			default:
 				return(attr); 
