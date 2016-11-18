@@ -1,5 +1,3 @@
-/* smbtxt.c */
-
 /* Synchronet message base (SMB) message text library routines */
 
 /* $Id$ */
@@ -71,10 +69,40 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 				sprintf(smb->last_error
 					,"realloc failure of %ld bytes for comment buffer"
 					,l+length+1);
-				return(buf);
+				free(buf);
+				return(NULL);
 			}
 			buf=p;
 			l+=sprintf(buf+l,"%s\r\n",str);
+		}
+		if(l) {	/* Add a blank line after comments */
+			if((p=(char*)realloc(buf,l+3))==NULL) {
+				sprintf(smb->last_error
+					,"realloc failure of %ld bytes for comment buffer"
+					,l+3);
+				free(buf);
+				return(NULL);
+			}
+			buf=p;
+			l+=sprintf(buf+l,"\r\n");
+		}
+		unsigned answers = 0;
+		for(i=0;i<(uint)msg->total_hfields;i++) {			/* Poll Answers are part of text */
+			if(msg->hfield[i].type!=SMB_POLL_ANSWER)
+				continue;
+			char tmp[128];
+			length = safe_snprintf(tmp, sizeof(tmp), "%2u: %s\r\n", ++answers, (char*)msg->hfield_dat[i]);
+			if((p=(char*)realloc(buf,l+length+1))==NULL) {
+				sprintf(smb->last_error
+					,"realloc failure of %ld bytes for comment buffer"
+					,l+length+1);
+				free(buf);
+				return(NULL);
+			}
+			buf=p;
+			memcpy(buf+l, tmp, length);
+			l += length;
+			buf[l] = 0;
 		}
 	}
 
@@ -113,7 +141,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 				sprintf(smb->last_error
 					,"malloc failure of %ld bytes for LZH buffer"
 					,length);
-				return(buf);
+				free(buf);
+				return(NULL);
 			}
 			smb_fread(smb,lzhbuf,length,smb->sdt_fp);
 			lzhlen=*(int32_t*)lzhbuf;
@@ -122,7 +151,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					,"realloc failure of %ld bytes for text buffer"
 					,l+lzhlen+3L);
 				free(lzhbuf);
-				return(buf); 
+				free(buf);
+				return(NULL); 
 			}
 			buf=p;
 			lzh_decode((uint8_t *)lzhbuf,length,(uint8_t *)buf+l);
@@ -134,7 +164,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 				sprintf(smb->last_error
 					,"realloc failure of %ld bytes for text buffer"
 					,l+length+3L);
-				return(buf);
+				free(buf);
+				return(NULL);
 			}
 			buf=p;
 			p=buf+l;

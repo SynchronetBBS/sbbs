@@ -385,3 +385,64 @@ int SMBCALL smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage)
 
 	return retval;
 }
+
+int SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
+{
+	smbmsg_t	remsg;
+	int			retval;
+
+	if(!SMB_IS_OPEN(smb)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "msgbase not open");
+		return SMB_ERR_NOT_OPEN;
+	}
+
+	if(filelength(fileno(smb->shd_fp)) < 1)
+		return SMB_ERR_NOT_FOUND;
+
+	if(msg->hdr.thread_back == 0)
+		return SMB_ERR_HDR_FIELD;
+
+	memset(&remsg, 0, sizeof(remsg));
+	remsg.hdr.number = msg->hdr.thread_back;
+	if((retval = smb_getmsgidx(smb, &remsg)) != SMB_SUCCESS)
+		return retval;
+	if((retval = smb_lockmsghdr(smb,&remsg)) != SMB_SUCCESS)
+		return retval;
+	if((retval = smb_getmsghdr(smb, &remsg)) != SMB_SUCCESS) {
+		smb_unlockmsghdr(smb, &remsg);
+		return retval;
+	}
+
+	if(remsg.hdr.auxattr&POLL_CLOSED) {
+		smb_freemsgmem(&remsg);
+		smb_unlockmsghdr(smb, &remsg);
+		return SMB_CLOSED;
+	}
+
+	if(!smb_msg_is_from(&remsg, msg->from, msg->from_net.type, msg->from_net.addr)) {
+		smb_freemsgmem(&remsg);
+		smb_unlockmsghdr(smb, &remsg);
+		return SMB_UNAUTHORIZED;
+	}
+
+	remsg.hdr.auxattr |= POLL_CLOSED;
+	retval = smb_putmsghdr(smb, &remsg);
+	smb_freemsgmem(&remsg);
+	smb_unlockmsghdr(smb, &remsg);
+	if(retval != SMB_SUCCESS)
+		return retval;
+
+	msg->hdr.attr |= MSG_POLL_CLOSURE;
+	msg->hdr.type = SMB_MSG_TYPE_POLL_CLOSURE;
+
+	if(msg->hdr.when_imported.time == 0) {
+		msg->hdr.when_imported.time = (uint32_t)time(NULL);
+		msg->hdr.when_imported.zone = 0;
+	}
+	if(msg->hdr.when_written.time == 0)	/* Uninitialized */
+		msg->hdr.when_written = msg->hdr.when_imported;
+
+	retval = smb_addmsghdr(smb, msg, storage);
+
+	return retval;
+}

@@ -747,9 +747,15 @@ ulong SMBCALL smb_getmsgtxtlen(smbmsg_t* msg)
 	int i;
 	ulong length=0L;
 
-	for(i=0;i<msg->total_hfields;i++)
-		if(msg->hfield[i].type==SMB_COMMENT || msg->hfield[i].type==SMTPSYSMSG)
+	for(i=0;i<msg->total_hfields;i++) {
+		switch(msg->hfield[i].type) {
+		case SMB_COMMENT:
+		case SMTPSYSMSG:
+		case SMB_POLL_ANSWER:
 			length+=msg->hfield[i].length+2;
+			break;
+		}
+	}
 	for(i=0;i<msg->hdr.total_dfields;i++)
 		if(msg->dfield[i].type==TEXT_BODY || msg->dfield[i].type==TEXT_TAIL)
 			length+=msg->dfield[i].length;
@@ -1652,6 +1658,25 @@ int SMBCALL smb_init_idx(smb_t* smb, smbmsg_t* msg)
 	return(SMB_SUCCESS);
 }
 
+BOOL SMBCALL smb_msg_is_from(smbmsg_t* msg, const char* name, enum smb_net_type net_type, const void* net_addr)
+{
+	if(stricmp(msg->from, name) != 0)
+		return FALSE;
+
+	if(msg->from_net.type != net_type)
+		return FALSE;
+
+	switch(net_type) {
+		case NET_NONE:
+			return TRUE;
+		case NET_FIDO:
+			return memcmp(msg->from_net.addr, net_addr, sizeof(fidoaddr_t)) == 0;
+		default:
+			return stricmp(msg->from_net.addr, net_addr) == 0;
+	}
+}
+
+
 uint16_t SMBCALL smb_voted_already(smb_t* smb, uint32_t msgnum, const char* name, enum smb_net_type net_type, void* net_addr)
 {
 	uint16_t votes = 0;
@@ -1675,26 +1700,11 @@ uint16_t SMBCALL smb_voted_already(smb_t* smb, uint32_t msgnum, const char* name
 			continue;
 		if(smb_getmsghdr(smb, &msg) != SMB_SUCCESS)
 			continue;
-		if(stricmp(msg.from, name) == 0) {
-			BOOL result = FALSE;
-			if(msg.from_net.type == net_type)
-				switch(net_type) {
-				case NET_NONE:
-					result = TRUE;
-					break;
-				case NET_FIDO:
-					result = memcmp(msg.from_net.addr, net_addr, sizeof(fidoaddr_t)) == 0;
-					break;
-				default:
-					result = stricmp(msg.from_net.addr, net_addr) == 0;
-					break;
-			}
-			if(result) {
-				if((msg.idx.attr&MSG_VOTE) == MSG_VOTE)
-					votes = msg.hdr.votes;
-				else
-					votes++;
-			}
+		if(smb_msg_is_from(&msg, name, net_type, net_addr)) {
+			if((msg.idx.attr&MSG_VOTE) == MSG_VOTE)
+				votes = msg.hdr.votes;
+			else
+				votes++;
 		}
 		smb_freemsgmem(&msg);
 	}

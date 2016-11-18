@@ -316,7 +316,9 @@
 #define MSG_DOWNVOTE		(1<<12)		/* This message is a downvote */
 #define MSG_POLL			(1<<13)		/* This message is a poll */
 
-#define MSG_VOTE			(MSG_UPVOTE|MSG_DOWNVOTE)	/* this message is a poll-vote */
+#define MSG_VOTE			(MSG_UPVOTE|MSG_DOWNVOTE)	/* This message is a poll-vote */
+#define MSG_POLL_CLOSURE	(MSG_POLL|MSG_VOTE)			/* This message is a poll-closure */
+#define MSG_POLL_VOTE_MASK	MSG_POLL_CLOSURE
 
 #define MSG_POLL_MAX_ANSWERS	16
 
@@ -328,6 +330,13 @@
 #define MSG_RECEIPTREQ		(1<<4)		/* Return receipt requested */
 #define MSG_CONFIRMREQ		(1<<5)		/* Confirmation receipt requested */
 #define MSG_NODISP			(1<<6)		/* Msg may not be displayed to user */
+#define POLL_CLOSED			(1<<24)		/* Closed to voting */
+#define POLL_RESULTS_MASK	(3<<30)		/* 4 possible values: */
+#define POLL_RESULTS_SECRET	(3<<30)		/* No one but pollster can see results */
+#define POLL_RESULTS_CLOSED	(2<<30)		/* No one but pollster can see results until poll is closed */
+#define POLL_RESULTS_OPEN	(1<<30)		/* Results are visible to everyone always */
+#define POLL_RESULTS_VOTERS	(0<<30)		/* Voters can see results right away, everyone else when closed */
+#define POLL_RESULTS_SHIFT	30
 
 										/* Message network attributes */
 #define MSG_LOCAL			(1<<0)		/* Msg created locally */
@@ -508,6 +517,7 @@ enum smb_msg_type {
      SMB_MSG_TYPE_NORMAL		/* Classic message (for reading) */
 	,SMB_MSG_TYPE_POLL			/* A poll question  */
 	,SMB_MSG_TYPE_BALLOT		/* Voter response to poll or normal message */
+	,SMB_MSG_TYPE_POLL_CLOSURE	/* Closure of an existing poll */
 };
 
 typedef struct _PACK {		/* Message header */
