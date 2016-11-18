@@ -331,11 +331,11 @@
 #define MSG_CONFIRMREQ		(1<<5)		/* Confirmation receipt requested */
 #define MSG_NODISP			(1<<6)		/* Msg may not be displayed to user */
 #define POLL_CLOSED			(1<<24)		/* Closed to voting */
-#define POLL_RESULTS_MASK	(3<<30)		/* 4 possible values: */
-#define POLL_RESULTS_SECRET	(3<<30)		/* No one but pollster can see results */
-#define POLL_RESULTS_CLOSED	(2<<30)		/* No one but pollster can see results until poll is closed */
-#define POLL_RESULTS_OPEN	(1<<30)		/* Results are visible to everyone always */
-#define POLL_RESULTS_VOTERS	(0<<30)		/* Voters can see results right away, everyone else when closed */
+#define POLL_RESULTS_MASK	(3U<<30)	/* 4 possible values: */
+#define POLL_RESULTS_SECRET	(3U<<30)	/* No one but pollster can see results */
+#define POLL_RESULTS_CLOSED	(2U<<30)	/* No one but pollster can see results until poll is closed */
+#define POLL_RESULTS_OPEN	(1U<<30)	/* Results are visible to everyone always */
+#define POLL_RESULTS_VOTERS	(0U<<30)	/* Voters can see results right away, everyone else when closed */
 #define POLL_RESULTS_SHIFT	30
 
 										/* Message network attributes */
