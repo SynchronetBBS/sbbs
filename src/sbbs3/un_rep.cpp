@@ -536,6 +536,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 	update_qwkroute(NULL);			/* Write ROUTE.DAT */
 
+	smb_freemsgmem(&msg);
+
 	iniFreeStringList(headers);
 
 	SAFEPRINTF(fname, "%sVOTING.DAT", cfg.temp_dir);
@@ -561,7 +563,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	/* QWKE support */
 	SAFEPRINTF(fname,"%sTODOOR.EXT",cfg.temp_dir);
 	if(fexistcase(fname)) {
-		useron.qwk|=QWK_EXT;
+		set_qwk_flag(QWK_EXT);
 		FILE* fp=fopen(fname,"r");
 		char* p;
 		if(fp!=NULL) {
