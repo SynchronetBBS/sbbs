@@ -9,7 +9,7 @@ for(i in argv)
         } else
                 option[argv[i].slice(1)] = true;
 
-if(this.bbs)
+if(js.global.bbs)
 	basecode = bbs.cursub_code;
 
 while(!basecode)
@@ -20,6 +20,8 @@ if(!msgbase.open()) {
         alert("Error " + msgbase.last_error + " opening " + basecode);
         exit();
 }
+
+print("Posting Poll to sub-board: " + basecode);
 
 var poll = { field_list: [] };
 while(!poll.subject)
