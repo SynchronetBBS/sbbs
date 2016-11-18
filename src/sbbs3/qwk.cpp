@@ -1181,7 +1181,6 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* 
 				continue;
 
 			smbmsg_t msg;
-			const char* notice = NULL;
 
 			ZERO_VAR(msg);
 			smb_hfield_str(&msg, RFC822MSGID, list[u] + 6);
