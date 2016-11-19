@@ -188,8 +188,11 @@ static int lputs(void* unused, int level, const char* str)
 	int		ret;
 
 #if defined(_WIN32) && defined(_DEBUG)
-	if(log_level==LOG_DEBUG)
-		OutputDebugString(str);
+	if(log_level==LOG_DEBUG) {
+		char dbgstr[1024];
+		SAFEPRINTF(dbgstr, "SEXYZ: %s", str);
+		OutputDebugString(dbgstr);
+	}
 #endif
 
 	if(level>log_level)
