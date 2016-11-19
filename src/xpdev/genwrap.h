@@ -1,8 +1,7 @@
-/* genwrap.h */
-
 /* General cross-platform development wrappers */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

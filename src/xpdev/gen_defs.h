@@ -1,8 +1,7 @@
-/* gen_defs.h */
-
 /* General(ly useful) constant, macro, and type definitions */
 
 /* $Id$ */
+// vi: tabstop=4
 																			
 /****************************************************************************
  * @format.tab-size 4           (Plain Text/Source Code File Header)        *
