@@ -1,8 +1,7 @@
-/* ftpsrvr.c */
-
 /* Synchronet FTP server */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1251,7 +1250,7 @@ static void send_thread(void* arg)
 	xfer=*(xfer_t*)arg;
 	free(arg);
 
-	SetThreadName("FTP Send");
+	SetThreadName("sbbs/FTP Send");
 	thread_up(TRUE /* setuid */);
 
 	length=flength(xfer.filename);
@@ -1376,7 +1375,7 @@ static void send_thread(void* arg)
 		}
 		total+=wr;
 		*xfer.lastactive=time(NULL);
-		YIELD();
+		//YIELD();
 	}
 
 	if((i=ferror(fp))!=0) 
@@ -1511,7 +1510,7 @@ static void receive_thread(void* arg)
 	xfer=*(xfer_t*)arg;
 	free(arg);
 
-	SetThreadName("FTP RECV");
+	SetThreadName("sbbs/FTP Receive");
 	thread_up(TRUE /* setuid */);
 
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
@@ -2371,7 +2370,7 @@ static void ctrl_thread(void* arg)
 #endif
 	login_attempt_t attempted;
 
-	SetThreadName("FTP CTRL");
+	SetThreadName("sbbs/FTP Control");
 	thread_up(TRUE /* setuid */);
 
 	lastactive=time(NULL);
@@ -4777,7 +4776,7 @@ void DLLCALL ftp_server(void* arg)
 	ftp_ver();
 
 	startup=(ftp_startup_t*)arg;
-	SetThreadName("FTP Server");
+	SetThreadName("sbbs/FTP Server");
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
@@ -4970,7 +4969,7 @@ void DLLCALL ftp_server(void* arg)
 		lprintf(LOG_INFO,"FTP Server thread started");
 
 		while(ftp_set!=NULL && !terminate_server) {
-
+			YIELD();
 			if(protected_uint32_value(thread_count) <= 1) {
 				if(!(startup->options&FTP_OPT_NO_RECYCLE)) {
 					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {

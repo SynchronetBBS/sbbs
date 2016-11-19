@@ -1,8 +1,7 @@
-/* services.c */
-
 /* Synchronet Services */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -980,7 +979,7 @@ static void js_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s JavaScript service thread started", socket, service->protocol);
 
-	SetThreadName("JS Service");
+	SetThreadName("sbbs/JS Service");
 	thread_up(TRUE /* setuid */);
 	protected_uint32_adjust(&threads_pending_start, -1);
 
@@ -1183,7 +1182,7 @@ static void js_static_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%s static JavaScript service thread started", service->protocol);
 
-	SetThreadName("JS Static Service");
+	SetThreadName("sbbs/JS Static Service");
 	thread_up(TRUE /* setuid */);
 	protected_uint32_adjust(&threads_pending_start, -1);
 
@@ -1282,7 +1281,7 @@ static void native_static_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s static service thread started", inst.socket, inst.service->protocol);
 
-	SetThreadName("Static Service");
+	SetThreadName("sbbs/Static Service");
 	thread_up(TRUE /* setuid */);
 	protected_uint32_adjust(&threads_pending_start, -1);
 
@@ -1345,7 +1344,7 @@ static void native_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s service thread started", socket, service->protocol);
 
-	SetThreadName("Native Service");
+	SetThreadName("sbbs/Native Service");
 	thread_up(TRUE /* setuid */);
 	protected_uint32_adjust(&threads_pending_start, -1);
 
@@ -1740,7 +1739,7 @@ void DLLCALL services_thread(void* arg)
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
 
-	SetThreadName("Services");
+	SetThreadName("sbbs/Services");
 
 	do {
 
@@ -1913,7 +1912,7 @@ void DLLCALL services_thread(void* arg)
 
 		/* Main Server Loop */
 		while(!terminated) {
-
+			YIELD();
 			if(active_clients()==0 && protected_uint32_value(threads_pending_start)==0) {
 				if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
 					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
@@ -1953,10 +1952,8 @@ void DLLCALL services_thread(void* arg)
 						high_socket=service[i].set->socks[j].sock;
 				}
 			}
-			if(high_socket==0) {	/* No dynamic services? */
-				YIELD();
+			if(high_socket==0) 	/* No dynamic services? */
 				continue;
-			}
 			tv.tv_sec=startup->sem_chk_freq;
 			tv.tv_usec=0;
 			if((result=select(high_socket+1,&socket_set,NULL,NULL,&tv))<1) {

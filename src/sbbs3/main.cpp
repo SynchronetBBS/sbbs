@@ -1,6 +1,7 @@
 /* Synchronet terminal server thread and related functions */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1662,7 +1663,7 @@ void input_thread(void *arg)
 	SOCKET		high_socket;
 	SOCKET		sock;
 
-	SetThreadName("Node Input");
+	SetThreadName("sbbs/Terminal Input");
 	thread_up(TRUE /* setuid */);
 
 #ifdef _DEBUG
@@ -1933,7 +1934,7 @@ void passthru_output_thread(void* arg)
 	int		rd;
 	int		wr;
 
-	SetThreadName("Passthrough Output");
+	SetThreadName("sbbs/Passthrough Output");
 	thread_up(FALSE /* setuid */);
 
 	while(sbbs->client_socket!=INVALID_SOCKET && sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
@@ -2047,7 +2048,7 @@ void passthru_input_thread(void* arg)
 	BYTE	ch;
 	int		i;
 
-	SetThreadName("Passthrough Input");
+	SetThreadName("sbbs/Passthrough Input");
 	thread_up(FALSE /* setuid */);
 
 	while(sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
@@ -2138,7 +2139,7 @@ void output_thread(void* arg)
 	struct timeval tv;
 	ulong		mss=IO_THREAD_BUF_SIZE;
 
-	SetThreadName("Node Output");
+	SetThreadName("sbbs/Terminal Output");
 	thread_up(TRUE /* setuid */);
 
     if(sbbs->cfg.node_num)
@@ -2378,7 +2379,7 @@ void event_thread(void* arg)
 
 	sbbs_srand();	/* Seed random number generator */
 
-	SetThreadName("BBS Events");
+	SetThreadName("sbbs/Events");
 	thread_up(TRUE /* setuid */);
 
 #ifdef JAVASCRIPT
@@ -4130,7 +4131,7 @@ void node_thread(void* arg)
 	sbbs_t*			sbbs = (sbbs_t*) arg;
 
 	update_clients();
-	SetThreadName("Node");
+	SetThreadName("sbbs/Terminal Node");
 	thread_up(TRUE /* setuid */);
 
 #ifdef _DEBUG
@@ -4641,7 +4642,7 @@ void DLLCALL bbs_thread(void* arg)
 	startup->shutdown_now=FALSE;
 	terminate_server=false;
 
-	SetThreadName("BBS");
+	SetThreadName("sbbs/Terminal Server");
 
 	do {
 
@@ -4975,7 +4976,7 @@ NO_SSH:
 	lprintf(LOG_INFO,"Terminal Server thread started for nodes %d through %d", first_node, last_node);
 
 	while(!terminate_server) {
-
+		YIELD();
 		if(protected_uint32_value(node_threads_running)==0) {	/* check for re-run flags and recycle/shutdown sem files */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
 

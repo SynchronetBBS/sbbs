@@ -1,8 +1,7 @@
-/* mailsrvr.c */
-
 /* Synchronet Mail (SMTP/POP3) server and sendmail threads */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -827,7 +826,7 @@ static void pop3_thread(void* arg)
 	pop3_t		pop3=*(pop3_t*)arg;
 	login_attempt_t attempted;
 
-	SetThreadName("POP3");
+	SetThreadName("sbbs/POP3");
 	thread_up(TRUE /* setuid */);
 
 	free(arg);
@@ -2499,7 +2498,7 @@ static void smtp_thread(void* arg)
 			,ENCODING_QUOTED_PRINTABLE
 	} content_encoding = ENCODING_NONE;
 
-	SetThreadName("SMTP");
+	SetThreadName("sbbs/SMTP");
 	thread_up(TRUE /* setuid */);
 
 	free(arg);
@@ -4533,7 +4532,7 @@ static void sendmail_thread(void* arg)
 	BOOL		sending_locally=FALSE;
 	link_list_t	failed_server_list;
 
-	SetThreadName("SendMail");
+	SetThreadName("sbbs/SendMail");
 	thread_up(TRUE /* setuid */);
 
 	terminate_sendmail=FALSE;
@@ -4546,7 +4545,7 @@ static void sendmail_thread(void* arg)
 	listInit(&failed_server_list, /* flags: */0);
 
 	while((!terminated) && !terminate_sendmail) {
-
+		YIELD();
 		if(startup->options&MAIL_OPT_NO_SENDMAIL) {
 			sem_trywait_block(&sendmail_wakeup_sem,1000);
 			continue;
@@ -5224,7 +5223,7 @@ void DLLCALL mail_server(void* arg)
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
 
-	SetThreadName("Mail Server");
+	SetThreadName("sbbs/Mail Server");
 	protected_uint32_init(&thread_count, 0);
 
 	do {
@@ -5408,6 +5407,7 @@ void DLLCALL mail_server(void* arg)
 		lprintf(LOG_INFO,"Mail Server thread started");
 
 		while(!terminated && !terminate_server) {
+			YIELD();
 
 			if(protected_uint32_value(thread_count) <= (unsigned int)(1+(sendmail_running?1:0))) {
 				if(!(startup->options&MAIL_OPT_NO_RECYCLE)) {

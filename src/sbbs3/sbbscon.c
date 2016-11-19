@@ -1,8 +1,7 @@
-/* sbbscon.c */
-
 /* Synchronet vanilla/console-mode "front-end" */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1102,7 +1101,7 @@ static void handle_sigs(void)
 	int			sig=0;
 	sigset_t	sigs;
 
-	SetThreadName("Signal Handler");
+	SetThreadName("sbbs/Signal Handler");
 	thread_up(NULL,TRUE,TRUE);
 
 	/* Write the standard .pid file if created/open */
