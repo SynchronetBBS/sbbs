@@ -37,40 +37,6 @@
 #include "qwk.h"
 
 /****************************************************************************/
-/* Convert a QWK conference number into a sub-board offset					*/
-/* Return INVALID_SUB upon failure to convert								*/
-/****************************************************************************/
-uint sbbs_t::resolve_qwkconf(uint n)
-{
-	uint	j,k;
-
-	for	(j=0;j<usrgrps;j++) {
-		for(k=0;k<usrsubs[j];k++)
-			if(cfg.sub[usrsub[j][k]]->qwkconf==n)
-				break;
-		if(k<usrsubs[j])
-			break; 
-	}
-
-	if(j>=usrgrps) {
-		if(n<1000) {			 /* version 1 method, start at 101 */
-			j=n/100;
-			k=n-(j*100); 
-		}
-		else {					 /* version 2 method, start at 1001 */
-			j=n/1000;
-			k=n-(j*1000); 
-		}
-		j--;	/* j is group */
-		k--;	/* k is sub */
-		if(j>=usrgrps || k>=usrsubs[j] || cfg.sub[usrsub[j][k]]->qwkconf)
-			return INVALID_SUB;
-	}
-
-	return usrsub[j][k];
-}
-
-/****************************************************************************/
 /* Unpacks .REP packet, 'repname' is the path and filename of the packet    */
 /****************************************************************************/
 bool sbbs_t::unpack_rep(char* repfile)

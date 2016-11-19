@@ -1002,6 +1002,44 @@ int sbbs_t::set_qwk_flag(ulong flag)
 	return putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
 }
 
+/****************************************************************************/
+/* Convert a QWK conference number into a sub-board offset					*/
+/* Return INVALID_SUB upon failure to convert								*/
+/****************************************************************************/
+uint sbbs_t::resolve_qwkconf(uint n, int hubnum)
+{
+	uint	j,k;
+
+	if(hubnum >= 0 && hubnum < cfg.total_qhubs) {
+		for(j=0;j<cfg.qhub[hubnum]->subs;j++)
+			if(cfg.qhub[hubnum]->conf[j] == n)
+				return cfg.qhub[hubnum]->sub[j];
+		return INVALID_SUB;
+	}
+
+	for(j=0;j<usrgrps;j++)
+		for(k=0;k<usrsubs[j];k++)
+			if(cfg.sub[usrsub[j][k]]->qwkconf == n)
+				return usrsub[j][k];
+
+	if(n<1000) {			 /* version 1 method, start at 101 */
+		j=n/100;
+		k=n%100; 
+	}
+	else {					 /* version 2 method, start at 1001 */
+		j=n/1000;
+		k=n%1000; 
+	}
+	if(j == 0 || k == 0)
+		return INVALID_SUB;
+	j--;	/* j is group */
+	k--;	/* k is sub */
+	if(j>=usrgrps || k>=usrsubs[j] || cfg.sub[usrsub[j][k]]->qwkconf != 0)
+		return INVALID_SUB;
+
+	return usrsub[j][k];
+}
+
 static void parse_common_header_fields(str_list_t ini, const char* section, smbmsg_t* msg, smb_net_type_t net_type, const char* qnet_id)
 {
 	char*	p;
@@ -1048,7 +1086,7 @@ static void parse_common_header_fields(str_list_t ini, const char* section, smbm
 		smb_hfield_str(msg, SENDERORG, p);
 }
 
-bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* qnet_id)
+bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* qnet_id, int hubnum)
 {
 	FILE *fp;
 	str_list_t ini;
@@ -1069,7 +1107,7 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* 
 		smb.subnum = INVALID_SUB;
 
 		for(u = 0; list[u] != NULL; u++) {
-			uint subnum = resolve_qwkconf(iniGetInteger(ini, list[u], "Conference", 0));
+			uint subnum = resolve_qwkconf(iniGetInteger(ini, list[u], "Conference", 0), hubnum);
 			if(subnum == INVALID_SUB)
 				continue;
 			if(cfg.sub[subnum]->misc&SUB_NOVOTING)
@@ -1124,7 +1162,7 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* 
 		smb.subnum = INVALID_SUB;
 
 		for(u = 0; list[u] != NULL; u++) {
-			uint subnum = resolve_qwkconf(iniGetInteger(ini, list[u], "Conference", 0));
+			uint subnum = resolve_qwkconf(iniGetInteger(ini, list[u], "Conference", 0), hubnum);
 			if(subnum == INVALID_SUB)
 				continue;
 			if(cfg.sub[subnum]->misc&SUB_NOVOTING)
@@ -1174,7 +1212,7 @@ bool sbbs_t::qwk_voting(const char* fname, smb_net_type_t net_type, const char* 
 		smb.subnum = INVALID_SUB;
 
 		for(u = 0; list[u] != NULL; u++) {
-			uint subnum = resolve_qwkconf(iniGetInteger(ini, list[u], "Conference", 0));
+			uint subnum = resolve_qwkconf(iniGetInteger(ini, list[u], "Conference", 0), hubnum);
 			if(subnum == INVALID_SUB)
 				continue;
 			if(cfg.sub[subnum]->misc&SUB_NOVOTING)
