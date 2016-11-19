@@ -155,7 +155,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 			bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str)); 
 	}
 	if(!(msg->hdr.attr&MSG_POLL) && (msg->upvotes || msg->downvotes))
-		bprintf(text[MsgVotes], msg->upvotes, msg->downvotes);
+		bprintf(text[MsgVotes], msg->upvotes, msg->downvotes, msg->upvotes - msg->downvotes);
 	bprintf(text[MsgDate]
 		,timestr(msg->hdr.when_written.time)
 		,smb_zonestr(msg->hdr.when_written.zone,NULL)
@@ -229,7 +229,8 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 			bool results_visible = false;
 			if((msg->hdr.auxattr&POLL_RESULTS_MASK) == POLL_RESULTS_OPEN)
 				results_visible = true;
-			else if(smb_msg_is_from(msg, cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL))
+			else if((msg->from_net.type == NET_NONE && sub_op(smb.subnum)) 
+				|| smb_msg_is_from(msg, cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL))
 				results_visible = true;
 			else if((msg->hdr.auxattr&POLL_RESULTS_MASK) == POLL_RESULTS_CLOSED)
 				results_visible = (msg->hdr.auxattr&POLL_CLOSED) ? true : false;
