@@ -233,7 +233,7 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	if(*p)
         SAFECOPY(global->host_name,value);
 
-	global->sem_chk_freq=iniGetShortInt(list,section,strSemFileCheckFrequency,2);
+	global->sem_chk_freq=iniGetShortInt(list,section,strSemFileCheckFrequency,DEFAULT_SEM_CHK_FREQ);
 	iniFreeStringList(global->interfaces);
 	global->interfaces=iniGetStringList(list,section,strInterfaces, ",", "0.0.0.0,::");
 	global->outgoing4.s_addr=iniGetIpAddress(list,section,strOutgoing4,0);

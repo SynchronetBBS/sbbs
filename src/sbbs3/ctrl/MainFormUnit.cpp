@@ -818,7 +818,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     global.js.time_limit=JAVASCRIPT_TIME_LIMIT;
     global.js.gc_interval=JAVASCRIPT_GC_INTERVAL;
     global.js.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
-    global.sem_chk_freq=5;		/* seconds */
+    global.sem_chk_freq=DEFAULT_SEM_CHK_FREQ;		/* seconds */
 
     /* These are SBBSCTRL-specific */
     LoginCommand="telnet://127.0.0.1";
