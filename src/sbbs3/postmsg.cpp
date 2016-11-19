@@ -562,6 +562,12 @@ extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const cha
 	if(msg->hdr.when_written.time == 0)	/* Uninitialized */
 		msg->hdr.when_written = msg->hdr.when_imported;
 
+ 	if(msg->id==NULL) {
+		char msg_id[256];
+ 		get_msgid(cfg, smb->subnum, msg, msg_id, sizeof(msg_id));
+ 		smb_hfield_str(msg, RFC822MSGID, msg_id);
+ 	}
+
 	/* Look-up thread_back if RFC822 Reply-ID was specified */
 	if(msg->hdr.thread_back == 0 && msg->reply_id != NULL) {
 		if(smb_getmsgidx_by_msgid(smb, &remsg, msg->reply_id) == SMB_SUCCESS)
@@ -608,6 +614,7 @@ extern "C" int DLLCALL closepoll(scfg_t* cfg, smb_t* smb, uint32_t msgnum, const
 {
 	int result;
 	smbmsg_t msg;
+	char msg_id[256];
 
 	ZERO_VAR(msg);
 
@@ -617,8 +624,28 @@ extern "C" int DLLCALL closepoll(scfg_t* cfg, smb_t* smb, uint32_t msgnum, const
 	msg.hdr.thread_back = msgnum;
 	smb_hfield_str(&msg, SENDER, username);
 
+	get_msgid(cfg, smb->subnum, &msg, msg_id, sizeof(msg_id));
+	smb_hfield_str(&msg,RFC822MSGID, msg_id);
+
 	result = smb_addpollclosure(smb, &msg, smb_storage_mode(cfg, smb));
 
 	smb_freemsgmem(&msg);
 	return result;
+}
+
+extern "C" int DLLCALL postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
+{
+	if(msg->hdr.when_imported.time == 0) {
+		msg->hdr.when_imported.time = time32(NULL);
+		msg->hdr.when_imported.zone = sys_timezone(cfg);
+	}
+	if(msg->hdr.when_written.time == 0)
+		msg->hdr.when_written = msg->hdr.when_imported;
+
+ 	if(msg->id==NULL) {
+		char msg_id[256];
+ 		get_msgid(cfg, smb->subnum, msg, msg_id, sizeof(msg_id));
+ 		smb_hfield_str(msg, RFC822MSGID, msg_id);
+ 	}
+	return smb_addpoll(smb, msg, smb_storage_mode(cfg, smb));
 }

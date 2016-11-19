@@ -2424,15 +2424,8 @@ js_add_poll(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(parse_header_object(cx, p, hdr, &msg, FALSE)) {
 
-		if(msg.hdr.when_imported.time == 0) {
-			msg.hdr.when_imported.time = time32(NULL);
-			msg.hdr.when_imported.zone = sys_timezone(scfg);
-		}
-		if(msg.hdr.when_written.time == 0)
-			msg.hdr.when_written = msg.hdr.when_imported;
-
 		rc=JS_SUSPENDREQUEST(cx);
-		if((p->status=smb_addpoll(&(p->smb), &msg, smb_storage_mode(scfg, &(p->smb)))) == SMB_SUCCESS) {
+		if((p->status=postpoll(scfg, &(p->smb), &msg)) == SMB_SUCCESS) {
 			JS_RESUMEREQUEST(cx, rc);
 			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		}
