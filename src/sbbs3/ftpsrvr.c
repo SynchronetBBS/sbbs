@@ -4797,31 +4797,12 @@ void DLLCALL ftp_server(void* arg)
 		return;
 	}
 
-	/* Setup intelligent defaults */
-	if(startup->port==0)					startup->port=IPPORT_FTP;
-	if(startup->qwk_timeout==0)				startup->qwk_timeout=FTP_DEFAULT_QWK_TIMEOUT;		/* seconds */
-	if(startup->max_inactivity==0)			startup->max_inactivity=FTP_DEFAULT_MAX_INACTIVITY;	/* seconds */
-	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;		/* seconds */
-	if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"00index");
-	if(startup->html_index_file[0]==0)		SAFECOPY(startup->html_index_file,"00index.html");
-	if(startup->html_index_script[0]==0) {	SAFECOPY(startup->html_index_script,"ftp-html.js");
-											startup->options|=FTP_OPT_HTML_INDEX_FILE;
-	}
-	if(startup->options&FTP_OPT_HTML_INDEX_FILE)
-		startup->options&=~FTP_OPT_NO_JAVASCRIPT;
-	else
-		startup->options|=FTP_OPT_NO_JAVASCRIPT;
-#ifdef JAVASCRIPT
-	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
-
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF2(js_server_props.version,"%s %s",FTP_SERVER,revision);
 	js_server_props.version_detail=ftp_ver();
 	js_server_props.clients=&active_clients.value;
 	js_server_props.options=&startup->options;
 	js_server_props.interfaces=&startup->interfaces;
-#endif
 
 	uptime=0;
 	served=0;
@@ -4831,6 +4812,20 @@ void DLLCALL ftp_server(void* arg)
 	protected_uint32_init(&thread_count, 0);
 
 	do {
+		/* Setup intelligent defaults */
+		if(startup->port==0)					startup->port=IPPORT_FTP;
+		if(startup->qwk_timeout==0)				startup->qwk_timeout=FTP_DEFAULT_QWK_TIMEOUT;		/* seconds */
+		if(startup->max_inactivity==0)			startup->max_inactivity=FTP_DEFAULT_MAX_INACTIVITY;	/* seconds */
+		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ;		/* seconds */
+		if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"00index");
+		if(startup->html_index_file[0]==0)		SAFECOPY(startup->html_index_file,"00index.html");
+		if(startup->html_index_script[0]==0)	SAFECOPY(startup->html_index_script,"ftp-html.js");
+		if(startup->options&FTP_OPT_HTML_INDEX_FILE)
+			startup->options&=~FTP_OPT_NO_JAVASCRIPT;
+		else
+			startup->options|=FTP_OPT_NO_JAVASCRIPT;
+		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+		if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 		protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);

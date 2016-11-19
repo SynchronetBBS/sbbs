@@ -6647,21 +6647,6 @@ void DLLCALL web_server(void* arg)
 		startup->seteuid(TRUE);
 #endif
 
-	/* Setup intelligent defaults */
-	if(startup->port==0)					startup->port=IPPORT_HTTP;
-	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,WEB_DEFAULT_ROOT_DIR);
-	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,WEB_DEFAULT_ERROR_DIR);
-	if(startup->default_auth_list[0]==0)	SAFECOPY(startup->default_auth_list,WEB_DEFAULT_AUTH_LIST);
-	if(startup->cgi_dir[0]==0)				SAFECOPY(startup->cgi_dir,WEB_DEFAULT_CGI_DIR);
-	if(startup->default_cgi_content[0]==0)	SAFECOPY(startup->default_cgi_content,WEB_DEFAULT_CGI_CONTENT);
-	if(startup->max_inactivity==0) 			startup->max_inactivity=WEB_DEFAULT_MAX_INACTIVITY; /* seconds */
-	if(startup->max_cgi_inactivity==0) 		startup->max_cgi_inactivity=WEB_DEFAULT_MAX_CGI_INACTIVITY; /* seconds */
-	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2; /* seconds */
-	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
-	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,".ssjs");
-	if(startup->js_ext[0]==0)				SAFECOPY(startup->js_ext,".bbs");
-
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF2(js_server_props.version,"%s %s",server_name,revision);
 	js_server_props.version_detail=web_ver();
@@ -6677,6 +6662,20 @@ void DLLCALL web_server(void* arg)
 	protected_uint32_init(&thread_count, 0);
 
 	do {
+		/* Setup intelligent defaults */
+		if(startup->port==0)					startup->port=IPPORT_HTTP;
+		if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,WEB_DEFAULT_ROOT_DIR);
+		if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,WEB_DEFAULT_ERROR_DIR);
+		if(startup->default_auth_list[0]==0)	SAFECOPY(startup->default_auth_list,WEB_DEFAULT_AUTH_LIST);
+		if(startup->cgi_dir[0]==0)				SAFECOPY(startup->cgi_dir,WEB_DEFAULT_CGI_DIR);
+		if(startup->default_cgi_content[0]==0)	SAFECOPY(startup->default_cgi_content,WEB_DEFAULT_CGI_CONTENT);
+		if(startup->max_inactivity==0) 			startup->max_inactivity=WEB_DEFAULT_MAX_INACTIVITY; /* seconds */
+		if(startup->max_cgi_inactivity==0) 		startup->max_cgi_inactivity=WEB_DEFAULT_MAX_CGI_INACTIVITY; /* seconds */
+		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ; /* seconds */
+		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+		if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
+		if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,".ssjs");
+		if(startup->js_ext[0]==0)				SAFECOPY(startup->js_ext,".bbs");
 
 		protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);

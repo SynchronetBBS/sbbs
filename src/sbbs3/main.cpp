@@ -4618,16 +4618,6 @@ void DLLCALL bbs_thread(void* arg)
 		startup->seteuid(TRUE);
 #endif
 
-	/* Setup intelligent defaults */
-	if(startup->telnet_port==0)				startup->telnet_port=IPPORT_TELNET;
-	if(startup->rlogin_port==0)				startup->rlogin_port=513;
-#ifdef USE_CRYPTLIB
-	if(startup->ssh_port==0)				startup->ssh_port=22;
-#endif
-	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
-	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
-	if(startup->temp_dir[0])				backslash(startup->temp_dir);
-
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
 	js_server_props.version_detail=bbs_ver();
@@ -4645,6 +4635,15 @@ void DLLCALL bbs_thread(void* arg)
 	SetThreadName("sbbs/Terminal Server");
 
 	do {
+	/* Setup intelligent defaults */
+	if(startup->telnet_port==0)				startup->telnet_port=IPPORT_TELNET;
+	if(startup->rlogin_port==0)				startup->rlogin_port=513;
+#ifdef USE_CRYPTLIB
+	if(startup->ssh_port==0)				startup->ssh_port=22;
+#endif
+	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ;
+	if(startup->temp_dir[0])				backslash(startup->temp_dir);
 
 	protected_uint32_init(&node_threads_running,0);
 

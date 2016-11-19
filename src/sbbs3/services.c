@@ -1729,11 +1729,6 @@ void DLLCALL services_thread(void* arg)
 		startup->seteuid(TRUE);
 #endif
 
-	/* Setup intelligent defaults */
-	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
-	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
-
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
@@ -1742,6 +1737,10 @@ void DLLCALL services_thread(void* arg)
 	SetThreadName("sbbs/Services");
 
 	do {
+		/* Setup intelligent defaults */
+		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ;
+		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+		if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 		thread_up(FALSE /* setuid */);
 
