@@ -26,7 +26,7 @@ static link_list_t	rt_list;
 #define TRIGGER_THREAD_STACK_SIZE       (256*1024)
 static void trigger_thread(void *args)
 {
-	SetThreadName("sbbs/JSRT Trigger");
+	SetThreadName("sbbs/jsRTtrig");
 	for(;;) {
 		list_node_t *node;
 		pthread_mutex_lock(&jsrt_mutex);

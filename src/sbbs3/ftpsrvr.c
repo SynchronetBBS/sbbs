@@ -1250,7 +1250,7 @@ static void send_thread(void* arg)
 	xfer=*(xfer_t*)arg;
 	free(arg);
 
-	SetThreadName("sbbs/FTP Send");
+	SetThreadName("sbbs/ftpSend");
 	thread_up(TRUE /* setuid */);
 
 	length=flength(xfer.filename);
@@ -1510,7 +1510,7 @@ static void receive_thread(void* arg)
 	xfer=*(xfer_t*)arg;
 	free(arg);
 
-	SetThreadName("sbbs/FTP Receive");
+	SetThreadName("sbbs/ftpReceive");
 	thread_up(TRUE /* setuid */);
 
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
@@ -2370,7 +2370,7 @@ static void ctrl_thread(void* arg)
 #endif
 	login_attempt_t attempted;
 
-	SetThreadName("sbbs/FTP Control");
+	SetThreadName("sbbs/ftpControl");
 	thread_up(TRUE /* setuid */);
 
 	lastactive=time(NULL);
@@ -4776,7 +4776,7 @@ void DLLCALL ftp_server(void* arg)
 	ftp_ver();
 
 	startup=(ftp_startup_t*)arg;
-	SetThreadName("sbbs/FTP Server");
+	SetThreadName("sbbs/ftpServer");
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)

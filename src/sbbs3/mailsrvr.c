@@ -826,7 +826,7 @@ static void pop3_thread(void* arg)
 	pop3_t		pop3=*(pop3_t*)arg;
 	login_attempt_t attempted;
 
-	SetThreadName("sbbs/POP3");
+	SetThreadName("sbbs/pop3");
 	thread_up(TRUE /* setuid */);
 
 	free(arg);
@@ -2498,7 +2498,7 @@ static void smtp_thread(void* arg)
 			,ENCODING_QUOTED_PRINTABLE
 	} content_encoding = ENCODING_NONE;
 
-	SetThreadName("sbbs/SMTP");
+	SetThreadName("sbbs/smtp");
 	thread_up(TRUE /* setuid */);
 
 	free(arg);
@@ -4532,7 +4532,7 @@ static void sendmail_thread(void* arg)
 	BOOL		sending_locally=FALSE;
 	link_list_t	failed_server_list;
 
-	SetThreadName("sbbs/SendMail");
+	SetThreadName("sbbs/sendMail");
 	thread_up(TRUE /* setuid */);
 
 	terminate_sendmail=FALSE;
@@ -5208,7 +5208,7 @@ void DLLCALL mail_server(void* arg)
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
 
-	SetThreadName("sbbs/Mail Server");
+	SetThreadName("sbbs/mailServer");
 	protected_uint32_init(&thread_count, 0);
 
 	do {

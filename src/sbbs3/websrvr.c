@@ -6009,7 +6009,7 @@ void http_output_thread(void *arg)
 	int		i;
 	unsigned mss=OUTBUF_LEN;
 
-	SetThreadName("sbbs/HTTP Output");
+	SetThreadName("sbbs/httpOutput");
 	thread_up(TRUE /* setuid */);
 
 	obuf=&(session->outbuf);
@@ -6145,7 +6145,7 @@ void http_session_thread(void* arg)
 	char			*uname;
 #endif
 
-	SetThreadName("sbbs/HTTP Session");
+	SetThreadName("sbbs/httpSess");
 	pthread_mutex_lock(&((http_session_t*)arg)->struct_filled);
 	pthread_mutex_unlock(&((http_session_t*)arg)->struct_filled);
 	pthread_mutex_destroy(&((http_session_t*)arg)->struct_filled);
@@ -6511,7 +6511,7 @@ void http_logging_thread(void* arg)
 	if(!base[0])
 		SAFEPRINTF(base,"%slogs/http-",scfg.logs_dir);
 
-	SetThreadName("sbbs/HTTP Logging");
+	SetThreadName("sbbs/httpLog");
 	filename[0]=0;
 	newfilename[0]=0;
 
@@ -6625,7 +6625,7 @@ void DLLCALL web_server(void* arg)
 
 	startup=(web_startup_t*)arg;
 
-	SetThreadName("sbbs/Web Server");
+	SetThreadName("sbbs/webServer");
 	web_ver();	/* get CVS revision */
 
     if(startup==NULL) {
