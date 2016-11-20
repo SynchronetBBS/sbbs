@@ -1040,28 +1040,44 @@ uint sbbs_t::resolve_qwkconf(uint n, int hubnum)
 	return usrsub[j][k];
 }
 
-bool sbbs_t::qwk_voting(str_list_t ini, long offset, smb_net_type_t net_type, const char* qnet_id, int hubnum)
+bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, const char* qnet_id, int hubnum)
 {
-	char* p;
-	char str[128];
-	char section[256];
-	int result;
+	char* section;
+	char location[128];
+	bool result;
 	int found;
-	str_list_t section_list = iniGetSectionList(ini, /* prefix: */NULL);
+	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
 	
-	sprintf(str, "[%lx]", offset);
-	if((found = strListFind(section_list, str, /* case_sensitive: */FALSE)) < 0) {
+	sprintf(location, "[%lx]", offset);
+	if((found = strListFind(section_list, location, /* case_sensitive: */FALSE)) < 0) {
 		strListFree(&section_list);
 		return false;
 	}
 	/* The section immediately following the (empty) [offset] section is the section of interest */
-	if((p = section_list[found+1]) == NULL) {
+	if((section = section_list[found+1]) == NULL) {
 		strListFree(&section_list);
 		return false;
 	}
-	SAFECOPY(section, p);
+	result = qwk_vote(*ini, section, net_type, qnet_id, hubnum);
+	iniRemoveSection(ini, section);
+	iniRemoveSection(ini, location);
 	strListFree(&section_list);
+	return result;
+}
+
+void sbbs_t::qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t net_type, const char* qnet_id, int hubnum)
+{
+	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
+
+	for(int i=0; section_list[i] != NULL; i++)
+		qwk_vote(*ini, section_list[i], net_type, qnet_id, hubnum);
+	strListFree(&section_list);
+}
 	
+bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_type, const char* qnet_id, int hubnum)
+{
+	char* p;
+	int result;
 	smb_t smb;
 	ZERO_VAR(smb);
 

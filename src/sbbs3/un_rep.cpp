@@ -112,6 +112,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 	SAFEPRINTF(fname,"%sHEADERS.DAT",cfg.temp_dir);
 	if(fexistcase(fname)) {
+		lprintf(LOG_DEBUG, "Reading %s", fname);
 		FILE* fp;
 		set_qwk_flag(QWK_HEADERS);
 		if((fp=fopen(fname,"r")) == NULL)
@@ -127,6 +128,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		if(useron.rest&FLAG('V'))
 			bputs(text[R_Voting]);
 		else {
+			lprintf(LOG_DEBUG, "Reading %s", fname);
 			FILE* fp;
 			set_qwk_flag(QWK_VOTING);
 			if((fp=fopen(fname,"r")) == NULL)
@@ -185,7 +187,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		blocks=atoi(tmp);  /* i = number of blocks */
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
-				qwk_voting(voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias);
+				qwk_voting(&voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias);
 				continue;
 			}
 			SAFEPRINTF3(str,"%s blocks (read '%s' at offset %ld)", msg_fname, tmp, l);
@@ -521,6 +523,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			}
 		}   /* end of public message */
 	}
+
+	qwk_handle_remaining_votes(&voting, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias);
 
 	update_qwkroute(NULL);			/* Write ROUTE.DAT */
 

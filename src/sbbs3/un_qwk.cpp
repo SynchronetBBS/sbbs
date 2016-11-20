@@ -94,6 +94,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 	SAFEPRINTF(str,"%sHEADERS.DAT",cfg.temp_dir);
 	if(fexistcase(str)) {
+		lprintf(LOG_DEBUG, "Reading %s", fname);
 		if((fp=fopen(str,"r")) == NULL)
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		else {
@@ -104,6 +105,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	}
 	SAFEPRINTF(fname, "%sVOTING.DAT", cfg.temp_dir);
 	if(fexistcase(fname)) {
+		lprintf(LOG_DEBUG, "Reading %s", fname);
 		if((fp=fopen(str,"r")) == NULL)
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		else {
@@ -145,7 +147,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		blocks=atoi(tmp);  /* i = number of blocks */
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
-				qwk_voting(voting, l, NET_QWK, cfg.qhub[hubnum]->id, hubnum);
+				qwk_voting(&voting, l, NET_QWK, cfg.qhub[hubnum]->id, hubnum);
 				continue;
 			}
 			eprintf(LOG_NOTICE,"!Invalid number of QWK blocks (%d) at offset %lu in %s"
@@ -332,6 +334,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			tmsgs++;
 		}
 	}
+
+	qwk_handle_remaining_votes(&voting, NET_QWK, cfg.qhub[hubnum]->id, hubnum);
 
 	update_qwkroute(NULL);		/* Write ROUTE.DAT */
 
