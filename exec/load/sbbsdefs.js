@@ -637,10 +637,11 @@ var LOG_DEBUG       =7;			/* debug-level messages                     */
                                 /********************************************/ 
 }
 
-								/* Message Types */
-var MSG_TYPE_NORMAL		= 0;	/* Classic message (for reading) */
-var MSG_TYPE_POLL		= 1;	/* A poll question  */
-var MSG_TYPE_BALLOT		= 2;	/* Voter response to poll or normal message */
+									/* Message Types */
+var MSG_TYPE_NORMAL			= 0;	/* Classic message (for reading) */
+var MSG_TYPE_POLL			= 1;	/* A poll question  */
+var MSG_TYPE_BALLOT			= 2;	/* Voter response to poll or normal message */
+var MSG_TYPE_POLL_CLOSURE	= 3;	/* Closure of an existing poll */
 
 									/* Message attributes */
 var MSG_PRIVATE 		=(1<<0);
@@ -659,15 +660,28 @@ var MSG_DOWNVOTE		=(1<<12);	// This message is a downvote */
 var MSG_POLL			=(1<<13);	// This message is a poll
 
 var MSG_VOTE			=(MSG_UPVOTE|MSG_DOWNVOTE);	/* This message is a poll-vote */
+var MSG_POLL_CLOSURE	=(MSG_POLL|MSG_VOTE);		/* This message is a poll-closure */
+var MSG_POLL_VOTE_MASK	=MSG_POLL_CLOSURE;
 
-								/* Auxiliary header attributes */
-var MSG_FILEREQUEST 	=(1<<0);// File request
-var MSG_FILEATTACH		=(1<<1);// File(s) attached to Msg
-var MSG_TRUNCFILE		=(1<<2);// Truncate file(s) when sent
-var MSG_KILLFILE		=(1<<3);// Delete file(s) when sent
-var MSG_RECEIPTREQ		=(1<<4);// Return receipt requested
-var MSG_CONFIRMREQ		=(1<<5);// Confirmation receipt requested
-var MSG_NODISP			=(1<<6);// Msg may not be displayed to user
+var MSG_POLL_MAX_ANSWERS	=16;
+
+
+									 /* Auxiliary header attributes */
+var MSG_FILEREQUEST 	=(1<<0);	// File request
+var MSG_FILEATTACH		=(1<<1);	// File(s) attached to Msg
+var MSG_TRUNCFILE		=(1<<2);	// Truncate file(s) when sent
+var MSG_KILLFILE		=(1<<3);	// Delete file(s) when sent
+var MSG_RECEIPTREQ		=(1<<4);	// Return receipt requested
+var MSG_CONFIRMREQ		=(1<<5);	// Confirmation receipt requested
+var MSG_NODISP			=(1<<6);	// Msg may not be displayed to user
+var POLL_CLOSED			=(1<<24);	// Closed to voting 
+var POLL_RESULTS_MASK	=(3<<30);	// 4 possible values:
+var POLL_RESULTS_SECRET	=(3<<30);	// No one but pollster can see results
+var POLL_RESULTS_CLOSED	=(2<<30);	// No one but pollster can see results until poll is closed
+var POLL_RESULTS_OPEN	=(1<<30);	// Results are visible to everyone always
+var POLL_RESULTS_VOTERS	=(0<<30);	// Voters can see results right away, everyone else when closed
+var POLL_RESULTS_SHIFT	=30;
+
 
 								/* Message network attributes */
 var MSG_LOCAL			=(1<<0);// Msg created locally
@@ -701,6 +715,10 @@ var AGENT_PERSON		=0;		/* Human */
 var AGENT_PROCESS		=1;		/* Unknown process type */
 var AGENT_SMBUTIL		=2;		/* Imported via Synchronet SMBUTIL */
 var AGENT_SMTPSYSMSG	=3;		/* Synchronet SMTP server system message */
+
+								/* Message hfield types */
+var SMB_COMMENT 		= 0x62; /* Appear in message text, before body */
+var SMB_POLL_ANSWER		= 0xe0;	/* One poll answer (the subject is the question) */
 
 								/* "flags" bits for directory() */
 var GLOB_MARK		=(1<<1);	/* Append a slash to each name.  */
