@@ -237,10 +237,13 @@ bool sbbs_t::pack_rep(uint hubnum)
 		YIELD();	/* yield */
 	}
 
+	BOOL voting_data = FALSE;
 	if(hdrs!=NULL)
 		fclose(hdrs);
-	if(voting!=NULL)
+	if(voting!=NULL) {
+		voting_data = ftell(voting);
 		fclose(voting);
+	}
 	fclose(rep);			/* close HUB_ID.MSG */
 	CRLF;
 							/* Look for extra files to send out */
@@ -260,7 +263,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	if(netfiles)
 		CRLF;
 
-	if(!msgcnt && !netfiles && !packedmail) {
+	if(!msgcnt && !netfiles && !packedmail && !voting_data) {
 		eprintf(LOG_INFO,remove_ctrl_a(text[QWKNoNewMessages],tmp));
 		return(true);	// Changed from false Mar-11-2005 (needs to be true to save updated ptrs)
 	}

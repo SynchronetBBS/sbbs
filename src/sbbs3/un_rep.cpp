@@ -61,6 +61,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	DIRENT*	dirent;
 	smbmsg_t	msg;
 	str_list_t	headers=NULL;
+	str_list_t	voting=NULL;
 	str_list_t	ip_can=NULL;
 	str_list_t	host_can=NULL;
 	str_list_t	subject_can=NULL;
@@ -121,10 +122,27 @@ bool sbbs_t::unpack_rep(char* repfile)
 		}
 		remove(fname);
 	}
+	SAFEPRINTF(fname,"%sVOTING.DAT",cfg.temp_dir);
+	if(fexistcase(fname)) {
+		if(useron.rest&FLAG('V'))
+			bputs(text[R_Voting]);
+		else {
+			FILE* fp;
+			set_qwk_flag(QWK_VOTING);
+			if((fp=fopen(fname,"r")) == NULL)
+				errormsg(WHERE,ERR_OPEN,fname,0);
+			else {
+				voting=iniReadFile(fp);
+				fclose(fp);
+			}
+		}
+		remove(fname);
+	}
 
 	fread(block,QWK_BLOCK_LEN,1,rep);
 	if(strnicmp((char *)block,cfg.sys_id,strlen(cfg.sys_id))) {
 		iniFreeStringList(headers);
+		iniFreeStringList(voting);
 		fclose(rep);
 		bputs(text[QWKReplyNotReceived]);
 		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
@@ -166,6 +184,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 		sprintf(tmp,"%.6s",block+116);
 		blocks=atoi(tmp);  /* i = number of blocks */
 		if(blocks<2) {
+			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
+				qwk_voting(voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias);
+				continue;
+			}
 			SAFEPRINTF3(str,"%s blocks (read '%s' at offset %ld)", msg_fname, tmp, l);
 			errormsg(WHERE,ERR_CHK,str,blocks);
 			blocks=1;
@@ -505,17 +527,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	smb_freemsgmem(&msg);
 
 	iniFreeStringList(headers);
-
-	SAFEPRINTF(fname, "%sVOTING.DAT", cfg.temp_dir);
-	if(fexistcase(fname)) {
-		if(useron.rest&FLAG('V'))
-			bputs(text[R_Voting]);
-		else {
-			set_qwk_flag(QWK_VOTING);
-			qwk_voting(fname, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias);
-		}
-		remove(fname);
-	}
+	iniFreeStringList(voting);
 
 	strListFree(&ip_can);
 	strListFree(&host_can);

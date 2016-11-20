@@ -892,7 +892,7 @@ public:
 	void	qwkcfgline(char *buf,uint subnum);
 	int		set_qwk_flag(ulong flag);
 	uint	resolve_qwkconf(uint n, int hubnum=-1);
-	bool	qwk_voting(const char* fname, smb_net_type_t, const char* qnet_id, int hubnum = -1);
+	bool	qwk_voting(str_list_t ini, long offset, smb_net_type_t, const char* qnet_id, int hubnum = -1);
 
 	/* pack_qwk.cpp */
 	bool	pack_qwk(char *packet, ulong *msgcnt, bool prepack);
@@ -1059,7 +1059,7 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg, char* msgid, size_t);
 	DLLEXPORT char *	DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg, char* msgid, size_t);
 	DLLEXPORT char *	DLLCALL get_replyid(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgid, size_t maxlen);
-
+	DLLEXPORT uint32_t	DLLCALL get_new_msg_number(smb_t* smb);
 
 	/* date_str.c */
 	DLLEXPORT char *	DLLCALL zonestr(short zone);

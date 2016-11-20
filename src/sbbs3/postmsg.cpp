@@ -564,6 +564,9 @@ extern "C" int DLLCALL votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const cha
 	if(msg->hdr.when_written.time == 0)	/* Uninitialized */
 		msg->hdr.when_written = msg->hdr.when_imported;
 
+	if(msg->hdr.number == 0)
+		msg->hdr.number = get_new_msg_number(smb);
+
  	if(msg->id==NULL) {
 		char msg_id[256];
  		get_msgid(cfg, smb->subnum, msg, msg_id, sizeof(msg_id));
@@ -626,6 +629,8 @@ extern "C" int DLLCALL closepoll(scfg_t* cfg, smb_t* smb, uint32_t msgnum, const
 	msg.hdr.thread_back = msgnum;
 	smb_hfield_str(&msg, SENDER, username);
 
+	msg.hdr.number = get_new_msg_number(smb);
+
 	get_msgid(cfg, smb->subnum, &msg, msg_id, sizeof(msg_id));
 	smb_hfield_str(&msg,RFC822MSGID, msg_id);
 
@@ -643,6 +648,9 @@ extern "C" int DLLCALL postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
 	}
 	if(msg->hdr.when_written.time == 0)
 		msg->hdr.when_written = msg->hdr.when_imported;
+
+	if(msg->hdr.number == 0)
+		msg->hdr.number = get_new_msg_number(smb);
 
  	if(msg->id==NULL) {
 		char msg_id[256];

@@ -41,6 +41,7 @@
 /****************************************************************************/
 /* Converts message 'msg' to QWK format, writing to file 'qwk_fp'.          */
 /* mode determines how to handle Ctrl-A codes								*/
+/* Returns the number of bytes used for the body-text (multiple of 128)		*/
 /****************************************************************************/
 ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 	, int conf, FILE* hdrs, FILE* voting)
@@ -58,10 +59,12 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 	time_t	tt;
 
 	get_msgid(&cfg, subnum, msg, msgid, sizeof(msgid));
+	offset=(long)ftell(qwk_fp);
 
 	if(msg->hdr.type != SMB_MSG_TYPE_NORMAL) {
 		if(voting == NULL)
 			return 0;
+		fprintf(voting,"[%lx]\n",offset);
 		switch(msg->hdr.type) {
 		case SMB_MSG_TYPE_BALLOT:
 			fprintf(voting, "[vote:%s]\n", msgid);
@@ -102,10 +105,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 			fprintf(voting, "%s: %s\n", smb_hfieldtype(SENDERNETADDR), smb_netaddrstr(&msg->from_net, tmp));
 		fprintf(voting, "Conference: %u\n", conf);
 		fputc('\n', voting);
-		return 0;
 	}
-	offset=(long)ftell(qwk_fp);
-	if(hdrs!=NULL) {
+	else if(hdrs!=NULL) {
 		fprintf(hdrs,"[%lx]\n",offset);
 
 		/* Message-IDs */
@@ -213,268 +214,271 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 
 	fprintf(qwk_fp,"%*s",QWK_BLOCK_LEN,"");		/* Init header to space */
 
-	/* QWKE compatible kludges */
 	SAFECOPY(from,msg->from);
-	if(msg->from_net.addr && (uint)subnum==INVALID_SUB && !(mode&QM_TO_QNET)) {
-		if(msg->from_net.type==NET_FIDO)
-			sprintf(from,"%.128s@%.128s"
-				,msg->from,smb_faddrtoa((faddr_t *)msg->from_net.addr,tmp));
-		else if(msg->from_net.type==NET_INTERNET || strchr((char*)msg->from_net.addr,'@')!=NULL)
-			sprintf(from,"%.128s",(char*)msg->from_net.addr);
-		else
-			sprintf(from,"%.128s@%.128s",msg->from,(char*)msg->from_net.addr);
-	}
-	if(msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
-		SAFECOPY(from,text[Anonymous]); 
-	else if((mode&QM_EXT) && strlen(from) > QWK_HFIELD_LEN) {
-		size+=fprintf(qwk_fp,"From: %.128s%c", from, QWK_NEWLINE);
-		SAFECOPY(from,msg->from); 
-	} 
-
 	SAFECOPY(to,msg->to);
-	if(msg->to_net.addr && (uint)subnum==INVALID_SUB) {
-		if(msg->to_net.type==NET_FIDO)
-			sprintf(to,"%.128s@%s",msg->to,smb_faddrtoa((faddr_t *)msg->to_net.addr,tmp));
-		else if(msg->to_net.type==NET_INTERNET)
-			sprintf(to,"%.128s",(char*)msg->to_net.addr);
-		else if(msg->to_net.type==NET_QWK) {
-			if(mode&QM_TO_QNET) {
-				p=strchr((char *)msg->to_net.addr,'/');
-				if(p) { 	/* Another hop */
-					p++;
-					SAFECOPY(to,"NETMAIL");
-					size+=fprintf(qwk_fp,"%.128s@%.128s%c",msg->to,p,QWK_NEWLINE);
+
+	if(msg->hdr.type == SMB_MSG_TYPE_NORMAL) {
+		/* QWKE compatible kludges */
+		if(msg->from_net.addr && (uint)subnum==INVALID_SUB && !(mode&QM_TO_QNET)) {
+			if(msg->from_net.type==NET_FIDO)
+				sprintf(from,"%.128s@%.128s"
+					,msg->from,smb_faddrtoa((faddr_t *)msg->from_net.addr,tmp));
+			else if(msg->from_net.type==NET_INTERNET || strchr((char*)msg->from_net.addr,'@')!=NULL)
+				sprintf(from,"%.128s",(char*)msg->from_net.addr);
+			else
+				sprintf(from,"%.128s@%.128s",msg->from,(char*)msg->from_net.addr);
+		}
+		if(msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
+			SAFECOPY(from,text[Anonymous]); 
+		else if((mode&QM_EXT) && strlen(from) > QWK_HFIELD_LEN) {
+			size+=fprintf(qwk_fp,"From: %.128s%c", from, QWK_NEWLINE);
+			SAFECOPY(from,msg->from); 
+		} 
+
+		if(msg->to_net.addr && (uint)subnum==INVALID_SUB) {
+			if(msg->to_net.type==NET_FIDO)
+				sprintf(to,"%.128s@%s",msg->to,smb_faddrtoa((faddr_t *)msg->to_net.addr,tmp));
+			else if(msg->to_net.type==NET_INTERNET)
+				sprintf(to,"%.128s",(char*)msg->to_net.addr);
+			else if(msg->to_net.type==NET_QWK) {
+				if(mode&QM_TO_QNET) {
+					p=strchr((char *)msg->to_net.addr,'/');
+					if(p) { 	/* Another hop */
+						p++;
+						SAFECOPY(to,"NETMAIL");
+						size+=fprintf(qwk_fp,"%.128s@%.128s%c",msg->to,p,QWK_NEWLINE);
+					}
+					else
+						sprintf(to,"%.128s",msg->to); 
 				}
 				else
-					sprintf(to,"%.128s",msg->to); 
+					sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr); 
 			}
 			else
-				sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr); 
+				sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
 		}
-		else
-			sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
-	}
-	if((mode&QM_EXT) && strlen(to) > QWK_HFIELD_LEN) {
-		size+=fprintf(qwk_fp,"To: %.128s%c", to, QWK_NEWLINE);
-		if(msg->to_net.type==NET_QWK)
-			SAFECOPY(to,"NETMAIL");
-		else
-			SAFECOPY(to,msg->to); 
-	}
-	if((mode&QM_EXT) && strlen(msg->subj) > QWK_HFIELD_LEN)
-		size+=fprintf(qwk_fp,"Subject: %.128s%c", msg->subj, QWK_NEWLINE);
-
-	if(msg->from_net.type==NET_QWK && mode&QM_VIA && !msg->forwarded)
-		size+=fprintf(qwk_fp,"@VIA: %s%c"
-			,(char*)msg->from_net.addr,QWK_NEWLINE);
-	
-	if(mode&QM_MSGID && (uint)subnum!=INVALID_SUB) {
-		size+=fprintf(qwk_fp,"@MSGID: %s%c"
-			,msgid,QWK_NEWLINE);
-
-		if(msg->reply_id) {
-			SAFECOPY(tmp,msg->reply_id);
-			truncstr(tmp," ");
-			size+=fprintf(qwk_fp,"@REPLY: %s%c"
-				,tmp,QWK_NEWLINE);
-		} else if(msg->hdr.thread_back) {
-			memset(&remsg,0,sizeof(remsg));
-			remsg.hdr.number=msg->hdr.thread_back;
-			if(smb_getmsgidx(&smb, &remsg))
-				size+=fprintf(qwk_fp,"@REPLY: <%s>%c",smb.last_error,QWK_NEWLINE);
+		if((mode&QM_EXT) && strlen(to) > QWK_HFIELD_LEN) {
+			size+=fprintf(qwk_fp,"To: %.128s%c", to, QWK_NEWLINE);
+			if(msg->to_net.type==NET_QWK)
+				SAFECOPY(to,"NETMAIL");
 			else
-				size+=fprintf(qwk_fp,"@REPLY: %s%c"
-					,get_msgid(&cfg,subnum,&remsg,msgid,sizeof(msgid))
-					,QWK_NEWLINE);
+				SAFECOPY(to,msg->to); 
 		}
-	}
+		if((mode&QM_EXT) && strlen(msg->subj) > QWK_HFIELD_LEN)
+			size+=fprintf(qwk_fp,"Subject: %.128s%c", msg->subj, QWK_NEWLINE);
 
-	if(msg->hdr.when_written.zone && mode&QM_TZ)
-		size+=fprintf(qwk_fp,"@TZ: %04hx%c",msg->hdr.when_written.zone,QWK_NEWLINE);
+		if(msg->from_net.type==NET_QWK && mode&QM_VIA && !msg->forwarded)
+			size+=fprintf(qwk_fp,"@VIA: %s%c"
+				,(char*)msg->from_net.addr,QWK_NEWLINE);
+	
+		if(mode&QM_MSGID && (uint)subnum!=INVALID_SUB) {
+			size+=fprintf(qwk_fp,"@MSGID: %s%c"
+				,msgid,QWK_NEWLINE);
 
-	if(msg->replyto!=NULL && mode&QM_REPLYTO)
-		size+=fprintf(qwk_fp,"@REPLYTO: %s%c"
-			,msg->replyto,QWK_NEWLINE);
+			if(msg->reply_id) {
+				SAFECOPY(tmp,msg->reply_id);
+				truncstr(tmp," ");
+				size+=fprintf(qwk_fp,"@REPLY: %s%c"
+					,tmp,QWK_NEWLINE);
+			} else if(msg->hdr.thread_back) {
+				memset(&remsg,0,sizeof(remsg));
+				remsg.hdr.number=msg->hdr.thread_back;
+				if(smb_getmsgidx(&smb, &remsg))
+					size+=fprintf(qwk_fp,"@REPLY: <%s>%c",smb.last_error,QWK_NEWLINE);
+				else
+					size+=fprintf(qwk_fp,"@REPLY: %s%c"
+						,get_msgid(&cfg,subnum,&remsg,msgid,sizeof(msgid))
+						,QWK_NEWLINE);
+			}
+		}
 
-	p=0;
-	for(i=0;i<msg->total_hfields;i++) {
-		if(msg->hfield[i].type==SENDER)
-			p=(char *)msg->hfield_dat[i];
-		if(msg->hfield[i].type==FORWARDED && p) {
-			size+=fprintf(qwk_fp,"Forwarded from %s on %s%c",p
-				,timestr(*(time32_t *)msg->hfield_dat[i])
-				,QWK_NEWLINE);
-		} 
-	}
+		if(msg->hdr.when_written.zone && mode&QM_TZ)
+			size+=fprintf(qwk_fp,"@TZ: %04hx%c",msg->hdr.when_written.zone,QWK_NEWLINE);
 
-	buf=smb_getmsgtxt(&smb,msg,GETMSGTXT_ALL);
-	if(!buf)
-		return(0);
+		if(msg->replyto!=NULL && mode&QM_REPLYTO)
+			size+=fprintf(qwk_fp,"@REPLYTO: %s%c"
+				,msg->replyto,QWK_NEWLINE);
 
-	for(l=0;buf[l];l++) {
-		ch=buf[l];
+		p=0;
+		for(i=0;i<msg->total_hfields;i++) {
+			if(msg->hfield[i].type==SENDER)
+				p=(char *)msg->hfield_dat[i];
+			if(msg->hfield[i].type==FORWARDED && p) {
+				size+=fprintf(qwk_fp,"Forwarded from %s on %s%c",p
+					,timestr(*(time32_t *)msg->hfield_dat[i])
+					,QWK_NEWLINE);
+			} 
+		}
 
-		if(ch=='\n') {
-			if(tear)
-				tear++; 				/* Count LFs after tearline */
-			if(tear>3)					/* more than two LFs after the tear */
-				tear=0;
-			if(tearwatch==4) {			/* watch for LF---LF */
+		buf=smb_getmsgtxt(&smb,msg,GETMSGTXT_ALL);
+		if(!buf)
+			return(0);
+
+		for(l=0;buf[l];l++) {
+			ch=buf[l];
+
+			if(ch=='\n') {
+				if(tear)
+					tear++; 				/* Count LFs after tearline */
+				if(tear>3)					/* more than two LFs after the tear */
+					tear=0;
+				if(tearwatch==4) {			/* watch for LF---LF */
+					tear=1;
+					tearwatch=0; 
+				}
+				else if(!tearwatch)
+					tearwatch=1;
+				else
+					tearwatch=0;
+				if(l && buf[l-1]=='\r')		/* Replace CRLF with funky char */
+					ch=QWK_NEWLINE;			/* but leave sole LF (soft-NL) alone */
+				fputc(ch,qwk_fp);		  
+				size++;
+				continue; 
+			}
+
+			if(ch=='\r') {					/* Ignore CRs */
+				if(tearwatch<4) 			/* LF---CRLF is okay */
+					tearwatch=0;			/* LF-CR- is not okay */
+				continue; 
+			}
+
+			if(ch==' ' && tearwatch==4) {	/* watch for "LF--- " */
 				tear=1;
 				tearwatch=0; 
 			}
-			else if(!tearwatch)
-				tearwatch=1;
+
+			if(ch=='-') {                   /* watch for "LF---" */
+				if(l==0 || (tearwatch && tearwatch<4))
+					tearwatch++;
+				else
+					tearwatch=0; 
+			}
 			else
 				tearwatch=0;
-			if(l && buf[l-1]=='\r')		/* Replace CRLF with funky char */
-				ch=QWK_NEWLINE;			/* but leave sole LF (soft-NL) alone */
-			fputc(ch,qwk_fp);		  
-			size++;
-			continue; 
-		}
 
-		if(ch=='\r') {					/* Ignore CRs */
-			if(tearwatch<4) 			/* LF---CRLF is okay */
-				tearwatch=0;			/* LF-CR- is not okay */
-			continue; 
-		}
-
-		if(ch==' ' && tearwatch==4) {	/* watch for "LF--- " */
-			tear=1;
-			tearwatch=0; 
-		}
-
-		if(ch=='-') {                   /* watch for "LF---" */
-			if(l==0 || (tearwatch && tearwatch<4))
-				tearwatch++;
-			else
-				tearwatch=0; 
-		}
-		else
-			tearwatch=0;
-
-		if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_ASCII) {
-			if(ch<' ' && ch!=1)
-				ch='.';
-			else if((uchar)ch>0x7f)
-				ch=exascii_to_ascii_char(ch); 
-		}
-
-		if(ch==QWK_NEWLINE)					/* funky char */
-			ch='*';
-
-		if(ch==CTRL_A) {
-			ch=buf[++l];
-			if(ch==0 || toupper(ch)=='Z')		/* EOF */
-				break;
-			if((asc=ctrl_a_to_ascii_char(ch)) != 0) {
-				fputc(asc,qwk_fp);
-				size++;
-				continue;
+			if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_ASCII) {
+				if(ch<' ' && ch!=1)
+					ch='.';
+				else if((uchar)ch>0x7f)
+					ch=exascii_to_ascii_char(ch); 
 			}
-			if(mode&A_EXPAND) {
-				str[0]=0;
-				switch(toupper(ch)) {
-					case 'W':
-						SAFECOPY(str,ansi(LIGHTGRAY));
-						break;
-					case 'K':
-						SAFECOPY(str,ansi(BLACK));
-						break;
-					case 'H':
-						SAFECOPY(str,ansi(HIGH));
-						break;
-					case 'I':
-						SAFECOPY(str,ansi(BLINK));
-						break;
-					case '-':
-					case '_':
-					case 'N':   /* Normal */
-						SAFECOPY(str,ansi(ANSI_NORMAL));
-						break;
-					case 'R':
-						SAFECOPY(str,ansi(RED));
-						break;
-					case 'G':
-						SAFECOPY(str,ansi(GREEN));
-						break;
-					case 'B':
-						SAFECOPY(str,ansi(BLUE));
-						break;
-					case 'C':
-						SAFECOPY(str,ansi(CYAN));
-						break;
-					case 'M':
-						SAFECOPY(str,ansi(MAGENTA));
-						break;
-					case 'Y':   /* Yellow */
-						SAFECOPY(str,ansi(BROWN));
-						break;
-					case '0':
-						SAFECOPY(str,ansi(BG_BLACK));
-						break;
-					case '1':
-						SAFECOPY(str,ansi(BG_RED));
-						break;
-					case '2':
-						SAFECOPY(str,ansi(BG_GREEN));
-						break;
-					case '3':
-						SAFECOPY(str,ansi(BG_BROWN));
-						break;
-					case '4':
-						SAFECOPY(str,ansi(BG_BLUE));
-						break;
-					case '5':
-						SAFECOPY(str,ansi(BG_MAGENTA));
-						break;
-					case '6':
-						SAFECOPY(str,ansi(BG_CYAN));
-						break; 
-					case '7':
-						SAFECOPY(str,ansi(BG_LIGHTGRAY));
-						break;
+
+			if(ch==QWK_NEWLINE)					/* funky char */
+				ch='*';
+
+			if(ch==CTRL_A) {
+				ch=buf[++l];
+				if(ch==0 || toupper(ch)=='Z')		/* EOF */
+					break;
+				if((asc=ctrl_a_to_ascii_char(ch)) != 0) {
+					fputc(asc,qwk_fp);
+					size++;
+					continue;
 				}
-				if(str[0])
-					size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
+				if(mode&A_EXPAND) {
+					str[0]=0;
+					switch(toupper(ch)) {
+						case 'W':
+							SAFECOPY(str,ansi(LIGHTGRAY));
+							break;
+						case 'K':
+							SAFECOPY(str,ansi(BLACK));
+							break;
+						case 'H':
+							SAFECOPY(str,ansi(HIGH));
+							break;
+						case 'I':
+							SAFECOPY(str,ansi(BLINK));
+							break;
+						case '-':
+						case '_':
+						case 'N':   /* Normal */
+							SAFECOPY(str,ansi(ANSI_NORMAL));
+							break;
+						case 'R':
+							SAFECOPY(str,ansi(RED));
+							break;
+						case 'G':
+							SAFECOPY(str,ansi(GREEN));
+							break;
+						case 'B':
+							SAFECOPY(str,ansi(BLUE));
+							break;
+						case 'C':
+							SAFECOPY(str,ansi(CYAN));
+							break;
+						case 'M':
+							SAFECOPY(str,ansi(MAGENTA));
+							break;
+						case 'Y':   /* Yellow */
+							SAFECOPY(str,ansi(BROWN));
+							break;
+						case '0':
+							SAFECOPY(str,ansi(BG_BLACK));
+							break;
+						case '1':
+							SAFECOPY(str,ansi(BG_RED));
+							break;
+						case '2':
+							SAFECOPY(str,ansi(BG_GREEN));
+							break;
+						case '3':
+							SAFECOPY(str,ansi(BG_BROWN));
+							break;
+						case '4':
+							SAFECOPY(str,ansi(BG_BLUE));
+							break;
+						case '5':
+							SAFECOPY(str,ansi(BG_MAGENTA));
+							break;
+						case '6':
+							SAFECOPY(str,ansi(BG_CYAN));
+							break; 
+						case '7':
+							SAFECOPY(str,ansi(BG_LIGHTGRAY));
+							break;
+					}
+					if(str[0])
+						size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
+					continue; 
+				} 						/* End Expand */
+				if(mode&A_LEAVE && valid_ctrl_a_code(ch)) {
+					fputc(CTRL_A,qwk_fp);
+					fputc(ch,qwk_fp);
+					size+=2L; 
+				}
 				continue; 
-			} 						/* End Expand */
-			if(mode&A_LEAVE && valid_ctrl_a_code(ch)) {
-				fputc(CTRL_A,qwk_fp);
-				fputc(ch,qwk_fp);
-				size+=2L; 
-			}
-			continue; 
-		} 							/* End of Ctrl-A shit */
-		fputc(ch,qwk_fp);
-		size++; 
-	}
+			} 							/* End of Ctrl-A shit */
+			fputc(ch,qwk_fp);
+			size++; 
+		}
 
-	free(buf);
-	if(ch!=QWK_NEWLINE) {
-		fputc(QWK_NEWLINE,qwk_fp); 		/* make sure it ends in CRLF */
-		size++; 
-	}
+		free(buf);
+		if(ch!=QWK_NEWLINE) {
+			fputc(QWK_NEWLINE,qwk_fp); 		/* make sure it ends in CRLF */
+			size++; 
+		}
 
-	if(mode&QM_TAGLINE && !(cfg.sub[subnum]->misc&SUB_NOTAG)) {
-		if(!tear)										/* no tear line */
-			SAFEPRINTF(str,"\1n---%c",QWK_NEWLINE);        /* so add one */
-		else
-			SAFECOPY(str,"\1n");
-		if(cfg.sub[subnum]->misc&SUB_ASCII) ch='*';
-		else ch='þ';
-		safe_snprintf(tmp,sizeof(tmp)," %c \1g%.10s\1n %c %.127s%c"
-			,ch,VERSION_NOTICE,ch,cfg.sub[subnum]->tagline,QWK_NEWLINE);
-		strcat(str,tmp);
-		if(!(mode&A_LEAVE))
-			remove_ctrl_a(str,str);
-		size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
-	}
+		if(mode&QM_TAGLINE && !(cfg.sub[subnum]->misc&SUB_NOTAG)) {
+			if(!tear)										/* no tear line */
+				SAFEPRINTF(str,"\1n---%c",QWK_NEWLINE);        /* so add one */
+			else
+				SAFECOPY(str,"\1n");
+			if(cfg.sub[subnum]->misc&SUB_ASCII) ch='*';
+			else ch='þ';
+			safe_snprintf(tmp,sizeof(tmp)," %c \1g%.10s\1n %c %.127s%c"
+				,ch,VERSION_NOTICE,ch,cfg.sub[subnum]->tagline,QWK_NEWLINE);
+			strcat(str,tmp);
+			if(!(mode&A_LEAVE))
+				remove_ctrl_a(str,str);
+			size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
+		}
 
-	while(size%QWK_BLOCK_LEN) {				 /* Pad with spaces */
-		size++;
-		fputc(' ',qwk_fp); 
+		while(size%QWK_BLOCK_LEN) {				 /* Pad with spaces */
+			size++;
+			fputc(' ',qwk_fp); 
+		}
 	}
 
 	tt=msg->hdr.when_written.time;
@@ -485,7 +489,9 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 		,tm.tm_mon+1,tm.tm_mday,TM_YEAR(tm.tm_year)
 		,tm.tm_hour,tm.tm_min);
 
-	if(msg->hdr.attr&MSG_PRIVATE) {
+	if(msg->hdr.attr&MSG_POLL_VOTE_MASK)
+		ch = 'V';	/* Vote/poll message */
+	else if(msg->hdr.attr&MSG_PRIVATE) {
 		if(msg->hdr.attr&MSG_READ)
 			ch='*'; /* private, read */
 		else

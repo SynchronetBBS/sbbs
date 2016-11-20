@@ -42,6 +42,20 @@ static uint32_t msg_number(smbmsg_t* msg)
 	return(msg->hdr.number);
 }
 
+uint32_t get_new_msg_number(smb_t* smb)
+{
+	BOOL locked = smb->locked;
+
+	if(!locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+		return 0;
+
+	if(smb_getstatus(smb)!=SMB_SUCCESS)
+		return 0;
+
+	if(!locked) smb_unlocksmbhdr(smb);
+	return smb->status.last_msg + 1;
+}
+
 static uint32_t msg_time(smbmsg_t* msg)
 {
 	if(msg->idx.time)
