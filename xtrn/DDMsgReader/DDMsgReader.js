@@ -192,6 +192,19 @@
  *                              an email address, etc.
  * 2016-09-11 Eric Oulashin     Version 1.16
  *                              Message forwarding complete.  Releasing this version.
+ * 2016-11-19 Eric Oulashin     Version 1.17 Beta 1
+ *                              Looked into handling null message headers, which is
+ *                              more likely now with the introduction of vote messages
+ *                              in Synchronet 3.17.  Headers for vote messages will
+ *                              be null.  I updated the GetMsgHdrBy* methods to
+ *                              return a bogus message header if he message header
+ *                              is null.  It will have the property 'isBogus'
+ *                              with the value of true.  That way, the message
+ *                              list won't have any weirdness on the screen, and
+ *                              the user won't be able to read the message.  I'd
+ *                              like to have the reader not display vote messages
+ *                              at all.  I may need to use the get_all_msg_headers()
+ *                              method for that.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -257,11 +270,9 @@
 */
 
 // TODO:
-// - Idea for future release: Add some extra functionality to the enhanced
-//   reader interface (perhaps accessible on their own small menu or via
-//   CTRL hotkeys):
-//   - Forward the current message (to username, user #, internet email address,
-//     FTN email address, QWK email address, etc.)
+// - Add support for message voting when that becomes available in
+//   Synchronet's JavaScript.  The voting feature was added to
+//   Synchronet around November 10, 2016.
 
 load("sbbsdefs.js");
 load("text.js"); // Text string definitions (referencing text.dat)
@@ -282,8 +293,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.16";
-var READER_DATE = "2016-09-11";
+var READER_VERSION = "1.17 Beta 1";
+var READER_DATE = "2016-11-19";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1624,7 +1635,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		retObj.stoppedReading = false;
 		return retObj;
 	}
-
+	
 	// Check the pAllowChgArea parameter.  If it's a boolean, then use it.  If
 	// not, then check to see if we're reading personal mail - If not, then allow
 	// the user to change to a different message area.
@@ -3038,7 +3049,22 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 					// If the user entered a valid message number, then let the
 					// user edit the message.
 					if (msgNum > 0)
-						var returnObj = this.EditExistingMsg(msgNum-1);
+					{
+						// See if the current message header has our "isBogus" property and it's true.
+						// Only let the user edit the message if it's not a bogus message header.
+						// The message header could have the "isBogus" property, for instance, if
+						// it's a vote message (introduced in Synchronet 3.17).
+						var tmpMsgHdr = this.GetMsgHdrByIdx(msgNum-1);
+						var hdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
+						if (!hdrIsBogus)
+							var returnObj = this.EditExistingMsg(msgNum-1);
+						else
+						{
+							console.print("\1n\r\n\1h\1yThat message isn't editable.\n");
+							console.crlf();
+							console.pause();
+						}
+					}
 
 					// Refresh the top header on the screen for continuing to list
 					// messages.
@@ -3445,83 +3471,91 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		// Enter key: Select a message to read
 		else if (userInput == KEY_ENTER)
 		{
-			var originalCurpos = console.getxy();
+			// See if the current message header has our "isBogus" property and it's true.
+			// Only let the user read the message if it's not a bogus message header.
+			// The message header could have the "isBogus" property, for instance, if
+			// it's a vote message (introduced in Synchronet 3.17).
+			var hdrIsBogus = (msgHeader.hasOwnProperty("isBogus") ? msgHeader.isBogus : false);
+			if (!hdrIsBogus)
+			{
+				var originalCurpos = console.getxy();
 
-			// Allow the user to read the current message.
-			var readMsg = true;
-			if (this.promptToReadMessage)
-			{
-				// Confirm with the user whether to read the message.
-				var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
-				                        + "Read message "
-				                        + this.colors["readMsgConfirmNumberColor"]
-				                        + +(msgHeader.offset+1)
-				                        + this.colors["readMsgConfirmColor"]
-				                        + ": Are you sure";
-				console.gotoxy(1, console.screen_rows);
-				console.print("\1n");
-				console.clearline();
-				readMsg = console.yesno(sReadMsgConfirmText);
-			}
-			var repliedToMessage = false;
-			if (readMsg)
-			{
-				// If there is a search specified and the search result objects are
-				// set up for the current sub-board, then the selected message offset
-				// should be the search result array index.  Otherwise (if not
-				// searching), the message offset should be the actual message offset
-				// in the message base.
-				if (this.SearchingAndResultObjsDefinedForCurSub())
-					retObj.selectedMsgOffset = this.lightbarListSelectedMsgIdx;
-				else
-					retObj.selectedMsgOffset = msgHeader.offset;
-				// Return from here so that the calling function can switch into
-				// reader mode.
-				continueOn = false;
-				return retObj;
-			}
-			else
-				this.deniedReadingMessage = true;
-
-			// Ask the user if  they want to continue reading messages
-			if (this.promptToContinueListingMessages)
-			{
-				continueOn = console.yesno(this.colors["afterReadMsg_ListMorePromptColor"] +
-				"Continue listing messages");
-			}
-			// If the user chose to continue reading messages, then refresh
-			// the screen.  Even if the user chooses not to read the message,
-			// the screen needs to be re-drawn so it appears properly.
-			if (continueOn)
-			{
-				console.clear("\1n");
-				this.WriteMsgListScreenTopHeader();
-				DisplayHelpLine(this.msgListLightbarModeHelpLine);
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				// If we're dispaying in reverse order and the user replied
-				// to the message, then we'll have to re-arrange the screen
-				// a bit to make way for the new message that will appear
-				// in the list.
-				if (this.reverseListOrder && repliedToMessage)
+				// Allow the user to read the current message.
+				var readMsg = true;
+				if (this.promptToReadMessage)
 				{
-					// Make way for the new message, which will appear at the
-					// top.
-					++this.lightbarListTopMsgIdx;
-					// If the cursor is below the bottommost line displaying
-					// messages, then advance the cursor down one position.
-					// Otherwise, increment this.lightbarListSelectedMsgIdx (since a new message
-					// will appear at the top, the previous selected message
-					// will be pushed to the next page).
-					if (this.lightbarListCurPos.y < console.screen_rows - 1)
-					{
-						++originalCurpos.y;
-						++this.lightbarListCurPos.y;
-					}
-					else
-						++this.lightbarListSelectedMsgIdx;
+					// Confirm with the user whether to read the message.
+					var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
+											+ "Read message "
+											+ this.colors["readMsgConfirmNumberColor"]
+											+ +(msgHeader.offset+1)
+											+ this.colors["readMsgConfirmColor"]
+											+ ": Are you sure";
+					console.gotoxy(1, console.screen_rows);
+					console.print("\1n");
+					console.clearline();
+					readMsg = console.yesno(sReadMsgConfirmText);
 				}
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-				console.gotoxy(originalCurpos); // Put the cursor back where it should be
+				var repliedToMessage = false;
+				if (readMsg)
+				{
+					// If there is a search specified and the search result objects are
+					// set up for the current sub-board, then the selected message offset
+					// should be the search result array index.  Otherwise (if not
+					// searching), the message offset should be the actual message offset
+					// in the message base.
+					if (this.SearchingAndResultObjsDefinedForCurSub())
+						retObj.selectedMsgOffset = this.lightbarListSelectedMsgIdx;
+					else
+						retObj.selectedMsgOffset = msgHeader.offset;
+					// Return from here so that the calling function can switch into
+					// reader mode.
+					continueOn = false;
+					return retObj;
+				}
+				else
+					this.deniedReadingMessage = true;
+
+				// Ask the user if  they want to continue reading messages
+				if (this.promptToContinueListingMessages)
+				{
+					continueOn = console.yesno(this.colors["afterReadMsg_ListMorePromptColor"] +
+					"Continue listing messages");
+				}
+				// If the user chose to continue reading messages, then refresh
+				// the screen.  Even if the user chooses not to read the message,
+				// the screen needs to be re-drawn so it appears properly.
+				if (continueOn)
+				{
+					console.clear("\1n");
+					this.WriteMsgListScreenTopHeader();
+					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
+					// If we're dispaying in reverse order and the user replied
+					// to the message, then we'll have to re-arrange the screen
+					// a bit to make way for the new message that will appear
+					// in the list.
+					if (this.reverseListOrder && repliedToMessage)
+					{
+						// Make way for the new message, which will appear at the
+						// top.
+						++this.lightbarListTopMsgIdx;
+						// If the cursor is below the bottommost line displaying
+						// messages, then advance the cursor down one position.
+						// Otherwise, increment this.lightbarListSelectedMsgIdx (since a new message
+						// will appear at the top, the previous selected message
+						// will be pushed to the next page).
+						if (this.lightbarListCurPos.y < console.screen_rows - 1)
+						{
+							++originalCurpos.y;
+							++this.lightbarListCurPos.y;
+						}
+						else
+							++this.lightbarListSelectedMsgIdx;
+					}
+					lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
+					console.gotoxy(originalCurpos); // Put the cursor back where it should be
+				}
 			}
 		}
 		// PageDown: Next page
@@ -3692,35 +3726,50 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			userInput = this.PromptForMsgNum({ x: 1, y: console.screen_rows }, this.text.readMsgNumPromptText, true, ERROR_PAUSE_WAIT_MS, false);
 			if (userInput > 0)
 			{
-				// Confirm with the user whether to read the message
-				var readMsg = true;
-				if (this.promptToReadMessage)
+				// See if the current message header has our "isBogus" property and it's true.
+				// Only let the user read the message if it's not a bogus message header.
+				// The message header could have the "isBogus" property, for instance, if
+				// it's a vote message (introduced in Synchronet 3.17).
+				//GetMsgHdrByIdx(pMsgIdx, pExpandFields)
+				var tmpMsgHdr = this.GetMsgHdrByIdx(+(userInput-1), false);
+				var hdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
+				if (!hdrIsBogus)
 				{
-					var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
-					                        + "Read message "
-					                        + this.colors["readMsgConfirmNumberColor"]
-					                        + userInput + this.colors["readMsgConfirmColor"]
-					                        + ": Are you sure";
-					readMsg = console.yesno(sReadMsgConfirmText);
-				}
-				if (readMsg)
-				{
-					// Update the message list screen variables
-					this.CalcMsgListScreenIdxVarsFromMsgNum(+userInput);
-					retObj.selectedMsgOffset = userInput - 1;
-					// Return from here so that the calling function can switch
-					// into reader mode.
-					return retObj;
+					// Confirm with the user whether to read the message
+					var readMsg = true;
+					if (this.promptToReadMessage)
+					{
+						var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
+												+ "Read message "
+												+ this.colors["readMsgConfirmNumberColor"]
+												+ userInput + this.colors["readMsgConfirmColor"]
+												+ ": Are you sure";
+						readMsg = console.yesno(sReadMsgConfirmText);
+					}
+					if (readMsg)
+					{
+						// Update the message list screen variables
+						this.CalcMsgListScreenIdxVarsFromMsgNum(+userInput);
+						retObj.selectedMsgOffset = userInput - 1;
+						// Return from here so that the calling function can switch
+						// into reader mode.
+						return retObj;
+					}
+					else
+						this.deniedReadingMessage = true;
+
+					// Prompt the user whether or not to continue listing
+					// messages.
+					if (this.promptToContinueListingMessages)
+					{
+						continueOn = console.yesno(this.colors["afterReadMsg_ListMorePromptColor"] +
+												   "Continue listing messages");
+					}
 				}
 				else
-					this.deniedReadingMessage = true;
-
-				// Prompt the user whether or not to continue listing
-				// messages.
-				if (this.promptToContinueListingMessages)
 				{
-					continueOn = console.yesno(this.colors["afterReadMsg_ListMorePromptColor"] +
-					                           "Continue listing messages");
+					writeWithPause(1, console.screen_rows, "\1n\1h\1yThat's not a readable message.",
+					               ERROR_PAUSE_WAIT_MS, "\1n", true);
 				}
 			}
 
@@ -3787,22 +3836,30 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		{
 			if (this.CanEdit())
 			{
-				var originalCurpos = console.getxy();
+				// See if the current message header has our "isBogus" property and it's true.
+				// Only let the user edit the message if it's not a bogus message header.
+				// The message header could have the "isBogus" property, for instance, if
+				// it's a vote message (introduced in Synchronet 3.17).
+				var hdrIsBogus = (msgHeader.hasOwnProperty("isBogus") ? msgHeader.isBogus : false);
+				if (!hdrIsBogus)
+				{
+					var originalCurpos = console.getxy();
 
-				// Ask the user if they really want to edit the message
-				console.gotoxy(1, console.screen_rows);
-				console.print("\1n");
-				console.clearline();
-				// Let the user edit the message
-				//var returnObj = this.EditExistingMsg(msgHeader.offset);
-				var returnObj = this.EditExistingMsg(this.lightbarListSelectedMsgIdx);
-				// Refresh the screen
-				console.clear("\1n");
-				this.WriteMsgListScreenTopHeader();
-				DisplayHelpLine(this.msgListLightbarModeHelpLine);
-				console.gotoxy(1, this.lightbarMsgListStartScreenRow);
-				lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
-				console.gotoxy(originalCurpos); // Put the cursor back where it should be
+					// Ask the user if they really want to edit the message
+					console.gotoxy(1, console.screen_rows);
+					console.print("\1n");
+					console.clearline();
+					// Let the user edit the message
+					//var returnObj = this.EditExistingMsg(msgHeader.offset);
+					var returnObj = this.EditExistingMsg(this.lightbarListSelectedMsgIdx);
+					// Refresh the screen
+					console.clear("\1n");
+					this.WriteMsgListScreenTopHeader();
+					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					console.gotoxy(1, this.lightbarMsgListStartScreenRow);
+					lastPage = this.ListScreenfulOfMessages(this.lightbarListTopMsgIdx, this.lightbarMsgListNumLines);
+					console.gotoxy(originalCurpos); // Put the cursor back where it should be
+				}
 			}
 		}
 		// G: Go to a specific message by # (highlight or place that message on the top)
@@ -4187,37 +4244,52 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoar
 		// have non-continuous message numbers.
 		if (this.IsValidMessageNum(userInput))
 		{
-			// Confirm with the user whether to read the message
-			var readMsg = true;
-			if (this.promptToReadMessage)
+			// See if the current message header has our "isBogus" property and it's true.
+			// Only let the user read the message if it's not a bogus message header.
+			// The message header could have the "isBogus" property, for instance, if
+			// it's a vote message (introduced in Synchronet 3.17).
+			var tmpMsgHdr = this.GetMsgHdrByIdx(+(userInput-1), false);
+			var hdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
+			if (!hdrIsBogus)
 			{
-				var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
-				                        + "Read message "
-				                        + this.colors["readMsgConfirmNumberColor"]
-				                        + userInput + this.colors["readMsgConfirmColor"]
-				                        + ": Are you sure";
-				readMsg = console.yesno(sReadMsgConfirmText);
-			}
-			if (readMsg)
-			{
-				// Update the message list screen variables
-				this.CalcMsgListScreenIdxVarsFromMsgNum(+userInput);
-				// Return from here so that the calling function can switch
-				// into reader mode.
-				retObj.continueOn = continueOn;
-				retObj.userInput = userInput;
-				retObj.selectedMsgOffset = userInput-1;
-				return retObj;
+				// Confirm with the user whether to read the message
+				var readMsg = true;
+				if (this.promptToReadMessage)
+				{
+					var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
+											+ "Read message "
+											+ this.colors["readMsgConfirmNumberColor"]
+											+ userInput + this.colors["readMsgConfirmColor"]
+											+ ": Are you sure";
+					readMsg = console.yesno(sReadMsgConfirmText);
+				}
+				if (readMsg)
+				{
+					// Update the message list screen variables
+					this.CalcMsgListScreenIdxVarsFromMsgNum(+userInput);
+					// Return from here so that the calling function can switch
+					// into reader mode.
+					retObj.continueOn = continueOn;
+					retObj.userInput = userInput;
+					retObj.selectedMsgOffset = userInput-1;
+					return retObj;
+				}
+				else
+					this.deniedReadingMessage = true;
+
+				// Prompt the user whether or not to continue listing
+				// messages.
+				if (this.promptToContinueListingMessages)
+				{
+					continueOn = console.yesno(this.colors["afterReadMsg_ListMorePromptColor"] +
+											   "Continue listing messages");
+				}
 			}
 			else
-				this.deniedReadingMessage = true;
-
-			// Prompt the user whether or not to continue listing
-			// messages.
-			if (this.promptToContinueListingMessages)
 			{
-				continueOn = console.yesno(this.colors["afterReadMsg_ListMorePromptColor"] +
-				                           "Continue listing messages");
+				console.print("\1n\1h\1yThat's not a readable message.\1n");
+				console.crlf();
+				console.pause();
 			}
 		}
 		else
@@ -7796,6 +7868,8 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields)
 			msgHdr = this.msgbase.get_msg_header(true, pMsgIdx, expandFields);
 		}
 	}
+	if (msgHdr == null)
+		msgHdr = getBogusMsgHdr();
 	return msgHdr;
 }
 
@@ -7825,6 +7899,8 @@ function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum, pExpandFields)
 			msgHdr = this.msgbase.get_msg_header(true, pMsgNum-1, expandFields);
 		}
 	}
+	if (msgHdr == null)
+		msgHdr = getBogusMsgHdr();
 	return msgHdr;
 }
 
@@ -7848,6 +7924,8 @@ function DigDistMsgReader_GetMsgHdrByAbsoluteNum(pMsgNum, pExpandFields)
 		var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
 		msgHdr = this.msgbase.get_msg_header(false, pMsgNum, expandFields);
 	}
+	if (msgHdr == null)
+		msgHdr = getBogusMsgHdr();
 	return msgHdr;
 }
 
@@ -17002,6 +17080,29 @@ function editUser(pUsername)
 		retObj.errorMsg = "User \"" + pUsername + "\" not found";
 	
 	return retObj;
+}
+
+// Returns an object containing bare minimum properties necessary to
+// display an invalid message header.  Additionally, an object returned
+// by this function will have an extra property, isBogus, that will be
+// a boolean set to true.
+//
+// Parameters:
+//  pSubject: Optional - A string to use as the subject in the bogus message
+//            header object
+function getBogusMsgHdr(pSubject)
+{
+	var msgHdr = new Object();
+	msgHdr.subject = (typeof(pSubject) == "string" ? pSubject : "");
+	msgHdr.when_imported_time = 0;
+	msgHdr.when_written_time = 0;
+	msgHdr.attr = 0;
+	msgHdr.to = "Nobody";
+	msgHdr.from = "Nobody";
+	msgHdr.number = 0;
+	msgHdr.offset = 0;
+	msgHdr.isBogus = true;
+	return msgHdr;
 }
 
 /////////////////////////////////////////////////////////////////////////
