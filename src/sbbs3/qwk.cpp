@@ -1057,6 +1057,9 @@ static void parse_common_header_fields(str_list_t ini, const char* section, smbm
 	if((p=iniGetString(ini, section, smb_hfieldtype(SENDER), NULL, NULL)) != NULL)
 		smb_hfield_str(msg, SENDER, p);
 
+	if((p=iniGetString(ini, section, smb_hfieldtype(SUBJECT), NULL, NULL)) != NULL)
+		smb_hfield_str(msg, SUBJECT, p);
+
 	if(net_type == NET_QWK) {
 		char fulladdr[256];
 		const char* netaddr = iniGetString(ini, section, smb_hfieldtype(SENDERNETADDR), NULL, NULL);
