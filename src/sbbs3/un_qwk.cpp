@@ -92,27 +92,27 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	}
 	size=(long)filelength(file);
 
-	SAFEPRINTF(str,"%sHEADERS.DAT",cfg.temp_dir);
-	if(fexistcase(str)) {
+	SAFEPRINTF(fname,"%sHEADERS.DAT",cfg.temp_dir);
+	if(fexistcase(fname)) {
 		lprintf(LOG_DEBUG, "Reading %s", fname);
-		if((fp=fopen(str,"r")) == NULL)
-			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
+		if((fp=fopen(fname,"r")) == NULL)
+			errormsg(WHERE,ERR_OPEN,fname,O_RDONLY);
 		else {
 			headers=iniReadFile(fp);
 			fclose(fp);
 		}
-		remove(str);
+		remove(fname);
 	}
 	SAFEPRINTF(fname, "%sVOTING.DAT", cfg.temp_dir);
 	if(fexistcase(fname)) {
 		lprintf(LOG_DEBUG, "Reading %s", fname);
-		if((fp=fopen(str,"r")) == NULL)
-			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
+		if((fp=fopen(fname,"r")) == NULL)
+			errormsg(WHERE,ERR_OPEN,fname,O_RDONLY);
 		else {
 			voting=iniReadFile(fp);
 			fclose(fp);
 		}
-		remove(str);
+		remove(fname);
 	}
 
 	/********************/
