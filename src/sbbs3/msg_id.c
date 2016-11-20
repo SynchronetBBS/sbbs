@@ -1,5 +1,3 @@
-/* msg_id.c */
-
 /* Synchronet Message-ID generation routines */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -116,4 +114,26 @@ char* DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg, char* msgid, si
 			,host);
 
 	return(msgid);
+}
+
+char* DLLCALL get_replyid(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgid, size_t maxlen)
+{
+	char* replyid;
+	smbmsg_t remsg;
+
+	if(msg->reply_id)
+		return msg->reply_id;
+	if(msg->hdr.thread_back == 0)
+		return NULL;
+
+	memset(&remsg, 0, sizeof(remsg));
+	remsg.hdr.number=msg->hdr.thread_back;
+	if(smb_getmsgidx(smb, &remsg) != SMB_SUCCESS)
+		return NULL;
+	if(smb_getmsghdr(smb, &remsg) != SMB_SUCCESS)
+		return NULL;
+	replyid = get_msgid(cfg, smb->subnum, &remsg, msgid, maxlen);
+	smb_freemsgmem(&remsg);
+
+	return replyid;
 }

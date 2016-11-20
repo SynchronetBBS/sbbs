@@ -48,6 +48,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 	char	str[512],from[512],to[512],ch=0,tear=0,tearwatch=0,*buf,*p;
 	char	asc;
 	char	msgid[256];
+	char	reply_id[256];
 	char 	tmp[512];
 	long	l,size=0,offset;
 	int 	i;
@@ -92,8 +93,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 		}
 		if(msg->subj && *msg->subj)
 			fprintf(voting, "%s: %s\n",smb_hfieldtype(SUBJECT), msg->subj);
-		if(msg->reply_id)
-			fprintf(voting, "%s: %s\n", smb_hfieldtype(RFC822REPLYID), msg->reply_id);
+		if((p = get_replyid(&cfg, &smb, msg, reply_id, sizeof(reply_id))) != NULL)
+			fprintf(voting, "%s: %s\n", smb_hfieldtype(RFC822REPLYID), p);
 
 		/* SENDER */
 		fprintf(voting, "%s: %s\n", smb_hfieldtype(SENDER), msg->from);
@@ -109,8 +110,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 
 		/* Message-IDs */
 		fprintf(hdrs,"%s: %s\n", smb_hfieldtype(RFC822MSGID), msgid);
-		if(msg->reply_id!=NULL)
-			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(RFC822REPLYID), msg->reply_id);
+		if((p = get_replyid(&cfg, &smb, msg, reply_id, sizeof(reply_id))) != NULL)
+			fprintf(hdrs, "%s: %s\n", smb_hfieldtype(RFC822REPLYID), p);
 
 		/* Time/Date/Zone info */
 		fprintf(hdrs,"WhenWritten:  %-20s %04hx\n"
