@@ -114,6 +114,93 @@ function getUnreadInThread(sub, thread) {
     return count;
 }
 
+function getVotesInThread(sub, thread) {
+    var ret = { t : { u : 0, d : 0 }, m : {} };
+    if (typeof msg_area.sub[sub] === 'undefined') return ret;
+    if (typeof thread === 'number') {
+        var threads = getMessageThreads(sub, settings.max_messages);
+        if (typeof threads.thread[thread] === 'undefined') return ret;
+        thread = threads.thread[thread];
+    }
+    var msgBase = new MsgBase(sub);
+    if (!msgBase.open()) return ret;
+    Object.keys(thread.messages).forEach(
+        function (m) {
+            if (thread.messages[m].upvotes > 0 ||
+                thread.messages[m].downvotes > 0
+            ) {
+                ret.t.up += thread.messages[m].upvotes;
+                ret.t.down += thread.messages[m].downvotes;
+                ret.m[thread.messages[m].number] = {
+                    u : thread.messages[m].upvotes,
+                    d : thread.messages[m].downvotes,
+                    v : msgBase.how_user_voted(
+                        thread.messages[m].number,
+                        msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
+                    )
+                };
+            }
+        }
+    );
+    msgBase.close();
+    return ret;
+}
+
+function getVotesInThreads(sub) {
+    var threads = getMessageThreads(sub, settings.max_messages);
+    var ret = {};
+    Object.keys(threads.thread).forEach(
+        function(t) {
+            Object.keys(threads.thread[t].messages).forEach(
+                function (m, i) {
+                    if (threads.thread[t].messages[m].upvotes < 1 &&
+                        threads.thread[t].messages[m].downvotes < 1
+                    ) {
+                        return;
+                    }
+                    if (typeof ret[t] === 'undefined') {
+                        ret[t] = { p : { u : 0, d : 0 }, t : { u : 0, d : 0 } };
+                        if (i < 1) {
+                            ret[t].p.u = threads.thread[t].messages[m].upvotes;
+                            ret[t].p.d = threads.thread[t].messages[m].downvotes;
+                        }
+                    }
+                    ret[t].t.u += threads.thread[t].messages[m].upvotes;
+                    ret[t].t.d += threads.thread[t].messages[m].downvotes;
+                }
+            );
+        }
+    );
+    return ret;
+}
+
+function getUserPollData(sub, id) {
+    var ret = { answers : 0, show_results : false };
+    if (typeof msg_area.sub[sub] === 'undefined') return ret;
+    var msgBase = new MsgBase(sub);
+    if (!msgBase.open()) return ret;
+    var header = msgBase.get_msg_header(id);
+    if (header === null || !(header.attr&MSG_POLL)) {
+        msgBase.close();
+        return ret;
+    }
+    ret.answers = msgBase.how_user_voted(
+        header.number,
+        msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
+    );
+    msgBase.close();
+    if (header.from === user.alias || header.from === user.name) {
+        ret.show_results = true;
+    } else if (header.auxattr&POLL_RESULTS_CLOSED && header.auxattr&POLL_CLOSED) {
+        ret.show_results = true;
+    } else if (header.auxattr&POLL_RESULTS_OPEN) {
+        ret.show_results = true;
+    } else if (header.auxattr&POLL_RESULTS_VOTERS && ret.answers > 0) {
+        ret.show_results = true;
+    }
+    return ret;
+}
+
 function getMailUnreadCount() {
     var count = 0;
     var msgBase = new MsgBase('mail');
@@ -426,6 +513,13 @@ function voteMessage(sub, number, up) {
     return ret;
 }
 
+function submitPollAnswers(sub, number, answers) {
+    // verify that user can vote
+    // verify that the poll is open
+    // msgbase.vote_msg
+    return true;
+}
+
 // Deuce's URL-ifier
 function linkify(body) {
     urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
@@ -613,10 +707,15 @@ var getMessageThreads = function(sub, max) {
     var threads = { thread : {}, order : [] };
     var subjects = {};
 
+    if (typeof msg_area.sub[sub] === 'undefined') return threads;
+    if (!msg_area.sub[sub].can_read) return threads;
+
     function addToThread(thread_id, header, subject) {
         if (typeof subject !== 'undefined') subjects[subject] = thread_id;
         threads.thread[thread_id].newest = header.when_written_time;
         threads.thread[thread_id].messages[header.number] = {
+            attr : header.attr,
+            auxattr : header.auxattr,
             number : header.number,
             from : header.from,
             from_net_addr : header.from_net_addr,
@@ -625,8 +724,36 @@ var getMessageThreads = function(sub, max) {
             upvotes : header.upvotes || 0,
             downvotes : header.downvotes || 0
         };
-        threads.thread[thread_id].votes.up += (header.upvotes || 0);
-        threads.thread[thread_id].votes.down += (header.downvotes || 0);
+        if (header.attr&MSG_POLL) {
+            header.field_list.sort(
+                function (a, b) {
+                    if (a.type === 0x62) return -1;
+                    if (b.type === 0x62) return 1;
+                    return 0;
+                }
+            );
+            threads.thread[thread_id].messages[header.number].poll_comments = [];
+            threads.thread[thread_id].messages[header.number].poll_answers = [];
+            header.field_list.forEach(
+                function (e) {
+                    switch (e.type) {
+                        case SMB_COMMENT:
+                            threads.thread[thread_id].messages[header.number].poll_comments.push(e);
+                            break;
+                        case SMB_POLL_ANSWER:
+                            threads.thread[thread_id].messages[header.number].poll_answers.push(e);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            );
+            threads.thread[thread_id].messages[header.number].votes = header.votes;
+            threads.thread[thread_id].messages[header.number].tally = header.tally;
+        } else {
+            threads.thread[thread_id].votes.up += (header.upvotes || 0);
+            threads.thread[thread_id].votes.down += (header.downvotes || 0);
+        }
     }
 
     function getSomeMessageHeaders(msgBase, start, count) {
