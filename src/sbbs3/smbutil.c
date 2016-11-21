@@ -531,11 +531,12 @@ void dumpindex(ulong start, ulong count)
 		if(!fread(&idx,1,sizeof(idx),smb.sid_fp))
 			break;
 		printf("%10"PRIu32"  ", idx.number);
-		if(idx.attr&MSG_VOTE)
+		if(idx.attr&MSG_VOTE && !(idx.attr&MSG_POLL))
 			printf("V  %04hX  %-10"PRIu32, idx.votes,idx.remsg);
 		else
 			printf("%c  %04hX  %04hX  %04X"
-				,idx.attr&MSG_POLL ? 'P':'M', idx.from, idx.to, idx.subj);
+				,(idx.attr&MSG_POLL_VOTE_MASK) == MSG_POLL_CLOSURE ? 'C' : (idx.attr&MSG_POLL ? 'P':'M')
+				,idx.from, idx.to, idx.subj);
 		printf("  %04X  %06X  %s\n", idx.attr, idx.offset, my_timestr(idx.time));
 		l++; 
 	}
