@@ -1072,6 +1072,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		safe_snprintf(str, maxlen, "%lu", current_msg->total_votes);
 		return(str);
 	}
+	if(!strcmp(sp,"MSG_VOTED"))
+		return (current_msg != NULL && current_msg->user_voted) ? text[PollAnswerChecked] : nulstr;
+	if(!strcmp(sp,"MSG_UPVOTED"))
+		return (current_msg != NULL && current_msg->user_voted == 1) ? text[PollAnswerChecked] : nulstr;
+	if(!strcmp(sp,"MSG_DOWNVOTED"))
+		return (current_msg != NULL && current_msg->user_voted == 2) ? text[PollAnswerChecked] : nulstr;
 
 	if(!strcmp(sp,"SMB_AREA")) {
 		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
