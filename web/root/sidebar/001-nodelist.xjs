@@ -48,5 +48,5 @@ var nodeList = function() {
 	);
 }
 nodeList();
-setInterval(nodeList, 30000);
+setInterval(nodeList, <?xjs write(settings.refresh_interval || 60000); ?>);
 </script>
