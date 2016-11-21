@@ -642,7 +642,7 @@ public:
 	/* getmsg.cpp */
 	int		loadmsg(smbmsg_t *msg, ulong number);
 	void	show_msgattr(smbmsg_t*);
-	void	show_msghdr(smbmsg_t* msg);
+	void	show_msghdr(smbmsg_t* msg, uint16_t votes);
 	void	show_msg(smbmsg_t* msg, long mode, post_t* post = NULL);
 	void	msgtotxt(smbmsg_t* msg, char *str, bool header, ulong mode);
 	ulong	getlastmsg(uint subnum, uint32_t *ptr, time_t *t);

@@ -118,7 +118,7 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 /****************************************************************************/
 /* Displays a message header to the screen                                  */
 /****************************************************************************/
-void sbbs_t::show_msghdr(smbmsg_t* msg)
+void sbbs_t::show_msghdr(smbmsg_t* msg, uint16_t votes)
 {
 	char	str[MAX_PATH+1];
 	char	age[64];
@@ -155,7 +155,8 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 			bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str)); 
 	}
 	if(!(msg->hdr.attr&MSG_POLL) && (msg->upvotes || msg->downvotes))
-		bprintf(text[MsgVotes], msg->upvotes, msg->downvotes, msg->upvotes - msg->downvotes);
+		bprintf(text[MsgVotes], msg->upvotes, votes==1 ? text[PollAnswerChecked] : nulstr
+			,msg->downvotes, votes==2 ? text[PollAnswerChecked] : nulstr, msg->upvotes - msg->downvotes);
 	bprintf(text[MsgDate]
 		,timestr(msg->hdr.when_written.time)
 		,smb_zonestr(msg->hdr.when_written.zone,NULL)
@@ -188,13 +189,18 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 {
 	char*	txt;
 
-	show_msghdr(msg);
+	uint16_t votes = 0;
+	
+	if((msg->hdr.type == SMB_MSG_TYPE_NORMAL && (post->upvotes || post->downvotes))
+		|| msg->hdr.type == SMB_MSG_TYPE_POLL)
+		votes = smb_voted_already(&smb, msg->hdr.number
+					,cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
+
+	show_msghdr(msg, votes);
 
 	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && smb.subnum < cfg.total_subs) {
 		char* answer;
 		int longest_answer = 0;
-		uint16_t votes = smb_voted_already(&smb, msg->hdr.number
-							,cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
 
 		int comments=0;
 		for(int i = 0; i < msg->total_hfields; i++)
