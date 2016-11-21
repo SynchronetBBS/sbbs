@@ -5,18 +5,135 @@ load('sbbsdefs.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'forum.js');
 
+var strings = {
+	script : {
+		open : '<script type="text/javascript">',
+		thread_navigation : 'threadNav();',
+		interval : 'setInterval(function () { %s }, %s);',
+		vote_buttons : 'enableVoteButtonHandlers("%s");',
+		vote_refresh_thread : 'getVotesInThread("%s", %s)',
+		vote_refresh_threads : 'getVotesInThreads("%s")',
+		get_group_unread : 'getGroupUnreadCount("%s")',
+		get_sub_unread : 'getSubUnreadCount("%s")',
+		close : '</script>'
+	},
+	notice_box : '<div id="noticebox" class="alert alert-warning">%s<script type="text/javascript">$("#noticebox").fadeOut(3000,function(){$("#noticebox").remove();});</script>',
+	group_list : {
+		breadcrumb : '<ol class="breadcrumb"><li><a href="./?page=%s">Forum</a></li></ol>',
+		container : {
+			open : '<div id="forum-list-container" class="list-group">',
+			close : '</div>'
+		},
+		item : '<a href="./?page=%s&amp;group=%s" class="list-group-item striped"><h3><strong>%s</strong></h3><span title="Unread messages (other)" class="badge ignored" id="badge-ignored-%s"></span><span title="Unread messages (scanned subs)" class="badge scanned" id="badge-scanned-%s"></span><p>%s : %s sub-boards</p></a>'
+	},
+	sub_list : {
+		breadcrumb : '<ol class="breadcrumb"><li><a href="./?page=%s">Forum</a></li><li><a href="./?page=%s&amp;group=%s">%s</a></li></ol>',
+		container : {
+			open : '<div id="forum-list-container" class="list-group">',
+			close : '</div>'
+		},
+		item : '<a href="./?page=%s&amp;sub=%s" class="list-group-item striped%s"><h4><strong>%s</strong></h4><span title="Unread messages" class="badge %s" id="badge-%s"></span><p>%s</p></a>'
+	},
+	thread_list : {
+		breadcrumb : '<ol class="breadcrumb"><li><a href="./?page=%s">Forum</a></li><li><a href="./?page=%s&amp;group=%s">%s</a></li><li><a href="./?page=%s&amp;sub=%s">%s</a></li></ol>',
+		container : {
+			open : '<div id="forum-list-container" class="list-group">',
+			close : '</div>'
+		},
+		item : {
+			open : '<a href="./?page=%s&amp;sub=%s&amp;thread=%s" class="list-group-item striped"><div class="row">',
+			details : {
+				open : '<div class="col-sm-9">',
+				info : '<strong>%s</strong><p>By <strong>%s</strong> on %s</p><p>Latest reply by <strong>%s</strong> on %s</p>',
+				close : '</div>'
+			},
+			badges : {
+				open : '<div class="col-sm-3"><div class="pull-right">',
+				unread : '<span title="Unread messages" class="badge%s" id="badge-%s">%s</span>',
+				votes : {
+					up : '<span id="uv-%s" title="Upvotes - Parent / Thread Total" class="badge upvote-bg"><span class="glyphicon glyphicon-arrow-up"></span><span id="uv-count-%s">%s / %s</span></span>&nbsp;',
+					down : '<span id="dv-%s" title="Downvotes - Parent / Thread Total" class="badge downvote-bg"><span class="glyphicon glyphicon-arrow-down"></span><span id="dv-count-%s">%s / %s</span></span>',
+				},
+				close : '</div></div>'
+			},
+			close : '</div></a>'
+		},
+		controls : {
+			post : '<button class="btn btn-default icon" aria-label="Post a new message" title="Post a new message" onclick="addNew(\'%s\')"><span class="glyphicon glyphicon-pencil"></span></button>',
+			scan_new : '<button id="scan-cfg-new" class="btn %s icon" aria-label="Scan for new messages" title="Scan for new messages" onclick="setScanCfg(\'%s\', 1)"><span class="glyphicon glyphicon-ok-sign"></span></button>',
+			scan_you : '<button id="scan-cfg-youonly" class="btn %s icon" aria-label="Scan for new messages to you only" title="Scan for new messages to you only" onclick="setScanCfg(\'%s\', 2)"><span class="glyphicon glyphicon-user"></span></button>',
+			scan_off : '<button id="scan-cfg-off" class="btn %s icon" aria-label="Do not scan this sub" title="Do not scan this sub" onclick="setScanCfg(\'%s\', 0)"><span class="glyphicon glyphicon-ban-circle"></span></button>'
+		}
+	},
+	thread_view : {
+		breadcrumb : '<ol class="breadcrumb"><li><a href="./?page=%s">Forum</a></li><li><a href="./?page=%s&amp;group=%s">%s</a></li><li><a href="./?page=%s&amp;sub=%s">%s</a></li></ol>',
+		jump_unread : '<div id="jump-unread-container" style="margin-bottom:1em;" hidden><a class="btn btn-default" id="jump-unread" title="Jump to first unread message" href="#"><span class="glyphicon glyphicon-star"></span></a></div>',
+		set_unread : '$("#jump-unread").attr("href", "#%s");$("#jump-unread-container").attr("hidden", false);',
+		container : {
+			open : '<ul id="forum-list-container" class="list-group">',
+			close : '</ul>'
+		},
+		subject : '<h4><strong>%s</strong></h4>'
+	},
+	message : {
+		anchor : '<a id="%s"></a>',
+		open : '<li class="list-group-item striped" id="li-%s">',
+		header : {
+			open : '<div class="row">',
+			details : {
+				open : '<div class="col-sm-9">',
+				unread : '<span title="Unread" class="glyphicon glyphicon-star"></span>',
+				info : 'From <strong>%s</strong>%s to <strong>%s</strong> on %s',
+				close : '</div>'
+			},
+			voting : {
+				open : '<div class="col-sm-3"><div class="pull-right">',
+				poll : '<span class="badge">POLL</span>',
+				buttons : {
+					up : '<button id="uv-%s" class="btn-uv btn btn-default icon %s"><span title="Upvotes" class="glyphicon glyphicon-arrow-up"></span><span id="uv-count-%s" title="Upvotes">%s</span></button>',
+					down : '<button id="dv-%s" class="btn-dv btn btn-default icon %s"><span title="Downvotes" class="glyphicon glyphicon-arrow-down"></span><span id="dv-count-%s" title="Downvotes">%s</span></button>'
+				},
+				close : '</div></div>'
+			},
+			close : '</div>'
+		},
+		body : {
+			open : '<div class="message" id="message-%s">',
+			poll : {
+				comment : '<strong>%s</strong>',
+				answer : {
+					container : {
+						open : '<ul class="list-group">',
+						close : '</ul>'
+					},
+					open : '<li class="%s"><label><input type="%s" name="poll-%s" value="%s">%s</label> %s</li>',
+					closed : '<li%s>%s %s</li>'
+				},
+				button : '<button id="submit-poll-%s" class="btn btn-default" onclick="submitPollAnswers(%s)">Vote</button>',
+				closed : 'This poll has been closed.',
+				disallowed : 'You cannot vote on this poll.',
+				voted : 'You already voted on this poll.'
+			},
+			close : '</div>'
+		},
+		controls : {
+			oldest : '<a class="btn btn-default icon" title="Jump to oldest message" aria-label="Jump to oldest message" href="#%s"><span class="glyphicon glyphicon-fast-backward"></span></a>',
+			previous : '<a class="btn btn-default icon" title="Jump to previous message" aria-label="Jump to previous message" href="#%s" id="pm-%s"><span class="glyphicon glyphicon-step-backward"></span></a>',
+			link : '<a class="btn btn-default icon" title="Direct link to this message" aria-label="Direct link to this message" href="#%s"><span class="glyphicon glyphicon-link"></span></a>',
+			next : '<a class="btn btn-default icon" title="Jump to next message" aria-label="Jump to next message" href="#%s" id="nm-%s"><span class="glyphicon glyphicon-step-forward"></span></a>',
+			newest : '<a class="btn btn-default icon" title="Jump to newest message" aria-label="Jump to newest message" href="#%s"><span class="glyphicon glyphicon-fast-forward"></span></a>',
+			reply : '<button class="btn btn-default icon" title="Reply to this message" aria-label="Reply to this message" name="reply-%s" onclick="addReply(\'%s\', \'%s\')"><span class="glyphicon glyphicon-comment"></span></button>',
+			remove : '<button class="btn btn-default icon" title="Delete this message" aria-label="Delete this message" onclick="deleteMessage(\'%s\',\'%s\')"><span class="glyphicon glyphicon-trash"></span></button>'
+		},
+		close : '</li>'
+	}
+};
+
 writeln('<script type="text/javascript" src="./js/forum.js"></script>');
 
 if (typeof http_request.query.notice !== 'undefined') {
-	writeln(
-		'<div id="noticebox" class="alert alert-warning">' + 
-		http_request.query.notice[0] + '</div>' +
-		'<script type="text/javascript">' +
-		'$("#noticebox").fadeOut(3000,function(){$("#noticebox").remove();});' +
-		'</script>'
-	);
+	writeln(format(strings.notice_box, http_request.query.notice[0]));
 }
-
 
 if (typeof http_request.query.sub !== 'undefined' &&
 	typeof msg_area.sub[http_request.query.sub[0]] !== 'undefined' &&
@@ -36,155 +153,149 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		var body = msgBase.get_msg_body(header.number);
 		if (body === null) return;
 
-		writeln(
-			'<a id="' + header.number + '"></a>' +
-			'<li class="list-group-item striped' +
-			'" id="li-' + header.number + '">'
-		);
+		writeln(format(strings.message.anchor, header.number));
+		writeln(format(strings.message.open, header.number));
 
 		// Show subject if first message
-		if (index === 0) {
-			writeln('<h4><strong>' + thread.subject + '</strong></h4>');
-		}
+		if (index === 0) writeln(format(strings.thread_view.subject, thread.subject));
 
 		// Header
-		writeln('<div class="row">');
+		writeln(strings.message.header.open);
 
-		writeln('<div class="col-sm-8">');
+		writeln(strings.message.header.details.open);
 		if (user.alias != settings.guest &&
 			header.number > msg_area.sub[http_request.query.sub[0]].scan_ptr
 		) {
-			writeln(
-				'<span title="Unread" class="glyphicon glyphicon-star"></span>'
-			);
+			writeln(strings.message.header.details.unread);
 			if (firstUnread === '') firstUnread += header.number;
 		}			
 		writeln(
-			'From <strong>' + header.from + "</strong>" +
-			(	typeof header.from_net_addr === 'undefined'
-				? ''
-				: ('@' +  header.from_net_addr)
-			) +
-			' to <strong>' + header.to + '</strong> on ' +
-			(new Date(header.when_written_time * 1000)).toLocaleString()
+			format(
+				strings.message.header.details.info,
+				header.from,
+				typeof header.from_net_addr === 'undefined' ? '' : '@' + header.from_net_addr,
+				header.to,
+				(new Date(header.when_written_time * 1000)).toLocaleString()
+			)
 		);
-		writeln('</div>');
+		writeln(strings.message.header.details.close);
 
-		if (typeof settings.vote_buttons === 'undefined' || settings.vote_buttons) {		
+		writeln(strings.message.header.voting.open);
+		if ((typeof settings.vote_buttons === 'undefined' || settings.vote_buttons) && !(header.attr&MSG_POLL)) {
 			writeln(
-				'<div class="col-sm-4">' +
-					'<div class="pull-right">' +
-					'<button id="uv-' + header.number + '" class="btn-uv btn btn-default icon"' + (user.alias == settings.guest || user.security.restrictions&UFLAG_V ? 'disabled' : '') + '>' +
-						'<span title="Upvotes" class="glyphicon glyphicon-arrow-up">' +
-						'</span>' +
-						'<span id="uv-count-' + header.number + '" title="Upvotes">' +
-						header.upvotes + '</span>' +
-					'</button>' +
-					'<button id="dv-' + header.number + '" class="btn-dv btn btn-default icon"' + (user.alias == settings.guest || user.security.restrictions&UFLAG_V ? 'disabled' : '') + '>' +
-						'<span title="Downvotes" class="glyphicon glyphicon-arrow-down">' +
-						'</span>' +
-						'<span id="dv-count-' + header.number + '" title="Downvotes">' +
-						header.downvotes + '</span>' +
-					'</button>' +
-					'</div>' +
-				'</div>'
+				format(
+					strings.message.header.voting.buttons.up,
+					header.number,
+					user.alias == settings.guest || user.security.restrictions&UFLAG_V ? 'disabled' : '',
+					header.number,
+					header.upvotes
+				)
 			);
+			writeln(
+				format(
+					strings.message.header.voting.buttons.down,
+					header.number,
+					user.alias == settings.guest || user.security.restrictions&UFLAG_V ? 'disabled' : '',
+					header.number,
+					header.downvotes
+				)
+			);
+		} else if (header.attr&MSG_POLL) {
+			writeln(strings.message.header.voting.poll);
 		}
+		writeln(strings.message.header.voting.close);
 		
-		writeln('</div>'); // message header
+		writeln(strings.message.header.close);
 
 		// Body
-		writeln(
-			'<div class="message" id="message-' + header.number + '">' +
-			formatMessage(body) + '</div>'
-		);
+		writeln(format(strings.message.body.open, header.number));
+		// If this is a poll message
+		if (header.attr&MSG_POLL) {
 
-		var prev = (
-			index === 0
-			? thread.messages[thread.__first].number
-			: thread.messages[keys[index - 1]].number
-		);
+			var pollData = getUserPollData(http_request.query.sub[0], header.number);
 
-		var next = (
-			key === thread.__last
-			? thread.messages[thread.__last].number
-			: thread.messages[keys[index + 1]].number
-		);
+			header.poll_comments.forEach(
+				function (e) {
+					writeln(format(strings.message.body.poll.comment, e.data));
+				}
+			);
+
+			writeln(strings.message.body.poll.answer.container.open);
+			// Poll is closed or user has voted
+			if (header.auxattr&POLL_CLOSED || pollData.answers > 0) {
+				header.poll.answers.forEach(
+					function (e, i) {
+						writeln(
+							format(
+								pollData.answers&(1<<i) ? 'class="upvote-bg"' : '',
+								strings.message.body.poll.answer.closed,
+								e.data,
+								pollData.show_results ? header.tally[i] : ''
+							)
+						);
+					}
+				);
+			// Poll is open and user hasn't voted
+			} else {
+				header.poll_answers.forEach(
+					function (e, i) {
+						writeln(
+							format(
+								strings.message.body.poll.answer.open,
+								header.votes < 2 ? 'radio' : 'checkbox',
+								header.votes < 2 ? 'radio' : 'checkbox',
+								header.number, i, e.data,
+								pollData.show_results ? header.tally[i] : ''
+							)
+						);
+					}
+				);
+			}
+			writeln(strings.message.body.poll.answer.container.close);
+
+			if (header.auxattr&POLL_CLOSED) {
+				writeln(strings.message.body.poll.closed);
+			} else if (pollData.answers > 0) {
+				writeln(strings.message.body.poll.voted);
+			} else if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) {
+				writeln(strings.message.body.poll.disallowed);
+			} else {
+				writeln(format(strings.message.body.poll.button, header.number, header.number));
+			}
+
+		// This is a normal message
+		} else {
+			writeln(formatMessage(body));
+		}
+		writeln(strings.message.body.close);
+
+		var prev = index === 0 ? thread.messages[thread.__first].number : thread.messages[keys[index - 1]].number;
+		var next = key === thread.__last ? thread.messages[thread.__last].number : thread.messages[keys[index + 1]].number;
 
 		// Standard controls
-		writeln(
-			'<a class="btn btn-default icon" title="Jump to oldest message" ' +
-			'aria-label="Jump to oldest message" href="#' +
-			thread.messages[thread.__first].number + '">' +
-			'<span class="glyphicon glyphicon-fast-backward"></span></a>' +
-
-			'<a class="btn btn-default icon" title="Jump to previous message" '+
-			'aria-label="Jump to previous message" href="#' + prev + '" ' +
-			'id="pm-' + header.number + '">' +
-			'<span class="glyphicon glyphicon-step-backward"></span></a>' +
-
-			'<a class="btn btn-default icon" ' +
-			'title="Direct link to this message" ' +
-			'aria-label="Direct link to this message" ' +
-			'href="#' + header.number + '">' +
-			'<span class="glyphicon glyphicon-link"></span></a>' +
-
-			'<a class="btn btn-default icon" title="Jump to next message" ' +
-			'aria-label="Jump to next message" href="#' + next + '" ' +
-			'id="nm-' + header.number + '">' +
-			'<span class="glyphicon glyphicon-step-forward"></span></a>' +
-			
-			'<a class="btn btn-default icon" ' +
-			'aria-label="Jump to newest message" ' +
-			'title="Jump to newest message" href="#' + 
-			thread.messages[thread.__last].number + 
-			'"><span class="glyphicon glyphicon-fast-forward"></span></a>'
-		);
+		writeln(format(strings.message.controls.oldest, thread.messages[thread.__first].number));
+		writeln(format(strings.message.controls.previous, prev, header.number));
+		writeln(format(strings.message.controls.link, header.number));
+		writeln(format(strings.message.controls.next, next, header.number));
+		writeln(format(strings.message.controls.newest, thread.messages[thread.__last].number));
 
 		// User can post
-		if (user.alias !== settings.guest &&
-			msg_area.sub[msgBase.cfg.code].can_post
-		) {
-			writeln(
-				'<button class="btn btn-default icon" ' +
-				'aria-label="Reply to this message" ' +
-				'title="Reply to this message" ' +
-				'name="reply-' + header.number + '" ' +
-				'onclick="addReply(\'' +
-					msgBase.cfg.code + '\',' + header.number +
-				')">' +
-				'<span class="glyphicon glyphicon-comment"></span>' +
-				'</button>'
-			);
+		if (user.alias !== settings.guest && msg_area.sub[msgBase.cfg.code].can_post) {
+			writeln(format(strings.message.controls.reply, header.number, msgBase.cfg.code, header.number));
 		}
 
 		// User is operator
-		if (user.alias != settings.guest &&
-			msg_area.sub[msgBase.cfg.code].is_operator
-		) {
-			writeln(
-				'<button class="btn btn-default icon" ' +
-				'aria-label="Delete this message" title="Delete this message" '+
-				'onclick="deleteMessage(\'' +
-					msgBase.cfg.code + '\', ' + header.number +
-				')" ' +
-				'href="#">' +
-				'<span class="glyphicon glyphicon-trash"></span>' +
-				'</button>'
-			);
+		if (user.alias != settings.guest && msg_area.sub[msgBase.cfg.code].is_operator) {
+			writeln(format(strings.message.controls.remove, msgBase.cfg.code, header.number));
 		}
 
-		writeln('</li>');
+		writeln(strings.message.close);
 
 	}
 
 	writeln(
 		format(
-			'<ol class="breadcrumb">' +
-			'<li><a href="./?page=%s">Forum</a></li>' +
-			'<li><a href="./?page=%s&amp;group=%s">%s</a></li>' +
-			'<li><a href="./?page=%s&amp;sub=%s">%s</a></li>' +
-			'</ol>',
+			strings.thread_view.breadcrumb,
 			http_request.query.page[0],
 			http_request.query.page[0],
 			msg_area.sub[http_request.query.sub[0]].grp_index,
@@ -194,13 +305,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			msg_area.sub[http_request.query.sub[0]].name
 		)
 	);
-	writeln(
-		'<div id="jump-unread-container" style="margin-bottom:1em;" hidden>' +
-		'<a class="btn btn-default" id="jump-unread" ' +
-		'title="Jump to first unread message" href="#">' +
-		'<span class="glyphicon glyphicon-star"></span>' +
-		'</a></div>'
-	);
+	writeln(strings.thread_view.jump_unread);
 
 	try {
 		msgBase.open();
@@ -213,26 +318,17 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		var keys = Object.keys(thread.messages);
 		thread.__first = keys[0];
 		thread.__last = keys[keys.length - 1];
-		writeln('<ul id="forum-list-container" class="list-group">');
-		keys.forEach(
-			function (key, index) {
-				writeMessage(thread, keys, key, index);
-			}
-		);
-		writeln('</ul>');
+		writeln(strings.thread_view.container.open);
+		keys.forEach(function (key, index) { writeMessage(thread, keys, key, index); });
+		writeln(strings.thread_view.container.close);
 		msgBase.close();
 		if (keys.length > 1 && firstUnread !== '') {
-			writeln(
-				'<script type="text/javascript">' +
-				'$("#jump-unread").attr("href", "#' + firstUnread + '");' +
-				'$("#jump-unread-container").attr("hidden", false);' +
-				'</script>'
-			);
+			writeln(strings.script.open);
+			writeln(format(strings.thread_view.set_unread, firstUnread));
+			writeln(strings.script.close);
 		}
 		// Update scan pointer
-		if (thread.messages[thread.__last].number >
-			msg_area.sub[http_request.query.sub[0]].scan_ptr
-		) {
+		if (thread.messages[thread.__last].number > msg_area.sub[http_request.query.sub[0]].scan_ptr) {
 			msg_area.sub[http_request.query.sub[0]].scan_ptr =
 			thread.messages[thread.__last].number;
 		}
@@ -240,14 +336,28 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		log(LOG_WARNING, err);
 	}
 
-	writeln('<script type="text/javascript">');
-	if (settings.keyboard_navigation) {
-		writeln('threadNav();');
-	}
+	writeln(strings.script.open);
+	if (settings.keyboard_navigation) writeln(strings.script.thread_navigation);
 	if (user.alias != settings.guest || user.security.restrictions&UFLAG_V) {
-		writeln('enableVoteButtonHandlers("'+http_request.query.sub[0]+'");');
+		writeln(format(strings.script.vote_buttons, http_request.query.sub[0]));
 	}
-	writeln('</script>');
+	writeln(
+		format(
+			strings.script.vote_refresh_thread,
+			http_request.query.sub[0], thread.__first
+		)
+	);
+	writeln(
+		format(
+			strings.script.interval,
+			format(
+				strings.script.vote_refresh_thread,
+				http_request.query.sub[0], thread.__first
+			),
+			settings.refresh_interval || 60000
+		)
+	);
+	writeln(strings.script.close);
 
 } else if (
 	typeof http_request.query.sub !== 'undefined' &&
@@ -257,6 +367,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	// Thread list
 	function writeThread(thread) {
+
 		if (user.number > 0 && user.alias != settings.guest) {
 			var unread = getUnreadInThread(http_request.query.sub[0], thread);
 		} else {
@@ -267,73 +378,64 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		var last = keys[keys.length - 1];
 		writeln(
 			format(
-				'<a href="./?page=%s&amp;sub=%s&amp;thread=%s" ' +
-				'class="list-group-item striped">',
+				strings.thread_list.item.open,
 				http_request.query.page[0],
 				http_request.query.sub[0],
 				thread.id
 			)
 		);
-		writeln('<div class="row"><div class="col-sm-8">');
+
+		writeln(strings.thread_list.item.details.open);
 		writeln(
 			format(
-				'<strong>%s</strong>' +
-				'<p>By <strong>%s</strong> on %s</p>' +
-				'<p>Latest reply by <strong>%s</strong> on %s</p>',
+				strings.thread_list.item.details.info,
 				thread.subject,
 				thread.messages[first].from,
-				(new Date(
-						thread.messages[first].when_written_time * 1000
-					)
-				).toLocaleString(),
+				(new Date(thread.messages[first].when_written_time * 1000)).toLocaleString(),
 				thread.messages[last].from,
-				(new Date(
-					thread.messages[last].when_written_time * 1000
-				)).toLocaleString()
+				(new Date(thread.messages[last].when_written_time * 1000)).toLocaleString()
 			)
 		);
-		writeln('</div>');
-		if (settings.vote_buttons) {
+		writeln(strings.thread_list.item.details.close);
+
+		writeln(strings.thread_list.item.badges.open);
+		if (settings.vote_buttons && (thread.votes.up > 0 || thread.votes.down > 0)) {
 			writeln(
-				'<div class="col-sm-3">' +
-				'<div class="pull-right">' +
-				'<div title="Upvotes - Parent (Thread Total)" class="btn icon">' +
-				'<span class="glyphicon glyphicon-arrow-up">' +
-				'</span>' +
-				thread.messages[first].upvotes + ' (' + thread.votes.up + ')' +
-				'</div>' +
-				'<div title="Downvotes - Parent (Thread Total)" class="btn icon">' +
-				'<span class="glyphicon glyphicon-arrow-down">' +
-				'</span>' +
-				thread.messages[first].downvotes + ' (' + thread.votes.down + ')' +
-				'</div>' +
-				'</div>' +
-				'</div>'
+				format(
+					strings.thread_list.item.badges.votes.up,
+					thread.messages[first].number,
+					thread.messages[first].number,
+					thread.messages[first].upvotes,
+					thread.votes.up
+				)
+			);
+			writeln(
+				format(
+					strings.thread_list.item.badges.votes.down,
+					thread.messages[first].number,
+					thread.messages[first].number,
+					thread.messages[first].downvotes,
+					thread.votes.down
+				)
 			);
 		}
 		writeln(
 			format(
-				'<div class="col-sm-1">' +
-				'<div class="btn icon">' +
-				'<span title="Unread messages" class="badge%s" id="badge-%s">' +
-				'%s</span></div></div>',
-				(	msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW
-					? ' scanned' : ''
-				),
+				strings.thread_list.item.badges.unread,
+				msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW ? ' scanned' : '',
 				thread.messages[first].number,
 				(unread == 0 ? '' : unread)
 			)
 		);
-		writeln('</div></a>');
+		writeln(strings.thread_list.item.badges.close);
+
+		writeln(strings.thread_list.item.close);
+
 	}
 
 	writeln(
 		format(
-			'<ol class="breadcrumb">' +
-			'<li><a href="./?page=%s">Forum</a></li>' +
-			'<li><a href="./?page=%s&amp;group=%s">%s</a></li>' +
-			'<li><a href="./?page=%s&amp;sub=%s">%s</a></li>' +
-			'</ol>',
+			strings.thread_list.breadcrumb,
 			http_request.query.page[0],
 			http_request.query.page[0],
 			msg_area.sub[http_request.query.sub[0]].grp_index,
@@ -344,73 +446,52 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		)
 	);
 
-	if (user.alias !== settings.guest &&
-		msg_area.sub[http_request.query.sub[0]].can_post
-	) {
-		writeln(
-			'<button class="btn btn-default icon" ' +
-			'aria-label="Post a new message" title="Post a new message" ' +
-			'onclick="addNew(\'' + http_request.query.sub[0] + '\')">' +
-			'<span class="glyphicon glyphicon-pencil"></span>' +
-			'</button>'
-		);
+	if (user.alias !== settings.guest && msg_area.sub[http_request.query.sub[0]].can_post) {
+		writeln(format(strings.thread_list.controls.post, http_request.query.sub[0]));
 	}
 
 	if (user.alias !== settings.guest) {
 		writeln(
-			'<button id="scan-cfg-new" class="btn ' +
-			(	!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY) &&
-				(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW)
-				? 'btn-primary'
-				: 'btn-default'
-			) +
-			' icon" aria-label="Scan for new messages" ' +
-			'title="Scan for new messages" ' +
-			'onclick="setScanCfg(\'' + http_request.query.sub[0] + '\',1)"' +
-			'>' +
-			'<span class="glyphicon glyphicon-ok-sign"></span>' +
-			'</button>'
+			format(
+				strings.thread_list.controls.scan_new,
+				!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY) && msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW ? 'btn-primary' : 'btn-default',
+				http_request.query.sub[0]
+			)
 		);
 		writeln(
-			'<button id="scan-cfg-youonly" class="btn ' +
-			(	msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY
-				? 'btn-primary'
-				: 'btn-default'
-			) +
-			' icon" aria-label="Scan for new messages to you only" ' +
-			'title="Scan for new messages to you only" ' +
-			'onclick="setScanCfg(\'' + http_request.query.sub[0] + '\',2)"' +
-			'>' +
-			'<span class="glyphicon glyphicon-user"></span>' +
-			'</button>'
+			format(
+				strings.thread_list.controls.scan_you,
+				msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY ? 'btn-primary' : 'btn-default',
+				http_request.query.sub[0]
+			)
 		);
 		writeln(
-			'<button id="scan-cfg-off" class="btn ' +
-			(	!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW) &&
-				!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY)
-				? 'btn-primary'
-				: 'btn-default'
-			) +
-			' icon" aria-label="Do not scan this sub" ' +
-			'title="Do not scan this sub" ' +
-			'onclick="setScanCfg(\'' + http_request.query.sub[0] + '\',0)"' +
-			'>' +
-			'<span class="glyphicon glyphicon-ban-circle"></span>' +
-			'</button>'
+			format(
+				strings.thread_list.controls.scan_off,
+				!(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_NEW) && !(msg_area.sub[http_request.query.sub[0]].scan_cfg&SCAN_CFG_YONLY) ? 'btn-primary' : 'btn-default',
+				http_request.query.sub[0]
+			)
 		);
 	}
 
 	try {
-		var threads = getMessageThreads(
-			http_request.query.sub[0],
-			settings.max_messages
-		);
-		writeln('<div id="forum-list-container" class="list-group">');
+		var threads = getMessageThreads(http_request.query.sub[0], settings.max_messages);
+		writeln(strings.thread_list.container.open);
 		threads.order.forEach(function(t){writeThread(threads.thread[t]);});
-		writeln('</div>');
+		writeln(strings.thread_list.container.close);
 	} catch (err) {
 		log(LOG_WARNING, err);
 	}
+
+	writeln(strings.script.open);
+	writeln(
+		format(
+			strings.script.interval,
+			format(strings.script.vote_refresh_threads, http_request.query.sub[0]),
+			settings.refresh_interval || 60000
+		)
+	);
+	writeln(strings.script.close);
 
 } else if (
 	typeof http_request.query.group !== 'undefined' &&
@@ -421,24 +502,12 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	function writeSub(sub) {
 		writeln(
 			format(
-				'<a href="./?page=%s&amp;sub=%s" ' +
-				'class="list-group-item striped%s">' +
-				'<h4><strong>%s</strong></h4>' +
-				'<span title="Unread messages" class="badge %s" id="badge-%s">'+
-				'</span>' +
-				'<p>%s</p>' +
-				'</a>',
+				strings.sub_list.item,
 				http_request.query.page[0],
 				sub.code,
-				(	sub.scan_cfg&SCAN_CFG_NEW || sub.scan_cfg&SCAN_CFG_YONLY
-					? ' scanned'
-					: ''
-				),
+				sub.scan_cfg&SCAN_CFG_NEW || sub.scan_cfg&SCAN_CFG_YONLY ? ' scanned' : '',
 				sub.name,
-				(	sub.scan_cfg&SCAN_CFG_NEW || sub.scan_cfg&SCAN_CFG_YONLY
-					? 'scanned'
-					: 'total'
-				),
+				sub.scan_cfg&SCAN_CFG_NEW || sub.scan_cfg&SCAN_CFG_YONLY ? 'scanned' : 'total',
 				sub.code,
 				sub.description
 			)
@@ -446,26 +515,24 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	}
 
 	function writeApiCall(subs) {
-		writeln('<script type="text/javascript">');
+		writeln(strings.script.open);
 		var codes = [];
 		subs.forEach(function (sub) { codes.push(sub.code); });
 		codes = codes.join('&sub=');
-		writeln('getSubUnreadCount("' + codes + '");');
+		writeln(format(strings.script.get_sub_unread, codes));
 		writeln(
-			'setInterval(' +
-				'function(){getSubUnreadCount("' + codes + '");},' +
-				'60000' +
-			');'
+			format(
+				strings.script.interval,
+				format(strings.script.get_sub_unread, codes),
+				settings.refresh_interval || 60000
+			)
 		);
-		writeln('</script>');
+		writeln(strings.script.close);
 	}
 
 	writeln(
 		format(
-			'<ol class="breadcrumb">' +
-			'<li><a href="./?page=%s">Forum</a></li>' +
-			'<li><a href="./?page=%s&amp;group=%s">%s</a></li>' +
-			'</ol>',
+			strings.sub_list.breadcrumb,
 			http_request.query.page[0],
 			http_request.query.page[0],
 			http_request.query.group[0],
@@ -475,12 +542,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	try {
 		var subs = listSubs(http_request.query.group[0]);
-		writeln('<div id="forum-list-container" class="list-group">');
+		writeln(strings.sub_list.container.open);
 		subs.forEach(writeSub);
-		writeln('</div>');
-		if (user.number > 0 && user.alias !== settings.guest) {
-			writeApiCall(subs);
-		}
+		writeln(strings.sub_list.container.close);
+		if (user.number > 0 && user.alias !== settings.guest) writeApiCall(subs);
 	} catch (err) {
 		log(LOG_WARNING, err);
 	}
@@ -491,17 +556,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	function writeGroup(group) {
 		writeln(
 			format(
-				'<a href="./?page=%s&amp;group=%s" ' +
-				'class="list-group-item striped">' +
-				'<h3><strong>%s</strong></h3>' +
-				'<span title="Unread messages (other)" ' +
-				'class="badge ignored" id="badge-ignored-%s">' +
-				'</span>' +
-				'<span title="Unread messages (scanned subs)" ' +
-				'class="badge scanned" id="badge-scanned-%s">' +
-				'</span>' +
-				'<p>%s : %s sub-boards</p>' +
-				'</a>',
+				strings.group_list.item,
 				http_request.query.page[0],
 				group.index,
 				group.name,
@@ -514,36 +569,29 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	}
 
 	function writeApiCall(groups) {
-		writeln('<script type="text/javascript">');
+		writeln(strings.script.open);
 		var indexes = [];
 		groups.forEach(function(group) { indexes.push(group.index); });
 		indexes = indexes.join('&group=');
-		writeln('getGroupUnreadCount("' + indexes + '");');
+		writeln(format(strings.script.get_group_unread, indexes));
 		writeln(
-			'setInterval(' +
-				'function(){getGroupUnreadCount("' + indexes + '");},' +
-				'60000' +
-			');'
+			format(
+				strings.script.interval,
+				format(strings.script.get_group_unread, indexes),
+				settings.refresh_interval || 60000
+			)
 		);
-		writeln('</script>');
+		writeln(strings.script.close);
 	}
 	
-	writeln(
-		'<ol class="breadcrumb">' +
-		'<li>' +
-		'<a href="./?page=' + http_request.query.page[0] + '">Forum</a>' +
-		'</li>' +
-		'</ol>'
-	);
+	writeln(format(strings.group_list.breadcrumb, http_request.query.page[0]));
 
 	try {
 		var groups = listGroups();
-		writeln('<div id="forum-list-container" class="list-group">');
+		writeln(strings.group_list.container.open);
 		groups.forEach(writeGroup);
-		writeln('</div>');
-		if (user.number > 0 && user.alias !== settings.guest) {
-			writeApiCall(groups);
-		}
+		writeln(strings.group_list.container.close);
+		if (user.number > 0 && user.alias !== settings.guest) writeApiCall(groups);
 	} catch (err) {
 		log(LOG_WARNING, err);
 	}
