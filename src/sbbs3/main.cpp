@@ -5131,7 +5131,7 @@ NO_SSH:
 			if(banned) {
 				char ban_duration[128];
 				lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
-					,client_socket, host_ip, attempted.count, attempted.user, seconds_to_str(banned, ban_duration));
+					,client_socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 			} else
 				lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", client_socket, host_ip);
 			SSH_END();

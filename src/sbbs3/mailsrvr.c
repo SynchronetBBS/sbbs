@@ -858,7 +858,7 @@ static void pop3_thread(void* arg)
 		if(banned) {
 			char ban_duration[128];
 			lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
-				,socket, host_ip, attempted.count, attempted.user, seconds_to_str(banned, ban_duration));
+				,socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		}
 		else
 			lprintf(LOG_NOTICE,"%04d !POP3 CLIENT IP ADDRESS BLOCKED: %s",socket, host_ip);
@@ -2567,7 +2567,7 @@ static void smtp_thread(void* arg)
 		if(banned) {
 			char ban_duration[128];
 			lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%u login attempts, last: %s) - remaining: %s"
-				,socket, host_ip, attempted.count, attempted.user, seconds_to_str(banned, ban_duration));
+				,socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 			mail_close_socket(socket);
 			thread_down();
 			protected_uint32_adjust(&active_clients, -1);
