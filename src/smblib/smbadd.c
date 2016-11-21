@@ -333,7 +333,7 @@ int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 	if(filelength(fileno(smb->shd_fp)) < 1)
 		return SMB_ERR_NOT_FOUND;
 
-	if(!(msg->hdr.attr&MSG_VOTE))
+	if(!(msg->hdr.attr&MSG_VOTE) || msg->hdr.attr&MSG_POLL)
 		return SMB_ERR_HDR_ATTR;
 
 	if(msg->hdr.thread_back == 0)

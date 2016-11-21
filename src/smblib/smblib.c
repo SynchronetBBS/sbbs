@@ -1694,17 +1694,24 @@ uint16_t SMBCALL smb_voted_already(smb_t* smb, uint32_t msgnum, const char* name
 		return SMB_ERR_SEEK;
 	}
 	while(!votes && smb_fread(smb, &msg.idx, sizeof(msg.idx), smb->sid_fp) == sizeof(msg.idx)) {
-		if(!(msg.idx.attr&MSG_VOTE))
+		if(!(msg.idx.attr&MSG_VOTE) || msg.idx.attr&MSG_POLL)
 			continue;
 		if(msg.idx.remsg != msgnum)
 			continue;
 		if(smb_getmsghdr(smb, &msg) != SMB_SUCCESS)
 			continue;
 		if(smb_msg_is_from(&msg, name, net_type, net_addr)) {
-			if((msg.idx.attr&MSG_VOTE) == MSG_VOTE)
+			switch(msg.idx.attr&MSG_VOTE) {
+			case MSG_VOTE:
 				votes = msg.hdr.votes;
-			else
-				votes++;
+				break;
+			case MSG_UPVOTE:
+				votes = 1;
+				break;
+			case MSG_DOWNVOTE:
+				votes = 2;
+				break;
+			}
 		}
 		smb_freemsgmem(&msg);
 	}
