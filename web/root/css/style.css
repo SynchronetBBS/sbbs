@@ -73,21 +73,65 @@ input.dropdown {
 }
 
 /* Upvote button */
-.btn-uv {
-
-}
+.btn-uv { }
 
 /* Downvote button */
-.btn-dv {
+.btn-dv { }
 
+.upvote-bg {
+	background-color : #F0B27A;
 }
 
-/* Upvote button (user has already upvoted) */
-.btn-uv-voted, .btn-uv-voted:hover {
-	color : orange;
+.downvote-bg {
+	background-color : #85C1E9;
 }
 
-/* Downvote button (user has already downvoted) */
-.btn-dv-voted, .btn-dv-voted:hover {
-	color : blue;
+.upvote-fg, .upvote:hover {
+	color : #F0B27A;
+}
+
+.downvote-fg, .downvote:hover {
+	color : #85C1E9;
+}
+
+.indicator {
+    background-color: transparent !important;
+    -webkit-animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@-webkit-keyframes indicator-fade {
+    from { background-color: #82E0AA; }
+    to { background-color: transparent; }
+}
+
+-moz-animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@-moz-keyframes indicator-fade {
+    from { background-color: #82E0AA; }
+    to { background-color: transparent; }
+}
+
+-ms-animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@-ms-keyframes indicator-fade {
+    from { background-color: #82E0AA; }
+    to { background-color: transparent; }
+}
+
+-o-animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@-o-keyframes indicator-fade {
+    from { background-color: #82E0AA;}
+    to { background-color: transparent; }
+}
+
+animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@keyframes indicator-fade {
+    from { background-color: #82E0AA;}
+    to { background-color: transparent; }
 }

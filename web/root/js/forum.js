@@ -310,7 +310,7 @@ function vote(sub, id) {
 		function (data) {
 			if (!data.success) return;
 			$('#' + id[0] + '-' + id[1]).addClass(
-				id[0] === 'uv' ? 'btn-uv-voted' : 'btn-dv-voted'
+				id[0] === 'uv' ? 'upvote-fg' : 'downvote-fg'
 			);
 			$('#' + id[0] + '-' + id[1]).attr('disabled', true);
 			$('#' + id[0] + '-' + id[1]).blur();
@@ -323,4 +323,66 @@ function vote(sub, id) {
 function enableVoteButtonHandlers(sub) {
 	$('.btn-uv').click(function () { vote(sub, this.id); });
 	$('.btn-dv').click(function () { vote(sub, this.id); });
+}
+
+function getVotesInThread(sub, id) {
+	$.getJSON(
+		'./api/forum.ssjs?call=get-thread-votes&sub=' + sub + '&id=' + id,
+		function (data) {
+			Object.keys(data.m).forEach(
+				function (m) {
+					var uv = parseInt($('#uv-count-' + m).text());
+					var dv = parseInt($('#dv-count-' + m).text());
+					if (uv !== data.m[m].u) {
+						$('#uv-count-' + m).text(data.m[m].u);
+						$('#uv-' + m).addClass('indicator');
+					}
+					if (dv !== data.m[m].d) {
+						$('#dv-count-' + m).text(data.m[m].d);
+						$('#dv-' + m).addClass('indicator');
+					}
+					console.log(data.m[m]);
+					switch (data.m[m].v) {
+						case 1:
+							$('#uv-' + m).addClass('upvote-fg');
+							break;
+						case 2:
+							$('#dv-' + m).addClass('downvote-fg');
+							break;
+						default:
+							break;
+					}
+				}
+			);
+		}
+	);
+}
+
+function getVotesInThreads(sub) {
+	$.getJSON(
+		'./api/forum.ssjs?call=get-sub-votes&sub=' + sub,
+		function (data) {
+			Object.keys(data).forEach(
+				function (t) {
+					var uv = data[t].p.u + ' / ' + data[t].t.u;
+					var dv = data[t].p.d + ' / ' + data[t].t.d;
+					if (uv !== $('#uv-count-' + t).text()) {
+						$('#uv-count-' + t).text(uv);
+					}
+					if (dv !== $('#dv-count-' + t).text()) {
+						$('#dv-count-' + t).text(dv);
+					}
+				}
+			);
+		}
+	);
+}
+
+function submitPollAnswers(id) {
+	$('[name="poll-' + id + '"]:checked').each(
+		function () {
+			alert($(this).val());
+		}
+	);
+	// async ./api/forum.ssjs?call=submit-poll-answers&sub=x&id=x&answer=x&answer=x...
 }
