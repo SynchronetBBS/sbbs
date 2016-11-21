@@ -1,6 +1,7 @@
 /* Synchronet message retrieval functions */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -183,7 +184,7 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 {
 	char*	txt;
 
-	if((msg->hdr.type == SMB_MSG_TYPE_NORMAL && (post->upvotes || post->downvotes))
+	if((msg->hdr.type == SMB_MSG_TYPE_NORMAL && post != NULL && (post->upvotes || post->downvotes))
 		|| msg->hdr.type == SMB_MSG_TYPE_POLL)
 		msg->user_voted = smb_voted_already(&smb, msg->hdr.number
 					,cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
