@@ -176,14 +176,6 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	CRLF;
 }
 
-ulong sbbs_t::total_votes(post_t* post)
-{
-	ulong total = 0;
-	for(int i = 0; i < MSG_POLL_MAX_ANSWERS; i++)
-		total += post->votes[i];
-	return total;
-}
-
 /****************************************************************************/
 /* Displays message header and text (if not deleted)                        */
 /****************************************************************************/
@@ -224,8 +216,7 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 			if(msg->hfield[i].type != SMB_POLL_ANSWER)
 				continue;
 			answer = (char*)msg->hfield_dat[i];
-			ulong total = total_votes(post);
-			float pct = total ? ((float)post->votes[answers] / total)*100.0F : 0.0F;
+			float pct = post->total_votes ? ((float)post->votes[answers] / post->total_votes)*100.0F : 0.0F;
 			char str[128];
 			int width = longest_answer;
 			if(width < cols/3) width = cols/3;

@@ -1615,6 +1615,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 				if(post[u].idx.number == msg.idx.remsg)
 					break;
 			if(u < off) {
+				post[u].total_votes++;
 				switch(msg.idx.attr&MSG_VOTE) {
 				case MSG_UPVOTE:
 					post[u].upvotes++;
@@ -1623,7 +1624,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 					post[u].downvotes++;
 					break;
 				default:
-					for(int b=0; b < 16; b++) {
+					for(int b=0; b < MSG_POLL_MAX_ANSWERS; b++) {
 						if(msg.idx.votes&(1<<b))
 							post[u].votes[b]++;
 					}
@@ -1669,13 +1670,24 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_TRUE;
 		}
 
+		JS_DefineProperty(cx, hdrobj, "total_votes", UINT_TO_JSVAL(post[off].total_votes)
+			,NULL, NULL, JSPROP_ENUMERATE);
 		if(post[off].upvotes)
 			JS_DefineProperty(cx, hdrobj, "upvotes", UINT_TO_JSVAL(post[off].upvotes)
-				,NULL,NULL,JSPROP_ENUMERATE);
+				,NULL, NULL, JSPROP_ENUMERATE);
 		if(post[off].downvotes)
 			JS_DefineProperty(cx, hdrobj, "downvotes", UINT_TO_JSVAL(post[off].downvotes)
-				,NULL,NULL,JSPROP_ENUMERATE);
-		/* ToDo: Handle votes[] array conversion to property/object/array */
+				,NULL, NULL, JSPROP_ENUMERATE);
+		if(post[off].total_votes) {
+			JSObject*		array;
+			if((array=JS_NewArrayObject(cx,0,NULL)) != NULL) {
+				JS_DefineProperty(cx, hdrobj, "tally", OBJECT_TO_JSVAL(array)
+					,NULL, NULL, JSPROP_ENUMERATE);
+				for(int i=0; i < MSG_POLL_MAX_ANSWERS;i++)
+					JS_DefineElement(cx, array, i, UINT_TO_JSVAL(post[off].votes[i])
+						,NULL, NULL, JSPROP_ENUMERATE);
+			}
+		}
 
 		if(!JS_SetPrivate(cx, hdrobj, p)) {
 			JS_ReportError(cx,"JS_SetPrivate failed");
@@ -2444,7 +2456,7 @@ js_add_poll(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_get_user_votes(JSContext *cx, uintN argc, jsval *arglist)
+js_how_user_voted(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*	obj=JS_THIS_OBJECT(cx, arglist);
 	jsval*		argv=JS_ARGV(cx, arglist);
@@ -2475,8 +2487,6 @@ js_get_user_votes(JSContext *cx, uintN argc, jsval *arglist)
 
 	return JS_TRUE;
 }
-
-
 
 /* MsgBase Object Properties */
 enum {
@@ -2816,7 +2826,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	)
 	,317
 	},
-	{"get_user_votes",		js_get_user_votes,		2, JSTYPE_NUMBER,	JSDOCSTR("message number, user name or alias")
+	{"how_user_voted",		js_how_user_voted,		2, JSTYPE_NUMBER,	JSDOCSTR("message number, user name or alias")
 	,JSDOCSTR("Returns 0 for no votes, 1 for an up-vote, 2 for a down-vote, or in the case of a poll-response: a bit-field of votes.")
 	,317
 	},

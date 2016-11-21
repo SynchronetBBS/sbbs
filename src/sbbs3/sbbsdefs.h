@@ -1008,6 +1008,7 @@ typedef struct {
 		};
 		uint32_t	votes[MSG_POLL_MAX_ANSWERS];
 	};
+	uint32_t	total_votes;
 } post_t;
 typedef idxrec_t mail_t;				/* defined in smbdefs.h */
 typedef fidoaddr_t faddr_t;				/* defined in smbdefs.h */

@@ -277,6 +277,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 				if(post[u].idx.number == idx.remsg)
 					break;
 			if(u < l) {
+				post[u].total_votes++;
 				switch(idx.attr&MSG_VOTE) {
 				case MSG_UPVOTE:
 					post[u].upvotes++;
@@ -285,7 +286,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 					post[u].downvotes++;
 					break;
 				default:
-					for(int b=0; b < 16; b++) {
+					for(int b=0; b < MSG_POLL_MAX_ANSWERS; b++) {
 						if(idx.votes&(1<<b))
 							post[u].votes[b]++;
 					}
@@ -684,7 +685,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 
 			msg.upvotes = post[smb.curmsg].upvotes;
 			msg.downvotes = post[smb.curmsg].downvotes;
-			msg.total_votes = total_votes(&post[smb.curmsg]);
+			msg.total_votes = post[smb.curmsg].total_votes;
 			show_msg(&msg
 				,msg.from_ext && !strcmp(msg.from_ext,"1") && !msg.from_net.type
 					? 0:P_NOATCODES
