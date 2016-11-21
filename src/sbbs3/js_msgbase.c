@@ -1242,6 +1242,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 			for(i=0;i<(p->msg).total_hfields;i++) {
 				switch((p->msg).hfield[i].type) {
 					case SMB_COMMENT:
+					case SMB_POLL_ANSWER:
 					case SMB_CARBONCOPY:
 					case SMB_GROUP:
 					case FILEATTACH:
