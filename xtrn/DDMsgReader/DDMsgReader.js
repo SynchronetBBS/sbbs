@@ -296,7 +296,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 2";
+var READER_VERSION = "1.17 Beta 3";
 var READER_DATE = "2016-11-20";
 
 // Keyboard key codes for displaying on the screen
@@ -1499,9 +1499,10 @@ function DigDistMsgReader_FilterMsgHdrsIntoHdrsForCurrentSubBoard(pMsgHdrs, pCle
 }
 
 // For the DigDistMsgReader class: Gets the message offset (index) for a message, given
-// a message header.  The returned index is for the object's message header array(s), if
-// populated, in the priority of search headers, then hdrsForCurrentSubBoard.  If neither
-// of those are populated, the offset of the header in the messagebase will be returned.
+// a message header.  Returns -1 on failure.  The returned index is for the object's
+// message header array(s), if populated, in the priority of search headers, then
+// hdrsForCurrentSubBoard.  If neither of those are populated, the offset of the header
+// in the messagebase will be returned.
 //
 // Parameters:
 //  pHdrOrMsgNum: Can either be a message header object or a message number.
@@ -1509,13 +1510,13 @@ function DigDistMsgReader_FilterMsgHdrsIntoHdrsForCurrentSubBoard(pMsgHdrs, pCle
 // Return value: The message index (or offset in the messagebase)
 function DigDistMsgReader_GetMsgIdx(pHdrOrMsgNum)
 {
-	var msgNum = 0;
+	var msgNum = -1;
 	if (typeof(pHdrOrMsgNum) == "object")
 		msgNum = pHdrOrMsgNum.number;
 	else if (typeof(pHdrOrMsgNum) == "number")
 		msgNum = pHdrOrMsgNum;
 	else
-		return 0;
+		return -1;
 	
 	var msgIdx = 0;
 	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
@@ -1817,8 +1818,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 				// and pass the selected index of the message to read.  If that
 				// index is -1, the ReadMessages method will use the user's
 				// last-read message index.
-				otherRetObj = this.ReadMessages(null, selectedMessageOffset, true,
-				allowChgMsgArea, pReturnOnNextAreaNav);
+				otherRetObj = this.ReadMessages(null, selectedMessageOffset, true, allowChgMsgArea, pReturnOnNextAreaNav);
 				// If the user wants to quit or if there was an error, then stop
 				// the input loop.
 				if (otherRetObj.stoppedReading)
@@ -2665,9 +2665,9 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 			retObj.stoppedReading = true;
 			break;
 		}
-		// If the message is marked as deleted (not by the user), then go to the
+		// If the message is not readable to the user, then go to the
 		// next/previous message
-		else if (readMsgRetObj.msgDeleted)
+		else if (readMsgRetObj.msgNotReadable)
 		{
 			// If the user's next action in the last iteration was to go to the
 			// previous message, then go backwards; otherwise, go forward.
@@ -3622,7 +3622,6 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
 											+ "Read message "
 											+ this.colors["readMsgConfirmNumberColor"]
-											//+ +(msgHeader.offset+1)
 											+ +(this.GetMsgIdx(msgHeader.number) + 1)
 											+ this.colors["readMsgConfirmColor"]
 											+ ": Are you sure";
@@ -3645,6 +3644,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					{
 						//retObj.selectedMsgOffset = msgHeader.offset;
 						retObj.selectedMsgOffset = this.GetMsgIdx(msgHeader.number);
+						if (retObj.selectedMsgOffset < 0)
+							retObj.selectedMsgOffset = 0;
 					}
 					// Return from here so that the calling function can switch into
 					// reader mode.
@@ -4481,7 +4482,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 {
 	var retObj = new Object();
 	retObj.offsetValid = true;
-	retObj.msgDeleted = false;
+	retObj.msgNotReadable = false;
 	retObj.userReplied = false;
 	retObj.lastKeypress = "";
 	retObj.newMsgOffset = -1;
@@ -4500,10 +4501,11 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		return retObj;
 	}
 
-	// See if the message is marked as deleted.  If so, don't let the
-	// user read it, just silently return.
-	retObj.msgDeleted = ((msgHeader.attr & MSG_DELETE) == MSG_DELETE);
-	if (retObj.msgDeleted)
+	// If this message is not readable for the user (it's marked as deleted and
+	// the system is set to not show deleted messages, etc.), then don't let the
+	// user read it, and just silently return.
+	retObj.msgNotReadable = !isReadableMsgHdr(msgHeader, this.subBoardCode);
+	if (retObj.msgNotReadable)
 		return retObj;
 
 	// Update the message list index variables so that the message list is in
@@ -4604,7 +4606,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 {
 	var retObj = new Object();
 	retObj.offsetValid = true;
-	retObj.msgDeleted = false;
+	retObj.msgNotReadable = false;
 	retObj.userReplied = false;
 	retObj.lastKeypress = "";
 	retObj.newMsgOffset = -1;
@@ -4855,9 +4857,9 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					// Let the user reply to the message.
 					var replyRetObj = this.ReplyToMsg(extdMsgHdr, msgInfo.msgText, privateReply, pOffset);
 													  retObj.userReplied = replyRetObj.postSucceeded;
-					//retObj.msgDeleted = replyRetObj.msgWasDeleted;
+					//retObj.msgNotReadable = replyRetObj.msgWasDeleted;
 					var msgWasDeleted = replyRetObj.msgWasDeleted;
-					//if (retObj.msgDeleted)
+					//if (retObj.msgNotReadable)
 					if (msgWasDeleted)
 					{
 						var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
@@ -5400,7 +5402,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 {
 	var retObj = new Object();
 	retObj.offsetValid = true;
-	retObj.msgDeleted = false;
+	retObj.msgNotReadable = false;
 	retObj.userReplied = false;
 	retObj.lastKeypress = "";
 	retObj.newMsgOffset = -1;
@@ -5585,7 +5587,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					// Let the user reply to the message
 					var replyRetObj = this.ReplyToMsg(extdMsgHdr, msgAndAttachmentInfo.msgText, privateReply, pOffset);
 					retObj.userReplied = replyRetObj.postSucceeded;
-					//retObj.msgDeleted = replyRetObj.msgWasDeleted;
+					//retObj.msgNotReadable = replyRetObj.msgWasDeleted;
 					var msgWasDeleted = replyRetObj.msgWasDeleted;
 					if (msgWasDeleted)
 					{
@@ -6213,7 +6215,8 @@ function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea)
 						continueGoingToPrevSubBoard = false; // No search results, so don't keep going to the previous sub-board.
 						// Go to the user's last read message.  If the message index ends up
 						// below 0, then go to the last message not marked as deleted.
-						retObj.msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+						//retObj.msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+						retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
 						if (retObj.msgIndex >= 0)
 							retObj.changedMsgArea = true;
 						else
@@ -6359,7 +6362,8 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 						continueGoingToNextSubBoard = false; // No search results, so don't keep going to the next sub-board.
 						// Go to the user's last read message.  If the message index ends up
 						// below 0, then go to the first message not marked as deleted.
-						retObj.msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+						//retObj.msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+						retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
 						if (retObj.msgIndex >= 0)
 							retObj.changedMsgArea = true;
 						else
@@ -12253,7 +12257,8 @@ function DigDistMsgReader_GetLastReadMsgIdx(pMailStartFromFirst)
 	}
 	else
 	{
-		msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+		//msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+		msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
 		// Sanity checking for msgIndex (note: this function should return -1 if
 		// there is no last read message).
 		if ((this.msgbase != null) && this.msgbase.is_open)
@@ -12303,7 +12308,8 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	// just use 0.  Otherwise, get the user's scan pointer message index.
 	var msgIdx = 0;
 	//if (msg_area.sub[this.subBoardCode].scan_ptr != 4294967295) // Crazy value the first time a user reads messages
-	msgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].scan_ptr);
+	//msgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].scan_ptr);
+	msgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
 	// Sanity checking for msgIdx
 	if ((msgIdx < 0) || (msgIdx >= this.msgbase.total_msgs))
 	{
@@ -12439,7 +12445,10 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 			// Fall back to thread_next if the Synchronet version is below 3.16 or there is
 			// no thread_id field in the header
 			else if ((typeof(pMsgHdr.thread_next) == "number") && (pMsgHdr.thread_next > 0))
-				newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_next);
+			{
+				//newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_next);
+				newMsgOffset = this.GetMsgIdx(pMsgHdr.thread_next);
+			}
 			break;
 		case THREAD_BY_TITLE:
 		case THREAD_BY_AUTHOR:
@@ -12619,6 +12628,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 						{
 							//nextMsgOffset = prevMsgHdr.offset;
 							nextMsgOffset = this.GetMsgIdx(prevMsgHdr.number);
+							nextMsgOffset = 0;
 						}
 					}
 				}
@@ -12628,18 +12638,27 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 			// Fall back to thread_next if the Synchronet version is below 3.16 or there is
 			// no thread_id field in the header
 			else if ((typeof(pMsgHdr.thread_back) == "number") && (pMsgHdr.thread_back > 0))
-				newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_back);
+			{
+				//newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_back);
+				newMsgOffset = this.GetMsgIdx(pMsgHdr.thread_back);
+				if (newMsgOffset < 0)
+					newMsgOffset = 0;
+			}
 
 			/*
 			// If thread_back is valid for the message header, then use that.
 			if ((typeof(pMsgHdr.thread_back) == "number") && (pMsgHdr.thread_back > 0))
-				newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_back);
+			{
+				//newMsgOffset = this.AbsMsgNumToIdx(pMsgHdr.thread_back);
+				newMsgOffset = this.GetMsgIdx(pMsgHdr.thread_back);
+			}
 			else
 			{
 				// If thread_id is defined and the index of the first message
 				// in the thread is before the current message, then search
 				// backwards for messages with a matching thread_id.
-				var firstThreadMsgIdx = this.AbsMsgNumToIdx(pMsgHdr.thread_first);
+				//var firstThreadMsgIdx = this.AbsMsgNumToIdx(pMsgHdr.thread_first);
+				var firstThreadMsgIdx = this.GetMsgIdx(pMsgHdr.thread_first);
 				if ((typeof(pMsgHdr.thread_id) == "number") && (firstThreadMsgIdx < pMsgHdr.offset))
 				{
 					// Note (2014-10-11): Digital Man said thread_id was
@@ -14846,6 +14865,8 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 				var lastReadMsgHdr = pMsgBase.get_msg_header(false, msg_area.sub[pSubBoardCode].last_read, false);
 				//var lastReadMsgOffset = (lastReadMsgHdr != null ? lastReadMsgHdr.offset : 0);
 				var lastReadMsgOffset = (lastReadMsgHdr != null ? this.GetMsgIdx(lastReadMsgHdr.number) : 0);
+				if (lastReadMsgOffset < 0)
+					lastReadMsgOffset = 0;
 				//return (pMsgHdr.offset > lastReadMsgOffset);
 				return (this.GetMsgIdx(pMsgHdr.number) > lastReadMsgOffset);
 			}
@@ -17374,10 +17395,13 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	// Let the sysop see unvalidated messages and private messages but not other users.
 	if (gIsSysop)
 	{
-		if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0)) ||
-		    (((pMsgHdr.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdr.to)))
+		if (pSubBoardCode != "mail")
 		{
-			return false;
+			if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0)) ||
+			    (((pMsgHdr.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdr.to)))
+			{
+				return false;
+			}
 		}
 	}
 	// If the message is deleted, determine whether it should be viewable, based
