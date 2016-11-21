@@ -205,6 +205,9 @@
  *                              like to have the reader not display vote messages
  *                              at all.  I may need to use the get_all_msg_headers()
  *                              method for that.
+ * 2016-11-20 Eric Oulashin     Continued working on updates for Synchronet's
+ *                              voting support - Mainly filtering out voting
+ *                              messages etc.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -293,8 +296,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 1";
-var READER_DATE = "2016-11-19";
+var READER_VERSION = "1.17 Beta 2";
+var READER_DATE = "2016-11-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -734,6 +737,13 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// arguments can specify another mode.
 	this.startMode = READER_MODE_LIST;
 
+	// hdrsForCurrentSubBoard is an array that will be populated with the
+	// message headers for the current sub-board.
+	this.hdrsForCurrentSubBoard = new Array();
+	// hdrsForCurrentSubBoardByMsgNum is an object that maps absolute message numbers
+	// to their index to hdrsForCurrentSubBoard
+	this.hdrsForCurrentSubBoardByMsgNum = new Object();
+
 	// msgSearchHdrs is an object containing message headers found via searching.
 	// It is indexed by internal message area code.  Each internal code index
 	// will specify an object containing the following properties:
@@ -888,6 +898,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.text.postOnSubBoard = "\1n\1gPost on %s %s";
 
 	// Set the methods for the object
+	this.PopulateHdrsForCurrentSubBoard = DigDistMsgReader_PopulateHdrsForCurrentSubBoard;
+	this.FilterMsgHdrsIntoHdrsForCurrentSubBoard = DigDistMsgReader_FilterMsgHdrsIntoHdrsForCurrentSubBoard;
+	this.GetMsgIdx = DigDistMsgReader_GetMsgIdx;
 	this.RefreshSearchResultMsgHdr = DigDistMsgReader_RefreshSearchResultMsgHdr;   // Refreshes a message header in the search results
 	this.SearchMessages = DigDistMsgReader_SearchMessages; // Prompts the user for search text, then lists/reads messages, performing the search
 	this.ReadMessages = DigDistMsgReader_ReadMessages;
@@ -1419,7 +1432,117 @@ function DigDistMsgReader_SetSubBoardCode(pSubCode)
 	this.readingPersonalEmail = (this.subBoardCode == "mail");
 }
 
-// Refreshes a message header in the message header arrays in this.msgSearchHdrs.
+// For the DigDistMsgReader class: Populates the hdrsForCurrentSubBoard
+// array with message headers from the current sub-board.  Filters out
+// messages that are deleted, unvalidated, private, and voting messages.
+function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
+{
+	if ((this.msgbase === null) || (!this.msgbase.is_open) || (this.subBoardCode == "mail"))
+	{
+		this.hdrsForCurrentSubBoard = [];
+		this.hdrsForCurrentSubBoardByMsgNum = new Object();
+		return;
+	}
+
+	// First get all headers in a temporary array, then filter them into
+	// this.hdrsForCurrentSubBoard.
+	var tmpHdrs;
+	// If get_all_msg_headers exists as a function, then use it.  Otherwise,
+	// iterate through all message offsets and get the headers.
+	if (typeof(this.msgbase.get_all_msg_headers) === "function")
+	{
+		// Pass false to get_all_msg_headers() to tell it not to return vote messages
+		// (the parameter was introduced in Synchronet 3.17+)
+		tmpHdrs = this.msgbase.get_all_msg_headers(false);
+	}
+	else
+	{
+		// Synchronet 3.15 or earlier
+		tmpHdrs = [];
+		var msgHdr;
+		for (var msgIdx = 0; msgIdx < this.msgbase.total_msgs; ++msgIdx)
+		{
+			msgHdr = this.msgbase.get_msg_header(true, msgIdx, expandFields);
+			tmpHdrs.push(msgHdr);
+		}
+	}
+
+	// Filter the headers into this.hdrsForCurrentSubBoard
+	this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpHdrs, true);
+}
+
+// For the DigDistMsgReader class: Takes an array of message headers in the current
+// sub-board and filters them into this.hdrsForCurrentSubBoard and
+// this.hdrsForCurrentSubBoardByMsgNum based on which messages are readable to the
+// user.
+//
+// Parameters:
+//  pMsgHdrs: An array/object of message header objects
+//  pClearFirst: Boolean - Whether or not to empty this.hdrsForCurrentSubBoard
+//               and this.hdrsForCurrentSubBoardByMsgNum first.
+function DigDistMsgReader_FilterMsgHdrsIntoHdrsForCurrentSubBoard(pMsgHdrs, pClearFirst)
+{
+	if (pClearFirst)
+	{
+		this.hdrsForCurrentSubBoard = [];
+		this.hdrsForCurrentSubBoardByMsgNum = new Object();
+	}
+	for (var prop in pMsgHdrs)
+	{
+		// Only add the message header if the message is readable to the user
+		if (isReadableMsgHdr(pMsgHdrs[prop], this.subBoardCode))
+		{
+			this.hdrsForCurrentSubBoard.push(pMsgHdrs[prop]);
+			this.hdrsForCurrentSubBoardByMsgNum[pMsgHdrs[prop].number] = this.hdrsForCurrentSubBoard.length - 1;
+		}
+	}
+}
+
+// For the DigDistMsgReader class: Gets the message offset (index) for a message, given
+// a message header.  The returned index is for the object's message header array(s), if
+// populated, in the priority of search headers, then hdrsForCurrentSubBoard.  If neither
+// of those are populated, the offset of the header in the messagebase will be returned.
+//
+// Parameters:
+//  pHdrOrMsgNum: Can either be a message header object or a message number.
+//
+// Return value: The message index (or offset in the messagebase)
+function DigDistMsgReader_GetMsgIdx(pHdrOrMsgNum)
+{
+	var msgNum = 0;
+	if (typeof(pHdrOrMsgNum) == "object")
+		msgNum = pHdrOrMsgNum.number;
+	else if (typeof(pHdrOrMsgNum) == "number")
+		msgNum = pHdrOrMsgNum;
+	else
+		return 0;
+	
+	var msgIdx = 0;
+	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
+	    (this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
+	{
+		for (var i = 0; i < this.msgSearchHdrs[this.subBoardCode].indexed.length; ++i)
+		{
+			if (this.msgSearchHdrs[this.subBoardCode].indexed[i].number == msgNum)
+			{
+				msgIdx = i;
+				break;
+			}
+		}
+	}
+	else if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(msgNum))
+		msgIdx = this.hdrsForCurrentSubBoardByMsgNum[msgNum];
+	else
+	{
+		var msgHdr = this.msgbase.get_msg_header(false, msgNum, false);
+		if (msgHdr != null)
+			msgIdx = msgHdr.offset;
+	}
+	return msgIdx;
+}
+
+// For the DigDistMsgReader class: Refreshes a message header in the message header
+// arrays in this.msgSearchHdrs.
 //
 // Parameters:
 //  pMsgIndex: The index (0-based) of the message header
@@ -1578,52 +1701,52 @@ function DigDistMsgReader_ClearSearchData()
 //               stoppedReading: Boolean - Whether or not the user stopped reading.
 //                               This can also be true if there is an error.
 function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
-                                              pAllowChgArea, pReturnOnNextAreaNav,
-                                              pPauseOnNoMsgSrchResults)
+                                             pAllowChgArea, pReturnOnNextAreaNav,
+                                             pPauseOnNoMsgSrchResults)
 {
-   var retObj = new Object();
-   retObj.stoppedReading = false;
+	var retObj = new Object();
+	retObj.stoppedReading = false;
 
-   // Set the sub-board code if applicable
-   var previousSubBoardCode = this.subBoardCode;
-   if (typeof(pSubBoardCode) == "string")
-   {
-      if (subBoardCodeIsValid(pSubBoardCode))
-         this.setSubBoardCode(pSubBoardCode);
-      else
-      {
-         console.print("\1n\1h\1yWarning: \1wThe Message Reader connot continue because an invalid");
-         console.crlf();
-         console.print("sub-board code was specified (" + pSubBoardCode + "). Please notify the sysop.");
-         console.crlf();
-         console.pause();
-         retObj.stoppedReading = true;
-         return retObj;
-      }
-   }
-   // (re)-open the message base
-   if (previousSubBoardCode != this.subBoardCode)
-   {
-      if ((this.msgbase != null) && (this.msgbase.is_open))
-         this.msgbase.close();
-      this.msgbase = new MsgBase(this.subBoardCode);
-   }
-   else if (this.msgbase == null)
-       this.msgbase = new MsgBase(this.subBoardCode);
+	// Set the sub-board code if applicable
+	var previousSubBoardCode = this.subBoardCode;
+	if (typeof(pSubBoardCode) == "string")
+	{
+		if (subBoardCodeIsValid(pSubBoardCode))
+			this.setSubBoardCode(pSubBoardCode);
+		else
+		{
+			console.print("\1n\1h\1yWarning: \1wThe Message Reader connot continue because an invalid");
+			console.crlf();
+			console.print("sub-board code was specified (" + pSubBoardCode + "). Please notify the sysop.");
+			console.crlf();
+			console.pause();
+			retObj.stoppedReading = true;
+			return retObj;
+		}
+	}
+	// (re)-open the message base
+	if (previousSubBoardCode != this.subBoardCode)
+	{
+		if ((this.msgbase != null) && (this.msgbase.is_open))
+			this.msgbase.close();
+		this.msgbase = new MsgBase(this.subBoardCode);
+	}
+	else if (this.msgbase == null)
+		this.msgbase = new MsgBase(this.subBoardCode);
 
-   // Open the sub-board.  If the message base was not opened, then output
-   // an error and return.
+	// Open the sub-board.  If the message base was not opened, then output
+	// an error and return.
 	if (!this.msgbase.is_open && !this.msgbase.open())
 	{
-      console.print("\1n");
-      console.crlf();
-      console.print("\1h\1y* \1wUnable to open message sub-board:");
-      console.crlf();
-      console.print(subBoardGrpAndName(this.subBoardCode));
-      console.crlf();
-      console.pause();
-      retObj.stoppedReading = true;
-      return retObj;
+		console.print("\1n");
+		console.crlf();
+		console.print("\1h\1y* \1wUnable to open message sub-board:");
+		console.crlf();
+		console.print(subBoardGrpAndName(this.subBoardCode));
+		console.crlf();
+		console.pause();
+		retObj.stoppedReading = true;
+		return retObj;
 	}
 
 	// Populate this.msgSearchHdrs for the current sub-board if there is a search
@@ -1635,7 +1758,11 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		retObj.stoppedReading = false;
 		return retObj;
 	}
-	
+	// If not searching, then populate the array of all readable headers for the
+	// current sub-board.
+	if (!this.SearchingAndResultObjsDefinedForCurSub())
+		this.PopulateHdrsForCurrentSubBoard();
+
 	// Check the pAllowChgArea parameter.  If it's a boolean, then use it.  If
 	// not, then check to see if we're reading personal mail - If not, then allow
 	// the user to change to a different message area.
@@ -1669,6 +1796,14 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		else
 			selectedMessageOffset = 0;
 	}
+	else if (this.hdrsForCurrentSubBoard.length > 0)
+	{
+		selectedMessageOffset = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
+		if (selectedMessageOffset < 0)
+			selectedMessageOffset = 0;
+		else if (selectedMessageOffset >= this.hdrsForCurrentSubBoard.length)
+			selectedMessageOffset = this.hdrsForCurrentSubBoard.length - 1;
+	}
 	else
 		selectedMessageOffset = -1;
 	var otherRetObj = null;
@@ -1683,7 +1818,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 				// index is -1, the ReadMessages method will use the user's
 				// last-read message index.
 				otherRetObj = this.ReadMessages(null, selectedMessageOffset, true,
-				                                allowChgMsgArea, pReturnOnNextAreaNav);
+				allowChgMsgArea, pReturnOnNextAreaNav);
 				// If the user wants to quit or if there was an error, then stop
 				// the input loop.
 				if (otherRetObj.stoppedReading)
@@ -1729,13 +1864,13 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		}
 	}
 
-   // Close the message base object (if it has not been closed already),
-   // re-enable the normal text attribute, and clear the screen.
-   if (this.msgbase != null)
-   {
-      this.msgbase.close();
-      this.msgbase = null;
-   }
+	// Close the message base object (if it has not been closed already),
+	// re-enable the normal text attribute, and clear the screen.
+	if (this.msgbase != null)
+	{
+		this.msgbase.close();
+		this.msgbase = null;
+	}
 	console.clear("\1n");
 
 	return retObj;
@@ -2700,7 +2835,6 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 			{
 				var goToPrevRetval = this.GoToPrevSubBoardForEnhReader(allowChgMsgArea);
 				retObj.stoppedReading = goToPrevRetval.shouldStopReading;
-				// If we're going to stop reading, then 
 				if (retObj.stoppedReading)
 					msgIndex = 0;
 				else if (goToPrevRetval.changedMsgArea)
@@ -3488,7 +3622,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
 											+ "Read message "
 											+ this.colors["readMsgConfirmNumberColor"]
-											+ +(msgHeader.offset+1)
+											//+ +(msgHeader.offset+1)
+											+ +(this.GetMsgIdx(msgHeader.number) + 1)
 											+ this.colors["readMsgConfirmColor"]
 											+ ": Are you sure";
 					console.gotoxy(1, console.screen_rows);
@@ -3507,7 +3642,10 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					if (this.SearchingAndResultObjsDefinedForCurSub())
 						retObj.selectedMsgOffset = this.lightbarListSelectedMsgIdx;
 					else
-						retObj.selectedMsgOffset = msgHeader.offset;
+					{
+						//retObj.selectedMsgOffset = msgHeader.offset;
+						retObj.selectedMsgOffset = this.GetMsgIdx(msgHeader.number);
+					}
 					// Return from here so that the calling function can switch into
 					// reader mode.
 					continueOn = false;
@@ -4101,7 +4239,8 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 		}
 	}
 
-	var msgNum = (typeof(pMsgNum) == "number" ? pMsgNum : pMsgHeader.offset+1);
+	//var msgNum = (typeof(pMsgNum) == "number" ? pMsgNum : pMsgHeader.offset+1);
+	var msgNum = (typeof(pMsgNum) == "number" ? pMsgNum : this.GetMsgIdx(pMsgHeader.number)+1);
 
 	// Determine if the message has been deleted.
 	var msgDeleted = ((pMsgHeader.attr & MSG_DELETE) == MSG_DELETE);
@@ -4388,7 +4527,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 
 	// Get the message text and see if it has any ANSI codes.  If it has ANSI codes,
 	// then don't use the scrolling interface so that the ANSI gets displayed properly.
-	var messageText = this.msgbase.get_msg_body(true, msgHeader.offset);
+	var messageText = this.msgbase.get_msg_body(false, msgHeader.number);
 	// If the message has ANSI content, then use the scrolling interface only
 	// if frame.js is available on the BBS machine and the option to use the
 	// scrolling interface for ANSI messages is enabled.
@@ -4414,7 +4553,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	if (userNameHandleAliasMatch(msgHeader.to))
 	{
 		msgHeader.attr |= MSG_READ;
-		//var successfullySavedMsgHdr = this.msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
 		var successfullySavedMsgHdr = this.msgbase.put_msg_header(false, msgHeader.number, msgHeader);
 		//var successfullySavedMsgHdr = this.msgbase.put_msg_header(msgHeader.number, msgHeader);
 		if (this.SearchTypePopulatesSearchResults() && successfullySavedMsgHdr)
@@ -4425,7 +4563,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		{
 			writeToSysAndNodeLog("Failed to save message header with the READ attribute set!", LOG_ERR);
 			writeToSysAndNodeLog(getMsgAreaDescStr(this.msgbase), LOG_ERR);
-			writeToSysAndNodeLog(format("Message offset: %d, number: %d", msgHeader.offset, msgHeader.number), LOG_ERR);
+			//writeToSysAndNodeLog(format("Message offset: %d, number: %d", msgHeader.offset, msgHeader.number), LOG_ERR);
+			writeToSysAndNodeLog(format("Message offset/index: %d, number: %d", this.GetMsgIdx(msgHeader.number), msgHeader.number), LOG_ERR);
 			writeToSysAndNodeLog("Status: " + this.msgbase.status, LOG_ERR);
 			writeToSysAndNodeLog("Error: " + this.msgbase.error, LOG_ERR);
 			/*
@@ -6126,6 +6265,7 @@ function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea)
 					else
 					{
 						retObj.changedMsgArea = true;
+						this.PopulateHdrsForCurrentSubBoard();
 						if ((oldHotkeyHelpLine != this.enhReadHelpLine) && this.scrollingReaderInterface && console.term_supports(USER_ANSI))
 							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, pAllowChgMsgArea);
 					}
@@ -6256,6 +6396,7 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 						{
 							retObj.changedMsgArea = true;
 							continueGoingToNextSubBoard = false;
+							this.PopulateHdrsForCurrentSubBoard();
 							retObj.msgIndex = 0;
 							if (this.scrollingReaderInterface && console.term_supports(USER_ANSI))
 								this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, pAllowChgMsgArea);
@@ -7489,115 +7630,122 @@ function DigDistMsgReader_ReadConfigFile()
 //                          If the message wasn't edited/saved, this will be -1.
 function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 {
-   var returnObj = new Object();
-   returnObj.userCannotEdit = false;
-   returnObj.userConfirmed = false;
-   returnObj.msgEdited = false;
-   returnObj.newMsgIdx = -1;
+	var returnObj = new Object();
+	returnObj.userCannotEdit = false;
+	returnObj.userConfirmed = false;
+	returnObj.msgEdited = false;
+	returnObj.newMsgIdx = -1;
 
-   // Only let the user edit the message if they're a sysop or
-   // if they wrote the message.
-   var msgHeader = this.GetMsgHdrByIdx(pMsgIndex);
-   if (!gIsSysop && (msgHeader.from != user.name) && (msgHeader.from != user.alias) && (msgHeader.from != user.handle))
-   {
-      console.print("\1n\1h\1wCannot edit message #\1y" + +(pMsgIndex+1) +
-                    " \1wbecause it's not yours or you're not a sysop.\r\n\1p");
-      returnObj.userCannotEdit = true;
-      return returnObj;
-   }
+	// Only let the user edit the message if they're a sysop or
+	// if they wrote the message.
+	var msgHeader = this.GetMsgHdrByIdx(pMsgIndex);
+	if (!gIsSysop && (msgHeader.from != user.name) && (msgHeader.from != user.alias) && (msgHeader.from != user.handle))
+	{
+		console.print("\1n\1h\1wCannot edit message #\1y" + +(pMsgIndex+1) +
+		              " \1wbecause it's not yours or you're not a sysop.\r\n\1p");
+		returnObj.userCannotEdit = true;
+		return returnObj;
+	}
 
-   // Confirm the action with the user (default to no).
-   returnObj.userConfirmed = !console.noyes(this.text.msgEditConfirmText.replace("%d", +(pMsgIndex+1)));
-   if (!returnObj.userConfirmed)
-      return returnObj;
+	// Confirm the action with the user (default to no).
+	returnObj.userConfirmed = !console.noyes(this.text.msgEditConfirmText.replace("%d", +(pMsgIndex+1)));
+	if (!returnObj.userConfirmed)
+		return returnObj;
 
-   // Dump the message body to a temporary file in the node dir
-   var originalMsgBody = this.msgbase.get_msg_body(true, pMsgIndex);
-   var tempFilename = system.node_dir + "DDMsgLister_message.txt";
-   var tmpFile = new File(tempFilename);
-   if (tmpFile.open("w"))
-   {
-      var wroteToTempFile = tmpFile.write(word_wrap(originalMsgBody, 79));
-      tmpFile.close();
-      // If we were able to write to the temp file, then let the user
-      // edit the file.
-      if (wroteToTempFile)
-      {
-         // The following lines set some attributes in the bbs object
-         // in an attempt to make the "To" name and subject appear
-         // correct in the editor.
-         // TODO: On May 14, 2013, Digital Man said bbs.msg_offset will
-         // probably be removed because it doesn't provide any benefit.
-         // bbs.msg_number is a unique message identifier that won't
-         // change, so it's probably best for scripts to use bbs.msg_number
-         // instead of offsets.
-         bbs.msg_to = msgHeader.to;
-         bbs.msg_to_ext = msgHeader.to_ext;
-         bbs.msg_subject = msgHeader.subject;
-         bbs.msg_offset = msgHeader.offset;
-         bbs.msg_number = msgHeader.number;
+	// Dump the message body to a temporary file in the node dir
+	//var originalMsgBody = this.msgbase.get_msg_body(true, pMsgIndex);
+	var originalMsgBody;
+	var tmpMsgHdr = this.GetMsgHdrByIdx(pMsgIndex);
+	var msgHdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
+	if (msgHdrIsBogus)
+		originalMsgBody = this.msgbase.get_msg_body(true, pMsgIndex);
+	else
+		originalMsgBody = this.msgbase.get_msg_body(false, tmpMsgHdr.number);
+	var tempFilename = system.node_dir + "DDMsgLister_message.txt";
+	var tmpFile = new File(tempFilename);
+	if (tmpFile.open("w"))
+	{
+		var wroteToTempFile = tmpFile.write(word_wrap(originalMsgBody, 79));
+		tmpFile.close();
+		// If we were able to write to the temp file, then let the user
+		// edit the file.
+		if (wroteToTempFile)
+		{
+			// The following lines set some attributes in the bbs object
+			// in an attempt to make the "To" name and subject appear
+			// correct in the editor.
+			// TODO: On May 14, 2013, Digital Man said bbs.msg_offset will
+			// probably be removed because it doesn't provide any benefit.
+			// bbs.msg_number is a unique message identifier that won't
+			// change, so it's probably best for scripts to use bbs.msg_number
+			// instead of offsets.
+			bbs.msg_to = msgHeader.to;
+			bbs.msg_to_ext = msgHeader.to_ext;
+			bbs.msg_subject = msgHeader.subject;
+			bbs.msg_offset = msgHeader.offset;
+			bbs.msg_number = msgHeader.number;
 
-         // Let the user edit the temporary file
-         console.editfile(tempFilename);
-         // Load the temp file back into msgBodyColor and have this.msgbase
-         // save the message.
-         if (tmpFile.open("r"))
-         {
-            var newMsgBody = tmpFile.read();
-            tmpFile.close();
-            // If the new message body is different from the original message
-            // body, then go ahead and save the message and mark the original
-            // message for deletion. (Checking the new & original message
-            // bodies seems to be the only way to check to see if the user
-            // aborted out of the message editor.)
-            if (newMsgBody != originalMsgBody)
-            {
-               var newHdr = { to: msgHeader.to, to_ext: msgHeader.to_ext, from: msgHeader.from,
-                              from_ext: msgHeader.from_ext, attr: msgHeader.attr,
-                              subject: msgHeader.subject };
-               var savedNewMsg = this.msgbase.save_msg(newHdr, newMsgBody);
-               // If the message was successfully saved, then mark the original
-               // message for deletion and output a message to the user.
-               if (savedNewMsg)
-               {
-                  returnObj.msgEdited = true;
-                  returnObj.newMsgIdx = this.msgbase.total_msgs - 1;
-                  var message = "\1n\1cThe edited message has been saved as a new message.";
-                  if (this.msgbase.remove_msg(true, pMsgIndex))
-                     message += "  The original has been\r\nmarked for deletion.";
-                  else
-                     message += "  \1h\1yHowever, the original\r\ncould not be marked for deletion.";
-                  message += "\r\n\1p";
-                  console.print(message);
-               }
-               else
-                  console.print("\r\n\1n\1h\1yError: \1wFailed to save the new message\r\n\1p");
-            }
-         }
-         else
-         {
-            console.print("\r\n\1n\1h\1yError: \1wUnable to read the temporary file\r\n");
-            console.print("Filename: \1b" + tempFilename + "\r\n");
-            console.pause();
-         }
-      }
-      else
-      {
-         console.print("\r\n\1n\1h\1yError: \1wUnable to write to temporary file\r\n");
-         console.print("Filename: \1b" + tempFilename + "\r\n");
-         console.pause();
-      }
-   }
-   else
-   {
-      console.print("\r\n\1n\1h\1yError: \1wUnable to open a temporary file for writing\r\n");
-      console.print("Filename: \1b" + tempFilename + "\r\n");
-      console.pause();
-   }
-   // Delete the temporary file from disk.
-   tmpFile.remove();
+			// Let the user edit the temporary file
+			console.editfile(tempFilename);
+			// Load the temp file back into msgBodyColor and have this.msgbase
+			// save the message.
+			if (tmpFile.open("r"))
+			{
+				var newMsgBody = tmpFile.read();
+				tmpFile.close();
+				// If the new message body is different from the original message
+				// body, then go ahead and save the message and mark the original
+				// message for deletion. (Checking the new & original message
+				// bodies seems to be the only way to check to see if the user
+				// aborted out of the message editor.)
+				if (newMsgBody != originalMsgBody)
+				{
+					var newHdr = { to: msgHeader.to, to_ext: msgHeader.to_ext, from: msgHeader.from,
+					               from_ext: msgHeader.from_ext, attr: msgHeader.attr,
+					               subject: msgHeader.subject };
+					var savedNewMsg = this.msgbase.save_msg(newHdr, newMsgBody);
+					// If the message was successfully saved, then mark the original
+					// message for deletion and output a message to the user.
+					if (savedNewMsg)
+					{
+						returnObj.msgEdited = true;
+						returnObj.newMsgIdx = this.msgbase.total_msgs - 1;
+						var message = "\1n\1cThe edited message has been saved as a new message.";
+						if (this.msgbase.remove_msg(true, pMsgIndex))
+							message += "  The original has been\r\nmarked for deletion.";
+						else
+							message += "  \1h\1yHowever, the original\r\ncould not be marked for deletion.";
+						message += "\r\n\1p";
+						console.print(message);
+					}
+					else
+						console.print("\r\n\1n\1h\1yError: \1wFailed to save the new message\r\n\1p");
+				}
+			}
+			else
+			{
+				console.print("\r\n\1n\1h\1yError: \1wUnable to read the temporary file\r\n");
+				console.print("Filename: \1b" + tempFilename + "\r\n");
+				console.pause();
+			}
+		}
+		else
+		{
+			console.print("\r\n\1n\1h\1yError: \1wUnable to write to temporary file\r\n");
+			console.print("Filename: \1b" + tempFilename + "\r\n");
+			console.pause();
+		}
+	}
+	else
+	{
+		console.print("\r\n\1n\1h\1yError: \1wUnable to open a temporary file for writing\r\n");
+		console.print("Filename: \1b" + tempFilename + "\r\n");
+		console.pause();
+	}
+	// Delete the temporary file from disk.
+	tmpFile.remove();
 
-   return returnObj;
+	return returnObj;
 }
 // For the DigDistMsgReader Class: Returns whether or not the user can delete
 // their messages in the sub-board (distinct from being able to delete only
@@ -7754,6 +7902,8 @@ function DigDistMsgReader_NumMessages(pCheckDeletedAttributes)
 	var numMsgs = 0;
 	if (this.SearchingAndResultObjsDefinedForCurSub())
 		numMsgs = this.msgSearchHdrs[this.subBoardCode].indexed.length;
+	else if (this.hdrsForCurrentSubBoard.length > 0)
+		numMsgs = this.hdrsForCurrentSubBoard.length;
 	else if ((this.msgbase != null) && this.msgbase.is_open)
 		numMsgs = this.msgbase.total_msgs;
 
@@ -7845,8 +7995,9 @@ function DigDistMsgReader_IsValidMessageNum(pMsgNum)
 }
 
 // For the DigDistMsgReader class: Returns a message header by index.  Will look
-// in this.msgSearchHdrs if it's not empty, or from this.msgbase.  This function
-// assumes that this.msgbase is open.
+// in this.msgSearchHdrs if it's not empty, then in this.hdrsForCurrentSubBoard
+// if it's not empty, then from this.msgbase.  This function assumes that
+// this.msgbase is open.
 //
 // Parameters:
 //  pMsgIdx: The message index (0-based)
@@ -7859,6 +8010,11 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields)
 	{
 		if ((pMsgIdx >= 0) && (pMsgIdx < this.msgSearchHdrs[this.subBoardCode].indexed.length))
 			msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIdx];
+	}
+	else if (this.hdrsForCurrentSubBoard.length > 0)
+	{
+		if ((pMsgIdx >= 0) && (pMsgIdx < this.hdrsForCurrentSubBoard.length))
+			msgHdr = this.hdrsForCurrentSubBoard[pMsgIdx];
 	}
 	else
 	{
@@ -7874,8 +8030,9 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields)
 }
 
 // For the DigDistMsgReader class: Returns a message header by message number
-// (1-based).  Will look in this.msgSearchHdrs if it's not empty, or from
-// this.msgbase.  This function assumes that this.msgbase is open.
+// (1-based).  Will look in this.msgSearchHdrs if it's not empty, then in
+// this.hdrsForCurrentSubBoard if it's not empty, then from this.msgbase.
+// This function assumes that this.msgbase is open.
 //
 // Parameters:
 //  pMsgNum: The message number (1-based)
@@ -7889,7 +8046,12 @@ function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum, pExpandFields)
 			(this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
 	{
 		if ((pMsgNum > 0) && (pMsgNum <= this.msgSearchHdrs[this.subBoardCode].indexed.length))
-		msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgNum-1];
+			msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgNum-1];
+	}
+	else if (this.hdrsForCurrentSubBoard.length > 0)
+	{
+		if ((pMsgNum > 0) && (pMsgNum <= this.hdrsForCurrentSubBoard.length))
+			msgHdr = this.hdrsForCurrentSubBoard.length[pMsgNum-1];
 	}
 	else
 	{
@@ -7976,10 +8138,7 @@ function absMsgNumToIdx(pMsgbase, pMsgNum)
 	// for the user's scan_ptr meaning it should point to the latest message
 	// in the messagebase.
 	if (pMsgNum == 4294967295)
-	{
-		//console.print("Here!\r\n\1p"); // Temporary
 		messageIdx = pMsgbase.total_msgs - 1; // Or this.NumMessages() - 1 but can't because this isn't a class member function
-	}
 	else
 	{
 		var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, false);
@@ -7990,7 +8149,6 @@ function absMsgNumToIdx(pMsgbase, pMsgNum)
 		}
 		messageIdx = (msgHdr != null ? msgHdr.offset : -1);
 	}
-	//return (msgHdr != null ? msgHdr.offset : -1);
 	return messageIdx;
 }
 
@@ -8474,10 +8632,12 @@ function DigDistMsgReader_FindNextNonDeletedMsgIdx(pOffset, pForward)
 		var numOfMessages = this.NumMessages();
 		if (pOffset < numOfMessages - 1)
 		{
+			var hdrIsBogus;
 			for (var messageIdx = pOffset+1; (messageIdx < numOfMessages) && (newMsgIdx == -1); ++messageIdx)
 			{
 				var nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-				if ((nextMsgHdr != null) && ((nextMsgHdr.attr & MSG_DELETE) == 0))
+				hdrIsBogus = (nextMsgHdr.hasOwnProperty("isBogus") ? nextMsgHdr.isBogus : false);
+				if ((nextMsgHdr != null) && !hdrIsBogus && ((nextMsgHdr.attr & MSG_DELETE) == 0))
 					newMsgIdx = messageIdx;
 			}
 		}
@@ -8487,10 +8647,12 @@ function DigDistMsgReader_FindNextNonDeletedMsgIdx(pOffset, pForward)
 		// Search backward for a message that isn't marked for deletion.
 		if (pOffset > 0)
 		{
+			var hdrIsBogus;
 			for (var messageIdx = pOffset-1; (messageIdx >= 0) && (newMsgIdx == -1); --messageIdx)
 			{
 				var prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-				if ((prevMsgHdr != null) && ((prevMsgHdr.attr & MSG_DELETE) == 0))
+				hdrIsBogus = (prevMsgHdr.hasOwnProperty("isBogus") ? prevMsgHdr.isBogus : false);
+				if ((prevMsgHdr != null) && !hdrIsBogus && ((prevMsgHdr.attr & MSG_DELETE) == 0))
 					newMsgIdx = messageIdx;
 			}
 		}
@@ -8538,6 +8700,7 @@ function DigDistMsgReader_ChangeSubBoard(pNewSubBoardCode)
 			this.msgbase.close();
 		this.setSubBoardCode(newSubBoardCode);
 		this.msgbase = new MsgBase(this.subBoardCode);
+		this.PopulateHdrsForCurrentSubBoard();
 	}
 	else if (this.msgbase == null)
 		this.msgbase = new MsgBase(this.subBoardCode);
@@ -8677,7 +8840,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			}
 			else
 			{
-				var msgText = this.msgbase.get_msg_body(true, msgHeader.offset);
+				var msgText = this.msgbase.get_msg_body(false, msgHeader.number);
 				//quoteFile.write(word_wrap(msgText, 80/*79*/));
 				quoteFile.write(msgText);
 			}
@@ -8786,21 +8949,38 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		// include the user's reply in the message matches or other new messages
 		// that may have been posted that match the user's search.
 		// TODO: Make sure this works for a newscan & new-to-user scan
-		if (retObj.postSucceeded && retObj.msgbaseReOpened &&
-		    this.SearchTypePopulatesSearchResults() &&
-		    this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
-		    (this.msgbase.total_msgs > numMessagesBefore))
+		if (retObj.postSucceeded && retObj.msgbaseReOpened && (this.msgbase.total_msgs > numMessagesBefore))
 		{
-			if (!this.msgSearchHdrs.hasOwnProperty(this.subBoardCode))
-				this.msgSearchHdrs[this.subBoardCode] = searchMsgbase(this.subBoardCode, this.msgbase, this.searchType, this.searchString, this.readingPersonalEmailFromUser);
-			else
+			if (this.SearchTypePopulatesSearchResults() && this.msgSearchHdrs.hasOwnProperty(this.subBoardCode))
 			{
-				var msgHeaders = searchMsgbase(this.subBoardCode, this.msgbase, this.searchType, this.searchString, this.readingPersonalEmailFromUser, numMessagesBefore, this.msgbase.total_msgs);
-				var msgNum = 0;
-				for (var i = 0; i < msgHeaders.indexed.length; ++i)
+				if (!this.msgSearchHdrs.hasOwnProperty(this.subBoardCode))
+					this.msgSearchHdrs[this.subBoardCode] = searchMsgbase(this.subBoardCode, this.msgbase, this.searchType, this.searchString, this.readingPersonalEmailFromUser);
+				else
 				{
-					this.msgSearchHdrs[this.subBoardCode].indexed.push(msgHeaders.indexed[i]);
-					msgNum = msgHeaders.indexed[i].offset + 1;
+					var msgHeaders = searchMsgbase(this.subBoardCode, this.msgbase, this.searchType, this.searchString, this.readingPersonalEmailFromUser, numMessagesBefore, this.msgbase.total_msgs);
+					var msgNum = 0;
+					for (var i = 0; i < msgHeaders.indexed.length; ++i)
+					{
+						this.msgSearchHdrs[this.subBoardCode].indexed.push(msgHeaders.indexed[i]);
+						msgNum = msgHeaders.indexed[i].offset + 1;
+					}
+				}
+			}
+			else if (this.hdrsForCurrentSubBoard.length > 0)
+			{
+				if (typeof(this.msgbase.get_all_msg_headers) === "function")
+				{
+					// Pass false to get_all_msg_headers() to tell it not to return vote messages
+					// (the parameter was introduced in Synchronet 3.17+)
+					this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(this.msgbase.get_all_msg_headers(false), true);
+				}
+				else
+				{
+					// Can't use get_all_msg_headers().  Also, append the new message
+					// headers to the end of this.hdrsForCurrentSubBoard and
+					// this.hdrsForCurrentSubBoardByMsgNum.
+					var msgHeaders = searchMsgbase(this.subBoardCode, this.msgbase, this.searchType, this.searchString, this.readingPersonalEmailFromUser, numMessagesBefore, this.msgbase.total_msgs);
+					this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(msgHeaders.indexed, false);
 				}
 			}
 		}
@@ -9709,7 +9889,8 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 		// If we are to delete the message, then delete it.
 		if (deleteMsg)
 		{
-			msgWasDeleted = this.msgbase.remove_msg(true, msgHeader.offset);
+			//msgWasDeleted = this.msgbase.remove_msg(true, msgHeader.offset);
+			msgWasDeleted = this.msgbase.remove_msg(false, msgHeader.number);
 			if (msgWasDeleted)
 			{
 				// If there are attachments, then delete them.
@@ -11349,7 +11530,14 @@ function DigDistMsgReader_WriteMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 		// Get the date & time when the last message was imported.
 		if (msgBase.total_msgs > 0)
 		{
-			msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, false);
+			// Get the header of the last message in the sub-board
+			msgHeader = null;
+			var msgOffset = msgBase.total_msgs - 1;
+			while ((msgHeader === null) && (msgOffset >= 0))
+			{
+				msgHeader = msgBase.get_msg_header(true, msgOffset, false);
+				--msgOffset;
+			}
 			// Construct the date & time strings of the latest post
 			if (this.msgAreaList_lastImportedMsg_showImportTime)
 			{
@@ -11877,7 +12065,7 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	var getB64Data = true;
 	if (typeof(pGetB64Data) == "boolean")
 		getB64Data = pGetB64Data;
-	var msgBody = (typeof(pMsgBody) == "string" ? pMsgBody : this.msgbase.get_msg_body(true, pMsgHdr.offset));
+	var msgBody = (typeof(pMsgBody) == "string" ? pMsgBody : this.msgbase.get_msg_body(false, pMsgHdr.number));
 	if (determineAttachments)
 	{
 		var msgInfo = determineMsgAttachments(pMsgHdr, msgBody, getB64Data);
@@ -12220,6 +12408,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 				// Look for the next message in the thread
 				var nextMsgOffset = -1;
 				var numOfMessages = this.NumMessages();
+				/*
 				if (pMsgHdr.offset < numOfMessages - 1)
 				{
 					var nextMsgHdr;
@@ -12228,6 +12417,20 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
 						if (((nextMsgHdr.attr & MSG_DELETE) == 0) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
 							nextMsgOffset = nextMsgHdr.offset;
+					}
+				}
+				*/
+				if (this.GetMsgIdx(pMsgHdr.number) < numOfMessages - 1)
+				{
+					var nextMsgHdr;
+					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
+					{
+						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
+						if (((nextMsgHdr.attr & MSG_DELETE) == 0) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
+						{
+							//nextMsgOffset = nextMsgHdr.offset;
+							nextMsgOffset = this.GetMsgIdx(nextMsgHdr.number);
+						}
 					}
 				}
 				if (nextMsgOffset > -1)
@@ -12298,6 +12501,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 				// Look for the next message that contains the given message's subject
 				var nextMsgOffset = -1;
 				var numOfMessages = this.NumMessages();
+				/*
 				if (pMsgHdr.offset < numOfMessages - 1)
 				{
 					var nextMsgHdr;
@@ -12306,6 +12510,20 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
 						if (msgHdrMatch(nextMsgHdr))
 							nextMsgOffset = nextMsgHdr.offset;
+					}
+				}
+				*/
+				if (this.GetMsgIdx(pMsgHdr.number) < numOfMessages - 1)
+				{
+					var nextMsgHdr;
+					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
+					{
+						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
+						if (msgHdrMatch(nextMsgHdr))
+						{
+							//nextMsgOffset = nextMsgHdr.offset;
+							nextMsgOffset = this.GetMsgIdx(nextMsgHdr.number);
+						}
 					}
 				}
 				if (nextMsgOffset > -1)
@@ -12379,6 +12597,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 				console.print("\1h\1ySearching\1i...\1n");
 				// Look for the previous message in the thread
 				var nextMsgOffset = -1;
+				/*
 				if (pMsgHdr.offset > 0)
 				{
 					var prevMsgHdr;
@@ -12387,6 +12606,20 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 						prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
 						if (((prevMsgHdr.attr & MSG_DELETE) == 0) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
 							nextMsgOffset = prevMsgHdr.offset;
+					}
+				}
+				*/
+				if (this.GetMsgIdx(pMsgHdr.number) > 0)
+				{
+					var prevMsgHdr;
+					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
+					{
+						prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
+						if (((prevMsgHdr.attr & MSG_DELETE) == 0) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
+						{
+							//nextMsgOffset = prevMsgHdr.offset;
+							nextMsgOffset = this.GetMsgIdx(prevMsgHdr.number);
+						}
 					}
 				}
 				if (nextMsgOffset > -1)
@@ -12503,6 +12736,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 				console.print("\1h\1ySearching\1i...\1n");
 				// Look for the next message that contains the given message's subject
 				var nextMsgOffset = -1;
+				/*
 				if (pMsgHdr.offset > 0)
 				{
 					var nextMsgHdr;
@@ -12511,6 +12745,20 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
 						if (msgHdrMatch(nextMsgHdr))
 							nextMsgOffset = nextMsgHdr.offset;
+					}
+				}
+				*/
+				if (this.GetMsgIdx(pMsgHdr.number) > 0)
+				{
+					var nextMsgHdr;
+					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
+					{
+						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
+						if (msgHdrMatch(nextMsgHdr))
+						{
+							//nextMsgOffset = nextMsgHdr.offset;
+							nextMsgOffset = this.GetMsgIdx(nextMsgHdr.number);
+						}
 					}
 				}
 				if (nextMsgOffset > -1)
@@ -12983,7 +13231,10 @@ function DigDistMsgReader_DeleteSelectedMessages()
 					// If the message header wasn't marked as deleted, then add
 					// the message index to the return object.
 					if (msgHdr != null)
-						msgWasDeleted = msgBase.remove_msg(true, msgHdr.offset);
+					{
+						//msgWasDeleted = msgBase.remove_msg(true, msgHdr.offset);
+						msgWasDeleted = msgBase.remove_msg(false, msgHdr.number);
+					}
 					else
 						msgWasDeleted = false;
 					if (msgWasDeleted)
@@ -13076,9 +13327,8 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 		{
 			// If the given message body is not a string, then get the
 			// message body from the messagebase.
-			//var messageText = this.msgbase.get_msg_body(true, msgHeader.offset);
 			if (typeof(pMsgBody) != "string")
-				pMsgBody = this.msgbase.get_msg_body(true, pMsgHdr.offset);
+				pMsgBody = this.msgbase.get_msg_body(false, pMsgHdr.number);
 			// Prepend some lines to the message body to describe where
 			// the message came from originally.
 			var newMsgBody = "This is a forwarded message from " + system.name + "\n";
@@ -14497,14 +14747,14 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 				if (readingPersonalEmailFromUser)
 				{
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
-						var msgText = strip_ctrl(pMsgBase.get_msg_body(true, pMsgHdr.offset));
+						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number));
 						return gAllPersonalEmailOptSpecified || msgIsFromUser(pMsgHdr);
 					}
 				}
 				else
 				{
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
-						var msgText = strip_ctrl(pMsgBase.get_msg_body(true, pMsgHdr.offset));
+						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number));
 						return gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr);
 					}
 				}
@@ -14512,7 +14762,7 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 			break;
 		case SEARCH_KEYWORD:
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
-				var msgText = strip_ctrl(pMsgBase.get_msg_body(true, pMsgHdr.offset));
+				var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number));
 				var keywordFound = ((pMsgHdr.subject.toUpperCase().indexOf(pSearchStr) > -1) || (msgText.toUpperCase().indexOf(pSearchStr) > -1));
 				if (pSubBoardCode == "mail")
 					return keywordFound && msgIsToUserByNum(pMsgHdr);
@@ -14594,8 +14844,10 @@ function searchMsgbase(pSubCode, pMsgbase, pSearchType, pSearchString,
 				// Get the offset of the last read message and compare it with the
 				// offset of the given message header
 				var lastReadMsgHdr = pMsgBase.get_msg_header(false, msg_area.sub[pSubBoardCode].last_read, false);
-				var lastReadMsgOffset = (lastReadMsgHdr != null ? lastReadMsgHdr.offset : 0);
-				return (pMsgHdr.offset > lastReadMsgOffset);
+				//var lastReadMsgOffset = (lastReadMsgHdr != null ? lastReadMsgHdr.offset : 0);
+				var lastReadMsgOffset = (lastReadMsgHdr != null ? this.GetMsgIdx(lastReadMsgHdr.number) : 0);
+				//return (pMsgHdr.offset > lastReadMsgOffset);
+				return (this.GetMsgIdx(pMsgHdr.number) > lastReadMsgOffset);
 			}
 			break;
 	}
@@ -17096,6 +17348,8 @@ function getBogusMsgHdr(pSubject)
 	msgHdr.subject = (typeof(pSubject) == "string" ? pSubject : "");
 	msgHdr.when_imported_time = 0;
 	msgHdr.when_written_time = 0;
+	msgHdr.when_written_zone = 0;
+	msgHdr.date = "Fri, 1 Jan 1960 00:00:00 -0000";
 	msgHdr.attr = 0;
 	msgHdr.to = "Nobody";
 	msgHdr.from = "Nobody";
@@ -17103,6 +17357,64 @@ function getBogusMsgHdr(pSubject)
 	msgHdr.offset = 0;
 	msgHdr.isBogus = true;
 	return msgHdr;
+}
+
+// Returns whether a message is readable to the user, based on its
+// header and the sub-board code.
+//
+// Parameters:
+//  pMsgHdr: The header object for the message
+//  pSubBoardCode: The internal code for the sub-board the message is in
+//
+// Return value: Boolean - Whether or not the message is readable for the user
+function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
+{
+	if (pMsgHdr === null)
+		return false;
+	// Let the sysop see unvalidated messages and private messages but not other users.
+	if (gIsSysop)
+	{
+		if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0)) ||
+		    (((pMsgHdr.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdr.to)))
+		{
+			return false;
+		}
+	}
+	// If the message is deleted, determine whether it should be viewable, based
+	// on the system settings.
+	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+	{
+		// If the user is a sysop, check whether sysops can view deleted messages.
+		// Otherwise, check whether users can view deleted messages.
+		if (gIsSysop)
+		{
+			if ((system.settings & SYS_SYSVDELM) == 0)
+				return false;
+		}
+		else
+		{
+			if ((system.settings & SYS_USRVDELM) == 0)
+				return false;
+		}
+	}
+	// The message voting and poll variables were added in sbbsdefs.js for
+	// Synchronet 3.17.  Make sure they're defined before referencing them.
+	if (typeof(MSG_UPVOTE) != "undefined")
+	{
+		if ((pMsgHdr.attr & MSG_UPVOTE) == MSG_UPVOTE)
+			return false;
+	}
+	if (typeof(MSG_DOWNVOTE) != "undefined")
+	{
+		if ((pMsgHdr.attr & MSG_DOWNVOTE) == MSG_DOWNVOTE)
+			return false;
+	}
+	if (typeof(MSG_POLL) != "undefined")
+	{
+		if ((pMsgHdr.attr & MSG_POLL) == MSG_POLL)
+			return false;
+	}
+	return true;
 }
 
 /////////////////////////////////////////////////////////////////////////
