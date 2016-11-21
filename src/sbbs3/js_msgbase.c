@@ -956,7 +956,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 	JS_DefineProperty(cx, idxobj, "number"	,val
 		,NULL,NULL,JSPROP_ENUMERATE);
 
-	if(msg.idx.attr&MSG_VOTE) {
+	if(msg.idx.attr&MSG_VOTE && !(msg.idx.attr&MSG_POLL)) {
 		val=UINT_TO_JSVAL(msg.idx.votes);
 		JS_DefineProperty(cx, idxobj, "votes"	,val
 			,NULL,NULL,JSPROP_ENUMERATE);
@@ -1609,7 +1609,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_TRUE;
 		}
 		post[off].idx = msg.idx;
-		if(msg.idx.attr&MSG_VOTE) {
+		if(msg.idx.attr&MSG_VOTE && !(msg.idx.attr&MSG_POLL)) {
 			ulong u;
 			for(u = 0; u < off; u++)
 				if(post[u].idx.number == msg.idx.remsg)
@@ -2443,6 +2443,40 @@ js_add_poll(JSContext *cx, uintN argc, jsval *arglist)
 	return ret;
 }
 
+static JSBool
+js_get_user_votes(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject*	obj=JS_THIS_OBJECT(cx, arglist);
+	jsval*		argv=JS_ARGV(cx, arglist);
+	int32		msgnum;
+	private_t*	p;
+	char*		name;
+	uint16_t	votes;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return JS_FALSE;
+	}
+
+	if(!SMB_IS_OPEN(&(p->smb)))
+		return JS_TRUE;
+
+	if(!JS_ValueToInt32(cx, argv[0], &msgnum))
+		return JS_FALSE;
+
+	if((name = (char*)JS_GetStringCharsZ(cx, JSVAL_TO_STRING(argv[1]))) == NULL)
+		return JS_FALSE;
+
+	votes = smb_voted_already(&(p->smb), msgnum, name, NET_NONE, NULL);
+
+	JS_SET_RVAL(cx, arglist,UINT_TO_JSVAL(votes));
+
+	return JS_TRUE;
+}
+
+
 
 /* MsgBase Object Properties */
 enum {
@@ -2780,6 +2814,10 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>from_net_addr</tt><td>Sender's network address"
 	"</table>"
 	)
+	,317
+	},
+	{"get_user_votes",		js_get_user_votes,		2, JSTYPE_NUMBER,	JSDOCSTR("message number, user name or alias")
+	,JSDOCSTR("Returns 0 for no votes, 1 for an up-vote, 2 for a down-vote, or in the case of a poll-response: a bit-field of votes.")
 	,317
 	},
 
