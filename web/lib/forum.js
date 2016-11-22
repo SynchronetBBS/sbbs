@@ -493,6 +493,7 @@ function voteMessage(sub, number, up) {
     if (typeof msg_area.sub[sub] === 'undefined' && sub !== 'mail') {
         return false;
     }
+    if (user.security.restrictions&UFLAG_V) return false;
     number = parseInt(number);
     if (isNaN(number)) return false;
     up = parseInt(up);
