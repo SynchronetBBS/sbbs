@@ -379,10 +379,30 @@ function getVotesInThreads(sub) {
 }
 
 function submitPollAnswers(id) {
-	$('[name="poll-' + id + '"]:checked').each(
+	$('input[name="poll-' + id + '"]:checked').each(
 		function () {
 			alert($(this).val());
 		}
 	);
 	// async ./api/forum.ssjs?call=submit-poll-answers&sub=x&id=x&answer=x&answer=x...
+}
+
+function pollControl(id, count) {
+	$('input[name="poll-' + id + '"]').each(
+		function () {
+			$(this).change(
+				function () {
+					if ($('input[name="poll-' + id + '"]:checked').length >= count) {
+						$('input[name="poll-' + id + '"]:not(:checked)').each(
+							function () { $(this).attr('disabled', true); }
+						);
+					} else {
+						$('input[name="poll-' + id + '"]:not(:checked)').each(
+							function () { $(this).attr('disabled', false); }
+						);
+					}
+				}
+			);
+		}
+	);
 }
