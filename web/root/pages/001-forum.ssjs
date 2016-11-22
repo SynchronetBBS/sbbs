@@ -108,7 +108,7 @@ var strings = {
 						close : '</ul>'
 					},
 					open : '<li class="%s"><label><input type="%s" name="poll-%s" value="%s">%s</label> %s</li>',
-					closed : '<li%s>%s %s</li>'
+					closed : '<li class="checkbox%s">%s %s</li>'
 				},
 				button : '<button id="submit-poll-%s" class="btn btn-default" onclick="submitPollAnswers(%s)">Vote</button>',
 				closed : 'This poll has been closed.',
@@ -228,8 +228,8 @@ if (typeof http_request.query.sub !== 'undefined' &&
 					function (e, i) {
 						writeln(
 							format(
-								pollData.answers&(1<<i) ? 'class="upvote-bg"' : '',
 								strings.message.body.poll.answer.closed,
+								pollData.answers&(1<<i) ? ' upvote-bg' : '',
 								e.data,
 								pollData.show_results ? header.tally[i] || 0 : ''
 							)
