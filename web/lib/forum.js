@@ -527,22 +527,39 @@ function submitPollAnswers(sub, number, answers) {
     if (typeof msg_area.sub[sub] === 'undefined') return false;
     if (msg_area.sub[sub].settings&SUB_NOVOTING) return false;
     if (user.security.restrictions&UFLAG_V) return false;
+    number = parseInt(number);
+    if (isNaN(number)) return false;
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return false;
     var ret = false;
     var header = msgBase.get_msg_header(number);
-    if (header !== null && header.attr&MSG_POLL && !(header.auxattr&POLL_CLOSED)) {
+    if (header !== null &&
+        header.attr&MSG_POLL &&
+        !(header.auxattr&POLL_CLOSED) &&
+        answers.length > 0 &&
+        (   answers.length <= header.votes ||
+            (answers.length == 1 && header.votes == 0)
+        )
+    ) {
         var uv = msgBase.how_user_voted(
             number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
         );
         if (uv === 0) {
+            var a = 0;
+            answers.forEach(
+                function (e) {
+                    e = parseInt(e);
+                    if (isNaN(e) || e < 0 || e > 15) return;
+                    a|=(1<<e);
+                }
+            );
             ret = msgBase.vote_msg(
                 {   'from' : msgBase.cfg.settings&SUB_NAME ? user.name : user.alias,
                     'from_ext' : user.number,
                     'from_net_type' : NET_NONE,
                     'thread_back' : number,
                     'attr' : MSG_VOTE,
-                    'votes' : answers
+                    'votes' : a
                 }
             );
         }
