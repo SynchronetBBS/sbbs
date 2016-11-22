@@ -494,6 +494,7 @@ function voteMessage(sub, number, up) {
         return false;
     }
     if (user.security.restrictions&UFLAG_V) return false;
+    if (msg_area.sub[sub].settings&SUB_NOVOTING) return false;
     number = parseInt(number);
     if (isNaN(number)) return false;
     up = parseInt(up);
@@ -501,9 +502,12 @@ function voteMessage(sub, number, up) {
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return false;
     var header = msgBase.get_msg_header(number);
-    if (header === null) return false;
+    if (header === null) {
+        msgBase.close();
+        return false;
+    }
     var vh = {
-        'from' : user.alias,
+        'from' : msgBase.cfg.settings&SUB_NAME ? user.name : user.alias,
         'from_ext' : user.number,
         'from_net_type' : NET_NONE,
         'thread_back' : header.number,
@@ -515,10 +519,31 @@ function voteMessage(sub, number, up) {
 }
 
 function submitPollAnswers(sub, number, answers) {
-    // verify that user can vote
-    // verify that the poll is open
-    // msgbase.vote_msg
-    return true;
+    if (typeof msg_area.sub[sub] === 'undefined') return false;
+    if (msg_area.sub[sub].settings&SUB_NOVOTING) return false;
+    if (user.security.restrictions&UFLAG_V) return false;
+    var msgBase = new MsgBase(sub);
+    if (!msgBase.open()) return false;
+    var ret = false;
+    var header = msgBase.get_msg_header(number);
+    if (header !== null && header.attr&MSG_POLL && !(header.auxattr&POLL_CLOSED)) {
+        var uv = msgBase.how_user_voted(
+            number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
+        );
+        if (uv === 0) {
+            ret = msgBase.vote_msg(
+                {   'from' : msgBase.cfg.settings&SUB_NAME ? user.name : user.alias,
+                    'from_ext' : user.number,
+                    'from_net_type' : NET_NONE,
+                    'thread_back' : number,
+                    'attr' : MSG_VOTE
+                    // supply the answers here ... somehow
+                }
+            );
+        }
+    }
+    msgBase.close();
+    return ret;
 }
 
 // Deuce's URL-ifier
