@@ -52,6 +52,8 @@ A web interface for Synchronet BBS
 	keyboard_navigation = false
 	; Display upvote/downvote buttons in message threads (3.17)
 	vote_buttons = true
+	; Refresh nodelist, vote counts, etc. this often (in milliseconds)
+	refresh_interval = 60000
 ```
 - Add the following section to your *ctrl/services.ini* file:
 ```ini
