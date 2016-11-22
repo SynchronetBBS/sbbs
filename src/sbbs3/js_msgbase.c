@@ -2464,6 +2464,7 @@ js_how_user_voted(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	char*		name;
 	uint16_t	votes;
+	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	
@@ -2478,10 +2479,14 @@ js_how_user_voted(JSContext *cx, uintN argc, jsval *arglist)
 	if(!JS_ValueToInt32(cx, argv[0], &msgnum))
 		return JS_FALSE;
 
-	if((name = (char*)JS_GetStringCharsZ(cx, JSVAL_TO_STRING(argv[1]))) == NULL)
-		return JS_FALSE;
+	JSVALUE_TO_MSTRING(cx, argv[1], name, NULL)
+	HANDLE_PENDING(cx);
+	if(name==NULL)
+		return JS_TRUE;
 
+	rc=JS_SUSPENDREQUEST(cx);
 	votes = smb_voted_already(&(p->smb), msgnum, name, NET_NONE, NULL);
+	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist,UINT_TO_JSVAL(votes));
 
