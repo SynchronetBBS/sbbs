@@ -16,6 +16,7 @@ var strings = {
 		get_group_unread : 'getGroupUnreadCount("%s")',
 		get_sub_unread : 'getSubUnreadCount("%s")',
 		poll_control : 'pollControl("%s", %s)',
+		get_poll_data : 'getPollData("%s", %s)',
 		close : '</script>'
 	},
 	notice_box : '<div id="noticebox" class="alert alert-warning">%s<script type="text/javascript">$("#noticebox").fadeOut(3000,function(){$("#noticebox").remove();});</script>',
@@ -102,15 +103,16 @@ var strings = {
 		body : {
 			open : '<div class="message" id="message-%s">',
 			poll : {
-				comment : '<strong>%s</strong>',
-				answer : {
-					container : {
-						open : '<ul class="list-group">',
-						close : '</ul>'
-					},
-					open : '<li class="list-group-item %s"><label><input type="%s" name="poll-%s" value="%s">%s</label> <div class="pull-right">%s</div></li>',
-					closed : '<li class="list-group-item checkbox%s">%s) %s <div class="pull-right">%s</div></li>'
+				container : {
+					open : '<ul class="list-group">',
+					close : '</ul>'
 				},
+				comment : '<li class="list-group-item"><strong>%s</strong></li>',
+				answer : {
+					open : '<li class="list-group-item %s"><label><input type="%s" name="poll-%s" value="%s">%s</label> <div id="poll-count-%s-%s" class="pull-right">%s</div></li>',
+					closed : '<li class="list-group-item checkbox%s">%s) %s <div id="poll-count-%s-%s" class="pull-right">%s</div></li>'
+				},
+				last : '<li class="list-group-item">&nbsp;<div class="pull-right">%s</div></li>',
 				button : '<button id="submit-poll-%s" class="btn btn-default" onclick="submitPollAnswers(\'%s\', %s)">Vote</button>',
 				closed : 'This poll has been closed.',
 				disallowed : 'You cannot vote on this poll.',
@@ -216,13 +218,14 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 			var pollData = getUserPollData(http_request.query.sub[0], header.number);
 
+			writeln(strings.message.body.poll.container.open);
+
 			header.poll_comments.forEach(
 				function (e) {
 					writeln(format(strings.message.body.poll.comment, e.data));
 				}
 			);
 
-			writeln(strings.message.body.poll.answer.container.open);
 			// Poll is closed or user has voted
 			if (header.auxattr&POLL_CLOSED || pollData.answers > 0) {
 				header.poll_answers.forEach(
@@ -231,7 +234,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 							format(
 								strings.message.body.poll.answer.closed,
 								pollData.answers&(1<<i) ? ' upvote-bg' : '',
-								i + 1, e.data,
+								i + 1, e.data, header.number, i,
 								pollData.show_results ? header.tally[i] || 0 : ''
 							)
 						);
@@ -246,30 +249,53 @@ if (typeof http_request.query.sub !== 'undefined' &&
 								strings.message.body.poll.answer.open,
 								header.votes < 2 ? 'radio' : 'checkbox',
 								header.votes < 2 ? 'radio' : 'checkbox',
-								header.number, i, e.data,
+								header.number, i, e.data, header.number, i,
 								pollData.show_results ? header.tally[i] || 0 : ''
 							)
 						);
 					}
 				);
 			}
-			writeln(strings.message.body.poll.answer.container.close);
 
 			if (header.auxattr&POLL_CLOSED) {
-				writeln(strings.message.body.poll.closed);
+				writeln(format(strings.message.body.poll.last, strings.message.body.poll.closed));
 			} else if (pollData.answers > 0) {
-				writeln(strings.message.body.poll.voted);
+				writeln(format(strings.message.body.poll.last, strings.message.body.poll.voted));
 			} else if (user.alias == settings.guest || user.security.restrictions&UFLAG_V || msgBase.cfg.settings&SUB_NOVOTING) {
-				writeln(strings.message.body.poll.disallowed);
+				writeln(format(strings.message.body.poll.last, strings.message.body.poll.disallowed));
 			} else {
-				writeln(format(strings.message.body.poll.button, header.number, http_request.query.sub[0], header.number));
+				writeln(
+					format (
+						strings.message.body.poll.last,
+						format(
+							strings.message.body.poll.button,
+							header.number, http_request.query.sub[0], header.number
+						)
+					)
+				);
 			}
+
+			writeln(strings.message.body.poll.container.close);
 
 			if (header.votes > 1) {
 				writeln(strings.script.open);
 				writeln(format(strings.script.poll_control, header.number, header.votes));
 				writeln(strings.script.close);
 			}
+
+			// Refresh poll results every so often
+			writeln(strings.script.open);
+			writeln(
+				format(
+					strings.script.interval,
+					format(
+						strings.script.get_poll_data,
+						http_request.query.sub[0], header.number
+					),
+					settings.refresh_interval || 60000
+				)
+			);
+			writeln(strings.script.close);
 
 		// This is a normal message
 		} else {

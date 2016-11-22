@@ -189,6 +189,16 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     reply = getVotesInThreads(http_request.query.sub[0]);
                 }
                 break;
+            case 'get-poll-results':
+                if (typeof http_request.query.sub !== 'undefined' &&
+                    typeof http_request.query.id !== 'undefined'
+                ) {
+                    reply = getUserPollData(
+                        http_request.query.sub[0],
+                        http_request.query.id[0]
+                    );
+                }
+                break;
             default:
                 break;
         }

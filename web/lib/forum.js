@@ -175,8 +175,10 @@ function getVotesInThreads(sub) {
 }
 
 function getUserPollData(sub, id) {
-    var ret = { answers : 0, show_results : false };
+    var ret = { answers : 0, tally : [], show_results : false };
     if (typeof msg_area.sub[sub] === 'undefined') return ret;
+    id = parseInt(id);
+    if (isNaN(id)) return ret;
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return ret;
     var header = msgBase.get_msg_header(id);
@@ -184,6 +186,7 @@ function getUserPollData(sub, id) {
         msgBase.close();
         return ret;
     }
+    if (header.tally && Array.isArray(header.tally)) ret.tally = header.tally;
     ret.answers = msgBase.how_user_voted(
         header.number,
         msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
@@ -493,7 +496,9 @@ function voteMessage(sub, number, up) {
     if (typeof msg_area.sub[sub] === 'undefined' && sub !== 'mail') {
         return false;
     }
-    if (user.security.restrictions&UFLAG_V) return false;
+    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) {
+        return false;
+    }
     if (msg_area.sub[sub].settings&SUB_NOVOTING) return false;
     number = parseInt(number);
     if (isNaN(number)) return false;
@@ -502,7 +507,7 @@ function voteMessage(sub, number, up) {
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return false;
     var header = msgBase.get_msg_header(number);
-    if (header === null) {
+    if (header === null || header.attr&MSG_POLL) {
         msgBase.close();
         return false;
     }
@@ -526,7 +531,9 @@ function voteMessage(sub, number, up) {
 function submitPollAnswers(sub, number, answers) {
     if (typeof msg_area.sub[sub] === 'undefined') return false;
     if (msg_area.sub[sub].settings&SUB_NOVOTING) return false;
-    if (user.security.restrictions&UFLAG_V) return false;
+    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) {
+        return false;
+    }
     number = parseInt(number);
     if (isNaN(number)) return false;
     var msgBase = new MsgBase(sub);

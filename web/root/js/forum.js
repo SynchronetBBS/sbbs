@@ -423,3 +423,23 @@ function pollControl(id, count) {
 		}
 	);
 }
+
+function getPollData(sub, id) {
+	$.getJSON(
+		'./api/forum.ssjs?call=get-poll-results&sub=' + sub + '&id=' + id,
+		function (data) {
+			console.log(JSON.stringify(data, null, 2));
+			data.tally.forEach(
+				function (e, i) {
+					if (e > 0) $('#poll-count-' + id + '-' + i).text(e);
+				}
+			);
+			if (data.answers > 0) {
+				$('input[name="poll-' + id + '"]').each(
+					function () { $(this).attr('disabled', true); }
+				);
+				$('#submit-poll-' + id).attr('disabled', true);
+			}
+		}
+	);
+}
