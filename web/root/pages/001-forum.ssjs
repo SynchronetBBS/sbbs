@@ -287,15 +287,13 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			}
 
 			writeln(strings.message.body.poll.container.close);
+			writeln(strings.message.body.close);
 
-			if (header.votes > 1) {
-				writeln(strings.script.open);
-				writeln(format(strings.script.poll_control, header.number, header.votes));
-				writeln(strings.script.close);
-			}
-
-			// Refresh poll results every so often
 			writeln(strings.script.open);
+			if (header.votes > 1) {
+				writeln(format(strings.script.poll_control, header.number, header.votes));
+			}
+			// Refresh poll results every so often
 			writeln(
 				format(
 					strings.script.interval,
@@ -311,8 +309,8 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		// This is a normal message
 		} else {
 			writeln(formatMessage(body));
+			writeln(strings.message.body.close);
 		}
-		writeln(strings.message.body.close);
 
 		var prev = index === 0 ? thread.messages[thread.__first].number : thread.messages[keys[index - 1]].number;
 		var next = key === thread.__last ? thread.messages[thread.__last].number : thread.messages[keys[index + 1]].number;
