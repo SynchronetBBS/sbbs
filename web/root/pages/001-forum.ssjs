@@ -63,6 +63,7 @@ var strings = {
 		},
 		controls : {
 			post : '<button class="btn btn-default icon" aria-label="Post a new message" title="Post a new message" onclick="addNew(\'%s\')"><span class="glyphicon glyphicon-pencil"></span></button>',
+			post_poll : '<button class="btn btn-default icon" aria-label="Post a new poll" title="Post a new poll" onclick="addPoll(\'%s\')"><span class="glyphicon glyphicon-list-alt"></span></button>',
 			scan_new : '<div class="pull-right"><button id="scan-cfg-new" class="btn %s icon" aria-label="Scan for new messages" title="Scan for new messages" onclick="setScanCfg(\'%s\', 1)"><span class="glyphicon glyphicon-ok-sign"></span></button>',
 			scan_you : '<button id="scan-cfg-youonly" class="btn %s icon" aria-label="Scan for new messages to you only" title="Scan for new messages to you only" onclick="setScanCfg(\'%s\', 2)"><span class="glyphicon glyphicon-user"></span></button>',
 			scan_off : '<button id="scan-cfg-off" class="btn %s icon" aria-label="Do not scan this sub" title="Do not scan this sub" onclick="setScanCfg(\'%s\', 0)"><span class="glyphicon glyphicon-ban-circle"></span></button></div>'
@@ -185,7 +186,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(strings.message.header.details.close);
 
 		writeln(strings.message.header.voting.open);
-		if ((typeof settings.vote_buttons === 'undefined' || settings.vote_buttons) && !(header.attr&MSG_POLL)) {
+		if (!(msgBase.cfg.settings&SUB_NOVOTING) &&
+			(typeof settings.vote_buttons === 'undefined' || settings.vote_buttons) &&
+			!(header.attr&MSG_POLL)
+		) {
 			writeln(
 				format(
 					strings.message.header.voting.buttons.up,
@@ -204,7 +208,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 					header.downvotes
 				)
 			);
-		} else if (header.attr&MSG_POLL) {
+		} else if (!(msgBase.cfg.settings&SUB_NOVOTING) && header.attr&MSG_POLL) {
 			writeln(strings.message.header.voting.poll);
 		}
 		writeln(strings.message.header.voting.close);
@@ -214,7 +218,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		// Body
 		writeln(format(strings.message.body.open, header.number));
 		// If this is a poll message
-		if (header.attr&MSG_POLL) {
+		if (!(msgBase.cfg.settings&SUB_NOVOTING) && header.attr&MSG_POLL) {
 
 			var pollData = getUserPollData(http_request.query.sub[0], header.number);
 
@@ -433,7 +437,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(strings.thread_list.item.details.close);
 
 		writeln(strings.thread_list.item.badges.open);
-		if (settings.vote_buttons && (thread.votes.up > 0 || thread.votes.down > 0)) {
+		if (!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) &&
+			settings.vote_buttons &&
+			(thread.votes.up > 0 || thread.votes.down > 0)
+		) {
 			writeln(
 				format(
 					strings.thread_list.item.badges.votes.up,
@@ -461,7 +468,9 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				(unread == 0 ? '' : unread)
 			)
 		);
-		if (thread.messages[first].attr&MSG_POLL) {
+		if (!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) &&
+			thread.messages[first].attr&MSG_POLL
+		) {
 			writeln(strings.thread_list.item.badges.poll);
 		}
 		writeln(strings.thread_list.item.badges.close);
@@ -485,6 +494,9 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	if (user.alias !== settings.guest && msg_area.sub[http_request.query.sub[0]].can_post) {
 		writeln(format(strings.thread_list.controls.post, http_request.query.sub[0]));
+		if (!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING)) {
+			writeln(format(strings.thread_list.controls.post_poll, http_request.query.sub[0]));
+		}
 	}
 
 	if (user.alias !== settings.guest) {

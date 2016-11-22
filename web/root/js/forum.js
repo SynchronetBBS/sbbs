@@ -443,3 +443,7 @@ function getPollData(sub, id) {
 		}
 	);
 }
+
+function addPoll(sub) {
+	
+}
