@@ -341,13 +341,14 @@ function getVotesInThread(sub, id) {
 						$('#dv-count-' + m).text(data.m[m].d);
 						$('#dv-' + m).addClass('indicator');
 					}
-					console.log(data.m[m]);
 					switch (data.m[m].v) {
 						case 1:
 							$('#uv-' + m).addClass('upvote-fg');
+							$('#uv-' + m).attr('disabled', true);							
 							break;
 						case 2:
 							$('#dv-' + m).addClass('downvote-fg');
+							$('#dv-' + m).attr('disabled', true);							
 							break;
 						default:
 							break;
