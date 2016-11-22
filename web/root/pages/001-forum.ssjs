@@ -186,7 +186,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				format(
 					strings.message.header.voting.buttons.up,
 					header.number,
-					user.alias == settings.guest || user.security.restrictions&UFLAG_V ? 'disabled' : '',
+					user.alias == settings.guest || user.security.restrictions&UFLAG_V || msgBase.cfg.settings&SUB_NOVOTING ? 'disabled' : '',
 					header.number,
 					header.upvotes
 				)
@@ -195,7 +195,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				format(
 					strings.message.header.voting.buttons.down,
 					header.number,
-					user.alias == settings.guest || user.security.restrictions&UFLAG_V ? 'disabled' : '',
+					user.alias == settings.guest || user.security.restrictions&UFLAG_V || msgBase.cfg.settings&SUB_NOVOTING ? 'disabled' : '',
 					header.number,
 					header.downvotes
 				)
@@ -257,7 +257,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				writeln(strings.message.body.poll.closed);
 			} else if (pollData.answers > 0) {
 				writeln(strings.message.body.poll.voted);
-			} else if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) {
+			} else if (user.alias == settings.guest || user.security.restrictions&UFLAG_V || msgBase.cfg.settings&SUB_NOVOTING) {
 				writeln(strings.message.body.poll.disallowed);
 			} else {
 				writeln(format(strings.message.body.poll.button, header.number, header.number));
