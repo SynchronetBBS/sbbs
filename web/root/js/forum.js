@@ -381,13 +381,27 @@ function getVotesInThreads(sub) {
 	);
 }
 
-function submitPollAnswers(id) {
+function submitPollAnswers(sub, id) {
+	if ($('input[name="poll-' + id + '"]:checked').length < 1) return;
+	var answers = [];
 	$('input[name="poll-' + id + '"]:checked').each(
-		function () {
-			alert($(this).val());
+		function () { answers.push($(this).val()); }
+	);
+	answers = answers.join('&answer=');
+	$.getJSON(
+		'./api/forum.ssjs?call=submit-poll-answers&sub=' + sub + '&id=' + id + '&answer=' + answers,
+		function (data) {
+			$('input[name="poll-' + id + '"]').each(
+				function () {
+					$(this).attr('disabled', true);
+					if ($(this).prop('checked')) {
+						$(this).parent().parent().addClass('upvote-bg');
+					}
+				}
+			);
+			$('submit-poll-' + id).attr('disabled', true);
 		}
 	);
-	// async ./api/forum.ssjs?call=submit-poll-answers&sub=x&id=x&answer=x&answer=x...
 }
 
 function pollControl(id, count) {
