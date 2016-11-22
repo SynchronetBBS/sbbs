@@ -113,8 +113,8 @@ var strings = {
 					open : '<li class="list-group-item %s"><label><input type="%s" name="poll-%s" value="%s">%s</label> <div id="poll-count-%s-%s" class="pull-right">%s</div></li>',
 					closed : '<li class="list-group-item checkbox%s">%s) %s <div id="poll-count-%s-%s" class="pull-right">%s</div></li>'
 				},
-				last : '<li class="list-group-item">&nbsp;<div class="pull-right">%s</div></li>',
-				button : '<button id="submit-poll-%s" class="btn btn-default" onclick="submitPollAnswers(\'%s\', %s)">Vote</button>',
+				last : '<li class="clearfix list-group-item">&nbsp;<div class="pull-right">%s</div></li>',
+				button : '<button id="submit-poll-%s" class="btn btn-primary" onclick="submitPollAnswers(\'%s\', %s)">Vote</button>',
 				closed : 'This poll has been closed.',
 				disallowed : 'You cannot vote on this poll.',
 				voted : 'You already voted on this poll.'
