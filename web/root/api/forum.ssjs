@@ -160,6 +160,16 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 }
                 break;
 
+            case 'submit-poll':
+                if (typeof http_request.query.subject !== 'undefined' &&
+                    typeof http_request.query.sub !== 'undefined' &&
+                    typeof http_request.query.votes !== 'undefined' &&
+                    typeof http_request.query.answer !== 'undefined'
+                ) {
+                    reply = "barf";
+                }
+                break;
+
             default:
                 handled = false;
                 break;

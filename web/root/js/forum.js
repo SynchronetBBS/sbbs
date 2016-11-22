@@ -119,10 +119,101 @@ function addNew(sub) {
 	);
 	window.location.hash = '#newmessage';
 	$('#newmessage-body').keydown(
-		function (evt) {
-			evt.stopImmediatePropagation();
+		function (evt) { evt.stopImmediatePropagation(); }
+	);
+}
+
+function submitPoll(sub) {
+
+	if ($('input[name="newpoll-answers"]:checked').length !== 1) return;
+
+	var subject = $('#newpoll-subject').val();
+	if (subject.length < 1) return;
+
+	var answerCount = $('input[name="newpoll-answers"]:checked:first').val();
+	if (answerCount == 2) answerCount = $('input[name="newpoll-answer-count"]').val();
+	if (answerCount < 0 || answerCount > 15) return;
+
+	var answers = [];
+	for (var i = 0; i < 16; i++) {
+		if ($('#newpoll-answer-' + i).length < 1) continue;
+		var val = $('#newpoll-answer-' + i).val();
+		if (val.length < 1) continue;
+		answers.push(val);
+	}
+	if (answers.length < 1) return;
+
+	$.getJSON(
+		'./api/forum.ssjs?call=submit-poll&sub=' + sub + '&subject=' + subject + '&votes=' + answerCount + '&answer=' + answers.join('&answer='),
+		function (data) {
+			console.log(data);
+			$('#newpoll').remove();
 		}
 	);
+
+}
+
+function addQuestion(elem) {
+	var count = $('div[name="newpoll-answer"]').length;
+	if (count > 15) return;
+	var number = count + 1;
+	$(	'<div id="newpoll-answer-container-' + number + '" name="newpoll-answer" class="form-group">' +
+			'<label for="newpoll-answer-' + number + '" class="col-sm-2 control-label">Answer</label>' +
+			'<div class="col-sm-9">' +
+				'<input id="newpoll-answer-' + number + '" class="form-control" type="text"> ' +
+			'</div>' +
+			'<div class="col-sm-1">' +
+				'<button type="button" class="btn btn-danger" onclick="$(\'#newpoll-answer-container-' + number + '\').remove()">' +
+					'<span class="glyphicon glyphicon-remove"></span>' +
+				'</button> ' +
+			'</div>' +
+		'</div>'
+	).insertBefore(elem);
+	$('#newpoll-answer-' + number).keydown(
+		function (evt) { evt.stopImmediatePropagation(); }
+	);
+}
+
+function addPoll(sub) {
+	$('#forum-list-container').append(
+		'<li id="newpoll" class="list-group-item">' +
+			'<strong>Add a new poll</strong>' +
+			'<form id="newpoll-form" class="form-horizontal">' +
+				'<div class="form-group">' +
+					'<label for="newpoll-subject" class="col-sm-2 control-label">Subject</label>' +
+					'<div class="col-sm-10">' +
+						'<input id="newpoll-subject" class="form-control" type="text" placeholder="Subject">' +
+					'</div>' +
+				'</div>' +
+				'<div class="form-group">' +
+					'<label for="newpoll-answers" class="col-sm-2 control-label">Selection</label>' +
+					'<div class="col-sm-10">' +
+						'<label class="radio-inline">' +
+							'<input type="radio" name="newpoll-answers" value="1" checked> Single' +
+						'</label>' +
+						'<label class="radio-inline">' +
+							'<input type="radio" name="newpoll-answers" value="2"> Multiple ' +
+							'<input type="number" name="newpoll-answer-count" min="1" max="15" value="1">' +
+						'</label>' +
+					'</div>' +
+				'</div>' +
+				'<div id="newpoll-button" class="form-group">' +
+					'<div class="col-sm-offset-2 col-sm-10">' +
+						'<button id="newpoll-submit" type="button" class="btn btn-primary" onclick="submitPoll(\'' + sub + '\')">' +
+							'Submit' +
+						'</button>' +
+						'<div class="pull-right">' +
+							'<button type="button" class="btn btn-success" onclick="addQuestion(\'#newpoll-button\')">' +
+								'<span class="glypicon glyphicon-plus"></span>' +
+							'</button> ' +
+						'</div>' +
+				    '</div>' +
+				'</div>' +
+			'</form>' +
+		'</li>'
+	);
+	addQuestion('#newpoll-button');
+	window.location.hash = '#newpoll';
 }
 
 // Add a reply input form to the page for message with number 'id' in sub 'sub'
@@ -441,8 +532,4 @@ function getPollData(sub, id) {
 			}
 		}
 	);
-}
-
-function addPoll(sub) {
-
 }
