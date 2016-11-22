@@ -506,14 +506,19 @@ function voteMessage(sub, number, up) {
         msgBase.close();
         return false;
     }
-    var vh = {
-        'from' : msgBase.cfg.settings&SUB_NAME ? user.name : user.alias,
-        'from_ext' : user.number,
-        'from_net_type' : NET_NONE,
-        'thread_back' : header.number,
-        'attr' : up ? MSG_UPVOTE : MSG_DOWNVOTE
-    };
-    var ret = msgBase.vote_msg(vh);
+    var uv = msgBase.how_user_voted(
+        header.number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
+    );
+    if (uv === 0) {
+        var vh = {
+            'from' : msgBase.cfg.settings&SUB_NAME ? user.name : user.alias,
+            'from_ext' : user.number,
+            'from_net_type' : NET_NONE,
+            'thread_back' : header.number,
+            'attr' : up ? MSG_UPVOTE : MSG_DOWNVOTE
+        };
+        var ret = msgBase.vote_msg(vh);
+    }
     msgBase.close();
     return ret;
 }
