@@ -1,13 +1,27 @@
+// $Id$
+
+load('sbbsdefs.js');
+
 var i;
 var basecode;
 var option = [];
 
-for(i in argv)
-        if(argv[i].charAt(0) != '-') {
-                if(!basecode)
-                        basecode = argv[i];
-        } else
-                option[argv[i].slice(1)] = true;
+for(i in argv) {
+    if(argv[i].charAt(0) != '-') {
+        if(!basecode)
+                basecode = argv[i];
+		continue;
+	}
+	var arg = argv[i].slice(1).toLowerCase();
+	var val = true
+	var eq = arg.indexOf('=');
+
+	if(eq > 0) {
+		val = arg.substring(eq+1);
+		arg = arg.substring(0,eq);
+	}
+	option[arg] = val;
+}
 
 if(js.global.bbs)
 	basecode = bbs.cursub_code;
@@ -24,15 +38,16 @@ if(!msgbase.open()) {
 print("Posting Poll to sub-board: " + basecode);
 
 var poll = { field_list: [] };
-while(!poll.subject)
-	poll.subject = prompt("Poll question");
+if(!(poll.subject = prompt("Poll question")))
+	exit();
 
 var comment;
-while(comment = prompt("Comment [done]")) poll.field_list.push({ type: 0x62, data: comment});
+while(comment = prompt("Comment [done]")) poll.field_list.push({ type: SMB_COMMENT, data: comment});
 
 var count=0;
 var answer;
-while(answer = prompt("Answer "+ (++count) + " [done]")) poll.field_list.push({ type: 0xe0, data: answer});
+while(count < MSG_POLL_MAX_ANSWERS && (answer = prompt("Answer "+ (++count) + " [done]")))
+	poll.field_list.push({ type: SMB_POLL_ANSWER, data: answer});
 
 print();
 print("Results Visibility:");
@@ -49,6 +64,8 @@ if(js.global.bbs) {
 	poll.from = system.operator;
 	poll.from_ext = 1;
 }
+if(option["votes"])
+	poll.votes = option["votes"];
 print("posted from: " + poll.from);
 if(!msgbase.add_poll(poll))
 	alert("Error " + msgbase.status + " " + msgbase.last_error);
