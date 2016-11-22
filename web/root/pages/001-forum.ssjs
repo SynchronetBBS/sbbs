@@ -55,15 +55,16 @@ var strings = {
 					up : '<span id="uv-%s" title="Upvotes - Parent / Thread Total" class="badge upvote-bg"><span class="glyphicon glyphicon-arrow-up"></span><span id="uv-count-%s">%s / %s</span></span>&nbsp;',
 					down : '<span id="dv-%s" title="Downvotes - Parent / Thread Total" class="badge downvote-bg"><span class="glyphicon glyphicon-arrow-down"></span><span id="dv-count-%s">%s / %s</span></span>',
 				},
+				poll : '<span class="badge">POLL</span>',
 				close : '</div></div>'
 			},
 			close : '</div></a>'
 		},
 		controls : {
 			post : '<button class="btn btn-default icon" aria-label="Post a new message" title="Post a new message" onclick="addNew(\'%s\')"><span class="glyphicon glyphicon-pencil"></span></button>',
-			scan_new : '<button id="scan-cfg-new" class="btn %s icon" aria-label="Scan for new messages" title="Scan for new messages" onclick="setScanCfg(\'%s\', 1)"><span class="glyphicon glyphicon-ok-sign"></span></button>',
+			scan_new : '<div class="pull-right"><button id="scan-cfg-new" class="btn %s icon" aria-label="Scan for new messages" title="Scan for new messages" onclick="setScanCfg(\'%s\', 1)"><span class="glyphicon glyphicon-ok-sign"></span></button>',
 			scan_you : '<button id="scan-cfg-youonly" class="btn %s icon" aria-label="Scan for new messages to you only" title="Scan for new messages to you only" onclick="setScanCfg(\'%s\', 2)"><span class="glyphicon glyphicon-user"></span></button>',
-			scan_off : '<button id="scan-cfg-off" class="btn %s icon" aria-label="Do not scan this sub" title="Do not scan this sub" onclick="setScanCfg(\'%s\', 0)"><span class="glyphicon glyphicon-ban-circle"></span></button>'
+			scan_off : '<button id="scan-cfg-off" class="btn %s icon" aria-label="Do not scan this sub" title="Do not scan this sub" onclick="setScanCfg(\'%s\', 0)"><span class="glyphicon glyphicon-ban-circle"></span></button></div>'
 		}
 	},
 	thread_view : {
@@ -108,9 +109,9 @@ var strings = {
 						close : '</ul>'
 					},
 					open : '<li class="%s"><label><input type="%s" name="poll-%s" value="%s">%s</label> %s</li>',
-					closed : '<li class="checkbox%s">%s %s</li>'
+					closed : '<li class="checkbox%s">%02d. %s %s</li>'
 				},
-				button : '<button id="submit-poll-%s" class="btn btn-default" onclick="submitPollAnswers(%s)">Vote</button>',
+				button : '<button id="submit-poll-%s" class="btn btn-default" onclick="submitPollAnswers(\'%s\', %s)">Vote</button>',
 				closed : 'This poll has been closed.',
 				disallowed : 'You cannot vote on this poll.',
 				voted : 'You already voted on this poll.'
@@ -230,7 +231,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 							format(
 								strings.message.body.poll.answer.closed,
 								pollData.answers&(1<<i) ? ' upvote-bg' : '',
-								e.data,
+								i + 1, e.data,
 								pollData.show_results ? header.tally[i] || 0 : ''
 							)
 						);
@@ -261,7 +262,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			} else if (user.alias == settings.guest || user.security.restrictions&UFLAG_V || msgBase.cfg.settings&SUB_NOVOTING) {
 				writeln(strings.message.body.poll.disallowed);
 			} else {
-				writeln(format(strings.message.body.poll.button, header.number, header.number));
+				writeln(format(strings.message.body.poll.button, header.number, http_request.query.sub[0], header.number));
 			}
 
 			if (header.votes > 1) {
@@ -434,6 +435,9 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				(unread == 0 ? '' : unread)
 			)
 		);
+		if (thread.messages[first].attr&MSG_POLL) {
+			writeln(strings.thread_list.item.badges.poll);
+		}
 		writeln(strings.thread_list.item.badges.close);
 
 		writeln(strings.thread_list.item.close);
