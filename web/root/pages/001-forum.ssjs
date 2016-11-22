@@ -499,7 +499,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	if (user.alias !== settings.guest && msg_area.sub[http_request.query.sub[0]].can_post) {
 		writeln(format(strings.thread_list.controls.post, http_request.query.sub[0]));
-		if (!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING)) {
+		if (!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) && !(user.security.restrictions&UFLAG_V)) {
 			writeln(format(strings.thread_list.controls.post_poll, http_request.query.sub[0]));
 		}
 	}
