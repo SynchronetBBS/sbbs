@@ -15,6 +15,7 @@ var strings = {
 		vote_refresh_threads : 'getVotesInThreads("%s")',
 		get_group_unread : 'getGroupUnreadCount("%s")',
 		get_sub_unread : 'getSubUnreadCount("%s")',
+		poll_control : 'pollControl("%s", %s)',
 		close : '</script>'
 	},
 	notice_box : '<div id="noticebox" class="alert alert-warning">%s<script type="text/javascript">$("#noticebox").fadeOut(3000,function(){$("#noticebox").remove();});</script>',
@@ -223,14 +224,14 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			writeln(strings.message.body.poll.answer.container.open);
 			// Poll is closed or user has voted
 			if (header.auxattr&POLL_CLOSED || pollData.answers > 0) {
-				header.poll.answers.forEach(
+				header.poll_answers.forEach(
 					function (e, i) {
 						writeln(
 							format(
 								pollData.answers&(1<<i) ? 'class="upvote-bg"' : '',
 								strings.message.body.poll.answer.closed,
 								e.data,
-								pollData.show_results ? header.tally[i] : ''
+								pollData.show_results ? header.tally[i] || 0 : ''
 							)
 						);
 					}
@@ -245,7 +246,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 								header.votes < 2 ? 'radio' : 'checkbox',
 								header.votes < 2 ? 'radio' : 'checkbox',
 								header.number, i, e.data,
-								pollData.show_results ? header.tally[i] : ''
+								pollData.show_results ? header.tally[i] || 0 : ''
 							)
 						);
 					}
@@ -261,6 +262,12 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				writeln(strings.message.body.poll.disallowed);
 			} else {
 				writeln(format(strings.message.body.poll.button, header.number, header.number));
+			}
+
+			if (header.votes > 1) {
+				writeln(strings.script.open);
+				writeln(format(strings.script.poll_control, header.number, header.votes));
+				writeln(strings.script.close);
 			}
 
 		// This is a normal message
