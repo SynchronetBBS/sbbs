@@ -775,7 +775,7 @@ var getMessageThreads = function(sub, max) {
                 }
             );
             threads.thread[thread_id].messages[header.number].votes = header.votes;
-            threads.thread[thread_id].messages[header.number].tally = header.tally;
+            threads.thread[thread_id].messages[header.number].tally = header.tally || [];
         } else {
             threads.thread[thread_id].votes.up += (header.upvotes || 0);
             threads.thread[thread_id].votes.down += (header.downvotes || 0);
