@@ -181,7 +181,16 @@ function getUserPollData(sub, id) {
     if (isNaN(id)) return ret;
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return ret;
-    var header = msgBase.get_msg_header(id);
+    // var header = msgBase.get_msg_header(id);
+    // Temporary use of get_all_msg_headers() to get header.tally for polls
+    var headers = msgBase.get_all_msg_headers();
+    var header = null;
+    for (var h in headers) {
+        if (headers[h].number !== id) continue;
+        header = headers[h];
+        break;
+    }
+    // End of temporary shitfest
     if (header === null || !(header.attr&MSG_POLL)) {
         msgBase.close();
         return ret;
@@ -757,7 +766,7 @@ function setScanCfg(sub, cfg) {
 
 }
 
-var getMessageThreads = function(sub, max) {
+function getMessageThreads(sub, max) {
 
     var threads = { thread : {}, order : [] };
     var subjects = {};
@@ -805,6 +814,7 @@ var getMessageThreads = function(sub, max) {
             );
             threads.thread[thread_id].messages[header.number].votes = header.votes;
             threads.thread[thread_id].messages[header.number].tally = header.tally || [];
+            threads.thread[thread_id].messages[header.number].subject = header.subject;
         } else {
             threads.thread[thread_id].votes.up += (header.upvotes || 0);
             threads.thread[thread_id].votes.down += (header.downvotes || 0);

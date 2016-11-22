@@ -108,7 +108,8 @@ var strings = {
 					open : '<ul class="list-group">',
 					close : '</ul>'
 				},
-				comment : '<li class="list-group-item"><strong>%s</strong></li>',
+				title : '<li class="list-group-item"><strong>%s</strong></li>',
+				comment : '<li class="list-group-item">%s</li>',
 				answer : {
 					open : '<li class="list-group-item %s"><label><input type="%s" name="poll-%s" value="%s">%s</label> <div id="poll-count-%s-%s" class="pull-right">%s</div></li>',
 					closed : '<li class="list-group-item checkbox%s">%s) %s <div id="poll-count-%s-%s" class="pull-right">%s</div></li>'
@@ -224,6 +225,8 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 			writeln(strings.message.body.poll.container.open);
 
+			writeln(format(strings.message.body.poll.title, header.subject));
+
 			header.poll_comments.forEach(
 				function (e) {
 					writeln(format(strings.message.body.poll.comment, e.data));
@@ -231,7 +234,11 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			);
 
 			// Poll is closed or user has voted
-			if (header.auxattr&POLL_CLOSED || pollData.answers > 0) {
+			if (header.auxattr&POLL_CLOSED ||
+				pollData.answers > 0 ||
+				user.alias == settings.guest ||
+				user.security.restrictions&UFLAG_V
+			) {
 				header.poll_answers.forEach(
 					function (e, i) {
 						writeln(

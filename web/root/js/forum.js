@@ -428,7 +428,6 @@ function getPollData(sub, id) {
 	$.getJSON(
 		'./api/forum.ssjs?call=get-poll-results&sub=' + sub + '&id=' + id,
 		function (data) {
-			console.log(JSON.stringify(data, null, 2));
 			data.tally.forEach(
 				function (e, i) {
 					if (e > 0) $('#poll-count-' + id + '-' + i).text(e);
@@ -445,5 +444,5 @@ function getPollData(sub, id) {
 }
 
 function addPoll(sub) {
-	
+
 }
