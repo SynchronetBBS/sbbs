@@ -345,9 +345,11 @@ function getVotesInThread(sub, id) {
 						case 1:
 							$('#uv-' + m).addClass('upvote-fg');
 							$('#uv-' + m).attr('disabled', true);							
+							$('#dv-' + m).attr('disabled', true);							
 							break;
 						case 2:
 							$('#dv-' + m).addClass('downvote-fg');
+							$('#uv-' + m).attr('disabled', true);							
 							$('#dv-' + m).attr('disabled', true);							
 							break;
 						default:
