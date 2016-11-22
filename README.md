@@ -127,7 +127,7 @@ if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (co
 
 ####On DOVE-Net
 
-- Post a message to *echicken* in [Synchronet Sysops](https://bbs.electronicchicken.com/?page=001-forum.ssjs&sub=sync_sys).  I read this sub regularly and will respond to you there.
+- Post a message to *echicken* in [Synchronet Discussion](https://bbs.electronicchicken.com/?page=001-forum.ssjs&sub=sync).  I read this sub regularly and will respond to you there.
 
 ####On IRC
 
