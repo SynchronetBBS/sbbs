@@ -536,8 +536,8 @@ function submitPollAnswers(sub, number, answers) {
                     'from_ext' : user.number,
                     'from_net_type' : NET_NONE,
                     'thread_back' : number,
-                    'attr' : MSG_VOTE
-                    // supply the answers here ... somehow
+                    'attr' : MSG_VOTE,
+                    'votes' : answers
                 }
             );
         }
