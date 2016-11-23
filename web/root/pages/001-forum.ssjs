@@ -155,6 +155,11 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	function writeMessage(thread, keys, key, index) {
 
 		var header = thread.messages[key];
+		if (header.attr&MSG_POLL &&
+			(msgBase.cfg.settings&SUB_NOVOTING || !settings.vote_functions)
+		) {
+			return;
+		}
 
 		var body = msgBase.get_msg_body(header.number);
 		if (body === null) return;
@@ -187,8 +192,8 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(strings.message.header.details.close);
 
 		writeln(strings.message.header.voting.open);
-		if (!(msgBase.cfg.settings&SUB_NOVOTING) &&
-			(typeof settings.vote_functions === 'undefined' || settings.vote_functions) &&
+		if (settings.vote_functions &&
+			!(msgBase.cfg.settings&SUB_NOVOTING) &&
 			!(header.attr&MSG_POLL)
 		) {
 			writeln(
@@ -209,7 +214,11 @@ if (typeof http_request.query.sub !== 'undefined' &&
 					header.downvotes
 				)
 			);
-		} else if (!(msgBase.cfg.settings&SUB_NOVOTING) && header.attr&MSG_POLL) {
+		} else if (
+			settings.vote_functions &&
+			!(msgBase.cfg.settings&SUB_NOVOTING) &&
+			header.attr&MSG_POLL
+		) {
 			writeln(strings.message.header.voting.poll);
 		}
 		writeln(strings.message.header.voting.close);
@@ -219,7 +228,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		// Body
 		writeln(format(strings.message.body.open, header.number));
 		// If this is a poll message
-		if (!(msgBase.cfg.settings&SUB_NOVOTING) && header.attr&MSG_POLL) {
+		if (settings.vote_functions &&
+			!(msgBase.cfg.settings&SUB_NOVOTING) &&
+			header.attr&MSG_POLL
+		) {
 
 			var pollData = getUserPollData(http_request.query.sub[0], header.number);
 
@@ -381,25 +393,29 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	writeln(strings.script.open);
 	if (settings.keyboard_navigation) writeln(strings.script.thread_navigation);
-	if (user.alias != settings.guest || user.security.restrictions&UFLAG_V) {
-		writeln(format(strings.script.vote_functions, http_request.query.sub[0]));
-	}
-	writeln(
-		format(
-			strings.script.vote_refresh_thread,
-			http_request.query.sub[0], thread.__first
-		)
-	);
-	writeln(
-		format(
-			strings.script.interval,
+	if (settings.vote_functions) {
+		if (user.alias != settings.guest || user.security.restrictions&UFLAG_V) {
+			writeln(
+				format(strings.script.vote_functions, http_request.query.sub[0])
+			);
+		}
+		writeln(
 			format(
 				strings.script.vote_refresh_thread,
 				http_request.query.sub[0], thread.__first
-			),
-			settings.refresh_interval || 60000
-		)
-	);
+			)
+		);
+		writeln(
+			format(
+				strings.script.interval,
+				format(
+					strings.script.vote_refresh_thread,
+					http_request.query.sub[0], thread.__first
+				),
+				settings.refresh_interval || 60000
+			)
+		);
+	}
 	writeln(strings.script.close);
 
 } else if (
@@ -442,8 +458,8 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(strings.thread_list.item.details.close);
 
 		writeln(strings.thread_list.item.badges.open);
-		if (!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) &&
-			settings.vote_functions &&
+		if (settings.vote_functions &&
+			!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) &&
 			(thread.votes.up > 0 || thread.votes.down > 0)
 		) {
 			writeln(
@@ -473,7 +489,8 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				(unread == 0 ? '' : unread)
 			)
 		);
-		if (!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) &&
+		if (settings.vote_functions &&
+			!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) &&
 			thread.messages[first].attr&MSG_POLL
 		) {
 			writeln(strings.thread_list.item.badges.poll);
@@ -499,7 +516,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	if (user.alias !== settings.guest && msg_area.sub[http_request.query.sub[0]].can_post) {
 		writeln(format(strings.thread_list.controls.post, http_request.query.sub[0]));
-		if (!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) && !(user.security.restrictions&UFLAG_V)) {
+		if (settings.vote_functions &&
+			!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) &&
+			!(user.security.restrictions&UFLAG_V)
+		) {
 			writeln(format(strings.thread_list.controls.post_poll, http_request.query.sub[0]));
 		}
 	}
@@ -537,15 +557,17 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		log(LOG_WARNING, err);
 	}
 
-	writeln(strings.script.open);
-	writeln(
-		format(
-			strings.script.interval,
-			format(strings.script.vote_refresh_threads, http_request.query.sub[0]),
-			settings.refresh_interval || 60000
-		)
-	);
-	writeln(strings.script.close);
+	if (settings.vote_functions) {
+		writeln(strings.script.open);
+		writeln(
+			format(
+				strings.script.interval,
+				format(strings.script.vote_refresh_threads, http_request.query.sub[0]),
+				settings.refresh_interval || 60000
+			)
+		);
+		writeln(strings.script.close);
+	}
 
 } else if (
 	typeof http_request.query.group !== 'undefined' &&
