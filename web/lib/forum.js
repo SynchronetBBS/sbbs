@@ -499,7 +499,7 @@ function postPoll(sub, subject, votes, results, answers, comments) {
     }
 
     var header = {
-        subject : subject,
+        subject : subject.substr(0, LEN_TITLE),
         from : msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias,
         from_ext : user.number,
         field_list : [],
@@ -510,14 +510,18 @@ function postPoll(sub, subject, votes, results, answers, comments) {
     if (Array.isArray(comments)) {
         comments.forEach(
             function (e) {
-                header.field_list.push({ type : SMB_COMMENT, data : e });
+                header.field_list.push(
+                    { type : SMB_COMMENT, data : e.substr(0, LEN_TITLE) }
+                );
             }
         );
     }
 
     answers.forEach(
         function (e) {
-            header.field_list.push({ type : SMB_POLL_ANSWER, data : e });
+            header.field_list.push(
+                { type : SMB_POLL_ANSWER, data : e.substr(0, LEN_TITLE) }
+            );
         }
     );
 

@@ -192,7 +192,7 @@ function addPollField(type, elem) {
 				(type === 'answer' ? 'Answer' : 'Comment') +
 			'</label>' +
 			'<div class="col-sm-9">' +
-				'<input id="' + prefix + '-' + number + '" class="form-control" name="' + prefix + '-input" type="text"> ' +
+				'<input id="' + prefix + '-' + number + '" class="form-control" name="' + prefix + '-input" type="text" maxlength="70"> ' +
 			'</div>' +
 			'<div class="col-sm-1">' +
 				'<button type="button" class="btn btn-danger" onclick="$(\'#' + prefix + '-container-' + number + '\').remove()">' +
@@ -217,7 +217,7 @@ function addPoll(sub) {
 				'<div class="form-group">' +
 					'<label for="newpoll-subject" class="col-sm-2 control-label">Question</label>' +
 					'<div class="col-sm-10">' +
-						'<input id="newpoll-subject" class="form-control" type="text" placeholder="Required">' +
+						'<input id="newpoll-subject" class="form-control" type="text" placeholder="Required" maxlength="70">' +
 					'</div>' +
 				'</div>' +
 				'<div id="newpoll-comment-group"></div>' +
