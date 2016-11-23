@@ -502,6 +502,7 @@ function postPoll(sub, subject, votes, results, answers, comments) {
         subject : subject.substr(0, LEN_TITLE),
         from : msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias,
         from_ext : user.number,
+        to : 'All',
         field_list : [],
         auxattr : (results<<POLL_RESULTS_SHIFT),
         votes : votes
