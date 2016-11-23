@@ -185,7 +185,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				strings.message.header.details.info,
 				header.from,
 				typeof header.from_net_addr === 'undefined' ? '' : '@' + header.from_net_addr,
-				header.to,
+				header.to || 'All',
 				(new Date(header.when_written_time * 1000)).toLocaleString()
 			)
 		);
