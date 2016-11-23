@@ -8,8 +8,7 @@ A web interface for Synchronet BBS
 ###Requirements
 
 - This web interface has been tested with Synchronet BBS 3.17a.  It will probably work with later versions.
-
-- The *Files* page of this web interface relies on a script which was introduced *after* the release of Synchronet BBS 3.16c.  You can grab a copy of *filebase.js* [here](http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/filebase.js?revision=1.7), and you should place it in your *exec/load/* directory.
+- In addition to updating your Synchronet build, be sure to update your the javascript modules in your *exec* and *exec/load* directories as well.  You can get them from [the Synchronet CVS repository](http://cvs.synchro.net/) or in the [sbbs_run.zip archive](http://vert.synchro.net/Synchronet/sbbs_run.zip).
 
 ###Quick start
 
