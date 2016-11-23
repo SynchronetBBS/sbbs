@@ -146,8 +146,8 @@ char* DLLCALL get_replyid(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgid, s
 		return NULL;
 	if(smb_getmsghdr(smb, &remsg) != SMB_SUCCESS)
 		return NULL;
-	replyid = get_msgid(cfg, smb->subnum, &remsg, msgid, maxlen);
+	get_msgid(cfg, smb->subnum, &remsg, msgid, maxlen);
 	smb_freemsgmem(&remsg);
 
-	return replyid;
+	return msgid;
 }
