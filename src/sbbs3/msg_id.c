@@ -132,7 +132,6 @@ char* DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg, char* msgid, si
 
 char* DLLCALL get_replyid(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgid, size_t maxlen)
 {
-	char* replyid;
 	smbmsg_t remsg;
 
 	if(msg->reply_id)
