@@ -19,7 +19,7 @@ var strings = {
 		get_poll_data : 'getPollData("%s", %s)',
 		close : '</script>'
 	},
-	notice_box : '<div id="noticebox" class="alert alert-warning">%s<script type="text/javascript">$("#noticebox").fadeOut(3000,function(){$("#noticebox").remove();});</script>',
+	notice_box : '<div id="noticebox" class="alert alert-warning">%s<script type="text/javascript">$("#noticebox").fadeOut(3000,function(){$("#noticebox").remove();});</script></div>',
 	group_list : {
 		breadcrumb : '<ol class="breadcrumb"><li><a href="./?page=%s">Forum</a></li></ol>',
 		container : {
