@@ -475,6 +475,61 @@ function postReply(sub, body, pid) {
     return ret;
 }
 
+function postPoll(sub, subject, votes, results, answers, comments) {
+
+    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) {
+        return false;
+    }
+
+    if (typeof msg_area.sub[sub] === 'undefined' || !msg_area.sub[sub].can_post) {
+        return false;
+    }
+
+    if (typeof subject !== 'string' || subject.length < 1) return false;
+
+    if (!Array.isArray(answers) || answers.length < 2) return false;
+
+    votes = parseInt(votes);
+    if (isNaN(votes) || votes < 1 || votes > 15) return false;
+    if (votes > answers) votes = answers;
+
+    results = parseInt(results);
+    if (isNaN(results) || results < 0 || results > 3) {
+        return false;
+    }
+
+    var header = {
+        subject : subject,
+        from : msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias,
+        from_ext : user.number,
+        field_list : [],
+        auxattr : (results<<POLL_RESULTS_SHIFT),
+        votes : votes
+    };
+
+    if (Array.isArray(comments)) {
+        comments.forEach(
+            function (e) {
+                header.field_list.push({ type : SMB_COMMENT, data : e });
+            }
+        );
+    }
+
+    answers.forEach(
+        function (e) {
+            header.field_list.push({ type : SMB_POLL_ANSWER, data : e });
+        }
+    );
+
+    var msgBase = new MsgBase(sub);
+    if (!msgBase.open()) return false;
+    var ret = msgBase.add_poll(header);
+    msgBase.close();
+
+    return ret;
+
+}
+
 // Delete a message if
 // - This is the mail sub, and the message was sent by or to this user
 // - This is another sub on which the user is an operator
