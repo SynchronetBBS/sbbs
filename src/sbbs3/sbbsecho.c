@@ -1,8 +1,7 @@
-/* sbbsecho.c */
-
 /* Synchronet FidoNet EchoMail Scanning/Tossing and NetMail Tossing Utility */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -46,6 +45,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#if defined(__unix__)
+	#include <signal.h>
+#endif
 
 #include "conwrap.h"		/* getch() */
 #include "sbbs.h"			/* load_cfg() */
@@ -2626,7 +2628,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		return IMPORT_FAILURE; 
 	}
 
-	for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
+	for(col=0,l=0,esc=0,done=0,bodylen=0,taillen=0,cr=1;l<length;l++) {
 
 		if(!l && !strncmp((char *)fbuf,"AREA:",5)) {
 			save=l;
