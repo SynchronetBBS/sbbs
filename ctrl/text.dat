@@ -951,9 +951,9 @@
 "\1n\1b[\1h\1wV\1n\1b] \1hInclude VOTING.DAT File      \1n\1b: \1c%s\r\n"	782 QWKSettingsVoting
 "\r\nVote for message: ~Up, ~Down, or ~Quit: "               783 VoteMsgUpDownOrQuit
 "\r\n³ \1bMsg \1n\1b: \1h\1cVoted Up %u times%s and Down %u times%s (Score: %d)"          784 MsgVotes
-"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1cUp\1n\1m-voted your message: \1n\1h%s\r\n" 785 MsgUpVoteNotice
-"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1rDown\1n\1m-voted your message: \1n\1h%s\r\n" 786 MsgDownVoteNotice
-"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s voted in your poll: \1n\1h%s\r\n" 787 PollVoteNotice
+"\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1cUp\1n\1m-voted your message: \1n\1h%s\r\n" 785 MsgUpVoteNotice
+"\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1rDown\1n\1m-voted your message: \1n\1h%s\r\n" 786 MsgDownVoteNotice
+"\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s voted in your poll: \1n\1h%s\r\n" 787 PollVoteNotice
 "\1n\1c\1h%2u\1n\1c: "                  788 PollAnswerNumber
 "%-*.*s [%-4u %3.0f%%]"                 789 PollAnswerFmt
 " \251"                                 790 PollAnswerChecked
