@@ -62,7 +62,7 @@ function getSubUnreadCount(sub) {
     try {
         var msgBase = new MsgBase(sub);
         msgBase.open();
-        for (var m = msg_area.sub[sub].scan_ptr + 1; m < msgBase.last_msg; m++) {
+        for (var m = msg_area.sub[sub].scan_ptr + 1; m <= msgBase.last_msg; m++) {
             var i = msgBase.get_msg_index(m);
             if (i === null || i.attr&MSG_DELETE || i.attr&MSG_NODISP) continue;
             if ((   msg_area.sub[sub].scan_cfg&SCAN_CFG_YONLY &&
