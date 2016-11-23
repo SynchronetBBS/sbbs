@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.12     2016-11-22   Updated the message area chooser to work better with
+                      Synchronet 3.17.  Null message headers seem to be more
+                      common with Synchronet 3.17 due to the message voting
+                      feature that was introduced in that version.
+1.11     2016-02-19   Bug fix: THe page number on the screen wasn't being updated
+                      properly when navigating between screens in the message
+                      group/file library list.
 1.10     2016-02-15   Added the ability to display a custom header file above
                       the area lists in the area choosers.  Added the
                       configuration options areaChooserHdrFilenameBase and

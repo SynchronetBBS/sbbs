@@ -57,6 +57,10 @@
  *                                  when changing pages in the message groups
  *                                  when using the arrow keys to scroll between
  *                                  pages
+ * 2016-11-20 Eric Oulashin 1.12    Started working on updating to handle null
+ *                                  message headers, which could happen with the
+ *                                  new voting feature in Synchronet 3.17.
+ * 2016-11-22 Eric Oulashin 1.12    Releasing this version
 */
 
 /* Command-line arguments:
@@ -85,8 +89,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.11";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-02-19";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.12";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-11-22";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
@@ -732,353 +736,335 @@ function DDMsgAreaChooser_selectMsgArea_Lightbar(pChooseGroup)
 //                              Will be -1 if none chosen.
 function DDMsgAreaChooser_selectSubBoard_Lightbar(pGrpIndex, pMarkIndex)
 {
-   // Create the return object.
-   var retObj = new Object();
-   retObj.subBoardChosen = false;
-   retObj.subBoardIndex = -1;
+	// Create the return object.
+	var retObj = new Object();
+	retObj.subBoardChosen = false;
+	retObj.subBoardIndex = -1;
 
-   var grpIndex = 0;
-   if (typeof(pGrpIndex) == "number")
-      grpIndex = pGrpIndex;
-   else if ((bbs.curgrp != null) && (typeof(bbs.curgrp) == "number"))
-      grpIndex = bbs.curgrp;
-   // Double-check grpIndex
-   if (grpIndex < 0)
-      grpIndex = 0;
-   else if (grpIndex >= msg_area.grp_list.length)
-      grpIndex = msg_area.grp_list.length - 1;
+	var grpIndex = 0;
+	if (typeof(pGrpIndex) == "number")
+		grpIndex = pGrpIndex;
+	else if ((bbs.curgrp != null) && (typeof(bbs.curgrp) == "number"))
+		grpIndex = bbs.curgrp;
+	// Double-check grpIndex
+	if (grpIndex < 0)
+		grpIndex = 0;
+	else if (grpIndex >= msg_area.grp_list.length)
+		grpIndex = msg_area.grp_list.length - 1;
 
-   var markIndex = 0;
-   if ((pMarkIndex != null) && (typeof(pMarkIndex) == "number"))
-      markIndex = pMarkIndex;
-   else if ((bbs.cursub != null) && (typeof(bbs.cursub) == "number") &&
-             (bbs.curgrp == pGrpIndex))
-   {
-      markIndex = bbs.cursub;
-   }
-   // Double-check markIndex
-   if (markIndex < 0)
-      markIndex = 0;
-   else if (markIndex >= msg_area.grp_list[grpIndex].sub_list.length)
-      markIndex = msg_area.grp_list[grpIndex].sub_list.length - 1;
+	var markIndex = 0;
+	if ((pMarkIndex != null) && (typeof(pMarkIndex) == "number"))
+		markIndex = pMarkIndex;
+	else if ((bbs.cursub != null) && (typeof(bbs.cursub) == "number") && (bbs.curgrp == pGrpIndex))
+		markIndex = bbs.cursub;
+	// Double-check markIndex
+	if (markIndex < 0)
+		markIndex = 0;
+	else if (markIndex >= msg_area.grp_list[grpIndex].sub_list.length)
+		markIndex = msg_area.grp_list[grpIndex].sub_list.length - 1;
 
 
-   // Ensure that the sub-board printf information is created for
-   // this message group.
-   this.BuildSubBoardPrintfInfoForGrp(grpIndex);
+	// Ensure that the sub-board printf information is created for
+	// this message group.
+	this.BuildSubBoardPrintfInfoForGrp(grpIndex);
 
 
-   // If there are no sub-boards in the given message group, then show
-   // an error and return.
-   if (msg_area.grp_list[grpIndex].sub_list.length == 0)
-   {
-      console.clear("\1n");
-      console.print("\1y\1hThere are no sub-boards in the chosen group.\r\n\1p");
-      return retObj;
-   }
+	// If there are no sub-boards in the given message group, then show
+	// an error and return.
+	if (msg_area.grp_list[grpIndex].sub_list.length == 0)
+	{
+		console.clear("\1n");
+		console.print("\1y\1hThere are no sub-boards in the chosen group.\r\n\1p");
+		return retObj;
+	}
 
-   // Returns the index of the bottommost sub-board that can be displayed on
-   // the screen.
-   //
-   // Parameters:
-   //  pTopSubIndex: The index of the topmost sub-board displayed on screen
-   //  pNumItemsPerPage: The number of items per page
-   function getBottommostSubIndex(pTopSubIndex, pNumItemsPerPage)
-   {
-      var bottomGrpIndex = topSubIndex + pNumItemsPerPage - 1;
-      // If bottomGrpIndex is beyond the last index, then adjust it.
-      if (bottomGrpIndex >= msg_area.grp_list[grpIndex].sub_list.length)
-         bottomGrpIndex = msg_area.grp_list[grpIndex].sub_list.length - 1;
-      return bottomGrpIndex;
-   }
+	// Returns the index of the bottommost sub-board that can be displayed on
+	// the screen.
+	//
+	// Parameters:
+	//  pTopSubIndex: The index of the topmost sub-board displayed on screen
+	//  pNumItemsPerPage: The number of items per page
+	function getBottommostSubIndex(pTopSubIndex, pNumItemsPerPage)
+	{
+		var bottomGrpIndex = topSubIndex + pNumItemsPerPage - 1;
+		// If bottomGrpIndex is beyond the last index, then adjust it.
+		if (bottomGrpIndex >= msg_area.grp_list[grpIndex].sub_list.length)
+			bottomGrpIndex = msg_area.grp_list[grpIndex].sub_list.length - 1;
+		return bottomGrpIndex;
+	}
 
 
-   // Figure out the index of the user's currently-selected sub-board.
-   var selectedSubIndex = 0;
-   if ((bbs.cursub != null) && (typeof(bbs.cursub) == "number"))
-   {
-      if ((bbs.curgrp != null) && (typeof(bbs.curgrp) == "number") &&
-          (bbs.curgrp == pGrpIndex))
-      {
-         selectedSubIndex = bbs.cursub;
-      }
-   }
+	// Figure out the index of the user's currently-selected sub-board.
+	var selectedSubIndex = 0;
+	if ((bbs.cursub != null) && (typeof(bbs.cursub) == "number"))
+	{
+		if ((bbs.curgrp != null) && (typeof(bbs.curgrp) == "number") && (bbs.curgrp == pGrpIndex))
+			selectedSubIndex = bbs.cursub;
+	}
 
-   var listStartRow = 3+this.areaChangeHdrLines.length; // The row on the screen where the list will start
-   var listEndRow = console.screen_rows - 1; // Row on screen where list will end
-   var topSubIndex = 0;      // The index of the message group at the top of the list
-   // Figure out the index of the last message group to appear on the screen.
-   var numItemsPerPage = listEndRow - listStartRow + 1;
-   var bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
-   // Figure out how many pages are needed to list all the sub-boards.
-   var numPages = Math.ceil(msg_area.grp_list[grpIndex].sub_list.length / numItemsPerPage);
-   // Figure out the top index for the last page.
-   var topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
+	var listStartRow = 3+this.areaChangeHdrLines.length; // The row on the screen where the list will start
+	var listEndRow = console.screen_rows - 1; // Row on screen where list will end
+	var topSubIndex = 0;      // The index of the message group at the top of the list
+	// Figure out the index of the last message group to appear on the screen.
+	var numItemsPerPage = listEndRow - listStartRow + 1;
+	var bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+	// Figure out how many pages are needed to list all the sub-boards.
+	var numPages = Math.ceil(msg_area.grp_list[grpIndex].sub_list.length / numItemsPerPage);
+	// Figure out the top index for the last page.
+	var topIndexForLastPage = (numItemsPerPage * numPages) - numItemsPerPage;
 
-   // If the highlighted row is beyond the current screen, then
-   // go to the appropriate page.
-   if (selectedSubIndex > bottomSubIndex)
-   {
-      var nextPageTopIndex = 0;
-      while (selectedSubIndex > bottomSubIndex)
-      {
-         nextPageTopIndex = topSubIndex + numItemsPerPage;
-         if (nextPageTopIndex < msg_area.grp_list[grpIndex].sub_list.length)
-         {
-            // Adjust topSubIndex and bottomSubIndex, and
-            // refresh the list on the screen.
-            topSubIndex = nextPageTopIndex;
-            bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
-         }
-         else
-            break;
-      }
+	// If the highlighted row is beyond the current screen, then
+	// go to the appropriate page.
+	if (selectedSubIndex > bottomSubIndex)
+	{
+		var nextPageTopIndex = 0;
+		while (selectedSubIndex > bottomSubIndex)
+		{
+			nextPageTopIndex = topSubIndex + numItemsPerPage;
+			if (nextPageTopIndex < msg_area.grp_list[grpIndex].sub_list.length)
+			{
+				// Adjust topSubIndex and bottomSubIndex, and
+				// refresh the list on the screen.
+				topSubIndex = nextPageTopIndex;
+				bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+			}
+			else
+				break;
+		}
 
-      // If we didn't find the correct page for some reason, then set the
-      // variables to display page 1 and select the first message group.
-      var foundCorrectPage =
-          ((topSubIndex < msg_area.grp_list[grpIndex].sub_list.length) &&
-           (selectedSubIndex >= topSubIndex) && (selectedSubIndex <= bottomSubIndex));
-      if (!foundCorrectPage)
-      {
-         topSubIndex = 0;
-         bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
-         selectedSubIndex = 0;
-      }
-   }
+		// If we didn't find the correct page for some reason, then set the
+		// variables to display page 1 and select the first message group.
+		var foundCorrectPage = ((topSubIndex < msg_area.grp_list[grpIndex].sub_list.length) &&
+		                       (selectedSubIndex >= topSubIndex) && (selectedSubIndex <= bottomSubIndex));
+		if (!foundCorrectPage)
+		{
+			topSubIndex = 0;
+			bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+			selectedSubIndex = 0;
+		}
+	}
 
-   // Clear the screen, write the header, help line, and group list header, and output
-   // a screenful of message groups.
-   console.clear("\1n");
-   this.DisplayAreaChgHdr(1); // Don't need to since it should already be drawn
-   if (this.areaChangeHdrLines.length > 0)
-	   console.crlf();
-   var pageNum = calcPageNum(topSubIndex, numItemsPerPage);
-   this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
-   this.WriteKeyHelpLine();
+	// Clear the screen, write the header, help line, and group list header, and output
+	// a screenful of message groups.
+	console.clear("\1n");
+	this.DisplayAreaChgHdr(1); // Don't need to since it should already be drawn
+	if (this.areaChangeHdrLines.length > 0)
+		console.crlf();
+	var pageNum = calcPageNum(topSubIndex, numItemsPerPage);
+	this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
+	this.WriteKeyHelpLine();
 
-   var curpos = new Object();
-   curpos.x = 1;
-   curpos.y = 2+this.areaChangeHdrLines.length;
-   console.gotoxy(curpos);
-   printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
-   this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow,
-                               false, false);
-   // Start of the input loop.
-   var highlightScrenRow = 0; // The row on the screen for the highlighted group
-   var userInput = "";        // Will store a keypress from the user
-   var continueChoosingSubBrd = true;
-   while (continueChoosingSubBrd)
-   {
-      // Highlight the currently-selected message group
-      highlightScrenRow = listStartRow + (selectedSubIndex - topSubIndex);
-      curpos.y = highlightScrenRow;
-      if ((highlightScrenRow > 0) && (highlightScrenRow < console.screen_rows))
-      {
-         console.gotoxy(1, highlightScrenRow);
-         this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, true);
-      }
+	var curpos = new Object();
+	curpos.x = 1;
+	curpos.y = 2+this.areaChangeHdrLines.length;
+	console.gotoxy(curpos);
+	printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+	this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, false);
+	// Start of the input loop.
+	var highlightScrenRow = 0; // The row on the screen for the highlighted group
+	var userInput = "";        // Will store a keypress from the user
+	var continueChoosingSubBrd = true;
+	while (continueChoosingSubBrd)
+	{
+		// Highlight the currently-selected message group
+		highlightScrenRow = listStartRow + (selectedSubIndex - topSubIndex);
+		curpos.y = highlightScrenRow;
+		if ((highlightScrenRow > 0) && (highlightScrenRow < console.screen_rows))
+		{
+			console.gotoxy(1, highlightScrenRow);
+			this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, true);
+		}
 
-      // Get a key from the user (upper-case) and take action based upon it.
-	  userInput = getKeyWithESCChars(K_UPPER | K_NOCRLF);
-      switch (userInput)
-      {
-         case KEY_UP: // Move up one message group in the list
-            if (selectedSubIndex > 0)
-            {
-               // If the previous group index is on the previous page, then
-               // display the previous page.
-               var previousSubIndex = selectedSubIndex - 1;
-               if (previousSubIndex < topSubIndex)
-               {
-                  // Adjust topSubIndex and bottomSubIndex, and
-                  // refresh the list on the screen.
-                  topSubIndex -= numItemsPerPage;
-                  bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
-                  pageNum = calcPageNum(topSubIndex, numItemsPerPage);
-                  this.updatePageNumInHeader(pageNum, numPages, false, false);
-                  this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow,
-                                              listEndRow, false, true);
-               }
-               else
-               {
-                  // Display the current line un-highlighted.
-                  console.gotoxy(1, curpos.y);
-                  this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
-               }
-               selectedSubIndex = previousSubIndex;
-            }
-            break;
-         case KEY_DOWN: // Move down one message group in the list
-            if (selectedSubIndex < msg_area.grp_list[grpIndex].sub_list.length - 1)
-            {
-               // If the next group index is on the next page, then display
-               // the next page.
-               var nextGrpIndex = selectedSubIndex + 1;
-               if (nextGrpIndex > bottomSubIndex)
-               {
-                  // Adjust topSubIndex and bottomSubIndex, and
-                  // refresh the list on the screen.
-                  topSubIndex += numItemsPerPage;
-                  bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
-                  pageNum = calcPageNum(topSubIndex, numItemsPerPage);
-                  this.updatePageNumInHeader(pageNum, numPages, false, false);
-                  this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow,
-                                              listEndRow, false, true);
-               }
-               else
-               {
-                  // Display the current line un-highlighted.
-                  console.gotoxy(1, curpos.y);
-                  this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
-               }
-               selectedSubIndex = nextGrpIndex;
-            }
-            break;
-         case KEY_HOME: // Go to the top message group on the screen
-            if (selectedSubIndex > topSubIndex)
-            {
-               // Display the current line un-highlighted, then adjust
-               // selectedSubIndex.
-               console.gotoxy(1, curpos.y);
-               this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
-               selectedSubIndex = topSubIndex;
-               // Note: curpos.y is set at the start of the while loop.
-            }
-            break;
-         case KEY_END: // Go to the bottom message group on the screen
-            if (selectedSubIndex < bottomSubIndex)
-            {
-               // Display the current line un-highlighted, then adjust
-               // selectedSubIndex.
-               console.gotoxy(1, curpos.y);
-               this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
-               selectedSubIndex = bottomSubIndex;
-               // Note: curpos.y is set at the start of the while loop.
-            }
-            break;
-         case KEY_ENTER: // Select the currently-highlighted sub-board; and we're done.
-            continueChoosingSubBrd = false;
-            retObj.subBoardChosen = true;
-            retObj.subBoardIndex = selectedSubIndex;
-            break;
-         case KEY_PAGE_DOWN: // Go to the next page
-            var nextPageTopIndex = topSubIndex + numItemsPerPage;
-            if (nextPageTopIndex < msg_area.grp_list[grpIndex].sub_list.length)
-            {
-               // Adjust topSubIndex and bottomSubIndex, and
-               // refresh the list on the screen.
-               topSubIndex = nextPageTopIndex;
-               pageNum = calcPageNum(topSubIndex, numItemsPerPage);
-               bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, false, false);
-               this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedSubIndex = topSubIndex;
-            }
-            break;
-         case KEY_PAGE_UP: // Go to the previous page
-            var prevPageTopIndex = topSubIndex - numItemsPerPage;
-            if (prevPageTopIndex >= 0)
-            {
-               // Adjust topSubIndex and bottomSubIndex, and
-               // refresh the list on the screen.
-               topSubIndex = prevPageTopIndex;
-               pageNum = calcPageNum(topSubIndex, numItemsPerPage);
-               bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, false, false);
-               this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedSubIndex = topSubIndex;
-            }
-            break;
-         case 'F': // Go to the first page
-            if (topSubIndex > 0)
-            {
-               topSubIndex = 0;
-               pageNum = calcPageNum(topSubIndex, numItemsPerPage);
-               bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, false, false);
-               this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedSubIndex = 0;
-            }
-            break;
-         case 'L': // Go to the last page
-            if (topSubIndex < topIndexForLastPage)
-            {
-               topSubIndex = topIndexForLastPage;
-               pageNum = calcPageNum(topSubIndex, numItemsPerPage);
-               bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
-               this.updatePageNumInHeader(pageNum, numPages, false, false);
-               this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow,
-                                            listEndRow, false, true);
-               selectedSubIndex = topIndexForLastPage;
-            }
-            break;
-         case 'Q': // Quit
-            continueChoosingSubBrd = false;
-            break;
-         case '?': // Show help
-            this.ShowHelpScreen(true, true);
-            console.pause();
-            // Refresh the screen
-			this.DisplayAreaChgHdr(1);
-            console.gotoxy(1, 1+this.areaChangeHdrLines.length);
-            this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
-            console.cleartoeol("\1n");
-            this.WriteKeyHelpLine();
-            console.gotoxy(1, 2+this.areaChangeHdrLines.length);
-            printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts",
-                   "Latest date & time");
-            this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow,
-                                        listEndRow, false, true);
-            break;
-         default:
-            // If the user entered a numeric digit, then treat it as
-            // the start of the message group number.
-            if (userInput.match(/[0-9]/))
-            {
-               var originalCurpos = curpos;
+		// Get a key from the user (upper-case) and take action based upon it.
+		userInput = getKeyWithESCChars(K_UPPER | K_NOCRLF);
+		switch (userInput)
+		{
+			case KEY_UP: // Move up one message group in the list
+				if (selectedSubIndex > 0)
+				{
+					// If the previous group index is on the previous page, then
+					// display the previous page.
+					var previousSubIndex = selectedSubIndex - 1;
+					if (previousSubIndex < topSubIndex)
+					{
+						// Adjust topSubIndex and bottomSubIndex, and
+						// refresh the list on the screen.
+						topSubIndex -= numItemsPerPage;
+						bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+						pageNum = calcPageNum(topSubIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum, numPages, false, false);
+						this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
+					}
+					else
+					{
+						// Display the current line un-highlighted.
+						console.gotoxy(1, curpos.y);
+						this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
+					}
+					selectedSubIndex = previousSubIndex;
+				}
+				break;
+			case KEY_DOWN: // Move down one message group in the list
+				if (selectedSubIndex < msg_area.grp_list[grpIndex].sub_list.length - 1)
+				{
+					// If the next group index is on the next page, then display
+					// the next page.
+					var nextGrpIndex = selectedSubIndex + 1;
+					if (nextGrpIndex > bottomSubIndex)
+					{
+						// Adjust topSubIndex and bottomSubIndex, and
+						// refresh the list on the screen.
+						topSubIndex += numItemsPerPage;
+						bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+						pageNum = calcPageNum(topSubIndex, numItemsPerPage);
+						this.updatePageNumInHeader(pageNum, numPages, false, false);
+						this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
+					}
+					else
+					{
+						// Display the current line un-highlighted.
+						console.gotoxy(1, curpos.y);
+						this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
+					}
+					selectedSubIndex = nextGrpIndex;
+				}
+				break;
+			case KEY_HOME: // Go to the top message group on the screen
+				if (selectedSubIndex > topSubIndex)
+				{
+					// Display the current line un-highlighted, then adjust
+					// selectedSubIndex.
+					console.gotoxy(1, curpos.y);
+					this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
+					selectedSubIndex = topSubIndex;
+					// Note: curpos.y is set at the start of the while loop.
+				}
+				break;
+			case KEY_END: // Go to the bottom message group on the screen
+				if (selectedSubIndex < bottomSubIndex)
+				{
+					// Display the current line un-highlighted, then adjust
+					// selectedSubIndex.
+					console.gotoxy(1, curpos.y);
+					this.WriteMsgSubBoardLine(grpIndex, selectedSubIndex, false);
+					selectedSubIndex = bottomSubIndex;
+					// Note: curpos.y is set at the start of the while loop.
+				}
+				break;
+			case KEY_ENTER: // Select the currently-highlighted sub-board; and we're done.
+				continueChoosingSubBrd = false;
+				retObj.subBoardChosen = true;
+				retObj.subBoardIndex = selectedSubIndex;
+				break;
+			case KEY_PAGE_DOWN: // Go to the next page
+				var nextPageTopIndex = topSubIndex + numItemsPerPage;
+				if (nextPageTopIndex < msg_area.grp_list[grpIndex].sub_list.length)
+				{
+					// Adjust topSubIndex and bottomSubIndex, and
+					// refresh the list on the screen.
+					topSubIndex = nextPageTopIndex;
+					pageNum = calcPageNum(topSubIndex, numItemsPerPage);
+					bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+					this.updatePageNumInHeader(pageNum, numPages, false, false);
+					this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
+					selectedSubIndex = topSubIndex;
+				}
+				break;
+			case KEY_PAGE_UP: // Go to the previous page
+				var prevPageTopIndex = topSubIndex - numItemsPerPage;
+				if (prevPageTopIndex >= 0)
+				{
+					// Adjust topSubIndex and bottomSubIndex, and
+					// refresh the list on the screen.
+					topSubIndex = prevPageTopIndex;
+					pageNum = calcPageNum(topSubIndex, numItemsPerPage);
+					bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+					this.updatePageNumInHeader(pageNum, numPages, false, false);
+					this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
+					selectedSubIndex = topSubIndex;
+				}
+				break;
+			case 'F': // Go to the first page
+				if (topSubIndex > 0)
+				{
+					topSubIndex = 0;
+					pageNum = calcPageNum(topSubIndex, numItemsPerPage);
+					bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+					this.updatePageNumInHeader(pageNum, numPages, false, false);
+					this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
+					selectedSubIndex = 0;
+				}
+				break;
+			case 'L': // Go to the last page
+				if (topSubIndex < topIndexForLastPage)
+				{
+					topSubIndex = topIndexForLastPage;
+					pageNum = calcPageNum(topSubIndex, numItemsPerPage);
+					bottomSubIndex = getBottommostSubIndex(topSubIndex, numItemsPerPage);
+					this.updatePageNumInHeader(pageNum, numPages, false, false);
+					this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
+					selectedSubIndex = topIndexForLastPage;
+				}
+				break;
+			case 'Q': // Quit
+				continueChoosingSubBrd = false;
+				break;
+			case '?': // Show help
+				this.ShowHelpScreen(true, true);
+				console.pause();
+				// Refresh the screen
+				this.DisplayAreaChgHdr(1);
+				console.gotoxy(1, 1+this.areaChangeHdrLines.length);
+				this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
+				console.cleartoeol("\1n");
+				this.WriteKeyHelpLine();
+				console.gotoxy(1, 2+this.areaChangeHdrLines.length);
+				printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+				this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
+				break;
+			default:
+				// If the user entered a numeric digit, then treat it as
+				// the start of the message group number.
+				if (userInput.match(/[0-9]/))
+				{
+					var originalCurpos = curpos;
 
-               // Put the user's input back in the input buffer to
-               // be used for getting the rest of the message number.
-               console.ungetstr(userInput);
-               // Move the cursor to the bottom of the screen and
-               // prompt the user for the message number.
-               console.gotoxy(1, console.screen_rows);
-               console.clearline("\1n");
-               console.print("\1cSub-board #: \1h");
-               userInput = console.getnum(msg_area.grp_list[grpIndex].sub_list.length);
-               // If the user made a selection, then set it in the
-               // return object and don't continue the input loop.
-               if (userInput > 0)
-               {
-                  continueChoosingSubBrd = false;
-                  retObj.subBoardChosen = true;
-                  retObj.subBoardIndex = userInput - 1;
-               }
-               else
-               {
-                  // The user didn't enter a selection.  Now we need to
-                  // re-draw the screen due to everything being moved
-                  // up one line.
-                  console.gotoxy(1, 1);
-                  this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
-                  console.cleartoeol("\1n");
-                  this.WriteKeyHelpLine();
-                  console.gotoxy(1, 2);
-                  printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts",
-                         "Latest date & time");
-                  this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow,
-                                              listEndRow, false, true);
-               }
-            }
-            break;
-      }
-   }
+					// Put the user's input back in the input buffer to
+					// be used for getting the rest of the message number.
+					console.ungetstr(userInput);
+					// Move the cursor to the bottom of the screen and
+					// prompt the user for the message number.
+					console.gotoxy(1, console.screen_rows);
+					console.clearline("\1n");
+					console.print("\1cSub-board #: \1h");
+					userInput = console.getnum(msg_area.grp_list[grpIndex].sub_list.length);
+					// If the user made a selection, then set it in the
+					// return object and don't continue the input loop.
+					if (userInput > 0)
+					{
+						continueChoosingSubBrd = false;
+						retObj.subBoardChosen = true;
+						retObj.subBoardIndex = userInput - 1;
+					}
+					else
+					{
+						// The user didn't enter a selection.  Now we need to
+						// re-draw the screen due to everything being moved
+						// up one line.
+						console.gotoxy(1, 1);
+						this.WriteSubBrdListHdr1Line(grpIndex, numPages, pageNum);
+						console.cleartoeol("\1n");
+						this.WriteKeyHelpLine();
+						console.gotoxy(1, 2);
+						printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# Posts", "Latest date & time");
+						this.ListScreenfulOfSubBrds(grpIndex, topSubIndex, listStartRow, listEndRow, false, true);
+					}
+				}
+				break;
+		}
+	}
 
-   return retObj;
+	return retObj;
 }
 
 // For the DDMsgAreaChooser class: Lets the user choose a message group and
@@ -1212,15 +1198,15 @@ function DDMsgAreaChooser_selectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardId
 // user interface).
 function DDMsgAreaChooser_listMsgGrps_Traditional()
 {
-   // Print the header
-   this.WriteGrpListHdrLine();
-   console.print("\1n");
-   // List the message groups
-   for (var i = 0; i < msg_area.grp_list.length; ++i)
-   {
-      console.crlf();
-      this.WriteMsgGroupLine(i, false);
-   }
+	// Print the header
+	this.WriteGrpListHdrLine();
+	console.print("\1n");
+	// List the message groups
+	for (var i = 0; i < msg_area.grp_list.length; ++i)
+	{
+		console.crlf();
+		this.WriteMsgGroupLine(i, false);
+	}
 }
 
 // For the DDMsgAreaChooser class: Lists the sub-boards in a message group,
@@ -1290,7 +1276,17 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				// Get the date & time when the last message was imported.
 				if (msgBase.total_msgs > 0)
 				{
-					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					console.print("Here 1!\r\n\1p"); // Temporary
+					//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					var msgHeader = null;
+					var msgIdx = msgBase.total_msgs-1;
+					while (msgHeader === null)
+					{
+						msgHeader = msgBase.get_msg_header(true, msgIdx, true);
+						--msgIdx;
+					}
+					if (msgHeader === null)
+						msgHeader = getBogusMsgHdr();
 					if (this.showImportDates)
 						subBoardInfo.newestPostDate = msgHeader.when_imported_time
 					else
@@ -1380,7 +1376,16 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				// Get the date & time when the last message was imported.
 				if (msgBase.total_msgs > 0)
 				{
-					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+					var msgHeader = null;
+					var msgIdx = msgBase.total_msgs-1;
+					while (msgHeader === null)
+					{
+						msgHeader = msgBase.get_msg_header(true, msgIdx, true);
+						--msgIdx;
+					}
+					if (msgHeader === null)
+						msgHeader = getBogusMsgHdr();
 					// Construct the date & time strings of the latest post
 					if (this.showImportDates)
 					{
@@ -1539,23 +1544,23 @@ function DDMsgAreaChooser_writeMsgGroupLine(pGrpIndex, pHighlight)
 //                  to the position where it was before this function was called
 function DDMsgAreaChooser_updatePageNumInHeader(pPageNum, pNumPages, pGroup, pRestoreCurPos)
 {
-  var originalCurPos = null;
-  if (pRestoreCurPos)
-    originalCurPos = console.getxy();
+	var originalCurPos = null;
+	if (pRestoreCurPos)
+		originalCurPos = console.getxy();
 
-  if (pGroup)
-  {
-    console.gotoxy(29, 1+this.areaChangeHdrLines.length);
-    console.print("\1n" + this.colors.header + pPageNum + " of " + pNumPages + ")   ");
-  }
-  else
-  {
-    console.gotoxy(51, 1+this.areaChangeHdrLines.length);
-    console.print("\1n" + this.colors.subBoardHeader + pPageNum + " of " + pNumPages + ")   ");
-  }
+	if (pGroup)
+	{
+		console.gotoxy(29, 1+this.areaChangeHdrLines.length);
+		console.print("\1n" + this.colors.header + pPageNum + " of " + pNumPages + ")   ");
+	}
+	else
+	{
+		console.gotoxy(51, 1+this.areaChangeHdrLines.length);
+		console.print("\1n" + this.colors.subBoardHeader + pPageNum + " of " + pNumPages + ")   ");
+	}
 
-  if (pRestoreCurPos)
-    console.gotoxy(originalCurPos);
+	if (pRestoreCurPos)
+		console.gotoxy(originalCurPos);
 }
 
 // Displays a screenful of message sub-boards, for the lightbar interface.
@@ -1573,68 +1578,68 @@ function DDMsgAreaChooser_listScreenfulOfSubBrds(pGrpIndex, pStartSubIndex,
                                                   pStartScreenRow, pEndScreenRow,
                                                   pClearScreenFirst, pBlankToEndRow)
 {
-   // Check the parameters; If they're bad, then just return.
-   if ((typeof(pGrpIndex) != "number") ||
-       (typeof(pStartSubIndex) != "number") ||
-       (typeof(pStartScreenRow) != "number") ||
-       (typeof(pEndScreenRow) != "number"))
-   {
-      return;
-   }
-   if ((pGrpIndex < 0) || (pGrpIndex >= msg_area.grp_list.length))
-      return;
-   if ((pStartSubIndex < 0) ||
-       (pStartSubIndex >= msg_area.grp_list[pGrpIndex].sub_list.length))
-   {
-      return;
-   }
-   if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
-      return;
-   if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
-      return;
-   // If pStartScreenRow is greather than pEndScreenRow, then swap them.
-   if (pStartScreenRow > pEndScreenRow)
-   {
-      var temp = pStartScreenRow;
-      pStartScreenRow = pEndScreenRow;
-      pEndScreenRow = temp;
-   }
+	// Check the parameters; If they're bad, then just return.
+	if ((typeof(pGrpIndex) != "number") ||
+	    (typeof(pStartSubIndex) != "number") ||
+	    (typeof(pStartScreenRow) != "number") ||
+	    (typeof(pEndScreenRow) != "number"))
+	{
+		return;
+	}
+	if ((pGrpIndex < 0) || (pGrpIndex >= msg_area.grp_list.length))
+		return;
+	if ((pStartSubIndex < 0) ||
+	    (pStartSubIndex >= msg_area.grp_list[pGrpIndex].sub_list.length))
+	{
+		return;
+	}
+	if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
+		return;
+	if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
+		return;
+	// If pStartScreenRow is greather than pEndScreenRow, then swap them.
+	if (pStartScreenRow > pEndScreenRow)
+	{
+		var temp = pStartScreenRow;
+		pStartScreenRow = pEndScreenRow;
+		pEndScreenRow = temp;
+	}
 
-   // Calculate the ending index to use for the sub-board array.
-   var endIndex = pStartSubIndex + (pEndScreenRow-pStartScreenRow);
-   if (endIndex >= msg_area.grp_list[pGrpIndex].sub_list.length)
-      endIndex = msg_area.grp_list[pGrpIndex].sub_list.length - 1;
-   var onePastEndIndex = endIndex + 1;
+	// Calculate the ending index to use for the sub-board array.
+	var endIndex = pStartSubIndex + (pEndScreenRow-pStartScreenRow);
+	if (endIndex >= msg_area.grp_list[pGrpIndex].sub_list.length)
+		endIndex = msg_area.grp_list[pGrpIndex].sub_list.length - 1;
+	var onePastEndIndex = endIndex + 1;
 
-   // Clear the screen and go to the specified screen row.
-   if (pClearScreenFirst)
-      console.clear("\1n");
-   console.gotoxy(1, pStartScreenRow);
+	// Clear the screen and go to the specified screen row.
+	if (pClearScreenFirst)
+		console.clear("\1n");
+	console.gotoxy(1, pStartScreenRow);
 
-   // Start listing the sub-boards.
+	// Start listing the sub-boards.
 
-   var subIndex = pStartSubIndex;
-   for (; subIndex < onePastEndIndex; ++subIndex)
-   {
-      this.WriteMsgSubBoardLine(pGrpIndex, subIndex, false);
-      if (subIndex < endIndex)
-         console.crlf();
-   }
+	var subIndex = pStartSubIndex;
+	for (; subIndex < onePastEndIndex; ++subIndex)
+	{
+		this.WriteMsgSubBoardLine(pGrpIndex, subIndex, false);
+		if (subIndex < endIndex)
+		console.crlf();
+	}
 
-   // If pBlankToEndRow is true and we're not at the end row yet, then
-   // write blank lines to the end row.
-   if (pBlankToEndRow)
-   {
-      var screenRow = pStartScreenRow + (endIndex - pStartSubIndex) + 1;
-      if (screenRow <= pEndScreenRow)
-      {
-         for (; screenRow <= pEndScreenRow; ++screenRow)
-         {
-            console.gotoxy(1, screenRow);
-            console.clearline("\1n");
-         }
-      }
-   }
+	// If pBlankToEndRow is true and we're not at the end row yet, then
+	// write blank lines to the end row.
+	if (pBlankToEndRow)
+	{
+		var screenRow = pStartScreenRow + (endIndex - pStartSubIndex) + 1;
+		if (screenRow <= pEndScreenRow)
+		{
+			for (; screenRow <= pEndScreenRow; ++screenRow)
+			{
+				console.gotoxy(1, screenRow);
+				console.clearline("\1n");
+			}
+		}
+	}
 }
 
 // For the DDMsgAreaChooser class: Writes a message sub-board information line.
@@ -1665,7 +1670,16 @@ function DDMsgAreaChooser_writeMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 		// Get the date & time when the last message was imported.
 		if (msgBase.total_msgs > 0)
 		{
-			msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+			//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+			var msgHeader = null;
+			var msgIdx = msgBase.total_msgs-1;
+			while (msgHeader === null)
+			{
+				msgHeader = msgBase.get_msg_header(true, msgIdx, true);
+				--msgIdx;
+			}
+			if (msgHeader === null)
+				msgHeader = getBogusMsgHdr();
 			// Construct the date & time strings of the latest post
 			if (this.showImportDates)
 			{
@@ -2023,26 +2037,26 @@ function calcPageNum(pTopIndex, pNumPerPage)
 //          the message group
 function getGreatestNumMsgs(pGrpIndex)
 {
-  // Sanity checking
-  if (typeof(pGrpIndex) != "number")
-    return 0;
-  if (typeof(msg_area.grp_list[pGrpIndex]) == "undefined")
-    return 0;
+	// Sanity checking
+	if (typeof(pGrpIndex) != "number")
+		return 0;
+	if (typeof(msg_area.grp_list[pGrpIndex]) == "undefined")
+		return 0;
 
-  var greatestNumMsgs = 0;
-  var msgBase = null;
-  for (var subIndex = 0; subIndex < msg_area.grp_list[pGrpIndex].sub_list.length; ++subIndex)
-  {
-    msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[subIndex].code);
-    if (msgBase == null) continue;
-    if (msgBase.open())
-    {
-      if (msgBase.total_msgs > greatestNumMsgs)
-        greatestNumMsgs = msgBase.total_msgs;
-      msgBase.close();
-    }
-  }
-  return greatestNumMsgs;
+	var greatestNumMsgs = 0;
+	var msgBase = null;
+	for (var subIndex = 0; subIndex < msg_area.grp_list[pGrpIndex].sub_list.length; ++subIndex)
+	{
+		msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[subIndex].code);
+		if (msgBase == null) continue;
+		if (msgBase.open())
+		{
+			if (msgBase.total_msgs > greatestNumMsgs)
+				greatestNumMsgs = msgBase.total_msgs;
+			msgBase.close();
+		}
+	}
+	return greatestNumMsgs;
 }
 
 // Inputs a keypress from the user and handles some ESC-based
@@ -2250,4 +2264,29 @@ function msgWrittenTimeToLocalBBSTime(pMsgHdr)
 	var timeZoneDiffSeconds = timeZoneDiffMinutes * 60;
 	var msgWrittenTimeAdjusted = pMsgHdr.when_written_time + timeZoneDiffSeconds;
 	return msgWrittenTimeAdjusted;
+}
+
+// Returns an object containing bare minimum properties necessary to
+// display an invalid message header.  Additionally, an object returned
+// by this function will have an extra property, isBogus, that will be
+// a boolean set to true.
+//
+// Parameters:
+//  pSubject: Optional - A string to use as the subject in the bogus message
+//            header object
+function getBogusMsgHdr(pSubject)
+{
+	var msgHdr = new Object();
+	msgHdr.subject = (typeof(pSubject) == "string" ? pSubject : "");
+	msgHdr.when_imported_time = 0;
+	msgHdr.when_written_time = 0;
+	msgHdr.when_written_zone = 0;
+	msgHdr.date = "Fri, 1 Jan 1960 00:00:00 -0000";
+	msgHdr.attr = 0;
+	msgHdr.to = "Nobody";
+	msgHdr.from = "Nobody";
+	msgHdr.number = 0;
+	msgHdr.offset = 0;
+	msgHdr.isBogus = true;
+	return msgHdr;
 }
