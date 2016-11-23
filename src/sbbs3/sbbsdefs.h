@@ -370,12 +370,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define EVENT_FORCE		(1<<1) 		/* Force users off-line for event		*/
 #define EVENT_INIT		(1<<2)		/* Always run event after init			*/
 #define EVENT_DISABLED	(1<<3)		/* Disabled								*/
-																			
-									/* Mode bits for QWK stuff */			
-#define A_EXPAND		(1<<0)		/* Expand to ANSI sequences */			
-#define A_LEAVE 		(1<<1)		/* Leave in */							
-#define A_STRIP 		(1<<2)		/* Strip out */							
-																			
+
 									/* Bits in xtrn_t.misc					*/
 #define MULTIUSER		(1<<0) 		/* allow multi simultaneous users		*/
 #define XTRN_ANSI		(1<<1)		/* LEGACY (not used)                    */
@@ -430,6 +425,15 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QWK_VOTING	(1L<<17)		/* Include VOTING.DAT					*/
 
 #define QWK_DEFAULT	(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL)
+
+#define QHUB_EXPCTLA	(1<<0)		/* Same as QM_EXPCTLA */
+#define QHUB_RETCTLA	(1<<1)		/* Same as QM_RETCTLA */
+#define QHUB_CTRL_A		(QHUB_EXPCTLA|QHUB_RETCTLA)
+#define QHUB_STRIP		0
+#define QHUB_EXT		(1<<13)		/* Use QWKE format */
+#define QHUB_NOKLUDGES	(1<<14)		/* Don't include @-kludges */
+#define QHUB_NOHEADERS	(1<<16)		/* Don't include HEADERS.DAT */
+#define QHUB_NOVOTING	(1<<17)		/* Don't include VOTING.DAT */
 																			
 							/* Bits in user.chat							*/
 #define CHAT_ECHO	(1<<0)	/* Multinode chat echo							*/

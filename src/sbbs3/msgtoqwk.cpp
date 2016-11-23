@@ -384,7 +384,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 					size++;
 					continue;
 				}
-				if(mode&A_EXPAND) {
+				if(mode&QM_EXPCTLA) {
 					str[0]=0;
 					switch(toupper(ch)) {
 						case 'W':
@@ -451,7 +451,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 						size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
 					continue; 
 				} 						/* End Expand */
-				if(mode&A_LEAVE && valid_ctrl_a_code(ch)) {
+				if(mode&QM_RETCTLA && valid_ctrl_a_code(ch)) {
 					fputc(CTRL_A,qwk_fp);
 					fputc(ch,qwk_fp);
 					size+=2L; 
@@ -478,7 +478,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, uint subnum
 			safe_snprintf(tmp,sizeof(tmp)," %c \1g%.10s\1n %c %.127s%c"
 				,ch,VERSION_NOTICE,ch,cfg.sub[subnum]->tagline,QWK_NEWLINE);
 			strcat(str,tmp);
-			if(!(mode&A_LEAVE))
+			if(!(mode&QM_RETCTLA))
 				remove_ctrl_a(str,str);
 			size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
 		}

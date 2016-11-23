@@ -94,13 +94,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			errormsg(WHERE,ERR_EXEC,p,i);
 	}
 
-	if(useron.rest&FLAG('Q') && useron.qwk&QWK_RETCTLA)
-		useron.qwk|=(QWK_NOINDEX|QWK_NOCTRL|QWK_VIA|QWK_TZ|QWK_MSGID);
+	if(useron.rest&FLAG('Q'))
+		useron.qwk|=QWK_NOINDEX|QWK_NOCTRL;
 
 	if(useron.qwk&QWK_EXPCTLA)
-		mode=A_EXPAND;
+		mode=QM_EXPCTLA;
 	else if(useron.qwk&QWK_RETCTLA)
-		mode=A_LEAVE;
+		mode=QM_RETCTLA;
 	else mode=0;
 	if(useron.qwk&QWK_TZ)
 		mode|=QM_TZ;
@@ -405,7 +405,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 						mv(str,tmp,/* copy: */TRUE); 
 				}
 
-				size=msgtoqwk(&msg,qwk,mode,INVALID_SUB,0,hdrs);
+				size=msgtoqwk(&msg,qwk,mode|QM_REPLYTO,INVALID_SUB,0,hdrs);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_freemsgmem(&msg);
 				if(ndx && size) {

@@ -1,5 +1,3 @@
-/* scfgnet.c */
-
 /* $Id$ */
 
 /****************************************************************************
@@ -908,14 +906,48 @@ while(!done) {
 		sprintf(str,"%2.2u:%2.2u",cfg.qhub[num]->time/60,cfg.qhub[num]->time%60);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Time",str); 
 	}
+	sprintf(opt[i++],"%-27.27s%s","Include Kludge Lines", cfg.qhub[num]->misc&QHUB_NOKLUDGES ? "No":"Yes");
+	sprintf(opt[i++],"%-27.27s%s","Include VOTING.DAT File", cfg.qhub[num]->misc&QHUB_NOVOTING ? "No":"Yes");
+	sprintf(opt[i++],"%-27.27s%s","Include HEADERS.DAT File", cfg.qhub[num]->misc&QHUB_NOHEADERS ? "No":"Yes");
+	sprintf(opt[i++],"%-27.27s%s","Extended (QWKE) Packets", cfg.qhub[num]->misc&QHUB_EXT ? "Yes":"No");
+	sprintf(opt[i++],"%-27.27s%s","Exported Ctrl-A Codes"
+		,cfg.qhub[num]->misc&QHUB_EXPCTLA ? "Expand" : cfg.qhub[num]->misc&QHUB_RETCTLA ? "Leave in" : "Strip");
 	strcpy(opt[i++],"Networked Sub-boards...");
 	opt[i][0]=0;
 	sprintf(str,"%s Network Hub",cfg.qhub[num]->id);
 	uifc.helpbuf=
 		"`QWK Network Hub Configuration:`\n"
 		"\n"
-		"This menu allows you to configure options specific to this QWK network\n"
-		"hub.\n"
+		"This menu allows you to configure options specific to this QWKnet hub.\n"
+		"\n"
+		"The `Hub System ID` must match the QWK System ID of this network hub.\n"
+		"\n"
+		"The `Pack` and `Unpack Command Lines` are used for creating and extracting\n"
+		"REP (reply) and QWK message packets (files, usually in PKZIP format).\n"
+		"\n"
+		"The `Call-out Command Line` is executed when your system attempts a packet\n"
+		"exchange with the QWKnet hub (e.g. executes a script).\n"
+		"\n"
+		"`Kludge Lines` (e.g. @TZ, @VIA, @MSGID, @REPLY) provide information not\n"
+		"available in standard QWK message headers, but are superfluous when the\n"
+		"HEADERS.DAT file is supported and used.\n"
+		"\n"
+		"The `VOTING.DAT` file is the distributed QWKnet voting system supported\n"
+		"in Synchronet v3.17 and later\n"
+		"\n"
+		"The `HEADERS.DAT` file provides all the same information that can be\n"
+		"found in Kludge Lines and also addresses the 25-character QWK field\n"
+		"length limits. HEADERS.DAT is supported in Synchronet v3.15 and later.\n"
+		"\n"
+		"`Extended (QWKE) Packets` are not normally used in QWK Networking.\n"
+		"Setting this to `Yes` enables some QWKE-specific Kludge Lines that are\n"
+		"superfluous when the HEADERS.DAT file is supported and used.\n"
+		"\n"
+		"`Exported Ctrl-A Codes` determines how Synchronet attribute/color\n"
+		"codes in messages are exported into the QWK network packets. This\n"
+		"may be set to `Leave in` (retain), `Expand` (to ANSI), or `Strip` (remove).\n"
+		"This setting is used for QWKnet NetMail messages and may over-ride the\n"
+		"equivalent setting for each sub-board."
 	;
 	switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&qhub_dflt,0
 		,str,opt)) {
@@ -1052,6 +1084,30 @@ while(!done) {
 			}
 			break;
 		case 7:
+			cfg.qhub[num]->misc^=QHUB_NOKLUDGES;
+			uifc.changes=1;
+			break;
+		case 8:
+			cfg.qhub[num]->misc^=QHUB_NOVOTING;
+			uifc.changes=1;
+			break;
+		case 9:
+			cfg.qhub[num]->misc^=QHUB_NOHEADERS;
+			uifc.changes=1;
+			break;
+		case 10:
+			cfg.qhub[num]->misc^=QHUB_EXT;
+			uifc.changes=1;
+			break;
+		case 11:
+			i = cfg.qhub[num]->misc&QHUB_CTRL_A;
+			i++;
+			if(i == QHUB_CTRL_A) i = 0;
+			cfg.qhub[num]->misc &= ~QHUB_CTRL_A;
+			cfg.qhub[num]->misc |= i;
+			uifc.changes=1;
+			break;
+		case 12:
 			qhub_sub_edit(num);
 			break; 
 		} 
@@ -1150,11 +1206,11 @@ while(1) {
 				cfg.qhub[num]->mode[n]=cfg.qhub[num]->mode[n-1]; 
 			}
 		if(!m)
-			cfg.qhub[num]->mode[j]=A_STRIP;
+			cfg.qhub[num]->mode[j]=QHUB_STRIP;
 		else if(m==1)
-			cfg.qhub[num]->mode[j]=A_LEAVE;
+			cfg.qhub[num]->mode[j]=QHUB_RETCTLA;
 		else
-			cfg.qhub[num]->mode[j]=A_EXPAND;
+			cfg.qhub[num]->mode[j]=QHUB_EXPCTLA;
 		cfg.qhub[num]->sub[j]=l;
 		cfg.qhub[num]->conf[j]=atoi(str);
 		cfg.qhub[num]->subs++;
@@ -1185,8 +1241,8 @@ while(1) {
 		sprintf(opt[n++],"%-22.22s%u"
 			,"Conference Number",cfg.qhub[num]->conf[j]);
 		sprintf(opt[n++],"%-22.22s%s"
-			,"Ctrl-A Codes",cfg.qhub[num]->mode[j]==A_STRIP ?
-			"Strip out" : cfg.qhub[num]->mode[j]==A_LEAVE ?
+			,"Ctrl-A Codes",cfg.qhub[num]->mode[j]==QHUB_STRIP ?
+			"Strip out" : cfg.qhub[num]->mode[j]==QHUB_RETCTLA ?
 			"Leave in" : "Expand to ANSI");
 		opt[n][0]=0;
 		uifc.helpbuf=
@@ -1246,11 +1302,11 @@ while(1) {
 				,"Ctrl-A Codes",opt);
 			uifc.changes=1;
 			if(!m)
-				cfg.qhub[num]->mode[j]=A_STRIP;
+				cfg.qhub[num]->mode[j]=QHUB_STRIP;
 			else if(m==1)
-				cfg.qhub[num]->mode[j]=A_LEAVE;
+				cfg.qhub[num]->mode[j]=QHUB_RETCTLA;
 			else if(m==2)
-				cfg.qhub[num]->mode[j]=A_EXPAND; 
+				cfg.qhub[num]->mode[j]=QHUB_EXPCTLA; 
 			} 
 		} 
 	}

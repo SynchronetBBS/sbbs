@@ -643,8 +643,10 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 			else
 				continue;
 			if(cfg->qhub[i]->sub[cfg->qhub[i]->subs]!=INVALID_SUB)
-				cfg->qhub[i]->subs++; }
-		for(j=0;j<32;j++)
+				cfg->qhub[i]->subs++;
+		}
+		get_int(cfg->qhub[i]->misc, instream);
+		for(j=0;j<30;j++)
 			get_int(n,instream);
 	}
 
