@@ -164,9 +164,17 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 if (typeof http_request.query.subject !== 'undefined' &&
                     typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.votes !== 'undefined' &&
+                    typeof http_request.query.results !== 'undefined' &&
                     typeof http_request.query.answer !== 'undefined'
                 ) {
-                    reply = "barf";
+                    reply.success = postPoll(
+                        http_request.query.sub[0],
+                        http_request.query.subject[0],
+                        http_request.query.votes[0],
+                        http_request.query.results[0],
+                        http_request.query.answer,
+                        http_request.query.comment || []
+                    );
                 }
                 break;
 
