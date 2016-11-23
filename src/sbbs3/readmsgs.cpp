@@ -450,7 +450,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
 		return(0); 
 	}
-	msg.total_hfields=0;				/* init to NULL, specify not-allocated */
+	ZERO_VAR(msg);				/* init to NULL, specify not-allocated */
 	if(!(mode&SCAN_CONST))
 		lncntr=0;
 	if((msgs=getlastmsg(subnum,&last,0))==0) {
