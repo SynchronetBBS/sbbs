@@ -1966,8 +1966,8 @@ int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 			return(retval);
 
 		remsg->hdr.thread_first=newmsgnum;
-		remsg->hdr.attr |= MSG_REPLIED;
-		retval=smb_putmsghdr(smb,remsg);
+		remsg->idx.attr = (remsg->hdr.attr |= MSG_REPLIED);
+		retval=smb_putmsg(smb,remsg);
 		smb_unlockmsghdr(smb,remsg);
 		return(retval);
 	}
