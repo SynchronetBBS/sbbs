@@ -1955,8 +1955,8 @@ int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 	ulong		nextmsgnum;
 	smbmsg_t	nextmsg;
 
-	if(!remsg->hdr.thread_first) {	/* New msg is first reply */
-		if(remsg->idx.offset==0		/* index not read? */
+ 	if(!remsg->hdr.thread_first) {	/* New msg is first reply */
+		if(remsg->offset==0 || remsg->idx.offset==0		/* index not read? */
 			&& (retval=smb_getmsgidx(smb,remsg))!=SMB_SUCCESS)
 			return(retval);
 		if((retval=smb_lockmsghdr(smb,remsg))!=SMB_SUCCESS)
