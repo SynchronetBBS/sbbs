@@ -1538,7 +1538,6 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 ushort sbbs_t::chmsgattr(smbmsg_t msg)
 {
 	int ch;
-	uint16_t attr = msg.hdr.attr;
 
 	while(online && !(sys_status&SS_ABORT)) {
 		CRLF;
@@ -1549,38 +1548,38 @@ ushort sbbs_t::chmsgattr(smbmsg_t msg)
 			bprintf("%c\r\n",ch);
 		switch(ch) {
 			case 'P':
-				attr^=MSG_PRIVATE;
+				msg.hdr.attr^=MSG_PRIVATE;
 				break;
 			case 'R':
-				attr^=MSG_READ;
+				msg.hdr.attr^=MSG_READ;
 				break;
 			case 'K':
-				attr^=MSG_KILLREAD;
+				msg.hdr.attr^=MSG_KILLREAD;
 				break;
 			case 'A':
-				attr^=MSG_ANONYMOUS;
+				msg.hdr.attr^=MSG_ANONYMOUS;
 				break;
 			case 'N':   /* Non-purgeable */
-				attr^=MSG_PERMANENT;
+				msg.hdr.attr^=MSG_PERMANENT;
 				break;
 			case 'M':
-				attr^=MSG_MODERATED;
+				msg.hdr.attr^=MSG_MODERATED;
 				break;
 			case 'V':
-				attr^=MSG_VALIDATED;
+				msg.hdr.attr^=MSG_VALIDATED;
 				break;
 			case 'D':
-				attr^=MSG_DELETE;
+				msg.hdr.attr^=MSG_DELETE;
 				break;
 			case 'L':
-				attr^=MSG_LOCKED;
+				msg.hdr.attr^=MSG_LOCKED;
 				break;
 			case 'C':
-				attr^=MSG_NOREPLY;
+				msg.hdr.attr^=MSG_NOREPLY;
 				break;
 			default:
-				return(attr); 
+				return(msg.hdr.attr); 
 		} 
 	}
-	return(attr);
+	return(msg.hdr.attr);
 }
