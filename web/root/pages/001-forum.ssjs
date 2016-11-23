@@ -10,7 +10,7 @@ var strings = {
 		open : '<script type="text/javascript">',
 		thread_navigation : 'threadNav();',
 		interval : 'setInterval(function () { %s }, %s);',
-		vote_buttons : 'enableVoteButtonHandlers("%s");',
+		vote_functions : 'enableVoteButtonHandlers("%s");',
 		vote_refresh_thread : 'getVotesInThread("%s", %s)',
 		vote_refresh_threads : 'getVotesInThreads("%s")',
 		get_group_unread : 'getGroupUnreadCount("%s")',
@@ -188,7 +188,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 		writeln(strings.message.header.voting.open);
 		if (!(msgBase.cfg.settings&SUB_NOVOTING) &&
-			(typeof settings.vote_buttons === 'undefined' || settings.vote_buttons) &&
+			(typeof settings.vote_functions === 'undefined' || settings.vote_functions) &&
 			!(header.attr&MSG_POLL)
 		) {
 			writeln(
@@ -382,7 +382,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 	writeln(strings.script.open);
 	if (settings.keyboard_navigation) writeln(strings.script.thread_navigation);
 	if (user.alias != settings.guest || user.security.restrictions&UFLAG_V) {
-		writeln(format(strings.script.vote_buttons, http_request.query.sub[0]));
+		writeln(format(strings.script.vote_functions, http_request.query.sub[0]));
 	}
 	writeln(
 		format(
@@ -443,7 +443,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 		writeln(strings.thread_list.item.badges.open);
 		if (!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) &&
-			settings.vote_buttons &&
+			settings.vote_functions &&
 			(thread.votes.up > 0 || thread.votes.down > 0)
 		) {
 			writeln(

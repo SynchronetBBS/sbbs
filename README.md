@@ -51,7 +51,7 @@ A web interface for Synchronet BBS
 	; Enable or disable keyboard navigation in message threads
 	keyboard_navigation = false
 	; Display upvote/downvote buttons in message threads (3.17)
-	vote_buttons = true
+	vote_functions = true
 	; Refresh nodelist, vote counts, etc. this often (in milliseconds)
 	refresh_interval = 60000
 ```
