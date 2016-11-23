@@ -1048,7 +1048,7 @@ bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, c
 	int found;
 	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
 	
-	sprintf(location, "[%lx]", offset);
+	sprintf(location, "%lx", offset);
 	if((found = strListFind(section_list, location, /* case_sensitive: */FALSE)) < 0) {
 		strListFree(&section_list);
 		return false;
@@ -1069,7 +1069,7 @@ void sbbs_t::qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t net_type
 {
 	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
 
-	for(int i=0; section_list[i] != NULL; i++)
+	for(int i=0; section_list != NULL && section_list[i] != NULL; i++)
 		qwk_vote(*ini, section_list[i], net_type, qnet_id, hubnum);
 	strListFree(&section_list);
 }
@@ -1167,7 +1167,6 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	else if(strnicmp(section, "vote:", 5) == 0) {
 		const char* notice = NULL;
 
-		ZERO_VAR(msg);
 		smb_hfield_str(&msg, RFC822MSGID, section + 5);
 		if(iniGetBool(ini, section, "upvote", FALSE)) {
 			msg.hdr.attr = MSG_UPVOTE;
