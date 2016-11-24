@@ -296,8 +296,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 4";
-var READER_DATE = "2016-11-23";
+var READER_VERSION = "1.17 Beta 5";
+var READER_DATE = "2016-11-24";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1037,6 +1037,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.enhReaderKeys.selectMessage = " ";
 	this.enhReaderKeys.batchDelete = CTRL_D;
 	this.enhReaderKeys.forwardMsg = "O";
+	this.enhReaderKeys.vote = "V";
+	this.enhReaderKeys.showVotes = "T";
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -4645,6 +4647,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	retObj.newMsgOffset = -1;
 	retObj.nextAction = ACTION_NONE;
 	retObj.refreshEnhancedRdrHelpLine = false;
+
+	// Temporary
+	//console.print("\1n\r\nHdr has total votes: " + msgHeader.hasOwnProperty("total_votes") + "\r\n");
+	//console.print("Hdr has upvotes: " + msgHeader.hasOwnProperty("upvotes") + "\r\n");
+	//console.pause();
+	// End Temporary
 	
 	// Show the message header
 	this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
@@ -5418,6 +5426,61 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 				writeMessage = true; // We want to refresh the message on the screen
 				break;
+			case this.enhReaderKeys.vote: // Vote on the message
+				// TODO: Implement this when a vote function is added to Synchronet's JS
+				break;
+			case this.enhReaderKeys.showVotes: // Show votes
+				// Save the original cursor position
+				var originalCurPos = console.getxy();
+				if (msgHeader.hasOwnProperty("total_votes") && msgHeader.hasOwnProperty("upvotes"))
+				{
+					var msgUpvotes = msgHeader.upvotes;
+					var msgDownvotes = msgHeader.total_votes - msgHeader.upvotes;
+					var msgVoteScore = msgHeader.upvotes - msgDownvotes;
+					var voteInfo = new Array();
+					voteInfo.push("Upvotes: " + msgUpvotes);
+					voteInfo.push("Downvotes: " + msgDownvotes);
+					voteInfo.push("Score: " + msgVoteScore);
+					if (msgHeader.hasOwnProperty("tally"))
+						voteInfo.push("Tally: " + msgHeader.tally);
+					// Display the vote info and let the user scroll through them
+					// (the console height should be enough, but do this just in case)
+					// Calculate information for the scrollbar for the vote info lines
+					var infoFractionShown = this.msgAreaHeight / voteInfo.length;
+					if (infoFractionShown > 1)
+						infoFractionShown = 1.0;
+					var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
+					if (numInfoSolidScrollBlocks == 0)
+						numInfoSolidScrollBlocks = 1;
+					var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
+					var lastInfoSolidBlockStartRow = this.msgAreaTop;
+					// Define a scrollbar update function for the header info/kludge lines
+					function msgInfoScrollbarUpdateFn(pFractionToLastPage)
+					{
+						var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidInfoScrollBlocks * pFractionToLastPage);
+						if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
+							msgReaderObj.UpdateEnhancedReaderScollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
+						lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
+						console.gotoxy(1, console.screen_rows);
+					}
+					// Display the kludge lines and let the user scroll through them
+					this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
+					scrollTextLines(voteInfo, 0, this.colors["msgBodyColor"], true,
+					this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
+					msgAreaHeight, 1, console.screen_rows,
+					msgInfoScrollbarUpdateFn);
+					// Display the scrollbar for the message to refresh it on the screen
+					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					writeMessage = true; // We want to refresh the message on the screen
+				}
+				else
+				{
+					this.DisplayEnhReaderError("There is no voting information for this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					console.gotoxy(originalCurPos);
+					writeMessage = false;
+				}
+				break;
 			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
@@ -6039,6 +6102,38 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					console.crlf();
 					console.pause();
 				}
+				writeMessage = true;
+				break;
+			case this.enhReaderKeys.vote: // Vote on the message
+				// TODO: Implement this when a vote function is added to Synchronet's JS
+				break;
+			case this.enhReaderKeys.showVotes: // Show votes
+				if (msgHeader.hasOwnProperty("total_votes") && msgHeader.hasOwnProperty("upvotes"))
+				{
+					var msgUpvotes = msgHeader.upvotes;
+					var msgDownvotes = msgHeader.total_votes - msgHeader.upvotes;
+					var msgVoteScore = msgHeader.upvotes - msgDownvotes;
+					var voteInfo = new Array();
+					console.print("\1n");
+					console.crlf();
+					console.print("Upvotes: " + msgUpvotes);
+					console.crlf();
+					console.print("Downvotes: " + msgDownvotes);
+					console.crlf();
+					console.print("Score: " + msgVoteScore);
+					console.crlf();
+					if (msgHeader.hasOwnProperty("tally"))
+					{
+						console.print("Tally: " + msgHeader.tally);
+						console.crlf();
+					}
+				}
+				else
+				{
+					console.print("\1n\1h\1yThere is no voting information for this message\1n");
+					console.crlf();
+				}
+				console.pause();
 				writeMessage = true;
 				break;
 			case this.enhReaderKeys.quit: // Quit
@@ -7842,10 +7937,10 @@ function DigDistMsgReader_CanQuote()
 //  pMsgHdr: The message header object
 function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 {
-  if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
-    return;
+	if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
+		return;
 
-  // Note: The message header has the following fields:
+	// Note: The message header has the following fields:
 	// 'number': The message number
 	// 'offset': The message offset
 	// 'to': Who the message is directed to (string)
@@ -7853,65 +7948,65 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 	// 'subject': The message subject (string)
 	// 'date': The date - Full text (string)
 
-  // Generate a string containing the message's import date & time.
-  //var dateTimeStr = strftime("%Y-%m-%d %H:%M:%S", msgHeader.when_imported_time)
-  // Use the date text in the message header, without the time
-  // zone offset at the end.
-  var dateTimeStr = pMsgHdr["date"].replace(/ [-+][0-9]+$/, "");
+	// Generate a string containing the message's import date & time.
+	//var dateTimeStr = strftime("%Y-%m-%d %H:%M:%S", msgHeader.when_imported_time)
+	// Use the date text in the message header, without the time
+	// zone offset at the end.
+	var dateTimeStr = pMsgHdr["date"].replace(/ [-+][0-9]+$/, "");
 
-  // Check to see if there is a msghdr file in the sbbs/text/menu
-  // directory.  If there is, then use it to display the message
-  // header information.  Otherwise, output a default message header.
-  var msgHdrFileOpened = false;
-  var msgHdrFilename = this.GetMsgHdrFilenameFull();
-  if (msgHdrFilename.length > 0)
-  {
-    var msgHdrFile = new File(msgHdrFilename);
-    if (msgHdrFile.open("r"))
-    {
-      msgHdrFileOpened = true;
-      var fileLine = null; // To store a line read from the file
-      while (!msgHdrFile.eof)
-      {
-         // Read the next line from the header file
-         fileLine = msgHdrFile.readln(2048);
+	// Check to see if there is a msghdr file in the sbbs/text/menu
+	// directory.  If there is, then use it to display the message
+	// header information.  Otherwise, output a default message header.
+	var msgHdrFileOpened = false;
+	var msgHdrFilename = this.GetMsgHdrFilenameFull();
+	if (msgHdrFilename.length > 0)
+	{
+		var msgHdrFile = new File(msgHdrFilename);
+		if (msgHdrFile.open("r"))
+		{
+			msgHdrFileOpened = true;
+			var fileLine = null; // To store a line read from the file
+			while (!msgHdrFile.eof)
+			{
+				// Read the next line from the header file
+				fileLine = msgHdrFile.readln(2048);
 
-         // fileLine should be a string, but I've seen some cases
-         // where it isn't, so check its type.
-         if (typeof(fileLine) != "string")
-            continue;
+				// fileLine should be a string, but I've seen some cases
+				// where it isn't, so check its type.
+				if (typeof(fileLine) != "string")
+					continue;
 
-         // Since we're displaying the message information ouside of Synchronet's
-         // message read prompt, this script now has to parse & replace some of
-         // the @-codes in the message header line, since Synchronet doesn't know
-         // that the user is reading a message.
-         console.putmsg(this.ParseMsgAtCodes(fileLine, pMsgHdr, null, dateTimeStr, false, true));
-         console.crlf();
-      }
-      msgHdrFile.close();
-    }
-  }
+				// Since we're displaying the message information ouside of Synchronet's
+				// message read prompt, this script now has to parse & replace some of
+				// the @-codes in the message header line, since Synchronet doesn't know
+				// that the user is reading a message.
+				console.putmsg(this.ParseMsgAtCodes(fileLine, pMsgHdr, null, dateTimeStr, false, true));
+				console.crlf();
+			}
+			msgHdrFile.close();
+		}
+	}
 
-  // If the msghdr file didn't open (or doesn't exist), then output the default
-  // header.
-  if (!msgHdrFileOpened)
-  {
-    // Generate a string describing the message attributes, then output the default
-    // header.
-    var allMsgAttrStr = makeAllMsgAttrStr(pMsgHdr);
-    console.print("\1n\1wАБВлллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллВБА");
-    console.crlf();
-    console.print("\1n\1wАБВлн\1cFrom\1w\1h: \1b" + pMsgHdr["from"].substr(0, console.screen_columns-12));
-    console.crlf();
-    console.print("\1n\1wАБВлн\1cTo  \1w\1h: \1b" + pMsgHdr["to"].substr(0, console.screen_columns-12));
-    console.crlf();
-    console.print("\1n\1wАБВлн\1cSubj\1w\1h: \1b" + pMsgHdr["subject"].substr(0, console.screen_columns-12));
-    console.crlf();
-    console.print("\1n\1wАБВлн\1cDate\1w\1h: \1b" + dateTimeStr.substr(0, console.screen_columns-12));
-    console.crlf();
-    console.print("\1n\1wАБВлн\1cAttr\1w\1h: \1b" + allMsgAttrStr.substr(0, console.screen_columns-12));
-    console.crlf();
-  }
+	// If the msghdr file didn't open (or doesn't exist), then output the default
+	// header.
+	if (!msgHdrFileOpened)
+	{
+		// Generate a string describing the message attributes, then output the default
+		// header.
+		var allMsgAttrStr = makeAllMsgAttrStr(pMsgHdr);
+		console.print("\1n\1wАБВлллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллВБА");
+		console.crlf();
+		console.print("\1n\1wАБВлн\1cFrom\1w\1h: \1b" + pMsgHdr["from"].substr(0, console.screen_columns-12));
+		console.crlf();
+		console.print("\1n\1wАБВлн\1cTo  \1w\1h: \1b" + pMsgHdr["to"].substr(0, console.screen_columns-12));
+		console.crlf();
+		console.print("\1n\1wАБВлн\1cSubj\1w\1h: \1b" + pMsgHdr["subject"].substr(0, console.screen_columns-12));
+		console.crlf();
+		console.print("\1n\1wАБВлн\1cDate\1w\1h: \1b" + dateTimeStr.substr(0, console.screen_columns-12));
+		console.crlf();
+		console.print("\1n\1wАБВлн\1cAttr\1w\1h: \1b" + allMsgAttrStr.substr(0, console.screen_columns-12));
+		console.crlf();
+	}
 }
 
 // For the DigDistMsgReader class: Returns the name of the msghdr file in the
@@ -8453,6 +8548,15 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 		}
 	}
 	var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
+	var msgUpvotes = 0;
+	var msgDownvotes = 0;
+	var msgVoteScore = 0;
+	if (pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
+	{
+		msgUpvotes = pMsgHdr.upvotes;
+		msgDownvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
+		msgVoteScore = pMsgHdr.upvotes - msgDownvotes;
+	}
 	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
 	                         .replace(/@MSG_FROM@/gi, pMsgHdr["from"])
 	                         .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr["from_ext"]) == "string" ? pMsgHdr["from_ext"] : ""))
@@ -8485,7 +8589,10 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 							 .replace(/@DIRL@/gi, fileDirLong)
 							 .replace(/@ALIAS@/gi, user.alias)
 							 .replace(/@NAME@/gi, (user.name.length > 0 ? user.name : user.alias))
-							 .replace(/@USER@/gi, user.alias);
+							 .replace(/@USER@/gi, user.alias)
+							 .replace(/@MSG_UPVOTES@/gi, msgUpvotes)
+							 .replace(/@MSG_DOWNVOTES@/gi, msgDownvotes)
+							 .replace(/@MSG_SCORE@/gi, msgVoteScore);
 	if (!pAllowCLS)
 		newTxtLine = newTxtLine.replace(/@CLS@/gi, "");
 	return newTxtLine;
@@ -9269,6 +9376,8 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	keyHelpLines.push("\1h\1cSpacebar         \1g: \1n\1cSelect message (for batch delete, etc.)");
 	keyHelpLines.push("                   \1n\1cFor batch delete, open the message list and use CTRL-D.");
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.forwardMsg + "                \1g: \1n\1cForward the message to user/email");
+	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.vote + "                \1g: \1n\1cVote on the message");
+	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.showVotes + "                \1g: \1n\1cShow vote stats for the message");
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.quit + "                \1g: \1n\1cQuit back to the BBS");
 	for (var idx = 0; idx < keyHelpLines.length; ++idx)
 	{
@@ -11764,6 +11873,21 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 	var msgHdr = this.GetMsgHdrByAbsoluteNum(pMsgHdr.number, true);
 	if (msgHdr == null)
 		return new Array();
+	// The message header retrieved that way might not have vote information,
+	// so copy any additional header information from this.hdrsForCurrentSubBoard
+	// if there's a header there for this message.
+	if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(pMsgHdr.number))
+	{
+		var tmpHdrIdx = this.hdrsForCurrentSubBoardByMsgNum[pMsgHdr.number];
+		if (this.hdrsForCurrentSubBoard.hasOwnProperty(tmpHdrIdx))
+		{
+			for (var hdrProp in this.hdrsForCurrentSubBoard[tmpHdrIdx])
+			{
+				if (!msgHdr.hasOwnProperty(hdrProp))
+					msgHdr[hdrProp] = this.hdrsForCurrentSubBoard[tmpHdrIdx][hdrProp];
+			}
+		}
+	}
 
 	var msgHdrInfoLines = new Array();
 
