@@ -296,8 +296,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 3";
-var READER_DATE = "2016-11-20";
+var READER_VERSION = "1.17 Beta 4";
+var READER_DATE = "2016-11-23";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1457,7 +1457,6 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
 	}
 	else
 	{
-		// Synchronet 3.15 or earlier
 		tmpHdrs = [];
 		var msgHdr;
 		for (var msgIdx = 0; msgIdx < this.msgbase.total_msgs; ++msgIdx)
@@ -1532,7 +1531,12 @@ function DigDistMsgReader_GetMsgIdx(pHdrOrMsgNum)
 		}
 	}
 	else if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(msgNum))
+	{
 		msgIdx = this.hdrsForCurrentSubBoardByMsgNum[msgNum];
+		//console.print("\1n\r\nmsgIdx: " + msgIdx + ", type: " + typeof(msgIdx) + "\r\n"); // Temporary
+		//logStackTrace(); // Temporary
+		//console.pause(); // Temporary
+	}
 	else
 	{
 		var msgHdr = this.msgbase.get_msg_header(false, msgNum, false);
@@ -1783,30 +1787,48 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 	// User input loop
 	var selectedMessageOffset = 0;
 	if (typeof(pStartingMsgOffset) == "number")
+	{
+		//console.print("\1n\r\nHere 1\r\n\1p"); // Temporary
 		selectedMessageOffset = pStartingMsgOffset;
+	}
 	else if (this.SearchingAndResultObjsDefinedForCurSub())
 	{
+		//console.print("\1n\r\nHere 2\r\n\1p"); // Temporary
 		// If reading personal mail, start at the first unread message index
 		// (or the last message, if all messages have been read)
 		if (this.readingPersonalEmail)
 		{
+			//console.print("\1n\r\nHere 3\r\n\1p"); // Temporary
 			selectedMessageOffset = this.GetLastReadMsgIdx(false); // Used to be true
 			if ((selectedMessageOffset > -1) && (selectedMessageOffset < this.NumMessages() - 1))
 				++selectedMessageOffset;
 		}
 		else
+		{
+			//console.print("\1n\r\nHere 4\r\n\1p"); // Temporary
 			selectedMessageOffset = 0;
+		}
 	}
 	else if (this.hdrsForCurrentSubBoard.length > 0)
 	{
+		//console.print("\1n\r\nHere 5\r\n\1p"); // Temporary
 		selectedMessageOffset = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
 		if (selectedMessageOffset < 0)
+		{
+			//console.print("\1n\r\nHere 6\r\n\1p"); // Temporary
 			selectedMessageOffset = 0;
+		}
 		else if (selectedMessageOffset >= this.hdrsForCurrentSubBoard.length)
+		{
+			//console.print("\1n\r\nHere 7\r\n\1p"); // Temporary
 			selectedMessageOffset = this.hdrsForCurrentSubBoard.length - 1;
+		}
 	}
 	else
+	{
+		//console.print("\1n\r\nHere 8\r\n\1p"); // Temporary
 		selectedMessageOffset = -1;
+	}
 	var otherRetObj = null;
 	var continueOn = true;
 	while (continueOn)
@@ -2743,7 +2765,10 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 					if (retObj.stoppedReading)
 						msgIndex = 0;
 					else if (goToNextRetval.changedMsgArea)
+					{
 						msgIndex = goToNextRetval.msgIndex;
+						//console.print("\1n\r\nNext area from last msg - msgIndex: " + msgIndex + "\r\n\1p"); // Temporary
+					}
 				}
 				// If the caller wants this method to return instead of going to the next
 				// sub-board with messages, then do so.
@@ -2854,7 +2879,10 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 				if (retObj.stoppedReading)
 					msgIndex = 0;
 				else if (goToNextRetval.changedMsgArea)
+				{
 					msgIndex = goToNextRetval.msgIndex;
+					//console.print("\1n\r\nmsgIndex: " + msgIndex + "\r\n\1p"); // Temporary
+				}
 			}
 			// If the caller wants this method to return instead of going to the next
 			// sub-board with messages, then do so.
@@ -4480,6 +4508,11 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoar
 //                                            non-scrolling interface to read the message)
 function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 {
+	// Temporary
+	//console.print("\1n\r\nRead - Offset: " + pOffset + "\r\n");
+	//logStackTrace();
+	//console.pause();
+	// End Temporary
 	var retObj = new Object();
 	retObj.offsetValid = true;
 	retObj.msgNotReadable = false;
@@ -6215,8 +6248,10 @@ function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea)
 						continueGoingToPrevSubBoard = false; // No search results, so don't keep going to the previous sub-board.
 						// Go to the user's last read message.  If the message index ends up
 						// below 0, then go to the last message not marked as deleted.
-						//retObj.msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
-						retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
+						// We probably shouldn't use GetMsgIdx() yet because the arrays of
+						// message headers have not been populated for the next area yet
+						retObj.msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+						//retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
 						if (retObj.msgIndex >= 0)
 							retObj.changedMsgArea = true;
 						else
@@ -6362,8 +6397,11 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 						continueGoingToNextSubBoard = false; // No search results, so don't keep going to the next sub-board.
 						// Go to the user's last read message.  If the message index ends up
 						// below 0, then go to the first message not marked as deleted.
-						//retObj.msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
-						retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
+						retObj.msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+						// We probably shouldn't use GetMsgIdx() yet because the arrays of
+						// message headers have not been populated for the next area yet
+						//retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
+						//console.print("\1n\r\nGo to next area - Code:" + this.subBoardCode + ":, msgIndex: " + retObj.msgIndex + "\r\n\1p"); // Temporary
 						if (retObj.msgIndex >= 0)
 							retObj.changedMsgArea = true;
 						else
@@ -6415,6 +6453,14 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 							}
 						}
 					}
+					else
+					{
+						// There is no search.  Populate the arrays of all headers
+						// for this sub-board
+						this.PopulateHdrsForCurrentSubBoard();
+						retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
+						//console.print("\1n\r\nGo to next area (2) - msgIndex: " + retObj.msgIndex + "\r\n\1p"); // Temporary
+					}
 				}
 				else // The message base failed to open
 				{
@@ -6441,8 +6487,8 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 				// Show a message telling the user that there are no more
 				// messages or sub-boards.  Then, refresh the hotkey help line.
 				writeWithPause(this.msgAreaLeft, console.screen_rows,
-									"\1n\1h\1y* No more messages or message areas.",
-									ERROR_PAUSE_WAIT_MS, "\1n", true);
+				               "\1n\1h\1y* No more messages or message areas.",
+				               ERROR_PAUSE_WAIT_MS, "\1n", true);
 				if (this.scrollingReaderInterface && console.term_supports(USER_ANSI))
 					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, pAllowChgMsgArea);
 			}
