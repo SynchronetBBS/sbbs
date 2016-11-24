@@ -1,6 +1,7 @@
 /* Synchronet message base (SMB) utility */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -68,8 +69,6 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #include "conwrap.h"	/* getch */
 #include "filewrap.h"
 #include "smblib.h"
-#include "crc16.h"
-#include "crc32.h"
 #include "gen_defs.h"	/* MAX_PATH */
 
 #ifdef __WATCOMC__
@@ -854,7 +853,7 @@ typedef struct {
 void packmsgs(ulong packable)
 {
 	uchar	buf[SDT_BLOCK_LEN],ch;
-	char	str[128],fname[128],tmpfname[128];
+	char	fname[MAX_PATH+1],tmpfname[MAX_PATH+1];
 	int i,size;
 	ulong l,m,n,datoffsets=0,length,total;
 	FILE *tmp_sdt,*tmp_shd,*tmp_sid;
@@ -1147,28 +1146,7 @@ void packmsgs(ulong packable)
 			msg.idx.offset=ftell(tmp_shd);
 		else
 			msg.idx.offset=smb_fallochdr(&smb,length)+smb.status.header_offset;
-		msg.idx.number=msg.hdr.number;
-		msg.idx.attr=msg.hdr.attr;
-		msg.idx.time=msg.hdr.when_imported.time;
-		msg.idx.subj=smb_subject_crc(msg.subj);
-		if(smb.status.attr&SMB_EMAIL) {
-			if(msg.to_ext)
-				msg.idx.to=atoi(msg.to_ext);
-			else
-				msg.idx.to=0;
-			if(msg.from_ext)
-				msg.idx.from=atoi(msg.from_ext);
-			else
-				msg.idx.from=0; 
-		}
-		else {
-			SAFECOPY(str,msg.to);
-			strlwr(str);
-			msg.idx.to=crc16(str,0);
-			SAFECOPY(str,msg.from);
-			strlwr(str);
-			msg.idx.from=crc16(str,0); 
-		}
+		smb_init_idx(&smb, &msg);
 		fwrite(&msg.idx,1,sizeof(idxrec_t),tmp_sid);
 
 		/* Write the new header entry */
