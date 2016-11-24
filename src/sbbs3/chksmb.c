@@ -327,7 +327,7 @@ int main(int argc, char **argv)
 		}
 
 		if(msg.from_net.type == NET_NONE && msg.id == NULL) {
-			fprintf(stderr,"%sNo Message ID\n",beep);
+			fprintf(stderr,"%sNo Message-ID\n",beep);
 			msgerr=TRUE;
 			if(extinfo)
 				printf("MSGERR: Header missing Message-ID\n");
@@ -415,7 +415,7 @@ int main(int argc, char **argv)
 						,msg.hdr.number,smb.status.last_msg);
 				hdrnumerr++; 
 			}
-			if(smb_getmsgidx(&smb,&msg)) {
+			if(smb_getmsgidx(&smb,&msg) || msg.idx.offset != l) {
 				fprintf(stderr,"%sNot found in index\n",beep);
 				msgerr=TRUE;
 				if(extinfo)
