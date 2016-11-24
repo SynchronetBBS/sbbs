@@ -1,6 +1,7 @@
 /* Synchronet message base (SMB) library function prototypes */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,6 +1,7 @@
 /* Synchronet message base constant and structure definitions */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -440,7 +441,7 @@ typedef struct _PACK {		/* Index record */
 		};
 	};
 	uint16_t	attr;			/* attributes (read, permanent, etc.) */
-	uint32_t	offset; 		/* offset into header file */
+	uint32_t	offset; 		/* byte-offset of msghdr in header file */
 	uint32_t	number; 		/* number of message (1 based) */
 	uint32_t	time;			/* time/date message was imported/posted */
 
