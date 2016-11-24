@@ -296,7 +296,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 5";
+var READER_VERSION = "1.17 Beta 6";
 var READER_DATE = "2016-11-24";
 
 // Keyboard key codes for displaying on the screen
@@ -984,6 +984,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.DeleteSelectedMessages = DigDistMsgReader_DeleteSelectedMessages;
 	this.NumSelectedMessages = DigDistMsgReader_NumSelectedMessages;
 	this.ForwardMessage = DigDistMsgReader_ForwardMessage;
+	this.VoteOnMessage = DigDistMsgReader_VoteOnMessage;
 
 	// These two variables keep track of whether we're doing a message scan that spans
 	// multiple sub-boards so that the enhanced reader function can enable use of
@@ -5427,7 +5428,43 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				writeMessage = true; // We want to refresh the message on the screen
 				break;
 			case this.enhReaderKeys.vote: // Vote on the message
-				// TODO: Implement this when a vote function is added to Synchronet's JS
+				var voteRetObj = this.VoteOnMessage(msgHeader);
+				if (voteRetObj.BBSHasVoteFunction)
+				{
+					if (!voteRetObj.userQuit)
+					{
+						if ((voteRetObj.errorMsg.length > 0) || (!voteRetObj.savedVote))
+						{
+							if (voteRetObj.errorMsg.length > 0)
+							{
+								if (voteRetObj.mnemonicsRequiredForErrorMsg)
+								{
+									console.mnemonics(voteRetObj.errorMsg);
+									console.print("\1n");
+								}
+								else
+									console.print("\1n\1y\1h* " + voteRetObj.errorMsg + "\1n");
+							}
+							else if (!voteRetObj.savedVote)
+								console.print("\1n\1y\1h* Failed to save the vote\1n");
+						}
+						else
+							msgHeader = voteRetObj.updatedHdr; // To get updated vote information
+						console.crlf();
+						console.pause();
+					}
+					// Refresh things on the screen
+					console.clear("\1n");
+					// Display the message header and key help line again
+					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					// Display the scrollbar again to refresh it on the screen
+					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					writeMessage = true; // We want to refresh the message on the screen
+				}
+				else
+					writeMessage = false;
 				break;
 			case this.enhReaderKeys.showVotes: // Show votes
 				// Save the original cursor position
@@ -6105,7 +6142,27 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				writeMessage = true;
 				break;
 			case this.enhReaderKeys.vote: // Vote on the message
-				// TODO: Implement this when a vote function is added to Synchronet's JS
+				var voteRetObj = this.VoteOnMessage(msgHeader);
+				if (voteRetObj.BBSHasVoteFunction)
+				{
+					if (!voteRetObj.userQuit)
+					{
+						if ((voteRetObj.errorMsg.length > 0) || (!voteRetObj.savedVote))
+						{
+							if (voteRetObj.errorMsg.length > 0)
+								console.print("\1n\1y\1h* MSG_UPVOTE & MSG_DOWNVOTE not defined\1n");
+							else if (!voteRetObj.savedVote)
+								console.print("\1n\1y\1h* Failed to save the vote\1n");
+							console.crlf();
+							console.pause();
+						}
+						else
+							msgHeader = voteRetObj.updatedHdr; // To get updated vote information
+					}
+					writeMessage = true; // We want to refresh the message on the screen
+				}
+				else
+					writeMessage = false;
 				break;
 			case this.enhReaderKeys.showVotes: // Show votes
 				if (msgHeader.hasOwnProperty("total_votes") && msgHeader.hasOwnProperty("upvotes"))
@@ -8217,9 +8274,10 @@ function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum, pExpandFields)
 // Parameters:
 //  pMsgNum: The absolute message number
 //  pExpandFields: Whether or not to expand fields.  Defaults to false.
+//  pGetVoteInfo: Whether or not to get voting information.  Defaults to false.
 //
 // Return value: The message header for the message number, or null on error
-function DigDistMsgReader_GetMsgHdrByAbsoluteNum(pMsgNum, pExpandFields)
+function DigDistMsgReader_GetMsgHdrByAbsoluteNum(pMsgNum, pExpandFields, pGetVoteInfo)
 {
 	var msgHdr = null;
 	if (this.msgbase == null)
@@ -8229,7 +8287,8 @@ function DigDistMsgReader_GetMsgHdrByAbsoluteNum(pMsgNum, pExpandFields)
 	else
 	{
 		var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
-		msgHdr = this.msgbase.get_msg_header(false, pMsgNum, expandFields);
+		var getVoteInfo = (typeof(pGetVoteInfo) == "boolean" ? pGetVoteInfo : false);
+		msgHdr = this.msgbase.get_msg_header(false, pMsgNum, expandFields, getVoteInfo);
 	}
 	if (msgHdr == null)
 		msgHdr = getBogusMsgHdr();
@@ -9376,7 +9435,8 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	keyHelpLines.push("\1h\1cSpacebar         \1g: \1n\1cSelect message (for batch delete, etc.)");
 	keyHelpLines.push("                   \1n\1cFor batch delete, open the message list and use CTRL-D.");
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.forwardMsg + "                \1g: \1n\1cForward the message to user/email");
-	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.vote + "                \1g: \1n\1cVote on the message");
+	if (typeof(this.msgbase.vote_msg) === "function")
+		keyHelpLines.push("\1h\1c" + this.enhReaderKeys.vote + "                \1g: \1n\1cVote on the message");
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.showVotes + "                \1g: \1n\1cShow vote stats for the message");
 	keyHelpLines.push("\1h\1c" + this.enhReaderKeys.quit + "                \1g: \1n\1cQuit back to the BBS");
 	for (var idx = 0; idx < keyHelpLines.length; ++idx)
@@ -11870,7 +11930,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 		return new Array();
 
 	// Get the message header with fields expanded so we can get the most info possible.
-	var msgHdr = this.GetMsgHdrByAbsoluteNum(pMsgHdr.number, true);
+	var msgHdr = this.GetMsgHdrByAbsoluteNum(pMsgHdr.number, true, true);
 	if (msgHdr == null)
 		return new Array();
 	// The message header retrieved that way might not have vote information,
@@ -13655,6 +13715,128 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 	}
 
 	return retStr;
+}
+
+// For the DigDistMsgReader class: Lets the user vote on a message
+//
+// Parameters:
+//  pMsgHdr: The header of the mesasge being voted on
+//
+// Return value: An object with the following properties:
+//               BBSHasVoteFunction: Boolean - Whether or not the system has
+//                                   the vote_msg function
+//               savedVote: Boolean - Whether or not the vote was saved
+//               userQuit: Boolean - Whether or not the user quit and didn't vote
+//               errorMsg: String - An error message, if something went wrong
+//               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
+//               updatedHdr: The updated message header containing vote information.
+//                           If something went wrong, this will be null.
+function DigDistMsgReader_VoteOnMessage(pMsgHdr)
+{
+	var retObj = new Object();
+	retObj.BBSHasVoteFunction = (typeof(this.msgbase.vote_msg) === "function");
+	retObj.savedVote = false;
+	retObj.userQuit = false;
+	retObj.errorMsg = "";
+	retObj.mnemonicsRequiredForErrorMsg = false;
+	retObj.updatedHdr = null;
+
+	// See if voting is allowed in the current sub-board
+	if ((msg_area.sub[this.subBoardCode].settings & SUB_NOVOTING) == SUB_NOVOTING)
+	{
+		retObj.errorMsg = bbs.text(typeof(VotingNotAllowed) != "undefined" ? VotingNotAllowed : 779);
+		retObj.mnemonicsRequiredForErrorMsg = true;
+		return retObj;
+	}
+		
+
+	// New MsgBase method: vote_msg(). it takes a message header object
+	// (like save_msg), except you only need a few properties, in order of
+	// importarnce:
+	// attr: you need to have this set to MSG_UPVOTE, MSG_DOWNVOTE, or MSG_VOTE
+	// thread_back or reply_id: either of these must be set to indicate msg to vote on
+	// from: name of voter
+	// from_net_type and from_net_addr: if applicable
+	if (retObj.BBSHasVoteFunction)
+	{
+		if ((typeof(MSG_UPVOTE) != "undefined") && (typeof(MSG_DOWNVOTE) != "undefined"))
+		{
+			var voteAttr = 0;
+			console.print("\1n");
+			console.crlf();
+			// Get text line 783 to prompt for voting
+			console.mnemonics(bbs.text(typeof(VoteMsgUpDownOrQuit) != "undefined" ? VoteMsgUpDownOrQuit : 783));
+			switch (console.getkeys("UDQ"))
+			{
+				case "U":
+					voteAttr = MSG_UPVOTE;
+					break;
+				case "D":
+					voteAttr = MSG_DOWNVOTE;
+					break;
+				case "Q":
+				default:
+					retObj.userQuit = true;
+					break;
+			}
+			// If the user voted, then save the message header.
+			if (voteAttr != 0)
+			{
+				var voteMsgHdr = new Object();
+				voteMsgHdr.attr = voteAttr;
+				voteMsgHdr.thread_back = pMsgHdr.number;
+				voteMsgHdr.reply_id = pMsgHdr.number;
+				voteMsgHdr.from = user.handle;
+				if (voteMsgHdr.from.length == 0)
+					voteMsgHdr.from = user.name;
+				if (pMsgHdr.from.hasOwnProperty("from_net_type"))
+				{
+					voteMsgHdr.from_net_type = pMsgHdr.from_net_type;
+					if (pMsgHdr.from_net_type != NET_NONE)
+						voteMsgHdr.from_net_addr = user.email;
+				}
+				// Save the vote message header
+				retObj.savedVote = this.msgbase.vote_msg(voteMsgHdr);
+				// If the save was successful, then update
+				// this.hdrsForCurrentSubBoard with the updated
+				// message header (for the message that was read)
+				if (retObj.savedVote)
+				{
+					if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(pMsgHdr.number))
+					{
+						var originalMsgIdx = this.hdrsForCurrentSubBoardByMsgNum[pMsgHdr.number];
+						//this.hdrsForCurrentSubBoard[originalMsgIdx] = this.msgbase.get_msg_header(false, pMsgHdr.number, true, true);
+						if (typeof(this.msgbase.get_all_msg_headers) === "function")
+						{
+							var tmpHdrs = this.msgbase.get_all_msg_headers();
+							if (tmpHdrs.hasOwnProperty(pMsgHdr.number))
+							{
+								this.hdrsForCurrentSubBoard[originalMsgIdx] = tmpHdrs[pMsgHdr.number];
+								retObj.updatedHdr = pMsgHdr;
+								if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("total_votes"))
+									retObj.updatedHdr.total_votes = this.hdrsForCurrentSubBoard[originalMsgIdx].total_votes;
+								if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("upvotes"))
+									retObj.updatedHdr.upvotes = this.hdrsForCurrentSubBoard[originalMsgIdx].upvotes;
+								if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("tally"))
+									retObj.updatedHdr.tally = this.hdrsForCurrentSubBoard[originalMsgIdx].tally;
+							}
+						}
+					}
+				}
+				else
+				{
+					// Failed to save the vote - Probably because the user has already voted
+					// on it.  Output the "you voted already" text.
+					retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
+					retObj.mnemonicsRequiredForErrorMsg = true;
+				}
+			}
+		}
+		else
+			retObj.errorMsg = "MSG_UPVOTE & MSG_DOWNVOTE are not defined";
+	}
+
+	return retObj;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
