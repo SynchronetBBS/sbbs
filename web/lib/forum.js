@@ -845,8 +845,8 @@ function getMessageThreads(sub, max) {
             from_net_addr : header.from_net_addr,
             to : header.to,
             when_written_time : header.when_written_time,
-            upvotes : header.upvotes || 0,
-            downvotes : header.downvotes || 0
+            upvotes : (header.attr&MSG_POLL ? 0 : (header.upvotes || 0)),
+            downvotes : (header.attr&MSG_POLL ? 0 : (header.downvotes || 0))
         };
         if (header.attr&MSG_POLL) {
             header.field_list.sort(
