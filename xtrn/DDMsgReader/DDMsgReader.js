@@ -296,7 +296,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 6";
+var READER_VERSION = "1.17 Beta 7";
 var READER_DATE = "2016-11-24";
 
 // Keyboard key codes for displaying on the screen
@@ -5428,13 +5428,20 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				writeMessage = true; // We want to refresh the message on the screen
 				break;
 			case this.enhReaderKeys.vote: // Vote on the message
-				var voteRetObj = this.VoteOnMessage(msgHeader);
+				// Move the cursor to the last line in the message area so the
+				// vote question text prompt will appear there.
+				var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+				console.gotoxy(1, console.screen_rows-1);
+				// Let the user vote on the message
+				var voteRetObj = this.VoteOnMessage(msgHeader, true);
 				if (voteRetObj.BBSHasVoteFunction)
 				{
 					if (!voteRetObj.userQuit)
 					{
 						if ((voteRetObj.errorMsg.length > 0) || (!voteRetObj.savedVote))
 						{
+							console.gotoxy(1, console.screen_rows-1);
+							console.print("\1n");
 							if (voteRetObj.errorMsg.length > 0)
 							{
 								if (voteRetObj.mnemonicsRequiredForErrorMsg)
@@ -5443,16 +5450,25 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 									console.print("\1n");
 								}
 								else
-									console.print("\1n\1y\1h* " + voteRetObj.errorMsg + "\1n");
+									console.print("\1y\1h* " + voteRetObj.errorMsg + "\1n");
 							}
 							else if (!voteRetObj.savedVote)
-								console.print("\1n\1y\1h* Failed to save the vote\1n");
+								console.print("\1y\1h* Failed to save the vote\1n");
 						}
 						else
 							msgHeader = voteRetObj.updatedHdr; // To get updated vote information
-						console.crlf();
+						//console.crlf();
+						console.print(" ");
 						console.pause();
 					}
+
+					// Refresh the last 2 message lines on the screen, then display
+					// the key help line
+					this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					writeMessage = false;
+
+					/*
 					// Refresh things on the screen
 					console.clear("\1n");
 					// Display the message header and key help line again
@@ -5462,6 +5478,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
 					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 					writeMessage = true; // We want to refresh the message on the screen
+					*/
 				}
 				else
 					writeMessage = false;
@@ -6149,10 +6166,20 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					{
 						if ((voteRetObj.errorMsg.length > 0) || (!voteRetObj.savedVote))
 						{
+							console.print("\1n");
+							console.crlf();
 							if (voteRetObj.errorMsg.length > 0)
-								console.print("\1n\1y\1h* MSG_UPVOTE & MSG_DOWNVOTE not defined\1n");
+							{
+								if (voteRetObj.mnemonicsRequiredForErrorMsg)
+								{
+									console.mnemonics(voteRetObj.errorMsg);
+									console.print("\1n");
+								}
+								else
+									console.print("\1y\1h* " + voteRetObj.errorMsg + "\1n");
+							}
 							else if (!voteRetObj.savedVote)
-								console.print("\1n\1y\1h* Failed to save the vote\1n");
+								console.print("\1y\1h* Failed to save the vote\1n");
 							console.crlf();
 							console.pause();
 						}
@@ -13721,6 +13748,9 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 //
 // Parameters:
 //  pMsgHdr: The header of the mesasge being voted on
+//  pRemoveNLsFromVoteText: Optional boolean - Whether or not to remove newlines
+//                          (and carriage returns) from the voting text from
+//                          text.dat.  Defaults to false.
 //
 // Return value: An object with the following properties:
 //               BBSHasVoteFunction: Boolean - Whether or not the system has
@@ -13731,7 +13761,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 //               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
 //               updatedHdr: The updated message header containing vote information.
 //                           If something went wrong, this will be null.
-function DigDistMsgReader_VoteOnMessage(pMsgHdr)
+function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 {
 	var retObj = new Object();
 	retObj.BBSHasVoteFunction = (typeof(this.msgbase.vote_msg) === "function");
@@ -13741,10 +13771,14 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr)
 	retObj.mnemonicsRequiredForErrorMsg = false;
 	retObj.updatedHdr = null;
 
+	var removeNLsFromVoteText = (typeof(pRemoveNLsFromVoteText) === "boolean" ? pRemoveNLsFromVoteText : false)
+
 	// See if voting is allowed in the current sub-board
 	if ((msg_area.sub[this.subBoardCode].settings & SUB_NOVOTING) == SUB_NOVOTING)
 	{
 		retObj.errorMsg = bbs.text(typeof(VotingNotAllowed) != "undefined" ? VotingNotAllowed : 779);
+		if (removeNLsFromVoteText)
+			retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\r", "");
 		retObj.mnemonicsRequiredForErrorMsg = true;
 		return retObj;
 	}
@@ -13762,11 +13796,16 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr)
 		if ((typeof(MSG_UPVOTE) != "undefined") && (typeof(MSG_DOWNVOTE) != "undefined"))
 		{
 			var voteAttr = 0;
-			console.print("\1n");
-			console.crlf();
 			// Get text line 783 to prompt for voting
-			console.mnemonics(bbs.text(typeof(VoteMsgUpDownOrQuit) != "undefined" ? VoteMsgUpDownOrQuit : 783));
-			switch (console.getkeys("UDQ"))
+			var textDatText = bbs.text(typeof(VoteMsgUpDownOrQuit) != "undefined" ? VoteMsgUpDownOrQuit : 783);
+			if (removeNLsFromVoteText)
+				textDatText = textDatText.replace("\r\n", "").replace("\n", "").replace("\r", "");
+			console.print("\1n");
+			console.mnemonics(textDatText);
+			console.print("\1n");
+			// Using getAllowedKeyWithMode() instead of console.getkeys() so we
+			// can control the input mode better, so it doesn't output a CRLF
+			switch (getAllowedKeyWithMode("UDQ", K_NOCRLF|K_NOSPIN))
 			{
 				case "U":
 					voteAttr = MSG_UPVOTE;
@@ -13828,6 +13867,8 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr)
 					// Failed to save the vote - Probably because the user has already voted
 					// on it.  Output the "you voted already" text.
 					retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
+					if (removeNLsFromVoteText)
+						retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\r", "");
 					retObj.mnemonicsRequiredForErrorMsg = true;
 				}
 			}
