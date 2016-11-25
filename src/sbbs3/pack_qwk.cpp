@@ -94,9 +94,6 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			errormsg(WHERE,ERR_EXEC,p,i);
 	}
 
-	if(useron.rest&FLAG('Q'))
-		useron.qwk|=QWK_NOINDEX|QWK_NOCTRL;
-
 	if(useron.qwk&QWK_EXPCTLA)
 		mode=QM_EXPCTLA;
 	else if(useron.qwk&QWK_RETCTLA)
@@ -319,9 +316,6 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		files=0;
 
 	start=time(NULL);
-
-	if(useron.rest&FLAG('Q'))
-		useron.qwk|=(QWK_EMAIL|QWK_ALLMAIL|QWK_DELMAIL);
 
 	if(!(useron.qwk&QWK_NOINDEX)) {
 		SAFEPRINTF(str,"%sPERSONAL.NDX",cfg.temp_dir);
