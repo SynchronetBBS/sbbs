@@ -296,8 +296,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 7";
-var READER_DATE = "2016-11-24";
+var READER_VERSION = "1.17 Beta 8";
+var READER_DATE = "2016-11-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -985,6 +985,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.NumSelectedMessages = DigDistMsgReader_NumSelectedMessages;
 	this.ForwardMessage = DigDistMsgReader_ForwardMessage;
 	this.VoteOnMessage = DigDistMsgReader_VoteOnMessage;
+	this.HasUserVotedOnMsg = DigDistMsgReader_HasUserVotedOnMsg;
 
 	// These two variables keep track of whether we're doing a message scan that spans
 	// multiple sub-boards so that the enhanced reader function can enable use of
@@ -1533,12 +1534,12 @@ function DigDistMsgReader_GetMsgIdx(pHdrOrMsgNum)
 			}
 		}
 	}
-	else if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(msgNum))
+	else if (this.hdrsForCurrentSubBoard.length > 0)
 	{
-		msgIdx = this.hdrsForCurrentSubBoardByMsgNum[msgNum];
-		//console.print("\1n\r\nmsgIdx: " + msgIdx + ", type: " + typeof(msgIdx) + "\r\n"); // Temporary
-		//logStackTrace(); // Temporary
-		//console.pause(); // Temporary
+		if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(msgNum))
+			msgIdx = this.hdrsForCurrentSubBoardByMsgNum[msgNum];
+		else
+			msgIdx = -1;
 	}
 	else
 	{
@@ -1832,6 +1833,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		//console.print("\1n\r\nHere 8\r\n\1p"); // Temporary
 		selectedMessageOffset = -1;
 	}
+	//console.print("selectedMessageOffset: " + selectedMessageOffset + "\r\n\1p"); // Temporary
 	var otherRetObj = null;
 	var continueOn = true;
 	while (continueOn)
@@ -5457,9 +5459,9 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						}
 						else
 							msgHeader = voteRetObj.updatedHdr; // To get updated vote information
-						//console.crlf();
-						console.print(" ");
-						console.pause();
+						//console.print(" ");
+						//console.pause();
+						mswait(ERROR_PAUSE_WAIT_MS);
 					}
 
 					// Refresh the last 2 message lines on the screen, then display
@@ -6710,6 +6712,7 @@ function DigDistMsgReader_SetUpLightbarMsgListVars()
 	if (!this.SearchingAndResultObjsDefinedForCurSub() || this.readingPersonalEmail)
 	{
 		lastReadMsgIdx = this.GetLastReadMsgIdx();
+		//console.print("\1n\r\nlastReadMsgIdx: " + lastReadMsgIdx + "\r\n\1p"); // Temporary
 		if (lastReadMsgIdx == -1)
 			lastReadMsgIdx = 0;
 	}
@@ -12516,10 +12519,27 @@ function DigDistMsgReader_GetLastReadMsgIdx(pMailStartFromFirst)
 	{
 		//msgIndex = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
 		msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
+		/*
+		this.hdrsForCurrentSubBoard = new Array();
+		// hdrsForCurrentSubBoardByMsgNum is an object that maps absolute message numbers
+		// to their index to hdrsForCurrentSubBoard
+		this.hdrsForCurrentSubBoardByMsgNum = new Object();
+		*/
 		// Sanity checking for msgIndex (note: this function should return -1 if
 		// there is no last read message).
 		if ((this.msgbase != null) && this.msgbase.is_open)
 		{
+			// If msgIndex is -1, as a result of GetMsgIdx(), then see what the last read
+			// message index is according to the Synchronet message base.  If
+			// this.hdrsForCurrentSubBoard.length has been populated, then if the last
+			// message index according to Synchronet is greater than that, then set the
+			// message index to the last index in this.hdrsForCurrentSubBoard.length.
+			if (msgIndex == -1)
+			{
+				var msgIdxAccordingToMsgbase = absMsgNumToIdx(this.msgbase, msg_area.sub[this.subBoardCode].last_read);
+				if ((this.hdrsForCurrentSubBoard.length > 0) && (msgIdxAccordingToMsgbase >= this.hdrsForCurrentSubBoard.length))
+					msgIndex = this.hdrsForCurrentSubBoard.length - 1;
+			}
 			//if (msgIndex >= this.msgbase.total_msgs)
 			//	msgIndex = this.msgbase.total_msgs - 1;
 			// TODO: Is this code right?  Modified 3/24/2015 to replace
@@ -13081,10 +13101,16 @@ function DigDistMsgReader_CalcTraditionalMsgListTopIdx(pPageNum)
 //  pPageNum: A page number (1-based)
 function DigDistMsgReader_CalcLightbarMsgListTopIdx(pPageNum)
 {
-   if (this.reverseListOrder)
-      this.lightbarListTopMsgIdx = this.NumMessages() - (this.lightbarMsgListNumLines * (pPageNum-1)) - 1;
-   else
-      this.lightbarListTopMsgIdx = (this.lightbarMsgListNumLines * (pPageNum-1));
+	if (this.reverseListOrder)
+		this.lightbarListTopMsgIdx = this.NumMessages() - (this.lightbarMsgListNumLines * (pPageNum-1)) - 1;
+	else
+	{
+		//this.lightbarListTopMsgIdx = (this.lightbarMsgListNumLines * (pPageNum-1));
+		var pageIdx = pPageNum - 1;
+		if (pageIdx < 0)
+			pageIdx = 0;
+		this.lightbarListTopMsgIdx = this.lightbarMsgListNumLines * pageIdx;
+	}
 }
 
 // For the DigDistMsgReader class: Given a message number (1-based), this calculates
@@ -13782,7 +13808,60 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 		retObj.mnemonicsRequiredForErrorMsg = true;
 		return retObj;
 	}
-		
+
+	// If the message is a poll question and has the maximum number of votes
+	// already or is closed for voting, then don't let the user vote on it.
+	if ((pMsgHdr.attr & MSG_POLL) == MSG_POLL)
+	{
+		var userVotedMaxVotes = false;
+		var numVotes = (pMsgHdr.hasOwnProperty("votes") ? pMsgHdr.votes : 0);
+		if (typeof(this.msgbase.how_user_voted) === "function")
+		{
+			var votes = this.msgbase.how_user_voted(pMsgNum, (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
+			if (votes >= 0)
+			{
+				if ((votes == 0) || (votes == 1))
+					userVotedMaxVotes = (votes == 3); // (1 << 0) | (1 << 1);
+				else
+				{
+					userVotedMaxVotes = true;
+					for (var voteIdx = 0; voteIdx <= numVotes; ++voteIdx)
+					{
+						if (votes && (1 << voteIdx) == 0)
+						{
+							userVotedMaxVotes = false;
+							break;
+						}
+					}
+				}
+			}
+		}
+		var pollIsClosed = ((pMsgHdr.auxattr & POLL_CLOSED) == POLL_CLOSED);
+		if (pollIsClosed)
+		{
+			retObj.errorMsg = "This poll is closed";
+			return retObj;
+		}
+		else if (userVotedMaxVotes)
+		{
+			retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
+			if (removeNLsFromVoteText)
+				retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\r", "");
+			retObj.mnemonicsRequiredForErrorMsg = true;
+			return retObj;
+		}
+	}
+
+	//this.HasUserVotedOnMsg(pMsgNum)
+	// If the user has voted on this message already, then set an error message and return.
+	if (this.HasUserVotedOnMsg(pMsgHdr.number))
+	{
+		retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
+		if (removeNLsFromVoteText)
+			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\r", "");
+		retObj.mnemonicsRequiredForErrorMsg = true;
+		return retObj;
+	}
 
 	// New MsgBase method: vote_msg(). it takes a message header object
 	// (like save_msg), except you only need a few properties, in order of
@@ -13864,12 +13943,8 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 				}
 				else
 				{
-					// Failed to save the vote - Probably because the user has already voted
-					// on it.  Output the "you voted already" text.
-					retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
-					if (removeNLsFromVoteText)
-						retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\r", "");
-					retObj.mnemonicsRequiredForErrorMsg = true;
+					// Failed to save the vote
+					retObj.errorMsg = "Failed to save your vote";
 				}
 			}
 		}
@@ -13878,6 +13953,37 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	}
 
 	return retObj;
+}
+
+// For the DigDistMsgReader class: Checks to see whether a user has voted on a message.
+// The message must belong to the currently-open sub-board.
+//
+// Parameters:
+//  pMsgNum: The message number
+function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum)
+{
+	// Thanks to echicken for explaining how to check this.  To check a user's
+	// vote, use MsgBase.how_user_voted().
+	/*
+	The return value will be:
+	0 - user hasn't voted
+	1 - upvoted
+	2 - downvoted
+	Or, if the message was a poll, it's a bitfield:
+	if (votes&(1<<2)) {
+	 // User selected answer 2
+	}
+	*/
+	var userHasVotedOnMsg = false;
+	if ((this.msgbase !== null) && this.msgbase.is_open)
+	{
+		if (typeof(this.msgbase.how_user_voted) === "function")
+		{
+			var votes = this.msgbase.how_user_voted(pMsgNum, (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
+			userHasVotedOnMsg = (votes > 0);
+		}
+	}
+	return userHasVotedOnMsg;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -17887,4 +17993,54 @@ function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib, pClearLineAft
       console.gotoxy(pX, pY);
       console.cleartoeol(clearLineAttrib);
    }
+}
+
+function logStackTrace(levels) {
+    var callstack = [];
+    var isCallstackPopulated = false;
+    try {
+        i.dont.exist += 0; //doesn't exist- that's the point
+    } catch (e) {
+        if (e.stack) { //Firefox / chrome
+            var lines = e.stack.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                    callstack.push(lines[i]);
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+        else if (window.opera && e.message) { //Opera
+            var lines = e.message.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
+                    var entry = lines[i];
+                    //Append next line also since it has the file info
+                    if (lines[i + 1]) {
+                        entry += " at " + lines[i + 1];
+                        i++;
+                    }
+                    callstack.push(entry);
+                }
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+    }
+    if (!isCallstackPopulated) { //IE and Safari
+        var currentFunction = arguments.callee.caller;
+        while (currentFunction) {
+            var fn = currentFunction.toString();
+            var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf("(")) || "anonymous";
+            callstack.push(fname);
+            currentFunction = currentFunction.caller;
+        }
+    }
+    if (levels) {
+        console.print(callstack.slice(0, levels).join("\r\n"));
+    }
+    else {
+        console.print(callstack.join("\r\n"));
+    }
 }
