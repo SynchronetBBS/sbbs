@@ -296,7 +296,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 10";
+var READER_VERSION = "1.17 Beta 11";
 var READER_DATE = "2016-11-27";
 
 // Keyboard key codes for displaying on the screen
@@ -13586,6 +13586,11 @@ function DigDistMsgReader_DeleteSelectedMessages()
 						if ((msgIdxNumber >= 0) && (msgIdxNumber < this.msgSearchHdrs[subBoardCode].indexed.length))
 							msgHdr = this.msgSearchHdrs[subBoardCode].indexed[msgIdxNumber];
 					}
+					else if (this.hdrsForCurrentSubBoard.length > 0)
+					{
+						if ((msgIdxNumber >= 0) && (msgIdxNumber < this.hdrsForCurrentSubBoard.length))
+							msgHdr = this.hdrsForCurrentSubBoard[msgIdxNumber];
+					}
 					else
 					{
 						if ((msgIdxNumber >= 0) && (msgIdxNumber < msgBase.total_msgs))
@@ -13613,7 +13618,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 					{
 						retObj.deletedAll = false;
 						if (!retObj.failureList.hasOwnProperty(subBoardCode))
-							retObj.failureList[subBoardCode] = new Object();
+							retObj.failureList[subBoardCode] = new Array();
 						retObj.failureList[subBoardCode].push(msgIdxNumber);
 					}
 				}
@@ -13631,7 +13636,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 				// sub-board code to indicate failure to delete all
 				// messages in the sub-board.
 				retObj.deletedAll = false;
-				retObj.failureList[subBoardCode] = new Object();
+				retObj.failureList[subBoardCode] = new Array();
 			}
 
 			msgBase.close();
@@ -13643,7 +13648,7 @@ function DigDistMsgReader_DeleteSelectedMessages()
 			// sub-board code to indicate failure to delete all messages
 			// in the sub-board.
 			retObj.deletedAll = false;
-			retObj.failureList[subBoardCode] = new Object();
+			retObj.failureList[subBoardCode] = new Array();
 		}
 	}
 
