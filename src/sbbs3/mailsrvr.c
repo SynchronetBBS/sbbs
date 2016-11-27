@@ -3354,11 +3354,18 @@ static void smtp_thread(void* arg)
 									break;
 							}
 						if(!newmsg.idx.to || i<=scfg.sys_nodes) {
+							p=sender_addr;
+							if(stricmp(sender, sender_addr) == 0) {
+								if((p = strchr(sender_addr, '@')) == NULL)
+									p = sender_addr;
+								else
+									p++;
+							}
 							safe_snprintf(str,sizeof(str)
-								,"\7\1n\1hOn %.24s\r\n\1m%s \1n\1msent you e-mail from: "
+								,"\7\1n\1hOn %.24s\r\n\1m%s \1n\1msent you \1h\1we-mail\1n\1m from: "
 								"\1h%s\1n\r\n"
 								,timestr(&scfg,newmsg.hdr.when_imported.time,tmp)
-								,sender,sender_addr);
+								,sender, p);
 							if(!newmsg.idx.to) {	/* Forwarding */
 								strcat(str,"\1mand it was automatically forwarded to: \1h");
 								strcat(str,rcpt_addr);
