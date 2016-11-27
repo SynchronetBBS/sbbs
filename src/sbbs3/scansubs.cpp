@@ -118,15 +118,21 @@ void sbbs_t::scansubs(long mode)
 			menu("msgscan"); 
 		}
 		for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
-			if(((mode&SCAN_NEW &&
-				(subscan[usrsub[curgrp][i]].cfg&SUB_CFG_NSCAN
-					|| cfg.sub[usrsub[curgrp][i]]->misc&SUB_FORCED))
-				|| (mode&SCAN_TOYOU && subscan[usrsub[curgrp][i]].cfg&SUB_CFG_SSCAN)
-				|| mode&SCAN_FIND)) {
-				if(scanposts(usrsub[curgrp][i],mode,str)) 
-					break;
-				subs_scanned++;
-			}
+			if((mode&SCAN_NEW) && !(subscan[usrsub[curgrp][i]].cfg&SUB_CFG_NSCAN) && !(cfg.sub[usrsub[curgrp][i]]->misc&SUB_FORCED))
+				continue;
+			if((mode&SCAN_TOYOU) && !(subscan[usrsub[curgrp][i]].cfg&SUB_CFG_SSCAN))
+				continue;
+			if((mode&SCAN_POLLS) && cfg.sub[usrsub[curgrp][i]]->misc&SUB_NOVOTING)
+				continue;
+			if(mode&SCAN_POLLS)
+				progress("Scanning", i, usrsubs[curgrp]);
+			if(scanposts(usrsub[curgrp][i],mode,str)) 
+				break;
+			subs_scanned++;
+		}
+		if(mode&SCAN_POLLS) {
+			progress("Done", subs_scanned, usrsubs[curgrp]);
+			cleartoeol();
 		}
 		bputs(text[MessageScan]);
 		if(i==usrsubs[curgrp]) bprintf(text[MessageScanComplete],subs_scanned);
@@ -146,6 +152,8 @@ void sbbs_t::scanallsubs(long mode)
 	char 	tmp[512];
 	uint	i,j,found=0;
 	ulong	subs_scanned=0;
+	uint*	sub;
+	ulong	total_subs=0;
 	bool	subj_only=false;
 
 	if(cfg.scansubs_mod[0] && !scansubs_inside) {
@@ -201,22 +209,35 @@ void sbbs_t::scanallsubs(long mode)
 	if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
 		menu("msgscan"); 
 	}
-	for(i=0;i<usrgrps;i++) {
-		for(j=0;j<usrsubs[i] && !msgabort();j++) {
-			if(((mode&SCAN_NEW && subscan[usrsub[i][j]].cfg&SUB_CFG_NSCAN)
-				|| cfg.sub[usrsub[i][j]]->misc&SUB_FORCED
-				|| mode&SCAN_FIND
-				|| (mode&SCAN_TOYOU && subscan[usrsub[i][j]].cfg&SUB_CFG_SSCAN))) {
-				if(scanposts(usrsub[i][j],mode,str)) 
-					break;
-				subs_scanned++;
-				}
+	if((sub = (uint*)malloc(sizeof(uint) * cfg.total_subs)) == NULL) {
+		errormsg(WHERE, ERR_ALLOC, "subs", sizeof(uint)*cfg.total_subs);
+		return;
+	}
+
+	for(i=0; i<usrgrps; i++)
+		for(j=0; j<usrsubs[i]; j++) {
+			if((mode&SCAN_NEW) && !(subscan[usrsub[i][j]].cfg&SUB_CFG_NSCAN) && !(cfg.sub[usrsub[i][j]]->misc&SUB_FORCED))
+				continue;
+			if((mode&SCAN_TOYOU) && !(subscan[usrsub[i][j]].cfg&SUB_CFG_SSCAN))
+				continue;
+			if((mode&SCAN_POLLS) && cfg.sub[usrsub[i][j]]->misc&SUB_NOVOTING)
+				continue;
+			sub[total_subs++] = usrsub[i][j];
 		}
-		if(j<usrsubs[i])
-			break; 
+	for(i=0; i<total_subs && !msgabort(); i++) {
+		if(mode&SCAN_POLLS)
+			progress("Scanning", i, total_subs);
+		if(scanposts(sub[i],mode,str)) 
+			break;
+	}
+	subs_scanned = i;
+	free(sub);
+	if(mode&SCAN_POLLS) {
+		progress("Done", subs_scanned, total_subs);
+		cleartoeol();
 	}
 	bputs(text[MessageScan]);
-	if(i<usrgrps) {
+	if(subs_scanned<total_subs) {
 		bputs(text[MessageScanAborted]);
 		return; 
 	}

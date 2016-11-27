@@ -237,11 +237,11 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 			if(results_visible) {
 				safe_snprintf(str, sizeof(str), text[PollAnswerFmt]
 					,width, width, answer, post->votes[answers], pct);
-				backfill(str, pct);
+				backfill(str, pct, cfg.color[clr_votes_full], cfg.color[clr_votes_empty]);
 				if(msg->user_voted&(1<<answers))
 					bputs(text[PollAnswerChecked]);
 			} else {
-				attr(cfg.color[clr_unfill]);
+				attr(cfg.color[clr_votes_empty]);
 				bputs(answer);
 			}
 			CRLF;

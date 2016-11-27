@@ -1524,7 +1524,7 @@ void http_logon(http_session_t * session, user_t *usr)
 	lprintf(LOG_DEBUG,"%04d HTTP Logon (user #%d)",session->socket,session->user.number);
 
 	if(session->subscan!=NULL)
-		getmsgptrs(&scfg,&session->user,session->subscan);
+		getmsgptrs(&scfg,&session->user,session->subscan,NULL,NULL);
 
 	session->logon_time=time(NULL);
 	if(session->user.number==0)

@@ -196,7 +196,6 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 /****************************************************************************/
 post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, ulong *unvalidated_num, uint32_t* visible)
 {
-	char name[128];
 	ushort aliascrc,namecrc,sysop;
 	int i,skip;
 	ulong l=0,total,alloc_len;
@@ -222,12 +221,8 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 		return(NULL); 
 	}
 
-	strcpy(name,useron.name);
-	strlwr(name);
-	namecrc=crc16(name,0);
-	strcpy(name,useron.alias);
-	strlwr(name);
-	aliascrc=crc16(name,0);
+	namecrc=smb_name_crc(useron.name);
+	aliascrc=smb_name_crc(useron.alias);
 	sysop=crc16("sysop",0);
 
 	rewind(smb.sid_fp);
@@ -249,6 +244,9 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 			break;
 
 		if(idx.number==0)	/* invalid message number, ignore */
+			continue;
+
+		if(mode&LP_NOMSGS && (idx.attr&MSG_POLL_VOTE_MASK) == 0)
 			continue;
 
 		if(idx.attr&MSG_DELETE) {		/* Pre-flagged */
@@ -457,7 +455,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		if(mode&(SCAN_NEW|SCAN_TOYOU))
 			bprintf(text[NScanStatusFmt]
 				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,0L,0L);
-		else
+		else if(!(mode&SCAN_POLLS))
 			bprintf(text[NoMsgsOnSub]
 				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
 		return(0); 
@@ -492,6 +490,8 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		lp|=LP_UNREAD;
 	if(!(cfg.sub[subnum]->misc&SUB_NOVOTING))
 		lp|=LP_POLLS;
+	if(mode&SCAN_POLLS)
+		lp|=LP_NOMSGS;
 	post=loadposts(&smb.msgs,subnum,0,lp,&unvalidated);
 	if(mode&SCAN_NEW) { 		  /* Scanning for new messages */
 		for(smb.curmsg=0;smb.curmsg<smb.msgs;smb.curmsg++)
@@ -516,11 +516,12 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		} 
 	}
 	else {
+		cleartoeol();
 		if(mode&SCAN_TOYOU)
 			bprintf(text[NScanStatusFmt]
 			   ,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,smb.msgs,msgs);
 		if(!smb.msgs) {
-			if(!(mode&SCAN_TOYOU))
+			if(!(mode&SCAN_TOYOU|SCAN_POLLS))
 				bprintf(text[NoMsgsOnSub]
 					,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
 			smb_close(&smb);
@@ -533,7 +534,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			domsg=1;
 			smb.curmsg=0; 
 		}
-		else if(mode&SCAN_TOYOU)
+		else if(mode&(SCAN_TOYOU|SCAN_POLLS))
 			smb.curmsg=0;
 		else {
 			for(smb.curmsg=0;smb.curmsg<smb.msgs;smb.curmsg++)
@@ -1381,7 +1382,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 	if(post)
 		free(post);
 	if(!quit
-		&& !(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
+		&& !(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND|SCAN_POLLS)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
 		&& reads && chk_ar(cfg.sub[subnum]->post_ar,&useron,&client) && text[Post][0]
 		&& !(useron.rest&FLAG('P'))) {
 		sprintf(str,text[Post],cfg.grp[cfg.sub[subnum]->grp]->sname

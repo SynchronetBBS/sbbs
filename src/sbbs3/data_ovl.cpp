@@ -1,5 +1,3 @@
-/* data_ovl.cpp */
-
 /* Synchronet hi-level data access routines */
 
 /* $Id$ */
@@ -37,6 +35,12 @@
 
 #include "sbbs.h"
 
+static void ProgressLoadingMsgPtrs(void* cbdata, int count, int total)
+{
+	sbbs_t* sbbs = ((sbbs_t*)cbdata);
+	sbbs->progress(sbbs->text[LoadingMsgPtrs], count, total);
+}
+
 /****************************************************************************/
 /* Fills the 'ptr' element of the each element of the cfg.sub[] array of sub_t  */
 /* and the sub_cfg and sub_ptr global variables                            */
@@ -46,8 +50,7 @@ void sbbs_t::getmsgptrs()
 {
 	if(!useron.number)
 		return;
-	bputs(text[LoadingMsgPtrs]);
-	::getmsgptrs(&cfg,&useron,subscan);
+	::getmsgptrs(&cfg,&useron,subscan,ProgressLoadingMsgPtrs,this);
 	bputs(text[LoadedMsgPtrs]);
 }
 

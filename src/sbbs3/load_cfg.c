@@ -331,7 +331,8 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 	}
 	/* Setup default colors here: */
 	memset(cfg->color,LIGHTGRAY|HIGH,MIN_COLORS);
-	cfg->color[clr_backfill] = WHITE|BG_MAGENTA;
+	cfg->color[clr_votes_full] = WHITE|BG_MAGENTA;
+	cfg->color[clr_progress_full] = CYAN|HIGH|BG_BLUE;
 	for(cfg->total_colors=0;!feof(instream) && !ferror(instream);cfg->total_colors++) {
 		if(readline(&offset,str,4,instream)==NULL)
 			break;

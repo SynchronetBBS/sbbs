@@ -332,8 +332,10 @@ enum {
 	,clr_chatremote
 	,clr_multichat
 	,clr_external
-	,clr_backfill
-	,clr_unfill
+	,clr_votes_full
+	,clr_votes_empty
+	,clr_progress_full
+	,clr_progress_empty
 	,MIN_COLORS 
 };
 
@@ -746,6 +748,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LP_REP		(1<<4)		/* Packing REP packet						*/
 #define LP_POLLS	(1<<5)		/* Include polls							*/
 #define LP_VOTES	(1<<6)		/* Include votes							*/
+#define LP_NOMSGS	(1<<7)		/* Don't include regular messages			*/
 								
 								/* Bits in the mode of loadmail()			*/
 #define LM_UNREAD	(1<<0)		/* Include un-read mail only				*/
@@ -817,14 +820,15 @@ enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
 #define LOL_SIZE    81			/* Length of each logon list entry          */
 								
 								/* Bits in mode of scanposts() function 	*/
-#define SCAN_CONST	(1<<0)		/* Continuous message scanning				*/
-#define SCAN_NEW	(1<<1)		/* New scanning								*/
-#define SCAN_BACK	(1<<2)		/* Scan the last message if no new			*/
-#define SCAN_TOYOU	(1<<3)		/* Scan for messages to you 				*/
-#define SCAN_FIND	(1<<4)		/* Scan for text in messages				*/
-#define SCAN_UNREAD	(1<<5)		/* Display un-read messages only			*/
+#define SCAN_CONST		(1<<0)	/* Continuous message scanning				*/
+#define SCAN_NEW		(1<<1)	/* New scanning								*/
+#define SCAN_BACK		(1<<2)	/* Scan the last message if no new			*/
+#define SCAN_TOYOU		(1<<3)	/* Scan for messages to you 				*/
+#define SCAN_FIND		(1<<4)	/* Scan for text in messages				*/
+#define SCAN_UNREAD		(1<<5)	/* Display un-read messages only			*/
 #define SCAN_MSGSONLY	(1<<6)	/* Do not do a new file scan even if the    
 								 * user enabled Automatic New File Scan		*/
+#define SCAN_POLLS		(1<<7)	/* Scan for polls (only)					*/
 
 								/* Bits in misc of chan_t					*/
 #define CHAN_PW 	(1<<0)		/* Can be password protected				*/

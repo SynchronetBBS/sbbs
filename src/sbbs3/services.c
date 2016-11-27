@@ -429,7 +429,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			lprintf(LOG_CRIT,"!MALLOC FAILURE");
 	}
 	if(client->subscan!=NULL) {
-		getmsgptrs(&scfg,&client->user,client->subscan);
+		getmsgptrs(&scfg,&client->user,client->subscan,NULL,NULL);
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
