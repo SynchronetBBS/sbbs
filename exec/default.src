@@ -301,6 +301,14 @@ cmdkey /U
 	userlist_all
 	end_cmd
 
+cmdkey V
+    exec_bin scanpolls
+    end_cmd
+
+cmdkey /V
+    exec_bin scanpolls all
+    end_cmd
+
 cmdkey X
 	exec_bin xtrn_sec
 	end_cmd
