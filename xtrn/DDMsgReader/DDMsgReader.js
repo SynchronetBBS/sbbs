@@ -296,8 +296,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 9";
-var READER_DATE = "2016-11-26";
+var READER_VERSION = "1.17 Beta 10";
+var READER_DATE = "2016-11-27";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5103,8 +5103,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				if (!this.SearchingAndResultObjsDefinedForCurSub())
 				{
 					var threadPrevMsgOffset = this.FindThreadNextOffset(msgHeader,
-																		keypressToThreadType(retObj.lastKeypress, this.enhReaderKeys),
-																		true);
+					                                                    keypressToThreadType(retObj.lastKeypress, this.enhReaderKeys),
+					                                                    true);
 					if (threadPrevMsgOffset > -1)
 					{
 						retObj.newMsgOffset = threadPrevMsgOffset;
@@ -5475,19 +5475,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 								console.pause();
 							}
 
-							// Refresh things on the screen
-							console.clear("\1n");
-							// Display the message header and key help line again
-							this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-							// Display the scrollbar again to refresh it on the screen
-							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-							writeMessage = true; // We want to refresh the message on the screen
-							// TODO: Figure out why this isn't refreshing the voting results
-							// text
-							msgHeader = this.GetMsgHdrByIdx(pOffset, false);
-							messageText = this.GetPollMsgBody(msgHeader);
+							// Exit out of the reader and come back to read
+							// the same message again so that the voting results
+							// are re-loaded and displayed on the screen.
+							retObj.newMsgOffset = pOffset;
+							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+							continueOn = false;
 						}
 						else
 						{
@@ -6227,7 +6220,18 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 						else
 							msgHeader = voteRetObj.updatedHdr; // To get updated vote information
 					}
-					writeMessage = true; // We want to refresh the message on the screen
+
+					// If this message is a poll vote, then exit out of the reader
+					// and come back to read the same message again so that the
+					// voting results are re-loaded and displayed on the screen.
+					if ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+					{
+						retObj.newMsgOffset = pOffset;
+						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						continueOn = false;
+					}
+					else
+						writeMessage = true; // We want to refresh the message on the screen
 				}
 				else
 					writeMessage = false;
@@ -13956,10 +13960,13 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 			var selectHdr = bbs.text(typeof(SelectItemHdr) != "undefined" ? SelectItemHdr : 501);
 			printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
 			var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
+			var numCommentLines = 0;
 			var optionNum = 1;
 			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 			{
-				if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+				if (pMsgHdr.field_list[fieldI].type == SMB_COMMENT)
+					++numCommentLines;
+				else if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
 				{
 					printf(optionFormatStr, optionNum++, pMsgHdr.field_list[fieldI].data);
 					console.crlf();
@@ -13982,6 +13989,9 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 				retObj.userQuit = true;
 			else
 			{
+				// It seems the user's choice needs to be incremented by 1 less
+				// than the number of comment lines
+				userInputNum += (numCommentLines-1);
 				var votes = (1 << userInputNum);
 				voteMsgHdr.attr = MSG_VOTE;
 				voteMsgHdr.votes = votes;
@@ -14131,8 +14141,11 @@ function DigDistMsgReader_GetPollMsgBody(pMsgHdr)
 		if (pMsgHdr.hasOwnProperty("field_list"))
 		{
 			// Format strings for outputting the voting option lines
-			var unvotedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1w\1h%-27s [%-4d %3d%]\1n";
-			var votedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1" + "5\1w\1h%-27s [%-4d %3d%]\1n";
+			var voteOptDescLen = 27;
+			//var unvotedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1w\1h%-" + voteOptDescLen + "s [%-4d %3d%]\1n";
+			//var votedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1" + "5\1w\1h%-" + voteOptDescLen + "s [%-4d %3d%]\1n";
+			var unvotedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n";
+			var votedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1" + "5\1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n";
 			// Add up the total number of votes so that we can
 			// calculate vote percentages.
 			var totalNumVotes = 0;
@@ -14146,10 +14159,17 @@ function DigDistMsgReader_GetPollMsgBody(pMsgHdr)
 			var optionNum = 1;
 			var numVotes = 0;
 			var votePercentage = 0;
+			var lastFieldType = 0;
 			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 			{
-				if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+				// Comments should come before poll answer choices
+				if (pMsgHdr.field_list[fieldI].type == SMB_COMMENT)
+					msgBody += pMsgHdr.field_list[fieldI].data + "\r\n";
+				else if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
 				{
+					// Put an empty line between comments and the poll choices
+					if (lastFieldType == SMB_COMMENT)
+						msgBody += "\r\n";
 					// Figure out the number of votes on this option and the
 					// vote percentage
 					if (pMsgHdr.hasOwnProperty("tally"))
@@ -14162,14 +14182,13 @@ function DigDistMsgReader_GetPollMsgBody(pMsgHdr)
 					}
 					// Append to the message text
 					msgBody += format(numVotes == 0 ? unvotedOptionFormatStr : votedOptionFormatStr,
-					                  optionNum++, pMsgHdr.field_list[fieldI].data.substr(0, 17),
+					                  optionNum++, pMsgHdr.field_list[fieldI].data.substr(0, voteOptDescLen),
 					                  numVotes, votePercentage);
 					if (numVotes > 0)
 						msgBody += " " + CHECK_CHAR;
 					msgBody += "\r\n";
 				}
-				else if (pMsgHdr.field_list[fieldI].type == SMB_COMMENT)
-					msgBody = "\1n" + pMsgHdr.field_list[fieldI].data + "\r\n\r\n" + msgBody;
+				lastFieldType = pMsgHdr.field_list[fieldI].type;
 			}
 
 			// If the current logged-in user has not voted on this message, then
