@@ -1577,6 +1577,9 @@ ushort sbbs_t::chmsgattr(smbmsg_t msg)
 			case 'C':
 				msg.hdr.attr^=MSG_NOREPLY;
 				break;
+			case 'E':
+				msg.hdr.attr^=MSG_REPLIED;
+				break;
 			default:
 				return(msg.hdr.attr); 
 		} 
