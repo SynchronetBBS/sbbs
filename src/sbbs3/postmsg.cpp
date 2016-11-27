@@ -319,9 +319,6 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		/* Add FidoNet Reply if original message has FidoNet MSGID */
 		if(remsg->ftn_msgid!=NULL)
 			smb_hfield_str(&msg,FIDOREPLYID,remsg->ftn_msgid);
-
-		if((i=smb_updatethread(&smb, remsg, smb.status.last_msg+1))!=SMB_SUCCESS)
-			errormsg(WHERE,"updating thread",smb.file,i,smb.last_error); 
 	}
 
 	smb_hfield_str(&msg,RECIPIENT,touser);
