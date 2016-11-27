@@ -296,8 +296,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 8";
-var READER_DATE = "2016-11-25";
+var READER_VERSION = "1.17 Beta 9";
+var READER_DATE = "2016-11-26";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -986,6 +986,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ForwardMessage = DigDistMsgReader_ForwardMessage;
 	this.VoteOnMessage = DigDistMsgReader_VoteOnMessage;
 	this.HasUserVotedOnMsg = DigDistMsgReader_HasUserVotedOnMsg;
+	this.GetPollMsgBody = DigDistMsgReader_GetPollMsgBody;
 
 	// These two variables keep track of whether we're doing a message scan that spans
 	// multiple sub-boards so that the enhanced reader function can enable use of
@@ -1172,7 +1173,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.enhMsgHeaderLines = loadTextFileIntoArray("enhMsgHeader", 10);
 	// If the header file didn't exist, then populate the enhanced reader header
 	// array with default lines.
-	if (this.enhMsgHeaderLines.length == 0)
+	this.usingInternalEnhMsgHdr = (this.enhMsgHeaderLines.length == 0);
+	if (this.usingInternalEnhMsgHdr)
 	{
 		// Group name: 20% of console width
 		// Sub-board name: 34% of console width
@@ -1239,7 +1241,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		numChars = console.screen_columns - 8;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine7 += HORIZONTAL_SINGLE;
-		hdrLine7 += "\1c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h"
+		hdrLine7 += "\1n\1c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h"
 		         + HORIZONTAL_SINGLE + BOTTOM_T_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine7);
 	}
@@ -4542,6 +4544,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// If this message is not readable for the user (it's marked as deleted and
 	// the system is set to not show deleted messages, etc.), then don't let the
 	// user read it, and just silently return.
+	// TODO: If the message is not readable, this will end up causing an infinite loop.
 	retObj.msgNotReadable = !isReadableMsgHdr(msgHeader, this.subBoardCode);
 	if (retObj.msgNotReadable)
 		return retObj;
@@ -4567,7 +4570,13 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 
 	// Get the message text and see if it has any ANSI codes.  If it has ANSI codes,
 	// then don't use the scrolling interface so that the ANSI gets displayed properly.
-	var messageText = this.msgbase.get_msg_body(false, msgHeader.number);
+	// If this message is a poll, then instead of using get_msg_body(), get the poll
+	// results from the message header.
+	var messageText = "";
+	if ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+		messageText = this.GetPollMsgBody(msgHeader);
+	else
+		messageText = this.msgbase.get_msg_body(false, msgHeader.number);
 	// If the message has ANSI content, then use the scrolling interface only
 	// if frame.js is available on the BBS machine and the option to use the
 	// scrolling interface for ANSI messages is enabled.
@@ -5438,12 +5447,17 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				var voteRetObj = this.VoteOnMessage(msgHeader, true);
 				if (voteRetObj.BBSHasVoteFunction)
 				{
+					var msgIsPollVote = ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL);
 					if (!voteRetObj.userQuit)
 					{
-						if ((voteRetObj.errorMsg.length > 0) || (!voteRetObj.savedVote))
+						// If the message is a poll vote, then output any error
+						// message on its own line and refresh the whole screen.
+						// Otherwise, use the last 2 rows for an error message
+						// and only refresh what's necessary.
+						if (msgIsPollVote)
 						{
-							console.gotoxy(1, console.screen_rows-1);
 							console.print("\1n");
+							console.crlf();
 							if (voteRetObj.errorMsg.length > 0)
 							{
 								if (voteRetObj.mnemonicsRequiredForErrorMsg)
@@ -5453,34 +5467,59 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 								}
 								else
 									console.print("\1y\1h* " + voteRetObj.errorMsg + "\1n");
+								console.pause();
 							}
 							else if (!voteRetObj.savedVote)
+							{
 								console.print("\1y\1h* Failed to save the vote\1n");
+								console.pause();
+							}
+
+							// Refresh things on the screen
+							console.clear("\1n");
+							// Display the message header and key help line again
+							this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+							// Display the scrollbar again to refresh it on the screen
+							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+							writeMessage = true; // We want to refresh the message on the screen
+							// TODO: Figure out why this isn't refreshing the voting results
+							// text
+							msgHeader = this.GetMsgHdrByIdx(pOffset, false);
+							messageText = this.GetPollMsgBody(msgHeader);
 						}
 						else
-							msgHeader = voteRetObj.updatedHdr; // To get updated vote information
-						//console.print(" ");
-						//console.pause();
-						mswait(ERROR_PAUSE_WAIT_MS);
+						{
+							// Not a poll vote - Just an up/down vote
+							if ((voteRetObj.errorMsg.length > 0) || (!voteRetObj.savedVote))
+							{
+								console.gotoxy(1, console.screen_rows-1);
+								console.print("\1n");
+								if (voteRetObj.errorMsg.length > 0)
+								{
+									if (voteRetObj.mnemonicsRequiredForErrorMsg)
+									{
+										console.mnemonics(voteRetObj.errorMsg);
+										console.print("\1n");
+									}
+									else
+										console.print("\1y\1h* " + voteRetObj.errorMsg + "\1n");
+								}
+								else if (!voteRetObj.savedVote)
+									console.print("\1y\1h* Failed to save the vote\1n");
+							}
+							else
+								msgHeader = voteRetObj.updatedHdr; // To get updated vote information
+							mswait(ERROR_PAUSE_WAIT_MS);
+
+							// Refresh the last 2 message lines on the screen, then display
+							// the key help line
+							this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+							writeMessage = false;
+						}
 					}
-
-					// Refresh the last 2 message lines on the screen, then display
-					// the key help line
-					this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-					writeMessage = false;
-
-					/*
-					// Refresh things on the screen
-					console.clear("\1n");
-					// Display the message header and key help line again
-					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
-					// Display the scrollbar again to refresh it on the screen
-					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-					writeMessage = true; // We want to refresh the message on the screen
-					*/
 				}
 				else
 					writeMessage = false;
@@ -9519,7 +9558,22 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		useBBSLocalTimeZone = true;
 	}
 	else
-		dateTimeStr = pMsgHdr["date"].replace(/ [-+][0-9]+$/, "");
+		dateTimeStr = pMsgHdr.date.replace(/ [-+][0-9]+$/, "");
+	
+	// If using the internal header (not loaded externally) and the message is not a poll and
+	// contains the properties total_votes and upvotes, then put some information in the header
+	// containing information about the message's voting results.
+	var enhHdrLines = this.enhMsgHeaderLines.slice(0);
+	if (this.usingInternalEnhMsgHdr && ((pMsgHdr.attr & MSG_POLL) == 0) &&
+	    pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
+	{
+		var msgUpvotes = pMsgHdr.upvotes;
+		var msgDownvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
+		var msgVoteScore = pMsgHdr.upvotes - msgDownvotes;
+		//var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h+" + msgUpvotes + "\1n\1c, \1h-" + msgDownvotes + "\1n\1c, \1h" + msgVoteScore + "\1n\1c" + LEFT_T_SINGLE;
+		var voteStatsTxt = "\1n\1c" + RIGHT_T_SINGLE + "\1h\1gS\1n\1gcore\1h\1c: \1b" + msgVoteScore + " (+" + msgUpvotes + ", -" + msgDownvotes + ")\1n\1c" + LEFT_T_SINGLE;
+		enhHdrLines[6] = enhHdrLines[6].slice(0, 10) + "\1n\1c" + voteStatsTxt + "\1n\1c" + HORIZONTAL_SINGLE + "\1h\1k" + enhHdrLines[6].slice(17 + strip_ctrl(voteStatsTxt).length);
+	}
 
 	// If the user's terminal supports ANSI, we can move the cursor and
 	// display the header where specified.
@@ -9528,10 +9582,12 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		// Display the header starting on the first column and the given screen row.
 		var screenX = 1;
 		var screenY = (typeof(pStartScreenRow) == "number" ? pStartScreenRow : 1);
-		for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
+		//for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
+		for (var hdrFileIdx = 0; hdrFileIdx < enhHdrLines.length; ++hdrFileIdx)
 		{
 			console.gotoxy(screenX, screenY++);
-			console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
+			//console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
+			console.putmsg(this.ParseMsgAtCodes(enhHdrLines[hdrFileIdx], pMsgHdr,
 			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false));
 		}
 		// Older - Used to center the header lines, but I'm not sure this is necessary,
@@ -9550,9 +9606,11 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	{
 		// The user's terminal doesn't support ANSI - So just output the header
 		// lines.
-		for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
+		//for (var hdrFileIdx = 0; hdrFileIdx < this.enhMsgHeaderLines.length; ++hdrFileIdx)
+		for (var hdrFileIdx = 0; hdrFileIdx < enhHdrLines.length; ++hdrFileIdx)
 		{
-			console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
+			//console.putmsg(this.ParseMsgAtCodes(this.enhMsgHeaderLines[hdrFileIdx], pMsgHdr,
+			console.putmsg(this.ParseMsgAtCodes(enhHdrLines[hdrFileIdx], pMsgHdr,
 			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false));
 		}
 	}
@@ -13797,6 +13855,11 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	retObj.mnemonicsRequiredForErrorMsg = false;
 	retObj.updatedHdr = null;
 
+	// If the message vote function is not defined in the running verison of Synchronet,
+	// then just return.
+	if (!retObj.BBSHasVoteFunction)
+		return retObj;
+
 	var removeNLsFromVoteText = (typeof(pRemoveNLsFromVoteText) === "boolean" ? pRemoveNLsFromVoteText : false)
 
 	// See if voting is allowed in the current sub-board
@@ -13804,7 +13867,7 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	{
 		retObj.errorMsg = bbs.text(typeof(VotingNotAllowed) != "undefined" ? VotingNotAllowed : 779);
 		if (removeNLsFromVoteText)
-			retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\r", "");
+			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 		retObj.mnemonicsRequiredForErrorMsg = true;
 		return retObj;
 	}
@@ -13817,7 +13880,7 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 		var numVotes = (pMsgHdr.hasOwnProperty("votes") ? pMsgHdr.votes : 0);
 		if (typeof(this.msgbase.how_user_voted) === "function")
 		{
-			var votes = this.msgbase.how_user_voted(pMsgNum, (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
+			var votes = this.msgbase.how_user_voted(pMsgHdr.number, (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
 			if (votes >= 0)
 			{
 				if ((votes == 0) || (votes == 1))
@@ -13846,19 +13909,18 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 		{
 			retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
 			if (removeNLsFromVoteText)
-				retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\r", "");
+				retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 			retObj.mnemonicsRequiredForErrorMsg = true;
 			return retObj;
 		}
 	}
 
-	//this.HasUserVotedOnMsg(pMsgNum)
 	// If the user has voted on this message already, then set an error message and return.
 	if (this.HasUserVotedOnMsg(pMsgHdr.number))
 	{
 		retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
 		if (removeNLsFromVoteText)
-			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\r", "");
+			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 		retObj.mnemonicsRequiredForErrorMsg = true;
 		return retObj;
 	}
@@ -13870,26 +13932,85 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	// thread_back or reply_id: either of these must be set to indicate msg to vote on
 	// from: name of voter
 	// from_net_type and from_net_addr: if applicable
-	if (retObj.BBSHasVoteFunction)
+
+	// Do some initial setup of the header for the vote message to be
+	// saved to the messagebase
+	var voteMsgHdr = new Object();
+	voteMsgHdr.thread_back = pMsgHdr.number;
+	voteMsgHdr.reply_id = pMsgHdr.number;
+	voteMsgHdr.from = (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias;
+	if (pMsgHdr.from.hasOwnProperty("from_net_type"))
 	{
+		voteMsgHdr.from_net_type = pMsgHdr.from_net_type;
+		if (pMsgHdr.from_net_type != NET_NONE)
+			voteMsgHdr.from_net_addr = user.email;
+	}
+
+	// Input vote options from the user differently depending on whether
+	// the message is a poll or not
+	if ((pMsgHdr.attr & MSG_POLL) == MSG_POLL)
+	{
+		if (pMsgHdr.hasOwnProperty("field_list"))
+		{
+			console.clear("\1n");
+			var selectHdr = bbs.text(typeof(SelectItemHdr) != "undefined" ? SelectItemHdr : 501);
+			printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
+			var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
+			var optionNum = 1;
+			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+			{
+				if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+				{
+					printf(optionFormatStr, optionNum++, pMsgHdr.field_list[fieldI].data);
+					console.crlf();
+				}
+			}
+			console.crlf();
+			// Get the selection prompt text from text.dat and replace the %u or %d with
+			// the number 1 (default option)
+			var selectPromptText = bbs.text(typeof(SelectItemWhich) != "undefined" ? SelectItemWhich : 503);
+			selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
+			console.mnemonics(selectPromptText);
+			// Get & process the selection from the user
+			var maxNum = optionNum - 1;
+			// TODO: Update to support multiple answers from the user
+			var userInputNum = console.getnum(maxNum);
+			console.print("\1n");
+			if (userInputNum == 0) // The user just pressed enter to choose the default
+				userInputNum = 1;
+			if (userInputNum == -1) // The user chose Q to quit
+				retObj.userQuit = true;
+			else
+			{
+				var votes = (1 << userInputNum);
+				voteMsgHdr.attr = MSG_VOTE;
+				voteMsgHdr.votes = votes;
+			}
+		}
+	}
+	else
+	{
+		// The message is not a poll - Prompt for up/downvote
 		if ((typeof(MSG_UPVOTE) != "undefined") && (typeof(MSG_DOWNVOTE) != "undefined"))
 		{
 			var voteAttr = 0;
 			// Get text line 783 to prompt for voting
 			var textDatText = bbs.text(typeof(VoteMsgUpDownOrQuit) != "undefined" ? VoteMsgUpDownOrQuit : 783);
 			if (removeNLsFromVoteText)
-				textDatText = textDatText.replace("\r\n", "").replace("\n", "").replace("\r", "");
+				textDatText = textDatText.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 			console.print("\1n");
 			console.mnemonics(textDatText);
 			console.print("\1n");
 			// Using getAllowedKeyWithMode() instead of console.getkeys() so we
 			// can control the input mode better, so it doesn't output a CRLF
-			switch (getAllowedKeyWithMode("UDQ", K_NOCRLF|K_NOSPIN))
+			switch (getAllowedKeyWithMode("UDQ" + KEY_UP + KEY_DOWN, K_NOCRLF|K_NOSPIN))
 			{
 				case "U":
+				case KEY_UP:
 					voteAttr = MSG_UPVOTE;
 					break;
 				case "D":
+				case KEY_DOWN:
 					voteAttr = MSG_DOWNVOTE;
 					break;
 				case "Q":
@@ -13897,59 +14018,50 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 					retObj.userQuit = true;
 					break;
 			}
-			// If the user voted, then save the message header.
+			// If the user voted, then save the user's vote in the attr property
+			// in the header
 			if (voteAttr != 0)
-			{
-				var voteMsgHdr = new Object();
 				voteMsgHdr.attr = voteAttr;
-				voteMsgHdr.thread_back = pMsgHdr.number;
-				voteMsgHdr.reply_id = pMsgHdr.number;
-				voteMsgHdr.from = user.handle;
-				if (voteMsgHdr.from.length == 0)
-					voteMsgHdr.from = user.name;
-				if (pMsgHdr.from.hasOwnProperty("from_net_type"))
+		}
+		else
+			retObj.errorMsg = "MSG_UPVOTE & MSG_DOWNVOTE are not defined";
+	}
+
+	// If the user hasn't quit and there is no error message, then save the vote
+	// message header
+	if (!retObj.userQuit && (retObj.errorMsg.length == 0))
+	{
+		retObj.savedVote = this.msgbase.vote_msg(voteMsgHdr);
+		// If the save was successful, then update
+		// this.hdrsForCurrentSubBoard with the updated
+		// message header (for the message that was read)
+		if (retObj.savedVote)
+		{
+			if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(pMsgHdr.number))
+			{
+				var originalMsgIdx = this.hdrsForCurrentSubBoardByMsgNum[pMsgHdr.number];
+				if (typeof(this.msgbase.get_all_msg_headers) === "function")
 				{
-					voteMsgHdr.from_net_type = pMsgHdr.from_net_type;
-					if (pMsgHdr.from_net_type != NET_NONE)
-						voteMsgHdr.from_net_addr = user.email;
-				}
-				// Save the vote message header
-				retObj.savedVote = this.msgbase.vote_msg(voteMsgHdr);
-				// If the save was successful, then update
-				// this.hdrsForCurrentSubBoard with the updated
-				// message header (for the message that was read)
-				if (retObj.savedVote)
-				{
-					if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(pMsgHdr.number))
+					var tmpHdrs = this.msgbase.get_all_msg_headers();
+					if (tmpHdrs.hasOwnProperty(pMsgHdr.number))
 					{
-						var originalMsgIdx = this.hdrsForCurrentSubBoardByMsgNum[pMsgHdr.number];
-						//this.hdrsForCurrentSubBoard[originalMsgIdx] = this.msgbase.get_msg_header(false, pMsgHdr.number, true, true);
-						if (typeof(this.msgbase.get_all_msg_headers) === "function")
-						{
-							var tmpHdrs = this.msgbase.get_all_msg_headers();
-							if (tmpHdrs.hasOwnProperty(pMsgHdr.number))
-							{
-								this.hdrsForCurrentSubBoard[originalMsgIdx] = tmpHdrs[pMsgHdr.number];
-								retObj.updatedHdr = pMsgHdr;
-								if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("total_votes"))
-									retObj.updatedHdr.total_votes = this.hdrsForCurrentSubBoard[originalMsgIdx].total_votes;
-								if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("upvotes"))
-									retObj.updatedHdr.upvotes = this.hdrsForCurrentSubBoard[originalMsgIdx].upvotes;
-								if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("tally"))
-									retObj.updatedHdr.tally = this.hdrsForCurrentSubBoard[originalMsgIdx].tally;
-							}
-						}
+						this.hdrsForCurrentSubBoard[originalMsgIdx] = tmpHdrs[pMsgHdr.number];
+						retObj.updatedHdr = pMsgHdr;
+						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("total_votes"))
+							retObj.updatedHdr.total_votes = this.hdrsForCurrentSubBoard[originalMsgIdx].total_votes;
+						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("upvotes"))
+							retObj.updatedHdr.upvotes = this.hdrsForCurrentSubBoard[originalMsgIdx].upvotes;
+						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("tally"))
+							retObj.updatedHdr.tally = this.hdrsForCurrentSubBoard[originalMsgIdx].tally;
 					}
-				}
-				else
-				{
-					// Failed to save the vote
-					retObj.errorMsg = "Failed to save your vote";
 				}
 			}
 		}
 		else
-			retObj.errorMsg = "MSG_UPVOTE & MSG_DOWNVOTE are not defined";
+		{
+			// Failed to save the vote
+			retObj.errorMsg = "Failed to save your vote";
+		}
 	}
 
 	return retObj;
@@ -13960,7 +14072,9 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 //
 // Parameters:
 //  pMsgNum: The message number
-function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum)
+//  pUser: Optional - A user account to check.  If omitted, the current logged-in
+//         user will be used.
+function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum, pUser)
 {
 	// Thanks to echicken for explaining how to check this.  To check a user's
 	// vote, use MsgBase.how_user_voted().
@@ -13979,11 +14093,129 @@ function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum)
 	{
 		if (typeof(this.msgbase.how_user_voted) === "function")
 		{
-			var votes = this.msgbase.how_user_voted(pMsgNum, (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
+			var votes = 0;
+			if (typeof(pUser) == "object")
+				votes = this.msgbase.how_user_voted(pMsgNum, (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? pUser.name : pUser.alias);
+			else
+				votes = this.msgbase.how_user_voted(pMsgNum, (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
 			userHasVotedOnMsg = (votes > 0);
 		}
 	}
 	return userHasVotedOnMsg;
+}
+
+// For the DigDistMsgReader class: Gets message text for a poll message.
+//
+// Parameters:
+//  pMsgHeader: The message header
+//
+// Return value: The poll results, colorized.  If the message is not a
+//               poll message, then an empty string will be returned.
+function DigDistMsgReader_GetPollMsgBody(pMsgHdr)
+{
+	var msgBody = "";
+	if ((typeof(MSG_TYPE_POLL) != "undefined") && (pMsgHdr.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+	{
+		// A poll is intended to be parsed (and displayed) using on the header data. The
+		// (optional) comments are stored in the hdr.field_list[] with type values of
+		// SMB_COMMENT (now defined in sbbsdefs.js) and the available answers are in the
+		// field_list[] with type values of SMB_POLL_ANSWER.
+
+		// The 'comments' and 'answers' are also a part of the message header, so you can
+		// grab them separately, then format and display them however you want.  You can
+		// find them in the header.field_list array; each element in that array should be
+		// an object with a 'type' and a 'data' property.  Relevant types here are
+		// SMB_COMMENT and SMB_POLL_ANSWER.  (This is what I'm doing on the web, and I
+		// just ignore the message body for poll messages.)
+
+		if (pMsgHdr.hasOwnProperty("field_list"))
+		{
+			// Format strings for outputting the voting option lines
+			var unvotedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1w\1h%-27s [%-4d %3d%]\1n";
+			var votedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1" + "5\1w\1h%-27s [%-4d %3d%]\1n";
+			// Add up the total number of votes so that we can
+			// calculate vote percentages.
+			var totalNumVotes = 0;
+			if (pMsgHdr.hasOwnProperty("tally"))
+			{
+				for (var tallyI = 0; tallyI < pMsgHdr.tally.length; ++tallyI)
+					totalNumVotes += pMsgHdr.tally[tallyI];
+			}
+			// Go through field_list and append the voting options and stats to
+			// msgBody
+			var optionNum = 1;
+			var numVotes = 0;
+			var votePercentage = 0;
+			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+			{
+				if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+				{
+					// Figure out the number of votes on this option and the
+					// vote percentage
+					if (pMsgHdr.hasOwnProperty("tally"))
+					{
+						if (fieldI < pMsgHdr.tally.length)
+						{
+							numVotes = pMsgHdr.tally[fieldI];
+							votePercentage = (numVotes / totalNumVotes) * 100;
+						}
+					}
+					// Append to the message text
+					msgBody += format(numVotes == 0 ? unvotedOptionFormatStr : votedOptionFormatStr,
+					                  optionNum++, pMsgHdr.field_list[fieldI].data.substr(0, 17),
+					                  numVotes, votePercentage);
+					if (numVotes > 0)
+						msgBody += " " + CHECK_CHAR;
+					msgBody += "\r\n";
+				}
+				else if (pMsgHdr.field_list[fieldI].type == SMB_COMMENT)
+					msgBody = "\1n" + pMsgHdr.field_list[fieldI].data + "\r\n\r\n" + msgBody;
+			}
+
+			// If the current logged-in user has not voted on this message, then
+			// append some text saying how to vote.
+			if (!this.HasUserVotedOnMsg(pMsgHdr.number))
+			{
+				msgBody += "\1n\r\n\1gTo vote in this poll, press \1w\1h"
+				        + this.enhReaderKeys.vote + "\1n\1g now.";
+			}
+
+			// If the current logged-in user created this poll, then show the
+			// users who have voted on it so far.
+			var msgFromUpper = pMsgHdr.from.toUpperCase();
+			if ((msgFromUpper == user.name.toUpperCase()) || (msgFromUpper == user.handle.toUpperCase()))
+			{
+				// TODO: Find out the times when users voted so that the time
+				// can be inserted into the message text.
+				//"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s voted in your poll: \1n\1h%s\r\n" 787 PollVoteNotice
+				var userVotedInYourPollText = bbs.text(typeof(PollVoteNotice) != "undefined" ? VoteMsgUpDownOrQuit : 787);
+				//userVotedInYourPollText = userVotedInYourPollText.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
+				// Check all users to see if they voted on this message
+				// Determine the last user number
+				var lastuser = (system.lastuser == undefined ? system.stats.total_users : system.lastuser);
+				for (var userNum = 1; userNum <= lastuser; ++userNum)
+				{
+					// Load the user record
+					var theUser = new User(userNum);
+
+					// Skip deleted, inactive, and guest accounts
+					if (((theUser.settings & USER_DELETED) == USER_DELETED) || ((theUser.settings & USER_INACTIVE) == USER_INACTIVE))
+						continue;
+					if (theUser.security.restrictions & UFLAG_G)
+						continue;
+
+					// See if this user has voted on the message
+					if (this.HasUserVotedOnMsg(pMsgHdr.number, theUser))
+					{
+						msgBody += "\1n\r\n\1m\1h";
+						msgBody += (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? theUser.name : theUser.alias;
+						msgBody += " voted in your poll: \1w" + pMsgHdr.subject + "\1n\r\n";
+					}
+				}
+			}
+		}
+	}
+	return msgBody;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -17932,11 +18164,15 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 		if ((pMsgHdr.attr & MSG_DOWNVOTE) == MSG_DOWNVOTE)
 			return false;
 	}
+	// Don't include polls as being unreadable messages - They just need to have
+	// their answer selections read from the header instead of the message body
+	/*
 	if (typeof(MSG_POLL) != "undefined")
 	{
 		if ((pMsgHdr.attr & MSG_POLL) == MSG_POLL)
 			return false;
 	}
+	*/
 	return true;
 }
 
