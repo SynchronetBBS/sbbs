@@ -67,5 +67,6 @@ if(js.global.bbs) {
 if(option["votes"])
 	poll.votes = option["votes"];
 print("posted from: " + poll.from);
+poll.to = "All";
 if(!msgbase.add_poll(poll))
 	alert("Error " + msgbase.status + " " + msgbase.last_error);
