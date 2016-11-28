@@ -52,8 +52,6 @@ typedef struct {
     uint32_t	options;
 	uint16_t	port;
 	uint16_t	tls_port;
-	struct in_addr outgoing4;
-	struct in6_addr	outgoing6;
     str_list_t	interfaces;
     str_list_t	tls_interfaces;
 	
@@ -98,7 +96,6 @@ typedef struct {
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 	char	default_cgi_content[128];
 	char	default_auth_list[128];
-	uint16_t	outbuf_highwater_mark;	/* output block size control */
 	uint16_t	outbuf_drain_timeout;
 
 	/* JavaScript operating parameters */
@@ -115,8 +112,6 @@ typedef struct {
 static struct init_field web_init_fields[] = { 
 	 OFFSET_AND_SIZE(web_startup_t,port)
 	,OFFSET_AND_SIZE(web_startup_t,interfaces)
-	,OFFSET_AND_SIZE(web_startup_t,outgoing4)
-	,OFFSET_AND_SIZE(web_startup_t,outgoing6)
 	,OFFSET_AND_SIZE(web_startup_t,ctrl_dir)
 	,OFFSET_AND_SIZE(web_startup_t,root_dir)
 	,OFFSET_AND_SIZE(web_startup_t,error_dir)
