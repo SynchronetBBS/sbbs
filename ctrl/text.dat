@@ -798,7 +798,7 @@
 "\1n\1g(\1h%d\1n\1g) %s\1h\r\n"                               659 CfgLibLstFmt
 "\1_\1c\1hListing \1n\1c(\1h%u\1n\1c) %s "\                     660 BatchFlagPrompt
 	"(\1h%u\1n\1c) %s (\1h?\1n\1c=Menu) (\1h%u\1n\1c Files\1n\1c): \1n"
-"\1n\1l\x014  \1h\1y[\1wB\1y]atch Download  "\                   661 FileListBatchCommands
+"\1n\1>\1q\1l\x014  \1h\1y[\1wB\1y]atch Download  "\                   661 FileListBatchCommands
 	"[\1wV\1y]iew Content  [\1wE\1y]xtended "\
 	"Info  [\1wP\1y]revious Files  [\1wQ\1y]uit  \1n\r\n"
 "\r\nDownload attached file: \1w%s\1b (%s bytes)"         662 DownloadAttachedFileQ
