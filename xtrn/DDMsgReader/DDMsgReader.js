@@ -8178,10 +8178,7 @@ function DigDistMsgReader_NumMessages(pCheckDeletedAttributes)
 	if (this.SearchingAndResultObjsDefinedForCurSub())
 		numMsgs = this.msgSearchHdrs[this.subBoardCode].indexed.length;
 	else if (this.hdrsForCurrentSubBoard.length > 0)
-	{
 		numMsgs = this.hdrsForCurrentSubBoard.length;
-		console.print("\1n\r\nHere 1 - numMsgs: " + numMsgs + "\r\n\1p"); // Temporary
-	}
 	else if ((this.msgbase != null) && this.msgbase.is_open)
 	{
 		//numMsgs = this.msgbase.total_msgs;
