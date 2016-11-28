@@ -403,6 +403,7 @@ void sbbs_read_ini(
 		bbs->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
+		bbs->max_concurrent_connections = iniGetInteger(list, section, "MaxConcurrentConnections", 0);
 	}
 
 	/***********************************************************************/
