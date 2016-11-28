@@ -52,7 +52,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 164
     Width = 624
-    Height = 1
+    Height = 10
     Cursor = crVSplit
     Align = alTop
     Beveled = True
@@ -61,9 +61,9 @@ object MainForm: TMainForm
   end
   object Logo: TImage
     Left = 0
-    Top = 165
+    Top = 174
     Width = 624
-    Height = 151
+    Height = 142
     Align = alClient
     AutoSize = True
     Center = True
@@ -13539,9 +13539,9 @@ object MainForm: TMainForm
   end
   object BottomPanel: TPanel
     Left = 0
-    Top = 165
+    Top = 174
     Width = 624
-    Height = 151
+    Height = 142
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
@@ -13550,7 +13550,7 @@ object MainForm: TMainForm
       Left = 235
       Top = 0
       Width = 2
-      Height = 151
+      Height = 142
       Cursor = crHSplit
       MinSize = 1
     end
@@ -13558,7 +13558,7 @@ object MainForm: TMainForm
       Left = 0
       Top = 0
       Width = 235
-      Height = 151
+      Height = 142
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -13569,7 +13569,7 @@ object MainForm: TMainForm
       Left = 237
       Top = 0
       Width = 387
-      Height = 151
+      Height = 142
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -13838,6 +13838,11 @@ object MainForm: TMainForm
           Caption = 'IP Address Filter Message'
           Hint = 'badip.msg'
           OnClick = TextMenuItemEditClick
+        end
+        object BBSEditHostExemptions: TMenuItem
+          Caption = 'Host/IP Exemptions'
+          Hint = 'ipfilter_exempt.cfg'
+          OnClick = CtrlMenuItemEditClick
         end
         object BBSEditHostFilter: TMenuItem
           Caption = 'Host Name Filter'
