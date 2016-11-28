@@ -3038,6 +3038,8 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*pr
 		subscan[i].sav_last=subscan[i].last;
 		subscan[i].sav_cfg=subscan[i].cfg; 
 	}
+	if(progress != NULL)
+		progress(cbdata, i, cfg->total_subs);
 	fclose(stream);
 	return(TRUE);
 }
@@ -3131,6 +3133,8 @@ BOOL DLLCALL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days, void (*
 			subscan[i].ptr = idx.number;
 		smb_close(&smb);
 	}
+	if(progress != NULL)
+		progress(cbdata, i, cfg->total_subs);
 	return TRUE;
 }
 

@@ -1,5 +1,3 @@
-/* scansubs.cpp */
-
 /* Synchronet message database scanning routines */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -255,6 +253,8 @@ void sbbs_t::new_scan_ptr_cfg()
 	long	s;
 	uint32_t	l;
 	time_t	t;
+	ulong	total_subs;
+	ulong	subs;
 
 	while(online) {
 		bputs(text[CfgGrpLstHdr]);
@@ -277,13 +277,17 @@ void sbbs_t::new_scan_ptr_cfg()
 				continue;
 			if(s=='D') {
 				t=time(NULL);
+				for(i=0, total_subs=0; i<usrgrps; i++)
+					total_subs += usrsubs[i];
 				if(inputnstime(&t) && !(sys_status&SS_ABORT)) {
-					bputs(text[LoadingMsgPtrs]);
-					for(i=0;i<usrgrps && online;i++)
+					for(i=0, subs=0; i<usrgrps && online; i++) {
 						for(j=0;j<usrsubs[i] && online;j++) {
+							progress(text[LoadingMsgPtrs], subs++, total_subs);
 							checkline();
 							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); 
-						} 
+						}
+					}
+					progress(text[LoadingMsgPtrs], subs, total_subs);
 				}
 				continue; 
 			}
@@ -291,9 +295,11 @@ void sbbs_t::new_scan_ptr_cfg()
 				s=0;
 			if(s)
 				s&=~0x80000000L;
-			bputs(text[LoadingMsgPtrs]);
-			for(i=0;i<usrgrps;i++)
+			for(i=0, total_subs=0; i<usrgrps; i++)
+				total_subs += usrsubs[i];
+			for(i=0, subs=0; i<usrgrps; i++)
 				for(j=0;j<usrsubs[i] && online;j++) {
+					progress(text[LoadingMsgPtrs], subs++, total_subs);
 					checkline();
 					getlastmsg(usrsub[i][j],&l,0);
 					if(s>(long)l)
@@ -301,6 +307,7 @@ void sbbs_t::new_scan_ptr_cfg()
 					else
 						subscan[usrsub[i][j]].ptr=l-s; 
 				}
+			progress(text[LoadingMsgPtrs], subs, total_subs);
 			continue; 
 		}
 		i=(s&~0x80000000L)-1;
@@ -335,11 +342,12 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(s=='D') {
 					t=l;
 					if(inputnstime(&t) && !(sys_status&SS_ABORT)) {
-						bputs(text[LoadingMsgPtrs]);
 						for(j=0;j<usrsubs[i] && online;j++) {
+							progress(text[LoadingMsgPtrs], j, usrsubs[i]);
 							checkline();
 							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); 
-						} 
+						}
+						progress(text[LoadingMsgPtrs], j, usrsubs[i]);
 					}
 					continue; 
 				}
@@ -347,8 +355,8 @@ void sbbs_t::new_scan_ptr_cfg()
 					s=0;
 				if(s)
 					s&=~0x80000000L;
-				bputs(text[LoadingMsgPtrs]);
 				for(j=0;j<usrsubs[i] && online;j++) {
+					progress(text[LoadingMsgPtrs], j, usrsubs[i]);
 					checkline();
 					getlastmsg(usrsub[i][j],&l,0);
 					if(s>(long)l)
@@ -356,6 +364,7 @@ void sbbs_t::new_scan_ptr_cfg()
 					else
 						subscan[usrsub[i][j]].ptr=l-s; 
 				}
+				progress(text[LoadingMsgPtrs], j, usrsubs[i]);
 				continue; 
 			}
 			else {
