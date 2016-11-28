@@ -2711,6 +2711,14 @@ BOOL DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* 
 	return(chk_ar(cfg,cfg->dir[dirnum]->ex_ar,user,client));
 }
 
+BOOL DLLCALL is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
+{
+	char	exempt[MAX_PATH+1];
+
+	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
+	return findstr(ip_addr, exempt) || findstr(host_name, exempt);
+}
+
 /****************************************************************************/
 /* Add an IP address (with comment) to the IP filter/trashcan file			*/
 /* ToDo: Move somewhere more appropriate (filter.c?)						*/

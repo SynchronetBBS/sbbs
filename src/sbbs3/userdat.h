@@ -121,6 +121,7 @@ DLLEXPORT BOOL	DLLCALL can_user_post(scfg_t*, uint subnum, user_t*, client_t* cl
 DLLEXPORT BOOL	DLLCALL can_user_send_mail(scfg_t*, enum smb_net_type, uint usernumber, user_t*, uint* reason);
 DLLEXPORT BOOL	DLLCALL is_user_subop(scfg_t*, uint subnum, user_t*, client_t* client);
 DLLEXPORT BOOL	DLLCALL is_download_free(scfg_t*, uint dirnum, user_t*, client_t* client);
+DLLEXPORT BOOL	DLLCALL is_host_exempt(scfg_t*, const char* ip_addr, const char* host_name);
 DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t*, const char* prot, const char* reason, const char* host
 								  ,const char* ip_addr, const char* username, const char* fname);
 
