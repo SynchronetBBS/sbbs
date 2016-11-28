@@ -296,7 +296,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 11";
+var READER_VERSION = "1.17 Beta 12";
 var READER_DATE = "2016-11-27";
 
 // Keyboard key codes for displaying on the screen
@@ -8178,9 +8178,22 @@ function DigDistMsgReader_NumMessages(pCheckDeletedAttributes)
 	if (this.SearchingAndResultObjsDefinedForCurSub())
 		numMsgs = this.msgSearchHdrs[this.subBoardCode].indexed.length;
 	else if (this.hdrsForCurrentSubBoard.length > 0)
+	{
 		numMsgs = this.hdrsForCurrentSubBoard.length;
+		console.print("\1n\r\nHere 1 - numMsgs: " + numMsgs + "\r\n\1p"); // Temporary
+	}
 	else if ((this.msgbase != null) && this.msgbase.is_open)
-		numMsgs = this.msgbase.total_msgs;
+	{
+		//numMsgs = this.msgbase.total_msgs;
+		// Count the number of readable messages in the messagebase (i.e.,
+		// messages that are not deleted, unvalidated, or null headers)
+		numMsgs = 0;
+		for (var msgIdx = 0; msgIdx < this.msgbase.total_msgs; ++msgIdx)
+		{
+			if (isReadableMsgHdr(this.msgbase.get_msg_header(true, msgIdx, false), this.subBoardCode))
+				++numMsgs;
+		}
+	}
 
 	// If the caller wants to check the deleted attributes, then do so.
 	if ((numMsgs > 0) && checkDeletedAttributes)
