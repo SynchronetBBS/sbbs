@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 			}
 			fprintf(text_h, "\t%c%s\n", i==1?' ':',', macro);
 			fprintf(text_js, "var %s=%d;\n", macro, i);
-			fprintf(text_defaults_c, "\t%c%s\n", i==1?' ':',', cstr);
+			fprintf(text_defaults_c, "\t%c%s // %s\n", i==1?' ':',', cstr, comment);
 		}
 	} while(p != NULL);
 	fclose(text_dat);
