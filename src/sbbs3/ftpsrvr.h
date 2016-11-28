@@ -1,5 +1,3 @@
-/* ftpsrvr.h */
-
 /* Synchronet FTP server */
 
 /* $Id$ */
@@ -87,6 +85,7 @@ typedef struct {
 	char	answer_sound[128];
 	char	hangup_sound[128];
     char	hack_sound[128];
+	char	ini_fname[128];
 
 	/* Misc */
     char	host_name[128];

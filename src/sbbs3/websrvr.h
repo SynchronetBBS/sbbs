@@ -1,5 +1,3 @@
-/* websrvr.h */
-
 /* Synchronet Web Server */
 
 /* $Id$ */
@@ -77,7 +75,7 @@ typedef struct {
 
 	/* Paths */
 	char	ssjs_ext[16];			/* Server-Side JavaScript file extension */
-	char	js_ext[16];			/* Embedded JavaScript file extension */
+	char	js_ext[16];				/* Embedded JavaScript file extension */
 	char**	cgi_ext;				/* CGI Extensions */
 	char	cgi_dir[128];			/* relative to root_dir (all files executable) */
     char    ctrl_dir[128];
@@ -89,6 +87,7 @@ typedef struct {
 	char	answer_sound[128];
 	char	hangup_sound[128];
     char	hack_sound[128];
+	char	ini_fname[128];
 
 	/* Misc */
     char	host_name[128];

@@ -1,5 +1,3 @@
-/* mailsrvr.h */
-
 /* Synchronet Mail (SMTP/POP3/SendMail) server */
 
 /* $Id$ */
@@ -91,6 +89,7 @@ typedef struct {
 	/* Paths */
     char    ctrl_dir[128];
 	char    temp_dir[128];
+	char	ini_fname[128];
 
 	/* Strings */
     char	dns_server[128];

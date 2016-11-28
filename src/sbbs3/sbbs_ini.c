@@ -258,6 +258,7 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 
 void sbbs_read_ini(
 	 FILE*					fp
+	,const char*			ini_fname
 	,global_startup_t*		global
 	,BOOL*					run_bbs
 	,bbs_startup_t*			bbs
@@ -295,6 +296,14 @@ void sbbs_read_ini(
 		if(web!=NULL)		SAFECOPY(web->ctrl_dir,global->ctrl_dir);
 		if(mail!=NULL)		SAFECOPY(mail->ctrl_dir,global->ctrl_dir);
 		if(services!=NULL)	SAFECOPY(services->ctrl_dir,global->ctrl_dir);
+	}
+
+	if(ini_fname!=NULL && ini_fname[0]) {
+		if(bbs!=NULL)		SAFECOPY(bbs->ini_fname, ini_fname);
+		if(ftp!=NULL)		SAFECOPY(ftp->ini_fname, ini_fname);
+		if(web!=NULL)		SAFECOPY(web->ini_fname, ini_fname);
+		if(mail!=NULL)		SAFECOPY(mail->ini_fname, ini_fname);
+		if(services!=NULL)	SAFECOPY(services->ini_fname, ini_fname);
 	}
 
 	global_interfaces = strListCombine(global->interfaces, NULL, 16384, ",");

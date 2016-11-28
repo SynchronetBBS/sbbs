@@ -129,6 +129,7 @@ typedef struct {
     char	temp_dir[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
+	char	ini_fname[128];
 
 	/* Miscellaneous */
 	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
