@@ -1,5 +1,3 @@
-/* link_list.h */
-
 /* Double-Linked-list library */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -143,11 +141,13 @@ DLLEXPORT link_list_t*	DLLCALL	listExtract(link_list_t* dest_list, const list_no
 
 /* Simple search functions returning found node or NULL on error */
 DLLEXPORT list_node_t*	DLLCALL	listNodeAt(link_list_t*, long index);
-/* Find a specific node by data */
+/* Find a specific node by data or tag */
 /* Pass length of 0 to search by data pointer rather than by data content comparison (memcmp) */
 DLLEXPORT list_node_t*	DLLCALL	listFindNode(link_list_t*, const void* data, size_t length);
 /* Find a specific node by its tag value */
 #define listFindTaggedNode(list, tag)	listFindNode(list, NULL, tag)
+/* Pass length of 0 to search by data pointer rather than by data content comparison (memcmp) */
+DLLEXPORT ulong			DLLCALL	listCountMatches(link_list_t*, const void* data, size_t length);
 
 /* Convenience functions */
 DLLEXPORT list_node_t*	DLLCALL	listFirstNode(link_list_t*);
