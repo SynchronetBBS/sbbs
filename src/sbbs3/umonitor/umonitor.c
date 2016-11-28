@@ -1,14 +1,13 @@
-/* umonitor.c */
-
 /* Synchronet for *nix node activity monitor */
 
 /* $Id$ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -835,7 +834,7 @@ int main(int argc, char** argv)  {
 		printf("Reading %s\n",ini_file);
 	}
 	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp,
+	sbbs_read_ini(fp, ini_file,
 		NULL,		/* global_startup */
 		NULL, &bbs_startup,
 		NULL, NULL, /* ftp_startup */
