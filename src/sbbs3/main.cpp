@@ -97,7 +97,8 @@ static	WORD	last_node;
 static	bool	terminate_server=false;
 static	str_list_t recycle_semfiles;
 static	str_list_t shutdown_semfiles;
-static	link_list_t connections;
+static	link_list_t current_logins;
+static	link_list_t current_connections;
 #ifdef _THREAD_SUID_BROKEN
 int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
 #endif
@@ -121,14 +122,15 @@ static void update_clients()
 
 void client_on(SOCKET sock, client_t* client, BOOL update)
 {
-	listAddNodeData(&connections, client->addr, strlen(client->addr)+1, sock, LAST_NODE);
+	if(!update)
+		listAddNodeData(&current_connections, client->addr, strlen(client->addr)+1, sock, LAST_NODE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
-	listRemoveTaggedNode(&connections, sock, /* free_data */TRUE);
+	listRemoveTaggedNode(&current_connections, sock, /* free_data */TRUE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
@@ -4160,6 +4162,7 @@ void node_thread(void* arg)
 
 	if(sbbs->answer()) {
 
+		listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr)+1, sbbs->cfg.node_num, LAST_NODE);
 		if(sbbs->qwklogon) {
 			sbbs->getsmsg(sbbs->useron.number);
 			sbbs->qwk_sec();
@@ -4210,6 +4213,7 @@ void node_thread(void* arg)
 			if(sbbs->exec(&sbbs->main_csi))
 				break;
 		}
+		listRemoveTaggedNode(&current_logins, sbbs->cfg.node_num, /* free_data */TRUE);
 	}
 
 #ifdef _WIN32
@@ -4536,7 +4540,8 @@ static void cleanup(int code)
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 	
-	listFree(&connections);
+	listFree(&current_logins);
+	listFree(&current_connections);
 
 	protected_uint32_destroy(node_threads_running);
 
@@ -4956,7 +4961,8 @@ NO_SSH:
 		semfile_list_check(&initialized,shutdown_semfiles);
 	semfile_list_check(&initialized,recycle_semfiles);
 
-	listInit(&connections, LINK_LIST_MUTEX);
+	listInit(&current_logins, LINK_LIST_MUTEX);
+	listInit(&current_connections, LINK_LIST_MUTEX);
 
 #ifdef __unix__	//	unix-domain spy sockets
 	for(i=first_node;i<=last_node && !(startup->options&BBS_OPT_NO_SPY_SOCKETS);i++)  {
@@ -5133,16 +5139,21 @@ NO_SSH:
 #endif
 			, host_ip, inet_addrport(&client_addr));
 
-		if(startup->max_concurrent_connections > 0 
-			&& listCountMatches(&connections, host_ip, strlen(host_ip)+1) >= startup->max_concurrent_connections
-			&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
-			lprintf(LOG_NOTICE, "%04d !Maximum concurrent connections (%u) reached from host: %s"
-				,client_socket, startup->max_concurrent_connections, host_ip);
-			SSH_END();
-			close_socket(client_socket);
-			SAFEPRINTF(logstr, "Too many concurrent connections from host: %s",host_ip);
-			sbbs->syslog("@!",logstr);
-			continue;
+		if(startup->max_concurrent_connections > 0) {
+			int ip_len = strlen(host_ip)+1;
+			int connections = listCountMatches(&current_connections, host_ip, ip_len);
+			int logins = listCountMatches(&current_logins, host_ip, ip_len);
+			
+			if(connections - logins >= (int)startup->max_concurrent_connections
+				&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
+				lprintf(LOG_NOTICE, "%04d !Maximum concurrent connections (%u) reached from host: %s"
+ 					,client_socket, startup->max_concurrent_connections, host_ip);
+				SSH_END();
+				close_socket(client_socket);
+				SAFEPRINTF(logstr, "Too many concurrent connections from host: %s",host_ip);
+				sbbs->syslog("@!",logstr);
+				continue;
+			}
 		}
 
 		login_attempt_t attempted;
