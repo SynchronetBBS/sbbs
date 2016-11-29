@@ -1,5 +1,3 @@
-/* smbfile.c */
-
 /* Synchronet message base (SMB) FILE stream I/O routines */
 
 /* $Id$ */
@@ -147,7 +145,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 		ext="hash";
 	else {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"opening %s: Illegal FILE* pointer argument: %p"
+			,__FUNCTION__" opening %s: Illegal FILE* pointer argument: %p"
 			,smb->file, fp);
 		return(SMB_ERR_OPEN);
 	}
@@ -162,7 +160,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 			break;
 		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%d '%s' opening %s"
+				,__FUNCTION__" %d '%s' opening %s"
 				,get_errno(),STRERROR(get_errno()),path);
 			return(SMB_ERR_OPEN);
 		}
@@ -171,7 +169,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 		else
 			if(time(NULL)-start>=(time_t)smb->retry_time) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
-					,"timeout opening %s (retry_time=%ld)"
+					,__FUNCTION__" timeout opening %s (retry_time=%ld)"
 					,path,smb->retry_time);
 				return(SMB_ERR_TIMEOUT); 
 			}
@@ -179,7 +177,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 	}
 	if((*fp=fdopen(file,"r+b"))==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%d '%s' fdopening %s (%d)"
+			,__FUNCTION__" %d '%s' fdopening %s (%d)"
 			,get_errno(),STRERROR(get_errno()),path,file);
 		close(file);
 		return(SMB_ERR_OPEN); 
