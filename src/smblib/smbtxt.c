@@ -53,8 +53,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 
 	if((buf=(char*)malloc(sizeof(char)))==NULL) {
 		sprintf(smb->last_error
-			,__FUNCTION__" malloc failure of %" XP_PRIsize_t "u bytes for buffer"
-			,sizeof(char));
+			,"%s malloc failure of %" XP_PRIsize_t "u bytes for buffer"
+			,__FUNCTION__, sizeof(char));
 		return(NULL);
 	}
 	*buf=0;
@@ -67,8 +67,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 			length=strlen(str)+2;	/* +2 for crlf */
 			if((p=(char*)realloc(buf,l+length+1))==NULL) {
 				sprintf(smb->last_error
-					,__FUNCTION__" realloc failure of %ld bytes for comment buffer"
-					,l+length+1);
+					,"%s realloc failure of %ld bytes for comment buffer"
+					, __FUNCTION__, l+length+1);
 				free(buf);
 				return(NULL);
 			}
@@ -78,8 +78,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 		if(l) {	/* Add a blank line after comments */
 			if((p=(char*)realloc(buf,l+3))==NULL) {
 				sprintf(smb->last_error
-					,__FUNCTION__" realloc failure of %ld bytes for comment buffer"
-					,l+3);
+					,"%s realloc failure of %ld bytes for comment buffer"
+					, __FUNCTION__, l+3);
 				free(buf);
 				return(NULL);
 			}
@@ -94,8 +94,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 			length = safe_snprintf(tmp, sizeof(tmp), "%2u: %s\r\n", ++answers, (char*)msg->hfield_dat[i]);
 			if((p=(char*)realloc(buf,l+length+1))==NULL) {
 				sprintf(smb->last_error
-					,__FUNCTION__" realloc failure of %ld bytes for comment buffer"
-					,l+length+1);
+					,"%s realloc failure of %ld bytes for comment buffer"
+					, __FUNCTION__, l+length+1);
 				free(buf);
 				return(NULL);
 			}
@@ -139,8 +139,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 				continue;
 			if((lzhbuf=(char*)malloc(length))==NULL) {
 				sprintf(smb->last_error
-					,__FUNCTION__" malloc failure of %ld bytes for LZH buffer"
-					,length);
+					,"%s malloc failure of %ld bytes for LZH buffer"
+					, __FUNCTION__, length);
 				free(buf);
 				return(NULL);
 			}
@@ -148,8 +148,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 			lzhlen=*(int32_t*)lzhbuf;
 			if((p=(char*)realloc(buf,l+lzhlen+3L))==NULL) {
 				sprintf(smb->last_error
-					,__FUNCTION__" realloc failure of %ld bytes for text buffer"
-					,l+lzhlen+3L);
+					,"%s realloc failure of %ld bytes for text buffer"
+					, __FUNCTION__, l+lzhlen+3L);
 				free(lzhbuf);
 				free(buf);
 				return(NULL); 
@@ -162,8 +162,8 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 		else {
 			if((p=(char*)realloc(buf,l+length+3L))==NULL) {
 				sprintf(smb->last_error
-					,__FUNCTION__" realloc failure of %ld bytes for text buffer"
-					,l+length+3L);
+					,"%s realloc failure of %ld bytes for text buffer"
+					, __FUNCTION__, l+length+3L);
 				free(buf);
 				return(NULL);
 			}

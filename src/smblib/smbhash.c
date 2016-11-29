@@ -312,7 +312,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 	if(smb_findhash(smb, hashes, &found, SMB_HASH_SOURCE_DUPE, update)==SMB_SUCCESS && !update) {
 		retval=SMB_DUPE_MSG;
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,__FUNCTION__" duplicate %s: %s found in message #%lu"
+			,"%s duplicate %s: %s found in message #%lu", __FUNCTION__
 			,smb_hashsourcetype(found.source)
 			,smb_hashsource(msg,found.source)
 			,found.number);
