@@ -296,8 +296,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 12";
-var READER_DATE = "2016-11-27";
+var READER_VERSION = "1.17 Beta 13";
+var READER_DATE = "2016-11-28";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -986,7 +986,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ForwardMessage = DigDistMsgReader_ForwardMessage;
 	this.VoteOnMessage = DigDistMsgReader_VoteOnMessage;
 	this.HasUserVotedOnMsg = DigDistMsgReader_HasUserVotedOnMsg;
-	this.GetPollMsgBody = DigDistMsgReader_GetPollMsgBody;
+	this.GetMsgBody = DigDistMsgReader_GetMsgBody;
 
 	// These two variables keep track of whether we're doing a message scan that spans
 	// multiple sub-boards so that the enhanced reader function can enable use of
@@ -1793,49 +1793,30 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 	// User input loop
 	var selectedMessageOffset = 0;
 	if (typeof(pStartingMsgOffset) == "number")
-	{
-		//console.print("\1n\r\nHere 1\r\n\1p"); // Temporary
 		selectedMessageOffset = pStartingMsgOffset;
-	}
 	else if (this.SearchingAndResultObjsDefinedForCurSub())
 	{
-		//console.print("\1n\r\nHere 2\r\n\1p"); // Temporary
 		// If reading personal mail, start at the first unread message index
 		// (or the last message, if all messages have been read)
 		if (this.readingPersonalEmail)
 		{
-			//console.print("\1n\r\nHere 3\r\n\1p"); // Temporary
 			selectedMessageOffset = this.GetLastReadMsgIdx(false); // Used to be true
 			if ((selectedMessageOffset > -1) && (selectedMessageOffset < this.NumMessages() - 1))
 				++selectedMessageOffset;
 		}
 		else
-		{
-			//console.print("\1n\r\nHere 4\r\n\1p"); // Temporary
 			selectedMessageOffset = 0;
-		}
 	}
 	else if (this.hdrsForCurrentSubBoard.length > 0)
 	{
-		//console.print("\1n\r\nHere 5\r\n\1p"); // Temporary
 		selectedMessageOffset = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
 		if (selectedMessageOffset < 0)
-		{
-			//console.print("\1n\r\nHere 6\r\n\1p"); // Temporary
 			selectedMessageOffset = 0;
-		}
 		else if (selectedMessageOffset >= this.hdrsForCurrentSubBoard.length)
-		{
-			//console.print("\1n\r\nHere 7\r\n\1p"); // Temporary
 			selectedMessageOffset = this.hdrsForCurrentSubBoard.length - 1;
-		}
 	}
 	else
-	{
-		//console.print("\1n\r\nHere 8\r\n\1p"); // Temporary
 		selectedMessageOffset = -1;
-	}
-	//console.print("selectedMessageOffset: " + selectedMessageOffset + "\r\n\1p"); // Temporary
 	var otherRetObj = null;
 	var continueOn = true;
 	while (continueOn)
@@ -2772,10 +2753,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 					if (retObj.stoppedReading)
 						msgIndex = 0;
 					else if (goToNextRetval.changedMsgArea)
-					{
 						msgIndex = goToNextRetval.msgIndex;
-						//console.print("\1n\r\nNext area from last msg - msgIndex: " + msgIndex + "\r\n\1p"); // Temporary
-					}
 				}
 				// If the caller wants this method to return instead of going to the next
 				// sub-board with messages, then do so.
@@ -2886,10 +2864,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 				if (retObj.stoppedReading)
 					msgIndex = 0;
 				else if (goToNextRetval.changedMsgArea)
-				{
 					msgIndex = goToNextRetval.msgIndex;
-					//console.print("\1n\r\nmsgIndex: " + msgIndex + "\r\n\1p"); // Temporary
-				}
 			}
 			// If the caller wants this method to return instead of going to the next
 			// sub-board with messages, then do so.
@@ -4515,11 +4490,6 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoar
 //                                            non-scrolling interface to read the message)
 function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 {
-	// Temporary
-	//console.print("\1n\r\nRead - Offset: " + pOffset + "\r\n");
-	//logStackTrace();
-	//console.pause();
-	// End Temporary
 	var retObj = new Object();
 	retObj.offsetValid = true;
 	retObj.msgNotReadable = false;
@@ -4570,13 +4540,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 
 	// Get the message text and see if it has any ANSI codes.  If it has ANSI codes,
 	// then don't use the scrolling interface so that the ANSI gets displayed properly.
-	// If this message is a poll, then instead of using get_msg_body(), get the poll
-	// results from the message header.
-	var messageText = "";
-	if ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
-		messageText = this.GetPollMsgBody(msgHeader);
-	else
-		messageText = this.msgbase.get_msg_body(false, msgHeader.number);
+	var messageText = this.GetMsgBody(msgHeader);
 	// If the message has ANSI content, then use the scrolling interface only
 	// if frame.js is available on the BBS machine and the option to use the
 	// scrolling interface for ANSI messages is enabled.
@@ -4660,12 +4624,6 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	retObj.nextAction = ACTION_NONE;
 	retObj.refreshEnhancedRdrHelpLine = false;
 
-	// Temporary
-	//console.print("\1n\r\nHdr has total votes: " + msgHeader.hasOwnProperty("total_votes") + "\r\n");
-	//console.print("Hdr has upvotes: " + msgHeader.hasOwnProperty("upvotes") + "\r\n");
-	//console.pause();
-	// End Temporary
-	
 	// Show the message header
 	this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
 
@@ -6625,7 +6583,6 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 						// We probably shouldn't use GetMsgIdx() yet because the arrays of
 						// message headers have not been populated for the next area yet
 						//retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
-						//console.print("\1n\r\nGo to next area - Code:" + this.subBoardCode + ":, msgIndex: " + retObj.msgIndex + "\r\n\1p"); // Temporary
 						if (retObj.msgIndex >= 0)
 							retObj.changedMsgArea = true;
 						else
@@ -6683,7 +6640,6 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 						// for this sub-board
 						this.PopulateHdrsForCurrentSubBoard();
 						retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
-						//console.print("\1n\r\nGo to next area (2) - msgIndex: " + retObj.msgIndex + "\r\n\1p"); // Temporary
 					}
 				}
 				else // The message base failed to open
@@ -6755,7 +6711,6 @@ function DigDistMsgReader_SetUpLightbarMsgListVars()
 	if (!this.SearchingAndResultObjsDefinedForCurSub() || this.readingPersonalEmail)
 	{
 		lastReadMsgIdx = this.GetLastReadMsgIdx();
-		//console.print("\1n\r\nlastReadMsgIdx: " + lastReadMsgIdx + "\r\n\1p"); // Temporary
 		if (lastReadMsgIdx == -1)
 			lastReadMsgIdx = 0;
 	}
@@ -14129,14 +14084,16 @@ function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum, pUser)
 	return userHasVotedOnMsg;
 }
 
-// For the DigDistMsgReader class: Gets message text for a poll message.
+// For the DigDistMsgReader class: Gets the body (text) of a message.  If it's
+// a poll, this method will format the message body with poll results.  Otherwise,
+// this method will simply get the message body.
 //
 // Parameters:
 //  pMsgHeader: The message header
 //
 // Return value: The poll results, colorized.  If the message is not a
 //               poll message, then an empty string will be returned.
-function DigDistMsgReader_GetPollMsgBody(pMsgHdr)
+function DigDistMsgReader_GetMsgBody(pMsgHdr)
 {
 	var msgBody = "";
 	if ((typeof(MSG_TYPE_POLL) != "undefined") && (pMsgHdr.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
@@ -14155,10 +14112,27 @@ function DigDistMsgReader_GetPollMsgBody(pMsgHdr)
 
 		if (pMsgHdr.hasOwnProperty("field_list"))
 		{
+			//var voteOptDescLen = 27;
+			// Figure out the longest length of the poll choices, with
+			// a maximum of 22 characters less than the terminal width.
+			// Use a minimum of 27 characters.
+			// That length will be used for the formatting strings for
+			// the poll results.
+			var voteOptDescLen = 0;
+			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+			{
+				if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+				{
+					if (pMsgHdr.field_list[fieldI].data.length > voteOptDescLen)
+						voteOptDescLen = pMsgHdr.field_list[fieldI].data.length;
+				}
+			}
+			if (voteOptDescLen > console.screen_columns - 22)
+				voteOptDescLen = console.screen_columns - 22;
+			else if (voteOptDescLen < 27)
+				voteOptDescLen = 27;
+
 			// Format strings for outputting the voting option lines
-			var voteOptDescLen = 27;
-			//var unvotedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1w\1h%-" + voteOptDescLen + "s [%-4d %3d%]\1n";
-			//var votedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1" + "5\1w\1h%-" + voteOptDescLen + "s [%-4d %3d%]\1n";
 			var unvotedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n";
 			var votedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1" + "5\1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n";
 			// Add up the total number of votes so that we can
@@ -14171,20 +14145,16 @@ function DigDistMsgReader_GetPollMsgBody(pMsgHdr)
 			}
 			// Go through field_list and append the voting options and stats to
 			// msgBody
+			var pollComment = "";
 			var optionNum = 1;
 			var numVotes = 0;
 			var votePercentage = 0;
-			var lastFieldType = 0;
 			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 			{
-				// Comments should come before poll answer choices
 				if (pMsgHdr.field_list[fieldI].type == SMB_COMMENT)
-					msgBody += pMsgHdr.field_list[fieldI].data + "\r\n";
+					pollComment += pMsgHdr.field_list[fieldI].data + "\r\n";
 				else if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
 				{
-					// Put an empty line between comments and the poll choices
-					if (lastFieldType == SMB_COMMENT)
-						msgBody += "\r\n";
 					// Figure out the number of votes on this option and the
 					// vote percentage
 					if (pMsgHdr.hasOwnProperty("tally"))
@@ -14203,8 +14173,9 @@ function DigDistMsgReader_GetPollMsgBody(pMsgHdr)
 						msgBody += " " + CHECK_CHAR;
 					msgBody += "\r\n";
 				}
-				lastFieldType = pMsgHdr.field_list[fieldI].type;
 			}
+			if (pollComment.length > 0)
+				msgBody = pollComment + "\r\n" + msgBody;
 
 			// If the current logged-in user has not voted on this message, then
 			// append some text saying how to vote.
@@ -14219,36 +14190,38 @@ function DigDistMsgReader_GetPollMsgBody(pMsgHdr)
 			var msgFromUpper = pMsgHdr.from.toUpperCase();
 			if ((msgFromUpper == user.name.toUpperCase()) || (msgFromUpper == user.handle.toUpperCase()))
 			{
-				// TODO: Find out the times when users voted so that the time
-				// can be inserted into the message text.
-				//"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s voted in your poll: \1n\1h%s\r\n" 787 PollVoteNotice
-				var userVotedInYourPollText = bbs.text(typeof(PollVoteNotice) != "undefined" ? VoteMsgUpDownOrQuit : 787);
-				//userVotedInYourPollText = userVotedInYourPollText.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
-				// Check all users to see if they voted on this message
-				// Determine the last user number
-				var lastuser = (system.lastuser == undefined ? system.stats.total_users : system.lastuser);
-				for (var userNum = 1; userNum <= lastuser; ++userNum)
+				// Check all the messages in the messagebase after the current one
+				// to find poll response messages
+				if (typeof(this.msgbase.get_all_msg_headers) === "function")
 				{
-					// Load the user record
-					var theUser = new User(userNum);
+					// Get the line from text.dat for writing who voted & when.  It
+					// is a format string and should look something like this:
+					//"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s voted in your poll: \1n\1h%s\r\n" 787 PollVoteNotice
+					var userVotedInYourPollText = bbs.text(typeof(PollVoteNotice) != "undefined" ? PollVoteNotice : 787);
 
-					// Skip deleted, inactive, and guest accounts
-					if (((theUser.settings & USER_DELETED) == USER_DELETED) || ((theUser.settings & USER_INACTIVE) == USER_INACTIVE))
-						continue;
-					if (theUser.security.restrictions & UFLAG_G)
-						continue;
-
-					// See if this user has voted on the message
-					if (this.HasUserVotedOnMsg(pMsgHdr.number, theUser))
+					// Pass true to get_all_msg_headers() to tell it to return vote messages
+					// (the parameter was introduced in Synchronet 3.17+)
+					var tmpHdrs = this.msgbase.get_all_msg_headers(true);
+					for (var tmpProp in tmpHdrs)
 					{
-						msgBody += "\1n\r\n\1m\1h";
-						msgBody += (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? theUser.name : theUser.alias;
-						msgBody += " voted in your poll: \1w" + pMsgHdr.subject + "\1n\r\n";
+						if (tmpHdrs[tmpProp] == null)
+							continue;
+						// If this header's thread_back or reply_id matches the poll message
+						// number, then append the 'user voted' string to the message body.
+						if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.number))
+						{
+							var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
+							var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
+							msgBody += format(userVotedInYourPollText, voteDate, this.msgbase.cfg.grp_name, this.msgbase.cfg.name,
+							                  tmpHdrs[tmpProp].from, pMsgHdr.subject);
+						}
 					}
 				}
 			}
 		}
 	}
+	else
+		msgBody = this.msgbase.get_msg_body(false, pMsgHdr.number);
 	return msgBody;
 }
 
