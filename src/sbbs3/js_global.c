@@ -2418,6 +2418,11 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 			continue;
 		}
 
+		if(strcmp(token,"bull")==0) {	/* bullet  */
+			outbuf[j++] = 249;
+			continue;
+		}
+
 		if(strcmp(token,"lsquo")==0 || strcmp(token,"rsquo")==0) {
 			outbuf[j++]='\'';	/* single quotation mark */
 			continue;
