@@ -296,8 +296,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 13";
-var READER_DATE = "2016-11-28";
+var READER_VERSION = "1.17 Beta 14";
+var READER_DATE = "2016-11-29";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5415,7 +5415,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						if (msgIsPollVote)
 						{
 							console.print("\1n");
-							console.crlf();
+							console.gotoxy(1, console.screen_rows-1);
 							if (voteRetObj.errorMsg.length > 0)
 							{
 								if (voteRetObj.mnemonicsRequiredForErrorMsg)
@@ -5425,12 +5425,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 								}
 								else
 									console.print("\1y\1h* " + voteRetObj.errorMsg + "\1n");
-								console.pause();
+								mswait(ERROR_PAUSE_WAIT_MS);
 							}
 							else if (!voteRetObj.savedVote)
 							{
 								console.print("\1y\1h* Failed to save the vote\1n");
-								console.pause();
+								mswait(ERROR_PAUSE_WAIT_MS);
 							}
 
 							// Exit out of the reader and come back to read
@@ -5445,8 +5445,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 							// Not a poll vote - Just an up/down vote
 							if ((voteRetObj.errorMsg.length > 0) || (!voteRetObj.savedVote))
 							{
-								console.gotoxy(1, console.screen_rows-1);
 								console.print("\1n");
+								console.gotoxy(1, console.screen_rows-1);
 								if (voteRetObj.errorMsg.length > 0)
 								{
 									if (voteRetObj.mnemonicsRequiredForErrorMsg)
