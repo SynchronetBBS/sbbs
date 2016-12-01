@@ -1,5 +1,3 @@
-/* logfile.cpp */
-
 /* Synchronet log file routines */
 
 /* $Id$ */
@@ -265,10 +263,9 @@ void sbbs_t::logch(char ch, bool comma)
 /* information, function, action, object and access and then attempts to    */
 /* write the error information into the file ERROR.LOG and NODE.LOG         */
 /****************************************************************************/
-void sbbs_t::errormsg(int line, const char *source, const char* action, const char *object
-					  ,ulong access, const char *extinfo)
+void sbbs_t::errormsg(int line, const char* function, const char *src, const char* action, const char *object
+					  ,long access, const char *extinfo)
 {
-	const char*	src;
     char	str[2048];
 
 	/* prevent recursion */
@@ -276,18 +273,16 @@ void sbbs_t::errormsg(int line, const char *source, const char* action, const ch
 		return;
 	errormsg_inside=true;
 
-	/* Don't log path to source code */
-	src=getfname(source);
 	safe_snprintf(str,sizeof(str),"ERROR %d (%s) "
 #ifdef _WIN32
 		"(WinError %u) "
 #endif
-		"in %s line %u %s \"%s\" access=%ld %s%s"
+		"in %s line %u (%s) %s \"%s\" access=%ld %s%s"
 		,errno,STRERROR(errno)
 #ifdef _WIN32
 		,GetLastError()
 #endif
-		,src, line, action, object, access
+		,src, line, function, action, object, access
 		,extinfo==NULL ? "":"info="
 		,extinfo==NULL ? "":extinfo);
 	if(online==ON_LOCAL)

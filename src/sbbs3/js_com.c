@@ -55,7 +55,7 @@ typedef struct
 
 } private_t;
 
-static const char* getprivate_failure = "line %d %s JS_GetPrivate failed";
+static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
 static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 {

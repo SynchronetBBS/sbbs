@@ -872,8 +872,8 @@ public:
 	void	logofflist(void);              /* List of users logon activity */
 	bool	syslog(const char* code, const char *entry);
 	bool	errormsg_inside;
-	void	errormsg(int line, const char *file, const char* action, const char *object
-				,ulong access, const char *extinfo=NULL);
+	void	errormsg(int line, const char* function, const char *source, const char* action, const char *object
+				,long access, const char *extinfo=NULL);
 	BOOL	hacklog(char* prot, char* text);
 
 	/* qwk.cpp */

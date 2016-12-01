@@ -1,5 +1,3 @@
-/* js_socket.c */
-
 /* Synchronet JavaScript "Socket" Object */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2013 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -45,7 +43,7 @@
 
 #ifdef JAVASCRIPT
 
-static const char* getprivate_failure = "line %d %s JS_GetPrivate failed";
+static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
 static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
 {

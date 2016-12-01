@@ -55,7 +55,7 @@ typedef struct
 
 } privatemsg_t;
 
-static const char* getprivate_failure = "line %d %s JS_GetPrivate failed";
+static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
 /* Destructor */
 
