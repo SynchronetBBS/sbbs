@@ -183,5 +183,7 @@ function FTNDomains()
 		this.domainDNSMap={
 			'fidonet':'binkp.net'
 		};
+		this.nodeListFN = {};
+		this.nodeList = {};
 	}
 }
