@@ -407,6 +407,23 @@ static int64_t get_start_msg(sbbs_t* sbbs, smb_t* smb)
 	return(i-1);
 }
 
+static int score_post(post_t* post)
+{
+	if((post->idx.attr&MSG_POLL_VOTE_MASK) == MSG_POLL)
+		return 0;
+	return (post->upvotes*2) + ((post->idx.attr&MSG_REPLIED) ? 1:0) - (post->downvotes*2);
+}
+
+static int rank_post(const void* a1, const void* a2)
+{
+	post_t* p1 = (post_t*)a1;
+	post_t* p2 = (post_t*)a2;
+	int diff = score_post(p2) - score_post(p1);
+	if(diff == 0)
+		return p2->idx.time - p1->idx.time;
+	return diff;
+}
+
 /****************************************************************************/
 /* Reads posts on subboard sub. 'mode' determines new-posts only, browse,   */
 /* or continuous read.                                                      */
@@ -784,7 +801,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			bprintf(text[UnvalidatedWarning],unvalidated+1);
 		bprintf(text[ReadingSub],ugrp,cfg.grp[cfg.sub[subnum]->grp]->sname
 			,usub,cfg.sub[subnum]->sname,smb.curmsg+1,smb.msgs);
-		sprintf(str,"ABCDEFILMNPQRTUVY?<>[]{}-+()");
+		sprintf(str,"ABCDEFHILMNPQRTUVY?<>[]{}-+()");
 		if(sub_op(subnum))
 			strcat(str,"O");
 		do_find=true;
@@ -954,6 +971,20 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					domsg=1;
 				}
 				break;
+			case 'H':	/* Highest ranked messages */
+			{
+				post_t* ranked = (post_t*)malloc(sizeof(post_t)*smb.msgs);
+				domsg = false;
+				if(ranked == NULL) {
+					errormsg(WHERE, ERR_ALLOC, "messages", smb.msgs);
+					break;
+				}
+				memcpy(ranked, post, sizeof(post_t)*smb.msgs);
+				qsort(ranked, smb.msgs, sizeof(post_t), rank_post);
+				listmsgs(subnum, 0, ranked, 0, 20);
+				free(ranked);
+				break;
+			}
 			case 'I':   /* Sub-board information */
 				domsg=0;
 				subinfo(subnum);
