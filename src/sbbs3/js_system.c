@@ -888,7 +888,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(userdatdupe(cfg,usernumber,offset,len,p,FALSE,match_next)));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(userdatdupe(cfg,usernumber,offset,len,p,FALSE,match_next,NULL,NULL)));
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
