@@ -1,5 +1,3 @@
-/* scfg.c */
-
 /* Synchronet configuration utility 										*/
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1883,12 +1881,13 @@ void bail(int code)
 /* information, function, action, object and access and then attempts to    */
 /* write the error information into the file ERROR.LOG in the text dir.     */
 /****************************************************************************/
-void errormsg(int line, char* source,  char* action, char* object, ulong access)
+void errormsg(int line, char* function, char* source,  char* action, char* object, ulong access)
 {
 	char scrn_buf[MAX_BFLN];
     gettext(1,1,80,uifc.scrn_len,scrn_buf);
     clrscr();
     printf("ERROR -     line: %d\n",line);
+	printf("        function: %s\n",function);
     printf("            file: %s\n",source);
     printf("          action: %s\n",action);
     printf("          object: %s\n",object);
