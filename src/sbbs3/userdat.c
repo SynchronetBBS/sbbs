@@ -1144,7 +1144,7 @@ void DLLCALL printnodedat(scfg_t* cfg, uint number, node_t* node)
 
 /****************************************************************************/
 uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen
-						 ,char *dat, BOOL del, BOOL next)
+						 ,char *dat, BOOL del, BOOL next, void (*progress)(void*, int, int), void* cbdata)
 {
     char	str[MAX_PATH+1];
     uint	i;
@@ -1164,6 +1164,8 @@ uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen
 	else
 		l=0;
 	for(;l<length;l+=U_LEN) {
+		if(progress != NULL)
+			progress(cbdata, l, length);
 		if(usernumber && l/U_LEN==(long)usernumber-1) 
 			continue;
 		lseek(file,l+offset,SEEK_SET);
@@ -1201,6 +1203,8 @@ uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen
 			unlock(file,l,U_LEN); 
 	}
 	close(file);
+	if(progress != NULL)
+		progress(cbdata, l, length);
 	return(0);
 }
 

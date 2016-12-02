@@ -104,7 +104,7 @@ DLLEXPORT char* DLLCALL getnmsg(scfg_t*, int node_num);
 DLLEXPORT int	DLLCALL putnmsg(scfg_t*, int num, char *strin);
 
 DLLEXPORT uint	DLLCALL userdatdupe(scfg_t*, uint usernumber, uint offset, uint datlen, char *dat
-							,BOOL del, BOOL next);
+							,BOOL del, BOOL next, void (*progress)(void*, int, int), void* cbdata);
 
 DLLEXPORT BOOL	DLLCALL chk_ar(scfg_t*, uchar* str, user_t*, client_t*); /* checks access requirements */
 

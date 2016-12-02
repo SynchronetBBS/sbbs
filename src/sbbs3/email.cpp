@@ -94,6 +94,10 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 		if((mode & WM_FORCEFWD) || text[ForwardMailQ][0]==0 || yesno(text[ForwardMailQ])) /* Forward to netmail address */
 			return(netmail(str,subj,mode));
 	}
+	if(sys_status&SS_ABORT) {
+		bputs(text[Aborted]);
+		return false;
+	}
 	bprintf(text[Emailing],username(&cfg,usernumber,tmp),usernumber);
 	action=NODE_SMAL;
 	nodesync();

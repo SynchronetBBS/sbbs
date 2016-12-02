@@ -59,6 +59,12 @@ void sbbs_t::putmsgptrs()
 	::putmsgptrs(&cfg,&useron,subscan);
 }
 
+static void ProgressSearchingDupes(void* cbdata, int count, int total)
+{
+	sbbs_t* sbbs = ((sbbs_t*)cbdata);
+	sbbs->progress(sbbs->text[SearchingForDupes], count, total);
+}
+
 /****************************************************************************/
 /* Checks for a duplicate user field starting at user record offset         */
 /* 'offset', reading in 'datlen' chars, comparing to 'str' for each user    */
@@ -70,8 +76,7 @@ void sbbs_t::putmsgptrs()
 uint sbbs_t::userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
     ,bool del, bool next)
 {
-	bputs(text[SearchingForDupes]);
-	uint i=::userdatdupe(&cfg, usernumber, offset, datlen, dat, del, next);
+	uint i=::userdatdupe(&cfg, usernumber, offset, datlen, dat, del, next, ProgressSearchingDupes, this);
 	bputs(text[SearchedForDupes]);
 	return(i);
 }
