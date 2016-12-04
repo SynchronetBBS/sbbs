@@ -208,6 +208,11 @@
  * 2016-11-20 Eric Oulashin     Continued working on updates for Synchronet's
  *                              voting support - Mainly filtering out voting
  *                              messages etc.
+ * 2016-12-03 Eric Oulashin     Version 1.17 beta 15
+ *                              Added a check in DigDistMsgReader_GetMsgIdx() to
+ *                              just return -1 if msgNum is not a number.  Also,
+ *                              have been continuing to work on voting & message
+ *                              filtering updates.
  */
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
@@ -296,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 14";
-var READER_DATE = "2016-11-29";
+var READER_VERSION = "1.17 Beta 15";
+var READER_DATE = "2016-12-04";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -903,6 +908,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.GetMsgIdx = DigDistMsgReader_GetMsgIdx;
 	this.RefreshSearchResultMsgHdr = DigDistMsgReader_RefreshSearchResultMsgHdr;   // Refreshes a message header in the search results
 	this.SearchMessages = DigDistMsgReader_SearchMessages; // Prompts the user for search text, then lists/reads messages, performing the search
+	this.RefreshHdrInSubBoardHdrs = DigDistMsgReader_RefreshHdrInSubBoardHdrs;
+	this.RefreshHdrInSavedArrays = DigDistMsgReader_RefreshHdrInSavedArrays;
 	this.ReadMessages = DigDistMsgReader_ReadMessages;
 	this.DisplayEnhancedMsgReadHelpLine = DigDistMsgReader_DisplayEnhancedMsgReadHelpLine;
 	this.GoToPrevSubBoardForEnhReader = DigDistMsgReader_GoToPrevSubBoardForEnhReader;
@@ -1522,7 +1529,10 @@ function DigDistMsgReader_GetMsgIdx(pHdrOrMsgNum)
 		msgNum = pHdrOrMsgNum;
 	else
 		return -1;
-	
+
+	if (typeof(msgNum) != "number")
+		return -1;
+
 	var msgIdx = 0;
 	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
 	    (this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
@@ -1589,6 +1599,37 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoar
 			}
 		}
 	}
+}
+
+// For the DigDistMsgReader class: Refreshes a message header in the message header
+// array for the current sub-board.
+//
+// Parameters:
+//  pMsgIndex: The index (0-based) of the message header
+//  pAttrib: Optional - An attribute to apply.  If this is is not specified,
+//           then the message header will be retrieved from the message base.
+function DigDistMsgReader_RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib)
+{
+	if (typeof(pMsgIndex) != "number")
+		return;
+
+	if ((pMsgIndex >= 0) && (pMsgIndex <= this.hdrsForCurrentSubBoard.length))
+		this.hdrsForCurrentSubBoard[pMsgIndex].attr = this.hdrsForCurrentSubBoard[pMsgIndex].attr | pAttrib;
+}
+
+// For the DigDistMsgReader class: Refreshes a message header in the saved message
+// header arrays.
+//
+// Parameters:
+//  pMsgIndex: The index (0-based) of the message header
+//  pAttrib: Optional - An attribute to apply.  If this is is not specified,
+//           then the message header will be retrieved from the message base.
+// pSubBoardCode: Optional - An internal sub-board code.  If not specified, then
+//                this method will default to this.subBoardCode.
+function DigDistMsgReader_RefreshHdrInSavedArrays(pMsgIndex, pAttrib, pSubBoardCode)
+{
+	this.RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pSubBoardCode);
+	this.RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib);
 }
 
 // For the DigDistMsgReader class: Inputs search text from the user, then reads/lists
@@ -4252,6 +4293,8 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum)
 
 	//var msgNum = (typeof(pMsgNum) == "number" ? pMsgNum : pMsgHeader.offset+1);
 	var msgNum = (typeof(pMsgNum) == "number" ? pMsgNum : this.GetMsgIdx(pMsgHeader.number)+1);
+	if (msgNum == 0) // In case GetMsgIdx() returns -1 for failure
+		msgNum = 1;
 
 	// Determine if the message has been deleted.
 	var msgDeleted = ((pMsgHeader.attr & MSG_DELETE) == MSG_DELETE);
@@ -4569,7 +4612,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		var successfullySavedMsgHdr = this.msgbase.put_msg_header(false, msgHeader.number, msgHeader);
 		//var successfullySavedMsgHdr = this.msgbase.put_msg_header(msgHeader.number, msgHeader);
 		if (this.SearchTypePopulatesSearchResults() && successfullySavedMsgHdr)
-			this.RefreshSearchResultMsgHdr(pOffset, MSG_READ);
+			this.RefreshHdrInSavedArrays(pOffset, MSG_READ);
 
 		// If failed to save the header, then write some error messages in the system & node log.
 		if (!successfullySavedMsgHdr)
@@ -5439,6 +5482,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 							retObj.newMsgOffset = pOffset;
 							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
 							continueOn = false;
+							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 						}
 						else
 						{
@@ -6640,6 +6684,8 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea)
 						// for this sub-board
 						this.PopulateHdrsForCurrentSubBoard();
 						retObj.msgIndex = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
+						if (retObj.msgIndex == -1)
+							retObj.msgIndex = 0;
 					}
 				}
 				else // The message base failed to open
@@ -10181,10 +10227,20 @@ function DigDistMsgReader_PromptAndDeleteMessage(pOffset, pPromptLoc, pClearProm
 						}
 					}
 				}
+				// Delete any vote response messages for this message
+				var voteDelRetObj = deleteVoteMsgs(this.msgbase, msgHeader.number, (this.subBoardCode == "mail"));
+				if (!voteDelRetObj.allVoteMsgsDeleted)
+				{
+					console.print("\1n");
+					console.crlf();
+					console.print("\1y\1h* Failed to delete all vote response messages for message " + msgNum + "\1n");
+					console.crlf();
+					console.pause();
+				}
 
-				// In case there are search results, refresh the header in the search
-				// results to enable the deleted attribute.
-				this.RefreshSearchResultMsgHdr(pOffset, MSG_DELETE);
+				// In case there are search results or saved message headers, refresh the header in
+				// those arrays to enable the deleted attribute.
+				this.RefreshHdrInSavedArrays(pOffset, MSG_DELETE);
 				// Output a message saying the message has been marked for deletion
 				if (promptLocValid)
 					console.gotoxy(pPromptLoc);
@@ -13573,11 +13629,23 @@ function DigDistMsgReader_DeleteSelectedMessages()
 						msgWasDeleted = false;
 					if (msgWasDeleted)
 					{
-						// Refresh the message header in the search results (if it
+						// Refresh the message header in the header arrays (if it
 						// exists there) and remove the message index from the
 						// selectedMessages object
-						this.RefreshSearchResultMsgHdr(msgIdxNumber, MSG_DELETE, subBoardCode);
+						this.RefreshHdrInSavedArrays(msgIdxNumber, MSG_DELETE, subBoardCode);
 						delete this.selectedMessages[subBoardCode][msgIdx];
+
+						// Delete any vote response messages that may exist for this message
+						var voteDelRetObj = deleteVoteMsgs(msgBase, msgHdr.number, (subBoardCode == "mail"));
+						// TODO: If the main messages was deleted, does it matter if vote response messages
+						// are deleted?
+						if (!voteDelRetObj.allVoteMsgsDeleted)
+						{
+							retObj.deletedAll = false;
+							if (!retObj.failureList.hasOwnProperty(subBoardCode))
+								retObj.failureList[subBoardCode] = new Array();
+							retObj.failureList[subBoardCode].push(msgIdxNumber);
+						}
 					}
 					else
 					{
@@ -13829,6 +13897,13 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	retObj.mnemonicsRequiredForErrorMsg = false;
 	retObj.updatedHdr = null;
 
+	// Don't allow voting for personal email
+	if (this.subBoardCode == "mail")
+	{
+		retObj.errorMsg = "Can not vote on personal email";
+		return retObj;
+	}
+
 	// If the message vote function is not defined in the running verison of Synchronet,
 	// then just return.
 	if (!retObj.BBSHasVoteFunction)
@@ -14056,6 +14131,10 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 //         user will be used.
 function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum, pUser)
 {
+	// Don't do this for personal email
+	if (this.subBoardCode == "mail")
+		return false;
+
 	// Thanks to echicken for explaining how to check this.  To check a user's
 	// vote, use MsgBase.how_user_voted().
 	/*
@@ -14177,9 +14256,11 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 			if (pollComment.length > 0)
 				msgBody = pollComment + "\r\n" + msgBody;
 
-			// If the current logged-in user has not voted on this message, then
-			// append some text saying how to vote.
-			if (!this.HasUserVotedOnMsg(pMsgHdr.number))
+			// If voting is allowed in this sub-board and the current logged-in
+			// user has not voted on this message, then append some text saying
+			// how to vote.
+			var votingAllowed = ((this.subBoardCode != "mail") && (((msg_area.sub[this.subBoardCode].settings & SUB_NOVOTING) == 0)));
+			if (votingAllowed && !this.HasUserVotedOnMsg(pMsgHdr.number))
 			{
 				msgBody += "\1n\r\n\1gTo vote in this poll, press \1w\1h"
 				        + this.enhReaderKeys.vote + "\1n\1g now.";
@@ -18181,6 +18262,60 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	}
 	*/
 	return true;
+}
+
+// Deletes vote messages (messages that have voting response data for a message with
+// a given message number).
+//
+// Parameters:
+//  pMsgbase: A MessageBase object containing the messages to be deleted
+//  pMsgNum: The number of the message for which vote messages should be deleted
+//  pIsMailSub: Boolean - Whether or not it's the personal email area
+//
+// Return value: An object containing the following properties:
+//               numVoteMsgs: The number of vote messages for the given message number
+//               numVoteMsgsDeleted: The number of vote messages that were deleted
+//               allVoteMsgsDeleted: Boolean - Whether or not all vote messages were deleted
+function deleteVoteMsgs(pMsgbase, pMsgNum, pIsEmailSub)
+{
+	var retObj = {
+		numVoteMsgs: 0,
+		numVoteMsgsDeleted: 0,
+		allVoteMsgsDeleted: true
+	};
+
+	if ((pMsgbase === null) || !pMsgbase.is_open)
+		return retObj;
+	if (typeof(pMsgNum) != "number")
+		return retObj;
+	if (pIsEmailSub)
+		return retObj;
+
+	// This relies on get_all_msg_headers() returning vote messages.  The get_all_msg_headers()
+	// function was added in Synchronet 3.16, and the 'true' parameter to get vote headers was
+	// added in Synchronet 3.17.
+	if (typeof(pMsgbase.get_all_msg_headers) === "function")
+	{
+		var msgHdrs = pMsgbase.get_all_msg_headers(true);
+		for (var msgHdrsProp in msgHdrs)
+		{
+			if (msgHdrs[msgHdrsProp] == null)
+				continue;
+			// If this header is a vote header and its thread_back or reply_id matches the given message
+			// number, then we can delete this message.
+			var isVoteMsg = (((msgHdrs[msgHdrsProp].attr & MSG_VOTE) == MSG_VOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_UPVOTE) == MSG_UPVOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_DOWNVOTE) == MSG_DOWNVOTE));
+			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgNum))
+			{
+				++retObj.numVoteMsgs;
+				msgWasDeleted = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
+				retObj.allVoteMsgsDeleted = (retObj.allVoteMsgsDeleted && msgWasDeleted);
+				if (msgWasDeleted)
+					++retObj.numVoteMsgsDeleted;
+			}
+		}
+	}
+
+	return retObj;
 }
 
 /////////////////////////////////////////////////////////////////////////
