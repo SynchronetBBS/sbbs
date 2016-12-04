@@ -301,7 +301,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 15";
+var READER_VERSION = "1.17 Beta 16";
 var READER_DATE = "2016-12-04";
 
 // Keyboard key codes for displaying on the screen
@@ -2168,6 +2168,8 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 			// Iterate through the sub-boards in this message group looking for unread messages
 			for (var subIndex = 0; (subIndex < msg_area.grp_list[grpIndex].sub_list.length) && continueNewScan; ++subIndex)
 			{
+				// Force garbage collection to ensure enough memory is available to continue
+				js.gc(true);
 				// Set the console line counter to 0 to prevent screen pausing
 				// when the "Searching ..." and "No messages were found" text is
 				// displayed repeatedly
@@ -2293,6 +2295,8 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		// Iterate through the sub-boards in the current message group looking for messages
 		for (var subIndex = 0; (subIndex < msg_area.grp_list[bbs.curgrp].sub_list.length) && continueNewScan; ++subIndex)
 		{
+			// Force garbage collection to ensure enough memory is available to continue
+			js.gc(true);
 			// Set the console line counter to 0 to prevent screen pausing
 			// when the "Searching ..." and "No messages were found" text is
 			// displayed repeatedly
@@ -2426,6 +2430,8 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 			//this.msgbase = new MsgBase(bbs.cursub_code);
 			if (this.msgbase.open())
 			{
+				// Force garbage collection to ensure enough memory is available to continue
+				js.gc(true);
 				// Temporarily change the user's sub-board to the current
 				// sub-board so that certain @-codes (such as @GRP-L@, etc.)
 				// are displayed by Synchronet correctly.
