@@ -2004,4 +2004,32 @@ int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 	return(retval);
 }
 
+long SMBCALL smb_first_in_thread(smb_t* smb, smbmsg_t* remsg)
+{
+	smbmsg_t msg;
+
+	if(!remsg->hdr.thread_back)
+		return remsg->hdr.number;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.hdr.number = remsg->hdr.thread_id;
+	if(smb_getmsgidx(smb, &msg) == SMB_SUCCESS)
+		return msg.hdr.number;
+
+	/* Walk the thread backwards to find the oldest msg in thread */
+	long msgnum = msg.hdr.number = remsg->hdr.number;
+	msg.hdr.thread_back = remsg->hdr.thread_back;
+	while(msg.hdr.thread_back != 0 && msg.hdr.thread_back < msg.hdr.number) {
+		msg.hdr.number = msg.hdr.thread_back;
+		if(smb_getmsgidx(smb, &msg) != SMB_SUCCESS)
+			break;
+		if(smb_getmsghdr(smb, &msg) != SMB_SUCCESS)
+			break;
+		smb_freemsgmem(&msg);
+		msgnum = msg.hdr.number;
+	}
+
+	return msgnum;
+}
+
 /* End of SMBLIB.C */

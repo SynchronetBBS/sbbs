@@ -657,7 +657,7 @@ typedef struct {				/* Message base */
 	/* Private member variables (not initialized by or used by smblib) */
 	uint32_t	subnum;			/* Sub-board number */
 	uint32_t	msgs;			/* Number of messages loaded (for user) */
-	uint32_t	curmsg;			/* Current message number (for user) */
+	uint32_t	curmsg;			/* Current message number (for user, 0-based) */
 
 } smb_t;
 
