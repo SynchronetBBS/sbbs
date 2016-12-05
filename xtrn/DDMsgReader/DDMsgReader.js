@@ -301,7 +301,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 16";
+var READER_VERSION = "1.17 Beta 17";
 var READER_DATE = "2016-12-04";
 
 // Keyboard key codes for displaying on the screen
@@ -14011,13 +14011,10 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 			var selectHdr = bbs.text(typeof(SelectItemHdr) != "undefined" ? SelectItemHdr : 501);
 			printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
 			var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
-			var numCommentLines = 0;
 			var optionNum = 1;
 			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 			{
-				if (pMsgHdr.field_list[fieldI].type == SMB_COMMENT)
-					++numCommentLines;
-				else if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+				if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
 				{
 					printf(optionFormatStr, optionNum++, pMsgHdr.field_list[fieldI].data);
 					console.crlf();
@@ -14034,15 +14031,17 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 			// TODO: Update to support multiple answers from the user
 			var userInputNum = console.getnum(maxNum);
 			console.print("\1n");
-			if (userInputNum == 0) // The user just pressed enter to choose the default
-				userInputNum = 1;
+			//if (userInputNum == 0) // The user just pressed enter to choose the default
+			//	userInputNum = 1;
 			if (userInputNum == -1) // The user chose Q to quit
 				retObj.userQuit = true;
 			else
 			{
-				// It seems the user's choice needs to be incremented by 1 less
-				// than the number of comment lines
-				userInputNum += (numCommentLines-1);
+				// The user's answer is 0-based, so if userInputNum is positive,
+				// subtract 1 from it (if it's already 0, that means the user
+				// chose to keep the default first answer).
+				if (userInputNum > 0)
+					--userInputNum;
 				var votes = (1 << userInputNum);
 				voteMsgHdr.attr = MSG_VOTE;
 				voteMsgHdr.votes = votes;
@@ -14234,6 +14233,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 			var optionNum = 1;
 			var numVotes = 0;
 			var votePercentage = 0;
+			var tallyIdx = 0;
 			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 			{
 				if (pMsgHdr.field_list[fieldI].type == SMB_COMMENT)
@@ -14244,9 +14244,9 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 					// vote percentage
 					if (pMsgHdr.hasOwnProperty("tally"))
 					{
-						if (fieldI < pMsgHdr.tally.length)
+						if (tallyIdx < pMsgHdr.tally.length)
 						{
-							numVotes = pMsgHdr.tally[fieldI];
+							numVotes = pMsgHdr.tally[tallyIdx];
 							votePercentage = (numVotes / totalNumVotes) * 100;
 						}
 					}
@@ -14257,6 +14257,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 					if (numVotes > 0)
 						msgBody += " " + CHECK_CHAR;
 					msgBody += "\r\n";
+					++tallyIdx;
 				}
 			}
 			if (pollComment.length > 0)
