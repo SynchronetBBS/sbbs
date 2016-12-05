@@ -301,7 +301,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 17";
+var READER_VERSION = "1.17 Beta 18";
 var READER_DATE = "2016-12-04";
 
 // Keyboard key codes for displaying on the screen
@@ -1613,7 +1613,7 @@ function DigDistMsgReader_RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib)
 	if (typeof(pMsgIndex) != "number")
 		return;
 
-	if ((pMsgIndex >= 0) && (pMsgIndex <= this.hdrsForCurrentSubBoard.length))
+	if ((pMsgIndex >= 0) && (pMsgIndex < this.hdrsForCurrentSubBoard.length))
 		this.hdrsForCurrentSubBoard[pMsgIndex].attr = this.hdrsForCurrentSubBoard[pMsgIndex].attr | pAttrib;
 }
 
