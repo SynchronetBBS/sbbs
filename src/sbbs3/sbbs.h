@@ -667,6 +667,7 @@ public:
 	void	center(char *str);
 	void	clearline(void);
 	void	cleartoeol(void);
+	void	cleartoeos(void);
 	void	cursor_home(void);
 	void	cursor_up(int count=1);
 	void	cursor_down(int count=1);

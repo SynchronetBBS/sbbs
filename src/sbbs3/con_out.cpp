@@ -377,6 +377,12 @@ void sbbs_t::cleartoeol(void)
 	}
 }
 
+void sbbs_t::cleartoeos(void)
+{
+	if(term_supports(ANSI))
+		rputs("\x1b[J");
+}
+
 /****************************************************************************/
 /* performs the correct attribute modifications for the Ctrl-A code			*/
 /****************************************************************************/
@@ -483,8 +489,14 @@ void sbbs_t::ctrl_a(char x)
 		case 'S':   /* Synchronize */
 			ASYNC;
 			break;
+		case 'J':	/* clear to end-of-screen */
+			cleartoeos();
+			break;
 		case 'L':	/* CLS (form feed) */
 			CLS;
+			break;
+		case '`':	/* Home cursor */
+			cursor_home();
 			break;
 		case '>':   /* CLREOL */
 			cleartoeol();
