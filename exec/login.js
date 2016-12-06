@@ -18,6 +18,12 @@ system.node_list[bbs.node_num-1].status = NODE_LOGON;
 
 var guest = system.matchuser("guest");
 
+if(!bbs.online)
+	exit();
+if(!console.autoterm) {
+	console.inactivity_hangup *= .25;
+	log(LOG_NOTICE, "Terminal not detected, reducing inactivity hang-up timeout to " + console.inactivity_hangup + " seconds");
+}
 for(var c=0; c < options.login_prompts; c++) {
 
 	// The "node sync" is required for sysop interruption/chat/etc.
