@@ -731,7 +731,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		mismatches=0;
 
 		if(thread_mode) {
-			long first = smb_first_in_thread(&smb, &msg);
+			long first = smb_first_in_thread(&smb, &msg, NULL);
 			if(first < 0) {
 				bputs(text[NoMessagesFound]);
 				break;
