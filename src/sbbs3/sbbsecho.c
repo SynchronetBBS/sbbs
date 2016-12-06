@@ -5139,6 +5139,7 @@ int main(int argc, char **argv)
 
 	/******* READ IN AREAS.BBS FILE *********/
 
+	fexistcase(cfg.areafile);
 	printf("Reading %s",cfg.areafile);
 	if((stream=fopen(cfg.areafile,"r"))==NULL) {
 		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,cfg.areafile);
