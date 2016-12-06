@@ -1,5 +1,3 @@
-/* putmsg.cpp */
-
 /* Synchronet message/menu display routine */
  
 /* $Id$ */
@@ -46,7 +44,7 @@
 /* If P_SAVEATR bit is set in mode, the attributes set by the message       */
 /* will be the current attributes after the message is displayed, otherwise */
 /* the attributes prior to diplaying the message are always restored.       */
-/* Ignores Ctrl-Z's                                                         */
+/* Ignores Ctrl-Z's  (only in P_CPM_EOF mode)                               */
 /****************************************************************************/
 char sbbs_t::putmsg(const char *buf, long mode)
 {
@@ -264,7 +262,7 @@ char sbbs_t::putmsg(const char *buf, long mode)
 				if(i)					/* if valid string, go to top */
 					continue; 
 			}
-			if(str[l]!=CTRL_Z) {
+			if(!(mode&P_CPM_EOF) || str[l]!=CTRL_Z) {
 				outchar(str[l]);
 #if 0
 				if(!(mode&P_HTML) && !exatr && !outchar_esc && lncntr && lbuflen && cols && ++col==cols)
