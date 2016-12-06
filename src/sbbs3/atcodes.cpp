@@ -660,6 +660,26 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(nulstr);
 	}
 
+	if(!strcmp(sp,"HOME")) {
+		cursor_home();
+		return(nulstr);
+	}
+
+	if(!strcmp(sp,"CLRLINE")) {
+		clearline();
+		return(nulstr);
+	}
+
+	if(!strcmp(sp,"CLR2EOL")) {
+		cleartoeol();
+		return(nulstr);
+	}
+
+	if(!strcmp(sp,"CLR2EOS")) {
+		cleartoeos();
+		return(nulstr);
+	}
+
 	if(!strncmp(sp,"UP:",3)) {
 		cursor_up(atoi(sp+3));
 		return(str);
