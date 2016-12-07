@@ -4,10 +4,8 @@ load(settings.web_lib + 'files.js');
 load('filebase.js');
 
 var reply = {};
-
 if ((http_request.method === 'GET' || http_request.method === 'POST') &&
-	typeof http_request.query.call !== 'undefined' &&
-	user.number > 0	&& user.alias !== settings.guest
+	typeof http_request.query.call !== 'undefined' && user.number > 0
 ) {
 
 	switch (http_request.query.call[0].toLowerCase()) {
@@ -30,16 +28,15 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 					}
 				);
 				if (file === null) break;
-				client.socket.send('HTTP/1.0 Status: 200 OK\r\n');
-				client.socket.send('Content-Type: application/octet-stream\r\n');
-				client.socket.send('Content-Disposition: attachment; filename="' + file.base + '.' + file.ext + '";\r\n');
-				client.socket.send('Content-Transfer-Encoding: binary\r\n');
-				client.socket.send('Content-Length: ' + file_size(file.path) + '\r\n');
-				client.socket.send('\r\n');
+				http_reply.header['Content-Type'] = 'application/octet-stream';
+				http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
+				http_reply.header['Content-Encoding'] = 'binary';
+				http_reply.header['Content-Length'] = file_size(file.path);
 				var f = new File(file.path);
-				f.open('r+b');
-				while (!f.eof) {
-					client.socket.sendBin(f.readBin(1), 1);
+				f.open('rb');
+				for (var n = 0; n < file_size(file.path); n++) {
+					var r = f.length - f.position;
+					write(f.read(r > 512 ? 512 : r));
 				}
 				f.close();
 				reply = false;
