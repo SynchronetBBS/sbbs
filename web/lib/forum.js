@@ -201,13 +201,14 @@ function getUserPollData(sub, id) {
         msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
     );
     msgBase.close();
+    var pollAttr = header.auxattr&POLL_RESULTS_MASK;
     if (header.from === user.alias || header.from === user.name) {
         ret.show_results = true;
-    } else if (header.auxattr&POLL_RESULTS_CLOSED && header.auxattr&POLL_CLOSED) {
+    } else if (pollAttr === POLL_RESULTS_CLOSED && header.auxattr&POLL_CLOSED) {
         ret.show_results = true;
-    } else if (header.auxattr&POLL_RESULTS_OPEN) {
+    } else if (pollAttr === POLL_RESULTS_OPEN) {
         ret.show_results = true;
-    } else if (header.auxattr&POLL_RESULTS_VOTERS && ret.answers > 0) {
+    } else if (pollAttr === POLL_RESULTS_VOTERS && ret.answers > 0) {
         ret.show_results = true;
     }
     return ret;
