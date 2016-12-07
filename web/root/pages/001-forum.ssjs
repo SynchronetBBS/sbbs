@@ -387,36 +387,37 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			msg_area.sub[http_request.query.sub[0]].scan_ptr =
 			thread.messages[thread.__last].number;
 		}
-	} catch (err) {
-		log(LOG_WARNING, err);
-	}
 
-	writeln(strings.script.open);
-	if (settings.keyboard_navigation) writeln(strings.script.thread_navigation);
-	if (settings.vote_functions) {
-		if (user.alias != settings.guest || user.security.restrictions&UFLAG_V) {
+		writeln(strings.script.open);
+		if (settings.keyboard_navigation) writeln(strings.script.thread_navigation);
+		if (settings.vote_functions) {
+			if (user.alias != settings.guest || user.security.restrictions&UFLAG_V) {
+				writeln(
+					format(strings.script.vote_functions, http_request.query.sub[0])
+				);
+			}
 			writeln(
-				format(strings.script.vote_functions, http_request.query.sub[0])
-			);
-		}
-		writeln(
-			format(
-				strings.script.vote_refresh_thread,
-				http_request.query.sub[0], thread.__first
-			)
-		);
-		writeln(
-			format(
-				strings.script.interval,
 				format(
 					strings.script.vote_refresh_thread,
 					http_request.query.sub[0], thread.__first
-				),
-				settings.refresh_interval || 60000
-			)
-		);
+				)
+			);
+			writeln(
+				format(
+					strings.script.interval,
+					format(
+						strings.script.vote_refresh_thread,
+						http_request.query.sub[0], thread.__first
+					),
+					settings.refresh_interval || 60000
+				)
+			);
+		}
+		writeln(strings.script.close);
+
+	} catch (err) {
+		log(LOG_WARNING, err);
 	}
-	writeln(strings.script.close);
 
 } else if (
 	typeof http_request.query.sub !== 'undefined' &&
