@@ -71,6 +71,7 @@ pre.ansi {
 }
 
 pre.list {
+	color : inherit;
 	background-color : inherit;
 	border : none;
 }
