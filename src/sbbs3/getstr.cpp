@@ -1,5 +1,3 @@
-/* getstr.cpp */
-
 /* Synchronet string input routines */
 
 /* $Id$ */
@@ -8,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2015 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -164,7 +162,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				}
 				outchar(str1[i++]=1);
 				break;
-			case CTRL_B: /* Ctrl-B Beginning of Line */
+			case TERM_KEY_HOME: /* Ctrl-B Beginning of Line */
 				if(i && !(mode&K_NOECHO)) {
 					cursor_left(i);
 					i=0; 
@@ -195,13 +193,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					l-=x-i;							/* l=new length */
 				}
 				break;
-			case CTRL_E: /* Ctrl-E End of line */
+			case TERM_KEY_END: /* Ctrl-E End of line */
 				if(term_supports(ANSI) && i<l) {
 					cursor_right(l-i);  /* move cursor to eol */
 					i=l; 
 				}
 				break;
-			case CTRL_F: /* Ctrl-F move cursor forewards */
+			case TERM_KEY_RIGHT: /* Ctrl-F move cursor forward */
 				if(i<l && term_supports(ANSI)) {
 					cursor_right();   /* move cursor right one */
 					i++; 
@@ -345,7 +343,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				if(!(mode&K_NOECHO))
 					redrwstr(str1,i,l,0);
 				break;
-			case CTRL_V:	/* Ctrl-V			Toggles Insert/Overwrite */
+			case TERM_KEY_INSERT:	/* Ctrl-V			Toggles Insert/Overwrite */
 				if(mode&K_NOECHO)
 					break;
 				console^=CON_INSERT;
@@ -417,7 +415,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				rputs(str1);
 				cleartoeol();
 				break;
-			case 28:    /* Ctrl-\ Previous word */
+			case CTRL_BACKSLASH:    /* Ctrl-\ Previous word */
 				if(i && !(mode&K_NOECHO)) {
 					x=i;
 					while(str1[i-1]==' ' && i)
@@ -427,7 +425,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					cursor_left(x-i); 
 				}
 				break;
-			case 29:  /* Ctrl-]/Left Arrow  Reverse Cursor Movement */
+			case TERM_KEY_LEFT:  /* Ctrl-]/Left Arrow  Reverse Cursor Movement */
 				if(i==0) {
 					if(mode&K_LEFTEXIT)
 						console|=CON_LEFTARROW;
@@ -438,7 +436,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					i--; 
 				}
 				break;
-			case 30:  /* Ctrl-^/Up Arrow */
+			case TERM_KEY_UP:  /* Ctrl-^/Up Arrow */
 				if(!(mode&K_EDIT))
 					break;
 #if 1
@@ -456,7 +454,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				console|=CON_UPARROW;
 				break;
 #endif
-			case DEL:  /* Ctrl-BkSpc (DEL) Delete current char */
+			case TERM_KEY_DELETE:  /* Ctrl-BkSpc (DEL) Delete current char */
 				if(i==l) {	/* Backspace if end of line */
 					if(i) {
 						i--;

@@ -1,5 +1,3 @@
-/* inkey.cpp */
-
 /* Synchronet single key input function (no wait) */
 
 /* $Id$ */
@@ -101,7 +99,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 	char 	tmp[512];
 	uint	i,j;
 
-	if(ch==CTRL_C) {  /* Ctrl-C Abort */
+	if(ch==TERM_KEY_ABORT) {  /* Ctrl-C Abort */
 		sys_status|=SS_ABORT;
 		if(mode&K_SPIN) /* back space once if on spinning cursor */
 			backspace();
@@ -293,30 +291,30 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				if(ch!=';' && !isdigit((uchar)ch) && ch!='R') {    /* other ANSI */
 					switch(ch) {
 						case 'A':
-							return(0x1e);	/* ctrl-^ (up arrow) */
+							return(TERM_KEY_UP);
 						case 'B':
-							return(LF); 	/* ctrl-j (dn arrow) */
+							return(TERM_KEY_DOWN);
 						case 'C':
-							return(CTRL_F);	/* ctrl-f (rt arrow) */
+							return(TERM_KEY_RIGHT);
 						case 'D':
-							return(0x1d);	/* ctrl-] (lf arrow) */
+							return(TERM_KEY_LEFT);
 						case 'H':	/* ANSI:  home cursor */
-							return(CTRL_B);	/* ctrl-b (beg line) */
+							return(TERM_KEY_HOME);
 						case 'F':	/* Xterm: cursor preceding line */
 						case 'K':	/* ANSI:  clear-to-end-of-line */
-							return(CTRL_E);	/* ctrl-e (end line) */
+							return(TERM_KEY_END);
 						case '@':	/* ANSI/ECMA-048 INSERT */
-							return(CTRL_V);
+							return(TERM_KEY_INSERT);
 						case '~':	/* VT-220 (XP telnet.exe) */
 							switch(atoi(str)) {
 								case 1:
-									return(CTRL_B);
+									return(TERM_KEY_HOME);
 								case 2:
-									return(CTRL_V);
+									return(TERM_KEY_INSERT);
 								case 3:
-									return(DEL);
+									return(TERM_KEY_DELETE);
 								case 4:
-									return(CTRL_E);
+									return(TERM_KEY_END);
 							}
 							break;
 					}
