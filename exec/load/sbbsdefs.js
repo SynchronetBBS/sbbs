@@ -157,13 +157,16 @@ var	  CON_DELETELINE=(1<<17);	/* Deleted line - from getstr(K_LEFTEXIT)	*/
 								/********************************************/
 								/* Special inkey()/getkey() return values	*/
 								/********************************************/
-var	  KEY_UP		='\x1e';	/* ctrl-^ (up arrow)						*/
-var	  KEY_DOWN		='\x0a';	/* ctrl-j (dn arrow)						*/
-var   KEY_RIGHT		='\x06';	/* ctrl-f (rt arrow)						*/
-var	  KEY_LEFT		='\x1d';	/* ctrl-] (lf arrow)						*/
-var	  KEY_HOME		='\x02';	/* ctrl-b (home)							*/
-var   KEY_END       ='\x05';	/* ctrl-e (end)								*/
-var   KEY_DEL       ='\x7f';    /* (del)                                    */
+var		KEY_UP		='\x1e';	/* ctrl-^ (up arrow)						*/
+var		KEY_DOWN	='\x0a';	/* ctrl-j (dn arrow)						*/
+var		KEY_RIGHT	='\x06';	/* ctrl-f (rt arrow)						*/
+var		KEY_LEFT	='\x1d';	/* ctrl-] (lf arrow)						*/
+var		KEY_HOME	='\x02';	/* ctrl-b (home)							*/
+var		KEY_END     ='\x05';	/* ctrl-e (end)								*/
+var		KEY_INSERT	='\x16';	/* ctrl-v (insert)							*/
+var		KEY_DEL     ='\x7f';    /* ctrl-BkSpc (DEL)							*/
+								/********************************************/
+var		KEY_ABORT	='\x03';	/* ctrl-c (cancel/abort/break)				*/
 								/********************************************/
 
 							    /********************************************/
