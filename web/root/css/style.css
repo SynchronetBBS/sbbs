@@ -70,6 +70,11 @@ pre.ansi {
 	line-height : 1;
 }
 
+pre.list {
+	background-color : inherit;
+	border : none;
+}
+
 .icon {
 	margin: 0 1em 1em 0;
 }

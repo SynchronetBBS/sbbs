@@ -33,7 +33,7 @@ if (typeof http_request.query.dir !== 'undefined' &&
 		} else if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])/) > -1) {
 			file.extdesc = '<pre class="ansi">' + html_encode(file.extdesc, true, false, true, true) + '</pre>';
 		} else {
-			file.extdesc = '<pre>' + file.extdesc + '</pre>';
+			file.extdesc = '<pre class="list">' + file.extdesc + '</pre>';
 		}
 		writeln(
 			format(
