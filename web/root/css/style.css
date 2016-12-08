@@ -64,6 +64,11 @@ input.dropdown {
 	margin: 0 0 1em 0;
 }
 
+pre.ansi {
+	background-color : black;
+	font-family : Courier New, monospace;
+}
+
 .icon {
 	margin: 0 1em 1em 0;
 }
