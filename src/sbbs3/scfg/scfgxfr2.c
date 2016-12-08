@@ -1,12 +1,10 @@
-/* scfgxfr2.c */
-
 /* $Id$ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2012 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -173,7 +171,7 @@ while(1) {
             continue; }
 
 		if(cfg.total_libs) {
-			for(u=cfg.total_libs;u>i;j--)
+			for(u=cfg.total_libs;u>i;u--)
                 cfg.lib[u]=cfg.lib[u-1];
 			for(j=0;j<cfg.total_dirs;j++)
 				if(cfg.dir[j]->lib>=i)
