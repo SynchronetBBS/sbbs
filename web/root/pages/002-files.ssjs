@@ -28,23 +28,23 @@ if (typeof http_request.query.dir !== 'undefined' &&
 	);
 
 	function writeFileDetails(file) {
-		if (typeof file.extdesc === 'undefined') {
-			file.extdesc = '';
-		} else if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])/) > -1) {
-			file.extdesc = '<pre class="ansi">' + html_encode(file.extdesc, true, false, true, true) + '</pre>';
-		} else {
-			file.extdesc = '<pre class="list">' + file.extdesc + '</pre>';
+		var description = '<p>' + file.desc + '</p>';
+		if (typeof file.extdesc !== 'undefined') {
+			if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])/) > -1) {
+				description = '<pre class="ansi">' + html_encode(file.extdesc, true, false, true, true) + '</pre>';
+			} else {
+				description = '<pre class="list">' + file.extdesc + '</pre>';
+			}
 		}
 		writeln(
 			format(
 				'<a href="./api/files.ssjs?call=download-file&amp;dir=%s&amp;file=%s" target="_blank" class="list-group-item striped">' +
 				'<strong>%s</strong> (%s)' +
 				'<p><em>Uploaded %s</em></p>' +
-				'<p>%s</p>' +
 				'%s' +
 				'</a>',
 				http_request.query.dir[0], file.name, file.name, file.size,
-				system.timestr(file.uldate), file.desc, file.extdesc
+				system.timestr(file.uldate), description
 			)
 		);
 	}
