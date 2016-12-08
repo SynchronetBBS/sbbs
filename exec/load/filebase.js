@@ -76,7 +76,7 @@ function FileBase(dir) {
 		this.altpath = parseInt(getrec(dat, 2), 16);
 
 		// Read from the EXB file
-		var exbpos = (dat.position / 118) * 512;
+		var exbpos = (this.datoffset / 118) * 512;
 		if (exb.is_open && (this.misc & FM_EXTDESC)) {
 			if (exb.length > exbpos) {
 				exb.position = exbpos;
