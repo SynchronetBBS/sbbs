@@ -3,6 +3,8 @@ load(settings.web_lib + 'auth.js');
 load(settings.web_lib + 'files.js');
 load('filebase.js');
 
+var CHUNK_SIZE = 1024;
+
 var reply = {};
 if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 	typeof http_request.query.call !== 'undefined' && user.number > 0
@@ -34,9 +36,10 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				http_reply.header['Content-Length'] = file_size(file.path);
 				var f = new File(file.path);
 				f.open('rb');
-				for (var n = 0; n < file_size(file.path); n++) {
+				for (var n = 0; n < f.length; n += CHUNK_SIZE) {
 					var r = f.length - f.position;
-					write(f.read(r > 512 ? 512 : r));
+					write(f.read(r > CHUNK_SIZE ? CHUNK_SIZE : r));
+					yield(false);
 				}
 				f.close();
 				reply = false;
