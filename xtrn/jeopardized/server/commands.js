@@ -51,7 +51,7 @@ this.QUERY = function(client, packet) {
 		return false;
 	}
 
-	if (allowed(packet) || admin.verify(client, packet, 90)) return false;
+	if (allowed(packet) || client.remote_ip_address === '127.0.0.1') return false;
 
 	return true;
 

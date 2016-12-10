@@ -20,15 +20,12 @@ var jsonClient,
 	levelTime = 0;
 
 // This will be called when we receive an update to a valid location
-var updateScores = function(data) {
-	
+function updateScores(data) {
+
 	// Make sure that the data provided is sane
-	if(	typeof data.player != "string"
-		||
-		typeof data.system != "string"
-		||
-		typeof data.level != "number"
-		||
+	if (typeof data.player != "string" ||
+		typeof data.system != "string" ||
+		typeof data.level != "number" ||
 		typeof data.score != "number"
 	) {
 		return;
@@ -44,9 +41,8 @@ var updateScores = function(data) {
 
 	/*	If this player's score is higher than any score in the list, shove
 		it into the list before that score. */
-	for(var s = 0; s < hs.length; s++) {
-		if(data.score < hs[s].score)
-			continue;
+	for (var s = 0; s < hs.length; s++) {
+		if(data.score < hs[s].score) continue;
 		hs.splice(s, 0, data);
 		changed = true;
 		break;
@@ -54,15 +50,14 @@ var updateScores = function(data) {
 
 	/*	If this player's score is the lowest in the list, but the list isn't
 		fully populated, tack this record onto the end of the list. */
-	if(!changed && hs.length < 20) {
+	if (!changed && hs.length < 20) {
 		hs.push(data);
 		changed = true;
 	}
 
 	//	If we flagged a DB update, then update the DB.
-	if(changed) {
-		while(hs.length > 20)
-			hs.pop();
+	if (changed) {
+		while(hs.length > 20) hs.pop();
 		jsonClient.write(DBNAME, "SCORES.HIGH", hs, 2);
 	}
 
@@ -72,13 +67,13 @@ var updateScores = function(data) {
 }
 
 // This will be called via updateScores
-var updatePlayer = function(data) {
+function updatePlayer(data) {
 
 	// Read the player's record from the DB
 	var player = jsonClient.read(DBNAME, "PLAYERS." + data.uid, 1);
 
 	// Or populate said record if it doesn't exist
-	if(!player) {
+	if (!player) {
 		jsonClient.write(
 			DBNAME,
 			"PLAYERS." + data.uid,
@@ -87,12 +82,9 @@ var updatePlayer = function(data) {
 		);
 	/*	If the player has reached a new level, update their level number so
 		they can start there next time. */
-	} else if(player.LEVEL < data.level) {
+	} else if (player.LEVEL < data.level) {
 		jsonClient.write(
-			DBNAME,
-			"PLAYERS." + data.uid + ".LEVEL",
-			data.level,
-			2
+			DBNAME, "PLAYERS." + data.uid + ".LEVEL", data.level, 2
 		);
 	}
 
@@ -109,42 +101,35 @@ var updatePlayer = function(data) {
 
 /*	We'll set this as the JSON client's callback function, and it will be
 	called when an update to a subscribed location is received. */
-var processUpdate = function(update) {
+function processUpdate(update) {
 
 	// We're not interested in any updates that aren't writes
-	if(update.oper != "WRITE")
-		return;
+	if (update.oper != "WRITE") return;
 
 	// Additionally, the update must be to a *.LATEST location
 	var location = update.location.split(".");
-	if(location.length != "2" || location[1] != "LATEST")
-		return;
+	if (location.length != "2" || location[1] != "LATEST") return;
 
-	switch(location[0].toUpperCase()) {
-
+	switch (location[0].toUpperCase()) {
 		// We're only subscribing to SCORES.LATEST right now
 		case "SCORES":
 			updateScores(update.data);
 			break;
-		
 		// But maybe we'll want to watch this in the future
 		case "PLAYERS":
 			updatePlayer(update.data);
 			break;
-		
 		default:
 			break;
-
 	}
 
 }
 
 /*	On startup, or if the local levels.json file has been updated recently,
 	overwrite level data in the DB from the local file. */
-var pushLevels = function() {
+function pushLevels() {
 
-	if(levelTime == file_date(root + "levels.json"))
-		return;
+	if (levelTime == file_date(root + "levels.json")) return;
 	
 	levelTime = file_date(root + "levels.json");
 
@@ -158,13 +143,10 @@ var pushLevels = function() {
 }
 
 // Set things up
-var init = function() {
-
-	while(system.lastuser < 1)
-		mswait(15000);
+function init() {
 
 	// Load the server config if it exists, or fake it if not
-	if(file_exists(root + "server.ini")) {
+	if (file_exists(root + "server.ini")) {
 		var f = new File(root + "server.ini");
 		f.open("r");
 		var ini = f.iniGetObject();
@@ -177,31 +159,17 @@ var init = function() {
 	// Create our JSON client handle (declared outside this function)
 	jsonClient = new JSONClient(ini.host, ini.port);
 
-	// Authenticate to the service as this board's sysop
-	var usr = new User(1);
-	jsonClient.ident("ADMIN", usr.alias, usr.security.password);
-
 	// Subscribe to updates to SCORES.LATEST
 	jsonClient.subscribe(DBNAME, "SCORES.LATEST");
 
 	// If SCORES doesn't exist, create it with dummy data
-	if(!jsonClient.read(DBNAME, "SCORES", 1)) {
-		jsonClient.write(
-			DBNAME,
-			"SCORES",
-			{ 'LATEST' : {}, 'HIGH' : [] },
-			2
-		);
+	if (!jsonClient.read(DBNAME, "SCORES", 1)) {
+		jsonClient.write(DBNAME, "SCORES", { 'LATEST' : {}, 'HIGH' : [] }, 2);
 	}
 
 	// If PLAYERS doesn't exist, create it with dummy data
-	if(!jsonClient.read(DBNAME, "PLAYERS", 1)) {
-		jsonClient.write(
-			DBNAME,
-			"PLAYERS",
-			{ 'LATEST' : {} },
-			2
-		);
+	if (!jsonClient.read(DBNAME, "PLAYERS", 1)) {
+		jsonClient.write(DBNAME, "PLAYERS", { 'LATEST' : {} }, 2);
 	}
 
 	// Overwrite levels in the DB with local data
@@ -216,29 +184,23 @@ var init = function() {
 }
 
 // Keep things rolling until we're told to stop
-var main = function() {
-
-	while(!js.terminated) {
+function main() {
+	while (!js.terminated) {
 		mswait(5);
 		timer.cycle();
 		jsonClient.cycle();
 	}
-
 }
 
 // Clean things up
-var cleanUp = function() {
-	jsonClient.disconnect();
-}
+function cleanUp() { jsonClient.disconnect(); }
 
 // Try to do things, log an error if necessary
 try {
 	init();
 	main();
 	cleanUp();
-} catch(err) {
-	log(LOG_ERR, err);
-}
+} catch(err) { }
 
 // This is implied, but hey, why not?
 exit();

@@ -1,13 +1,15 @@
 js.branch_limit = 0;
 js.time_limit = 0;
+
 var root = argv[0];
+
 load(root + "lib.js");
 load("json-client.js");
 
 var settings, jsonClient, usr;
 
-var processUpdate = function(update) {
-	for(var count = jsonClient.read("ONELINERS", "ONELINERS.length", 1); count >= 50; count--) {
+function processUpdate(update) {
+	for (var count = jsonClient.read("ONELINERS", "ONELINERS.length", 1); count >= 50; count--) {
 		jsonClient.push(
 			"ONELINERS",
 			"HISTORY",
@@ -15,13 +17,12 @@ var processUpdate = function(update) {
 			2
 		);
 	}
-	if(typeof update != "undefined" && update.oper == "WRITE") {
+	if (typeof update !== "undefined" && update.oper == "WRITE") {
 		jsonClient.write("ONELINERS", "LATEST", update.data[update.data.length - 1], 2);
 	}
 }
 
-var init = function() {
-	usr = new User(1);
+function init() {
 	settings = initSettings(root);
 	var dummy = [
 		{	'time' : time(),
@@ -34,10 +35,10 @@ var init = function() {
 		}
 	];
 	jsonClient = new JSONClient(settings.server, settings.port);
-	jsonClient.ident("ADMIN", usr.alias, usr.security.password);
-	if(!jsonClient.read("ONELINERS", "ONELINERS", 1)) {
-		if(file_exists(root + "oneliners.json"))
+	if (!jsonClient.read("ONELINERS", "ONELINERS", 1)) {
+		if (file_exists(root + "oneliners.json")) {
 			file_copy(root + "oneliners.json", root + "oneliners.bak");
+		}
 		jsonClient.write("ONELINERS", "ONELINERS", dummy, 2);
 		jsonClient.write("ONELINERS", "HISTORY", dummy, 2);
 		jsonClient.write("ONELINERS", "LATEST", dummy[0], 2);
@@ -47,25 +48,21 @@ var init = function() {
 	processUpdate();
 }
 
-var main = function() {
-	while(!js.terminated) {
+function main() {
+	while (!js.terminated) {
 		mswait(5);
 		jsonClient.cycle();
 	}
 }
 
-var cleanUp = function() {
+function cleanUp() {
 	jsonClient.disconnect();
 }
-
-if(system.lastuser < 1)
-	exit();
 
 try {
 	init();
 	main();
 	cleanUp();
-	exit();
-} catch(err) {
-	log(LOG_ERR, "Oneliners service error: " + err);
-}
+} catch (err) { }
+
+exit();

@@ -82,7 +82,6 @@ var initJson = function() {
 	}
 	var usr = new User(1);
 	jsonClient = new JSONClient(ini.host, ini.port);
-	jsonClient.ident("ADMIN", usr.alias, usr.security.password);
 	jsonClient.subscribe(dbName, "SCORES.LATEST");
 	if(!jsonClient.read(dbName, "SCORES", 1)) {
 		jsonClient.write(
@@ -122,7 +121,7 @@ try {
 	main();
 	cleanUp();
 } catch(err) {
-	log(LOG_ERR, err);
+//	log(LOG_ERR, err);
 }
 
 exit();

@@ -319,9 +319,7 @@ function loadSettings() {
 }
 
 function initJSON() {
-	var usr = new User(1);
 	jsonClient = new JSONClient(settings.JSONDB.host, settings.JSONDB.port);
-	jsonClient.ident('ADMIN', usr.alias, usr.security.password);
 	jsonClient.callback = processUpdate;
 	jsonClient.subscribe(settings.JSONDB.dbName, 'input');
 }
