@@ -1163,9 +1163,11 @@ uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen
 		l=((long)usernumber) * U_LEN;
 	else
 		l=0;
+	if(progress != NULL)
+		progress(cbdata, l, length);
 	for(;l<length;l+=U_LEN) {
 		if(progress != NULL)
-			progress(cbdata, l, length);
+			progress(cbdata, l, length, U_LEN*10);
 		if(usernumber && l/U_LEN==(long)usernumber-1) 
 			continue;
 		lseek(file,l+offset,SEEK_SET);
@@ -3039,7 +3041,7 @@ BOOL DLLCALL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*pr
 	length=(long)filelength(file);
 	for(i=0;i<cfg->total_subs;i++) {
 		if(progress != NULL)
-			progress(cbdata, i, cfg->total_subs);
+			progress(cbdata, i, cfg->total_subs, 10);
 		if(length>=(cfg->sub[i]->ptridx+1)*10L) {
 			fseek(stream,(long)cfg->sub[i]->ptridx*10L,SEEK_SET);
 			fread(&subscan[i].ptr,sizeof(subscan[i].ptr),1,stream);
@@ -3127,7 +3129,7 @@ BOOL DLLCALL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days, void (*
 
 	for(i=0;i<cfg->total_subs;i++) {
 		if(progress != NULL)
-			progress(cbdata, i, cfg->total_subs);
+			progress(cbdata, i, cfg->total_subs, 10);
 		if(days == 0) {
 			/* This value will be "fixed" (changed to the last msg) when saving */
 			subscan[i].ptr = ~0;

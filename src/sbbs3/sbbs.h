@@ -675,7 +675,7 @@ public:
 	void	cursor_right(int count=1);
 	long	term_supports(long cmp_flags=0);
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
-	void	progress(const char* str, int count, int total);
+	void	progress(const char* str, int count, int total, int interval=1);
 
 	/* getstr.cpp */
 	size_t	getstr_offset;

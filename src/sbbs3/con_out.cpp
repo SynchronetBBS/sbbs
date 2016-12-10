@@ -656,10 +656,12 @@ int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr
 	return len;
 }
 
-void sbbs_t::progress(const char* text, int count, int total)
+void sbbs_t::progress(const char* text, int count, int total, int interval)
 {
 	char str[128];
 
+	if((count%interval) != 0)
+		return;
 	if(text == NULL) text = "";
 	float pct = ((float)count/total)*100.0F;
 	SAFEPRINTF2(str, "[ %-8s  %4.1f%% ]", text, pct);
