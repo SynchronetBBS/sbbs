@@ -38,7 +38,7 @@
 static void ProgressLoadingMsgPtrs(void* cbdata, int count, int total)
 {
 	sbbs_t* sbbs = ((sbbs_t*)cbdata);
-	sbbs->progress(sbbs->text[LoadingMsgPtrs], count, total);
+	sbbs->progress(sbbs->text[LoadingMsgPtrs], count, total, 10);
 }
 
 /****************************************************************************/
@@ -59,10 +59,10 @@ void sbbs_t::putmsgptrs()
 	::putmsgptrs(&cfg,&useron,subscan);
 }
 
-static void ProgressSearchingDupes(void* cbdata, int count, int total)
+static void ProgressSearchingUsers(void* cbdata, int count, int total)
 {
 	sbbs_t* sbbs = ((sbbs_t*)cbdata);
-	sbbs->progress(sbbs->text[SearchingForDupes], count, total);
+	sbbs->progress(sbbs->text[SearchingForDupes], count, total, U_LEN*10);
 }
 
 /****************************************************************************/
@@ -76,7 +76,7 @@ static void ProgressSearchingDupes(void* cbdata, int count, int total)
 uint sbbs_t::userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
     ,bool del, bool next)
 {
-	uint i=::userdatdupe(&cfg, usernumber, offset, datlen, dat, del, next, ProgressSearchingDupes, this);
+	uint i=::userdatdupe(&cfg, usernumber, offset, datlen, dat, del, next, ProgressSearchingUsers, this);
 	bputs(text[SearchedForDupes]);
 	return(i);
 }
