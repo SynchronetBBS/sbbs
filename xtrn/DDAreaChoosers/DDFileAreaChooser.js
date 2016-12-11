@@ -58,11 +58,12 @@
  * 2016-02-19 Eric Oulashin 1.11    Bug fix: The page number wasn't being updated
  *                                  properly when changing pages in the file
  *                                  libraries
- * 2016-11-22 Eric Oulashin 1.12    Updated the version to match the area
+ * 2016-11-22 Eric Oulashin 1.12    Updated the version to match the message area
  *                                  chooser, which has a bug fix for working
  *                                  with null message headers, which seem to
  *                                  be more common with Synchronet 3.17+ (the
  *                                  message voting feature was introduced in 3.17).
+ * 2016-12-11 Eric Oulashin 1.13    Updated the version to match the message area chooser
  */
 
 /* Command-line arguments:
@@ -91,8 +92,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.12";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-11-22";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.13";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2016-12-11";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";

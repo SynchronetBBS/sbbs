@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.13     2016-12-11   Updated the message area chooser to show the number of
+                      readable messages rather than the actual total number of
+                      messages in the sub-boards (in case some messages are
+                      deleted, unverified, etc.)
 1.12     2016-11-22   Updated the message area chooser to work better with
                       Synchronet 3.17.  Null message headers seem to be more
                       common with Synchronet 3.17 due to the message voting

@@ -61,6 +61,9 @@
  *                                  message headers, which could happen with the
  *                                  new voting feature in Synchronet 3.17.
  * 2016-11-22 Eric Oulashin 1.12    Releasing this version
+ * 2016-12-11 Eric Oulashin 1.13    Updated to show the number of readable messages rather than
+ *                                  the actual total number of messages in the sub-boards (in
+ *                                  case some messages are deleted, unverified, etc.)
 */
 
 /* Command-line arguments:
@@ -89,8 +92,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.12";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-11-22";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.13";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2016-12-11";
 
 // Keyboard input key codes
 var CTRL_M = "\x0d";
@@ -112,6 +115,9 @@ var DOWN_ARROW = ascii(25);
 var gStartupPath = '.';
 try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
 gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
+
+// gIsSysop stores whether or not the user is a sysop.
+var gIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
 
 // 1st command-line argument: Whether or not to choose a message group first (if
 // false, then only choose a sub-board within the user's current group).  This
@@ -1271,16 +1277,15 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				subBoardInfo = new MsgSubBoardInfo();
 				subBoardInfo.subBoardNum = +(arrSubBoardNum);
 				subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
-				subBoardInfo.numPosts = msgBase.total_msgs;
+				subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
 
 				// Get the date & time when the last message was imported.
-				if (msgBase.total_msgs > 0)
+				if (subBoardInfo.numPosts > 0)
 				{
-					console.print("Here 1!\r\n\1p"); // Temporary
 					//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
 					var msgHeader = null;
 					var msgIdx = msgBase.total_msgs-1;
-					while (msgHeader === null)
+					while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code))
 					{
 						msgHeader = msgBase.get_msg_header(true, msgIdx, true);
 						--msgIdx;
@@ -1358,8 +1363,8 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 			console.crlf();
 			console.print((subBoardArray[i].subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
 			printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
-			subBoardArray[i].description.substr(0, this.subBoardNameLen),
-			subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
+			       subBoardArray[i].description.substr(0, this.subBoardNameLen),
+			       subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
 			strftime("%H:%M:%S", subBoardArray[i].newestPostDate));
 		}
 	}
@@ -1374,7 +1379,8 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 			if (msgBase.open())
 			{
 				// Get the date & time when the last message was imported.
-				if (msgBase.total_msgs > 0)
+				var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+				if (numMsgs > 0)
 				{
 					//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
 					var msgHeader = null;
@@ -1415,8 +1421,8 @@ function DDMsgAreaChooser_listSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				console.crlf();
 				console.print((subBoardNum == highlightIndex) ? "\1n" + this.colors.areaMark + "*" : " ");
 				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-				msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-				msgBase.total_msgs, newestDate.date, newestDate.time);
+				       msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+				       numMsgs, newestDate.date, newestDate.time);
 
 				msgBase.close();
 			}
@@ -1668,12 +1674,13 @@ function DDMsgAreaChooser_writeMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 	{
 		var newestDate = new Object(); // For storing the date of the newest post
 		// Get the date & time when the last message was imported.
-		if (msgBase.total_msgs > 0)
+		var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
+		if (numMsgs > 0)
 		{
 			//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
 			var msgHeader = null;
 			var msgIdx = msgBase.total_msgs-1;
-			while (msgHeader === null)
+			while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code))
 			{
 				msgHeader = msgBase.get_msg_header(true, msgIdx, true);
 				--msgIdx;
@@ -1708,9 +1715,9 @@ function DDMsgAreaChooser_writeMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 		console.print(currentSub ? this.colors.areaMark + "*" : " ");
 		printf((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
 		       +(pSubIndex+1),
-		msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
-		msgBase.total_msgs, newestDate.date, newestDate.time);
-		msgBase.close();
+		       msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
+		       numMsgs, newestDate.date, newestDate.time);
+		 msgBase.close();
 
 		// Free some memory?
 		delete msgBase;
@@ -2289,4 +2296,108 @@ function getBogusMsgHdr(pSubject)
 	msgHdr.offset = 0;
 	msgHdr.isBogus = true;
 	return msgHdr;
+}
+
+// Returns whether a message is readable to the user, based on its
+// header and the sub-board code.
+//
+// Parameters:
+//  pMsgHdr: The header object for the message
+//  pSubBoardCode: The internal code for the sub-board the message is in
+//
+// Return value: Boolean - Whether or not the message is readable for the user
+function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
+{
+	if (pMsgHdr === null)
+		return false;
+	// Let the sysop see unvalidated messages and private messages but not other users.
+	if (gIsSysop)
+	{
+		if (pSubBoardCode != "mail")
+		{
+			if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0)) ||
+			    (((pMsgHdr.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdr.to)))
+			{
+				return false;
+			}
+		}
+	}
+	// If the message is deleted, determine whether it should be viewable, based
+	// on the system settings.
+	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+	{
+		// If the user is a sysop, check whether sysops can view deleted messages.
+		// Otherwise, check whether users can view deleted messages.
+		if (gIsSysop)
+		{
+			if ((system.settings & SYS_SYSVDELM) == 0)
+				return false;
+		}
+		else
+		{
+			if ((system.settings & SYS_USRVDELM) == 0)
+				return false;
+		}
+	}
+	// The message voting and poll variables were added in sbbsdefs.js for
+	// Synchronet 3.17.  Make sure they're defined before referencing them.
+	if (typeof(MSG_UPVOTE) != "undefined")
+	{
+		if ((pMsgHdr.attr & MSG_UPVOTE) == MSG_UPVOTE)
+			return false;
+	}
+	if (typeof(MSG_DOWNVOTE) != "undefined")
+	{
+		if ((pMsgHdr.attr & MSG_DOWNVOTE) == MSG_DOWNVOTE)
+			return false;
+	}
+	// Don't include polls as being unreadable messages - They just need to have
+	// their answer selections read from the header instead of the message body
+	/*
+	if (typeof(MSG_POLL) != "undefined")
+	{
+		if ((pMsgHdr.attr & MSG_POLL) == MSG_POLL)
+			return false;
+	}
+	*/
+	return true;
+}
+
+// Returns the number of readable messages in a sub-board.
+//
+// Parameters:
+//  pMsgbase: The MsgBase object representing the sub-board
+//  pSubBoardCode: The internal code of the sub-board
+//
+// Return value: The number of readable messages in the sub-board
+function numReadableMsgs(pMsgbase, pSubBoardCode)
+{
+	if ((pMsgbase === null) || !pMsgbase.is_open)
+		return 0;
+
+	var numMsgs = 0;
+	if (typeof(pMsgbase.get_all_msg_headers) === "function")
+	{
+		var msgHdrs = pMsgbase.get_all_msg_headers(true);
+		for (var msgHdrsProp in msgHdrs)
+		{
+			if (msgHdrs[msgHdrsProp] == null)
+				continue;
+			else if (isReadableMsgHdr(msgHdrs[msgHdrsProp], pSubBoardCode))
+				++numMsgs;
+		}
+	}
+	else
+	{
+		var msgHeader;
+		for (var i = 0; i < pMsgbase.total_msgs; ++i)
+		{
+			msgHeader = msgBase.get_msg_header(true, i, false);
+			if (msgHeader == null)
+				continue;
+			else if (isReadableMsgHdr(msgHeader, pSubBoardCode))
+				++numMsgs;
+		}
+	}
+	return numMsgs;
 }
