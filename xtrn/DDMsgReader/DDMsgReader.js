@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 18";
-var READER_DATE = "2016-12-04";
+var READER_VERSION = "1.17 Beta 19";
+var READER_DATE = "2016-12-11";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -11296,7 +11296,7 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 		// If the user just pressed enter (selectedGrp would be blank),
 		// default to the current group.
 		if (selectedGrp.toString() == "")
-		selectedGrp = msg_area.sub[this.subBoardCode].grp_index + 1;
+			selectedGrp = msg_area.sub[this.subBoardCode].grp_index + 1;
 		// Older:
 		/*
 		if (selectedGrp.toString() == "")
@@ -11481,12 +11481,15 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				subBoardInfo = new MsgSubBoardInfo();
 				subBoardInfo.subBoardNum = +(arrSubBoardNum);
 				subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
-				subBoardInfo.numPosts = msgBase.total_msgs;
+				subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
 
 				// Get the date & time when the last message was imported.
-				if (msgBase.total_msgs > 0)
+				if (subBoardInfo.numPosts > 0)
 				{
-					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, false);
+					var msgIdx = msgBase.total_msgs-1;
+					msgHeader = msgBase.get_msg_header(true, msgIdx, false);
+					while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code) && (msgIdx >= 0))
+					  msgHeader = msgBase.get_msg_header(true, --msgIdx, true);
 					if (this.msgAreaList_lastImportedMsg_showImportTime)
 						subBoardInfo.newestPostDate = msgHeader.when_imported_time
 					else
@@ -11576,9 +11579,13 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 			if (msgBase.open())
 			{
 				// Get the date & time when the last message was imported.
-				if (msgBase.total_msgs > 0)
+				var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+				if (numMsgs > 0)
 				{
-					msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, false);
+					var msgIdx = msgBase.total_msgs-1;
+					msgHeader = msgBase.get_msg_header(true, msgIdx, false);
+					while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code) && (msgIdx >= 0))
+					  msgHeader = msgBase.get_msg_header(true, --msgIdx, true);
 					// Construct the date & time strings of the latest post
 					if (this.msgAreaList_lastImportedMsg_showImportTime)
 					{
@@ -11603,7 +11610,7 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 					}
 				}
 				else
-				newestDate.date = newestDate.time = "";
+					newestDate.date = newestDate.time = "";
 
 				// Print the sub-board information
 				subBoardNum = +(arrSubBoardNum);
@@ -11612,7 +11619,7 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				              this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
 				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
 				       msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
-				       msgBase.total_msgs, newestDate.date, newestDate.time);
+				       numMsgs, newestDate.date, newestDate.time);
 
 				msgBase.close();
 			}
@@ -11866,16 +11873,15 @@ function DigDistMsgReader_WriteMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 	{
 		var newestDate = new Object(); // For storing the date of the newest post
 		// Get the date & time when the last message was imported.
-		if (msgBase.total_msgs > 0)
+		//numReadableMsgs(pMsgbase, pSubBoardCode)
+		var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
+		if (numMsgs > 0)
 		{
 			// Get the header of the last message in the sub-board
 			msgHeader = null;
 			var msgOffset = msgBase.total_msgs - 1;
-			while ((msgHeader === null) && (msgOffset >= 0))
-			{
-				msgHeader = msgBase.get_msg_header(true, msgOffset, false);
-				--msgOffset;
-			}
+			while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code) && (msgOffset >= 0))
+				msgHeader = msgBase.get_msg_header(true, --msgOffset, true);
 			// Construct the date & time strings of the latest post
 			if (this.msgAreaList_lastImportedMsg_showImportTime)
 			{
@@ -11906,8 +11912,8 @@ function DigDistMsgReader_WriteMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 		console.print(currentSub ? this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
 		printf((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
 		       +(pSubIndex+1),
-		msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
-		                                                                    msgBase.total_msgs, newestDate.date, newestDate.time);
+		       msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
+		       numMsgs, newestDate.date, newestDate.time);
 		msgBase.close();
 
 		delete msgBase;
@@ -18015,13 +18021,17 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 			{
 				if (getStrAfterPeriod(txtFileFilename).toUpperCase() == "ANS")
 				{
-					var filenameBase = txtFileFilename.substr(0, dotIdx);
-					var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
-								+ syncConvertedHdrFilename + "\"";
-					// Note: Both system.exec(cmdLine) and
-					// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
-					// execute the command, but system.exec() seems noticeably faster.
-					system.exec(cmdLine);
+					var dotIdx = txtFileFilename.lastIndexOf(".");
+					if (dotIdx >= 0)
+					{
+						var filenameBase = txtFileFilename.substr(0, dotIdx);
+						var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
+									+ syncConvertedHdrFilename + "\"";
+						// Note: Both system.exec(cmdLine) and
+						// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+						// execute the command, but system.exec() seems noticeably faster.
+						system.exec(cmdLine);
+					}
 				}
 				else
 					syncConvertedHdrFilename = txtFileFilename;
@@ -18269,6 +18279,45 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	}
 	*/
 	return true;
+}
+
+// Returns the number of readable messages in a sub-board.
+//
+// Parameters:
+//  pMsgbase: The MsgBase object representing the sub-board
+//  pSubBoardCode: The internal code of the sub-board
+//
+// Return value: The number of readable messages in the sub-board
+function numReadableMsgs(pMsgbase, pSubBoardCode)
+{
+	if ((pMsgbase === null) || !pMsgbase.is_open)
+		return 0;
+
+	var numMsgs = 0;
+	if (typeof(pMsgbase.get_all_msg_headers) === "function")
+	{
+		var msgHdrs = pMsgbase.get_all_msg_headers(true);
+		for (var msgHdrsProp in msgHdrs)
+		{
+			if (msgHdrs[msgHdrsProp] == null)
+				continue;
+			else if (isReadableMsgHdr(msgHdrs[msgHdrsProp], pSubBoardCode))
+				++numMsgs;
+		}
+	}
+	else
+	{
+		var msgHeader;
+		for (var i = 0; i < pMsgbase.total_msgs; ++i)
+		{
+			msgHeader = msgBase.get_msg_header(true, i, false);
+			if (msgHeader == null)
+				continue;
+			else if (isReadableMsgHdr(msgHeader, pSubBoardCode))
+				++numMsgs;
+		}
+	}
+	return numMsgs;
 }
 
 // Deletes vote messages (messages that have voting response data for a message with
