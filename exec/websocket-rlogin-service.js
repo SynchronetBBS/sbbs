@@ -397,8 +397,14 @@ try {
 	var ini = f.iniGetObject('BBS');
 	f.close();
 
+    if (typeof ini.RLoginInterface === 'undefined' || ini.RLoginInterface === '0.0.0.0') {
+        var rlogin_addr = '127.0.0.1';
+    } else {
+        var rlogin_addr = ini.RLoginInterface;
+    }
+
 	rlogin = new RLoginClient(
-		{	host : system.inet_addr,
+		{	host : rlogin_addr,
 			port : ini.RLoginPort,
 			clientUsername : usr.security.password,
 			serverUsername : usr.alias,
