@@ -228,8 +228,14 @@ try {
     var ini = f.iniGetObject('BBS');
     f.close();
 
+    if (typeof ini.TelnetInterface === 'undefined' || ini.TelnetInterface === '0.0.0.0') {
+        var telnet_addr = '127.0.0.1';
+    } else {
+        var telnet_addr = ini.TelnetInterface;
+    }
+
     var wss = new WebSocketProxy(client);
-    var telnet = new TelnetClient(system.inet_addr, ini.TelnetPort);
+    var telnet = new TelnetClient(telnet_addr, ini.TelnetPort);
  
 	while (client.socket.is_connected && telnet.connected) {
 
