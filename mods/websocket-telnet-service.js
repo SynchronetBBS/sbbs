@@ -235,8 +235,9 @@ try {
     }
 
     var wss = new WebSocketProxy(client);
+    log(LOG_DEBUG, 'Connecting to ' + telnet_addr + ':' + ini.TelnetPort);
     var telnet = new TelnetClient(telnet_addr, ini.TelnetPort);
- 
+
 	while (client.socket.is_connected && telnet.connected) {
 
     	wss.cycle();
