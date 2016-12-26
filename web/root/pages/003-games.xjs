@@ -10,8 +10,8 @@
 <div id="fTelnetContainer" style="margin-bottom:1em;"></div>
 
 <script type="text/javascript">
-	fTelnet.Hostname = '<?xjs write(http_request.vhost); ?>';
-	fTelnet.Port = <?xjs write(webSocketRLogin.Port); ?>;
+	fTelnet.Hostname = '<?xjs write(system.inet_addr); ?>';
+	fTelnet.Port = 1514;//<?xjs write(webSocketRLogin.Port); ?>;
 	fTelnet.ConnectionType = 'telnet';
 	fTelnet.SplashScreen = '<?xjs write(getSplash()); ?>';
 	fTelnet.StatusBarVisible = false;
@@ -37,6 +37,7 @@
 
 	settings.xtrn_sections.forEach(
 		function (section) {
+			section = section.toLowerCase();
 			writeln('<div class="list-group-item">');
 			writeln('<h4>' + xtrn_area.sec[section].name + '</h4>');
 			writeln('<ul class="nav nav-pills">');
