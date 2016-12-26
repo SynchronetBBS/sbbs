@@ -403,6 +403,7 @@ try {
         var rlogin_addr = ini.RLoginInterface;
     }
 
+    log(LOG_DEBUG, 'WSRS Connecting to ' + rlogin_addr + ':' + ini.RLoginPort);
 	rlogin = new RLoginClient(
 		{	host : rlogin_addr,
 			port : ini.RLoginPort,
