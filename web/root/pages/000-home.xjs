@@ -1,4 +1,8 @@
 <!--Home-->
+<?xjs
+	if (typeof argv[0] != 'boolean' || !argv[0]) exit(); // I don't remember what this is for
+	load(settings.web_lib + 'ftelnet.js');
+?>
 
 <script src="./ftelnet/ftelnet.min.js" id="fTelnetScript"></script>
 <div id="fTelnetContainer" style="margin-bottom:1em;"></div>
