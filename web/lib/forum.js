@@ -53,6 +53,31 @@ function listSubs(group) {
     return response;
 }
 
+function listThreads(sub, offset, count) {
+
+    offset = parseInt(offset);
+    if (isNaN(offset) || offset < 0) return false;
+    count = parseInt(count);
+    if (isNaN(count) || count < 1) return false;
+
+    var threads = getMessageThreads(sub, settings.max_messages);
+    if (offset >= threads.order.length) return false;
+
+    var stop = Math.min(threads.order.length, offset + count);
+    var ret = [];
+    for (var n = offset; n < stop; n++) {
+        var thread = threads.thread[threads.order[n]];
+        var msgs = Object.keys(thread.messages);
+        thread.first = thread.messages[msgs[0]];
+        thread.last = thread.messages[msgs[msgs.length - 1]];
+        delete thread.messages;
+        ret.push(thread);
+    }
+
+    return ret;
+
+}
+
 function getSubUnreadCount(sub) {
     var ret = {
         scanned : 0,
@@ -882,16 +907,17 @@ function getMessageThreads(sub, max) {
         }
     }
 
-    function getSomeMessageHeaders(msgBase, start, count) {
-        if (start < 0 || start > msgBase.last_msg) return {};
-        if (start + count - 1 > msgBase.last_msg) {
-            count = msgBase.last_msg - start;
-        }
+    function getSomeMessageHeaders(msgBase, count) {
+        var start = msgBase.last_msg - count;
+        if (start < msgBase.first_msg) start = msgBase.first_msg;
         var headers = {};
-        for (var m = 0; m < count; m++) {
-            var header = msgBase.get_msg_header(start + m);
+        var c = 0;
+        for (var m = start; m < msgBase.last_msg; m++) {
+            var header = msgBase.get_msg_header(m);
             if (header === null || header.attr&MSG_DELETE) continue;
             headers[header.number] = header;
+            c++;
+            if (c >= count) break;
         }
         return headers;
     }
@@ -901,7 +927,7 @@ function getMessageThreads(sub, max) {
     if ((typeof max === 'number' && max > 0) ||
         typeof msgBase.get_all_msg_headers !== 'function'
     ) {
-        var headers = getSomeMessageHeaders(msgBase, 0, max);
+        var headers = getSomeMessageHeaders(msgBase, max);
     } else {
         var headers = msgBase.get_all_msg_headers();
     }
