@@ -11,7 +11,7 @@
 
 <script type="text/javascript">
 	fTelnet.Hostname = '<?xjs write(system.inet_addr); ?>';
-	fTelnet.Port = 1514;//<?xjs write(webSocketRLogin.Port); ?>;
+	fTelnet.Port = <?xjs write(webSocketRLogin.Port); ?>;
 	fTelnet.ConnectionType = 'telnet';
 	fTelnet.SplashScreen = '<?xjs write(getSplash()); ?>';
 	fTelnet.StatusBarVisible = false;
