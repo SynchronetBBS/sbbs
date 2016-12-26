@@ -1,21 +1,20 @@
 <!--Home-->
 <?xjs 
-	if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
+	if (typeof argv[0] != 'boolean' || !argv[0]) exit();
 	load(settings.web_lib + 'ftelnet.js');
+	load('../xtrn/bullshit/bullshit.ssjs');
 ?>
 
 <script src="./ftelnet/ftelnet.min.js" id="fTelnetScript"></script>
 <div id="fTelnetContainer" style="margin-bottom:1em;"></div>
 <div class="row">
 	<div class="center-block" style="width:200px;margin-bottom:1em;">
-		<button id="ftelnet-connect" class="btn btn-primary">
-			Connect via Telnet
-		</button>
+		<button id="ftelnet-connect" class="btn btn-primary">Connect via Telnet</button>
 	</div>
 </div>
 <script type="text/javascript">
 	fTelnet.Hostname = '<?xjs write(http_request.vhost); ?>';
-	fTelnet.Port = <?xjs write((webSocket === null) ? 1123 : webSocket.Port); ?>;
+	fTelnet.Port = 1124;//<?xjs write((webSocket === null) ? 1123 : webSocket.Port); ?>;
 	fTelnet.ConnectionType = 'telnet';
 	fTelnet.SplashScreen = '<?xjs write(getSplash()); ?>';
 	fTelnet.StatusBarVisible = false;
@@ -25,5 +24,18 @@
 		)
 	);
 	fTelnet.Init();
-	$('#ftelnet-connect').click(function () { fTelnet.Connect(); });
+	$('#ftelnet-connect').click(function() { fTelnet.Connect(); });
 </script>
+
+<div class="well well-sm">
+	<a title="RSS Feed" href="http://bbs.electronicchicken.com/rss/bullshitrss.xml">
+		<h4>
+			<img alt="" src="./images/rss.png" style="border-width:0;float:left;margin-right:1em;">
+			Bulletins
+		</h4>
+	</a>
+</div>
+
+<?xjs
+	bullshit('bullshit', 5);
+?>
