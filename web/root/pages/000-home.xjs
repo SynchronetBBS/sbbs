@@ -14,7 +14,7 @@
 </div>
 <script type="text/javascript">
 	fTelnet.Hostname = '<?xjs write(http_request.vhost); ?>';
-	fTelnet.Port = 1124;//<?xjs write((webSocket === null) ? 1123 : webSocket.Port); ?>;
+	fTelnet.Port = <?xjs write(settings.websocket_telnet_port : webSocket.Port); ?>;
 	fTelnet.ConnectionType = 'telnet';
 	fTelnet.SplashScreen = '<?xjs write(getSplash()); ?>';
 	fTelnet.StatusBarVisible = false;
