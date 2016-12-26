@@ -26,16 +26,3 @@
 	fTelnet.Init();
 	$('#ftelnet-connect').click(function() { fTelnet.Connect(); });
 </script>
-
-<div class="well well-sm">
-	<a title="RSS Feed" href="http://bbs.electronicchicken.com/rss/bullshitrss.xml">
-		<h4>
-			<img alt="" src="./images/rss.png" style="border-width:0;float:left;margin-right:1em;">
-			Bulletins
-		</h4>
-	</a>
-</div>
-
-<?xjs
-	bullshit('bullshit', 5);
-?>
