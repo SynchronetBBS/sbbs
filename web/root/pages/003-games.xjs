@@ -1,7 +1,36 @@
 <!--Games-->
 <?xjs 
+
 	if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
 	load(settings.web_lib + 'ftelnet.js');
+
+	if (typeof settings.xtrn_blacklist === 'string') {
+		settings.xtrn_blacklist = settings.xtrn_blacklist.toLowerCase().split(',');
+	} else {
+		settings.xtrn_blacklist = [];
+	}
+
+	var xtrn = {};
+	xtrn_area.sec_list.forEach(
+		function (sec) {
+			if (!sec.can_access || sec.prog_list.length < 1) return;
+			if (settings.xtrn_blacklist.indexOf(sec.code.toLowerCase()) > -1) {
+				return;
+			}
+			var x = [];
+			sec.prog_list.forEach(
+				function (prog) {
+					if (!prog.can_access || !prog.can_run) return;
+					if (settings.xtrn_blacklist.indexOf(prog.code.toLowerCase()) > -1) {
+						return;
+					}
+					x.push({ c : prog.code, n : prog.name });
+				}
+			);
+			if (x.length > 0) xtrn[sec.name] = x;
+		}
+	);
+
 ?>
 
 <script src="./ftelnet/ftelnet.min.js" id="fTelnetScript"></script>
@@ -9,7 +38,19 @@
 <a name="fTelnet"></a>
 <div id="fTelnetContainer" style="margin-bottom:1em;"></div>
 
+<div id="xtrn-list" class="list-group">
+	<div id="xtrn-list-template" class="list-group-item" style="display:none;">
+		<h4></h4>
+		<ul class="nav nav-pills">
+			<li id="xtrn-item-template" role="presentation" style="display:none;">
+			<a href="#fTelnet"></a>
+			</li>
+		</ul>
+	</div>
+</div>
+
 <script type="text/javascript">
+
 	fTelnet.Hostname = '<?xjs write(http_request.vhost); ?>';
 	fTelnet.Port = <?xjs write(settings.websocket_rlogin_port || webSocketRLogin.Port); ?>;
 	fTelnet.ConnectionType = 'telnet';
@@ -20,42 +61,39 @@
 			navigator.userAgent
 		)
 	);
-	$(document).ready(fTelnet.Init());
+	function ftInit() {
+		$('#fTelnetContainer').html('');
+		fTelnet.Init();
+		fTelnet.OnConnectionClose = ftInit;
+	}
+	$(document).ready(ftInit);
 	function launchXtrn(code) {
 		$.getJSON(
 			'./api/system.ssjs?call=set-xtrn-intent&code=' + code,
-			function(data) {
-				fTelnet.Connect();
-			}
+			function(data) { fTelnet.Connect(); }
 		);
 	}
-</script>
 
-<div class="list-group">
-
-<?xjs
-
-	settings.xtrn_sections.forEach(
-		function (section) {
-			section = section.toLowerCase();
-			writeln('<div class="list-group-item">');
-			writeln('<h4>' + xtrn_area.sec[section].name + '</h4>');
-			writeln('<ul class="nav nav-pills">');
-			xtrn_area.sec_list[xtrn_area.sec[section].index].prog_list.forEach(
-				function (program) {
-					writeln(
-						'<li role="presentation">' +
-						'<a href="#fTelnet" onclick="launchXtrn(\'' +
-							program.code + '\')">' + program.name + '</a>' +
-						'</li>'
-					);
+	var xtrn = <?xjs write(JSON.stringify(xtrn)); ?>;
+	Object.keys(xtrn).forEach(
+		function (x) {
+			var e = $('#xtrn-list-template').clone();
+			$($(e).find('h4')[0]).text(x);
+			var ul = $($(e).find('ul')[0]);
+			xtrn[x].forEach(
+				function (xx) {
+					var li = $('#xtrn-item-template').clone();
+					var a = $(li).find('a')[0];
+					$(a).text(xx.n);
+					$(a).click(function () { launchXtrn(xx.c); });
+					$(ul).append(li);
+					$(li).show();
 				}
 			);
-			writeln('</ul>');
-			writeln('</div>');
+			$(e).append(ul);
+			$('#xtrn-list').append(e);
+			$(e).show();
 		}
 	);
 
-?>
-
-</div>
+</script>
