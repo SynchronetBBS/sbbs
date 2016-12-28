@@ -337,6 +337,11 @@ var RLoginClient = function(options) {
 
 	this.cycle = function () {
 
+		if (!handle.is_connected) {
+			state.connected = false;
+			return;
+		}
+
 		getServerData();
 
 		if (state.suspendInput || clientBuffer.length < 1) return;
