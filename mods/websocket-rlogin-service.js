@@ -337,6 +337,11 @@ var RLoginClient = function(options) {
 
 	this.cycle = function () {
 
+		if (!handle.is_connected) {
+			state.connected = false;
+			return;
+		}
+
 		getServerData();
 
 		if (state.suspendInput || clientBuffer.length < 1) return;
@@ -403,7 +408,6 @@ try {
         var rlogin_addr = ini.RLoginInterface;
     }
 
-    log(LOG_DEBUG, 'WSRS Connecting to ' + rlogin_addr + ':' + ini.RLoginPort);
 	rlogin = new RLoginClient(
 		{	host : rlogin_addr,
 			port : ini.RLoginPort,
