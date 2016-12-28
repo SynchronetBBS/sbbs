@@ -39,22 +39,10 @@ if (typeof settings.user_registration !== 'boolean') {
 
 }
 
-if (typeof settings.xtrn_sections === 'string') {
-	settings.xtrn_sections = settings.xtrn_sections.split(',').filter(
-		function (section) {
-			if (typeof xtrn_area.sec[section] === 'undefined') return false;
-			if (!xtrn_area.sec[section].can_access) return false;
-			if (xtrn_area.sec_list[
-					xtrn_area.sec[section].index
-				].prog_list.length < 1
-			) {
-				return false;
-			}
-			return true;	
-		}
-	);
-}
-
 if (typeof settings.max_messages !== 'number' || settings.max_messages < 0) {
 	settings.max_messages = 0;
-} 
+}
+
+if (typeof settings.page_size !== 'number' || settings.page_size < 1) {
+	settings.page_size = 25;
+}
