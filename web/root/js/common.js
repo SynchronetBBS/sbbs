@@ -38,9 +38,7 @@ function logout() {
 			}
 		}
 	).done(
-		function (data) {
-			if (!data.authenticated) window.location.reload(true);
-		}
+		function (data) { if (!data.authenticated) window.location.href = '/'; }
 	);
 }
 
