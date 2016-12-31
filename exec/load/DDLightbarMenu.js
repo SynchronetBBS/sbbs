@@ -345,13 +345,17 @@ function DDLightbarMenu_GetVal(pDraw)
 		}
 		else if (userInput == KEY_PAGE_UP)
 		{
-			this.selectedItemIdx -= this.size.height;
-			this.topItemIdx -= this.size.height;
-			if (this.selectedItemIdx < 0)
-				this.selectedItemIdx = 0;
-			if (this.topItemIdx < 0)
-				this.topItemIdx = 0;
-			this.Draw();
+			var newTopItemIdx = this.topItemIdx - this.size.height;
+			if (newTopItemIdx < 0)
+				newTopItemIdx = 0;
+			if (newTopItemIdx != this.topItemIdx)
+			{
+				this.topItemIdx = newTopItemIdx;
+				this.selectedItemIdx -= this.size.height;
+				if (this.selectedItemIdx < 0)
+					this.selectedItemIdx = 0;
+				this.Draw();
+			}
 		}
 		else if (userInput == KEY_PAGE_DOWN)
 		{
@@ -360,14 +364,21 @@ function DDLightbarMenu_GetVal(pDraw)
 			// Figure out the top index for the last page.
 			//var topIndexForLastPage = (this.size.height * numPages) - this.size.height;
 			var topIndexForLastPage = this.items.length - this.size.height;
-			// Update the selected & top item indexes
-			this.selectedItemIdx += this.size.height;
-			this.topItemIdx += this.size.height;
-			if (this.selectedItemIdx >= topIndexForLastPage)
-				this.selectedItemIdx = topIndexForLastPage;
-			if (this.topItemIdx > topIndexForLastPage)
-				this.topItemIdx = topIndexForLastPage;
-			this.Draw();
+			if (topIndexForLastPage < 0)
+				topIndexForLastPage = 0;
+			else if (topIndexForLastPage >= this.items.length)
+				topIndexForLastPage = this.items.length - 1;
+			if (topIndexForLastPage != this.topItemIdx)
+			{
+				// Update the selected & top item indexes
+				this.selectedItemIdx += this.size.height;
+				this.topItemIdx += this.size.height;
+				if (this.selectedItemIdx >= topIndexForLastPage)
+					this.selectedItemIdx = topIndexForLastPage;
+				if (this.topItemIdx > topIndexForLastPage)
+					this.topItemIdx = topIndexForLastPage;
+				this.Draw();
+			}
 		}
 		else if (userInput == KEY_HOME)
 		{
@@ -423,6 +434,10 @@ function DDLightbarMenu_GetVal(pDraw)
 			}
 		}
 	}
+
+	// Set the screen color back to normal so that text written to the screen
+	// after this looks good.
+	console.print("\1n");
 
 	return retVal;
 }
