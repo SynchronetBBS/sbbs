@@ -97,6 +97,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
+	this.Remove = DDLightbarMenu_Remove;
+	this.RemoveAllItems = DDLightbarMenu_RemoveAllItems;
 	this.SetPos = DDLightbarMenu_SetPos;
 	this.SetSize = DDLightbarMenu_SetSize;
 	this.SetWidth = DDLightbarMenu_SetWidth;
@@ -105,6 +107,8 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.WriteItem = DDLightbarMenu_WriteItem;
 	this.Erase = DDLightbarMenu_Erase;
 	this.SetItemHotkey = DDLightbarMenu_SetItemHotkey;
+	this.RemoveItemHotkey = DDLightbarMenu_RemoveItemHotkey;
+	this.RemoveAllItemHotkeys = DDLightbarMenu_RemoveAllItemHotkeys;
 	this.GetVal = DDLightbarMenu_GetVal;
 
 	// Set some things based on the parameters passed in
@@ -133,6 +137,36 @@ function DDLightbarMenu_Add(pText, pRetval, pHotkey)
 	if (typeof(pHotkey) == "string")
 		item.hotkey = pHotkey;
 	this.items.push(item);
+}
+
+// Removes an item
+//
+// Parameters:
+//  pIdx: The index of the item to remove
+function DDLightbarMenu_Remove(pIdx)
+{
+	if ((typeof(pIdx) != "number") || (pIdx < 0) || (pIdx >= this.items.length))
+		return; // pIdx is invalid
+
+	this.items.splice(pIdx, 1);
+	if (this.items.length > 0)
+	{
+		if (this.selectedItemIdx >= this.items.length)
+			this.selectedItemIdx = this.items.length - 1;
+	}
+	else
+	{
+		this.selectedItemIdx = 0;
+		this.topItemIdx = 0;
+	}
+}
+
+// Removes all items
+function DDLightbarMenu_RemoveAllItems()
+{
+	this.items = [];
+	this.selectedItemIdx = 0;
+	this.topItemIdx = 0;
 }
 
 // Sets the menu's upper-left corner position
@@ -209,7 +243,6 @@ function DDLightbarMenu_Draw()
 	var curPos = { x: this.pos.x, y: this.pos.y };
 	// Write the menu items, only up to the height of the menu
 	var numItemsWritten = 0;
-	//writeWithPause(1, 1, "Top idx: " + this.topItemIdx + ", # items: " + this.items.length + ", height: " + this.size.height + "  ", 1500, "\1n", false); // Temporary
 	for (var idx = this.topItemIdx; (idx < this.items.length) && (numItemsWritten < this.size.height); ++idx)
 	{
 		console.gotoxy(curPos.x, curPos.y++);
@@ -279,6 +312,29 @@ function DDLightbarMenu_SetItemHotkey(pIdx, pHotkey)
 {
 	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length) && (typeof(pHotkey) == "string"))
 		this.items[pIdx].hotkey = pHotkey;
+}
+
+// Removes an item's hotkey
+//
+// Parameters:
+//  pIdx: The index of the item
+function  DDLightbarMenu_RemoveItemHotkey(pIdx)
+{
+	if ((typeof(pIdx) == "number") && (pIdx >= 0) && (pIdx < this.items.length))
+	{
+		if (this.items[pIdx].hasOwnProperty("hotkey"))
+			delete this.items[pIdx].hotkey;
+	}
+}
+
+// Removes the hotkeys from all items
+function DDLightbarMenu_RemoveAllItemHotkeys()
+{
+	for (var i = 0; i < this.items.length; ++i)
+	{
+		if (this.items[i].hasOwnProperty("hotkey"))
+			delete this.items[i].hotkey;
+	}
 }
 
 // Waits for user input, optionally drawing the menu first.
@@ -485,6 +541,7 @@ function DDLightbarMenu_GetVal(pDraw)
 					{
 						retVal = this.items[i].retval;
 						continueOn = false;
+						break;
 					}
 				}
 			}
