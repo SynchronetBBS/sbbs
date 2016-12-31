@@ -293,7 +293,7 @@ function DDLightbarMenu_GetVal(pDraw)
 	while (continueOn)
 	{
 		var userInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF);
-		if (userInput == KEY_UP)
+		if ((userInput == KEY_UP) || (userInput == KEY_LEFT))
 		{
 			if (this.selectedItemIdx > 0)
 			{
@@ -318,7 +318,7 @@ function DDLightbarMenu_GetVal(pDraw)
 				}
 			}
 		}
-		else if (userInput == KEY_DOWN)
+		else if ((userInput == KEY_DOWN) || (userInput == KEY_RIGHT))
 		{
 			if (this.selectedItemIdx < this.items.length-1)
 			{
