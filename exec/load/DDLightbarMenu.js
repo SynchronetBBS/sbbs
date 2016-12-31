@@ -30,6 +30,10 @@ itemColor: The color to use for non-selected items (current default is white
 selectedItemColor: The color to use for selected items (current default is blue
                    on white)
 
+By default, the menu selection will wrap around to the beginning/end when using
+the down/up arrows.  That behavior can be disabled by setting the wrapNavigation
+property to false.
+
 Example usage:
 load("DDLightbarMenu.js");
 // Create a menu at position 1, 3 with width 45 and height of 10
@@ -46,9 +50,12 @@ console.print("\1n\r\n");
 console.print("Value:" + val + ":, type: " + typeof(val) + "\r\n");
 console.pause();
 
-Changing the normal item color to green & selected item color to bright green:
+// Changing the normal item color to green & selected item color to bright green:
 lbMenu.colors.itemColor = "\1n\1g";
 lbMenu.colors.selectedItemColor = "\1n\1h\1g";
+
+// Disabling the navigation wrap behavior:
+lbMenu.wrapNavigation = false;
 */
 
 load("sbbsdefs.js");
@@ -86,6 +93,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	};
 	this.selectedItemIdx = 0;
 	this.topItemIdx = 0;
+	this.wrapNavigation = true;
 
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
@@ -317,6 +325,31 @@ function DDLightbarMenu_GetVal(pDraw)
 					this.WriteItem(this.selectedItemIdx, null, true);
 				}
 			}
+			else
+			{
+				// selectedItemIdx is 0.  If wrap navigation is enabled, then go to the
+				// last item.
+				if (this.wrapNavigation)
+				{
+					// Draw the current item in regular colors
+					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					this.WriteItem(this.selectedItemIdx, null, false);
+					// Go to the last item and scroll to the bottom if necessary
+					this.selectedItemIdx = this.items.length - 1;
+					var oldTopItemIdx = this.topItemIdx;
+					this.topItemIdx = this.items.length - this.size.height;
+					if (this.topItemIdx < 0)
+						this.topItemIdx = 0;
+					if (this.topItemIdx != oldTopItemIdx)
+						this.Draw();
+					else
+					{
+						// Draw the new current item in selected colors
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+						this.WriteItem(this.selectedItemIdx, null, true);
+					}
+				}
+			}
 		}
 		else if ((userInput == KEY_DOWN) || (userInput == KEY_RIGHT))
 		{
@@ -340,6 +373,29 @@ function DDLightbarMenu_GetVal(pDraw)
 					// just draw the selected item highlighted.
 					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
 					this.WriteItem(this.selectedItemIdx, null, true);
+				}
+			}
+			else
+			{
+				// selectedItemIdx is the last item index.  If wrap navigation is enabled,
+				// then go to the first item.
+				if (this.wrapNavigation)
+				{
+					// Draw the current item in regular colors
+					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+					this.WriteItem(this.selectedItemIdx, null, false);
+					// Go to the first item and scroll to the top if necessary
+					this.selectedItemIdx = 0;
+					var oldTopItemIdx = this.topItemIdx;
+					this.topItemIdx = 0;
+					if (this.topItemIdx != oldTopItemIdx)
+						this.Draw();
+					else
+					{
+						// Draw the new current item in selected colors
+						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
+						this.WriteItem(this.selectedItemIdx, null, true);
+					}
 				}
 			}
 		}
