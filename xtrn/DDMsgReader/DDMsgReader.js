@@ -301,7 +301,7 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 19";
+var READER_VERSION = "1.17 Beta 20";
 var READER_DATE = "2016-12-11";
 
 // Keyboard key codes for displaying on the screen
@@ -9584,9 +9584,11 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	// If using the internal header (not loaded externally) and the message is not a poll and
 	// contains the properties total_votes and upvotes, then put some information in the header
 	// containing information about the message's voting results.
+	var msgIsAPoll = false;
+	if (typeof(MSG_POLL) != "undefined")
+		msgIsAPoll = ((pMsgHdr.attr & MSG_POLL) == MSG_POLL);
 	var enhHdrLines = this.enhMsgHeaderLines.slice(0);
-	if (this.usingInternalEnhMsgHdr && ((pMsgHdr.attr & MSG_POLL) == 0) &&
-	    pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
+	if (this.usingInternalEnhMsgHdr && !msgIsAPoll && pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
 	{
 		var msgUpvotes = pMsgHdr.upvotes;
 		var msgDownvotes = pMsgHdr.total_votes - pMsgHdr.upvotes;
