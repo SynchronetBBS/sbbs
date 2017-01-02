@@ -1,0 +1,131 @@
+                                   SlyVote
+                                 Version 0.01 Beta
+                           Release date: 2017-01-01
+
+                                     by
+
+                                Eric Oulashin
+                                AKA Nightfox
+                          Sysop of Digital Distortion
+                  BBS internet address: digitaldistortionbbs.com
+                     Alternate address: digdist.bbsindex.com
+                        Email: eric.oulashin@gmail.com
+
+
+
+This file describes SlyVote.
+
+Contents
+========
+1. Disclaimer
+2. Introduction
+3. Installation & Setup
+4. Configuration file
+
+
+1. Disclaimer
+=============
+I cannot guarantee that this script is 100% free of bugs.  However, I have
+tested it, and I used it often during development, so I have some confidence
+that there are no serious issues with it (at least, none that I have seen).
+
+
+2. Introduction
+===============
+SlyVote is a voting booth door for Synchronet, which allows users to add and
+vote on various topics with multiple-choice answers.  SlyVote makes use of the
+voting capabilities in the Synchronet messagebase, which were added to
+Synchronet 3.17.  Thus, SlyVote requires version 3.17 or higher of Synchronet,
+along with the latest sbbsdefs.js and possibly other JavaScript files included
+with Synchronet.
+
+SlyVote requires an ANSI terminal, since SlyVote makes use of lightbar menus
+which do cursor movement, etc.
+
+SlyVote's look and feel was initially based on DCT Vote, a voting booth door
+which was available in the 1990s.
+
+NOTE: SlyVote is currently in a very early beta state and is not fully complete
+yet.
+
+
+3. Installation & Setup
+=======================
+SlyVote is comprised of the following files:
+1. SlyVote.js             The SlyVote script
+
+2. SlyVote.cfg            The SlyVote configuration file
+
+3. DDLightbarMenu.js      A JavaScript lightbar menu class used by SlyVote.
+                          You do not need to edit or use this file directly.
+                          You can keep this file in the SlyVote directory or
+                          copy it to your sbbs/exec/load directory if it's
+                          not already there.  
+
+SlyVote.cfg is a plain text file, so it can be edited using any text editor.
+
+Installing into Synchronet's external programs menu
+---------------------------------------------------
+This section assumes that SlyVote is installed in the directory
+sbbs/xtrn/SlyVote.
+
+To set up SlyVote in the Synchronet external programs menu:
+1. Run SCFG
+2. Choose "External Programs" and then "Online Programs (Doors)"
+3. Choose a program section, and then add an entry that is set up as follows:
++[¦][?]----------------------------------------------------+
+¦                          SlyVote                         ¦
+¦----------------------------------------------------------¦
+¦ ¦Name                       SlyVote                      ¦
+¦ ¦Internal Code              SLYVOTE                      ¦
+¦ ¦Start-up Directory         ../xtrn/SlyVote              ¦
+¦ ¦Command Line               ?SlyVote.js                  ¦
+¦ ¦Clean-up Command Line                                   ¦
+¦ ¦Execution Cost             None                         ¦
+¦ ¦Access Requirements        ANSI                         ¦
+¦ ¦Execution Requirements                                  ¦
+¦ ¦Multiple Concurrent Users  Yes                          ¦
+¦ ¦Intercept I/O              No                           ¦
+¦ ¦Native Executable          No                           ¦
+¦ ¦Use Shell to Execute       No                           ¦
+¦ ¦Modify User Data           No                           ¦
+¦ ¦Execute on Event           No                           ¦
+¦ ¦Pause After Execution      No                           ¦
+¦ ¦BBS Drop File Type         None                         ¦
+¦ ¦Place Drop File In         Node Directory               ¦
++----------------------------------------------------------+
+
+
+Installing into a command shell
+-------------------------------
+This section assumes that SlyVote is installed in the directory
+sbbs/xtrn/SlyVote.
+
+If you are unsure which command shell you are using, you are likely using
+Synchronet's "default" command shell, which is contained in the files
+default.src and default.bin in the synchronet/exec directory.  To modify the
+default command shell, you'll need to open default.src with a text editor.
+Then, you can add a menu command to run SlyVote as follows:
+  exec "?../xtrn/SlyVote/SlyVote.js"
+
+If you are using a JavaScript command shell, the process would be similar.  You
+can add a menu command to run SlyVote as follows:
+bbs.exec("?../xtrn/SlyVote/SlyVote.js");
+
+
+4. Configuration file
+=====================
+The format of SlyVote.cfg is setting=value.  SlyVote.cfg supports the following
+settings:
+
+Setting                               Description
+-------                               -----------
+subBoardCodes                         A comma-separated list of internal
+                                      sub-board codes specifying which
+                                      sub-board or sub-boards to use for voting
+                                      topics.  A single sub-board code can be
+                                      specified if you only want to use one
+                                      sub-board with SlyVote.  Also,
+                                      subBoardCodes can appear multiple times
+                                      in SlyVote.cfg, and all sub-boards will
+                                      be used.
