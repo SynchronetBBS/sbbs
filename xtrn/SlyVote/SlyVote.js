@@ -217,13 +217,14 @@ function ChooseVoteTopic()
 
 	// Display the list of voting topics
 	console.print("\1n");
-	console.gotoxy(18, 3);
+	var pleaseSelectTextRow = 6;
+	console.gotoxy(18, pleaseSelectTextRow);
 	console.print("\1c\1hP\1n\1clease select a topic to vote on (ESC=Return)\1n");
 	// Draw the columns to frame the voting topics
 	var columnX1 = 17;
 	var columnX2 = 63;
 	var textLen = columnX2 - columnX1 - 2;
-	var listTopRow = 4;
+	var listTopRow = pleaseSelectTextRow + 1;
 	for (var posY = listTopRow; posY < gBottomBorderRow; ++posY)
 	{
 		console.gotoxy(columnX1, posY);
@@ -237,13 +238,17 @@ function ChooseVoteTopic()
 	var topicsMenu = new DDLightbarMenu(startCol, listTopRow, textLen, menuHeight);
 	for (var i = 0; i < voteTopicInfo.msgHdrs.length; ++i)
 		topicsMenu.Add(voteTopicInfo.msgHdrs[i].subject, voteTopicInfo.msgHdrs[i].number);
+	var drawTopicsMenu = true;
 	while (nextProgramState == VOTING_ON_A_TOPIC)
 	{
 		console.print("\1n");
-		var userChoice = topicsMenu.GetVal(true);
+		var userChoice = topicsMenu.GetVal(drawTopicsMenu);
 		if (userChoice != null)
 		{
-			VoteOnTopic(gSubBoardCode, userChoice, startCol, listTopRow, textLen, menuHeight);
+			topicsMenu.Erase();
+			var voteRetObj = VoteOnTopic(gSubBoardCode, userChoice, startCol, listTopRow, textLen, menuHeight);
+			// TODO: Check for voteRetObj.errorMsg, etc.
+			drawTopicsMenu = true;
 		}
 		else // The user chose to exit the topics menu
 			nextProgramState = MAIN_MENU;
@@ -276,7 +281,39 @@ function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, p
 	if (msgbase.open())
 	{
 		var msgHdr = msgbase.get_msg_header(false, pMsgNum, true);
-		// TODO: Finish this
+		if (msgHdr != null)
+		{
+			var pollTextAndOpts = GetPollTextAndOpts(msgHdr);
+			// Output up to the first 3 poll comment lines
+			console.print("\1n");
+			var i = 0;
+			var commentStartRow = pStartRow - 4;
+			for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
+			{
+				console.gotoxy(1, row);
+				console.print(pollTextAndOpts.commentLines[i++].substr(0, console.screen_columns));
+			}
+			// Show the poll options and let the user choose an option
+			var optionsMenu = new DDLightbarMenu(pStartCol, pStartRow, pMenuWidth, pMenuHeight);
+			for (i = 0; i < pollTextAndOpts.options.length; ++i)
+				optionsMenu.Add(pollTextAndOpts.options[i], i);
+			optionsMenu.colors.itemColor = "\1c";
+			optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
+			var userChoice = optionsMenu.GetVal(true);
+			// TODO: Finish this
+
+			// Before returning, erase the poll comment lines from the screen
+			console.print("\1n");
+			i = 0;
+			var formatStr = "%" + console.screen_columns + "s";
+			for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
+			{
+				console.gotoxy(1, row);
+				printf(formatStr, "");
+			}
+		}
+		else
+			retObj.errorMsg = "Unable to retrieve the topic options";
 
 		msgbase.close();
 	}
@@ -604,7 +641,59 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 	return msgBody;
 }
 
+// Gets a poll message's text and options
+//
+// Parameters:
+//  pMsgHdr: The header object of the message to get the text & options from
+//
+// Return value: An object with the following properties:
+//               commentLines: An array containing the comment lines
+//               options: An array containing the poll options (text)
+function GetPollTextAndOpts(pMsgHdr)
+{
+	var retObj = {
+		commentLines: [],
+		options: []
+	};
+	
+	if ((typeof(MSG_TYPE_POLL) != "undefined") && (pMsgHdr.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+	{
+		// A poll is intended to be parsed (and displayed) using on the header data. The
+		// (optional) comments are stored in the hdr.field_list[] with type values of
+		// SMB_COMMENT (now defined in sbbsdefs.js) and the available answers are in the
+		// field_list[] with type values of SMB_POLL_ANSWER.
+
+		// The 'comments' and 'answers' are also a part of the message header, so you can
+		// grab them separately, then format and display them however you want.  You can
+		// find them in the header.field_list array; each element in that array should be
+		// an object with a 'type' and a 'data' property.  Relevant types here are
+		// SMB_COMMENT and SMB_POLL_ANSWER.  (This is what I'm doing on the web, and I
+		// just ignore the message body for poll messages.)
+
+		if (pMsgHdr.hasOwnProperty("field_list"))
+		{
+			// Go through field_list and append the voting options and stats to
+			// msgBody
+			var pollComment = "";
+			var optionNum = 1;
+			var numVotes = 0;
+			var votePercentage = 0;
+			var tallyIdx = 0;
+			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+			{
+				if (pMsgHdr.field_list[fieldI].type == SMB_COMMENT)
+					retObj.commentLines.push(pMsgHdr.field_list[fieldI].data);
+				else if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+					retObj.options.push(pMsgHdr.field_list[fieldI].data);
+			}
+		}
+	}
+
+	return retObj;
+}
+
 // Lets the user vote on a message
+// TODO: Remove this function?  Not sure if this script needs it.
 //
 // Parameters:
 //  pMsgHdr: The header of the mesasge being voted on
