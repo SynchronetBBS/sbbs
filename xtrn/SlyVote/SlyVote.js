@@ -218,8 +218,6 @@ function ChooseVoteTopic()
 	// Display the list of voting topics
 	console.print("\1n");
 	var pleaseSelectTextRow = 6;
-	console.gotoxy(18, pleaseSelectTextRow);
-	console.print("\1c\1hP\1n\1clease select a topic to vote on (ESC=Return)\1n");
 	// Draw the columns to frame the voting topics
 	var columnX1 = 17;
 	var columnX2 = 63;
@@ -241,11 +239,16 @@ function ChooseVoteTopic()
 	var drawTopicsMenu = true;
 	while (nextProgramState == VOTING_ON_A_TOPIC)
 	{
+		var pleaseSectTopicText = "\1n\1c\1hP\1n\1clease select a topic to vote on (ESC=Return)\1n";
+		console.gotoxy(18, pleaseSelectTextRow);
+		console.print(pleaseSectTopicText);
 		console.print("\1n");
 		var userChoice = topicsMenu.GetVal(drawTopicsMenu);
 		if (userChoice != null)
 		{
-			topicsMenu.Erase();
+			//topicsMenu.Erase();
+			console.gotoxy(18, pleaseSelectTextRow);
+			printf("%" + strip_ctrl(pleaseSectTopicText).length + "s", "");
 			var voteRetObj = VoteOnTopic(gSubBoardCode, userChoice, startCol, listTopRow, textLen, menuHeight);
 			// TODO: Check for voteRetObj.errorMsg, etc.
 			drawTopicsMenu = true;
@@ -284,16 +287,19 @@ function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, p
 		if (msgHdr != null)
 		{
 			var pollTextAndOpts = GetPollTextAndOpts(msgHdr);
+			// Print the poll question text
+			console.gotoxy(1, pStartRow-4);
+			printf("\1n\1c%-" + console.screen_columns + "s", msgHdr.subject.substr(0, console.screen_columns));
 			// Output up to the first 3 poll comment lines
-			console.print("\1n");
+			//console.print("\1n");
 			var i = 0;
-			var commentStartRow = pStartRow - 4;
+			var commentStartRow = pStartRow - 3;
 			for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
 			{
 				console.gotoxy(1, row);
 				console.print(pollTextAndOpts.commentLines[i++].substr(0, console.screen_columns));
 			}
-			// Show the poll options and let the user choose an option
+			// Create the poll options menu, and show it and let the user choose an option
 			var optionsMenu = new DDLightbarMenu(pStartCol, pStartRow, pMenuWidth, pMenuHeight);
 			for (i = 0; i < pollTextAndOpts.options.length; ++i)
 				optionsMenu.Add(pollTextAndOpts.options[i], i);
@@ -302,8 +308,10 @@ function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, p
 			var userChoice = optionsMenu.GetVal(true);
 			// TODO: Finish this
 
-			// Before returning, erase the poll comment lines from the screen
+			// Before returning, erase the poll question text and comment lines from the screen
 			console.print("\1n");
+			console.gotoxy(1, pStartRow-4);
+			printf("%" + console.screen_columns + "s", "");
 			i = 0;
 			var formatStr = "%" + console.screen_columns + "s";
 			for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
