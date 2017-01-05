@@ -40,7 +40,7 @@ if (!console.term_supports(USER_ANSI))
 
 // Version information
 var SLYVOTE_VERSION = "0.01 Beta";
-var SLYVOTE_DATE = "2017-01-01";
+var SLYVOTE_DATE = "2017-01-04";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -49,6 +49,8 @@ var SLYVOTE_DATE = "2017-01-01";
 var gStartupPath = '.';
 try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
 gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
+
+var ERROR_PAUSE_WAIT_MS = 1500;
 
 var gBottomBorderRow = 23;
 
@@ -239,7 +241,7 @@ function ChooseVoteTopic()
 	var drawTopicsMenu = true;
 	while (nextProgramState == VOTING_ON_A_TOPIC)
 	{
-		var pleaseSectTopicText = "\1n\1c\1hP\1n\1clease select a topic to vote on (ESC=Return)\1n";
+		var pleaseSectTopicText = "\1n\1c\1hP\1n\1clease select a topic to vote on (\1hESC\1n\1g=\1cReturn)\1n";
 		console.gotoxy(18, pleaseSelectTextRow);
 		console.print(pleaseSectTopicText);
 		console.print("\1n");
@@ -289,7 +291,9 @@ function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, p
 			var pollTextAndOpts = GetPollTextAndOpts(msgHdr);
 			// Print the poll question text
 			console.gotoxy(1, pStartRow-4);
-			printf("\1n\1c%-" + console.screen_columns + "s", msgHdr.subject.substr(0, console.screen_columns));
+			//printf("\1n\1c%-" + console.screen_columns + "s", msgHdr.subject.substr(0, console.screen_columns));
+			var pollSubject = msgHdr.subject.substr(0, console.screen_columns);
+			console.print("\1n\1c" + pollSubject);
 			// Output up to the first 3 poll comment lines
 			//console.print("\1n");
 			var i = 0;
@@ -305,19 +309,47 @@ function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, p
 				optionsMenu.Add(pollTextAndOpts.options[i], i);
 			optionsMenu.colors.itemColor = "\1c";
 			optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
+			// TODO: If the poll has already been voted on by the user, then show it before inputting
+			// the user's choice.
 			var userChoice = optionsMenu.GetVal(true);
-			// TODO: Finish this
+			// Return value: An object with the following properties:
+			//               BBSHasVoteFunction: Boolean - Whether or not the system has
+			//                                   the vote_msg function
+			//               savedVote: Boolean - Whether or not the vote was saved
+			//               userQuit: Boolean - Whether or not the user quit and didn't vote
+			//               errorMsg: String - An error message, if something went wrong
+			//               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
+			//               updatedHdr: The updated message header containing vote information.
+			//                           If something went wrong, this will be null.
+			var voteRetObj = VoteOnMessage(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
+			// If there was an error, then show it.  Otherwise, show a success message.
+			var firstLineEraseLength = pollSubject.length;
+			console.gotoxy(1, pStartRow-4);
+			printf("\1n%" + pollSubject.length + "s", "");
+			console.gotoxy(1, pStartRow-4);
+			if (voteRetObj.errorMsg.length > 0)
+			{
+				var voteErrMsg = voteRetObj.errorMsg.substr(0, console.screen_columns - 2);
+				firstLineEraseLength = voteErrMsg.length;
+				console.print("\1y\1h* " + voteErrMsg);
+				mswait(ERROR_PAUSE_WAIT_MS);
+			}
+			else
+			{
+				console.print("\1cYour vote was successfully saved.");
+				mswait(ERROR_PAUSE_WAIT_MS);
+			}
 
 			// Before returning, erase the poll question text and comment lines from the screen
 			console.print("\1n");
 			console.gotoxy(1, pStartRow-4);
-			printf("%" + console.screen_columns + "s", "");
+			printf("%" + firstLineEraseLength + "s", "");
 			i = 0;
-			var formatStr = "%" + console.screen_columns + "s";
 			for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
 			{
 				console.gotoxy(1, row);
-				printf(formatStr, "");
+				var pollCommentLine = pollTextAndOpts.commentLines[i++].substr(0, console.screen_columns);
+				printf("%" + pollCommentLine.length + "s", "");
 			}
 		}
 		else
@@ -701,10 +733,15 @@ function GetPollTextAndOpts(pMsgHdr)
 }
 
 // Lets the user vote on a message
-// TODO: Remove this function?  Not sure if this script needs it.
 //
 // Parameters:
+//  pSubBoardCode: The internal code of the sub-board being used for voting
+//  pMsgbase: The MessageBase object for the sub-board being used for voting
 //  pMsgHdr: The header of the mesasge being voted on
+//  pUser: The user object representing the user voting on the poll
+//  pUserVoteNumber: Optional - A number inputted by the user representing their vote.
+//                   If this is not passed in or is null, etc., then this function will
+//                   prompt the user for their vote.
 //  pRemoveNLsFromVoteText: Optional boolean - Whether or not to remove newlines
 //                          (and carriage returns) from the voting text from
 //                          text.dat.  Defaults to false.
@@ -718,10 +755,10 @@ function GetPollTextAndOpts(pMsgHdr)
 //               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
 //               updatedHdr: The updated message header containing vote information.
 //                           If something went wrong, this will be null.
-function VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
+function VoteOnMessage(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pRemoveNLsFromVoteText)
 {
 	var retObj = new Object();
-	retObj.BBSHasVoteFunction = (typeof(this.msgbase.vote_msg) === "function");
+	retObj.BBSHasVoteFunction = (typeof(pMsgbase.vote_msg) === "function");
 	retObj.savedVote = false;
 	retObj.userQuit = false;
 	retObj.errorMsg = "";
@@ -729,7 +766,7 @@ function VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	retObj.updatedHdr = null;
 
 	// Don't allow voting for personal email
-	if (this.subBoardCode == "mail")
+	if (pSubBoardCode == "mail")
 	{
 		retObj.errorMsg = "Can not vote on personal email";
 		return retObj;
@@ -743,7 +780,7 @@ function VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	var removeNLsFromVoteText = (typeof(pRemoveNLsFromVoteText) === "boolean" ? pRemoveNLsFromVoteText : false)
 
 	// See if voting is allowed in the current sub-board
-	if ((msg_area.sub[this.subBoardCode].settings & SUB_NOVOTING) == SUB_NOVOTING)
+	if ((msg_area.sub[pSubBoardCode].settings & SUB_NOVOTING) == SUB_NOVOTING)
 	{
 		retObj.errorMsg = bbs.text(typeof(VotingNotAllowed) != "undefined" ? VotingNotAllowed : 779);
 		if (removeNLsFromVoteText)
@@ -758,9 +795,9 @@ function VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	{
 		var userVotedMaxVotes = false;
 		var numVotes = (pMsgHdr.hasOwnProperty("votes") ? pMsgHdr.votes : 0);
-		if (typeof(this.msgbase.how_user_voted) === "function")
+		if (typeof(pMsgbase.how_user_voted) === "function")
 		{
-			var votes = this.msgbase.how_user_voted(pMsgHdr.number, (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
+			var votes = pMsgbase.how_user_voted(pMsgHdr.number, (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
 			if (votes >= 0)
 			{
 				if ((votes == 0) || (votes == 1))
@@ -818,7 +855,7 @@ function VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	var voteMsgHdr = new Object();
 	voteMsgHdr.thread_back = pMsgHdr.number;
 	voteMsgHdr.reply_id = pMsgHdr.number;
-	voteMsgHdr.from = (this.msgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias;
+	voteMsgHdr.from = (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias;
 	if (pMsgHdr.from.hasOwnProperty("from_net_type"))
 	{
 		voteMsgHdr.from_net_type = pMsgHdr.from_net_type;
@@ -832,30 +869,36 @@ function VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	{
 		if (pMsgHdr.hasOwnProperty("field_list"))
 		{
-			console.clear("\1n");
-			var selectHdr = bbs.text(typeof(SelectItemHdr) != "undefined" ? SelectItemHdr : 501);
-			printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
-			var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
-			var optionNum = 1;
-			for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+			var userInputNum = 0;
+			if (typeof(pUserVoteNumber) != "number")
 			{
-				if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+				console.clear("\1n");
+				var selectHdr = bbs.text(typeof(SelectItemHdr) != "undefined" ? SelectItemHdr : 501);
+				printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
+				var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
+				var optionNum = 1;
+				for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
 				{
-					printf(optionFormatStr, optionNum++, pMsgHdr.field_list[fieldI].data);
-					console.crlf();
+					if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+					{
+						printf(optionFormatStr, optionNum++, pMsgHdr.field_list[fieldI].data);
+						console.crlf();
+					}
 				}
+				console.crlf();
+				// Get the selection prompt text from text.dat and replace the %u or %d with
+				// the number 1 (default option)
+				var selectPromptText = bbs.text(typeof(SelectItemWhich) != "undefined" ? SelectItemWhich : 503);
+				selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
+				console.mnemonics(selectPromptText);
+				// Get & process the selection from the user
+				var maxNum = optionNum - 1;
+				// TODO: Update to support multiple answers from the user
+				userInputNum = console.getnum(maxNum);
+				console.print("\1n");
 			}
-			console.crlf();
-			// Get the selection prompt text from text.dat and replace the %u or %d with
-			// the number 1 (default option)
-			var selectPromptText = bbs.text(typeof(SelectItemWhich) != "undefined" ? SelectItemWhich : 503);
-			selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
-			console.mnemonics(selectPromptText);
-			// Get & process the selection from the user
-			var maxNum = optionNum - 1;
-			// TODO: Update to support multiple answers from the user
-			var userInputNum = console.getnum(maxNum);
-			console.print("\1n");
+			else
+				userInputNum = pUserVoteNumber;
 			//if (userInputNum == 0) // The user just pressed enter to choose the default
 			//	userInputNum = 1;
 			if (userInputNum == -1) // The user chose Q to quit
@@ -873,76 +916,13 @@ function VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 			}
 		}
 	}
-	else
-	{
-		// The message is not a poll - Prompt for up/downvote
-		if ((typeof(MSG_UPVOTE) != "undefined") && (typeof(MSG_DOWNVOTE) != "undefined"))
-		{
-			var voteAttr = 0;
-			// Get text line 783 to prompt for voting
-			var textDatText = bbs.text(typeof(VoteMsgUpDownOrQuit) != "undefined" ? VoteMsgUpDownOrQuit : 783);
-			if (removeNLsFromVoteText)
-				textDatText = textDatText.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
-			console.print("\1n");
-			console.mnemonics(textDatText);
-			console.print("\1n");
-			// Using getAllowedKeyWithMode() instead of console.getkeys() so we
-			// can control the input mode better, so it doesn't output a CRLF
-			switch (getAllowedKeyWithMode("UDQ" + KEY_UP + KEY_DOWN, K_NOCRLF|K_NOSPIN))
-			{
-				case "U":
-				case KEY_UP:
-					voteAttr = MSG_UPVOTE;
-					break;
-				case "D":
-				case KEY_DOWN:
-					voteAttr = MSG_DOWNVOTE;
-					break;
-				case "Q":
-				default:
-					retObj.userQuit = true;
-					break;
-			}
-			// If the user voted, then save the user's vote in the attr property
-			// in the header
-			if (voteAttr != 0)
-				voteMsgHdr.attr = voteAttr;
-		}
-		else
-			retObj.errorMsg = "MSG_UPVOTE & MSG_DOWNVOTE are not defined";
-	}
 
 	// If the user hasn't quit and there is no error message, then save the vote
 	// message header
 	if (!retObj.userQuit && (retObj.errorMsg.length == 0))
 	{
-		retObj.savedVote = this.msgbase.vote_msg(voteMsgHdr);
-		// If the save was successful, then update
-		// this.hdrsForCurrentSubBoard with the updated
-		// message header (for the message that was read)
-		if (retObj.savedVote)
-		{
-			if (this.hdrsForCurrentSubBoardByMsgNum.hasOwnProperty(pMsgHdr.number))
-			{
-				var originalMsgIdx = this.hdrsForCurrentSubBoardByMsgNum[pMsgHdr.number];
-				if (typeof(this.msgbase.get_all_msg_headers) === "function")
-				{
-					var tmpHdrs = this.msgbase.get_all_msg_headers();
-					if (tmpHdrs.hasOwnProperty(pMsgHdr.number))
-					{
-						this.hdrsForCurrentSubBoard[originalMsgIdx] = tmpHdrs[pMsgHdr.number];
-						retObj.updatedHdr = pMsgHdr;
-						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("total_votes"))
-							retObj.updatedHdr.total_votes = this.hdrsForCurrentSubBoard[originalMsgIdx].total_votes;
-						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("upvotes"))
-							retObj.updatedHdr.upvotes = this.hdrsForCurrentSubBoard[originalMsgIdx].upvotes;
-						if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("tally"))
-							retObj.updatedHdr.tally = this.hdrsForCurrentSubBoard[originalMsgIdx].tally;
-					}
-				}
-			}
-		}
-		else // Failed to save the vote
+		retObj.savedVote = pMsgbase.vote_msg(voteMsgHdr);
+		if (!retObj.savedVote)
 			retObj.errorMsg = "Failed to save your vote";
 	}
 
@@ -977,7 +957,7 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	console.print(CenterText("\1n\1hSlyVote v\1c" + SLYVOTE_VERSION.replace(".", "\1b.\1c") + "\1n", fieldWidth));
 	// Write the "Registered to" text centered
 	console.gotoxy(41, 17);
-	console.print(CenterText("\1n\1h" + system.operator.substr + "\1n", fieldWidth));
+	console.print(CenterText("\1n\1h" + system.operator + "\1n", fieldWidth));
 	console.gotoxy(41, 18);
 	console.print(CenterText("\1n\1h" + system.name + "\1n", fieldWidth));
 	// Write the option numbers
