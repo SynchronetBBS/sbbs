@@ -46,3 +46,7 @@ if (typeof settings.max_messages !== 'number' || settings.max_messages < 0) {
 if (typeof settings.page_size !== 'number' || settings.page_size < 1) {
 	settings.page_size = 25;
 }
+
+if (typeof settings.forum_extended_ascii !== 'boolean') {
+	settings.forum_extended_ascii = true;
+}
