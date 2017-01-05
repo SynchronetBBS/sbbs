@@ -37,7 +37,7 @@ function required(mask) {
 
 function cleanParam(param) {
 	if (paramExists(param)) {
-		return http_request.query[param][0].replace(/[^\x20-\x7E]/g, '');
+		return http_request.query[param][0].replace(/[\x00-\x19\x7F]/g, '');
 	}
 	return "";
 }
