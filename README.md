@@ -53,6 +53,8 @@ A web interface for Synchronet BBS
 	refresh_interval = 60000
 	; External Programs (or entire sections) to exclude from the Games page
 	xtrn_blacklist = scfg,oneliner
+	; Use extended-ASCII characters when displaying forum messages
+	forum_extended_ascii = true
 ```
 - Add the following section to your *ctrl/services.ini* file:
 ```ini
