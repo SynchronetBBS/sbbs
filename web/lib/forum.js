@@ -775,7 +775,7 @@ function quotify(body) {
 }
 
 // Format message body for the web
-function formatMessage(body, ansi) {
+function formatMessage(body, ansi, exascii) {
 
     // Workaround for html_encode(body, true, false, false, false);
     // which causes a crash if body is empty
@@ -820,7 +820,7 @@ function formatMessage(body, ansi) {
 
         // Format for the web
         body = word_wrap(body, body.length);
-        body = html_encode(body, true, false, false, false);
+        body = html_encode(body, exascii, false, false, false);
         body = quotify(body);
         body = linkify(body);
         body = body.replace(/\r\n$/,'');
