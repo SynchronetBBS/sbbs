@@ -320,7 +320,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 		// This is a normal message
 		} else {
-			writeln(formatMessage(body));
+			writeln(formatMessage(body, false, settings.forum_extended_ascii));
 			writeln(strings.message.body.close);
 		}
 
