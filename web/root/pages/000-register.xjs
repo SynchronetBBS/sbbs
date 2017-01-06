@@ -113,6 +113,15 @@
 		</div>
 
 		<div class="form-group">
+			<label for="zipcode">Postal Code</label> 
+			<?xjs iconRequired(UQ_ADDRESS); ?>
+			<input type="text" data-minlength="3" maxlength="<?xjs write(LEN_ADDRESS); ?>" class="form-control" id="zipcode" name="zipcode" placeholder="10101"<?xjs write(required(UQ_ADDRESS)); ?>>
+			<span class="help-block">
+				Maximum of <?xjs write(LEN_ADDRESS); ?> characters
+			</span>
+		</div>
+
+		<div class="form-group">
 			<label for="location">Location</label> 
 			<?xjs iconRequired(UQ_LOCATION); ?>
 			<input type="text" data-minlength="1" maxlength="<?xjs write(LEN_LOCATION); ?>" class="form-control" id="location" name="location" placeholder="City, State"<?xjs write(required(UQ_LOCATION)); ?>>

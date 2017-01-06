@@ -24,6 +24,7 @@ var prepUser = {
 	name : '',
 	netmail : '',
 	address : '',
+	zipcode : '',
 	location : '',
 	phone : '',
 	birthdate : '',
@@ -169,12 +170,16 @@ if (required(UQ_LOCATION) &&
 if (required(UQ_ADDRESS) &&
 	(	!paramExists('address') ||
 		paramLength('address') < MIN_ADDRESS ||
-		paramLength('address') > LEN_ADDRESS
+		paramLength('address') > LEN_ADDRESS ||
+		!paramExists('zipcode') ||
+		paramLength('zipcode') < 3 ||
+		paramLength('zipcode') > LEN_ADDRESS
 	)
 ) {
-	reply.errors.push('Valid street address is required.');
+	reply.errors.push('Valid street address and postal code are required.');
 } else {
 	prepUser.address = cleanParam('address');
+	prepUser.zipcode = cleanParam('zipcode');
 }
 
 if (required(UQ_PHONE) &&
