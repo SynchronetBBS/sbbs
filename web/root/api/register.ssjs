@@ -189,11 +189,14 @@ if (required(UQ_PHONE) &&
 }
 
 if (required(UQ_SEX) &&
-	(!paramExists('gender') || paramLength('gender') != 1)
+	(	!paramExists('gender') ||
+		paramLength('gender') != 1 ||
+		['X','M','F','O'].indexOf(http_request.query.gender[0]) < 0
+	)
 ) {
 	reply.errors.push('Sex is required. Heh heh.');
 } else {
-	prepUser.gender = cleanParam('gender');
+	prepUser.gender = http_request.query.gender[0];
 }
 
 if (paramExists('birth') &&
