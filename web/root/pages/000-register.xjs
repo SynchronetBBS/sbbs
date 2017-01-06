@@ -142,40 +142,33 @@
 			<?xjs iconRequired(UQ_SEX); ?> <label>Gender</label>&nbsp;
 			<div class="radio">
 				<label>
-					<input type="radio" id="gender-withheld" name="gender-withheld" checked> Withheld 
+					<input type="radio" id="gender-withheld" name="gender" value="X" checked> Withheld 
 				</label>
 			</div>
 			<div class="radio">
 				<label>
-					<input type="radio" id="gender-male" name="gender-male"> Male 
+					<input type="radio" id="gender-male" name="gender" value="M"> Male 
 				</label>
 			</div>
 			<div class="radio">
 				<label>
-					<input type="radio" id="gender-female" name="gender-female"> Female
+					<input type="radio" id="gender-female" name="gender" value="F"> Female
 				</label>
 			</div>
 			<div class="radio">
 				<label>
-					<input type="radio" id="gender-other" name="gender-other"> Other 
+					<input type="radio" id="gender-other" name="gender" value="O"> Other 
 				</label>
 			</div>
 		</div>
 		<br>
 
-		<?xjs
-			if(system.newuser_password !== '') {
-				writeln('<div class="form-group">');
-				writeln(
-					'<label for="newuser-password">Registration password</label>'
-				);
-				writeln(
-					'<input type="password" id="newuser-password" ' +
-					'name="newuser-password" data-minlength="1" maxlength="8">'
-				);
-				writeln('</div>');
-			}
-		?>
+		<?xjs if(system.newuser_password !== '') { ?>
+		<div class="form-group">
+			<label for="newuser-password">Registration password</label>
+			<input type="password" id="newuser-password" name="newuser-password" data-minlength="1" maxlength="8">
+		</div>
+		<?xjs } ?>
 
 		<!-- Traps - leave these here. They will be hidden from users. -->
 		<input id="send-me-free-stuff" title="Don't fill this field" name="send-me-free-stuff" type="text">
