@@ -21,7 +21,7 @@ var reply = {
 var prepUser = {
 	alias : '',
 	handle : '',
-	realname : '',
+	name : '',
 	netmail : '',
 	address : '',
 	location : '',
@@ -152,7 +152,7 @@ if (required(UQ_REALNAME) &&
 ) {
 	reply.errors.push('Valid real name is required.');
 } else {
-	prepUser.realname = cleanParam('realname');
+	prepUser.name = cleanParam('realname');
 }
 
 if (required(UQ_LOCATION) &&
