@@ -5,6 +5,6 @@ f.open('w');
 //f.write(JSON.stringify(http_request.header));
 //f.write(JSON.stringify(http_request));
 f.writeln(JSON.stringify(http_request.post_data));
-f.writeln(JSON.stringify(http_request.query));
+f.writeln(http_request.query.payload[0]);
 f.writeln(http_request.header['x-hub-signature']);
 f.close();
