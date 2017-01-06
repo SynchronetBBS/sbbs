@@ -7,6 +7,14 @@ function a2h(str) {
     return hex;
 }
 
+function h2a(hex) {
+	var str = '';
+	for (var i = 0; i < hex.length; i += 2) {
+		str += ascii(parseInt(hex.substr(i, 2), 16));
+	}
+	return str;
+}
+
 function b2h(str) {
     if (typeof str !== 'string') str += '';
     var ret = '';
@@ -23,5 +31,6 @@ var f = new File(system.ctrl_dir + '../github.txt');
 f.open('w');
 f.writeln(b2h(hmac_sha1(settings.github_secret, a2h(payload))));
 f.writeln(b2h(hmac_sha1(settings.github_secret, payload)));
-f.writeln(http_request.header['x-hub-signature']);
+f.writeln(h2a(b2h(hmac_sha1(settings.github_secret, payload))));
+f.writeln(http_request.header['x-hub-signature'].split('=')[1]);
 f.close();
