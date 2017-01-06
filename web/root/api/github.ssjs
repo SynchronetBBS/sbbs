@@ -1,6 +1,6 @@
 load(system.exec_dir + '../web/lib/init.js');
 
-var cc = new CryptContext('HMAC-SHA1');
+var cc = new CryptContext(CryptContext.ALGO['HMAC-SHA1']);
 cc.set_key(settings.github_secret);
 var secret = cc.decrypt(http_request.header['x-hub-signature'].split('=')[1]);
 
