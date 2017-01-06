@@ -29,4 +29,5 @@ var f = new File(system.ctrl_dir + '../github.txt');
 f.open('w');
 f.writeln(http_request.header['x-hub-signature'].split('=')[1]);
 f.writeln(payload);
+f.writeln(':D');
 f.close();
