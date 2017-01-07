@@ -76,6 +76,11 @@ pre.list {
 	border : none;
 }
 
+.list-group-item.sidebar {
+	overflow : hidden;
+	word-wrap : break-word;
+}
+
 .icon {
 	margin: 0 1em 1em 0;
 }
