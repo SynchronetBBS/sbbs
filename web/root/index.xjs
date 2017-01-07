@@ -74,77 +74,6 @@
 		}
 	}
 
-	function writeAuthMenu() {
-		if (user.alias === settings.guest || user.number < 1) {
-			if (settings.user_registration) {
-				writeln(
-					'<li><a href="./?page=000-register.xjs">Register</a></li>'
-				);
-			}
-			writeln(
-				'<li class="dropdown">' +
-				'<a	href="#" ' +
-					'class="dropdown-toggle" ' +
-					'data-toggle="dropdown" ' +
-					'role="button" ' +
-					'aria-haspopup="true" ' +
-					'aria-expanded="false">' +
-				'Log in<span class="caret"></span></a>' +
-				'<div id="login-form" ' +
-					'class="dropdown-menu" ' +
-					'style="padding:15px; padding-bottom: 0px;"' +
-				'>' +
-				'<form id="form-login">' +
-				'<label for="input-username" class="sr-only">Username</label>' +
-				'<input id="input-username" ' +
-					'title="Username" ' +
-					'type="text" ' +
-					'class="dropdown form-control" ' +
-					'placeholder="Username"' +
-				'>' +
-				'<label for="input-password" class="sr-only">Password</label>' +
-				'<input id="input-password" ' +
-					'title="Password" ' +
-					'type="password" ' +
-					'class="dropdown form-control" ' +
-					'placeholder="Password"' +
-				'>' +
-				'<input id="button-login" ' +
-					'class="dropdown btn btn-primary" ' +
-					'type="submit" ' +
-					'value="Log in"' +
-					'>' +
-				'</form>' +
-				'</div>' +
-				'</li>'
-			);
-		} else {
-			writeln(
-				'<li class="dropdown">' +
-				'<a	href="#" ' +
-					'class="dropdown-toggle" ' +
-					'data-toggle="dropdown" ' +
-					'role="button" ' +
-					'aria-haspopup="true" ' +
-					'aria-expanded="false">' +
-					user.alias + 
-					' <span class="badge scanned" title="Unread mail" ' +
-					'id="badge-unread-mail"></span>' +
-					' <span class="caret"></span>' +
-				'</a>' +
-				'<ul class="dropdown-menu">' +
-				'<li><a href="./?page=000-mail.ssjs">Mail ' +
-				'<span class="badge scanned" ' +
-					'title="Unread mail" ' +
-					'id="badge-unread-mail-inner">' +
-				'</span>' +
-				'</a></li>' +
-				'<li><a id="button-logout" href="#">Log out</a></li>' +
-				'</ul>'
-			);
-		}
-	}
-
 	function writePage() {
 		var ini = getWebCtrl();
 		if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
@@ -208,7 +137,45 @@
 				<div id="navbar" class="collapse navbar-collapse">
 					<ul class="nav navbar-nav"><?xjs writeNavBar(); ?></ul>
 					<ul class="nav navbar-nav navbar-right">
-						<?xjs writeAuthMenu(); ?>
+						<?xjs if (user.alias === settings.guest || user.number < 1) { ?>
+							<?xjs if (settings.user_registration) { ?>
+							<li><a href="./?page=000-register.xjs">Register</a></li>
+							<?xjs } ?>
+							<li class="dropdown">
+								<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+									Log in
+									<span class="caret"></span>
+								</a>
+								<div id="login-form" class="dropdown-menu" style="padding:15px; padding-bottom:0px;">
+									<form id="form-login">
+										<label for="input-username" class="sr-only">Username</label>
+										<input id="input-username" title="Username" type="text" class="dropdown form-control" placeholder="Username">
+										<label for="input-password" class="sr-only">Password</label>
+										<input id="input-password" title="Password" type="password" class="dropdown form-control" placeholder="Password">
+										<input id="button-login" class="dropdown btn btn-primary" type="submit" value="Log in">
+									</form>
+								</div>
+							</li>
+						<?xjs } else { ?>
+							<li class="dropdown">
+								<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+									<?xjs write(user.alias); ?>
+									<span class="badge scanned" title="Unread mail" id="badge-unread-mail"></span>
+									<span class="caret"></span>
+								</a>
+								<ul class="dropdown-menu">
+									<li>
+										<a href="./?page=000-mail.ssjs">
+											Mail
+											<span class="badge scanned" title="Unread mail" id="badge-unread-mail-inner"></span>
+										</a>
+									</li>
+									<li>
+										<a id="button-logout" href="#">Log out</a>
+									</li>
+								</ul>
+							</li>
+						<?xjs } ?>
 					</ul>
 				</div>
 		  </div>
