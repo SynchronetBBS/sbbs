@@ -9,6 +9,7 @@ A web interface for Synchronet BBS
 
 - This web interface has been tested with Synchronet BBS 3.17a.  It will probably work with later versions.
 - In addition to updating your Synchronet build, be sure to update your the javascript modules in your *exec* and *exec/load* directories as well.  You can get them from [the Synchronet CVS repository](http://cvs.synchro.net/) or in the [sbbs_run.zip archive](http://vert.synchro.net/Synchronet/sbbs_run.zip).
+	- Do *not* simply unzip sbbs_run.zip overtop your existing sbbs directory structure.  This may overwrite much of your local configuration.  Extract the archive elsewhere and copy things over piecemeal as needed.
 
 ###Quick start
 
@@ -42,9 +43,6 @@ A web interface for Synchronet BBS
 	web_directory = ../web
 	; Path to a .ans file to use as the ftelnet splash screen
 	ftelnet_splash = ../text/synch.ans
-	; Only load this many messages from each sub (default: 0 for all)
-	; (If you get 'Out of memory' errors when viewing subs, tweak this setting)
-	max_messages = 0
 	; Enable or disable keyboard navigation in message threads
 	keyboard_navigation = false
 	; Display upvote/downvote buttons in message threads (3.17)
@@ -53,8 +51,6 @@ A web interface for Synchronet BBS
 	refresh_interval = 60000
 	; External Programs (or entire sections) to exclude from the Games page
 	xtrn_blacklist = scfg,oneliner
-	; Use extended-ASCII characters when displaying forum messages
-	forum_extended_ascii = true
 ```
 - Add the following section to your *ctrl/services.ini* file:
 ```ini
@@ -103,6 +99,24 @@ if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (co
 
 - Ensure that the *guest* user specified in the [web] section of *ctrl/modopts.ini* exists and has only the permissions that you want an unauthenticated visitor from the web to have.  This user probably shouldn't be able to post messages, and definitely shouldn't be able to post to networked message areas.
 - Customise the *xtrn_blacklist* setting in the [web] section of *ctrl/modopts.ini*.  This is a comma-separated list of *internal codes* of any programs (or Online Program Sections) that you wish to *exclude* from your games page.
+
+####Additional / advanced settings
+
+- The following *optional* settings can be added to the [web] section of your *ctrl/modopts.ini* file:
+
+```ini
+	; Use extended-ASCII characters when displaying forum messages (default: true)
+	forum_extended_ascii = false
+	; Only load this many messages from each sub (default: 0 for all)
+	max_messages = 500
+	; Connect to the websocket proxies on ports other than specified in ctrl/services.ini
+	websocket_telnet_port = 1124
+	websocket_rlogin_port = 1514
+```
+
+- Setting *forum_extended_ascii* to *false* may resolve problems with displaying UTF-8 encoded characters; character codes > 127 will not be assumed to be extended-ASCII references to CP437 characters.
+- Tweaking *max_messages* may improve forum performance or resolve 'Out of memory' errors, if you see any of those when browsing the forum
+- Normally, fTelnet will try to connect to the websocket proxies based on information from *ctrl/services.ini*.  In some situations (eg. when using an HTTPS reverse proxy) it may be necessary to connect to another port unknown to Synchronet.
 
 ###Customization
 
