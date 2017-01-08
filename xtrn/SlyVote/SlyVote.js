@@ -156,9 +156,9 @@ function DoMainMenu()
 	console.clear("\1n");
 	var mainScrRetObj = DisplaySlyVoteMainVoteScreen(false);
 	var voteOptsMenu = new DDLightbarMenu(mainScrRetObj.optMenuX, mainScrRetObj.optMenuY, 17, 5);
-	voteOptsMenu.Add("Vote On A Booth", "vote", "1");
-	voteOptsMenu.Add("Answer All Booths", "answerAll", "2");
-	voteOptsMenu.Add("Create A Booth", "create", "3");
+	voteOptsMenu.Add("Vote On A Topic", "vote", "1");
+	voteOptsMenu.Add("Answer All Topics", "answerAll", "2");
+	voteOptsMenu.Add("Create A Topic", "create", "3");
 	voteOptsMenu.Add("View Results", "viewResults", "4");
 	voteOptsMenu.Add("Quit To BBS", "quit", "5");
 	voteOptsMenu.colors.itemColor = "\1n\1w";
@@ -173,7 +173,9 @@ function DoMainMenu()
 	}
 	else if (userChoice == "create")
 	{
-		
+		console.print("\1n");
+		console.gotoxy(1, console.screen_rows);
+		bbs.exec("?postpoll.js");
 	}
 	else if (userChoice == "viewResults")
 	{
