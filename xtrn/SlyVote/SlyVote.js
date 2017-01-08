@@ -40,7 +40,7 @@ if (!console.term_supports(USER_ANSI))
 
 // Version information
 var SLYVOTE_VERSION = "0.01 Beta";
-var SLYVOTE_DATE = "2017-01-04";
+var SLYVOTE_DATE = "2017-01-07";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -252,8 +252,27 @@ function ChooseVoteTopic()
 			console.gotoxy(18, pleaseSelectTextRow);
 			printf("%" + strip_ctrl(pleaseSectTopicText).length + "s", "");
 			var voteRetObj = VoteOnTopic(gSubBoardCode, userChoice, startCol, listTopRow, textLen, menuHeight);
-			// TODO: Check for voteRetObj.errorMsg, etc.
 			drawTopicsMenu = true;
+			if (voteRetObj.errorMsg.length > 0)
+			{
+				var errorMsgRow = 3;
+				console.gotoxy(1, errorMsgRow);
+				if (voteRetObj.mnemonicsRequiredForErrorMsg)
+				{
+					console.gotoxy(1, errorMsgRow);
+					console.mnemonics(voteRetObj.errorMsg);
+					mswait(ERROR_PAUSE_WAIT_MS);
+					console.gotoxy(1, errorMsgRow);
+					printf("\1n%" + console.screen_columns + "s", "");
+				}
+				else
+				{
+					console.print("\1n\1y\1h" + voteRetObj.errorMsg);
+					mswait(ERROR_PAUSE_WAIT_MS);
+					console.gotoxy(1, errorMsgRow);
+					printf("\1n%" + voteRetObj.errorMsg.length + "s", "");
+				}
+			}
 		}
 		else // The user chose to exit the topics menu
 			nextProgramState = MAIN_MENU;
@@ -274,86 +293,98 @@ function ChooseVoteTopic()
 //
 // Return value: An object containing the following properties:
 //               errorMsg: A string containing a message on error, or an empty string on success
+//               mnemonicsRequiredForErrorMsg: Whether or not mnemonics is required to display the error message
 function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, pMenuHeight)
 {
 	var retObj = {
 		errorMsg: "",
+		mnemonicsRequiredForErrorMsg: false,
 		nextProgramState: VOTING_ON_A_TOPIC
 	};
-
+	
 	// Open the chosen sub-board
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
 	{
-		var msgHdr = msgbase.get_msg_header(false, pMsgNum, true);
-		if (msgHdr != null)
+		if (!HasUserVotedOnMsg(pMsgNum, pSubBoardCode, msgbase, user))
 		{
-			var pollTextAndOpts = GetPollTextAndOpts(msgHdr);
-			// Print the poll question text
-			console.gotoxy(1, pStartRow-4);
-			//printf("\1n\1c%-" + console.screen_columns + "s", msgHdr.subject.substr(0, console.screen_columns));
-			var pollSubject = msgHdr.subject.substr(0, console.screen_columns);
-			console.print("\1n\1c" + pollSubject);
-			// Output up to the first 3 poll comment lines
-			//console.print("\1n");
-			var i = 0;
-			var commentStartRow = pStartRow - 3;
-			for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
+			var msgHdr = msgbase.get_msg_header(false, pMsgNum, true);
+			if (msgHdr != null)
 			{
-				console.gotoxy(1, row);
-				console.print(pollTextAndOpts.commentLines[i++].substr(0, console.screen_columns));
-			}
-			// Create the poll options menu, and show it and let the user choose an option
-			var optionsMenu = new DDLightbarMenu(pStartCol, pStartRow, pMenuWidth, pMenuHeight);
-			for (i = 0; i < pollTextAndOpts.options.length; ++i)
-				optionsMenu.Add(pollTextAndOpts.options[i], i);
-			optionsMenu.colors.itemColor = "\1c";
-			optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
-			// TODO: If the poll has already been voted on by the user, then show it before inputting
-			// the user's choice.
-			var userChoice = optionsMenu.GetVal(true);
-			// Return value: An object with the following properties:
-			//               BBSHasVoteFunction: Boolean - Whether or not the system has
-			//                                   the vote_msg function
-			//               savedVote: Boolean - Whether or not the vote was saved
-			//               userQuit: Boolean - Whether or not the user quit and didn't vote
-			//               errorMsg: String - An error message, if something went wrong
-			//               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
-			//               updatedHdr: The updated message header containing vote information.
-			//                           If something went wrong, this will be null.
-			var voteRetObj = VoteOnMessage(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
-			// If there was an error, then show it.  Otherwise, show a success message.
-			var firstLineEraseLength = pollSubject.length;
-			console.gotoxy(1, pStartRow-4);
-			printf("\1n%" + pollSubject.length + "s", "");
-			console.gotoxy(1, pStartRow-4);
-			if (voteRetObj.errorMsg.length > 0)
-			{
-				var voteErrMsg = voteRetObj.errorMsg.substr(0, console.screen_columns - 2);
-				firstLineEraseLength = voteErrMsg.length;
-				console.print("\1y\1h* " + voteErrMsg);
-				mswait(ERROR_PAUSE_WAIT_MS);
+				var pollTextAndOpts = GetPollTextAndOpts(msgHdr);
+				// Print the poll question text
+				console.gotoxy(1, pStartRow-4);
+				//printf("\1n\1c%-" + console.screen_columns + "s", msgHdr.subject.substr(0, console.screen_columns));
+				var pollSubject = msgHdr.subject.substr(0, console.screen_columns);
+				console.print("\1n\1c" + pollSubject);
+				// Output up to the first 3 poll comment lines
+				//console.print("\1n");
+				var i = 0;
+				var commentStartRow = pStartRow - 3;
+				for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
+				{
+					console.gotoxy(1, row);
+					console.print(pollTextAndOpts.commentLines[i++].substr(0, console.screen_columns));
+				}
+				// Create the poll options menu, and show it and let the user choose an option
+				var optionsMenu = new DDLightbarMenu(pStartCol, pStartRow, pMenuWidth, pMenuHeight);
+				for (i = 0; i < pollTextAndOpts.options.length; ++i)
+					optionsMenu.Add(pollTextAndOpts.options[i], i);
+				optionsMenu.colors.itemColor = "\1c";
+				optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
+				// TODO: If the poll has already been voted on by the user, then show it before inputting
+				// the user's choice.
+				var userChoice = optionsMenu.GetVal(true);
+				// Return value: An object with the following properties:
+				//               BBSHasVoteFunction: Boolean - Whether or not the system has
+				//                                   the vote_msg function
+				//               savedVote: Boolean - Whether or not the vote was saved
+				//               userQuit: Boolean - Whether or not the user quit and didn't vote
+				//               errorMsg: String - An error message, if something went wrong
+				//               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
+				//               updatedHdr: The updated message header containing vote information.
+				//                           If something went wrong, this will be null.
+				var voteRetObj = VoteOnMessage(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
+				// If there was an error, then show it.  Otherwise, show a success message.
+				var firstLineEraseLength = pollSubject.length;
+				console.gotoxy(1, pStartRow-4);
+				printf("\1n%" + pollSubject.length + "s", "");
+				console.gotoxy(1, pStartRow-4);
+				if (voteRetObj.errorMsg.length > 0)
+				{
+					var voteErrMsg = voteRetObj.errorMsg.substr(0, console.screen_columns - 2);
+					firstLineEraseLength = voteErrMsg.length;
+					console.print("\1y\1h* " + voteErrMsg);
+					mswait(ERROR_PAUSE_WAIT_MS);
+				}
+				else
+				{
+					console.print("\1cYour vote was successfully saved.");
+					mswait(ERROR_PAUSE_WAIT_MS);
+				}
+
+				// Before returning, erase the poll question text and comment lines from the screen
+				console.print("\1n");
+				console.gotoxy(1, pStartRow-4);
+				printf("%" + firstLineEraseLength + "s", "");
+				i = 0;
+				for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
+				{
+					console.gotoxy(1, row);
+					var pollCommentLine = pollTextAndOpts.commentLines[i++].substr(0, console.screen_columns);
+					printf("%" + pollCommentLine.length + "s", "");
+				}
 			}
 			else
-			{
-				console.print("\1cYour vote was successfully saved.");
-				mswait(ERROR_PAUSE_WAIT_MS);
-			}
-
-			// Before returning, erase the poll question text and comment lines from the screen
-			console.print("\1n");
-			console.gotoxy(1, pStartRow-4);
-			printf("%" + firstLineEraseLength + "s", "");
-			i = 0;
-			for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
-			{
-				console.gotoxy(1, row);
-				var pollCommentLine = pollTextAndOpts.commentLines[i++].substr(0, console.screen_columns);
-				printf("%" + pollCommentLine.length + "s", "");
-			}
+				retObj.errorMsg = "Unable to retrieve the topic options";
 		}
 		else
-			retObj.errorMsg = "Unable to retrieve the topic options";
+		{
+			// The user has already voted
+			retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
+			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
+			retObj.mnemonicsRequiredForErrorMsg = true;
+		}
 
 		msgbase.close();
 	}
@@ -527,6 +558,31 @@ function HasUserVotedOnMsg(pMsgNum, pSubBoardCode, pMsgbase, pUser)
 			else
 				votes = pMsgbase.how_user_voted(pMsgNum, (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias);
 			userHasVotedOnMsg = (votes > 0);
+			/*
+			if (votes > 0)
+			{
+				var userVotedMaxVotes = false;
+				if ((votes == 0) || (votes == 1))
+					userVotedMaxVotes = (votes == 3); // (1 << 0) | (1 << 1);
+				else
+				{
+					var msgHdr = pMsgbase.get_msg_header(false, pMsgNum);
+					if (msgHdr != null)
+					{
+						userVotedMaxVotes = true;
+						for (var voteIdx = 0; voteIdx <= numVotes; ++voteIdx)
+						{
+							if (votes && (1 << voteIdx) == 0)
+							{
+								userVotedMaxVotes = false;
+								break;
+							}
+						}
+					}
+				}
+				userHasVotedOnMsg = userVotedMaxVotes;
+			}
+			*/
 		}
 	}
 	return userHasVotedOnMsg;
@@ -1081,8 +1137,9 @@ function GetVoteTopicHdrs(pSubBoardCode)
 		{
 			if ((msgHdrs[prop].type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
 			{
-				// TODO: See if the logged-in user has already voted on this?
-				retObj.msgHdrs.push(msgHdrs[prop]);
+				// If the user has not already voted on the message, then add the header
+				if (!HasUserVotedOnMsg(msgHdrs[prop].number, pSubBoardCode, msgbase, user))
+					retObj.msgHdrs.push(msgHdrs[prop]);
 			}
 		}
 
