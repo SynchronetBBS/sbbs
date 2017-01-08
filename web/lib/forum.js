@@ -572,7 +572,6 @@ function deleteMessage(sub, number) {
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return false;
     var header = msgBase.get_msg_header(number);
-	log(JSON.stringify(header));
     if (header === null) return false;
     if (sub === 'mail' &&
         (header.to_ext == user.number || header.from_ext == user.number)
@@ -585,6 +584,25 @@ function deleteMessage(sub, number) {
     }
     msgBase.close();
     return ret;
+}
+
+function deleteMail(numbers) {
+    if (typeof numbers === 'undefined' || !Array.isArray(numbers)) return false;
+    var msgBase = new MsgBase('mail');
+    if (!msgBase.open()) return false;
+    numbers.forEach(
+        function (e) {
+            e = parseInt(e);
+            if (isNaN(e) || e < msgBase.first_msg || e > msgBase.last_msg) return;
+            var header = msgBase.get_msg_header(e);
+            if (header === null) return;
+            if (header.to_ext == user.number || header.from_ext == user.number) {
+                msgBase.remove_msg(e);
+            }
+        }
+    );
+    msgBase.close();
+    return true;
 }
 
 function voteMessage(sub, number, up) {

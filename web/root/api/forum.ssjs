@@ -23,42 +23,6 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 
         switch(http_request.query.call[0].toLowerCase()) {
 
-            case 'list-groups':
-                reply = listGroups();
-                break;
-            
-            case 'list-subs':
-                if (typeof http_request.query.group !== 'undefined') {
-                    reply = listSubs(http_request.query.group[0]);
-                }
-                break;
-            
-            case 'list-threads':
-                if (typeof http_request.query.sub !== 'undefined') {
-                    reply = listThreads(http_request.query.sub[0]);
-                }
-                break;
-            
-            case 'get-group-unread-count':
-                if (typeof http_request.query.group !== 'undefined') {
-                    http_request.query.group.forEach(
-                        function(group) {
-                            reply[group] = getGroupUnreadCount(group);
-                        }
-                    );
-                }
-                break;
-
-            case 'get-sub-unread-count':
-                if (typeof http_request.query.sub !== 'undefined') {
-                    http_request.query.sub.forEach(
-                        function(sub) {
-                            reply[sub] = getSubUnreadCount(sub);
-                        }
-                    );
-                }
-                break;
-
             case 'get-mail-unread-count':
                 reply.count = getMailUnreadCount();
                 break;
@@ -113,6 +77,14 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                         http_request.query.sub[0],
                         http_request.query.number[0]
                     );
+                } else {
+                    reply.success = false;
+                }
+                break;
+
+            case 'delete-mail':
+                if (typeof http_request.query.number !== 'undefined') {
+                    reply.success = deleteMail(http_request.query.number);
                 } else {
                     reply.success = false;
                 }
@@ -188,7 +160,9 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 
     // Unauthenticated calls
     if (!handled) {
+    
         switch(http_request.query.call[0].toLowerCase()) {
+
             case 'get-thread-votes':
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.id !== 'undefined'
@@ -202,11 +176,13 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     }
                 }
                 break;
+            
             case 'get-sub-votes':
                 if (typeof http_request.query.sub !== 'undefined') {
                     reply = getVotesInThreads(http_request.query.sub[0]);
                 }
                 break;
+            
             case 'get-poll-results':
                 if (typeof http_request.query.sub !== 'undefined' &&
                     typeof http_request.query.id !== 'undefined'
@@ -217,9 +193,57 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                     );
                 }
                 break;
+
+            case 'list-groups':
+                reply = listGroups();
+                break;
+            
+            case 'list-subs':
+                if (typeof http_request.query.group !== 'undefined') {
+                    reply = listSubs(http_request.query.group[0]);
+                }
+                break;
+            
+            case 'list-threads':
+                if (typeof http_request.query.sub !== 'undefined' &&
+                    typeof http_request.query.offset !== 'undefined'
+                ) {
+                    if (typeof http_request.query.count !== 'undefined') {
+                        var count = http_request.query.count[0];
+                    }
+                    reply = listThreads(
+                        http_request.query.sub[0],
+                        http_request.query.offset[0],
+                        count || settings.page_size
+                    );
+                }
+                break;
+            
+            case 'get-group-unread-count':
+                if (typeof http_request.query.group !== 'undefined') {
+                    http_request.query.group.forEach(
+                        function(group) {
+                            reply[group] = getGroupUnreadCount(group);
+                        }
+                    );
+                }
+                break;
+
+            case 'get-sub-unread-count':
+                if (typeof http_request.query.sub !== 'undefined') {
+                    http_request.query.sub.forEach(
+                        function(sub) {
+                            reply[sub] = getSubUnreadCount(sub);
+                        }
+                    );
+                }
+                break;
+            
             default:
                 break;
+        
         }
+    
     }
 
 }
