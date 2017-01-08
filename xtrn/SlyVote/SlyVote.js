@@ -133,6 +133,9 @@ while (gContinueSlyVote)
 		case VOTING_ON_A_TOPIC:
 			gProgramState = ChooseVoteTopic();
 			break;
+		case VIEWING_VOTE_RESULTS:
+			gProgramState = ViewVoteResults(gSubBoardCode);
+			break;
 		case EXIT_SLYVOTE:
 			gContinueSlyVote = false;
 			break;
@@ -148,6 +151,7 @@ while (gContinueSlyVote)
 // Helper functions
 ////////////////////////////////////////////////////////////
 
+var gMainMenu = null;
 function DoMainMenu()
 {
 	gProgramState = MAIN_MENU;
@@ -155,16 +159,19 @@ function DoMainMenu()
 	// Display the SlyVote screen and menu of choices
 	console.clear("\1n");
 	var mainScrRetObj = DisplaySlyVoteMainVoteScreen(false);
-	var voteOptsMenu = new DDLightbarMenu(mainScrRetObj.optMenuX, mainScrRetObj.optMenuY, 17, 5);
-	voteOptsMenu.Add("Vote On A Topic", "vote", "1");
-	voteOptsMenu.Add("Answer All Topics", "answerAll", "2");
-	voteOptsMenu.Add("Create A Topic", "create", "3");
-	voteOptsMenu.Add("View Results", "viewResults", "4");
-	voteOptsMenu.Add("Quit To BBS", "quit", "5");
-	voteOptsMenu.colors.itemColor = "\1n\1w";
-	voteOptsMenu.colors.selectedItemColor = "\1n\1" + "4\1w\1h";
+	if (gMainMenu == null)
+	{
+		gMainMenu = new DDLightbarMenu(mainScrRetObj.optMenuX, mainScrRetObj.optMenuY, 17, 5);
+		gMainMenu.Add("Vote On A Topic", "vote", "1");
+		gMainMenu.Add("Answer All Topics", "answerAll", "2");
+		gMainMenu.Add("Create A Topic", "create", "3");
+		gMainMenu.Add("View Results", "viewResults", "4");
+		gMainMenu.Add("Quit To BBS", "quit", "5");
+		gMainMenu.colors.itemColor = "\1n\1w";
+		gMainMenu.colors.selectedItemColor = "\1n\1" + "4\1w\1h";
+	}
 	// Get the user's choice and take appropriate action
-	var userChoice = voteOptsMenu.GetVal(true);
+	var userChoice = gMainMenu.GetVal(true);
 	if (userChoice == "vote")
 		nextProgramState = VOTING_ON_A_TOPIC;
 	else if (userChoice == "answerAll")
@@ -178,9 +185,7 @@ function DoMainMenu()
 		bbs.exec("?postpoll.js");
 	}
 	else if (userChoice == "viewResults")
-	{
-		
-	}
+		nextProgramState = VIEWING_VOTE_RESULTS;
 	else if (userChoice == "quit")
 		nextProgramState = EXIT_SLYVOTE;
 
@@ -1151,4 +1156,12 @@ function GetVoteTopicHdrs(pSubBoardCode)
 		retObj.errorMsg = "Failed to open the messagebase";
 
 	return retObj;
+}
+
+function ViewVoteResults(pSubBoardCode)
+{
+	var nextProgramState = MAIN_MENU;
+
+
+	return nextProgramState;
 }

@@ -540,6 +540,7 @@ function DDLightbarMenu_GetVal(pDraw)
 					if (userInput == this.items[i].hotkey)
 					{
 						retVal = this.items[i].retval;
+						this.selectedItemIdx = i;
 						continueOn = false;
 						break;
 					}
