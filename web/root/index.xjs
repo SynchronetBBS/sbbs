@@ -141,7 +141,7 @@
 								</a>
 								<ul class="dropdown-menu">
 									<li>
-										<a href="./?page=000-mail.ssjs">
+										<a href="./?page=000-mail.xjs">
 											Mail
 											<span class="badge scanned" title="Unread mail" id="badge-unread-mail-inner"></span>
 										</a>
