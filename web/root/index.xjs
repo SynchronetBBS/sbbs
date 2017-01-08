@@ -13,46 +13,6 @@
 		: file_getname(http_request.query.page[0])
 	);
 
-	function writeNavBar() {
-		var pages = getPages();
-		var primary = [];
-		var secondary = [];
-		pages.forEach(
-			function (e) { (e.primary ? primary : secondary).push(e); }
-		);
-		primary.forEach(
-			function (p) {
-				writeln(
-					'<li' + (p.page === page ? ' class="active"' : '') + '>' +
-					'<a href="./?page=' + p.page + '">' + p.title +	'</a></li>'
-				);
-			}
-		);
-		if (secondary.length > 0) {
-			writeln(
-				'<li class="dropdown">' +
-				'<a	href="#" ' +
-					'class="dropdown-toggle" ' +
-					'data-toggle="dropdown" ' +
-					'role="button" aria-haspopup="true" ' +
-					'aria-expanded="false">' +
-					'More<span class="caret"></span>' +
-				'</a>' +
-				'<ul class="dropdown-menu">'
-			);
-			secondary.forEach(
-				function (p) {
-					writeln(
-						'<li' +	(p.page === page ? ' class="active"' : '') + '>' +
-						'<a href="./?page=' + p.page + '">' + p.title + '</a>' +
-						'</li>'
-					);
-				}
-			);
-			writeln('</ul></li>');
-		}
-	}
-
 	function writePage() {
 		var ini = getWebCtrl();
 		if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
@@ -61,7 +21,6 @@
 	}
 
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -121,7 +80,36 @@
 				</div>
 				<div id="navbar" class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
-						<?xjs writeNavBar(); ?>
+						<?xjs
+							var _primary = [];
+							var _secondary = [];
+							getPages().forEach(function (e) { (e.primary ? _primary : _secondary).push(e); });
+							 _primary.forEach(function (e) {
+						?>
+							<li<?xjs if (e.page === page) write(' class="active"'); ?>>
+								<a href="./?page=<?xjs write(e.page); ?>">
+									<?xjs write(e.title); ?>
+								</a>
+							</li>
+						<?xjs
+							});
+							if (_secondary.length > 0) {
+						?>
+							<li class="dropdown">
+								<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+									More<span class="caret"></span>
+								</a>
+								<ul class="dropdown-menu">
+									<?xjs _secondary.forEach(function (e) { ?>
+										<li <?xjs if (e.page === page) write('class="active"'); ?>>
+											<a href="./?page=<?xjs write(e.page); ?>">
+												<?xjs write(e.title); ?>
+											</a>
+										</li>
+									<?xjs }); ?>
+								</ul>
+							</li>
+						<?xjs } ?>
 					</ul>
 					<ul class="nav navbar-nav navbar-right">
 						<?xjs if (user.alias === settings.guest || user.number < 1) { ?>
@@ -132,8 +120,7 @@
 							<?xjs } ?>
 							<li class="dropdown">
 								<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-									Log in
-									<span class="caret"></span>
+									Log in<span class="caret"></span>
 								</a>
 								<div id="login-form" class="dropdown-menu" style="padding:15px; padding-bottom:0px;">
 									<form id="form-login">
@@ -171,9 +158,7 @@
 		</nav>
 
 		<div class="container">
-			
 			<div class="row row-offcanvas row-offcanvas-right">
-
 				<div class="col-xs-12 col-sm-9">
 					<p class="pull-right visible-xs">
 						<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">
@@ -182,19 +167,14 @@
 					</p>
 					<?xjs writePage(); ?>
 				</div>
-
 				<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">
 					<?xjs writeSidebarModules(); ?>
 				</div>
-
 			</div>
-
 		  	<hr>
-			
 			<footer>
 			<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
 			</footer>
-
 		</div>
 
 		<script src="./js/offcanvas.js"></script>
