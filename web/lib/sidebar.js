@@ -1,15 +1,20 @@
+function getFileContents(file) {
+	var ret = '';
+	var f = new File(file);
+	if (f.open('r')) {
+		ret = f.read();
+		f.close();
+	}
+	return ret;
+}
+
 function getSidebarModules() {
-	var sidebarModules = [];
-	var d = directory(settings.web_root + 'sidebar/*');
-	d.forEach(
-		function (item) {
-			if (file_isdir(item)) return;
-			var fn = file_getname(item);
-			// Check webctrl.ini
-			sidebarModules.push(fn);
-		}
+	return directory(settings.web_root + 'sidebar/*').reduce(
+		function (a, c) {
+			if (!file_isdir(c)) a.push(file_getname(c));
+			return a;
+		}, []
 	);
-	return sidebarModules;
 }
 
 function getSidebarModule(module) {
@@ -21,26 +26,16 @@ function getSidebarModule(module) {
 	switch (ext) {
 		case '.SSJS':
 			if (ext === '.SSJS' && module.search(/\.xjs\.ssjs$/i) >= 0) break;
-			load(module, true);
+			load({}, module, true);
 			break;
 		case '.XJS':
-			load(xjs_compile(module), true);
+			load({}, xjs_compile(module), true);
 			break;
 		case '.HTML':
-			var f = new File(module);
-			f.open('r');
-			if (f.is_open) {
-				ret = f.read();
-				f.close();
-			}
+			ret = getFileContents(module);
 			break;
 		case '.TXT':
-			var f = new File(module);
-			f.open();
-			if (f.is_open) {
-				ret = '<pre>' + f.read() + '</pre>';
-				f.close();
-			}
+			ret = '<pre>' + getFileContents(module) + '</pre>';
 			break;
 		default:
 			break;
