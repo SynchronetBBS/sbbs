@@ -1,0 +1,102 @@
+<!--HIDDEN:Mail-->
+
+<?xjs
+
+if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
+if (user.number == 0 || user.alias == settings.guest) exit();
+
+load('sbbsdefs.js');
+load(system.exec_dir + '../web/lib/init.js');
+load(settings.web_lib + 'forum.js');
+
+function sent() {
+	if (typeof http_request.query.sent === 'undefined') return false;
+	if (http_request.query.sent[0] == '0') return false;
+	return true;
+}
+
+?>
+
+<?xjs function writeMessage(header) { ?>
+	<li id="li-<?xjs write(header.number); ?>" class="list-group-item mail striped <?xjs write(header.attr&MSG_READ ? 'read' : 'unread'); ?>">
+		<div class="row">
+			<div class="col-sm-1">
+				<div class="checkbox">
+					<label class="checkbox-inline">
+						<input id="check-<?xjs write(header.number); ?>" type="checkbox" class="mail-select">
+					</label>
+				</div>
+			</div>
+			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<?xjs write(header.number); ?>)">
+				<?xjs write(!sent() ? 'From' : 'To'); ?>: 
+				<strong><?xjs write(!sent() ? header.from : header.to); ?></strong> 
+				on <?xjs write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
+				<p>Subject: <strong><?xjs write(header.subject); ?></strong></p>
+			</div>
+		</div>
+		<div class="message" id="message-<?xjs write(header.number); ?>" hidden></div>
+	</li>
+<?xjs } ?>
+
+<script type="text/javascript" src="./js/forum.js"></script>
+
+<script type="text/javascript">
+
+	function selectAllMail() {
+		$('input.mail-select').each(
+			function () {
+				$(this).prop('checked', $(this).prop('checked') ? false : true);
+			}
+		);
+	}
+
+	function deleteSelectedMail() {
+		var numbers = [];
+		$('input.mail-select:checked').each(
+			function () { numbers.push($(this).attr('id').split('-')[1]); }
+		);
+		$.getJSON(
+			'./api/forum.ssjs?call=delete-mail&number=' + numbers.join('&number='),
+			function (data) {
+				if (!data.success) return;
+				numbers.forEach(function (e) { $('#li-' + e).remove(); });
+			}
+		);
+	}
+
+</script>
+
+<?xjs if (typeof http_request.query.notice != "undefined") { ?>
+	<div id="noticebox" class="alert alert-warning">
+		<?xjs write(http_request.query.notice[0]); ?>
+	</div>
+	<script type="text/javascript">
+		$("#noticebox").fadeOut(3000, function () { $("#noticebox").remove(); });
+	</script>
+<?xjs } ?>
+
+<?xjs if (!(user.security.restrictions&UFLAG_E) && !(user.security.restrictions&UFLAG_M)) { ?>
+	<button class="btn btn-default icon" aria-label="Post a new message" title="Post a new message" onclick="addNew('mail')">
+		<span class="glyphicon glyphicon-pencil"></span>
+	</button>
+	<button class="btn btn-default icon" aria-label="Select all messages" title="Select all messages" onclick="selectAllMail()">
+		<span class="glyphicon glyphicon-check"></span>
+	</button>
+	<button class="btn btn-default icon" aria-label="Delete selected messages" title="Delete selected messages" onclick="deleteSelectedMail()">
+		<span class="glyphicon glyphicon-trash"></span>
+	</button>
+<?xjs } ?>
+
+<ul class="nav nav-tabs">
+	<li role="presentation" class="<?xjs write(!sent() ? ' active' : ''); ?>">
+		<a href="./?page=<?xjs write(page); ?>&amp;sent=0">Inbox</a>
+	</li>
+	<li role="presentation" class="<?xjs write(sent() ? ' active' : ''); ?>">
+		<a href="./?page=<?xjs write(page); ?>&amp;sent=1">Sent</a>
+	</li>
+</ul>
+<br>
+
+<ul id="forum-list-container" class="list-group">
+	<?xjs getMailHeaders(sent()).forEach(writeMessage); ?>
+</ul>
