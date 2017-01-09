@@ -25,6 +25,63 @@ function webCtrlTest(ini, filename) {
 	return ret;
 }
 
+function getCtrlLine(file) {
+
+	if (backslash(
+			fullpath(file)
+		).indexOf(
+			backslash(fullpath(settings.web_root + '/pages'))
+		) !== 0
+	) {
+		return;
+	}
+
+	var f = new File(file);
+	var ctrl = '';
+	var ext = file_getext(file).toUpperCase();
+	switch (ext) {
+		case '.JS':
+		case '.SSJS':
+			if (!f.open('r')) return;
+			ctrl = f.readln().replace(/\/\//g, '');
+			f.close();
+			break;
+		case '.XJS':
+		case '.HTML':
+			if (!f.open('r')) return;
+			while (!f.eof) {
+				var i = f.readln().match(/\<\!\-\-(.*?)\-\-\>/);
+				if (i !== null && i.length > 1) {
+					ctrl = i[1];
+					break;
+				}
+			}
+			f.close();
+			break;
+		default:
+			ctrl = file_getname(file);
+			break;
+	}
+
+	var opts = ctrl.match(/^(.*?)\:/);
+	if (opts === null || opts.length < 2) {
+		opts = [];
+	} else {
+		opts = opts[1].toUpperCase().split('|');
+	}
+
+	var title = ctrl.replace(/^.*\:/, '');
+
+	return {
+		options : {
+			hidden : (opts.indexOf('HIDDEN') >= 0),
+			no_sidebar : (opts.indexOf('NO_SIDEBAR') >= 0)
+		},
+		title : title
+	};
+
+}
+
 function getPageList(dir) {
 
 	dir = backslash(fullpath(dir));
@@ -44,59 +101,18 @@ function getPageList(dir) {
 				}
 			} else if (e.search(/(\.xjs\.ssjs|webctrl\.ini)$/i) < 0) {
 				var fn = file_getname(e);
-				var title = getPageTitle(e);
+				var ctrl = getCtrlLine(e);
 				if ((	typeof webctrl === 'undefined' ||
 						webCtrlTest(webctrl, fn)
-					) && title.search(/^HIDDEN/) < 0
+					) && !ctrl.options.hidden
 				) {
-					pages[title] = file_getname(e);
+					pages[ctrl.title] = file_getname(e);
 				}
 			}
 		}
 	);
 
 	return pages;
-
-}
-
-function getPageTitle(file) {
-
-	if (backslash(
-			fullpath(file)
-		).indexOf(
-			backslash(fullpath(settings.web_root + '/pages'))
-		) !== 0
-	) {
-		return;
-	}
-
-	var title;
-	var ext = file_getext(file).toUpperCase();
-	var f = new File(file);
-	if (ext === '.JS' ||
-		(ext === '.SSJS' && file.search(/\.xjs\.ssjs$/i) === -1)
-	) {
-		f.open('r');
-		var i = f.readln();
-		f.close();
-		title = i.replace(/\/\//g, '');
-	} else if (ext === '.HTML' || ext === '.XJS') {
-		// Seek first comment line in an HTML document
-		f.open('r');
-		while (!f.eof) {
-			var i = f.readln();
-			var k = i.match(/^\<\!\-\-.*\-\-\>$/);
-			if (k !== null) {
-				title = k[0].replace(/[\<\!\-+|\-+\>]/g, '');
-				break;
-			}
-		}
-		f.close();
-	} else if (ext === '.TXT') {
-		title = file_getname(file);
-	}
-
-	return title;
 
 }
 
@@ -111,13 +127,9 @@ function getPage(page) {
 	var ext = file_getext(page).toUpperCase();
 
 	if (user.alias != settings.guest) {
-		var title = getPageTitle(page);
-		if (title != 'HIDDEN') {
-			setSessionValue(
-				user.number,
-				'action',
-				title.replace(/^HIDDEN(\:)+/, '')
-			);
+		var ctrl = getCtrlLine(page);
+		if (typeof ctrl !== 'undefined' && !ctrl.options.hidden) {
+			setSessionValue(user.number, 'action', ctrl.title);
 		}
 	}
 
