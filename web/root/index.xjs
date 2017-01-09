@@ -32,6 +32,46 @@
 
 ?>
 
+<?xjs function _subMenu(obj, title, path) { ?>
+	<li class="dropdown<?xjs if (path.match(/\//g).length > 1) write('-submenu'); ?>">
+		<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+			<?xjs write(title.replace(/^.*\-/, '')); ?>
+			<span class="caret"></span>
+		</a>
+		<ul class="dropdown-menu">
+			<?xjs _menu(obj, path); ?>
+		</ul>
+	</li>
+<?xjs } ?>
+
+<?xjs
+	function _menu(obj, path) {
+		Object.keys(obj).forEach(
+			function (e) {
+				if (typeof obj[e] === 'object') {
+					_subMenu(obj[e], e, (path || '') + e + '/');
+				} else {
+?>
+				<li>
+					<a href="./?page=<?xjs write((path || '') + obj[e]); ?>">
+						<?xjs write(e); ?>
+					</a>
+				</li>
+<?xjs
+				}
+			}
+		);
+	}
+?>
+
+<?xjs function _sidebar() {
+		if (settings.layout_sidebar_off) return;
+?>
+	<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">
+		<?xjs writeSidebarModules(); ?>
+	</div>
+<?xjs } ?>
+
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -77,7 +117,7 @@
 		</div>
 
 		<nav class="navbar navbar-default navbar-fixed-top">
-			<div class="container">
+			<div class="container<?xjs if (settings.layout_full_width) write('-fluid'); ?>">
 				<div class="navbar-header">
 					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
 						<span class="sr-only">Sidebar</span>
@@ -90,43 +130,9 @@
 					</a>
 				</div>
 				<div id="navbar" class="collapse navbar-collapse">
-
-					<?xjs function subMenu(obj, title, path) { ?>
-						<li class="dropdown<?xjs if (path.match(/\//g).length > 1) write('-submenu'); ?>">
-							<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-								<?xjs write(title.replace(/^.*\-/, '')); ?>
-								<span class="caret"></span>
-							</a>
-							<ul class="dropdown-menu">
-								<?xjs menu(obj, path); ?>
-							</ul>
-						</li>
-					<?xjs } ?>
-
-					<?xjs
-						function menu(obj, path) {
-							Object.keys(obj).forEach(
-								function (e) {
-									if (typeof obj[e] === 'object') {
-										subMenu(obj[e], e, (path || '') + e + '/');
-									} else {
-					?>
-									<li>
-										<a href="./?page=<?xjs write((path || '') + obj[e]); ?>">
-											<?xjs write(e); ?>
-										</a>
-									</li>
-					<?xjs
-									}
-								}
-							);
-						}
-					?>
-
 					<ul class="nav navbar-nav">
-						<?xjs menu(getPageList(settings.web_root + 'pages/')); ?>
+						<?xjs _menu(getPageList(settings.web_root + 'pages/')); ?>
 					</ul>
-
 					<ul class="nav navbar-nav navbar-right">
 						<?xjs if (user.alias === settings.guest || user.number < 1) { ?>
 							<?xjs if (settings.user_registration) { ?>
@@ -173,19 +179,18 @@
 			</div>
 		</nav>
 
-		<div class="container">
-			<div class="row row-offcanvas row-offcanvas-right">
-				<div class="col-xs-12 col-sm-9">
-					<p class="pull-right visible-xs">
+		<div class="container<?xjs if (settings.layout_full_width) write('-fluid'); ?>">
+			<div class="row row-offcanvas row-offcanvas-<?xjs write(settings.layout_sidebar_left ? 'left' : 'right'); ?>">
+				<?xjs if (settings.layout_sidebar_left) _sidebar(); ?>
+				<div class="col-xs-12 col-sm-<?xjs write(settings.layout_sidebar_off ? 12 : 9); ?>">
+					<p class="pull-<?xjs write(settings.layout_sidebar_left ? 'left' : 'right'); ?> visible-xs">
 						<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">
 							<span class="glyphicon glyphicon-tasks"></span> Sidebar
 						</button>
 					</p>
 					<?xjs writePage(); ?>
 				</div>
-				<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">
-					<?xjs writeSidebarModules(); ?>
-				</div>
+				<?xjs if (!settings.layout_sidebar_left || settings.layout_sidebar_right) _sidebar(); ?>
 			</div>
 		  	<hr>
 			<footer>
