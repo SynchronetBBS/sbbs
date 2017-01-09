@@ -301,8 +301,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.17 Beta 20";
-var READER_DATE = "2016-12-11";
+var READER_VERSION = "1.17 Beta 21";
+var READER_DATE = "2017-01-08";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5520,6 +5520,16 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 							writeMessage = false;
 						}
+					}
+					else
+					{
+						// The user quit out of voting.  Refresh the screen.
+						// Exit out of the reader and come back to read
+						// the same message again so that the screen is refreshed.
+						retObj.newMsgOffset = pOffset;
+						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						continueOn = false;
+						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 					}
 				}
 				else
@@ -13915,6 +13925,15 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 	if (this.subBoardCode == "mail")
 	{
 		retObj.errorMsg = "Can not vote on personal email";
+		return retObj;
+	}
+	
+	// Check whether the user has the voting restiction
+	if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
+	{
+		// Use the line from text.dat that says the user is not allowed to vote,
+		// and remove newlines from it.
+		retObj.errorMsg = "\1n" + bbs.text(typeof(R_Voting) != "undefined" ? R_Voting : 781).replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 		return retObj;
 	}
 
