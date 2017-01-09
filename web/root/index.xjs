@@ -7,14 +7,24 @@
 	load(settings.web_lib + 'sidebar.js');
 
 	var page = (
-		typeof http_request.query.page === 'undefined' ||
-		!file_exists(settings.web_root + 'pages/' + file_getname(http_request.query.page[0]))
+		(	typeof http_request.query.page === 'undefined' ||
+			!file_exists(
+				fullpath(
+					settings.web_root + 'pages/' + http_request.query.page[0]
+				)
+			) ||
+			fullpath(
+				settings.web_root + 'pages/' + http_request.query.page[0]
+			).indexOf(settings.web_root + 'pages') !== 0
+		)
 		? '000-home.xjs'
-		: file_getname(http_request.query.page[0])
+		: http_request.query.page[0]
 	);
 
 	function writePage() {
-		var ini = getWebCtrl();
+		var ini = getWebCtrl(
+			settings.web_root + 'pages/' + page.replace(file_getname(page), '')
+		);
 		if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
 			write(getPage(page));
 		}
@@ -30,6 +40,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="icon" href="./images/favicon.ico">
 		<title>
+			<?xjs log(LOG_ERR, 'PAGE: ' + page); ?>
 			<?xjs write(getPageTitle(settings.web_root + 'pages/' + page).replace(/^HIDDEN(\:)*/, '')); ?>
 			:
 			<?xjs write(system.name); ?>
@@ -79,38 +90,43 @@
 					</a>
 				</div>
 				<div id="navbar" class="collapse navbar-collapse">
+
+					<?xjs function subMenu(obj, title, path) { ?>
+						<li class="dropdown<?xjs if (path.match(/\//g).length > 1) write('-submenu'); ?>">
+							<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+								<?xjs write(title.replace(/^.*\-/, '')); ?>
+								<span class="caret"></span>
+							</a>
+							<ul class="dropdown-menu">
+								<?xjs menu(obj, path); ?>
+							</ul>
+						</li>
+					<?xjs } ?>
+
+					<?xjs
+						function menu(obj, path) {
+							Object.keys(obj).forEach(
+								function (e) {
+									if (typeof obj[e] === 'object') {
+										subMenu(obj[e], e, (path || '') + e + '/');
+									} else {
+					?>
+									<li>
+										<a href="./?page=<?xjs write((path || '') + obj[e]); ?>">
+											<?xjs write(e); ?>
+										</a>
+									</li>
+					<?xjs
+									}
+								}
+							);
+						}
+					?>
+
 					<ul class="nav navbar-nav">
-						<?xjs
-							var _primary = [];
-							var _secondary = [];
-							getPages().forEach(function (e) { (e.primary ? _primary : _secondary).push(e); });
-							 _primary.forEach(function (e) {
-						?>
-							<li<?xjs if (e.page === page) write(' class="active"'); ?>>
-								<a href="./?page=<?xjs write(e.page); ?>">
-									<?xjs write(e.title); ?>
-								</a>
-							</li>
-						<?xjs
-							});
-							if (_secondary.length > 0) {
-						?>
-							<li class="dropdown">
-								<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-									More<span class="caret"></span>
-								</a>
-								<ul class="dropdown-menu">
-									<?xjs _secondary.forEach(function (e) { ?>
-										<li <?xjs if (e.page === page) write('class="active"'); ?>>
-											<a href="./?page=<?xjs write(e.page); ?>">
-												<?xjs write(e.title); ?>
-											</a>
-										</li>
-									<?xjs }); ?>
-								</ul>
-							</li>
-						<?xjs } ?>
+						<?xjs menu(getPageList(settings.web_root + 'pages/')); ?>
 					</ul>
+
 					<ul class="nav navbar-nav navbar-right">
 						<?xjs if (user.alias === settings.guest || user.number < 1) { ?>
 							<?xjs if (settings.user_registration) { ?>
@@ -178,6 +194,23 @@
 		</div>
 
 		<script src="./js/offcanvas.js"></script>
+
+	<script>
+		$(document).ready(
+			function () {
+				$('a.dropdown-toggle').on(
+					"click", function (e) {
+						$(this).next('ul').toggle();
+						$(this).next('div').toggle();
+						e.stopPropagation();
+						e.preventDefault();
+					}
+				);
+			}
+		);
+	</script>
+
+	<?xjs if (user.alias === 'echicken') write(JSON.stringify(getPageList(settings.web_root + 'pages/'))); ?>
 
 	</body>
 

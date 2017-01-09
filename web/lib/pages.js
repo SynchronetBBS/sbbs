@@ -1,8 +1,8 @@
-function getWebCtrl() {
-	if (!file_exists(settings.web_root + 'pages/webctrl.ini')) return false;
-	var f = new File(settings.web_root + 'pages/webctrl.ini');
+function getWebCtrl(dir) {
+	if (!file_exists(dir + 'webctrl.ini')) return false;
+	var f = new File(dir + 'webctrl.ini');
 	if (!f.open('r')) {
-		log('Unable to open pages/webctrl.ini');
+		log('Unable to open ' + dir + 'webctrl.ini');
 		exit();
 	}
 	var ini = f.iniGetAllObjects();
@@ -14,8 +14,7 @@ function webCtrlTest(ini, filename) {
 	var ret = true;
 	for (var i = 0; i < ini.length; i++) {
 		if (!wildmatch(false, filename, ini[i].name)) continue;
-		if (typeof ini[i].AccessRequirements === 'undefined'
-			||
+		if (typeof ini[i].AccessRequirements === 'undefined' ||
 			user.compare_ars(ini[i].AccessRequirements)
 		) {
 			continue;
@@ -26,45 +25,50 @@ function webCtrlTest(ini, filename) {
 	return ret;
 }
 
-function webCtrlFilter(pages) {
-	var ini = getWebCtrl();
-	if (typeof ini === 'boolean' && !ini) return pages;
-	pages = pages.filter(
-		function (page) {
-			return webCtrlTest(ini, page.page);
-		}
-	);
-	return pages;
-}
+function getPageList(dir) {
 
-function getPages() {
+	dir = backslash(fullpath(dir));
+	if (dir.indexOf(backslash(fullpath(settings.web_root + '/pages'))) !== 0) {
+		return {};
+	}
 
-	var pages = [];
-	var d = directory(settings.web_root + 'pages/*');
-	d.forEach(
-		function (item) {
-			if (file_isdir(item)) return;
-			var fn = file_getname(item);
-			var title = getPageTitle(item);
-			if (typeof title === 'undefined' ||
-				title.search(/^HIDDEN/) === 0 ||
-				fn.search(/\.xjs\.ssjs$/i) >= 0
-			) {
-				return;
-			}
-			pages.push(
-				{	'page' : fn,
-					'title' : title,
-					'primary' : (fn.search(/^\d+_/) === 0 ? false : true)
+	var webctrl = getWebCtrl(dir);
+
+	var pages = {};
+	directory(dir + '*').forEach(
+		function (e) {
+			if (file_isdir(e)) {
+				var list = getPageList(e);
+				if (Object.keys(list).length > 0) {
+					pages[e.split(e.substr(-1, 1)).slice(-2, -1)] = list;
 				}
-			);
+			} else if (e.search(/(\.xjs\.ssjs|webctrl\.ini)$/i) < 0) {
+				var fn = file_getname(e);
+				var title = getPageTitle(e);
+				if ((	typeof webctrl === 'undefined' ||
+						webCtrlTest(webctrl, fn)
+					) && title.search(/^HIDDEN/) < 0
+				) {
+					pages[title] = file_getname(e);
+				}
+			}
 		}
 	);
-	return webCtrlFilter(pages);
+
+	return pages;
 
 }
 
 function getPageTitle(file) {
+
+	if (backslash(
+			fullpath(file)
+		).indexOf(
+			backslash(fullpath(settings.web_root + '/pages'))
+		) !== 0
+	) {
+		return;
+	}
 
 	var title;
 	var ext = file_getext(file).toUpperCase();
