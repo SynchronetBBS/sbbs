@@ -1,0 +1,100 @@
+<!--HIDDEN:Files-->
+
+<?xjs
+	if (typeof argv[0] !== 'boolean' || !argv[0]) exit();
+	load(system.exec_dir + '../web/lib/init.js');
+	load(settings.web_lib + 'files.js');
+
+	if (typeof http_request.query.dir !== 'undefined' &&
+		typeof file_area.dir[http_request.query.dir[0]] !== 'undefined'
+	) {
+?>
+	<ol class="breadcrumb">
+		<li>
+			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>">Files</a>
+		</li>
+		<li>
+			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;library=<?xjs write(file_area.dir[http_request.query.dir[0]].lib_index); ?>">
+				<?xjs write(file_area.dir[http_request.query.dir[0]].lib_name); ?>
+			</a>
+		</li>
+		<li>
+			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;dir=<?xjs write(http_request.query.dir[0]); ?>">
+				<?xjs write(http_request.query.dir[0]); ?>
+			</a>
+		</li>
+	</ol>
+
+	<?xjs function writeFileDetails(file) { ?>
+		<a href="./api/files.ssjs?call=download-file&amp;dir=<?xjs write(http_request.query.dir[0]); ?>&amp;file=<?xjs write(file.name); ?>" target="_blank" class="list-group-item striped">
+			<strong><?xjs write(file.name); ?></strong> (<?xjs write(file.size); ?>)
+			<p><em>Uploaded <?xjs write(system.timestr(file.uldate)); ?></em></p>
+			<?xjs if (typeof file.extdesc === 'undefined') { ?>
+				<p><?xjs write(file.desc); ?></p>
+			<?xjs } else if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])/) > -1) { ?>
+				<pre class="ansi">
+					<?xjs write(html_encode(file.extdesc, true, false, true, true)); ?>
+				</pre>
+			<?xjs } else { ?>
+				<pre class="list">
+					<?xjs write(file.extdesc.replace(/[^\r,\n\x20-\x7E]/g, '')); ?>
+				</pre>
+			<?xjs } ?>
+		</a>
+	<?xjs } ?>
+
+	<div id="file-list-container" class="list-group">
+		<?xjs listFiles(http_request.query.dir[0]).forEach(writeFileDetails); ?>
+	</div>
+
+
+<?xjs
+	} else if(
+		typeof http_request.query.library !== 'undefined' &&
+		typeof file_area.lib_list[http_request.query.library[0]] !== 'undefined'
+	) {
+?>
+
+	<ol class="breadcrumb">
+		<li>
+			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>">Files</a>
+		</li>
+		<li>
+			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;library=<?xjs write(http_request.query.library[0]); ?>">
+				<?xjs write(file_area.lib_list[http_request.query.library[0]].name); ?>
+			</a>
+		</li>
+	</ol>
+
+
+	<?xjs function writeDirectory(dir) { ?>
+		<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;dir=<?xjs write(dir.dir.code); ?>" class="list-group-item striped">
+			<h4><strong><?xjs write(dir.dir.name); ?></strong></h4>
+			<p><?xjs write(dir.dir.description); ?> : <?xjs write(dir.fileCount); ?> files</p>
+		</a>
+	<?xjs } ?>
+
+	<div id="file-list-container" class="list-group">
+		<?xjs listDirectories(http_request.query.library[0]).forEach(writeDirectory); ?>
+	</div>
+
+<?xjs } else { ?>
+
+	<ol class="breadcrumb">
+		<li>
+			<a href="./?page=<?xjs write(http_request.query.page[0]); ?>">Files</a>
+		</li>
+	</ol>
+
+	<?xjs function writeLibrary(library) { ?>
+		<a href="./?page=<?xjs write(http_request.query.page[0]); ?>&amp;library=<?xjs write(library.index); ?>" class="list-group-item striped">
+			<h3><strong><?xjs write(library.name); ?></strong></h3>
+			<p><?xjs write(library.description); ?>: <?xjs write(library.dir_list.length); ?> directories</p>
+		</a>
+	<?xjs } ?>
+
+	<div id="file-list-container" class="list-group">
+		<?xjs listLibraries().forEach(writeLibrary); ?>
+	</div>
+
+<?xjs } ?>
