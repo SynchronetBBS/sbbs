@@ -80,7 +80,6 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="icon" href="./images/favicon.ico">
 		<title>
-			<?xjs log(LOG_ERR, 'PAGE: ' + page); ?>
 			<?xjs write(getPageTitle(settings.web_root + 'pages/' + page).replace(/^HIDDEN(\:)*/, '')); ?>
 			:
 			<?xjs write(system.name); ?>
