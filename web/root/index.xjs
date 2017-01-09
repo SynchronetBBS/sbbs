@@ -210,8 +210,6 @@
 		);
 	</script>
 
-	<?xjs if (user.alias === 'echicken') write(JSON.stringify(getPageList(settings.web_root + 'pages/'))); ?>
-
 	</body>
 
 </html>
