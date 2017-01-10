@@ -2,7 +2,7 @@
 <?xjs
 	if (typeof argv[0] != 'boolean' || !argv[0]) exit();
 	load(settings.web_lib + 'ftelnet.js');
-	var _hpl = getLanguage(settings.language_file || 'english.ini', 'page_home'); ?>
+	var _hpl = getLanguage(settings.language_file || 'english.ini', 'page_home');
 ?>
 
 <script src="./ftelnet/ftelnet.min.js" id="fTelnetScript"></script>
