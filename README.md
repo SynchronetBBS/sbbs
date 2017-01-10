@@ -51,6 +51,12 @@ A web interface for Synchronet BBS
 	refresh_interval = 60000
 	; External Programs (or entire sections) to exclude from the Games page
 	xtrn_blacklist = scfg,oneliner
+	; Disable the sidebar altogether
+	layout_sidebar_off = false
+	; Place the sidebar on the left-hand side of the page
+	layout_sidebar_left = false
+	; Make the page consume the entire width of the browser window
+	layout_full_width = false
 ```
 - Add the following section to your *ctrl/services.ini* file:
 ```ini
@@ -102,7 +108,7 @@ if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (co
 
 ####Additional / advanced settings
 
-- The following *optional* settings can be added to the [web] section of your *ctrl/modopts.ini* file:
+The following *optional* settings can be added to the [web] section of your *ctrl/modopts.ini* file:
 
 ```ini
 	; Use extended-ASCII characters when displaying forum messages (default: true)
@@ -120,14 +126,76 @@ if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (co
 
 ###Customization
 
-- This web interface uses [Bootstrap 3.3.5](http://getbootstrap.com/).  It should be possible to use any compatible stylesheet.
-	- You can place your own CSS overrides in *web/root/css/custom.css*
-	- You can load another stylesheet of your own choosing in the &lt;head&gt; section of *web/root/index.xjs* (load it after the others)
-- The sidebar module & page structure is *mostly* similar to the system used in ecWeb v3.  See [the old instructions](http://wiki.synchro.net/howto:ecweb#the_sidebar) for info on adding content.
+This web interface uses [Bootstrap 3.3.5](http://getbootstrap.com/).  It should be possible to use any compatible stylesheet.
+
+- You can place your own CSS overrides in *web/root/css/custom.css*.  Create this file and use it if you want to use fonts, colours, etc. other than the defaults.  It is not recommended that you modify any of the existing stylesheets.
+
+####Sidebar Modules
+
+Sidebar modules are the widgets displayed in the narrow column running down the right (or left) side of the page.  A sidebar module can be an SSJS, XJS, HTML, or TXT file.
+
+- Sidebar modules are loaded in alphanumeric order from the *web/root/sidebar/* directory; see the included files for examples and for a file-naming convention that enforces order of appearance
+- HTML, XJS, and SSJS sidebar modules should not be complete HTML documents.  They should not have <html>, <head>, or <body> tags.  Instead, they should contain (or produce) an HTML snippet suitable for inclusion in the overall page.
+- TXT sidebar modules are displayed inside of <pre> tags to preserve fixed-width formatting.
+- Support for additional file formats can be added if necessary, but by using HTML and Javascript you should be able to display whatever you like.  (If you want to put an image in the sidebar, a simple HTML file containing an <img> tag will do the job, for example.)
+
+####Pages
+
+Like sidebar modules, pages can be HTML, XJS, SSJS, or TXT files.
+
+- Pages are loaded in alphanumeric order from the *web/root/pages/* directory.  See the included files for examples and for a file-naming convention that enforces order of appearance.
+- As with sidebar modules, HTML, XJS, and SSJS pages should not be complete HTML documents.  They should contain (or generate) snippets of text or HTML suitable for inclusion in the overall page.
+- Your *web/root/pages/* directory should contain a [webctrl.ini](http://wiki.synchro.net/server:web#webctrlini_per-directory_configuration_file) file.
+	- You can use this file to restrict access to certain pages so that guests or unprivileged users can't see them
+- In an HTML, XJS, or SSJS file, the first line *containing a comment* is treated as the *control line* for the page.
+	- The format of the control line is *OPTION|OPTION:Title*
+	- Available options at the moment are *HIDDEN* and *NO_SIDEBAR*
+	- *HIDDEN* pages will not appear in the menus or in the activity fields of the *who's online* list
+	- The *NO_SIDEBAR* directive tells the layout script not to include a sidebar on this page
+		- The main content will expand to fill the space normally used by the sidebar
+	- The part of the control line following the first colon is treated as the title of the page.  This is the text that appears in the menu, browser title bar, and *who's online* list.
+		- If you don't need to specify any options, (and as long as your page title doesn't contain a colon) you can omit the colon, and the entire string will be treated as the title of the page, or you can start the control line with a colon.
+
+Here's an example control line for a hidden HTML file:
+
+```html
+<!--HIDDEN:My Awesome Web Page-->
+```
+
+Here's an example control file for a hidden XJS page with no sidebar:
+
+```html
+<!--HIDDEN|NO_SIDEBAR:My Awesome Web Page-->
+```
+
+Here's an example control file for an SSJS script with no settings:
+
+```js
+//My Awesome Web Page
+```
+
+If your page title contains a colon, it's necessary to prepend a dummy one like so:
+
+```js
+//:Awesome Web Pages: This is one
+```
+
+Of course, that's not an issue if you're providing some settings:
+
+```html
+<!--NO_SIDEBAR:Awesome Web Pages: This is one-->
+```
+
+You can add drop-down menus to the navigation bar by adding subdirectories to the *web/root/pages/* directory.  The files within these subdirectories follow the same format described above.
+- The name of the subdirectory is used as the text of the menu item.
+- You can nest additional subdirectories to create sub-menus.
+- Subdirectories with names beginning with *.* will be ignored.
+- Each subdirectory can contain a [webctrl.ini](http://wiki.synchro.net/server:web#webctrlini_per-directory_configuration_file) file for access control.
 
 ###Uninstall
 
-- To stop using this web interface, you can just revert to your previous *web* directory at any time.
+To stop using this web interface, you can just revert to your previous *web* directory at any time.
+
 - The [web] section added to *ctrl/modopts.ini* won't hurt anything if you leave it there, but you can delete it if you want
 - Revert your *ctrl/services.ini* file to the backup you made prior to installing this web interface
 - Undo any changes you made to your firewall & router during the *Quick Start*
