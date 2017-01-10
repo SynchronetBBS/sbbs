@@ -162,13 +162,13 @@ Here's an example control line for a hidden HTML file:
 <!--HIDDEN:My Awesome Web Page-->
 ```
 
-Here's an example control file for a hidden XJS page with no sidebar:
+Here's an example control line for a hidden XJS page with no sidebar:
 
 ```html
 <!--HIDDEN|NO_SIDEBAR:My Awesome Web Page-->
 ```
 
-Here's an example control file for an SSJS script with no settings:
+Here's an example control line for an SSJS script with no settings:
 
 ```js
 //My Awesome Web Page
