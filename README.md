@@ -136,8 +136,8 @@ Sidebar modules are the widgets displayed in the narrow column running down the 
 
 - Sidebar modules are loaded in alphanumeric order from the *web/root/sidebar/* directory; see the included files for examples and for a file-naming convention that enforces order of appearance
 - HTML, XJS, and SSJS sidebar modules should not be complete HTML documents.  They should not have \<html\>, \<head\>, or \<body\> tags.  Instead, they should contain (or produce) an HTML snippet suitable for inclusion in the overall page.
-- TXT sidebar modules are displayed inside of <pre> tags to preserve fixed-width formatting.
-- Support for additional file formats can be added if necessary, but by using HTML and Javascript you should be able to display whatever you like.  (If you want to put an image in the sidebar, a simple HTML file containing an <img> tag will do the job, for example.)
+- TXT sidebar modules are displayed inside of \<pre\> tags to preserve fixed-width formatting.
+- Support for additional file formats can be added if necessary, but by using HTML and Javascript you should be able to display whatever you like.  (If you want to put an image in the sidebar, a simple HTML file containing an \<img\> tag will do the job, for example.)
 
 ####Pages
 
