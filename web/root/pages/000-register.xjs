@@ -12,7 +12,7 @@
 
 	load('sbbsdefs.js');
 
-	var _rpl = getLanguage(settings.language_file || 'english.ini', 'register');
+	var _rpl = getLanguage(settings.language_file || 'english.ini', 'page_register');
 
 	function required(mask) {
 		return ((system.new_user_questions&mask) ? (' ' + _rpl.stat_suffix_field_required) : '');

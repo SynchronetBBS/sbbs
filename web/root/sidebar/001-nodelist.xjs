@@ -1,4 +1,4 @@
-<?xjs var _nll = getLanguage(settings.language_file || 'english.ini', 'node_list'); ?>
+<?xjs var _nll = getLanguage(settings.language_file || 'english.ini', 'sidebar_node_list'); ?>
 
 <div id="sbbs-nodelist"></div>
 <script type="text/javascript">

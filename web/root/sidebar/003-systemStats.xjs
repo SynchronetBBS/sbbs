@@ -1,4 +1,4 @@
-<?xjs var _sill = getLanguage(settings.language_file || 'english.ini', 'system_info'); ?>
+<?xjs var _sill = getLanguage(settings.language_file || 'english.ini', 'sidebar_system_info'); ?>
 
 <h4>System Info</h4>
 <table class="table table-condensed table-responsive table-striped">

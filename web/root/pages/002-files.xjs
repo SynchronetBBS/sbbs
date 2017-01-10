@@ -5,7 +5,7 @@
 	load(system.exec_dir + '../web/lib/init.js');
 	load(settings.web_lib + 'files.js');
 
-	var _fpl = getLanguage(settings.language_file || 'english.ini', 'files');
+	var _fpl = getLanguage(settings.language_file || 'english.ini', 'page_files');
 
 	if (typeof http_request.query.dir !== 'undefined' &&
 		typeof file_area.dir[http_request.query.dir[0]] !== 'undefined'

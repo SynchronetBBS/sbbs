@@ -9,7 +9,7 @@ load('sbbsdefs.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'forum.js');
 
-var _mpl = getLanguage(settings.language_file || 'english.ini', 'mail');
+var _mpl = getLanguage(settings.language_file || 'english.ini', 'page_mail');
 
 function sent() {
 	if (typeof http_request.query.sent === 'undefined') return false;
