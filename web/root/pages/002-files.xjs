@@ -36,13 +36,9 @@
 			<?xjs if (typeof file.extdesc === 'undefined') { ?>
 				<p><?xjs write(file.desc); ?></p>
 			<?xjs } else if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])/) > -1) { ?>
-				<pre class="ansi">
-					<?xjs write(html_encode(file.extdesc, true, false, true, true)); ?>
-				</pre>
+				<pre class="ansi"><?xjs write(html_encode(file.extdesc, true, false, true, true)); ?></pre>
 			<?xjs } else { ?>
-				<pre class="list">
-					<?xjs write(file.extdesc.replace(/[^\r,\n\x20-\x7E]/g, '')); ?>
-				</pre>
+				<pre class="list"><?xjs write(file.extdesc.replace(/[^\r,\n\x20-\x7E]/g, '')); ?></pre>
 			<?xjs } ?>
 		</a>
 	<?xjs } ?>
