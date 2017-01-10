@@ -15,7 +15,7 @@
 			) ||
 			fullpath(
 				settings.web_root + 'pages/' + http_request.query.page[0]
-			).indexOf(settings.web_root + 'pages') !== 0
+			).indexOf(fullpath(settings.web_root + 'pages')) !== 0
 		)
 		? '000-home.xjs'
 		: http_request.query.page[0]

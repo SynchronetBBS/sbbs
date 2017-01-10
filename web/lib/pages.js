@@ -27,12 +27,7 @@ function webCtrlTest(ini, filename) {
 
 function getCtrlLine(file) {
 
-	if (backslash(
-			fullpath(file)
-		).indexOf(
-			backslash(fullpath(settings.web_root + '/pages'))
-		) !== 0
-	) {
+	if (fullpath(file).indexOf(fullpath(settings.web_root + '/pages')) !== 0) {
 		return;
 	}
 
@@ -95,6 +90,7 @@ function getPageList(dir) {
 	directory(dir + '*').forEach(
 		function (e) {
 			if (file_isdir(e)) {
+				e = fullpath(e);
 				var list = getPageList(e);
 				if (Object.keys(list).length > 0) {
 					pages[e.split(e.substr(-1, 1)).slice(-2, -1)] = list;
