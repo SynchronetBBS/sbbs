@@ -9,6 +9,8 @@ load('sbbsdefs.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'forum.js');
 
+var _mpl = getLanguage(settings.language_file || 'english.ini', 'mail');
+
 function sent() {
 	if (typeof http_request.query.sent === 'undefined') return false;
 	if (http_request.query.sent[0] == '0') return false;
@@ -28,10 +30,14 @@ function sent() {
 				</div>
 			</div>
 			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<?xjs write(header.number); ?>)">
-				<?xjs write(!sent() ? 'From' : 'To'); ?>: 
+				<?xjs write(!sent() ? _mpl.label_message_from : _mpl.label_message_to); ?>: 
 				<strong><?xjs write(!sent() ? header.from : header.to); ?></strong> 
-				on <?xjs write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
-				<p>Subject: <strong><?xjs write(header.subject); ?></strong></p>
+				<?xjs write(_mpl.label_message_date); ?>
+				<?xjs write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
+				<p>
+					<?xjs write(_mpl.label_message_subject); ?>: 
+					<strong><?xjs write(header.subject); ?></strong>
+				</p>
 			</div>
 		</div>
 		<div class="message" id="message-<?xjs write(header.number); ?>" hidden></div>
@@ -76,23 +82,27 @@ function sent() {
 <?xjs } ?>
 
 <?xjs if (!(user.security.restrictions&UFLAG_E) && !(user.security.restrictions&UFLAG_M)) { ?>
-	<button class="btn btn-default icon" aria-label="Post a new message" title="Post a new message" onclick="addNew('mail')">
+	<button class="btn btn-default icon" aria-label="<?xjs write(_mpl.button_post_new); ?>" title="<?xjs write(_mpl.button_post_new); ?>" onclick="addNew('mail')">
 		<span class="glyphicon glyphicon-pencil"></span>
 	</button>
-	<button class="btn btn-default icon" aria-label="Select all messages" title="Select all messages" onclick="selectAllMail()">
+	<button class="btn btn-default icon" aria-label="<?xjs write(_mpl.button_select_all); ?>" title="<?xjs write(_mpl.button_select_all); ?>" onclick="selectAllMail()">
 		<span class="glyphicon glyphicon-check"></span>
 	</button>
-	<button class="btn btn-default icon" aria-label="Delete selected messages" title="Delete selected messages" onclick="deleteSelectedMail()">
+	<button class="btn btn-default icon" aria-label="<?xjs write(_mpl.button_delete_selected); ?>" title="<?xjs write(_mpl.button_delete_selected); ?>" onclick="deleteSelectedMail()">
 		<span class="glyphicon glyphicon-trash"></span>
 	</button>
 <?xjs } ?>
 
 <ul class="nav nav-tabs">
 	<li role="presentation" class="<?xjs write(!sent() ? ' active' : ''); ?>">
-		<a href="./?page=<?xjs write(page); ?>&amp;sent=0">Inbox</a>
+		<a href="./?page=<?xjs write(page); ?>&amp;sent=0">
+			<?xjs write(_mpl.label_tab_inbox); ?>
+		</a>
 	</li>
 	<li role="presentation" class="<?xjs write(sent() ? ' active' : ''); ?>">
-		<a href="./?page=<?xjs write(page); ?>&amp;sent=1">Sent</a>
+		<a href="./?page=<?xjs write(page); ?>&amp;sent=1">
+			<?xjs write(_mpl.label_tab_sent); ?>
+		</a>
 	</li>
 </ul>
 <br>
