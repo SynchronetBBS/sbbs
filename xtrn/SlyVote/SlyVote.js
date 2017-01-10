@@ -43,14 +43,18 @@ if ((user.security.restrictions & UFLAG_V) == UFLAG_V)
 {
 	console.crlf();
 	// Use the line from text.dat that says the user is not allowed to vote
-	console.print("\1n" + bbs.text(typeof(R_Voting) != "undefined" ? R_Voting : 781));
+	console.print("\1n" + bbs.text(R_Voting));
 	console.pause();
 	
 }
 
+load("frame.js");
+load("scrollbar.js");
+load("DDLightbarMenu.js");
+
 // Version information
 var SLYVOTE_VERSION = "0.01 Beta";
-var SLYVOTE_DATE = "2017-01-08";
+var SLYVOTE_DATE = "2017-01-09";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -147,18 +151,10 @@ var ERROR_PAUSE_WAIT_MS = 1500;
 
 var gBottomBorderRow = 23;
 
-load("frame.js");
-load("DDLightbarMenu.js");
-
-// See if frame.js and scrollbar.js exist in sbbs/exec/load on the BBS machine.
-// If so, load them.  They will be used for displaying messages with ANSI content
-// with a scrollable user interface.
-var gFrameJSAvailable = file_exists(backslash(system.exec_dir) + "load/frame.js");
-if (gFrameJSAvailable)
-	load("frame.js");
-var gScrollbarJSAvailable = file_exists(backslash(system.exec_dir) + "load/scrollbar.js");
-if (gScrollbarJSAvailable)
-	load("scrollbar.js");
+// An object containing keypresses for the vote results reader
+var gReaderKeys = {
+	vote: "V"
+}
 
 
 //  cfgReadError: A string which will contain a message if failed to read the configuration file
@@ -432,18 +428,8 @@ function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, p
 					optionsMenu.Add(pollTextAndOpts.options[i], i);
 				optionsMenu.colors.itemColor = "\1c";
 				optionsMenu.colors.selectedItemColor = "\1b\1" + "7";
-				// TODO: If the poll has already been voted on by the user, then show it before inputting
-				// the user's choice.
+				// Get the user's choice of voting option and submit it for voting
 				var userChoice = optionsMenu.GetVal(true);
-				// Return value: An object with the following properties:
-				//               BBSHasVoteFunction: Boolean - Whether or not the system has
-				//                                   the vote_msg function
-				//               savedVote: Boolean - Whether or not the vote was saved
-				//               userQuit: Boolean - Whether or not the user quit and didn't vote
-				//               errorMsg: String - An error message, if something went wrong
-				//               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
-				//               updatedHdr: The updated message header containing vote information.
-				//                           If something went wrong, this will be null.
 				var voteRetObj = VoteOnMessage(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
 				// If there was an error, then show it.  Otherwise, show a success message.
 				var firstLineEraseLength = pollSubject.length;
@@ -481,8 +467,7 @@ function VoteOnTopic(pSubBoardCode, pMsgNum, pStartCol, pStartRow, pMenuWidth, p
 		else
 		{
 			// The user has already voted
-			retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
-			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
+			retObj.errorMsg = bbs.text(VotedAlready).replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 			retObj.mnemonicsRequiredForErrorMsg = true;
 		}
 
@@ -790,10 +775,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 			// how to vote.
 			var votingAllowed = ((pSubBoardCode != "mail") && (((msg_area.sub[pSubBoardCode].settings & SUB_NOVOTING) == 0)));
 			if (votingAllowed && !HasUserVotedOnMsg(pMsgHdr.number, pSubBoardCode, pMsgbase, pUser))
-			{
-				msgBody += "\1n\r\n\1gTo vote in this poll, press \1w\1h"
-				        + this.enhReaderKeys.vote + "\1n\1g now.";
-			}
+				msgBody += "\1n\r\n\1gTo vote in this poll, press \1w\1h" + gReaderKeys.vote + "\1n\1g now.";
 
 			// If the current logged-in user created this poll, then show the
 			// users who have voted on it so far.
@@ -802,7 +784,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 			{
 				// Check all the messages in the messagebase after the current one
 				// to find poll response messages
-				if (typeof(this.msgbase.get_all_msg_headers) === "function")
+				if (typeof(pMsgbase.get_all_msg_headers) === "function")
 				{
 					// Get the line from text.dat for writing who voted & when.  It
 					// is a format string and should look something like this:
@@ -811,7 +793,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 
 					// Pass true to get_all_msg_headers() to tell it to return vote messages
 					// (the parameter was introduced in Synchronet 3.17+)
-					var tmpHdrs = this.msgbase.get_all_msg_headers(true);
+					var tmpHdrs = pMsgbase.get_all_msg_headers(true);
 					for (var tmpProp in tmpHdrs)
 					{
 						if (tmpHdrs[tmpProp] == null)
@@ -820,9 +802,9 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 						// number, then append the 'user voted' string to the message body.
 						if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.number))
 						{
-							var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
+							var msgWrittenLocalTime = MsgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 							var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
-							msgBody += format(userVotedInYourPollText, voteDate, this.msgbase.cfg.grp_name, this.msgbase.cfg.name,
+							msgBody += format(userVotedInYourPollText, voteDate, pMsgbase.cfg.grp_name, pMsgbase.cfg.name,
 							                  tmpHdrs[tmpProp].from, pMsgHdr.subject);
 						}
 					}
@@ -831,7 +813,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 		}
 	}
 	else
-		msgBody = this.msgbase.get_msg_body(false, pMsgHdr.number);
+		msgBody = pMsgbase.get_msg_body(false, pMsgHdr.number);
 	return msgBody;
 }
 
@@ -936,7 +918,7 @@ function VoteOnMessage(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber,
 	// See if voting is allowed in the current sub-board
 	if ((msg_area.sub[pSubBoardCode].settings & SUB_NOVOTING) == SUB_NOVOTING)
 	{
-		retObj.errorMsg = bbs.text(typeof(VotingNotAllowed) != "undefined" ? VotingNotAllowed : 779);
+		retObj.errorMsg = bbs.text(VotingNotAllowed);
 		if (removeNLsFromVoteText)
 			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 		retObj.mnemonicsRequiredForErrorMsg = true;
@@ -978,7 +960,7 @@ function VoteOnMessage(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber,
 		}
 		else if (userVotedMaxVotes)
 		{
-			retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
+			retObj.errorMsg = bbs.text(VotedAlready);
 			if (removeNLsFromVoteText)
 				retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 			retObj.mnemonicsRequiredForErrorMsg = true;
@@ -989,7 +971,7 @@ function VoteOnMessage(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber,
 	// If the user has voted on this message already, then set an error message and return.
 	if (HasUserVotedOnMsg(pMsgHdr.number, pSubBoardCode, pMsgbase, pUser))
 	{
-		retObj.errorMsg = bbs.text(typeof(VotedAlready) != "undefined" ? VotedAlready : 780);
+		retObj.errorMsg = bbs.text(VotedAlready);
 		if (removeNLsFromVoteText)
 			retObj.errorMsg = retObj.errorMsg.replace("\r\n", "").replace("\n", "").replace("\N", "").replace("\r", "").replace("\R", "").replace("\R\n", "").replace("\r\N", "").replace("\R\N", "");
 		retObj.mnemonicsRequiredForErrorMsg = true;
@@ -1027,7 +1009,7 @@ function VoteOnMessage(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber,
 			if (typeof(pUserVoteNumber) != "number")
 			{
 				console.clear("\1n");
-				var selectHdr = bbs.text(typeof(SelectItemHdr) != "undefined" ? SelectItemHdr : 501);
+				var selectHdr = bbs.text(SelectItemHdr);
 				printf("\1n" + selectHdr + "\1n", pMsgHdr.subject);
 				var optionFormatStr = "\1n\1c\1h%2d\1n\1c: \1h%s\1n";
 				var optionNum = 1;
@@ -1042,7 +1024,7 @@ function VoteOnMessage(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber,
 				console.crlf();
 				// Get the selection prompt text from text.dat and replace the %u or %d with
 				// the number 1 (default option)
-				var selectPromptText = bbs.text(typeof(SelectItemWhich) != "undefined" ? SelectItemWhich : 503);
+				var selectPromptText = bbs.text(SelectItemWhich);
 				selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
 				console.mnemonics(selectPromptText);
 				// Get & process the selection from the user
@@ -1291,9 +1273,31 @@ function ViewVoteResults(pSubBoardCode)
 				console.print(displayMsgHdr[i]);
 			}
 			console.print("\1n");
+			var msgBodyText = GetMsgBody(msgbase, pollMsgHdrs[currentMsgIdx], pSubBoardCode, user);
+			if (msgBodyText == null)
+				msgBodyText = "Unable to load poll";
+			// TODO: Finish this
+			console.print(msgBodyText); // Temporary
 			console.pause(); // Temporary
 			continueOn = false; // Temporary
+			/*
+			// Create a frame object to display
+			var displayFrame = new Frame(1, // x: Horizontal coordinate of top left
+			                             displayMsgHdr.length + 1, // y: Vertical coordinate of top left
+			                             console.screen_columns, // Width
+			                             console.screen_rows - displayMsgHdr.length - 1, // Height
+			                             BG_BLACK);
+			displayFrame.v_scroll = true;
+			displayFrame.h_scroll = false;
+			displayFrame.scrollbars = true;
+			var displayFrameScrollbar = new ScrollBar(displayFrame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+			// Load the poll text into the Frame object and draw the frame
+			displayFrame.putmsg(msgBodyText);
+			displayFrame.draw();
 			// TODO: Finish this
+			console.pause(); // Temporary
+			continueOn = false; // Temporary
+			*/
 		}
 
 		msgbase.close();
@@ -1342,39 +1346,32 @@ function GetDefaultMsgDisplayHdr()
 	hdrLine3 += "@\1k" + VERTICAL_SINGLE;
 	hdrDisplayLines.push(hdrLine3);
 	var hdrLine4 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
-	             + "\1gT\1n\1go  \1h\1c: \1b@MSG_TO-L";
-	numChars = console.screen_columns - 21;
+	             + "\1gS\1n\1gubj\1h\1c: \1b@MSG_SUBJECT-L";
+	numChars = console.screen_columns - 26;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine4 += "#";
 	hdrLine4 += "@\1k" + VERTICAL_SINGLE;
 	hdrDisplayLines.push(hdrLine4);
-	var hdrLine5 = "\1n\1h\1k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
-	             + "\1gS\1n\1gubj\1h\1c: \1b@MSG_SUBJECT-L";
-	numChars = console.screen_columns - 26;
-	for (var i = 0; i < numChars; ++i)
-		hdrLine5 += "#";
-	hdrLine5 += "@\1k" + VERTICAL_SINGLE;
-	hdrDisplayLines.push(hdrLine5);
-	var hdrLine6 = "\1n\1c" + VERTICAL_SINGLE + "\1h\1k" + BLOCK1 + BLOCK2 + BLOCK3
+	var hdrLine5 = "\1n\1c" + VERTICAL_SINGLE + "\1h\1k" + BLOCK1 + BLOCK2 + BLOCK3
 	             + "\1gD\1n\1gate\1h\1c: \1b@MSG_DATE-L";
 	//numChars = console.screen_columns - 23;
 	numChars = console.screen_columns - 67;
 	for (var i = 0; i < numChars; ++i)
-		hdrLine6 += "#";
-	//hdrLine6 += "@\1n\1c" + VERTICAL_SINGLE;
-	hdrLine6 += "@ @MSG_TIMEZONE@\1n";
+		hdrLine5 += "#";
+	//hdrLine5 += "@\1n\1c" + VERTICAL_SINGLE;
+	hdrLine5 += "@ @MSG_TIMEZONE@\1n";
 	for (var i = 0; i < 40; ++i)
-		hdrLine6 += " ";
-	hdrLine6 += "\1n\1c" + VERTICAL_SINGLE;
-	hdrDisplayLines.push(hdrLine6);
-	var hdrLine7 = "\1n\1h\1c" + BOTTOM_T_SINGLE + HORIZONTAL_SINGLE + "\1n\1c"
+		hdrLine5 += " ";
+	hdrLine5 += "\1n\1c" + VERTICAL_SINGLE;
+	hdrDisplayLines.push(hdrLine5);
+	var hdrLine6 = "\1n\1h\1c" + BOTTOM_T_SINGLE + HORIZONTAL_SINGLE + "\1n\1c"
 	             + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h\1k";
 	numChars = console.screen_columns - 8;
 	for (var i = 0; i < numChars; ++i)
-		hdrLine7 += HORIZONTAL_SINGLE;
-	hdrLine7 += "\1n\1c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h"
+		hdrLine6 += HORIZONTAL_SINGLE;
+	hdrLine6 += "\1n\1c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\1h"
 	         + HORIZONTAL_SINGLE + BOTTOM_T_SINGLE;
-	hdrDisplayLines.push(hdrLine7);
+	hdrDisplayLines.push(hdrLine6);
 
 	return hdrDisplayLines;
 }
@@ -1851,4 +1848,24 @@ function makeNetMsgAttrStr(pNetMsgAttrs, pIfEmptyString)
    if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
 	   msgAttrStr = pIfEmptyString;
    return msgAttrStr;
+}
+
+// Adjusts a message's when-written time to the BBS's local time.
+//
+// Parameters:
+//  pMsgHdr: A message header object
+//
+// Return value: The message's when_written_time adjusted to the BBS's local time.
+//               If the message header doesn't have a when_written_time or
+//               when_written_zone property, then this function will return -1.
+function MsgWrittenTimeToLocalBBSTime(pMsgHdr)
+{
+	if (!pMsgHdr.hasOwnProperty("when_written_time") || !pMsgHdr.hasOwnProperty("when_written_zone_offset") || !pMsgHdr.hasOwnProperty("when_imported_zone_offset"))
+		return -1;
+
+	var timeZoneDiffMinutes = pMsgHdr.when_imported_zone_offset - pMsgHdr.when_written_zone_offset;
+	//var timeZoneDiffMinutes = pMsgHdr.when_written_zone - system.timezone;
+	var timeZoneDiffSeconds = timeZoneDiffMinutes * 60;
+	var msgWrittenTimeAdjusted = pMsgHdr.when_written_time + timeZoneDiffSeconds;
+	return msgWrittenTimeAdjusted;
 }
