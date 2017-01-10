@@ -1,6 +1,7 @@
 var f = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 if (!f.open('r')) exit();
-var webSocket = f.iniGetObject('WebSocket');
+var webSocket = f.iniGetObject('WebSocketTelnet');
+if (webSocket === null) webSocket = f.iniGetObject('WebSocket');
 var webSocketRLogin = f.iniGetObject('WebSocketRLogin');
 f.close();
 
