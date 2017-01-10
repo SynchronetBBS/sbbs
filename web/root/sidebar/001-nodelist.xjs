@@ -1,3 +1,5 @@
+<?xjs var _nll = getLanguage(settings.language_file || 'english.ini', 'node_list'); ?>
+
 <div id="sbbs-nodelist"></div>
 <script type="text/javascript">
 var nodeList = function() {
@@ -5,10 +7,10 @@ var nodeList = function() {
 		'./api/system.ssjs?call=node-list',
 		function (data) {
 			$('#sbbs-nodelist').html(
-				'<h4>Who\'s online</h4>' +
+				"<h4><?xjs write(_nll.label_title); ?></h4>" +
 				'<table id="sbbs-nodelist-table" ' +
 				'class="table table-condensed table-responsive table-striped">'+
-				'<thead><tr><th>Node</th><th>Status</th></tr></thead>' +
+				'<thead><tr><th><?xjs write(_nll.label_node_column); ?></th><th><?xjs write(_nll.label_status_column); ?></th></tr></thead>' +
 				'<tbody></tbody>' +
 				'</table>'
 			);
@@ -33,7 +35,7 @@ var nodeList = function() {
 					) {
 						$('#nodelist-' + index).attr(
 							'title',
-							'Send a telegram'
+							'<?xjs write(_nll.label_send_telegram); ?>'
 						);
 						$('#nodelist-' + index).css('cursor', 'pointer');
 						$('#nodelist-' + index).click(

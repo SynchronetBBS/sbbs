@@ -1,56 +1,66 @@
+<?xjs var _sill = getLanguage(settings.language_file || 'english.ini', 'system_info'); ?>
+
 <h4>System Info</h4>
 <table class="table table-condensed table-responsive table-striped">
 	<tbody>
 		<tr>
-			<th>Sysop:</th>
+			<th scope="row"><?xjs write(_sill.label_sysop); ?></th>
 			<td><?xjs write(system.operator); ?></td>
 		</tr>
 		<tr>
-			<th>Location:</th>
+			<th scope="row"><?xjs write(_sill.label_location); ?></th>
 			<td><?xjs write(system.location); ?></td>
 		</tr>
 		<tr>
-			<th>Users:</th>
+			<th scope="row"><?xjs write(_sill.label_users); ?></th>
 			<td><?xjs write(system.stats.total_users); ?></td>
 		</tr>
 		<tr>
-			<th>Nodes:</th>
+			<th scope="row"><?xjs write(_sill.label_nodes); ?></th>
 			<td><?xjs write(system.nodes); ?></td>
 		</tr>
 		<tr>
-			<th>Uptime:</th>
+			<th scope="row"><?xjs write(_sill.label_uptime); ?></th>
 			<td><?xjs write(system.secondstr(time() - system.uptime)); ?></td>
 		</tr>
 		<tr>
-			<th>Calls:</th>
+			<th scope="row"><?xjs write(_sill.label_calls_total); ?></th>
 			<td><?xjs write(system.stats.total_logons); ?></td>
 		</tr>
 		<tr>
-			<th>Calls today:</th>
+			<th scope="row"><?xjs write(_sill.label_calls_today); ?></th>
 			<td><?xjs write(system.stats.logons_today); ?></td>
 		</tr>
 		<tr>
-			<th>Files:</th>
+			<th scope="row"><?xjs write(_sill.label_files_total); ?></th>
 			<td><?xjs write(system.stats.total_files); ?></td>
 		</tr>
 		<tr>
-			<th>U/L today:</th>
-			<td><?xjs write(system.stats.files_uploaded_today); ?> files<br>
-				(<?xjs write(system.stats.bytes_uploaded_today); ?> bytes)
+			<th scope="row"><?xjs write(_sill.label_files_uploaded_today); ?></th>
+			<td>
+				<?xjs write(system.stats.files_uploaded_today); ?> 
+				<?xjs write(_sill.stat_suffix_files); ?>
+				<br>
+				(<?xjs write(system.stats.bytes_uploaded_today); ?> 
+				<?xjs write(_sill.stat_suffix_bytes); ?>)
 			</td>
 		</tr>
 		<tr>
-			<th>D/L today:</th>
-			<td><?xjs write(system.stats.files_downloaded_today); ?> files<br>
-				(<?xjs write(system.stats.bytes_downloaded_today); ?> bytes)
+			<th scope="row"><?xjs write(_sill.label_files_downloaded_today); ?></th>
+			<td>
+				<?xjs write(system.stats.files_downloaded_today); ?> 
+				<?xjs write(_sill.stat_suffix_files); ?>
+				<br>
+				(<?xjs write(system.stats.bytes_downloaded_today); ?> 
+				<?xjs write(_sill.stat_suffix_bytes); ?>)
 			</td>
 		</tr>
 		<tr>
-			<th>Messages:</th>
+			<th scope="row"><?xjs write(_sill.label_messages_total); ?></th>
 			<td><?xjs write(system.stats.total_messages); ?></td>
 		</tr>
 		<tr>
-			<th>Posts today:</th>
+			<th scope="row"><?xjs write(_sill.label_messages_posted_today); ?></th>
 			<td><?xjs write(system.stats.messages_posted_today); ?></td>
 		</tr>
 	</tbody>
