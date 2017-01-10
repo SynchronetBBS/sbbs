@@ -2,6 +2,9 @@ load('sbbsdefs.js');
 load('nodedefs.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + 'auth.js');
+load(settings.web_lib + 'language.js');
+
+var _language = getLanguage(settings.language_file || 'english.ini', 'api_system');
 
 var reply = {};
 
@@ -39,7 +42,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				if (webAction === null) continue;
 				reply.push(
 					{	status : '',
-						action : 'viewing ' + webAction,
+						action : _language.nodelist_action_prefix + ' ' + webAction,
 						user : usr.alias
 					}
 				);
@@ -63,9 +66,10 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 			if (un < 1) break;
 			system.put_telegram(
 				un,
-				'Telegram from ' +
-				user.alias + ' via WWW on ' + system.timestr() + '\r\n' +
-				http_request.query.telegram[0] + '\r\n'
+				format(
+					_language.telegram_header_format,
+					user.alias, (new Date()).toLocaleString()
+				) + '\r\n' + http_request.query.telegram[0] + '\r\n'
 			);
 			break;
 
