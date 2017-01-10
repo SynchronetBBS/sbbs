@@ -1,9 +1,12 @@
 load('sbbsdefs.js');
 load(system.exec_dir + '../web/lib/init.js');
 load(settings.web_lib + '/auth.js');
+load(settings.web_lib + '/language.js');
 
 if (user.alias !== settings.guest) exit();
 if (!settings.user_registration) exit();
+
+var _rl = getLanguage(settings.language_file || 'english.ini', 'api_register');
 
 var MIN_ALIAS = 1,
 	MIN_REALNAME = 3,
@@ -67,10 +70,10 @@ function paramLength(param) {
 function newUser() {
 	var usr = system.new_user(prepUser.alias);
 	if (typeof usr === 'number') {
-		reply.errors.push('Failed to create user record.');
+		reply.errors.push(_rl.error_failed);
 		return;
 	}
-	log(LOG_INFO, 'User #' + usr.number + ' registered via HTTP.');
+	log(LOG_INFO, format(_rl.log_success, usr.number));
 	usr.security.password = prepUser.password;
 	for (var property in prepUser) {
 		if (property === 'alias' || property === 'password') continue;
@@ -87,10 +90,7 @@ if ((	paramExists('send-me-free-stuff') &&
 		http_request.query['subscribe-to-newsletter'][0] !== ''
 	)
 ) {
-	log(LOG_WARNING,
-		'Hidden registration form input element filled.  ' +
-		'Likely a bot.  Cancelling user registration.'
-	);
+	log(LOG_WARNING, _rl.log_bot_attempt);
 	exit();
 }
 
@@ -99,7 +99,7 @@ if (system.newuser_password !== '' &&
 		http_request.query['newuser-password'][0] != system.newuser_password
 	)
 ) {
-	reply.errors.push('Incorrect registration password.');
+	reply.errors.push(_rl.error_bad_syspass);
 }
 
 // More could be done to respect certain newuser question toggles
@@ -109,9 +109,9 @@ if (!paramExists('alias') ||
 	paramLength('alias') < MIN_ALIAS ||
 	paramLength('alias') > LEN_ALIAS
 ) {
-	reply.errors.push('Valid username is required.');
+	reply.errors.push(_rl.error_invalid_alias);
 } else if (system.matchuser(http_request.query.alias[0]) > 0) {
-	reply.errors.push('Username already taken.');
+	reply.errors.push(_rl.error_alias_taken);
 } else {
 	prepUser.alias = cleanParam('alias');
 	prepUser.handle = cleanParam('alias');
@@ -120,27 +120,29 @@ if (!paramExists('alias') ||
 if ((!paramExists('password1') || !paramExists('password2')) ||
 	http_request.query.password1[0] !== http_request.query.password2[0]
 ) {
-	reply.errors.push('Password & confirmation are required, and must match.');
+	reply.errors.push(_rl.error_password_mismatch);
 } else if (
 	paramLength('password1') < settings.minimum_password_length ||
 	paramLength('password1') > LEN_PASS
 ) {
 	reply.errors.push(
-		'Password must be between ' +
-		settings.minimum_password_length + ' and ' + LEN_PASS + ' in length.'
+		format(
+			_rl.error_password_length,
+			settings.minimum_password_length, LEN_PASS
+		)
 	);
 } else {
 	prepUser.password = cleanParam('password1');
 }
 
 if (!paramExists('netmail') && !required(UQ_NONETMAIL)) {
-	reply.errors.push('Email address is required.');
+	reply.errors.push(_rl.error_email_required);
 } else if (
 	(	paramLength('netmail') < MIN_NETMAIL ||
 		paramLength('netmail') > LEN_NETMAIL
 	) && !required(UQ_NONETMAIL)
 ) {
-	reply.errors.push('Invalid email address.');
+	reply.errors.push(_rl.error_invalid_email);
 } else {
 	prepUser.netmail = cleanParam('netmail');
 }
@@ -151,7 +153,7 @@ if (required(UQ_REALNAME) &&
 		paramLength('realname') > LEN_NAME
 	)
 ) {
-	reply.errors.push('Valid real name is required.');
+	reply.errors.push(_rl.error_invalid_name);
 } else {
 	prepUser.name = cleanParam('realname');
 }
@@ -162,7 +164,7 @@ if (required(UQ_LOCATION) &&
 		paramLength('location') > LEN_LOCATION
 	)
 ) {
-	reply.errors.push('Valid location is required.');
+	reply.errors.push(_rl.error_invalid_location);
 } else {
 	prepUser.location = cleanParam('location');
 }
@@ -176,7 +178,7 @@ if (required(UQ_ADDRESS) &&
 		paramLength('zipcode') > LEN_ADDRESS
 	)
 ) {
-	reply.errors.push('Valid street address and postal code are required.');
+	reply.errors.push(_rl.error_invalid_street_address);
 } else {
 	prepUser.address = cleanParam('address');
 	prepUser.zipcode = cleanParam('zipcode');
@@ -188,7 +190,7 @@ if (required(UQ_PHONE) &&
 		paramLength('phone') > LEN_PHONE
 	)
 ) {
-	reply.errors.push('Valid phone number is required.');
+	reply.errors.push(_rl.error_invalid_phone);
 } else {
 	prepUser.phone = cleanParam('phone');
 }
@@ -199,7 +201,7 @@ if (required(UQ_SEX) &&
 		['X','M','F','O'].indexOf(http_request.query.gender[0]) < 0
 	)
 ) {
-	reply.errors.push('Sex is required. Heh heh.');
+	reply.errors.push(_rl.error_invalid_gender);
 } else {
 	prepUser.gender = http_request.query.gender[0];
 }
@@ -210,7 +212,7 @@ if (paramExists('birth') &&
 	// Should really test for valid date (and date format per system config)
 	prepUser.birthdate = cleanParam('birth');
 } else if (required(UQ_BIRTH)) {
-	reply.errors.push('Birthdate is required.');
+	reply.errors.push(_rl.error_invalid_birthdate);
 }
 
 if (reply.errors.length < 1) newUser();
