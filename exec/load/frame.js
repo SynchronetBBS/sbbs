@@ -925,34 +925,35 @@ Frame.prototype.clear = function (attr) {
 Frame.prototype.clearline = function(attr) {
 	if(attr == undefined)
 		attr = this.attr;
-	if(!this.__properties__.data[this.__position__.cursor.y])
+	var py = this.__position__.offset.y + this.__position__.cursor.y;
+	if(!this.__properties__.data[py])
 		return false;
-	for(var x=0;x<this.__properties__.data[this.__position__.cursor.y].length;x++) {
-		if(this.__properties__.data[this.__position__.cursor.y][x]) {
-			this.__properties__.data[this.__position__.cursor.y][x].ch = undefined;
-			this.__properties__.data[this.__position__.cursor.y][x].attr = attr;
+	for(var x=0;x<this.__properties__.data[py].length;x++) {
+		if(this.__properties__.data[py][x]) {
+			this.__properties__.data[py][x].ch = undefined;
+			this.__properties__.data[py][x].attr = attr;
 		}
 	}
 	for(var x=0;x<this.width;x++) {
 		this.__properties__.display.updateChar(this,x,this.__position__.cursor.y);
 	}
-	return true;
 }
 Frame.prototype.cleartoeol = function(attr) {
 	if(attr == undefined)
 		attr = this.attr;
+	var px = this.__position__.offset.x + this.__position__.cursor.x;
+	var py = this.__position__.offset.y + this.__position__.cursor.y;
 	if(!this.__properties__.data[this.__position__.cursor.y])
 		return false;
-	for(var x=this.__position__.cursor.x;x<this.__properties__.data[this.__position__.cursor.y].length;x++) {
-		if(this.__properties__.data[this.__position__.cursor.y][x]) {
-			this.__properties__.data[this.__position__.cursor.y][x].ch = undefined;
-			this.__properties__.data[this.__position__.cursor.y][x].attr = attr;
+	for(var x=px;x<this.__properties__.data[py].length;x++) {
+		if(this.__properties__.data[py][x]) {
+			this.__properties__.data[py][x].ch = undefined;
+			this.__properties__.data[py][x].attr = attr;
 		}
 	}
 	for(var x=this.__position__.cursor.x;x<this.width;x++) {
 		this.__properties__.display.updateChar(this,x,this.__position__.cursor.y);
 	}
-	return true;
 }
 Frame.prototype.crlf = function() {
 	this.__position__.cursor.x = 0;
