@@ -935,6 +935,10 @@ Frame.prototype.clear = function(attr) {
 	this.home();
 	return true;
 }
+Frame.prototype.cleardata = function () {
+	this.__properties__.data = [];
+	this.invalidate();
+}
 Frame.prototype.clearline = function(attr) {
 	if(attr == undefined)
 		attr = this.attr;
