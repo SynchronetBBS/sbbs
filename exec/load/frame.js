@@ -914,28 +914,8 @@ Frame.prototype.pageup = function() {
 		this.__position__.offset.y = 0;
 	this.refresh();
 }
-Frame.prototype.clear = function(attr) {
-	if(attr == undefined)
-		attr = this.attr;
-	for(var y=0;y<this.__properties__.data.length;y++) {
-		if(!this.__properties__.data[y])
-			continue;
-		for(var x=0;x<this.__properties__.data[y].length;x++) {	
-			if(this.__properties__.data[y][x]) {
-				this.__properties__.data[y][x].ch = undefined;
-				this.__properties__.data[y][x].attr = attr;
-			}
-		}
-	}
-	for(var y=0;y<this.height;y++) {
-		for(var x=0;x<this.width;x++) {
-			this.__properties__.display.updateChar(this,x,y);
-		}
-	}
-	this.home();
-	return true;
-}
-Frame.prototype.cleardata = function () {
+Frame.prototype.clear = function (attr) {
+	if (attr) this.attr = attr;
 	this.__properties__.data = [];
 	this.home();
 	this.invalidate();
