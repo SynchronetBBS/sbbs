@@ -24,20 +24,19 @@
 
 	Working example:
 
-		load("sbbsdefs.js");
-		load("frame.js");
-		load("scrollbar.js");
+		load('sbbsdefs.js');
+		load('frame.js');
+		load('scrollbar.js');
 
 		var f = new Frame(1, 1, 10, 10, LIGHTGRAY);
-		for(var n = 0; n < f.height * 2; n++)
-		    f.putmsg(n + "\r\n");
+		for (var n = 0; n < f.height * 2; n++) f.putmsg(n + '\r\n');
 		var s = new ScrollBar(f);
 		f.open();
 
-		var userInput = "";
-		while(userInput != "\x1B") {
+		var userInput = '';
+		while (userInput != '\x1B') {
 		    userInput = console.inkey(K_NONE, 5);
-		    switch(userInput) {
+		    switch (userInput) {
 		        case KEY_UP:
 		            f.scroll(0, -1);
 		            break;
@@ -47,7 +46,7 @@
 		        default:
 		            break;
 		    }
-		    if(f.cycle()) {
+		    if (f.cycle()) {
 		        s.cycle();
 		        console.gotoxy(console.screen_columns, console.screen_rows);
 		    }
@@ -56,10 +55,10 @@
 		f.close();
 */
 
-load("sbbsdefs.js");
-load("tree.js"); // instanceof
+load('sbbsdefs.js');
+load('tree.js'); // instanceof
 
-var ScrollBar = function(frame, opts) {
+var ScrollBar = function (frame, opts) {
 
 	var self = this;
 
@@ -67,36 +66,38 @@ var ScrollBar = function(frame, opts) {
 		bg : BG_BLACK,
 		fg : LIGHTGRAY,
 		autohide : false,
-		orientation : "vertical"
+		orientation : 'vertical'
 	};
 
 	var scrollBarFrame, scrollArea, bar;
 
-	var init = function() {
+	function init() {
 
-		for(var o in opts) {
-			if(typeof settings[o] == typeof opts[o])
-				settings[o] = opts[o];
+		for (var o in opts) {
+			if (typeof settings[o] == typeof opts[o]) settings[o] = opts[o];
 		}
-		if(frame instanceof Tree) {
+
+		if (frame instanceof Tree) {
 			settings.tree = frame;
 			frame = frame.frame;
 		}
 
+		var vertical = (settings.orientation === 'vertical');
+
 		scrollBarFrame = new Frame(
-			(settings.orientation == "vertical") ? frame.x + frame.width - 1 : frame.x,
-			(settings.orientation == "vertical") ? frame.y : frame.y + frame.height - 1,
-			(settings.orientation == "vertical") ? 1 : frame.width,
-			(settings.orientation == "vertical") ? frame.height : 1,
+			vertical ? frame.x + frame.width - 1 : frame.x,
+			vertical ? frame.y : frame.y + frame.height - 1,
+			vertical ? 1 : frame.width,
+			vertical ? frame.height : 1,
 			settings.bg|settings.fg,
 			frame
 		);
 
 		scrollArea = new Frame(
-			(settings.orientation == "vertical") ? scrollBarFrame.x : scrollBarFrame.x + 1,
-			(settings.orientation == "vertical") ? scrollBarFrame.y + 1 : scrollBarFrame.y,
-			(settings.orientation == "vertical") ? scrollBarFrame.width : scrollBarFrame.width - 2,
-			(settings.orientation == "vertical") ? scrollBarFrame.height - 2 : scrollBarFrame.height,
+			vertical ? scrollBarFrame.x : scrollBarFrame.x + 1,
+			vertical ? scrollBarFrame.y + 1 : scrollBarFrame.y,
+			vertical ? scrollBarFrame.width : scrollBarFrame.width - 2,
+			vertical ? scrollBarFrame.height - 2 : scrollBarFrame.height,
 			settings.bg|settings.fg,
 			scrollBarFrame
 		);
@@ -110,41 +111,50 @@ var ScrollBar = function(frame, opts) {
 			scrollArea
 		);
 
-		scrollBarFrame.putmsg((settings.orientation == "vertical") ? ascii(30) : "<");
+		scrollBarFrame.putmsg(vertical ? ascii(30) : '<');
 		scrollBarFrame.end();
-		scrollBarFrame.putmsg((settings.orientation == "vertical") ? ascii(31) : ">");
+		scrollBarFrame.putmsg(vertical ? ascii(31) : '>');
 
-		if(settings.orientation == "vertical") {
-			for(var y = 1; y <= scrollArea.height; y++)
+		if (vertical) {
+			for (var y = 1; y <= scrollArea.height; y++) {
 				scrollArea.putmsg(ascii(176));
-			for(var y = 1; y <= bar.height; y++)
-				bar.putmsg(ascii(219));
+			}
+			for (var y = 1; y <= bar.height; y++) bar.putmsg(ascii(219));
 		} else {
-			for(var x = 1; x <= scrollArea.width; x++)
+			for (var x = 1; x <= scrollArea.width; x++) {
 				scrollArea.putmsg(ascii(176));
-			for(var x = 1; x <= bar.width; x++)
-				bar.putmsg(ascii(219));
+			}
+			for (var x = 1; x <= bar.width; x++) bar.putmsg(ascii(219));
 		}
 
 		self.cycle();
 
 	}
 
-	var cycleTree = function() {
+	function cycleTree() {
 
 		var height = settings.tree.height;
 		var bh = bar.height;
 		var by = bar.y;
 
-		if(settings.autohide && height <= frame.height && scrollBarFrame.is_open)
+		if (settings.autohide &&
+			height <= frame.height &&
+			scrollBarFrame.is_open
+		) {
 			self.close();
-		else if(settings.autohide && height > frame.height && !scrollBarFrame.is_open)
+		} else if (
+			settings.autohide &&
+			height > frame.height &&
+			!scrollBarFrame.is_open
+		) {
 			self.open();
+		}
 
 		var adj = Math.min(
 			scrollArea.height,
 			Math.round(scrollArea.height * (frame.height / height))
 		);
+		bar.y = scrollArea.y;
 		bar.height = (isNaN(adj) || adj < 1) ? 1 : adj;
 
 		var adj = Math.min(
@@ -157,22 +167,31 @@ var ScrollBar = function(frame, opts) {
 		);
 		bar.y = scrollArea.y + (isNaN(adj) ? 0 : adj);
 
-		if(bh != bar.height || by != bar.y)
-			scrollBarFrame.invalidate();
+		if (bh != bar.height || by != bar.y) scrollBarFrame.invalidate();
 
 	}
 
-	var cycleVertical = function() {
+	function cycleVertical() {
 
-		if(settings.autohide && frame.data_height <= frame.height && scrollBarFrame.is_open)
+		if (settings.autohide &&
+			frame.data_height <= frame.height &&
+			scrollBarFrame.is_open
+		) {
 			self.close();
-		else if(settings.autohide && frame.data_height > frame.height && !scrollBarFrame.is_open)
+		} else if (
+			settings.autohide &&
+			frame.data_height > frame.height &&
+			!scrollBarFrame.is_open
+		) {
 			self.open();
+		}
 
 		var adj = Math.min(
 			scrollArea.height,
 			Math.round(scrollArea.height * (frame.height / frame.data_height))
 		);
+
+		bar.y = scrollArea.y;
 		bar.height = (isNaN(adj) || adj < 1) ? 1 : adj;
 
 		var adj = Math.min(
@@ -187,17 +206,26 @@ var ScrollBar = function(frame, opts) {
 
 	}
 
-	var cycleHorizontal = function() {
+	function cycleHorizontal() {
 
-		if(settings.autohide && frame.data_width <= frame.width && scrollBarFrame.is_open)
+		if (settings.autohide &&
+			frame.data_width <= frame.width &&
+			scrollBarFrame.is_open
+		) {
 			self.close();
-		else if(settings.autohide && frame.data_width > frame.width && !scrollBarFrame.is_open)
+		} else if (
+			settings.autohide &&
+			frame.data_width > frame.width &&
+			!scrollBarFrame.is_open
+		) {
 			self.open();
+		}
 
 		var adj = Math.min(
 			scrollArea.width,
 			Math.round(scrollArea.width * (frame.width / frame.data_width))
 		);
+		bar.x = scrollArea.x;
 		bar.width = (isNaN(adj) || adj < 1) ? 1 : adj;
 
 		var adj = Math.min(
@@ -212,22 +240,23 @@ var ScrollBar = function(frame, opts) {
 
 	}
 
-	this.open = function() {
+	this.open = function () {
 		scrollBarFrame.open();
 		scrollBarFrame.top();
 	}
 
-	this.close = function() {
+	this.close = function () {
 		scrollBarFrame.close();
 	}
 
-	this.cycle = function() {
-		if(typeof settings.tree != "undefined")
+	this.cycle = function () {
+		if (typeof settings.tree !== 'undefined') {
 			cycleTree();
-		else if(settings.orientation == "vertical")
+		} else if (settings.orientation === 'vertical') {
 			cycleVertical();
-		else
+		} else {
 			cycleHorizontal();
+		}
 	}
 
 	init();
