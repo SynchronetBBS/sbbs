@@ -54,7 +54,7 @@ load("DDLightbarMenu.js");
 
 // Version information
 var SLYVOTE_VERSION = "0.01 Beta";
-var SLYVOTE_DATE = "2017-01-09";
+var SLYVOTE_DATE = "2017-01-10";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -150,10 +150,24 @@ var gNetMsgAttrStrs = {
 var ERROR_PAUSE_WAIT_MS = 1500;
 
 var gBottomBorderRow = 23;
+var gMessageRow = 3;
+
+// Keyboard key codes for displaying on the screen
+var UP_ARROW = ascii(24);
+var DOWN_ARROW = ascii(25);
+var LEFT_ARROW = ascii(17);
+var RIGHT_ARROW = ascii(16);
+// PageUp & PageDown keys - Not real key codes, but codes defined
+// to be used & recognized in this script
+var KEY_PAGE_UP = "\1PgUp";
+var KEY_PAGE_DOWN = "\1PgDn";
 
 // An object containing keypresses for the vote results reader
 var gReaderKeys = {
-	vote: "V"
+	goToFirst: "F",
+	goToLast: "L",
+	vote: "V",
+	quit: "Q"
 }
 
 
@@ -288,7 +302,7 @@ function ChooseVoteTopic()
 	// Clear the screen between the top & bottom borders
 	var formatStr = "%" + console.screen_columns + "s";
 	console.print("\1n");
-	for (var posY = 3; posY < gBottomBorderRow; ++posY)
+	for (var posY = gMessageRow; posY < gBottomBorderRow; ++posY)
 	{
 		console.gotoxy(1, posY);
 		printf(formatStr, "");
@@ -298,7 +312,7 @@ function ChooseVoteTopic()
 	var voteTopicInfo = GetVoteTopicHdrs(gSubBoardCode, true);
 	if (voteTopicInfo.errorMsg.length > 0)
 	{
-		console.gotoxy(1, 3);
+		console.gotoxy(1, gMessageRow);
 		console.print("\1n\1y\1h" + voteTopicInfo.errorMsg + "\1n");
 		console.crlf();
 		console.pause();
@@ -306,7 +320,7 @@ function ChooseVoteTopic()
 	}
 	else if (voteTopicInfo.msgHdrs.length == 0)
 	{
-		console.gotoxy(1, 3);
+		console.gotoxy(1, gMessageRow);
 		console.print("\1n\1cThere are no polls to vote on in this section\1n");
 		console.crlf();
 		console.pause();
@@ -351,21 +365,20 @@ function ChooseVoteTopic()
 			drawTopicsMenu = true;
 			if (voteRetObj.errorMsg.length > 0)
 			{
-				var errorMsgRow = 3;
-				console.gotoxy(1, errorMsgRow);
+				console.gotoxy(1, gMessageRow);
 				if (voteRetObj.mnemonicsRequiredForErrorMsg)
 				{
-					console.gotoxy(1, errorMsgRow);
+					console.gotoxy(1, gMessageRow);
 					console.mnemonics(voteRetObj.errorMsg);
 					mswait(ERROR_PAUSE_WAIT_MS);
-					console.gotoxy(1, errorMsgRow);
+					console.gotoxy(1, gMessageRow);
 					printf("\1n%" + console.screen_columns + "s", "");
 				}
 				else
 				{
 					console.print("\1n\1y\1h" + voteRetObj.errorMsg);
 					mswait(ERROR_PAUSE_WAIT_MS);
-					console.gotoxy(1, errorMsgRow);
+					console.gotoxy(1, gMessageRow);
 					printf("\1n%" + voteRetObj.errorMsg.length + "s", "");
 				}
 			}
@@ -724,8 +737,8 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 				voteOptDescLen = 27;
 
 			// Format strings for outputting the voting option lines
-			var unvotedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n";
-			var votedOptionFormatStr = "\1n\1c\1h%2d\1n\1c: \1" + "5\1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n";
+			var unvotedOptionFormatStr = "\1n\1" + "0\1c\1h%2d\1n\1" + "0\1c: \1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n\1" + "0";
+			var votedOptionFormatStr = "\1n\1" + "0\1c\1h%2d\1n\1" + 0 + "\1c: \1" + "5\1w\1h%-" + voteOptDescLen + "s [%-4d %6.2f%]\1n\1" + "0";
 			// Add up the total number of votes so that we can
 			// calculate vote percentages.
 			var totalNumVotes = 0;
@@ -775,7 +788,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 			// how to vote.
 			var votingAllowed = ((pSubBoardCode != "mail") && (((msg_area.sub[pSubBoardCode].settings & SUB_NOVOTING) == 0)));
 			if (votingAllowed && !HasUserVotedOnMsg(pMsgHdr.number, pSubBoardCode, pMsgbase, pUser))
-				msgBody += "\1n\r\n\1gTo vote in this poll, press \1w\1h" + gReaderKeys.vote + "\1n\1g now.";
+				msgBody += "\1n\1" + "0\r\n\1gTo vote in this poll, press \1w\1h" + gReaderKeys.vote + "\1n\1" + "0\1g now.";
 
 			// If the current logged-in user created this poll, then show the
 			// users who have voted on it so far.
@@ -788,7 +801,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 				{
 					// Get the line from text.dat for writing who voted & when.  It
 					// is a format string and should look something like this:
-					//"\r\n\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s voted in your poll: \1n\1h%s\r\n" 787 PollVoteNotice
+					//"\r\n\1n\1" + "0\1hOn %s, in \1c%s \1n\1" + "0\1c%s\r\n\1h\1m%s voted in your poll: \1n\1" + "0\1h%s\r\n" 787 PollVoteNotice
 					var userVotedInYourPollText = bbs.text(typeof(PollVoteNotice) != "undefined" ? PollVoteNotice : 787);
 
 					// Pass true to get_all_msg_headers() to tell it to return vote messages
@@ -1253,51 +1266,122 @@ function ViewVoteResults(pSubBoardCode)
 		}
 		delete msgHdrs; // Free some memory
 
+		// If there are no polls, then just return
+		if (pollMsgHdrs.length == 0)
+		{
+			msgbase.close();
+			console.gotoxy(1, gMessageRow);
+			console.print("\1n\1y\1hThere are no topics to view.\1n");
+			mswait(ERROR_PAUSE_WAIT_MS);
+			console.gotoxy(1, gMessageRow);
+			printf("%28s", ""); // Erase the error message
+			return nextProgramState;
+		}
+
+		// Create the key help line to be displayed at the bottom of the screen
+		var keyHelpLine = "\1" + "7" + CenterText("\1rLeft\1b, \1rRight\1b, \1rUp\1b, \1rDn\1b, \1rPgUp\1b/\1rDn\1b, \1rF\1m)\1birst, \1rL\1m)\1bast, \1r#\1b, \1rQ\1m)\1buit", console.screen_columns-1);
+
 		// Get the unmodified default header lines to be displayed
 		var displayMsgHdrUnmodified = GetDefaultMsgDisplayHdr();
 
-		// User input loop
+		// Calculate the height of the frame to use
+		var frameHeight = console.screen_rows - displayMsgHdrUnmodified.length - 1;
+		// Create the frame object to use for displaying the message
+		// TODO: The scrollbar scroll amount seems to change as the message lengths change
+		var displayFrame = new Frame(1, // x: Horizontal coordinate of top left
+		                             displayMsgHdrUnmodified.length + 1, // y: Vertical coordinate of top left
+		                             console.screen_columns, // Width
+		                             frameHeight, // Height
+		                             BG_BLACK);
+		displayFrame.v_scroll = true;
+		displayFrame.h_scroll = false;
+		displayFrame.scrollbars = true;
+		var displayFrameScrollbar = new ScrollBar(displayFrame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+
+		// Prepare the screen and display the key help line on the last row of the screen
 		console.clear("\1n");
+		console.gotoxy(1, console.screen_rows);
+		console.print(keyHelpLine);
+
+		// User input loop
 		var currentMsgIdx = 0;
+		var drawMsg = true;
 		var continueOn = true;
 		while (continueOn)
 		{
+			// Do garbage collection to ensure low memory usage
+			js.gc(true);
+
 			// Get the message header lines to be displayed
 			var dateTimeStr = pollMsgHdrs[currentMsgIdx]["date"].replace(/ [-+][0-9]+$/, "");
 			var displayMsgHdr = GetDisplayMsgHdrForMsg(pollMsgHdrs[currentMsgIdx], displayMsgHdrUnmodified, pSubBoardCode, pollMsgHdrs.length, currentMsgIdx+1, dateTimeStr, false, false);
 			// Display the message header on the screen
-			var curPos = { x: 1, y: 1 };
-			for (var i = 0; i < displayMsgHdr.length; ++i)
+			if (drawMsg)
 			{
-				console.gotoxy(curPos.x, curPos.y++);
-				console.print(displayMsgHdr[i]);
+				var curPos = { x: 1, y: 1 };
+				for (var i = 0; i < displayMsgHdr.length; ++i)
+				{
+					console.gotoxy(curPos.x, curPos.y++);
+					console.print(displayMsgHdr[i]);
+				}
+				console.print("\1n");
 			}
-			console.print("\1n");
 			var msgBodyText = GetMsgBody(msgbase, pollMsgHdrs[currentMsgIdx], pSubBoardCode, user);
 			if (msgBodyText == null)
 				msgBodyText = "Unable to load poll";
-			// TODO: Finish this
-			console.print(msgBodyText); // Temporary
-			console.pause(); // Temporary
-			continueOn = false; // Temporary
-			/*
-			// Create a frame object to display
-			var displayFrame = new Frame(1, // x: Horizontal coordinate of top left
-			                             displayMsgHdr.length + 1, // y: Vertical coordinate of top left
-			                             console.screen_columns, // Width
-			                             console.screen_rows - displayMsgHdr.length - 1, // Height
-			                             BG_BLACK);
-			displayFrame.v_scroll = true;
-			displayFrame.h_scroll = false;
-			displayFrame.scrollbars = true;
-			var displayFrameScrollbar = new ScrollBar(displayFrame, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+
 			// Load the poll text into the Frame object and draw the frame
-			displayFrame.putmsg(msgBodyText);
-			displayFrame.draw();
-			// TODO: Finish this
-			console.pause(); // Temporary
-			continueOn = false; // Temporary
-			*/
+			displayFrame.clear("\1n");
+			displayFrame.putmsg(msgBodyText, "\1n");
+			displayFrame.scrollTo(0, 0);
+			if (drawMsg)
+				displayFrame.draw();
+			var scrollRetObj = ScrollFrame(displayFrame, displayFrameScrollbar, 0, "\1n", false, 1, console.screen_rows);
+			drawMsg = true;
+			if (scrollRetObj.lastKeypress == KEY_LEFT)
+			{
+				// Go back one poll topic
+				if (currentMsgIdx > 0)
+					--currentMsgIdx;
+				else
+					drawMsg = false;
+			}
+			else if (scrollRetObj.lastKeypress == KEY_RIGHT)
+			{
+				// Go to the next poll topic, if there is one
+				if (currentMsgIdx < pollMsgHdrs.length-1)
+					++currentMsgIdx;
+				else
+					drawMsg = false;
+			}
+			else if (scrollRetObj.lastKeypress == gReaderKeys.goToFirst)
+			{
+				// Go to the first poll
+				if (currentMsgIdx > 0)
+					currentMsgIdx = 0;
+				else
+					drawMsg = false;
+			}
+			else if (scrollRetObj.lastKeypress == gReaderKeys.goToLast)
+			{
+				// Go to the last poll
+				if (currentMsgIdx < pollMsgHdrs.length-1)
+					currentMsgIdx = pollMsgHdrs.length-1;
+				else
+					drawMsg = false;
+			}
+			else if (scrollRetObj.lastKeypress == gReaderKeys.vote)
+			{
+				// TODO: Vote on the topic
+			}
+			else if (/[0-9]/.test(scrollRetObj.lastKeypress))
+			{
+				// The user started typing a number - Continue inputting the
+				// poll number and go to that poll
+				// TODO
+			}
+			else if (scrollRetObj.lastKeypress == gReaderKeys.quit)
+				continueOn = false;
 		}
 
 		msgbase.close();
@@ -1868,4 +1952,202 @@ function MsgWrittenTimeToLocalBBSTime(pMsgHdr)
 	var timeZoneDiffSeconds = timeZoneDiffMinutes * 60;
 	var msgWrittenTimeAdjusted = pMsgHdr.when_written_time + timeZoneDiffSeconds;
 	return msgWrittenTimeAdjusted;
+}
+
+// Inputs a keypress from the user and handles some ESC-based
+// characters such as PageUp, PageDown, and ESC.  If PageUp
+// or PageDown are pressed, this function will return the
+// string "\1PgUp" (KEY_PAGE_UP) or "\1Pgdn" (KEY_PAGE_DOWN),
+// respectively.  Also, F1-F5 will be returned as "\1F1"
+// through "\1F5", respectively.
+// Thanks goes to Psi-Jack for the original impementation
+// of this function.
+//
+// Parameters:
+//  pGetKeyMode: Optional - The mode bits for console.getkey().
+//               If not specified, K_NONE will be used.
+//
+// Return value: The user's keypress
+function GetKeyWithESCChars(pGetKeyMode)
+{
+	var getKeyMode = K_NONE;
+	if (typeof(pGetKeyMode) == "number")
+		getKeyMode = pGetKeyMode;
+
+	var userInput = console.getkey(getKeyMode);
+	if (userInput == KEY_ESC) {
+		switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
+			case '[':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
+				case 'V':
+					userInput = KEY_PAGE_UP;
+					break;
+				case 'U':
+					userInput = KEY_PAGE_DOWN;
+					break;
+				}
+				break;
+			case 'O':
+				switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
+				case 'P':
+					userInput = "\1F1";
+					break;
+				case 'Q':
+					userInput = "\1F2";
+					break;
+				case 'R':
+					userInput = "\1F3";
+					break;
+				case 'S':
+					userInput = "\1F4";
+					break;
+				case 't':
+					userInput = "\1F5";
+					break;
+				}
+			default:
+				break;
+		}
+	}
+
+	return userInput;
+}
+
+// Displays a Frame on the screen and allows scrolling through it with the up &
+// down arrow keys, PageUp, PageDown, HOME, and END.
+//
+// Parameters:
+//  pFrame: A Frame object to display & scroll through
+//  pScrollbar: A ScrollBar object associated with the Frame object
+//  pTopLineIdx: The index of the text line to display at the top
+//  pTxtAttrib: The attribute(s) to apply to the text lines
+//  pWriteTxtLines: Boolean - Whether or not to write the text lines (in addition
+//                  to doing the message loop).  If false, this will only do the
+//                  the message loop.  This parameter is intended as a screen
+//                  refresh optimization.
+//  pPostWriteCurX: The X location for the cursor after writing the message
+//                  lines
+//  pPostWriteCurY: The Y location for the cursor after writing the message
+//                  lines
+//
+// Return value: An object with the following properties:
+//               lastKeypress: The last key pressed by the user (a string)
+//               topLineIdx: The new top line index of the text lines, in case of scrolling
+function ScrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pPostWriteCurX,
+                     pPostWriteCurY)
+{
+	// Variables for the top line index for the last page, scrolling, etc.
+	var topLineIdxForLastPage = pFrame.data_height - pFrame.height;
+	if (topLineIdxForLastPage < 0)
+		topLineIdxForLastPage = 0;
+
+	var retObj = new Object();
+	retObj.lastKeypress = "";
+	retObj.topLineIdx = pTopLineIdx;
+
+	if (pTopLineIdx > 0)
+		pFrame.scrollTo(0, pTopLineIdx);
+
+	var writeTxtLines = pWriteTxtLines;
+	if (writeTxtLines)
+	{
+		pFrame.invalidate(); // Force drawing on the next call to draw() or cycle()
+		pFrame.cycle();
+		//pFrame.draw();
+	}
+
+	// Note: It seems that in order for the frame's scrollbar to be accurate,
+	// the frame & scrollbar must be cycled at least once initially.
+	var cycleFrame = true;
+	var continueOn = true;
+	while (continueOn)
+	{
+		// If we are to write the text lines, then draw the frame.
+		// TODO: Do we really need this?  Will this be different from
+		// scrollTextLines()?
+		//if (writeTxtLines)
+		//	pFrame.draw();
+
+		if (cycleFrame)
+		{
+			// Invalidate the frame to force it to redraw everything, as a
+			// workaround to clear the background before writing again
+			// TODO: I might want to remove this invalidate() later when
+			// Frame is fixed to redraw better on scrolling.
+			pFrame.invalidate();
+			// Cycle the scrollbar & frame to get them to scroll
+			if (pScrollbar != null)
+				pScrollbar.cycle();
+			pFrame.cycle();
+		}
+
+		writeTxtLines = false;
+		cycleFrame = false;
+
+		// Get a keypress from the user and take action based on it
+		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
+		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
+		switch (retObj.lastKeypress)
+		{
+			case KEY_UP:
+				if (retObj.topLineIdx > 0)
+				{
+					pFrame.scroll(0, -1);
+					--retObj.topLineIdx;
+					cycleFrame = true;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_DOWN:
+				if (retObj.topLineIdx < topLineIdxForLastPage)
+				{
+					pFrame.scroll(0, 1);
+					cycleFrame = true;
+					++retObj.topLineIdx;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_PAGE_DOWN: // Next page
+				if (retObj.topLineIdx < topLineIdxForLastPage)
+				{
+					//pFrame.scroll(0, pFrame.height);
+					retObj.topLineIdx += pFrame.height;
+					if (retObj.topLineIdx > topLineIdxForLastPage)
+						retObj.topLineIdx = topLineIdxForLastPage;
+					pFrame.scrollTo(0, retObj.topLineIdx);
+					cycleFrame = true;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_PAGE_UP: // Previous page
+				if (retObj.topLineIdx > 0)
+				{
+					//pFrame.scroll(0, -(pFrame.height));
+					retObj.topLineIdx -= pFrame.height;
+					if (retObj.topLineIdx < 0)
+						retObj.topLineIdx = 0;
+					pFrame.scrollTo(0, retObj.topLineIdx);
+					cycleFrame = true;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_HOME: // First page
+				//pFrame.home();
+				pFrame.scrollTo(0, 0);
+				cycleFrame = true;
+				retObj.topLineIdx = 0;
+				break;
+			case KEY_END: // Last page
+				//pFrame.end();
+				pFrame.scrollTo(0, topLineIdxForLastPage);
+				cycleFrame = true;
+				retObj.topLineIdx = topLineIdxForLastPage;
+				break;
+			default:
+				continueOn = false;
+				break;
+		}
+	}
+
+	return retObj;
 }
