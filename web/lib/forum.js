@@ -525,6 +525,7 @@ function postPoll(sub, subject, votes, results, answers, comments) {
     }
 
     var header = {
+        attr : MSG_POLL,
         subject : subject.substr(0, LEN_TITLE),
         from : msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias,
         from_ext : user.number,
