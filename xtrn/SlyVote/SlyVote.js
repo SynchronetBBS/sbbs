@@ -1331,7 +1331,6 @@ function ViewVoteResults(pSubBoardCode)
 				msgBodyText = "Unable to load poll";
 
 			// Load the poll text into the Frame object and draw the frame
-			displayFrame.cleardata();
 			displayFrame.clear("\1n");
 			displayFrame.putmsg(msgBodyText, "\1n");
 			displayFrame.scrollTo(0, 0);
